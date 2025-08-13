@@ -15,7 +15,7 @@ import {
 import type ExcelJS from 'exceljs';
 import {findPlatePositions, getPlateFromSheet} from './excel-plates';
 import {FitFunctionType, FitSeries} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
-import {AnalysisOptions, PlateWidget} from './plate-widget';
+import {AnalysisOptions} from './plate-widget';
 import {inspectCurve} from '../fit/fit-renderer';
 import {plateDbColumn, wellProperties, plateTypes} from '../plates/plates-crud';
 import {PlateDrcAnalysis} from './plate-drc-analysis';
@@ -54,25 +54,6 @@ interface ISeriesData {
   y: number[];
 }
 
-// export class PlateLayer<TData> {
-//   plate: Plate;
-//   data: Float64Array ArrayLike<number> DG.Column<TData>;
-//   role: 'concentration' | 'volume';
-//
-//   /** Array of non-empty values */
-//   values(filter?: IPlateWellFilter): Array<any> {
-//     const col = this.data.columns.byName(data.name);
-//     assure(col != null, `Field does not exist: ${field}`);
-//
-//     const result = [];
-//     for (let i = 0; i < this.rows * this.cols; i++)
-//       if ((filter?.includeEmpty ?? false) || !col.isNone(i))
-//         result.push(col.isNone(i) ? null : col.get(i));
-//
-//     return result;
-//   }
-// }
-
 export const PLATE_OUTLIER_WELL_NAME = 'Outlier';
 
 export function randomizeTableId() {
@@ -88,7 +69,6 @@ export class Plate {
 
   data: DG.DataFrame; // each column is a layer, layed out like (r1 c1) (r1 c2) ... (r2 c1)
   details: {[index: string]: any} = {}; // dynamic plate properties, stored in db: plates.plate_details
-  //layers: PlateLayer[];
   rows: number = 8;
   cols: number = 12;
 
@@ -100,19 +80,15 @@ export class Plate {
     this.barcode = Math.round(Math.random() * 10000).toString().padStart(10, '0');
   }
 
-  /** Creates an empty plate of the standard size to fit the specified positions. t*/
   static autoSize(positions: Iterable<[number, number]>): Plate {
     const [rows, cols] = toStandardSize(getMaxPosition(positions));
     return new Plate(rows, cols);
   }
 
-  /** Returns the internal index of the DataFrame row that stores information
-   * for the grid cell with 0-based (row, col) coordinates. */
   _idx(row: number, col: number): number {
     return row * this.cols + col;
   }
 
-  /** Converts a row index in the internal dataframe to 0-based row/col position. */
   rowIndexToExcel(dataFrameRow: number): [row: number, col: number] {
     return Plate._idxToPos(dataFrameRow, this.cols);
   }
@@ -120,8 +96,6 @@ export class Plate {
   static _idxToPos(dataFrameRow: number, cols: number): [row: number, col: number] {
     return [Math.floor(dataFrameRow / cols), dataFrameRow % cols];
   }
-
-  //well(row: number, col: number): PlateWell { return new PlateWell(); }
 
   _markOutlier(row: number, flag: boolean = true) {
     const outlierCol = this.data.columns.getOrCreate(PLATE_OUTLIER_WELL_NAME, DG.TYPE.BOOL);
@@ -147,12 +121,8 @@ export class Plate {
     });
   }
 
-  /** Constructs a plate from a table of size 8x12, 16x24 or 32x48
-   * This plate will have one layer.
-   * The opposite of {@link toGridDataFrame}. */
   static fromGridDataFrame(table: DG.DataFrame, field?: string): Plate {
     const rows = table.rowCount;
-    // remove row letters
     function containsRowLetters(c: DG.Column): boolean {
       return c.type == DG.TYPE.STRING && DG.range(rows).every((i) => numToExcel(i) == c.get(i).toUpperCase());
     }
@@ -179,8 +149,6 @@ export class Plate {
     return plate;
   }
 
-  /** Returns a dataframe representing the specified layer with the same layout as the plate.
-   * The opposite of {@link fromGridDataFrame}. */
   toGridDataFrame(layer: string): DG.DataFrame {
     const df = DG.DataFrame.create(this.rows, layer);
     const col = this.data.columns.byName(layer);
@@ -191,10 +159,6 @@ export class Plate {
     return df;
   }
 
-
-  /** Constructs a plate from a dataframe where each row corresponds to a well.
-   * Automatically detects position column (either one column in Excel notation, or two integer "row" and "col" columns).
-   * If positions columns are not provided, assumes the data is sorted by [row, col] asc. */
   static fromTableByRow(
     table: DG.DataFrame, options?: {
       posColName?: string,
@@ -221,7 +185,6 @@ export class Plate {
 
     const positions = DG.range(table.rowCount).map(rowToPos);
     const [rows, cols] = toStandardSize(getMaxPosition(positions));
-
     const plate = new Plate(rows, cols);
 
     for (const col of table.columns) {
@@ -234,14 +197,9 @@ export class Plate {
         plateCol.set(plate._idx(wellRow, wellCol), col.get(r), false);
       }
     }
-
     return plate;
   }
 
-  /** Constructs a plate from the Datagrok database format. The dataframe should have these columns:
-   *  property_id, row, col, value_num, value_string, value_bool.
-   *  See also plates-crud.sql/getWellValuesByBarcode
-   * */
   static fromDbDataFrame(df: DG.DataFrame): Plate {
     const plate = new Plate(df.col('row')!.stats.max + 1, df.col('col')!.stats.max + 1);
     const pidCol = df.col('property_id');
@@ -258,23 +216,9 @@ export class Plate {
     return plate;
   }
 
-  // /**  Constructs a plate from the format used by the PlateWidget */
-  // static fromPlateData(df: DG.DataFrame): Plate {
-  //   const plate = new Plate(df.col('row')!.stats.max + 1, df.col('col')!.stats.max + 1);
-  // }
-
-
   static async fromCsvTableFile(csvPath: string, field: string, options?: DG.CsvImportOptions): Promise<Plate> {
     return this.fromGridDataFrame(await grok.dapi.files.readCsv(csvPath, options), field);
   }
-
-  // getClosestRoleName(fileName: string): string {
-  //   const roleRoleNames = ['role', 'compound', 'compound name'];
-  //   const concentrationRoleNames = ['concentration', 'conc', 'dilution'];
-  //   const valueRoleNames = ['value', 'readout', 'response', 'activity', 'signal', 'absorbance', 'fluorescence', 'luminescence', 'intensity', 'od', 'optical density'];
-  //   const foundRoleIndex = [roleRoleNames, concentrationRoleNames, valueRoleNames];
-
-  // }
 
   static fromCsvTable(csv: string, field: string, options?: DG.CsvImportOptions): Plate {
     return this.fromGridDataFrame(DG.DataFrame.fromCsv(csv, options), field);
@@ -282,27 +226,16 @@ export class Plate {
 
   static fromCsv(csv: string, options?: IPlateCsvImportOptions): Plate {
     const df = DG.DataFrame.fromCsv(csv);
-
-    // we do not need first row with row letters
     if (DG.range(df.rowCount).every((i) => df.col(0)!.get(i) == String.fromCharCode(65 + i)))
       df.columns.remove(df.columns.byIndex(0).name);
-
-    // sometimes there is an unnecessary last column in the end
     if (df.columns.length == 13 || df.columns.length == 25 || df.columns.length == 49 && df.col(df.columns.length - 1)?.isEmpty)
       df.columns.remove(df.columns.length - 1);
-
-    // TODO: tall format?
-    // if (df.columns.contains('pos'))
-    //   return new Plate(0, 0);
-
     return this.fromGridDataFrame(df, options?.field ?? 'value');
   }
 
-  /** Merges the attributes from {@link plates} into one plate. */
   static fromPlates(plates: Plate[], name?: string) {
     assure(plates.length > 0, 'Array is empty.');
     assure(plates.every((p) => p.rows == plates[0].rows && p.cols == plates[0].cols), 'Plate dimensions differ.');
-
     const result = plates.reduce((p1, p2) => p1 ? p1.merge(p2) : p2.clone());
     if (name != null)
       result.data.name = name;
@@ -318,23 +251,17 @@ export class Plate {
     return this.fromExcel(content, name);
   }
 
-  /** Constructs the plates from the specified Excel file.
-   * Plate positions are detected automatically. */
   static async fromExcel(excelBytes: Uint8Array, name?: string): Promise<Plate> {
     await DG.Utils.loadJsCss(['/js/common/exceljs.min.js']);
-
     //@ts-ignore
     const loadedExcelJS = window.ExcelJS as ExcelJS;
     const workbook = new loadedExcelJS.Workbook() as ExcelJS.Workbook;
-    // @ts-ignore reason: some typescript error with araryLike and arrayBufferLike
-    const wb= await workbook.xlsx.load(excelBytes);
-
+    const wb = await workbook.xlsx.load(excelBytes);
     const platePositions = findPlatePositions(wb);
-    if (platePositions.length == 0) throw new Error('Plates not found in "${excelPath}"');
+    if (platePositions.length == 0) throw new Error('Plates not found in excel file');
     const p0 = platePositions[0];
     if (!platePositions.every((pc) => pc.rows == p0.rows || pc.cols == p0.cols))
       throw new Error(`Plate sizes differ in "${name}"`);
-
     return Plate.fromPlates(platePositions.map((p) => getPlateFromSheet(p)), name);
   }
 
@@ -344,16 +271,12 @@ export class Plate {
     return plate;
   }
 
-  /** Generates [count] increasing integer numbers, starting with 0. */
   get wells(): wu.WuIterable<PlateWell> {
-    const self = this; // Capture this context
+    const self = this;
     return wu((function* () {
       for (let row = 0; row < self.rows; row++) {
         for (let col = 0; col < self.cols; col++) {
-          const well: PlateWell = {
-            row: row,
-            col: col,
-          };
+          const well: PlateWell = {row: row, col: col};
           for (const field of self.data.columns) {
             if (field.name.toLowerCase() != 'row' && field.name.toLowerCase() != 'col' && !field.isNone(self._idx(row, col)))
               well[field.name] = field.get(self._idx(row, col));
@@ -364,21 +287,14 @@ export class Plate {
     })());
   }
 
-  /** Returns the specified field value at the specified positions (0-based).
-   * The following examples all return volume for the C4 well:
-   * - plate.get('volume', 2, 3)
-   * - plate.get('volume', 'C4')
-   * */
   get(field: string, rowIdxOrPos: number | string, colIdx?: number): any {
     assure(this.data.columns.byName(field) != null, `Field does not exist: ${field}`);
     if (typeof rowIdxOrPos === 'number' && colIdx == null)
       throw new Error('Column not defined');
-
     const [row, col] = (typeof rowIdxOrPos === 'string') ? parseExcelPosition(rowIdxOrPos) : [rowIdxOrPos, colIdx!];
     return this.data.columns.byName(field).get(this._idx(row, col));
   }
 
-  /** Changes all numerical values to the results of the specified normalization function */
   normalize(field: string, f: (value: number) => number, inplace: boolean = false) {
     const originalCol = this.data.getCol(field);
     const col = inplace ? originalCol : this.data.columns.addNewFloat(this.data.columns.getUnusedName(`${field}_normalized`));
@@ -388,12 +304,15 @@ export class Plate {
 
   matches(i: number, filter: IPlateWellFilter): boolean {
     const cols = this.data.columns;
-    // we allow both any and array of any things in matches object, so we need to convert it to array to have one api
-    const arMatches = filter.match ? Object.entries(filter.match).reduce((acc, [key, value]) => { acc[key] = Array.isArray(value) ? value : [value]; return acc; }, {} as Record<string, any[]>) : null;
-    const arExclude = filter.exclude ? Object.entries(filter.exclude).reduce((acc, [key, value]) => { acc[key] = Array.isArray(value) ? value : [value]; return acc; }, {} as Record<string, any[]>) : null;
+    const arMatches = filter.match ? Object.entries(filter.match).reduce((acc, [key, value]) => {
+      acc[key] = Array.isArray(value) ? value : [value]; return acc;
+    }, {} as Record<string, any[]>) : null;
+    const arExclude = filter.exclude ? Object.entries(filter.exclude).reduce((acc, [key, value]) => {
+      acc[key] = Array.isArray(value) ? value : [value]; return acc;
+    }, {} as Record<string, any[]>) : null;
     return !filter || (!arMatches && !arExclude) ||
-        (
-          Object.keys(arMatches ?? {}).filter((m) => cols.contains(m)).every((key) => arMatches![key].some((m) => this.data.columns.byName(key).get(i) === m)) &&
+      (
+        Object.keys(arMatches ?? {}).filter((m) => cols.contains(m)).every((key) => arMatches![key].some((m) => this.data.columns.byName(key).get(i) === m)) &&
         Object.keys(arExclude ?? {}).filter((m) => cols.contains(m)).every((key) => arExclude![key].every((e) => this.data.columns.byName(key).get(i) !== e)));
   }
 
@@ -408,7 +327,6 @@ export class Plate {
     return c;
   }
 
-  /** Array of non-empty values */
   values(fields: string[], filter?: IPlateWellFilter): Array<Record<string, any> & {innerDfRow: number}> {
     const cols = fields.map((f) => this.data.columns.byName(f));
     assure(cols.every((c) => c != null), `Field does not exist: ${fields.find((_, i) => cols[i] == null)}`);
@@ -418,7 +336,9 @@ export class Plate {
     const result: (Record<string, any> & {innerDfRow: number}) [] = [];
     for (let i = 0; i < this.rows * this.cols; i++) {
       if (((filter?.includeEmpty ?? false) || cols.every((col) => !col.isNone(i))) && (!filter || this.matches(i, filter))) {
-        const res = fields.reduce((acc, f) => { acc[f] = colsObj[f].isNone(i) ? null : colsObj[f].get(i); return acc; }, {} as Record<string, any> & {innerDfRow: number});
+        const res = fields.reduce((acc, f) => {
+          acc[f] = colsObj[f].isNone(i) ? null : colsObj[f].get(i); return acc;
+        }, {} as Record<string, any> & {innerDfRow: number});
         res.innerDfRow = i;
         result.push(res);
       }
@@ -426,13 +346,11 @@ export class Plate {
     return result;
   }
 
-  /// Returns specified field statistics for the specified filter and specified field name
   getStatistics<T extends JSTATStatistics[]>(field: string, statistics: T, filter?: IPlateWellFilter): Record<T[number], number> {
     const values = this.fieldValues(field, filter);
     const result: Record<JSTATStatistics, number> = {} as Record<JSTATStatistics, number>;
     for (const stat of statistics)
       result[stat] = jstatStatistics[stat](values);
-
     return result;
   }
 
@@ -460,7 +378,7 @@ export class Plate {
         logX: true,
         title: seriesName,
       },
-      series: [{...series, fit: undefined, fitFunction: fitFunctionName, clickToToggle: true, droplines: ['IC50'], name: seriesName}]
+      series: [{...series, fit: undefined, fitFunction: fitFunctionName, clickToToggle: true, droplines: ['IC50'], name: seriesName}],
     }), false);
     const df = DG.DataFrame.fromColumns([curveCol]);
     df.name = seriesName;
@@ -490,6 +408,15 @@ export class Plate {
       series[group].meta.push(v.innerDfRow);
       series[group].outlier.push(this._isOutlier(v.innerDfRow));
     }
+
+    console.log('--- Debugging doseResponseSeries ---');
+    console.log(`Grouping by column: '${options?.groupBy ?? 'undefined'}' on plate with barcode: '${this.barcode}'`);
+    const seriesPointCounts = Object.fromEntries(
+      Object.entries(series).map(([key, value]) => [key, value.x.length])
+    );
+    console.log('Found series and their point counts:', seriesPointCounts);
+    console.log('Full series data for inspection:', series);
+
     return Object.fromEntries(Object.entries(series).map(([k, v]) => {
       const fitSeries = new FitSeries(v.x.map((_, i) => ({x: v.x[i], y: v.y[i], outlier: v.outlier[i], meta: v.meta[i]})).sort((a, b) => a.x - b.x));
       fitSeries.name = k;
@@ -498,26 +425,33 @@ export class Plate {
   }
 
   getAnalysisDialog(options: AnalysisOptions) {
-    ui.dialog('Plate Analysis')
-      .add(PlateDrcAnalysis.analysisView(this, options))
-      .showModal(true);
+    const dialog = ui.dialog('Plate Analysis');
+    const drcView = PlateDrcAnalysis.analysisView(this, options);
+    if (drcView)
+      dialog.add(drcView);
+    else
+      dialog.add(ui.divText('Required columns for analysis not found.'));
+    dialog.showModal(true);
   }
 
   getAnalysisView(options: AnalysisOptions) {
-    const view = DG.View.fromRoot(PlateDrcAnalysis.analysisView(this, options).root);
+    const drcView = PlateDrcAnalysis.analysisView(this, options);
+    const view = DG.View.create();
     view.name = 'Plate Analysis';
+    if (drcView)
+      view.root.appendChild(drcView.root);
+    else
+      view.root.appendChild(ui.divText('Required columns for analysis not found.'));
+
     return grok.shell.addView(view);
   }
 
-  /** Adds data from the other plate to this plate. Typically, you would apply plate layout */
   merge(plate: Plate) {
     for (const col of plate.data.columns)
       this.data.columns.add(col.clone());
-
     return this;
   }
 
-  /** Deep cloning */
   clone(): Plate {
     const cloned = new Plate(this.rows, this.cols);
     cloned.data = this.data.clone();
@@ -536,8 +470,6 @@ export class Plate {
     }
   }
 
-  /** Validates the wells of the plate using the specified validators.
-   * Returns a map of well positions to the errors. */
   validateWells(validators: IPlateWellValidator[]): Map<string, string[]> {
     const result = new Map<string, string[]>();
     for (const validator of validators) {

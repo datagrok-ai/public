@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import {MARKER_TYPE, TYPE} from 'datagrok-api/dg';
@@ -8,20 +9,20 @@ import {Plate, PLATE_OUTLIER_WELL_NAME} from './plate';
 //@ts-ignore
 import * as jStat from 'jstat';
 import {IPlateWellValidator, plateWellValidators} from './plate-well-validators';
-import {debounceTime, filter} from 'rxjs/operators';
-
+import {fromEvent, Subject} from 'rxjs';
+import {debounceTime, filter, takeUntil, take} from 'rxjs/operators';
 
 export type AnalysisOptions = {
-  roleName: string,
-  concentrationName: string,
-  valueName: string
-  controlColumns: string[],
-  normalize: boolean,
-  autoFilterOutliers: boolean,
-  submitAction?: (plate: Plate, curvesDf: DG.DataFrame) => void,
-  categorizeFormula: string,
-  statisticsColumns: string[],
-  plateStatistics?: {[key: string]: (plate: Plate) => string | number}
+    roleName: string,
+    concentrationName: string,
+    valueName: string
+    controlColumns: string[],
+    normalize: boolean,
+    autoFilterOutliers: boolean,
+    submitAction?: (plate: Plate, curvesDf: DG.DataFrame) => void,
+    categorizeFormula: string,
+    statisticsColumns: string[],
+    plateStatistics?: {[key: string]: (plate: Plate) => string | number}
 }
 
 
@@ -32,24 +33,29 @@ export const dimensions = new Map([
   [1536, {rows: 32, cols: 48}],
 ]);
 
-/** Visualizes multiple layers of {@link Plate} in tabbed interface and lets you edit it */
 export class PlateWidget extends DG.Widget {
   _colorColumn?: DG.Column | undefined;
   _plate: Plate = new Plate(8, 12);
   grid: DG.Grid = DG.Viewer.heatMap(DG.DataFrame.create());
   colorColumnName: string = '';
-  colorSelector?: DG.InputBase;
   detailsDiv?: HTMLElement;
   wellDetailsDiv?: HTMLElement;
   plateDetailsDiv?: HTMLElement;
   plateActionsDiv?: HTMLElement;
-  tabs: DG.TabControl = DG.TabControl.create();
-  tabsContainer: HTMLElement = ui.divH([], 'curves-plate-tabs-container');
+  tabs: DG.TabControl = DG.TabControl.create(true);
+  tabsContainer: HTMLElement = ui.divH([], 'plate-widget__tabs-container');
   _editable: boolean = false;
   mapFromRowFunc: (row: DG.Row) => Record<string, any> = mapFromRow;
   grids: Map<string, DG.Grid> = new Map();
   wellValidators: IPlateWellValidator[] = plateWellValidators;
   wellValidationErrors: Map<string, string[]> = new Map();
+
+  private _isDragging: boolean = false;
+  private _selectionRect: DG.Rect | null = null;
+  private _canvas: HTMLCanvasElement | null = null;
+  private _onDestroy = new Subject<void>();
+
+  roleSummaryDiv: HTMLElement = ui.divH([], 'plate-widget__role-summary');
 
   get editable() { return this._editable; }
   set editable(x: boolean) {
@@ -58,17 +64,22 @@ export class PlateWidget extends DG.Widget {
   }
 
   constructor() {
-    super(ui.div([], 'curves-plate-widget'));
+    super(ui.div([], 'plate-widget'));
 
-    this.tabs.root.style.flexGrow = '1';
-    // this.tabs.root.style.height = '100%';
-    //this.tabs.addPane('Summary', () => this.grid.root);
-
+    this.tabs.root.classList.add('plate-widget__tabs');
     this.tabsContainer.appendChild(this.tabs.root);
     this.root.appendChild(this.tabsContainer);
+    this.root.appendChild(this.roleSummaryDiv);
+
+    this.grid.props.allowRowSelection = false;
+    this.grid.props.allowColSelection = false;
+    this.grid.props.allowBlockSelection = false;
+    this.grid.props.showCurrentRowIndicator = false;
+    this.grid.props.showMouseOverRowIndicator = false;
 
     this.grid.props.showHeatmapScrollbars = false;
     this.grid.props.colHeaderHeight = 30;
+
     this.grid.onCellRender.subscribe((args) => this.renderCell(args, true));
     this.grid.onCellRendered.subscribe((args) => {
       const cell = args.cell;
@@ -83,6 +94,134 @@ export class PlateWidget extends DG.Widget {
         }
       }
     });
+
+    ui.tools.waitForElementInDom(this.grid.root).then(() => {
+      this._canvas = this.grid.overlay;
+      this.initSelectionEvents();
+    });
+  }
+
+  private initSelectionEvents() {
+    const interactionElement = this.grid.overlay;
+    if (!interactionElement) return;
+
+    fromEvent<MouseEvent>(interactionElement, 'mousedown')
+      .pipe(takeUntil(this._onDestroy))
+      .subscribe((e: MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        this._isDragging = true;
+        this._selectionRect = new DG.Rect(e.offsetX, e.offsetY, 0, 0);
+
+        const mouseMoveStream = fromEvent<MouseEvent>(document, 'mousemove');
+        const mouseUpStream = fromEvent<MouseEvent>(document, 'mouseup');
+
+        mouseMoveStream
+          .pipe(takeUntil(mouseUpStream))
+          .subscribe((move_e: MouseEvent) => {
+            if (!this._isDragging || !this._selectionRect) return;
+            const canvasBounds = interactionElement.getBoundingClientRect();
+            const currentX = move_e.clientX - canvasBounds.left;
+            const currentY = move_e.clientY - canvasBounds.top;
+            this._selectionRect.width = currentX - this._selectionRect.x;
+            this._selectionRect.height = currentY - this._selectionRect.y;
+            this.drawSelectionRect();
+            this.updateSelection();
+          });
+
+        mouseUpStream.pipe(take(1)).subscribe(() => {
+          this._isDragging = false;
+          this.clearSelectionRect();
+          this._selectionRect = null;
+
+          const selectedIndexes = this.plate.data.selection.getSelectedIndexes();
+          if (selectedIndexes.length > 0) {
+            const selectedPositions = Array.from(selectedIndexes).map((idx) => {
+              const [row, col] = this.plate.rowIndexToExcel(idx);
+              return toExcelPosition(row, col);
+            });
+            console.log('Selected wells:', selectedPositions);
+          }
+        });
+      });
+  }
+
+  private drawSelectionRect() {
+    if (!this._canvas || !this._selectionRect) return;
+    const g = this._canvas.getContext('2d')!;
+    g.clearRect(0, 0, this._canvas.width, this._canvas.height);
+    g.strokeStyle = 'rgba(0, 128, 255, 0.7)';
+    g.fillStyle = 'rgba(0, 128, 255, 0.2)';
+    g.lineWidth = 1;
+    g.strokeRect(this._selectionRect.x, this._selectionRect.y, this._selectionRect.width, this._selectionRect.height);
+    g.fillRect(this._selectionRect.x, this._selectionRect.y, this._selectionRect.width, this._selectionRect.height);
+  }
+
+  private clearSelectionRect() {
+    if (!this._canvas) return;
+    const g = this._canvas.getContext('2d')!;
+    g.clearRect(0, 0, this._canvas.width, this._canvas.height);
+  }
+
+  private updateSelection() {
+    if (!this._selectionRect || !this.grid || this.grid.columns.length === 0)
+      return;
+
+    const selection = this.plate.data.selection;
+    selection.setAll(false, false);
+
+    const r = this._selectionRect;
+    const normalizedRect = new DG.Rect(
+      r.width < 0 ? r.x + r.width : r.x,
+      r.height < 0 ? r.y + r.height : r.y,
+      Math.abs(r.width),
+      Math.abs(r.height)
+    );
+
+    for (let row = 0; row < this.plate.rows; row++) {
+      for (let col = 0; col < this.plate.cols; col++) {
+        const gridCol = this.grid.columns.byIndex(col + 1);
+        if (gridCol) {
+          const cell = this.grid.cell(gridCol.name, row);
+          if (cell) {
+            const cellBounds = cell.bounds;
+            if (normalizedRect.contains(cellBounds.midX, cellBounds.midY)) {
+              const dataIndex = this.plate._idx(row, col);
+              selection.set(dataIndex, true, false);
+            }
+          }
+        }
+      }
+    }
+    selection.fireChanged();
+    this.grid.invalidate();
+  }
+
+  updateRoleSummary() {
+    ui.empty(this.roleSummaryDiv);
+    const roleColumn = this.plate.data.col('Role');
+    if (!roleColumn || roleColumn.stats.valueCount === 0) return;
+
+    const countsDf = this.plate.data.groupBy(['Role']).count().aggregate();
+    const roleColumnColors = roleColumn.meta.colors;
+    const originalRolesList = roleColumn.toList();
+
+    for (const row of countsDf.rows) {
+      const role = row.Role;
+      const count = row.count;
+
+      const firstIndex = originalRolesList.indexOf(role);
+      const color = (firstIndex !== -1) ?
+        DG.Color.toHtml(roleColumnColors.getColor(firstIndex)) :
+        DG.Color.toHtml(DG.Color.lightGray);
+
+      const legendItem = ui.divH([
+        ui.div('', {style: {width: '12px', height: '12px', borderRadius: '3px', backgroundColor: color, border: '1px solid var(--grey-3)'}}),
+        ui.divText(`${role} (${count} wells)`),
+      ], 'role-summary__item');
+      this.roleSummaryDiv.appendChild(legendItem);
+    }
   }
 
   static fromPlate(plate: Plate) {
@@ -91,23 +230,15 @@ export class PlateWidget extends DG.Widget {
 
   static detailedView(plate: Plate): PlateWidget {
     const pw = new PlateWidget();
-    pw.grid.root.style.width = '100%';
     pw.plate = plate;
-    pw.colorSelector = ui.input.column('Color by', {
-      table: plate.data,
-      value: pw._colorColumn,
-      onValueChanged: (v) => { pw._colorColumn = v; pw.grid.invalidate(); }
-    });
-    pw.detailsDiv = ui.divV([]);
+    pw.detailsDiv = ui.divV([], 'plate-widget__details');
     pw.wellDetailsDiv = div();
     pw.detailsDiv.appendChild(pw.wellDetailsDiv!);
     pw.grid.onCurrentCellChanged.pipe(filter((gc) => gc.gridRow >= 0 && gc.gridColumn.idx > 0)).subscribe((gc) => {
       ui.empty(pw.wellDetailsDiv!);
       const map = pw.mapFromRowFunc(pw.plate.data.rows.get(plate._idx(gc.gridRow, gc.gridColumn.idx - 1)));
-      pw.wellDetailsDiv!.appendChild(ui.tableFromMap(map));
+            pw.wellDetailsDiv!.appendChild(ui.tableFromMap(map));
     });
-
-    pw.root.prepend(pw.colorSelector.root);
     pw.tabsContainer.appendChild(pw.detailsDiv);
     return pw;
   }
@@ -122,6 +253,11 @@ export class PlateWidget extends DG.Widget {
     grid.props.showColumnGridlines = true;
     grid.props.heatmapColors = false;
     grid.props.colHeaderHeight = 25;
+    grid.props.allowRowSelection = false;
+    grid.props.allowColSelection = false;
+    grid.props.allowBlockSelection = false;
+    grid.props.showCurrentRowIndicator = false;
+    grid.props.showMouseOverRowIndicator = false;
 
     grid.onCellRender.subscribe((args) => this.renderCell(args, isSummary));
   }
@@ -132,7 +268,6 @@ export class PlateWidget extends DG.Widget {
     this.refresh();
   }
 
-  /** Re-renders the UI */
   refresh() {
     this.tabs.clear();
     this.tabs.addPane('Summary', () => this.grid.root);
@@ -140,12 +275,12 @@ export class PlateWidget extends DG.Widget {
       this.tabs.addPane(layer, () => {
         const df = this.plate.toGridDataFrame(layer);
         const grid = DG.Viewer.heatMap(df);
-        grid.columns.add({gridColumnName: '0', cellType: 'string', index: 1}); // to show row numbers in Excel format - will be done in initPlateGrid
+        grid.columns.add({gridColumnName: '0', cellType: 'string', index: 1});
         df.onValuesChanged.pipe(debounceTime(1000)).subscribe(() => {
           const p = this.plate;
           for (let i = 0; i < df.rowCount; i++) {
             for (let j = 0; j < df.columns.length - 1; j++)
-              p.data.col(layer)!.set(p._idx(i, j), df.get(`${j + 1}`, i));
+                      p.data.col(layer)!.set(p._idx(i, j), df.get(`${j + 1}`, i));
           }
           this.wellValidationErrors = p.validateWells(this.wellValidators);
         });
@@ -162,12 +297,11 @@ export class PlateWidget extends DG.Widget {
 
     const t = this.plate.data;
     this._colorColumn = t.columns.firstWhere((col) => col.name == 'activity' && col.type == TYPE.FLOAT) ??
-      t.columns.firstWhere((col) => (col.name == 'concentration' || col.name == 'concentrations') && col.type == TYPE.FLOAT) ??
-      t.columns.firstWhere((col) => col.name != 'row' && col.name != 'col' && col.type == TYPE.FLOAT) ??
-      t.columns.firstWhere((col) => col.type == TYPE.FLOAT) ??
-      (t.columns.length > 0 ? t.columns.byIndex(0) : undefined);
+            t.columns.firstWhere((col) => (col.name == 'concentration' || col.name == 'concentrations') && col.type == TYPE.FLOAT) ??
+            t.columns.firstWhere((col) => col.name != 'row' && col.name != 'col' && col.type == TYPE.FLOAT) ??
+            t.columns.firstWhere((col) => col.type == TYPE.FLOAT) ??
+            (t.columns.length > 0 ? t.columns.byIndex(0) : undefined);
 
-    // row header + all columns
     this.grid.dataFrame = DG.DataFrame.create(this.plate.rows);
     this.grid.columns.clear();
     for (let i = 0; i <= this.plate.cols; i++)
@@ -178,7 +312,7 @@ export class PlateWidget extends DG.Widget {
 
   renderCell(args:DG.GridCellRenderArgs, summary: boolean = false) {
     const gc = args.cell;
-    args.g.fillStyle = 'grey'; //(args.cell.isColHeader ? 'red' : (args.cell.isRowHeader ? 'green' : 'blue'));
+    args.g.fillStyle = 'grey';
     args.g.strokeStyle = 'grey';
     args.g.lineWidth = 1;
     const g = args.g;
@@ -188,7 +322,6 @@ export class PlateWidget extends DG.Widget {
     g.font = `${Math.ceil(Math.min(...[16, w - 1, h - 1]))}px  Roboto, Roboto Local`;
     const isColoredByConc = this._colorColumn?.name?.toLowerCase()?.includes('conc');
 
-    // column header
     const hasRowHeader = gc.grid.columns.byIndex(0)?.cellType === 'row header';
     if (gc.isColHeader && gc.gridColumn.idx > (hasRowHeader ? 1 : 0)) {
       g.fillText('' + (gc.gridColumn.idx - (hasRowHeader ? 1 : 0)), x + w / 2, y + h / 2);
@@ -202,6 +335,11 @@ export class PlateWidget extends DG.Widget {
       args.preventDefault();
     } else if (summary && h > 0 && gc.gridRow >= 0 && gc.gridColumn.idx > 0) {
       const dataRow = this._plate._idx(gc.gridRow, gc.gridColumn.idx - 1);
+
+      if (this.plate.data.selection.get(dataRow)) {
+        g.fillStyle = 'rgba(0, 128, 255, 0.2)';
+        g.fillRect(x, y, w, h);
+      }
 
       g.beginPath();
       const r = Math.min(h / 2, w / 2) * 0.8;
@@ -234,9 +372,15 @@ export class PlateWidget extends DG.Widget {
     return DG.Color.scaleColor(reducedVal, min, max, undefined, colorScheme);
   }
 
-  /** Applies plate widget options to all grids */
   syncGrids() {
     for (const grid of this.grids.values())
       grid.props.allowEdit = this.editable;
   }
+
+  detach() {
+    this._onDestroy.next();
+    this._onDestroy.complete();
+    super.detach();
+  }
 }
+
