@@ -43,6 +43,7 @@ export class MixtureCellRenderer extends RDKitCellRenderer {
     h = h - 10;
     const bracketLen = Math.min(10, h / 6);
     g.save();
+    g.setTransform(1, 0, 0, 1, 0, 0);
     g.strokeStyle = '#222';
     g.lineWidth = 0.5;
     // Left bracket
@@ -87,6 +88,7 @@ export class MixtureCellRenderer extends RDKitCellRenderer {
       annotation += (annotation ? ', ' : '') + `SE: ${comp.error}`;
     if (annotation) {
       g.save();
+      g.setTransform(1, 0, 0, 1, 0, 0);
       g.font = '9px sans-serif';
       g.fillStyle = '#222';
       g.textAlign = 'center';
@@ -123,6 +125,7 @@ export class MixtureCellRenderer extends RDKitCellRenderer {
     } else {
       // Draw the name as text (centered)
       g.save();
+      g.setTransform(1, 0, 0, 1, 0, 0);
       g.font = '12px sans-serif';
       g.fillStyle = '#444';
       g.textAlign = 'center';
@@ -135,6 +138,7 @@ export class MixtureCellRenderer extends RDKitCellRenderer {
     }
     if (highlight === true) {
       g.save();
+      g.setTransform(1, 0, 0, 1, 0, 0);
       g.strokeStyle = '#1976d2';
       g.lineWidth = 0.5;
       g.strokeRect(x + 3, y + 3, w - 10, molH - 10);
@@ -196,6 +200,12 @@ export class MixtureCellRenderer extends RDKitCellRenderer {
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle): void {
     const value = gridCell.cell.value;
     if (!value) return;
+
+    const r = window.devicePixelRatio;
+    x = r * x;
+    y = r * y;
+    w = r * w;
+    h = r * h;
     const mixture: Mixfile = typeof value === 'string' ? JSON.parse(value) : value;
     if (!mixture.contents || !Array.isArray(mixture.contents)) return;
     const boxes: Component[] = [];
@@ -250,8 +260,10 @@ export class MixtureCellRenderer extends RDKitCellRenderer {
     const boxes = this._componentsCache.get(this._cellKey(gridCell));
     if (!boxes) return;
     const rect = (e.target as HTMLElement).getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    // Scale mouse coordinates to match the scaled box coordinates
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    const x = (e.clientX - rect.left) * devicePixelRatio;
+    const y = (e.clientY - rect.top) * devicePixelRatio;
     let overComponent = false;
     let isStructure = false;
     for (let i = 0; i < boxes.length; ++i) {
