@@ -1,0 +1,114 @@
+/* === Plate Grid Manager Styles === */
+.plate-grid-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0; /* Prevents the container from collapsing */
+}
+
+.plate-grid-manager > .d4-grid {
+    height: 220px;
+    width: 100%;
+    border: 1px solid var(--grey-2);
+    border-radius: 4px;
+}
+
+/* === Import Container === */
+.plate-import-container {
+  align-items: center;
+  gap: 24px;
+  padding: 8px 0;
+}
+
+.plate-import-container > .d4-div-text,
+.plate-import-container .d4-input-label {
+  font-weight: 500;
+  color: var(--grey-6);
+}
+
+.plate-import-button .d4-input-button > button {
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+/* === Re-used from tabs for icons === */
+.plate-file-tab__mapped-pill {
+  background-color: var(--grey-1);
+  border-radius: 10px;
+  padding: 2px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.plate-file-tab__mapped-pill > .grok-icon {
+  color: var(--blue-1);
+  font-size: 11px;
+  margin: 0;
+}
+
+.plate-file-tab__conflict-dot {
+  width: 8px;
+  height: 8px;
+  background-color: var(--red-3);
+  border-radius: 50%;
+  border: 1px solid var(--white);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* === Mapping Dialog Styles (copied from plate-tabs-manager) === */
+.mapping-summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mapping-summary-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background-color: var(--grey-0);
+  border: 1px solid var(--grey-2);
+}
+
+.mapping-summary-old-name {
+  color: var(--grey-6);
+  font-style: italic;
+  font-family: var(--font-family-mono);
+}
+
+.mapping-summary-new-name {
+  font-weight: 500;
+  color: var(--grey-8);
+  font-family: var(--font-family-mono);
+}
+
+.mapping-summary-row > .grok-icon:nth-of-type(1) {
+  color: var(--grey-4);
+}
+
+.mapping-summary-row > .grok-icon:nth-of-type(2) {
+  margin-left: auto;
+  color: var(--grey-4);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+}
+
+.mapping-summary-row > .grok-icon:nth-of-type(2):hover {
+  color: var(--red-3);
+  background-color: var(--grey-1);
+}
+
+.plate-selection-host {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--grey-2);
+  padding: 8px 12px;
+  border-radius: 4px;
+  background-color: var(--grey-0);
+}
