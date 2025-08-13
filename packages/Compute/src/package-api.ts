@@ -59,8 +59,8 @@ export namespace funcs {
     return await grok.functions.call('Compute:ModelCatalog', {});
   }
 
-  export async function modelCatalogTreeBrowser(treeNode: any ): Promise<void> {
-    return await grok.functions.call('Compute:ModelCatalogTreeBrowser', { treeNode });
+  export async function modelCatalogTreeBrowser(treeNode: any , browseView: DG.View ): Promise<void> {
+    return await grok.functions.call('Compute:ModelCatalogTreeBrowser', { treeNode, browseView });
   }
 
   export async function customDataUploader(func: any ): Promise<any> {

@@ -53,8 +53,11 @@ export function modelCatalog() {
 
 //name: modelCatalogTreeBrowser
 //input: dynamic treeNode 
-export function modelCatalogTreeBrowser(treeNode: any) {
-  return PackageFunctions.modelCatalogTreeBrowser(treeNode);
+//input: view browseView 
+//meta.role:  
+//meta.app:  
+export function modelCatalogTreeBrowser(treeNode: any, browseView: DG.ViewBase) {
+  return PackageFunctions.modelCatalogTreeBrowser(treeNode, browseView);
 }
 
 //name: CustomDataUploader

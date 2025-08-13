@@ -116,7 +116,7 @@ export async function TestDF1(df: DG.DataFrame) {
 
 //name: Custom View (Compute 2 Test)
 //tags: test, compute2
-//editor: Compute2
+//editor: Compute2:CustomFunctionViewEditor
 export async function TestCustomView() {
   return PackageFunctions.TestCustomView();
 }

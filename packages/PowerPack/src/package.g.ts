@@ -7,13 +7,6 @@ export function _compareColumns() {
   return PackageFunctions._compareColumns();
 }
 
-//name: addNewColumn
-//input: funccall call 
-//meta.editor-for: AddNewColumn
-export function addNewColumnDialog(call: DG.FuncCall) {
-  return PackageFunctions.addNewColumnDialog(call);
-}
-
 //name: welcomeView
 //output: view result
 //meta.autostartImmediate: true

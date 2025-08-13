@@ -111,17 +111,6 @@ export class PackageFunctions {
     compareColumns();
   }
 
-
-  @grok.decorators.func({
-    meta: {'editor-for': 'AddNewColumn'},
-    name: 'addNewColumn',
-    outputs: [],
-  })
-  static addNewColumnDialog(call: DG.FuncCall): AddNewColumnDialog {
-    return new AddNewColumnDialog(call);
-  }
-
-
   @grok.decorators.func({
     meta: {'autostartImmediate': 'true'},
     name: 'welcomeView',
@@ -297,12 +286,12 @@ export class PackageFunctions {
     outputs: [],
   })
   static formulaLinesDialog(
-    @grok.decorators.param({'options': {'optional': true}}) src: DG.DataFrame | DG.Viewer): FormulaLinesDialog {
+    @grok.decorators.param({'options': {'optional': true}}) src: DG.DataFrame | DG.Viewer): void {
     const options = Object.keys(_properties)
       .filter((k) => k in DEFAULT_OPTIONS)
       .reduce((opts, k) => (opts[k] = _properties[k], opts), <EditorOptions>{});
     //TODO: use property's 'category' or 'tags' to distinguish relevant properties
-    return new FormulaLinesDialog(src, options);
+    new FormulaLinesDialog(src, options);
   }
 
   @grok.decorators.init()
@@ -385,6 +374,13 @@ export class PackageFunctions {
     const excelJSService = ExcelJSService.getInstance();
     return (await excelJSService.parse(bytes, sheetName));
   }
+}
+
+//name: addNewColumn
+//input: funccall call {optional: true}
+//editor-for: AddNewColumn
+export function addNewColumnDialog(call: DG.FuncCall | null = null): AddNewColumnDialog {
+  return new AddNewColumnDialog(call as any);
 }
 
 

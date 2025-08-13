@@ -256,50 +256,50 @@ export class PackageFunctions {
     PinnedUtils.registerPinnedColumns();
     DG.GridCellRenderer.register(new ScatterPlotCellRenderer());
 
-  // handling column remove/rename in sparkline columns
-  grok.events.onViewerAdded.subscribe((args) => {
-    if (args.args.viewer.type !== DG.VIEWER.GRID)
-      return;
-    const grid = args.args.viewer as DG.Grid;
-    const dataFrame = grid.dataFrame;
-    const getSparklineSettings = (gridCol: DG.GridColumn) => (gridCol.settings ?? {})[gridCol.cellType] as SummarySettingsBase;
-    const findSummaryCols = (columns: (string | DG.Column)[]) => {
-      const summaryCols: DG.GridColumn[] = [];
-      for (let i = 1; i < grid.columns.length; i++) {
-        const gridCol = grid.columns.byIndex(i)!;
-        const sparklineSettings = getSparklineSettings(gridCol);
-        if (sparklineTypes.includes(gridCol.cellType) && sparklineSettings?.columnNames?.length > 0 &&
+    // handling column remove/rename in sparkline columns
+    grok.events.onViewerAdded.subscribe((args) => {
+      if (args.args.viewer.type !== DG.VIEWER.GRID)
+        return;
+      const grid = args.args.viewer as DG.Grid;
+      const dataFrame = grid.dataFrame;
+      const getSparklineSettings = (gridCol: DG.GridColumn) => (gridCol.settings ?? {})[gridCol.cellType] as SummarySettingsBase;
+      const findSummaryCols = (columns: (string | DG.Column)[]) => {
+        const summaryCols: DG.GridColumn[] = [];
+        for (let i = 1; i < grid.columns.length; i++) {
+          const gridCol = grid.columns.byIndex(i)!;
+          const sparklineSettings = getSparklineSettings(gridCol);
+          if (sparklineTypes.includes(gridCol.cellType) && sparklineSettings?.columnNames?.length > 0 &&
           columns.some((col) => sparklineSettings.columnNames.includes(col instanceof DG.Column ? col.name : col)))
-          summaryCols[summaryCols.length] = gridCol;
-      }
-      return summaryCols;
-    };
+            summaryCols[summaryCols.length] = gridCol;
+        }
+        return summaryCols;
+      };
 
-    const colsRemovedSub = dataFrame.onColumnsRemoved.subscribe((args: DG.ColumnsArgs) => {
-      const summaryCols = findSummaryCols(args.columns);
-      for (const col of args.columns) {
+      const colsRemovedSub = dataFrame.onColumnsRemoved.subscribe((args: DG.ColumnsArgs) => {
+        const summaryCols = findSummaryCols(args.columns);
+        for (const col of args.columns) {
+          for (const summaryCol of summaryCols) {
+            const sparklineSettings = getSparklineSettings(summaryCol);
+            if (sparklineSettings.columnNames.includes(col.name))
+              sparklineSettings.columnNames = sparklineSettings.columnNames.filter((name) => name !== col.name);
+          }
+        }
+      });
+      const colsRenamedSub = dataFrame.onColumnNameChanged.subscribe((args: DG.EventData) => {
+        const renamedArgs: {newName: string, oldName: string} = args.args;
+        const summaryCols = findSummaryCols([renamedArgs.oldName]);
         for (const summaryCol of summaryCols) {
           const sparklineSettings = getSparklineSettings(summaryCol);
-          if (sparklineSettings.columnNames.includes(col.name))
-            sparklineSettings.columnNames = sparklineSettings.columnNames.filter((name) => name !== col.name);
+          sparklineSettings.columnNames[sparklineSettings.columnNames.indexOf(renamedArgs.oldName)] = renamedArgs.newName;
         }
-      }
+      });
+      const gridDetachedSub = grid.onDetached.subscribe(() => {
+        grid.detach();
+      });
+      grid.sub(colsRemovedSub);
+      grid.sub(colsRenamedSub);
+      grid.sub(gridDetachedSub);
     });
-    const colsRenamedSub = dataFrame.onColumnNameChanged.subscribe((args: DG.EventData) => {
-      const renamedArgs: {newName: string, oldName: string} = args.args;
-      const summaryCols = findSummaryCols([renamedArgs.oldName]);
-      for (const summaryCol of summaryCols) {
-        const sparklineSettings = getSparklineSettings(summaryCol);
-        sparklineSettings.columnNames[sparklineSettings.columnNames.indexOf(renamedArgs.oldName)] = renamedArgs.newName;
-      }
-    });
-    const gridDetachedSub = grid.onDetached.subscribe(() => {
-      grid.detach();
-    });
-    grid.sub(colsRemovedSub);
-    grid.sub(colsRenamedSub);
-    grid.sub(gridDetachedSub);
-  });
 
     if (navigator.gpu)
       gpuDevice = await getGPUDevice();
@@ -389,7 +389,7 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({tags: ['isWebGPUAvailable']})
-  static isWebGPUAvailable() : boolean{
+  static isWebGPUAvailable() : boolean {
     return gpuDevice != null && !gpuErrorCounter;
   }
 

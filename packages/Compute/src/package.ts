@@ -120,8 +120,10 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func()
-  static modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup) {
+  @grok.decorators.func({
+    meta: { role: ' ', app: ' '}
+  })
+  static modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.ViewBase) {
     makeModelTreeBrowser(treeNode as any);
   }
 

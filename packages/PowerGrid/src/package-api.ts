@@ -116,7 +116,7 @@ export namespace funcs {
     return await grok.functions.call('PowerGrid:ScWebGPUPointHitTest', { sc, pt });
   }
 
-  export async function isWebGPUAvailable(): Promise<void> {
+  export async function isWebGPUAvailable(): Promise<boolean> {
     return await grok.functions.call('PowerGrid:IsWebGPUAvailable', {});
   }
 
