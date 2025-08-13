@@ -921,6 +921,8 @@ export class FittingView {
     });
 
     primaryToggle.root.hidden = true;
+    const paddingDiv = ui.div('', { classes: 'sa-switch-input ui-div' })
+    primaryToggle.root.prepend(paddingDiv);
     form.append(primaryToggle.root);
 
     //1. Inputs of the function
