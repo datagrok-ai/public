@@ -5,6 +5,7 @@
 ### Bug fixes
 
 * GROK-18622: Implement logic to check and switch TableView if needed
+* [#3445](https://github.com/datagrok-ai/public/issues/3445) Structure filter does not realign when coordinates change but structure does not
 
 ## 1.16.1 (2025-08-04)
 
