@@ -27,6 +27,7 @@ export function tokenContextMiddleware(req: any, res: any, next: any) {
         req?.headers?.authorization ||
         req?.authorization ||
         (req?.cookies && req.cookies['auth']) ||
+        req.headers["x-user-api-key"] ||
         null;
 
     const store = { token };
@@ -40,6 +41,7 @@ export function withTokenContext(req: any, callback: any) {
         req?.headers?.authorization ||
         req?.authorization ||
         cookies["auth"] ||
+        req.headers["x-user-api-key"] ||
         null;
 
     const store = { token };
