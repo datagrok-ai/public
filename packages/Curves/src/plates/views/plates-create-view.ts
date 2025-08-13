@@ -60,32 +60,42 @@ export function createPlatesView(): DG.View {
         onUndo: (mappedField) => {
           if (state.activePlateIdx >= 0)
             stateManager.undoMapping(state.activePlateIdx, mappedField);
-        }
+        },
       });
     } else {
       grok.shell.warning('Please import a plate and define at least one mapping on the active plate first.');
     }
   };
+  ;
 
   stateManager.onStateChange.subscribe(async (event) => {
     const activePlate = stateManager.activePlate;
-    const template = stateManager.currentTemplate;
 
-    if (activePlate && activePlate.plate && activePlate.plate.data) {
+    if (activePlate) {
       plateWidget.plate = activePlate.plate;
-
       ui.empty(drcAnalysisHost);
-      const drcCurvesElement = PlateDrcAnalysis.createCurvesGrid(
-        activePlate.plate,
-        plateWidget
-      );
+
+      const mappedDf = stateManager.getActivePlateMappedData();
+      let drcCurvesElement: HTMLElement | null = null;
+
+      if (mappedDf) {
+        // Create a temporary plate object with the mapped data for analysis
+        const tempPlate = new Plate(activePlate.plate.rows, activePlate.plate.cols);
+        tempPlate.data = mappedDf;
+        tempPlate.barcode = activePlate.plate.barcode;
+
+        drcCurvesElement = PlateDrcAnalysis.createCurvesGrid(
+          tempPlate,
+          plateWidget
+        );
+      }
 
       if (drcCurvesElement)
         drcAnalysisHost.appendChild(drcCurvesElement);
       else
         drcAnalysisHost.appendChild(createAnalysisSkeleton());
     } else {
-      // Show default plate
+      // Show default plate if no file is loaded
       plateWidget.plate = await stateManager.getOrCreateDefaultPlate();
       ui.empty(drcAnalysisHost);
       drcAnalysisHost.appendChild(createAnalysisSkeleton());
@@ -109,6 +119,7 @@ export function createPlatesView(): DG.View {
   );
   const drcContainer = ui.divV([analysisTitle, drcAnalysisHost], 'drc-container');
 
+
   const rightPanel = ui.divV([
     rightPanelTop,
     drcContainer,
@@ -122,6 +133,7 @@ export function createPlatesView(): DG.View {
   view.root.appendChild(mainLayout);
 
   stateManager.setTemplate(plateTemplates[0]);
+
 
   view.setRibbonPanels([[
     ui.bigButton('CREATE', async () => {

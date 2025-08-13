@@ -51,20 +51,43 @@ export class PlateStateManager {
     return state ? state.plates[state.activePlateIdx] : undefined;
   }
 
+  /** Creates a new DataFrame with columns renamed according to the active plate's mapping. */
+  public getActivePlateMappedData(): DG.DataFrame | null {
+    const activePlate = this.activePlate;
+    if (!activePlate || !activePlate.plate.data) return null;
+
+    const sourceDf = activePlate.plate.data;
+    const map = activePlate.reconciliationMap;
+    const newColumns: DG.Column[] = [];
+
+    const sourceToTarget = new Map<string, string>();
+    map.forEach((source, target) => sourceToTarget.set(source, target));
+
+    for (const sourceCol of sourceDf.columns) {
+      const newCol = sourceCol.clone();
+      const targetName = sourceToTarget.get(sourceCol.name);
+      if (targetName)
+        newCol.name = targetName;
+
+      newColumns.push(newCol);
+    }
+
+    return DG.DataFrame.fromColumns(newColumns);
+  }
+
   async setTemplate(template: PlateTemplate): Promise<void> {
     this._currentTemplate = template;
 
-    // Initialize empty state if needed
     if (!this.templateStates.has(template.id)) {
       this.templateStates.set(template.id, {
         plates: [],
-        activePlateIdx: -1
+        activePlateIdx: -1,
       });
     }
 
     this.stateChange$.next({
       type: 'template-changed',
-      templateId: template.id
+      templateId: template.id,
     });
   }
 
@@ -89,20 +112,32 @@ export class PlateStateManager {
 
     const currentState = this.templateStates.get(this._currentTemplate.id) ?? {
       plates: [],
-      activePlateIdx: -1
+      activePlateIdx: -1,
     };
 
     currentState.plates = [];
     for (const plate of parsedPlates) {
       const dummyFile = {
         name: `Plate: ${plate.barcode}`,
-        fullPath: ''
+        fullPath: '',
       } as DG.FileInfo;
+
+      const reconciliationMap = new Map<string, string>();
+      const allRequiredProps = [
+        ...this.currentTemplate.wellProperties.map((p) => p.name),
+        'Activity', 'Concentration', 'SampleID',
+      ].filter((p): p is string => p !== null && p !== undefined);
+
+      const sourceCols = new Set(plate.data.columns.names());
+      for (const prop of allRequiredProps) {
+        if (sourceCols.has(prop))
+          reconciliationMap.set(prop, prop);
+      }
 
       currentState.plates.push({
         plate,
         file: dummyFile,
-        reconciliationMap: new Map<string, string>()
+        reconciliationMap,
       });
     }
 
@@ -119,7 +154,7 @@ export class PlateStateManager {
       this.stateChange$.next({
         type: 'plate-selected',
         plateIndex: index,
-        plate: state.plates[index]
+        plate: state.plates[index],
       });
     }
   }
@@ -132,61 +167,53 @@ export class PlateStateManager {
     if (state.activePlateIdx >= index)
       state.activePlateIdx = Math.max(0, state.activePlateIdx - 1);
 
-
     if (state.plates.length === 0)
       this.templateStates.delete(this._currentTemplate.id);
 
-
     this.stateChange$.next({
       type: 'plate-removed',
-      plateIndex: index
+      plateIndex: index,
     });
   }
 
-  applyMapping(plateIndex: number, mappedField: string, originalField: string): void {
+  remapProperty(plateIndex: number, targetProperty: string, newSourceColumn: string): void {
     const state = this.currentState;
     if (!state || !state.plates[plateIndex]) return;
-
     const plateFile = state.plates[plateIndex];
-    const column = plateFile.plate.data.col(originalField);
-    if (!column) {
-      console.warn(`Column '${originalField}' not found for mapping`);
-      return;
+
+    let conflictingProperty: string | null = null;
+    for (const [target, source] of plateFile.reconciliationMap.entries()) {
+      if (source === newSourceColumn && target !== targetProperty) {
+        conflictingProperty = target;
+        break;
+      }
     }
 
-    column.name = mappedField;
-    plateFile.reconciliationMap.set(mappedField, originalField);
+    if (conflictingProperty)
+      plateFile.reconciliationMap.delete(conflictingProperty);
 
-    grok.shell.info(`Mapped column '${originalField}' to '${mappedField}'`);
-
+    plateFile.reconciliationMap.set(targetProperty, newSourceColumn);
+    grok.shell.info(`Mapped '${targetProperty}' to column '${newSourceColumn}'`);
     this.stateChange$.next({
       type: 'mapping-changed',
       plateIndex,
-      plate: plateFile
+      plate: plateFile,
     });
   }
 
-  undoMapping(plateIndex: number, mappedField: string): void {
+  undoMapping(plateIndex: number, targetProperty: string): void {
     const state = this.currentState;
     if (!state || !state.plates[plateIndex]) return;
-
     const plateFile = state.plates[plateIndex];
-    const originalName = plateFile.reconciliationMap.get(mappedField);
 
-    if (originalName) {
-      const column = plateFile.plate.data.col(mappedField);
-      if (column) {
-        column.name = originalName;
-        plateFile.reconciliationMap.delete(mappedField);
-
-        grok.shell.info(`Reverted mapping for '${mappedField}'`);
-
-        this.stateChange$.next({
-          type: 'mapping-changed',
-          plateIndex,
-          plate: plateFile
-        });
-      }
+    if (plateFile.reconciliationMap.has(targetProperty)) {
+      plateFile.reconciliationMap.delete(targetProperty);
+      grok.shell.info(`Reverted mapping for '${targetProperty}'`);
+      this.stateChange$.next({
+        type: 'mapping-changed',
+        plateIndex,
+        plate: plateFile,
+      });
     }
   }
 
@@ -198,30 +225,8 @@ export class PlateStateManager {
     let modified = 0;
 
     state.plates.forEach((plateFile, index) => {
-      const shouldBeMapped = selectedSet.has(index);
-      const isCurrentlyMapped = [...sourceMappings.keys()].every(
-        (key) => plateFile.reconciliationMap.has(key)
-      );
-
-      if (shouldBeMapped && !isCurrentlyMapped) {
-        // Apply mapping
-        sourceMappings.forEach((oldName, newName) => {
-          const column = plateFile.plate.data.col(oldName);
-          if (column && oldName !== newName) {
-            column.name = newName;
-            plateFile.reconciliationMap.set(newName, oldName);
-          }
-        });
-        modified++;
-      } else if (!shouldBeMapped && isCurrentlyMapped) {
-        // Undo mapping
-        sourceMappings.forEach((oldName, newName) => {
-          const column = plateFile.plate.data.col(newName);
-          if (column && plateFile.reconciliationMap.get(newName) === oldName) {
-            column.name = oldName;
-            plateFile.reconciliationMap.delete(newName);
-          }
-        });
+      if (selectedSet.has(index)) {
+        plateFile.reconciliationMap = new Map(sourceMappings);
         modified++;
       }
     });

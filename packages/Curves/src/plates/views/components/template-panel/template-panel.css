@@ -1,12 +1,12 @@
 /* === Template Panel Styles === */
 .template-panel {
   flex-shrink: 0;
-  width: 410px; 
+  width: 410px;
   max-width: 450px;
-  display: flex; 
-  flex-direction: column; 
+  display: flex;
+  flex-direction: column;
   gap: 1px;
-  overflow: hidden; 
+  overflow: hidden;
 
   border-right: 1px solid var(--grey-2);
   padding-right: 12px;
@@ -18,18 +18,16 @@
   flex-direction: column;
   gap: 0;
   border-bottom: 1px solid var(--grey-1);
-
   margin-bottom: 12px;
 }
 
-/* Container for the chevron icon and the title text/element */
 .left-panel-section > .d4-div-h {
   display: flex;
   align-items: center;
-  padding: 8px 4px; 
+  padding: 8px 4px;
 }
 
-.left-panel-section > .d4-div-h h2 {
+.left-panel-section h2 {
   margin: 0 !important;
   font-size: 16px;
   font-weight: 400;
@@ -38,17 +36,11 @@
   letter-spacing: 0.5px;
 }
 
-
-.left-panel-section > .d4-collapse-content {
-  padding: 8px 4px 12px 4px;
-}
-
 .left-panel-section-content {
   display: flex;
   flex-direction: column;
   gap: 12px;
-
-  padding: 8px 0 16px 0; 
+  padding: 8px 0 16px 0;
 }
 
 .template-panel .d4-input-base {
@@ -57,114 +49,12 @@
   align-items: center;
 }
 
-.template-panel .d4-input-base > .d4-input-label {
-  flex-grow: 1;
-  margin-right: 12px;
-  white-space: nowrap;
-}
-
-.template-panel .d4-input-base > .d4-input-editor {
-  flex-grow: 0;
-  flex-shrink: 0;
-  width: 200px; 
-}
-
-/* === Well Properties Header === */
-.well-props-header__template-name {
-  color: var(--grey-5);
-  font-size: 11px;
-  font-style: italic;
-  margin-left: 8px;
-  flex-grow: 1;
-}
-
-/* === Manage Mappings Button === */
-.manage-mappings-button > .d4-div-h {
-  gap: 8px;
-  align-items: center;
-}
-
-.manage-mappings-button .ui-badge-red,
-.manage-mappings-button .ui-badge-blue {
-  margin: 0;
-}
-
-.manage-mappings-button .d4-div-h > .grok-icon {
-  margin-right: 4px;
-}
-
-/* === Role Summary === */
-.plate-widget__role-summary {
-  gap: 12px;
-  margin-top: 8px;
-  flex-wrap: wrap;
-}
-
-.role-summary__item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* === Legend Icons === */
-.legend-icon {
-  margin-right: 2px;
-}
-
-.legend-icon-template {
-  color: var(--blue-1) !important;
-}
-
-.legend-icon-analysis {
-  color: var(--green-3) !important;
-}
-
-.legend-icon-required {
-  color: var(--red-3) !important;
-}
-
-/* === Helper Classes === */
-.space-between-center {
-  justify-content: space-between;
-  align-items: center;
-}
-
-.info-message {
-  color: var(--grey-5);
-  padding: 20px;
-  text-align: center;
-  font-style: italic;
-}
-
-.error-message {
-  color: var(--red-5);
-  padding: 20px;
-  text-align: center;
-}
-
-/* === Badges === */
-.ui-badge-red, .ui-badge-blue {
-  border-radius: 10px;
-  padding: 2px 7px;
-  font-size: 11px;
-  color: white;
-  margin-right: 8px;
-  font-weight: 500;
-  line-height: 1;
-}
-
-.ui-badge-red {
-  background-color: var(--red-3);
-}
-
-.ui-badge-blue {
-  background-color: var(--blue-1);
-}
 /* === Validation Table Styles === */
 .plate-validation-table-header,
 .plate-validation-table-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  gap: 12px;
   padding: 4px 0;
   align-items: center;
 }
@@ -176,117 +66,120 @@
 
 .plate-validation-table-row .d4-input-root {
   width: 100%;
+  margin: 0;
 }
 
-.locked-mapping-input {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 4px 0 8px;
-  height: 26px;
+.mapping-input-container {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.mapping-choice-editor {
   background-color: var(--grey-0);
-  border: 1px solid var(--grey-3);
+  border: 1px solid var(--grey-2);
   border-radius: 4px;
+  padding: 2px 28px 2px 8px;
   width: 100%;
+  cursor: pointer;
+  min-height: 26px; /* Ensure consistent height */
+  line-height: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.locked-mapping-input > .grok-icon {
+.mapping-choice-editor.empty {
+  color: var(--grey-4);
+}
+
+.mapping-choice-editor:hover {
+  border-color: var(--blue-1) !important;
+}
+
+.mapping-input-container .mapping-choice-editor:not(.empty) {
+    background-color: var(--grey-1);
+    border-color: transparent;
+    font-weight: 500;
+}
+
+.mapping-input-container:hover .mapping-choice-editor:not(.empty) {
+    border-color: var(--grey-3);
+}
+
+.mapping-undo-icon {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
   color: var(--grey-4);
   cursor: pointer;
   visibility: hidden;
   padding: 4px;
+  z-index: 1;
 }
 
-.plate-validation-table-row:hover .locked-mapping-input > .grok-icon {
+.plate-validation-table-row:hover .mapping-undo-icon {
   visibility: visible;
 }
 
-.locked-mapping-input > .grok-icon:hover {
+.mapping-undo-icon:hover {
   color: var(--red-3);
 }
-/* === Styles for custom mapping suggestions === */
-.custom-suggestion-popup {
-  position: absolute;
-  z-index: 1000;
-  border: 1px solid var(--grey-2);
-  border-radius: 4px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  max-height: 250px;
-  overflow-y: auto;
-  box-sizing: border-box;
-  background-color: var(--white);
+
+.required-asterisk {
+  color: var(--red-3);
+  margin-left: 2px;
+  font-weight: bold;
 }
 
-.custom-suggestion-legend {
+/* === Add Row Styles === */
+.plate-validation-add-row {
   display: flex;
-  gap: 16px;
-  padding: 6px 12px;
-  color: var(--grey-5);
-  font-size: 11px;
-  background-color: var(--grey-0);
-  position: sticky;
-  top: 0;
-}
-
-.custom-suggestion-legend > .d4-div-h {
-  display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 6px;
+  padding: 4px 0;
+  margin-top: 4px;
 }
 
-.custom-suggestion-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 6px 12px;
+.plate-validation-add-icon {
+  color: var(--grey-4);
   cursor: pointer;
-  color: var(--grey-8);
-}
-
-.custom-suggestion-item .custom-suggestion-icons {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: 16px;
-}
-
-.custom-suggestion-item .custom-suggestion-icons > .grok-icon {
-  font-size: 12px;
-  width: 14px;
+  padding: 4px;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
   text-align: center;
 }
 
-.custom-suggestion-item:hover {
+.plate-validation-add-icon:hover {
+  color: var(--blue-1);
   background-color: var(--grey-1);
 }
 
-.custom-suggestion-name {
-  font-weight: 500;
+.dynamic-row-right-cell {
   display: flex;
   align-items: center;
+  gap: 8px;
+  width: 100%;
 }
 
-.drc-container > .d4-div-h {
-  align-items: center;
-}
-.drc-container > .d4-div-h > h2 {
-  margin: 0;
+.dynamic-row-right-cell .d4-input-editor,
+.dynamic-row-right-cell .mapping-choice-editor {
+  flex-grow: 1;
 }
 
-.manage-mappings-button {
-  padding: 4px 8px;
+.mapping-cancel-icon {
+  cursor: pointer;
+  color: var(--grey-5);
 }
-.manage-mappings-button .ui-badge-red,
-.manage-mappings-button .ui-badge-blue {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  margin: 0;
-}
-.manage-mappings-button > .d4-div-h {
-  position: relative;
-}
+.mapping-cancel-icon:hover { color: var(--red-3); }
 
-h2{
-  margin:  0 !important; /* Overrides datagrok h2 defaults that for w/e reason have surpisrse margin on h2 */
+/* Other Styles */
+.info-message {
+  color: var(--grey-5);
+  padding: 20px;
+  text-align: center;
+  font-style: italic;
 }

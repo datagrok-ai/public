@@ -70,7 +70,7 @@ export class TemplatePanel {
         const plateType = plateTypes.find((pt) => pt.name === v)!;
         this.stateManager.setPlateType(plateType);
         this.stateManager.setTemplate(this.stateManager.currentTemplate);
-      }
+      },
     });
 
     plateTypeSelector.root.style.display = 'flex';
@@ -83,7 +83,7 @@ export class TemplatePanel {
       onValueChanged: (v) => {
         const template = plateTemplates.find((pt) => pt.name === v)!;
         this.stateManager.setTemplate(template);
-      }
+      },
     });
 
     plateTemplateSelector.root.style.display = 'flex';
@@ -200,7 +200,6 @@ export class TemplatePanel {
     const activePlate = this.stateManager.activePlate;
     const state = this.stateManager.currentState;
 
-    // Clear content
     ui.empty(this.platePropertiesHost);
     ui.empty(this.validationHost);
     ui.empty(this.wellPropsHeaderHost);
@@ -217,21 +216,21 @@ export class TemplatePanel {
     };
 
     if (activePlate) {
-      const handleMapping = (currentColName: string, templatePropName: string) => {
+      const handleMapping = (sourceColumn: string, targetProperty: string) => {
         const currentState = this.stateManager.currentState;
         if (currentState) {
-          this.stateManager.applyMapping(
+          this.stateManager.remapProperty(
             currentState.activePlateIdx,
-            templatePropName,
-            currentColName
+            targetProperty,
+            sourceColumn
           );
         }
       };
 
-      const handleUndo = (mappedField: string) => {
+      const handleUndo = (targetProperty: string) => {
         const currentState = this.stateManager.currentState;
         if (currentState)
-          this.stateManager.undoMapping(currentState.activePlateIdx, mappedField);
+          this.stateManager.undoMapping(currentState.activePlateIdx, targetProperty);
       };
 
       renderValidationResults(
@@ -261,12 +260,10 @@ export class TemplatePanel {
         this.platePropertiesHost.appendChild(styleFormInputs(form));
       }
 
-
       this.validationHost.appendChild(
         ui.divText('Import a CSV file to see validation results.', 'info-message')
       );
     }
-
 
     this.updateWellPropsHeader(template, state);
   }
@@ -326,4 +323,3 @@ export class TemplatePanel {
     this.subscriptions.forEach((sub) => sub.unsubscribe());
   }
 }
-
