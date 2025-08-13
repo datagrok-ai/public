@@ -11,16 +11,10 @@ import { addMoleculeStructures, assetsQuery, batchesQuery, materialsCondition, M
 import { getDefaultProperties, REVVITY_FIELD_TO_PROP_TYPE_MAPPING } from './properties';
 import { ComplexCondition, Operators, QueryBuilder, SUGGESTIONS_FUNCTION } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { getRevvityUsers } from './users';
-import { getRevvityLibraries } from './libraries';
+import { createInitialSatistics, getRevvityLibraries, RevvityLibrary, RevvityType } from './libraries';
 
 
 export const _package = new DG.Package();
-
-export type RevvityLibrary = {
-  id: string;
-  name: string;
-  types: string[];
-}
 
 export type CurrentRevvityLibrary = {
   libId: string;
@@ -51,18 +45,22 @@ export async function revvitySignalsLinkApp(): Promise<DG.ViewBase> {
       '- Analyze assay data.'
   });
 
-  const view = DG.View.fromRoot(appHeader);
+  const statsDiv = ui.div('', {style: {position: 'relative'}});
+  const view = DG.View.fromRoot(ui.divV([appHeader, statsDiv]));
   view.name = 'Revvity';
+  createInitialSatistics(statsDiv);
   return view;
+
 }
 
 //input: dynamic treeNode
 //input: view browseView
 export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGroup) {
   getRevvityUsers();
-  getRevvityLibraries();
+  const libs = await getRevvityLibraries();
 
   const createViewFromPreDefinedQuery = async (query: string, name: string, libName: string, compoundType: string) => {
+    //!!!!!!!!!!TODO: Change to .then()
     const df = await grok.functions.call('RevvitySignalsLink:searchEntitiesWithStructures', {
       query: query,
       params: '{}'
@@ -98,7 +96,7 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
         filterFields.push(prop);
       });
       queryBuilder = new QueryBuilder(filterFields);
-      const runSearchButton = ui.bigButton('RUN', async () => {
+      const runSearchButton = ui.bigButton('Search', async () => {
         ui.setUpdateIndicator(tv.grid.root, true, 'Searching...');
         const resultDf = await runSearch(libId, compoundType, queryBuilder!.condition);
         tv.dataFrame = resultDf;
@@ -157,17 +155,16 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
     initializeFilters();
   }
 
-  const compounds = treeNode.group('Compounds');
-
-  const assets = compounds.item('Assets');
-  assets.onSelected.subscribe(async () => {
-    await createViewFromPreDefinedQuery(JSON.stringify(assetsQuery), 'Assets', 'Compounds', 'asset');
-  });
-
-  const batches = compounds.item('Batches');
-  batches.onSelected.subscribe(async () => {
-    await createViewFromPreDefinedQuery(JSON.stringify(batchesQuery), 'Batches', 'Compounds', 'batch');
-  });
+  for (const lib of libs) {
+    const libNode = treeNode.group(lib.name);
+    for (const libType of lib.types) {
+      const typeNode = libNode.item(`${libType.name.charAt(0).toUpperCase()}${libType.name.slice(1)}`);
+      typeNode.onSelected.subscribe(async () => {
+        await createViewFromPreDefinedQuery(JSON.stringify(assetsQuery), `${libType.name.charAt(0).toUpperCase()}${libType.name.slice(1)}`,
+          lib.name, libType.name);
+      });
+    }
+  }
 }
 
 //name: Search Entities
@@ -242,7 +239,7 @@ export async function getLibraries(): Promise<string> {
   const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
   for (const lib of data) {
     if (lib.attributes.name && lib.id) {
-      let types: string[] = [];
+      let types: RevvityType[] = [];
       const query = {
         "query": {
           "$and": [
@@ -269,7 +266,9 @@ export async function getLibraries(): Promise<string> {
       const typesResponse = await queryTerms(query);
       if (typesResponse.data) {
         const typesData: Record<string, any>[] = !Array.isArray(typesResponse.data) ? [typesResponse.data!] : typesResponse.data!;
-        types = typesData.map((it) => it.id);
+        types = typesData.map((it) => {
+          return {name: it.id, count: it.attributes?.count};
+        });
       }
       libraries.push({ name: lib.attributes.name, id: `${lib.type}:${lib.id}`, types: types });
     }
