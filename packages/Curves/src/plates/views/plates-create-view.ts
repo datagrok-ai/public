@@ -33,7 +33,7 @@ export function createPlatesView(): DG.View {
   plateWidget.editable = true;
   plateWidget.root.style.width = '100%';
   plateWidget.root.style.minWidth = '0';
-  plateWidget.root.style.flexGrow = '0';
+  plateWidget.root.style.flexGrow = '1'; // Changed from '0' to '1' to allow growth
   const drcAnalysisHost = ui.divV([], 'create-plate-view__drc-host');
   drcAnalysisHost.style.width = '100%';
   drcAnalysisHost.style.flexGrow = '1';
@@ -109,7 +109,8 @@ export function createPlatesView(): DG.View {
     plateTabsManager.root,
     plateWidget.root,
   ]);
-  rightPanelTop.style.flexShrink = '0';
+  rightPanelTop.style.flexGrow = '1'; // Ensure this container can grow
+  rightPanelTop.style.minHeight = '0';
 
   const analysisIcon = ui.iconFA('chart-line');
   analysisIcon.classList.add('legend-icon', 'legend-icon-analysis');

@@ -68,8 +68,10 @@ export class PlateWidget extends DG.Widget {
 
     this.tabs.root.classList.add('plate-widget__tabs');
     this.tabsContainer.appendChild(this.tabs.root);
-    this.root.appendChild(this.tabsContainer);
-    this.root.appendChild(this.roleSummaryDiv);
+    const mainContainer = ui.divV([this.tabsContainer, this.roleSummaryDiv]);
+    mainContainer.style.flexGrow = '1';
+    mainContainer.style.width = '100%';
+    this.root.appendChild(mainContainer);
 
     this.grid.props.allowRowSelection = false;
     this.grid.props.allowColSelection = false;
@@ -108,6 +110,7 @@ export class PlateWidget extends DG.Widget {
     fromEvent<MouseEvent>(interactionElement, 'mousedown')
       .pipe(takeUntil(this._onDestroy))
       .subscribe((e: MouseEvent) => {
+        if (!this.editable) return;
         e.preventDefault();
         e.stopPropagation();
 
@@ -133,18 +136,96 @@ export class PlateWidget extends DG.Widget {
         mouseUpStream.pipe(take(1)).subscribe(() => {
           this._isDragging = false;
           this.clearSelectionRect();
-          this._selectionRect = null;
 
-          const selectedIndexes = this.plate.data.selection.getSelectedIndexes();
-          if (selectedIndexes.length > 0) {
-            const selectedPositions = Array.from(selectedIndexes).map((idx) => {
-              const [row, col] = this.plate.rowIndexToExcel(idx);
-              return toExcelPosition(row, col);
-            });
-            console.log('Selected wells:', selectedPositions);
-          }
+          if (this.plate.data.selection.trueCount > 0)
+            this.showRoleAssignmentPopup();
+
+          this._selectionRect = null;
         });
       });
+  }
+
+  private showRoleAssignmentPopup(): void {
+    const selection = this.plate.data.selection;
+    if (selection.trueCount === 0) return;
+
+    const roles = ['Control', 'Buffer', 'Assay Reagent', 'Sample'];
+    const roleInput = ui.input.multiChoice<string>('Roles', {items: roles, value: []});
+
+    const popupContent = ui.divV([
+      ui.h3(`${selection.trueCount} wells selected`),
+      roleInput,
+      ui.button('Assign', () => {
+        const selectedRoles = roleInput.value;
+        if (!selectedRoles || selectedRoles.length === 0) return;
+
+        let roleCol = this.plate.data.col('Role');
+        if (roleCol === null) {
+          roleCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, 'Role', this.plate.data.rowCount);
+          this.plate.data.columns.add(roleCol);
+        }
+
+        const selectedIndexes = selection.getSelectedIndexes();
+
+        for (const i of selectedIndexes)
+          (roleCol as DG.Column<string>).set(i, selectedRoles.join(','));
+
+        this._colorColumn = roleCol;
+        if (this._colorColumn.isCategorical && this._colorColumn.meta.colors.getType() !== DG.COLOR_CODING_TYPE.CATEGORICAL)
+          this._colorColumn.meta.colors.setCategorical();
+
+        this.grid.invalidate();
+        this.updateRoleSummary();
+        selection.setAll(false, true);
+        popup.remove();
+        anchorDiv.remove();
+      })
+    ], 'd4-menu-item-container');
+
+    popupContent.style.padding = '10px';
+
+    const selectedIndices = selection.getSelectedIndexes();
+    let minRow = this.plate.rows; let maxRow = -1; let minCol = this.plate.cols; let maxCol = -1;
+
+    for (const idx of selectedIndices) {
+      const row = Math.floor(idx / this.plate.cols);
+      const col = idx % this.plate.cols;
+      if (row < minRow) minRow = row;
+      if (row > maxRow) maxRow = row;
+      if (col < minCol) minCol = col;
+      if (col > maxCol) maxCol = col;
+    }
+
+    const firstCell = this.grid.cell(this.grid.columns.byIndex(minCol + 1)!.name, minRow);
+    const lastCell = this.grid.cell(this.grid.columns.byIndex(maxCol + 1)!.name, maxRow);
+    const selectionBounds = firstCell.bounds.union(lastCell.bounds);
+
+    const canvasBounds = this.grid.overlay.getBoundingClientRect();
+
+    const anchorDiv = ui.div('', {
+      style: {
+        position: 'absolute',
+        left: `${canvasBounds.left + selectionBounds.x + selectionBounds.width / 2}px`,
+        top: `${canvasBounds.top + selectionBounds.y}px`,
+        width: '0px',
+        height: '0px',
+      }
+    });
+    document.body.appendChild(anchorDiv);
+
+    const popup = ui.showPopup(popupContent, anchorDiv);
+
+    const closePopup = () => {
+      if (document.body.contains(popup)) popup.remove();
+      if (document.body.contains(anchorDiv)) anchorDiv.remove();
+      document.removeEventListener('mousedown', onMouseDown, true);
+    };
+
+    const onMouseDown = (e: MouseEvent) => {
+      if (!popup.contains(e.target as Node)) closePopup();
+    };
+
+    setTimeout(() => document.addEventListener('mousedown', onMouseDown, true), 0);
   }
 
   private drawSelectionRect() {
@@ -232,12 +313,19 @@ export class PlateWidget extends DG.Widget {
     const pw = new PlateWidget();
     pw.plate = plate;
 
+    pw.roleSummaryDiv.remove();
+
     pw.detailsDiv = ui.divV([], 'plate-widget__details');
     pw.wellDetailsDiv = ui.div();
     pw.detailsDiv.appendChild(pw.wellDetailsDiv);
 
-    const mainContainer = ui.divH([
+    const gridAndSummaryWrapper = ui.divV([
       pw.tabs.root,
+      pw.roleSummaryDiv,
+    ], {style: {flexGrow: '1', display: 'flex', flexDirection: 'column'}});
+
+    const mainContainer = ui.divH([
+      gridAndSummaryWrapper,
       pw.detailsDiv,
     ], 'plate-widget__main-container');
 
@@ -294,7 +382,7 @@ export class PlateWidget extends DG.Widget {
           const p = this.plate;
           for (let i = 0; i < df.rowCount; i++) {
             for (let j = 0; j < df.columns.length - 1; j++)
-                      p.data.col(layer)!.set(p._idx(i, j), df.get(`${j + 1}`, i));
+                    p.data.col(layer)!.set(p._idx(i, j), df.get(`${j + 1}`, i));
           }
           this.wellValidationErrors = p.validateWells(this.wellValidators);
         });

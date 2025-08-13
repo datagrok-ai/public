@@ -12,7 +12,6 @@ export class TemplatePanel {
   private platePropertiesHost: HTMLElement;
   private validationHost: HTMLElement;
   private wellPropsHeaderHost: HTMLElement;
-  private roleAssignmentSection: HTMLElement;
   private subscriptions: Subscription[] = [];
 
   constructor(
@@ -24,7 +23,6 @@ export class TemplatePanel {
     this.platePropertiesHost = ui.divV([]);
     this.validationHost = ui.divV([]);
     this.wellPropsHeaderHost = ui.div();
-    this.roleAssignmentSection = this.createRoleAssignmentSection();
 
     this.buildPanel();
     this.subscribeToStateChanges();
@@ -42,16 +40,10 @@ export class TemplatePanel {
       this.validationHost,
       true
     );
-    const roleSection = this.createCollapsiblePanel(
-      ui.h2('Role Assignment'),
-      this.roleAssignmentSection,
-      true
-    );
 
     this.root.appendChild(templateSection);
     this.root.appendChild(platePropsSection);
     this.root.appendChild(wellPropsSection);
-    this.root.appendChild(roleSection);
   }
 
   private createTemplateSection(): HTMLElement {
@@ -96,68 +88,6 @@ export class TemplatePanel {
     );
 
     return this.createCollapsiblePanel(templateHeader, templateContent, true);
-  }
-
-  private createRoleAssignmentSection(): HTMLElement {
-    const selectionStatusDiv = ui.divText('Drag on the plate to select wells.');
-    selectionStatusDiv.style.marginTop = '10px';
-
-    const roles = ['Control', 'Buffer', 'Assay Reagent', 'Sample'];
-    const roleInput = ui.input.multiChoice('Roles', {items: roles, value: []});
-
-    const assignButton = ui.button('Assign Roles', async () => {
-      const selectedRoles = roleInput.value;
-      const plate = this.plateWidget.plate;
-      const selection = plate.data.selection;
-
-      if (selectedRoles?.length === 0 || selection.trueCount === 0) return;
-
-      const roleCol = plate.data.columns.getOrCreate('Role', DG.COLUMN_TYPE.STRING);
-      const selectedIndexes = selection.getSelectedIndexes();
-
-      for (const i of selectedIndexes)
-        roleCol.set(i, selectedRoles?.join(',') ?? '');
-
-
-      this.plateWidget._colorColumn = roleCol;
-      this.plateWidget.grid.invalidate();
-      this.plateWidget.updateRoleSummary();
-
-      selection.setAll(false, true);
-    });
-    assignButton.disabled = true;
-
-    const updateAssignButtonState = () => {
-      const selectionCount = this.plateWidget.plate.data.selection.trueCount;
-      const rolesCount = roleInput.value?.length ?? 0;
-      assignButton.disabled = selectionCount === 0 || rolesCount === 0;
-    };
-
-    this.plateWidget.plate.data.selection.onChanged.subscribe(() => {
-      const selectionCount = this.plateWidget.plate.data.selection.trueCount;
-
-      if (selectionCount > 0) {
-        selectionStatusDiv.textContent = `${selectionCount} wells selected`;
-        const selectedPositions = Array.from(
-          this.plateWidget.plate.data.selection.getSelectedIndexes()
-        ).map((idx) => {
-          const [row, col] = this.plateWidget.plate.rowIndexToExcel(idx);
-          return toExcelPosition(row, col);
-        });
-        ui.tooltip.bind(selectionStatusDiv, () => ui.divText(selectedPositions.join(', ')));
-      } else {
-        selectionStatusDiv.textContent = 'Drag on the plate to select wells.';
-        ui.tooltip.bind(selectionStatusDiv, () => null);
-      }
-      updateAssignButtonState();
-    });
-
-    roleInput.onInput.subscribe(() => updateAssignButtonState());
-
-    return ui.divV(
-      [selectionStatusDiv, roleInput.root, assignButton],
-      'left-panel-section-content'
-    );
   }
 
   private createCollapsiblePanel(
