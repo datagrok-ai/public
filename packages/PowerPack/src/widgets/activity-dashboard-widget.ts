@@ -66,7 +66,15 @@ export class ActivityDashboardWidget extends DG.Widget {
       tabControl.root.style.height = '100%';
       tabControl.root.style.width = '100%';
 
-      setTimeout(() => this.cleanLists(), 500);
+      setTimeout(() => {
+        const header = this.root.parentElement?.parentElement?.querySelector('.d4-dialog-header');
+        if (header) {
+          const icons = Array.from(header.getElementsByClassName('grok-icon'));
+          this.root.appendChild(icons[icons.length - 1]);
+          header.remove();
+        }
+        this.cleanLists();
+      }, 500);
       console.timeEnd('ActivityDashboardWidget.buildTabbedUI');
       return tabControl.root;
     }));
