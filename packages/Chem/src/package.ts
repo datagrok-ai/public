@@ -487,6 +487,17 @@ export async function descriptorsDocker(): Promise<void> {
   await openDescriptorsDialogDocker();
 }
 
+//name: calculateDescriptorsTransform
+//tags: Transform
+//input: dataframe table
+//input: column molecules { semType: Molecule }
+//input: list<string> selected
+export async function calculateDescriptorsTransform(table: DG.DataFrame, molecules: DG.Column, selected: string[]): Promise<void> {
+  const cols = await calculateDescriptors(molecules, selected);
+  addDescriptorsColsToDf(table, cols);
+}
+
+
 //name: chemDescriptorsTree
 //output: object descriptors
 export async function chemDescriptorsTree(): Promise<object> {
