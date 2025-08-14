@@ -250,7 +250,8 @@ export async function _autoPowerGrid() {
         sparklineSettings.columnNames[sparklineSettings.columnNames.indexOf(renamedArgs.oldName)] = renamedArgs.newName;
       }
     });
-    const gridDetachedSub = grid.onDetached.subscribe(() => {
+    //TODO: change it to `DG.Viewer.onDetached`
+    const gridDetachedSub = grid.onEvent('d4-viewer-detached').subscribe(() => {
       grid.detach();
     });
     grid.sub(colsRemovedSub);
