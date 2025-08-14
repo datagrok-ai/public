@@ -90,7 +90,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'name': 'AdmeticaMenu',
     'top-menu': 'Chem | Admetica | Сalculate...',
-    'editor': 'Admetica: AdmeticaEditor',
+    'editor': 'Admetica:AdmeticaEditor',
   })
   static async admeticaMenu(
     @grok.decorators.param({options: { description: 'Input data table' }})table: DG.DataFrame,
