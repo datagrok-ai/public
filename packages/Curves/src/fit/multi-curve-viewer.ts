@@ -25,7 +25,7 @@ export class MultiCurveViewer extends DG.JsViewer {
   canvas: HTMLCanvasElement;
   gridCellWidget: DG.GridCellWidget;
   curvesColumnNames?: string[] = [];
-  showSelectedRowsCurves: boolean = false;
+  showSelectedRowsCurves: boolean = true;
   showCurrentRowCurve: boolean = true;
   showMouseOverRowCurve: boolean = true;
   mergeColumnSeries: boolean = false;
@@ -64,7 +64,7 @@ export class MultiCurveViewer extends DG.JsViewer {
 
     this.curvesColumnNames = this.addProperty('curvesColumnNames', DG.TYPE.COLUMN_LIST, [], {semType: FitConstants.FIT_SEM_TYPE});
 
-    this.showSelectedRowsCurves = this.bool('showSelectedRowsCurves', false, {description: 'Adds curves from the selected rows'});
+    this.showSelectedRowsCurves = this.bool('showSelectedRowsCurves', true, {description: 'Adds curves from the selected rows'});
     this.showCurrentRowCurve = this.bool('showCurrentRowCurve', true);
     this.showMouseOverRowCurve = this.bool('showMouseOverRowCurve', true);
     this.mergeColumnSeries = this.bool('mergeColumnSeries', false);
@@ -196,8 +196,9 @@ export class MultiCurveViewer extends DG.JsViewer {
           this.render();
         }
       });
-    if (this.isInTrellis())
-      this.createChartData();
+    this.createChartData();
+    if (!this.isInTrellis())
+      this.render();
   }
 
   _showErrorMessage(msg: string) {
