@@ -39,7 +39,7 @@ module.exports = {
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
   },
-  // plugins: [
-  //   new FuncGeneratorPlugin({outputPath: './src/package.g.ts'}),
-  // ],
+  plugins: [
+    new FuncGeneratorPlugin({outputPath: './src/package.g.ts'}),
+  ],
 };

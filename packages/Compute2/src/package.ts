@@ -22,13 +22,8 @@ declare global {
   var initialURLHandled: boolean;
 }
 declare let ENABLE_VUE_DEV_TOOLS: any;
-
+export * from './package.g';
 export const _package = new DG.Package();
-
-//tags: init
-export async function init() {
-  await DG.Func.byName('WebComponents:init').prepare().call();
-}
 
 function setViewHierarchyData(call: DG.FuncCall, view: DG.ViewBase) {
   view.parentCall = call.parentCall;
@@ -46,368 +41,410 @@ function setVueAppOptions(app: Vue.App<any>) {
     app.config.performance = true;
 }
 
-//name: CustomFunctionViewEditor
-//tags: editor, vue
-//input: funccall call
-//output: view result
-export async function CustomFunctionViewEditor(call: DG.FuncCall) {
-  const view = (await call.call()).getOutputParamValue() as CustomFunctionView;
-  setViewHierarchyData(call, view);
+export class PackageFunctions {
+  @grok.decorators.init()
+  static async init() {
+    await DG.Func.byName('WebComponents:init').prepare().call();
+  }
 
-  await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
-  const updateFCBus = new Subject<DG.FuncCall>();
+  @grok.decorators.editor({tags: ['vue']})
+  static async CustomFunctionViewEditor(call: DG.FuncCall) : Promise<DG.ViewBase> {
+    const view = (await call.call()).getOutputParamValue() as CustomFunctionView;
+    setViewHierarchyData(call, view);
 
-  const app = Vue.createApp(HistoryApp, {name: view.funcNqName, showHistory: view.showHistory, updateFCBus: Vue.markRaw(updateFCBus)});
-  setVueAppOptions(app);
+    await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
+    const updateFCBus = new Subject<DG.FuncCall>();
 
-  const sub = updateFCBus.subscribe((fc) => {
-    view.linkFunccall(fc);
-    view.onAfterLoadRun(fc);
-  });
+    const app = Vue.createApp(HistoryApp, {name: view.funcNqName, showHistory: view.showHistory, updateFCBus: Vue.markRaw(updateFCBus)});
+    setVueAppOptions(app);
 
-  app.mount(view.historyRoot);
+    const sub = updateFCBus.subscribe((fc) => {
+      view.linkFunccall(fc);
+      view.onAfterLoadRun(fc);
+    });
 
-  grok.events.onViewRemoved.pipe(
-    filter((closedView) => {
-      return closedView === (view as any);
-    }),
-    take(1),
-  ).subscribe(() => {
-    sub.unsubscribe();
-    app.unmount();
-  });
+    app.mount(view.historyRoot);
 
-  return view;
-}
+    grok.events.onViewRemoved.pipe(
+      filter((closedView) => {
+        return closedView === (view as any);
+      }),
+      take(1),
+    ).subscribe(() => {
+      sub.unsubscribe();
+      app.unmount();
+    });
 
-
-//name: RichFunctionViewEditor
-//tags: editor, vue
-//input: funccall call
-//output: view result
-export async function RichFunctionViewEditor(call: DG.FuncCall) {
-  const view = new DG.ViewBase();
-  setViewHierarchyData(call, view);
-
-  const app = Vue.createApp(RFVApp, {funcCall: Vue.markRaw(call), view: Vue.markRaw(view)});
-  view.root.classList.remove('ui-panel');
-  view.root.classList.add('ui-box');
-  setVueAppOptions(app);
-
-  app.mount(view.root);
-
-  grok.events.onViewRemoved.pipe(
-    filter((closedView) => {
-      return closedView === view;
-    }),
-    take(1),
-  ).subscribe(() => {
-    app.unmount();
-  });
-
-  grok.shell.windows.showHelp = false;
-
-  return view;
-}
-
-//name: Tree Wizard Editor
-//tags: editor
-//input: funccall call
-//output: view result
-export async function TreeWizardEditor(call: DG.FuncCall) {
-  const providerFunc = call?.func?.options?.provider ?? call?.func?.nqName;
-  if (!providerFunc)
-    throw new Error(`Model ${call?.func?.name} has no provider`);
-
-  const view = new DG.ViewBase();
-  setViewHierarchyData(call, view);
-
-  const modelName = call.options?.['title'] ?? call.func?.friendlyName ?? call.func?.name;
-  const version = call.inputs.params?.version;
-  let instanceConfig = deserialize(call.options?.instanceConfig ?? 'null');
-
-  if (instanceConfig)
-    instanceConfig = Vue.markRaw(instanceConfig);
-
-  const {resolve} = call.aux;
-
-  const app = Vue.createApp(TreeWizardAppInstance, {providerFunc, modelName, version, instanceConfig, resolve, view: Vue.markRaw(view)});
-  view.root.classList.remove('ui-panel');
-  view.root.classList.add('ui-box');
-  setVueAppOptions(app);
-
-  app.mount(view.root);
-
-  grok.events.onViewRemoved.pipe(
-    filter((closedView) => {
-      return closedView === view;
-    }),
-    take(1),
-  ).subscribe(() => {
-    app.unmount();
-    if (resolve)
-      resolve();
-  });
-
-  grok.shell.windows.showHelp = false;
-
-  return view;
-}
-
-//input: string nqName
-//input: string version
-//input: object instanceConfig
-//output: object result
-export async function StartWorkflow(nqName: string, version: string, instanceConfig?: PipelineInstanceConfig) {
-  const func = DG.Func.byName(nqName);
-  // @ts-ignore-next-line
-  const {promise, resolve} = Promise.withResolvers();
-  const call = func.prepare({version});
-  call.options.instanceConfig = serialize(instanceConfig);
-  call.aux.resolve = resolve;
-  call.edit();
-  return promise;
-}
-
-////
-// Testing only
-///
-
-//tags: test, vue
-export async function ViewerTestApp() {
-  const view = new DG.ViewBase();
-  const app = Vue.createApp(ViewerAppInstance);
-  setVueAppOptions(app);
-  app.mount(view.root);
-  view.name = 'ViewerTestApp';
-  grok.shell.addView(view);
-}
-
-//tags: test, vue
-export async function FormTestApp() {
-  const view = new DG.ViewBase();
-  const app = Vue.createApp(FormAppInstance);
-  setVueAppOptions(app);
-  app.mount(view.root);
-  view.name = 'FormTestApp';
-  grok.shell.addView(view);
-}
-
-//tags: test, vue
-export async function HistoryTestApp() {
-  const view = new DG.ViewBase();
-  const app = Vue.createApp(HistoryAppInstance);
-  view.root.classList.remove('ui-panel');
-  setVueAppOptions(app);
-  app.mount(view.root);
-  view.name = 'HistoryTestApp';
-  grok.shell.addView(view);
-}
+    return view;
+  }
 
 
-//input: object params
-//output: object result
-//editor: Compute2:TreeWizardEditor
-//tags: test, compute2
-export async function MockPipeline1(params: any) {
-  const c: PipelineConfiguration = {
-    id: 'pipeline1',
-    friendlyName: 'Pipeline 1',
-    nqName: 'Compute2:MockPipeline1',
-    version: '1.0',
-    type: 'static',
-    steps: [
-      {
-        id: 'step1',
-        nqName: 'Compute2:LongScript',
-      },
-      {
-        id: 'step2',
-        nqName: 'Compute2:LongFailingScript',
-      },
+  @grok.decorators.editor({tags: ['vue']})
+  static async RichFunctionViewEditor(call: DG.FuncCall) : Promise<DG.ViewBase> {
+    const view = new DG.ViewBase();
+    setViewHierarchyData(call, view);
+
+    const app = Vue.createApp(RFVApp, {funcCall: Vue.markRaw(call), view: Vue.markRaw(view)});
+    view.root.classList.remove('ui-panel');
+    view.root.classList.add('ui-box');
+    setVueAppOptions(app);
+
+    app.mount(view.root);
+
+    grok.events.onViewRemoved.pipe(
+      filter((closedView) => {
+        return closedView === view;
+      }),
+      take(1),
+    ).subscribe(() => {
+      app.unmount();
+    });
+
+    grok.shell.windows.showHelp = false;
+
+    return view;
+  }
+
+
+  @grok.decorators.editor({name: 'Tree Wizard Editor'})
+  static async TreeWizardEditor(call: DG.FuncCall) : Promise<DG.ViewBase> {
+    const providerFunc = call?.func?.options?.provider ?? call?.func?.nqName;
+    if (!providerFunc)
+      throw new Error(`Model ${call?.func?.name} has no provider`);
+
+    const view = new DG.ViewBase();
+    setViewHierarchyData(call, view);
+
+    const modelName = call.options?.['title'] ?? call.func?.friendlyName ?? call.func?.name;
+    const version = call.inputs.params?.version;
+    let instanceConfig = deserialize(call.options?.instanceConfig ?? 'null');
+
+    if (instanceConfig)
+      instanceConfig = Vue.markRaw(instanceConfig);
+
+    const {resolve} = call.aux;
+
+    const app = Vue.createApp(TreeWizardAppInstance, {providerFunc, modelName, version, instanceConfig, resolve, view: Vue.markRaw(view)});
+    view.root.classList.remove('ui-panel');
+    view.root.classList.add('ui-box');
+    setVueAppOptions(app);
+
+    app.mount(view.root);
+
+    grok.events.onViewRemoved.pipe(
+      filter((closedView) => {
+        return closedView === view;
+      }),
+      take(1),
+    ).subscribe(() => {
+      app.unmount();
+      if (resolve)
+        resolve();
+    });
+
+    grok.shell.windows.showHelp = false;
+
+    return view;
+  }
+
+
+  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
+  static async StartWorkflow(
+    nqName: string,
+    version: string,
+    @grok.decorators.param({'type': 'object'}) instanceConfig?: PipelineInstanceConfig) {
+    const func = DG.Func.byName(nqName);
+    // @ts-ignore-next-line
+    const {promise, resolve} = Promise.withResolvers();
+    const call = func.prepare({version});
+    call.options.instanceConfig = serialize(instanceConfig);
+    call.aux.resolve = resolve;
+    call.edit();
+    return promise;
+  }
+
+
+  @grok.decorators.func({
+    tags: [
+      'test',
+      'vue',
     ],
-    links: [{
-      id: 'link1',
-      from: 'in1:step1/res',
-      to: 'out1:step2/a',
-    }],
-  };
-  return c;
-}
+  })
+  static async ViewerTestApp() {
+    const view = new DG.ViewBase();
+    const app = Vue.createApp(ViewerAppInstance);
+    setVueAppOptions(app);
+    app.mount(view.root);
+    view.name = 'ViewerTestApp';
+    grok.shell.addView(view);
+  }
 
 
-//input: object params
-//output: object result
-//editor: Compute2:TreeWizardEditor
-//tags: test, compute2
-export async function MockPipeline2(params: any) {
-  const c: PipelineConfiguration = {
-    id: 'pipelinePar',
-    nqName: 'Compute2:MockPipeline2',
-    friendlyName: 'Pipeline 2',
-    version: '1.0',
-    type: 'sequential',
-    stepTypes: [{
-      id: 'cooling',
-      nqName: 'Compute2:ObjectCooling2',
-      friendlyName: 'cooling',
-      actions: [{
-        id: 'action1',
-        from: 'in:ambTemp',
-        to: 'out:initTemp',
-        position: 'none',
-        handler({controller}) {
-          controller.setAll('out', controller.getFirst('in') * 2);
-          return;
-        },
-      },
-      {
-        id: 'action2',
-        from: 'in:ambTemp',
-        to: 'out:ambTemp',
-        position: 'menu',
-        menuCategory: 'Test',
-        description: 'My menu action',
-        handler({controller}) {
-          controller.setAll('out', controller.getFirst('in') * 2);
-          return;
-        },
-      },
-      {
-        id: 'action3',
-        from: 'in:ambTemp',
-        to: 'out:ambTemp',
-        position: 'buttons',
-        menuCategory: 'Test',
-        description: 'My view action',
-        handler({controller}) {
-          controller.setAll('out', controller.getFirst('in') * 2);
-          return;
-        },
-      }],
-    }, {
-      id: 'stepAdd',
-      nqName: 'Compute2:TestAdd2',
-      friendlyName: 'add',
-    }, {
-      id: 'stepMul',
-      nqName: 'Compute2:TestMul2',
-      friendlyName: 'mul',
-    }, {
-      id: 'LongScript',
-      nqName: 'Compute2:LongScript',
-      friendlyName: 'long',
-    }, {
-      type: 'ref',
-      provider: 'Compute2:MockPipeline1',
+  @grok.decorators.func({
+    tags: [
+      'test',
+      'vue',
+    ],
+  })
+  static async FormTestApp() {
+    const view = new DG.ViewBase();
+    const app = Vue.createApp(FormAppInstance);
+    setVueAppOptions(app);
+    app.mount(view.root);
+    view.name = 'FormTestApp';
+    grok.shell.addView(view);
+  }
+
+
+  @grok.decorators.func({
+    tags: [
+      'test',
+      'vue',
+    ],
+  })
+  static async HistoryTestApp() {
+    const view = new DG.ViewBase();
+    const app = Vue.createApp(HistoryAppInstance);
+    view.root.classList.remove('ui-panel');
+    setVueAppOptions(app);
+    app.mount(view.root);
+    view.name = 'HistoryTestApp';
+    grok.shell.addView(view);
+  }
+
+  @grok.decorators.func({
+    tags: [
+      'test',
+      'compute2',
+    ],
+    editor: 'Compute2:TreeWizardEditor',
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static async MockPipeline1(
+    @grok.decorators.param({type: 'object'}) params: any) {
+    const c: PipelineConfiguration = {
+      id: 'pipeline1',
+      friendlyName: 'Pipeline 1',
+      nqName: 'Compute2:MockPipeline1',
       version: '1.0',
-    }],
-    initialSteps: [
-      {
+      type: 'static',
+      steps: [
+        {
+          id: 'step1',
+          nqName: 'Compute2:LongScript',
+        },
+        {
+          id: 'step2',
+          nqName: 'Compute2:LongFailingScript',
+        },
+      ],
+      links: [{
+        id: 'link1',
+        from: 'in1:step1/res',
+        to: 'out1:step2/a',
+      }],
+    };
+    return c;
+  }
+
+
+  @grok.decorators.func({
+    tags: [
+      'test',
+      'compute2',
+    ],
+    editor: 'Compute2:TreeWizardEditor',
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static async MockPipeline2(
+    @grok.decorators.param({'type': 'object'}) params: any) {
+    const c: PipelineConfiguration = {
+      id: 'pipelinePar',
+      nqName: 'Compute2:MockPipeline2',
+      friendlyName: 'Pipeline 2',
+      version: '1.0',
+      type: 'sequential',
+      stepTypes: [{
+        id: 'cooling',
+        nqName: 'Compute2:ObjectCooling2',
+        friendlyName: 'cooling',
+        actions: [{
+          id: 'action1',
+          from: 'in:ambTemp',
+          to: 'out:initTemp',
+          position: 'none',
+          handler({controller}) {
+            controller.setAll('out', controller.getFirst('in') * 2);
+            return;
+          },
+        },
+        {
+          id: 'action2',
+          from: 'in:ambTemp',
+          to: 'out:ambTemp',
+          position: 'menu',
+          menuCategory: 'Test',
+          description: 'My menu action',
+          handler({controller}) {
+            controller.setAll('out', controller.getFirst('in') * 2);
+            return;
+          },
+        },
+        {
+          id: 'action3',
+          from: 'in:ambTemp',
+          to: 'out:ambTemp',
+          position: 'buttons',
+          menuCategory: 'Test',
+          description: 'My view action',
+          handler({controller}) {
+            controller.setAll('out', controller.getFirst('in') * 2);
+            return;
+          },
+        }],
+      }, {
         id: 'stepAdd',
+        nqName: 'Compute2:TestAdd2',
+        friendlyName: 'add',
       }, {
         id: 'stepMul',
+        nqName: 'Compute2:TestMul2',
+        friendlyName: 'mul',
       }, {
-        id: 'cooling',
+        id: 'LongScript',
+        nqName: 'Compute2:LongScript',
+        friendlyName: 'long',
+      }, {
+        type: 'ref',
+        provider: 'Compute2:MockPipeline1',
+        version: '1.0',
+      }],
+      initialSteps: [
+        {
+          id: 'stepAdd',
+        }, {
+          id: 'stepMul',
+        }, {
+          id: 'cooling',
+        },
+      ],
+      links: [{
+        id: 'selector',
+        type: 'selector',
+        from: 'in:cooling/ambTemp',
+        to: ['out1:cooling/title', 'out2:cooling/description', 'out3:cooling/tags'],
+        handler({controller}) {
+          const val = controller.getFirst('in');
+          controller.setDescriptionItem('out1', `Title ${val}`);
+          controller.setDescriptionItem('out2', `Description ${val}`);
+          controller.setDescriptionItem('out3', [`tag ${val}`]);
+        },
+      }, {
+        id: 'link1',
+        from: 'in1:stepAdd/res',
+        to: 'out1:stepMul/a',
+        type: 'meta',
+        handler({controller}) {
+          const addRes = controller.getFirst('in1');
+          controller.setViewMeta('out1', {items: addRes > 0? ['0', '1', '2']: ['1', '2', '3']});
+        },
       },
+      {
+        id: 'toMul',
+        from: 'from:stepAdd/res',
+        to: 'to:stepMul/b',
+        defaultRestrictions: {to: 'restricted'},
+      },
+      {
+        id: 'initialTempValidator',
+        from: [
+          'initTemp:cooling/initTemp',
+          'ambTemp:cooling/ambTemp',
+        ],
+        to: [
+          'toInitTemp:cooling/initTemp',
+        ],
+        actions: 'actions:cooling',
+        type: 'validator',
+        handler({controller}) {
+          const initTemp = controller.getFirst('initTemp');
+          const ambTemp = controller.getFirst('ambTemp');
+
+          if (initTemp < ambTemp) {
+            const action = controller.getValidationAction('actions', 'action1');
+
+            if (!action) return;
+
+            controller.setValidation('toInitTemp',
+              ({errors: [
+                {
+                  description: `Initial temperature should be more than ambient temperature ${ambTemp}`,
+                  actions: [{actionName: `Set reasonable initial temperature`, action}],
+                },
+              ]}));
+          } else
+            controller.setValidation('toInitTemp');
+        },
+      }],
+    };
+    return c;
+  }
+
+
+  @grok.decorators.func()
+  static async TestAdd2(
+    a: number,
+    b: number): Promise<number> {
+    return a + b;
+  }
+
+
+  @grok.decorators.func({
+    name: 'TestMul2',
+  })
+  static async TestSub2(
+    a: number,
+    b: number) : Promise<number> {
+    return a - b;
+  }
+
+
+  @grok.decorators.func()
+  static async TestMul2(
+    @grok.decorators.param({type: 'string', options: {choices: ['0', '1']}}) a: number,
+      b: number) : Promise<number> {
+    return Number(a) * b;
+  }
+
+
+  @grok.decorators.func()
+  static async TestDiv2(
+    a: number,
+    b: number) : Promise<number> {
+    return a / b;
+  }
+
+
+  @grok.decorators.func()
+  static async TestDF1(
+    df: DG.DataFrame) : Promise<DG.DataFrame> {
+    return df;
+  }
+
+  @grok.decorators.func({
+    tags: [
+      'test',
+      'compute2',
     ],
-    links: [{
-      id: 'selector',
-      type: 'selector',
-      from: 'in:cooling/ambTemp',
-      to: ['out1:cooling/title', 'out2:cooling/description', 'out3:cooling/tags'],
-      handler({controller}) {
-        const val = controller.getFirst('in');
-        controller.setDescriptionItem('out1', `Title ${val}`);
-        controller.setDescriptionItem('out2', `Description ${val}`);
-        controller.setDescriptionItem('out3', [`tag ${val}`]);
-      },
-    }, {
-      id: 'link1',
-      from: 'in1:stepAdd/res',
-      to: 'out1:stepMul/a',
-      type: 'meta',
-      handler({controller}) {
-        const addRes = controller.getFirst('in1');
-        controller.setViewMeta('out1', {items: addRes > 0? ['0', '1', '2']: ['1', '2', '3']});
-      },
-    },
-    {
-      id: 'toMul',
-      from: 'from:stepAdd/res',
-      to: 'to:stepMul/b',
-      defaultRestrictions: {to: 'restricted'},
-    },
-    {
-      id: 'initialTempValidator',
-      from: [
-        'initTemp:cooling/initTemp',
-        'ambTemp:cooling/ambTemp',
-      ],
-      to: [
-        'toInitTemp:cooling/initTemp',
-      ],
-      actions: 'actions:cooling',
-      type: 'validator',
-      handler({controller}) {
-        const initTemp = controller.getFirst('initTemp');
-        const ambTemp = controller.getFirst('ambTemp');
-
-        if (initTemp < ambTemp) {
-          const action = controller.getValidationAction('actions', 'action1');
-
-          if (!action) return;
-
-          controller.setValidation('toInitTemp',
-            ({errors: [
-              {
-                description: `Initial temperature should be more than ambient temperature ${ambTemp}`,
-                actions: [{actionName: `Set reasonable initial temperature`, action}],
-              },
-            ]}));
-        } else
-          controller.setValidation('toInitTemp');
-      },
-    }],
-  };
-  return c;
+    name: 'Custom View (Compute 2 Test)',
+    editor: 'Compute2:CustomFunctionViewEditor',
+  })
+  static async TestCustomView() {
+    const view = new MyView();
+    return view;
+  }
 }
 
-//name: TestAdd2
-//input: double a
-//input: double b
-//output: double res
-export async function TestAdd2(a: number, b: number) {
-  return a + b;
-}
-
-//name: TestMul2
-//input: double a
-//input: double b
-//output: double res
-export async function TestSub2(a: number, b: number) {
-  return a - b;
-}
-
-//input: string a {choices: ['0','1']}
-//input: double b
-//output: double res
-export async function TestMul2(a: number, b: number) {
-  return Number(a) * b;
-}
-
-//input: double a
-//input: double b
-//output: double res
-export async function TestDiv2(a: number, b: number) {
-  return a / b;
-}
-
-//input: dataframe df
-//output: dataframe res
-export async function TestDF1(df: DG.DataFrame) {
-  return df;
-}
 
 class MyView extends CustomFunctionView {
   private aIn?: DG.InputBase;
@@ -442,13 +479,4 @@ class MyView extends CustomFunctionView {
     this.bIn!.value = this.funcCall!.inputs.b;
     this.res!.value = this.funcCall?.outputs.res;
   }
-}
-
-//name: Custom View (Compute 2 Test)
-//editor: Compute2:CustomFunctionViewEditor
-//output: view result
-//tags: test, compute2
-export async function TestCustomView() {
-  const view = new MyView();
-  return view;
 }
