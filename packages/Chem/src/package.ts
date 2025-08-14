@@ -91,6 +91,7 @@ import {scaleActivity} from './analysis/molecular-matched-pairs/mmp-viewer/mmpa-
 import {MixtureCellRenderer} from './rendering/mixture-cell-renderer';
 import {createComponentPane, createMixtureWidget, Mixfile} from './utils/mixfile';
 import {biochemicalPropertiesDialog} from './widgets/biochem-properties-widget';
+import {checkCurrentView} from './utils/ui-utils';
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -486,6 +487,17 @@ export async function descriptorsDocker(): Promise<void> {
   await openDescriptorsDialogDocker();
 }
 
+//name: calculateDescriptorsTransform
+//tags: Transform
+//input: dataframe table
+//input: column molecules { semType: Molecule }
+//input: list<string> selected
+export async function calculateDescriptorsTransform(table: DG.DataFrame, molecules: DG.Column, selected: string[]): Promise<void> {
+  const cols = await calculateDescriptors(molecules, selected);
+  addDescriptorsColsToDf(table, cols);
+}
+
+
 //name: chemDescriptorsTree
 //output: object descriptors
 export async function chemDescriptorsTree(): Promise<object> {
@@ -697,10 +709,7 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
   options?: (IUMAPOptions | ITSNEOptions) & Options, preprocessingFunction?: DG.Func, clusterEmbeddings?: boolean,
   clusterMCS?: boolean): Promise<DG.Viewer | undefined> {
   //workaround for functions which add viewers to tableView (can be run only on active table view)
-  if (table.name !== grok.shell.tv.dataFrame.name) {
-    grok.shell.error(`Table ${table.name} is not a current table view`);
-    return;
-  }
+  checkCurrentView(table);
 
   if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
     grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
@@ -818,11 +827,7 @@ export async function elementalAnalysis(table: DG.DataFrame, molecules: DG.Colum
     return;
   }
 
-  //workaround for functions which add viewers to tableView (can be run only on active table view)
-  if (table.name !== grok.shell.tv.dataFrame.name && (radarViewer || radarGrid)) {
-    grok.shell.error(`Table ${table.name} is not a current table view`);
-    return;
-  }
+  checkCurrentView(table);
 
   const funcCall = await DG.Func.find({name: 'runElementalAnalysis'})[0].prepare({
     table: table,
@@ -833,7 +838,9 @@ export async function elementalAnalysis(table: DG.DataFrame, molecules: DG.Colum
   const view = grok.shell.getTableView(table.name);
 
   if (radarViewer) {
-    const packageExists = checkPackage('Charts', '_radarViewerDemo');
+    let packageExists = checkPackage('Charts', 'radarViewerDemo');
+    if (!packageExists) //for compatibility with previous versions of Charts
+      packageExists = checkPackage('Charts', '_radarViewerDemo');
     if (packageExists) {
       const radarViewer = DG.Viewer.fromType('Radar', table, {
         valuesColumnNames: columnNames,
@@ -974,11 +981,7 @@ export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, 
     grok.shell.error(`Column ${activities.name} is not numeric`);
     return;
   }
-  //workaround for functions which add viewers to tableView (can be run only on active table view)
-  if (table.name !== grok.shell.tv.dataFrame.name) {
-    grok.shell.error(`Table ${table.name} is not a current table view`);
-    return;
-  }
+  checkCurrentView(table);
 
   const allowedRowCount = 10000;
   const fastRowCount = methodName === DimReductionMethods.UMAP ? 5000 : 2000;
@@ -1942,11 +1945,7 @@ export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column,
     return;
   }
 
-  //workaround for functions which add viewers to tableView (can be run only on active table view)
-  if (table.name !== grok.shell.tv.dataFrame.name) {
-    grok.shell.error(`Table ${table.name} is not a current table view`);
-    return;
-  }
+  checkCurrentView(table);
 
   if (demo)
     view = grok.shell.getTableView(table.name) as DG.TableView;

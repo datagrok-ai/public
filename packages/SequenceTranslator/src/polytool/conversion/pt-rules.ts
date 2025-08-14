@@ -5,7 +5,8 @@ import {ActiveFiles} from '@datagrok-libraries/utils/src/settings/active-files-b
 import {RulesManager} from './rule-manager';
 import {RuleCards} from './pt-rule-cards';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {applyNotationProviderForCyclized} from '../../package';
+import {
+   PackageFunctions} from '../../package';
 
 export const RULES_PATH = 'System:AppData/SequenceTranslator/polytool-rules/';
 export const RULES_STORAGE_NAME = 'Polytool';
@@ -102,12 +103,12 @@ export class Rules {
     const firstMonomerCol = DG.Column.string(NAME_FIRST_MONOMERS, length);
     firstMonomerCol.setTag('friendlyName', 'First monomers');
     firstMonomerCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    applyNotationProviderForCyclized(firstMonomerCol, ',');
+    PackageFunctions.applyNotationProviderForCyclized(firstMonomerCol, ',');
 
     const secondMonomerCol = DG.Column.string(NAME_SECOND_MONOMERS, length);
     secondMonomerCol.setTag('friendlyName', 'Second monomers');
     secondMonomerCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    applyNotationProviderForCyclized(secondMonomerCol, ',');
+    PackageFunctions.applyNotationProviderForCyclized(secondMonomerCol, ',');
 
     const firstLinkingGroup = DG.Column.int(NAME_FIRST_LINK, length);
     firstLinkingGroup.setTag('friendlyName', 'First group');

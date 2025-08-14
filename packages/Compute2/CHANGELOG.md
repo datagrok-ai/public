@@ -1,5 +1,9 @@
 # Compute2 changelog
 
+## 1.3.11 (2025-08-08)
+
+- Optimization tool integration fixes
+
 ## 1.3.10 (2025-07-28)
 
 - API updated for 1.26.0

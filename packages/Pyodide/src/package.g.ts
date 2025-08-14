@@ -8,7 +8,7 @@ export async function initPyodide() {
 }
 
 //name: makeVectorCode
-//input: dynamic script 
+//input: script script 
 //output: string result
 export function makeVectorCode(script: any) {
   return PackageFunctions.makeVectorCode(script);

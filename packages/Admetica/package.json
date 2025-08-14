@@ -16,7 +16,7 @@
   "dependencies": {
     "@datagrok-libraries/statistics": "^1.8.0",
     "@datagrok-libraries/tutorials": "^1.7.0",
-    "@datagrok-libraries/utils": "^4.5.7",
+    "@datagrok-libraries/utils": "^4.6.3",
     "cash-dom": "^8.1.5",
     "datagrok-api": "^1.26.0",
     "dayjs": "=1.11.10",
@@ -28,7 +28,7 @@
     "@typescript-eslint/eslint-plugin": "^8.32.0",
     "@typescript-eslint/parser": "^8.32.0",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.20",
+    "datagrok-tools": "^4.14.39",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.5.1",

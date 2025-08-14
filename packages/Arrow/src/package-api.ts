@@ -12,11 +12,11 @@ export namespace funcs {
     return await grok.functions.call('Arrow:Info', {});
   }
 
-  export async function parquetInit(): Promise<any> {
+  export async function parquetInit(): Promise<void> {
     return await grok.functions.call('Arrow:ParquetInit', {});
   }
 
-  export async function initPackage(): Promise<any> {
+  export async function initPackage(): Promise<void> {
     return await grok.functions.call('Arrow:InitPackage', {});
   }
 
@@ -59,14 +59,14 @@ export namespace funcs {
   /**
   Save as Parquet
   */
-  export async function saveAsParquet(): Promise<any> {
+  export async function saveAsParquet(): Promise<void> {
     return await grok.functions.call('Arrow:SaveAsParquet', {});
   }
 
   /**
   Save as Feather
   */
-  export async function saveAsFeather(): Promise<any> {
+  export async function saveAsFeather(): Promise<void> {
     return await grok.functions.call('Arrow:SaveAsFeather', {});
   }
 }

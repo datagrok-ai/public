@@ -2,7 +2,6 @@ import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
 //name: info
-//output: dynamic result
 export function info() {
   return PackageFunctions.info();
 }

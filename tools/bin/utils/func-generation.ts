@@ -15,10 +15,12 @@ const nonMetaData = [
   'editor',
   'friendlyName',
   'helpUrl', 
+  'help-url', 
   'condition',
   'top-menu',
   'cache',
   'cache.invalidateOn',
+  'test',
 ];
 
 const decoratorOptionToAnnotation = new Map<string, string>([
@@ -134,7 +136,7 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
   const isFileViewer = data.tags?.includes(FUNC_TYPES.FILE_VIEWER) ?? false;
   const isFileImporter = data.tags?.includes(FUNC_TYPES.FILE_HANDLER) ?? false;
   let s = '';
-  if (data.name)
+  if (data.name && (!data.tags?.includes('init') || (data.name !== 'init' && data.name !== '_init')))
     s += `${comment}name: ${data.name}${sep}`;
   if (pseudoParams.EXTENSION in data && data.tags != null && data.tags.includes(FUNC_TYPES.FILE_EXPORTER))
     s += `${comment}description: Save as ${data[pseudoParams.EXTENSION]}${sep}`;
@@ -202,14 +204,18 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
   }
 
   if (data.test) {
-    for (const entry of Object.entries(data.test)) {
-      if (entry[0] === 'test' || entry[0] === 'wait')
-        s += `${comment}`;
-      else
-        s += `, `;
-      s += `${entry[0]}: ${entry[1]} `;
+    if (typeof(data.test) === 'string') 
+      s += `${comment}test: ${data.test}${sep}`;
+    else {
+      for (const entry of Object.entries(data.test)) {
+        if (entry[0] === 'test' || entry[0] === 'wait')
+          s += `${comment}`;
+        else
+          s += `, `;
+        s += `${entry[0]}: ${entry[1]} `;
+      }
+      s += `${sep}`;
     }
-    s += `${sep}`;
   }
   return s;
 }
@@ -423,7 +429,7 @@ export function generateFunc(
   inputs: FuncParam[] = [], 
   isAsync: boolean = false): string {
   // eslint-disable-next-line max-len
-  const funcSigNature = (inputs.map((e) => `${e.name}: ${primitives.has(e.type ?? '') && !typesToAny.includes(e.type ?? '') ? e.type : (typesToAnnotation[e.type?.replace('[]', '') ?? ''] && !typesToAny.includes(e.type ?? '') ? e.type : 'any')}`)).join(', ');
+  const funcSigNature = (inputs.map((e) => `${e.name}${e.optional? '?': ''}: ${primitives.has(e.type ?? '') && !typesToAny.includes(e.type ?? '') ? e.type : (typesToAnnotation[e.type?.replace('[]', '') ?? ''] && !typesToAny.includes(e.type ?? '') ? e.type : 'any')}`)).join(', ');
   const funcArguments = (inputs.map((e) => e.name)).join(', ');
 
   // eslint-disable-next-line max-len

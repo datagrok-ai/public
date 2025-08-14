@@ -9,7 +9,8 @@ import {Extremum, InconsistentTables} from './optimizer-misc';
 
 import '../../css/fitting-view.css';
 import '../../css/sens-analysis.css';
-import {GRID_SIZE, HELP_LINK, INDICES, TIMEOUT, TARGET_DATAFRAME_INFO, TITLE, NAME} from './constants';
+import {GRID_SIZE, HELP_LINK, INDICES, TIMEOUT, TARGET_DATAFRAME_INFO, TITLE, NAME,
+  MIN_RADAR_COLS_COUNT} from './constants';
 
 /** Returns indices corresponding to the closest items */
 export function getIndices(expArg: DG.Column, simArg: DG.Column): Uint32Array {
@@ -424,4 +425,13 @@ export function getRadarTooltip(): HTMLElement {
   targetLabel.style.color = rgbToHex(DG.Color.toRgb(colors[INDICES.ORANGE]));
 
   return ui.divV([simLabel, targetLabel]);
+}
+
+/** Return true iff the radar viewer can be used */
+export function toUseRadar(table: DG.DataFrame): boolean {
+  // check that table contains results on scalar outputs <=> it has the Category column
+  if (table.col(NAME.CATEGORY) == null)
+    return false;
+
+  return (table.columns.length >= MIN_RADAR_COLS_COUNT);
 }

@@ -1,6 +1,7 @@
 {
   "name": "@datagrok/charts",
   "fullName": "Charts",
+  "friendlyName": "Charts",
   "version": "1.6.0",
   "description": "Charts package provides visualizations built using the [ECharts](https://echarts.apache.org/en/index.html) library.",
   "author": {
@@ -63,7 +64,7 @@
     "@typescript-eslint/parser": "^5.27.0",
     "css-loader": "^5.2.7",
     "d3-cloud": "^1.2.5",
-    "datagrok-tools": "^4.14.20",
+    "datagrok-tools": "^4.14.40", 
     "eslint": "^8.16.0",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^2.0.0",

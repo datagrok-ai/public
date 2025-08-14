@@ -101,7 +101,7 @@ export type ParentTableFormHistory = {
   fitParams: FitFunctionEditorHistory | null,
 }
 
-function createParentTableForm() {
+function createParentTableForm(onTableChange: (t: DG.DataFrame | null) => void) {
   const tableInput = ui.input.table('Parent Table', {value: undefined, nullable: true, tooltipText: 'Table with parent data'});
   const form = ui.form([]);
   let fitFunctionEditor: ReturnType<typeof createFitFunctionEditor> | null = null;
@@ -113,6 +113,7 @@ function createParentTableForm() {
   const onChanged = () => {
     ui.empty(form);
     form.appendChild(tableInput.root);
+    onTableChange(tableInput.value);
     if (!tableInput.value) {
       fitFunctionEditor = null;
       return;
@@ -177,7 +178,7 @@ function createParentTableForm() {
 }
 
 
-function createWellTableForm() {
+function createWellTableForm(onTableChange: (t: DG.DataFrame | null) => void) {
   const tableInput = ui.input.table('Well Table', {value: grok.shell.tv.dataFrame, nullable: false, tooltipText: 'Table with well level data'});
   let assayColInput: DG.InputBase<DG.Column | null>;
   let concentrationColInput: DG.InputBase<DG.Column | null>;
@@ -192,6 +193,7 @@ function createWellTableForm() {
   const onTableInputChange = () => {
     const df = tableInput.value!;
     ui.empty(form);
+    onTableChange(tableInput.value);
     assayColInput = ui.input.column('Assay Name', {table: df, nullable: true, filter: (c) => c.isCategorical, tooltipText: 'Column with assay names'});
     concentrationColInput = ui.input.column('Concentration', {table: df, nullable: false, filter: (c) => c.isNumerical, tooltipText: 'Column with concentration values'});
     readoutColInput = ui.input.column('Readout', {table: df, nullable: false, filter: (c) => c.isNumerical, tooltipText: 'Column with readout values'});
@@ -239,6 +241,65 @@ function createWellTableForm() {
   };
 }
 
+function createJoinEditor() {
+  const form = ui.divH([], {style: {alignItems: 'center'}});
+  let wellLevelColInput: DG.InputBase<DG.Column | null> | null = null;
+  let parentLevelColInput: DG.InputBase<DG.Column | null> | null = null;
+  let wellDataTable: DG.DataFrame | null = null;
+  let parentDataTable: DG.DataFrame | null = null;
+  const onTableChange = (wellLevelData: DG.DataFrame | null, parentLevelData: DG.DataFrame | null) => {
+    ui.empty(form);
+    if (!wellLevelData || !parentLevelData) {
+      wellLevelColInput = null;
+      parentLevelColInput = null;
+      wellDataTable = null;
+      parentDataTable = null;
+      return;
+    }
+    wellDataTable = wellLevelData;
+    parentDataTable = parentLevelData;
+    wellLevelColInput = ui.input.column('JOIN', {table: wellLevelData, nullable: true, tooltipText: 'Column to join on from the well level data'});
+    parentLevelColInput = ui.input.column('ON', {table: parentLevelData, nullable: true, tooltipText: 'Column to join on from the parent level data'});
+    const potentialParentCol = wu(parentLevelData.columns.categorical).map((c) => {
+      let score = c.categories.length;
+      if (c.name.toLowerCase().includes('id'))
+        score += 10;
+      if (c.name.toLowerCase().includes('unique'))
+        score += 15;
+      return {col: c, score: score};
+    }).toArray().sort((a, b) => b.score - a.score)[0];
+    if (potentialParentCol?.col && potentialParentCol.score > 0) {
+      parentLevelColInput.value = potentialParentCol.col;
+      const n = potentialParentCol.col.name.toLowerCase();
+      const potentialWellCol = wu(wellLevelData.columns.categorical).filter((c) => c.name.toLowerCase().includes(n)).toArray()[0];
+      if (potentialWellCol)
+        wellLevelColInput.value = potentialWellCol;
+    }
+    const infoIcon = ui.icons.info(() => {}, 'Specify the columns that will be used to join the well level data with the parent level data. if not specified, combination of the compound ID, assay name, target entity and run ID will be used for joining.');
+    ui.appendAll(form, [infoIcon, wellLevelColInput.root, parentLevelColInput.root]);
+  };
+
+  return {
+    form,
+    getValues: () => (wellLevelColInput?.value && parentLevelColInput?.value) ? ({
+      wellLevelCol: wellLevelColInput?.value,
+      parentLevelCol: parentLevelColInput?.value,
+    }) : null,
+    getHistory: () => (wellLevelColInput?.value && parentLevelColInput?.value) ? ({
+      wellLevelCol: wellLevelColInput?.value?.name ?? null,
+      parentLevelCol: parentLevelColInput?.value?.name ?? null,
+    }) : null,
+    applyHistory: (history: {wellLevelCol: string | null, parentLevelCol: string | null}) => {
+      if (!history.wellLevelCol || !history.parentLevelCol || !wellDataTable || !parentDataTable)
+        return;
+      if (wellLevelColInput && parentLevelColInput) {
+        wellLevelColInput.value = wellDataTable.col(history.wellLevelCol);
+        parentLevelColInput.value = parentDataTable.col(history.parentLevelCol);
+      }
+    },
+    onTableChange: (wellLevelData: DG.DataFrame | null, parentLevelData: DG.DataFrame | null) => onTableChange(wellLevelData, parentLevelData),
+  };
+}
 
 export function dataToCurvesUI() {
   const tv = grok.shell.tv;
@@ -246,12 +307,17 @@ export function dataToCurvesUI() {
     grok.shell.warning('No open tableview');
     return;
   }
-  const wellLevelForm = createWellTableForm();
-  const parentTableForm = createParentTableForm();
+  let wellLevelForm: ReturnType<typeof createWellTableForm> | null = null;
+  let parentTableForm: ReturnType<typeof createParentTableForm> | null = null;
+
+  const joinEditor = createJoinEditor();
+  wellLevelForm = createWellTableForm(() => joinEditor.onTableChange(wellLevelForm?.getValues()?.table ?? null, parentTableForm?.getTable() ?? null));
+  parentTableForm = createParentTableForm(() => joinEditor.onTableChange(wellLevelForm?.getValues()?.table ?? null, parentTableForm?.getTable() ?? null));
   const horzForm = ui.divH([wellLevelForm.form, parentTableForm.form], {style: {minWidth: '400px', gap: '20px'}});
 
   ui.dialog('Data to Curves')
     .add(horzForm)
+    .add(joinEditor.form)
     .onOK(async () => {
       const formRes = wellLevelForm.getValues();
       let parentLevelData: WellTableParentData | undefined = undefined;
@@ -270,7 +336,7 @@ export function dataToCurvesUI() {
           additionalColumns: parentFormValues.additionalColumns ?? [],
         };
       }
-
+      const joinValues = joinEditor.getValues();
       const {table, assayCol, batchIDCol, concentrationCol, readoutCol, compoundIDCol, excludeOutliersCol, runIDCol, targetEntityCol} = formRes;
       const func = DG.Func.find({name: 'dataToCurves'})[0];
       if (!func) {
@@ -297,8 +363,10 @@ export function dataToCurvesUI() {
         experimentIDColumn: parentLevelData?.experimentIDColumn?.name,
         qualifierColumn: parentLevelData?.qualifierColumn?.name,
         additionalColumns: parentLevelData?.additionalColumns?.map((c) => c.name) ?? [],
+        // joinInfo
+        wellLevelJoinCol: joinValues?.wellLevelCol?.name,
+        parentLevelJoinCol: joinValues?.parentLevelCol?.name,
       });
-      console.log(fc.toString());
       const needsCreationScript = table.tags[DG.Tags.CreationScript] && (!parentLevelData?.table || parentLevelData.table.tags[DG.Tags.CreationScript]);
       await fc.call(undefined, undefined, {processed: !needsCreationScript});
       //console.log(fc.getResultViews());
@@ -314,7 +382,7 @@ export function dataToCurvesUI() {
           onClick: 'Select'
         });
         tv.dockManager.dock(trellis, DG.DOCK_TYPE.TOP, tv.dockManager.findNode(tv.grid.root), 'Fitted Curves', 0.5);
-        const selectionGrid = tv.addViewer(DG.VIEWER.GRID, {rowSource: 'Selected', selectedRowsColor: DG.Color.white});
+        const selectionGrid = tv.addViewer(DG.VIEWER.GRID, {rowSource: DG.RowSet.FilteredSelected, selectedRowsColor: DG.Color.white});
         tv.dockManager.dock(selectionGrid, DG.DOCK_TYPE.FILL, tv.dockManager.findNode(tv.grid.root), 'Selected Curves');
         selectionGrid.props.title = 'Selected Curves';
 
@@ -338,12 +406,14 @@ export function dataToCurvesUI() {
         runIDCol: runIDCol?.name,
         targetEntityCol: targetEntityCol?.name,
       };
-      return {wells: JSON.stringify(Object.fromEntries(Object.entries(obj).filter(([_, v]) => !!v)) ?? {}), parent: JSON.stringify(parentTableForm.getHistory() ?? {})};
+      return {wells: JSON.stringify(Object.fromEntries(Object.entries(obj).filter(([_, v]) => !!v)) ?? {}), parent: JSON.stringify(parentTableForm.getHistory() ?? {}), join: JSON.stringify(joinEditor.getHistory() ?? {})};
     }, (v) => {
       const wells = JSON.parse(v?.wells ?? '{}');
       const parent = JSON.parse(v?.parent ?? '{}');
       wellLevelForm.applyHistory(wells);
       parentTableForm.applyHistory(parent);
+      const joinHistory = JSON.parse(v?.join ?? '{}');
+      joinEditor.applyHistory(joinHistory);
     });
 }
 export type WellTableParentData = {
@@ -353,14 +423,15 @@ export type WellTableParentData = {
 
 export async function convertDataToCurves(df: DG.DataFrame,
   concentrationCol: DG.Column, readoutCol: DG.Column, batchIDCol: DG.Column,
-  assayCol: DG.Column, runIDCol: DG.Column, compoundIDCol: DG.Column, targetEntityCol: DG.Column, excludeOutliersCol?: DG.Column, parentData?: WellTableParentData
+  assayCol: DG.Column, runIDCol: DG.Column, compoundIDCol: DG.Column, targetEntityCol: DG.Column, excludeOutliersCol?: DG.Column, parentData?: WellTableParentData,
+  joinInfo?: {wellLevelCol: DG.Column, parentLevelCol: DG.Column}
 ): Promise<DG.DataFrame> {
   if (!concentrationCol || !readoutCol || !batchIDCol) {
     grok.shell.warning('Please fill all required fields');
     throw new Error('Please fill all required fields');
   }
 
-  const curvesObj: {[curveKey: string]: {x: number[], y: number[], outliers: boolean[], groupKey: string, runID: string, info: {[key: string]: any}}} = {};
+  const curvesObj: {[curveKey: string]: {name: string, x: number[], y: number[], outliers: boolean[], groupKey: string, runID: string, info: {[key: string]: any}}} = {};
   const assayColCats = assayCol?.categories;
   const assayColIndexes = assayCol?.getRawData();
   const consentrationRawData = concentrationCol.getRawData();
@@ -396,12 +467,19 @@ export async function convertDataToCurves(df: DG.DataFrame,
     }
   };
 
+  const hasJoinInfo = !!(joinInfo?.parentLevelCol && joinInfo?.wellLevelCol);
+  const parentCompoundIDCol = parentData?.table?.col(compoundIDCol.name);
+  const parentAssayCol = parentData?.table?.col(assayCol.name);
+  const parentTargetEntityCol = parentData?.table?.col(targetEntityCol.name);
+  const parentRunIDCol = parentData?.table?.col(runIDCol.name);
+  const hasParentGrouppingCols = parentCompoundIDCol && parentAssayCol && parentTargetEntityCol && parentRunIDCol;
+
   const getGroupKey = (row: number) => `${getCompoundID(row)}||${getAssay(row)}||${getTargetEntity(row)}`;
-  const getCurveKey = (row: number) => `${getGroupKey(row)}||${getRunID(row)}`;
-  const getParentDataCurveKey = parentData && parentData.table?.col(compoundIDCol.name) && parentData.table.col(assayCol.name) && parentData.table.col(targetEntityCol.name) &&
-  parentData.table.col(runIDCol.name) ? (row: number) =>
-      `${parentData.table?.col(compoundIDCol.name)!.get(row)}||${parentData.table?.col(assayCol.name)!.get(row)}||${parentData.table?.col(targetEntityCol.name)!.get(row)}||${parentData.table?.col(runIDCol.name)!.get(row)}` :
-    (_row: number) => null;
+  const getCurveName = (row: number) => `${getGroupKey(row)}||${getRunID(row)}`;
+  const getCurveKey = !hasJoinInfo ? ((row: number) => getCurveName(row)) : ((row: number) => `${joinInfo!.wellLevelCol.get(row)}`);
+  const getParentDataCurveKey = !hasJoinInfo ? (hasParentGrouppingCols ? ((row: number) =>
+    `${parentData!.table?.col(compoundIDCol.name)!.get(row)}||${parentData!.table?.col(assayCol.name)!.get(row)}||${parentData!.table?.col(targetEntityCol.name)!.get(row)}||${parentData!.table?.col(runIDCol.name)!.get(row)}`) :
+    ((_row: number) => null)) : ((row: number) => `${joinInfo!.parentLevelCol.get(row)}`);
   // put the parent data into the parentObj
   const parentObj: {[curveKey: string]: {groupKey?: string, fitParams: number[], fitFunction: FitFunctionType, reportedIC50?: number, reportedQualifiedIC50?: number | string, experimentID?: string, qualifier?: string, additionalColumns?: {[colName: string]: any}}} = {};
   if (parentData) {
@@ -432,14 +510,16 @@ export async function convertDataToCurves(df: DG.DataFrame,
 
     const groupKey = getGroupKey(i);
     const curveKey = getCurveKey(i);
+    const curveName = getCurveName(i);
 
     if (!curvesObj[curveKey]) {
-      curvesObj[curveKey] = {x: [], y: [], outliers: [], groupKey, runID: runID, info: {
+      curvesObj[curveKey] = {name: curveName, x: [], y: [], outliers: [], groupKey, runID: runID, info: {
         'Assay Name': assay,
         'Batch ID': batchID,
         'Compound ID': compoundID,
         'Target Entity': targetEntity,
         'Run ID': runID,
+        'Max Percent Inhibition': null, // will be calculated later
       }};
       if (parentData && parentObj[curveKey]) {
         curvesObj[curveKey].info['Reported IC50'] = parentObj[curveKey].reportedIC50;
@@ -461,6 +541,8 @@ export async function convertDataToCurves(df: DG.DataFrame,
     curve.x.push(concentration);
     curve.y.push(readout);
     curve.outliers.push(outlier);
+    if (!outlier && readout != null || readout != DG.FLOAT_NULL && readout != DG.INT_NULL)
+      curve.info['Max Percent Inhibition'] = Math.max(curve.info['Max Percent Inhibition'] ?? -Infinity, readout);
   }
 
   // create fit series
@@ -485,7 +567,7 @@ export async function convertDataToCurves(df: DG.DataFrame,
     const runID = curve.runID;
     const markerType = getMarkerType(runID);
     const params = parentObj[curveKey] ? parentObj[curveKey].fitParams : undefined;
-    const colorKey = (curve.info['Assay Name'] ?? '') + '||' + (curve.info['Target Entity'] ?? '');
+    const colorKey = (curve.info['Compound ID'] ?? '') + '||'+ (curve.info['Assay Name'] ?? '') + '||' + (curve.info['Target Entity'] ?? '');
     const color = getColor(colorKey);
     const fitFunctionName = parentObj?.[curveKey]?.fitFunction ? parentObj[curveKey].fitFunction : FIT_FUNCTION_4PL_DOSE_RESPONSE;
     const s: IFitSeries = {
@@ -497,7 +579,7 @@ export async function convertDataToCurves(df: DG.DataFrame,
         xAxisName: concentrationCol.name,
         yAxisName: readoutCol.name,
         logX: true,
-        title: `${curveKey}`,
+        title: `${curve.name ?? curveKey ?? ''}`,
       },
       series: [s],
     };
@@ -555,7 +637,7 @@ export async function convertDataToCurves(df: DG.DataFrame,
   for (const groupKey in grouppedValues) {
     const values = grouppedValues[groupKey];
     grouppedAggregations[groupKey] = {
-      'Max Percent Inhibition': values.maxYs.length ? Math.max(...values.maxYs)?.toString() : null,
+      'Max Percent Inhibition (Compound | Assay | Target)': values.maxYs.length ? Math.max(...values.maxYs)?.toString() : null,
       ...(parentData && parentData.table ? {
         'Number of total results': values.qualifiedIC50s.length?.toString(),
         'Number of reported results': values.reportedIC50s.length?.toString(),

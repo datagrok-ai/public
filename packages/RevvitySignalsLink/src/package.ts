@@ -2,20 +2,38 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {u2} from "@datagrok-libraries/utils/src/u2";
-import { buildOperatorUI, createDefaultOperator, signalsSearchBuilderUI } from './signalsSearchBuilder';
+import { u2 } from "@datagrok-libraries/utils/src/u2";
 import '../css/revvity-signals-styles.css';
-import { SignalsSearchParams, SignalsSearchQuery } from './signalsSearchQuery';
-import { queryEntities, queryEntityById, queryMaterialById, queryStructureById, queryUsers, RevvityApiResponse, RevvityData, RevvityUser } from './revvityApi';
-import { dataFrameFromObjects, reorderColummns, transformData, widgetFromObject, createRevvityResponseWidget } from './utils';
-import { addMoleculeStructures, assetsQuery, batchesQuery, MOL_COL_NAME } from './compounds';
-import { RevvityFilters } from './filters';
-import { buildPropertyFilterForm } from './defaultProperties';
-import { getProperties } from './properties';
+import { convertComplexConditionToSignalsSearchQuery, SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
+import { queryEntities, queryLibraries, queryMaterialById, queryTags, queryTerms, queryUsers, RevvityApiResponse, RevvityData, RevvityUser } from './revvity-api';
+import { dataFrameFromObjects, reorderColummns, transformData, createRevvityResponseWidget } from './utils';
+import { addMoleculeStructures, assetsQuery, batchesQuery, materialsCondition, MOL_COL_NAME } from './compounds';
+import { getDefaultProperties, REVVITY_FIELD_TO_PROP_TYPE_MAPPING } from './properties';
+import { ComplexCondition, Operators, QueryBuilder, SUGGESTIONS_FUNCTION } from '@datagrok-libraries/utils/src/query-builder/query-builder';
+import { getRevvityUsers } from './users';
+import { getRevvityLibraries } from './libraries';
 
 
 export const _package = new DG.Package();
+
+export type RevvityLibrary = {
+  id: string;
+  name: string;
+  types: string[];
+}
+
+export type CurrentRevvityLibrary = {
+  libId: string;
+  libName: string;
+  type?: string;
+}
+
+export type RevvityConfig = {
+  libraries?: RevvityLibrary[];
+}
+
 let openedView: DG.View | null = null;
+let config: RevvityConfig = { libraries: undefined };
 
 //tags: app
 //name: Revvity Signals
@@ -24,11 +42,13 @@ let openedView: DG.View | null = null;
 export async function revvitySignalsLinkApp(): Promise<DG.ViewBase> {
 
   const appHeader = u2.appHeader({
-    iconPath: _package.webRoot + '/images/benchling.png',
+    iconPath: _package.webRoot + '/img/revvity.png',
     learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/RevvitySignalsLink/README.md',
     description: '- Integrate with your Revvity account.\n' +
-      '- Analyze assay data.\n' +
-      '- Browse the tenant content.\n'
+      '- Browse the tenant content.\n' +
+      '- Perfrom searches through you tenant.' +
+      '- Find contextual information on entities like assets, batches etc.\n' +
+      '- Analyze assay data.'
   });
 
   const view = DG.View.fromRoot(appHeader);
@@ -36,46 +56,117 @@ export async function revvitySignalsLinkApp(): Promise<DG.ViewBase> {
   return view;
 }
 
-
 //input: dynamic treeNode
 //input: view browseView
 export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGroup) {
-  const search = treeNode.item('Search');
-  search.onSelected.subscribe(() => {
-    const v = DG.View.create('Search');
-    const queryBuilder = signalsSearchBuilderUI();
-    v.append(queryBuilder);
-    grok.shell.addPreview(v);
-  });
+  getRevvityUsers();
+  getRevvityLibraries();
 
-  const search2 = treeNode.item('Search 2');
-  search2.onSelected.subscribe(() => {
-    const v = DG.View.create('Search 2');
-    const queryBuilder = buildPropertyFilterForm(getProperties());
-    v.append(queryBuilder);
-    grok.shell.addPreview(v);
-  });
-
-  const createViewFromPreDefinedQuery = async (query: string, name: string) => {
+  const createViewFromPreDefinedQuery = async (query: string, name: string, libName: string, compoundType: string) => {
     const df = await grok.functions.call('RevvitySignalsLink:searchEntitiesWithStructures', {
       query: query,
       params: '{}'
     });
     const tv = grok.shell.addTablePreview(df);
     tv.name = name;
-    new RevvityFilters(tv);
+    const filtersDiv = ui.div([]);
+    let queryBuilder: QueryBuilder | null = null;
+
+
+    const initializeQueryBuilder = async (libId: string, compoundType: string) => {
+      ui.setUpdateIndicator(filtersDiv, true, 'Loading filters...');
+      const filterFields = getDefaultProperties();
+      const tagsStr = await grok.functions.call('RevvitySignalsLink:getTags', {
+        assetTypeId: libId,
+        type: compoundType
+      });
+      const tags: {[key: string]: string} = JSON.parse(tagsStr);
+      Object.keys(tags).forEach((tagName) => {
+        const propOptions: {[key: string]: any} = {
+          name: tagName, 
+          type: REVVITY_FIELD_TO_PROP_TYPE_MAPPING[tags[tagName]],
+        };
+        const nameArr = tagName.split('.');
+        if (nameArr.length > 1)
+          propOptions.friendlyName = nameArr[1];
+        const prop = DG.Property.fromOptions(propOptions);
+        prop.options[SUGGESTIONS_FUNCTION] = async (text: string) => {
+          const termsStr =  await getTerms(tagName, compoundType, libId, true);
+          const terms: string[] =  JSON.parse(termsStr);
+          return terms.filter((it) => it.toLowerCase().includes(text.toLowerCase()));
+        }
+        filterFields.push(prop);
+      });
+      queryBuilder = new QueryBuilder(filterFields);
+      const runSearchButton = ui.bigButton('RUN', async () => {
+        ui.setUpdateIndicator(tv.grid.root, true, 'Searching...');
+        const resultDf = await runSearch(libId, compoundType, queryBuilder!.condition);
+        tv.dataFrame = resultDf;
+        ui.setUpdateIndicator(tv.grid.root, false);
+      });
+      ui.setUpdateIndicator(filtersDiv, false);
+      filtersDiv.append(queryBuilder.root);
+      filtersDiv.append(runSearchButton);
+    }
+
+    const initializeFilters = async () => {
+      const libs = await getRevvityLibraries();
+      const selectedLib = libs.filter((l) => l.name === libName);
+      if (selectedLib.length) {
+        //create filters button
+        const filtersButton = ui.button('Add filters', () => {
+          grok.shell.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
+          if (!queryBuilder)
+            initializeQueryBuilder(selectedLib[0].id, compoundType);
+        });
+        tv.setRibbonPanels([[filtersButton]]);
+      }
+    }
+
+    const runSearch = async (libId: string, compoundType: string,
+      queryBuilderCondition: ComplexCondition): Promise<DG.DataFrame> => {
+      const condition: ComplexCondition = {
+        logicalOperator: Operators.Logical.and,
+        conditions: [
+          materialsCondition
+        ]
+      }
+      condition.conditions.push(
+        {
+          field: "assetTypeEid",
+          operator: Operators.EQ,
+          value: libId
+        }
+      );
+      condition.conditions.push(
+        {
+          field: "type",
+          operator: Operators.EQ,
+          value: compoundType
+        }
+      );
+      condition.conditions.push(queryBuilderCondition);
+      const signalsQuery: SignalsSearchQuery = convertComplexConditionToSignalsSearchQuery(condition);
+      console.log(signalsQuery);
+      const resultDf = await grok.functions.call('RevvitySignalsLink:searchEntitiesWithStructures', {
+        query: JSON.stringify(signalsQuery),
+        params: '{}'
+      });
+      return resultDf;
+    }
+    initializeFilters();
   }
 
   const compounds = treeNode.group('Compounds');
 
   const assets = compounds.item('Assets');
   assets.onSelected.subscribe(async () => {
-    await createViewFromPreDefinedQuery(JSON.stringify(assetsQuery), 'Assets');
+    await createViewFromPreDefinedQuery(JSON.stringify(assetsQuery), 'Assets', 'Compounds', 'asset');
   });
 
   const batches = compounds.item('Batches');
   batches.onSelected.subscribe(async () => {
-    await createViewFromPreDefinedQuery(JSON.stringify(batchesQuery), 'Batches');
+    await createViewFromPreDefinedQuery(JSON.stringify(batchesQuery), 'Batches', 'Compounds', 'batch');
   });
 }
 
@@ -108,7 +199,7 @@ export async function searchEntitiesWithStructures(query: string, params: string
     const queryJson: SignalsSearchQuery = JSON.parse(query);
     const paramsJson: SignalsSearchParams = JSON.parse(params);
     const response = await queryEntities(queryJson, Object.keys(paramsJson).length ? paramsJson : undefined);
-    if (!response.data)
+    if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
       return DG.DataFrame.create();
     const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
 
@@ -130,14 +221,162 @@ export async function searchEntitiesWithStructures(query: string, params: string
 //name: Get Users
 //output: string users
 export async function getUsers(): Promise<string> {
-  const users: {[key: string]: RevvityUser} = {};
+  const users: { [key: string]: RevvityUser } = {};
   const response = await queryUsers();
-  if (!response.data)
+  if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
     return '{}';
   const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
   for (const user of data)
     users[user.id] = Object.assign({}, user.attributes || {});
   return JSON.stringify(users);
+}
+
+
+//name: Get Libraries
+//output: string libraries
+export async function getLibraries(): Promise<string> {
+  const response = await queryLibraries();
+  const libraries: RevvityLibrary[] = [];
+  if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
+    return '[]';
+  const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
+  for (const lib of data) {
+    if (lib.attributes.name && lib.id) {
+      let types: string[] = [];
+      const query = {
+        "query": {
+          "$and": [
+            {
+              "$match": {
+                "field": "assetTypeEid",
+                "value": `${lib.type}:${lib.id}`,
+              }
+            },
+            {
+              "$not": [
+                {
+                  "$match": {
+                    "field": "type",
+                    "value": "assetType"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "field": "type"
+      }
+      const typesResponse = await queryTerms(query);
+      if (typesResponse.data) {
+        const typesData: Record<string, any>[] = !Array.isArray(typesResponse.data) ? [typesResponse.data!] : typesResponse.data!;
+        types = typesData.map((it) => it.id);
+      }
+      libraries.push({ name: lib.attributes.name, id: `${lib.type}:${lib.id}`, types: types });
+    }
+  }
+  return JSON.stringify(libraries);
+}
+
+
+//name: Get Tags
+//input: string type
+//input: string assetTypeId
+//output: string fields
+export async function getTags(type: string, assetTypeId: string): Promise<string> {
+  const query = {
+    "query": {
+      "$and": [
+        {
+          "$match": {
+            "field": "assetTypeEid",
+            "value": assetTypeId,
+          }
+        },
+        {
+          "$match": {
+            "field": "type",
+            "value": type,
+            "mode": "keyword"
+          }
+        },
+        {
+          "$match": {
+            "field": "isTemplate",
+            "value": false
+          }
+        }
+      ]
+    }
+  };
+  const response = await queryTags(query);
+  if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
+    return '{}';
+  const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
+  const tags: { [key: string]: string } = {};
+  for (const tag of data) {
+    tags[tag.id] = tag.attributes.types[0].type;
+  }
+  return JSON.stringify(tags);
+}
+
+
+//name: Get Terms
+//input: string fieldName
+//input: string type
+//input: string assetTypeId
+//input: bool isMaterial
+//output: string terms
+export async function getTerms(fieldName: string, type: string, assetTypeId: string, isMaterial: boolean): Promise<string> {
+  const innerAndConditions: any[] = [
+    {
+      "$match": {
+        "field": "assetTypeEid",
+        "value": assetTypeId,
+      }
+    },
+    {
+      "$match": {
+        "field": "type",
+        "value": type,
+        "mode": "keyword"
+      }
+    },
+  ];
+  if (isMaterial) {
+    innerAndConditions.push({
+      "$and": [
+        {
+          "$match": {
+            "field": "isMaterial",
+            "value": true
+          }
+        },
+        {
+          "$not": [
+            {
+              "$match": {
+                "field": "type",
+                "value": "assetType"
+              }
+            }
+          ]
+        }
+      ]
+    })
+  }
+  const query: SignalsSearchQuery = {
+    "query": {
+      "$and": innerAndConditions
+    },
+    field: fieldName,
+    in: "tags"
+  };
+  const response = await queryTerms(query);
+  if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
+    return '{}';
+  const data: RevvityData[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
+  const tags = data.map((it) => it.id).filter((tag) => tag != undefined);
+  return JSON.stringify(tags);
 }
 
 
