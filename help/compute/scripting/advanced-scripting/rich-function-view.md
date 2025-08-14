@@ -386,9 +386,7 @@ To disable history, add the following line to your code:
 You may compare historical runs using history panel. Select the historical runs of the interest
 and click <i class="fas fa-exchange"></i> icon to open the comparison view.
 
-Datagrok provides defauls set of viewers to compare all kindas of the output data.
-You can customize it using
-[helper JS fucntions](js-helpers-with-rich-fucntion-view.md#customize-history-run-comparison).
+Datagrok provides defauls set of viewers to compare all kinds of the output data.
 
 :::tip
 
