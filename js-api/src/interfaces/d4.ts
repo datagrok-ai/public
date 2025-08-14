@@ -1257,7 +1257,9 @@ export interface IGridSettings {
   /// Determines whether newly added columns are added to the grid
   syncNewColumns: boolean;
 
-  colorScheme: Array<number>;
+  linearColorScheme: Array<number>;
+
+  categoricalColorScheme: Array<number>;
 
   columnHeaderTypes: Array<string>;
 
