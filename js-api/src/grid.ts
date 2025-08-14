@@ -1143,6 +1143,7 @@ export class Grid extends Viewer<IGridSettings> {
 
 export type HorzAlign = 'right' | 'center' | 'left';
 export type VertAlign = 'top' | 'center' | 'bottom';
+export type TextWrap = 'auto' | 'none' | 'new line' | 'words' | 'characters' | 'ellipsis';
 
 
 /** Represents grid cell style. */
@@ -1190,6 +1191,9 @@ export class GridCellStyle {
 
   get vertAlign(): VertAlign | null { return api.grok_GridCellStyle_Get_vertAlign(this.dart); }
   set vertAlign(x: VertAlign | null) { api.grok_GridCellStyle_Set_vertAlign(this.dart, x); }
+
+  get textWrap(): TextWrap | null { return api.grok_GridCellStyle_Get_textWrap(this.dart); }
+  set textWrap(x: TextWrap | null) { api.grok_GridCellStyle_Set_textWrap(this.dart, x); }
 }
 
 

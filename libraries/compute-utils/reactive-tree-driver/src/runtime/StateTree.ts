@@ -433,7 +433,7 @@ export class StateTree {
       if (!isFuncCallNode(item) || item.instancesWrapper.isReadonly)
         throw new Error(`FuncCall writable node is expected on path ${JSON.stringify(path)}`);
       const adapter = new FuncCallAdapter(call, false);
-      item.changeAdapter(adapter);
+      item.changeAdapter(adapter, true);
       item.instancesWrapper.isOutputOutdated$.next(false);
       const details = [{
         mutationRootPath: ppath,
@@ -443,7 +443,7 @@ export class StateTree {
         isMutation: true,
         details,
       }]);
-    });
+    }, true, false);
   }
 
   public resetToConsistent(uuid: string, ioName: string) {
@@ -752,13 +752,13 @@ export class StateTree {
   // locking, tree mutation and deps tracking
   //
 
-  private mutateTree<R>(fn: () => Observable<readonly [TreeUpdateData?, R?]>, waitForLinks = true) {
+  private mutateTree<R>(fn: () => Observable<readonly [TreeUpdateData?, R?]>, waitForLinks = true, disableLinks = true) {
     return defer(() => {
       if (this.logger)
         this.logger.logTreeUpdates('treeUpdateStarted');
       this.treeLock();
       return (waitForLinks ? this.linksState.waitForLinks() : of(undefined)).pipe(
-        tap(() => this.linksState.disableLinks()),
+        tap(() => disableLinks ? this.linksState.disableLinks() : undefined),
         concatMap(() => fn()),
       );
     }).pipe(

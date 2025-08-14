@@ -133,7 +133,7 @@ export namespace funcs {
     return await grok.functions.call('Pyodide:MakeVectorCode', { script });
   }
 
-  export async function pyodideLanguageHandler(): Promise<void> {
-    return await grok.functions.call('Pyodide:PyodideLanguageHandler', {});
+  export async function pyodideLanguageHandler(scriptCall: any ): Promise<number> {
+    return await grok.functions.call('Pyodide:PyodideLanguageHandler', { scriptCall });
   }
 }

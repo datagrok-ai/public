@@ -1,5 +1,6 @@
 import * as dayjs from "dayjs";
 import * as wu from "wu";
+const { AsyncLocalStorage } = require('async_hooks');
 
 (globalThis as any).self = globalThis;
 (globalThis as any).window = {};
@@ -16,7 +17,60 @@ const WebSocket = require('ws');
     return new WebSocket(url, { headers: headers['o'] });
 };
 
-export async function startDatagrok(options: {apiUrl: string, apiToken: string}): Promise<any> {
+// ===== AsyncLocalStorage-based token context =====
+export const datagrokAsyncLocalStorage = new AsyncLocalStorage();
+
+// Express middleware
+export function tokenContextMiddleware(req: any, res: any, next: any) {
+    //@ts-ignore
+    const token =
+        req?.headers?.authorization ||
+        req?.authorization ||
+        (req?.cookies && req.cookies['auth']) ||
+        req.headers["x-user-api-key"] ||
+        null;
+
+    const store = { token };
+    datagrokAsyncLocalStorage.run(store, () => next());
+}
+
+// Generic wrapper for non-Express usage
+export function withTokenContext(req: any, callback: any) {
+    const cookies = parseCookies(req.headers?.cookie);
+    const token =
+        req?.headers?.authorization ||
+        req?.authorization ||
+        cookies["auth"] ||
+        req.headers["x-user-api-key"] ||
+        null;
+
+    const store = { token };
+    return datagrokAsyncLocalStorage.run(store, () => callback());
+}
+
+function parseCookies(cookieHeader: string | undefined): Record<string, string> {
+    const cookies: Record<string, string> = {};
+    if (!cookieHeader) return cookies;
+
+    cookieHeader.split(";").forEach((cookie: string) => {
+        const [name, ...rest] = cookie.trim().split("=");
+        cookies[name] = decodeURIComponent(rest.join("="));
+    });
+
+    return cookies;
+}
+
+
+export function getContext() {
+    return datagrokAsyncLocalStorage.getStore();
+}
+
+(globalThis as any).getTokenFromAsyncLocalStorage = function() {
+    const store = datagrokAsyncLocalStorage.getStore();
+    return store ? store.token : null;
+}
+
+export async function startDatagrok(options: {apiUrl: string, apiToken?: string | undefined}): Promise<any> {
     //@ts-ignore
     await import ('./src/datagrok/web/grok_shared.dart.js');
 
@@ -40,5 +94,4 @@ export async function startDatagrok(options: {apiUrl: string, apiToken: string})
 
     let status = await (globalThis as any).window.grok_Init();
     console.log(status);
-
 }

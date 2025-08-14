@@ -513,6 +513,11 @@ export class SubstructureFilter extends DG.Filter {
     } else if ((wu(this.dataFrame!.rows.filters)
       .has(`${this.columnName}: ${this.getFilterSummary(newMolFile)}`) || this.isFilteringBySameStructure(newMolFile)) &&
       !this.recalculateFilter && !this.searchNotCompleted) {
+      //check if the coordinates have changed and in case align is true - reset the tag on column
+      if (this.currentMolfile !== newMolFile && this.sketcher.align) {
+        this.currentMolfile = newMolFile;
+        this.setFilterScaffoldTag();
+      }
       // some other filter is already filtering for the exact same thing
       // value to pass into has() is created similarly to filterSummary property
       _package.logger.debug(`already filter by the same structure ${this.getFilterSummary(newMolFile)} , ${this.filterId}`);

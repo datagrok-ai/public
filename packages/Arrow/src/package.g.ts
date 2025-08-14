@@ -3,14 +3,12 @@ import * as DG from 'datagrok-api/dg';
 
 //name: parquetInit
 //tags: autostart
-//output: dynamic result
 export function parquetInit() {
   return PackageFunctions.parquetInit();
 }
 
 //name: initPackage
 //tags: init
-//output: dynamic result
 export async function initPackage() {
   return PackageFunctions.initPackage();
 }
@@ -35,9 +33,9 @@ export function fromFeather(bytes: Uint8Array) {
 //name: toParquet
 //description: Converts DG.DataFrame to parquet
 //input: dataframe table 
-//input: double compression { nullable: true }
+//input: int compression { nullable: true }
 //output: blob result
-export function toParquet(table: DG.DataFrame, compression: number) {
+export function toParquet(table: DG.DataFrame, compression?: number) {
   return PackageFunctions.toParquet(table, compression);
 }
 
@@ -51,8 +49,8 @@ export function fromParquet(bytes: Uint8Array) {
 
 //name: parquetFileHandler
 //tags: file-handler
-//input: blob bytes 
-//output: list result
+//input: list bytes 
+//output: list<dataframe> result
 //meta.ext: parquet
 export function parquetFileHandler(bytes: any) {
   return PackageFunctions.parquetFileHandler(bytes);
@@ -60,8 +58,8 @@ export function parquetFileHandler(bytes: any) {
 
 //name: featherFileHandler
 //tags: file-handler
-//input: blob bytes 
-//output: list result
+//input: list bytes 
+//output: list<dataframe> result
 //meta.ext: feather
 export function featherFileHandler(bytes: any) {
   return PackageFunctions.featherFileHandler(bytes);
@@ -70,7 +68,6 @@ export function featherFileHandler(bytes: any) {
 //name: saveAsParquet
 //description: Save as Parquet
 //tags: fileExporter
-//output: dynamic result
 export function saveAsParquet() {
   return PackageFunctions.saveAsParquet();
 }
@@ -78,7 +75,6 @@ export function saveAsParquet() {
 //name: saveAsFeather
 //description: Save as Feather
 //tags: fileExporter
-//output: dynamic result
 export function saveAsFeather() {
   return PackageFunctions.saveAsFeather();
 }

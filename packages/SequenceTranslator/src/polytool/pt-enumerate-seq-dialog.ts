@@ -32,7 +32,7 @@ import {RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './conversion/pt-rules'
 import {Chain} from './conversion/pt-chain';
 import {polyToolConvert} from './pt-dialog';
 
-import {_package, applyNotationProviderForCyclized} from '../package';
+import {_package, PackageFunctions} from '../package';
 import {buildMonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 
@@ -723,14 +723,14 @@ async function polyToolEnumerateSeq(
       enumCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Enumerated', templateList);
       enumCol.semType = DG.SEMTYPE.MACROMOLECULE;
       enumCol.setTag(PolyToolTags.dataRole, PolyToolDataRole.template);
-      applyNotationProviderForCyclized(enumCol, '-');
+      PackageFunctions.applyNotationProviderForCyclized(enumCol, '-');
       break;
     }
     }
     const enumeratorResDf = DG.DataFrame.fromColumns([enumCol]);
     await grok.data.detectSemanticTypes(enumeratorResDf);
     if (dataRole == PolyToolDataRole.template)
-      applyNotationProviderForCyclized(enumCol, '-');
+      PackageFunctions.applyNotationProviderForCyclized(enumCol, '-');
 
 
     if (toAtomicLevel) {

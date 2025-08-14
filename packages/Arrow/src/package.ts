@@ -40,7 +40,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({description: 'Converts DG.DataFrame to parquet'})
   static toParquet(table: DG.DataFrame,
-    @grok.decorators.param({options: {nullable: true}}) compression?: number): Uint8Array | null {
+    @grok.decorators.param({type: 'int', options: {nullable: true}}) compression?: number): Uint8Array | null {
     return _toParquet(table, compression);
   }
 
@@ -50,13 +50,13 @@ export class PackageFunctions {
   }
 
   @grok.decorators.fileHandler({ext: 'parquet'})
-  static parquetFileHandler(@grok.decorators.param({type: 'blob'}) bytes: WithImplicitCoercion<ArrayBuffer | SharedArrayBuffer>): DG.DataFrame[] | null {
+  static parquetFileHandler(@grok.decorators.param({type: 'list'}) bytes: WithImplicitCoercion<ArrayBuffer | SharedArrayBuffer>): DG.DataFrame[] | null {
     const res = this.fromParquet(bytes as Uint8Array);
     return res ? [res] : null;
   }
 
   @grok.decorators.fileHandler({ext: 'feather'})
-  static featherFileHandler(@grok.decorators.param({type: 'blob'}) bytes: WithImplicitCoercion<ArrayBuffer | SharedArrayBuffer>): DG.DataFrame[] | null {
+  static featherFileHandler(@grok.decorators.param({type: 'list'}) bytes: WithImplicitCoercion<ArrayBuffer | SharedArrayBuffer>): DG.DataFrame[] | null {
     const df = this.fromFeather(bytes as Uint8Array);
     return df ? [df] : null;
   }

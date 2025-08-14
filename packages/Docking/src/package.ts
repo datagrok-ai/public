@@ -91,10 +91,10 @@ export class PackageFunctions{
     'description': 'Autodock plugin UI'
   })
   static async runAutodock5(
-    table: DG.DataFrame,
-    @grok.decorators.param({'options':{'type': 'categorical', 'semType':'Molecule', 'description':'Small molecules to dock'}}) ligands: DG.Column,
-    @grok.decorators.param({'options':{'choices':'Docking:getConfigFiles', 'description':'Folder with config and macromolecule'}}) target: string,
-    @grok.decorators.param({'type': 'int', 'options':{'initialValue':'10', 'description': 'Number of output conformations for each small molecule'}}) poses: number): Promise<void> {
+    @grok.decorators.param({'options':{'description': '\'Input data table\''}}) table: DG.DataFrame,
+    @grok.decorators.param({'options':{'type': 'categorical', 'semType':'Molecule', 'description':'\'Small molecules to dock\''}}) ligands: DG.Column,
+    @grok.decorators.param({'options':{'choices':'Docking:getConfigFiles', 'description':'\'Folder with config and macromolecule\''}}) target: string,
+    @grok.decorators.param({'type': 'int', 'options':{'initialValue':'10', 'description': '\'Number of output conformations for each small molecule\''}}) poses: number): Promise<void> {
 
     const desirableHeight = 100;
     const desirableWidth = 100;
@@ -149,7 +149,6 @@ export class PackageFunctions{
 
   @grok.decorators.panel({
     'tags': [
-      'panel',
       'chem',
       'widgets'
     ],
@@ -218,7 +217,8 @@ export class PackageFunctions{
   }
 
   @grok.decorators.panel({
-    'name': 'Biology | AutoDock'
+    'name': 'Biology | AutoDock',
+    'tags': ['widgets']
   })
   static async autodockPanel(
     @grok.decorators.param({'options':{'semType':'Molecule'}}) smiles: DG.SemanticValue): Promise<DG.Widget> {

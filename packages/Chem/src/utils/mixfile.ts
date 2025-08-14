@@ -179,7 +179,7 @@ export function createComponentPane(component: MixfileComponent): HTMLElement {
         (typeof (component as any)[key][0] === 'string' || typeof (component as any)[key][0] === 'number'))
       fieldsForTableFromMap[key] = (component as any)[key].join(',');
     //dictionaries (identifiers, links)
-    else if (!Array.isArray((component as any)[key]) && typeof (component as any)[key] === 'object') {
+    else if (!Array.isArray((component as any)[key]) && typeof (component as any)[key] === 'object' && (component as any)[key] != null) {
       const innerDictAcc = ui.accordion(key);
       const obj = (component as any)[key];
       innerDictAcc.addPane(key, () => {

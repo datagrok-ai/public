@@ -8,9 +8,6 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
-  /**
-  Show package web root
-  */
   export async function info(): Promise<void> {
     return await grok.functions.call('Boltz1:Info', {});
   }

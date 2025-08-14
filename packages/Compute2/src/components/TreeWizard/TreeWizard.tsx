@@ -494,6 +494,7 @@ export const TreeWizard = Vue.defineComponent({
           </RibbonMenu>
         }
         <DockManager class='block h-full'
+          style={{overflow: 'hidden !important'}}
           key={providerFunc.value.id}
           onPanelClosed={handlePanelClose}
         >

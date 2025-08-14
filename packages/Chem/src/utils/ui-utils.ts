@@ -4,6 +4,16 @@ import * as ui from 'datagrok-api/ui';
 
 import '../../css/chem.css';
 
+export function checkCurrentView(dataFrame: DG.DataFrame): void {
+  if (grok.shell.tv.dataFrame === dataFrame)
+    return;
+  const tv = grok.shell.tableView(dataFrame.name);
+  if (tv)
+    grok.shell.v = tv;
+  else
+    throw Error('No table view found for selected table');
+}
+
 export function updateDivInnerHTML(div: HTMLElement, content: string | Node): void {
   div.innerHTML = '';
   div.append(content);

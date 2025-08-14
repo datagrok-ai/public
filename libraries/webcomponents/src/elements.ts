@@ -119,6 +119,7 @@ export class DGComboPopup extends HTMLElement {
   private _caption: string | HTMLElement = 'Caption';
   private _items = [] as string[];
   private _tooltip: string | null = null;
+  private _rightAligned: boolean = false;
 
   constructor() {
     super();
@@ -139,6 +140,11 @@ export class DGComboPopup extends HTMLElement {
     this.render();
   }
 
+  public set rightAligned(val: boolean) {
+    this._rightAligned = val;
+    this.render();
+  }
+
   private render() {
     ui.empty(this);
     const newPopup = ui.comboPopup(
@@ -148,6 +154,8 @@ export class DGComboPopup extends HTMLElement {
         'selected', {detail: {item, itemIdx: this._items.findIndex((i) => i === item)}}),
       ),
     );
+    if (this._rightAligned)
+      newPopup.classList.add('right-aligned');
     ui.tooltip.bind(newPopup, this._tooltip);
     newPopup.style.height = '24px';
     newPopup.style.minWidth = '0px';
@@ -159,4 +167,3 @@ export class DGComboPopup extends HTMLElement {
 }
 
 export interface DGComboPopupT extends DGComboPopup {};
-

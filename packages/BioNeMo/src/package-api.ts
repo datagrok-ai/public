@@ -51,7 +51,7 @@ export namespace funcs {
     return await grok.functions.call('BioNeMo:GetTargetFiles', {});
   }
 
-  export async function diffDockModelScript(ligand: string , target: string , poses: number ): Promise<any> {
+  export async function diffDockModelScript(ligand: string , target: string , poses: number ): Promise<string> {
     return await grok.functions.call('BioNeMo:DiffDockModelScript', { ligand, target, poses });
   }
 

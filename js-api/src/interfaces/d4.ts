@@ -1670,6 +1670,8 @@ export interface ILineChartSettings {
   /// Use column format for axis labels, where possible
   axesUseColumnFormat: boolean;
 
+  showAggrTypeSelector: boolean;
+
   /// Marker type for showing the distribution of the aggregated values
   /// when multiple values have the same X value
   whiskersType: string;
@@ -1752,9 +1754,9 @@ export interface ILineChartSettings {
 
   rowGroupTooltip: string;
 
-  /// When true, lines are added to the legend
-  /// Requires *Multi Axis* to be enabled
-  addLinesToLegend: boolean;
+  /// When selected, column names are added to the legend.
+  /// Requires *Multi Axis* to be enabled.
+  addYColumnsToLegend: boolean;
 
   autoAdjustMultiAxisLegendPosition: boolean;
 
@@ -2293,6 +2295,10 @@ export interface IPcPlotSettings {
   transformation: string;
 
   labelsOrientation: keyof typeof TextOrientation;
+
+  minMaxOrientation: keyof typeof TextOrientation;
+
+  axisFont: string;
 
   linearColorScheme: Array<number>;
 

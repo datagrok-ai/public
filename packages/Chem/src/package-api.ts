@@ -274,6 +274,10 @@ export namespace funcs {
     return await grok.functions.call('Chem:DescriptorsDocker', {});
   }
 
+  export async function calculateDescriptorsTransform(table: DG.DataFrame , molecules: DG.Column , selected: any ): Promise<void> {
+    return await grok.functions.call('Chem:CalculateDescriptorsTransform', { table, molecules, selected });
+  }
+
   export async function chemDescriptorsTree(): Promise<any> {
     return await grok.functions.call('Chem:ChemDescriptorsTree', {});
   }

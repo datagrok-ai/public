@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.44.2 (2025-08-08)
+
+- Optimization view Compute2 integration fixes
+
 ## 1.44.1 (2025-07-22)
 
 - Update dependencies

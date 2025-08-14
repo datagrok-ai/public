@@ -1,0 +1,106 @@
+.query-builder-search-query-operator .fa-trash-alt {
+    font-size: 12px;
+    color: #2083D5;
+}
+
+.query-builder-nested-condition-operators .fa-trash-alt {
+    padding: 0px 7px 0px 5px;
+    font-size: 10px !important;
+    margin-top: 2px;
+}
+
+.query-builder-search-query-operator .fa-plus {
+    color: #2083D5;
+}
+
+.query-builder-nested-condition-operators .fa-plus {
+    padding: 1px 5px 1px 5px;
+}
+
+.query-builder-search-query-operator {
+    border: none;
+    margin: 4px;
+    padding: 4px 4px 4px 12px;
+    position: relative;
+    margin-top: 20px;
+}
+
+.query-builder-search-query-operator[data-nesting-level] {
+    border-left: 3px solid var(--nesting-color, #e0e0e0);
+}
+
+.query-builder-search-query-operator .ui-input-text {
+    width: 95%;
+}
+
+.query-builder-filter-inputs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 32px;
+}
+
+.query-builder-filter-inputs .ui-input-editor {
+    width: auto!important;
+}
+
+.query-builder-filter-inputs .ui-input-root {
+    width: auto!important;
+}
+
+.property-query-builder-and-or-operator {
+    font-size: 10px;
+    margin: 0px!important;
+    height: 12px!important;
+}
+
+.query-builder-nested-condition-operators .property-query-builder-and-or-operator {
+    padding: 2px 5px 0px 5px!important;
+    display: none!important;
+}
+
+.property-query-builder-multipe-filelds > .query-builder-nested-condition-operators .property-query-builder-and-or-operator {
+    display: flex!important;
+}
+
+.query-builder-nested-condition-operators {
+    position: absolute;
+    top: -7px;
+    border: none;
+    border-radius: 4px;
+    background-color: white;
+    left: 10px;
+}
+
+.query-builder-filter-inputs .add-delete-icons {
+    visibility: hidden;
+    gap: 6px;
+    padding-top: 15px;
+}
+
+.query-builder-filter-inputs:hover .add-delete-icons {
+    visibility: visible;
+}
+
+.nested-add-delete-icons {
+    visibility: hidden;
+}
+
+.query-builder-search-query-operator:hover .nested-add-delete-icons {
+    visibility: visible !important;
+}
+
+/* Hide dropdown arrow on select elements by default, show only on hover */
+.query-builder-filter-inputs select.ui-input-editor {
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    background-image: none !important;
+    background: none !important;
+}
+
+.query-builder-filter-inputs select.ui-input-editor:hover {
+    background-image: url("../img/chevron.svg") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 0px top 50% !important;
+}

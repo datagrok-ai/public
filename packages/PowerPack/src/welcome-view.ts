@@ -110,7 +110,7 @@ function suggestionMenuKeyNavigation(inputContainer: HTMLElement) {
       e.preventDefault();
       return;
     }
-    currentlySelected?.classList.remove('d4-menu-item-hover');
-    allItems[currentIndex].classList.add('d4-menu-item-hover');
+    currentlySelected?.classList?.remove('d4-menu-item-hover');
+    allItems[currentIndex]?.classList?.add('d4-menu-item-hover');
   });
 }

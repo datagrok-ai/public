@@ -33,6 +33,16 @@ category('projects', () => {
     await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runToInchiKeys, ['smiles', 'inchi_key'], '', true);
   });
 
+  test('descriptors', async () => {
+    await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runDescriptors,
+      ['MolWt', 'HeavyAtomMolWt', 'ExactMolWt', 'FractionCSP3', 'HeavyAtomCount', 'NHOHCount'], '');
+  });
+
+  test('descriptors_sync', async () => {
+    await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runDescriptors,
+      ['MolWt', 'HeavyAtomMolWt', 'ExactMolWt', 'FractionCSP3', 'HeavyAtomCount', 'NHOHCount'], '', true);
+  });
+
   test('toxicity_risks', async () => {
     await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runAddChemRisksColumns,
       ['smiles', 'Mutagenicity'], '');
@@ -275,6 +285,14 @@ async function runToInchiKeys(tv: DG.TableView): Promise<void> {
   await DG.Func.find({ package: 'Chem', name: 'addInchisKeysTopMenu' })[0].prepare({
     table: tv.dataFrame,
     molecules: tv.dataFrame.col('smiles'),
+  }).call(undefined, undefined, { processed: false });
+}
+
+async function runDescriptors(tv: DG.TableView): Promise<void> {
+  await DG.Func.find({ package: 'Chem', name: 'calculateDescriptorsTransform' })[0].prepare({
+    table: tv.dataFrame,
+    molecules: tv.dataFrame.col('smiles'),
+    selected: ['MolWt', 'HeavyAtomMolWt', 'ExactMolWt', 'FractionCSP3', 'HeavyAtomCount', 'NHOHCount']
   }).call(undefined, undefined, { processed: false });
 }
 

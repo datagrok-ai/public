@@ -9,6 +9,7 @@ import {
   ValidationIcon
 } from '@datagrok-libraries/webcomponents';
 import {DockSpawnTsWebcomponent} from '@datagrok-libraries/dock-spawn-dg';
+import './styles.css';
 
 export const _package = new DG.Package();
 

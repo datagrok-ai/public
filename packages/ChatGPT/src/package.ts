@@ -66,9 +66,6 @@ async function executeFunction(functionName: string, parameters: any) {
   throw new Error(`Function ${functionName} not found`);
 }
 
-
-
-
 export class PackageFunctions {
 
   @grok.decorators.init()

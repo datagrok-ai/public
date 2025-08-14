@@ -100,7 +100,7 @@ export class PipelineView extends FunctionView {
           [new Uint8Array(await stepBlob.arrayBuffer()), {level: 0}];
       };
 
-      return new Blob([zipSync(zipConfig)]);
+      return new Blob([zipSync(zipConfig) as any]);
     }
 
     if (format === 'Single Excel') {

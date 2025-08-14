@@ -8,14 +8,14 @@ export function _initUA() {
 }
 
 //name: TestsList
-//output: dynamic result
+//output: dataframe result
 //meta.url: /tests/list
 export async function TestsList() {
   return PackageFunctions.TestsList();
 }
 
 //name: TestsListJoined
-//output: dynamic result
+//output: dataframe result
 //meta.url: /tests/joinedlist
 export async function TestsListJoined() {
   return PackageFunctions.TestsListJoined();
@@ -23,7 +23,6 @@ export async function TestsListJoined() {
 
 //name: TestAnalysisReportForCurrentDay
 //input: datetime date 
-//output: dynamic result
 export async function TestAnalysisReportForCurrentDay(date: any) {
   return PackageFunctions.TestAnalysisReportForCurrentDay(date);
 }
@@ -40,7 +39,7 @@ export async function TestAnalysisReportForCurrentDay(date: any) {
 //output: view result
 //meta.url: /
 //meta.browsePath: Admin
-export async function usageAnalysisApp(path: string, date: string, groups: string, packages: string, tags: string, categories: string, projects: string) {
+export async function usageAnalysisApp(path?: string, date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string) {
   return PackageFunctions.usageAnalysisApp(path, date, groups, packages, tags, categories, projects);
 }
 
@@ -58,7 +57,7 @@ export function testTrackApp() {
 //output: view result
 //meta.url: /reports
 //meta.browsePath: Admin
-export async function reportsApp(path: string) {
+export async function reportsApp(path?: string) {
   return PackageFunctions.reportsApp(path);
 }
 
@@ -70,14 +69,13 @@ export async function reportsApp(path: string) {
 //output: view result
 //meta.url: /service-logs
 //meta.browsePath: Admin
-export function serviceLogsApp(path: string, params: any, limit: number) {
+export function serviceLogsApp(path?: string, params?: any, limit?: number) {
   return PackageFunctions.serviceLogsApp(path, params, limit);
 }
 
 //name: serviceLogsAppTreeBrowser
 //input: dynamic treeNode 
 //input: dynamic browseView 
-//output: dynamic result
 export async function serviceLogsAppTreeBrowser(treeNode: any, browseView: any) {
   return PackageFunctions.serviceLogsAppTreeBrowser(treeNode, browseView);
 }
@@ -85,7 +83,6 @@ export async function serviceLogsAppTreeBrowser(treeNode: any, browseView: any) 
 //name: reportsAppTreeBrowser
 //input: dynamic treeNode 
 //input: dynamic browseView 
-//output: dynamic result
 export async function reportsAppTreeBrowser(treeNode: any, browseView: any) {
   return PackageFunctions.reportsAppTreeBrowser(treeNode, browseView);
 }
@@ -94,6 +91,7 @@ export async function reportsAppTreeBrowser(treeNode: any, browseView: any) {
 //tags: dashboard
 //output: widget result
 //meta.canView: Developers,Administrators
+//test: usageWidget()
 export function usageWidget() {
   return PackageFunctions.usageWidget();
 }
@@ -102,6 +100,7 @@ export function usageWidget() {
 //tags: dashboard
 //output: widget result
 //meta.canView: Developers,Administrators
+//test: reportsWidget()
 export function reportsWidget() {
   return PackageFunctions.reportsWidget();
 }
@@ -128,7 +127,6 @@ export function describeCurrentObj() {
 
 //name: Create JIRA ticket
 //description: Creates JIRA ticket using current error log
-//output: dynamic result
 export function createJiraTicket() {
   return PackageFunctions.createJiraTicket();
 }

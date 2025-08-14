@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {_package, sequenceSpaceTopMenu} from '../package';
+import {_package, PackageFunctions} from '../package';
 import {StringMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {getNormalizedEmbeddings} from
@@ -65,7 +65,7 @@ export async function demoSequenceSpace(
     })) as DG.ScatterPlotViewer;
   } else {
     const preprocessingFunc = DG.Func.find({package: 'Bio', name: 'macromoleculePreprocessingFunction'})[0];
-    resSpaceViewer = (await sequenceSpaceTopMenu(df, df.getCol(colName),
+    resSpaceViewer = (await PackageFunctions.sequenceSpaceTopMenu(df, df.getCol(colName),
       DimReductionMethods.UMAP, MmDistanceFunctionsNames.LEVENSHTEIN, true, preprocessingFunc)) as DG.ScatterPlotViewer;
   }
   view.dockManager.dock(resSpaceViewer!, DG.DOCK_TYPE.RIGHT, null, 'Sequence Space', 0.35);

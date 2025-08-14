@@ -20,7 +20,8 @@ export class SequencePositionStatsViewer extends DG.JsViewer {
   public showPositionInfo: boolean = true;
   constructor() {
     super();
-    this.position = this.int('position', 0, {nullable: false});
+    // starting from 1!
+    this.position = this.int('position', 1, {nullable: false, showSlider: false, min: 1});
     this.sequenceColumnName = this.column('sequence', {semType: DG.SEMTYPE.MACROMOLECULE, nullable: false});
     this.valueColumnName = this.column('value', {columnTypeFilter: 'numerical', nullable: false});
     this.leftMotifLength = this.int('leftMotifLength', 0, {nullable: false, min: 0, max: 10});
@@ -36,14 +37,15 @@ export class SequencePositionStatsViewer extends DG.JsViewer {
   }
 
   getPositionFromColumn(): number {
+    // also starting from 1!
     const col = this.dataFrame.col(this.sequenceColumnName);
     if (col == null)
-      return 0;
+      return 1;
     const positionString = col.getTag(bioTAGS.selectedPosition) ?? '1';
     const position = parseInt(positionString);
     if (Number.isNaN(position))
-      return 0;
-    return Math.max(0, position - 1);
+      return 1;
+    return Math.max(1, position);
   }
 
   onTableAttached(): void {
@@ -71,7 +73,8 @@ export class SequencePositionStatsViewer extends DG.JsViewer {
   }
 
   render(): void {
-    if (this.dataFrame == null || !this.sequenceColumnName || (this.position ?? -1) < 0 || !this._positionColumn || !this.valueColumnName)
+    const position0Based = (this.position ?? -1) - 1;
+    if (this.dataFrame == null || !this.sequenceColumnName || position0Based < 0 || !this._positionColumn || !this.valueColumnName)
       return;
 
     $(this.root).empty();
@@ -81,8 +84,8 @@ export class SequencePositionStatsViewer extends DG.JsViewer {
     const seqHandler = seqHelper.getSeqHandler(sequenceColumn);
     const leftOverhang = Math.min(Math.max(this.leftMotifLength ?? 0, 0), 10);
     const rightOverhang = Math.min(Math.max(this.rightMotifLength ?? 0, 0), 10);
-    const start = Math.max(0, this.position - leftOverhang);
-    const end = rightOverhang + this.position;
+    const start = Math.max(0, position0Based - leftOverhang);
+    const end = rightOverhang + position0Based;
     const canonicals = Array.from({length: end - start + 1}).fill('')
       .map((_, i) => seqHandler.getMonomersAtPosition(start + i, true));
     this._positionColumn.init((i) => canonicals.map((c) => c[i]).join(MONOMER_MOTIF_SPLITTER));
@@ -105,7 +108,7 @@ export class SequencePositionStatsViewer extends DG.JsViewer {
     });
 
     const descriptionDiv = ui.divH([
-      leftOverhangInput.root, ui.h2(`${this.sequenceColumnName}: Position ${this.position + 1}`),
+      leftOverhangInput.root, ui.h2(`${this.sequenceColumnName}: Position ${this.position}`),
       rightOverhangInput.root,
     ], {style: {alignItems: 'center', justifyContent: 'space-around', width: '100%'}});
     if (this.showPositionInfo) {

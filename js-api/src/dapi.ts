@@ -63,7 +63,7 @@ export class Dapi {
     return api.grok_Dapi_Get_Token();
   }
   // @ts-ignore
-  set token(token: string) {
+  set token(token?: string | undefined) {
 
     // @ts-ignore
 

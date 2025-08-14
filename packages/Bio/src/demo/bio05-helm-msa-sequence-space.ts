@@ -8,7 +8,7 @@ import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
 import {Pepsea, pepseaMethods, runPepsea} from '../utils/pepsea';
-import {sequenceSpaceTopMenu} from '../package';
+import {PackageFunctions} from '../package';
 import {handleError} from './utils';
 
 import {_package} from '../package';
@@ -92,7 +92,7 @@ export async function demoBio05UI(): Promise<void> {
       })
       .step('Build sequence space', async () => {
         const preprocessingFunc = DG.Func.find({package: 'Bio', name: 'macromoleculePreprocessingFunction'})[0];
-        ssViewer = (await sequenceSpaceTopMenu(df, msaHelmCol,
+        ssViewer = (await PackageFunctions.sequenceSpaceTopMenu(df, msaHelmCol,
           dimRedMethod, MmDistanceFunctionsNames.LEVENSHTEIN, true, preprocessingFunc, undefined, undefined, true)) as DG.ScatterPlotViewer;
         view.dockManager.dock(ssViewer, DG.DOCK_TYPE.RIGHT, null, 'Sequence Space', 0.35);
       }, {

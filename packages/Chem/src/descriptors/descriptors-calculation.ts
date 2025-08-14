@@ -6,7 +6,7 @@ import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {addCopyIcon} from '../utils/ui-utils';
 import {MESSAGE_MALFORMED} from '../constants';
-import {calculateDescriptors, getDescriptorsTree} from "../docker/api";
+import {calculateDescriptors, getDescriptorsTree} from '../docker/api';
 
 const _STORAGE_NAME = 'rdkit_descriptors';
 const _KEY = 'selected';
@@ -19,8 +19,10 @@ export async function openDescriptorsDialogDocker() {
     if (molecules) {
       const prog = DG.TaskBarProgressIndicator.create('Calculating descriptors...');
       try {
-        const cols = await calculateDescriptors(molecules, selected);
-        addDescriptorsColsToDf(table, cols);
+        await DG.Func.find({name: 'calculateDescriptorsTransform'})[0].prepare({
+          table: table,
+          molecules: molecules,
+          selected: selected}).call(undefined, undefined, {processed: false});
       } catch (e) {
         throw e;
       } finally {

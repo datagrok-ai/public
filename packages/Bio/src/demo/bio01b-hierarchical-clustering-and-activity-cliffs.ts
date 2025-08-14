@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_package, activityCliffs} from '../package';
+import {_package, PackageFunctions} from '../package';
 import $ from 'cash-dom';
 
 import {TEMPS as acTEMPS} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
@@ -51,7 +51,7 @@ export async function demoBio01bUI() {
       })
       .step('Find activity cliffs', async () => {
         const seqEncodingFunc = DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0];
-        activityCliffsViewer = (await activityCliffs(
+        activityCliffsViewer = (await PackageFunctions.activityCliffs(
           df, df.getCol('Sequence'), df.getCol('Activity'),
           80, dimRedMethod, MmDistanceFunctionsNames.LEVENSHTEIN, seqEncodingFunc, {}, true)) as DG.ScatterPlotViewer;
         view.dockManager.dock(activityCliffsViewer, DG.DOCK_TYPE.RIGHT, null, 'Activity Cliffs', 0.35);
@@ -117,7 +117,7 @@ export async function demoActivityCliffsCyclic() {
   ui.setUpdateIndicator(tv.root, true);
   try {
     const seqEncodingFunc = DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0];
-    const activityCliffsViewer = (await activityCliffs(
+    const activityCliffsViewer = (await PackageFunctions.activityCliffs(
       df, df.getCol('Sequence'), df.getCol('Activity'),
       96, DimReductionMethods.UMAP, MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE,
       seqEncodingFunc, {}, true)) as DG.ScatterPlotViewer;

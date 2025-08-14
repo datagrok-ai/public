@@ -149,6 +149,10 @@ export const ComboPopup = Vue.defineComponent({
       type: Array<String>,
       default: [],
     },
+    rightAligned: {
+      type: Boolean,
+      default: false,
+    },
     tooltip: {
       type: String,
     },
@@ -158,10 +162,10 @@ export const ComboPopup = Vue.defineComponent({
   },
   setup(props, {emit}) {
     return () => <dg-combo-popup
-      //@ts-ignore
       caption={props.caption}
       items={props.items}
       tooltip={props.tooltip}
+      rightAligned={props.rightAligned}
       onSelected={(e: any) => emit('selected', e.detail)}
     />;
   },

@@ -2,13 +2,12 @@ import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
 //name: info
-//output: dynamic result
 export function info() {
   return PackageFunctions.info();
 }
 
 //name: getFolders
-//output: list result
+//output: list<string> result
 export async function getFolders() {
   return PackageFunctions.getFolders();
 }
@@ -35,7 +34,7 @@ export async function runReinvent(ligand: string, optimize: string) {
 //input: string ligand { semType: Molecule; default: 'OC(CN1CCCC1)NC(CCC1)CC1Cl' }
 //input: string optimize { choices: Reinvent4:getFolders }
 //output: dataframe result
-//editor: Reinvent4
+//editor: Reinvent4:ReinventEditor
 export async function reinvent(ligand: string, optimize: string) {
   return PackageFunctions.reinvent(ligand, optimize);
 }
@@ -43,9 +42,8 @@ export async function reinvent(ligand: string, optimize: string) {
 //name: reinventTopMenu
 //input: string ligand { semType: Molecule; default: 'OC(CN1CCCC1)NC(CCC1)CC1Cl' }
 //input: string optimize { choices: Reinvent4:getFolders }
-//output: dynamic result
 //top-menu: Chem | Generate molecules...
-//editor: Reinvent4
+//editor: Reinvent4:ReinventEditor
 export async function reinventTopMenu(ligand: string, optimize: string) {
   return PackageFunctions.reinventTopMenu(ligand, optimize);
 }

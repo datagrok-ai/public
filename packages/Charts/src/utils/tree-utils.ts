@@ -153,7 +153,7 @@ export class TreeUtils {
         const colorCodingType = columns[colIdx].meta.colors.getType();
         if (colorCodingType !== DG.COLOR_CODING_TYPE.OFF && colorCodingType !== null && inherit) {
           node.itemStyle = {
-            color: DG.Color.toHtml(columns[colIdx].meta.colors.getColor(i)),
+            color: DG.Color.toHtml(DG.Color.getRowColor(columns[colIdx], i)),
           };
         }
 

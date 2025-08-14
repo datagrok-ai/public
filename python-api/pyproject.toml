@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "datagrok-api"
-version = "0.0.7"
+version = "0.0.8"
 authors = [
   { name="Andrew Skalkin", email="askalkin@datagrok.ai" },
   { name="Amelichev Konstantin", email="kamelichev@datagrok.ai" },
@@ -43,7 +43,8 @@ test = [
     "pytest",
     "pytest-xml",
     "pytest-item-dict",
-    "data_to_xml"
+    "data_to_xml",
+    "requests-mock"
 ]
 
 [project.urls]

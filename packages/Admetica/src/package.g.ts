@@ -1,9 +1,14 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
+//name: info
+export function info() {
+  return PackageFunctions.info();
+}
+
 //name: Biology | Admetica
 //tags: panel, chem, widgets
-//input: semantic_value semValue { semType: Molecule }
+//input: semantic_value smiles { semType: Molecule }
 //output: widget result
 export async function admeticaWidget(semValue: DG.SemanticValue) {
   return PackageFunctions.admeticaWidget(semValue);
@@ -11,7 +16,7 @@ export async function admeticaWidget(semValue: DG.SemanticValue) {
 
 //name: getModels
 //input: string property 
-//output: list result
+//output: list<string> result
 export async function getModels(property: string) {
   return PackageFunctions.getModels(property);
 }
@@ -28,7 +33,7 @@ export async function admeticaHT(table: DG.DataFrame, molecules: DG.Column, abso
   return PackageFunctions.admeticaHT(table, molecules, absorption, distribution, metabolism, excretion);
 }
 
-//name: admeticaEditor
+//name: AdmeticaEditor
 //tags: editor
 //input: funccall call 
 export function admeticaEditor(call: DG.FuncCall) {
@@ -36,14 +41,14 @@ export function admeticaEditor(call: DG.FuncCall) {
 }
 
 //name: AdmeticaMenu
-//input: dataframe table 
-//input: column molecules { semType: Molecule }
+//input: dataframe table { description: Input data table }
+//input: column molecules { type: categorical; semType: Molecule }
 //input: string template 
 //input: list<string> models 
 //input: bool addPiechart 
 //input: bool addForm 
 //top-menu: Chem | Admetica | Сalculate...
-//editor: Admetica:AdmeticaEditor
+//editor: Admetica: AdmeticaEditor
 export async function admeticaMenu(table: DG.DataFrame, molecules: DG.Column, template: string, models: string[], addPiechart: boolean, addForm: boolean) {
   return PackageFunctions.admeticaMenu(table, molecules, template, models, addPiechart, addForm);
 }
@@ -51,7 +56,7 @@ export async function admeticaMenu(table: DG.DataFrame, molecules: DG.Column, te
 //name: admeProperty
 //input: string molecule { semType: Molecule }
 //input: string prop { choices: ['Caco2','Solubility','Lipophilicity','PPBR','VDss'] }
-//output: dynamic result
+//output: double result
 export async function admeProperty(molecule: string, prop: string) {
   return PackageFunctions.admeProperty(molecule, prop);
 }
@@ -67,7 +72,6 @@ export async function admeticaApp() {
 
 //name: Admetica Demo
 //description: Evaluating ADMET properties
-//output: view result
 //meta.demoPath: Cheminformatics | Admetica
 export async function admeticaDemo() {
   return PackageFunctions.admeticaDemo();
