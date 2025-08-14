@@ -22,7 +22,7 @@ class SharesClient:
     share(id, groups, access='View') -> ShareResponse
         Shares the specified entity with given groups or users with the specified access level.
 
-    Example
+    Examples
     -------
     Prepare an entity to share
 

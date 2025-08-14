@@ -109,15 +109,63 @@ class FunctionsClient:
         return [Func.from_dict(data) for data in response.json()]
     
     def list_queries(self) -> List[DataQuery]:
+        """
+        List all queries available in Datagrok.
+
+        Returns
+        -------
+        List[DataQuery]
+            List of `DataQuery` instances.
+        """
         return self.list(smart_filter=f"source=\"{DataQuery.SOURCE}\"")
     
     def list_scripts(self) -> List[Script]:
+        """
+        List all scripts available in Datagrok.
+
+        Returns
+        -------
+        List[Script]
+            List of `DataQuery` instances.
+        """
         return self.list(smart_filter=f"source=\"{Script.SOURCE}\"")
     
     def create_query(self, connection: DataConnection, query: str, name: Optional[str]=None) -> DataQuery:
+        """
+        Create and save a new data query in Datagrok.
+
+        Parameters
+        ----------
+        connection : DataConnection
+            The data connection to execute the query on.
+        query : str
+            The SQL or query string to execute.
+        name : str, optional
+            Optional name for the query.
+
+        Returns
+        -------
+        DataQuery
+            The created `DataQuery` instance.
+        """
         return self._save(DataQuery(query=query, connection=connection, name=name))
     
     def create_script(self, script: str, name: Optional[str]=None) -> Script:
+        """
+        Create and save a new script in Datagrok.
+
+        Parameters
+        ----------
+        script : str
+            The script source code.
+        name : str, optional
+            Optional name for the script.
+
+        Returns
+        -------
+        Script
+            The created `Script` instance.
+        """
         return self._save(Script(script=script, name=name))
     
     def _save(self, func: Func) -> Func:
