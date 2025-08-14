@@ -237,6 +237,7 @@ export const TreeNode = Vue.defineComponent({
               />]: [],
               ...hasAddControls(props.stat.data) ? [<ComboPopup
                 caption={ui.iconFA('plus')}
+                rightAligned
                 items={props.stat.data.stepTypes
                   .filter((stepType) => !stepType.disableUIAdding)
                   .map((stepType) => stepType.friendlyName || stepType.nqName || stepType.configId)

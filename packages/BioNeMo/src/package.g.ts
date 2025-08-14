@@ -1,15 +1,20 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
+//name: info
+export function info() {
+  return PackageFunctions.info();
+}
+
 //name: MolMIMModel
-//input: string algorithm { default: CMA-ES }
-//input: double num_molecules { default: 30 }
-//input: string property_name { default: QED }
+//input: string algorithm { default: 'CMA-ES' }
+//input: int num_molecules { default: 30 }
+//input: string property_name { default: 'QED' }
 //input: bool minimize { default: false }
 //input: double min_similarity { default: 0.3 }
-//input: double particles { default: 30 }
-//input: double iterations { default: 10 }
-//input: string smi { default: [H][C@@]12Cc3c[nH]c4cccc(C1=C[C@H](NC(=O)N(CC)CC)CN2C)c34; semType: Molecule }
+//input: int particles { default: 30 }
+//input: int iterations { default: 10 }
+//input: string smi { default: '[H][C@@]12Cc3c[nH]c4cccc(C1=C[C@H](NC(=O)N(CC)CC)CN2C)c34'; semType: Molecule }
 export async function molMIMModel(algorithm: string, num_molecules: number, property_name: string, minimize: boolean, min_similarity: number, particles: number, iterations: number, smi: string) {
   return PackageFunctions.molMIMModel(algorithm, num_molecules, property_name, minimize, min_similarity, particles, iterations, smi);
 }
@@ -30,7 +35,7 @@ export async function esmFoldModelPanel(sequence: DG.SemanticValue) {
 }
 
 //name: getTargetFiles
-//output: list result
+//output: list<string> result
 export async function getTargetFiles() {
   return PackageFunctions.getTargetFiles();
 }
@@ -38,8 +43,8 @@ export async function getTargetFiles() {
 //name: diffDockModelScript
 //input: string ligand 
 //input: string target 
-//input: double poses 
-//output: dynamic result
+//input: int poses 
+//output: string result
 //meta.cache: client
 //meta.cache.invalidateOn: 0 * * * *
 export async function diffDockModelScript(ligand: string, target: string, poses: number) {
@@ -50,7 +55,7 @@ export async function diffDockModelScript(ligand: string, target: string, poses:
 //input: dataframe df 
 //input: column ligands { semType: Molecule }
 //input: string target { choices: Bionemo: getTargetFiles }
-//input: double poses { default: 5 }
+//input: int poses { default: 5 }
 //top-menu: Chem | Docking | DiffDock...
 export async function diffDockModel(df: DG.DataFrame, ligands: DG.Column, target: string, poses: number) {
   return PackageFunctions.diffDockModel(df, ligands, target, poses);

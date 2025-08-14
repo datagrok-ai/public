@@ -91,6 +91,7 @@ import {scaleActivity} from './analysis/molecular-matched-pairs/mmp-viewer/mmpa-
 import {MixtureCellRenderer} from './rendering/mixture-cell-renderer';
 import {createComponentPane, createMixtureWidget, Mixfile} from './utils/mixfile';
 import {biochemicalPropertiesDialog} from './widgets/biochem-properties-widget';
+import {checkCurrentView} from './utils/ui-utils';
 
 export {getMCS};
 export * from './package.g';

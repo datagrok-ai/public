@@ -326,7 +326,7 @@ export class PackageFunctions{
 
   @grok.decorators.func()
   static makeVectorCode(
-    script: DG.Script): string {
+    @grok.decorators.param({type: 'script'}) script: DG.Script): string {
   
     const inputTable = DG.Script.vecInputTableName;
     let code: string = `input_table_length = len(${inputTable}.index)\n`;

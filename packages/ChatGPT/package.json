@@ -11,7 +11,7 @@
     "dayjs": "latest"
   },
   "devDependencies": {
-    "datagrok-tools": "^4.14.34",
+    "datagrok-tools": "^4.14.40",
     "ts-loader": "latest",
     "typescript": "latest",
     "webpack": "latest",

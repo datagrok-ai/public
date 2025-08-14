@@ -74,7 +74,7 @@ export class PackageFunctions
       'HitDesignerFunction'
     ],
     'name': 'Reinvent',
-    'editor': 'Reinvent4'
+    'editor': 'Reinvent4:ReinventEditor'
   })
   static async reinvent(
     @grok.decorators.param({'options':{'semType':'Molecule','initialValue':'\'OC(CN1CCCC1)NC(CCC1)CC1Cl\''}}) ligand: string,
@@ -124,7 +124,7 @@ export class PackageFunctions
 
   @grok.decorators.func({
     'top-menu': 'Chem | Generate molecules...',
-    'editor': 'Reinvent4'
+    'editor': 'Reinvent4:ReinventEditor'
   })
   static async reinventTopMenu(
     @grok.decorators.param({'options':{'semType':'Molecule','initialValue':'\'OC(CN1CCCC1)NC(CCC1)CC1Cl\''}})  ligand: string,

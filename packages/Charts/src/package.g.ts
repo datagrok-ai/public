@@ -21,7 +21,6 @@ export function flagCellRenderer() {
 
 //name: chordViewerDemo
 //description: Chord viewer visualizes weighted relationships between several entities
-//output: dynamic result
 //meta.demoPath: Visualization | General | Chord
 //meta.demoWait: 4000
 export async function chordViewerDemo() {
@@ -30,7 +29,6 @@ export async function chordViewerDemo() {
 
 //name: radarViewerDemo
 //description: Radar viewer is used on multivariate data to plot groups of values over several common variables
-//output: dynamic result
 //meta.demoPath: Visualization | General | Radar
 //meta.demoWait: 4000
 export async function radarViewerDemo() {
@@ -39,7 +37,6 @@ export async function radarViewerDemo() {
 
 //name: sankeyViewerDemo
 //description: Sankey viewer depicts a flow from one set of values to another
-//output: dynamic result
 //meta.demoPath: Visualization | General | Sankey
 //meta.demoWait: 4000
 export async function sankeyViewerDemo() {
@@ -48,7 +45,6 @@ export async function sankeyViewerDemo() {
 
 //name: sunburstViewerDemo
 //description: Sunburst viewer displays hierarchical data
-//output: dynamic result
 //meta.demoPath: Visualization | General | Sunburst
 //meta.demoWait: 4000
 export async function sunburstViewerDemo() {
@@ -57,7 +53,6 @@ export async function sunburstViewerDemo() {
 
 //name: surfacePlotDemo
 //description: Surface plot viewer displays a set of three-dimensional data as a mesh surface
-//output: dynamic result
 //meta.demoPath: Visualization | General | Surface Plot
 //meta.demoWait: 4000
 export async function surfacePlotDemo() {
@@ -66,7 +61,6 @@ export async function surfacePlotDemo() {
 
 //name: timelinesViewerDemo
 //description: Timelines viewer displays the flow of events over time
-//output: dynamic result
 //meta.demoPath: Visualization | General | Timelines
 //meta.demoWait: 4000
 export async function timelinesViewerDemo() {
@@ -75,7 +69,6 @@ export async function timelinesViewerDemo() {
 
 //name: treeViewerDemo
 //description: Tree viewer visualizes hierarchical data by categories
-//output: dynamic result
 //meta.demoPath: Visualization | Data Flow and Hierarchy | Tree
 //meta.demoWait: 4000
 export async function treeViewerDemo() {
@@ -84,7 +77,6 @@ export async function treeViewerDemo() {
 
 //name: wordCloudViewerDemo
 //description: Word Cloud viewer visualizes unstructured text data
-//output: dynamic result
 //meta.demoPath: Visualization | General | Word Cloud
 //meta.demoWait: 4000
 export async function wordCloudViewerDemo() {

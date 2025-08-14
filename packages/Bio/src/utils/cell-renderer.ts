@@ -59,6 +59,8 @@ export function processSequence(subParts: string[]): [string[], boolean] {
 type RendererGridCellTemp = {
   [MmcrTemps.monomerPlacer]: MonomerPlacer
 }
+
+// @grok.decorators.cellRenderer({name: 'customSequenceCellRenderer', cellType: 'sequence', columnTags: 'quality=Macromolecule, units=custom'})
 export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   private readonly seqHelper: ISeqHelper;
 

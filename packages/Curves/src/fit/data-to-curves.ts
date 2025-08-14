@@ -367,7 +367,6 @@ export function dataToCurvesUI() {
         wellLevelJoinCol: joinValues?.wellLevelCol?.name,
         parentLevelJoinCol: joinValues?.parentLevelCol?.name,
       });
-      console.log(fc.toString());
       const needsCreationScript = table.tags[DG.Tags.CreationScript] && (!parentLevelData?.table || parentLevelData.table.tags[DG.Tags.CreationScript]);
       await fc.call(undefined, undefined, {processed: !needsCreationScript});
       //console.log(fc.getResultViews());
@@ -383,7 +382,7 @@ export function dataToCurvesUI() {
           onClick: 'Select'
         });
         tv.dockManager.dock(trellis, DG.DOCK_TYPE.TOP, tv.dockManager.findNode(tv.grid.root), 'Fitted Curves', 0.5);
-        const selectionGrid = tv.addViewer(DG.VIEWER.GRID, {rowSource: 'Selected', selectedRowsColor: DG.Color.white});
+        const selectionGrid = tv.addViewer(DG.VIEWER.GRID, {rowSource: DG.RowSet.FilteredSelected, selectedRowsColor: DG.Color.white});
         tv.dockManager.dock(selectionGrid, DG.DOCK_TYPE.FILL, tv.dockManager.findNode(tv.grid.root), 'Selected Curves');
         selectionGrid.props.title = 'Selected Curves';
 
@@ -432,7 +431,7 @@ export async function convertDataToCurves(df: DG.DataFrame,
     throw new Error('Please fill all required fields');
   }
 
-  const curvesObj: {[curveKey: string]: {x: number[], y: number[], outliers: boolean[], groupKey: string, runID: string, info: {[key: string]: any}}} = {};
+  const curvesObj: {[curveKey: string]: {name: string, x: number[], y: number[], outliers: boolean[], groupKey: string, runID: string, info: {[key: string]: any}}} = {};
   const assayColCats = assayCol?.categories;
   const assayColIndexes = assayCol?.getRawData();
   const consentrationRawData = concentrationCol.getRawData();
@@ -476,7 +475,8 @@ export async function convertDataToCurves(df: DG.DataFrame,
   const hasParentGrouppingCols = parentCompoundIDCol && parentAssayCol && parentTargetEntityCol && parentRunIDCol;
 
   const getGroupKey = (row: number) => `${getCompoundID(row)}||${getAssay(row)}||${getTargetEntity(row)}`;
-  const getCurveKey = !hasJoinInfo ? ((row: number) => `${getGroupKey(row)}||${getRunID(row)}`) : ((row: number) => `${joinInfo!.wellLevelCol.get(row)}`);
+  const getCurveName = (row: number) => `${getGroupKey(row)}||${getRunID(row)}`;
+  const getCurveKey = !hasJoinInfo ? ((row: number) => getCurveName(row)) : ((row: number) => `${joinInfo!.wellLevelCol.get(row)}`);
   const getParentDataCurveKey = !hasJoinInfo ? (hasParentGrouppingCols ? ((row: number) =>
     `${parentData!.table?.col(compoundIDCol.name)!.get(row)}||${parentData!.table?.col(assayCol.name)!.get(row)}||${parentData!.table?.col(targetEntityCol.name)!.get(row)}||${parentData!.table?.col(runIDCol.name)!.get(row)}`) :
     ((_row: number) => null)) : ((row: number) => `${joinInfo!.parentLevelCol.get(row)}`);
@@ -510,14 +510,16 @@ export async function convertDataToCurves(df: DG.DataFrame,
 
     const groupKey = getGroupKey(i);
     const curveKey = getCurveKey(i);
+    const curveName = getCurveName(i);
 
     if (!curvesObj[curveKey]) {
-      curvesObj[curveKey] = {x: [], y: [], outliers: [], groupKey, runID: runID, info: {
+      curvesObj[curveKey] = {name: curveName, x: [], y: [], outliers: [], groupKey, runID: runID, info: {
         'Assay Name': assay,
         'Batch ID': batchID,
         'Compound ID': compoundID,
         'Target Entity': targetEntity,
         'Run ID': runID,
+        'Max Percent Inhibition': null, // will be calculated later
       }};
       if (parentData && parentObj[curveKey]) {
         curvesObj[curveKey].info['Reported IC50'] = parentObj[curveKey].reportedIC50;
@@ -539,6 +541,8 @@ export async function convertDataToCurves(df: DG.DataFrame,
     curve.x.push(concentration);
     curve.y.push(readout);
     curve.outliers.push(outlier);
+    if (!outlier && readout != null || readout != DG.FLOAT_NULL && readout != DG.INT_NULL)
+      curve.info['Max Percent Inhibition'] = Math.max(curve.info['Max Percent Inhibition'] ?? -Infinity, readout);
   }
 
   // create fit series
@@ -563,7 +567,7 @@ export async function convertDataToCurves(df: DG.DataFrame,
     const runID = curve.runID;
     const markerType = getMarkerType(runID);
     const params = parentObj[curveKey] ? parentObj[curveKey].fitParams : undefined;
-    const colorKey = (curve.info['Assay Name'] ?? '') + '||' + (curve.info['Target Entity'] ?? '');
+    const colorKey = (curve.info['Compound ID'] ?? '') + '||'+ (curve.info['Assay Name'] ?? '') + '||' + (curve.info['Target Entity'] ?? '');
     const color = getColor(colorKey);
     const fitFunctionName = parentObj?.[curveKey]?.fitFunction ? parentObj[curveKey].fitFunction : FIT_FUNCTION_4PL_DOSE_RESPONSE;
     const s: IFitSeries = {
@@ -575,7 +579,7 @@ export async function convertDataToCurves(df: DG.DataFrame,
         xAxisName: concentrationCol.name,
         yAxisName: readoutCol.name,
         logX: true,
-        title: `${curveKey}`,
+        title: `${curve.name ?? curveKey ?? ''}`,
       },
       series: [s],
     };
@@ -633,7 +637,7 @@ export async function convertDataToCurves(df: DG.DataFrame,
   for (const groupKey in grouppedValues) {
     const values = grouppedValues[groupKey];
     grouppedAggregations[groupKey] = {
-      'Max Percent Inhibition': values.maxYs.length ? Math.max(...values.maxYs)?.toString() : null,
+      'Max Percent Inhibition (Compound | Assay | Target)': values.maxYs.length ? Math.max(...values.maxYs)?.toString() : null,
       ...(parentData && parentData.table ? {
         'Number of total results': values.qualifiedIC50s.length?.toString(),
         'Number of reported results': values.reportedIC50s.length?.toString(),

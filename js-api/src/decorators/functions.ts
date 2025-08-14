@@ -169,7 +169,8 @@ export namespace decorators {
     ['cache.invalidateOn']?: string;
     ['top-menu']?: string;
     condition?: string;
-    helpUrl?: string;
+    ['help-url']?: string;
+    connection?: string;
   }
 
   interface AppOptions extends FunctionOptions {
@@ -180,6 +181,7 @@ export namespace decorators {
 
   interface DashboardOptions extends FunctionOptions {
     test?: string,
+    order?: string,
   }
 
   interface ModelOptions extends FunctionOptions {
