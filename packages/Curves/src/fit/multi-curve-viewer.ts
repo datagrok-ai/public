@@ -25,6 +25,7 @@ export class MultiCurveViewer extends DG.JsViewer {
   canvas: HTMLCanvasElement;
   gridCellWidget: DG.GridCellWidget;
   curvesColumnNames?: string[] = [];
+  legendColumnName?: string;
   showSelectedRowsCurves: boolean = true;
   showCurrentRowCurve: boolean = true;
   showMouseOverRowCurve: boolean = true;
@@ -63,6 +64,7 @@ export class MultiCurveViewer extends DG.JsViewer {
     });
 
     this.curvesColumnNames = this.addProperty('curvesColumnNames', DG.TYPE.COLUMN_LIST, [], {semType: FitConstants.FIT_SEM_TYPE});
+    this.legendColumnName = this.addProperty('legendColumnName', DG.TYPE.STRING, '', {description: 'Column to be used for curves names'});
 
     this.showSelectedRowsCurves = this.bool('showSelectedRowsCurves', true, {description: 'Adds curves from the selected rows'});
     this.showCurrentRowCurve = this.bool('showCurrentRowCurve', true);
@@ -133,9 +135,17 @@ export class MultiCurveViewer extends DG.JsViewer {
         if (!tableCell || !tableCell.value)
           continue;
         const cellCurves = getOrCreateParsedChartData(tableCell);
-        cellCurves.series?.forEach((series) => series.columnName = tableCell.column.name);
+        if (!cellCurves.series || cellCurves.series.length === 0)
+          continue;
+        cellCurves.series.forEach((series) => series.columnName = tableCell.column.name);
+        const legendCol = !this.legendColumnName || !this.dataFrame.col(this.legendColumnName) ? null : this.dataFrame.col(this.legendColumnName);
+        for (let j = 0; j < cellCurves.series.length; j++) {
+          const series = cellCurves.series[j];
+          if (legendCol)
+            series.auxLegendName = cellCurves.series.length > 1 ? `${legendCol.get(i)} ${series.name}` : `${legendCol.get(i)}`;
+        }
         const currentChartOptions = cellCurves.chartOptions;
-        if (currentChartOptions !== undefined && currentChartOptions !== null)
+        if (currentChartOptions != null)
           chartOptions[chartOptions.length] = currentChartOptions;
         if (mergeCellSeries) {
           const mergedSeries = mergeSeries(cellCurves.series!)!;
@@ -151,6 +161,7 @@ export class MultiCurveViewer extends DG.JsViewer {
         this.data.series?.push(...JSON.parse(JSON.stringify(series)));
     }
     this.data.chartOptions = mergeChartOptions(chartOptions);
+    this.data.chartOptions.useAuxLegendNames = true;
     this.mergeViewerChartOptions();
     this.data.series?.forEach((series, i) => {
       if (!series.fitLineColor && !series.pointColor) {
