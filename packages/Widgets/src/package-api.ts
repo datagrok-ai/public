@@ -11,25 +11,25 @@ export namespace funcs {
   /**
   A filter that lets you select exactly one category
   */
-  export async function radioButtonFilter(): Promise<void> {
+  export async function radioButtonFilter(): Promise<any> {
     return await grok.functions.call('Widgets:RadioButtonFilter', {});
   }
 
   /**
   A filter that works with columns of multi-value cells (such as lists of identifiers)
   */
-  export async function multiValueFilter(): Promise<void> {
+  export async function multiValueFilter(): Promise<any> {
     return await grok.functions.call('Widgets:MultiValueFilter', {});
   }
 
   /**
   Shows current time
   */
-  export async function timeWidget(): Promise<void> {
+  export async function timeWidget(): Promise<any> {
     return await grok.functions.call('Widgets:TimeWidget', {});
   }
 
-  export async function tableSummary(): Promise<void> {
+  export async function tableSummary(): Promise<any> {
     return await grok.functions.call('Widgets:TableSummary', {});
   }
 

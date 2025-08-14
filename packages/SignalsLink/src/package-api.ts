@@ -12,7 +12,7 @@ export namespace funcs {
     return await grok.functions.call('SignalsLink:SignalsApp', {});
   }
 
-  export async function signalsAppTreeBrowser(treeNode: any , browseView: any ): Promise<void> {
+  export async function signalsAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<void> {
     return await grok.functions.call('SignalsLink:SignalsAppTreeBrowser', { treeNode, browseView });
   }
 
