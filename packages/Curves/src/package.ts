@@ -65,14 +65,14 @@ export class PackageFunctions {
     grok.shell.addView(await PackageFunctions.previewPlateXlsx(plateFile) as DG.ViewBase);
   }
 
-  @grok.decorators.init({})
+  @grok.decorators.init()
   static _initCurves(): void {
     DG.ObjectHandler.register(new FitGridCellHandler());
     DG.ObjectHandler.register(new PlateCellHandler());
     DG.ObjectHandler.register(new PlateTemplateHandler());
   }
 
-  @grok.decorators.func({})
+  @grok.decorators.func()
   static async dataToCurves(df: DG.DataFrame, concentrationCol: DG.Column, readoutCol: DG.Column, batchIDCol: DG.Column, assayCol: DG.Column,
     runIDCol: DG.Column, compoundIDCol: DG.Column, targetEntityCol: DG.Column, @grok.decorators.param({options: {nullable: true}})excludeOutliersCol?: DG.Column,
     // rest is parent level data
@@ -104,7 +104,7 @@ export class PackageFunctions {
     );
   }
 
-  @grok.decorators.func({'top-menu': 'Data | Curves | Data to Curves'})
+  @grok.decorators.func({'top-menu': 'Data | Curves | Data to Curves', 'outputs': [{'name': 'result', 'type': 'dynamic'}]})
   static async dataToCurvesTopMenu() {
     dataToCurvesUI();
   }
@@ -175,7 +175,7 @@ export class PackageFunctions {
     return column;
   }
 
-  @grok.decorators.folderViewer({})
+  @grok.decorators.folderViewer({outputs: [{'name': 'result', 'type': 'dynamic'}]})
   static async platesFolderPreview(folder: DG.FileInfo, files: DG.FileInfo[]): Promise<DG.Widget | DG.ViewBase | undefined> {
     const nameLowerCase = folder.name?.toLowerCase();
     if (!nameLowerCase?.includes('plate'))
@@ -226,7 +226,7 @@ export class PackageFunctions {
     return view;
   }
 
-  @grok.decorators.func({})
+  @grok.decorators.func()
   static async checkExcelIsPlate(content: Uint8Array): Promise<boolean> {
     try {
       if (content.length > 1_000_000) // haven't really seen a plate file larger than 1MB
@@ -249,7 +249,7 @@ export class PackageFunctions {
     }
   }
 
-  @grok.decorators.func({})
+  @grok.decorators.func()
   static checkFileIsPlate(content: string): boolean {
     if (content.length > 1_000_000)
       return false;
@@ -261,14 +261,14 @@ export class PackageFunctions {
     return platesAppView();
   }
 
-  @grok.decorators.func({})
+  @grok.decorators.func()
   static async getPlateByBarcode(barcode: string): Promise<Plate> {
     await initPlates();
     const df: DG.DataFrame = await api.queries.getWellValuesByBarcode(barcode);
     return Plate.fromDbDataFrame(df);
   }
 
-  @grok.decorators.func({})
+  @grok.decorators.func()
   static async createDummyPlateData(): Promise<void> {
     await __createDummyPlateData();
   }

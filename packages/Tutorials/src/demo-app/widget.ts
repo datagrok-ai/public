@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {DemoView} from './demo-app'
 import {DEMO_APP_HIERARCHY} from './const';
-import {demoApp} from '../package';
+import {PackageFunctions} from '../package';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import { TreeViewGroup } from 'datagrok-api/dg';
 
@@ -79,7 +79,7 @@ export class DemoAppWidget extends DG.Widget {
 
           DG.debounce(tree.onSelectedNodeChanged, 300).subscribe(async (value) => {
             if (value.root.classList.contains('d4-tree-view-item')) {
-                demoApp();
+                PackageFunctions.demoApp();
                 demoView.tree.items.find(node => node.text === value.text)?.root.click();
             }
           });
