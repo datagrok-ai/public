@@ -30,6 +30,11 @@ export namespace Operators {
     }
 }
 
+export enum QueryBuilderLayout {
+    Standard = 'standard',
+    Narrow = 'narrow'
+}
+
 export interface SimpleCondition<T = any> {
     field: string;
     operator: string;
@@ -49,7 +54,7 @@ export class BaseConditionEditor<T = any> {
     condition: SimpleCondition<T>;
     onChanged: Subject<SimpleCondition<T>> = new Subject<SimpleCondition<T>>();
     showSuggestions = false;
-    suggestionsMenuClicked = false
+    suggestionsMenuClicked = false;
 
     constructor(prop: DG.Property, operator: string, initialCondition?: SimpleCondition<T>) {
         this.condition = initialCondition ?? {
@@ -366,45 +371,59 @@ export class QueryBuilder {
     condition: ComplexCondition;
     properties: DG.Property[];
     structureChanged: Subject<ComplexCondition> = new Subject<ComplexCondition>();
-    filterValueChanged: Subject<SimpleCondition> = new Subject<SimpleCondition>();    
+    filterValueChanged: Subject<SimpleCondition> = new Subject<SimpleCondition>();
+    layout: QueryBuilderLayout;
 
-    constructor(properties: DG.Property[], initialCondition?: ComplexCondition) {
+    constructor(properties: DG.Property[], initialCondition?: ComplexCondition, layout: QueryBuilderLayout = QueryBuilderLayout.Standard) {
         this.properties = properties;
+        this.layout = layout;
         
         if (initialCondition) {
             this.condition = initialCondition;
         } else {
-            // Create a default condition with the first property and its first operator
-            const firstProperty = properties[0];
-            if (firstProperty) {
-                const registry = ConditionRegistry.getInstance();
-                const operators = registry.getOperatorsForProperty(firstProperty);
-                const firstOperator = operators[0];
-                
-                this.condition = {
+            const defaultCondition = this.createDefaultSimpleCondition();
+            this.condition = {
                     logicalOperator: Operators.Logical.and,
-                    conditions: [{
-                        field: firstProperty.name,
-                        operator: firstOperator,
-                        value: undefined
-                    }]
-                };
-            } else {
-                // Fallback if no properties are available
-                this.condition = {
-                    logicalOperator: Operators.Logical.and,
-                    conditions: []
-                };
-            }
+                    conditions: [defaultCondition]
+            };
         }
 
         this.root = this.buildUI(this.condition, undefined, 0);
+    }
+
+    createDefaultSimpleCondition(): SimpleCondition {
+        const firstProperty = this.properties[0];
+        if (firstProperty) {
+            const registry = ConditionRegistry.getInstance();
+            const operators = registry.getOperatorsForProperty(firstProperty);
+            const firstOperator = operators[0];
+
+            return {
+                field: firstProperty.name,
+                operator: firstOperator,
+                value: undefined
+            }
+        } else
+            return {
+                field: '',
+                value: undefined,
+                operator: ''
+            }
     }
 
     rebuildUI(): void {
         const newRoot = this.buildUI(this.condition, undefined, 0);
         this.root.replaceWith(newRoot);
         this.root = newRoot;
+    }
+
+    setLayout(layout: QueryBuilderLayout): void {
+        this.layout = layout;
+        this.rebuildUI();
+    }
+
+    getLayout(): QueryBuilderLayout {
+        return this.layout;
     }
 
     buildUI(
@@ -508,7 +527,7 @@ export class QueryBuilder {
                 removeOrReplaceCondition(cond, parentCondition ? parentCondition.conditions : condition.conditions);
                 this.rebuildUI();
                 this.structureChanged.next(this.condition);
-            });
+            }, 'Remove current condition');
 
             const addNestedConditionIcon = ui.icons.add(() => {
                 const parentCond = { logicalOperator: Operators.Logical.and, conditions: [cond] };
@@ -520,8 +539,22 @@ export class QueryBuilder {
 
             const operatorInputDiv = ui.div('', 'query-builder-filter-operator');
             const criteriaDiv = ui.div();
-            const filterContainer = ui.divH([fieldChoiceInput.root, operatorInputDiv, criteriaDiv,
-            ui.divH([deleteFieldIcon, addNestedConditionIcon], 'add-delete-icons')], 'query-builder-filter-inputs');
+            // Create filter container based on layout
+            let filterContainer: HTMLElement;
+            if (this.layout === QueryBuilderLayout.Narrow) {
+                // Narrow layout: each field on separate row
+                filterContainer = ui.divV([
+                    ui.divH([fieldChoiceInput.root], 'query-builder-filter-field-row'),
+                    ui.divH([operatorInputDiv], 'query-builder-filter-operator-row'),
+                    ui.divH([criteriaDiv], 'query-builder-filter-value-row'),
+                    ui.divH([deleteFieldIcon, addNestedConditionIcon], 'add-delete-icons')
+                ], 'query-builder-filter-inputs-narrow');
+            } else {
+                // Standard layout: all fields on same row
+                filterContainer = ui.divH([fieldChoiceInput.root, operatorInputDiv, criteriaDiv,
+                ui.divH([deleteFieldIcon, addNestedConditionIcon], 'add-delete-icons')], 'query-builder-filter-inputs');
+            }
+            
             container.appendChild(filterContainer);
             createFilter();
             this.filterValueChanged.next(cond);
@@ -529,11 +562,7 @@ export class QueryBuilder {
 
         // adding filter field
         const addFieldIcon = ui.icons.add(() => {
-            const conditionForFilter: SimpleCondition = {
-                field: '',
-                value: '',
-                operator: ''
-            };
+            const conditionForFilter: SimpleCondition = this.createDefaultSimpleCondition();
             condition.conditions?.push(conditionForFilter);
             condition.conditions.length < 2 ? container.classList.remove('property-query-builder-multipe-filelds') :
                 container.classList.add('property-query-builder-multipe-filelds');
@@ -543,17 +572,22 @@ export class QueryBuilder {
 
         // AND/OR operators handling
         condition.logicalOperator ??= Operators.Logical.and;
-        const logicalOperatorIcon = ui.button(condition.logicalOperator, () => {
-            condition.logicalOperator = condition.logicalOperator === Operators.Logical.or ? Operators.Logical.and : Operators.Logical.or;
-            logicalOperatorIcon.innerText = condition.logicalOperator.toUpperCase();
-            this.rebuildUI();
-            this.structureChanged.next(this.condition);
-        }, 'Logical operator');
 
-        logicalOperatorIcon.classList.add('property-query-builder-and-or-operator');
+        const logicalOperatorChoice = ui.input.choice('', {
+            value: condition.logicalOperator === Operators.Logical.and ? 'all' : 'any',
+            items: ['all', 'any'],
+            nullable: false,
+            onValueChanged: () => {
+                condition.logicalOperator = logicalOperatorChoice.value! === 'all' ? Operators.Logical.and : Operators.Logical.or;
+                this.rebuildUI();
+                this.structureChanged.next(this.condition);
+            }
+        })
+
+        const logicalOperatorDiv = ui.divH([ui.divText('Match'), logicalOperatorChoice.root], 'query-builder-match-div');
 
         const addDeleteIconsDiv = ui.divH([addFieldIcon], 'nested-add-delete-icons');
-        const iconsDiv = ui.divH([logicalOperatorIcon, addDeleteIconsDiv], 'query-builder-nested-condition-operators');
+        const iconsDiv = ui.divH([logicalOperatorDiv, addDeleteIconsDiv], 'query-builder-nested-condition-operators');
         const container = ui.divV([iconsDiv], 'query-builder-search-query-operator');
 
 
