@@ -70,7 +70,7 @@ export class MultiCurveViewer extends DG.JsViewer {
     this.mergeColumnSeries = this.bool('mergeColumnSeries', false);
 
     for (const p of fitChartDataProperties)
-      this.addProperty(p.name === 'mergeSeries' ? 'mergeCellSeries' : p.name, p.propertyType, p.defaultValue, p.options);
+      this.addProperty(p.name === 'mergeSeries' ? 'mergeCellSeries' : p.name, p.propertyType, p.defaultValue, {...p.options, showSlider: false});
   }
 
   static fromChartData(chartData: IFitChartData): MultiCurveViewer {
