@@ -69,6 +69,7 @@ export class BaseConditionEditor<T = any> {
         if (Array.isArray(this.condition.value))
             this.condition.value = undefined as T;
         const input = ui.input.forProperty(prop, this.condition.value, {
+            nullable: false,
             onValueChanged: () => {
                 this.condition.value = input.value as T;
                 this.onChanged.next(this.condition);
@@ -114,6 +115,7 @@ export class BetweenConditionEditor extends BaseConditionEditor {
             this.onChanged.next(this.condition);
         }
         const input1 = ui.input.forProperty(prop, this.condition.value[0], {
+            nullable: false,
             onValueChanged: () => {
                 this.condition.value[0] = input1.value!;
                 this.onChanged.next(this.condition);
@@ -193,6 +195,7 @@ export class MultiValueConditionEditorString extends BaseConditionEditor<string[
             this.condition.value = [];
         }
         const input = ui.input.list('', {
+            nullable: false,
             value: this.condition.value,
             onValueChanged: () => {
                 this.condition.value = input.value!;
@@ -209,6 +212,7 @@ export class MultiValueConditionEditorInt extends BaseConditionEditor<number[]> 
             this.condition.value = [];
         }
         const input = ui.input.list('', {
+            nullable: false,
             value: this.condition.value,
             onValueChanged: () => {
                 this.condition.value = input.value!.map((it) => parseInt(it));
@@ -225,6 +229,7 @@ export class MultiValueConditionEditorFloat extends BaseConditionEditor<number[]
             this.condition.value = [];
         }
         const input = ui.input.list('', {
+            nullable: false,
             value: this.condition.value,
             onValueChanged: () => {
                 this.condition.value = input.value!.map((it) => parseFloat(it));
