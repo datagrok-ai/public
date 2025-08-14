@@ -18,8 +18,6 @@ import { AdmeticaViewApp } from './utils/admetica-app';
 export * from './package.g';
 export const _package = new DG.Package();
 
-//name: info
-
 export class PackageFunctions {
   // @grok.decorators.init()
   // static async init() { }
