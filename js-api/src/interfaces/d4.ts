@@ -2733,6 +2733,7 @@ export interface IScatterPlotSettings {
   linesOrder: string;
   linesOrderColumnName: string;
 
+  /// Defines the width of the lines connecting the markers. See **Lines Width**.
   linesWidth: number;
 
   /// Label columns to show next to the markers.
