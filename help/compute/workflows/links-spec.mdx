@@ -21,7 +21,7 @@ results. Mandatory for any LQL query.
 that for creating a link matching this query is not necessary. `call`
 flag is used in [funccall](link-types#funccall-actions) actions, to
 specify that instead of a script io, FuncCall itself should be matched
-and returned.
+and returned. `template` flag is used in [template queries](#template-queries).
 
 `PATH` is a mandatory path, where items are delimited by `/`. For
 example, assuming its data link input:
@@ -53,6 +53,8 @@ All plain selectors support matching multiple ids via `or`. For
 example, `first(script1|script2)` will match the first item with id
 either `script1` or `script2`.
 
+Here is a list of plain selectors:
+
 #### `first`
 
 Matches the first item with provided ids among direct descendant.
@@ -79,29 +81,45 @@ for base queries. Selector `expand` is working like `all` in terms of
 matching, but has a special meaning. For each match a separate link
 instance will be created (provided all other queries are matching as
 well). Each link instance will be triggered separately and pass data
-only from its own matched inputs to own matched outputs.
+only from its own matched inputs to own matched outputs. Reference
+selectors are using `@` base query name as the first argument, and id
+list as the second.
 
 For example, here is a part of link definition with base and reference
 selectors:
 
 ```
 {
-  base: "base:myworkflow/expand(workflow1|workflow2)/script1",
-  from: "in:myworkflow/same(@base,workflow1|workflow2)/script1/output1"
-  to: "out:myworkflow/after+(@base,workflow1|workflow2)/script2/input1"
+  id: "mylink1",
+  base: "base:expand(workflow1|workflow2)/expand(script1)",
+  from: "in:same(@base,workflow1|workflow2)/same(@base,script1)/output1"
+  to: "out:same(@base,workflow1|workflow2)/after+(@base,script2)/input1"
 }
 ```
 
-__TODO__ ui gif and state diagramm with base paths and links
+![Base path example1](pics/base_path_example1.svg)
 
-If there are multiple grandchildren in the workflow with ids workflow1
-or workflow2, multiple links instances will be created. Each matched
-link instance will pass its own matched script1 output1 to the
-adjacent script2 input1. Reference selectors are using `@` base query
-name as the first argument, and id list as the second. It is possible
-to mix reference and plain selectors, in the exmaple above first
-selector is used in a short form. Note that base queries are targeted
+
+Is this example (assuming that mylink1 is defined directly in
+myworkflow), the first segment `expand(workflow1|workflow2)` matches
+both workflow1 and workflow2. The second segment of the base path
+`expand(script1)` is matching script1, and there are 2 matches inside
+each workflow, so 4 script1 items are matching. All base path matches
+are colored via a red border. Note that base queries are targeted
 scirpts or workflows, not scirpt io.
+
+The next step is to use this base path matches to create mylink1
+instances. The first segment of both from and to paths
+`same(@base,workflow1|workflow2)` matches the same workflow1 and
+workflow2 as the base path. For from path the second segment
+`same(@base,script1)` matches again the same nodes as the
+base. However, for to path `after+(@base,script2)/input1`, it matches
+next adjacent script2 (relative to base path script1 match). There are
+4 matches, so four link mylink1 instances are created. If the last
+script2 is removed, there will be 3 links, since there will be no more
+matching next adjacent script2 for the last script1.
+
+Here is a list of reference selectors:
 
 #### `same`
 
@@ -153,8 +171,6 @@ It is also possible to combine tag and id selector in the same query:
 ```
 #all(tag1&tag2)/last(script1|scirpt2)/input1
 ```
-
-__TODO__ ui gif and state diagramm with base paths
 
 Will match all items with both tag1 and tag2 first, regardless of how
 deep they are nested, and then match last child item that has id
