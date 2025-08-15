@@ -59,8 +59,8 @@ export class PackageFunctions {
     'meta': {
       'role': 'converter',
       'inputRegexp': '(^\\s*[Pp][Uu][Bb][Cc][Hh][Ee][Mm]\\s*\\:\\s*[0-9]+\\s*$)',
-      'connection': 'PubChemApi',
     },
+    'connection': 'PubChemApi',
     'outputs': [{name: 'result', type: 'string', options: {semType: 'Molecule'}}],
   })
   static async pubChemToSmiles(
@@ -78,8 +78,8 @@ export class PackageFunctions {
     'meta': {
       'role': 'converter',
       'inputRegexp': '([A-Z]{14}-[A-Z]{10}-N)',
-      'connection': 'PubChemApi',
     },
+    'connection': 'PubChemApi',
     'outputs': [{name: 'result', type: 'string', options: {semType: 'Molecule'}}],
   })
   static async inchiKeysToSmiles(
@@ -92,9 +92,7 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'meta': {
-      'connection': 'PubChemApi',
-    },
+    'connection': 'PubChemApi',
   })
   static async GetIupacName(
     smiles: string): Promise<string> {
