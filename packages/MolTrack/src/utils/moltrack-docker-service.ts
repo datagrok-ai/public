@@ -60,6 +60,15 @@ export class MolTrackDockerService {
     return response.json();
   }
 
+  static async getCompoundById(id: number): Promise<any> {
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy(
+      this.container.id,
+      `/v1/compounds/${id}`,
+      { method: 'GET' },
+    );
+    return response.json();
+  }
+
   static async registerBulk(
     csvFile: DG.FileInfo,
     scope: string,

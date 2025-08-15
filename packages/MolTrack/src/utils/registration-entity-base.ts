@@ -14,6 +14,7 @@ export abstract class EntityBaseView {
   previewDf: DG.DataFrame | undefined;
 
   inputs: DG.InputBase[] = [];
+  batchInputs: DG.InputBase<any>[] = [];
   formBackingObject: Record<string, any> = {};
 
   title: string = 'Register new chemical compounds';
@@ -21,8 +22,6 @@ export abstract class EntityBaseView {
   singleRetrieved: boolean = false;
 
   protected messageContainer: HTMLDivElement = ui.div([], 'moltrack-info-container');
-
-  protected abstract scope: Scope;
 
   constructor(buildUI: boolean = true) {
     this.view = DG.View.create();
@@ -42,7 +41,7 @@ export abstract class EntityBaseView {
     if (p.description)
       options.description = p.description;
 
-    if (p.pattern) {
+    if (p.pattern && !reservedProperties.includes(p.name)) {
       const regex = new RegExp(p.pattern);
       options.valueValidators = [
         (val: any) =>
@@ -106,19 +105,23 @@ export abstract class EntityBaseView {
     try {
       const smiles = this.sketcherInstance.getSmiles();
       const propValues = this.collectNonEmptyInputValues();
-      const csvFile = this.createCsvFile(smiles, propValues);
+      const batchInputNames = this.batchInputs.map((input) => input.property.name);
+      const isBatch = Object.keys(propValues).find((name) => batchInputNames.includes(name)) !== undefined;
+      const scope = isBatch ? Scope.BATCHES : Scope.COMPOUNDS;
+      const singularScope = scope.replace(/(es|s)$/, '');
+      const csvFile = this.createCsvFile(smiles, propValues, scope);
 
-      const resultDf = await registerBulk(csvFile, this.scope, '', ErrorHandling.REJECT_ROW);
+      const resultDf = await registerBulk(csvFile, scope, '', ErrorHandling.REJECT_ROW);
 
       ui.empty(this.messageContainer);
       if (!resultDf)
         return;
 
-      const { status, compoundId, errorMsg } = this.extractResultData(resultDf);
-      this.showRegistrationMessage(status, compoundId, errorMsg);
+      const { status, compoundId, batchId, errorMsg } = this.extractResultData(resultDf);
+      this.showRegistrationMessage(status, batchId?.trim() || compoundId, errorMsg, singularScope);
 
       if (status === 'success' && openedView)
-        openedView.path = `${createPath('Compound')}?corporate_compound_id=${encodeURIComponent(compoundId)}`;
+        openedView.path = `${createPath('Compound')}?corporate_${singularScope}_id=${encodeURIComponent(batchId?.trim() || compoundId)}`;
     } catch {
       ui.empty(this.messageContainer);
     }
@@ -133,29 +136,31 @@ export abstract class EntityBaseView {
       }, {} as Record<string, any>);
   }
 
-  private createCsvFile(smiles: string, propValues: Record<string, any>): DG.FileInfo {
+  private createCsvFile(smiles: string, propValues: Record<string, any>, scope: string): DG.FileInfo {
     const headers = ['smiles', ...Object.keys(propValues)];
     const row = [smiles, ...Object.values(propValues)];
     const csvString = `${headers.join(',')}\n${row.join(',')}\n`;
-    return DG.FileInfo.fromString(`${this.scope}.csv`, csvString);
+    return DG.FileInfo.fromString(`${scope}.csv`, csvString);
   }
 
-  private extractResultData(df: DG.DataFrame): { status: string, compoundId: string, errorMsg: string } {
+  private extractResultData(df: DG.DataFrame): { status: string, compoundId: string, batchId: string, errorMsg: string } {
     const getValue = (colName: string, fallback = '') => df.col(colName)?.get(0) ?? fallback;
 
     return {
       status: getValue('registration_status', 'Unknown'),
       compoundId: getValue('property_corporate_compound_id', ''),
+      batchId: getValue('batch_property_corporate_batch_id', ''),
       errorMsg: getValue('registration_error_message', 'Unknown error'),
     };
   }
 
-  private showRegistrationMessage(status: string, compoundId: string, errorMsg: string) {
+  private showRegistrationMessage(status: string, id: string, errorMsg: string, scope: string) {
+    const upperCasedScope = scope.charAt(0).toUpperCase() + scope.slice(1);
     const header = status === 'success' ?
-      'Compound successfully registered!' :
-      'Compound registration failed!';
+      `${upperCasedScope} successfully registered!` :
+      `${upperCasedScope} registration failed!`;
     const message = status === 'success' ?
-      `The compound has been added to the database with ID: ${compoundId}` :
+      `The ${scope} has been added to the database with ID: ${id}` :
       `Error: ${errorMsg}`;
 
     const infoDiv = ui.info(message, header, true);
@@ -205,6 +210,7 @@ export abstract class EntityBaseView {
       },
     );
 
+    this.batchInputs = batchInputs;
     this.inputs = [...compoundInputs, ...batchInputs];
     this.formBackingObject = {
       ...compoundFormBackingObject,

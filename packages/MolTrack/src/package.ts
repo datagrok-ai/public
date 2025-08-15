@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -8,10 +9,7 @@ import { RegistrationView } from './utils/registration-tab';
 import { registerAllData, registerAssayData, updateAllMolTrackSchemas } from './utils/utils';
 import { RegistrationCompoundView } from './utils/registration-compound-tab';
 import { RegistrationBatchView } from './utils/registration-batch-tab';
-import { RegistrationAssayView } from './utils/registration-assay-tab';
 import { Scope } from './utils/constants';
-// import { RegistrationAssayRunView } from './utils/registration-assay-run-tab';
-// import { RegistrationAssayResultView } from './utils/registration-assay-results-tab';
 
 export const _package = new DG.Package();
 
@@ -28,12 +26,31 @@ export async function init(): Promise<void> {
   //   await (query.prepare()).call();
 }
 
+export function createPath(viewName: string) {
+  let path = `${MOLTRACK_APP_PATH}/`;
+  path += encodeURIComponent(viewName);
+  return path;
+}
+
+const MOLTRACK_APP_PATH: string = 'apps/MolTrack';
+
 //tags: app
 //name: MolTrack
 //meta.icon: images/moltrack.png
+//input: string path {meta.url: true; optional: true}
 //output: view v
 //meta.browsePath: Chem
-export async function molTrackApp(): Promise<DG.ViewBase> {
+export async function molTrackApp(path: string): Promise<DG.ViewBase> {
+  const url = new URL(window.location.href);
+  const corporateCompoundId = url.searchParams.get('corporate_compound_id');
+  const corporateBatchId = url.searchParams.get('corporate_batch_id');
+
+  if (corporateCompoundId)
+    return await compoundView(corporateCompoundId);
+
+  if (corporateBatchId)
+    return await batchView(corporateBatchId);
+
   const appHeader = u2.appHeader({
     iconPath: _package.webRoot + '/images/cdd-icon-big.png',
     learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/MolTrack/README.md',
@@ -48,6 +65,87 @@ export async function molTrackApp(): Promise<DG.ViewBase> {
   ]));
 }
 
+async function buildRegistrationView({
+  title,
+  smiles,
+  pathQueryParam,
+  propsList,
+}: {
+  title: string;
+  smiles: string;
+  pathQueryParam: string;
+  propsList: any[];
+}) {
+  const registrationView = new RegistrationCompoundView(false);
+  registrationView.initialSmiles = smiles;
+  registrationView.singleRetrieved = true;
+  registrationView.title = title;
+  await registrationView.buildUIMethod();
+
+  registrationView.formBackingObject = {};
+  for (const prop of propsList) {
+    const value = prop.value_string ?? prop.value_num ?? prop.value_datetime ?? prop.value_uuid;
+    if (value !== null && value !== undefined)
+      registrationView.formBackingObject[prop.name] = value;
+  }
+
+  for (const input of registrationView.inputs) {
+    const propName = input.property.name;
+    if (registrationView.formBackingObject.hasOwnProperty(propName))
+      input.value = registrationView.formBackingObject[propName];
+  }
+
+  registrationView.show();
+  registrationView.view.path = `${createPath('Compound')}?${pathQueryParam}`;
+
+  return registrationView.view;
+}
+
+async function compoundView(corporateCompoundId: string) {
+  const df = await retrieveEntity(Scope.COMPOUNDS);
+  const idx = findEntityIndex(df!, 'properties', corporateCompoundId);
+  const smiles = df!.get('canonical_smiles', idx);
+  const propertiesJson = df!.get('properties', idx);
+  const properties: any[] = JSON.parse(propertiesJson ?? '[]');
+
+  return buildRegistrationView({
+    title: `Compound: ${corporateCompoundId}`,
+    smiles,
+    pathQueryParam: `corporate_compound_id=${encodeURIComponent(corporateCompoundId)}`,
+    propsList: properties,
+  });
+}
+
+async function batchView(corporateBatchId: string) {
+  const df = await retrieveEntity(Scope.BATCHES);
+  const idx = findEntityIndex(df!, 'properties', corporateBatchId);
+
+  const compoundId = df!.get('compound_id', idx);
+  const compoundInfo = await getCompoundById(compoundId);
+  const smiles = compoundInfo?.get('canonical_smiles', 0);
+
+  const batchProps: any[] = JSON.parse(df!.get('properties', idx) ?? '[]');
+  const compoundProps: any[] = JSON.parse(compoundInfo?.get('properties', 0) ?? '[]');
+  const combinedPropsMap = new Map<string, any>();
+  for (const prop of [...compoundProps, ...batchProps])
+    combinedPropsMap.set(prop.name, prop);
+
+  return buildRegistrationView({
+    title: `Batch: ${corporateBatchId}`,
+    smiles,
+    pathQueryParam: `corporate_batch_id=${encodeURIComponent(corporateBatchId)}`,
+    propsList: Array.from(combinedPropsMap.values()),
+  });
+}
+
+function findEntityIndex(df: DG.DataFrame, colName: string, searchValue: string): number {
+  for (let i = 0; i < df!.rowCount; i++) {
+    if (df!.get(colName, i)?.includes(searchValue))
+      return i;
+  }
+  throw new Error(`Entity with value '${searchValue}' not found in column '${colName}'`);
+}
+
 //input: dynamic treeNode
 //input: view browseView
 export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseView: any) {
@@ -56,16 +154,12 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
   registerCompoundNode.onSelected.subscribe(() => {
     const registrationCompoundView = new RegistrationCompoundView();
     registrationCompoundView.show();
+    registrationCompoundView.view.path = createPath('Compound');
   });
   const registerBatchNode = appNode.getOrCreateGroup('Register').item('Batch');
   registerBatchNode.onSelected.subscribe(() => {
     const registrationBatchView = new RegistrationBatchView();
     registrationBatchView.show();
-  });
-  const registerAssayNode = appNode.getOrCreateGroup('Register').item('Assay');
-  registerAssayNode.onSelected.subscribe(() => {
-    const registrationAssayView = new RegistrationAssayView();
-    registrationAssayView.show();
   });
   const registerBulkNode = appNode.getOrCreateGroup('Register').item('Bulk...');
   registerBulkNode.onSelected.subscribe(() => {
@@ -75,9 +169,9 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
 
   for (const scope of Object.values(Scope)) {
     const formattedScope = scope
-    .toLowerCase()
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (char) => char.toUpperCase());
+      .toLowerCase()
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (char) => char.toUpperCase());
     const retrieveNode = appNode.getOrCreateGroup('Retrieve').item(formattedScope);
     retrieveNode.onSelected.subscribe(async () => {
       const data = await grok.functions.call('MolTrack:retrieveEntity', { scope });
@@ -156,19 +250,23 @@ export async function registerBulk(
 export async function retrieveEntity(scope: string): Promise<DG.DataFrame | undefined> {
   await MolTrackDockerService.init();
   const resultJson = await MolTrackDockerService.retrieveEntity(scope);
+  const flattenedRes = resultJson.map((item: any) => flattened(item));
+  return DG.DataFrame.fromObjects(flattenedRes);
+}
 
-  const flattened = resultJson.map((item: any) => {
-    const row: any = {};
-    for (const [key, value] of Object.entries(item)) {
-      // If value is an object or array, stringify it
-      if (typeof value === 'object' && value !== null) {
-        row[key] = JSON.stringify(value);
-      } else {
-        row[key] = value;
-      }
-    }
-    return row;
-  });
-  
-  return DG.DataFrame.fromObjects(flattened);
+export async function getCompoundById(id: number): Promise<DG.DataFrame | undefined> {
+  await MolTrackDockerService.init();
+  const resultJson = await MolTrackDockerService.getCompoundById(id);
+  const flattenedRes = [resultJson].map((item) => flattened(item));
+  return DG.DataFrame.fromObjects(flattenedRes);
+}
+
+function flattened(item: any) {
+  const row: any = {};
+  for (const [key, value] of Object.entries(item)) {
+    row[key] = (typeof value === 'object' && value !== null) ?
+      JSON.stringify(value) :
+      value;
+  }
+  return row;
 }
