@@ -19,7 +19,7 @@ import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
 import {getErrors, getCategoryWidget, getShowInfoWidget, getLossFuncDf, rgbToHex, lightenRGB, getScalarsGoodnessOfFitViewer, getHelpIcon, getRadarTooltip, toUseRadar} from './fitting/fitting-utils';
-import {OptimizationResult, Extremum, TargetTableOutput} from './fitting/optimizer-misc';
+import {OptimizationResult, Extremum, TargetTableOutput, Setting} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
 import {IVP, IVP2WebWorker, PipelineCreator} from '@datagrok/diff-grok';
@@ -30,6 +30,7 @@ import {ScalarsFitRadar} from './fitting/scalars-fit-radar';
 const colors = DG.Color.categoricalPalette;
 const colorsCount = colors.length;
 
+const miscName = 'Misc';
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
 type OutputTarget = number | DG.DataFrame | null;
@@ -73,12 +74,14 @@ export type RangeDescription = {
   min?: number;
   max?: number;
   step?: number;
+  isPrimary?: boolean;
   enabled?: boolean;
 }
 
 export type TargetDescription = {
   default?: any;
   argumentCol?: string;
+  isPrimary?: boolean;
   enabled?: boolean;
 }
 
@@ -504,6 +507,7 @@ export class FittingView {
     const chosenCall = this.currentFuncCalls[chosenItem-1];
     this.isFittingAccepted = true;
     this.acceptedFitting$.next(chosenCall);
+    this.baseView.close();
   });
 
   private helpIcon = getHelpIcon();
@@ -566,6 +570,8 @@ export class FittingView {
     learningRate: 0.0001,
   };
 
+  private defaultsOverrides: Record<string,number> = {};
+
   private settingsInputs = new Map<METHOD, DG.InputBase[]>();
 
   store = this.generateInputFields(this.func);
@@ -622,7 +628,7 @@ export class FittingView {
 
   private constructor(
     public func: DG.Func,
-    baseView: RunComparisonView,
+    private baseView: RunComparisonView,
     public options: {
       parentView?: DG.View,
       parentCall?: DG.FuncCall,
@@ -649,12 +655,15 @@ export class FittingView {
       return;
     }
 
+    this.parseDefaultsOverrides();
+
     grok.events.onViewRemoved.pipe(filter((v) => v.id === baseView.id), take(1)).subscribe(() => {
       if (options.acceptMode && !this.isFittingAccepted) {
         this.acceptedFitting$.next(null);
         this.isFittingAccepted = true;
       }
     });
+
     this.buildForm(options.inputsLookup).then((form) => {
       this.comparisonView = baseView;
 
@@ -718,6 +727,10 @@ export class FittingView {
     this.diffGrok = options.diffGrok;
   } // constructor
 
+  private parseDefaultsOverrides() {
+    this.defaultsOverrides = JSON.parse(this.func.options['fittingSettings'] || '{}');
+  }
+
   /** Check fiiting applicability to the function */
   private isOptimizationApplicable(func: DG.Func): boolean {
     for (const output of func.outputs) {
@@ -736,7 +749,7 @@ export class FittingView {
       const inp = ui.input.forProperty(DG.Property.fromOptions({
         name: nelderMeadCaptions.get(key),
         inputType: (key !== 'maxIter') ? 'Float' : 'Int',
-        defaultValue: vals.default,
+        defaultValue: this.defaultsOverrides[key] ?? vals.default,
         min: vals.min,
         max: vals.max,
       }));
@@ -772,7 +785,7 @@ export class FittingView {
     const iterInp = ui.input.forProperty(DG.Property.fromOptions({
       name: 'iterations',
       inputType: 'Int',
-      defaultValue: this.gradDescentSettings.iterCount,
+      defaultValue: this.defaultsOverrides.iterCount ?? this.gradDescentSettings.iterCount,
       min: 1,
       max: 10000,
     }));
@@ -781,7 +794,7 @@ export class FittingView {
     const learningRateInp = ui.input.forProperty(DG.Property.fromOptions({
       name: 'Learning rate',
       inputType: 'Float',
-      defaultValue: this.gradDescentSettings.learningRate,
+      defaultValue: this.defaultsOverrides.learningRate ?? this.gradDescentSettings.learningRate,
       min: 1e-6,
       max: 1000,
     }));
@@ -836,28 +849,107 @@ export class FittingView {
     return lookupElement;
   }
 
+  private addFormInputs(
+    form: HTMLElement,
+    inputsByCategories: Map<string, HTMLElement[]>,
+    topCategory: string | null,
+    expandHandler: (r: HTMLElement, isExpanded: boolean, category: string) => void
+  ) {
+    const newCategoriesElements = new Map<string, HTMLElement> ();
+    if (inputsByCategories.size > 1) {
+      if (topCategory !== null) {
+        const roots = inputsByCategories.get(topCategory);
+        const catEl = getCategoryWidget(topCategory, roots!, expandHandler);
+        newCategoriesElements.set(topCategory, catEl);
+        form.append(catEl);
+        form.append(...roots!);
+      }
+
+      inputsByCategories.forEach((roots, category) => {
+        if ((category !== miscName) && (category !== topCategory)) {
+          const catEl = getCategoryWidget(category, roots, expandHandler);
+          newCategoriesElements.set(category, catEl);
+          form.append(catEl);
+          form.append(...roots);
+        }
+      });
+
+      if (topCategory !== miscName) {
+        const miscRoots = inputsByCategories.get(miscName);
+
+        if (miscRoots!.length > 0) {
+          const roots = inputsByCategories.get(miscName)!;
+          const catEl = getCategoryWidget(miscName, roots, expandHandler);
+          newCategoriesElements.set(miscName, catEl);
+          form.append(catEl);
+          form.append(...roots);
+        }
+      }
+    } else
+      form.append(...inputsByCategories.get(miscName)!);
+    return newCategoriesElements;
+  }
+
   /** Build form with inputs */
   private async buildForm(inputsLookup?: string) {
-    //1. Inputs of the function
+    // the main form
     const fitHeader = ui.h1(TITLE.FIT);
     ui.tooltip.bind(fitHeader, 'Select inputs to be fitted');
+    const form = ui.div([fitHeader], {style: {overflowY: 'scroll', width: '100%'}});
 
-    // inputs grouped by categories
-    const inputsByCategories = new Map<string, HTMLElement[]>([['Misc', []]]);
+    //0. Handling primary/secondary inputs outputs, but only if at
+    //least one is set as primray
+    const primaryInputRoots = new Set<HTMLElement>();
+
+    // inputs/outputs grouped by categories
+    const inputsByCategories = new Map<string, HTMLElement[]>([[miscName, []]]);
+    const outputsByCategories = new Map<string, HTMLElement[]>([[miscName, []]]);
+    const collapsedInputCategories = new Set<string>();
+    const collapsedOutputCategories = new Set<string>();
+
+    const primaryToggle = ui.input.toggle('Show only primary', {
+      value: false, onValueChanged: (showPrimaryOnly) => {
+        if (primaryInputRoots.size === 0)
+          return;
+        const iterPayload = [
+          [inputsByCategories, inputCategoriesByName, collapsedInputCategories],
+          [outputsByCategories, outputCategoriesByName, collapsedOutputCategories]
+        ] as const;
+        for (const [rootsMap, catMap, collapsedCats] of iterPayload) {
+          for (const [catName, roots] of rootsMap.entries()) {
+            const hideCat = showPrimaryOnly && !roots.some(root => primaryInputRoots.has(root));
+            const catEl = catMap.get(catName);
+            if (catEl)
+              catEl.hidden = hideCat;
+            for (const root of roots) {
+              root.hidden = collapsedCats.has(catName) || (showPrimaryOnly && !primaryInputRoots.has(root));
+            }
+          }
+        }
+      }
+    });
+
+    primaryToggle.root.hidden = true;
+    const paddingDiv = ui.div('', { classes: 'sa-switch-input ui-div' })
+    primaryToggle.root.prepend(paddingDiv);
+    form.append(primaryToggle.root);
+
+    //1. Inputs of the function
 
     // group inputs by categories
     Object.values(this.store.inputs).forEach((inputConfig) => {
       const category = inputConfig.prop.category;
+      const propName = inputConfig.prop.name;
       const roots = [...inputConfig.constForm.map((input) => input.root), ...inputConfig.saForm.map((input) => input.root)];
+      const isPrimary = this.options.ranges?.[propName]?.isPrimary;
+      if (isPrimary)
+        roots.forEach(item => primaryInputRoots.add(item));
 
       if (inputsByCategories.has(category))
         inputsByCategories.get(category)!.push(...roots);
       else
         inputsByCategories.set(category, roots);
     });
-
-    // the main form
-    const form = ui.div([fitHeader], {style: {overflowY: 'scroll', width: '100%'}});
 
     const lookupElement = await this.getLookupElement(inputsLookup);
     let topCategory: string | null = null;
@@ -873,31 +965,10 @@ export class FittingView {
     }
 
     // add inputs to the main form (grouped by categories)
-    if (inputsByCategories.size > 1) {
-      if (topCategory !== null) {
-        const roots = inputsByCategories.get(topCategory);
-        form.append(getCategoryWidget(topCategory, roots!));
-        form.append(...roots!);
-      }
-
-      inputsByCategories.forEach((roots, category) => {
-        if ((category !== 'Misc') && (category !== topCategory)) {
-          form.append(getCategoryWidget(category, roots));
-          form.append(...roots);
-        }
-      });
-
-      if (topCategory !== 'Misc') {
-        const miscRoots = inputsByCategories.get('Misc');
-
-        if (miscRoots!.length > 0) {
-          const roots = inputsByCategories.get('Misc')!;
-          form.append(getCategoryWidget('Misc', roots));
-          form.append(...roots);
-        }
-      }
-    } else
-      form.append(...inputsByCategories.get('Misc')!);
+    const inputCategoriesByName = this.addFormInputs(form, inputsByCategories, topCategory, (el, isExpanded, catName) => {
+      isExpanded ? collapsedInputCategories.delete(catName) : collapsedInputCategories.add(catName);
+      el.hidden = !isExpanded || (primaryToggle.value && !primaryInputRoots.has(el));
+    });
 
     // Check if isChanging is enabled
     for (const name of Object.keys(this.store.inputs)) {
@@ -909,28 +980,39 @@ export class FittingView {
     const toGetHeader = ui.h1(TITLE.TARGET);
     ui.tooltip.bind(toGetHeader, 'Select target outputs');
     form.appendChild(toGetHeader);
-    let prevCategory = 'Misc';
 
-    Object.values(this.store.outputs)
-      .reduce((container, outputConfig) => {
-        const prop = outputConfig.prop;
-        if (prop.category !== prevCategory) {
-          container.append(ui.h3(prop.category));
-          prevCategory = prop.category;
-        }
-
-        container.append(outputConfig.input.root);
-
+    // group outputs by categories
+    Object.values(this.store.outputs).forEach((outputConfig) => {
+      const category = outputConfig.prop.category;
+      const roots = [outputConfig.input.root];
+      if (outputConfig.prop.type === DG.TYPE.DATA_FRAME) {
         outputConfig.argColInput.root.insertBefore(getShowInfoWidget(
           outputConfig.input.root,
           outputConfig.prop.caption ?? outputConfig.prop.name,
         ), outputConfig.argColInput.captionLabel);
+        roots.push(outputConfig.argColInput.root, outputConfig.funcColsInput.root);
+      }
+      const propName = outputConfig.prop.name;
+      const isPrimary = this.options.targets?.[propName]?.isPrimary;
+      if (isPrimary)
+        roots.forEach(item => primaryInputRoots.add(item));
 
-        container.append(outputConfig.argColInput.root);
-        container.append(outputConfig.funcColsInput.root);
+      if (outputsByCategories.has(category))
+        outputsByCategories.get(category)!.push(...roots);
+      else
+        outputsByCategories.set(category, roots);
+    });
 
-        return container;
-      }, form);
+    // add outputs to the main form (grouped by categories)
+    const outputCategoriesByName = this.addFormInputs(form, outputsByCategories, null,  (el, isExpanded, catName) => {
+      isExpanded ? collapsedOutputCategories.delete(catName) : collapsedOutputCategories.add(catName);
+      el.hidden = !isExpanded || (primaryToggle.value && !primaryInputRoots.has(el));
+    });
+
+    if (primaryInputRoots.size > 0) {
+      primaryToggle.root.hidden = false;
+      primaryToggle.value = true;
+    }
 
     // 3. Make one output of interest
     let isAnyOutputSelectedAsOfInterest = false;
