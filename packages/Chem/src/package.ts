@@ -487,6 +487,19 @@ export class PackageFunctions {
     await openDescriptorsDialogDocker();
   }
 
+  @grok.decorators.func({
+    name: 'calculateDescriptorsTransform',
+    tags: ['Transform'],
+  })
+  static async calculateDescriptorsTransform(
+    table: DG.DataFrame,
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'list<string>'}) selected: string[],
+  ): Promise<void> {
+    const cols = await calculateDescriptors(molecules, selected);
+    addDescriptorsColsToDf(table, cols);
+  }
+
   @grok.decorators.func({outputs: [{name: 'descriptors', type: 'object'}]})
   static async chemDescriptorsTree(): Promise<object> {
     return await fetchWrapper(() => getDescriptorsTree());
@@ -692,10 +705,7 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'bool', options: {optional: true}}) clusterEmbeddings?: boolean,
     @grok.decorators.param({type: 'bool', options: {optional: true}}) clusterMCS?: boolean): Promise<DG.Viewer | undefined> {
     //workaround for functions which add viewers to tableView (can be run only on active table view)
-    if (table.name !== grok.shell.tv.dataFrame.name) {
-      grok.shell.error(`Table ${table.name} is not a current table view`);
-      return;
-    }
+    checkCurrentView(table);
 
     if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
       grok.shell.error(`Column ${molecules.name} is not of Molecule semantic type`);
@@ -815,10 +825,8 @@ export class PackageFunctions {
       return;
     }
     //workaround for functions which add viewers to tableView (can be run only on active table view)
-    if (table.name !== grok.shell.tv.dataFrame.name && (radarViewer || radarGrid)) {
-      grok.shell.error(`Table ${table.name} is not a current table view`);
-      return;
-    }
+    checkCurrentView(table);
+
     const funcCall = await DG.Func.find({name: 'runElementalAnalysis'})[0].prepare({
       table: table,
       molecules: molecules,
@@ -826,7 +834,9 @@ export class PackageFunctions {
     const columnNames: string[] = funcCall.getOutputParamValue();
     const view = grok.shell.getTableView(table.name);
     if (radarViewer) {
-      const packageExists = checkPackage('Charts', '_radarViewerDemo');
+      let packageExists = checkPackage('Charts', 'radarViewerDemo');
+      if (!packageExists) //for compatibility with previous versions of Charts
+        packageExists = checkPackage('Charts', '_radarViewerDemo');
       if (packageExists) {
         const radarViewer = DG.Viewer.fromType('Radar', table, {
           valuesColumnNames: columnNames,
@@ -966,10 +976,7 @@ export class PackageFunctions {
       return;
     }
     //workaround for functions which add viewers to tableView (can be run only on active table view)
-    if (table.name !== grok.shell.tv.dataFrame.name) {
-      grok.shell.error(`Table ${table.name} is not a current table view`);
-      return;
-    }
+    checkCurrentView(table);
 
     const allowedRowCount = 10000;
     const fastRowCount = methodName === DimReductionMethods.UMAP ? 5000 : 2000;
@@ -1963,10 +1970,7 @@ export class PackageFunctions {
     }
 
     //workaround for functions which add viewers to tableView (can be run only on active table view)
-    if (table.name !== grok.shell.tv.dataFrame.name) {
-      grok.shell.error(`Table ${table.name} is not a current table view`);
-      return;
-    }
+    checkCurrentView(table);
 
     const view = grok.shell.getTableView(table.name) as DG.TableView;
 
