@@ -11,16 +11,4 @@ export class RegistrationBatchView extends EntityBaseView {
     super();
     this.view.name = 'Register a batch';
   }
-
-  async getMolTrackDGProperties(): Promise<DG.Property[]> {
-    try {
-      const propsJson: MolTrackProp[] = (JSON.parse(await fetchBatchProperties())['properties'] as MolTrackProp[])
-        .filter((p) => p.name.toLowerCase() !== 'corporate_batch_id');
-
-      return propsJson.map(this.convertToDGProperty);
-    } catch (err) {
-      grok.shell.error(`Failed to fetch properties: ${err}`);
-      return [];
-    }
-  }
 }

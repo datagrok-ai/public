@@ -15,8 +15,15 @@
 
 .moltrack-top-container {
   display: flex;
-  gap: 20px;
   align-items: flex-start;
+  flex: 1;
+  flex-direction: row;
+  gap: 20px;
+}
+
+.moltrack-info-container {
+    flex: 0 0 10%;
+    overflow: auto;
 }
 
 .moltrack-sketcher-root {
@@ -26,4 +33,48 @@
 .moltrack-form {
   flex: 1 1 auto;
   min-width: 200px;
+}
+
+.moltrack-compound-form {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 35px;
+    margin-top: 15px;
+}
+
+.moltrack-title {
+    font-size: 18px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.moltrack-section {
+  width: 100%;
+}
+
+.moltrack-section-header {
+  width: 100%;
+  align-items: center;
+}
+
+.moltrack-section-title {
+  font-weight: bold;
+  margin-left: 8px;
+}
+
+.moltrack-section-form {
+  width: 100%;
+}
+
+.moltrack-chevron {
+  cursor: pointer;
+}
+
+.moltrack-top-sections,
+.moltrack-top-container,
+.moltrack-register-container {
+  width: 100%;
 }

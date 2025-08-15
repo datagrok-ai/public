@@ -8,20 +8,8 @@ import { EntityBaseView } from './registration-entity-base';
 
 export class RegistrationCompoundView extends EntityBaseView {
   protected scope: Scope = Scope.COMPOUNDS;
-  constructor() {
-    super();
+  constructor(buildUI: boolean = true) {
+    super(buildUI);
     this.view.name = 'Register a compound';
-  }
-
-  async getMolTrackDGProperties(): Promise<DG.Property[]> {
-    try {
-      const propsJson: MolTrackProp[] = (JSON.parse(await fetchCompoundProperties()) as MolTrackProp[])
-        .filter((p) => p.name.toLowerCase() !== 'corporate_compound_id');
-
-      return propsJson.map(this.convertToDGProperty);
-    } catch (err) {
-      grok.shell.error(`Failed to fetch properties: ${err}`);
-      return [];
-    }
   }
 }
