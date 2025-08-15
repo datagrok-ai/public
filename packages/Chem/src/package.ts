@@ -661,7 +661,8 @@ export class PackageFunctions {
   static async getFingerprints(
     @grok.decorators.param({options: {semType: 'Molecule'}}) col: DG.Column,
     @grok.decorators.param({options: {optional: true}}) _metric?: string,
-    @grok.decorators.param({options: {caption: 'Fingerprint type', optional: true, choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'], initialValue: 'Morgan'}}) fingerprintType?: Fingerprint) {
+    @grok.decorators.param({type: 'string', options: {caption: 'Fingerprint type', optional: true,
+      choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'], initialValue: 'Morgan'}}) fingerprintType: Fingerprint = Fingerprint.Morgan) {
     //TODO: get rid of fallback
     let fingerprintTypeStr = fingerprintType as string;
     if ((fingerprintTypeStr.startsWith('\'') || fingerprintTypeStr.startsWith('"')) &&
@@ -1393,7 +1394,7 @@ export class PackageFunctions {
   })
   static async convertNotation(
     data: DG.DataFrame,
-    @grok.decorators.param({type: 'string', options: {semType: 'Molecule'}}) molecules: DG.Column<string>,
+    @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molecules: DG.Column<string>,
     @grok.decorators.param({type: 'string', options: {choices: ['smiles', 'smarts', 'molblock', 'v3Kmolblock'], initialValue: 'smiles'}}) targetNotation: DG.chem.Notation,
     @grok.decorators.param({options: {initialValue: 'false'}}) overwrite: boolean = false,
     @grok.decorators.param({options: {initialValue: 'true'}}) join: boolean = true): Promise<DG.Column<string> | void> {
