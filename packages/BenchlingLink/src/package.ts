@@ -41,7 +41,7 @@ export class PackageFunctions {
   }
   
   @grok.decorators.func()
-  static async benchlingLinkAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.View) {
+  static async benchlingLinkAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.View): Promise<void> {
     function createFuncEditorView(funcName: string, v: DG.View) {
       let func = DG.Func.byName(funcName);
       let editorDiv = ui.div();
@@ -351,7 +351,7 @@ export class PackageFunctions {
     return assayRuns;
   }
 
-  @grok.decorators.func({name: 'Get AA Sequence'})
+  @grok.decorators.func({name: 'Create AA Sequence'})
   static async createAASequence(
     name: string,
     aminoAcids: string,
@@ -376,7 +376,7 @@ export class PackageFunctions {
     return dataFrameFromObjects([result]) ?? DG.DataFrame.create();
   }
 
-  @grok.decorators.func({name: 'Get DNA Sequence'})
+  @grok.decorators.func({name: 'Create DNA Sequence'})
   static async createDNASequence(
     name: string,
     bases: string,
@@ -400,7 +400,7 @@ export class PackageFunctions {
     return dataFrameFromObjects([result]) ?? DG.DataFrame.create();
   }
 
-  @grok.decorators.func({name: 'Get Assay Result'})
+  @grok.decorators.func({name: 'Create Assay Result'})
   static async createAssayResult(
     schemaId: string,
     @grok.decorators.param({options: {nullable: true}}) fields?: string,
@@ -484,7 +484,7 @@ export class PackageFunctions {
     return await queryMolecules(params);
   }
 
-  @grok.decorators.func({name: 'Create Molecules'})
+  @grok.decorators.func({name: 'Create Molecule'})
   static async createMolecule(
     name: string,
     smiles: string,
@@ -496,7 +496,7 @@ export class PackageFunctions {
     return dataFrameFromObjects([result]) ?? DG.DataFrame.create();
   }
 
-  @grok.decorators.func({name: 'Cet Projects'})
+  @grok.decorators.func({name: 'Get Projects'})
   static async getProjects(
     @grok.decorators.param({options: {nullable: true}}) sort?: string,
     @grok.decorators.param({options: {nullable: true}}) archiveReason?: string,
@@ -575,7 +575,7 @@ export class PackageFunctions {
     return await queryPlates(params);
   }
  
-  @grok.decorators.func({name: 'Create Plates'})
+  @grok.decorators.func({name: 'Create Plate'})
   static async createPlate(
     name: string,
     schemaId: string,
@@ -645,7 +645,7 @@ export class PackageFunctions {
     return await queryMixtures(params);
   }
   
-  @grok.decorators.func({name: 'Create Mixtures'})
+  @grok.decorators.func({name: 'Create Mixture'})
   static async createMixture(
     name: string,
     ingredients: string,
@@ -724,7 +724,7 @@ export class PackageFunctions {
     return await queryDnaOligos(params);
   }
 
-  @grok.decorators.func({name: 'Create DNA Oligos'})
+  @grok.decorators.func({name: 'Create DNA Oligo'})
   static async createDnaOligo(
     name: string,
     bases: string,

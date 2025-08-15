@@ -12,7 +12,6 @@ export async function benchlingLinkApp() {
 //name: benchlingLinkAppTreeBrowser
 //input: dynamic treeNode 
 //input: view browseView 
-//output: dynamic result
 export async function benchlingLinkAppTreeBrowser(treeNode: any, browseView: DG.View) {
   return PackageFunctions.benchlingLinkAppTreeBrowser(treeNode, browseView);
 }
@@ -105,7 +104,7 @@ export async function getAssayRuns(schemaId: string, minCreatedTime: number, max
   return PackageFunctions.getAssayRuns(schemaId, minCreatedTime, maxCreatedTime, ids);
 }
 
-//name: Get AA Sequence
+//name: Create AA Sequence
 //input: string name 
 //input: string aminoAcids 
 //input: string aliases { nullable: true }
@@ -120,7 +119,7 @@ export async function createAASequence(name: string, aminoAcids: string, aliases
   return PackageFunctions.createAASequence(name, aminoAcids, aliases, annotations, authorIds, customFields, fields, folderId, schemaId);
 }
 
-//name: Get DNA Sequence
+//name: Create DNA Sequence
 //input: string name 
 //input: string bases 
 //input: string aliases { nullable: true }
@@ -135,7 +134,7 @@ export async function createDNASequence(name: string, bases: string, aliases: st
   return PackageFunctions.createDNASequence(name, bases, aliases, annotations, authorIds, customFields, fields, folderId, schemaId);
 }
 
-//name: Get Assay Result
+//name: Create Assay Result
 //input: string schemaId 
 //input: string fields { nullable: true }
 //input: string entityIds { nullable: true }
@@ -184,7 +183,7 @@ export async function getMolecules(sort: string, createdAt: string, modifiedAt: 
   return PackageFunctions.getMolecules(sort, createdAt, modifiedAt, name, nameIncludes, folderId, mentionedIn, projectId, registryId, schemaId, schemaFields, archiveReason, mentions, ids, entityRegistryIds_anyOf, names_anyOf, authorIds_anyOf, chemicalSubstructure_mol, chemicalSubstructure_smiles);
 }
 
-//name: Create Molecules
+//name: Create Molecule
 //input: string name 
 //input: string smiles 
 //input: string formula { nullable: true }
@@ -193,7 +192,7 @@ export async function createMolecule(name: string, smiles: string, formula: stri
   return PackageFunctions.createMolecule(name, smiles, formula);
 }
 
-//name: Cet Projects
+//name: Get Projects
 //input: string sort { nullable: true }
 //input: string archiveReason { nullable: true }
 //input: string ids { nullable: true }
@@ -236,7 +235,7 @@ export async function getPlates(sort: string, schemaId: string, schemaFields: st
   return PackageFunctions.getPlates(sort, schemaId, schemaFields, createdAt, modifiedAt, name, nameIncludes, emptyPositions, emptyPositions_gte, emptyPositions_gt, emptyPositions_lte, emptyPositions_lt, emptyContainers, emptyContainers_gte, emptyContainers_gt, emptyContainers_lte, emptyContainers_lt, ancestorStorageId, storageContentsId, storageContentsIds, archiveReason, ids, barcodes, names_anyOf, names_anyOf_caseSensitive, returning, creatorIds);
 }
 
-//name: Create Plates
+//name: Create Plate
 //input: string name 
 //input: string schemaId 
 //input: string barcode { nullable: true }
@@ -276,7 +275,7 @@ export async function getMixtures(sort: string, createdAt: string, modifiedAt: s
   return PackageFunctions.getMixtures(sort, createdAt, modifiedAt, name, nameIncludes, folderId, mentionedIn, projectId, registryId, schemaId, schemaFields, archiveReason, mentions, ids, names_anyOf, names_anyOf_caseSensitive, entityRegistryIds_anyOf, ingredientComponentEntityIds, ingredientComponentEntityIds_anyOf, authorIds_anyOf);
 }
 
-//name: Create Mixtures
+//name: Create Mixture
 //input: string name 
 //input: string ingredients 
 //input: string schemaId 
@@ -321,7 +320,7 @@ export async function getDnaOligos(sort: string, createdAt: string, modifiedAt: 
   return PackageFunctions.getDnaOligos(sort, createdAt, modifiedAt, name, nameIncludes, bases, folderId, mentionedIn, projectId, registryId, schemaId, schemaFields, archiveReason, mentions, ids, entityRegistryIds_anyOf, names_anyOf, names_anyOf_caseSensitive, creatorIds, authorIds_anyOf, returning, customNotationId);
 }
 
-//name: Create DNA Oligos
+//name: Create DNA Oligo
 //input: string name 
 //input: string bases 
 //input: string aliases { nullable: true }
