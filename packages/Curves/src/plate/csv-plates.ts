@@ -2,33 +2,62 @@
 import * as DG from 'datagrok-api/dg';
 import {Plate} from './plate';
 
-// --- This is the new, powerful function used by the "Create Plate" view ---
 /**
- * Parses a 'tidy' DataFrame into one or more Plate objects based on specified identifier columns.
- * @param sourceDf The source DataFrame.
- * @param plateIdColName The column that identifies the main plate group (e.g., 'barcode').
- * @param replicateIdColName An optional column that identifies technical replicates within a plate group.
- * @param plateNumberColName An optional column that identifies a plate number within a main group.
- * @returns An array of Plate objects.
+ * A new interface to define the structure for a processed plate file.
+ * This will be used throughout the application.
+ */
+export interface PlateFile {
+  plate: Plate;
+  commonProperties: Map<string, any>;
+  reconciliationMap: Map<string, string>;
+}
+
+/**
+ * Analyzes a DataFrame for a single plate to find columns with constant values.
+ * @param plateDf A DataFrame containing data for only one plate.
+ * @returns A Map of common property names to their values.
+ */
+function findCommonProperties(plateDf: DG.DataFrame): Map<string, any> {
+  const commonProperties = new Map<string, any>();
+  const IGNORED_PROPERTIES = new Set([
+    'Well Position', 'Robust Inhibition (%)', 'Concentration (M)', 'Signal Emission',
+    'Destination Plate Barcode', 'Plate Number', 'Technical Duplicate ID', 'Vial Barcode',
+    'Automatic Data Point Exclusion (\'Excluded\', NA)', 'Manual Data Point Exclusion (\'Excluded\', NA)',
+    'SMILES', 'Compound Iso ID'
+  ]);
+
+  for (const col of plateDf.columns) {
+    if (!IGNORED_PROPERTIES.has(col.name) && col.stats.uniqueCount === 1) {
+      const value = col.get(0);
+      if (value !== null && value !== '')
+        commonProperties.set(col.name, value);
+    }
+  }
+  return commonProperties;
+}
+
+/**
+ * Parses a 'tidy' DataFrame and returns an array of objects, each containing a Plate and its common properties.
  */
 export function parsePlates(
   sourceDf: DG.DataFrame,
   plateIdColName: string | null,
   replicateIdColName: string | null,
   plateNumberColName: string | null
-): Plate[] {
-  const plates: Plate[] = [];
+): { plate: Plate, commonProperties: Map<string, any> }[] { // <-- Return an intermediate object
+  const results: { plate: Plate, commonProperties: Map<string, any> }[] = [];
   const plateIdCol = plateIdColName ? sourceDf.col(plateIdColName) : null;
+
+  if (!plateIdCol) {
+    const plate = Plate.fromTableByRow(sourceDf);
+    const commonProperties = findCommonProperties(sourceDf);
+    results.push({plate, commonProperties});
+    return results;
+  }
+
   const replicateIdCol = replicateIdColName ? sourceDf.col(replicateIdColName) : null;
   const plateNumberCol = plateNumberColName ? sourceDf.col(plateNumberColName) : null;
 
-  // If no primary identifier is provided, treat the entire file as a single plate.
-  if (!plateIdCol) {
-    plates.push(Plate.fromTableByRow(sourceDf));
-    return plates;
-  }
-
-  // Create a temporary combined key column to uniquely identify each plate/replicate/number combination.
   const comboKeyColName = '~comboKey';
   const comboKeyCol = DG.Column.string(comboKeyColName, sourceDf.rowCount).init((i) => {
     const parts = [plateIdCol.get(i)];
@@ -39,41 +68,30 @@ export function parsePlates(
 
   const uniqueIds = comboKeyCol.categories;
 
-  if (uniqueIds.length > 1) {
-    // If multiple unique combinations are found, split the DataFrame into separate plates.
-    for (const id of uniqueIds) {
-      const rowMask = DG.BitSet.create(sourceDf.rowCount, (i) => comboKeyCol.get(i) === id);
-      const plateDf = sourceDf.clone(rowMask);
+  for (const id of uniqueIds) {
+    const rowMask = DG.BitSet.create(sourceDf.rowCount, (i) => comboKeyCol.get(i) === id);
+    const plateDf = sourceDf.clone(rowMask);
 
-      const plate = Plate.fromTableByRow(plateDf);
-      plate.barcode = id; // The plate's barcode becomes the combined unique ID.
-      plates.push(plate);
-    }
-    return plates;
+    const plate = Plate.fromTableByRow(plateDf);
+    plate.barcode = id;
+    const commonProperties = findCommonProperties(plateDf);
+    results.push({plate, commonProperties});
   }
 
-  // Fallback for a single plate (or a file with only one unique combo-key).
-  const plate = Plate.fromTableByRow(sourceDf);
-  if (uniqueIds.length === 1)
-    plate.barcode = uniqueIds[0];
-
-  plates.push(plate);
-  return plates;
+  return results;
 }
 
 
-// --- This is the backward-compatibility wrapper for other parts of the app ---
 /**
- * Parses a CSV string using default settings for simple file handlers.
- * It defaults to looking for a 'barcode' column to split by, preserving the original behavior.
- * @param csvContent The string content of the CSV file.
+ * Backward-compatibility wrapper.
  * @returns A Promise that resolves to an array of Plate objects.
  */
 export async function parsePlateFromCsv(csvContent: string): Promise<Plate[]> {
   try {
     const df = DG.DataFrame.fromCsv(csvContent);
-    // Call our new, powerful function with default parameters ('barcode' for plate, null for others).
-    return parsePlates(df, 'barcode', null, null);
+    // Note: The return type here is Plate[] for backward compatibility.
+    // New code should use parsePlates directly.
+    return parsePlates(df, 'Destination Plate Barcode', null, null).map((res) => res.plate);
   } catch (error) {
     console.error('Failed to parse CSV as a plate:', error);
     throw new Error('Could not parse the CSV file. Ensure it is in a tidy format with a well position column (e.g., "A1").');

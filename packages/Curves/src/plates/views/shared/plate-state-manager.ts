@@ -129,7 +129,8 @@ export class PlateStateManager {
   async reprocessPlates(): Promise<void> {
     if (!this._sourceDataFrame) return;
 
-    const parsedPlates = parsePlates(
+    // The parser now returns an array of { plate, commonProperties } objects
+    const parsedPlateResults = parsePlates(
       this._sourceDataFrame,
       this.plateIdentifierColumn,
       this.replicateIdentifierColumn,
@@ -142,9 +143,10 @@ export class PlateStateManager {
     };
 
     currentState.plates = [];
-    for (const plate of parsedPlates) {
+    // Loop over the new result structure
+    for (const parsedResult of parsedPlateResults) {
       const dummyFile = {
-        name: `Plate: ${plate.barcode}`,
+        name: `Plate: ${parsedResult.plate.barcode}`, // <-- FIX: Use parsedResult.plate
         fullPath: '',
       } as DG.FileInfo;
 
@@ -154,16 +156,19 @@ export class PlateStateManager {
         'Activity', 'Concentration', 'SampleID',
       ].filter((p): p is string => p !== null && p !== undefined);
 
-      const sourceCols = new Set(plate.data.columns.names());
+      // FIX: Use the correct dataframe from the parsed result
+      const sourceCols = new Set(parsedResult.plate.data.columns.names());
       for (const prop of allRequiredProps) {
         if (sourceCols.has(prop))
           reconciliationMap.set(prop, prop);
       }
 
+      // Assemble the final PlateFile object according to the updated interface
       currentState.plates.push({
-        plate,
+        plate: parsedResult.plate,
         file: dummyFile,
         reconciliationMap,
+        commonProperties: parsedResult.commonProperties, // <-- Add the new properties
       });
     }
 

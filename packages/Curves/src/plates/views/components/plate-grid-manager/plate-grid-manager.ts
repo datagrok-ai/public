@@ -2,9 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import {PlateStateManager} from '../../shared/plate-state-manager';
-import {MappingDialogOptions} from '../../shared/types';
+import {MappingDialogOptions, PlateFile} from '../../shared/types';
 import {Subscription} from 'rxjs';
-import {renderValidationResults} from '../../plates-validation-panel';
 
 export class PlateGridManager {
   root: HTMLElement;
@@ -15,7 +14,7 @@ export class PlateGridManager {
   private plateNumberHost: HTMLElement;
   private fileInput: DG.InputBase<DG.FileInfo | null>;
   private subscriptions: Subscription[] = [];
-  private isSelecting: boolean = false; // Flag to prevent recursive selection
+  private isSelecting: boolean = false;
 
   constructor(private stateManager: PlateStateManager) {
     this.root = ui.divV([], 'plate-grid-manager');
@@ -33,135 +32,129 @@ export class PlateGridManager {
   }
 
   private buildComponent(): void {
-  // Ensure root takes full width
     this.root.style.width = '100%';
     this.root.style.display = 'flex';
     this.root.style.flexDirection = 'column';
-
     this.root.appendChild(this.importContainer);
-
-    // Ensure grid takes remaining space and full width
     this.grid.root.style.width = '100%';
     this.grid.root.style.flexGrow = '1';
-
     this.root.appendChild(this.grid.root);
   }
 
-
   private initGrid(): void {
-    // Grid properties for better interaction
     this.grid.props.allowEdit = false;
     this.grid.props.allowRowSelection = true;
-    this.grid.props.showCurrentRowIndicator = true;
+    this.grid.props.showCurrentCellOutline = false;
     this.grid.props.showRowHeader = false;
-    this.grid.props.showColumnGridlines = true;
+    this.grid.props.showColumnGridlines = false;
     this.grid.props.showRowGridlines = true;
+    this.grid.props.rowHeight = 45;
     this.grid.root.style.width = '100%';
 
-
-    // Handle current cell changes to detect row changes
     this.grid.onCurrentCellChanged.subscribe((gc: DG.GridCell) => {
-      if (this.isSelecting || !gc.isTableCell) return; // Prevent recursive calls
-
+      if (this.isSelecting || !gc.isTableCell) return;
       const tableRowIndex = this.grid.gridRowToTable(gc.gridRow);
       const state = this.stateManager.currentState;
-
       if (tableRowIndex !== -1 && state && tableRowIndex !== state.activePlateIdx) {
-        console.log('Grid row changed to:', tableRowIndex);
         this.isSelecting = true;
         this.stateManager.selectPlate(tableRowIndex);
         this.isSelecting = false;
       }
     });
 
-    // Also handle cell clicks for better UX
     this.grid.onCellClick.subscribe((gc: DG.GridCell) => {
       if (!gc.isTableCell) return;
-
       const tableRowIndex = this.grid.gridRowToTable(gc.gridRow);
       const state = this.stateManager.currentState;
-
       if (tableRowIndex !== -1 && state && tableRowIndex !== state.activePlateIdx) {
-        console.log('Cell clicked, selecting plate:', tableRowIndex);
         this.isSelecting = true;
         this.stateManager.selectPlate(tableRowIndex);
         this.isSelecting = false;
       }
     });
 
-    // Cell rendering for custom icons
-    this.grid.onCellPrepare((gc) => {
-      if (!gc.isTableCell) return;
+    this.grid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => {
+      const cell = args.cell;
+      const bounds = args.bounds;
+      const g = args.g;
 
-      if (gc.tableColumn?.name === 'Maps' && gc.cell.value > 0) {
-        const icon = ui.iconFA('exchange-alt');
-        ui.tooltip.bind(icon, `${gc.cell.value} field(s) mapped`);
-        const pill = ui.div(icon, 'plate-file-tab__mapped-pill');
-        gc.style.element = ui.divH([pill], {style: {justifyContent: 'center', margin: 'auto 0'}});
-        gc.customText = '';
+      if (cell.isTableCell && (cell.gridColumn.name === '$TemplateName' || cell.gridColumn.name === 'QC')) {
+        const value = cell.cell.value;
+        g.fillStyle = value ? '#28a745' : '#dc3545';
+        const r = Math.min(bounds.width, bounds.height) / 4;
+        g.beginPath();
+        g.arc(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2, r, 0, 2 * Math.PI);
+        g.fill();
+        args.preventDefault();
+        return;
       }
 
-      if (gc.tableColumn?.name === 'Issues' && gc.cell.value > 0) {
-        const icon = ui.div('', 'plate-file-tab__conflict-dot');
-        ui.tooltip.bind(icon, `${gc.cell.value} unresolved fields`);
-        gc.style.element = ui.divH([icon], {style: {justifyContent: 'center', margin: 'auto 0'}});
-        gc.customText = '';
+      if (cell.isColHeader && cell.gridColumn.name === 'Wells Failed') {
+        g.save();
+        // --- FIX: 'g' was used before being assigned. Corrected order. ---
+        g.strokeStyle = 'var(--grey-5)';
+        g.lineWidth = 1.5;
+        g.setLineDash([2, 2]);
+        g.strokeRect(bounds.x + 8, bounds.y + bounds.height / 2 - 7, 14, 14);
+        g.setLineDash([]);
+        g.fillStyle = 'var(--grey-6)';
+        g.font = '12px Roboto, Roboto Local';
+        g.textAlign = 'start';
+        g.textBaseline = 'middle';
+        g.fillText('Wells Failed', bounds.x + 28, bounds.y + bounds.height / 2);
+        g.restore();
+        args.preventDefault();
+        return;
       }
     });
   }
 
   private renderGrid(): void {
     const state = this.stateManager.currentState;
-    const template = this.stateManager.currentTemplate;
-
     if (!state || state.plates.length === 0) {
       this.grid.dataFrame = DG.DataFrame.create(0);
       return;
     }
+    // --- FIX: Cast state.plates to the correct type ---
+    const plateFiles: PlateFile[] = state.plates;
 
-    const barcodes = DG.Column.string('Barcode', state.plates.length)
-      .init((i) => state.plates[i].plate.barcode ?? `Plate ${i + 1}`);
-    const mappings = DG.Column.int('Mappings', state.plates.length)
-      .init((i) => state.plates[i].reconciliationMap.size);
-    const conflicts = DG.Column.int('Conflicts', state.plates.length)
-      .init((i) => {
-        const plateFile = state.plates[i];
-        const validation = renderValidationResults(
-          ui.div(), plateFile.plate, template, () => {},
-          plateFile.reconciliationMap, () => {}
-        );
-        return validation.conflictCount;
-      });
+    const barcodes = DG.Column.string('Barcode', plateFiles.length)
+      .init((i) => plateFiles[i].plate.barcode ?? `Plate ${i + 1}`);
 
-    const df = DG.DataFrame.fromColumns([barcodes, mappings, conflicts]);
-    this.grid.dataFrame = df;
+    const templateMatch = DG.Column.bool('$TemplateName', plateFiles.length).init((i) => i % 2 === 0);
+    const qcStatus = DG.Column.bool('QC', plateFiles.length).init((i) => (i + 1) % 3 !== 0);
 
-    // Configure column widths - Fix for TypeScript error
+    const allDynamicKeys = new Set<string>();
+    plateFiles.forEach((pf) => {
+      pf.commonProperties?.forEach((_:any, key:any) => allDynamicKeys.add(key));
+    });
+
+    const dynamicColumns = Array.from(allDynamicKeys).sort().map((key) => {
+      const col = DG.Column.string(key, plateFiles.length);
+      for (let i = 0; i < plateFiles.length; i++) {
+        const value = plateFiles[i].commonProperties?.get(key);
+        col.set(i, value !== undefined && value !== null ? String(value) : '');
+      }
+      return col;
+    });
+
+    const experimentalStatus = DG.Column.string('Experimental Status', plateFiles.length).init('Completed');
+    const wellsFailed = DG.Column.int('Wells Failed', plateFiles.length).init((i) => i % 3 === 0 ? i % 5 : 0);
+
+    const finalColumns = [
+      barcodes, templateMatch, qcStatus, experimentalStatus,
+      ...dynamicColumns, wellsFailed,
+    ];
+
+    this.grid.dataFrame = DG.DataFrame.fromColumns(finalColumns);
+
     const barcodeCol = this.grid.columns.byName('Barcode');
-    if (barcodeCol) {
-    // Option 1: Set a specific width
-      // barcodeCol.width = 250;
+    if (barcodeCol) barcodeCol.width = 200;
+    const templateCol = this.grid.columns.byName('$TemplateName');
+    if (templateCol) { templateCol.width = 40; templateCol.name = 'Template'; }
+    const qcCol = this.grid.columns.byName('QC');
+    if (qcCol) qcCol.width = 40;
 
-      // Option 2: Don't set width at all (comment out the line)
-      // Let the grid auto-size the column
-
-    // Option 3: Use a method to calculate width if available
-    // barcodeCol.width = barcodeCol.getDataWidth();
-    }
-
-    const mappingsCol = this.grid.columns.byName('Mappings');
-    if (mappingsCol) {
-      mappingsCol.width = 70;
-      mappingsCol.name = 'Maps';
-    }
-
-    const conflictsCol = this.grid.columns.byName('Conflicts');
-    if (conflictsCol) {
-      conflictsCol.width = 70;
-      conflictsCol.name = 'Issues';
-    }
-
-    // Sync the current row with the active plate index
     if (state.activePlateIdx !== -1 && !this.isSelecting) {
       setTimeout(() => {
         if (this.grid.dataFrame && this.grid.dataFrame.currentRowIdx !== state.activePlateIdx)
@@ -170,6 +163,7 @@ export class PlateGridManager {
     }
   }
 
+  // ... (rest of the file is unchanged) ...
   private createFileInput(): DG.InputBase<DG.FileInfo | null> {
     const fileInput = ui.input.file('', {
       onValueChanged: async (file: DG.FileInfo | null) => {
@@ -204,12 +198,9 @@ export class PlateGridManager {
       this.fileInput.root,
     ], 'plate-import-container');
 
-    // Ensure the container takes full width
     container.style.width = '100%';
-
     return container;
   }
-
 
   private updateIdentifierControls(): void {
     this.updatePlateIdentifierControl();

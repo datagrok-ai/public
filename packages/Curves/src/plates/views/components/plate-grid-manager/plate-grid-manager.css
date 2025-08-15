@@ -3,19 +3,47 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  width: 100% !important; /* Force full width */
+  width: 100% !important;
   height: 100%;
-  min-height: 0; /* Important for flex containers */
+  min-height: 0;
 }
 
-/* Force the internal grid to take full width */
 .plate-grid-manager > .d4-grid {
-  flex-grow: 1; /* Let the grid grow to fill available space */
-  width: 100% !important; /* Force full width */
+  flex-grow: 1;
+  width: 100% !important;
   border: 1px solid var(--grey-2);
   border-radius: 4px;
-  min-height: 150px; /* Minimum height instead of fixed */
+  min-height: 150px;
 }
+
+/* NEW: Add padding to cells and style row selection */
+.plate-grid-manager .d4-grid-cell {
+  padding: 0 10px !important;
+  display: flex;
+  align-items: center;
+}
+
+.plate-grid-manager .d4-grid-row.d4-current {
+  background-color: var(--blue-0) !important;
+}
+
+.plate-grid-manager .d4-grid-row.d4-mouse-over {
+  background-color: var(--grey-1) !important;
+}
+
+/* === Import Container (existing styles) === */
+.plate-import-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  flex-shrink: 0;
+  width: 100%;
+  background-color: var(--grey-0);
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
 
 /* Ensure the grid's root element takes full width */
 .plate-grid-manager .d4-grid-root {
