@@ -57,8 +57,8 @@ export function getMolfiles(col: any) {
 
 //name: helmInput
 //tags: valueEditor
-//input: string name { optional: true; default: undefined }
-//input: object options { optional: true; default: undefined }
+//input: string name { optional: true }
+//input: object options { optional: true }
 //output: object result
 //meta.propertyType: string
 //meta.semType: Macromolecule

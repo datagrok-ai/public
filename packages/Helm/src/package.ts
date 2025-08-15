@@ -200,8 +200,8 @@ export class PackageFunctions{
     'outputs': [{'type': 'object',  'name': 'result'}]
   })
   static helmInput(
-    @grok.decorators.param({'options':{'optional':true,'initialValue':'undefined'}})  name: string,
-    @grok.decorators.param({'type':'object','options':{'optional':true,'initialValue':'undefined'}})   options: IHelmInputInitOptions): HelmInputBase {
+    @grok.decorators.param({'options':{'optional':true}})  name: string,
+    @grok.decorators.param({'type':'object','options':{'optional':true}})   options: IHelmInputInitOptions): HelmInputBase {
   
     // TODO: Annotate for semType = 'Macromolecule' AND units = 'helm'
     return _package.helmHelper.createHelmInput(name, options);
