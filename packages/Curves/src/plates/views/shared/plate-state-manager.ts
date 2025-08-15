@@ -48,31 +48,57 @@ export class PlateStateManager {
 
   get activePlate(): PlateFile | undefined {
     const state = this.currentState;
-    return state ? state.plates[state.activePlateIdx] : undefined;
+    if (!state || state.activePlateIdx < 0 || state.activePlateIdx >= state.plates.length)
+      return undefined;
+    return state.plates[state.activePlateIdx];
   }
 
-  /** Creates a new DataFrame with columns renamed according to the active plate's mapping. */
   public getActivePlateMappedData(): DG.DataFrame | null {
     const activePlate = this.activePlate;
     if (!activePlate || !activePlate.plate.data) return null;
 
     const sourceDf = activePlate.plate.data;
     const map = activePlate.reconciliationMap;
+
+    console.log('[DEBUG] Mapping plate data with reconciliation map:', map);
+
+    // The map is target -> source, so we need to check each source column
+    // to see if it should be renamed to a target
     const newColumns: DG.Column[] = [];
+    const processedSources = new Set<string>();
 
-    const sourceToTarget = new Map<string, string>();
-    map.forEach((source, target) => sourceToTarget.set(source, target));
+    // Process each entry in the reconciliation map
+    map.forEach((sourceColName, targetColName) => {
+      const sourceCol = sourceDf.col(sourceColName);
+      if (sourceCol) {
+        const newCol = sourceCol.clone();
+        newCol.name = targetColName;
+        newColumns.push(newCol);
+        processedSources.add(sourceColName);
+        console.log(`[DEBUG] Mapped column: ${sourceColName} -> ${targetColName}`);
+      }
+    });
 
+    // Add any unmapped columns with their original names
     for (const sourceCol of sourceDf.columns) {
-      const newCol = sourceCol.clone();
-      const targetName = sourceToTarget.get(sourceCol.name);
-      if (targetName)
-        newCol.name = targetName;
-
-      newColumns.push(newCol);
+      if (!processedSources.has(sourceCol.name)) {
+        const newCol = sourceCol.clone();
+        newColumns.push(newCol);
+        console.log(`[DEBUG] Added unmapped column: ${sourceCol.name}`);
+      }
     }
 
-    return DG.DataFrame.fromColumns(newColumns);
+    if (newColumns.length === 0) {
+      console.log('[DEBUG] No columns to create mapped DataFrame');
+      return null;
+    }
+
+    const mappedDf = DG.DataFrame.fromColumns(newColumns);
+    mappedDf.name = sourceDf.name + '_mapped';
+
+    console.log('[DEBUG] Final mapped columns:', mappedDf.columns.names());
+
+    return mappedDf;
   }
 
   async setTemplate(template: PlateTemplate): Promise<void> {
@@ -148,13 +174,28 @@ export class PlateStateManager {
   }
 
   selectPlate(index: number): void {
+    console.log(`[DEBUG] 2. PlateStateManager: selectPlate called with index: ${index}.`);
     const state = this.currentState;
-    if (state && index >= 0 && index < state.plates.length) {
+    if (!state || index === state.activePlateIdx) {
+      console.log(`[DEBUG] 2a. PlateStateManager: No state update needed. Current index: ${state?.activePlateIdx}.`);
+      return;
+    }
+
+    if (index >= 0 && index < state.plates.length) {
       state.activePlateIdx = index;
+      console.log(`[DEBUG] 2b. PlateStateManager: New activePlateIdx: ${state.activePlateIdx}. Firing state change.`);
       this.stateChange$.next({
         type: 'plate-selected',
         plateIndex: index,
         plate: state.plates[index],
+      });
+    } else {
+      state.activePlateIdx = -1;
+      console.log(`[DEBUG] 2c. PlateStateManager: Deselected plate. New activePlateIdx: -1. Firing state change.`);
+      this.stateChange$.next({
+        type: 'plate-selected',
+        plateIndex: -1,
+        plate: undefined,
       });
     }
   }
@@ -238,10 +279,9 @@ export class PlateStateManager {
   }
 
   async getOrCreateDefaultPlate(): Promise<Plate> {
-    const state = this.currentState;
-    if (state && state.plates.length > 0)
-      return state.plates[state.activePlateIdx].plate;
-
+    const active = this.activePlate;
+    if (active)
+      return active.plate;
     return await createNewPlateForTemplate(this._currentPlateType, this._currentTemplate);
   }
 

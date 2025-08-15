@@ -305,7 +305,13 @@ export class PlateWidget extends DG.Widget {
     }
   }
 
-  static fromPlate(plate: Plate) {
+  static fromPlate(plate: Plate, useSimpleView: boolean = false) {
+    if (useSimpleView) {
+      // Simple view without the detailed layout
+      const pw = new PlateWidget();
+      pw.plate = plate;
+      return pw;
+    }
     return PlateWidget.detailedView(plate);
   }
 
@@ -366,6 +372,7 @@ export class PlateWidget extends DG.Widget {
 
   get plate(): Plate { return this._plate; }
   set plate(p: Plate) {
+    console.log(`[DEBUG] 4. PlateWidget: Plate setter called with plate barcode: ${p.barcode}. Refreshing widget.`);
     this._plate = p;
     this.refresh();
   }
@@ -382,7 +389,7 @@ export class PlateWidget extends DG.Widget {
           const p = this.plate;
           for (let i = 0; i < df.rowCount; i++) {
             for (let j = 0; j < df.columns.length - 1; j++)
-                    p.data.col(layer)!.set(p._idx(i, j), df.get(`${j + 1}`, i));
+            p.data.col(layer)!.set(p._idx(i, j), df.get(`${j + 1}`, i));
           }
           this.wellValidationErrors = p.validateWells(this.wellValidators);
         });
@@ -391,6 +398,14 @@ export class PlateWidget extends DG.Widget {
         return grid.root;
       });
     }
+
+    // Ensure the tabs container takes full width
+    if (this.tabsContainer) {
+      this.tabsContainer.style.width = '100%';
+      this.tabsContainer.style.display = 'flex';
+      this.tabsContainer.style.flexDirection = 'column';
+    }
+
     ui.tools.waitForElementInDom(this.tabs.root).then(() => {
       this.tabs.currentPane = this.tabs.getPane('Summary');
     });
@@ -399,15 +414,20 @@ export class PlateWidget extends DG.Widget {
 
     const t = this.plate.data;
     this._colorColumn = t.columns.firstWhere((col) => col.name == 'activity' && col.type == TYPE.FLOAT) ??
-            t.columns.firstWhere((col) => (col.name == 'concentration' || col.name == 'concentrations') && col.type == TYPE.FLOAT) ??
-            t.columns.firstWhere((col) => col.name != 'row' && col.name != 'col' && col.type == TYPE.FLOAT) ??
-            t.columns.firstWhere((col) => col.type == TYPE.FLOAT) ??
-            (t.columns.length > 0 ? t.columns.byIndex(0) : undefined);
+          t.columns.firstWhere((col) => (col.name == 'concentration' || col.name == 'concentrations') && col.type == TYPE.FLOAT) ??
+          t.columns.firstWhere((col) => col.name != 'row' && col.name != 'col' && col.type == TYPE.FLOAT) ??
+          t.columns.firstWhere((col) => col.type == TYPE.FLOAT) ??
+          (t.columns.length > 0 ? t.columns.byIndex(0) : undefined);
 
     this.grid.dataFrame = DG.DataFrame.create(this.plate.rows);
     this.grid.columns.clear();
     for (let i = 0; i <= this.plate.cols; i++)
       this.grid.columns.add({gridColumnName: i.toString(), cellType: 'string'});
+
+    // Ensure the grid takes full width
+    if (this.grid && this.grid.root)
+      this.grid.root.style.width = '100%';
+
 
     this.grid.invalidate();
   }

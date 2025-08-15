@@ -3,35 +3,75 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  flex-shrink: 0; /* Prevents the container from collapsing */
+  width: 100% !important; /* Force full width */
+  height: 100%;
+  min-height: 0; /* Important for flex containers */
 }
 
+/* Force the internal grid to take full width */
 .plate-grid-manager > .d4-grid {
-    height: 220px;
-    width: 100%;
-    border: 1px solid var(--grey-2);
-    border-radius: 4px;
+  flex-grow: 1; /* Let the grid grow to fill available space */
+  width: 100% !important; /* Force full width */
+  border: 1px solid var(--grey-2);
+  border-radius: 4px;
+  min-height: 150px; /* Minimum height instead of fixed */
+}
+
+/* Ensure the grid's root element takes full width */
+.plate-grid-manager .d4-grid-root {
+  width: 100% !important;
 }
 
 /* === Import Container === */
 .plate-import-container {
+  display: flex; /* Change to flex for better layout */
   align-items: center;
-  gap: 24px;
-  padding: 8px 0;
+  gap: 12px; /* Reduced gap */
+  padding: 8px 12px;
+  flex-shrink: 0; /* Don't let this shrink */
+  width: 100%;
+  background-color: var(--grey-0);
+  border-radius: 4px;
+  margin-bottom: 8px;
 }
 
-.plate-import-container > .d4-div-text,
-.plate-import-container .d4-input-label {
+.plate-import-container > .d4-div-text {
   font-weight: 500;
   color: var(--grey-6);
+  white-space: nowrap;
+  margin-right: 8px;
+}
+
+.plate-import-container .d4-input-root {
+  flex: 0 0 auto;
+  margin: 0 4px;
+}
+
+.plate-import-container .d4-input-label {
+  font-size: 12px;
+  color: var(--grey-5);
+  margin-right: 4px;
+}
+
+.plate-import-button {
+  margin-left: auto; /* Push to the right */
 }
 
 .plate-import-button .d4-input-button > button {
   padding: 4px 8px;
   border-radius: 4px;
+  background-color: var(--blue-1);
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-/* === Re-used from tabs for icons === */
+.plate-import-button .d4-input-button > button:hover {
+  background-color: var(--blue-2);
+}
+
+/* === Grid Cell Styles === */
 .plate-file-tab__mapped-pill {
   background-color: var(--grey-1);
   border-radius: 10px;
@@ -58,11 +98,13 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-/* === Mapping Dialog Styles (copied from plate-tabs-manager) === */
+/* === Mapping Dialog Styles === */
 .mapping-summary-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
 }
 
 .mapping-summary-row {
@@ -79,16 +121,19 @@
   color: var(--grey-6);
   font-style: italic;
   font-family: var(--font-family-mono);
+  flex: 1;
 }
 
 .mapping-summary-new-name {
   font-weight: 500;
   color: var(--grey-8);
   font-family: var(--font-family-mono);
+  flex: 1;
 }
 
 .mapping-summary-row > .grok-icon:nth-of-type(1) {
   color: var(--grey-4);
+  flex-shrink: 0;
 }
 
 .mapping-summary-row > .grok-icon:nth-of-type(2) {
@@ -97,6 +142,7 @@
   cursor: pointer;
   padding: 4px;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .mapping-summary-row > .grok-icon:nth-of-type(2):hover {
@@ -111,4 +157,11 @@
   padding: 8px 12px;
   border-radius: 4px;
   background-color: var(--grey-0);
+}
+
+.info-message {
+  color: var(--grey-5);
+  padding: 20px;
+  text-align: center;
+  font-style: italic;
 }
