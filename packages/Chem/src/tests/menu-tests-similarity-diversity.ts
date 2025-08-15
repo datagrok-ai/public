@@ -7,7 +7,7 @@ import {_package} from '../package-test';
 import {Fingerprint} from '../utils/chem-common';
 import {createTableView, readDataframe, molV2000, molV3000} from './utils';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import {findSimilar, getSimilarities} from '../package';
+import {PackageFunctions} from '../package';
 import {chemDiversitySearch, ChemDiversityViewer} from '../analysis/chem-diversity-viewer';
 import {chemSimilaritySearch, ChemSimilarityViewer} from '../analysis/chem-similarity-viewer';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
@@ -37,19 +37,19 @@ category('top menu similarity/diversity', () => {
   });
 
   test('findSimilar.chem.smiles', async () => {
-    await _testFindSimilar(findSimilar);
+    await _testFindSimilar(PackageFunctions.findSimilar);
   }, {benchmark: true});
 
   test('findSimilar.chem.molV2000', async () => {
-    await _testFindSimilar(findSimilar, molV2000, 'V2000');
+    await _testFindSimilar(PackageFunctions.findSimilar, molV2000, 'V2000');
   });
 
   test('findSimilar.chem.molV3000', async () => {
-    await _testFindSimilar(findSimilar, molV3000, 'V3000');
+    await _testFindSimilar(PackageFunctions.findSimilar, molV3000, 'V3000');
   });
 
   test('getSimilarities.chem.molecules', async () => {
-    await _testGetSimilarities(getSimilarities, molecules);
+    await _testGetSimilarities(PackageFunctions.getSimilarities, molecules);
   });
 
   test('similarity.emptyValues', async () => {

@@ -14,6 +14,7 @@ import { getRevvityUsers } from './users';
 import { createInitialSatistics, getRevvityLibraries, RevvityLibrary, RevvityType } from './libraries';
 
 
+export * from './package.g';
 export const _package = new DG.Package();
 
 export type CurrentRevvityLibrary = {
@@ -29,11 +30,6 @@ export type RevvityConfig = {
 let openedView: DG.View | null = null;
 let config: RevvityConfig = { libraries: undefined };
 
-//tags: app
-//name: Revvity Signals
-//output: view v
-//meta.browsePath: Chem
-export async function revvitySignalsLinkApp(): Promise<DG.ViewBase> {
 
   const appHeader = u2.appHeader({
     iconPath: _package.webRoot + '/img/revvity.png',
@@ -182,24 +178,28 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
   }
 }
 
-//name: Search Entities
-//input: string query
-//input: string params
-//output: dataframe df
-export async function searchEntities(query: string, params: string): Promise<DG.DataFrame> {
-  let df = DG.DataFrame.create();
-  try {
-    const queryJson: SignalsSearchQuery = JSON.parse(query);
-    const paramsJson: SignalsSearchParams = JSON.parse(params);
-    const response = await queryEntities(queryJson, Object.keys(paramsJson).length ? paramsJson : undefined);
-    const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
-    df = dataFrameFromObjects(data);
-    await grok.data.detectSemanticTypes(df);
-  } catch (e: any) {
-    grok.shell.error(e?.message ?? e);
+    const createViewFromPreDefinedQuery = async (query: string, name: string) => {
+      const df = await grok.functions.call('RevvitySignalsLink:searchEntitiesWithStructures', {
+        query: query,
+        params: '{}'
+      });
+      const tv = grok.shell.addTablePreview(df);
+      tv.name = name;
+      new RevvityFilters(tv);
+    }
+
+    const compounds = treeNode.group('Compounds');
+
+    const assets = compounds.item('Assets');
+    assets.onSelected.subscribe(async () => {
+      await createViewFromPreDefinedQuery(JSON.stringify(assetsQuery), 'Assets');
+    });
+
+    const batches = compounds.item('Batches');
+    batches.onSelected.subscribe(async () => {
+      await createViewFromPreDefinedQuery(JSON.stringify(batchesQuery), 'Batches');
+    });
   }
-  return df;
-}
 
 //name: Search Entities With Structures
 //input: string query
@@ -214,21 +214,10 @@ export async function searchEntitiesWithStructures(query: string, params: string
     if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
       return DG.DataFrame.create();
     const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
-
-    const rows = await transformData(data);
-    const moleculeIds = data.map((it) => it.id);
-    df = DG.DataFrame.fromObjects(rows)!;
-    const moleculeColumn = DG.Column.fromStrings(MOL_COL_NAME, new Array<string>(moleculeIds.length).fill(''));
-    moleculeColumn.semType = DG.SEMTYPE.MOLECULE;
-    moleculeColumn.meta.units = DG.UNITS.Molecule.MOLBLOCK;
-    df.columns.add(moleculeColumn);
-    reorderColummns(df);
-    addMoleculeStructures(moleculeIds, moleculeColumn);
-  } catch (e: any) {
-    grok.shell.error(e?.message ?? e);
+    for (const user of data)
+      users[user.id] = Object.assign({}, user.attributes || {});
+    return JSON.stringify(users);
   }
-  return df;
-}
 
 //name: Get Users
 //output: string users

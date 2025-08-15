@@ -3,7 +3,7 @@ import {_package} from '../package-test';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import {convertNotation, getRdKitModule, namesToSmiles} from '../package';
+import {PackageFunctions} from '../package';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 
 // import {_package} from '../package-test';
@@ -36,7 +36,7 @@ category('converters', async () => {
   function _testConvert(srcNotation: DG.chem.Notation, tgtNotation: DG.chem.Notation) {
     const result = [];
     for (const mol of molecules[srcNotation])
-      result.push(_convertMolNotation(mol, srcNotation, tgtNotation, getRdKitModule()));
+      result.push(_convertMolNotation(mol, srcNotation, tgtNotation, PackageFunctions.getRdKitModule()));
     expectArray(result.map((it) => it.replaceAll('\r', '')),
       molecules[tgtNotation].map((it) => it.replaceAll('\r', '')));
   }
@@ -44,7 +44,7 @@ category('converters', async () => {
   test('SMILES to Molfile V2000', async () => {
     if (DG.Test.isInBenchmark) {
       const df = await readDataframe('smiles.csv');
-      const rdkitModule = getRdKitModule();
+      const rdkitModule = PackageFunctions.getRdKitModule();
       for (let i = 0; i < df.rowCount; i++)
         _convertMolNotation(df.get('canonical_smiles', i), DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock, rdkitModule);
     } else
@@ -70,20 +70,19 @@ category('converters', async () => {
     _testConvert(DG.chem.Notation.V3KMolBlock, DG.chem.Notation.Smiles);
   });
   test('Names to SMILES', async () => {
-    const chemblPackInstalled = DG.Func.find({ package: 'ChemblApi', name: 'getCompoundsIds' }).length;
+    const chemblPackInstalled = DG.Func.find({package: 'ChemblApi', name: 'getCompoundsIds'}).length;
     if (chemblPackInstalled) {
       const df = await readDataframe('tests/names_to_smiles.csv');
-      await namesToSmiles(df, df.col('Name')!);
+      await PackageFunctions.namesToSmiles(df, df.col('Name')!);
       await awaitCheck(() => df.columns.names().includes(`canonical_smiles`),
         `Column with names has not been converted to smiles`, 5000);
       expect(df.get('canonical_smiles', 4) === '');
-      let mol1, mol2, smiles1, smiles2;
+      let mol1; let mol2; let smiles1; let smiles2;
       try {
         mol1 = rdkitModule.get_mol(df.get('canonical_smiles', 3));
         smiles1 = mol1.get_smiles();
         mol2 = rdkitModule.get_mol('O=C(CCCN1CCC(n2c(O)nc3ccccc32)CC1)c1ccc(F)cc1');
         smiles2 = mol1.get_smiles();
-
       } finally {
         mol1?.delete();
         mol2?.delete();
@@ -96,10 +95,10 @@ category('converters', async () => {
       await readDataframe('tests/Test_smiles_with_empty_and_malformed.csv');
 
     const testColumnAdded = async (colName: string, convertFrom: DG.chem.Notation, convertTo: DG.chem.Notation) => {
-      await convertNotation(df, df.col(colName)!, convertTo, false);
+      await PackageFunctions.convertNotation(df, df.col(colName)!, convertTo, false);
       await awaitCheck(() => df.columns.names().includes(`${colName}_${convertTo}`),
         `Column with ${convertFrom} has not been converted to ${convertTo}`, 5000);
-    }
+    };
 
     await testColumnAdded('smiles', DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
     expect(DG.chem.isMolBlock(df.get('smiles_molblock', 0)));
@@ -108,14 +107,14 @@ category('converters', async () => {
       expect(DG.chem.isMolBlock(df.get('smiles_v3Kmolblock', 0)));
       await testColumnAdded('smiles', DG.chem.Notation.Smiles, DG.chem.Notation.Smarts);
       expect(df.get('smiles_smarts', 0) === '[#6]-[#6](-[#6](=[#8])-[#8]-[#6]-[#6]-[#6]-[#6]1:[#6]:[#6]:[#6]:[#7]:[#6]:1)-[#6]1:[#6]:[#6]:[#6]:[#6](:[#6]:1)-[#6](=[#8])-[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1');
-      
+
       await testColumnAdded('smiles_molblock', DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles);
       expect(df.get('smiles_molblock_smiles', 0) === 'CC(C(=O)OCCCc1cccnc1)c1cccc(C(=O)c2ccccc2)c1');
       await testColumnAdded('smiles_molblock', DG.chem.Notation.MolBlock, DG.chem.Notation.V3KMolBlock);
       expect(DG.chem.isMolBlock(df.get('smiles_molblock_v3Kmolblock', 0)));
       await testColumnAdded('smiles_molblock', DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts);
       expect(df.get('smiles_molblock_smarts', 0) === '[#6]-[#6](-[#6](=[#8])-[#8]-[#6]-[#6]-[#6]-[#6]1:[#6]:[#6]:[#6]:[#7]:[#6]:1)-[#6]1:[#6]:[#6]:[#6]:[#6](:[#6]:1)-[#6](=[#8])-[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1');
-  
+
       await testColumnAdded('smiles_v3Kmolblock', DG.chem.Notation.V3KMolBlock, DG.chem.Notation.Smiles);
       expect(df.get('smiles_v3Kmolblock_smiles', 0) === 'CC(C(=O)OCCCc1cccnc1)c1cccc(C(=O)c2ccccc2)c1');
       await testColumnAdded('smiles_v3Kmolblock', DG.chem.Notation.V3KMolBlock, DG.chem.Notation.MolBlock);
@@ -124,5 +123,4 @@ category('converters', async () => {
       expect(df.get('smiles_v3Kmolblock_smarts', 0) === '[#6]-[#6](-[#6](=[#8])-[#8]-[#6]-[#6]-[#6]-[#6]1:[#6]:[#6]:[#6]:[#7]:[#6]:1)-[#6]1:[#6]:[#6]:[#6]:[#6](:[#6]:1)-[#6](=[#8])-[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1');
     }
   }, {benchmark: true});
-  
 });
