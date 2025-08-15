@@ -18,17 +18,6 @@ export async function samplesPanel(smiles: string) {
   return PackageFunctions.samplesPanel(smiles);
 }
 
-//name: createSearchPanel
-//description: Creates search panel
-//input: dynamic searchMode 
-//input: string smiles 
-//input: dynamic category 
-//input: dynamic shipToCountry 
-//output: dynamic result
-export function createSearchPanel(searchMode: any, smiles: string, category: any, shipToCountry: any) {
-  return PackageFunctions.createSearchPanel(searchMode, smiles, category, shipToCountry);
-}
-
 //name: Chemspace Prices
 //description: Chemspace Prices
 //tags: panel, widgets
@@ -65,6 +54,6 @@ export async function getChemspacePrices(data: DG.DataFrame, idsColumn: DG.Colum
 //output: string result
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 1 * *
-export async function queryMultipart(path: string, formParamsStr: string, paramsStr?: string) {
+export async function queryMultipart(path: string, formParamsStr: string, paramsStr: string) {
   return PackageFunctions.queryMultipart(path, formParamsStr, paramsStr);
 }

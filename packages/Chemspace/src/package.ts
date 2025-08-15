@@ -120,13 +120,13 @@ export class PackageFunctions {
       acc.addPane(SEARCH_MODE.SIMILAR, () => {
         categoryToData[cacheKey] ??= {};
         categoryToData[cacheKey]![SEARCH_MODE.SIMILAR] ??=
-          PackageFunctions.createSearchPanel(SEARCH_MODE.SIMILAR, smiles, cat, shipToCountry);
+          createSearchPanel(SEARCH_MODE.SIMILAR, smiles, cat, shipToCountry);
         return categoryToData[cacheKey]![SEARCH_MODE.SIMILAR]!;
       }, similarExpanded);
       acc.addPane(SEARCH_MODE.SUBSTRUCTURE, () => {
         categoryToData[cacheKey] ??= {};
         categoryToData[cacheKey]![SEARCH_MODE.SUBSTRUCTURE] ??=
-          PackageFunctions.createSearchPanel(SEARCH_MODE.SUBSTRUCTURE, smiles, cat, shipToCountry);
+          createSearchPanel(SEARCH_MODE.SUBSTRUCTURE, smiles, cat, shipToCountry);
         return categoryToData[cacheKey]![SEARCH_MODE.SUBSTRUCTURE]!;
       }, substructureExpanded);
     };
@@ -156,76 +156,6 @@ export class PackageFunctions {
     }
     return new DG.Widget(panels);
   }
-
-  @grok.decorators.func({'description': 'Creates search panel'})
-  static createSearchPanel(searchMode: SEARCH_MODE, smiles: string, category: CATEGORY = CATEGORY.CSCS,
-    shipToCountry: COUNTRY_CODES = COUNTRY_CODES['United States']): HTMLDivElement {
-    const headerHost = ui.divH([/*ui.h2(panelName)*/], 'chemspace-panel-header');
-    const compsHost = ui.div([ui.loader()], 'd4-flex-wrap chem-viewer-grid');
-    const panel = ui.divV([headerHost, compsHost], 'chemspace-panel');
-
-    const queryParams: {[key: string]: any} = {
-      'shipToCountry': shipToCountry,
-      'categories': category,
-    };
-    grok.functions.call(`${_package.name}:queryMultipart`, {
-      path: `search/${modeToParam[searchMode]}`,
-      formParamsStr: JSON.stringify({'SMILES': smiles}),
-      paramsStr: JSON.stringify(queryParams),
-    }).then(async (resStr: string) => {
-      const res: ChemspaceResult[] = JSON.parse(resStr);
-      compsHost.firstChild?.remove();
-      if (res.length === 0) {
-        compsHost.appendChild(ui.divText('No matches'));
-        return;
-      }
-
-      function getTooltip(idx: number): HTMLDivElement {
-        const props: {[key: string]: any} = {
-          'ID': res[idx].csId,
-          'Formula': res[idx].molFormula,
-        };
-        Object.keys(res[idx].properties).forEach((prop) => props[prop] = (res[idx].properties as any)[prop]);
-        return ui.divV([ui.tableFromMap(props), ui.divText('Click to open in the store.')]);
-      }
-
-      const smilesCol: DG.Column<string> = DG.Column.string('smiles', res.length).init((i) => res[i].smiles);
-
-      let similarityResult: DG.DataFrame | null = null;
-      if (searchMode === SEARCH_MODE.SIMILAR)
-        similarityResult = await grok.chem.findSimilar(smilesCol, smiles, {limit: 20, cutoff: 0.1});
-
-      for (let i = 0; i < Math.min((similarityResult ? similarityResult.rowCount : res.length), 20); i++) {
-        const idx = searchMode === SEARCH_MODE.SIMILAR ? similarityResult!.get('index', i) : i;
-        const smiles = smilesCol.get(idx);
-        const molHost = ui.div();
-        if (smiles) {
-          const res = grok.chem.drawMolecule(smiles, WIDTH, HEIGHT, true);
-          molHost.append(res);
-          if (searchMode === SEARCH_MODE.SIMILAR)
-            molHost.appendChild(ui.divText(`Score: ${similarityResult?.get('score', i).toFixed(2)}`));
-        }
-        ui.tooltip.bind(molHost, () => getTooltip(idx));
-        molHost.addEventListener('click', () => window.open(res[idx].link, '_blank'));
-        compsHost.appendChild(molHost);
-      }
-      headerHost.appendChild(ui.iconFA('arrow-square-down', () => {
-        const df = DG.DataFrame.fromJson(JSON.stringify(res));
-        df.name = `Chemspace ${searchMode}`;
-        grok.shell.addTableView(df);
-      }, 'Open compounds as table'));
-      compsHost.style.overflowY = 'auto';
-    })
-      .catch((err) => {
-        compsHost.firstChild?.remove();
-        const div = ui.divText(err.message ?? err);
-        ui.tooltip.bind(div, `${err}`);
-        compsHost.appendChild(div);
-      });
-
-    return panel;
-  }
-
 
   @grok.decorators.panel({
     'tags': [
@@ -514,5 +444,74 @@ async function requestAuthToken(apiKey: string): Promise<string> {
 
 function getCategoryCacheKey(cat: string, shipToCountry: COUNTRY_CODES): string {
   return `${cat}|${shipToCountry}`;
+}
+
+
+function createSearchPanel(searchMode: SEARCH_MODE, smiles: string, category: CATEGORY = CATEGORY.CSCS,
+  shipToCountry: COUNTRY_CODES = COUNTRY_CODES['United States']): HTMLDivElement {
+  const headerHost = ui.divH([/*ui.h2(panelName)*/], 'chemspace-panel-header');
+  const compsHost = ui.div([ui.loader()], 'd4-flex-wrap chem-viewer-grid');
+  const panel = ui.divV([headerHost, compsHost], 'chemspace-panel');
+
+  const queryParams: {[key: string]: any} = {
+    'shipToCountry': shipToCountry,
+    'categories': category,
+  };
+  grok.functions.call(`${_package.name}:queryMultipart`, {
+    path: `search/${modeToParam[searchMode]}`,
+    formParamsStr: JSON.stringify({'SMILES': smiles}),
+    paramsStr: JSON.stringify(queryParams),
+  }).then(async (resStr: string) => {
+    const res: ChemspaceResult[] = JSON.parse(resStr);
+    compsHost.firstChild?.remove();
+    if (res.length === 0) {
+      compsHost.appendChild(ui.divText('No matches'));
+      return;
+    }
+
+    function getTooltip(idx: number): HTMLDivElement {
+      const props: {[key: string]: any} = {
+        'ID': res[idx].csId,
+        'Formula': res[idx].molFormula,
+      };
+      Object.keys(res[idx].properties).forEach((prop) => props[prop] = (res[idx].properties as any)[prop]);
+      return ui.divV([ui.tableFromMap(props), ui.divText('Click to open in the store.')]);
+    }
+
+    const smilesCol: DG.Column<string> = DG.Column.string('smiles', res.length).init((i) => res[i].smiles);
+
+    let similarityResult: DG.DataFrame | null = null;
+    if (searchMode === SEARCH_MODE.SIMILAR)
+      similarityResult = await grok.chem.findSimilar(smilesCol, smiles, {limit: 20, cutoff: 0.1});
+
+    for (let i = 0; i < Math.min((similarityResult ? similarityResult.rowCount : res.length), 20); i++) {
+      const idx = searchMode === SEARCH_MODE.SIMILAR ? similarityResult!.get('index', i) : i;
+      const smiles = smilesCol.get(idx);
+      const molHost = ui.div();
+      if (smiles) {
+        const res = grok.chem.drawMolecule(smiles, WIDTH, HEIGHT, true);
+        molHost.append(res);
+        if (searchMode === SEARCH_MODE.SIMILAR)
+          molHost.appendChild(ui.divText(`Score: ${similarityResult?.get('score', i).toFixed(2)}`));
+      }
+      ui.tooltip.bind(molHost, () => getTooltip(idx));
+      molHost.addEventListener('click', () => window.open(res[idx].link, '_blank'));
+      compsHost.appendChild(molHost);
+    }
+    headerHost.appendChild(ui.iconFA('arrow-square-down', () => {
+      const df = DG.DataFrame.fromJson(JSON.stringify(res));
+      df.name = `Chemspace ${searchMode}`;
+      grok.shell.addTableView(df);
+    }, 'Open compounds as table'));
+    compsHost.style.overflowY = 'auto';
+  })
+    .catch((err) => {
+      compsHost.firstChild?.remove();
+      const div = ui.divText(err.message ?? err);
+      ui.tooltip.bind(div, `${err}`);
+      compsHost.appendChild(div);
+    });
+
+  return panel;
 }
 
