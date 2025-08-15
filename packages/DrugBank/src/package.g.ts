@@ -30,6 +30,7 @@ export async function drugBankSimilaritySearchPanel(mol: string) {
 //output: string result { semType: Molecule }
 //meta.role: converter
 //meta.inputRegexp: (db\:.+)
+//meta.connection: DrugBank
 export function drugNameMolecule(id: string) {
   return PackageFunctions.drugNameMolecule(id);
 }

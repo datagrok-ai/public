@@ -20,7 +20,7 @@ export namespace funcs {
     return await grok.functions.call('DrugBank:DrugBankSimilaritySearchPanel', { mol });
   }
 
-  export async function drugNameMolecule(id: string ): Promise<void> {
+  export async function drugNameMolecule(id: string ): Promise<string> {
     return await grok.functions.call('DrugBank:DrugNameMolecule', { id });
   }
 }

@@ -50,13 +50,12 @@ export class PackageFunctions {
   }
 
 
-  //Add after release 1.26.1
-  //'connection': 'DrugBank',
   @grok.decorators.func({
     meta: {
       role: 'converter',
       inputRegexp: '(db\\:.+)',
     },
+    connection: 'DrugBank',
     name: 'Drug Name Molecule',
     outputs: [{type: 'string', name: 'result', options: {semType: 'Molecule'}}],
   })
