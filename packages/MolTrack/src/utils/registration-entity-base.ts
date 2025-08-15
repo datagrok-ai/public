@@ -15,6 +15,7 @@ export abstract class EntityBaseView {
 
   inputs: DG.InputBase[] = [];
   batchInputs: DG.InputBase<any>[] = [];
+  isBatchSectionExpanded: boolean = false;
   formBackingObject: Record<string, any> = {};
 
   title: string = 'Register new chemical compounds';
@@ -26,6 +27,20 @@ export abstract class EntityBaseView {
   constructor(buildUI: boolean = true) {
     this.view = DG.View.create();
     this.sketcherInstance = new grok.chem.Sketcher();
+    this.sketcherInstance.onChanged.subscribe(async () => {
+      const molfile = this.sketcherInstance.getMolFile();
+      const validate = await grok.functions.call('Chem:validateMolecule', {s: molfile});
+      ui.empty(this.messageContainer);
+      if (validate !== '') {
+        const header = 'Validation warning';
+        const message = `The submitted structure may be invalid. Details: ${validate}`;
+        const infoDiv = ui.info(message, header, true);
+        this.messageContainer.append(infoDiv);
+      } else {
+        const titleText = ui.divText(this.title, 'moltrack-title');
+        this.messageContainer.append(titleText);
+      }
+    });
     DG.chem.currentSketcherType = 'Ketcher';
 
     if (buildUI)
@@ -96,9 +111,38 @@ export abstract class EntityBaseView {
 
     const form = ui.wideForm(inputs);
     form.classList.add('moltrack-compound-form', 'moltrack-form');
-    const section = createCollapsibleSection(title, form, initiallyOpen);
+    const section = this.createCollapsibleSection(title, form, initiallyOpen);
 
     return { section, inputs, formBackingObject };
+  }
+
+  createCollapsibleSection(
+    title: string,
+    form: HTMLElement,
+    initiallyOpen: boolean = false,
+  ): HTMLElement {
+    const chevron = ui.iconFA(
+      initiallyOpen ? 'chevron-down' : 'chevron-right',
+      () => toggleSection(form, chevron, title, clearButton),
+      `Toggle ${title}`,
+    );
+    chevron.classList.add('moltrack-chevron');
+
+    const headerText = ui.divText(title, 'moltrack-section-title');
+    const header = ui.divH([chevron, headerText], 'moltrack-section-header');
+
+    form.style.display = initiallyOpen ? 'block' : 'none';
+    form.classList.add('moltrack-section-form');
+
+    const clearButton = ui.button('Clear form', () => {
+      for (const input of this.inputs)
+        input.value = null;
+    });
+    clearButton.style.display = initiallyOpen ? 'block' : 'none';
+    clearButton.style.marginLeft = 'auto';
+
+    const section = ui.divV([header, form, clearButton], 'moltrack-section');
+    return section;
   }
 
   private async registerButtonHandler() {
@@ -119,6 +163,16 @@ export abstract class EntityBaseView {
 
       const { status, compoundId, batchId, errorMsg } = this.extractResultData(resultDf);
       this.showRegistrationMessage(status, batchId?.trim() || compoundId, errorMsg, singularScope);
+
+      for (const [propName, value] of [
+        ['corporate_compound_id', compoundId],
+        ['corporate_batch_id', batchId],
+      ]) {
+        if (value) {
+          const input = this.inputs.find((inp) => inp.property.name === propName);
+          if (input) input.value = value;
+        }
+      }
 
       if (status === 'success' && openedView)
         openedView.path = `${createPath('Compound')}?corporate_${singularScope}_id=${encodeURIComponent(batchId?.trim() || compoundId)}`;
@@ -206,7 +260,7 @@ export abstract class EntityBaseView {
       fetchBatchProperties,
       {
         disableNames: this.singleRetrieved ? ['*'] : reservedProperties,
-        initiallyOpen: false,
+        initiallyOpen: this.isBatchSectionExpanded,
       },
     );
 
@@ -236,31 +290,10 @@ export abstract class EntityBaseView {
   }
 }
 
-function createCollapsibleSection(
-  title: string,
-  form: HTMLElement,
-  initiallyOpen: boolean = false,
-): HTMLElement {
-  const chevron = ui.iconFA(
-    initiallyOpen ? 'chevron-down' : 'chevron-right',
-    () => toggleSection(form, chevron, title),
-    `Toggle ${title}`,
-  );
-  chevron.classList.add('moltrack-chevron');
-
-  const headerText = ui.divText(title, 'moltrack-section-title');
-  const header = ui.divH([chevron, headerText], 'moltrack-section-header');
-
-  form.style.display = initiallyOpen ? 'block' : 'none';
-  form.classList.add('moltrack-section-form');
-
-  const section = ui.divV([header, form], 'moltrack-section');
-  return section;
-}
-
-function toggleSection(form: HTMLElement, chevron: HTMLElement, title: string) {
+function toggleSection(form: HTMLElement, chevron: HTMLElement, title: string, button: HTMLElement) {
   const isHidden = form.style.display === 'none';
   form.style.display = isHidden ? 'block' : 'none';
+  button.style.display = isHidden ? 'block' : 'none';
   chevron.className = `fa fa-chevron-${isHidden ? 'down' : 'right'}`;
 }
 

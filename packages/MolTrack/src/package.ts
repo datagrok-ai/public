@@ -70,16 +70,19 @@ async function buildRegistrationView({
   smiles,
   pathQueryParam,
   propsList,
+  batchSection,
 }: {
   title: string;
   smiles: string;
   pathQueryParam: string;
   propsList: any[];
+  batchSection: boolean
 }) {
   const registrationView = new RegistrationCompoundView(false);
   registrationView.initialSmiles = smiles;
   registrationView.singleRetrieved = true;
   registrationView.title = title;
+  registrationView.isBatchSectionExpanded = batchSection;
   await registrationView.buildUIMethod();
 
   registrationView.formBackingObject = {};
@@ -113,6 +116,7 @@ async function compoundView(corporateCompoundId: string) {
     smiles,
     pathQueryParam: `corporate_compound_id=${encodeURIComponent(corporateCompoundId)}`,
     propsList: properties,
+    batchSection: false,
   });
 }
 
@@ -135,6 +139,7 @@ async function batchView(corporateBatchId: string) {
     smiles,
     pathQueryParam: `corporate_batch_id=${encodeURIComponent(corporateBatchId)}`,
     propsList: Array.from(combinedPropsMap.values()),
+    batchSection: true,
   });
 }
 
