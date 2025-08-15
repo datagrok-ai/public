@@ -274,10 +274,6 @@ export namespace funcs {
     return await grok.functions.call('Chem:DescriptorsDocker', {});
   }
 
-  export async function calculateDescriptorsTransform(table: DG.DataFrame , molecules: DG.Column , selected: any ): Promise<void> {
-    return await grok.functions.call('Chem:CalculateDescriptorsTransform', { table, molecules, selected });
-  }
-
   export async function chemDescriptorsTree(): Promise<any> {
     return await grok.functions.call('Chem:ChemDescriptorsTree', {});
   }
@@ -324,8 +320,8 @@ export namespace funcs {
     return await grok.functions.call('Chem:ChemSpaceEditor', { call });
   }
 
-  export async function getFingerprints(col: DG.Column , _metric?: string , fingerprintType?: any ): Promise<any> {
-    return await grok.functions.call('Chem:GetFingerprints', { col, _metric, fingerprintType });
+  export async function getFingerprints(col: DG.Column , fingerprintType?: string , _metric?: string ): Promise<any> {
+    return await grok.functions.call('Chem:GetFingerprints', { col, fingerprintType, _metric });
   }
 
   /**
@@ -335,7 +331,7 @@ export namespace funcs {
     return await grok.functions.call('Chem:ChemSpaceTopMenu', { table, molecules, methodName, similarityMetric, plotEmbeddings, options, preprocessingFunction, clusterEmbeddings, clusterMCS });
   }
 
-  export async function chemSpaceTransform(table: DG.DataFrame , molecules: string , methodName: string , similarityMetric: string , plotEmbeddings: boolean , options?: string , clusterEmbeddings?: boolean ): Promise<any> {
+  export async function chemSpaceTransform(table: DG.DataFrame , molecules: DG.Column , methodName: string , similarityMetric: string , plotEmbeddings: boolean , options?: string , clusterEmbeddings?: boolean ): Promise<any> {
     return await grok.functions.call('Chem:ChemSpaceTransform', { table, molecules, methodName, similarityMetric, plotEmbeddings, options, clusterEmbeddings });
   }
 
@@ -489,7 +485,7 @@ export namespace funcs {
     return await grok.functions.call('Chem:ConvertMolNotation', { molecule, sourceNotation, targetNotation });
   }
 
-  export async function convertNotation(data: DG.DataFrame , molecules: string , targetNotation: string , overwrite: boolean , join: boolean ): Promise<DG.Column> {
+  export async function convertNotation(data: DG.DataFrame , molecules: DG.Column , targetNotation: string , overwrite: boolean , join: boolean ): Promise<DG.Column> {
     return await grok.functions.call('Chem:ConvertNotation', { data, molecules, targetNotation, overwrite, join });
   }
 
@@ -647,8 +643,8 @@ export namespace funcs {
     return await grok.functions.call('Chem:MMPEditor', { call });
   }
 
-  export async function mmpAnalysis(table: DG.DataFrame , molecules: DG.Column , activities: string[] , diffTypes: any , scalings: any , fragmentCutoff: number , demo: boolean ): Promise<void> {
-    return await grok.functions.call('Chem:MmpAnalysis', { table, molecules, activities, diffTypes, scalings, fragmentCutoff, demo });
+  export async function mmpAnalysis(table: DG.DataFrame , molecules: DG.Column , activities: string[] , diffTypes: any , scalings: any , fragmentCutoff: number ): Promise<void> {
+    return await grok.functions.call('Chem:MmpAnalysis', { table, molecules, activities, diffTypes, scalings, fragmentCutoff });
   }
 
   /**

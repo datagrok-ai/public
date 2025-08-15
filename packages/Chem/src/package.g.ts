@@ -287,13 +287,13 @@ export function ChemSpaceEditor(call: DG.FuncCall) {
 //name: Fingerprints
 //tags: dim-red-preprocessing-function
 //input: column col { semType: Molecule }
+//input: string fingerprintType { caption: Fingerprint type; optional: true; choices: ['Morgan','RDKit','Pattern','AtomPair','MACCS','TopologicalTorsion']; default: Morgan }
 //input: string _metric { optional: true }
-//input: dynamic fingerprintType { caption: Fingerprint type; optional: true; choices: ['Morgan','RDKit','Pattern','AtomPair','MACCS','TopologicalTorsion']; default: Morgan }
 //output: object result
 //meta.supportedSemTypes: Molecule
 //meta.supportedDistanceFunctions: Tanimoto, Asymmetric, Cosine, Sokal
-export async function getFingerprints(col: DG.Column, _metric?: string, fingerprintType?: any) {
-  return PackageFunctions.getFingerprints(col, _metric, fingerprintType);
+export async function getFingerprints(col: DG.Column, fingerprintType: any, _metric?: string) {
+  return PackageFunctions.getFingerprints(col, fingerprintType, _metric);
 }
 
 //name: Chem Space
@@ -317,7 +317,7 @@ export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column
 //name: chemSpaceTransform
 //tags: Transform
 //input: dataframe table 
-//input: string molecules { semType: Molecule }
+//input: column molecules { semType: Molecule }
 //input: string methodName 
 //input: string similarityMetric 
 //input: bool plotEmbeddings { default: true }
@@ -542,7 +542,7 @@ export function descriptorsWidget(smiles: string) {
 //tags: panel, chem, widgets
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
-//helpUrl: /help/domains/chem/info-panels/drug-likeness.md
+//help-url: /help/domains/chem/info-panels/drug-likeness.md
 export function drugLikeness(smiles: DG.SemanticValue) {
   return PackageFunctions.drugLikeness(smiles);
 }
@@ -569,7 +569,7 @@ export function getChemPropertyFunction(name: string) {
 //tags: panel, chem, widgets
 //input: string smiles { semType: Molecule }
 //output: widget result
-//helpUrl: /help/domains/chem/info-panels/structural-alerts.md
+//help-url: /help/domains/chem/info-panels/structural-alerts.md
 export async function structuralAlerts(smiles: string) {
   return PackageFunctions.structuralAlerts(smiles);
 }
@@ -605,7 +605,7 @@ export function structure2d(molecule: string) {
 //tags: panel, chem, widgets
 //input: semantic_value smiles { semType: Molecule }
 //output: widget result
-//helpUrl: /help/domains/chem/info-panels/toxicity-risks.md
+//help-url: /help/domains/chem/info-panels/toxicity-risks.md
 export function toxicity(smiles: DG.SemanticValue) {
   return PackageFunctions.toxicity(smiles);
 }
@@ -633,7 +633,7 @@ export function convertMolNotation(molecule: string, sourceNotation: any, target
 //name: Convert Notation
 //tags: Transform
 //input: dataframe data 
-//input: string molecules { semType: Molecule }
+//input: column molecules { semType: Molecule }
 //input: string targetNotation { choices: ['smiles','smarts','molblock','v3Kmolblock']; default: smiles }
 //input: bool overwrite { default: false }
 //input: bool join { default: true }
@@ -908,11 +908,10 @@ export function MMPEditor(call: DG.FuncCall) {
 //input: string_list diffTypes 
 //input: string_list scalings 
 //input: double fragmentCutoff { description: Maximum fragment size relative to core; default: 0.4 }
-//input: bool demo 
 //editor: Chem:MMPEditor
 //top-menu: Chem | Analyze | Matched Molecular Pairs...
-export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column[], diffTypes: any, scalings: any, fragmentCutoff: number, demo: boolean) {
-  return PackageFunctions.mmpAnalysis(table, molecules, activities, diffTypes, scalings, fragmentCutoff, demo);
+export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column[], diffTypes: any, scalings: any, fragmentCutoff: number) {
+  return PackageFunctions.mmpAnalysis(table, molecules, activities, diffTypes, scalings, fragmentCutoff);
 }
 
 //name: Scaffold Tree Filter

@@ -660,9 +660,9 @@ export class PackageFunctions {
   })
   static async getFingerprints(
     @grok.decorators.param({options: {semType: 'Molecule'}}) col: DG.Column,
-    @grok.decorators.param({options: {optional: true}}) _metric?: string,
     @grok.decorators.param({type: 'string', options: {caption: 'Fingerprint type', optional: true,
-      choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'], initialValue: 'Morgan'}}) fingerprintType: Fingerprint = Fingerprint.Morgan) {
+      choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'], initialValue: 'Morgan'}}) fingerprintType: Fingerprint = Fingerprint.Morgan,
+    @grok.decorators.param({options: {optional: true}}) _metric?: string) {
     //TODO: get rid of fallback
     let fingerprintTypeStr = fingerprintType as string;
     if ((fingerprintTypeStr.startsWith('\'') || fingerprintTypeStr.startsWith('"')) &&
@@ -743,7 +743,7 @@ export class PackageFunctions {
   })
   static async chemSpaceTransform(
     table: DG.DataFrame,
-    @grok.decorators.param({type: 'string', options: {semType: 'Molecule'}})molecules: DG.Column,
+    @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}})molecules: DG.Column,
     @grok.decorators.param({type: 'string'}) methodName: DimReductionMethods,
     @grok.decorators.param({type: 'string'}) similarityMetric: BitArrayMetrics = BitArrayMetricsNames.Tanimoto,
     @grok.decorators.param({options: {initialValue: 'true'}}) plotEmbeddings: boolean,
@@ -1255,10 +1255,10 @@ export class PackageFunctions {
   }
 
   @grok.decorators.panel({
-    name: 'Biology | Drug Likeness',
-    description: 'Drug Likeness score, with explanations on molecule fragments contributing to the score. OCL.',
-    helpUrl: '/help/domains/chem/info-panels/drug-likeness.md',
-    tags: ['chem', 'widgets'],
+    'name': 'Biology | Drug Likeness',
+    'description': 'Drug Likeness score, with explanations on molecule fragments contributing to the score. OCL.',
+    'help-url': '/help/domains/chem/info-panels/drug-likeness.md',
+    'tags': ['chem', 'widgets'],
   })
   static drugLikeness(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: DG.SemanticValue): DG.Widget {
@@ -1291,10 +1291,10 @@ export class PackageFunctions {
   }
 
   @grok.decorators.panel({
-    name: 'Biology | Structural Alerts',
-    description: 'Screening drug candidates against structural alerts i.e. fragments associated to a toxicological response',
-    helpUrl: '/help/domains/chem/info-panels/structural-alerts.md',
-    tags: ['chem', 'widgets'],
+    'name': 'Biology | Structural Alerts',
+    'description': 'Screening drug candidates against structural alerts i.e. fragments associated to a toxicological response',
+    'help-url': '/help/domains/chem/info-panels/structural-alerts.md',
+    'tags': ['chem', 'widgets'],
   })
   static async structuralAlerts(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: string): Promise<DG.Widget> {
@@ -1338,10 +1338,10 @@ export class PackageFunctions {
   }
 
   @grok.decorators.panel({
-    name: 'Biology | Toxicity',
-    description: 'Toxicity prediction. Calculated by openchemlib',
-    helpUrl: '/help/domains/chem/info-panels/toxicity-risks.md',
-    tags: ['chem', 'widgets'],
+    'name': 'Biology | Toxicity',
+    'description': 'Toxicity prediction. Calculated by openchemlib',
+    'help-url': '/help/domains/chem/info-panels/toxicity-risks.md',
+    'tags': ['chem', 'widgets'],
   })
   static toxicity(
     @grok.decorators.param({options: {semType: 'Molecule'}}) smiles: DG.SemanticValue): DG.Widget {
@@ -1955,10 +1955,8 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'column_list', options: {type: 'numerical'}}) activities: DG.Column[],
     @grok.decorators.param({type: 'string_list'}) diffTypes: MmpDiffTypes[],
     @grok.decorators.param({type: 'string_list'}) scalings: SCALING_METHODS[],
-    @grok.decorators.param({type: 'double', options: {description: 'Maximum fragment size relative to core', initialValue: '0.4'}}) fragmentCutoff: number = 0.4,
-    demo: boolean = false): Promise<void> {
-    let view: DG.TableView;
-
+    @grok.decorators.param({type: 'double',
+      options: {description: 'Maximum fragment size relative to core', initialValue: '0.4'}}) fragmentCutoff: number = 0.4): Promise<void> {
     if (activities.length < 1) {
       grok.shell.warning('MMP analysis requires at least one activity');
       return;
@@ -1970,10 +1968,7 @@ export class PackageFunctions {
       return;
     }
 
-    if (demo)
-      view = grok.shell.getTableView(table.name) as DG.TableView;
-    else
-      view = grok.shell.getTableView(table.name) as DG.TableView;
+    const view = grok.shell.getTableView(table.name) as DG.TableView;
 
     const activityColsNames = [];
     for (let i = 0; i < scalings.length; i++) {
