@@ -41,7 +41,7 @@ async def websocket_handler():
 # Run the ASGI server
 async def run_server():
     config = Config()
-    config.bind = ["0.0.0.0:5353"]  # Same port for HTTP and WebSocket
+    config.bind = ["0.0.0.0:25353"]  # Same port for HTTP and WebSocket
     await serve(app, config)
 
 if __name__ == '__main__':
