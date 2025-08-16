@@ -60,7 +60,7 @@ ENV PATH="/opt/conda/envs/myenv/bin:$PATH"
 
 COPY --chown=$MAMBA_USER:$MAMBA_USER . /app
 
-EXPOSE 8001
+EXPOSE 38005
 
 SHELL ["micromamba", "run", "-n", "myenv", "/bin/bash", "-c"]
 

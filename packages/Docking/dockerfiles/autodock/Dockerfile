@@ -60,6 +60,6 @@ RUN mamba install -n base -c conda-forge awscli -y && \
 
 COPY autodock.py /app/autodock.py
 
-EXPOSE 8000
+EXPOSE 38005
 
 ENTRYPOINT ["python", "autodock.py", "--host", "0.0.0.0", "--port", "8000"]

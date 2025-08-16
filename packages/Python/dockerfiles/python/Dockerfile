@@ -11,5 +11,5 @@ RUN pip install websockets
 RUN pip install pandas
 RUN pip install scikit-learn
 COPY server.py server.py
-EXPOSE 8080
+EXPOSE 38081
 CMD ["python3", "server.py"]

@@ -95,6 +95,6 @@ RUN /app/venv/bin/pip install flask_cors
 
 ENV PATH="/app/venv/bin:$PATH"
 
-EXPOSE 8000
+EXPOSE 38002
 
 ENTRYPOINT ["python", "reinvent.py", "--host", "0.0.0.0", "--port", "8000"]

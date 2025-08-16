@@ -20,5 +20,5 @@ RUN pyenv install 3.10.15
 RUN pyenv install 3.12.2
 RUN pyenv install 3.11.9
 
-EXPOSE 5001
+EXPOSE 35008
 CMD ["./run.sh"]

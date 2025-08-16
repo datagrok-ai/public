@@ -135,4 +135,4 @@ ENV MAFFT_DIR="/usr/bin/"
 # CMD can be changed easially, you need ENTRYPOINT in this case
 ENTRYPOINT ["uvicorn", "--host", "0.0.0.0", "alignment.api:api"]
 
-EXPOSE 8000
+EXPOSE 38006
