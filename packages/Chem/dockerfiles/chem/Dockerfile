@@ -28,7 +28,7 @@ ENV CHEM_PORT=5000
 ENV CHEM_NUM_CORES=4
 
 COPY --chown=$CHEM_USER:$CHEM_USER . .
-EXPOSE 35002
+EXPOSE 5000
 SHELL ["/bin/bash", "-c"]
 
 ENTRYPOINT gunicorn app:app \

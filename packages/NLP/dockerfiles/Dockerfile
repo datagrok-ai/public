@@ -16,6 +16,6 @@ RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTr
 
 COPY . /app
 
-EXPOSE 38004
+EXPOSE 8000
 
 ENTRYPOINT ["python", "-m", "app", "--host", "0.0.0.0", "--port", "8000"]

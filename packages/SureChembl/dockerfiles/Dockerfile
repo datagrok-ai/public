@@ -6,4 +6,4 @@ ENV DB_NAME=surechembl
 ENV DB_PASSWORD=datagrok
 ENV DB_USER=datagrok
 
-EXPOSE 35432
+EXPOSE 5432

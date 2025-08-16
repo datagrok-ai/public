@@ -15,7 +15,7 @@ RUN sed -i 's/\r$//' /etc/nginx/entrypoint.sh && chmod +x /etc/nginx/entrypoint.
 
 RUN chown -R grok:grok /etc/nginx /var/lib/nginx /var/log/nginx
 
-EXPOSE 38091
+EXPOSE 8090
 
 USER grok
 WORKDIR '/etc/nginx'

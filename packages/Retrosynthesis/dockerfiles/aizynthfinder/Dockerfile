@@ -34,7 +34,7 @@ COPY app.py /app/
 RUN chown -R datagrok:datagrok /app
 USER datagrok
 # grok_spawner expects port to be exposed
-EXPOSE 38001
+EXPOSE 8000
 
 # Datagrok will populate this env variables based on DockerContainer id and config properties
 # Use concurrency=cpu in container.json

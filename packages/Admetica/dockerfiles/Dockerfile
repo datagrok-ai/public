@@ -47,7 +47,7 @@ RUN set -ex ; \
 
 COPY --chown=$MAMBA_USER:$MAMBA_USER . /app
 
-EXPOSE 38008
+EXPOSE 8000
 
 ENTRYPOINT micromamba run -n myenv celery -A Admetica worker \
     --loglevel=info \
