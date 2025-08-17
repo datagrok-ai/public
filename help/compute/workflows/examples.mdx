@@ -3,17 +3,19 @@ title: "Tutorial and examples"
 sidebar_position: 5
 ---
 
-Let's make some multistep analysis using the low-code workflows.
-For example, let's analyze the standard Wine Quality dataset.
+Let's create a multi-step analysis using low-code workflows.
+We'll analyze the standard Wine Quality dataset as an example.
 
 We'll make a workflow that can make the following:
 
-1. Load the public dataset),
+1. Load the public dataset,
 2. Perform two separate calculations:
     * Regression to predict wine quality.
     * Clustering wines based on chemical profile.
 3. Combine: Highlight which clusters have best average quality.
 
+The final code of the package can be found in the
+[GitHub repository](https://github.com/GennadiyZakharov/winequalitywf)
 
 ## Development setup and minimal workflow
 
@@ -88,8 +90,8 @@ export function MyAddScript(a: number, b: number) {
 
 The imports of `utc`, `timezone` and `daysjs` are required for the `TreeWizardEditor` to work.
 
-Tn the main part of scripts we define the `WineQualityWf` function, that created and returns
-a big JSON with the `PipelineConfiguration` type, that defines our workflow.
+In the main part of the script, we define the `WineQualityWf` function that creates and returns
+a JSON object with the `PipelineConfiguration` type that defines our workflow.
 The `nqName:` key of the configuration should always contain the name of the main function and main script.
 In our case this is `winequalitywf:WineQualityWf`
 
@@ -132,9 +134,6 @@ the file `fetchwinedata.py` with the following code:
 #output: dataframe df_wine
 #output: int total_lines
 
-# URLs for red and white wine datasets
-
-
 # Load datasets
 df_red = pd.read_csv(url_red, sep=';')
 df_white = pd.read_csv(url_white, sep=';')
@@ -145,6 +144,7 @@ df_white["wine_type"] = "white"
 
 # Combine both datasets
 df_wine = pd.concat([df_red, df_white], ignore_index=True)
+df_wine.reset_index(drop=True, inplace=True)
 total_lines = df_wine.shape[0]
 ```
 
@@ -191,7 +191,9 @@ Add to the scripts the second file `clusterwinedata.py` with the following conte
 #description: Cluster fetched data
 #language: python
 #input: dataframe df_wine
-#output: dataframe df_clustering
+#input: int n_pca = 8 { caption: PCA components } [Number of PCA components to cluster]
+#input: int n_clusters = 4 {caption: Clusters} [Number of clusters for K-means]
+#output: dataframe df_clustering { viewer: scatterPlot(x:"PCA1", y:"PCA2", color:"cluster")}
 
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
@@ -204,11 +206,11 @@ scaler = StandardScaler()
 X_scaled = scaler.fit_transform(features)
 
 # --- Step 2: PCA for visualization ---
-pca = PCA(n_components=4)
+pca = PCA(n_components=n_pca)
 X_pca = pca.fit_transform(X_scaled)
 
 # --- Step 3: K-means clustering ---
-kmeans = KMeans(n_clusters=5, random_state=42)
+kmeans = KMeans(n_clusters=n_clusters, random_state=42)
 clusters = kmeans.fit_predict(X_scaled).astype(str)
 
 # --- Step 4: Plotting ---
@@ -217,7 +219,7 @@ df_clustering = pd.DataFrame({
     "PCA2": X_pca[:, 1],
     "cluster": clusters,
     "wine_type": df_wine["wine_type"]
-})
+}, index=df_wine.index)
 ```
 
 This script runs PCA and then simple k-means clustering on the all wine characteristics,
@@ -324,7 +326,7 @@ Add parameters to the input declaration:
 
 ```python
 #input: int n_pca = 6 { caption: PCA components } [Number of PCA components to cluster]
-#input: int n_clusters = 2 {caption: Clusters} [Number of cluisters for K-means]
+#input: int n_clusters = 2 {caption: Clusters} [Number of clusters for K-means]
 ```
 
 And modify the PCA and clustering code like this:
@@ -339,19 +341,19 @@ Now you can change the number of clusters and PCA components.
 
 ![Two-step workflow - inputs](pics/WineQ_two_steps_step_input.png)
 
-## Adding regression step
+## Adding the regression step
 
 Now, let's add one more step to our workflow.
-Now we want to make a regression of the wuality based on the numeric data.
+Now we want to create a regression model to predict wine quality based on the numeric data.
 
-Add the tew file `trainregression.py` to the `scripts` folder:
+Add the file `trainregression.py` to the `scripts` folder:
 
 ```python
 #name: trainregression
 #description: Train regression on wine quality data
 #language: python
 #input: dataframe df_wine
-#input: double test_size = 0.2 {caption: PCA components; min:0.1; max:0.5 }
+#input: double test_size = 0.2 {caption: Fraction of test data; min:0.1; max:0.5 }
 #output: dataframe df_regression { viewer: scatterPlot(x:"actual", y:"predicted")}
 
 import pandas as pd
@@ -370,19 +372,20 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 model = LinearRegression()
 model.fit(X_train, y_train)
 
-# --- Predict and evaluate ---
+# --- Predict and evaluate on the test data ---
 y_pred = model.predict(X_test)
 mse = mean_squared_error(y_test, y_pred)
 r2 = r2_score(y_test, y_pred)
+print(f"R2 score: {r2:.2f}")
 
-# --- Make dataframe actual vs predicted ---
+# --- Make dataframe actual vs predicted for full-zise data ---
 df_regression = pd.DataFrame({
-    'actual': y_test,
-    'predicted': y_pred,
-})
+    'actual': y,
+    'predicted': model.predict(X),
+}, index=df_wine.index)
 ```
 
-Add to the package.ts the new step:
+Add to the `package.ts` the new step:
 
 ```typescript
 steps: [
@@ -400,7 +403,7 @@ steps: [
 ]
 ```
 
-And the new connection:
+Add the new connection:
 
 ```typescript
 links: [
@@ -423,3 +426,137 @@ Now you can see the regression step in the workflow.
 Both computational steps use data from the data fetch step.
 
 ![Two-step workflow - inputs](pics/WineQ_regression.png)
+
+## Combining outputs
+
+The final step is to combine clusterign and refression data in one step.
+
+To do this, first create a simple Python script for the data combining logic.
+The script receives two dataframes and return one combined dataframe,
+containign regression data, and cluster id from the clusterign dataframe.
+
+```python
+#name: mergepredictions
+#description: Merge linear regression and clustering data
+#language: python
+#input: dataframe df_clustering
+#input: dataframe df_regression
+#output: dataframe df_combined { viewer: scatterPlot(x:"actual", y:"predicted", color:"cluster")}
+
+import pandas as pd
+
+df_combined = df_regression.copy()
+df_combined["cluster"] = df_clustering["cluster"]
+```
+
+Next, add to the `steps` the description of the new step,
+and two static links to the `links` section:
+
+```javascript
+const c: PipelineConfiguration = {
+    steps: [
+        ...
+        {
+          id: 'mergepredictions',
+          friendlyName: 'Merge predictions of two models',
+          nqName: 'winequalitywf:mergepredictions',
+        }
+        ], // we nned comma here because after it we'll have the `links` section
+    links: [
+      ...
+      {
+        id: 'regressindatatomerge',
+        type: 'data',
+        from: [
+          'value_in:trainregression/df_regression',
+        ],
+        to: [
+          'value_out:mergepredictions/df_regression',
+        ],
+      },
+      {
+        id: 'clusteringtomerge',
+        type: 'data',
+        from: [
+          'value_in:clusterwinedata/df_clustering',
+        ],
+        to: [
+          'value_out:mergepredictions/df_clustering',
+        ],
+      }
+     ]
+}
+```
+
+Publish and run the model.
+
+```shell
+npm i && npm run build && grok publish local --release
+```
+
+
+You'll see the following pipeline tree:
+
+![Completed multi-step wine quality analysis workflow](pics/wineQ_full_workflow.png)
+
+When you fetch the wine quality dataset,
+both analysis steps will be automatically marked by green arrows, as ready for execution:
+
+![Analysis steps are ready](pics/wineQ_full_workflow_data_fetched.png)
+
+After you run both analysis steps,
+the final dat merge step will be marked as ready for execution.
+![Merging data step is ready](pics/wineQ_full_workflow_analysis_done.png)
+
+Run it to see the final results.
+
+![Data merging is ready](pics/wineQ_full_workflow_done.png)
+
+As you can see, the quality of our prediction is not good.
+We have only a slight correlation between the predicted and actual wine quality.
+Color by clustering also shows no distribution between classes.
+
+However, the provided examples demonstrate the key capabilities of the
+Datagrok Low-code workflows.
+A simple Javascript code allows you to assemble your scripts in the workflow buildign blocks,
+combining the flexibility of Python/R with the
+automated UI construction and blaze-fast interactive viewers.
+
+## Automatic data consistency check
+
+The Datagrok workflow engine also applies an extended set of validations,
+ensuring reproducibility of your workflow.
+For example, try to run the data merging step,
+then change number of clusters and rerun the clustering step.
+
+![Inconsistent data mark](pics/wineQ_full_workflow_consistency_check.png)
+
+As you can see, now we have only three clusters,
+and the final dama merging step was immediately marked by the red circle.
+
+The workflow engine found input data inconsistency and notified us.
+Now the data merge step shows us the **Rerun** buton,
+suggesting tu rerun the step.
+
+The Low-code workflow engine provides many advanced tools to
+combine flexible data analysis with the ability to
+tightly manage workflow state and ensure stable and reproducible results.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
