@@ -1039,6 +1039,10 @@ export class Script extends Func {
 
   static create(script: string): Script { return new Script(api.grok_Script_Create(script)); }
 
+  static fromParams(inputs: Property[], outputs: Property[], script: string = ''): Script {
+    return new Script(api.grok_Script_FromParams(inputs.map((i) => toDart(i)), outputs.map((i) => toDart(i)), script));
+  }
+
   /** Script */
   get script(): string { return api.grok_Script_GetScript(this.dart); }
   set script(s: string) { api.grok_Script_SetScript(this.dart, s); }
