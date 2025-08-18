@@ -1546,6 +1546,7 @@ export interface IDartApi {
   grok_FuncCall_Cancel(call: any): any;
   grok_FuncCall_Call_Sync(call: any, processed: Bool, report: Bool): any;
   grok_Script_Create(script: String): any;
+  grok_Script_FromParams(inputs: any, outputs: any, script: String): any;
   grok_Script_GetScript(script: any): any;
   grok_Script_SetScript(script: any, s: String): any;
   grok_Script_ClientCode(script: any): any;

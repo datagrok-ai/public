@@ -49,6 +49,89 @@ export const MONOMER_DF_COLUMNS = {
   [MONOMER_DF_COLUMN_NAMES.SOURCE]: DG.COLUMN_TYPE.STRING,
 } as const;
 
+export function getMonomersDataFrame(activeMonomerLib: IMonomerLib) {
+  try {
+    const ploymerTypes = activeMonomerLib.getPolymerTypes();
+    const monomers = ploymerTypes.flatMap((polymerType) => {
+      return activeMonomerLib!.getMonomerSymbolsByType(polymerType).map((symbol) => {
+        return activeMonomerLib!.getMonomer(polymerType, symbol)!;
+      });
+    });
+    const df = DG.DataFrame.create(monomers.length);
+
+    const uniqueRgroupNamesSet = new Set<string>();
+    for (const monomer of monomers) {
+      monomer.rgroups.forEach((rg) => {
+        rg.label && uniqueRgroupNamesSet.add(rg.label);
+      });
+    }
+    const uniqueRgroupNames = Array.from(uniqueRgroupNamesSet);
+    uniqueRgroupNames.sort();
+    for (const [k, v] of Object.entries(MONOMER_DF_COLUMNS)) {
+      df.columns.addNew(k, v);
+      if (k === MONOMER_DF_COLUMN_NAMES.R_GROUPS) {
+        for (const rgroupName of uniqueRgroupNames)
+          df.columns.addNew(rgroupName, DG.COLUMN_TYPE.STRING);
+      }
+    }
+      df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.semType = 'Monomer';
+      df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.setTag(MONOMER_RENDERER_TAGS.applyToBackground, 'true');
+
+
+      for (let i = 0; i < monomers.length; i++) {
+        let molSmiles = getCorrectedSmiles(monomers[i].rgroups, monomers[i].smiles, monomers[i].molfile);
+        molSmiles = fixRGroupsAsElementsSmiles(molSmiles);
+        // r-groups here might be broken, so need to make sure they are correct
+        monomers[i].rgroups = resolveRGroupInfo(monomers[i].rgroups);
+        const rgroupSmiles = uniqueRgroupNames.map((rgName) => {
+          const rgroup = monomers[i].rgroups.find((rg) => rg.label === rgName);
+          return rgroup ? getCaseInvariantValue(rgroup, HELM_RGROUP_FIELDS.CAP_GROUP_SMILES) : '';
+        });
+        let date: number | null = null;
+
+        if (monomers[i].createDate) {
+          try {
+            date = Date.parse(monomers[i].createDate!);
+          } catch (e) {
+            console.error(`Error parsing date ${monomers[i].createDate}`);
+          }
+        }
+
+
+        df.rows.setValues(i, [
+          molSmiles,
+          monomers[i].symbol,
+          monomers[i].name,
+          JSON.stringify(monomers[i].rgroups ?? []),
+          ...rgroupSmiles,
+          monomers[i].monomerType,
+          monomers[i].polymerType,
+          monomers[i].naturalAnalog,
+          monomers[i].author,
+          date,
+          monomers[i].id,
+          JSON.stringify(monomers[i].meta ?? {}),
+          monomers[i].lib?.source ?? '',
+        ]);
+        // something is wrong with setting dates, so setting it manually for now
+        try {
+          if (date)
+            df.col(MONOMER_DF_COLUMN_NAMES.CREATE_DATE)?.set(i, date, false);
+        } catch (e) {
+          console.error(`Error setting date ${monomers[i].createDate}`, e);
+        }
+      }
+      df.col(MONOMER_DF_COLUMN_NAMES.MONOMER)!.semType = DG.SEMTYPE.MOLECULE;
+      uniqueRgroupNames.forEach((rgName) => {
+        df.col(rgName)!.semType = DG.SEMTYPE.MOLECULE;
+      });
+      return df;
+  } catch (e) {
+    grok.shell.error('Error creating monomers dataframe');
+    console.error(e);
+    throw e;
+  }
+}
 
 export class MonomerManager implements IMonomerManager {
   private adjustTable() {
@@ -354,91 +437,7 @@ export class MonomerManager implements IMonomerManager {
         grok.shell.error(`Library ${fileName} not found`);
         return DG.DataFrame.create();
       }
-      const ploymerTypes = this.activeMonomerLib.getPolymerTypes();
-      const monomers = ploymerTypes.flatMap((polymerType) => {
-        return this.activeMonomerLib!.getMonomerSymbolsByType(polymerType).map((symbol) => {
-          return this.activeMonomerLib!.getMonomer(polymerType, symbol)!;
-        });
-      });
-      const df = DG.DataFrame.create(monomers.length);
-
-      const uniqueRgroupNamesSet = new Set<string>();
-      for (const monomer of monomers) {
-        monomer.rgroups.forEach((rg) => {
-          rg.label && uniqueRgroupNamesSet.add(rg.label);
-        });
-      }
-      const uniqueRgroupNames = Array.from(uniqueRgroupNamesSet);
-      uniqueRgroupNames.sort();
-      for (const [k, v] of Object.entries(MONOMER_DF_COLUMNS)) {
-        df.columns.addNew(k, v);
-        if (k === MONOMER_DF_COLUMN_NAMES.R_GROUPS) {
-          for (const rgroupName of uniqueRgroupNames)
-            df.columns.addNew(rgroupName, DG.COLUMN_TYPE.STRING);
-        }
-      }
-      df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.semType = 'Monomer';
-      df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.setTag(MONOMER_RENDERER_TAGS.applyToBackground, 'true');
-
-
-      for (let i = 0; i < monomers.length; i++) {
-        let molSmiles = getCorrectedSmiles(monomers[i].rgroups, monomers[i].smiles, monomers[i].molfile);
-        molSmiles = fixRGroupsAsElementsSmiles(molSmiles);
-        // r-groups here might be broken, so need to make sure they are correct
-        monomers[i].rgroups = resolveRGroupInfo(monomers[i].rgroups);
-        const rgroupSmiles = uniqueRgroupNames.map((rgName) => {
-          const rgroup = monomers[i].rgroups.find((rg) => rg.label === rgName);
-          return rgroup ? getCaseInvariantValue(rgroup, HELM_RGROUP_FIELDS.CAP_GROUP_SMILES) : '';
-        });
-        let date: number | null = null;
-
-        if (monomers[i].createDate) {
-          try {
-            date = Date.parse(monomers[i].createDate!);
-          } catch (e) {
-            console.error(`Error parsing date ${monomers[i].createDate}`);
-          }
-        }
-
-
-        df.rows.setValues(i, [
-          molSmiles,
-          monomers[i].symbol,
-          monomers[i].name,
-          JSON.stringify(monomers[i].rgroups ?? []),
-          ...rgroupSmiles,
-          monomers[i].monomerType,
-          monomers[i].polymerType,
-          monomers[i].naturalAnalog,
-          monomers[i].author,
-          date,
-          monomers[i].id,
-          JSON.stringify(monomers[i].meta ?? {}),
-          monomers[i].lib?.source ?? '',
-        ]);
-        // something is wrong with setting dates, so setting it manually for now
-        try {
-          if (date)
-            df.col(MONOMER_DF_COLUMN_NAMES.CREATE_DATE)?.set(i, date, false);
-        } catch (e) {
-          console.error(`Error setting date ${monomers[i].createDate}`);
-        }
-      }
-      df.col(MONOMER_DF_COLUMN_NAMES.MONOMER)!.semType = DG.SEMTYPE.MOLECULE;
-      uniqueRgroupNames.forEach((rgName) => {
-        df.col(rgName)!.semType = DG.SEMTYPE.MOLECULE;
-      });
-      df.currentRowIdx = -1;
-      // eslint-disable-next-line rxjs/no-ignored-subscription, rxjs/no-async-subscribe
-      df.onCurrentRowChanged.subscribe(async (_) => {
-        try {
-          if (df.currentRowIdx === -1 || this._newMonomerForm.molChanged)
-            return;
-          await this.editMonomer(df.rows.get(df.currentRowIdx));
-        } catch (e) {
-          console.error(e);
-        }
-      });
+      const df = getMonomersDataFrame(this.activeMonomerLib);
       return df;
     } catch (e) {
       grok.shell.error('Error creating monomers dataframe');
