@@ -47,3 +47,11 @@ export async function registerAssayData(): Promise<void> {
   const assayPayload = await fetchSchema(`${Scope.ASSAYS}.json`);
   await registerAssays(JSON.stringify(assayPayload));
 }
+
+export function createPath(viewName: string) {
+  let path = `${MOLTRACK_APP_PATH}/`;
+  path += encodeURIComponent(viewName);
+  return path;
+}
+
+const MOLTRACK_APP_PATH: string = 'apps/MolTrack';

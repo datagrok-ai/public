@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import { u2 } from '@datagrok-libraries/utils/src/u2';
 import { MolTrackDockerService } from './utils/moltrack-docker-service';
 import { RegistrationView } from './utils/registration-tab';
-import { registerAllData, registerAssayData, updateAllMolTrackSchemas } from './utils/utils';
+import { createPath, registerAllData, registerAssayData, updateAllMolTrackSchemas } from './utils/utils';
 import { RegistrationCompoundView } from './utils/registration-compound-tab';
 import { RegistrationBatchView } from './utils/registration-batch-tab';
 import { Scope } from './utils/constants';
@@ -14,10 +14,15 @@ import { Scope } from './utils/constants';
 export const _package = new DG.Package();
 
 //tags: init
-export async function init(): Promise<void> {
-  await updateAllMolTrackSchemas();
-  await registerAssayData();
-  await registerAllData();
+export function init(): void {
+  setTimeout(async () => {
+    // Run independent tasks in parallel
+    await Promise.all([
+      updateAllMolTrackSchemas(),
+      registerAssayData(),
+      registerAllData(),
+    ]);
+  }, 0);
 
   // This will be used for the updated docker setup later.
   // const connection = await grok.dapi.connections.filter('name = "moltrack"').first();
@@ -25,14 +30,6 @@ export async function init(): Promise<void> {
   // for (const query of queries)
   //   await (query.prepare()).call();
 }
-
-export function createPath(viewName: string) {
-  let path = `${MOLTRACK_APP_PATH}/`;
-  path += encodeURIComponent(viewName);
-  return path;
-}
-
-const MOLTRACK_APP_PATH: string = 'apps/MolTrack';
 
 //tags: app
 //name: MolTrack
