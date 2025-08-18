@@ -400,7 +400,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func()
-  static async clinicalCaseAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.View) {// TODO: DG.BrowseView
+  static async clinicalCaseAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     if (!validationRulesList)
       validationRulesList = await grok.data.loadTable(`${_package.webRoot}tables/validation-rules.csv`);
     const url = new URL(window.location.href);

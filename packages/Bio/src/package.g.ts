@@ -473,9 +473,8 @@ export async function manageMonomerLibrariesView() {
 
 //name: Monomer Manager Tree Browser
 //input: dynamic treeNode 
-//input: dynamic browsePanel 
-export async function manageMonomerLibrariesViewTreeBrowser(treeNode: any, browsePanel: any) {
-  return PackageFunctions.manageMonomerLibrariesViewTreeBrowser(treeNode, browsePanel);
+export async function manageMonomerLibrariesViewTreeBrowser(treeNode: any) {
+  return PackageFunctions.manageMonomerLibrariesViewTreeBrowser(treeNode);
 }
 
 //name: saveAsFasta

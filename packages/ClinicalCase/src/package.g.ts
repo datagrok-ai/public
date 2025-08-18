@@ -11,9 +11,8 @@ export async function clinicalCaseApp() {
 
 //name: clinicalCaseAppTreeBrowser
 //input: dynamic treeNode 
-//input: view browseView 
-export async function clinicalCaseAppTreeBrowser(treeNode: any, browseView: DG.View) {
-  return PackageFunctions.clinicalCaseAppTreeBrowser(treeNode, browseView);
+export async function clinicalCaseAppTreeBrowser(treeNode: any) {
+  return PackageFunctions.clinicalCaseAppTreeBrowser(treeNode);
 }
 
 //name: clinicalCaseFolderLauncher

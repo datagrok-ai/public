@@ -23,6 +23,7 @@ export async function TestsListJoined() {
 
 //name: TestAnalysisReportForCurrentDay
 //input: datetime date 
+//output: dataframe result
 export async function TestAnalysisReportForCurrentDay(date: any) {
   return PackageFunctions.TestAnalysisReportForCurrentDay(date);
 }
@@ -75,16 +76,14 @@ export function serviceLogsApp(path?: string, params?: any, limit?: number) {
 
 //name: serviceLogsAppTreeBrowser
 //input: dynamic treeNode 
-//input: dynamic browseView 
-export async function serviceLogsAppTreeBrowser(treeNode: any, browseView: any) {
-  return PackageFunctions.serviceLogsAppTreeBrowser(treeNode, browseView);
+export async function serviceLogsAppTreeBrowser(treeNode: any) {
+  return PackageFunctions.serviceLogsAppTreeBrowser(treeNode);
 }
 
 //name: reportsAppTreeBrowser
 //input: dynamic treeNode 
-//input: dynamic browseView 
-export async function reportsAppTreeBrowser(treeNode: any, browseView: any) {
-  return PackageFunctions.reportsAppTreeBrowser(treeNode, browseView);
+export async function reportsAppTreeBrowser(treeNode: any) {
+  return PackageFunctions.reportsAppTreeBrowser(treeNode);
 }
 
 //name: Usage

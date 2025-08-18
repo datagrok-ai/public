@@ -970,7 +970,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({name: 'Monomer Manager Tree Browser'})
-  static async manageMonomerLibrariesViewTreeBrowser(treeNode: DG.TreeViewGroup, browsePanel: DG.BrowsePanel) {
+  static async manageMonomerLibrariesViewTreeBrowser(treeNode: DG.TreeViewGroup) {
     const libraries = (await (await MonomerLibManager.getInstance()).getFileManager()).getValidLibraryPaths();
     libraries.forEach((libName) => {
       const nodeName = libName.endsWith('.json') ? libName.substring(0, libName.length - 5) : libName;

@@ -297,8 +297,8 @@ export namespace funcs {
     return await grok.functions.call('Bio:ManageMonomerLibrariesView', {});
   }
 
-  export async function manageMonomerLibrariesViewTreeBrowser(treeNode: any , browsePanel: any ): Promise<void> {
-    return await grok.functions.call('Bio:ManageMonomerLibrariesViewTreeBrowser', { treeNode, browsePanel });
+  export async function manageMonomerLibrariesViewTreeBrowser(treeNode: any ): Promise<void> {
+    return await grok.functions.call('Bio:ManageMonomerLibrariesViewTreeBrowser', { treeNode });
   }
 
   /**

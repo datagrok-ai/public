@@ -111,8 +111,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.treeBrowser({ })
-  static async runDiffStudioTreeBrowser(treeNode: DG.TreeViewGroup, browsePanel: DG.BrowsePanel) {
-    new DiffStudio(false, false, false, {treeNode: treeNode, browsePanel: browsePanel});
+  static async runDiffStudioTreeBrowser(treeNode: DG.TreeViewGroup) {
+    new DiffStudio(false, false, false, {treeNode: treeNode, browsePanel: grok.shell.browsePanel});
   }
 
   @grok.decorators.model({

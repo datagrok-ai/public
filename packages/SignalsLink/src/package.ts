@@ -27,8 +27,7 @@ export async function signalsApp(): Promise<DG.ViewBase> {
 
 
 //input: dynamic treeNode
-//input: view browseView
-export async function signalsAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: any){
+export async function signalsAppTreeBrowser(treeNode: DG.TreeViewGroup){
   treeNode.group('Projects');
   treeNode.group('Experiments');
   treeNode.group('Equipment');

@@ -12,12 +12,12 @@ export namespace funcs {
     return await grok.functions.call('CDDVaultLink:CddVaultApp', { path, filter });
   }
 
-  export async function cddVaultAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<void> {
-    return await grok.functions.call('CDDVaultLink:CddVaultAppTreeBrowser', { treeNode, browseView });
+  export async function cddVaultAppTreeBrowser(treeNode: any ): Promise<void> {
+    return await grok.functions.call('CDDVaultLink:CddVaultAppTreeBrowser', { treeNode });
   }
 
-  export async function molColumnPropertyPanel(molecule: string ): Promise<any> {
-    return await grok.functions.call('CDDVaultLink:MolColumnPropertyPanel', { molecule });
+  export async function molColumnPropertyPanel(mol: string ): Promise<any> {
+    return await grok.functions.call('CDDVaultLink:MolColumnPropertyPanel', { mol });
   }
 
   export async function cddvaultSearchEditor(call: any ): Promise<void> {

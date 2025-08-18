@@ -55,7 +55,6 @@ export async function revvitySignalsLinkApp(): Promise<DG.ViewBase> {
 }
 
 //input: dynamic treeNode
-//input: view browseView
 export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGroup) {
   getRevvityUsers();
   const libs = await getRevvityLibraries();
@@ -97,7 +96,7 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
       const tags: {[key: string]: string} = JSON.parse(tagsStr);
       Object.keys(tags).forEach((tagName) => {
         const propOptions: {[key: string]: any} = {
-          name: tagName, 
+          name: tagName,
           type: REVVITY_FIELD_TO_PROP_TYPE_MAPPING[tags[tagName]],
         };
         const nameArr = tagName.split('.');
@@ -111,7 +110,7 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
         }
         filterFields.push(prop);
       });
-      queryBuilder = new QueryBuilder(filterFields, undefined, QueryBuilderLayout.Narrow);      
+      queryBuilder = new QueryBuilder(filterFields, undefined, QueryBuilderLayout.Narrow);
       const runSearchButton = ui.bigButton('Search', async () => {
         ui.setUpdateIndicator(tv.grid.root, true, 'Searching...');
         const resultDf = await runSearch(libId, compoundType, queryBuilder!.condition);

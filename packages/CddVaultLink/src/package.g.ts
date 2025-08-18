@@ -14,9 +14,8 @@ export async function cddVaultApp(path: string, filter: string) {
 
 //name: cddVaultAppTreeBrowser
 //input: dynamic treeNode 
-//input: view browseView 
-export async function cddVaultAppTreeBrowser(treeNode: any, browseView: DG.View) {
-  return PackageFunctions.cddVaultAppTreeBrowser(treeNode, browseView);
+export async function cddVaultAppTreeBrowser(treeNode: any) {
+  return PackageFunctions.cddVaultAppTreeBrowser(treeNode);
 }
 
 //name: Databases | CDD Vault

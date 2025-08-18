@@ -60,10 +60,9 @@ export async function previewIvp(file: DG.FileInfo) {
 
 //name: runDiffStudioTreeBrowser
 //input: dynamic treeNode 
-//input: dynamic browsePanel 
 //output: dynamic result
-export async function runDiffStudioTreeBrowser(treeNode: any, browsePanel: any) {
-  return PackageFunctions.runDiffStudioTreeBrowser(treeNode, browsePanel);
+export async function runDiffStudioTreeBrowser(treeNode: any) {
+  return PackageFunctions.runDiffStudioTreeBrowser(treeNode);
 }
 
 //name: Ball flight

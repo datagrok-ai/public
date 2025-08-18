@@ -3,23 +3,20 @@ import * as DG from 'datagrok-api/dg';
 
 //name: hitTriageAppTreeBrowser
 //input: dynamic treeNode 
-//input: view browseView 
-export async function hitTriageAppTreeBrowser(treeNode: any, browsePanel: any) {
-  return PackageFunctions.hitTriageAppTreeBrowser(treeNode, browsePanel);
+export async function hitTriageAppTreeBrowser(treeNode: any) {
+  return PackageFunctions.hitTriageAppTreeBrowser(treeNode);
 }
 
 //name: hitDesignAppTreeBrowser
 //input: dynamic treeNode 
-//input: view browseView 
-export async function hitDesignAppTreeBrowser(treeNode: any, browsePanel: any) {
-  return PackageFunctions.hitDesignAppTreeBrowser(treeNode, browsePanel);
+export async function hitDesignAppTreeBrowser(treeNode: any) {
+  return PackageFunctions.hitDesignAppTreeBrowser(treeNode);
 }
 
 //name: peptiHitAppTreeBrowser
 //input: dynamic treeNode 
-//input: view browseView 
-export async function peptiHitAppTreeBrowser(treeNode: any, browsePanel: any) {
-  return PackageFunctions.peptiHitAppTreeBrowser(treeNode, browsePanel);
+export async function peptiHitAppTreeBrowser(treeNode: any) {
+  return PackageFunctions.peptiHitAppTreeBrowser(treeNode);
 }
 
 //name: Hit Triage

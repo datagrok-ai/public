@@ -30,8 +30,7 @@ export async function molTrackApp(): Promise<DG.ViewBase> {
 
 
 //input: dynamic treeNode
-//input: view browseView
-export async function cddVaultAppTreeBrowser(appNode: DG.TreeViewGroup, browseView: any) {
+export async function cddVaultAppTreeBrowser(appNode: DG.TreeViewGroup) {
   appNode.group('Protocols');
   appNode.group('Plates');
   appNode.group('Assays');
