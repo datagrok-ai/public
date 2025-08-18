@@ -471,10 +471,20 @@ const sampler = new OptGPSampler({ Aeq: S, beq, lb, ub }, {
 const samples = sampler.sample(1000);
 console.log(samples.length, 'samples, first:', samples[220]);*/
 
-const S = [ [-2, 1, 0, 1], [0, 1, -2, 1] ];
+/**
+ m - rows (metabolites)
+ n - cols (reactions)
+ */
+
+const S = [ // 2 metab, 4 reactions
+  [-2, 1, 0, 1],
+  [0, 1, -2, 1],
+];
 const beq = [0, 0];
-const lb = [-10, -10, -10, -10];
-const ub = [10, 10, 10, 10];
+
+const lb = [-10, -10, -10, -10]; // 4 reactions
+
+const ub = [10, 10, 10, 10]; // 4 reactions
 
 // You can now omit x0 — the sampler will find one automatically
 const sampler = new OptGPSampler({ Aeq: S, beq, lb, ub }, {

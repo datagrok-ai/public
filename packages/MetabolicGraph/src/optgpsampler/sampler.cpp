@@ -25,9 +25,11 @@
 //    violation reduction with projected gradient/backtracking.
 //    It is not a full LP solver, but works well in practice.
 
-#pragma once
+#ifndef SAMPLER_CPP
+#define SAMPLER_CPP
 
-#include <Eigen/Dense>
+//#include <Eigen/Dense>
+#include "../../Eigen/Eigen/Dense"
 #include <random>
 #include <vector>
 #include <optional>
@@ -382,3 +384,5 @@ int main(){
   std::cout << "N=" << samples.size() << " first sample: " << samples[0].transpose() << "\n";
 }
 */
+
+#endif // !SAMPLER_CPP
