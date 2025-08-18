@@ -105,12 +105,12 @@ The environment variable name is derived from the configuration key by applying 
 
 | Config Option                          | Environment Variable Name                                   |
 |----------------------------------------|-------------------------------------------------------------|
-| `dbLogin`                              | `GROK_PARAMETERS_DB_LOGIN`                                 |
-| `dbAdminLogin`                         | `GROK_PARAMETERS_DB_ADMIN_LOGIN`                           |
-| `queueSettings.queueReconnectWaitTime` | `GROK_PARAMETERS_QUEUE_SETTINGS__QUEUE_RECONNECT_WAIT_TIME`|
-| `connectorsSettings.grokConnectHost`   | `GROK_PARAMETERS_CONNECTORS_SETTINGS__GROK_CONNECT_HOST`   |
-| `dockerSettings.proxyRequestTimeout`   | `GROK_PARAMETERS_DOCKER_SETTINGS__PROXY_REQUEST_TIMEOUT`   |
-| `connectorsSettings.sambaSpaceEscape`  | `GROK_PARAMETERS_CONNECTORS_SETTINGS__SAMBA_SPACE_ESCAPE`  |
+| `dbLogin`                              | `GROK_PARAMETERS_DB_LOGIN`                                  |
+| `dbAdminLogin`                         | `GROK_PARAMETERS_DB_ADMIN_LOGIN`                            |
+| `queueSettings.queueReconnectWaitTime` | `GROK_PARAMETERS_QUEUE_SETTINGS__QUEUE_RECONNECT_WAIT_TIME` |
+| `connectorsSettings.grokConnectHost`   | `GROK_PARAMETERS_CONNECTORS_SETTINGS__GROK_CONNECT_HOST`    |
+| `dockerSettings.proxyRequestTimeout`   | `GROK_PARAMETERS_DOCKER_SETTINGS__PROXY_REQUEST_TIMEOUT`    |
+| `connectorsSettings.sambaSpaceEscape`  | `GROK_PARAMETERS_CONNECTORS_SETTINGS__SAMBA_SPACE_ESCAPE`   |
 
 
 ## Datlas Startup Mode
