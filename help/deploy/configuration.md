@@ -84,6 +84,38 @@ Datagrok supports several deployment schemas which can be configured using `GROK
 | localFileSystemAccess     | false        | Enables local file system access                                |
 | windowsSharesProxy        |              | Proxy for Windows shares                                        |
 
+
+## Overriding Datlas Configuration with Environment Variables
+
+In addition to supplying the full JSON, you can override *ndividual values using environment variables. This is useful when deploying in containerized or cloud environments where injecting single parameters is easier than rebuilding the entire configuration object.
+
+### Naming Convention
+
+The environment variable name is derived from the configuration key by applying the following rules:
+
+1. Prefix every variable with `GROK_PARAMETERS_`
+
+2. Flatten nested objects by joining keys with a double underscore `__`.
+
+Example:
+- `queueSettings.queueReconnectWaitTime` → `QUEUE_SETTINGS__QUEUE_RECONNECT_WAIT_TIME`
+
+3. Convert key names to uppercase.
+- `dbLogin` → `DB_LOGIN`
+- `grokConnectHost` → `GROK_CONNECT_HOST`
+
+### Examples
+
+| Config Option                          | Environment Variable Name                                   |
+|----------------------------------------|-------------------------------------------------------------|
+| `dbLogin`                              | `GROK_PARAMETERS_DB_LOGIN`                                 |
+| `dbAdminLogin`                         | `GROK_PARAMETERS_DB_ADMIN_LOGIN`                           |
+| `queueSettings.queueReconnectWaitTime` | `GROK_PARAMETERS_QUEUE_SETTINGS__QUEUE_RECONNECT_WAIT_TIME`|
+| `connectorsSettings.grokConnectHost`   | `GROK_PARAMETERS_CONNECTORS_SETTINGS__GROK_CONNECT_HOST`   |
+| `dockerSettings.proxyRequestTimeout`   | `GROK_PARAMETERS_DOCKER_SETTINGS__PROXY_REQUEST_TIMEOUT`   |
+| `connectorsSettings.sambaSpaceEscape`  | `GROK_PARAMETERS_CONNECTORS_SETTINGS__SAMBA_SPACE_ESCAPE`  |
+
+
 ## Datlas Startup Mode
 
 `GROK_MODE` possible values:
