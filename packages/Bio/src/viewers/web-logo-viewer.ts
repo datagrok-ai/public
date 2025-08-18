@@ -31,7 +31,7 @@ import {undefinedColor} from '@datagrok-libraries/bio/src/utils/cell-renderer-mo
 
 import {AggFunc, getAgg} from '../utils/agg';
 
-import {_package, getMonomerLibHelper} from '../package';
+import {_package, PackageFunctions} from '../package';
 import {numbersWithinMaxDiff} from './utils';
 import {buildCompositionTable} from '@datagrok-libraries/bio/src/utils/composition-table';
 
@@ -463,7 +463,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     this.canvas.classList.value = 'bio-wl-canvas';
     this.canvas.style.width = '100%';
 
-    getMonomerLibHelper().then((libHelper) => {
+    PackageFunctions.getMonomerLibHelper().then((libHelper) => {
       this.monomerLib = libHelper.getMonomerLib();
       this.render(WlRenderLevel.Render, 'monomerLib');
       this.subs.push(this.monomerLib.onChanged.subscribe(() => {

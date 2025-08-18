@@ -214,34 +214,31 @@ export async function _autoPowerGrid() {
   DG.GridCellRenderer.register(new ScatterPlotCellRenderer());
 
   // handling column remove/rename in sparkline columns
-  const viewersAdded: DG.Grid[] = [];
   grok.events.onViewerAdded.subscribe((args) => {
     if (args.args.viewer.type !== DG.VIEWER.GRID)
       return;
     const grid = args.args.viewer as DG.Grid;
-    viewersAdded[viewersAdded.length] = grid;
     const dataFrame = grid.dataFrame;
     const getSparklineSettings = (gridCol: DG.GridColumn) => (gridCol.settings ?? {})[gridCol.cellType] as SummarySettingsBase;
-    const findSummaryCols = (columnNames: string[]) => {
+    const findSummaryCols = (columns: (string | DG.Column)[]) => {
       const summaryCols: DG.GridColumn[] = [];
       for (let i = 1; i < grid.columns.length; i++) {
         const gridCol = grid.columns.byIndex(i)!;
         const sparklineSettings = getSparklineSettings(gridCol);
         if (sparklineTypes.includes(gridCol.cellType) && sparklineSettings?.columnNames?.length > 0 &&
-          columnNames.some((name) => sparklineSettings.columnNames.includes(name)))
+          columns.some((col) => sparklineSettings.columnNames.includes(col instanceof DG.Column ? col.name : col)))
           summaryCols[summaryCols.length] = gridCol;
       }
       return summaryCols;
     };
 
     const colsRemovedSub = dataFrame.onColumnsRemoved.subscribe((args: DG.ColumnsArgs) => {
-      const columnNames = args.columns.map((col) => col.name);
-      const summaryCols = findSummaryCols(columnNames);
-      for (const colName of columnNames) {
+      const summaryCols = findSummaryCols(args.columns);
+      for (const col of args.columns) {
         for (const summaryCol of summaryCols) {
           const sparklineSettings = getSparklineSettings(summaryCol);
-          if (sparklineSettings.columnNames.includes(colName))
-            sparklineSettings.columnNames = sparklineSettings.columnNames.filter((name) => name !== colName);
+          if (sparklineSettings.columnNames.includes(col.name))
+            sparklineSettings.columnNames = sparklineSettings.columnNames.filter((name) => name !== col.name);
         }
       }
     });
@@ -253,18 +250,10 @@ export async function _autoPowerGrid() {
         sparklineSettings.columnNames[sparklineSettings.columnNames.indexOf(renamedArgs.oldName)] = renamedArgs.newName;
       }
     });
+    const gridDetachedSub = grid.onDetached.subscribe(() => grid.detach());
     grid.sub(colsRemovedSub);
     grid.sub(colsRenamedSub);
-  });
-
-  grok.events.onViewerClosed.subscribe((args) => {
-    if (args.args.viewer.type !== DG.VIEWER.GRID)
-      return;
-    const grid = args.args.viewer as DG.Grid;
-    if (viewersAdded.includes(grid)) {
-      grid.detach();
-      viewersAdded.splice(viewersAdded.indexOf(grid), 1);
-    }
+    grid.sub(gridDetachedSub);
   });
 
   if (navigator.gpu)

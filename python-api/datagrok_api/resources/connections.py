@@ -34,7 +34,7 @@ class ConnectionsClient:
     Create, save and test DataConnection
 
     >>> shop_connection = DataConnection(name="TestConn", data_source=DatabaseDataSourceType.Postgres, description="Test conn", server="localhost", 
-                                               port=5432, db="shopdb", credentials=Credentials(login="***", password="***"))
+    ... port=5432, db="shopdb", credentials=Credentials(login="***", password="***"))
     >>> shop_connection_saved = grok.connections.save(shop_connection, save_credentials=True)
     >>> grok.connections.test(shop_connection_saved)
 

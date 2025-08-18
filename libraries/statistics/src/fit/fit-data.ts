@@ -105,20 +105,20 @@ function changeBounds(bounds: DG.Rect, chartOptions: IFitChartOptions): DG.Rect 
   let width = bounds.width;
   let height = bounds.height;
 
-  if (chartOptions.minX !== undefined && chartOptions.minX !== null &&
+  if (chartOptions.minX != null && chartOptions.minX <= bounds.maxX &&
     ((!chartOptions.logX) || (chartOptions.logX && chartOptions.minX > 0))) {
     width += x - chartOptions.minX;
     x = chartOptions.minX;
   }
-  if (chartOptions.maxX !== undefined && chartOptions.maxX !== null &&
+  if (chartOptions.maxX != null && chartOptions.maxX >= bounds.minX &&
     ((!chartOptions.logX) || (chartOptions.logX && chartOptions.maxX > 0)))
     width += chartOptions.maxX - (x + width);
-  if (chartOptions.minY !== undefined && chartOptions.minY !== null &&
+  if (chartOptions.minY != null && chartOptions.minY <= bounds.maxY &&
     ((!chartOptions.logY) || (chartOptions.logY && chartOptions.minY > 0))) {
     height += y - chartOptions.minY;
     y = chartOptions.minY;
   }
-  if (chartOptions.maxY !== undefined && chartOptions.maxY !== null &&
+  if (chartOptions.maxY != null && chartOptions.maxY >= bounds.minY &&
     ((!chartOptions.logY) || (chartOptions.logY && chartOptions.maxY > 0)))
     height += chartOptions.maxY - (y + height);
 

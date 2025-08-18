@@ -463,7 +463,8 @@ export const RichFunctionView = Vue.defineComponent({
             style={{'background-color': !historyHidden.value ? 'var(--grey-1)': null}}
           /> }
         </RibbonPanel>
-        <DockManager
+        <DockManager class='block h-full'
+          style={{overflow: 'hidden !important'}}
           key={currentUuid.value}
           onPanelClosed={handlePanelClose}
         >

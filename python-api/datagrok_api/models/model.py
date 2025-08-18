@@ -10,7 +10,7 @@ class Model(ABC):
     It handles unique identification of model instances and ensures each instance
     has a valid ID.
     
-    Parameters
+    Attributes
     ----------
     id : str
         Unique identifier for the model instance. Can be None for new instances
@@ -39,7 +39,7 @@ class Model(ABC):
 class NamedModel(Model, ABC):
     """NamedModel class that contains some common fields of Datagrok entities.
 
-    Parameters
+    Attributes
     ----------
     name : Optional[str]
         Internal name of the model, used as an identifier.

@@ -93,7 +93,7 @@ class Credentials(Model):
     Allows dynamic setting and getting of credential fields like login, password,
     access keys, or tokens depending on the data source.
 
-    Parameters
+    Attributes
     ----------
     **kwargs : dict
         Arbitrary credential fields passed as key-value pairs.
@@ -156,7 +156,7 @@ class DataConnection(NamedModel):
     """
     Represents a data connection in Datagrok.
 
-    Parameters
+    Attributes
     ----------
         name : Optional[str]
             Internal name of the model, used as an identifier.
@@ -186,25 +186,25 @@ class DataConnection(NamedModel):
     Create a connection to a Postgres database with login parameters
 
     >>> conn_pg = DataConnection(
-        name="my_postgres_conn",
-        data_source=DataSourceType.Postgres,
-        server="localhost",
-        port=5432,
-        db="mydb",
-        new Credentials(login="postgres", password="postgres")
-    )
+    ...     name="my_postgres_conn",
+    ...     data_source=DataSourceType.Postgres,
+    ...     server="localhost",
+    ...     port=5432,
+    ...     db="mydb",
+    ...     new Credentials(login="postgres", password="postgres")
+    ... )
     >>> print(conn_pg.host)         # Access arbitrary parameter
     >>> conn_pg.password = "new_password"  # Update arbitrary parameter
 
     Create a connection to an S3 bucket with different parameters
 
     >>> conn_s3 = DataConnection(
-        name="my_s3_conn",
-        data_source=DataSourceType.S3,
-        bucket="my-bucket",
-        region="us-west-2",
-        new Credentials(accessKey="AKIA...", secretKey="...")
-    )
+    ...     name="my_s3_conn",
+    ...     data_source=DataSourceType.S3,
+    ...     bucket="my-bucket",
+    ...     region="us-west-2",
+    ...     new Credentials(accessKey="AKIA...", secretKey="...")
+    ... )
     >>> print(conn_s3.bucket)       # Access bucket name
     >>> conn_s3.region = "us-east-1"  # Update region dynamically
     """

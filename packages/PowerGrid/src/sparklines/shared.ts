@@ -40,7 +40,7 @@ export function getSettingsBase<T extends SummarySettingsBase>(gc: DG.GridColumn
   return isSummarySettingsBase(gc.settings) ? (gc.settings as unknown as T) :
     (gc.settings[sparklineType] ??= {
       columnNames: names(wu(gc.grid.dataFrame.columns.numerical)
-        .filter((c: DG.Column) => c.type != DG.TYPE.DATE_TIME)),
+        .filter((c: DG.Column) => c.type != DG.TYPE.DATE_TIME)).slice(0, 10),
     } as unknown as T);
 }
 

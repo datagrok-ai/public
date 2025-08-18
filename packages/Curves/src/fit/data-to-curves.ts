@@ -367,7 +367,6 @@ export function dataToCurvesUI() {
         wellLevelJoinCol: joinValues?.wellLevelCol?.name,
         parentLevelJoinCol: joinValues?.parentLevelCol?.name,
       });
-      console.log(fc.toString());
       const needsCreationScript = table.tags[DG.Tags.CreationScript] && (!parentLevelData?.table || parentLevelData.table.tags[DG.Tags.CreationScript]);
       await fc.call(undefined, undefined, {processed: !needsCreationScript});
       //console.log(fc.getResultViews());

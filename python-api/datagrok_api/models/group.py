@@ -15,7 +15,7 @@ class Group(NamedModel):
     defined through parent-child links. Groups can be personal, hidden, and have
     admin or non-admin members.
 
-    Parameters
+    Attributes
     ----------
     description : Optional[str]
         A description of the group's purpose.

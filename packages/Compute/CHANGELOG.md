@@ -1,5 +1,9 @@
 # Compute changelog
 
+## 1.44.3 (2025-08-15)
+
+- Update compute-utils
+
 ## 1.44.1 (2025-08-08)
 
 - Update compute-utils

@@ -11,12 +11,12 @@ export const testFilterCondition = {
             "logicalOperator": "or",
             "conditions": [
                 {
-                    "field": "Editor",
+                    "field": "Id",
                     "operator": "=",
                     "value": "id123"
                 },
                 {
-                    "field": "Creator",
+                    "field": "Created by",
                     "operator": "=",
                     "value": "User1"
                 },

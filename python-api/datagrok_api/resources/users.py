@@ -15,7 +15,7 @@ class UsersClient:
     client : HttpClient
         An instance of the HTTP client used to communicate with the Datagrok API.
 
-     Examples
+    Examples
     --------
     Get user by login
 
@@ -24,7 +24,7 @@ class UsersClient:
     >>> grok = DatagrokClient(base_url="https://public.datagrok.ai/api", api_key="Bearer <your-token>")
     >>> john_doe = grok.users.get("johndoe")
     >>> print(john_doe.first_name)
-    John
+    ... John
 
     Get current authenticated user
     >>> me = grok.users.current()
@@ -112,10 +112,24 @@ class UsersClient:
         return [User.from_dict(data) for data in response.json()]
     
     def block(self, user: User):
+        """Block a user from accessing the Datagrok platform.
+
+        Parameters
+        ----------
+        user : User
+            The user to block.
+        """
         endpoint = "/public/v1/users/block"
         self.client.post(endpoint, json=user.to_dict())
 
     def unblock(self, user: User):
+        """Unblock a previously blocked user.
+
+        Parameters
+        ----------
+        user : User
+            The user to unblock.
+        """
         endpoint = "/public/v1/users/unblock"
         self.client.post(endpoint, json=user.to_dict())
             

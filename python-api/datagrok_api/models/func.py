@@ -45,28 +45,28 @@ class Func(NamedModel):
     define, discover, secure, and execute platform capabilities.
 
     Examples of functions in Grok include:
-        - Querying an external PostgreSQL database
-        - Executing JavaScript code in the browser that uses Grok APIs
-        - Performing mathematical calculations (e.g., `Sin(PI)`)
-        - Modifying datasets (e.g., deleting a column)
-        - Sending an email
-        - Applying a predictive model to a dataset
-        - Calculating molecular properties via a Python script
-        - Displaying interactive dialogs
+        * Querying an external PostgreSQL database
+        * Executing JavaScript code in the browser that uses Grok APIs
+        * Performing mathematical calculations (e.g., `Sin(PI)`)
+        * Modifying datasets (e.g., deleting a column)
+        * Sending an email
+        * Applying a predictive model to a dataset
+        * Calculating molecular properties via a Python script
+        * Displaying interactive dialogs
 
     Despite their differences (server-side vs client-side execution, 
     computational vs UI-based tasks), all functions share a common 
     set of capabilities:
-        - **Scriptable**: Callable from the console or scripts.
-        - **Findable**: Searchable through the "Help | Functions" interface.
-        - **Introspectable**: Metadata about parameters is programmatically accessible.
-        - **Secure**: Access can be restricted via privileges or user groups.
-        - **Auditable**: Execution history and parameters are tracked.
-        - **Runnable**: The platform can dynamically generate UI for parameters.
-        - **Linkable**: Functions can be linked in dashboards, conversations, etc.
-        - **Composable**: Usable in workflow designers and query transformations.
+        * **Scriptable**: Callable from the console or scripts.
+        * **Findable**: Searchable through the "Help | Functions" interface.
+        * **Introspectable**: Metadata about parameters is programmatically accessible.
+        * **Secure**: Access can be restricted via privileges or user groups.
+        * **Auditable**: Execution history and parameters are tracked.
+        * **Runnable**: The platform can dynamically generate UI for parameters.
+        * **Linkable**: Functions can be linked in dashboards, conversations, etc.
+        * **Composable**: Usable in workflow designers and query transformations.
 
-    Parameters
+    Attributes
     ----------
     source : Optional[str], default='function'
         Identifies the origin or type of function (e.g., `"function"`, `"sql-query"`, `"js-script"`).
@@ -81,9 +81,6 @@ class Func(NamedModel):
     **kwargs
         Additional arguments passed to the parent `NamedModel` initializer,
         such as `id`, `name`, `friendly_name`, `created_on`, `updated_on`, and `namespace`.
-
-    Attributes
-    ----------
     params : list of FuncParam
         Parameter definitions (both input and output).
     source : str
@@ -94,24 +91,10 @@ class Func(NamedModel):
         Human-readable description.
     options : dict
         Function-specific settings.
-
-    Properties
-    ----------
     input_params : list of FuncParam
         Parameters marked as inputs to the function.
     output_params : list of FuncParam
         Parameters marked as outputs from the function.
-
-    Methods
-    -------
-    to_dict() -> dict
-        Serializes the function to a dictionary for API usage.
-    register_subclass(source: str) -> Callable
-        Class decorator for registering a `Func` subclass for a specific `source`.
-    from_dict(data: dict) -> Func
-        Creates a `Func` (or registered subclass) instance from a dictionary.
-    _from_dict(data: dict) -> Func
-        Internal constructor used by `from_dict`.
     """
     SOURCE = "function"
     _registry: Dict[str, Type["Func"]] = {}

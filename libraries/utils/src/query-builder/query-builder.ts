@@ -30,6 +30,11 @@ export namespace Operators {
     }
 }
 
+export enum QueryBuilderLayout {
+    Standard = 'standard',
+    Narrow = 'narrow'
+}
+
 export interface SimpleCondition<T = any> {
     field: string;
     operator: string;
@@ -49,7 +54,7 @@ export class BaseConditionEditor<T = any> {
     condition: SimpleCondition<T>;
     onChanged: Subject<SimpleCondition<T>> = new Subject<SimpleCondition<T>>();
     showSuggestions = false;
-    suggestionsMenuClicked = false
+    suggestionsMenuClicked = false;
 
     constructor(prop: DG.Property, operator: string, initialCondition?: SimpleCondition<T>) {
         this.condition = initialCondition ?? {
@@ -64,6 +69,7 @@ export class BaseConditionEditor<T = any> {
         if (Array.isArray(this.condition.value))
             this.condition.value = undefined as T;
         const input = ui.input.forProperty(prop, this.condition.value, {
+            nullable: false,
             onValueChanged: () => {
                 this.condition.value = input.value as T;
                 this.onChanged.next(this.condition);
@@ -109,6 +115,7 @@ export class BetweenConditionEditor extends BaseConditionEditor {
             this.onChanged.next(this.condition);
         }
         const input1 = ui.input.forProperty(prop, this.condition.value[0], {
+            nullable: false,
             onValueChanged: () => {
                 this.condition.value[0] = input1.value!;
                 this.onChanged.next(this.condition);
@@ -188,6 +195,7 @@ export class MultiValueConditionEditorString extends BaseConditionEditor<string[
             this.condition.value = [];
         }
         const input = ui.input.list('', {
+            nullable: false,
             value: this.condition.value,
             onValueChanged: () => {
                 this.condition.value = input.value!;
@@ -204,6 +212,7 @@ export class MultiValueConditionEditorInt extends BaseConditionEditor<number[]> 
             this.condition.value = [];
         }
         const input = ui.input.list('', {
+            nullable: false,
             value: this.condition.value,
             onValueChanged: () => {
                 this.condition.value = input.value!.map((it) => parseInt(it));
@@ -220,6 +229,7 @@ export class MultiValueConditionEditorFloat extends BaseConditionEditor<number[]
             this.condition.value = [];
         }
         const input = ui.input.list('', {
+            nullable: false,
             value: this.condition.value,
             onValueChanged: () => {
                 this.condition.value = input.value!.map((it) => parseFloat(it));
@@ -366,45 +376,59 @@ export class QueryBuilder {
     condition: ComplexCondition;
     properties: DG.Property[];
     structureChanged: Subject<ComplexCondition> = new Subject<ComplexCondition>();
-    filterValueChanged: Subject<SimpleCondition> = new Subject<SimpleCondition>();    
+    filterValueChanged: Subject<SimpleCondition> = new Subject<SimpleCondition>();
+    layout: QueryBuilderLayout;
 
-    constructor(properties: DG.Property[], initialCondition?: ComplexCondition) {
+    constructor(properties: DG.Property[], initialCondition?: ComplexCondition, layout: QueryBuilderLayout = QueryBuilderLayout.Standard) {
         this.properties = properties;
+        this.layout = layout;
         
         if (initialCondition) {
             this.condition = initialCondition;
         } else {
-            // Create a default condition with the first property and its first operator
-            const firstProperty = properties[0];
-            if (firstProperty) {
-                const registry = ConditionRegistry.getInstance();
-                const operators = registry.getOperatorsForProperty(firstProperty);
-                const firstOperator = operators[0];
-                
-                this.condition = {
+            const defaultCondition = this.createDefaultSimpleCondition();
+            this.condition = {
                     logicalOperator: Operators.Logical.and,
-                    conditions: [{
-                        field: firstProperty.name,
-                        operator: firstOperator,
-                        value: undefined
-                    }]
-                };
-            } else {
-                // Fallback if no properties are available
-                this.condition = {
-                    logicalOperator: Operators.Logical.and,
-                    conditions: []
-                };
-            }
+                    conditions: [defaultCondition]
+            };
         }
 
         this.root = this.buildUI(this.condition, undefined, 0);
+    }
+
+    createDefaultSimpleCondition(): SimpleCondition {
+        const firstProperty = this.properties[0];
+        if (firstProperty) {
+            const registry = ConditionRegistry.getInstance();
+            const operators = registry.getOperatorsForProperty(firstProperty);
+            const firstOperator = operators[0];
+
+            return {
+                field: firstProperty.name,
+                operator: firstOperator,
+                value: undefined
+            }
+        } else
+            return {
+                field: '',
+                value: undefined,
+                operator: ''
+            }
     }
 
     rebuildUI(): void {
         const newRoot = this.buildUI(this.condition, undefined, 0);
         this.root.replaceWith(newRoot);
         this.root = newRoot;
+    }
+
+    setLayout(layout: QueryBuilderLayout): void {
+        this.layout = layout;
+        this.rebuildUI();
+    }
+
+    getLayout(): QueryBuilderLayout {
+        return this.layout;
     }
 
     buildUI(
@@ -432,7 +456,7 @@ export class QueryBuilder {
 
             const createFilter = () => {
                 ui.empty(operatorInputDiv);
-                const property = this.properties.find((prop: DG.Property) => prop.name === fieldChoiceInput.value!);
+                const property = getPropByFriendlyName(fieldChoiceInput.value!);
                 if (property) {
                     const registry = ConditionRegistry.getInstance();
                     const operators = registry.getOperatorsForProperty(property);
@@ -466,14 +490,36 @@ export class QueryBuilder {
                 criteriaDiv.append(editor.root);
             }
 
-            cond.field ??= (this.properties[0]?.name || '')
+                       const getPropByName = (name: string) => {
+                const property = this.properties.find((prop: DG.Property) => prop.name === name);
+                return property;
+            }
+
+            const getPropByFriendlyName = (friendlyName: string) => {
+                let property = this.properties.find((prop: DG.Property) => prop.friendlyName === friendlyName);
+                if (!property)
+                    property = this.properties.find((prop: DG.Property) => prop.name === friendlyName);
+                return property;
+            }
+
+            const getFieldChoiceInputVal = (name: string) => {
+                const prop = getPropByName(name);
+                return prop?.friendlyName ?? prop?.name ?? '';
+            }
+
+            const getPropNameByChoiceInputVal = (friendlyName: string) => {
+                const prop = getPropByFriendlyName(friendlyName);
+                return prop?.name ?? '';
+            }
+
+            cond.field ??= this.properties[0]?.name || '';
 
             const fieldChoiceInput = ui.input.choice('', {
-                items: this.properties.map((prop: DG.Property) => prop.name),
-                value: cond.field,
+                items: this.properties.map((prop: DG.Property) => prop.friendlyName ?? prop.name),
+                value: getFieldChoiceInputVal(cond.field),
                 nullable: false,
                 onValueChanged: () => {
-                    cond.field = fieldChoiceInput.value!;
+                    cond.field = getPropNameByChoiceInputVal(fieldChoiceInput.value!);
                     cond.value = undefined;
                     cond.operator = '';
                     createFilter();
@@ -486,7 +532,7 @@ export class QueryBuilder {
                 removeOrReplaceCondition(cond, parentCondition ? parentCondition.conditions : condition.conditions);
                 this.rebuildUI();
                 this.structureChanged.next(this.condition);
-            });
+            }, 'Remove current condition');
 
             const addNestedConditionIcon = ui.icons.add(() => {
                 const parentCond = { logicalOperator: Operators.Logical.and, conditions: [cond] };
@@ -498,8 +544,22 @@ export class QueryBuilder {
 
             const operatorInputDiv = ui.div('', 'query-builder-filter-operator');
             const criteriaDiv = ui.div();
-            const filterContainer = ui.divH([fieldChoiceInput.root, operatorInputDiv, criteriaDiv,
-            ui.divH([deleteFieldIcon, addNestedConditionIcon], 'add-delete-icons')], 'query-builder-filter-inputs');
+            // Create filter container based on layout
+            let filterContainer: HTMLElement;
+            if (this.layout === QueryBuilderLayout.Narrow) {
+                // Narrow layout: each field on separate row
+                filterContainer = ui.divV([
+                    ui.divH([fieldChoiceInput.root], 'query-builder-filter-field-row'),
+                    ui.divH([operatorInputDiv], 'query-builder-filter-operator-row'),
+                    ui.divH([criteriaDiv], 'query-builder-filter-value-row'),
+                    ui.divH([deleteFieldIcon, addNestedConditionIcon], 'add-delete-icons')
+                ], 'query-builder-filter-inputs-narrow');
+            } else {
+                // Standard layout: all fields on same row
+                filterContainer = ui.divH([fieldChoiceInput.root, operatorInputDiv, criteriaDiv,
+                ui.divH([deleteFieldIcon, addNestedConditionIcon], 'add-delete-icons')], 'query-builder-filter-inputs');
+            }
+            
             container.appendChild(filterContainer);
             createFilter();
             this.filterValueChanged.next(cond);
@@ -507,11 +567,7 @@ export class QueryBuilder {
 
         // adding filter field
         const addFieldIcon = ui.icons.add(() => {
-            const conditionForFilter: SimpleCondition = {
-                field: '',
-                value: '',
-                operator: ''
-            };
+            const conditionForFilter: SimpleCondition = this.createDefaultSimpleCondition();
             condition.conditions?.push(conditionForFilter);
             condition.conditions.length < 2 ? container.classList.remove('property-query-builder-multipe-filelds') :
                 container.classList.add('property-query-builder-multipe-filelds');
@@ -521,17 +577,22 @@ export class QueryBuilder {
 
         // AND/OR operators handling
         condition.logicalOperator ??= Operators.Logical.and;
-        const logicalOperatorIcon = ui.button(condition.logicalOperator, () => {
-            condition.logicalOperator = condition.logicalOperator === Operators.Logical.or ? Operators.Logical.and : Operators.Logical.or;
-            logicalOperatorIcon.innerText = condition.logicalOperator.toUpperCase();
-            this.rebuildUI();
-            this.structureChanged.next(this.condition);
-        }, 'Logical operator');
 
-        logicalOperatorIcon.classList.add('property-query-builder-and-or-operator');
+        const logicalOperatorChoice = ui.input.choice('', {
+            value: condition.logicalOperator === Operators.Logical.and ? 'all' : 'any',
+            items: ['all', 'any'],
+            nullable: false,
+            onValueChanged: () => {
+                condition.logicalOperator = logicalOperatorChoice.value! === 'all' ? Operators.Logical.and : Operators.Logical.or;
+                this.rebuildUI();
+                this.structureChanged.next(this.condition);
+            }
+        })
+
+        const logicalOperatorDiv = ui.divH([ui.divText('Match'), logicalOperatorChoice.root], 'query-builder-match-div');
 
         const addDeleteIconsDiv = ui.divH([addFieldIcon], 'nested-add-delete-icons');
-        const iconsDiv = ui.divH([logicalOperatorIcon, addDeleteIconsDiv], 'query-builder-nested-condition-operators');
+        const iconsDiv = ui.divH([logicalOperatorDiv, addDeleteIconsDiv], 'query-builder-nested-condition-operators');
         const container = ui.divV([iconsDiv], 'query-builder-search-query-operator');
 
 

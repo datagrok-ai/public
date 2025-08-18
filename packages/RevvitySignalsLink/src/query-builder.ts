@@ -24,8 +24,6 @@ import { IProperty } from 'datagrok-api/dg';
 //     value: 5
 // }
 
-export const SUGGESTIONS_FUNCTION = 'suggestionsFunction';
-
 export namespace Operators {
     export const CONTAINS = 'contains';
     export const IN = 'in';
@@ -56,20 +54,21 @@ export interface SimpleCondition<T = any> {
     value: T;
 }
 
+export interface SimpleConditionWithThreshold extends SimpleCondition {
+    threshold: number
+}
+
 export interface ComplexCondition {
     logicalOperator: Operators.Logical;
     conditions: Expression[];
 }
 
-export type Expression<T = any> = SimpleCondition<T> | ComplexCondition;
-
+export type Expression = SimpleCondition | ComplexCondition;
 
 export class BaseConditionEditor<T = any> {
     root: HTMLDivElement = ui.div();
     condition: SimpleCondition<T>;
     onChanged: Subject<SimpleCondition<T>> = new Subject<SimpleCondition<T>>();
-    showSuggestions = false;
-    suggestionsMenuClicked = false
 
     constructor(prop: DG.Property, operator: string, initialCondition?: SimpleCondition<T>) {
         this.condition = initialCondition ?? {
@@ -81,81 +80,43 @@ export class BaseConditionEditor<T = any> {
     }
 
     protected initializeEditor(prop: DG.Property): void {
-        if (Array.isArray(this.condition.value))
-            this.condition.value = undefined as T;
         const input = ui.input.forProperty(prop, this.condition.value, {
             onValueChanged: () => {
                 this.condition.value = input.value as T;
                 this.onChanged.next(this.condition);
-                this.addSuggestions(prop, input);
             }
         });
         input.addCaption('');
         this.root.append(input.root);
-        this.initializeSuggestions(prop, input);
-    }
-
-    initializeSuggestions(prop: DG.Property, input: DG.InputBase) {
-        this.showSuggestions = prop.type === DG.TYPE.STRING && prop.options[SUGGESTIONS_FUNCTION];
-        if (this.showSuggestions) {
-           suggestionMenuKeyNavigation(this.root);
-        }
-    }
-
-    async addSuggestions(prop: DG.Property, input: DG.InputBase) {
-        if (this.showSuggestions && !this.suggestionsMenuClicked) {
-            if (input.value) {
-            const suggestions: Array<string> = await prop.options[SUGGESTIONS_FUNCTION](input.value);
-            if (suggestions.length === 1 && suggestions[0] === input.value)
-                return;
-            const suggestionsMenu = DG.Menu.popup();
-            suggestions.forEach((s) => {
-                suggestionsMenu!.item(s, () => {
-                    input.value = s;
-                    this.suggestionsMenuClicked = true;
-                });
-            });
-            suggestionsMenu.show({ element: input.root, y: input.root.offsetHeight });
-        }
-        }
-        this.suggestionsMenuClicked = false;
     }
 }
 
-export class BetweenConditionEditor extends BaseConditionEditor {
+export class DateBetweenConditionEditor extends BaseConditionEditor<Date[]> {
     override initializeEditor(prop: DG.Property): void {
         if (!this.condition.value || !Array.isArray(this.condition.value)) {
-            this.condition.value = [this.condition.value, undefined];
+            this.condition.value = [new Date(), new Date()];
             this.onChanged.next(this.condition);
         }
-        const input1 = ui.input.forProperty(prop, this.condition.value[0], {
+        const date1 = ui.input.date('', {
+            value: dayjs(this.condition.value[0]),
             onValueChanged: () => {
-                this.condition.value[0] = input1.value!;
+                this.condition.value[0] = date1.value!.toDate();
                 this.onChanged.next(this.condition);
             }
         });
-        input1.addCaption('');
-        const input2 = ui.input.forProperty(prop, this.condition.value[1], {
-            value: this.condition.value[1],
+        const date2 = ui.input.date('', {
+            value: dayjs(this.condition.value[1]),
             onValueChanged: () => {
-                this.condition.value[1] = input2.value!;
+                this.condition.value[1] = date2.value!.toDate();
                 this.onChanged.next(this.condition);
             }
         });
-        input2.addCaption('');
-        this.root.append(ui.divH([input1.root, input2.root], { style: { gap: '10px' } }));
+        this.root.append(ui.divH([date1.root, date2.root], { style: { gap: '10px' } }));
     }
 }
 
 export class MoleculeConditionEditor extends BaseConditionEditor<string> {
     override initializeEditor(prop: DG.Property): void {
-        //if we swith from similarity input to standard molecule input - need to modify value
-        if (this.condition.value && typeof this.condition.value !== 'string') {
-            if ('molecule' in this.condition.value)
-                 this.condition.value = (this.condition.value as MoleculeSimilarity).molecule;
-            else
-                this.condition.value = '';
-        }
         const input = ui.input.molecule('', {
             value: this.condition.value,
             onValueChanged: () => {
@@ -170,82 +131,32 @@ export class MoleculeConditionEditor extends BaseConditionEditor<string> {
     }
 }
 
-export type MoleculeSimilarity = {
-    molecule: string,
-    threshold: number
-}
-export class MoleculeSimilarityConditionEditor extends BaseConditionEditor<MoleculeSimilarity> {
+
+// export class MoleculeSimilarityConditionEditor extends BaseConditionEditor<string> {
+//     override initializeEditor(prop: DG.Property): void {
+//         if (!this.condition.value)
+//             this.condition.value = '';
+//         if (!this.condition.thre)
+//         const input = ui.input.molecule('', {
+//             onValueChanged: () => {
+//                 this.condition.value = input.value;
+//                 this.onChanged.next(this.condition);
+//             }
+//         });
+//         this.root.append(input.root);
+//     }
+// }
+
+
+export class MultiValueConditionEditor extends BaseConditionEditor<any[]> {
     override initializeEditor(prop: DG.Property): void {
-        //in case we switch from some other operator, where value is a string (contains, is contained)
-        if (!this.condition.value || typeof this.condition.value === 'string') {
-            this.condition.value = {molecule: this.condition.value ?? '', threshold: 0.7};
-        }
-        const moleculeInput = ui.input.molecule('', {
+        const input = ui.input.string((this.condition.value || []).join(', '), {
             onValueChanged: () => {
-                this.condition.value.molecule = moleculeInput.value;
+                this.condition.value = input.value.split(',').map(s => s.trim()).filter(s => s.length > 0);
                 this.onChanged.next(this.condition);
             }
         });
-        const tresholdInput = ui.input.float('', {
-            value: this.condition.value.threshold,
-            min: 0,
-            max: 1,
-            step: 0.01
-        });
-        DG.debounce(tresholdInput.onChanged, 300).subscribe(() => {
-            this.condition.value.threshold = tresholdInput.value!;
-            this.onChanged.next(this.condition);
-        })
-        this.root.append(ui.divV([moleculeInput.root, tresholdInput.root]));
-        this.root.style.paddingTop = '15px';
-    }
-}
-
-
-export class MultiValueConditionEditorString extends BaseConditionEditor<string[]> {
-    override initializeEditor(prop: DG.Property): void {
-        if (!Array.isArray(this.condition.value)) {
-            this.condition.value = [];
-        }
-        const input = ui.input.list('', {
-            value: this.condition.value,
-            onValueChanged: () => {
-                this.condition.value = input.value!;
-                this.onChanged.next(this.condition);
-            }
-        });
-        this.root.append(input.root);
-    }
-}
-
-export class MultiValueConditionEditorInt extends BaseConditionEditor<number[]> {
-    override initializeEditor(prop: DG.Property): void {
-        if (!Array.isArray(this.condition.value)) {
-            this.condition.value = [];
-        }
-        const input = ui.input.list('', {
-            value: this.condition.value,
-            onValueChanged: () => {
-                this.condition.value = input.value!.map((it) => parseInt(it));
-                this.onChanged.next(this.condition);
-            }
-        });
-        this.root.append(input.root);
-    }
-}
-
-export class MultiValueConditionEditorFloat extends BaseConditionEditor<number[]> {
-    override initializeEditor(prop: DG.Property): void {
-        if (!Array.isArray(this.condition.value)) {
-            this.condition.value = [];
-        }
-        const input = ui.input.list('', {
-            value: this.condition.value,
-            onValueChanged: () => {
-                this.condition.value = input.value!.map((it) => parseFloat(it));
-                this.onChanged.next(this.condition);
-            }
-        });
+        input.addCaption('Comma-separated values');
         this.root.append(input.root);
     }
 }
@@ -271,16 +182,13 @@ export class ConditionRegistry {
 
     private initializeDefaultOperators(): void {
         // Type operators
-        this.registerTypeOperators(DG.TYPE.BOOL, [Operators.EQ]);
-        this.registerTypeOperators(DG.TYPE.STRING, [Operators.STARTS_WITH, Operators.EQ, Operators.NOT_EQ, Operators.IN]);
-        this.registerTypeOperators(DG.TYPE.INT, [Operators.GT, Operators.LT, Operators.GTE, Operators.LTE, Operators.EQ,
-            Operators.NOT_EQ, Operators.BETWEEN, Operators.IN]);
-        this.registerTypeOperators(DG.TYPE.FLOAT, [Operators.GT, Operators.LT, Operators.GTE, Operators.LTE, Operators.EQ,
-            Operators.NOT_EQ, Operators.BETWEEN, Operators.IN]);
-        this.registerTypeOperators(DG.TYPE.DATE_TIME, [Operators.BEFORE, Operators.AFTER, Operators.BETWEEN]);
+        this.registerTypeOperators(DG.TYPE.STRING, ['starts with', 'ends with', '=', '!=', 'in']);
+        this.registerTypeOperators(DG.TYPE.INT, ['>', '<', '>=', '<=', '=', '!=']);
+        this.registerTypeOperators(DG.TYPE.FLOAT, ['>', '<', '>=', '<=', '=', '!=']);
+        this.registerTypeOperators(DG.TYPE.DATE_TIME, ['before', 'after', 'between']);
 
         // SemType operators (take precedence over type operators)
-        this.registerSemTypeOperators(DG.SEMTYPE.MOLECULE, [Operators.CONTAINS, Operators.IS_CONTAINED, Operators.EQ, Operators.IS_SIMILAR]);
+        this.registerSemTypeOperators(DG.SEMTYPE.MOLECULE, ['contains', 'is contained', '=', 'is similar']);
     }
 
     private initializeDefaultEditors(): void {
@@ -289,19 +197,13 @@ export class ConditionRegistry {
         this.registerEditor(DG.TYPE.INT, '', '', BaseConditionEditor);
         this.registerEditor(DG.TYPE.FLOAT, '', '', BaseConditionEditor);
         this.registerEditor(DG.TYPE.DATE_TIME, '', '', BaseConditionEditor);
-        this.registerEditor(DG.TYPE.BOOL, '', '', BaseConditionEditor);
 
         // Register specialized editors for specific combinations
-        this.registerEditor(DG.TYPE.STRING, '', Operators.IN, MultiValueConditionEditorString);
-        this.registerEditor(DG.TYPE.INT, '', Operators.IN, MultiValueConditionEditorInt);
-        this.registerEditor(DG.TYPE.FLOAT, '', Operators.IN, MultiValueConditionEditorFloat);
-        this.registerEditor(DG.TYPE.DATE_TIME, '', Operators.BETWEEN, BetweenConditionEditor);
-        this.registerEditor(DG.TYPE.INT, '', Operators.BETWEEN, BetweenConditionEditor);
-        this.registerEditor(DG.TYPE.FLOAT, '', Operators.BETWEEN, BetweenConditionEditor);
-        this.registerEditor(DG.TYPE.STRING, DG.SEMTYPE.MOLECULE, Operators.CONTAINS, MoleculeConditionEditor);
-        this.registerEditor(DG.TYPE.STRING, DG.SEMTYPE.MOLECULE, Operators.IS_CONTAINED, MoleculeConditionEditor);
-        this.registerEditor(DG.TYPE.STRING, DG.SEMTYPE.MOLECULE, Operators.EQ, MoleculeConditionEditor);
-        this.registerEditor(DG.TYPE.STRING, DG.SEMTYPE.MOLECULE, Operators.IS_SIMILAR, MoleculeSimilarityConditionEditor);
+        this.registerEditor(DG.TYPE.STRING, '', 'in', MultiValueConditionEditor);
+        this.registerEditor(DG.TYPE.DATE_TIME, '', 'between', DateBetweenConditionEditor);
+        this.registerEditor(DG.TYPE.STRING, DG.SEMTYPE.MOLECULE, 'contains', MoleculeConditionEditor);
+        this.registerEditor(DG.TYPE.STRING, DG.SEMTYPE.MOLECULE, 'is contained', MoleculeConditionEditor);
+        this.registerEditor(DG.TYPE.STRING, DG.SEMTYPE.MOLECULE, '=', MoleculeConditionEditor);
     }
 
     // Operator registration methods
@@ -384,51 +286,22 @@ export class ConditionRegistry {
 export class QueryBuilder {
     root: HTMLElement;
     condition: ComplexCondition;
-    properties: DG.Property[];
     structureChanged: Subject<ComplexCondition> = new Subject<ComplexCondition>();
-    filterValueChanged: Subject<SimpleCondition> = new Subject<SimpleCondition>();    
+    filterValueChanged: Subject<SimpleCondition> = new Subject<SimpleCondition>();
 
     constructor(properties: DG.Property[], initialCondition?: ComplexCondition) {
-        this.properties = properties;
-        
-        if (initialCondition) {
-            this.condition = initialCondition;
-        } else {
-            // Create a default condition with the first property and its first operator
-            const firstProperty = properties[0];
-            if (firstProperty) {
-                const registry = ConditionRegistry.getInstance();
-                const operators = registry.getOperatorsForProperty(firstProperty);
-                const firstOperator = operators[0];
-                
-                this.condition = {
-                    logicalOperator: Operators.Logical.and,
-                    conditions: [{
-                        field: firstProperty.name,
-                        operator: firstOperator,
-                        value: undefined
-                    }]
-                };
-            } else {
-                // Fallback if no properties are available
-                this.condition = {
-                    logicalOperator: Operators.Logical.and,
-                    conditions: []
-                };
-            }
-        }
+        // Initialize with provided condition or create a default logical condition
+        this.condition = initialCondition || {
+            logicalOperator: Operators.Logical.and,
+            conditions: []
+        };
 
-        this.root = this.buildUI(this.condition, undefined, 0);
-    }
-
-    rebuildUI(): void {
-        const newRoot = this.buildUI(this.condition, undefined, 0);
-        this.root.replaceWith(newRoot);
-        this.root = newRoot;
+        this.root = this.buildUI(this.condition, properties, undefined, 0);
     }
 
     buildUI(
         condition: ComplexCondition,
+        properties: DG.Property[],
         parentCondition?: ComplexCondition,
         nestingLevel: number = 0
     ): HTMLElement {
@@ -452,7 +325,7 @@ export class QueryBuilder {
 
             const createFilter = () => {
                 ui.empty(operatorInputDiv);
-                const property = this.properties.find((prop: DG.Property) => prop.name === fieldChoiceInput.value!);
+                const property = properties.find(prop => prop.name === fieldChoiceInput.value!);
                 if (property) {
                     const registry = ConditionRegistry.getInstance();
                     const operators = registry.getOperatorsForProperty(property);
@@ -465,8 +338,8 @@ export class QueryBuilder {
                         value: cond.operator,
                         items: operators,
                         onValueChanged: () => {
+                            createEditor(property, operatorsInput.value!, cond);
                             cond.operator = operatorsInput.value!;
-                            this.rebuildUI();
                             this.structureChanged.next(this.condition);
                         },
                         nullable: false
@@ -486,10 +359,10 @@ export class QueryBuilder {
                 criteriaDiv.append(editor.root);
             }
 
-            cond.field ??= (this.properties[0]?.name || '')
+            cond.field ??= (properties[0]?.name || '')
 
             const fieldChoiceInput = ui.input.choice('', {
-                items: this.properties.map((prop: DG.Property) => prop.name),
+                items: properties.map(prop => prop.name),
                 value: cond.field,
                 nullable: false,
                 onValueChanged: () => {
@@ -504,19 +377,19 @@ export class QueryBuilder {
             const deleteFieldIcon = ui.icons.delete(() => {
                 container.removeChild(filterContainer);
                 removeOrReplaceCondition(cond, parentCondition ? parentCondition.conditions : condition.conditions);
-                this.rebuildUI();
+                this.root.replaceWith(this.buildUI(this.condition, properties, undefined, 0));
                 this.structureChanged.next(this.condition);
             });
 
             const addNestedConditionIcon = ui.icons.add(() => {
                 const parentCond = { logicalOperator: Operators.Logical.and, conditions: [cond] };
                 removeOrReplaceCondition(cond, parentCondition ? parentCondition.conditions : condition.conditions, parentCond);
-                this.rebuildUI();
+                this.root.replaceWith(this.buildUI(this.condition, properties, undefined, 0));
                 this.structureChanged.next(this.condition);
 
             }, 'Add nested condition');
 
-            const operatorInputDiv = ui.div('', 'query-builder-filter-operator');
+            const operatorInputDiv = ui.div();
             const criteriaDiv = ui.div();
             const filterContainer = ui.divH([fieldChoiceInput.root, operatorInputDiv, criteriaDiv,
             ui.divH([deleteFieldIcon, addNestedConditionIcon], 'add-delete-icons')], 'revvity-signals-filter-inputs');
@@ -535,7 +408,7 @@ export class QueryBuilder {
             condition.conditions?.push(conditionForFilter);
             condition.conditions.length < 2 ? container.classList.remove('property-query-builder-multipe-filelds') :
                 container.classList.add('property-query-builder-multipe-filelds');
-            this.rebuildUI();
+            this.root.replaceWith(this.buildUI(this.condition, properties, undefined, 0));
             this.structureChanged.next(this.condition);
         }, 'Add field to the condition');
 
@@ -544,7 +417,7 @@ export class QueryBuilder {
         const logicalOperatorIcon = ui.button(condition.logicalOperator, () => {
             condition.logicalOperator = condition.logicalOperator === Operators.Logical.or ? Operators.Logical.and : Operators.Logical.or;
             logicalOperatorIcon.innerText = condition.logicalOperator.toUpperCase();
-            this.rebuildUI();
+            this.root.replaceWith(this.buildUI(this.condition, properties, undefined, 0));
             this.structureChanged.next(this.condition);
         }, 'Logical operator');
 
@@ -565,7 +438,7 @@ export class QueryBuilder {
         if (parentCondition) {
             const deleteCondition = ui.icons.delete(() => {
                 removeOrReplaceCondition(condition, parentCondition.conditions);
-                this.rebuildUI();
+                this.root.replaceWith(this.buildUI(this.condition, properties, undefined, 0));
                 this.structureChanged.next(this.condition);
             });
             addDeleteIconsDiv.append(deleteCondition);
@@ -575,7 +448,7 @@ export class QueryBuilder {
             if ('field' in nestedCondition)
                 createPropertyFilterContainer(nestedCondition);
             else {
-                const nestedContainer = this.buildUI(nestedCondition as ComplexCondition,
+                const nestedContainer = this.buildUI(nestedCondition as ComplexCondition, properties,
                     condition, nestingLevel + 1);
                 container.append(nestedContainer);
             }
@@ -602,33 +475,9 @@ export class QueryBuilder {
 }
 
 
-function suggestionMenuKeyNavigation(inputContainer: HTMLElement) {
-  inputContainer.addEventListener('keydown', (e) => {
-    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Enter')
-      return;
-    const currentlySelected: HTMLElement | null = inputContainer.querySelector('.d4-menu-item-hover');
-    const allItems: HTMLElement[] = Array.from(inputContainer.querySelectorAll('.d4-menu-item') ?? []);
-    if (!allItems || allItems.length === 0)
-      return;
-    allItems.sort((a, b) => a.offsetTop - b.offsetTop); // sort by vertical position
-
-    let currentIndex = currentlySelected ? allItems.indexOf(currentlySelected) : -1;
-    if (e.key === 'ArrowDown')
-      currentIndex = (currentIndex + 1) % allItems.length;
-    else if (e.key === 'ArrowUp')
-      currentIndex = (currentIndex - 1 + allItems.length) % allItems.length;
-    else if (e.key === 'Enter' && currentlySelected) {
-      currentlySelected.click();
-      e.preventDefault();
-      return;
-    }
-    currentlySelected?.classList.remove('d4-menu-item-hover');
-    allItems[currentIndex].classList.add('d4-menu-item-hover');
-  });
-}
 
 // Main UI builder function for property filters
-export function buildPropertyBasedQueryBuilder(properties: DG.Property[], initialCondition?: ComplexCondition): HTMLElement {
+export function buildPropertyFilterForm(properties: DG.Property[], initialCondition?: ComplexCondition): HTMLElement {
 
     const builder = new QueryBuilder(properties, initialCondition);
 
@@ -642,7 +491,9 @@ export function buildPropertyBasedQueryBuilder(properties: DG.Property[], initia
     builder.structureChanged.subscribe(() => updatePreview());
     builder.filterValueChanged.subscribe(() => updatePreview());
 
+    // will also be removed, I guess we will trigger request if one of the filters changed
     const submitBtn = ui.button('Apply Filters', async () => {
+        // Here you would apply the filters
         grok.shell.info('Filters applied: ' + JSON.stringify({ filter: builder.condition }));
     });
 

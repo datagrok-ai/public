@@ -1,6 +1,6 @@
 {
   "name": "datagrok-tools",
-  "version": "4.14.40",
+  "version": "4.14.42",
   "description": "Utility to upload and publish packages to Datagrok",
   "homepage": "https://github.com/datagrok-ai/public/tree/master/tools#readme",
   "dependencies": {
@@ -24,7 +24,8 @@
     "papaparse": "^5.4.1",
     "path": "^0.12.7",
     "puppeteer": "22.10.0",
-    "puppeteer-screen-recorder": "3.0.3"
+    "puppeteer-screen-recorder": "3.0.3",
+    "datagrok-api": "^1.26.0"
   },
   "scripts": {
     "link": "npm link",
