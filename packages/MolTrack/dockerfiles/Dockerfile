@@ -22,6 +22,7 @@ RUN sed -i 's/\^/\;/g' /docker-entrypoint-initdb.d/04_schema_rdkit.sql
 EXPOSE 8000 5432
 
 COPY start.sh /start.sh
+RUN sed -i 's/\r$//' start.sh
 RUN chmod +x /start.sh
 
 CMD ["/start.sh"]
