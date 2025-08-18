@@ -18,7 +18,7 @@ export abstract class EntityBaseView {
   isBatchSectionExpanded: boolean = false;
   formBackingObject: Record<string, any> = {};
 
-  title: string = 'Register new chemical compounds';
+  title: string = 'Register a new compound';
   initialSmiles: string = 'CC(=O)Oc1ccccc1C(=O)O';
   singleRetrieved: boolean = false;
 
@@ -32,9 +32,8 @@ export abstract class EntityBaseView {
       const validate = await grok.functions.call('Chem:validateMolecule', {s: molfile});
       ui.empty(this.messageContainer);
       if (validate !== '') {
-        const header = 'Validation warning';
-        const message = `The submitted structure may be invalid. Details: ${validate}`;
-        const infoDiv = ui.info(message, header, true);
+        const header = 'Invalid structure';
+        const infoDiv = ui.info(validate, header, true);
         this.messageContainer.append(infoDiv);
       } else {
         const titleText = ui.divText(this.title, 'moltrack-title');
@@ -101,11 +100,13 @@ export abstract class EntityBaseView {
     const inputs = props.map((p) => {
       const input = DG.InputBase.forProperty(p, formBackingObject);
       const rawProp = propArray.find((rp) => rp.name === p.name);
-      if (rawProp?.pattern)
-        (input.input as HTMLInputElement).placeholder = `e.g., ${generateExample(rawProp?.pattern)}`;
+      if (rawProp?.pattern) {
+        const message = reservedProperties.includes(rawProp.name) ? 'will be assigned at registration' : `e.g., ${generateExample(rawProp?.pattern)}`;
+        (input.input as HTMLInputElement).placeholder = message;
+      }
 
       if (disableAll || disableNames.includes(p.name))
-        input.enabled = false;
+        input.readOnly = true;
       return input;
     });
 
@@ -272,8 +273,10 @@ export abstract class EntityBaseView {
     };
 
     const topSections = ui.divV([compoundSection, batchSection], 'moltrack-top-sections');
+    // const clearSketcherButton = ui.button('Clear sketcher', () => this.sketcherInstance.setValue(''));
+    // clearSketcherButton.style.marginLeft = 'auto';
     const sketcherFormContainer = ui.divH(
-      [this.sketcherInstance.root, topSections],
+      [/*ui.divV([this.sketcherInstance.root, clearSketcherButton])*/this.sketcherInstance.root, topSections],
       'moltrack-top-container',
     );
 
@@ -298,12 +301,6 @@ function toggleSection(form: HTMLElement, chevron: HTMLElement, title: string, b
 }
 
 function generateExample(pattern: string, index: number = 1): string {
-  const template = pattern.match(/\{\:0?(\d+)d\}/);
-  if (template) {
-    const width = Number(template[1]);
-    return pattern.replace(/\{\:0?(\d+)d\}/, index.toString().padStart(width, '0'));
-  }
-
   try {
     return new RandExp(new RegExp(pattern)).gen();
   } catch {

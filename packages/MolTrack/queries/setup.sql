@@ -28,7 +28,7 @@ with admin as (
 stype as (
   select id from moltrack.semantic_types where name = 'Synonym'
 )
-insert into moltrack.properties (created_by, updated_by, name, description, value_type, semantic_type_id, property_class, scope, pattern)
+insert into moltrack.properties (created_by, updated_by, name, description, value_type, semantic_type_id, property_class, entity_type, pattern)
 values (
   (select id from admin),
   (select id from admin),

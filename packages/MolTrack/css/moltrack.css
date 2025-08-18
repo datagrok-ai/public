@@ -1,16 +1,16 @@
 .moltrack-register-res-div {
-    width: 100%;
-    height: 75%;
-    position: relative;
+  width: 100%;
+  height: 75%;
+  position: relative;
 }
 
 .moltrack-register-res-div .d4-grid {
-    width: 100%!important;
-    height: 100%!important;
+  width: 100%!important;
+  height: 100%!important;
 }
 
 .moltrack-run-register-button {
-    width: 100px;
+  width: 100px;
 }
 
 .moltrack-top-container {
@@ -22,12 +22,13 @@
 }
 
 .moltrack-info-container {
-    flex: 0 0 10%;
-    overflow: auto;
+  flex: 0 0 15%;
+  overflow: auto;
 }
 
 .moltrack-sketcher-root {
   flex: 0 0 auto;
+  height: 90%!important;
 }
 
 .moltrack-form {
@@ -36,19 +37,19 @@
 }
 
 .moltrack-compound-form {
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    padding: 12px;
-    margin-bottom: 35px;
-    margin-top: 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 35px;
+  margin-top: 15px;
 }
 
 .moltrack-title {
-    font-size: 18px;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    height: 100%;
+  font-size: 18px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  height: 100%;
 }
 
 .moltrack-section {
