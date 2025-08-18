@@ -37,6 +37,9 @@
 #include <limits>
 #include <cmath>
 
+//#include <iostream>
+//#include <chrono>
+
 struct LinearPolytope {
     // Inequalities: A x <= b
     Eigen::MatrixXd A;      // (mi x n) or empty
@@ -83,6 +86,8 @@ public:
         if (Aeq_.rows() > 0 && Aeq_.cols() != n_) throw std::invalid_argument("Aeq cols != n");
         if (Aeq_.rows() > 0 && beq_.size() != Aeq_.rows()) throw std::invalid_argument("beq size != Aeq rows");
 
+        decomp = (Aeq_ * Aeq_.transpose()).ldlt();
+
         // Initialize x: use x0 if feasible, else find one
         if (model.x0 && isFeasible(*model.x0)) {
             x_ = *model.x0;
@@ -95,14 +100,37 @@ public:
     // Generate N samples (each is an Eigen::VectorXd of size n)
     std::vector<Eigen::VectorXd> sample(int N) {
         if (N <= 0) return {};
+
+        //auto start = std::chrono::high_resolution_clock::now();
+
         warmup_();
-        std::vector<Eigen::VectorXd> out; out.reserve(N);
+
+        //auto end = std::chrono::high_resolution_clock::now();
+
+        //std::chrono::duration<double, std::milli> elapsed = end - start; // In milliseconds
+
+        //std::cout << "Warmup time: " << elapsed.count() << " ms\n";
+        
+
+        //std::vector<Eigen::VectorXd> out; out.reserve(N);
+
+        std::vector<Eigen::VectorXd> out(N);
 
         for (int s = 0; s < N; ++s) {
+            //auto start = std::chrono::high_resolution_clock::now();
+
             for (int j = 0; j < opt_.nproj; ++j) {
                 for (int k = 0; k < opt_.thinning; ++k) x_ = singleStep_(x_);
             }
-            out.push_back(x_);
+
+            //auto end = std::chrono::high_resolution_clock::now();
+
+            //std::chrono::duration<double, std::milli> elapsed = end - start; // In milliseconds
+
+            //std::cout << s << "-th point: " << elapsed.count() << " ms\n";
+            //out.push_back(x_);
+
+            out[s] = x_;
         }
         return out;
     }
@@ -118,6 +146,8 @@ private:
     Eigen::VectorXd beq_;
     Eigen::VectorXd lb_;
     Eigen::VectorXd ub_;
+
+    Eigen::LDLT<Eigen::MatrixXd> decomp;
 
     // Options and state
     OptGPOptions opt_;
@@ -163,9 +193,9 @@ private:
         if (Aeq_.rows() == 0) return v;
         Eigen::VectorXd Av = Aeq_ * v;                      // m
         // Solve (Aeq Aeq^T) y = Av; use robust solver
-        Eigen::MatrixXd AAT = Aeq_ * Aeq_.transpose();
-        Eigen::VectorXd y = AAT.ldlt().solve(Av);
-        return v - Aeq_.transpose() * y;
+        //Eigen::MatrixXd AAT = Aeq_ * Aeq_.transpose();
+        //Eigen::VectorXd y = AAT.ldlt().solve(Av);
+        return v - Aeq_.transpose() * decomp.solve(Av);
     }
 
     // Particular solution of Aeq x = beq (minimum-norm)
@@ -341,21 +371,54 @@ private:
 
     Eigen::VectorXd singleStep_(const Eigen::VectorXd& x) {
         Eigen::VectorXd c = center_.value_or(x);
+
         // direction: (c - x) + normal noise, then project to Null(Aeq)
+
         Eigen::VectorXd g(n_);
-        for (int i = 0; i < n_; ++i) g[i] = norm01_(rng_);
+
+        //auto start = std::chrono::high_resolution_clock::now();
+
+        for (int i = 0; i < n_; ++i)
+            g[i] = norm01_(rng_);
+
         Eigen::VectorXd d = (c - x) + g;
+
         d = projectToNull_(d);
 
+        //auto end = std::chrono::high_resolution_clock::now();
+
+        //std::chrono::duration<double, std::milli> elapsed = end - start; // In milliseconds
+
+        //std::cout << "projectToNull_: " << elapsed.count() << " ms\n";
+
+        //start = std::chrono::high_resolution_clock::now();
+        
         auto seg = stepInterval_(x, d);
+
+        //end = std::chrono::high_resolution_clock::now();
+
+        //elapsed = end - start; // In milliseconds
+
+        //std::cout << "stepInterval_: " << elapsed.count() << " ms\n\n";
+
+
+        
+
         if (!(seg.first < seg.second) || !std::isfinite(seg.first) || !std::isfinite(seg.second)) {
             // fallback: pure random nullspace direction
-            for (int i = 0; i < n_; ++i) g[i] = norm01_(rng_);
+            for (int i = 0; i < n_; ++i)
+                g[i] = norm01_(rng_);
+
             d = projectToNull_(g);
+
             seg = stepInterval_(x, d);
-            if (!(seg.first < seg.second)) return x; // degenerate
+
+            if (!(seg.first < seg.second)) 
+                return x; // degenerate
         }
+
         double a = seg.first + uni01_(rng_) * (seg.second - seg.first);
+
         return x + a * d;
     }
 };

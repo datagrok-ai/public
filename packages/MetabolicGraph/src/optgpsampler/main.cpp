@@ -25,7 +25,8 @@ double samplerRandomTest(const int metabolitesCount = 2, const int reactionsCoun
 	Eigen::VectorXd ub(reactionsCount);
 	ub.setConstant(DEFAULT_UPPER_BOUND);
 
-	Eigen::MatrixXd S(metabolitesCount, reactionsCount);
+	//Eigen::MatrixXd S(metabolitesCount, reactionsCount);
+	Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> S(metabolitesCount, reactionsCount);
 	//S << -2, 1, 0, 1, 0, 1, -2, 1;
 	S.setRandom(); // [-1, 1]
 
@@ -76,6 +77,87 @@ double samplerRandomTest(const int metabolitesCount = 2, const int reactionsCoun
 	return elapsed.count();
 }
 
+
+double samplerChompact(const int samplesCount = 1000) {
+	const int metabolitesCount = 101;
+	const int reactionsCount = 144;
+
+	Eigen::VectorXd beq(metabolitesCount);
+	beq.setConstant(0.0);
+
+	Eigen::VectorXd lb(reactionsCount);
+	lb.setConstant(DEFAULT_LOW_BOUND);
+
+	Eigen::VectorXd ub(reactionsCount);
+	ub.setConstant(DEFAULT_UPPER_BOUND);
+
+	Eigen::MatrixXd S(metabolitesCount, reactionsCount);
+	
+	std::ifstream file("chompact.txt", std::ios::in);
+
+	double val = 0;
+
+	for (int i = 0; i < metabolitesCount; ++i) {
+		for (int j = 0; j < reactionsCount; ++j) {
+			file >> val;
+
+			S(i, j) = val;
+
+			//std::cout << " " << val;
+		}
+
+		//std::cout << "\n";
+	}
+
+	//std::cout << "S=\n" << S << "\n";
+
+	//return 0;
+
+	LinearPolytope P;
+	P.A = Eigen::MatrixXd();
+	P.b = Eigen::VectorXd();
+	P.Aeq = S; P.beq = beq;
+	P.lb = lb; P.ub = ub;
+
+	OptGPOptions opt;
+	opt.seed = SEED;
+	opt.thinning = THINNING;
+	opt.nproj = NPROJ;
+	opt.warmupSteps = WARM_STEPS;
+	opt.feasTol = FEAS_TOL;
+	opt.feasMaxIter = FEAS_MAX_ITER;
+
+	OptGPSampler sampler(P, opt);
+
+	auto start = std::chrono::high_resolution_clock::now();
+
+	auto samples = sampler.sample(samplesCount);
+
+	auto end = std::chrono::high_resolution_clock::now();
+
+	std::chrono::duration<double, std::milli> elapsed = end - start; // In milliseconds
+
+	/*for (int i = 0; i < samplesCount; ++i)
+		std::cout << i << "-th: " << samples[i].transpose() << "\n";*/
+
+	double mad = 0;
+
+	for (int i = 0; i < samplesCount; ++i) {
+		mad = (S * samples[i]).norm();
+		if (mad > TOL) {
+			throw std::runtime_error("Invalid sample: " + std::to_string(i) + ", too big deviation: " + std::to_string(mad));
+		}
+
+		for (int k = 0; k < reactionsCount; ++k) {
+			if ((samples[i](k) > ub(k)) || (samples[i](k) < lb(k))) {
+				throw std::runtime_error("Invalid sample: value is out of range");
+			}
+		}
+	}
+
+	return elapsed.count();
+}
+
 /*
    NOTES:
    
@@ -86,8 +168,9 @@ double samplerRandomTest(const int metabolitesCount = 2, const int reactionsCoun
 */
 
 int main() {
-	/*samplerRandomTest(50, 50, 1000);
-	return 0;*/
+	//std::cout << samplerChompact()/* samplerRandomTest(10, 20, 1) */ << " ms" << " --- " << "SUCCESS!\n";
+	//return 0;
+
 	int reactMin = 0;
 	int reactMax = 0;
 
