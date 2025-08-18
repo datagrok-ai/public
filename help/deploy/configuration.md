@@ -94,12 +94,9 @@ In addition to supplying the full JSON, you can override *ndividual values using
 The environment variable name is derived from the configuration key by applying the following rules:
 
 1. Prefix every variable with `GROK_PARAMETERS_`
-
 2. Flatten nested objects by joining keys with a double underscore `__`.
-
-Example:
-- `queueSettings.queueReconnectWaitTime` → `QUEUE_SETTINGS__QUEUE_RECONNECT_WAIT_TIME`
-
+   Example:
+    - `queueSettings.queueReconnectWaitTime` → `QUEUE_SETTINGS__QUEUE_RECONNECT_WAIT_TIME`
 3. Convert key names to uppercase.
 - `dbLogin` → `DB_LOGIN`
 - `grokConnectHost` → `GROK_CONNECT_HOST`
