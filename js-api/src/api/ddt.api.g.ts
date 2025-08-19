@@ -265,6 +265,9 @@ export class Tags {
   /// Specifies if the color picker control should appear in the legend to allow color selection
   static AllowColorPicking = '.allow-color-picking';
 
+  /// Used to preserve the column's original name, set only once (on the first rename)
+  static ColumnInitialName = '.%initialName';
+
 }
 export class FuncOptions {
   /// Fully qualified name of the function that edits corresponding function calls
