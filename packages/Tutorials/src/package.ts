@@ -131,9 +131,8 @@ export class PackageFunctions {
     return demoView;
   }
   
-  @grok.decorators.func()
-  static async demoAppTreeBrowser(treeNode: DG.TreeViewGroup, 
-    @grok.decorators.param({'type': 'view'}) browseView: DG.BrowsePanel) : Promise<void> {
+  @grok.decorators.appTreeBrowser()
+  static async demoAppTreeBrowser(treeNode: DG.TreeViewGroup) : Promise<void> {
     new DemoView(false);
   }
   
@@ -155,11 +154,6 @@ export class PackageFunctions {
   
     grok.shell.addView(DG.FilesView.create());
   }
-
-//input: dynamic treeNode
-export async function demoAppTreeBrowser(treeNode: DG.TreeViewGroup) {
-  new DemoView(false);
-}
 
   @grok.decorators.func({
     'meta': {

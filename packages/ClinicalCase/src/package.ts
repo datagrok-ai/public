@@ -399,7 +399,7 @@ export class PackageFunctions {
     return view;
   }
 
-  @grok.decorators.func()
+  @grok.decorators.appTreeBrowser()
   static async clinicalCaseAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     if (!validationRulesList)
       validationRulesList = await grok.data.loadTable(`${_package.webRoot}tables/validation-rules.csv`);

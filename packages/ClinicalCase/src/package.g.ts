@@ -5,14 +5,15 @@ import * as DG from 'datagrok-api/dg';
 //tags: app
 //output: view result
 //meta.browsePath: Clinical
-export async function clinicalCaseApp() {
+export async function clinicalCaseApp() : Promise<any> {
   return PackageFunctions.clinicalCaseApp();
 }
 
 //name: clinicalCaseAppTreeBrowser
 //input: dynamic treeNode 
-export async function clinicalCaseAppTreeBrowser(treeNode: any) {
-  return PackageFunctions.clinicalCaseAppTreeBrowser(treeNode);
+//meta.role: appTreeBrowser
+export async function clinicalCaseAppTreeBrowser(treeNode: any) : Promise<void> {
+  PackageFunctions.clinicalCaseAppTreeBrowser(treeNode);
 }
 
 //name: clinicalCaseFolderLauncher
@@ -20,6 +21,6 @@ export async function clinicalCaseAppTreeBrowser(treeNode: any) {
 //input: file folder 
 //input: list<file> files 
 //output: widget result
-export async function clinicalCaseFolderLauncher(folder: DG.FileInfo, files: DG.FileInfo[]) {
+export async function clinicalCaseFolderLauncher(folder: DG.FileInfo, files: DG.FileInfo[]) : Promise<any> {
   return PackageFunctions.clinicalCaseFolderLauncher(folder, files);
 }

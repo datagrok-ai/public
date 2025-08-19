@@ -57,7 +57,7 @@ export class PackageFunctions{
   }
 
 
-  @grok.decorators.func()
+  @grok.decorators.appTreeBrowser()
   static async cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     try {
       const vaults = JSON.parse(await grok.functions.call('CDDVaultLink:getVaults')) as Vault[];
