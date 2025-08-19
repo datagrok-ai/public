@@ -387,7 +387,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function appTreeBrowser(config: AppTreeBrowserOptions) {
+  export function appTreeBrowser(config?: AppTreeBrowserOptions) {
     return function (
       target: any,
       propertyKey: string,
