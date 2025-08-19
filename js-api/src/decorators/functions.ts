@@ -96,11 +96,13 @@ export namespace decorators {
     viewer?: string;
     units?: string;
     type?: string;
+    optionsType?: string;
     step?: string;
     "meta.url"?: boolean;
+    metaUrl?: boolean;
   }
 
-  interface Input {
+  interface Input extends InputOptions{
     name?: string;
     type?: string;
     options?: InputOptions
@@ -114,6 +116,7 @@ export namespace decorators {
 
   interface Meta {
     cache?: string;
+    cacheInvalidateOn?: string;
     ['cache.invalidateOn']?: string;
     browsePath?: string;
     icon?: string;
@@ -146,11 +149,17 @@ export namespace decorators {
     order?: string;
     autostartImmediate?: string;
     ['scriptHandler.language']?: string;
+    scriptHandlerLanguage?: string;
     ['scriptHandler.extensions']?: string;
+    scriptHandlerExtensions?: string;
     ['scriptHandler.commentStart']?: string;
+    scriptHandlerCommentStart?: string;
     ['scriptHandler.templateScript']?: string;
+    scriptHandlerTemplateScript?: string;
     ['scriptHandler.codeEditorMode']?: string;
+    scriptHandlerCodeEditorMode?: string;
     ['scriptHandler.vectorizationFunction']?: string;
+    scriptHandlerVectorizationFunction?: string;
     url?: string;
     propertyType?: string;
     semType?: string;
@@ -163,12 +172,16 @@ export namespace decorators {
     description?: string,
     meta?: Meta | Record<string, string>,
     outputs?: Output[],
+    result?: Output,
     sidebar?: string;
     editor?: string;
     cache?: string;
     ['cache.invalidateOn']?: string;
+    cacheInvalidateOn?: string;
     ['top-menu']?: string;
+    topMenu?: string;
     condition?: string;
+    helpUrl?: string;
     ['help-url']?: string;
     connection?: string;
   }
@@ -189,6 +202,10 @@ export namespace decorators {
     features?: string,
     runOnInput?: string,
     runOnOpen?: string
+  }
+
+  interface AppTreeBrowserOptions extends FunctionOptions {
+    app?: string;
   }
 
   interface CellRendererOptions extends FunctionOptions {
@@ -363,6 +380,14 @@ export namespace decorators {
   }
 
   export function model(config: ModelOptions) {
+    return function (
+      target: any,
+      propertyKey: string,
+      descriptor: PropertyDescriptor
+    ) { };
+  }
+
+  export function appTreeBrowser(config: AppTreeBrowserOptions) {
     return function (
       target: any,
       propertyKey: string,
