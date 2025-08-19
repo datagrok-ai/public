@@ -10,11 +10,12 @@ import { createPath, registerAllData, registerAssayData, updateAllMolTrackSchema
 import { RegistrationCompoundView } from './utils/registration-compound-tab';
 import { RegistrationBatchView } from './utils/registration-batch-tab';
 import { Scope } from './utils/constants';
+import { createSearchPanel } from './utils/search';
 
 export const _package = new DG.Package();
 
 //tags: init
-export function init(): void {
+export function initDB(): void {
   setTimeout(async () => {
     // Run independent tasks in parallel
     await Promise.all([
@@ -177,7 +178,8 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
     const retrieveNode = appNode.getOrCreateGroup('Retrieve').item(formattedScope);
     retrieveNode.onSelected.subscribe(async () => {
       const data = await grok.functions.call('MolTrack:retrieveEntity', { scope });
-      grok.shell.addTablePreview(data);
+      const tv = grok.shell.addTablePreview(data);
+      createSearchPanel(tv, scope);
     });
   }
 }
@@ -199,13 +201,6 @@ export async function checkMolTrackHealth(): Promise<string> {
 export async function fetchCompoundProperties(): Promise<string> {
   await MolTrackDockerService.init();
   return await MolTrackDockerService.fetchCompoundProperties();
-}
-
-//name: fetchProperties
-//output: string result
-export async function fetchProperties(): Promise<string> {
-  await MolTrackDockerService.init();
-  return await MolTrackDockerService.fetchProperties();
 }
 
 //name: fetchBatchProperties

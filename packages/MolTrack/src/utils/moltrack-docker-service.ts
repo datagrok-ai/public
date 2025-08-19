@@ -1,8 +1,7 @@
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { ErrorHandling, ResultOutput, scopeToUrl } from './constants';
-import { MolTrackEntityType, MolTrackProperty, MolTrackSearchQuery, MolTrackSearchResponse, searchTypeMapping } from './types';
+import { MolTrackProperty, MolTrackSearchQuery, MolTrackSearchResponse} from './types';
 
 export class MolTrackDockerService {
   private static _container: DG.DockerContainer;
@@ -34,11 +33,6 @@ export class MolTrackDockerService {
     return response.text();
   }
 
-  static async fetchProperties(): Promise<string> {
-    const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id, '/v1/schema/');
-    return response.text();
-  }
-
   static async fetchCompoundProperties(): Promise<string> {
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id, '/v1/schema/compounds');
     return response.text();
@@ -50,19 +44,19 @@ export class MolTrackDockerService {
   }
 
   static async fetchSchema(): Promise<MolTrackProperty[]> {
-    const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id, '/v1/schema');
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id, '/v1/schema/');
     if (!response.ok)
       throw new Error(`HTTP error!: ${response.status}`, { cause: response.status });
     return await response.json();
   }
 
-  static async search(query: MolTrackSearchQuery, entityType: MolTrackEntityType): Promise<MolTrackSearchResponse> {
+  static async search(query: MolTrackSearchQuery, endpointLevel: string): Promise<MolTrackSearchResponse> {
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id,
-      `/v1/search/${searchTypeMapping[entityType]}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(query),
-    });
+      `/v1/search/${endpointLevel}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(query),
+      });
     if (!response.ok)
       throw new Error(`HTTP error!: ${response.status}`, { cause: response.status });
     return await response.json();
@@ -114,7 +108,7 @@ export class MolTrackDockerService {
       }
 
       const json = await response.json();
-      return DG.DataFrame.fromJson(JSON.stringify(json['data']));
+      return DG.DataFrame.fromJson(JSON.stringify(json));
     } catch (e) {
       grok.shell.error(String(e));
       throw e;

@@ -9,15 +9,16 @@ import {
 } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { MolTrackDockerService } from './moltrack-docker-service';
 import {
-  MolTrackEntityType,
   MolTrackSearchQuery,
   MolTrackFilter,
   MolTrackComplexCondition,
+  searchTypeMapping,
 } from './types';
+import { Scope } from './constants';
 
 export let molTrackEntitiesProps: {[key: string]: DG.Property[]} | null = null;
 
-export async function createSearchPanel(tv: DG.TableView, entityType: MolTrackEntityType) {
+export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope) {
   const filtersDiv = ui.div([]);
   let queryBuilder: QueryBuilder | null = null;
 
@@ -35,31 +36,45 @@ export async function createSearchPanel(tv: DG.TableView, entityType: MolTrackEn
     updateQueryBuilderLayout(filtersDiv.clientWidth);
   });
 
-  const initializeQueryBuilder = async (entityType: MolTrackEntityType) => {
+  const initializeQueryBuilder = async (entityLevel: Scope) => {
     ui.setUpdateIndicator(filtersDiv, true, 'Loading filters...');
-    const filterFields: DG.Property[] = await getPropertiesForEntity(entityType);
+    const filterFields: DG.Property[] = await getPropertiesForEntity(entityLevel);
     queryBuilder = new QueryBuilder(filterFields, undefined, QueryBuilderLayout.Narrow);
+    const outputFieldsInput = ui.input.list('Output', {});
+    outputFieldsInput.root.style.paddingLeft = '15px';
     const runSearchButton = ui.bigButton('Search', async () => {
       ui.setUpdateIndicator(tv.grid.root, true, 'Searching...');
-     // const molTrackQuery = convertQueryBuilderConditionToMolTrackQuery(queryBuilder!.condition);
-      // const resultDf = await MolTrackDockerService.search(queryBuilder);
-      // tv.dataFrame = resultDf;
+      const molTrackQuery = convertQueryBuilderConditionToMolTrackQuery(queryBuilder!.condition,
+        entityLevel, outputFieldsInput.value!.map((it) => `${entityLevel}.${it}`));
+      const endpointLevel = searchTypeMapping.filter((it) => it.level === entityLevel);
+      if (!endpointLevel.length) {
+        ui.setUpdateIndicator(tv.grid.root, false);
+        throw new Error(`No search endpoint for ${entityLevel}`);
+      }
+      const result = await MolTrackDockerService.search(molTrackQuery, endpointLevel[0].searchEndpoint);
+      const resultDf = DG.DataFrame.fromObjects(result.data);
+      tv.dataFrame = resultDf ?? DG.DataFrame.create();
       ui.setUpdateIndicator(tv.grid.root, false);
     });
     ui.setUpdateIndicator(filtersDiv, false);
     filtersDiv.append(queryBuilder.root);
+    filtersDiv.append(outputFieldsInput.root);
     filtersDiv.append(ui.div(runSearchButton, { style: { paddingLeft: '4px' } }));
   };
 
   const filtersButton = ui.button('Add filters', () => {
     tv.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
     if (!queryBuilder)
-      initializeQueryBuilder(entityType);
+      initializeQueryBuilder(entityLevel);
   });
   tv.setRibbonPanels([[filtersButton]]);
 }
 
-export async function getPropertiesForEntity(entityType: MolTrackEntityType): Promise<DG.Property[]> {
+export async function getPropertiesForEntity(entityLevel: Scope): Promise<DG.Property[]> {
+  const entityTypeArr = searchTypeMapping.filter((it) => it.level === entityLevel);
+  if (!entityTypeArr.length)
+    return [];
+  const entityType = entityTypeArr[0].propEntityType;
   if (!molTrackEntitiesProps) {
     molTrackEntitiesProps = {};
     const props = await MolTrackDockerService.fetchSchema();
@@ -80,10 +95,22 @@ export async function getPropertiesForEntity(entityType: MolTrackEntityType): Pr
 
 export function convertQueryBuilderConditionToMolTrackQuery(
   cond: ComplexCondition,
-  level: string,
+  level: Scope,
   output: string[],
 ): MolTrackSearchQuery {
-  const filter = convertComplexCondition(cond);
+  // If query builder condition contains only one condition in array,
+  // create MolTrackSearchQuery where filter is a MolTrackSimpleCondition
+  if (cond.conditions.length === 1 && isSimpleCondition(cond.conditions[0])) {
+    const filter = convertSimpleCondition(cond.conditions[0], level, true);
+
+    return {
+      level: level,
+      output: output,
+      filter: filter,
+    };
+  }
+
+  const filter = convertComplexCondition(cond, level);
 
   return {
     level: level,
@@ -92,33 +119,32 @@ export function convertQueryBuilderConditionToMolTrackQuery(
   };
 }
 
-function convertComplexCondition(cond: ComplexCondition): MolTrackComplexCondition {
+function convertComplexCondition(cond: ComplexCondition, level: Scope): MolTrackComplexCondition {
   if (cond.conditions.length === 0) {
-    return {
-      operator: Operators.Logical.and,
+    return {//@ts-ignore
+      operator: Operators.Logical.and.toUpperCase(),
       conditions: [],
     };
   }
 
   const convertedConditions: MolTrackFilter[] = cond.conditions.map((condition) => {
-    if (isSimpleCondition(condition)) {
-      return convertSimpleCondition(condition);
-    } else {
-      return convertComplexCondition(condition as ComplexCondition);
-    }
+    if (isSimpleCondition(condition))
+      return convertSimpleCondition(condition, level, true);
+    else
+      return convertComplexCondition(condition as ComplexCondition, level);
   });
 
-  return {
-    operator: cond.logicalOperator,
+  return { //@ts-ignore
+    operator: cond.logicalOperator.toUpperCase(),
     conditions: convertedConditions,
   };
 }
 
-function convertSimpleCondition(cond: any): MolTrackFilter {
+function convertSimpleCondition(cond: any, level: Scope, isDynamicProp?: boolean): MolTrackFilter {
   // Handle chemical similarity search special case
   if (cond.operator === 'is_similar' && cond.value && typeof cond.value === 'object' && 'molecule' in cond.value) {
     return {
-      field: cond.field,
+      field: `${level}${isDynamicProp ? '.details': ''}.${cond.field}`,
       operator: Operators.IS_SIMILAR,
       value: cond.value.molecule,
       threshold: cond.value.threshold || null,
@@ -127,7 +153,7 @@ function convertSimpleCondition(cond: any): MolTrackFilter {
 
   // Handle regular simple conditions - operators are similar, no mapping needed
   return {
-    field: cond.field,
+    field: `${level}${isDynamicProp ? '.details': ''}.${cond.field}`,
     operator: cond.operator,
     value: cond.value,
     threshold: cond.threshold || null,

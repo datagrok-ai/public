@@ -1,4 +1,6 @@
 import { Operators } from '@datagrok-libraries/utils/src/query-builder/query-builder';
+import { Scope } from './constants';
+
 
 // Enums for property classification and entity types
 export enum MolTrackPropertyClass {
@@ -65,10 +67,17 @@ export interface MolTrackSearchResponse {
     columns: string[],
 }
 
-export const searchTypeMapping: Record<MolTrackEntityType, string> = {
-    [MolTrackEntityType.COMPOUND]: 'compounds',
-    [MolTrackEntityType.BATCH]: 'batches',
-    [MolTrackEntityType.ASSAY]: 'assays',
-    [MolTrackEntityType.ASSAY_RUN]: 'assay-runs',
-    [MolTrackEntityType.ASSAY_RESULT]: 'assay-results',
+export interface MolTrackSearchMapping {
+    level: Scope,
+    searchEndpoint: string,
+    propEntityType: MolTrackEntityType
 }
+
+export const searchTypeMapping: MolTrackSearchMapping[] = [
+  { level: Scope.COMPOUNDS, searchEndpoint: 'compounds', propEntityType: MolTrackEntityType.COMPOUND },
+  { level: Scope.BATCHES, searchEndpoint: 'batches', propEntityType: MolTrackEntityType.BATCH },
+  { level: Scope.ASSAYS, searchEndpoint: 'assays', propEntityType: MolTrackEntityType.ASSAY },
+  { level: Scope.ASSAY_RUNS, searchEndpoint: 'assay-runs', propEntityType: MolTrackEntityType.ASSAY_RUN },
+  { level: Scope.ASSAY_RESULTS, searchEndpoint: 'assay-results', propEntityType: MolTrackEntityType.ASSAY_RESULT },
+];
+
