@@ -158,7 +158,7 @@ class FuncGeneratorPlugin {
 
     if ((reservedDecorators[name]['metadata']['role']?.length > 0) ) {
       if (!decoratorOptions.get('meta'))
-        decoratorOptions.set('meta', {roles: reservedDecorators[name]['metadata']['role']});
+        decoratorOptions.set('meta', {role: reservedDecorators[name]['metadata']['role']});
       else if (!decoratorOptions.get('meta')['role']) 
         decoratorOptions.get('meta')['role'] = reservedDecorators[name]['metadata']['role'];
       delete reservedDecorators[name]['metadata']['role'];
