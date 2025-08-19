@@ -27,13 +27,13 @@ The Datagrok 1.26.0 release focuses on improved data access and collaboration, e
 
 ### Breaking changes
 
-Database structure changes: older versions are not compatible with this release. Rollback to 1.25 requires manually reverting the database changes
+This release introduces non-backward-compatible database changes. You can upgrade to version 1.26.0 automatically; however, once you migrate the database, older versions (including 1.25) will no longer be compatible. In case you need to roll back to 1.25.N, you must manually revert the changes or restore a pre-upgrade backup
 
 ### Main updates
 
-* We've added **Spaces**, a new section in **Browse** that lets you organize, access, and share projects, files, folders, connections, and other frequently used items, enabling easier collaboration
-* **Power Search**: we've improved search on the **Home Page**, making it easier to quickly find tables, queries, functions, projects, and help topics from a single place
-* We've added a new **Home Page** widget, **Activity Dashboard**, that lets you view recent activity, shared items, favorites, personal actions, and notifications in one place, making it easy to track and access key updates
+* Introducing **Spaces**, a new section in **Browse** that helps you organize, access, and share projects, files, folders, connections, and other frequently used items, making collaboration easier
+* Enhanced **Power Search** on the **Home Page** now lets you quickly find tables, queries, functions, projects, and help topics all from one place
+* A new **Home Page** widget, **Activity Dashboard**, provides a unified view of recent activity, shared items, favorites, personal actions, and notifications, so you can easily track and access key updates
 * **Complex calculated columns**: you can now use a single vector function to generate multiple columns in one step, so you no longer have to add each column manually
 * **Python Celery task wrapper** enables seamless integration of Python Docker applications with Datagrok,
 running Python functions as Celery tasks in isolated containers while the platform handles orchestration, task queuing, and results. For details, see [Creating Python Docker apps](https://datagrok.ai/help/develop/how-to/packages/python-functions)

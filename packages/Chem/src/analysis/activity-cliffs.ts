@@ -3,11 +3,11 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {drawMoleculeToCanvas} from '../utils/chem-common-rdkit';
 import {ITooltipAndPanelParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {convertMolNotation, getRdKitModule} from '../package';
-import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {PackageFunctions} from '../package';
+import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getMCS} from '../utils/most-common-subs';
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
-import { getUncommonAtomsAndBonds } from '../utils/chem-common';
+import {getUncommonAtomsAndBonds} from '../utils/chem-common';
 
 const canvasWidth = 200;
 const canvasHeight = 100;
@@ -40,7 +40,7 @@ async function drawMoleculesWithMcsAsync(params: ITooltipAndPanelParams, hosts: 
 }
 
 function drawMolecules(params: ITooltipAndPanelParams, hosts: HTMLElement[], molecules: [string, string]) {
-  const rdkit = getRdKitModule();
+  const rdkit = PackageFunctions.getRdKitModule();
   let mcsMol: RDMol | null = null;
   const mcsGenerated = cashedData.has(`${molecules[0]}_${molecules[1]}`);
   try {
@@ -50,11 +50,11 @@ function drawMolecules(params: ITooltipAndPanelParams, hosts: HTMLElement[], mol
       const imageHost = ui.canvas(canvasWidth, canvasHeight);
       if (params.seqCol.meta.units === DG.chem.Notation.Smiles) {
         //convert to molFile to draw in coordinates similar to dataframe cell
-        molecule = convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
+        molecule = PackageFunctions.convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
       }
       const substruct = mcsGenerated ? getUncommonAtomsAndBonds(molecule!, mcsMol, rdkit) : null;
       drawMoleculeToCanvas(0, 0, canvasWidth, canvasHeight, imageHost, molecule, '',
-        { normalizeDepiction: true, straightenDepiction: true }, substruct);
+        {normalizeDepiction: true, straightenDepiction: true}, substruct);
       ui.empty(hosts[index]);
       if (!cashedData.has(`${molecules[0]}_${molecules[1]}`))
         hosts[index].append(ui.divText('MCS loading...'));

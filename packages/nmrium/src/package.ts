@@ -7,7 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import './bp.css';
 import '@blueprintjs/icons/lib/css/blueprint-icons.css';
 import { getNMRiumView, loadNMRiumData } from './utils';
-
+export * from './package.g';
 export const _package = new DG.Package();
 async function addNmriumView(extension: string, bytes: string) {
   const {v, nmriumId} = getNMRiumView();
@@ -16,63 +16,60 @@ async function addNmriumView(extension: string, bytes: string) {
   return [];
 }
 
-//name: jdxFileHandler
-//input: string bytes
-//output: list tables
-//tags: file-handler
-//meta.fileViewerCheck: Nmrium:checkNmriumJdx
-//meta.ext: jdx
-export async function jdxFileHandler(bytes: string) {
-  return await addNmriumView('jdx', bytes);
+export class PackageFunctions{
+  @grok.decorators.fileHandler({
+    fileViewerCheck: 'Nmrium:checkNmriumJdx',
+    ext: 'jdx',
+    outputs: [{name: 'tables', type: 'list'}]
+  })
+  static async jdxFileHandler(bytes: string) {
+  
+    return await addNmriumView('jdx', bytes);
+  }
+
+
+  @grok.decorators.fileHandler({
+    fileViewerCheck: 'Nmrium:checkNmriumJdx',
+    ext: 'dx',
+    name: 'jdxFileHandler',
+    outputs: [{name: 'tables', type: 'list'}]
+  })
+  static async dxFileHandler(bytes: string) {
+  
+    return await addNmriumView('dx', bytes);
+  }
+
+
+  @grok.decorators.fileHandler({ext: 'nmrium', outputs: [{name: 'tables', type: 'list'}]})
+  static async nmriumFileHandler(bytes: string) {
+    return await addNmriumView('nmrium', bytes);
+  }
+
+
+  @grok.decorators.fileViewer({fileViewer: 'nmrium'})
+  static previewNMRData(file: DG.FileInfo): DG.View {
+    const {v, nmriumId} = getNMRiumView();
+    (async () => {
+      const dataString = await file.readAsString();
+      await loadNMRiumData(file.name, dataString, nmriumId);
+    })();
+
+    return v;
+  }
+
+
+  @grok.decorators.fileViewer({
+    fileViewer: 'dx, jdx',
+    fileViewerCheck: 'Nmrium:checkNmriumJdx',
+  })
+  static previewNMRFromDX(file: DG.FileInfo): DG.View {
+    return PackageFunctions.previewNMRData(file);
+  }
+
+
+  @grok.decorators.func()
+  static checkNmriumJdx (content: string) : boolean{
+    return content.includes('NMR SPECTRUM');
+  }
 }
-
-//name: jdxFileHandler
-//input: string bytes
-//output: list tables
-//tags: file-handler
-//meta.fileViewerCheck: Nmrium:checkNmriumJdx
-//meta.ext: dx
-export async function dxFileHandler(bytes: string) {
-  return await addNmriumView('dx', bytes);
-}
-
-//name: nmriumFileHandler
-//input: string bytes
-//output: list tables
-//tags: file-handler
-//meta.ext: nmrium
-export async function nmriumFileHandler(bytes: string) {
-  return await addNmriumView('nmrium', bytes);
-}
-
-//tags: fileViewer
-//meta.fileViewer: nmrium
-//input: file file
-//output: view v
-export function previewNMRData(fileData: DG.FileInfo): DG.View {
-  const {v, nmriumId} = getNMRiumView();
-  (async () => {
-    const dataString = await fileData.readAsString();
-    await loadNMRiumData(fileData.name, dataString, nmriumId);
-  })();
-
-  return v;
-}
-
-//tags: fileViewer
-//meta.fileViewer: dx, jdx
-//input: file file
-//meta.fileViewerCheck: Nmrium:checkNmriumJdx
-//output: view v
-export function previewNMRFromDX(fileData: DG.FileInfo): DG.View {
-  return previewNMRData(fileData);
-}
-
-//name: checkNmriumJdx
-//input: string content
-//output: bool result
-export function checkNmriumJdx(content: string) {
-  return content.includes('NMR SPECTRUM');
-}
-
 

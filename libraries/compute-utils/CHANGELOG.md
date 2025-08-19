@@ -1,5 +1,14 @@
 # compute-utils changelog
 
+## 1.44.3 (2025-08-15)
+
+- Optimization view support primary params filtering
+- Optimization view support support per script defaults
+
+## 1.44.2 (2025-08-08)
+
+- Optimization view Compute2 integration fixes
+
 ## 1.44.1 (2025-07-22)
 
 - Update dependencies

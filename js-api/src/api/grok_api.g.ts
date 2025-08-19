@@ -302,6 +302,7 @@ export interface IDartApi {
   grok_Viewer_Props_SetDefault(v: any, data: Bool, style: Bool): any;
   grok_Viewer_Props_ResetDefault(v: any): any;
   grok_Viewer_CanVisualize(viewerType: String, df: any): any;
+  grok_Viewer_OnDetached(v: any): any;
   grok_ScatterPlotViewer_HitTest(s: any, x: Num, y: Num): any;
   grok_ScatterPlotViewer_InvalidateCanvas(s: any): any;
   grok_ScatterPlotViewer_Zoom(s: any, x1: Num, y1: Num, x2: Num, y2: Num): any;
@@ -1542,9 +1543,10 @@ export interface IDartApi {
   grok_Func_Prepare(func: any, parameters: any): any;
   grok_Func_Find(packageName: String, functionName: String, tags: any, meta: any, resultType: String, resultSemType: String): any;
   grok_FuncCall_Call(call: any, showProgress: any, progress: any, processed: Bool, report: Bool): Promise<any>;
-  grok_FuncCall_Cancel(call: any): Promise<any>;
+  grok_FuncCall_Cancel(call: any): any;
   grok_FuncCall_Call_Sync(call: any, processed: Bool, report: Bool): any;
   grok_Script_Create(script: String): any;
+  grok_Script_FromParams(inputs: any, outputs: any, script: String): any;
   grok_Script_GetScript(script: any): any;
   grok_Script_SetScript(script: any, s: String): any;
   grok_Script_ClientCode(script: any): any;

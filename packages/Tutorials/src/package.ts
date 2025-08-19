@@ -156,6 +156,10 @@ export class PackageFunctions {
     grok.shell.addView(DG.FilesView.create());
   }
 
+//input: dynamic treeNode
+export async function demoAppTreeBrowser(treeNode: DG.TreeViewGroup) {
+  new DemoView(false);
+}
 
   @grok.decorators.func({
     'meta': {

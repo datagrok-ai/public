@@ -34,6 +34,8 @@ import {ClinicalCaseViewBase} from './model/ClinicalCaseViewBase';
 import '../css/clinical-case.css';
 import {u2} from '@datagrok-libraries/utils/src/u2';
 
+export * from './package.g';
+
 export const _package = new DG.Package();
 
 export let validationRulesList = null;
@@ -54,58 +56,6 @@ const domains = (studyId: string, exactDomains?: string[]) =>
 export let c: DG.FuncCall;
 
 let cliniclaCaseLaunched = false;
-
-//name: Clinical Case
-//tags: app
-//meta.browsePath: Clinical
-//output: view v
-export async function clinicalCaseApp(): Promise<DG.ViewBase | void> {
-  const appHeader = u2.appHeader({
-    iconPath: _package.webRoot + '/img/clin_case_icon.png',
-    learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/README.md',
-    description:
-    '-  Visualize and explore your SDTM data\n' +
-    '-  Find patterns and trends in your data\n' +
-    '-  Explore data on patient specific and trial specific levels\n' +
-    '-  Browse through AEs and related data\n' +
-    '-  Validate your SDTM data',
-  });
-
-  const studiesHeader = ui.h1('Studies');
-  const existingStudies = await loadStudies([]);
-  const existingStudiesNames = Object.keys(existingStudies);
-  const studiesDiv = ui.divV([]);
-  for (const studyName of existingStudiesNames) {
-    const studyLink = ui.link(studyName, async () => {
-      studies[studyName] = new ClinicalStudy(studyName);
-      createClinicalCaseViews(existingStudies[studyName]);
-    }, 'Click to run the study');
-    studyLink.style.paddingBottom = '10px';
-    studiesDiv.append(studyLink);
-  }
-  const view = DG.View.create();
-  view.name = 'Clinical Case';
-  view.path = CLINICAL_CASE_APP_PATH;
-  view.root.append(ui.divV([
-    appHeader,
-    studiesHeader,
-    studiesDiv,
-  ]));
-  cliniclaCaseLaunched = true;
-  return view;
-}
-
-//input: dynamic treeNode
-//input: view browseView
-export async function clinicalCaseAppTreeBrowser(treeNode: DG.TreeViewGroup) {// TODO: DG.BrowseView
-  if (!validationRulesList)
-    validationRulesList = await grok.data.loadTable(`${_package.webRoot}tables/validation-rules.csv`);
-  const url = new URL(window.location.href);
-  const currentStudyAndViewPath = url.pathname.includes(`/browse${CLINICAL_CASE_APP_PATH}`) ?
-    url.pathname.replace(`/browse${CLINICAL_CASE_APP_PATH}`, ``) : '';
-  const studyAndView = getCurrentStudyAndView(currentStudyAndViewPath);
-  await clinicalCaseAppTB(treeNode, studyAndView.study, studyAndView.viewName);
-}
 
 function getCurrentStudyAndView(path: string): CurrentStudyAndView {
   let currentStudy = '';
@@ -143,7 +93,6 @@ async function clinicalCaseAppTB(treeNode: DG.TreeViewGroup,
         const dataRead = await readClinicalData(study, domainsToValidate);
         if (!dataRead)
           return;
-        //validation results are required for summary view
         studies[study.name].validate();
         studies[study.name].processSitesAndSubjectCount();
       }
@@ -217,6 +166,7 @@ async function clinicalCaseAppTB(treeNode: DG.TreeViewGroup,
   }
 }
 
+
 export async function initClinicalStudy(study: ClinStudyConfig) {
   if (!studies[study.name].initCompleted) {
     try {
@@ -231,6 +181,7 @@ export async function initClinicalStudy(study: ClinStudyConfig) {
     }
   }
 }
+
 
 export async function readClinicalData(study: ClinStudyConfig, domainsToDownLoad?: string[]): Promise<boolean> {
   const studyFiles = await _package.files.list(`studies/${study.name}`);
@@ -249,6 +200,7 @@ export async function readClinicalData(study: ClinStudyConfig, domainsToDownLoad
   return true;
 }
 
+
 export async function loadStudies(deletedCampaigns: string[]): Promise<{[name: string]: ClinStudyConfig}> {
   const studiesFolders = (await _package.files.list(`studies`))
     .filter((f) => deletedCampaigns.indexOf(f.name) === -1);
@@ -264,6 +216,7 @@ export async function loadStudies(deletedCampaigns: string[]): Promise<{[name: s
   }
   return studiesNamesMap;
 }
+
 
 export async function createClinicalCaseViews(studyConfig?: ClinStudyConfig): Promise<void> {
   c = grok.functions.getCurrentCall();
@@ -405,35 +358,87 @@ export async function createClinicalCaseViews(studyConfig?: ClinStudyConfig): Pr
   }
 }
 
-//name: clinicalCaseFolderLauncher
-//tags: folderViewer
-//input: file folder
-//input: list<file> files
-//output: widget res
-export async function clinicalCaseFolderLauncher(folder: DG.FileInfo, files: DG.FileInfo[]):
-  Promise<DG.Widget | undefined> {
-  if (files.some((f) => f.fileName.toLowerCase() === 'dm.csv')) {
-    const res = await grok.dapi.files.readAsText(`${folder.fullPath}/dm.csv`);
-    const table = DG.DataFrame.fromCsv(res);
-    const studyId = table.columns.names().includes(STUDY_ID) ? table.get(STUDY_ID, 0) : 'undefined';
-    return DG.Widget.fromRoot(ui.div([
-      ui.panel([
-        ui.divText('Folder contains SDTM data'),
-        ui.divText(`Study ID: ${studyId}`)]),
-      ui.button('Run ClinicalCase', async () => {
-        studies[studyId] = new ClinicalStudy(studyId);
-        await Promise.all(files.map(async (file) => {
-          if (domains(studyId).includes(file.fileName.toLowerCase())) {
-            const df = await grok.data.files.openTable(`${folder.fullPath}/${file.fileName.toLowerCase()}`);
-            grok.shell.addTableView(df);
-          }
-        }));
-        grok.functions.call('Clinicalcase:clinicalCaseApp');
-      }),
+export class PackageFunctions {
+  @grok.decorators.app({
+    'browsePath': 'Clinical',
+    'name': 'Clinical Case',
+  })
+  static async clinicalCaseApp(): Promise<DG.ViewBase | void> {
+    const appHeader = u2.appHeader({
+      iconPath: _package.webRoot + '/img/clin_case_icon.png',
+      learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/ClinicalCase/README.md',
+      description:
+      '-  Visualize and explore your SDTM data\n' +
+      '-  Find patterns and trends in your data\n' +
+      '-  Explore data on patient specific and trial specific levels\n' +
+      '-  Browse through AEs and related data\n' +
+      '-  Validate your SDTM data',
+    });
+
+    const studiesHeader = ui.h1('Studies');
+    const existingStudies = await loadStudies([]);
+    const existingStudiesNames = Object.keys(existingStudies);
+    const studiesDiv = ui.divV([]);
+    for (const studyName of existingStudiesNames) {
+      const studyLink = ui.link(studyName, async () => {
+        studies[studyName] = new ClinicalStudy(studyName);
+        createClinicalCaseViews(existingStudies[studyName]);
+      }, 'Click to run the study');
+      studyLink.style.paddingBottom = '10px';
+      studiesDiv.append(studyLink);
+    }
+    const view = DG.View.create();
+    view.name = 'Clinical Case';
+    view.path = CLINICAL_CASE_APP_PATH;
+    view.root.append(ui.divV([
+      appHeader,
+      studiesHeader,
+      studiesDiv,
     ]));
+    cliniclaCaseLaunched = true;
+    return view;
+  }
+
+  @grok.decorators.func()
+  static async clinicalCaseAppTreeBrowser(treeNode: DG.TreeViewGroup) {
+    if (!validationRulesList)
+      validationRulesList = await grok.data.loadTable(`${_package.webRoot}tables/validation-rules.csv`);
+    const url = new URL(window.location.href);
+    const currentStudyAndViewPath = url.pathname.includes(`/browse${CLINICAL_CASE_APP_PATH}`) ?
+      url.pathname.replace(`/browse${CLINICAL_CASE_APP_PATH}`, ``) : '';
+    const studyAndView = getCurrentStudyAndView(currentStudyAndViewPath);
+    await clinicalCaseAppTB(treeNode, studyAndView.study, studyAndView.viewName);
+  }
+
+  @grok.decorators.folderViewer({
+    'name': 'clinicalCaseFolderLauncher',
+  })
+  static async clinicalCaseFolderLauncher(
+    folder: DG.FileInfo,
+    files: DG.FileInfo[]):
+    Promise<DG.Widget | undefined> {
+    if (files.some((f) => f.fileName.toLowerCase() === 'dm.csv')) {
+      const res = await grok.dapi.files.readAsText(`${folder.fullPath}/dm.csv`);
+      const table = DG.DataFrame.fromCsv(res);
+      const studyId = table.columns.names().includes(STUDY_ID) ? table.get(STUDY_ID, 0) : 'undefined';
+      return DG.Widget.fromRoot(ui.div([
+        ui.panel([
+          ui.divText('Folder contains SDTM data'),
+          ui.divText(`Study ID: ${studyId}`)]),
+        ui.button('Run ClinicalCase', async () => {
+          studies[studyId] = new ClinicalStudy(studyId);
+          await Promise.all(files.map(async (file) => {
+            if (domains(studyId).includes(file.fileName.toLowerCase())) {
+              const df = await grok.data.files.openTable(`${folder.fullPath}/${file.fileName.toLowerCase()}`);
+              grok.shell.addTableView(df);
+            }
+          }));
+          grok.functions.call('Clinicalcase:clinicalCaseApp');
+        }),
+      ]));
+    }
   }
 }
-
 
 export const VIEW_CREATE_FUNC: {[key: string]: (studyId: string, args?: any) => DG.ViewBase | ClinCaseTableView} = {
 
@@ -454,7 +459,6 @@ export const VIEW_CREATE_FUNC: {[key: string]: (studyId: string, args?: any) => 
   [STUDY_CONFIGURATIN_VIEW_NAME]: (studyId, addView?: boolean) =>
     new StudyConfigurationView(STUDY_CONFIGURATIN_VIEW_NAME, studyId, addView),
   [VALIDATION_VIEW_NAME]: (studyId) => new ValidationView(VALIDATION_VIEW_NAME, studyId),
-  //[COHORT_VIEW_NAME]: (studyId) => new StudySummaryView(COHORT_VIEW_NAME, studyId),
   [QUESTIONNAIRES_VIEW_NAME]: (studyId) => new QuestionnaiesView(QUESTIONNAIRES_VIEW_NAME, studyId),
   [AE_BROWSER_VIEW_NAME]: (studyId, viewName) => createClinCaseTableView(studyId, viewName),
 };

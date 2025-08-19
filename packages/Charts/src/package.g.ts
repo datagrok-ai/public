@@ -82,7 +82,6 @@ export async function treeViewerDemo() {
 export async function wordCloudViewerDemo() {
   return PackageFunctions.wordCloudViewerDemo();
 }
-
 //name: Chord
 //description: Creates a chord viewer
 //tags: viewer

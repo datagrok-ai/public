@@ -276,7 +276,6 @@ export class PackageFunctions {
 
 //name: platesAppTreeBrowserTempDisabled
 //input: dynamic treeNode
-//input: view browseView
-export async function platesAppTreeBrowserTempDisabled(treeNode: DG.TreeViewGroup, browseView: DG.BrowsePanel) {
+export async function platesAppTreeBrowserTempDisabled(treeNode: DG.TreeViewGroup) {
   await initPlatesAppTree(treeNode);
 }

@@ -80,8 +80,8 @@ export namespace queries {
 }
 
 export namespace funcs {
-  export async function platesAppTreeBrowserTempDisabled(treeNode: any , browseView: DG.View ): Promise<void> {
-    return await grok.functions.call('Curves:PlatesAppTreeBrowserTempDisabled', { treeNode, browseView });
+  export async function platesAppTreeBrowserTempDisabled(treeNode: any ): Promise<void> {
+    return await grok.functions.call('Curves:PlatesAppTreeBrowserTempDisabled', { treeNode });
   }
 
   export async function fitChartCellRenderer(): Promise<any> {

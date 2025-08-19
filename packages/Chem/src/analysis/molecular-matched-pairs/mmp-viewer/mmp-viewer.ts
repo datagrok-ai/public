@@ -27,7 +27,7 @@ import {getMmpFilters, MmpFilters} from './mmp-filters';
 import {getSigFigs} from '../../../utils/chem-common';
 import {createLines} from './mmp-lines';
 import {MmpPairedGrids} from './mmp-grids';
-import {chemDescriptor} from '../../../package';
+import {PackageFunctions} from '../../../package';
 import {getZoomCoordinates} from '../../../utils/ui-utils';
 import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 
@@ -1159,7 +1159,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   async prepareMwForSorting() {
     const frags = this.fragSortingInfo.fragmentIdxs.map((idx) => this.mmpa?.frags.idToName[idx]) as string[];
-    chemDescriptor(DG.Column.fromStrings('smiles', frags), 'MolWt').then((res: DG.Column) => {
+    PackageFunctions.chemDescriptor(DG.Column.fromStrings('smiles', frags), 'MolWt').then((res: DG.Column) => {
       this.fragSortingInfo.mw = new Float32Array(this.fragSortingInfo.fragmentIdxs.length);
       let errorCount = 0;
       frags.forEach((key: string, idx) => {

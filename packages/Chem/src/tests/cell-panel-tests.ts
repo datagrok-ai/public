@@ -20,7 +20,7 @@ import {structure3dWidget} from '../widgets/structure3d';
 import {molV2000, molV3000} from './utils';
 import {EMPTY_MOLECULE_MESSAGE} from '../constants';
 import {checkPackage} from '../utils/elemental-analysis-utils';
-import {identifiers} from '../package';
+import {PackageFunctions} from '../package';
 import {getDescriptorsPy} from '../scripts-api';
 
 const identifiersVals: {[key: string]: string} = {
@@ -104,7 +104,7 @@ category('cell panel', async () => {
     }
     //check that widget doesn't throw errors
     for (const mol of molFormats)
-      identifiers(mol);
+      PackageFunctions.identifiers(mol);
   }, {timeout: 90000});
 
   test('properties', async () => {

@@ -4,6 +4,7 @@ import path from 'path';
 import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
 import {PuppeteerNode} from 'puppeteer';
+import * as DG from 'datagrok-api/dg';
 import {PuppeteerScreenRecorder} from 'puppeteer-screen-recorder';
 import {spaceToCamelCase} from '../utils/utils';
 import puppeteer from 'puppeteer';
@@ -64,7 +65,9 @@ export function getDevKey(hostKey: string): { url: string, key: string } {
   return {url, key};
 }
 
-export async function getBrowserPage(puppeteer: PuppeteerNode, params: any = defaultLaunchParameters): Promise<{ browser: Browser, page: Page }> {
+export async function getBrowserPage(
+  puppeteer: PuppeteerNode, 
+  params: any = defaultLaunchParameters): Promise<{ browser: Browser, page: Page }> {
   let url: string = process.env.HOST ?? '';
   const cfg = getDevKey(url);
   url = cfg.url;
@@ -165,7 +168,14 @@ export const recorderConfig = {
   // aspectRatio: '16:9',
 };
 
-export async function loadPackages(packagesDir: string, packagesToLoad?: string, host?: string, skipPublish?: boolean, skipBuild?: boolean, linkPackage?: boolean, release?: boolean): Promise<string[]> {
+export async function loadPackages(
+  packagesDir: string, 
+  packagesToLoad?: string, 
+  host?: string, 
+  skipPublish?: boolean, 
+  skipBuild?: boolean, 
+  linkPackage?: boolean, 
+  release?: boolean): Promise<string[]> {
   const packagesToRun = new Map<string, boolean>();
   const hostString = host === undefined ? `` : `${host}`;
   if (packagesToLoad !== 'all') {
@@ -181,7 +191,11 @@ export async function loadPackages(packagesDir: string, packagesToLoad?: string,
 
       try {
         const packageJsonData = JSON.parse(fs.readFileSync(path.join(packageDir, 'package.json'), {encoding: 'utf-8'}));
-        const packageFriendlyName = packagesToRun.get(spaceToCamelCase(packageJsonData['friendlyName'] ?? packageJsonData['name'].split('/')[1] ?? packageJsonData['name'] ?? '').toLocaleLowerCase() ?? '') ?? packagesToRun.get(dirName);
+        const packageFriendlyName = 
+        packagesToRun.get(
+          spaceToCamelCase(packageJsonData['friendlyName'] ?? 
+            packageJsonData['name'].split('/')[1] ?? packageJsonData['name'] ?? '').toLocaleLowerCase() ?? '') ?? 
+        packagesToRun.get(dirName);
 
         if (utils.isPackageDir(packageDir) && (packageFriendlyName !== undefined || packagesToLoad === 'all')) {
           try {
@@ -201,7 +215,8 @@ export async function loadPackages(packagesDir: string, packagesToLoad?: string,
           }
         }
       } catch (e: any) {
-        if (utils.isPackageDir(packageDir) && (packagesToRun.get(spaceToCamelCase(dirName).toLocaleLowerCase()) !== undefined || packagesToLoad === 'all'))
+        if (utils.isPackageDir(packageDir) && 
+        (packagesToRun.get(spaceToCamelCase(dirName).toLocaleLowerCase()) !== undefined || packagesToLoad === 'all'))
           console.log(`Couldn't read package.json  ${dirName}`);
       }
     }
@@ -241,6 +256,7 @@ export async function loadTestsList(packages: string[], core: boolean = false): 
 
         } catch (err) {
           console.error('Error during evaluation in browser context:', err);
+          // eslint-disable-next-line prefer-promise-reject-errors
           reject();
         }
         Promise.all(promises)
@@ -341,9 +357,11 @@ async function runTests(testsParams: { package: any, params: any }[], stopOnFail
   try {
     for (const testParam of testsParams) {
       lastTest = testParam;
-      const df: any = await (<any>window).grok.functions.call(testParam.package + ':test', testParam.params);
+      const df: DG.DataFrame = await (<any>window).grok.functions.call(testParam.package + ':test', testParam.params);
       
-      df.columns.setOrder([ 'date', 'category', 'name', 'success', 'result', 'ms', 'skipped', 'logs', 'owner', 'package', 'widgetsDifference', 'flaking' ]);
+      df.columns
+        .setOrder([ 
+          'date', 'category', 'name', 'success', 'result', 'ms', 'skipped', 'logs', 'owner', 'package', 'widgetsDifference', 'flaking']);
       // addColumn('flaking', (<any>window).DG.Column.fromType((<any>window).DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount), df);
       // addColumn('package', (<any>window).DG.Column.fromType((<any>window).DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount), df);
       // if (!df.getCol('flaking')) {
@@ -425,7 +443,10 @@ async function runTests(testsParams: { package: any, params: any }[], stopOnFail
   } catch (e) {
     failed = true;
 
-    error = lastTest ? `category: ${lastTest.params.category}, name: ${lastTest.params.test}, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}` :
+    error = lastTest ? 
+      `category: ${
+        lastTest.params.category}, name: ${
+        lastTest.params.test}, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}` :
       `test: null, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}`;
   }
 
@@ -443,7 +464,11 @@ async function runTests(testsParams: { package: any, params: any }[], stopOnFail
   };
 }
 
-export async function runBrowser(testExecutionData: OrganizedTests[], browserOptions: BrowserOptions, browsersId: number, testInvocationTimeout: number = 3600000): Promise<ResultObject> {
+export async function runBrowser(
+  testExecutionData: OrganizedTests[], 
+  browserOptions: BrowserOptions, 
+  browsersId: number, 
+  testInvocationTimeout: number = 3600000): Promise<ResultObject> {
   const testsToRun = {
     func: runTests.toString(),
     tests: testExecutionData,

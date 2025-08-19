@@ -437,7 +437,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     for (let i = 0; i < data.series?.length!; i++) {
       const series = data.series![i];
       const containsParams = series.parameters && series.parameters.length > 0;
-      if (series.points.some((point) => point.x === undefined || point.y === undefined))
+      if (series.points.some((point) => point.x === undefined || point.y === undefined) || series.points.length <= 1)
         continue;
       series.points.sort((a, b) => a.x - b.x);
 

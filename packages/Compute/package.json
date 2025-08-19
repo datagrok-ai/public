@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/compute",
   "friendlyName": "Compute",
-  "version": "1.44.0",
+  "version": "1.44.3",
   "author": {
     "name": "Andrey Sharapov",
     "email": "andrey.sharapov@softwarecountry.com"
@@ -22,7 +22,7 @@
     "rxjs": "^6.6.7",
     "source-map-loader": "^5.0.0",
     "ts-loader": "^9.5.1",
-    "typescript": "^5.6.3"
+    "typescript": "^5.8.3"
   },
   "devDependencies": {
     "@types/lodash.clonedeepwith": "^4.5.9",

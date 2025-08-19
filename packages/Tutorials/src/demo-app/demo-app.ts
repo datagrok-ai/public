@@ -230,7 +230,7 @@ export class DemoView extends DG.ViewBase {
     }
 
     const searchInput = this._createSearchInput(this.funcs, tree);
-    this.root.append(ui.div([searchInput.root, tree.root], 'grok-gallery-grid'));
+    this.root.append(ui.div([searchInput.root, tree.root], 'grok-gallery-grid grok-gallery-grid-view-demo-app'));
     this.subs.push(grok.events.onViewAdded.subscribe((view) => {
       if (view.name === 'Demo app')
         setTimeout(() => this._setBreadcrumbsInViewName([], view), 100); // we need this because sometimes view is added one more time
