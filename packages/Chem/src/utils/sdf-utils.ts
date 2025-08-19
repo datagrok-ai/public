@@ -23,6 +23,9 @@ export function saveAsSdfDialog() {
       $(text).css('color', 'gray');
       $(text).css('font-size', '12px');
     }
+    const notationInput = ui.input.choice('Notation', {value: DG.chem.Notation.MolBlock, nullable: false,
+      items: [DG.chem.Notation.MolBlock, DG.chem.Notation.V3KMolBlock]});
+    sdfDialog.add(notationInput);
     const selectedColsInput = ui.input.bool('Selected Columns Only', {value: false});
     sdfDialog.add(selectedColsInput);
     const visibleColsInput = ui.input.bool('Visible Columns Only', {value: true});
@@ -32,11 +35,13 @@ export function saveAsSdfDialog() {
     const selectedRowsInput = ui.input.bool('Selected Rows Only', {value: false});
     sdfDialog.add(selectedRowsInput);
     sdfDialog.initFromLocalStorage();
+    sdfDialog.initDefaultHistory();
     colsInput.value = cols[0];
     sdfDialog.onOK(() => {
       const progressIndicator = DG.TaskBarProgressIndicator.create('Saving as SDF...');
       const structureColumn = colsInput.value;
-      const exportOptions: DG.CsvExportOptions = {
+      const exportOptions: DG.CsvExportOptions & {molBlockFormat?: DG.chem.Notation} = {
+        molBlockFormat: notationInput.value!,
         selectedColumnsOnly: selectedColsInput.value,
         visibleColumnsOnly: visibleColsInput.value,
         filteredRowsOnly: filteredRowsInput.value,
@@ -84,14 +89,14 @@ export async function getSdfStringAsync(structureColumn: DG.Column): Promise<str
 export function getSdfString(
   table: DG.DataFrame,
   structureColumn: DG.Column, // non-null
-  exportOptions: DG.CsvExportOptions = {selectedColumnsOnly: false, visibleColumnsOnly: true, filteredRowsOnly: false, selectedRowsOnly: false},
+  exportOptions: DG.CsvExportOptions & {molBlockFormat?: DG.chem.Notation} = {selectedColumnsOnly: false, visibleColumnsOnly: true, filteredRowsOnly: false, selectedRowsOnly: false},
 ): string {
   let result = '';
   const rowIndexes = table.rows.indexes({onlyFiltered: exportOptions.filteredRowsOnly, onlySelected: exportOptions.selectedRowsOnly});
   for (const rowIdx of rowIndexes) {
     const molecule: string = structureColumn.get(rowIdx);
     const mol = DG.chem.isMolBlock(molecule) ? molecule :
-      _convertMolNotation(molecule, DG.chem.Notation.Unknown, DG.chem.Notation.MolBlock, chemCommonRdKit.getRdKitModule());
+      _convertMolNotation(molecule, DG.chem.Notation.Unknown, exportOptions?.molBlockFormat ?? DG.chem.Notation.MolBlock, chemCommonRdKit.getRdKitModule());
     result += `${mol}\n`;
 
     const grid = grok.shell.tv != null && grok.shell.tv.dataFrame === table ? grok.shell.tv.grid :
@@ -125,7 +130,7 @@ export function getSdfString(
 export function _saveAsSdf(
   table: DG.DataFrame,
   structureColumn: DG.Column,
-  exportOptions: DG.CsvExportOptions = {selectedColumnsOnly: false, visibleColumnsOnly: true, filteredRowsOnly: false, selectedRowsOnly: false},
+  exportOptions: DG.CsvExportOptions & {molBlockFormat?: DG.chem.Notation} = {selectedColumnsOnly: false, visibleColumnsOnly: true, filteredRowsOnly: false, selectedRowsOnly: false},
 ): void {
   //todo: load OpenChemLib (or use RDKit?)
   //todo: UI for choosing columns with properties
