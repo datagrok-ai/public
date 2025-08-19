@@ -201,6 +201,13 @@ export async function fetchCompoundProperties(): Promise<string> {
   return await MolTrackDockerService.fetchCompoundProperties();
 }
 
+//name: fetchProperties
+//output: string result
+export async function fetchProperties(): Promise<string> {
+  await MolTrackDockerService.init();
+  return await MolTrackDockerService.fetchProperties();
+}
+
 //name: fetchBatchProperties
 //description: Retrieves all properties defined for the 'batch' scope
 //meta.cache: all

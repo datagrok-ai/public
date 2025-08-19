@@ -44,9 +44,9 @@ CREATE TABLE moltrack.properties (
   semantic_type_id INTEGER REFERENCES moltrack.semantic_types (id),
   property_class text check (property_class in ('DECLARED','CALCULATED', 'MEASURED', 'PREDICTED')) NOT NULL,
   unit text,
-  scope text check (scope in ('BATCH', 'COMPOUND', 'ASSAY', 'ASSAY_RUN', 'ASSAY_RESULT', 'SYSTEM')) NOT NULL,
+  entity_type text check (entity_type in ('BATCH', 'COMPOUND', 'ASSAY', 'ASSAY_RUN', 'ASSAY_RESULT', 'SYSTEM')) NOT NULL,
   pattern text, -- regex for validating string value_type properties, e.g., identifier: CHEMBL.*
-  UNIQUE(name, scope) -- Ensure unique property names within each scope
+  UNIQUE(name, entity_type) -- Ensure unique property names within each entity_type
 );
 
 -- System settings like compound standardization rules, compound uniqueness rules, compound identification rules and synonym generation rules.

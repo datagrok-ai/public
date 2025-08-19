@@ -22,7 +22,7 @@ with ADMIN AS (
 STYPE AS (
   SELECT id FROM moltrack.semantic_types WHERE name = 'Synonym'
 )
-INSERT INTO moltrack.properties (created_by, updated_by, name, description, value_type, semantic_type_id, property_class, scope, pattern)
+INSERT INTO moltrack.properties (created_by, updated_by, name, description, value_type, semantic_type_id, property_class, entity_type, pattern)
 VALUES (
   (SELECT id FROM ADMIN),
   (SELECT id FROM ADMIN),
