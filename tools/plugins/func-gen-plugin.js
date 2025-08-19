@@ -413,11 +413,13 @@ class FuncGeneratorPlugin {
     let resultType = 'void';
     let nodeAnnotation = annotation;
     let isArray = false; 
+    let isNullable = false; 
     if (nodeAnnotation?.type === 'TSUnionType' && 
       nodeAnnotation?.types?.length === 2 && 
       nodeAnnotation?.types?.some((e)=> e?.type === 'TSNullKeyword' || e?.type === 'TSVoidKeyword'|| e?.type === 'TSUndefinedKeyword')) {
       nodeAnnotation = 
         nodeAnnotation.types.filter((e)=> e.type !== 'TSNullKeyword' || e?.type === 'TSVoidKeyword' || e?.type === 'TSUndefinedKeyword')[0];
+      isNullable = true;
     }
     
 
@@ -442,6 +444,7 @@ class FuncGeneratorPlugin {
       } 
     }
     let anotationType = typesToAnnotation[resultType];
+    resultType = isNullable? 'any' : resultType;
     if (isArray && anotationType) anotationType = `list<${anotationType}>`;
     return [anotationType ?? 'dynamic', `${resultType}${isArray? '[]': ''}` ?? 'any'];
   }
