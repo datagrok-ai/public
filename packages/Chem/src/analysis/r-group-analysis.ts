@@ -298,7 +298,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
         let rColName = '';
         if (resCol.name === 'Core') {
           rColName = corePrefixIdx ? `${resCol.name}_${corePrefixIdx}` : resCol.name;
-          col.temp[SCAFFOLD_COL] = rColName;
+          col.tags[SCAFFOLD_COL] = rColName;
         } else {
           rColName = rGroupPrefixIdx ? `${resCol.name.replace('R', params.rGroupName)}_${rGroupPrefixIdx}` :
             resCol.name.replace('R', params.rGroupName);
