@@ -19,10 +19,8 @@
 
 .query-builder-search-query-operator {
     border: none;
-    margin: 4px;
-    padding: 4px 4px 4px 12px;
+    padding-left: 12px;
     position: relative;
-    margin-top: 20px;
 }
 
 .query-builder-search-query-operator[data-nesting-level] {
@@ -123,7 +121,6 @@
 .query-builder-filter-inputs-narrow {
     display: flex;
     flex-direction: column;
-    gap: 8px;
     padding-top: 8px;
 }
 
@@ -139,7 +136,8 @@
 
 .query-builder-filter-inputs-narrow .add-delete-icons {
     justify-content: flex-end;
-    gap: 5px;
+    padding-right: 10px;
+    padding-top: 5px;
 }
 
 .query-builder-filter-inputs-narrow .ui-input-editor {
