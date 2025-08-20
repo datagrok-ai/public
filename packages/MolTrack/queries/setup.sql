@@ -54,3 +54,25 @@ values ('Compound Matching Rule',
         'ALL_LAYERS',
         'Defines the rule for matching compounds. Possible values: ALL_LAYERS (default), STEREO_INSENSITIVE_LAYERS, TAUTOMER_INSENSITIVE_LAYERS');
 --end
+
+--name: insertStandartization
+--connection: moltrack
+insert into moltrack.settings (name, value, description)
+values (
+  'Molecule standardization rules',
+  'operations:
+  - type: "Cleanup"
+    description: "Basic cleanup of the molecule, including removal of explicit hydrogens"
+    enable: true
+
+  - type: "FragmentParent"
+    description: "Retains the largest parent fragment of the molecule."
+    enable: true
+
+  - type: "Uncharger"
+    description: "Neutralizes charges on the molecule."
+    enable: true
+  ',
+  'Defines the molecule standardization pipeline'
+);
+--end
