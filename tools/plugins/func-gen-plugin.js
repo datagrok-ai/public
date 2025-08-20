@@ -195,7 +195,13 @@ class FuncGeneratorPlugin {
     else if (funcAnnotaionOptions.outputs?.length === 0)
       actualType = 'void';
 
-    if (!funcAnnotaionOptions.name) funcAnnotaionOptions.name = identifierName;
+    // if (!funcAnnotaionOptions.name) funcAnnotaionOptions.name = identifierName;
+    
+    console.log(funcName);
+    console.log(funcAnnotaionOptions.name);
+    if (funcAnnotaionOptions.name === funcName)
+      funcAnnotaionOptions.name = undefined;
+    
     functions.push(
       reservedDecorators[name]['genFunc'](
         getFuncAnnotation(funcAnnotaionOptions),
