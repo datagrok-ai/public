@@ -286,7 +286,7 @@ export class PackageFunctions {
     outputs: [],
   })
   static formulaLinesDialog(
-    @grok.decorators.param({'options': {'optional': true}}) src: DG.DataFrame | DG.Viewer): void {
+    @grok.decorators.param({type: 'dataframe', options: {optional: true}}) src: DG.DataFrame | DG.Viewer): void {
     const options = Object.keys(_properties)
       .filter((k) => k in DEFAULT_OPTIONS)
       .reduce((opts, k) => (opts[k] = _properties[k], opts), <EditorOptions>{});

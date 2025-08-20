@@ -66,7 +66,7 @@ export namespace funcs {
     return await grok.functions.call('PowerPack:PowerPackSearchProvider', {});
   }
 
-  export async function formulaLinesDialog(src?: any ): Promise<void> {
+  export async function formulaLinesDialog(src?: DG.DataFrame ): Promise<void> {
     return await grok.functions.call('PowerPack:FormulaLinesDialog', { src });
   }
 
