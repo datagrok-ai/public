@@ -308,8 +308,8 @@ export class View extends ViewBase {
    *  Saves view layout as a string. Only applicable to certain views, such as {@link TableView}.
    *  See also {@link loadLayout}
    *  @returns {ViewLayout} */
-  saveLayout(): ViewLayout {
-    return toJs(api.grok_View_Save_Layout(this.dart));
+  saveLayout(options?: { saveZoom?: boolean }): ViewLayout {
+    return toJs(api.grok_View_Save_Layout(this.dart, options?.saveZoom ?? false));
   }
 
   /**
