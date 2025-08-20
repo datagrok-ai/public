@@ -35,9 +35,18 @@
 
 .query-builder-filter-inputs {
     display: flex;
+    flex-direction: row;
     align-items: center;
     gap: 6px;
     min-height: 32px;
+    flex-wrap: nowrap;
+}
+
+.query-builder-filter-inputs .query-builder-filter-field,
+.query-builder-filter-inputs .query-builder-filter-operator,
+.query-builder-filter-inputs .query-builder-filter-value {
+    flex: 0 0 auto;
+    min-width: 0;
 }
 
 .query-builder-filter-inputs .ui-input-editor {
@@ -118,13 +127,14 @@
     padding-top: 8px;
 }
 
-.query-builder-filter-inputs-narrow .query-builder-filter-field-row,
-.query-builder-filter-inputs-narrow .query-builder-filter-operator-row,
-.query-builder-filter-inputs-narrow .query-builder-filter-value-row {
+.query-builder-filter-inputs-narrow .query-builder-filter-field,
+.query-builder-filter-inputs-narrow .query-builder-filter-operator,
+.query-builder-filter-inputs-narrow .query-builder-filter-value {
     display: flex;
     align-items: center;
     gap: 6px;
     min-height: 32px;
+    width: 100%;
 }
 
 .query-builder-filter-inputs-narrow .add-delete-icons {
@@ -134,4 +144,34 @@
 
 .query-builder-filter-inputs-narrow .ui-input-editor {
     width: 100% !important;
+}
+
+/* Ensure consistent field sizing and prevent height jumping */
+.query-builder-filter-field,
+.query-builder-filter-operator,
+.query-builder-filter-value {
+    display: flex;
+    align-items: center;
+    min-height: 32px;
+    transition: all 0.2s ease;
+}
+
+.query-builder-filter-field .ui-input-editor,
+.query-builder-filter-operator .ui-input-editor,
+.query-builder-filter-value .ui-input-editor {
+    min-height: 28px;
+    box-sizing: border-box;
+}
+
+/* Prevent field height changes during layout switching */
+.query-builder-filter-inputs,
+.query-builder-filter-inputs-narrow {
+    transition: flex-direction 0.2s ease;
+}
+
+.add-delete-icons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
 }

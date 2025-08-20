@@ -68,7 +68,8 @@ export class BaseConditionEditor<T = any> {
     protected initializeEditor(prop: DG.Property): void {
         if (Array.isArray(this.condition.value))
             this.condition.value = undefined as T;
-        const input = ui.input.forProperty(prop, this.condition.value, {
+        const input = ui.input.forProperty(prop, undefined, {
+            value: this.condition.value,
             nullable: false,
             onValueChanged: () => {
                 this.condition.value = input.value as T;
@@ -424,7 +425,19 @@ export class QueryBuilder {
 
     setLayout(layout: QueryBuilderLayout): void {
         this.layout = layout;
-        this.rebuildUI();
+        
+        // Find all filter containers and apply/remove layout classes
+        const filterContainers = this.root.querySelectorAll('.query-builder-filter-inputs, .query-builder-filter-inputs-narrow');
+        
+        filterContainers.forEach(container => {
+            if (layout === QueryBuilderLayout.Narrow) {
+                container.classList.remove('query-builder-filter-inputs');
+                container.classList.add('query-builder-filter-inputs-narrow');
+            } else {
+                container.classList.remove('query-builder-filter-inputs-narrow');
+                container.classList.add('query-builder-filter-inputs');
+            }
+        });
     }
 
     getLayout(): QueryBuilderLayout {
@@ -544,21 +557,13 @@ export class QueryBuilder {
 
             const operatorInputDiv = ui.div('', 'query-builder-filter-operator');
             const criteriaDiv = ui.div();
-            // Create filter container based on layout
-            let filterContainer: HTMLElement;
-            if (this.layout === QueryBuilderLayout.Narrow) {
-                // Narrow layout: each field on separate row
-                filterContainer = ui.divV([
-                    ui.divH([fieldChoiceInput.root], 'query-builder-filter-field-row'),
-                    ui.divH([operatorInputDiv], 'query-builder-filter-operator-row'),
-                    ui.divH([criteriaDiv], 'query-builder-filter-value-row'),
-                    ui.divH([deleteFieldIcon, addNestedConditionIcon], 'add-delete-icons')
-                ], 'query-builder-filter-inputs-narrow');
-            } else {
-                // Standard layout: all fields on same row
-                filterContainer = ui.divH([fieldChoiceInput.root, operatorInputDiv, criteriaDiv,
-                ui.divH([deleteFieldIcon, addNestedConditionIcon], 'add-delete-icons')], 'query-builder-filter-inputs');
-            }
+
+            const filterContainer = ui.div([
+                ui.div([fieldChoiceInput.root], 'query-builder-filter-field'),
+                ui.div([operatorInputDiv], 'query-builder-filter-operator'),
+                ui.div([criteriaDiv], 'query-builder-filter-value'),
+                ui.div([deleteFieldIcon, addNestedConditionIcon], 'add-delete-icons')
+            ], this.layout === QueryBuilderLayout.Narrow ? 'query-builder-filter-inputs-narrow' : 'query-builder-filter-inputs');
             
             container.appendChild(filterContainer);
             createFilter();
