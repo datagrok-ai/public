@@ -120,6 +120,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     meta: {'autostartImmediate': 'true'},
     name: 'welcomeView',
+    outputs: [{name: 'home', type: 'view'}],
   })
   static _welcomeView(): DG.View | undefined {
     return welcomeView();

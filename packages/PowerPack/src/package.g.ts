@@ -3,14 +3,14 @@ import * as DG from 'datagrok-api/dg';
 
 //name: compareColumns
 //top-menu: Data | Compare Columns...
-export function _compareColumns() {
-  return PackageFunctions._compareColumns();
+export function _compareColumns() : void {
+  PackageFunctions._compareColumns();
 }
 
 //name: welcomeView
-//output: view result
+//output: view home
 //meta.autostartImmediate: true
-export function _welcomeView() {
+export function _welcomeView() : any {
   return PackageFunctions._welcomeView();
 }
 
@@ -19,7 +19,7 @@ export function _welcomeView() {
 //output: widget result
 //meta.showName: false
 //meta.order: 1
-export function activityDashboardWidget() {
+export function activityDashboardWidget() : any {
   return PackageFunctions.activityDashboardWidget();
 }
 
@@ -27,7 +27,7 @@ export function activityDashboardWidget() {
 //tags: dashboard
 //output: widget result
 //meta.order: 2
-export function recentProjectsWidget() {
+export function recentProjectsWidget() : any {
   return PackageFunctions.recentProjectsWidget();
 }
 
@@ -35,19 +35,19 @@ export function recentProjectsWidget() {
 //tags: dashboard
 //output: widget result
 //meta.order: 6
-export function communityWidget() {
+export function communityWidget() : any {
   return PackageFunctions.communityWidget();
 }
 
 //name: webWidget
 //output: widget result
-export function webWidget() {
+export function webWidget() : any {
   return PackageFunctions.webWidget();
 }
 
 //name: htmlWidget
 //output: widget result
-export function htmlWidget() {
+export function htmlWidget() : any {
   return PackageFunctions.htmlWidget();
 }
 
@@ -55,20 +55,20 @@ export function htmlWidget() {
 //tags: dashboard
 //output: widget result
 //meta.order: 5
-export function learnWidget() {
+export function learnWidget() : any {
   return PackageFunctions.learnWidget();
 }
 
 //name: kpiWidget
 //output: widget result
-export function kpiWidget() {
+export function kpiWidget() : any {
   return PackageFunctions.kpiWidget();
 }
 
 //name: isFormulaColumn
 //input: column col 
 //output: bool result
-export function isFormulaColumn(col: DG.Column) {
+export function isFormulaColumn(col: DG.Column) : boolean {
   return PackageFunctions.isFormulaColumn(col);
 }
 
@@ -77,49 +77,49 @@ export function isFormulaColumn(col: DG.Column) {
 //input: column col 
 //output: widget result
 //condition: PowerPack:isFormulaColumn(col)
-export function formulaWidget(col: DG.Column) {
+export function formulaWidget(col: DG.Column) : any {
   return PackageFunctions.formulaWidget(col);
 }
 
 //name: powerPackSearchProvider
 //tags: searchProvider
 //output: dynamic result
-export function powerPackSearchProvider() {
+export function powerPackSearchProvider() : any {
   return PackageFunctions.powerPackSearchProvider();
 }
 
 //name: formulaLinesEditor
 //input: dataframe src { optional: true }
 //top-menu: Data | Formula Lines...
-export function formulaLinesDialog(src: any) {
-  return PackageFunctions.formulaLinesDialog(src);
+export function formulaLinesDialog(src: any) : void {
+  PackageFunctions.formulaLinesDialog(src);
 }
 
 //name: powerPackInit
 //tags: init
-export async function powerPackInit() {
-  return PackageFunctions.powerPackInit();
+export async function powerPackInit() : Promise<void> {
+  PackageFunctions.powerPackInit();
 }
 
 //name: windowsManager
 //description: Windows Manager
 //tags: autostart
-export function windowsManager() {
-  return PackageFunctions.windowsManager();
+export function windowsManager() : void {
+  PackageFunctions.windowsManager();
 }
 
 //name: viewerDialog
 //description: Open 'Viewer Gallery' dialog
 //input: dynamic tv 
-export function viewerDialog(tv: any) {
-  return PackageFunctions.viewerDialog(tv);
+export function viewerDialog(tv: any) : void {
+  PackageFunctions.viewerDialog(tv);
 }
 
 //name: viewerGallery
 //description: ViewerGallery
 //tags: autostart
-export function viewerGallery() {
-  return PackageFunctions.viewerGallery();
+export function viewerGallery() : void {
+  PackageFunctions.viewerGallery();
 }
 
 //name: markdownFileViewer
@@ -127,7 +127,7 @@ export function viewerGallery() {
 //input: file file 
 //output: view result
 //meta.fileViewer: md,mdx
-export async function markdownFileViewer(file: DG.FileInfo) {
+export async function markdownFileViewer(file: DG.FileInfo) : Promise<any> {
   return PackageFunctions.markdownFileViewer(file);
 }
 
@@ -138,6 +138,6 @@ export async function markdownFileViewer(file: DG.FileInfo) {
 //input: string sheetName { optional: true }
 //output: list<dataframe> result
 //meta.ext: xlsx
-export async function xlsxFileHandler(bytes: Uint8Array, sheetName?: string) {
+export async function xlsxFileHandler(bytes: Uint8Array, sheetName?: string) : Promise<any> {
   return PackageFunctions.xlsxFileHandler(bytes, sheetName);
 }
