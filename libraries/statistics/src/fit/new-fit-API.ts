@@ -507,6 +507,7 @@ export class FitSeries implements IFitSeries {
   connectDots?: boolean; // defines whether to connect the points with lines or not. If true and showFitLine is false - fitting is disabled - otherwise, it will be rendered accordingly to the parameter value.
   showFitLine?: boolean; // defines whether to show the fit line or not
   showPoints?: string; // defines the data display mode
+  showOutliers?: boolean; // defines whether to show the outliers or not
   showCurveConfidenceInterval?: boolean; // defines whether to show the confidence intervals or not
   errorModel?: FitErrorModelType; // defines the series error model
   clickToToggle?: boolean; // if true, clicking on the point toggles its outlier status and causes curve refitting
@@ -535,6 +536,7 @@ export const fitSeriesProperties: DG.Property[] = [
   DG.Property.js('showPoints', DG.TYPE.STRING, // rewrite description
     {category: 'Fitting', description: 'Whether points/candlesticks/none should be rendered',
       defaultValue: 'points', choices: ['points', 'candlesticks', 'both']}),
+  DG.Property.js('showOutliers', DG.TYPE.BOOL, {category: 'Fitting', defaultValue: true}),
   DG.Property.js('showCurveConfidenceInterval', DG.TYPE.BOOL,
     {category: 'Fitting', description: 'Whether confidence intervals should be rendered', defaultValue: false,
       //@ts-ignore
