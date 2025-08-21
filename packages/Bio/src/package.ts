@@ -82,6 +82,36 @@ export * from './package.g';
 // /** Avoid reassigning {@link monomerLib} because consumers subscribe to {@link IMonomerLib.onChanged} event */
 // let monomerLib: MonomerLib | null = null;
 let initBioPromise: Promise<void> | null = null;
+/** Temporary polyfill */
+
+function getDecoratorFunc() {
+  return function(args: any) {
+    return function(
+      target: any,
+      propertyKey: string,
+      descriptor: PropertyDescriptor
+    ) { };
+  };
+}
+
+// Ensure decorators object exists and polyfill missing decorators
+if (!grok.decorators)
+  (grok as any).decorators = {};
+
+
+const decorators = [
+  'func', 'init', 'param', 'panel', 'editor', 'demo', 'app',
+  'appTreeBrowser', 'fileHandler', 'fileExporter', 'model', 'viewer', 'filter', 'cellRenderer', 'autostart',
+  'dashboard', 'folderViewer', 'semTypeDetector', 'packageSettingsEditor', 'functionAnalysis', 'converter',
+  'fileViewer', 'model', 'treeBrowser', 'polyfill'
+];
+
+decorators.forEach((decorator) => {
+  if (!(grok.decorators as any)[decorator])
+    (grok.decorators as any)[decorator] = getDecoratorFunc();
+});
+
+/** End temporary polyfill */
 
 export class PackageFunctions {
   @grok.decorators.func({description: 'Returns an instance of the monomer library helper', outputs: [{type: 'object', name: 'result'}]})
@@ -969,7 +999,7 @@ export class PackageFunctions {
     return await showManageLibrariesView(false);
   }
 
-  @grok.decorators.func({name: 'Monomer Manager Tree Browser'})
+  @grok.decorators.func({name: 'Monomer Manager Tree Browser', meta: {role: 'appTreeBrowser'}})
   static async manageMonomerLibrariesViewTreeBrowser(treeNode: DG.TreeViewGroup) {
     const libraries = (await (await MonomerLibManager.getInstance()).getFileManager()).getValidLibraryPaths();
     libraries.forEach((libName) => {
