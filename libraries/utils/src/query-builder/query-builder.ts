@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { Subject } from 'rxjs';
 import '../../css/query-builder.css';
+import dayjs from 'dayjs';
 
 export const SUGGESTIONS_FUNCTION = 'suggestionsFunction';
 
@@ -68,8 +69,10 @@ export class BaseConditionEditor<T = any> {
     protected initializeEditor(prop: DG.Property): void {
         if (Array.isArray(this.condition.value))
             this.condition.value = undefined as T;
+        const initVal = prop.type === DG.TYPE.DATE_TIME && typeof this.condition.value === 'string' ?
+            dayjs(this.condition.value as string) : this.condition.value;
         const input = ui.input.forProperty(prop, undefined, {
-            value: this.condition.value,
+            value: initVal,
             nullable: false,
             onValueChanged: () => {
                 this.condition.value = input.value as T;
@@ -379,10 +382,16 @@ export class QueryBuilder {
     structureChanged: Subject<ComplexCondition> = new Subject<ComplexCondition>();
     filterValueChanged: Subject<SimpleCondition> = new Subject<SimpleCondition>();
     layout: QueryBuilderLayout;
+    private _history: boolean;
+    private historyCache: DG.LruCache<string, string>;
+    private historyKeys: string[] = [];
+    private historyIcon: HTMLElement | null = null;
 
-    constructor(properties: DG.Property[], initialCondition?: ComplexCondition, layout: QueryBuilderLayout = QueryBuilderLayout.Standard) {
+    constructor(properties: DG.Property[], initialCondition?: ComplexCondition, layout: QueryBuilderLayout = QueryBuilderLayout.Standard, history: boolean = false) {
         this.properties = properties;
         this.layout = layout;
+        this._history = history;
+        this.historyCache = new DG.LruCache<string, string>(10);
         
         if (initialCondition) {
             this.condition = initialCondition;
@@ -395,6 +404,65 @@ export class QueryBuilder {
         }
 
         this.root = this.buildUI(this.condition, undefined, 0);
+        this.setupHistoryIcon();
+    }
+
+    set history(enabled: boolean) {
+        this._history = enabled;
+        this.setupHistoryIcon(); // This will control visibility
+    }
+
+    get history(): boolean {
+        return this._history;
+    }
+
+    saveHistory(): void {
+        if (this._history) {
+            const conditionString = JSON.stringify(this.condition);
+            this.historyCache.set(conditionString, conditionString);
+            
+            if (!this.historyKeys.includes(conditionString)) {
+                this.historyKeys.push(conditionString);
+                
+                // Keep only the last 10 keys (matching cache size)
+                if (this.historyKeys.length > 10) {
+                    this.historyKeys.shift();
+                }
+            }
+        }
+    }
+
+    private setupHistoryIcon(): void {
+        if (!this.historyIcon) {
+            this.historyIcon = ui.iconFA('history', () => {
+                this.showHistoryMenu();
+            }, 'Query History');
+
+            this.historyIcon.classList.add('query-builder-history-icon');
+        }
+
+        this.root.appendChild(this.historyIcon);
+        
+        // Set data attribute for CSS to control visibility
+        if (this.root) {
+            this.root.setAttribute('data-history', this._history.toString());
+        }
+    }
+
+    private showHistoryMenu(): void {
+        const menu = DG.Menu.popup();
+        menu.items(this.historyKeys, (cond: string) => {
+            const condition = this.historyCache.get(cond);
+            if (condition)
+                this.loadCondition(JSON.parse(condition));
+        });
+        menu.show();
+    }
+
+    private loadCondition(condition: ComplexCondition): void {
+        this.condition = JSON.parse(JSON.stringify(condition)); // Deep clone
+        this.rebuildUI();
+        this.structureChanged.next(this.condition);
     }
 
     createDefaultSimpleCondition(): SimpleCondition {
@@ -421,10 +489,18 @@ export class QueryBuilder {
         const newRoot = this.buildUI(this.condition, undefined, 0);
         this.root.replaceWith(newRoot);
         this.root = newRoot;
+        
+        // Recreate history icon after rebuilding UI
+        this.setupHistoryIcon();
     }
 
     setLayout(layout: QueryBuilderLayout): void {
         this.layout = layout;
+
+        if (layout === QueryBuilderLayout.Narrow)
+            this.root.classList.add('query-builder-narrow');
+        else
+            this.root.classList.remove('query-builder-narrow');
         
         // Find all filter containers and apply/remove layout classes
         const filterContainers = this.root.querySelectorAll('.query-builder-filter-inputs, .query-builder-filter-inputs-narrow');
@@ -672,3 +748,4 @@ function suggestionMenuKeyNavigation(inputContainer: HTMLElement) {
     allItems[currentIndex].classList.add('d4-menu-item-hover');
   });
 }
+
