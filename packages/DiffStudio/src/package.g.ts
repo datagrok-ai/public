@@ -72,8 +72,7 @@ export async function runDiffStudioTreeBrowser(treeNode: any) : Promise<void> {
 //output: double maxDist {  }
 //output: double maxHeight {  }
 //output: dataframe df {  }
-//editor: Compute:RichFunctionViewEditor
-//sidebar: @compute
+//editor: Compute2:RichFunctionViewEditor
 //meta.runOnOpen: true
 //meta.runOnInput: true
 //meta.features: {"sens-analysis": true, "fitting": true}
@@ -147,4 +146,24 @@ export async function demoBioreactor() : Promise<any> {
 //input: int graphsDockRatio 
 export async function runModel(model: string, inputsTabDockRatio: number, graphsDockRatio: number) : Promise<void> {
   PackageFunctions.runModel(model, inputsTabDockRatio, graphsDockRatio);
+}
+
+//name: ivpLanguageHandler
+//tags: scriptHandler
+//input: funccall ivpCall 
+//meta.scriptHandler.language: ivp
+//meta.scriptHandler.extensions: ivp
+//meta.scriptHandler.commentStart: #
+//meta.scriptHandler.codeEditorMode: python
+//meta.scriptHandler.parserFunction: DiffStudio:ivpLanguageParser
+//meta.icon: files/icons/package.png
+export async function ivpLanguageHandler(ivpCall: DG.FuncCall) : Promise<void> {
+  PackageFunctions.ivpLanguageHandler(ivpCall);
+}
+
+//name: ivpLanguageParser
+//input: string code 
+//output: dynamic result
+export function ivpLanguageParser(code: string) : any {
+  return PackageFunctions.ivpLanguageParser(code);
 }

@@ -23,7 +23,8 @@ import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, DOCK_RATIO, TEMPLATE_TITLES
 
 import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
-  CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS} from './scripting-tools';
+  CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS,
+  ARG_INPUT_KEYS_MAPPING} from './scripting-tools';
 
 import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools';
 
@@ -985,27 +986,13 @@ export class DiffStudio {
       const ivp = getIVP(model);
       await this.tryToSolve(ivp);
 
-      let lines = [
-        `//name: ${ivp.name}`,
-        '//language: javascript',
-      ];
+      const header = [
+        '#language: ivp',
+        '#tags: model',
+        '#editor: Compute2:RichFunctionViewEditor',
+      ].join('\n');
 
-      if (ivp.descr)
-        lines.push(`//description: ${ivp.descr}`);
-
-      lines = lines.concat([
-        '//tags: model',
-        '',
-        `const model = \`${model}\`;`,
-        '',
-        `await grok.functions.call('DiffStudio:runModel', {`,
-        `  'model': model,`,
-        `  'inputsTabDockRatio': ${this.uiOpts.inputsTabDockRatio},`,
-        `  'graphsDockRatio': ${this.uiOpts.graphsDockRatio},`,
-        '});',
-      ]);
-
-      const script = DG.Script.create(lines.join('\n'));
+      const script = DG.Script.create(header + '\n' + model);
       grok.dapi.scripts.save(script);
       grok.shell.info('Saved to Model Hub');
     } catch (err) {
@@ -1238,84 +1225,90 @@ export class DiffStudio {
     }
   } // clearSolution
 
-  /** Generate model inputs */
-  private async generateInputs(ivp: IVP): Promise<void> {
-    /** Return options with respect to the model input specification */
-    const getOptions = (name: string, modelInput: Input, modelBlock: string) => {
-      const options: DG.IProperty = {
-        name: name,
-        defaultValue: modelInput.value,
-        type: DG.TYPE.FLOAT,
-        inputType: INPUT_TYPE.FLOAT,
-      };
+  /** Return options with respect to the model input specification */
+  public static getOptions(name: string, modelInput: Input, modelBlock: string, startingInputs?: Map<string,number>) {
+    const options: DG.IProperty = {
+      name: name,
+      defaultValue: modelInput.value,
+      type: DG.TYPE.FLOAT,
+      inputType: INPUT_TYPE.FLOAT,
+    };
 
-      if (modelInput.annot !== null) {
-        let annot = modelInput.annot;
-        let descr: string | undefined = undefined;
+    if (modelInput.annot !== null) {
+      let annot = modelInput.annot;
+      let descr: string | undefined = undefined;
 
-        let posOpen = annot.indexOf(BRACKET_OPEN);
-        let posClose = annot.indexOf(BRACKET_CLOSE);
+      let posOpen = annot.indexOf(BRACKET_OPEN);
+      let posClose = annot.indexOf(BRACKET_CLOSE);
 
-        if (posOpen !== -1) {
-          if (posClose === -1) {
-            throw new ModelError(
-              `${ERROR_MSG.MISSING_CLOSING_BRACKET}. Correct annotation in the **${modelBlock}** block.`,
-              LINK.INTERFACE,
-              annot,
-            );
-          }
-
-          descr = annot.slice(posOpen + 1, posClose);
-
-          annot = annot.slice(0, posOpen);
-        }
-
-        posOpen = annot.indexOf(BRACE_OPEN);
-        posClose = annot.indexOf(BRACE_CLOSE);
-
-        if (posOpen >= posClose) {
+      if (posOpen !== -1) {
+        if (posClose === -1) {
           throw new ModelError(
-            `${ERROR_MSG.INCORRECT_BRACES_USE}. Correct annotation in the ***${modelBlock}** block.`,
+            `${ERROR_MSG.MISSING_CLOSING_BRACKET}. Correct annotation in the **${modelBlock}** block.`,
             LINK.INTERFACE,
             annot,
           );
         }
 
-        let pos: number;
-        let key: string;
-        let val;
+        descr = annot.slice(posOpen + 1, posClose);
 
-        annot.slice(posOpen + 1, posClose).split(ANNOT_SEPAR).forEach((str) => {
-          pos = str.indexOf(CONTROL_SEP);
-
-          if (pos === -1) {
-            throw new ModelError(
-              `${ERROR_MSG.MISSING_COLON}. Correct annotation in the **${modelBlock}** block.`,
-              LINK.INTERFACE,
-              annot,
-            );
-          }
-
-          key = str.slice(0, pos).trim();
-          val = str.slice(pos + 1).trim();
-
-          // @ts-ignore
-          options[key !== 'caption' ? key : 'friendlyName'] = strToVal(val);
-        });
-
-        options.description = descr ?? '';
-        options.name = options.friendlyName ?? options.name;
-        options.friendlyName = options.name;
+        annot = annot.slice(0, posOpen);
       }
 
-      if (this.startingInputs) {
-        options.defaultValue = this.startingInputs
-          .get(options.name!.replace(' ', '').toLowerCase()) ?? options.defaultValue;
-        modelInput.value = options.defaultValue;
+      posOpen = annot.indexOf(BRACE_OPEN);
+      posClose = annot.indexOf(BRACE_CLOSE);
+
+      if (posOpen >= posClose) {
+        throw new ModelError(
+          `${ERROR_MSG.INCORRECT_BRACES_USE}. Correct annotation in the ***${modelBlock}** block.`,
+          LINK.INTERFACE,
+          annot,
+        );
       }
 
-      return options;
-    }; // getOptions
+      let pos: number;
+      let key: string;
+      let val: string;
+
+      annot.slice(posOpen + 1, posClose).split(ANNOT_SEPAR).forEach((str) => {
+        pos = str.indexOf(CONTROL_SEP);
+
+        if (pos === -1) {
+          throw new ModelError(
+            `${ERROR_MSG.MISSING_COLON}. Correct annotation in the **${modelBlock}** block.`,
+            LINK.INTERFACE,
+            annot,
+          );
+        }
+
+        key = str.slice(0, pos).trim();
+        val = str.slice(pos + 1).trim();
+
+        options[key !== 'caption' ? key : 'friendlyName'] = strToVal(val);
+      });
+
+      options.description = descr ?? '';
+      options.friendlyName = options.friendlyName ?? options.name;
+      options.caption = options.friendlyName;
+    }
+
+    if (modelBlock === CONTROL_EXPR.ARG) {
+      options.friendlyName = options.name;
+      options.caption = options.name;
+      options.name = ARG_INPUT_KEYS_MAPPING[options.name];
+    }
+
+    if (startingInputs) {
+      options.defaultValue = startingInputs
+        .get(options.name!.replace(' ', '').toLowerCase()) ?? options.defaultValue;
+      modelInput.value = options.defaultValue;
+    }
+
+    return options;
+  }; // getOptions
+
+  /** Generate model inputs */
+  private async generateInputs(ivp: IVP): Promise<void> {
 
     const inputsByCategories = new Map<string, DG.InputBase[]>();
     const toSaveInputs = ivp.inputsLookup !== null;
@@ -1362,14 +1355,11 @@ export class DiffStudio {
 
     // Inputs for argument
     for (const key of ARG_INPUT_KEYS) {
-      //@ts-ignore
-      options = getOptions(key, ivp.arg[key], CONTROL_EXPR.ARG);
+      options = DiffStudio.getOptions(key, ivp.arg[key], CONTROL_EXPR.ARG, this.startingInputs);
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
 
-      //@ts-ignore
       input.onChanged.subscribe(async (value) => {
         if (value !== null) {
-          //@ts-ignore
           ivp.arg[key].value = value;
           await this.solve(ivp, getInputsPath());
         }
@@ -1381,14 +1371,13 @@ export class DiffStudio {
 
     // Inputs for initial values
     ivp.inits.forEach((val, key) => {
-      options = getOptions(key, val, CONTROL_EXPR.INITS);
+      options = DiffStudio.getOptions(key, val, CONTROL_EXPR.INITS, this.startingInputs);
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
 
-      //@ts-ignore
       input.onChanged.subscribe(async (value) => {
         if (value !== null) {
-        ivp.inits.get(key)!.value = value;
-        await this.solve(ivp, getInputsPath());
+          ivp.inits.get(key)!.value = value;
+          await this.solve(ivp, getInputsPath());
         }
       });
 
@@ -1399,10 +1388,9 @@ export class DiffStudio {
     // Inputs for parameters
     if (ivp.params !== null) {
       ivp.params.forEach((val, key) => {
-        options = getOptions(key, val, CONTROL_EXPR.PARAMS);
+        options = DiffStudio.getOptions(key, val, CONTROL_EXPR.PARAMS, this.startingInputs);
         const input = ui.input.forProperty(DG.Property.fromOptions(options));
 
-        //@ts-ignore
         input.onChanged.subscribe(async (value) => {
           if (value !== null) {
             ivp.params!.get(key)!.value = value;
@@ -1417,12 +1405,11 @@ export class DiffStudio {
 
     // Inputs for loop
     if (ivp.loop !== null) {
-      options = getOptions(SCRIPTING.COUNT, ivp.loop.count, CONTROL_EXPR.LOOP);
+      options = DiffStudio.getOptions(SCRIPTING.COUNT, ivp.loop.count, CONTROL_EXPR.LOOP, this.startingInputs);
       options.inputType = INPUT_TYPE.INT; // since it's an integer
       options.type = DG.TYPE.INT; // since it's an integer
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
 
-      //@ts-ignore
       input.onChanged.subscribe(async (value) => {
         if (value !== null) {
           ivp.loop!.count.value = value;

@@ -6,12 +6,12 @@ import * as DG from 'datagrok-api/dg';
 
 import {solveDefault, solveIVP} from './solver-tools';
 import {DiffStudio} from './app';
-import {getIVP, IVP, getScriptLines, getScriptParams} from './scripting-tools';
+import {getIVP, IVP, getScriptLines, getScriptParams, ARG_INPUT_KEYS, SCRIPTING} from './scripting-tools';
 
 import {getBallFlightSim} from './demo/ball-flight';
 import {PK_PD_DEMO} from './demo/pk-pd';
 import {BIOREACTOR_DEMO} from './demo/bioreactor';
-import {DF_NAME} from './constants';
+import {CONTROL_EXPR, DF_NAME} from './constants';
 import {UI_TIME} from './ui-constants';
 
 import {ODEs, SolverOptions} from '@datagrok/diff-grok';
@@ -118,8 +118,7 @@ export class PackageFunctions {
   @grok.decorators.model({
     name: 'Ball flight',
     description: 'Ball flight simulation',
-    editor: 'Compute:RichFunctionViewEditor',
-    sidebar: '@compute',
+    editor: 'Compute2:RichFunctionViewEditor',
     runOnOpen: 'true',
     runOnInput: 'true',
     features: '{"sens-analysis": true, "fitting": true}',
@@ -238,6 +237,58 @@ export class PackageFunctions {
     }, '');
 
     await diffStudioModel.run();
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'scriptHandler.language': 'ivp',
+      'scriptHandler.extensions': 'ivp',
+      'scriptHandler.commentStart': '#',
+      'scriptHandler.codeEditorMode': 'python',
+      'scriptHandler.parserFunction': 'DiffStudio:ivpLanguageParser',
+      'icon': 'files/icons/package.png'
+    },
+    'tags': [
+      'scriptHandler'
+    ]
+  })
+  static async ivpLanguageHandler(ivpCall: DG.FuncCall): Promise<void> {
+    const params = {...ivpCall.inputs};
+
+    const ivp = getIVP((ivpCall.func as DG.Script).script);
+    const scriptText = getScriptLines(ivp).filter(line => line.search(/^[\s]*\/\/language:[\s]*ivp/g) < 0).join('\n');
+    const jsScript = DG.Script.create(scriptText);
+
+    const jsCall = jsScript.prepare(params);
+    await jsCall.call();
+    ivpCall.outputs[DF_NAME] = jsCall.outputs[DF_NAME];
+  }
+
+  @grok.decorators.func()
+  static ivpLanguageParser(@grok.decorators.param({ type: 'string' }) code: string): DG.Script  {
+    const ivp = getIVP(code);
+
+    const argOptions = ARG_INPUT_KEYS.map((key) => DiffStudio.getOptions(key, ivp.arg[key], CONTROL_EXPR.ARG));
+    const initsOptions =  [...ivp.inits.entries()].map(([key, val]) => DiffStudio.getOptions(key, val, CONTROL_EXPR.INITS));
+    const paramsOptions = ivp.params ? [...ivp.params.entries()].map(([key, val]) => DiffStudio.getOptions(key, val, CONTROL_EXPR.PARAMS)) : [];
+    const loopOptions = ivp.loop ? [DiffStudio.getOptions(SCRIPTING.COUNT, ivp.loop.count, CONTROL_EXPR.LOOP)] : [];
+
+    const inputs: DG.Property[] = [
+      ...argOptions, ...initsOptions, ...paramsOptions, ...loopOptions
+    ].map((propOpts) =>{
+      const prop = DG.Property.fromOptions(propOpts);
+      return prop;
+    });
+
+    const dfProp = DG.Property.fromOptions({
+      name: DF_NAME,
+      type: DG.TYPE.DATA_FRAME,
+    });
+
+    dfProp.options.viewer = 'Grid() | Line chart()';
+
+    const ivpScript = DG.Script.fromParams(inputs, [dfProp], code);
+    return ivpScript;
   }
 }
 
