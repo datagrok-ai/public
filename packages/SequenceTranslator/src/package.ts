@@ -29,6 +29,38 @@ import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import { getPTCombineDialog } from './polytool/pt-combine-dialog';
 
 export * from './package.g';
+
+/** Temporary polyfill */
+
+function getDecoratorFunc() {
+  return function(args: any) {
+    return function(
+      target: any,
+      propertyKey: string,
+      descriptor: PropertyDescriptor
+    ) { };
+  };
+}
+
+// Ensure decorators object exists and polyfill missing decorators
+if (!grok.decorators)
+  (grok as any).decorators = {};
+
+
+const decorators = [
+  'func', 'init', 'param', 'panel', 'editor', 'demo', 'app',
+  'appTreeBrowser', 'fileHandler', 'fileExporter', 'model', 'viewer', 'filter', 'cellRenderer', 'autostart',
+  'dashboard', 'folderViewer', 'semTypeDetector', 'packageSettingsEditor', 'functionAnalysis', 'converter',
+  'fileViewer', 'model', 'treeBrowser', 'polyfill'
+];
+
+decorators.forEach((decorator) => {
+  if (!(grok.decorators as any)[decorator])
+    (grok.decorators as any)[decorator] = getDecoratorFunc();
+});
+
+/** End temporary polyfill */
+
 export const _package: OligoToolkitPackage = new OligoToolkitPackage({debug: true}/**/);
 
 let initSequenceTranslatorPromise: Promise<void> | null = null;
