@@ -49,14 +49,29 @@ export const MONOMER_DF_COLUMNS = {
   [MONOMER_DF_COLUMN_NAMES.SOURCE]: DG.COLUMN_TYPE.STRING,
 } as const;
 
-export function getMonomersDataFrame(activeMonomerLib: IMonomerLib) {
+export async function standardiseMonomers(monomers: Monomer[]) {
+  const df = getMonomersDataFrame(monomers);
+  if (monomers.length !== df.rowCount)
+    throw new Error(`Monomers length ${monomers.length} does not match dataframe row count ${df.rowCount}`);
+  const fixedMonomers = await Promise.all(new Array(monomers.length).fill(null).map(async (_, i) => monomerFromDfRow(df.rows.get(i))));
+  return fixedMonomers;
+}
+
+/** Standardizes the monomer library
+ * warning: throws error if the library is not valid or has invalid monomers
+ */
+export async function standardizeMonomerLibrary(libraryString: string) {
+  const library: Monomer[] = JSON.parse(libraryString);
+  if (!library || !Array.isArray(library) || library.length === 0)
+    throw new Error('Invalid library format, expected an array of monomers');
+  const fixedMonomers = await standardiseMonomers(library);
+  const fixedLibrary = fixedMonomers.map((m) => ({...m, lib: undefined, wem: undefined}));
+  const libraryStringFixed = JSON.stringify(fixedLibrary, null, 2);
+  return libraryStringFixed;
+}
+
+export function getMonomersDataFrame(monomers: Monomer[]) {
   try {
-    const ploymerTypes = activeMonomerLib.getPolymerTypes();
-    const monomers = ploymerTypes.flatMap((polymerType) => {
-      return activeMonomerLib!.getMonomerSymbolsByType(polymerType).map((symbol) => {
-        return activeMonomerLib!.getMonomer(polymerType, symbol)!;
-      });
-    });
     const df = DG.DataFrame.create(monomers.length);
 
     const uniqueRgroupNamesSet = new Set<string>();
@@ -437,7 +452,14 @@ export class MonomerManager implements IMonomerManager {
         grok.shell.error(`Library ${fileName} not found`);
         return DG.DataFrame.create();
       }
-      const df = getMonomersDataFrame(this.activeMonomerLib);
+
+      const ploymerTypes = this.activeMonomerLib.getPolymerTypes();
+      const monomers = ploymerTypes.flatMap((polymerType) => {
+        return this.activeMonomerLib!.getMonomerSymbolsByType(polymerType).map((symbol) => {
+          return this.activeMonomerLib!.getMonomer(polymerType, symbol)!;
+        });
+      });
+      const df = getMonomersDataFrame(monomers);
       return df;
     } catch (e) {
       grok.shell.error('Error creating monomers dataframe');

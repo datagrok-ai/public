@@ -70,7 +70,7 @@ import {GetRegionFuncEditor} from './utils/get-region-func-editor';
 import {sequenceToMolfile} from './utils/sequence-to-mol';
 import {detectMacromoleculeProbeDo} from './utils/detect-macromolecule-probe';
 import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
-import {MonomerManager} from './utils/monomer-lib/monomer-manager/monomer-manager';
+import {MonomerManager, standardizeMonomerLibrary} from './utils/monomer-lib/monomer-manager/monomer-manager';
 import {calculateScoresWithEmptyValues} from './utils/calculate-scores';
 import {SeqHelper} from './utils/seq-helper/seq-helper';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
@@ -97,7 +97,6 @@ function getDecoratorFunc() {
 // Ensure decorators object exists and polyfill missing decorators
 if (!grok.decorators)
   (grok as any).decorators = {};
-
 
 const decorators = [
   'func', 'init', 'param', 'panel', 'editor', 'demo', 'app',
@@ -137,6 +136,11 @@ export class PackageFunctions {
         grok.shell.error(errMsg);
       });
     return resWidget;
+  }
+
+  @grok.decorators.func({})
+  static async standardiseMonomerLibrary(library: string): Promise<string> {
+    return await standardizeMonomerLibrary(library);
   }
 
   // Keep for backward compatibility
