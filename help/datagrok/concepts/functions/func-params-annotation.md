@@ -224,6 +224,25 @@ For example, to create an optional string parameter with the initial value:
 SELECT * FROM customers where shipCountry = @shipCountry
 ```
 
+### Nullable vs Optional
+
+It’s important to distinguish between **nullable** and **optional** parameters:
+
+* **Nullable** parameters can explicitly accept `null`, but are still **required positional parameters**. You must pass
+them in the function call, even if the value is `null`.
+
+```
+Func(1, null, 3)
+```
+
+* **Optional** parameters are **named parameters** with default values and can be skipped entirely in function calls.
+```
+Func(1, 3, optional = 4)
+```
+
+**In the UI forms**, both nullable and optional parameters appear similarly (users can leave the field empty), but
+their behavior in code differs.
+
 ### Filter patterns
 
 **Filter pattern** allows you to use free-text conditions like "this week" for dates, or ">50" for numbers.
