@@ -448,7 +448,8 @@ export async function convertDataToCurves(df: DG.DataFrame,
 
   const getAssay = assayCol ? (row: number) => assayColCats![assayColIndexes![row]] : () => 'All';
   const otlierIndexes = excludeOutliersCol ? excludeOutliersCol.getRawData() : null;
-  const isOutlier = excludeOutliersCol ? (excludeOutliersCol.type == DG.COLUMN_TYPE.BOOL ? (row: number) => !!otlierIndexes![row] : (row: number) => !otlierIndexes![row] ) : (_row: number) => false;
+  const outlierCats = excludeOutliersCol ? excludeOutliersCol.categories : null;
+  const isOutlier = excludeOutliersCol ? (excludeOutliersCol.type == DG.COLUMN_TYPE.BOOL ? (row: number) => !!otlierIndexes![row] : (row: number) => outlierCats![otlierIndexes![row]]?.toLowerCase()?.includes('exclude') ?? false) : (_row: number) => false;
   const getConcentration = (row: number) => consentrationRawData[row];
   const getReadout = (row: number) => readoutRawData[row];
   const getBatchID = (row: number) => batchIDCategories[batchIDRawData[row]];
