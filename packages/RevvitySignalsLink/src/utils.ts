@@ -7,6 +7,7 @@ import { RevvityApiResponse, RevvityData, RevvityUser } from './revvity-api';
 import { MOL_COL_NAME } from './compounds';
 import { awaitCheck } from '@datagrok-libraries/utils/src/test';
 
+
 export const STORAGE_NAME = 'RevvitySignalsSearch';
 export const QUERY_KEY = 'query';
 export const PARAMS_KEY = 'params';
@@ -356,13 +357,3 @@ export async function reorderColummns(df: DG.DataFrame) {
   df.columns.setOrder(newColOrder.concat(colNames));
 }
 
-
-export async function openRevvityNode(treeNode: DG.TreeViewGroup, libToOpen: string, typeToOpen: string) {
-  //need to wait for tree to become available
-  await awaitCheck(() => treeNode.items.find((node) => node.text === libToOpen) !== undefined, `Libraries haven't been loaded in 10 seconds`, 10000);
-  const libNode = treeNode.items.find((node) => node.text === libToOpen) as DG.TreeViewGroup;
-  libNode.expanded = true;
-  //need to wait for types to become available after lib node was expanded
-  await awaitCheck(() => libNode.items.find((node) => node.text === typeToOpen) !== undefined, `Library types haven't been loaded in 10 seconds`, 10000);
-  treeNode.items.find((node) => node.text === typeToOpen)?.root.click();
-}

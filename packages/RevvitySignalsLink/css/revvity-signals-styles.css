@@ -38,3 +38,11 @@
     width: 100%!important;
     height: 100%!important;
 }
+
+.filters-button-icon {
+   color:#40607f;
+   width: 24px;
+   height: 24px;
+   padding: 8px;
+   cursor: pointer;
+}

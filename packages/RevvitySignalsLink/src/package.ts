@@ -4,15 +4,13 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { u2 } from "@datagrok-libraries/utils/src/u2";
 import '../css/revvity-signals-styles.css';
-import { convertComplexConditionToSignalsSearchQuery, SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
+import { SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
 import { queryEntities, queryLibraries, queryMaterialById, queryTags, queryTerms, queryUsers, RevvityApiResponse, RevvityData, RevvityUser } from './revvity-api';
 import { dataFrameFromObjects, reorderColummns, transformData, createRevvityResponseWidget } from './utils';
-import { addMoleculeStructures, assetsQuery, batchesQuery, materialsCondition, MOL_COL_NAME } from './compounds';
-import { getDefaultProperties, REVVITY_FIELD_TO_PROP_TYPE_MAPPING } from './properties';
-import { ComplexCondition, Operators, QueryBuilder, QueryBuilderLayout, SUGGESTIONS_FUNCTION } from '@datagrok-libraries/utils/src/query-builder/query-builder';
+import { addMoleculeStructures, assetsQuery, MOL_COL_NAME } from './compounds';
 import { getRevvityUsers } from './users';
 import { createInitialSatistics, getRevvityLibraries, RevvityLibrary, RevvityType } from './libraries';
-
+import { createViewFromPreDefinedQuery, handleInitialURL } from './view-utils';
 
 
 export const _package = new DG.Package();
@@ -29,14 +27,15 @@ export type RevvityConfig = {
 
 let openedView: DG.View | null = null;
 let config: RevvityConfig = { libraries: undefined };
-const viewQueryBuilders: {[key: string]: QueryBuilder} = {};
 
 //tags: app
 //name: Revvity Signals
+//input: string path { meta.url: true; optional: true }
 //output: view v
 //meta.browsePath: Chem
-export async function revvitySignalsLinkApp(): Promise<DG.ViewBase> {
+export async function revvitySignalsLinkApp(path?: string): Promise<DG.ViewBase> {
 
+  console.log(path);
   const appHeader = u2.appHeader({
     iconPath: _package.webRoot + '/img/revvity.png',
     learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/RevvitySignalsLink/README.md',
@@ -50,7 +49,14 @@ export async function revvitySignalsLinkApp(): Promise<DG.ViewBase> {
   const statsDiv = ui.div('', {style: {position: 'relative'}});
   const view = DG.View.fromRoot(ui.divV([appHeader, statsDiv]));
   view.name = 'Revvity';
-  createInitialSatistics(statsDiv);
+
+      if (path) {
+      const cddNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').getOrCreateGroup('Chem').getOrCreateGroup('Revvity Signals');
+      cddNode.expanded = true;
+      handleInitialURL(cddNode, path);
+    } else
+      createInitialSatistics(statsDiv);
+
   return view;
 
 }
@@ -61,128 +67,12 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
   getRevvityUsers();
   const libs = await getRevvityLibraries();
 
-  const createViewFromPreDefinedQuery = async (query: string, name: string, libName: string, compoundType: string) => {
-    //!!!!!!!!!!TODO: Change to .then()
-    const df = await grok.functions.call('RevvitySignalsLink:searchEntitiesWithStructures', {
-      query: query,
-      params: '{}'
-    });
-    const tv = grok.shell.addTablePreview(df);
-    tv.name = name;
-    const filtersDiv = ui.div([]);
-
-    const initializeQueryBuilder = async (libId: string, compoundType: string) => {
-      const filterFields = getDefaultProperties();
-      const tagsStr = await grok.functions.call('RevvitySignalsLink:getTags', {
-        assetTypeId: libId,
-        type: compoundType
-      });
-      const tags: { [key: string]: string } = JSON.parse(tagsStr);
-      Object.keys(tags).forEach((tagName) => {
-        const propOptions: { [key: string]: any } = {
-          name: tagName,
-          type: REVVITY_FIELD_TO_PROP_TYPE_MAPPING[tags[tagName]],
-        };
-        const nameArr = tagName.split('.');
-        if (nameArr.length > 1)
-          propOptions.friendlyName = nameArr[1];
-        const prop = DG.Property.fromOptions(propOptions);
-        prop.options[SUGGESTIONS_FUNCTION] = async (text: string) => {
-          const termsStr = await getTerms(tagName, compoundType, libId, true);
-          const terms: string[] = JSON.parse(termsStr);
-          return terms.filter((it) => it.toLowerCase().includes(text.toLowerCase()));
-        }
-        filterFields.push(prop);
-      });
-      if (!viewQueryBuilders[`${libId}|${compoundType}`]) {
-        viewQueryBuilders[`${libId}|${compoundType}`] = new QueryBuilder(filterFields, undefined, QueryBuilderLayout.Narrow, true);
-      }
-
-      const updateQueryBuilderLayout = (width: number) => {
-        if (!viewQueryBuilders[`${libId}|${compoundType}`]) return;
-
-        // Switch to narrow layout if width is less than 300px, otherwise use standard
-        const newLayout = width < 300 ? QueryBuilderLayout.Narrow : QueryBuilderLayout.Standard;
-
-        if (viewQueryBuilders[`${libId}|${compoundType}`].getLayout() !== newLayout) {
-          viewQueryBuilders[`${libId}|${compoundType}`].setLayout(newLayout);
-        }
-      };
-
-      ui.onSizeChanged(filtersDiv).subscribe(() => {
-        updateQueryBuilderLayout(filtersDiv.clientWidth);
-      });
-
-    }
-
-    const initializeFilters = async () => {
-      const libs = await getRevvityLibraries();
-      const selectedLib = libs.filter((l) => l.name === libName);
-      if (selectedLib.length) {
-        //create filters button
-        const filtersButton = ui.button('Add filters', () => {
-          tv.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
-        });
-        tv.setRibbonPanels([[filtersButton]]);
-        //create filters panel
-        tv.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
-        ui.setUpdateIndicator(filtersDiv, true, 'Loading filters...');
-        await initializeQueryBuilder(selectedLib[0].id, compoundType);
-
-        const runSearchButton = ui.bigButton('Search', async () => {
-          viewQueryBuilders[`${selectedLib[0].id}|${compoundType}`]!.saveHistory();
-          ui.setUpdateIndicator(tv.grid.root, true, 'Searching...');
-          const resultDf = await runSearch(selectedLib[0].id, compoundType, viewQueryBuilders[`${selectedLib[0].id}|${compoundType}`]!.condition);
-          tv.dataFrame = resultDf;
-          ui.setUpdateIndicator(tv.grid.root, false);
-        });
-
-        ui.setUpdateIndicator(filtersDiv, false);
-        filtersDiv.append(viewQueryBuilders[`${selectedLib[0].id}|${compoundType}`].root);
-        filtersDiv.append(ui.div(runSearchButton, { style: { paddingLeft: '4px' } }));
-      }
-    }
-
-    const runSearch = async (libId: string, compoundType: string,
-      queryBuilderCondition: ComplexCondition): Promise<DG.DataFrame> => {
-      const condition: ComplexCondition = {
-        logicalOperator: Operators.Logical.and,
-        conditions: [
-          materialsCondition
-        ]
-      }
-      condition.conditions.push(
-        {
-          field: "assetTypeEid",
-          operator: Operators.EQ,
-          value: libId
-        }
-      );
-      condition.conditions.push(
-        {
-          field: "type",
-          operator: Operators.EQ,
-          value: compoundType
-        }
-      );
-      condition.conditions.push(queryBuilderCondition);
-      const signalsQuery: SignalsSearchQuery = convertComplexConditionToSignalsSearchQuery(condition);
-      console.log(signalsQuery);
-      const resultDf = await grok.functions.call('RevvitySignalsLink:searchEntitiesWithStructures', {
-        query: JSON.stringify(signalsQuery),
-        params: '{}'
-      });
-      return resultDf;
-    }
-    initializeFilters();
-  }
-
   for (const lib of libs) {
     const libNode = treeNode.group(lib.name);
     for (const libType of lib.types) {
       const typeNode = libNode.item(`${libType.name.charAt(0).toUpperCase()}${libType.name.slice(1)}`);
       typeNode.onSelected.subscribe(async () => {
-        await createViewFromPreDefinedQuery(JSON.stringify(assetsQuery), `${libType.name.charAt(0).toUpperCase()}${libType.name.slice(1)}`,
+        await createViewFromPreDefinedQuery(treeNode, JSON.stringify(assetsQuery), `${libType.name.charAt(0).toUpperCase()}${libType.name.slice(1)}`,
           lib.name, libType.name);
       });
     }
