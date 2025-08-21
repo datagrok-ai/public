@@ -110,9 +110,9 @@ export class PackageFunctions {
     return proxiView;
   }
 
-  @grok.decorators.treeBrowser({ })
-  static async runDiffStudioTreeBrowser(treeNode: DG.TreeViewGroup, browsePanel: DG.BrowsePanel) {
-    new DiffStudio(false, false, false, {treeNode: treeNode, browsePanel: browsePanel});
+  @grok.decorators.appTreeBrowser()
+  static async runDiffStudioTreeBrowser(treeNode: DG.TreeViewGroup) {
+    new DiffStudio(false, false, false, {treeNode: treeNode, browsePanel: grok.shell.browsePanel});
   }
 
   @grok.decorators.model({

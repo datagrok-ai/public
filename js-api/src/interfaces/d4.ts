@@ -1257,7 +1257,9 @@ export interface IGridSettings {
   /// Determines whether newly added columns are added to the grid
   syncNewColumns: boolean;
 
-  colorScheme: Array<number>;
+  linearColorScheme: Array<number>;
+
+  categoricalColorScheme: Array<number>;
 
   columnHeaderTypes: Array<string>;
 
@@ -2731,6 +2733,7 @@ export interface IScatterPlotSettings {
   linesOrder: string;
   linesOrderColumnName: string;
 
+  /// Defines the width of the lines connecting the markers. See **Lines Width**.
   linesWidth: number;
 
   /// Label columns to show next to the markers.

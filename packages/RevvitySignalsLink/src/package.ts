@@ -9,18 +9,13 @@ import { queryEntities, queryLibraries, queryMaterialById, queryTags, queryTerms
 import { dataFrameFromObjects, reorderColummns, transformData, createRevvityResponseWidget } from './utils';
 import { addMoleculeStructures, assetsQuery, batchesQuery, materialsCondition, MOL_COL_NAME } from './compounds';
 import { getDefaultProperties, REVVITY_FIELD_TO_PROP_TYPE_MAPPING } from './properties';
-import { ComplexCondition, Operators, QueryBuilder, SUGGESTIONS_FUNCTION } from '@datagrok-libraries/utils/src/query-builder/query-builder';
+import { ComplexCondition, Operators, QueryBuilder, QueryBuilderLayout, SUGGESTIONS_FUNCTION } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { getRevvityUsers } from './users';
-import { getRevvityLibraries } from './libraries';
+import { createInitialSatistics, getRevvityLibraries, RevvityLibrary, RevvityType } from './libraries';
+
 
 
 export const _package = new DG.Package();
-
-export type RevvityLibrary = {
-  id: string;
-  name: string;
-  types: string[];
-}
 
 export type CurrentRevvityLibrary = {
   libId: string;
@@ -51,18 +46,21 @@ export async function revvitySignalsLinkApp(): Promise<DG.ViewBase> {
       '- Analyze assay data.'
   });
 
-  const view = DG.View.fromRoot(appHeader);
+  const statsDiv = ui.div('', {style: {position: 'relative'}});
+  const view = DG.View.fromRoot(ui.divV([appHeader, statsDiv]));
   view.name = 'Revvity';
+  createInitialSatistics(statsDiv);
   return view;
+
 }
 
 //input: dynamic treeNode
-//input: view browseView
 export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGroup) {
   getRevvityUsers();
-  getRevvityLibraries();
+  const libs = await getRevvityLibraries();
 
   const createViewFromPreDefinedQuery = async (query: string, name: string, libName: string, compoundType: string) => {
+    //!!!!!!!!!!TODO: Change to .then()
     const df = await grok.functions.call('RevvitySignalsLink:searchEntitiesWithStructures', {
       query: query,
       params: '{}'
@@ -71,6 +69,21 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
     tv.name = name;
     const filtersDiv = ui.div([]);
     let queryBuilder: QueryBuilder | null = null;
+
+    const updateQueryBuilderLayout = (width: number) => {
+      if (!queryBuilder) return;
+
+      // Switch to narrow layout if width is less than 300px, otherwise use standard
+      const newLayout = width < 300 ? QueryBuilderLayout.Narrow : QueryBuilderLayout.Standard;
+
+      if (queryBuilder.getLayout() !== newLayout) {
+        queryBuilder.setLayout(newLayout);
+      }
+    };
+
+    ui.onSizeChanged(filtersDiv).subscribe(() => {
+      updateQueryBuilderLayout(filtersDiv.clientWidth);
+    });
 
 
     const initializeQueryBuilder = async (libId: string, compoundType: string) => {
@@ -83,7 +96,7 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
       const tags: {[key: string]: string} = JSON.parse(tagsStr);
       Object.keys(tags).forEach((tagName) => {
         const propOptions: {[key: string]: any} = {
-          name: tagName, 
+          name: tagName,
           type: REVVITY_FIELD_TO_PROP_TYPE_MAPPING[tags[tagName]],
         };
         const nameArr = tagName.split('.');
@@ -97,8 +110,8 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
         }
         filterFields.push(prop);
       });
-      queryBuilder = new QueryBuilder(filterFields);
-      const runSearchButton = ui.bigButton('RUN', async () => {
+      queryBuilder = new QueryBuilder(filterFields, undefined, QueryBuilderLayout.Narrow);
+      const runSearchButton = ui.bigButton('Search', async () => {
         ui.setUpdateIndicator(tv.grid.root, true, 'Searching...');
         const resultDf = await runSearch(libId, compoundType, queryBuilder!.condition);
         tv.dataFrame = resultDf;
@@ -106,7 +119,7 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
       });
       ui.setUpdateIndicator(filtersDiv, false);
       filtersDiv.append(queryBuilder.root);
-      filtersDiv.append(runSearchButton);
+      filtersDiv.append(ui.div(runSearchButton, {style: {paddingLeft: '4px'}}));
     }
 
     const initializeFilters = async () => {
@@ -115,7 +128,7 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
       if (selectedLib.length) {
         //create filters button
         const filtersButton = ui.button('Add filters', () => {
-          grok.shell.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
+          tv.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
           if (!queryBuilder)
             initializeQueryBuilder(selectedLib[0].id, compoundType);
         });
@@ -157,17 +170,16 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
     initializeFilters();
   }
 
-  const compounds = treeNode.group('Compounds');
-
-  const assets = compounds.item('Assets');
-  assets.onSelected.subscribe(async () => {
-    await createViewFromPreDefinedQuery(JSON.stringify(assetsQuery), 'Assets', 'Compounds', 'asset');
-  });
-
-  const batches = compounds.item('Batches');
-  batches.onSelected.subscribe(async () => {
-    await createViewFromPreDefinedQuery(JSON.stringify(batchesQuery), 'Batches', 'Compounds', 'batch');
-  });
+  for (const lib of libs) {
+    const libNode = treeNode.group(lib.name);
+    for (const libType of lib.types) {
+      const typeNode = libNode.item(`${libType.name.charAt(0).toUpperCase()}${libType.name.slice(1)}`);
+      typeNode.onSelected.subscribe(async () => {
+        await createViewFromPreDefinedQuery(JSON.stringify(assetsQuery), `${libType.name.charAt(0).toUpperCase()}${libType.name.slice(1)}`,
+          lib.name, libType.name);
+      });
+    }
+  }
 }
 
 //name: Search Entities
@@ -185,6 +197,12 @@ export async function searchEntities(query: string, params: string): Promise<DG.
     await grok.data.detectSemanticTypes(df);
   } catch (e: any) {
     grok.shell.error(e?.message ?? e);
+
+
+
+
+
+
   }
   return df;
 }
@@ -242,7 +260,7 @@ export async function getLibraries(): Promise<string> {
   const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
   for (const lib of data) {
     if (lib.attributes.name && lib.id) {
-      let types: string[] = [];
+      let types: RevvityType[] = [];
       const query = {
         "query": {
           "$and": [
@@ -269,7 +287,9 @@ export async function getLibraries(): Promise<string> {
       const typesResponse = await queryTerms(query);
       if (typesResponse.data) {
         const typesData: Record<string, any>[] = !Array.isArray(typesResponse.data) ? [typesResponse.data!] : typesResponse.data!;
-        types = typesData.map((it) => it.id);
+        types = typesData.map((it) => {
+          return {name: it.id, count: it.attributes?.count};
+        });
       }
       libraries.push({ name: lib.attributes.name, id: `${lib.type}:${lib.id}`, types: types });
     }

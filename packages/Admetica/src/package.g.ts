@@ -48,7 +48,7 @@ export function admeticaEditor(call: DG.FuncCall) {
 //input: bool addPiechart 
 //input: bool addForm 
 //top-menu: Chem | Admetica | Сalculate...
-//editor: Admetica: AdmeticaEditor
+//editor: Admetica:AdmeticaEditor
 export async function admeticaMenu(table: DG.DataFrame, molecules: DG.Column, template: string, models: string[], addPiechart: boolean, addForm: boolean) {
   return PackageFunctions.admeticaMenu(table, molecules, template, models, addPiechart, addForm);
 }

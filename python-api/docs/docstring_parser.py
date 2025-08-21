@@ -29,6 +29,7 @@ class DocstringParser:
         result = {
             'parameters': [],
             'attributes': [],
+            'examples': [],
             'returns': [],
             'docstring': []
         }
@@ -43,7 +44,7 @@ class DocstringParser:
         
         for line in lines:
             # Check for section headers
-            if line in ['Parameters', 'Attributes', 'Returns']:
+            if line in ['Parameters', 'Attributes', 'Returns', 'Examples']:
                 # Save any accumulated main description
                 if main_description:
                     result['docstring'].append(' '.join(main_description))
@@ -83,12 +84,16 @@ class DocstringParser:
                     if current_item['description']:
                         current_item['description'] += ' '
                     current_item['description'] += line
-                if not current_item and not match and current_section == 'returns':
-                     current_item = {
-                        'name': '',
-                        'type': line,
-                        'description': ''
-                    }    
+                if not current_item and not match:
+                    if current_section == 'returns':
+                        current_item = {
+                            'name': '',
+                            'type': line,
+                            'description': ''
+                        }
+                    elif current_section == 'examples':
+                        result[current_section].append(line)
+                            
             else:
                 # Collect main description text
                 main_description.append(line)

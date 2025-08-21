@@ -470,7 +470,7 @@ export namespace funcs {
     return await grok.functions.call('UsageAnalysis:TestsListJoined', {});
   }
 
-  export async function testAnalysisReportForCurrentDay(date: any ): Promise<void> {
+  export async function testAnalysisReportForCurrentDay(date: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('UsageAnalysis:TestAnalysisReportForCurrentDay', { date });
   }
 
@@ -490,12 +490,12 @@ export namespace funcs {
     return await grok.functions.call('UsageAnalysis:ServiceLogsApp', { path, params, limit });
   }
 
-  export async function serviceLogsAppTreeBrowser(treeNode: any , browseView: any ): Promise<void> {
-    return await grok.functions.call('UsageAnalysis:ServiceLogsAppTreeBrowser', { treeNode, browseView });
+  export async function serviceLogsAppTreeBrowser(treeNode: any ): Promise<void> {
+    return await grok.functions.call('UsageAnalysis:ServiceLogsAppTreeBrowser', { treeNode });
   }
 
-  export async function reportsAppTreeBrowser(treeNode: any , browseView: any ): Promise<void> {
-    return await grok.functions.call('UsageAnalysis:ReportsAppTreeBrowser', { treeNode, browseView });
+  export async function reportsAppTreeBrowser(treeNode: any ): Promise<void> {
+    return await grok.functions.call('UsageAnalysis:ReportsAppTreeBrowser', { treeNode });
   }
 
   export async function usageWidget(): Promise<any> {

@@ -12,7 +12,7 @@ class DataQuery(Func):
     a provided connection. This class combines the platform's general 
     function capabilities with specific query execution details.
 
-    Parameters
+    Attributes
     ----------
     query : str
         The query text to be executed. Typically SQL, but may vary 
@@ -33,22 +33,10 @@ class DataQuery(Func):
             - namespace : Optional[str]
             - tags : Optional[List[str]]
             - options : Optional[Dict[str, Any]]
-
-    Attributes
-    ----------
     query : str
         The raw query text.
     connection : DataConnection
         Connection settings for the target data source.
-
-    Methods
-    -------
-    to_dict() -> dict
-        Serializes the data query to a dictionary, including both 
-        function-level metadata and query-specific fields.
-    _from_dict(data: dict) -> DataQuery
-        Creates a `DataQuery` instance from a dictionary, reconstructing 
-        both base function fields and query-specific details.
 
     Examples
     --------
@@ -57,21 +45,21 @@ class DataQuery(Func):
     >>> conn = DataConnection(name="Postgres", server="db.example.com", port=5432)
     >>> dq = DataQuery(query="SELECT * FROM customers", connection=conn, name="Customer Query")
     >>> dq.to_dict()
-    {
-        "id": None,
-        "name": "Customer Query",
-        "friendlyName": None,
-        "createdOn": None,
-        "updatedOn": None,
-        "source": "data-query",
-        "description": None,
-        "params": [],
-        "namespace": None,
-        "tags": [],
-        "options": {},
-        "query": "SELECT * FROM customers",
-        "connection": {...}
-    }
+    ... {
+    ...     "id": None,
+    ...     "name": "Customer Query",
+    ...     "friendlyName": None,
+    ...     "createdOn": None,
+    ...     "updatedOn": None,
+    ...     "source": "data-query",
+    ...     "description": None,
+    ...     "params": [],
+    ...     "namespace": None,
+    ...     "tags": [],
+    ...     "options": {},
+    ...     "query": "SELECT * FROM customers",
+    ...     "connection": {...}
+    ... }
     """
     SOURCE = "data-query"
 

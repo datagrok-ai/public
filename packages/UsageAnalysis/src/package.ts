@@ -57,7 +57,7 @@ export class PackageFunctions {
       'url': '/tests/joinedlist'
     }
   })
-  static async TestsListJoined(): Promise<DG.DataFrame| undefined> {     
+  static async TestsListJoined(): Promise<DG.DataFrame| undefined> {
     const pacakageTests = await TestAnalysisManager.collectPackageTests();
     const packageTestsListMapped = pacakageTests.map((elem) => {
       return { 'type':  "package ", 'test': elem.packageName + ": " + elem.test.category + ": " + elem.test.name };
@@ -68,8 +68,8 @@ export class PackageFunctions {
     });
     const resultTestsList = DG.DataFrame.fromObjects(manualTestsListMapped.concat(packageTestsListMapped));
 
-    // const builds: DG.DataFrame = await grok.functions.call('UsageAnalysis:Builds'); 
-    // const id = builds.get('name', 0); 
+    // const builds: DG.DataFrame = await grok.functions.call('UsageAnalysis:Builds');
+    // const id = builds.get('name', 0);
 
     // const tests = await grok.functions.call('UsageAnalysis:getTestStatusesAcordingDF', { 'buildId': id, 'testslist': resultTestsList });
     grok.shell.addTableView(resultTestsList!);
@@ -79,7 +79,7 @@ export class PackageFunctions {
   @grok.decorators.func()
   static async TestAnalysisReportForCurrentDay(
     @grok.decorators.param({'type':'datetime'})  date: any) : Promise<DG.DataFrame> {
-  
+
     const tests = await TestAnalysisManager.collectPackageTests();
     const testsListMapped = tests.map((elem) => {
       return { 'name':  "test-package " + elem.packageName + ": " + elem.test.category + ": " + elem.test.name };
@@ -101,7 +101,7 @@ export class PackageFunctions {
     @grok.decorators.param({'options':{'optional':true}})   tags?: string,
     @grok.decorators.param({'options':{'optional':true}})   categories?: string,
     @grok.decorators.param({'options':{'optional':true}})   projects?: string): Promise<DG.ViewBase | null> {
-  
+
     const handler = new ViewHandler();
     await handler.init(date, groups, packages, tags, categories, projects, path);
     return handler.view;
@@ -114,11 +114,11 @@ export class PackageFunctions {
     'name': 'Test Track'
   })
   static testTrackApp(): void {
-  
+
     if (!grok.shell.dockManager.findNode(TestTrack.getInstance().root))
       TestTrack.getInstance().init();
     else
-      TestTrack.getInstance().reopen(); 
+      TestTrack.getInstance().reopen();
   }
 
 
@@ -129,7 +129,7 @@ export class PackageFunctions {
   })
   static async reportsApp(
     @grok.decorators.param({'options':{'optional':true,'meta.url':true}})  path?: string): Promise<DG.ViewBase> {
-  
+
     const parent = grok.functions.getCurrentCall();
     const app = new ReportingApp(parent);
     app.init(path).catch((e) => console.log(e));
@@ -162,10 +162,8 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func()
-  static async serviceLogsAppTreeBrowser(
-    treeNode: DG.TreeViewGroup,
-    browseView: DG.ViewBase) {  
+  @grok.decorators.appTreeBrowser()
+  static async serviceLogsAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     const loaderDiv = ui.div([], {style: {width: '50px', height: '24px', position: 'relative'}});
     loaderDiv.innerHTML = `<div class="grok-loader"><div></div><div></div><div></div><div></div></div>`;
     const loaderItem = treeNode.item(loaderDiv);
@@ -207,10 +205,8 @@ export class PackageFunctions {
     }
   }
 
-  @grok.decorators.func()
-  static async reportsAppTreeBrowser(
-    treeNode: DG.TreeViewGroup,
-    browseView: DG.ViewBase) {  
+  @grok.decorators.appTreeBrowser()
+  static async reportsAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     await treeNode.group('Reports', null, false).loadSources(grok.dapi.reports.by(10));
     await treeNode.group('Rules', null, false).loadSources(grok.dapi.rules.include('actions,actions.assignee').by(10));
   }
@@ -255,7 +251,7 @@ export class PackageFunctions {
     ]
   })
   static testDashboardsViewer(): TestDashboardWidget {
-  
+
     return new TestDashboardWidget();
   }
 
@@ -289,7 +285,7 @@ export class PackageFunctions {
     'name': 'Create JIRA ticket',
     'description': 'Creates JIRA ticket using current error log'
   })
-  static createJiraTicket(){   
+  static createJiraTicket(){
     grok.data.query('JiraCreateIssue', {
       'createRequest': JSON.stringify({
         'fields': {
@@ -307,6 +303,6 @@ export class PackageFunctions {
     }).then((t) => {
       grok.shell.info('Created');
       console.log(t);
-    });  
+    });
   }
 }

@@ -60,11 +60,11 @@ export class ExcelJSService {
           }
           const results: (string | null)[][][] = e.data.result;
           const names: string[] = e.data.names;
-          const dfResults = results.map((result, index) => {
+          const dfResults = mapWithFor(results, (result, index) => {
             if (result.length === 0)
               return DG.DataFrame.fromCsv('');
 
-            const headers = result[0].map((name, i) => name ?? `col${i + 1}`);
+            const headers = mapWithFor(result[0], (name, i) => name ?? `col${i + 1}`);
             const columnCount = headers.length;
             const rowCount = result.length - 1;
 
@@ -76,9 +76,8 @@ export class ExcelJSService {
                 columnData[j][i - 1] = row[j] ?? '';
             }
 
-            const columns: DG.Column[] = headers.map((name: string, i: number) =>
+            const columns: DG.Column[] = mapWithFor(headers, (name: string, i: number) =>
               DG.Column.fromStrings(name, columnData[i]));
-
             const df = DG.DataFrame.fromColumns(columns);
             df.name = names[index] || `Sheet ${index + 1}`;
             return df;
@@ -100,6 +99,13 @@ export class ExcelJSService {
   public terminate(): void {
     this._worker.terminate();
   }
+}
+
+export function mapWithFor<T, K>(arr: ArrayLike<T>, mapFunc: (value: T, index: number) => K): K[] {
+  const result: K[] = new Array<K>(arr.length);
+  for (let i = 0; i < arr.length; i++)
+    result[i] = mapFunc(arr[i], i);
+  return result;
 }
 
 export class PackageFunctions {

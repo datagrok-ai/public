@@ -49,6 +49,7 @@ export class RevvityUserConditionEditor extends BaseConditionEditor<string> {
 
     createUserInput(initValue: string, prop: DG.Property) {
         const userInput = ui.input.string('', {
+            nullable: false,
             value: initValue,
             onValueChanged: async () => {
                 this.condition.value = await getUserIdByUserString(userInput.value);

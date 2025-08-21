@@ -101,17 +101,12 @@ export class GridCellElement extends Element {
 
   render(g: CanvasRenderingContext2D) {
     g.fillStyle = 'grey';
-    // TODO: do this when we get the patch with updated API, for now using quick hack
-    // this.gridCell.style.vertAlign = 'top';
-    //@ts-ignore
-    window.grok_GridCellStyle_Set_vertAlign(this.gridCell.style.dart, 'top');
-    //@ts-ignore
-    window.grok_GridCellStyle_Set_textWrap(this.gridCell.style.dart, 'new line');
+    this.gridCell.style.vertAlign = 'top';
+    this.gridCell.style.textWrap = 'new line';
 
     // if we don't do this, the text color will become same as grid background one
     const oldIsTextColorCoded = this.gridCell.gridColumn.isTextColorCoded;
     this.gridCell.gridColumn.isTextColorCoded = false;
-    //this.gridCell.render({context: g, bounds: this.bounds});
     this.gridCell.renderer.render(g,
       this.bounds.x, Math.ceil(this.bounds.y), this.bounds.width, Math.ceil(this.bounds.height),
       this.gridCell, this.gridCell.style);

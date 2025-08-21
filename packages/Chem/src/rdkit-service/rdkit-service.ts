@@ -7,7 +7,7 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {IFpResult} from './rdkit-service-worker-similarity';
 import {LockedEntity} from '../utils/locked-entitie';
 import {getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
-import {getRdKitModule} from '../package';
+import {PackageFunctions} from '../package';
 import {SubstructureSearchType} from '../constants';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {getRDKitFpAsUint8Array} from '../chem-searches';
@@ -286,8 +286,8 @@ export class RdKitService {
     progressFunc: (progress: number) => void, molecules: string[], createSmiles = false,
     searchType = SubstructureSearchType.CONTAINS, simCutOff = 0.8, fp = Fingerprint.Morgan,
     afterBatchCalculated = () => {}) {
-    const queryMol = searchType === SubstructureSearchType.IS_SIMILAR ? getMolSafe(query, {}, getRdKitModule()).mol :
-      getQueryMolSafe(query, queryMolBlockFailover, getRdKitModule());
+    const queryMol = searchType === SubstructureSearchType.IS_SIMILAR ? getMolSafe(query, {}, PackageFunctions.getRdKitModule()).mol :
+      getQueryMolSafe(query, queryMolBlockFailover, PackageFunctions.getRdKitModule());
     const fpType = searchType === SubstructureSearchType.IS_SIMILAR ? fp : Fingerprint.Pattern;
     if (!queryMol)
       throw new Error(`Chem | Invalid search pattern: ${query}`);
@@ -636,7 +636,7 @@ export class RdKitService {
       if (!it)
         return '';
       try {
-        const qm = getQueryMolSafe(it, '', getRdKitModule());
+        const qm = getQueryMolSafe(it, '', PackageFunctions.getRdKitModule());
         const smiles = qm?.get_smiles();
         qm?.delete();
         return smiles ?? '';

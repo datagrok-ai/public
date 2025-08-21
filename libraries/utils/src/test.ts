@@ -674,7 +674,7 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
       if (DG.Test.isProfiling)
         console.profile(`${t.category}: ${t.name}`);
 
-      r = { name: t.name, owner:t.options?.owner ?? '', category: t.category, logs: '', date: startDate, success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false , package: packageName ?? '', flaking: DG.Test.isReproducing};
+      r = { name: t.name, owner:t.options?.owner ?? '', category: t.category, logs: '', date: startDate, success: true, result: (await timeout(t.test, timeout_)).toString() ?? 'OK', ms: 0, skipped: false , package: packageName ?? '', flaking: DG.Test.isReproducing};
 
       if (DG.Test.isProfiling) {
         console.profileEnd(`${t.category}: ${t.name}`);

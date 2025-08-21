@@ -19,10 +19,8 @@
 
 .query-builder-search-query-operator {
     border: none;
-    margin: 4px;
-    padding: 4px 4px 4px 12px;
+    padding-left: 12px;
     position: relative;
-    margin-top: 20px;
 }
 
 .query-builder-search-query-operator[data-nesting-level] {
@@ -35,9 +33,18 @@
 
 .query-builder-filter-inputs {
     display: flex;
+    flex-direction: row;
     align-items: center;
     gap: 6px;
     min-height: 32px;
+    flex-wrap: nowrap;
+}
+
+.query-builder-filter-inputs .query-builder-filter-field,
+.query-builder-filter-inputs .query-builder-filter-operator,
+.query-builder-filter-inputs .query-builder-filter-value {
+    flex: 0 0 auto;
+    min-width: 0;
 }
 
 .query-builder-filter-inputs .ui-input-editor {
@@ -64,12 +71,18 @@
 }
 
 .query-builder-nested-condition-operators {
-    position: absolute;
-    top: -7px;
-    border: none;
-    border-radius: 4px;
-    background-color: white;
-    left: 10px;
+    align-items: center;
+}
+
+.query-builder-match-div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.query-builder-nested-condition-operators select {
+    width: 50px!important;
 }
 
 .query-builder-filter-inputs .add-delete-icons {
@@ -103,4 +116,60 @@
     background-image: url("../img/chevron.svg") !important;
     background-repeat: no-repeat !important;
     background-position: right 0px top 50% !important;
+}
+
+.query-builder-filter-inputs-narrow {
+    display: flex;
+    flex-direction: column;
+    padding-top: 8px;
+}
+
+.query-builder-filter-inputs-narrow .query-builder-filter-field,
+.query-builder-filter-inputs-narrow .query-builder-filter-operator,
+.query-builder-filter-inputs-narrow .query-builder-filter-value {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 32px;
+    width: 100%;
+}
+
+.query-builder-filter-inputs-narrow .add-delete-icons {
+    justify-content: flex-end;
+    padding-right: 10px;
+    padding-top: 5px;
+}
+
+.query-builder-filter-inputs-narrow .ui-input-editor {
+    width: 100% !important;
+}
+
+/* Ensure consistent field sizing and prevent height jumping */
+.query-builder-filter-field,
+.query-builder-filter-operator,
+.query-builder-filter-value {
+    display: flex;
+    align-items: center;
+    min-height: 32px;
+    transition: all 0.2s ease;
+}
+
+.query-builder-filter-field .ui-input-editor,
+.query-builder-filter-operator .ui-input-editor,
+.query-builder-filter-value .ui-input-editor {
+    min-height: 28px;
+    box-sizing: border-box;
+}
+
+/* Prevent field height changes during layout switching */
+.query-builder-filter-inputs,
+.query-builder-filter-inputs-narrow {
+    transition: flex-direction 0.2s ease;
+}
+
+.add-delete-icons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
 }

@@ -43,6 +43,8 @@ class DatagrokClient:
 
     Examples
     --------
+    Initialize a client
+    
     >>> from datagrok_api import DatagrokClient
 
     >>> grok = DatagrokClient(base_url="https://public.datagrok.ai/api", api_key="Bearer <your-token>")

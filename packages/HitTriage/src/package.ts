@@ -41,7 +41,7 @@ export class HTPackage extends DG.Package {
 
 export const _package = new HTPackage();
 
-async function hitAppTB(treeNode: DG.TreeViewGroup, browseView: DG.BrowsePanel, name: AppName) {// TODO: DG.BrowseView
+async function hitAppTB(treeNode: DG.TreeViewGroup, name: AppName) {
   const loaderDiv = ui.div([], {style: {width: '50px', height: '24px', position: 'relative'}});
   loaderDiv.innerHTML = `<div class="grok-loader"><div></div><div></div><div></div><div></div></div>`;
   const loaderItem = treeNode.item(loaderDiv);
@@ -130,27 +130,21 @@ async function hitAppTB(treeNode: DG.TreeViewGroup, browseView: DG.BrowsePanel, 
 }
 
 export class PackageFunctions {
-  @grok.decorators.func()
-  static async hitTriageAppTreeBrowser(
-    treeNode: DG.TreeViewGroup,
-    @grok.decorators.param({name: 'browseView', type: 'view'}) browsePanel: DG.BrowsePanel) {// TODO: DG.BrowseView
-    await hitAppTB(treeNode, browsePanel, 'Hit Triage');
+  @grok.decorators.appTreeBrowser()
+  static async hitTriageAppTreeBrowser(treeNode: DG.TreeViewGroup) {
+    await hitAppTB(treeNode, 'Hit Triage');
   }
 
 
-  @grok.decorators.func()
-  static async hitDesignAppTreeBrowser(
-    treeNode: DG.TreeViewGroup,
-    @grok.decorators.param({name: 'browseView', type: 'view'}) browsePanel: DG.BrowsePanel) {// TODO: DG.BrowseView
-    await hitAppTB(treeNode, browsePanel, 'Hit Design');
+  @grok.decorators.appTreeBrowser()
+  static async hitDesignAppTreeBrowser(treeNode: DG.TreeViewGroup) {
+    await hitAppTB(treeNode, 'Hit Design');
   }
 
 
-  @grok.decorators.func()
-  static async peptiHitAppTreeBrowser(
-    treeNode: DG.TreeViewGroup,
-    @grok.decorators.param({name: 'browseView', type: 'view'}) browsePanel: DG.BrowsePanel) {// TODO: DG.BrowseView
-    await hitAppTB(treeNode, browsePanel, 'PeptiHit');
+  @grok.decorators.appTreeBrowser()
+  static async peptiHitAppTreeBrowser(treeNode: DG.TreeViewGroup) {
+    await hitAppTB(treeNode, 'PeptiHit');
   }
 
 

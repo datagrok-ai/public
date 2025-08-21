@@ -18,8 +18,6 @@ import { AdmeticaViewApp } from './utils/admetica-app';
 export * from './package.g';
 export const _package = new DG.Package();
 
-//name: info
-
 export class PackageFunctions {
   // @grok.decorators.init()
   // static async init() { }
@@ -90,7 +88,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'name': 'AdmeticaMenu',
     'top-menu': 'Chem | Admetica | Сalculate...',
-    'editor': 'Admetica: AdmeticaEditor',
+    'editor': 'Admetica:AdmeticaEditor',
   })
   static async admeticaMenu(
     @grok.decorators.param({options: { description: 'Input data table' }})table: DG.DataFrame,

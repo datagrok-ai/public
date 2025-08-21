@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
 import { findRGroups, findRGroupsWithCore } from '../scripts-api';
-import { convertMolNotation, getRdKitModule } from '../package';
+import { PackageFunctions } from '../package';
 import { getMCS } from '../utils/most-common-subs';
 import { IRGroupAnalysisResult } from '../rdkit-service/rdkit-service-worker-substructure';
 import { getRdKitService } from '../utils/chem-common-rdkit';
@@ -111,7 +111,7 @@ export function rGroupAnalysis(col: DG.Column, demo = false): void {
       const mcsSmarts = await getMCS(molCol, mcsExactAtomsCheck.value!, mcsExactBondsCheck.value!);
       if (mcsSmarts !== null) {
         ui.setUpdateIndicator(sketcher.root, false);
-        const mol = getQueryMolSafe(mcsSmarts, '', getRdKitModule());
+        const mol = getQueryMolSafe(mcsSmarts, '', PackageFunctions.getRdKitModule());
         if (mol)
           sketcher.setMolFile(mol.get_molblock());
         mol?.delete();
@@ -246,7 +246,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
   let progressBar;
   try {
     const coreSmarts = core;
-    core = convertMolNotation(core, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock);
+    core = PackageFunctions.convertMolNotation(core, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock);
     const labelledRGroups = !!MolfileHandler.getInstance(core)
       .atomTypes.filter((it) => it.startsWith('R')).length && core.includes('M  RGP');
     if (!labelledRGroups && params.onlyMatchAtRGroups)
@@ -264,7 +264,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
       onlyMatchAtRGroups: params.onlyMatchAtRGroups,
     };
     const { rGroups, highlightCol } = await rGroupsMinilib(col, core, coreIsQMol, rGroupPrefixIdx, rGroupOptions);
-    const rdkit = getRdKitModule();
+    const rdkit = PackageFunctions.getRdKitModule();
     if (rGroups.length) {
       //unmatched are those items for which all R group cols are empty
       const unmatchedItems = new Uint8Array(rGroups[0].length).fill(0);
@@ -298,7 +298,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
         let rColName = '';
         if (resCol.name === 'Core') {
           rColName = corePrefixIdx ? `${resCol.name}_${corePrefixIdx}` : resCol.name;
-          col.temp[SCAFFOLD_COL] = rColName;
+          col.tags[SCAFFOLD_COL] = rColName;
         } else {
           rColName = rGroupPrefixIdx ? `${resCol.name.replace('R', params.rGroupName)}_${rGroupPrefixIdx}` :
             resCol.name.replace('R', params.rGroupName);
@@ -392,7 +392,7 @@ export async function rGroupsPython(col: DG.Column<string>, core: string, prefix
   const resCols = [];
   const res = withCore ? await findRGroupsWithCore(col.name, col.dataFrame, core, onlyMatchAtRGroups) :
     await findRGroups(col.name, col.dataFrame, core, prefix);
-  const module = getRdKitModule();
+  const module = PackageFunctions.getRdKitModule();
   if (res.rowCount) {
     for (const resCol of res.columns) {
       const molsArray = new Array<string>(resCol.length);

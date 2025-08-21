@@ -80,8 +80,8 @@ export namespace queries {
 }
 
 export namespace funcs {
-  export async function platesAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<void> {
-    return await grok.functions.call('Curves:PlatesAppTreeBrowser', { treeNode, browseView });
+  export async function platesAppTreeBrowserTempDisabled(treeNode: any ): Promise<void> {
+    return await grok.functions.call('Curves:PlatesAppTreeBrowserTempDisabled', { treeNode });
   }
 
   export async function fitChartCellRenderer(): Promise<any> {
@@ -113,8 +113,8 @@ export namespace funcs {
     return await grok.functions.call('Curves:InitCurves', {});
   }
 
-  export async function dataToCurves(df: DG.DataFrame , concentrationCol: DG.Column , readoutCol: DG.Column , batchIDCol: DG.Column , assayCol: DG.Column , runIDCol: DG.Column , compoundIDCol: DG.Column , targetEntityCol: DG.Column , excludeOutliersCol: DG.Column | null, parentTable: DG.DataFrame | null, fitParamColumns: any | null, reportedIC50Column: string | null, reportedQualifiedIC50Column: string | null, experimentIDColumn: string | null, qualifierColumn: string | null, additionalColumns: any | null): Promise<DG.DataFrame> {
-    return await grok.functions.call('Curves:DataToCurves', { df, concentrationCol, readoutCol, batchIDCol, assayCol, runIDCol, compoundIDCol, targetEntityCol, excludeOutliersCol, parentTable, fitParamColumns, reportedIC50Column, reportedQualifiedIC50Column, experimentIDColumn, qualifierColumn, additionalColumns });
+  export async function dataToCurves(df: DG.DataFrame , concentrationCol: DG.Column , readoutCol: DG.Column , batchIDCol: DG.Column , assayCol: DG.Column , runIDCol: DG.Column , compoundIDCol: DG.Column , targetEntityCol: DG.Column , excludeOutliersCol: DG.Column | null, parentTable: DG.DataFrame | null, fitParamColumns: any | null, reportedIC50Column: string | null, reportedQualifiedIC50Column: string | null, experimentIDColumn: string | null, qualifierColumn: string | null, additionalColumns: any | null, wellLevelJoinCol: string | null, parentLevelJoinCol: string | null): Promise<DG.DataFrame> {
+    return await grok.functions.call('Curves:DataToCurves', { df, concentrationCol, readoutCol, batchIDCol, assayCol, runIDCol, compoundIDCol, targetEntityCol, excludeOutliersCol, parentTable, fitParamColumns, reportedIC50Column, reportedQualifiedIC50Column, experimentIDColumn, qualifierColumn, additionalColumns, wellLevelJoinCol, parentLevelJoinCol });
   }
 
   export async function dataToCurvesTopMenu(): Promise<any> {
@@ -155,10 +155,6 @@ export namespace funcs {
 
   export async function checkFileIsPlate(content: string ): Promise<boolean> {
     return await grok.functions.call('Curves:CheckFileIsPlate', { content });
-  }
-
-  export async function platesApp(): Promise<DG.View> {
-    return await grok.functions.call('Curves:PlatesApp', {});
   }
 
   export async function getPlateByBarcode(barcode: string ): Promise<any> {

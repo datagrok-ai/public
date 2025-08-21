@@ -948,6 +948,39 @@ export interface IMenuColorPaletteOptions {
   closeOnClick?: boolean;
 }
 
+/** See {@link Menu.fontEditor} */
+export interface IMenuFontEditorOptions {
+  /** Minimum font size. */
+  fontSizeMin: number;
+
+  /** Maximum font size. */
+  fontSizeMax: number;
+
+  /** Step of font size. */
+  fontSizeStep: number;
+
+  /** List of available font families. */
+  fontFamilies: Iterable<String>;
+
+  /** A name of the group in the menu. */
+  asGroup: string;
+
+  /** Whether font family should be grouped. */
+  fontFamilyGroup: boolean;
+
+  /** Called when font size is changed. */
+  onSizeChange: (size: number) => void;
+
+  /** Called when font family is changed. */
+  onFamilyChange: (family: string) => void;
+
+  /** Called when bold mode is changed. */
+  onBoldChange: (isBold: boolean) => void;
+
+  /** Called when italic mode is changed. */
+  onItalicChange: (isItalic: boolean) => void;
+}
+
 /** See {@link IMenuSingleColumnSelectorOptions} and {@link IMenuMultiColumnSelectorOptions} */
 export interface IMenuColumnSelectorOptions<T> {
 
@@ -1125,13 +1158,22 @@ export class Menu {
   }
 
   /** Adds color palettes colors to menu.
-   * @param initial - Initial colors to be set first or reset.
    * @param colors - Array of arrays of color choices.
    * @param options - Optional params and functions, see {@link IMenuColorPaletteOptions}.
    * @returns {Menu} `this` menu itself. */
   colorPalette(colors: number[][], options?: IMenuColorPaletteOptions): Menu {
     return toJs(api.grok_Menu_ColorPalette(this.dart, colors, options?.getInitialValue, options?.onSelect,
       options?.onPreview, options?.asGroup, options?.visible, options?.categorical ?? false, options?.resetColorMs ?? 200, options?.closeOnClick ?? true));
+  }
+
+  /** Adds font editor to menu.
+   * @param initial - Initial font to be set first or reset.
+   * @param options - Optional params and functions, see {@link IMenuFontEditorOptions}.
+   * @returns {Menu} `this` menu itself. */
+  fontEditor(initial: string, options?: IMenuFontEditorOptions): Menu {
+    return toJs(api.grok_Menu_FontEditor(this.dart, initial, options?.fontSizeMin, options?.fontSizeMax,
+      options?.fontSizeStep ?? 1, options?.fontFamilies, options?.asGroup, options?.fontFamilyGroup ?? false,
+      options?.onSizeChange, options?.onFamilyChange, options?.onBoldChange, options?.onItalicChange));
   }
 
   /** Adds single-column selector to menu.

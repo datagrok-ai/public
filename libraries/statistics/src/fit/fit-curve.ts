@@ -133,6 +133,7 @@ export interface IFitChartOptions {
   showColumnLabel?: boolean; // defines whether to show the column label in the legend or not
   showStatistics?: string[]; // defines the statistics that would be shown on the plot
   labelOptions?: IFitChartLabelOptions[]; // controls the plot labels
+  useAuxLegendNames?: boolean; // if true, uses aux legend names instead of series names
 }
 
 /** Data for the fit chart. */
@@ -172,6 +173,7 @@ export interface IFitSeriesOptions {
   labels?: {[key: string]: string | number | boolean}; // controlled by IFitChartData labelOptions, shows labels
   droplines?: string[];                 // defines the droplines that would be shown on the plot (IC50)
   columnName?: string;                  // defines the column name where the series is stored
+  auxLegendName?: string;               // defines the auxiliary legend name for the series
 }
 // TODO: show labels in property panel if present, color by default from series
 

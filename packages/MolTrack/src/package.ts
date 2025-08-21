@@ -29,8 +29,7 @@ export class PackageFunctions {
 
   @grok.decorators.func()
   static async cddVaultAppTreeBrowser(
-    @grok.decorators.param({name:'treeNode'})  appNode: DG.TreeViewGroup,
-    @grok.decorators.param({type:'view'}) browseView: any) {
+    @grok.decorators.param({name:'treeNode'})  appNode: DG.TreeViewGroup) {
   
     appNode.group('Protocols');
     appNode.group('Plates');

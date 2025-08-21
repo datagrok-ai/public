@@ -96,6 +96,7 @@ interface FitLegendColumnlabelSeriesRenderOptions extends FitLegendRenderOptions
     drawnCurvesInLegend: number;
     showColumnLabel?: boolean;
     seriesIdx?: number;
+    useAuxLegendNames?: boolean;
 }
 
 
@@ -437,7 +438,7 @@ export function renderLegend(g: CanvasRenderingContext2D, data: IFitChartData, r
         const currentSeries = series![j];
         if (currentSeries.name === '' || currentSeries.name === null || currentSeries.name === undefined)
           continue;
-        renderLegendSeries(g, currentSeries, {dataBox: dataBox, ratio: ratio,
+        renderLegendSeries(g, currentSeries, {dataBox: dataBox, ratio: ratio, useAuxLegendNames: data.chartOptions?.useAuxLegendNames,
           columnIdx: i, drawnCurvesInLegend, showColumnLabel: data.chartOptions?.showColumnLabel, seriesIdx: j});
         drawnCurvesInLegend++;
       }
@@ -466,7 +467,8 @@ function renderLegendSeries(g: CanvasRenderingContext2D, series: IFitSeries, ren
   g.beginPath();
   g.strokeStyle = fitLineColor;
   g.lineWidth = 2 * ratio;
-  const textWidth = g.measureText(series.name!).width;
+  const nameToRender = renderOptions.useAuxLegendNames ? series.auxLegendName ?? series.name! : series.name!;
+  const textWidth = g.measureText(nameToRender).width;
   g.moveTo(dataBox.maxX - textWidth - FitConstants.LEGEND_RECORD_LINE_PX_WIDTH - FitConstants.LEGEND_RECORD_LINE_RIGHT_PX_MARGIN,
     dataBox.y + FitConstants.LEGEND_TOP_PX_MARGIN - FitConstants.LEGEND_RECORD_LINE_BOTTOM_PX_MARGIN +
       (showColumnLabel ? FitConstants.LEGEND_RECORD_PX_HEIGHT * (columnIdx + 1) : 0) +
@@ -482,8 +484,7 @@ function renderLegendSeries(g: CanvasRenderingContext2D, series: IFitSeries, ren
       (columnIdx + 1) : 0) + FitConstants.LEGEND_RECORD_PX_HEIGHT * drawnCurvesInLegend,
   pointColor, FitConstants.POINT_PX_SIZE * ratio);
   g.fillStyle = fitLineColor;
-  g.fillText(series.name!, dataBox.maxX - textWidth,
-    dataBox.y + FitConstants.LEGEND_TOP_PX_MARGIN + (showColumnLabel ?
-      FitConstants.LEGEND_RECORD_PX_HEIGHT * (columnIdx + 1) : 0) + FitConstants.LEGEND_RECORD_PX_HEIGHT * drawnCurvesInLegend);
+  g.fillText(nameToRender, dataBox.maxX - textWidth, dataBox.y + FitConstants.LEGEND_TOP_PX_MARGIN + (showColumnLabel ?
+    FitConstants.LEGEND_RECORD_PX_HEIGHT * (columnIdx + 1) : 0) + FitConstants.LEGEND_RECORD_PX_HEIGHT * drawnCurvesInLegend);
   g.stroke();
 }

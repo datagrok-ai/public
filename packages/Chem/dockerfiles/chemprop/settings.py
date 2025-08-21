@@ -27,7 +27,7 @@ class Settings(object):
 
     # General
     host = '0.0.0.0'
-    port = 5000
+    port = 45002
     keys = None
     num_cores = 4
     cache_path = 'tmp'
@@ -50,7 +50,7 @@ class Settings(object):
         Settings.host = '0.0.0.0' if host is None else host
 
         port = conf['general'].get('port')
-        Settings.port = 5000 if port is None else port
+        Settings.port = 45002 if port is None else port
 
         application_root = conf['general'].get('application_root')
         Settings.application_root = None if application_root is None else application_root

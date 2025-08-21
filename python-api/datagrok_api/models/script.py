@@ -15,7 +15,7 @@ class ScriptLanguage(str, Enum):
     supported by the platform. This enum defines the set of valid language
     identifiers used for both serialization and execution.
 
-    Members
+    Attributes
     -------
     Grok : str
         Grok's native scripting language.
@@ -30,17 +30,12 @@ class ScriptLanguage(str, Enum):
     Octave : str
         GNU Octave, primarily for numerical computations.
 
-    Notes
-    -----
-    The string values (e.g., `"python"`, `"r"`) are used for
-    serialization and platform API communication.
-
     Examples
     --------
     >>> ScriptLanguage.Python.value
-    'python'
+    ... 'python'
     >>> ScriptLanguage['Julia']
-    <ScriptLanguage.Julia: 'julia'>
+    ... <ScriptLanguage.Julia: 'julia'>
     """
     Grok = 'grok'
     Julia = 'julia'
@@ -59,7 +54,7 @@ class Script(Func):
     Scripts can be run in various environments (server-side or client-side) 
     depending on the language and platform configuration.
 
-    Parameters
+    Attributes
     ----------
     script : str
         The source code of the script. Can contain special annotations that will 
@@ -78,19 +73,10 @@ class Script(Func):
             - namespace : Optional[str]
             - tags : Optional[List[str]]
             - options : Optional[Dict[str, Any]]
-
-    Attributes
-    ----------
     script : str
         The script source code.
     language : ScriptLanguage
         The programming language used for the script.
-
-    Methods
-    -------
-    to_dict() -> dict
-        Serializes the script function into a dictionary including 
-        both base function metadata and script-specific fields.
 
     Examples
     --------
@@ -99,21 +85,21 @@ class Script(Func):
     >>> script_code = "print('Hello from Datagrok!')"
     >>> s = Script(script=script_code, language=ScriptLanguage.Python, name="Hello Script")
     >>> s.to_dict()
-    {
-        "id": None,
-        "name": "Hello Script",
-        "friendlyName": None,
-        "createdOn": None,
-        "updatedOn": None,
-        "source": "script",
-        "description": None,
-        "params": [],
-        "namespace": None,
-        "tags": [],
-        "options": {},
-        "script": "print('Hello from Datagrok!')",
-        "language": "python"
-    }
+    ... {
+    ...     "id": None,
+    ...     "name": "Hello Script",
+    ...     "friendlyName": None,
+    ...     "createdOn": None,
+    ...     "updatedOn": None,
+    ...     "source": "script",
+    ...    "description": None,
+    ...     "params": [],
+    ...     "namespace": None,
+    ...     "tags": [],
+    ...     "options": {},
+    ...     "script": "print('Hello from Datagrok!')",
+    ...     "language": "python"
+    ... }
     """
     SOURCE = "script"
 

@@ -495,6 +495,12 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         maxLengthOfMonomer = !isNaN(v) && v ? v : 50;
       }
 
+      if (MmcrTemps.maxMonomerLength in tableCol.temp) {
+        const v = tableCol.temp[MmcrTemps.maxMonomerLength];
+        const vn = typeof v === 'number' ? v : parseInt(v);
+        maxLengthOfMonomer = !isNaN(vn) && vn ? vn : 50;
+      }
+
       if (
         tableCol.temp[MmcrTemps.rendererSettingsChanged] === rendererSettingsChangedState.true ||
         this.monomerLengthLimit != maxLengthOfMonomer
