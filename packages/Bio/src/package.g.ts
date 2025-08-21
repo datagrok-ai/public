@@ -1,20 +1,17 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//name: getMonomerLibHelper
 //description: Returns an instance of the monomer library helper
 //output: object result
 export async function getMonomerLibHelper() : Promise<any> {
   return PackageFunctions.getMonomerLibHelper();
 }
 
-//name: initBio
 //tags: init
 export async function initBio() : Promise<void> {
   PackageFunctions.initBio();
 }
 
-//name: sequenceTooltip
 //tags: tooltip
 //input: column col { semType: Macromolecule }
 //output: widget result
@@ -22,13 +19,11 @@ export function sequenceTooltip(col: DG.Column) : any {
   return PackageFunctions.sequenceTooltip(col);
 }
 
-//name: getBioLib
 //output: object monomerLib
 export function getBioLib() : any {
   return PackageFunctions.getBioLib();
 }
 
-//name: getSeqHandler
 //input: column sequence { semType: Macromolecule }
 //output: object result
 export function getSeqHandler(sequence: DG.Column<any>) : any {
@@ -52,35 +47,30 @@ export async function libraryPanel(_seqColumn: DG.Column) : Promise<any> {
   return PackageFunctions.libraryPanel(_seqColumn);
 }
 
-//name: GetRegionEditor
 //tags: editor
 //input: funccall call 
 export function GetRegionEditor(call: DG.FuncCall) : void {
   PackageFunctions.GetRegionEditor(call);
 }
 
-//name: SplitToMonomersEditor
 //tags: editor
 //input: funccall call 
 export function SplitToMonomersEditor(call: DG.FuncCall) : void {
   PackageFunctions.SplitToMonomersEditor(call);
 }
 
-//name: SequenceSpaceEditor
 //tags: editor
 //input: funccall call 
 export function SequenceSpaceEditor(call: DG.FuncCall) : void {
   PackageFunctions.SequenceSpaceEditor(call);
 }
 
-//name: SeqActivityCliffsEditor
 //tags: editor
 //input: funccall call 
 export function SeqActivityCliffsEditor(call: DG.FuncCall) : void {
   PackageFunctions.SeqActivityCliffsEditor(call);
 }
 
-//name: customSequenceCellRenderer
 //tags: cellRenderer
 //output: grid_cell_renderer result
 //meta.cellType: sequence
@@ -89,7 +79,6 @@ export function customSequenceCellRenderer() : any {
   return PackageFunctions.customSequenceCellRenderer();
 }
 
-//name: fastaSequenceCellRenderer
 //tags: cellRenderer
 //output: grid_cell_renderer result
 //meta.cellType: sequence
@@ -98,7 +87,6 @@ export function fastaSequenceCellRenderer() : any {
   return PackageFunctions.fastaSequenceCellRenderer();
 }
 
-//name: separatorSequenceCellRenderer
 //tags: cellRenderer
 //output: grid_cell_renderer result
 //meta.cellType: sequence
@@ -132,7 +120,6 @@ export function macromoleculeDifferenceCellRenderer() : any {
   return PackageFunctions.macromoleculeDifferenceCellRenderer();
 }
 
-//name: sequenceAlignment
 //input: string alignType { choices: ['Local alignment','Global alignment'] }
 //input: string alignTable { choices: ['AUTO','NUCLEOTIDES','BLOSUM45','BLOSUM50','BLOSUM62','BLOSUM80','BLOSUM90','PAM30','PAM70','PAM250','SCHNEIDER','TRANS'] }
 //input: double gap 
@@ -161,7 +148,6 @@ export function vdRegionsViewer() {
   return PackageFunctions.vdRegionsViewer();
 }
 
-//name: getRegion
 //description: Gets a new column with sequences of the region between start and end
 //input: column sequence 
 //input: string start { optional: true }
@@ -308,7 +294,6 @@ export async function compositionAnalysis() {
   return PackageFunctions.compositionAnalysis();
 }
 
-//name: importFasta
 //description: Opens FASTA file
 //tags: file-handler
 //input: string fileContent 
@@ -318,7 +303,6 @@ export function importFasta(fileContent: string) : any {
   return PackageFunctions.importFasta(fileContent);
 }
 
-//name: importBam
 //description: Opens Bam file
 //tags: file-handler
 //input: string fileContent 
@@ -328,7 +312,6 @@ export function importBam(fileContent: string) : any {
   return PackageFunctions.importBam(fileContent);
 }
 
-//name: convertDialog
 //top-menu: Bio | Transform | Convert Notation...
 export function convertDialog() : void {
   PackageFunctions.convertDialog();
@@ -341,7 +324,6 @@ export function convertColumnAction(col: DG.Column) : void {
   PackageFunctions.convertColumnAction(col);
 }
 
-//name: monomerCellRenderer
 //tags: cellRenderer
 //output: grid_cell_renderer result
 //meta.cellType: Monomer
@@ -350,7 +332,6 @@ export function monomerCellRenderer() : any {
   return PackageFunctions.monomerCellRenderer();
 }
 
-//name: testDetectMacromolecule
 //input: string path { choices: ['Demo:Files/','System:AppData/'] }
 //output: dataframe result
 export async function testDetectMacromolecule(path: string) : Promise<any> {
@@ -455,7 +436,6 @@ export async function manageLibrariesView() : Promise<void> {
   PackageFunctions.manageLibrariesView();
 }
 
-//name: manageMonomersView
 //description: Edit and create monomers
 //top-menu: Bio | Manage | Monomers
 export async function manageMonomersView() : Promise<void> {
@@ -473,12 +453,10 @@ export async function manageMonomerLibrariesView() : Promise<any> {
 
 //name: Monomer Manager Tree Browser
 //input: dynamic treeNode 
-//meta.role: appTreeBrowser
 export async function manageMonomerLibrariesViewTreeBrowser(treeNode: any) : Promise<void> {
   PackageFunctions.manageMonomerLibrariesViewTreeBrowser(treeNode);
 }
 
-//name: saveAsFasta
 //description: As FASTA...
 //tags: fileExporter
 export function saveAsFasta() : void {
@@ -501,49 +479,40 @@ export function bioSubstructureFilterTest() : any {
   return PackageFunctions.bioSubstructureFilterTest();
 }
 
-//name: webLogoLargeApp
 export async function webLogoLargeApp() : Promise<void> {
   PackageFunctions.webLogoLargeApp();
 }
 
-//name: webLogoAggApp
 export async function webLogoAggApp() : Promise<void> {
   PackageFunctions.webLogoAggApp();
 }
 
-//name: getRegionApp
 export async function getRegionApp() : Promise<void> {
   PackageFunctions.getRegionApp();
 }
 
-//name: getRegionHelmApp
 export async function getRegionHelmApp() : Promise<void> {
   PackageFunctions.getRegionHelmApp();
 }
 
-//name: longSeqTableSeparator
 export function longSeqTableSeparator() : void {
   PackageFunctions.longSeqTableSeparator();
 }
 
-//name: longSeqTableFasta
 export function longSeqTableFasta() : void {
   PackageFunctions.longSeqTableFasta();
 }
 
-//name: longSeqTableHelm
 export function longSeqTableHelm() : void {
   PackageFunctions.longSeqTableHelm();
 }
 
-//name: addCopyMenu
 //input: object cell 
 //input: object menu 
 export function addCopyMenu(cell: any, menu: any) : void {
   PackageFunctions.addCopyMenu(cell, menu);
 }
 
-//name: demoBioSimilarityDiversity
 //description: Sequence similarity tracking and evaluation dataset diversity
 //meta.demoPath: Bioinformatics | Similarity, Diversity
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Similarity,%20Diversity
@@ -552,7 +521,6 @@ export async function demoBioSimilarityDiversity() : Promise<void> {
   PackageFunctions.demoBioSimilarityDiversity();
 }
 
-//name: demoBioSequenceSpace
 //description: Exploring sequence space of Macromolecules, comparison with hierarchical clustering results
 //meta.demoPath: Bioinformatics | Sequence Space
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Sequence%20Space
@@ -561,7 +529,6 @@ export async function demoBioSequenceSpace() : Promise<void> {
   PackageFunctions.demoBioSequenceSpace();
 }
 
-//name: demoBioActivityCliffs
 //description: Activity Cliffs analysis on Macromolecules data
 //meta.demoPath: Bioinformatics | Activity Cliffs
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Activity%20Cliffs
@@ -570,7 +537,6 @@ export async function demoBioActivityCliffs() : Promise<void> {
   PackageFunctions.demoBioActivityCliffs();
 }
 
-//name: demoBioAtomicLevel
 //description: Atomic level structure of Macromolecules
 //meta.demoPath: Bioinformatics | Atomic Level
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Atomic%20Level
@@ -585,7 +551,6 @@ export async function sdfToJsonLib(table: DG.DataFrame) : Promise<void> {
   PackageFunctions.sdfToJsonLib(table);
 }
 
-//name: seq2atomic
 //description: Converts a `Macromolecule` sequence to its atomic level `Molecule` representation
 //input: string seq { semType: Macromolecule }
 //input: bool nonlinear 
@@ -595,7 +560,6 @@ export async function seq2atomic(seq: string, nonlinear: boolean) : Promise<any>
   return PackageFunctions.seq2atomic(seq, nonlinear);
 }
 
-//name: seqIdentity
 //description: Gets identity to a reference sequence
 //input: string seq { semType: Macromolecule }
 //input: string ref { semType: Macromolecule }
@@ -605,7 +569,6 @@ export async function seqIdentity(seq: string, ref: string) : Promise<any> {
   return PackageFunctions.seqIdentity(seq, ref);
 }
 
-//name: detectMacromoleculeProbe
 //input: file file 
 //input: string colName 
 //input: double probeCount { default: 100 }
@@ -613,13 +576,11 @@ export async function detectMacromoleculeProbe(file: DG.FileInfo, colName: strin
   PackageFunctions.detectMacromoleculeProbe(file, colName, probeCount);
 }
 
-//name: getSeqHelper
 //output: object result
 export async function getSeqHelper() : Promise<any> {
   return PackageFunctions.getSeqHelper();
 }
 
-//name: getMolFromHelm
 //input: dataframe df 
 //input: column helmCol 
 //input: bool chiralityEngine { default: true }

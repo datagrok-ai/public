@@ -969,7 +969,7 @@ export class PackageFunctions {
     return await showManageLibrariesView(false);
   }
 
-  @grok.decorators.appTreeBrowser({name: 'Monomer Manager Tree Browser'})
+  @grok.decorators.func({name: 'Monomer Manager Tree Browser'})
   static async manageMonomerLibrariesViewTreeBrowser(treeNode: DG.TreeViewGroup) {
     const libraries = (await (await MonomerLibManager.getInstance()).getFileManager()).getValidLibraryPaths();
     libraries.forEach((libName) => {
