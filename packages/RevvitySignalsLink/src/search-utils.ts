@@ -94,7 +94,7 @@ export async function initializeFilters(tv: DG.TableView, filtersDiv: HTMLDivEle
 }
 
 export async function runSearch(tv: DG.TableView, libId: string, compoundType: string, libName: string) {
-  viewQueryBuilders[`${libId}|${compoundType}`]!.saveHistory();
+  viewQueryBuilders[`${libId}|${compoundType}`]!.saveConditionToHistory();
   ui.setUpdateIndicator(tv.grid.root, true, 'Searching...');
   const condition = viewQueryBuilders[`${libId}|${compoundType}`]!.condition;
   const resultDf = await runSearchQuery(libId, compoundType, condition);
@@ -131,7 +131,7 @@ export async function initializeQueryBuilder(libId: string, compoundType: string
   });
 
   if (!viewQueryBuilders[`${libId}|${compoundType}`])
-    viewQueryBuilders[`${libId}|${compoundType}`] = new QueryBuilder(filterFields, initSearchQuery, QueryBuilderLayout.Narrow, true);
+    viewQueryBuilders[`${libId}|${compoundType}`] = new QueryBuilder(filterFields, initSearchQuery, QueryBuilderLayout.Narrow, `Revvity Signals|${libId}|${compoundType}`);
 }
 
 
