@@ -59,7 +59,7 @@ export class TodoView extends DG.ViewBase {
         this.container = await grok.dapi.docker.dockerContainers.filter('todo').first();
         const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id, '/todos');
         if (response.status !== 200) {
-            const body = response.json();
+            const body: any = response.json();
             const error = body['error'] ?? response.statusText;
             grok.shell.error(`Couldn't get todos list. ${error}`);
             return;
@@ -89,7 +89,7 @@ export class TodoView extends DG.ViewBase {
         };
         const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container!.id, '/todos', {method: 'POST', body: JSON.stringify(todo), headers: {'content-type': 'application/json'}});
         if (response.status !== 201) {
-            const body = response.json();
+            const body: any = response.json();
             const error = body['error'] ?? response.statusText;
             grok.shell.error(`Couldn't create todo record. ${error}`);
             return;
@@ -104,10 +104,10 @@ export class TodoView extends DG.ViewBase {
     async updateTodo(todo: Todo): Promise<boolean> {
         const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container!.id, `/todos/${todo.id}`, {method: 'PUT', body: JSON.stringify(todo), headers: {'content-type': 'application/json'}});
         if (response.status !== 200) {
-            const body = response.json();
+            const body: any = response.json();
             const error = body['error'] ?? response.statusText;
             grok.shell.error(`Couldn't modify todo record. ${error}`);
-            return;
+            return false;
         }
         const updated = this.createTodo(await response.json());
         todo.id = updated.id;
