@@ -79,7 +79,7 @@ export interface IDartApi {
   grok_View_Set_ParentCall(v: any, c: any): any;
   grok_View_Get_Temp(v: any): any;
   grok_View_Load_Layout(v: any, l: any, pickupColumnsTags: Bool): any;
-  grok_View_Save_Layout(v: any): any;
+  grok_View_Save_Layout(v: any, saveZoom: Bool): any;
   grok_View_Get_Info(v: any): any;
   grok_View_Get_DockNode(v: any): any;
   grok_View_Get_RibbonMenu(v: any): any;
@@ -201,6 +201,7 @@ export interface IDartApi {
   grok_Menu_SingleColumSelector(m: any, dataFrame: any, initialValue: String, onChange: any, asGroup: String, nullable: Bool, visible: Bool, editable: Bool, closeOnClick: Bool, changeOnHover: Bool, columnFilter: any): any;
   grok_Menu_MultiColumSelector(m: any, dataFrame: any, initialValue: any, onChange: any, asGroup: String, visible: Bool, editable: Bool, columnFilter: any): any;
   grok_Menu_Header(m: any, text: String, onClick: any, hasHoverEffect: Bool, getDescription: any): any;
+  grok_Menu_FontEditor(m: any, initial: String, fontSizeMin: Num, fontSizeMax: Num, fontSizeStep: Num, fontFamilies: any, asGroup: String, fontFamilyGroup: Bool, onSizeChange: any, onFamilyChange: any, onBoldChange: any, onItalicChange: any): any;
   grok_Dialog(title: String, helpUrl: String, showHeader: Bool, showFooter: Bool): any;
   grok_Dialog_Get_Root(d: any): any;
   grok_Dialog_Get_Title(d: any): any;
@@ -585,6 +586,8 @@ export interface IDartApi {
   grok_InputForm_OnValidationCompleted(form: any): any;
   grok_DateInput_Get_Value(input: any): any;
   grok_DateInput_Set_Value(input: any, x: any): any;
+  grok_FontInput_Get_Value(input: any): any;
+  grok_FontInput_Set_Value(input: any, x: String): any;
   grok_ChoiceInput_Get_Items(input: any): any;
   grok_ChoiceInput_Set_Items(input: any, x: any): any;
   grok_RadioInput_Set_Items(input: any, x: any): any;
@@ -1682,10 +1685,10 @@ export interface IDartApi {
   grok_FuncOptions_Create(): any;
   grok_FuncParamOptions_Create(): any;
 
-  // Generated from ../d4\lib\src\common\common.api.g.dart
+  // Generated from ../d4/lib/src/common/common.api.g.dart
   grok_UsageType_Create(): any;
 
-  // Generated from ../d4\lib\src\grid\grid.api.g.dart
+  // Generated from ../d4/lib/src/grid/grid.api.g.dart
   grok_GridCellStyle_Create(): any;
   grok_GridCellStyle_Get_defaultStyle(): any;
   grok_GridCellStyle_Set_defaultStyle(v: any): any;
@@ -1735,7 +1738,7 @@ export interface IDartApi {
   grok_GridCellStyle_Set_choices(x: any, v: any): any;
   grok_renderMultipleHistograms(g: any, bounds: any, histograms: any, categoryColumn: any, colors: any, tension: Num, normalize: Bool, markerSize: Num, fill: Bool, minBin: Num, maxBin: Num, localMaximum: Bool, highlightedHistogram: Num): any;
 
-  // Generated from ../d4\lib\src\viewer_base\viewer_base.api.g.dart
+  // Generated from ../d4/lib/src/viewer_base/viewer_base.api.g.dart
   grok_ViewerEvent_Create(): any;
   grok_ViewerEvent_Get_viewer(x: any): any;
   grok_ViewerEvent_Set_viewer(x: any, v: any): any;
@@ -1751,6 +1754,6 @@ export interface IDartApi {
   grok_ViewerEvent_Set_mouseEvent(x: any, v: any): any;
   grok_ViewerEvent_Get_bitset(x: any): any;
 
-  // Generated from ../d4\lib\src\widgets\widgets.api.g.dart
+  // Generated from ../d4/lib/src/widgets/widgets.api.g.dart
   grok_InputType_Create(): any;
 }
