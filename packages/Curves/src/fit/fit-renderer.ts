@@ -131,6 +131,7 @@ export function mergeSeries(series: IFitSeries[]): IFitSeries | null {
     connectDots: series[0].connectDots,
     showFitLine: series[0].showFitLine,
     showPoints: series[0].showPoints,
+    showOutliers: series[0].showOutliers,
     showCurveConfidenceInterval: series[0].showCurveConfidenceInterval,
     errorModel: series[0].errorModel,
     clickToToggle: series[0].clickToToggle,
@@ -370,6 +371,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         continue;
       for (let j = 0; j < data.series![i].points.length!; j++) {
         const p = data.series![i].points[j];
+        if (p.outlier && !data.series![i].showOutliers)
+          continue;
         if (this.hitTest(e, p, viewport)) {
           setOutlier(gridCell, p, i, j, data);
           return;
@@ -555,6 +558,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
           continue;
         for (let j = 0; j < data.series![i].points.length!; j++) {
           const p = data.series![i].points[j];
+          if (p.outlier && !data.series![i].showOutliers)
+            continue;
           if (this.hitTest(e, p, viewport)) {
             ui.tooltip.show(ui.divV([ui.divText(`${data.chartOptions?.xAxisName ?? 'x'}: ${DG.format(p.x, !data.chartOptions?.logX ? '#0.000' : 'scientific')}`),
               ui.divText(`${data.chartOptions?.yAxisName ?? 'y'}: ${DG.format(p.y, !data.chartOptions?.logY ? '#0.000' : 'scientific')}`)]), e.x + 16, e.y + 16);

@@ -7,6 +7,15 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 
+export namespace scripts {
+  /**
+  Calculates Minimum Significant Ratio (MSR) for compounds based on IC50 values, run dates, assay names, and target entities. 
+  */
+  export async function calculateMSR(table: DG.DataFrame , ic50Column: DG.Column , compoundIdColumn: DG.Column , runDateColumn: DG.Column , assayNameColumn: DG.Column , targetEntityColumn: DG.Column ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Curves:CalculateMSR', { table, ic50Column, compoundIdColumn, runDateColumn, assayNameColumn, targetEntityColumn });
+  }
+}
+
 export namespace queries {
   export async function getPlates(): Promise<DG.DataFrame> {
     return await grok.data.query('Curves:GetPlates', {});
