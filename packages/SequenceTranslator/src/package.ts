@@ -144,7 +144,7 @@ export class PackageFunctions{
 
 
   @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
-  static getCodeToWeightsMap(): { [key: string]: number } {
+  static getCodeToWeightsMap(): Record<string, number> {
   
     const monomerLibWrapper = _package.monomerLibWrapper;
     const map = monomerLibWrapper.getCodesToWeightsMap();
@@ -386,8 +386,7 @@ export class PackageFunctions{
   }
 }
 
-
-
+//name: getSpecifiedAppView
 async function getSpecifiedAppView(appName: string): Promise<DG.ViewBase> {
   await _package.initLibData();
   const appUI = getSpecifiedAppUI(appName, _package);
