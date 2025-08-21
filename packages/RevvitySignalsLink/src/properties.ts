@@ -29,7 +29,7 @@ export function getDefaultProperties(): DG.Property[] {
 }
 
 
-export const NOT_IN_TAGS = [ 'Created', 'Edited', 'Creator', 'Editor', 'Structure', 'isMaterial', 'type', 'assetTypeEid'];
+export const NOT_IN_TAGS = [ 'createdAt', 'editedAt', 'createdBy', 'editedBy', 'Structure', 'isMaterial', 'type', 'assetTypeEid'];
 
 export const REVVITY_FIELD_TO_PROP_TYPE_MAPPING: {[key: string]: DG.TYPE} = {
     'double': DG.TYPE.FLOAT,

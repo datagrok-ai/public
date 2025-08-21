@@ -29,6 +29,7 @@ export type RevvityConfig = {
 
 let openedView: DG.View | null = null;
 let config: RevvityConfig = { libraries: undefined };
+const viewQueryBuilders: {[key: string]: QueryBuilder} = {};
 
 //tags: app
 //name: Revvity Signals
@@ -55,7 +56,8 @@ export async function revvitySignalsLinkApp(): Promise<DG.ViewBase> {
 }
 
 //input: dynamic treeNode
-export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGroup) {
+//input: view browseView
+export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.View) {
   getRevvityUsers();
   const libs = await getRevvityLibraries();
 
@@ -68,34 +70,16 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
     const tv = grok.shell.addTablePreview(df);
     tv.name = name;
     const filtersDiv = ui.div([]);
-    let queryBuilder: QueryBuilder | null = null;
-
-    const updateQueryBuilderLayout = (width: number) => {
-      if (!queryBuilder) return;
-
-      // Switch to narrow layout if width is less than 300px, otherwise use standard
-      const newLayout = width < 300 ? QueryBuilderLayout.Narrow : QueryBuilderLayout.Standard;
-
-      if (queryBuilder.getLayout() !== newLayout) {
-        queryBuilder.setLayout(newLayout);
-      }
-    };
-
-    ui.onSizeChanged(filtersDiv).subscribe(() => {
-      updateQueryBuilderLayout(filtersDiv.clientWidth);
-    });
-
 
     const initializeQueryBuilder = async (libId: string, compoundType: string) => {
-      ui.setUpdateIndicator(filtersDiv, true, 'Loading filters...');
       const filterFields = getDefaultProperties();
       const tagsStr = await grok.functions.call('RevvitySignalsLink:getTags', {
         assetTypeId: libId,
         type: compoundType
       });
-      const tags: {[key: string]: string} = JSON.parse(tagsStr);
+      const tags: { [key: string]: string } = JSON.parse(tagsStr);
       Object.keys(tags).forEach((tagName) => {
-        const propOptions: {[key: string]: any} = {
+        const propOptions: { [key: string]: any } = {
           name: tagName,
           type: REVVITY_FIELD_TO_PROP_TYPE_MAPPING[tags[tagName]],
         };
@@ -104,22 +88,31 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
           propOptions.friendlyName = nameArr[1];
         const prop = DG.Property.fromOptions(propOptions);
         prop.options[SUGGESTIONS_FUNCTION] = async (text: string) => {
-          const termsStr =  await getTerms(tagName, compoundType, libId, true);
-          const terms: string[] =  JSON.parse(termsStr);
+          const termsStr = await getTerms(tagName, compoundType, libId, true);
+          const terms: string[] = JSON.parse(termsStr);
           return terms.filter((it) => it.toLowerCase().includes(text.toLowerCase()));
         }
         filterFields.push(prop);
       });
-      queryBuilder = new QueryBuilder(filterFields, undefined, QueryBuilderLayout.Narrow);
-      const runSearchButton = ui.bigButton('Search', async () => {
-        ui.setUpdateIndicator(tv.grid.root, true, 'Searching...');
-        const resultDf = await runSearch(libId, compoundType, queryBuilder!.condition);
-        tv.dataFrame = resultDf;
-        ui.setUpdateIndicator(tv.grid.root, false);
+      if (!viewQueryBuilders[`${libId}|${compoundType}`]) {
+        viewQueryBuilders[`${libId}|${compoundType}`] = new QueryBuilder(filterFields, undefined, QueryBuilderLayout.Narrow, true);
+      }
+
+      const updateQueryBuilderLayout = (width: number) => {
+        if (!viewQueryBuilders[`${libId}|${compoundType}`]) return;
+
+        // Switch to narrow layout if width is less than 300px, otherwise use standard
+        const newLayout = width < 300 ? QueryBuilderLayout.Narrow : QueryBuilderLayout.Standard;
+
+        if (viewQueryBuilders[`${libId}|${compoundType}`].getLayout() !== newLayout) {
+          viewQueryBuilders[`${libId}|${compoundType}`].setLayout(newLayout);
+        }
+      };
+
+      ui.onSizeChanged(filtersDiv).subscribe(() => {
+        updateQueryBuilderLayout(filtersDiv.clientWidth);
       });
-      ui.setUpdateIndicator(filtersDiv, false);
-      filtersDiv.append(queryBuilder.root);
-      filtersDiv.append(ui.div(runSearchButton, {style: {paddingLeft: '4px'}}));
+
     }
 
     const initializeFilters = async () => {
@@ -129,10 +122,24 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
         //create filters button
         const filtersButton = ui.button('Add filters', () => {
           tv.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
-          if (!queryBuilder)
-            initializeQueryBuilder(selectedLib[0].id, compoundType);
         });
         tv.setRibbonPanels([[filtersButton]]);
+        //create filters panel
+        tv.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
+        ui.setUpdateIndicator(filtersDiv, true, 'Loading filters...');
+        await initializeQueryBuilder(selectedLib[0].id, compoundType);
+
+        const runSearchButton = ui.bigButton('Search', async () => {
+          viewQueryBuilders[`${selectedLib[0].id}|${compoundType}`]!.saveHistory();
+          ui.setUpdateIndicator(tv.grid.root, true, 'Searching...');
+          const resultDf = await runSearch(selectedLib[0].id, compoundType, viewQueryBuilders[`${selectedLib[0].id}|${compoundType}`]!.condition);
+          tv.dataFrame = resultDf;
+          ui.setUpdateIndicator(tv.grid.root, false);
+        });
+
+        ui.setUpdateIndicator(filtersDiv, false);
+        filtersDiv.append(viewQueryBuilders[`${selectedLib[0].id}|${compoundType}`].root);
+        filtersDiv.append(ui.div(runSearchButton, { style: { paddingLeft: '4px' } }));
       }
     }
 
@@ -197,12 +204,6 @@ export async function searchEntities(query: string, params: string): Promise<DG.
     await grok.data.detectSemanticTypes(df);
   } catch (e: any) {
     grok.shell.error(e?.message ?? e);
-
-
-
-
-
-
   }
   return df;
 }
