@@ -375,6 +375,26 @@ export class ConditionRegistry {
 }
 
 
+export type HistoryItem = {
+    date: DG.TYPE.DATE_TIME,
+    value: string,
+}
+
+export function saveHistory(key: string, value: string) {
+    let collection: HistoryItem[] = JSON.parse(localStorage.getItem(key) ?? '[]');
+    const newItem = { date: new Date(), value: value };
+    if (!collection.length)
+        localStorage.setItem(key, JSON.stringify([newItem]));
+    else {
+        collection = collection.filter((it) => it.value !== value)
+        localStorage.setItem(key, JSON.stringify([newItem, ...collection.slice(0, 9)]));
+    }
+}
+
+export function getHistory(key: string): HistoryItem[] {
+    return JSON.parse(localStorage.getItem(key) ?? '[]');
+}
+
 export class QueryBuilder {
     root: HTMLElement;
     condition: ComplexCondition;
@@ -382,16 +402,14 @@ export class QueryBuilder {
     structureChanged: Subject<ComplexCondition> = new Subject<ComplexCondition>();
     filterValueChanged: Subject<SimpleCondition> = new Subject<SimpleCondition>();
     layout: QueryBuilderLayout;
-    private _history: boolean;
-    private historyCache: DG.LruCache<string, string>;
-    private historyKeys: string[] = [];
+    private _historyCacheKey: string;
     private historyIcon: HTMLElement | null = null;
 
-    constructor(properties: DG.Property[], initialCondition?: ComplexCondition, layout: QueryBuilderLayout = QueryBuilderLayout.Standard, history: boolean = false) {
+    constructor(properties: DG.Property[], initialCondition?: ComplexCondition, layout: QueryBuilderLayout = QueryBuilderLayout.Standard,
+        _historyCacheKey: string = '') {
         this.properties = properties;
         this.layout = layout;
-        this._history = history;
-        this.historyCache = new DG.LruCache<string, string>(10);
+        this._historyCacheKey = _historyCacheKey;
         
         if (initialCondition) {
             this.condition = initialCondition;
@@ -407,29 +425,14 @@ export class QueryBuilder {
         this.setupHistoryIcon();
     }
 
-    set history(enabled: boolean) {
-        this._history = enabled;
+    set historyCache(key: string) {
+        this._historyCacheKey = key;
         this.setupHistoryIcon(); // This will control visibility
     }
 
-    get history(): boolean {
-        return this._history;
-    }
-
-    saveHistory(): void {
-        if (this._history) {
-            const conditionString = JSON.stringify(this.condition);
-            this.historyCache.set(conditionString, conditionString);
-            
-            if (!this.historyKeys.includes(conditionString)) {
-                this.historyKeys.push(conditionString);
-                
-                // Keep only the last 10 keys (matching cache size)
-                if (this.historyKeys.length > 10) {
-                    this.historyKeys.shift();
-                }
-            }
-        }
+    saveConditionToHistory(): void {
+        if (this._historyCacheKey)
+            saveHistory(this._historyCacheKey, JSON.stringify(this.condition));
     }
 
     private setupHistoryIcon(): void {
@@ -445,24 +448,63 @@ export class QueryBuilder {
         
         // Set data attribute for CSS to control visibility
         if (this.root) {
-            this.root.setAttribute('data-history', this._history.toString());
+            this.root.setAttribute('data-history', this._historyCacheKey  === '' ? 'false' : 'true');
         }
     }
 
     private showHistoryMenu(): void {
+        const items: HistoryItem[] = getHistory(this._historyCacheKey);
         const menu = DG.Menu.popup();
-        menu.items(this.historyKeys, (cond: string) => {
-            const condition = this.historyCache.get(cond);
-            if (condition)
-                this.loadCondition(JSON.parse(condition));
-        });
+        menu.items(items.map((it) => ui.tools.click(
+            ui.divH([
+                ui.divText(it.date.toString(), {style: {color: '#7990A5'}}),
+                ui.divText(this.conditionToString(JSON.parse(it.value) as ComplexCondition)),
+            ], {style: {gap: '5px'}}),
+        () => {this.loadCondition(JSON.parse(it.value))})), () => {});
         menu.show();
     }
 
     private loadCondition(condition: ComplexCondition): void {
-        this.condition = JSON.parse(JSON.stringify(condition)); // Deep clone
+        this.condition = JSON.parse(JSON.stringify(condition));
         this.rebuildUI();
         this.structureChanged.next(this.condition);
+    }
+
+    conditionToString(condition: ComplexCondition): string {
+        if (!condition || !condition.conditions || condition.conditions.length === 0) {
+            return 'No conditions';
+        }
+
+        // If there's only one condition, don't wrap it in logical operator
+        if (condition.conditions.length === 1) {
+            return this.expressionToString(condition.conditions[0]);
+        }
+
+        // For multiple conditions, wrap them in logical operator
+        const logicalOp = condition.logicalOperator === Operators.Logical.and ? 'AND' : 'OR';
+        const conditionStrings = condition.conditions.map(cond => this.expressionToString(cond));
+        
+        return `(${conditionStrings.join(` ${logicalOp} `)})`;
+    }
+
+    private expressionToString(expression: Expression): string {
+        if ('field' in expression) {
+            // This is a SimpleCondition
+            return this.simpleConditionToString(expression);
+        } else {
+            // This is a ComplexCondition (recursive)
+            return this.conditionToString(expression);
+        }
+    }
+
+    private simpleConditionToString(condition: SimpleCondition): string {
+        const field = condition.field || 'Unknown field';
+        const operator = condition.operator || 'Unknown operator';
+        const value = condition.value !== undefined && condition.value !== null ? 
+            (Array.isArray(condition.value) ? `[${condition.value.join(', ')}]` : String(condition.value)) : 
+            'No value';
+        
+        return `${field} ${operator} ${value}`;
     }
 
     createDefaultSimpleCondition(): SimpleCondition {
