@@ -1,6 +1,7 @@
 const path = require('path');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 const webpack = require('webpack');
+const FuncGeneratorPlugin = require('datagrok-tools/plugins/func-gen-plugin');
 
 module.exports = (env) => {
   const ENABLE_VUE_DEV_TOOLS = env.enable_vue_dev_tools;
@@ -38,12 +39,15 @@ module.exports = (env) => {
 	},
       ],
     },
-    plugins: [new webpack.DefinePlugin({
-      ENABLE_VUE_DEV_TOOLS,
-      __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false',
-      __VUE_PROD_DEVTOOLS__: 'false',
-      __VUE_OPTIONS_API__: 'true',
-    })],
+    plugins: [
+      new webpack.DefinePlugin({
+        ENABLE_VUE_DEV_TOOLS,
+        __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false',
+        __VUE_PROD_DEVTOOLS__: 'false',
+        __VUE_OPTIONS_API__: 'true',
+    }),
+    new FuncGeneratorPlugin({outputPath: './src/package.g.ts'}),
+  ],
     devtool: 'source-map',
     externals: {
       'datagrok-api/dg': 'DG',
