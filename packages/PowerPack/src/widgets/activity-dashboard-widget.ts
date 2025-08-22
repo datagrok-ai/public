@@ -69,10 +69,14 @@ export class ActivityDashboardWidget extends DG.Widget {
   }
 
   async initSpotlightData(): Promise<void> {
-    console.time('ActivityDashboardWidget.notifications');
+    console.time('ActivityDashboardWidget.initSpotlightData');
     const notificationsDataSource: DG.NotificationsDataSource = grok.dapi.users.notifications.forCurrentUser()
       .by(ActivityDashboardWidget.RECORDS_AMOUNT_PER_PAGE) as DG.NotificationsDataSource;
-    const notifications = await notificationsDataSource.list();
+    console.time('ActivityDashboardWidget.notificationsAndMostRecentEntities');
+    const [notifications, mostRecentEntitiesDf]: [DG.UserNotification[], DG.DataFrame] = await Promise.all([notificationsDataSource.list(),
+      queries.mostRecentEntities(DG.User.current().id)]);
+    console.timeEnd('ActivityDashboardWidget.notificationsAndMostRecentEntities');
+
     this.recentNotifications = notifications
       .filter((n) => !n.isRead || n.createdAt?.isAfter(this.currentDate.subtract(ActivityDashboardWidget.RECENT_TIME_DAYS, 'day')))
       .sort((a, b) => b.createdAt?.diff(a.createdAt) ?? 0);
@@ -87,37 +91,32 @@ export class ActivityDashboardWidget extends DG.Widget {
         sharedEntityIds.push(matches[1][1]);
       }
     });
-    console.timeEnd('ActivityDashboardWidget.notifications');
+
+    const recentEntityIdCol = mostRecentEntitiesDf.col('id')!;
+    const lastEventTimeCol = mostRecentEntitiesDf.col('last_event_time')!;
+    const recentEntityIds = new Array(recentEntityIdCol.length);
+    for (let i = 0; i < recentEntityIdCol.length; i++)
+      recentEntityIds[i] = recentEntityIdCol.get(i);
+
     console.time('ActivityDashboardWidget.getEntitiesByIds');
-    const entities = await grok.dapi.getEntities([...sharedUserIds, ...sharedEntityIds]);
-    this.sharedUsers = entities.filter((ent) => ent instanceof DG.User) as DG.User[];
-    this.sharedWithMe = entities.filter((ent) => !(ent instanceof DG.User));
+    const [sharedEntities, recentEntsNotFiltered] = await Promise.all([grok.dapi.getEntities([...sharedUserIds, ...sharedEntityIds]),
+      grok.dapi.getEntities(recentEntityIds)]);
     console.timeEnd('ActivityDashboardWidget.getEntitiesByIds');
 
-    console.time('ActivityDashboardWidget.mostRecentEntities');
-    const mostRecentEntitiesDf = await queries.mostRecentEntities(DG.User.current().id);
-    console.timeEnd('ActivityDashboardWidget.mostRecentEntities');
-    const recentEntityIdCol = mostRecentEntitiesDf.col('id');
-    const lastEventTimeCol = mostRecentEntitiesDf.col('last_event_time');
-    if (recentEntityIdCol && lastEventTimeCol) {
-      const recentEntityIds = new Array(recentEntityIdCol.length);
-      console.time('ActivityDashboardWidget.mostRecentEntities.getAllEntities');
-      for (let i = 0; i < recentEntityIdCol.length; i++)
-        recentEntityIds[i] = recentEntityIdCol.get(i);
-      const recentEntsNotFiltered = await grok.dapi.getEntities(recentEntityIds);
-      for (let i = 0; i < recentEntsNotFiltered.length; i++) {
-        const ent = recentEntsNotFiltered[i];
-        if (!(ent instanceof DG.FuncCall || ent instanceof DG.Group || ent instanceof DG.User || ent instanceof DG.Package ||
-          ent instanceof DG.UserReport || ent instanceof DG.TableInfo || (ent instanceof DG.Func && !(ent instanceof DG.Script ||
-          ent instanceof DG.DataQuery || ent instanceof DG.DataJob)) || ent instanceof DG.ViewInfo || ent == null ||
-          //@ts-ignore
-          (ent instanceof DG.Project && (!ent.isDashboard || ent.isPackage)) || (ent.hasOwnProperty('npmScope') && ent['npmScope'] == 'datagrok'))) {
-          this.recentEntities.push(ent);
-          this.recentEntityTimes.push(lastEventTimeCol.get(i));
-        }
+    this.sharedUsers = sharedEntities.filter((ent) => ent instanceof DG.User) as DG.User[];
+    this.sharedWithMe = sharedEntities.filter((ent) => !(ent instanceof DG.User));
+    for (let i = 0; i < recentEntsNotFiltered.length; i++) {
+      const ent = recentEntsNotFiltered[i];
+      if (!(ent instanceof DG.FuncCall || ent instanceof DG.Group || ent instanceof DG.User || ent instanceof DG.Package ||
+        ent instanceof DG.UserReport || ent instanceof DG.TableInfo || (ent instanceof DG.Func && !(ent instanceof DG.Script ||
+        ent instanceof DG.DataQuery || ent instanceof DG.DataJob)) || ent instanceof DG.ViewInfo || ent == null ||
+        //@ts-ignore
+        (ent instanceof DG.Project && (!ent.isDashboard || ent.isPackage)) || (ent.hasOwnProperty('npmScope') && ent['npmScope'] == 'datagrok'))) {
+        this.recentEntities.push(ent);
+        this.recentEntityTimes.push(lastEventTimeCol.get(i));
       }
-      console.timeEnd('ActivityDashboardWidget.mostRecentEntities.getAllEntities');
     }
+    console.timeEnd('ActivityDashboardWidget.initSpotlightData');
   }
 
   async getSpotlightTab(): Promise<HTMLElement> {
