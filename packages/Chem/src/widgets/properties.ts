@@ -8,6 +8,7 @@ import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {addCopyIcon} from '../utils/ui-utils';
 import {IChemProperty, OCLService, CHEM_PROP_MAP as PROP_MAP} from '../open-chem/ocl-service';
+import * as api from '../package-api';
 
 const DGTypeMap = {
   'float': DG.TYPE.FLOAT,
@@ -43,7 +44,6 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
     host.appendChild(ui.tableFromMap(widgetPropMap));
 
     addCopyIcon(widgetPropMap, 'Properties');
-    
   } catch {
     return new DG.Widget(ui.divText('Could not analyze properties'));
   }
@@ -53,19 +53,30 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
 
 export function getPropertiesMap(semValue: DG.SemanticValue<string>, host?: HTMLElement):
  {[k: string]: {value: any, addColumnIcon: HTMLElement | null}} {
-
   const mol = oclMol(semValue.value);
-  
+
   function prop(p: IChemProperty, mol: OCL.Molecule): {value: any, addColumnIcon: HTMLElement | null} {
     let addColumnIcon: HTMLElement | null = null;
     if (host && semValue.cell.dataFrame && semValue.cell.column) {
       addColumnIcon = ui.iconFA('plus', async () => {
-      const res = await addPropertiesAsColumns(semValue.cell.dataFrame, semValue.cell.column, [p.name]);
-      const col = res[0];
-      col.setTag('CHEM_WIDGET_PROPERTY', p.name);
-      col.setTag('CHEM_ORIG_MOLECULE_COLUMN', semValue.cell.column.name);
+        const func = DG.Func.find({name: 'addChemPropertiesColumns'})[0];
+        if (!func)
+          throw new Error('Function addChemPropertiesColumns not found');
+        await func.prepare({
+          table: semValue.cell.dataFrame,
+          molecules: semValue.cell.column,
+          MW: p.name === 'MW',
+          HBA: p.name === 'HBA',
+          HBD: p.name === 'HBD',
+          logP: p.name === 'LogP',
+          logS: p.name === 'LogS',
+          PSA: p.name === 'PSA',
+          rotatableBonds: p.name === 'Rotatable bonds',
+          stereoCenters: p.name === 'Stereo centers',
+          moleculeCharge: p.name === 'Molecule charge',
+        }).call(undefined, undefined, {processed: false});
       }, `Calculate ${p.name} for the whole table`);
-  
+
       ui.tools.setHoverVisibility(host, [addColumnIcon]);
       $(addColumnIcon)
         .css('color', '#2083d5')
@@ -76,7 +87,6 @@ export function getPropertiesMap(semValue: DG.SemanticValue<string>, host?: HTML
     }
 
     return {value: p.valueFunc(mol), addColumnIcon: addColumnIcon};
-    
   }
 
   const map : {[k: string]: {value: any, addColumnIcon: HTMLElement | null}} = {};
@@ -91,8 +101,11 @@ export async function addPropertiesAsColumns(df: DG.DataFrame, smilesCol: DG.Col
   propsMap: string[]) {
   const resCols = await getPropertiesAsColumns(smilesCol, propsMap);
   resCols.forEach((col) => {
+    const origColName = col.name;
     col.name = df.columns.getUnusedName(col.name);
     df.columns.add(col);
+    col.setTag('CHEM_WIDGET_PROPERTY', origColName);
+    col.setTag('CHEM_ORIG_MOLECULE_COLUMN', smilesCol.name);
   });
   return resCols;
 }
