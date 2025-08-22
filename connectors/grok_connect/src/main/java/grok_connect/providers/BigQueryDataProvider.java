@@ -74,7 +74,7 @@ public class BigQueryDataProvider extends JdbcDataProvider {
         if (conn.credentials == null)
             throw new GrokConnectException("Credentials can't be null");
 
-        boolean resolvedByDatagrok = conn.credentials.parameters.get("#dg_resolved").equals(true);
+        boolean resolvedByDatagrok = conn.credentials.parameters.getOrDefault("#dg_resolved", Boolean.FALSE).equals(true);
         com.simba.googlebigquery.jdbc42.DataSource ds = getDataSource(conn, resolvedByDatagrok);
         if (resolvedByDatagrok)
             return ds.getConnection();
