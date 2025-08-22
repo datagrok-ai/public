@@ -3,13 +3,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { ErrorHandling, MolTrackProp, Scope } from './constants';
-import { fetchBatchProperties, fetchCompoundProperties, registerBulk } from '../package';
+import { checkCompoundExists, fetchBatchProperties, fetchCompoundProperties, registerBulk } from '../package';
 import RandExp from 'randexp';
 import { createPath } from './utils';
 
 let openedView: DG.ViewBase | null = null;
 
-export abstract class EntityBaseView {
+export class EntityBaseView {
   view: DG.View;
   sketcherInstance: grok.chem.Sketcher;
   previewDf: DG.DataFrame | undefined;
@@ -22,24 +22,29 @@ export abstract class EntityBaseView {
   title: string = 'Register a new compound';
   initialSmiles: string = 'CC(=O)Oc1ccccc1C(=O)O';
   singleRetrieved: boolean = false;
+  path: string = 'Compound';
 
   protected messageContainer: HTMLDivElement = ui.div([], 'moltrack-info-container');
+  registerButton: HTMLButtonElement | undefined;
 
   constructor(buildUI: boolean = true) {
     this.view = DG.View.create();
     this.sketcherInstance = new grok.chem.Sketcher();
+
+    const validationFunc = (s: string) => {
+      const valFunc = DG.Func.find({package: 'Chem', name: 'validateMolecule'})[0];
+      const funcCall: DG.FuncCall = valFunc.prepare({s});
+      funcCall.callSync();
+      const res = funcCall.getOutputParamValue();
+      return res;
+    };
+    this.sketcherInstance._validationFunc = (s) => validationFunc(s);
     this.sketcherInstance.onChanged.subscribe(async () => {
-      const molfile = this.sketcherInstance.getMolFile();
-      const validate = await grok.functions.call('Chem:validateMolecule', {s: molfile});
       ui.empty(this.messageContainer);
-      if (validate !== '') {
-        const header = 'Invalid structure';
-        const infoDiv = ui.info(validate, header, true);
-        this.messageContainer.append(infoDiv);
-      } else {
-        const titleText = ui.divText(this.title, 'moltrack-title');
-        this.messageContainer.append(titleText);
-      }
+      this.messageContainer.appendChild(ui.divText(this.title, 'moltrack-title'));
+
+      const compoundExists = await checkCompoundExists(this.sketcherInstance.getSmiles());
+      this.registerButton?.classList.toggle('dim', compoundExists);
     });
     DG.chem.currentSketcherType = 'Ketcher';
 
@@ -49,7 +54,7 @@ export abstract class EntityBaseView {
 
   protected convertToDGProperty(p: MolTrackProp): DG.Property {
     const options: any = {
-      name: p.name,
+      name: p.friendly_name ?? p.name,
       type: p.value_type,
     };
 
@@ -118,14 +123,14 @@ export abstract class EntityBaseView {
     return { section, inputs, formBackingObject };
   }
 
-  createCollapsibleSection(
+  private createCollapsibleSection(
     title: string,
     form: HTMLElement,
     initiallyOpen: boolean = false,
   ): HTMLElement {
     const chevron = ui.iconFA(
       initiallyOpen ? 'chevron-down' : 'chevron-right',
-      () => toggleSection(form, chevron, title, clearButton),
+      () => toggleSection(form, chevron, title),
       `Toggle ${title}`,
     );
     chevron.classList.add('moltrack-chevron');
@@ -136,15 +141,14 @@ export abstract class EntityBaseView {
     form.style.display = initiallyOpen ? 'block' : 'none';
     form.classList.add('moltrack-section-form');
 
-    const clearButton = ui.button('Clear form', () => {
-      for (const input of this.inputs)
-        input.value = null;
-    });
-    clearButton.style.display = initiallyOpen ? 'block' : 'none';
-    clearButton.style.marginLeft = 'auto';
-
-    const section = ui.divV([header, form, clearButton], 'moltrack-section');
+    const section = ui.divV([header, form], 'moltrack-section');
     return section;
+  }
+
+  private clearAll() {
+    this.sketcherInstance.setValue('');
+    for (const input of this.inputs)
+      input.value = null;
   }
 
   private async registerButtonHandler() {
@@ -153,7 +157,7 @@ export abstract class EntityBaseView {
       const propValues = this.collectNonEmptyInputValues();
       const batchInputNames = this.batchInputs.map((input) => input.property.name);
       const isBatch = Object.keys(propValues).find((name) => batchInputNames.includes(name)) !== undefined;
-      const scope = isBatch ? Scope.BATCHES : Scope.COMPOUNDS;
+      const scope = (isBatch || this.isBatchSectionExpanded) ? Scope.BATCHES : Scope.COMPOUNDS;
       const singularScope = scope.replace(/(es|s)$/, '');
       const csvFile = this.createCsvFile(smiles, propValues, scope);
 
@@ -176,8 +180,12 @@ export abstract class EntityBaseView {
         }
       }
 
-      if (status === 'success' && openedView)
-        openedView.path = `${createPath('Compound')}?corporate_${singularScope}_id=${encodeURIComponent(batchId?.trim() || compoundId)}`;
+      if (openedView) {
+        const basePath = createPath(this.path);
+        openedView.path = status === 'success' ?
+          `${basePath}?corporate_${singularScope}_id=${encodeURIComponent(batchId?.trim() || compoundId)}` :
+          basePath;
+      }
     } catch {
       ui.empty(this.messageContainer);
     }
@@ -204,8 +212,8 @@ export abstract class EntityBaseView {
 
     return {
       status: getValue('registration_status', 'Unknown'),
-      compoundId: getValue('property_corporate_compound_id', ''),
-      batchId: getValue('batch_property_corporate_batch_id', ''),
+      compoundId: getValue('corporate_compound_id', ''),
+      batchId: getValue('corporate_batch_id', ''),
       errorMsg: getValue('registration_error_message', 'Unknown error'),
     };
   }
@@ -213,31 +221,52 @@ export abstract class EntityBaseView {
   private showRegistrationMessage(status: string, id: string, errorMsg: string, scope: string) {
     const upperCasedScope = scope.charAt(0).toUpperCase() + scope.slice(1);
     const header = status === 'success' ?
-      `${upperCasedScope} successfully registered!` :
+      `${id} successfully registered!` :
       `${upperCasedScope} registration failed!`;
-    const message = status === 'success' ?
-      `The ${scope} has been added to the database with ID: ${id}` :
-      `Error: ${errorMsg}`;
+    const message = status === 'success' ? '' : `Error: ${errorMsg}`;
 
     const infoDiv = ui.info(message, header, true);
     const bar = infoDiv.querySelector('.grok-info-bar') as HTMLElement;
-    if (bar)
-      bar.style.setProperty('background-color', status === 'success' ? '#d4edda' : '#f8d7da', 'important');
+    if (bar) {
+      bar.classList.toggle('moltrack-bar-success', status === 'success');
+      bar.classList.toggle('moltrack-bar-error', status !== 'success');
+    }
 
     this.messageContainer.appendChild(infoDiv);
   }
 
-  public async buildUIMethod() {
+  private async buildSketcherOrPreview(): Promise<HTMLElement> {
     const titleText = ui.divText(this.title, 'moltrack-title');
     this.messageContainer.append(titleText);
+
     this.sketcherInstance.setSmiles(this.initialSmiles);
 
+    if (this.singleRetrieved) {
+      const image: HTMLCanvasElement = ui.canvas();
+      image.width = 600;
+      image.height = 300;
+
+      const container = ui.div();
+      // container.style.marginLeft = '-80px';
+      container.appendChild(image);
+
+      await grok.chem.canvasMol(0, 0, image.width, image.height, image, this.initialSmiles);
+
+      return container;
+    } else
+      return this.sketcherInstance.root;
+  }
+
+
+  public async buildUIMethod() {
+    const container = await this.buildSketcherOrPreview();
     if (!this.singleRetrieved) {
-      const registerButton = ui.bigButton('REGISTER', async () => {
+      this.registerButton = ui.bigButton('REGISTER', async () => {
         await this.registerButtonHandler();
       });
-      registerButton.classList.add('moltrack-run-register-button');
-      this.view.setRibbonPanels([[registerButton]]);
+
+      const clearAllIcon = ui.iconFA('eraser', () => this.clearAll(), 'Clear all');
+      this.view.setRibbonPanels([[this.registerButton, clearAllIcon]]);
     }
 
     const {
@@ -273,11 +302,10 @@ export abstract class EntityBaseView {
       ...batchFormBackingObject,
     };
 
+    const element = this.singleRetrieved ? container : this.sketcherInstance.root;
     const topSections = ui.divV([compoundSection, batchSection], 'moltrack-top-sections');
-    // const clearSketcherButton = ui.button('Clear sketcher', () => this.sketcherInstance.setValue(''));
-    // clearSketcherButton.style.marginLeft = 'auto';
     const sketcherFormContainer = ui.divH(
-      [/*ui.divV([this.sketcherInstance.root, clearSketcherButton])*/this.sketcherInstance.root, topSections],
+      [element, topSections],
       'moltrack-top-container',
     );
 
@@ -294,10 +322,9 @@ export abstract class EntityBaseView {
   }
 }
 
-function toggleSection(form: HTMLElement, chevron: HTMLElement, title: string, button: HTMLElement) {
+function toggleSection(form: HTMLElement, chevron: HTMLElement, title: string) {
   const isHidden = form.style.display === 'none';
   form.style.display = isHidden ? 'block' : 'none';
-  button.style.display = isHidden ? 'block' : 'none';
   chevron.className = `fa fa-chevron-${isHidden ? 'down' : 'right'}`;
 }
 

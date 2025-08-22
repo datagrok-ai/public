@@ -9,10 +9,6 @@
   height: 100%!important;
 }
 
-.moltrack-run-register-button {
-  width: 100px;
-}
-
 .moltrack-top-container {
   display: flex;
   align-items: flex-start;
@@ -34,11 +30,12 @@
 .moltrack-form {
   flex: 1 1 auto;
   min-width: 200px;
+  max-height: 30vh;
+  overflow-y: auto;
+  padding-right: 8px;
 }
 
 .moltrack-compound-form {
-  border: 1px solid #ccc;
-  border-radius: 4px;
   padding: 12px;
   margin-bottom: 35px;
   margin-top: 15px;
@@ -78,4 +75,14 @@
 .moltrack-top-container,
 .moltrack-register-container {
   width: 100%;
+}
+
+.moltrack-bar-success {
+  background-color: #dcf3e7!important;
+  color: #286344!important;
+}
+
+.moltrack-bar-error {
+  background-color: #fbe0e0!important;
+  color: #763434!important;
 }
