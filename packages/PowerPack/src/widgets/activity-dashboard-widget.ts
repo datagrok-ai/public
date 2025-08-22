@@ -99,9 +99,10 @@ export class ActivityDashboardWidget extends DG.Widget {
       recentEntityIds[i] = recentEntityIdCol.get(i);
 
     console.time('ActivityDashboardWidget.getEntitiesByIds');
-    const [sharedEntities, recentEntsNotFiltered] = await Promise.all([grok.dapi.getEntities([...sharedUserIds, ...sharedEntityIds]),
-      grok.dapi.getEntities(recentEntityIds)]);
+    const allEntities = await grok.dapi.getEntities([...sharedUserIds, ...sharedEntityIds, ...recentEntityIds]);
     console.timeEnd('ActivityDashboardWidget.getEntitiesByIds');
+    const sharedEntities = allEntities.slice(0, sharedUserIds.length + sharedEntityIds.length);
+    const recentEntsNotFiltered = allEntities.slice(sharedUserIds.length + sharedEntityIds.length);
 
     this.sharedUsers = sharedEntities.filter((ent) => ent instanceof DG.User) as DG.User[];
     this.sharedWithMe = sharedEntities.filter((ent) => !(ent instanceof DG.User));
