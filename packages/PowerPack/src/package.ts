@@ -127,16 +127,16 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.dashboard({
-    meta: {
-      'showName': 'false',
-    },
-    order: '1',
-    name: 'Activity dashboard',
-  })
-  static activityDashboardWidget(): DG.Widget {
-    return new ActivityDashboardWidget();
-  }
+  // @grok.decorators.dashboard({
+  //   meta: {
+  //     'showName': 'false',
+  //   },
+  //   order: '1',
+  //   name: 'Activity dashboard',
+  // })
+  // static activityDashboardWidget(): DG.Widget {
+  //   return new ActivityDashboardWidget();
+  // }
 
 
   @grok.decorators.dashboard({
