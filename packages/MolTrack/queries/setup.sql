@@ -28,14 +28,15 @@ with admin as (
 stype as (
   select id from moltrack.semantic_types where name = 'Synonym'
 )
-insert into moltrack.properties (created_by, updated_by, name, description, value_type, semantic_type_id, property_class, entity_type, pattern)
+insert into moltrack.properties (created_by, updated_by, name, description, value_type, semantic_type_id, property_class, entity_type, pattern, friendly_name)
 values (
   (select id from admin),
   (select id from admin),
   'corporate_compound_id', 'Official institution synonym for compounds',
   'string',
   (select id from stype),
-  'DECLARED', 'COMPOUND', 'DG-{:06d}'
+  'DECLARED', 'COMPOUND', 'DG-{:06d}',
+  'Grok ID'
 ), (
   (select id from admin),
   (select id from admin),
@@ -43,7 +44,8 @@ values (
   'string',
   (select id from stype),
   'DECLARED', 'BATCH',
-  'DGB-{:06d}'
+  'DGB-{:06d}',
+  'Grok Batch ID'
 );
 --end
 

@@ -7,29 +7,28 @@ import { u2 } from '@datagrok-libraries/utils/src/u2';
 import { MolTrackDockerService } from './utils/moltrack-docker-service';
 import { RegistrationView } from './utils/registration-tab';
 import { createPath, registerAllData, registerAssayData, updateAllMolTrackSchemas } from './utils/utils';
-import { RegistrationCompoundView } from './utils/registration-compound-tab';
-import { RegistrationBatchView } from './utils/registration-batch-tab';
-import { Scope } from './utils/constants';
+import { EntityBaseView } from './utils/registration-entity-base';
+import { MolTrackProp, Scope } from './utils/constants';
 import { createSearchPanel } from './utils/search';
+import { MolTrackEntityType, MolTrackProperty } from './utils/types';
 
 export const _package = new DG.Package();
 
 //tags: init
-export function initDB(): void {
-  setTimeout(async () => {
-    // Run independent tasks in parallel
-    await Promise.all([
-      updateAllMolTrackSchemas(),
-      registerAssayData(),
-      registerAllData(),
-    ]);
-  }, 0);
-
+export async function init(): Promise<void> {
+  await grok.functions.call('Chem:initChemAutostart');
   // This will be used for the updated docker setup later.
-  // const connection = await grok.dapi.connections.filter('name = "moltrack"').first();
-  // const queries = await grok.dapi.queries.filter(`connection.id = "${connection.id}"`).list();
-  // for (const query of queries)
-  //   await (query.prepare()).call();
+  const connection = await grok.dapi.connections.filter('name = "moltrack"').first();
+  const queries = await grok.dapi.queries.filter(`connection.id = "${connection.id}"`).list();
+  for (const query of queries)
+    await (query.prepare()).call();
+}
+
+//name: initDB
+export async function initDB() {
+  await updateAllMolTrackSchemas();
+  await registerAssayData();
+  await registerAllData();
 }
 
 //tags: app
@@ -48,6 +47,12 @@ export async function molTrackApp(path: string): Promise<DG.ViewBase> {
 
   if (corporateBatchId)
     return await batchView(corporateBatchId);
+
+  if (path.includes('Compound'))
+    return initRegisterView('Compound');
+
+  if (path.includes('Batch'))
+    return initRegisterView('Batch');
 
   const appHeader = u2.appHeader({
     iconPath: _package.webRoot + '/images/cdd-icon-big.png',
@@ -69,14 +74,16 @@ async function buildRegistrationView({
   pathQueryParam,
   propsList,
   batchSection,
+  path,
 }: {
   title: string;
   smiles: string;
   pathQueryParam: string;
   propsList: any[];
-  batchSection: boolean
+  batchSection: boolean,
+  path: string,
 }) {
-  const registrationView = new RegistrationCompoundView(false);
+  const registrationView = new EntityBaseView(false);
   registrationView.initialSmiles = smiles;
   registrationView.singleRetrieved = true;
   registrationView.title = title;
@@ -97,7 +104,7 @@ async function buildRegistrationView({
   }
 
   registrationView.show();
-  registrationView.view.path = `${createPath('Compound')}?${pathQueryParam}`;
+  registrationView.view.path = `${createPath(path)}?${pathQueryParam}`;
 
   return registrationView.view;
 }
@@ -115,6 +122,7 @@ async function compoundView(corporateCompoundId: string) {
     pathQueryParam: `corporate_compound_id=${encodeURIComponent(corporateCompoundId)}`,
     propsList: properties,
     batchSection: false,
+    path: 'Compound',
   });
 }
 
@@ -138,6 +146,7 @@ async function batchView(corporateBatchId: string) {
     pathQueryParam: `corporate_batch_id=${encodeURIComponent(corporateBatchId)}`,
     propsList: Array.from(combinedPropsMap.values()),
     batchSection: true,
+    path: 'Batch',
   });
 }
 
@@ -149,41 +158,51 @@ function findEntityIndex(df: DG.DataFrame, colName: string, searchValue: string)
   throw new Error(`Entity with value '${searchValue}' not found in column '${colName}'`);
 }
 
+function initRegisterView(entity: 'Compound' | 'Batch') {
+  const isBatch = entity === 'Batch';
+  const view = new EntityBaseView(!isBatch);
+
+  if (isBatch) {
+    view.title = 'Register a new batch';
+    view.isBatchSectionExpanded = true;
+    view.path = 'Batch';
+    view.buildUIMethod();
+    view.view.name = 'Register a batch';
+  } else {
+    view.view.name = 'Register a compound';
+    view.view.path = createPath('Compound');
+  }
+
+  view.show();
+  return view.view;
+}
+
 //input: dynamic treeNode
 //input: view browseView
 export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseView: any) {
-  //search node
-  const registerCompoundNode = appNode.getOrCreateGroup('Register').item('Compound');
-  registerCompoundNode.onSelected.subscribe(() => {
-    const registrationCompoundView = new RegistrationCompoundView();
-    registrationCompoundView.show();
-    registrationCompoundView.view.path = createPath('Compound');
-  });
-  const registerBatchNode = appNode.getOrCreateGroup('Register').item('Batch');
-  registerBatchNode.onSelected.subscribe(() => {
-    const registrationBatchView = new RegistrationBatchView();
-    registrationBatchView.show();
-  });
-  const registerBulkNode = appNode.getOrCreateGroup('Register').item('Bulk...');
-  registerBulkNode.onSelected.subscribe(() => {
-    const registrationView = new RegistrationView();
-    registrationView.show();
-  });
+  function createRegisterNode(label: string, initView: () => void) {
+    appNode.getOrCreateGroup('Register').item(label).onSelected.subscribe(initView);
+  }
 
-  for (const scope of Object.values(Scope)) {
+  function createRetrieveNode(scope: string) {
     const formattedScope = scope
       .toLowerCase()
       .replace(/_/g, ' ')
-      .replace(/\b\w/g, (char) => char.toUpperCase());
-    const retrieveNode = appNode.getOrCreateGroup('Retrieve').item(formattedScope);
-    retrieveNode.onSelected.subscribe(async () => {
+      .replace(/\b\w/g, c => c.toUpperCase());
+
+    appNode.getOrCreateGroup('Retrieve').item(formattedScope).onSelected.subscribe(async () => {
       const data = await grok.functions.call('MolTrack:retrieveEntity', { scope });
       const tv = grok.shell.addTablePreview(data);
-      createSearchPanel(tv, scope);
+      createSearchPanel(tv, scope as Scope);
     });
   }
-}
 
+  createRegisterNode('Compound', () => initRegisterView('Compound'));
+  createRegisterNode('Batch', () => initRegisterView('Batch'));
+  createRegisterNode('Bulk...', () => new RegistrationView().show());
+
+  Object.values(Scope).forEach(scope => createRetrieveNode(scope));
+}
 
 //name: checkMolTrackHealth
 //description: Checks whether the MolTrack service is running and responsive
@@ -248,6 +267,23 @@ export async function registerBulk(
   return await MolTrackDockerService.registerBulk(csvFile, scope, mapping, errorHandling);
 }
 
+//name: searchTest
+export async function searchTest() {
+  await MolTrackDockerService.init();
+  const query = {
+    'level': 'compounds',
+    'output': ['compounds.canonical_smiles'],
+    'filter': {
+      'field': 'compounds.canonical_smiles',
+      'operator': 'CONTAINS',
+      'value': 'c1ccccc1',
+    },
+    'output_format': 'json',
+  };
+
+  return await MolTrackDockerService.search(query, 'compounds');
+}
+
 //name: retrieveEntity
 //input: string scope
 //output: dataframe result
@@ -263,6 +299,11 @@ export async function getCompoundById(id: number): Promise<DG.DataFrame | undefi
   const resultJson = await MolTrackDockerService.getCompoundById(id);
   const flattenedRes = [resultJson].map((item) => flattened(item));
   return DG.DataFrame.fromObjects(flattenedRes);
+}
+
+export async function checkCompoundExists(smiles: string): Promise<boolean> {
+  await MolTrackDockerService.init();
+  return await MolTrackDockerService.checkCompoundExists(smiles);
 }
 
 function flattened(item: any) {

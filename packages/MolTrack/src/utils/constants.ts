@@ -30,6 +30,7 @@ export type MolTrackProp = {
   value_type: string;
   description?: string;
   pattern?: string;
+  friendly_name?: string;
 };
 
 export const GITHUB_BASE_URL =

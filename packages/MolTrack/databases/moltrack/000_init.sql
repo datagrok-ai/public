@@ -40,6 +40,7 @@ CREATE TABLE moltrack.properties (
   unit text,
   entity_type text check (entity_type in ('BATCH', 'COMPOUND', 'ASSAY', 'ASSAY_RUN', 'ASSAY_RESULT', 'SYSTEM')) NOT NULL,
   pattern text, -- regex for validating string value_type properties, e.g., identifier: CHEMBL.* 
+  friendly_name text,
   UNIQUE(name, entity_type) -- Ensure unique property names within each entity_type
 );
 

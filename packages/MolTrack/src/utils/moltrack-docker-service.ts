@@ -94,14 +94,30 @@ export class MolTrackDockerService {
     return response.json();
   }
 
+  static async checkCompoundExists(smiles: string): Promise<boolean> {
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy(
+      this.container.id,
+      `/v1/compounds/check-duplicate?smiles=${smiles}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
+    if (response.ok) {
+      const data = await response.json();
+      return data['exists'];
+    }
+    return false;
+  }
+
   static async registerBulk(
-    csvFile: DG.FileInfo,
+    file: DG.FileInfo,
     scope: string,
     mapping: string,
     errorHandling: string,
   ): Promise<DG.DataFrame> {
     try {
-      const formData = await buildFormData(csvFile, mapping, errorHandling);
+      const formData = await buildFormData(file, mapping, errorHandling);
       const response = await grok.dapi.docker.dockerContainers.fetchProxy(
         this.container.id,
         scopeToUrl[scope],
@@ -123,19 +139,19 @@ export class MolTrackDockerService {
 }
 
 async function buildFormData(
-  csvFile: DG.FileInfo,
+  file: DG.FileInfo,
   mapping: string,
   errorHandling: string,
 ): Promise<FormData> {
   const formData = new FormData();
 
-  const rawBytes = await csvFile.readAsBytes();
+  const rawBytes = await file.readAsBytes();
   const bytes = new Uint8Array(rawBytes.length);
   bytes.set(rawBytes);
   const blob = new Blob([bytes], { type: 'text/csv' });
-  const file = new File([blob], csvFile.fileName, { type: 'text/csv' });
+  const preparedFile = new File([blob], file.fileName, { type: 'text/csv' });
 
-  formData.append('csv_file', file, csvFile.name);
+  formData.append('file', preparedFile, file.name);
   formData.append('error_handling', errorHandling || ErrorHandling.REJECT_ROW);
   formData.append('mapping', mapping || '');
   formData.append('output_format', ResultOutput.JSON);
