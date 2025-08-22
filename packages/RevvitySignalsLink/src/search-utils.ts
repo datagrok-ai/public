@@ -10,14 +10,12 @@ import { getDefaultProperties, REVVITY_FIELD_TO_PROP_TYPE_MAPPING } from './prop
 import { getTerms } from './package';
 import { createPath, initSearchQuery, resetInitSearchQuery } from './view-utils';
 
-export const viewQueryBuilders: { [key: string]: QueryBuilder } = {};
-
 export async function runSearchQuery(libId: string, compoundType: string,
   queryBuilderCondition: ComplexCondition): Promise<DG.DataFrame> {
   const condition: ComplexCondition = {
     logicalOperator: Operators.Logical.and,
     conditions: [
-      materialsCondition //now we have only materials loaded, so adding condition to search through materials
+      materialsCondition //now we have only materials section in our revvity instance, so adding condition to search through materials
     ]
   }
   condition.conditions.push(
@@ -50,8 +48,8 @@ export async function initializeFilters(tv: DG.TableView, filtersDiv: HTMLDivEle
   const selectedLib = libs.filter((l) => l.name === libName);
   if (selectedLib.length) {
     //create filters icon
-    const svgElement = document.createElement('div');
-    svgElement.innerHTML = `
+    const externalFilterIcon = document.createElement('div');
+    externalFilterIcon.innerHTML = `
 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
   <!-- Funnel Body -->
   <path d="M4 4H15L10 10V17L8 19V10L4 4Z" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
@@ -64,39 +62,43 @@ export async function initializeFilters(tv: DG.TableView, filtersDiv: HTMLDivEle
     <path d="M21 10L24 13L21 16" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 </svg>`;
-    svgElement.className = 'filters-button-icon';
-    svgElement.onclick = () => {
+    externalFilterIcon.className = 'filters-button-icon';
+    externalFilterIcon.onclick = () => {
       tv.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
+      externalFilterIcon.classList.remove('filters-button-icon-show');
     };
-    ui.tooltip.bind(svgElement, 'Add Revvity Signals filters');
-    const filtersButton = ui.div(svgElement);
+    ui.tooltip.bind(externalFilterIcon, 'Add Revvity Signals filters');
+    const filtersButton = ui.div(externalFilterIcon);
     tv.setRibbonPanels([[filtersButton]]);
     //create filters panel
     tv.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
+    tv.dockManager.onClosed.subscribe((el: any) => {
+      externalFilterIcon.classList.add('filters-button-icon-show');
+    })
     ui.setUpdateIndicator(filtersDiv, true, 'Loading filters...');
-    await initializeQueryBuilder(selectedLib[0].id, compoundType);
+    const qb = await initializeQueryBuilder(selectedLib[0].id, compoundType);
 
     const runSearchButton = ui.bigButton('Search', async () => {
-      runSearch(tv, selectedLib[0].id, compoundType, libName);
+      runSearch(qb, tv, selectedLib[0].id, compoundType, libName);
     });
 
     ui.setUpdateIndicator(filtersDiv, false);
-    filtersDiv.append(viewQueryBuilders[`${selectedLib[0].id}|${compoundType}`].root);
+    filtersDiv.append(qb.root);
     filtersDiv.append(ui.div(runSearchButton, { style: { paddingLeft: '4px' } }));
 
     ui.onSizeChanged(filtersDiv).subscribe(() => {
-      updateQueryBuilderLayout(filtersDiv.clientWidth, selectedLib[0].id, compoundType);
+      updateQueryBuilderLayout(qb, filtersDiv.clientWidth, selectedLib[0].id, compoundType);
     });
 
     if (initSearchQuery)
-      runSearch(tv, selectedLib[0].id, compoundType, libName);
+      runSearch(qb, tv, selectedLib[0].id, compoundType, libName);
   }
 }
 
-export async function runSearch(tv: DG.TableView, libId: string, compoundType: string, libName: string) {
-  viewQueryBuilders[`${libId}|${compoundType}`]!.saveConditionToHistory();
+export async function runSearch(qb: QueryBuilder, tv: DG.TableView, libId: string, compoundType: string, libName: string) {
+  qb.saveConditionToHistory();
   ui.setUpdateIndicator(tv.grid.root, true, 'Searching...');
-  const condition = viewQueryBuilders[`${libId}|${compoundType}`]!.condition;
+  const condition = qb.condition;
   const resultDf = await runSearchQuery(libId, compoundType, condition);
   tv.dataFrame = resultDf;
   tv.path = createPath([libName, compoundType, 'search', JSON.stringify(condition)]);
@@ -106,7 +108,7 @@ export async function runSearch(tv: DG.TableView, libId: string, compoundType: s
 }
 
 
-export async function initializeQueryBuilder(libId: string, compoundType: string) {
+export async function initializeQueryBuilder(libId: string, compoundType: string): Promise<QueryBuilder> {
   const filterFields = getDefaultProperties();
   const tagsStr = await grok.functions.call('RevvitySignalsLink:getTags', {
     assetTypeId: libId,
@@ -130,18 +132,18 @@ export async function initializeQueryBuilder(libId: string, compoundType: string
     filterFields.push(prop);
   });
 
-  if (!viewQueryBuilders[`${libId}|${compoundType}`])
-    viewQueryBuilders[`${libId}|${compoundType}`] = new QueryBuilder(filterFields, initSearchQuery, QueryBuilderLayout.Narrow, `Revvity Signals|${libId}|${compoundType}`);
+  return new QueryBuilder(filterFields, initSearchQuery, QueryBuilderLayout.Narrow, `Revvity Signals|${libId}|${compoundType}`);
+
 }
 
 
-function updateQueryBuilderLayout(width: number, libId: string, compoundType: string) {
-  if (!viewQueryBuilders[`${libId}|${compoundType}`]) return;
+function updateQueryBuilderLayout(qb: QueryBuilder, width: number, libId: string, compoundType: string) {
+  if (!qb) return;
 
   // Switch to narrow layout if width is less than 300px, otherwise use standard
   const newLayout = width < 300 ? QueryBuilderLayout.Narrow : QueryBuilderLayout.Standard;
 
-  if (viewQueryBuilders[`${libId}|${compoundType}`].getLayout() !== newLayout) {
-    viewQueryBuilders[`${libId}|${compoundType}`].setLayout(newLayout);
+  if (qb.getLayout() !== newLayout) {
+    qb.setLayout(newLayout);
   }
 };

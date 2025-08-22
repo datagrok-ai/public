@@ -45,4 +45,9 @@
    height: 24px;
    padding: 8px;
    cursor: pointer;
+   display: none;
+}
+
+.filters-button-icon-show {
+   display: flex;
 }

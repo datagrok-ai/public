@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import { awaitCheck } from '@datagrok-libraries/utils/src/test';
 import { getRevvityLibraries } from './libraries';
-import { initializeFilters, runSearch, viewQueryBuilders } from './search-utils';
+import { initializeFilters } from './search-utils';
 
 
 const REVVITY_SIGNALS_APP_PATH: string = 'apps/Revvitysignalslink';
