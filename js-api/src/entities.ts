@@ -1458,6 +1458,9 @@ export interface IProperty {
   /** Filter for columns, can be numerical, categorical or directly a column type (string, int...)
    * Applicable when type = Column */
   columnTypeFilter?: ColumnType | 'numerical' | 'categorical' | null;
+
+
+  viewer?: string;
 }
 
 
@@ -1542,8 +1545,8 @@ export class Property implements IProperty {
   set nullable(s: boolean) { api.grok_Property_Set_Nullable(this.dart, s); }
 
   /** Initial value used when initializing UI */
-  get initialValue(): any { return toJs(api.grok_Property_Get_InitialValue(this.dart)); }
-  set initialValue(s: any) { api.grok_Property_Set_InitialValue(this.dart, toDart(s)); }
+  get initialValue(): string { return toJs(api.grok_Property_Get_InitialValue(this.dart)); }
+  set initialValue(s: string) { api.grok_Property_Set_InitialValue(this.dart, toDart(s)); }
 
   /** Default value */
   get defaultValue(): any { return toJs(api.grok_Property_Get_DefaultValue(this.dart)); }
@@ -1682,7 +1685,7 @@ export class Property implements IProperty {
     'showSlider': { name: 'showSlider', applicableTo: TYPE.NUMERICAL, type: TYPE.BOOL, description: 'Whether a slider appears next to the number input. Applies to numerical columns only.' },
     'showPlusMinus': { name: 'showPlusMinus', applicableTo: TYPE.NUMERICAL, type: TYPE.BOOL, description: 'Whether a plus/minus clicker appears next to the number input. Applies to numerical columns only.' },
     'choices': { name: 'choices', applicableTo: TYPE.STRING, type: TYPE.STRING_LIST, description: 'List of choices. Applicable to string properties only' },
-    'initialValue': { name: 'initialValue', type: TYPE.OBJECT, description: 'Initial value used when initializing UI. See also {@link defaultValue}' },
+    'initialValue': { name: 'initialValue', type: TYPE.STRING, description: 'Initial value used when initializing UI. See also {@link defaultValue}' },
     'defaultValue': { name: 'defaultValue', type: TYPE.OBJECT, description: 'Default value used for deserialization and cloning. See also {@link initialValue}.' },
     'editor': { name: 'editor', type: TYPE.STRING, description: 'Custom editor (such as slider or text area)' },
     'category': { name: 'category', type: TYPE.STRING, description: 'Corresponding category on the context panel' },
