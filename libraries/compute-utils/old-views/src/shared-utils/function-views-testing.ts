@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {FunctionView, PipelineView, RichFunctionView} from '../function-views';
+import {FunctionView, PipelineView, RichFunctionView} from '../../';
 import {ExpectDeepEqualOptions, expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {delay, last, takeUntil, takeWhile, map, debounceTime} from 'rxjs/operators';
 import {of} from 'rxjs';

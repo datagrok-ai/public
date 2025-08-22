@@ -13,7 +13,7 @@ import {
   StepFunCallState,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {zipSync, Zippable} from 'fflate';
-import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {dfToViewerMapping, getFuncCallDefaultFilename, replaceForWindowsPath, richFunctionViewReport} from '@datagrok-libraries/compute-utils';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
 export type NodeWithPath = {
@@ -137,15 +137,15 @@ export async function reportStep(treeState?: PipelineState) {
       if (isFuncCallState(state) && state.funcCall) {
         const funccall = state.funcCall;
 
-        const [blob] = await Utils.richFunctionViewReport(
+        const [blob] = await richFunctionViewReport(
           'Excel',
           funccall.func,
           funccall,
-          Utils.dfToViewerMapping(funccall),
+          dfToViewerMapping(funccall),
         );
 
-        const validatedFilename = Utils.replaceForWindowsPath(
-          `${String(idx).padStart(3, '0')}_${Utils.getFuncCallDefaultFilename(funccall)}`,
+        const validatedFilename = replaceForWindowsPath(
+          `${String(idx).padStart(3, '0')}_${getFuncCallDefaultFilename(funccall)}`,
         );
         const validatedFilenameWithPath = `${previousPath}/${validatedFilename}`;
 
@@ -159,7 +159,7 @@ export async function reportStep(treeState?: PipelineState) {
           isStaticPipelineState(state)
       ) {
         const nestedPath = `${String(idx).padStart(3, '0')}_${state.friendlyName ?? state.nqName}`;
-        let validatedNestedPath = Utils.replaceForWindowsPath(nestedPath);
+        let validatedNestedPath = replaceForWindowsPath(nestedPath);
 
         if (previousPath.length > 0) validatedNestedPath = `${previousPath}/${validatedNestedPath}`;
 

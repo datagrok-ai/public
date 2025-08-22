@@ -8,8 +8,8 @@ import $ from 'cash-dom';
 import {historyUtils} from '../../history-utils';
 import '../css/history-input.css';
 import {HistoricalRunsList} from './history-list';
-import {extractStringValue, getMainParams, isIncomplete} from '../../shared-utils/utils';
-import {getStarted} from '../../function-views/src/shared/utils';
+import {getStarted, isIncomplete} from '../../shared-utils/utils';
+import {extractStringValue, getMainParams} from '../../shared-utils/history';
 
 class DatabaseService {
   static getHistoryRuns(
@@ -32,7 +32,6 @@ class DatabaseService {
 }
 
 export const PICK_COLUMN_NAME = 'Pick' as const;
-export const ID_COLUMN_NAME = 'ID' as const;
 
 export abstract class HistoryInputBase<T = DG.FuncCall> extends DG.InputBase<T | null> {
   /**

@@ -6,16 +6,16 @@ export async function init() {
   return PackageFunctions.init();
 }
 
-//name: CustomFunctionViewEditor
-//tags: editor, vue
+//name: Custom Function View Editor
+//tags: editor
 //input: funccall call 
 //output: view result
 export async function CustomFunctionViewEditor(call: DG.FuncCall) {
   return PackageFunctions.CustomFunctionViewEditor(call);
 }
 
-//name: RichFunctionViewEditor
-//tags: editor, vue
+//name: Rich Function View Editor
+//tags: editor
 //input: funccall call 
 //output: view result
 export async function RichFunctionViewEditor(call: DG.FuncCall) {
@@ -83,7 +83,7 @@ export async function TestAdd2(a: number, b: number) {
   return PackageFunctions.TestAdd2(a, b);
 }
 
-//name: TestMul2
+//name: TestSub2
 //input: double a 
 //input: double b 
 //output: double result

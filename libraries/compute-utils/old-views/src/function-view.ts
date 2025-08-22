@@ -7,16 +7,18 @@ import {Subject, BehaviorSubject} from 'rxjs';
 import $ from 'cash-dom';
 import dayjs from 'dayjs';
 import {historyUtils} from '../../history-utils';
-import {UiUtils} from '../../shared-components';
-import {CARD_VIEW_TYPE, VIEW_STATE} from '../../shared-utils/consts';
-import {createPartialCopy, deepCopy, fcToSerializable, getContextHelp, getFeature, getFeatures, hasContextHelp, isIncomplete, isRunningOnInput} from '../../shared-utils/utils';
-import {HistoryPanel} from '../../shared-components/src/history-panel';
-import {RunComparisonView} from './run-comparison-view';
-import {delay, distinctUntilChanged, filter, take} from 'rxjs/operators';
+import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
+import {deepCopy, getContextHelp, getFeature, getFeatures, getStarted, hasContextHelp, isIncomplete, isRunningOnInput} from '../../shared-utils/utils';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
-import {FileInput} from '../../shared-components/src/file-input';
-import {testFunctionView} from '../../shared-utils/function-views-testing';
-import {getStarted, properUpdateIndicator} from './shared/utils';
+import {RunComparisonView} from '../../function-views';
+import {HistoryPanel} from '../../old-components/src/history-panel';
+import {UiUtils} from '../../old-components';
+import {properUpdateIndicator} from '../../function-views/src/shared/utils';
+import {delay, distinctUntilChanged, filter, take} from 'rxjs/operators';
+import {createPartialCopy, fcToSerializable} from './shared-utils/utils';
+import {FileInput} from '../../old-components/src/file-input';
+import {testFunctionView} from './shared-utils/function-views-testing';
+import {VIEW_STATE} from './shared-utils/consts';
 
 // Getting inital URL user entered with
 const startUrl = new URL(grok.shell.startUri);

@@ -8,14 +8,16 @@ import {debounceTime, filter, map, mapTo, startWith, switchMap, take, tap, withL
 import $ from 'cash-dom';
 import type ExcelJS from 'exceljs';
 import {historyUtils} from '../../history-utils';
-import {ABILITY_STATE, CARD_VIEW_TYPE, VISIBILITY_STATE, storageName} from '../../shared-utils/consts';
+import {CARD_VIEW_TYPE, storageName} from '../../shared-utils/consts';
 import {RichFunctionView} from './rich-function-view';
 import {FunctionView} from './function-view';
-import {RunComparisonView} from './run-comparison-view';
 import '../css/pipeline-view.css';
 import {serialize} from '@datagrok-libraries/utils/src/json-serialization';
-import {createPartialCopy, deepCopy, fcToSerializable, getStartedOrNull, isIncomplete, showHelpWithDelay} from '../../shared-utils/utils';
-import {testPipeline} from '../../shared-utils/function-views-testing';
+import {deepCopy, isIncomplete} from '../../shared-utils/utils';
+import {ABILITY_STATE, VISIBILITY_STATE} from './shared-utils/consts';
+import {RunComparisonView} from '../../function-views';
+import {createPartialCopy, fcToSerializable, showHelpWithDelay} from './shared-utils/utils';
+import {testPipeline} from './shared-utils/function-views-testing';
 
 export type StepState = {
   func: DG.Func,
