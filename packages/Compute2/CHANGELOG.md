@@ -1,5 +1,9 @@
 # Compute2 changelog
 
+## 1.3.13 (2025-08-15)
+
+- Fix DataFrame input viewers updates
+
 ## 1.3.12 (2025-08-15)
 
 - Optimization view support primary params filtering

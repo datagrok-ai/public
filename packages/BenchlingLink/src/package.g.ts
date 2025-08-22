@@ -5,15 +5,15 @@ import * as DG from 'datagrok-api/dg';
 //tags: app
 //output: view result
 //meta.browsePath: Chem
-export async function benchlingLinkApp() {
+export async function benchlingLinkApp() : Promise<any> {
   return PackageFunctions.benchlingLinkApp();
 }
 
 //name: benchlingLinkAppTreeBrowser
 //input: dynamic treeNode 
-//input: view browseView 
-export async function benchlingLinkAppTreeBrowser(treeNode: any, browseView: DG.View) {
-  return PackageFunctions.benchlingLinkAppTreeBrowser(treeNode, browseView);
+//meta.role: appTreeBrowser
+export async function benchlingLinkAppTreeBrowser(treeNode: any) : Promise<void> {
+  PackageFunctions.benchlingLinkAppTreeBrowser(treeNode);
 }
 
 //name: Get AA Sequences
@@ -39,7 +39,7 @@ export async function benchlingLinkAppTreeBrowser(treeNode: any, browseView: DG.
 //input: string authorIds_anyOf { nullable: true }
 //input: string returning { nullable: true }
 //output: dataframe result
-export async function getAASequences(sort: string, createdAt: string, modifiedAt: string, name: string, nameIncludes: string, aminoAcids: string, folderId: string, mentionedIn: string, projectId: string, registryId: string, schemaId: string, schemaFields: string, archiveReason: string, mentions: string, ids: string, entityRegistryIds_anyOf: string, names_anyOf: string, names_anyOf_caseSensitive: string, creatorIds: string, authorIds_anyOf: string, returning: string) {
+export async function getAASequences(sort?: string, createdAt?: string, modifiedAt?: string, name?: string, nameIncludes?: string, aminoAcids?: string, folderId?: string, mentionedIn?: string, projectId?: string, registryId?: string, schemaId?: string, schemaFields?: string, archiveReason?: string, mentions?: string, ids?: string, entityRegistryIds_anyOf?: string, names_anyOf?: string, names_anyOf_caseSensitive?: string, creatorIds?: string, authorIds_anyOf?: string, returning?: string) : Promise<any> {
   return PackageFunctions.getAASequences(sort, createdAt, modifiedAt, name, nameIncludes, aminoAcids, folderId, mentionedIn, projectId, registryId, schemaId, schemaFields, archiveReason, mentions, ids, entityRegistryIds_anyOf, names_anyOf, names_anyOf_caseSensitive, creatorIds, authorIds_anyOf, returning);
 }
 
@@ -66,7 +66,7 @@ export async function getAASequences(sort: string, createdAt: string, modifiedAt
 //input: string authorIds_anyOf { nullable: true }
 //input: string returning { nullable: true }
 //output: dataframe result
-export async function getDNASequences(sort: string, createdAt: string, name: string, modifiedAt: string, nameIncludes: string, bases: string, folderId: string, mentionedIn: string, projectId: string, registryId: string, schemaId: string, schemaFields: string, archiveReason: string, mentions: string, ids: string, entityRegistryIds_anyOf: string, names_anyOf: string, names_anyOf_caseSensitive: string, creatorIds: string, authorIds_anyOf: string, returning: string) {
+export async function getDNASequences(sort?: string, createdAt?: string, name?: string, modifiedAt?: string, nameIncludes?: string, bases?: string, folderId?: string, mentionedIn?: string, projectId?: string, registryId?: string, schemaId?: string, schemaFields?: string, archiveReason?: string, mentions?: string, ids?: string, entityRegistryIds_anyOf?: string, names_anyOf?: string, names_anyOf_caseSensitive?: string, creatorIds?: string, authorIds_anyOf?: string, returning?: string) : Promise<any> {
   return PackageFunctions.getDNASequences(sort, createdAt, name, modifiedAt, nameIncludes, bases, folderId, mentionedIn, projectId, registryId, schemaId, schemaFields, archiveReason, mentions, ids, entityRegistryIds_anyOf, names_anyOf, names_anyOf_caseSensitive, creatorIds, authorIds_anyOf, returning);
 }
 
@@ -90,7 +90,7 @@ export async function getDNASequences(sort: string, createdAt: string, name: str
 //input: string modifiedAt_gte { nullable: true }
 //input: string archiveReason { nullable: true }
 //output: dataframe result
-export async function getAssayResults(schemaId: string, createdAt_lt: string, createdAt_gt: string, createdAt_lte: string, createdAt_gte: string, minCreatedTime: number, maxCreatedTime: number, sort: string, entityIds: string, storageIds: string, assayRunIds: string, automationOutputProcessorId: string, ids: string, modifiedAt_lt: string, modifiedAt_gt: string, modifiedAt_lte: string, modifiedAt_gte: string, archiveReason: string) {
+export async function getAssayResults(schemaId?: string, createdAt_lt?: string, createdAt_gt?: string, createdAt_lte?: string, createdAt_gte?: string, minCreatedTime?: number, maxCreatedTime?: number, sort?: string, entityIds?: string, storageIds?: string, assayRunIds?: string, automationOutputProcessorId?: string, ids?: string, modifiedAt_lt?: string, modifiedAt_gt?: string, modifiedAt_lte?: string, modifiedAt_gte?: string, archiveReason?: string) : Promise<any> {
   return PackageFunctions.getAssayResults(schemaId, createdAt_lt, createdAt_gt, createdAt_lte, createdAt_gte, minCreatedTime, maxCreatedTime, sort, entityIds, storageIds, assayRunIds, automationOutputProcessorId, ids, modifiedAt_lt, modifiedAt_gt, modifiedAt_lte, modifiedAt_gte, archiveReason);
 }
 
@@ -100,7 +100,7 @@ export async function getAssayResults(schemaId: string, createdAt_lt: string, cr
 //input: double maxCreatedTime { nullable: true }
 //input: string ids { nullable: true }
 //output: dataframe result
-export async function getAssayRuns(schemaId: string, minCreatedTime: number, maxCreatedTime: number, ids: string) {
+export async function getAssayRuns(schemaId?: string, minCreatedTime?: number, maxCreatedTime?: number, ids?: string) : Promise<any> {
   return PackageFunctions.getAssayRuns(schemaId, minCreatedTime, maxCreatedTime, ids);
 }
 
@@ -115,7 +115,7 @@ export async function getAssayRuns(schemaId: string, minCreatedTime: number, max
 //input: string folderId { nullable: true }
 //input: string schemaId { nullable: true }
 //output: dataframe result
-export async function createAASequence(name: string, aminoAcids: string, aliases: string, annotations: string, authorIds: string, customFields: string, fields: string, folderId: string, schemaId: string) {
+export async function createAASequence(name: string, aminoAcids: string, aliases?: string, annotations?: string, authorIds?: string, customFields?: string, fields?: string, folderId?: string, schemaId?: string) : Promise<any> {
   return PackageFunctions.createAASequence(name, aminoAcids, aliases, annotations, authorIds, customFields, fields, folderId, schemaId);
 }
 
@@ -130,7 +130,7 @@ export async function createAASequence(name: string, aminoAcids: string, aliases
 //input: string folderId { nullable: true }
 //input: string schemaId { nullable: true }
 //output: dataframe result
-export async function createDNASequence(name: string, bases: string, aliases: string, annotations: string, authorIds: string, customFields: string, fields: string, folderId: string, schemaId: string) {
+export async function createDNASequence(name: string, bases: string, aliases?: string, annotations?: string, authorIds?: string, customFields?: string, fields?: string, folderId?: string, schemaId?: string) : Promise<any> {
   return PackageFunctions.createDNASequence(name, bases, aliases, annotations, authorIds, customFields, fields, folderId, schemaId);
 }
 
@@ -143,7 +143,7 @@ export async function createDNASequence(name: string, bases: string, aliases: st
 //input: string authorIds { nullable: true }
 //input: string customFields { nullable: true }
 //output: dataframe result
-export async function createAssayResult(schemaId: string, fields: string, entityIds: string, storageIds: string, assayRunId: string, authorIds: string, customFields: string) {
+export async function createAssayResult(schemaId: string, fields?: string, entityIds?: string, storageIds?: string, assayRunId?: string, authorIds?: string, customFields?: string) : Promise<any> {
   return PackageFunctions.createAssayResult(schemaId, fields, entityIds, storageIds, assayRunId, authorIds, customFields);
 }
 
@@ -154,7 +154,7 @@ export async function createAssayResult(schemaId: string, fields: string, entity
 //input: string authorIds { nullable: true }
 //input: string customFields { nullable: true }
 //output: dataframe result
-export async function createAssayRun(schemaId: string, fields: string, name: string, authorIds: string, customFields: string) {
+export async function createAssayRun(schemaId: string, fields?: string, name?: string, authorIds?: string, customFields?: string) : Promise<any> {
   return PackageFunctions.createAssayRun(schemaId, fields, name, authorIds, customFields);
 }
 
@@ -179,7 +179,7 @@ export async function createAssayRun(schemaId: string, fields: string, name: str
 //input: string chemicalSubstructure_mol { nullable: true }
 //input: string chemicalSubstructure_smiles { nullable: true }
 //output: dataframe result
-export async function getMolecules(sort: string, createdAt: string, modifiedAt: string, name: string, nameIncludes: string, folderId: string, mentionedIn: string, projectId: string, registryId: string, schemaId: string, schemaFields: string, archiveReason: string, mentions: string, ids: string, entityRegistryIds_anyOf: string, names_anyOf: string, authorIds_anyOf: string, chemicalSubstructure_mol: string, chemicalSubstructure_smiles: string) {
+export async function getMolecules(sort?: string, createdAt?: string, modifiedAt?: string, name?: string, nameIncludes?: string, folderId?: string, mentionedIn?: string, projectId?: string, registryId?: string, schemaId?: string, schemaFields?: string, archiveReason?: string, mentions?: string, ids?: string, entityRegistryIds_anyOf?: string, names_anyOf?: string, authorIds_anyOf?: string, chemicalSubstructure_mol?: string, chemicalSubstructure_smiles?: string) : Promise<any> {
   return PackageFunctions.getMolecules(sort, createdAt, modifiedAt, name, nameIncludes, folderId, mentionedIn, projectId, registryId, schemaId, schemaFields, archiveReason, mentions, ids, entityRegistryIds_anyOf, names_anyOf, authorIds_anyOf, chemicalSubstructure_mol, chemicalSubstructure_smiles);
 }
 
@@ -188,7 +188,7 @@ export async function getMolecules(sort: string, createdAt: string, modifiedAt: 
 //input: string smiles 
 //input: string formula { nullable: true }
 //output: dataframe result
-export async function createMolecule(name: string, smiles: string, formula: string) {
+export async function createMolecule(name: string, smiles: string, formula?: string) : Promise<any> {
   return PackageFunctions.createMolecule(name, smiles, formula);
 }
 
@@ -198,7 +198,7 @@ export async function createMolecule(name: string, smiles: string, formula: stri
 //input: string ids { nullable: true }
 //input: string name { nullable: true }
 //output: dataframe result
-export async function getProjects(sort: string, archiveReason: string, ids: string, name: string) {
+export async function getProjects(sort?: string, archiveReason?: string, ids?: string, name?: string) : Promise<any> {
   return PackageFunctions.getProjects(sort, archiveReason, ids, name);
 }
 
@@ -231,7 +231,7 @@ export async function getProjects(sort: string, archiveReason: string, ids: stri
 //input: string returning { nullable: true }
 //input: string creatorIds { nullable: true }
 //output: dataframe result
-export async function getPlates(sort: string, schemaId: string, schemaFields: string, createdAt: string, modifiedAt: string, name: string, nameIncludes: string, emptyPositions: number, emptyPositions_gte: number, emptyPositions_gt: number, emptyPositions_lte: number, emptyPositions_lt: number, emptyContainers: number, emptyContainers_gte: number, emptyContainers_gt: number, emptyContainers_lte: number, emptyContainers_lt: number, ancestorStorageId: string, storageContentsId: string, storageContentsIds: string, archiveReason: string, ids: string, barcodes: string, names_anyOf: string, names_anyOf_caseSensitive: string, returning: string, creatorIds: string) {
+export async function getPlates(sort?: string, schemaId?: string, schemaFields?: string, createdAt?: string, modifiedAt?: string, name?: string, nameIncludes?: string, emptyPositions?: number, emptyPositions_gte?: number, emptyPositions_gt?: number, emptyPositions_lte?: number, emptyPositions_lt?: number, emptyContainers?: number, emptyContainers_gte?: number, emptyContainers_gt?: number, emptyContainers_lte?: number, emptyContainers_lt?: number, ancestorStorageId?: string, storageContentsId?: string, storageContentsIds?: string, archiveReason?: string, ids?: string, barcodes?: string, names_anyOf?: string, names_anyOf_caseSensitive?: string, returning?: string, creatorIds?: string) : Promise<any> {
   return PackageFunctions.getPlates(sort, schemaId, schemaFields, createdAt, modifiedAt, name, nameIncludes, emptyPositions, emptyPositions_gte, emptyPositions_gt, emptyPositions_lte, emptyPositions_lt, emptyContainers, emptyContainers_gte, emptyContainers_gt, emptyContainers_lte, emptyContainers_lt, ancestorStorageId, storageContentsId, storageContentsIds, archiveReason, ids, barcodes, names_anyOf, names_anyOf_caseSensitive, returning, creatorIds);
 }
 
@@ -245,7 +245,7 @@ export async function getPlates(sort: string, schemaId: string, schemaFields: st
 //input: string projectId { nullable: true }
 //input: string wells { nullable: true }
 //output: dataframe result
-export async function createPlate(name: string, schemaId: string, barcode: string, containerSchemaId: string, fields: string, parentStorageId: string, projectId: string, wells: string) {
+export async function createPlate(name: string, schemaId: string, barcode?: string, containerSchemaId?: string, fields?: string, parentStorageId?: string, projectId?: string, wells?: string) : Promise<any> {
   return PackageFunctions.createPlate(name, schemaId, barcode, containerSchemaId, fields, parentStorageId, projectId, wells);
 }
 
@@ -271,7 +271,7 @@ export async function createPlate(name: string, schemaId: string, barcode: strin
 //input: string ingredientComponentEntityIds_anyOf { nullable: true }
 //input: string authorIds_anyOf { nullable: true }
 //output: dataframe result
-export async function getMixtures(sort: string, createdAt: string, modifiedAt: string, name: string, nameIncludes: string, folderId: string, mentionedIn: string, projectId: string, registryId: string, schemaId: string, schemaFields: string, archiveReason: string, mentions: string, ids: string, names_anyOf: string, names_anyOf_caseSensitive: string, entityRegistryIds_anyOf: string, ingredientComponentEntityIds: string, ingredientComponentEntityIds_anyOf: string, authorIds_anyOf: string) {
+export async function getMixtures(sort?: string, createdAt?: string, modifiedAt?: string, name?: string, nameIncludes?: string, folderId?: string, mentionedIn?: string, projectId?: string, registryId?: string, schemaId?: string, schemaFields?: string, archiveReason?: string, mentions?: string, ids?: string, names_anyOf?: string, names_anyOf_caseSensitive?: string, entityRegistryIds_anyOf?: string, ingredientComponentEntityIds?: string, ingredientComponentEntityIds_anyOf?: string, authorIds_anyOf?: string) : Promise<any> {
   return PackageFunctions.getMixtures(sort, createdAt, modifiedAt, name, nameIncludes, folderId, mentionedIn, projectId, registryId, schemaId, schemaFields, archiveReason, mentions, ids, names_anyOf, names_anyOf_caseSensitive, entityRegistryIds_anyOf, ingredientComponentEntityIds, ingredientComponentEntityIds_anyOf, authorIds_anyOf);
 }
 
@@ -288,7 +288,7 @@ export async function getMixtures(sort: string, createdAt: string, modifiedAt: s
 //input: string fields { nullable: true }
 //input: string folderId { nullable: true }
 //output: dataframe result
-export async function createMixture(name: string, ingredients: string, schemaId: string, units: string, aliases: string, amount: string, authorIds: string, customFields: string, entityRegistryId: string, fields: string, folderId: string) {
+export async function createMixture(name: string, ingredients: string, schemaId: string, units: string, aliases?: string, amount?: string, authorIds?: string, customFields?: string, entityRegistryId?: string, fields?: string, folderId?: string) : Promise<any> {
   return PackageFunctions.createMixture(name, ingredients, schemaId, units, aliases, amount, authorIds, customFields, entityRegistryId, fields, folderId);
 }
 
@@ -316,7 +316,7 @@ export async function createMixture(name: string, ingredients: string, schemaId:
 //input: string returning { nullable: true }
 //input: string customNotationId { nullable: true }
 //output: dataframe result
-export async function getDnaOligos(sort: string, createdAt: string, modifiedAt: string, name: string, nameIncludes: string, bases: string, folderId: string, mentionedIn: string, projectId: string, registryId: string, schemaId: string, schemaFields: string, archiveReason: string, mentions: string, ids: string, entityRegistryIds_anyOf: string, names_anyOf: string, names_anyOf_caseSensitive: string, creatorIds: string, authorIds_anyOf: string, returning: string, customNotationId: string) {
+export async function getDnaOligos(sort?: string, createdAt?: string, modifiedAt?: string, name?: string, nameIncludes?: string, bases?: string, folderId?: string, mentionedIn?: string, projectId?: string, registryId?: string, schemaId?: string, schemaFields?: string, archiveReason?: string, mentions?: string, ids?: string, entityRegistryIds_anyOf?: string, names_anyOf?: string, names_anyOf_caseSensitive?: string, creatorIds?: string, authorIds_anyOf?: string, returning?: string, customNotationId?: string) : Promise<any> {
   return PackageFunctions.getDnaOligos(sort, createdAt, modifiedAt, name, nameIncludes, bases, folderId, mentionedIn, projectId, registryId, schemaId, schemaFields, archiveReason, mentions, ids, entityRegistryIds_anyOf, names_anyOf, names_anyOf_caseSensitive, creatorIds, authorIds_anyOf, returning, customNotationId);
 }
 
@@ -332,6 +332,6 @@ export async function getDnaOligos(sort: string, createdAt: string, modifiedAt: 
 //input: string schemaId { nullable: true }
 //input: string helm { nullable: true }
 //output: dataframe result
-export async function createDnaOligo(name: string, bases: string, aliases: string, annotations: string, authorIds: string, customFields: string, fields: string, folderId: string, schemaId: string, helm: string) {
+export async function createDnaOligo(name: string, bases: string, aliases?: string, annotations?: string, authorIds?: string, customFields?: string, fields?: string, folderId?: string, schemaId?: string, helm?: string) : Promise<any> {
   return PackageFunctions.createDnaOligo(name, bases, aliases, annotations, authorIds, customFields, fields, folderId, schemaId, helm);
 }

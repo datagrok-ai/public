@@ -47,21 +47,50 @@ export interface Indexable {
   [key: string]: any,
 }
 
+
 export interface FuncMetadata extends Indexable {
   name?: string,
   inputs: FuncParam[],
   outputs: FuncParam[],
   tags?: string[],
+  roles?: string,
   description?: string,
   cache?: string,
-  meta?: Record<string,string>,
+  meta?: Record<string, string>,
   invalidateOn?: string,
   isInvalidateOnWithoutCache?: boolean,
+  actualType?: string;
 }
 
-export interface FuncParam {
+
+interface InputOptions {
+  semType?: string;
+  category?: string;
+  optional?: boolean;
+  editor?: string;
+  nullable?: boolean;
+  separators?: string[];
+  choices?: string[] | string;
+  format?: string;
+  min?: string;
+  max?: string;
+  caption?: string;
+  description?: string;
+  initialValue?: string;
+  viewer?: string;
+  units?: string;
+  type?: string;
+  optionsType?: string;
+  step?: string;
+  'meta.url'?: boolean;
+  metaUrl?: boolean;
+}
+
+
+export interface FuncParam extends InputOptions{
   name?: string, 
   type?: string, 
+  actualType?: string, 
   defaultValue?: string, 
   options?: any[],
   optional?: boolean

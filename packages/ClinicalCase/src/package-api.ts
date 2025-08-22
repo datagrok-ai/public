@@ -12,8 +12,8 @@ export namespace funcs {
     return await grok.functions.call('ClinicalCase:ClinicalCaseApp', {});
   }
 
-  export async function clinicalCaseAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<any> {
-    return await grok.functions.call('ClinicalCase:ClinicalCaseAppTreeBrowser', { treeNode, browseView });
+  export async function clinicalCaseAppTreeBrowser(treeNode: any ): Promise<void> {
+    return await grok.functions.call('ClinicalCase:ClinicalCaseAppTreeBrowser', { treeNode });
   }
 
   export async function clinicalCaseFolderLauncher(folder: DG.FileInfo , files: any ): Promise<any> {

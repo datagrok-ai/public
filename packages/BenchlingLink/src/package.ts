@@ -39,9 +39,9 @@ export class PackageFunctions {
     view.name = 'Benchling';
     return view;
   }
-  
+
   @grok.decorators.func()
-  static async benchlingLinkAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.View): Promise<void> {
+  static async benchlingLinkAppTreeBrowser(treeNode: DG.TreeViewGroup): Promise<void> {
     function createFuncEditorView(funcName: string, v: DG.View) {
       let func = DG.Func.byName(funcName);
       let editorDiv = ui.div();
@@ -81,7 +81,7 @@ export class PackageFunctions {
         Object.keys(funcCall.inputParams).forEach((paramName) => {
           if (funcCall.inputParams[paramName].value)
             params[paramName] = funcCall.inputParams[paramName].value;
-        });    
+        });
         grok.userSettings.add(STORAGE_NAME, funcName, JSON.stringify(params));
 
         //run function
@@ -437,7 +437,7 @@ export class PackageFunctions {
     const result = await postAssayRun(body);
     return dataFrameFromObjects([result]) ?? DG.DataFrame.create();
   }
-  
+
   @grok.decorators.func({name: 'Get Molecules'})
   static async getMolecules(
     @grok.decorators.param({options: {nullable: true}}) sort?: string,
@@ -574,7 +574,7 @@ export class PackageFunctions {
     };
     return await queryPlates(params);
   }
- 
+
   @grok.decorators.func({name: 'Create Plate'})
   static async createPlate(
     name: string,
@@ -595,7 +595,7 @@ export class PackageFunctions {
     if (wells) body.wells = JSON.parse(wells);
     const result = await postPlate(body);
     return dataFrameFromObjects([result]) ?? DG.DataFrame.create();
-  } 
+  }
 
   @grok.decorators.func({name: 'Get Mixtures'})
   static async getMixtures(
@@ -644,7 +644,7 @@ export class PackageFunctions {
     };
     return await queryMixtures(params);
   }
-  
+
   @grok.decorators.func({name: 'Create Mixture'})
   static async createMixture(
     name: string,

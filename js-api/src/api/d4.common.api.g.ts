@@ -190,4 +190,6 @@ export class InputType {
 
   static Pem = 'Pem';
 
+  static Font = 'Font';
+
 }

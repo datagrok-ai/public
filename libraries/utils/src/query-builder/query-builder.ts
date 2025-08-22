@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { Subject } from 'rxjs';
 import '../../css/query-builder.css';
+import dayjs from 'dayjs';
 
 export const SUGGESTIONS_FUNCTION = 'suggestionsFunction';
 
@@ -68,7 +69,10 @@ export class BaseConditionEditor<T = any> {
     protected initializeEditor(prop: DG.Property): void {
         if (Array.isArray(this.condition.value))
             this.condition.value = undefined as T;
-        const input = ui.input.forProperty(prop, this.condition.value, {
+        const initVal = prop.type === DG.TYPE.DATE_TIME && typeof this.condition.value === 'string' ?
+            dayjs(this.condition.value as string) : this.condition.value;
+        const input = ui.input.forProperty(prop, undefined, {
+            value: initVal,
             nullable: false,
             onValueChanged: () => {
                 this.condition.value = input.value as T;
@@ -371,6 +375,26 @@ export class ConditionRegistry {
 }
 
 
+export type HistoryItem = {
+    date: DG.TYPE.DATE_TIME,
+    value: string,
+}
+
+export function saveHistory(key: string, value: string) {
+    let collection: HistoryItem[] = JSON.parse(localStorage.getItem(key) ?? '[]');
+    const newItem = { date: new Date(), value: value };
+    if (!collection.length)
+        localStorage.setItem(key, JSON.stringify([newItem]));
+    else {
+        collection = collection.filter((it) => it.value !== value)
+        localStorage.setItem(key, JSON.stringify([newItem, ...collection.slice(0, 9)]));
+    }
+}
+
+export function getHistory(key: string): HistoryItem[] {
+    return JSON.parse(localStorage.getItem(key) ?? '[]');
+}
+
 export class QueryBuilder {
     root: HTMLElement;
     condition: ComplexCondition;
@@ -378,10 +402,14 @@ export class QueryBuilder {
     structureChanged: Subject<ComplexCondition> = new Subject<ComplexCondition>();
     filterValueChanged: Subject<SimpleCondition> = new Subject<SimpleCondition>();
     layout: QueryBuilderLayout;
+    private _historyCacheKey: string;
+    private historyIcon: HTMLElement | null = null;
 
-    constructor(properties: DG.Property[], initialCondition?: ComplexCondition, layout: QueryBuilderLayout = QueryBuilderLayout.Standard) {
+    constructor(properties: DG.Property[], initialCondition?: ComplexCondition, layout: QueryBuilderLayout = QueryBuilderLayout.Standard,
+        _historyCacheKey: string = '') {
         this.properties = properties;
         this.layout = layout;
+        this._historyCacheKey = _historyCacheKey;
         
         if (initialCondition) {
             this.condition = initialCondition;
@@ -394,6 +422,89 @@ export class QueryBuilder {
         }
 
         this.root = this.buildUI(this.condition, undefined, 0);
+        this.setupHistoryIcon();
+    }
+
+    set historyCache(key: string) {
+        this._historyCacheKey = key;
+        this.setupHistoryIcon(); // This will control visibility
+    }
+
+    saveConditionToHistory(): void {
+        if (this._historyCacheKey)
+            saveHistory(this._historyCacheKey, JSON.stringify(this.condition));
+    }
+
+    private setupHistoryIcon(): void {
+        if (!this.historyIcon) {
+            this.historyIcon = ui.iconFA('history', () => {
+                this.showHistoryMenu();
+            }, 'Query History');
+
+            this.historyIcon.classList.add('query-builder-history-icon');
+        }
+
+        this.root.appendChild(this.historyIcon);
+        
+        // Set data attribute for CSS to control visibility
+        if (this.root) {
+            this.root.setAttribute('data-history', this._historyCacheKey  === '' ? 'false' : 'true');
+        }
+    }
+
+    private showHistoryMenu(): void {
+        const items: HistoryItem[] = getHistory(this._historyCacheKey);
+        const menu = DG.Menu.popup();
+        menu.items(items.map((it) => ui.tools.click(
+            ui.divH([
+                ui.divText(it.date.toString(), {style: {color: '#7990A5'}}),
+                ui.divText(this.conditionToString(JSON.parse(it.value) as ComplexCondition)),
+            ], {style: {gap: '5px'}}),
+        () => {this.loadCondition(JSON.parse(it.value))})), () => {});
+        menu.show();
+    }
+
+    private loadCondition(condition: ComplexCondition): void {
+        this.condition = JSON.parse(JSON.stringify(condition));
+        this.rebuildUI();
+        this.structureChanged.next(this.condition);
+    }
+
+    conditionToString(condition: ComplexCondition): string {
+        if (!condition || !condition.conditions || condition.conditions.length === 0) {
+            return 'No conditions';
+        }
+
+        // If there's only one condition, don't wrap it in logical operator
+        if (condition.conditions.length === 1) {
+            return this.expressionToString(condition.conditions[0]);
+        }
+
+        // For multiple conditions, wrap them in logical operator
+        const logicalOp = condition.logicalOperator === Operators.Logical.and ? 'AND' : 'OR';
+        const conditionStrings = condition.conditions.map(cond => this.expressionToString(cond));
+        
+        return `(${conditionStrings.join(` ${logicalOp} `)})`;
+    }
+
+    private expressionToString(expression: Expression): string {
+        if ('field' in expression) {
+            // This is a SimpleCondition
+            return this.simpleConditionToString(expression);
+        } else {
+            // This is a ComplexCondition (recursive)
+            return this.conditionToString(expression);
+        }
+    }
+
+    private simpleConditionToString(condition: SimpleCondition): string {
+        const field = condition.field || 'Unknown field';
+        const operator = condition.operator || 'Unknown operator';
+        const value = condition.value !== undefined && condition.value !== null ? 
+            (Array.isArray(condition.value) ? `[${condition.value.join(', ')}]` : String(condition.value)) : 
+            'No value';
+        
+        return `${field} ${operator} ${value}`;
     }
 
     createDefaultSimpleCondition(): SimpleCondition {
@@ -420,11 +531,31 @@ export class QueryBuilder {
         const newRoot = this.buildUI(this.condition, undefined, 0);
         this.root.replaceWith(newRoot);
         this.root = newRoot;
+        
+        // Recreate history icon after rebuilding UI
+        this.setupHistoryIcon();
     }
 
     setLayout(layout: QueryBuilderLayout): void {
         this.layout = layout;
-        this.rebuildUI();
+
+        if (layout === QueryBuilderLayout.Narrow)
+            this.root.classList.add('query-builder-narrow');
+        else
+            this.root.classList.remove('query-builder-narrow');
+        
+        // Find all filter containers and apply/remove layout classes
+        const filterContainers = this.root.querySelectorAll('.query-builder-filter-inputs, .query-builder-filter-inputs-narrow');
+        
+        filterContainers.forEach(container => {
+            if (layout === QueryBuilderLayout.Narrow) {
+                container.classList.remove('query-builder-filter-inputs');
+                container.classList.add('query-builder-filter-inputs-narrow');
+            } else {
+                container.classList.remove('query-builder-filter-inputs-narrow');
+                container.classList.add('query-builder-filter-inputs');
+            }
+        });
     }
 
     getLayout(): QueryBuilderLayout {
@@ -544,21 +675,13 @@ export class QueryBuilder {
 
             const operatorInputDiv = ui.div('', 'query-builder-filter-operator');
             const criteriaDiv = ui.div();
-            // Create filter container based on layout
-            let filterContainer: HTMLElement;
-            if (this.layout === QueryBuilderLayout.Narrow) {
-                // Narrow layout: each field on separate row
-                filterContainer = ui.divV([
-                    ui.divH([fieldChoiceInput.root], 'query-builder-filter-field-row'),
-                    ui.divH([operatorInputDiv], 'query-builder-filter-operator-row'),
-                    ui.divH([criteriaDiv], 'query-builder-filter-value-row'),
-                    ui.divH([deleteFieldIcon, addNestedConditionIcon], 'add-delete-icons')
-                ], 'query-builder-filter-inputs-narrow');
-            } else {
-                // Standard layout: all fields on same row
-                filterContainer = ui.divH([fieldChoiceInput.root, operatorInputDiv, criteriaDiv,
-                ui.divH([deleteFieldIcon, addNestedConditionIcon], 'add-delete-icons')], 'query-builder-filter-inputs');
-            }
+
+            const filterContainer = ui.div([
+                ui.div([fieldChoiceInput.root], 'query-builder-filter-field'),
+                ui.div([operatorInputDiv], 'query-builder-filter-operator'),
+                ui.div([criteriaDiv], 'query-builder-filter-value'),
+                ui.div([deleteFieldIcon, addNestedConditionIcon], 'add-delete-icons')
+            ], this.layout === QueryBuilderLayout.Narrow ? 'query-builder-filter-inputs-narrow' : 'query-builder-filter-inputs');
             
             container.appendChild(filterContainer);
             createFilter();
@@ -667,3 +790,4 @@ function suggestionMenuKeyNavigation(inputContainer: HTMLElement) {
     allItems[currentIndex].classList.add('d4-menu-item-hover');
   });
 }
+

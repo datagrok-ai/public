@@ -149,6 +149,8 @@ function drawPoints(g: CanvasRenderingContext2D, series: IFitSeries, options: Fi
 
   for (let i = 0; i < series.points.length!; i++) {
     const p = series.points[i];
+    if (p.outlier && !series.showOutliers)
+      continue;
     const xScreen = viewport.xToScreen(p.x);
     const yScreen = viewport.yToScreen(p.y);
     const color = connectDots ? pointColor :

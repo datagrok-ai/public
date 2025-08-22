@@ -24,8 +24,9 @@ import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-drive
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {useViewersHook} from '../../composables/use-viewers-hook';
 import {ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
-import {take} from 'rxjs/operators';
+import {startWith, take, map} from 'rxjs/operators';
 import {useHelp} from '../../composables/use-help';
+import {useObservable} from '@vueuse/rxjs';
 
 interface ScalarsState {
   type: 'scalars',
@@ -34,7 +35,7 @@ interface ScalarsState {
 
 interface DataFrameState {
   name: string,
-  df: DG.DataFrame,
+  df: Vue.ShallowRef<DG.DataFrame>,
   type: 'dataframe',
   config: Record<string, any>,
 }
@@ -73,7 +74,7 @@ const getScalarContent = (funcCall: DG.FuncCall, prop: DG.Property) => {
 
 const tabToProperties = (fc: DG.FuncCall) => {
   const func = fc.func;
-  const map = getEmptyTabToProperties();
+  const tabsToProps = getEmptyTabToProperties();
 
   const processDf = (dfProp: DG.Property, isOutput: boolean) => {
     const dfViewers = Utils.getPropViewers(dfProp).config;
@@ -87,13 +88,16 @@ const tabToProperties = (fc: DG.FuncCall) => {
         dfNameWithViewer: `${dfProp.category}: ${dfNameWithViewer}`;
 
       const name = dfProp.name;
-      let df = isOutput ? fc.outputs[name] : fc.inputs[name];
-      if (df)
-        df = Vue.markRaw(df);
+      const source = isOutput ? fc.outputParams : fc.inputParams;
+      const changes$ = source[name].onChanged.pipe(
+        startWith(null),
+        map(() => source[name].value ? Vue.markRaw(source[name].value) : null)
+      );
+      const df = useObservable(changes$);
       if (isOutput)
-        map.outputs.set(tabLabel, {type: 'dataframe', name, df, config: dfViewer});
+        tabsToProps.outputs.set(tabLabel, {type: 'dataframe', name, df, config: dfViewer});
       else
-        map.inputs.set(tabLabel, {type: 'dataframe', name, df, config: dfViewer});
+        tabsToProps.inputs.set(tabLabel, {type: 'dataframe', name, df, config: dfViewer});
     });
     return;
   };
@@ -112,16 +116,16 @@ const tabToProperties = (fc: DG.FuncCall) => {
 
       const category = outputProp.category === 'Misc' ? 'Output': outputProp.category;
 
-      const categoryProps = map.outputs.get(category);
+      const categoryProps = tabsToProps.outputs.get(category);
       const [rawValue, formattedValue, units] = getScalarContent(fc, outputProp);
       const scalarProp = {name: outputProp.caption || outputProp.name, rawValue, formattedValue, units};
       if (categoryProps && categoryProps.type === 'scalars')
         categoryProps.scalarsData.push(scalarProp);
       else
-        map.outputs.set(category, {type: 'scalars', scalarsData: [scalarProp]});
+        tabsToProps.outputs.set(category, {type: 'scalars', scalarsData: [scalarProp]});
     });
 
-  return map;
+  return tabsToProps;
 };
 
 export const RichFunctionView = Vue.defineComponent({
@@ -231,7 +235,6 @@ export const RichFunctionView = Vue.defineComponent({
     const tabLabels = Vue.shallowRef<string[]>([]);
     const visibleTabLabels = Vue.shallowRef([] as string[]);
 
-    const viewerTabsCount = Vue.ref<number>(0);
     const isSAenabled = Vue.ref(false);
     const isReportEnabled = Vue.ref(false);
     const isFittingEnabled = Vue.ref(false);
@@ -261,11 +264,6 @@ export const RichFunctionView = Vue.defineComponent({
         ...tabToPropertiesMap.inputs.keys(),
         ...tabToPropertiesMap.outputs.keys(),
       ];
-
-      viewerTabsCount.value = [
-        ...call.inputParams.values(),
-        ...call.outputParams.values(),
-      ].filter((param) => param.property.propertyType === DG.TYPE.DATA_FRAME)?.length;
 
       const features = Utils.getFeatures(call.func);
       isSAenabled.value = Utils.getFeature(features, 'sens-analysis', false);
@@ -549,7 +547,7 @@ export const RichFunctionView = Vue.defineComponent({
                       Vue.withDirectives(<Viewer
                         type={options['type'] as string}
                         options={options}
-                        dataFrame={tabContent.df}
+                        dataFrame={tabContent.df.value}
                         class='w-full'
                         onViewerChanged={(v) => setViewerRef(v, tabContent.name, options['type'] as string)}
                       />, [[ifOverlapping, isRunning.value, 'Recalculating...']])

@@ -8,30 +8,30 @@ import * as DG from 'datagrok-api/dg';
 //output: view result
 //meta.icon: images/cdd-icon-small.png
 //meta.browsePath: Chem
-export async function cddVaultApp(path: string, filter: string) {
+export async function cddVaultApp(path: string, filter: string) : Promise<any> {
   return PackageFunctions.cddVaultApp(path, filter);
 }
 
 //name: cddVaultAppTreeBrowser
 //input: dynamic treeNode 
-//input: view browseView 
-export async function cddVaultAppTreeBrowser(treeNode: any, browseView: DG.View) {
-  return PackageFunctions.cddVaultAppTreeBrowser(treeNode, browseView);
+//meta.role: appTreeBrowser
+export async function cddVaultAppTreeBrowser(treeNode: any) : Promise<void> {
+  PackageFunctions.cddVaultAppTreeBrowser(treeNode);
 }
 
 //name: Databases | CDD Vault
 //tags: panel
 //input: string mol { semType: Molecule }
 //output: widget result
-export function molColumnPropertyPanel(molecule: string) {
+export function molColumnPropertyPanel(molecule: string) : any {
   return PackageFunctions.molColumnPropertyPanel(molecule);
 }
 
 //name: CDDVaultSearchEditor
 //tags: editor
 //input: funccall call 
-export async function CDDVaultSearchEditor(call: DG.FuncCall) {
-  return PackageFunctions.CDDVaultSearchEditor(call);
+export async function CDDVaultSearchEditor(call: DG.FuncCall) : Promise<void> {
+  PackageFunctions.CDDVaultSearchEditor(call);
 }
 
 //name: Get Vault Stats
@@ -40,7 +40,7 @@ export async function CDDVaultSearchEditor(call: DG.FuncCall) {
 //output: string result
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
-export async function getVaultStats(vaultId: number, vaultName: string) {
+export async function getVaultStats(vaultId: number, vaultName: string) : Promise<string> {
   return PackageFunctions.getVaultStats(vaultId, vaultName);
 }
 
@@ -48,7 +48,7 @@ export async function getVaultStats(vaultId: number, vaultName: string) {
 //output: string result
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
-export async function getVaults() {
+export async function getVaults() : Promise<string> {
   return PackageFunctions.getVaults();
 }
 
@@ -58,7 +58,7 @@ export async function getVaults() {
 //output: dataframe result
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
-export async function getMolecules(vaultId: number, moleculesIds: string) {
+export async function getMolecules(vaultId: number, moleculesIds: string) : Promise<any> {
   return PackageFunctions.getMolecules(vaultId, moleculesIds);
 }
 
@@ -69,7 +69,7 @@ export async function getMolecules(vaultId: number, moleculesIds: string) {
 //output: dataframe result
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
-export async function getMoleculesAsync(vaultId: number, moleculesIds: string, timeoutMinutes: number) {
+export async function getMoleculesAsync(vaultId: number, moleculesIds: string, timeoutMinutes: number) : Promise<any> {
   return PackageFunctions.getMoleculesAsync(vaultId, moleculesIds, timeoutMinutes);
 }
 
@@ -79,7 +79,7 @@ export async function getMoleculesAsync(vaultId: number, moleculesIds: string, t
 //output: string result
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
-export async function getProtocolsAsync(vaultId: number, timeoutMinutes: number) {
+export async function getProtocolsAsync(vaultId: number, timeoutMinutes: number) : Promise<string> {
   return PackageFunctions.getProtocolsAsync(vaultId, timeoutMinutes);
 }
 
@@ -89,7 +89,7 @@ export async function getProtocolsAsync(vaultId: number, timeoutMinutes: number)
 //output: string result
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
-export async function getCollectionsAsync(vaultId: number, timeoutMinutes: number) {
+export async function getCollectionsAsync(vaultId: number, timeoutMinutes: number) : Promise<string> {
   return PackageFunctions.getCollectionsAsync(vaultId, timeoutMinutes);
 }
 
@@ -98,7 +98,7 @@ export async function getCollectionsAsync(vaultId: number, timeoutMinutes: numbe
 //output: string result
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
-export async function getSavedSearches(vaultId: number) {
+export async function getSavedSearches(vaultId: number) : Promise<string> {
   return PackageFunctions.getSavedSearches(vaultId);
 }
 
@@ -109,7 +109,7 @@ export async function getSavedSearches(vaultId: number) {
 //output: dataframe result
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
-export async function getSavedSearchResults(vaultId: number, searchId: number, timeoutMinutes: number) {
+export async function getSavedSearchResults(vaultId: number, searchId: number, timeoutMinutes: number) : Promise<any> {
   return PackageFunctions.getSavedSearchResults(vaultId, searchId, timeoutMinutes);
 }
 
@@ -124,7 +124,7 @@ export async function getSavedSearchResults(vaultId: number, searchId: number, t
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
 //editor: Cddvaultlink:CDDVaultSearchEditor
-export async function cDDVaultSearchAsync(vaultId: number, structure?: string, structure_search_type?: any, structure_similarity_threshold?: number, protocol?: number, run?: number) {
+export async function cDDVaultSearchAsync(vaultId: number, structure?: string, structure_search_type?: any, structure_similarity_threshold?: number, protocol?: number, run?: number) : Promise<any> {
   return PackageFunctions.cDDVaultSearchAsync(vaultId, structure, structure_search_type, structure_similarity_threshold, protocol, run);
 }
 
@@ -157,7 +157,7 @@ export async function cDDVaultSearchAsync(vaultId: number, structure?: string, s
 //output: dataframe result
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
-export async function cDDVaultSearch(vaultId: number, molecules: string, names: string, include_original_structures: boolean, only_ids: boolean, only_batch_ids: boolean, created_before: string, created_after: string, modified_before: string, modified_after: string, batch_created_before: string, batch_created_after: string, batch_field_before_name: string, batch_field_before_date: string, batch_field_after_name: string, batch_field_after_date: string, projects: string, data_sets: string, structure: string, structure_search_type: any, structure_similarity_threshold: number, inchikey: string, molecule_fields: string[], batch_fields: string[], fields_search: string[]) {
+export async function cDDVaultSearch(vaultId: number, molecules: string, names: string, include_original_structures: boolean, only_ids: boolean, only_batch_ids: boolean, created_before: string, created_after: string, modified_before: string, modified_after: string, batch_created_before: string, batch_created_after: string, batch_field_before_name: string, batch_field_before_date: string, batch_field_after_name: string, batch_field_after_date: string, projects: string, data_sets: string, structure: string, structure_search_type: any, structure_similarity_threshold: number, inchikey: string, molecule_fields: string[], batch_fields: string[], fields_search: string[]) : Promise<any> {
   return PackageFunctions.cDDVaultSearch(vaultId, molecules, names, include_original_structures, only_ids, only_batch_ids, created_before, created_after, modified_before, modified_after, batch_created_before, batch_created_after, batch_field_before_name, batch_field_before_date, batch_field_after_name, batch_field_after_date, projects, data_sets, structure, structure_search_type, structure_similarity_threshold, inchikey, molecule_fields, batch_fields, fields_search);
 }
 
@@ -172,6 +172,6 @@ export async function cDDVaultSearch(vaultId: number, molecules: string, names: 
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
 //editor: Cddvaultlink:CDDVaultSearchEditor
-export async function cDDVaultSearch2(vaultId: number, structure?: string, structure_search_type?: any, structure_similarity_threshold?: number, protocol?: number, run?: number) {
+export async function cDDVaultSearch2(vaultId: number, structure?: string, structure_search_type?: any, structure_similarity_threshold?: number, protocol?: number, run?: number) : Promise<any> {
   return PackageFunctions.cDDVaultSearch2(vaultId, structure, structure_search_type, structure_similarity_threshold, protocol, run);
 }

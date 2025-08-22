@@ -137,21 +137,22 @@ export class SunburstViewer extends EChartViewer {
     const handleChartMouseover = async (params: any) => {
       const { x, y } = params.event.event;
       const { name, value, data } = params;
+      const displayName = name || 'Nulls';
       const tooltipDiv = ui.div();
 
       ui.tooltip.show(tooltipDiv, x + 10, y);
 
       if (data.semType !== DG.SEMTYPE.MOLECULE) {
-        tooltipDiv.innerText = `${value}\n${name}`;
+        tooltipDiv.innerText = `${value}\n${displayName}`;
         return;
       }
 
       const image = await TreeUtils.getMoleculeImage(name, 150, 100);
       tooltipDiv.appendChild(ui.divText(`${value}\n`));
-      if (name) {
+      if (name)
         tooltipDiv.appendChild(image);
-        return;
-      }
+      else
+        tooltipDiv.appendChild(ui.divText(displayName));
     };
 
     const handleCanvasDblClick = (event: MouseEvent) => {
