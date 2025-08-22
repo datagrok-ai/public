@@ -33,4 +33,4 @@ export type MolTrackProp = {
 };
 
 export const GITHUB_BASE_URL =
-  'https://raw.githubusercontent.com/datagrok-ai/mol-track/main/data/simple/';
+  'https://raw.githubusercontent.com/datagrok-ai/mol-track/main/data/black/';

@@ -50,6 +50,12 @@ export class MolTrackDockerService {
     return await response.json();
   }
 
+  static async fetchDirectFields(): Promise<Partial<MolTrackProperty>[]> {
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id, '/v1/schema-direct/');
+    const data = await response.json();
+    return data.flat();
+  }
+
   static async search(query: MolTrackSearchQuery, endpointLevel: string): Promise<MolTrackSearchResponse> {
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id,
       `/v1/search/${endpointLevel}`, {
