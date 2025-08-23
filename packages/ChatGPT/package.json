@@ -45,6 +45,11 @@
       "propertyType": "string",
       "defaultValue": "Enter ChatGPT API key",
       "nullable": false
+    },
+    {
+      "name": "claudeApiKey",
+      "propertyType": "string",
+      "nullable": true
     }
   ]
 }
