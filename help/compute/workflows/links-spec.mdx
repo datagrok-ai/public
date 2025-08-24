@@ -3,10 +3,9 @@ title: "Link Query Language"
 sidebar_position: 3
 ---
 
-This section provides Link Query Language (abbreviated as LQL)
-description. Note that queries could be rather complicated, but links
-must still propagate data only forward, and it is up to query author
-to ensure it is the case in any possible workflow state.
+This section describes the Link Query Language (LQL),
+which is used to define relationships between workflow components.
+Each link is a one-directional connection propagating data from input to output.
 
 ### Query structure
 
@@ -14,14 +13,12 @@ Each LQL query has the following high level structure:
 
 `NAME(FLAGS?):PATH`
 
-`NAME` is the LQL query name, this name is used in controllers to get
-results. Mandatory for any LQL query.
+`NAME` is the mandatory LQL query name used by controllers to retrieve results.
 
-`FLAGS` is an optional coma separated flag list. `optional` flag means
-that for creating a link matching this query is not necessary. `call`
-flag is used in [funccall](link-types#funccall-actions) actions, to
-specify that instead of a script io, FuncCall itself should be matched
-and returned. `template` flag is used in [template queries](#template-queries).
+`FLAGS` is an optional comma-separated list of flags:
+- The `optional` flag indicates that creating a link matching this query is not required
+- The `call` flag, used in [funccall](link-types#funccall-actions) actions, specifies that the FuncCall itself should be matched and returned instead of a script I/O
+- The `template` flag is used in [template queries](#template-queries)
 
 `PATH` is a mandatory path, where items are delimited by `/`. For
 example, assuming its data link input:
@@ -53,24 +50,23 @@ All plain selectors support matching multiple ids via `or`. For
 example, `first(script1|script2)` will match the first item with id
 either `script1` or `script2`.
 
-Here is a list of plain selectors:
+The following plain selectors are available:
 
 #### `first`
 
-Matches the first item with provided ids among direct descendant.
+Matches the first item with provided IDs among direct descendants.
 
 #### `last`
 
-Matches the last item with provided ids among direct descendant.
+Matches the last item with provided IDs among direct descendants.
 
 #### `all`
 
-Matches all items with provided ids among direct descendant.
+Matches all items with provided IDs among direct descendants.
 
 #### `expand`
 
-The same as `all` in terms of matching, but is used in base path
-only. Will generate several link instances (one per each match).
+Functions similarly to `all` for matching, but is exclusively used in base paths. Generates multiple link instances (one per match).
 
 
 ### Reference selectors
@@ -141,10 +137,9 @@ For [before](#before) and [after](#after) special suffixes are
 available. `*` forcing to match all items, and `+` forcing to match an
 adjacent item, both in the direction of a selector.
 
-Also for [before](#before) and [after](#after) a third parameter
-called stop ids is available. If during matching an id from this list
-is encountered (depending on the selector direction), matching is
-stopped.
+Additionally, [before](#before) and [after](#after) selectors accept a third parameter called "stop IDs".
+When matching encounters any ID from this list (in the respective selector's direction),
+the matching process stops.
 
 
 ### Tag selectors
@@ -181,8 +176,8 @@ in the tree than a link definition will not be matched.
 
 ### Template queries
 
-If there is a need to pass many io items of one script to another,
-this could be done using templates. For exmaple, the following:
+When you need to pass multiple I/O items from one script to another, you can use templates.
+For example:
 
 ```
 {

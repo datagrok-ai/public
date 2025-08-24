@@ -3,10 +3,10 @@ title: "Tutorial and examples"
 sidebar_position: 5
 ---
 
-Let's create a multi-step analysis using low-code workflows.
-We'll analyze the standard Wine Quality dataset as an example.
+This tutorial demonstrates how to create a multi-step analysis using low-code workflows.
+We'll use the standard Wine Quality dataset as an example.
 
-We'll make a workflow that can make the following:
+Our workflow will perform the following tasks:
 
 1. Load the public dataset,
 2. Perform two separate calculations:
@@ -14,8 +14,8 @@ We'll make a workflow that can make the following:
     * Clustering wines based on chemical profile.
 3. Combine: Highlight which clusters have best average quality.
 
-The final code of the package can be found in the
-[GitHub repository](https://github.com/GennadiyZakharov/winequalitywf)
+You can find the complete code for this package in the
+[GitHub repository](https://github.com/GennadiyZakharov/winequalitywf).
 
 ## Development setup and minimal workflow
 
@@ -119,10 +119,10 @@ You will see the following interface:
 
 ## Using scripts for workflow steps
 
-Now, let's make our workflow useful — add to it some logic.
-Since Datagrok supports multi-language development,
+Let's enhance our workflow by adding computation logic.
+Since Datagrok supports multiple programming languages,
 we can implement computational logic using any supported language.
-For this example, we'll use Python as the most used data science language.
+For this example, we'll use Python as the most popular language for data science.
 
 Make the folder `scripts` inside your package and add
 the file `fetchwinedata.py` with the following code:
@@ -514,9 +514,9 @@ Run it to see the final results.
 
 ![Data merging is ready](pics/wineQ_full_workflow_done.png)
 
-As you can see, the quality of our prediction is not good.
-We have only a slight correlation between the predicted and actual wine quality.
-Color by clustering also shows no distribution between classes.
+As demonstrated by the results, our prediction model's quality is not good.
+There's only a slight correlation between predicted and actual wine quality values.
+The clustering analysis, shown by colors, reveals no clear separation between classes.
 
 However, the provided examples demonstrate the key capabilities of the
 Datagrok Low-code workflows.
@@ -531,7 +531,7 @@ ensuring reproducibility of your workflow.
 For example, try to run the data merging step,
 then change number of clusters and rerun the clustering step.
 
-![Inconsistent data mark](pics/wineQ_full_workflow_consistency_check.png)
+
 
 As you can see, now we have only three clusters,
 and the final dama merging step was immediately marked by the red circle.
@@ -540,9 +540,9 @@ The workflow engine found input data inconsistency and notified us.
 Now the data merge step shows us the **Rerun** buton,
 suggesting tu rerun the step.
 
-The Low-code workflow engine provides many advanced tools to
-combine flexible data analysis with the ability to
-tightly manage workflow state and ensure stable and reproducible results.
+The Low-code workflow engine combines flexible data analysis capabilities
+with robust workflow state management to ensure reproducible results.
+Its advanced tools help maintain data consistency throughout the analysis process.
 
 
 

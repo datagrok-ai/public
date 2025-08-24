@@ -18,7 +18,7 @@ Before starting to work with workflows, we need to define several terms:
   * Link source: where to take data from
   * Link target: where to put data
   * Link handler: a TypeScript function performing data transformation.
-    Using handlers, the user can apply small non-interactive transformation to data between steps.
+  Using handlers, the user can apply small non-interactive transformations to data between steps.
 * **Configuration**: a tree of JavaScript objects holding workflow definition: nodes and links
 * **Workflow provider**: A JavaScript function that returns a Workflow configuration object
 * **Controller**: An object that is passed to handler.
@@ -55,8 +55,8 @@ that receives a `controller` object argument.
 Each link type has its own controller type with slightly different methods
 to get and set inputs/outputs.
 
-Link Handlers is a good way to apply some fast none-interactive
-transformation to the data, when making a separate script step is and overkill.
+Link Handlers are a good way to apply fast non-interactive
+transformations to data when creating a separate script step would be overkill.
 
 Note that inputs/outputs of links are different from inputs/outputs of scripts.
 A script output is usually connected to a link input,
@@ -72,10 +72,10 @@ You can access TypeScript configuration typing by installing
 
 `PipelineConfiguration` type describes an n-ary tree
 structure where leafs are scripts.
-Each nested level might have links
-definitions which target own or nested scripts IO.
-The main restriction for links is to have information propagated only forward
-(depth-first graph ordering).
+Each nested level might have link
+definitions which target its own or nested script IOs.
+The main restriction for links is that information can only be propagated forward
+(using depth-first graph ordering).
 More information about configuration is
 available [here](configuration).
 The configuration is used to make a UI navigation tree.
