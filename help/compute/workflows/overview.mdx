@@ -20,11 +20,15 @@ Before starting to work with workflows, we need to define several terms:
   * Link handler: a TypeScript function performing data transformation.
     Using handlers, the user can apply small non-interactive transformation to data between steps.
 * **Configuration**: a tree of JavaScript objects holding workflow definition: nodes and links
-* **Workflow provider**: A javaScript function, that returns Workflow configuration object
-  TBD: Cover in the description:
-* **Controller**:
-* **Action**:
-* **FuncCall**:
+* **Workflow provider**: A JavaScript function that returns a Workflow configuration object
+* **Controller**: An object that is passed to handler.
+  Controller has methods to get inputs and assign outputs.
+* **Action**: Similar to links, but triggers only by clicking a UI button.
+* **FuncCall**: a result of executing a data query, script, or any other function.
+  From the user point of view, funccall is the one invocation of a script, containing the script code,
+  input and output.
+  The description is available [here](../../datagrok/concepts/functions/function-call.md)
+
 
 ### Scripts nodes
 
@@ -76,9 +80,15 @@ More information about configuration is
 available [here](configuration).
 The configuration is used to make a UI navigation tree.
 
-__TODO: describe other types of objects.__
+### Navigation tree
 
-__TODO: simple diagram and code illustrating the above__
+Each workflow has a navigation tree, automatically created
+from the workflow configuration.
+Each node in the navigation tree is a script.
+The script UI is created automatically based on the input annotations.
+To learn more about script UI, check the [Scripting](../scripting/scripting.mdx)
+section of the Datagrok documentation.
 
-__TODO: simple nav tree gif__
+![A workflow navigation tree](pics/Low-code_workflow_-_navigation.png)
+
 

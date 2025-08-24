@@ -18,9 +18,9 @@ function (called a provider), with at least these annotations is needed:
 //output: object result
 ```
 
-`editor` tag is a system tag used by the platform to launch a
-workflow. Tag `model` means that it will be added to ModelHub
-(__TODO__ Docs and link). Output of the function should be of type
+`editor` tag is a system tag used by the platform to launch a workflow.
+Tag `model` means that it will be added to ModelHub.
+Output of the function should be of type
 `PipelineConfiguration`, and input will be an object with `version`
 field, so it is possible to have multiple [workflow
 versions](#workflow-versioning) at the same time.
@@ -81,9 +81,9 @@ however, they are effectively replaced by a workflow configuration.
 
 #### `nqName`
 
-This is a full name (__TODO__ link to nqName) of the corresponding
-[provider](#workflow-providers), meaning this configuration is
-returned by the specified provider. Not used for nested workflows that
+This is a full name of the corresponding [provider](#workflow-providers),
+containing package name and the script name, separated by `:`.
+Not used for nested workflows that
 are not a [reference](#reusing-workflows).
 
 #### `version`
@@ -94,7 +94,7 @@ input. Not used for nested workflows that are not
 
 #### `friendlyName`
 
-_Optional_
+_Optional_.
 
 A user-friendly name of a workflow, will be shown in UI.
 
@@ -162,8 +162,6 @@ node](#script-nodes) . Each item must have an unique
 id. This array defines an immutable sequence of steps, but if nested
 workflows are dynamic, those could be internally mutated.
 
-__TODO ui gif example__
-
 ### Dynamic workflows
 
 #### `stepTypes`
@@ -180,8 +178,6 @@ _Optional_
 
 Is an array of initial steps. Each item is a reference to a
 [stepTypes](#steptypes) item.
-
-__TODO ui gif example__
 
 ### Additional stepTypes items options
 
@@ -220,7 +216,7 @@ This id is used in [links](./links-spec) for paths.
 
 #### `nqName`
 
-Mandatory script full name (__TODO__ link to nqName).
+Mandatory script full name.
 
 #### `type`
 
@@ -297,7 +293,7 @@ Not used, id of the returned workflow will be used.
 
 #### `provider`
 
-`nqName` of the provider function (__TODO__ link to nqName).
+`nqName` of the provider function.
 
 #### `version`
 
@@ -315,8 +311,6 @@ user to launch different workflow versions directly, the following
 //meta.versions: ["2.0", "1.0"]
 ```
 
-__TODO ui gif example__
-
 __Note__ that all versions must not be removed or altered in a
 non-compatible way, regardless of the meta-annotation, otherwise
 user's saved state of such workflows could not be
@@ -326,12 +320,8 @@ results with the same steps and inputs.
 For a toplevel workflow all saved users's data across all versions is
 available.
 
-__TODO ui gif example__
-
 For nested [references](#reusing-workflows) items only a
 specific version workflow data is available.
-
-__TODO ui gif example__
 
 This means that after making a new workflow version, all dependent
 workflows must also have new versions released, provided they want to

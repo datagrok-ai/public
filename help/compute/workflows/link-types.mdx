@@ -163,8 +163,6 @@ Where to show action. Possible values are
 - `menu` action is show as menu item
 - `none` action is not show on ui at all
 
-(__TODO ui examples__)
-
 #### `friendlyName`
 
 _Optional_
@@ -258,7 +256,7 @@ trigger consistency changes. User has either to manually review, apply
 changes and rerun scripts, or do it via **rerun with consistent** on a
 scope of workflow, nested workflow, or a script.
 
-__TODO: ui consistency examples gifs__
+![Inconsistent data mark](pics/wineQ_full_workflow_consistency_check.png)
 
 
 ### Validators
@@ -322,8 +320,6 @@ action name, `action` is a result of
 could be access inside action controller via
 [`getAdditionalParam`](#getadditionalparam).
 
-__TODO: ui example__
-
 #### `getValidationAction`
 
 ```
@@ -358,10 +354,10 @@ It is possible to hide script inputs setting the following meta:
 { hidden: true }
 ```
 
-Also an input annotation (__TODO: link to annotation doc__) should
+Also, an input annotation should
 include `optional: true`
 
-For choice inputs (__TODO: link to doc__) it is possible to update an
+For choice inputs it is possible to update an
 items list:
 
 ```
