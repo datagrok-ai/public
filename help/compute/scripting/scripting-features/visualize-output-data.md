@@ -121,7 +121,7 @@ outputDF = inputDF.copy()
 
 The default script view shows all viewers at once.
 You may divide viewers by different tabs using
-[advanced UI editor](../advanced-scripting/rich-function-view.md#group-outputs).
+[advanced UI editor](../advanced-scripting/rich-function-view.md#group-scalar-outputs).
 
 :::
 
