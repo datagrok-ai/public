@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import MolNotation = DG.chem.Notation;
@@ -5,8 +6,8 @@ import MolNotation = DG.chem.Notation;
 // datagrok libraries dependencies
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {getMolSafe} from './mol-creation_rdkit';
-import { chemBeginCriticalSection, chemEndCriticalSection } from './chem-common';
-import { getRdKitService } from './chem-common-rdkit';
+import {chemBeginCriticalSection, chemEndCriticalSection} from './chem-common';
+import {getRdKitService} from './chem-common-rdkit';
 
 
 export const MALFORMED_MOL_V2000 = `
