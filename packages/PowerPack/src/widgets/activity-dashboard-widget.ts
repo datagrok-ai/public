@@ -14,10 +14,13 @@ enum SpotlightTabNames {
 
 export class ActivityDashboardWidget extends DG.Widget {
   static RECENT_TIME_DAYS = 2;
-  static RECORDS_AMOUNT_PER_PAGE = 50;
+  static SPOTLIGHT_ITEMS_LENGTH: 10;
 
   keywordsToIgnore: string[] = ['"data"', '"data w/', '"fitted data"', '"reduced data"', '"reduceddata"', '"sizingparams"', '"primaryfilter', '"trimmed data"', '"input data from imported file"', '"dataanalysisdf', '"clean data"'/*, 'Ran <span>#{x.'*/];
   currentDate: dayjs.Dayjs = dayjs();
+  get cutoffDate(): dayjs.Dayjs {
+    return this.currentDate.subtract(ActivityDashboardWidget.RECENT_TIME_DAYS, 'day');
+  }
 
   favoritesEvents: DG.LogEvent[] = [];
 
@@ -58,39 +61,32 @@ export class ActivityDashboardWidget extends DG.Widget {
     tabControl.root.style.width = '100%';
 
     this.root.appendChild(tabControl.root);
-    setTimeout(() => {
-      const header = this.root.parentElement?.parentElement?.querySelector('.d4-dialog-header');
-      if (header) {
-        const icons = Array.from(header.getElementsByClassName('grok-icon'));
-        this.root.appendChild(icons[icons.length - 1]);
-        header.remove();
-      }
-    }, 500);
   }
 
   async initSpotlightData(): Promise<void> {
     console.time('ActivityDashboardWidget.initSpotlightData');
     const notificationsDataSource: DG.NotificationsDataSource = grok.dapi.users.notifications.forCurrentUser()
-      .by(ActivityDashboardWidget.RECORDS_AMOUNT_PER_PAGE) as DG.NotificationsDataSource;
+      .by(ActivityDashboardWidget.SPOTLIGHT_ITEMS_LENGTH) as DG.NotificationsDataSource;
     console.time('ActivityDashboardWidget.notificationsAndMostRecentEntities');
     const [notifications, mostRecentEntitiesDf]: [DG.UserNotification[], DG.DataFrame] = await Promise.all([notificationsDataSource.list(),
       queries.mostRecentEntities(DG.User.current().id)]);
     console.timeEnd('ActivityDashboardWidget.notificationsAndMostRecentEntities');
 
     this.recentNotifications = notifications
-      .filter((n) => !n.isRead || n.createdAt?.isAfter(this.currentDate.subtract(ActivityDashboardWidget.RECENT_TIME_DAYS, 'day')))
+      .filter((n) => !n.isRead || n.createdAt?.isAfter(this.cutoffDate))
       .sort((a, b) => b.createdAt?.diff(a.createdAt) ?? 0);
-    this.sharedNotifications = this.recentNotifications.filter((n) => n.text.startsWith('<span>#') &&
-      n.text.includes('</span> shared') && n.text.includes(': <span>'));
+    const sharedCandidates = this.recentNotifications.filter((n) => n.text.startsWith('<span>#') &&
+      n.text.includes('</span> shared') && n.text.includes(': <span>')).slice(0, ActivityDashboardWidget.SPOTLIGHT_ITEMS_LENGTH);
     const sharedUserIds: string[] = [];
     const sharedEntityIds: string[] = [];
-    this.sharedNotifications.forEach((n) => {
+    sharedCandidates.forEach((n) => {
       const matches = [...n.text.matchAll(/<span>#{x\.([a-f0-9-]+)\.".*?"}<\/span>/g)];
       if (matches.length > 1) {
         sharedUserIds.push(matches[0][1]);
         sharedEntityIds.push(matches[1][1]);
       }
     });
+    this.sharedNotifications = sharedCandidates;
 
     const recentEntityIdCol = mostRecentEntitiesDf.col('id')!;
     const lastEventTimeCol = mostRecentEntitiesDf.col('last_event_time')!;
@@ -98,16 +94,21 @@ export class ActivityDashboardWidget extends DG.Widget {
     for (let i = 0; i < recentEntityIdCol.length; i++)
       recentEntityIds[i] = recentEntityIdCol.get(i);
 
+    const uniqueIds = Array.from(new Set<string>([...sharedUserIds, ...sharedEntityIds, ...recentEntityIds]));
     console.time('ActivityDashboardWidget.getEntitiesByIds');
-    const allEntities = await grok.dapi.getEntities([...sharedUserIds, ...sharedEntityIds, ...recentEntityIds]);
+    const allEntities = await grok.dapi.getEntities(uniqueIds);
     console.timeEnd('ActivityDashboardWidget.getEntitiesByIds');
-    const sharedEntities = allEntities.slice(0, sharedUserIds.length + sharedEntityIds.length);
-    const recentEntsNotFiltered = allEntities.slice(sharedUserIds.length + sharedEntityIds.length);
 
-    this.sharedUsers = sharedEntities.filter((ent) => ent instanceof DG.User) as DG.User[];
-    this.sharedWithMe = sharedEntities.filter((ent) => !(ent instanceof DG.User));
-    for (let i = 0; i < recentEntsNotFiltered.length; i++) {
-      const ent = recentEntsNotFiltered[i];
+    const byIdMap = new Map(allEntities.map((e) => [e.id, e]));
+
+    this.sharedUsers = sharedUserIds.map((id) => byIdMap.get(id)).filter((e): e is DG.User => e instanceof DG.User);
+    this.sharedWithMe = sharedEntityIds.map((id) => byIdMap.get(id)).filter((e): e is DG.Entity => !!e && !(e instanceof DG.User));
+    this.recentEntities.length = 0;
+    this.recentEntityTimes.length = 0;
+    for (let i = 0; i < recentEntityIds.length; i++) {
+      const ent = byIdMap.get(recentEntityIds[i]);
+      if (!ent)
+        continue;
       if (!(ent instanceof DG.FuncCall || ent instanceof DG.Group || ent instanceof DG.User || ent instanceof DG.Package ||
         ent instanceof DG.UserReport || ent instanceof DG.TableInfo || (ent instanceof DG.Func && !(ent instanceof DG.Script ||
         ent instanceof DG.DataQuery || ent instanceof DG.DataJob)) || ent instanceof DG.ViewInfo || ent == null ||
@@ -144,8 +145,7 @@ export class ActivityDashboardWidget extends DG.Widget {
         }
       } else
         usedItems = items;
-      const ITEMS_LENGTH = 10;
-      const itemsToShow = usedItems.slice(0, ITEMS_LENGTH);
+      const itemsToShow = usedItems.slice(0, ActivityDashboardWidget.SPOTLIGHT_ITEMS_LENGTH);
       const list = ui.list(itemsToShow);
       list.classList.add('power-pack-activity-widget-subwidget-list-content');
       const listChildren = Array.from(list.children);
@@ -266,7 +266,7 @@ export class ActivityDashboardWidget extends DG.Widget {
 
     const eventFetches = await Promise.all(favorites.map((entity) =>
       grok.dapi.log.where({entityId: entity.id,
-        start: this.currentDate.subtract(ActivityDashboardWidget.RECENT_TIME_DAYS, 'days')}) // where entityId in
+        start: this.cutoffDate})
         .list()));
     this.favoritesEvents = (this.removeUnnecessaryEntities(eventFetches.flat()) as DG.LogEvent[])
       .sort((a, b) => b.eventTime?.diff(a.eventTime) ?? 0);
@@ -313,10 +313,10 @@ export class ActivityDashboardWidget extends DG.Widget {
   async getActivityTab(): Promise<HTMLElement> {
     console.time('ActivityDashboardWidget.buildActivityTab');
     const recentUserActivityDataSource: DG.ActivityDataSource = grok.dapi.log.activity
-      .where({userId: DG.User.current().id, start: this.currentDate.subtract(ActivityDashboardWidget.RECENT_TIME_DAYS, 'day')});
+      .where({userId: DG.User.current().id, start: this.cutoffDate});
     const recentActivity = await recentUserActivityDataSource.list();
     this.recentUserActivity = (this.removeUnnecessaryEntities(recentActivity
-      .filter((a) => a.eventTime?.isAfter(this.currentDate.subtract(ActivityDashboardWidget.RECENT_TIME_DAYS, 'day')))) as DG.LogEvent[])
+      .filter((a) => a.eventTime?.isAfter(this.cutoffDate))) as DG.LogEvent[])
       .sort((a, b) => b.eventTime?.diff(a.eventTime) ?? 0);
 
     const root = ui.div([]);
