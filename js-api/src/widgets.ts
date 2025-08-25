@@ -965,20 +965,8 @@ export interface IMenuFontEditorOptions {
   /** A name of the group in the menu. */
   asGroup: string;
 
-  /** Whether font family should be grouped. */
-  fontFamilyGroup: boolean;
-
-  /** Called when font size is changed. */
-  onSizeChange: (size: number) => void;
-
-  /** Called when font family is changed. */
-  onFamilyChange: (family: string) => void;
-
-  /** Called when bold mode is changed. */
-  onBoldChange: (isBold: boolean) => void;
-
-  /** Called when italic mode is changed. */
-  onItalicChange: (isItalic: boolean) => void;
+  /** Called when font is changed */
+  onChange: (value: string) => void;
 }
 
 /** See {@link IMenuSingleColumnSelectorOptions} and {@link IMenuMultiColumnSelectorOptions} */
@@ -1172,8 +1160,7 @@ export class Menu {
    * @returns {Menu} `this` menu itself. */
   fontEditor(initial: string, options?: IMenuFontEditorOptions): Menu {
     return toJs(api.grok_Menu_FontEditor(this.dart, initial, options?.fontSizeMin, options?.fontSizeMax,
-      options?.fontSizeStep ?? 1, options?.fontFamilies, options?.asGroup, options?.fontFamilyGroup ?? false,
-      options?.onSizeChange, options?.onFamilyChange, options?.onBoldChange, options?.onItalicChange));
+      options?.fontSizeStep ?? 1, options?.fontFamilies, options?.asGroup, options?.onChange));
   }
 
   /** Adds single-column selector to menu.

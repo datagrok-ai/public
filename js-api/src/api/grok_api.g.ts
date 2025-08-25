@@ -201,7 +201,7 @@ export interface IDartApi {
   grok_Menu_SingleColumSelector(m: any, dataFrame: any, initialValue: String, onChange: any, asGroup: String, nullable: Bool, visible: Bool, editable: Bool, closeOnClick: Bool, changeOnHover: Bool, columnFilter: any): any;
   grok_Menu_MultiColumSelector(m: any, dataFrame: any, initialValue: any, onChange: any, asGroup: String, visible: Bool, editable: Bool, columnFilter: any): any;
   grok_Menu_Header(m: any, text: String, onClick: any, hasHoverEffect: Bool, getDescription: any): any;
-  grok_Menu_FontEditor(m: any, initial: String, fontSizeMin: Num, fontSizeMax: Num, fontSizeStep: Num, fontFamilies: any, asGroup: String, fontFamilyGroup: Bool, onSizeChange: any, onFamilyChange: any, onBoldChange: any, onItalicChange: any): any;
+  grok_Menu_FontEditor(m: any, initial: String, fontSizeMin: Num, fontSizeMax: Num, fontSizeStep: Num, fontFamilies: any, asGroup: String, onChange: any): any;
   grok_Dialog(title: String, helpUrl: String, showHeader: Bool, showFooter: Bool): any;
   grok_Dialog_Get_Root(d: any): any;
   grok_Dialog_Get_Title(d: any): any;

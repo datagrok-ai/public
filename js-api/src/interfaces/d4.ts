@@ -1,6 +1,181 @@
 /// this file was generated automatically from d4 classes declarations
 
 
+export interface IPointsViewerSettings {
+  /// List of columns to show
+  columnNames: Array<string>;
+
+  /// Additional columns to display in the tooltip
+  tooltipColumnNames: Array<string>;
+
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+}
+
+export enum FlexPosition {
+  Left = 'Left',
+  Right = 'Right',
+  Top = 'Top',
+  Bottom = 'Bottom',
+}
+
+export enum VisibilityMode {
+  Auto = 'Auto',
+  Always = 'Always',
+  Never = 'Never',
+}
+
+export interface IConfusionMatrixSettings {
+  /// Column to be put on the X axis
+  x: string;
+  xColumnName: string;
+
+  /// Column to be put on the Y axis
+  y: string;
+  yColumnName: string;
+
+  /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
+  /// Formula that filters out rows to show.
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
+  ///   ${SEVERITY} == 'Medium'
+  ///   ${RACE}.endsWith('sian')
+  filter: string;
+
+  /// Viewer components font size in pixels.
+  controlsFont: string;
+
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+}
+
+export enum RowSet {
+  All = 'All',
+  Filtered = 'Filtered',
+  Selected = 'Selected',
+  SelectedOrCurrent = 'SelectedOrCurrent',
+  FilteredSelected = 'FilteredSelected',
+  MouseOverGroup = 'MouseOverGroup',
+  CurrentRow = 'CurrentRow',
+  MouseOverRow = 'MouseOverRow',
+}
+
+export interface IRocCurveSettings {
+  /// Columns to be put on the X axis
+  predictionColumnNames: Array<string>;
+
+  /// Column to be put on the Y axis
+  targetColumn: string;
+
+  /// Positive class name
+  positiveClass: string;
+
+  /// Select to draw thresholds
+  showThreshold: boolean;
+
+  /// Determines the rows shown on the plot.
+  rowSource: keyof typeof RowSet;
+
+  /// Formula that filters out rows to show.
+  /// Examples:
+  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
+  ///   ${SEVERITY} == 'Medium'
+  ///   ${RACE}.endsWith('sian')
+  filter: string;
+
+  /// Viewer components font size in pixels.
+  controlsFont: string;
+
+  allowDynamicMenus: boolean;
+
+  // Properties common for all viewers
+  // todo: use code generation
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /// Viewer description that gets shown at the *Descriptor Position*.
+  /// Markup is supported.
+  description: string;
+
+  /// Help to be shown when user clicks on the '?' icon on top.
+  /// Could either be in markdown, or a URL (starting with '/' or 'http').
+  help: string;
+
+  /// Namespace-qualified function that gets executed when a viewer is initialized
+  initializationFunction: string;
+
+  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+}
+
 export interface IBarChartSettings {
   /// Determines the rows shown on the scatter plot.
   rowSource: keyof typeof RowSet;
@@ -185,17 +360,6 @@ export interface IBarChartSettings {
 
 }
 
-export enum RowSet {
-  All = 'All',
-  Filtered = 'Filtered',
-  Selected = 'Selected',
-  SelectedOrCurrent = 'SelectedOrCurrent',
-  FilteredSelected = 'FilteredSelected',
-  MouseOverGroup = 'MouseOverGroup',
-  CurrentRow = 'CurrentRow',
-  MouseOverRow = 'MouseOverRow',
-}
-
 export enum RowGroupAction {
   Select = 'Select',
   Filter = 'Filter',
@@ -213,12 +377,6 @@ export enum VerticalAlignType {
   Bottom = 'Bottom',
 }
 
-export enum VisibilityMode {
-  Auto = 'Auto',
-  Always = 'Always',
-  Never = 'Never',
-}
-
 export enum FlexAutoPosition {
   Auto = 'Auto',
   Left = 'Left',
@@ -229,13 +387,6 @@ export enum FlexAutoPosition {
   RightBottom = 'RightBottom',
   LeftTop = 'LeftTop',
   LeftBottom = 'LeftBottom',
-}
-
-export enum FlexPosition {
-  Left = 'Left',
-  Right = 'Right',
-  Top = 'Top',
-  Bottom = 'Bottom',
 }
 
 export interface IBoxPlotSettings {
@@ -579,60 +730,6 @@ export enum CardValueSourceType {
   Markup = 'Markup',
   Formula = 'Formula',
   External = 'External',
-}
-
-export interface IConfusionMatrixSettings {
-  /// Column to be put on the X axis
-  x: string;
-  xColumnName: string;
-
-  /// Column to be put on the Y axis
-  y: string;
-  yColumnName: string;
-
-  /// Determines the rows shown on the plot.
-  rowSource: keyof typeof RowSet;
-
-  /// Formula that filters out rows to show.
-  /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
-  ///   ${RACE}.endsWith('sian')
-  filter: string;
-
-  /// Viewer components font size in pixels.
-  controlsFont: string;
-
-  allowDynamicMenus: boolean;
-
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  description: string;
-
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
-
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  initializationFunction: string;
-
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  onInitializedScript: string;
-
-  descriptionPosition: keyof typeof FlexPosition;
-
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
-
 }
 
 export interface ICorrelationPlotSettings {
@@ -2442,103 +2539,6 @@ export interface IPivotViewerSettings {
   gridLook: any;
 
   allowViewers: boolean;
-
-  /// Determines the rows shown on the plot.
-  rowSource: keyof typeof RowSet;
-
-  /// Formula that filters out rows to show.
-  /// Examples:
-  ///   ${AGE} > 20 or ${WEIGHT / 2) > 100
-  ///   ${SEVERITY} == 'Medium'
-  ///   ${RACE}.endsWith('sian')
-  filter: string;
-
-  /// Viewer components font size in pixels.
-  controlsFont: string;
-
-  allowDynamicMenus: boolean;
-
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  description: string;
-
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
-
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  initializationFunction: string;
-
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  onInitializedScript: string;
-
-  descriptionPosition: keyof typeof FlexPosition;
-
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
-
-}
-
-export interface IPointsViewerSettings {
-  /// List of columns to show
-  columnNames: Array<string>;
-
-  /// Additional columns to display in the tooltip
-  tooltipColumnNames: Array<string>;
-
-  allowDynamicMenus: boolean;
-
-  // Properties common for all viewers
-  // todo: use code generation
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  /// Viewer description that gets shown at the *Descriptor Position*.
-  /// Markup is supported.
-  description: string;
-
-  /// Help to be shown when user clicks on the '?' icon on top.
-  /// Could either be in markdown, or a URL (starting with '/' or 'http').
-  help: string;
-
-  /// Namespace-qualified function that gets executed when a viewer is initialized
-  initializationFunction: string;
-
-  /// JavaScript that gets executed after a viewer is initialized and added to the TableView
-  onInitializedScript: string;
-
-  descriptionPosition: keyof typeof FlexPosition;
-
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
-
-}
-
-export interface IRocCurveSettings {
-  /// Columns to be put on the X axis
-  predictionColumnNames: Array<string>;
-
-  /// Column to be put on the Y axis
-  targetColumn: string;
-
-  /// Positive class name
-  positiveClass: string;
-
-  /// Select to draw thresholds
-  showThreshold: boolean;
 
   /// Determines the rows shown on the plot.
   rowSource: keyof typeof RowSet;
