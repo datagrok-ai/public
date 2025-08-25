@@ -211,39 +211,39 @@ This dynamic item type cannot be dragged from the UI.
 These are end nodes in the configuration graph aka leafs. These nodes
 provide additional configuration for scripts.
 
-#### `id`
+#### `id` (Script node)
 
 This id is used in [links](./links-spec) for paths.
 
-#### `nqName`
+#### `nqName`  (Script node)
 
 Mandatory script full name.
 
-#### `type`
+#### `type`  (Script node)
 
 _Optional_
 
 Could be omitted, but the only other possible value is `step`.
 
-#### `friendlyName`
+#### `friendlyName`  (Script node)
 
 _Optional_
 
 A user-friendly name of a script to show in UI.
 
-#### `actions`
+#### `actions`  (Script node)
 
 _Optional_
 
 Same as workflow [actions](#actions)
 
-#### `tags`
+#### `tags`  (Script node)
 
 _Optional_
 
 Same as workflow [tags](#tags)
 
-#### `initialValues`
+#### `initialValues`  (Script node)
 
 _Optional_
 
@@ -252,15 +252,15 @@ initial values. __Note__ Initial values don't trigger links, so there
 should be no data links that are dependent only on inputs with initial
 values.
 
-#### `inputRestrictions`
+#### `inputRestrictions`  (Script node)
 
 _Optional_
 
 A key-value object with input initial restrictions. Used with
-[initialValues](#initialvalues). Read more about restrictions
-[here](./link-types).
+`initialValues`. Read more about restrictions
+[here](./link-types.mdx).
 
-#### `viewersHook`
+#### `viewersHook`  (Script node)
 
 _Optional_
 
@@ -282,23 +282,23 @@ viewer.
 It is done using a reference object. A returned by the provider
 function object will just replace a `ref` object.
 
-#### `id`
+#### `id` (Reference)
 
 _Optional_
 
 Not used, id of the returned workflow will be used.
 
-#### `type`
+#### `type` (Reference)
 
 `ref` must be provided to distinguish from other configuration types.
 
-#### `provider`
+#### `provider`  (Reference)
 
 `nqName` of the provider function.
 
-#### `version`
+#### `version`  (Reference)
 
-A versions string that will be passed as an argument to the provider
+A version string that will be passed as an argument to the provider
 function.
 
 
