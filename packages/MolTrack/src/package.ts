@@ -16,7 +16,9 @@ export const _package = new DG.Package();
 
 //tags: init
 export async function init(): Promise<void> {
-  await grok.functions.call('Chem:initChemAutostart');
+  try {
+    await grok.functions.call('Chem:initChemAutostart');
+  } catch (e) {}
   // This will be used for the updated docker setup later.
   const connection = await grok.dapi.connections.filter('name = "moltrack"').first();
   const queries = await grok.dapi.queries.filter(`connection.id = "${connection.id}"`).list();
@@ -230,6 +232,24 @@ export async function fetchCompoundProperties(): Promise<string> {
 export async function fetchBatchProperties(): Promise<string> {
   await MolTrackDockerService.init();
   return await MolTrackDockerService.fetchBatchProperties();
+}
+
+//name: fetchSchema
+//description: Retrieves all dynamic fields
+//output: string result
+export async function fetchSchema(): Promise<string> {
+  await MolTrackDockerService.init();
+  const res = await MolTrackDockerService.fetchSchema();
+  return JSON.stringify(res);
+}
+
+//name: fetchDirectSchema
+//description: Retrieves all static fields
+//output: string result
+export async function fetchDirectSchema(): Promise<string> {
+  await MolTrackDockerService.init();
+  const res = await MolTrackDockerService.fetchDirectSchema();
+  return JSON.stringify(res);
 }
 
 //name: updateMolTrackProperties

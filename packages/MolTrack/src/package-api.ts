@@ -27,35 +27,84 @@ export namespace queries {
   export async function insertSettings(): Promise<DG.DataFrame> {
     return await grok.data.query('MolTrack:InsertSettings', {});
   }
+
+  export async function insertStandartization(): Promise<DG.DataFrame> {
+    return await grok.data.query('MolTrack:InsertStandartization', {});
+  }
 }
 
 export namespace funcs {
-  export async function molTrackApp(): Promise<DG.View> {
-    return await grok.functions.call('MolTrack:MolTrackApp', {});
+  export async function init(): Promise<void> {
+    return await grok.functions.call('MolTrack:Init', {});
   }
 
-  export async function cddVaultAppTreeBrowser(treeNode: any ): Promise<void> {
-    return await grok.functions.call('MolTrack:CddVaultAppTreeBrowser', { treeNode });
+  export async function initDB(): Promise<void> {
+    return await grok.functions.call('MolTrack:InitDB', {});
+  }
+
+  export async function molTrackApp(path?: string ): Promise<DG.View> {
+    return await grok.functions.call('MolTrack:MolTrackApp', { path });
+  }
+
+  export async function molTrackAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<void> {
+    return await grok.functions.call('MolTrack:MolTrackAppTreeBrowser', { treeNode, browseView });
   }
 
   /**
-  Checks whether the Moltrack service is running and responsive
+  Checks whether the MolTrack service is running and responsive
   */
-  export async function checkMoltrackHealth(): Promise<string> {
-    return await grok.functions.call('MolTrack:CheckMoltrackHealth', {});
+  export async function checkMolTrackHealth(): Promise<string> {
+    return await grok.functions.call('MolTrack:CheckMolTrackHealth', {});
   }
 
   /**
   Retrieves all properties defined for the 'compound' scope
   */
-  export async function fetchMoltrackProperties(): Promise<string> {
-    return await grok.functions.call('MolTrack:FetchMoltrackProperties', {});
+  export async function fetchCompoundProperties(): Promise<string> {
+    return await grok.functions.call('MolTrack:FetchCompoundProperties', {});
   }
 
   /**
-  Modifies compound properties in the Moltrack service based on the given JSON data
+  Retrieves all properties defined for the 'batch' scope
   */
-  export async function updateMoltrackSchema(jsonPayload: string ): Promise<string> {
-    return await grok.functions.call('MolTrack:UpdateMoltrackSchema', { jsonPayload });
+  export async function fetchBatchProperties(): Promise<string> {
+    return await grok.functions.call('MolTrack:FetchBatchProperties', {});
+  }
+
+  /**
+  Retrieves all dynamic fields
+  */
+  export async function fetchSchema(): Promise<string> {
+    return await grok.functions.call('MolTrack:FetchSchema', {});
+  }
+
+  /**
+  Retrieves all static fields
+  */
+  export async function fetchDirectSchema(): Promise<string> {
+    return await grok.functions.call('MolTrack:FetchDirectSchema', {});
+  }
+
+  /**
+  Registers compound properties in the MolTrack service based on the given JSON data
+  */
+  export async function updateMolTrackSchema(jsonPayload: string ): Promise<string> {
+    return await grok.functions.call('MolTrack:UpdateMolTrackSchema', { jsonPayload });
+  }
+
+  export async function registerAssays(assayPayload: string ): Promise<string> {
+    return await grok.functions.call('MolTrack:RegisterAssays', { assayPayload });
+  }
+
+  export async function registerBulk(csvFile: DG.FileInfo , scope: string , mapping: string , errorHandling: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('MolTrack:RegisterBulk', { csvFile, scope, mapping, errorHandling });
+  }
+
+  export async function searchTest(): Promise<void> {
+    return await grok.functions.call('MolTrack:SearchTest', {});
+  }
+
+  export async function retrieveEntity(scope: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('MolTrack:RetrieveEntity', { scope });
   }
 }

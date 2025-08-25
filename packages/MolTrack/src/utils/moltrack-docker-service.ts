@@ -47,10 +47,12 @@ export class MolTrackDockerService {
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id, '/v1/schema/');
     if (!response.ok)
       throw new Error(`HTTP error!: ${response.status}`, { cause: response.status });
-    return await response.json();
+    const res = await response.json();
+    return res;
   }
 
-  static async fetchDirectFields(): Promise<Partial<MolTrackProperty>[]> {
+
+  static async fetchDirectSchema(): Promise<Partial<MolTrackProperty>[]> {
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id, '/v1/schema-direct/');
     const data = await response.json();
     return data.flat();

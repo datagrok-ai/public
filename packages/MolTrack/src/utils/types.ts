@@ -20,19 +20,15 @@ export enum MolTrackEntityType {
 
 // MolTrack Property interface
 export interface MolTrackProperty {
-  id: number;
-  name: string;
   description: string;
-  value_type: 'string' | 'int' | 'double' | 'datetime' | 'uuid' | 'boolean';
-  property_class: MolTrackPropertyClass;
   entity_type: MolTrackEntityType;
-  unit: string | null;
+  name: string;
+  friendly_name: string;
   pattern: string | null;
+  property_class: MolTrackPropertyClass;
   semantic_type_id: number;
-  created_at: string; // ISO 8601 datetime string
-  updated_at: string; // ISO 8601 datetime string
-  created_by: string; // UUID
-  updated_by: string; // UUID
+  value_type: 'string' | 'int' | 'double' | 'datetime' | 'uuid' | 'boolean';
+  unit: string | null;
 }
 
 // Simple condition structure

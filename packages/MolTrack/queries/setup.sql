@@ -10,7 +10,7 @@ insert into moltrack.users (
   true, true, true,
   '3f5b8c3e-1a72-4c09-9aeb-2f12a7a81e8d',
   '3f5b8c3e-1a72-4c09-9aeb-2f12a7a81e8d'
-);
+) on conflict (email) do nothing;
 --end
 
 --name: insertSemanticTypeSynonym
