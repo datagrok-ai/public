@@ -64,6 +64,11 @@ type Arg = {
 
 /** Input keys of Arg */
 export const ARG_INPUT_KEYS = ['initial', 'final', 'step'];
+export const ARG_INPUT_KEYS_MAPPING = {
+  'initial': '_t0',
+  'final': '_t1',
+  'step': '_h'
+};
 
 /** Scripting specific constants */
 export enum SCRIPTING {
