@@ -37,7 +37,7 @@ import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected, getNullO
 
 import '../css/app-styles.css';
 
-import {_package} from './package';
+import {_package, PackageFunctions} from './package';
 
 const COLORS = DG.Color.categoricalPalette;
 const COLORS_COUNT = COLORS.length;
@@ -990,9 +990,12 @@ export class DiffStudio {
         '#language: ivp',
         '#tags: model',
         '#editor: Compute2:RichFunctionViewEditor',
+        '#meta.features: {"fitting": true, "sens-analysis": true}'
       ].join('\n');
 
-      const script = DG.Script.create(header + '\n' + model);
+      const code = header + '\n' + model;
+
+      const script = PackageFunctions.ivpLanguageParser(code);
       grok.dapi.scripts.save(script);
       grok.shell.info('Saved to Model Hub');
     } catch (err) {

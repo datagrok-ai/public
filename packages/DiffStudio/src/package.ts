@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {solveDefault, solveIVP} from './solver-tools';
 import {DiffStudio} from './app';
-import {getIVP, IVP, getScriptLines, getScriptParams, ARG_INPUT_KEYS, SCRIPTING} from './scripting-tools';
+import {getIVP, IVP, getScriptLines, getScriptParams, ARG_INPUT_KEYS, SCRIPTING, STAGE_COL_NAME} from './scripting-tools';
 
 import {getBallFlightSim} from './demo/ball-flight';
 import {PK_PD_DEMO} from './demo/pk-pd';
@@ -246,6 +246,7 @@ export class PackageFunctions {
       'scriptHandler.commentStart': '#',
       'scriptHandler.codeEditorMode': 'python',
       'scriptHandler.parserFunction': 'DiffStudio:ivpLanguageParser',
+      'scriptHandler.templateScript': '#name: Template\\n#language: ivp\\n#equations:\\n  dy/dt = -y + sin(t) / t\\n\\n#argument: t\\n  initial = 0.01 {min: 0.01; max: 10}\\n  final = 15 {min: 15; max: 150}\\n  step = 0.01 {min: 0.001; max: 0.1}\\n\\n#inits:\\n  y = 0 {min: 0; max: 9}\\n',
       'icon': 'files/icons/package.png'
     },
     'tags': [
@@ -283,9 +284,9 @@ export class PackageFunctions {
     const dfProp = DG.Property.fromOptions({
       name: DF_NAME,
       type: DG.TYPE.DATA_FRAME,
+      // @ts-ignore:next-line
+      viewer: `Grid() | Line chart(multiAxis: true, allowEdit: false, segmentColumnName: ${STAGE_COL_NAME})`
     });
-
-    dfProp.options.viewer = 'Grid() | Line chart()';
 
     const ivpScript = DG.Script.fromParams(inputs, [dfProp], code);
     return ivpScript;
