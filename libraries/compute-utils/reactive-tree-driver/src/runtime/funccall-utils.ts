@@ -8,7 +8,7 @@ import {serialize, deserialize} from '@datagrok-libraries/utils/src/json-seriali
 import {FuncCallInstancesBridge} from './FuncCallInstancesBridge';
 import {AdapterInitData} from './StateTreeNodes';
 import {ItemMetadata} from '../view/ViewCommunication';
-import {loadIsFavorite, saveIsFavorite} from '../../../shared-utils/utils';
+import {loadIsFavorite, saveIsFavorite} from '../../../shared-utils/history';
 
 export const RESTRICTIONS_PATH = 'INPUT_RESTRICTIONS';
 export const OUTPUT_OUTDATED_PATH = 'OUTPUT_OUTDATED';
@@ -22,12 +22,14 @@ export function getFuncallDefaults(func: DG.Func) {
   for (const prop of func.inputs) {
     const name = prop.name;
     if (prop.options.default)
-      // sometimes it is parsable, sometimes not
+    // sometimes it is parsable, sometimes not
+    {
       try {
         defaultValues[name] = JSON.parse(prop.options.default);
       } catch {
         defaultValues[name] = prop.options.default;
       }
+    }
   }
   return defaultValues;
 }

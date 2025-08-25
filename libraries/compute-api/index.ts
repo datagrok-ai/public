@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/index';
+import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils';
 
 type ConstructorTypeOf<T> = new (...args:any[]) => T;
 
@@ -24,6 +24,8 @@ declare global {
       makeAdvice: typeof makeAdvice,
       makeRevalidation: typeof makeRevalidation,
       mergeValidationResults: typeof mergeValidationResults,
+
+      deepCopy: typeof deepCopy,
     },
   }
 }
@@ -33,6 +35,9 @@ export {testPipeline};
 
 import * as UiUtils from './src/ui-utils';
 export {UiUtils};
+
+import {deepCopy} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+export {deepCopy};
 
 import {
   makeValidationResult, makeAdvice, makeRevalidation, mergeValidationResults,

@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import type {
   testPipeline as testPipelineType,
-} from '@datagrok-libraries/compute-utils/shared-utils/function-views-testing';
+} from '@datagrok-libraries/compute-utils/old-views/src/shared-utils/function-views-testing';
 
 export function testPipeline(
   ...args: Parameters<typeof testPipelineType>

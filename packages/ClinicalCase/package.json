@@ -17,7 +17,7 @@
     "@datagrok-libraries/utils": "^4.5.7",
     "@datagrok/charts": "^1.5.1",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "../../js-api",
+    "datagrok-api": "^1.26.0",
     "jstat": "^1.9.5",
     "moment": "^2.29.1"
   },
@@ -25,7 +25,7 @@
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.45",
+    "datagrok-tools": "^4.14.48",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^4.0.0",

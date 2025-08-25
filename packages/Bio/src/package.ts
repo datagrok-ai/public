@@ -70,7 +70,7 @@ import {GetRegionFuncEditor} from './utils/get-region-func-editor';
 import {sequenceToMolfile} from './utils/sequence-to-mol';
 import {detectMacromoleculeProbeDo} from './utils/detect-macromolecule-probe';
 import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
-import {MonomerManager} from './utils/monomer-lib/monomer-manager/monomer-manager';
+import {MonomerManager, standardizeMonomerLibrary} from './utils/monomer-lib/monomer-manager/monomer-manager';
 import {calculateScoresWithEmptyValues} from './utils/calculate-scores';
 import {SeqHelper} from './utils/seq-helper/seq-helper';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
@@ -82,6 +82,35 @@ export * from './package.g';
 // /** Avoid reassigning {@link monomerLib} because consumers subscribe to {@link IMonomerLib.onChanged} event */
 // let monomerLib: MonomerLib | null = null;
 let initBioPromise: Promise<void> | null = null;
+/** Temporary polyfill */
+
+function getDecoratorFunc() {
+  return function(args: any) {
+    return function(
+      target: any,
+      propertyKey: string,
+      descriptor: PropertyDescriptor
+    ) { };
+  };
+}
+
+// Ensure decorators object exists and polyfill missing decorators
+if (!grok.decorators)
+  (grok as any).decorators = {};
+
+const decorators = [
+  'func', 'init', 'param', 'panel', 'editor', 'demo', 'app',
+  'appTreeBrowser', 'fileHandler', 'fileExporter', 'model', 'viewer', 'filter', 'cellRenderer', 'autostart',
+  'dashboard', 'folderViewer', 'semTypeDetector', 'packageSettingsEditor', 'functionAnalysis', 'converter',
+  'fileViewer', 'model', 'treeBrowser', 'polyfill'
+];
+
+decorators.forEach((decorator) => {
+  if (!(grok.decorators as any)[decorator])
+    (grok.decorators as any)[decorator] = getDecoratorFunc();
+});
+
+/** End temporary polyfill */
 
 export class PackageFunctions {
   @grok.decorators.func({description: 'Returns an instance of the monomer library helper', outputs: [{type: 'object', name: 'result'}]})
@@ -107,6 +136,11 @@ export class PackageFunctions {
         grok.shell.error(errMsg);
       });
     return resWidget;
+  }
+
+  @grok.decorators.func({})
+  static async standardiseMonomerLibrary(library: string): Promise<string> {
+    return await standardizeMonomerLibrary(library);
   }
 
   // Keep for backward compatibility
@@ -969,7 +1003,7 @@ export class PackageFunctions {
     return await showManageLibrariesView(false);
   }
 
-  @grok.decorators.appTreeBrowser({name: 'Monomer Manager Tree Browser'})
+  @grok.decorators.func({name: 'Monomer Manager Tree Browser', meta: {role: 'appTreeBrowser'}})
   static async manageMonomerLibrariesViewTreeBrowser(treeNode: DG.TreeViewGroup) {
     const libraries = (await (await MonomerLibManager.getInstance()).getFileManager()).getValidLibraryPaths();
     libraries.forEach((libName) => {

@@ -82,20 +82,4 @@ menu
 		},
 		columnFilter: (c) => c.isNumerical,	// show only numerical columns
 	})
-	.separator()
-	.fontEditor('normal italic 12px "Roboto"', {
-		fontSizeMin: 10,								// Set the minimum font size to 10
-		fontSizeMax: 24,    							// Set the maximum font size to 24
-		fontSizeStep: 2,								// Set the font size step to 2 (i.e. font sizes will increase/decrease by 2 points at a time)
-		fontFamilies: ['Arial', 'Calibri', 'Roboto'],	// Specify the list of font families to choose from
-		asGroup: 'Font Editor',							// Display the font editor in a nested group called 'Font Editor'
-		// Define a callback function to execute when the font size is changed
-		onSizeChange: (size) => grok.shell.info(`Font size changed to ${size}`),
-		// Define a callback function to execute when the font family is changed
-		onFamilyChange: (family) => grok.shell.info(`Font family changed to "${family}"`),
-		 // Define a callback function to execute when the bold font style is changed
-		onBoldChange: (isBold) => grok.shell.info(`Font bold changed to ${isBold}`),
-		// Define a callback function to execute when the italic font style is changed
-		onItalicChange: (isItalic) => grok.shell.info(`Font italic changed to ${isItalic}`),
-	})
   .show();

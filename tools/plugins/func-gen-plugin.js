@@ -195,7 +195,11 @@ class FuncGeneratorPlugin {
     else if (funcAnnotaionOptions.outputs?.length === 0)
       actualType = 'void';
 
-    if (!funcAnnotaionOptions.name) funcAnnotaionOptions.name = identifierName;
+    // if (!funcAnnotaionOptions.name) funcAnnotaionOptions.name = identifierName;
+    
+    if (funcAnnotaionOptions.name === funcName)
+      funcAnnotaionOptions.name = undefined;
+    
     functions.push(
       reservedDecorators[name]['genFunc'](
         getFuncAnnotation(funcAnnotaionOptions),
@@ -247,7 +251,6 @@ class FuncGeneratorPlugin {
         optionsToAdd.set(key, this._evalLiteral(prop.value));
       else
         resultMap.set(key, this._evalLiteral(prop.value));
-      
     }
     
     if (optionsToAdd.size > 0)

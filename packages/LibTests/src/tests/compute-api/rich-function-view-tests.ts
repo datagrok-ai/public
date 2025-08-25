@@ -6,7 +6,7 @@ import {applyTransformations} from '@datagrok-libraries/utils/src/json-serializa
 import {getFuncCallIO} from '../utils';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import fc1 from '../snapshots/fc1.json';
-import {InputVariants} from '@datagrok-libraries/compute-utils/function-views/src/rich-function-view';
+import {InputVariants} from '@datagrok-libraries/compute-utils/old-views/src/rich-function-view';
 
 category('Compute API: RFV Inputs', async () => {
   before(async () => {

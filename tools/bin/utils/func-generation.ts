@@ -192,7 +192,7 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
     for (const output of data.outputs) {
       if (output.type !== 'void') {
       // eslint-disable-next-line max-len
-        s += comment + 'output: ' + output.type + (output.name ? ` ${output.name}${output.options ? ` ${buildStringOfOptions(output.options)}` : ''}` : '') + sep;
+        s += comment + 'output: ' + output.type + (output.name ? ` ${output.name}${output.options ? ` ${buildStringOfOptions(output)}` : ''}` : '') + sep;
       }
     }
   }
@@ -492,7 +492,7 @@ export function generateFunc(
   const returnType = output ? ( primitives.has(output) ? 
     (!isAsync? `: ${output} `: `: Promise<${output}> `) : (!isAsync? `: any `: `: Promise<any> `)) : '';
   // eslint-disable-next-line max-len
-  return sep + annotation + `export ${isAsync ? 'async ' : ''}function ${funcName}(${funcSigNature}) ${returnType}{${sep}  ${output !== 'void'? 'return ': ''}${className.length > 0 ? `${className}.` : ''}${funcName}(${funcArguments});${sep}}${sep}`;
+  return sep + annotation + `export ${isAsync ? 'async ' : ''}function ${funcName}(${funcSigNature}) ${returnType}{${sep}  ${output !== 'void'? 'return ': ''}${isAsync? 'await ': ''}${className.length > 0 ? `${className}.` : ''}${funcName}(${funcArguments});${sep}}${sep}`;
 }
 
 export function generateImport(className: string, path: string, sep: string = '\n'): string {

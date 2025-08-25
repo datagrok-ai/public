@@ -8,7 +8,7 @@ export const REVVITY_USER = 'revvity_user';
 
 export const created = DG.Property.create('createdAt', DG.TYPE.DATE_TIME, (x: any) => x, (x: any, v) => x = v);
 created.friendlyName = 'Created';
-export const edited = DG.Property.create('editedAt', DG.TYPE.DATE_TIME, (x: any) => x, (x: any, v) => x = v);
+export const edited = DG.Property.create('modifiedAt', DG.TYPE.DATE_TIME, (x: any) => x, (x: any, v) => x = v);
 edited.friendlyName = 'Edited';
 export const creator = DG.Property.create('createdBy', DG.TYPE.STRING, (x: any) => x, (x: any, v) => x = v);
 creator.semType = REVVITY_USER;
@@ -29,7 +29,7 @@ export function getDefaultProperties(): DG.Property[] {
 }
 
 
-export const NOT_IN_TAGS = [ 'Created', 'Edited', 'Creator', 'Editor', 'Structure', 'isMaterial', 'type', 'assetTypeEid'];
+export const NOT_IN_TAGS = [ 'createdAt', 'modifiedAt', 'createdBy', 'editedBy', 'Structure', 'isMaterial', 'type', 'assetTypeEid'];
 
 export const REVVITY_FIELD_TO_PROP_TYPE_MAPPING: {[key: string]: DG.TYPE} = {
     'double': DG.TYPE.FLOAT,

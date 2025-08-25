@@ -49,7 +49,7 @@ function shouldIncludeTagsProperty(fieldName: string): boolean {
   return !NOT_IN_TAGS.includes(fieldName);
 }
 
-type AsType = 'text' | 'date'
+type AsType = 'text' | 'date' | 'double'
 
 // $in operator
 export interface QueryInOperator {
@@ -313,6 +313,20 @@ export function convertSimpleConditionToQueryOperator(condition: SimpleCondition
     return val && typeof val === 'object' && val.format;
   };
   
+  // Helper function to determine the 'as' type based on value
+  const getAsType = (val: any): AsType => {
+    if (isDateValue(val)) {
+      return 'date';
+    } else if (typeof val === 'number') {
+      return 'double';
+    } else if (typeof val === 'string') {
+      return 'text';
+    } else {
+      // Default to text for other types
+      return 'text';
+    }
+  };
+  
   // Find the corresponding Revvity operator
   const revvityOperator = REVVITY_OPERATORS_MAPPING[operator as keyof typeof REVVITY_OPERATORS_MAPPING];
   
@@ -337,37 +351,33 @@ export function convertSimpleConditionToQueryOperator(condition: SimpleCondition
     case OPERATORS.GT:
       result = {
         field: field,
-        value: convertDateValue(value)
+        value: convertDateValue(value),
+        as: getAsType(value)
       };
-      if (isDateValue(value))
-        result.as = 'date';
       break;
        
     case OPERATORS.LT:
       result = {
         field: field,
-        value: convertDateValue(value)
+        value: convertDateValue(value),
+        as: getAsType(value)
       };
-      if (isDateValue(value))
-        result.as = 'date';
       break;
       
     case OPERATORS.GTE:
       result = {
         field: field,
-        value: convertDateValue(value)
+        value: convertDateValue(value),
+        as: getAsType(value)
       };
-      if (isDateValue(value))
-        result.as = 'date';
       break;
        
     case OPERATORS.LTE:
       result = {
         field: field,
-        value: convertDateValue(value)
+        value: convertDateValue(value),
+        as: getAsType(value)
       };
-      if (isDateValue(value))
-        result.as = 'date';
       break;
       
     case OPERATORS.RANGE:
@@ -377,10 +387,9 @@ export function convertSimpleConditionToQueryOperator(condition: SimpleCondition
       result = {
         field: field,
         from: convertDateValue(value[0]),
-        to: convertDateValue(value[1])
+        to: convertDateValue(value[1]),
+        as: getAsType(value[0]) // Use the first value to determine type
       };
-      if (isDateValue(value[0]) || isDateValue(value[1]))
-        result.as = 'date';
       break;
       
     case OPERATORS.MATCH:

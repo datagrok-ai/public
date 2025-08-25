@@ -1,9 +1,9 @@
 #name: calculateMSR
 #description: Calculates Minimum Significant Ratio (MSR) for compounds based on IC50 values, run dates, assay names, and target entities. 
-#environment: channels: [Conda-forge], dependencies: [python=3.12, {pip: [statsmodels]}]
+#environment: channels: [Conda-forge], dependencies: [python=3.12, pip, {pip: [statsmodels]}]
 #language: python
 #tags: Transform
-#top-menu: Curves | Calculate MSR
+#top-menu: Data | Curves | Calculate MSR
 #input: dataframe table [Input data table]
 #input: column ic50Column [IC50 column]
 #input: column compoundIdColumn [Compound ID column]

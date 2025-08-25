@@ -5,11 +5,10 @@ import * as Vue from 'vue';
 import {Subject, BehaviorSubject, of, from} from 'rxjs';
 
 import {RichFunctionView} from '../components/RFV/RichFunctionView';
-import {historyUtils} from '@datagrok-libraries/compute-utils';
+import {historyUtils, saveIsFavorite} from '@datagrok-libraries/compute-utils';
 import {debounceTime, switchMap, take, withLatestFrom} from 'rxjs/operators';
 import {IconFA, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
 import {useUrlSearchParams} from '@vueuse/core';
-import {saveIsFavorite} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 
 const RUN_DEBOUNCE_TIME = 250;

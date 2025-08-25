@@ -26,10 +26,10 @@ import {
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 import {take} from 'rxjs/operators';
-import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {setHelpService} from '../../composables/use-help';
+import {reportFuncCallExcel} from '@datagrok-libraries/compute-utils';
 
 const DEVELOPERS_GROUP = 'Developers';
 
@@ -485,7 +485,7 @@ export const TreeWizard = Vue.defineComponent({
             {
               exports.value.map(({id, friendlyName, handler}) =>
                 <span onClick={() => (treeState.value) ?
-                  handler(treeState.value, {reportFuncCallExcel: Utils.reportFuncCallExcel}) :
+                  handler(treeState.value, {reportFuncCallExcel: reportFuncCallExcel}) :
                   null}>
                   <div> {friendlyName ?? id} </div>
                 </span>,

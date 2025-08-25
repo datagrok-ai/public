@@ -73,7 +73,7 @@ export interface IConfusionMatrixSettings {
   filter: string;
 
   /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -142,7 +142,7 @@ export interface IRocCurveSettings {
   filter: string;
 
   /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -326,7 +326,7 @@ export interface IBarChartSettings {
   legendPosition: keyof typeof FlexAutoPosition;
 
   /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -577,7 +577,7 @@ export interface IBoxPlotSettings {
   filter: string;
 
   /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -647,7 +647,7 @@ export interface ICalendarSettings {
   filter: string;
 
   /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -763,7 +763,7 @@ export interface ICorrelationPlotSettings {
   filter: string;
 
   /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -862,7 +862,7 @@ export interface IDensityPlotSettings {
   filter: string;
 
   /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -1284,7 +1284,7 @@ export interface IGridSettings {
   filter: string;
 
   /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -1523,7 +1523,7 @@ export interface IHistogramSettings {
   filter: string;
 
   /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -1809,7 +1809,7 @@ export interface ILineChartSettings {
   filter: string;
 
   /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -1907,7 +1907,7 @@ export interface IMapViewerSettings {
   filter: string;
 
   /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -2023,7 +2023,7 @@ export interface IMatrixPlotSettings {
   filter: string;
 
   /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -2367,7 +2367,7 @@ export interface IPcPlotSettings {
   filter: string;
 
   /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -2484,7 +2484,7 @@ export interface IPieChartSettings {
   filter: string;
 
   /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -2551,7 +2551,7 @@ export interface IPivotViewerSettings {
   filter: string;
 
   /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -2887,7 +2887,7 @@ export interface IScatterPlotSettings {
   filter: string;
 
   /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -2997,7 +2997,7 @@ export interface IScatterPlot3dSettings {
   filter: string;
 
   /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -3098,7 +3098,7 @@ export interface IStatsViewerSettings {
   filter: string;
 
   /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -3226,7 +3226,7 @@ export interface ITileViewerSettings {
   filter: string;
 
   /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -3314,7 +3314,7 @@ export interface ITreeMapSettings {
   filter: string;
 
   /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -3416,7 +3416,7 @@ export interface ITrellisPlotSettings {
   filter: string;
 
   /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
