@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -6,13 +7,13 @@ import {Plate} from '../../plate/plate';
 import {plateTemplates, plateTypes, savePlate, savePlateAsTemplate, initPlates} from '../plates-crud';
 import {PlateStateManager} from './shared/plate-state-manager';
 import {TemplatePanel} from './components/template-panel/template-panel';
-import {PlateGridManager} from './components/plate-grid-manager/plate-grid-manager';
 import {PlateDrcAnalysis} from '../../plate/plate-drc-analysis';
 import {renderValidationResults} from './plates-validation-panel';
 
 import './components/template-panel/template-panel.css';
 import './components/plate-grid-manager/plate-grid-manager.css';
 import './components/plate-analysis-panel/plate-analysis-panel.css';
+import {PlateGridManager} from './components/plate-grid-manager/plate-grid-manager';
 
 export function createPlatesView(): DG.View {
   const view = DG.View.create();
@@ -34,150 +35,82 @@ export function createPlatesView(): DG.View {
   plateWidget.editable = true;
   plateWidget.plate = new Plate(plateType.rows, plateType.cols);
 
-  // DEBUG: Log initial plate setup
-  console.log('[DEBUG] Initial plate widget setup with plate:', plateWidget.plate);
+  // Use Datagrok's native TabControl for Wells/Analysis
+  const tabControl = ui.tabControl();
 
-  // Create the DRC analysis container
-  const drcAnalysisContainer: HTMLElement | null = null;
+  // Function to create the DRC analysis content
+  const createAnalysisContent = () => {
+    const activePlate = stateManager.activePlate;
+    if (activePlate) {
+      const mappedData = stateManager.getActivePlateMappedData();
+      console.log('[DEBUG] Mapped data columns:', mappedData?.columns.names());
+      if (mappedData) {
+        const hasActivity = mappedData.columns.contains('Activity');
+        const hasConcentration = mappedData.columns.contains('Concentration');
+        const hasSampleID = mappedData.columns.contains('SampleID');
+        console.log('[DEBUG] DRC requirements check:', {
+          hasActivity,
+          hasConcentration,
+          hasSampleID,
+          mappings: activePlate.reconciliationMap
+        });
 
-  // Create toggle buttons for Wells/Analysis view
-  const wellsButton = ui.button('Wells', () => toggleView('wells'));
-  const analysisButton = ui.button('Analysis', () => toggleView('analysis'));
+        if (hasActivity && hasConcentration && hasSampleID) {
+          const mappedPlate = new Plate(activePlate.plate.rows, activePlate.plate.cols);
+          mappedPlate.data = mappedData;
+          mappedPlate.barcode = activePlate.plate.barcode;
+          mappedPlate.id = activePlate.plate.id;
 
-  wellsButton.classList.add('view-toggle-button', 'active');
-  analysisButton.classList.add('view-toggle-button');
-
-  const toggleButtonsContainer = ui.divH([wellsButton, analysisButton], 'view-toggle-container');
-
-  // Create the bottom panel that will switch between plate widget and analysis
-  const bottomPanel = ui.div([], 'bottom-panel-container');
-  bottomPanel.style.width = '100%';
-  bottomPanel.style.flexGrow = '1';
-  bottomPanel.style.display = 'flex';
-  bottomPanel.style.minHeight = '0';
-
-  function toggleView(viewType: 'wells' | 'analysis') {
-    console.log(`[DEBUG] Toggling to view: ${viewType}`);
-
-    if (viewType === 'wells') {
-      wellsButton.classList.add('active');
-      analysisButton.classList.remove('active');
-
-      ui.empty(bottomPanel);
-
-      // For plate widget, we need to ensure it takes full width
-      plateWidget.root.style.width = '100%';
-      plateWidget.root.style.height = '100%';
-      plateWidget.root.style.display = 'flex';
-      plateWidget.root.style.flexDirection = 'column';
-
-      // Make sure the internal grid takes full width
-      if (plateWidget.grid && plateWidget.grid.root)
-        plateWidget.grid.root.style.width = '100%';
-
-
-      // Fix the tabs container to take full width
-      if (plateWidget.tabsContainer) {
-        plateWidget.tabsContainer.style.width = '100%';
-        plateWidget.tabsContainer.style.display = 'flex';
-        plateWidget.tabsContainer.style.flexDirection = 'column';
-      }
-
-      bottomPanel.appendChild(plateWidget.root);
-
-      // Force refresh after DOM update
-      setTimeout(() => {
-        plateWidget.refresh();
-        plateWidget.grid?.invalidate();
-      }, 0);
-    } else {
-      wellsButton.classList.remove('active');
-      analysisButton.classList.add('active');
-
-      ui.empty(bottomPanel);
-
-      // Create or update DRC analysis
-      const activePlate = stateManager.activePlate;
-      if (activePlate) {
-        // Get the mapped data which applies the reconciliation map
-        const mappedData = stateManager.getActivePlateMappedData();
-        console.log('[DEBUG] Mapped data columns:', mappedData?.columns.names());
-
-        if (mappedData) {
-          // Check if all required columns exist after mapping
-          const hasActivity = mappedData.columns.contains('Activity');
-          const hasConcentration = mappedData.columns.contains('Concentration');
-          const hasSampleID = mappedData.columns.contains('SampleID');
-
-          console.log('[DEBUG] DRC requirements check:', {
-            hasActivity,
-            hasConcentration,
-            hasSampleID,
-            mappings: activePlate.reconciliationMap
-          });
-
-          if (hasActivity && hasConcentration && hasSampleID) {
-            // Create a new plate with the mapped data for DRC analysis
-            const mappedPlate = new Plate(activePlate.plate.rows, activePlate.plate.cols);
-            mappedPlate.data = mappedData;
-            mappedPlate.barcode = activePlate.plate.barcode;
-            mappedPlate.id = activePlate.plate.id;
-
-            // Use the mapped plate for DRC analysis with the correct column names
-            const drcGrid = PlateDrcAnalysis.createCurvesGrid(
-              mappedPlate,
-              plateWidget,
-              {
-                roleName: 'SampleID',
-                concentrationName: 'Concentration',
-                valueName: 'Activity',
-                normalize: true,
-                controlColumns: ['High Control', 'Low Control'],
-                autoFilterOutliers: true,
-                categorizeFormula: '${rSquared} > 0.8 && ${Hill} > 0.25 && ${Max} > 80 && ${Max} < 120',
-                statisticsColumns: ['Min', 'Max', 'rSquared', 'Hill', 'IC50', 'AUC'],
-              },
-              'csv'
-            );
-
-            if (drcGrid) {
-              drcGrid.style.width = '100%';
-              drcGrid.style.height = '100%';
-              bottomPanel.appendChild(drcGrid);
-            } else {
-              console.log('[DEBUG] DRC grid creation failed despite having required columns');
-              bottomPanel.appendChild(createAnalysisSkeleton());
-            }
+          const drcGrid = PlateDrcAnalysis.createCurvesGrid(
+            mappedPlate, plateWidget, {}, 'csv'
+          );
+          if (drcGrid) {
+            drcGrid.style.width = '100%';
+            drcGrid.style.height = '100%';
+            return drcGrid;
           } else {
-            console.log('[DEBUG] Missing required columns for DRC analysis');
-            const message = ui.divV([
-              createAnalysisSkeleton(),
-              ui.divText(
-                `Missing required columns: ${[
-                  !hasActivity && 'Activity',
-                  !hasConcentration && 'Concentration',
-                  !hasSampleID && 'SampleID'
-                ].filter(Boolean).join(', ')}`,
-                'warning-message'
-              )
-            ]);
-            bottomPanel.appendChild(message);
+            console.log('[DEBUG] DRC grid creation failed despite having required columns');
+            return createAnalysisSkeleton();
           }
         } else {
-          bottomPanel.appendChild(createAnalysisSkeleton());
+          console.log('[DEBUG] Missing required columns for DRC analysis');
+          const message = ui.divV([
+            createAnalysisSkeleton(),
+            ui.divText(
+              `Missing required columns: ${[
+                !hasActivity && 'Activity',
+                !hasConcentration && 'Concentration',
+                !hasSampleID && 'SampleID'
+              ].filter(Boolean).join(', ')}`,
+              'warning-message'
+            )
+          ]);
+          return message;
         }
       } else {
-        bottomPanel.appendChild(createAnalysisSkeleton());
+        return createAnalysisSkeleton();
       }
+    } else {
+      return createAnalysisSkeleton();
     }
-  }
+  };
+
+  // Add the Wells and Analysis panes
+  tabControl.addPane('Wells', () => {
+    // Ensure the plate widget takes full width and height
+    plateWidget.root.style.width = '100%';
+    plateWidget.root.style.height = '100%';
+    return plateWidget.root;
+  });
+  tabControl.addPane('Analysis', () => createAnalysisContent());
+
+  // Fixes for the Datagrok tabs layout
+  tabControl.root.style.width = '100%';
+  tabControl.root.style.flexGrow = '1';
+  tabControl.root.style.display = 'flex';
+  tabControl.root.style.flexDirection = 'column';
 
   const plateGridManager = new PlateGridManager(stateManager);
-
-  // Fix plate grid manager to take full width
-  plateGridManager.root.style.width = '100%';
-  plateGridManager.root.style.display = 'flex';
-  plateGridManager.root.style.flexDirection = 'column';
 
   const handleManageMappings = () => {
     const state = stateManager.currentState;
@@ -209,7 +142,6 @@ export function createPlatesView(): DG.View {
   // Subscribe to state changes and update the plate widget
   stateManager.onStateChange.subscribe(async (event) => {
     console.log('[DEBUG] State change event:', event);
-
     const activePlate = stateManager.activePlate;
 
     if (activePlate) {
@@ -224,24 +156,23 @@ export function createPlatesView(): DG.View {
 
     plateWidget.updateRoleSummary();
 
-    // Force grid invalidation to ensure visual update
     if (plateWidget.grid)
       plateWidget.grid.invalidate();
 
-
     // If analysis view is active, refresh it when mappings change
-    if (analysisButton.classList.contains('active') &&
-        (event.type === 'mapping-changed' || event.type === 'plate-selected')) {
+    if (tabControl.currentPane.name === 'Analysis' && (event.type === 'mapping-changed' || event.type === 'plate-selected')) {
       console.log('[DEBUG] Refreshing DRC analysis view due to mapping change');
-      toggleView('analysis');
+      // Re-create the analysis content to force a full refresh
+      const newContent = createAnalysisContent();
+      ui.empty(tabControl.getPane('Analysis').content);
+      tabControl.getPane('Analysis').content.appendChild(newContent);
     }
   });
 
   // Create the right panel with proper flex distribution
   const rightPanel = ui.divV([
     plateGridManager.root,
-    toggleButtonsContainer,
-    bottomPanel,
+    tabControl.root,
   ], 'create-plate-view__right-panel');
 
   const mainLayout = ui.divH(
@@ -252,7 +183,7 @@ export function createPlatesView(): DG.View {
   view.root.appendChild(mainLayout);
 
   // Initialize with wells view
-  toggleView('wells');
+  tabControl.currentPane = tabControl.getPane('Wells');
 
   // Initialize with the first template
   stateManager.setTemplate(plateTemplates[0]);
@@ -312,21 +243,21 @@ export function createPlatesView(): DG.View {
 
 function createAnalysisSkeleton(): HTMLElement {
   const curveSvg = `
-  <svg width="200" height="150" viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
-    <style>
-      .axis { stroke: #e0e0e0; stroke-width: 2; }
-      .curve { fill: none; stroke: #d0d0d0; stroke-width: 3; stroke-dasharray: 4 4; }
-      .grid-line { stroke: #f0f0f0; stroke-width: 1; }
-    </style>
-    <line x1="20" y1="20" x2="20" y2="130" class="axis" />
-    <line x1="20" y1="130" x2="180" y2="130" class="axis" />
-    <line x1="60" y1="130" x2="60" y2="20" class="grid-line" />
-    <line x1="100" y1="130" x2="100" y2="20" class="grid-line" />
-    <line x1="140" y1="130" x2="140" y2="20" class="grid-line" />
-    <line x1="20" y1="95" x2="180" y2="95" class="grid-line" />
-    <line x1="20" y1="60" x2="180" y2="60" class="grid-line" />
-    <path d="M 30 25 Q 80 30, 100 80 T 170 125" class="curve"/>
-  </svg>`;
+<svg width="200" height="150" viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
+ <style>
+ .axis { stroke: #e0e0e0; stroke-width: 2; }
+ .curve { fill: none; stroke: #d0d0d0; stroke-width: 3; stroke-dasharray: 4 4; }
+ .grid-line { stroke: #f0f0f0; stroke-width: 1; }
+ </style>
+ <line x1="20" y1="20" x2="20" y2="130" class="axis" />
+ <line x1="20" y1="130" x2="180" y2="130" class="axis" />
+ <line x1="60" y1="130" x2="60" y2="20" class="grid-line" />
+ <line x1="100" y1="130" x2="100" y2="20" class="grid-line" />
+ <line x1="140" y1="130" x2="140" y2="20" class="grid-line" />
+ <line x1="20" y1="95" x2="180" y2="95" class="grid-line" />
+ <line x1="20" y1="60" x2="180" y2="60" class="grid-line" />
+ <path d="M 30 25 Q 80 30, 100 80 T 170 125" class="curve"/>
+ </svg>`;
 
   const svgDiv = ui.div([]);
   svgDiv.innerHTML = curveSvg;
