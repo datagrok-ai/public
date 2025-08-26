@@ -74,7 +74,7 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
 }
 
 .power-pack-activity-widget-content .d4-tab-host.d4-tab-vertical .d4-tab-content .d4-flex-col > .d4-entity-markup-row {
-    margin-left: 5px;
+    margin-left: 12px;
 }
 
 .power-pack-activity-widget-content .d4-tab-host.d4-tab-vertical .d4-tab-content .ui-div {
@@ -96,15 +96,17 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     justify-content: flex-start;
     gap: 12px;
     flex-wrap: wrap;
+    margin-top: 7px;
 }
 
 .power-pack-activity-widget-spotlight-column {
     margin-right: 13px;
+    flex: 1 1 0;
 }
 
 .power-pack-activity-widget-spotlight-column-action-required {
-    max-width: 200px;
     margin-right: 13px;
+    flex: 1 1 0;
 }
 
 .power-pack-activity-widget-spotlight-column .d4-entity-markup-row {

@@ -33,12 +33,19 @@ export class ActivityDashboardWidget extends DG.Widget {
   recentEntities: DG.Entity[] = [];
   recentEntityTimes: dayjs.Dayjs[] = [];
 
+  tabControl?: DG.TabControl;
   spotlightRoot?: HTMLElement;
   favoritesListRoot?: HTMLElement;
   notificationsListRoot?: HTMLElement;
   activityListRoot?: HTMLElement;
 
   actionRequiredRoot?: HTMLDivElement | null = null;
+  sharedWithMeRoot?: HTMLDivElement | null = null;
+  spacesRoot?: HTMLDivElement | null = null;
+  recentItemsRoot?: HTMLDivElement | null = null;
+  adminRoot?: HTMLDivElement | null = null;
+  subwidgetsAdded: Map<string, HTMLDivElement | null> = new Map<string, HTMLDivElement>();
+  subwidgetsAmount: number = 0;
   reportAmount?: number = 0;
 
   constructor() {
@@ -55,12 +62,12 @@ export class ActivityDashboardWidget extends DG.Widget {
       'My Activity': () => ui.wait(async () => await this.getActivityTab()),
     };
 
-    const tabControl = ui.tabControl(tabs, true);
-    tabControl.onTabChanged.subscribe((_) => this.cleanLists());
-    tabControl.root.style.height = '100%';
-    tabControl.root.style.width = '100%';
+    this.tabControl = ui.tabControl(tabs, true);
+    this.tabControl.onTabChanged.subscribe((_) => this.cleanLists());
+    this.tabControl.root.style.height = '100%';
+    this.tabControl.root.style.width = '100%';
 
-    this.root.appendChild(tabControl.root);
+    this.root.appendChild(this.tabControl.root);
   }
 
   async initSpotlightData(): Promise<void> {
@@ -192,6 +199,7 @@ export class ActivityDashboardWidget extends DG.Widget {
           listChild.prepend(timestamp);
         }
       }
+      this.subwidgetsAmount++;
       return ui.divV([ui.h3(ui.span([icon, ui.span([` ${title}`])]), 'power-pack-activity-widget-spotlight-column-header'),
         list], title === SpotlightTabNames.ACTION_REQUIRED ? 'power-pack-activity-widget-spotlight-column-action-required' : 'power-pack-activity-widget-spotlight-column');
     };
@@ -203,29 +211,33 @@ export class ActivityDashboardWidget extends DG.Widget {
       return text.includes('you were assigned') || text.includes('requested a membership');
     });
     this.actionRequiredRoot = actionRequired.length > 0 ? createSection(SpotlightTabNames.ACTION_REQUIRED, actionRequired, ui.iconFA('exclamation-circle')) : null;
-    if (this.actionRequiredRoot) {
-      if (actionRequired.some((n) => n.text.includes('requested a membership')))
-        this.actionRequiredRoot.style.maxWidth = '200px';
+    if (this.actionRequiredRoot)
       root.appendChild(this.actionRequiredRoot);
-    }
+    this.subwidgetsAdded.set(SpotlightTabNames.ACTION_REQUIRED, this.actionRequiredRoot);
 
-    const sharedWithMeRoot = this.sharedWithMe.length > 0 ? createSection(SpotlightTabNames.SHARED_WITH_ME, this.sharedWithMe, ui.iconFA('inbox')) : null;
-    if (sharedWithMeRoot)
-      root.appendChild(sharedWithMeRoot);
+    this.sharedWithMeRoot = this.sharedWithMe.length > 0 ? createSection(SpotlightTabNames.SHARED_WITH_ME, this.sharedWithMe, ui.iconFA('inbox')) : null;
+    if (this.sharedWithMeRoot)
+      root.appendChild(this.sharedWithMeRoot);
+    this.subwidgetsAdded.set(SpotlightTabNames.SHARED_WITH_ME, this.sharedWithMeRoot);
 
-    const spacesRoot = null;
-    if (spacesRoot)
-      root.appendChild(spacesRoot);
+    this.spacesRoot = null;
+    if (this.spacesRoot)
+      root.appendChild(this.spacesRoot);
+    // this.subwidgetsAdded.set(SpotlightTabNames.SPACES, this.spacesRoot);
 
-    const recentItemsRoot = this.recentEntities.length > 0 ? createSection(SpotlightTabNames.RECENT, this.recentEntities, ui.iconFA('history')) : null;
-    if (recentItemsRoot)
-      root.appendChild(recentItemsRoot);
+    this.recentItemsRoot = this.recentEntities.length > 0 ? createSection(SpotlightTabNames.RECENT, this.recentEntities, ui.iconFA('history')) : null;
+    if (this.recentItemsRoot)
+      root.appendChild(this.recentItemsRoot);
+    this.subwidgetsAdded.set(SpotlightTabNames.RECENT, this.recentItemsRoot);
 
     const adminActivity = this.recentUserActivity.filter((l) => l.description.toLowerCase().includes('published version'));
-    const adminRoot = adminActivity.length > 0 ? createSection(SpotlightTabNames.ADMIN, adminActivity, ui.icons.settings(() => {})) : null;
-    if (adminRoot)
-      root.appendChild(adminRoot);
+    this.adminRoot = adminActivity.length > 0 ? createSection(SpotlightTabNames.ADMIN, adminActivity, ui.icons.settings(() => {})) : null;
+    if (this.adminRoot)
+      root.appendChild(this.adminRoot);
+    this.subwidgetsAdded.set(SpotlightTabNames.ADMIN, this.adminRoot);
+
     this.cleanLists();
+    this.applySpotlightStyles();
 
     console.timeEnd('ActivityDashboardWidget.buildSpotlightTab');
 
@@ -386,5 +398,9 @@ export class ActivityDashboardWidget extends DG.Widget {
       const text = item instanceof DG.LogEvent ? item.description?.toLowerCase() : item.text?.toLowerCase();
       return !this.keywordsToIgnore.some((keyword) => text?.includes(keyword));
     });
+  }
+
+  applySpotlightStyles(): void {
+
   }
 }
