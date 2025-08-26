@@ -192,9 +192,10 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
       .replace(/_/g, ' ')
       .replace(/\b\w/g, c => c.toUpperCase());
 
-    appNode.getOrCreateGroup('Retrieve').item(formattedScope).onSelected.subscribe(async () => {
+    appNode.getOrCreateGroup('Search').item(formattedScope).onSelected.subscribe(async () => {
       const data = await grok.functions.call('MolTrack:retrieveEntity', { scope });
       const tv = grok.shell.addTablePreview(data);
+      tv.name = formattedScope;
       createSearchPanel(tv, scope as Scope);
     });
   }

@@ -86,3 +86,16 @@
   background-color: #fbe0e0!important;
   color: #763434!important;
 }
+
+.moltrack-filters-button-icon {
+   color:#40607f;
+   width: 24px;
+   height: 24px;
+   padding: 8px;
+   cursor: pointer;
+   display: none;
+}
+
+.moltrack-filters-button-icon-show {
+   display: flex;
+}
