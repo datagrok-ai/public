@@ -15,7 +15,7 @@ import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
-import {FittingView, TargetDescription} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
+import {DiffGrok, FittingView, TargetDescription} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {dfToViewerMapping, richFunctionViewReport, SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
 import {RangeDescription} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
 import {ScalarsPanel, ScalarState} from './ScalarsPanel';
@@ -27,6 +27,7 @@ import {ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver
 import {startWith, take, map} from 'rxjs/operators';
 import {useHelp} from '../../composables/use-help';
 import {useObservable} from '@vueuse/rxjs';
+import {getIvp2WebWorker, getPipelineCreator} from '@datagrok/diff-grok';
 
 interface ScalarsState {
   type: 'scalars',
@@ -353,9 +354,28 @@ export const RichFunctionView = Vue.defineComponent({
       return targets;
     };
 
-    const runSA = () => {
+    const getDiffGrok = async () => {
+      let diffGrok: DiffGrok | undefined = undefined;
+      let hasDiffStudio = false;
+      try {
+        hasDiffStudio = !!(await grok.functions.find('DiffStudio:serializeEquations')); // throws error if not found
+      } catch {}
+      if (hasDiffStudio) {
+        const script = (currentCall.value.func as any)?.language === 'ivp' ? (currentCall.value.func as DG.Script).script : undefined;
+        const ivp = await grok.functions.call('DiffStudio:serializeEquations', { problem: script });
+        diffGrok = {
+          ivp,
+          ivpWW: getIvp2WebWorker(ivp),
+          pipelineCreator: getPipelineCreator(ivp),
+        };
+      }
+      return diffGrok;
+    }
+
+    const runSA = async () => {
       const ranges = getRanges('rangeSA');
-      SensitivityAnalysisView.fromEmpty(currentCall.value.func, {ranges});
+      const diffGrok = await getDiffGrok();
+      SensitivityAnalysisView.fromEmpty(currentCall.value.func, {ranges, diffGrok});
     };
 
     const runFitting = async () => {
@@ -366,7 +386,8 @@ export const RichFunctionView = Vue.defineComponent({
         const currentView = grok.shell.v;
         const ranges = getRanges('rangeFitting');
         const targets = getTargets();
-        const view = await FittingView.fromEmpty(currentCall.value.func, {ranges, targets, acceptMode: true});
+        const diffGrok = await getDiffGrok();
+        const view = await FittingView.fromEmpty(currentCall.value.func, {ranges, targets, diffGrok, acceptMode: true});
         const call = await view.acceptedFitting$.pipe(take(1)).toPromise();
         grok.shell.v = currentView;
         if (call)
