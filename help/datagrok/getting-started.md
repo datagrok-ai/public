@@ -3,7 +3,7 @@ title: "Getting started"
 
 ---
 
-# Where to find help
+## Where to find help
 
 Now that you have deployed Datagrok, it's time to get benefits! This article gives you pointers
 on how to start and grow your data ecosystem. Here is how to get help:
@@ -20,7 +20,7 @@ on how to start and grow your data ecosystem. Here is how to get help:
 * Reach out to us - either to your support engineer, or info@datagrok.ai 
 
 
-# Install plugins
+## Install plugins
 
 Make sure you have all necessary plugins installed. To do that, go to **Platform | Plugins**, and explore
 your areas of interest. Click on the plugin to see its detailed information on the context panel.
@@ -29,7 +29,7 @@ structures.
 
 ![Install plugins](./img/install_package.png)
 
-# Make a project and share with others
+## Make a project and share with others
 
 Let's see how easy it is to load any data, visualize it in a rich way (Datagrok will automatically 
 understand molecules, biostructures in HELM formats, etc), and share with others. You surely
@@ -43,7 +43,7 @@ have a CSV file around
 
 ![Make a project](./img/drag-csv-save-project.gif)
 
-# Connect to data
+## Connect to data
 
 At any point, you can drag-and-drop a CSV file and explore it. But we want more - let's connect
 to your proprietary systems and expose the data to your colleagues in a manageable, safe way:
@@ -57,7 +57,7 @@ to your proprietary systems and expose the data to your colleagues in a manageab
   can be shared, and files can be used in dynamic dashboards.
 * [Connect to your webservices](../access/open-api.md) if you have a Swagger/OpenAPI definition.
 
-# Make dynamic dashboards
+## Make dynamic dashboards
 
 Using the data conections we've created previnously, let's create a dynamic dashboard.
 Once a query is saved, you can run it by entering parameters via the automatically built UI,
@@ -71,7 +71,7 @@ In the [query editor](../access/databases/databases.md#query-editor), do the fol
 
 You've just created the first dynamic dashboard! Note that you can share results as a URL as well.
 
-# Bio/Chem specific functions
+## Bio/Chem specific functions
 
 If you are working with biological or chemical data, you will see Bio/Chem menus in the top bar.
 These menus contain functions specific to these domains, like different analysis (r-groups, SAR, MMP, dimentionality reduction, clustering), different conversion/calculation methods, and different visualizations.

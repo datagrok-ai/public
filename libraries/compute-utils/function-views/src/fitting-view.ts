@@ -10,7 +10,7 @@ import {combineLatest} from 'rxjs';
 import {take, filter} from 'rxjs/operators';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
-import {getDefaultValue, getPropViewers} from './shared/utils';
+import {getDefaultValue} from './shared/utils';
 import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossTooltip, FITTING_UI,
   INDICES, NAME, LOSS_FUNC_CHART_OPTS, SIZE,
   MIN_RADAR_COLS_COUNT,
@@ -26,6 +26,7 @@ import {IVP, IVP2WebWorker, PipelineCreator} from '@datagrok/diff-grok';
 import {getFittedParams} from './fitting/diff-studio/nelder-mead';
 import {getNonSimilar} from './fitting/similarity-utils';
 import {ScalarsFitRadar} from './fitting/scalars-fit-radar';
+import { getPropViewers } from '../../shared-utils/utils';
 
 const colors = DG.Color.categoricalPalette;
 const colorsCount = colors.length;
@@ -570,7 +571,7 @@ export class FittingView {
     learningRate: 0.0001,
   };
 
-  private defaultsOverrides: Record<string,number> = {};
+  private defaultsOverrides: Record<string, number> = {};
 
   private settingsInputs = new Map<METHOD, DG.InputBase[]>();
 
@@ -853,9 +854,9 @@ export class FittingView {
     form: HTMLElement,
     inputsByCategories: Map<string, HTMLElement[]>,
     topCategory: string | null,
-    expandHandler: (r: HTMLElement, isExpanded: boolean, category: string) => void
+    expandHandler: (r: HTMLElement, isExpanded: boolean, category: string) => void,
   ) {
-    const newCategoriesElements = new Map<string, HTMLElement> ();
+    const newCategoriesElements = new Map<string, HTMLElement>();
     if (inputsByCategories.size > 1) {
       if (topCategory !== null) {
         const roots = inputsByCategories.get(topCategory);
@@ -913,24 +914,23 @@ export class FittingView {
           return;
         const iterPayload = [
           [inputsByCategories, inputCategoriesByName, collapsedInputCategories],
-          [outputsByCategories, outputCategoriesByName, collapsedOutputCategories]
+          [outputsByCategories, outputCategoriesByName, collapsedOutputCategories],
         ] as const;
         for (const [rootsMap, catMap, collapsedCats] of iterPayload) {
           for (const [catName, roots] of rootsMap.entries()) {
-            const hideCat = showPrimaryOnly && !roots.some(root => primaryInputRoots.has(root));
+            const hideCat = showPrimaryOnly && !roots.some((root) => primaryInputRoots.has(root));
             const catEl = catMap.get(catName);
             if (catEl)
               catEl.hidden = hideCat;
-            for (const root of roots) {
+            for (const root of roots)
               root.hidden = collapsedCats.has(catName) || (showPrimaryOnly && !primaryInputRoots.has(root));
-            }
           }
         }
-      }
+      },
     });
 
     primaryToggle.root.hidden = true;
-    const paddingDiv = ui.div('', { classes: 'sa-switch-input ui-div' })
+    const paddingDiv = ui.div('', {classes: 'sa-switch-input ui-div'});
     primaryToggle.root.prepend(paddingDiv);
     form.append(primaryToggle.root);
 
@@ -943,7 +943,7 @@ export class FittingView {
       const roots = [...inputConfig.constForm.map((input) => input.root), ...inputConfig.saForm.map((input) => input.root)];
       const isPrimary = this.options.ranges?.[propName]?.isPrimary;
       if (isPrimary)
-        roots.forEach(item => primaryInputRoots.add(item));
+        roots.forEach((item) => primaryInputRoots.add(item));
 
       if (inputsByCategories.has(category))
         inputsByCategories.get(category)!.push(...roots);
@@ -995,7 +995,7 @@ export class FittingView {
       const propName = outputConfig.prop.name;
       const isPrimary = this.options.targets?.[propName]?.isPrimary;
       if (isPrimary)
-        roots.forEach(item => primaryInputRoots.add(item));
+        roots.forEach((item) => primaryInputRoots.add(item));
 
       if (outputsByCategories.has(category))
         outputsByCategories.get(category)!.push(...roots);
@@ -1004,7 +1004,7 @@ export class FittingView {
     });
 
     // add outputs to the main form (grouped by categories)
-    const outputCategoriesByName = this.addFormInputs(form, outputsByCategories, null,  (el, isExpanded, catName) => {
+    const outputCategoriesByName = this.addFormInputs(form, outputsByCategories, null, (el, isExpanded, catName) => {
       isExpanded ? collapsedOutputCategories.delete(catName) : collapsedOutputCategories.add(catName);
       el.hidden = !isExpanded || (primaryToggle.value && !primaryInputRoots.has(el));
     });

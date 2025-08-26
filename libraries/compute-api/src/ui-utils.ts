@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import type {UiUtils} from '@datagrok-libraries/compute-utils/shared-components';
+import type {UiUtils} from '@datagrok-libraries/compute-utils/old-components';
 
 export function fileInput(...args: Parameters<typeof UiUtils.fileInput>): ReturnType<typeof UiUtils.fileInput> {
   return window.compute.fileInput(...args);

@@ -1,7 +1,7 @@
 services:
   rabbitmq:
     image: rabbitmq:4.0.5-management
-    container_name: rabbitmq
+    container_name: rabbitmq_dev
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
@@ -17,7 +17,7 @@ services:
 
   grok_pipe:
     image: datagrok/grok_pipe:${DATAGROK_VERSION:-bleeding-edge}
-    container_name: grok_pipe
+    container_name: grok_pipe_dev
     ports:
       - "3000:3000"
     environment:
@@ -31,6 +31,7 @@ services:
 
   datagrok:
     privileged: true
+    container_name: datagrok_dev
     image: datagrok/datagrok:${DATAGROK_VERSION:-bleeding-edge}
     environment:
       GROK_PARAMETERS: |
@@ -92,6 +93,7 @@ services:
   grok_spawner:
     image: datagrok/grok_spawner:${GROK_SPAWNER_VERSION:-bleeding-edge}
     user: root
+    container_name: grok_spawner_dev
     environment:
       GROK_SPAWNER_DATAGROK_API_URL: http://datagrok:8080/api
       X_API_KEY: test-x-api-key
@@ -110,6 +112,7 @@ services:
 
   grok_connect:
     image: datagrok/grok_connect:${GROK_CONNECT_VERSION:-bleeding-edge}
+    container_name: grok_connect_dev
     networks:
       datagrok_dev:
         aliases:
@@ -125,6 +128,7 @@ services:
 
   jupyter_kernel_gateway:
     image: datagrok/jupyter_kernel_gateway:${GROK_JUPYTER_KERNEL_GATEWAY_VERSION:-bleeding-edge-cuda}
+    container_name: jupyter_kernel_gateway_dev
     networks:
       datagrok_dev:
         aliases:
@@ -142,6 +146,7 @@ services:
 
   db:
     image: postgres:12.20
+    container_name: db_dev
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -164,6 +169,7 @@ services:
 
   pg_rdkit:
     image: mcs07/postgres-rdkit
+    container_name: pg_rdkit_dev
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -181,6 +187,7 @@ services:
 
   northwind:
     image: datagrok/demo_db_postgres:12-1.1.0
+    container_name: northwind_dev
     environment:
       POSTGRES_DB: northwind
     ports:
@@ -196,6 +203,7 @@ services:
 
   chembl:
     image: datagrok/demo_db_chembl:12.9-rdkit2022032-32
+    container_name: chembl_dev
     environment:
       POSTGRES_DB: chembl
     ports:
@@ -211,6 +219,7 @@ services:
 
   unichem:
     image: datagrok/demo_db_postgres:12-1.1.0
+    container_name: unichem_dev
     environment:
       POSTGRES_DB: unichem
     ports:
@@ -226,6 +235,7 @@ services:
 
   starbucks:
     image: datagrok/demo_db_postgres:bleeding-edge-1.1.0
+    container_name: starbucks_dev
     environment:
       POSTGRES_DB: starbucks
     ports:
@@ -241,6 +251,7 @@ services:
 
   world:
     image: datagrok/demo_db_postgres:12-1.1.0
+    container_name: world_dev
     environment:
       POSTGRES_DB: world
     ports:
@@ -256,6 +267,7 @@ services:
 
   mlflow:
     image: datagrok/mlflow:2.9.2
+    container_name: mlflow_dev
     command: >-
       mlflow server
         --backend-store-uri file:/data/mlruns

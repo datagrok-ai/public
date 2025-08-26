@@ -16,7 +16,7 @@ import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {History} from '../History/History';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {FittingView, TargetDescription} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
-import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
+import {dfToViewerMapping, richFunctionViewReport, SensitivityAnalysisView} from '@datagrok-libraries/compute-utils';
 import {RangeDescription} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
 import {ScalarsPanel, ScalarState} from './ScalarsPanel';
 import {BehaviorSubject} from 'rxjs';
@@ -91,7 +91,7 @@ const tabToProperties = (fc: DG.FuncCall) => {
       const source = isOutput ? fc.outputParams : fc.inputParams;
       const changes$ = source[name].onChanged.pipe(
         startWith(null),
-        map(() => source[name].value ? Vue.markRaw(source[name].value) : null)
+        map(() => source[name].value ? Vue.markRaw(source[name].value) : null),
       );
       const df = useObservable(changes$);
       if (isOutput)
@@ -428,11 +428,11 @@ export const RichFunctionView = Vue.defineComponent({
           { isReportEnabled.value && !isOutputOutdated.value && <IconFA
             name='arrow-to-bottom'
             onClick={async () => {
-              const [blob] = await Utils.richFunctionViewReport(
+              const [blob] = await richFunctionViewReport(
                 'Excel',
                 currentCall.value.func,
                 currentCall.value,
-                Utils.dfToViewerMapping(currentCall.value),
+                dfToViewerMapping(currentCall.value),
               );
               DG.Utils.download(`${currentCall.value.func.nqName} - ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob);
             }}

@@ -22,6 +22,7 @@ declare global {
   var initialURLHandled: boolean;
 }
 declare let ENABLE_VUE_DEV_TOOLS: any;
+
 export * from './package.g';
 export const _package = new DG.Package();
 
@@ -47,7 +48,7 @@ export class PackageFunctions {
     await DG.Func.byName('WebComponents:init').prepare().call();
   }
 
-  @grok.decorators.editor({tags: ['vue']})
+  @grok.decorators.editor({name: 'Custom Function View Editor'})
   static async CustomFunctionViewEditor(call: DG.FuncCall) : Promise<DG.ViewBase> {
     const view = (await call.call()).getOutputParamValue() as CustomFunctionView;
     setViewHierarchyData(call, view);
@@ -79,7 +80,7 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.editor({tags: ['vue']})
+  @grok.decorators.editor({name: 'Rich Function View Editor'})
   static async RichFunctionViewEditor(call: DG.FuncCall) : Promise<DG.ViewBase> {
     const view = new DG.ViewBase();
     setViewHierarchyData(call, view);
@@ -399,9 +400,7 @@ export class PackageFunctions {
   }
 
 
-  @grok.decorators.func({
-    name: 'TestMul2',
-  })
+  @grok.decorators.func()
   static async TestSub2(
     a: number,
     b: number) : Promise<number> {

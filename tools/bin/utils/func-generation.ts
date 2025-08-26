@@ -192,7 +192,7 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
     for (const output of data.outputs) {
       if (output.type !== 'void') {
       // eslint-disable-next-line max-len
-        s += comment + 'output: ' + output.type + (output.name ? ` ${output.name}${output.options ? ` ${buildStringOfOptions(output.options)}` : ''}` : '') + sep;
+        s += comment + 'output: ' + output.type + (output.name ? ` ${output.name}${output.options ? ` ${buildStringOfOptions(output)}` : ''}` : '') + sep;
       }
     }
   }

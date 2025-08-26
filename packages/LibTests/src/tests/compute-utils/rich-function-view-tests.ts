@@ -5,7 +5,7 @@ import {take, filter} from 'rxjs/operators';
 import {applyTransformations, serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {getFuncCallIO} from '../utils';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {InputVariants} from '@datagrok-libraries/compute-utils/function-views/src/rich-function-view';
+import {InputVariants} from '@datagrok-libraries/compute-utils/old-views/src/rich-function-view';
 import fc1 from '../snapshots/fc1.json';
 
 category('ComputeUtils: RichFunctionView Inputs', async () => {

@@ -213,7 +213,10 @@ export class SunburstViewer extends EChartViewer {
     if (!this.dataFrame)
       return;
     this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => this.render()));
-    this.subs.push(grok.events.onEvent('d4-grid-color-coding-changed').subscribe(() => this.render()));
+    this.subs.push(grok.events.onEvent('d4-grid-color-coding-changed').subscribe(() => {
+      if (this.inheritFromGrid)
+        this.render();
+    }));
     this.subs.push(this.dataFrame.onValuesChanged.subscribe((_) => this.render()));
     this.subs.push(grok.events.onEvent('d4-current-viewer-changed').subscribe((args) => {
       const {viewer} = args.args;

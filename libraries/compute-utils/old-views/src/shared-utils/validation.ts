@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {RichFunctionView} from '../function-views';
+import {RichFunctionView} from '../rich-function-view';
 
 // validation/advisory system
 export interface ActionItem {

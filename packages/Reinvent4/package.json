@@ -16,7 +16,7 @@
     "jszip": "3.10.1"
   },
   "devDependencies": {
-    "datagrok-tools": "^4.14.40",
+    "datagrok-tools": "^4.14.48",
     "ts-loader": "^9.5.1",
     "typescript": "5.6.3",
     "webpack": "^5.95.0",

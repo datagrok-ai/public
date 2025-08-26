@@ -24,6 +24,12 @@ external consumption. To find out how to use it:
 
 Both JavaScript and Curl samples are provided.
 
+:::caution
+
+DataFrame and File inputs are not supported
+
+:::
+
 <details>
 <summary> REST API panel </summary>
 <div>

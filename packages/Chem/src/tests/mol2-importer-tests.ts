@@ -25,6 +25,6 @@ category('mol2 to SDF', async () => {
 
   test('Save SMILES column', async () => {
     const col = mol2InputDF.col('molecules')!;
-    expect(getSdfString(mol2InputDF, col), sdfOutputString);
+    expect(await getSdfString(mol2InputDF, col), sdfOutputString);
   });
 });

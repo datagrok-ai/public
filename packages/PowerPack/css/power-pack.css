@@ -591,3 +591,7 @@ body.dartium .power-pack-widgets-host.ui-div {
 .add-new-column-widget-cm-div {
     height: 100px;
 }
+
+.d4-dialog-header-hidden {
+    display: none;
+}

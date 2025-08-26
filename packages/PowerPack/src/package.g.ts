@@ -14,15 +14,6 @@ export function _welcomeView() : any {
   return PackageFunctions._welcomeView();
 }
 
-//name: Activity dashboard
-//tags: dashboard
-//output: widget result
-//meta.showName: false
-//meta.order: 1
-export function activityDashboardWidget() : any {
-  return PackageFunctions.activityDashboardWidget();
-}
-
 //name: Recent projects
 //tags: dashboard
 //output: widget result

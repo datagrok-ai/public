@@ -17,7 +17,7 @@ import {
   makeValidationResult as makeValidationResultInst,
   makeRevalidation as makeRevalidationInst,
   mergeValidationResults as mergeValidationResultsInst,
-} from '@datagrok-libraries/compute-utils/shared-utils/validation';
+} from '@datagrok-libraries/compute-utils';
 import {ModelCatalogView,
   ModelHandler,
   startModelCatalog,
@@ -27,12 +27,19 @@ import {ModelCatalogView,
   setModelCatalogHandler} from '@datagrok-libraries/compute-utils/model-catalog';
 import {
   testPipeline as testPipelineInst,
-} from '@datagrok-libraries/compute-utils/shared-utils/function-views-testing';
+} from '@datagrok-libraries/compute-utils';
+import {
+  deepCopy as  deepCopyInst,
+} from '@datagrok-libraries/compute-utils';
+
 
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 export * from './package.g';
 export const _package = new DG.Package();
+
+// for compute-api pakage
 export const testPipeline = testPipelineInst;
+export const deepCopy = deepCopyInst;
 export const CompView = ComputationViewInst;
 export const RFV = RichFunctionViewInst;
 export const CFV = CustomFunctionViewInst;
@@ -45,8 +52,6 @@ export const fileInput = UiUtils.fileInput;
 export const historyInput = UiUtils.historyInput;
 export const historyInputJSON = UiUtils.historyInputJSON;
 export const historyPanel = UiUtils.historyPanel;
-export const makeAdvice2 = makeAdviceInst;
-export const makeValidationResult2 = makeValidationResultInst;
 
 let startUriLoaded = false;
 let initCompleted = false;
@@ -126,6 +131,10 @@ export class PackageFunctions {
   static modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.ViewBase) {
     makeModelTreeBrowser(treeNode as any);
   }
+
+  //
+  // Testing code
+  //
 
   @grok.decorators.func({outputs: [{type: 'object', name: 'uploadedCalls'}]})
   static async CustomDataUploader(func: DG.Func) {

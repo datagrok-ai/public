@@ -197,8 +197,6 @@ class FuncGeneratorPlugin {
 
     // if (!funcAnnotaionOptions.name) funcAnnotaionOptions.name = identifierName;
     
-    console.log(funcName);
-    console.log(funcAnnotaionOptions.name);
     if (funcAnnotaionOptions.name === funcName)
       funcAnnotaionOptions.name = undefined;
     
@@ -253,7 +251,6 @@ class FuncGeneratorPlugin {
         optionsToAdd.set(key, this._evalLiteral(prop.value));
       else
         resultMap.set(key, this._evalLiteral(prop.value));
-      
     }
     
     if (optionsToAdd.size > 0)

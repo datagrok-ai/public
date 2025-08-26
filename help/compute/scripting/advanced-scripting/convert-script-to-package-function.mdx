@@ -10,70 +10,62 @@ import BrowserWindow from '@site/src/components/browser-window';
 ```
 
 You can convert a script to a package function to:
-- use external libraries in your code,
-- save the script in the version control system (e.g., Git).
-- Cal your script from other scripts or fucntions by a stable name.
+- Save the script in the version control system (e.g., Git).
+- Call your script from other scripts or fucntions by a stable name.
 
 Follow these steps to achieve it:
 
 1. Create a TypeScript [package](../../../develop/develop.md#packages).
 
   ```shell
-  grok init package_name --ts
+  grok create package_name --ts
   ```
 
-1. Install required NodeJs modules:
+2. Add your script to the package.
 
-  ```shell
-  npm install
-  ```
+    a. For Python, R, Julia, and other server-side languages, create
+    the `scripts` folder in your package directory and place your
+    script file in it.
 
-1. Add your script to the package.
-
-    - For Python, R, Julia, and other server-side languages,
-    create the `scripts` folder in your package directory and place your script file in it.
-
-    - If you are writing in Javascript/Typescript,
-    you can convert your script to the JS function, annotate it, and add directly to `src` folder:
+    b. If you are writing in Javascript/Typescript, you can convert
+    your script to a package function, annotate it, and add directly
+    to `src` package.ts file:
 
     ```typescript
     //name: DemoScript
     //tags: demo
-    //language: javascript
     //input: int input1
-    ...
-    export async function DemoScript(input1: int, ...) {
-    ...
+    //output: int result
+    export async function DemoScript(input1: number) {
+      return 1;
     }
     ```
 
+3. Compile and [publish](../../../develop/develop.md#publishing) the package:
 
-1. Add the application function to the `src/package.ts`:
+    ```shell
+    npm run build && grok publish your_environment
+    ```
 
-  ```typescript
-  //name: ApplicationFromScript
-  //tags: app, demo
-  //description: Demo application created from a script
-  //language: javascript
-  export async function DemoAppCreate() {
-    const func = await grok.functions.eval(`${_package.name}:DemoScript`);
-    const call = func.prepare(); 
-    call.edit(); 
-  }
-  ```
+    To make your package publicly available, use the `--release` [publishing mode](../../../develop/develop.md#publishing-modes).
 
-  Substitute the `DemoScript` in the `grok.functions.eval` call with the name of your script
-  (what you used in the `//name:` annotation, not the file name).
+    ```shell
+    npm run build && grok publish your_environment --release
+    ```
 
-1. Compile and [publish](../../../develop/develop.md#publishing) the package:
+Now you can call your function using:
 
-  ```shell
-  npm run build && grok publish your_environment
-  ```
+    ```typescript
+    const result = await grok.functions.call('package_name:DemoScript', { input1: 10 }); // result = 1
+    ```
 
-  To make your package publicly available, use the `--release` [publishing mode](../../../develop/develop.md#publishing-modes).
+For a JS function with a single output, the output will be returned
+directly. If there are multiple outputs, a function will return an
+Object with key value results.
 
-  ```shell
-  npm run build && grok publish your_environment --release
-  ```
+:::note
 
+To return multiple outputs from a function inside package.ts, just
+return an Object with key value results.
+
+:::

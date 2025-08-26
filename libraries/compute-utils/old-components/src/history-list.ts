@@ -6,16 +6,17 @@ import $ from 'cash-dom';
 import {Subject, BehaviorSubject} from 'rxjs';
 import {take} from 'rxjs/operators';
 import {historyUtils} from '../../history-utils';
-import {HistoricalRunsDelete, EditRunMetadataDialog} from './history-dialogs';
 import {ACTIONS_COLUMN_NAME, AUTHOR_COLUMN_NAME,
   COMPLETE_COLUMN_NAME,
   DESC_COLUMN_NAME, EXP_COLUMN_NAME,
-  FAVORITE_COLUMN_NAME, HistoryOptions, STARTED_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME,
+  FAVORITE_COLUMN_NAME, HistoryOptions, ID_COLUMN_NAME,
+  STARTED_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME,
 } from '../../shared-utils/consts';
-import {ID_COLUMN_NAME} from './history-input';
-import {getRunsDfFromList, getVisibleProps, saveIsFavorite, setGridCellRendering, styleHistoryFilters, styleHistoryGrid} from '../../shared-utils/utils';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
+import {EditRunMetadataDialog, HistoricalRunsDelete} from '../../shared-components/src/history-dialogs';
+import {getRunsDfFromList, getVisibleProps, saveIsFavorite, setGridCellRendering} from '../../shared-utils/history';
+import {styleHistoryFilters, styleHistoryGrid} from '../../old-views/src/shared-utils/utils';
 
 dayjs.extend(utc);
 

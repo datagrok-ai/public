@@ -36,7 +36,7 @@ export function saveSettings(): void {
 }
 
 
-function initWidgetHost(host: HTMLDivElement, w: DG.Widget) {
+function initWidgetHost(host: HTMLDivElement, w: DG.Widget, title?: string) {
   function remove(): void {
     host.remove();
     if (w.factory?.name) {
@@ -49,9 +49,15 @@ function initWidgetHost(host: HTMLDivElement, w: DG.Widget) {
   if (w.props.hasProperty('order'))
     host.style.order = w.props.order;
 
-  const header = host.querySelector('.d4-dialog-header')!;
-  header.appendChild(ui.icons.settings(() => {grok.shell.o = w;}, 'Edit settings'));
-  header.appendChild(ui.icons.close(remove, 'Remove'));
+  const header = host.querySelector('.d4-dialog-header')! as HTMLElement;
+  if (title === '') {
+    header.classList.add('d4-dialog-header-hidden');
+    w.root.appendChild(ui.icons.close(remove, 'Remove'));
+  }
+  else {
+    header.appendChild(ui.icons.settings(() => {grok.shell.o = w;}, 'Edit settings'));
+    header.appendChild(ui.icons.close(remove, 'Remove'));
+  }
 
   if (w.root.classList.contains('widget-narrow'))
     host.classList.add('widget-narrow');
@@ -71,13 +77,14 @@ function createWidgetHost(title: string): HTMLDivElement {
 }
 
 export function widgetHostFromFunc(f: DG.Func) {
-  const host: HTMLDivElement = createWidgetHost(f.options['showName'] === 'false' ? '' : f.friendlyName);
+  const title = f.options['showName'] === 'false' ? '' : f.friendlyName;
+  const host: HTMLDivElement = createWidgetHost(title);
   const contentDiv: HTMLElement = (host.querySelector('.power-pack-widget-content')!) as HTMLElement;
 
   f.apply().then(function(w: DG.Widget) {
     if (w) {
       w.factory = f;
-      initWidgetHost(host, w);
+      initWidgetHost(host, w, title);
     } else
       host.remove();
   })
@@ -101,8 +108,9 @@ export function widgetHostFromFunc(f: DG.Func) {
 
 
 export function widgetHost(w: DG.Widget/*, widgetHeader?: HTMLDivElement*/): HTMLElement {
-  const host = createWidgetHost(w.props.hasProperty('caption') ? w.props.caption ?? '' : '');
-  initWidgetHost(host, w);
+  const title = w.props.hasProperty('caption') ? w.props.caption ?? '' : '';
+  const host = createWidgetHost(title);
+  initWidgetHost(host, w, title);
   //widgetHeader ??= ui.div();
 
   return host;
