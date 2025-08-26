@@ -29,3 +29,50 @@
 .skeleton-key { width: 100px; height: 14px; background-color: var(--grey-1); border-radius: 3px; }
 .skeleton-value { flex-grow: 1; height: 14px; background-color: var(--grey-2); border-radius: 3px; }
 .warning-message { color: var(--orange-3); padding: 12px; text-align: center; font-size: 13px; background-color: var(--orange-0); border: 1px solid var(--orange-2); border-radius: 4px; margin-top: 12px; }
+/*
+ * === COMPLETE CREATE PLATE LAYOUT FIX ===
+ */
+
+/* --- 1. Main 50/50 Panel Split --- */
+
+/* This targets the container for the TabControl (the element getting the inline 400px style) */
+.create-plate-view__right-panel > :last-child {
+  flex: 1;          /* Make it take the second 50% of vertical space */
+  min-height: 0;    /* Allows the container to shrink properly */
+  width: 100% !important; /* Use !important to FORCEFULLY override the inline width: 400px */
+  display: flex;    /* Make it a flex container to manage the tab host inside */
+}
+
+
+/* --- 2. Tab Control and Content Sizing --- */
+
+/* Make the tab control itself fill its newly sized container */
+.d4-tab-host {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Make the content area of the tabs grow to fill all available space below the tab headers */
+.d4-tab-content {
+  flex-grow: 1;
+  display: flex; /* This is crucial for the plate-widget inside it */
+  min-height: 0;
+}
+
+
+/* --- 3. Plate Widget Sizing --- */
+
+/* Make the plate widget fill the entire tab content area */
+.d4-tab-content .plate-widget {
+  flex-grow: 1;
+  display: flex;
+  min-width: 0; /* Prevents flexbox overflow issues */
+}
+
+/* Make the grid part of the widget (the last element) expand horizontally */
+.d4-tab-content .plate-widget > :last-child {
+  flex-grow: 1;
+  min-width: 0;
+}

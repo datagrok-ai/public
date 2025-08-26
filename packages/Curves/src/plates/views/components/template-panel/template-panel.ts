@@ -6,6 +6,18 @@ import {Subscription} from 'rxjs';
 import {renderValidationResults} from '../../plates-validation-panel';
 import {PlateTemplate, plateTemplates, plateTypes} from '../../../plates-crud';
 import {PlateWidget} from '../../../../plate/plate-widget';
+/**
+ * Creates a consistent two-column form row (Label on left, Input on right).
+ * @param label The text for the label.
+ * @param input The Datagrok InputBase component.
+ * @returns An HTMLElement representing the styled row.
+ */
+function createFormRow(label: string, input: DG.InputBase<any>): HTMLElement {
+  const labelEl = ui.divText(label, 'ui-label');
+  // Remove the default label from the input component, as we're providing our own.
+  input.root.querySelector('label')?.remove();
+  return ui.divH([labelEl, input.root], 'template-panel-form-row');
+}
 
 export class TemplatePanel {
   root: HTMLElement;
@@ -58,7 +70,6 @@ export class TemplatePanel {
     this.root.appendChild(wellPropsSection);
   }
 
-  // --- NEW METHODS (MOVED FROM PLATE-GRID-MANAGER) ---
 
   private createImportSection(): HTMLElement {
     const fileInput = this.createFileInput();
@@ -66,11 +77,11 @@ export class TemplatePanel {
       this.plateIdentifierHost,
       this.replicateIdentifierHost,
       this.plateNumberHost,
-    ], 'import-section-content');
+    ], 'left-panel-section-content');
 
     const content = ui.divV([
-        fileInput.root,
-        indexControls
+      fileInput.root,
+      indexControls
     ]);
 
     // Initially populate the controls (they will be empty)
@@ -106,6 +117,7 @@ export class TemplatePanel {
     return fileInput;
   }
 
+
   private updateIdentifierControls(): void {
     this.updatePlateIdentifierControl();
     this.updateReplicateIdentifierControl();
@@ -117,7 +129,7 @@ export class TemplatePanel {
     const df = this.stateManager.sourceDataFrame;
     if (!df) return;
 
-    const choiceInput = ui.input.choice('Plate Index', {
+    const choiceInput = ui.input.choice('', { // Label is now empty
       value: this.stateManager.plateIdentifierColumn,
       items: [null, ...df.columns.names()],
       onValueChanged: (newColumn: string | null) => {
@@ -126,7 +138,8 @@ export class TemplatePanel {
       },
     });
     ui.tooltip.bind(choiceInput.root, 'Select the column that identifies individual plates in the file.');
-    this.plateIdentifierHost.appendChild(choiceInput.root);
+    // Use the new helper to create a styled row
+    this.plateIdentifierHost.appendChild(createFormRow('Plate Index', choiceInput));
   }
 
   private updateReplicateIdentifierControl(): void {
@@ -134,7 +147,7 @@ export class TemplatePanel {
     const df = this.stateManager.sourceDataFrame;
     if (!df) return;
 
-    const choiceInput = ui.input.choice('Replicate Index', {
+    const choiceInput = ui.input.choice('', { // Label is now empty
       value: this.stateManager.replicateIdentifierColumn,
       items: [null, ...df.columns.names()],
       onValueChanged: (newColumn: string | null) => {
@@ -143,7 +156,8 @@ export class TemplatePanel {
       },
     });
     ui.tooltip.bind(choiceInput.root, 'Optional: Select the column that identifies technical replicates.');
-    this.replicateIdentifierHost.appendChild(choiceInput.root);
+    // Use the new helper to create a styled row
+    this.replicateIdentifierHost.appendChild(createFormRow('Replicate Index', choiceInput));
   }
 
   private updatePlateNumberControl(): void {
@@ -151,7 +165,7 @@ export class TemplatePanel {
     const df = this.stateManager.sourceDataFrame;
     if (!df) return;
 
-    const choiceInput = ui.input.choice('Plate Number', {
+    const choiceInput = ui.input.choice('', { // Label is now empty
       value: this.stateManager.plateNumberColumn,
       items: [null, ...df.columns.names()],
       onValueChanged: (newColumn: string | null) => {
@@ -160,13 +174,14 @@ export class TemplatePanel {
       },
     });
     ui.tooltip.bind(choiceInput.root, 'Optional: Select the column that identifies the plate number.');
-    this.plateNumberHost.appendChild(choiceInput.root);
+    // Use the new helper to create a styled row
+    this.plateNumberHost.appendChild(createFormRow('Plate Number', choiceInput));
   }
 
   // --- EXISTING METHODS (UNCHANGED OR SLIGHTLY MODIFIED) ---
 
+
   private createTemplateSection(): HTMLElement {
-    // ... (this.createTemplateSection method remains completely unchanged) ...
     const templateIcon = ui.iconFA('file-alt', null, 'Template-defined properties');
     templateIcon.classList.add('legend-icon', 'legend-icon-template');
 
@@ -175,7 +190,7 @@ export class TemplatePanel {
       {style: {alignItems: 'center', gap: '8px', flexGrow: '1'}}
     );
 
-    const plateTypeSelector = ui.input.choice('Plate Type', {
+    const plateTypeSelector = ui.input.choice('', { // Label is now empty
       value: this.stateManager.currentPlateType.name,
       items: plateTypes.map((pt) => pt.name),
       onValueChanged: (v) => {
@@ -185,7 +200,7 @@ export class TemplatePanel {
       },
     });
 
-    const plateTemplateSelector = ui.input.choice('Template', {
+    const plateTemplateSelector = ui.input.choice('', { // Label is now empty
       value: this.stateManager.currentTemplate.name,
       items: plateTemplates.map((pt) => pt.name),
       onValueChanged: (v) => {
@@ -194,8 +209,12 @@ export class TemplatePanel {
       },
     });
 
+    // Create the rows using the new helper function
+    const plateTypeRow = createFormRow('Plate Type', plateTypeSelector);
+    const templateRow = createFormRow('Template', plateTemplateSelector);
+
     const templateContent = ui.divV(
-      [plateTypeSelector.root, plateTemplateSelector.root],
+      [plateTypeRow, templateRow], // Add the new rows to the content
       'left-panel-section-content'
     );
 
