@@ -19,6 +19,7 @@ function createFormRow(label: string, input: DG.InputBase<any>): HTMLElement {
   return ui.divH([labelEl, input.root], 'template-panel-form-row');
 }
 
+
 export class TemplatePanel {
   root: HTMLElement;
   private platePropertiesHost: HTMLElement;
@@ -105,7 +106,8 @@ export class TemplatePanel {
       },
     });
 
-    fileInput.root.classList.add('plate-import-button');
+
+    fileInput.root.classList.add('plate-import-input');
     const fileInputButton = fileInput.root.querySelector('button');
     if (fileInputButton) {
       ui.empty(fileInputButton);

@@ -5,11 +5,37 @@ import {PlateStateManager} from '../../shared/plate-state-manager';
 import {MappingDialogOptions, PlateFile} from '../../shared/types';
 import {Subscription} from 'rxjs';
 
+function createPlateGridSkeleton(): HTMLElement {
+  const icon = ui.iconFA('table', null, 'Plates Table');
+  icon.style.fontSize = '48px';
+  icon.style.color = 'var(--grey-3)';
+
+  const message = ui.divText('Import a file to see the list of plates', 'info-message');
+  message.style.marginTop = '12px';
+
+  const skeleton = ui.divV([icon, message], 'plate-grid-skeleton');
+  skeleton.style.cssText = `
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    min-height: 150px;
+    border: 1px dashed var(--grey-2);
+    border-radius: 4px;
+    background-color: var(--grey-0);
+  `;
+  return skeleton;
+}
+
 export class PlateGridManager {
   root: HTMLElement;
   grid: DG.Grid;
   private subscriptions: Subscription[] = [];
   private isSelecting: boolean = false;
+  private skeletonEl: HTMLElement | null = null;
+  private loadingIndicator: HTMLElement | null = null;
 
   constructor(private stateManager: PlateStateManager) {
     this.root = ui.divV([], 'plate-grid-manager');
@@ -30,7 +56,6 @@ export class PlateGridManager {
   }
 
   private initGrid(): void {
-    // ... (this.initGrid method remains completely unchanged) ...
     this.grid.props.allowEdit = false;
     this.grid.props.allowRowSelection = true;
     this.grid.props.showCurrentCellOutline = false;
@@ -98,12 +123,24 @@ export class PlateGridManager {
   }
 
   private renderGrid(): void {
-    // ... (this.renderGrid method remains completely unchanged) ...
     const state = this.stateManager.currentState;
     if (!state || state.plates.length === 0) {
-      this.grid.dataFrame = DG.DataFrame.create(0);
+      if (!this.skeletonEl) {
+        this.skeletonEl = createPlateGridSkeleton();
+        this.root.appendChild(this.skeletonEl);
+        this.setupDroppableArea(); // <-- ATTACH DROPPABLE LISTENER
+      }
+      this.skeletonEl.style.display = 'flex';
+      this.grid.root.style.display = 'none'; // HIDE the grid
       return;
     }
+
+    if (this.skeletonEl)
+      this.skeletonEl.style.display = 'none';
+
+
+    this.grid.root.style.display = ''; // SHOW the grid by resetting its display style
+
     const plateFiles: PlateFile[] = state.plates;
 
     const barcodes = DG.Column.string('Barcode', plateFiles.length)
@@ -151,9 +188,93 @@ export class PlateGridManager {
     }
   }
 
-  // The showMultiPlateMappingDialog method is also unchanged
+  // --- NEW METHODS FOR DROPPABLE FUNCTIONALITY ---
+
+  private setupDroppableArea(): void {
+    if (!this.skeletonEl) return;
+
+    // Visual feedback for drag-and-drop
+    const highlightColor = 'var(--blue-2)';
+    const defaultColor = 'var(--grey-0)';
+    const defaultBorder = '1px dashed var(--grey-2)';
+    const highlightBorder = '1px solid var(--blue-5)';
+
+    this.skeletonEl.addEventListener('dragenter', () => this.skeletonEl!.style.backgroundColor = highlightColor);
+    this.skeletonEl.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      this.skeletonEl!.style.backgroundColor = highlightColor;
+      this.skeletonEl!.style.border = highlightBorder;
+    });
+    this.skeletonEl.addEventListener('dragleave', () => {
+      this.skeletonEl!.style.backgroundColor = defaultColor;
+      this.skeletonEl!.style.border = defaultBorder;
+    });
+
+    ui.makeDroppable(this.skeletonEl, {
+      acceptDrop: (dragObject) => {
+        // The dragged object can be a File from the OS or a Datagrok FileInfo
+        const file = dragObject instanceof File ? dragObject : (dragObject as any)?.file;
+        return !!file && file.name.toLowerCase().endsWith('.csv');
+      },
+      doDrop: (dragObject) => {
+        const file = dragObject instanceof File ? dragObject : (dragObject as any)?.file;
+        if (file) {
+          this.skeletonEl!.style.backgroundColor = defaultColor;
+          this.skeletonEl!.style.border = defaultBorder;
+          this.processDroppedFile(file);
+        }
+      }
+    });
+  }
+
+  private async processDroppedFile(file: File): Promise<void> {
+    this.showLoadingIndicator();
+    try {
+      const csvString = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target!.result as string);
+        reader.readAsText(file);
+      });
+      const df = DG.DataFrame.fromCsv(csvString);
+      await this.stateManager.loadDataFrame(df);
+    } catch (e: any) {
+      grok.shell.error(`Failed to load file: ${e.message}`);
+    } finally {
+      this.hideLoadingIndicator();
+    }
+  }
+
+  private showLoadingIndicator(): void {
+    if (!this.skeletonEl) return;
+    this.loadingIndicator = ui.divV([
+      ui.loader(),
+      ui.divText('Loading...')
+    ], 'loading-indicator');
+    this.loadingIndicator.style.cssText = `
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.8);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      border-radius: 4px;
+    `;
+    this.skeletonEl.appendChild(this.loadingIndicator);
+  }
+
+  private hideLoadingIndicator(): void {
+    this.loadingIndicator?.remove();
+    this.loadingIndicator = null;
+  }
+
+  // --- EXISTING METHODS (UNCHANGED) ---
+
   showMultiPlateMappingDialog(options: MappingDialogOptions): void {
-    // ... (this.showMultiPlateMappingDialog method remains completely unchanged) ...
     const dialog = ui.dialog('Apply Field Mappings');
     dialog.root.style.minWidth = '500px';
     const content = ui.divV([], {style: {gap: '20px'}});

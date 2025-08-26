@@ -9,6 +9,7 @@ import {PlateStateManager} from './shared/plate-state-manager';
 import {TemplatePanel} from './components/template-panel/template-panel';
 import {PlateDrcAnalysis} from '../../plate/plate-drc-analysis';
 import {renderValidationResults} from './plates-validation-panel';
+import {Subscription} from 'rxjs';
 
 import './components/template-panel/template-panel.css';
 import './components/plate-grid-manager/plate-grid-manager.css';
@@ -29,6 +30,7 @@ export function createPlatesView(): DG.View {
   }
 
   const stateManager = new PlateStateManager(plateTemplate, plateType);
+  const subscriptions: Subscription[] = [];
 
   // Create plate widget
   const plateWidget = new PlateWidget();
@@ -52,7 +54,7 @@ export function createPlatesView(): DG.View {
           hasActivity,
           hasConcentration,
           hasSampleID,
-          mappings: activePlate.reconciliationMap
+          mappings: activePlate.reconciliationMap,
         });
 
         if (hasActivity && hasConcentration && hasSampleID) {
@@ -230,8 +232,50 @@ export function createPlatesView(): DG.View {
     }),
   ]]);
 
+  // --- NEW: Global File Import Interceptor ---
+  const handleDroppedFile = async (file: File) => {
+    const pi = DG.TaskBarProgressIndicator.create(`Importing ${file.name}...`);
+    try {
+      const csvString = await file.text();
+      const df = DG.DataFrame.fromCsv(csvString);
+      await stateManager.loadDataFrame(df);
+      grok.shell.info(`File "${file.name}" imported successfully.`);
+    } catch (error: any) {
+      grok.shell.error(`Failed to import file: ${error.message}`);
+    } finally {
+      pi.close();
+    }
+  };
+
+  const fileImportSub = grok.events.onFileImportRequest.subscribe((args) => {
+    // 1. Context Check: Only handle if our view is active.
+    if (grok.shell.v.name !== view.name)
+      return;
+
+    const file = args.args.file;
+    if (!file) return;
+
+    // 2. File Type Check: Ensure it's a CSV file.
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      // Optional: Inform user if they drop a wrong file type
+      grok.shell.warning(`Only .csv files can be dropped here. To open other files, navigate away from the 'Create Plate' view.`);
+      args.preventDefault(); // Prevent opening other files even if they are valid Datagrok tables
+      return;
+    }
+
+    // 3. Prevent Default Behavior for this file.
+    args.preventDefault();
+
+    // 4. Route to our custom handler.
+    handleDroppedFile(file);
+  });
+  subscriptions.push(fileImportSub);
+
+
+  // --- Updated View Detach Logic ---
   const originalDetach = view.detach.bind(view);
   view.detach = () => {
+    subscriptions.forEach((sub) => sub.unsubscribe()); // <-- Clean up the subscription
     stateManager.destroy();
     templatePanel.destroy();
     plateGridManager.destroy();

@@ -23,6 +23,14 @@
 /* === NEW: This is the rule that creates the two-column layout === */
 .template-panel-form-row { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 12px; }
 .template-panel-form-row .d4-input-root { width: 100%; }
-.plate-import-button > button { width: 100%; justify-content: center !important; gap: 8px; }
+.plate-import-button > button {
+  width: 100%;
+  justify-content: center !important;
+  gap: 8px;
+}
 /* === Validation Table Styles (unchanged) === */
 .plate-validation-table-header, .plate-validation-table-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 4px 0; align-items: center; }
+/* Make the entire file input component and its children full-width */
+.plate-import-input { width: 100%; }
+.plate-import-input .ui-input-editor { width: 100%; }
+.plate-import-input button { width: 100%; justify-content: center !important; gap: 8px; }
