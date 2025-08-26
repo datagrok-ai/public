@@ -222,7 +222,7 @@ export const TreeNode = Vue.defineComponent({
         <span
           class="mtl-ml text-nowrap text-ellipsis overflow-hidden"
           style={{
-            opacity: (props.stat.children.length === 0 && props.stat.data.type !== 'funccall') ? 0.5 : 1.0,
+            opacity: (props.stat.data.type === 'funccall' && props.callState?.pendingDependencies?.length) ? 0.5 : 1.0,
           }}
         >{ props.descriptions?.title ?? nodeLabel(props.stat) }</span>
         {
