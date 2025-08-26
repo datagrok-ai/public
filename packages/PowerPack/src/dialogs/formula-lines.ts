@@ -481,6 +481,7 @@ class Editor {
   _dataFrame: DG.DataFrame;
   _onItemChangedAction: Function;
   _onFormulaValidation: Function;
+  _columnInput: DG.InputBase<DG.Column | null> | undefined;
 
   /** The title must be accessible from other inputs, because it may depend on the formula */
   _ibTitle?: DG.InputBase;
@@ -521,6 +522,7 @@ class Editor {
     const tooltipPane = ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px', overflowX: 'auto'}});
 
     if (itemIdx >= 0) {
+      this._columnInput = undefined;
       /** Preparing the "Main" panel */
       mainPane.append(caption === ITEM_CAPTION.CONST_LINE ?
         this._inputConstant(itemIdx, itemY, expression) :
@@ -764,6 +766,11 @@ class Editor {
     return iShowLabels.root;
   }
 
+  changeColumnInput(value: DG.Column | null): void {
+    if (this._columnInput && this._columnInput.value?.name !== value?.name)
+      this._columnInput.value = value;
+  }
+
   /** Creates textarea for item description */
   _inputDescription(itemIdx: number): HTMLElement {
     const item = this.items[itemIdx];
@@ -792,10 +799,11 @@ class Editor {
         item.column2 = value.name;
         this._onItemChangedAction(itemIdx);
       }});
-
+      
+    this._columnInput = ibColumn2;
     const elColumn2 = ibColumn2.input as HTMLInputElement;
     //elColumn2.setAttribute('style', 'width: 204px; max-width: none;');
-
+    
     return ui.divH([ibColumn2.root]);
   }
 
@@ -812,6 +820,7 @@ class Editor {
         this._setTitleIfEmpty(oldFormula, item.formula);
       }});
 
+    this._columnInput = ibColumn;
     const elColumn = ibColumn.input as HTMLInputElement;
     //elColumn.setAttribute('style', 'width: 204px; max-width: none; margin-right: -10px;');
 
@@ -999,6 +1008,25 @@ export class FormulaLinesDialog {
     this.preview = this._initPreview(src);
     this.editor = this._initEditor();
     this.tabs = this._initTabs();
+    this.dialog.sub(this.preview.viewer.onDartPropertyChanged.subscribe((typeArgs) => {
+      if (!this.editor || !this.preview?.viewer || !this._currentTable.currentItem?.orientation)
+        return;
+
+      var propName = (typeArgs as unknown as DG.TypedEventArgs<unknown>)?.dart?.name;
+      const vertOrientation = this._currentTable.currentItem.orientation === ITEM_ORIENTATION.VERTICAL;
+      const df = this.preview.viewer.dataFrame;
+      if (this.preview.viewer.type === DG.VIEWER.LINE_CHART
+          && (vertOrientation ? propName === 'yColumnNames' : propName === 'xColumnName')) {
+        const props = this.preview.viewer.props as DG.ILineChartSettings;
+        this.editor.changeColumnInput(df.col(vertOrientation ? props['yColumnNames'][0] : props['xColumnName']));
+      } else if (this.preview.viewer.type === DG.VIEWER.SCATTER_PLOT
+          && (vertOrientation ? propName === 'yColumnName' : propName === 'xColumnName')) {
+        const props = this.preview.viewer.props as DG.IScatterPlotSettings;
+        this.editor.changeColumnInput(df.col(vertOrientation ? props['yColumnName'] : props['xColumnName']));
+      }
+    }));
+
+    this.dialog.sub(this.dialog.onClose.subscribe(() => this.dialog.detach()));
 
     /** Init Dialog layout */
     const layout = ui.div([
