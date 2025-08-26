@@ -118,7 +118,7 @@ const tabToProperties = (fc: DG.FuncCall) => {
 
       const categoryProps = tabsToProps.outputs.get(category);
       const [rawValue, formattedValue, units] = getScalarContent(fc, outputProp);
-      const scalarProp = {name: outputProp.caption || outputProp.name, rawValue, formattedValue, units};
+      const scalarProp = {name: outputProp.name, friendlyName: outputProp.caption || outputProp.name, rawValue, formattedValue, units};
       if (categoryProps && categoryProps.type === 'scalars')
         categoryProps.scalarsData.push(scalarProp);
       else
@@ -559,6 +559,7 @@ export const RichFunctionView = Vue.defineComponent({
                   const scalarsData = tabContent.scalarsData;
 
                   const panel = <ScalarsPanel
+                    validationStates={validationState.value}
                     class='h-full overflow-scroll'
                     scalarsData={scalarsData}
                     dock-spawn-panel-icon='sign-out-alt'
