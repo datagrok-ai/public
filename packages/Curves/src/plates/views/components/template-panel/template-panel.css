@@ -183,3 +183,29 @@
   text-align: center;
   font-style: italic;
 }
+/* === Import Section Styles === */
+.plate-import-button > button {
+  width: 100%;
+  justify-content: center !important;
+  gap: 8px;
+}
+
+.import-section-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.import-section-content .d4-input-root {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.import-section-content .d4-input-root > .d4-input-label {
+  margin-bottom: 4px;
+}
+
+.import-section-content .d4-input-root > .ui-input-editor {
+  width: 100%;
+}

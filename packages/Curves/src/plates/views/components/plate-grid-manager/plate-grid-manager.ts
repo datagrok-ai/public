@@ -8,22 +8,11 @@ import {Subscription} from 'rxjs';
 export class PlateGridManager {
   root: HTMLElement;
   grid: DG.Grid;
-  private importContainer: HTMLElement;
-  private plateIdentifierHost: HTMLElement;
-  private replicateIdentifierHost: HTMLElement;
-  private plateNumberHost: HTMLElement;
-  private fileInput: DG.InputBase<DG.FileInfo | null>;
   private subscriptions: Subscription[] = [];
   private isSelecting: boolean = false;
 
   constructor(private stateManager: PlateStateManager) {
     this.root = ui.divV([], 'plate-grid-manager');
-    this.plateIdentifierHost = ui.div([]);
-    this.replicateIdentifierHost = ui.div([]);
-    this.plateNumberHost = ui.div([]);
-
-    this.fileInput = this.createFileInput();
-    this.importContainer = this.createImportContainer();
     this.grid = DG.Grid.create(DG.DataFrame.create());
 
     this.buildComponent();
@@ -35,13 +24,13 @@ export class PlateGridManager {
     this.root.style.width = '100%';
     this.root.style.display = 'flex';
     this.root.style.flexDirection = 'column';
-    this.root.appendChild(this.importContainer);
     this.grid.root.style.width = '100%';
     this.grid.root.style.flexGrow = '1';
     this.root.appendChild(this.grid.root);
   }
 
   private initGrid(): void {
+    // ... (this.initGrid method remains completely unchanged) ...
     this.grid.props.allowEdit = false;
     this.grid.props.allowRowSelection = true;
     this.grid.props.showCurrentCellOutline = false;
@@ -91,7 +80,6 @@ export class PlateGridManager {
 
       if (cell.isColHeader && cell.gridColumn.name === 'Wells Failed') {
         g.save();
-        // --- FIX: 'g' was used before being assigned. Corrected order. ---
         g.strokeStyle = 'var(--grey-5)';
         g.lineWidth = 1.5;
         g.setLineDash([2, 2]);
@@ -110,12 +98,12 @@ export class PlateGridManager {
   }
 
   private renderGrid(): void {
+    // ... (this.renderGrid method remains completely unchanged) ...
     const state = this.stateManager.currentState;
     if (!state || state.plates.length === 0) {
       this.grid.dataFrame = DG.DataFrame.create(0);
       return;
     }
-    // --- FIX: Cast state.plates to the correct type ---
     const plateFiles: PlateFile[] = state.plates;
 
     const barcodes = DG.Column.string('Barcode', plateFiles.length)
@@ -163,103 +151,9 @@ export class PlateGridManager {
     }
   }
 
-  // ... (rest of the file is unchanged) ...
-  private createFileInput(): DG.InputBase<DG.FileInfo | null> {
-    const fileInput = ui.input.file('', {
-      onValueChanged: async (file: DG.FileInfo | null) => {
-        if (!file) return;
-        try {
-          const df = DG.DataFrame.fromCsv(await file.readAsString());
-          await this.stateManager.loadDataFrame(df);
-          this.updateIdentifierControls();
-        } catch (e: any) {
-          grok.shell.error(`Failed to parse CSV: ${e.message}`);
-        }
-      },
-    });
-
-    fileInput.root.classList.add('plate-import-button');
-    const fileInputButton = fileInput.root.querySelector('button');
-    if (fileInputButton) {
-      ui.empty(fileInputButton);
-      fileInputButton.appendChild(ui.iconFA('upload'));
-    }
-    fileInput.root.querySelector('label')?.remove();
-    ui.tooltip.bind(fileInput.root, 'Import a plate from a CSV file');
-    return fileInput;
-  }
-
-  private createImportContainer(): HTMLElement {
-    const container = ui.divH([
-      ui.divText('Import Plate File'),
-      this.plateIdentifierHost,
-      this.replicateIdentifierHost,
-      this.plateNumberHost,
-      this.fileInput.root,
-    ], 'plate-import-container');
-
-    container.style.width = '100%';
-    return container;
-  }
-
-  private updateIdentifierControls(): void {
-    this.updatePlateIdentifierControl();
-    this.updateReplicateIdentifierControl();
-    this.updatePlateNumberControl();
-  }
-
-  private updatePlateIdentifierControl(): void {
-    ui.empty(this.plateIdentifierHost);
-    const df = this.stateManager.sourceDataFrame;
-    if (!df) return;
-
-    const choiceInput = ui.input.choice('Plate Index', {
-      value: this.stateManager.plateIdentifierColumn,
-      items: [null, ...df.columns.names()],
-      onValueChanged: (newColumn: string | null) => {
-        this.stateManager.plateIdentifierColumn = newColumn;
-        this.stateManager.reprocessPlates();
-      },
-    });
-    ui.tooltip.bind(choiceInput.root, 'Select the column that identifies individual plates in the file.');
-    this.plateIdentifierHost.appendChild(choiceInput.root);
-  }
-
-  private updateReplicateIdentifierControl(): void {
-    ui.empty(this.replicateIdentifierHost);
-    const df = this.stateManager.sourceDataFrame;
-    if (!df) return;
-
-    const choiceInput = ui.input.choice('Replicate Index', {
-      value: this.stateManager.replicateIdentifierColumn,
-      items: [null, ...df.columns.names()],
-      onValueChanged: (newColumn: string | null) => {
-        this.stateManager.replicateIdentifierColumn = newColumn;
-        this.stateManager.reprocessPlates();
-      },
-    });
-    ui.tooltip.bind(choiceInput.root, 'Optional: Select the column that identifies technical replicates.');
-    this.replicateIdentifierHost.appendChild(choiceInput.root);
-  }
-
-  private updatePlateNumberControl(): void {
-    ui.empty(this.plateNumberHost);
-    const df = this.stateManager.sourceDataFrame;
-    if (!df) return;
-
-    const choiceInput = ui.input.choice('Plate Number Index', {
-      value: this.stateManager.plateNumberColumn,
-      items: [null, ...df.columns.names()],
-      onValueChanged: (newColumn: string | null) => {
-        this.stateManager.plateNumberColumn = newColumn;
-        this.stateManager.reprocessPlates();
-      },
-    });
-    ui.tooltip.bind(choiceInput.root, 'Optional: Select the column that identifies the plate number within a barcode.');
-    this.plateNumberHost.appendChild(choiceInput.root);
-  }
-
+  // The showMultiPlateMappingDialog method is also unchanged
   showMultiPlateMappingDialog(options: MappingDialogOptions): void {
+    // ... (this.showMultiPlateMappingDialog method remains completely unchanged) ...
     const dialog = ui.dialog('Apply Field Mappings');
     dialog.root.style.minWidth = '500px';
     const content = ui.divV([], {style: {gap: '20px'}});
