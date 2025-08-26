@@ -16,7 +16,7 @@ import {AugmentedStat} from './types';
 import '@he-tree/vue/style/default.css';
 import '@he-tree/vue/style/material-design.css';
 import {PipelineView} from '../PipelineView/PipelineView';
-import {useUrlSearchParams} from '@vueuse/core';
+import {useUrlSearchParams, computedAsync} from '@vueuse/core';
 import {Inspector} from '../Inspector/Inspector';
 import {
   findNextStep,
@@ -103,8 +103,17 @@ export const TreeWizard = Vue.defineComponent({
     const searchParams = useUrlSearchParams<{id?: string, currentStep?: string}>('history');
     const modelName = Vue.computed(() => props.modelName);
     const isTreeReady = Vue.computed(() => treeState.value && !treeMutationsLocked.value && !isGlobalLocked.value);
-    const providerFunc = Vue.computed(() => DG.Func.byName(props.providerFunc));
+    const providerFunc = Vue.computed(() => {
+      const func = DG.Func.byName(props.providerFunc);
+      return func ? Vue.markRaw(func) : undefined;
+    });
     const showReturn = Vue.computed(() => props.showReturn);
+    const reportBugUrl = computedAsync<string | undefined>(async () => {
+      return (await providerFunc.value?.package?.getProperties() as any)?.REPORT_BUG_URL
+    });
+    const reqFeatureUrl = computedAsync<string | undefined>(async () => {
+      return (await providerFunc.value?.package?.getProperties() as any)?.REQUEST_FEATURE_URL
+    });
 
     ////
     // results
@@ -493,9 +502,25 @@ export const TreeWizard = Vue.defineComponent({
             }
           </RibbonMenu>
         }
+        {(reportBugUrl.value || reqFeatureUrl.value) &&
+          <RibbonMenu groupName='Feedback' view={currentView.value}>
+            {
+              reportBugUrl.value &&
+              <span onClick={() => window.open(reportBugUrl.value, '_blank')}>
+                <div>Report a bug</div>
+              </span>
+            }
+            {
+              reqFeatureUrl.value &&
+              <span onClick={() => window.open(reqFeatureUrl.value, '_blank')}>
+                <div>Request a feature</div>
+              </span>
+            }
+          </RibbonMenu>
+        }
         <DockManager class='block h-full'
           style={{overflow: 'hidden !important'}}
-          key={providerFunc.value.id}
+          key={providerFunc.value?.id}
           onPanelClosed={handlePanelClose}
         >
           { !inspectorHidden.value &&
