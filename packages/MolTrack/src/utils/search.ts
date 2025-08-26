@@ -192,21 +192,6 @@ export async function getSearchFiledsForEntity(entityType?: MolTrackEntityType):
     addProperties(staticFields, true);
     addProperties(dynamicFields, false);
   }
-  //TEMPORARY SOLUTION!!! Put boolean fields to the end of the list not to show boolean input by default
-  const sortProps = (props: DG.Property[]) => {
-    return props.sort((a, b) => {
-      if (a.type === DG.TYPE.BOOL && b.type !== DG.TYPE.BOOL) return 1;
-      if (a.type !== DG.TYPE.BOOL && b.type === DG.TYPE.BOOL) return -1;
-      return 0;
-    });
-  };
-  if (molTrackSearchFields[entityType].direct?.length) {
-    molTrackSearchFields[entityType].direct =
-        sortProps(molTrackSearchFields[entityType].direct);
-  } else if (molTrackSearchFields[entityType].dynamic?.length) {
-    molTrackSearchFields[entityType].dynamic =
-        sortProps(molTrackSearchFields[entityType].dynamic);
-  }
   return (molTrackSearchFields[entityType].direct ?? []).concat(molTrackSearchFields[entityType].dynamic ?? []);
 }
 
