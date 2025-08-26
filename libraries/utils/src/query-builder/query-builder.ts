@@ -138,6 +138,24 @@ export class BetweenConditionEditor extends BaseConditionEditor {
     }
 }
 
+export class BooleanConditionEditor extends BaseConditionEditor {
+    override initializeEditor(prop: DG.Property): void {
+        if (!this.condition.value)
+            this.condition.value = true
+        const options = ['true', 'false'];
+        const input = ui.input.choice('', {
+            items: options,
+            nullable: false,
+            value: this.condition.value ? 'true' : 'false',
+            onValueChanged: () => {
+                this.condition.value = input.value === 'true';
+                this.onChanged.next(this.condition);
+            }
+        });
+        this.root.append(input.root);
+    }
+}
+
 export class MoleculeConditionEditor extends BaseConditionEditor<string> {
     override initializeEditor(prop: DG.Property): void {
         //if we swith from similarity input to standard molecule input - need to modify value
@@ -266,7 +284,7 @@ export class ConditionRegistry {
     private initializeDefaultOperators(): void {
         // Type operators
         this.registerTypeOperators(DG.TYPE.BOOL, [Operators.EQ]);
-        this.registerTypeOperators(DG.TYPE.STRING, [Operators.STARTS_WITH, Operators.EQ, Operators.NOT_EQ, Operators.IN]);
+        this.registerTypeOperators(DG.TYPE.STRING, [Operators.STARTS_WITH, Operators.CONTAINS, Operators.EQ, Operators.NOT_EQ, Operators.IN]);
         this.registerTypeOperators(DG.TYPE.INT, [Operators.GT, Operators.LT, Operators.GTE, Operators.LTE, Operators.EQ,
             Operators.NOT_EQ, Operators.BETWEEN, Operators.IN]);
         this.registerTypeOperators(DG.TYPE.FLOAT, [Operators.GT, Operators.LT, Operators.GTE, Operators.LTE, Operators.EQ,
@@ -296,6 +314,7 @@ export class ConditionRegistry {
         this.registerEditor(DG.TYPE.STRING, DG.SEMTYPE.MOLECULE, Operators.IS_CONTAINED, MoleculeConditionEditor);
         this.registerEditor(DG.TYPE.STRING, DG.SEMTYPE.MOLECULE, Operators.EQ, MoleculeConditionEditor);
         this.registerEditor(DG.TYPE.STRING, DG.SEMTYPE.MOLECULE, Operators.IS_SIMILAR, MoleculeSimilarityConditionEditor);
+        this.registerEditor(DG.TYPE.BOOL, '', Operators.EQ, BooleanConditionEditor);
     }
 
     // Operator registration methods

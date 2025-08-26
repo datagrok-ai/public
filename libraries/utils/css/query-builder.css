@@ -198,6 +198,6 @@
 
 .query-builder-search-query-operator[data-history="false"] .query-builder-history-icon,
 .query-builder-search-query-operator:not([data-history]) .query-builder-history-icon {
-    visibility: visible;
+    visibility: hidden;
 }
 
