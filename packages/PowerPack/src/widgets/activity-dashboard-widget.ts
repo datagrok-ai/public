@@ -75,7 +75,7 @@ export class ActivityDashboardWidget extends DG.Widget {
     const notificationsDataSource: DG.NotificationsDataSource = grok.dapi.users.notifications.forCurrentUser()
       .by(ActivityDashboardWidget.SPOTLIGHT_ITEMS_LENGTH) as DG.NotificationsDataSource;
     console.time('ActivityDashboardWidget.notificationsAndMostRecentEntities');
-    const [notifications, mostRecentEntitiesDf]: [DG.UserNotification[], DG.DataFrame] = await Promise.all([notificationsDataSource.list(),
+    const [notifications, mostRecentEntitiesDf]: [DG.UserNotification[], DG.DataFrame] = await Promise.all([notificationsDataSource.list({pageSize: 50}),
       queries.mostRecentEntities(DG.User.current().id)]);
     console.timeEnd('ActivityDashboardWidget.notificationsAndMostRecentEntities');
 
@@ -236,7 +236,7 @@ export class ActivityDashboardWidget extends DG.Widget {
       root.appendChild(this.adminRoot);
     this.subwidgetsAdded.set(SpotlightTabNames.ADMIN, this.adminRoot);
 
-    this.cleanLists();
+    setTimeout(() => this.cleanLists(), 500);
     this.applySpotlightStyles();
 
     console.timeEnd('ActivityDashboardWidget.buildSpotlightTab');
@@ -354,8 +354,9 @@ export class ActivityDashboardWidget extends DG.Widget {
       const list = this.actionRequiredRoot.lastElementChild;
       for (let i = 0; i < list.children.length; i++) {
         const listChild = list.children[i];
-        if (listChild.textContent?.toLowerCase()?.includes('you were assigned  report #'))
-          listChild.querySelector('.d4-markup label')!.textContent = `${this.reportAmount} reports`;
+        const text = listChild.textContent?.toLowerCase();
+        if ((text?.includes('you were assigned report #') || text?.includes('you were assigned  report #')) && listChild.querySelector('.d4-markup label'))
+          listChild.querySelector('.d4-markup label').textContent = `${this.reportAmount} reports`;
       }
     }
   }
