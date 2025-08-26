@@ -1,5 +1,11 @@
 # Chem changelog
 
+## 1.16.3 (2025-08-26)
+
+### Features
+
+* Removed on demand from docker containers
+
 ## 1.16.2 (2025-08-07)
 
 ### Bug fixes
