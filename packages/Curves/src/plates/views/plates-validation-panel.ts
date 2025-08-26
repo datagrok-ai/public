@@ -12,38 +12,6 @@ const REQUIRED_ANALYSIS_FIELDS = [
 
 const MOCKED_REQUIRED_TEMPLATE_FIELDS = ['Target', 'Assay Format'];
 
-function createSearchableChoice(
-  value: string | null,
-  items: string[],
-  onValueChanged: (newValue: string | null) => void
-): HTMLElement {
-  const host = ui.divText(value ?? '...', 'd4-input-editor');
-  host.classList.add('mapping-choice-editor');
-  if (!value)
-    host.classList.add('empty');
-
-  host.onclick = () => {
-    const menu = DG.Menu.create();
-    const searchInput = ui.input.search('', {placeholder: 'Search column...'});
-
-    searchInput.root.addEventListener('mousedown', (e) => e.stopPropagation());
-
-    const renderItems = (filter: string) => {
-      menu.clear();
-      menu.root.appendChild(searchInput.root);
-      const filteredItems = items.filter((item) => item.toLowerCase().includes(filter.toLowerCase()));
-      for (const item of filteredItems)
-        menu.item(item, () => onValueChanged(item));
-    };
-
-    searchInput.onChanged.subscribe(renderItems);
-    renderItems('');
-    menu.show();
-  };
-
-  return host;
-}
-
 function createDynamicMappingRow(
   sourceColumns: string[],
   onMap: (source: string, target: string) => void,
@@ -57,21 +25,29 @@ function createDynamicMappingRow(
       onMap(sourceCol, propName);
   };
 
-  const propInput = ui.input.string('', {placeholder: 'Property name...'});
-  propInput.onChanged.subscribe((value) => {
-    propName = value;
-    tryApplyMapping();
+  // --- FIX: Use onValueChanged instead of onChanged for string input ---
+  const propInput = ui.input.string('', {
+    placeholder: 'Property name...',
+    onValueChanged: (value) => { // Correct property name
+      propName = value;
+      tryApplyMapping();
+    }
   });
 
-  const colChoice = createSearchableChoice(null, sourceColumns, (value) => {
-    sourceCol = value;
-    tryApplyMapping();
+  const colChoice = ui.input.choice('', {
+    value: null,
+    items: [null, ...sourceColumns],
+    nullable: true,
+    onValueChanged: (value: string | null) => {
+      sourceCol = value;
+      tryApplyMapping();
+    }
   });
 
   const cancelBtn = ui.iconFA('times', onCancel, 'Cancel');
   cancelBtn.classList.add('mapping-cancel-icon');
 
-  const rightCell = ui.divH([colChoice, cancelBtn], 'dynamic-row-right-cell');
+  const rightCell = ui.divH([colChoice.root, cancelBtn], 'dynamic-row-right-cell');
   const newRow = ui.divH([propInput.root, rightCell], 'plate-validation-table-row');
 
   propInput.input.focus();
@@ -84,7 +60,7 @@ export function renderValidationResults(
   plate: Plate,
   template: PlateTemplate,
   onMap: (sourceColumn: string, targetProperty: string) => void,
-  reconciliationMap: Map<string, string>, // targetProperty -> sourceColumn
+  reconciliationMap: Map<string, string>,
   onUndo: (targetProperty: string) => void
 ): { element: HTMLElement, conflictCount: number } {
   const sourceColumns = plate.data.columns.names();
@@ -149,14 +125,19 @@ export function renderValidationResults(
         conflictCount++;
     }
 
-    const choiceControl = createSearchableChoice(mappedSource as string, sourceColumns, (v: string | null) => {
-      if (v)
-        onMap(v, prop.name);
-      else if (mappedSource) // If cleared, treat as undo
-        onUndo(prop.name);
+    const choiceControl = ui.input.choice('', {
+      value: mappedSource || null,
+      items: [null, ...sourceColumns],
+      nullable: true,
+      onValueChanged: (v: string | null) => {
+        if (v)
+          onMap(v, prop.name);
+        else if (mappedSource)
+          onUndo(prop.name);
+      },
     });
 
-    const rightCell = ui.divH([choiceControl], 'mapping-input-container');
+    const rightCell = ui.divH([choiceControl.root], 'mapping-input-container');
     if (mappedSource) {
       const undoIcon = ui.iconFA('times', () => onUndo(prop.name), 'Undo mapping');
       undoIcon.classList.add('mapping-undo-icon');
