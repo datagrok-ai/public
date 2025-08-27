@@ -45,7 +45,7 @@ module.exports = (env) => {
         __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false',
         __VUE_PROD_DEVTOOLS__: 'false',
         __VUE_OPTIONS_API__: 'true',
-    }),
+      }),
     new FuncGeneratorPlugin({outputPath: './src/package.g.ts'}),
   ],
     devtool: 'source-map',

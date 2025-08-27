@@ -2,8 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-import {IconFA, ValidationIcon} from '@datagrok-libraries/webcomponents-vue';
+import {ValidationIcon} from '@datagrok-libraries/webcomponents-vue';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
+import './ScalarsPanel.css';
 
 export interface ScalarState {
   name: string,
@@ -29,52 +30,45 @@ export const ScalarsPanel = Vue.defineComponent({
       console.log('ScalarsPanel onRenderTriggered', event);
     });
 
-    const hoveredIdx = Vue.ref(null as null | number);
     const scalarsData = Vue.computed(() => Vue.markRaw(props.scalarsData));
     const validationStates = Vue.computed(() => props.validationStates);
-
-    const copyToClipboard = async (text: string) => {
-      await navigator.clipboard.writeText(text);
-      grok.shell.info('Value is copied to clipboard');
-    };
 
     return () =>
       scalarsData.value.length <= 3 ?
         <div
-          class='flex flex-wrap justify-around'
+          class='flex flex-wrap justify-around rfv2-scalar-widget'
         >
-          { scalarsData.value.map((prop, idx) => {
-            const {formattedValue, rawValue, units, friendlyName} = prop;
+          { scalarsData.value.map((prop) => {
+            const {formattedValue, units, friendlyName, name} = prop;
 
             return <div
+              key={name}
               class='flex flex-col p-2 items-center gap-4 flex-nowrap'
-              onMouseenter={() => hoveredIdx.value = idx}
-              onMouseleave={() => hoveredIdx.value = null}
             >
               <div class='text-center' style={{color: 'var(--grey-4)'}}> { friendlyName } </div>
               <span style={{fontSize: 'var(--font-size-large)'}}>
                 { formattedValue } { units }
-                <span style={{color: 'var(--grey-3)', paddingLeft: '3px'}} class='absolute'>
-                  { hoveredIdx.value === idx && <IconFA
-                    name='copy'
-                    tooltip="Copy caption & value"
-                    onClick={() => copyToClipboard(`${ friendlyName } ${ rawValue } ${ units } `)}
-                  /> }
+                <span style={{paddingLeft: '10px'}}>
+                  { validationStates.value?.[name] &&
+                    <td>
+                      <ValidationIcon validationStatus={{validation: validationStates.value?.[name]}}/>
+                    </td>
+                  }
                 </span>
+
               </span>
             </div>;
           })}
         </div> :
         <div class='h-full overflow-scroll'>
-          <table class='d4-table d4-item-table d4-info-table rfv-scalar-table'>
+          <table class='d4-table d4-item-table d4-info-table rfv2-scalar-table'>
             <tbody>
               {
-                scalarsData.value.map((prop, idx) => {
-                  const {formattedValue, rawValue, units, friendlyName, name} = prop;
+                scalarsData.value.map((prop) => {
+                  const {formattedValue, units, friendlyName, name} = prop;
 
                   return <tr
-                    onMouseenter={() => hoveredIdx.value = idx}
-                    onMouseleave={() => hoveredIdx.value = null}
+                    key={name}
                   >
                     <td> <span> { friendlyName } </span></td>
                     <td> <span> { units } </span></td>
@@ -86,14 +80,7 @@ export const ScalarsPanel = Vue.defineComponent({
                         </span>
                       </td>
                     }
-                    <td>
-                      { hoveredIdx.value === idx && <IconFA
-                        style={{color: 'var(--grey-3)'}}
-                        name='copy'
-                        tooltip="Copy caption & value"
-                        onClick={() => copyToClipboard(`${ name } ${ rawValue } ${ units } `)}
-                      /> }
-                    </td>
+                    <td> <span> </span></td>
                   </tr>;
                 })
               }
