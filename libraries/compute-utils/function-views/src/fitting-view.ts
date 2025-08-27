@@ -656,6 +656,7 @@ export class FittingView {
       return;
     }
 
+    nelderMeadSettingsVals.forEach((vals, key) => this.nelderMeadSettings.set(key, vals.default));
     this.parseDefaultsOverrides();
 
     grok.events.onViewRemoved.pipe(filter((v) => v.id === baseView.id), take(1)).subscribe(() => {
@@ -677,8 +678,6 @@ export class FittingView {
       );
 
       this.comparisonView.grid.columns.byName(RUN_NAME_COL_LABEL)!.visible = false;
-
-      nelderMeadSettingsVals.forEach((vals, key) => this.nelderMeadSettings.set(key, vals.default));
 
       const rbnPanels = [[this.helpIcon, this.runIcon, ...(this.options.acceptMode ? [this.acceptIcon] : [])]];
       this.comparisonView.setRibbonPanels(rbnPanels);
@@ -746,6 +745,8 @@ export class FittingView {
   private generateNelderMeadSettingsInputs(): void {
     const inputs: DG.InputBase[] = [];
 
+    let needsInitalUpdate = false
+
     nelderMeadSettingsVals.forEach((vals, key) => {
       const inp = ui.input.forProperty(DG.Property.fromOptions({
         name: nelderMeadCaptions.get(key),
@@ -758,6 +759,11 @@ export class FittingView {
       inp.addCaption(nelderMeadCaptions.get(key)!);
       inp.nullable = false;
 
+      if (this.defaultsOverrides[key] != null) {
+        this.nelderMeadSettings.set(key, this.defaultsOverrides[key]);
+        needsInitalUpdate = true;
+      }
+
       inp.onChanged.subscribe((value) => {
         this.nelderMeadSettings.set(key, value);
         this.updateApplicabilityState();
@@ -767,6 +773,9 @@ export class FittingView {
     });
 
     this.settingsInputs.set(METHOD.NELDER_MEAD, inputs);
+    if (needsInitalUpdate)
+      this.updateApplicabilityState();
+
   } // generateNelderMeadSettingsInputs
 
   /** Check correctness of the Nelder-Mead settings */
