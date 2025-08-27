@@ -30,6 +30,7 @@ export class MultiCurveViewer extends DG.JsViewer {
   showCurrentRowCurve: boolean = true;
   showMouseOverRowCurve: boolean = true;
   mergeColumnSeries: boolean = false;
+  showOutliers?: boolean = true;
   rows: number[] = [];
   data: IFitChartData = new FitChartData();
   logX?: boolean;
@@ -70,6 +71,7 @@ export class MultiCurveViewer extends DG.JsViewer {
     this.showCurrentRowCurve = this.bool('showCurrentRowCurve', true);
     this.showMouseOverRowCurve = this.bool('showMouseOverRowCurve', true);
     this.mergeColumnSeries = this.bool('mergeColumnSeries', false);
+    this.showOutliers = this.bool('showOutliers', true);
 
     for (const p of fitChartDataProperties)
       this.addProperty(p.name === 'mergeSeries' ? 'mergeCellSeries' : p.name, p.propertyType, p.defaultValue, {...p.options, showSlider: false});
@@ -168,6 +170,7 @@ export class MultiCurveViewer extends DG.JsViewer {
         series.pointColor = DG.Color.toHtml(DG.Color.getCategoricalColor(this.data.series?.length! > 20 ? 0 : i));
         series.fitLineColor = DG.Color.toHtml(DG.Color.getCategoricalColor(this.data.series?.length! > 20 ? 0 : i));
       }
+      series.showOutliers = this.showOutliers;
       series.showCurveConfidenceInterval = false;
       series.droplines = [];
       if (this.data.series?.length! > 20) {
