@@ -52,5 +52,6 @@
     "type": "git",
     "url": "git@github.com:datagrok-ai/public.git",
     "directory": "libraries/compute-utils"
-  }
+  },
+  "sideEffects": ["*.css", "./old-views/**/*.ts", "./old-components/**/*.ts"]
 }

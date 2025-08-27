@@ -43,5 +43,6 @@
     "type": "git",
     "url": "git@github.com:datagrok-ai/public.git",
     "directory": "libraries/webcomponents-vue"
-  }
+  },
+  "sideEffects": ["*.css"]
 }

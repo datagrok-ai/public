@@ -2,10 +2,12 @@ const path = require('path');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 const webpack = require('webpack');
 const FuncGeneratorPlugin = require('datagrok-tools/plugins/func-gen-plugin');
+const {BundleAnalyzerPlugin} = require('webpack-bundle-analyzer');
 
 module.exports = (env) => {
   const ENABLE_VUE_DEV_TOOLS = env.enable_vue_dev_tools;
   const mode = ENABLE_VUE_DEV_TOOLS ? 'development' : (env.NODE_ENV ?? 'production');
+  const stats = env.stats === 'true';
 
   if (ENABLE_VUE_DEV_TOOLS)
     console.warn('Building DEV ONLY Compute2 build with vue devtools support');
@@ -46,8 +48,13 @@ module.exports = (env) => {
         __VUE_PROD_DEVTOOLS__: 'false',
         __VUE_OPTIONS_API__: 'true',
       }),
-    new FuncGeneratorPlugin({outputPath: './src/package.g.ts'}),
-  ],
+      new BundleAnalyzerPlugin({
+        defaultSizes: 'parsed',
+        generateStatsFile: stats,
+        analyzerMode: 'disabled',
+      }),
+      new FuncGeneratorPlugin({outputPath: './src/package.g.ts'}),
+    ],
     devtool: 'source-map',
     externals: {
       'datagrok-api/dg': 'DG',
@@ -71,7 +78,6 @@ module.exports = (env) => {
       clean: true,
     },
     optimization: {
-      usedExports: true,
       concatenateModules: false,
     }
   };

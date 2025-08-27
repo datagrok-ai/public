@@ -26,5 +26,6 @@
     "type": "git",
     "url": "git@github.com:datagrok-ai/public.git",
     "directory": "libraries/dock-spawn-dg"
-  }
+  },
+  "sideEffects": ["*.css"]
 }
