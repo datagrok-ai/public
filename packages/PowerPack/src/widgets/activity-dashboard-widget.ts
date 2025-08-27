@@ -16,11 +16,9 @@ export class ActivityDashboardWidget extends DG.Widget {
   static RECENT_TIME_DAYS = 2;
   static SPOTLIGHT_ITEMS_LENGTH: 10;
 
+  static sharedEntityRegex: RegExp = /<span>#{x\.([a-f0-9-]+)\.".*?"}<\/span>/g;
   keywordsToIgnore: string[] = ['"data"', '"data w/', '"fitted data"', '"reduced data"', '"reduceddata"', '"sizingparams"', '"primaryfilter', '"trimmed data"', '"input data from imported file"', '"dataanalysisdf', '"clean data"'/*, 'Ran <span>#{x.'*/];
-  currentDate: dayjs.Dayjs = dayjs();
-  get cutoffDate(): dayjs.Dayjs {
-    return this.currentDate.subtract(ActivityDashboardWidget.RECENT_TIME_DAYS, 'day');
-  }
+  cutoffDate: dayjs.Dayjs = dayjs().subtract(ActivityDashboardWidget.RECENT_TIME_DAYS, 'day');
 
   favoritesEvents: DG.LogEvent[] = [];
 
@@ -88,7 +86,8 @@ export class ActivityDashboardWidget extends DG.Widget {
     const sharedUserIds: string[] = [];
     const sharedEntityIds: string[] = [];
     sharedCandidates.forEach((n) => {
-      const matches = [...n.text.matchAll(/<span>#{x\.([a-f0-9-]+)\.".*?"}<\/span>/g)];
+      ActivityDashboardWidget.sharedEntityRegex.lastIndex = 0;
+      const matches = [...n.text.matchAll(ActivityDashboardWidget.sharedEntityRegex)];
       if (matches.length > 1) {
         sharedUserIds.push(matches[0][1]);
         sharedEntityIds.push(matches[1][1]);
@@ -109,8 +108,18 @@ export class ActivityDashboardWidget extends DG.Widget {
 
     const byIdMap = new Map(allEntities.map((e) => [e.id, e]));
 
-    this.sharedUsers = sharedUserIds.map((id) => byIdMap.get(id)).filter((e): e is DG.User => e instanceof DG.User);
-    this.sharedWithMe = sharedEntityIds.map((id) => byIdMap.get(id)).filter((e): e is DG.Entity => !!e && !(e instanceof DG.User));
+    this.sharedUsers = [];
+    this.sharedWithMe = [];
+    for (let i = 0; i < sharedUserIds.length; i++) {
+      const user = byIdMap.get(sharedUserIds[i]);
+      if (user instanceof DG.User)
+        this.sharedUsers.push(user);
+    }
+    for (let i = 0; i < sharedEntityIds.length; i++) {
+      const ent = byIdMap.get(sharedEntityIds[i]);
+      if (!!ent && !(ent instanceof DG.User))
+        this.sharedWithMe.push(ent);
+    }
     this.recentEntities.length = 0;
     this.recentEntityTimes.length = 0;
     for (let i = 0; i < recentEntityIds.length; i++) {
@@ -156,10 +165,9 @@ export class ActivityDashboardWidget extends DG.Widget {
       const itemsToShow = usedItems.slice(0, ActivityDashboardWidget.SPOTLIGHT_ITEMS_LENGTH);
       const list = ui.list(itemsToShow);
       list.classList.add('power-pack-activity-widget-subwidget-list-content');
-      const listChildren = Array.from(list.children);
       for (let i = 0; i < itemsToShow.length; i++) {
         const item = itemsToShow[i];
-        const listChild = listChildren[i];
+        const listChild = list.children[i];
         const sharedNotification = this.sharedNotifications[i];
         if (item instanceof DG.Project || item instanceof DG.Notebook || item instanceof DG.Model || item instanceof DG.ViewLayout) {
           const parentElem = listChild.firstChild;
@@ -248,9 +256,8 @@ export class ActivityDashboardWidget extends DG.Widget {
   replaceMarkupSpans(container: HTMLElement, replacements: HTMLElement[], names: string[], time: dayjs.Dayjs): HTMLElement {
     const result = ui.span([], 'd4-markup');
     let replacementIndex = 0;
-    const children = Array.from(container.childNodes);
-    for (let i = 0; i < children.length; i++) {
-      const node = children[i];
+    for (let i = 0; i < container.childNodes.length; i++) {
+      const node = container.childNodes[i];
       if (node instanceof HTMLSpanElement && node.textContent?.trim()?.startsWith('#{x')) {
         if (replacementIndex < replacements.length) {
           const span = ui.span([ui.span([
@@ -304,9 +311,8 @@ export class ActivityDashboardWidget extends DG.Widget {
     }
 
     this.notificationsListRoot = ui.list(this.recentNotifications);
-    const childList = Array.from(this.notificationsListRoot.children);
-    for (let i = 0; i < childList.length; i++) {
-      const child = childList[i];
+    for (let i = 0; i < this.notificationsListRoot.children.length; i++) {
+      const child = this.notificationsListRoot.children[i];
       const item = this.recentNotifications[i];
       if (item.createdAt) {
         const timestamp = ui.time.shortTimestamp(item.createdAt);
@@ -357,15 +363,15 @@ export class ActivityDashboardWidget extends DG.Widget {
         const listChild = list.children[i];
         const text = listChild.textContent?.toLowerCase();
         if ((text?.includes('you were assigned report #') || text?.includes('you were assigned  report #')) && listChild.querySelector('.d4-markup label'))
-          listChild.querySelector('.d4-markup label').textContent = `${this.reportAmount} reports`;
+          listChild.querySelector('.d4-markup label')!.textContent = `${this.reportAmount} reports`;
       }
     }
   }
 
   cleanList(list: HTMLElement, aggregateUnique: boolean = true): HTMLElement {
     const uniqueEvents: Map<string, number> = new Map<string, number>();
-    const oldChildren = Array.from(list.children);
-    for (const child of oldChildren) {
+    for (let i = 0; i < list.children.length; i++) {
+      const child = list.children[i];
       const text = child.textContent;
       if (aggregateUnique && text) {
         if (uniqueEvents.has(text)) {
@@ -384,8 +390,8 @@ export class ActivityDashboardWidget extends DG.Widget {
       }
       child.classList.add('power-pack-activity-widget-row');
     }
-    const newChildren = Array.from(list.children);
-    for (const child of newChildren) {
+    for (let i = 0; i < list.children.length; i++) {
+      const child = list.children[i];
       const text = child.textContent;
       if (!text)
         continue;
