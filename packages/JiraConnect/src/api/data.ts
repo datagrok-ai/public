@@ -43,8 +43,17 @@ export async function loadIssues(host: string, creds: AuthCreds, index: number =
     }
     let requestOptions = buildRequestOptions(url, creds);
     let issues: JiraIssuesList | ErrorMessageResponse = await invokeApiFetch(url, requestOptions);
-    if ((issues as ErrorMessageResponse).errorMessages) 
-        issues = await loadIssues(host, creds, index, count, filterObject,  keys?.filter(e => (!(issues as ErrorMessageResponse).errorMessages[0].includes(e) && !e.split(/\s/).some(a=>(issues as ErrorMessageResponse).errorMessages[0].includes(a)))));
+
+    if ((issues as ErrorMessageResponse).errorMessages) {
+        issues = { maxResults: count, startAt: index, issues: [], total: 0 }
+        for(let issue of keys ?? []) {
+            let issueData = await loadIssueData(host, creds, issue)
+            if (issueData && (issueData as JiraIssue).key) {
+                issues.issues.push(issueData as JiraIssue);
+                issues.total = issues.total + 1;
+            }
+        }
+    }
     return issues as JiraIssuesList;
 }
 
