@@ -257,21 +257,19 @@ export class PackageFunctions {
     DG.GridCellRenderer.register(new ScatterPlotCellRenderer());
 
     // handling column remove/rename in sparkline columns
-    const viewersAdded: DG.Grid[] = [];
     grok.events.onViewerAdded.subscribe((args) => {
       if (args.args.viewer.type !== DG.VIEWER.GRID)
         return;
       const grid = args.args.viewer as DG.Grid;
-      viewersAdded[viewersAdded.length] = grid;
       const dataFrame = grid.dataFrame;
       const getSparklineSettings = (gridCol: DG.GridColumn) => (gridCol.settings ?? {})[gridCol.cellType] as SummarySettingsBase;
-      const findSummaryCols = (columnNames: string[]) => {
+      const findSummaryCols = (columns: (string | DG.Column)[]) => {
         const summaryCols: DG.GridColumn[] = [];
         for (let i = 1; i < grid.columns.length; i++) {
           const gridCol = grid.columns.byIndex(i)!;
           const sparklineSettings = getSparklineSettings(gridCol);
           if (sparklineTypes.includes(gridCol.cellType) && sparklineSettings?.columnNames?.length > 0 &&
-          columnNames.some((name) => sparklineSettings.columnNames.includes(name)))
+            columns.some((col) => sparklineSettings.columnNames.includes(col instanceof DG.Column ? col.name : col)))
             summaryCols[summaryCols.length] = gridCol;
         }
         return summaryCols;
