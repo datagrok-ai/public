@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -6,7 +7,8 @@ import {RulesManager} from './rule-manager';
 import {RuleCards} from './pt-rule-cards';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {
-   PackageFunctions} from '../../package';
+  PackageFunctions} from '../../package';
+import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
 
 export const RULES_PATH = 'System:AppData/SequenceTranslator/polytool-rules/';
 export const RULES_STORAGE_NAME = 'Polytool';
@@ -63,6 +65,15 @@ export type RuleReaction = {
   name: string
 }
 
+export type LinkRuleRowArgs = {
+  row?: number,
+  code: number,
+  firstMonomers: string,
+  secondMonomers: string,
+  firstLinkingGroup: number,
+  secondLinkingGroup: number
+}
+
 export class Rules {
   homodimerCode: string | null;
   heterodimerCode: string | null;
@@ -95,39 +106,54 @@ export class Rules {
       this.reactionRules.push(rules[j]);
   }
 
-  getLinkRulesDf(): DG.DataFrame {
+  getLinkRulesDf() {
     const length = this.linkRules.length;
     const codeCol = DG.Column.int(NAME_CODE, length);
     codeCol.setTag('friendlyName', 'Code');
     //ui.tooltip.bind(codeCol.root, 'Click to zoom');
     const firstMonomerCol = DG.Column.string(NAME_FIRST_MONOMERS, length);
+    firstMonomerCol.temp[MmcrTemps.fontSize] = 16;
     firstMonomerCol.setTag('friendlyName', 'First monomers');
     firstMonomerCol.semType = DG.SEMTYPE.MACROMOLECULE;
     PackageFunctions.applyNotationProviderForCyclized(firstMonomerCol, ',');
 
     const secondMonomerCol = DG.Column.string(NAME_SECOND_MONOMERS, length);
     secondMonomerCol.setTag('friendlyName', 'Second monomers');
+    secondMonomerCol.temp[MmcrTemps.fontSize] = 16;
     secondMonomerCol.semType = DG.SEMTYPE.MACROMOLECULE;
     PackageFunctions.applyNotationProviderForCyclized(secondMonomerCol, ',');
 
-    const firstLinkingGroup = DG.Column.int(NAME_FIRST_LINK, length);
-    firstLinkingGroup.setTag('friendlyName', 'First group');
-    const secondLinkingGroup = DG.Column.int(NAME_SECOND_LINK, length);
-    secondLinkingGroup.setTag('friendlyName', 'Second group');
+    const firstLinkingGroupCol = DG.Column.int(NAME_FIRST_LINK, length);
+    firstLinkingGroupCol.setTag('friendlyName', 'First group');
+    const secondLinkingGroupCol = DG.Column.int(NAME_SECOND_LINK, length);
+    secondLinkingGroupCol.setTag('friendlyName', 'Second group');
 
     for (let i = 0; i < length; i++) {
       codeCol.set(i, this.linkRules[i].code);
       firstMonomerCol.set(i, this.linkRules[i].firstMonomers.toString());
       secondMonomerCol.set(i, this.linkRules[i].secondMonomers.toString());
-      firstLinkingGroup.set(i, this.linkRules[i].firstLinkingGroup);
-      secondLinkingGroup.set(i, this.linkRules[i].secondLinkingGroup);
+      firstLinkingGroupCol.set(i, this.linkRules[i].firstLinkingGroup);
+      secondLinkingGroupCol.set(i, this.linkRules[i].secondLinkingGroup);
     }
 
     const res = DG.DataFrame.fromColumns([
-      codeCol, firstMonomerCol, secondMonomerCol, firstLinkingGroup, secondLinkingGroup
+      codeCol, firstMonomerCol, secondMonomerCol, firstLinkingGroupCol, secondLinkingGroupCol
     ]);
 
-    return res;
+    const addNewRow = (rowObj: LinkRuleRowArgs) => {
+      if (rowObj.row != undefined && rowObj.row < res.rowCount && rowObj.row >= 0) {
+        codeCol.set(rowObj.row, rowObj.code);
+        firstMonomerCol.set(rowObj.row, rowObj.firstMonomers);
+        secondMonomerCol.set(rowObj.row, rowObj.secondMonomers);
+        firstLinkingGroupCol.set(rowObj.row, rowObj.firstLinkingGroup);
+        secondLinkingGroupCol.set(rowObj.row, rowObj.secondLinkingGroup);
+      } else {
+        const {code, firstMonomers, secondMonomers, firstLinkingGroup, secondLinkingGroup} = rowObj;
+        res.rows.addNew([code, firstMonomers ?? '', secondMonomers ?? '', firstLinkingGroup ?? 1, secondLinkingGroup ?? 2]);
+      }
+    };
+
+    return {res, addNewRow};
   }
 
   async getLinkCards(): Promise<RuleCards[]> {

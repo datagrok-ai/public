@@ -1,7 +1,8 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {getMonomerPairs, getRules, Rules} from './pt-rules';
+import {getMonomerPairs, getRules, LinkRuleRowArgs, Rules} from './pt-rules';
 import {_package, PackageFunctions} from '../../package';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {doPolyToolConvert} from './pt-conversion';
@@ -24,13 +25,16 @@ export class RulesManager {
   heteroDimerInput: DG.InputBase;
 
   linkCards: RuleCards[];
+  addLinkRulesFunc: (rowObj: LinkRuleRowArgs) => void;
 
   // every rule set will have its editor instance
   private static instances: Record<string, RulesManager> = {};
 
   protected constructor(rules: Rules, fileName: string) {
     this.rules = rules;
-    this.linkRuleDataFrame = this.rules.getLinkRulesDf();
+    const linksRes = this.rules.getLinkRulesDf();
+    this.linkRuleDataFrame = linksRes.res;
+    this.addLinkRulesFunc = linksRes.addNewRow;
 
     this.synthRuleDataFrame = this.rules.getSynthesisRulesDf();
     this.fileName = fileName;
@@ -179,10 +183,26 @@ export class RulesManager {
   }
 
   async getForm() {
-    inputsTabControl: DG.TabControl;
+    const gridOptions: Partial<DG.IGridSettings> = {showAddNewRowIcon: false, allowEdit: false, rowHeight: 60};
+
+    const linksGrid = this.linkRuleDataFrame.plot.grid(gridOptions);
+    linksGrid.onCellDoubleClick.subscribe(() => {
+      if (!linksGrid.dataFrame || linksGrid.dataFrame.currentRowIdx == -1 || linksGrid.dataFrame.currentRowIdx == undefined)
+        return;
+      const idx = linksGrid.dataFrame.currentRowIdx;
+      const editArgs: LinkRuleRowArgs = {
+        row: idx,
+        code: this.linkRuleDataFrame.get('code', idx),
+        firstMonomers: this.linkRuleDataFrame.get('firstMonomers', idx),
+        secondMonomers: this.linkRuleDataFrame.get('secondMonomers', idx),
+        firstLinkingGroup: this.linkRuleDataFrame.get('firstLinkingGroup', idx),
+        secondLinkingGroup: this.linkRuleDataFrame.get('secondLinkingGroup', idx),
+      };
+      this.getAddNewLinkRuleDialog(editArgs);
+    });
 
     const linksGridDiv = this.createGridDiv('Rules',
-      this.linkRuleDataFrame.plot.grid({showAddNewRowIcon: true}),
+      linksGrid,
       'specification for monomers to link and linking positions');
     const linkExamples = this.createGridDiv('Examples', await this.getLinkExamplesGrid(),
       'specification for monomers to link and linking positions');
@@ -205,7 +225,7 @@ export class RulesManager {
     this.linkRuleDataFrame.currentRowIdx = 0;
     this.linkRuleDataFrame.onCurrentRowChanged.subscribe(async () => {
       const idx = this.linkRuleDataFrame.currentRowIdx;
-      if (idx !== -1) {
+      if (idx !== -1 && idx != undefined) {
         ui.empty(gridDiv);
         gridDiv.append(ui.splitV([
           ui.box(
@@ -214,10 +234,9 @@ export class RulesManager {
           ),
           this.linkCards[idx].root,
         ]));
+        this.linkCards[idx].render();
+        await this.linkCards[idx].reset();
       }
-
-      this.linkCards[idx].render();
-      await this.linkCards[idx].reset();
     });
 
     const links = ui.splitH([linksGridDiv, gridDiv], null, true);
@@ -260,7 +279,7 @@ export class RulesManager {
     const addButton = ui.button('Add rule', () => {
       const currentTab = inputsTabControl.currentPane.name;
       if (currentTab == TAB_LINKS)
-        this.linkRuleDataFrame.rows.addNew();
+        this.getAddNewLinkRuleDialog();
       else if (currentTab == TAB_REACTIONS)
         this.synthRuleDataFrame.rows.addNew();
     });
@@ -271,6 +290,40 @@ export class RulesManager {
     panel.style.alignItems = 'center';
 
     return inputsTabControl.root;
+  }
+
+  getAddNewLinkRuleDialog(preset?: Partial<LinkRuleRowArgs>): void {
+    const codeInput = ui.input.int('Code', {nullable: false, value: preset?.code});
+    const firstMonomersInput = ui.input.string('First monomers', {placeholder: 'E.g. C,D,E', value: preset?.firstMonomers,
+      tooltipText: 'Comma separated list of first monomers applicable for the rule. If left empty, all monomers will be considered', nullable: true});
+    const secondMonomersInput = ui.input.string('Second monomers', {placeholder: 'E.g. C,D,E', value: preset?.secondMonomers,
+      tooltipText: 'Comma separated list of second monomers applicable for the rule. If left empty, all monomers will be considered', nullable: true});
+    const firstLinkingGroup = preset?.firstLinkingGroup ? `R${preset.firstLinkingGroup}` : 'R3';
+    const secondLinkingGroup = preset?.secondLinkingGroup ? `R${preset.secondLinkingGroup}` : 'R3';
+    const firstLinkingGroupInput = ui.input.choice('First linking group', {value: firstLinkingGroup, items: ['R1', 'R2', 'R3', 'R4'],
+      tooltipText: 'Specifies which R-group of the first monomer will be used for linking', nullable: false});
+    const secondLinkingGroupInput = ui.input.choice('Second linking group', {value: secondLinkingGroup, items: ['R1', 'R2', 'R3', 'R4'],
+      tooltipText: 'Specifies which R-group of the second monomer will be used for linking', nullable: false});
+    ui.dialog('Add new link rule')
+      .add(codeInput)
+      .add(firstMonomersInput)
+      .add(secondMonomersInput)
+      .add(firstLinkingGroupInput)
+      .add(secondLinkingGroupInput)
+      .onOK(async () => {
+        // we rely on validation of inputs by DG inputs
+        const code = codeInput.value!;
+        const firstMonomers = (firstMonomersInput.value ?? '').split(',').map((s) => s.trim()).filter((s) => s).join(',');
+        const secondMonomers = (secondMonomersInput.value ?? '').split(',').map((s) => s.trim()).filter((s) => s).join(',');
+        const firstLinkingGroup = parseInt(firstLinkingGroupInput.value!.substring(1));
+        const secondLinkingGroup = parseInt(secondLinkingGroupInput.value!.substring(1));
+        this.addLinkRulesFunc({code, firstMonomers: firstMonomers ?? '', secondMonomers: secondMonomers ?? '',
+          firstLinkingGroup, secondLinkingGroup, row: preset?.row});
+
+        this.rules.setLinkRules(this.linkRuleDataFrame);
+        this.linkCards = await this.rules.getLinkCards();
+        this.save();
+      }).show();
   }
 }
 

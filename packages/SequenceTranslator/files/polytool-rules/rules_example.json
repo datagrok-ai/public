@@ -4,13 +4,13 @@
   "linkRules": [
     {
       "firstMonomers": [
-        "NH2"
-      ],
-      "secondMonomers": [
         "D"
       ],
-      "firstLinkingGroup": "2",
-      "secondLinkingGroup": "3",
+      "secondMonomers": [
+        "NH2"
+      ],
+      "firstLinkingGroup": "3",
+      "secondLinkingGroup": "2",
       "code": "2"
     },
     {
