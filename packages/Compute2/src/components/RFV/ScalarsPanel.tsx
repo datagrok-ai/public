@@ -23,7 +23,7 @@ export const ScalarsPanel = Vue.defineComponent({
     },
     validationStates: {
       type: Object as Vue.PropType<Record<string, ValidationResult>>,
-    }
+    },
   },
   setup(props) {
     Vue.onRenderTriggered((event) => {

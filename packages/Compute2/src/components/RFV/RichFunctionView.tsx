@@ -57,7 +57,7 @@ const DEFAULT_FLOAT_PRECISION = 4;
 
 const getScalarContent = (funcCall: DG.FuncCall, prop: DG.Property) => {
   const scalarValue = funcCall.outputs[prop.name];
-  let formattedScalarValue = undefined;
+  let formattedScalarValue = scalarValue;
 
   if (prop.propertyType === DG.TYPE.FLOAT && scalarValue != null) {
     if (prop.options.format)

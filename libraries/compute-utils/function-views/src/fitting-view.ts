@@ -26,7 +26,7 @@ import {IVP, IVP2WebWorker, PipelineCreator} from '@datagrok/diff-grok';
 import {getFittedParams} from './fitting/diff-studio/nelder-mead';
 import {getNonSimilar} from './fitting/similarity-utils';
 import {ScalarsFitRadar} from './fitting/scalars-fit-radar';
-import { getPropViewers } from '../../shared-utils/utils';
+import {getPropViewers} from '../../shared-utils/utils';
 
 const colors = DG.Color.categoricalPalette;
 const colorsCount = colors.length;
@@ -745,7 +745,7 @@ export class FittingView {
   private generateNelderMeadSettingsInputs(): void {
     const inputs: DG.InputBase[] = [];
 
-    let needsInitalUpdate = false
+    let needsInitalUpdate = false;
 
     nelderMeadSettingsVals.forEach((vals, key) => {
       const inp = ui.input.forProperty(DG.Property.fromOptions({
@@ -775,7 +775,6 @@ export class FittingView {
     this.settingsInputs.set(METHOD.NELDER_MEAD, inputs);
     if (needsInitalUpdate)
       this.updateApplicabilityState();
-
   } // generateNelderMeadSettingsInputs
 
   /** Check correctness of the Nelder-Mead settings */

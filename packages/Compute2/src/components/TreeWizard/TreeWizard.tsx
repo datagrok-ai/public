@@ -109,10 +109,10 @@ export const TreeWizard = Vue.defineComponent({
     });
     const showReturn = Vue.computed(() => props.showReturn);
     const reportBugUrl = computedAsync<string | undefined>(async () => {
-      return (await providerFunc.value?.package?.getProperties() as any)?.REPORT_BUG_URL
+      return (await providerFunc.value?.package?.getProperties() as any)?.REPORT_BUG_URL;
     });
     const reqFeatureUrl = computedAsync<string | undefined>(async () => {
-      return (await providerFunc.value?.package?.getProperties() as any)?.REQUEST_FEATURE_URL
+      return (await providerFunc.value?.package?.getProperties() as any)?.REQUEST_FEATURE_URL;
     });
 
     ////
