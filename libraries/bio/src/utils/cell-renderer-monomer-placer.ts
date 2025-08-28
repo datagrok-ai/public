@@ -480,7 +480,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
   ) {
     // for cases when we render it on somewhere other than grid, gridRow might be null or incorrect (set to 0).
     //for this case we can just recalculate split sequence without caching
-    const isRenderedOnGrid = gridCell.grid?.canvas === g.canvas;
+    const isRenderedOnGrid = gridCell.grid?.dart && gridCell.grid?.canvas === g.canvas;
 
     if (!this.seqHelper) return;
     const tableCol = this.tableCol;
