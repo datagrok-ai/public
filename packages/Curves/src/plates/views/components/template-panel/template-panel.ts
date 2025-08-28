@@ -3,9 +3,11 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import {PlateStateManager} from '../../shared/plate-state-manager';
 import {Subscription} from 'rxjs';
-import {renderValidationResults} from '../../plates-validation-panel';
+// import {renderValidationResults} from '../../plates-validation-panel';
 import {PlateTemplate, plateTemplates, plateTypes} from '../../../plates-crud';
 import {PlateWidget} from '../../../../plate/plate-widget';
+import { renderMappingEditor, TargetProperty} from '../mapping-editor/mapping-editor';
+import {renderValidationResults} from '../../plates-validation-panel';
 /**
  * Creates a consistent two-column form row (Label on left, Input on right).
  * @param label The text for the label.
@@ -27,10 +29,10 @@ export class TemplatePanel {
   private wellPropsHeaderHost: HTMLElement;
   private subscriptions: Subscription[] = [];
 
-  // Hosts for the new Import section
   private plateIdentifierHost: HTMLElement;
   private replicateIdentifierHost: HTMLElement;
   private plateNumberHost: HTMLElement;
+
 
   constructor(
     private stateManager: PlateStateManager,
@@ -42,7 +44,6 @@ export class TemplatePanel {
     this.validationHost = ui.divV([]);
     this.wellPropsHeaderHost = ui.div();
 
-    // Initialize new hosts
     this.plateIdentifierHost = ui.div([]);
     this.replicateIdentifierHost = ui.div([]);
     this.plateNumberHost = ui.div([]);
@@ -52,7 +53,7 @@ export class TemplatePanel {
   }
 
   private buildPanel(): void {
-    const importSection = this.createImportSection(); // New section
+    const importSection = this.createImportSection();
     const templateSection = this.createTemplateSection();
     const platePropsSection = this.createCollapsiblePanel(
       ui.h2('Plate Properties'),
@@ -65,7 +66,7 @@ export class TemplatePanel {
       true
     );
 
-    this.root.appendChild(importSection); // Add new section to the top
+    this.root.appendChild(importSection);
     this.root.appendChild(templateSection);
     this.root.appendChild(platePropsSection);
     this.root.appendChild(wellPropsSection);
@@ -85,7 +86,6 @@ export class TemplatePanel {
       indexControls
     ]);
 
-    // Initially populate the controls (they will be empty)
     this.updateIdentifierControls();
 
     return this.createCollapsiblePanel(ui.h2('Import'), content, true);
@@ -98,7 +98,6 @@ export class TemplatePanel {
         try {
           const df = DG.DataFrame.fromCsv(await file.readAsString());
           await this.stateManager.loadDataFrame(df);
-          // After loading the data, update the dropdowns with the new columns
           this.updateIdentifierControls();
         } catch (e: any) {
           grok.shell.error(`Failed to parse CSV: ${e.message}`);
@@ -140,7 +139,6 @@ export class TemplatePanel {
       },
     });
     ui.tooltip.bind(choiceInput.root, 'Select the column that identifies individual plates in the file.');
-    // Use the new helper to create a styled row
     this.plateIdentifierHost.appendChild(createFormRow('Plate Index', choiceInput));
   }
 
@@ -149,7 +147,7 @@ export class TemplatePanel {
     const df = this.stateManager.sourceDataFrame;
     if (!df) return;
 
-    const choiceInput = ui.input.choice('', { // Label is now empty
+    const choiceInput = ui.input.choice('', {
       value: this.stateManager.replicateIdentifierColumn,
       items: [null, ...df.columns.names()],
       onValueChanged: (newColumn: string | null) => {
@@ -158,7 +156,6 @@ export class TemplatePanel {
       },
     });
     ui.tooltip.bind(choiceInput.root, 'Optional: Select the column that identifies technical replicates.');
-    // Use the new helper to create a styled row
     this.replicateIdentifierHost.appendChild(createFormRow('Replicate Index', choiceInput));
   }
 
@@ -167,7 +164,7 @@ export class TemplatePanel {
     const df = this.stateManager.sourceDataFrame;
     if (!df) return;
 
-    const choiceInput = ui.input.choice('', { // Label is now empty
+    const choiceInput = ui.input.choice('', {
       value: this.stateManager.plateNumberColumn,
       items: [null, ...df.columns.names()],
       onValueChanged: (newColumn: string | null) => {
@@ -176,11 +173,8 @@ export class TemplatePanel {
       },
     });
     ui.tooltip.bind(choiceInput.root, 'Optional: Select the column that identifies the plate number.');
-    // Use the new helper to create a styled row
     this.plateNumberHost.appendChild(createFormRow('Plate Number', choiceInput));
   }
-
-  // --- EXISTING METHODS (UNCHANGED OR SLIGHTLY MODIFIED) ---
 
 
   private createTemplateSection(): HTMLElement {
@@ -192,7 +186,7 @@ export class TemplatePanel {
       {style: {alignItems: 'center', gap: '8px', flexGrow: '1'}}
     );
 
-    const plateTypeSelector = ui.input.choice('', { // Label is now empty
+    const plateTypeSelector = ui.input.choice('', {
       value: this.stateManager.currentPlateType.name,
       items: plateTypes.map((pt) => pt.name),
       onValueChanged: (v) => {
@@ -202,7 +196,7 @@ export class TemplatePanel {
       },
     });
 
-    const plateTemplateSelector = ui.input.choice('', { // Label is now empty
+    const plateTemplateSelector = ui.input.choice('', {
       value: this.stateManager.currentTemplate.name,
       items: plateTemplates.map((pt) => pt.name),
       onValueChanged: (v) => {
@@ -211,12 +205,11 @@ export class TemplatePanel {
       },
     });
 
-    // Create the rows using the new helper function
     const plateTypeRow = createFormRow('Plate Type', plateTypeSelector);
     const templateRow = createFormRow('Template', plateTemplateSelector);
 
     const templateContent = ui.divV(
-      [plateTypeRow, templateRow], // Add the new rows to the content
+      [plateTypeRow, templateRow],
       'left-panel-section-content'
     );
 
@@ -228,7 +221,6 @@ export class TemplatePanel {
     content: HTMLElement,
     expanded: boolean = true
   ): HTMLElement {
-    // ... (this.createCollapsiblePanel method remains completely unchanged) ...
     const icon = ui.iconFA(expanded ? 'chevron-down' : 'chevron-right', () => {
       const isExpanded = content.style.display !== 'none';
       content.style.display = isExpanded ? 'none' : 'block';
@@ -254,33 +246,25 @@ export class TemplatePanel {
 
   private subscribeToStateChanges(): void {
     const sub = this.stateManager.onStateChange.subscribe((event) => {
-      // The identifier controls are now updated by the file input directly,
-      // so no changes are needed here for them.
       this.updatePanelContent();
     });
     this.subscriptions.push(sub);
   }
 
   private updatePanelContent(): void {
-    // ... (this.updatePanelContent method remains completely unchanged) ...
     const template = this.stateManager.currentTemplate;
     const activePlate = this.stateManager.activePlate;
     const state = this.stateManager.currentState;
 
     ui.empty(this.platePropertiesHost);
-    ui.empty(this.validationHost);
     ui.empty(this.wellPropsHeaderHost);
 
     if (activePlate) {
-      const handleMapping = (sourceColumn: string, targetProperty: string) => {
+      // Define direct callbacks to the state manager, like the original implementation
+      const handleMapping = (targetProperty: string, sourceColumn: string) => {
         const currentState = this.stateManager.currentState;
-        if (currentState) {
-          this.stateManager.remapProperty(
-            currentState.activePlateIdx,
-            targetProperty,
-            sourceColumn
-          );
-        }
+        if (currentState)
+          this.stateManager.remapProperty(currentState.activePlateIdx, targetProperty, sourceColumn);
       };
 
       const handleUndo = (targetProperty: string) => {
@@ -289,43 +273,56 @@ export class TemplatePanel {
           this.stateManager.undoMapping(currentState.activePlateIdx, targetProperty);
       };
 
-      renderValidationResults(
-        this.validationHost,
-        activePlate.plate,
-        template,
-        handleMapping,
-        activePlate.reconciliationMap,
-        handleUndo
-      );
+      // Prepare data for the renderer
+      const sourceColumns = activePlate.plate.data.columns.names();
+      const REQUIRED_ANALYSIS_FIELDS = [
+        {name: 'Activity', required: true},
+        {name: 'Concentration', required: true},
+        {name: 'SampleID', required: true},
+      ];
+      const MOCKED_REQUIRED_TEMPLATE_FIELDS = ['Target', 'Assay Format'];
+      const templateProps: TargetProperty[] = template.wellProperties
+        .filter((p) => p && p.name)
+        .map((p) => ({name: p.name!, required: MOCKED_REQUIRED_TEMPLATE_FIELDS.includes(p.name!)}));
+      const allTargetProps: TargetProperty[] = [...templateProps, ...REQUIRED_ANALYSIS_FIELDS];
 
+      // Call the stateless renderer function
+      renderMappingEditor(this.validationHost, {
+        targetProperties: allTargetProps,
+        sourceColumns: sourceColumns,
+        mappings: activePlate.reconciliationMap,
+        onMap: handleMapping,
+        onUndo: handleUndo,
+      });
+
+      // Plate properties logic remains the same...
       const plateProperties = template.plateProperties
         .filter((p) => p && p.name && p.type)
         .map((p) => DG.Property.js(p.name!, p.type! as DG.TYPE));
-
-      if (plateProperties.length > 0) {
-        const form = ui.input.form(activePlate.plate.details || {}, plateProperties);
-        this.platePropertiesHost.appendChild(form);
-      }
+      if (plateProperties.length > 0)
+        this.platePropertiesHost.appendChild(ui.input.form(activePlate.plate.details || {}, plateProperties));
     } else {
+      // Handle the "no plate" case by calling the renderer with empty data
+      renderMappingEditor(this.validationHost, {
+        targetProperties: [],
+        sourceColumns: [],
+        mappings: new Map(),
+        onMap: () => {},
+        onUndo: () => {},
+      });
+
+      // Plate properties logic remains the same...
       const templateProperties = template.plateProperties
         .filter((p) => p && p.name && p.type)
         .map((p) => DG.Property.js(p.name!, p.type! as DG.TYPE));
-
-      if (templateProperties.length > 0) {
-        const form = ui.input.form({}, templateProperties);
-        this.platePropertiesHost.appendChild(form);
-      }
-
-      this.validationHost.appendChild(
-        ui.divText('Import a CSV file to see validation results.', 'info-message')
-      );
+      if (templateProperties.length > 0)
+        this.platePropertiesHost.appendChild(ui.input.form({}, templateProperties));
     }
 
     this.updateWellPropsHeader(template, state);
   }
 
   private updateWellPropsHeader(template: PlateTemplate, state: any): void {
-    // ... (this.updateWellPropsHeader method remains completely unchanged) ...
     const manageMappingsButton = ui.button(
       ui.iconFA('exchange-alt'),
       this.onManageMappings,
@@ -378,5 +375,6 @@ export class TemplatePanel {
 
   destroy(): void {
     this.subscriptions.forEach((sub) => sub.unsubscribe());
+    // No need to destroy a mapping editor instance anymore
   }
 }

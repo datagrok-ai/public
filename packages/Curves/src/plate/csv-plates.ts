@@ -2,10 +2,6 @@
 import * as DG from 'datagrok-api/dg';
 import {Plate} from './plate';
 
-/**
- * A new interface to define the structure for a processed plate file.
- * This will be used throughout the application.
- */
 export interface PlateFile {
   plate: Plate;
   commonProperties: Map<string, any>;

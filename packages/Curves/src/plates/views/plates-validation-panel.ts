@@ -25,10 +25,9 @@ function createDynamicMappingRow(
       onMap(sourceCol, propName);
   };
 
-  // --- FIX: Use onValueChanged instead of onChanged for string input ---
   const propInput = ui.input.string('', {
     placeholder: 'Property name...',
-    onValueChanged: (value) => { // Correct property name
+    onValueChanged: (value) => {
       propName = value;
       tryApplyMapping();
     }

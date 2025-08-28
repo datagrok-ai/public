@@ -25,6 +25,21 @@ export class PlateStateManager {
     this._currentTemplate = initialTemplate;
     this._currentPlateType = initialPlateType;
   }
+  // Add this method to the PlateStateManager class in plate-state-manager.ts
+
+  public setMappings(plateIndex: number, newMappings: Map<string, string>): void {
+    const state = this.currentState;
+    if (!state || !state.plates[plateIndex]) return;
+
+    const plateFile = state.plates[plateIndex];
+    plateFile.reconciliationMap = new Map(newMappings); // Replace the old map
+
+    this.stateChange$.next({
+      type: 'mapping-changed',
+      plateIndex,
+      plate: plateFile,
+    });
+  }
 
   get onStateChange(): Observable<PlateStateChangeEvent> {
     return this.stateChange$.asObservable();
@@ -62,12 +77,9 @@ export class PlateStateManager {
 
     console.log('[DEBUG] Mapping plate data with reconciliation map:', map);
 
-    // The map is target -> source, so we need to check each source column
-    // to see if it should be renamed to a target
     const newColumns: DG.Column[] = [];
     const processedSources = new Set<string>();
 
-    // Process each entry in the reconciliation map
     map.forEach((sourceColName, targetColName) => {
       const sourceCol = sourceDf.col(sourceColName);
       if (sourceCol) {
@@ -79,7 +91,6 @@ export class PlateStateManager {
       }
     });
 
-    // Add any unmapped columns with their original names
     for (const sourceCol of sourceDf.columns) {
       if (!processedSources.has(sourceCol.name)) {
         const newCol = sourceCol.clone();
@@ -143,10 +154,9 @@ export class PlateStateManager {
     };
 
     currentState.plates = [];
-    // Loop over the new result structure
     for (const parsedResult of parsedPlateResults) {
       const dummyFile = {
-        name: `Plate: ${parsedResult.plate.barcode}`, // <-- FIX: Use parsedResult.plate
+        name: `Plate: ${parsedResult.plate.barcode}`,
         fullPath: '',
       } as DG.FileInfo;
 
@@ -156,19 +166,17 @@ export class PlateStateManager {
         'Activity', 'Concentration', 'SampleID',
       ].filter((p): p is string => p !== null && p !== undefined);
 
-      // FIX: Use the correct dataframe from the parsed result
       const sourceCols = new Set(parsedResult.plate.data.columns.names());
       for (const prop of allRequiredProps) {
         if (sourceCols.has(prop))
           reconciliationMap.set(prop, prop);
       }
 
-      // Assemble the final PlateFile object according to the updated interface
       currentState.plates.push({
         plate: parsedResult.plate,
         file: dummyFile,
         reconciliationMap,
-        commonProperties: parsedResult.commonProperties, // <-- Add the new properties
+        commonProperties: parsedResult.commonProperties,
       });
     }
 

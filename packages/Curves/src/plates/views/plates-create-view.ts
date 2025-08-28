@@ -32,15 +32,12 @@ export function createPlatesView(): DG.View {
   const stateManager = new PlateStateManager(plateTemplate, plateType);
   const subscriptions: Subscription[] = [];
 
-  // Create plate widget
   const plateWidget = new PlateWidget();
   plateWidget.editable = true;
   plateWidget.plate = new Plate(plateType.rows, plateType.cols);
 
-  // Use Datagrok's native TabControl for Wells/Analysis
   const tabControl = ui.tabControl();
 
-  // Function to create the DRC analysis content
   const createAnalysisContent = () => {
     const activePlate = stateManager.activePlate;
     if (activePlate) {
@@ -97,16 +94,13 @@ export function createPlatesView(): DG.View {
     }
   };
 
-  // Add the Wells and Analysis panes
   tabControl.addPane('Wells', () => {
-    // Ensure the plate widget takes full width and height
     plateWidget.root.style.width = '100%';
     plateWidget.root.style.height = '100%';
     return plateWidget.root;
   });
   tabControl.addPane('Analysis', () => createAnalysisContent());
 
-  // Fixes for the Datagrok tabs layout
   tabControl.root.style.width = '100%';
   tabControl.root.style.flexGrow = '1';
   tabControl.root.style.display = 'flex';
@@ -141,7 +135,6 @@ export function createPlatesView(): DG.View {
     () => handleManageMappings()
   );
 
-  // Subscribe to state changes and update the plate widget
   stateManager.onStateChange.subscribe(async (event) => {
     console.log('[DEBUG] State change event:', event);
     const activePlate = stateManager.activePlate;
@@ -161,17 +154,14 @@ export function createPlatesView(): DG.View {
     if (plateWidget.grid)
       plateWidget.grid.invalidate();
 
-    // If analysis view is active, refresh it when mappings change
     if (tabControl.currentPane.name === 'Analysis' && (event.type === 'mapping-changed' || event.type === 'plate-selected')) {
       console.log('[DEBUG] Refreshing DRC analysis view due to mapping change');
-      // Re-create the analysis content to force a full refresh
       const newContent = createAnalysisContent();
       ui.empty(tabControl.getPane('Analysis').content);
       tabControl.getPane('Analysis').content.appendChild(newContent);
     }
   });
 
-  // Create the right panel with proper flex distribution
   const rightPanel = ui.divV([
     plateGridManager.root,
     tabControl.root,
@@ -184,10 +174,8 @@ export function createPlatesView(): DG.View {
 
   view.root.appendChild(mainLayout);
 
-  // Initialize with wells view
   tabControl.currentPane = tabControl.getPane('Wells');
 
-  // Initialize with the first template
   stateManager.setTemplate(plateTemplates[0]);
 
   view.setRibbonPanels([[
@@ -232,7 +220,6 @@ export function createPlatesView(): DG.View {
     }),
   ]]);
 
-  // --- NEW: Global File Import Interceptor ---
   const handleDroppedFile = async (file: File) => {
     const pi = DG.TaskBarProgressIndicator.create(`Importing ${file.name}...`);
     try {
@@ -248,34 +235,28 @@ export function createPlatesView(): DG.View {
   };
 
   const fileImportSub = grok.events.onFileImportRequest.subscribe((args) => {
-    // 1. Context Check: Only handle if our view is active.
     if (grok.shell.v.name !== view.name)
       return;
 
     const file = args.args.file;
     if (!file) return;
 
-    // 2. File Type Check: Ensure it's a CSV file.
     if (!file.name.toLowerCase().endsWith('.csv')) {
-      // Optional: Inform user if they drop a wrong file type
       grok.shell.warning(`Only .csv files can be dropped here. To open other files, navigate away from the 'Create Plate' view.`);
       args.preventDefault(); // Prevent opening other files even if they are valid Datagrok tables
       return;
     }
 
-    // 3. Prevent Default Behavior for this file.
     args.preventDefault();
 
-    // 4. Route to our custom handler.
     handleDroppedFile(file);
   });
   subscriptions.push(fileImportSub);
 
 
-  // --- Updated View Detach Logic ---
   const originalDetach = view.detach.bind(view);
   view.detach = () => {
-    subscriptions.forEach((sub) => sub.unsubscribe()); // <-- Clean up the subscription
+    subscriptions.forEach((sub) => sub.unsubscribe());
     stateManager.destroy();
     templatePanel.destroy();
     plateGridManager.destroy();

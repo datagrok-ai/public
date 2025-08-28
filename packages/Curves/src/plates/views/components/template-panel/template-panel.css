@@ -1,11 +1,6 @@
-/* === Template Panel Styles === */
-/* === Left Panel Sections === */
-/* === FIX: Force a two-column grid on inputs in the top sections === */
 .left-panel-section-content .d4-input-base { display: grid !important; grid-template-columns: 1fr 1fr; align-items: center; gap: 12px; }
 .left-panel-section-content .d4-input-label { margin-bottom: 0 !important; }
-/* === FIX: Remove legacy styling that conflicts with the grid === */
 .import-section-content .d4-input-root { flex-direction: row; }
-/* === Validation Table Styles === */
 .plate-validation-table-header { padding-bottom: 8px; border-bottom: 1px solid var(--grey-2); }
 .plate-validation-table-row .d4-input-root { width: 100%; margin: 0; }
 .mapping-input-container { position: relative; width: 100%; display: flex; align-items: center; }
@@ -13,14 +8,11 @@
 .plate-validation-table-row:hover .mapping-undo-icon { visibility: visible; }
 .mapping-undo-icon:hover { color: var(--red-3); }
 .required-asterisk { color: var(--red-3); margin-left: 2px; font-weight: bold; }
-/* === Template Panel Styles === */
 .template-panel { flex-shrink: 0; width: 410px; max-width: 450px; display: flex; flex-direction: column; gap: 1px; overflow: hidden; border-right: 1px solid var(--grey-2); padding-right: 12px; }
-/* === Left Panel Sections === */
 .left-panel-section { display: flex; flex-direction: column; gap: 0; border-bottom: 1px solid var(--grey-1); margin-bottom: 12px; }
 .left-panel-section > .d4-div-h { display: flex; align-items: center; padding: 8px 4px; }
 .left-panel-section h2 { margin: 0 !important; font-size: 18px; font-weight: 500; color: var(--grey-8); text-transform: none; letter-spacing: normal; line-height: 1.2; }
 .left-panel-section-content { display: flex; flex-direction: column; gap: 12px; padding: 8px 0 16px 0; }
-/* === NEW: This is the rule that creates the two-column layout === */
 .template-panel-form-row { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 12px; }
 .template-panel-form-row .d4-input-root { width: 100%; }
 .plate-import-button > button {
@@ -28,9 +20,7 @@
   justify-content: center !important;
   gap: 8px;
 }
-/* === Validation Table Styles (unchanged) === */
 .plate-validation-table-header, .plate-validation-table-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 4px 0; align-items: center; }
-/* Make the entire file input component and its children full-width */
 .plate-import-input { width: 100%; }
 .plate-import-input .ui-input-editor { width: 100%; }
 .plate-import-input button { width: 100%; justify-content: center !important; gap: 8px; }
