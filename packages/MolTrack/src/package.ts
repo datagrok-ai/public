@@ -200,10 +200,17 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
       .replace(/\b\w/g, (c) => c.toUpperCase());
 
     appNode.getOrCreateGroup('Search').item(formattedScope).onSelected.subscribe(async () => {
-      const data = await grok.functions.call('MolTrack:retrieveEntity', { scope });
-      const tv = grok.shell.addTablePreview(data);
-      tv.name = formattedScope;
-      createSearchPanel(tv, scope as Scope);
+      const df = DG.DataFrame.create();
+      const view = grok.shell.addTablePreview(df);
+      view.name = formattedScope;
+      ui.setUpdateIndicator(view.root, true, `Loading ${formattedScope.toLowerCase()}...`);
+
+      const data: DG.DataFrame = await grok.functions.call('MolTrack:retrieveEntity', { scope });
+      view.dataFrame = data;
+      view.dataFrame.name = formattedScope;
+
+      createSearchPanel(view, scope as Scope);
+      ui.setUpdateIndicator(view.root, false);
     });
   }
 
