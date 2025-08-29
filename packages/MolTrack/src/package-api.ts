@@ -100,11 +100,15 @@ export namespace funcs {
     return await grok.functions.call('MolTrack:RegisterBulk', { csvFile, scope, mapping, errorHandling });
   }
 
-  export async function searchTest(): Promise<void> {
-    return await grok.functions.call('MolTrack:SearchTest', {});
+  export async function searchTest(operator: string ): Promise<void> {
+    return await grok.functions.call('MolTrack:SearchTest', { operator });
   }
 
   export async function retrieveEntity(scope: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('MolTrack:RetrieveEntity', { scope });
+  }
+
+  export async function getMoltrackPropPanel(mol: string ): Promise<any> {
+    return await grok.functions.call('MolTrack:GetMoltrackPropPanel', { mol });
   }
 }
