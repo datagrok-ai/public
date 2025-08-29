@@ -19,7 +19,6 @@ import {
   searchTypeMapping,
   MolTrackProperty,
   MolTrackEntityType,
-  MolTrackSearchMapping,
 } from './types';
 import { EXCLUDE_SEARCH_FIELDS, EXCLUDE_SEARCH_OUTPUT_FIELDS, Scope } from './constants';
 import { funcs } from '../package-api';
@@ -64,7 +63,16 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope) {
     const outputFields = filterFields.filter((it) => !EXCLUDE_SEARCH_OUTPUT_FIELDS.includes(it.name));
     outputFields.forEach((it) => df.columns
       .add(DG.Column.fromType((it.type as string === 'uuid' ? 'string' : it.type) as any, it.name)));
-    const outputFieldsInput = ui.input.columns('Output', {table: df});
+    const outputFieldsInput = ui.input.columns('Output', {
+      table: df,
+      value: df.columns.toList(),
+      nullable: false,
+      onValueChanged(value, input) {
+        const isEmptyList = value.length == 0;
+        runSearchButton.classList.toggle('dim', isEmptyList);
+        runSearchButton.disabled = isEmptyList;
+      },
+    });
     outputFieldsInput.root.style.paddingLeft = '15px';
     const runSearchButton = ui.bigButton('Search', async () => {
       try {
