@@ -1244,6 +1244,7 @@ export interface IDartApi {
   grok_User_Get_Storage(u: any): any;
   grok_User_ToMarkup(u: any): any;
   grok_User_Get_Group(u: any): any;
+  grok_User_Get_Joined(u: any): any;
   grok_User_Test(): any;
   grok_User_Admin(): any;
   grok_User_System(): any;
