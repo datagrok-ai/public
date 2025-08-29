@@ -74,7 +74,7 @@ export class ActivityDashboardWidget extends DG.Widget {
     const notificationsDataSource: DG.NotificationsDataSource = grok.dapi.users.notifications.forCurrentUser()
       .by(ActivityDashboardWidget.SPOTLIGHT_ITEMS_LENGTH) as DG.NotificationsDataSource;
     console.time('ActivityDashboardWidget.notificationsAndMostRecentEntities');
-    const [notifications, mostRecentEntitiesDf]: [DG.UserNotification[], DG.DataFrame] = await Promise.all([notificationsDataSource.list({pageSize: 50}),
+    const [notifications, mostRecentEntitiesDf]: [DG.UserNotification[], DG.DataFrame] = await Promise.all([notificationsDataSource.list({pageSize: 20}),
       queries.mostRecentEntities(DG.User.current().id)]);
     console.timeEnd('ActivityDashboardWidget.notificationsAndMostRecentEntities');
 
