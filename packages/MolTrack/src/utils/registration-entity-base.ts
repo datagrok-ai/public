@@ -22,6 +22,7 @@ export class EntityBaseView {
   title: string = 'Register a new compound';
   initialSmiles: string = 'CC(=O)Oc1ccccc1C(=O)O';
   singleRetrieved: boolean = false;
+  compoundExists: boolean = false;
   path: string = 'Compound';
 
   protected messageContainer: HTMLDivElement = ui.div([], 'moltrack-info-container');
@@ -45,10 +46,8 @@ export class EntityBaseView {
       ui.empty(this.messageContainer);
       this.messageContainer.appendChild(ui.divText(this.title, 'moltrack-title'));
 
-      const compoundExists = await checkCompoundExists(this.sketcherInstance.getSmiles());
-      this.registerButton?.classList.toggle('dim', compoundExists);
-      this.registerButton!.disabled = compoundExists;
-
+      this.compoundExists = await checkCompoundExists(this.sketcherInstance.getSmiles());
+      this.registerButton?.classList.toggle('dim', this.compoundExists);
     });
     DG.chem.currentSketcherType = 'Ketcher';
 
@@ -228,9 +227,9 @@ export class EntityBaseView {
     const header = status === 'success' ?
       `${id} successfully registered!` :
       `${upperCasedScope} registration failed!`;
-    
+
     const errorMatch = errorMsg.match(/^\d+:\s*(.*)$/);
-    const message = status === 'success' ? '' : `${errorMatch ? errorMatch[1] : ""}`;
+    const message = status === 'success' ? '' : `${errorMatch ? errorMatch[1] : ''}`;
 
     const infoDiv = ui.info(message, header, true);
     const bar = infoDiv.querySelector('.grok-info-bar') as HTMLElement;
@@ -267,9 +266,25 @@ export class EntityBaseView {
   public async buildUIMethod() {
     const container = await this.buildSketcherOrPreview();
     if (!this.singleRetrieved) {
-      this.registerButton = ui.bigButton('REGISTER', async () => {
-        await this.registerButtonHandler();
+      this.registerButton = ui.bigButton('REGISTER', () => {});
+
+      this.registerButton!.addEventListener('click', async (e) => {
+        if (this.compoundExists) {
+          e.preventDefault();
+          e.stopPropagation();
+        } else
+          await this.registerButtonHandler();
       });
+
+      this.registerButton.onmouseenter = (e) => {
+        if (this.compoundExists) {
+          ui.tooltip.show('The compound already exists', e.clientX + 15, e.clientY);
+          this.registerButton!.style.cursor = 'not-allowed';
+        } else
+          this.registerButton!.style.cursor = 'pointer';
+      };
+
+      this.registerButton.onmouseleave = (e) => ui.tooltip.hide();
 
       const clearAllIcon = ui.iconFA('eraser', () => this.clearAll(), 'Clear all');
       this.view.setRibbonPanels([[this.registerButton, clearAllIcon]]);
