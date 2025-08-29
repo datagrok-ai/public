@@ -11,9 +11,9 @@ that action handlers need to be triggered separately
 whenever any of their inputs change.
 
 Links and actions are created at runtime based on matching rules defined in
-[Link Query Language](./links-spec.mdx) (LQL). 
+[Link Query Language](./links-spec.mdx) (LQL).
 A link will not be created until the workflow state
-satisfies these matching rules. 
+satisfies these matching rules.
 If changes in the current workflow break the link matching rules, the link will be destroyed.
 
 ### Common options
@@ -38,13 +38,13 @@ There are several types of links/actions:
 #### `from`
 
 Describes link inputs via a [Link Query Language](./links-spec.mdx).
-Can be either a LQL string or an array of zero or more LQL strings. 
+Can be either a LQL string or an array of zero or more LQL strings.
 All LQL queries should have at least one match, otherwise the link will not be created.
 
 #### `to`
 
 Describes link outputs via a [Link Query Language](./links-spec.mdx).
-Can be either a LQL string or an array of zero or more LQL strings. 
+Can be either a LQL string or an array of zero or more LQL strings.
 All LQL queries should have at least one match, otherwise the link will not be created.
 
 #### `handler`
@@ -58,23 +58,23 @@ state for any handler. Also handlers must not internally mutate
 received states. If the same handler is triggered before a previous
 invocation is finished, the previous one will be gracefully canceled
 and no changes are applied. Handler is mandatory for all links and
-actions, except for [data links](#data-links), 
+actions, except for [data links](#data-links),
 where a [default handler](#default-handler) might be used if non is provided.
 
 #### `not`
 
 _Optional_
 
-Can be either a LQL string or an array of zero or more LQL strings. 
+Can be either a LQL string or an array of zero or more LQL strings.
 
-If all LQL queries match, the link will not be created. 
+If all LQL queries match, the link will not be created.
 Queries are targeting script nodes or workflows.
 
 #### `base`
 
 _Optional_
 
-Could be either a [LQL](links-spec.mdx) string or an array of exactly 1 LQL string. 
+Could be either a [LQL](links-spec.mdx) string or an array of exactly 1 LQL string.
 Queries are targeting script nodes or
 workflows. Used in [reference selectors](./links-spec).
 
@@ -272,12 +272,12 @@ Validators have the following additional configuration options:
 _Optional_
 
 Could be either a [LQL](links-spec.mdx) string or an array of multiple
-LQL strings. 
-Queries are targeting script nodes or
-workflows. Actions descriptors could be retrieved using
+LQL strings.  Queries are targeting script nodes or workflows. Actions
+descriptors could be retrieved using
 [`getValidationAction`](#getvalidationaction) controller method and
 later shown alongside validation results via
-[`setValidation`](#setvalidation) controller method.
+[`setValidation`](#setvalidation) controller method. It must recieve
+`ValidationResult` as a data argument.
 
 
 Validation controller has the following additional methods:
@@ -472,5 +472,5 @@ when a workflow created. Usually is used to populate static
 
 It is using `onReturn` field instead of links and is triggered only
 once when a workflow is started [programmatically](code-usage.mdx) and
-exited via `Accept` button. 
+exited via `Accept` button.
 Otherwise, the same as [data links](#data-links).
