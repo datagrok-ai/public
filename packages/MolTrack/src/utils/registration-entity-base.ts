@@ -190,6 +190,11 @@ export class EntityBaseView {
           `${basePath}?corporate_${singularScope}_id=${encodeURIComponent(batchId?.trim() || compoundId)}` :
           basePath;
       }
+
+      if (status === 'success') {
+        this.compoundExists = true;
+        this.registerButton?.classList.toggle('dim', this.compoundExists);
+      }
     } catch {
       ui.empty(this.messageContainer);
     }
