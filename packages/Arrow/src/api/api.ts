@@ -87,9 +87,10 @@ export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
         values = unpackDictionaryColumn(vector);
     }
     else {
-      values = new Array(table.numRows);
-      for (let i = 0; i < table.numRows; i++)
-        values[i] = vector.get(i);
+      values = vector.toArray();
+      // values = new Array(table.numRows);
+      // for (let i = 0; i < table.numRows; i++)
+      //   values[i] = vector.get(i);
     }
 
     switch (type.typeId) {
@@ -134,7 +135,8 @@ export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
         break;
       case arrow.Type.Date:
       case arrow.Type.Timestamp:
-        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME as DG.ColumnType, name, values));
+        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME as DG.ColumnType, name, values instanceof BigInt64Array
+            ? Array.from(values, b => timestampBigIntToDate(b, type.unit)) : values));
         break;
       case arrow.Type.Time:
         if (type?.bitWidth < 64)
@@ -225,4 +227,25 @@ function convertInt64Column(array: BigInt64Array | BigUint64Array, name: string)
 
 function inferNumberType(values: number[]): arrow.DataType {
   return values.every(v => Number.isInteger(v)) ? new arrow.Int32() : new arrow.Float64();
+}
+
+function timestampBigIntToDate(value: bigint, unit: number): Date {
+  let ms: number;
+  switch (unit) {
+    case 0: // SECOND
+      ms = Number(value) * 1000;
+      break;
+    case 1: // MILLISECOND
+      ms = Number(value);
+      break;
+    case 2: // MICROSECOND
+      ms = Number(value / 1000n);
+      break;
+    case 3: // NANOSECOND
+      ms = Number(value / 1000000n);
+      break;
+    default:
+      throw new Error(`Unsupported time unit: ${unit}`);
+  }
+  return new Date(ms);
 }
