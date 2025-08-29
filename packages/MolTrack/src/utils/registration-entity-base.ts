@@ -23,6 +23,7 @@ export class EntityBaseView {
   initialSmiles: string = 'CC(=O)Oc1ccccc1C(=O)O';
   singleRetrieved: boolean = false;
   compoundExists: boolean = false;
+  invalidForm: boolean = false;
   path: string = 'Compound';
 
   protected messageContainer: HTMLDivElement = ui.div([], 'moltrack-info-container');
@@ -46,8 +47,10 @@ export class EntityBaseView {
       ui.empty(this.messageContainer);
       this.messageContainer.appendChild(ui.divText(this.title, 'moltrack-title'));
 
-      this.compoundExists = await checkCompoundExists(this.sketcherInstance.getSmiles());
-      this.registerButton?.classList.toggle('dim', this.compoundExists);
+      const smiles = this.sketcherInstance.getSmiles();
+      this.compoundExists = await checkCompoundExists(smiles);
+      this.invalidForm = !smiles || smiles.trim().length === 0;
+      this.registerButton?.classList.toggle('dim', (this.compoundExists || this.invalidForm));
     });
     DG.chem.currentSketcherType = 'Ketcher';
 
@@ -109,6 +112,10 @@ export class EntityBaseView {
 
     const inputs = props.map((p) => {
       const input = DG.InputBase.forProperty(p, formBackingObject);
+      input.onChanged.subscribe(() => {
+        this.invalidForm = !input.validate();
+        this.registerButton?.classList.toggle('dim', this.invalidForm);
+      });
       const rawProp = propArray.find((rp) => rp.name === p.name);
       if (rawProp?.pattern) {
         const message = reservedProperties.includes(rawProp.name) ? 'will be assigned at registration' : `e.g., ${generateExample(rawProp?.pattern)}`;
@@ -274,7 +281,7 @@ export class EntityBaseView {
       this.registerButton = ui.bigButton('REGISTER', () => {});
 
       this.registerButton!.addEventListener('click', async (e) => {
-        if (this.compoundExists) {
+        if (this.compoundExists || this.invalidForm) {
           e.preventDefault();
           e.stopPropagation();
         } else
@@ -282,11 +289,19 @@ export class EntityBaseView {
       });
 
       this.registerButton.onmouseenter = (e) => {
+        let tooltipMessage: string | null = null;
+
         if (this.compoundExists) {
-          ui.tooltip.show('The compound already exists', e.clientX + 15, e.clientY);
+          tooltipMessage = 'This compound already exists.';
+          this.registerButton!.style.cursor = 'not-allowed';
+        } else if (this.invalidForm) {
+          tooltipMessage = 'Please check the form. Values are invalid or do not match the required patterns.';
           this.registerButton!.style.cursor = 'not-allowed';
         } else
           this.registerButton!.style.cursor = 'pointer';
+
+        if (tooltipMessage)
+          ui.tooltip.show(tooltipMessage, e.clientX + 15, e.clientY);
       };
 
       this.registerButton.onmouseleave = (e) => ui.tooltip.hide();
