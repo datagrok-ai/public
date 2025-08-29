@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {FuncCallInput} from '@datagrok-libraries/compute-utils/old-views/src/shared-utils/input-wrappers';
 import {BehaviorSubject} from 'rxjs';
 import {distinctUntilChanged} from 'rxjs/operators';
-import equal from 'deep-equal';
+import {deepEqual} from 'fast-equals';
 import {
   PipelineConfiguration,
   ValidationInfo, makeAdvice, makeRevalidation, makeValidationResult,
@@ -44,7 +44,7 @@ class InputMock implements FuncCallInput {
   }
 
   onInput(fn: Function) {
-    return this._value.pipe(distinctUntilChanged(equal)).subscribe(() => {
+    return this._value.pipe(distinctUntilChanged(deepEqual)).subscribe(() => {
       if (this.notify)
         fn(this.value);
     });

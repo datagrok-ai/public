@@ -17,6 +17,7 @@
     "dayjs": "=1.11.10",
     "ebnf": "^1.9.1",
     "exceljs": "^4.3.0",
+    "fast-equals": "^5.2.2",
     "fflate": "^0.7.4",
     "html2canvas": "^1.4.1",
     "jstat": "^1.9.6",
@@ -53,5 +54,9 @@
     "url": "git@github.com:datagrok-ai/public.git",
     "directory": "libraries/compute-utils"
   },
-  "sideEffects": ["*.css", "./old-views/**/*.ts", "./old-components/**/*.ts"]
+  "sideEffects": [
+    "*.css",
+    "./old-views/**/*.ts",
+    "./old-components/**/*.ts"
+  ]
 }

@@ -16,16 +16,14 @@
     "cash-dom": "^8.1.4",
     "datagrok-api": "^1.25.0",
     "dayjs": "=1.11.10",
-    "deep-equal": "^2.2.1",
+    "fast-equals": "^5.2.2",
     "fflate": "^0.8.2",
     "lodash.clonedeepwith": "^4.5.0",
     "rxjs": "^6.6.7",
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@types/deep-equal": "^1.0.1",
     "@types/lodash.clonedeepwith": "^4.5.9",
-    "@types/lodash.isequal": "^4.5.8",
     "@types/wu": "^2.1.42",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
