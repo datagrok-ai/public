@@ -72,9 +72,24 @@ export async function molTrackApp(path: string): Promise<DG.ViewBase> {
       '- Find contextual information on molecules.\n',
   });
 
+  const getStatisticsWidget = async () => {
+    const statsMap: Record<string, number> = {};
+    // TODO: Implement retrieval of assay results
+    for (const entity of Object.values(Scope)) {
+      try {
+        const df = await grok.functions.call('MolTrack:retrieveEntity', { scope: entity });
+        statsMap[entity] = df ? df.rowCount : 0;
+      } catch (e) {
+        grok.shell.error(`Failed to retrieve ${entity}: ${e}`);
+      }
+    }
+
+    return ui.tableFromMap(statsMap);
+  };
+
   return DG.View.fromRoot(ui.divV([
     appHeader,
-    ui.wait(async () => (await grok.functions.call('MolTrack:getCompounds') as DG.DataFrame).plot.grid().root),
+    ui.wait(async () => await getStatisticsWidget()),
   ]));
 }
 
