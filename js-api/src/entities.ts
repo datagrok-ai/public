@@ -1152,7 +1152,7 @@ export class LogEvent extends Entity {
 
   /** Parameters of the event
    * @type {Array<LogEventParameterValue>} */
-  get parameters(): LogEventParameterValue[] { return api.grok_LogEvent_Get_Parameters(this.dart); }
+  get parameters(): LogEventParameterValue[] { return toJs(api.grok_LogEvent_Get_Parameters(this.dart)); }
 
   /** Type of the event
    * @type {LogEventType} */
