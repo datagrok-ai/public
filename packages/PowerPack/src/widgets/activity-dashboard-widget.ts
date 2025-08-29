@@ -361,8 +361,16 @@ export class ActivityDashboardWidget extends DG.Widget {
       for (let i = 0; i < list.children.length; i++) {
         const listChild = list.children[i];
         const text = listChild.textContent?.toLowerCase();
-        if ((text?.includes('you were assigned report #') || text?.includes('you were assigned  report #')) && listChild.querySelector('.d4-markup label'))
-          listChild.querySelector('.d4-markup label')!.textContent = `${this.reportAmount} reports`;
+        if ((text?.includes('you were assigned report #') || text?.includes('you were assigned  report #')) && listChild.querySelector('.d4-markup label')) {
+          listChild.querySelector('.d4-markup label')!.textContent = `${this.reportAmount} ${this.reportAmount > 1 ? 'reports' : 'report'}`;
+          const reportsApp = DG.Func.find({package: 'UsageAnalysis', name: 'reportsApp'})[0];
+          if (reportsApp) {
+            const handler = DG.ObjectHandler.forEntity(reportsApp);
+            const reportsAppLabelSpan = handler?.renderTooltip(DG.toDart(reportsApp)).firstChild;
+            if (reportsAppLabelSpan)
+              listChild.lastElementChild.appendChild(ui.span(['. Open ', reportsAppLabelSpan, ' to see more.']));
+          }
+        }
       }
     }
   }
