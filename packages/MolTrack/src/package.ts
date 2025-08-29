@@ -374,14 +374,27 @@ function flattened(item: any) {
   return row;
 }
 
-
 //name: Databases | MolTrack
 //input: string mol {semType: Molecule}
 //tags: panel
 //output: widget res
-export async function getMoltrackPropPanel(mol: string): Promise<DG.Widget> {
-  // TODO: Implement a server endpoint to fetch information by structure and update accordingly
+export async function getMoltrackPropPanelByStructure(mol: string): Promise<DG.Widget> {
   const compound = await getCompound(mol);
+  return molTrackPropPanel(compound);
+}
+
+//name: Databases | MolTrack
+//input: string id {semType: Grok ID}
+//tags: panel
+//output: widget res
+export async function getMoltrackPropPanelById(id: string): Promise<DG.Widget> {
+  await MolTrackDockerService.init();
+  const compound = await MolTrackDockerService.getCompoundByCorporateId(id);
+  return molTrackPropPanel(compound);
+}
+
+async function molTrackPropPanel(compound: any): Promise<DG.Widget> {
+  const mol = compound['canonical_smiles'];
   if (compound.detail) {
     const registerButton = ui.bigButton('Register', async () => {
       const registrationView = new EntityBaseView(false);
@@ -427,16 +440,16 @@ export async function getMoltrackPropPanel(mol: string): Promise<DG.Widget> {
   const panes = [
     {
       title: 'Batches',
-      content: () => createNestedAccordion(JSON.parse(compound.batches || '[]'), 'id'),
+      content: () => createNestedAccordion(safeParse(compound.batches || '[]'), 'id'),
     },
     {
       title: 'Properties',
-      content: () => createPropertiesTable(JSON.parse(compound.properties || '[]')),
+      content: () => createPropertiesTable(safeParse(compound.properties || '[]')),
     },
   ];
 
   // --- Create the corporate_compound_id link first ---
-  const properties = JSON.parse(compound.properties || '[]');
+  const properties = safeParse(compound.properties || '[]');
   const corpProp = properties.find((p: any) => p.name === 'corporate_compound_id');
   const value = extractPropValue(corpProp);
   const corpLink = ui.link(value.toString() ?? '', async () => {
@@ -469,4 +482,15 @@ export async function getCompound(mol: string) {
   const compoundInfo = await getCompoundById(1);
   const compound = compoundInfo?.toJson()[0];
   return compound;
+}
+
+function safeParse(value: any, fallback = []) {
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return fallback; // return empty array or object if parsing fails
+    }
+  }
+  return value || fallback;
 }
