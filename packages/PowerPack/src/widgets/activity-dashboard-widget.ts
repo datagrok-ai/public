@@ -128,7 +128,7 @@ export class ActivityDashboardWidget extends DG.Widget {
         continue;
       if (!(ent instanceof DG.FuncCall || ent instanceof DG.Group || ent instanceof DG.User || ent instanceof DG.Package ||
         ent instanceof DG.UserReport || ent instanceof DG.TableInfo || (ent instanceof DG.Func && !(ent instanceof DG.Script ||
-        ent instanceof DG.DataQuery || ent instanceof DG.DataJob)) || ent instanceof DG.ViewInfo || ent == null ||
+        ent instanceof DG.DataQuery || ent instanceof DG.DataJob)) || ent instanceof DG.ViewInfo || ent instanceof DG.DataConnection || ent == null ||
         //@ts-ignore
         (ent instanceof DG.Project && (!ent.isDashboard || ent.isPackage)) || (ent.hasOwnProperty('npmScope') && ent['npmScope'] == 'datagrok'))) {
         this.recentEntities.push(ent);
@@ -246,7 +246,6 @@ export class ActivityDashboardWidget extends DG.Widget {
     this.subwidgetsAdded.set(SpotlightTabNames.ADMIN, this.adminRoot);
 
     setTimeout(() => this.cleanLists(), 500);
-    this.applySpotlightStyles();
 
     console.timeEnd('ActivityDashboardWidget.buildSpotlightTab');
 
@@ -406,9 +405,5 @@ export class ActivityDashboardWidget extends DG.Widget {
       const text = item instanceof DG.LogEvent ? item.description?.toLowerCase() : item.text?.toLowerCase();
       return !this.keywordsToIgnore.some((keyword) => text?.includes(keyword));
     });
-  }
-
-  applySpotlightStyles(): void {
-
   }
 }
