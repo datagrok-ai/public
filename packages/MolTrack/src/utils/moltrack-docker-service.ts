@@ -90,7 +90,25 @@ export class MolTrackDockerService {
   static async getCompoundById(id: number): Promise<any> {
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(
       this.container.id,
-      `/v1/compounds/${id}`,
+      `/v1/compounds/id/${id}`,
+      { method: 'GET' },
+    );
+    return response.json();
+  }
+
+  static async getCompoundByCorporateId(corporate_compound_id: string): Promise<any> {
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy(
+      this.container.id,
+      `/v1/compounds/${corporate_compound_id}`,
+      { method: 'GET' },
+    );
+    return response.json();
+  }
+
+  static async getBatchByCorporateId(corporate_batch_id: string): Promise<any> {
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy(
+      this.container.id,
+      `/v1/batches/${corporate_batch_id}`,
       { method: 'GET' },
     );
     return response.json();

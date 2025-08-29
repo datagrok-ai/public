@@ -33,10 +33,12 @@ export class EntityBaseView {
 
     const validationFunc = (s: string) => {
       const valFunc = DG.Func.find({package: 'Chem', name: 'validateMolecule'})[0];
-      const funcCall: DG.FuncCall = valFunc.prepare({s});
-      funcCall.callSync();
-      const res = funcCall.getOutputParamValue();
-      return res;
+      if (valFunc) {
+        const funcCall: DG.FuncCall = valFunc.prepare({s});
+        funcCall.callSync();
+        const res = funcCall.getOutputParamValue();
+        return res;
+      }
     };
     this.sketcherInstance._validationFunc = (s) => validationFunc(s);
     this.sketcherInstance.onChanged.subscribe(async () => {
@@ -45,6 +47,8 @@ export class EntityBaseView {
 
       const compoundExists = await checkCompoundExists(this.sketcherInstance.getSmiles());
       this.registerButton?.classList.toggle('dim', compoundExists);
+      this.registerButton!.disabled = compoundExists;
+
     });
     DG.chem.currentSketcherType = 'Ketcher';
 
@@ -54,7 +58,8 @@ export class EntityBaseView {
 
   protected convertToDGProperty(p: MolTrackProp): DG.Property {
     const options: any = {
-      name: p.friendly_name ?? p.name,
+      name: p.name,
+      friendlyName: p.friendly_name,
       type: p.value_type,
     };
 
@@ -195,7 +200,7 @@ export class EntityBaseView {
     return this.inputs
       .filter((input) => input.value !== null && input.value !== undefined && input.value !== '')
       .reduce((acc, input) => {
-        acc[input.property.name] = input.value;
+        acc[input.property.name] = input.stringValue;
         return acc;
       }, {} as Record<string, any>);
   }
@@ -223,7 +228,9 @@ export class EntityBaseView {
     const header = status === 'success' ?
       `${id} successfully registered!` :
       `${upperCasedScope} registration failed!`;
-    const message = status === 'success' ? '' : `Error: ${errorMsg}`;
+    
+    const errorMatch = errorMsg.match(/^\d+:\s*(.*)$/);
+    const message = status === 'success' ? '' : `${errorMatch ? errorMatch[1] : ""}`;
 
     const infoDiv = ui.info(message, header, true);
     const bar = infoDiv.querySelector('.grok-info-bar') as HTMLElement;
@@ -247,7 +254,6 @@ export class EntityBaseView {
       image.height = 300;
 
       const container = ui.div();
-      // container.style.marginLeft = '-80px';
       container.appendChild(image);
 
       await grok.chem.canvasMol(0, 0, image.width, image.height, image, this.initialSmiles);

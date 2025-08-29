@@ -50,14 +50,14 @@ export async function molTrackApp(path: string): Promise<DG.ViewBase> {
   if (corporateBatchId)
     return await batchView(corporateBatchId);
 
-  if (path.includes('Compound'))
+  if (path && path.includes('Compound'))
     return initRegisterView('Compound');
 
-  if (path.includes('Batch'))
+  if (path && path.includes('Batch'))
     return initRegisterView('Batch');
 
   const appHeader = u2.appHeader({
-    iconPath: _package.webRoot + '/images/cdd-icon-big.png',
+    iconPath: _package.webRoot + '/images/moltrack.png',
     learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/MolTrack/README.md',
     description: '- Chemical compound registration system\n' +
       '- Analyze assay data\n' +
@@ -204,7 +204,11 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
   createRegisterNode('Batch', () => initRegisterView('Batch'));
   createRegisterNode('Bulk...', () => new RegistrationView().show());
 
-  Object.values(Scope).forEach(scope => createRetrieveNode(scope));
+  const excludedScopes = [Scope.ASSAY_RUNS, Scope.ASSAY_RESULTS];
+  
+  Object.values(Scope)
+    .filter(scope => !excludedScopes.includes(scope))
+    .forEach(scope => createRetrieveNode(scope));
 }
 
 //name: checkMolTrackHealth
