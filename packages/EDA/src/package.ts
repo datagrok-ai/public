@@ -259,7 +259,7 @@ export class PackageFunctions {
     'top-menu': 'ML | Cluster | MCL...',
     'name': 'MCLClustering',
     'description': 'Markov clustering (MCL) is an unsupervised clustering algorithm for graphs based on simulation of stochastic flow.',
-    'editor': 'EDA: GetMCLEditor',
+    'editor': 'EDA:GetMCLEditor',
     'outputs': [],
   })
   static async MCLClustering(
