@@ -9,6 +9,8 @@ import {loadFileAsText, loadFileAsBytes} from './utils';
 
 import {getSdfString} from '../utils/sdf-utils';
 import {_importTripos} from '../file-importers/mol2-importer';
+import * as chemCommonRdKit from '../utils/chem-common-rdkit';
+import {_package} from '../package-test';
 
 category('mol2 to SDF', async () => {
   let mol2InputBytes: Uint8Array;
@@ -16,6 +18,10 @@ category('mol2 to SDF', async () => {
   let sdfOutputString: string;
 
   before(async () => {
+    if (!chemCommonRdKit.moduleInitialized) {
+      chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
+      await chemCommonRdKit.initRdKitModuleLocal();
+    }
     mol2InputBytes = await loadFileAsBytes('tests/mol2-test.mol2');
     mol2InputDF = _importTripos(mol2InputBytes)[0];
     await grok.data.detectSemanticTypes(mol2InputDF);

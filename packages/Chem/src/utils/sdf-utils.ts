@@ -24,8 +24,8 @@ export function saveAsSdfDialog() {
       $(text).css('color', 'gray');
       $(text).css('font-size', '12px');
     }
-    const notationInput = ui.input.choice('Notation', {value: DG.chem.Notation.MolBlock, nullable: false,
-      items: [DG.chem.Notation.MolBlock, DG.chem.Notation.V3KMolBlock]});
+    const notationInput = ui.input.choice('Notation', {value: null, nullable: true,
+      items: [DG.chem.Notation.MolBlock, DG.chem.Notation.V3KMolBlock], tooltipText: `Molecule notation for selected molecular column. If not specified, the exporter will try to keep existing MolBlocks as is, and convert other formats to MolBlock V2000`});
     sdfDialog.add(notationInput);
     const selectedColsInput = ui.input.bool('Selected Columns Only', {value: false});
     sdfDialog.add(selectedColsInput);
@@ -42,7 +42,7 @@ export function saveAsSdfDialog() {
       const progressIndicator = DG.TaskBarProgressIndicator.create('Saving as SDF...');
       const structureColumn = colsInput.value;
       const exportOptions: DG.CsvExportOptions & {molBlockFormat?: DG.chem.Notation} = {
-        molBlockFormat: notationInput.value!,
+        molBlockFormat: notationInput.value ?? undefined,
         selectedColumnsOnly: selectedColsInput.value,
         visibleColumnsOnly: visibleColsInput.value,
         filteredRowsOnly: filteredRowsInput.value,
@@ -122,10 +122,19 @@ export async function getSdfString(
   const maskedStructureCol = maskedTable.getCol(structureColumn.name);
   if (maskedStructureCol == null)
     throw new Error(`Column ${structureColumn.name} not found`);
-  const molBlockFormat = exportOptions?.molBlockFormat ?? DG.chem.Notation.MolBlock;
+
+  // if exportOptions.molBlockFormat is not set, do not convert molblocks if all of them are already in any of molblock formats
+  let molBlockFormat = exportOptions.molBlockFormat;
+  let dontTouchMolblocks = false;
+  if (molBlockFormat == null) {
+    dontTouchMolblocks = true;
+    molBlockFormat = DG.chem.Notation.MolBlock;
+  }
+
+  //const molBlockFormat = exportOptions?.molBlockFormat ?? DG.chem.Notation.MolBlock;
   const molList = maskedStructureCol.toList();
-  const molBlockCheck = molBlockFormat === DG.chem.Notation.MolBlock ? (mol: string) => DG.chem.isMolBlock(mol) && mol.includes('V2000') :
-    (mol: string) => DG.chem.isMolBlock(mol) && mol.includes('V3000');
+  const molBlockCheck = dontTouchMolblocks ? ((mol: string) => DG.chem.isMolBlock(mol)) : (molBlockFormat === DG.chem.Notation.MolBlock ? (mol: string) => DG.chem.isMolBlock(mol) && mol.includes('V2000') :
+    (mol: string) => DG.chem.isMolBlock(mol) && mol.includes('V3000'));
 
   const skipConversion = molList.every((mol) => !mol?.trim() || molBlockCheck(mol));
   const convertedStructures = skipConversion ? molList : await rdkitService.convertMolNotation(molList, molBlockFormat);
