@@ -118,7 +118,8 @@ export class BetweenConditionEditor extends BaseConditionEditor {
             this.condition.value = [this.condition.value, undefined];
             this.onChanged.next(this.condition);
         }
-        const input1 = ui.input.forProperty(prop, this.condition.value[0], {
+        const input1 = ui.input.forProperty(prop, undefined, {
+            value: this.condition.value[0],
             nullable: false,
             onValueChanged: () => {
                 this.condition.value[0] = input1.value!;
@@ -126,7 +127,7 @@ export class BetweenConditionEditor extends BaseConditionEditor {
             }
         });
         input1.addCaption('');
-        const input2 = ui.input.forProperty(prop, this.condition.value[1], {
+        const input2 = ui.input.forProperty(prop, undefined, {
             value: this.condition.value[1],
             onValueChanged: () => {
                 this.condition.value[1] = input2.value!;
