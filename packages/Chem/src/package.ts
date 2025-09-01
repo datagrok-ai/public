@@ -1172,7 +1172,6 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'runStructuralAlerts',
     tags: ['Transform'],
-    outputs: [{name: 'result', type: 'dataframe'}],
   })
   static async runStructuralAlerts(
     @grok.decorators.param({options: {caption: 'Table', description: 'Input data table'}}) table: DG.DataFrame,
@@ -1184,7 +1183,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {caption: 'Dundee', initialValue: 'false', description: '"University of Dundee NTD Screening Library filters"'}}) dundee: boolean,
     @grok.decorators.param({options: {caption: 'Inpharmatica', initialValue: 'false', description: '"Inpharmatica filters"'}}) inpharmatica: boolean,
     @grok.decorators.param({options: {caption: 'LINT', initialValue: 'false', description: '"Pfizer LINT filters"'}}) lint: boolean,
-    @grok.decorators.param({options: {caption: 'Glaxo', initialValue: 'false', description: '"Glaxo Wellcome Hard filters"'}}) glaxo: boolean): Promise<DG.DataFrame | void> {
+    @grok.decorators.param({options: {caption: 'Glaxo', initialValue: 'false', description: '"Glaxo Wellcome Hard filters"'}}) glaxo: boolean): Promise<void> {
     if (table.rowCount > 5000)
       grok.shell.info('Structural Alerts detection will take a while to run');
 
@@ -1198,7 +1197,6 @@ export class PackageFunctions {
         table.columns.add(resultCol.clone());
       }
     }
-    return table;
   }
 
   @grok.decorators.func({
@@ -1856,7 +1854,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {initialValue: 'false'}}) rotatableBonds?: boolean,
     @grok.decorators.param({options: {initialValue: 'false'}}) stereoCenters?: boolean,
     @grok.decorators.param({options: {initialValue: 'false'}}) moleculeCharge?: boolean,
-  ): Promise<DG.DataFrame> {
+  ): Promise<void> {
     const propArgs: string[] = ([] as string[]).concat(MW ? ['MW'] : [], HBA ? ['HBA'] : [],
       HBD ? ['HBD'] : [], logP ? ['LogP'] : [], logS ? ['LogS'] : [], PSA ? ['PSA'] : [],
       rotatableBonds ? ['Rotatable bonds'] : [], stereoCenters ? ['Stereo centers'] : [],
@@ -1867,7 +1865,6 @@ export class PackageFunctions {
     } finally {
       pb.close();
     }
-    return table;
   }
 
   @grok.decorators.func({
@@ -1907,14 +1904,13 @@ export class PackageFunctions {
     @grok.decorators.param({options: {initialValue: 'false'}}) tumorigenicity?: boolean,
     @grok.decorators.param({options: {initialValue: 'false'}}) irritatingEffects?: boolean,
     @grok.decorators.param({options: {initialValue: 'false'}}) reproductiveEffects?: boolean,
-  ): Promise<DG.DataFrame> {
+  ): Promise<void> {
     const pb = DG.TaskBarProgressIndicator.create('Toxicity risks ...');
     try {
       await addRisksAsColumns(table, molecules, {mutagenicity, tumorigenicity, irritatingEffects, reproductiveEffects});
     } finally {
       pb.close();
     }
-    return table;
   }
 
   @grok.decorators.func({
