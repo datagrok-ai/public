@@ -673,9 +673,10 @@ export class PackageFunctions {
   })
   static async getFingerprints(
     @grok.decorators.param({options: {semType: 'Molecule'}}) col: DG.Column,
+    @grok.decorators.param({options: {optional: true}}) _metric: string | undefined = undefined,
     @grok.decorators.param({type: 'string', options: {caption: 'Fingerprint type', optional: true,
       choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'], initialValue: 'Morgan'}}) fingerprintType: Fingerprint = Fingerprint.Morgan,
-    @grok.decorators.param({options: {optional: true}}) _metric?: string) {
+  ) {
     //TODO: get rid of fallback
     let fingerprintTypeStr = fingerprintType as string;
     if ((fingerprintTypeStr.startsWith('\'') || fingerprintTypeStr.startsWith('"')) &&
