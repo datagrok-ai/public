@@ -24,11 +24,17 @@ export interface MolTrackProperty {
   entity_type: MolTrackEntityType;
   name: string;
   friendly_name: string;
-  pattern: string | null;
+  pattern?: string;
   property_class: MolTrackPropertyClass;
   semantic_type_id: number;
   value_type: 'string' | 'int' | 'double' | 'datetime' | 'uuid' | 'boolean';
-  unit: string | null;
+  unit?: string;
+  semantic_type?: MolTrackSemanticType
+}
+
+export interface MolTrackSemanticType {
+  name?: string;
+  description?: string;
 }
 
 // Simple condition structure

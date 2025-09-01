@@ -8,7 +8,7 @@ import { RegistrationView } from './utils/registration-tab';
 import { createPath, registerAllData, registerAssayData, updateAllMolTrackSchemas } from './utils/utils';
 import { EntityBaseView } from './utils/registration-entity-base';
 import { Scope } from './utils/constants';
-import { createSearchPanel } from './utils/search';
+import { createSearchNode } from './utils/search';
 
 export const _package = new DG.Package();
 
@@ -208,27 +208,6 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
     appNode.getOrCreateGroup('Register').item(label).onSelected.subscribe(initView);
   }
 
-  function createRetrieveNode(scope: string) {
-    const formattedScope = scope
-      .toLowerCase()
-      .replace(/_/g, ' ')
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-
-    appNode.getOrCreateGroup('Search').item(formattedScope).onSelected.subscribe(async () => {
-      const df = DG.DataFrame.create();
-      const view = grok.shell.addTablePreview(df);
-      view.name = formattedScope;
-      ui.setUpdateIndicator(view.root, true, `Loading ${formattedScope.toLowerCase()}...`);
-
-      const data: DG.DataFrame = await grok.functions.call('MolTrack:retrieveEntity', { scope });
-      view.dataFrame = data;
-      view.dataFrame.name = formattedScope;
-
-      createSearchPanel(view, scope as Scope);
-      ui.setUpdateIndicator(view.root, false);
-    });
-  }
-
   appNode.getOrCreateGroup('Register').onSelected.subscribe(() => {
     const view = initRegisterView('Compound');
     view.path = createPath('Register');
@@ -241,7 +220,7 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
 
   Object.values(Scope)
     .filter((scope) => !excludedScopes.includes(scope))
-    .forEach((scope) => createRetrieveNode(scope));
+    .forEach((scope) => createSearchNode(appNode, scope));
 }
 
 //name: checkMolTrackHealth

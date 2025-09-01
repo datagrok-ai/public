@@ -19,8 +19,9 @@ import {
   searchTypeMapping,
   MolTrackProperty,
   MolTrackEntityType,
+  MolTrackSearchMapping,
 } from './types';
-import { EXCLUDE_SEARCH_FIELDS, EXCLUDE_SEARCH_OUTPUT_FIELDS, Scope } from './constants';
+import { EXCLUDE_SEARCH_FIELDS, EXCLUDE_SEARCH_OUTPUT_FIELDS, Scope, STRUCTURE_FIELDS, STRUCTURE_SEARCH_FIELD } from './constants';
 import { funcs } from '../package-api';
 import dayjs, { Dayjs } from 'dayjs';
 import { _package } from '../package';
@@ -31,6 +32,7 @@ export type MolTrackSearchFields = {
 }
 
 export let molTrackSearchFields: {[key: string]: MolTrackSearchFields} | null = null;
+let openedSearchView: DG.TableView | null = null;
 
 export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope) {
   const filtersDiv = ui.div([]);
@@ -51,60 +53,77 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope) {
   });
 
   const initializeQueryBuilder = async (entityLevel: Scope) => {
-    ui.setUpdateIndicator(filtersDiv, true, 'Loading filters...');
-    const entityTypeArr = searchTypeMapping.filter((it) => it.level === entityLevel);
-    const entityType = entityTypeArr.length ? entityTypeArr[0].propEntityType : undefined;
-    const endpointLevelArr = searchTypeMapping.filter((it) => it.level === entityLevel);
-    const endpointLevel = endpointLevelArr.length ? endpointLevelArr[0] : undefined;
-    const filterFields: DG.Property[] = await getSearchFiledsForEntity(entityType);
-    queryBuilder = new QueryBuilder(filterFields, undefined, QueryBuilderLayout.Narrow,
-      `${_package.name}|${entityLevel}`);
-    const df = DG.DataFrame.create();
-    const outputFields = filterFields.filter((it) => !EXCLUDE_SEARCH_OUTPUT_FIELDS.includes(it.name));
-    outputFields.forEach((it) => df.columns
-      .add(DG.Column.fromType((it.type as string === 'uuid' ? 'string' : it.type) as any, it.name)));
-    const outputFieldsInput = ui.input.columns('Output', {
-      table: df,
-      value: df.columns.toList(),
-      nullable: false,
-      onValueChanged(value, input) {
-        const isEmptyList = value.length == 0;
-        runSearchButton.classList.toggle('dim', isEmptyList);
-        runSearchButton.disabled = isEmptyList;
-      },
-    });
-    outputFieldsInput.root.style.paddingLeft = '15px';
-    const runSearchButton = ui.bigButton('Search', async () => {
-      try {
-        ui.setUpdateIndicator(tv.grid.root, true, 'Searching...');
-        const outputFields = outputFieldsInput.value!
-          .map((it) => `${entityLevel}.${isDynamicField(it.name, entityType) ? 'details.' : ''}${it.name}`);
-        const molTrackQuery = convertQueryBuilderConditionToMolTrackQuery(queryBuilder!.condition,
-          entityLevel, outputFields, entityType);
-        if (!endpointLevel) {
-          ui.setUpdateIndicator(tv.grid.root, false);
-          throw new Error(`No search endpoint for ${entityLevel}`);
-        }
-        queryBuilder?.saveConditionToHistory();
-        const result = await MolTrackDockerService.search(molTrackQuery, endpointLevel.searchEndpoint);
-        const resultDf = DG.DataFrame.fromObjects(result.data);
-        tv.dataFrame = resultDf ?? DG.DataFrame.create();
-      } catch (e: any) {
-        grok.shell.error(e?.message ?? e);
-        tv.dataFrame = DG.DataFrame.create();
-      } finally {
-        ui.setUpdateIndicator(tv.grid.root, false);
-      }
-    });
-    ui.setUpdateIndicator(filtersDiv, false);
-    filtersDiv.append(queryBuilder.root);
-    filtersDiv.append(outputFieldsInput.root);
-    filtersDiv.append(ui.div(runSearchButton, { style: { paddingLeft: '4px', paddingTop: '10px' } }));
     tv.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
-    createFiltersIcon(tv, filtersDiv);
+    ui.setUpdateIndicator(filtersDiv, true, 'Loading filters...');
+    try {
+      const entityTypeArr = searchTypeMapping.filter((it) => it.level === entityLevel);
+      const entityType = entityTypeArr.length ? entityTypeArr[0].propEntityType : undefined;
+      const endpointLevelArr = searchTypeMapping.filter((it) => it.level === entityLevel);
+      const endpointLevel = endpointLevelArr.length ? endpointLevelArr[0] : undefined;
+      const filterFields: DG.Property[] = await getSearchFiledsForEntity(entityType);
+      queryBuilder = new QueryBuilder(filterFields, undefined, QueryBuilderLayout.Narrow,
+        `${_package.name}|${entityLevel}`);
+      const df = DG.DataFrame.create();
+      const outputFields = filterFields
+        .filter((it) => !EXCLUDE_SEARCH_OUTPUT_FIELDS.includes(it.name) && it.name !== STRUCTURE_SEARCH_FIELD);
+      const defaultFields = STRUCTURE_FIELDS.concat(filterFields.map((it) => it.name));
+      outputFields.forEach((it) => df.columns
+        .add(DG.Column.fromType((it.type as string === 'uuid' ? 'string' : it.type) as any, it.name)));
+      //adding structure fields to return
+      STRUCTURE_FIELDS.forEach((it) => df.columns.addNewString(it));
+      const outputFieldsInput = ui.input.columns('Output', {
+        table: df,
+        value: df.columns.toList(),
+        checked: defaultFields,
+        nullable: false,
+        onValueChanged(value, input) {
+          const isEmptyList = value.length == 0;
+          runSearchButton.classList.toggle('dim', isEmptyList);
+          runSearchButton.disabled = isEmptyList;
+        },
+      });
+      outputFieldsInput.root.style.paddingLeft = '15px';
+      const runSearchButton = ui.bigButton('Search', async () => {
+        await runSearch(tv, outputFieldsInput.value!, entityLevel, queryBuilder!, entityType, endpointLevel);
+      });
+      filtersDiv.append(queryBuilder.root);
+      filtersDiv.append(outputFieldsInput.root);
+      filtersDiv.append(ui.div(runSearchButton, { style: { paddingLeft: '4px', paddingTop: '10px' } }));
+      createFiltersIcon(tv, filtersDiv);
+    } catch (e: any) {
+      grok.shell.error(`Error loading filters: ${e?.message ?? e}`);
+    } finally {
+      ui.setUpdateIndicator(filtersDiv, false);
+    }
   };
 
   initializeQueryBuilder(entityLevel);
+}
+
+export async function runSearch(tv: DG.TableView, outputFieldsList: DG.Column[], entityLevel: Scope,
+  queryBuilder: QueryBuilder, entityType?: MolTrackEntityType, endpointLevel?: MolTrackSearchMapping) {
+  try {
+    ui.setUpdateIndicator(tv.grid.root, true, 'Searching...');
+    if (!outputFieldsList.length)
+      throw new Error(`At least one input field should be selected`);
+    const outputFields = outputFieldsList!
+      .map((it) => `${entityLevel}.${isDynamicField(it.name, entityType) ? 'details.' : ''}${it.name}`);
+    const molTrackQuery = convertQueryBuilderConditionToMolTrackQuery(queryBuilder!.condition,
+      entityLevel, outputFields, entityType);
+    if (!endpointLevel) {
+      ui.setUpdateIndicator(tv.grid.root, false);
+      throw new Error(`No search endpoint for ${entityLevel}`);
+    }
+    queryBuilder?.saveConditionToHistory();
+    const result = await MolTrackDockerService.search(molTrackQuery, endpointLevel.searchEndpoint);
+    const resultDf = DG.DataFrame.fromObjects(result.data);
+    tv.dataFrame = resultDf ?? DG.DataFrame.create();
+  } catch (e: any) {
+    grok.shell.error(e?.message ?? e);
+    tv.dataFrame = DG.DataFrame.create();
+  } finally {
+    ui.setUpdateIndicator(tv.grid.root, false);
+  }
 }
 
 export function createFiltersIcon(tv: DG.TableView, filtersDiv: HTMLDivElement) {
@@ -151,11 +170,12 @@ export async function getSearchFiledsForEntity(entityType?: MolTrackEntityType):
 
     const addProperties = (props: MolTrackProperty[], isStatic: boolean) => {
       for (const prop of props) {
-        if (EXCLUDE_SEARCH_FIELDS.includes(prop.name))
+        if (EXCLUDE_SEARCH_FIELDS.includes(prop.name) || STRUCTURE_FIELDS.includes(prop.name))
           continue;
         const propOptions: { [key: string]: any } = {
           name: prop.name,
           type: prop.value_type,
+          semType: prop.semantic_type?.name,
         };
         const dgProp = DG.Property.fromOptions(propOptions);
         if (!molTrackSearchFields![prop.entity_type]) {
@@ -165,12 +185,11 @@ export async function getSearchFiledsForEntity(entityType?: MolTrackEntityType):
           isStatic ? molTrackSearchFields![prop.entity_type].direct!.push(dgProp) :
             molTrackSearchFields![prop.entity_type].dynamic!.push(dgProp);
         }
-        if (dgProp.name === 'canonical_smiles')
-          dgProp.semType = DG.SEMTYPE.MOLECULE;
         //for string values - implement suggestions
         const entityLevelArr = searchTypeMapping.filter((it) => it.propEntityType === prop.entity_type);
         const entityLevel = entityLevelArr.length ? entityLevelArr[0] : undefined;
-        if (prop.value_type === 'string' && entityLevel && dgProp.semType !== DG.SEMTYPE.MOLECULE) {
+        const registeredSemType = dgProp.semType && Object.values(DG.SEMTYPE).includes(dgProp.semType);
+        if (prop.value_type === 'string' && entityLevel && !registeredSemType) {
           const fieldName = `${entityLevel.level}${isStatic ? '' : '.details'}.${prop.name}`;
           const getPropSuggestions = async (text: string): Promise<string[]> => {
             const query: MolTrackSearchQuery = {
@@ -200,7 +219,15 @@ export async function getSearchFiledsForEntity(entityType?: MolTrackEntityType):
     addProperties(staticFields, true);
     addProperties(dynamicFields, false);
   }
-  return (molTrackSearchFields[entityType].direct ?? []).concat(molTrackSearchFields[entityType].dynamic ?? []);
+  // add structure search field separately
+  const structPropOptions: { [key: string]: any } = {
+    name: STRUCTURE_SEARCH_FIELD,
+    type: 'string',
+    semType: DG.SEMTYPE.MOLECULE,
+  };
+  const structProp = DG.Property.fromOptions(structPropOptions);
+  return [structProp].concat(molTrackSearchFields[entityType].direct ?? [])
+    .concat(molTrackSearchFields[entityType].dynamic ?? []);
 }
 
 export function convertQueryBuilderConditionToMolTrackQuery(
@@ -293,6 +320,24 @@ function convertDateToString(date: Dayjs) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+
+export function createSearchNode(appNode:DG.TreeViewGroup, scope: string) {
+  const formattedScope = scope
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+
+  appNode.getOrCreateGroup('Search').item(formattedScope).onSelected.subscribe(async () => {
+    if (openedSearchView?.name === formattedScope)
+      return;
+    const df = DG.DataFrame.create();
+    openedSearchView?.close();
+    openedSearchView = grok.shell.addTablePreview(df);
+    openedSearchView.name = formattedScope;
+
+    createSearchPanel(openedSearchView!, scope as Scope);
+  });
+}
 
 //register operators for molecule semType, applicable for MolTrack
 ConditionRegistry.getInstance()

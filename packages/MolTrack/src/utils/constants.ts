@@ -43,3 +43,6 @@ export const EXCLUDE_SEARCH_FIELDS = ['id', 'molregno', 'batch_regno', 'original
 
 export const EXCLUDE_SEARCH_OUTPUT_FIELDS = ['id', 'molregno', 'batch_regno', 'hash_mol', 'hash_tautomer', 'uuid',
   'hash_canonical_smiles', 'hash_no_stereo_smiles', 'hash_no_stereo_tautomer'];
+
+export const STRUCTURE_FIELDS = ['canonical_smiles', 'original_molfile'];
+export const STRUCTURE_SEARCH_FIELD = 'structure';
