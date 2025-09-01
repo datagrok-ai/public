@@ -59,7 +59,7 @@ select * from (Select distinct on ((r.params::json->>'batchName'))
 from tests t full join builds b on 1 = 1
 left join test_runs r on r.test_name = t.name and r.build_name = b.name   
 where t.type = 'manual' and not (r.params::json->>'batchName') = '' 
-order by (r.params::json->>'batchName'), date desc) as a
+order by (r.params::json->>'batchName'), r.date_time) as a
 order by a.date desc
 --end
 

@@ -106,6 +106,54 @@ export class PackageFunctions {
     await handler.init(date, groups, packages, tags, categories, projects, path);
     return handler.view;
   }
+  
+  @grok.decorators.func({meta: {vectorFunc: 'true'}})
+  static async getTicketsVerdict(@grok.decorators.param({type:'column<string>'})  ticketColumn: DG.Column): Promise<DG.Column | undefined>  {
+    const ticketsMap = new Map<string, string>()
+    const ticketRegex = /GROK-\d*/g;
+    const ticketColumnList = ticketColumn.toList();
+    for (let i = 0; i < ticketColumnList.length; i++) {
+      if (ticketColumnList[i]) {
+        let tickets = ticketColumnList[i].matchAll(ticketRegex);
+        for (let ticket of tickets) {
+          let status = (await grok.functions.call('JiraConnect:issueData', {issueKey: ticket}));
+          if (status && !ticketsMap.has(ticket[0]))
+            ticketsMap.set(ticket[0], status.fields.status.name);
+        }
+      }
+    }
+
+    const resultCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, `${ticketColumn} ticket verdict`, ticketColumn.length);
+    for (let i = 0; i < ticketColumnList.length; i++) {
+      if (ticketColumnList[i]) {
+        let tickets = ticketColumnList[i].matchAll(ticketRegex);
+        let resultStatuses = [];
+        let status = undefined;
+        for (let ticket of tickets) {
+          if (ticketsMap.has(ticket[0])){
+            resultStatuses.push(ticketsMap.get(ticket[0]))
+          }
+        }
+
+        if (resultStatuses.length > 0)
+        {
+          if (resultStatuses.some(e=> e !== 'Done'))
+          {
+            if (resultStatuses.some(e=> e === 'Done'))
+              status = 'Particialy Fixed';
+            else
+              status = 'Wasn\'t Fixed';
+          }
+          else
+            status = 'Fixed';
+          resultCol.set(i, status);
+        }
+      }
+    }
+
+    console.log(ticketsMap)
+    return resultCol;
+  }
 
 
   @grok.decorators.app({

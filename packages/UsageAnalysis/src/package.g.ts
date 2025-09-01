@@ -40,6 +40,13 @@ export async function usageAnalysisApp(path?: string, date?: string, groups?: st
   return await PackageFunctions.usageAnalysisApp(path, date, groups, packages, tags, categories, projects);
 }
 
+//input: column<string> ticketColumn 
+//output: column result
+//meta.vectorFunc: true
+export async function getTicketsVerdict(ticketColumn: DG.Column) : Promise<any> {
+  return await PackageFunctions.getTicketsVerdict(ticketColumn);
+}
+
 //name: Test Track
 //tags: app
 //meta.url: /tests/manager
