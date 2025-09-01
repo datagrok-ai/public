@@ -18,6 +18,7 @@ export class ActivityDashboardWidget extends DG.Widget {
 
   static sharedEntityRegex: RegExp = /<span>#{x\.([a-f0-9-]+)\.".*?"}<\/span>/g;
   keywordsToIgnore: string[] = ['"data"', '"data w/', '"fitted data"', '"reduced data"', '"reduceddata"', '"sizingparams"', '"primaryfilter', '"trimmed data"', '"input data from imported file"', '"dataanalysisdf', '"clean data"'/*, 'Ran <span>#{x.'*/];
+  tipsOfTheDay: string[] = ['Double-click a column header to sort the data.', 'Drag and drop a CSV or Excel file into Datagrok to load it as a table.', 'Hover over a column name to see its statistics in the tooltip.', 'Hold Shift and click multiple column headers to select several columns.', 'Use Ctrl+F in a table to search across all values.', 'Resize columns by dragging the separator in the header.', 'Use Layouts to save and restore your favorite viewer arrangements.', 'Use “Add New Column” to create calculated columns with formulas.', 'Right-click a column to see context actions available for it.', 'Try the “Correlation Plot” to quickly see relationships between numeric columns.'];
   cutoffDate: dayjs.Dayjs = dayjs().subtract(ActivityDashboardWidget.RECENT_TIME_DAYS, 'day');
 
   favoritesEvents: DG.LogEvent[] = [];
@@ -213,8 +214,10 @@ export class ActivityDashboardWidget extends DG.Widget {
         list], title === SpotlightTabNames.ACTION_REQUIRED ? 'power-pack-activity-widget-spotlight-column-action-required' : 'power-pack-activity-widget-spotlight-column');
     };
 
-    const root = ui.divH([], 'power-pack-activity-widget-spotlight-root');
+    let root = ui.divH([], 'power-pack-activity-widget-spotlight-root');
 
+    // API changes needed
+    // if (!(DG.User.current().joined > dayjs().subtract(7, 'day')) && false) {
     const actionRequired = this.recentNotifications.filter((n) => {
       const text = n.text.toLowerCase();
       return text.includes('you were assigned') || text.includes('requested a membership');
@@ -244,10 +247,68 @@ export class ActivityDashboardWidget extends DG.Widget {
     if (this.adminRoot)
       root.appendChild(this.adminRoot);
     this.subwidgetsAdded.set(SpotlightTabNames.ADMIN, this.adminRoot);
+    // }
+
+    if (root.children.length === 0)
+      root = this.getNewUserInfoColumns();
 
     setTimeout(() => this.cleanLists(), 500);
-
     console.timeEnd('ActivityDashboardWidget.buildSpotlightTab');
+    return root;
+  }
+
+  getNewUserInfoColumns(): HTMLDivElement {
+    const root = ui.divH([], 'power-pack-activity-widget-spotlight-root');
+    const tutorialsApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'trackOverview'})[0];
+    const demoApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'demoApp'})[0];
+    if (!tutorialsApp || !demoApp)
+      return root;
+    const appHandler = DG.ObjectHandler.forEntity(demoApp);
+
+    const gettingStartedList = ui.list([
+      ui.link('Data Access', async () => await tutorialsApp.apply()),
+      ui.link('Exploratory Data Analysis', async () => await tutorialsApp.apply()),
+      ui.link('Cheminformatics', async () => await tutorialsApp.apply()),
+      ui.link('Explore more Tutorials', async () => await tutorialsApp.apply()),
+    ]);
+    gettingStartedList.classList.add('power-pack-activity-widget-subwidget-list-content');
+    const gettingStartedRoot = ui.divV([ui.h3(ui.span([ui.span(['Getting Started'])]), 'power-pack-activity-widget-spotlight-column-header'),
+      gettingStartedList], 'power-pack-activity-widget-spotlight-column');
+
+    const tryDemoAppsList = ui.list([
+      ui.link('Scatter Plot', async () => await demoApp.apply({path: '/Visualization/General/Scatter-Plot'})),
+      ui.link('Files', async () => await demoApp.apply({path: '/Data-Access/Files'})),
+      ui.link('Matched Molecular Pairs', async () => await demoApp.apply({path: '/Cheminformatics/Matched-Molecular-Pairs'})),
+      ui.link('Curve Fitting', async () => await demoApp.apply({path: '/Curves/Curve-Fitting'})),
+    ]);
+    tryDemoAppsList.classList.add('power-pack-activity-widget-subwidget-list-content');
+    const tryDemoAppsRoot = ui.divV([ui.h3(ui.span([ui.span(['Try Demo Apps'])]), 'power-pack-activity-widget-spotlight-column-header'),
+      tryDemoAppsList], 'power-pack-activity-widget-spotlight-column');
+
+    let featuredApps: HTMLElement[] = [];
+    const hitDesignApp = DG.Func.find({tags: ['app'], package: 'HitTriage', name: 'hitTriageApp'})[0];
+    if (hitDesignApp)
+      featuredApps.push((appHandler?.renderTooltip(DG.toDart(hitDesignApp)).firstChild as HTMLElement) ?? null);
+    const admeticaApp = DG.Func.find({tags: ['app'], package: 'Admetica', name: 'admeticaApp'})[0];
+    if (admeticaApp)
+      featuredApps.push((appHandler?.renderTooltip(DG.toDart(admeticaApp)).firstChild as HTMLElement) ?? null);
+    const diffStudioApp = DG.Func.find({tags: ['app'], package: 'DiffStudio', name: 'runDiffStudio'})[0];
+    if (diffStudioApp)
+      featuredApps.push((appHandler?.renderTooltip(DG.toDart(diffStudioApp)).firstChild as HTMLElement) ?? null);
+    featuredApps = featuredApps.filter((app) => !!app);
+
+    const featuredAppsList = ui.list([
+      ...featuredApps,
+      ui.link('Explore more Apps', () => setTimeout(() => grok.shell.addView(DG.View.createByType(DG.VIEW_TYPE.APPS)), 100)),
+    ]);
+    featuredAppsList.classList.add('power-pack-activity-widget-subwidget-list-content');
+    const featuredAppsRoot = ui.divV([ui.h3(ui.span([ui.span(['Featured Apps'])]), 'power-pack-activity-widget-spotlight-column-header'),
+      featuredAppsList], 'power-pack-activity-widget-spotlight-column');
+
+    root.append(gettingStartedRoot, tryDemoAppsRoot, featuredAppsRoot);
+    const randomTip = this.tipsOfTheDay[Math.floor(Math.random() * this.tipsOfTheDay.length)];
+    const tip = ui.divText(`💡 Tip of the day: ${randomTip}`, 'power-pack-activity-widget-spotlight-tip');
+    root.appendChild(tip);
 
     return root;
   }
@@ -362,12 +423,12 @@ export class ActivityDashboardWidget extends DG.Widget {
         const listChild = list.children[i];
         const text = listChild.textContent?.toLowerCase();
         if ((text?.includes('you were assigned report #') || text?.includes('you were assigned  report #')) && listChild.querySelector('.d4-markup label')) {
-          listChild.querySelector('.d4-markup label')!.textContent = `${this.reportAmount} ${this.reportAmount > 1 ? 'reports' : 'report'}`;
+          listChild.querySelector('.d4-markup label')!.textContent = `${this.reportAmount} ${this.reportAmount && this.reportAmount > 1 ? 'reports' : 'report'}`;
           const reportsApp = DG.Func.find({package: 'UsageAnalysis', name: 'reportsApp'})[0];
           if (reportsApp) {
             const handler = DG.ObjectHandler.forEntity(reportsApp);
             const reportsAppLabelSpan = handler?.renderTooltip(DG.toDart(reportsApp)).firstChild;
-            if (reportsAppLabelSpan)
+            if (reportsAppLabelSpan && listChild.lastElementChild)
               listChild.lastElementChild.appendChild(ui.span(['. Open ', reportsAppLabelSpan, ' to see more.']));
           }
         }
