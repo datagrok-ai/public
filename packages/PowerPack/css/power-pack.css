@@ -135,6 +135,11 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     margin-left: 18px;
 }
 
+.power-pack-activity-widget-spotlight-tip {
+    flex-basis: 100%;
+    text-align: center;
+}
+
 .power-pack-widget-header {
     height: 20px;
     font-size: 16px;
