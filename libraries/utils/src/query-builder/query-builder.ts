@@ -484,7 +484,7 @@ export class QueryBuilder {
         menu.show();
     }
 
-    private loadCondition(condition: ComplexCondition): void {
+    loadCondition(condition: ComplexCondition): void {
         this.condition = JSON.parse(JSON.stringify(condition));
         this.rebuildUI();
         this.structureChanged.next(this.condition);
