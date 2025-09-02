@@ -493,10 +493,10 @@ export interface IBoxPlotSettings {
   /// Points are not shown if the number of rows is greater than *Show Values Limit*.
   showValuesLimit: number;
 
-  /// Show points inside the Q2-Q3 bar
+  /// Show points inside the interquartile range (Q3 - Q1).
   showInsideValues: boolean;
 
-  /// Show points outside Q2-Q3
+  /// Show points outside the interquartile range (Q3 - Q1).
   showOutsideValues: boolean;
 
   /// Show p-value. Press T to toggle.
@@ -508,7 +508,33 @@ export interface IBoxPlotSettings {
 
   showMouseOverRowGroup: boolean;
 
-  statistics: Array<string>;
+  showTotalCount: boolean;
+
+  /// Shown values count inside lower and upper bounds, where:
+  /// IQR = Q3 - Q1.
+  /// Lower Bound = Q1 - (1.5 * IQR).
+  /// Upper Bound = Q3 + (1.5 * IQR).
+  showInliersCount: boolean;
+
+  /// Shown values count outside lower and upper bounds, where:
+  /// IQR = Q3 - Q1.
+  /// Lower Bound = Q1 - (1.5 * IQR).
+  /// Upper Bound = Q3 + (1.5 * IQR).
+  showOutliersCount: boolean;
+
+  showMin: boolean;
+
+  showMax: boolean;
+
+  showAvg: boolean;
+
+  showMed: boolean;
+
+  showStdev: boolean;
+
+  showQ1: boolean;
+
+  showQ3: boolean;
 
   viewport: string;
 
