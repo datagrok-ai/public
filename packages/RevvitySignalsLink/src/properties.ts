@@ -62,6 +62,8 @@ export class RevvityUserConditionEditor extends BaseConditionEditor<string> {
     }
 }
 
+//register operators for string type, applicable for Revvity
+ConditionRegistry.getInstance().registerTypeOperators(DG.TYPE.STRING, [Operators.STARTS_WITH, Operators.EQ, Operators.NOT_EQ, Operators.IN]);
 //register operators for molecule semType, applicable for Revvity
 ConditionRegistry.getInstance().registerSemTypeOperators(DG.SEMTYPE.MOLECULE, [Operators.CONTAINS, Operators.IS_SIMILAR]);
 //register operators for user semtype

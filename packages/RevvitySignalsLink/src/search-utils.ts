@@ -10,6 +10,8 @@ import { getDefaultProperties, REVVITY_FIELD_TO_PROP_TYPE_MAPPING } from './prop
 import { getTerms } from './package';
 import { createPath, initSearchQuery, resetInitSearchQuery } from './view-utils';
 
+const SAVED_SEARCH_STORAGE = 'RevvitySignalsLinkSavedSearch'
+
 export async function runSearchQuery(libId: string, compoundType: string,
   queryBuilderCondition: ComplexCondition): Promise<DG.DataFrame> {
   const condition: ComplexCondition = {
@@ -68,8 +70,22 @@ export async function initializeFilters(tv: DG.TableView, filtersDiv: HTMLDivEle
       externalFilterIcon.classList.remove('filters-button-icon-show');
     };
     ui.tooltip.bind(externalFilterIcon, 'Add Revvity Signals filters');
+    
+    //save search icon
+    const saveSearchIcon = ui.icons.save(() => {
+      saveSearchQuery(selectedLib[0].id, compoundType, qb)
+    }, 'Save current search query');
+
+
+    //load search icon
+    const loadSearchIcon = ui.iconFA('arrow-to-bottom', () => {
+      loadSearchQuery(selectedLib[0].id, compoundType, qb);
+    }, 'Load saved search query');
+    
     const filtersButton = ui.div(externalFilterIcon);
-    tv.setRibbonPanels([[filtersButton]]);
+    const saveButton = ui.div(saveSearchIcon);
+    const loadButton = ui.div(loadSearchIcon);
+    tv.setRibbonPanels([[filtersButton, saveButton, loadButton]]);
     //create filters panel
     tv.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
     tv.dockManager.onClosed.subscribe((el: any) => {
@@ -147,3 +163,88 @@ function updateQueryBuilderLayout(qb: QueryBuilder, width: number, libId: string
     qb.setLayout(newLayout);
   }
 };
+
+// Function to save search query
+async function saveSearchQuery(libId: string, compoundType: string, queryBuilder: QueryBuilder) {
+
+  const storageKey = `${libId}|${compoundType}`;
+  const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, storageKey) || '{}';
+  const savedSearches: { [key: string]: string } = JSON.parse(savedSearchesStr);
+  
+  // Generate default name
+  let defaultName = 'new search';
+  let counter = 1;
+  while (savedSearches[defaultName]) {
+    defaultName = `new search (${counter})`;
+    counter++;
+  }
+
+  const nameInput = ui.input.string('Search Name', { value: defaultName });
+  const dialog = ui.dialog('Save Search Query')
+    .add(nameInput)
+    .onOK(async () => {
+      const searchName = nameInput.value;
+      if (!searchName.trim()) {
+        grok.shell.error('Search name cannot be empty');
+        return;
+      }
+
+      // Save the current query condition
+      savedSearches[searchName] = JSON.stringify(queryBuilder.condition);
+      grok.userSettings.add(SAVED_SEARCH_STORAGE, storageKey, JSON.stringify(savedSearches));
+      
+      grok.shell.info(`Search query "${searchName}" saved successfully`);
+    });
+
+  dialog.show();
+}
+
+// Function to load search query
+async function loadSearchQuery(libId: string, compoundType: string, queryBuilder: QueryBuilder) {
+  const storageKey = `${libId}|${compoundType}`;
+  const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, storageKey) || '{}';
+  const savedSearches: { [key: string]: string } = JSON.parse(savedSearchesStr);
+  
+  const searchNames = Object.keys(savedSearches);
+  if (searchNames.length === 0) {
+    grok.shell.info('No saved searches found for this view');
+    return;
+  }
+
+  const searchNamesDf = DG.DataFrame.fromColumns([DG.Column.fromList('string', 'name', searchNames)]);
+
+  // Create typeahead input with saved search names
+  const searchInput = ui.typeAhead('Search name', {
+    source: {
+      local: searchNames.map(name => ({ label: name, value: name }))
+    },
+    minLength: 0,
+    limit: 10,
+    highlight: true,
+    debounceRemote: 100,
+    preventSubmit: true,
+  });
+
+  searchInput.onChanged.subscribe(() => {
+      searchNamesDf.rows.filter((row) => (row.name as string).includes(searchInput.value));
+  });
+  
+  const dialog = ui.dialog('Load Search Query')
+    .add(ui.divV([searchInput, searchNamesDf.plot.grid().root]))
+    .onOK(async () => {
+      if (searchNamesDf.currentRowIdx === -1) {
+        grok.shell.error('Select saved search in the grid');
+        return;
+      }
+      const selectedSearchName = searchNamesDf.get('name', searchNamesDf.currentRowIdx);
+      // Load the saved query condition into the query builder
+      try {
+        const condition = JSON.parse(savedSearches[selectedSearchName]);
+        queryBuilder.loadCondition(condition);
+      } catch (e) {
+        grok.shell.error('Failed to parse saved search query');
+      }
+    });
+
+  dialog.show();
+}
