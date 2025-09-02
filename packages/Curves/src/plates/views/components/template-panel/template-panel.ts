@@ -6,7 +6,7 @@ import {Subscription} from 'rxjs';
 // import {renderValidationResults} from '../../plates-validation-panel';
 import {PlateTemplate, plateTemplates, plateTypes} from '../../../plates-crud';
 import {PlateWidget} from '../../../../plate/plate-widget';
-import { renderMappingEditor, TargetProperty} from '../mapping-editor/mapping-editor';
+import {renderMappingEditor, TargetProperty} from '../mapping-editor/mapping-editor';
 import {renderValidationResults} from '../../plates-validation-panel';
 /**
  * Creates a consistent two-column form row (Label on left, Input on right).
@@ -260,7 +260,6 @@ export class TemplatePanel {
     ui.empty(this.wellPropsHeaderHost);
 
     if (activePlate) {
-      // Define direct callbacks to the state manager, like the original implementation
       const handleMapping = (targetProperty: string, sourceColumn: string) => {
         const currentState = this.stateManager.currentState;
         if (currentState)
@@ -273,27 +272,47 @@ export class TemplatePanel {
           this.stateManager.undoMapping(currentState.activePlateIdx, targetProperty);
       };
 
-      // Prepare data for the renderer
       const sourceColumns = activePlate.plate.data.columns.names();
-      const REQUIRED_ANALYSIS_FIELDS = [
+
+      // Define required fields for both existing and new analyses
+      const DRC_FIELDS: TargetProperty[] = [
         {name: 'Activity', required: true},
         {name: 'Concentration', required: true},
         {name: 'SampleID', required: true},
+      ];
+      const DOSE_RATIO_FIELDS: TargetProperty[] = [
+        {name: 'Percent_Inhibition', required: true},
+        {name: 'Agonist_Concentration_M', required: true},
+        {name: 'Antagonist_Concentration_M', required: true},
+        // These are useful for titles/grouping but not strictly essential for calculation
+        {name: 'Antagonist_ID', required: false},
+        {name: 'Agonist_ID', required: false},
       ];
       const MOCKED_REQUIRED_TEMPLATE_FIELDS = ['Target', 'Assay Format'];
       const templateProps: TargetProperty[] = template.wellProperties
         .filter((p) => p && p.name)
         .map((p) => ({name: p.name!, required: MOCKED_REQUIRED_TEMPLATE_FIELDS.includes(p.name!)}));
-      const allTargetProps: TargetProperty[] = [...templateProps, ...REQUIRED_ANALYSIS_FIELDS];
 
-      // Call the stateless renderer function
+
+      // Combine all properties into a single list for the mapping editor
+      const allPropsMap = new Map<string, TargetProperty>();
+      [...templateProps, ...DRC_FIELDS, ...DOSE_RATIO_FIELDS].forEach((prop) => {
+        const existing = allPropsMap.get(prop.name);
+        if (existing)
+          existing.required = existing.required || prop.required;
+        else
+          allPropsMap.set(prop.name, {...prop});
+      });
+      const allTargetProps = Array.from(allPropsMap.values());
+
       renderMappingEditor(this.validationHost, {
-        targetProperties: allTargetProps,
+        targetProperties: allTargetProps, // Pass the corrected list
         sourceColumns: sourceColumns,
         mappings: activePlate.reconciliationMap,
         onMap: handleMapping,
         onUndo: handleUndo,
       });
+
 
       // Plate properties logic remains the same...
       const plateProperties = template.plateProperties
@@ -318,6 +337,7 @@ export class TemplatePanel {
       if (templateProperties.length > 0)
         this.platePropertiesHost.appendChild(ui.input.form({}, templateProperties));
     }
+
 
     this.updateWellPropsHeader(template, state);
   }

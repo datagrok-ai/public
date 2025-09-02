@@ -25,14 +25,13 @@ export class PlateStateManager {
     this._currentTemplate = initialTemplate;
     this._currentPlateType = initialPlateType;
   }
-  // Add this method to the PlateStateManager class in plate-state-manager.ts
 
   public setMappings(plateIndex: number, newMappings: Map<string, string>): void {
     const state = this.currentState;
     if (!state || !state.plates[plateIndex]) return;
 
     const plateFile = state.plates[plateIndex];
-    plateFile.reconciliationMap = new Map(newMappings); // Replace the old map
+    plateFile.reconciliationMap = new Map(newMappings);
 
     this.stateChange$.next({
       type: 'mapping-changed',

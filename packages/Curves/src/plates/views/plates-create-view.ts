@@ -15,6 +15,8 @@ import './components/template-panel/template-panel.css';
 import './components/plate-grid-manager/plate-grid-manager.css';
 import './components/plate-analysis-panel/plate-analysis-panel.css';
 import {PlateGridManager} from './components/plate-grid-manager/plate-grid-manager';
+// ADD THIS IMPORT
+import {PlateDoseRatioAnalysis} from '../../plate/dose-ratio-analysis';
 
 export function createPlatesView(): DG.View {
   const view = DG.View.create();
@@ -38,59 +40,64 @@ export function createPlatesView(): DG.View {
 
   const tabControl = ui.tabControl();
 
-  const createAnalysisContent = () => {
-    const activePlate = stateManager.activePlate;
-    if (activePlate) {
+  const createDrcAnalysisContent = (): HTMLElement => {
+    try {
+      const activePlate = stateManager.activePlate;
+      if (!activePlate)
+        return createAnalysisSkeleton('Dose Response', ['SampleID', 'Concentration', 'Activity']);
+
       const mappedData = stateManager.getActivePlateMappedData();
-      console.log('[DEBUG] Mapped data columns:', mappedData?.columns.names());
-      if (mappedData) {
-        const hasActivity = mappedData.columns.contains('Activity');
-        const hasConcentration = mappedData.columns.contains('Concentration');
-        const hasSampleID = mappedData.columns.contains('SampleID');
-        console.log('[DEBUG] DRC requirements check:', {
-          hasActivity,
-          hasConcentration,
-          hasSampleID,
-          mappings: activePlate.reconciliationMap,
-        });
+      if (!mappedData)
+        return createAnalysisSkeleton('Dose Response', ['SampleID', 'Concentration', 'Activity']);
 
-        if (hasActivity && hasConcentration && hasSampleID) {
-          const mappedPlate = new Plate(activePlate.plate.rows, activePlate.plate.cols);
-          mappedPlate.data = mappedData;
-          mappedPlate.barcode = activePlate.plate.barcode;
-          mappedPlate.id = activePlate.plate.id;
+      const mappedPlate = new Plate(activePlate.plate.rows, activePlate.plate.cols);
+      mappedPlate.data = mappedData;
+      mappedPlate.barcode = activePlate.plate.barcode;
 
-          const drcGrid = PlateDrcAnalysis.createCurvesGrid(
-            mappedPlate, plateWidget, {}, 'csv'
-          );
-          if (drcGrid) {
-            drcGrid.style.width = '100%';
-            drcGrid.style.height = '100%';
-            return drcGrid;
-          } else {
-            console.log('[DEBUG] DRC grid creation failed despite having required columns');
-            return createAnalysisSkeleton();
-          }
-        } else {
-          console.log('[DEBUG] Missing required columns for DRC analysis');
-          const message = ui.divV([
-            createAnalysisSkeleton(),
-            ui.divText(
-              `Missing required columns: ${[
-                !hasActivity && 'Activity',
-                !hasConcentration && 'Concentration',
-                !hasSampleID && 'SampleID'
-              ].filter(Boolean).join(', ')}`,
-              'warning-message'
-            )
-          ]);
-          return message;
-        }
-      } else {
-        return createAnalysisSkeleton();
+      const drcGrid = PlateDrcAnalysis.createCurvesGrid(mappedPlate, plateWidget, {}, 'csv');
+
+      if (!drcGrid) {
+        const required = ['Activity', 'Concentration', 'SampleID'];
+        const missing = required.filter((c) => !mappedData.columns.contains(c));
+        return createAnalysisSkeleton('Dose Response', missing.length > 0 ? missing : required);
       }
-    } else {
-      return createAnalysisSkeleton();
+
+      drcGrid.style.width = '100%';
+      drcGrid.style.height = '100%';
+      return drcGrid;
+    } catch (e: any) {
+      console.error('Error creating Dose Response view:', e);
+      return ui.divText(`Error displaying Dose Response analysis: ${e.message}`, 'error-message');
+    }
+  };
+
+  // UPDATE THIS FUNCTION
+  const createDoseRatioContent = (): HTMLElement => {
+    try {
+      const activePlate = stateManager.activePlate;
+      const requiredCols = ['Agonist_Concentration_M', 'Antagonist_Concentration_M', 'Percent_Inhibition'];
+      if (!activePlate)
+        return createAnalysisSkeleton('Dose Ratio', requiredCols);
+
+      const mappedData = stateManager.getActivePlateMappedData();
+      if (!mappedData)
+        return createAnalysisSkeleton('Dose Ratio', requiredCols);
+
+      const mappedPlate = new Plate(activePlate.plate.rows, activePlate.plate.cols);
+      mappedPlate.data = mappedData;
+      mappedPlate.barcode = activePlate.plate.barcode;
+
+      const doseRatioGrid = PlateDoseRatioAnalysis.createDoseRatioGrid(mappedPlate);
+
+      if (!doseRatioGrid) {
+        const missing = requiredCols.filter((c) => !mappedData.columns.contains(c));
+        return createAnalysisSkeleton('Dose Ratio', missing.length > 0 ? missing : requiredCols);
+      }
+
+      return doseRatioGrid;
+    } catch (e: any) {
+      console.error('Error creating Dose Ratio view:', e);
+      return ui.divText(`Error displaying Dose Ratio analysis: ${e.message}`, 'error-message');
     }
   };
 
@@ -99,7 +106,9 @@ export function createPlatesView(): DG.View {
     plateWidget.root.style.height = '100%';
     return plateWidget.root;
   });
-  tabControl.addPane('Analysis', () => createAnalysisContent());
+  tabControl.addPane('Dose Response', () => createDrcAnalysisContent());
+  tabControl.addPane('Dose Ratio', () => createDoseRatioContent());
+
 
   tabControl.root.style.width = '100%';
   tabControl.root.style.flexGrow = '1';
@@ -154,11 +163,20 @@ export function createPlatesView(): DG.View {
     if (plateWidget.grid)
       plateWidget.grid.invalidate();
 
-    if (tabControl.currentPane.name === 'Analysis' && (event.type === 'mapping-changed' || event.type === 'plate-selected')) {
-      console.log('[DEBUG] Refreshing DRC analysis view due to mapping change');
-      const newContent = createAnalysisContent();
-      ui.empty(tabControl.getPane('Analysis').content);
-      tabControl.getPane('Analysis').content.appendChild(newContent);
+    if (event.type === 'mapping-changed' || event.type === 'plate-selected') {
+      console.log('[DEBUG] Refreshing analysis views due to state change');
+
+      const drcPane = tabControl.getPane('Dose Response');
+      if (drcPane) {
+        ui.empty(drcPane.content);
+        drcPane.content.appendChild(createDrcAnalysisContent());
+      }
+
+      const doseRatioPane = tabControl.getPane('Dose Ratio');
+      if (doseRatioPane) {
+        ui.empty(doseRatioPane.content);
+        doseRatioPane.content.appendChild(createDoseRatioContent());
+      }
     }
   });
 
@@ -266,7 +284,7 @@ export function createPlatesView(): DG.View {
   return view;
 }
 
-function createAnalysisSkeleton(): HTMLElement {
+function createAnalysisSkeleton(analysisType: string, requiredColumns: string[] = []): HTMLElement {
   const curveSvg = `
 <svg width="200" height="150" viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">
  <style>
@@ -282,26 +300,19 @@ function createAnalysisSkeleton(): HTMLElement {
  <line x1="20" y1="95" x2="180" y2="95" class="grid-line" />
  <line x1="20" y1="60" x2="180" y2="60" class="grid-line" />
  <path d="M 30 25 Q 80 30, 100 80 T 170 125" class="curve"/>
- </svg>`;
+</svg>`;
 
   const svgDiv = ui.div([]);
   svgDiv.innerHTML = curveSvg;
 
-  const message = ui.divText(
-    'To see dose-response curves, ensure your CSV has "SampleID", "Concentration", and "Activity" columns.'
-  );
+  const messageText = `To see ${analysisType.toLowerCase()} curves, please map the following required properties: ${requiredColumns.join(', ')}.`;
+  const message = ui.divText(messageText);
 
   const skeleton = ui.divV([svgDiv, message], 'drc-skeleton');
-
-  skeleton.style.display = 'flex';
-  skeleton.style.alignItems = 'center';
-  skeleton.style.justifyContent = 'center';
-  skeleton.style.width = '100%';
-  skeleton.style.flexGrow = '1';
-  skeleton.style.textAlign = 'center';
-  skeleton.style.border = '1px dashed var(--grey-2)';
-  skeleton.style.borderRadius = '8px';
-  skeleton.style.backgroundColor = 'var(--grey-0)';
+  skeleton.style.cssText = `
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    width: 100%; flex-grow: 1; text-align: center;
+    border: 1px dashed var(--grey-2); border-radius: 8px; background-color: var(--grey-0);`;
 
   return skeleton;
 }
