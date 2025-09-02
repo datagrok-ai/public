@@ -15,19 +15,12 @@ export class PlateDoseRatioAnalysis {
     const antagonistCol = plate.data.col('Antagonist_Concentration_M')!;
     const agonistCol = plate.data.col('Agonist_Concentration_M')!;
     const responseCol = plate.data.col('Percent_Inhibition')!;
-
-    // --- FIX START ---
-    // 1. Use toList() for a type-safe way to get a JS array from the column.
     const uniqueConcentrations = Array.from(new Set(antagonistCol.toList()));
-
-    // 2. Assert the type to number[] so TypeScript allows numeric operations like sort.
     const antagonistConcentrations = (uniqueConcentrations as number[]).sort((a, b) => a - b);
-    // --- FIX END ---
 
     const series: IFitSeries[] = [];
 
     for (let i = 0; i < antagonistConcentrations.length; i++) {
-      // TypeScript now correctly infers 'antagonistConc' as a number.
       const antagonistConc = antagonistConcentrations[i];
       const color = DG.Color.toHtml(DG.Color.getCategoricalColor(i));
       const currentSeries: IFitSeries = {
@@ -78,15 +71,20 @@ export class PlateDoseRatioAnalysis {
     curveCol.semType = 'fit';
 
     const grid = chartDf.plot.grid();
-    grid.col(curveCol.name)!.width = 500;
-    grid.props.rowHeight = 350;
 
     const container = ui.div([grid.root], 'drc-grid-container');
+
     container.style.width = '100%';
     container.style.height = '100%';
-
     grid.root.style.width = '100%';
-    grid.root.style.flexGrow = '1';
+    grid.root.style.height = '100%';
+
+    ui.tools.handleResize(container, (w: number, h: number) => {
+      if (w > 20 && h > 20) {
+        grid.col(curveCol.name)!.width = w - 20;
+        grid.props.rowHeight = h - 20;
+      }
+    });
 
     return container;
   }
