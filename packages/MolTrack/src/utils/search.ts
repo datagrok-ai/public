@@ -275,6 +275,15 @@ export async function createSearchFileds(): Promise<DG.Property[]> {
 
   addProperties(staticFields, true);
   addProperties(dynamicFields, false);
+  //Put boolean fields to the end of the list not to show boolean input by default
+  const sortProps = (props: DG.Property[]) => {
+    return props.sort((a, b) => {
+      if (a.type === DG.TYPE.BOOL && b.type !== DG.TYPE.BOOL) return 1;
+      if (a.type !== DG.TYPE.BOOL && b.type === DG.TYPE.BOOL) return -1;
+      return 0;
+    });
+  };
+  sortProps(propArr);
   return propArr;
 }
 
@@ -467,14 +476,23 @@ export function createSearchNode(appNode:DG.TreeViewGroup, scope: string) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
   appNode.getOrCreateGroup('Search').item(formattedScope).onSelected.subscribe(async () => {
-    if (openedSearchView?.name === formattedScope)
+    if (openedSearchView?.name === formattedScope && openedSearchView.dockNode.parent) {
+      grok.shell.v = openedSearchView;
       return;
+    }
     const df = DG.DataFrame.create();
     openedSearchView?.close();
     openedSearchView = grok.shell.addTablePreview(df);
     openedSearchView.name = formattedScope;
-
-    createSearchPanel(openedSearchView!, scope as Scope);
+    ui.setUpdateIndicator(openedSearchView.root, true, `Loading ${formattedScope.toLowerCase()}...`);
+    try {
+      const data: DG.DataFrame = await grok.functions.call('MolTrack:retrieveEntity', { scope });
+      openedSearchView.dataFrame = data;
+      openedSearchView.dataFrame.name = formattedScope;
+      createSearchPanel(openedSearchView!, scope as Scope);
+    } finally {
+      ui.setUpdateIndicator(openedSearchView.root, false);
+    }
   });
 }
 

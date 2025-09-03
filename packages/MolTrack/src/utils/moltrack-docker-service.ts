@@ -84,6 +84,8 @@ export class MolTrackDockerService {
       `/v1/${scope}/`,
       { method: 'GET'},
     );
+    if (!response.ok)
+      throw new Error(`HTTP error!: ${response.status}`, { cause: response.status });
     return response.json();
   }
 
