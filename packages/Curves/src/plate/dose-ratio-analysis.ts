@@ -4,9 +4,11 @@ import * as ui from 'datagrok-api/ui';
 import {Plate} from './plate';
 import {FIT_FUNCTION_4PL_REGRESSION, IFitChartData, IFitSeries} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 
+
 export class PlateDoseRatioAnalysis {
   static createDoseRatioGrid(plate: Plate): HTMLElement | null {
     const requiredColumns = ['Agonist_Concentration_M', 'Antagonist_Concentration_M', 'Percent_Inhibition'];
+
     if (!requiredColumns.every((col) => plate.data.columns.contains(col))) {
       console.warn(`Dose Ratio Analysis: Missing one of the required columns: ${requiredColumns.join(', ')}`);
       return null;
@@ -15,6 +17,7 @@ export class PlateDoseRatioAnalysis {
     const antagonistCol = plate.data.col('Antagonist_Concentration_M')!;
     const agonistCol = plate.data.col('Agonist_Concentration_M')!;
     const responseCol = plate.data.col('Percent_Inhibition')!;
+
     const uniqueConcentrations = Array.from(new Set(antagonistCol.toList()));
     const antagonistConcentrations = (uniqueConcentrations as number[]).sort((a, b) => a - b);
 

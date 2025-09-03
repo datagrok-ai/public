@@ -28,6 +28,7 @@ import {PlateTemplateHandler} from './plates/objects/plate-template-handler';
 import * as api from './package-api';
 import {convertDataToCurves, dataToCurvesUI, WellTableParentData} from './fit/data-to-curves';
 import {parsePlateFromCsv} from './plate/csv-plates';
+import { layoutsView } from './plates/views/layouts-view';
 
 export const _package = new DG.Package();
 const SOURCE_COLUMN_TAG = '.sourceColumn';
@@ -279,22 +280,29 @@ static async importPlateCsv(fileContent: string, file: DG.FileInfo): Promise<voi
     grok.shell.error(`Could not import plate from ${file.name}: ${e.message}`);
   }
 }
-
-static async parseExcelPlate(content: string | Uint8Array, name?: string) {
-  if (typeof content === 'string') {
-    const blob = new Blob([content], {type: 'application/octet-binary'});
-    const buf = await blob.arrayBuffer();
-    const plate = await Plate.fromExcel(new Uint8Array(buf), name);
-    return plate;
-  } else {
-    return await Plate.fromExcel(content, name);
-  }
+ @grok.decorators.func({
+   name: 'Layouts',
+   description: 'A standalone view for designing plate layouts.',
+ })
+static layouts(): DG.View {
+  return layoutsView();
 }
+
+ static async parseExcelPlate(content: string | Uint8Array, name?: string) {
+   if (typeof content === 'string') {
+     const blob = new Blob([content], {type: 'application/octet-binary'});
+     const buf = await blob.arrayBuffer();
+     const plate = await Plate.fromExcel(new Uint8Array(buf), name);
+     return plate;
+   } else {
+     return await Plate.fromExcel(content, name);
+   }
+ }
 
 @grok.decorators.app({name: 'Browse', browsePath: 'Plates'})
-static platesApp(): DG.View {
-  return platesAppView();
-}
+ static platesApp(): DG.View {
+   return platesAppView();
+ }
 
   @grok.decorators.func({})
 static async getPlateByBarcode(barcode: string): Promise<Plate> {

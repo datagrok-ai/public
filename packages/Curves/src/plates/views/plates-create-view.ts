@@ -37,8 +37,17 @@ export function createPlatesView(): DG.View {
   const plateWidget = new PlateWidget();
   plateWidget.editable = true;
   plateWidget.plate = new Plate(plateType.rows, plateType.cols);
-
   const tabControl = ui.tabControl();
+
+  tabControl.root.classList.remove('ui-box');
+  tabControl.root.style.cssText = `
+    width: 100%;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+  `;
+
+
 
   const createDrcAnalysisContent = (): HTMLElement => {
     try {
@@ -71,7 +80,6 @@ export function createPlatesView(): DG.View {
     }
   };
 
-  // UPDATE THIS FUNCTION
   const createDoseRatioContent = (): HTMLElement => {
     try {
       const activePlate = stateManager.activePlate;
@@ -108,12 +116,35 @@ export function createPlatesView(): DG.View {
   });
   tabControl.addPane('Dose Response', () => createDrcAnalysisContent());
   tabControl.addPane('Dose Ratio', () => createDoseRatioContent());
+  ui.tools.waitForElementInDom(tabControl.root).then(() => {
+    tabControl.panes.forEach((pane) => {
+      pane.content.style.cssText = `
+        width: 100%;
+        height: 100%;
+        max-width: none; /* Override any max-width constraints */
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      `;
+    });
+
+    // Ensure the PlateWidget's root itself also conforms. This might be redundant
+    // but ensures consistency.
+    plateWidget.root.style.width = '100%';
+    plateWidget.root.style.height = '100%';
+  });
 
 
-  tabControl.root.style.width = '100%';
-  tabControl.root.style.flexGrow = '1';
-  tabControl.root.style.display = 'flex';
-  tabControl.root.style.flexDirection = 'column';
+  const tabContentHost = tabControl.root.querySelector('.d4-tab-host');
+  if (tabContentHost) {
+    (tabContentHost as HTMLElement).style.flexGrow = '1';
+    (tabContentHost as HTMLElement).style.width = '100%';
+    (tabContentHost as HTMLElement).style.display = 'flex';
+  }
+  // tabControl.root.style.width = '100%';
+  // tabControl.root.style.flexGrow = '1';
+  // tabControl.root.style.display = 'flex';
+  // tabControl.root.style.flexDirection = 'column';
 
   const plateGridManager = new PlateGridManager(stateManager);
 
