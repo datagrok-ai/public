@@ -16,22 +16,36 @@ import {
   MolTrackSearchQuery,
   MolTrackFilter,
   MolTrackComplexCondition,
-  searchTypeMapping,
   MolTrackProperty,
   MolTrackEntityType,
-  MolTrackSearchMapping,
+  molTrackSearchMapping,
+  MolTrackSearchAggregation,
 } from './types';
-import { EXCLUDE_SEARCH_FIELDS, EXCLUDE_SEARCH_OUTPUT_FIELDS, Scope, STRUCTURE_FIELDS, STRUCTURE_SEARCH_FIELD } from './constants';
+import {
+  EXCLUDE_SEARCH_FIELDS,
+  EXCLUDE_SEARCH_OUTPUT_FIELDS,
+  Scope,
+  STRUCTURE_FIELDS,
+  STRUCTURE_SEARCH_FIELD,
+  STRING_AGGREGATIONS,
+  NUMERIC_AGGREGATIONS,
+  MOLTRACK_ENTITY_TYPE,
+  MOLTRACK_ENDPOINT,
+  MOLTRACK_ENTITY_LEVEL,
+  MOLTRACK_IS_STATIC_FIELD,
+  PROP_NUM_TYPES,
+} from './constants';
 import { funcs } from '../package-api';
 import dayjs, { Dayjs } from 'dayjs';
 import { _package } from '../package';
+import { Subject } from 'rxjs';
 
 export type MolTrackSearchFields = {
   direct?: DG.Property[],
   dynamic?: DG.Property[],
 }
 
-export let molTrackSearchFields: {[key: string]: MolTrackSearchFields} | null = null;
+export let molTrackSearchFieldsArr: DG.Property[] | null = null;
 let openedSearchView: DG.TableView | null = null;
 
 export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope) {
@@ -53,14 +67,27 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope) {
   });
 
   const initializeQueryBuilder = async (entityLevel: Scope) => {
+    const validationErrorSubj = new Subject<boolean>();
     tv.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
     ui.setUpdateIndicator(filtersDiv, true, 'Loading filters...');
     try {
-      const entityTypeArr = searchTypeMapping.filter((it) => it.level === entityLevel);
-      const entityType = entityTypeArr.length ? entityTypeArr[0].propEntityType : undefined;
-      const endpointLevelArr = searchTypeMapping.filter((it) => it.level === entityLevel);
-      const endpointLevel = endpointLevelArr.length ? endpointLevelArr[0] : undefined;
-      const filterFields: DG.Property[] = await getSearchFiledsForEntity(entityType);
+      if (!molTrackSearchFieldsArr) {
+        try {
+          molTrackSearchFieldsArr = await createSearchFileds();
+        } catch (e: any) {
+          molTrackSearchFieldsArr = null;
+          throw e;
+        }
+      }
+      const filterFields: DG.Property[] = molTrackSearchFieldsArr
+        .filter((it) => it.options[MOLTRACK_ENTITY_LEVEL] === entityLevel);
+      if (!filterFields.length) {
+        grok.shell.warning(`No search fields found for ${entityLevel}`);
+        return;
+      }
+      const entityType = filterFields[0].options[MOLTRACK_ENTITY_TYPE];
+      const endpoint = filterFields[0].options[MOLTRACK_ENDPOINT];
+
       queryBuilder = new QueryBuilder(filterFields, undefined, QueryBuilderLayout.Narrow,
         `${_package.name}|${entityLevel}`);
       const df = DG.DataFrame.create();
@@ -82,12 +109,36 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope) {
           runSearchButton.disabled = isEmptyList;
         },
       });
-      outputFieldsInput.root.style.paddingLeft = '15px';
+      outputFieldsInput.root.style.paddingLeft = '12px';
+
+      validationErrorSubj.subscribe((val: boolean) => runSearchButton.disabled = val);
+
+      const menuFieldsForAggr = molTrackSearchFieldsArr
+        .filter((it) => it.type === 'string' || PROP_NUM_TYPES.includes(it.type) &&
+      (!it.semType || it.semType && !Object.values(DG.SEMTYPE).includes(it.semType)));
+
+      const aggregations: MolTrackSearchAggregation[] = [];
+      // Create aggregations section
+      const aggregationsDiv = ui.divV([]);
+      const aggregationsHeader = ui.divH([
+        ui.divText('Aggregations'),
+        ui.icons.add(() => {
+          const aggregationRow = createAggregationRow(aggregationsContainer, menuFieldsForAggr, aggregations,
+            validationErrorSubj);
+          aggregationsContainer.append(aggregationRow);
+        }),
+      ], 'moltrack-search-aggr-header-div');
+
+      const aggregationsContainer = ui.divV([]);
+      aggregationsDiv.append(aggregationsHeader);
+      aggregationsDiv.append(aggregationsContainer);
+
       const runSearchButton = ui.bigButton('Search', async () => {
-        await runSearch(tv, outputFieldsInput.value!, entityLevel, queryBuilder!, entityType, endpointLevel);
+        await runSearch(tv, outputFieldsInput.value!, aggregations, entityLevel, queryBuilder!, entityType, endpoint);
       });
       filtersDiv.append(queryBuilder.root);
       filtersDiv.append(outputFieldsInput.root);
+      filtersDiv.append(aggregationsDiv);
       filtersDiv.append(ui.div(runSearchButton, { style: { paddingLeft: '4px', paddingTop: '10px' } }));
       createFiltersIcon(tv, filtersDiv);
     } catch (e: any) {
@@ -100,8 +151,9 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope) {
   initializeQueryBuilder(entityLevel);
 }
 
-export async function runSearch(tv: DG.TableView, outputFieldsList: DG.Column[], entityLevel: Scope,
-  queryBuilder: QueryBuilder, entityType?: MolTrackEntityType, endpointLevel?: MolTrackSearchMapping) {
+export async function runSearch(tv: DG.TableView, outputFieldsList: DG.Column[],
+  aggregations: MolTrackSearchAggregation[], entityLevel: Scope,
+  queryBuilder: QueryBuilder, entityType: MolTrackEntityType, endpoint: string) {
   try {
     ui.setUpdateIndicator(tv.grid.root, true, 'Searching...');
     if (!outputFieldsList.length)
@@ -109,13 +161,9 @@ export async function runSearch(tv: DG.TableView, outputFieldsList: DG.Column[],
     const outputFields = outputFieldsList!
       .map((it) => `${entityLevel}.${isDynamicField(it.name, entityType) ? 'details.' : ''}${it.name}`);
     const molTrackQuery = convertQueryBuilderConditionToMolTrackQuery(queryBuilder!.condition,
-      entityLevel, outputFields, entityType);
-    if (!endpointLevel) {
-      ui.setUpdateIndicator(tv.grid.root, false);
-      throw new Error(`No search endpoint for ${entityLevel}`);
-    }
+      entityLevel, outputFields, aggregations, entityType);
     queryBuilder?.saveConditionToHistory();
-    const result = await MolTrackDockerService.search(molTrackQuery, endpointLevel.searchEndpoint);
+    const result = await MolTrackDockerService.search(molTrackQuery, endpoint);
     const resultDf = DG.DataFrame.fromObjects(result.data);
     tv.dataFrame = resultDf ?? DG.DataFrame.create();
   } catch (e: any) {
@@ -132,7 +180,8 @@ export function createFiltersIcon(tv: DG.TableView, filtersDiv: HTMLDivElement) 
   externalFilterIcon.innerHTML = `
 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
   <!-- Funnel Body -->
-  <path d="M4 4H15L10 10V17L8 19V10L4 4Z" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M4 4H15L10 10V17L8 19V10L4 4Z" stroke="currentColor" stroke-width="1" 
+        stroke-linecap="round" stroke-linejoin="round"/>
   
   <!-- The arrow group is rotated -45 degrees around point (16, 13) -->
   <g transform="rotate(-45, 16, 13)">
@@ -155,110 +204,105 @@ export function createFiltersIcon(tv: DG.TableView, filtersDiv: HTMLDivElement) 
   tv.setRibbonPanels([[filtersButton]]);
 }
 
-export async function getSearchFiledsForEntity(entityType?: MolTrackEntityType): Promise<DG.Property[]> {
-  if (!entityType)
-    return [];
-  if (!molTrackSearchFields) {
-    molTrackSearchFields = {};
-    const promises = [
-      funcs.fetchDirectSchema(),
-      funcs.fetchSchema(),
-    ];
-    const results = await Promise.all(promises);
-    const staticFields: MolTrackProperty[] = JSON.parse(results[0]);
-    const dynamicFields: MolTrackProperty[] = JSON.parse(results[1]);
 
-    const addProperties = (props: MolTrackProperty[], isStatic: boolean) => {
-      for (const prop of props) {
-        if (EXCLUDE_SEARCH_FIELDS.includes(prop.name) || STRUCTURE_FIELDS.includes(prop.name))
-          continue;
-        const propOptions: { [key: string]: any } = {
+export async function createSearchFileds(): Promise<DG.Property[]> {
+  const propArr: DG.Property[] = [];
+  const promises = [
+    funcs.fetchDirectSchema(),
+    funcs.fetchSchema(),
+  ];
+  const results = await Promise.all(promises);
+  const staticFields: MolTrackProperty[] = JSON.parse(results[0]);
+  const dynamicFields: MolTrackProperty[] = JSON.parse(results[1]);
+
+  const addProperties = (props: MolTrackProperty[], isStatic: boolean) => {
+    for (const prop of props) {
+      if (EXCLUDE_SEARCH_FIELDS.includes(prop.name))
+        continue;
+      const isStructureField = STRUCTURE_FIELDS.includes(prop.name);
+      const structureAlreadyExists = propArr.filter((it) => it.options[MOLTRACK_ENTITY_TYPE] === prop.entity_type &&
+            it.name === STRUCTURE_SEARCH_FIELD).length > 0;
+      if (isStructureField && structureAlreadyExists)
+        continue;
+      const propOptions = isStructureField ?
+        {
+          name: STRUCTURE_SEARCH_FIELD,
+          type: 'string',
+          semType: DG.SEMTYPE.MOLECULE,
+        }:
+        {
           name: prop.name,
           type: prop.value_type,
           semType: prop.semantic_type?.name,
         };
-        const dgProp = DG.Property.fromOptions(propOptions);
-        if (!molTrackSearchFields![prop.entity_type]) {
-          molTrackSearchFields![prop.entity_type] =
-            { direct: isStatic ? [dgProp] : [], dynamic: isStatic ? [] : [dgProp] };
-        } else {
-          isStatic ? molTrackSearchFields![prop.entity_type].direct!.push(dgProp) :
-            molTrackSearchFields![prop.entity_type].dynamic!.push(dgProp);
-        }
-        //for string values - implement suggestions
-        const entityLevelArr = searchTypeMapping.filter((it) => it.propEntityType === prop.entity_type);
-        const entityLevel = entityLevelArr.length ? entityLevelArr[0] : undefined;
-        const registeredSemType = dgProp.semType && Object.values(DG.SEMTYPE).includes(dgProp.semType);
-        if (prop.value_type === 'string' && entityLevel && !registeredSemType) {
-          const fieldName = `${entityLevel.level}${isStatic ? '' : '.details'}.${prop.name}`;
-          const getPropSuggestions = async (text: string): Promise<string[]> => {
-            const query: MolTrackSearchQuery = {
-              level: entityLevel.level,
-              filter: {
-                field: fieldName,
-                operator: Operators.CONTAINS,
-                value: text,
-              },
-              output: [fieldName],
-            };
-            const suggestions: string[] = [];
-            try {
-              const res = await MolTrackDockerService.search(query, entityLevel.searchEndpoint);
-              if (res.data.length)
-                return res.data.map((it) => it[fieldName.toLowerCase()]);
-            } catch (e: any) {
-              grok.shell.error(e);
-            }
-            return suggestions;
-          };
-          dgProp.options[SUGGESTIONS_FUNCTION] = getPropSuggestions;
-        }
+      const dgProp = DG.Property.fromOptions(propOptions);
+      dgProp.options[MOLTRACK_ENTITY_TYPE] = prop.entity_type;
+      dgProp.options[MOLTRACK_IS_STATIC_FIELD] = isStatic;
+      const propMapping = molTrackSearchMapping[prop.entity_type];
+      if (propMapping) {
+        dgProp.options[MOLTRACK_ENDPOINT] = propMapping.searchEndpoint;
+        dgProp.options[MOLTRACK_ENTITY_LEVEL] = propMapping.level;
       }
-    };
 
-    addProperties(staticFields, true);
-    addProperties(dynamicFields, false);
-  }
-  // add structure search field separately
-  const structPropOptions: { [key: string]: any } = {
-    name: STRUCTURE_SEARCH_FIELD,
-    type: 'string',
-    semType: DG.SEMTYPE.MOLECULE,
+      propArr.push(dgProp);
+      const registeredSemType = dgProp.semType && Object.values(DG.SEMTYPE).includes(dgProp.semType);
+      if (prop.value_type === 'string' && propMapping.level && !registeredSemType) {
+        const fieldName = `${propMapping.level}${isStatic ? '' : '.details'}.${prop.name}`;
+        const getPropSuggestions = async (text: string): Promise<string[]> => {
+          const query: MolTrackSearchQuery = {
+            level: propMapping.level,
+            filter: {
+              field: fieldName,
+              operator: Operators.CONTAINS,
+              value: text,
+            },
+            output: [fieldName],
+          };
+          const suggestions: string[] = [];
+          try {
+            const res = await MolTrackDockerService.search(query, propMapping.searchEndpoint);
+            if (res.data.length)
+              return res.data.map((it) => it[fieldName.toLowerCase()]);
+          } catch (e: any) {
+            grok.shell.error(e);
+          }
+          return suggestions;
+        };
+        dgProp.options[SUGGESTIONS_FUNCTION] = getPropSuggestions;
+      }
+    }
   };
-  const structProp = DG.Property.fromOptions(structPropOptions);
-  return [structProp].concat(molTrackSearchFields[entityType].direct ?? [])
-    .concat(molTrackSearchFields[entityType].dynamic ?? []);
+
+  addProperties(staticFields, true);
+  addProperties(dynamicFields, false);
+  return propArr;
 }
+
 
 export function convertQueryBuilderConditionToMolTrackQuery(
   cond: ComplexCondition,
   level: Scope,
   output: string[],
-  type?: MolTrackEntityType,
+  aggregations: MolTrackSearchAggregation[],
+  type: MolTrackEntityType,
 ): MolTrackSearchQuery {
   // If query builder condition contains only one condition in array,
   // create MolTrackSearchQuery where filter is a MolTrackSimpleCondition
-  if (cond.conditions.length === 1 && isSimpleCondition(cond.conditions[0])) {
-    const filter = convertSimpleCondition(cond.conditions[0], level, type);
-
-    return {
-      level: level,
-      output: output,
-      filter: filter,
-    };
-  }
-
-  const filter = convertComplexCondition(cond, level, type);
-
-  return {
+  const query: MolTrackSearchQuery = {
     level: level,
     output: output,
-    filter: filter,
+    filter: cond.conditions.length === 1 && isSimpleCondition(cond.conditions[0]) ?
+      convertSimpleCondition(cond.conditions[0], level, type):
+      convertComplexCondition(cond, level, type),
   };
+  if (aggregations.length)
+    query.aggregations = aggregations;
+
+  return query;
 }
 
 function convertComplexCondition(cond: ComplexCondition, level: Scope,
-  type?: MolTrackEntityType): MolTrackComplexCondition {
+  type: MolTrackEntityType): MolTrackComplexCondition {
   if (cond.conditions.length === 0) {
     return {
       operator: Operators.Logical.and,
@@ -279,16 +323,18 @@ function convertComplexCondition(cond: ComplexCondition, level: Scope,
   };
 }
 
-function isDynamicField(field: string, type?: MolTrackEntityType): boolean {
+function isDynamicField(field: string, type: MolTrackEntityType): boolean {
   let isDynamicProp = false;
   if (type) {
-    const dynamicPropIdx = molTrackSearchFields![type].dynamic?.findIndex((it) => it.name === field);
+    const dynamicPropIdx = molTrackSearchFieldsArr!
+      .findIndex((it) => it.name === field && it.options[MOLTRACK_ENTITY_TYPE] === type &&
+        !it.options[MOLTRACK_IS_STATIC_FIELD]);
     isDynamicProp = dynamicPropIdx !== -1;
   }
   return isDynamicProp;
 }
 
-function convertSimpleCondition(cond: any, level: Scope, type?: MolTrackEntityType): MolTrackFilter {
+function convertSimpleCondition(cond: any, level: Scope, type: MolTrackEntityType): MolTrackFilter {
   const isDynamicProp = isDynamicField(cond.field, type);
   // Handle chemical similarity search special case
   if (cond.operator === 'is_similar' && cond.value && typeof cond.value === 'object' && 'molecule' in cond.value) {
@@ -318,6 +364,99 @@ function convertDateToString(date: Dayjs) {
   const mm = String(date.month() + 1).padStart(2, '0');
   const dd = String(date.date()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}`;
+}
+
+function createAggregationRow(container: HTMLElement, menuFieldsForAggr: DG.Property[],
+  aggregations: MolTrackSearchAggregation[], validationErrorSubj: Subject<boolean>): HTMLElement {
+  const row = ui.divH([], 'moltrack-search-aggr-row');
+
+  const newAggr: MolTrackSearchAggregation = {field: '', operation: ''};
+  aggregations.push(newAggr);
+
+  const fieldValidationError = (errorMessage: string) => {
+    validationErrorSubj.next(true);
+    fieldTooltip = errorMessage;
+    newAggr.field = '';
+    Array.from(fieldInput.root.children).forEach((it) => it.classList.add('moltrack-invalid-aggr-field'));
+  };
+
+  const nonErrorTooltip = 'Click the field to see options';
+  let fieldTooltip = nonErrorTooltip;
+  const fieldInput = ui.input.string('', {
+    value: '',
+    nullable: false,
+    onValueChanged: () => {
+      const error = `Field ${fieldInput.value} not found. Click to select from list of available fields`;
+      const splittedName = fieldInput.value.split('.');
+      if (splittedName.length < 2) {
+        fieldValidationError(error);
+        return;
+      }
+      const prop = menuFieldsForAggr
+        .filter((it) => it.options[MOLTRACK_ENTITY_LEVEL] === splittedName[0] && it.name === splittedName[1]);
+      if (!prop.length) {
+        fieldValidationError(error);
+        return;
+      }
+      newAggr.field = `${splittedName[0]}.${isDynamicField(prop[0].name,
+        prop[0].options[MOLTRACK_ENTITY_TYPE]) ? 'details.' : ''}${splittedName[1]}`;
+      const fieldType = prop[0].type;
+      updateAggregationOptions(aggregationInputDiv, fieldType, newAggr);
+      Array.from(fieldInput.root.children).forEach((it) => it.classList.remove('moltrack-invalid-aggr-field'));
+      const containInvalidRows = aggregations.filter((it) => it.field === '').length > 0;
+      validationErrorSubj.next(containInvalidRows);
+      fieldTooltip = nonErrorTooltip;
+    },
+  });
+  fieldInput.classList.add('moltrack-search-aggr-field');
+  ui.tooltip.bind(fieldInput.input, () => fieldTooltip);
+
+  const aggregationInputDiv = ui.div();
+
+  const removeButton = ui.icons.delete(() => {
+    const idx = aggregations.findIndex((it) => it.field === newAggr.field && it.operation === newAggr.operation);
+    if (idx !== -1)
+      aggregations.splice(idx, 1);
+    container.removeChild(row);
+    const containInvalidRows = aggregations.filter((it) => it.field === '').length > 0;
+    validationErrorSubj.next(containInvalidRows);
+  });
+
+  if (menuFieldsForAggr.length > 0) {
+    const menu = DG.Menu.popup();
+    if (menuFieldsForAggr.length) {
+      menuFieldsForAggr.forEach((field) => {
+        menu.item(`${field.options[MOLTRACK_ENTITY_LEVEL]}.${field.name}`, () => {
+          fieldInput.value = `${field.options[MOLTRACK_ENTITY_LEVEL]}.${field.name}`;
+        });
+      });
+      fieldInput.root.onclick = () => menu.show({ element: fieldInput.root, y: fieldInput.root.offsetHeight });
+    }
+  }
+
+  row.append(fieldInput.root);
+  row.append(aggregationInputDiv);
+  row.append(removeButton);
+
+  //when added a new row, field input is empty, so disable SEARCH button
+  validationErrorSubj.next(true);
+
+  return row;
+}
+
+function updateAggregationOptions(aggregationInputDiv: any, fieldType: any, aggr: MolTrackSearchAggregation) {
+  const options = PROP_NUM_TYPES.includes(fieldType) ? NUMERIC_AGGREGATIONS : STRING_AGGREGATIONS;
+  ui.empty(aggregationInputDiv);
+  aggr.operation = options[0];
+  const input = ui.input.choice('', {
+    value: options[0],
+    items: options,
+    nullable: false,
+    onValueChanged: () => {
+      aggr.operation = input.value!;
+    },
+  });
+  aggregationInputDiv.append(input.root);
 }
 
 

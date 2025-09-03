@@ -1,3 +1,5 @@
+import * as DG from 'datagrok-api/dg';
+
 /* eslint-disable no-unused-vars */
 export enum ErrorHandling {
   REJECT_ALL = 'reject_all',
@@ -46,3 +48,13 @@ export const EXCLUDE_SEARCH_OUTPUT_FIELDS = ['id', 'molregno', 'batch_regno', 'h
 
 export const STRUCTURE_FIELDS = ['canonical_smiles', 'original_molfile'];
 export const STRUCTURE_SEARCH_FIELD = 'structure';
+
+export const STRING_AGGREGATIONS = ['CONCAT ALL', 'CONCAT UNIQUE', 'LONGEST', 'SHORTEST', 'MOST FREQUENT'];
+export const NUMERIC_AGGREGATIONS = ['FIRST', 'COUNT', 'VALUES', 'UNIQUE', 'NULLS', 'MIN', 'MAX', 'SUM',
+  'MED', 'AVG', 'STDEV', 'VARIANCE', 'Q1', 'Q2', 'Q3'];
+export const PROP_NUM_TYPES = [DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.INT, DG.TYPE.NUM, DG.TYPE.QNUM];
+
+export const MOLTRACK_ENDPOINT = 'moltrackEndpoint';
+export const MOLTRACK_ENTITY_TYPE = 'moltrackEntityType';
+export const MOLTRACK_ENTITY_LEVEL = 'moltrackEntityLevel';
+export const MOLTRACK_IS_STATIC_FIELD = 'moltrackIsStaticField';

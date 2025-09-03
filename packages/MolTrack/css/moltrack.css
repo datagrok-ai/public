@@ -130,3 +130,48 @@
   align-items: center;
   margin-bottom: 8px;
 }
+
+.moltrack-search-aggr-header-div {
+  gap: 5px;
+  align-items: center;
+  padding: 10px 12px 5px;
+}
+
+.moltrack-search-aggr-header-div .grok-icon.fal.fa-plus {
+  color: #2083d5!important;
+}
+
+.moltrack-search-aggr-field .d4-menu-item-container.d4-vert-menu.d4-menu-popup {
+  height: 400px;
+  overflow-y: scroll;
+}
+
+.moltrack-search-aggr-row {
+  padding-left: 12px;
+  padding-right: 15px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  align-items: center;
+  gap: 5px;
+}
+
+.moltrack-search-aggr-row select {
+  width: 125px!important;
+}
+
+.moltrack-search-aggr-row .fa-trash-alt {
+    font-size: 12px;
+    color: #2083D5;
+    padding-top: 5px;
+    padding-left: 4px;
+    display: none;
+}
+
+.moltrack-invalid-aggr-field {
+  color: #eb6767!important;
+  border-color: #eb6767 !important;
+}
+
+.moltrack-search-aggr-row:hover .fa-trash-alt {
+  display: flex;
+}

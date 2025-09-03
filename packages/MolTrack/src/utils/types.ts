@@ -1,6 +1,6 @@
 import { Operators } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { Scope } from './constants';
-
+/* eslint-disable no-unused-vars */
 
 // Enums for property classification and entity types
 export enum MolTrackPropertyClass {
@@ -54,11 +54,15 @@ export interface MolTrackComplexCondition {
 // Union type for any condition
 export type MolTrackFilter = MolTrackSimpleCondition | MolTrackComplexCondition;
 
-// Complex condition structure
+export interface MolTrackSearchAggregation {
+   field: string;
+   operation: string;
+}
 export interface MolTrackSearchQuery {
   level: string;
   output: string[];
   filter: MolTrackFilter;
+  aggregations?: MolTrackSearchAggregation[];
 }
 
 export interface MolTrackSearchResponse {
@@ -69,17 +73,12 @@ export interface MolTrackSearchResponse {
     columns: string[],
 }
 
-export interface MolTrackSearchMapping {
-    level: Scope,
-    searchEndpoint: string,
-    propEntityType: MolTrackEntityType
-}
+export const molTrackSearchMapping = {
+  [MolTrackEntityType.COMPOUND]: {level: Scope.COMPOUNDS, searchEndpoint: 'compounds'},
+  [MolTrackEntityType.BATCH]: {level: Scope.BATCHES, searchEndpoint: 'batches'},
+  [MolTrackEntityType.ASSAY]: {level: Scope.ASSAYS, searchEndpoint: 'assays'},
+  [MolTrackEntityType.ASSAY_RUN]: {level: Scope.ASSAY_RUNS, searchEndpoint: 'assay-runs'},
+  [MolTrackEntityType.ASSAY_RESULT]: {level: Scope.ASSAY_RESULTS, searchEndpoint: 'assay-results'},
+};
 
-export const searchTypeMapping: MolTrackSearchMapping[] = [
-  { level: Scope.COMPOUNDS, searchEndpoint: 'compounds', propEntityType: MolTrackEntityType.COMPOUND },
-  { level: Scope.BATCHES, searchEndpoint: 'batches', propEntityType: MolTrackEntityType.BATCH },
-  { level: Scope.ASSAYS, searchEndpoint: 'assays', propEntityType: MolTrackEntityType.ASSAY },
-  { level: Scope.ASSAY_RUNS, searchEndpoint: 'assay-runs', propEntityType: MolTrackEntityType.ASSAY_RUN },
-  { level: Scope.ASSAY_RESULTS, searchEndpoint: 'assay-results', propEntityType: MolTrackEntityType.ASSAY_RESULT },
-];
 
