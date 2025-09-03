@@ -18,7 +18,6 @@ Datagrok supports secure connections to **AWS** and **GCP**, allowing you to:
 
 ## AWS Connection
 
-### Overview
 Datagrok supports two authentication methods for AWS:
 
 1. **IAM credentials** – Manually provide an **Access Key ID** and **Secret Access Key**.
@@ -44,7 +43,7 @@ The IAM or task role used by Datagrok must have the necessary permissions for th
 3. Set **Credentials** to the AWS connection you created, then complete the remaining parameters.
 4. (Optional) Specify a **Secret name**. Datagrok will fetch the credentials object from [AWS Secrets Manager](https://docs.aws.amazon.com/secretsmanager/latest/userguide/introduction.html) using this **AWS** connection.
 
-#### For logs export
+#### For logs export to CloudWatch
 1. Navigate to **Settings → Log → Log Export → Add New Export Block**.
 2. Select **Amazon CloudWatch** and choose the AWS connection in the **Connection** field.
 
@@ -52,7 +51,6 @@ The IAM or task role used by Datagrok must have the necessary permissions for th
 
 ## GCP Connection
 
-### Overview
 Datagrok supports two authentication methods for GCP:
 
 1. **Service account key** – Upload a JSON key file for a GCP service account.
@@ -76,7 +74,7 @@ The service account (or impersonated account) must have the necessary permission
 3. Set **Credentials** to the GCP connection you created, then complete the remaining parameters.
 4. (Optional) Specify a **Secret name**. Datagrok will fetch the credentials object from [Google Secret Manager](https://cloud.google.com/security/products/secret-manager) using this **GCP** connection.
 
-#### For logs export
+#### For logs export to Google Cloud Logging
 1. Navigate to **Settings → Log → Log Export → Add New Export Block**.
 2. Select **Google Cloud Logging** and choose the GCP connection in the **Connection** field.
 
