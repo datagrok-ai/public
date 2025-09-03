@@ -28,6 +28,7 @@ You can also [connect to a data source, query data, and share connections progra
 
 ## Connecting to database
 
+
 ### Adding connection
 
 ![Add a new database connection](img/database-connection.gif)
@@ -56,7 +57,7 @@ Some connection parameters have unique characteristics, and it's important to sp
   * Manually. When entered manually, Datagrok stores secrets in a [secure privilege management system](../../govern/access-control/access-control.md#credentials-management-system). To specify who can change the connection credentials, click the **Gear** icon
    and select from the **Credential owner** dropdown.
 
-  * Use the [Secrets Manager](../../govern/access-control/data-connection-credentials.md), such as the AWS Secrets Manager.
+  * Use the [Secrets Manager](../../govern/access-control/data-connection-credentials.md), such as the AWS or GCP Secrets Manager.
 
 Upon successful connection, the database appears in the [Database Manager](https://public.datagrok.ai/connect) 
 under the respective data source.

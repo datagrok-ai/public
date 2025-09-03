@@ -1,47 +1,88 @@
 ---
-title: "Secrets managers"
+title: "Secrets Managers"
 format: mdx
 sidebar_position: 2
 ---
 
-When you [add a data connection](../../access/databases/databases.md#adding-connection) you can use Amazon Web Services Secrets Manager to store, manage, and retrieve secrets. Alternatively, you can use the Datagrok's [credentials management systems](access-control.md#credentials-management-system).
+# Secrets Managers
 
-## Setting up connection with AWS Secrets Manager
+Datagrok supports secure connections to **AWS** and **GCP**, allowing you to:
 
-Prerequisites:
+- Access cloud services such as **BigQuery**, **S3**, and **Athena**.
+- Configure log exports to **CloudWatch** or **Google Cloud Logging**.
+- Securely provide credentials for other Datagrok connections by fetching them from the respective **Secrets Manager**.
 
-* In Datagrok:
-  * A user role with _create connections_ and _edit connections_ privileges.
-* In AWS:
-  * An existing secret. For information on how to create a secret, see [Amazon's documentation](https://docs.aws.amazon.com/secretsmanager/latest/userguide/create_secret.html).
-  * Permissions that allow you to view secrets in AWS Secrets Manager.
+> **Note:** You must be a member of the **Administrators** or **Developers** group to create these connections.
 
-To use the AWS Secrets Manager in a database connection, follow these steps:
+---
 
-* _Step 1_. Set up a connection to the AWS Secrets Manager.
-  1. Go to **Data > Databases**.
-  1. In the **Toolbox** under **Actions**, select **Add new connection…** to open the **Add new connection** dialog.
-  1. In the dialog under the **Data Source**, select **AWS** from the list of options.
-  1. Paste the secret key and access key in the fields provided, name the connection, and fill in other connection parameters as appropriate.
+## AWS Connection
 
-   <!--![Create connection to AWS Secret Manager](../img/connect-to-aws.png)-->
+### Overview
+Datagrok supports two authentication methods for AWS:
 
-  1. Click **TEST** to test the connection, then click **OK** to save it. If the connection fails, verify your secrets details.
-* _Step 2_. Create a connection that will use the AWS Secrets Manager.
-  1. Open the **Add new connection** dialog by repeating the actions described in Step 1 above.
-  1. In the **Add new connection** dialog, under **Credentials**, select the name of the connection that you created in Step 1.
-  1. Enter the Secret Name and other connection parameters in the fields provided.
+1. **IAM credentials** – Manually provide an **Access Key ID** and **Secret Access Key**.
+2. **Task role credentials** – When Datagrok is running on **EC2** or **ECS/Fargate**, it can fetch temporary credentials automatically from the IAM role assigned to the environment.
+    - **EC2:** Credentials are retrieved from the Instance Metadata Service (IMDS).
+    - **ECS/Fargate:** Credentials are fetched from the task role endpoint.
 
-  <!--![Add new Data connection](../img/data-connection-secret-p02.png)-->
+### Creating an AWS Connection
+1. Navigate to **Databases → AWS**.
+2. Right-click the provider and select **Add connection...**.
+3. Select the **Authentication Method**.
+4. Fill in the required fields and **save** the connection.
 
-  :::note
+### Using an AWS Connection
+The IAM or task role used by Datagrok must have the necessary permissions for the resources you intend to use, such as:
 
-  You can set up connections to the AWS Secrets Managers for different user groups. Each connection has its own set of credentials which are stored in the Cloud Manager and which are identified by the specified Datagrok connection name and the Secret Name. The Secret Name is defined within the AWS Secrets Manager.
+- **Athena:** `athena:*`, `s3:*`, and `glue:*` (for the Data Catalog).
+- **Logging:** `logs:CreateLogGroup`, `logs:CreateLogStream`, `logs:PutLogEvents`.
 
-  :::
+#### As credentials provider for Athena
+1. Navigate to **Databases → Athena**.
+2. Right-click the provider and select **Add connection...**.
+3. Set **Credentials** to the AWS connection you created, then complete the remaining parameters.
+4. (Optional) Specify a **Secret name**. Datagrok will fetch the credentials object from [AWS Secrets Manager](https://docs.aws.amazon.com/secretsmanager/latest/userguide/introduction.html) using this **AWS** connection.
 
-  1. Click **Test** to test the connection, then click **OK** to save it. If the connection fails, verify your connection details and that you added Datagrok's IP addresses to your allowlist.
+#### For logs export
+1. Navigate to **Settings → Log → Log Export → Add New Export Block**.
+2. Select **Amazon CloudWatch** and choose the AWS connection in the **Connection** field.
 
-For more information about using the AWS Secrets Manager, see the [Amazon Web Services Secrets Manager User Guide](https://docs.aws.amazon.com/secretsmanager/latest/userguide/introduction.html).
+---
 
-![](../img/credentials.gif)
+## GCP Connection
+
+### Overview
+Datagrok supports two authentication methods for GCP:
+
+1. **Service account key** – Upload a JSON key file for a GCP service account.
+2. **Service account impersonation** – Provide a **Service Account Email**. If Datagrok runs under a service account with the **Service Account Token Creator** role, it can impersonate the specified account.
+
+### Creating a GCP Connection
+1. Navigate to **Databases → GCP**.
+2. Right-click the provider and select **Add connection...**.
+3. Select the **Authentication Method**.
+4. Fill in the required fields and **save** the connection.
+
+### Using a GCP Connection
+The service account (or impersonated account) must have the necessary permissions:
+
+- **BigQuery:** `roles/bigquery.dataViewer` (dataset access).
+- **Logging:** `roles/logging.logWriter` (permission to write logs).
+
+#### As credentials provider for BigQuery
+1. Navigate to **Databases → BigQuery**.
+2. Right-click the provider and select **Add connection...**.
+3. Set **Credentials** to the GCP connection you created, then complete the remaining parameters.
+4. (Optional) Specify a **Secret name**. Datagrok will fetch the credentials object from [Google Secret Manager](https://cloud.google.com/security/products/secret-manager) using this **GCP** connection.
+
+#### For logs export
+1. Navigate to **Settings → Log → Log Export → Add New Export Block**.
+2. Select **Google Cloud Logging** and choose the GCP connection in the **Connection** field.
+
+---
+
+See also:
+
+* [Data connection](../../access/access.md#data-connection)
+* [Adding connection](../../access/databases/databases.md#adding-connection)
