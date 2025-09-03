@@ -56,7 +56,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
 
   public initialValues: Record<string, any> = {};
 
-  public outdatedChanged$ = new BehaviorSubject(true);
+  private outdatedChanged$ = new BehaviorSubject(true);
   private closed$ = new Subject<true>();
   private initialData?: BridgePreInitData;
 
@@ -213,6 +213,10 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     }
     const currentMeta = this.metaStates[id].value ?? {};
     this.metaStates[id].next({...currentMeta, [handlerId]: meta});
+  }
+
+  setOuputStatus(isOutdated: boolean) {
+    this.outdatedChanged$.next(isOutdated);
   }
 
   run(mockResults?: Record<string, any>, mockDelay?: number) {
