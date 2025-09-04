@@ -215,7 +215,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     this.metaStates[id].next({...currentMeta, [handlerId]: meta});
   }
 
-  setOuputStatus(isOutdated: boolean) {
+  setOutdatedStatus(isOutdated: boolean) {
     this.outdatedChanged$.next(isOutdated);
   }
 
@@ -259,7 +259,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     });
   }
 
-  public getIOEditsFlag(filteredInputs?: FuncCallIODescription[]) {
+  getIOEditsFlag(filteredInputs?: FuncCallIODescription[]) {
     const inputs = filteredInputs ?? this.io;
     const inputsChanges = inputs.map(
       (item) => this.getStateChanges(item.id, true).pipe(skip(1)));

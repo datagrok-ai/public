@@ -428,13 +428,9 @@ export class StateTree {
         throw new Error(`FuncCall writable node is expected on path ${JSON.stringify(path)}`);
       const adapter = new FuncCallAdapter(call, false);
       item.changeAdapter(adapter, true);
+      item.setOutdatedStatus(false);
       return of(item);
-    }).pipe(concatMap(
-      // TODO: investigate, a better fix (?)
-      (item) => this.linksState.waitForLinks().pipe(
-        debounceTime(0),
-        tap(() => item.instancesWrapper.setOuputStatus(false)))
-    ));
+    });
   }
 
   public resetToConsistent(uuid: string, ioName: string) {
