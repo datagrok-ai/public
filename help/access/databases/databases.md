@@ -297,7 +297,7 @@ saving.
 
 ### AI Query Builder
 
-Use **AI Query Builder** to ask natural language questions about your data, and it will automatically generate the appropriate query
+**AI Query Builder** turns natural language questions into precise queries automatically.
 
 ![Create a join query](img/query-editor-ai.gif)
 
