@@ -8,9 +8,10 @@ import { materialsCondition } from './compounds';
 import { getRevvityLibraries } from './libraries';
 import { getDefaultProperties, REVVITY_FIELD_TO_PROP_TYPE_MAPPING } from './properties';
 import { getTerms } from './package';
-import { createPath, initSearchQuery, resetInitSearchQuery } from './view-utils';
+import { createPath } from './view-utils';
+import { getCompoundTypeByViewName, getViewNameByCompoundType } from './utils';
 
-const SAVED_SEARCH_STORAGE = 'RevvitySignalsLinkSavedSearch'
+export const SAVED_SEARCH_STORAGE = 'RevvitySignalsLinkSavedSearch'
 
 export async function runSearchQuery(libId: string, compoundType: string,
   queryBuilderCondition: ComplexCondition): Promise<DG.DataFrame> {
@@ -45,7 +46,8 @@ export async function runSearchQuery(libId: string, compoundType: string,
 }
 
 
-export async function initializeFilters(tv: DG.TableView, filtersDiv: HTMLDivElement, libName: string, compoundType: string) {
+export async function initializeFilters(tv: DG.TableView, filtersDiv: HTMLDivElement, libName: string,
+  compoundType: string, initialSearchQuery?: ComplexCondition) {
   const libs = await getRevvityLibraries();
   const selectedLib = libs.filter((l) => l.name === libName);
   if (selectedLib.length) {
@@ -73,13 +75,13 @@ export async function initializeFilters(tv: DG.TableView, filtersDiv: HTMLDivEle
     
     //save search icon
     const saveSearchIcon = ui.icons.save(() => {
-      saveSearchQuery(selectedLib[0].id, compoundType, qb)
+      saveSearchQuery(selectedLib[0].name, compoundType, qb)
     }, 'Save current search query');
 
 
     //load search icon
-    const loadSearchIcon = ui.iconFA('arrow-to-bottom', () => {
-      loadSearchQuery(selectedLib[0].id, compoundType, qb);
+    const loadSearchIcon = ui.iconFA('folder-open', () => {
+      loadSearchQuery(selectedLib[0].name, compoundType, qb);
     }, 'Load saved search query');
     
     const filtersButton = ui.div(externalFilterIcon);
@@ -92,7 +94,7 @@ export async function initializeFilters(tv: DG.TableView, filtersDiv: HTMLDivEle
       externalFilterIcon.classList.add('revvity-filters-button-icon-show');
     })
     ui.setUpdateIndicator(filtersDiv, true, 'Loading filters...');
-    const qb = await initializeQueryBuilder(selectedLib[0].id, compoundType);
+    const qb = await initializeQueryBuilder(selectedLib[0].id, compoundType, initialSearchQuery);
 
     const runSearchButton = ui.bigButton('Search', async () => {
       runSearch(qb, tv, selectedLib[0].id, compoundType, libName);
@@ -106,7 +108,7 @@ export async function initializeFilters(tv: DG.TableView, filtersDiv: HTMLDivEle
       updateQueryBuilderLayout(qb, filtersDiv.clientWidth, selectedLib[0].id, compoundType);
     });
 
-    if (initSearchQuery)
+    if (initialSearchQuery)
       runSearch(qb, tv, selectedLib[0].id, compoundType, libName);
   }
 }
@@ -117,14 +119,13 @@ export async function runSearch(qb: QueryBuilder, tv: DG.TableView, libId: strin
   const condition = qb.condition;
   const resultDf = await runSearchQuery(libId, compoundType, condition);
   tv.dataFrame = resultDf;
-  tv.path = createPath([libName, compoundType, 'search', JSON.stringify(condition)]);
+  tv.path = createPath([libName, getViewNameByCompoundType(compoundType), 'search', JSON.stringify(condition)]);
   ui.setUpdateIndicator(tv.grid.root, false);
-  if (initSearchQuery)
-    resetInitSearchQuery();
 }
 
 
-export async function initializeQueryBuilder(libId: string, compoundType: string): Promise<QueryBuilder> {
+export async function initializeQueryBuilder(libId: string, compoundType: string,
+  initialSearchQuery?: ComplexCondition): Promise<QueryBuilder> {
   const filterFields = getDefaultProperties();
   const tagsStr = await grok.functions.call('RevvitySignalsLink:getTags', {
     assetTypeId: libId,
@@ -148,7 +149,7 @@ export async function initializeQueryBuilder(libId: string, compoundType: string
     filterFields.push(prop);
   });
 
-  return new QueryBuilder(filterFields, initSearchQuery, QueryBuilderLayout.Narrow, `Revvity Signals|${libId}|${compoundType}`);
+  return new QueryBuilder(filterFields, initialSearchQuery, QueryBuilderLayout.Narrow, `Revvity Signals|${libId}|${compoundType}`);
 
 }
 
@@ -165,9 +166,9 @@ function updateQueryBuilderLayout(qb: QueryBuilder, width: number, libId: string
 };
 
 // Function to save search query
-async function saveSearchQuery(libId: string, compoundType: string, queryBuilder: QueryBuilder) {
+async function saveSearchQuery(libName: string, compoundType: string, queryBuilder: QueryBuilder) {
 
-  const storageKey = `${libId}|${compoundType}`;
+  const storageKey = `${libName}|${compoundType}`;
   const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, storageKey) || '{}';
   const savedSearches: { [key: string]: string } = JSON.parse(savedSearchesStr);
   
@@ -200,8 +201,8 @@ async function saveSearchQuery(libId: string, compoundType: string, queryBuilder
 }
 
 // Function to load search query
-async function loadSearchQuery(libId: string, compoundType: string, queryBuilder: QueryBuilder) {
-  const storageKey = `${libId}|${compoundType}`;
+async function loadSearchQuery(libName: string, compoundType: string, queryBuilder: QueryBuilder) {
+  const storageKey = `${libName}|${compoundType}`;
   const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, storageKey) || '{}';
   const savedSearches: { [key: string]: string } = JSON.parse(savedSearchesStr);
   

@@ -25,7 +25,6 @@ export type RevvityConfig = {
   libraries?: RevvityLibrary[];
 }
 
-let openedView: DG.View | null = null;
 let config: RevvityConfig = { libraries: undefined };
 
 //tags: app
@@ -73,8 +72,13 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
       const viewName = getViewNameByCompoundType(libType.name);
       const typeNode = libNode.item(`${viewName.charAt(0).toUpperCase()}${viewName.slice(1)}`);
       typeNode.onSelected.subscribe(async () => {
-        await createViewFromPreDefinedQuery(treeNode, JSON.stringify(retrieveQueriesMap[libType.name]), `${viewName.charAt(0).toUpperCase()}${viewName.slice(1)}`,
-          lib.name, libType.name);
+        
+        //need woraround with nodeToDeselect to deselect node which was selected via routing (openRevvityNode function)
+        const nodeToDeselect = treeNode.items
+          .find((node) => node.text.toLowerCase() !== viewName.toLowerCase() && node.root.classList.contains('d4-tree-view-node-selected'));
+        nodeToDeselect?.root.classList.remove('d4-tree-view-node-selected');
+
+        await createViewFromPreDefinedQuery(treeNode, [lib.name, getViewNameByCompoundType(libType.name)], lib.name, libType.name);
       });
     }
   }
