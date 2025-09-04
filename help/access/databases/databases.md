@@ -153,8 +153,8 @@ Datagrok provides several tools for creating, exploring, and editing queries.
 
   :::
 
-* [_Join tables_](#join-tables): This tool lets you merge multiple tables within
-  a database connection.
+* [_AI Query Builder_](#ai-query-builder): This tool lets you build queries and
+ visualizations using natural language.
 
 :::note
 
@@ -295,24 +295,11 @@ columns, and more. When your query is complete, give it a name and click the
 **Save** button. If you don't want to save the query, close the editor without
 saving.
 
-### Join tables
+### AI Query Builder
 
-Use this tool to merge tables:
+Use **AI Query Builder** to ask natural language questions about your data, and it will automatically generate the appropriate query
 
-  1. Right-click a table and select **Join tables**. This action opens a dialog
-     with a list of columns connected by keys.
-  1. Select the checkboxes that correspond to the columns you want to include.
-     Based on your selections, Datagrok automatically generates an SQL statement
-     and a preview of the results. If desired, you can manually modify the SQL
-     statement. The preview will update accordingly as you make changes.
-  1. When finished, use the **Dropdown Arrow** control in the bottom left corner
-     of the dialog to choose between the two options:
-     * **Save as query**: This opens the **Query Editor** where you can further
-       edit the query.
-     * **Add result to workspace**: This opens the query output as a dataframe
-       for detailed exloration.
-
-![Create a join query](img/query-builder.gif)
+![Create a join query](img/query-editor-ai.gif)
 
 ### Parameterized queries
 
