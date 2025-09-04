@@ -11,6 +11,7 @@ import { addMoleculeStructures, assetsQuery, MOL_COL_NAME, retrieveQueriesMap } 
 import { getRevvityUsers } from './users';
 import { createInitialSatistics, getRevvityLibraries, RevvityLibrary, RevvityType } from './libraries';
 import { createViewFromPreDefinedQuery, handleInitialURL } from './view-utils';
+import { SAVED_SEARCH_STORAGE } from './search-utils';
 
 
 export const _package = new DG.Package();
@@ -72,16 +73,37 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
       const viewName = getViewNameByCompoundType(libType.name);
       const typeNode = libNode.item(`${viewName.charAt(0).toUpperCase()}${viewName.slice(1)}`);
       typeNode.onSelected.subscribe(async () => {
-        
-        //need woraround with nodeToDeselect to deselect node which was selected via routing (openRevvityNode function)
-        const nodeToDeselect = treeNode.items
-          .find((node) => node.text.toLowerCase() !== viewName.toLowerCase() && node.root.classList.contains('d4-tree-view-node-selected'));
-        nodeToDeselect?.root.classList.remove('d4-tree-view-node-selected');
+
+        // //need woraround with nodeToDeselect to deselect node which was selected via routing (openRevvityNode function)
+        // const nodeToDeselect = treeNode.items
+        //   .find((node) => node.text.toLowerCase() !== viewName.toLowerCase() && node.root.classList.contains('d4-tree-view-node-selected'));
+        // nodeToDeselect?.root.classList.remove('d4-tree-view-node-selected');
 
         await createViewFromPreDefinedQuery(treeNode, [lib.name, getViewNameByCompoundType(libType.name)], lib.name, libType.name);
       });
     }
   }
+  const savedSearchesNode = treeNode.group('Saved searches');
+  for (const lib of libs) {
+    const libNode = savedSearchesNode.group(lib.name);
+    for (const libType of lib.types) {
+      const typeName = getViewNameByCompoundType(libType.name);
+      const typeNode = libNode.group(`${typeName.charAt(0).toUpperCase()}${typeName.slice(1)}`);
+
+      const storageKey = `${lib.name}|${libType.name}`;
+      const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, storageKey) || '{}';
+      const savedSearches: { [key: string]: string } = JSON.parse(savedSearchesStr);
+      for (let key of Object.keys(savedSearches)) {
+        const savedSearchNode = typeNode.item(key);
+        savedSearchNode.onSelected.subscribe(async () => {
+          await createViewFromPreDefinedQuery(treeNode,
+            ['saved searches', lib.name, getViewNameByCompoundType(libType.name), key], lib.name, libType.name,
+            JSON.parse(savedSearches[key]), true);
+        });
+      }
+    }
+  }
+
 }
 
 //name: Search Entities

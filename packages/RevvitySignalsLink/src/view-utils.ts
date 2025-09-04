@@ -62,13 +62,13 @@ export async function openRevvityNode(treeNode: DG.TreeViewGroup, nodesToExpand:
   if (libToOpen && typeToOpen) {
     createViewFromPreDefinedQuery(treeNode, path, libToOpen, typeToOpen, initialSearchQuery, isSavedSearch);
 
-    //selecting node manually
-    if (lastExpandedNode) {
-      await awaitCheck(() => lastExpandedNode.items.find((node) => node.text.toLowerCase() === nodeToSelectName.toLowerCase()) !== undefined,
-        `${nodeToSelectName} types haven't been loaded in 10 seconds`, 10000);
-      const nodeToSelect = treeNode.items.find((node) => node.text.toLowerCase() === nodeToSelectName.toLowerCase());
-      nodeToSelect?.root.classList.add('d4-tree-view-node-selected');
-    }
+    // //selecting node manually
+    // if (lastExpandedNode) {
+    //   await awaitCheck(() => lastExpandedNode.items.find((node) => node.text.toLowerCase() === nodeToSelectName.toLowerCase()) !== undefined,
+    //     `${nodeToSelectName} types haven't been loaded in 10 seconds`, 10000);
+    //   const nodeToSelect = treeNode.items.find((node) => node.text.toLowerCase() === nodeToSelectName.toLowerCase());
+    //   nodeToSelect?.root.classList.add('d4-tree-view-node-selected');
+    // }
   }
 }
 
@@ -148,9 +148,8 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
   openedView = grok.shell.addTablePreview(df);
   openedView.name = name;
   openedView.path = createPath(path);
-  let query: string | null = null;
 
-  if (isSavedSearch) {
+  if (isSavedSearch && !initialSearchQuery) {
     const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, `${libName}|${compoundType}`) || '{}';
     const savedSearches: { [key: string]: string } = JSON.parse(savedSearchesStr);
     initialSearchQuery = JSON.parse(savedSearches[name]);
@@ -163,7 +162,7 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
     ui.setUpdateIndicator(openedView!.root, false);
     setBreadcrumbsInViewName([libName, compoundType], treeNode);
     const filtersDiv = ui.div([]);
-    initializeFilters(openedView!, filtersDiv, libName, compoundType, initialSearchQuery);
+    initializeFilters(openedView!, filtersDiv, libName, compoundType, initialSearchQuery, !isSavedSearch);
   }
 
   if (!initialSearchQuery) {

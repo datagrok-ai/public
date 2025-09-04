@@ -47,7 +47,7 @@ export async function runSearchQuery(libId: string, compoundType: string,
 
 
 export async function initializeFilters(tv: DG.TableView, filtersDiv: HTMLDivElement, libName: string,
-  compoundType: string, initialSearchQuery?: ComplexCondition) {
+  compoundType: string, initialSearchQuery?: ComplexCondition, changePath?: boolean) {
   const libs = await getRevvityLibraries();
   const selectedLib = libs.filter((l) => l.name === libName);
   if (selectedLib.length) {
@@ -97,7 +97,7 @@ export async function initializeFilters(tv: DG.TableView, filtersDiv: HTMLDivEle
     const qb = await initializeQueryBuilder(selectedLib[0].id, compoundType, initialSearchQuery);
 
     const runSearchButton = ui.bigButton('Search', async () => {
-      runSearch(qb, tv, selectedLib[0].id, compoundType, libName);
+      runSearch(qb, tv, selectedLib[0].id, compoundType, libName, true);
     });
 
     ui.setUpdateIndicator(filtersDiv, false);
@@ -109,17 +109,18 @@ export async function initializeFilters(tv: DG.TableView, filtersDiv: HTMLDivEle
     });
 
     if (initialSearchQuery)
-      runSearch(qb, tv, selectedLib[0].id, compoundType, libName);
+      runSearch(qb, tv, selectedLib[0].id, compoundType, libName, changePath);
   }
 }
 
-export async function runSearch(qb: QueryBuilder, tv: DG.TableView, libId: string, compoundType: string, libName: string) {
+export async function runSearch(qb: QueryBuilder, tv: DG.TableView, libId: string, compoundType: string, libName: string, changePath?: boolean) {
   qb.saveConditionToHistory();
   ui.setUpdateIndicator(tv.grid.root, true, 'Searching...');
   const condition = qb.condition;
   const resultDf = await runSearchQuery(libId, compoundType, condition);
   tv.dataFrame = resultDf;
-  tv.path = createPath([libName, getViewNameByCompoundType(compoundType), 'search', JSON.stringify(condition)]);
+  if (changePath)
+    tv.path = createPath([libName, getViewNameByCompoundType(compoundType), 'search', JSON.stringify(condition)]);
   ui.setUpdateIndicator(tv.grid.root, false);
 }
 
