@@ -304,36 +304,47 @@ export class PlateDrcAnalysis {
     plateWidget: PlateWidget
   ): HTMLElement {
     const container = ui.divV([], 'drc-analysis-container');
+    container.style.width='100%';
 
-    // Add the mapping section at the top
-    const mappingPanel = new AnalysisMappingPanel({
-      analysisName: 'Dose Response Curve',
-      requiredFields: [
-        {name: 'Activity', required: true},
-        {name: 'Concentration', required: true},
-        {name: 'SampleID', required: true}
-      ],
-      sourceColumns: plate.data.columns.names(),
-      currentMappings,
-      onMap,
-      onUndo
-    });
+    // Check if all required fields are mapped
+    const requiredFields = ['Activity', 'Concentration', 'SampleID'];
+    const allRequiredMapped = requiredFields.every((field) => currentMappings.has(field));
 
-    // Add the existing curves grid below
-    const curvesGrid = this.createCurvesGrid(plate, plateWidget, {}, 'csv');
+    if (allRequiredMapped) {
+    // Show the analysis results - PASS THE MAPPINGS!
+      const curvesGrid = this.createCurvesGrid(plate, plateWidget, currentMappings, 'csv');
 
-    container.appendChild(mappingPanel.getRoot());
+      if (curvesGrid)
+        container.appendChild(curvesGrid);
+      else
+        container.appendChild(ui.divText('Unable to create dose-response curves with current mapping.', 'warning-message'));
+    } else {
+    // Show the mapping panel
+      const mappingPanel = new AnalysisMappingPanel({
+        analysisName: 'Dose Response Curve',
+        requiredFields: [
+          {name: 'Activity', required: true},
+          {name: 'Concentration', required: true},
+          {name: 'SampleID', required: true}
+        ],
+        sourceColumns: plate.data.columns.names(),
+        currentMappings,
+        onMap,
+        onUndo
+      });
 
-    if (curvesGrid)
-      container.appendChild(curvesGrid);
-    else
-      container.appendChild(ui.divText('Map the required fields above to see dose-response curves.', 'info-message'));
-
+      container.appendChild(mappingPanel.getRoot());
+    }
 
     return container;
   }
 
-  static createCurvesGrid(plate: Plate, plateWidget: PlateWidget, options?: Partial<AnalysisOptions>, layout: 'csv' | 'excel' = 'csv'): HTMLElement | null {
+  static createCurvesGrid(
+    plate: Plate,
+    plateWidget: PlateWidget,
+    mappingsOrOptions?: Partial<AnalysisOptions> | Map<string, string>,
+    layout: 'csv' | 'excel' = 'csv'
+  ): HTMLElement | null {
     const defaultOptions: AnalysisOptions = {
       roleName: 'layout', concentrationName: 'concentration', valueName: 'readout',
       normalize: true, controlColumns: ['High Control', 'Low Control'], autoFilterOutliers: true,
@@ -342,15 +353,41 @@ export class PlateDrcAnalysis {
     };
 
     let actOptions: AnalysisOptions & {normalizedColName?: string};
-    if (layout === 'csv')
-      actOptions = {..._getOptionsForCsv(plate, defaultOptions), ...options};
-    else
-      actOptions = {..._getOptionsForExcel(plate, defaultOptions), ...options};
 
+    // Handle both mappings and options
+    if (mappingsOrOptions instanceof Map) {
+    // It's a mappings Map - use the mapped column names
+      const mappings = mappingsOrOptions;
+      if (layout === 'csv') {
+        actOptions = {
+          ..._getOptionsForCsv(plate, defaultOptions),
+          roleName: mappings.get('SampleID') || defaultOptions.roleName,
+          concentrationName: mappings.get('Concentration') || defaultOptions.concentrationName,
+          valueName: mappings.get('Activity') || defaultOptions.valueName,
+        };
+      } else {
+        actOptions = {
+          ..._getOptionsForExcel(plate, defaultOptions),
+          roleName: mappings.get('SampleID') || defaultOptions.roleName,
+          concentrationName: mappings.get('Concentration') || defaultOptions.concentrationName,
+          valueName: mappings.get('Activity') || defaultOptions.valueName,
+        };
+      }
+    } else {
+    // It's options - use existing logic
+      const options = mappingsOrOptions || {};
+      if (layout === 'csv')
+        actOptions = {..._getOptionsForCsv(plate, defaultOptions), ...options};
+      else
+        actOptions = {..._getOptionsForExcel(plate, defaultOptions), ...options};
+    }
+
+    // Rest of the method remains the same...
     if (!plate.data.columns.contains(actOptions.roleName) ||
-      !plate.data.columns.contains(actOptions.concentrationName) ||
-      !plate.data.columns.contains(actOptions.valueName))
+    !plate.data.columns.contains(actOptions.concentrationName) ||
+    !plate.data.columns.contains(actOptions.valueName))
       return null;
+
 
     const drFilterOptions: IPlateWellFilter = {exclude: {[actOptions.roleName]: actOptions.controlColumns}};
     let normed = false;

@@ -68,16 +68,16 @@ export function createPlatesView(): DG.View {
 
 
       // Get current mappings for this analysis (for now, just use empty map until you implement the state manager methods)
-      const currentMappings = new Map<string, string>();
+      // Get current mappings for this analysis (for now, just use empty map)
+      const currentMappings = stateManager.getAnalysisMapping(activeIndex, 'drc');
+
 
       const handleMap = (target: string, source: string) => {
-      // For now, just use the regular mapping - you can implement analysis-specific later
-        stateManager.remapProperty(activeIndex, target, source);
+        stateManager.remapAnalysisProperty(activeIndex, 'drc', target, source);
       };
 
       const handleUndo = (target: string) => {
-      // For now, just use the regular mapping - you can implement analysis-specific later
-        stateManager.undoMapping(activeIndex, target);
+        stateManager.undoAnalysisMapping(activeIndex, 'drc', target);
       };
 
       return PlateDrcAnalysis.createAnalysisViewWithMapping(
@@ -105,11 +105,11 @@ export function createPlatesView(): DG.View {
 
 
       // Get current mappings for this analysis (for now, just use empty map)
-      const currentMappings = new Map<string, string>();
+      const currentMappings = stateManager.getAnalysisMapping(activeIndex, 'doseRatio');
+
 
       const handleMap = (target: string, source: string) => {
-      // For now, just use the regular mapping
-        stateManager.remapProperty(activeIndex, target, source);
+        stateManager.remapAnalysisProperty(activeIndex, 'doseRatio', target, source);
       };
 
       const handleUndo = (target: string) => {

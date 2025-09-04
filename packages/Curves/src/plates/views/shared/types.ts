@@ -5,7 +5,7 @@ import {Plate} from '../../../plate/plate';
 export type PlateFile = {
   plate: Plate;
   file: DG.FileInfo;
-  reconciliationMap: Map<string, string>; // Template properties only now
+  reconciliationMap: Map<string, string>;
   analysisMappings: {
     drc: Map<string, string>;
     doseRatio: Map<string, string>;

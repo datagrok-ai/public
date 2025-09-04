@@ -40,13 +40,6 @@ export class PlateStateManager {
       plate: plateFile,
     });
   }
-  public getAnalysisMapping(plateIndex: number, analysisType: 'drc' | 'doseRatio'): Map<string, string> {
-    const state = this.currentState;
-    if (!state || !state.plates[plateIndex]) return new Map();
-
-    const plateFile = state.plates[plateIndex];
-    return plateFile.analysisMappings[analysisType] || new Map();
-  }
   public setAnalysisMapping(plateIndex: number, analysisType: 'drc' | 'doseRatio', mappings: Map<string, string>): void {
     const state = this.currentState;
     if (!state || !state.plates[plateIndex]) return;
@@ -62,37 +55,30 @@ export class PlateStateManager {
     });
   }
 
-  public remapAnalysisProperty(plateIndex: number, analysisType: 'drc' | 'doseRatio', targetProperty: string, newSourceColumn: string): void {
+  // Add to PlateStateManager
+  public getAnalysisMapping(plateIndex: number, analysisType: 'drc' | 'doseRatio'): Map<string, string> {
+    const state = this.currentState;
+    if (!state || !state.plates[plateIndex]) return new Map();
+
+    const plateFile = state.plates[plateIndex];
+
+    // Return the analysis-specific mappings directly
+    return plateFile.analysisMappings[analysisType] || new Map();
+  }
+
+
+  public remapAnalysisProperty(plateIndex: number, analysisType: 'drc' | 'doseRatio', target: string, source: string): void {
     const state = this.currentState;
     if (!state || !state.plates[plateIndex]) return;
 
     const plateFile = state.plates[plateIndex];
-    if (!plateFile.analysisMappings[analysisType])
-      plateFile.analysisMappings[analysisType] = new Map();
 
-
-    const analysisMap = plateFile.analysisMappings[analysisType];
-
-    // Check for conflicts within this analysis mapping
-    let conflictingProperty: string | null = null;
-    for (const [target, source] of analysisMap.entries()) {
-      if (source === newSourceColumn && target !== targetProperty) {
-        conflictingProperty = target;
-        break;
-      }
-    }
-
-    if (conflictingProperty)
-      analysisMap.delete(conflictingProperty);
-
-
-    analysisMap.set(targetProperty, newSourceColumn);
-    grok.shell.info(`Mapped '${targetProperty}' to column '${newSourceColumn}' for ${analysisType} analysis`);
+    // Put it only in analysis mappings, not template mappings
+    plateFile.analysisMappings[analysisType].set(target, source);
 
     this.stateChange$.next({
       type: 'analysis-mapping-changed',
       plateIndex,
-      analysisType,
       plate: plateFile,
     });
   }
@@ -248,23 +234,24 @@ export class PlateStateManager {
           reconciliationMap.set(prop, prop);
       }
 
-      // Initialize analysis-specific mappings with auto-mapping where possible
+
+      // Auto-map DRC fields if they exist
       const drcMappings = new Map<string, string>();
       const doseRatioMappings = new Map<string, string>();
 
-      // Auto-map DRC fields if they exist
-      const drcFields = ['Activity', 'Concentration', 'SampleID'];
-      for (const field of drcFields) {
-        if (sourceCols.has(field))
-          drcMappings.set(field, field);
-      }
+      // // Auto-map DRC fields if they exist
+      // const drcFields = ['Activity', 'Concentration', 'SampleID'];
+      // for (const field of drcFields) {
+      //   if (sourceCols.has(field))
+      //     drcMappings.set(field, field);
+      // }
 
-      // Auto-map Dose Ratio fields if they exist
-      const doseRatioFields = ['Agonist_Concentration_M', 'Antagonist_Concentration_M', 'Percent_Inhibition', 'Agonist_ID', 'Antagonist_ID'];
-      for (const field of doseRatioFields) {
-        if (sourceCols.has(field))
-          doseRatioMappings.set(field, field);
-      }
+      // // Auto-map Dose Ratio fields if they exist
+      // const doseRatioFields = ['Agonist_Concentration_M', 'Antagonist_Concentration_M', 'Percent_Inhibition', 'Agonist_ID', 'Antagonist_ID'];
+      // for (const field of doseRatioFields) {
+      //   if (sourceCols.has(field))
+      //     doseRatioMappings.set(field, field);
+      // }
 
       currentState.plates.push({
         plate: parsedResult.plate,

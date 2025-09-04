@@ -34,47 +34,62 @@ export class PlateDoseRatioAnalysis {
     }
   ];
 
+  // In PlateDoseRatioAnalysis
   static createAnalysisView(
     plate: Plate,
     currentMappings: Map<string, string>,
     onMap: (target: string, source: string) => void,
     onUndo: (target: string) => void
   ): HTMLElement {
-    console.log('[DEBUG] createAnalysisView called with plate:', plate.barcode);
-    console.log('[DEBUG] sourceColumns:', plate.data.columns.names());
-
     const container = ui.divV([], 'dose-ratio-analysis-container');
-    console.log('[DEBUG] Created container:', container);
 
-    // Add the mapping section at the top
-    const mappingPanel = new AnalysisMappingPanel({
-      analysisName: 'Dose Ratio',
-      requiredFields: [
-        {name: 'Agonist_Concentration_M', required: true},
-        {name: 'Antagonist_Concentration_M', required: true},
-        {name: 'Percent_Inhibition', required: true},
-        {name: 'Agonist_ID', required: false},
-        {name: 'Antagonist_ID', required: false}
-      ],
-      sourceColumns: plate.data.columns.names(),
-      currentMappings,
-      onMap,
-      onUndo
-    });
-    console.log('[DEBUG] Created mapping panel:', mappingPanel);
+    // Check if all required fields are mapped
+    const requiredFields = ['Agonist_Concentration_M', 'Antagonist_Concentration_M', 'Percent_Inhibition'];
+    const allRequiredMapped = requiredFields.every((field) => currentMappings.has(field));
 
-    container.appendChild(mappingPanel.getRoot());
-    console.log('[DEBUG] Added mapping panel to container');
+    if (allRequiredMapped) {
+      console.log('[DEBUG] All required fields mapped, creating grid...');
+      const doseRatioGrid = this.createDoseRatioGrid(plate, currentMappings);
 
+      if (doseRatioGrid) {
+        console.log('[DEBUG] Grid dimensions:', doseRatioGrid.style.width, doseRatioGrid.style.height);
+        console.log('[DEBUG] Grid element:', doseRatioGrid);
+        console.log('[DEBUG] Container before adding grid:', container);
 
-    // Add the existing dose ratio grid below
-    const doseRatioGrid = this.createDoseRatioGrid(plate);
+        container.appendChild(doseRatioGrid);
 
-    container.appendChild(mappingPanel.getRoot());
-    if (doseRatioGrid)
-      container.appendChild(doseRatioGrid);
-    else
-      container.appendChild(ui.divText('Map the required fields above to see dose-ratio curves.', 'info-message'));
+        console.log('[DEBUG] Container after adding grid:', container);
+        console.log('[DEBUG] Container children count:', container.children.length);
+        console.log('[DEBUG] Container dimensions:', container.style.width, container.style.height);
+
+        // Force container to be visible
+        container.style.minHeight = '400px';
+        // container.style.border = '2px solid red'; // Temporary debug border
+        container.style.width = '100%'; // Temporary debug border
+        doseRatioGrid.style.minHeight = '400px';
+
+        console.log('[DEBUG] Grid added to container with forced dimensions');
+      }
+    } else {
+    // Show the mapping panel
+      const mappingPanel = new AnalysisMappingPanel({
+        analysisName: 'Dose Ratio',
+        requiredFields: [
+          {name: 'Agonist_Concentration_M', required: true},
+          {name: 'Antagonist_Concentration_M', required: true},
+          {name: 'Percent_Inhibition', required: true},
+          {name: 'Agonist_ID', required: false},
+          {name: 'Antagonist_ID', required: false}
+        ],
+        sourceColumns: plate.data.columns.names(),
+        currentMappings,
+        onMap,
+        onUndo
+      });
+
+      container.appendChild(mappingPanel.getRoot());
+    }
+
     return container;
   }
 
@@ -127,17 +142,24 @@ export class PlateDoseRatioAnalysis {
 
   static createDoseRatioGrid(plate: Plate, mappings?: Map<string, string>): HTMLElement | null {
     // Use mappings to get actual column names
+    console.log('[DEBUG] createDoseRatioGrid called with mappings:', mappings);
+
     const agonistColumn = mappings?.get('Agonist_Concentration_M') || 'Agonist_Concentration_M';
     const antagonistColumn = mappings?.get('Antagonist_Concentration_M') || 'Antagonist_Concentration_M';
     const responseColumn = mappings?.get('Percent_Inhibition') || 'Percent_Inhibition';
 
-    // Check if required columns exist (either mapped names or default names)
+    console.log('[DEBUG] Looking for columns:', {agonistColumn, antagonistColumn, responseColumn});
+    console.log('[DEBUG] Available columns:', plate.data.columns.names());
+
+    // Check if required columns exist
     if (!plate.data.columns.contains(agonistColumn) ||
-        !plate.data.columns.contains(antagonistColumn) ||
-        !plate.data.columns.contains(responseColumn)) {
-      console.warn(`Dose Ratio Analysis: Missing required columns. Looking for: ${agonistColumn}, ${antagonistColumn}, ${responseColumn}`);
+      !plate.data.columns.contains(antagonistColumn) ||
+      !plate.data.columns.contains(responseColumn)) {
+      console.warn(`[DEBUG] Missing columns. Looking for: ${agonistColumn}, ${antagonistColumn}, ${responseColumn}`);
       return null;
     }
+
+    console.log('[DEBUG] All columns found, proceeding with grid creation...');
 
     const antagonistCol = plate.data.col(antagonistColumn)!;
     const agonistCol = plate.data.col(agonistColumn)!;
@@ -206,6 +228,22 @@ export class PlateDoseRatioAnalysis {
     grid.root.style.width = '100%';
     grid.root.style.height = '100%';
 
+
+    console.log('[DEBUG] Number of series created:', series.length);
+    console.log('[DEBUG] Series details:', series.map((s) => ({name: s.name, pointCount: s.points.length})));
+
+    if (series.length === 0) {
+      console.log('[DEBUG] No series created - returning text message');
+      return ui.divText('No data available to plot dose-ratio curves.');
+    }
+
+    // After you create the chartData, add this:
+    console.log('[DEBUG] Chart data created:', chartData);
+
+    // After you create the grid, add this:
+    console.log('[DEBUG] Datagrok grid created:', grid);
+    console.log('[DEBUG] Grid root:', grid.root);
+    console.log('[DEBUG] Grid root style:', grid.root.style.cssText);
     ui.tools.handleResize(container, (w: number, h: number) => {
       if (w > 20 && h > 20) {
         grid.col(curveCol.name)!.width = w - 20;
