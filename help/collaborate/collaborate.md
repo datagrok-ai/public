@@ -31,7 +31,7 @@ Start a discussion in the **Context Panel** under the **Chat** pane. Conversatio
 
 ## Notifications
 
-Datagrok keeps you informed about relevant activity. The [User Profile View](link) shows:
+Datagrok keeps you informed about relevant activity. The [User Profile View](../datagrok/navigation/views/user-profile-view.md) shows:
 
 * Mentions
 * Items shared with you
