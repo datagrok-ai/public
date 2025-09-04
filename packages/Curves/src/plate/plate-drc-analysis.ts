@@ -10,6 +10,7 @@ import {FIT_FUNCTION_4PL_REGRESSION, FitMarkerType, IFitPoint} from '@datagrok-l
 import {FitConstants} from '../fit/const';
 import {FitCellOutlierToggleArgs, setOutlier} from '../fit/fit-renderer';
 import {savePlate} from '../plates/plates-crud';
+import {AnalysisMappingPanel} from '../plates/views/components/analysis-mapping/analysis-mapping-panel';
 
 
 function _getOptionsForExcel(plate: Plate, defaultOptions: AnalysisOptions): AnalysisOptions {
@@ -294,6 +295,42 @@ export class PlateDrcAnalysis {
       pw.plateActionsDiv!.appendChild(btn);
     }
     return pw;
+  }
+  static createAnalysisViewWithMapping(
+    plate: Plate,
+    currentMappings: Map<string, string>,
+    onMap: (target: string, source: string) => void,
+    onUndo: (target: string) => void,
+    plateWidget: PlateWidget
+  ): HTMLElement {
+    const container = ui.divV([], 'drc-analysis-container');
+
+    // Add the mapping section at the top
+    const mappingPanel = new AnalysisMappingPanel({
+      analysisName: 'Dose Response Curve',
+      requiredFields: [
+        {name: 'Activity', required: true},
+        {name: 'Concentration', required: true},
+        {name: 'SampleID', required: true}
+      ],
+      sourceColumns: plate.data.columns.names(),
+      currentMappings,
+      onMap,
+      onUndo
+    });
+
+    // Add the existing curves grid below
+    const curvesGrid = this.createCurvesGrid(plate, plateWidget, {}, 'csv');
+
+    container.appendChild(mappingPanel.getRoot());
+
+    if (curvesGrid)
+      container.appendChild(curvesGrid);
+    else
+      container.appendChild(ui.divText('Map the required fields above to see dose-response curves.', 'info-message'));
+
+
+    return container;
   }
 
   static createCurvesGrid(plate: Plate, plateWidget: PlateWidget, options?: Partial<AnalysisOptions>, layout: 'csv' | 'excel' = 'csv'): HTMLElement | null {

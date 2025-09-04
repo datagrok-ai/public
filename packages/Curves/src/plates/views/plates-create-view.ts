@@ -48,32 +48,45 @@ export function createPlatesView(): DG.View {
   `;
 
 
-
   const createDrcAnalysisContent = (): HTMLElement => {
     try {
+      console.log('[DEBUG] createDrcAnalysisContent called');
+
       const activePlate = stateManager.activePlate;
-      if (!activePlate)
+      const activeIndex = stateManager.currentState?.activePlateIdx ?? -1;
+
+      console.log('[DEBUG] activePlate:', activePlate?.plate.barcode);
+      console.log('[DEBUG] activeIndex:', activeIndex);
+      console.log('[DEBUG] currentState:', stateManager.currentState);
+
+      if (!activePlate || activeIndex < 0) {
+        console.log('[DEBUG] Returning skeleton - no active plate or bad index');
         return createAnalysisSkeleton('Dose Response', ['SampleID', 'Concentration', 'Activity']);
-
-      const mappedData = stateManager.getActivePlateMappedData();
-      if (!mappedData)
-        return createAnalysisSkeleton('Dose Response', ['SampleID', 'Concentration', 'Activity']);
-
-      const mappedPlate = new Plate(activePlate.plate.rows, activePlate.plate.cols);
-      mappedPlate.data = mappedData;
-      mappedPlate.barcode = activePlate.plate.barcode;
-
-      const drcGrid = PlateDrcAnalysis.createCurvesGrid(mappedPlate, plateWidget, {}, 'csv');
-
-      if (!drcGrid) {
-        const required = ['Activity', 'Concentration', 'SampleID'];
-        const missing = required.filter((c) => !mappedData.columns.contains(c));
-        return createAnalysisSkeleton('Dose Response', missing.length > 0 ? missing : required);
       }
 
-      drcGrid.style.width = '100%';
-      drcGrid.style.height = '100%';
-      return drcGrid;
+      console.log('[DEBUG] About to call createAnalysisView...');
+
+
+      // Get current mappings for this analysis (for now, just use empty map until you implement the state manager methods)
+      const currentMappings = new Map<string, string>();
+
+      const handleMap = (target: string, source: string) => {
+      // For now, just use the regular mapping - you can implement analysis-specific later
+        stateManager.remapProperty(activeIndex, target, source);
+      };
+
+      const handleUndo = (target: string) => {
+      // For now, just use the regular mapping - you can implement analysis-specific later
+        stateManager.undoMapping(activeIndex, target);
+      };
+
+      return PlateDrcAnalysis.createAnalysisViewWithMapping(
+        activePlate.plate,
+        currentMappings,
+        handleMap,
+        handleUndo,
+        plateWidget
+      );
     } catch (e: any) {
       console.error('Error creating Dose Response view:', e);
       return ui.divText(`Error displaying Dose Response analysis: ${e.message}`, 'error-message');
@@ -81,28 +94,35 @@ export function createPlatesView(): DG.View {
   };
 
   const createDoseRatioContent = (): HTMLElement => {
+    console.log('[DEBUG] PlateDoseRatioAnalysis methods:', Object.getOwnPropertyNames(PlateDoseRatioAnalysis));
+    console.log('[DEBUG] createAnalysisView exists:', typeof PlateDoseRatioAnalysis.createAnalysisView);
     try {
       const activePlate = stateManager.activePlate;
-      const requiredCols = ['Agonist_Concentration_M', 'Antagonist_Concentration_M', 'Percent_Inhibition'];
-      if (!activePlate)
-        return createAnalysisSkeleton('Dose Ratio', requiredCols);
+      const activeIndex = stateManager.currentState?.activePlateIdx ?? -1;
 
-      const mappedData = stateManager.getActivePlateMappedData();
-      if (!mappedData)
-        return createAnalysisSkeleton('Dose Ratio', requiredCols);
+      if (!activePlate || activeIndex < 0)
+        return createAnalysisSkeleton('Dose Ratio', ['Agonist_Concentration_M', 'Antagonist_Concentration_M', 'Percent_Inhibition']);
 
-      const mappedPlate = new Plate(activePlate.plate.rows, activePlate.plate.cols);
-      mappedPlate.data = mappedData;
-      mappedPlate.barcode = activePlate.plate.barcode;
 
-      const doseRatioGrid = PlateDoseRatioAnalysis.createDoseRatioGrid(mappedPlate);
+      // Get current mappings for this analysis (for now, just use empty map)
+      const currentMappings = new Map<string, string>();
 
-      if (!doseRatioGrid) {
-        const missing = requiredCols.filter((c) => !mappedData.columns.contains(c));
-        return createAnalysisSkeleton('Dose Ratio', missing.length > 0 ? missing : requiredCols);
-      }
+      const handleMap = (target: string, source: string) => {
+      // For now, just use the regular mapping
+        stateManager.remapProperty(activeIndex, target, source);
+      };
 
-      return doseRatioGrid;
+      const handleUndo = (target: string) => {
+      // For now, just use the regular mapping
+        stateManager.undoMapping(activeIndex, target);
+      };
+
+      return PlateDoseRatioAnalysis.createAnalysisView(
+        activePlate.plate,
+        currentMappings,
+        handleMap,
+        handleUndo
+      );
     } catch (e: any) {
       console.error('Error creating Dose Ratio view:', e);
       return ui.divText(`Error displaying Dose Ratio analysis: ${e.message}`, 'error-message');
@@ -194,7 +214,11 @@ export function createPlatesView(): DG.View {
     if (plateWidget.grid)
       plateWidget.grid.invalidate();
 
-    if (event.type === 'mapping-changed' || event.type === 'plate-selected') {
+    // Update this condition to include analysis mapping changes
+    if (event.type === 'mapping-changed' ||
+    event.type === 'plate-selected' ||
+    event.type === 'analysis-mapping-changed' ||
+    event.type === 'plate-added') { // Add this line
       console.log('[DEBUG] Refreshing analysis views due to state change');
 
       const drcPane = tabControl.getPane('Dose Response');

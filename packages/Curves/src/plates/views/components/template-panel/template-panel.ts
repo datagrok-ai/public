@@ -274,45 +274,27 @@ export class TemplatePanel {
 
       const sourceColumns = activePlate.plate.data.columns.names();
 
-      // Define required fields for both existing and new analyses
-      const DRC_FIELDS: TargetProperty[] = [
-        {name: 'Activity', required: true},
-        {name: 'Concentration', required: true},
-        {name: 'SampleID', required: true},
-      ];
-      const DOSE_RATIO_FIELDS: TargetProperty[] = [
-        {name: 'Percent_Inhibition', required: true},
-        {name: 'Agonist_Concentration_M', required: true},
-        {name: 'Antagonist_Concentration_M', required: true},
-        // These are useful for titles/grouping but not strictly essential for calculation
-        {name: 'Antagonist_ID', required: false},
-        {name: 'Agonist_ID', required: false},
-      ];
+      // REMOVED: Analysis-specific fields are no longer added here
+      // const DRC_FIELDS: TargetProperty[] = [...]
+      // const DOSE_RATIO_FIELDS: TargetProperty[] = [...]
+
+      // Only handle template-specific properties
       const MOCKED_REQUIRED_TEMPLATE_FIELDS = ['Target', 'Assay Format'];
       const templateProps: TargetProperty[] = template.wellProperties
         .filter((p) => p && p.name)
-        .map((p) => ({name: p.name!, required: MOCKED_REQUIRED_TEMPLATE_FIELDS.includes(p.name!)}));
+        .map((p) => ({
+          name: p.name!,
+          required: MOCKED_REQUIRED_TEMPLATE_FIELDS.includes(p.name!)
+        }));
 
-
-      // Combine all properties into a single list for the mapping editor
-      const allPropsMap = new Map<string, TargetProperty>();
-      [...templateProps, ...DRC_FIELDS, ...DOSE_RATIO_FIELDS].forEach((prop) => {
-        const existing = allPropsMap.get(prop.name);
-        if (existing)
-          existing.required = existing.required || prop.required;
-        else
-          allPropsMap.set(prop.name, {...prop});
-      });
-      const allTargetProps = Array.from(allPropsMap.values());
-
+      // Only template properties go into the central validation panel now
       renderMappingEditor(this.validationHost, {
-        targetProperties: allTargetProps, // Pass the corrected list
+        targetProperties: templateProps,
         sourceColumns: sourceColumns,
         mappings: activePlate.reconciliationMap,
         onMap: handleMapping,
         onUndo: handleUndo,
       });
-
 
       // Plate properties logic remains the same...
       const plateProperties = template.plateProperties
@@ -321,7 +303,7 @@ export class TemplatePanel {
       if (plateProperties.length > 0)
         this.platePropertiesHost.appendChild(ui.input.form(activePlate.plate.details || {}, plateProperties));
     } else {
-      // Handle the "no plate" case by calling the renderer with empty data
+    // Handle the "no plate" case by calling the renderer with empty data
       renderMappingEditor(this.validationHost, {
         targetProperties: [],
         sourceColumns: [],
@@ -337,7 +319,6 @@ export class TemplatePanel {
       if (templateProperties.length > 0)
         this.platePropertiesHost.appendChild(ui.input.form({}, templateProperties));
     }
-
 
     this.updateWellPropsHeader(template, state);
   }
@@ -370,13 +351,13 @@ export class TemplatePanel {
 
       if (totalConflicts > 0) {
         const conflictBadge = ui.span([`${totalConflicts}`], 'ui-badge-red');
-        ui.tooltip.bind(conflictBadge, `${totalConflicts} unresolved fields across all plates`);
+        ui.tooltip.bind(conflictBadge, `${totalConflicts} unresolved template fields across all plates`);
         badges.appendChild(conflictBadge);
       }
 
       if (totalMappings > 0) {
         const mappingBadge = ui.span([`${totalMappings}`], 'ui-badge-blue');
-        ui.tooltip.bind(mappingBadge, `${totalMappings} total mappings applied across all plates`);
+        ui.tooltip.bind(mappingBadge, `${totalMappings} total template mappings applied across all plates`);
         badges.appendChild(mappingBadge);
       }
 
@@ -384,7 +365,8 @@ export class TemplatePanel {
         manageMappingsButton.prepend(badges);
     }
 
-    const header = ui.h2('Well Properties');
+    // Changed header text to reflect template-only scope
+    const header = ui.h2('Template Properties');
     const headerContainer = ui.divH(
       [header, ui.div([manageMappingsButton], {style: {marginLeft: 'auto'}})],
       'space-between-center'

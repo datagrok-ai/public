@@ -3,20 +3,145 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {Plate} from './plate';
 import {FIT_FUNCTION_4PL_REGRESSION, IFitChartData, IFitSeries} from '@datagrok-libraries/statistics/src/fit/fit-curve';
-
+import {AnalysisMappingPanel, AnalysisRequiredFields} from '../plates/views/components/analysis-mapping/analysis-mapping-panel';
 
 export class PlateDoseRatioAnalysis {
-  static createDoseRatioGrid(plate: Plate): HTMLElement | null {
-    const requiredColumns = ['Agonist_Concentration_M', 'Antagonist_Concentration_M', 'Percent_Inhibition'];
+  private static REQUIRED_FIELDS: AnalysisRequiredFields[] = [
+    {
+      name: 'Agonist_Concentration_M',
+      required: true,
+      description: 'Agonist concentration values in molar units'
+    },
+    {
+      name: 'Antagonist_Concentration_M',
+      required: true,
+      description: 'Antagonist concentration values in molar units'
+    },
+    {
+      name: 'Percent_Inhibition',
+      required: true,
+      description: 'Response values as percent inhibition'
+    },
+    {
+      name: 'Agonist_ID',
+      required: false,
+      description: 'Optional: Identifier for the agonist compound'
+    },
+    {
+      name: 'Antagonist_ID',
+      required: false,
+      description: 'Optional: Identifier for the antagonist compound'
+    }
+  ];
 
-    if (!requiredColumns.every((col) => plate.data.columns.contains(col))) {
-      console.warn(`Dose Ratio Analysis: Missing one of the required columns: ${requiredColumns.join(', ')}`);
+  static createAnalysisView(
+    plate: Plate,
+    currentMappings: Map<string, string>,
+    onMap: (target: string, source: string) => void,
+    onUndo: (target: string) => void
+  ): HTMLElement {
+    console.log('[DEBUG] createAnalysisView called with plate:', plate.barcode);
+    console.log('[DEBUG] sourceColumns:', plate.data.columns.names());
+
+    const container = ui.divV([], 'dose-ratio-analysis-container');
+    console.log('[DEBUG] Created container:', container);
+
+    // Add the mapping section at the top
+    const mappingPanel = new AnalysisMappingPanel({
+      analysisName: 'Dose Ratio',
+      requiredFields: [
+        {name: 'Agonist_Concentration_M', required: true},
+        {name: 'Antagonist_Concentration_M', required: true},
+        {name: 'Percent_Inhibition', required: true},
+        {name: 'Agonist_ID', required: false},
+        {name: 'Antagonist_ID', required: false}
+      ],
+      sourceColumns: plate.data.columns.names(),
+      currentMappings,
+      onMap,
+      onUndo
+    });
+    console.log('[DEBUG] Created mapping panel:', mappingPanel);
+
+    container.appendChild(mappingPanel.getRoot());
+    console.log('[DEBUG] Added mapping panel to container');
+
+
+    // Add the existing dose ratio grid below
+    const doseRatioGrid = this.createDoseRatioGrid(plate);
+
+    container.appendChild(mappingPanel.getRoot());
+    if (doseRatioGrid)
+      container.appendChild(doseRatioGrid);
+    else
+      container.appendChild(ui.divText('Map the required fields above to see dose-ratio curves.', 'info-message'));
+    return container;
+  }
+
+
+  static updateAnalysisView(
+    container: HTMLElement,
+    plate: Plate,
+    currentMappings: Map<string, string>,
+    onMap: (sourceColumn: string, targetProperty: string) => void,
+    onUndo: (targetProperty: string) => void
+  ): void {
+    const mappingPanel = (container as any).__mappingPanel as AnalysisMappingPanel;
+    const resultsContainer = (container as any).__resultsContainer as HTMLElement;
+
+    if (!mappingPanel || !resultsContainer) return;
+
+    // Update mapping panel
+    mappingPanel.updateConfig({
+      sourceColumns: plate.data.columns.names(),
+      currentMappings,
+      onMap,
+      onUndo
+    });
+
+    // Update results
+    ui.empty(resultsContainer);
+
+    const validationStatus = mappingPanel.getValidationStatus();
+
+    if (validationStatus.isValid) {
+      const chartElement = this.createDoseRatioGrid(plate, currentMappings);
+      if (chartElement) {
+        resultsContainer.appendChild(chartElement);
+      } else {
+        resultsContainer.appendChild(
+          ui.divText('Unable to create dose-ratio curves with current data mapping.', 'warning-message')
+        );
+      }
+    } else {
+      const missingFieldsText = validationStatus.missingFields.join(', ');
+      resultsContainer.appendChild(
+        ui.divText(
+          `Please map the following required fields to continue: ${missingFieldsText}`,
+          'info-message'
+        )
+      );
+    }
+  }
+
+
+  static createDoseRatioGrid(plate: Plate, mappings?: Map<string, string>): HTMLElement | null {
+    // Use mappings to get actual column names
+    const agonistColumn = mappings?.get('Agonist_Concentration_M') || 'Agonist_Concentration_M';
+    const antagonistColumn = mappings?.get('Antagonist_Concentration_M') || 'Antagonist_Concentration_M';
+    const responseColumn = mappings?.get('Percent_Inhibition') || 'Percent_Inhibition';
+
+    // Check if required columns exist (either mapped names or default names)
+    if (!plate.data.columns.contains(agonistColumn) ||
+        !plate.data.columns.contains(antagonistColumn) ||
+        !plate.data.columns.contains(responseColumn)) {
+      console.warn(`Dose Ratio Analysis: Missing required columns. Looking for: ${agonistColumn}, ${antagonistColumn}, ${responseColumn}`);
       return null;
     }
 
-    const antagonistCol = plate.data.col('Antagonist_Concentration_M')!;
-    const agonistCol = plate.data.col('Agonist_Concentration_M')!;
-    const responseCol = plate.data.col('Percent_Inhibition')!;
+    const antagonistCol = plate.data.col(antagonistColumn)!;
+    const agonistCol = plate.data.col(agonistColumn)!;
+    const responseCol = plate.data.col(responseColumn)!;
 
     const uniqueConcentrations = Array.from(new Set(antagonistCol.toList()));
     const antagonistConcentrations = (uniqueConcentrations as number[]).sort((a, b) => a - b);
@@ -55,7 +180,6 @@ export class PlateDoseRatioAnalysis {
     if (series.length === 0)
       return ui.divText('No data available to plot dose-ratio curves.');
 
-
     const chartData: IFitChartData = {
       chartOptions: {
         title: `Dose Ratio Analysis for ${plate.barcode}`,
@@ -90,5 +214,10 @@ export class PlateDoseRatioAnalysis {
     });
 
     return container;
+  }
+
+  // Static method to get required fields (useful for other components)
+  static getRequiredFields(): AnalysisRequiredFields[] {
+    return [...this.REQUIRED_FIELDS];
   }
 }
