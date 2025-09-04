@@ -48,7 +48,10 @@ export const InputForm = Vue.defineComponent({
     actionRequested: (_actionUuid: string) => true,
     consistencyReset: (_ioName: string) => true,
   },
-  setup(props, {emit}) {
+  methods: {
+    clearForm: () => undefined,
+  },
+  setup(props, {emit, expose}) {
     Vue.onRenderTriggered((event) => {
       console.log('InputForm onRenderTriggered', event);
     });
@@ -135,9 +138,13 @@ export const InputForm = Vue.defineComponent({
       emit('formReplaced', form);
     };
 
-    Vue.onBeforeUnmount(() => {
-      formRef.value?.destroy();
-    });
+    const clearForm = () => {
+      if (currentForm.value) {
+        ui.empty(currentForm.value.root);
+      }
+    }
+
+    expose({clearForm});
 
     return () =>
       <dg-input-form

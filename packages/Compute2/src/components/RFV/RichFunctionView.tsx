@@ -247,6 +247,7 @@ export const RichFunctionView = Vue.defineComponent({
     const historyRef = Vue.shallowRef<InstanceType<typeof History> | undefined>(undefined);
     const helpRef = Vue.shallowRef<HTMLElement | undefined>(undefined);
     const formRef = Vue.shallowRef<HTMLElement | undefined>(undefined);
+    const inputFormComponentRef = Vue.shallowRef<InstanceType<typeof InputForm> | undefined>(undefined);
 
     ////
     // FuncCall related
@@ -315,6 +316,11 @@ export const RichFunctionView = Vue.defineComponent({
     Vue.watch(currentCall, () => {
       visibleTabLabels.value = [...tabLabels.value];
     }, {immediate: true});
+
+    Vue.onBeforeUnmount(() => {
+      if (inputFormComponentRef.value)
+        inputFormComponentRef.value.clearForm();
+    });
 
     ////
     // Intergrations related
@@ -463,11 +469,12 @@ export const RichFunctionView = Vue.defineComponent({
         </RibbonPanel>
         <DockManager class='block h-full'
           style={{overflow: 'hidden !important'}}
-          key={currentUuid.value}
           onPanelClosed={handlePanelClose}
+          key={currentUuid.value}
         >
           { !historyHidden.value && props.historyEnabled &&
-              <History
+            <History
+                key="__HISTORY__"
                 func={currentCall.value.func}
                 onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
                 allowCompare={true}
@@ -482,6 +489,7 @@ export const RichFunctionView = Vue.defineComponent({
               /> }
           { !formHidden.value &&
               <div
+                key="__FORM__"
                 class='flex flex-col p-2 overflow-scroll h-full'
                 dock-spawn-dock-type='left'
                 dock-spawn-dock-ratio={0.2}
@@ -491,6 +499,8 @@ export const RichFunctionView = Vue.defineComponent({
               >
                 {
                   Vue.withDirectives(<InputForm
+                    key={currentCall.value?.id}
+                    ref={inputFormComponentRef}
                     funcCall={currentCall.value}
                     callMeta={callMeta.value}
                     validationStates={validationState.value}
@@ -577,6 +587,7 @@ export const RichFunctionView = Vue.defineComponent({
               dock-spawn-dock-type='right'
               dock-spawn-dock-ratio={0.2}
               style={{overflow: 'scroll', height: '100%', padding: '5px'}}
+              key="__HELP__"
               ref={helpRef}
             > { Vue.withDirectives(
                 <MarkDown
