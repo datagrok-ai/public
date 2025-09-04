@@ -152,8 +152,7 @@ Datagrok provides several tools for creating, exploring, and editing queries.
 
   :::
 
-* [_AI Query Builder_](#ai-query-builder): This tool lets you build queries and
- visualizations using natural language.
+* [_AI Query Builder_](#ai-query-builder): is implemented through the [ChatGPT](https://github.com/datagrok-ai/public/tree/master/packages/ChatGPT) package and provides AI-powered assistance for creating visualizations and queries.
 
 :::note
 
@@ -279,7 +278,12 @@ columns.
 
 * **Data**: Use this field to select tables and columns for your query. To
   do so, click the **Add a table** icon, choose the tables, and specify which columns to include in the result. 
-* **Join**: Use this field to define relationships between tables. Tables are added automatically when more than one is selected in **Data**. By default, they are joined with the left inner join. To change the join type, click the **Join tables** icon between table names and choose the desired type. To change a key column, click it and select the required one from the list.
+* **Join**: Use this field to define relationships between tables.
+  Tables are added automatically when more than one is selected in **Data**.
+  By default, they are joined with the left inner join. To change the
+  join type, click the **Join tables** icon between table names and
+  choose the desired type. To change a key column, click it and select
+  the required one from the list.
 * **Where**: Use this field to filter the results using the pattern syntax. To
   do so, click the **Add** (**+**) icon, select the column to which you want to
   apply the filter, then set the condition (see [parameter patterns](#parameterized-queries) for syntax). You can also make the _Where condition_ a UI input parameter by selecting the checkbox located just before the expression.
@@ -317,14 +321,16 @@ columns.
 As you work on your query, you can preview the query output as an interactive
 dataframe. In the dataframe, you can view object details, perform actions on
 columns, and more. When your query is complete, give it a name and click the
-**Save** button. If you don't want to save the query, close the editor without
-saving.
+**Save** button. If you don't want to save the query, close the editor
+without saving.
 
 ### AI Query Builder
 
-AI Query Builder turns natural language questions into precise queries automatically.
+AI Query Builder turns natural language questions into precise queries
+automatically. Toggle the AI panel by clicking the **Brain** icon
+on the menu ribbon of the **Query** tab.
 
-![Create a join query](img/query-builder.gif)
+![AI Query Builder](img/query-editor-ai.gif)
 
 ### Parameterized queries
 
