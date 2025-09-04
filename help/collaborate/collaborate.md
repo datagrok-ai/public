@@ -1,7 +1,7 @@
 ---
 
 title: Seamless collaboration
-unlisted: true
+
 ---
 
 Datagrok supports collaboration at every level:
