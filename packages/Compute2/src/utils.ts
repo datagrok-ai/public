@@ -172,7 +172,7 @@ export async function reportStep(treeState?: PipelineState) {
 
     DG.Utils.download(
       `${treeState.friendlyName ?? treeState.configId}.zip`,
-      new Blob([zipSync(zipConfig)]),
+      new Blob([zipSync(zipConfig) as any]),
     );
   }
 }
