@@ -197,7 +197,7 @@ you don't want to save the query, close the editor without saving.
 :::note
 
 You can also add the query results to the workspace for further analysis. To do
-so, click the **Plus** icon on the menu ribbon of the
+so, click the **Add** (**+**) icon on the menu ribbon of the
 **Query** tab.
 
 :::
@@ -277,17 +277,16 @@ aggregated values for each column. You can also perform both actions to produce
 a pivot table that shows an aggregated value for every intersection of rows and
 columns.
 
-* **Data**: 
+* **Data**: Use this field to select tables and columns for your query. To
+  do so, click the **Add a table** icon, choose the tables, and specify which columns to include in the result. 
+* **Join**: Use this field to define relationships between tables. Tables are added automatically when more than one is selected in **Data**. By default, they are joined with the left inner join. To change the join type, click the **Join tables** icon between table names and choose the desired type. To change a key column, click it and select the required one from the list.
 * **Where**: Use this field to filter the results using the pattern syntax. To
   do so, click the **Add** (**+**) icon, select the column to which you want to
-  apply the filter, then set the condition (see [parameter patterns](#parameterized-queries) for syntax).
+  apply the filter, then set the condition (see [parameter patterns](#parameterized-queries) for syntax). You can also make the _Where condition_ a UI input parameter by selecting the checkbox located just before the expression.
 * **Group by**: Use this field to specify columns to be used for grouping rows.
   To do so, click the **Add** (**+**) icon and select the desired column from
   the list. The chosen column then acts as a key, with its unique values serving
   as row identifiers. You can add multiple columns.
-* **Pivot**: Use this field to specify the rows that you want to show as
-  columns. To do so, click the **Add** (**+**) icon and select the desired
-  column from the list. You can pivot one or more columns.
 * **Aggregate**: Use this field to add aggregated values. First, click the
   **Add** (**+**) icon and select the column you want to aggregate. Datagrok
   automatically applies a default aggregating function based on the data type:
@@ -306,6 +305,13 @@ columns.
 
   :::
 
+* **Pivot**: Use this field to specify the rows that you want to show as
+  columns. To do so, click the **Add** (**+**) icon and select the desired
+  column from the list. You can pivot one or more columns.
+* **Order by**: Use this field to sort query results. Click the **Add** (**+**)
+  icon and select one or more columns from the list of the group by columns.
+  Click the **Sorting Order** (**↑**) icon to change the order.
+
 ![Aggregation query](img/aggr-query.gif)
 
 As you work on your query, you can preview the query output as an interactive
@@ -316,20 +322,7 @@ saving.
 
 ### AI Query Builder
 
-Use this tool to merge tables:
-
-  1. Right-click a table and select **Join tables**. This action opens a dialog
-     with a list of columns connected by keys.
-  1. Select the checkboxes that correspond to the columns you want to include.
-     Based on your selections, Datagrok automatically generates an SQL statement
-     and a preview of the results. If desired, you can manually modify the SQL
-     statement. The preview will update accordingly as you make changes.
-  1. When finished, use the **Dropdown Arrow** control in the bottom left corner
-     of the dialog to choose between the two options:
-     * **Save as query**: This opens the **Query Editor** where you can further
-       edit the query.
-     * **Add result to workspace**: This opens the query output as a dataframe
-       for detailed exloration.
+AI Query Builder turns natural language questions into precise queries automatically.
 
 ![Create a join query](img/query-builder.gif)
 
