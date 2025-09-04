@@ -50,8 +50,14 @@ async function postprocess() {
     if (ticketsStatusCol)
       ticketsStatusCol.colors.setCategorical({
         'Fixed': '#2ca02c',
-        'Particialy Fixed': '#ffa500',
-        'Wasn\'t Fixed': '#8e342a',
+        'Partially Fixed (Lowest)': '#ffe51c',
+        'Partially Fixed (Low)': '#ffa500',
+        'Partially Fixed (Medium)': '#ff5a00',
+        'Partially Fixed (Blocker)': '#7b2d24',
+        'Wasn\'t Fixed (Lowest)': '#ffe51c',
+        'Wasn\'t Fixed (Low)': '#ffa500',
+        'Wasn\'t Fixed (Medium)': '#ff5a00',
+        'Wasn\'t Fixed (Blocker)': '#7b2d24',
       })
     order.push(`${batchNames[i]} concat unique(result)`);
     order.push(`${batchNames[i]} tickets status`);
