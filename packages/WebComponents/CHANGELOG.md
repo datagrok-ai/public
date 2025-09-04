@@ -1,5 +1,9 @@
 # WebComponents changelog
 
+## 1.2.7 (2025-09-04)
+
+- Small bug fixes
+
 ## 1.2.6 (2025-08-28)
 
 - Compute2 related updates
