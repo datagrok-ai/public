@@ -265,7 +265,7 @@ Use it to track the query’s execution process and debug issues.
 To open it, right-click a table in the **Database Manager** and select
 **New Visual Query...**.
 
-The **Visual Query Editor** has the same tabs — **Queries**, **Transformations**, **Post-Process**, **Layout**, and **Debug** — which work similarly to the [Query Editor](#query-editor)'s tabs.
+The **Visual Query Editor** has the same tabs—**Queries**, **Transformations**, **Post-Process**, **Layout**, and **Debug**—which work similarly to the [Query Editor](#query-editor)'s tabs.
 
 To aggregate data, use the **Query** tab. Here, you can join multiple tables
 and choose which columns to include in your report. You can decide how to
