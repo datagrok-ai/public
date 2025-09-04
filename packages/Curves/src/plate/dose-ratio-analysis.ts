@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import {Plate} from './plate';
 import {FIT_FUNCTION_4PL_REGRESSION, IFitChartData, IFitSeries} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {AnalysisMappingPanel, AnalysisRequiredFields} from '../plates/views/components/analysis-mapping/analysis-mapping-panel';
+import { BaseAnalysisView } from './base-analysis-view';
 
 export class PlateDoseRatioAnalysis {
   private static REQUIRED_FIELDS: AnalysisRequiredFields[] = [
@@ -41,56 +42,27 @@ export class PlateDoseRatioAnalysis {
     onMap: (target: string, source: string) => void,
     onUndo: (target: string) => void
   ): HTMLElement {
-    const container = ui.divV([], 'dose-ratio-analysis-container');
-
-    // Check if all required fields are mapped
-    const requiredFields = ['Agonist_Concentration_M', 'Antagonist_Concentration_M', 'Percent_Inhibition'];
-    const allRequiredMapped = requiredFields.every((field) => currentMappings.has(field));
-
-    if (allRequiredMapped) {
-      console.log('[DEBUG] All required fields mapped, creating grid...');
-      const doseRatioGrid = this.createDoseRatioGrid(plate, currentMappings);
-
-      if (doseRatioGrid) {
-        console.log('[DEBUG] Grid dimensions:', doseRatioGrid.style.width, doseRatioGrid.style.height);
-        console.log('[DEBUG] Grid element:', doseRatioGrid);
-        console.log('[DEBUG] Container before adding grid:', container);
-
-        container.appendChild(doseRatioGrid);
-
-        console.log('[DEBUG] Container after adding grid:', container);
-        console.log('[DEBUG] Container children count:', container.children.length);
-        console.log('[DEBUG] Container dimensions:', container.style.width, container.style.height);
-
-        // Force container to be visible
-        container.style.minHeight = '400px';
-        // container.style.border = '2px solid red'; // Temporary debug border
-        container.style.width = '100%'; // Temporary debug border
-        doseRatioGrid.style.minHeight = '400px';
-
-        console.log('[DEBUG] Grid added to container with forced dimensions');
-      }
-    } else {
-    // Show the mapping panel
-      const mappingPanel = new AnalysisMappingPanel({
-        analysisName: 'Dose Ratio',
+    const analysisView = new BaseAnalysisView(
+      plate,
+      {
+        analysisName: 'Dose Ratio Analysis',
         requiredFields: [
-          {name: 'Agonist_Concentration_M', required: true},
-          {name: 'Antagonist_Concentration_M', required: true},
-          {name: 'Percent_Inhibition', required: true},
-          {name: 'Agonist_ID', required: false},
-          {name: 'Antagonist_ID', required: false}
+          {name: 'Agonist_Concentration_M', required: true, description: 'Agonist concentration values in molar units'},
+          {name: 'Antagonist_Concentration_M', required: true, description: 'Antagonist concentration values in molar units'},
+          {name: 'Percent_Inhibition', required: true, description: 'Response values as percent inhibition'},
+          {name: 'Agonist_ID', required: false, description: 'Optional: Identifier for the agonist compound'},
+          {name: 'Antagonist_ID', required: false, description: 'Optional: Identifier for the antagonist compound'}
         ],
-        sourceColumns: plate.data.columns.names(),
-        currentMappings,
-        onMap,
-        onUndo
-      });
+        createResultsView: (plate, mappings) => {
+          return this.createDoseRatioGrid(plate, mappings);
+        }
+      },
+      currentMappings,
+      onMap,
+      onUndo
+    );
 
-      container.appendChild(mappingPanel.getRoot());
-    }
-
-    return container;
+    return analysisView.getRoot();
   }
 
 

@@ -11,6 +11,7 @@ import {FitConstants} from '../fit/const';
 import {FitCellOutlierToggleArgs, setOutlier} from '../fit/fit-renderer';
 import {savePlate} from '../plates/plates-crud';
 import {AnalysisMappingPanel} from '../plates/views/components/analysis-mapping/analysis-mapping-panel';
+import { BaseAnalysisView } from './base-analysis-view';
 
 
 function _getOptionsForExcel(plate: Plate, defaultOptions: AnalysisOptions): AnalysisOptions {
@@ -296,6 +297,7 @@ export class PlateDrcAnalysis {
     }
     return pw;
   }
+  // Replace your current createAnalysisViewWithMapping method
   static createAnalysisViewWithMapping(
     plate: Plate,
     currentMappings: Map<string, string>,
@@ -303,40 +305,25 @@ export class PlateDrcAnalysis {
     onUndo: (target: string) => void,
     plateWidget: PlateWidget
   ): HTMLElement {
-    const container = ui.divV([], 'drc-analysis-container');
-    container.style.width='100%';
-
-    // Check if all required fields are mapped
-    const requiredFields = ['Activity', 'Concentration', 'SampleID'];
-    const allRequiredMapped = requiredFields.every((field) => currentMappings.has(field));
-
-    if (allRequiredMapped) {
-    // Show the analysis results - PASS THE MAPPINGS!
-      const curvesGrid = this.createCurvesGrid(plate, plateWidget, currentMappings, 'csv');
-
-      if (curvesGrid)
-        container.appendChild(curvesGrid);
-      else
-        container.appendChild(ui.divText('Unable to create dose-response curves with current mapping.', 'warning-message'));
-    } else {
-    // Show the mapping panel
-      const mappingPanel = new AnalysisMappingPanel({
+    const analysisView = new BaseAnalysisView(
+      plate,
+      {
         analysisName: 'Dose Response Curve',
         requiredFields: [
-          {name: 'Activity', required: true},
-          {name: 'Concentration', required: true},
-          {name: 'SampleID', required: true}
+          {name: 'Activity', required: true, description: 'Response/activity values'},
+          {name: 'Concentration', required: true, description: 'Concentration/dose values'},
+          {name: 'SampleID', required: true, description: 'Sample/compound identifiers'}
         ],
-        sourceColumns: plate.data.columns.names(),
-        currentMappings,
-        onMap,
-        onUndo
-      });
+        createResultsView: (plate, mappings) => {
+          return this.createCurvesGrid(plate, plateWidget, mappings, 'csv');
+        }
+      },
+      currentMappings,
+      onMap,
+      onUndo
+    );
 
-      container.appendChild(mappingPanel.getRoot());
-    }
-
-    return container;
+    return analysisView.getRoot();
   }
 
   static createCurvesGrid(
