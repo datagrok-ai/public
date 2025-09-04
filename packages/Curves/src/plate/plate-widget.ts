@@ -55,9 +55,6 @@ export class PlateWidget extends DG.Widget {
   private _canvas: HTMLCanvasElement | null = null;
   private _onDestroy = new Subject<void>();
 
-  // ADDED: To track which role tab is currently active for filtering
-  private _activeRoleFilter: string | null = null;
-
   roleSummaryDiv: HTMLElement = ui.divH([], 'plate-widget__role-summary');
 
   get editable() { return this._editable; }
@@ -382,37 +379,25 @@ export class PlateWidget extends DG.Widget {
 
   refresh() {
     this.tabs.clear();
-    this.grids.clear(); // Clear old grid references
-
-    // --- Main Summary Tab ---
     this.tabs.addPane('Summary', () => this.grid.root);
-
-    // --- Role-based Tabs ---
-    const roleCol = this.plate.data.col('Role');
-    if (roleCol) {
-      this._colorColumn = roleCol;
-      // Ensure the 'Role' column is treated as categorical for coloring
-      if (roleCol.isCategorical && roleCol.meta.colors.getType() !== DG.COLOR_CODING_TYPE.CATEGORICAL)
-        roleCol.meta.colors.setCategorical();
-
-      for (const role of roleCol.categories) {
-        // Add a tab for each role. The content can be empty because the main grid is always visible.
-        if (role) this.tabs.addPane(role, () => ui.div());
-      }
+    for (const layer of this.plate.getLayerNames()) {
+      this.tabs.addPane(layer, () => {
+        const df = this.plate.toGridDataFrame(layer);
+        const grid = DG.Viewer.heatMap(df);
+        grid.columns.add({gridColumnName: '0', cellType: 'string', index: 1});
+        df.onValuesChanged.pipe(debounceTime(1000)).subscribe(() => {
+          const p = this.plate;
+          for (let i = 0; i < df.rowCount; i++) {
+            for (let j = 0; j < df.columns.length - 1; j++)
+            p.data.col(layer)!.set(p._idx(i, j), df.get(`${j + 1}`, i));
+          }
+          this.wellValidationErrors = p.validateWells(this.wellValidators);
+        });
+        this.initPlateGrid(grid, false);
+        this.grids.set(layer, grid);
+        return grid.root;
+      });
     }
-
-    // --- Tab Change Logic ---
-    this.tabs.onTabChanged.subscribe((tab) => {
-      const roleCategories = roleCol?.categories ?? [];
-      if (roleCategories.includes(tab.name)) {
-        this._activeRoleFilter = tab.name;
-      } else {
-        // For 'Summary' or any other tab, clear the filter
-        this._activeRoleFilter = null;
-      }
-      this.grid.invalidate(); // Re-render the grid with the new filter
-    });
-
 
     // Ensure the tabs container takes full width
     if (this.tabsContainer) {
@@ -421,26 +406,31 @@ export class PlateWidget extends DG.Widget {
       this.tabsContainer.style.flexDirection = 'column';
     }
 
-    // Set Summary as the default tab
     ui.tools.waitForElementInDom(this.tabs.root).then(() => {
-      if (this.tabs.panes.length > 0)
-        this.tabs.currentPane = this.tabs.getPane('Summary');
+      this.tabs.currentPane = this.tabs.getPane('Summary');
     });
 
     this.syncGrids();
+
+    const t = this.plate.data;
+    this._colorColumn = t.columns.firstWhere((col) => col.name == 'activity' && col.type == TYPE.FLOAT) ??
+          t.columns.firstWhere((col) => (col.name == 'concentration' || col.name == 'concentrations') && col.type == TYPE.FLOAT) ??
+          t.columns.firstWhere((col) => col.name != 'row' && col.name != 'col' && col.type == TYPE.FLOAT) ??
+          t.columns.firstWhere((col) => col.type == TYPE.FLOAT) ??
+          (t.columns.length > 0 ? t.columns.byIndex(0) : undefined);
 
     this.grid.dataFrame = DG.DataFrame.create(this.plate.rows);
     this.grid.columns.clear();
     for (let i = 0; i <= this.plate.cols; i++)
       this.grid.columns.add({gridColumnName: i.toString(), cellType: 'string'});
 
+    // Ensure the grid takes full width
     if (this.grid && this.grid.root)
       this.grid.root.style.width = '100%';
 
-    this.grid.invalidate();
-    this.updateRoleSummary();
-  }
 
+    this.grid.invalidate();
+  }
 
   renderCell(args:DG.GridCellRenderArgs, summary: boolean = false) {
     const gc = args.cell;
@@ -452,6 +442,7 @@ export class PlateWidget extends DG.Widget {
     g.textAlign = 'center';
     g.textBaseline = 'middle';
     g.font = `${Math.ceil(Math.min(...[16, w - 1, h - 1]))}px  Roboto, Roboto Local`;
+    const isColoredByConc = this._colorColumn?.name?.toLowerCase()?.includes('conc');
 
     const hasRowHeader = gc.grid.columns.byIndex(0)?.cellType === 'row header';
     if (gc.isColHeader && gc.gridColumn.idx > (hasRowHeader ? 1 : 0)) {
@@ -475,28 +466,17 @@ export class PlateWidget extends DG.Widget {
       g.beginPath();
       const r = Math.min(h / 2, w / 2) * 0.8;
       g.ellipse(x + w / 2, y + h / 2, r, r, 0, 0, 2 * Math.PI);
-
-      if (this._colorColumn && this._colorColumn.name === 'Role') {
-        const cellRole = this._colorColumn.get(dataRow);
-        let color = DG.Color.lightGray;
-
-        if (cellRole) {
-          color = this._colorColumn.meta.colors.getColor(dataRow);
-          // If a role filter is active, fade out non-matching wells
-          if (this._activeRoleFilter && cellRole !== this._activeRoleFilter)
-            color = DG.Color.lightLightGray;
-        }
-
+      if (this._colorColumn) {
+        if (this._colorColumn.isCategorical && this._colorColumn.meta.colors.getType() !== DG.COLOR_CODING_TYPE.CATEGORICAL)
+          this._colorColumn.meta.colors.setCategorical();
+        const color = this._colorColumn.isNone(dataRow) ? DG.Color.white : this._colorColumn.isNumerical ?
+          this.getColor(dataRow, isColoredByConc) :
+          this._colorColumn.meta.colors.getColor(dataRow);
         g.fillStyle = DG.Color.toHtml(color);
         g.fill();
-        g.strokeStyle = DG.Color.toHtml(DG.Color.gray);
-        g.stroke();
-      } else {
-        // Default rendering if not coloring by Role
-        g.strokeStyle = DG.Color.toHtml(DG.Color.gray);
-        g.stroke();
       }
 
+      g.stroke();
       const outlierCol = this.plate.data.col(PLATE_OUTLIER_WELL_NAME);
       if (outlierCol?.get(dataRow))
         DG.Paint.marker(g, MARKER_TYPE.CROSS_X_BORDER, x + w / 2, y + h / 2, DG.Color.red, r * 2);
