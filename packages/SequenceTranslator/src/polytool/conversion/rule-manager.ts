@@ -8,6 +8,12 @@ import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {doPolyToolConvert} from './pt-conversion';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {RuleCards} from './pt-rule-cards';
+import {getOverriddenLibrary} from './pt-synthetic';
+import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
+import {helmToMol} from './pt-atomic';
+import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
+import {getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {getReactionEditor, ReactionEditorProps} from './rule-reaction-editor';
 
 
 const TAB_LINKS = 'Links';
@@ -26,6 +32,7 @@ export class RulesManager {
 
   linkCards: RuleCards[];
   addLinkRulesFunc: (rowObj: LinkRuleRowArgs) => void;
+  addSynthRulesFunc: (rowObj: ReactionEditorProps) => void;
 
   // every rule set will have its editor instance
   private static instances: Record<string, RulesManager> = {};
@@ -36,7 +43,15 @@ export class RulesManager {
     this.linkRuleDataFrame = linksRes.res;
     this.addLinkRulesFunc = linksRes.addNewRow;
 
-    this.synthRuleDataFrame = this.rules.getSynthesisRulesDf();
+    const synthRes = this.rules.getSynthesisRulesDf();
+    this.addSynthRulesFunc = (r) => {
+      synthRes.addNewRow(r);
+      this.rules.setSynthesisRules(synthRes.df);
+      this.synthRuleDataFrame = synthRes.df;
+      this.substituteReactionGridDataFrame?.();
+      this.save();
+    };
+    this.synthRuleDataFrame = synthRes.df;
     this.fileName = fileName;
 
     const homoValue = this.rules.homodimerCode ? this.rules.homodimerCode : '';
@@ -170,17 +185,35 @@ export class RulesManager {
 
     const initCol = DG.Column.fromStrings('Monomers', seqs);
     const helmCol = DG.Column.fromStrings('Helm', helms);
-
+    const df = DG.DataFrame.fromColumns([
+      initCol, helmCol
+    ]);
     initCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    const rdKitModule = await getRdKitModule();
+    const seqHelper = await getSeqHelper();
+    // initialize seqHandler for this column
     PackageFunctions.applyNotationProviderForCyclized(initCol, '-');
+    initCol.tags[DG.TAGS.CELL_RENDERER] = 'Sequence';
 
     helmCol.semType = DG.SEMTYPE.MACROMOLECULE;
     helmCol.meta.units = NOTATION.HELM;
     helmCol.setTag(DG.TAGS.CELL_RENDERER, 'helm');
-    return DG.DataFrame.fromColumns([
-      initCol, helmCol
-    ]).plot.grid();
+
+    const lib = await getOverriddenLibrary(this.rules);
+    const resHelmColTemp = helmCol.temp;
+    resHelmColTemp[MmcrTemps.overriddenLibrary] = lib;
+    helmCol.temp = resHelmColTemp;
+
+    const resMolCol = await helmToMol(helmCol, seqs,
+      isLinear, true, false, false, lib, rdKitModule, seqHelper);
+    resMolCol.name = `molfile(sequence)`;
+    resMolCol.semType = DG.SEMTYPE.MOLECULE;
+    df.columns.add(resMolCol);
+
+    return df.plot.grid();
   }
+
+  private substituteReactionGridDataFrame: (() => void) | null = null;
 
   async getForm() {
     const gridOptions: Partial<DG.IGridSettings> = {showAddNewRowIcon: false, allowEdit: false, rowHeight: 60};
@@ -240,10 +273,31 @@ export class RulesManager {
     });
 
     const links = ui.splitH([linksGridDiv, gridDiv], null, true);
+    const synthesisGrid = this.synthRuleDataFrame.plot.grid({showAddNewRowIcon: false, allowEdit: false, rowHeight: 130});
+    synthesisGrid.onCellDoubleClick.subscribe(() => {
+      if (!synthesisGrid.dataFrame || synthesisGrid.dataFrame.currentRowIdx == -1 || synthesisGrid.dataFrame.currentRowIdx == undefined)
+        return;
+      const idx = synthesisGrid.dataFrame.currentRowIdx;
+      const editArgs: ReactionEditorProps = {
+        rowIndex: idx,
+        code: this.synthRuleDataFrame.get('code', idx),
+        firstMonomers: this.synthRuleDataFrame.get('firstMonomers', idx).split(',').map((s: string) => s.trim()).filter((s: string) => s),
+        secondMonomers: this.synthRuleDataFrame.get('secondMonomers', idx).split(',').map((s: string) => s.trim()).filter((s: string) => s),
+        resultMonomerName: this.synthRuleDataFrame.get('name', idx),
+        firstReactantSmiles: this.synthRuleDataFrame.get('firstReactant', idx),
+        secondReactantSmiles: this.synthRuleDataFrame.get('secondReactant', idx),
+        productSmiles: this.synthRuleDataFrame.get('product', idx),
+      };
+      getReactionEditor((props: ReactionEditorProps) => this.addSynthRulesFunc(props), editArgs);
+    });
+    const reactionsGridDiv = this.createGridDiv('Rules', synthesisGrid);
 
-    const reactionsGridDiv = this.createGridDiv('Rules',
-      this.synthRuleDataFrame.plot.grid({showAddNewRowIcon: true}));
-    const reactionExamples = this.createGridDiv('Examples', await this.getReactionExamplesGrid());
+    const reactionExamplesGrid = await this.getReactionExamplesGrid();
+    const reactionExamples = this.createGridDiv('Examples', reactionExamplesGrid);
+    this.substituteReactionGridDataFrame = async () => {
+      const newGrid = await this.getReactionExamplesGrid();
+      reactionExamplesGrid.dataFrame = newGrid.dataFrame;
+    };
     reactionsGridDiv.style.width = '50%';
     reactionExamples.style.width = '50%';
     const reactions = ui.divH([reactionsGridDiv, reactionExamples]);
@@ -281,9 +335,37 @@ export class RulesManager {
       if (currentTab == TAB_LINKS)
         this.getAddNewLinkRuleDialog();
       else if (currentTab == TAB_REACTIONS)
-        this.synthRuleDataFrame.rows.addNew();
+        getReactionEditor((props: ReactionEditorProps) => this.addSynthRulesFunc(props));
     });
-    const topPanel = [saveButton, addButton];
+    const removeButton = ui.button('Remove rule', () => {
+      const currentTab = inputsTabControl.currentPane.name;
+      if (currentTab == TAB_LINKS) {
+        if (this.linkRuleDataFrame == null || this.linkRuleDataFrame.currentRowIdx == -1 || this.linkRuleDataFrame.currentRowIdx == undefined)
+          return;
+        const idx = linksGrid.dataFrame.currentRowIdx;
+        ui.dialog('Are you sure you want to remove the rule?')
+          .add(ui.divText('This action is irreversible!'))
+          .onOK(() => {
+            this.linkRuleDataFrame.rows.removeAt(idx);
+            this.rules.setLinkRules(this.linkRuleDataFrame);
+            this.save();
+          }).show();
+      } else if (currentTab == TAB_REACTIONS) {
+        if (this.synthRuleDataFrame == null || this.synthRuleDataFrame.currentRowIdx == -1 || this.synthRuleDataFrame.currentRowIdx == undefined)
+          return;
+        const idx = synthesisGrid.dataFrame.currentRowIdx;
+        ui.dialog('Are you sure you want to remove the rule?')
+          .add(ui.divText('This action is irreversible!'))
+          .onOK(() => {
+            this.synthRuleDataFrame.rows.removeAt(idx);
+            this.rules.setSynthesisRules(this.synthRuleDataFrame);
+            this.substituteReactionGridDataFrame?.();
+            this.save();
+          }).show();
+      }
+    });
+
+    const topPanel = [saveButton, addButton, removeButton];
     this.v!.setRibbonPanels([topPanel]);
 
     panel.style.height = '100%';

@@ -6,13 +6,13 @@ import * as DG from 'datagrok-api/dg';
 //output: view result
 //meta.icon: img/icons/toolkit.png
 //meta.browsePath: Peptides | Oligo Toolkit
-export async function oligoToolkitApp() {
-  return PackageFunctions.oligoToolkitApp();
+export async function oligoToolkitApp() : Promise<any> {
+  return await PackageFunctions.oligoToolkitApp();
 }
 
 //tags: init
-export async function init() {
-  return PackageFunctions.init();
+export async function init() : Promise<void> {
+  await PackageFunctions.init();
 }
 
 //name: Oligo Translator
@@ -20,8 +20,8 @@ export async function init() {
 //output: view result
 //meta.icon: img/icons/translator.png
 //meta.browsePath: Peptides | Oligo Toolkit
-export async function oligoTranslatorApp() {
-  return PackageFunctions.oligoTranslatorApp();
+export async function oligoTranslatorApp() : Promise<any> {
+  return await PackageFunctions.oligoTranslatorApp();
 }
 
 //name: Oligo Pattern
@@ -29,8 +29,8 @@ export async function oligoTranslatorApp() {
 //output: view result
 //meta.icon: img/icons/pattern.png
 //meta.browsePath: Peptides | Oligo Toolkit
-export async function oligoPatternApp() {
-  return PackageFunctions.oligoPatternApp();
+export async function oligoPatternApp() : Promise<any> {
+  return await PackageFunctions.oligoPatternApp();
 }
 
 //name: Oligo Structure
@@ -38,26 +38,23 @@ export async function oligoPatternApp() {
 //output: view result
 //meta.icon: img/icons/structure.png
 //meta.browsePath: Peptides | Oligo Toolkit
-export async function oligoStructureApp() {
-  return PackageFunctions.oligoStructureApp();
+export async function oligoStructureApp() : Promise<any> {
+  return await PackageFunctions.oligoStructureApp();
 }
 
-//name: getTranslationHelper
 //output: object result
-export async function getTranslationHelper() {
-  return PackageFunctions.getTranslationHelper();
+export async function getTranslationHelper() : Promise<any> {
+  return await PackageFunctions.getTranslationHelper();
 }
 
-//name: getCodeToWeightsMap
 //output: object result
-export function getCodeToWeightsMap() {
+export function getCodeToWeightsMap() : any {
   return PackageFunctions.getCodeToWeightsMap();
 }
 
-//name: validateSequence
 //input: string sequence 
 //output: bool result
-export function validateSequence(sequence: string) {
+export function validateSequence(sequence: string) : boolean {
   return PackageFunctions.validateSequence(sequence);
 }
 
@@ -65,14 +62,13 @@ export function validateSequence(sequence: string) {
 //input: string sequence 
 //input: bool invert 
 //output: string result
-export function getMolfileFromGcrsSequence(sequence: string, invert: boolean) {
+export function getMolfileFromGcrsSequence(sequence: string, invert: boolean) : string {
   return PackageFunctions.getMolfileFromGcrsSequence(sequence, invert);
 }
 
-//name: linkStrands
 //input: object strands 
 //output: string result
-export function linkStrands(strands: any) {
+export function linkStrands(strands: any) : string {
   return PackageFunctions.linkStrands(strands);
 }
 
@@ -81,51 +77,46 @@ export function linkStrands(strands: any) {
 //meta.demoPath: Bioinformatics | Oligo Toolkit | Translator
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Translate
 //meta.demoSkip: GROK-14320
-export async function demoTranslateSequence() {
-  return PackageFunctions.demoTranslateSequence();
+export async function demoTranslateSequence() : Promise<void> {
+  await PackageFunctions.demoTranslateSequence();
 }
 
-//name: demoOligoPattern
 //description: Design a modification pattern for an oligonucleotide sequence
 //meta.demoPath: Bioinformatics | Oligo Toolkit | Pattern
 //meta.path: %20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Visualize%20duplex
-export async function demoOligoPattern() {
-  return PackageFunctions.demoOligoPattern();
+export async function demoOligoPattern() : Promise<void> {
+  await PackageFunctions.demoOligoPattern();
 }
 
-//name: demoOligoStructure
 //description: Visualize duplex and save SDF
 //meta.demoPath: Bioinformatics | Oligo Toolkit | Structure
 //meta.path: %20/apps/Tutorials/Demo/Bioinformatics/Oligonucleotide%20Sequence:%20Visualize%20duplex
-export async function demoOligoStructure() {
-  return PackageFunctions.demoOligoStructure();
+export async function demoOligoStructure() : Promise<void> {
+  await PackageFunctions.demoOligoStructure();
 }
 
-//name: translateOligonucleotideSequence
 //input: string sequence 
 //input: string sourceFormat 
 //input: string targetFormat 
 //output: string result
-export async function translateOligonucleotideSequence(sequence: string, sourceFormat: string, targetFormat: string) {
-  return PackageFunctions.translateOligonucleotideSequence(sequence, sourceFormat, targetFormat);
+export async function translateOligonucleotideSequence(sequence: string, sourceFormat: string, targetFormat: string) : Promise<string> {
+  return await PackageFunctions.translateOligonucleotideSequence(sequence, sourceFormat, targetFormat);
 }
 
 //name: polyToolConvert
 //description: Perform cyclization of polymers
 //top-menu: Bio | PolyTool | Convert...
-export async function polyToolConvertTopMenu() {
-  return PackageFunctions.polyToolConvertTopMenu();
+export async function polyToolConvertTopMenu() : Promise<void> {
+  await PackageFunctions.polyToolConvertTopMenu();
 }
 
-//name: getPolyToolConvertEditor
 //tags: editor
 //input: funccall call 
 //output: column result
-export async function getPolyToolConvertEditor(call: DG.FuncCall) {
-  return PackageFunctions.getPolyToolConvertEditor(call);
+export async function getPolyToolConvertEditor(call: DG.FuncCall) : Promise<any> {
+  return await PackageFunctions.getPolyToolConvertEditor(call);
 }
 
-//name: polyToolConvert2
 //input: dataframe table 
 //input: column seqCol { caption: Sequence }
 //input: bool generateHelm { default: true }
@@ -133,74 +124,72 @@ export async function getPolyToolConvertEditor(call: DG.FuncCall) {
 //input: object rules 
 //output: column result
 //editor: SequenceTranslator:getPolyToolConvertEditor
-export async function polyToolConvert2(table: DG.DataFrame, seqCol: DG.Column, generateHelm: boolean, chiralityEngine: boolean, rules: string[]) {
-  return PackageFunctions.polyToolConvert2(table, seqCol, generateHelm, chiralityEngine, rules);
+export async function polyToolConvert2(table: DG.DataFrame, seqCol: DG.Column, generateHelm: boolean, chiralityEngine: boolean, rules: string[]) : Promise<any> {
+  return await PackageFunctions.polyToolConvert2(table, seqCol, generateHelm, chiralityEngine, rules);
 }
 
 //name: polyToolEnumerateHelm
 //description: Perform cyclization of polymers
 //top-menu: Bio | PolyTool | Enumerate HELM...
-export async function polyToolEnumerateHelmTopMenu() {
-  return PackageFunctions.polyToolEnumerateHelmTopMenu();
+export async function polyToolEnumerateHelmTopMenu() : Promise<void> {
+  await PackageFunctions.polyToolEnumerateHelmTopMenu();
 }
 
 //name: polyToolEnumerateChem
 //description: Perform cyclization of polymers
 //top-menu: Bio | PolyTool | Enumerate Chem...
-export async function polyToolEnumerateChemTopMenu() {
-  return PackageFunctions.polyToolEnumerateChemTopMenu();
+export async function polyToolEnumerateChemTopMenu() : Promise<void> {
+  await PackageFunctions.polyToolEnumerateChemTopMenu();
 }
 
-//name: polyToolColumnChoice
 //input: dataframe df { description: Input data table }
 //input: column macroMolecule 
-export async function polyToolColumnChoice(df: DG.DataFrame, macroMolecule: DG.Column) {
-  return PackageFunctions.polyToolColumnChoice(df, macroMolecule);
+export async function polyToolColumnChoice(df: DG.DataFrame, macroMolecule: DG.Column) : Promise<void> {
+  await PackageFunctions.polyToolColumnChoice(df, macroMolecule);
 }
 
-//name: createMonomerLibraryForPolyTool
 //input: file file 
-export async function createMonomerLibraryForPolyTool(file: DG.FileInfo) {
-  return PackageFunctions.createMonomerLibraryForPolyTool(file);
+export async function createMonomerLibraryForPolyTool(file: DG.FileInfo) : Promise<void> {
+  await PackageFunctions.createMonomerLibraryForPolyTool(file);
 }
 
 //name: HELM Enumerator
 //tags: app
 //meta.icon: img/icons/structure.png
 //meta.browsePath: Peptides | PolyTool
-export async function ptEnumeratorHelmApp() {
-  return PackageFunctions.ptEnumeratorHelmApp();
+export async function ptEnumeratorHelmApp() : Promise<void> {
+  await PackageFunctions.ptEnumeratorHelmApp();
 }
 
 //name: Chem Enumerator
 //tags: app
 //meta.icon: img/icons/structure.png
 //meta.browsePath: Peptides | PolyTool
-export async function ptEnumeratorChemApp() {
-  return PackageFunctions.ptEnumeratorChemApp();
+export async function ptEnumeratorChemApp() : Promise<void> {
+  await PackageFunctions.ptEnumeratorChemApp();
 }
 
 //name: Polytool Helm Enumerator dialog
 //input: object cell { nullable: true }
-export async function getPtHelmEnumeratorDialog(cell?: any) {
-  return PackageFunctions.getPtHelmEnumeratorDialog(cell);
+export async function getPtHelmEnumeratorDialog(cell?: any) : Promise<void> {
+  await PackageFunctions.getPtHelmEnumeratorDialog(cell);
 }
 
 //name: Polytool Chem Enumerator dialog
 //input: object cell { nullable: true }
-export async function getPtChemEnumeratorDialog(cell?: any) {
-  return PackageFunctions.getPtChemEnumeratorDialog(cell);
+export async function getPtChemEnumeratorDialog(cell?: any) : Promise<void> {
+  await PackageFunctions.getPtChemEnumeratorDialog(cell);
 }
 
 //name: Combine Sequences
 //top-menu: Bio | PolyTool | Combine Sequences...
-export async function getPolyToolCombineDialog() {
-  return PackageFunctions.getPolyToolCombineDialog();
+export async function getPolyToolCombineDialog() : Promise<void> {
+  await PackageFunctions.getPolyToolCombineDialog();
 }
 
 //name: applyNotationProviderForHarmonizedSequence
 //input: column col 
 //input: string separator 
-export function applyNotationProviderForCyclized(col: any, separator: string) {
-  return PackageFunctions.applyNotationProviderForCyclized(col, separator);
+export function applyNotationProviderForCyclized(col: DG.Column<any>, separator: string) : void {
+  PackageFunctions.applyNotationProviderForCyclized(col, separator);
 }
