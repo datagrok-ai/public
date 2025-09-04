@@ -4,6 +4,8 @@ import * as ui from 'datagrok-api/ui';
 import { awaitCheck } from '@datagrok-libraries/utils/src/test';
 import { getRevvityLibraries } from './libraries';
 import { initializeFilters } from './search-utils';
+import { getViewNameByCompoundType } from './utils';
+import { retrieveQueriesMap } from './compounds';
 
 
 const REVVITY_SIGNALS_APP_PATH: string = 'apps/Revvitysignalslink';
@@ -55,10 +57,11 @@ export async function openRevvityNode(treeNode: DG.TreeViewGroup, libToOpen: str
   const libNode = treeNode.items.find((node) => node.text.toLowerCase() === libToOpen.toLowerCase()) as DG.TreeViewGroup;
   libNode.expanded = true;
   if (typeToOpen) {
+    const compoundType = getViewNameByCompoundType(typeToOpen);
     //need to wait for types to become available after lib node was expanded
-    await awaitCheck(() => libNode.items.find((node) => node.text.toLowerCase() === typeToOpen.toLowerCase()) !== undefined,
+    await awaitCheck(() => libNode.items.find((node) => node.text.toLowerCase() === compoundType.toLowerCase()) !== undefined,
       `Library types haven't been loaded in 10 seconds`, 10000);
-    treeNode.items.find((node) => node.text.toLowerCase() === typeToOpen.toLowerCase())?.root.click();
+    treeNode.items.find((node) => node.text.toLowerCase() === compoundType.toLowerCase())?.root.click();
   }
 }
 
@@ -101,15 +104,25 @@ export async function handleInitialURL(treeNode: DG.TreeViewGroup, url: string) 
 
 export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, query: string, name: string, libName: string, compoundType: string) {
   //!!!!!!!!!!TODO: Change to .then()
-  const df = initSearchQuery ? DG.DataFrame.create() :
-    await grok.functions.call('RevvitySignalsLink:searchEntitiesWithStructures', {
-      query: query,
-      params: '{}'
-    });
+  const df = DG.DataFrame.create();
   const tv = grok.shell.addTablePreview(df);
   tv.name = name;
   tv.path = createPath([libName, compoundType]);
-  setBreadcrumbsInViewName([libName, compoundType], treeNode);
-  const filtersDiv = ui.div([]);
-  initializeFilters(tv, filtersDiv, libName, compoundType);
+  if (!initSearchQuery) {
+    ui.setUpdateIndicator(tv.root, true, `Loading ${name}...`);
+    grok.functions.call('RevvitySignalsLink:searchEntitiesWithStructures', {
+      query: query,
+      params: '{}'
+    }).then((res: DG.DataFrame) => {
+      ui.setUpdateIndicator(tv.root, false);
+      tv.dataFrame = res;
+      setBreadcrumbsInViewName([libName, compoundType], treeNode);
+      const filtersDiv = ui.div([]);
+      initializeFilters(tv, filtersDiv, libName, compoundType);
+    })
+      .catch((e: any) => {
+        grok.shell.error(e?.message ?? e);
+        ui.setUpdateIndicator(tv.root, false);
+      });
+  }
 }

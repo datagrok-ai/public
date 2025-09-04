@@ -3,9 +3,10 @@ import * as DG from 'datagrok-api/dg';
 import { SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
 import * as ui from 'datagrok-api/ui';
 import { getRevvityUsers } from './users';
-import { RevvityApiResponse, RevvityData, RevvityUser } from './revvity-api';
+import { queryEntityById, RevvityApiResponse, RevvityData, RevvityUser } from './revvity-api';
 import { MOL_COL_NAME } from './compounds';
 import { awaitCheck } from '@datagrok-libraries/utils/src/test';
+import { compoundTypeAndViewNameMapping } from './constants';
 
 
 export const STORAGE_NAME = 'RevvitySignalsSearch';
@@ -195,7 +196,29 @@ export function widgetFromObject(obj: Record<string, any>): DG.Widget {
 }
 
 
-export function createRevvityResponseWidget(response: RevvityApiResponse): HTMLDivElement {
+export function processField(map: Record<string, any>, key: string, value: any): void {
+  if (typeof value === 'object' || FIELDS_TO_EXCLUDE_FROM_WIDGET.includes(key)) {
+    // Skip objects except for fields
+    return;
+  } else if (Array.isArray(value))
+    map[key] = value.join(', ');
+  else {
+    //handle molecular formula fields since they contain <sub> tags
+    if (key.includes(MOLECULAR_FORMULA_FIELD_NAME))
+      value = (value as string).replaceAll('<sub>', '').replaceAll('</sub>', '');
+    else if (key === SUBMITTER_FIELD_NAME) {
+      if (typeof value === 'string' && value.includes('firstName=')) {
+        value = extractNameFromJavaObjectString(value);
+      } else {
+        value = 'Unknown User';
+      }
+    }
+    map[key] = value === null ? '' : value;
+  }
+}
+
+
+export function createRevvityResponseWidget(response: RevvityApiResponse, idSemValue: DG.SemanticValue<string>): HTMLDivElement {
   const data = response.data as RevvityData;
   if (!data || !data.attributes) {
     return ui.divText('No data available');
@@ -207,27 +230,6 @@ export function createRevvityResponseWidget(response: RevvityApiResponse): HTMLD
 
   // Create the main table from attributes
   const mainMap: Record<string, any> = {};
-
-  const processField = (map: Record<string, any>, key: string, value: any) => {
-    if (typeof value === 'object' || FIELDS_TO_EXCLUDE_FROM_WIDGET.includes(key)) {
-      // Skip objects except for fields
-      return;
-    } else if (Array.isArray(value))
-      map[key] = value.join(', ');
-    else {
-      //handle molecular formula fields since they contain <sub> tags
-      if (key.includes(MOLECULAR_FORMULA_FIELD_NAME))
-        value = (value as string).replaceAll('<sub>', '').replaceAll('</sub>', '');
-      else if (key === SUBMITTER_FIELD_NAME) {
-        if (typeof value === 'string' && value.includes('firstName=')) {
-          value = extractNameFromJavaObjectString(value);
-        } else {
-          value = 'Unknown User';
-        }
-      }
-      map[key] = value === null ? '' : value;
-    }
-  }
 
   // Process regular attributes
   for (const [key, value] of Object.entries(attributes)) {
@@ -243,8 +245,21 @@ export function createRevvityResponseWidget(response: RevvityApiResponse): HTMLD
       }
     }
   }
+  const widgetMapWithAddIcons: { [key: string]: HTMLElement } = {};
+  Object.keys(mainMap).forEach((key) => {
+      const propDiv = ui.divH([mainMap[key]], {style: {'position': 'relative'}});
+        if (idSemValue.cell.dataFrame && idSemValue.cell.column) {
+      const addColumnIcon = ui.iconFA('plus', async () => {
+        calculatePropForColumn(key, idSemValue.cell.dataFrame, idSemValue.cell.column);
+      }, `Calculate ${key} for the whole table`);
+      addColumnIcon.classList.add('revvity-add-prop-as-column-icon');
+      propDiv.prepend(addColumnIcon);
+      ui.tools.setHoverVisibility(propDiv, [addColumnIcon]);
+      widgetMapWithAddIcons[key] = propDiv;
+    }
+  });
 
-  const mainTable = ui.tableFromMap(mainMap);
+  const mainTable = ui.tableFromMap(widgetMapWithAddIcons);
   const accordions: DG.Accordion[] = [];
 
   // Create accordion tabs for relationships
@@ -357,3 +372,48 @@ export async function reorderColummns(df: DG.DataFrame) {
   df.columns.setOrder(newColOrder.concat(colNames));
 }
 
+export function getCompoundTypeByViewName(viewName: string): string {
+  const res = compoundTypeAndViewNameMapping.filter((it) => it.viewName === viewName);
+  return !res.length ? viewName : res[0].compoundType;
+}
+
+export function getViewNameByCompoundType(compoundType: string): string {
+  const res = compoundTypeAndViewNameMapping.filter((it) => it.compoundType === compoundType);
+  return !res.length ? compoundType : res[0].viewName;
+}
+
+export async function calculatePropForColumn(propName: string, df: DG.DataFrame, idsCol: DG.Column) {
+  const newColName = df.columns.getUnusedName(propName);
+  const newCol = df.columns.addNewString(newColName);
+  const promises = idsCol.toList().map((id, index) =>
+    getEntityPropByEntityId(propName, id)
+      .then(res => newCol.set(index, res))
+      .catch(() => { })
+  );
+  await Promise.allSettled(promises);
+
+}
+
+export async function getEntityPropByEntityId(propName: string, id: string): Promise<any> {
+  let prop: any = null;
+  try {
+  const entity = await queryEntityById(id);
+  if (entity.data) {
+    const attributes = (entity.data as RevvityData).attributes;
+    if (attributes) {
+      //look for prop in attributes
+      if(Object.keys(attributes).includes(propName))
+        prop = attributes[propName];
+      //if not in attributes - look in fields
+      if(attributes['fields'] && Object.keys(attributes['fields']))
+        prop = attributes['fields'][propName].value;
+      const tempMap = {[propName]: prop};
+      processField({[propName]: prop}, propName, prop);
+      prop = tempMap[propName];
+    }
+  }
+  } catch(e: any) {
+    grok.shell.error(e.message ?? e);
+  }
+  return prop;
+}

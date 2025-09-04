@@ -64,10 +64,10 @@ export async function initializeFilters(tv: DG.TableView, filtersDiv: HTMLDivEle
     <path d="M21 10L24 13L21 16" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 </svg>`;
-    externalFilterIcon.className = 'filters-button-icon';
+    externalFilterIcon.className = 'revvity-filters-button-icon';
     externalFilterIcon.onclick = () => {
       tv.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
-      externalFilterIcon.classList.remove('filters-button-icon-show');
+      externalFilterIcon.classList.remove('revvity-filters-button-icon-show');
     };
     ui.tooltip.bind(externalFilterIcon, 'Add Revvity Signals filters');
     
@@ -89,7 +89,7 @@ export async function initializeFilters(tv: DG.TableView, filtersDiv: HTMLDivEle
     //create filters panel
     tv.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
     tv.dockManager.onClosed.subscribe((el: any) => {
-      externalFilterIcon.classList.add('filters-button-icon-show');
+      externalFilterIcon.classList.add('revvity-filters-button-icon-show');
     })
     ui.setUpdateIndicator(filtersDiv, true, 'Loading filters...');
     const qb = await initializeQueryBuilder(selectedLib[0].id, compoundType);

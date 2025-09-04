@@ -39,7 +39,7 @@
     height: 100%!important;
 }
 
-.filters-button-icon {
+.revvity-filters-button-icon {
    color:#40607f;
    width: 24px;
    height: 24px;
@@ -48,6 +48,11 @@
    display: none;
 }
 
-.filters-button-icon-show {
+.revvity-filters-button-icon-show {
    display: flex;
+}
+
+.revvity-add-prop-as-column-icon {
+    color: #2083d5;
+    padding-right: 3px;
 }
