@@ -261,6 +261,9 @@ export class ActivityDashboardWidget extends DG.Widget {
         list], 'power-pack-activity-widget-spotlight-column');
       root.appendChild(listRoot);
     }
+    const randomTip = this.tipsOfTheDay[Math.floor(Math.random() * this.tipsOfTheDay.length)];
+    const tip = ui.divText(`💡 Tip of the day: ${randomTip}`, 'power-pack-activity-widget-spotlight-tip');
+    root.appendChild(tip);
 
     setTimeout(() => this.cleanLists(), 500);
     console.timeEnd('ActivityDashboardWidget.buildSpotlightTab');
@@ -316,10 +319,6 @@ export class ActivityDashboardWidget extends DG.Widget {
       featuredAppsList], 'power-pack-activity-widget-spotlight-column');
 
     root.append(gettingStartedRoot, tryDemoAppsRoot, featuredAppsRoot);
-    const randomTip = this.tipsOfTheDay[Math.floor(Math.random() * this.tipsOfTheDay.length)];
-    const tip = ui.divText(`💡 Tip of the day: ${randomTip}`, 'power-pack-activity-widget-spotlight-tip');
-    root.appendChild(tip);
-
     return root;
   }
 
