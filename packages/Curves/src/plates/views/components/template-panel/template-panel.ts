@@ -16,9 +16,8 @@ import {renderValidationResults} from '../../plates-validation-panel';
  */
 function createFormRow(label: string, input: DG.InputBase<any>): HTMLElement {
   const labelEl = ui.divText(label, 'ui-label');
-  // Remove the default label from the input component, as we're providing our own.
   input.root.querySelector('label')?.remove();
-  return ui.divH([labelEl, input.root], 'template-panel-form-row');
+  return ui.divH([labelEl, input.root], 'template-panel-form-row'); // This class now has styling
 }
 
 

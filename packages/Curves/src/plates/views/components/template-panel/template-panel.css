@@ -1,26 +1,243 @@
-.left-panel-section-content .d4-input-base { display: grid !important; grid-template-columns: 1fr 1fr; align-items: center; gap: 12px; }
-.left-panel-section-content .d4-input-label { margin-bottom: 0 !important; }
-.import-section-content .d4-input-root { flex-direction: row; }
-.plate-validation-table-header { padding-bottom: 8px; border-bottom: 1px solid var(--grey-2); }
-.plate-validation-table-row .d4-input-root { width: 100%; margin: 0; }
-.mapping-input-container { position: relative; width: 100%; display: flex; align-items: center; }
-.mapping-undo-icon { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: var(--grey-4); cursor: pointer; visibility: hidden; padding: 4px; z-index: 1; }
-.plate-validation-table-row:hover .mapping-undo-icon { visibility: visible; }
-.mapping-undo-icon:hover { color: var(--red-3); }
-.required-asterisk { color: var(--red-3); margin-left: 2px; font-weight: bold; }
-.template-panel { flex-shrink: 0; width: 410px; max-width: 450px; display: flex; flex-direction: column; gap: 1px; overflow: hidden; border-right: 1px solid var(--grey-2); padding-right: 12px; }
-.left-panel-section { display: flex; flex-direction: column; gap: 0; border-bottom: 1px solid var(--grey-1); margin-bottom: 12px; }
-.left-panel-section > .d4-div-h { display: flex; align-items: center; padding: 8px 4px; }
-.left-panel-section h2 { margin: 0 !important; font-size: 18px; font-weight: 500; color: var(--grey-8); text-transform: none; letter-spacing: normal; line-height: 1.2; }
-.left-panel-section-content { display: flex; flex-direction: column; gap: 12px; padding: 8px 0 16px 0; }
-.template-panel-form-row { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 12px; }
-.template-panel-form-row .d4-input-root { width: 100%; }
-.plate-import-button > button {
-  width: 100%;
-  justify-content: center !important;
-  gap: 8px;
+/* Template Panel - Combined and reconciled styles */
+
+.template-panel {
+    flex-shrink: 0;
+    width: 410px;
+    max-width: 450px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    overflow: hidden;
+    border-right: 1px solid var(--grey-2);
+    padding-right: 12px;
 }
-.plate-validation-table-header, .plate-validation-table-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 4px 0; align-items: center; }
-.plate-import-input { width: 100%; }
-.plate-import-input .ui-input-editor { width: 100%; }
-.plate-import-input button { width: 100%; justify-content: center !important; gap: 8px; }
+
+.left-panel-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border-bottom: 1px solid var(--grey-1);
+    margin-bottom: 12px;
+}
+
+.left-panel-section > .d4-div-h {
+    display: flex;
+    align-items: center;
+    padding: 8px 4px;
+}
+
+.left-panel-section h2 {
+    margin: 0 !important;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--grey-8);
+    text-transform: none;
+    letter-spacing: normal;
+    line-height: 1.2;
+}
+
+.left-panel-section-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 8px 0 16px 0;
+}
+
+/* Template panel form rows - consistent with mapping editor */
+.template-panel-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    min-height: 32px;
+    background: transparent;
+}
+
+.template-panel-form-row .ui-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--grey-5);
+}
+
+.template-panel-form-row .d4-input-root {
+    width: 100%;
+    margin: 0 !important;
+}
+
+/* Legacy support for existing d4-input-base grid styling */
+.left-panel-section-content .d4-input-base {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    gap: 12px;
+}
+
+.left-panel-section-content .d4-input-label {
+    margin-bottom: 0 !important;
+}
+
+/* Import section specific styling */
+.import-section-content .d4-input-root {
+    flex-direction: row;
+}
+
+.plate-import-input {
+    width: 100%;
+}
+
+.plate-import-input .ui-input-editor {
+    width: 100%;
+}
+
+.plate-import-input button {
+    width: 100%;
+    justify-content: center !important;
+    gap: 8px;
+}
+
+.plate-import-button > button {
+    width: 100%;
+    justify-content: center !important;
+    gap: 8px;
+}
+
+/* Apply consistent input styling across all template panel inputs */
+.template-panel-form-row .ui-input-choice select,
+.left-panel-section-content .ui-input-choice select {
+    height: 28px;
+    padding: 4px 8px;
+    border: 1px solid var(--grey-2);
+    border-radius: 2px;
+    font-size: 12px;
+    background-color: white;
+    width: 100%;
+}
+
+.template-panel-form-row .ui-input-choice select:focus,
+.left-panel-section-content .ui-input-choice select:focus {
+    border-color: var(--blue-2);
+    outline: none;
+    box-shadow: none;
+}
+
+/* Validation table styling (for the template properties mapping) */
+.plate-validation-table-header {
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--grey-2);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    color: var(--grey-5);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.plate-validation-table-header,
+.plate-validation-table-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 4px 0;
+    align-items: center;
+}
+
+.plate-validation-table-row {
+    padding: 8px 0;
+    min-height: 32px;
+    background: transparent;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.plate-validation-table-row .d4-input-root {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+/* Force the mapping editor to respect container boundaries but allow proper width */
+.template-panel .mapping-editor {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.template-panel .mapping-editor-table {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.template-panel .mapping-editor-row {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding-right: 0; /* Remove any extra padding */
+}
+
+/* Ensure Template Properties inputs align with other template panel inputs */
+.template-panel .mapping-input-container {
+    width: 100%;
+    max-width: none; /* Allow full width within the grid column */
+}
+
+.template-panel .mapping-input-container .ui-input-choice {
+    width: 100%;
+    max-width: none;
+}
+
+.template-panel .mapping-input-container .ui-input-choice select {
+    width: 100%;
+    max-width: none;
+}
+
+/* Mapping input container styling */
+.mapping-input-container {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 24px;
+}
+
+.mapping-input-container .ui-input-root {
+    flex: 1;
+    margin: 0 !important;
+}
+
+/* Undo icon styling */
+.mapping-undo-icon {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--grey-4);
+    cursor: pointer;
+    visibility: hidden;
+    padding: 4px;
+    z-index: 1;
+    font-size: 12px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.plate-validation-table-row:hover .mapping-undo-icon {
+    visibility: visible;
+}
+
+.mapping-undo-icon:hover {
+    color: var(--red-2);
+    background-color: var(--red-0);
+}
+
+/* Required asterisk styling */
+.required-asterisk {
+    color: var(--red-3);
+    margin-left: 2px;
+    font-weight: bold;
+}

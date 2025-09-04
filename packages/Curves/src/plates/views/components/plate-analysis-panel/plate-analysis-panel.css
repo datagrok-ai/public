@@ -28,11 +28,7 @@
 .skeleton-key { width: 100px; height: 14px; background-color: var(--grey-1); border-radius: 3px; }
 .skeleton-value { flex-grow: 1; height: 14px; background-color: var(--grey-2); border-radius: 3px; }
 .warning-message { color: var(--orange-3); padding: 12px; text-align: center; font-size: 13px; background-color: var(--orange-0); border: 1px solid var(--orange-2); border-radius: 4px; margin-top: 12px; }
-/*
- * === COMPLETE CREATE PLATE LAYOUT FIX ===
- */
 
-/* --- 1. Main 50/50 Panel Split --- */
 
 .create-plate-view__right-panel > :last-child {
   flex: 1;          /* Make it take the second 50% of vertical space */
