@@ -1,5 +1,5 @@
 import {Column, DataFrame} from "./dataframe";
-import {toJs} from "./wrappers";
+import {toDart, toJs} from "./wrappers";
 import {FuncCall, Functions} from "./functions";
 import {CsvImportOptions, DemoDatasetName, JOIN_TYPE, JoinType, StringPredicate, SyncType, TYPE} from "./const";
 import {DataConnection, TableQueryBuilder} from "./entities";
@@ -223,14 +223,50 @@ export class Data {
     return api.grok_OpenTable(id);
   }
 
-  /** Executes a parameterized query.
+  /**
+   * Executes a Datagrok query and returns the result as the specified type.
+   *
+   * @template T - The expected return type of the query (defaults to {@link DataFrame}).
+   *
+   * @param queryName - The fully qualified name of the query to execute
+   *   (e.g., `"DbTests:PostgresqlScalarInt"`).
+   * @param queryParameters - Optional key-value pairs that will be passed as
+   *   parameters to the query. Defaults to `null` if no parameters are needed.
+   * @param adHoc - **Deprecated.** Indicates whether the query should be
+   *   executed in ad-hoc mode. This parameter will be removed soon and should
+   *   not be used.
+   *
+   * @returns A promise that resolves to the query result, converted to type `T`.
+   *
+   * @example
+   * // Returns a number
+   * const count = await grok.data.query<number>("DbTests:PostgresqlScalarInt");
+   *
+   * @example
+   * // Returns a string
+   * const text = await grok.data.query<string>("DbTests:PostgresqlScalarStr");
+   *
+   * @example
+   * // Returns a DataFrame (default)
+   * const df = await grok.data.query("DbTests:PostgresqlTable");
+   *
    * Sample: {@link https://public.datagrok.ai/js/samples/data-access/parameterized-query}
    */
-  query(queryName: string, queryParameters: object | null = null, adHoc: boolean = false): Promise<DataFrame | any> {
-    return api.grok_Query(queryName, queryParameters, adHoc);
+  async query<T = DataFrame>(queryName: string,
+                             queryParameters: object | null = null,
+                             /**
+                              * @deprecated Parameter adHoc will be removed soon.
+                              */
+                             adHoc: boolean = false): Promise<T> {
+    return toJs(await api.grok_CallFunc(queryName, queryParameters, true, null));
   }
 
-  callQuery(queryName: string, queryParameters: object | null = null, adHoc: boolean = false): Promise<FuncCall> {
+  callQuery(queryName: string,
+            queryParameters: object | null = null,
+            /**
+             * @deprecated Parameter adHoc will be removed soon.
+             */
+            adHoc: boolean = false): Promise<FuncCall> {
     return api.grok_CallQuery(queryName, queryParameters, adHoc);
   }
 
