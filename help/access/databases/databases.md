@@ -139,7 +139,7 @@ Datagrok provides several tools for creating, exploring, and editing queries.
   * [Query Editor](#query-editor) is the main interface for executing database
     queries. Using this tool, you can write and edit statements in SQL and other
     languages and use functions to add post-processing steps.
-  * [Aggregation Editor](#aggregation-editor) can be used for manipulating,
+  * [Visual Query Editor](#visual-query-editor) can be used for manipulating,
     summarizing, filtering, and pivoting table data.
 * _Built-in queries for tables_:
   * **Get All**: retrieves all table data. Use it with caution.
@@ -153,8 +153,7 @@ Datagrok provides several tools for creating, exploring, and editing queries.
 
   :::
 
-* [_AI Query Builder_](#ai-query-builder): This tool lets you build queries and
- visualizations using natural language.
+* [_AI Query Builder_](#ai-query-builder): lets users build queries using natural language. To access AI Query Builder, install the [ChatGPT](https://github.com/datagrok-ai/public/tree/master/packages/ChatGPT) plugin.
 
 :::note
 
@@ -176,10 +175,10 @@ queries** from the list of options.
 ### Query Editor
 
 **Query Editor** is the main interface for executing database queries. To open
-it, right-click a database connection or a table and select **Add query** (for
+it, right-click a database connection or a table and select **New Query...** (for
 connections) or **New SQL Query...** (for tables).
 
-The **Query Editor** has two tabs:
+The **Query Editor** has the following tabs:
 
 <Tabs>
 <TabItem value="query" label="Query" default>
@@ -198,8 +197,8 @@ you don't want to save the query, close the editor without saving.
 :::note
 
 You can also add the query results to the workspace for further analysis. To do
-so, click the **Dropdown Arrow** control in the bottom left corner of the
-**Query** tab and select **Add results to workspace**.
+so, click the **Add** (**+**) icon on the menu ribbon of the
+**Query** tab.
 
 :::
 
@@ -238,33 +237,67 @@ language. See [Scripting](../../compute/scripting/scripting.mdx).
 :::
 
 </TabItem>
+<TabItem value="post-process" label="Post-Process">
+
+Use this tab to view, edit, and extend the query script in your
+chosen programming language (R, Python, JavaScript, Octave, Julia, NodeJS, Grok, or Pyodide).
+
+![Post-Process](img/post-process.gif)
+
+</TabItem>
+<TabItem value="layout" label="Layout">
+
+This tab lets you set up a query result’s [layout](../../visualize/view-layout.md), including arranging
+viewers, applying color coding, and configuring styles, formatting, and other interface elements.
+
+Once your layout is complete, click Save.
+
+![Layout](img/layout.gif)
+
+</TabItem>
+<TabItem value="debug" label="Debug">
+
+This tab is where you can run queries and monitor their execution logs. 
+Use it to track the query’s execution process and debug issues.
+
+![Debug](img/Debug.gif)
+
+</TabItem>
 </Tabs>
 
-### Aggregation Editor
+### Visual Query Editor
 
-**Aggregation Editor** is a visual tool for summarizing and pivoting table data.
+**Visual Query Editor** is a visual tool for joining tables, selecting columns, and summarizing data with pivoting and grouping.
 To open it, right-click a table in the **Database Manager** and select
-**Aggregate data**.
+**New Visual Query...**.
 
-The **Aggregation Editor** has two tabs: **Queries** and **Transformations**.
-The **Transformations** tab works similarly to the [Query Editor](#query-editor)'s
- tab and lets you add post-processing steps.
+The **Visual Query Editor** has the same tabs—**Queries**, **Transformations**, **Post-Process**, **Layout**, and **Debug**—which work similarly to the [Query Editor](#query-editor)'s tabs.
 
-To aggregate data, use the **Query** tab. Here, you can choose which columns to
-include in your report and decide how to pivot and group them. You can show one
-or multiple aggregated values for rows, for example, average sales and headcount
+To aggregate data, use the **Query** tab. Here, you can join multiple tables
+and choose which columns to include in your report. You can decide how to
+pivot, group, and sort data. You can show one or multiple
+aggregated values for rows, for example, average sales and headcount
 by country. Additionally, you can pivot rows into columns to show one or more
 aggregated values for each column. You can also perform both actions to produce
 a pivot table that shows an aggregated value for every intersection of rows and
 columns.
 
+* **Data**: Use this field to select tables and columns for your query. To
+  do so, click the **Add a table** (**⧉**) icon,
+  choose the tables, and specify which columns to include in the result. 
+* **Join**: Use this field to define relationships between tables.
+  Tables are added automatically when more than one is selected in **Data**.
+  By default, they are joined with the left inner join. To change the
+  join type, click the **Join tables** icon between table names and
+  choose the desired type. To change a key column, click it and select
+  the required one from the list.
+* **Where**: Use this field to filter the results using the pattern syntax. To
+  do so, click the **Add** (**+**) icon, select the column to which you want to
+  apply the filter, then set the condition (see [parameter patterns](#parameterized-queries) for syntax). You can also make the _Where condition_ a UI input parameter by selecting the checkbox located just before the expression.
 * **Group by**: Use this field to specify columns to be used for grouping rows.
   To do so, click the **Add** (**+**) icon and select the desired column from
   the list. The chosen column then acts as a key, with its unique values serving
   as row identifiers. You can add multiple columns.
-* **Pivot**: Use this field to specify the rows that you want to show as
-  columns. To do so, click the **Add** (**+**) icon and select the desired
-  column from the list. You can pivot one or more columns.
 * **Aggregate**: Use this field to add aggregated values. First, click the
   **Add** (**+**) icon and select the column you want to aggregate. Datagrok
   automatically applies a default aggregating function based on the data type:
@@ -283,23 +316,30 @@ columns.
 
   :::
 
-* **Filter**: Use this field to filter the results using the pattern syntax. To
-  do so, click the **Add** (**+**) icon, select the column to which you want to
-  apply the filter, then set the condition (see [parameter patterns](#parameterized-queries) for syntax).
+* **Pivot**: Use this field to specify the rows that you want to show as
+  columns. To do so, click the **Add** (**+**) icon and select the desired
+  column from the list. You can pivot one or more columns.
+* **Order by**: Use this field to sort query results. Click the **Add** (**+**)
+  icon and select one or more columns from the list of the group by columns.
+  Click the **Sorting Order** (**↑**) icon to change the order.
 
-![Aggregation query](img/aggr-query.gif)
+![Visual query](img/visual-query-editor.gif)
 
 As you work on your query, you can preview the query output as an interactive
 dataframe. In the dataframe, you can view object details, perform actions on
 columns, and more. When your query is complete, give it a name and click the
-**Save** button. If you don't want to save the query, close the editor without
-saving.
+**Save** button. If you don't want to save the query, close the editor
+without saving.
 
 ### AI Query Builder
 
-**AI Query Builder** turns natural language questions into precise queries automatically.
+**AI Query Builder** lets you ask questions in natural language and automatically 
+generates precise queries. You can then continue working with the query in 
+the **Query Editor**—manually edit, debug, add layouts, and more. 
 
-![Create a join query](img/query-editor-ai.gif)
+To open the AI panel, click the **Brain** icon on the menu ribbon of the **Query** tab.
+
+![AI Query Builder](img/query-editor-ai.gif)
 
 ### Parameterized queries
 
