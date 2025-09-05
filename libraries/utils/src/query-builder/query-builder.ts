@@ -609,6 +609,9 @@ export class QueryBuilder {
                 ui.empty(operatorInputDiv);
                 const property = getPropByFriendlyName(fieldChoiceInput.value!);
                 if (property) {
+                    //in case of boolean input we need to hide operators input
+                    if (property.type === DG.TYPE.BOOL)
+                        filterContainer.classList.add('boolean-input');
                     const registry = ConditionRegistry.getInstance();
                     const operators = registry.getOperatorsForProperty(property);
                     if (!cond.operator || cond.operator === '') {
