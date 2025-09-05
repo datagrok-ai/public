@@ -2,10 +2,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { ErrorHandling, Scope } from './constants';
+import { ErrorHandling, ErrorHandlingLabels, Scope, ScopeLabels } from './constants';
 import '../../css/moltrack.css';
 import { renderMappingEditor, TargetProperty } from '../components/mapping_editor';
 import { _package, fetchCompoundProperties } from '../package';
+import { MolTrackDockerService } from './moltrack-docker-service';
 
 let openedView: DG.ViewBase | null = null;
 
@@ -16,7 +17,6 @@ export class RegistrationView {
   errorStrategyInput: DG.InputBase | null = null;
   mappingEditorDiv: HTMLDivElement = ui.div();
   uploadedPreviewDiv: HTMLDivElement;
-  resultsDiv: HTMLDivElement;
   uploadedDf: DG.DataFrame | null = null;
   mappingDict: Record<string, string> = {};
 
@@ -26,27 +26,22 @@ export class RegistrationView {
 
     this.createInputs();
     this.uploadedPreviewDiv = ui.div('', 'moltrack-register-preview-div');
-    this.resultsDiv = ui.divH([], 'moltrack-register-res-div');
-    this.resultsDiv.style.width = '60%!important';
-
     this.buildUI();
     this.addRibbonButtons();
   }
 
-  private createInputs() {
-    this.datasetInput = ui.input.file('Upload dataset');
-    this.entityTypeInput = this.createChoiceInput('Entity type', Object.values(Scope));
-    this.errorStrategyInput = this.createChoiceInput('Error handling', Object.values(ErrorHandling));
-    // Removed mapping JSON text area
+  private async createInputs() {
+    this.entityTypeInput = this.createChoiceInput('Register', Object.keys(ScopeLabels));
+    this.datasetInput = ui.input.file('File'/*, {
+      value: (await grok.dapi.files.list('System:AppData/MolTrack/samples/'))[1],
+    }*/);
+
+    this.errorStrategyInput = this.createChoiceInput('On error', Object.keys(ErrorHandlingLabels));
   }
 
   private buildUI() {
-    const mappingAccordion = ui.accordion();
-    mappingAccordion.addPane('Properties', () => {
-      this.createMapping();
-      return this.mappingEditorDiv;
-    }, true);
-    const leftPanel = ui.divV([mappingAccordion], 'moltrack-left-panel');
+    this.createMapping();
+    const leftPanel = ui.divV([this.mappingEditorDiv], 'moltrack-left-panel');
 
     const inputRow = ui.divH([
       this.datasetInput!.root,
@@ -57,7 +52,6 @@ export class RegistrationView {
     const rightPanel = ui.divV([
       inputRow,
       this.uploadedPreviewDiv,
-      this.resultsDiv,
     ], 'moltrack-right-panel');
 
     const container = ui.divH([leftPanel, rightPanel], 'moltrack-container');
@@ -98,26 +92,17 @@ export class RegistrationView {
   private async registerEntities() {
     if (!this.uploadedDf) return;
 
-    // Convert DataFrame to CSV
     const csv = await this.uploadedDf.toCsv();
     const csvFile = DG.FileInfo.fromString('data.csv', csv);
     try {
       const df: DG.DataFrame = await grok.functions.call('Moltrack:registerBulk', {
         csvFile: csvFile,
-        scope: this.entityTypeInput?.value,
+        scope: ScopeLabels[this.entityTypeInput?.value],
         mapping: Object.keys(this.mappingDict).length === 0 ? '' : JSON.stringify(this.mappingDict),
-        errorHandling: this.errorStrategyInput?.value,
+        errorHandling: ErrorHandlingLabels[this.errorStrategyInput?.value],
       });
 
-      const resultDf = DG.DataFrame.fromColumns(df.columns.byNames(['smiles', 'registration_status', 'registration_error_message']));
-      const plot = resultDf.plot.bar({
-        'value': 'smiles',
-        'split': 'registration_status',
-        'stack': 'registration_status',
-      });
-      ui.empty(this.resultsDiv);
-      this.resultsDiv.append(resultDf.plot.grid().root);
-      this.resultsDiv.append(plot.root);
+      this.uploadedDf.join(df, ['smiles'], ['smiles'], null, ['registration_status', 'registration_error_message'], DG.JOIN_TYPE.INNER, true);
 
       grok.shell.info('Entities registered successfully!');
     } catch (err: any) {
@@ -136,8 +121,15 @@ export class RegistrationView {
       { name: 'smiles', required: true },
     ];
 
+    await MolTrackDockerService.init();
+    const autoMapping: Map<string, string> = await MolTrackDockerService.getAutoMapping(this.uploadedDf!.columns.names(), 'COMPOUND');
+
     const sourceColumns = this.uploadedDf ? this.uploadedDf.columns.names() : [];
     const mappings = new Map<string, string>();
+    for (const [source, target] of Object.entries(autoMapping)) {
+      const cleanTarget = target.replace(/^.*?_details\./, '');
+      mappings.set(source, cleanTarget);
+    }
 
     const handleMap = (target: string, source: string) => {
       if (!this.uploadedDf) return;
@@ -146,13 +138,10 @@ export class RegistrationView {
       if (col) {
         if (target === 'smiles') {
           this.mappingDict[source] = target;
-          grok.shell.info(`Column "${source}" has been mapped to "${target}".`);
           return;
         }
         const newName = `${this.entityTypeInput?.value.toLowerCase().replace(/(es|s)$/, '')}_details.${target}`;
-        col.name = newName;
         this.mappingDict[source] = newName;
-        grok.shell.info(`Column "${source}" has been mapped to "${newName}".`);
       }
     };
 
