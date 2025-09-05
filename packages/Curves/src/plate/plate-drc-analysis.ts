@@ -10,6 +10,8 @@ import {FIT_FUNCTION_4PL_REGRESSION, FitMarkerType, IFitPoint} from '@datagrok-l
 import {FitConstants} from '../fit/const';
 import {FitCellOutlierToggleArgs, setOutlier} from '../fit/fit-renderer';
 import {savePlate} from '../plates/plates-crud';
+import {AnalysisMappingPanel} from '../plates/views/components/analysis-mapping/analysis-mapping-panel';
+import { BaseAnalysisView } from './base-analysis-view';
 
 
 function _getOptionsForExcel(plate: Plate, defaultOptions: AnalysisOptions): AnalysisOptions {
@@ -295,8 +297,41 @@ export class PlateDrcAnalysis {
     }
     return pw;
   }
+  // Replace your current createAnalysisViewWithMapping method
+  static createAnalysisViewWithMapping(
+    plate: Plate,
+    currentMappings: Map<string, string>,
+    onMap: (target: string, source: string) => void,
+    onUndo: (target: string) => void,
+    plateWidget: PlateWidget
+  ): HTMLElement {
+    const analysisView = new BaseAnalysisView(
+      plate,
+      {
+        analysisName: 'Dose Response Curve',
+        requiredFields: [
+          {name: 'Activity', required: true, description: 'Response/activity values'},
+          {name: 'Concentration', required: true, description: 'Concentration/dose values'},
+          {name: 'SampleID', required: true, description: 'Sample/compound identifiers'}
+        ],
+        createResultsView: (plate, mappings) => {
+          return this.createCurvesGrid(plate, plateWidget, mappings, 'csv');
+        }
+      },
+      currentMappings,
+      onMap,
+      onUndo
+    );
 
-  static createCurvesGrid(plate: Plate, plateWidget: PlateWidget, options?: Partial<AnalysisOptions>, layout: 'csv' | 'excel' = 'csv'): HTMLElement | null {
+    return analysisView.getRoot();
+  }
+
+  static createCurvesGrid(
+    plate: Plate,
+    plateWidget: PlateWidget,
+    mappingsOrOptions?: Partial<AnalysisOptions> | Map<string, string>,
+    layout: 'csv' | 'excel' = 'csv'
+  ): HTMLElement | null {
     const defaultOptions: AnalysisOptions = {
       roleName: 'layout', concentrationName: 'concentration', valueName: 'readout',
       normalize: true, controlColumns: ['High Control', 'Low Control'], autoFilterOutliers: true,
@@ -305,15 +340,41 @@ export class PlateDrcAnalysis {
     };
 
     let actOptions: AnalysisOptions & {normalizedColName?: string};
-    if (layout === 'csv')
-      actOptions = {..._getOptionsForCsv(plate, defaultOptions), ...options};
-    else
-      actOptions = {..._getOptionsForExcel(plate, defaultOptions), ...options};
 
+    // Handle both mappings and options
+    if (mappingsOrOptions instanceof Map) {
+    // It's a mappings Map - use the mapped column names
+      const mappings = mappingsOrOptions;
+      if (layout === 'csv') {
+        actOptions = {
+          ..._getOptionsForCsv(plate, defaultOptions),
+          roleName: mappings.get('SampleID') || defaultOptions.roleName,
+          concentrationName: mappings.get('Concentration') || defaultOptions.concentrationName,
+          valueName: mappings.get('Activity') || defaultOptions.valueName,
+        };
+      } else {
+        actOptions = {
+          ..._getOptionsForExcel(plate, defaultOptions),
+          roleName: mappings.get('SampleID') || defaultOptions.roleName,
+          concentrationName: mappings.get('Concentration') || defaultOptions.concentrationName,
+          valueName: mappings.get('Activity') || defaultOptions.valueName,
+        };
+      }
+    } else {
+    // It's options - use existing logic
+      const options = mappingsOrOptions || {};
+      if (layout === 'csv')
+        actOptions = {..._getOptionsForCsv(plate, defaultOptions), ...options};
+      else
+        actOptions = {..._getOptionsForExcel(plate, defaultOptions), ...options};
+    }
+
+    // Rest of the method remains the same...
     if (!plate.data.columns.contains(actOptions.roleName) ||
-      !plate.data.columns.contains(actOptions.concentrationName) ||
-      !plate.data.columns.contains(actOptions.valueName))
+    !plate.data.columns.contains(actOptions.concentrationName) ||
+    !plate.data.columns.contains(actOptions.valueName))
       return null;
+
 
     const drFilterOptions: IPlateWellFilter = {exclude: {[actOptions.roleName]: actOptions.controlColumns}};
     let normed = false;

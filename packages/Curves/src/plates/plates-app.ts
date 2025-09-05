@@ -10,7 +10,7 @@ import {searchPlatesView} from './views/plates-search-view';
 import {propertySchemaView as templateView} from './views/plates-schema-view';
 import {createTemplatesView} from './views/plates-templates-view';
 import {filter} from 'rxjs/operators';
-import { createPlatesView } from './views/plates-create-view';
+import {createPlatesView} from './views/plates-create-view';
 
 export function platesAppView(): DG.View {
   const dummy = DG.DataFrame.create(5);
@@ -37,6 +37,10 @@ export async function initPlatesAppTree(treeNode: DG.TreeViewGroup): Promise<voi
   createPlatesNode.onSelected.subscribe(async (_) => grok.shell.addPreview(createPlatesView()));
   searchPlatesNode.onSelected.subscribe(async (_) => grok.shell.addPreview(searchPlatesView()));
   searchWellsNode.onSelected.subscribe(async (_) => grok.shell.addPreview(searchWellsView()));
+
+  const layoutsNode = treeNode.item('Layouts');
+  layoutsNode.onSelected.subscribe(async (_) => grok.shell.addPreview(await grok.functions.call('Curves:Layouts')));
+
 
   const templatesNode = treeNode.group('Templates');
   templatesNode.onSelected.subscribe(async (_) => grok.shell.addPreview(createTemplatesView()));

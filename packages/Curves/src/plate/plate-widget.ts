@@ -505,3 +505,4 @@ export class PlateWidget extends DG.Widget {
     super.detach();
   }
 }
+

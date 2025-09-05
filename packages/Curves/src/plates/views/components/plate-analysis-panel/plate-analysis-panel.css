@@ -7,15 +7,14 @@
 .view-toggle-button:hover { background-color: var(--grey-1); color: var(--grey-8); }
 .view-toggle-button.active { background-color: var(--blue-1); color: var(--white); border-color: var(--blue-2); }
 .view-toggle-button.active:hover { background-color: var(--blue-2); }
-.bottom-panel-container { flex-grow: 1; width: 100%; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
-.bottom-panel-container > .plate-widget { width: 100% !important; height: 100%; display: flex; flex-direction: column; }
-.bottom-panel-container .plate-widget__tabs-container { width: 100% !important; display: flex !important; flex-direction: column !important; height: 100%; }
-.bottom-panel-container .plate-widget__tabs { width: 100% !important; flex-grow: 1; }
-.bottom-panel-container .plate-widget__main-container { width: 100% !important; display: flex; flex-direction: column !important; gap: 15px; height: 100%; }
-.bottom-panel-container .plate-widget__main-container > div:first-child { width: 100% !important; flex-grow: 1; }
-.bottom-panel-container .plate-widget__details { display: none; }
-.bottom-panel-container .d4-tab-contents { width: 100% !important; }
-.bottom-panel-container .d4-grid { width: 100% !important; }
+.plate-widget { width: 100% !important; height: 100%; display: flex; flex-direction: column; }
+.plate-widget__tabs-container { width: 100% !important; display: flex !important; flex-direction: column !important; height: 100%;flex-grow: 1; }
+.plate-widget__tabs { width: 100% !important; flex-grow: 1; }
+.plate-widget__main-container { width: 100% !important; display: flex; flex-direction: column !important; gap: 15px; height: 100%; }
+.plate-widget__main-container > div:first-child { width: 100% !important; flex-grow: 1; }
+.plate-widget__details { display: none; }
+.d4-tab-contents { width: 100% !important; }
+.d4-grid { width: 100% !important; }
 .drc-container { width: 100%; height: 100%; display: flex; flex-direction: column; }
 .create-plate-view__drc-host { flex-grow: 1; overflow-y: auto; width: 100%; min-height: 0; display: flex; align-items: center; justify-content: center; }
 .drc-skeleton { display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 20px; background-color: var(--grey-0); border-radius: 8px; text-align: center; color: var(--grey-5); }
@@ -29,17 +28,12 @@
 .skeleton-key { width: 100px; height: 14px; background-color: var(--grey-1); border-radius: 3px; }
 .skeleton-value { flex-grow: 1; height: 14px; background-color: var(--grey-2); border-radius: 3px; }
 .warning-message { color: var(--orange-3); padding: 12px; text-align: center; font-size: 13px; background-color: var(--orange-0); border: 1px solid var(--orange-2); border-radius: 4px; margin-top: 12px; }
-/*
- * === COMPLETE CREATE PLATE LAYOUT FIX ===
- */
 
-/* --- 1. Main 50/50 Panel Split --- */
 
-/* This targets the container for the TabControl (the element getting the inline 400px style) */
 .create-plate-view__right-panel > :last-child {
   flex: 1;          /* Make it take the second 50% of vertical space */
   min-height: 0;    /* Allows the container to shrink properly */
-  width: 100% !important; /* Use !important to FORCEFULLY override the inline width: 400px */
+  width: 100% !important; 
   display: flex;    /* Make it a flex container to manage the tab host inside */
 }
 

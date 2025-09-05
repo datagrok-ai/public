@@ -6,7 +6,7 @@ import {Subscription} from 'rxjs';
 // import {renderValidationResults} from '../../plates-validation-panel';
 import {PlateTemplate, plateTemplates, plateTypes} from '../../../plates-crud';
 import {PlateWidget} from '../../../../plate/plate-widget';
-import { renderMappingEditor, TargetProperty} from '../mapping-editor/mapping-editor';
+import {renderMappingEditor, TargetProperty} from '../mapping-editor/mapping-editor';
 import {renderValidationResults} from '../../plates-validation-panel';
 /**
  * Creates a consistent two-column form row (Label on left, Input on right).
@@ -16,9 +16,8 @@ import {renderValidationResults} from '../../plates-validation-panel';
  */
 function createFormRow(label: string, input: DG.InputBase<any>): HTMLElement {
   const labelEl = ui.divText(label, 'ui-label');
-  // Remove the default label from the input component, as we're providing our own.
   input.root.querySelector('label')?.remove();
-  return ui.divH([labelEl, input.root], 'template-panel-form-row');
+  return ui.divH([labelEl, input.root], 'template-panel-form-row'); // This class now has styling
 }
 
 
@@ -260,7 +259,6 @@ export class TemplatePanel {
     ui.empty(this.wellPropsHeaderHost);
 
     if (activePlate) {
-      // Define direct callbacks to the state manager, like the original implementation
       const handleMapping = (targetProperty: string, sourceColumn: string) => {
         const currentState = this.stateManager.currentState;
         if (currentState)
@@ -273,22 +271,24 @@ export class TemplatePanel {
           this.stateManager.undoMapping(currentState.activePlateIdx, targetProperty);
       };
 
-      // Prepare data for the renderer
       const sourceColumns = activePlate.plate.data.columns.names();
-      const REQUIRED_ANALYSIS_FIELDS = [
-        {name: 'Activity', required: true},
-        {name: 'Concentration', required: true},
-        {name: 'SampleID', required: true},
-      ];
+
+      // REMOVED: Analysis-specific fields are no longer added here
+      // const DRC_FIELDS: TargetProperty[] = [...]
+      // const DOSE_RATIO_FIELDS: TargetProperty[] = [...]
+
+      // Only handle template-specific properties
       const MOCKED_REQUIRED_TEMPLATE_FIELDS = ['Target', 'Assay Format'];
       const templateProps: TargetProperty[] = template.wellProperties
         .filter((p) => p && p.name)
-        .map((p) => ({name: p.name!, required: MOCKED_REQUIRED_TEMPLATE_FIELDS.includes(p.name!)}));
-      const allTargetProps: TargetProperty[] = [...templateProps, ...REQUIRED_ANALYSIS_FIELDS];
+        .map((p) => ({
+          name: p.name!,
+          required: MOCKED_REQUIRED_TEMPLATE_FIELDS.includes(p.name!)
+        }));
 
-      // Call the stateless renderer function
+      // Only template properties go into the central validation panel now
       renderMappingEditor(this.validationHost, {
-        targetProperties: allTargetProps,
+        targetProperties: templateProps,
         sourceColumns: sourceColumns,
         mappings: activePlate.reconciliationMap,
         onMap: handleMapping,
@@ -302,7 +302,7 @@ export class TemplatePanel {
       if (plateProperties.length > 0)
         this.platePropertiesHost.appendChild(ui.input.form(activePlate.plate.details || {}, plateProperties));
     } else {
-      // Handle the "no plate" case by calling the renderer with empty data
+    // Handle the "no plate" case by calling the renderer with empty data
       renderMappingEditor(this.validationHost, {
         targetProperties: [],
         sourceColumns: [],
@@ -350,13 +350,13 @@ export class TemplatePanel {
 
       if (totalConflicts > 0) {
         const conflictBadge = ui.span([`${totalConflicts}`], 'ui-badge-red');
-        ui.tooltip.bind(conflictBadge, `${totalConflicts} unresolved fields across all plates`);
+        ui.tooltip.bind(conflictBadge, `${totalConflicts} unresolved template fields across all plates`);
         badges.appendChild(conflictBadge);
       }
 
       if (totalMappings > 0) {
         const mappingBadge = ui.span([`${totalMappings}`], 'ui-badge-blue');
-        ui.tooltip.bind(mappingBadge, `${totalMappings} total mappings applied across all plates`);
+        ui.tooltip.bind(mappingBadge, `${totalMappings} total template mappings applied across all plates`);
         badges.appendChild(mappingBadge);
       }
 
@@ -364,7 +364,8 @@ export class TemplatePanel {
         manageMappingsButton.prepend(badges);
     }
 
-    const header = ui.h2('Well Properties');
+    // Changed header text to reflect template-only scope
+    const header = ui.h2('Template Properties');
     const headerContainer = ui.divH(
       [header, ui.div([manageMappingsButton], {style: {marginLeft: 'auto'}})],
       'space-between-center'
