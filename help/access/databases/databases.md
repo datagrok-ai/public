@@ -259,7 +259,7 @@ Once your layout is complete, click Save.
 This tab is where you can run queries and monitor their execution logs. 
 Use it to track the query’s execution process and debug issues.
 
-![Debug](img/debug.gif)
+![Debug](img/Debug.gif)
 
 </TabItem>
 </Tabs>
