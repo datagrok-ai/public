@@ -1,5 +1,9 @@
 # Chem changelog
 
+## 1.16.4 (2025-09-05)
+
+* Fixed issues with tableview getting for cloned views in functions.
+
 ## 1.16.3 (2025-08-26)
 
 ### Features

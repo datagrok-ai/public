@@ -25,7 +25,6 @@ const nonMetaData = [
 ];
 
 export const decoratorOptionToAnnotation = new Map<string, string>([
-  ['initialValue', 'default'],
   ['helpUrl', 'help-url'],
   ['topMenu', 'top-menu'],
   ['metaUrl', 'meta.url'],
@@ -260,7 +259,15 @@ export const inputOptionsNames = [
 
 function buildStringOfOptions(input: any) {
   const optionsInString: string[] = [];
-  for (const [key, value] of Object.entries(input.options ?? {})) {
+  const opt = input.options ?? {};
+  let defaultValue = '';
+  if (opt['initialValue']) 
+    defaultValue = ` = ${opt['initialValue']}`; 
+  
+
+  for (const [key, value] of Object.entries(opt)) {
+    if (key === 'initialValue')
+      continue;
     let val = value;
     let option = key;
     option = decoratorOptionToAnnotation.get(option) ?? option;
@@ -269,7 +276,8 @@ function buildStringOfOptions(input: any) {
       val = JSON.stringify(value);
     optionsInString.push(`${option}: ${val}`);
   }
-  return `{ ${optionsInString.join('; ')} }`;
+  const optString = optionsInString.length> 0 ? `{ ${optionsInString.join('; ')} }`: '';
+  return `${defaultValue} ${optString}`;
 }
 
 

@@ -673,9 +673,10 @@ export class PackageFunctions {
   })
   static async getFingerprints(
     @grok.decorators.param({options: {semType: 'Molecule'}}) col: DG.Column,
+    @grok.decorators.param({options: {optional: true}}) _metric: string | undefined = undefined,
     @grok.decorators.param({type: 'string', options: {caption: 'Fingerprint type', optional: true,
       choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'], initialValue: 'Morgan'}}) fingerprintType: Fingerprint = Fingerprint.Morgan,
-    @grok.decorators.param({options: {optional: true}}) _metric?: string) {
+  ) {
     //TODO: get rid of fallback
     let fingerprintTypeStr = fingerprintType as string;
     if ((fingerprintTypeStr.startsWith('\'') || fingerprintTypeStr.startsWith('"')) &&
@@ -826,13 +827,13 @@ export class PackageFunctions {
     }
     //workaround for functions which add viewers to tableView (can be run only on active table view)
     checkCurrentView(table);
-
+    const view = grok.shell.tv;
     const funcCall = await DG.Func.find({name: 'runElementalAnalysis'})[0].prepare({
       table: table,
       molecules: molecules,
     }).call(undefined, undefined, {processed: false});
     const columnNames: string[] = funcCall.getOutputParamValue();
-    const view = grok.shell.getTableView(table.name);
+
     if (radarViewer) {
       let packageExists = checkPackage('Charts', 'radarViewerDemo');
       if (!packageExists) //for compatibility with previous versions of Charts
@@ -997,7 +998,7 @@ export class PackageFunctions {
         isDemo: isDemo,
       }).call(undefined, undefined, {processed: false});
 
-      const view = grok.shell.getTableView(table.name);
+      const view = grok.shell.tv;
 
       const description = `Molecules: ${molecules.name}, activities: ${activities.name}, method: ${methodName}, ${options ? `options: ${JSON.stringify(options)},` : ``} similarity: ${similarityMetric}, similarity cutoff: ${similarity}`;
       view.addViewer(DG.VIEWER.SCATTER_PLOT, {
@@ -1183,7 +1184,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {caption: 'Dundee', initialValue: 'false', description: '"University of Dundee NTD Screening Library filters"'}}) dundee: boolean,
     @grok.decorators.param({options: {caption: 'Inpharmatica', initialValue: 'false', description: '"Inpharmatica filters"'}}) inpharmatica: boolean,
     @grok.decorators.param({options: {caption: 'LINT', initialValue: 'false', description: '"Pfizer LINT filters"'}}) lint: boolean,
-    @grok.decorators.param({options: {caption: 'Glaxo', initialValue: 'false', description: '"Glaxo Wellcome Hard filters"'}}) glaxo: boolean): Promise<DG.DataFrame | void> {
+    @grok.decorators.param({options: {caption: 'Glaxo', initialValue: 'false', description: '"Glaxo Wellcome Hard filters"'}}) glaxo: boolean): Promise<void> {
     if (table.rowCount > 5000)
       grok.shell.info('Structural Alerts detection will take a while to run');
 
@@ -1197,7 +1198,6 @@ export class PackageFunctions {
         table.columns.add(resultCol.clone());
       }
     }
-    return table;
   }
 
   @grok.decorators.func({
@@ -1617,8 +1617,8 @@ export class PackageFunctions {
     const tableRowIdx = value.cell.rowIndex;
     const dframe = molCol.dataFrame;
     const smiles = molCol.get(tableRowIdx);
-
-    const grid = value.viewer as DG.Grid ?? grok.shell.getTableView(dframe.name)?.grid;
+    checkCurrentView(dframe);
+    const grid = value.viewer as DG.Grid ?? grok.shell.tv?.grid;
     if (!grid)
       throw new Error('Cannnot access value grid');
     ui.setUpdateIndicator(grid.root, true);
@@ -1855,7 +1855,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {initialValue: 'false'}}) rotatableBonds?: boolean,
     @grok.decorators.param({options: {initialValue: 'false'}}) stereoCenters?: boolean,
     @grok.decorators.param({options: {initialValue: 'false'}}) moleculeCharge?: boolean,
-  ): Promise<DG.DataFrame> {
+  ): Promise<void> {
     const propArgs: string[] = ([] as string[]).concat(MW ? ['MW'] : [], HBA ? ['HBA'] : [],
       HBD ? ['HBD'] : [], logP ? ['LogP'] : [], logS ? ['LogS'] : [], PSA ? ['PSA'] : [],
       rotatableBonds ? ['Rotatable bonds'] : [], stereoCenters ? ['Stereo centers'] : [],
@@ -1866,7 +1866,6 @@ export class PackageFunctions {
     } finally {
       pb.close();
     }
-    return table;
   }
 
   @grok.decorators.func({
@@ -1906,14 +1905,13 @@ export class PackageFunctions {
     @grok.decorators.param({options: {initialValue: 'false'}}) tumorigenicity?: boolean,
     @grok.decorators.param({options: {initialValue: 'false'}}) irritatingEffects?: boolean,
     @grok.decorators.param({options: {initialValue: 'false'}}) reproductiveEffects?: boolean,
-  ): Promise<DG.DataFrame> {
+  ): Promise<void> {
     const pb = DG.TaskBarProgressIndicator.create('Toxicity risks ...');
     try {
       await addRisksAsColumns(table, molecules, {mutagenicity, tumorigenicity, irritatingEffects, reproductiveEffects});
     } finally {
       pb.close();
     }
-    return table;
   }
 
   @grok.decorators.func({
@@ -1972,7 +1970,7 @@ export class PackageFunctions {
     //workaround for functions which add viewers to tableView (can be run only on active table view)
     checkCurrentView(table);
 
-    const view = grok.shell.getTableView(table.name) as DG.TableView;
+    const view = grok.shell.tv as DG.TableView;
 
     const activityColsNames = [];
     for (let i = 0; i < scalings.length; i++) {

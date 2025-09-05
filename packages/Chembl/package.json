@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/chembl",
   "friendlyName": "ChEMBL",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "description": "ChEMBL integration, commonly used queries and browser",
   "author": {
     "name": "Maria Dolotova",
@@ -14,7 +14,7 @@
     "directory": "packages/Chembl"
   },
   "dependencies": {
-    "@datagrok-libraries/db-explorer": "^1.2.0",
+    "@datagrok-libraries/db-explorer": "^1.2.1",
     "@datagrok-libraries/utils": "^4.6.3",
     "@types/react-dom": "^17.0.9",
     "datagrok-api": "^1.26.0",

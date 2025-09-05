@@ -24,6 +24,13 @@ export * from './package.g';
 let AVAILABLE_SERVICES: string[];
 
 
+const highestPriorityIndex = 3;
+const  priorityLevels : Record<string, number> = {
+  'Lowest': 0,
+  'Low': 1,
+  'Medium': 2,
+  'Blocker': highestPriorityIndex,
+};
 export class PackageFunctions {
   @grok.decorators.init()
   static _initUA(): void {
@@ -106,7 +113,70 @@ export class PackageFunctions {
     await handler.init(date, groups, packages, tags, categories, projects, path);
     return handler.view;
   }
+  
+  @grok.decorators.func({meta: {vectorFunc: 'true'}})
+  static async getTicketsVerdict(@grok.decorators.param({type:'column<string>'})  ticketColumn: DG.Column): Promise<DG.Column | undefined>  {
+    const ticketsMap = new Map<string, {status: string, severity: string}>();
+    const ticketRegex = /GROK-\d*/g;
+    const ticketColumnList = ticketColumn.toList();
+    for (let i = 0; i < ticketColumnList.length; i++) {
+      if (ticketColumnList[i]) {
+        let tickets = ticketColumnList[i].matchAll(ticketRegex);
+        for (let ticket of tickets) {
+          let status = (await grok.functions.call('JiraConnect:issueData', {issueKey: ticket}));
+          if (status && !ticketsMap.has(ticket[0]))
+            ticketsMap.set(ticket[0], { status: status.fields.status.name, severity: status.fields.priority.name });
+        }
+      }
+    }
 
+    const resultCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, `${ticketColumn} ticket verdict`, ticketColumn.length);
+    for (let i = 0; i < ticketColumnList.length; i++) {
+      if (ticketColumnList[i]) {
+        let tickets = ticketColumnList[i].matchAll(ticketRegex);
+        let resultStatuses = [];
+        let status = undefined;
+        for (let ticket of tickets) {
+          if (ticketsMap.has(ticket[0])){
+            resultStatuses.push(ticketsMap.get(ticket[0]))
+          }
+        }
+
+        if (resultStatuses.length > 0)
+        {
+          if (resultStatuses.some(e=> e?.status !== 'Done'))
+          {
+            let priority = this.getHighestPriorityLevel(resultStatuses as any);
+            if (resultStatuses.some(e=> e?.status === 'Done'))
+              status = `Partially Fixed (${priority})`;
+            else
+              status = `Wasn\'t Fixed (${priority})`;
+          }
+          else
+            status = 'Fixed';
+          resultCol.set(i, status);
+        }
+      }
+    }
+
+    return resultCol;
+  }
+
+  static getHighestPriorityLevel(ticketsMap: {status: string, severity: string}[]){
+    let highestPriority = 'Lowest';
+    let highestPriorityIndex = 0;
+    for(let [key, value] of ticketsMap.entries())
+    {
+      let index = priorityLevels[value.severity];
+      if (index > highestPriorityIndex) {
+        highestPriority = (value.severity);
+        highestPriorityIndex = index
+      }
+      if (index >= highestPriorityIndex)
+        break;
+    }
+    return highestPriority;
+  }
 
   @grok.decorators.app({
     'url': '/tests/manager',

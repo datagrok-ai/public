@@ -4,7 +4,14 @@
 
 async function postprocess() {
   let builds = result.col('build_index').categories;
-  let buildNames = result.col('build').categories.sort();
+  
+  let buildNames = [];
+  let nameCategories =  result.col('build').categories;
+  for (var i = 0; i < result.col('build').length && nameCategories.length > buildNames.length; i++) {
+    let nm =result.col('build').get(i);
+    if (!buildNames.includes(nm)) 
+      buildNames.push(nm) 
+  }
 
   let pivot = result
     .groupBy(['test', 'owner'])

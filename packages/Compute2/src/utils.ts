@@ -108,7 +108,7 @@ export const hasAddControls = (data: PipelineState): data is PipelineWithAdd =>
   (isParallelPipelineState(data) || isSequentialPipelineState(data)) && !data.isReadonly &&
     data.stepTypes.filter((item) => !item.disableUIAdding).length > 0;
 
-export const couldBeSaved = (data: PipelineState) => !isFuncCallState(data) && !!data.nqName;
+export const couldBeSaved = (data: PipelineState) => !isFuncCallState(data) && !!data.nqName && !data.disableHistory;
 
 export const hasSubtreeFixableInconsistencies = (
   data: PipelineState,
@@ -172,7 +172,7 @@ export async function reportStep(treeState?: PipelineState) {
 
     DG.Utils.download(
       `${treeState.friendlyName ?? treeState.configId}.zip`,
-      new Blob([zipSync(zipConfig)]),
+      new Blob([zipSync(zipConfig) as any]),
     );
   }
 }

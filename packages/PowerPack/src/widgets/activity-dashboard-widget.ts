@@ -16,11 +16,10 @@ export class ActivityDashboardWidget extends DG.Widget {
   static RECENT_TIME_DAYS = 2;
   static SPOTLIGHT_ITEMS_LENGTH: 10;
 
+  static sharedEntityRegex: RegExp = /<span>#{x\.([a-f0-9-]+)\.".*?"}<\/span>/g;
   keywordsToIgnore: string[] = ['"data"', '"data w/', '"fitted data"', '"reduced data"', '"reduceddata"', '"sizingparams"', '"primaryfilter', '"trimmed data"', '"input data from imported file"', '"dataanalysisdf', '"clean data"'/*, 'Ran <span>#{x.'*/];
-  currentDate: dayjs.Dayjs = dayjs();
-  get cutoffDate(): dayjs.Dayjs {
-    return this.currentDate.subtract(ActivityDashboardWidget.RECENT_TIME_DAYS, 'day');
-  }
+  tipsOfTheDay: string[] = ['Double-click a column header to sort the data.', 'Drag and drop a CSV or Excel file into Datagrok to load it as a table.', 'Hover over a column name to see its statistics in the tooltip.', 'Hold Shift and click multiple column headers to select several columns.', 'Use Ctrl+F in a table to search across all values.', 'Resize columns by dragging the separator in the header.', 'Use Layouts to save and restore your favorite viewer arrangements.', 'Use “Add New Column” to create calculated columns with formulas.', 'Right-click a column to see context actions available for it.', 'Try the “Correlation Plot” to quickly see relationships between numeric columns.'];
+  cutoffDate: dayjs.Dayjs = dayjs().subtract(ActivityDashboardWidget.RECENT_TIME_DAYS, 'day');
 
   favoritesEvents: DG.LogEvent[] = [];
 
@@ -33,12 +32,19 @@ export class ActivityDashboardWidget extends DG.Widget {
   recentEntities: DG.Entity[] = [];
   recentEntityTimes: dayjs.Dayjs[] = [];
 
+  tabControl?: DG.TabControl;
   spotlightRoot?: HTMLElement;
   favoritesListRoot?: HTMLElement;
   notificationsListRoot?: HTMLElement;
   activityListRoot?: HTMLElement;
 
   actionRequiredRoot?: HTMLDivElement | null = null;
+  sharedWithMeRoot?: HTMLDivElement | null = null;
+  spacesRoot?: HTMLDivElement | null = null;
+  recentItemsRoot?: HTMLDivElement | null = null;
+  adminRoot?: HTMLDivElement | null = null;
+  subwidgetsAdded: Map<string, HTMLDivElement | null> = new Map<string, HTMLDivElement>();
+  subwidgetsAmount: number = 0;
   reportAmount?: number = 0;
 
   constructor() {
@@ -55,12 +61,13 @@ export class ActivityDashboardWidget extends DG.Widget {
       'My Activity': () => ui.wait(async () => await this.getActivityTab()),
     };
 
-    const tabControl = ui.tabControl(tabs, true);
-    tabControl.onTabChanged.subscribe((_) => this.cleanLists());
-    tabControl.root.style.height = '100%';
-    tabControl.root.style.width = '100%';
+    this.tabControl = ui.tabControl(tabs, true);
+    this.tabControl.onTabChanged.subscribe((_) => this.cleanLists());
+    this.tabControl.root.style.height = '100%';
+    this.tabControl.root.style.width = '100%';
+    (this.tabControl.root.querySelector('.ui-box.d4-tab-content') as HTMLElement)!.style.overflow = 'scroll';
 
-    this.root.appendChild(tabControl.root);
+    this.root.appendChild(this.tabControl.root);
   }
 
   async initSpotlightData(): Promise<void> {
@@ -68,7 +75,7 @@ export class ActivityDashboardWidget extends DG.Widget {
     const notificationsDataSource: DG.NotificationsDataSource = grok.dapi.users.notifications.forCurrentUser()
       .by(ActivityDashboardWidget.SPOTLIGHT_ITEMS_LENGTH) as DG.NotificationsDataSource;
     console.time('ActivityDashboardWidget.notificationsAndMostRecentEntities');
-    const [notifications, mostRecentEntitiesDf]: [DG.UserNotification[], DG.DataFrame] = await Promise.all([notificationsDataSource.list(),
+    const [notifications, mostRecentEntitiesDf]: [DG.UserNotification[], DG.DataFrame] = await Promise.all([notificationsDataSource.list({pageSize: 20}),
       queries.mostRecentEntities(DG.User.current().id)]);
     console.timeEnd('ActivityDashboardWidget.notificationsAndMostRecentEntities');
 
@@ -80,7 +87,8 @@ export class ActivityDashboardWidget extends DG.Widget {
     const sharedUserIds: string[] = [];
     const sharedEntityIds: string[] = [];
     sharedCandidates.forEach((n) => {
-      const matches = [...n.text.matchAll(/<span>#{x\.([a-f0-9-]+)\.".*?"}<\/span>/g)];
+      ActivityDashboardWidget.sharedEntityRegex.lastIndex = 0;
+      const matches = [...n.text.matchAll(ActivityDashboardWidget.sharedEntityRegex)];
       if (matches.length > 1) {
         sharedUserIds.push(matches[0][1]);
         sharedEntityIds.push(matches[1][1]);
@@ -101,8 +109,18 @@ export class ActivityDashboardWidget extends DG.Widget {
 
     const byIdMap = new Map(allEntities.map((e) => [e.id, e]));
 
-    this.sharedUsers = sharedUserIds.map((id) => byIdMap.get(id)).filter((e): e is DG.User => e instanceof DG.User);
-    this.sharedWithMe = sharedEntityIds.map((id) => byIdMap.get(id)).filter((e): e is DG.Entity => !!e && !(e instanceof DG.User));
+    this.sharedUsers = [];
+    this.sharedWithMe = [];
+    for (let i = 0; i < sharedUserIds.length; i++) {
+      const user = byIdMap.get(sharedUserIds[i]);
+      if (user instanceof DG.User)
+        this.sharedUsers.push(user);
+    }
+    for (let i = 0; i < sharedEntityIds.length; i++) {
+      const ent = byIdMap.get(sharedEntityIds[i]);
+      if (!!ent && !(ent instanceof DG.User))
+        this.sharedWithMe.push(ent);
+    }
     this.recentEntities.length = 0;
     this.recentEntityTimes.length = 0;
     for (let i = 0; i < recentEntityIds.length; i++) {
@@ -111,7 +129,7 @@ export class ActivityDashboardWidget extends DG.Widget {
         continue;
       if (!(ent instanceof DG.FuncCall || ent instanceof DG.Group || ent instanceof DG.User || ent instanceof DG.Package ||
         ent instanceof DG.UserReport || ent instanceof DG.TableInfo || (ent instanceof DG.Func && !(ent instanceof DG.Script ||
-        ent instanceof DG.DataQuery || ent instanceof DG.DataJob)) || ent instanceof DG.ViewInfo || ent == null ||
+        ent instanceof DG.DataQuery || ent instanceof DG.DataJob)) || ent instanceof DG.ViewInfo || ent instanceof DG.DataConnection || ent == null ||
         //@ts-ignore
         (ent instanceof DG.Project && (!ent.isDashboard || ent.isPackage)) || (ent.hasOwnProperty('npmScope') && ent['npmScope'] == 'datagrok'))) {
         this.recentEntities.push(ent);
@@ -148,10 +166,9 @@ export class ActivityDashboardWidget extends DG.Widget {
       const itemsToShow = usedItems.slice(0, ActivityDashboardWidget.SPOTLIGHT_ITEMS_LENGTH);
       const list = ui.list(itemsToShow);
       list.classList.add('power-pack-activity-widget-subwidget-list-content');
-      const listChildren = Array.from(list.children);
       for (let i = 0; i < itemsToShow.length; i++) {
         const item = itemsToShow[i];
-        const listChild = listChildren[i];
+        const listChild = list.children[i];
         const sharedNotification = this.sharedNotifications[i];
         if (item instanceof DG.Project || item instanceof DG.Notebook || item instanceof DG.Model || item instanceof DG.ViewLayout) {
           const parentElem = listChild.firstChild;
@@ -192,52 +209,124 @@ export class ActivityDashboardWidget extends DG.Widget {
           listChild.prepend(timestamp);
         }
       }
+      this.subwidgetsAmount++;
       return ui.divV([ui.h3(ui.span([icon, ui.span([` ${title}`])]), 'power-pack-activity-widget-spotlight-column-header'),
         list], title === SpotlightTabNames.ACTION_REQUIRED ? 'power-pack-activity-widget-spotlight-column-action-required' : 'power-pack-activity-widget-spotlight-column');
     };
 
-    const root = ui.divH([], 'power-pack-activity-widget-spotlight-root');
+    let root = ui.divH([], 'power-pack-activity-widget-spotlight-root');
 
+    // API changes needed
+    // if (!(DG.User.current().joined > dayjs().subtract(7, 'day')) && false) {
     const actionRequired = this.recentNotifications.filter((n) => {
       const text = n.text.toLowerCase();
       return text.includes('you were assigned') || text.includes('requested a membership');
     });
     this.actionRequiredRoot = actionRequired.length > 0 ? createSection(SpotlightTabNames.ACTION_REQUIRED, actionRequired, ui.iconFA('exclamation-circle')) : null;
-    if (this.actionRequiredRoot) {
-      if (actionRequired.some((n) => n.text.includes('requested a membership')))
-        this.actionRequiredRoot.style.maxWidth = '200px';
+    if (this.actionRequiredRoot)
       root.appendChild(this.actionRequiredRoot);
-    }
+    this.subwidgetsAdded.set(SpotlightTabNames.ACTION_REQUIRED, this.actionRequiredRoot);
 
-    const sharedWithMeRoot = this.sharedWithMe.length > 0 ? createSection(SpotlightTabNames.SHARED_WITH_ME, this.sharedWithMe, ui.iconFA('inbox')) : null;
-    if (sharedWithMeRoot)
-      root.appendChild(sharedWithMeRoot);
+    this.sharedWithMeRoot = this.sharedWithMe.length > 0 ? createSection(SpotlightTabNames.SHARED_WITH_ME, this.sharedWithMe, ui.iconFA('inbox')) : null;
+    if (this.sharedWithMeRoot)
+      root.appendChild(this.sharedWithMeRoot);
+    this.subwidgetsAdded.set(SpotlightTabNames.SHARED_WITH_ME, this.sharedWithMeRoot);
 
-    const spacesRoot = null;
-    if (spacesRoot)
-      root.appendChild(spacesRoot);
+    this.spacesRoot = null;
+    if (this.spacesRoot)
+      root.appendChild(this.spacesRoot);
+    // this.subwidgetsAdded.set(SpotlightTabNames.SPACES, this.spacesRoot);
 
-    const recentItemsRoot = this.recentEntities.length > 0 ? createSection(SpotlightTabNames.RECENT, this.recentEntities, ui.iconFA('history')) : null;
-    if (recentItemsRoot)
-      root.appendChild(recentItemsRoot);
+    this.recentItemsRoot = this.recentEntities.length > 0 ? createSection(SpotlightTabNames.RECENT, this.recentEntities, ui.iconFA('history')) : null;
+    if (this.recentItemsRoot)
+      root.appendChild(this.recentItemsRoot);
+    this.subwidgetsAdded.set(SpotlightTabNames.RECENT, this.recentItemsRoot);
 
     const adminActivity = this.recentUserActivity.filter((l) => l.description.toLowerCase().includes('published version'));
-    const adminRoot = adminActivity.length > 0 ? createSection(SpotlightTabNames.ADMIN, adminActivity, ui.icons.settings(() => {})) : null;
-    if (adminRoot)
-      root.appendChild(adminRoot);
-    this.cleanLists();
+    this.adminRoot = adminActivity.length > 0 ? createSection(SpotlightTabNames.ADMIN, adminActivity, ui.icons.settings(() => {})) : null;
+    if (this.adminRoot)
+      root.appendChild(this.adminRoot);
+    this.subwidgetsAdded.set(SpotlightTabNames.ADMIN, this.adminRoot);
+    // }
 
+    if (root.children.length === 0)
+      root = this.getNewUserInfoColumns();
+
+    const additionalFuncs = DG.Func.find({meta: {'isActivityWidget': 'true'}});
+    for (const func of additionalFuncs) {
+      const elements: HTMLElement[] = await func.apply();
+      const list = ui.list(elements);
+      list.classList.add('power-pack-activity-widget-subwidget-list-content');
+      const listRoot = ui.divV([ui.h3(ui.span([ui.span([func.options['activityWidgetHeader'] ?? ''])]), 'power-pack-activity-widget-spotlight-column-header'),
+        list], 'power-pack-activity-widget-spotlight-column');
+      root.appendChild(listRoot);
+    }
+    const randomTip = this.tipsOfTheDay[Math.floor(Math.random() * this.tipsOfTheDay.length)];
+    const tip = ui.divText(`💡 Tip of the day: ${randomTip}`, 'power-pack-activity-widget-spotlight-tip');
+    root.appendChild(tip);
+
+    setTimeout(() => this.cleanLists(), 500);
     console.timeEnd('ActivityDashboardWidget.buildSpotlightTab');
+    return root;
+  }
 
+  getNewUserInfoColumns(): HTMLDivElement {
+    const root = ui.divH([], 'power-pack-activity-widget-spotlight-root');
+    const tutorialsApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'trackOverview'})[0];
+    const demoApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'demoApp'})[0];
+    if (!tutorialsApp || !demoApp)
+      return root;
+    const appHandler = DG.ObjectHandler.forEntity(demoApp);
+
+    const gettingStartedList = ui.list([
+      ui.link('Data Access', async () => await tutorialsApp.apply()),
+      ui.link('Exploratory Data Analysis', async () => await tutorialsApp.apply()),
+      ui.link('Cheminformatics', async () => await tutorialsApp.apply()),
+      ui.link('Explore more Tutorials', async () => await tutorialsApp.apply()),
+    ]);
+    gettingStartedList.classList.add('power-pack-activity-widget-subwidget-list-content');
+    const gettingStartedRoot = ui.divV([ui.h3(ui.span([ui.span(['Getting Started'])]), 'power-pack-activity-widget-spotlight-column-header'),
+      gettingStartedList], 'power-pack-activity-widget-spotlight-column');
+
+    const tryDemoAppsList = ui.list([
+      ui.link('Scatter Plot', async () => await demoApp.apply({path: '/Visualization/General/Scatter-Plot'})),
+      ui.link('Files', async () => await demoApp.apply({path: '/Data-Access/Files'})),
+      ui.link('Matched Molecular Pairs', async () => await demoApp.apply({path: '/Cheminformatics/Matched-Molecular-Pairs'})),
+      ui.link('Curve Fitting', async () => await demoApp.apply({path: '/Curves/Curve-Fitting'})),
+    ]);
+    tryDemoAppsList.classList.add('power-pack-activity-widget-subwidget-list-content');
+    const tryDemoAppsRoot = ui.divV([ui.h3(ui.span([ui.span(['Try Demo Apps'])]), 'power-pack-activity-widget-spotlight-column-header'),
+      tryDemoAppsList], 'power-pack-activity-widget-spotlight-column');
+
+    let featuredApps: HTMLElement[] = [];
+    const hitDesignApp = DG.Func.find({tags: ['app'], package: 'HitTriage', name: 'hitTriageApp'})[0];
+    if (hitDesignApp)
+      featuredApps.push((appHandler?.renderTooltip(DG.toDart(hitDesignApp)).firstChild as HTMLElement) ?? null);
+    const admeticaApp = DG.Func.find({tags: ['app'], package: 'Admetica', name: 'admeticaApp'})[0];
+    if (admeticaApp)
+      featuredApps.push((appHandler?.renderTooltip(DG.toDart(admeticaApp)).firstChild as HTMLElement) ?? null);
+    const diffStudioApp = DG.Func.find({tags: ['app'], package: 'DiffStudio', name: 'runDiffStudio'})[0];
+    if (diffStudioApp)
+      featuredApps.push((appHandler?.renderTooltip(DG.toDart(diffStudioApp)).firstChild as HTMLElement) ?? null);
+    featuredApps = featuredApps.filter((app) => !!app);
+
+    const featuredAppsList = ui.list([
+      ...featuredApps,
+      ui.link('Explore more Apps', () => setTimeout(() => grok.shell.addView(DG.View.createByType(DG.VIEW_TYPE.APPS)), 100)),
+    ]);
+    featuredAppsList.classList.add('power-pack-activity-widget-subwidget-list-content');
+    const featuredAppsRoot = ui.divV([ui.h3(ui.span([ui.span(['Featured Apps'])]), 'power-pack-activity-widget-spotlight-column-header'),
+      featuredAppsList], 'power-pack-activity-widget-spotlight-column');
+
+    root.append(gettingStartedRoot, tryDemoAppsRoot, featuredAppsRoot);
     return root;
   }
 
   replaceMarkupSpans(container: HTMLElement, replacements: HTMLElement[], names: string[], time: dayjs.Dayjs): HTMLElement {
     const result = ui.span([], 'd4-markup');
     let replacementIndex = 0;
-    const children = Array.from(container.childNodes);
-    for (let i = 0; i < children.length; i++) {
-      const node = children[i];
+    for (let i = 0; i < container.childNodes.length; i++) {
+      const node = container.childNodes[i];
       if (node instanceof HTMLSpanElement && node.textContent?.trim()?.startsWith('#{x')) {
         if (replacementIndex < replacements.length) {
           const span = ui.span([ui.span([
@@ -291,9 +380,8 @@ export class ActivityDashboardWidget extends DG.Widget {
     }
 
     this.notificationsListRoot = ui.list(this.recentNotifications);
-    const childList = Array.from(this.notificationsListRoot.children);
-    for (let i = 0; i < childList.length; i++) {
-      const child = childList[i];
+    for (let i = 0; i < this.notificationsListRoot.children.length; i++) {
+      const child = this.notificationsListRoot.children[i];
       const item = this.recentNotifications[i];
       if (item.createdAt) {
         const timestamp = ui.time.shortTimestamp(item.createdAt);
@@ -342,16 +430,25 @@ export class ActivityDashboardWidget extends DG.Widget {
       const list = this.actionRequiredRoot.lastElementChild;
       for (let i = 0; i < list.children.length; i++) {
         const listChild = list.children[i];
-        if (listChild.textContent?.toLowerCase()?.includes('you were assigned  report #'))
-          listChild.querySelector('.d4-markup label')!.textContent = `${this.reportAmount} reports`;
+        const text = listChild.textContent?.toLowerCase();
+        if ((text?.includes('you were assigned report #') || text?.includes('you were assigned  report #')) && listChild.querySelector('.d4-markup label')) {
+          listChild.querySelector('.d4-markup label')!.textContent = `${this.reportAmount} ${this.reportAmount && this.reportAmount > 1 ? 'reports' : 'report'}`;
+          const reportsApp = DG.Func.find({package: 'UsageAnalysis', name: 'reportsApp'})[0];
+          if (reportsApp) {
+            const handler = DG.ObjectHandler.forEntity(reportsApp);
+            const reportsAppLabelSpan = handler?.renderTooltip(DG.toDart(reportsApp)).firstChild;
+            if (reportsAppLabelSpan && listChild.lastElementChild)
+              listChild.lastElementChild.appendChild(ui.span(['. Open ', reportsAppLabelSpan, ' to see more.']));
+          }
+        }
       }
     }
   }
 
   cleanList(list: HTMLElement, aggregateUnique: boolean = true): HTMLElement {
     const uniqueEvents: Map<string, number> = new Map<string, number>();
-    const oldChildren = Array.from(list.children);
-    for (const child of oldChildren) {
+    for (let i = 0; i < list.children.length; i++) {
+      const child = list.children[i];
       const text = child.textContent;
       if (aggregateUnique && text) {
         if (uniqueEvents.has(text)) {
@@ -370,8 +467,8 @@ export class ActivityDashboardWidget extends DG.Widget {
       }
       child.classList.add('power-pack-activity-widget-row');
     }
-    const newChildren = Array.from(list.children);
-    for (const child of newChildren) {
+    for (let i = 0; i < list.children.length; i++) {
+      const child = list.children[i];
       const text = child.textContent;
       if (!text)
         continue;

@@ -50,7 +50,7 @@ export class ViewBase {
   protected _root: HTMLElement;
   private _closing: boolean;
 
-  /** 
+  /**
    * @constructs ViewBase
    * @param {Object} params - URL parameters.
    * @param {string} path - URL path.
@@ -187,7 +187,7 @@ export class ViewBase {
    * @returns {boolean} "true" if path is acceptable, "false" otherwise. */
   acceptsPath(_urlPath: string): boolean { return false; }
 
-  /** 
+  /**
    * Appends an item to this view. Use {@link appendAll} for appending multiple elements.
    * @param {Object} item */
   append(item: any): HTMLElement {
@@ -304,7 +304,7 @@ export class View extends ViewBase {
     return api.grok_View_Load_Layout(this.dart, layout.dart, pickupColumnTags);
   }
 
-  /** 
+  /**
    *  Saves view layout as a string. Only applicable to certain views, such as {@link TableView}.
    *  See also {@link loadLayout}
    *  @returns {ViewLayout} */
@@ -356,7 +356,7 @@ export class View extends ViewBase {
   static readonly FUNCTIONS = 'functions';
   static readonly DATA_CONNECTIONS = 'connections';
   static readonly DATA_JOB_RUNS = 'jobs';
-  static readonly FILES = 'files'; 
+  static readonly FILES = 'files';
   static readonly DATA_QUERY_RUNS = 'queryruns'; // no any viewer like that
   static readonly EMAILS = 'emails';
   static readonly GROUPS = 'groups';
@@ -435,7 +435,7 @@ export class TableView extends View {
     return new DockNode(api.grok_View_Get_DockNode(this.dart));
   }
 
-  /** 
+  /**
    * View's dock manager. Only defined for DockView descendants such as {@link TableView}, UsersView, etc.
    * @type {DockManager} */
   get dockManager(): DockManager {
@@ -637,6 +637,11 @@ export class TableView extends View {
 
   loadState(x: string, options?: IViewStateApplicationOptions): void {
     api.grok_TableView_LoadState(this.dart, x, options?.pickupColumnTags);
+  }
+
+  /** Re-runs the table creation script (for dynamic data), and executes post-processing if `enrich` is true. */
+  refresh(options?: {enrich?: boolean}): Promise<void> {
+    return api.grok_TableView_Refresh(this.dart, options?.enrich ?? true);
   }
 }
 

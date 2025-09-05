@@ -105,7 +105,7 @@ export class FormsViewer extends DG.JsViewer {
 
     ui.tools.waitForElementInDom(this.virtualView.root).then((_) => {
       this.fitHeaderToLabelWidth();
-    });  
+    });
   }
 
   fitHeaderToLabelWidth(width?: number) {
@@ -121,7 +121,7 @@ export class FormsViewer extends DG.JsViewer {
 
   onTableAttached() {
     if (this.fieldsColumnNames === null)
-      this.setfieldsColumnNames(this.dataFrame.columns.names());
+      this.setFieldsColumnNames(this.dataFrame.columns.names());
 
     const sub = (stream: Observable<unknown>, action: Function) => {
       this.subs.push(DG.debounce(stream, 50).subscribe((_) => action()));
@@ -133,7 +133,7 @@ export class FormsViewer extends DG.JsViewer {
     sub(this.dataFrame.onMetadataChanged, () => this.render());
 
     sub(this.dataFrame.onColumnsRemoved, () => {
-      this.updatefieldsColumnNames();
+      this.updateFieldsColumnNames();
       this.render();
     });
 
@@ -146,16 +146,11 @@ export class FormsViewer extends DG.JsViewer {
     this.render();
   }
 
-  setfieldsColumnNames(dfColumns: string[]) {
-    if (dfColumns.length > 20) {
-      grok.shell.warning(COLS_LIMIT_EXCEEDED_WARNING);
-      this.fieldsColumnNames = dfColumns.slice(0, 20);
-    }
-    else
-      this.fieldsColumnNames = dfColumns;
+  setFieldsColumnNames(dfColumns: string[]) {
+    this.fieldsColumnNames = dfColumns.length > 20 ? dfColumns.slice(0, 20) : dfColumns;
   }
 
-  updatefieldsColumnNames() {
+  updateFieldsColumnNames() {
     const newColumns = this.dataFrame.columns.names();
     let counter = this.fieldsColumnNames.length;
     for (let i = 0; i < counter; i++) {

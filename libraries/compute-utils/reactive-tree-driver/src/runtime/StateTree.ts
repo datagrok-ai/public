@@ -402,11 +402,7 @@ export class StateTree {
         );
       });
     } else if (action.spec.type === 'funccall') {
-      return this.withTreeLock(() => {
-        return action.exec(additionalParams).pipe(
-          finalize(() => this.makeStateRequests$.next(true)),
-        );
-      });
+      return this.withTreeLock(() => action.exec(additionalParams));
     } else
       return action.exec(additionalParams);
   }
@@ -422,28 +418,19 @@ export class StateTree {
   }
 
   public updateFuncCall(uuid: string, call: DG.FuncCall) {
-    return this.mutateTree(() => {
+    return this.withTreeLock(() => {
       const data = this.nodeTree.find((item) => item.uuid === uuid);
       if (!data)
         throw new Error(`No FuncCall node found ${uuid}`);
       const [node, path] = data;
-      const ppath = path.slice(0, -1);
-      const idx = indexFromEnd(path)?.idx ?? 0;
       const item = node.getItem();
       if (!isFuncCallNode(item) || item.instancesWrapper.isReadonly)
         throw new Error(`FuncCall writable node is expected on path ${JSON.stringify(path)}`);
       const adapter = new FuncCallAdapter(call, false);
       item.changeAdapter(adapter, true);
-      item.instancesWrapper.isOutputOutdated$.next(false);
-      const details = [{
-        mutationRootPath: ppath,
-        addIdx: idx,
-      }];
-      return of([{
-        isMutation: true,
-        details,
-      }]);
-    }, true, false);
+      item.setOutdatedStatus(false);
+      return of(item);
+    });
   }
 
   public resetToConsistent(uuid: string, ioName: string) {
@@ -785,7 +772,7 @@ export class StateTree {
     );
   }
 
-  private withTreeLock(fn: () => Observable<undefined>) {
+  private withTreeLock<T = undefined>(fn: () => Observable<T>) {
     return defer(() => {
       this.treeLock();
       return this.linksState.waitForLinks().pipe(concatMap(() => fn()));

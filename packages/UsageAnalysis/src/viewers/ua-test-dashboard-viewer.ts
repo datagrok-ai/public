@@ -69,7 +69,7 @@ export class TestDashboardWidget extends DG.JsViewer {
   onFrameAttached(dataFrame: DG.DataFrame): void {
     this.root.childNodes.forEach((node, _idx, _parent) => node.remove());
     this.root.appendChild(ui.wait(async () => {
-      let tableNames: RegExp[] = [/Benchmark/, /Test.*Track/];
+      let tableNames: RegExp[] = [/Benchmark/];
       let promises: Promise<void>[] = tableNames.map((name) => new Promise((resolve, reject) => {
         const checkCondition = () => {
           try {
@@ -89,9 +89,7 @@ export class TestDashboardWidget extends DG.JsViewer {
       let verdicts: Verdict[] = [];
       verdicts.push(...this.verdictsOnCorrectness(dataFrame));
       verdicts.push(...this.verdictsOnPerformance());
-      verdicts.push(...this.verdictsOnTestTrack());
       verdicts.push(...(await this.unaddressedTests(dataFrame)));
-      verdicts.push(...(await this.verdictsForTickets()));
       verdicts.push(...this.getBuildInfos(dataFrame));
       let status = Priority.getMaxPriority(verdicts.map((v) => v.priority));
       if (status == Priority.BLOCKER)
@@ -181,9 +179,18 @@ export class TestDashboardWidget extends DG.JsViewer {
 
       let verdicts: Verdict[] = [];
       for (const packageName of brokenPackages.keys()) {
+        let packageFilter= '';
         let widget: DG.Widget = DG.Widget.fromRoot(ui.span([packageName + ' has broken tests']));
         widget.root.onclick = (ev: MouseEvent) => {
-          df.filter.init((row) => testColumn.getString(row)?.startsWith(packageName));
+          grok.shell.tv.grid.scrollToCell('test', 0);
+          if (packageFilter.length === 0){
+            df.filter.init((row) => testColumn.getString(row)?.startsWith(packageName));
+            packageFilter = packageName;
+          }
+          else {
+            df.filter.init((row) => true);
+            packageFilter = '';
+          }
           df.selection.init((row) => testColumn.getString(row)?.startsWith(packageName) && (failingColumn.get(row) ?? false));
           grok.shell.tv.grid.sort(['needs_attention'], [false]);
         };
@@ -320,17 +327,42 @@ export class TestDashboardWidget extends DG.JsViewer {
       verdicts.push(new Verdict(Priority.INFO, `Ignored tests - ${widgets.length} items`, widgets[i].root));
     return verdicts;
   }
+
   performanceDowngrades(df: DG.DataFrame): Verdict[] {
+    function getLastDuration(df: DG.DataFrame, index: number) {
+      let duration = 0;
+      for(let i = 1; i <= 5; i++) {
+        if (!df.getCol(`${i} avg(duration)`).isNone(index)) {
+          duration = df.get(`${i} avg(duration)`, index);
+          break;
+        }
+      }
+      return duration;
+    }
+
     try {
       let verdicts: Verdict[] = [];
+      let verdictGrid: DG.Grid;
+      let performanceObjects= [];
       for (let i = 0; i < df.rowCount; i++) {
         if (df.col('has_suspicious')!.get(i)) {
-          let lastDuration: number = df.col('1 avg(duration)')!.get(i) ?? 0;
+          df.col('1 avg(duration)')?.isNone(i);
+          let lastDuration: number = getLastDuration(df, i) ?? 0;
           let minDuration: number = df.col('min')!.get(i) ?? 0;
           let maxDuration: number = df.col('max')!.get(i) ?? 0;
-          if (lastDuration - minDuration > maxDuration - lastDuration)
-            verdicts.push(new Verdict(Priority.ERROR, 'Performance downgrade', ui.span([df.col('test')!.getString(i) + ` is down ${(maxDuration / minDuration - 1) * 100}% in performance`])));
+          let percentage: number = Number(((lastDuration / minDuration) * 100).toFixed(2)) - 100;
+          console.log({test: df.col('test')!.getString(i), from: minDuration, to:  lastDuration, percentage: percentage});
+         
+          if (percentage > 20)
+            performanceObjects.push({test: df.col('test')!.getString(i), from: minDuration, to:  lastDuration, percentage: percentage});
+          
+          //verdicts.push(new Verdict(Priority.ERROR, 'Performance downgrade', ui.span([df.col('test')!.getString(i) + ` is down ${(maxDuration / minDuration - 1) * 100}% in performance`])));
         }
+      }
+      let verdictDF = DG.DataFrame.fromObjects(performanceObjects);
+      if (verdictDF) {
+        verdictGrid = (DG.Grid.create(verdictDF) )
+        verdicts.push(new Verdict(Priority.ERROR, 'Performance downgrade', verdictGrid.root));
       }
       return verdicts;
     } catch (x) {

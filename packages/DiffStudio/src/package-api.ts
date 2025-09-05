@@ -12,7 +12,7 @@ export namespace funcs {
     return await grok.functions.call('DiffStudio:Info', {});
   }
 
-  export async function init(): Promise<any> {
+  export async function init(): Promise<void> {
     return await grok.functions.call('DiffStudio:Init', {});
   }
 
@@ -38,7 +38,7 @@ export namespace funcs {
     return await grok.functions.call('DiffStudio:RunDiffStudioDemo', {});
   }
 
-  export async function ivpFileHandler(content: string ): Promise<any> {
+  export async function ivpFileHandler(content: string ): Promise<void> {
     return await grok.functions.call('DiffStudio:IvpFileHandler', { content });
   }
 
@@ -46,7 +46,7 @@ export namespace funcs {
     return await grok.functions.call('DiffStudio:PreviewIvp', { file });
   }
 
-  export async function runDiffStudioTreeBrowser(treeNode: any ): Promise<any> {
+  export async function runDiffStudioTreeBrowser(treeNode: any ): Promise<void> {
     return await grok.functions.call('DiffStudio:RunDiffStudioTreeBrowser', { treeNode });
   }
 

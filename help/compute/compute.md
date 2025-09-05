@@ -273,7 +273,7 @@ from other access-related features:
 
 * [Result caching](../access/databases/databases.md#caching-data) (very useful when working with data that changes overnight)
 * [Visual table query builder](../access/databases/databases.md#query-editor)
-* [Visual schema query builder](../access/databases/databases.md#join-tables)
+<!--* [Visual schema query builder](../access/databases/databases.md#join-tables)-->
 * [DB explorer](../access/databases/databases.md#database-manager)
 
 ## Reproducible computations

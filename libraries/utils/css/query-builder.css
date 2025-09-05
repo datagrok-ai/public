@@ -201,3 +201,7 @@
     visibility: hidden;
 }
 
+.boolean-input .query-builder-filter-operator {
+    display: none;
+}
+

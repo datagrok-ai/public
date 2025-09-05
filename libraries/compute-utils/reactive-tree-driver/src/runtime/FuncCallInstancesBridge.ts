@@ -56,7 +56,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
 
   public initialValues: Record<string, any> = {};
 
-  public outdatedChanged$ = new BehaviorSubject(true);
+  private outdatedChanged$ = new BehaviorSubject(true);
   private closed$ = new Subject<true>();
   private initialData?: BridgePreInitData;
 
@@ -215,6 +215,10 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     this.metaStates[id].next({...currentMeta, [handlerId]: meta});
   }
 
+  setOutdatedStatus(isOutdated: boolean) {
+    this.outdatedChanged$.next(isOutdated);
+  }
+
   run(mockResults?: Record<string, any>, mockDelay?: number) {
     return defer(() => {
       const currentInstance = this.instance$.value?.adapter;
@@ -255,7 +259,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     });
   }
 
-  public getIOEditsFlag(filteredInputs?: FuncCallIODescription[]) {
+  getIOEditsFlag(filteredInputs?: FuncCallIODescription[]) {
     const inputs = filteredInputs ?? this.io;
     const inputsChanges = inputs.map(
       (item) => this.getStateChanges(item.id, true).pipe(skip(1)));

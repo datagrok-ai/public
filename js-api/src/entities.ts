@@ -197,6 +197,9 @@ export class User extends Entity {
   /** Security Group */
   get group(): Group { return toJs(api.grok_User_Get_Group(this.dart)); }
 
+  /** Date when user joined */
+  get joined(): dayjs.Dayjs { return dayjs(api.grok_User_Get_Joined(this.dart)); }
+
   static get defaultUsersIds() {
     return {
       "Test": "ca1e672e-e3be-40e0-b79b-d2c68e68d380",
@@ -1152,7 +1155,7 @@ export class LogEvent extends Entity {
 
   /** Parameters of the event
    * @type {Array<LogEventParameterValue>} */
-  get parameters(): LogEventParameterValue[] { return api.grok_LogEvent_Get_Parameters(this.dart); }
+  get parameters(): LogEventParameterValue[] { return toJs(api.grok_LogEvent_Get_Parameters(this.dart)); }
 
   /** Type of the event
    * @type {LogEventType} */

@@ -118,7 +118,8 @@ export class BetweenConditionEditor extends BaseConditionEditor {
             this.condition.value = [this.condition.value, undefined];
             this.onChanged.next(this.condition);
         }
-        const input1 = ui.input.forProperty(prop, this.condition.value[0], {
+        const input1 = ui.input.forProperty(prop, undefined, {
+            value: this.condition.value[0],
             nullable: false,
             onValueChanged: () => {
                 this.condition.value[0] = input1.value!;
@@ -126,7 +127,7 @@ export class BetweenConditionEditor extends BaseConditionEditor {
             }
         });
         input1.addCaption('');
-        const input2 = ui.input.forProperty(prop, this.condition.value[1], {
+        const input2 = ui.input.forProperty(prop, undefined, {
             value: this.condition.value[1],
             onValueChanged: () => {
                 this.condition.value[1] = input2.value!;
@@ -483,7 +484,7 @@ export class QueryBuilder {
         menu.show();
     }
 
-    private loadCondition(condition: ComplexCondition): void {
+    loadCondition(condition: ComplexCondition): void {
         this.condition = JSON.parse(JSON.stringify(condition));
         this.rebuildUI();
         this.structureChanged.next(this.condition);
@@ -608,6 +609,9 @@ export class QueryBuilder {
                 ui.empty(operatorInputDiv);
                 const property = getPropByFriendlyName(fieldChoiceInput.value!);
                 if (property) {
+                    //in case of boolean input we need to hide operators input
+                    if (property.type === DG.TYPE.BOOL)
+                        filterContainer.classList.add('boolean-input');
                     const registry = ConditionRegistry.getInstance();
                     const operators = registry.getOperatorsForProperty(property);
                     if (!cond.operator || cond.operator === '') {

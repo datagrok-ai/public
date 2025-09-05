@@ -109,10 +109,10 @@ export const TreeWizard = Vue.defineComponent({
     });
     const showReturn = Vue.computed(() => props.showReturn);
     const reportBugUrl = computedAsync<string | undefined>(async () => {
-      return (await providerFunc.value?.package?.getProperties() as any)?.REPORT_BUG_URL
+      return (await providerFunc.value?.package?.getProperties() as any)?.REPORT_BUG_URL;
     });
     const reqFeatureUrl = computedAsync<string | undefined>(async () => {
-      return (await providerFunc.value?.package?.getProperties() as any)?.REQUEST_FEATURE_URL
+      return (await providerFunc.value?.package?.getProperties() as any)?.REQUEST_FEATURE_URL;
     });
 
     ////
@@ -525,6 +525,7 @@ export const TreeWizard = Vue.defineComponent({
         >
           { !inspectorHidden.value &&
             <Inspector
+              key="inspector"
               treeState={treeState.value}
               config={config.value}
               logs={logs.value}
@@ -541,6 +542,7 @@ export const TreeWizard = Vue.defineComponent({
               Vue.withDirectives(<Draggable
                 class="ui-div mtl-tree p-2 overflow-scroll h-full"
                 style={{paddingLeft: '25px'}}
+                key="navigation"
 
                 dock-spawn-title='Steps'
                 dock-spawn-panel-icon='folder-tree'
@@ -601,6 +603,7 @@ export const TreeWizard = Vue.defineComponent({
             !rfvHidden.value && chosenStepState.value && chosenStepUuid.value &&
             isFuncCallState(chosenStepState.value) && chosenStepState.value.funcCall &&
               <RichFunctionView
+                key={chosenStepUuid.value!}
                 class={{'overflow-hidden': true}}
                 funcCall={chosenStepState.value.funcCall}
                 uuid={chosenStepUuid.value!}
@@ -632,6 +635,7 @@ export const TreeWizard = Vue.defineComponent({
                 DG.Func.byName(chosenStepState.value.nqName!).prepare() :
                 undefined
               }
+              key={chosenStepUuid.value!}
               state={chosenStepState.value}
               uuid={chosenStepUuid.value}
               isRoot={isRootChoosen.value}

@@ -5,12 +5,13 @@
     background-color: white;
 }
 
-.ui-input-disabled.ui-input-root i.rfv2-validation-icon span {
+.ui-input-disabled.ui-input-root i.rfv2-validation-icon div {
     color: #4A4A49!important;
 }
 
 .ui-input-disabled.ui-input-root i.rfv2-validation-icon a {
     color: #2083d5!important;
+    cursor: pointer!important;
 }
 
 .ui-input-disabled.ui-input-root .ui-input-options:has(i.rfv2-validation-icon) {

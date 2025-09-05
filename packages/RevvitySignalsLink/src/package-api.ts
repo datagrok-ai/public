@@ -8,12 +8,12 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
-  export async function revvitySignalsLinkApp(): Promise<DG.View> {
-    return await grok.functions.call('RevvitySignalsLink:RevvitySignalsLinkApp', {});
+  export async function revvitySignalsLinkApp(path?: string ): Promise<DG.View> {
+    return await grok.functions.call('RevvitySignalsLink:RevvitySignalsLinkApp', { path });
   }
 
-  export async function revvitySignalsLinkAppTreeBrowser(treeNode: any ): Promise<void> {
-    return await grok.functions.call('RevvitySignalsLink:RevvitySignalsLinkAppTreeBrowser', { treeNode });
+  export async function revvitySignalsLinkAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<void> {
+    return await grok.functions.call('RevvitySignalsLink:RevvitySignalsLinkAppTreeBrowser', { treeNode, browseView });
   }
 
   export async function searchEntities(query: string , params: string ): Promise<DG.DataFrame> {
@@ -40,7 +40,7 @@ export namespace funcs {
     return await grok.functions.call('RevvitySignalsLink:GetTerms', { fieldName, type, assetTypeId, isMaterial });
   }
 
-  export async function entityTreeWidget(id: string ): Promise<any> {
+  export async function entityTreeWidget(id: any ): Promise<any> {
     return await grok.functions.call('RevvitySignalsLink:EntityTreeWidget', { id });
   }
 }

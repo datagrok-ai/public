@@ -6,11 +6,12 @@ import { u2 } from "@datagrok-libraries/utils/src/u2";
 import '../css/revvity-signals-styles.css';
 import { SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
 import { queryEntities, queryLibraries, queryMaterialById, queryTags, queryTerms, queryUsers, RevvityApiResponse, RevvityData, RevvityUser } from './revvity-api';
-import { dataFrameFromObjects, reorderColummns, transformData, createRevvityResponseWidget } from './utils';
-import { addMoleculeStructures, assetsQuery, MOL_COL_NAME } from './compounds';
+import { dataFrameFromObjects, reorderColummns, transformData, createRevvityResponseWidget, getViewNameByCompoundType } from './utils';
+import { addMoleculeStructures, assetsQuery, MOL_COL_NAME, retrieveQueriesMap } from './compounds';
 import { getRevvityUsers } from './users';
 import { createInitialSatistics, getRevvityLibraries, RevvityLibrary, RevvityType } from './libraries';
 import { createViewFromPreDefinedQuery, handleInitialURL } from './view-utils';
+import { SAVED_SEARCH_STORAGE } from './search-utils';
 
 
 export const _package = new DG.Package();
@@ -25,7 +26,6 @@ export type RevvityConfig = {
   libraries?: RevvityLibrary[];
 }
 
-let openedView: DG.View | null = null;
 let config: RevvityConfig = { libraries: undefined };
 
 //tags: app
@@ -50,12 +50,12 @@ export async function revvitySignalsLinkApp(path?: string): Promise<DG.ViewBase>
   const view = DG.View.fromRoot(ui.divV([appHeader, statsDiv]));
   view.name = 'Revvity';
 
-      if (path) {
-      const cddNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').getOrCreateGroup('Chem').getOrCreateGroup('Revvity Signals');
-      cddNode.expanded = true;
-      handleInitialURL(cddNode, path);
-    } else
-      createInitialSatistics(statsDiv);
+  if (path) {
+    const cddNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').getOrCreateGroup('Chem').getOrCreateGroup('Revvity Signals');
+    cddNode.expanded = true;
+    handleInitialURL(cddNode, path);
+  } else
+    createInitialSatistics(statsDiv);
 
   return view;
 
@@ -70,16 +70,45 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
   for (const lib of libs) {
     const libNode = treeNode.group(lib.name);
     for (const libType of lib.types) {
-      const typeNode = libNode.item(`${libType.name.charAt(0).toUpperCase()}${libType.name.slice(1)}`);
+      const viewName = getViewNameByCompoundType(libType.name);
+      const typeNode = libNode.item(`${viewName.charAt(0).toUpperCase()}${viewName.slice(1)}`);
       typeNode.onSelected.subscribe(async () => {
-        await createViewFromPreDefinedQuery(treeNode, JSON.stringify(assetsQuery), `${libType.name.charAt(0).toUpperCase()}${libType.name.slice(1)}`,
-          lib.name, libType.name);
+
+        // //need woraround with nodeToDeselect to deselect node which was selected via routing (openRevvityNode function)
+        // const nodeToDeselect = treeNode.items
+        //   .find((node) => node.text.toLowerCase() !== viewName.toLowerCase() && node.root.classList.contains('d4-tree-view-node-selected'));
+        // nodeToDeselect?.root.classList.remove('d4-tree-view-node-selected');
+
+        await createViewFromPreDefinedQuery(treeNode, [lib.name, getViewNameByCompoundType(libType.name)], lib.name, libType.name);
       });
     }
   }
+  const savedSearchesNode = treeNode.group('Saved searches');
+  for (const lib of libs) {
+    const libNode = savedSearchesNode.group(lib.name);
+    for (const libType of lib.types) {
+      const typeName = getViewNameByCompoundType(libType.name);
+      const typeNode = libNode.group(`${typeName.charAt(0).toUpperCase()}${typeName.slice(1)}`);
+
+      const storageKey = `${lib.name}|${libType.name}`;
+      const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, storageKey) || '{}';
+      const savedSearches: { [key: string]: string } = JSON.parse(savedSearchesStr);
+      for (let key of Object.keys(savedSearches)) {
+        const savedSearchNode = typeNode.item(key);
+        savedSearchNode.onSelected.subscribe(async () => {
+          await createViewFromPreDefinedQuery(treeNode,
+            ['saved searches', lib.name, getViewNameByCompoundType(libType.name), key], lib.name, libType.name,
+            JSON.parse(savedSearches[key]), true);
+        });
+      }
+    }
+  }
+
 }
 
 //name: Search Entities
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
 //input: string query
 //input: string params
 //output: dataframe df
@@ -99,6 +128,8 @@ export async function searchEntities(query: string, params: string): Promise<DG.
 }
 
 //name: Search Entities With Structures
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
 //input: string query
 //input: string params
 //output: dataframe df
@@ -128,6 +159,8 @@ export async function searchEntitiesWithStructures(query: string, params: string
 }
 
 //name: Get Users
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
 //output: string users
 export async function getUsers(): Promise<string> {
   const users: { [key: string]: RevvityUser } = {};
@@ -142,6 +175,8 @@ export async function getUsers(): Promise<string> {
 
 
 //name: Get Libraries
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
 //output: string libraries
 export async function getLibraries(): Promise<string> {
   const response = await queryLibraries();
@@ -190,6 +225,8 @@ export async function getLibraries(): Promise<string> {
 
 
 //name: Get Tags
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
 //input: string type
 //input: string assetTypeId
 //output: string fields
@@ -232,6 +269,8 @@ export async function getTags(type: string, assetTypeId: string): Promise<string
 
 
 //name: Get Terms
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
 //input: string fieldName
 //input: string type
 //input: string assetTypeId
@@ -293,10 +332,10 @@ export async function getTerms(fieldName: string, type: string, assetTypeId: str
 
 //name: Revvity Signals
 //tags: panel, widgets
-//input: string id { semType: RevvitySignalsId }
+//input: semantic_value id { semType: RevvitySignalsId }
 //output: widget result
-export async function entityTreeWidget(id: string): Promise<DG.Widget> {
-  const obj = (await queryMaterialById(id)) as RevvityApiResponse;
-  const div = createRevvityResponseWidget(obj);
+export async function entityTreeWidget(idSemValue: DG.SemanticValue<string>): Promise<DG.Widget> {
+  const obj = (await queryMaterialById(idSemValue.value)) as RevvityApiResponse;
+  const div = createRevvityResponseWidget(obj, idSemValue);
   return new DG.Widget(div);
 }
