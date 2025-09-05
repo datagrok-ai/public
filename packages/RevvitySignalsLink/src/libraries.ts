@@ -43,7 +43,7 @@ export async function createInitialSatistics(statsDiv: HTMLDivElement) {
     ui.link(lib.count, () => {
       const node = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').getOrCreateGroup('Chem').getOrCreateGroup('Revvity Signals');
       node.expanded = true;
-      openRevvityNode(node, lib.libName, `${lib.libType.charAt(0).toUpperCase()}${lib.libType.slice(1)}`);
+      openRevvityNode(node, lib.libName, lib.libType);
     }),
   ]),
     ['Library', 'Type', 'Count']);

@@ -120,6 +120,10 @@ export class FuncCallNode implements IStoreProvider {
     this.instancesWrapper.change(adapter, isNew);
   }
 
+  setOutdatedStatus(isOutdated: boolean) {
+    this.instancesWrapper.setOutdatedStatus(isOutdated);
+  }
+
   setDeps(deps: (readonly [string, Observable<boolean>])[]) {
     this.depsData$.next(deps);
   }

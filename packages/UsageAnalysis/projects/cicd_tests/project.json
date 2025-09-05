@@ -18,11 +18,6 @@
         "path": "Stress_Tests.csv",
         "creationScript": "Result = UsageAnalysis:StressTestsDashboard(3)",
         "id": "48498f80-c210-11ef-9cb9-7bfcfe94b295"
-      }, 
-      {
-        "path": "Test_Track.csv",
-        "creationScript": "Result = UsageAnalysis:ManualTests(3)",
-        "id": "32a0d3c9-7b4b-420e-b06d-b05d021b8247"
       }
     ]
   }

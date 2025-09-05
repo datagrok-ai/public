@@ -9,6 +9,7 @@ import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/mon
 import {
   PackageFunctions} from '../../package';
 import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
+import {ReactionEditorProps} from './rule-reaction-editor';
 
 export const RULES_PATH = 'System:AppData/SequenceTranslator/polytool-rules/';
 export const RULES_STORAGE_NAME = 'Polytool';
@@ -170,7 +171,7 @@ export class Rules {
     return cards;
   }
 
-  getSynthesisRulesDf(): DG.DataFrame {
+  getSynthesisRulesDf() {
     const length = this.reactionRules.length;
     const codeCol = DG.Column.int(NAME_CODE, length);
     codeCol.setTag('friendlyName', 'Code');
@@ -178,6 +179,15 @@ export class Rules {
     firstMonomerCol.setTag('friendlyName', 'First monomers');
     const secondMonomerCol = DG.Column.string(NAME_SECOND_MONOMERS, length);
     secondMonomerCol.setTag('friendlyName', 'Second monomers');
+    // set these columns as macromolecule for better visualization
+    firstMonomerCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    firstMonomerCol.temp[MmcrTemps.fontSize] = 16;
+    PackageFunctions.applyNotationProviderForCyclized(firstMonomerCol, ',');
+    secondMonomerCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    secondMonomerCol.temp[MmcrTemps.fontSize] = 16;
+    PackageFunctions.applyNotationProviderForCyclized(secondMonomerCol, ',');
+    secondMonomerCol.setTag(DG.TAGS.CELL_RENDERER, 'Sequence');
+    firstMonomerCol.setTag(DG.TAGS.CELL_RENDERER, 'Sequence');
     const name = DG.Column.string(NAME_REACTION_NAME, length);
     name.setTag('friendlyName', 'Name');
     const firstReactant = DG.Column.string('firstReactant', length);
@@ -205,9 +215,27 @@ export class Rules {
     product.semType = DG.SEMTYPE.MOLECULE;
 
 
-    return DG.DataFrame.fromColumns([
+    const df = DG.DataFrame.fromColumns([
       name, firstReactant, secondReactant, product, codeCol, firstMonomerCol, secondMonomerCol
     ]);
+
+    const addNewRow = (rowObj: ReactionEditorProps) => {
+      if (rowObj.rowIndex != undefined && rowObj.rowIndex < df.rowCount && rowObj.rowIndex >= 0) {
+        name.set(rowObj.rowIndex, rowObj.resultMonomerName);
+        codeCol.set(rowObj.rowIndex, rowObj.code);
+        firstMonomerCol.set(rowObj.rowIndex, rowObj.firstMonomers.join(','));
+        secondMonomerCol.set(rowObj.rowIndex, rowObj.secondMonomers.join(','));
+        firstReactant.set(rowObj.rowIndex, rowObj.firstReactantSmiles);
+        secondReactant.set(rowObj.rowIndex, rowObj.secondReactantSmiles);
+        product.set(rowObj.rowIndex, rowObj.productSmiles);
+      } else {
+        const {resultMonomerName, code, firstMonomers, secondMonomers,
+          firstReactantSmiles, secondReactantSmiles, productSmiles} = rowObj;
+        df.rows.addNew([resultMonomerName, firstReactantSmiles, secondReactantSmiles,
+          productSmiles, code, firstMonomers.join(','), secondMonomers.join(',')]);
+      }
+    };
+    return {df, addNewRow};
   }
 
   setLinkRules(df: DG.DataFrame) : void {

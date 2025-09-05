@@ -35,6 +35,11 @@ export const batchesQuery = {
     }
 };
 
+export const retrieveQueriesMap: {[key: string]: any} = {
+    'asset': assetsQuery,
+    'batch': batchesQuery,
+}
+
 export const materialsCondition: ComplexCondition = {
     logicalOperator: Operators.Logical.and,
     conditions: [

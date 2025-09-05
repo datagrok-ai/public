@@ -1,5 +1,9 @@
 # Compute2 changelog
 
+## 1.3.14 (2025-09-04)
+
+- Small bug fixes
+
 ## 1.3.13 (2025-08-15)
 
 - Fix DataFrame input viewers updates

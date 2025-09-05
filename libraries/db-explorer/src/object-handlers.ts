@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {DBValueObject, EntryPointOptions, SchemaInfo} from './types';
 import {DBExplorerRenderer} from './renderer';
 
+
 export class DBExplorerObjectHandler extends DG.ObjectHandler {
   get type(): string {
     return 'db-explorer-value';
@@ -83,6 +84,11 @@ export class DBExplorerObjectHandler extends DG.ObjectHandler {
     const acc = this.renderInnerProperties(x.table, x, this.options.valueConverter(x.value).toString());
     if (x.semValue) {
       const origAcc = ui.panels.infoPanel(x.semValue);
+      origAcc.context = x.semValue;
+      if (x.semValue.semType)
+        x.semValue.tags[DG.Tags.Quality] = x.semValue.semType;
+      origAcc?.end();
+      
       return ui.divV([acc.root, origAcc.root]);
     }
     return acc.root;
@@ -126,10 +132,6 @@ export class SemValueObjectHandler extends DBExplorerObjectHandler {
   }
 
   renderProperties(x: any, context?: any): HTMLElement {
-    const existingAcc = ui.panels.infoPanel(x);
-    return ui.divV([
-      super.renderProperties(new DBValueObject(this.tableName, this.columnName, x.value, x), context),
-      existingAcc.root
-    ]);
+    return super.renderProperties(new DBValueObject(this.tableName, this.columnName, x.value, x), context);
   }
 }
