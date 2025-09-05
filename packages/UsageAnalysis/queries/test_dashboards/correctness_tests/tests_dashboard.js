@@ -12,7 +12,7 @@ function getFirstOfCol(col) {
 async function postprocess() {
 
   let builds = result.col('build_index').categories.map((x) => parseInt(x));
-  let buildNames = result.col('build').categories.sort();
+  
   let pivot = await result
     .groupBy(['test', 'owner'])
     .pivot('build_index')
