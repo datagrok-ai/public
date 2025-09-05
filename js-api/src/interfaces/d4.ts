@@ -508,6 +508,8 @@ export interface IBoxPlotSettings {
 
   showMouseOverRowGroup: boolean;
 
+  statistics: Array<string>;
+
   showTotalCount: boolean;
 
   /// Shown values count inside lower and upper bounds, where:
@@ -1715,8 +1717,6 @@ export interface ILineChartSettings {
   autoLayout: boolean;
 
   segmentsFont: string;
-
-  columnSelectorsFont: string;
 
   lineWidth: number;
 
