@@ -56,3 +56,9 @@
     color: #2083d5;
     padding-right: 3px;
 }
+
+.revvity-saved-searches-icons-div {
+    gap: 10px;
+    justify-content: end;
+    padding-right: 10px;
+}

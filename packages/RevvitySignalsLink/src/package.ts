@@ -107,6 +107,8 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
 }
 
 //name: Search Entities
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
 //input: string query
 //input: string params
 //output: dataframe df
@@ -126,6 +128,8 @@ export async function searchEntities(query: string, params: string): Promise<DG.
 }
 
 //name: Search Entities With Structures
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
 //input: string query
 //input: string params
 //output: dataframe df
@@ -155,6 +159,8 @@ export async function searchEntitiesWithStructures(query: string, params: string
 }
 
 //name: Get Users
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
 //output: string users
 export async function getUsers(): Promise<string> {
   const users: { [key: string]: RevvityUser } = {};
@@ -219,6 +225,8 @@ export async function getLibraries(): Promise<string> {
 
 
 //name: Get Tags
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
 //input: string type
 //input: string assetTypeId
 //output: string fields
@@ -261,6 +269,8 @@ export async function getTags(type: string, assetTypeId: string): Promise<string
 
 
 //name: Get Terms
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
 //input: string fieldName
 //input: string type
 //input: string assetTypeId

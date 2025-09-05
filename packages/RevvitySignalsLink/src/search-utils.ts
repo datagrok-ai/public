@@ -87,7 +87,7 @@ export async function initializeFilters(tv: DG.TableView, filtersDiv: HTMLDivEle
     const filtersButton = ui.div(externalFilterIcon);
     const saveButton = ui.div(saveSearchIcon);
     const loadButton = ui.div(loadSearchIcon);
-    tv.setRibbonPanels([[filtersButton, saveButton, loadButton]]);
+    tv.setRibbonPanels([[filtersButton]]);
     //create filters panel
     tv.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
     tv.dockManager.onClosed.subscribe((el: any) => {
@@ -101,6 +101,7 @@ export async function initializeFilters(tv: DG.TableView, filtersDiv: HTMLDivEle
     });
 
     ui.setUpdateIndicator(filtersDiv, false);
+    filtersDiv.append(ui.divH([saveButton, loadButton], 'revvity-saved-searches-icons-div'));
     filtersDiv.append(qb.root);
     filtersDiv.append(ui.div(runSearchButton, { style: { paddingLeft: '4px' } }));
 
