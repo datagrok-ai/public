@@ -17,7 +17,8 @@ export class TestGridCellHandler extends DG.ObjectHandler {
     renderProperties(semValue: DG.SemanticValue, context: any = null): HTMLElement {
         let panel = ui.accordion('testData');
         const testData = semValue.cell.value.split(':');
-
+        if (testData[0] === 'Test Track')
+            return ui.p('Manual Test(Update it in the Test Track app)');
         const buttonsData = ui.button('Run', async () => {
             let df = semValue.cell.dataFrame;
             let progressBar = DG.TaskBarProgressIndicator.create(`Running test ${testData.join(':')}`);
