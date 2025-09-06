@@ -150,7 +150,7 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
   const isFileViewer = data.tags?.includes(FUNC_TYPES.FILE_VIEWER) ?? false;
   const isFileImporter = data.tags?.includes(FUNC_TYPES.FILE_HANDLER) ?? false;
   let s = '';
-  if (data.name && (!data.tags?.includes('init') || (data.name !== 'init' && data.name !== '_init')))
+  if (data.name)
     s += `${comment}name: ${data.name}${sep}`;
   if (pseudoParams.EXTENSION in data && data.tags != null && data.tags.includes(FUNC_TYPES.FILE_EXPORTER))
     s += `${comment}description: Save as ${data[pseudoParams.EXTENSION]}${sep}`;
