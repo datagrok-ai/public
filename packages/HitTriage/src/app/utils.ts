@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
-import {CampaignGroupingType, CampaignJsonName, ComputeQueryMolColName, HDCampaignsGroupingLSKey, HTFunctionOrderingLSKey, i18n} from './consts';
+import {CampaignGroupingType, CampaignJsonName, CampaignTableColumns, ComputeQueryMolColName, HDCampaignsGroupingLSKey, HDCampaignTableColumnsLSKey, HTFunctionOrderingLSKey, i18n} from './consts';
 import {AppName, CampaignsType, HitDesignCampaign, HitTriageCampaign, TriagePermissions} from './types';
 import {_package} from '../package';
 
@@ -207,6 +207,27 @@ export function getSavedCampaignsGrouping(): CampaignGroupingType {
 export function setSavedCampaignsGrouping(value: CampaignGroupingType) {
   setLocalStorageValue(HDCampaignsGroupingLSKey, value);
 }
+
+export function getSavedCampaignTableColumns(): CampaignTableColumns[] {
+  const columnsString = getLocalStorageValue<string>(HDCampaignTableColumnsLSKey);
+  const defaultCols: CampaignTableColumns[] = ['Code', 'Created', 'Author', 'Last Modified by', 'Molecules', 'Status'];
+  if (!columnsString)
+    return defaultCols;
+  try {
+    const columnsP = JSON.parse(columnsString);
+    if (Array.isArray(columnsP) && columnsP.every((c) => typeof c === 'string'))
+      return columnsP as CampaignTableColumns[];
+    return defaultCols;
+  } catch (e) {
+    console.error('error parsing campaign table columns', e);
+    return defaultCols;
+  }
+}
+
+export function setSavedCampaignTableColumns(columns: CampaignTableColumns[]) {
+  setLocalStorageValue(HDCampaignTableColumnsLSKey, JSON.stringify(columns));
+}
+
 
 export const getGroupingKey = <T extends HitDesignCampaign | HitTriageCampaign = HitDesignCampaign>(grouping: CampaignGroupingType, campaign: T): string => {
   switch (grouping) {
