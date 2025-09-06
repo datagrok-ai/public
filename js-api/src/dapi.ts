@@ -1164,7 +1164,7 @@ export class LogDataSource extends HttpDataSource<LogEvent> {
     return new ActivityDataSource(api.grok_Dapi_Activity());
   }
 
-  where(options?: {entityId?: string, start?: dayjs.Dayjs, end?: dayjs.Dayjs, favoritesOnly: boolean}): LogDataSource {
+  where(options?: {entityId?: string, start?: dayjs.Dayjs, end?: dayjs.Dayjs, favoritesOnly?: boolean}): LogDataSource {
     return new LogDataSource(api.grok_Dapi_Log_Where(this.dart, options?.entityId ?? '', toDart(options?.start), toDart(options?.end), options?.favoritesOnly ?? false));
   }
 }
