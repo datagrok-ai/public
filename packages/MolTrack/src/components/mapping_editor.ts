@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import '../components/mapping_editor.css';
 export interface TargetProperty {
   name: string;
+  type?: string;
   required?: boolean;
 }
 
@@ -52,7 +53,7 @@ function createDynamicMappingRow(
   return ui.divH([propInput.root, rightCell], 'mapping-editor-row');
 }
 
-export function renderMappingEditor(host: HTMLElement, options: MappingEditorOptions): void {
+export function renderMappingEditor(host: HTMLElement, options: MappingEditorOptions, df: DG.DataFrame): void {
   const {targetProperties, sourceColumns, mappings, onMap, onUndo} = options;
 
   ui.empty(host);
@@ -69,6 +70,7 @@ export function renderMappingEditor(host: HTMLElement, options: MappingEditorOpt
   const header = ui.divH([
     ui.divText('Property', {style: {fontWeight: 'bold'}}),
     ui.divText('Source Column', {style: {fontWeight: 'bold'}}),
+    ui.divText('Status', {style: {fontWeight: 'bold'}}),
   ], 'mapping-editor-header');
   tableHost.appendChild(header);
 
@@ -89,6 +91,8 @@ export function renderMappingEditor(host: HTMLElement, options: MappingEditorOpt
     const propNameEl = ui.divH([ui.span([prop.name])]);
     if (prop.required) {
       const asterisk = ui.element('sup');
+      asterisk.onmouseenter = (e: any) => ui.tooltip.show('The field is required', e.clientX, e.clientY);
+      asterisk.onmouseleave = (e: any) => ui.tooltip.hide();
       asterisk.className = 'required-asterisk';
       asterisk.innerText = '*';
       propNameEl.appendChild(asterisk);
@@ -99,8 +103,27 @@ export function renderMappingEditor(host: HTMLElement, options: MappingEditorOpt
       items: [null, ...sourceColumns],
       nullable: true,
       onValueChanged: (v: string | null) => {
-        if (v) onMap(prop.name, v);
-        else if (mappedSource) onUndo(prop.name);
+        if (v) {
+          onMap(prop.name, v);
+          const issues = validateMapping(prop, v, df);
+          ui.empty(warningCell);
+
+          if (issues.length > 0) {
+            const mainIssue = issues.find((i) => i.severity === 'error') || issues[0];
+
+            const iconName = mainIssue.severity === 'error' ? 'times-circle' : 'exclamation-triangle';
+            const iconColor = mainIssue.severity === 'error' ? 'red' : 'orange';
+
+            const icon = ui.iconFA(iconName, undefined, mainIssue.message);
+            icon.style.color = iconColor;
+            warningCell.appendChild(icon);
+          } else {
+            const icon = ui.iconFA('check-circle', undefined, 'Valid mapping');
+            icon.style.color = 'green';
+            warningCell.appendChild(icon);
+          }
+          // if issues.length === 0 → mapping is valid (success)
+        } else if (mappedSource) onUndo(prop.name);
       },
     });
 
@@ -111,7 +134,11 @@ export function renderMappingEditor(host: HTMLElement, options: MappingEditorOpt
       rightCell.appendChild(undoIcon);
     }
 
-    const row = ui.divH([propNameEl, rightCell], 'mapping-editor-row');
+    const loader = ui.iconFA('spinner'); // or 'circle-notch', 'sync'
+    loader.classList.add('fa-spin');
+    const warningCell = ui.divH([loader]);
+
+    const row = ui.divH([propNameEl, rightCell, warningCell], 'mapping-editor-row');
     tableHost.appendChild(row);
   });
 
@@ -124,4 +151,34 @@ export function renderMappingEditor(host: HTMLElement, options: MappingEditorOpt
   addIcon.classList.add('mapping-add-icon');
   addRowHost.appendChild(addIcon);
   tableHost.appendChild(addRowHost);
+}
+
+interface ValidationIssue {
+  message: string;
+  severity: 'warning' | 'error';
+}
+
+function validateMapping(
+  prop: TargetProperty,
+  v: string,
+  df: DG.DataFrame,
+): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+
+  const col = df.col(v);
+  if (!col) {
+    issues.push({ message: 'Column not found in the data frame', severity: 'error' });
+    return issues;
+  }
+
+  if (col.type !== prop.type)
+    issues.push({ message: `Type mismatch: expected ${prop.type}, got ${col.type}`, severity: 'error' });
+
+  if ((col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) && col.min != null && col.min < 0)
+    issues.push({ message: 'Contains negative numbers', severity: 'warning' });
+
+  if (col.categories?.includes(''))
+    issues.push({ message: 'Contains empty values', severity: 'warning' });
+
+  return issues;
 }

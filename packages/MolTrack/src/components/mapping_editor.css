@@ -14,11 +14,16 @@
 .mapping-editor-header,
 .mapping-editor-row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 8px;
     align-items: center;
     padding: 4px 0;
     border-bottom: 1px solid var(--grey-1);
+}
+
+.mapping-editor-row > :nth-child(3) {
+    margin-left: 16px;
+    align-items: center;
 }
 
 .mapping-editor-header {
