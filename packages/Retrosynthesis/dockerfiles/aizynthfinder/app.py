@@ -9,6 +9,8 @@ from celery import Celery
 from datagrok_celery_task import DatagrokTask, Settings
 from datagrok_api import DatagrokClient
 
+from flask import jsonify
+
 
 settings = Settings(log_level=logging.DEBUG)
 app = Celery(settings.celery_name, broker=settings.broker_url)
@@ -100,3 +102,10 @@ def _silence_aizynth_logs():
     aiz_logger.setLevel(logging.CRITICAL + 1)
     aiz_logger.propagate = False
     aiz_logger.addHandler(logging.NullHandler())
+
+
+#name: checkHealth
+#output: bool result
+@app.task(name='check_health', base=DatagrokTask)
+def check_health(self) -> bool:
+    return jsonify({"status": "ok"}), 200
