@@ -27,13 +27,13 @@ export function saveAsSdfDialog() {
     const notationInput = ui.input.choice('Notation', {value: null, nullable: true,
       items: [DG.chem.Notation.MolBlock, DG.chem.Notation.V3KMolBlock], tooltipText: `Molecule notation for selected molecular column. If not specified, the exporter will try to keep existing MolBlocks as is, and convert other formats to MolBlock V2000`});
     sdfDialog.add(notationInput);
-    const selectedColsInput = ui.input.bool('Selected Columns Only', {value: false});
+    const selectedColsInput = ui.input.bool('Selected Columns Only', {value: false, tooltipText: 'Include only the currently selected columns.'});
     sdfDialog.add(selectedColsInput);
-    const visibleColsInput = ui.input.bool('Visible Columns Only', {value: true});
+    const visibleColsInput = ui.input.bool('Visible Columns Only', {value: true, tooltipText: 'Include only columns that are visible in the view.'});
     sdfDialog.add(visibleColsInput);
-    const filteredRowsInput = ui.input.bool('Filtered Rows Only', {value: false});
+    const filteredRowsInput = ui.input.bool('Filtered Rows Only', {value: false, tooltipText: 'Include only rows that match the current filter. Can be combined with [selectedRowsOnly].'});
     sdfDialog.add(filteredRowsInput);
-    const selectedRowsInput = ui.input.bool('Selected Rows Only', {value: false});
+    const selectedRowsInput = ui.input.bool('Selected Rows Only', {value: false, tooltipText: 'Include only the currently selected rows. Can be combined with [filteredRowsOnly].'});
     sdfDialog.add(selectedRowsInput);
     sdfDialog.initFromLocalStorage();
     sdfDialog.initDefaultHistory();
