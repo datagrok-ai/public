@@ -396,6 +396,7 @@ export class TestTrack extends DG.ViewBase {
       this.testingNames.push(this.testingName);
 
     this.addTestingButton = ui.button(getIcon('plus', { style: 'fas' }), async () => { await this.showAddNewTestingDialog() });
+    ui.tooltip.bind(this.addTestingButton, 'Add Testing');
     this.testingNameSelector = ui.input.choice('', {
       items: this.testingNames, value: this.testingName, nullable: false, onValueChanged: (e) => {
         this.testingName = e;
@@ -828,7 +829,7 @@ export class TestTrack extends DG.ViewBase {
 
   // To Do: fix styles
   showNodeDialog(node: DG.TreeViewNode, status: typeof CRITICALFAIL | typeof MINORFAIL | typeof BLOCKFAIL | typeof SKIPPED, edit: boolean = false): void {
-    const name = `${edit ? 'Edit' : 'Specify'} ${errorSeverityLevels.includes(status) ? 'ticket' : 'skip reason'}`;
+    const name = `${edit ? 'Edit' : 'Specify'} ${errorSeverityLevels.includes(status) ? 'fail reason' : 'skip reason'}`;
     const dialog = ui.dialog(name);
     dialog.root.classList.add('tt-dialog', 'tt-reason-dialog');
     const value = edit ? (node.value.fullReason) || '' : '';
@@ -1013,8 +1014,8 @@ export class TestTrack extends DG.ViewBase {
         'Version': params['version'],
         'Batch': this.testingName
       };
-
-      map['Reason'] = reasonTooltipValue;
+      if (reasonTooltipValue)
+        map['Reason'] = reasonTooltipValue;
       ui.tooltip.bind(icon, () => ui.tableFromMap(map));
     });
     this.updateReportData(node);
@@ -1054,7 +1055,8 @@ export class TestTrack extends DG.ViewBase {
         'Batch': this.testingName
       };
 
-      map['Reason'] = reasonTooltipValue;
+      if (reason)
+        map['Reason'] = reasonTooltipValue;
       ui.tooltip.bind(node.value.icon, () => ui.tableFromMap(map));
     });
     if (reportData) {
@@ -1064,7 +1066,7 @@ export class TestTrack extends DG.ViewBase {
     this.updateReportData(node);
   }
   async showAddNewTestingDialog(): Promise<void> {
-    const dialog = ui.dialog('Select testing');
+    const dialog = ui.dialog('Add testing');
     const newNameInput = ui.input.string('Name', { value: NEW_TESTING });
 
     dialog.add(newNameInput);
@@ -1102,76 +1104,76 @@ export class TestTrack extends DG.ViewBase {
     const okButton = dialog.root.getElementsByClassName("d4-dialog-footer")[0].getElementsByClassName('ui-btn-ok')[0];
   }
 
-  async showStartNewTestingDialog(): Promise<void> {
-    const dialog = ui.dialog('Select testing');
-    const newNameInput = ui.input.string('Name', { value: NEW_TESTING });
-    const check = ui.input.bool('New testing:');
-    const testingNames = (await grok.functions.call('UsageAnalysis:TestingNames'));
+  // async showStartNewTestingDialog(): Promise<void> {
+  //   const dialog = ui.dialog('Select testing');
+  //   const newNameInput = ui.input.string('Name', { value: NEW_TESTING });
+  //   const check = ui.input.bool('New testing:');
+  //   const testingNames = (await grok.functions.call('UsageAnalysis:TestingNames'));
 
-    const allTestingNames: string[] = [];
-    const testingToOpen: string[] = [];
-    const testingToOpenLimit = 5;
-    let i = 0;
-    for (const row of testingNames.rows) {
-      let batch = row['batchName'];
-      if (batch[0] === '"' && batch[batch.length - 1] === '"')
-        batch = batch.substring(1, batch.length - 1)
-      allTestingNames.push(batch);
-      if (batch === '')
-        continue;
-      if (i < testingToOpenLimit)
-        testingToOpen.push(batch);
-      i++;
-    }
+  //   const allTestingNames: string[] = [];
+  //   const testingToOpen: string[] = [];
+  //   const testingToOpenLimit = 5;
+  //   let i = 0;
+  //   for (const row of testingNames.rows) {
+  //     let batch = row['batchName'];
+  //     if (batch[0] === '"' && batch[batch.length - 1] === '"')
+  //       batch = batch.substring(1, batch.length - 1)
+  //     allTestingNames.push(batch);
+  //     if (batch === '')
+  //       continue;
+  //     if (i < testingToOpenLimit)
+  //       testingToOpen.push(batch);
+  //     i++;
+  //   }
 
-    newNameInput.addValidator((e: string) => {
-      if (allTestingNames.includes(`${newNameInput.value}`)) {
-        if (!check.value)
-          return null
-        return `${e} is already exists`;
-      }
-      return null;
-    });
+  //   newNameInput.addValidator((e: string) => {
+  //     if (allTestingNames.includes(`${newNameInput.value}`)) {
+  //       if (!check.value)
+  //         return null
+  //       return `${e} is already exists`;
+  //     }
+  //     return null;
+  //   });
 
-    const versionSelector = ui.input.choice('Available tests:', { value: testingToOpen[0], items: testingToOpen.map((e) => e.toString()), nullable: false });
-    if (testingToOpen.length === 0)
-      versionSelector.nullable = true;
-    check.onChanged.subscribe((value) => {
-      versionSelector.enabled = !value;
-      newNameInput.enabled = value;
-    });
-    newNameInput.enabled = false;
-    dialog.add(check);
-    dialog.add(versionSelector);
-    dialog.add(newNameInput);
-    dialog.onOK(async () => {
-      let testingToOpen: string | undefined | null = undefined;
+  //   const versionSelector = ui.input.choice('Available tests:', { value: testingToOpen[0], items: testingToOpen.map((e) => e.toString()), nullable: false });
+  //   if (testingToOpen.length === 0)
+  //     versionSelector.nullable = true;
+  //   check.onChanged.subscribe((value) => {
+  //     versionSelector.enabled = !value;
+  //     newNameInput.enabled = value;
+  //   });
+  //   newNameInput.enabled = false;
+  //   dialog.add(check);
+  //   dialog.add(versionSelector);
+  //   dialog.add(newNameInput);
+  //   dialog.onOK(async () => {
+  //     let testingToOpen: string | undefined | null = undefined;
 
-      if (check.value) {
-        if (allTestingNames.indexOf(`${newNameInput.value}`) === -1) {
-          testingToOpen = newNameInput.value;
-        }
-      }
-      else {
-        if (versionSelector.value !== '') {
-          testingToOpen = versionSelector.value;
-        }
-      }
+  //     if (check.value) {
+  //       if (allTestingNames.indexOf(`${newNameInput.value}`) === -1) {
+  //         testingToOpen = newNameInput.value;
+  //       }
+  //     }
+  //     else {
+  //       if (versionSelector.value !== '') {
+  //         testingToOpen = versionSelector.value;
+  //       }
+  //     }
 
-      if (testingToOpen && testingNames !== null) {
-        const start = Date.now().toString();
-        this.testingName = testingToOpen;
-        localStorage.setItem('TTState', start);
-        await this.refresh();
-      }
-      else {
-        grok.shell.error('Testing Name is not valid');
-      }
-      localStorage.setItem(BATCHNAME_STORAGE_KEY, this.testingName);
-    });
-    dialog.show();
-    const okButton = dialog.root.getElementsByClassName("d4-dialog-footer")[0].getElementsByClassName('ui-btn-ok')[0];
-  }
+  //     if (testingToOpen && testingNames !== null) {
+  //       const start = Date.now().toString();
+  //       this.testingName = testingToOpen;
+  //       localStorage.setItem('TTState', start);
+  //       await this.refresh();
+  //     }
+  //     else {
+  //       grok.shell.error('Testing Name is not valid');
+  //     }
+  //     localStorage.setItem(BATCHNAME_STORAGE_KEY, this.testingName);
+  //   });
+  //   dialog.show();
+  //   const okButton = dialog.root.getElementsByClassName("d4-dialog-footer")[0].getElementsByClassName('ui-btn-ok')[0];
+  // }
 
   showEditTestingNameDialog(): void {
     const dialog = ui.dialog('Edit testing name');
