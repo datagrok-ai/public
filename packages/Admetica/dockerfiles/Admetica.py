@@ -18,6 +18,7 @@ from datagrok_celery_task import DatagrokTask, Settings, get_logger
 
 from constants import mean_vectors
 from chemprop import data, featurizers, models
+from flask import jsonify
 
 
 logging_level = logging.DEBUG
@@ -201,3 +202,10 @@ def run_admetica(self, csv: str, models: str, raiseException: bool=False) -> pd.
   global raise_ex_flag
   raise_ex_flag = raiseException
   return predict(csv, models, False)
+
+
+#name: checkHealth
+#output: bool result
+@app.task(name='check_health', base=DatagrokTask)
+def check_health(self) -> bool:
+    return jsonify({"status": "ok"}), 200
