@@ -4,6 +4,9 @@ import '../components/mapping_editor.css';
 export interface TargetProperty {
   name: string;
   type?: string;
+  min?: number;
+  max?: number;
+  semType?: string;
   required?: boolean;
 }
 
@@ -127,18 +130,13 @@ export function renderMappingEditor(host: HTMLElement, options: MappingEditorOpt
       },
     });
 
-    const rightCell = ui.divH([choiceControl.root], 'mapping-input-container');
-    if (mappedSource) {
-      const undoIcon = ui.iconFA('times', () => onUndo(prop.name), 'Undo mapping');
-      undoIcon.classList.add('mapping-undo-icon');
-      rightCell.appendChild(undoIcon);
-    }
-
     const loader = ui.iconFA('spinner'); // or 'circle-notch', 'sync'
     loader.classList.add('fa-spin');
     const warningCell = ui.divH([loader]);
 
-    const row = ui.divH([propNameEl, rightCell, warningCell], 'mapping-editor-row');
+    choiceControl.fireChanged();
+
+    const row = ui.divH([propNameEl, choiceControl.root, warningCell], 'mapping-editor-row');
     tableHost.appendChild(row);
   });
 
@@ -159,7 +157,7 @@ interface ValidationIssue {
 }
 
 function validateMapping(
-  prop: TargetProperty,
+  prop: TargetProperty & { min?: number; max?: number },
   v: string,
   df: DG.DataFrame,
 ): ValidationIssue[] {
@@ -167,15 +165,41 @@ function validateMapping(
 
   const col = df.col(v);
   if (!col) {
-    issues.push({ message: 'Column not found in the data frame', severity: 'error' });
+    issues.push({ message: 'Column not found in the dataframe', severity: 'error' });
     return issues;
   }
 
-  if (col.type !== prop.type)
-    issues.push({ message: `Type mismatch: expected ${prop.type}, got ${col.type}`, severity: 'error' });
+  if (prop.type && (col.type !== prop.type)) {
+    issues.push({
+      message: `Type mismatch: expected ${prop.type}, got ${col.type}`,
+      severity: 'error',
+    });
+    return issues;
+  }
 
-  if ((col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT) && col.min != null && col.min < 0)
-    issues.push({ message: 'Contains negative numbers', severity: 'warning' });
+  if ((prop.semType && prop.semType === DG.SEMTYPE.MOLECULE) && (col.semType !== prop.semType)) {
+    issues.push({
+      message: `Semantic type mismatch: expected ${prop.semType}, got ${col.semType}`,
+      severity: 'error',
+    });
+    return issues;
+  }
+
+  if ((col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.INT)) {
+    if (prop.min != null && col.min != null && col.min < prop.min) {
+      issues.push({
+        message: `Values below allowed minimum (${prop.min})`,
+        severity: 'error',
+      });
+    }
+
+    if (prop.max != null && col.max != null && col.max > prop.max) {
+      issues.push({
+        message: `Values above allowed maximum (${prop.max})`,
+        severity: 'error',
+      });
+    }
+  }
 
   if (col.categories?.includes(''))
     issues.push({ message: 'Contains empty values', severity: 'warning' });

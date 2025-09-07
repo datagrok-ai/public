@@ -5,9 +5,9 @@ import * as DG from 'datagrok-api/dg';
 import { ErrorHandlingLabels, ScopeLabels } from './constants';
 import '../../css/moltrack.css';
 import { renderMappingEditor, TargetProperty } from '../components/mapping_editor';
-import { _package, fetchCompoundProperties } from '../package';
 import { MolTrackDockerService } from './moltrack-docker-service';
 import {UiUtils} from '@datagrok-libraries/compute-utils';
+import { fetchSchema } from '../package';
 
 let openedView: DG.ViewBase | null = null;
 
@@ -21,51 +21,25 @@ export class RegistrationView {
   uploadedDf: DG.DataFrame | null = null;
   mappingDict: Record<string, string> = {};
   summaryDiv: HTMLDivElement = ui.div([]);
+  rightPanel: HTMLDivElement | null = null;
 
   constructor() {
     this.view = DG.View.create();
     this.view.name = 'Bulk Registration';
 
     this.createInputs();
-    this.createSummaryDiv();
     this.uploadedPreviewDiv = ui.div('', 'moltrack-register-preview-div');
+    this.summaryDiv.style.marginTop = '50px';
     this.buildUI();
     this.addRibbonButtons();
   }
 
-  createSummaryDiv() {
-    const summaryDiv: HTMLDivElement = ui.div([]);
-
-    const placeholderText = ui.divText('Summary will appear here once you register entities.', {
-      style: {
-        textAlign: 'center',
-        marginBottom: '8px',
-      },
-    });
-    summaryDiv.appendChild(placeholderText);
-
-    this.summaryDiv.style.cssText = `
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  background-color: #f9f9f9;
-  min-height: 80px;
-  max-width: 240px;
-  margin-top: 40px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-
-`;
-
-    this.summaryDiv.appendChild(summaryDiv);
-  }
-
   private async createInputs() {
-    this.entityTypeInput = this.createChoiceInput('Register', Object.keys(ScopeLabels));
-    // this.datasetInput = ui.input.file('File', /*, {
-    //   value: (await grok.dapi.files.list('System:AppData/MolTrack/samples/'))[1],
-    // }*/);
+    this.entityTypeInput = this.createChoiceInput(
+      'Register',
+      Object.keys(ScopeLabels).filter((k) => k !== 'Assays'),
+      (value) => this.createMapping(value),
+    );
 
     this.errorStrategyInput = this.createChoiceInput('On error', Object.keys(ErrorHandlingLabels));
   }
@@ -83,29 +57,19 @@ export class RegistrationView {
 
     const dragDropInput = this.createFileInputPane();
 
-    const rightPanel = ui.divV([
+    this.rightPanel = ui.divV([
       dragDropInput,
-      this.uploadedPreviewDiv,
+      // this.uploadedPreviewDiv,
     ], 'moltrack-right-panel');
 
-    leftPanel.style.flex = '1';
-    rightPanel.style.flex = '2';
-
-    // const splitterBar = new SplitterBar(leftPanel, rightPanel, this.stackedVertical);
-
-    // const container = ui.divH([leftPanel, rightPanel], 'moltrack-container');
     const container = ui.splitH([
       leftPanel,
-      rightPanel,
+      this.rightPanel,
     ], {}, true);
     container.classList.add('moltrack-container');
     this.view.root.append(container);
-
-    // TODO: No need to preload default table - we gonna add just a drag-n-drop with an action item
-    // this.preloadDefaultTable();
   }
 
-  /** Copy pasted from the Admetica demo app */
   private createFileInputPane() {
     const fileInputEditor = this.initializeFileInputEditor();
     this.removeLabels(fileInputEditor.root);
@@ -137,6 +101,13 @@ export class RegistrationView {
     this.uploadedDf = DG.DataFrame.fromCsv(csvData);
     await grok.data.detectSemanticTypes(this.uploadedDf);
     this.createMapping();
+
+    if (this.rightPanel?.firstElementChild)
+      (this.rightPanel.firstElementChild as HTMLElement).style.height = '5%';
+
+    this.uploadedPreviewDiv.style.height = '95%';
+    this.rightPanel?.appendChild(this.uploadedPreviewDiv);
+
     this.uploadedPreviewDiv.append(this.uploadedDf.plot.grid().root);
   }
 
@@ -171,7 +142,6 @@ export class RegistrationView {
 
     const highlightColor = '#e0f7fa';
     const defaultColor = '#ffffff';
-    inputEditor.style.border = '1px dashed #007bff';
 
     const setHighlightedStyle = () => inputEditor.style.backgroundColor = highlightColor;
     const resetStyle = () => inputEditor.style.backgroundColor = defaultColor;
@@ -204,24 +174,20 @@ export class RegistrationView {
     this.view.setRibbonPanels([[registerButton, addToWorkspaceButton]]);
   }
 
-  private createChoiceInput<T>(label: string, choices: T[]): DG.ChoiceInput<T | null> {
+  private createChoiceInput<T>(
+    label: string,
+    choices: T[],
+    onChanged?: (value: T) => void,
+  ): DG.ChoiceInput<T | null> {
+    if (!choices || choices.length === 0)
+      throw new Error('Choices array cannot be empty');
+
     return ui.input.choice(label, {
       value: choices[0],
       items: choices,
+      onValueChanged: (value: T) => onChanged?.(value),
     });
   }
-
-  // private async preloadDefaultTable() {
-  //   try {
-  //     this.uploadedDf = await grok.data.loadTable(_package.webRoot + 'files/samples/compounds.csv');
-  //     await grok.data.detectSemanticTypes(this.uploadedDf);
-
-  //     ui.empty(this.uploadedPreviewDiv);
-  //     this.uploadedPreviewDiv.append(this.uploadedDf.plot.grid().root);
-  //   } catch (e: any) {
-  //     grok.shell.error(`Failed to load dataset: ${e.message}`);
-  //   }
-  // }
 
   private async registerEntities() {
     if (!this.uploadedDf) return;
@@ -238,13 +204,9 @@ export class RegistrationView {
         errorHandling: ErrorHandlingLabels[this.errorStrategyInput?.value],
       });
 
-      // TODO: Add ui.loader while we are waiting for the results
       this.uploadedDf.join(df, ['smiles'], ['smiles'], null, ['registration_status', 'registration_error_message'], DG.JOIN_TYPE.INNER, true);
 
       this.createSummary();
-      // TODO: Add summary with successful/failed rows
-
-      grok.shell.info('Entities registered successfully!');
     } catch (err: any) {
       grok.shell.error(`Registration failed: ${err.message}`);
     }
@@ -259,45 +221,45 @@ export class RegistrationView {
     const failedCount = statuses.filter((v) => v === 'failed').length;
     const notProcessedCount = statuses.filter((v) => v === 'not_processed').length;
 
-    // const successText = ui.divText('Successful', {
-    //   style: { color: '#286344' },
-    // });
-
-    // const failedText = ui.divText('Failed', {
-    //   style: { color: '#763434' },
-    // });
-
-    // const notProcessedText = ui.divText('Not processed', {
-    //   style: { color: '#805125' },
-    // });
-
     const summary: { [key: string]: number } = {
       'Successful': successCount,
       'Failed': failedCount,
       'Not processed': notProcessedCount,
     };
-    const summaryTable = ui.tableFromMap(summary);
+
+    const summaryTable = ui.table(
+      [summary],
+      (item) => [item['Successful'], item['Failed'], item['Not processed']],
+      Object.keys(summary),
+    );
+
     this.summaryDiv.appendChild(summaryTable);
   }
 
-  private async createMapping() {
-    const parsedProps = JSON.parse(await fetchCompoundProperties());
+  private async createMapping(value?: string) {
+    const parsedProps = JSON.parse(await fetchSchema());
     const targetProperties: TargetProperty[] = [
-      ...parsedProps.map((p: any) => ({
-        name: p.friendly_name ?? p.name,
-        type: p.value_type,
-        required: false,
-      })),
-      { name: 'smiles', required: true },
+      ...parsedProps
+        .filter((p: any) => ScopeLabels[value ?? this.entityTypeInput?.value].includes(p.entity_type.toLowerCase()))
+        .map((p: any) => ({
+          name: p.friendly_name ?? p.name,
+          min: p.min,
+          max: p.max,
+          semType: p.semantic_type ? p.semantic_type['name'] : null,
+          type: p.value_type,
+          required: false,
+        })),
+      { name: 'smiles', required: true, semType: DG.SEMTYPE.MOLECULE },
     ];
 
+    // TODO: Auto-mapping should handle cases where some properties may not exist in the database
     let autoMapping: Map<string, string> = new Map();
     if (this.uploadedDf) {
       await MolTrackDockerService.init();
       autoMapping = await MolTrackDockerService.getAutoMapping(this.uploadedDf!.columns.names(), 'COMPOUND');
     }
 
-    const sourceColumns = this.uploadedDf ? this.uploadedDf.columns.names() : [];
+    const sourceColumns = this.uploadedDf ? this.uploadedDf.columns.names() : [''];
     const mappings = new Map<string, string>();
     for (const [source, target] of Object.entries(autoMapping)) {
       const cleanTarget = target.replace(/^.*?_details\./, '');
@@ -329,8 +291,6 @@ export class RegistrationView {
     },
     this.uploadedDf!,
     );
-
-    // TODO: near the render mapping editor there should be a separate column with the mapping status (warning, error, success)
   }
 
   show() {

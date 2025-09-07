@@ -287,8 +287,6 @@ export async function registerAssays(assayPayload: string): Promise<string> {
 }
 
 //name: registerBulk
-//meta.cache: all
-//meta.cache.invalidateOn: 0 0 1 * *
 //input: file csvFile
 //input: string scope
 //input: string mapping
