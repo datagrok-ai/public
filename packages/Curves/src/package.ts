@@ -28,7 +28,7 @@ import {PlateTemplateHandler} from './plates/objects/plate-template-handler';
 import * as api from './package-api';
 import {convertDataToCurves, dataToCurvesUI, WellTableParentData} from './fit/data-to-curves';
 import {parsePlateFromCsv} from './plate/csv-plates';
-import { layoutsView } from './plates/views/layouts-view';
+import {layoutsView} from './plates/views/layouts-view';
 
 export const _package = new DG.Package();
 const SOURCE_COLUMN_TAG = '.sourceColumn';

@@ -21,16 +21,13 @@ import {plateDbColumn, wellProperties, plateTypes} from '../plates/plates-crud';
 import {PlateDrcAnalysis} from './plate-drc-analysis';
 import {IPlateWellValidator} from './plate-well-validators';
 
-
 /** Represents a well in the experimental plate */
 export interface PlateWell {
   row: number;
   col: number;
-  volume?: number;
-  concentration?: number;
+  tags?: string[]; // New addition for future use
   [key: string]: any;
 }
-
 
 interface IPlateCsvImportOptions {
   rowColumn?: string;
@@ -41,17 +38,28 @@ interface IPlateCsvImportOptions {
   field?: string; // used as a field name when a 12x8 table is passed; if not passed, defaults to 'value'
 }
 
-
 export interface IPlateWellFilter {
   includeEmpty?: boolean;
   match?: {[key: string]: any};
   exclude?: {[key: string]: any};
 }
 
-
 interface ISeriesData {
   x: number[];
   y: number[];
+}
+
+export enum LayerType {
+  ORIGINAL = 'original',
+  DERIVED = 'derived',
+  LAYOUT = 'layout'
+}
+
+export interface LayerMetadata {
+  type: LayerType;
+  source?: string;
+  createdAt: Date;
+  aliases: Map<string, string>;
 }
 
 export const PLATE_OUTLIER_WELL_NAME = 'Outlier';
@@ -62,15 +70,23 @@ export function randomizeTableId() {
 
 /** Represents experimental plate (typically 96-, 384-, or 1536-well assay plates) */
 export class Plate {
-  id?: number; // database id
-  plateTemplateId?: number; // database plate template id
-  plateTypeId?: number; // database plate type id
-  barcode?: string; // database barcode
+  id?: number;
+  plateTemplateId?: number;
+  plateTypeId?: number;
+  barcode?: string;
 
-  data: DG.DataFrame; // each column is a layer, layed out like (r1 c1) (r1 c2) ... (r2 c1)
-  details: {[index: string]: any} = {}; // dynamic plate properties, stored in db: plates.plate_details
+  data: DG.DataFrame;
+  plate_metadata: {[index: string]: any} = {};
   rows: number = 8;
   cols: number = 12;
+
+  private layerRegistry: Map<string, LayerMetadata> = new Map();
+
+  private changeLog: Array<{
+    timestamp: Date;
+    action: string;
+    details: any;
+  }> = [];
 
   constructor(rows: number, cols: number) {
     this.data = DG.DataFrame.create(rows * cols);
@@ -78,6 +94,7 @@ export class Plate {
     this.cols = cols;
     this.plateTypeId = plateTypes.find((pt) => pt.rows == this.rows && pt.cols == this.cols)?.id;
     this.barcode = Math.round(Math.random() * 10000).toString().padStart(10, '0');
+    this.logChange('plate-created', {rows, cols});
   }
 
   static autoSize(positions: Iterable<[number, number]>): Plate {
@@ -110,6 +127,7 @@ export class Plate {
     const outlierCol = this.data.columns.getOrCreate(PLATE_OUTLIER_WELL_NAME, DG.TYPE.BOOL);
     return outlierCol.get(row);
   }
+
   isOutlier(row: number, col: number): boolean {
     return this._isOutlier(this._idx(row, col));
   }
@@ -120,6 +138,111 @@ export class Plate {
         this._markOutlier(v.innerDfRow, true);
     });
   }
+
+  // --- NEW LAYER MANAGEMENT METHODS ---
+
+  /**
+   * Get a column by its name or any of its aliases
+   */
+  getColumn(nameOrAlias: string): DG.Column | null {
+    // First check direct column name
+    if (this.data.columns.contains(nameOrAlias))
+      return this.data.col(nameOrAlias);
+
+
+    // Then check if this is an alias for any column
+    for (const [colName, metadata] of this.layerRegistry) {
+      if (metadata.aliases.has(nameOrAlias))
+        return this.data.col(colName);
+    }
+
+    return null;
+  }
+
+  /**
+   * Register a column as a layer with metadata
+   */
+  registerLayer(columnName: string, type: LayerType, source?: string): void {
+    if (!this.data.columns.contains(columnName))
+      throw new Error(`Column ${columnName} does not exist`);
+
+
+    if (!this.layerRegistry.has(columnName)) {
+      this.layerRegistry.set(columnName, {
+        type,
+        source: source || 'unknown',
+        createdAt: new Date(),
+        aliases: new Map()
+      });
+
+      this.logChange('layer-registered', {columnName, type, source});
+    }
+  }
+
+  /**
+   * Add an alias for a column without renaming it
+   */
+  addAlias(columnName: string, alias: string): void {
+    if (!this.data.columns.contains(columnName))
+      throw new Error(`Column ${columnName} does not exist`);
+
+
+    // Remove this alias from any other column first
+    for (const metadata of this.layerRegistry.values())
+      metadata.aliases.delete(alias);
+
+
+    // Ensure the column is registered
+    if (!this.layerRegistry.has(columnName))
+      this.registerLayer(columnName, LayerType.ORIGINAL);
+
+
+    // Add the alias
+    this.layerRegistry.get(columnName)!.aliases.set(alias, columnName);
+    this.logChange('alias-added', {columnName, alias});
+  }
+
+  removeAlias(alias: string): void {
+    for (const [colName, metadata] of this.layerRegistry) {
+      if (metadata.aliases.has(alias)) {
+        metadata.aliases.delete(alias);
+        this.logChange('alias-removed', {columnName: colName, alias});
+        return;
+      }
+    }
+  }
+
+  getAliases(columnName: string): string[] {
+    const metadata = this.layerRegistry.get(columnName);
+    return metadata ? Array.from(metadata.aliases.keys()) : [];
+  }
+
+  getLayerType(columnName: string): LayerType | undefined {
+    return this.layerRegistry.get(columnName)?.type;
+  }
+
+  getLayersByType(type: LayerType): string[] {
+    const layers: string[] = [];
+    for (const [name, metadata] of this.layerRegistry) {
+      if (metadata.type === type)
+        layers.push(name);
+    }
+    return layers;
+  }
+
+  private logChange(action: string, details: any): void {
+    this.changeLog.push({
+      timestamp: new Date(),
+      action,
+      details
+    });
+  }
+
+  getChangeLog(): ReadonlyArray<any> {
+    return this.changeLog;
+  }
+
+  // --- EXISTING METHODS WITH ALIAS SUPPORT ---
 
   static fromGridDataFrame(table: DG.DataFrame, field?: string): Plate {
     const rows = table.rowCount;
@@ -146,12 +269,15 @@ export class Plate {
       }
     }
 
+    // Register imported column as ORIGINAL
+    plate.registerLayer(dataColumn.name, LayerType.ORIGINAL, 'grid-import');
+
     return plate;
   }
 
   toGridDataFrame(layer: string): DG.DataFrame {
     const df = DG.DataFrame.create(this.rows, layer);
-    const col = this.data.columns.byName(layer);
+    const col = this.getColumn(layer) || this.data.columns.byName(layer);
 
     for (let i = 0; i < this.cols; i++)
       df.columns.addNew(`${i + 1}`, col.type).init((r) => col.get(this._idx(r, i)));
@@ -196,6 +322,9 @@ export class Plate {
         const [wellRow, wellCol] = rowToPos!(r);
         plateCol.set(plate._idx(wellRow, wellCol), col.get(r), false);
       }
+
+      // Register imported columns as ORIGINAL
+      plate.registerLayer(col.name, LayerType.ORIGINAL, 'table-by-row');
     }
     return plate;
   }
@@ -209,8 +338,11 @@ export class Plate {
       const property = wellProperties.find((p) => p.id == pid)!;
       const valueColumn = df.col(plateDbColumn[property.type])!;
       //@ts-ignore
-      plate.data.columns.addNew(property.name, property.type)
+      const newCol = plate.data.columns.addNew(property.name, property.type)
         .init((i) => valueColumn.get(start + i));
+
+      // Register database columns as ORIGINAL
+      plate.registerLayer(property.name, LayerType.ORIGINAL, 'database');
     }
 
     return plate;
@@ -257,6 +389,7 @@ export class Plate {
     const loadedExcelJS = window.ExcelJS as ExcelJS;
     const workbook = new loadedExcelJS.Workbook() as ExcelJS.Workbook;
     const wb = await workbook.xlsx.load(excelBytes);
+
     const platePositions = findPlatePositions(wb);
     if (platePositions.length == 0) throw new Error('Plates not found in excel file');
     const p0 = platePositions[0];
@@ -288,17 +421,24 @@ export class Plate {
   }
 
   get(field: string, rowIdxOrPos: number | string, colIdx?: number): any {
-    assure(this.data.columns.byName(field) != null, `Field does not exist: ${field}`);
+    const column = this.getColumn(field);
+    assure(column != null, `Field does not exist: ${field}`);
     if (typeof rowIdxOrPos === 'number' && colIdx == null)
       throw new Error('Column not defined');
     const [row, col] = (typeof rowIdxOrPos === 'string') ? parseExcelPosition(rowIdxOrPos) : [rowIdxOrPos, colIdx!];
-    return this.data.columns.byName(field).get(this._idx(row, col));
+    return column!.get(this._idx(row, col));
   }
 
   normalize(field: string, f: (value: number) => number, inplace: boolean = false) {
-    const originalCol = this.data.getCol(field);
+    const originalCol = this.getColumn(field) || this.data.getCol(field);
     const col = inplace ? originalCol : this.data.columns.addNewFloat(this.data.columns.getUnusedName(`${field}_normalized`));
     col.init((i) => originalCol.isNone(i) ? null : f(originalCol.get(i)));
+
+    // Register normalized column as DERIVED
+    if (!inplace)
+      this.registerLayer(col.name, LayerType.DERIVED, 'normalization');
+
+
     return col;
   }
 
@@ -328,7 +468,7 @@ export class Plate {
   }
 
   values(fields: string[], filter?: IPlateWellFilter): Array<Record<string, any> & {innerDfRow: number}> {
-    const cols = fields.map((f) => this.data.columns.byName(f));
+    const cols = fields.map((f) => this.getColumn(f) || this.data.columns.byName(f));
     assure(cols.every((c) => c != null), `Field does not exist: ${fields.find((_, i) => cols[i] == null)}`);
     const colsObj: Record<string, DG.Column> = {};
     for (let i = 0; i < fields.length; i++)
@@ -424,37 +564,44 @@ export class Plate {
     }));
   }
 
-  getAnalysisDialog(options: AnalysisOptions) {
-    const dialog = ui.dialog('Plate Analysis');
-    const drcView = PlateDrcAnalysis.analysisView(this, options);
-    if (drcView)
-      dialog.add(drcView);
-    else
-      dialog.add(ui.divText('Required columns for analysis not found.'));
-    dialog.showModal(true);
-  }
+  //   getAnalysisDialog(options: AnalysisOptions) {
+  //     const dialog = ui.dialog('Plate Analysis');
+  //     const drcView = PlateDrcAnalysis.analysisView(this, options);
+  //     if (drcView)
+  //       dialog.add(drcView);
+  //     else
+  //       dialog.add(ui.divText('Required columns for analysis not found.'));
+  //     dialog.showModal(true);
+  //   }
 
-  getAnalysisView(options: AnalysisOptions) {
-    const drcView = PlateDrcAnalysis.analysisView(this, options);
-    const view = DG.View.create();
-    view.name = 'Plate Analysis';
-    if (drcView)
-      view.root.appendChild(drcView.root);
-    else
-      view.root.appendChild(ui.divText('Required columns for analysis not found.'));
+  //   getAnalysisView(options: AnalysisOptions) {
+  //     const drcView = PlateDrcAnalysis.analysisView(this, options);
+  //     const view = DG.View.create();
+  //     view.name = 'Plate Analysis';
+  //     if (drcView)
+  //       view.root.appendChild(drcView.root);
+  //     else
+  //       view.root.appendChild(ui.divText('Required columns for analysis not found.'));
 
-    return grok.shell.addView(view);
-  }
+  //     return grok.shell.addView(view);
+  //   }
 
   merge(plate: Plate) {
-    for (const col of plate.data.columns)
+    for (const col of plate.data.columns) {
       this.data.columns.add(col.clone());
+      // Register merged columns, preserving their type if known
+      const sourceType = plate.getLayerType(col.name);
+      if (sourceType)
+        this.registerLayer(col.name, sourceType, 'merged');
+    }
     return this;
   }
 
   clone(): Plate {
     const cloned = new Plate(this.rows, this.cols);
     cloned.data = this.data.clone();
+    cloned.layerRegistry = new Map(this.layerRegistry);
+    cloned.plate_metadata = {...this.plate_metadata};
     return cloned;
   }
 
@@ -470,20 +617,20 @@ export class Plate {
     }
   }
 
-  validateWells(validators: IPlateWellValidator[]): Map<string, string[]> {
-    const result = new Map<string, string[]>();
-    for (const validator of validators) {
-      for (let row = 0; row < this.rows; row++) {
-        for (let col = 0; col < this.cols; col++) {
-          const error = validator.validate(this, row, col);
-          if (error) {
-            const errors = result.get(`${numToExcel(row)}${col}`) ?? [];
-            errors.push(error);
-            result.set(`${toExcelPosition(row, col)}`, errors);
-          }
-        }
-      }
-    }
-    return result;
-  }
+//   validateWells(validators: IPlateWellValidator[]): Map<string, string[]> {
+//     const result = new Map<string, string[]>();
+//     for (const validator of validators) {
+//       for (let row = 0; row < this.rows; row++) {
+//         for (let col = 0; col < this.cols; col++) {
+//           const error = validator.validate(this, row, col);
+//           if (error) {
+//             const errors = result.get(`${numToExcel(row)}${col}`) ?? [];
+//             errors.push(error);
+//             result.set(`${toExcelPosition(row, col)}`, errors);
+//           }
+//         }
+//       }
+//     }
+//     return result;
+//   }
 }

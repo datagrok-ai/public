@@ -3,23 +3,16 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import {PlateStateManager} from '../../shared/plate-state-manager';
 import {Subscription} from 'rxjs';
-// import {renderValidationResults} from '../../plates-validation-panel';
 import {PlateTemplate, plateTemplates, plateTypes} from '../../../plates-crud';
 import {PlateWidget} from '../../../../plate/plate-widget';
 import {renderMappingEditor, TargetProperty} from '../mapping-editor/mapping-editor';
 import {renderValidationResults} from '../../plates-validation-panel';
-/**
- * Creates a consistent two-column form row (Label on left, Input on right).
- * @param label The text for the label.
- * @param input The Datagrok InputBase component.
- * @returns An HTMLElement representing the styled row.
- */
+
 function createFormRow(label: string, input: DG.InputBase<any>): HTMLElement {
   const labelEl = ui.divText(label, 'ui-label');
   input.root.querySelector('label')?.remove();
-  return ui.divH([labelEl, input.root], 'template-panel-form-row'); // This class now has styling
+  return ui.divH([labelEl, input.root], 'template-panel-form-row');
 }
-
 
 export class TemplatePanel {
   root: HTMLElement;
@@ -27,11 +20,9 @@ export class TemplatePanel {
   private validationHost: HTMLElement;
   private wellPropsHeaderHost: HTMLElement;
   private subscriptions: Subscription[] = [];
-
   private plateIdentifierHost: HTMLElement;
   private replicateIdentifierHost: HTMLElement;
   private plateNumberHost: HTMLElement;
-
 
   constructor(
     private stateManager: PlateStateManager,
@@ -42,11 +33,9 @@ export class TemplatePanel {
     this.platePropertiesHost = ui.divV([]);
     this.validationHost = ui.divV([]);
     this.wellPropsHeaderHost = ui.div();
-
     this.plateIdentifierHost = ui.div([]);
     this.replicateIdentifierHost = ui.div([]);
     this.plateNumberHost = ui.div([]);
-
     this.buildPanel();
     this.subscribeToStateChanges();
   }
@@ -64,13 +53,11 @@ export class TemplatePanel {
       this.validationHost,
       true
     );
-
     this.root.appendChild(importSection);
     this.root.appendChild(templateSection);
     this.root.appendChild(platePropsSection);
     this.root.appendChild(wellPropsSection);
   }
-
 
   private createImportSection(): HTMLElement {
     const fileInput = this.createFileInput();
@@ -79,14 +66,11 @@ export class TemplatePanel {
       this.replicateIdentifierHost,
       this.plateNumberHost,
     ], 'left-panel-section-content');
-
     const content = ui.divV([
       fileInput.root,
       indexControls
     ]);
-
     this.updateIdentifierControls();
-
     return this.createCollapsiblePanel(ui.h2('Import'), content, true);
   }
 
@@ -103,8 +87,6 @@ export class TemplatePanel {
         }
       },
     });
-
-
     fileInput.root.classList.add('plate-import-input');
     const fileInputButton = fileInput.root.querySelector('button');
     if (fileInputButton) {
@@ -117,7 +99,6 @@ export class TemplatePanel {
     return fileInput;
   }
 
-
   private updateIdentifierControls(): void {
     this.updatePlateIdentifierControl();
     this.updateReplicateIdentifierControl();
@@ -128,8 +109,7 @@ export class TemplatePanel {
     ui.empty(this.plateIdentifierHost);
     const df = this.stateManager.sourceDataFrame;
     if (!df) return;
-
-    const choiceInput = ui.input.choice('', { // Label is now empty
+    const choiceInput = ui.input.choice('', {
       value: this.stateManager.plateIdentifierColumn,
       items: [null, ...df.columns.names()],
       onValueChanged: (newColumn: string | null) => {
@@ -145,7 +125,6 @@ export class TemplatePanel {
     ui.empty(this.replicateIdentifierHost);
     const df = this.stateManager.sourceDataFrame;
     if (!df) return;
-
     const choiceInput = ui.input.choice('', {
       value: this.stateManager.replicateIdentifierColumn,
       items: [null, ...df.columns.names()],
@@ -162,7 +141,6 @@ export class TemplatePanel {
     ui.empty(this.plateNumberHost);
     const df = this.stateManager.sourceDataFrame;
     if (!df) return;
-
     const choiceInput = ui.input.choice('', {
       value: this.stateManager.plateNumberColumn,
       items: [null, ...df.columns.names()],
@@ -175,16 +153,13 @@ export class TemplatePanel {
     this.plateNumberHost.appendChild(createFormRow('Plate Number', choiceInput));
   }
 
-
   private createTemplateSection(): HTMLElement {
     const templateIcon = ui.iconFA('file-alt', null, 'Template-defined properties');
     templateIcon.classList.add('legend-icon', 'legend-icon-template');
-
     const templateHeader = ui.divH(
       [ui.h2('Template'), templateIcon],
       {style: {alignItems: 'center', gap: '8px', flexGrow: '1'}}
     );
-
     const plateTypeSelector = ui.input.choice('', {
       value: this.stateManager.currentPlateType.name,
       items: plateTypes.map((pt) => pt.name),
@@ -194,7 +169,6 @@ export class TemplatePanel {
         this.stateManager.setTemplate(this.stateManager.currentTemplate);
       },
     });
-
     const plateTemplateSelector = ui.input.choice('', {
       value: this.stateManager.currentTemplate.name,
       items: plateTemplates.map((pt) => pt.name),
@@ -203,15 +177,12 @@ export class TemplatePanel {
         this.stateManager.setTemplate(template);
       },
     });
-
     const plateTypeRow = createFormRow('Plate Type', plateTypeSelector);
     const templateRow = createFormRow('Template', plateTemplateSelector);
-
     const templateContent = ui.divV(
       [plateTypeRow, templateRow],
       'left-panel-section-content'
     );
-
     return this.createCollapsiblePanel(templateHeader, templateContent, true);
   }
 
@@ -229,17 +200,13 @@ export class TemplatePanel {
     icon.style.marginRight = '8px';
     icon.style.color = 'var(--grey-4)';
     icon.style.cursor = 'pointer';
-
     header.style.cursor = 'pointer';
     header.onclick = () => icon.click();
-
     const headerContainer = ui.divH([icon, header]);
     headerContainer.style.alignItems = 'center';
-
     content.style.display = expanded ? 'block' : 'none';
     content.style.paddingLeft = '24px';
     content.classList.add('left-panel-section-content');
-
     return ui.divV([headerContainer, content], 'left-panel-section');
   }
 
@@ -254,30 +221,30 @@ export class TemplatePanel {
     const template = this.stateManager.currentTemplate;
     const activePlate = this.stateManager.activePlate;
     const state = this.stateManager.currentState;
-
     ui.empty(this.platePropertiesHost);
     ui.empty(this.wellPropsHeaderHost);
-
     if (activePlate) {
       const handleMapping = (targetProperty: string, sourceColumn: string) => {
         const currentState = this.stateManager.currentState;
         if (currentState)
           this.stateManager.remapProperty(currentState.activePlateIdx, targetProperty, sourceColumn);
       };
-
       const handleUndo = (targetProperty: string) => {
         const currentState = this.stateManager.currentState;
         if (currentState)
           this.stateManager.undoMapping(currentState.activePlateIdx, targetProperty);
       };
-
       const sourceColumns = activePlate.plate.data.columns.names();
 
-      // REMOVED: Analysis-specific fields are no longer added here
-      // const DRC_FIELDS: TargetProperty[] = [...]
-      // const DOSE_RATIO_FIELDS: TargetProperty[] = [...]
+      // **FIX START**: Construct the mappings map from the plate's aliases
+      const currentMappings = new Map<string, string>();
+      for (const layer of activePlate.plate.getLayerNames()) {
+        const aliases = activePlate.plate.getAliases(layer);
+        for (const alias of aliases)
+          currentMappings.set(alias, layer);
+      }
+      // **FIX END**
 
-      // Only handle template-specific properties
       const MOCKED_REQUIRED_TEMPLATE_FIELDS = ['Target', 'Assay Format'];
       const templateProps: TargetProperty[] = template.wellProperties
         .filter((p) => p && p.name)
@@ -286,23 +253,20 @@ export class TemplatePanel {
           required: MOCKED_REQUIRED_TEMPLATE_FIELDS.includes(p.name!)
         }));
 
-      // Only template properties go into the central validation panel now
       renderMappingEditor(this.validationHost, {
         targetProperties: templateProps,
         sourceColumns: sourceColumns,
-        mappings: activePlate.reconciliationMap,
+        mappings: currentMappings, // <-- Use the newly created map
         onMap: handleMapping,
         onUndo: handleUndo,
       });
 
-      // Plate properties logic remains the same...
       const plateProperties = template.plateProperties
         .filter((p) => p && p.name && p.type)
         .map((p) => DG.Property.js(p.name!, p.type! as DG.TYPE));
       if (plateProperties.length > 0)
-        this.platePropertiesHost.appendChild(ui.input.form(activePlate.plate.details || {}, plateProperties));
+        this.platePropertiesHost.appendChild(ui.input.form(activePlate.plate.plate_metadata || {}, plateProperties));
     } else {
-    // Handle the "no plate" case by calling the renderer with empty data
       renderMappingEditor(this.validationHost, {
         targetProperties: [],
         sourceColumns: [],
@@ -310,15 +274,12 @@ export class TemplatePanel {
         onMap: () => {},
         onUndo: () => {},
       });
-
-      // Plate properties logic remains the same...
       const templateProperties = template.plateProperties
         .filter((p) => p && p.name && p.type)
         .map((p) => DG.Property.js(p.name!, p.type! as DG.TYPE));
       if (templateProperties.length > 0)
         this.platePropertiesHost.appendChild(ui.input.form({}, templateProperties));
     }
-
     this.updateWellPropsHeader(template, state);
   }
 
@@ -335,17 +296,26 @@ export class TemplatePanel {
       let totalConflicts = 0;
       let totalMappings = 0;
 
+      // **FIX START**: We need to create the mappings map again here for validation checks
       state.plates.forEach((pf: any) => {
+        const plateMappings = new Map<string, string>();
+        for (const layer of pf.plate.getLayerNames()) {
+          const aliases = pf.plate.getAliases(layer);
+          for (const alias of aliases)
+            plateMappings.set(alias, layer);
+        }
+        // **FIX END**
+
         const validation = renderValidationResults(
           ui.div(),
           pf.plate,
           template,
           () => {},
-          pf.reconciliationMap,
+          plateMappings, // <-- Use the correct map
           () => {}
         );
         totalConflicts += validation.conflictCount;
-        totalMappings += pf.reconciliationMap.size;
+        totalMappings += plateMappings.size; // <-- Count from the correct map
       });
 
       if (totalConflicts > 0) {
@@ -353,29 +323,24 @@ export class TemplatePanel {
         ui.tooltip.bind(conflictBadge, `${totalConflicts} unresolved template fields across all plates`);
         badges.appendChild(conflictBadge);
       }
-
       if (totalMappings > 0) {
         const mappingBadge = ui.span([`${totalMappings}`], 'ui-badge-blue');
         ui.tooltip.bind(mappingBadge, `${totalMappings} total template mappings applied across all plates`);
         badges.appendChild(mappingBadge);
       }
-
       if (badges.children.length > 0)
         manageMappingsButton.prepend(badges);
     }
 
-    // Changed header text to reflect template-only scope
     const header = ui.h2('Template Properties');
     const headerContainer = ui.divH(
       [header, ui.div([manageMappingsButton], {style: {marginLeft: 'auto'}})],
       'space-between-center'
     );
-
     this.wellPropsHeaderHost.appendChild(headerContainer);
   }
 
   destroy(): void {
     this.subscriptions.forEach((sub) => sub.unsubscribe());
-    // No need to destroy a mapping editor instance anymore
   }
 }

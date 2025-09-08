@@ -314,11 +314,12 @@ export class PlateGridManager {
     const plateSelectionHost = ui.divV([], 'plate-selection-host');
 
     options.allPlates.forEach((plateFile, idx) => {
-      const isCurrentlyMapped = [...options.sourceMappings.keys()].every(
-        (key) => plateFile.reconciliationMap.has(key)
-      );
+      // For now, we'll just default to selecting the active plate,
+      // since the old mapping indicators have been removed.
+      const isSelected = (idx === this.stateManager.currentState?.activePlateIdx);
+
       const cb = ui.input.bool(plateFile.plate.barcode ?? `Plate ${idx + 1}`, {
-        value: isCurrentlyMapped
+        value: isSelected
       });
       plateCheckboxes.push(cb);
       plateSelectionHost.appendChild(cb.root);

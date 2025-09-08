@@ -172,22 +172,35 @@ export function createPlatesView(): DG.View {
     const state = stateManager.currentState;
     const activePlate = stateManager.activePlate;
 
-    if (state && activePlate && activePlate.reconciliationMap.size > 0) {
-      plateGridManager.showMultiPlateMappingDialog({
-        allPlates: state.plates,
-        sourceMappings: activePlate.reconciliationMap,
-        onSync: (mappings, selectedIndexes) => {
-          stateManager.syncMappings(mappings, selectedIndexes);
-        },
-        onUndo: (mappedField) => {
-          if (state.activePlateIdx >= 0)
-            stateManager.undoMapping(state.activePlateIdx, mappedField);
-        },
-      });
+    if (state && activePlate) {
+    // 1. Create the mappings map from the plate's aliases (the new source of truth)
+      const currentMappings = new Map<string, string>();
+      for (const layer of activePlate.plate.getLayerNames()) {
+        const aliases = activePlate.plate.getAliases(layer);
+        for (const alias of aliases)
+          currentMappings.set(alias, layer);
+      }
+
+      // 2. Check if there are any mappings to sync
+      if (currentMappings.size > 0) {
+        plateGridManager.showMultiPlateMappingDialog({
+          allPlates: state.plates,
+          sourceMappings: currentMappings, // 3. Pass the new map
+          onSync: (mappings, selectedIndexes) => {
+            stateManager.syncMappings(mappings, selectedIndexes);
+          },
+          onUndo: (mappedField) => {
+            if (state.activePlateIdx >= 0)
+              stateManager.undoMapping(state.activePlateIdx, mappedField);
+          },
+        });
+      } else {
+        grok.shell.warning('Please define at least one mapping on the active plate first.');
+      }
     } else {
-      grok.shell.warning('Please import a plate and define at least one mapping on the active plate first.');
+      grok.shell.warning('Please import a plate first.');
     }
-  };
+  }; ;
 
   const templatePanel = new TemplatePanel(
     stateManager,

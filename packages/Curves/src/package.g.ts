@@ -166,6 +166,13 @@ export async function importPlateCsv(fileContent: string, file: DG.FileInfo) {
   return PackageFunctions.importPlateCsv(fileContent, file);
 }
 
+//name: Layouts
+//description: A standalone view for designing plate layouts.
+//output: view result
+export function layouts() {
+  return PackageFunctions.layouts();
+}
+
 //name: Browse
 //tags: app
 //output: view result

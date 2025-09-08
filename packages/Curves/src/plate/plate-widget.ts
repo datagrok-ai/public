@@ -5,7 +5,7 @@ import {MARKER_TYPE, TYPE} from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {div} from 'datagrok-api/ui';
 import {mapFromRow, safeLog, toExcelPosition} from './utils';
-import {Plate, PLATE_OUTLIER_WELL_NAME} from './plate';
+import {LayerType, Plate, PLATE_OUTLIER_WELL_NAME} from './plate';
 //@ts-ignore
 import * as jStat from 'jstat';
 import {IPlateWellValidator, plateWellValidators} from './plate-well-validators';
@@ -163,10 +163,12 @@ export class PlateWidget extends DG.Widget {
         if (roleCol === null) {
           roleCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, 'Role', this.plate.data.rowCount);
           this.plate.data.columns.add(roleCol);
+
+          // NEW: Register the Role column as a LAYOUT layer
+          this.plate.registerLayer('Role', LayerType.LAYOUT, 'user-assignment');
         }
 
         const selectedIndexes = selection.getSelectedIndexes();
-
         for (const i of selectedIndexes)
           (roleCol as DG.Column<string>).set(i, selectedRoles.join(','));
 
@@ -176,6 +178,10 @@ export class PlateWidget extends DG.Widget {
 
         this.grid.invalidate();
         this.updateRoleSummary();
+
+        // NEW: Refresh tabs to show the new Role layer
+        this.refresh();
+
         selection.setAll(false, true);
         popup.remove();
         anchorDiv.remove();
@@ -379,24 +385,30 @@ export class PlateWidget extends DG.Widget {
 
   refresh() {
     this.tabs.clear();
+    this.grids.clear(); // Clear old grid references
     this.tabs.addPane('Summary', () => this.grid.root);
-    for (const layer of this.plate.getLayerNames()) {
-      this.tabs.addPane(layer, () => {
-        const df = this.plate.toGridDataFrame(layer);
-        const grid = DG.Viewer.heatMap(df);
-        grid.columns.add({gridColumnName: '0', cellType: 'string', index: 1});
-        df.onValuesChanged.pipe(debounceTime(1000)).subscribe(() => {
-          const p = this.plate;
-          for (let i = 0; i < df.rowCount; i++) {
-            for (let j = 0; j < df.columns.length - 1; j++)
-            p.data.col(layer)!.set(p._idx(i, j), df.get(`${j + 1}`, i));
-          }
-          this.wellValidationErrors = p.validateWells(this.wellValidators);
-        });
-        this.initPlateGrid(grid, false);
-        this.grids.set(layer, grid);
-        return grid.root;
-      });
+
+    const layerInfo = {
+      [LayerType.ORIGINAL]: {icon: '📦', layers: this.plate.getLayersByType(LayerType.ORIGINAL)},
+      [LayerType.LAYOUT]: {icon: '🗺️', layers: this.plate.getLayersByType(LayerType.LAYOUT)},
+      [LayerType.DERIVED]: {icon: '📊', layers: this.plate.getLayersByType(LayerType.DERIVED)},
+    };
+
+    const allRegisteredLayers = new Set<string>();
+
+    // Create tabs for all categorized layers
+    for (const type of [LayerType.ORIGINAL, LayerType.LAYOUT, LayerType.DERIVED]) {
+      for (const layerName of layerInfo[type].layers) {
+        allRegisteredLayers.add(layerName);
+        const paneName = `${layerInfo[type].icon} ${layerName}`;
+        this.tabs.addPane(paneName, () => this.createLayerGrid(layerName));
+      }
+    }
+
+    // Fallback for any layers that might not have been registered for some reason
+    for (const layerName of this.plate.getLayerNames()) {
+      if (!allRegisteredLayers.has(layerName))
+        this.tabs.addPane(`❔ ${layerName}`, () => this.createLayerGrid(layerName));
     }
 
     // Ensure the tabs container takes full width
@@ -407,31 +419,54 @@ export class PlateWidget extends DG.Widget {
     }
 
     ui.tools.waitForElementInDom(this.tabs.root).then(() => {
-      this.tabs.currentPane = this.tabs.getPane('Summary');
+      if (this.tabs.panes.length > 0)
+        this.tabs.currentPane = this.tabs.getPane('Summary');
     });
 
     this.syncGrids();
 
+
     const t = this.plate.data;
-    this._colorColumn = t.columns.firstWhere((col) => col.name == 'activity' && col.type == TYPE.FLOAT) ??
-          t.columns.firstWhere((col) => (col.name == 'concentration' || col.name == 'concentrations') && col.type == TYPE.FLOAT) ??
-          t.columns.firstWhere((col) => col.name != 'row' && col.name != 'col' && col.type == TYPE.FLOAT) ??
-          t.columns.firstWhere((col) => col.type == TYPE.FLOAT) ??
-          (t.columns.length > 0 ? t.columns.byIndex(0) : undefined);
+    this._colorColumn =
+  t.columns.firstWhere((c) => c.semType === 'Activity') ??
+  t.columns.firstWhere((c) => c.semType === 'Concentration') ??
+  t.columns.firstWhere((c) => c.name.toLowerCase() === 'activity') ??
+  t.columns.firstWhere((c) => c.name.toLowerCase().includes('concentration')) ??
+  t.columns.firstWhere((c) => c.type === DG.TYPE.FLOAT && !['row', 'col'].includes(c.name.toLowerCase()));
+
 
     this.grid.dataFrame = DG.DataFrame.create(this.plate.rows);
     this.grid.columns.clear();
     for (let i = 0; i <= this.plate.cols; i++)
       this.grid.columns.add({gridColumnName: i.toString(), cellType: 'string'});
 
-    // Ensure the grid takes full width
     if (this.grid && this.grid.root)
       this.grid.root.style.width = '100%';
-
 
     this.grid.invalidate();
   }
 
+  private createLayerGrid(layer: string): HTMLElement {
+    const df = this.plate.toGridDataFrame(layer);
+    const grid = DG.Viewer.heatMap(df);
+    grid.columns.add({gridColumnName: '0', cellType: 'string', index: 1});
+
+    df.onValuesChanged.pipe(debounceTime(1000)).subscribe(() => {
+      const p = this.plate;
+      for (let i = 0; i < df.rowCount; i++) {
+        for (let j = 0; j < df.columns.length - 1; j++) {
+          // Use getColumn to respect aliases, though here layer is the direct name
+          const plateCol = p.getColumn(layer);
+          if (plateCol)
+            plateCol.set(p._idx(i, j), df.get(`${j + 1}`, i));
+        }
+      }
+    });
+
+    this.initPlateGrid(grid, false);
+    this.grids.set(layer, grid);
+    return grid.root;
+  }
   renderCell(args:DG.GridCellRenderArgs, summary: boolean = false) {
     const gc = args.cell;
     args.g.fillStyle = 'grey';
@@ -505,4 +540,3 @@ export class PlateWidget extends DG.Widget {
     super.detach();
   }
 }
-

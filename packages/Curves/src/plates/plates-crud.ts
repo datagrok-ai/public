@@ -388,10 +388,10 @@ export async function savePlate(plate: Plate, options?: { autoCreateProperties?:
   plate.id = (await grok.data.db.query('Admin:Plates', plateSql)).get('id', 0);
 
   // register new plate level properties
-  for (const layer of Object.keys(plate.details)) {
+  for (const layer of Object.keys(plate.plate_metadata)) {
     const prop = findProp(plateProperties, layer);
     if (autoCreateProperties && !prop) {
-      const valueType = getValueType(plate.details[layer]);
+      const valueType = getValueType(plate.plate_metadata[layer]);
       plateProperties.push(await createProperty({name: layer, type: valueType}));
       grok.shell.info('Plate layer created: ' + layer);
     } else if (!prop) { throw new Error(`Property ${layer} not found in plateProperties`); }
@@ -422,12 +422,12 @@ export async function savePlateAsTemplate(plate: Plate, template: PlateTemplate)
 function getPlateInsertSql(plate: Plate): string {
   let sql = 'insert into plates.plate_wells(plate_id, row, col) values ' +
     plate.wells.map((pw) => `  (${plate.id}, ${pw.row}, ${pw.col})`).toArray().join(',\n') + ';';
-  for (const layer of Object.keys(plate.details)) {
+  for (const layer of Object.keys(plate.plate_metadata)) {
     const property = plateProperties.find((p) => p.name.toLowerCase() == layer.toLowerCase())!;
     const dbCol = plateDbColumn[property.type];
 
     sql += `\n insert into plates.plate_details(plate_id, property_id, ${dbCol}) values ` +
-      `(${plate.id}, ${property.id}, ${sqlStr(plate.details[layer])});`;
+      `(${plate.id}, ${property.id}, ${sqlStr(plate.plate_metadata[layer])});`;
   }
 
   // well data

@@ -1,8 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import * as ExcelJS from 'exceljs';
 import wu from 'wu';
-import {Plate} from "./plate";
-import {DataFrame} from "datagrok-api/dg";
+import {Plate} from './plate';
+import {DataFrame} from 'datagrok-api/dg';
 
 interface ExcelPlatePosition {
   sheet: ExcelJS.Worksheet;
@@ -32,18 +32,16 @@ export function findPlatePositions(workbook: ExcelJS.Workbook): ExcelPlatePositi
     });
 
     // Find numeric column headers (1, 2, 3, ...)
-    let headerRow = -1, startCol = -1, numColumns = 0;
+    let headerRow = -1; let startCol = -1; let numColumns = 0;
     for (let i = 1; i < grid.length; i++) {
       const row = grid[i] || [];
-      let numSequence = 0, seqStart = -1;
+      let numSequence = 0; let seqStart = -1;
 
       for (let j = 1; j < row.length; j++) {
         if (typeof row[j] === 'number' && Number.isInteger(row[j]) && row[j] === numSequence + 1) {
           if (numSequence === 0) seqStart = j;
           numSequence++;
-        }
-        else if (numSequence > 0)
-          break;
+        } else if (numSequence > 0) { break; }
       }
 
       if (numSequence >= 12) { // Minimum 12 columns
@@ -55,10 +53,10 @@ export function findPlatePositions(workbook: ExcelJS.Workbook): ExcelPlatePositi
     }
 
     // Find alphabetic row headers (A, B, C, ...)
-    let headerCol = -1, startRow = -1, numRows = 0;
+    let headerCol = -1; let startRow = -1; let numRows = 0;
     if (headerRow !== -1) {
       for (let j = 1; j < startCol; j++) {
-        let letterSequence = 0, seqStart = -1;
+        let letterSequence = 0; let seqStart = -1;
 
         for (let i = headerRow + 1; i < grid.length; i++) {
           if (!grid[i]) continue;
@@ -70,11 +68,8 @@ export function findPlatePositions(workbook: ExcelJS.Workbook): ExcelPlatePositi
             if (val?.toLowerCase() === expected?.toLowerCase()) {
               if (letterSequence === 0) seqStart = i;
               letterSequence++;
-            }
-            else break;
-          }
-          else if (letterSequence > 0)
-            break;
+            } else { break; }
+          } else if (letterSequence > 0) { break; }
         }
 
         if (letterSequence >= 8) { // Minimum 8 rows
@@ -105,7 +100,7 @@ export function findPlatePositions(workbook: ExcelJS.Workbook): ExcelPlatePositi
 export function getPlateFromSheet(p: ExcelPlatePosition): Plate {
   const df = DataFrame.create(p.rows);
   for (let col = p.startCol + 1; col <= p.startCol + p.cols; col++) {
-    const strings = DG.range(p.rows).map(i => p.sheet.getCell(p.startRow + i + 1, col).toString()).toArray();
+    const strings = DG.range(p.rows).map((i) => p.sheet.getCell(p.startRow + i + 1, col).toString()).toArray();
     df.columns.add(DG.Column.fromStrings(`${col - p.startCol + 1}`, strings));
   }
   return Plate.fromGridDataFrame(df, p.sheet.name);

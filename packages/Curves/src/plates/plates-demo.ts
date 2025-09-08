@@ -1,9 +1,10 @@
-import { PlateProperty, plateTypes, savePlate } from "./plates-crud";
-import { initPlates } from "./plates-crud";
+/* eslint-disable max-len */
+import {PlateProperty, plateTypes, savePlate} from './plates-crud';
+import {initPlates} from './plates-crud';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import { createPlateTemplate, createNewPlateForTemplate } from "./plates-crud";
-import { Plate } from '../plate/plate';
+import {createPlateTemplate, createNewPlateForTemplate} from './plates-crud';
+import {Plate} from '../plate/plate';
 
 
 export async function __createDummyPlateData() {
@@ -55,18 +56,18 @@ async function createDummyPlates() {
 
   const getDemoValue = (property: PlateProperty) =>
     property.choices ? DG.Utils.random(property.choices) :
-    property.type === DG.COLUMN_TYPE.BOOL ? Math.random() > 0.5 :
-    property.min !== undefined && property.max !== undefined ?
-      property.type === DG.COLUMN_TYPE.INT ?
-        Math.floor(property.min + Math.random() * (property.max - property.min)) :
-        property.min + Math.random() * (property.max - property.min) :
-    null;
+      property.type === DG.COLUMN_TYPE.BOOL ? Math.random() > 0.5 :
+        property.min !== undefined && property.max !== undefined ?
+          property.type === DG.COLUMN_TYPE.INT ?
+            Math.floor(property.min + Math.random() * (property.max - property.min)) :
+            property.min + Math.random() * (property.max - property.min) :
+          null;
 
   for (const template of [cellCountingTemplate, doseResponseTemplate]) {
     for (let i = 0; i < 20; i++) {
       const plate = await createNewPlateForTemplate(plateTypes[0], template);
-      plate.details = Object.fromEntries(
-        template.plateProperties.map(p => [p.name!, getDemoValue(p as PlateProperty)])
+      plate.plate_metadata = Object.fromEntries(
+        template.plateProperties.map((p) => [p.name!, getDemoValue(p as PlateProperty)])
       );
 
       // Initialize well properties
@@ -87,9 +88,9 @@ async function createDummyPlatesFromExcel() {
   const excelPlateTemplate = await createPlateTemplate({
     name: 'Excel',
     description: 'Excel plates',
-    plateProperties: [ {name: 'Barcode', type: DG.COLUMN_TYPE.STRING } ],
+    plateProperties: [{name: 'Barcode', type: DG.COLUMN_TYPE.STRING}],
     wellProperties: [
-      {name: 'raw data', type: DG.COLUMN_TYPE.FLOAT },
+      {name: 'raw data', type: DG.COLUMN_TYPE.FLOAT},
       {name: 'plate layout', type: DG.COLUMN_TYPE.STRING},
       {name: 'concentrations', min: 0, max: 100, type: DG.COLUMN_TYPE.FLOAT}
     ]
@@ -101,7 +102,7 @@ async function createDummyPlatesFromExcel() {
   for (const file of xlsxFiles) {
     const plate = await Plate.fromExcelFile(file);
     plate.plateTemplateId = excelPlateTemplate.id;
-    plate.details = { Barcode: (Math.round(Math.random() * 100000)).toString().padStart(8, '0') };
+    plate.plate_metadata = {Barcode: (Math.round(Math.random() * 100000)).toString().padStart(8, '0')};
     await savePlate(plate, {autoCreateProperties: false});
   }
 }
