@@ -17,6 +17,7 @@ import './components/plate-analysis-panel/plate-analysis-panel.css';
 import {PlateGridManager} from './components/plate-grid-manager/plate-grid-manager';
 // ADD THIS IMPORT
 import {PlateDoseRatioAnalysis} from '../../plate/dose-ratio-analysis';
+import {MAPPING_SCOPES} from './shared/scopes';
 
 export function createPlatesView(): DG.View {
   const view = DG.View.create();
@@ -69,15 +70,15 @@ export function createPlatesView(): DG.View {
 
       // Get current mappings for this analysis (for now, just use empty map until you implement the state manager methods)
       // Get current mappings for this analysis (for now, just use empty map)
-      const currentMappings = stateManager.getAnalysisMapping(activeIndex, 'drc');
+      const currentMappings = stateManager.getScopedMapping(activeIndex, MAPPING_SCOPES.DRC);
 
 
       const handleMap = (target: string, source: string) => {
-        stateManager.remapAnalysisProperty(activeIndex, 'drc', target, source);
+        stateManager.remapScopedProperty(activeIndex, MAPPING_SCOPES.DRC, target, source);
       };
 
       const handleUndo = (target: string) => {
-        stateManager.undoAnalysisMapping(activeIndex, 'drc', target);
+        stateManager.undoScopedMapping(activeIndex, MAPPING_SCOPES.DRC, target);
       };
 
       return PlateDrcAnalysis.createAnalysisViewWithMapping(
@@ -104,17 +105,14 @@ export function createPlatesView(): DG.View {
         return createAnalysisSkeleton('Dose Ratio', ['Agonist_Concentration_M', 'Antagonist_Concentration_M', 'Percent_Inhibition']);
 
 
-      // Get current mappings for this analysis (for now, just use empty map)
-      const currentMappings = stateManager.getAnalysisMapping(activeIndex, 'doseRatio');
-
+      const currentMappings = stateManager.getScopedMapping(activeIndex, MAPPING_SCOPES.DOSE_RATIO);
 
       const handleMap = (target: string, source: string) => {
-        stateManager.remapAnalysisProperty(activeIndex, 'doseRatio', target, source);
+        stateManager.remapScopedProperty(activeIndex, MAPPING_SCOPES.DOSE_RATIO, target, source);
       };
 
       const handleUndo = (target: string) => {
-      // For now, just use the regular mapping
-        stateManager.undoMapping(activeIndex, target);
+        stateManager.undoScopedMapping(activeIndex, MAPPING_SCOPES.DOSE_RATIO, target);
       };
 
       return PlateDoseRatioAnalysis.createAnalysisView(
@@ -168,44 +166,44 @@ export function createPlatesView(): DG.View {
 
   const plateGridManager = new PlateGridManager(stateManager);
 
-  const handleManageMappings = () => {
-    const state = stateManager.currentState;
-    const activePlate = stateManager.activePlate;
+  // const handleManageMappings = () => {
+  //   const state = stateManager.currentState;
+  //   const activePlate = stateManager.activePlate;
 
-    if (state && activePlate) {
-    // 1. Create the mappings map from the plate's aliases (the new source of truth)
-      const currentMappings = new Map<string, string>();
-      for (const layer of activePlate.plate.getLayerNames()) {
-        const aliases = activePlate.plate.getAliases(layer);
-        for (const alias of aliases)
-          currentMappings.set(alias, layer);
-      }
+  //   if (state && activePlate) {
+  //   // 1. Create the mappings map from the plate's aliases (the new source of truth)
+  //     const currentMappings = new Map<string, string>();
+  //     for (const layer of activePlate.plate.getLayerNames()) {
+  //       const aliases = activePlate.plate.getAliases(layer);
+  //       for (const alias of aliases)
+  //         currentMappings.set(alias, layer);
+  //     }
 
-      // 2. Check if there are any mappings to sync
-      if (currentMappings.size > 0) {
-        plateGridManager.showMultiPlateMappingDialog({
-          allPlates: state.plates,
-          sourceMappings: currentMappings, // 3. Pass the new map
-          onSync: (mappings, selectedIndexes) => {
-            stateManager.syncMappings(mappings, selectedIndexes);
-          },
-          onUndo: (mappedField) => {
-            if (state.activePlateIdx >= 0)
-              stateManager.undoMapping(state.activePlateIdx, mappedField);
-          },
-        });
-      } else {
-        grok.shell.warning('Please define at least one mapping on the active plate first.');
-      }
-    } else {
-      grok.shell.warning('Please import a plate first.');
-    }
-  }; ;
+  //     // 2. Check if there are any mappings to sync
+  //     if (currentMappings.size > 0) {
+  //       plateGridManager.showMultiPlateMappingDialog({
+  //         allPlates: state.plates,
+  //         sourceMappings: currentMappings, // 3. Pass the new map
+  //         onSync: (mappings, selectedIndexes) => {
+  //           stateManager.syncMappings(mappings, selectedIndexes);
+  //         },
+  //         onUndo: (mappedField) => {
+  //           if (state.activePlateIdx >= 0)
+  //             stateManager.undoMapping(state.activePlateIdx, mappedField);
+  //         },
+  //       });
+  //     } else {
+  //       grok.shell.warning('Please define at least one mapping on the active plate first.');
+  //     }
+  //   } else {
+  //     grok.shell.warning('Please import a plate first.');
+  //   }
+  // }; ;
 
   const templatePanel = new TemplatePanel(
     stateManager,
     plateWidget,
-    () => handleManageMappings()
+    () => { console.warn('[DEBUG] TemplatePanel is not implemented'); }
   );
 
   stateManager.onStateChange.subscribe(async (event) => {

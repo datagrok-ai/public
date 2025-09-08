@@ -6,6 +6,7 @@ import {PlateFile, TemplateState, PlateStateChangeEvent} from './types';
 import {createNewPlateForTemplate, PlateTemplate, PlateType} from '../../plates-crud';
 import {parsePlates} from '../../../plate/csv-plates';
 import {Plate} from '../../../plate/plate';
+import {MAPPING_SCOPES} from './scopes';
 
 export class PlateStateManager {
   private templateStates = new Map<number, TemplateState>();
@@ -27,19 +28,7 @@ export class PlateStateManager {
     this._currentPlateType = initialPlateType;
   }
 
-  public setMappings(plateIndex: number, newMappings: Map<string, string>): void {
-    const state = this.currentState;
-    if (!state || !state.plates[plateIndex]) return;
 
-    const plateFile = state.plates[plateIndex];
-    // plateFile.reconciliationMap = new Map(newMappings);
-
-    this.stateChange$.next({
-      type: 'mapping-changed',
-      plateIndex,
-      plate: plateFile,
-    });
-  }
   // public setAnalysisMapping(plateIndex: number, analysisType: 'drc' | 'doseRatio', mappings: Map<string, string>): void {
   //   const state = this.currentState;
   //   if (!state || !state.plates[plateIndex]) return;
@@ -56,54 +45,6 @@ export class PlateStateManager {
   // }
 
   // Add to PlateStateManager
-  public getAnalysisMapping(plateIndex: number, analysisType: 'drc' | 'doseRatio'): Map<string, string> {
-    const state = this.currentState;
-    if (!state || !state.plates[plateIndex]) return new Map();
-
-    const plate = state.plates[plateIndex].plate;
-    const currentMappings = new Map<string, string>();
-
-    // The plate itself is the source of truth.
-    for (const layer of plate.getLayerNames()) {
-      const aliases = plate.getAliases(layer);
-      for (const alias of aliases)
-        currentMappings.set(alias, layer);
-    }
-    return currentMappings;
-  }
-
-
-  public remapAnalysisProperty(plateIndex: number, analysisType: 'drc' | 'doseRatio', target: string, source: string): void {
-    const state = this.currentState;
-    if (!state || !state.plates[plateIndex]) return;
-    const plateFile = state.plates[plateIndex];
-
-    plateFile.plate.addAlias(source, target);
-
-    this.stateChange$.next({
-      type: 'analysis-mapping-changed',
-      plateIndex,
-      analysisType, // Pass the analysisType so the specific view can update
-      plate: plateFile,
-    });
-  }
-
-
-  public undoAnalysisMapping(plateIndex: number, analysisType: 'drc' | 'doseRatio', targetProperty: string): void {
-    const state = this.currentState;
-    if (!state || !state.plates[plateIndex]) return;
-
-    const plateFile = state.plates[plateIndex];
-    plateFile.plate.removeAlias(targetProperty);
-    grok.shell.info(`Reverted mapping for '${targetProperty}' in ${analysisType} analysis`);
-
-    this.stateChange$.next({
-      type: 'analysis-mapping-changed',
-      plateIndex,
-      analysisType,
-      plate: plateFile,
-    });
-  }
 
 
   get onStateChange(): Observable<PlateStateChangeEvent> {
@@ -229,15 +170,9 @@ export class PlateStateManager {
 
       for (const prop of templateOnlyProps) {
         if (sourceCols.has(prop))
-          plate.addAlias(prop, prop);
+          plate.addScopedAlias(MAPPING_SCOPES.TEMPLATE, prop, prop);
       }
 
-      // Auto-alias common analysis fields on load
-      const commonAnalysisFields = ['Activity', 'Concentration', 'SampleID', 'Agonist_Concentration_M', 'Antagonist_Concentration_M', 'Percent_Inhibition'];
-      for (const field of commonAnalysisFields) {
-        if (sourceCols.has(field))
-          plate.addAlias(field, field);
-      }
 
       currentState.plates.push({
         plate: plate,
@@ -292,53 +227,41 @@ export class PlateStateManager {
     });
   }
 
-  public remapProperty(plateIndex: number, targetProperty: string, newSourceColumn: string): void {
+  public remapScopedProperty(plateIndex: number, scope: string, target: string, source: string): void {
     const state = this.currentState;
     if (!state || !state.plates[plateIndex]) return;
+
     const plateFile = state.plates[plateIndex];
+    plateFile.plate.addScopedAlias(scope, source, target);
 
-    plateFile.plate.addAlias(newSourceColumn, targetProperty);
-
-    grok.shell.info(`Mapped '${targetProperty}' to column '${newSourceColumn}'`);
     this.stateChange$.next({
-      type: 'mapping-changed',
+      type: scope === MAPPING_SCOPES.TEMPLATE ? 'mapping-changed' : 'analysis-mapping-changed',
       plateIndex,
+      analysisType: scope as any,
       plate: plateFile,
     });
   }
 
-  undoMapping(plateIndex: number, targetProperty: string): void {
+  public undoScopedMapping(plateIndex: number, scope: string, targetProperty: string): void {
     const state = this.currentState;
     if (!state || !state.plates[plateIndex]) return;
-    const plateFile = state.plates[plateIndex];
 
-    plateFile.plate.removeAlias(targetProperty);
-    grok.shell.info(`Reverted mapping for '${targetProperty}'`);
+    const plateFile = state.plates[plateIndex];
+    plateFile.plate.removeScopedAlias(scope, targetProperty);
+
     this.stateChange$.next({
-      type: 'mapping-changed',
+      type: scope === MAPPING_SCOPES.TEMPLATE ? 'mapping-changed' : 'analysis-mapping-changed',
       plateIndex,
+      analysisType: scope as any,
       plate: plateFile,
     });
   }
 
-  syncMappings(sourceMappings: Map<string, string>, selectedIndexes: number[]): void {
+  public getScopedMapping(plateIndex: number, scope: string): Map<string, string> {
     const state = this.currentState;
-    if (!state) return;
-    const selectedSet = new Set(selectedIndexes);
-    let modified = 0;
-    state.plates.forEach((plateFile, index) => {
-      if (selectedSet.has(index)) {
-        for (const [targetProperty, sourceColumn] of sourceMappings.entries())
-          plateFile.plate.addAlias(sourceColumn, targetProperty);
+    if (!state || !state.plates[plateIndex]) return new Map();
 
-        modified++;
-      }
-    });
-
-    if (modified > 0) {
-      grok.shell.info(`Synchronized mappings for ${modified} plate(s)`);
-      this.stateChange$.next({type: 'mapping-changed'});
-    }
+    return state.plates[plateIndex].plate.getScopedAliases(scope);
   }
 
   async getOrCreateDefaultPlate(): Promise<Plate> {

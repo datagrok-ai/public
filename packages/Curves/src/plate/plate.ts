@@ -59,7 +59,7 @@ export interface LayerMetadata {
   type: LayerType;
   source?: string;
   createdAt: Date;
-  aliases: Map<string, string>;
+  // aliases: Map<string, string>;
 }
 
 export const PLATE_OUTLIER_WELL_NAME = 'Outlier';
@@ -81,6 +81,8 @@ export class Plate {
   cols: number = 12;
 
   private layerRegistry: Map<string, LayerMetadata> = new Map();
+  private scopedAliases: Map<string, Map<string, string>> = new Map(); // scope -> (alias -> originalColumnName)
+
 
   private changeLog: Array<{
     timestamp: Date;
@@ -145,15 +147,55 @@ export class Plate {
    * Get a column by its name or any of its aliases
    */
   getColumn(nameOrAlias: string): DG.Column | null {
-    // First check direct column name
+  // First check direct column name
     if (this.data.columns.contains(nameOrAlias))
       return this.data.col(nameOrAlias);
 
+    // Then search all scopes for this alias
+    for (const scopeMap of this.scopedAliases.values()) {
+      if (scopeMap.has(nameOrAlias))
+        return this.data.col(scopeMap.get(nameOrAlias)!);
+    }
 
-    // Then check if this is an alias for any column
-    for (const [colName, metadata] of this.layerRegistry) {
-      if (metadata.aliases.has(nameOrAlias))
-        return this.data.col(colName);
+    return null;
+  }
+  addScopedAlias(scope: string, originalColumnName: string, alias: string): void {
+    if (!this.data.columns.contains(originalColumnName))
+      throw new Error(`Column ${originalColumnName} does not exist`);
+
+    if (!this.scopedAliases.has(scope))
+      this.scopedAliases.set(scope, new Map());
+
+    // Remove this alias from any other column in this scope first
+    this.removeScopedAlias(scope, alias);
+
+  this.scopedAliases.get(scope)!.set(alias, originalColumnName);
+  this.logChange('scoped-alias-added', {originalColumnName, scope, alias});
+  }
+
+  removeScopedAlias(scope: string, alias: string): void {
+    const scopeMap = this.scopedAliases.get(scope);
+    if (scopeMap && scopeMap.has(alias)) {
+      const originalColumnName = scopeMap.get(alias)!;
+      scopeMap.delete(alias);
+      this.logChange('scoped-alias-removed', {originalColumnName, scope, alias});
+    }
+  }
+
+  getScopedAliases(scope: string): Map<string, string> {
+    return this.scopedAliases.get(scope) || new Map();
+  }
+
+  getScopedColumn(scope: string, nameOrAlias: string): DG.Column | null {
+  // First try direct column name
+    if (this.data.columns.contains(nameOrAlias))
+      return this.data.col(nameOrAlias);
+
+    // Then check scoped alias
+    const scopeMap = this.scopedAliases.get(scope);
+    if (scopeMap && scopeMap.has(nameOrAlias)) {
+      const originalColumnName = scopeMap.get(nameOrAlias)!;
+      return this.data.col(originalColumnName);
     }
 
     return null;
@@ -172,50 +214,12 @@ export class Plate {
         type,
         source: source || 'unknown',
         createdAt: new Date(),
-        aliases: new Map()
       });
 
       this.logChange('layer-registered', {columnName, type, source});
     }
   }
 
-  /**
-   * Add an alias for a column without renaming it
-   */
-  addAlias(columnName: string, alias: string): void {
-    if (!this.data.columns.contains(columnName))
-      throw new Error(`Column ${columnName} does not exist`);
-
-
-    // Remove this alias from any other column first
-    for (const metadata of this.layerRegistry.values())
-      metadata.aliases.delete(alias);
-
-
-    // Ensure the column is registered
-    if (!this.layerRegistry.has(columnName))
-      this.registerLayer(columnName, LayerType.ORIGINAL);
-
-
-    // Add the alias
-    this.layerRegistry.get(columnName)!.aliases.set(alias, columnName);
-    this.logChange('alias-added', {columnName, alias});
-  }
-
-  removeAlias(alias: string): void {
-    for (const [colName, metadata] of this.layerRegistry) {
-      if (metadata.aliases.has(alias)) {
-        metadata.aliases.delete(alias);
-        this.logChange('alias-removed', {columnName: colName, alias});
-        return;
-      }
-    }
-  }
-
-  getAliases(columnName: string): string[] {
-    const metadata = this.layerRegistry.get(columnName);
-    return metadata ? Array.from(metadata.aliases.keys()) : [];
-  }
 
   getLayerType(columnName: string): LayerType | undefined {
     return this.layerRegistry.get(columnName)?.type;

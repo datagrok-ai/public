@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
@@ -7,6 +8,7 @@ import {PlateTemplate, plateTemplates, plateTypes} from '../../../plates-crud';
 import {PlateWidget} from '../../../../plate/plate-widget';
 import {renderMappingEditor, TargetProperty} from '../mapping-editor/mapping-editor';
 import {renderValidationResults} from '../../plates-validation-panel';
+import {MAPPING_SCOPES} from '../../shared/scopes';
 
 function createFormRow(label: string, input: DG.InputBase<any>): HTMLElement {
   const labelEl = ui.divText(label, 'ui-label');
@@ -227,23 +229,23 @@ export class TemplatePanel {
       const handleMapping = (targetProperty: string, sourceColumn: string) => {
         const currentState = this.stateManager.currentState;
         if (currentState)
-          this.stateManager.remapProperty(currentState.activePlateIdx, targetProperty, sourceColumn);
+          this.stateManager.remapScopedProperty(currentState.activePlateIdx, MAPPING_SCOPES.TEMPLATE, targetProperty, sourceColumn);
       };
+
       const handleUndo = (targetProperty: string) => {
         const currentState = this.stateManager.currentState;
         if (currentState)
-          this.stateManager.undoMapping(currentState.activePlateIdx, targetProperty);
+          this.stateManager.undoScopedMapping(currentState.activePlateIdx, MAPPING_SCOPES.TEMPLATE, targetProperty);
       };
       const sourceColumns = activePlate.plate.data.columns.names();
 
-      // **FIX START**: Construct the mappings map from the plate's aliases
-      const currentMappings = new Map<string, string>();
-      for (const layer of activePlate.plate.getLayerNames()) {
-        const aliases = activePlate.plate.getAliases(layer);
-        for (const alias of aliases)
-          currentMappings.set(alias, layer);
-      }
-      // **FIX END**
+      const currentMappings = activePlate.plate.getScopedAliases(MAPPING_SCOPES.TEMPLATE);
+      // const currentMappings = new Map<string, string>();
+      // for (const layer of activePlate.plate.getLayerNames()) {
+      //   const aliases = activePlate.plate.getAliases(layer);
+      //   for (const alias of aliases)
+      //     currentMappings.set(alias, layer);
+      // }
 
       const MOCKED_REQUIRED_TEMPLATE_FIELDS = ['Target', 'Assay Format'];
       const templateProps: TargetProperty[] = template.wellProperties
