@@ -177,3 +177,16 @@
   width: 100%;
   height: 100%;
 }
+
+.moltrack-saved-searches-icons-div {
+  gap: 10px;
+  padding-left: 12px;
+  padding-bottom: 6px;
+}
+
+.moltrack-serch-history-item {
+    max-width: 1000px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}

@@ -60,7 +60,9 @@ export const EXCLUDE_SEARCH_FIELDS = ['id', 'molregno', 'batch_regno', 'original
 export const EXCLUDE_SEARCH_OUTPUT_FIELDS = ['id', 'molregno', 'batch_regno', 'hash_mol', 'hash_tautomer', 'uuid',
   'hash_canonical_smiles', 'hash_no_stereo_smiles', 'hash_no_stereo_tautomer'];
 
-export const STRUCTURE_FIELDS = ['canonical_smiles', 'original_molfile'];
+export const MOL_COL_NAME = 'canonical_smiles';
+export const CORPORATE_COMPOUND_ID_COL_NAME = 'corporate_compound_id';
+export const STRUCTURE_FIELDS = [MOL_COL_NAME, 'original_molfile'];
 export const STRUCTURE_SEARCH_FIELD = 'structure';
 
 export const STRING_AGGREGATIONS = ['CONCAT ALL', 'CONCAT UNIQUE', 'LONGEST', 'SHORTEST', 'MOST FREQUENT'];

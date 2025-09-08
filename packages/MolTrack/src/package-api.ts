@@ -104,11 +104,19 @@ export namespace funcs {
     return await grok.functions.call('MolTrack:SearchTest', { operator });
   }
 
+  export async function search(query: string , entityEndpoint: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('MolTrack:Search', { query, entityEndpoint });
+  }
+
   export async function retrieveEntity(scope: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('MolTrack:RetrieveEntity', { scope });
   }
 
-  export async function getMoltrackPropPanel(mol: string ): Promise<any> {
-    return await grok.functions.call('MolTrack:GetMoltrackPropPanel', { mol });
+  export async function getMoltrackPropPanelByStructure(mol: string ): Promise<any> {
+    return await grok.functions.call('MolTrack:GetMoltrackPropPanelByStructure', { mol });
+  }
+
+  export async function getMoltrackPropPanelById(id: string ): Promise<any> {
+    return await grok.functions.call('MolTrack:GetMoltrackPropPanelById', { id });
   }
 }

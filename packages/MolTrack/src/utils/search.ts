@@ -20,6 +20,8 @@ import {
   MolTrackEntityType,
   molTrackSearchMapping,
   MolTrackSearchAggregation,
+  MolTrackSearch,
+  MolTrackSearchHistoryItem,
 } from './types';
 import {
   EXCLUDE_SEARCH_FIELDS,
@@ -34,6 +36,8 @@ import {
   MOLTRACK_ENTITY_LEVEL,
   MOLTRACK_IS_STATIC_FIELD,
   PROP_NUM_TYPES,
+  MOL_COL_NAME,
+  CORPORATE_COMPOUND_ID_COL_NAME,
 } from './constants';
 import { funcs } from '../package-api';
 import dayjs, { Dayjs } from 'dayjs';
@@ -45,12 +49,134 @@ export type MolTrackSearchFields = {
   dynamic?: DG.Property[],
 }
 
+const FIRST_COL_NAMES = [
+  `${Scope.COMPOUNDS}.${MOL_COL_NAME}`,
+  `${Scope.COMPOUNDS}.details.${CORPORATE_COMPOUND_ID_COL_NAME}`];
+export const SAVED_SEARCH_STORAGE = 'MolTrackSavedSearch';
+
 export let molTrackSearchFieldsArr: DG.Property[] | null = null;
 let openedSearchView: DG.TableView | null = null;
 
-export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope) {
+export function getSavedSearches(entityLevel: Scope): {[key: string]: string} {
+  const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, entityLevel) || '{}';
+  const savedSearches: { [key: string]: string } = JSON.parse(savedSearchesStr);
+  return savedSearches;
+}
+
+async function saveSearch(entityLevel: Scope, savedSearch: MolTrackSearch) {
+  const savedSearches: { [key: string]: string } = getSavedSearches(entityLevel);
+
+  // Generate default name
+  let defaultName = 'new search';
+  let counter = 1;
+  while (savedSearches[defaultName]) {
+    defaultName = `new search (${counter})`;
+    counter++;
+  }
+
+  const nameInput = ui.input.string('Search Name', { value: defaultName });
+  const dialog = ui.dialog('Save Search Query')
+    .add(nameInput)
+    .onOK(async () => {
+      const searchName = nameInput.value;
+      if (!searchName.trim()) {
+        grok.shell.error('Search name cannot be empty');
+        return;
+      }
+
+      // Save the current query condition
+      savedSearches[searchName] = JSON.stringify(savedSearch);
+      grok.userSettings.add(SAVED_SEARCH_STORAGE, entityLevel, JSON.stringify(savedSearches));
+      grok.shell.info(`Search query "${searchName}" saved successfully`);
+    });
+
+  dialog.show();
+}
+
+function openSavedSearch(entityLevel: Scope, queryBuilder: QueryBuilder, outputsFieldsInput: DG.InputBase,
+  aggrContainer: HTMLElement, menuFieldsForAggr: DG.Property[], aggregations: MolTrackSearchAggregation[],
+  validationErrorSubj: Subject<string>): void {
+  const savedSearches: { [key: string]: string } = getSavedSearches(entityLevel);
+  const searchNames = Object.keys(savedSearches);
+  if (searchNames.length === 0) {
+    grok.shell.info('No saved searches found for this view');
+    return;
+  }
+
+  const searchNamesDf = DG.DataFrame.fromColumns([DG.Column.fromList('string', 'name', searchNames)]);
+
+  // Create typeahead input with saved search names
+  const searchInput = ui.typeAhead('Search name', {
+    source: {
+      local: searchNames.map((name) => ({ label: name, value: name })),
+    },
+    minLength: 0,
+    limit: 10,
+    highlight: true,
+    debounceRemote: 100,
+    preventSubmit: true,
+  });
+
+  searchInput.onChanged.subscribe(() => {
+    searchNamesDf.rows.filter((row) => (row.name as string).includes(searchInput.value));
+  });
+
+  const dialog = ui.dialog('Open saved search')
+    .add(ui.divV([searchInput, searchNamesDf.plot.grid().root]))
+    .onOK(async () => {
+      if (searchNamesDf.currentRowIdx === -1) {
+        grok.shell.error('Select saved search in the grid');
+        return;
+      }
+      const selectedSearchName = searchNamesDf.get('name', searchNamesDf.currentRowIdx);
+      // Load the saved query condition into the query builder
+      try {
+        const savedSearch: MolTrackSearch = JSON.parse(savedSearches[selectedSearchName]);
+        loadSearchQuery(savedSearch, queryBuilder, outputsFieldsInput, aggrContainer, menuFieldsForAggr,
+          aggregations, validationErrorSubj);
+      } catch (e) {
+        grok.shell.error('Failed to load saved search query');
+      }
+    });
+
+  dialog.show();
+}
+
+export function loadSearchQuery(savedSearch: MolTrackSearch, queryBuilder: QueryBuilder,
+  outputsFieldsInput: DG.InputBase, aggrContainer: HTMLElement, menuFieldsForAggr: DG.Property[],
+  aggregations: MolTrackSearchAggregation[],
+  validationErrorSubj: Subject<string>) {
+  queryBuilder.loadCondition(savedSearch.condition);
+  outputsFieldsInput.value = savedSearch.outputCols
+    .map((it) => DG.Column.fromType((it.type as string === 'uuid' ? 'string' : it.type) as any, it.name));
+  ui.empty(aggrContainer);
+  aggregations = [];
+  savedSearch.aggregations?.forEach((aggr) => {
+    const aggregationRow = createAggregationRow(aggrContainer, menuFieldsForAggr, aggregations,
+      validationErrorSubj, aggr);
+    aggrContainer.append(aggregationRow);
+  });
+}
+
+export function saveSearchHistory(key: string, value: string) {
+  let collection: MolTrackSearchHistoryItem[] = getSearchHistory(key);
+  const newItem = { date: new Date(), value: value };
+  if (!collection.length)
+    localStorage.setItem(key, JSON.stringify([newItem]));
+  else {
+    collection = collection.filter((it) => it.value !== value);
+    localStorage.setItem(key, JSON.stringify([newItem, ...collection.slice(0, 9)]));
+  }
+}
+
+export function getSearchHistory(key: string): MolTrackSearchHistoryItem[] {
+  const stringItems = localStorage.getItem(key);
+  return JSON.parse(!stringItems ? '[]' : stringItems);
+}
+
+export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope, initialQuery?: MolTrackSearch) {
   const filtersDiv = ui.div([]);
-  let queryBuilder: QueryBuilder | null = null;
+  let queryBuilder: QueryBuilder | undefined = undefined;
 
   const updateQueryBuilderLayout = (width: number) => {
     if (!queryBuilder) return;
@@ -67,7 +193,7 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope) {
   });
 
   const initializeQueryBuilder = async (entityLevel: Scope) => {
-    const validationErrorSubj = new Subject<boolean>();
+    const validationErrorSubj = new Subject<string>();
     tv.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
     ui.setUpdateIndicator(filtersDiv, true, 'Loading filters...');
     try {
@@ -88,8 +214,8 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope) {
       const entityType = filterFields[0].options[MOLTRACK_ENTITY_TYPE];
       const endpoint = filterFields[0].options[MOLTRACK_ENDPOINT];
 
-      queryBuilder = new QueryBuilder(filterFields, undefined, QueryBuilderLayout.Narrow,
-        `${_package.name}|${entityLevel}`);
+      queryBuilder = new QueryBuilder(filterFields, undefined, QueryBuilderLayout.Narrow);
+      queryBuilder.validationError.subscribe((error) => runSearchButton.disabled = error);
       const df = DG.DataFrame.create();
       const outputFields = filterFields
         .filter((it) => !EXCLUDE_SEARCH_OUTPUT_FIELDS.includes(it.name) && it.name !== STRUCTURE_SEARCH_FIELD);
@@ -111,7 +237,9 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope) {
       });
       outputFieldsInput.root.style.paddingLeft = '12px';
 
-      validationErrorSubj.subscribe((val: boolean) => runSearchButton.disabled = val);
+      validationErrorSubj.subscribe((val: string) => {
+        runSearchButton.disabled = val !== '';
+      });
 
       const menuFieldsForAggr = molTrackSearchFieldsArr
         .filter((it) => it.type === 'string' || PROP_NUM_TYPES.includes(it.type) &&
@@ -133,14 +261,67 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope) {
       aggregationsDiv.append(aggregationsHeader);
       aggregationsDiv.append(aggregationsContainer);
 
-      const runSearchButton = ui.bigButton('Search', async () => {
-        await runSearch(tv, outputFieldsInput.value!, aggregations, entityLevel, queryBuilder!, entityType, endpoint);
+      const runSearchButton = ui.button('Search', async () => {
+        if (queryBuilder) {
+          const search: MolTrackSearch = {
+            condition: queryBuilder?.condition,
+            outputCols: outputFieldsInput.value!.map((col) => {return {name: col.name, type: col.type};}),
+            aggregations: aggregations,
+          };
+          await runSearch(tv, search, entityLevel, entityType, endpoint);
+        }
       });
+
+
+      //save search icon
+      const saveSearchIcon = ui.icons.save(() => {
+        if (queryBuilder) {
+          const savedSearch: MolTrackSearch = {
+            condition: queryBuilder?.condition,
+            outputCols: outputFieldsInput.value!.map((col) => {return {name: col.name, type: col.type};}),
+            aggregations: aggregations,
+          };
+          saveSearch(entityLevel, savedSearch);
+        }
+      }, 'Save current search query');
+
+
+      //load search icon
+      const openSearchIcon = ui.iconFA('folder-open', () => {
+        if (queryBuilder) {
+          openSavedSearch(entityLevel, queryBuilder, outputFieldsInput, aggregationsContainer,
+            menuFieldsForAggr, aggregations, validationErrorSubj);
+        };
+      }, 'Load saved search query');
+
+      //search history icon
+      const historyIcon = ui.iconFA('history', () => {
+        const items: MolTrackSearchHistoryItem[] = getSearchHistory(`${_package.name}|${entityLevel}`);
+        const menu = DG.Menu.popup();
+        menu.items(items.map((it) => ui.tools.click(
+          ui.divH([
+            ui.divText(it.date.toString(), {style: {color: '#7990A5'}}),
+            ui.divText(molTrackSerachToString(JSON.parse(it.value) as MolTrackSearch, queryBuilder),
+              'moltrack-serch-history-item'),
+          ], {style: {gap: '5px'}}),
+          () => {
+            loadSearchQuery(JSON.parse(it.value), queryBuilder!, outputFieldsInput, aggregationsContainer,
+              menuFieldsForAggr, aggregations, validationErrorSubj);
+          })), () => {});
+        menu.show();
+      }, 'Query History');
+
+      filtersDiv.append(ui.divH([historyIcon, saveSearchIcon, openSearchIcon], 'moltrack-saved-searches-icons-div'));
       filtersDiv.append(queryBuilder.root);
       filtersDiv.append(outputFieldsInput.root);
       filtersDiv.append(aggregationsDiv);
       filtersDiv.append(ui.div(runSearchButton, { style: { paddingLeft: '4px', paddingTop: '10px' } }));
       createFiltersIcon(tv, filtersDiv);
+      if (initialQuery) {
+        loadSearchQuery(initialQuery, queryBuilder, outputFieldsInput, aggregationsContainer, menuFieldsForAggr,
+          aggregations, validationErrorSubj);
+        await runSearch(tv, initialQuery, entityLevel, entityType, endpoint);
+      }
     } catch (e: any) {
       grok.shell.error(`Error loading filters: ${e?.message ?? e}`);
     } finally {
@@ -151,20 +332,58 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope) {
   initializeQueryBuilder(entityLevel);
 }
 
-export async function runSearch(tv: DG.TableView, outputFieldsList: DG.Column[],
-  aggregations: MolTrackSearchAggregation[], entityLevel: Scope,
-  queryBuilder: QueryBuilder, entityType: MolTrackEntityType, endpoint: string) {
+export function molTrackSerachToString(search: MolTrackSearch, queryBuilder?: QueryBuilder): string {
+  if (!queryBuilder)
+    return '';
+  const parts: string[] = [];
+
+  // Add condition string
+  if (search.condition) {
+    const conditionStr = queryBuilder.conditionToString(search.condition);
+    if (conditionStr && conditionStr !== 'No conditions')
+      parts.push(`Conditions: ${conditionStr}`);
+  }
+
+  // Add output columns
+  if (search.outputCols && search.outputCols.length > 0) {
+    const outputFields = search.outputCols.map((col) => col.name).join(', ');
+    parts.push(`Output: ${outputFields}`);
+  }
+
+  // Add aggregations
+  if (search.aggregations && search.aggregations.length > 0) {
+    const aggrStrings = search.aggregations.map((aggr) => `${aggr.operation}(${aggr.field})`);
+    parts.push(`Aggregations: ${aggrStrings.join(', ')}`);
+  }
+
+  return parts.length > 0 ? parts.join(' | ') : 'Empty search';
+}
+
+export async function runSearch(tv: DG.TableView, search: MolTrackSearch, entityLevel: Scope,
+  entityType: MolTrackEntityType, endpoint: string) {
   try {
     ui.setUpdateIndicator(tv.grid.root, true, 'Searching...');
-    if (!outputFieldsList.length)
+    if (!search.outputCols.length)
       throw new Error(`At least one input field should be selected`);
-    const outputFields = outputFieldsList!
+    const outputFields = search.outputCols!
       .map((it) => `${entityLevel}.${isDynamicField(it.name, entityType) ? 'details.' : ''}${it.name}`);
-    const molTrackQuery = convertQueryBuilderConditionToMolTrackQuery(queryBuilder!.condition,
-      entityLevel, outputFields, aggregations, entityType);
-    queryBuilder?.saveConditionToHistory();
-    const result = await MolTrackDockerService.search(molTrackQuery, endpoint);
+    const molTrackQuery = convertQueryBuilderConditionToMolTrackQuery(search!.condition,
+      entityLevel, outputFields, search.aggregations ?? [], entityType);
+    const result = await grok.functions.call('MolTrack:search', {
+      query: JSON.stringify(molTrackQuery),
+      entityEndpoint: endpoint,
+    }); ;
     const resultDf = DG.DataFrame.fromObjects(result.data);
+    if (resultDf) {
+      resultDf?.columns.names().forEach((colName: string) => {
+        const friendlyName =
+          resultDf.col(colName)!.name.replace(`${entityLevel.toLowerCase()}.`, '').replace(`details.`, '');
+        resultDf.col(colName)!.setTag('friendlyName', friendlyName);
+      });
+      reorderSearchResColummns(resultDf);
+      //save history in case of successful search
+      saveSearchHistory(`${_package.name}|${entityLevel}`, JSON.stringify(search));
+    }
     tv.dataFrame = resultDf ?? DG.DataFrame.create();
   } catch (e: any) {
     grok.shell.error(e?.message ?? e);
@@ -376,45 +595,56 @@ function convertDateToString(date: Dayjs) {
 }
 
 function createAggregationRow(container: HTMLElement, menuFieldsForAggr: DG.Property[],
-  aggregations: MolTrackSearchAggregation[], validationErrorSubj: Subject<boolean>): HTMLElement {
+  aggregations: MolTrackSearchAggregation[], validationErrorSubj: Subject<string>,
+  defaultAggr?: MolTrackSearchAggregation): HTMLElement {
   const row = ui.divH([], 'moltrack-search-aggr-row');
 
-  const newAggr: MolTrackSearchAggregation = {field: '', operation: ''};
+  const newAggr: MolTrackSearchAggregation = defaultAggr ?? {field: '', operation: ''};
   aggregations.push(newAggr);
 
-  const fieldValidationError = (errorMessage: string) => {
-    validationErrorSubj.next(true);
+  const sendValidationError = (errorMessage: string) => {
+    validationErrorSubj.next(errorMessage);
     fieldTooltip = errorMessage;
     newAggr.field = '';
     Array.from(fieldInput.root.children).forEach((it) => it.classList.add('moltrack-invalid-aggr-field'));
   };
 
+  const getFieldType = (): DG.TYPE | null => {
+    const error = `Field ${fieldInput.value} not found. Click to select from list of available fields`;
+    const splittedName = fieldInput.value.split('.');
+    if (splittedName.length < 2) {
+      sendValidationError(error);
+      return null;
+    }
+    const prop = menuFieldsForAggr
+      .filter((it) => it.options[MOLTRACK_ENTITY_LEVEL] === splittedName[0] &&
+        it.name === (splittedName.length > 2 && splittedName[1] === 'details' ? splittedName[2] : splittedName[1]));
+    if (!prop.length) {
+      sendValidationError(error);
+      return null;
+    }
+    newAggr.field = `${splittedName[0]}.${isDynamicField(prop[0].name,
+      prop[0].options[MOLTRACK_ENTITY_TYPE]) ? 'details.' : ''}${splittedName[1]}`;
+    const fieldType = prop[0].type;
+    return fieldType;
+  };
+
+  const changeFieldValue = () => {
+    const fieldType = getFieldType();
+    updateAggregationOptions(aggregationInputDiv, fieldType, newAggr);
+    Array.from(fieldInput.root.children).forEach((it) => it.classList.remove('moltrack-invalid-aggr-field'));
+    //check if aggregations list contains invalid rows
+    const containInvalidRows = aggregations.filter((it) => it.field === '').length > 0 ? 'Invalid aggregations' : '';
+    validationErrorSubj.next(containInvalidRows);
+  };
+
   const nonErrorTooltip = 'Click the field to see options';
   let fieldTooltip = nonErrorTooltip;
   const fieldInput = ui.input.string('', {
-    value: '',
+    value: defaultAggr?.field ?? '',
     nullable: false,
     onValueChanged: () => {
-      const error = `Field ${fieldInput.value} not found. Click to select from list of available fields`;
-      const splittedName = fieldInput.value.split('.');
-      if (splittedName.length < 2) {
-        fieldValidationError(error);
-        return;
-      }
-      const prop = menuFieldsForAggr
-        .filter((it) => it.options[MOLTRACK_ENTITY_LEVEL] === splittedName[0] && it.name === splittedName[1]);
-      if (!prop.length) {
-        fieldValidationError(error);
-        return;
-      }
-      newAggr.field = `${splittedName[0]}.${isDynamicField(prop[0].name,
-        prop[0].options[MOLTRACK_ENTITY_TYPE]) ? 'details.' : ''}${splittedName[1]}`;
-      const fieldType = prop[0].type;
-      updateAggregationOptions(aggregationInputDiv, fieldType, newAggr);
-      Array.from(fieldInput.root.children).forEach((it) => it.classList.remove('moltrack-invalid-aggr-field'));
-      const containInvalidRows = aggregations.filter((it) => it.field === '').length > 0;
-      validationErrorSubj.next(containInvalidRows);
-      fieldTooltip = nonErrorTooltip;
+      changeFieldValue();
     },
   });
   fieldInput.classList.add('moltrack-search-aggr-field');
@@ -427,7 +657,7 @@ function createAggregationRow(container: HTMLElement, menuFieldsForAggr: DG.Prop
     if (idx !== -1)
       aggregations.splice(idx, 1);
     container.removeChild(row);
-    const containInvalidRows = aggregations.filter((it) => it.field === '').length > 0;
+    const containInvalidRows = aggregations.filter((it) => it.field === '').length > 0 ? 'Invalid aggregations' : '';
     validationErrorSubj.next(containInvalidRows);
   });
 
@@ -448,17 +678,22 @@ function createAggregationRow(container: HTMLElement, menuFieldsForAggr: DG.Prop
   row.append(removeButton);
 
   //when added a new row, field input is empty, so disable SEARCH button
-  validationErrorSubj.next(true);
+  if (!fieldInput.validate())
+    validationErrorSubj.next(`Invalid aggregation field: ${fieldInput.value}`);
+
+  if (defaultAggr)
+    changeFieldValue();
 
   return row;
 }
 
-function updateAggregationOptions(aggregationInputDiv: any, fieldType: any, aggr: MolTrackSearchAggregation) {
+function updateAggregationOptions(aggregationInputDiv: any, fieldType: any, aggr: MolTrackSearchAggregation,
+  defaultVal?: string) {
   const options = PROP_NUM_TYPES.includes(fieldType) ? NUMERIC_AGGREGATIONS : STRING_AGGREGATIONS;
   ui.empty(aggregationInputDiv);
   aggr.operation = options[0];
   const input = ui.input.choice('', {
-    value: options[0],
+    value: defaultVal ?? options[0],
     items: options,
     nullable: false,
     onValueChanged: () => {
@@ -469,32 +704,54 @@ function updateAggregationOptions(aggregationInputDiv: any, fieldType: any, aggr
 }
 
 
-export function createSearchNode(appNode:DG.TreeViewGroup, scope: string) {
+export function createSearchNode(appNode:DG.TreeViewGroup, scope: string, initialQuery?: MolTrackSearch) {
   const formattedScope = scope
     .toLowerCase()
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
   appNode.getOrCreateGroup('Search').item(formattedScope).onSelected.subscribe(async () => {
-    if (openedSearchView?.name === formattedScope && openedSearchView.dockNode.parent) {
-      grok.shell.v = openedSearchView;
-      return;
-    }
-    const df = DG.DataFrame.create();
-    openedSearchView?.close();
-    openedSearchView = grok.shell.addTablePreview(df);
-    openedSearchView.name = formattedScope;
-    ui.setUpdateIndicator(openedSearchView.root, true, `Loading ${formattedScope.toLowerCase()}...`);
+    createSearchView(formattedScope, scope, initialQuery);
+  });
+}
+
+export async function createSearchView(viewName: string, scope: string, initialQuery?: MolTrackSearch,
+  isSavedSearch?: boolean) {
+  if (openedSearchView?.name === viewName && openedSearchView.dockNode.parent) {
+    grok.shell.v = openedSearchView;
+    return;
+  }
+  const df = DG.DataFrame.create();
+  openedSearchView?.close();
+  openedSearchView = grok.shell.addTablePreview(df);
+  openedSearchView.name = viewName;
+  //if there is no initial search query - retrieve all data to initially show in the view
+  if (!initialQuery) {
+    ui.setUpdateIndicator(openedSearchView.root, true, `Loading ${viewName.toLowerCase()}...`);
     try {
       const data: DG.DataFrame = await grok.functions.call('MolTrack:retrieveEntity', { scope });
       openedSearchView.dataFrame = data;
-      openedSearchView.dataFrame.name = formattedScope;
-      createSearchPanel(openedSearchView!, scope as Scope);
+      openedSearchView.dataFrame.name = viewName;
     } finally {
       ui.setUpdateIndicator(openedSearchView.root, false);
     }
-  });
+  }
+  createSearchPanel(openedSearchView!, scope as Scope, initialQuery);
 }
+
+export async function reorderSearchResColummns(df: DG.DataFrame) {
+  const colNames = df.columns.names();
+  const newColOrder = [];
+  for (const colName of FIRST_COL_NAMES) {
+    const index = colNames.indexOf(colName);
+    if (index > -1) {
+      colNames.splice(index, 1);
+      newColOrder.push(colName);
+    }
+  }
+  df.columns.setOrder(newColOrder.concat(colNames));
+}
+
 
 //register operators for molecule semType, applicable for MolTrack
 ConditionRegistry.getInstance()

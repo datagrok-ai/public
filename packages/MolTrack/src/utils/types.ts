@@ -1,5 +1,7 @@
-import { Operators } from '@datagrok-libraries/utils/src/query-builder/query-builder';
+import { ComplexCondition, Operators } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { Scope } from './constants';
+import * as DG from 'datagrok-api/dg';
+
 /* eslint-disable no-unused-vars */
 
 // Enums for property classification and entity types
@@ -65,12 +67,23 @@ export interface MolTrackSearchQuery {
   aggregations?: MolTrackSearchAggregation[];
 }
 
+export interface MolTrackSearch {
+  outputCols: {name: string, type: string}[];
+  condition: ComplexCondition;
+  aggregations?: MolTrackSearchAggregation[];
+}
+
 export interface MolTrackSearchResponse {
     status: string,
     data: Record<string, any>[],
     total_count: number,
     level: string,
     columns: string[],
+}
+
+export type MolTrackSearchHistoryItem = {
+    date: DG.TYPE.DATE_TIME,
+    value: string,
 }
 
 export const molTrackSearchMapping = {

@@ -8,7 +8,7 @@ import { RegistrationView } from './utils/registration-tab';
 import { createPath, registerAllData, registerAssayData, updateAllMolTrackSchemas } from './utils/utils';
 import { EntityBaseView } from './utils/registration-entity-base';
 import { Scope } from './utils/constants';
-import { createSearchNode } from './utils/search';
+import { createSearchNode, createSearchView, getSavedSearches } from './utils/search';
 
 export const _package = new DG.Package();
 
@@ -218,9 +218,24 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
 
   const excludedScopes = [Scope.ASSAY_RUNS, Scope.ASSAY_RESULTS];
 
+  //search section
   Object.values(Scope)
     .filter((scope) => !excludedScopes.includes(scope))
     .forEach((scope) => createSearchNode(appNode, scope));
+
+  //saved searches section
+  const savedSearchesNode = appNode.getOrCreateGroup('Saved Searches');
+  Object.values(Scope)
+    .filter((scope) => !excludedScopes.includes(scope))
+    .forEach((scope) => {
+      const entityGroup = savedSearchesNode.getOrCreateGroup(`${scope.charAt(0).toUpperCase()}${scope.slice(1)}`);
+      const savedSearches = getSavedSearches(scope);
+      Object.keys(savedSearches).forEach((savedSearch) => {
+        const savedSearchNode = entityGroup.item(savedSearch);
+        savedSearchNode.onSelected
+          .subscribe(() => createSearchView(savedSearch, scope, JSON.parse(savedSearches[savedSearch])));
+      });
+    });
 }
 
 //name: checkMolTrackHealth
@@ -317,6 +332,15 @@ export async function searchTest(operator: string) {
     'output_format': 'json',
   };
   return await MolTrackDockerService.search(query, 'compounds');
+}
+
+//name: search
+//input: string query
+//input: string entityEndpoint
+//output: dataframe df
+export async function search(query: string, entityEndpoint: string) {
+  await MolTrackDockerService.init();
+  return await MolTrackDockerService.search(JSON.parse(query), entityEndpoint);
 }
 
 //name: retrieveEntity
