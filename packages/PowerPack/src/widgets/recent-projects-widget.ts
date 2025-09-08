@@ -16,27 +16,27 @@ export class RecentProjectsWidget extends DG.Widget {
   }
 
   async getProjects(){
-    const projects = await grok.dapi.projects.recent.list({pageSize: 5});
-    let projectList = ui.divV([]);
-
-    if (projects.length > 0)
-      projectList.appendChild(ui.divV(projects.map((p) => getProjectCard(p) ), {style:{overflowX:'scroll'}}));
-    else {
-      this.caption = 'Demo projects';
-      grok.dapi.projects
-        .filter('#demo')
-        .list({pageSize: 5})
-        .then((projects) => projectList.appendChild(ui.divV(projects.map((p) => getDemoProjectCard(p) ), {style:{overflowX:'scroll'}})));
-    }
-
-    if (projects.length < 20) {
-      const dropZone = div([
-        ui.link('Open a file', () => grok.shell.openFileOpenDialog()),
-        ui.span([', or drop it here'])
-      ], {classes: 'pp-drop-zone'});
-      projectList.appendChild(dropZone);
-    }
-
+    const projectList = ui.wait(async () => {
+      const listDiv = ui.divV([]);
+      const projects = await grok.dapi.projects.recent.list({pageSize: 5});
+      if (projects.length > 0)
+        listDiv.appendChild(ui.divV(projects.map((p) => getProjectCard(p) ), {style:{overflowX:'scroll'}}));
+      else {
+        this.caption = 'Demo projects';
+        grok.dapi.projects
+          .filter('#demo')
+          .list({pageSize: 5})
+          .then((projects) => listDiv.appendChild(ui.divV(projects.map((p) => getDemoProjectCard(p)), {style: {overflowX: 'scroll'}})));
+      }
+      if (projects.length < 20) {
+        const dropZone = div([
+          ui.link('Open a file', () => grok.shell.openFileOpenDialog()),
+          ui.span([', or drop it here'])
+        ], {classes: 'pp-drop-zone'});
+        listDiv.appendChild(dropZone);
+      }
+      return listDiv;
+    });
     this.root.appendChild(projectList);
   }
 }
