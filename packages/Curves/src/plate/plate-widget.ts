@@ -179,7 +179,6 @@ export class PlateWidget extends DG.Widget {
         this.grid.invalidate();
         this.updateRoleSummary();
 
-        // NEW: Refresh tabs to show the new Role layer
         this.refresh();
 
         selection.setAll(false, true);
@@ -383,24 +382,33 @@ export class PlateWidget extends DG.Widget {
     this.refresh();
   }
 
+  private getDisplayName(layerName: string, layerType: LayerType): string {
+  // Special handling for outlier layer to show user-friendly name
+    if (layerType === LayerType.OUTLIER && layerName === PLATE_OUTLIER_WELL_NAME)
+      return 'Outliers';
+
+    return layerName;
+  }
+
   refresh() {
     this.tabs.clear();
     this.grids.clear(); // Clear old grid references
     this.tabs.addPane('Summary', () => this.grid.root);
 
-    const layerInfo = {
-      [LayerType.ORIGINAL]: {icon: '📦', layers: this.plate.getLayersByType(LayerType.ORIGINAL)},
-      [LayerType.LAYOUT]: {icon: '🗺️', layers: this.plate.getLayersByType(LayerType.LAYOUT)},
-      [LayerType.DERIVED]: {icon: '📊', layers: this.plate.getLayersByType(LayerType.DERIVED)},
+    const layerInfo: Record<LayerType, {icon: string, layers: string[]}> = {
+      [LayerType.ORIGINAL]: {icon: '', layers: this.plate.getLayersByType(LayerType.ORIGINAL)},
+      [LayerType.LAYOUT]: {icon: '️(Layout)', layers: this.plate.getLayersByType(LayerType.LAYOUT)},
+      [LayerType.DERIVED]: {icon: '(Derived)', layers: this.plate.getLayersByType(LayerType.DERIVED)},
+      [LayerType.OUTLIER]: {icon: '🚫', layers: this.plate.getLayersByType(LayerType.OUTLIER)}, // NEW: Add outlier layer support
     };
 
     const allRegisteredLayers = new Set<string>();
 
     // Create tabs for all categorized layers
-    for (const type of [LayerType.ORIGINAL, LayerType.LAYOUT, LayerType.DERIVED]) {
+    for (const type of [LayerType.ORIGINAL, LayerType.LAYOUT, LayerType.DERIVED, LayerType.OUTLIER]) { // NEW: Include OUTLIER in iteration
       for (const layerName of layerInfo[type].layers) {
         allRegisteredLayers.add(layerName);
-        const paneName = `${layerInfo[type].icon} ${layerName}`;
+        const paneName = `${layerInfo[type].icon} ${this.getDisplayName(layerName, type)}`; // NEW: Use display name helper
         this.tabs.addPane(paneName, () => this.createLayerGrid(layerName));
       }
     }
@@ -424,7 +432,6 @@ export class PlateWidget extends DG.Widget {
     });
 
     this.syncGrids();
-
 
     const t = this.plate.data;
     this._colorColumn =
@@ -451,22 +458,62 @@ export class PlateWidget extends DG.Widget {
     const grid = DG.Viewer.heatMap(df);
     grid.columns.add({gridColumnName: '0', cellType: 'string', index: 1});
 
+    // NEW: Special handling for outlier layer
+    const layerType = this.plate.getLayerType(layer);
+    if (layerType === LayerType.OUTLIER) {
+    // Configure outlier-specific grid properties
+      this.configureOutlierGrid(grid, layer);
+    }
+
     df.onValuesChanged.pipe(debounceTime(1000)).subscribe(() => {
       const p = this.plate;
       for (let i = 0; i < df.rowCount; i++) {
         for (let j = 0; j < df.columns.length - 1; j++) {
-          // Use getColumn to respect aliases, though here layer is the direct name
+        // Use getColumn to respect aliases, though here layer is the direct name
           const plateCol = p.getColumn(layer);
           if (plateCol)
             plateCol.set(p._idx(i, j), df.get(`${j + 1}`, i));
         }
       }
+
+      // NEW: For outlier layer, trigger grid invalidation to update red crosses in summary
+      if (layerType === LayerType.OUTLIER)
+        this.grid.invalidate();
     });
 
     this.initPlateGrid(grid, false);
     this.grids.set(layer, grid);
     return grid.root;
   }
+  private configureOutlierGrid(grid: DG.Grid, layerName: string): void {
+  // Make outlier grid cells render as checkboxes or boolean indicators
+  // This could be enhanced later, for now use default boolean rendering
+
+    // Add custom cell renderer for outlier layer if needed
+    grid.onCellRender.subscribe((args) => {
+      if (args.cell.gridColumn.idx > 0 && args.cell.gridRow >= 0) {
+        const dataRow = this.plate._idx(args.cell.gridRow, args.cell.gridColumn.idx - 1);
+        const outlierCol = this.plate.data.col(layerName);
+
+        if (outlierCol && outlierCol.get(dataRow)) {
+        // Draw a clear indication that this well is marked as outlier
+          const g = args.g;
+          const bounds = args.bounds;
+          g.fillStyle = 'rgba(255, 0, 0, 0.3)'; // Light red background
+          g.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+
+          // Draw text indicator
+          g.fillStyle = 'red';
+          g.font = '12px Arial';
+          g.textAlign = 'center';
+          g.textBaseline = 'middle';
+          g.fillText('OUT', bounds.midX, bounds.midY);
+        }
+      }
+    });
+  }
+
+
   renderCell(args:DG.GridCellRenderArgs, summary: boolean = false) {
     const gc = args.cell;
     args.g.fillStyle = 'grey';

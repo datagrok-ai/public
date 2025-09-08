@@ -11,7 +11,7 @@ import {FitConstants} from '../fit/const';
 import {FitCellOutlierToggleArgs, setOutlier} from '../fit/fit-renderer';
 import {savePlate} from '../plates/plates-crud';
 import {AnalysisMappingPanel} from '../plates/views/components/analysis-mapping/analysis-mapping-panel';
-import { BaseAnalysisView } from './base-analysis-view';
+import {BaseAnalysisView} from './base-analysis-view';
 
 
 function _getOptionsForExcel(plate: Plate, defaultOptions: AnalysisOptions): AnalysisOptions {
@@ -123,8 +123,10 @@ export class PlateDrcAnalysis {
         const statTable = ui.tableFromMap(plateStatMap);
         pw.plateDetailsDiv!.appendChild(statTable);
 
+        //         if (actOptions.autoFilterOutliers)
+        //           plate.markOutliersWhere(actOptions.normalizedColName!, (v) => v > 106 || v < -6, drFilterOptions);
         if (actOptions.autoFilterOutliers)
-          plate.markOutliersWhere(actOptions.normalizedColName!, (v) => v > 106 || v < -6, drFilterOptions);
+          plate.markOutliersWhere(actOptions.normalizedColName!, (v) => v > 106 || v < -6, drFilterOptions, 'auto-qc');
       }
     }
 
@@ -206,11 +208,13 @@ export class PlateDrcAnalysis {
     let prevSelection: {seriesIndex: number, pointIndex: number, markerType: FitMarkerType, markerSize: number, markerColor: string, curvesGridCell?: DG.GridCell} | null = null;
 
     pw.mapFromRowFunc = (row) => mapFromRow(row, (rowIdx, checkBoxState) => {
-      plate._markOutlier(rowIdx, checkBoxState);
+      // NEW: Use source tracking for checkbox-originated outlier markings
+      plate._markOutlierWithSource(rowIdx, checkBoxState, 'user-checkbox');
       if (prevSelection && prevSelection.curvesGridCell)
         setOutlier(prevSelection.curvesGridCell, {x: 0, y: 0, outlier: !checkBoxState}, 0, prevSelection.pointIndex);
       pw.grid.invalidate();
     });
+
 
     function clearPreviousSelection() {
       try {
@@ -277,7 +281,8 @@ export class PlateDrcAnalysis {
         return;
       const point: IFitPoint = args.series.points[args.pointIdx];
       if (point.meta !== null) {
-        plate._markOutlier(point.meta, !!point.outlier);
+        // NEW: Use source tracking for DRC-originated outlier markings
+        plate._markOutlierWithSource(point.meta, !!point.outlier, 'drc-click');
         pw.grid.invalidate();
       }
     }));

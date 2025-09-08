@@ -29,24 +29,6 @@ export class PlateStateManager {
   }
 
 
-  // public setAnalysisMapping(plateIndex: number, analysisType: 'drc' | 'doseRatio', mappings: Map<string, string>): void {
-  //   const state = this.currentState;
-  //   if (!state || !state.plates[plateIndex]) return;
-
-  //   const plateFile = state.plates[plateIndex];
-  //   plateFile.analysisMappings[analysisType] = new Map(mappings);
-
-  //   this.stateChange$.next({
-  //     type: 'analysis-mapping-changed',
-  //     plateIndex,
-  //     analysisType,
-  //     plate: plateFile,
-  //   });
-  // }
-
-  // Add to PlateStateManager
-
-
   get onStateChange(): Observable<PlateStateChangeEvent> {
     return this.stateChange$.asObservable();
   }
@@ -73,50 +55,6 @@ export class PlateStateManager {
       return undefined;
     return state.plates[state.activePlateIdx];
   }
-
-  // public getActivePlateMappedData(): DG.DataFrame | null {
-  //   const activePlate = this.activePlate;
-  //   if (!activePlate || !activePlate.plate.data) return null;
-
-  //   const sourceDf = activePlate.plate.data;
-  //   const map = activePlate.reconciliationMap;
-
-  //   console.log('[DEBUG] Mapping plate data with reconciliation map:', map);
-
-  //   const newColumns: DG.Column[] = [];
-  //   const processedSources = new Set<string>();
-
-  //   map.forEach((sourceColName, targetColName) => {
-  //     const sourceCol = sourceDf.col(sourceColName);
-  //     if (sourceCol) {
-  //       const newCol = sourceCol.clone();
-  //       newCol.name = targetColName;
-  //       newColumns.push(newCol);
-  //       processedSources.add(sourceColName);
-  //       console.log(`[DEBUG] Mapped column: ${sourceColName} -> ${targetColName}`);
-  //     }
-  //   });
-
-  //   for (const sourceCol of sourceDf.columns) {
-  //     if (!processedSources.has(sourceCol.name)) {
-  //       const newCol = sourceCol.clone();
-  //       newColumns.push(newCol);
-  //       console.log(`[DEBUG] Added unmapped column: ${sourceCol.name}`);
-  //     }
-  //   }
-
-  //   if (newColumns.length === 0) {
-  //     console.log('[DEBUG] No columns to create mapped DataFrame');
-  //     return null;
-  //   }
-
-  //   const mappedDf = DG.DataFrame.fromColumns(newColumns);
-  //   mappedDf.name = sourceDf.name + '_mapped';
-
-  //   console.log('[DEBUG] Final mapped columns:', mappedDf.columns.names());
-
-  //   return mappedDf;
-  // }
 
   async setTemplate(template: PlateTemplate): Promise<void> {
     this._currentTemplate = template;

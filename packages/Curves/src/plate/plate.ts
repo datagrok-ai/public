@@ -52,8 +52,10 @@ interface ISeriesData {
 export enum LayerType {
   ORIGINAL = 'original',
   DERIVED = 'derived',
-  LAYOUT = 'layout'
+  LAYOUT = 'layout',
+  OUTLIER = 'outlier' // NEW: Add outlier layer type
 }
+
 
 export interface LayerMetadata {
   type: LayerType;
@@ -118,7 +120,62 @@ export class Plate {
 
   _markOutlier(row: number, flag: boolean = true) {
     const outlierCol = this.data.columns.getOrCreate(PLATE_OUTLIER_WELL_NAME, DG.TYPE.BOOL);
+
+    // NEW: Register the outlier column as an OUTLIER layer when first created
+    if (!this.layerRegistry.has(PLATE_OUTLIER_WELL_NAME)) {
+      this.registerLayer(PLATE_OUTLIER_WELL_NAME, LayerType.OUTLIER, 'user-interaction');
+
+      // NEW: Initialize source tracking using column tags - more "frisky" approach
+      outlierCol.setTag('outlier.sources', '{}'); // JSON string to store sources
+    }
+
     outlierCol.set(row, flag);
+
+    // NEW: Track the source of this outlier marking using tags
+    const source = 'user-interaction'; // Default for now
+    this._updateOutlierSource(outlierCol, row, flag, source);
+  }
+
+  markOutlierWithSource(row: number, col: number, flag: boolean = true, source: string = 'user-interaction') {
+    const dataRow = this._idx(row, col);
+    this._markOutlierWithSource(dataRow, flag, source);
+  }
+  _markOutlierWithSource(row: number, flag: boolean = true, source: string = 'user-interaction') {
+    const outlierCol = this.data.columns.getOrCreate(PLATE_OUTLIER_WELL_NAME, DG.TYPE.BOOL);
+
+    // Register the outlier column as an OUTLIER layer when first created
+    if (!this.layerRegistry.has(PLATE_OUTLIER_WELL_NAME)) {
+      this.registerLayer(PLATE_OUTLIER_WELL_NAME, LayerType.OUTLIER, 'user-interaction');
+      outlierCol.setTag('outlier.sources', '{}');
+    }
+
+    outlierCol.set(row, flag);
+    this._updateOutlierSource(outlierCol, row, flag, source);
+  }
+
+  // Helper method to manage source tracking via column tags
+  private _updateOutlierSource(outlierCol: DG.Column, row: number, flag: boolean, source: string) {
+    try {
+      const sourcesJson = outlierCol.getTag('outlier.sources') || '{}';
+      const sources: Record<number, string[]> = JSON.parse(sourcesJson);
+
+      if (!sources[row])
+        sources[row] = [];
+
+
+      if (flag && !sources[row].includes(source)) {
+        sources[row].push(source);
+      } else if (!flag) {
+      // Clear sources when unmarking outlier
+        sources[row] = [];
+      }
+
+      outlierCol.setTag('outlier.sources', JSON.stringify(sources));
+    } catch (e) {
+      console.warn('Failed to update outlier sources:', e);
+      // Fallback: just ensure the tag exists
+      outlierCol.setTag('outlier.sources', '{}');
+    }
   }
 
   markOutlier(row: number, col: number, flag: boolean = true) {
@@ -134,10 +191,10 @@ export class Plate {
     return this._isOutlier(this._idx(row, col));
   }
 
-  markOutliersWhere(field: string, valueFunc: (fieldValue: any) => boolean, filter?: IPlateWellFilter) {
+  markOutliersWhere(field: string, valueFunc: (fieldValue: any) => boolean, filter?: IPlateWellFilter, source: string = 'auto-filter') {
     this.values([field], filter).forEach((v) => {
       if (valueFunc(v[field]))
-        this._markOutlier(v.innerDfRow, true);
+        this._markOutlierWithSource(v.innerDfRow, true, source);
     });
   }
 
@@ -223,6 +280,32 @@ export class Plate {
 
   getLayerType(columnName: string): LayerType | undefined {
     return this.layerRegistry.get(columnName)?.type;
+  }
+  getOutlierSources(row: number, col: number): string[] {
+    const dataRow = this._idx(row, col);
+    const outlierCol = this.data.col(PLATE_OUTLIER_WELL_NAME);
+    if (!outlierCol) return [];
+
+    try {
+      const sourcesJson = outlierCol.getTag('outlier.sources') || '{}';
+      const sources: Record<number, string[]> = JSON.parse(sourcesJson);
+      return sources[dataRow] || [];
+    } catch (e) {
+      console.warn('Failed to parse outlier sources:', e);
+      return [];
+    }
+  }
+  getAllOutlierSources(): Record<number, string[]> {
+    const outlierCol = this.data.col(PLATE_OUTLIER_WELL_NAME);
+    if (!outlierCol) return {};
+
+    try {
+      const sourcesJson = outlierCol.getTag('outlier.sources') || '{}';
+      return JSON.parse(sourcesJson);
+    } catch (e) {
+      console.warn('Failed to parse outlier sources:', e);
+      return {};
+    }
   }
 
   getLayersByType(type: LayerType): string[] {

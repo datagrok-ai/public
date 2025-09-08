@@ -240,12 +240,6 @@ export class TemplatePanel {
       const sourceColumns = activePlate.plate.data.columns.names();
 
       const currentMappings = activePlate.plate.getScopedAliases(MAPPING_SCOPES.TEMPLATE);
-      // const currentMappings = new Map<string, string>();
-      // for (const layer of activePlate.plate.getLayerNames()) {
-      //   const aliases = activePlate.plate.getAliases(layer);
-      //   for (const alias of aliases)
-      //     currentMappings.set(alias, layer);
-      // }
 
       const MOCKED_REQUIRED_TEMPLATE_FIELDS = ['Target', 'Assay Format'];
       const templateProps: TargetProperty[] = template.wellProperties
@@ -258,7 +252,7 @@ export class TemplatePanel {
       renderMappingEditor(this.validationHost, {
         targetProperties: templateProps,
         sourceColumns: sourceColumns,
-        mappings: currentMappings, // <-- Use the newly created map
+        mappings: currentMappings,
         onMap: handleMapping,
         onUndo: handleUndo,
       });
@@ -298,7 +292,6 @@ export class TemplatePanel {
       let totalConflicts = 0;
       let totalMappings = 0;
 
-      // **FIX START**: We need to create the mappings map again here for validation checks
       state.plates.forEach((pf: any) => {
         const plateMappings = new Map<string, string>();
         for (const layer of pf.plate.getLayerNames()) {
@@ -306,18 +299,17 @@ export class TemplatePanel {
           for (const alias of aliases)
             plateMappings.set(alias, layer);
         }
-        // **FIX END**
 
         const validation = renderValidationResults(
           ui.div(),
           pf.plate,
           template,
           () => {},
-          plateMappings, // <-- Use the correct map
+          plateMappings,
           () => {}
         );
         totalConflicts += validation.conflictCount;
-        totalMappings += plateMappings.size; // <-- Count from the correct map
+        totalMappings += plateMappings.size;
       });
 
       if (totalConflicts > 0) {
