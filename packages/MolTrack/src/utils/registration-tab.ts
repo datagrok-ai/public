@@ -8,20 +8,27 @@ import { renderMappingEditor, TargetProperty } from '../components/mapping_edito
 import { MolTrackDockerService } from './moltrack-docker-service';
 import {UiUtils} from '@datagrok-libraries/compute-utils';
 import { fetchSchema } from '../package';
+import { Subscription } from 'rxjs';
 
 let openedView: DG.ViewBase | null = null;
 
 export class RegistrationView {
   view: DG.View;
+
   datasetInput: DG.InputBase | null = null;
   entityTypeInput: DG.InputBase | null = null;
   errorStrategyInput: DG.InputBase | null = null;
+  registerButton: HTMLButtonElement | null = null;
+
   mappingEditorDiv: HTMLDivElement = ui.div();
   uploadedPreviewDiv: HTMLDivElement;
-  uploadedDf: DG.DataFrame | null = null;
-  mappingDict: Record<string, string> = {};
   summaryDiv: HTMLDivElement = ui.div([]);
   rightPanel: HTMLDivElement | null = null;
+
+  uploadedDf: DG.DataFrame | null = null;
+  mappingDict: Record<string, string> = {};
+  hasErrors: boolean = false;
+  subs: Subscription[] = [];
 
   constructor() {
     this.view = DG.View.create();
@@ -32,6 +39,7 @@ export class RegistrationView {
     this.summaryDiv.style.marginTop = '50px';
     this.buildUI();
     this.addRibbonButtons();
+    this.addSubs();
   }
 
   private async createInputs() {
@@ -59,12 +67,13 @@ export class RegistrationView {
 
     this.rightPanel = ui.divV([
       dragDropInput,
-      // this.uploadedPreviewDiv,
-    ], 'moltrack-right-panel');
+    ]);
 
     const container = ui.splitH([
-      leftPanel,
-      this.rightPanel,
+      ui.box(leftPanel, {style: {display: 'flex', flex: '1'}}),
+      ui.box(this.rightPanel, {style: {display: 'flex', flex: '2'}}),
+      // leftPanel,
+      // this.rightPanel,
     ], {}, true);
     container.classList.add('moltrack-container');
     this.view.root.append(container);
@@ -165,13 +174,36 @@ export class RegistrationView {
   }
 
   private addRibbonButtons() {
-    const registerButton = ui.bigButton('REGISTER', async () => await this.registerEntities());
+    this.registerButton = ui.bigButton('REGISTER', () => {});
+
+    this.registerButton!.addEventListener('click', async (e) => {
+      if (this.hasErrors) {
+        e.preventDefault();
+        e.stopPropagation();
+      } else
+        await this.registerEntities();
+    });
+
+    this.registerButton.onmouseenter = (e) => {
+      let tooltipMessage: string | null = null;
+
+      if (this.hasErrors) {
+        tooltipMessage = 'Form validation failed. Please check your input';
+        this.registerButton!.style.cursor = 'not-allowed';
+      } else
+        this.registerButton!.style.cursor = 'pointer';
+
+      if (tooltipMessage)
+        ui.tooltip.show(tooltipMessage, e.clientX + 15, e.clientY);
+    };
+
+    this.registerButton.onmouseleave = (e) => ui.tooltip.hide();
 
     const addToWorkspaceButton = ui.icons.add(() => {
       if (this.uploadedDf) grok.shell.addTablePreview(this.uploadedDf);
     }, 'Add uploaded dataset to workspace');
 
-    this.view.setRibbonPanels([[registerButton, addToWorkspaceButton]]);
+    this.view.setRibbonPanels([[this.registerButton, addToWorkspaceButton]]);
   }
 
   private createChoiceInput<T>(
@@ -263,7 +295,8 @@ export class RegistrationView {
     const mappings = new Map<string, string>();
     for (const [source, target] of Object.entries(autoMapping)) {
       const cleanTarget = target.replace(/^.*?_details\./, '');
-      mappings.set(source, cleanTarget);
+      const exists = targetProperties.some((tp: TargetProperty) => tp.name === cleanTarget);
+      if (exists) mappings.set(source, cleanTarget);
     }
 
     const handleMap = (target: string, source: string) => {
@@ -291,6 +324,13 @@ export class RegistrationView {
     },
     this.uploadedDf!,
     );
+  }
+
+  private addSubs() {
+    this.subs.push(grok.events.onCustomEvent('mappingValidationChanged').subscribe((args) => {
+      this.hasErrors = args.hasErrors;
+      this.registerButton?.classList.toggle('dim', this.hasErrors);
+    }));
   }
 
   show() {

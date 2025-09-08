@@ -1,5 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
+
 import '../components/mapping_editor.css';
 export interface TargetProperty {
   name: string;
@@ -71,9 +73,9 @@ export function renderMappingEditor(host: HTMLElement, options: MappingEditorOpt
   host.appendChild(tableHost);
 
   const header = ui.divH([
+    ui.divText('Status', {style: {fontWeight: 'bold'}}),
     ui.divText('Property', {style: {fontWeight: 'bold'}}),
     ui.divText('Source Column', {style: {fontWeight: 'bold'}}),
-    ui.divText('Status', {style: {fontWeight: 'bold'}}),
   ], 'mapping-editor-header');
   tableHost.appendChild(header);
 
@@ -109,7 +111,7 @@ export function renderMappingEditor(host: HTMLElement, options: MappingEditorOpt
         if (v) {
           onMap(prop.name, v);
           const issues = validateMapping(prop, v, df);
-          ui.empty(warningCell);
+          ui.empty(statusCell);
 
           if (issues.length > 0) {
             const mainIssue = issues.find((i) => i.severity === 'error') || issues[0];
@@ -119,24 +121,24 @@ export function renderMappingEditor(host: HTMLElement, options: MappingEditorOpt
 
             const icon = ui.iconFA(iconName, undefined, mainIssue.message);
             icon.style.color = iconColor;
-            warningCell.appendChild(icon);
+            statusCell.appendChild(icon);
           } else {
             const icon = ui.iconFA('check-circle', undefined, 'Valid mapping');
             icon.style.color = 'green';
-            warningCell.appendChild(icon);
+            statusCell.appendChild(icon);
           }
+
+          grok.events.fireCustomEvent('mappingValidationChanged', {hasErrors: hasMappingErrors(host)});
           // if issues.length === 0 → mapping is valid (success)
         } else if (mappedSource) onUndo(prop.name);
       },
     });
 
-    const loader = ui.iconFA('spinner'); // or 'circle-notch', 'sync'
-    loader.classList.add('fa-spin');
-    const warningCell = ui.divH([loader]);
+    const statusCell = ui.divH([]);
 
     choiceControl.fireChanged();
 
-    const row = ui.divH([propNameEl, choiceControl.root, warningCell], 'mapping-editor-row');
+    const row = ui.divH([statusCell, propNameEl, choiceControl.root], 'mapping-editor-row');
     tableHost.appendChild(row);
   });
 
@@ -205,4 +207,10 @@ function validateMapping(
     issues.push({ message: 'Contains empty values', severity: 'warning' });
 
   return issues;
+}
+
+function hasMappingErrors(tableHost: HTMLElement): boolean {
+  return Array.from(tableHost.querySelectorAll('.mapping-editor-row')).some((row) =>
+    row.querySelector('.fa-times-circle') !== null,
+  );
 }
