@@ -116,6 +116,26 @@ export class MolTrackDockerService {
     return response.json();
   }
 
+  static async getAutoMapping(columns: string[], entityType: string): Promise<any> {
+    const payload = {
+      entity_type: entityType,
+      columns: columns,
+    };
+
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy(
+      this.container.id,
+      `/v1/auto-map-columns`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      },
+    );
+
+    return response.json();
+  }
+
+
   static async checkCompoundExists(smiles: string): Promise<boolean> {
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(
       this.container.id,

@@ -14,6 +14,20 @@ export enum Scope {
   ASSAY_RESULTS = 'assay_results'
 }
 
+export const ErrorHandlingLabels: Record<string, ErrorHandling> = {
+  'Reject all': ErrorHandling.REJECT_ALL,
+  'Reject invalid': ErrorHandling.REJECT_ROW,
+};
+
+export const ScopeLabels: Record<string, Scope> = {
+  'Compounds': Scope.COMPOUNDS,
+  'Batches': Scope.BATCHES,
+  'Assays': Scope.ASSAYS,
+  'Assay Runs': Scope.ASSAY_RUNS,
+  'Assay Results': Scope.ASSAY_RESULTS,
+};
+
+
 export enum ResultOutput {
   CSV = 'csv',
   JSON = 'json'
