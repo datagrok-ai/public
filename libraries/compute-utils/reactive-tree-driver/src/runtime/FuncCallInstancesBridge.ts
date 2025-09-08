@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, of, combineLatest, Observable, defer, Subject, merge, EMPTY} from 'rxjs';
 import {switchMap, map, takeUntil, finalize, mapTo, skip, distinctUntilChanged, withLatestFrom, filter, catchError, tap} from 'rxjs/operators';
-import {IFuncCallAdapter, IRunnableWrapper, IStateStore} from './FuncCallAdapters';
+import {FuncCallAdapter, IFuncCallAdapter, IRunnableWrapper, IStateStore} from './FuncCallAdapters';
 import {RestrictionType, ValidationResult} from '../data/common-types';
 import {FuncCallIODescription} from '../config/config-processing-utils';
 
@@ -141,9 +141,14 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
       ...this.inputRestrictions$.value,
       [id]: restrictionPayload,
     });
+
     if (!this.isReadonly)
       currentInstance.setState(id, val, restrictionType);
     else
+      this.inputRestrictionsUpdates$.next([id, restrictionPayload] as const);
+
+    // equal values might not trigger updates with real FuncCalls
+    if (currentInstance instanceof FuncCallAdapter && currentInstance.getState(id) === assignedValue && !this.isReadonly)
       this.inputRestrictionsUpdates$.next([id, restrictionPayload] as const);
   }
 
