@@ -975,7 +975,7 @@ export namespace input {
   }
 
   export async function markdownPreview(markdown: string): Promise<HTMLDivElement> {
-    await Utils.loadJsCss(['js/common/quill/marked.min.js']);
+    await Utils.loadJsCss(['js/common/quill/marked.umd.js']);
     const markdownPreview = div([], { style: { padding: '12px' } });
     //@ts-ignore
     markdownPreview.innerHTML = marked.parse(markdown ?? '');
