@@ -61,4 +61,14 @@
     gap: 10px;
     justify-content: end;
     padding-right: 10px;
+    color: #2083d5;
+}
+
+.revvity-signals-starting-app .d4-update-shadow .ui-label {
+    display: none;
+}
+
+.revvity-signals-starting-app .d4-update-shadow .grok-loader {
+    width: 100px;
+    height: 30px;
 }

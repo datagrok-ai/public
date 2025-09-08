@@ -6,12 +6,13 @@ import {u2} from '@datagrok-libraries/utils/src/u2';
 import {HitDesignApp} from '../hit-design-app';
 import {_package} from '../../package';
 import $ from 'cash-dom';
-import {CampaignGroupingType, CampaignJsonName, HitDesignCampaignIdKey, i18n} from '../consts';
+import {CampaignGroupingType, CampaignJsonName, CampaignTableColumns, DefaultCampaignTableInfoGetters, HitDesignCampaignIdKey, i18n} from '../consts';
 import {HitDesignCampaign, HitDesignTemplate} from '../types';
 import {addBreadCrumbsToRibbons, checkEditPermissions,
-  checkViewPermissions, getGroupedCampaigns, getSavedCampaignsGrouping, modifyUrl, popRibbonPannels,
+  checkViewPermissions, getGroupedCampaigns, getSavedCampaignsGrouping, getSavedCampaignTableColumns, modifyUrl, popRibbonPannels,
   processGroupingTable,
-  setSavedCampaignsGrouping} from '../utils';
+  setSavedCampaignsGrouping,
+  setSavedCampaignTableColumns} from '../utils';
 import {newHitDesignCampaignAccordeon} from '../accordeons/new-hit-design-campaign-accordeon';
 import {newHitDesignTemplateAccordeon} from '../accordeons/new-hit-design-template-accordeon';
 import {HitBaseView} from '../base-view';
@@ -76,37 +77,79 @@ export class HitDesignInfoView
         } finally {
           ui.setUpdateIndicator(tableRoot, false);
         }
-      }
+      };
       // grouping via different campaign properties
-      const sortIcon = ui.iconFA('sort', () => {
+      const sortIcon = ui.iconFA('layer-group', () => {
         const menu = DG.Menu.popup();
         Object.values(CampaignGroupingType).forEach((i) => {
           menu.item(i, async () => {
             setSavedCampaignsGrouping(i as CampaignGroupingType);
             await refreshTable();
           });
-          menu.show({element: sortingHeader, x: 100, y: sortingHeader.offsetTop + 30});
+          menu.show({element: sortingHeader, x: 120, y: sortingHeader.offsetTop + 30});
         });
       });
       sortIcon.style.marginBottom = '9px';
       sortIcon.style.marginLeft = '8px';
       sortIcon.style.fontSize = '15px';
+      sortIcon.style.color = 'var(--blue-1)';
       ui.tooltip.bind(sortIcon, () => `Group Campaigns. Current: ${this.currentSorting}`);
+
+      const editColumnsIcon = ui.iconFA('eye', async () => {
+        const menu = DG.Menu.popup();
+        const campaignNamesMap = await _package.loadCampaigns(this.app.appName, this.deletedCampaigns);
+        const getters: {[key in CampaignTableColumns]: (a: HitDesignCampaign) => string} = {...DefaultCampaignTableInfoGetters};
+        Object.values(campaignNamesMap).forEach((c) => {
+          if (c.campaignFields) {
+            Object.keys(c.campaignFields).forEach((field) => {
+              getters[`campaignFields.${field}`] = (a) => a.campaignFields?.[field] ?? '';
+            });
+          }
+        });
+        const savedColumns = getSavedCampaignTableColumns().reduce((acc: {[code in CampaignTableColumns]: boolean}, col) => {acc[col] = true; return acc;}, {} as any);
+        // first add the main columns
+        Object.keys(getters).filter((g) => !g.startsWith('campaignFields.')).forEach((col) => {
+          menu.item(col, () => {
+            savedColumns[col as CampaignTableColumns] = !savedColumns[col as CampaignTableColumns];
+            setSavedCampaignTableColumns(Object.keys(savedColumns).filter((c) => savedColumns[c as CampaignTableColumns]) as CampaignTableColumns[]);
+            refreshTable();
+          }, null, {check: savedColumns[col as CampaignTableColumns] ?? false});
+        });
+        // then add a new group
+        const campaignsPropsGroup = menu.group('Campaign Fields');
+
+        Object.keys(getters).filter((g) => g.startsWith('campaignFields.')).forEach((col) => {
+          campaignsPropsGroup.item(col.replace('campaignFields.', ''), () => {
+            savedColumns[col as CampaignTableColumns] = !savedColumns[col as CampaignTableColumns];
+            setSavedCampaignTableColumns(Object.keys(savedColumns).filter((c) => savedColumns[c as CampaignTableColumns]) as CampaignTableColumns[]);
+            refreshTable();
+          }, null, {check: savedColumns[col as CampaignTableColumns] ?? false});
+        });
+
+        // then add the custom fields
+        menu.show({element: sortingHeader, x: 100, y: sortingHeader.offsetTop + 30});
+      });
+      ui.tooltip.bind(editColumnsIcon, 'Edit visible columns in campaigns table');
+      editColumnsIcon.style.marginBottom = '9px';
+      editColumnsIcon.style.marginLeft = '8px';
+      editColumnsIcon.style.fontSize = '15px';
+      editColumnsIcon.style.color = 'var(--blue-1)';
 
       const refreshIcon = ui.iconFA('sync', async () => {
         await refreshTable();
       });
       refreshIcon.style.marginBottom = '9px';
       refreshIcon.style.marginLeft = '8px';
+      refreshIcon.style.color = 'var(--blue-1)';
       ui.tooltip.bind(refreshIcon, () => 'Refresh campaigns table');
-      const sortingHeader = ui.divH([continueCampaignsHeader, sortIcon, refreshIcon], {style: {alignItems: 'center'}});
+      const sortingHeader = ui.divH([continueCampaignsHeader, editColumnsIcon, sortIcon, refreshIcon], {style: {alignItems: 'center'}});
       $(this.root).empty();
       this.root.appendChild(ui.div([
         ui.divV([appHeader, sortingHeader], {style: {marginLeft: '10px'}}),
         tableRoot,
         createNewCampaignHeader,
         contentDiv,
-      ]));
+      ], {classes: 'hit-triage-info-view-container'}));
       await this.startNewCampaign(campaignAccordionDiv, templatesDiv, presetTemplate);
     } finally {
       ui.setUpdateIndicator(this.root, false);
@@ -174,10 +217,11 @@ export class HitDesignInfoView
         })
         .show();
     }, 'Delete template');
+    deleteTempleteButton.style.color = 'var(--blue-1)';
     createNewtemplateButton.style.color = '#2083d5';
-    templatesInput.addOptions(deleteTempleteButton);
-    templatesInput.addOptions(cloneTemplateButton);
     templatesInput.addOptions(createNewtemplateButton);
+    templatesInput.addOptions(cloneTemplateButton);
+    templatesInput.addOptions(deleteTempleteButton);
     await onTemmplateChange();
     $(templateInputDiv).empty();
     templateInputDiv.appendChild(templatesInput.root);
@@ -223,6 +267,7 @@ export class HitDesignInfoView
     const campaignNamesMap = await _package.loadCampaigns(this.app.appName, this.deletedCampaigns);
     const grouppingMode = getSavedCampaignsGrouping();
     const grouppedCampaigns = getGroupedCampaigns<HitDesignCampaign>(Object.values(campaignNamesMap), grouppingMode);
+    const shownColumns = getSavedCampaignTableColumns();
     this.currentSorting = grouppingMode;
     this.app.existingStatuses = Array.from(new Set(Object.values(campaignNamesMap).map((c) => c.status).filter((s) => !!s)));
     const deleteAndShareCampaignIcons = (info: HitDesignCampaign) => {
@@ -259,20 +304,19 @@ export class HitDesignInfoView
           shareIcon.style.display = 'inline-block';
         }
       });
+      deleteIcon.style.color = 'var(--blue-1)';
+      shareIcon.style.color = 'var(--blue-1)';
       return [shareIcon, deleteIcon];
     };
 
     const table = ui.table(Object.values(grouppedCampaigns).flat(), (info) =>
       ([ui.link(info.friendlyName ?? info.name, () => this.setCampaign(info.name), 'Continue Campaign', ''),
-        info.name,
-        info.createDate,
-        info.authorUserFriendlyName ?? '',
-        info.lastModifiedUserName ?? '',
-        info.rowCount,
-        info.status,
+        ...(shownColumns.map((col) => col.startsWith('campaignFields.') ?
+          info.campaignFields?.[col.replace('campaignFields.', '')] ?? '' :
+          DefaultCampaignTableInfoGetters[col as unknown as keyof typeof DefaultCampaignTableInfoGetters](info) ?? '')),
         ...(deleteAndShareCampaignIcons(info)),
       ]),
-    ['Name', 'Code', 'Created', 'Author', 'Last Modified by', 'Molecules', 'Status', '', '']);
+    ['Name', ...(shownColumns.map((a) => a.replace('campaignFields.', ''))), '', '']);
     table.style.color = 'var(--grey-5)';
     table.style.marginLeft = '24px';
     processGroupingTable(table, grouppedCampaigns);

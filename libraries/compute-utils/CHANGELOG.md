@@ -1,5 +1,13 @@
 # compute-utils changelog
 
+## 1.44.6 (2025-09-08)
+
+- Fix funcCall reactive updates edge case
+
+## 1.44.5 (2025-09-05)
+
+- Fix optimizer returned funcCall redraw
+
 ## 1.44.4 (2025-09-04)
 
 - Small bug fixes

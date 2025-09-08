@@ -64,9 +64,19 @@ export async function revvitySignalsLinkApp(path?: string): Promise<DG.ViewBase>
 //input: dynamic treeNode
 //input: view browseView
 export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.View) {
-  getRevvityUsers();
-  const libs = await getRevvityLibraries();
-
+  const loadingNode = treeNode.item('');
+  loadingNode.captionLabel.classList.add('revvity-signals-starting-app');
+  ui.setUpdateIndicator(loadingNode.captionLabel, true);
+  let libs;
+  try {
+    getRevvityUsers();
+    libs = await getRevvityLibraries();
+  } catch(e: any) {
+    loadingNode.remove();
+    grok.shell.error(`Revvity libraries haven't been loaded: ${e?.message ?? e}`);
+    return;
+  }
+  loadingNode.remove();
   for (const lib of libs) {
     const libNode = treeNode.group(lib.name);
     for (const libType of lib.types) {

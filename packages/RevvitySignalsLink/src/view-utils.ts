@@ -74,11 +74,20 @@ export async function openRevvityNode(treeNode: DG.TreeViewGroup, nodesToExpand:
 
 export async function handleInitialURL(treeNode: DG.TreeViewGroup, url: string) {
 
+  const tv = grok.shell.addTablePreview(DG.DataFrame.create());
+  ui.setUpdateIndicator(tv.root, true, 'Loading Revvity Signals...');
   if (url.startsWith('/'))
     url = url.slice(1);
   const componentsArr = url.split('/');
   if (componentsArr.length) {
-    const libs = await getRevvityLibraries();
+    let libs;
+    try {
+      libs = await getRevvityLibraries();
+    } catch(e: any) {
+      ui.setUpdateIndicator(tv.root, false);
+      grok.shell.error(`Revvity libraries haven't been loaded: ${e?.message ?? e}`);
+      return;
+    }
 
     let idx = 0;
     const nodesToExpand = [];

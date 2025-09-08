@@ -173,11 +173,13 @@ class FuncGeneratorPlugin {
       node?.type === 'MethodDefinition' ? className : identifierName,
       modifyImportPath(path.dirname(this.options.outputPath), file),
     );
+    
     imports.add(importString);
     const funcName = `${
       node?.type === 'MethodDefinition' ? '' : '_'
     }${identifierName}`;
     const funcAnnotaionOptions = {
+      ...{name: funcName},
       ...reservedDecorators[name]['metadata'],
       ...(annotationByReturnObj ?
         {outputs: annotationByReturnObj ?? []} :
@@ -196,10 +198,20 @@ class FuncGeneratorPlugin {
       actualType = 'void';
 
     // if (!funcAnnotaionOptions.name) funcAnnotaionOptions.name = identifierName;
-    
-    if (funcAnnotaionOptions.name === funcName)
-      funcAnnotaionOptions.name = undefined;
-    
+    function containsAnything(funcAnnotaionOptions) {
+      let hasValues = false;
+      const arrays = ['tags', 'inputs', 'outputs'];
+      for (const option of Object.keys(funcAnnotaionOptions)) {
+        if (arrays.includes(option)) {
+          if (funcAnnotaionOptions[option].length > 0)
+            hasValues = true;
+        } else if (option != 'isAsync' && option != 'name')
+          hasValues = true;
+      }
+      return hasValues;
+    }
+    if (funcAnnotaionOptions.name === funcName && containsAnything(funcAnnotaionOptions))
+      delete funcAnnotaionOptions.name;
     functions.push(
       reservedDecorators[name]['genFunc'](
         getFuncAnnotation(funcAnnotaionOptions),

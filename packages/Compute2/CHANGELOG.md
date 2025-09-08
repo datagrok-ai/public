@@ -1,5 +1,13 @@
 # Compute2 changelog
 
+## 1.3.16 (2025-09-08)
+
+- Fix funcCall reactive updates edge case
+
+## 1.3.15 (2025-09-05)
+
+- Fix optimizer returned funcCall redraw
+
 ## 1.3.14 (2025-09-04)
 
 - Small bug fixes
