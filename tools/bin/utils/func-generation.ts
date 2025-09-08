@@ -262,7 +262,7 @@ function buildStringOfOptions(input: any) {
   const opt = input.options ?? {};
   let defaultValue = '';
   if (opt['initialValue']) 
-    defaultValue = ` = ${opt['initialValue']}`; 
+    defaultValue = `= ${opt['initialValue']}`; 
   
 
   for (const [key, value] of Object.entries(opt)) {
