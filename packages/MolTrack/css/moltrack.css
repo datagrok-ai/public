@@ -105,6 +105,7 @@
 .moltrack-container {
   display: flex;
   width: 100% !important;
+  height: 90% !important;
   gap: 16px; /* space between left and right */
 }
 

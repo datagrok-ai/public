@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { ErrorHandlingLabels, ScopeLabels } from './constants';
+import { ErrorHandlingLabels, ScopeLabels, ScopeLabelsReduced } from './constants';
 import '../../css/moltrack.css';
 import { renderMappingEditor, TargetProperty } from '../components/mapping_editor';
 import { MolTrackDockerService } from './moltrack-docker-service';
@@ -15,31 +15,41 @@ let openedView: DG.ViewBase | null = null;
 export class RegistrationView {
   view: DG.View;
 
-  datasetInput: DG.InputBase | null = null;
   entityTypeInput: DG.InputBase | null = null;
   errorStrategyInput: DG.InputBase | null = null;
   registerButton: HTMLButtonElement | null = null;
 
   mappingEditorDiv: HTMLDivElement = ui.div();
   uploadedPreviewDiv: HTMLDivElement;
-  summaryDiv: HTMLDivElement = ui.div([]);
+  // summaryDiv: HTMLDivElement = ui.div([]);
   rightPanel: HTMLDivElement | null = null;
 
   uploadedDf: DG.DataFrame | null = null;
   mappingDict: Record<string, string> = {};
-  hasErrors: boolean = false;
   subs: Subscription[] = [];
+
+  hasErrors: boolean = false;
+  registrationStarted: boolean = false;
+
+  title: string = 'Bulk registration';
+  messageContainer: HTMLDivElement = ui.div([], 'moltrack-info-container');
 
   constructor() {
     this.view = DG.View.create();
     this.view.name = 'Bulk Registration';
 
     this.createInputs();
+    this.addTitle();
     this.uploadedPreviewDiv = ui.div('', 'moltrack-register-preview-div');
-    this.summaryDiv.style.marginTop = '50px';
+    // this.summaryDiv.style.marginTop = '50px';
     this.buildUI();
     this.addRibbonButtons();
     this.addSubs();
+  }
+
+  private async addTitle() {
+    const titleText = ui.divText(this.title, 'moltrack-title');
+    this.messageContainer.append(titleText);
   }
 
   private async createInputs() {
@@ -56,12 +66,11 @@ export class RegistrationView {
     this.createMapping();
 
     const inputRow = ui.wideForm([
-      this.datasetInput!,
       this.entityTypeInput!,
       this.errorStrategyInput!,
     ], 'moltrack-input-row');
 
-    const leftPanel = ui.divV([inputRow, this.mappingEditorDiv, this.summaryDiv]);
+    const leftPanel = ui.divV([inputRow, this.mappingEditorDiv/*, this.summaryDiv*/]);
 
     const dragDropInput = this.createFileInputPane();
 
@@ -76,7 +85,7 @@ export class RegistrationView {
       // this.rightPanel,
     ], {}, true);
     container.classList.add('moltrack-container');
-    this.view.root.append(container);
+    this.view.root.append(ui.divV([this.messageContainer, container]));
   }
 
   private createFileInputPane() {
@@ -190,6 +199,9 @@ export class RegistrationView {
       if (this.hasErrors) {
         tooltipMessage = 'Form validation failed. Please check your input';
         this.registerButton!.style.cursor = 'not-allowed';
+      } else if (this.registrationStarted) {
+        tooltipMessage = 'Registration is already in progress. Please wait…';
+        this.registerButton!.style.cursor = 'not-allowed';
       } else
         this.registerButton!.style.cursor = 'pointer';
 
@@ -226,9 +238,16 @@ export class RegistrationView {
 
     const csv = await this.uploadedDf.toCsv();
     const csvFile = DG.FileInfo.fromString('data.csv', csv);
+    const loader = ui.loader();
     try {
-      ui.empty(this.summaryDiv);
-      this.summaryDiv.appendChild(ui.loader());
+      // ui.empty(this.summaryDiv);
+      // this.summaryDiv.appendChild(ui.loader());
+      this.registrationStarted = true;
+      this.registerButton?.classList.add('dim');
+
+      ui.empty(this.messageContainer);
+      this.messageContainer.appendChild(loader);
+
       const df: DG.DataFrame = await grok.functions.call('Moltrack:registerBulk', {
         csvFile: csvFile,
         scope: ScopeLabels[this.entityTypeInput?.value],
@@ -236,36 +255,75 @@ export class RegistrationView {
         errorHandling: ErrorHandlingLabels[this.errorStrategyInput?.value],
       });
 
-      this.uploadedDf.join(df, ['smiles'], ['smiles'], null, ['registration_status', 'registration_error_message'], DG.JOIN_TYPE.INNER, true);
+      let corporateId;
+      if (Object.keys(ScopeLabelsReduced).includes(this.entityTypeInput?.value))
+        corporateId = `corporate_${this.entityTypeInput?.value.toLowerCase().replace(/(es|s)$/, '')}_id`;
+
+      this.uploadedDf.join(df, ['smiles'], ['smiles'], null, ['registration_status', 'registration_error_message', corporateId!], DG.JOIN_TYPE.INNER, true);
 
       this.createSummary();
     } catch (err: any) {
       grok.shell.error(`Registration failed: ${err.message}`);
+    } finally {
+      this.registerButton?.classList.remove('dim');
+      this.registrationStarted = false;
+      this.messageContainer.removeChild(loader);
     }
   }
 
+  // private createSummary() {
+  //   if (!this.uploadedDf) return;
+  //   ui.empty(this.summaryDiv);
+  //   const statuses = this.uploadedDf.getCol('registration_status').toList();
+
+  //   const successCount = statuses.filter((v) => v === 'success').length;
+  //   const failedCount = statuses.filter((v) => v === 'failed').length;
+  //   const notProcessedCount = statuses.filter((v) => v === 'not_processed').length;
+
+  //   const summary: { [key: string]: number } = {
+  //     'Successful': successCount,
+  //     'Failed': failedCount,
+  //     'Not processed': notProcessedCount,
+  //   };
+
+  //   const summaryTable = ui.table(
+  //     [summary],
+  //     (item) => [item['Successful'], item['Failed'], item['Not processed']],
+  //     Object.keys(summary),
+  //   );
+
+  //   this.summaryDiv.appendChild(summaryTable);
+  // }
+
   private createSummary() {
     if (!this.uploadedDf) return;
-    ui.empty(this.summaryDiv);
-    const statuses = this.uploadedDf.getCol('registration_status').toList();
 
+    const statuses = this.uploadedDf.getCol('registration_status').toList();
     const successCount = statuses.filter((v) => v === 'success').length;
     const failedCount = statuses.filter((v) => v === 'failed').length;
     const notProcessedCount = statuses.filter((v) => v === 'not_processed').length;
 
-    const summary: { [key: string]: number } = {
-      'Successful': successCount,
-      'Failed': failedCount,
-      'Not processed': notProcessedCount,
-    };
+    const header = failedCount === 0 ?
+      `✅ Bulk registration completed` :
+      `⚠ Bulk registration completed with errors`;
+    const status = failedCount === 0 ? 'success' : 'failed';
 
-    const summaryTable = ui.table(
-      [summary],
-      (item) => [item['Successful'], item['Failed'], item['Not processed']],
-      Object.keys(summary),
-    );
+    const messageParts: string[] = [];
 
-    this.summaryDiv.appendChild(summaryTable);
+    if (successCount > 0) messageParts.push(`${successCount} registered`);
+    if (failedCount > 0) messageParts.push(`${failedCount} failed`);
+    if (notProcessedCount > 0) messageParts.push(`${notProcessedCount} skipped`);
+
+    const message = messageParts.join(', ');
+
+    ui.empty(this.messageContainer);
+    const infoDiv = ui.info(message, header, true);
+    const bar = infoDiv.querySelector('.grok-info-bar') as HTMLElement;
+    if (bar) {
+      bar.classList.toggle('moltrack-bar-success', status === 'success');
+      bar.classList.toggle('moltrack-bar-error', status !== 'success');
+    }
+    this.messageContainer.appendChild(infoDiv);
   }
 
   private async createMapping(value?: string) {
