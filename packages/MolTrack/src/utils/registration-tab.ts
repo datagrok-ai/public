@@ -267,7 +267,6 @@ export class RegistrationView {
     } finally {
       this.registerButton?.classList.remove('dim');
       this.registrationStarted = false;
-      this.messageContainer.removeChild(loader);
     }
   }
 
