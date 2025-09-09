@@ -39,6 +39,7 @@ export interface IAnalysisWidgetCoordinator {
 }
 
 
+type InteractionMode = 'default' | 'outlier';
 export class PlateWidget extends DG.Widget {
   _colorColumn?: DG.Column | undefined;
   _plate: Plate = new Plate(8, 12);
@@ -62,21 +63,31 @@ export class PlateWidget extends DG.Widget {
   private _onDestroy = new Subject<void>();
   private analysisCoordinators: IAnalysisWidgetCoordinator[] = [];
   private outlierSubscription?: Subscription;
+  private interactionMode: InteractionMode = 'default';
 
 
   roleSummaryDiv: HTMLElement = ui.divH([], 'plate-widget__role-summary');
-
   get editable() { return this._editable; }
   set editable(x: boolean) {
     this._editable = x;
     this.syncGrids();
   }
 
+
   constructor() {
     super(ui.div([], 'plate-widget'));
 
     this.tabs.root.classList.add('plate-widget__tabs');
     this.tabsContainer.appendChild(this.tabs.root);
+
+    this.tabs.onTabChanged.subscribe(() => {
+      const isOutlierMode = this.tabs.currentPane.name.includes('Outliers');
+      this.interactionMode = isOutlierMode ? 'outlier' : 'default';
+      // This toggles the CSS class on the grid's root element
+      this.grid.root.classList.toggle('outlier-mode', isOutlierMode);
+      console.log(`Interaction mode set to: ${this.interactionMode}`);
+    });
+
     const mainContainer = ui.divV([this.tabsContainer, this.roleSummaryDiv]);
     mainContainer.style.flexGrow = '1';
     mainContainer.style.width = '100%';
@@ -106,11 +117,23 @@ export class PlateWidget extends DG.Widget {
       }
     });
 
+    this.grid.onCellClick.subscribe((gc: DG.GridCell) => {
+      if (!this.editable || !gc.isTableCell || this.interactionMode !== 'outlier')
+        return;
+
+      const row = gc.gridRow;
+      const col = gc.gridColumn.idx - 1;
+      const currentState = this.plate.isOutlier(row, col);
+      this.plate.markOutlierWithSource(row, col, !currentState, 'summary-click-toggle');
+    });
+
     ui.tools.waitForElementInDom(this.grid.root).then(() => {
       this._canvas = this.grid.overlay;
       this.initSelectionEvents();
     });
   }
+
+
   registerAnalysisCoordinator(coordinator: IAnalysisWidgetCoordinator): void {
     this.analysisCoordinators.push(coordinator);
   }
@@ -119,28 +142,25 @@ export class PlateWidget extends DG.Widget {
     this.analysisCoordinators.forEach((coord) => coord.onPlateDataChanged(changeType, details));
   }
 
+
   private refreshTabs(): void {
-    // Save current pane
     const currentPaneName = this.tabs.currentPane?.name;
 
-    // Clear and rebuild tabs
     this.tabs.clear();
     this.grids.clear();
 
-    // Add summary tab
+    // --- MODIFIED: Both Summary and Outliers tabs now point to the same grid element for identical layout ---
     this.tabs.addPane('Summary', () => this.grid.root);
 
-    // Rebuild layer tabs (copied from refresh())
     const layerInfo: Record<LayerType, {icon: string, layers: string[]}> = {
       [LayerType.ORIGINAL]: {icon: '', layers: this.plate.getLayersByType(LayerType.ORIGINAL)},
       [LayerType.LAYOUT]: {icon: '️(Layout)', layers: this.plate.getLayersByType(LayerType.LAYOUT)},
       [LayerType.DERIVED]: {icon: '(Derived)', layers: this.plate.getLayersByType(LayerType.DERIVED)},
-      [LayerType.OUTLIER]: {icon: '🚫', layers: this.plate.getLayersByType(LayerType.OUTLIER)},
+      [LayerType.OUTLIER]: {icon: '🚫', layers: []},
     };
 
     const allRegisteredLayers = new Set<string>();
-
-    for (const type of [LayerType.ORIGINAL, LayerType.LAYOUT, LayerType.DERIVED, LayerType.OUTLIER]) {
+    for (const type of [LayerType.ORIGINAL, LayerType.LAYOUT, LayerType.DERIVED]) {
       for (const layerName of layerInfo[type].layers) {
         allRegisteredLayers.add(layerName);
         const paneName = `${layerInfo[type].icon} ${this.getDisplayName(layerName, type)}`;
@@ -148,23 +168,25 @@ export class PlateWidget extends DG.Widget {
       }
     }
 
-    // Fallback for unregistered layers
+    // --- MODIFIED: Always add the Outliers tab ---
+    this.tabs.addPane(`🚫 Outliers`, () => this.grid.root);
+
     for (const layerName of this.plate.getLayerNames()) {
-      if (!allRegisteredLayers.has(layerName))
+      if (!allRegisteredLayers.has(layerName) && layerName !== PLATE_OUTLIER_WELL_NAME)
         this.tabs.addPane(`❔ ${layerName}`, () => this.createLayerGrid(layerName));
     }
 
-    // Restore current pane if it still exists
     if (currentPaneName) {
       const restoredPane = this.tabs.panes.find((p) => p.name === currentPaneName);
       if (restoredPane)
         this.tabs.currentPane = restoredPane;
     }
   }
+
   private layerExists(layerName: string): boolean {
     return this.tabs.panes.some((pane) =>
       pane.name.includes(layerName) ||
-      pane.name.includes('Outliers')
+      (layerName === PLATE_OUTLIER_WELL_NAME && pane.name.includes('Outliers'))
     );
   }
 
@@ -176,8 +198,7 @@ export class PlateWidget extends DG.Widget {
       .pipe(takeUntil(this._onDestroy))
       .subscribe((e: MouseEvent) => {
         if (!this.editable) return;
-        e.preventDefault();
-        e.stopPropagation();
+        // --- FIX: DO NOT prevent default on mousedown. This allows click events to fire. ---
 
         this._isDragging = true;
         this._selectionRect = new DG.Rect(e.offsetX, e.offsetY, 0, 0);
@@ -189,6 +210,11 @@ export class PlateWidget extends DG.Widget {
           .pipe(takeUntil(mouseUpStream))
           .subscribe((move_e: MouseEvent) => {
             if (!this._isDragging || !this._selectionRect) return;
+
+            // --- FIX: Prevent default ONLY when the user actually starts dragging. ---
+            move_e.preventDefault();
+            move_e.stopPropagation();
+
             const canvasBounds = interactionElement.getBoundingClientRect();
             const currentX = move_e.clientX - canvasBounds.left;
             const currentY = move_e.clientY - canvasBounds.top;
@@ -202,9 +228,21 @@ export class PlateWidget extends DG.Widget {
           this._isDragging = false;
           this.clearSelectionRect();
 
-          if (this.plate.data.selection.trueCount > 0)
-            this.showRoleAssignmentPopup();
+          const selection = this.plate.data.selection;
+          // Clicks are now handled by onCellClick, so this logic is only for drag-selections.
+          if (selection.trueCount > 0) {
+            if (this.interactionMode === 'outlier') {
+              const selectedIndices = selection.getSelectedIndexes();
+              for (const idx of selectedIndices) {
+                const currentState = this.plate._isOutlier(idx);
+                this.plate._markOutlierWithSource(idx, !currentState, 'summary-drag-toggle');
+              }
+            } else {
+              this.showRoleAssignmentPopup();
+            }
+          }
 
+          selection.setAll(false, true);
           this._selectionRect = null;
         });
       });
@@ -442,25 +480,14 @@ export class PlateWidget extends DG.Widget {
 
   get plate(): Plate { return this._plate; }
   set plate(p: Plate) {
-    console.log(`[DEBUG] 4. PlateWidget: Plate setter called with plate barcode: ${p.barcode}. Refreshing widget.`);
+    console.log(`[DEBUG] PlateWidget: Plate setter called with plate barcode: ${p.barcode}. Refreshing widget.`);
     this._plate = p;
 
-    // Unsubscribe from previous plate's outlier changes
     if (this.outlierSubscription)
       this.outlierSubscription.unsubscribe();
 
-
-    // Subscribe to new plate's outlier changes
     this.outlierSubscription = p.onOutlierChanged.subscribe((change) => {
       console.log(`[DEBUG] PlateWidget received outlier change:`, change);
-
-      if (!this.layerExists(PLATE_OUTLIER_WELL_NAME)) {
-        console.log(`[DEBUG] Outlier layer doesn't exist, refreshing tabs`);
-        this.refreshTabs();
-      } else {
-        console.log(`[DEBUG] Outlier layer already exists`);
-      }
-
       this.grid.invalidate();
       this.notifyAnalysisCoordinators('outlier', change);
     });
@@ -470,47 +497,38 @@ export class PlateWidget extends DG.Widget {
 
 
   private getDisplayName(layerName: string, layerType: LayerType): string {
-  // Special handling for outlier layer to show user-friendly name
-    if (layerType === LayerType.OUTLIER && layerName === PLATE_OUTLIER_WELL_NAME)
-      return 'Outliers';
-
+    // This function is now simpler as it doesn't need to handle the outlier case.
     return layerName;
   }
 
+
   refresh() {
     this.tabs.clear();
-    this.grids.clear(); // Clear old grid references
+    this.grids.clear();
+    // --- MODIFIED: Both Summary and Outliers tabs point to the same grid element ---
     this.tabs.addPane('Summary', () => this.grid.root);
+    this.tabs.addPane(`🚫 Outliers`, () => this.grid.root);
 
     const layerInfo: Record<LayerType, {icon: string, layers: string[]}> = {
       [LayerType.ORIGINAL]: {icon: '', layers: this.plate.getLayersByType(LayerType.ORIGINAL)},
       [LayerType.LAYOUT]: {icon: '️(Layout)', layers: this.plate.getLayersByType(LayerType.LAYOUT)},
       [LayerType.DERIVED]: {icon: '(Derived)', layers: this.plate.getLayersByType(LayerType.DERIVED)},
-      [LayerType.OUTLIER]: {icon: '🚫', layers: this.plate.getLayersByType(LayerType.OUTLIER)}, // NEW: Add outlier layer support
+      [LayerType.OUTLIER]: {icon: '🚫', layers: []},
     };
 
     const allRegisteredLayers = new Set<string>();
 
-    // Create tabs for all categorized layers
-    for (const type of [LayerType.ORIGINAL, LayerType.LAYOUT, LayerType.DERIVED, LayerType.OUTLIER]) { // NEW: Include OUTLIER in iteration
+    for (const type of [LayerType.ORIGINAL, LayerType.LAYOUT, LayerType.DERIVED]) {
       for (const layerName of layerInfo[type].layers) {
         allRegisteredLayers.add(layerName);
-        const paneName = `${layerInfo[type].icon} ${this.getDisplayName(layerName, type)}`; // NEW: Use display name helper
+        const paneName = `${layerInfo[type].icon} ${this.getDisplayName(layerName, type)}`;
         this.tabs.addPane(paneName, () => this.createLayerGrid(layerName));
       }
     }
 
-    // Fallback for any layers that might not have been registered for some reason
     for (const layerName of this.plate.getLayerNames()) {
-      if (!allRegisteredLayers.has(layerName))
+      if (!allRegisteredLayers.has(layerName) && layerName !== PLATE_OUTLIER_WELL_NAME)
         this.tabs.addPane(`❔ ${layerName}`, () => this.createLayerGrid(layerName));
-    }
-
-    // Ensure the tabs container takes full width
-    if (this.tabsContainer) {
-      this.tabsContainer.style.width = '100%';
-      this.tabsContainer.style.display = 'flex';
-      this.tabsContainer.style.flexDirection = 'column';
     }
 
     ui.tools.waitForElementInDom(this.tabs.root).then(() => {
@@ -518,15 +536,16 @@ export class PlateWidget extends DG.Widget {
         this.tabs.currentPane = this.tabs.getPane('Summary');
     });
 
+
     this.syncGrids();
 
     const t = this.plate.data;
     this._colorColumn =
-  t.columns.firstWhere((c) => c.semType === 'Activity') ??
-  t.columns.firstWhere((c) => c.semType === 'Concentration') ??
-  t.columns.firstWhere((c) => c.name.toLowerCase() === 'activity') ??
-  t.columns.firstWhere((c) => c.name.toLowerCase().includes('concentration')) ??
-  t.columns.firstWhere((c) => c.type === DG.TYPE.FLOAT && !['row', 'col'].includes(c.name.toLowerCase()));
+      t.columns.firstWhere((c) => c.semType === 'Activity') ??
+      t.columns.firstWhere((c) => c.semType === 'Concentration') ??
+      t.columns.firstWhere((c) => c.name.toLowerCase() === 'activity') ??
+      t.columns.firstWhere((c) => c.name.toLowerCase().includes('concentration')) ??
+      t.columns.firstWhere((c) => c.type === DG.TYPE.FLOAT && !['row', 'col'].includes(c.name.toLowerCase()));
 
 
     this.grid.dataFrame = DG.DataFrame.create(this.plate.rows);
@@ -541,41 +560,21 @@ export class PlateWidget extends DG.Widget {
   }
 
   private createLayerGrid(layer: string): HTMLElement {
+    // --- MODIFIED: No longer needs to handle the Outlier case ---
     const df = this.plate.toGridDataFrame(layer);
     const grid = DG.Viewer.heatMap(df);
     grid.columns.add({gridColumnName: '0', cellType: 'string', index: 1});
-
-    const layerType = this.plate.getLayerType(layer);
-    if (layerType === LayerType.OUTLIER)
-      this.configureOutlierGrid(grid, layer);
-
 
     df.onValuesChanged.pipe(debounceTime(1000)).subscribe(() => {
       const p = this.plate;
       for (let i = 0; i < df.rowCount; i++) {
         for (let j = 0; j < df.columns.length - 1; j++) {
           const newValue = df.get(`${j + 1}`, i);
-
-          // START of CHANGE
-          if (layerType === LayerType.OUTLIER) {
-            // If the value in our temporary grid is different from the main plate state...
-            if (p.isOutlier(i, j) !== newValue) {
-              // ...update the main plate state and fire the event.
-              p.markOutlierWithSource(i, j, newValue, 'user-checkbox');
-            }
-          } else { // Keep existing logic for other layers
-            const plateCol = p.getColumn(layer);
-            if (plateCol)
-              plateCol.set(p._idx(i, j), newValue);
-          }
-          // END of CHANGE
+          const plateCol = p.getColumn(layer);
+          if (plateCol)
+            plateCol.set(p._idx(i, j), newValue);
         }
       }
-
-      // This invalidate call can be removed as the event system will handle it,
-      // but it's harmless to leave.
-      if (layerType === LayerType.OUTLIER)
-        this.grid.invalidate();
     });
 
     this.initPlateGrid(grid, false);
