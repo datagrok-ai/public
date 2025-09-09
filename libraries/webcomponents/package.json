@@ -1,6 +1,5 @@
 {
   "name": "@datagrok-libraries/webcomponents",
-  "sideEffects": false,
   "version": "0.2.2",
   "author": {
     "name": "Andrey Sharapov",
