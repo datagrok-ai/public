@@ -7,8 +7,8 @@ import { MolTrackDockerService } from './utils/moltrack-docker-service';
 import { RegistrationView } from './utils/registration-tab';
 import { createPath, registerAllData, registerAssayData, updateAllMolTrackSchemas } from './utils/utils';
 import { EntityBaseView } from './utils/registration-entity-base';
-import { Scope } from './utils/constants';
-import { createSearchNode, createSearchView, getSavedSearches } from './utils/search';
+import { SAVED_SEARCHES_NODE, Scope, SEARCH_NODE } from './utils/constants';
+import { createSearchNode, createSearchView, getSavedSearches, handleSearchURL } from './utils/search';
 
 export const _package = new DG.Package();
 
@@ -46,11 +46,19 @@ export async function molTrackApp(path: string): Promise<DG.ViewBase> {
   const isCompoundPath = hasPath && path.includes('Compound');
   const isRegisterPath = hasPath && path.includes('Register');
   const isBatchPath = hasPath && path.includes('Batch');
+  const isSearchPath = hasPath && (path.includes(SEARCH_NODE) || path.includes(SAVED_SEARCHES_NODE));
 
   const setPathAndReturn = (view: DG.View) => {
     view.path = path;
     return view;
   };
+
+  try {
+    if (isSearchPath)
+      return handleSearchURL(path);
+  } catch (e: any) {
+    grok.shell.error(e);
+  }
 
   if (corporateCompoundId)
     return await compoundView(corporateCompoundId);
@@ -87,10 +95,11 @@ export async function molTrackApp(path: string): Promise<DG.ViewBase> {
     return ui.tableFromMap(statsMap);
   };
 
-  return DG.View.fromRoot(ui.divV([
-    appHeader,
-    ui.wait(async () => await getStatisticsWidget()),
-  ]));
+  const viewRoot = ui.divV([appHeader]);
+  if (!isSearchPath)
+    viewRoot.append(ui.wait(async () => await getStatisticsWidget()));
+
+  return DG.View.fromRoot(viewRoot);
 }
 
 async function buildRegistrationView({
@@ -224,7 +233,7 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
     .forEach((scope) => createSearchNode(appNode, scope));
 
   //saved searches section
-  const savedSearchesNode = appNode.getOrCreateGroup('Saved Searches');
+  const savedSearchesNode = appNode.getOrCreateGroup(SAVED_SEARCHES_NODE);
   Object.values(Scope)
     .filter((scope) => !excludedScopes.includes(scope))
     .forEach((scope) => {
@@ -233,7 +242,7 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
       Object.keys(savedSearches).forEach((savedSearch) => {
         const savedSearchNode = entityGroup.item(savedSearch);
         savedSearchNode.onSelected
-          .subscribe(() => createSearchView(savedSearch, scope, JSON.parse(savedSearches[savedSearch])));
+          .subscribe(() => createSearchView(savedSearch, scope, JSON.parse(savedSearches[savedSearch]), true));
       });
     });
 }

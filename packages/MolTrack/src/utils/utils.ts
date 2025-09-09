@@ -52,4 +52,10 @@ export function createPath(viewName: string) {
   return path;
 }
 
+export function createPathFromArr(pathComponents: string[]) {
+  let path = `${MOLTRACK_APP_PATH}`;
+  path += `/${pathComponents.map((it) => encodeURIComponent(it)).join('/')}`;
+  return path;
+}
+
 const MOLTRACK_APP_PATH: string = 'apps/MolTrack';
