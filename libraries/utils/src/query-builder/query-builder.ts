@@ -57,6 +57,7 @@ export class BaseConditionEditor<T = any> {
     onValidationError: Subject<boolean> = new Subject<boolean>();
     showSuggestions = false;
     suggestionsMenuClicked = false;
+    invalid = false;
 
     constructor(prop: DG.Property, operator: string, initialCondition?: SimpleCondition<T>) {
         this.condition = initialCondition ?? {
@@ -67,9 +68,11 @@ export class BaseConditionEditor<T = any> {
         const inputs = this.initializeEditor(prop);
         inputs.forEach((input) => {
             input.onChanged.subscribe(() => {
-                this.onValidationError.next(!input.validate());
-            })
-        })
+                this.invalid = inputs.some((it) => !it.validate());
+                this.onValidationError.next(this.invalid);
+            });
+        });
+        this.invalid = inputs.some((it) => !it.validate());
     }
 
     protected initializeEditor(prop: DG.Property): DG.InputBase[] {
@@ -149,8 +152,8 @@ export class BetweenConditionEditor extends BaseConditionEditor {
 
 export class BooleanConditionEditor extends BaseConditionEditor {
     override initializeEditor(prop: DG.Property): DG.InputBase[] {
-        if (!this.condition.value)
-            this.condition.value = true
+        if (this.condition.value === undefined)
+            this.condition.value = true;
         const options = ['true', 'false'];
         const input = ui.input.choice('', {
             items: options,
@@ -627,6 +630,8 @@ export class QueryBuilder {
                     //in case of boolean input we need to hide operators input
                     if (property.type === DG.TYPE.BOOL)
                         filterContainer.classList.add('boolean-input');
+                    else
+                        filterContainer.classList.remove('boolean-input');
                     const registry = ConditionRegistry.getInstance();
                     const operators = registry.getOperatorsForProperty(property);
                     if (!cond.operator || cond.operator === '') {
@@ -660,10 +665,12 @@ export class QueryBuilder {
                 editor.onValidationError.subscribe((error) => {
                     this.validationError.next(error);
                 });
+                if (editor.invalid)
+                    this.validationError.next(true);
                 criteriaDiv.append(editor.root);
             }
 
-                       const getPropByName = (name: string) => {
+            const getPropByName = (name: string) => {
                 const property = this.properties.find((prop: DG.Property) => prop.name === name);
                 return property;
             }

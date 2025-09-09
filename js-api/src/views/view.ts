@@ -640,8 +640,8 @@ export class TableView extends View {
   }
 
   /** Re-runs the table creation script (for dynamic data), and executes post-processing if `enrich` is true. */
-  refresh(options?: {enrich?: boolean}): Promise<void> {
-    return api.grok_TableView_Refresh(this.dart, options?.enrich ?? true);
+  reloadData(options?: {enrich?: boolean}): Promise<void> {
+    return api.grok_TableView_ReloadData(this.dart, options?.enrich ?? true);
   }
 }
 

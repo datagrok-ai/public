@@ -21,7 +21,7 @@ export async function queryDB(
     applicableJoins
       .map((opt, i) => {
         const alias = tableAliases[i];
-        return opt.select.map((col) => `${alias}.${col}`).join(', ') + (i < applicableJoins.length - 1 ? ', ' : '');
+        return opt.select.map((col) => `${alias}.${col}`).join(', ');
       })
       .join(', ') + (applicableJoins.length > 0 ? ', ' : '');
   const joinStr = applicableJoins

@@ -109,7 +109,7 @@ export interface IDartApi {
   grok_TableView_LoadState(v: any, state: String, pickupColumnsTags: Bool): any;
   grok_TableView_SaveState(v: any): any;
   grok_TableView_ProcessNewViewer(v: any, viewer: any): any;
-  grok_TableView_Refresh(v: any, enrich: Bool): Promise<any>;
+  grok_TableView_ReloadData(v: any, enrich: Bool): Promise<any>;
   grok_CardView_Create(options: any): any;
   grok_CardView_Get_SearchValue(v: any): any;
   grok_CardView_Set_SearchValue(v: any, s: String): any;
@@ -1528,7 +1528,6 @@ export interface IDartApi {
   grok_LinkTables(t1: any, t2: any, keys1: any, keys2: any, linkTypes: any, initialSync: Bool): any;
   grok_JoinTables(t1: any, t2: any, keys1: any, keys2: any, values1: any, values2: any, joinType: String, inPlace: Bool): any;
   grok_Subscription_Cancel(sub: any): any;
-  grok_Query(queryName: String, queryParameters: any, adHoc: Bool): Promise<any>;
   grok_CallQuery(queryName: String, queryParameters: any, adHoc: Bool): Promise<any>;
   grok_GetCurrentCall(): any;
   grok_CallFunc(p0: any, p1: any, p2: any, p3: any): Promise<any>;

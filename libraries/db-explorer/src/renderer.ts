@@ -41,7 +41,7 @@ export function moleculeRenderer(value: string) {
   return textRenderer(value);
 }
 
-export function imageRenderer(fullUrl: string) {
+export function imageRenderer(fullUrl: string, useProxy: boolean = true) {
   const nameHost = textRenderer(fullUrl);
   const loaderDiv = getLoaderDiv();
   const host = ui.divH([nameHost, loaderDiv]);
@@ -49,7 +49,7 @@ export function imageRenderer(fullUrl: string) {
 
   async function replaceWithImage() {
     try {
-      const qRes = await grok.dapi.fetchProxy(fullUrl, {});
+      const qRes = useProxy ? await grok.dapi.fetchProxy(fullUrl, {}) : await fetch(fullUrl);
       if (!qRes) throw new Error('');
       const blob = await qRes.blob();
       if (!blob) throw new Error('');
@@ -74,11 +74,40 @@ export function imageRenderer(fullUrl: string) {
   return host;
 }
 
+export function rawImageRenderer(rawImage: string) {
+  const nameHost = textRenderer('image');
+  const loaderDiv = getLoaderDiv();
+  const host = ui.divH([nameHost, loaderDiv]);
+  ui.tooltip.bind(nameHost, 'Unable to render image');
+  async function replaceWithImage() {
+    try {
+      if (!rawImage) throw new Error('Empty image string');
+      const canvas = ui.canvas(200, 200);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('');
+      const image = new Image();
+      image.onload = () => {
+        ctx.drawImage(image, 0, 0, 200, 200);
+      };
+      image.src = 'data:image/png;base64,' + rawImage;
+
+      nameHost.remove();
+      host.appendChild(canvas);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      loaderDiv.remove();
+    }
+  }
+  replaceWithImage();
+  return host;
+}
+
 export function ownIdRenderer(id: string | number, tableName: string, colName: string) {
   const nameHost = textRenderer(id.toString(), false);
   nameHost.style.color = 'var(--blue-1)';
   nameHost.style.cursor = 'pointer';
-  ui.tooltip.bind(nameHost, 'Click to make it current object');
+  ui.tooltip.bind(nameHost, 'Click to explore');
   nameHost.addEventListener('click', (e) => {
     e.stopImmediatePropagation();
     grok.shell.o = new DBValueObject(tableName, colName, id);
@@ -243,8 +272,16 @@ export class DBExplorerRenderer {
     const clearedDF = removeEmptyCols(df);
     let entries = Object.entries(clearedDF.toJson()[0]) as [string, string | number][];
 
-    if (this.customSelectedColumns[tableName])
+    if (this.customSelectedColumns[tableName]) {
       entries = entries.filter(([key]) => this.customSelectedColumns[tableName].has(key));
+    // reorder entries according to customSelectedColumns if present
+      const cols = Array.from(this.customSelectedColumns[tableName]);
+      entries.sort((a, b) => { 
+        return cols.indexOf(a[0]) - cols.indexOf(b[0]);
+      });
+    }
+
+
 
     const mainTable = ui.table(entries, (entry) => {
       const key = entry[0];
