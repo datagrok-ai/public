@@ -1,16 +1,15 @@
 /* eslint-disable no-irregular-whitespace */
 /* eslint-disable max-len */
-import {AnalysisOptions, PlateWidget} from './plate-widget';
+import {AnalysisOptions, IAnalysisWidgetCoordinator, PlateWidget} from './plate-widget';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import {mapFromRow} from './utils';
 import {IPlateWellFilter, Plate, randomizeTableId} from './plate';
-import {FIT_FUNCTION_4PL_REGRESSION, FitMarkerType, IFitPoint} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {FIT_FUNCTION_4PL_REGRESSION, FitCurve, FitMarkerType, IFitChartData, IFitPoint} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {FitConstants} from '../fit/const';
-import {FitCellOutlierToggleArgs, setOutlier} from '../fit/fit-renderer';
+import {FitCellOutlierToggleArgs, FitChartCellRenderer, setOutlier} from '../fit/fit-renderer';
 import {savePlate} from '../plates/plates-crud';
-import {AnalysisMappingPanel} from '../plates/views/components/analysis-mapping/analysis-mapping-panel';
 import {BaseAnalysisView} from './base-analysis-view';
 
 
@@ -277,12 +276,18 @@ export class PlateDrcAnalysis {
     }));
 
     pw.subs.push(grok.events.onCustomEvent('fit-cell-outlier-toggle').subscribe((args: FitCellOutlierToggleArgs) => {
-      if (!args || !args.gridCell || !args.series || args.pointIdx == null || args.gridCell.cell.column !== curveCol)
+      console.log('[DEBUG] fit-cell-outlier-toggle event received:', args);
+
+      if (!args || !args.gridCell || !args.series || args.pointIdx == null || args.gridCell.cell.column !== curveCol) {
+        console.log('[DEBUG] fit-cell-outlier-toggle event filtered out');
         return;
+      }
+
       const point: IFitPoint = args.series.points[args.pointIdx];
+      console.log('[DEBUG] About to call plate._markOutlier with:', point.meta, !!point.outlier);
+
       if (point.meta !== null) {
-        // NEW: Use source tracking for DRC-originated outlier markings
-        plate._markOutlierWithSource(point.meta, !!point.outlier, 'drc-click');
+        plate._markOutlier(point.meta, !!point.outlier);
         pw.grid.invalidate();
       }
     }));
@@ -451,6 +456,7 @@ export class PlateDrcAnalysis {
     if (actualStatNames['interceptX'])
       df.col(actualStatNames['interceptX'])!.meta.format = 'scientific';
 
+
     let prevSelection: {seriesIndex: number, pointIndex: number, markerType: FitMarkerType, markerSize: number, markerColor: string, curvesGridCell?: DG.GridCell} | null = null;
 
     function clearPreviousSelection() {
@@ -525,6 +531,18 @@ export class PlateDrcAnalysis {
       curvesGrid.props.rowHeight = 200;
       curvesGrid.root.style.width = '100%';
     });
+    const coordinator = new DrcAnalysisCoordinator(
+      plate,
+      plateWidget,
+      curvesGrid,
+      curveCol,
+      seriesVals,
+      actOptions,
+      drFilterOptions,
+      normed
+    );
+
+    plateWidget.registerAnalysisCoordinator(coordinator);
 
     const container = ui.div([curvesGrid.root], 'drc-grid-container');
     container.style.width = '100%';
@@ -536,5 +554,86 @@ export class PlateDrcAnalysis {
     curvesGrid.root.style.flexGrow = '1';
 
     return container;
+  }
+}
+
+class DrcAnalysisCoordinator implements IAnalysisWidgetCoordinator {
+  constructor(
+    private plate: Plate,
+    private plateWidget: PlateWidget,
+    private curvesGrid: DG.Grid,
+    private curveCol: DG.Column,
+    private seriesVals: Array<[string, any]>,
+    private actOptions: AnalysisOptions & {normalizedColName?: string},
+    private drFilterOptions: IPlateWellFilter,
+    private normed: boolean
+  ) {}
+
+  onPlateDataChanged(changeType: 'outlier' | 'data' | 'layer', details: any): void {
+    if (changeType === 'outlier') {
+      // START of CHANGE
+      console.log('[DEBUG] DrcAnalysisCoordinator: Outlier changed, regenerating curve data directly.');
+      this.regenerateCurveData();
+      // END of CHANGE
+    }
+  }
+
+
+  refreshAnalysisView(): void {
+    // Full refresh - not needed for outlier changes
+    console.log('Full analysis view refresh requested');
+  }
+
+  private regenerateCurveData(): void {
+    console.log('[DEBUG] DrcAnalysisCoordinator: Starting curve regeneration');
+
+    // Regenerate the series data with current outlier states
+    const series = this.plate.doseResponseSeries({
+      ...this.drFilterOptions,
+      value: this.normed ? this.actOptions.normalizedColName! : this.actOptions.valueName,
+      concentration: this.actOptions.concentrationName,
+      groupBy: this.actOptions.roleName
+    });
+
+    const newSeriesVals = Object.entries(series);
+    console.log('[DEBUG] DrcAnalysisCoordinator: Generated new series with', newSeriesVals.length, 'compounds');
+
+    // Update the curve column with fresh data that includes current outlier states
+    for (let i = 0; i < Math.min(newSeriesVals.length, this.curveCol.length); i++) {
+      const currentSeries = newSeriesVals[i][1];
+      const outlierCount = currentSeries.points.filter((p) => p.outlier).length;
+      console.log(`[DEBUG] DrcAnalysisCoordinator: Series ${newSeriesVals[i][0]} has ${outlierCount} outliers out of ${currentSeries.points.length} points`);
+
+      const seriesData = {
+        points: currentSeries.points,
+        name: currentSeries.name,
+        fitFunction: FIT_FUNCTION_4PL_REGRESSION,
+        clickToToggle: true,
+        droplines: ['IC50'],
+        showPoints: 'points',
+      };
+
+      const minMax = this.normed ? {minY: -10, maxY: 110} : {};
+
+      const curveJson = JSON.stringify({
+        chartOptions: {
+          xAxisName: this.actOptions.concentrationName,
+          yAxisName: this.normed ? `norm(${this.actOptions.valueName})` : this.actOptions.valueName,
+          logX: true,
+          title: `${newSeriesVals[i][0]}`,
+          ...minMax,
+        },
+        series: [seriesData],
+      });
+
+      // Force column to recognize change by using notify=true
+      this.curveCol.set(i, curveJson, true);
+    }
+
+    // Update our stored series values
+    this.seriesVals.length = 0;
+    this.seriesVals.push(...newSeriesVals);
+
+    console.log('[DEBUG] DrcAnalysisCoordinator: Curve regeneration data updated, column version:', this.curveCol.version);
   }
 }

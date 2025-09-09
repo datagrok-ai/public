@@ -9,7 +9,7 @@ import {LayerType, Plate, PLATE_OUTLIER_WELL_NAME} from './plate';
 //@ts-ignore
 import * as jStat from 'jstat';
 import {IPlateWellValidator, plateWellValidators} from './plate-well-validators';
-import {fromEvent, Subject} from 'rxjs';
+import {fromEvent, Subject, Subscription} from 'rxjs';
 import {debounceTime, filter, takeUntil, take} from 'rxjs/operators';
 
 export type AnalysisOptions = {
@@ -33,6 +33,12 @@ export const dimensions = new Map([
   [1536, {rows: 32, cols: 48}],
 ]);
 
+export interface IAnalysisWidgetCoordinator {
+  onPlateDataChanged(changeType: 'outlier' | 'data' | 'layer', details: any): void;
+  refreshAnalysisView(): void;
+}
+
+
 export class PlateWidget extends DG.Widget {
   _colorColumn?: DG.Column | undefined;
   _plate: Plate = new Plate(8, 12);
@@ -54,6 +60,9 @@ export class PlateWidget extends DG.Widget {
   private _selectionRect: DG.Rect | null = null;
   private _canvas: HTMLCanvasElement | null = null;
   private _onDestroy = new Subject<void>();
+  private analysisCoordinators: IAnalysisWidgetCoordinator[] = [];
+  private outlierSubscription?: Subscription;
+
 
   roleSummaryDiv: HTMLElement = ui.divH([], 'plate-widget__role-summary');
 
@@ -101,6 +110,62 @@ export class PlateWidget extends DG.Widget {
       this._canvas = this.grid.overlay;
       this.initSelectionEvents();
     });
+  }
+  registerAnalysisCoordinator(coordinator: IAnalysisWidgetCoordinator): void {
+    this.analysisCoordinators.push(coordinator);
+  }
+
+  private notifyAnalysisCoordinators(changeType: 'outlier' | 'data' | 'layer', details: any): void {
+    this.analysisCoordinators.forEach((coord) => coord.onPlateDataChanged(changeType, details));
+  }
+
+  private refreshTabs(): void {
+    // Save current pane
+    const currentPaneName = this.tabs.currentPane?.name;
+
+    // Clear and rebuild tabs
+    this.tabs.clear();
+    this.grids.clear();
+
+    // Add summary tab
+    this.tabs.addPane('Summary', () => this.grid.root);
+
+    // Rebuild layer tabs (copied from refresh())
+    const layerInfo: Record<LayerType, {icon: string, layers: string[]}> = {
+      [LayerType.ORIGINAL]: {icon: '', layers: this.plate.getLayersByType(LayerType.ORIGINAL)},
+      [LayerType.LAYOUT]: {icon: '️(Layout)', layers: this.plate.getLayersByType(LayerType.LAYOUT)},
+      [LayerType.DERIVED]: {icon: '(Derived)', layers: this.plate.getLayersByType(LayerType.DERIVED)},
+      [LayerType.OUTLIER]: {icon: '🚫', layers: this.plate.getLayersByType(LayerType.OUTLIER)},
+    };
+
+    const allRegisteredLayers = new Set<string>();
+
+    for (const type of [LayerType.ORIGINAL, LayerType.LAYOUT, LayerType.DERIVED, LayerType.OUTLIER]) {
+      for (const layerName of layerInfo[type].layers) {
+        allRegisteredLayers.add(layerName);
+        const paneName = `${layerInfo[type].icon} ${this.getDisplayName(layerName, type)}`;
+        this.tabs.addPane(paneName, () => this.createLayerGrid(layerName));
+      }
+    }
+
+    // Fallback for unregistered layers
+    for (const layerName of this.plate.getLayerNames()) {
+      if (!allRegisteredLayers.has(layerName))
+        this.tabs.addPane(`❔ ${layerName}`, () => this.createLayerGrid(layerName));
+    }
+
+    // Restore current pane if it still exists
+    if (currentPaneName) {
+      const restoredPane = this.tabs.panes.find((p) => p.name === currentPaneName);
+      if (restoredPane)
+        this.tabs.currentPane = restoredPane;
+    }
+  }
+  private layerExists(layerName: string): boolean {
+    return this.tabs.panes.some((pane) =>
+      pane.name.includes(layerName) ||
+      pane.name.includes('Outliers')
+    );
   }
 
   private initSelectionEvents() {
@@ -379,8 +444,30 @@ export class PlateWidget extends DG.Widget {
   set plate(p: Plate) {
     console.log(`[DEBUG] 4. PlateWidget: Plate setter called with plate barcode: ${p.barcode}. Refreshing widget.`);
     this._plate = p;
+
+    // Unsubscribe from previous plate's outlier changes
+    if (this.outlierSubscription)
+      this.outlierSubscription.unsubscribe();
+
+
+    // Subscribe to new plate's outlier changes
+    this.outlierSubscription = p.onOutlierChanged.subscribe((change) => {
+      console.log(`[DEBUG] PlateWidget received outlier change:`, change);
+
+      if (!this.layerExists(PLATE_OUTLIER_WELL_NAME)) {
+        console.log(`[DEBUG] Outlier layer doesn't exist, refreshing tabs`);
+        this.refreshTabs();
+      } else {
+        console.log(`[DEBUG] Outlier layer already exists`);
+      }
+
+      this.grid.invalidate();
+      this.notifyAnalysisCoordinators('outlier', change);
+    });
+
     this.refresh();
   }
+
 
   private getDisplayName(layerName: string, layerType: LayerType): string {
   // Special handling for outlier layer to show user-friendly name
@@ -458,25 +545,35 @@ export class PlateWidget extends DG.Widget {
     const grid = DG.Viewer.heatMap(df);
     grid.columns.add({gridColumnName: '0', cellType: 'string', index: 1});
 
-    // NEW: Special handling for outlier layer
     const layerType = this.plate.getLayerType(layer);
-    if (layerType === LayerType.OUTLIER) {
-    // Configure outlier-specific grid properties
+    if (layerType === LayerType.OUTLIER)
       this.configureOutlierGrid(grid, layer);
-    }
+
 
     df.onValuesChanged.pipe(debounceTime(1000)).subscribe(() => {
       const p = this.plate;
       for (let i = 0; i < df.rowCount; i++) {
         for (let j = 0; j < df.columns.length - 1; j++) {
-        // Use getColumn to respect aliases, though here layer is the direct name
-          const plateCol = p.getColumn(layer);
-          if (plateCol)
-            plateCol.set(p._idx(i, j), df.get(`${j + 1}`, i));
+          const newValue = df.get(`${j + 1}`, i);
+
+          // START of CHANGE
+          if (layerType === LayerType.OUTLIER) {
+            // If the value in our temporary grid is different from the main plate state...
+            if (p.isOutlier(i, j) !== newValue) {
+              // ...update the main plate state and fire the event.
+              p.markOutlierWithSource(i, j, newValue, 'user-checkbox');
+            }
+          } else { // Keep existing logic for other layers
+            const plateCol = p.getColumn(layer);
+            if (plateCol)
+              plateCol.set(p._idx(i, j), newValue);
+          }
+          // END of CHANGE
         }
       }
 
-      // NEW: For outlier layer, trigger grid invalidation to update red crosses in summary
+      // This invalidate call can be removed as the event system will handle it,
+      // but it's harmless to leave.
       if (layerType === LayerType.OUTLIER)
         this.grid.invalidate();
     });
@@ -582,6 +679,9 @@ export class PlateWidget extends DG.Widget {
   }
 
   detach() {
+    if (this.outlierSubscription)
+      this.outlierSubscription.unsubscribe();
+
     this._onDestroy.next();
     this._onDestroy.complete();
     super.detach();

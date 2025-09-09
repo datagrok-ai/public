@@ -227,9 +227,10 @@ export function createPlatesView(): DG.View {
 
     // Update this condition to include analysis mapping changes
     if (event.type === 'mapping-changed' ||
-    event.type === 'plate-selected' ||
-    event.type === 'analysis-mapping-changed' ||
-    event.type === 'plate-added') { // Add this line
+      event.type === 'plate-selected' ||
+      event.type === 'analysis-mapping-changed' ||
+      event.type === 'plate-added'
+    ) {
       console.log('[DEBUG] Refreshing analysis views due to state change');
 
       const drcPane = tabControl.getPane('Dose Response');
@@ -245,6 +246,7 @@ export function createPlatesView(): DG.View {
       }
     }
   });
+
 
   const rightPanel = ui.divV([
     plateGridManager.root,

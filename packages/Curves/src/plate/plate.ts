@@ -20,6 +20,7 @@ import {inspectCurve} from '../fit/fit-renderer';
 import {plateDbColumn, wellProperties, plateTypes} from '../plates/plates-crud';
 import {PlateDrcAnalysis} from './plate-drc-analysis';
 import {IPlateWellValidator} from './plate-well-validators';
+import {Subject} from 'rxjs';
 
 /** Represents a well in the experimental plate */
 export interface PlateWell {
@@ -53,7 +54,7 @@ export enum LayerType {
   ORIGINAL = 'original',
   DERIVED = 'derived',
   LAYOUT = 'layout',
-  OUTLIER = 'outlier' // NEW: Add outlier layer type
+  OUTLIER = 'outlier'
 }
 
 
@@ -83,7 +84,9 @@ export class Plate {
   cols: number = 12;
 
   private layerRegistry: Map<string, LayerMetadata> = new Map();
-  private scopedAliases: Map<string, Map<string, string>> = new Map(); // scope -> (alias -> originalColumnName)
+  private scopedAliases: Map<string, Map<string, string>> = new Map();
+  private outlierChangeSubject = new Subject<{row: number, col: number, isOutlier: boolean, source: string}>();
+  public get onOutlierChanged() { return this.outlierChangeSubject.asObservable(); }
 
 
   private changeLog: Array<{
@@ -119,21 +122,23 @@ export class Plate {
   }
 
   _markOutlier(row: number, flag: boolean = true) {
+    console.log(`[DEBUG] _markOutlier called: row=${row}, flag=${flag}`);
+
     const outlierCol = this.data.columns.getOrCreate(PLATE_OUTLIER_WELL_NAME, DG.TYPE.BOOL);
 
-    // NEW: Register the outlier column as an OUTLIER layer when first created
     if (!this.layerRegistry.has(PLATE_OUTLIER_WELL_NAME)) {
+      console.log(`[DEBUG] Registering outlier layer for first time`);
       this.registerLayer(PLATE_OUTLIER_WELL_NAME, LayerType.OUTLIER, 'user-interaction');
-
-      // NEW: Initialize source tracking using column tags - more "frisky" approach
-      outlierCol.setTag('outlier.sources', '{}'); // JSON string to store sources
+      outlierCol.setTag('outlier.sources', '{}');
     }
 
     outlierCol.set(row, flag);
-
-    // NEW: Track the source of this outlier marking using tags
-    const source = 'user-interaction'; // Default for now
+    const source = 'user-interaction';
     this._updateOutlierSource(outlierCol, row, flag, source);
+
+    console.log(`[DEBUG] _markOutlier completed, calling _markOutlierWithSource`);
+    // Also call the event-emitting version
+    this._markOutlierWithSource(row, flag, source);
   }
 
   markOutlierWithSource(row: number, col: number, flag: boolean = true, source: string = 'user-interaction') {
@@ -141,7 +146,10 @@ export class Plate {
     this._markOutlierWithSource(dataRow, flag, source);
   }
   _markOutlierWithSource(row: number, flag: boolean = true, source: string = 'user-interaction') {
+    console.log(`[DEBUG] Marking outlier: row=${row}, flag=${flag}, source=${source}`);
+
     const outlierCol = this.data.columns.getOrCreate(PLATE_OUTLIER_WELL_NAME, DG.TYPE.BOOL);
+
 
     // Register the outlier column as an OUTLIER layer when first created
     if (!this.layerRegistry.has(PLATE_OUTLIER_WELL_NAME)) {
@@ -151,6 +159,10 @@ export class Plate {
 
     outlierCol.set(row, flag);
     this._updateOutlierSource(outlierCol, row, flag, source);
+    // Emitting change event
+    const [plateRow, plateCol] = this.rowIndexToExcel(row);
+    this.outlierChangeSubject.next({row: plateRow, col: plateCol, isOutlier: flag, source});
+    console.log(`[DEBUG] Outlier change event emitted for row=${plateRow}, col=${plateCol}`);
   }
 
   // Helper method to manage source tracking via column tags
@@ -633,7 +645,10 @@ export class Plate {
       series[group].x.push(v[concKey]);
       series[group].y.push(v[valueKey]);
       series[group].meta.push(v.innerDfRow);
-      series[group].outlier.push(this._isOutlier(v.innerDfRow));
+
+      const isOutlier = this._isOutlier(v.innerDfRow);
+      console.log(`[DEBUG] doseResponseSeries: Row ${v.innerDfRow} isOutlier=${isOutlier}`);
+      series[group].outlier.push(isOutlier);
     }
 
     console.log('--- Debugging doseResponseSeries ---');
