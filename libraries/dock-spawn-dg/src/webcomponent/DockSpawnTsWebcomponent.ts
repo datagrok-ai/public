@@ -91,8 +91,10 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
 
     public set activePanelTitle(panelTitle: string) {
         const foundPanel = this.dockManager?.getPanels().find((panel) => panel.title === panelTitle);
-        if (foundPanel)
-            this.dockManager.activePanel = foundPanel;
+        if (foundPanel) {
+            const pNode = this.dockManager?.findNodeFromContainerElement(foundPanel?.tabPage?.container?.containerElement)?.parent;
+            pNode?.container?.setActiveChild(foundPanel);
+        }
     }
 
     public getElementInSlot(slot: HTMLSlotElement): HTMLElement {
