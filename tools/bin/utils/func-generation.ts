@@ -185,7 +185,7 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
     const functionName = ((input.options as any)?.name ? (input?.options as any)?.name : ` ${input.name?.replaceAll('.', '')}`)?.trim();
     
     // eslint-disable-next-line max-len
-    s += comment + 'input: ' + type + ' ' + functionName + (input.defaultValue !== undefined ? `= ${input.defaultValue}` : '') + ' ' + options.replaceAll('"', '\'') + sep;
+    s += comment + 'input: ' + type + ' ' + functionName + (input.defaultValue !== undefined ? `= ${input.defaultValue}` : '') + ' ' + options + sep;
   }
   if (data.outputs) {
     for (const output of data.outputs) {
