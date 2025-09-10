@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
 import * as ui from 'datagrok-api/ui';
-import { getRevvityUsers } from './users';
+import { getRevvityUsersWithMapping } from './users';
 import { queryEntityById, RevvityApiResponse, RevvityData, RevvityUser } from './revvity-api';
 import { MOL_COL_NAME } from './compounds';
 import { awaitCheck } from '@datagrok-libraries/utils/src/test';
@@ -15,7 +15,7 @@ export const PARAMS_KEY = 'params';
 
 const ENTITY_FIELDS_TO_EXCLUDE = ['type', 'isTemplate', 'tags', 'eid'];
 const TAGS_TO_EXCLUDE = ['system.Keywords'];
-const OWNER_FIELDS = ['owner', 'createdBy', 'editedBy'];
+export const USER_FIELDS = ['owner', 'createdBy', 'editedBy'];
 const FIRST_COL_NAMES = [MOL_COL_NAME, 'id', 'name'];
 const FIELDS_SECTION_NAME = 'fields';
 const TABS_TO_EXCLUDE_FROM_WIDGET = ['chemicalDrawing'];
@@ -304,7 +304,7 @@ export function createRevvityResponseWidget(response: RevvityApiResponse, idSemV
         else {
           const innerAcc = ui.accordion();
           for (const relationshipItem of relationshipItems) {
-            innerAcc.addPane(OWNER_FIELDS.includes(relationshipName) ? relationshipItem.userId ?? 'User' : relationshipItem.name ?? relationshipItem.id, () => {
+            innerAcc.addPane(USER_FIELDS.includes(relationshipName) ? relationshipItem.userId ?? 'User' : relationshipItem.name ?? relationshipItem.id, () => {
               return ui.tableFromMap(relationshipItem);
             });
           }
@@ -329,9 +329,9 @@ export async function transformData(data: Record<string, any>[]): Promise<Record
       if (ENTITY_FIELDS_TO_EXCLUDE.includes(key))
         continue;
       //handle fileds related to users
-      if (OWNER_FIELDS.includes(key)) {
-        const user = (await getRevvityUsers())![value as string] as RevvityUser;
-        result[key] = user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.userName ?? value;
+      if (USER_FIELDS.includes(key)) {
+        const user = (await getRevvityUsersWithMapping())![value as string].revvityUser as RevvityUser;
+        result[key] = user.userId;
         continue;
       }
       if (Array.isArray(value)) {

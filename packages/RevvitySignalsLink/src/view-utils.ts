@@ -4,9 +4,12 @@ import * as ui from 'datagrok-api/ui';
 import { awaitCheck } from '@datagrok-libraries/utils/src/test';
 import { getRevvityLibraries } from './libraries';
 import { initializeFilters, SAVED_SEARCH_STORAGE } from './search-utils';
-import { getCompoundTypeByViewName, getViewNameByCompoundType } from './utils';
+import { getCompoundTypeByViewName, getViewNameByCompoundType, USER_FIELDS } from './utils';
 import { retrieveQueriesMap } from './compounds';
 import { ComplexCondition } from '@datagrok-libraries/utils/src/query-builder/query-builder';
+import { RevvityUser } from './revvity-api';
+import { getRevvityUsersWithMapping } from './users';
+
 
 
 const REVVITY_SIGNALS_APP_PATH: string = 'apps/Revvitysignalslink';
@@ -157,6 +160,8 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
   openedView = grok.shell.addTablePreview(df);
   openedView.name = name;
   openedView.path = createPath(path);
+  const users = await getRevvityUsersWithMapping();
+  setUserColumnRenderer(openedView, users ?? {});
 
   if (isSavedSearch && !initialSearchQuery) {
     const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, `${libName}|${compoundType}`) || '{}';
@@ -180,6 +185,7 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
       params: '{}'
     }).then((res: DG.DataFrame) => {
       openedView!.dataFrame = res;
+      setUserColumnsStyle(openedView!);
       initFilters();
     })
       .catch((e: any) => {
@@ -188,4 +194,40 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
       });
   } else
     initFilters();
+}
+
+export function setUserColumnsStyle(tv: DG.TableView) {
+  USER_FIELDS.forEach((it) => {
+    const col = tv.grid.col(it);
+    if (col) {
+      col.cellType = 'html';
+      col.width = 100;
+    }
+  });
+}
+
+function setUserColumnRenderer(tv: DG.TableView, users: {[key: string]: {revvityUser: RevvityUser, datagrokUser?: DG.User}}) {
+    tv.grid.onCellPrepare(async (gc) => {
+    if (USER_FIELDS.includes(gc.cell.column?.name) && gc.cell.value && !gc.isColHeader) {
+
+        //gc.cell.value is revvity user id
+        const user = users[gc.cell.value];
+        const datagrokUser = user?.datagrokUser;
+        const revvityUser = user?.revvityUser;
+
+        if (datagrokUser) {
+          const icon = DG.ObjectHandler.forEntity(datagrokUser)?.renderIcon(datagrokUser.dart);
+          if (icon) {
+            icon.style.top = 'calc(50% - 8px)';
+            icon.style.left = 'calc(50% - 8px)';
+            gc.style.element = ui.tooltip.bind(icon, () => {
+              return DG.ObjectHandler.forEntity(datagrokUser)?.renderTooltip(datagrokUser.dart)!;
+            });
+          }
+        } else {
+          gc.style.element = ui.divText(revvityUser.firstName && revvityUser.lastName ? `${revvityUser.firstName} ${revvityUser.lastName}` : revvityUser.userName ?? `user #${gc.cell.value}`);
+        }
+      
+    }
+  });
 }

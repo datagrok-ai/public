@@ -8,7 +8,7 @@ import { SignalsSearchParams, SignalsSearchQuery } from './signals-search-query'
 import { queryEntities, queryLibraries, queryMaterialById, queryTags, queryTerms, queryUsers, RevvityApiResponse, RevvityData, RevvityUser } from './revvity-api';
 import { dataFrameFromObjects, reorderColummns, transformData, createRevvityResponseWidget, getViewNameByCompoundType } from './utils';
 import { addMoleculeStructures, assetsQuery, MOL_COL_NAME, retrieveQueriesMap } from './compounds';
-import { getRevvityUsers } from './users';
+import { getRevvityUsersWithMapping } from './users';
 import { createInitialSatistics, getRevvityLibraries, RevvityLibrary, RevvityType } from './libraries';
 import { createViewFromPreDefinedQuery, handleInitialURL } from './view-utils';
 import { SAVED_SEARCH_STORAGE } from './search-utils';
@@ -69,7 +69,7 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
   ui.setUpdateIndicator(loadingNode.captionLabel, true);
   let libs;
   try {
-    getRevvityUsers();
+    await getRevvityUsersWithMapping();
     libs = await getRevvityLibraries();
   } catch(e: any) {
     loadingNode.remove();
@@ -138,8 +138,6 @@ export async function searchEntities(query: string, params: string): Promise<DG.
 }
 
 //name: Search Entities With Structures
-//meta.cache: all
-//meta.cache.invalidateOn: 0 0 * * *
 //input: string query
 //input: string params
 //output: dataframe df
