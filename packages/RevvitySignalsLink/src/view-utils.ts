@@ -170,7 +170,7 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
   const initFilters = () => {
     ui.setUpdateIndicator(openedView!.root, false);
     setBreadcrumbsInViewName([libName, compoundType], treeNode);
-    const filtersDiv = ui.divV([]);
+    const filtersDiv = ui.divV([], 'revvity-signals-filter-panel');
     initializeFilters(openedView!, filtersDiv, libName, compoundType, initialSearchQuery, !isSavedSearch);
   }
 

@@ -95,10 +95,16 @@ export async function initializeFilters(tv: DG.TableView, filtersDiv: HTMLDivEle
     })
     ui.setUpdateIndicator(filtersDiv, true, 'Loading filters...');
     const qb = await initializeQueryBuilder(selectedLib[0].id, compoundType, initialSearchQuery);
+    qb.validationError.subscribe((isInvalid: boolean) => {
+      runSearchButton.disabled = isInvalid;
+    });
 
-    const runSearchButton = ui.bigButton('Search', async () => {
+    const runSearchButton = ui.button('Search', async () => {
       runSearch(qb, tv, selectedLib[0].id, compoundType, libName, true);
     });
+
+    //set initial validation status
+    runSearchButton.disabled = qb.invalid;
 
     ui.setUpdateIndicator(filtersDiv, false);
     filtersDiv.append(ui.divH([saveButton, loadButton], 'revvity-saved-searches-icons-div'));
@@ -151,7 +157,7 @@ export async function initializeQueryBuilder(libId: string, compoundType: string
     filterFields.push(prop);
   });
 
-  return new QueryBuilder(filterFields, initialSearchQuery, QueryBuilderLayout.Narrow, `Revvity Signals|${libId}|${compoundType}`);
+  return new QueryBuilder(filterFields, initialSearchQuery, QueryBuilderLayout.Narrow, `Revvity Signals|${libId}|${compoundType}`, true);
 
 }
 

@@ -58,10 +58,11 @@
 }
 
 .revvity-saved-searches-icons-div {
+    position: absolute;
+    left: 35px;
+    z-index: 1000;
     gap: 10px;
-    justify-content: end;
-    padding-right: 10px;
-    color: #2083d5;
+    top: 5px;
 }
 
 .revvity-signals-starting-app .d4-update-shadow .ui-label {
@@ -71,4 +72,10 @@
 .revvity-signals-starting-app .d4-update-shadow .grok-loader {
     width: 100px;
     height: 30px;
+}
+
+.revvity-signals-filter-panel .query-builder-history-icon {
+    font-size: 14px;
+    visibility: visible;
+    padding-bottom: 10px;
 }
