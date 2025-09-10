@@ -178,6 +178,17 @@ export function getSearchHistory(key: string): MolTrackSearchHistoryItem[] {
   return JSON.parse(!stringItems ? '[]' : stringItems);
 }
 
+export async function loadSearchFields() {
+  if (!molTrackSearchFieldsArr) {
+    try {
+      molTrackSearchFieldsArr = await createSearchFileds();
+    } catch (e: any) {
+      molTrackSearchFieldsArr = null;
+      throw e;
+    }
+  }
+}
+
 export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope, initialQuery?: MolTrackSearch,
   changePath?: boolean) {
   const filtersDiv = ui.div([]);
@@ -202,13 +213,10 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope, in
     tv.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
     ui.setUpdateIndicator(filtersDiv, true, 'Loading filters...');
     try {
+      await loadSearchFields();
       if (!molTrackSearchFieldsArr) {
-        try {
-          molTrackSearchFieldsArr = await createSearchFileds();
-        } catch (e: any) {
-          molTrackSearchFieldsArr = null;
-          throw e;
-        }
+        grok.shell.error(`Filter fields haven't been loaded`);
+        return;
       }
       const filterFields: DG.Property[] = molTrackSearchFieldsArr
         .filter((it) => it.options[MOLTRACK_ENTITY_LEVEL] === entityLevel);
@@ -384,16 +392,25 @@ export async function runSearch(tv: DG.TableView, search: MolTrackSearch, entity
     }); ;
     const resultDf = DG.DataFrame.fromObjects(result.data);
     if (resultDf) {
-      resultDf?.columns.names().forEach((colName: string) => {
-        const friendlyName =
-          resultDf.col(colName)!.name.replace(`${entityLevel.toLowerCase()}.`, '').replace(`details.`, '');
+      await loadSearchFields();
+      const filterFields: DG.Property[] = molTrackSearchFieldsArr ?
+        molTrackSearchFieldsArr.filter((it) => it.options[MOLTRACK_ENTITY_LEVEL] === entityLevel) : [];
+      resultDf?.columns.names().forEach(async (colName: string) => {
+        const propIdx = filterFields
+          .findIndex((it) => it.name.toLowerCase() ===
+            colName.replace(`${entityLevel.toLowerCase()}.`, '').replace(`details.`, '').toLowerCase());
+        const friendlyName = propIdx !== -1 ?
+          filterFields[propIdx].friendlyName ?? filterFields[propIdx].name :
+          colName.replace(`${entityLevel.toLowerCase()}.`, '').replace(`details.`, '');
         resultDf.col(colName)!.setTag('friendlyName', friendlyName);
       });
+      await grok.data.detectSemanticTypes(resultDf);
       reorderSearchResColummns(resultDf);
       //save history in case of successful search
       saveSearchHistory(`${_package.name}|${entityLevel}`, JSON.stringify(search));
     }
     tv.dataFrame = resultDf ?? DG.DataFrame.create();
+    tv.dataFrame.name = tv.name;
   } catch (e: any) {
     grok.shell.error(e?.message ?? e);
     tv.dataFrame = DG.DataFrame.create();
@@ -457,11 +474,13 @@ export async function createSearchFileds(): Promise<DG.Property[]> {
           name: STRUCTURE_SEARCH_FIELD,
           type: 'string',
           semType: DG.SEMTYPE.MOLECULE,
+          friendlyName: prop.friendly_name,
         }:
         {
           name: prop.name,
           type: prop.value_type,
           semType: prop.semantic_type?.name,
+          friendlyName: prop.friendly_name,
         };
       const dgProp = DG.Property.fromOptions(propOptions);
       dgProp.options[MOLTRACK_ENTITY_TYPE] = prop.entity_type;
@@ -574,7 +593,8 @@ function isDynamicField(field: string, type: MolTrackEntityType): boolean {
 function convertSimpleCondition(cond: any, level: Scope, type: MolTrackEntityType): MolTrackFilter {
   const isDynamicProp = isDynamicField(cond.field, type);
   // Handle chemical similarity search special case
-  if (cond.operator === 'is_similar' && cond.value && typeof cond.value === 'object' && 'molecule' in cond.value) {
+  if (cond.operator === Operators.IS_SIMILAR && cond.value &&
+    typeof cond.value === 'object' && 'molecule' in cond.value) {
     return {
       field: `${level}${isDynamicProp ? '.details': ''}.${cond.field}`,
       operator: Operators.IS_SIMILAR,

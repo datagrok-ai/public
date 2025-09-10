@@ -27,6 +27,10 @@ export const ScopeLabels: Record<string, Scope> = {
   'Assay Results': Scope.ASSAY_RESULTS,
 };
 
+export const ScopeLabelsReduced: Record<string, Scope> = {
+  'Compounds': Scope.COMPOUNDS,
+  'Batches': Scope.BATCHES,
+};
 
 export enum ResultOutput {
   CSV = 'csv',

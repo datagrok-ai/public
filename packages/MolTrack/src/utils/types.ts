@@ -31,7 +31,15 @@ export interface MolTrackProperty {
   semantic_type_id: number;
   value_type: 'string' | 'int' | 'double' | 'datetime' | 'uuid' | 'boolean';
   unit?: string;
-  semantic_type?: MolTrackSemanticType
+  semantic_type?: MolTrackSemanticType;
+  min?: number;
+  max?: number;
+  choices?: any;
+  validators?: any;
+  value_datetime?: any;
+  value_uuid?: string;
+  value_num?: number;
+  value_string?: string;
 }
 
 export interface MolTrackSemanticType {
