@@ -53,7 +53,7 @@ See [Disaster recovery demo](https://www.youtube.com/watch?v=oFs9RShkHT8) for mo
 **A:** Yes, Datagrok adheres to secure development and industry best practices across infrastructure, development, and enterprise security:
 
 - Security-first infrastructure – designed with security from the ground up. Features include secure credentials management, flexible authentication (OAuth, SSO, Active Directory), and role-based access control.  
-  [Learn more](../../deploy/GCP/deploy-gcp-gke-terraform.md#security) | [Authentication & authorization](../../develop/how-to/apps/build-an-app.md#authentication) | [Role-based access](../../compute/compute.md#privileges-and-visibility)
+  [Learn more](../../deploy/GCP/deploy-gcp-gke-terraform.md) | [Authentication & authorization](../../develop/how-to/apps/build-an-app.md#authentication) | [Role-based access](../../compute/compute.md#privileges-and-visibility)
 
 - Quality assurance – Automated check for vulnerabilities (Snyk, Grype) and multi-layered testing including unit, integration, UI, and performance tests.  
   [Learn more](../../develop/qa/quality-assurance.md#continuous-integration-and-deployment-system) | [Testing](../../develop/qa/quality-assurance.md#automated-testing)
