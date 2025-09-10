@@ -14,6 +14,11 @@ Learn more about [Datagrok's architecture](../../develop/under-the-hood/architec
 **A:** Datagrok supports Docker, Kubernetes, on-premises, and cloud deployments (AWS, GCP, Azure).  
 Learn more about [Deployment](../../deploy/deploy.md).
 
+### Requirements
+
+**Q:** What are the browser requirements?
+**A:** Datagrok is compatible with modern browsers.  Popular choices are Chrome, Edge, or Safari.
+
 ### Security
 
 **Q:** How does Datagrok handle authentication and authorization?  
