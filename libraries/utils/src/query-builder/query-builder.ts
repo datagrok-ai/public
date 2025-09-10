@@ -57,7 +57,6 @@ export class BaseConditionEditor<T = any> {
     onValidationError: Subject<boolean> = new Subject<boolean>();
     showSuggestions = false;
     suggestionsMenuClicked = false;
-    invalid = false;
 
     constructor(prop: DG.Property, operator: string, initialCondition?: SimpleCondition<T>) {
         this.condition = initialCondition ?? {
@@ -65,17 +64,18 @@ export class BaseConditionEditor<T = any> {
             operator: operator,
             value: undefined as T
         };
-        const inputs = this.initializeEditor(prop);
-        inputs.forEach((input) => {
-            input.onChanged.subscribe(() => {
-                this.invalid = inputs.some((it) => !it.validate());
-                this.onValidationError.next(this.invalid);
+        const inputs = this.initializeEditor(prop).then((inputs) => {
+            inputs.forEach((input) => {
+                input.onChanged.subscribe(() => {
+                    this.onValidationError.next(!input.validate());
+                });
             });
+            if(inputs.some((it) => !it.validate()))
+                this.onValidationError.next(true);;
         });
-        this.invalid = inputs.some((it) => !it.validate());
     }
 
-    protected initializeEditor(prop: DG.Property): DG.InputBase[] {
+    protected async initializeEditor(prop: DG.Property): Promise<DG.InputBase[]> {
         if (Array.isArray(this.condition.value))
             this.condition.value = undefined as T;
         const initVal = prop.type === DG.TYPE.DATE_TIME && typeof this.condition.value === 'string' ?
@@ -123,7 +123,7 @@ export class BaseConditionEditor<T = any> {
 }
 
 export class BetweenConditionEditor extends BaseConditionEditor {
-    override initializeEditor(prop: DG.Property): DG.InputBase[] {
+    override async initializeEditor(prop: DG.Property): Promise<DG.InputBase[]> {
         if (!this.condition.value || !Array.isArray(this.condition.value)) {
             this.condition.value = [this.condition.value, undefined];
             this.onChanged.next(this.condition);
@@ -151,7 +151,7 @@ export class BetweenConditionEditor extends BaseConditionEditor {
 }
 
 export class BooleanConditionEditor extends BaseConditionEditor {
-    override initializeEditor(prop: DG.Property): DG.InputBase[] {
+    override async initializeEditor(prop: DG.Property): Promise<DG.InputBase[]> {
         if (this.condition.value === undefined)
             this.condition.value = true;
         const options = ['true', 'false'];
@@ -170,7 +170,7 @@ export class BooleanConditionEditor extends BaseConditionEditor {
 }
 
 export class MoleculeConditionEditor extends BaseConditionEditor<string> {
-    override initializeEditor(prop: DG.Property): DG.InputBase[] {
+    override async initializeEditor(prop: DG.Property): Promise<DG.InputBase[]> {
         //if we swith from similarity input to standard molecule input - need to modify value
         if (this.condition.value && typeof this.condition.value !== 'string') {
             if ('molecule' in this.condition.value)
@@ -198,12 +198,13 @@ export type MoleculeSimilarity = {
     threshold: number
 }
 export class MoleculeSimilarityConditionEditor extends BaseConditionEditor<MoleculeSimilarity> {
-    override initializeEditor(prop: DG.Property): DG.InputBase[] {
+    override async initializeEditor(prop: DG.Property): Promise<DG.InputBase[]> {
         //in case we switch from some other operator, where value is a string (contains, is contained)
         if (!this.condition.value || typeof this.condition.value === 'string') {
             this.condition.value = {molecule: this.condition.value ?? '', threshold: 0.7};
         }
         const moleculeInput = ui.input.molecule('', {
+            value: this.condition.value.molecule,
             onValueChanged: () => {
                 this.condition.value.molecule = moleculeInput.value;
                 this.onChanged.next(this.condition);
@@ -227,7 +228,7 @@ export class MoleculeSimilarityConditionEditor extends BaseConditionEditor<Molec
 
 
 export class MultiValueConditionEditorString extends BaseConditionEditor<string[]> {
-    override initializeEditor(prop: DG.Property): DG.InputBase[] {
+    override async initializeEditor(prop: DG.Property): Promise<DG.InputBase[]> {
         if (!Array.isArray(this.condition.value)) {
             this.condition.value = [];
         }
@@ -245,7 +246,7 @@ export class MultiValueConditionEditorString extends BaseConditionEditor<string[
 }
 
 export class MultiValueConditionEditorInt extends BaseConditionEditor<number[]> {
-    override initializeEditor(prop: DG.Property): DG.InputBase[] {
+    override async initializeEditor(prop: DG.Property): Promise<DG.InputBase[]> {
         if (!Array.isArray(this.condition.value)) {
             this.condition.value = [];
         }
@@ -263,7 +264,7 @@ export class MultiValueConditionEditorInt extends BaseConditionEditor<number[]> 
 }
 
 export class MultiValueConditionEditorFloat extends BaseConditionEditor<number[]> {
-    override initializeEditor(prop: DG.Property): DG.InputBase[] {
+    override async initializeEditor(prop: DG.Property): Promise<DG.InputBase[]> {
         if (!Array.isArray(this.condition.value)) {
             this.condition.value = [];
         }
@@ -439,15 +440,18 @@ export class QueryBuilder {
     structureChanged: Subject<ComplexCondition> = new Subject<ComplexCondition>();
     filterValueChanged: Subject<SimpleCondition> = new Subject<SimpleCondition>();
     validationError: Subject<boolean> = new Subject<boolean>();
+    invalid = false;
     layout: QueryBuilderLayout;
     private _historyCacheKey: string;
     private historyIcon: HTMLElement | null = null;
+    private historyIconOnTop = false;
 
     constructor(properties: DG.Property[], initialCondition?: ComplexCondition, layout: QueryBuilderLayout = QueryBuilderLayout.Standard,
-        _historyCacheKey: string = '') {
+        historyCacheKey: string = '', historyIconOnTop = false) {
         this.properties = properties;
         this.layout = layout;
-        this._historyCacheKey = _historyCacheKey;
+        this._historyCacheKey = historyCacheKey;
+        this.historyIconOnTop = historyIconOnTop;
         
         if (initialCondition) {
             this.condition = initialCondition;
@@ -482,7 +486,10 @@ export class QueryBuilder {
             this.historyIcon.classList.add('query-builder-history-icon');
         }
 
-        this.root.appendChild(this.historyIcon);
+        if (this.historyIconOnTop)
+            this.root.prepend(this.historyIcon);
+        else
+            this.root.appendChild(this.historyIcon);
         
         // Set data attribute for CSS to control visibility
         if (this.root) {
@@ -606,6 +613,10 @@ export class QueryBuilder {
         nestingLevel: number = 0
     ): HTMLElement {
 
+        //reset validation status
+        this.invalid = false;
+        this.validationError.next(false);
+
         if (!condition) {
             condition = {
                 logicalOperator: Operators.Logical.and,
@@ -663,10 +674,9 @@ export class QueryBuilder {
                     this.filterValueChanged.next(editor.condition);
                 });
                 editor.onValidationError.subscribe((error) => {
+                    this.invalid = error;
                     this.validationError.next(error);
                 });
-                if (editor.invalid)
-                    this.validationError.next(true);
                 criteriaDiv.append(editor.root);
             }
 
