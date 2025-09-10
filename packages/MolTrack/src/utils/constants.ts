@@ -78,6 +78,7 @@ export const MOLTRACK_ENDPOINT = 'moltrackEndpoint';
 export const MOLTRACK_ENTITY_TYPE = 'moltrackEntityType';
 export const MOLTRACK_ENTITY_LEVEL = 'moltrackEntityLevel';
 export const MOLTRACK_IS_STATIC_FIELD = 'moltrackIsStaticField';
+export const PROPERTIES = 'properties';
 
 export const SEARCH_NODE = 'Search';
 export const SAVED_SEARCHES_NODE = 'Saved Searches';

@@ -7,8 +7,9 @@ import { MolTrackDockerService } from './utils/moltrack-docker-service';
 import { RegistrationView } from './utils/registration-tab';
 import { createPath, registerAllData, registerAssayData, updateAllMolTrackSchemas } from './utils/utils';
 import { EntityBaseView } from './utils/registration-entity-base';
-import { SAVED_SEARCHES_NODE, Scope, SEARCH_NODE } from './utils/constants';
-import { createSearchNode, createSearchView, getSavedSearches, handleSearchURL } from './utils/search';
+import { MOLTRACK_ENTITY_LEVEL, MOLTRACK_IS_STATIC_FIELD, PROPERTIES, SAVED_SEARCHES_NODE, Scope, SEARCH_NODE } from './utils/constants';
+import { createSearchNode, createSearchView, getSavedSearches, handleSearchURL, loadSearchFields, molTrackSearchFieldsArr } from './utils/search';
+import { MolTrackProperty } from './utils/types';
 
 export const _package = new DG.Package();
 
@@ -358,14 +359,20 @@ export async function search(query: string, entityEndpoint: string) {
 export async function retrieveEntity(scope: string): Promise<DG.DataFrame | undefined> {
   await MolTrackDockerService.init();
   const resultJson = await MolTrackDockerService.retrieveEntity(scope);
-  const flattenedRes = resultJson.map((item: any) => flattened(item));
+  await loadSearchFields();
+  const dynamicProps = molTrackSearchFieldsArr ?
+    molTrackSearchFieldsArr.filter((it) => it.options[MOLTRACK_ENTITY_LEVEL] === scope && !it.options[MOLTRACK_IS_STATIC_FIELD]) : [];
+  const flattenedRes = resultJson.map((item: any) => flattened(item, dynamicProps));
   return DG.DataFrame.fromObjects(flattenedRes);
 }
 
 export async function getCompoundById(id: number): Promise<DG.DataFrame | undefined> {
   await MolTrackDockerService.init();
   const resultJson = await MolTrackDockerService.getCompoundById(id);
-  const flattenedRes = [resultJson].map((item) => flattened(item));
+  await loadSearchFields();
+  const dynamicProps = molTrackSearchFieldsArr ?
+    molTrackSearchFieldsArr.filter((it) => it.options[MOLTRACK_ENTITY_LEVEL] === Scope.COMPOUNDS && !it.options[MOLTRACK_IS_STATIC_FIELD]) : [];
+  const flattenedRes = [resultJson].map((item) => flattened(item, dynamicProps));
   return DG.DataFrame.fromObjects(flattenedRes);
 }
 
@@ -374,12 +381,25 @@ export async function checkCompoundExists(smiles: string): Promise<boolean> {
   return await MolTrackDockerService.checkCompoundExists(smiles);
 }
 
-function flattened(item: any) {
+function flattened(item: any, props: DG.Property[]) {
   const row: any = {};
   for (const [key, value] of Object.entries(item)) {
-    row[key] = (typeof value === 'object' && value !== null) ?
-      JSON.stringify(value) :
-      value;
+    if (typeof value === 'object' && value !== null) {
+      //handle properties object
+      if (Array.isArray(value) && key === PROPERTIES) {
+        props.forEach((prop: DG.Property) => {
+          const valIdx = value.findIndex((it) => it.name.toLowerCase() === prop.name.toLocaleLowerCase());
+          const val = valIdx === -1 ? null : 
+          (value[valIdx] as MolTrackProperty).value_num ??
+          (value[valIdx] as MolTrackProperty).value_datetime ??
+          (value[valIdx] as MolTrackProperty).value_uuid ??
+          (value[valIdx] as MolTrackProperty).value_string;
+          row[prop.friendlyName ?? prop.name]  = val;
+        })
+      } else
+        row[key] = JSON.stringify(value)
+    } else 
+      row[key] = value;
   }
   return row;
 }
