@@ -22,7 +22,7 @@ import {
   findNextStep,
   findNodeWithPathByUuid, findTreeNodeByPath,
   findTreeNodeParrent, hasSubtreeFixableInconsistencies,
-  reportStep,
+  reportTree,
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 import {take} from 'rxjs/operators';
@@ -339,7 +339,7 @@ export const TreeWizard = Vue.defineComponent({
     const exports = Vue.computed(() => {
       if (!treeState.value || isFuncCallState(treeState.value))
         return [];
-      return [{id: 'default', friendlyName: 'Default Excel', handler: () => reportStep(treeState.value)}, ...(treeState.value.customExports ?? [])];
+      return [{id: 'default', friendlyName: 'Default Excel', handler: () => reportTree(treeState.value, currentMetaCallData.value, hasNotSavedEdits.value)}, ...(treeState.value.customExports ?? [])];
     });
 
     const chosenStepState = Vue.computed(() => chosenStep.value?.state);

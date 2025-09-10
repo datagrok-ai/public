@@ -61,11 +61,11 @@ export const getFeature = (features: Record<string, boolean> | string[], feature
   return defaultValue;
 };
 
-export const getStartedOrNull = (run: DG.FuncCall) => {
+export const getStartedOrNull = (run?: DG.FuncCall) => {
   try {
-    return run.started as any;
+    return run?.started;
   } catch {
-    return null;
+    return;
   }
 };
 
