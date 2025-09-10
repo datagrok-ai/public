@@ -11,6 +11,7 @@ import * as jStat from 'jstat';
 import {IPlateWellValidator, plateWellValidators} from './plate-well-validators';
 import {fromEvent, Subject, Subscription} from 'rxjs';
 import {debounceTime, filter, takeUntil, take} from 'rxjs/operators';
+import './plate-widget.css';
 
 export type AnalysisOptions = {
     roleName: string,
@@ -73,6 +74,20 @@ export class PlateWidget extends DG.Widget {
     this.syncGrids();
   }
 
+  private isPointInWell(x: number, y: number, gridRow: number, gridCol: number): boolean {
+    if (gridRow < 0 || gridCol <= 0) return false;
+
+    const cell = this.grid.cell(this.grid.columns.byIndex(gridCol)!.name, gridRow);
+    if (!cell) return false;
+
+    const bounds = cell.bounds;
+    const centerX = bounds.midX;
+    const centerY = bounds.midY;
+    const radius = Math.min(bounds.height / 2, bounds.width / 2) * 0.8;
+
+    const distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
+    return distance <= radius;
+  }
 
   constructor() {
     super(ui.div([], 'plate-widget'));
@@ -93,11 +108,21 @@ export class PlateWidget extends DG.Widget {
     mainContainer.style.width = '100%';
     this.root.appendChild(mainContainer);
 
+
     this.grid.props.allowRowSelection = false;
     this.grid.props.allowColSelection = false;
     this.grid.props.allowBlockSelection = false;
     this.grid.props.showCurrentRowIndicator = false;
     this.grid.props.showMouseOverRowIndicator = false;
+    this.grid.props.showCurrentCellOutline = false;
+
+    this.grid.props.showHeatmapScrollbars = false;
+    this.grid.props.colHeaderHeight = 30;
+
+    // Disable ALL resizing
+    this.grid.props.allowColHeaderResizing = false;
+    this.grid.props.allowColResizing = false;
+    this.grid.props.allowRowResizing = false;
 
     this.grid.props.showHeatmapScrollbars = false;
     this.grid.props.colHeaderHeight = 30;
@@ -117,15 +142,41 @@ export class PlateWidget extends DG.Widget {
       }
     });
 
+    let hoveredCell: {row: number, col: number} | null = null;
+
+    // Handle mouse move for hover effects
+    this.grid.onCellMouseEnter.subscribe((gc: DG.GridCell) => {
+      if (gc.isTableCell) {
+        hoveredCell = {row: gc.gridRow, col: gc.gridColumn.idx - 1};
+        this.grid.invalidate();
+      }
+    });
+
+    this.grid.onCellMouseLeave.subscribe((gc: DG.GridCell) => {
+      hoveredCell = null;
+      this.grid.invalidate();
+    });
+
     this.grid.onCellClick.subscribe((gc: DG.GridCell) => {
-      if (!this.editable || !gc.isTableCell || this.interactionMode !== 'outlier')
-        return;
+      if (!gc.isTableCell) return;
 
       const row = gc.gridRow;
       const col = gc.gridColumn.idx - 1;
-      const currentState = this.plate.isOutlier(row, col);
-      this.plate.markOutlierWithSource(row, col, !currentState, 'summary-click-toggle');
+
+      // Handle based on interaction mode
+      if (this.interactionMode === 'outlier' && this.editable) {
+        const currentState = this.plate.isOutlier(row, col);
+        this.plate.markOutlierWithSource(row, col, !currentState, 'summary-click-toggle');
+        this.grid.invalidate();
+      } else if (this.interactionMode === 'default' && this.editable) {
+      // In default mode, clicking could open role assignment
+      // You can add logic here if needed
+      }
     });
+
+    // Store hovered cell reference for rendering
+    (this as any)._hoveredCell = () => hoveredCell;
+
 
     ui.tools.waitForElementInDom(this.grid.root).then(() => {
       this._canvas = this.grid.overlay;
@@ -460,20 +511,34 @@ export class PlateWidget extends DG.Widget {
   }
 
   initPlateGrid(grid: DG.Grid, isSummary: boolean = false) {
+  // Core display settings
     grid.props.showHeatmapScrollbars = false;
     grid.props.allowColReordering = false;
     grid.props.allowRowReordering = false;
     grid.props.allowSorting = false;
     grid.props.allowEdit = !isSummary;
-    grid.props.showRowGridlines = true;
-    grid.props.showColumnGridlines = true;
+    grid.props.showRowGridlines = false;
+    grid.props.showColumnGridlines = false;
     grid.props.heatmapColors = false;
     grid.props.colHeaderHeight = 25;
+
+    // Disable selection visuals - using actual properties from IGridSettings
     grid.props.allowRowSelection = false;
     grid.props.allowColSelection = false;
     grid.props.allowBlockSelection = false;
     grid.props.showCurrentRowIndicator = false;
     grid.props.showMouseOverRowIndicator = false;
+    grid.props.showCurrentCellOutline = false; // This should help with the black box
+
+    // Disable resizing - correct properties
+    grid.props.allowColHeaderResizing = false;
+    grid.props.allowColResizing = false;
+    grid.props.allowRowResizing = false;
+
+    // Make selection colors transparent (using 0 for transparent)
+    grid.props.selectedRowsColor = 0x00000000; // Fully transparent
+    grid.props.mouseOverRowColor = 0x00000000; // Fully transparent
+    grid.props.currentRowColor = 0x00000000; // Fully transparent
 
     grid.onCellRender.subscribe((args) => this.renderCell(args, isSummary));
   }
@@ -610,40 +675,55 @@ export class PlateWidget extends DG.Widget {
   }
 
 
-  renderCell(args:DG.GridCellRenderArgs, summary: boolean = false) {
+  renderCell(args: DG.GridCellRenderArgs, summary: boolean = false) {
     const gc = args.cell;
-    args.g.fillStyle = 'grey';
-    args.g.strokeStyle = 'grey';
-    args.g.lineWidth = 1;
     const g = args.g;
-    const x = args.bounds.x; const y = args.bounds.y; const w = args.bounds.width; const h = args.bounds.height;
+    const x = args.bounds.x;
+    const y = args.bounds.y;
+    const w = args.bounds.width;
+    const h = args.bounds.height;
+
+    // Clear any grid background completely
+    if (summary) {
+      g.save();
+      g.fillStyle = 'white';
+      g.fillRect(x, y, w, h);
+      g.restore();
+    }
+
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.font = `${Math.ceil(Math.min(...[16, w - 1, h - 1]))}px  Roboto, Roboto Local`;
+    g.font = `${Math.ceil(Math.min(...[16, w - 1, h - 1]))}px Roboto, Roboto Local`;
     const isColoredByConc = this._colorColumn?.name?.toLowerCase()?.includes('conc');
 
     const hasRowHeader = gc.grid.columns.byIndex(0)?.cellType === 'row header';
+
     if (gc.isColHeader && gc.gridColumn.idx > (hasRowHeader ? 1 : 0)) {
+      g.fillStyle = 'grey';
       g.fillText('' + (gc.gridColumn.idx - (hasRowHeader ? 1 : 0)), x + w / 2, y + h / 2);
       args.preventDefault();
     } else if (gc.isColHeader) {
       args.preventDefault();
       return;
     } else if ((gc.gridColumn.name == '0' || gc.gridColumn.idx == 0) && gc.gridRow >= 0) {
+      g.fillStyle = 'grey';
       const prefix = gc.gridRow > 25 ? 'A' : '';
       g.fillText(prefix + String.fromCharCode(65 + gc.gridRow % 26), x + w / 2, y + h / 2);
       args.preventDefault();
     } else if (summary && h > 0 && gc.gridRow >= 0 && gc.gridColumn.idx > 0) {
       const dataRow = this._plate._idx(gc.gridRow, gc.gridColumn.idx - 1);
 
-      if (this.plate.data.selection.get(dataRow)) {
-        g.fillStyle = 'rgba(0, 128, 255, 0.2)';
-        g.fillRect(x, y, w, h);
-      }
+      // Check if this cell is hovered
+      const hoveredCell = (this as any)._hoveredCell ? (this as any)._hoveredCell() : null;
+      const isHovered = hoveredCell &&
+                     hoveredCell.row === gc.gridRow &&
+                     hoveredCell.col === gc.gridColumn.idx - 1;
 
+      // Draw the well circle
       g.beginPath();
       const r = Math.min(h / 2, w / 2) * 0.8;
       g.ellipse(x + w / 2, y + h / 2, r, r, 0, 0, 2 * Math.PI);
+
       if (this._colorColumn) {
         if (this._colorColumn.isCategorical && this._colorColumn.meta.colors.getType() !== DG.COLOR_CODING_TYPE.CATEGORICAL)
           this._colorColumn.meta.colors.setCategorical();
@@ -654,7 +734,20 @@ export class PlateWidget extends DG.Widget {
         g.fill();
       }
 
+      // Draw hover effect
+      if (isHovered) {
+        g.strokeStyle = 'rgba(0, 128, 255, 0.8)';
+        g.lineWidth = 3;
+      } else if (this.plate.data.selection.get(dataRow)) {
+      // Selection ring
+        g.strokeStyle = 'rgba(0, 128, 255, 0.5)';
+        g.lineWidth = 2;
+      } else {
+        g.strokeStyle = 'grey';
+        g.lineWidth = 1;
+      }
       g.stroke();
+
       const outlierCol = this.plate.data.col(PLATE_OUTLIER_WELL_NAME);
       if (outlierCol?.get(dataRow))
         DG.Paint.marker(g, MARKER_TYPE.CROSS_X_BORDER, x + w / 2, y + h / 2, DG.Color.red, r * 2);

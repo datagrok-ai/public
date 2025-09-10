@@ -1,0 +1,21 @@
+  .plate-widget .d4-grid canvas {
+        cursor: pointer !important;
+      }
+      
+      /* Hide the resizing cursors */
+      .plate-widget .d4-grid-col-header-border,
+      .plate-widget .d4-grid-row-header-border {
+        cursor: default !important;
+        pointer-events: none !important;
+      }
+      
+      /* Remove cell selection outline */
+      .plate-widget .d4-grid-cell-current {
+        border: none !important;
+        outline: none !important;
+      }
+      
+      /* Prevent resize handles from appearing */
+      .plate-widget .d4-grid-resize-handle {
+        display: none !important;
+      }
