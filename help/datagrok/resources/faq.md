@@ -49,6 +49,18 @@ See [Disaster recovery demo](https://www.youtube.com/watch?v=oFs9RShkHT8) for mo
 
 ## Govern
 
+**Q:** Does Datagrok follow secure development standards and industry best practices?  
+**A:** Yes, Datagrok adheres to secure development and industry best practices across infrastructure, development, and enterprise security:
+
+- Security-first infrastructure – designed with security from the ground up. Features include secure credentials management, flexible authentication (OAuth, SSO, Active Directory), and role-based access control.  
+  [Learn more](../../deploy/GCP/deploy-gcp-gke-terraform.md#security) | [Authentication & authorization](../../develop/how-to/apps/build-an-app.md#authentication) | [Role-based access](../../compute/compute.md#privileges-and-visibility)
+
+- Quality assurance – Automated check for vulnerabilities (Snyk, Grype) and multi-layered testing including unit, integration, UI, and performance tests.  
+  [Learn more](../../develop/qa/quality-assurance.md#continuous-integration-and-deployment-system) | [Testing](../../develop/qa/quality-assurance.md#automated-testing)
+
+- Secure development lifecycle – CI/CD pipelines enforce automated build, test, and security checks; semantic versioning; and secure credential management.  
+  [Learn more](../../develop/develop.md#continuous-integration) | [Version control](../..//develop/dev-process/versioning-policy) | [Credential management](../../develop/how-to/packages/manage-credentials.md)
+
 ### Authentication and access control
 
 **Q:** How does Datagrok handle authentication and authorization?  
@@ -235,4 +247,6 @@ Terraform scripts to deploy to AWS ECS-->
 **Q:** Do you have a guide for installing and deploying Datagrok on a GCP Kubernetes cluster?   
 **A:** The fastest way to deploy Datagrok for evaluation is by using Docker Compose on a virtual machine. This setup takes just a minute or two.    
 [Learn more](https://datagrok.ai/help/develop/admin/docker-compose)-->
+
+
 
