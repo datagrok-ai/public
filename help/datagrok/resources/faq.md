@@ -59,7 +59,7 @@ See [Disaster recovery demo](https://www.youtube.com/watch?v=oFs9RShkHT8) for mo
   [Learn more](../../develop/qa/quality-assurance.md#continuous-integration-and-deployment-system) | [Testing](../../develop/qa/quality-assurance.md#automated-testing)
 
 - Secure development lifecycle – CI/CD pipelines enforce automated build, test, and security checks; semantic versioning; and secure credential management.  
-  [Learn more](../../develop/develop.md#continuous-integration) | [Version control](../..//develop/dev-process/versioning-policy) | [Credential management](../../develop/how-to/packages/manage-credentials.md)
+  [Learn more](../../develop/develop.md#continuous-integration) | [Version control](../../develop/dev-process/versioning-policy) | [Credential management](../../develop/how-to/packages/manage-credentials.md)
 
 ### Authentication and access control
 
