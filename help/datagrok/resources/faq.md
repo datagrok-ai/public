@@ -4,7 +4,7 @@ sidebar_position: 2
 ---
 ##  Drug design and discovery
 
-### Assay Data Processing
+### Assay data processing
 
 **Q:** How can I ingest raw assay data into Datagrok?  
 **A:** Raw data can be ingested through multiple channels, including drag-and-drop, [file shares](../../access/files/files.md#file-sharing-and-access-control), 
@@ -49,7 +49,7 @@ See [Disaster recovery demo](https://www.youtube.com/watch?v=oFs9RShkHT8) for mo
 
 ## Govern
 
-### Authentication and Access Control
+### Authentication and access control
 
 **Q:** How does Datagrok handle authentication and authorization?  
 **A:** Datagrok uses role-based access control and integrates with enterprise identity providers such as LDAP, SSO, and OAuth.  
@@ -67,7 +67,7 @@ Learn more about [Access control](../../govern/access-control/access-control.md)
 **Q:** Who has access to Bitbucket, and what are the authentication requirements?  
 **A:** Only core developers have access. MFA is being enabled to strengthen authentication. Bitbucket also provides built-in security scanning features.  
 
-### Vulnerability and Patch Management
+### Vulnerability and patch management
 
 **Q:** How does Datagrok manage vulnerabilities in the application and cloud infrastructure?  
 **A:** We monitor CISA alerts and run daily [Snyk](https://snyk.io/) scans on container builds. Vulnerabilities are triaged, remediated via infrastructure-as-code pipelines, and verified through CI/CD testing. Customers are notified and supported in version upgrades as needed.  
@@ -77,7 +77,7 @@ Learn more about [Infrastructure](../../develop/under-the-hood/infrastructure.md
 **A:** Jenkins and development servers are rebuilt quarterly with a fresh OS. Documentation for builds is maintained in internal repositories.  
 Learn more about [Deployment](../../deploy/deploy.md)
 
-### Endpoint Security
+### Endpoint security
 
 **Q:** What controls mitigate risks on BYOD devices?  
 **A:** We have a policy that all devices must have active malware protection, updated signatures, and drive encryption enabled.  
