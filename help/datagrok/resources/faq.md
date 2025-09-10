@@ -53,7 +53,7 @@ See [Disaster recovery demo](https://www.youtube.com/watch?v=oFs9RShkHT8) for mo
 
 **Q:** How does Datagrok handle authentication and authorization?  
 **A:** Datagrok uses role-based access control and integrates with enterprise identity providers such as LDAP, SSO, and OAuth.  
-Learn more about [Access control](../../govern/access-control/access-control.md).
+Learn more about [Access control](../../govern/access-control/access-control.md)
 
 **Q:** Is data encrypted at rest?  
 **A:** Yes, Datagrok relies on Amazon's built-in encryption for [RDS](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html) and [S3 buckets](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-encryption.html).
@@ -195,7 +195,7 @@ See [Admetica example](https://github.com/datagrok-ai/public/tree/master/package
 
 **Q:** Can I add scripts and reuse them in components?  
 **A:** Yes, Datagrok supports multiple scripting languages.  
-Learn more about [Scripting](https://datagrok.ai/help/compute/scripting)
+Learn more about [Scripting](../../compute/scripting/scripting.mdx)
 
 **Q:** Can I reskin Datagrok?  
 **A:** Yes, you can build tailored UI applications.  
@@ -214,11 +214,11 @@ See [Custom application packages](https://github.com/datagrok-ai/public/tree/mas
   See also: [Example: 2.7M ChEMBL molecules](../../datagrok/datagrok.md#why-datagrok) | [WebGPU acceleration](../../visualize/viewers/scatter-plot#webgpu-acceleration)
 - Cross-connecting multiple large data tables – perform sophisticated data manipulation including joins, filters, and aggregation. Linked tables enable interactive cross-referencing across datasets.  
   Learn more about [Transformations](../../transform/transform.md)
-- Visualization capabilities – Over 50 interactive [viewers](../../visualize/viewers/viewers.md) for synchronized dashboards, including [chemically-aware viewers](https://datagrok.ai/help/datagrok/solutions/domains/chem/chemically-aware-viewers)  
+- Visualization capabilities – Over 50 interactive [viewers](../../visualize/viewers/viewers.md) for synchronized dashboards, including [chemically-aware viewers](../../datagrok/solutions/domains/chem/chemically-aware-viewers.md)  
 - 2D/3D structure rendering and interaction.  
-See [Cheminformatics](datagrok/solutions/domains/chem/) for details
+See [Cheminformatics](../../datagrok/solutions/domains/chem/chem.md) for details
 - Interactivity features – live data masking, filter by selection, synchronized updates across viewers, multiple input methods including 2D sketching.  
-See [Cheminformatics](datagrok/solutions/domains/chem/) for details
+See [Cheminformatics](../../datagrok/solutions/domains/chem/chem.md) for details
 - API integration and extensibility. See [JavaScript API](../../develop/packages/js-api.md) for details
 - Frontend scripting scalability. See [Compute](../../compute/compute.md) for details
 
