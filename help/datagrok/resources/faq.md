@@ -75,18 +75,15 @@ Learn more about [Infrastructure](../../develop/under-the-hood/infrastructure.md
 
 **Q: How are OS and server patching handled?**  
 **A:** Jenkins and development servers are rebuilt quarterly with a fresh OS. Documentation for builds is maintained in internal repositories.  
-Learn more about [Deployment](../../../../deploy/deploy.md)
+Learn more about [Deployment](../../deploy/deploy.md)
 
 ### Endpoint Security
 
 **Q:** What controls mitigate risks on BYOD devices?  
 **A:** We have a policy that all devices must have active malware protection, updated signatures, and drive encryption enabled.  
-[Learn more about endpoint policies](../../../../govern/access-control/access-control.md)
 
 **Q:** How is data exfiltration via removable media prevented?  
 **A:** We have a policy that sensitive data must not be stored on removable media. Passwords or credentials must not be transmitted unencrypted.  
-[Learn more about security practices](../../../../govern/access-control/access-control.md)
-
 
 ### Endpoint Detection and Response (EDR)
 
@@ -233,12 +230,9 @@ Also, there are multiple advanced options to deploy application:
 CloudFormation template to deploy to AWS ECS
 Terraform scripts to deploy to AWS ECS-->
 
-
 <!--## Deployment
 
-**Q:** Do you have a guide for installing and deploying Datagrok on a GCP Kubernetes cluster?
-
-**A:** The fastest way to deploy Datagrok for evaluation is by using Docker Compose on a virtual machine. This setup takes just a minute or two.  
-
+**Q:** Do you have a guide for installing and deploying Datagrok on a GCP Kubernetes cluster?   
+**A:** The fastest way to deploy Datagrok for evaluation is by using Docker Compose on a virtual machine. This setup takes just a minute or two.    
 [Learn more](https://datagrok.ai/help/develop/admin/docker-compose)-->
 
