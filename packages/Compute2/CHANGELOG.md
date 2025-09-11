@@ -1,5 +1,9 @@
 # Compute2 changelog
 
+## 1.3.18 (2025-09-11)
+
+- Hisotry and export fixes for workflows
+
 ## 1.3.17 (2025-09-09)
 
 - Save focused RFV tab in session storage
