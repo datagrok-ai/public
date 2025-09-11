@@ -45,7 +45,12 @@ function setVueAppOptions(app: Vue.App<any>) {
 export class PackageFunctions {
   @grok.decorators.init()
   static async init() {
-    await DG.Func.byName('WebComponents:init').prepare().call();
+    try {
+      await DG.Func.byName('WebComponents:init').prepare().call();
+    } catch (e) {
+      console.log(e);
+      grok.shell.error(`WebComponents package init error`);
+    }
   }
 
   @grok.decorators.editor({name: 'Custom Function View Editor'})
