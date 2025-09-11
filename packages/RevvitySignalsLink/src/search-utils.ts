@@ -8,7 +8,7 @@ import { materialsCondition } from './compounds';
 import { getRevvityLibraries } from './libraries';
 import { getDefaultProperties, REVVITY_FIELD_TO_PROP_TYPE_MAPPING } from './properties';
 import { getTerms } from './package';
-import { createPath, setUserColumnsStyle } from './view-utils';
+import { createPath, openRevvityNode, setUserColumnsStyle } from './view-utils';
 import { getCompoundTypeByViewName, getViewNameByCompoundType } from './utils';
 
 export const SAVED_SEARCH_STORAGE = 'RevvitySignalsLinkSavedSearch'
@@ -257,4 +257,70 @@ async function loadSearchQuery(libName: string, compoundType: string, queryBuild
     });
 
   dialog.show();
+}
+
+
+export async function createSavedSearchesSatistics(statsDiv: HTMLElement, libName?: string, entityType?: string) {
+
+  ui.setUpdateIndicator(statsDiv, true, 'Loading saved searches...');
+  const libs = await getRevvityLibraries();
+  const libObjForTable: any[] = [];
+  for (const lib of libs) {
+    if (libName && lib.name !== libName)
+      continue;
+    for (const libType of lib.types) {
+      if (entityType && libType !== libType)
+        continue;
+      const storageKey = `${lib.name}|${libType.name}`;
+      const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, storageKey) || '{}';
+      const savedSearches: { [key: string]: string } = JSON.parse(savedSearchesStr);
+      const searchNames = Object.keys(savedSearches);
+      for (const search of searchNames)
+        libObjForTable.push({ libName: lib.name, libType: libType.name, search: search });
+    }
+  }
+
+  const statsElement = createSavedSearchStats(libObjForTable, libName, entityType);
+  statsDiv.append(statsElement);
+  ui.setUpdateIndicator(statsDiv, false);
+}
+
+function createSavedSearchStats(libObjForTable: any[], libName?: string, libType?: string): HTMLElement {
+  const outputArr: string[] = ['Library', 'Type', 'Search'];
+  let header = 'Saved Searches';
+
+  if (libName) {
+    outputArr.splice(0, 1);
+    header += ` | ${libName}`;
+  }
+
+  if (libType) {
+    outputArr.splice(0, 1);
+    const entityTypeName = getViewNameByCompoundType(libType);
+    header += ` | ${entityTypeName.charAt(0).toUpperCase()}${entityTypeName.slice(1)}`;
+  }
+
+  const table = ui.table(libObjForTable, (search) => {
+    const arr = [
+      search.libName ?? '',
+      search.libType ?? '',
+      ui.link(search.search, () => {
+        const node = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').getOrCreateGroup('Chem').getOrCreateGroup('Revvity Signals');
+        node.expanded = true;
+        openRevvityNode(node, ['saved searches', search.libName, getViewNameByCompoundType(search.libType)], search.search, search.libName, search.libType, undefined, true);
+      }),
+    ];
+    if (libName)
+      arr.splice(0, 1);
+
+    if (libType)
+      arr.splice(0, 1);
+
+    return arr;
+  },
+    outputArr);
+  return ui.div([
+    ui.h3(header),
+    table
+  ]);
 }

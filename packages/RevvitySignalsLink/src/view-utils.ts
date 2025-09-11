@@ -14,7 +14,7 @@ import { getRevvityUsersWithMapping } from './users';
 
 const REVVITY_SIGNALS_APP_PATH: string = 'apps/Revvitysignalslink';
 
-let openedView: DG.TableView | null = null;
+let openedView: DG.TableView | DG.ViewBase | null = null;
 
 export function createPath(viewName?: string[]) {
   let path = `${REVVITY_SIGNALS_APP_PATH}`;
@@ -144,13 +144,22 @@ export async function handleInitialURL(treeNode: DG.TreeViewGroup, url: string) 
   }
 }
 
+export function createViewForExpandabelNode(viewName: string,
+  getElement:(root: HTMLElement, libName?: string, typeName?: string) => Promise<void>, libName?: string, typeName?: string) {
+  openedView?.close();
+  const div = ui.div()
+  openedView = grok.shell.addPreview(DG.View.fromRoot(div));
+  const name = typeName ? getViewNameByCompoundType(typeName) : libName ?? viewName;
+  openedView.name = name.charAt(0).toUpperCase() + name.slice(1);
+  getElement(div, libName, typeName);
+}
 
 export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, path: string[], libName: string,
   compoundType: string, initialSearchQuery?: ComplexCondition, isSavedSearch?: boolean): Promise<void> {
   let name = path[path.length - 1];
   if (!isSavedSearch)
     name = getViewNameByCompoundType(compoundType);
-  if (openedView && openedView.name.toLowerCase() === name.toLowerCase() && openedView.dockNode.parent) {
+  if (openedView && openedView.name.toLowerCase() === name.toLowerCase() && ("dockNode" in openedView && openedView.dockNode.parent)) {
     grok.shell.v = openedView;
     return;
   }
@@ -158,10 +167,10 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
 
   const df = DG.DataFrame.create();
   openedView = grok.shell.addTablePreview(df);
-  openedView.name = name;
+  openedView.name = name.charAt(0).toUpperCase() + name.slice(1);
   openedView.path = createPath(path);
   const users = await getRevvityUsersWithMapping();
-  setUserColumnRenderer(openedView, users ?? {});
+  setUserColumnRenderer(openedView as DG.TableView, users ?? {});
 
   if (isSavedSearch && !initialSearchQuery) {
     const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, `${libName}|${compoundType}`) || '{}';
@@ -176,7 +185,7 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
     ui.setUpdateIndicator(openedView!.root, false);
     setBreadcrumbsInViewName([libName, compoundType], treeNode);
     const filtersDiv = ui.divV([], 'revvity-signals-filter-panel');
-    initializeFilters(openedView!, filtersDiv, libName, compoundType, initialSearchQuery, !isSavedSearch);
+    initializeFilters(openedView! as DG.TableView, filtersDiv, libName, compoundType, initialSearchQuery, !isSavedSearch);
   }
 
   if (!initialSearchQuery) {
@@ -184,8 +193,8 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
       query: JSON.stringify(retrieveQueriesMap[compoundType]),
       params: '{}'
     }).then((res: DG.DataFrame) => {
-      openedView!.dataFrame = res;
-      setUserColumnsStyle(openedView!);
+      (openedView! as DG.TableView).dataFrame = res;
+      setUserColumnsStyle(openedView!  as DG.TableView);
       initFilters();
     })
       .catch((e: any) => {

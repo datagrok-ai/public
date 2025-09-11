@@ -10,8 +10,8 @@ import { dataFrameFromObjects, reorderColummns, transformData, createRevvityResp
 import { addMoleculeStructures, assetsQuery, MOL_COL_NAME, retrieveQueriesMap } from './compounds';
 import { getRevvityUsersWithMapping } from './users';
 import { createInitialSatistics, getRevvityLibraries, RevvityLibrary, RevvityType } from './libraries';
-import { createViewFromPreDefinedQuery, handleInitialURL } from './view-utils';
-import { SAVED_SEARCH_STORAGE } from './search-utils';
+import { createViewForExpandabelNode, createViewFromPreDefinedQuery, handleInitialURL } from './view-utils';
+import { createSavedSearchesSatistics, SAVED_SEARCH_STORAGE } from './search-utils';
 
 
 export const _package = new DG.Package();
@@ -77,8 +77,10 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
     return;
   }
   loadingNode.remove();
+
   for (const lib of libs) {
     const libNode = treeNode.group(lib.name);
+    libNode.onSelected.subscribe(() => createViewForExpandabelNode(lib.name, createInitialSatistics, lib.name));
     for (const libType of lib.types) {
       const viewName = getViewNameByCompoundType(libType.name);
       const typeNode = libNode.item(`${viewName.charAt(0).toUpperCase()}${viewName.slice(1)}`);
@@ -93,13 +95,17 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
       });
     }
   }
+
   const savedSearchesNode = treeNode.group('Saved searches');
+  savedSearchesNode.onSelected.subscribe(() => createViewForExpandabelNode('saved searches', createSavedSearchesSatistics));
   for (const lib of libs) {
     const libNode = savedSearchesNode.group(lib.name);
+    libNode.onSelected.subscribe(() => createViewForExpandabelNode(lib.name, createSavedSearchesSatistics, lib.name));
     for (const libType of lib.types) {
       const typeName = getViewNameByCompoundType(libType.name);
       const typeNode = libNode.group(`${typeName.charAt(0).toUpperCase()}${typeName.slice(1)}`);
-
+      typeNode.onSelected.subscribe(() => createViewForExpandabelNode(lib.name, createSavedSearchesSatistics, lib.name, libType.name));
+      
       const storageKey = `${lib.name}|${libType.name}`;
       const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, storageKey) || '{}';
       const savedSearches: { [key: string]: string } = JSON.parse(savedSearchesStr);

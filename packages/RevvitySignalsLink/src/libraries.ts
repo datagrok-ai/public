@@ -26,28 +26,42 @@ export async function getRevvityLibraries(): Promise<RevvityLibrary[]> {
     return libraries!;
 }
 
-export async function createInitialSatistics(statsDiv: HTMLDivElement) {
+export async function createInitialSatistics(statsDiv: HTMLElement, libName?: string) {
 
   ui.setUpdateIndicator(statsDiv, true, 'Loading statistics...');
   const libs = await getRevvityLibraries();
   const libObjForTable: any[] = [];
   for (const lib of libs) {
+    if (libName && lib.name !== libName)
+      continue;
     for (const libType of lib.types)
       libObjForTable.push({ libName: lib.name, libType: libType.name, count: libType.count });
   }
 
-
-  const table = ui.table(libObjForTable, (lib) => ([
-    lib.libName ?? '',
-    lib.libType ?? '',
-    ui.link(lib.count, () => {
-      const node = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').getOrCreateGroup('Chem').getOrCreateGroup('Revvity Signals');
-      node.expanded = true;
-      openRevvityNode(node, lib.libName, lib.libType);
-    }),
-  ]),
-    ['Library', 'Type', 'Count']);
-
-  statsDiv.append(table);
+  const statsElement = createLibsStatsTable(libObjForTable, libName);
+  statsDiv.append(statsElement);
   ui.setUpdateIndicator(statsDiv, false);
+}
+
+function createLibsStatsTable(libObjForTable: any[], libName?: string): HTMLElement {
+  const output = libName ? ['Type', 'Count'] : ['Library', 'Type', 'Count'];
+
+  const table = ui.table(libObjForTable, (lib) => {
+    const arr = [
+      lib.libName ?? '',
+      lib.libType ?? '',
+      ui.link(lib.count, () => {
+        const node = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').getOrCreateGroup('Chem').getOrCreateGroup('Revvity Signals');
+        node.expanded = true;
+        openRevvityNode(node, [lib.libName], lib.libType, lib.libName, lib.libType);
+      }),
+    ];
+    if (libName)
+      arr.splice(0, 1);
+
+    return arr;
+  },
+    output);
+
+  return libName ? ui.div([ui.h3(libName), table]) : table;
 }
