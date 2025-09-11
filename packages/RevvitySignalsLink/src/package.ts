@@ -7,11 +7,13 @@ import '../css/revvity-signals-styles.css';
 import { SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
 import { queryEntities, queryLibraries, queryMaterialById, queryTags, queryTerms, queryUsers, RevvityApiResponse, RevvityData, RevvityUser } from './revvity-api';
 import { dataFrameFromObjects, reorderColummns, transformData, createRevvityResponseWidget, getViewNameByCompoundType } from './utils';
-import { addMoleculeStructures, assetsQuery, MOL_COL_NAME, retrieveQueriesMap } from './compounds';
+import { addMoleculeStructures, assetsQuery, retrieveQueriesMap } from './compounds';
 import { getRevvityUsersWithMapping } from './users';
 import { createInitialSatistics, getRevvityLibraries, RevvityLibrary, RevvityType } from './libraries';
 import { createViewForExpandabelNode, createViewFromPreDefinedQuery, handleInitialURL } from './view-utils';
 import { createSavedSearchesSatistics, SAVED_SEARCH_STORAGE } from './search-utils';
+import { funcs } from './package-api';
+import { ID_COL_NAME, MOL_COL_NAME } from './constants';
 
 
 export const _package = new DG.Package();
@@ -129,17 +131,12 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
 //input: string params
 //output: dataframe df
 export async function searchEntities(query: string, params: string): Promise<DG.DataFrame> {
-  let df = DG.DataFrame.create();
-  try {
-    const queryJson: SignalsSearchQuery = JSON.parse(query);
-    const paramsJson: SignalsSearchParams = JSON.parse(params);
-    const response = await queryEntities(queryJson, Object.keys(paramsJson).length ? paramsJson : undefined);
-    const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
-    df = dataFrameFromObjects(data);
-    await grok.data.detectSemanticTypes(df);
-  } catch (e: any) {
-    grok.shell.error(e?.message ?? e);
-  }
+  const queryJson: SignalsSearchQuery = JSON.parse(query);
+  const paramsJson: SignalsSearchParams = JSON.parse(params);
+  const response = await queryEntities(queryJson, Object.keys(paramsJson).length ? paramsJson : undefined);
+  const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
+  const rows = await transformData(data);
+  const df = DG.DataFrame.fromObjects(rows)!;
   return df;
 }
 
@@ -150,22 +147,17 @@ export async function searchEntities(query: string, params: string): Promise<DG.
 export async function searchEntitiesWithStructures(query: string, params: string): Promise<DG.DataFrame> {
   let df = DG.DataFrame.create();
   try {
-    const queryJson: SignalsSearchQuery = JSON.parse(query);
-    const paramsJson: SignalsSearchParams = JSON.parse(params);
-    const response = await queryEntities(queryJson, Object.keys(paramsJson).length ? paramsJson : undefined);
-    if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
-      return DG.DataFrame.create();
-    const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
-
-    const rows = await transformData(data);
-    const moleculeIds = data.map((it) => it.id);
-    df = DG.DataFrame.fromObjects(rows)!;
-    const moleculeColumn = DG.Column.fromStrings(MOL_COL_NAME, new Array<string>(moleculeIds.length).fill(''));
-    moleculeColumn.semType = DG.SEMTYPE.MOLECULE;
-    moleculeColumn.meta.units = DG.UNITS.Molecule.MOLBLOCK;
-    df.columns.add(moleculeColumn);
-    reorderColummns(df);
-    addMoleculeStructures(moleculeIds, moleculeColumn);
+    df = await funcs.searchEntities(query, params);
+    const idCol = df.col(ID_COL_NAME);
+    if (idCol) {
+      const moleculeIds = idCol.toList();
+      const moleculeColumn = DG.Column.fromStrings(MOL_COL_NAME, new Array<string>(moleculeIds.length).fill(''));
+      moleculeColumn.semType = DG.SEMTYPE.MOLECULE;
+      moleculeColumn.meta.units = DG.UNITS.Molecule.MOLBLOCK;
+      df.columns.add(moleculeColumn);
+      reorderColummns(df);
+      addMoleculeStructures(moleculeIds, moleculeColumn);
+    }
   } catch (e: any) {
     grok.shell.error(e?.message ?? e);
   }

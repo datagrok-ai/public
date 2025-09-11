@@ -4,11 +4,12 @@ import * as ui from 'datagrok-api/ui';
 import { awaitCheck } from '@datagrok-libraries/utils/src/test';
 import { getRevvityLibraries } from './libraries';
 import { initializeFilters, SAVED_SEARCH_STORAGE } from './search-utils';
-import { getCompoundTypeByViewName, getViewNameByCompoundType, USER_FIELDS } from './utils';
+import { getCompoundTypeByViewName, getViewNameByCompoundType } from './utils';
 import { retrieveQueriesMap } from './compounds';
 import { ComplexCondition } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { RevvityUser } from './revvity-api';
 import { getRevvityUsersWithMapping } from './users';
+import { USER_FIELDS } from './constants';
 
 
 
@@ -55,8 +56,13 @@ export async function openRevvityNode(treeNode: DG.TreeViewGroup, nodesToExpand:
   libToOpen?: string, typeToOpen?: string, initialSearchQuery?: ComplexCondition, isSavedSearch?: boolean) {
   let lastExpandedNode = null;
   for (let nodeName of nodesToExpand) {
-    await awaitCheck(() => treeNode.items.find((node) => node.text.toLowerCase() === nodeName.toLowerCase()) !== undefined,
-      `${nodeName} haven't been loaded in 10 seconds`, 10000);
+    try {
+      await awaitCheck(() => treeNode.items.find((node) => node.text.toLowerCase() === nodeName.toLowerCase()) !== undefined,
+        `${nodeName} haven't been loaded in 10 seconds`, 10000);
+    } catch(e: any) {
+      grok.shell.error(e?.message ?? e);
+      return;
+    }
     lastExpandedNode = treeNode.items.find((node) => node.text.toLowerCase() === nodeName.toLowerCase()) as DG.TreeViewGroup;
     lastExpandedNode.expanded = true;
   }

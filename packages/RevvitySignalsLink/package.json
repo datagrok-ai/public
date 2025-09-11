@@ -11,12 +11,11 @@
     "datagrok-api": "^1.26.0",
     "cash-dom": "^8.1.5",
     "dayjs": "^1.11.13",
-    "@datagrok-libraries/utils": "latest",
+    "@datagrok-libraries/utils": "../../libraries/utils",
     "rxjs": "^6.5.5"
   },
   "devDependencies": {
     "datagrok-tools": "^4.14.48",
-    "@datagrok-libraries/utils": "../../libraries/utils",
     "webpack": "^5.95.0",
     "webpack-cli": "^5.1.4",
     "ts-loader": "latest",

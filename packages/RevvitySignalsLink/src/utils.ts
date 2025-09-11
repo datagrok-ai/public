@@ -4,24 +4,10 @@ import { SignalsSearchParams, SignalsSearchQuery } from './signals-search-query'
 import * as ui from 'datagrok-api/ui';
 import { getRevvityUsersWithMapping } from './users';
 import { queryEntityById, RevvityApiResponse, RevvityData, RevvityUser } from './revvity-api';
-import { MOL_COL_NAME } from './compounds';
+
 import { awaitCheck } from '@datagrok-libraries/utils/src/test';
-import { compoundTypeAndViewNameMapping } from './constants';
+import { compoundTypeAndViewNameMapping, ENTITY_FIELDS_TO_EXCLUDE, FIELDS_SECTION_NAME, FIELDS_TO_EXCLUDE_FROM_WIDGET, FIRST_COL_NAMES, MOL_COL_NAME, MOLECULAR_FORMULA_FIELD_NAME, PARAMS_KEY, QUERY_KEY, STORAGE_NAME, SUBMITTER_FIELD_NAME, TABS_TO_EXCLUDE_FROM_WIDGET, TAGS_TO_EXCLUDE, USER_FIELDS } from './constants';
 
-
-export const STORAGE_NAME = 'RevvitySignalsSearch';
-export const QUERY_KEY = 'query';
-export const PARAMS_KEY = 'params';
-
-const ENTITY_FIELDS_TO_EXCLUDE = ['type', 'isTemplate', 'tags', 'eid'];
-const TAGS_TO_EXCLUDE = ['system.Keywords'];
-export const USER_FIELDS = ['owner', 'createdBy', 'editedBy'];
-const FIRST_COL_NAMES = [MOL_COL_NAME, 'id', 'name'];
-const FIELDS_SECTION_NAME = 'fields';
-const TABS_TO_EXCLUDE_FROM_WIDGET = ['chemicalDrawing'];
-const FIELDS_TO_EXCLUDE_FROM_WIDGET = ['assetTypeId', 'assetId', 'eid', 'type', 'library'];
-const MOLECULAR_FORMULA_FIELD_NAME = 'Molecular Formula';
-const SUBMITTER_FIELD_NAME = 'Submitter';
 
 function extractNameFromJavaObjectString(javaString: string): string {
   try {
