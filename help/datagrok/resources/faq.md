@@ -160,7 +160,9 @@ file viewers for specific formats
 ##### **Q:** How can I visualizing old and new data side by side?
 
 **A:** Multiple [viewer](../../visualize/viewers/viewers.md) and grids can be combined in a single [dashboard](../../datagrok/concepts/project/dashboard.md) to display different datasets side by side. 
+<!-- markdownlint-disable descriptive-link-text -->
 Each viewer (scatterplots, charts, etc.) has configurable settings, allowing plots to source data from different tables. There are also multiple ways to [join](../../transform/join-tables.md), [link](../../transform/link-tables.md), [pivot](../../transform/aggregate-rows.md), and apply other [transformations](../../transform/transform.md) 
+<!-- markdownlint-enable descriptive-link-text -->
 to data within the intuitive UI. 
 
 ## Collaborate
@@ -237,11 +239,6 @@ Learn more about [Concurrent development](../../develop/develop.md#development)
 See [Scaling and stability](../../develop/under-the-hood/infrastructure.md#scalability) for more information
 
 ### Extensibility
-
-##### **Q:** Can I create custom visualizations?
-
-**A:** Yes, Datagrok offers multiple options for creating and embedding custom visualizations.  
-See [Custom visualizations](#visualize) for details
 
 ##### **Q:** Can I build server-side components?
 
