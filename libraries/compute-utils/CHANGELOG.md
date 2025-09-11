@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.44.7 (2025-09-11)
+
+- Hisotry and export fixes for workflows
+
 ## 1.44.6 (2025-09-08)
 
 - Fix funcCall reactive updates edge case
