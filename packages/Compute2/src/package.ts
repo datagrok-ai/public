@@ -410,8 +410,8 @@ export class PackageFunctions {
 
   @grok.decorators.func()
   static async TestMul2(
-    @grok.decorators.param({type: 'string', options: {choices: ['0', '1']}}) a: number,
-      b: number) : Promise<number> {
+    a: number,
+    b: number) : Promise<number> {
     return Number(a) * b;
   }
 

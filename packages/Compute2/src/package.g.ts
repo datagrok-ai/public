@@ -83,7 +83,7 @@ export async function TestSub2(a: number, b: number) : Promise<number> {
   return await PackageFunctions.TestSub2(a, b);
 }
 
-//input: string a  { choices: ['0','1'] }
+//input: double a 
 //input: double b 
 //output: double result
 export async function TestMul2(a: number, b: number) : Promise<number> {
