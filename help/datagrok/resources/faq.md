@@ -187,9 +187,9 @@ Learn more about [Deployment](../../deploy/deploy.md)
 
 ### Requirements
 
-##### **Q:** What are the browser requirements?
+##### **Q:** What are the end-user computer and browser requirements?
 
-**A:** Datagrok is compatible with modern browsers.  Popular choices are Chrome, Edge, or Safari.
+**A:** The Datagrok user experience is run completely through the browser.  There is no need to install any additional software.  Datagrok is compatible with modern browsers.  Popular choices are Chrome, Edge, or Safari.
 
 ### Interoperability
 
