@@ -35,12 +35,14 @@ export const dimensions = new Map([
 ]);
 
 export interface IAnalysisWidgetCoordinator {
-  onPlateDataChanged(changeType: 'outlier' | 'data' | 'layer', details: any): void;
-  refreshAnalysisView(): void;
+    onPlateDataChanged(changeType: 'outlier' | 'data' | 'layer', details: any): void;
+    refreshAnalysisView(): void;
 }
 
 
 type InteractionMode = 'default' | 'outlier';
+// NEW: Constant to define the minimum pixel distance to initiate a drag action
+const DRAG_THRESHOLD = 5;
 export class PlateWidget extends DG.Widget {
   _colorColumn?: DG.Column | undefined;
   _plate: Plate = new Plate(8, 12);
@@ -58,6 +60,7 @@ export class PlateWidget extends DG.Widget {
   wellValidators: IPlateWellValidator[] = plateWellValidators;
   wellValidationErrors: Map<string, string[]> = new Map();
 
+  // MODIFIED: State variables for the new interaction logic
   private _isDragging: boolean = false;
   private _selectionRect: DG.Rect | null = null;
   private _canvas: HTMLCanvasElement | null = null;
@@ -65,6 +68,7 @@ export class PlateWidget extends DG.Widget {
   private analysisCoordinators: IAnalysisWidgetCoordinator[] = [];
   private outlierSubscription?: Subscription;
   private interactionMode: InteractionMode = 'default';
+  private _dragStartPoint: DG.Point | null = null;
 
 
   roleSummaryDiv: HTMLElement = ui.divH([], 'plate-widget__role-summary');
@@ -89,6 +93,19 @@ export class PlateWidget extends DG.Widget {
     return distance <= radius;
   }
 
+  // NEW: Hit-testing function to find a well from canvas coordinates
+  private hitTest(canvasX: number, canvasY: number): { row: number, col: number } | null {
+    for (let row = 0; row < this.plate.rows; row++) {
+      for (let col = 0; col < this.plate.cols; col++) {
+        // Check if the point is inside the circular area of the well
+        if (this.isPointInWell(canvasX, canvasY, row, col + 1))
+          return {row, col};
+      }
+    }
+    return null;
+  }
+
+
   constructor() {
     super(ui.div([], 'plate-widget'));
 
@@ -98,9 +115,9 @@ export class PlateWidget extends DG.Widget {
     this.tabs.onTabChanged.subscribe(() => {
       const isOutlierMode = this.tabs.currentPane.name.includes('Outliers');
       this.interactionMode = isOutlierMode ? 'outlier' : 'default';
-      // This toggles the CSS class on the grid's root element
       this.grid.root.classList.toggle('outlier-mode', isOutlierMode);
-      console.log(`Interaction mode set to: ${this.interactionMode}`);
+      this.plate.data.selection.setAll(false, true);
+      this.grid.invalidate();
     });
 
     const mainContainer = ui.divV([this.tabsContainer, this.roleSummaryDiv]);
@@ -115,17 +132,11 @@ export class PlateWidget extends DG.Widget {
     this.grid.props.showCurrentRowIndicator = false;
     this.grid.props.showMouseOverRowIndicator = false;
     this.grid.props.showCurrentCellOutline = false;
-
     this.grid.props.showHeatmapScrollbars = false;
     this.grid.props.colHeaderHeight = 30;
-
-    // Disable ALL resizing
     this.grid.props.allowColHeaderResizing = false;
     this.grid.props.allowColResizing = false;
     this.grid.props.allowRowResizing = false;
-
-    this.grid.props.showHeatmapScrollbars = false;
-    this.grid.props.colHeaderHeight = 30;
 
     this.grid.onCellRender.subscribe((args) => this.renderCell(args, true));
     this.grid.onCellRendered.subscribe((args) => {
@@ -144,7 +155,6 @@ export class PlateWidget extends DG.Widget {
 
     let hoveredCell: {row: number, col: number} | null = null;
 
-    // Handle mouse move for hover effects
     this.grid.onCellMouseEnter.subscribe((gc: DG.GridCell) => {
       if (gc.isTableCell) {
         hoveredCell = {row: gc.gridRow, col: gc.gridColumn.idx - 1};
@@ -157,24 +167,19 @@ export class PlateWidget extends DG.Widget {
       this.grid.invalidate();
     });
 
+    // MODIFIED: This is now a fallback and can be removed, as our new system handles clicks.
+    // We'll leave it for now in case other parts of the system rely on it.
     this.grid.onCellClick.subscribe((gc: DG.GridCell) => {
       if (!gc.isTableCell) return;
-
-      const row = gc.gridRow;
-      const col = gc.gridColumn.idx - 1;
-
-      // Handle based on interaction mode
       if (this.interactionMode === 'outlier' && this.editable) {
+        const row = gc.gridRow;
+        const col = gc.gridColumn.idx - 1;
         const currentState = this.plate.isOutlier(row, col);
         this.plate.markOutlierWithSource(row, col, !currentState, 'summary-click-toggle');
         this.grid.invalidate();
-      } else if (this.interactionMode === 'default' && this.editable) {
-      // In default mode, clicking could open role assignment
-      // You can add logic here if needed
       }
     });
 
-    // Store hovered cell reference for rendering
     (this as any)._hoveredCell = () => hoveredCell;
 
 
@@ -200,7 +205,6 @@ export class PlateWidget extends DG.Widget {
     this.tabs.clear();
     this.grids.clear();
 
-    // --- MODIFIED: Both Summary and Outliers tabs now point to the same grid element for identical layout ---
     this.tabs.addPane('Summary', () => this.grid.root);
 
     const layerInfo: Record<LayerType, {icon: string, layers: string[]}> = {
@@ -219,7 +223,6 @@ export class PlateWidget extends DG.Widget {
       }
     }
 
-    // --- MODIFIED: Always add the Outliers tab ---
     this.tabs.addPane(`🚫 Outliers`, () => this.grid.root);
 
     for (const layerName of this.plate.getLayerNames()) {
@@ -237,10 +240,11 @@ export class PlateWidget extends DG.Widget {
   private layerExists(layerName: string): boolean {
     return this.tabs.panes.some((pane) =>
       pane.name.includes(layerName) ||
-      (layerName === PLATE_OUTLIER_WELL_NAME && pane.name.includes('Outliers'))
+            (layerName === PLATE_OUTLIER_WELL_NAME && pane.name.includes('Outliers'))
     );
   }
 
+  // MODIFIED: Complete overhaul of the selection logic.
   private initSelectionEvents() {
     const interactionElement = this.grid.overlay;
     if (!interactionElement) return;
@@ -248,56 +252,85 @@ export class PlateWidget extends DG.Widget {
     fromEvent<MouseEvent>(interactionElement, 'mousedown')
       .pipe(takeUntil(this._onDestroy))
       .subscribe((e: MouseEvent) => {
-        if (!this.editable) return;
-        // --- FIX: DO NOT prevent default on mousedown. This allows click events to fire. ---
+        // MODIFIED: Removed mode check. This logic now runs for all modes.
+        if (!this.editable || e.button !== 0) return;
 
-        this._isDragging = true;
-        this._selectionRect = new DG.Rect(e.offsetX, e.offsetY, 0, 0);
+        this._dragStartPoint = new DG.Point(e.offsetX, e.offsetY);
 
-        const mouseMoveStream = fromEvent<MouseEvent>(document, 'mousemove');
-        const mouseUpStream = fromEvent<MouseEvent>(document, 'mouseup');
+        const mouseMoveStream = fromEvent<MouseEvent>(document, 'mousemove').pipe(takeUntil(this._onDestroy));
+        const mouseUpStream = fromEvent<MouseEvent>(document, 'mouseup').pipe(takeUntil(this._onDestroy));
 
         mouseMoveStream
           .pipe(takeUntil(mouseUpStream))
           .subscribe((move_e: MouseEvent) => {
-            if (!this._isDragging || !this._selectionRect) return;
+            if (!this._dragStartPoint) return;
 
-            // --- FIX: Prevent default ONLY when the user actually starts dragging. ---
-            move_e.preventDefault();
-            move_e.stopPropagation();
+            const dx = Math.abs(move_e.offsetX - this._dragStartPoint.x);
+            const dy = Math.abs(move_e.offsetY - this._dragStartPoint.y);
 
-            const canvasBounds = interactionElement.getBoundingClientRect();
-            const currentX = move_e.clientX - canvasBounds.left;
-            const currentY = move_e.clientY - canvasBounds.top;
-            this._selectionRect.width = currentX - this._selectionRect.x;
-            this._selectionRect.height = currentY - this._selectionRect.y;
-            this.drawSelectionRect();
-            this.updateSelection();
+            if (!this._isDragging && (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD)) {
+              this._isDragging = true;
+              this._selectionRect = new DG.Rect(this._dragStartPoint.x, this._dragStartPoint.y, 0, 0);
+              // MODIFIED: Do NOT clear previous selections when starting a drag.
+            }
+
+            if (this._isDragging && this._selectionRect) {
+              move_e.preventDefault();
+              move_e.stopPropagation();
+
+              const canvasBounds = interactionElement.getBoundingClientRect();
+              const currentX = move_e.clientX - canvasBounds.left;
+              const currentY = move_e.clientY - canvasBounds.top;
+              this._selectionRect.width = currentX - this._selectionRect.x;
+              this._selectionRect.height = currentY - this._selectionRect.y;
+
+              this.drawSelectionRect();
+              this.updateSelection();
+            }
           });
 
-        mouseUpStream.pipe(take(1)).subscribe(() => {
-          this._isDragging = false;
-          this.clearSelectionRect();
-
+        mouseUpStream.pipe(take(1)).subscribe((up_e: MouseEvent) => {
           const selection = this.plate.data.selection;
-          // Clicks are now handled by onCellClick, so this logic is only for drag-selections.
-          if (selection.trueCount > 0) {
-            if (this.interactionMode === 'outlier') {
-              const selectedIndices = selection.getSelectedIndexes();
-              for (const idx of selectedIndices) {
-                const currentState = this.plate._isOutlier(idx);
-                this.plate._markOutlierWithSource(idx, !currentState, 'summary-drag-toggle');
+
+          if (this._isDragging) {
+            // Logic for end of a DRAG
+            if (selection.trueCount > 0) {
+              if (this.interactionMode === 'default') {
+                this.showRoleAssignmentPopup();
+              } else if (this.interactionMode === 'outlier') {
+                // NEW: Toggle outliers for all selected wells
+                for (const i of selection.getSelectedIndexes()) {
+                  const [row, col] = this.plate.rowIndexToExcel(i);
+                  this.plate.markOutlierWithSource(row, col, true, 'summary-drag-set');
+                }
+                selection.setAll(false, true); // Clear selection after marking
               }
-            } else {
-              this.showRoleAssignmentPopup();
+            }
+          } else if (this._dragStartPoint) {
+            // Logic for a CLICK
+            const well = this.hitTest(up_e.offsetX, up_e.offsetY);
+            if (well) {
+              if (this.interactionMode === 'default') {
+                const dataIndex = this.plate._idx(well.row, well.col);
+                selection.set(dataIndex, !selection.get(dataIndex), true);
+              } else if (this.interactionMode === 'outlier') {
+                // NEW: Toggle a single outlier on click
+                const currentState = this.plate.isOutlier(well.row, well.col);
+                this.plate.markOutlierWithSource(well.row, well.col, !currentState, 'summary-click-toggle');
+              }
             }
           }
 
-          selection.setAll(false, true);
+          // Reset all state variables
+          this._isDragging = false;
+          this.clearSelectionRect();
           this._selectionRect = null;
+          this._dragStartPoint = null;
+          this.grid.invalidate();
         });
       });
   }
+
 
   private showRoleAssignmentPopup(): void {
     const selection = this.plate.data.selection;
@@ -317,8 +350,6 @@ export class PlateWidget extends DG.Widget {
         if (roleCol === null) {
           roleCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, 'Role', this.plate.data.rowCount);
           this.plate.data.columns.add(roleCol);
-
-          // NEW: Register the Role column as a LAYOUT layer
           this.plate.registerLayer('Role', LayerType.LAYOUT, 'user-assignment');
         }
 
@@ -330,12 +361,12 @@ export class PlateWidget extends DG.Widget {
         if (this._colorColumn.isCategorical && this._colorColumn.meta.colors.getType() !== DG.COLOR_CODING_TYPE.CATEGORICAL)
           this._colorColumn.meta.colors.setCategorical();
 
-        this.grid.invalidate();
+
         this.updateRoleSummary();
-
         this.refresh();
+        selection.setAll(false, true); // Clear selection after assigning
+        this.grid.invalidate();
 
-        selection.setAll(false, true);
         popup.remove();
         anchorDiv.remove();
       })
@@ -409,7 +440,7 @@ export class PlateWidget extends DG.Widget {
       return;
 
     const selection = this.plate.data.selection;
-    selection.setAll(false, false);
+    // MODIFIED: The line `selection.setAll(false, false)` is REMOVED from here.
 
     const r = this._selectionRect;
     const normalizedRect = new DG.Rect(
@@ -428,6 +459,7 @@ export class PlateWidget extends DG.Widget {
             const cellBounds = cell.bounds;
             if (normalizedRect.contains(cellBounds.midX, cellBounds.midY)) {
               const dataIndex = this.plate._idx(row, col);
+              // This now ADDs to the selection.
               selection.set(dataIndex, true, false);
             }
           }
@@ -511,7 +543,7 @@ export class PlateWidget extends DG.Widget {
   }
 
   initPlateGrid(grid: DG.Grid, isSummary: boolean = false) {
-  // Core display settings
+    // Core display settings
     grid.props.showHeatmapScrollbars = false;
     grid.props.allowColReordering = false;
     grid.props.allowRowReordering = false;
@@ -545,14 +577,12 @@ export class PlateWidget extends DG.Widget {
 
   get plate(): Plate { return this._plate; }
   set plate(p: Plate) {
-    console.log(`[DEBUG] PlateWidget: Plate setter called with plate barcode: ${p.barcode}. Refreshing widget.`);
     this._plate = p;
 
     if (this.outlierSubscription)
       this.outlierSubscription.unsubscribe();
 
     this.outlierSubscription = p.onOutlierChanged.subscribe((change) => {
-      console.log(`[DEBUG] PlateWidget received outlier change:`, change);
       this.grid.invalidate();
       this.notifyAnalysisCoordinators('outlier', change);
     });
@@ -562,7 +592,6 @@ export class PlateWidget extends DG.Widget {
 
 
   private getDisplayName(layerName: string, layerType: LayerType): string {
-    // This function is now simpler as it doesn't need to handle the outlier case.
     return layerName;
   }
 
@@ -570,7 +599,6 @@ export class PlateWidget extends DG.Widget {
   refresh() {
     this.tabs.clear();
     this.grids.clear();
-    // --- MODIFIED: Both Summary and Outliers tabs point to the same grid element ---
     this.tabs.addPane('Summary', () => this.grid.root);
     this.tabs.addPane(`🚫 Outliers`, () => this.grid.root);
 
@@ -606,11 +634,11 @@ export class PlateWidget extends DG.Widget {
 
     const t = this.plate.data;
     this._colorColumn =
-      t.columns.firstWhere((c) => c.semType === 'Activity') ??
-      t.columns.firstWhere((c) => c.semType === 'Concentration') ??
-      t.columns.firstWhere((c) => c.name.toLowerCase() === 'activity') ??
-      t.columns.firstWhere((c) => c.name.toLowerCase().includes('concentration')) ??
-      t.columns.firstWhere((c) => c.type === DG.TYPE.FLOAT && !['row', 'col'].includes(c.name.toLowerCase()));
+            t.columns.firstWhere((c) => c.semType === 'Activity') ??
+            t.columns.firstWhere((c) => c.semType === 'Concentration') ??
+            t.columns.firstWhere((c) => c.name.toLowerCase() === 'activity') ??
+            t.columns.firstWhere((c) => c.name.toLowerCase().includes('concentration')) ??
+            t.columns.firstWhere((c) => c.type === DG.TYPE.FLOAT && !['row', 'col'].includes(c.name.toLowerCase()));
 
 
     this.grid.dataFrame = DG.DataFrame.create(this.plate.rows);
@@ -625,7 +653,6 @@ export class PlateWidget extends DG.Widget {
   }
 
   private createLayerGrid(layer: string): HTMLElement {
-    // --- MODIFIED: No longer needs to handle the Outlier case ---
     const df = this.plate.toGridDataFrame(layer);
     const grid = DG.Viewer.heatMap(df);
     grid.columns.add({gridColumnName: '0', cellType: 'string', index: 1});
@@ -647,23 +674,17 @@ export class PlateWidget extends DG.Widget {
     return grid.root;
   }
   private configureOutlierGrid(grid: DG.Grid, layerName: string): void {
-  // Make outlier grid cells render as checkboxes or boolean indicators
-  // This could be enhanced later, for now use default boolean rendering
-
-    // Add custom cell renderer for outlier layer if needed
     grid.onCellRender.subscribe((args) => {
       if (args.cell.gridColumn.idx > 0 && args.cell.gridRow >= 0) {
         const dataRow = this.plate._idx(args.cell.gridRow, args.cell.gridColumn.idx - 1);
         const outlierCol = this.plate.data.col(layerName);
 
         if (outlierCol && outlierCol.get(dataRow)) {
-        // Draw a clear indication that this well is marked as outlier
           const g = args.g;
           const bounds = args.bounds;
-          g.fillStyle = 'rgba(255, 0, 0, 0.3)'; // Light red background
+          g.fillStyle = 'rgba(255, 0, 0, 0.3)';
           g.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
 
-          // Draw text indicator
           g.fillStyle = 'red';
           g.font = '12px Arial';
           g.textAlign = 'center';
@@ -683,7 +704,6 @@ export class PlateWidget extends DG.Widget {
     const w = args.bounds.width;
     const h = args.bounds.height;
 
-    // Clear any grid background completely
     if (summary) {
       g.save();
       g.fillStyle = 'white';
@@ -713,13 +733,11 @@ export class PlateWidget extends DG.Widget {
     } else if (summary && h > 0 && gc.gridRow >= 0 && gc.gridColumn.idx > 0) {
       const dataRow = this._plate._idx(gc.gridRow, gc.gridColumn.idx - 1);
 
-      // Check if this cell is hovered
       const hoveredCell = (this as any)._hoveredCell ? (this as any)._hoveredCell() : null;
       const isHovered = hoveredCell &&
-                     hoveredCell.row === gc.gridRow &&
-                     hoveredCell.col === gc.gridColumn.idx - 1;
+                                hoveredCell.row === gc.gridRow &&
+                                hoveredCell.col === gc.gridColumn.idx - 1;
 
-      // Draw the well circle
       g.beginPath();
       const r = Math.min(h / 2, w / 2) * 0.8;
       g.ellipse(x + w / 2, y + h / 2, r, r, 0, 0, 2 * Math.PI);
@@ -735,11 +753,11 @@ export class PlateWidget extends DG.Widget {
       }
 
       // Draw hover effect
-      if (isHovered) {
+      if (isHovered && this.interactionMode !== 'outlier') {
         g.strokeStyle = 'rgba(0, 128, 255, 0.8)';
         g.lineWidth = 3;
-      } else if (this.plate.data.selection.get(dataRow)) {
-      // Selection ring
+      } else if (this.plate.data.selection.get(dataRow) && this.interactionMode === 'default') {
+        // Selection ring
         g.strokeStyle = 'rgba(0, 128, 255, 0.5)';
         g.lineWidth = 2;
       } else {
