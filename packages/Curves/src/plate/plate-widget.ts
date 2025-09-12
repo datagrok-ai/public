@@ -1,42 +1,42 @@
 /* eslint-disable camelcase */
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
-import {MARKER_TYPE, TYPE} from 'datagrok-api/dg';
+import { MARKER_TYPE, TYPE } from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {div} from 'datagrok-api/ui';
-import {mapFromRow, safeLog, toExcelPosition} from './utils';
-import {LayerType, Plate, PLATE_OUTLIER_WELL_NAME} from './plate';
+import { div } from 'datagrok-api/ui';
+import { mapFromRow, safeLog, toExcelPosition } from './utils';
+import { LayerType, Plate, PLATE_OUTLIER_WELL_NAME } from './plate';
 //@ts-ignore
 import * as jStat from 'jstat';
-import {IPlateWellValidator, plateWellValidators} from './plate-well-validators';
-import {fromEvent, Subject, Subscription} from 'rxjs';
-import {debounceTime, filter, takeUntil, take} from 'rxjs/operators';
+import { IPlateWellValidator, plateWellValidators } from './plate-well-validators';
+import { fromEvent, Subject, Subscription } from 'rxjs';
+import { debounceTime, filter, takeUntil, take } from 'rxjs/operators';
 import './plate-widget.css';
 
 export type AnalysisOptions = {
-    roleName: string,
-    concentrationName: string,
-    valueName: string
-    controlColumns: string[],
-    normalize: boolean,
-    autoFilterOutliers: boolean,
-    submitAction?: (plate: Plate, curvesDf: DG.DataFrame) => void,
-    categorizeFormula: string,
-    statisticsColumns: string[],
-    plateStatistics?: {[key: string]: (plate: Plate) => string | number}
+  roleName: string,
+  concentrationName: string,
+  valueName: string
+  controlColumns: string[],
+  normalize: boolean,
+  autoFilterOutliers: boolean,
+  submitAction?: (plate: Plate, curvesDf: DG.DataFrame) => void,
+  categorizeFormula: string,
+  statisticsColumns: string[],
+  plateStatistics?: { [key: string]: (plate: Plate) => string | number }
 }
 
 
 const colorScheme = [DG.Color.white, DG.Color.gray];
 export const dimensions = new Map([
-  [96, {rows: 8, cols: 12}],
-  [384, {rows: 16, cols: 24}],
-  [1536, {rows: 32, cols: 48}],
+  [96, { rows: 8, cols: 12 }],
+  [384, { rows: 16, cols: 24 }],
+  [1536, { rows: 32, cols: 48 }],
 ]);
 
 export interface IAnalysisWidgetCoordinator {
-    onPlateDataChanged(changeType: 'outlier' | 'data' | 'layer', details: any): void;
-    refreshAnalysisView(): void;
+  onPlateDataChanged(changeType: 'outlier' | 'data' | 'layer', details: any): void;
+  refreshAnalysisView(): void;
 }
 
 
@@ -99,7 +99,7 @@ export class PlateWidget extends DG.Widget {
       for (let col = 0; col < this.plate.cols; col++) {
         // Check if the point is inside the circular area of the well
         if (this.isPointInWell(canvasX, canvasY, row, col + 1))
-          return {row, col};
+          return { row, col };
       }
     }
     return null;
@@ -153,19 +153,24 @@ export class PlateWidget extends DG.Widget {
       }
     });
 
-    let hoveredCell: {row: number, col: number} | null = null;
+    let hoveredCell: { row: number, col: number } | null = null;
 
     this.grid.onCellMouseEnter.subscribe((gc: DG.GridCell) => {
       if (gc.isTableCell) {
+        gc.grid.root.style.cursor = 'pointer';
+
         hoveredCell = {row: gc.gridRow, col: gc.gridColumn.idx - 1};
         this.grid.invalidate();
       }
     });
 
     this.grid.onCellMouseLeave.subscribe((gc: DG.GridCell) => {
+      gc.grid.root.style.cursor = 'default';
+
       hoveredCell = null;
       this.grid.invalidate();
     });
+
 
     // MODIFIED: This is now a fallback and can be removed, as our new system handles clicks.
     // We'll leave it for now in case other parts of the system rely on it.
@@ -207,11 +212,11 @@ export class PlateWidget extends DG.Widget {
 
     this.tabs.addPane('Summary', () => this.grid.root);
 
-    const layerInfo: Record<LayerType, {icon: string, layers: string[]}> = {
-      [LayerType.ORIGINAL]: {icon: '', layers: this.plate.getLayersByType(LayerType.ORIGINAL)},
-      [LayerType.LAYOUT]: {icon: '️(Layout)', layers: this.plate.getLayersByType(LayerType.LAYOUT)},
-      [LayerType.DERIVED]: {icon: '(Derived)', layers: this.plate.getLayersByType(LayerType.DERIVED)},
-      [LayerType.OUTLIER]: {icon: '🚫', layers: []},
+    const layerInfo: Record<LayerType, { icon: string, layers: string[] }> = {
+      [LayerType.ORIGINAL]: { icon: '', layers: this.plate.getLayersByType(LayerType.ORIGINAL) },
+      [LayerType.LAYOUT]: { icon: '️(Layout)', layers: this.plate.getLayersByType(LayerType.LAYOUT) },
+      [LayerType.DERIVED]: { icon: '(Derived)', layers: this.plate.getLayersByType(LayerType.DERIVED) },
+      [LayerType.OUTLIER]: { icon: '🚫', layers: [] },
     };
 
     const allRegisteredLayers = new Set<string>();
@@ -240,7 +245,7 @@ export class PlateWidget extends DG.Widget {
   private layerExists(layerName: string): boolean {
     return this.tabs.panes.some((pane) =>
       pane.name.includes(layerName) ||
-            (layerName === PLATE_OUTLIER_WELL_NAME && pane.name.includes('Outliers'))
+      (layerName === PLATE_OUTLIER_WELL_NAME && pane.name.includes('Outliers'))
     );
   }
 
@@ -343,7 +348,7 @@ export class PlateWidget extends DG.Widget {
         DG.Color.toHtml(DG.Color.lightGray);
 
       const legendItem = ui.divH([
-        ui.div('', {style: {width: '12px', height: '12px', borderRadius: '3px', backgroundColor: color, border: '1px solid var(--grey-3)'}}),
+        ui.div('', { style: { width: '12px', height: '12px', borderRadius: '3px', backgroundColor: color, border: '1px solid var(--grey-3)' } }),
         ui.divText(`${role} (${count} wells)`),
       ], 'role-summary__item');
       this.roleSummaryDiv.appendChild(legendItem);
@@ -387,7 +392,7 @@ export class PlateWidget extends DG.Widget {
     if (selection.trueCount === 0) return;
 
     const roles = ['Control', 'Buffer', 'Assay Reagent', 'Sample'];
-    const roleInput = ui.input.multiChoice<string>('Roles', {items: roles, value: []});
+    const roleInput = ui.input.multiChoice<string>('Roles', { items: roles, value: [] });
 
     const popupContent = ui.divV([
       ui.h3(`${selection.trueCount} wells selected`),
@@ -544,7 +549,7 @@ export class PlateWidget extends DG.Widget {
     const gridAndSummaryWrapper = ui.divV([
       pw.tabs.root,
       pw.roleSummaryDiv,
-    ], {style: {flexGrow: '1', display: 'flex', flexDirection: 'column'}});
+    ], { style: { flexGrow: '1', display: 'flex', flexDirection: 'column' } });
 
     const mainContainer = ui.divH([
       gridAndSummaryWrapper,
@@ -627,11 +632,11 @@ export class PlateWidget extends DG.Widget {
     this.tabs.addPane('Summary', () => this.grid.root);
     this.tabs.addPane(`🚫 Outliers`, () => this.grid.root);
 
-    const layerInfo: Record<LayerType, {icon: string, layers: string[]}> = {
-      [LayerType.ORIGINAL]: {icon: '', layers: this.plate.getLayersByType(LayerType.ORIGINAL)},
-      [LayerType.LAYOUT]: {icon: '️(Layout)', layers: this.plate.getLayersByType(LayerType.LAYOUT)},
-      [LayerType.DERIVED]: {icon: '(Derived)', layers: this.plate.getLayersByType(LayerType.DERIVED)},
-      [LayerType.OUTLIER]: {icon: '🚫', layers: []},
+    const layerInfo: Record<LayerType, { icon: string, layers: string[] }> = {
+      [LayerType.ORIGINAL]: { icon: '', layers: this.plate.getLayersByType(LayerType.ORIGINAL) },
+      [LayerType.LAYOUT]: { icon: '️(Layout)', layers: this.plate.getLayersByType(LayerType.LAYOUT) },
+      [LayerType.DERIVED]: { icon: '(Derived)', layers: this.plate.getLayersByType(LayerType.DERIVED) },
+      [LayerType.OUTLIER]: { icon: '🚫', layers: [] },
     };
 
     const allRegisteredLayers = new Set<string>();
@@ -659,17 +664,17 @@ export class PlateWidget extends DG.Widget {
 
     const t = this.plate.data;
     this._colorColumn =
-            t.columns.firstWhere((c) => c.semType === 'Activity') ??
-            t.columns.firstWhere((c) => c.semType === 'Concentration') ??
-            t.columns.firstWhere((c) => c.name.toLowerCase() === 'activity') ??
-            t.columns.firstWhere((c) => c.name.toLowerCase().includes('concentration')) ??
-            t.columns.firstWhere((c) => c.type === DG.TYPE.FLOAT && !['row', 'col'].includes(c.name.toLowerCase()));
+      t.columns.firstWhere((c) => c.semType === 'Activity') ??
+      t.columns.firstWhere((c) => c.semType === 'Concentration') ??
+      t.columns.firstWhere((c) => c.name.toLowerCase() === 'activity') ??
+      t.columns.firstWhere((c) => c.name.toLowerCase().includes('concentration')) ??
+      t.columns.firstWhere((c) => c.type === DG.TYPE.FLOAT && !['row', 'col'].includes(c.name.toLowerCase()));
 
 
     this.grid.dataFrame = DG.DataFrame.create(this.plate.rows);
     this.grid.columns.clear();
     for (let i = 0; i <= this.plate.cols; i++)
-      this.grid.columns.add({gridColumnName: i.toString(), cellType: 'string'});
+      this.grid.columns.add({ gridColumnName: i.toString(), cellType: 'string' });
 
     if (this.grid && this.grid.root)
       this.grid.root.style.width = '100%';
@@ -680,7 +685,7 @@ export class PlateWidget extends DG.Widget {
   private createLayerGrid(layer: string): HTMLElement {
     const df = this.plate.toGridDataFrame(layer);
     const grid = DG.Viewer.heatMap(df);
-    grid.columns.add({gridColumnName: '0', cellType: 'string', index: 1});
+    grid.columns.add({ gridColumnName: '0', cellType: 'string', index: 1 });
 
     df.onValuesChanged.pipe(debounceTime(1000)).subscribe(() => {
       const p = this.plate;
@@ -760,8 +765,8 @@ export class PlateWidget extends DG.Widget {
 
       const hoveredCell = (this as any)._hoveredCell ? (this as any)._hoveredCell() : null;
       const isHovered = hoveredCell &&
-                                hoveredCell.row === gc.gridRow &&
-                                hoveredCell.col === gc.gridColumn.idx - 1;
+        hoveredCell.row === gc.gridRow &&
+        hoveredCell.col === gc.gridColumn.idx - 1;
 
       g.beginPath();
       const r = Math.min(h / 2, w / 2) * 0.8;
@@ -778,22 +783,39 @@ export class PlateWidget extends DG.Widget {
       }
 
       // Draw hover effect
-      if (isHovered && this.interactionMode !== 'outlier') {
-        g.strokeStyle = 'rgba(0, 128, 255, 0.8)';
-        g.lineWidth = 3;
-      } else if (this.plate.data.selection.get(dataRow) && this.interactionMode === 'default') {
-        // Selection ring
-        g.strokeStyle = 'rgba(0, 128, 255, 0.5)';
-        g.lineWidth = 2;
+      const isSelected = this.plate.data.selection.get(dataRow) && this.interactionMode === 'default';
+
+      if (isHovered || isSelected) {
+        g.shadowColor = 'rgba(40, 255, 140, 0.9)'; // Glow color
+        g.shadowBlur = 10;
+        g.strokeStyle = 'rgba(40, 255, 140, 0.9)'; // Bright green border
+        g.lineWidth = isHovered ? 3 : 2; // Make hover slightly thicker
       } else {
         g.strokeStyle = 'grey';
         g.lineWidth = 1;
       }
       g.stroke();
 
+      // Reset shadow for other elements
+      g.shadowBlur = 0;
+
       const outlierCol = this.plate.data.col(PLATE_OUTLIER_WELL_NAME);
-      if (outlierCol?.get(dataRow))
-        DG.Paint.marker(g, MARKER_TYPE.CROSS_X_BORDER, x + w / 2, y + h / 2, DG.Color.red, r * 2);
+      if (outlierCol?.get(dataRow)) {
+        g.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+        g.lineWidth = 3;
+        g.lineCap = 'round'; // This makes the line ends soft
+
+        const crossSize = r * 0.8; // Padding inside the well
+        const centerX = x + w / 2;
+        const centerY = y + h / 2;
+
+        g.beginPath();
+        g.moveTo(centerX - crossSize, centerY - crossSize);
+        g.lineTo(centerX + crossSize, centerY + crossSize);
+        g.moveTo(centerX + crossSize, centerY - crossSize);
+        g.lineTo(centerX - crossSize, centerY + crossSize);
+        g.stroke();
+      }
     }
 
     if (summary)
