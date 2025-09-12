@@ -18,6 +18,7 @@ public class PropertyAdapter implements JsonSerializer<Property> {
 
         obj.addProperty("#type", "Property");
         obj.addProperty("name", src.name);
+        obj.addProperty("friendlyName", src.friendlyName);
         obj.addProperty("propertyType", src.propertyType + (src.propertySubType == null ? "" : "<" + src.propertySubType + ">"));
         obj.addProperty("propertySubType", src.propertySubType);
         obj.addProperty("description", src.description);
