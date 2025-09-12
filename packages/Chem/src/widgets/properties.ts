@@ -43,7 +43,6 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
     host.appendChild(ui.tableFromMap(widgetPropMap));
 
     addCopyIcon(widgetPropMap, 'Properties');
-    
   } catch {
     return new DG.Widget(ui.divText('Could not analyze properties'));
   }
@@ -53,19 +52,18 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
 
 export function getPropertiesMap(semValue: DG.SemanticValue<string>, host?: HTMLElement):
  {[k: string]: {value: any, addColumnIcon: HTMLElement | null}} {
-
   const mol = oclMol(semValue.value);
-  
+
   function prop(p: IChemProperty, mol: OCL.Molecule): {value: any, addColumnIcon: HTMLElement | null} {
     let addColumnIcon: HTMLElement | null = null;
-    if (host && semValue.cell.dataFrame && semValue.cell.column) {
+    if (host && semValue?.cell?.dart && semValue.cell.dataFrame && semValue.cell.column) {
       addColumnIcon = ui.iconFA('plus', async () => {
-      const res = await addPropertiesAsColumns(semValue.cell.dataFrame, semValue.cell.column, [p.name]);
-      const col = res[0];
-      col.setTag('CHEM_WIDGET_PROPERTY', p.name);
-      col.setTag('CHEM_ORIG_MOLECULE_COLUMN', semValue.cell.column.name);
+        const res = await addPropertiesAsColumns(semValue.cell.dataFrame, semValue.cell.column, [p.name]);
+        const col = res[0];
+        col.setTag('CHEM_WIDGET_PROPERTY', p.name);
+        col.setTag('CHEM_ORIG_MOLECULE_COLUMN', semValue.cell.column.name);
       }, `Calculate ${p.name} for the whole table`);
-  
+
       ui.tools.setHoverVisibility(host, [addColumnIcon]);
       $(addColumnIcon)
         .css('color', '#2083d5')
@@ -76,7 +74,6 @@ export function getPropertiesMap(semValue: DG.SemanticValue<string>, host?: HTML
     }
 
     return {value: p.valueFunc(mol), addColumnIcon: addColumnIcon};
-    
   }
 
   const map : {[k: string]: {value: any, addColumnIcon: HTMLElement | null}} = {};
