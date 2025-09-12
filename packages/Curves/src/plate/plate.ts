@@ -62,7 +62,6 @@ export interface LayerMetadata {
   type: LayerType;
   source?: string;
   createdAt: Date;
-  // aliases: Map<string, string>;
 }
 
 export const PLATE_OUTLIER_WELL_NAME = 'Outlier';
@@ -85,6 +84,7 @@ export class Plate {
 
   private layerRegistry: Map<string, LayerMetadata> = new Map();
   private scopedAliases: Map<string, Map<string, string>> = new Map();
+
   private outlierChangeSubject = new Subject<{row: number, col: number, isOutlier: boolean, source: string}>();
   public get onOutlierChanged() { return this.outlierChangeSubject.asObservable(); }
 
@@ -122,12 +122,9 @@ export class Plate {
   }
 
   _markOutlier(row: number, flag: boolean = true) {
-    console.log(`[DEBUG] _markOutlier called: row=${row}, flag=${flag}`);
-
     const outlierCol = this.data.columns.getOrCreate(PLATE_OUTLIER_WELL_NAME, DG.TYPE.BOOL);
 
     if (!this.layerRegistry.has(PLATE_OUTLIER_WELL_NAME)) {
-      console.log(`[DEBUG] Registering outlier layer for first time`);
       this.registerLayer(PLATE_OUTLIER_WELL_NAME, LayerType.OUTLIER, 'user-interaction');
       outlierCol.setTag('outlier.sources', '{}');
     }
@@ -135,9 +132,6 @@ export class Plate {
     outlierCol.set(row, flag);
     const source = 'user-interaction';
     this._updateOutlierSource(outlierCol, row, flag, source);
-
-    console.log(`[DEBUG] _markOutlier completed, calling _markOutlierWithSource`);
-    // Also call the event-emitting version
     this._markOutlierWithSource(row, flag, source);
   }
 
@@ -146,8 +140,6 @@ export class Plate {
     this._markOutlierWithSource(dataRow, flag, source);
   }
   _markOutlierWithSource(row: number, flag: boolean = true, source: string = 'user-interaction') {
-    console.log(`[DEBUG] Marking outlier: row=${row}, flag=${flag}, source=${source}`);
-
     const outlierCol = this.data.columns.getOrCreate(PLATE_OUTLIER_WELL_NAME, DG.TYPE.BOOL);
 
 
@@ -162,7 +154,6 @@ export class Plate {
     // Emitting change event
     const [plateRow, plateCol] = this.rowIndexToExcel(row);
     this.outlierChangeSubject.next({row: plateRow, col: plateCol, isOutlier: flag, source});
-    console.log(`[DEBUG] Outlier change event emitted for row=${plateRow}, col=${plateCol}`);
   }
 
   // Helper method to manage source tracking via column tags
@@ -210,8 +201,6 @@ export class Plate {
     });
   }
 
-  // --- NEW LAYER MANAGEMENT METHODS ---
-
   /**
    * Get a column by its name or any of its aliases
    */
@@ -234,7 +223,6 @@ export class Plate {
 
     if (!this.scopedAliases.has(scope))
       this.scopedAliases.set(scope, new Map());
-
     // Remove this alias from any other column in this scope first
     this.removeScopedAlias(scope, alias);
 
@@ -665,28 +653,6 @@ export class Plate {
       return [k, fitSeries];
     }));
   }
-
-  //   getAnalysisDialog(options: AnalysisOptions) {
-  //     const dialog = ui.dialog('Plate Analysis');
-  //     const drcView = PlateDrcAnalysis.analysisView(this, options);
-  //     if (drcView)
-  //       dialog.add(drcView);
-  //     else
-  //       dialog.add(ui.divText('Required columns for analysis not found.'));
-  //     dialog.showModal(true);
-  //   }
-
-  //   getAnalysisView(options: AnalysisOptions) {
-  //     const drcView = PlateDrcAnalysis.analysisView(this, options);
-  //     const view = DG.View.create();
-  //     view.name = 'Plate Analysis';
-  //     if (drcView)
-  //       view.root.appendChild(drcView.root);
-  //     else
-  //       view.root.appendChild(ui.divText('Required columns for analysis not found.'));
-
-  //     return grok.shell.addView(view);
-  //   }
 
   merge(plate: Plate) {
     for (const col of plate.data.columns) {

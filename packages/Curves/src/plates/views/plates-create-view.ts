@@ -38,8 +38,9 @@ export function createPlatesView(): DG.View {
   const plateWidget = new PlateWidget();
   plateWidget.editable = true;
   plateWidget.plate = new Plate(plateType.rows, plateType.cols);
-  const tabControl = ui.tabControl();
 
+  // Create analysis tabs (without Wells tab)
+  const tabControl = ui.tabControl();
   tabControl.root.classList.remove('ui-box');
   tabControl.root.style.cssText = `
     width: 100%;
@@ -47,7 +48,6 @@ export function createPlatesView(): DG.View {
     display: flex;
     flex-direction: column;
   `;
-
 
   const createDrcAnalysisContent = (): HTMLElement => {
     try {
@@ -67,11 +67,8 @@ export function createPlatesView(): DG.View {
 
       console.log('[DEBUG] About to call createAnalysisView...');
 
-
-      // Get current mappings for this analysis (for now, just use empty map until you implement the state manager methods)
-      // Get current mappings for this analysis (for now, just use empty map)
+      // Get current mappings for this analysis
       const currentMappings = stateManager.getScopedMapping(activeIndex, MAPPING_SCOPES.DRC);
-
 
       const handleMap = (target: string, source: string) => {
         stateManager.remapScopedProperty(activeIndex, MAPPING_SCOPES.DRC, target, source);
@@ -104,7 +101,6 @@ export function createPlatesView(): DG.View {
       if (!activePlate || activeIndex < 0)
         return createAnalysisSkeleton('Dose Ratio', ['Agonist_Concentration_M', 'Antagonist_Concentration_M', 'Percent_Inhibition']);
 
-
       const currentMappings = stateManager.getScopedMapping(activeIndex, MAPPING_SCOPES.DOSE_RATIO);
 
       const handleMap = (target: string, source: string) => {
@@ -127,31 +123,22 @@ export function createPlatesView(): DG.View {
     }
   };
 
-  tabControl.addPane('Wells', () => {
-    plateWidget.root.style.width = '100%';
-    plateWidget.root.style.height = '100%';
-    return plateWidget.root;
-  });
+  // Add only analysis tabs (no Wells tab)
   tabControl.addPane('Dose Response', () => createDrcAnalysisContent());
   tabControl.addPane('Dose Ratio', () => createDoseRatioContent());
+
   ui.tools.waitForElementInDom(tabControl.root).then(() => {
     tabControl.panes.forEach((pane) => {
       pane.content.style.cssText = `
         width: 100%;
         height: 100%;
-        max-width: none; /* Override any max-width constraints */
+        max-width: none;
         flex: 1;
         display: flex;
         flex-direction: column;
       `;
     });
-
-    // Ensure the PlateWidget's root itself also conforms. This might be redundant
-    // but ensures consistency.
-    plateWidget.root.style.width = '100%';
-    plateWidget.root.style.height = '100%';
   });
-
 
   const tabContentHost = tabControl.root.querySelector('.d4-tab-host');
   if (tabContentHost) {
@@ -159,46 +146,11 @@ export function createPlatesView(): DG.View {
     (tabContentHost as HTMLElement).style.width = '100%';
     (tabContentHost as HTMLElement).style.display = 'flex';
   }
-  // tabControl.root.style.width = '100%';
-  // tabControl.root.style.flexGrow = '1';
-  // tabControl.root.style.display = 'flex';
-  // tabControl.root.style.flexDirection = 'column';
 
   const plateGridManager = new PlateGridManager(stateManager);
 
-  // const handleManageMappings = () => {
-  //   const state = stateManager.currentState;
-  //   const activePlate = stateManager.activePlate;
-
-  //   if (state && activePlate) {
-  //   // 1. Create the mappings map from the plate's aliases (the new source of truth)
-  //     const currentMappings = new Map<string, string>();
-  //     for (const layer of activePlate.plate.getLayerNames()) {
-  //       const aliases = activePlate.plate.getAliases(layer);
-  //       for (const alias of aliases)
-  //         currentMappings.set(alias, layer);
-  //     }
-
-  //     // 2. Check if there are any mappings to sync
-  //     if (currentMappings.size > 0) {
-  //       plateGridManager.showMultiPlateMappingDialog({
-  //         allPlates: state.plates,
-  //         sourceMappings: currentMappings, // 3. Pass the new map
-  //         onSync: (mappings, selectedIndexes) => {
-  //           stateManager.syncMappings(mappings, selectedIndexes);
-  //         },
-  //         onUndo: (mappedField) => {
-  //           if (state.activePlateIdx >= 0)
-  //             stateManager.undoMapping(state.activePlateIdx, mappedField);
-  //         },
-  //       });
-  //     } else {
-  //       grok.shell.warning('Please define at least one mapping on the active plate first.');
-  //     }
-  //   } else {
-  //     grok.shell.warning('Please import a plate first.');
-  //   }
-  // }; ;
+  // Create the top right panel switcher
+  const topRightSwitcher = createTopRightSwitcher(plateWidget, plateGridManager);
 
   const templatePanel = new TemplatePanel(
     stateManager,
@@ -206,6 +158,7 @@ export function createPlatesView(): DG.View {
     () => { console.warn('[DEBUG] TemplatePanel is not implemented'); }
   );
 
+  // Update state change subscription to handle both analyses and plate widget
   stateManager.onStateChange.subscribe(async (event) => {
     console.log('[DEBUG] State change event:', event);
     const activePlate = stateManager.activePlate;
@@ -225,7 +178,7 @@ export function createPlatesView(): DG.View {
     if (plateWidget.grid)
       plateWidget.grid.invalidate();
 
-    // Update this condition to include analysis mapping changes
+    // Update analysis views on relevant changes
     if (event.type === 'mapping-changed' ||
       event.type === 'plate-selected' ||
       event.type === 'analysis-mapping-changed' ||
@@ -247,9 +200,8 @@ export function createPlatesView(): DG.View {
     }
   });
 
-
   const rightPanel = ui.divV([
-    plateGridManager.root,
+    topRightSwitcher.container,
     tabControl.root,
   ], 'create-plate-view__right-panel');
 
@@ -260,7 +212,8 @@ export function createPlatesView(): DG.View {
 
   view.root.appendChild(mainLayout);
 
-  tabControl.currentPane = tabControl.getPane('Wells');
+  // Set default tab for analysis
+  tabControl.currentPane = tabControl.getPane('Dose Response');
 
   stateManager.setTemplate(plateTemplates[0]);
 
@@ -329,16 +282,14 @@ export function createPlatesView(): DG.View {
 
     if (!file.name.toLowerCase().endsWith('.csv')) {
       grok.shell.warning(`Only .csv files can be dropped here. To open other files, navigate away from the 'Create Plate' view.`);
-      args.preventDefault(); // Prevent opening other files even if they are valid Datagrok tables
+      args.preventDefault();
       return;
     }
 
     args.preventDefault();
-
     handleDroppedFile(file);
   });
   subscriptions.push(fileImportSub);
-
 
   const originalDetach = view.detach.bind(view);
   view.detach = () => {
@@ -350,6 +301,120 @@ export function createPlatesView(): DG.View {
   };
 
   return view;
+}
+
+function createTopRightSwitcher(plateWidget: PlateWidget, plateGridManager: PlateGridManager): {
+  container: HTMLElement;
+  showPlateView: () => void;
+  showGridView: () => void;
+} {
+  const container = ui.divV([], 'top-right-switcher');
+  const buttonContainer = ui.divH([], 'switcher-buttons');
+  const contentContainer = ui.div([], 'switcher-content');
+
+  // Create toggle buttons
+  const plateViewBtn = ui.button('Plate View', () => showPlateView());
+  const gridViewBtn = ui.button('Plates List', () => showGridView());
+
+  plateViewBtn.classList.add('switcher-btn', 'switcher-btn-active');
+  gridViewBtn.classList.add('switcher-btn');
+
+  buttonContainer.appendChild(plateViewBtn);
+  buttonContainer.appendChild(gridViewBtn);
+
+  const buttonStyle = `
+    padding: 4px 24px;
+    margin-right: 2px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--grey-5);
+    transition: all 0.2s ease;
+  `;
+
+  const activeButtonStyle = `
+    padding: 4px 24px;
+    margin-right: 2px;
+    border: none;
+    border-bottom: 2px solid var(--blue-3);
+    background: transparent;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--grey-6);
+    transition: all 0.2s ease;
+  `;
+
+  plateViewBtn.style.cssText = activeButtonStyle;
+  gridViewBtn.style.cssText = buttonStyle;
+
+  buttonContainer.style.cssText = `
+    display: flex;
+    padding: 0;
+    background: transparent;
+    border-bottom: 1px solid var(--grey-2);
+  `;
+
+  contentContainer.style.cssText = `
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  `;
+
+  container.style.cssText = `
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 200px;
+    background: white;
+  `;
+
+  plateWidget.root.style.cssText = `
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  `;
+  plateWidget.roleSummaryDiv.style.display = 'none';
+  contentContainer.appendChild(plateWidget.root);
+
+  function showPlateView() {
+    // Update button states
+    plateViewBtn.style.cssText = activeButtonStyle;
+    gridViewBtn.style.cssText = buttonStyle;
+    plateViewBtn.classList.add('switcher-btn-active');
+    gridViewBtn.classList.remove('switcher-btn-active');
+
+    // Switch content
+    ui.empty(contentContainer);
+    plateWidget.roleSummaryDiv.style.display = 'none';
+    contentContainer.appendChild(plateWidget.root);
+  }
+
+  function showGridView() {
+    // Update button states
+    gridViewBtn.style.cssText = activeButtonStyle;
+    plateViewBtn.style.cssText = buttonStyle;
+    gridViewBtn.classList.add('switcher-btn-active');
+    plateViewBtn.classList.remove('switcher-btn-active');
+
+    // Switch content
+    ui.empty(contentContainer);
+    contentContainer.appendChild(plateGridManager.root);
+  }
+
+  container.appendChild(buttonContainer);
+  container.appendChild(contentContainer);
+
+  return {
+    container,
+    showPlateView,
+    showGridView
+  };
 }
 
 function createAnalysisSkeleton(analysisType: string, requiredColumns: string[] = []): HTMLElement {
