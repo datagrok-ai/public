@@ -192,7 +192,7 @@ Learn more about [Deployment](../../deploy/deploy.md)
 
 See also: [Viewer gallery](https://github.com/datagrok-ai/public/blob/master/help/visualize/viewers/viewer-gallery.md), [Table view](../navigation/views/table-view.md), [Grid](../../visualize/viewers/grid.md)
 
-##### **Q:** Can I create custom visualizations?
+##### **Q:** How can I create custom visualizations?
 
 **A:** Yes, **Datagrok** offers multiple options for creating and embedding custom visualizations:
 
@@ -218,7 +218,7 @@ to data within the intuitive UI.
 ##### **Q:** Can users save and share custom dashboards, analyses, and visualizations in **Datagrok**?  
 
 **A:** Yes. Users can create projects that include data, analyses, and dashboards, then share them with others. Dashboards are dynamic and customizable.   
-[Make a project and share with others](../getting-started.md#make-a-project-and-share-with-others) | [Creating dynamic dashboards](../../access/databases/databases.md#creating-dynamic-dashboards-for-query-results)  
+[Creating and managing projects](../concepts/project/project.md#creating-and-managing-projects) | [Creating dynamic dashboards](../../access/databases/databases.md#creating-dynamic-dashboards-for-query-results)  
 
 ##### **Q:** How can I link raw data, metadata, and analysis results to compounds or sequences so that this information can be easily recalled and shared across **Datagrok** dashboards?
 
@@ -296,7 +296,7 @@ See [Scaling and stability](../../develop/under-the-hood/infrastructure.md#scala
 ##### **Q:** Can I create custom visualizations?
 
 **A:** Yes, Datagrok offers multiple options for creating and embedding custom visualizations.  
-See [Custom visualizations](#visualize) for details
+See [Custom visualizations](#q-how-can-i-create-custom-visualizations) for details
 
 ##### **Q:** Can I build server-side components?
 
