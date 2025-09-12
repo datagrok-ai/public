@@ -27,8 +27,8 @@ export namespace funcs {
     return await grok.functions.call('Tutorials:DemoApp', { path, filter });
   }
 
-  export async function demoAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<void> {
-    return await grok.functions.call('Tutorials:DemoAppTreeBrowser', { treeNode, browseView });
+  export async function demoAppTreeBrowser(treeNode: any ): Promise<void> {
+    return await grok.functions.call('Tutorials:DemoAppTreeBrowser', { treeNode });
   }
 
   export async function demoAppWidget(): Promise<any> {
