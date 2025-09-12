@@ -20,7 +20,7 @@ export class DashboardTutorial extends Tutorial {
 
   demoTable: string = '';
   helpUrl: string = '';
-  prerequisites: TutorialPrerequisites = {/*grokConnect: true*/};
+  prerequisites: TutorialPrerequisites = {grokConnect: true};
 
   protected async _run(): Promise<void> {
     grok.shell.windows.showToolbox = true;
