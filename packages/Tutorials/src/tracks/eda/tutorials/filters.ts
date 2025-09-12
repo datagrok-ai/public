@@ -29,8 +29,9 @@ export class FiltersTutorial extends Tutorial {
   findIndicator(filterHeader: Cash): HTMLElement | null {
     return filterHeader.find('div.d4-filter-indicator')[0] ?? null;
   }
-  
+
   protected async _run() {
+    this.showToolbox();
     this.header.textContent = this.name;
     this.describe('Dynamic filtering is an important concept in exploratory data analysis, and ' +
       'our platform makes it as powerful and easy to use as possible. Let\'s start with opening ' +

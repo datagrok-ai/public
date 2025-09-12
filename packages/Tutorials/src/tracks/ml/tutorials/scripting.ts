@@ -21,6 +21,7 @@ export class ScriptingTutorial extends Tutorial {
   prerequisites: TutorialPrerequisites = {jupyter: true};
 
   protected async _run() {
+    this.showBrowse();
     this.header.textContent = this.name;
     this.describe('Scripting is an integration mechanism with languages for statistical computing.');
 

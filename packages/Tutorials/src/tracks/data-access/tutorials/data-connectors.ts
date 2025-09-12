@@ -14,16 +14,20 @@ export class DataConnectorsTutorial extends Tutorial {
     return 'Direct connection to data sources and databases using the connector server';
   }
   get steps() { return 12; }
-  
+
   demoTable: string = '';
   helpUrl: string = '';
   prerequisites: TutorialPrerequisites = {grokConnect: true};
 
   protected async _run() {
+    this.showBrowse();
+    const databasesNode = grok.shell.browsePanel.mainTree.children.find((child) => child.text === 'Databases') as DG.TreeViewGroup;
+    if (databasesNode)
+      databasesNode.expanded = true;
     this.header.textContent = this.name;
     this.describe('In this tutorial, we will browse the tree of connections and learn how to ' +
       'create new connections to query the database.');
-    
+
     this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML);
 
     const dbViewInfo = 'In this view, you can create queries to data connectors from the list. ' +

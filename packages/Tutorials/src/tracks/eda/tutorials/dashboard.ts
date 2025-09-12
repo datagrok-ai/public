@@ -20,10 +20,14 @@ export class DashboardTutorial extends Tutorial {
 
   demoTable: string = '';
   helpUrl: string = '';
-  prerequisites: TutorialPrerequisites = {grokConnect: true};
+  prerequisites: TutorialPrerequisites = {/*grokConnect: true*/};
 
   protected async _run(): Promise<void> {
     grok.shell.windows.showToolbox = true;
+    this.showBrowse();
+    const databasesNode = grok.shell.browsePanel.mainTree.children.find((child) => child.text === 'Databases') as DG.TreeViewGroup;
+    if (databasesNode)
+      databasesNode.expanded = true;
     this.header.textContent = this.name;
     this.describe('In this tutorial, we will learn how to query data and visualize the results.');
 
@@ -41,6 +45,9 @@ export class DashboardTutorial extends Tutorial {
 
     const dlg = await this.openDialog('Create a connection to Postgres server', 'Add new connection',
       providerRoot, `${dbViewInfo}\nOpen the context menu on the Postgres connector and click "Add connection..."`);
+
+    // UI generation delay
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
     await this.dlgInputAction(dlg, `Set "Name" to "${connectionName}"`, 'Name', connectionName);
     await this.dlgInputAction(dlg, 'Set "Server" to "db.datagrok.ai"', 'Server', 'db.datagrok.ai');
