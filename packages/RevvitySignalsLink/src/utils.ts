@@ -233,16 +233,16 @@ export function createRevvityResponseWidget(response: RevvityApiResponse, idSemV
   }
   const widgetMapWithAddIcons: { [key: string]: HTMLElement } = {};
   Object.keys(mainMap).forEach((key) => {
-      const propDiv = ui.divH([mainMap[key]], {style: {'position': 'relative'}});
-        if (idSemValue.cell.dataFrame && idSemValue.cell.column) {
+    const propDiv = ui.divH([mainMap[key]], { style: { 'position': 'relative' } });
+    if (idSemValue.cell?.dataFrame && idSemValue.cell?.column) {
       const addColumnIcon = ui.iconFA('plus', async () => {
         calculatePropForColumn(key, idSemValue.cell.dataFrame, idSemValue.cell.column);
       }, `Calculate ${key} for the whole table`);
       addColumnIcon.classList.add('revvity-add-prop-as-column-icon');
       propDiv.prepend(addColumnIcon);
       ui.tools.setHoverVisibility(propDiv, [addColumnIcon]);
-      widgetMapWithAddIcons[key] = propDiv;
     }
+    widgetMapWithAddIcons[key] = propDiv;
   });
 
   const mainTable = ui.tableFromMap(widgetMapWithAddIcons);
@@ -377,7 +377,11 @@ export async function calculatePropForColumn(propName: string, df: DG.DataFrame,
       .catch(() => { })
   );
   await Promise.allSettled(promises);
-
+  //create a temp column to ckeck if all values are actually numeric
+  const tempCol = DG.Column.fromStrings(newColName, newCol.toList());
+  if (tempCol.type !== DG.TYPE.STRING) {
+    df.columns.replace(newCol, tempCol);
+  }
 }
 
 export async function getEntityPropByEntityId(propName: string, id: string): Promise<any> {
