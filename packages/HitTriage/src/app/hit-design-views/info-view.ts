@@ -6,7 +6,7 @@ import {u2} from '@datagrok-libraries/utils/src/u2';
 import {HitDesignApp} from '../hit-design-app';
 import {_package} from '../../package';
 import $ from 'cash-dom';
-import {CampaignGroupingType, CampaignJsonName, CampaignTableColumns, DefaultCampaignTableInfoGetters, HitDesignCampaignIdKey, i18n} from '../consts';
+import {CampaignGrouping, CampaignGroupingType, CampaignJsonName, CampaignTableColumns, DefaultCampaignTableInfoGetters, HitDesignCampaignIdKey, i18n} from '../consts';
 import {HitDesignCampaign, HitDesignTemplate} from '../types';
 import {addBreadCrumbsToRibbons, checkEditPermissions,
   checkViewPermissions, getGroupedCampaigns, getSavedCampaignsGrouping, getSavedCampaignTableColumns, modifyUrl, popRibbonPannels,
@@ -79,15 +79,29 @@ export class HitDesignInfoView
         }
       };
       // grouping via different campaign properties
-      const sortIcon = ui.iconFA('layer-group', () => {
+      const sortIcon = ui.iconFA('layer-group', async () => {
         const menu = DG.Menu.popup();
-        Object.values(CampaignGroupingType).forEach((i) => {
+        Object.values(CampaignGrouping).forEach((i) => {
           menu.item(i, async () => {
             setSavedCampaignsGrouping(i as CampaignGroupingType);
             await refreshTable();
           });
-          menu.show({element: sortingHeader, x: 120, y: sortingHeader.offsetTop + 30});
         });
+        const campaignFieldsGroup = menu.group('Campaign Fields');
+        const campaignNamesMap = await _package.loadCampaigns(this.app.appName, this.deletedCampaigns);
+        const customFields = new Set<string>();
+        Object.values(campaignNamesMap).forEach((c) => {
+          if (c.campaignFields)
+            Object.keys(c.campaignFields).forEach((field) => customFields.add(field));
+        });
+        Array.from(customFields).forEach((field) => {
+          campaignFieldsGroup.item(field, async () => {
+            setSavedCampaignsGrouping(`campaignFields.${field}`);
+            await refreshTable();
+          });
+        });
+
+        menu.show({element: sortingHeader, x: 120, y: sortingHeader.offsetTop + 30});
       });
       sortIcon.style.marginBottom = '9px';
       sortIcon.style.marginLeft = '8px';

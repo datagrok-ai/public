@@ -44,13 +44,15 @@ export const funcTypeNames = {
 export const HDCampaignsGroupingLSKey = 'HDCampaignsGrouping';
 export const HDCampaignTableColumnsLSKey = 'HDCampaignTableColumns';
 
-export enum CampaignGroupingType {
+export enum CampaignGrouping {
   None = 'None',
   Template = 'Template',
   Status = 'Status',
   Author = 'Author',
   LastModifiedUser = 'Last Modified User',
 }
+
+export type CampaignGroupingType = CampaignGrouping | `campaignFields.${string}`;
 
 export const DefaultCampaignTableInfoGetters = {
   'Code': (info: HitDesignCampaign) => info.name,
