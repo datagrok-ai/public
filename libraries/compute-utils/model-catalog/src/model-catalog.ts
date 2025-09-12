@@ -36,12 +36,8 @@ function findOrCreateViewWithCore(options: ModelCatalogConfig) {
     const mc: DG.Func = DG.Func.find({package: _package.name, name: funcName})[0];
     const mfc = mc.prepare();
     mfc.callSync({processed: true, report: false});
-    view = mfc.outputs.v;
+    view = mfc.getOutputParamValue();
   }
-  const currentView = [...grok.shell.views].find((v) => v === view);
-  if (!currentView)
-    grok.shell.add(view!);
-
   return view;
 }
 
