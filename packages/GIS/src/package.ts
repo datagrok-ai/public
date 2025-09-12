@@ -618,7 +618,6 @@ export class PackageFunctions {
     'test': {
       'test': '_mapDemo()',
       'wait': '2000',
-      'skip': 'GROK-11670',
     },
   })
   static async _mapDemo() {
