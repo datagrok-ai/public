@@ -252,7 +252,6 @@ export class PlateWidget extends DG.Widget {
     fromEvent<MouseEvent>(interactionElement, 'mousedown')
       .pipe(takeUntil(this._onDestroy))
       .subscribe((e: MouseEvent) => {
-        // MODIFIED: Removed mode check. This logic now runs for all modes.
         if (!this.editable || e.button !== 0) return;
 
         this._dragStartPoint = new DG.Point(e.offsetX, e.offsetY);
@@ -271,7 +270,6 @@ export class PlateWidget extends DG.Widget {
             if (!this._isDragging && (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD)) {
               this._isDragging = true;
               this._selectionRect = new DG.Rect(this._dragStartPoint.x, this._dragStartPoint.y, 0, 0);
-              // MODIFIED: Do NOT clear previous selections when starting a drag.
             }
 
             if (this._isDragging && this._selectionRect) {
@@ -284,44 +282,41 @@ export class PlateWidget extends DG.Widget {
               this._selectionRect.width = currentX - this._selectionRect.x;
               this._selectionRect.height = currentY - this._selectionRect.y;
 
+              // MODIFIED: Only draw the rectangle, do not update the selection state here.
               this.drawSelectionRect();
-              this.updateSelection();
             }
           });
 
         mouseUpStream.pipe(take(1)).subscribe((up_e: MouseEvent) => {
-          const selection = this.plate.data.selection;
-
           if (this._isDragging) {
-            // Logic for end of a DRAG
+            // MODIFIED: Finalize the selection state here, on mouseup.
+            this.finalizeDragSelection();
+            const selection = this.plate.data.selection;
             if (selection.trueCount > 0) {
               if (this.interactionMode === 'default') {
                 this.showRoleAssignmentPopup();
               } else if (this.interactionMode === 'outlier') {
-                // NEW: Toggle outliers for all selected wells
                 for (const i of selection.getSelectedIndexes()) {
                   const [row, col] = this.plate.rowIndexToExcel(i);
                   this.plate.markOutlierWithSource(row, col, true, 'summary-drag-set');
                 }
-                selection.setAll(false, true); // Clear selection after marking
+                selection.setAll(false, true);
               }
             }
           } else if (this._dragStartPoint) {
-            // Logic for a CLICK
             const well = this.hitTest(up_e.offsetX, up_e.offsetY);
             if (well) {
               if (this.interactionMode === 'default') {
                 const dataIndex = this.plate._idx(well.row, well.col);
+                const selection = this.plate.data.selection;
                 selection.set(dataIndex, !selection.get(dataIndex), true);
               } else if (this.interactionMode === 'outlier') {
-                // NEW: Toggle a single outlier on click
                 const currentState = this.plate.isOutlier(well.row, well.col);
                 this.plate.markOutlierWithSource(well.row, well.col, !currentState, 'summary-click-toggle');
               }
             }
           }
 
-          // Reset all state variables
           this._isDragging = false;
           this.clearSelectionRect();
           this._selectionRect = null;
@@ -330,7 +325,62 @@ export class PlateWidget extends DG.Widget {
         });
       });
   }
+  updateRoleSummary() {
+    ui.empty(this.roleSummaryDiv);
+    const roleColumn = this.plate.data.col('Role');
+    if (!roleColumn || roleColumn.stats.valueCount === 0) return;
 
+    const countsDf = this.plate.data.groupBy(['Role']).count().aggregate();
+    const roleColumnColors = roleColumn.meta.colors;
+    const originalRolesList = roleColumn.toList();
+
+    for (const row of countsDf.rows) {
+      const role = row.Role;
+      const count = row.count;
+      const firstIndex = originalRolesList.indexOf(role);
+      const color = (firstIndex !== -1) ?
+        DG.Color.toHtml(roleColumnColors.getColor(firstIndex)) :
+        DG.Color.toHtml(DG.Color.lightGray);
+
+      const legendItem = ui.divH([
+        ui.div('', {style: {width: '12px', height: '12px', borderRadius: '3px', backgroundColor: color, border: '1px solid var(--grey-3)'}}),
+        ui.divText(`${role} (${count} wells)`),
+      ], 'role-summary__item');
+      this.roleSummaryDiv.appendChild(legendItem);
+    }
+  }
+
+  private finalizeDragSelection() {
+    if (!this._selectionRect || !this.grid || this.grid.columns.length === 0)
+      return;
+
+    const selection = this.plate.data.selection;
+
+    const r = this._selectionRect;
+    const normalizedRect = new DG.Rect(
+      r.width < 0 ? r.x + r.width : r.x,
+      r.height < 0 ? r.y + r.height : r.y,
+      Math.abs(r.width),
+      Math.abs(r.height)
+    );
+
+    for (let row = 0; row < this.plate.rows; row++) {
+      for (let col = 0; col < this.plate.cols; col++) {
+        const gridCol = this.grid.columns.byIndex(col + 1);
+        if (gridCol) {
+          const cell = this.grid.cell(gridCol.name, row);
+          if (cell) {
+            const cellBounds = cell.bounds;
+            if (normalizedRect.contains(cellBounds.midX, cellBounds.midY)) {
+              const dataIndex = this.plate._idx(row, col);
+              selection.set(dataIndex, true, false);
+            }
+          }
+        }
+      }
+    }
+    selection.fireChanged();
+  }
 
   private showRoleAssignmentPopup(): void {
     const selection = this.plate.data.selection;
@@ -470,31 +520,6 @@ export class PlateWidget extends DG.Widget {
     this.grid.invalidate();
   }
 
-  updateRoleSummary() {
-    ui.empty(this.roleSummaryDiv);
-    const roleColumn = this.plate.data.col('Role');
-    if (!roleColumn || roleColumn.stats.valueCount === 0) return;
-
-    const countsDf = this.plate.data.groupBy(['Role']).count().aggregate();
-    const roleColumnColors = roleColumn.meta.colors;
-    const originalRolesList = roleColumn.toList();
-
-    for (const row of countsDf.rows) {
-      const role = row.Role;
-      const count = row.count;
-
-      const firstIndex = originalRolesList.indexOf(role);
-      const color = (firstIndex !== -1) ?
-        DG.Color.toHtml(roleColumnColors.getColor(firstIndex)) :
-        DG.Color.toHtml(DG.Color.lightGray);
-
-      const legendItem = ui.divH([
-        ui.div('', {style: {width: '12px', height: '12px', borderRadius: '3px', backgroundColor: color, border: '1px solid var(--grey-3)'}}),
-        ui.divText(`${role} (${count} wells)`),
-      ], 'role-summary__item');
-      this.roleSummaryDiv.appendChild(legendItem);
-    }
-  }
 
   static fromPlate(plate: Plate, useSimpleView: boolean = false) {
     if (useSimpleView) {
