@@ -1,23 +1,23 @@
 {
   "#type": "ViewInfo",
   "table": {
-    "id": "94e609e4-b5b7-437e-b91f-01da1ff73b17"
+    "id": "659778c0-8560-11f0-db7e-4721775f0c0a"
   },
   "type": "TableView",
   "viewStateMap": {
     "containerType": "horizontal",
     "state": {
-      "width": 1068,
-      "height": 927
+      "width": 1242,
+      "height": 1067
     },
     "children": [
       {
         "containerType": "panel",
         "state": {
-          "width": 195,
-          "height": 927,
+          "width": 226,
+          "height": 1067,
           "element": {
-            "id": "21bdefd0-c210-11ef-954f-4d790ee1b10d",
+            "id": "8a410010-8560-11f0-a432-c1ce4cd94acd",
             "type": "Filters",
             "look": {
               "#type": "FiltersLook",
@@ -79,25 +79,25 @@
       {
         "containerType": "vertical",
         "state": {
-          "width": 872,
-          "height": 927
+          "width": 1014,
+          "height": 1067
         },
         "children": [
           {
             "containerType": "fill",
             "state": {
-              "width": 872,
-              "height": 602,
+              "width": 1014,
+              "height": 692,
               "documentManager": true
             },
             "children": [
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 872,
-                  "height": 602,
+                  "width": 1014,
+                  "height": 692,
                   "element": {
-                    "id": "21be3df0-c210-11ef-b365-b3a90e87fd79",
+                    "id": "8a419c50-8560-11f0-ce26-13f5cc5995eb",
                     "type": "Grid",
                     "look": {
                       "#type": "GridLook",
@@ -308,7 +308,8 @@
                                 "5 avg(duration)"
                               ],
                               "normalization": "Row",
-                              "colorCode": "Values"
+                              "colorCode": "Values",
+                              "zeroScale": true
                             }
                           }
                         },
@@ -518,17 +519,17 @@
           {
             "containerType": "horizontal",
             "state": {
-              "width": 872,
-              "height": 324
+              "width": 1014,
+              "height": 374
             },
             "children": [
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 728,
-                  "height": 324,
+                  "width": 846,
+                  "height": 374,
                   "element": {
-                    "id": "21be6500-c210-11ef-a020-4f13162946ea",
+                    "id": "8a41c360-8560-11f0-928f-c52b868142e3",
                     "type": "Bar chart",
                     "look": {
                       "#type": "BarChartLook",
@@ -554,10 +555,10 @@
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 143,
-                  "height": 324,
+                  "width": 166,
+                  "height": 374,
                   "element": {
-                    "id": "21beb320-c210-11ef-b1b1-8d895067a28c",
+                    "id": "8a425fa0-8560-11f0-fedb-7d8d02af5476",
                     "type": "Heat map",
                     "look": {
                       "#type": "GridLook",
@@ -572,13 +573,9 @@
                         150
                       ],
                       "heatmapVertScroll": [
-                        108,
+                        141,
                         0,
-                        108
-                      ],
-                      "colorScheme": [
-                        4292072403,
-                        4294901760
+                        141
                       ],
                       "columns": [
                         {
@@ -944,13 +941,15 @@
       }
     ],
     "floating": [],
-    "tableId": "94e609e4-b5b7-437e-b91f-01da1ff73b17",
+    "tableId": "659778c0-8560-11f0-db7e-4721775f0c0a",
     "tableName": "Benchmarks"
   },
-  "userData": {
-    "TABLE_ROW_HEIGHT_KEY": null
+  "id": "89a07a50-8560-11f0-b3d8-6df75d06288f",
+  "name": "Benchmarks_4",
+  "friendlyName": "Benchmarks",
+  "author": {
+    "id": "f7c9fb10-fec0-11ee-829a-bd6a1fb43c6f"
   },
-  "id": "a48f3baf-ce4a-5588-86f9-16cfd84f9845",
-  "name": "Benchmarks",
-  "friendlyName": "Benchmarks"
+  "createdOn": "2025-09-11T14:28:09.908Z",
+  "updatedOn": "2025-09-11T14:28:09.908Z"
 }
