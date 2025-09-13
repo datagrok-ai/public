@@ -179,6 +179,33 @@ Planned
 
 --->
 
+
+### Bio
+
+<h5>Read</h5>
+
+* [Bioinformatics](../solutions/domains/bio/bio.md)
+* [Peptide SAR](../solutions/domains/bio/peptides-sar.md)
+
+<h5>Watch</h5>
+
+* [Peptide SAR (~8 mins)](https://youtu.be/CPkoZ7TD4qk?si=lBK0IzJh9kxbaaft)
+
+<h5>Experience in Demo app</h5>
+
+* [Bioinformatics capabilities](https://public.datagrok.ai/apps/Tutorials/Demo/Bioinformatics)
+
+<!----
+
+<h5>Complete tutorials</h5>
+
+|Tutorial                 | Description  |
+|-------------------------|--------------|
+|Peptide SAR   |<li></li><li></li><li></li> |
+|Polytool   |<li></li><li></li><li></li> |
+
+--->
+
 ### Data science
 
 <h5>Read</h5>
