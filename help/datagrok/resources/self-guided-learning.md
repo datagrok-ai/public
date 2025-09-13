@@ -1,7 +1,7 @@
 ---
 title: "Self-guided learning"
 format: 'mdx'
-sidebar_position: 1
+sidebar_position: 2
 ---
 
 To get you started, we've prepared the following resources:

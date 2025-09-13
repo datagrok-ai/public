@@ -262,17 +262,18 @@ Datagrok supports rich visualization for both chemical and general data, includi
 
 See also: [Viewer gallery](https://github.com/datagrok-ai/public/blob/master/help/visualize/viewers/viewer-gallery.md), [Table view](../navigation/views/table-view.md), [Grid](../../visualize/viewers/grid.md).
 
-##### <b>Q: Can I create a custom visualizations?</b>
+##### <b>Q: Can I create custom visualizations?</b>
 
 Yes. There're several options:
 
-* Custom viewers via JavaScript API – [build custom viewers](../../develop/how-to/viewers/develop-custom-viewer.md) using the
+* Custom viewers via JavaScript API – 
+[build custom viewers](../../develop/how-to/viewers/develop-custom-viewer.md) using the
 [JavaScript API](../../develop/packages/js-api.md)
 * Scripting viewers – use R, Python, or Julia to embed visualizations via
 [scripting](../../compute/scripting/scripting.mdx).
 * Third-party libraries – integrate frameworks like ECharts, D3.js, Circos, or three.js 
 (see [Charts package](https://github.com/datagrok-ai/public/tree/master/packages/Charts))
-* Custom file and folder viewers – extend Datagrok with  
+* Custom file and folder viewers – extend Datagrok with 
 file viewers for specific formats 
 (e.g., PDB files via [NGL viewer](../../visualize/viewers/ngl.md) through the [Biostructure Viewer](https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer#biostructure-viewer) package)
 * [Custom cell renderers](../../develop/how-to/grid/custom-cell-renderers.md) - create custom visualization for cells in data [grid/table](../../visualize/viewers/grid.md).
@@ -379,7 +380,7 @@ See [Scaling and stability](../../develop/under-the-hood/infrastructure.md#scala
 ##### <b>Q: Can I create custom visualizations?</b>
 
 Yes, Datagrok offers multiple options for creating and embedding custom visualizations.  
-[Custom visualizations](#bq-can-i-create-a-custom-visualizationsb)
+[Custom visualizations](#q-can-i-create-custom-visualizations)
 
 ##### <b>Q: Can I build server-side components?</b>
 
