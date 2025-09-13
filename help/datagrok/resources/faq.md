@@ -28,7 +28,7 @@ and assay data workflows. See [Example: Complex data types in one user interface
 
 ##### <b>Q: Is there a sample dashboard for biologists?</b>
 
-* The [Demo App](https://public.datagrok.ai/apps/Tutorials/Demo/Bioinformatics) showcases common analyses like sequence space or Peptide SAR, and how they look in Datagrok 
+The [Demo App](https://public.datagrok.ai/apps/Tutorials/Demo/Bioinformatics) showcases common analyses like sequence space or Peptide SAR, and how they look in Datagrok.
 
 ### Assays, plates, curves
 
@@ -337,7 +337,7 @@ Learn more about [Datagrok's architecture](../../develop/under-the-hood/architec
 
 ### Interoperability
 
-##### <b>Q:** Can Datagrok call external web services?</b>
+##### <b>Q: Can Datagrok call external web services?</b>
 
 Yes, both client and server can call authenticated web services and integrate
 responses with the Datagrok API. See [Developer guide](../../develop/develop.md) for details
@@ -347,7 +347,7 @@ responses with the Datagrok API. See [Developer guide](../../develop/develop.md)
 Use Datagrok’s REST server API with authentication tokens.  
 See [Proof of concept video](https://www.youtube.com/watch?v=TjApCwd_3hw) for more information
 
-##### <b>Q:** How do I interact with Datagrok from the client?</b>
+##### <b>Q: How do I interact with Datagrok from the client?</b>
 
 Use the JavaScript API for custom applications and extensions.  
 Learn more about  [JavaScript API](../../develop/packages/js-api.md)
@@ -380,7 +380,10 @@ See [Scaling and stability](../../develop/under-the-hood/infrastructure.md#scala
 ##### <b>Q: Can I create custom visualizations?</b>
 
 Yes, Datagrok offers multiple options for creating and embedding custom visualizations.  
-[Custom visualizations](#q-can-i-create-custom-visualizations)
+See:
+* [Custom viewers](../../develop/how-to/viewers/develop-custom-viewer.md)
+* [Custom cell renderers](../../develop/how-to/grid/custom-cell-renderers.md)
+* [Custom file viewers](../../develop/how-to/files/create-custom-file-viewers.md)
 
 ##### <b>Q: Can I build server-side components?</b>
 
