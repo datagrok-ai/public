@@ -261,7 +261,7 @@ export class TemplatePanel {
         .filter((p) => p && p.name && p.type)
         .map((p) => DG.Property.js(p.name!, p.type! as DG.TYPE));
       if (plateProperties.length > 0)
-        this.platePropertiesHost.appendChild(ui.input.form(activePlate.plate.plate_metadata || {}, plateProperties));
+        this.platePropertiesHost.appendChild(ui.input.form(activePlate.plate.details || {}, plateProperties));
     } else {
       renderMappingEditor(this.validationHost, {
         targetProperties: [],

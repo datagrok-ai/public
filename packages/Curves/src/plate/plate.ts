@@ -78,7 +78,7 @@ export class Plate {
   barcode?: string;
 
   data: DG.DataFrame;
-  plate_metadata: {[index: string]: any} = {};
+  details: {[index: string]: any} = {}; // dynamic plate properties, stored in db: plates.plate_details
   rows: number = 8;
   cols: number = 12;
 
@@ -669,7 +669,7 @@ export class Plate {
     const cloned = new Plate(this.rows, this.cols);
     cloned.data = this.data.clone();
     cloned.layerRegistry = new Map(this.layerRegistry);
-    cloned.plate_metadata = {...this.plate_metadata};
+    cloned.details = {...this.details};
     return cloned;
   }
 

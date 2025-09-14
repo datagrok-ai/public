@@ -276,15 +276,11 @@ export class PlateDrcAnalysis {
     }));
 
     pw.subs.push(grok.events.onCustomEvent('fit-cell-outlier-toggle').subscribe((args: FitCellOutlierToggleArgs) => {
-      console.log('[DEBUG] fit-cell-outlier-toggle event received:', args);
-
-      if (!args || !args.gridCell || !args.series || args.pointIdx == null || args.gridCell.cell.column !== curveCol) {
-        console.log('[DEBUG] fit-cell-outlier-toggle event filtered out');
+      if (!args || !args.gridCell || !args.series || args.pointIdx == null || args.gridCell.cell.column !== curveCol)
         return;
-      }
+
 
       const point: IFitPoint = args.series.points[args.pointIdx];
-      console.log('[DEBUG] About to call plate._markOutlier with:', point.meta, !!point.outlier);
 
       if (point.meta !== null) {
         plate._markOutlier(point.meta, !!point.outlier);
@@ -572,7 +568,6 @@ class DrcAnalysisCoordinator implements IAnalysisWidgetCoordinator {
   onPlateDataChanged(changeType: 'outlier' | 'data' | 'layer', details: any): void {
     if (changeType === 'outlier') {
       // START of CHANGE
-      console.log('[DEBUG] DrcAnalysisCoordinator: Outlier changed, regenerating curve data directly.');
       this.regenerateCurveData();
       // END of CHANGE
     }
@@ -585,8 +580,6 @@ class DrcAnalysisCoordinator implements IAnalysisWidgetCoordinator {
   }
 
   private regenerateCurveData(): void {
-    console.log('[DEBUG] DrcAnalysisCoordinator: Starting curve regeneration');
-
     // Regenerate the series data with current outlier states
     const series = this.plate.doseResponseSeries({
       ...this.drFilterOptions,
@@ -596,13 +589,11 @@ class DrcAnalysisCoordinator implements IAnalysisWidgetCoordinator {
     });
 
     const newSeriesVals = Object.entries(series);
-    console.log('[DEBUG] DrcAnalysisCoordinator: Generated new series with', newSeriesVals.length, 'compounds');
 
     // Update the curve column with fresh data that includes current outlier states
     for (let i = 0; i < Math.min(newSeriesVals.length, this.curveCol.length); i++) {
       const currentSeries = newSeriesVals[i][1];
       const outlierCount = currentSeries.points.filter((p) => p.outlier).length;
-      console.log(`[DEBUG] DrcAnalysisCoordinator: Series ${newSeriesVals[i][0]} has ${outlierCount} outliers out of ${currentSeries.points.length} points`);
 
       const seriesData = {
         points: currentSeries.points,
@@ -633,7 +624,5 @@ class DrcAnalysisCoordinator implements IAnalysisWidgetCoordinator {
     // Update our stored series values
     this.seriesVals.length = 0;
     this.seriesVals.push(...newSeriesVals);
-
-    console.log('[DEBUG] DrcAnalysisCoordinator: Curve regeneration data updated, column version:', this.curveCol.version);
   }
 }

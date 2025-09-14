@@ -66,7 +66,7 @@ async function createDummyPlates() {
   for (const template of [cellCountingTemplate, doseResponseTemplate]) {
     for (let i = 0; i < 20; i++) {
       const plate = await createNewPlateForTemplate(plateTypes[0], template);
-      plate.plate_metadata = Object.fromEntries(
+      plate.details = Object.fromEntries(
         template.plateProperties.map((p) => [p.name!, getDemoValue(p as PlateProperty)])
       );
 
@@ -102,7 +102,7 @@ async function createDummyPlatesFromExcel() {
   for (const file of xlsxFiles) {
     const plate = await Plate.fromExcelFile(file);
     plate.plateTemplateId = excelPlateTemplate.id;
-    plate.plate_metadata = {Barcode: (Math.round(Math.random() * 100000)).toString().padStart(8, '0')};
+    plate.details = {Barcode: (Math.round(Math.random() * 100000)).toString().padStart(8, '0')};
     await savePlate(plate, {autoCreateProperties: false});
   }
 }

@@ -51,21 +51,13 @@ export function createPlatesView(): DG.View {
 
   const createDrcAnalysisContent = (): HTMLElement => {
     try {
-      console.log('[DEBUG] createDrcAnalysisContent called');
-
       const activePlate = stateManager.activePlate;
       const activeIndex = stateManager.currentState?.activePlateIdx ?? -1;
 
-      console.log('[DEBUG] activePlate:', activePlate?.plate.barcode);
-      console.log('[DEBUG] activeIndex:', activeIndex);
-      console.log('[DEBUG] currentState:', stateManager.currentState);
 
-      if (!activePlate || activeIndex < 0) {
-        console.log('[DEBUG] Returning skeleton - no active plate or bad index');
+      if (!activePlate || activeIndex < 0)
         return createAnalysisSkeleton('Dose Response', ['SampleID', 'Concentration', 'Activity']);
-      }
 
-      console.log('[DEBUG] About to call createAnalysisView...');
 
       // Get current mappings for this analysis
       const currentMappings = stateManager.getScopedMapping(activeIndex, MAPPING_SCOPES.DRC);
@@ -92,8 +84,6 @@ export function createPlatesView(): DG.View {
   };
 
   const createDoseRatioContent = (): HTMLElement => {
-    console.log('[DEBUG] PlateDoseRatioAnalysis methods:', Object.getOwnPropertyNames(PlateDoseRatioAnalysis));
-    console.log('[DEBUG] createAnalysisView exists:', typeof PlateDoseRatioAnalysis.createAnalysisView);
     try {
       const activePlate = stateManager.activePlate;
       const activeIndex = stateManager.currentState?.activePlateIdx ?? -1;
@@ -160,15 +150,12 @@ export function createPlatesView(): DG.View {
 
   // Update state change subscription to handle both analyses and plate widget
   stateManager.onStateChange.subscribe(async (event) => {
-    console.log('[DEBUG] State change event:', event);
     const activePlate = stateManager.activePlate;
 
     if (activePlate) {
-      console.log('[DEBUG] Setting active plate:', activePlate.plate.barcode);
       plateWidget.plate = activePlate.plate;
       plateWidget.refresh();
     } else {
-      console.log('[DEBUG] No active plate, showing default');
       plateWidget.plate = await stateManager.getOrCreateDefaultPlate();
       plateWidget.refresh();
     }
@@ -184,9 +171,8 @@ export function createPlatesView(): DG.View {
       event.type === 'analysis-mapping-changed' ||
       event.type === 'plate-added'
     ) {
-      console.log('[DEBUG] Refreshing analysis views due to state change');
-
       const drcPane = tabControl.getPane('Dose Response');
+
       if (drcPane) {
         ui.empty(drcPane.content);
         drcPane.content.appendChild(createDrcAnalysisContent());

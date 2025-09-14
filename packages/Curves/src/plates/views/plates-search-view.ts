@@ -105,6 +105,8 @@ function getSearchView(search: (query: PlateQuery) => Promise<DG.DataFrame>,
     };
 
     search(query).then((df) => {
+      console.log('Search returned:', df.rowCount, 'plates');
+      console.log('Plate IDs:', df.col('plate_id')?.toList());
       view.dataFrame = df;
       onResults(view.grid);
     });
