@@ -244,7 +244,7 @@ SELECT
   fp.id         AS plate_id,
   fp.barcode,
   fp.description,
-  jsonb_pretty(
+  COALESCE(
     jsonb_object_agg(
       pr.name,
       CASE
@@ -253,13 +253,14 @@ SELECT
         WHEN pd.value_bool     IS NOT NULL THEN to_jsonb(pd.value_bool)
         WHEN pd.value_uuid     IS NOT NULL THEN to_jsonb(pd.value_uuid)
         WHEN pd.value_datetime IS NOT NULL THEN to_jsonb(pd.value_datetime)
-        ELSE to_jsonb(NULL::text)               -- should never happen
+        ELSE to_jsonb(NULL::text)
       END
-    )
+    ) FILTER (WHERE pr.name IS NOT NULL),
+    '{}'::jsonb
   ) AS properties
 FROM filtered_plates fp
-JOIN plates.plate_details pd ON pd.plate_id = fp.id
-JOIN plates.properties     pr ON pr.id      = pd.property_id
+LEFT JOIN plates.plate_details pd ON pd.plate_id = fp.id
+LEFT JOIN plates.properties     pr ON pr.id = pd.property_id
 GROUP BY fp.id, fp.barcode, fp.description
 ORDER BY fp.id;
 `.trim();
@@ -317,37 +318,34 @@ function getWellSearchSql(query: PlateQuery): string {
 
   // ---------- 2. Final query – filter first, then collect all well properties ----------
   return `
-WITH filtered_wells AS (
-  SELECT DISTINCT pwv.plate_id, pwv.row, pwv.col
-  FROM plates.plate_well_values pwv
-  JOIN plates.plates p ON p.id = pwv.plate_id
+WITH filtered_plates AS (
+  SELECT p.id, p.barcode, p.description
+  FROM plates.plates p
   ${whereFilter}
 )
 SELECT
-  fw.plate_id,
-  p.barcode,
-  p.description AS plate_description,
-  fw.row,
-  fw.col,
-  jsonb_pretty(
+  fp.id         AS plate_id,
+  fp.barcode,
+  fp.description,
+  COALESCE(
     jsonb_object_agg(
       pr.name,
       CASE
-        WHEN pwv.value_string IS NOT NULL THEN to_jsonb(pwv.value_string)
-        WHEN pwv.value_num    IS NOT NULL THEN to_jsonb(pwv.value_num)
-        WHEN pwv.value_bool   IS NOT NULL THEN to_jsonb(pwv.value_bool)
-        ELSE to_jsonb(NULL::text)               -- should never happen
+        WHEN pd.value_string   IS NOT NULL THEN to_jsonb(pd.value_string)
+        WHEN pd.value_num      IS NOT NULL THEN to_jsonb(pd.value_num)
+        WHEN pd.value_bool     IS NOT NULL THEN to_jsonb(pd.value_bool)
+        WHEN pd.value_uuid     IS NOT NULL THEN to_jsonb(pd.value_uuid)
+        WHEN pd.value_datetime IS NOT NULL THEN to_jsonb(pd.value_datetime)
+        ELSE to_jsonb(NULL::text)
       END
-    )
+    ) FILTER (WHERE pr.name IS NOT NULL),
+    '{}'::jsonb
   ) AS properties
-FROM filtered_wells fw
-JOIN plates.plates p ON p.id = fw.plate_id
-JOIN plates.plate_well_values pwv ON pwv.plate_id = fw.plate_id
-                                   AND pwv.row = fw.row
-                                   AND pwv.col = fw.col
-JOIN plates.properties pr ON pr.id = pwv.property_id
-GROUP BY fw.plate_id, p.barcode, p.description, fw.row, fw.col
-ORDER BY fw.plate_id, fw.row, fw.col;
+FROM filtered_plates fp
+LEFT JOIN plates.plate_details pd ON pd.plate_id = fp.id
+LEFT JOIN plates.properties     pr ON pr.id      = pd.property_id
+GROUP BY fp.id, fp.barcode, fp.description
+ORDER BY fp.id;
 `.trim();
 }
 
@@ -385,29 +383,42 @@ export async function savePlate(plate: Plate, options?: { autoCreateProperties?:
     `insert into plates.plates(plate_type_id, barcode)
      values(${plate.plateTypeId}, ${sqlStr(plate.barcode)})
      returning id`;
+
   plate.id = (await grok.data.db.query('Admin:Plates', plateSql)).get('id', 0);
 
-  // register new plate level properties
-  for (const layer of Object.keys(plate.plate_metadata)) {
+  console.log('Created plate with ID:', plate.id);
+  console.log('Plate details to save:', plate.details);
+  console.log('Plate layers:', plate.getLayerNames());
+
+  // FIRST: register new plate level properties
+  for (const layer of Object.keys(plate.details)) {
     const prop = findProp(plateProperties, layer);
     if (autoCreateProperties && !prop) {
-      const valueType = getValueType(plate.plate_metadata[layer]);
+      const valueType = getValueType(plate.details[layer]);
       plateProperties.push(await createProperty({name: layer, type: valueType}));
       grok.shell.info('Plate layer created: ' + layer);
-    } else if (!prop) { throw new Error(`Property ${layer} not found in plateProperties`); }
+    } else if (!prop) {
+      throw new Error(`Property ${layer} not found in plateProperties`);
+    }
   }
 
-  // register new well level properties
+  // SECOND: register new well level properties
   for (const layer of plate.getLayerNames()) {
     const prop = findProp(wellProperties, layer);
     if (autoCreateProperties && !prop) {
       const col = plate.data.col(layer);
       wellProperties.push(await createProperty({name: layer, type: col!.type}));
       grok.shell.info('Well layer created: ' + layer);
-    } else if (!prop) { throw new Error(`Property ${layer} not found in wellProperties`); }
+    } else if (!prop) {
+      throw new Error(`Property ${layer} not found in wellProperties`);
+    }
   }
 
-  await grok.data.db.query('Admin:Plates', getPlateInsertSql(plate));
+  // THIRD: NOW execute the SQL (only once!)
+  const sql = getPlateInsertSql(plate);
+  console.log('Executing SQL:', sql);
+  await grok.data.db.query('Admin:Plates', sql);
+
   events.next({on: 'after', eventType: 'created', objectType: TYPE.PLATE, object: plate});
   grok.shell.info('Plate saved');
 }
@@ -422,12 +433,12 @@ export async function savePlateAsTemplate(plate: Plate, template: PlateTemplate)
 function getPlateInsertSql(plate: Plate): string {
   let sql = 'insert into plates.plate_wells(plate_id, row, col) values ' +
     plate.wells.map((pw) => `  (${plate.id}, ${pw.row}, ${pw.col})`).toArray().join(',\n') + ';';
-  for (const layer of Object.keys(plate.plate_metadata)) {
+  for (const layer of Object.keys(plate.details)) {
     const property = plateProperties.find((p) => p.name.toLowerCase() == layer.toLowerCase())!;
     const dbCol = plateDbColumn[property.type];
 
     sql += `\n insert into plates.plate_details(plate_id, property_id, ${dbCol}) values ` +
-      `(${plate.id}, ${property.id}, ${sqlStr(plate.plate_metadata[layer])});`;
+      `(${plate.id}, ${property.id}, ${sqlStr(plate.details[layer])});`;
   }
 
   // well data
