@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import {PlateQuery, PlateTemplate, PropertyCondition} from '../plates-crud';
 
 import * as DG from 'datagrok-api/dg';
@@ -5,41 +6,67 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {debounceTime} from 'rxjs/operators';
 import {NumericMatcher, StringInListMatcher} from '../numeric_matcher';
+import * as rxjs from 'rxjs';
 import {PlateProperty, plateProperties, getPlateUniquePropertyValues,
+
   getWellUniquePropertyValues, queryPlates, queryWells, wellProperties, plateTemplates} from '../plates-crud';
 
 
 type PropInput = DG.InputBase & { prop: PlateProperty };
 
 
-function getSearchForm(properties: PlateProperty[], getUniqueValues: (prop: any) => string[]): DG.InputForm {
-  const inputs: PropInput[] = [];
-  for (const prop of properties) {
+function getSearchForm(
+  allProperties: PlateProperty[],
+  templateProperties: PlateProperty[],
+  getUniqueValues: (prop: any) => string[]
+): { root: HTMLElement, templateForm: DG.InputForm, otherForm: DG.InputForm } {
+  const createInput = (prop: PlateProperty): PropInput | null => {
     if (prop.type == DG.TYPE.STRING) {
-      const items = getUniqueValues(prop);
-      const input = ui.input.multiChoice(prop.name, {items: items}) as PropInput;
+      const input = ui.input.multiChoice(prop.name, {items: getUniqueValues(prop)}) as PropInput;
       input.prop = prop;
-      inputs.push(input);
+      return input;
     } else if (prop.type == DG.TYPE.FLOAT) {
       const input = ui.input.string(prop.name) as PropInput;
       input.prop = prop;
       input.addValidator((s) => NumericMatcher.parse(s) ? null : 'Invalid numerical criteria. Example: ">10"');
-      inputs.push(input);
+      return input;
     }
-  }
-  return DG.InputForm.forInputs(inputs);
+    return null;
+  };
+
+  const templatePropNames = new Set(templateProperties.map((p) => p.name));
+
+  const templateInputs = templateProperties.map(createInput).filter((i) => i) as PropInput[];
+  const otherInputs = allProperties.filter((p) => !templatePropNames.has(p.name))
+    .map(createInput).filter((i) => i) as PropInput[];
+
+  const templateForm = DG.InputForm.forInputs(templateInputs);
+  const otherForm = DG.InputForm.forInputs(otherInputs);
+
+  const templateContainer = ui.divV([
+    ui.h3('Template Properties', {style: {marginTop: '0px', marginBottom: '2px'}}),
+    templateForm.root
+  ], {
+    style: {
+      border: '1px solid var(--grey-2)',
+      borderRadius: '5px',
+      padding: '8px',
+      marginBottom: '10px'
+    }
+  });
+
+  const root = ui.divV([
+    ...(templateInputs.length > 0 ? [templateContainer] : []),
+    ...(otherInputs.length > 0 ? [otherForm.root] : [])
+  ]);
+
+  return {root, templateForm, otherForm};
 }
 
-function getPlatesSearchForm(filteredProperties?: PlateProperty[]): DG.InputForm {
-  return getSearchForm(filteredProperties ?? plateProperties, getPlateUniquePropertyValues);
-}
-
-function getWellsSearchForm(filteredProperties?: PlateProperty[]): DG.InputForm {
-  return getSearchForm(filteredProperties ?? wellProperties, getWellUniquePropertyValues);
-}
 
 function searchFormToMatchers(form: DG.InputForm): PropertyCondition[] {
   const matchers: PropertyCondition[] = [];
+  if (!form) return matchers;
 
   for (const input of form.inputs as PropInput[]) {
     if (input.inputType == DG.InputType.MultiChoice && input.value.length > 0) {
@@ -54,20 +81,20 @@ function searchFormToMatchers(form: DG.InputForm): PropertyCondition[] {
       });
     }
   }
-
   return matchers;
 }
+
 
 function getSearchView(
   search: (query: PlateQuery) => Promise<DG.DataFrame>,
   onResults: (grid: DG.Grid) => void
 ): DG.View {
   const mainView = DG.View.create();
-
   const resultsView = DG.TableView.create(DG.DataFrame.create(0));
 
-  let platesForm: DG.InputForm;
-  let wellsForm: DG.InputForm;
+  let platesTemplateForm: DG.InputForm; let platesOtherForm: DG.InputForm;
+  let wellsTemplateForm: DG.InputForm; let wellsOtherForm: DG.InputForm;
+
   const platesFormHost = ui.div();
   const wellsFormHost = ui.div();
   let plateTemplate = plateTemplates[0];
@@ -89,8 +116,8 @@ function getSearchView(
 
   const refreshResults = () => {
     const query: PlateQuery = {
-      plateMatchers: searchFormToMatchers(platesForm),
-      wellMatchers: searchFormToMatchers(wellsForm)
+      plateMatchers: [...searchFormToMatchers(platesTemplateForm), ...searchFormToMatchers(platesOtherForm)],
+      wellMatchers: [...searchFormToMatchers(wellsTemplateForm), ...searchFormToMatchers(wellsOtherForm)]
     };
     search(query).then((df) => {
       resultsView.dataFrame = df;
@@ -101,21 +128,34 @@ function getSearchView(
   const refreshUI = () => {
     ui.empty(platesFormHost);
     ui.empty(wellsFormHost);
-    if (globalSearchInput.value) {
-      platesForm = getPlatesSearchForm(plateProperties);
-      wellsForm = getWellsSearchForm(wellProperties);
-    } else {
-      platesForm = getPlatesSearchForm(plateTemplate?.plateProperties?.map((p) => p as PlateProperty));
-      wellsForm = getWellsSearchForm(plateTemplate?.wellProperties?.map((p) => p as PlateProperty));
-    }
 
-    platesForm.root.style.width = '100%';
-    wellsForm.root.style.width = '100%';
+    const currentTemplatePlateProps = plateTemplate?.plateProperties?.map((p) => p as PlateProperty) ?? [];
+    const currentTemplateWellProps = plateTemplate?.wellProperties?.map((p) => p as PlateProperty) ?? [];
 
-    platesForm.onInputChanged.pipe(debounceTime(500)).subscribe((_) => refreshResults());
-    wellsForm.onInputChanged.pipe(debounceTime(500)).subscribe((_) => refreshResults());
-    platesFormHost.appendChild(platesForm.root);
-    wellsFormHost.appendChild(wellsForm.root);
+    const allPlateProps = globalSearchInput.value ? plateProperties : currentTemplatePlateProps;
+    const allWellProps = globalSearchInput.value ? wellProperties : currentTemplateWellProps;
+
+    const platesFormsResult = getSearchForm(allPlateProps, currentTemplatePlateProps, getPlateUniquePropertyValues);
+    const wellsFormsResult = getSearchForm(allWellProps, currentTemplateWellProps, getWellUniquePropertyValues);
+
+    platesTemplateForm = platesFormsResult.templateForm;
+    platesOtherForm = platesFormsResult.otherForm;
+    wellsTemplateForm = wellsFormsResult.templateForm;
+    wellsOtherForm = wellsFormsResult.otherForm;
+
+    [platesTemplateForm.root, platesOtherForm.root, wellsTemplateForm.root, wellsOtherForm.root].forEach((r) => r.style.width = '100%');
+
+    const combinedSub = DG.debounce(
+      rxjs.merge(
+        platesTemplateForm.onInputChanged,
+        platesOtherForm.onInputChanged,
+        wellsTemplateForm.onInputChanged,
+        wellsOtherForm.onInputChanged
+      ), 500).subscribe((_) => refreshResults());
+
+    platesFormHost.appendChild(platesFormsResult.root);
+    wellsFormHost.appendChild(wellsFormsResult.root);
+
     refreshResults();
   };
 
@@ -135,10 +175,11 @@ function getSearchView(
   filterPanel.style.overflowY = 'auto';
   filterPanel.style.padding = '0 12px';
 
-  const splitter = ui.splitV([
-    filterPanel,
-    resultsView.root
-  ], {style: {width: '100%', height: '100%'}}, true);
+  const splitter = ui.splitV(
+    [filterPanel, resultsView.root],
+    {style: {width: '100%', height: '100%'}},
+    true
+  );
 
   mainView.root.appendChild(splitter);
 
