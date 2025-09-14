@@ -27,7 +27,6 @@ function getSearchForm(properties: PlateProperty[], getUniqueValues: (prop: any)
       inputs.push(input);
     }
   }
-
   return DG.InputForm.forInputs(inputs);
 }
 
@@ -59,30 +58,65 @@ function searchFormToMatchers(form: DG.InputForm): PropertyCondition[] {
   return matchers;
 }
 
-function getSearchView(search: (query: PlateQuery) => Promise<DG.DataFrame>,
+function getSearchView(
+  search: (query: PlateQuery) => Promise<DG.DataFrame>,
   onResults: (grid: DG.Grid) => void
 ): DG.View {
-  const dummy = DG.DataFrame.create(5, 'Search plates');
-  const view = DG.TableView.create(dummy);
-  let platesForm = getPlatesSearchForm();
-  let wellsForm = getWellsSearchForm();
+  const mainView = DG.View.create();
+
+  const resultsView = DG.TableView.create(DG.DataFrame.create(0));
+
+  let platesForm: DG.InputForm;
+  let wellsForm: DG.InputForm;
   const platesFormHost = ui.div();
   const wellsFormHost = ui.div();
   let plateTemplate = plateTemplates[0];
-  if (!plateTemplate) {
-    grok.shell.warning('No plate templates found. Please create a template first.');
-    throw new Error('No plate templates found. Please create a template first.');
-  }
+
+  const plateTemplateSelector = ui.input.choice('Template', {
+    items: plateTemplates.map((pt) => pt.name),
+    value: plateTemplates[0].name,
+    onValueChanged: (v) => setTemplate(plateTemplates.find((pt) => pt.name === v)!)
+  });
+
+  const globalSearchInput = ui.input.bool('Search all properties', {
+    value: false,
+    onValueChanged: () => {
+      plateTemplateSelector.enabled = !globalSearchInput.value;
+      refreshUI();
+    }
+  });
+  globalSearchInput.setTooltip('Search using all properties in the database, not just those defined in the template.');
+
+  const refreshResults = () => {
+    const query: PlateQuery = {
+      plateMatchers: searchFormToMatchers(platesForm),
+      wellMatchers: searchFormToMatchers(wellsForm)
+    };
+    search(query).then((df) => {
+      resultsView.dataFrame = df;
+      onResults(resultsView.grid);
+    });
+  };
 
   const refreshUI = () => {
     ui.empty(platesFormHost);
     ui.empty(wellsFormHost);
-    platesForm = getPlatesSearchForm(plateTemplate?.plateProperties?.map((p) => p as PlateProperty));
-    wellsForm = getWellsSearchForm(plateTemplate?.wellProperties?.map((p) => p as PlateProperty));
+    if (globalSearchInput.value) {
+      platesForm = getPlatesSearchForm(plateProperties);
+      wellsForm = getWellsSearchForm(wellProperties);
+    } else {
+      platesForm = getPlatesSearchForm(plateTemplate?.plateProperties?.map((p) => p as PlateProperty));
+      wellsForm = getWellsSearchForm(plateTemplate?.wellProperties?.map((p) => p as PlateProperty));
+    }
+
+    platesForm.root.style.width = '100%';
+    wellsForm.root.style.width = '100%';
+
     platesForm.onInputChanged.pipe(debounceTime(500)).subscribe((_) => refreshResults());
     wellsForm.onInputChanged.pipe(debounceTime(500)).subscribe((_) => refreshResults());
     platesFormHost.appendChild(platesForm.root);
     wellsFormHost.appendChild(wellsForm.root);
+    refreshResults();
   };
 
   const setTemplate = (template: PlateTemplate) => {
@@ -90,42 +124,28 @@ function getSearchView(search: (query: PlateQuery) => Promise<DG.DataFrame>,
     refreshUI();
   };
 
-  const plateTemplateSelector = ui.input.choice('Template', {
-    nullable: true,
-    items: plateTemplates.map((pt) => pt.name),
-    value: plateTemplates[0].name,
-    onValueChanged: (v) => setTemplate(plateTemplates.find((pt) => pt.name === v)!)
-  });
-
-
-  const refreshResults = () => {
-    const query: PlateQuery = {
-      plateMatchers: searchFormToMatchers(platesForm),
-      wellMatchers: searchFormToMatchers(wellsForm)
-    };
-
-    search(query).then((df) => {
-      console.log('Search returned:', df.rowCount, 'plates');
-      console.log('Plate IDs:', df.col('plate_id')?.toList());
-      view.dataFrame = df;
-      onResults(view.grid);
-    });
-  };
-
-  const searchHost = ui.divV([
-    plateTemplateSelector.root,
+  const filterPanel = ui.divV([
+    ui.divH([plateTemplateSelector.root, globalSearchInput.root]),
     ui.divH([
       ui.divV([ui.h2('Plates'), platesFormHost], {style: {flexGrow: '1'}}),
       ui.divV([ui.h2('Wells'), wellsFormHost], {style: {flexGrow: '1'}})
-    ], {style: {height: '100%', width: '100%'}}),
+    ], {style: {width: '100%'}}),
   ], {classes: 'ui-panel'});
-  view.dockManager.dock(searchHost, DG.DOCK_TYPE.TOP);
 
-  //refreshUI();
+  filterPanel.style.overflowY = 'auto';
+  filterPanel.style.padding = '0 12px';
+
+  const splitter = ui.splitV([
+    filterPanel,
+    resultsView.root
+  ], {style: {width: '100%', height: '100%'}}, true);
+
+  mainView.root.appendChild(splitter);
+
   setTemplate(plateTemplates[0]);
-  refreshResults();
-  return view;
+  return mainView;
 }
+
 
 export function searchPlatesView(): DG.View {
   return getSearchView(queryPlates, (grid) => {
