@@ -15,7 +15,6 @@ import './components/template-panel/template-panel.css';
 import './components/plate-grid-manager/plate-grid-manager.css';
 import './components/plate-analysis-panel/plate-analysis-panel.css';
 import {PlateGridManager} from './components/plate-grid-manager/plate-grid-manager';
-// ADD THIS IMPORT
 import {PlateDoseRatioAnalysis} from '../../plate/dose-ratio-analysis';
 import {MAPPING_SCOPES} from './shared/scopes';
 
@@ -38,8 +37,15 @@ export function createPlatesView(): DG.View {
   const plateWidget = new PlateWidget();
   plateWidget.editable = true;
   plateWidget.plate = new Plate(plateType.rows, plateType.cols);
+  plateWidget.root.style.cssText = `
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  `;
+  plateWidget.roleSummaryDiv.style.display = 'none';
+  // END of CHANGE
 
-  // Create analysis tabs (without Wells tab)
   const tabControl = ui.tabControl();
   tabControl.root.classList.remove('ui-box');
   tabControl.root.style.cssText = `
@@ -58,8 +64,6 @@ export function createPlatesView(): DG.View {
       if (!activePlate || activeIndex < 0)
         return createAnalysisSkeleton('Dose Response', ['SampleID', 'Concentration', 'Activity']);
 
-
-      // Get current mappings for this analysis
       const currentMappings = stateManager.getScopedMapping(activeIndex, MAPPING_SCOPES.DRC);
 
       const handleMap = (target: string, source: string) => {
@@ -113,7 +117,7 @@ export function createPlatesView(): DG.View {
     }
   };
 
-  // Add only analysis tabs (no Wells tab)
+  tabControl.addPane('Plate View', () => plateWidget.root);
   tabControl.addPane('Dose Response', () => createDrcAnalysisContent());
   tabControl.addPane('Dose Ratio', () => createDoseRatioContent());
 
@@ -139,16 +143,12 @@ export function createPlatesView(): DG.View {
 
   const plateGridManager = new PlateGridManager(stateManager);
 
-  // Create the top right panel switcher
-  const topRightSwitcher = createTopRightSwitcher(plateWidget, plateGridManager);
-
   const templatePanel = new TemplatePanel(
     stateManager,
     plateWidget,
     () => { console.warn('[DEBUG] TemplatePanel is not implemented'); }
   );
 
-  // Update state change subscription to handle both analyses and plate widget
   stateManager.onStateChange.subscribe(async (event) => {
     const activePlate = stateManager.activePlate;
 
@@ -165,7 +165,6 @@ export function createPlatesView(): DG.View {
     if (plateWidget.grid)
       plateWidget.grid.invalidate();
 
-    // Update analysis views on relevant changes
     if (event.type === 'mapping-changed' ||
       event.type === 'plate-selected' ||
       event.type === 'analysis-mapping-changed' ||
@@ -187,7 +186,7 @@ export function createPlatesView(): DG.View {
   });
 
   const rightPanel = ui.divV([
-    topRightSwitcher.container,
+    plateGridManager.root,
     tabControl.root,
   ], 'create-plate-view__right-panel');
 
@@ -198,8 +197,9 @@ export function createPlatesView(): DG.View {
 
   view.root.appendChild(mainLayout);
 
-  // Set default tab for analysis
-  tabControl.currentPane = tabControl.getPane('Dose Response');
+  // START of CHANGE: Set the new 'Plate View' as the default tab.
+  tabControl.currentPane = tabControl.getPane('Plate View');
+  // END of CHANGE
 
   stateManager.setTemplate(plateTemplates[0]);
 
@@ -287,120 +287,6 @@ export function createPlatesView(): DG.View {
   };
 
   return view;
-}
-
-function createTopRightSwitcher(plateWidget: PlateWidget, plateGridManager: PlateGridManager): {
-  container: HTMLElement;
-  showPlateView: () => void;
-  showGridView: () => void;
-} {
-  const container = ui.divV([], 'top-right-switcher');
-  const buttonContainer = ui.divH([], 'switcher-buttons');
-  const contentContainer = ui.div([], 'switcher-content');
-
-  // Create toggle buttons
-  const plateViewBtn = ui.button('Plate View', () => showPlateView());
-  const gridViewBtn = ui.button('Plates List', () => showGridView());
-
-  plateViewBtn.classList.add('switcher-btn', 'switcher-btn-active');
-  gridViewBtn.classList.add('switcher-btn');
-
-  buttonContainer.appendChild(plateViewBtn);
-  buttonContainer.appendChild(gridViewBtn);
-
-  const buttonStyle = `
-    padding: 4px 24px;
-    margin-right: 2px;
-    border: none;
-    border-bottom: 2px solid transparent;
-    background: transparent;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--grey-5);
-    transition: all 0.2s ease;
-  `;
-
-  const activeButtonStyle = `
-    padding: 4px 24px;
-    margin-right: 2px;
-    border: none;
-    border-bottom: 2px solid var(--blue-3);
-    background: transparent;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--grey-6);
-    transition: all 0.2s ease;
-  `;
-
-  plateViewBtn.style.cssText = activeButtonStyle;
-  gridViewBtn.style.cssText = buttonStyle;
-
-  buttonContainer.style.cssText = `
-    display: flex;
-    padding: 0;
-    background: transparent;
-    border-bottom: 1px solid var(--grey-2);
-  `;
-
-  contentContainer.style.cssText = `
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  `;
-
-  container.style.cssText = `
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    min-height: 200px;
-    background: white;
-  `;
-
-  plateWidget.root.style.cssText = `
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  `;
-  plateWidget.roleSummaryDiv.style.display = 'none';
-  contentContainer.appendChild(plateWidget.root);
-
-  function showPlateView() {
-    // Update button states
-    plateViewBtn.style.cssText = activeButtonStyle;
-    gridViewBtn.style.cssText = buttonStyle;
-    plateViewBtn.classList.add('switcher-btn-active');
-    gridViewBtn.classList.remove('switcher-btn-active');
-
-    // Switch content
-    ui.empty(contentContainer);
-    plateWidget.roleSummaryDiv.style.display = 'none';
-    contentContainer.appendChild(plateWidget.root);
-  }
-
-  function showGridView() {
-    // Update button states
-    gridViewBtn.style.cssText = activeButtonStyle;
-    plateViewBtn.style.cssText = buttonStyle;
-    gridViewBtn.classList.add('switcher-btn-active');
-    plateViewBtn.classList.remove('switcher-btn-active');
-
-    // Switch content
-    ui.empty(contentContainer);
-    contentContainer.appendChild(plateGridManager.root);
-  }
-
-  container.appendChild(buttonContainer);
-  container.appendChild(contentContainer);
-
-  return {
-    container,
-    showPlateView,
-    showGridView
-  };
 }
 
 function createAnalysisSkeleton(analysisType: string, requiredColumns: string[] = []): HTMLElement {

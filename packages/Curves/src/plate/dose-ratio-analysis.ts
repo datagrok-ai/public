@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import {Plate} from './plate';
 import {FIT_FUNCTION_4PL_REGRESSION, IFitChartData, IFitSeries} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {AnalysisMappingPanel, AnalysisRequiredFields} from '../plates/views/components/analysis-mapping/analysis-mapping-panel';
-import { BaseAnalysisView } from './base-analysis-view';
+import {BaseAnalysisView} from './base-analysis-view';
 
 export class PlateDoseRatioAnalysis {
   private static REQUIRED_FIELDS: AnalysisRequiredFields[] = [
@@ -114,24 +114,18 @@ export class PlateDoseRatioAnalysis {
 
   static createDoseRatioGrid(plate: Plate, mappings?: Map<string, string>): HTMLElement | null {
     // Use mappings to get actual column names
-    console.log('[DEBUG] createDoseRatioGrid called with mappings:', mappings);
 
     const agonistColumn = mappings?.get('Agonist_Concentration_M') || 'Agonist_Concentration_M';
     const antagonistColumn = mappings?.get('Antagonist_Concentration_M') || 'Antagonist_Concentration_M';
     const responseColumn = mappings?.get('Percent_Inhibition') || 'Percent_Inhibition';
 
-    console.log('[DEBUG] Looking for columns:', {agonistColumn, antagonistColumn, responseColumn});
-    console.log('[DEBUG] Available columns:', plate.data.columns.names());
 
     // Check if required columns exist
     if (!plate.data.columns.contains(agonistColumn) ||
       !plate.data.columns.contains(antagonistColumn) ||
-      !plate.data.columns.contains(responseColumn)) {
-      console.warn(`[DEBUG] Missing columns. Looking for: ${agonistColumn}, ${antagonistColumn}, ${responseColumn}`);
+      !plate.data.columns.contains(responseColumn))
       return null;
-    }
 
-    console.log('[DEBUG] All columns found, proceeding with grid creation...');
 
     const antagonistCol = plate.data.col(antagonistColumn)!;
     const agonistCol = plate.data.col(agonistColumn)!;
@@ -201,21 +195,10 @@ export class PlateDoseRatioAnalysis {
     grid.root.style.height = '100%';
 
 
-    console.log('[DEBUG] Number of series created:', series.length);
-    console.log('[DEBUG] Series details:', series.map((s) => ({name: s.name, pointCount: s.points.length})));
-
-    if (series.length === 0) {
-      console.log('[DEBUG] No series created - returning text message');
+    if (series.length === 0)
       return ui.divText('No data available to plot dose-ratio curves.');
-    }
 
-    // After you create the chartData, add this:
-    console.log('[DEBUG] Chart data created:', chartData);
 
-    // After you create the grid, add this:
-    console.log('[DEBUG] Datagrok grid created:', grid);
-    console.log('[DEBUG] Grid root:', grid.root);
-    console.log('[DEBUG] Grid root style:', grid.root.style.cssText);
     ui.tools.handleResize(container, (w: number, h: number) => {
       if (w > 20 && h > 20) {
         grid.col(curveCol.name)!.width = w - 20;
