@@ -36,7 +36,8 @@ export const getSearchProgressEventName =
 export const getSearchQueryAndType = (molecule: string | null, type: string, fp: string, similarity: number) =>
   molecule ? type !== SubstructureSearchType.IS_SIMILAR ? `${molecule}_${type}` : `${molecule}_${type}_${fp}_${similarity}` : '';
 export const FILTER_SCAFFOLD_TAG = 'chem-scaffold-filter';
-export const ALIGN_BY_SCAFFOLD_TAG = '.chem-scaffold-align';
+export const ALIGN_BY_SCAFFOLD_TAG = '.chem-scaffold-align'; // todo: Remove this tag in future, should be replaced with ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG
+export const ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG = '.%chem-scaffold-align';
 export const HIGHLIGHT_BY_SCAFFOLD_TAG = '.%chem-scaffold-highlight';
 export const SCAFFOLD_COL = 'scaffold-col';
 export const PARENT_MOL_COL = 'parent-mol-col';

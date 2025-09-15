@@ -1,5 +1,9 @@
 # Chem changelog
 
+## 1.16.5 (2025-09-15)
+
+* Add layout persistant tag for scaffold alignment
+
 ## 1.16.4 (2025-09-05)
 
 * Fixed issues with tableview getting for cloned views in functions.
