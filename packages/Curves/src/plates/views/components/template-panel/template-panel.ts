@@ -22,24 +22,28 @@ export class TemplatePanel {
   private validationHost: HTMLElement;
   private wellPropsHeaderHost: HTMLElement;
   private subscriptions: Subscription[] = [];
-  private plateIdentifierHost: HTMLElement;
-  private replicateIdentifierHost: HTMLElement;
-  private plateNumberHost: HTMLElement;
+  private identifierControlsHost: HTMLElement;
 
   constructor(
-    private stateManager: PlateStateManager,
-    private plateWidget: PlateWidget,
-    private onManageMappings: () => void
+  private stateManager: PlateStateManager,
+  private plateWidget: PlateWidget,
+  private onManageMappings: () => void
   ) {
     this.root = ui.divV([], 'template-panel');
     this.platePropertiesHost = ui.divV([]);
     this.validationHost = ui.divV([]);
     this.wellPropsHeaderHost = ui.div();
-    this.plateIdentifierHost = ui.div([]);
-    this.replicateIdentifierHost = ui.div([]);
-    this.plateNumberHost = ui.div([]);
+    this.identifierControlsHost = ui.divV([], 'identifier-controls-host');
     this.buildPanel();
     this.subscribeToStateChanges();
+  }
+  private updateWellPropsHeader(template: PlateTemplate, state: any): void {
+    const header = ui.h2('Template Properties');
+    const headerContainer = ui.divH(
+      [header],
+      'space-between-center'
+    );
+    this.wellPropsHeaderHost.appendChild(headerContainer);
   }
 
   private buildPanel(): void {
@@ -63,15 +67,12 @@ export class TemplatePanel {
 
   private createImportSection(): HTMLElement {
     const fileInput = this.createFileInput();
-    const indexControls = ui.divV([
-      this.plateIdentifierHost,
-      this.replicateIdentifierHost,
-      this.plateNumberHost,
-    ], 'left-panel-section-content');
+    // START of CHANGE: Use the new single host for identifier controls
     const content = ui.divV([
       fileInput.root,
-      indexControls
+      this.identifierControlsHost
     ]);
+    // END of CHANGE
     this.updateIdentifierControls();
     return this.createCollapsiblePanel(ui.h2('Import'), content, true);
   }
@@ -83,7 +84,7 @@ export class TemplatePanel {
         try {
           const df = DG.DataFrame.fromCsv(await file.readAsString());
           await this.stateManager.loadDataFrame(df);
-          this.updateIdentifierControls();
+          this.updateIdentifierControls(); // This will now get the auto-detected column
         } catch (e: any) {
           grok.shell.error(`Failed to parse CSV: ${e.message}`);
         }
@@ -101,59 +102,55 @@ export class TemplatePanel {
     return fileInput;
   }
 
+  // START of CHANGE: Replace the three update...Control methods with a single dynamic one.
   private updateIdentifierControls(): void {
-    this.updatePlateIdentifierControl();
-    this.updateReplicateIdentifierControl();
-    this.updatePlateNumberControl();
-  }
-
-  private updatePlateIdentifierControl(): void {
-    ui.empty(this.plateIdentifierHost);
+    ui.empty(this.identifierControlsHost);
     const df = this.stateManager.sourceDataFrame;
-    if (!df) return;
-    const choiceInput = ui.input.choice('', {
-      value: this.stateManager.plateIdentifierColumn,
-      items: [null, ...df.columns.names()],
-      onValueChanged: (newColumn: string | null) => {
-        this.stateManager.plateIdentifierColumn = newColumn;
-        this.stateManager.reprocessPlates();
-      },
-    });
-    ui.tooltip.bind(choiceInput.root, 'Select the column that identifies individual plates in the file.');
-    this.plateIdentifierHost.appendChild(createFormRow('Plate Index', choiceInput));
-  }
 
-  private updateReplicateIdentifierControl(): void {
-    ui.empty(this.replicateIdentifierHost);
-    const df = this.stateManager.sourceDataFrame;
     if (!df) return;
-    const choiceInput = ui.input.choice('', {
-      value: this.stateManager.replicateIdentifierColumn,
-      items: [null, ...df.columns.names()],
-      onValueChanged: (newColumn: string | null) => {
-        this.stateManager.replicateIdentifierColumn = newColumn;
-        this.stateManager.reprocessPlates();
-      },
-    });
-    ui.tooltip.bind(choiceInput.root, 'Optional: Select the column that identifies technical replicates.');
-    this.replicateIdentifierHost.appendChild(createFormRow('Replicate Index', choiceInput));
-  }
 
-  private updatePlateNumberControl(): void {
-    ui.empty(this.plateNumberHost);
-    const df = this.stateManager.sourceDataFrame;
-    if (!df) return;
-    const choiceInput = ui.input.choice('', {
-      value: this.stateManager.plateNumberColumn,
-      items: [null, ...df.columns.names()],
-      onValueChanged: (newColumn: string | null) => {
-        this.stateManager.plateNumberColumn = newColumn;
-        this.stateManager.reprocessPlates();
-      },
+    // START of CHANGE: Logic to prevent duplicate index columns
+    const allDfColumns = df.columns.names();
+    const selectedIdentifiers = this.stateManager.identifierColumns.filter((c): c is string => c !== null);
+
+    this.stateManager.identifierColumns.forEach((colName, index) => {
+      // For each dropdown, the available choices are all columns MINUS those already selected in OTHER dropdowns.
+      const otherSelected = selectedIdentifiers.filter((c) => c !== colName);
+      const availableColumns = allDfColumns.filter((c) => !otherSelected.includes(c));
+
+      const choiceInput = ui.input.choice<string | null>('', {
+        value: colName,
+        items: [null, ...availableColumns], // Use the filtered list
+        onValueChanged: (newColumn) => {
+          this.stateManager.setIdentifierColumn(index, newColumn);
+        },
+      });
+      ui.tooltip.bind(choiceInput.root, 'Select a column to identify unique plates.');
+
+      // START of CHANGE: Improved remove button UI
+      const removeBtn = ui.button(ui.iconFA('trash-alt'), () => {
+        this.stateManager.removeIdentifierColumn(index);
+      }, 'Remove this index column');
+      removeBtn.classList.add('curves-icon-button', 'curves-remove-button');
+      // END of CHANGE
+
+      const formRow = createFormRow(`Plate Index ${index + 1}`, choiceInput);
+      const controlRow = ui.divH([formRow, removeBtn], {style: {alignItems: 'center', flexWrap: 'nowrap'}});
+      (formRow.lastChild as HTMLElement).style.flexGrow = '1';
+
+      this.identifierControlsHost.appendChild(controlRow);
     });
-    ui.tooltip.bind(choiceInput.root, 'Optional: Select the column that identifies the plate number.');
-    this.plateNumberHost.appendChild(createFormRow('Plate Number', choiceInput));
+
+    // START of CHANGE: Improved add button UI
+    const addBtn = ui.button(ui.iconFA('plus'), () => {
+      this.stateManager.addIdentifierColumn();
+    }, 'Add another index column');
+    addBtn.classList.add('curves-icon-button', 'curves-add-button');
+    // END of CHANGE
+
+    this.identifierControlsHost.appendChild(ui.div(addBtn, {style: {marginTop: '8px'}}));
   }
+  // END of CHANGE
 
   private createTemplateSection(): HTMLElement {
     const templateIcon = ui.iconFA('file-alt', null, 'Template-defined properties');
@@ -214,10 +211,14 @@ export class TemplatePanel {
 
   private subscribeToStateChanges(): void {
     const sub = this.stateManager.onStateChange.subscribe((event) => {
-      this.updatePanelContent();
+      if (event.type === 'identifier-changed')
+        this.updateIdentifierControls();
+      else
+        this.updatePanelContent();
     });
     this.subscriptions.push(sub);
   }
+
   private createPropertyInput(prop: any, currentValue: any): DG.InputBase {
     if (prop.choices) {
       let choicesList: string[];
@@ -277,6 +278,7 @@ export class TemplatePanel {
     ui.empty(this.platePropertiesHost);
     ui.empty(this.wellPropsHeaderHost);
 
+
     if (activePlate) {
       const handleMapping = (targetProperty: string, sourceColumn: string) => {
         const currentState = this.stateManager.currentState;
@@ -289,8 +291,10 @@ export class TemplatePanel {
         if (currentState)
           this.stateManager.undoScopedMapping(currentState.activePlateIdx, MAPPING_SCOPES.TEMPLATE, targetProperty);
       };
+      const identifierColumns = this.stateManager.identifierColumns.filter((c): c is string => c !== null);
+      const allSourceColumns = activePlate.plate.data.columns.names();
+      const availableSourceColumns = allSourceColumns.filter((c) => !identifierColumns.includes(c));
 
-      const sourceColumns = activePlate.plate.data.columns.names();
       const currentMappings = activePlate.plate.getScopedAliases(MAPPING_SCOPES.TEMPLATE);
 
       const MOCKED_REQUIRED_TEMPLATE_FIELDS = ['Target', 'Assay Format'];
@@ -303,7 +307,7 @@ export class TemplatePanel {
 
       renderMappingEditor(this.validationHost, {
         targetProperties: templateProps,
-        sourceColumns: sourceColumns,
+        sourceColumns: availableSourceColumns, // Use the filtered list here
         mappings: currentMappings,
         onMap: handleMapping,
         onUndo: handleUndo,
@@ -358,60 +362,6 @@ export class TemplatePanel {
     this.updateWellPropsHeader(template, state);
   }
 
-  private updateWellPropsHeader(template: PlateTemplate, state: any): void {
-    const manageMappingsButton = ui.button(
-      ui.iconFA('exchange-alt'),
-      this.onManageMappings,
-      'Synchronize field mappings across multiple plates'
-    );
-    manageMappingsButton.classList.add('manage-mappings-button');
-
-    if (state && state.plates.length > 0) {
-      const badges = ui.divH([]);
-      let totalConflicts = 0;
-      let totalMappings = 0;
-
-      state.plates.forEach((pf: any) => {
-        const plateMappings = new Map<string, string>();
-        for (const layer of pf.plate.getLayerNames()) {
-          const aliases = pf.plate.getAliases(layer);
-          for (const alias of aliases)
-            plateMappings.set(alias, layer);
-        }
-
-        const validation = renderValidationResults(
-          ui.div(),
-          pf.plate,
-          template,
-          () => {},
-          plateMappings,
-          () => {}
-        );
-        totalConflicts += validation.conflictCount;
-        totalMappings += plateMappings.size;
-      });
-
-      if (totalConflicts > 0) {
-        const conflictBadge = ui.span([`${totalConflicts}`], 'ui-badge-red');
-        ui.tooltip.bind(conflictBadge, `${totalConflicts} unresolved template fields across all plates`);
-        badges.appendChild(conflictBadge);
-      }
-      if (totalMappings > 0) {
-        const mappingBadge = ui.span([`${totalMappings}`], 'ui-badge-blue');
-        ui.tooltip.bind(mappingBadge, `${totalMappings} total template mappings applied across all plates`);
-        badges.appendChild(mappingBadge);
-      }
-      if (badges.children.length > 0)
-        manageMappingsButton.prepend(badges);
-    }
-
-    const header = ui.h2('Template Properties');
-    const headerContainer = ui.divH(
-      [header, ui.div([manageMappingsButton], {style: {marginLeft: 'auto'}})],
-      'space-between-center'
-    );
-    this.wellPropsHeaderHost.appendChild(headerContainer);
-  }
 
   destroy(): void {
     this.subscriptions.forEach((sub) => sub.unsubscribe());

@@ -67,11 +67,11 @@ export function renderMappingEditor(host: HTMLElement, options: MappingEditorOpt
   const tableHost = ui.divV([], 'mapping-editor-table');
   host.appendChild(tableHost);
 
-  const header = ui.divH([
-    ui.divText('Property', {style: {fontWeight: 'bold'}}),
-    ui.divText('Source Column', {style: {fontWeight: 'bold'}}),
-  ], 'mapping-editor-header');
-  tableHost.appendChild(header);
+  // const header = ui.divH([
+  //   ui.divText('Property', {style: {fontWeight: 'bold'}}),
+  //   ui.divText('Source Column', {style: {fontWeight: 'bold'}}),
+  // ], 'mapping-editor-header');
+  // tableHost.appendChild(header);
 
   const allPropsMap = new Map<string, TargetProperty>();
   targetProperties.forEach((p) => allPropsMap.set(p.name, p));

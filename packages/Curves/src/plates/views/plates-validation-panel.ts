@@ -103,11 +103,11 @@ export function renderValidationResults(
 
   tableElement.className = 'plate-validation-table';
 
-  const header = ui.divH([
-    ui.divText('Property', {style: {fontWeight: 'bold'}}),
-    ui.divText('Source Column', {style: {fontWeight: 'bold'}}),
-  ], 'plate-validation-table-header');
-  tableElement.appendChild(header);
+  // const header = ui.divH([
+  //   ui.divText('Property', {style: {fontWeight: 'bold'}}),
+  //   ui.divText('Source Column', {style: {fontWeight: 'bold'}}),
+  // ], 'plate-validation-table-header');
+  // tableElement.appendChild(header);
 
   let conflictCount = 0;
 
@@ -148,12 +148,13 @@ export function renderValidationResults(
   });
 
   const skeletonRow = ui.divH([], 'plate-validation-add-row');
-  const addIcon = ui.iconFA('plus', () => {
+
+  const addBtn = ui.button(ui.iconFA('plus'), () => {
     const newRow = createDynamicMappingRow(sourceColumns, onMap, () => newRow.remove());
     tableElement.insertBefore(newRow, skeletonRow);
   }, 'Add new property mapping');
-  addIcon.classList.add('plate-validation-add-icon');
-  skeletonRow.appendChild(addIcon);
+  addBtn.classList.add('curves-icon-button', 'curves-add-button');
+  skeletonRow.appendChild(addBtn);
   tableElement.appendChild(skeletonRow);
 
   return {element: tableElement, conflictCount};

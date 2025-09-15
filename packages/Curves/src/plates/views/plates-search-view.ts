@@ -210,7 +210,7 @@ function getSearchView(viewName: string,
   filterPanel.style.padding = '0 12px';
 
   const splitter = ui.splitV(
-    [filterPanel, resultsHost],
+    [filterPanel, resultsView.root],
     {style: {width: '100%', height: '100%'}},
     true
   );

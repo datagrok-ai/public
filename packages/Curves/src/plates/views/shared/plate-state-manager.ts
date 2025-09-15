@@ -16,9 +16,9 @@ export class PlateStateManager {
 
   private stateChange$ = new Subject<PlateStateChangeEvent>();
 
-  public plateIdentifierColumn: string | null = 'Destination Plate Barcode';
-  public replicateIdentifierColumn: string | null = 'Technical Duplicate ID';
-  public plateNumberColumn: string | null = 'Plate Number';
+  // START of CHANGE: Replace hardcoded identifiers with a dynamic array
+  public identifierColumns: (string | null)[] = [];
+  // END of CHANGE
 
   constructor(
     initialTemplate: PlateTemplate,
@@ -74,20 +74,49 @@ export class PlateStateManager {
     this._currentPlateType = plateType;
   }
 
+  // START of CHANGE: New method to auto-detect the best initial identifier column
+  private autodetectIdentifierColumn(): void {
+    if (!this._sourceDataFrame) {
+      this.identifierColumns = [];
+      return;
+    }
+
+    const commonNames = [
+      'barcode', 'plate barcode', 'plate id', 'plate index', 'plate number',
+      'destination plate barcode'
+    ];
+    const dfCols = this._sourceDataFrame.columns.names();
+
+    for (const name of commonNames) {
+      const foundCol = dfCols.find((c) => c.toLowerCase().replace(/[\s_]/g, '') === name.replace(/\s/g, ''));
+      if (foundCol) {
+        this.identifierColumns = [foundCol];
+        return;
+      }
+    }
+
+    // If no common name is found, initialize with one empty slot for the user to choose
+    this.identifierColumns = [null];
+  }
+  // END of CHANGE
+
   async loadDataFrame(df: DG.DataFrame): Promise<void> {
     this._sourceDataFrame = df;
+    // START of CHANGE: Call the new auto-detection method
+    this.autodetectIdentifierColumn();
+    // END of CHANGE
     await this.reprocessPlates();
   }
 
   async reprocessPlates(): Promise<void> {
     if (!this._sourceDataFrame) return;
 
+    // START of CHANGE: Pass the entire dynamic array to parsePlates
     const parsedPlateResults = parsePlates(
       this._sourceDataFrame,
-      this.plateIdentifierColumn,
-      this.replicateIdentifierColumn,
-      this.plateNumberColumn
+      this.identifierColumns
     );
+    // END of CHANGE
 
     const currentState = this.templateStates.get(this._currentTemplate.id) ?? {
       plates: [],
@@ -111,13 +140,9 @@ export class PlateStateManager {
           plate.addScopedAlias(MAPPING_SCOPES.TEMPLATE, prop, prop);
       }
 
-
       currentState.plates.push({
         plate: plate,
         file: dummyFile,
-        // reconciliationMap: new Map(), // This is fully deprecated now
-        // FIX #3: Remove the obsolete analysisMappings property
-        // analysisMappings: {drc: new Map(), doseRatio: new Map()},
         commonProperties: parsedResult.commonProperties,
       });
     }
@@ -127,6 +152,29 @@ export class PlateStateManager {
     this.stateChange$.next({type: 'plate-added'});
   }
 
+  // START of CHANGE: Add methods to manage the identifierColumns array
+  public addIdentifierColumn(): void {
+    this.identifierColumns.push(null);
+    this.reprocessPlates();
+    this.stateChange$.next({type: 'identifier-changed'});
+  }
+
+  public removeIdentifierColumn(index: number): void {
+    if (index >= 0 && index < this.identifierColumns.length) {
+      this.identifierColumns.splice(index, 1);
+      this.reprocessPlates();
+      this.stateChange$.next({type: 'identifier-changed'});
+    }
+  }
+
+  public setIdentifierColumn(index: number, columnName: string | null): void {
+    if (index >= 0 && index < this.identifierColumns.length) {
+      this.identifierColumns[index] = columnName;
+      this.reprocessPlates();
+      // No state change event here, as reprocessPlates already sends one.
+    }
+  }
+  // END of CHANGE
 
   selectPlate(index: number): void {
     const state = this.currentState;

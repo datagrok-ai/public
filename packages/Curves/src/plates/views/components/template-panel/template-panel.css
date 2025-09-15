@@ -240,4 +240,40 @@
     color: var(--red-3);
     margin-left: 2px;
     font-weight: bold;
+}/* In src/plates/views/components/template-panel/template-panel.css */
+
+.curves-icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  border: 1px solid var(--grey-2);
+  background-color: var(--grey-0);
+  margin-left: 8px;
+  height: 30px; /* Match input height */
+  width: 30px; /* Match input height */
+}
+
+.curves-icon-button:hover {
+  border-color: var(--blue-2);
+  background-color: var(--grey-1);
+}
+
+.curves-icon-button i.grok-icon {
+  font-size: 16px; /* Make icon larger */
+  margin: 0 !important;
+}
+
+.curves-add-button i.grok-icon {
+  color: var(--blue-3);
+}
+
+.curves-remove-button i.grok-icon {
+  color: var(--red-3); /* More visible remove color */
+}
+
+.curves-add-button {
+  width: 100%; /* Make the add button span the full width */
+  justify-content: center;
 }
