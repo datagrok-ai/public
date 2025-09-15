@@ -1,6 +1,7 @@
 import os
 import logging
 import tempfile
+import json
 from time import time
 from numpy.linalg import norm
 from concurrent.futures import ThreadPoolExecutor
@@ -18,7 +19,6 @@ from datagrok_celery_task import DatagrokTask, Settings, get_logger
 
 from constants import mean_vectors
 from chemprop import data, featurizers, models
-from flask import jsonify
 
 
 logging_level = logging.DEBUG
@@ -205,7 +205,7 @@ def run_admetica(self, csv: str, models: str, raiseException: bool=False) -> pd.
 
 
 #name: checkHealth
-#output: bool result
+#output: string result
 @app.task(name='check_health', base=DatagrokTask)
-def check_health(self) -> bool:
-    return jsonify({"status": "ok"}), 200
+def check_health(self) -> str:
+  return json.dumps({"status": "ok"})
