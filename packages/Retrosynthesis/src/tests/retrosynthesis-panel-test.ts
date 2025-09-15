@@ -3,7 +3,6 @@ import {category, test, expect} from '@datagrok-libraries/utils/src/test';
 import {ReactionData, Tree} from '../aizynth-api';
 import {before, timeout} from '@datagrok-libraries/utils/src/test';
 
-export const CONTAINER_TIMEOUT = 900000;
 
 category('retrosynthesis', async () => {
   const molStr = 'CC(C(=O)OCCCc1cccnc1)c2cccc(c2)C(=O)c3ccccc3';
@@ -12,8 +11,8 @@ category('retrosynthesis', async () => {
     try {
       await timeout(
         () => grok.functions.call('Retrosynthesis:check_health', {}),
-        3 * 60 * 1000,
-        'Health check timed out'
+        180000,
+        'Health check timed out',
       );
     } catch (err: any) {
       throw new Error(`Health check failed: ${err}`);
