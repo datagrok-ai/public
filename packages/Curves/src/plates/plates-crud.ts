@@ -263,7 +263,7 @@ SELECT
       END
     ) FILTER (WHERE pr.name IS NOT NULL),
     '{}'::jsonb
-  ) AS properties
+  )::text AS properties
 FROM filtered_plates fp
 LEFT JOIN plates.plate_details pd ON pd.plate_id = fp.id
 LEFT JOIN plates.properties     pr ON pr.id = pd.property_id
@@ -333,7 +333,7 @@ SELECT
   fp.id         AS plate_id,
   fp.barcode,
   fp.description,
-  jsonb_pretty(
+  COALESCE(
     jsonb_object_agg(
       pr.name,
       CASE
