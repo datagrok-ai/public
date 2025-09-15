@@ -103,14 +103,14 @@ function searchFormToMatchers(form: DG.InputForm): PropertyCondition[] {
 }
 
 
-function getSearchView(
-  viewName: string,
+function getSearchView(viewName: string,
   search: (query: PlateQuery) => Promise<DG.DataFrame>,
   onResults: (grid: DG.Grid) => void
 ): DG.View {
   const mainView = DG.View.create();
-  // FIX 1: Add style to make the container fill the available height.
-  const resultsHost = ui.div([], {classes: 'd4-pane-container', style: {height: '100%'}});
+  const resultsView = DG.TableView.create(DG.DataFrame.create(0, viewName), false);
+  resultsView.name = viewName;
+  resultsView._onAdded();
 
   let platesTemplateForm: DG.InputForm; let platesOtherForm: DG.InputForm;
   let wellsTemplateForm: DG.InputForm; let wellsOtherForm: DG.InputForm;
@@ -141,12 +141,9 @@ function getSearchView(
     };
 
     search(query).then((df) => {
-      ui.empty(resultsHost);
-      const grid = df.plot.grid();
-      // FIX 2: Make the grid's root element also fill its container.
-      grid.root.style.height = '100%';
-      resultsHost.appendChild(grid.root);
-      onResults(grid);
+      resultsView.dataFrame = df;
+      df.name = viewName;
+      onResults(resultsView.grid);
     });
   };
 
@@ -225,35 +222,13 @@ function getSearchView(
 }
 
 
-export async function searchPlatesView(): Promise<DG.View> {
-  await initPlates();
-
-  if (plateTemplates.length === 0) {
-    const noTemplatesView = ui.divV([
-      ui.h1('No Plate Templates Found'),
-      ui.divText('Please create a template first or ensure the database is seeded with data.')
-    ]);
-    return DG.View.create(noTemplatesView);
-  }
-  return getSearchView(
-    'Search Plates',
-    queryPlates, (grid) => {
-      grid.columns.add({gridColumnName: 'plate', cellType: 'Plate'}).onPrepareValueScript = `return (await curves.getPlateByBarcode(gridCell.tableRow.get('barcode'))).data;`;
-    });
+export function searchPlatesView(): DG.View {
+  return getSearchView('Search Plates', queryPlates, (grid) => {
+    grid.columns.add({gridColumnName: 'plate', cellType: 'Plate'})
+      .onPrepareValueScript = `return (await curves.getPlateByBarcode(gridCell.tableRow.get('barcode'))).data;`;
+  });
 }
 
-export async function searchWellsView(): Promise<DG.View> {
-  await initPlates();
-
-  if (plateTemplates.length === 0) {
-    const noTemplatesView = ui.divV([
-      ui.h1('No Plate Templates Found'),
-      ui.divText('Please create a template first or ensure the database is seeded with data.')
-    ]);
-    return DG.View.create(noTemplatesView);
-  }
-
-  return getSearchView(
-    'Search Wells',
-    queryWells, (grid) => {});
+export function searchWellsView(): DG.View {
+  return getSearchView('Search Wells', queryWells, (grid) => {});
 }
