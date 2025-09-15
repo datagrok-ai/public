@@ -150,3 +150,12 @@ FROM plates.template_plate_properties
 SELECT * FROM plates.properties
 WHERE template_id = @templateId;
 -- end
+
+
+
+-- name: getPlateByBarcode
+-- connection: Curves:Plates
+-- input: string barcode
+-- output: dataframe result
+SELECT * FROM plates.plates WHERE barcode = @barcode;
+-- end

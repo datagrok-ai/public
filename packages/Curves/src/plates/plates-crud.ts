@@ -206,8 +206,9 @@ export async function getPlateById(id: number): Promise<Plate> {
  *     ...
  *   }
  */
+// In src/plates/plates-crud.ts
+
 function getPlateSearchSql(query: PlateQuery): string {
-  // ---------- 1. Build the boolean conditions for the filter ----------
   const existsClauses: string[] = [];
 
   // Handle plate-level property conditions
@@ -236,10 +237,8 @@ function getPlateSearchSql(query: PlateQuery): string {
       )`);
   }
 
-  const whereFilter =
-    existsClauses.length > 0 ? `WHERE ${existsClauses.join(' AND ')}` : '';
+  const whereFilter = existsClauses.length > 0 ? `WHERE ${existsClauses.join(' AND ')}` : '';
 
-  // ---------- 2. Final query – filter first, then collect all properties ----------
   return `
 WITH filtered_plates AS (
   SELECT p.id, p.barcode, p.description
@@ -247,26 +246,29 @@ WITH filtered_plates AS (
   ${whereFilter}
 )
 SELECT
-  fp.id         AS plate_id,
+  fp.id AS plate_id,
   fp.barcode,
   fp.description,
   COALESCE(
     jsonb_object_agg(
-      pr.name,
-      CASE
-        WHEN pd.value_string   IS NOT NULL THEN to_jsonb(pd.value_string)
-        WHEN pd.value_num      IS NOT NULL THEN to_jsonb(pd.value_num)
-        WHEN pd.value_bool     IS NOT NULL THEN to_jsonb(pd.value_bool)
-        WHEN pd.value_uuid     IS NOT NULL THEN to_jsonb(pd.value_uuid)
-        WHEN pd.value_datetime IS NOT NULL THEN to_jsonb(pd.value_datetime)
-        ELSE to_jsonb(NULL::text)
-      END
-    ) FILTER (WHERE pr.name IS NOT NULL),
+      COALESCE(pr.name, 'unnamed_' || pr.id::text),
+      COALESCE(
+        CASE
+          WHEN pd.value_string IS NOT NULL THEN to_jsonb(pd.value_string)
+          WHEN pd.value_num IS NOT NULL THEN to_jsonb(pd.value_num)
+          WHEN pd.value_bool IS NOT NULL THEN to_jsonb(pd.value_bool)
+          WHEN pd.value_uuid IS NOT NULL THEN to_jsonb(pd.value_uuid::text)
+          WHEN pd.value_datetime IS NOT NULL THEN to_jsonb(pd.value_datetime::text)
+          ELSE 'null'::jsonb
+        END,
+        'null'::jsonb
+      )
+    ) FILTER (WHERE pr.id IS NOT NULL),
     '{}'::jsonb
-  ) AS properties
+  )::text AS properties -- <<< THIS IS THE FIX. Cast the result to text.
 FROM filtered_plates fp
 LEFT JOIN plates.plate_details pd ON pd.plate_id = fp.id
-LEFT JOIN plates.properties     pr ON pr.id = pd.property_id
+LEFT JOIN plates.properties pr ON pr.id = pd.property_id
 GROUP BY fp.id, fp.barcode, fp.description
 ORDER BY fp.id;
 `.trim();
@@ -288,10 +290,9 @@ ORDER BY fp.id;
  *   }
  */
 function getWellSearchSql(query: PlateQuery): string {
-  // ---------- 1. Build the boolean conditions for the filter ----------
   const whereClauses: string[] = [];
 
-  // Handle plate-level property conditions (using EXISTS for parent plate)
+  // Handle plate-level property conditions
   for (const condition of query.plateMatchers) {
     const dbColumn = plateDbColumn[condition.property.type];
     whereClauses.push(`
@@ -304,7 +305,7 @@ function getWellSearchSql(query: PlateQuery): string {
       )`);
   }
 
-  // Handle well-level property conditions (direct filter on wells)
+  // Handle well-level property conditions
   for (const condition of query.wellMatchers) {
     const dbColumn = plateDbColumn[condition.property.type];
     whereClauses.push(`
@@ -319,39 +320,36 @@ function getWellSearchSql(query: PlateQuery): string {
       )`);
   }
 
-  const whereFilter =
-    whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+  const whereFilter = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
-  // ---------- 2. Final query – filter first, then collect all well properties ----------
+  // This is the new, corrected query.
+  // It queries from the well values table and groups by each unique well.
   return `
-WITH filtered_plates AS (
-  SELECT p.id, p.barcode, p.description
-  FROM plates.plates p
-  ${whereFilter}
-)
 SELECT
-  fp.id         AS plate_id,
-  fp.barcode,
-  fp.description,
-  jsonb_pretty(
-    jsonb_object_agg(
-      pr.name,
-      CASE
-        WHEN pd.value_string   IS NOT NULL THEN to_jsonb(pd.value_string)
-        WHEN pd.value_num      IS NOT NULL THEN to_jsonb(pd.value_num)
-        WHEN pd.value_bool     IS NOT NULL THEN to_jsonb(pd.value_bool)
-        WHEN pd.value_uuid     IS NOT NULL THEN to_jsonb(pd.value_uuid)
-        WHEN pd.value_datetime IS NOT NULL THEN to_jsonb(pd.value_datetime)
-        ELSE to_jsonb(NULL::text)
-      END
-    ) FILTER (WHERE pr.name IS NOT NULL),
-    '{}'::jsonb
-  )::text AS properties
-FROM filtered_plates fp
-LEFT JOIN plates.plate_details pd ON pd.plate_id = fp.id
-LEFT JOIN plates.properties     pr ON pr.id      = pd.property_id
-GROUP BY fp.id, fp.barcode, fp.description
-ORDER BY fp.id;
+    pwv.plate_id,
+    p.barcode,
+    pwv.row,
+    pwv.col,
+    COALESCE(jsonb_object_agg(
+        pr.name,
+        CASE
+            WHEN pwv.value_string IS NOT NULL THEN to_jsonb(pwv.value_string)
+            WHEN pwv.value_num    IS NOT NULL THEN to_jsonb(pwv.value_num)
+            WHEN pwv.value_bool   IS NOT NULL THEN to_jsonb(pwv.value_bool)
+            ELSE 'null'::jsonb
+        END
+    ) FILTER (WHERE pr.id IS NOT NULL), '{}'::jsonb)::text AS properties
+FROM
+    plates.plate_well_values pwv
+JOIN
+    plates.plates p ON p.id = pwv.plate_id
+LEFT JOIN
+    plates.properties pr ON pr.id = pwv.property_id
+${whereFilter}
+GROUP BY
+    pwv.plate_id, p.barcode, pwv.row, pwv.col
+ORDER BY
+    pwv.plate_id, pwv.row, pwv.col;
 `.trim();
 }
 
@@ -364,10 +362,24 @@ export async function queryWells(query: PlateQuery): Promise<DG.DataFrame> {
 
 export async function queryPlates(query: PlateQuery): Promise<DG.DataFrame> {
   const df = await grok.data.db.query('Curves:Plates', getPlateSearchSql(query));
-  DG.Utils.jsonToColumns(df.col('properties')!);
-  df.col('properties')!.name = '~properties';
+
+  console.log(`Query returned ${df.rowCount} rows.`);
+
+  // Make sure properties column exists and is valid JSON
+  const propsCol = df.col('properties');
+  if (propsCol) {
+    try {
+      DG.Utils.jsonToColumns(propsCol);
+      propsCol.name = '~properties';
+    } catch (e) {
+      console.error('Failed to parse properties JSON:', e);
+      // Handle the error gracefully
+    }
+  }
+
   return df;
 }
+
 
 export async function createProperty(prop: Partial<PlateProperty>): Promise<PlateProperty> {
   // Need to pass ALL property fields to the backend

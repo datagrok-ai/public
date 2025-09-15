@@ -304,17 +304,29 @@ static layouts(): DG.View {
    return platesAppView();
  }
 
-  @grok.decorators.func({})
+//   @grok.decorators.func({})
+// static async getPlateByBarcode(barcode: string): Promise<Plate> {
+//   await initPlates();
+//   const df: DG.DataFrame = await api.queries.getWellValuesByBarcode(barcode);
+//   return Plate.fromDbDataFrame(df);
+// }
+@grok.decorators.func({})
 static async getPlateByBarcode(barcode: string): Promise<Plate> {
   await initPlates();
   const df: DG.DataFrame = await api.queries.getWellValuesByBarcode(barcode);
+
+  if (df.rowCount === 0) {
+    console.error(`Plate with barcode '${barcode}' not found in the database.`);
+    throw new Error(`Plate not found: ${barcode}`);
+  }
+
   return Plate.fromDbDataFrame(df);
 }
 
   @grok.decorators.func({})
-  static async createDummyPlateData(): Promise<void> {
-    await __createDummyPlateData();
-  }
+static async createDummyPlateData(): Promise<void> {
+  await __createDummyPlateData();
+}
 }
 
 //name: platesAppTreeBrowser

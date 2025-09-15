@@ -1,18 +1,15 @@
 /* eslint-disable max-len */
-import {getPlateUniquePropertyValues, getWellUniquePropertyValues, PlateQuery, PlateTemplate, PropertyCondition} from '../plates-crud';
+import {getPlateUniquePropertyValues, getWellUniquePropertyValues, initPlates, PlateQuery, PlateTemplate, PropertyCondition} from '../plates-crud';
 
 import * as DG from 'datagrok-api/dg';
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {debounceTime} from 'rxjs/operators';
 import {NumericMatcher, StringInListMatcher} from '../numeric_matcher';
 import * as rxjs from 'rxjs';
 import {
   PlateProperty,
-  getUniquePropertyValues, // We'll use this single function for both plates and wells
   queryPlates,
   queryWells,
-  allProperties, // Import the new unified cache
+  allProperties,
   plateTemplates
 } from '../plates-crud';
 
@@ -23,19 +20,15 @@ type PropInput = DG.InputBase & { prop: PlateProperty };
 function getSearchForm(
   allProperties: PlateProperty[],
   templateProperties: PlateProperty[],
-  // CHANGED: The function signature is simplified, as the underlying unique value logic is now unified.
   getUniqueValues: (prop: any) => string[]
 ): { root: HTMLElement, templateForm: DG.InputForm, otherForm: DG.InputForm } {
   const createInput = (prop: PlateProperty): PropInput | null => {
-  // Check if choices exist (inherited from IProperty)
     if (prop.choices && prop.choices.length > 0) {
-    // If choices is a string (from DB), parse it; otherwise use as-is
       let choicesList: string[];
       if (typeof prop.choices === 'string') {
         try {
           choicesList = JSON.parse(prop.choices as any);
         } catch {
-        // If parsing fails, treat as a single choice
           choicesList = [prop.choices as any];
         }
       } else {
@@ -115,7 +108,8 @@ function getSearchView(
   onResults: (grid: DG.Grid) => void
 ): DG.View {
   const mainView = DG.View.create();
-  const resultsView = DG.TableView.create(DG.DataFrame.create(0), false);
+  // FIX 1: Add style to make the container fill the available height.
+  const resultsHost = ui.div([], {classes: 'd4-pane-container', style: {height: '100%'}});
 
   let platesTemplateForm: DG.InputForm; let platesOtherForm: DG.InputForm;
   let wellsTemplateForm: DG.InputForm; let wellsOtherForm: DG.InputForm;
@@ -144,9 +138,14 @@ function getSearchView(
       plateMatchers: [...searchFormToMatchers(platesTemplateForm), ...searchFormToMatchers(platesOtherForm)],
       wellMatchers: [...searchFormToMatchers(wellsTemplateForm), ...searchFormToMatchers(wellsOtherForm)]
     };
+
     search(query).then((df) => {
-      resultsView.dataFrame = df;
-      onResults(resultsView.grid);
+      ui.empty(resultsHost);
+      const grid = df.plot.grid();
+      // FIX 2: Make the grid's root element also fill its container.
+      grid.root.style.height = '100%';
+      resultsHost.appendChild(grid.root);
+      onResults(grid);
     });
   };
 
@@ -157,15 +156,11 @@ function getSearchView(
     const currentTemplatePlateProps = plateTemplate?.plateProperties?.map((p) => p as PlateProperty) ?? [];
     const currentTemplateWellProps = plateTemplate?.wellProperties?.map((p) => p as PlateProperty) ?? [];
 
-    // REWRITTEN: This is the main fix.
-    // Instead of using the old variables, we now filter the unified 'allProperties' cache by scope.
-    // In plates-search-view.ts, update the refreshUI function:
-
     const allPlateProps = globalSearchInput.value ?
       Array.from(new Map(
         allProperties
           .filter((p) => p.scope === 'plate')
-          .map((p) => [p.name, p]) // Use name as key to deduplicate
+          .map((p) => [p.name, p])
       ).values()) :
       currentTemplatePlateProps;
 
@@ -173,12 +168,10 @@ function getSearchView(
       Array.from(new Map(
         allProperties
           .filter((p) => p.scope === 'well')
-          .map((p) => [p.name, p]) // Use name as key to deduplicate
+          .map((p) => [p.name, p])
       ).values()) :
       currentTemplateWellProps;
 
-    // FIXED: Pass the simplified 'getUniquePropertyValues' function for both calls.
-    // NEW, CORRECTED CODE
     const platesFormsResult = getSearchForm(allPlateProps, currentTemplatePlateProps, getPlateUniquePropertyValues);
     const wellsFormsResult = getSearchForm(allWellProps, currentTemplateWellProps, getWellUniquePropertyValues);
 
@@ -189,7 +182,7 @@ function getSearchView(
 
     [platesTemplateForm.root, platesOtherForm.root, wellsTemplateForm.root, wellsOtherForm.root].forEach((r) => r.style.width = '100%');
 
-    const combinedSub = DG.debounce(
+    DG.debounce(
       rxjs.merge(
         platesTemplateForm.onInputChanged,
         platesOtherForm.onInputChanged,
@@ -219,7 +212,7 @@ function getSearchView(
   filterPanel.style.padding = '0 12px';
 
   const splitter = ui.splitV(
-    [filterPanel, resultsView.root],
+    [filterPanel, resultsHost],
     {style: {width: '100%', height: '100%'}},
     true
   );
@@ -231,13 +224,31 @@ function getSearchView(
 }
 
 
-export function searchPlatesView(): DG.View {
+export async function searchPlatesView(): Promise<DG.View> {
+  await initPlates();
+
+  if (plateTemplates.length === 0) {
+    const noTemplatesView = ui.divV([
+      ui.h1('No Plate Templates Found'),
+      ui.divText('Please create a template first or ensure the database is seeded with data.')
+    ]);
+    return DG.View.create(noTemplatesView);
+  }
   return getSearchView(queryPlates, (grid) => {
-    grid.columns.add({gridColumnName: 'plate', cellType: 'Plate'})
-      .onPrepareValueScript = `return (await curves.getPlateByBarcode(gridCell.tableRow.get('barcode'))).data;`;
+    grid.columns.add({gridColumnName: 'plate', cellType: 'Plate'}).onPrepareValueScript = `return (await curves.getPlateByBarcode(gridCell.tableRow.get('barcode'))).data;`;
   });
 }
 
-export function searchWellsView(): DG.View {
+export async function searchWellsView(): Promise<DG.View> {
+  await initPlates();
+
+  if (plateTemplates.length === 0) {
+    const noTemplatesView = ui.divV([
+      ui.h1('No Plate Templates Found'),
+      ui.divText('Please create a template first or ensure the database is seeded with data.')
+    ]);
+    return DG.View.create(noTemplatesView);
+  }
+
   return getSearchView(queryWells, (grid) => {});
 }
