@@ -17,7 +17,7 @@ import {findPlatePositions, getPlateFromSheet} from './excel-plates';
 import {FitFunctionType, FitSeries} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
 import {AnalysisOptions} from './plate-widget';
 import {inspectCurve} from '../fit/fit-renderer';
-import {plateDbColumn, wellProperties, plateTypes} from '../plates/plates-crud';
+import {plateDbColumn, allProperties, plateTypes} from '../plates/plates-crud';
 import {PlateDrcAnalysis} from './plate-drc-analysis';
 import {IPlateWellValidator} from './plate-well-validators';
 import {Subject} from 'rxjs';
@@ -422,7 +422,7 @@ export class Plate {
     for (let propBlock = 0; propBlock < df.rowCount / (plate.rows * plate.cols); propBlock++) {
       const start = propBlock * plate.rows * plate.cols;
       const pid = pidCol?.get(start);
-      const property = wellProperties.find((p) => p.id == pid)!;
+      const property = allProperties.find((p) => p.id == pid)!;
       const valueColumn = df.col(plateDbColumn[property.type])!;
       //@ts-ignore
       const newCol = plate.data.columns.addNew(property.name, property.type)

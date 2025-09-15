@@ -6,6 +6,7 @@ import * as grok from 'datagrok-api/grok';
 import {createPlateTemplate, createNewPlateForTemplate} from './plates-crud';
 import {Plate} from '../plate/plate';
 
+//! DONT FORGET TO SEED THE PLATE TYPES
 
 export async function __createDummyPlateData() {
   await initPlates(true);

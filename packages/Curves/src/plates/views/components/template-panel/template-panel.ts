@@ -218,6 +218,57 @@ export class TemplatePanel {
     });
     this.subscriptions.push(sub);
   }
+  private createPropertyInput(prop: any, currentValue: any): DG.InputBase {
+    if (prop.choices) {
+      let choicesList: string[];
+      if (typeof prop.choices === 'string') {
+        try {
+          choicesList = JSON.parse(prop.choices);
+        } catch {
+          choicesList = [prop.choices];
+        }
+      } else if (Array.isArray(prop.choices)) {
+        choicesList = prop.choices;
+      } else {
+        choicesList = [];
+      }
+
+      return ui.input.choice(prop.name, {
+        items: choicesList,
+        value: currentValue || choicesList[0]
+      });
+    }
+
+    // For numeric properties with min/max
+    if (prop.type === DG.TYPE.FLOAT || prop.type === DG.TYPE.INT) {
+      const input = prop.type === DG.TYPE.INT ?
+        ui.input.int(prop.name, {value: currentValue || 0}) :
+        ui.input.float(prop.name, {value: currentValue || 0});
+
+      if (prop.min !== undefined || prop.max !== undefined) {
+        input.addValidator((valueStr: string) => {
+          const value = parseFloat(valueStr);
+          if (isNaN(value))
+            return 'Invalid number';
+          if (prop.min !== undefined && value < prop.min)
+            return `Minimum value is ${prop.min}`;
+          if (prop.max !== undefined && value > prop.max)
+            return `Maximum value is ${prop.max}`;
+          return null;
+        });
+      }
+
+      return input;
+    }
+
+    // For boolean properties
+    if (prop.type === DG.TYPE.BOOL)
+      return ui.input.bool(prop.name, {value: currentValue || false});
+
+
+    // Default to string input
+    return ui.input.string(prop.name, {value: currentValue || ''});
+  }
 
   private updatePanelContent(): void {
     const template = this.stateManager.currentTemplate;
@@ -225,6 +276,7 @@ export class TemplatePanel {
     const state = this.stateManager.currentState;
     ui.empty(this.platePropertiesHost);
     ui.empty(this.wellPropsHeaderHost);
+
     if (activePlate) {
       const handleMapping = (targetProperty: string, sourceColumn: string) => {
         const currentState = this.stateManager.currentState;
@@ -237,8 +289,8 @@ export class TemplatePanel {
         if (currentState)
           this.stateManager.undoScopedMapping(currentState.activePlateIdx, MAPPING_SCOPES.TEMPLATE, targetProperty);
       };
-      const sourceColumns = activePlate.plate.data.columns.names();
 
+      const sourceColumns = activePlate.plate.data.columns.names();
       const currentMappings = activePlate.plate.getScopedAliases(MAPPING_SCOPES.TEMPLATE);
 
       const MOCKED_REQUIRED_TEMPLATE_FIELDS = ['Target', 'Assay Format'];
@@ -257,11 +309,28 @@ export class TemplatePanel {
         onUndo: handleUndo,
       });
 
-      const plateProperties = template.plateProperties
-        .filter((p) => p && p.name && p.type)
-        .map((p) => DG.Property.js(p.name!, p.type! as DG.TYPE));
-      if (plateProperties.length > 0)
-        this.platePropertiesHost.appendChild(ui.input.form(activePlate.plate.details || {}, plateProperties));
+      // Create proper inputs for plate properties
+      const platePropertyInputs: HTMLElement[] = [];
+      for (const prop of template.plateProperties) {
+        if (!prop || !prop.name || !prop.type) continue;
+
+        const currentValue = activePlate.plate.details?.[prop.name!];
+        const input = this.createPropertyInput(prop, currentValue);
+
+        // Update the plate details when value changes
+        input.onChanged.subscribe(() => {
+          if (!activePlate.plate.details)
+            activePlate.plate.details = {};
+          activePlate.plate.details[prop.name!] = input.value;
+        });
+
+        platePropertyInputs.push(createFormRow(prop.name!, input));
+      }
+
+      if (platePropertyInputs.length > 0) {
+        const form = ui.divV(platePropertyInputs, 'template-plate-properties-form');
+        this.platePropertiesHost.appendChild(form);
+      }
     } else {
       renderMappingEditor(this.validationHost, {
         targetProperties: [],
@@ -270,12 +339,22 @@ export class TemplatePanel {
         onMap: () => {},
         onUndo: () => {},
       });
-      const templateProperties = template.plateProperties
-        .filter((p) => p && p.name && p.type)
-        .map((p) => DG.Property.js(p.name!, p.type! as DG.TYPE));
-      if (templateProperties.length > 0)
-        this.platePropertiesHost.appendChild(ui.input.form({}, templateProperties));
+
+      // Create proper inputs even when no plate is active
+      const platePropertyInputs: HTMLElement[] = [];
+      for (const prop of template.plateProperties) {
+        if (!prop || !prop.name || !prop.type) continue;
+
+        const input = this.createPropertyInput(prop, null);
+        platePropertyInputs.push(createFormRow(prop.name!, input));
+      }
+
+      if (platePropertyInputs.length > 0) {
+        const form = ui.divV(platePropertyInputs, 'template-plate-properties-form');
+        this.platePropertiesHost.appendChild(form);
+      }
     }
+
     this.updateWellPropsHeader(template, state);
   }
 

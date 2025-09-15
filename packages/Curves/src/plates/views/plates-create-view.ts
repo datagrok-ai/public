@@ -44,7 +44,6 @@ export function createPlatesView(): DG.View {
     flex-direction: column;
   `;
   plateWidget.roleSummaryDiv.style.display = 'none';
-  // END of CHANGE
 
   const tabControl = ui.tabControl();
   tabControl.root.classList.remove('ui-box');

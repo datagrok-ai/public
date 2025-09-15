@@ -9,7 +9,7 @@ CREATE TABLE plates.semantic_types (
 -- Consider merging
 CREATE TABLE plates.properties (
     id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL UNIQUE, 
+    name TEXT NOT NULL, 
     nullable BOOLEAN NOT NULL DEFAULT TRUE,   -- used for validation of the submitted data
     type TEXT CHECK (type IN ('int', 'double', 'bool', 'datetime', 'string')),
     semType TEXT,         -- Semantic type
