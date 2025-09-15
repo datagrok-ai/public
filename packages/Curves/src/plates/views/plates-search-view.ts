@@ -104,6 +104,7 @@ function searchFormToMatchers(form: DG.InputForm): PropertyCondition[] {
 
 
 function getSearchView(
+  viewName: string,
   search: (query: PlateQuery) => Promise<DG.DataFrame>,
   onResults: (grid: DG.Grid) => void
 ): DG.View {
@@ -234,9 +235,11 @@ export async function searchPlatesView(): Promise<DG.View> {
     ]);
     return DG.View.create(noTemplatesView);
   }
-  return getSearchView(queryPlates, (grid) => {
-    grid.columns.add({gridColumnName: 'plate', cellType: 'Plate'}).onPrepareValueScript = `return (await curves.getPlateByBarcode(gridCell.tableRow.get('barcode'))).data;`;
-  });
+  return getSearchView(
+    'Search Plates',
+    queryPlates, (grid) => {
+      grid.columns.add({gridColumnName: 'plate', cellType: 'Plate'}).onPrepareValueScript = `return (await curves.getPlateByBarcode(gridCell.tableRow.get('barcode'))).data;`;
+    });
 }
 
 export async function searchWellsView(): Promise<DG.View> {
@@ -250,5 +253,7 @@ export async function searchWellsView(): Promise<DG.View> {
     return DG.View.create(noTemplatesView);
   }
 
-  return getSearchView(queryWells, (grid) => {});
+  return getSearchView(
+    'Search Wells',
+    queryWells, (grid) => {});
 }
