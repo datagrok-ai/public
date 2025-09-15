@@ -10,7 +10,7 @@ import {
   getQueryParams,
   properties,
   setProperties,
-  runAdmeticaFunc
+  runAdmeticaFunc,
 } from '../utils/admetica-utils';
 
 category('Admetica', () => {
@@ -25,8 +25,8 @@ category('Admetica', () => {
     try {
       await timeout(
         () => grok.functions.call('Admetica:check_health', {}),
-        3 * 60 * 1000,
-        'Health check timed out'
+        180000,
+        'Health check timed out',
       );
     } catch (err: any) {
       throw new Error(`Health check failed: ${err}`);
