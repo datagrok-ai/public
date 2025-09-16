@@ -22,7 +22,7 @@
     "vendor/pviz-bundle.min.js"
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^1.54.9",
+    "@datagrok-libraries/bio": "^5.54.9",
     "@datagrok-libraries/chem-meta": "^1.2.7",
     "@datagrok-libraries/tutorials": "^1.6.1",
     "@datagrok-libraries/utils": "^4.5.7",
