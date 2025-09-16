@@ -1696,7 +1696,7 @@ export interface ILineChartSettings {
 
   overviewAggrType: string;
 
-  /// Shows/hides upper and lower control limits, and seven [Western Electric rules](https://sentient.cloud/what-are-western-electric-rules-2/).
+  /// Shows/hides upper and lower control limits, and seven <a href="https://sentient.cloud/what-are-western-electric-rules-2/" target="_blank">Western Electric rules</a>.
   showStaticalProcessControl: boolean;
 
   /// Shows/hides upper and lower control limits.
