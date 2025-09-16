@@ -939,14 +939,14 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'Identity Scoring',
+    name: 'Identity',
     description: 'Adds a column with fraction of matching monomers',
     'top-menu': 'Bio | Calculate | Identity...',
   })
   static async sequenceIdentityScoring(
-    @grok.decorators.param({options: {description: 'Table containing Macromolecule column'}})table: DG.DataFrame,
+    @grok.decorators.param({options: {description: 'Table containing Macromolecule column'}}) table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Macromolecule', description: 'Sequences to score'}}) macromolecule: DG.Column,
-    @grok.decorators.param({options: {description: 'Sequence,matching column format'}})reference: string
+    @grok.decorators.param({options: {description: 'Sequence,matching column format'}}) reference: string
   ): Promise<DG.Column<number>> {
     const seqHelper = _package.seqHelper;
     const scores = calculateScoresWithEmptyValues(table, macromolecule, reference, SCORE.IDENTITY, seqHelper);
@@ -954,14 +954,14 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'Similarity Scoring',
+    name: 'Similarity',
     description: 'Adds a column with similarity scores, calculated as sum of monomer fingerprint similarities',
     'top-menu': 'Bio | Calculate | Similarity...',
   })
   static async sequenceSimilarityScoring(
-    @grok.decorators.param({options: {description: 'Table containing Macromolecule column'}})table: DG.DataFrame,
+    @grok.decorators.param({options: {description: 'Table containing Macromolecule column'}}) table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Macromolecule', description: 'Sequences to score'}}) macromolecule: DG.Column,
-    @grok.decorators.param({options: {description: 'Sequence,matching column format'}})reference: string
+    @grok.decorators.param({options: {description: 'Sequence,matching column format'}}) reference: string
   ): Promise<DG.Column<number>> {
     const seqHelper = _package.seqHelper;
     const scores = calculateScoresWithEmptyValues(table, macromolecule, reference, SCORE.SIMILARITY, seqHelper);
