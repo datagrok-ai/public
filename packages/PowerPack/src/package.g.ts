@@ -90,7 +90,6 @@ export function powerPackSearchProvider() : any {
 
 //name: formulaLinesEditor
 //input: dataframe src { optional: true }
-//top-menu: Data | Formula Lines...
 export function formulaLinesDialog(src: any) : void {
   PackageFunctions.formulaLinesDialog(src);
 }

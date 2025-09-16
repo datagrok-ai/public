@@ -289,7 +289,6 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'formulaLinesEditor',
-    'top-menu': 'Data | Formula Lines...',
     outputs: [],
   })
   static formulaLinesDialog(
