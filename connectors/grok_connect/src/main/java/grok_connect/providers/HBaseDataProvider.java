@@ -13,7 +13,7 @@ public class HBaseDataProvider extends JdbcDataProvider {
         descriptor.type = "HBase";
         descriptor.description = "Query HBase database";
         descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
-        descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
+        descriptor.connectionTemplate.add(DbCredentials.getSsl());
         descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
     }
 
