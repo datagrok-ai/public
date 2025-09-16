@@ -1,6 +1,7 @@
 import os
 import logging
 import tempfile
+import json
 from time import time
 from numpy.linalg import norm
 from concurrent.futures import ThreadPoolExecutor
@@ -201,3 +202,10 @@ def run_admetica(self, csv: str, models: str, raiseException: bool=False) -> pd.
   global raise_ex_flag
   raise_ex_flag = raiseException
   return predict(csv, models, False)
+
+
+#name: checkHealth
+#output: string result
+@app.task(name='check_health', base=DatagrokTask)
+def check_health() -> str:
+  return json.dumps({"status": "ok"})

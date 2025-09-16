@@ -100,3 +100,10 @@ def _silence_aizynth_logs():
     aiz_logger.setLevel(logging.CRITICAL + 1)
     aiz_logger.propagate = False
     aiz_logger.addHandler(logging.NullHandler())
+
+
+#name: checkHealth
+#output: string result
+@app.task(name='check_health', base=DatagrokTask)
+def check_health() -> str:
+  return json.dumps({"status": "ok"})
