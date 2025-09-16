@@ -105,5 +105,5 @@ def _silence_aizynth_logs():
 #name: checkHealth
 #output: string result
 @app.task(name='check_health', base=DatagrokTask)
-def check_health(self) -> str:
+def check_health() -> str:
   return json.dumps({"status": "ok"})
