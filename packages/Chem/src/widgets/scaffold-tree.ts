@@ -1936,7 +1936,14 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   makeGenerateInactive() {
     const disableIcon = (icon?: HTMLElement | null) => {
       if (icon) {
-        (icon as any).inert = true;
+        const blockEvent = (e: Event) => e.stopPropagation();
+
+        icon.addEventListener('click', blockEvent, true);
+        icon.addEventListener('dblclick', blockEvent, true);
+        icon.addEventListener('mousedown', blockEvent, true);
+        icon.addEventListener('mouseup', blockEvent, true);
+
+        icon.style.cursor = 'not-allowed';
         icon.style.setProperty('color', 'gray', 'important');
       }
     };
@@ -2242,7 +2249,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this._bitOpInput.setTooltip('AND: all selected substructures match \n\r OR: any selected substructures match');
     this._bitOpInput.root.style.marginLeft = '20px';
     const iconHost = ui.box(ui.divH([
-      this._iconGenerate = this.allowGenerate !== false ? ui.iconFA('magic', () => this.generateTree(), 'Generate from molecular column') : null,
+      this._iconGenerate = this.allowGenerate !== false ? ui.iconFA('magic', () => this.generateTree()) : null,
       this._iconAdd = ui.iconFA('plus', () => thisViewer.openAddSketcher(thisViewer.tree), 'Sketch scaffolds manually'),
       this._iconUpload = ui.iconFA('folder-open', () => this.loadTree(), 'Upload saved tree file'),
       ui.div([], 'd4-ribbon-separator'),
@@ -2265,6 +2272,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
             .show();
         }, 'Drop all trees')]),
     ], 'chem-scaffold-tree-scrollbar'), 'chem-scaffold-tree-toolbar');
+    this.attachGenerateIconTooltip();
+
     this.root.appendChild(ui.splitV([iconHost, this.tree.root]));
     enableToolbar(thisViewer);
 
@@ -2272,6 +2281,21 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this.root.appendChild(this._message);
     this.updateSizes();
     this.updateUI();
+  }
+
+  attachGenerateIconTooltip() {
+    this._iconGenerate!.onmouseenter = (e) => {
+      const tooltipText = (() => {
+        if (!this.molColumn) return 'There is no molecule column in the table';
+        if (this.molColumn.categories.length >= MAX_MOL_NUMBER)
+          return `The number of molecules exceeds the limit of ${MAX_MOL_NUMBER}`;
+        return 'Generate from molecular column';
+      })();
+
+      ui.tooltip.show(tooltipText, e.clientX, e.clientY);
+    };
+
+    this._iconGenerate!.onmouseleave = () => ui.tooltip.hide();
   }
 
   static validateNodes(childSmiles: string, parentSmiles: string): boolean {
