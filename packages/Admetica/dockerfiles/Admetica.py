@@ -120,7 +120,7 @@ def make_chemprop_predictions(df_test, checkpoint_path, batch_size=512):
 
   test_preds = [pred.item() for batch in test_preds for pred in batch]
   for index in invalid_indices:
-    test_preds.insert(index, "")
+    test_preds.insert(index, np.nan)
 
   return np.array(test_preds, dtype=object)
 
