@@ -36,7 +36,7 @@ export function previewNglUI(file: DG.FileInfo): { view: DG.View, loadingPromise
   const loadingPromise = new Promise<void>(async (resolve, reject) => {
     try {
       const data = await file.readAsBytes();
-      const blob = new Blob([data], {type: 'application/octet-binary'});
+      const blob = new Blob([data as BlobPart], {type: 'application/octet-binary'});
       await stage.loadFile(blob, {defaultRepresentation: true, ext: file.extension});
     } catch (err: any) {
       reject(err);
