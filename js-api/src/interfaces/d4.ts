@@ -1696,6 +1696,50 @@ export interface ILineChartSettings {
 
   overviewAggrType: string;
 
+  /// Shows/hides upper and lower control limits, and seven [Western Electric rules](https://sentient.cloud/what-are-western-electric-rules-2/).
+  showStaticalProcessControl: boolean;
+
+  /// Shows/hides upper and lower control limits.
+  showControlLimits: boolean;
+
+  showSigma1: boolean;
+
+  showSigma2: boolean;
+
+  showAverage: boolean;
+
+  lowerControlLimit: number;
+
+  upperControlLimit: number;
+
+  /// Rile 1: One point is more than 3 standard deviations from the mean. When sample(s) is grossly out of control.
+  showOutlier: boolean;
+
+  /// Rule 2: Nine (or more) points in a row are on the same side of the mean. Some prolonged "bias" exists.
+  showBias: boolean;
+
+  /// Rule 3: Six (or more) points in a row are continually increasing (or decreasing). When a "trend" exists.
+  showConsistentTrend: boolean;
+
+  /// Rule 4: Fourteen (or more) points in a row alternate in direction, increasing then decreasing.
+  /// This much "oscillation" is beyond noise. Note that the rule is considered with directionality only.
+  /// The position of the mean and the size of the standard deviation have no bearing.
+  showOscillation: boolean;
+
+  /// Rule 5:Two (or three) out of the three points in a row are more than 2 standard deviations from the mean
+  /// in the same direction. There is a medium tendency for samples to be mediumly out of control.
+  /// The side of the mean for the third point is unspecified.
+  showMediumShift: boolean;
+
+  /// Rule 6: Four (or five) out of five points in a row are more than 1 standard deviation from the mean
+  /// in the same direction. There is strong tendency for samples to be slightly out of control.
+  /// The side of the mean for the fifth point is unspecified.
+  showSustainedShift: boolean;
+
+  /// Rule 7: Fifteen points in a row are all within 1 standard deviation of the mean on either side of the mean.
+  /// With 1 standard deviation, greater variation would be expected.
+  showSuppressedVariation: boolean;
+
   /// Show vertical line reflecting the position of the mouse-over row
   /// See also *Mouse Over Line Color*
   showMouseOverRowLine: boolean;
@@ -1753,6 +1797,12 @@ export interface ILineChartSettings {
   mouseOverLineColor: number;
 
   currentLineColor: number;
+
+  statisticalProcessLineColor: number;
+
+  statisticalProcessAreaColor: number;
+
+  statisticalProcessRuleColor: number;
 
   xAxisMin: number;
 
