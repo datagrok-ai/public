@@ -2955,6 +2955,8 @@ export interface IScatterPlotSettings {
 
   labelFont: string;
 
+  formulaFont: string;
+
   defaultRenderer: boolean;
 
   legendVisibility: keyof typeof VisibilityMode;
