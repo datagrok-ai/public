@@ -178,7 +178,7 @@ export abstract class Tutorial extends DG.Widget {
 
     if (statusMap && Object.values(statusMap).every((v) => v)) {
       this.root.append(ui.div([
-        ui.divText(this.track?.name+'is complete!'),
+        ui.divText(this.track?.name + ' is complete!'),
         ui.bigButton('Complete', ()=>{
           this.updateProgress(this.track);
           this._closeAll();
@@ -470,13 +470,13 @@ export abstract class Tutorial extends DG.Widget {
 
   protected getMenuItem(name: string, horizontalMenu?: boolean): HTMLElement | null {
     return this.getElement(this.menuRoot, `div.d4-menu-item.d4-menu-group${horizontalMenu ? '.d4-menu-item-horz' : ''}`,
-      (idx, el) => Array.from(el.children).some((c) => c.textContent === name));
+      (idx, el) => Array.from(el.children).some((c) => c.textContent?.toLowerCase() === name.toLowerCase()));
   }
 
   protected getSidebarHints(paneName: string, commandName: string): HTMLElement[] {
     const pane = grok.shell.sidebar.getPane(paneName);
     const command = this.getElement(pane.content, `div.d4-toggle-button[data-view=${commandName}]`) ??
-      this.getElement(pane.content, 'div.d4-toggle-button', (idx, el) => el.textContent === commandName)!;
+      this.getElement(pane.content, 'div.d4-toggle-button', (idx, el) => el.textContent?.toLowerCase() === commandName.toLowerCase())!;
     return [pane.header, command];
   }
 
@@ -527,7 +527,7 @@ export abstract class Tutorial extends DG.Widget {
   protected async textInpAction(root: HTMLElement, instructions: string,
     caption: string, value: string, description: string = ''): Promise<void> {
     const inputRoot = this.getElement(root, 'div.ui-input-root', (idx, inp) =>
-      $(inp).find('label.ui-label.ui-input-label')[0]?.textContent === caption);
+      $(inp).find('label.ui-label.ui-input-label')[0]?.textContent?.toLowerCase() === caption.toLowerCase());
     if (inputRoot == null) return;
     const input = this.getElement(inputRoot, 'input.ui-input-editor') as HTMLInputElement;
     const source = fromEvent(input, 'input').pipe(map((_) => input.value), filter((val) => val === value));
@@ -582,7 +582,7 @@ export abstract class Tutorial extends DG.Widget {
 
   protected async buttonClickAction(root: HTMLElement, instructions: string,
     caption: string, description: string = '') {
-    const btn = this.getElement(root, 'button.ui-btn', (idx, btn) => btn.textContent === caption);
+    const btn = this.getElement(root, 'button.ui-btn', (idx, btn) => btn.textContent?.toLowerCase() === caption.toLowerCase());
     if (btn == null) return;
     const source = fromEvent(btn, 'click');
     await this.action(instructions, source, btn, description);

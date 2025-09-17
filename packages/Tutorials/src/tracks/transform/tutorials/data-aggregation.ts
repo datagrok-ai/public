@@ -90,7 +90,7 @@ export class AggregationTutorial extends Tutorial {
       'only one aggregation, right-click this aggregation and select <b>Remove others</b> in the ' +
       'context menu.'
     );
-    
+
     await this.action('Change a column to "WEIGHT"', findColTag(aggRoot, 'avg(WEIGHT)', () =>
       $(aggRoot).find(colTagSelector).length === 1), ageAggr, 'In addition, you can change the aggregation column from the context menu too. ' +
       'For example, if you are adding multiple columns using the same aggregation function, you can set it as default by pressing the "+" sign and choosing ' +
@@ -106,14 +106,14 @@ export class AggregationTutorial extends Tutorial {
 
     const viewerPopup = $(aggRoot).find('.d4-combo-popup').get(0);
     await this.action('Add viewer to visualize aggregation', waitForElementClick(viewerPopup as HTMLElement), viewerPopup,
-      'To change the viewer, click on the combobox.' + 
-      'This action will open a dropdown list containing various visualization options for aggregations.' + 
+      'To change the viewer, click on the combobox.' +
+      'This action will open a dropdown list containing various visualization options for aggregations.' +
       'You\'ll find a selection of standard viewers like scatterplot, barchart, piechart, and more.'
     );
 
     const lineChartEl = $(aggRoot).find('label.ui-label').filter(function() {
       return $(this).text().trim() === "Line chart";
-    }).closest('div.d4-icon-text.d4-list-item').get(0);  
+    }).closest('div.d4-icon-text.d4-list-item').get(0);
     await this.action('Choose Line Chart from the viewers list', waitForElementClick(lineChartEl as HTMLElement), lineChartEl,
       'Now, choose the Line Chart viewer from the list.' +
       'By doing so, you\'ll be able to visualize the aggregation results in a line chart format.' +
@@ -139,9 +139,9 @@ export class AggregationTutorial extends Tutorial {
 
     this.title('History');
 
-    const serializedParams = '[{"#type":"GroupAggregation","aggType":"key","colName":"RACE"},' +
+    const serializedParams = ('[{"#type":"GroupAggregation","aggType":"key","colName":"RACE"},' +
       '{"#type":"GroupAggregation","aggType":"key","colName":"SEX"},{"#type":"GroupAggregation",' +
-      '"aggType":"pivot","colName":"DIS_POP"},{"#type":"GroupAggregation","aggType":"med","colName":"WEIGHT"}]';
+      '"aggType":"pivot","colName":"DIS_POP"},{"#type":"GroupAggregation","aggType":"med","colName":"WEIGHT"}]').toLowerCase();
 
     const historyStr = window.localStorage['grok-aggregation-history'];
     const initialParamsLen = historyStr ? JSON.parse(historyStr).length : 0;
@@ -152,7 +152,7 @@ export class AggregationTutorial extends Tutorial {
           return false;
         const history = JSON.parse(historyStr);
         return history.length > initialParamsLen &&
-          JSON.stringify(history[history.length - 1]) === serializedParams;
+          JSON.stringify(history[history.length - 1]).toLowerCase() === serializedParams;
       })), $('i.grok-icon.fa-history.d4-command-bar-icon')[0],
       'Click on the history icon and select <b>Save parameters</b> from the menu. Note that parameters are ' +
       'also saved automatically when you click "OK" to add the aggregated dataframe to the workspace. This ' +

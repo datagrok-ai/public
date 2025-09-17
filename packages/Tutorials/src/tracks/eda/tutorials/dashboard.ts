@@ -15,7 +15,7 @@ export class DashboardTutorial extends Tutorial {
     return 'Creation of interactive dashboards';
   }
   get steps(): number {
-    return 28;
+    return 27;
   }
 
   demoTable: string = '';
@@ -26,8 +26,12 @@ export class DashboardTutorial extends Tutorial {
     grok.shell.windows.showToolbox = true;
     this.showBrowse();
     const databasesNode = grok.shell.browsePanel.mainTree.children.find((child) => child.text === 'Databases') as DG.TreeViewGroup;
-    if (databasesNode)
+    if (databasesNode) {
       databasesNode.expanded = true;
+      const postgresNode = databasesNode.children.find((child) => child.text === 'Postgres') as DG.TreeViewGroup;
+      if (postgresNode)
+        postgresNode.expanded = true;
+    }
     this.header.textContent = this.name;
     this.describe('In this tutorial, we will learn how to query data and visualize the results.');
 
@@ -57,9 +61,10 @@ export class DashboardTutorial extends Tutorial {
     await this.dlgInputAction(dlg, 'Set "Password" to "KKfIh6ooS7vjzHYrNiRrderyz3KUyglrhSJF"', 'Password', 'KKfIh6ooS7vjzHYrNiRrderyz3KUyglrhSJF');
     await this.action('Click "OK"', dlg.onClose, $(dlg.root).find('button.ui-btn.ui-btn-ok')[0]);
 
+    const starbucksNodes = $(providerRoot).find('div.d4-tree-view-group-label').filter((idx, el) =>
+      el.textContent === 'Starbucks');
     const dqv = await this.openViewByType(`Create a data query to the "${connectionName}" data connection`,
-      'DataQueryView', $(providerRoot).find('div.d4-tree-view-group-label').filter((idx, el) =>
-        el.textContent === connectionName)[0],
+      'DataQueryView', starbucksNodes[starbucksNodes.length - 1],
       `Open the context menu on Postgres | ${connectionName} and click "New Query..."`);
 
     // UI generation delay
@@ -107,6 +112,7 @@ export class DashboardTutorial extends Tutorial {
 
     this.title('Create a dashboard');
 
+    this.showToolbox();
     await this.openPlot('bar chart', (x) => x.type === DG.VIEWER.BAR_CHART);
 
     const projectPaneHints = [
@@ -123,14 +129,14 @@ export class DashboardTutorial extends Tutorial {
       (<HTMLInputElement>$(projectDlg.root).find('.ui-input-editor#name')[0])?.value)),
       projectNameHint);
 
-    await this.action('Enable Data sync', new Observable((subscriber: any) => {
-      $(projectDlg.root).find('.ui-input-switch').one('click', () => subscriber.next(true));
-    }), $(projectDlg.root).find('.ui-input-switch')[1]);
+    // await this.action('Enable Data sync', new Observable((subscriber: any) => {
+    //   $(projectDlg.root).find('.ui-input-switch').one('click', () => subscriber.next(true));
+    // }), $(projectDlg.root).find('.ui-input-switch')[1]);
 
     const sharingDescription = 'You can share a newly created project with other users of the platform. Also, ' +
       'there is a link your project will be available at. Copy it, if you prefer this way of sharing.';
     const shareDlg = await this.openDialog('Click "OK"', `Share ${projectName}`,
-      $(projectDlg.root).find('button.ui-btn.ui-btn-ok')[0]);
+      $(projectDlg.root).find('button.ui-btn.ui-btn-ok')[1]);
     await this.action('Skip the sharing step', shareDlg.onClose, null, sharingDescription);
 
     const closeProjectDescription = 'You can close the project by right-clicking on the sidebar and clicking "Close all"';
@@ -143,9 +149,11 @@ export class DashboardTutorial extends Tutorial {
 
     await this.action('Find and open your project',
       grok.events.onProjectOpened.pipe(filter((p: DG.Project) => p.friendlyName === projectName)));
+    this.showToolbox();
+    await delay(1000);
 
-    await this.textInpAction($('.d4-toolbox')[0]!, 'Set State to LA', 'State', 'LA');
+    await this.textInpAction($('.d4-toolbox')[1]!, 'Set State to LA', 'State', 'LA');
 
-    await this.buttonClickAction($('.d4-toolbox')[0]!, 'Click REFRESH button', 'REFRESH');
+    await this.buttonClickAction($('.d4-toolbox')[1]!, 'Click REFRESH button', 'REFRESH');
   }
 }
