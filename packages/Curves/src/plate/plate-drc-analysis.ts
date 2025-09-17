@@ -9,7 +9,7 @@ import {IPlateWellFilter, Plate, randomizeTableId} from './plate';
 import {FIT_FUNCTION_4PL_REGRESSION, FitCurve, FitMarkerType, IFitChartData, IFitPoint} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {FitConstants} from '../fit/const';
 import {FitCellOutlierToggleArgs, FitChartCellRenderer, setOutlier} from '../fit/fit-renderer';
-import {savePlate} from '../plates/plates-crud';
+import {savePlate, saveDrcAnalysisResults} from '../plates/plates-crud';
 import {BaseAnalysisView} from './base-analysis-view';
 
 
@@ -303,7 +303,7 @@ export class PlateDrcAnalysis {
     }
     return pw;
   }
-  // Replace your current createAnalysisViewWithMapping method
+
   static createAnalysisViewWithMapping(
     plate: Plate,
     currentMappings: Map<string, string>,
@@ -331,6 +331,7 @@ export class PlateDrcAnalysis {
 
     return analysisView.getRoot();
   }
+
 
   static createCurvesGrid(
     plate: Plate,
@@ -540,7 +541,46 @@ export class PlateDrcAnalysis {
 
     plateWidget.registerAnalysisCoordinator(coordinator);
 
-    const container = ui.div([curvesGrid.root], 'drc-grid-container');
+
+    const saveButton = ui.button('SAVE RESULTS', async () => {
+    // Defensively check for the plate ID again.
+      if (!plate.id) {
+        grok.shell.warning('Please use the main "CREATE" button to save the plate before saving analysis results.');
+        return;
+      }
+
+      const pi = DG.TaskBarProgressIndicator.create('Saving DRC results...');
+      try {
+      // The results dataframe is 'df' which was created earlier in this function
+        const resultsDf = df;
+
+        // The analysis parameters are in 'actOptions'
+        const analysisParams = {
+          roleName: actOptions.roleName,
+          concentrationName: actOptions.concentrationName,
+          valueName: actOptions.valueName,
+          normalize: actOptions.normalize,
+        };
+
+        const roleColumnName = actOptions.roleName;
+
+        await saveDrcAnalysisResults(plate, resultsDf, analysisParams, roleColumnName);
+      } catch (e: any) {
+      // Improved error logging
+        console.error('Save DRC Results failed:', e);
+        grok.shell.error(`Failed to save DRC results: ${e?.message ?? e}`);
+      } finally {
+        pi.close();
+      }
+    });
+    saveButton.style.marginTop = '8px';
+
+    // 2. Create the main container for the grid and the button
+    const container = ui.divV([
+      curvesGrid.root,
+      ui.div([saveButton], {style: {display: 'flex', justifyContent: 'flex-end', paddingRight: '4px'}})
+    ], 'drc-grid-container');
+
     container.style.width = '100%';
     container.style.height = '100%';
     container.style.display = 'flex';
@@ -549,6 +589,7 @@ export class PlateDrcAnalysis {
     curvesGrid.root.style.width = '100%';
     curvesGrid.root.style.flexGrow = '1';
 
+    // 3. Return the new container
     return container;
   }
 }

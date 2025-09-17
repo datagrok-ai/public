@@ -104,6 +104,7 @@ WHERE p.type = 'string';
 -- end
 
 
+
 -- name: createProperty
 -- connection: Curves:plates
 -- input: string propertyName
@@ -113,11 +114,13 @@ WHERE p.type = 'string';
 -- input: string choices { nullable: true }
 -- input: double min { nullable: true }
 -- input: double max { nullable: true }
+-- input: int originPlateId { nullable: true }
 -- output: int propertyId
-INSERT INTO plates.properties(name, type, template_id, scope, choices, min, max)
-VALUES(@propertyName, @valueType, @templateId, @scope, @choices, @min, @max)
+INSERT INTO plates.properties(name, type, template_id, scope, choices, min, max, origin_plate_id)
+VALUES(@propertyName, @valueType, @templateId, @scope, @choices, @min, @max, @originPlateId)
 RETURNING id;
 -- end
+
 
 
 -- name: createTemplate
@@ -158,4 +161,35 @@ WHERE template_id = @templateId;
 -- input: string barcode
 -- output: dataframe result
 SELECT * FROM plates.plates WHERE barcode = @barcode;
+-- end
+
+
+-- name: createAnalysisRun
+-- connection: Curves:plates
+-- input: int plateId
+-- input: string analysisName
+-- input: string parameters
+-- output: int runId
+INSERT INTO plates.analysis_runs(plate_id, analysis_name, parameters)
+VALUES (@plateId, @analysisName, CAST(@parameters AS jsonb))
+RETURNING id;
+-- end
+
+
+-- name: saveCurveResult
+-- connection: Curves:plates
+-- input: int runId
+-- input: string seriesName {nullable: true}
+-- input: string curveJson
+-- input: double ic50 {nullable: true}
+-- input: double hillSlope {nullable: true}
+-- input: double rSquared {nullable: true}
+-- input: double minValue {nullable: true}
+-- input: double maxValue {nullable: true}
+-- input: double auc {nullable: true}
+INSERT INTO plates.analysis_results_curves(
+    analysis_run_id, series_name, curve_json, ic50, hill_slope, r_squared, min_value, max_value, auc
+) VALUES (
+    @runId, @seriesName, CAST(@curveJson AS jsonb), @ic50, @hillSlope, @rSquared, @minValue, @maxValue, @auc
+);
 -- end

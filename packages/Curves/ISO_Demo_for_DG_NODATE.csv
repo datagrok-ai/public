@@ -1,0 +1,1549 @@
+Iso Assay ID,CRO Experiment ID,Project,Assay Format,Target,Compound CRO ID,Technical Duplicate ID,Library ID,Iso Feeder Plate Barcode,Original Supplier Batch/Lot#,Vial Barcode,Iso Feeder Plate Well Position,Destination Plate Barcode,Plate Number,Well Position,Robust Inhibition (%),Concentration (M),Signal Emission,"Automatic Data Point Exclusion ('Excluded', NA)","Manual Data Point Exclusion ('Excluded', NA)",Sample Type,Interference Detected (T/F),Comment,SMILES,Catalogue Number,Compound Iso ID
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,A1,99.95,0,133120,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,A2,42.36,1e-05,1078680,,,TEST,,,,,compound 1
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,A3,62.99,3.0003000300030004e-06,739920,,,TEST,,,,,compound 1
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,A4,49.86,1.0001000100010001e-06,955560,,,TEST,,,,,compound 1
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,A5,21.760000000000005,3.000600090012001e-07,1416880,,,TEST,,,,,compound 1
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,A6,5.140000000000001,1.0002000300040004e-07,1689840,,,TEST,,,,,compound 1
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,A7,-8.69,0,1916800,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,A8,-1.92,3.000900180030004e-08,1805720,,,TEST,,,,,compound 1
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,A9,-5.71,1.0003000600100013e-08,1868000,,,TEST,,,,,compound 1
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,A10,-7.47,3.00120030006001e-09,1896800,,,TEST,,,,,compound 1
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,A11,-4.65,1.0004001000200033e-09,1850600,,,TEST,,,,,compound 1
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,A12,19.439999999999998,3.0015004501050203e-10,1455080,,,TEST,,,,,compound 1
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,B1,99.74,0,136520,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,B2,75.58,1e-05,533320,,,TEST,,,,,compound 2
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,B3,73.84,3.0003000300030004e-06,561880,,,TEST,,,,,compound 2
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,B4,52.33,1.0001000100010001e-06,914960,,,TEST,,,,,compound 2
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,B5,0.3299999999999983,3.000600090012001e-07,1768760,,,TEST,,,,,compound 2
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,B6,3.3799999999999955,1.0002000300040004e-07,1718760,,,TEST,,,,,compound 2
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,B7,-3.74,0,1835600,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,B8,-6.48,3.000900180030004e-08,1880520,,,TEST,,,,,compound 2
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,B9,-2.78,1.0003000600100013e-08,1819880,,,TEST,,,,,compound 2
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,B10,-6.98,3.00120030006001e-09,1888760,,,TEST,,,,,compound 2
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,B11,-9.09,1.0004001000200033e-09,1923440,,,TEST,,,,,compound 2
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,B12,9.650000000000006,3.0015004501050203e-10,1615760,,,TEST,,,,,compound 2
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,C1,100.57,0,122960,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,C2,86.56,1e-05,353000,,,TEST,,,,,compound 3
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,C3,64.4,3.0003000300030004e-06,716880,,,TEST,,,,,compound 3
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,C4,38.45,1.0001000100010001e-06,1142960,,,TEST,,,,,compound 3
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,C5,15.170000000000002,3.000600090012001e-07,1525040,,,TEST,,,,,compound 3
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,C6,-0.57,1.0002000300040004e-07,1783520,,,TEST,,,,,compound 3
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,C7,-7.71,0,1900800,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,C8,-6.14,3.000900180030004e-08,1874960,,,TEST,,,,,compound 3
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,C9,-6.24,1.0003000600100013e-08,1876560,,,TEST,,,,,compound 3
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,C10,-3.85,3.00120030006001e-09,1837320,,,TEST,,,,,compound 3
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,C11,-3.18,1.0004001000200033e-09,1826400,,,TEST,,,,,compound 3
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,C12,14.129999999999995,3.0015004501050203e-10,1542240,,,TEST,,,,,compound 3
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,D1,100.34,0,126680,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,D2,100.14,1e-05,130000,,,TEST,,,,,compound 4
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,D3,99.88,3.0003000300030004e-06,134280,,,TEST,,,,,compound 4
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,D4,99.48,1.0001000100010001e-06,140800,,,TEST,,,,,compound 4
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,D5,99.52,3.000600090012001e-07,140160,,,TEST,,,,,compound 4
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,D6,98.25,1.0002000300040004e-07,161080,,,TEST,,,,,compound 4
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,D7,-1.82,0,1804040,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,D8,97.03,3.000900180030004e-08,181040,,,TEST,,,,,compound 4
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,D9,97.67,1.0003000600100013e-08,170560,,,TEST,,,,,compound 4
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,D10,92.65,3.00120030006001e-09,252960,,,TEST,,,,,compound 4
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,D11,63.46,1.0004001000200033e-09,732240,,,TEST,,,,,compound 4
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,D12,37.05,3.0015004501050203e-10,1165840,,,TEST,,,,,compound 4
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,E1,100.03,0,131840,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,E2,99.95,1e-05,133120,,,TEST,,,,,compound 5
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,E3,99.78,3.0003000300030004e-06,135920,,,TEST,,,,,compound 5
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,E4,99.05,1.0001000100010001e-06,147920,,,TEST,,,,,compound 5
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,E5,97.17,3.000600090012001e-07,178720,,,TEST,,,,,compound 5
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,E6,93.38,1.0002000300040004e-07,240960,,,TEST,,,,,compound 5
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,E7,3.3599999999999994,0,1719000,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,E8,80.25,3.000900180030004e-08,456560,,,TEST,,,,,compound 5
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,E9,60.53,1.0003000600100013e-08,780440,,,TEST,,,,,compound 5
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,E10,33.61,3.00120030006001e-09,1222400,,,TEST,,,,,compound 5
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,E11,16.769999999999996,1.0004001000200033e-09,1498800,,,TEST,,,,,compound 5
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,E12,27.840000000000003,3.0015004501050203e-10,1317080,,,TEST,,,,,compound 5
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,F1,100.06,0,131400,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,F2,100.33,1e-05,126960,,,TEST,,,,,compound 6
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,F3,99.83,3.0003000300030004e-06,135080,,,TEST,,,,,compound 6
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,F4,99.57,1.0001000100010001e-06,139400,,,TEST,,,,,compound 6
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,F5,99.21,3.000600090012001e-07,145320,,,TEST,,,,,compound 6
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,F6,98.73,1.0002000300040004e-07,153160,,,TEST,,,,,compound 6
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,F7,1.8199999999999932,0,1744320,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,F8,96.3,3.000900180030004e-08,193080,,,TEST,,,,,compound 6
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,F9,94.39,1.0003000600100013e-08,224400,,,TEST,,,,,compound 6
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,F10,79.93,3.00120030006001e-09,461760,,,TEST,,,,,compound 6
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,F11,51.63,1.0004001000200033e-09,926560,,,TEST,,,,,compound 6
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,F12,39.1,3.0015004501050203e-10,1132160,,,TEST,,,,,compound 6
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,G1,99.97,0,132800,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,G2,100.41,1e-05,125520,,,TEST,,,,,compound 7
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,G3,99.48,3.0003000300030004e-06,140840,,,TEST,,,,,compound 7
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,G4,99.02,1.0001000100010001e-06,148440,,,TEST,,,,,compound 7
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,G5,98.05,3.000600090012001e-07,164280,,,TEST,,,,,compound 7
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,G6,91.77,1.0002000300040004e-07,267520,,,TEST,,,,,compound 7
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,G7,4.510000000000005,0,1700160,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,G8,79.81,3.000900180030004e-08,463760,,,TEST,,,,,compound 7
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,G9,56.72,1.0003000600100013e-08,842960,,,TEST,,,,,compound 7
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,G10,25.97,3.00120030006001e-09,1347760,,,TEST,,,,,compound 7
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,G11,14.930000000000007,1.0004001000200033e-09,1529120,,,TEST,,,,,compound 7
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,G12,20.430000000000007,3.0015004501050203e-10,1438680,,,TEST,,,,,compound 7
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,H1,99.93,0,133400,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,H2,100.53,1e-05,123560,,,TEST,,,,,compound 8
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,H3,100.38,3.0003000300030004e-06,126040,,,TEST,,,,,compound 8
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,H4,98.61,1.0001000100010001e-06,155120,,,TEST,,,,,compound 8
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,H5,95.89,3.000600090012001e-07,199840,,,TEST,,,,,compound 8
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,H6,88.58,1.0002000300040004e-07,319800,,,TEST,,,,,compound 8
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,H7,5.590000000000003,0,1682360,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,H8,72.31,3.000900180030004e-08,586960,,,TEST,,,,,compound 8
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,H9,50.85,1.0003000600100013e-08,939360,,,TEST,,,,,compound 8
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,H10,31.120000000000005,3.00120030006001e-09,1263160,,,TEST,,,,,compound 8
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,H11,18.069999999999993,1.0004001000200033e-09,1477520,,,TEST,,,,,compound 8
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-01,1,H12,22.28,3.0015004501050203e-10,1408320,,,TEST,,,,,compound 8
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,A1,99.25,0,150920,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,A2,40.78,1e-05,1167240,,,TEST,,,,,compound 1
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,A3,55.7,3.0003000300030004e-06,907920,,,TEST,,,,,compound 1
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,A4,41.68,1.0001000100010001e-06,1151680,,,TEST,,,,,compound 1
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,A5,15.560000000000002,3.000600090012001e-07,1605680,,,TEST,,,,,compound 1
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,A6,2.280000000000001,1.0002000300040004e-07,1836600,,,TEST,,,,,compound 1
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,A7,-4.56,0,1955400,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,A8,-6.94,3.000900180030004e-08,1996800,,,TEST,,,,,compound 1
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,A9,-6.66,1.0003000600100013e-08,1991920,,,TEST,,,,,compound 1
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,A10,-4.08,3.00120030006001e-09,1947040,,,TEST,,,,,compound 1
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,A11,-10.47,1.0004001000200033e-09,2058160,,,TEST,,,,,compound 1
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,A12,-6.18,3.0015004501050203e-10,1983600,,,TEST,,,,,compound 1
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,B1,99.71,0,142920,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,B2,71.97,1e-05,625160,,,TEST,,,,,compound 2
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,B3,73.38,3.0003000300030004e-06,600600,,,TEST,,,,,compound 2
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,B4,41.45,1.0001000100010001e-06,1155680,,,TEST,,,,,compound 2
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,B5,12.370000000000005,3.000600090012001e-07,1661080,,,TEST,,,,,compound 2
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,B6,0.7000000000000028,1.0002000300040004e-07,1864000,,,TEST,,,,,compound 2
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,B7,-3.98,0,1945360,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,B8,-7.32,3.000900180030004e-08,2003440,,,TEST,,,,,compound 2
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,B9,-7.32,1.0003000600100013e-08,2003360,,,TEST,,,,,compound 2
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,B10,-4.29,3.00120030006001e-09,1950800,,,TEST,,,,,compound 2
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,B11,-7.11,1.0004001000200033e-09,1999760,,,TEST,,,,,compound 2
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,B12,-2.42,3.0015004501050203e-10,1918280,,,TEST,,,,,compound 2
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,C1,100.46,0,129920,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,C2,84.7,1e-05,403840,,,TEST,,,,,compound 3
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,C3,61.1,3.0003000300030004e-06,814160,,,TEST,,,,,compound 3
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,C4,34.06999999999999,1.0001000100010001e-06,1283920,,,TEST,,,,,compound 3
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,C5,14.239999999999995,3.000600090012001e-07,1628640,,,TEST,,,,,compound 3
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,C6,4.1299999999999955,1.0002000300040004e-07,1804400,,,TEST,,,,,compound 3
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,C7,-2.75,0,1923880,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,C8,-5.09,3.000900180030004e-08,1964560,,,TEST,,,,,compound 3
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,C9,-2.06,1.0003000600100013e-08,1911960,,,TEST,,,,,compound 3
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,C10,-1.35,3.00120030006001e-09,1899600,,,TEST,,,,,compound 3
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,C11,-1.89,1.0004001000200033e-09,1908960,,,TEST,,,,,compound 3
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,C12,-0.93,3.0015004501050203e-10,1892240,,,TEST,,,,,compound 3
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,D1,100.15,0,135360,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,D2,99.49,1e-05,146720,,,TEST,,,,,compound 4
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,D3,99.67,3.0003000300030004e-06,143760,,,TEST,,,,,compound 4
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,D4,99.34,1.0001000100010001e-06,149400,,,TEST,,,,,compound 4
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,D5,99.28,3.000600090012001e-07,150440,,,TEST,,,,,compound 4
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,D6,97.93,1.0002000300040004e-07,173960,,,TEST,,,,,compound 4
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,D7,-2.62,0,1921720,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,D8,98.04,3.000900180030004e-08,172080,,,TEST,,,,,compound 4
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,D9,97.05,1.0003000600100013e-08,189160,,,TEST,,,,,compound 4
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,D10,89.57,3.00120030006001e-09,319160,,,TEST,,,,,compound 4
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,D11,52.73,1.0004001000200033e-09,959560,,,TEST,,,,,compound 4
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,D12,14.900000000000006,3.0015004501050203e-10,1617120,,,TEST,,,,,compound 4
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,E1,99.55,0,145840,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,E2,99.92,1e-05,139320,,,TEST,,,,,compound 5
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,E3,98.86,3.0003000300030004e-06,157760,,,TEST,,,,,compound 5
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,E4,98.64,1.0001000100010001e-06,161560,,,TEST,,,,,compound 5
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,E5,97.19,3.000600090012001e-07,186800,,,TEST,,,,,compound 5
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,E6,93.03,1.0002000300040004e-07,259160,,,TEST,,,,,compound 5
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,E7,3.1500000000000057,0,1821320,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,E8,77.47,3.000900180030004e-08,529640,,,TEST,,,,,compound 5
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,E9,56.31,1.0003000600100013e-08,897400,,,TEST,,,,,compound 5
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,E10,29.33,3.00120030006001e-09,1366360,,,TEST,,,,,compound 5
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,E11,12.780000000000001,1.0004001000200033e-09,1653960,,,TEST,,,,,compound 5
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,E12,7.090000000000003,3.0015004501050203e-10,1752840,,,TEST,,,,,compound 5
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,F1,99.85,0,140520,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,F2,99.8,1e-05,141440,,,TEST,,,,,compound 6
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,F3,100.02,3.0003000300030004e-06,137560,,,TEST,,,,,compound 6
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,F4,99.26,1.0001000100010001e-06,150800,,,TEST,,,,,compound 6
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,F5,98.65,3.000600090012001e-07,161400,,,TEST,,,,,compound 6
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,F6,98.17,1.0002000300040004e-07,169800,,,TEST,,,,,compound 6
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,F7,2.6200000000000045,0,1830600,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,F8,96,3.000900180030004e-08,207400,,,TEST,,,,,compound 6
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,F9,91.09,1.0003000600100013e-08,292800,,,TEST,,,,,compound 6
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,F10,74.95,3.00120030006001e-09,573280,,,TEST,,,,,compound 6
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,F11,44.58,1.0004001000200033e-09,1101320,,,TEST,,,,,compound 6
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,F12,19.010000000000005,3.0015004501050203e-10,1545640,,,TEST,,,,,compound 6
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,G1,100.5,0,129280,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,G2,99.91,1e-05,139440,,,TEST,,,,,compound 7
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,G3,99.47,3.0003000300030004e-06,147080,,,TEST,,,,,compound 7
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,G4,98.92,1.0001000100010001e-06,156640,,,TEST,,,,,compound 7
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,G5,97.6,3.000600090012001e-07,179680,,,TEST,,,,,compound 7
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,G6,89.86,1.0002000300040004e-07,314280,,,TEST,,,,,compound 7
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,G7,3.4000000000000057,0,1817120,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,G8,76.27,3.000900180030004e-08,550360,,,TEST,,,,,compound 7
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,G9,48.85,1.0003000600100013e-08,1027080,,,TEST,,,,,compound 7
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,G10,22.209999999999994,3.00120030006001e-09,1490040,,,TEST,,,,,compound 7
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,G11,10.780000000000001,1.0004001000200033e-09,1688800,,,TEST,,,,,compound 7
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,G12,5.840000000000003,3.0015004501050203e-10,1774640,,,TEST,,,,,compound 7
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,H1,100.75,0,124960,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,H2,99.42,1e-05,147960,,,TEST,,,,,compound 8
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,H3,99,3.0003000300030004e-06,155320,,,TEST,,,,,compound 8
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,H4,98.07,1.0001000100010001e-06,171480,,,TEST,,,,,compound 8
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,H5,93.89,3.000600090012001e-07,244120,,,TEST,,,,,compound 8
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,H6,85.95,1.0002000300040004e-07,382080,,,TEST,,,,,compound 8
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,H7,8.370000000000005,0,1730720,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,H8,67.65,3.000900180030004e-08,700320,,,TEST,,,,,compound 8
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,H9,49.12,1.0003000600100013e-08,1022400,,,TEST,,,,,compound 8
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,H10,30.909999999999997,3.00120030006001e-09,1338920,,,TEST,,,,,compound 8
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,H11,17.72,1.0004001000200033e-09,1568080,,,TEST,,,,,compound 8
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-01,2,H12,13.11,3.0015004501050203e-10,1648200,,,TEST,,,,,compound 8
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,A1,98.95,0,165800,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,A2,97.41,1e-05,191600,,,TEST,,,,,compound 9
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,A3,97.43,3.0003000300030004e-06,191280,,,TEST,,,,,compound 9
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,A4,94.09,1.0001000100010001e-06,247440,,,TEST,,,,,compound 9
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,A5,87.56,3.000600090012001e-07,357080,,,TEST,,,,,compound 9
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,A6,70.99,1.0002000300040004e-07,635400,,,TEST,,,,,compound 9
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,A7,-8.41,0,1969280,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,A8,37.98,3.000900180030004e-08,1189920,,,TEST,,,,,compound 9
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,A9,9.180000000000007,1.0003000600100013e-08,1673760,,,TEST,,,,,compound 9
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,A10,-1.7,3.00120030006001e-09,1856520,,,TEST,,,,,compound 9
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,A11,-7.3,1.0004001000200033e-09,1950680,,,TEST,,,,,compound 9
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,A12,-1.97,3.0015004501050203e-10,1861000,,,TEST,,,,,compound 9
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,B1,99.82,0,151200,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,B2,97.59,1e-05,188560,,,TEST,,,,,compound 10
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,B3,94.88,3.0003000300030004e-06,234120,,,TEST,,,,,compound 10
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,B4,87.78,1.0001000100010001e-06,353360,,,TEST,,,,,compound 10
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,B5,66.22,3.000600090012001e-07,715560,,,TEST,,,,,compound 10
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,B6,35.45,1.0002000300040004e-07,1232400,,,TEST,,,,,compound 10
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,B7,-5.11,0,1913760,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,B8,4.6299999999999955,3.000900180030004e-08,1750280,,,TEST,,,,,compound 10
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,B9,-7.42,1.0003000600100013e-08,1952560,,,TEST,,,,,compound 10
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,B10,-8.93,3.00120030006001e-09,1977960,,,TEST,,,,,compound 10
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,B11,-10.7,1.0004001000200033e-09,2007800,,,TEST,,,,,compound 10
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,B12,0.8700000000000045,3.0015004501050203e-10,1813320,,,TEST,,,,,compound 10
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,C1,100.11,0,146280,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,C2,99.59,1e-05,155040,,,TEST,,,,,compound 11
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,C3,99,3.0003000300030004e-06,164920,,,TEST,,,,,compound 11
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,C4,98.19,1.0001000100010001e-06,178560,,,TEST,,,,,compound 11
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,C5,98.24,3.000600090012001e-07,177640,,,TEST,,,,,compound 11
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,C6,96.14,1.0002000300040004e-07,213040,,,TEST,,,,,compound 11
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,C7,1.0799999999999983,0,1809800,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,C8,96.04,3.000900180030004e-08,214640,,,TEST,,,,,compound 11
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,C9,91.06,1.0003000600100013e-08,298360,,,TEST,,,,,compound 11
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,C10,68.8,3.00120030006001e-09,672200,,,TEST,,,,,compound 11
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,C11,35.599999999999994,1.0004001000200033e-09,1229920,,,TEST,,,,,compound 11
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,C12,19.08,3.0015004501050203e-10,1507520,,,TEST,,,,,compound 11
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,D1,100.17,0,145360,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,D2,100.59,1e-05,138160,,,TEST,,,,,compound 12
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,D3,99.47,3.0003000300030004e-06,156960,,,TEST,,,,,compound 12
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,D4,99.43,1.0001000100010001e-06,157640,,,TEST,,,,,compound 12
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,D5,98.91,3.000600090012001e-07,166520,,,TEST,,,,,compound 12
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,D6,96.51,1.0002000300040004e-07,206760,,,TEST,,,,,compound 12
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,D7,-2.82,0,1875280,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,D8,92.54,3.000900180030004e-08,273440,,,TEST,,,,,compound 12
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,D9,83.62,1.0003000600100013e-08,423320,,,TEST,,,,,compound 12
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,D10,53.98,3.00120030006001e-09,921280,,,TEST,,,,,compound 12
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,D11,21.75,1.0004001000200033e-09,1462640,,,TEST,,,,,compound 12
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,D12,11.299999999999997,3.0015004501050203e-10,1638160,,,TEST,,,,,compound 12
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,E1,99.84,0,150880,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,E2,99.23,1e-05,161000,,,TEST,,,,,compound 13
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,E3,99.51,3.0003000300030004e-06,156360,,,TEST,,,,,compound 13
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,E4,99.43,1.0001000100010001e-06,157680,,,TEST,,,,,compound 13
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,E5,99.14,3.000600090012001e-07,162600,,,TEST,,,,,compound 13
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,E6,97.69,1.0002000300040004e-07,186920,,,TEST,,,,,compound 13
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,E7,-1.08,0,1846160,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,E8,97.75,3.000900180030004e-08,185880,,,TEST,,,,,compound 13
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,E9,97.25,1.0003000600100013e-08,194360,,,TEST,,,,,compound 13
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,E10,93.32,3.00120030006001e-09,260360,,,TEST,,,,,compound 13
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,E11,79.84,1.0004001000200033e-09,486760,,,TEST,,,,,compound 13
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,E12,47.23,3.0015004501050203e-10,1034520,,,TEST,,,,,compound 13
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,F1,99.95,0,149040,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,F2,98.77,1e-05,168800,,,TEST,,,,,compound 14
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,F3,95.83,3.0003000300030004e-06,218120,,,TEST,,,,,compound 14
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,F4,88.32,1.0001000100010001e-06,344400,,,TEST,,,,,compound 14
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,F5,70.03,3.000600090012001e-07,651640,,,TEST,,,,,compound 14
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,F6,41.35,1.0002000300040004e-07,1133320,,,TEST,,,,,compound 14
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,F7,1.4099999999999966,0,1804360,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,F8,17.799999999999997,3.000900180030004e-08,1528920,,,TEST,,,,,compound 14
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,F9,6.849999999999994,1.0003000600100013e-08,1712960,,,TEST,,,,,compound 14
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,F10,4.780000000000001,3.00120030006001e-09,1747680,,,TEST,,,,,compound 14
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,F11,0.6099999999999994,1.0004001000200033e-09,1817680,,,TEST,,,,,compound 14
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,F12,6.640000000000001,3.0015004501050203e-10,1716360,,,TEST,,,,,compound 14
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,G1,100.76,0,135320,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,G2,94.79,1e-05,235720,,,TEST,,,,,compound 15
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,G3,81.78999999999999,3.0003000300030004e-06,454080,,,TEST,,,,,compound 15
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,G4,61.48,1.0001000100010001e-06,795240,,,TEST,,,,,compound 15
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,G5,33,3.000600090012001e-07,1273600,,,TEST,,,,,compound 15
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,G6,11.510000000000005,1.0002000300040004e-07,1634600,,,TEST,,,,,compound 15
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,G7,3.530000000000001,0,1768760,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,G8,9.959999999999994,3.000900180030004e-08,1660720,,,TEST,,,,,compound 15
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,G9,3.6599999999999966,1.0003000600100013e-08,1766440,,,TEST,,,,,compound 15
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,G10,4.3799999999999955,3.00120030006001e-09,1754440,,,TEST,,,,,compound 15
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,G11,3.989999999999995,1.0004001000200033e-09,1760880,,,TEST,,,,,compound 15
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,G12,9.810000000000002,3.0015004501050203e-10,1663240,,,TEST,,,,,compound 15
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,H1,100.05,0,147240,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,H2,100.41,1e-05,141280,,,TEST,,,,,compound 16
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,H3,99.68,3.0003000300030004e-06,153440,,,TEST,,,,,compound 16
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,H4,99.23,1.0001000100010001e-06,161000,,,TEST,,,,,compound 16
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,H5,98.65,3.000600090012001e-07,170760,,,TEST,,,,,compound 16
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,H6,97.41,1.0002000300040004e-07,191600,,,TEST,,,,,compound 16
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,H7,6.189999999999998,0,1723960,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,H8,96.95,3.000900180030004e-08,199320,,,TEST,,,,,compound 16
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,H9,93.67,1.0003000600100013e-08,254480,,,TEST,,,,,compound 16
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,H10,82.84,3.00120030006001e-09,436480,,,TEST,,,,,compound 16
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,H11,60.54,1.0004001000200033e-09,811040,,,TEST,,,,,compound 16
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-02,3,H12,31.769999999999996,3.0015004501050203e-10,1294320,,,TEST,,,,,compound 16
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,A1,99.97,0,151680,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,A2,98.73,1e-05,172160,,,TEST,,,,,compound 9
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,A3,96.85,3.0003000300030004e-06,203480,,,TEST,,,,,compound 9
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,A4,93.81,1.0001000100010001e-06,253880,,,TEST,,,,,compound 9
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,A5,86.36,3.000600090012001e-07,377720,,,TEST,,,,,compound 9
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,A6,64.14,1.0002000300040004e-07,746800,,,TEST,,,,,compound 9
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,A7,-10.61,0,1988680,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,A8,31.129999999999995,3.000900180030004e-08,1295240,,,TEST,,,,,compound 9
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,A9,5.3799999999999955,1.0003000600100013e-08,1722960,,,TEST,,,,,compound 9
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,A10,-5.47,3.00120030006001e-09,1903280,,,TEST,,,,,compound 9
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,A11,-9.78,1.0004001000200033e-09,1974840,,,TEST,,,,,compound 9
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,A12,-8.84,3.0015004501050203e-10,1959200,,,TEST,,,,,compound 9
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,B1,99.58,0,158040,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,B2,97.5,1e-05,192600,,,TEST,,,,,compound 10
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,B3,94.64,3.0003000300030004e-06,240080,,,TEST,,,,,compound 10
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,B4,83.64,1.0001000100010001e-06,422840,,,TEST,,,,,compound 10
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,B5,58.96,3.000600090012001e-07,832840,,,TEST,,,,,compound 10
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,B6,30.150000000000006,1.0002000300040004e-07,1311560,,,TEST,,,,,compound 10
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,B7,-6.34,0,1917800,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,B8,5.1299999999999955,3.000900180030004e-08,1727160,,,TEST,,,,,compound 10
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,B9,-2.93,1.0003000600100013e-08,1861040,,,TEST,,,,,compound 10
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,B10,-8.98,3.00120030006001e-09,1961600,,,TEST,,,,,compound 10
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,B11,-10.53,1.0004001000200033e-09,1987280,,,TEST,,,,,compound 10
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,B12,-8.82,3.0015004501050203e-10,1958960,,,TEST,,,,,compound 10
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,C1,99.04,0,167000,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,C2,99.74,1e-05,155440,,,TEST,,,,,compound 11
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,C3,99.5,3.0003000300030004e-06,159440,,,TEST,,,,,compound 11
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,C4,98.98,1.0001000100010001e-06,168040,,,TEST,,,,,compound 11
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,C5,98.93,3.000600090012001e-07,168880,,,TEST,,,,,compound 11
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,C6,95.94,1.0002000300040004e-07,218520,,,TEST,,,,,compound 11
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,C7,0.28000000000000114,0,1807720,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,C8,95.29,3.000900180030004e-08,229280,,,TEST,,,,,compound 11
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,C9,87.32,1.0003000600100013e-08,361720,,,TEST,,,,,compound 11
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,C10,62.48,3.00120030006001e-09,774440,,,TEST,,,,,compound 11
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,C11,26.569999999999993,1.0004001000200033e-09,1371040,,,TEST,,,,,compound 11
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,C12,8.450000000000003,3.0015004501050203e-10,1671960,,,TEST,,,,,compound 11
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,D1,100.03,0,150520,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,D2,99.63,1e-05,157320,,,TEST,,,,,compound 12
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,D3,100.14,3.0003000300030004e-06,148720,,,TEST,,,,,compound 12
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,D4,99.15,1.0001000100010001e-06,165280,,,TEST,,,,,compound 12
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,D5,97.94,3.000600090012001e-07,185320,,,TEST,,,,,compound 12
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,D6,96.83,1.0002000300040004e-07,203840,,,TEST,,,,,compound 12
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,D7,-3.33,0,1867680,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,D8,91.23,3.000900180030004e-08,296880,,,TEST,,,,,compound 12
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,D9,80.39,1.0003000600100013e-08,476960,,,TEST,,,,,compound 12
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,D10,50.5,3.00120030006001e-09,973520,,,TEST,,,,,compound 12
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,D11,22.590000000000003,1.0004001000200033e-09,1437080,,,TEST,,,,,compound 12
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,D12,2.3100000000000023,3.0015004501050203e-10,1774080,,,TEST,,,,,compound 12
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,E1,99.56,0,158400,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,E2,100.05,1e-05,150200,,,TEST,,,,,compound 13
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,E3,99.95,3.0003000300030004e-06,151960,,,TEST,,,,,compound 13
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,E4,99.95,1.0001000100010001e-06,151880,,,TEST,,,,,compound 13
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,E5,99.92,3.000600090012001e-07,152400,,,TEST,,,,,compound 13
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,E6,95.17,1.0002000300040004e-07,231320,,,TEST,,,,,compound 13
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,E7,-0.28,0,1817120,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,E8,97.95,3.000900180030004e-08,185120,,,TEST,,,,,compound 13
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,E9,96.84,1.0003000600100013e-08,203640,,,TEST,,,,,compound 13
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,E10,92.28,3.00120030006001e-09,279320,,,TEST,,,,,compound 13
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,E11,74.76,1.0004001000200033e-09,570400,,,TEST,,,,,compound 13
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,E12,33.39,3.0015004501050203e-10,1257680,,,TEST,,,,,compound 13
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,F1,100.57,0,141680,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,F2,99.08,1e-05,166320,,,TEST,,,,,compound 14
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,F3,94.72,3.0003000300030004e-06,238880,,,TEST,,,,,compound 14
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,F4,87.36,1.0001000100010001e-06,361160,,,TEST,,,,,compound 14
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,F5,64.15,3.000600090012001e-07,746680,,,TEST,,,,,compound 14
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,F6,34.05,1.0002000300040004e-07,1246680,,,TEST,,,,,compound 14
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,F7,0.6500000000000057,0,1801640,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,F8,14.5,3.000900180030004e-08,1571560,,,TEST,,,,,compound 14
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,F9,3.7099999999999937,1.0003000600100013e-08,1750800,,,TEST,,,,,compound 14
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,F10,-2.39,3.00120030006001e-09,1852120,,,TEST,,,,,compound 14
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,F11,-0.34,1.0004001000200033e-09,1818080,,,TEST,,,,,compound 14
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,F12,-1.75,3.0015004501050203e-10,1841440,,,TEST,,,,,compound 14
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,G1,101.06,0,133480,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,G2,93.59,1e-05,257600,,,TEST,,,,,compound 15
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,G3,79.06,3.0003000300030004e-06,499040,,,TEST,,,,,compound 15
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,G4,55.57,1.0001000100010001e-06,889200,,,TEST,,,,,compound 15
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,G5,30.269999999999996,3.000600090012001e-07,1309480,,,TEST,,,,,compound 15
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,G6,10.599999999999994,1.0002000300040004e-07,1636360,,,TEST,,,,,compound 15
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,G7,5.909999999999997,0,1714280,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,G8,1.7800000000000011,3.000900180030004e-08,1782920,,,TEST,,,,,compound 15
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,G9,-2.34,1.0003000600100013e-08,1851360,,,TEST,,,,,compound 15
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,G10,-1.86,3.00120030006001e-09,1843320,,,TEST,,,,,compound 15
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,G11,-1.48,1.0004001000200033e-09,1836960,,,TEST,,,,,compound 15
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,G12,-1.96,3.0015004501050203e-10,1845040,,,TEST,,,,,compound 15
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,H1,100.05,0,150280,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,H2,100.83,1e-05,137280,,,TEST,,,,,compound 16
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,H3,99.47,3.0003000300030004e-06,159840,,,TEST,,,,,compound 16
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,H4,99.24,1.0001000100010001e-06,163760,,,TEST,,,,,compound 16
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,H5,98.53,3.000600090012001e-07,175480,,,TEST,,,,,compound 16
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,H6,97.93,1.0002000300040004e-07,185480,,,TEST,,,,,compound 16
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,H7,5.390000000000001,0,1722920,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,H8,95.76,3.000900180030004e-08,221480,,,TEST,,,,,compound 16
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,H9,91.71000000000001,1.0003000600100013e-08,288800,,,TEST,,,,,compound 16
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,H10,76.42,3.00120030006001e-09,542840,,,TEST,,,,,compound 16
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,H11,52.09,1.0004001000200033e-09,947000,,,TEST,,,,,compound 16
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-02,4,H12,29.33,3.0015004501050203e-10,1325080,,,TEST,,,,,compound 16
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,A1,102.01,0,133080,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,A2,98.45,1e-05,184280,,,TEST,,,,,compound 17
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,A3,98.52,3.0003000300030004e-06,183320,,,TEST,,,,,compound 17
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,A4,97.68,1.0001000100010001e-06,195440,,,TEST,,,,,compound 17
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,A5,98.49,3.000600090012001e-07,183800,,,TEST,,,,,compound 17
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,A6,97.22,1.0002000300040004e-07,202000,,,TEST,,,,,compound 17
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,A7,-10.37,0,1749560,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,A8,95.39,3.000900180030004e-08,228320,,,TEST,,,,,compound 17
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,A9,89.73,1.0003000600100013e-08,309760,,,TEST,,,,,compound 17
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,A10,77.34,3.00120030006001e-09,487960,,,TEST,,,,,compound 17
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,A11,43.98,1.0004001000200033e-09,967840,,,TEST,,,,,compound 17
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,A12,32.709999999999994,3.0015004501050203e-10,1129880,,,TEST,,,,,compound 17
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,B1,100.04,0,161440,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,B2,65,1e-05,665440,,,TEST,,,,,compound 18
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,B3,26.480000000000004,3.0003000300030004e-06,1219520,,,TEST,,,,,compound 18
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,B4,13.060000000000002,1.0001000100010001e-06,1412520,,,TEST,,,,,compound 18
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,B5,1.0900000000000034,3.000600090012001e-07,1584640,,,TEST,,,,,compound 18
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,B6,-4.08,1.0002000300040004e-07,1659000,,,TEST,,,,,compound 18
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,B7,1.9599999999999937,0,1572120,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,B8,-3.05,3.000900180030004e-08,1644160,,,TEST,,,,,compound 18
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,B9,-2.57,1.0003000600100013e-08,1637320,,,TEST,,,,,compound 18
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,B10,-5.21,3.00120030006001e-09,1675240,,,TEST,,,,,compound 18
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,B11,-3.23,1.0004001000200033e-09,1646800,,,TEST,,,,,compound 18
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,B12,8.579999999999998,3.0015004501050203e-10,1476880,,,TEST,,,,,compound 18
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,C1,99.9,0,163520,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,C2,79.2,1e-05,461240,,,TEST,,,,,compound 19
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,C3,52.29,3.0003000300030004e-06,848240,,,TEST,,,,,compound 19
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,C4,24.730000000000004,1.0001000100010001e-06,1244680,,,TEST,,,,,compound 19
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,C5,7.099999999999994,3.000600090012001e-07,1498240,,,TEST,,,,,compound 19
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,C6,-1.71,1.0002000300040004e-07,1624880,,,TEST,,,,,compound 19
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,C7,-3.89,0,1656360,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,C8,-5.14,3.000900180030004e-08,1674320,,,TEST,,,,,compound 19
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,C9,-2.85,1.0003000600100013e-08,1641360,,,TEST,,,,,compound 19
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,C10,-3.91,3.00120030006001e-09,1656520,,,TEST,,,,,compound 19
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,C11,-3.35,1.0004001000200033e-09,1648520,,,TEST,,,,,compound 19
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,C12,7.3799999999999955,3.0015004501050203e-10,1494160,,,TEST,,,,,compound 19
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,D1,98.91,0,177760,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,D2,101.81,1e-05,136040,,,TEST,,,,,compound 20
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,D3,101.22,3.0003000300030004e-06,144480,,,TEST,,,,,compound 20
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,D4,101.45,1.0001000100010001e-06,141200,,,TEST,,,,,compound 20
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,D5,101.27,3.000600090012001e-07,143840,,,TEST,,,,,compound 20
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,D6,99.73,1.0002000300040004e-07,165920,,,TEST,,,,,compound 20
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,D7,-0.58,0,1608640,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,D8,100.56,3.000900180030004e-08,154000,,,TEST,,,,,compound 20
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,D9,99.54,1.0003000600100013e-08,168640,,,TEST,,,,,compound 20
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,D10,99.1,3.00120030006001e-09,175000,,,TEST,,,,,compound 20
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,D11,93.41,1.0004001000200033e-09,256840,,,TEST,,,,,compound 20
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,D12,54.94,3.0015004501050203e-10,810120,,,TEST,,,,,compound 20
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,E1,99.74,0,165760,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,E2,101.99,1e-05,133360,,,TEST,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,E3,101.11,3.0003000300030004e-06,146080,,,TEST,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,E4,101.82,1.0001000100010001e-06,135800,,,TEST,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,E5,100.92,3.000600090012001e-07,148760,,,TEST,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,E6,101.52,1.0002000300040004e-07,140160,,,TEST,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,E7,5.659999999999997,0,1518880,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,E8,99.67,3.000900180030004e-08,166720,,,TEST,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,E9,100.61,1.0003000600100013e-08,153280,,,TEST,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,E10,95.51,3.00120030006001e-09,226560,,,TEST,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,E11,56.72,1.0004001000200033e-09,784560,,,TEST,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,E12,17.799999999999997,3.0015004501050203e-10,1344280,,,TEST,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,F1,99.96,0,162640,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,F7,0.5799999999999983,0,1592040,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,G1,101.12,0,145920,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,G7,-1.12,0,1616520,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,H1,101.12,0,145960,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,1,,,,,,24263-006-03,5,H7,6.099999999999994,0,1512560,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,A1,99.13,0,187160,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,A2,102.3,1e-05,143960,,,TEST,,,,,compound 17
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,A3,101.33,3.0003000300030004e-06,157160,,,TEST,,,,,compound 17
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,A4,100.65,1.0001000100010001e-06,166400,,,TEST,,,,,compound 17
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,A5,101.13,3.000600090012001e-07,159880,,,TEST,,,,,compound 17
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,A6,99.29,1.0002000300040004e-07,185040,,,TEST,,,,,compound 17
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,A7,-4.21,0,1598440,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,A8,97.67,3.000900180030004e-08,207200,,,TEST,,,,,compound 17
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,A9,93.57,1.0003000600100013e-08,263160,,,TEST,,,,,compound 17
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,A10,79.28999999999999,3.00120030006001e-09,458160,,,TEST,,,,,compound 17
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,A11,43.48,1.0004001000200033e-09,947240,,,TEST,,,,,compound 17
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,A12,13.469999999999999,3.0015004501050203e-10,1357040,,,TEST,,,,,compound 17
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,B1,99.72,0,179120,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,B2,65.65,1e-05,644480,,,TEST,,,,,compound 18
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,B3,22.900000000000006,3.0003000300030004e-06,1228200,,,TEST,,,,,compound 18
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,B4,2.010000000000005,1.0001000100010001e-06,1513520,,,TEST,,,,,compound 18
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,B5,-5.23,3.000600090012001e-07,1612440,,,TEST,,,,,compound 18
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,B6,-13.5,1.0002000300040004e-07,1725320,,,TEST,,,,,compound 18
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,B7,-6.45,0,1629120,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,B8,-9.13,3.000900180030004e-08,1665720,,,TEST,,,,,compound 18
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,B9,-4.6,1.0003000600100013e-08,1603840,,,TEST,,,,,compound 18
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,B10,-3.15,3.00120030006001e-09,1583960,,,TEST,,,,,compound 18
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,B11,1.769999999999996,1.0004001000200033e-09,1516840,,,TEST,,,,,compound 18
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,B12,-7.4,3.0015004501050203e-10,1642040,,,TEST,,,,,compound 18
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,C1,99.78,0,178320,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,C2,78.78,1e-05,465120,,,TEST,,,,,compound 19
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,C3,46.14,3.0003000300030004e-06,910920,,,TEST,,,,,compound 19
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,C4,19.17,1.0001000100010001e-06,1279240,,,TEST,,,,,compound 19
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,C5,5.180000000000007,3.000600090012001e-07,1470280,,,TEST,,,,,compound 19
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,C6,-8.66,1.0002000300040004e-07,1659240,,,TEST,,,,,compound 19
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,C7,-1.53,0,1561840,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,C8,-2.83,3.000900180030004e-08,1579640,,,TEST,,,,,compound 19
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,C9,0.52,1.0003000600100013e-08,1533960,,,TEST,,,,,compound 19
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,C10,3.469999999999999,3.00120030006001e-09,1493640,,,TEST,,,,,compound 19
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,C11,-1.46,1.0004001000200033e-09,1560960,,,TEST,,,,,compound 19
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,C12,-2.42,3.0015004501050203e-10,1574080,,,TEST,,,,,compound 19
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,D1,100.22,0,172320,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,D2,102.9,1e-05,135760,,,TEST,,,,,compound 20
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,D3,102.43,3.0003000300030004e-06,142200,,,TEST,,,,,compound 20
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,D4,102.28,1.0001000100010001e-06,144160,,,TEST,,,,,compound 20
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,D5,103.1,3.000600090012001e-07,132960,,,TEST,,,,,compound 20
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,D6,101.17,1.0002000300040004e-07,159280,,,TEST,,,,,compound 20
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,D7,1.1700000000000017,0,1525040,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,D8,101.78,3.000900180030004e-08,151040,,,TEST,,,,,compound 20
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,D9,101.25,1.0003000600100013e-08,158240,,,TEST,,,,,compound 20
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,D10,100.25,3.00120030006001e-09,171880,,,TEST,,,,,compound 20
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,D11,91.72,1.0004001000200033e-09,288360,,,TEST,,,,,compound 20
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,D12,42.3,3.0015004501050203e-10,963320,,,TEST,,,,,compound 20
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,E1,99.57,0,181240,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,E2,101.68,1e-05,152440,,,TEST,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,E3,102.2,3.0003000300030004e-06,145240,,,TEST,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,E4,101.58,1.0001000100010001e-06,153800,,,TEST,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,E5,101.79,3.000600090012001e-07,150840,,,TEST,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,E6,101.68,1.0002000300040004e-07,152440,,,TEST,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,E7,3.319999999999993,0,1495640,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,E8,100.86,3.000900180030004e-08,163640,,,TEST,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,E9,100.26,1.0003000600100013e-08,171720,,,TEST,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,E10,94.35,3.00120030006001e-09,252440,,,TEST,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,E11,54.21,1.0004001000200033e-09,800680,,,TEST,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,E12,17.200000000000003,3.0015004501050203e-10,1306040,,,TEST,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,F1,101.11,0,160200,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,F7,-0.64,0,1549760,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,G1,101.22,0,158680,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,G7,0.6400000000000006,0,1532240,,,HIGH,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,H1,103.34,0,129760,,,LOW,,,,,
+504,pinkbluered,Mongoose,ADP-Glo,off-target B,,2,,,,,,24263-006-03,6,H7,1.5600000000000023,0,1519760,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,A1,100.43,0,16520,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,A2,97.91,1e-05,27800,,,TEST,,,,,compound 1
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,A3,98.69,3.0003000300030004e-06,24320,,,TEST,,,,,compound 1
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,A4,97.71,1.0001000100010001e-06,28680,,,TEST,,,,,compound 1
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,A5,95.79,3.000600090012001e-07,37240,,,TEST,,,,,compound 1
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,A6,90.92,1.0002000300040004e-07,59000,,,TEST,,,,,compound 1
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,A7,-2.94,0,478120,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,A8,78.3,3.000900180030004e-08,115360,,,TEST,,,,,compound 1
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,A9,57.85,1.0003000600100013e-08,206680,,,TEST,,,,,compound 1
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,A10,27.120000000000005,3.00120030006001e-09,343880,,,TEST,,,,,compound 1
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,A11,12.079999999999998,1.0004001000200033e-09,411080,,,TEST,,,,,compound 1
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,A12,8.319999999999993,3.0015004501050203e-10,427840,,,TEST,,,,,compound 1
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,B1,99.81,0,19320,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,B2,99.66,1e-05,19960,,,TEST,,,,,compound 2
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,B3,98.88,3.0003000300030004e-06,23440,,,TEST,,,,,compound 2
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,B4,98.59,1.0001000100010001e-06,24760,,,TEST,,,,,compound 2
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,B5,94.79,3.000600090012001e-07,41720,,,TEST,,,,,compound 2
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,B6,88.38,1.0002000300040004e-07,70360,,,TEST,,,,,compound 2
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,B7,-6.62,0,494560,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,B8,72.19,3.000900180030004e-08,142640,,,TEST,,,,,compound 2
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,B9,51.44,1.0003000600100013e-08,235280,,,TEST,,,,,compound 2
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,B10,17.439999999999998,3.00120030006001e-09,387120,,,TEST,,,,,compound 2
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,B11,8.579999999999998,1.0004001000200033e-09,426680,,,TEST,,,,,compound 2
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,B12,0.7999999999999972,3.0015004501050203e-10,461440,,,TEST,,,,,compound 2
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,C1,98.88,0,23440,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,C2,99.47,1e-05,20840,,,TEST,,,,,compound 3
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,C3,98.94,3.0003000300030004e-06,23200,,,TEST,,,,,compound 3
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,C4,97.11,1.0001000100010001e-06,31360,,,TEST,,,,,compound 3
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,C5,90.89,3.000600090012001e-07,59120,,,TEST,,,,,compound 3
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,C6,74.96000000000001,1.0002000300040004e-07,130280,,,TEST,,,,,compound 3
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,C7,-3.57,0,480960,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,C8,42.29,3.000900180030004e-08,276160,,,TEST,,,,,compound 3
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,C9,12.36,1.0003000600100013e-08,409800,,,TEST,,,,,compound 3
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,C10,-4.37,3.00120030006001e-09,484520,,,TEST,,,,,compound 3
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,C11,-5.56,1.0004001000200033e-09,489840,,,TEST,,,,,compound 3
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,C12,-2.45,3.0015004501050203e-10,475960,,,TEST,,,,,compound 3
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,D1,99.66,0,19960,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,D2,100.06,1e-05,18200,,,TEST,,,,,compound 4
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,D3,99.99,3.0003000300030004e-06,18520,,,TEST,,,,,compound 4
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,D4,99.77,1.0001000100010001e-06,19480,,,TEST,,,,,compound 4
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,D5,100.03,3.000600090012001e-07,18320,,,TEST,,,,,compound 4
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,D6,99.2,1.0002000300040004e-07,22040,,,TEST,,,,,compound 4
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,D7,0.7900000000000063,0,461480,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,D8,96.05,3.000900180030004e-08,36120,,,TEST,,,,,compound 4
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,D9,96.65,1.0003000600100013e-08,33440,,,TEST,,,,,compound 4
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,D10,91.15,3.00120030006001e-09,58000,,,TEST,,,,,compound 4
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,D11,48.68,1.0004001000200033e-09,247640,,,TEST,,,,,compound 4
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,D12,34.989999999999995,3.0015004501050203e-10,308760,,,TEST,,,,,compound 4
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,E1,100.43,0,16520,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,E2,100.52,1e-05,16120,,,TEST,,,,,compound 5
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,E3,100.06,3.0003000300030004e-06,18200,,,TEST,,,,,compound 5
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,E4,99.58,1.0001000100010001e-06,20320,,,TEST,,,,,compound 5
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,E5,97.83,3.000600090012001e-07,28160,,,TEST,,,,,compound 5
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,E6,94.03,1.0002000300040004e-07,45120,,,TEST,,,,,compound 5
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,E7,-0.79,0,468520,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,E8,81.53999999999999,3.000900180030004e-08,100880,,,TEST,,,,,compound 5
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,E9,62,1.0003000600100013e-08,188160,,,TEST,,,,,compound 5
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,E10,32.260000000000005,3.00120030006001e-09,320960,,,TEST,,,,,compound 5
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,E11,14.170000000000002,1.0004001000200033e-09,401720,,,TEST,,,,,compound 5
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,E12,10,3.0015004501050203e-10,420360,,,TEST,,,,,compound 5
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,F1,99.96,0,18640,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,F2,100.11,1e-05,17960,,,TEST,,,,,compound 6
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,F3,100.09,3.0003000300030004e-06,18040,,,TEST,,,,,compound 6
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,F4,100.05,1.0001000100010001e-06,18240,,,TEST,,,,,compound 6
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,F5,99.8,3.000600090012001e-07,19360,,,TEST,,,,,compound 6
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,F6,99.14,1.0002000300040004e-07,22320,,,TEST,,,,,compound 6
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,F7,2.700000000000003,0,452960,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,F8,95.11,3.000900180030004e-08,40280,,,TEST,,,,,compound 6
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,F9,92.57,1.0003000600100013e-08,51640,,,TEST,,,,,compound 6
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,F10,77.52,3.00120030006001e-09,118840,,,TEST,,,,,compound 6
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,F11,51.64,1.0004001000200033e-09,234400,,,TEST,,,,,compound 6
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,F12,26.42,3.0015004501050203e-10,347040,,,TEST,,,,,compound 6
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,G1,100.04,0,18280,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,G2,100.32,1e-05,17040,,,TEST,,,,,compound 7
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,G3,99.85,3.0003000300030004e-06,19120,,,TEST,,,,,compound 7
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,G4,99.84,1.0001000100010001e-06,19160,,,TEST,,,,,compound 7
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,G5,99.16,3.000600090012001e-07,22200,,,TEST,,,,,compound 7
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,G6,97.14,1.0002000300040004e-07,31240,,,TEST,,,,,compound 7
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,G7,11.620000000000005,0,413120,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,G8,83.9,3.000900180030004e-08,90360,,,TEST,,,,,compound 7
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,G9,60.88,1.0003000600100013e-08,193160,,,TEST,,,,,compound 7
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,G10,27.980000000000004,3.00120030006001e-09,340080,,,TEST,,,,,compound 7
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,G11,17.019999999999996,1.0004001000200033e-09,389000,,,TEST,,,,,compound 7
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,G12,13.430000000000007,3.0015004501050203e-10,405040,,,TEST,,,,,compound 7
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,H1,100.31,0,17080,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,H2,100.57,1e-05,15920,,,TEST,,,,,compound 8
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,H3,100.04,3.0003000300030004e-06,18280,,,TEST,,,,,compound 8
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,H4,99.72,1.0001000100010001e-06,19720,,,TEST,,,,,compound 8
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,H5,98.82,3.000600090012001e-07,23720,,,TEST,,,,,compound 8
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,H6,96.27,1.0002000300040004e-07,35120,,,TEST,,,,,compound 8
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,H7,9.319999999999993,0,423400,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,H8,86.78,3.000900180030004e-08,77480,,,TEST,,,,,compound 8
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,H9,72.67,1.0003000600100013e-08,140520,,,TEST,,,,,compound 8
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,H10,47.31,3.00120030006001e-09,253720,,,TEST,,,,,compound 8
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,H11,27.980000000000004,1.0004001000200033e-09,340040,,,TEST,,,,,compound 8
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-01,7,H12,19.819999999999993,3.0015004501050203e-10,376480,,,TEST,,,,,compound 8
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,A1,99.46,0,21560,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,A2,98.41,1e-05,26440,,,TEST,,,,,compound 1
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,A3,98.57,3.0003000300030004e-06,25680,,,TEST,,,,,compound 1
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,A4,97.54,1.0001000100010001e-06,30480,,,TEST,,,,,compound 1
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,A5,94.48,3.000600090012001e-07,44760,,,TEST,,,,,compound 1
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,A6,87.1,1.0002000300040004e-07,79120,,,TEST,,,,,compound 1
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,A7,-3.19,0,499720,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,A8,70.26,3.000900180030004e-08,157560,,,TEST,,,,,compound 1
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,A9,45,1.0003000600100013e-08,275240,,,TEST,,,,,compound 1
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,A10,21.950000000000003,3.00120030006001e-09,382640,,,TEST,,,,,compound 1
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,A11,3.9599999999999937,1.0004001000200033e-09,466440,,,TEST,,,,,compound 1
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,A12,-4.38,3.0015004501050203e-10,505280,,,TEST,,,,,compound 1
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,B1,99.97,0,19160,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,B2,99.09,1e-05,23280,,,TEST,,,,,compound 2
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,B3,98.9,3.0003000300030004e-06,24160,,,TEST,,,,,compound 2
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,B4,98.34,1.0001000100010001e-06,26760,,,TEST,,,,,compound 2
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,B5,93.47,3.000600090012001e-07,49440,,,TEST,,,,,compound 2
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,B6,83.46000000000001,1.0002000300040004e-07,96080,,,TEST,,,,,compound 2
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,B7,-0.68,0,488040,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,B8,62.37,3.000900180030004e-08,194320,,,TEST,,,,,compound 2
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,B9,38.68,1.0003000600100013e-08,304680,,,TEST,,,,,compound 2
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,B10,7.489999999999995,3.00120030006001e-09,450000,,,TEST,,,,,compound 2
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,B11,1.25,1.0004001000200033e-09,479040,,,TEST,,,,,compound 2
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,B12,-8.26,3.0015004501050203e-10,523360,,,TEST,,,,,compound 2
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,C1,99.44,0,21640,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,C2,99.36,1e-05,22040,,,TEST,,,,,compound 3
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,C3,98.28,3.0003000300030004e-06,27040,,,TEST,,,,,compound 3
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,C4,95.9,1.0001000100010001e-06,38160,,,TEST,,,,,compound 3
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,C5,88.26,3.000600090012001e-07,73720,,,TEST,,,,,compound 3
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,C6,67.25,1.0002000300040004e-07,171600,,,TEST,,,,,compound 3
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,C7,-0.43,0,486880,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,C8,38.12,3.000900180030004e-08,307320,,,TEST,,,,,compound 3
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,C9,9.069999999999993,1.0003000600100013e-08,442640,,,TEST,,,,,compound 3
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,C10,-1.49,3.00120030006001e-09,491840,,,TEST,,,,,compound 3
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,C11,-6.87,1.0004001000200033e-09,516880,,,TEST,,,,,compound 3
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,C12,-6.91,3.0015004501050203e-10,517080,,,TEST,,,,,compound 3
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,D1,99.86,0,19680,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,D2,99.88,1e-05,19600,,,TEST,,,,,compound 4
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,D3,99.87,3.0003000300030004e-06,19640,,,TEST,,,,,compound 4
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,D4,98.9,1.0001000100010001e-06,24160,,,TEST,,,,,compound 4
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,D5,99.63,3.000600090012001e-07,20760,,,TEST,,,,,compound 4
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,D6,99.14,1.0002000300040004e-07,23040,,,TEST,,,,,compound 4
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,D7,-0.83,0,488760,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,D8,96.48,3.000900180030004e-08,35440,,,TEST,,,,,compound 4
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,D9,96.56,1.0003000600100013e-08,35080,,,TEST,,,,,compound 4
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,D10,87.78999999999999,3.00120030006001e-09,75920,,,TEST,,,,,compound 4
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,D11,32.989999999999995,1.0004001000200033e-09,331200,,,TEST,,,,,compound 4
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,D12,17.22,3.0015004501050203e-10,404640,,,TEST,,,,,compound 4
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,E1,100.16,0,18280,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,E2,100.39,1e-05,17240,,,TEST,,,,,compound 5
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,E3,100.07,3.0003000300030004e-06,18720,,,TEST,,,,,compound 5
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,E4,99.48,1.0001000100010001e-06,21480,,,TEST,,,,,compound 5
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,E5,97.69,3.000600090012001e-07,29800,,,TEST,,,,,compound 5
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,E6,93.35,1.0002000300040004e-07,50040,,,TEST,,,,,compound 5
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,E7,0.4300000000000068,0,482880,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,E8,78.28,3.000900180030004e-08,120240,,,TEST,,,,,compound 5
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,E9,54.93,1.0003000600100013e-08,229000,,,TEST,,,,,compound 5
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,E10,26.439999999999998,3.00120030006001e-09,361720,,,TEST,,,,,compound 5
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,E11,10.019999999999996,1.0004001000200033e-09,438200,,,TEST,,,,,compound 5
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,E12,2.2099999999999937,3.0015004501050203e-10,474600,,,TEST,,,,,compound 5
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,F1,100.03,0,18920,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,F2,99.96,1e-05,19240,,,TEST,,,,,compound 6
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,F3,99.51,3.0003000300030004e-06,21320,,,TEST,,,,,compound 6
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,F4,99.82,1.0001000100010001e-06,19880,,,TEST,,,,,compound 6
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,F5,99.38,3.000600090012001e-07,21920,,,TEST,,,,,compound 6
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,F6,98.86,1.0002000300040004e-07,24360,,,TEST,,,,,compound 6
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,F7,2.9599999999999937,0,471080,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,F8,94.87,3.000900180030004e-08,42960,,,TEST,,,,,compound 6
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,F9,91.16,1.0003000600100013e-08,60200,,,TEST,,,,,compound 6
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,F10,73.39,3.00120030006001e-09,143000,,,TEST,,,,,compound 6
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,F11,44.05,1.0004001000200033e-09,279680,,,TEST,,,,,compound 6
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,F12,13.670000000000002,3.0015004501050203e-10,421200,,,TEST,,,,,compound 6
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,G1,100.12,0,18480,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,G2,100.29,1e-05,17680,,,TEST,,,,,compound 7
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,G3,99.96,3.0003000300030004e-06,19240,,,TEST,,,,,compound 7
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,G4,99.45,1.0001000100010001e-06,21600,,,TEST,,,,,compound 7
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,G5,99.24,3.000600090012001e-07,22600,,,TEST,,,,,compound 7
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,G6,95.75,1.0002000300040004e-07,38840,,,TEST,,,,,compound 7
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,G7,4.680000000000007,0,463080,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,G8,79.41,3.000900180030004e-08,114960,,,TEST,,,,,compound 7
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,G9,51.67,1.0003000600100013e-08,244200,,,TEST,,,,,compound 7
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,G10,20.489999999999995,3.00120030006001e-09,389440,,,TEST,,,,,compound 7
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,G11,10.629999999999995,1.0004001000200033e-09,435360,,,TEST,,,,,compound 7
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,G12,2.8900000000000006,3.0015004501050203e-10,471440,,,TEST,,,,,compound 7
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,H1,100.66,0,15960,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,H2,100.12,1e-05,18480,,,TEST,,,,,compound 8
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,H3,100.04,3.0003000300030004e-06,18840,,,TEST,,,,,compound 8
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,H4,99.52,1.0001000100010001e-06,21280,,,TEST,,,,,compound 8
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,H5,98.25,3.000600090012001e-07,27200,,,TEST,,,,,compound 8
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,H6,95.96,1.0002000300040004e-07,37840,,,TEST,,,,,compound 8
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,H7,13.079999999999998,0,423960,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,H8,84.85,3.000900180030004e-08,89600,,,TEST,,,,,compound 8
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,H9,68.49,1.0003000600100013e-08,165840,,,TEST,,,,,compound 8
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,H10,44.09,3.00120030006001e-09,279480,,,TEST,,,,,compound 8
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,H11,27.310000000000002,1.0004001000200033e-09,357640,,,TEST,,,,,compound 8
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-01,8,H12,13.090000000000003,3.0015004501050203e-10,423880,,,TEST,,,,,compound 8
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,A1,100.55,0,19720,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,A2,100.01,1e-05,21960,,,TEST,,,,,compound 9
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,A3,98.94,3.0003000300030004e-06,26400,,,TEST,,,,,compound 9
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,A4,98.11,1.0001000100010001e-06,29880,,,TEST,,,,,compound 9
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,A5,98.05,3.000600090012001e-07,30120,,,TEST,,,,,compound 9
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,A6,94.94,1.0002000300040004e-07,43000,,,TEST,,,,,compound 9
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,A7,-7.57,0,468400,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,A8,78.3,3.000900180030004e-08,112080,,,TEST,,,,,compound 9
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,A9,55.91,1.0003000600100013e-08,205000,,,TEST,,,,,compound 9
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,A10,22.959999999999994,3.00120030006001e-09,341720,,,TEST,,,,,compound 9
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,A11,8.790000000000006,1.0004001000200033e-09,400520,,,TEST,,,,,compound 9
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,A12,5.730000000000004,3.0015004501050203e-10,413240,,,TEST,,,,,compound 9
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,B1,99.86,0,22600,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,B2,100.15,1e-05,21400,,,TEST,,,,,compound 10
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,B3,99.68,3.0003000300030004e-06,23360,,,TEST,,,,,compound 10
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,B4,99.59,1.0001000100010001e-06,23720,,,TEST,,,,,compound 10
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,B5,98.78,3.000600090012001e-07,27080,,,TEST,,,,,compound 10
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,B6,96.28,1.0002000300040004e-07,37440,,,TEST,,,,,compound 10
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,B7,-6.62,0,464480,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,B8,83.18,3.000900180030004e-08,91840,,,TEST,,,,,compound 10
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,B9,48.73,1.0003000600100013e-08,234800,,,TEST,,,,,compound 10
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,B10,12.680000000000007,3.00120030006001e-09,384400,,,TEST,,,,,compound 10
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,B11,-4.61,1.0004001000200033e-09,456120,,,TEST,,,,,compound 10
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,B12,1.2199999999999989,3.0015004501050203e-10,431920,,,TEST,,,,,compound 10
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,C1,99.92,0,22360,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,C2,100.28,1e-05,20840,,,TEST,,,,,compound 11
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,C3,99.24,3.0003000300030004e-06,25160,,,TEST,,,,,compound 11
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,C4,100.2,1.0001000100010001e-06,21200,,,TEST,,,,,compound 11
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,C5,100.39,3.000600090012001e-07,20400,,,TEST,,,,,compound 11
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,C6,99.38,1.0002000300040004e-07,24600,,,TEST,,,,,compound 11
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,C7,-3.29,0,450640,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,C8,95.4,3.000900180030004e-08,41120,,,TEST,,,,,compound 11
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,C9,88.39,1.0003000600100013e-08,70200,,,TEST,,,,,compound 11
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,C10,71.86,3.00120030006001e-09,138800,,,TEST,,,,,compound 11
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,C11,40.74,1.0004001000200033e-09,267920,,,TEST,,,,,compound 11
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,C12,18.97,3.0015004501050203e-10,358280,,,TEST,,,,,compound 11
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,D1,100.03,0,21880,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,D2,100.07,1e-05,21720,,,TEST,,,,,compound 12
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,D3,98.71,3.0003000300030004e-06,27360,,,TEST,,,,,compound 12
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,D4,99.99,1.0001000100010001e-06,22080,,,TEST,,,,,compound 12
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,D5,99.42,3.000600090012001e-07,24440,,,TEST,,,,,compound 12
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,D6,97.8,1.0002000300040004e-07,31160,,,TEST,,,,,compound 12
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,D7,1.730000000000004,0,429840,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,D8,94.22,3.000900180030004e-08,46000,,,TEST,,,,,compound 12
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,D9,89.26,1.0003000600100013e-08,66600,,,TEST,,,,,compound 12
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,D10,70.71000000000001,3.00120030006001e-09,143560,,,TEST,,,,,compound 12
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,D11,41.33,1.0004001000200033e-09,265480,,,TEST,,,,,compound 12
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,D12,18.89,3.0015004501050203e-10,358600,,,TEST,,,,,compound 12
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,E1,100.93,0,18160,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,E2,101.07,1e-05,17600,,,TEST,,,,,compound 13
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,E3,100.89,3.0003000300030004e-06,18320,,,TEST,,,,,compound 13
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,E4,100.94,1.0001000100010001e-06,18120,,,TEST,,,,,compound 13
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,E5,100.32,3.000600090012001e-07,20680,,,TEST,,,,,compound 13
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,E6,100.15,1.0002000300040004e-07,21400,,,TEST,,,,,compound 13
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,E7,2.9599999999999937,0,424720,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,E8,96.53,3.000900180030004e-08,36400,,,TEST,,,,,compound 13
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,E9,95.68,1.0003000600100013e-08,39960,,,TEST,,,,,compound 13
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,E10,85.47,3.00120030006001e-09,82320,,,TEST,,,,,compound 13
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,E11,63.73,1.0004001000200033e-09,172520,,,TEST,,,,,compound 13
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,E12,34.11,3.0015004501050203e-10,295440,,,TEST,,,,,compound 13
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,F1,99.89,0,22480,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,F2,98.38,1e-05,28760,,,TEST,,,,,compound 14
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,F3,91.48,3.0003000300030004e-06,57360,,,TEST,,,,,compound 14
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,F4,75.18,1.0001000100010001e-06,125000,,,TEST,,,,,compound 14
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,F5,48.19,3.000600090012001e-07,237040,,,TEST,,,,,compound 14
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,F6,21.709999999999994,1.0002000300040004e-07,346920,,,TEST,,,,,compound 14
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,F7,-1.73,0,444160,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,F8,7.010000000000005,3.000900180030004e-08,407920,,,TEST,,,,,compound 14
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,F9,3.299999999999997,1.0003000600100013e-08,423320,,,TEST,,,,,compound 14
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,F10,1.5100000000000051,3.00120030006001e-09,430720,,,TEST,,,,,compound 14
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,F11,3.769999999999996,1.0004001000200033e-09,421360,,,TEST,,,,,compound 14
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,F12,2.760000000000005,3.0015004501050203e-10,425560,,,TEST,,,,,compound 14
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,G1,99.97,0,22160,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,G2,100.57,1e-05,19640,,,TEST,,,,,compound 15
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,G3,99.48,3.0003000300030004e-06,24160,,,TEST,,,,,compound 15
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,G4,98.4,1.0001000100010001e-06,28640,,,TEST,,,,,compound 15
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,G5,93.7,3.000600090012001e-07,48160,,,TEST,,,,,compound 15
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,G6,82.56,1.0002000300040004e-07,94400,,,TEST,,,,,compound 15
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,G7,4.890000000000001,0,416720,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,G8,54.79,3.000900180030004e-08,209640,,,TEST,,,,,compound 15
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,G9,30.67,1.0003000600100013e-08,309720,,,TEST,,,,,compound 15
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,G10,13.849999999999994,3.00120030006001e-09,379520,,,TEST,,,,,compound 15
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,G11,9.040000000000006,1.0004001000200033e-09,399480,,,TEST,,,,,compound 15
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,G12,6.159999999999997,3.0015004501050203e-10,411440,,,TEST,,,,,compound 15
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,H1,100.23,0,21080,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,H2,100.34,1e-05,20600,,,TEST,,,,,compound 16
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,H3,100.53,3.0003000300030004e-06,19840,,,TEST,,,,,compound 16
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,H4,100.55,1.0001000100010001e-06,19720,,,TEST,,,,,compound 16
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,H5,100.31,3.000600090012001e-07,20720,,,TEST,,,,,compound 16
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,H6,99.79,1.0002000300040004e-07,22880,,,TEST,,,,,compound 16
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,H7,9.420000000000002,0,397920,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,H8,97,3.000900180030004e-08,34480,,,TEST,,,,,compound 16
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,H9,97.59,1.0003000600100013e-08,32040,,,TEST,,,,,compound 16
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,H10,93.22,3.00120030006001e-09,50160,,,TEST,,,,,compound 16
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,H11,82.9,1.0004001000200033e-09,93000,,,TEST,,,,,compound 16
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-02,9,H12,48.06,3.0015004501050203e-10,237560,,,TEST,,,,,compound 16
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,A1,99.45,0,24680,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,A2,100.15,1e-05,21680,,,TEST,,,,,compound 9
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,A3,99.63,3.0003000300030004e-06,23880,,,TEST,,,,,compound 9
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,A4,98.97,1.0001000100010001e-06,26720,,,TEST,,,,,compound 9
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,A5,97.69,3.000600090012001e-07,32200,,,TEST,,,,,compound 9
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,A6,92.08,1.0002000300040004e-07,56160,,,TEST,,,,,compound 9
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,A7,-7.28,0,480680,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,A8,70.4,3.000900180030004e-08,148800,,,TEST,,,,,compound 9
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,A9,44.2,1.0003000600100013e-08,260720,,,TEST,,,,,compound 9
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,A10,15.180000000000007,3.00120030006001e-09,384720,,,TEST,,,,,compound 9
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,A11,-2.46,1.0004001000200033e-09,460080,,,TEST,,,,,compound 9
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,A12,-6.24,3.0015004501050203e-10,476240,,,TEST,,,,,compound 9
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,B1,99.99,0,22360,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,B2,100.1,1e-05,21880,,,TEST,,,,,compound 10
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,B3,100.04,3.0003000300030004e-06,22160,,,TEST,,,,,compound 10
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,B4,99.61,1.0001000100010001e-06,24000,,,TEST,,,,,compound 10
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,B5,98.63,3.000600090012001e-07,28160,,,TEST,,,,,compound 10
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,B6,95.5,1.0002000300040004e-07,41560,,,TEST,,,,,compound 10
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,B7,-4.27,0,467800,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,B8,76.91,3.000900180030004e-08,120960,,,TEST,,,,,compound 10
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,B9,42.19,1.0003000600100013e-08,269320,,,TEST,,,,,compound 10
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,B10,9.650000000000006,3.00120030006001e-09,408320,,,TEST,,,,,compound 10
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,B11,-3.63,1.0004001000200033e-09,465080,,,TEST,,,,,compound 10
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,B12,-8.61,3.0015004501050203e-10,486360,,,TEST,,,,,compound 10
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,C1,99.95,0,22520,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,C2,100.04,1e-05,22160,,,TEST,,,,,compound 11
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,C3,99.93,3.0003000300030004e-06,22600,,,TEST,,,,,compound 11
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,C4,99.55,1.0001000100010001e-06,24240,,,TEST,,,,,compound 11
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,C5,100.06,3.000600090012001e-07,22080,,,TEST,,,,,compound 11
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,C6,99.01,1.0002000300040004e-07,26560,,,TEST,,,,,compound 11
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,C7,-0.29,0,450800,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,C8,94.53,3.000900180030004e-08,45680,,,TEST,,,,,compound 11
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,C9,88.75,1.0003000600100013e-08,70400,,,TEST,,,,,compound 11
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,C10,63.16,3.00120030006001e-09,179720,,,TEST,,,,,compound 11
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,C11,29.72,1.0004001000200033e-09,322600,,,TEST,,,,,compound 11
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,C12,8.299999999999997,3.0015004501050203e-10,414080,,,TEST,,,,,compound 11
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,D1,100.01,0,22280,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,D2,100.21,1e-05,21440,,,TEST,,,,,compound 12
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,D3,99.72,3.0003000300030004e-06,23520,,,TEST,,,,,compound 12
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,D4,100.12,1.0001000100010001e-06,21800,,,TEST,,,,,compound 12
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,D5,99.27,3.000600090012001e-07,25440,,,TEST,,,,,compound 12
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,D6,97.97,1.0002000300040004e-07,31000,,,TEST,,,,,compound 12
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,D7,-0.93,0,453520,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,D8,92.56,3.000900180030004e-08,54120,,,TEST,,,,,compound 12
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,D9,86.18,1.0003000600100013e-08,81360,,,TEST,,,,,compound 12
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,D10,64.3,3.00120030006001e-09,174840,,,TEST,,,,,compound 12
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,D11,32.129999999999995,1.0004001000200033e-09,312280,,,TEST,,,,,compound 12
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,D12,8.040000000000006,3.0015004501050203e-10,415200,,,TEST,,,,,compound 12
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,E1,100.13,0,21760,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,E2,100.98,1e-05,18120,,,TEST,,,,,compound 13
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,E3,100.66,3.0003000300030004e-06,19480,,,TEST,,,,,compound 13
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,E4,100.81,1.0001000100010001e-06,18840,,,TEST,,,,,compound 13
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,E5,100.51,3.000600090012001e-07,20160,,,TEST,,,,,compound 13
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,E6,99.64,1.0002000300040004e-07,23840,,,TEST,,,,,compound 13
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,E7,4.219999999999999,0,431520,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,E8,95.87,3.000900180030004e-08,39960,,,TEST,,,,,compound 13
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,E9,94.22,1.0003000600100013e-08,47000,,,TEST,,,,,compound 13
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,E10,82.53,3.00120030006001e-09,96960,,,TEST,,,,,compound 13
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,E11,57.57,1.0004001000200033e-09,203600,,,TEST,,,,,compound 13
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,E12,28.730000000000004,3.0015004501050203e-10,326800,,,TEST,,,,,compound 13
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,F1,99.93,0,22640,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,F2,98.11,1e-05,30400,,,TEST,,,,,compound 14
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,F3,89.75,3.0003000300030004e-06,66120,,,TEST,,,,,compound 14
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,F4,71.9,1.0001000100010001e-06,142360,,,TEST,,,,,compound 14
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,F5,39.3,3.000600090012001e-07,281640,,,TEST,,,,,compound 14
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,F6,16.72,1.0002000300040004e-07,378120,,,TEST,,,,,compound 14
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,F7,0.29000000000000625,0,448320,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,F8,4.079999999999998,3.000900180030004e-08,432120,,,TEST,,,,,compound 14
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,F9,0.9000000000000057,1.0003000600100013e-08,445720,,,TEST,,,,,compound 14
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,F10,2.780000000000001,3.00120030006001e-09,437680,,,TEST,,,,,compound 14
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,F11,-0.52,1.0004001000200033e-09,451800,,,TEST,,,,,compound 14
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,F12,-3.98,3.0015004501050203e-10,466560,,,TEST,,,,,compound 14
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,G1,100.32,0,20960,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,G2,100.53,1e-05,20040,,,TEST,,,,,compound 15
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,G3,99.9,3.0003000300030004e-06,22760,,,TEST,,,,,compound 15
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,G4,98.25,1.0001000100010001e-06,29800,,,TEST,,,,,compound 15
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,G5,93.84,3.000600090012001e-07,48640,,,TEST,,,,,compound 15
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,G6,80.24,1.0002000300040004e-07,106760,,,TEST,,,,,compound 15
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,G7,9.049999999999997,0,410880,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,G8,51.53,3.000900180030004e-08,229400,,,TEST,,,,,compound 15
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,G9,28.310000000000002,1.0003000600100013e-08,328600,,,TEST,,,,,compound 15
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,G10,17.75,3.00120030006001e-09,373720,,,TEST,,,,,compound 15
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,G11,6.030000000000001,1.0004001000200033e-09,423800,,,TEST,,,,,compound 15
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,G12,0.9599999999999937,3.0015004501050203e-10,445440,,,TEST,,,,,compound 15
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,H1,100.64,0,19600,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,H2,100.66,1e-05,19520,,,TEST,,,,,compound 16
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,H3,100.51,3.0003000300030004e-06,20120,,,TEST,,,,,compound 16
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,H4,100.4,1.0001000100010001e-06,20600,,,TEST,,,,,compound 16
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,H5,100.41,3.000600090012001e-07,20560,,,TEST,,,,,compound 16
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,H6,99.85,1.0002000300040004e-07,22960,,,TEST,,,,,compound 16
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,H7,14.269999999999996,0,388600,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,H8,97,3.000900180030004e-08,35120,,,TEST,,,,,compound 16
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,H9,97.4,1.0003000600100013e-08,33440,,,TEST,,,,,compound 16
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,H10,92.39,3.00120030006001e-09,54840,,,TEST,,,,,compound 16
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,H11,77.34,1.0004001000200033e-09,119120,,,TEST,,,,,compound 16
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-02,10,H12,40.07,3.0015004501050203e-10,278360,,,TEST,,,,,compound 16
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,A1,99,0,21960,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,A2,99.04,1e-05,21840,,,TEST,,,,,compound 17
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,A3,98.66,3.0003000300030004e-06,23040,,,TEST,,,,,compound 17
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,A4,98.46,1.0001000100010001e-06,23680,,,TEST,,,,,compound 17
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,A5,98.39,3.000600090012001e-07,23920,,,TEST,,,,,compound 17
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,A6,97.11,1.0002000300040004e-07,28000,,,TEST,,,,,compound 17
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,A7,-12.91,0,378480,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,A8,94.09,3.000900180030004e-08,37600,,,TEST,,,,,compound 17
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,A9,92.22,1.0003000600100013e-08,43560,,,TEST,,,,,compound 17
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,A10,79.88,3.00120030006001e-09,82880,,,TEST,,,,,compound 17
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,A11,55.17,1.0004001000200033e-09,161600,,,TEST,,,,,compound 17
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,A12,29.689999999999998,3.0015004501050203e-10,242760,,,TEST,,,,,compound 17
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,B1,98.45,0,23720,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,B2,98.64,1e-05,23120,,,TEST,,,,,compound 18
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,B3,98.46,3.0003000300030004e-06,23680,,,TEST,,,,,compound 18
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,B4,97.9,1.0001000100010001e-06,25480,,,TEST,,,,,compound 18
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,B5,93.1,3.000600090012001e-07,40760,,,TEST,,,,,compound 18
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,B6,81.13,1.0002000300040004e-07,78880,,,TEST,,,,,compound 18
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,B7,-3.65,0,348960,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,B8,48.56,3.000900180030004e-08,182640,,,TEST,,,,,compound 18
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,B9,25.840000000000003,1.0003000600100013e-08,255040,,,TEST,,,,,compound 18
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,B10,3.1099999999999994,3.00120030006001e-09,327440,,,TEST,,,,,compound 18
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,B11,4.780000000000001,1.0004001000200033e-09,322120,,,TEST,,,,,compound 18
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,B12,6.3799999999999955,3.0015004501050203e-10,317000,,,TEST,,,,,compound 18
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,C1,99.96,0,18920,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,C2,96.3,1e-05,30560,,,TEST,,,,,compound 19
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,C3,89.03,3.0003000300030004e-06,53720,,,TEST,,,,,compound 19
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,C4,72.08,1.0001000100010001e-06,107720,,,TEST,,,,,compound 19
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,C5,43.6,3.000600090012001e-07,198440,,,TEST,,,,,compound 19
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,C6,14.799999999999997,1.0002000300040004e-07,290200,,,TEST,,,,,compound 19
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,C7,-3.99,0,350040,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,C8,6.019999999999996,3.000900180030004e-08,318160,,,TEST,,,,,compound 19
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,C9,-3.3,1.0003000600100013e-08,347840,,,TEST,,,,,compound 19
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,C10,0.14000000000000057,3.00120030006001e-09,336880,,,TEST,,,,,compound 19
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,C11,1.0499999999999972,1.0004001000200033e-09,334000,,,TEST,,,,,compound 19
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,C12,1.5400000000000063,3.0015004501050203e-10,332440,,,TEST,,,,,compound 19
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,D1,100.04,0,18640,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,D2,99.83,1e-05,19320,,,TEST,,,,,compound 20
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,D3,100.01,3.0003000300030004e-06,18760,,,TEST,,,,,compound 20
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,D4,98.76,1.0001000100010001e-06,22720,,,TEST,,,,,compound 20
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,D5,99.3,3.000600090012001e-07,21000,,,TEST,,,,,compound 20
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,D6,98.96,1.0002000300040004e-07,22080,,,TEST,,,,,compound 20
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,D7,-5.76,0,355680,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,D8,95.66,3.000900180030004e-08,32600,,,TEST,,,,,compound 20
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,D9,98.01,1.0003000600100013e-08,25120,,,TEST,,,,,compound 20
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,D10,96.92,3.00120030006001e-09,28600,,,TEST,,,,,compound 20
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,D11,94.72,1.0004001000200033e-09,35600,,,TEST,,,,,compound 20
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,D12,82.44,3.0015004501050203e-10,74720,,,TEST,,,,,compound 20
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,E1,100.89,0,15960,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,E2,100.33,1e-05,17720,,,TEST,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,E3,100.78,3.0003000300030004e-06,16280,,,TEST,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,E4,100.67,1.0001000100010001e-06,16640,,,TEST,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,E5,100.57,3.000600090012001e-07,16960,,,TEST,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,E6,99.49,1.0002000300040004e-07,20400,,,TEST,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,E7,3.7900000000000063,0,325280,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,E8,97.58,3.000900180030004e-08,26480,,,TEST,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,E9,99.08,1.0003000600100013e-08,21720,,,TEST,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,E10,91.66,3.00120030006001e-09,45360,,,TEST,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,E11,83.07,1.0004001000200033e-09,72720,,,TEST,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,E12,42.42,3.0015004501050203e-10,202200,,,TEST,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,F1,100.11,0,18440,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,F7,3.6500000000000057,0,325720,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,G1,100.42,0,17440,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,G7,7.079999999999998,0,314800,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,H1,99.68,0,19800,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,1,,,,,,24263-006-03,11,H7,8.569999999999993,0,310040,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,A1,98.06,0,25680,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,A2,98.36,1e-05,24680,,,TEST,,,,,compound 17
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,A3,100.22,3.0003000300030004e-06,18520,,,TEST,,,,,compound 17
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,A4,99.11,1.0001000100010001e-06,22200,,,TEST,,,,,compound 17
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,A5,98.38,3.000600090012001e-07,24600,,,TEST,,,,,compound 17
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,A6,97.57,1.0002000300040004e-07,27280,,,TEST,,,,,compound 17
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,A7,-11.37,0,387080,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,A8,93.27,3.000900180030004e-08,41480,,,TEST,,,,,compound 17
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,A9,89.53999999999999,1.0003000600100013e-08,53800,,,TEST,,,,,compound 17
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,A10,78.47,3.00120030006001e-09,90360,,,TEST,,,,,compound 17
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,A11,45.41,1.0004001000200033e-09,199560,,,TEST,,,,,compound 17
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,A12,15.420000000000002,3.0015004501050203e-10,298600,,,TEST,,,,,compound 17
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,B1,99.18,0,21960,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,B2,98.93,1e-05,22800,,,TEST,,,,,compound 18
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,B3,98.98,3.0003000300030004e-06,22640,,,TEST,,,,,compound 18
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,B4,97.41,1.0001000100010001e-06,27800,,,TEST,,,,,compound 18
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,B5,92.13,3.000600090012001e-07,45240,,,TEST,,,,,compound 18
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,B6,75.91,1.0002000300040004e-07,98840,,,TEST,,,,,compound 18
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,B7,-1.97,0,356040,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,B8,35.22,3.000900180030004e-08,233200,,,TEST,,,,,compound 18
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,B9,22.349999999999994,1.0003000600100013e-08,275720,,,TEST,,,,,compound 18
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,B10,7.480000000000004,3.00120030006001e-09,324840,,,TEST,,,,,compound 18
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,B11,5.010000000000005,1.0004001000200033e-09,333000,,,TEST,,,,,compound 18
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,B12,-0.03,3.0015004501050203e-10,349640,,,TEST,,,,,compound 18
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,C1,100.04,0,19120,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,C2,97.04,1e-05,29040,,,TEST,,,,,compound 19
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,C3,88.4,3.0003000300030004e-06,57560,,,TEST,,,,,compound 19
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,C4,69.33,1.0001000100010001e-06,120560,,,TEST,,,,,compound 19
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,C5,39.34,3.000600090012001e-07,219600,,,TEST,,,,,compound 19
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,C6,13.420000000000002,1.0002000300040004e-07,305200,,,TEST,,,,,compound 19
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,C7,-0.56,0,351400,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,C8,4.719999999999999,3.000900180030004e-08,333960,,,TEST,,,,,compound 19
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,C9,2.1500000000000057,1.0003000600100013e-08,342440,,,TEST,,,,,compound 19
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,C10,2.769999999999996,3.00120030006001e-09,340400,,,TEST,,,,,compound 19
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,C11,-1.59,1.0004001000200033e-09,354800,,,TEST,,,,,compound 19
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,C12,-1.87,3.0015004501050203e-10,355720,,,TEST,,,,,compound 19
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,D1,100.27,0,18360,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,D2,100.36,1e-05,18080,,,TEST,,,,,compound 20
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,D3,100.25,3.0003000300030004e-06,18440,,,TEST,,,,,compound 20
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,D4,100.33,1.0001000100010001e-06,18160,,,TEST,,,,,compound 20
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,D5,100.14,3.000600090012001e-07,18800,,,TEST,,,,,compound 20
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,D6,99.39,1.0002000300040004e-07,21280,,,TEST,,,,,compound 20
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,D7,-2.73,0,358560,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,D8,96.83,3.000900180030004e-08,29720,,,TEST,,,,,compound 20
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,D9,99.59,1.0003000600100013e-08,20600,,,TEST,,,,,compound 20
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,D10,97.32,3.00120030006001e-09,28120,,,TEST,,,,,compound 20
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,D11,95.23,1.0004001000200033e-09,35000,,,TEST,,,,,compound 20
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,D12,63.81,3.0015004501050203e-10,138800,,,TEST,,,,,compound 20
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,E1,101.45,0,14480,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,E2,100.49,1e-05,17640,,,TEST,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,E3,100.2,3.0003000300030004e-06,18600,,,TEST,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,E4,100.12,1.0001000100010001e-06,18880,,,TEST,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,E5,100.36,3.000600090012001e-07,18080,,,TEST,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,E6,99.96,1.0002000300040004e-07,19400,,,TEST,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,E7,0.5600000000000023,0,347680,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,E8,96.89,3.000900180030004e-08,29520,,,TEST,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,E9,97.49,1.0003000600100013e-08,27560,,,TEST,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,E10,88.68,3.00120030006001e-09,56640,,,TEST,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,E11,70.93,1.0004001000200033e-09,115280,,,TEST,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,E12,26.950000000000003,3.0015004501050203e-10,260520,,,TEST,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,F1,99.81,0,19880,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,F7,2.299999999999997,0,341960,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,G1,99.96,0,19400,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,G7,3.8100000000000023,0,336960,,,HIGH,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,H1,100.54,0,17480,,,LOW,,,,,
+505,pinkbluered,Mongoose,ADP-Glo,on-target A,,2,,,,,,24263-006-03,12,H7,9.790000000000006,0,317200,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,A1,99.39,0,79120,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,A2,65.14,1e-05,606800,,,TEST,,,,,compound 1
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,A3,90.27,3.0003000300030004e-06,219560,,,TEST,,,,,compound 1
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,A4,66.75999999999999,1.0001000100010001e-06,581800,,,TEST,,,,,compound 1
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,A5,34.36,3.000600090012001e-07,1080960,,,TEST,,,,,compound 1
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,A6,12.129999999999995,1.0002000300040004e-07,1423360,,,TEST,,,,,compound 1
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,A7,-3.28,0,1660800,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,A8,4.569999999999993,3.000900180030004e-08,1539920,,,TEST,,,,,compound 1
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,A9,0.5300000000000011,1.0003000600100013e-08,1602200,,,TEST,,,,,compound 1
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,A10,-0.49,3.00120030006001e-09,1617800,,,TEST,,,,,compound 1
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,A11,0.8299999999999983,1.0004001000200033e-09,1597560,,,TEST,,,,,compound 1
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,A12,5.599999999999994,3.0015004501050203e-10,1523960,,,TEST,,,,,compound 1
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,B1,99.79,0,72920,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,B2,86.6,1e-05,276080,,,TEST,,,,,compound 2
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,B3,86.62,3.0003000300030004e-06,275840,,,TEST,,,,,compound 2
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,B4,73.55,1.0001000100010001e-06,477160,,,TEST,,,,,compound 2
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,B5,25.810000000000002,3.000600090012001e-07,1212680,,,TEST,,,,,compound 2
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,B6,9.659999999999997,1.0002000300040004e-07,1461480,,,TEST,,,,,compound 2
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,B7,-2.97,0,1656080,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,B8,2.430000000000007,3.000900180030004e-08,1572800,,,TEST,,,,,compound 2
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,B9,-3.5,1.0003000600100013e-08,1664200,,,TEST,,,,,compound 2
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,B10,-5.76,3.00120030006001e-09,1699040,,,TEST,,,,,compound 2
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,B11,-4.66,1.0004001000200033e-09,1682160,,,TEST,,,,,compound 2
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,B12,-0.8,3.0015004501050203e-10,1622560,,,TEST,,,,,compound 2
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,C1,99.94,0,70520,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,C2,99.37,1e-05,79400,,,TEST,,,,,compound 3
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,C3,98.75,3.0003000300030004e-06,88920,,,TEST,,,,,compound 3
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,C4,97.15,1.0001000100010001e-06,113560,,,TEST,,,,,compound 3
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,C5,93.44,3.000600090012001e-07,170800,,,TEST,,,,,compound 3
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,C6,83.72,1.0002000300040004e-07,320400,,,TEST,,,,,compound 3
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,C7,0.8799999999999955,0,1596800,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,C8,61.62,3.000900180030004e-08,660920,,,TEST,,,,,compound 3
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,C9,30.409999999999997,1.0003000600100013e-08,1141720,,,TEST,,,,,compound 3
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,C10,7.549999999999997,3.00120030006001e-09,1493920,,,TEST,,,,,compound 3
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,C11,2.480000000000004,1.0004001000200033e-09,1572040,,,TEST,,,,,compound 3
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,C12,0.12999999999999545,3.0015004501050203e-10,1608320,,,TEST,,,,,compound 3
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,D1,99.98,0,69960,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,D2,99.74,1e-05,73600,,,TEST,,,,,compound 4
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,D3,99.43,3.0003000300030004e-06,78440,,,TEST,,,,,compound 4
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,D4,99.5,1.0001000100010001e-06,77360,,,TEST,,,,,compound 4
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,D5,98.94,3.000600090012001e-07,85920,,,TEST,,,,,compound 4
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,D6,98.32,1.0002000300040004e-07,95600,,,TEST,,,,,compound 4
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,D7,-0.28,0,1614600,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,D8,95.03,3.000900180030004e-08,146240,,,TEST,,,,,compound 4
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,D9,83.35,1.0003000600100013e-08,326120,,,TEST,,,,,compound 4
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,D10,48.05,3.00120030006001e-09,869960,,,TEST,,,,,compound 4
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,D11,11.400000000000006,1.0004001000200033e-09,1434680,,,TEST,,,,,compound 4
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,D12,8.920000000000002,3.0015004501050203e-10,1472840,,,TEST,,,,,compound 4
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,E1,100.02,0,69360,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,E2,97.43,1e-05,109320,,,TEST,,,,,compound 5
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,E3,92.56,3.0003000300030004e-06,184320,,,TEST,,,,,compound 5
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,E4,81.09,1.0001000100010001e-06,361000,,,TEST,,,,,compound 5
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,E5,57.46,3.000600090012001e-07,725120,,,TEST,,,,,compound 5
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,E6,29.53,1.0002000300040004e-07,1155280,,,TEST,,,,,compound 5
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,E7,-1.36,0,1631240,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,E8,8.469999999999999,3.000900180030004e-08,1479880,,,TEST,,,,,compound 5
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,E9,0.75,1.0003000600100013e-08,1598760,,,TEST,,,,,compound 5
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,E10,-1.16,3.00120030006001e-09,1628240,,,TEST,,,,,compound 5
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,E11,-0.07,1.0004001000200033e-09,1611440,,,TEST,,,,,compound 5
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,E12,0.4399999999999977,3.0015004501050203e-10,1603480,,,TEST,,,,,compound 5
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,F1,100.42,0,63120,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,F2,99.78,1e-05,73040,,,TEST,,,,,compound 6
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,F3,99.62,3.0003000300030004e-06,75480,,,TEST,,,,,compound 6
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,F4,98.92,1.0001000100010001e-06,86360,,,TEST,,,,,compound 6
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,F5,98.36,3.000600090012001e-07,94880,,,TEST,,,,,compound 6
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,F6,95.8,1.0002000300040004e-07,134360,,,TEST,,,,,compound 6
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,F7,0.28000000000000114,0,1606000,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,F8,87.32,3.000900180030004e-08,264960,,,TEST,,,,,compound 6
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,F9,68.93,1.0003000600100013e-08,548280,,,TEST,,,,,compound 6
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,F10,36,3.00120030006001e-09,1055600,,,TEST,,,,,compound 6
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,F11,18.86,1.0004001000200033e-09,1319680,,,TEST,,,,,compound 6
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,F12,9.739999999999995,3.0015004501050203e-10,1460200,,,TEST,,,,,compound 6
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,G1,100.7,0,58840,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,G2,99.96,1e-05,70200,,,TEST,,,,,compound 7
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,G3,99.65,3.0003000300030004e-06,75040,,,TEST,,,,,compound 7
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,G4,98.94,1.0001000100010001e-06,85920,,,TEST,,,,,compound 7
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,G5,98.6,3.000600090012001e-07,91280,,,TEST,,,,,compound 7
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,G6,94.33,1.0002000300040004e-07,157040,,,TEST,,,,,compound 7
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,G7,4.599999999999994,0,1539480,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,G8,81.46000000000001,3.000900180030004e-08,355320,,,TEST,,,,,compound 7
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,G9,45.62,1.0003000600100013e-08,907400,,,TEST,,,,,compound 7
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,G10,18.97,3.00120030006001e-09,1318040,,,TEST,,,,,compound 7
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,G11,12.200000000000003,1.0004001000200033e-09,1422400,,,TEST,,,,,compound 7
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,G12,8.549999999999997,3.0015004501050203e-10,1478640,,,TEST,,,,,compound 7
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,H1,100.26,0,65680,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,H2,100.06,1e-05,68720,,,TEST,,,,,compound 8
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,H3,100.03,3.0003000300030004e-06,69200,,,TEST,,,,,compound 8
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,H4,99.42,1.0001000100010001e-06,78560,,,TEST,,,,,compound 8
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,H5,98.89,3.000600090012001e-07,86800,,,TEST,,,,,compound 8
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,H6,95.74,1.0002000300040004e-07,135320,,,TEST,,,,,compound 8
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,H7,3.9599999999999937,0,1549240,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,H8,86.28,3.000900180030004e-08,281040,,,TEST,,,,,compound 8
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,H9,66.53999999999999,1.0003000600100013e-08,585160,,,TEST,,,,,compound 8
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,H10,38.23,3.00120030006001e-09,1021320,,,TEST,,,,,compound 8
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,H11,20.340000000000003,1.0004001000200033e-09,1296920,,,TEST,,,,,compound 8
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-01,13,H12,13.670000000000002,3.0015004501050203e-10,1399720,,,TEST,,,,,compound 8
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,A1,100.01,0,68480,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,A2,63.3,1e-05,636840,,,TEST,,,,,compound 1
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,A3,84.06,3.0003000300030004e-06,315400,,,TEST,,,,,compound 1
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,A4,53.22,1.0001000100010001e-06,792960,,,TEST,,,,,compound 1
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,A5,26.040000000000006,3.000600090012001e-07,1213800,,,TEST,,,,,compound 1
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,A6,2.9200000000000017,1.0002000300040004e-07,1571720,,,TEST,,,,,compound 1
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,A7,-1.15,0,1634640,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,A8,-5.57,3.000900180030004e-08,1703080,,,TEST,,,,,compound 1
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,A9,-3.67,1.0003000600100013e-08,1673760,,,TEST,,,,,compound 1
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,A10,-3.48,3.00120030006001e-09,1670840,,,TEST,,,,,compound 1
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,A11,-4.44,1.0004001000200033e-09,1685720,,,TEST,,,,,compound 1
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,A12,-5.41,3.0015004501050203e-10,1700720,,,TEST,,,,,compound 1
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,B1,99.83,0,71200,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,B2,87.57,1e-05,261080,,,TEST,,,,,compound 2
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,B3,86.17,3.0003000300030004e-06,282800,,,TEST,,,,,compound 2
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,B4,66.03,1.0001000100010001e-06,594560,,,TEST,,,,,compound 2
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,B5,19.120000000000005,3.000600090012001e-07,1320840,,,TEST,,,,,compound 2
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,B6,2.3400000000000034,1.0002000300040004e-07,1580640,,,TEST,,,,,compound 2
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,B7,-3.24,0,1667040,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,B8,1.5400000000000063,3.000900180030004e-08,1593000,,,TEST,,,,,compound 2
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,B9,-6.05,1.0003000600100013e-08,1710520,,,TEST,,,,,compound 2
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,B10,-7.57,3.00120030006001e-09,1734040,,,TEST,,,,,compound 2
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,B11,-9.08,1.0004001000200033e-09,1757440,,,TEST,,,,,compound 2
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,B12,-7.41,3.0015004501050203e-10,1731600,,,TEST,,,,,compound 2
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,C1,99.77,0,72160,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,C2,99.58,1e-05,75120,,,TEST,,,,,compound 3
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,C3,98.83,3.0003000300030004e-06,86800,,,TEST,,,,,compound 3
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,C4,97.28,1.0001000100010001e-06,110800,,,TEST,,,,,compound 3
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,C5,93.29,3.000600090012001e-07,172520,,,TEST,,,,,compound 3
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,C6,82.09,1.0002000300040004e-07,345880,,,TEST,,,,,compound 3
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,C7,-3.06,0,1664280,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,C8,57.56,3.000900180030004e-08,725760,,,TEST,,,,,compound 3
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,C9,24.909999999999997,1.0003000600100013e-08,1231160,,,TEST,,,,,compound 3
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,C10,6.950000000000003,3.00120030006001e-09,1509360,,,TEST,,,,,compound 3
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,C11,-3.09,1.0004001000200033e-09,1664720,,,TEST,,,,,compound 3
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,C12,-2.1,3.0015004501050203e-10,1649440,,,TEST,,,,,compound 3
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,D1,99.76,0,72280,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,D2,99.79,1e-05,71960,,,TEST,,,,,compound 4
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,D3,99.53,3.0003000300030004e-06,75840,,,TEST,,,,,compound 4
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,D4,99.45,1.0001000100010001e-06,77160,,,TEST,,,,,compound 4
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,D5,99.17,3.000600090012001e-07,81480,,,TEST,,,,,compound 4
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,D6,98.08,1.0002000300040004e-07,98440,,,TEST,,,,,compound 4
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,D7,0.75,0,1605280,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,D8,91.62,3.000900180030004e-08,198320,,,TEST,,,,,compound 4
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,D9,72.8,1.0003000600100013e-08,489800,,,TEST,,,,,compound 4
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,D10,38.85,3.00120030006001e-09,1015400,,,TEST,,,,,compound 4
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,D11,4.459999999999994,1.0004001000200033e-09,1547800,,,TEST,,,,,compound 4
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,D12,-1.05,3.0015004501050203e-10,1633120,,,TEST,,,,,compound 4
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,E1,100.14,0,66520,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,E2,97.4,1e-05,108960,,,TEST,,,,,compound 5
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,E3,92.24,3.0003000300030004e-06,188800,,,TEST,,,,,compound 5
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,E4,80.34,1.0001000100010001e-06,373000,,,TEST,,,,,compound 5
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,E5,54.86,3.000600090012001e-07,767560,,,TEST,,,,,compound 5
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,E6,24.430000000000007,1.0002000300040004e-07,1238640,,,TEST,,,,,compound 5
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,E7,-0.75,0,1628520,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,E8,2.730000000000004,3.000900180030004e-08,1574640,,,TEST,,,,,compound 5
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,E9,-2.65,1.0003000600100013e-08,1657920,,,TEST,,,,,compound 5
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,E10,-1.27,3.00120030006001e-09,1636560,,,TEST,,,,,compound 5
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,E11,1.2900000000000063,1.0004001000200033e-09,1596920,,,TEST,,,,,compound 5
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,E12,0,3.0015004501050203e-10,1616880,,,TEST,,,,,compound 5
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,F1,100.13,0,66680,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,F2,99.9,1e-05,70240,,,TEST,,,,,compound 6
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,F3,99.6,3.0003000300030004e-06,74760,,,TEST,,,,,compound 6
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,F4,99.44,1.0001000100010001e-06,77280,,,TEST,,,,,compound 6
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,F5,98.58,3.000600090012001e-07,90640,,,TEST,,,,,compound 6
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,F6,95.85,1.0002000300040004e-07,132960,,,TEST,,,,,compound 6
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,F7,2.3499999999999943,0,1580480,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,F8,84.76,3.000900180030004e-08,304640,,,TEST,,,,,compound 6
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,F9,61.4,1.0003000600100013e-08,666240,,,TEST,,,,,compound 6
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,F10,31.03,3.00120030006001e-09,1136440,,,TEST,,,,,compound 6
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,F11,15.459999999999994,1.0004001000200033e-09,1377560,,,TEST,,,,,compound 6
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,F12,2.450000000000003,3.0015004501050203e-10,1578960,,,TEST,,,,,compound 6
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,G1,100.32,0,63680,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,G2,100.05,1e-05,67800,,,TEST,,,,,compound 7
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,G3,99.84,3.0003000300030004e-06,71080,,,TEST,,,,,compound 7
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,G4,99.44,1.0001000100010001e-06,77360,,,TEST,,,,,compound 7
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,G5,98.56,3.000600090012001e-07,90920,,,TEST,,,,,compound 7
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,G6,92.19,1.0002000300040004e-07,189520,,,TEST,,,,,compound 7
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,G7,1.980000000000004,0,1586200,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,G8,74.15,3.000900180030004e-08,468800,,,TEST,,,,,compound 7
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,G9,37.91,1.0003000600100013e-08,1029960,,,TEST,,,,,compound 7
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,G10,15.900000000000006,3.00120030006001e-09,1370800,,,TEST,,,,,compound 7
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,G11,3.6899999999999977,1.0004001000200033e-09,1559800,,,TEST,,,,,compound 7
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,G12,-0.56,3.0015004501050203e-10,1625640,,,TEST,,,,,compound 7
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,H1,99.99,0,68800,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,H2,99.88,1e-05,70480,,,TEST,,,,,compound 8
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,H3,99.4,3.0003000300030004e-06,77920,,,TEST,,,,,compound 8
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,H4,99.07,1.0001000100010001e-06,83040,,,TEST,,,,,compound 8
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,H5,97.83,3.000600090012001e-07,102160,,,TEST,,,,,compound 8
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,H6,94.57,1.0002000300040004e-07,152640,,,TEST,,,,,compound 8
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,H7,7.540000000000006,0,1500200,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,H8,84.36,3.000900180030004e-08,310720,,,TEST,,,,,compound 8
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,H9,62.92,1.0003000600100013e-08,642720,,,TEST,,,,,compound 8
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,H10,37.2,3.00120030006001e-09,1040960,,,TEST,,,,,compound 8
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,H11,19.260000000000005,1.0004001000200033e-09,1318640,,,TEST,,,,,compound 8
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-01,14,H12,9.969999999999999,3.0015004501050203e-10,1462520,,,TEST,,,,,compound 8
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,A1,99.19,0,87400,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,A2,99.18,1e-05,87600,,,TEST,,,,,compound 9
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,A3,43.98,3.0003000300030004e-06,913280,,,TEST,,,,,compound 9
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,A4,98.3,1.0001000100010001e-06,100840,,,TEST,,,,,compound 9
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,A5,96.68,3.000600090012001e-07,125040,,,TEST,,,,,compound 9
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,A6,91.41,1.0002000300040004e-07,203880,,,TEST,,,,,compound 9
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,A7,-8.95,0,1704880,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,A8,77.64,3.000900180030004e-08,409760,,,TEST,,,,,compound 9
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,A9,53.14,1.0003000600100013e-08,776200,,,TEST,,,,,compound 9
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,A10,20.849999999999994,3.00120030006001e-09,1259200,,,TEST,,,,,compound 9
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,A11,4.400000000000006,1.0004001000200033e-09,1505200,,,TEST,,,,,compound 9
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,A12,5.469999999999999,3.0015004501050203e-10,1489280,,,TEST,,,,,compound 9
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,B1,99.74,0,79160,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,B2,99.11,1e-05,88600,,,TEST,,,,,compound 10
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,B3,99.1,3.0003000300030004e-06,88800,,,TEST,,,,,compound 10
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,B4,97.92,1.0001000100010001e-06,106480,,,TEST,,,,,compound 10
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,B5,93.12,3.000600090012001e-07,178280,,,TEST,,,,,compound 10
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,B6,81.78,1.0002000300040004e-07,347800,,,TEST,,,,,compound 10
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,B7,-7.4,0,1681760,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,B8,44.35,3.000900180030004e-08,907720,,,TEST,,,,,compound 10
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,B9,10.719999999999999,1.0003000600100013e-08,1410680,,,TEST,,,,,compound 10
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,B10,-2.89,3.00120030006001e-09,1614280,,,TEST,,,,,compound 10
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,B11,-6.22,1.0004001000200033e-09,1664000,,,TEST,,,,,compound 10
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,B12,0.5699999999999932,3.0015004501050203e-10,1562560,,,TEST,,,,,compound 10
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,C1,99.92,0,76520,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,C2,99.88,1e-05,77160,,,TEST,,,,,compound 11
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,C3,99.02,3.0003000300030004e-06,89960,,,TEST,,,,,compound 11
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,C4,97.92,1.0001000100010001e-06,106440,,,TEST,,,,,compound 11
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,C5,96.6,3.000600090012001e-07,126200,,,TEST,,,,,compound 11
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,C6,90.11,1.0002000300040004e-07,223200,,,TEST,,,,,compound 11
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,C7,-1.06,0,1586840,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,C8,74.62,3.000900180030004e-08,455000,,,TEST,,,,,compound 11
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,C9,48.12,1.0003000600100013e-08,851240,,,TEST,,,,,compound 11
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,C10,15.540000000000006,3.00120030006001e-09,1338600,,,TEST,,,,,compound 11
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,C11,5.170000000000002,1.0004001000200033e-09,1493760,,,TEST,,,,,compound 11
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,C12,-2.48,3.0015004501050203e-10,1608120,,,TEST,,,,,compound 11
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,D1,99.97,0,75840,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,D2,99.22,1e-05,87080,,,TEST,,,,,compound 12
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,D3,97.45,3.0003000300030004e-06,113520,,,TEST,,,,,compound 12
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,D4,95.08,1.0001000100010001e-06,148880,,,TEST,,,,,compound 12
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,D5,86.59,3.000600090012001e-07,275840,,,TEST,,,,,compound 12
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,D6,67.15,1.0002000300040004e-07,566640,,,TEST,,,,,compound 12
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,D7,-2.91,0,1614480,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,D8,38.43,3.000900180030004e-08,996280,,,TEST,,,,,compound 12
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,D9,19.870000000000005,1.0003000600100013e-08,1273840,,,TEST,,,,,compound 12
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,D10,5.280000000000001,3.00120030006001e-09,1492080,,,TEST,,,,,compound 12
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,D11,0.1700000000000017,1.0004001000200033e-09,1568440,,,TEST,,,,,compound 12
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,D12,-1.12,3.0015004501050203e-10,1587760,,,TEST,,,,,compound 12
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,E1,100.03,0,74840,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,E2,99.63,1e-05,80920,,,TEST,,,,,compound 13
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,E3,99.56,3.0003000300030004e-06,81960,,,TEST,,,,,compound 13
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,E4,99.59,1.0001000100010001e-06,81400,,,TEST,,,,,compound 13
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,E5,98.97,3.000600090012001e-07,90720,,,TEST,,,,,compound 13
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,E6,97.84,1.0002000300040004e-07,107720,,,TEST,,,,,compound 13
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,E7,1.0600000000000023,0,1555200,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,E8,93.56,3.000900180030004e-08,171600,,,TEST,,,,,compound 13
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,E9,82.88,1.0003000600100013e-08,331440,,,TEST,,,,,compound 13
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,E10,53.22,3.00120030006001e-09,775000,,,TEST,,,,,compound 13
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,E11,27.64,1.0004001000200033e-09,1157560,,,TEST,,,,,compound 13
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,E12,12.629999999999995,3.0015004501050203e-10,1382160,,,TEST,,,,,compound 13
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,F1,100.14,0,73280,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,F2,99.23,1e-05,86840,,,TEST,,,,,compound 14
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,F3,97.82,3.0003000300030004e-06,107960,,,TEST,,,,,compound 14
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,F4,94.01,1.0001000100010001e-06,164920,,,TEST,,,,,compound 14
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,F5,81.81,3.000600090012001e-07,347400,,,TEST,,,,,compound 14
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,F6,57.36,1.0002000300040004e-07,713080,,,TEST,,,,,compound 14
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,F7,2.25,0,1537360,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,F8,28.560000000000002,3.000900180030004e-08,1143840,,,TEST,,,,,compound 14
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,F9,13.450000000000003,1.0003000600100013e-08,1369880,,,TEST,,,,,compound 14
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,F10,5.390000000000001,3.00120030006001e-09,1490360,,,TEST,,,,,compound 14
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,F11,4.8700000000000045,1.0004001000200033e-09,1498160,,,TEST,,,,,compound 14
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,F12,3.5900000000000034,3.0015004501050203e-10,1517320,,,TEST,,,,,compound 14
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,G1,100.52,0,67560,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,G2,100.01,1e-05,75200,,,TEST,,,,,compound 15
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,G3,99.44,3.0003000300030004e-06,83680,,,TEST,,,,,compound 15
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,G4,98.62,1.0001000100010001e-06,95960,,,TEST,,,,,compound 15
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,G5,95.72,3.000600090012001e-07,139320,,,TEST,,,,,compound 15
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,G6,86.88,1.0002000300040004e-07,271520,,,TEST,,,,,compound 15
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,G7,6.3799999999999955,0,1475640,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,G8,64.83,3.000900180030004e-08,601320,,,TEST,,,,,compound 15
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,G9,42.65,1.0003000600100013e-08,933120,,,TEST,,,,,compound 15
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,G10,21.129999999999995,3.00120030006001e-09,1255000,,,TEST,,,,,compound 15
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,G11,13.030000000000001,1.0004001000200033e-09,1376120,,,TEST,,,,,compound 15
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,G12,9.39,3.0015004501050203e-10,1430520,,,TEST,,,,,compound 15
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,H1,100.45,0,68640,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,H2,100.11,1e-05,73760,,,TEST,,,,,compound 16
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,H3,100.08,3.0003000300030004e-06,74200,,,TEST,,,,,compound 16
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,H4,99.68,1.0001000100010001e-06,80200,,,TEST,,,,,compound 16
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,H5,99.06,3.000600090012001e-07,89360,,,TEST,,,,,compound 16
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,H6,96.84,1.0002000300040004e-07,122560,,,TEST,,,,,compound 16
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,H7,6.1299999999999955,0,1479360,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,H8,91.42,3.000900180030004e-08,203720,,,TEST,,,,,compound 16
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,H9,79.68,1.0003000600100013e-08,379320,,,TEST,,,,,compound 16
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,H10,52.34,3.00120030006001e-09,788240,,,TEST,,,,,compound 16
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,H11,28.269999999999996,1.0004001000200033e-09,1148240,,,TEST,,,,,compound 16
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-02,15,H12,14.819999999999993,3.0015004501050203e-10,1349360,,,TEST,,,,,compound 16
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,A1,99.97,0,77640,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,A2,99.74,1e-05,81080,,,TEST,,,,,compound 9
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,A3,98.15,3.0003000300030004e-06,104480,,,TEST,,,,,compound 9
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,A4,98.46,1.0001000100010001e-06,100000,,,TEST,,,,,compound 9
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,A5,97.27,3.000600090012001e-07,117560,,,TEST,,,,,compound 9
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,A6,90.62,1.0002000300040004e-07,215600,,,TEST,,,,,compound 9
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,A7,-9.43,0,1690800,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,A8,72.43,3.000900180030004e-08,483760,,,TEST,,,,,compound 9
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,A9,44.31,1.0003000600100013e-08,898440,,,TEST,,,,,compound 9
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,A10,13.760000000000005,3.00120030006001e-09,1348920,,,TEST,,,,,compound 9
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,A11,-1.48,1.0004001000200033e-09,1573600,,,TEST,,,,,compound 9
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,A12,-6.43,3.0015004501050203e-10,1646600,,,TEST,,,,,compound 9
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,B1,100.03,0,76880,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,B2,99.09,1e-05,90720,,,TEST,,,,,compound 10
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,B3,98.82,3.0003000300030004e-06,94600,,,TEST,,,,,compound 10
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,B4,97.07,1.0001000100010001e-06,120400,,,TEST,,,,,compound 10
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,B5,90.11,3.000600090012001e-07,223120,,,TEST,,,,,compound 10
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,B6,73.06,1.0002000300040004e-07,474520,,,TEST,,,,,compound 10
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,B7,-8.23,0,1673040,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,B8,35.599999999999994,3.000900180030004e-08,1026880,,,TEST,,,,,compound 10
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,B9,4.1200000000000045,1.0003000600100013e-08,1491000,,,TEST,,,,,compound 10
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,B10,-3.61,3.00120030006001e-09,1605040,,,TEST,,,,,compound 10
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,B11,-8.26,1.0004001000200033e-09,1673480,,,TEST,,,,,compound 10
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,B12,-8.81,3.0015004501050203e-10,1681720,,,TEST,,,,,compound 10
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,C1,99.53,0,84200,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,C2,99.74,1e-05,81080,,,TEST,,,,,compound 11
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,C3,99.6,3.0003000300030004e-06,83160,,,TEST,,,,,compound 11
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,C4,97.52,1.0001000100010001e-06,113880,,,TEST,,,,,compound 11
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,C5,95.42,3.000600090012001e-07,144800,,,TEST,,,,,compound 11
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,C6,86.93,1.0002000300040004e-07,269920,,,TEST,,,,,compound 11
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,C7,-4.13,0,1612680,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,C8,64.22999999999999,3.000900180030004e-08,604640,,,TEST,,,,,compound 11
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,C9,39.29,1.0003000600100013e-08,972360,,,TEST,,,,,compound 11
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,C10,12.64,3.00120030006001e-09,1365400,,,TEST,,,,,compound 11
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,C11,-0.76,1.0004001000200033e-09,1563000,,,TEST,,,,,compound 11
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,C12,-5.5,3.0015004501050203e-10,1632880,,,TEST,,,,,compound 11
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,D1,99.92,0,78400,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,D2,99.17,1e-05,89560,,,TEST,,,,,compound 12
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,D3,97.35,3.0003000300030004e-06,116360,,,TEST,,,,,compound 12
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,D4,93.94,1.0001000100010001e-06,166600,,,TEST,,,,,compound 12
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,D5,82.95,3.000600090012001e-07,328680,,,TEST,,,,,compound 12
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,D6,60.4,1.0002000300040004e-07,661200,,,TEST,,,,,compound 12
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,D7,0.7600000000000051,0,1540600,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,D8,30.769999999999996,3.000900180030004e-08,1098000,,,TEST,,,,,compound 12
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,D9,12.900000000000006,1.0003000600100013e-08,1361480,,,TEST,,,,,compound 12
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,D10,4.799999999999997,3.00120030006001e-09,1481000,,,TEST,,,,,compound 12
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,D11,-2.79,1.0004001000200033e-09,1592840,,,TEST,,,,,compound 12
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,D12,-7.53,3.0015004501050203e-10,1662760,,,TEST,,,,,compound 12
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,E1,99.92,0,78400,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,E2,100.02,1e-05,76960,,,TEST,,,,,compound 13
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,E3,99.67,3.0003000300030004e-06,82120,,,TEST,,,,,compound 13
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,E4,99.69,1.0001000100010001e-06,81760,,,TEST,,,,,compound 13
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,E5,99.13,3.000600090012001e-07,90080,,,TEST,,,,,compound 13
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,E6,97.37,1.0002000300040004e-07,116080,,,TEST,,,,,compound 13
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,E7,-0.76,0,1562920,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,E8,92.38,3.000900180030004e-08,189680,,,TEST,,,,,compound 13
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,E9,80.28999999999999,1.0003000600100013e-08,367880,,,TEST,,,,,compound 13
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,E10,50.73,3.00120030006001e-09,803800,,,TEST,,,,,compound 13
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,E11,22.14,1.0004001000200033e-09,1225280,,,TEST,,,,,compound 13
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,E12,3.5400000000000063,3.0015004501050203e-10,1499520,,,TEST,,,,,compound 13
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,F1,100.18,0,74600,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,F2,99.68,1e-05,82040,,,TEST,,,,,compound 14
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,F3,97.29,3.0003000300030004e-06,117280,,,TEST,,,,,compound 14
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,F4,92.72,1.0001000100010001e-06,184600,,,TEST,,,,,compound 14
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,F5,76.8,3.000600090012001e-07,419280,,,TEST,,,,,compound 14
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,F6,49.01,1.0002000300040004e-07,829080,,,TEST,,,,,compound 14
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,F7,1.2600000000000051,0,1533160,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,F8,24.599999999999994,3.000900180030004e-08,1189040,,,TEST,,,,,compound 14
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,F9,8.739999999999995,1.0003000600100013e-08,1422840,,,TEST,,,,,compound 14
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,F10,4.700000000000003,3.00120030006001e-09,1482440,,,TEST,,,,,compound 14
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,F11,12.150000000000006,1.0004001000200033e-09,1372680,,,TEST,,,,,compound 14
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,F12,-10.76,3.0015004501050203e-10,1710480,,,TEST,,,,,compound 14
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,G1,100.71,0,66760,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,G2,100.03,1e-05,76760,,,TEST,,,,,compound 15
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,G3,99.88,3.0003000300030004e-06,78960,,,TEST,,,,,compound 15
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,G4,99.04,1.0001000100010001e-06,91440,,,TEST,,,,,compound 15
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,G5,95.85,3.000600090012001e-07,138480,,,TEST,,,,,compound 15
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,G6,86.9,1.0002000300040004e-07,270360,,,TEST,,,,,compound 15
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,G7,2.9099999999999966,0,1508800,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,G8,64.75999999999999,3.000900180030004e-08,596920,,,TEST,,,,,compound 15
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,G9,37.56,1.0003000600100013e-08,998000,,,TEST,,,,,compound 15
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,G10,21.189999999999998,3.00120030006001e-09,1239280,,,TEST,,,,,compound 15
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,G11,9.11,1.0004001000200033e-09,1417480,,,TEST,,,,,compound 15
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,G12,0.05,3.0015004501050203e-10,1551040,,,TEST,,,,,compound 15
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,H1,100.21,0,74200,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,H2,100.22,1e-05,74040,,,TEST,,,,,compound 16
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,H3,100.36,3.0003000300030004e-06,71960,,,TEST,,,,,compound 16
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,H4,99.54,1.0001000100010001e-06,84000,,,TEST,,,,,compound 16
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,H5,98.67,3.000600090012001e-07,96880,,,TEST,,,,,compound 16
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,H6,96.61,1.0002000300040004e-07,127200,,,TEST,,,,,compound 16
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,H7,7.159999999999997,0,1446240,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,H8,90.11,3.000900180030004e-08,223040,,,TEST,,,,,compound 16
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,H9,75.89,1.0003000600100013e-08,432720,,,TEST,,,,,compound 16
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,H10,47.13,3.00120030006001e-09,856800,,,TEST,,,,,compound 16
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,H11,24.340000000000003,1.0004001000200033e-09,1192880,,,TEST,,,,,compound 16
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-02,16,H12,7.650000000000006,3.0015004501050203e-10,1439000,,,TEST,,,,,compound 16
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,A1,99.08,0,85400,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,A2,99.28,1e-05,82880,,,TEST,,,,,compound 17
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,A3,98.37,3.0003000300030004e-06,94320,,,TEST,,,,,compound 17
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,A4,95.74,1.0001000100010001e-06,127360,,,TEST,,,,,compound 17
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,A5,90.58,3.000600090012001e-07,192080,,,TEST,,,,,compound 17
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,A6,73.35,1.0002000300040004e-07,408400,,,TEST,,,,,compound 17
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,A7,-4.94,0,1391000,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,A8,46.39,3.000900180030004e-08,746680,,,TEST,,,,,compound 17
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,A9,22.819999999999993,1.0003000600100013e-08,1042480,,,TEST,,,,,compound 17
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,A10,6.560000000000002,3.00120030006001e-09,1246600,,,TEST,,,,,compound 17
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,A11,1.4500000000000028,1.0004001000200033e-09,1310680,,,TEST,,,,,compound 17
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,A12,5.640000000000001,3.0015004501050203e-10,1258160,,,TEST,,,,,compound 17
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,B1,98.42,0,93760,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,B2,95.75,1e-05,127160,,,TEST,,,,,compound 18
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,B3,95.29,3.0003000300030004e-06,133000,,,TEST,,,,,compound 18
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,B4,89.24,1.0001000100010001e-06,208960,,,TEST,,,,,compound 18
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,B5,60.25,3.000600090012001e-07,572800,,,TEST,,,,,compound 18
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,B6,26.939999999999998,1.0002000300040004e-07,990840,,,TEST,,,,,compound 18
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,B7,-1.33,0,1345640,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,B8,6.900000000000006,3.000900180030004e-08,1242360,,,TEST,,,,,compound 18
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,B9,2.0400000000000063,1.0003000600100013e-08,1303280,,,TEST,,,,,compound 18
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,B10,2.0600000000000023,3.00120030006001e-09,1303120,,,TEST,,,,,compound 18
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,B11,0.8100000000000023,1.0004001000200033e-09,1318720,,,TEST,,,,,compound 18
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,B12,8.510000000000005,3.0015004501050203e-10,1222160,,,TEST,,,,,compound 18
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,C1,99.95,0,74520,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,C2,100.61,1e-05,66240,,,TEST,,,,,compound 19
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,C3,99.57,3.0003000300030004e-06,79240,,,TEST,,,,,compound 19
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,C4,97.61,1.0001000100010001e-06,103880,,,TEST,,,,,compound 19
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,C5,93.94,3.000600090012001e-07,149960,,,TEST,,,,,compound 19
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,C6,81.53999999999999,1.0002000300040004e-07,305520,,,TEST,,,,,compound 19
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,C7,-0.72,0,1337920,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,C8,59.92,3.000900180030004e-08,576920,,,TEST,,,,,compound 19
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,C9,36.15,1.0003000600100013e-08,875280,,,TEST,,,,,compound 19
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,C10,14.090000000000003,3.00120030006001e-09,1152120,,,TEST,,,,,compound 19
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,C11,9.489999999999995,1.0004001000200033e-09,1209800,,,TEST,,,,,compound 19
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,C12,5.969999999999999,3.0015004501050203e-10,1254000,,,TEST,,,,,compound 19
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,D1,100.05,0,73240,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,D2,100.77,1e-05,64240,,,TEST,,,,,compound 20
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,D3,100.22,3.0003000300030004e-06,71120,,,TEST,,,,,compound 20
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,D4,100.13,1.0001000100010001e-06,72240,,,TEST,,,,,compound 20
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,D5,100.24,3.000600090012001e-07,70880,,,TEST,,,,,compound 20
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,D6,97.94,1.0002000300040004e-07,99680,,,TEST,,,,,compound 20
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,D7,-0.63,0,1336800,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,D8,99.62,3.000900180030004e-08,78640,,,TEST,,,,,compound 20
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,D9,97.76,1.0003000600100013e-08,102040,,,TEST,,,,,compound 20
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,D10,93.28,3.00120030006001e-09,158240,,,TEST,,,,,compound 20
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,D11,64.07,1.0004001000200033e-09,524880,,,TEST,,,,,compound 20
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,D12,28.099999999999994,3.0015004501050203e-10,976320,,,TEST,,,,,compound 20
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,E1,100.38,0,69160,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,E2,100.99,1e-05,61440,,,TEST,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,E3,99.94,3.0003000300030004e-06,74680,,,TEST,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,E4,100.62,1.0001000100010001e-06,66080,,,TEST,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,E5,100.34,3.000600090012001e-07,69560,,,TEST,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,E6,98.89,1.0002000300040004e-07,87760,,,TEST,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,E7,2.4000000000000057,0,1298880,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,E8,94.14,3.000900180030004e-08,147480,,,TEST,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,E9,85.99,1.0003000600100013e-08,249720,,,TEST,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,E10,36.42,3.00120030006001e-09,871800,,,TEST,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,E11,22.83,1.0004001000200033e-09,1042400,,,TEST,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,E12,8.510000000000005,3.0015004501050203e-10,1222160,,,TEST,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,F1,100.94,0,62040,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,F7,0.6299999999999955,0,1321080,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,G1,99.74,0,77120,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,G7,3.180000000000007,0,1289080,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,H1,100.07,0,73040,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,1,,,,,,24263-006-03,17,H7,2.1599999999999966,0,1301800,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,A1,99.06,0,91840,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,A2,99.32,1e-05,88640,,,TEST,,,,,compound 17
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,A3,98.23,3.0003000300030004e-06,102120,,,TEST,,,,,compound 17
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,A4,96.53,1.0001000100010001e-06,123160,,,TEST,,,,,compound 17
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,A5,90.66,3.000600090012001e-07,195880,,,TEST,,,,,compound 17
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,A6,71.07,1.0002000300040004e-07,438360,,,TEST,,,,,compound 17
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,A7,-5.5,0,1386200,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,A8,43.4,3.000900180030004e-08,780880,,,TEST,,,,,compound 17
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,A9,18.159999999999997,1.0003000600100013e-08,1093280,,,TEST,,,,,compound 17
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,A10,5.400000000000006,3.00120030006001e-09,1251320,,,TEST,,,,,compound 17
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,A11,-4.13,1.0004001000200033e-09,1369200,,,TEST,,,,,compound 17
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,A12,-3.44,3.0015004501050203e-10,1360720,,,TEST,,,,,compound 17
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,B1,99.16,0,90560,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,B2,96.97,1e-05,117720,,,TEST,,,,,compound 18
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,B3,97.11,3.0003000300030004e-06,115960,,,TEST,,,,,compound 18
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,B4,86.27,1.0001000100010001e-06,250160,,,TEST,,,,,compound 18
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,B5,48.82,3.000600090012001e-07,713720,,,TEST,,,,,compound 18
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,B6,18.629999999999995,1.0002000300040004e-07,1087480,,,TEST,,,,,compound 18
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,B7,-5.02,0,1380320,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,B8,6.730000000000004,3.000900180030004e-08,1234760,,,TEST,,,,,compound 18
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,B9,1.1700000000000017,1.0003000600100013e-08,1303680,,,TEST,,,,,compound 18
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,B10,1.9899999999999949,3.00120030006001e-09,1293480,,,TEST,,,,,compound 18
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,B11,0.8199999999999932,1.0004001000200033e-09,1307920,,,TEST,,,,,compound 18
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,B12,1.9500000000000028,3.0015004501050203e-10,1293960,,,TEST,,,,,compound 18
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,C1,101.65,0,59760,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,C2,100.63,1e-05,72360,,,TEST,,,,,compound 19
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,C3,100.1,3.0003000300030004e-06,79000,,,TEST,,,,,compound 19
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,C4,98,1.0001000100010001e-06,105000,,,TEST,,,,,compound 19
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,C5,94.52,3.000600090012001e-07,148080,,,TEST,,,,,compound 19
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,C6,80.45,1.0002000300040004e-07,322160,,,TEST,,,,,compound 19
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,C7,3.980000000000004,0,1268840,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,C8,54.61,3.000900180030004e-08,642080,,,TEST,,,,,compound 19
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,C9,29.430000000000007,1.0003000600100013e-08,953800,,,TEST,,,,,compound 19
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,C10,17.939999999999998,3.00120030006001e-09,1096000,,,TEST,,,,,compound 19
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,C11,11.019999999999996,1.0004001000200033e-09,1181760,,,TEST,,,,,compound 19
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,C12,5.909999999999997,3.0015004501050203e-10,1244960,,,TEST,,,,,compound 19
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,D1,100.3,0,76440,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,D2,100.52,1e-05,73800,,,TEST,,,,,compound 20
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,D3,100.94,3.0003000300030004e-06,68520,,,TEST,,,,,compound 20
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,D4,100.58,1.0001000100010001e-06,73080,,,TEST,,,,,compound 20
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,D5,99.02,3.000600090012001e-07,92280,,,TEST,,,,,compound 20
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,D6,98.94,1.0002000300040004e-07,93320,,,TEST,,,,,compound 20
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,D7,1.9899999999999949,0,1293480,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,D8,98.9,3.000900180030004e-08,93800,,,TEST,,,,,compound 20
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,D9,98.2,1.0003000600100013e-08,102440,,,TEST,,,,,compound 20
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,D10,90.11,3.00120030006001e-09,202640,,,TEST,,,,,compound 20
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,D11,57.87,1.0004001000200033e-09,601680,,,TEST,,,,,compound 20
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,D12,16.510000000000005,3.0015004501050203e-10,1113800,,,TEST,,,,,compound 20
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,E1,101.19,0,65520,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,E2,100.66,1e-05,72040,,,TEST,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,E3,99.99,3.0003000300030004e-06,80280,,,TEST,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,E4,99.31,1.0001000100010001e-06,88760,,,TEST,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,E5,99.38,3.000600090012001e-07,87920,,,TEST,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,E6,96.81,1.0002000300040004e-07,119640,,,TEST,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,E7,-3.39,0,1360080,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,E8,92.97,3.000900180030004e-08,167240,,,TEST,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,E9,74.78,1.0003000600100013e-08,392360,,,TEST,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,E10,26.019999999999996,3.00120030006001e-09,996040,,,TEST,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,E11,14.739999999999995,1.0004001000200033e-09,1135640,,,TEST,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,E12,0.39000000000000057,3.0015004501050203e-10,1313280,,,TEST,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,F1,99.69,0,84000,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,F7,-0.23,0,1320960,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,G1,99.71,0,83760,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,G7,2.6200000000000045,0,1285680,,,HIGH,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,H1,100.29,0,76640,,,LOW,,,,,
+506,pinkbluered,Mongoose,ADP-Glo,off-target C,,2,,,,,,24263-006-03,18,H7,0.23000000000000398,0,1315280,,,HIGH,,,,,

@@ -381,17 +381,16 @@ export async function queryPlates(query: PlateQuery): Promise<DG.DataFrame> {
 }
 
 
-export async function createProperty(prop: Partial<PlateProperty>): Promise<PlateProperty> {
-  // Need to pass ALL property fields to the backend
+export async function createProperty(prop: Partial<PlateProperty>, originPlateId?: number): Promise<PlateProperty> {
   prop.id = await grok.functions.call('Curves:createProperty', {
     propertyName: prop.name!,
     valueType: prop.type!,
     templateId: prop.template_id,
     scope: prop.scope,
-    choices: prop.choices ? JSON.stringify(prop.choices) : null, // Add this
-    min: prop.min, // Add this
-    max: prop.max, // Add this
-    // Add other fields as needed
+    choices: prop.choices ? JSON.stringify(prop.choices) : null,
+    min: prop.min,
+    max: prop.max,
+    originPlateId: originPlateId,
   });
 
   events.next({on: 'after', eventType: 'created', objectType: TYPE.PROPERTY, object: prop});
@@ -414,37 +413,31 @@ export async function savePlate(plate: Plate, options?: { autoCreateProperties?:
      returning id`;
   plate.id = (await grok.data.db.query('Curves:Plates', plateSql)).get('id', 0);
 
-  // Get global properties (template_id is null) from the unified cache
   const globalPlateProperties = allProperties.filter((p) => p.template_id == null && p.scope === 'plate');
   const globalWellProperties = allProperties.filter((p) => p.template_id == null && p.scope === 'well');
 
-  // FIRST: register new GLOBAL plate level properties
   for (const layer of Object.keys(plate.details)) {
     const prop = findProp(globalPlateProperties, layer);
     if (autoCreateProperties && !prop) {
       const valueType = getValueType(plate.details[layer]);
-      // Create a global (template_id: null) property with a 'plate' scope
-      await createProperty({name: layer, type: valueType, scope: 'plate'});
+      await createProperty({name: layer, type: valueType, scope: 'plate'}, plate.id);
       grok.shell.info('Global plate property created: ' + layer);
     } else if (!prop) {
       throw new Error(`Global property ${layer} not found`);
     }
   }
 
-  // SECOND: register new GLOBAL well level properties
-  for (const layer of plate.getLayerNames()) {
-    const prop = findProp(globalWellProperties, layer);
+  for (const col of plate.data.columns) {
+    const prop = findProp(globalWellProperties, col.name);
     if (autoCreateProperties && !prop) {
-      const col = plate.data.col(layer);
-      // Create a global (template_id: null) property with a 'well' scope
-      await createProperty({name: layer, type: col!.type, scope: 'well'});
-      grok.shell.info('Global well property created: ' + layer);
+      await createProperty({name: col.name, type: col.type, scope: 'well'}, plate.id);
+      grok.shell.info('Global well property created: ' + col.name);
     } else if (!prop) {
-      throw new Error(`Global property ${layer} not found`);
+      throw new Error(`Global property ${col.name} not found`);
     }
   }
 
-  // THIRD: NOW execute the SQL
+  await initPlates(true);
   const sql = getPlateInsertSql(plate);
   await grok.data.db.query('Curves:Plates', sql);
 
@@ -549,4 +542,83 @@ export async function deletePlateTemplate(template: PlateTemplate): Promise<void
   await grok.data.db.query('Curves:Plates', deleteSql);
   events.next({on: 'after', eventType: 'deleted', objectType: TYPE.TEMPLATE, object: template});
   await initPlates(true); // Refresh the cache
+}
+
+/**
+ * Creates a record for a new analysis run in the database.
+ * @param plateId The ID of the plate the analysis was run on.
+ * @param analysisName A string identifier for the analysis type (e.g., 'Dose-Response').
+ * @param parameters An object containing the parameters used for the run (e.g., mappings).
+ * @returns The ID of the newly created analysis run.
+ */
+export async function createAnalysisRun(plateId: number, analysisName: string, parameters: object): Promise<number> {
+  const result = await grok.functions.call('Curves:createAnalysisRun', {
+    plateId: plateId,
+    analysisName: analysisName,
+    parameters: JSON.stringify(parameters)
+  });
+  return result;
+}
+
+/**
+ * Saves a single curve's results to the database.
+ * @param params An object containing all the curve data.
+ */
+export async function saveCurveResult(params: {
+  runId: number, seriesName: string | null, curveJson: string, ic50: number | null, hillSlope: number | null,
+  rSquared: number | null, minValue: number | null, maxValue: number | null, auc: number | null
+}): Promise<void> {
+  await grok.functions.call('Curves:saveCurveResult', params);
+}
+
+/**
+ * High-level orchestrator function to save the complete results of a DRC analysis.
+ * @param plate The Plate object the analysis was run on. Must have an ID.
+ * @param resultsDf The DataFrame containing the results from the DRC analysis (one row per curve).
+ * @param analysisParams The parameters (e.g., column mappings) used to run the analysis.
+ * @param roleColumnName The name of the column in resultsDf that contains the series name.
+ */
+export async function saveDrcAnalysisResults(
+  plate: Plate,
+  resultsDf: DG.DataFrame,
+  analysisParams: object,
+  roleColumnName: string
+): Promise<void> {
+  if (!plate.id) {
+    grok.shell.error('Plate must be saved before saving analysis results.');
+    return;
+  }
+
+  // 1. Create the single analysis run record
+  const runId = await createAnalysisRun(plate.id, 'Dose-Response', analysisParams);
+
+  // 2. Iterate over the results dataframe and save each curve
+  for (const row of resultsDf.rows) {
+    const fullChartJson = JSON.parse(row.get('Curve'));
+
+    // Create the single-series JSON for storage
+    const singleSeriesJson = JSON.stringify({
+      chartOptions: fullChartJson.chartOptions,
+      series: [fullChartJson.series[0]]
+    });
+    const getNum = (colName: string): number | null => {
+      if (!resultsDf.columns.contains(colName)) return null;
+      const val = row.get(colName);
+      return (typeof val === 'number' && isFinite(val)) ? val : null;
+    };
+
+    await saveCurveResult({
+      runId: runId,
+      seriesName: row.get(roleColumnName),
+      curveJson: singleSeriesJson,
+      ic50: getNum('IC50'),
+      hillSlope: getNum('Hill'),
+      rSquared: getNum('rSquared'),
+      minValue: getNum('Min'),
+      maxValue: getNum('Max'),
+      auc: getNum('AUC')
+    });
+  }
+
+  grok.shell.info(`Saved ${resultsDf.rowCount} dose-response curves for plate ${plate.barcode}.`);
 }
