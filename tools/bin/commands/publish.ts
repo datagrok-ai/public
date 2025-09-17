@@ -3,12 +3,11 @@ import archiver from 'archiver-promise';
 import fs from 'fs';
 // @ts-ignore
 import fetch from 'node-fetch';
-import os, {hostname} from 'os';
+import os from 'os';
 import path from 'path';
 import walk from 'ignore-walk';
 import yaml from 'js-yaml';
 import {getDevKey, getToken} from '../utils/test-utils';
-import {checkImportStatements, checkFuncSignatures, extractExternals, checkPackageFile, checkChangelog} from './check';
 import * as utils from '../utils/utils';
 import {Indexable} from '../utils/utils';
 import {loadPackages} from '../utils/test-utils';
@@ -23,6 +22,7 @@ const confTemplateDir = path.join(path.dirname(path.dirname(__dirname)), 'config
 const confTemplate = yaml.load(fs.readFileSync(confTemplateDir, {encoding: 'utf-8'}));
 let curDir = process.cwd();
 const packDir = path.join(curDir, 'package.json');
+
 const packageFiles = [
   'src/package.ts', 'src/detectors.ts', 'src/package.js', 'src/detectors.js',
   'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js',
@@ -74,7 +74,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
         'or run `grok publish` with the `--rebuild` option');
       rebuild = true;
     }
-  }
+  } 
 
   // let contentValidationLog = '';
   console.log('Starting package checks...');
@@ -203,8 +203,7 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
 }
 
 export async function publish(args: PublishArgs) {
-  console.log('publish');
-  if (args['skip-check'] && !args['all'])
+  if (!args['skip-check'] && !args['all']&& !args['refresh'])
     check({_: ['check']});
   config = yaml.load(fs.readFileSync(confPath, {encoding: 'utf-8'})) as utils.Config;
   if (args.refresh) {
@@ -238,6 +237,8 @@ export async function publish(args: PublishArgs) {
     await loadPackages(curDir, packagesToLoad.join(' '), host, false, false, args.link, args.release);
   } else {
     if (args.link) {
+      console.log('Linking');
+
       await utils.runScript(`npm install`, curDir);
       await utils.runScript(`grok link`, curDir);
       await utils.runScript(`npm run build`, curDir);
@@ -249,9 +250,12 @@ export async function publish(args: PublishArgs) {
 async function publishPackage(args: PublishArgs) {
   const nArgs = args['_'].length;
 
-  if (args.build || args.rebuild) {
-    utils.runScript('npm install', curDir, false);
-    utils.runScript('npm run build', curDir, false);
+  if (!args.link) {
+    if (args.build || args.rebuild) {
+      console.log('Building');
+      utils.runScript('npm install', curDir, false);
+      utils.runScript('npm run build', curDir, false);
+    }
   }
 
   if (args.debug && args.release) {
@@ -259,7 +263,7 @@ async function publishPackage(args: PublishArgs) {
     return false;
   }
 
-
+  console.log('Publishing');
   // Create `config.yaml` if it doesn't exist yet
   if (!fs.existsSync(grokDir)) fs.mkdirSync(grokDir);
   if (!fs.existsSync(confPath)) fs.writeFileSync(confPath, yaml.dump(confTemplate));
