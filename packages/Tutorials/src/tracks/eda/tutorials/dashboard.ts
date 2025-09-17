@@ -60,7 +60,7 @@ export class DashboardTutorial extends Tutorial {
     const dqv = await this.openViewByType(`Create a data query to the "${connectionName}" data connection`,
       'DataQueryView', $(providerRoot).find('div.d4-tree-view-group-label').filter((idx, el) =>
         el.textContent === connectionName)[0],
-      `Open the context menu on Postgres | ${connectionName} and click "Add query..."`);
+      `Open the context menu on Postgres | ${connectionName} and click "New Query..."`);
 
     // UI generation delay
     await new Promise((resolve) => setTimeout(resolve, 1500));

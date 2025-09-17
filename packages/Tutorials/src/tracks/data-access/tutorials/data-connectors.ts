@@ -52,7 +52,7 @@ export class DataConnectorsTutorial extends Tutorial {
     const dqv = await this.openViewByType('Create a data query to the "Starbucks" data connection',
       'DataQueryView', $(providerRoot).find('div.d4-tree-view-group-label').filter((idx, el) =>
         el.textContent === 'Starbucks')[0],
-      'Open the context menu on Postgres | Starbucks and click "Add query..."');
+      'Open the context menu on Postgres | Starbucks and click "New Query..."');
 
     // UI generation delay
     await new Promise((resolve) => setTimeout(resolve, 1500));
