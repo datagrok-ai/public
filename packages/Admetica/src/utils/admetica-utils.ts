@@ -1,3 +1,4 @@
+/* eslint-disable guard-for-in */
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
@@ -23,7 +24,9 @@ export const tablePieChartIndexMap: Map<string, number> = new Map();
 const piechartIndex = 0;
 
 
-export async function runAdmeticaFunc(csv: string, models: string, raiseException: boolean): Promise<DG.DataFrame> {
+export async function runAdmeticaFunc(
+  csv: string, models: string, raiseException: boolean,
+): Promise<DG.DataFrame> {
   const df = DG.DataFrame.fromCsv(csv);
   const smilesCol = df.columns.bySemType(DG.SEMTYPE.MOLECULE);
 
@@ -86,9 +89,9 @@ export async function performChemicalPropertyPredictions(
     const molColIdx = viewTable.columns.names().findIndex((name) => name === molColumn.name);
     if (table)
       addResultColumns(table, viewTable, addPiechart, addForm, molColIdx ?? -1, update);
-  } catch (error) {
+  } catch (error: any) {
     if (raiseException) throw error;
-    grok.log.error(error);
+    grok.shell.error(error);
   } finally {
     progressIndicator.close();
   }
@@ -103,7 +106,9 @@ function applyColumnColorCoding(column: DG.Column, model: Model): void {
     column.meta.colors.setConditional(createConditionalColoringRules(model.coloring));
 }
 
-export function addColorCoding(table: DG.DataFrame, columnNames: string[], showInPanel: boolean = false, props?: string): void {
+export function addColorCoding(
+  table: DG.DataFrame, columnNames: string[], showInPanel: boolean = false, props?: string,
+): void {
   const tableView = grok.shell.getTableView(table.name);
   if (!tableView && !showInPanel) return;
 
@@ -485,7 +490,9 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
   return CellRenderViewer.fromGridCell(gridCell, pieChartRenderer).root;
 }
 
-export function createDynamicForm(viewTable: DG.DataFrame, updatedModelNames: string[], molColName: string, addPiechart: boolean) {
+export function createDynamicForm(
+  viewTable: DG.DataFrame, updatedModelNames: string[], molColName: string, addPiechart: boolean
+): DG.FormViewer {
   const form = DG.FormViewer.createDefault(viewTable, { columns: updatedModelNames });
   const mapping = FormStateGenerator.createCategoryModelMapping(properties, updatedModelNames);
   const generator = new FormStateGenerator(viewTable.name, mapping, molColName, addPiechart);
