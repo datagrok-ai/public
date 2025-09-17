@@ -96,11 +96,12 @@ export class ActivityDashboardWidget extends DG.Widget {
     });
     this.sharedNotifications = sharedCandidates;
 
-    const recentEntityIdCol = mostRecentEntitiesDf.col('id')!;
-    const lastEventTimeCol = mostRecentEntitiesDf.col('last_event_time')!;
-    const recentEntityIds = new Array(recentEntityIdCol.length);
-    for (let i = 0; i < recentEntityIdCol.length; i++)
-      recentEntityIds[i] = recentEntityIdCol.get(i);
+    const recentEntityIdCol = mostRecentEntitiesDf?.col('id')!;
+    const lastEventTimeCol = mostRecentEntitiesDf?.col('last_event_time')!;
+    const recentEntityIds = new Array(recentEntityIdCol?.length ?? 0);
+    if (recentEntityIdCol)
+      for (let i = 0; i < recentEntityIdCol.length; i++)
+        recentEntityIds[i] = recentEntityIdCol.get(i);
 
     const uniqueIds = Array.from(new Set<string>([...sharedUserIds, ...sharedEntityIds, ...recentEntityIds]));
     console.time('ActivityDashboardWidget.getEntitiesByIds');
@@ -131,7 +132,7 @@ export class ActivityDashboardWidget extends DG.Widget {
         ent instanceof DG.UserReport || ent instanceof DG.TableInfo || (ent instanceof DG.Func && !(ent instanceof DG.Script ||
         ent instanceof DG.DataQuery || ent instanceof DG.DataJob)) || ent instanceof DG.ViewInfo || ent instanceof DG.DataConnection || ent == null ||
         //@ts-ignore
-        (ent instanceof DG.Project && (!ent.isDashboard || ent.isPackage)) || (ent.hasOwnProperty('npmScope') && ent['npmScope'] == 'datagrok'))) {
+        (ent instanceof DG.Project && (!ent.isDashboard || ent.isPackage)) || (ent.hasOwnProperty('npmScope') && ent['npmScope'] == 'datagrok')) && lastEventTimeCol && lastEventTimeCol.get(i)) {
         this.recentEntities.push(ent);
         this.recentEntityTimes.push(lastEventTimeCol.get(i));
       }
