@@ -13,7 +13,7 @@ export async function _testActivityCliffsOpen(df: DG.DataFrame, drMethod: DimRed
   similarityMetric: MmDistanceFunctionsNames | BitArrayMetrics, preprocessingFunction: DG.Func,
 ): Promise<void> {
   await grok.data.detectSemanticTypes(df);
-  const scatterPlot = (await api.funcs.activityCliffs(
+  await api.funcs.activityCliffs(
     df, 
     df.getCol(seqColName), 
     df.getCol(activityColName), 
@@ -23,7 +23,8 @@ export async function _testActivityCliffsOpen(df: DG.DataFrame, drMethod: DimRed
     preprocessingFunction, 
     {[`${BYPASS_LARGE_DATA_WARNING}`]: true}, 
     false) as DG.Viewer | undefined);
-  expect(scatterPlot != null, true);
+  const scatterPlot = Array.from(grok.shell.tv.viewers)[1];
+  expect(scatterPlot?.type === DG.VIEWER.SCATTER_PLOT, true);
 
   await awaitCheck(() => {
     const link = Array.from(scatterPlot!.root.getElementsByClassName('scatter_plot_link'));

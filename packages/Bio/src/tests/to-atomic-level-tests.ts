@@ -78,6 +78,7 @@ category('toAtomicLevel', async () => {
       const inputPath = testData.inPath;
 
       sourceDf[testName] = DG.DataFrame.fromCsv((await fileSource.readAsText(testData.inPath)).replace(/\n$/, ''));
+      sourceDf[testName].name = testData.inPath.split('/').pop()!;
       await grok.data.detectSemanticTypes(sourceDf[testName]);
       targetDf[testName] = DG.DataFrame.fromCsv((await fileSource.readAsText(testData.outPath)).replace(/\n$/, ''));
     }
@@ -93,6 +94,7 @@ category('toAtomicLevel', async () => {
     // await toAtomicLevel(source, inputCol, false);
     await api.funcs.toAtomicLevel(source, inputCol, false, false);
     const obtainedCol = source.getCol(outputColName);
+    // DG.Utils.download(source.name.endsWith('.csv') ? source.name : source.name + '.csv', source.toCsv());
     const expectedCol = target.getCol(outputColName);
     const obtainedArray: string[] = wu(obtainedCol.values()).map((mol) => polishMolfile(mol)).toArray();
     const expectedArray: string[] = wu(expectedCol.values()).map((mol) => polishMolfile(mol)).toArray();
@@ -218,6 +220,8 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr
     seqCol.setTag(bioTAGS.alphabet, ALPHABET.PT);
     const sh = seqHelper.getSeqHandler(seqCol);
     const resCol = (await _testToAtomicLevel(srcDf, 'seq', monomerLibHelper))!;
+    // DG.Utils.download('molfile.mol', polishMolfile(resCol.get(0)));
+
     expect(polishMolfile(resCol.get(0)), polishMolfile(tgtMol));
   });
 

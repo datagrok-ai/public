@@ -8,7 +8,7 @@ import {MapProxy} from "./proxies";
 import {toJs, toDart} from "./wrappers";
 import {__obs, EventData, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
-import {Subscription} from "rxjs";
+import {Subscription} from 'rxjs';
 import {filter, map} from 'rxjs/operators';
 import {Grid, Point, Rect} from "./grid";
 import {FormulaLinesHelper} from "./helpers";
@@ -49,8 +49,8 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   }
 
   /** combined filter of the viewer */
-  get filter(): BitSet { 
-    return this._filter ??= this.dart ? toJs(api.grok_Viewer_Get_Filter(this.dart)) : BitSet.create(0); 
+  get filter(): BitSet {
+    return this._filter ??= this.dart ? toJs(api.grok_Viewer_Get_Filter(this.dart)) : BitSet.create(0);
   }
   set filter(f: BitSet) {
     this._filter = f;
@@ -298,12 +298,19 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     );
   }
 
+  /** Occurs when viewer is detached. */
+  get onDetached(): rxjs.Observable<any> { return api.grok_Viewer_OnDetached(this.dart); }
+
   copyViewersLook(other: Viewer) {
     api.grok_Viewer_Copy_Viewers_Look(this.dart, other.dart);
   }
 
   removeFromView() {
     return toJs(api.grok_Viewer_Remove_From_View(this.dart));
+  }
+
+  static canVisualize(viewerType: string, dataFrame: DataFrame): string | null {
+    return api.grok_Viewer_CanVisualize(viewerType, dataFrame.dart);
   }
 
   static CORE_VIEWER_TYPES: string[] = [

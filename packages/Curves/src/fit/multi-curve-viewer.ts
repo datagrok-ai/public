@@ -25,10 +25,12 @@ export class MultiCurveViewer extends DG.JsViewer {
   canvas: HTMLCanvasElement;
   gridCellWidget: DG.GridCellWidget;
   curvesColumnNames?: string[] = [];
-  showSelectedRowsCurves: boolean = false;
+  legendColumnName?: string;
+  showSelectedRowsCurves: boolean = true;
   showCurrentRowCurve: boolean = true;
   showMouseOverRowCurve: boolean = true;
   mergeColumnSeries: boolean = false;
+  showOutliers?: boolean = true;
   rows: number[] = [];
   data: IFitChartData = new FitChartData();
   logX?: boolean;
@@ -63,14 +65,16 @@ export class MultiCurveViewer extends DG.JsViewer {
     });
 
     this.curvesColumnNames = this.addProperty('curvesColumnNames', DG.TYPE.COLUMN_LIST, [], {semType: FitConstants.FIT_SEM_TYPE});
+    this.legendColumnName = this.addProperty('legendColumnName', DG.TYPE.STRING, '', {description: 'Column to be used for curves names'});
 
-    this.showSelectedRowsCurves = this.bool('showSelectedRowsCurves', false, {description: 'Adds curves from the selected rows'});
+    this.showSelectedRowsCurves = this.bool('showSelectedRowsCurves', true, {description: 'Adds curves from the selected rows'});
     this.showCurrentRowCurve = this.bool('showCurrentRowCurve', true);
     this.showMouseOverRowCurve = this.bool('showMouseOverRowCurve', true);
     this.mergeColumnSeries = this.bool('mergeColumnSeries', false);
+    this.showOutliers = this.bool('showOutliers', true);
 
     for (const p of fitChartDataProperties)
-      this.addProperty(p.name === 'mergeSeries' ? 'mergeCellSeries' : p.name, p.propertyType, p.defaultValue, p.options);
+      this.addProperty(p.name === 'mergeSeries' ? 'mergeCellSeries' : p.name, p.propertyType, p.defaultValue, {...p.options, showSlider: false});
   }
 
   static fromChartData(chartData: IFitChartData): MultiCurveViewer {
@@ -118,7 +122,7 @@ export class MultiCurveViewer extends DG.JsViewer {
         this.rows.push(this.dataFrame.mouseOverRowIdx);
       if (this.showSelectedRowsCurves) {
         selectionStart = this.rows.length;
-        this.rows.push(...this.dataFrame.selection.getSelectedIndexes());
+        this.rows.push(...this.dataFrame.selection.clone().and(this.dataFrame.filter).getSelectedIndexes());
       }
     }
 
@@ -133,9 +137,17 @@ export class MultiCurveViewer extends DG.JsViewer {
         if (!tableCell || !tableCell.value)
           continue;
         const cellCurves = getOrCreateParsedChartData(tableCell);
-        cellCurves.series?.forEach((series) => series.columnName = tableCell.column.name);
+        if (!cellCurves.series || cellCurves.series.length === 0)
+          continue;
+        cellCurves.series.forEach((series) => series.columnName = tableCell.column.name);
+        const legendCol = !this.legendColumnName || !this.dataFrame.col(this.legendColumnName) ? null : this.dataFrame.col(this.legendColumnName);
+        for (let j = 0; j < cellCurves.series.length; j++) {
+          const series = cellCurves.series[j];
+          if (legendCol)
+            series.auxLegendName = cellCurves.series.length > 1 ? `${legendCol.get(i)} ${series.name}` : `${legendCol.get(i)}`;
+        }
         const currentChartOptions = cellCurves.chartOptions;
-        if (currentChartOptions !== undefined && currentChartOptions !== null)
+        if (currentChartOptions != null)
           chartOptions[chartOptions.length] = currentChartOptions;
         if (mergeCellSeries) {
           const mergedSeries = mergeSeries(cellCurves.series!)!;
@@ -151,10 +163,14 @@ export class MultiCurveViewer extends DG.JsViewer {
         this.data.series?.push(...JSON.parse(JSON.stringify(series)));
     }
     this.data.chartOptions = mergeChartOptions(chartOptions);
+    this.data.chartOptions.useAuxLegendNames = true;
     this.mergeViewerChartOptions();
     this.data.series?.forEach((series, i) => {
-      series.pointColor = DG.Color.toHtml(DG.Color.getCategoricalColor(this.data.series?.length! > 20 ? 0 : i));
-      series.fitLineColor = DG.Color.toHtml(DG.Color.getCategoricalColor(this.data.series?.length! > 20 ? 0 : i));
+      if (!series.fitLineColor && !series.pointColor) {
+        series.pointColor = DG.Color.toHtml(DG.Color.getCategoricalColor(this.data.series?.length! > 20 ? 0 : i));
+        series.fitLineColor = DG.Color.toHtml(DG.Color.getCategoricalColor(this.data.series?.length! > 20 ? 0 : i));
+      }
+      series.showOutliers = this.showOutliers;
       series.showCurveConfidenceInterval = false;
       series.droplines = [];
       if (this.data.series?.length! > 20) {
@@ -162,7 +178,7 @@ export class MultiCurveViewer extends DG.JsViewer {
         series.lineStyle = 'solid';
       }
       if (this.data.series?.length! > 10 && this.data.series?.length! < 100 && i >= selectionStart) {
-        const color = DG.Color.fromHtml(series.fitLineColor);
+        const color = DG.Color.fromHtml(series.fitLineColor!);
         series.fitLineColor = `rgba(${DG.Color.r(color)}, ${DG.Color.g(color)}, ${DG.Color.b(color)}, 0.2)`;
       }
     });
@@ -194,8 +210,9 @@ export class MultiCurveViewer extends DG.JsViewer {
           this.render();
         }
       });
-    if (this.isInTrellis())
-      this.createChartData();
+    this.createChartData();
+    if (!this.isInTrellis())
+      this.render();
   }
 
   _showErrorMessage(msg: string) {

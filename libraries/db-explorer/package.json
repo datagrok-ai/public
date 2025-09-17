@@ -8,10 +8,10 @@
     "access": "public"
   },
   "friendlyName": "Datagrok database explorer library",
-  "version": "1.1.4",
+  "version": "1.2.2",
   "description": "Library for exploring databases",
   "dependencies": {
-    "datagrok-api": "^1.23.0",
+    "datagrok-api": "^1.26.0",
     "dayjs": "^1.11.13",
     "file-loader": "^6.2.0",
     "rxjs": "^6.5.5",

@@ -274,7 +274,9 @@ export abstract class RenderServiceBase<TProps extends PropsBase, TAux> {
 export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
   extends CellRendererBackBase<string> {
   protected readonly taskQueueMap = new Map<string, RenderTask<TProps, TAux>>;
-  protected imageCache = new LRUCache<string, ImageData>({max: 100});
+  protected imageCache = new LRUCache<string, ImageData>({max: 300});
+  protected get minWidth(): number { return 25; }
+  protected get minHeight(): number { return 25; }
 
   /** Consumer identifier of the render service */
   protected consumerId: number | null = null;
@@ -347,10 +349,15 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
         gridCellHeight = h * dpr - 2;
         backColor = DG.Color.argb(0, 0, 0, 0);
       }
+      if (gridCellWidth < this.minWidth * dpr || gridCellHeight < this.minHeight * dpr) {
+        this.logger.debug('PdbRenderer.render(), skip too small cell ' +
+          `rowIdx=${rowIdx}, width=${gridCellWidth}, height=${gridCellHeight}`);
+        return;
+      }
 
       if (!this.cacheEnabled || !cellImageData ||
-        Math.abs(cellImageData.width / dpr - gridCellWidth) > 0.5 ||
-        Math.abs(cellImageData.height / dpr - gridCellHeight) > 0.5
+        Math.abs(cellImageData.width - gridCellWidth) > 1 ||
+        Math.abs(cellImageData.height - gridCellHeight) > 1
       ) {
         let toUpdate: boolean = true;
         if (cellImageData)

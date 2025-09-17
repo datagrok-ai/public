@@ -54,7 +54,7 @@ export class JiraGridCellHandler extends DG.ObjectHandler {
         return ui.wait(async () => {
             const issue = await issueData(x.value);
             if (!issue || issue === null)
-                return ui.divText('Issue not found');
+                return ui.divText('Issue was not found');
             const creds = await getJiraCreds();
             if (!creds)
                 return ui.div('There is no any creds to get tickets\'s data');

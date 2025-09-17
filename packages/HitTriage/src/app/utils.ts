@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
-import {CampaignGroupingType, CampaignJsonName, ComputeQueryMolColName, HDCampaignsGroupingLSKey, HTFunctionOrderingLSKey, i18n} from './consts';
+import {CampaignGrouping, CampaignGroupingType, CampaignJsonName, CampaignTableColumns, ComputeQueryMolColName, HDCampaignsGroupingLSKey, HDCampaignTableColumnsLSKey, HTFunctionOrderingLSKey, i18n} from './consts';
 import {AppName, CampaignsType, HitDesignCampaign, HitTriageCampaign, TriagePermissions} from './types';
 import {_package} from '../package';
 
@@ -201,31 +201,56 @@ export function setLocalStorageValue(key: string, value: string) {
 }
 
 export function getSavedCampaignsGrouping(): CampaignGroupingType {
-  return getLocalStorageValue<CampaignGroupingType>(HDCampaignsGroupingLSKey) ?? CampaignGroupingType.None;
+  return getLocalStorageValue<CampaignGroupingType>(HDCampaignsGroupingLSKey) ?? CampaignGrouping.None;
 }
 
 export function setSavedCampaignsGrouping(value: CampaignGroupingType) {
   setLocalStorageValue(HDCampaignsGroupingLSKey, value);
 }
 
+export function getSavedCampaignTableColumns(): CampaignTableColumns[] {
+  const columnsString = getLocalStorageValue<string>(HDCampaignTableColumnsLSKey);
+  const defaultCols: CampaignTableColumns[] = ['Code', 'Created', 'Author', 'Last Modified by', 'Molecules', 'Status'];
+  if (!columnsString)
+    return defaultCols;
+  try {
+    const columnsP = JSON.parse(columnsString);
+    if (Array.isArray(columnsP) && columnsP.every((c) => typeof c === 'string'))
+      return columnsP as CampaignTableColumns[];
+    return defaultCols;
+  } catch (e) {
+    console.error('error parsing campaign table columns', e);
+    return defaultCols;
+  }
+}
+
+export function setSavedCampaignTableColumns(columns: CampaignTableColumns[]) {
+  setLocalStorageValue(HDCampaignTableColumnsLSKey, JSON.stringify(columns));
+}
+
+
 export const getGroupingKey = <T extends HitDesignCampaign | HitTriageCampaign = HitDesignCampaign>(grouping: CampaignGroupingType, campaign: T): string => {
   switch (grouping) {
-  case CampaignGroupingType.Template:
+  case CampaignGrouping.Template:
     return campaign.template?.key ?? campaign.templateName;
-  case CampaignGroupingType.Status:
+  case CampaignGrouping.Status:
     return campaign.status;
-  case CampaignGroupingType.Author:
+  case CampaignGrouping.Author:
     return campaign.authorUserFriendlyName ?? i18n.noInformation;
-  case CampaignGroupingType.LastModifiedUser:
+  case CampaignGrouping.LastModifiedUser:
     return campaign.lastModifiedUserName ?? i18n.noInformation;
   default:
+    if (grouping.startsWith('campaignFields.')) {
+      const fieldName = grouping.replace('campaignFields.', '');
+      return campaign.campaignFields?.[fieldName] ?? i18n.noInformation;
+    }
     return '';
   }
 };
 
 export function getGroupedCampaigns<T extends HitDesignCampaign | HitTriageCampaign = HitDesignCampaign>(campaigns: T[], grouping: CampaignGroupingType):
   {[key: string]: T[]} {
-  if (grouping === CampaignGroupingType.None)
+  if (grouping === CampaignGrouping.None)
     return {'': campaigns};
   const groupedCampaigns: {[key: string]: T[]} = {};
   for (const campaign of campaigns) {

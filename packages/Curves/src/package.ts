@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 //@ts-ignore
 export * from './package.g';
 
@@ -21,12 +22,11 @@ import {PlateReader} from './plate/plate-reader';
 import {initPlatesAppTree, platesAppView} from './plates/plates-app';
 import {initPlates} from './plates/plates-crud';
 import {__createDummyPlateData} from './plates/plates-demo';
-import {dataToCurvesUI} from './fit/data-to-curves';
 import {getPlatesFolderPreview} from './plate/plates-folder-preview';
 import {PlateDrcAnalysis} from './plate/plate-drc-analysis';
-import wu from 'wu';
-import { PlateTemplateHandler } from './plates/objects/plate-template-handler';
+import {PlateTemplateHandler} from './plates/objects/plate-template-handler';
 import * as api from './package-api';
+import {convertDataToCurves, dataToCurvesUI, WellTableParentData} from './fit/data-to-curves';
 
 export const _package = new DG.Package();
 const SOURCE_COLUMN_TAG = '.sourceColumn';
@@ -34,7 +34,7 @@ const SERIES_NUMBER_TAG = '.seriesNumber';
 const SERIES_AGGREGATION_TAG = '.seriesAggregation';
 const STATISTICS_TAG = '.statistics';
 
-class Sync {
+export class Sync {
   private static _currentPromise: Promise<any> = Promise.resolve();
   public static async runWhenDone<T>(func: () => Promise<T>): Promise<T> {
     Sync._currentPromise = Sync._currentPromise.then(async () => { try { return await func(); } catch (e) { _package.logger.error(e); } });
@@ -65,11 +65,50 @@ export class PackageFunctions {
     grok.shell.addView(await PackageFunctions.previewPlateXlsx(plateFile) as DG.ViewBase);
   }
 
-  @grok.decorators.init({})
+  @grok.decorators.init()
   static _initCurves(): void {
     DG.ObjectHandler.register(new FitGridCellHandler());
     DG.ObjectHandler.register(new PlateCellHandler());
     DG.ObjectHandler.register(new PlateTemplateHandler());
+  }
+
+  @grok.decorators.func()
+  static async dataToCurves(df: DG.DataFrame, concentrationCol: DG.Column, readoutCol: DG.Column, batchIDCol: DG.Column, assayCol: DG.Column,
+    runIDCol: DG.Column, compoundIDCol: DG.Column, targetEntityCol: DG.Column, @grok.decorators.param({options: {nullable: true}})excludeOutliersCol?: DG.Column,
+    // rest is parent level data
+    @grok.decorators.param({options: {nullable: true}})parentTable?: DG.DataFrame, // these inputs need to be string and resolved here bellow, because this function is used in datasync, otherwise context is lost
+    @grok.decorators.param({options: {nullable: true}})fitParamColumns?: string[],
+    @grok.decorators.param({options: {nullable: true}})reportedIC50Column?: string,
+    @grok.decorators.param({options: {nullable: true}})reportedQualifiedIC50Column?: string,
+    @grok.decorators.param({options: {nullable: true}})experimentIDColumn?: string, @grok.decorators.param({options: {nullable: true}})qualifierColumn?: string,
+    @grok.decorators.param({options: {nullable: true}})additionalColumns?: string[],
+    @grok.decorators.param({options: {nullable: true}})wellLevelJoinCol?: string,
+    @grok.decorators.param({options: {nullable: true}})parentLevelJoinCol?: string,
+    @grok.decorators.param({options: {nullable: true, optional: true}})wellLevelAdditionalColumns?: string[]
+  ): Promise<DG.DataFrame> {
+    const pt = parentTable;
+    const joinInfo = pt && wellLevelJoinCol && parentLevelJoinCol && df.col(wellLevelJoinCol) && pt.col(parentLevelJoinCol) ? {
+      wellLevelCol: df.col(wellLevelJoinCol)!,
+      parentLevelCol: pt.col(parentLevelJoinCol)!,
+    } : undefined;
+    const wellLevelAdditionalColumnsAct = (wellLevelAdditionalColumns ?? []).map((c) => df.col(c)).filter((c) => c != null) as DG.Column[];
+    // this needs to work with datasync so we use wide format
+    return convertDataToCurves(df, concentrationCol, readoutCol, batchIDCol, assayCol, runIDCol, compoundIDCol, targetEntityCol, excludeOutliersCol, {
+      table: pt,
+      fitParamColumns: (fitParamColumns ?? []).map((c) => pt?.col(c)).filter((c) => c != null) as DG.Column[],
+      reportedIC50Column: reportedIC50Column ? pt?.col(reportedIC50Column) ?? undefined : undefined,
+      reportedQualifiedIC50Column: reportedQualifiedIC50Column ? pt?.col(reportedQualifiedIC50Column) ?? undefined : undefined,
+      experimentIDColumn: experimentIDColumn ? pt?.col(experimentIDColumn) ?? undefined : undefined,
+      qualifierColumn: qualifierColumn ? pt?.col(qualifierColumn) ?? undefined : undefined,
+      additionalColumns: (additionalColumns ?? []).map((c) => pt?.col(c)).filter((c) => c != null) as DG.Column[],
+    },
+    joinInfo, wellLevelAdditionalColumnsAct
+    );
+  }
+
+  @grok.decorators.func({'top-menu': 'Data | Curves | Data to Curves', 'outputs': [{'name': 'result', 'type': 'dynamic'}]})
+  static async dataToCurvesTopMenu() {
+    dataToCurvesUI();
   }
 
   @grok.decorators.func({meta: {vectorFunc: 'true'}, tags: ['Transform']})
@@ -123,8 +162,9 @@ export class PackageFunctions {
         const cell = df.cell(i, colName);
         if (!cell || !cell.value)
           return null;
-        const chartData = cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
-          convertXMLToIFitChartData(cell.value) : getOrCreateParsedChartData(cell);
+        const chartData =
+          cell.column.getTag(FitConstants.TAG_FIT_CHART_FORMAT) === FitConstants.TAG_FIT_CHART_FORMAT_3DX ?
+            convertXMLToIFitChartData(cell.value) : getOrCreateParsedChartData(cell);
         if (chartData.series?.every((series) => series.points.every((p) => p.outlier)))
           return null;
         if (chartData.chartOptions?.allowXZeroes && chartData.chartOptions?.logX &&
@@ -137,7 +177,7 @@ export class PackageFunctions {
     return column;
   }
 
-  @grok.decorators.folderViewer({})
+  @grok.decorators.folderViewer({outputs: [{'name': 'result', 'type': 'dynamic'}]})
   static async platesFolderPreview(folder: DG.FileInfo, files: DG.FileInfo[]): Promise<DG.Widget | DG.ViewBase | undefined> {
     const nameLowerCase = folder.name?.toLowerCase();
     if (!nameLowerCase?.includes('plate'))
@@ -188,7 +228,7 @@ export class PackageFunctions {
     return view;
   }
 
-  @grok.decorators.func({})
+  @grok.decorators.func()
   static async checkExcelIsPlate(content: Uint8Array): Promise<boolean> {
     try {
       if (content.length > 1_000_000) // haven't really seen a plate file larger than 1MB
@@ -211,34 +251,33 @@ export class PackageFunctions {
     }
   }
 
-  @grok.decorators.func({})
+  @grok.decorators.func()
   static checkFileIsPlate(content: string): boolean {
     if (content.length > 1_000_000)
       return false;
     return PlateReader.getReader(content) != null;
   }
 
-  @grok.decorators.app({name: 'Browse', browsePath: 'Plates'})
+  // @grok.decorators.app({name: 'Browse', browsePath: 'Plates'})
   static platesApp(): DG.View {
     return platesAppView();
   }
 
-  @grok.decorators.func({})
+  @grok.decorators.func()
   static async getPlateByBarcode(barcode: string): Promise<Plate> {
     await initPlates();
     const df: DG.DataFrame = await api.queries.getWellValuesByBarcode(barcode);
     return Plate.fromDbDataFrame(df);
   }
 
-  @grok.decorators.func({})
+  @grok.decorators.func()
   static async createDummyPlateData(): Promise<void> {
     await __createDummyPlateData();
   }
 }
 
-//name: platesAppTreeBrowser
+//name: platesAppTreeBrowserTempDisabled
 //input: dynamic treeNode
-//input: view browseView
-export async function platesAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowsePanel) {
+export async function platesAppTreeBrowserTempDisabled(treeNode: DG.TreeViewGroup) {
   await initPlatesAppTree(treeNode);
 }

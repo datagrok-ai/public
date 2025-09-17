@@ -77,8 +77,11 @@ export class Link {
 
     if (linksState) {
       for (const [name, minfos] of Object.entries(this.matchInfo.actions)) {
-        if (minfos.length > 1)
-          grok.shell.warning(`Node ${this.matchInfo.spec.id} prefix ${this.prefix} multiple action nodes with the same name ${name}`);
+        if (minfos.length > 1) {
+          const msg = `Node ${this.matchInfo.spec.id} prefix ${this.prefix} multiple action nodes with the same name ${name}`;
+          console.error(msg);
+          grok.shell.error(msg);
+        }
         const nodeActions = minfos.map((minfo) => {
           const node = state.getNode([...this.prefix, ...minfo.path]);
           const actions = linksState.nodesActions.get(node.getItem().uuid) ?? [];
@@ -287,7 +290,7 @@ export class Link {
           const store = node.getItem().getStateStore();
           if (store instanceof MemoryStore)
             throw new Error(`Unable to set meta to a raw memory store ${node.getItem().uuid}`);
-          store.setMeta(ioName, controller.outputs[outputAlias]);
+          store.setMeta(ioName, this.uuid, controller.outputs[outputAlias]);
         } else if (controller instanceof MutationController) {
           const initConfig = controller.outputs[outputAlias];
           if (initConfig)

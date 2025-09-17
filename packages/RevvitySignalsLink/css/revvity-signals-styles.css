@@ -1,0 +1,81 @@
+.revvity-signals-search-logical-operator {
+    border: 1px solid #ccc;
+    margin: 4px;
+    padding: 4px;
+    width: 100%;
+}
+
+.revvity-signals-search-query-operator .fa-trash-alt {
+    font-size: 12px;
+    color: #2083D5;
+}
+
+.revvity-signals-search-query-operator .fa-plus {
+    color: #2083D5;
+}
+
+.revvity-signals-search-query-operator {
+    border: none;
+    margin: 4px;
+    padding: 4px 4px 4px 12px;
+    position: relative;
+    margin-top: 20px;
+}
+
+.revvity-signals-search-query-operator[data-nesting-level] {
+    border-left: 3px solid var(--nesting-color, #e0e0e0);
+}
+
+.revvity-signals-search-query-operator .ui-input-text {
+    width: 95%;
+}
+
+.revvity-signals-search-query-operator:hover .nested-add-delete-icons {
+    visibility: visible !important;
+}
+
+.revvity-signals-search-res-grid {
+    width: 100%!important;
+    height: 100%!important;
+}
+
+.revvity-filters-button-icon {
+   color:#40607f;
+   width: 24px;
+   height: 24px;
+   padding: 8px;
+   cursor: pointer;
+   display: none;
+}
+
+.revvity-filters-button-icon-show {
+   display: flex;
+}
+
+.revvity-add-prop-as-column-icon {
+    color: #2083d5;
+    padding-right: 3px;
+}
+
+.revvity-saved-searches-icons-div {
+    position: absolute;
+    left: 35px;
+    z-index: 1000;
+    gap: 10px;
+    top: 5px;
+}
+
+.revvity-signals-starting-app .d4-update-shadow .ui-label {
+    display: none;
+}
+
+.revvity-signals-starting-app .d4-update-shadow .grok-loader {
+    width: 100px;
+    height: 30px;
+}
+
+.revvity-signals-filter-panel .query-builder-history-icon {
+    font-size: 14px;
+    visibility: visible;
+    padding-bottom: 10px;
+}

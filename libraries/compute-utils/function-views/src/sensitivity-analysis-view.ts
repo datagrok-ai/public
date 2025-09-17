@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {BehaviorSubject} from 'rxjs';
-import {getDefaultValue, getPropViewers} from './shared/utils';
+import {getDefaultValue} from './shared/utils';
 import {SobolAnalysis} from './variance-based-analysis/sobol-sensitivity-analysis';
 import {RandomAnalysis} from './variance-based-analysis/random-sensitivity-analysis';
 import {getHelpIcon} from './variance-based-analysis/utils';
@@ -19,6 +19,7 @@ import {getCategoryWidget} from './fitting/fitting-utils';
 
 import {DiffGrok} from './fitting-view';
 import {GridAnalysis} from './variance-based-analysis/grid-sensitivity-analysis';
+import {getPropViewers} from '../../shared-utils/utils';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedInputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];

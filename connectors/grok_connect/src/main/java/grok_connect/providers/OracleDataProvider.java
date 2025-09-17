@@ -18,6 +18,7 @@ import grok_connect.resultset.OracleResultSetManager;
 import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
+import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
 import oracle.jdbc.OracleResultSet;
 import oracle.jdbc.driver.OracleConnection;
@@ -37,7 +38,7 @@ public class OracleDataProvider extends JdbcDataProvider {
         descriptor.type = "Oracle";
         descriptor.description = "Query Oracle database";
         descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
-        descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
+        descriptor.connectionTemplate.add(DbCredentials.getSsl());
         descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
         descriptor.canBrowseSchema = true;
         descriptor.nameBrackets = "\"";
@@ -64,6 +65,28 @@ public class OracleDataProvider extends JdbcDataProvider {
         }};
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "stddev(#)", Types.dataFrameNumericTypes));
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "median(#)", Types.dataFrameNumericTypes));
+        descriptor.jdbcPropertiesTemplate = new ArrayList<Property>() {{
+            add(new Property(Property.INT_TYPE, OracleConnection.CONNECTION_PROPERTY_LOGIN_TIMEOUT,
+                    "Maximum time to wait for login in seconds", new Prop(), "loginTimeout"));
+            add(new Property(Property.INT_TYPE, OracleConnection.CONNECTION_PROPERTY_THIN_NET_CONNECT_TIMEOUT,
+                    "Connection timeout in milliseconds", new Prop(), "connectTimeout"));
+            add(new Property(Property.INT_TYPE, OracleConnection.CONNECTION_PROPERTY_THIN_READ_TIMEOUT,
+                    "Socket read timeout in milliseconds", new Prop(), "readTimeout"));
+
+            add(new Property(Property.BOOL_TYPE, OracleConnection.CONNECTION_PROPERTY_REPORT_REMARKS,
+                    "Enable retrieval of table/column remarks via DatabaseMetaData", new Prop(), "remarksReporting"));
+
+            add(new Property(Property.INT_TYPE, OracleConnection.CONNECTION_PROPERTY_IMPLICIT_STATEMENT_CACHE_SIZE,
+                    "Number of statements in the implicit cache", new Prop(), "implicitStatementCacheSize"));
+            add(new Property(Property.INT_TYPE, OracleConnection.CONNECTION_PROPERTY_MAX_CACHED_BUFFER_SIZE,
+                    "Maximum cached buffer size in KB", new Prop(), "maxCachedBufferSize"));
+            add(new Property(Property.BOOL_TYPE, OracleConnection.CONNECTION_PROPERTY_USE_FETCH_SIZE_WITH_LONG_COLUMN,
+                    "Apply fetch size to LONG and LONG RAW columns", new Prop()));
+
+            add(new Property(Property.BOOL_TYPE, OracleConnection.CONNECTION_PROPERTY_DEFAULTNCHAR,
+                    "Use NCHAR semantics for all character data", new Prop()));
+        }};
+
     }
 
     @Override
@@ -73,8 +96,9 @@ public class OracleDataProvider extends JdbcDataProvider {
 
     @Override
     public Properties getProperties(DataConnection conn) {
-        java.util.Properties properties = defaultConnectionProperties(conn);
-        properties.setProperty(OracleConnection.CONNECTION_PROPERTY_THIN_NET_CONNECT_TIMEOUT, "180000");
+        java.util.Properties properties = super.getProperties(conn);
+        if (!properties.containsKey(OracleConnection.CONNECTION_PROPERTY_THIN_NET_CONNECT_TIMEOUT))
+            properties.setProperty(OracleConnection.CONNECTION_PROPERTY_THIN_NET_CONNECT_TIMEOUT, "180000");
         return properties;
     }
 
@@ -151,7 +175,7 @@ public class OracleDataProvider extends JdbcDataProvider {
                 "CASE WHEN DATA_PRECISION IS NOT NULL AND DATA_SCALE IS NOT NULL " +
                 "THEN CONCAT(COL.DATA_TYPE, CONCAT(CONCAT(CONCAT(CONCAT('(', DATA_PRECISION), ', '), DATA_SCALE), ')')) ELSE COL.DATA_TYPE END AS DATA_TYPE, " +
                 "CASE WHEN O.OBJECT_TYPE = 'VIEW' THEN 1 ELSE 0 END AS IS_VIEW" +
-                " FROM ALL_TAB_COLUMNS COL INNER JOIN ALL_OBJECTS O ON O.OBJECT_NAME = COL.TABLE_NAME " + whereClause +
+                " FROM ALL_TAB_COLUMNS COL INNER JOIN ALL_OBJECTS O ON O.OBJECT_NAME = COL.TABLE_NAME AND O.OWNER = COL.OWNER " + whereClause +
                 " ORDER BY TABLE_NAME";
     }
 

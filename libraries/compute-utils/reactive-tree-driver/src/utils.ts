@@ -1,6 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Observable, defer, of} from 'rxjs';
+import dayjs from 'dayjs';
+import {deepEqual, createCustomEqual, TypeEqualityComparator} from 'fast-equals';
 import {HandlerBase} from './config/PipelineConfiguration';
 import {ValidationResult} from './data/common-types';
 import {NodeAddressSegment, NodePathSegment, TreeNode} from './data/BaseTree';
@@ -59,3 +61,45 @@ export function pathToUUID(
 export function indexFromEnd<T>(arr: Readonly<T[]>, offset = 0): T | undefined {
   return arr[arr.length - offset - 1];
 }
+
+const areObjectsEqual: TypeEqualityComparator<Record<any, any>> = (a, b) => {
+  if (a instanceof DG.DataFrame && b instanceof DG.DataFrame) {
+    if (a.rowCount !== b.rowCount || [...a.columns].length !== [...b.columns].length)
+      return false;
+    for (const columnA of a.columns) {
+      const columnB = b.columns.byName(columnA.name);
+
+      if (columnA.type !== columnB.type || columnA.name !== columnB.name)
+        return false;
+
+      for (let i = 0; i < a.rowCount; i++) {
+        const valueA = columnA.get(i);
+        const valueB = columnB.get(i);
+        if (!customDeepEqual(valueA, valueB))
+          return false;
+      }
+    }
+    return true;
+  }
+
+  if (dayjs.isDayjs(a) && dayjs.isDayjs(b)) {
+    return a.isSame(b);
+  }
+
+  if (!deepEqual(a, b))
+    return false;
+
+  return true;
+}
+
+const FLOAT_TOLERANCE = 0.0001
+
+const areNumbersEqual: TypeEqualityComparator<number> = (a, b) => {
+  if (isNaN(a) && isNaN(b))
+    return true;
+  return Math.abs(a - b) < FLOAT_TOLERANCE;
+}
+
+export const customDeepEqual = createCustomEqual({
+  createCustomConfig: () => ({ areNumbersEqual, areObjectsEqual })
+});

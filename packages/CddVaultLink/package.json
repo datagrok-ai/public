@@ -11,12 +11,12 @@
     "@datagrok-libraries/utils": "^4.5.7",
     "@datagrok/chem": "^1.15.0",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.25.0",
+    "datagrok-api": "^1.26.0",
     "dayjs": "^1.11.13"
   },
   "devDependencies": {
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.25",
+    "datagrok-tools": "^4.14.48",
     "style-loader": "^4.0.0",
     "ts-loader": "latest",
     "typescript": "latest",

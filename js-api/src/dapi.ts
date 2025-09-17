@@ -63,7 +63,7 @@ export class Dapi {
     return api.grok_Dapi_Get_Token();
   }
   // @ts-ignore
-  set token(token: string) {
+  set token(token?: string | undefined) {
 
     // @ts-ignore
 
@@ -598,6 +598,11 @@ export class EntitiesDataSource extends HttpDataSource<Entity> {
   /** @constructs CredentialsDataSource*/
   constructor(s: any) {
     super(s);
+  }
+
+  /** Returns recent entities */
+  getRecentEntities(): Promise<Entity[]> {
+    return toJs(api.grok_EntitiesDataSource_GetRecent(this.dart));
   }
 
   /** Allows to set properties for entities
@@ -1159,8 +1164,8 @@ export class LogDataSource extends HttpDataSource<LogEvent> {
     return new ActivityDataSource(api.grok_Dapi_Activity());
   }
 
-  where(options?: {entityId?: string, start?: dayjs.Dayjs, end?: dayjs.Dayjs}): LogDataSource {
-    return new LogDataSource(api.grok_Dapi_Log_Where(this.dart, options?.entityId ?? '', toDart(options?.start), toDart(options?.end)));
+  where(options?: {entityId?: string, start?: dayjs.Dayjs, end?: dayjs.Dayjs, favoritesOnly?: boolean}): LogDataSource {
+    return new LogDataSource(api.grok_Dapi_Log_Where(this.dart, options?.entityId ?? '', toDart(options?.start), toDart(options?.end), options?.favoritesOnly ?? false));
   }
 }
 

@@ -63,6 +63,26 @@ def write_class_md(output_dir, class_data, classes: dict):
         lines.append(desc)
         lines.append('\n\n')
 
+    if class_docs["examples"] and len(class_docs["examples"]) > 0:
+        lines.append("## Examples\n\n")
+        in_example = False
+        for line in class_docs["examples"]:
+            if not line.startswith('>>>') and not line.startswith('...'):
+                if in_example:
+                    lines.append("```\n")
+                in_example = False
+                line = f"### {line}\n"
+                lines.append(line)
+            else:
+                if not in_example:
+                    in_example = True
+                    lines.append("```py\n")
+                lines.append(line)
+                lines.append('\n')    
+        if in_example:
+            lines.append("```\n")           
+        lines.append("\n")            
+
     if class_docs["attributes"] and len(class_docs["attributes"]) > 0:
         lines.append("## Attributes\n\n")
         lines.append("| Name | Type | Description |\n")

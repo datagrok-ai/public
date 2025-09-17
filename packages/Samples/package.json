@@ -13,8 +13,8 @@
     "directory": "packages/Samples"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.5.7",
-    "datagrok-api": "../../js-api",
+    "@datagrok-libraries/utils": "^4.6.3",
+    "datagrok-api": "^1.26.0",
     "rxjs": "^6.5.5",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3"
@@ -24,7 +24,7 @@
     "@datagrok/dendrogram": "^1.2.33",
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
-    "datagrok-tools": "^4.14.25",
+    "datagrok-tools": "^4.14.48",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "webpack": "^5.95.0",

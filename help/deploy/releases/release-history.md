@@ -21,6 +21,139 @@ See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
 
+## 2025-07-25 Datagrok 1.26.0 release
+
+The Datagrok 1.26.0 release focuses on improved data access and collaboration, enhanced visualization capabilities, and navigation UI/UX improvements.
+
+### Breaking changes
+
+This release introduces non-backward-compatible database changes. You can upgrade to version 1.26.0 automatically; however, once you migrate the database, older versions (including 1.25) will no longer be compatible. In case you need to roll back to 1.25.N, you must manually revert the changes or restore a pre-upgrade backup
+
+### Main updates
+
+* Introducing **Spaces**, a new section in **Browse** that helps you organize, access, and share projects, files, folders, connections, and other frequently used items, making collaboration easier
+* Enhanced **Power Search** on the **Home Page** now lets you quickly find tables, queries, functions, projects, and help topics all from one place
+* A new **Home Page** widget, **Activity Dashboard**, provides a unified view of recent activity, shared items, favorites, personal actions, and notifications, so you can easily track and access key updates
+* **Complex calculated columns**: you can now use a single vector function to generate multiple columns in one step, so you no longer have to add each column manually
+* **Python Celery task wrapper** enables seamless integration of Python Docker applications with Datagrok,
+running Python functions as Celery tasks in isolated containers while the platform handles orchestration, task queuing, and results. For details, see [Creating Python Docker apps](https://datagrok.ai/help/develop/how-to/packages/python-functions)
+
+### Platform
+
+* [#2835](https://github.com/datagrok-ai/public/issues/2835): Data-Link Tables: Enabled editing of data-link tables without needing to unlink them
+* [#2919](https://github.com/datagrok-ai/public/issues/2919): Added support for capture groups in regular expressions
+* [#3346](https://github.com/datagrok-ai/public/issues/3346): Added option to export selected dataframe as SDF with customization
+* Provided the possibility to send email notifications with membership requests
+* Added the ability to restrict sharing within user groups
+* Enabled custom function call editors that integrate into the Datagrok UI, allowing tailored parameter input forms. For details, see [Custom function editors](https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation#custom-function-editors)
+  
+* Fixed: 
+  * [#3325](https://github.com/datagrok-ai/public/issues/3325): CSV Export: Pinned columns are not saved when "Visible Columns Only" is enabled 
+  * [#2654](https://github.com/datagrok-ai/public/issues/2654): Projects: Error when using joining table function  
+  * [#3127](https://github.com/datagrok-ai/public/issues/3127): Projects: Datasync joined tables error when reopened in project/dashboard  
+  * [#3269](https://github.com/datagrok-ai/public/issues/3269): XLSX files with multiple sheets: data sync is only provided for the first sheet  
+  * [#3300](https://github.com/datagrok-ai/public/issues/3300): Projects: Data sync save setting resets to OFF after reopening saved data sync project  
+  * Find and Replace: Finding all empty values is not supported  
+  * Float column formats: Some different formats look the same in examples  
+  
+#### Browse
+
+* Browse tree navigation improvements: the selected directory is now sticky, so it stays in view when you navigate between sections, making it easier to keep your context while browsing
+* Redesigned Docker UX with added **Resources**, **Logs**, and **Build logs** sections for easier container management and monitoring
+
+### [JS API](https://datagrok.ai/help/develop/js-api)
+
+* Added the alias for 'memberships', addressing the previous limitation that required using group.parents in the JavaScript API. For details, see [how to get a list of users](https://community.datagrok.ai/t/how-to-delete-users-from-grok-server/613/7)
+
+### Viewers
+
+* [#3322](https://github.com/datagrok-ai/public/issues/3322): Split date-based viewer timeline by time periods (week, month, quarter, year)
+* [#3077](https://github.com/datagrok-ai/public/issues/3077): Coloring: Added the ability to define colors for linear coloring (min, max, inflection point)
+* [#3303](https://github.com/datagrok-ai/public/issues/3303): Legend now considers categories filtering
+* [#3394](https://github.com/datagrok-ai/public/issues/3394): Added an option to adjust the font size of axis titles (column names), currently available for box plot, scatterplot, pie chart, bar chart, histogram, and density plot viewers
+* [Box plot](../../visualize/viewers/box-plot.md): [#3373](https://github.com/datagrok-ai/public/issues/3373): Added the ability to select date/time column for X-axis and aggregation by month/year/quarter 
+* [PC plot](../../visualize/viewers/pc-plot.md): Added box plot and violin plot visualization
+* [Line Chart](../../visualize/viewers/line-chart.md): Added an option to choose column for markers
+* Fixed:
+  * [Tile Viewer](../../visualize/viewers/tile-viewer.md):  
+    * [#3416](https://github.com/datagrok-ai/public/issues/3416): Tile Viewer editor: Renamed "Reset" button for clarity  
+    * [#3343](https://github.com/datagrok-ai/public/issues/3343): Freezes when opening "Properties > Data > Lanes > Id"  
+    * [#3344](https://github.com/datagrok-ai/public/issues/3344): Not updating after editing calculated column result  
+  * [Trellis plot](../../visualize/viewers/trellis-plot.md):  
+    * [#3389](https://github.com/datagrok-ai/public/issues/3389): Formula line preview for Scatterplot in Trellis plot does not reflect axes configuration  
+    * [#3390](https://github.com/datagrok-ai/public/issues/3390): Formula lines on Scatterplot within Trellis plot are added incorrectly  
+  * [Pivot table](../../visualize/viewers/pivot-table.md): [#3414](https://github.com/datagrok-ai/public/issues/3414): Fixed duplicated tables on Pivot added via properties
+  * [#3398](https://github.com/datagrok-ai/public/issues/3398): Legend coloring: Icon change and direct access for numerical color editing
+  * [#3410](https://github.com/datagrok-ai/public/issues/3410): Designed Form: Fixed alignment of some column values  
+
+### [Grid](../../visualize/viewers/grid.md)
+
+Fixed:
+
+* [#3327](https://github.com/datagrok-ai/public/issues/3327): Coloring: Fails to apply to text after project reopening  
+* [#3406](https://github.com/datagrok-ai/public/issues/3406): Coloring: Resetting applied categorical coloring in some cases  
+* [#3413](https://github.com/datagrok-ai/public/issues/3413): Issues with color coding saving in Grid  
+* [#3376](https://github.com/datagrok-ai/public/issues/3376): Tooltip not shown after changing "Show" option in grid menu  
+* [#3220](https://github.com/datagrok-ai/public/issues/3220): Context menu hidden on last columns with no content on the right  
+
+### [Scatterplot](../../visualize/viewers/scatter-plot.md)
+
+* [#3339](https://github.com/datagrok-ai/public/issues/3339): Improved scatterplot whiskers
+* [#3404](https://github.com/datagrok-ai/public/issues/3404): Harmonizes min/max and range selection for whiskers
+* Fixed:
+  * [#3338](https://github.com/datagrok-ai/public/issues/3338): Whiskers: Incorrect behavior if only one of Min/Max columns selected  
+  * [#1434](https://github.com/datagrok-ai/public/issues/1434): Colors not updating after turning off color coding  
+  * [#3204](https://github.com/datagrok-ai/public/issues/3204): Formula lines cannot be edited in some cases  
+  * [#3323](https://github.com/datagrok-ai/public/issues/3323): Labels: Drag option not working for All or Filtered  
+  * [#3392](https://github.com/datagrok-ai/public/issues/3392): Formula lines: Axis in dialog should match viewer  
+  * [#3290](https://github.com/datagrok-ai/public/issues/3290): Color and Marker legend incorrect structure rendering
+
+### [Filter Panel](../../visualize/viewers/filters.md):  
+  * [#3341](https://github.com/datagrok-ai/public/issues/3341): Expression filter: Added support for values separated by line breaks
+  * Histogram: Improved filters performance for large datasets
+
+### Packages
+
+#### [Bio](https://github.com/datagrok-ai/public/tree/master/packages/Bio/CHANGELOG.md)
+
+* [MSA Header Enhancements](https://community.datagrok.ai/t/plugin-releases/775/122):
+  * Added header tracks: Conservation and WebLogo
+  * Added tooltips for the WebLogo header
+  * Improved performance of Conservation and WebLogo calculations
+* Sequence Scrolling and Positioning:
+  * Added optional scrolling header for short sequences
+  * Improved detection of the maximum sequence length
+  * Improved display of the current position
+* Performance Improvements:
+  *  Added faster methods for retrieving monomers at specified positions
+
+#### [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem/CHANGELOG.md)
+
+* [#3302](https://github.com/datagrok-ai/public/issues/3302): Multiple scaffold trees: Added the ability to apply scaffold tree colors to scatterplot
+* [#3365](https://github.com/datagrok-ai/public/issues/3365): Scaffold Tree: Added Description field to viewer
+* Fixed:
+  * [#3408](https://github.com/datagrok-ai/public/issues/3408): Scaffold tree: Molecule coloring disappears after closing the tree
+  * [#3399](https://github.com/datagrok-ai/public/issues/3399): Scaffold tree: Prevented modification of scaffold colors from scatterplot or other viewers
+
+#### [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts/CHANGELOG.md)
+
+* [#3420](https://github.com/datagrok-ai/public/issues/3420): Tree viewer: Moved `Show mouse over line` to **Style** section on the **Context Panel**
+* [#3298](https://github.com/datagrok-ai/public/issues/3298): Tree viewer: Ctrl+Click updates, coloring, dash line behavior
+* Fixed:
+  * [#3307](https://github.com/datagrok-ai/public/issues/3307): Tree viewer: Upper node not clickable  
+  * [#3377](https://github.com/datagrok-ai/public/issues/3377): Sunburst: Tooltip displays wrong number of rows  
+  * [#3421](https://github.com/datagrok-ai/public/issues/3421): Tree viewer: Different row source behavior when changing `On Click` property  
+  * [#3397](https://github.com/datagrok-ai/public/issues/3397): Tree viewer: Selection and clicking issues
+
+#### [Diff Studio](https://github.com/datagrok-ai/public/tree/master/packages/DiffStudio/CHANGELOG.md)
+
+* Model Analysis: Improved fitting and sensitivity analysis
+* Sensitivity Analysis: implemented parallel evaluation of Diff Studio models, which significantly speeds up calculations
+* Parameters optimization: improved usability and consistent line chart colors
+
+#### [EDA](https://github.com/datagrok-ai/public/tree/master/packages/EDA/CHANGELOG.md)
+
+* Quadratic PLS: Implemented quadratic partial least squares (PLS) regression
 
 ## 2025-03-28 Datagrok 1.25.0 release
 

@@ -88,15 +88,21 @@ Here is an initialization sequence:
 1. `Compute` package is starting. This could be triggered via an URL
    or via starting Model Hub app from UI.
 
-2. `WebComponents` initialization is done during `Compute` init.
+2. `compute-api` initialization is done during `Compute` init.
 
-3. `compute-api` initialization is done during `Compute` init.
-
-4. `Compute` initialization is done. Model Hub integrated abstractions
+3. `Compute` initialization is done. `compute-api` dependent code
    can be launched, since all dynamic dependencies are ready.
 
+4. `Compute2` initialization is done when starting a `Rich Function
+   View` or `Tree Wizard`.
 
-Note that `Compute` depends only on `webomponents-vue` library, which
+5. `WebComponents` initialization is done during `Compute2` init.
+
+6. `Compute2` initialization is done, `Rich Function View` or `Tree
+   Wizard` based views can be rendered.
+
+
+Note that `Compute2` depends only on `webomponents-vue` library, which
 doesn't include web components themselves, that is why `WebComponents`
 init is necessary. Also a global platform shared Vue.js library is
 used.

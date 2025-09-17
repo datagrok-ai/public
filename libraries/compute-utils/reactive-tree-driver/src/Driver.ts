@@ -14,15 +14,16 @@ import {ConsistencyInfo, FuncCallStateInfo, MetaCallInfo} from './runtime/StateT
 import {ValidationResult} from './data/common-types';
 import {DriverLogger} from './data/Logger';
 import {LinksData} from './runtime/LinksState';
+import {getStartedOrNull} from '../../shared-utils/utils';
 
 export class Driver {
   public currentMetaCallData$ = new BehaviorSubject<MetaCallInfo>({});
   public hasNotSavedEdits$ = new BehaviorSubject<boolean>(false);
   public currentState$ = new BehaviorSubject<PipelineState | undefined>(undefined);
-  public currentCallsState$ = new BehaviorSubject<Record<string, BehaviorSubject<FuncCallStateInfo | undefined>>>({});
-  public currentValidations$ = new BehaviorSubject<Record<string, BehaviorSubject<Record<string, ValidationResult>>>>({});
-  public currentConsistency$ = new BehaviorSubject<Record<string, BehaviorSubject<Record<string, ConsistencyInfo>>>>({});
-  public currentMeta$ = new BehaviorSubject<Record<string, BehaviorSubject<Record<string, BehaviorSubject<any>>>>>({});
+  public currentCallsState$ = new BehaviorSubject<Record<string, Observable<FuncCallStateInfo | undefined>>>({});
+  public currentValidations$ = new BehaviorSubject<Record<string, Observable<Record<string, ValidationResult>>>>({});
+  public currentConsistency$ = new BehaviorSubject<Record<string, Observable<Record<string, ConsistencyInfo>>>>({});
+  public currentMeta$ = new BehaviorSubject<Record<string, Observable<Record<string, BehaviorSubject<any>>>>>({});
   public currentConfig$ = new BehaviorSubject<PipelineConfigurationProcessed | undefined>(undefined);
   public nodesDescriptions$ = new BehaviorSubject<Record<string, Observable<Record<string, string | string[]> | undefined>>>({});
   public currentLinks$ = new BehaviorSubject<LinksData[]>([]);
@@ -244,6 +245,7 @@ export class Driver {
         isFavorite,
         description: call?.options.description,
         tags: call?.options.tags,
+        started: getStartedOrNull(call),
       })),
       tap(() => this.wasEdited$.next(false)),
     );
@@ -281,6 +283,7 @@ export class Driver {
           description: metaCall?.options.description,
           isFavorite,
           tags: metaCall?.options.tags,
+          started: getStartedOrNull(metaCall),
         });
         this.wasEdited$.next(false);
       }),

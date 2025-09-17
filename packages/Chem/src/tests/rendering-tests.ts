@@ -5,15 +5,13 @@ import {readDataframe} from './utils';
 import {scrollTable} from '../utils/demo-utils';
 import * as DG from 'datagrok-api/dg';
 import {RDKitCellRenderer} from '../rendering/rdkit-cell-renderer';
-import { FILTER_SCAFFOLD_TAG, HIGHLIGHT_BY_SCAFFOLD_TAG, SCAFFOLD_TREE_HIGHLIGHT } from '../constants';
-import { convertMolNotation } from '../package';
-import { _convertMolNotation } from '../utils/convert-notation-utils';
+import {FILTER_SCAFFOLD_TAG, HIGHLIGHT_BY_SCAFFOLD_TAG, SCAFFOLD_TREE_HIGHLIGHT} from '../constants';
+import {_convertMolNotation} from '../utils/convert-notation-utils';
 import * as api from '../package-api';
 
 category('rendering', () => {
-  
   let rdkitModule: any;
-  
+
   before(async () => {
     rdkitModule = await api.funcs.getRdKitModule();
   });
@@ -62,56 +60,54 @@ category('rendering', () => {
     const df = DG.Test.isInBenchmark ? await readDataframe('tests/smi10K.csv') : await readDataframe('mol1K.csv');
     const grid = df.plot.grid();
     const rowCount = df.rowCount;
-    const colName = DG.Test.isInBenchmark ? 'smiles' : 'molecule'
-    const col = df.col(colName)!;
+    const colName = DG.Test.isInBenchmark ? 'smiles' : 'molecule';
+    // const col = df.col(colName)!;
     const renderFunctions = DG.Func.find({meta: {chemRendererName: 'RDKit'}});
     const rendndererObj = await renderFunctions[0].apply();
     const moleculeHost = ui.canvas(200, 100);
-    
-    let start = performance.now();
+
+    const start = performance.now();
     //rendering without highlights
-    for (let i = 0; i < rowCount; i++) {
+    for (let i = 0; i < rowCount; i++)
       rendndererObj.render(moleculeHost.getContext('2d')!, 0, 0, 200, 100, grid.cell(colName, i));
-    }
+
     console.log(`rendering of ${rowCount} molecules without highlight took ${performance.now() - start} milliseconds`);
-    
   }, {timeout: 180000, benchmark: true});
 
   test('rdkit grid cell renderer with highlights', async () => {
     const df = DG.Test.isInBenchmark ? await readDataframe('tests/smi10K.csv') : await readDataframe('mol1K.csv');
     const grid = df.plot.grid();
     const rowCount = df.rowCount;
-    const colName = DG.Test.isInBenchmark ? 'smiles' : 'molecule'
+    const colName = DG.Test.isInBenchmark ? 'smiles' : 'molecule';
     const col = df.col(colName)!;
     const renderFunctions = DG.Func.find({meta: {chemRendererName: 'RDKit'}});
     const rendndererObj = await renderFunctions[0].apply();
     const moleculeHost = ui.canvas(200, 100);
-    
+
     let start = performance.now();
-   
+
     col.temp[FILTER_SCAFFOLD_TAG] = JSON.stringify([{
       molecule: _convertMolNotation('c1ccccc1', DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock, rdkitModule),
-      isSuperstructure: false
+      isSuperstructure: false,
     }]);
     col.setTag(HIGHLIGHT_BY_SCAFFOLD_TAG, '[{"color":"#00FF00","molecule":"C1CCCCC1"}]');
     const scaffoldTag = JSON.stringify([
       {
         molecule: _convertMolNotation('Cc1ccccc1', DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock, rdkitModule),
-        color: '#ffbb78'
+        color: '#ffbb78',
       },
       {
         molecule: _convertMolNotation('Cc1ccccc1C', DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock, rdkitModule),
-        color: '#2ca02c'
+        color: '#2ca02c',
       },
     ]);
     col.setTag(SCAFFOLD_TREE_HIGHLIGHT, scaffoldTag);
     //rendering with highlights
     start = performance.now();
-    for (let i = 0; i < rowCount; i++) {
+    for (let i = 0; i < rowCount; i++)
       rendndererObj.render(moleculeHost.getContext('2d')!, 0, 0, 200, 100, grid.cell(colName, i));
-    }
+
     console.log(`rendering of ${rowCount} molecules with highlight took ${performance.now() - start} milliseconds`);
-    
   }, {timeout: 180000, benchmark: true});
 
   test('stereochemistry', async () => {

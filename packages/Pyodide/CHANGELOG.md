@@ -1,5 +1,14 @@
 # Pyodide package changelog
 
+## 1.3.0 (2025-07-25)
+
+### Features:
+
+* Allow calling FuncCalls via run_sync and execFuncCall
+* Allow script dependencies with meta.dependencies annotation
+* Print scripts errors in console with actual line numbers
+
+
 ## 1.2.1 (2025-06-19)
 
 * Fixed bug that happened during code generation for dataframes

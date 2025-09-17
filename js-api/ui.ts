@@ -502,8 +502,8 @@ export function waitBox(getElement: () => Promise<HTMLElement>): any {
 /** Creates a visual element representing list of [items].
  * Example: {@link https://public.datagrok.ai/js/samples/ui/components/list}
 */
-export function list(items: any[], options?: {processNode?: (node: HTMLElement) => void}): HTMLElement {
-  const host: HTMLElement = api.grok_UI_List(Array.from(items).map(toDart));
+export function list(items: any[], options?: {processNode?: (node: HTMLElement) => void, maxRows?: number}): HTMLElement {
+  const host: HTMLElement = api.grok_UI_List(Array.from(items).map(toDart), options?.maxRows ?? 20);
   if (options?.processNode != null)
     for (const c of Array.from(host.children))
       options.processNode(c as HTMLElement);
@@ -736,16 +736,16 @@ export namespace input {
     showOnlyColorBox: (input, x) => api.grok_ColorInput_SetShowOnlyColorBox(input.dart, x),
   };
 
-  function setInputOptions(input: InputBase, inputType: d4.InputType, options?: IInputInitOptions): void {
+  function setInputOptions(input: InputBase, inputType: d4.InputType, options?: IInputInitOptions, ignoreProp: boolean = false): void {
     if (options === null || options === undefined)
       return;
     const specificOptions = (({value, property, elementOptions, onCreated, onValueChanged, ...opt}) => opt)(options);
-    if (!options.property)
+    if (!options.property && !ignoreProp)
       options.property = Property.fromOptions({name: input.caption, type: inputType as string});
     if (specificOptions.nullable !== undefined)
       optionsMap['nullable'](input, specificOptions.nullable);
     for (let key of Object.keys(specificOptions)) {
-      if (['min', 'max', 'step', 'format', 'showSlider', 'showPlusMinus'].includes(key))
+      if (['min', 'max', 'step', 'format', 'showSlider', 'showPlusMinus'].includes(key) && options.property)
         (options.property as IIndexable)[key] = (specificOptions as IIndexable)[key];
       if (key === 'table' && (specificOptions as IIndexable)[key] !== undefined) {
         const filter = (specificOptions as IIndexable)['filter'];
@@ -758,9 +758,9 @@ export namespace input {
     const baseOptions = (({value, nullable, property, onCreated, onValueChanged}) => ({value, nullable, property, onCreated, onValueChanged}))(options);
     for (let key of Object.keys(baseOptions)) {
       if (key === 'value' && baseOptions[key] !== undefined)
-        options.property.defaultValue = toDart(baseOptions[key]);
+        options.property ? options.property.defaultValue = toDart(baseOptions[key]) : optionsMap[key](input, (baseOptions as IIndexable)[key]);
       if (key === 'nullable' && baseOptions[key] !== undefined)
-        options.property.nullable = baseOptions[key]!;
+        options.property ? options.property.nullable = baseOptions[key]! : optionsMap[key](input, (baseOptions as IIndexable)[key]);
       if ((baseOptions as IIndexable)[key] !== undefined && optionsMap[key] !== undefined)
         optionsMap[key](input, (baseOptions as IIndexable)[key]);
     }
@@ -833,10 +833,7 @@ export namespace input {
   /** Creates input for the specified property, and optionally binds it to the specified object */
   export function forProperty(property: Property, source: any = null, options?: IInputInitOptions): InputBase {
     const input = InputBase.forProperty(property, source);
-    if (options?.onCreated)
-      options.onCreated(input);
-    if (options?.onValueChanged)
-      input.onChanged.subscribe(() => options.onValueChanged!(input.value, input));
+    setInputOptions(input, input.inputType, options, true);
     return input;
   }
 
@@ -1401,6 +1398,15 @@ export class ObjectHandler<T = any> {
   get name(): string { return `${this.type} handler`; }
 
   toString(): string { return this.name; }
+
+  /** Will be used by search providers to get suggestions (like chembl which has regexp matcher)
+   * For something like CHEMBL object handler, it should return:
+   * regexpMarkup: 'CHEMBL[0-9]+', example: 'CHEMBL1234', nonVariablePart: 'CHEMBL'
+   *
+  */
+  get regexpExample(): {regexpMarkup: string, example: string, nonVariablePart: string} | null {
+    return null;
+  }
 
   async getById(id: string): Promise<T | null> {
     return null;
@@ -2110,12 +2116,14 @@ export function fileBrowser(params: {path?: string, dataSourceFilter?: fileShare
   return FilesWidget.create(params);
 }
 
-export function time(time: dayjs.Dayjs): HTMLSpanElement {
-  return api.grok_UI_Time(toDart(time));
-}
+export namespace time {
+  export function timeSpan(time: dayjs.Dayjs): HTMLSpanElement {
+    return api.grok_UI_Time(toDart(time));
+  }
 
-export function shortTimestamp(time: dayjs.Dayjs): HTMLElement {
-  return api.grok_UI_ShortTimestamp(toDart(time));
+  export function shortTimestamp(time: dayjs.Dayjs): HTMLElement {
+    return api.grok_UI_ShortTimestamp(toDart(time));
+  }
 }
 
 export namespace tools {

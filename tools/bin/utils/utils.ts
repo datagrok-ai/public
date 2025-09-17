@@ -27,7 +27,7 @@ export function kebabToCamelCase(s: string, firstUpper: boolean = true): string 
 export function descriptionToComment(s: string) {
   if (s.length === 0)
     return '';
-  return '//' + s + '\n';
+  return '/**\n' + s + '\n*/\n';
 }
 
 export function spaceToCamelCase(s: string, firstUpper: boolean = true): string {
@@ -255,7 +255,7 @@ export function getScriptDescription(script: string, comment: string = '#'): str
   return desc;
 };
 
-export const dgImports = `import * as grok from 'datagrok-api/grok';\nimport * as DG from 'datagrok-api/dg';\n\n`;
+export const dgImports = `import * as grok from 'datagrok-api/grok';\nimport * as DG from 'datagrok-api/dg';\n`;
 
 export const scriptWrapperTemplate = `#{FUNC_DESCRIPTION}export async function #{FUNC_NAME_LOWERCASE}(#{TYPED_PARAMS}): Promise<#{OUTPUT_TYPE}> {
   return await grok.functions.call('#{PACKAGE_NAMESPACE}:#{FUNC_NAME}', #{PARAMS_OBJECT});
@@ -307,4 +307,42 @@ export function setHost(host: any, configFile: any) {
     process.env.HOST = configFile.default;
     console.log('Environment variable `HOST` is set to', configFile.default);
   }
+}
+
+export async function runAll(packagesDir: string, command: string, options: Record<string, any>, packagesToLoad:string[] = ['all']) {
+  const packages = fs.readdirSync(packagesDir);
+  const commandToRun = `${command} ${optionsToString(options)}`;
+  for (const packageName of packages) {
+    const packagePath = path.join(...[packagesDir, packageName]);
+    const packageJsonPath = path.join(...[packagesDir, packageName, 'package.json']);
+    if (fs.statSync(packagePath).isDirectory() && fs.existsSync(packageJsonPath)) {
+      try {
+        console.log(`${packagePath}: ${commandToRun} - Started`);
+        await runScript(commandToRun, packagePath, options.verbose);
+          console.log(`${packagePath}: ${commandToRun} - Finished`);
+      }
+      catch (e) {
+        console.log(`${packagePath}: ${commandToRun} - Error`);
+      }
+    }
+  }
+  return;
+}
+
+function optionsToString(options: Record<string, any>) {
+  const parts: string[] = []; 
+
+  for (const [key, value] of Object.entries(options)) {
+    if (key === '_' || key === 'all') continue;
+
+    if (typeof value === 'boolean') {
+      if (value) {
+        parts.push(`--${key}`);
+      }
+    } else if (value !== undefined && value !== null) {
+      parts.push(`--${key}="${value}"`);
+    }
+  }
+
+  return parts.join(' ');
 }

@@ -1,4 +1,5 @@
 const path = require('path');
+const FuncGeneratorPlugin = require('datagrok-tools/plugins/func-gen-plugin');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
@@ -49,6 +50,7 @@ module.exports = {
   },
   plugins: [
     new MiniCssExtractPlugin({filename: 'molstar.css'}),
+    new FuncGeneratorPlugin({outputPath: './src/package.g.ts'}),
   ],
   devtool: mode !== 'production' ? 'inline-source-map' : 'source-map',
   externals: {

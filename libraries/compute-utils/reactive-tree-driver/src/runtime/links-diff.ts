@@ -1,5 +1,5 @@
+import {deepEqual} from 'fast-equals';
 import {Link} from './Link';
-import isEqual from 'lodash.isequal';
 
 export interface LinksDiff {
   toRemove: Set<string>,
@@ -38,10 +38,10 @@ export function findLink(links: Link[], link: Link) {
 }
 
 export function linkEqual(link1: Link, link2: Link): boolean {
-  if (!isEqual(link1.prefix, link2.prefix))
+  if (!deepEqual(link1.prefix, link2.prefix))
     return false;
 
-  if (!isEqual(link1.matchInfo, link2.matchInfo))
+  if (!deepEqual(link1.matchInfo, link2.matchInfo))
     return false;
 
   return true;

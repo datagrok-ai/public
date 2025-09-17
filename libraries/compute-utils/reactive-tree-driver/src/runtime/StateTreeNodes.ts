@@ -10,9 +10,8 @@ import {IFuncCallAdapter, IStateStore, MemoryStore} from './FuncCallAdapters';
 import {FuncCallInstancesBridge, RestrictionState} from './FuncCallInstancesBridge';
 import {isPipelineConfig, isPipelineStepConfig, PipelineStepConfigurationProcessed} from '../config/config-utils';
 import {map, mapTo, scan, skip, switchMap, takeUntil, withLatestFrom} from 'rxjs/operators';
-import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {RestrictionType, ValidationResult} from '../data/common-types';
-import {mergeValidationResults} from '../utils';
+import {customDeepEqual, mergeValidationResults} from '../utils';
 
 export const descriptionOutputs = ['title', 'description', 'tags'] as const;
 const descriptionStates = descriptionOutputs.map((id) => ({id}));
@@ -70,7 +69,7 @@ export class FuncCallNode implements IStoreProvider {
 
   public consistencyInfo$ = new BehaviorSubject<Record<string, ConsistencyInfo>>({});
   public validationInfo$ = new BehaviorSubject<Record<string, ValidationResult>>({});
-  public metaInfo$ = new BehaviorSubject<Record<string, BehaviorSubject<any | undefined>>>({});
+  public metaInfo$ = new BehaviorSubject<Record<string, BehaviorSubject<Record<string, any> | undefined>>>({});
   public funcCallState$ = new BehaviorSubject<FuncCallStateInfo | undefined>(undefined);
   public pendingDependencies$ = new BehaviorSubject<string[]>([]);
   public nodeDescription = new NodeMetaDescription(descriptionStates, false);
@@ -90,9 +89,7 @@ export class FuncCallNode implements IStoreProvider {
       takeUntil(this.closed$),
     ).subscribe(this.validationInfo$);
 
-    this.instancesWrapper.meta$.pipe(
-      takeUntil(this.closed$),
-    ).subscribe(this.metaInfo$);
+    this.metaInfo$.next(this.instancesWrapper.meta);
 
     combineLatest([
       this.instancesWrapper.isRunning$,
@@ -119,8 +116,12 @@ export class FuncCallNode implements IStoreProvider {
     this.instancesWrapper.init({...data, initValues});
   }
 
-  changeAdapter(adapter: IFuncCallAdapter) {
-    this.instancesWrapper.change(adapter);
+  changeAdapter(adapter: IFuncCallAdapter, isNew = false) {
+    this.instancesWrapper.change(adapter, isNew);
+  }
+
+  setOutdatedStatus(isOutdated: boolean) {
+    this.instancesWrapper.setOutdatedStatus(isOutdated);
   }
 
   setDeps(deps: (readonly [string, Observable<boolean>])[]) {
@@ -188,10 +189,20 @@ export class FuncCallNode implements IStoreProvider {
     return res;
   }
 
-  clearIOMeta(name: string) {
-    const s = this.metaInfo$.value?.[name];
-    if (s?.value != null)
-      s.next(undefined);
+  clearOldMetas(currentIds: Set<string>) {
+    for (const meta$ of Object.values(this.instancesWrapper.metaStates ?? {})) {
+      if (!meta$?.value)
+        continue;
+      let needsUpdate = false;
+      for (const handlerId of Object.keys(meta$.value)) {
+        if (!currentIds.has(handlerId)) {
+          delete meta$.value[handlerId];
+          needsUpdate = true;
+        }
+      }
+      if (needsUpdate)
+        meta$.next(Object.keys(meta$.value).length === 0 ? undefined : meta$.value);
+    }
   }
 
   clearIORestriction(name: string) {
@@ -279,7 +290,7 @@ export class FuncCallNode implements IStoreProvider {
     else {
       const {assignedValue, type} = restriction;
       const currentVal = this.instancesWrapper.getState(inputName);
-      const inconsistent = !this.deepEq(currentVal, assignedValue);
+      const inconsistent = !customDeepEqual(currentVal, assignedValue);
       return {
         restriction: type,
         inconsistent,
@@ -304,19 +315,6 @@ export class FuncCallNode implements IStoreProvider {
       map((s) => [...s]),
     );
     return pending$;
-  }
-
-  private deepEq(actual: any, expected: any) {
-    try {
-      // expectDeepEqual will not check additional props in an actual
-      // data, only those that are explicitly present in the expected
-      // data
-      expectDeepEqual(actual, expected, {maxErrorsReport: 1, floatTolerance: 0.0001});
-      expectDeepEqual(expected, actual, {maxErrorsReport: 1, floatTolerance: 0.0001});
-    } catch {
-      return false;
-    }
-    return true;
   }
 }
 

@@ -12,6 +12,7 @@
  * TODO: Use detectors from WebLogo pickUp.. methods
  */
 // eslint-disable-next-line max-lines
+/// <reference path="../../globals.d.ts" />
 
 const SEQ_SAMPLE_LIMIT = 100;
 const SEQ_SAMPLE_LENGTH_LIMIT = 100;
@@ -626,8 +627,8 @@ class BioPackageDetectors extends DG.Package {
         return true;
       }
 
-      if (event.args.item && event.args.item instanceof DG.GridColumn && event.args.item.column &&
-        event.args.item.column.type === DG.TYPE.STRING && !event.args.item.column.semType) {
+      if (event.args.item && event.args.item instanceof DG.GridColumn && event.args.item.column && // there might be cases where PDS sequences with spaces are detected as text
+        event.args.item.column.type === DG.TYPE.STRING && (!event.args.item.column.semType || event.args.item.column.semType === DG.SEMTYPE.TEXT)) {
         const contextMenu = event.args.menu;
         const column = event.args.item.column;
         try {

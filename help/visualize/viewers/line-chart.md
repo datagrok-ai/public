@@ -22,6 +22,11 @@ General:
 
 ![Line Chart](../../uploads/gifs/line-chart.gif "Line chart")
 
+## Statistical Process Control
+
+Line chart supports Statistical Process Control (SPC) features out of the box, including contol limits and adjustable rules.
+![SPC Chart](../../uploads/gifs/line-chart-spc.png "SPC Chart")
+
 ## Videos
 
 [![Line Chart](../../uploads/youtube/visualizations2.png "Open on Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=934s)

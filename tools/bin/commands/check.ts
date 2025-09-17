@@ -54,7 +54,8 @@ function runChecks(packagePath: string, soft: boolean = false): boolean {
     if (externals)
       errors.push(...checkImportStatements(packagePath, jsTsFiles, externals));
   }
-  errors.push(...checkSourceMap(packagePath));
+  if (!soft)
+    errors.push(...checkSourceMap(packagePath));
   errors.push(...checkNpmIgnore(packagePath));
   warnings.push(...checkScriptNames(packagePath));
   const [signatureWarnings, signatureErrors] = checkFuncSignatures(packagePath, jsTsFiles);

@@ -2,7 +2,7 @@ import {toDart, toJs} from "./wrappers";
 import {__obs, _sub, EventData, InputArgs, observeStream, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
 import {fromEvent, Observable, Subject, Subscription} from "rxjs";
-import {Func, Property, IProperty, Entity, Group} from './entities';
+import {Func, Property, IProperty, Entity, Group, ProgressIndicator} from "./entities";
 import {Cell, Column, DataFrame} from "./dataframe";
 import {LegendPosition, Type} from "./const";
 import {filter, map} from 'rxjs/operators';
@@ -948,6 +948,27 @@ export interface IMenuColorPaletteOptions {
   closeOnClick?: boolean;
 }
 
+/** See {@link Menu.fontEditor} */
+export interface IMenuFontEditorOptions {
+  /** Minimum font size. */
+  fontSizeMin: number;
+
+  /** Maximum font size. */
+  fontSizeMax: number;
+
+  /** Step of font size. */
+  fontSizeStep: number;
+
+  /** List of available font families. */
+  fontFamilies: Iterable<String>;
+
+  /** A name of the group in the menu. */
+  asGroup: string;
+
+  /** Called when font is changed */
+  onChange: (value: string) => void;
+}
+
 /** See {@link IMenuSingleColumnSelectorOptions} and {@link IMenuMultiColumnSelectorOptions} */
 export interface IMenuColumnSelectorOptions<T> {
 
@@ -1125,13 +1146,21 @@ export class Menu {
   }
 
   /** Adds color palettes colors to menu.
-   * @param initial - Initial colors to be set first or reset.
    * @param colors - Array of arrays of color choices.
    * @param options - Optional params and functions, see {@link IMenuColorPaletteOptions}.
    * @returns {Menu} `this` menu itself. */
   colorPalette(colors: number[][], options?: IMenuColorPaletteOptions): Menu {
     return toJs(api.grok_Menu_ColorPalette(this.dart, colors, options?.getInitialValue, options?.onSelect,
       options?.onPreview, options?.asGroup, options?.visible, options?.categorical ?? false, options?.resetColorMs ?? 200, options?.closeOnClick ?? true));
+  }
+
+  /** Adds font editor to menu.
+   * @param initial - Initial font to be set first or reset.
+   * @param options - Optional params and functions, see {@link IMenuFontEditorOptions}.
+   * @returns {Menu} `this` menu itself. */
+  fontEditor(initial: string, options?: IMenuFontEditorOptions): Menu {
+    return toJs(api.grok_Menu_FontEditor(this.dart, initial, options?.fontSizeMin, options?.fontSizeMax,
+      options?.fontSizeStep ?? 1, options?.fontFamilies, options?.asGroup, options?.onChange));
   }
 
   /** Adds single-column selector to menu.
@@ -1173,6 +1202,10 @@ export class Menu {
    * @returns {Menu} `this` menu itself. */
   show(options?: IShowMenuOptions): Menu {
     return toJs(api.grok_Menu_Show(this.dart, options?.element, options?.causedBy, options?.x, options?.y, options?.nextToElement));
+  }
+
+  hide(): void {
+    api.grok_Menu_Hide(this.dart);
   }
 
   /** Binds the menu to the specified {@link options.element} */
@@ -1392,6 +1425,11 @@ export class InputBase<T = any> {
 
   get classList(): DOMTokenList { return this.root.classList; }
 
+  /**
+   * Performs immediate validation of the input and returns the result.
+   *
+   * @returns {boolean} True if the input is valid; otherwise, false.
+   */
   validate(): boolean {
     return api.grok_InputBase_Validate(this.dart);
   }
@@ -1499,49 +1537,6 @@ export class ChoiceInput<T> extends InputBase<T> {
 
   get items(): T[] { return toJs(api.grok_ChoiceInput_Get_Items(this.dart)); }
   set items(s: T[]) { api.grok_ChoiceInput_Set_Items(this.dart, toDart(s)); }
-}
-
-
-export class ProgressIndicator {
-  dart: any;
-
-  constructor(dart: any) {
-    this.dart = dart;
-  }
-
-  static create() {
-    return toJs(api.grok_ProgressIndicator_Create());
-  }
-
-  get percent(): number {
-    return api.grok_ProgressIndicator_Get_Percent(this.dart);
-  }
-
-  /** Flag indicating whether the operation was canceled by the user. */
-  get canceled(): boolean { return api.grok_ProgressIndicator_Get_Canceled(this.dart); }
-
-  get description(): string { return api.grok_ProgressIndicator_Get_Description(this.dart); }
-  set description(s: string) { api.grok_ProgressIndicator_Set_Description(this.dart, s); }
-
-  update(percent: number, description: string): void {
-    api.grok_ProgressIndicator_Update(this.dart, percent, description);
-  }
-
-  log(line: string): void {
-    api.grok_ProgressIndicator_Log(this.dart, line);
-  }
-
-  get onProgressUpdated(): Observable<any> {
-    return observeStream(api.grok_Progress_Updated(this.dart));
-  }
-
-  get onLogUpdated(): Observable<any> {
-    return observeStream(api.grok_Progress_Log_Updated(this.dart));
-  }
-
-  get onCanceled(): Observable<any> {
-    return observeStream(api.grok_Progress_Canceled(this.dart));
-  }
 }
 
 
@@ -1669,7 +1664,7 @@ export class TreeViewNode<T = any> {
 
   /** Node value */
   get value(): T { return api.grok_TreeViewNode_Get_Value(this.dart); };
-  set value(v: T) { api.grok_TreeViewNode_Set_Value(this.dart, v); };
+  set value(v: T) { api.grok_TreeViewNode_Set_Value(this.dart, v)};
 
   /** Enables checkbox */
   enableCheckBox(checked: boolean = false): void {
@@ -1765,17 +1760,17 @@ export class TreeViewGroup extends TreeViewNode {
 
   /** Adds new group */
   group(text: string | Element, value: object | null = null, expanded: boolean = true, index: number | null = null): TreeViewGroup {
-    return toJs(api.grok_TreeViewNode_Group(this.dart, text, toDart(value), expanded, index));
+    return toJs(api.grok_TreeViewNode_Group(this.dart, text, value, expanded, index));
   }
 
   /** Returns existing, or creates a new node group */
   getOrCreateGroup(text: string, value: object | null = null, expanded: boolean = true): TreeViewGroup {
-    return toJs(api.grok_TreeViewNode_GetOrCreateGroup(this.dart, text, toDart(value), expanded));
+    return toJs(api.grok_TreeViewNode_GetOrCreateGroup(this.dart, text, value, expanded));
   }
 
   /** Adds new item to group */
   item(text: string | Element, value: object | null = null): TreeViewNode {
-    return toJs(api.grok_TreeViewNode_Item(this.dart, text, toDart(value)));
+    return toJs(api.grok_TreeViewNode_Item(this.dart, text, value));
   }
 
   get onNodeExpanding(): Observable<TreeViewGroup> { return __obs('d4-tree-view-node-expanding', this.dart); }

@@ -22,9 +22,10 @@ export type MatchInfo = {
   basePathUUID?: string;
   actions: Record<string, MatchedNodePaths>;
   inputs: Record<string, MatchedNodePaths>;
-  inputsUUID: Map<string, Set<string>>;
   outputs: Record<string, MatchedNodePaths>;
-  outputsUUID: Map<string, Set<string>>;
+  // needed to diff order beetween multiple steps of the same kind
+  inputsUUID: Map<string, Array<string>>;
+  outputsUUID: Map<string, Array<string>>;
   isDefaultValidator?: boolean;
 }
 
@@ -72,8 +73,8 @@ function matchLinkInstance(
     basePath: base?.path,
     actions,
     inputs: {},
-    inputsUUID: new Map(),
     outputs: {},
+    inputsUUID: new Map(),
     outputsUUID: new Map(),
   };
   const currentIO: Record<string, MatchedNodePaths> = {};
@@ -143,16 +144,18 @@ function getRefOrigin(
   rnode: TreeNode<StateTreeNode>,
   currentIO: Record<string, MatchedNodePaths>,
   parsedLink: LinkIOParsed,
-  ref: string,
+  ref: string | undefined,
   selector: LinkRefSelectors,
   path: readonly NodePathSegment[],
 ) {
+  if (ref == null)
+    return;
   const io = currentIO[ref];
   if (io == null)
     throw new Error(`Node ${rnode.getItem().config.id} referenced unknown io ${ref} in ${parsedLink.name}`);
   const refOrigin = refSelectorDirection(selector) === 'before' ? io[0] : indexFromEnd(io)!;
   if (!BaseTree.isNodeChildOrEq(path, refOrigin.path))
-    throw new Error(`Node ${rnode.getItem().config.id} reference path ${JSON.stringify(refOrigin.path)} is different from current ${JSON.stringify(path)}`);
+    return;
   return refOrigin;
 }
 
@@ -174,10 +177,9 @@ function matchLinkIO(
         nextNodes = matchNonRefSegment(pnode, ids, selector);
       else {
         let originIdx = undefined;
-        if (ref) {
-          const refOrigin = getRefOrigin(rnode, currentIO, parsedLink, ref, selector, currentPath);
+        const refOrigin = getRefOrigin(rnode, currentIO, parsedLink, ref, selector, currentPath);
+        if (refOrigin)
           originIdx = refOrigin.path[currentSegment!].idx;
-        }
         nextNodes = matchRefSegment(pnode, ids, selector, originIdx, stopIds);
       }
       return nextNodes.map(([idx, node]) => [{pnode: node.item, isLastSegment}, [...currentPath, {id: node.id, idx}], currentSegment!+1] as const);
@@ -187,9 +189,9 @@ function matchLinkIO(
       if (isNonRefSelector(selector))
         nextNodes = matchNonRefTag(pnode, tags, selector);
       else {
-        if (!ref)
-          return [];
         const refOrigin = getRefOrigin(rnode, currentIO, parsedLink, ref, selector, currentPath);
+        if (!refOrigin)
+          return [];
         const refNode = rnode.getNode(refOrigin.path);
         if (!refNode)
           return [];
@@ -399,13 +401,13 @@ export function updateMatchInfoUUIDs(rnode: TreeNode<StateTreeNode>, matchInfo: 
   }
 }
 
-function matchedPathsToUUIDs(rnode: TreeNode<StateTreeNode>, paths: MatchedNodePaths) {
-  const res = new Set<string>;
+function matchedPathsToUUIDs(rnode: TreeNode<StateTreeNode>, paths: MatchedNodePaths): string[] {
+  const res: string[] = [];
   for (const path of paths) {
     const uuids = pathToUUID(rnode, path.path);
     if (path.ioName)
       uuids.push(path.ioName);
-    res.add(uuids.join('/'));
+    res.push(uuids.join('/'));
   }
   return res;
 }

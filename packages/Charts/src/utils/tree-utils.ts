@@ -5,6 +5,8 @@ import * as ui from 'datagrok-api/ui';
 import * as utils from './utils';
 
 export class TreeUtils {
+  static colorCache: DG.LruCache = new DG.LruCache<string, Record<string, string>>();
+
   static async toTree(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet,
     visitNode: ((arg0: TreeDataType) => void) | null = null, aggregations:
       AggregationInfo[] = [], linkSelection: boolean = true, selection?: boolean, inherit?: boolean,
@@ -70,6 +72,28 @@ export class TreeUtils {
         }
       }
       return false;
+    };
+
+    const precomputeCategoryColors = (column: DG.Column) => {
+      const colors: Record<string, string> = {};
+      column.categories.forEach((cat, idx) => {
+        colors[cat] = DG.Color.toHtml(DG.Color.getCategoricalColor(idx));
+      });
+      this.colorCache.set(column.name, colors);
+    };
+
+    const getCategoryColor = (column: DG.Column, i: number, inherit: boolean) => {
+      if (inherit)
+        return DG.Color.toHtml(DG.Color.getRowColor(column, i));
+
+      let colors = this.colorCache.get(column.name);
+      if (!colors) {
+        precomputeCategoryColors(column);
+        colors = this.colorCache.get(column.name)!;
+      }
+
+      const category = column.get(i);
+      return colors[category];
     };
 
     function aggregateParentNodes(): void {
@@ -150,12 +174,9 @@ export class TreeUtils {
           };
         }
 
-        const colorCodingType = columns[colIdx].meta.colors.getType();
-        if (colorCodingType !== DG.COLOR_CODING_TYPE.OFF && colorCodingType !== null && inherit) {
-          node.itemStyle = {
-            color: DG.Color.toHtml(columns[colIdx].meta.colors.getColor(i)),
-          };
-        }
+        node.itemStyle = {
+          color: getCategoryColor(columns[colIdx], i, inherit!),
+        };
 
         if (colIdx === columns.length - 1)
           propNames.forEach((prop) => node[prop] = aggrValues[prop]);

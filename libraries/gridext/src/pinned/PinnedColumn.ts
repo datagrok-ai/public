@@ -301,7 +301,7 @@ export class PinnedColumn {
 
     const storeGridOptions = () => {
       const gridLook = grid.getOptions(true).look;
-      this.colHeaderHeight = gridLook.colHeaderHeight;
+      // this.colHeaderHeight = gridLook.colHeaderHeight ?? 40; // need to fix DG bug
       this.rowHeight = gridLook.rowHeight;
       this.colHeaderFont = gridLook.colHeaderFont;
     }
@@ -363,7 +363,7 @@ export class PinnedColumn {
     );
 
     this.m_handlerMouseOverRow = DG.debounce(dframe.onMouseOverRowChanged, 50).subscribe(() => {
-      clearTimeout(this._mouseOverRowsTimer!);  
+      clearTimeout(this._mouseOverRowsTimer!);
       this._mouseOverRowsTimer = window.setTimeout(() => {
           const g = eCanvasThis.getContext('2d');
           headerThis.paint(g, grid);
@@ -408,8 +408,10 @@ export class PinnedColumn {
           if(headerThis.m_colGrid === null)
             return;
           for(let nC=0; nC<e.columns.length; ++nC) {
-            if(e.columns[nC].name === headerThis.m_colGrid.name)
+            if(e.columns[nC].name === headerThis.m_colGrid.name) {
               headerThis.close();
+              break;
+            }
           }
         }
     );
@@ -1355,7 +1357,8 @@ export class PinnedColumn {
     //onsole.log("nXX " + nXX + " nYY = " + nYY + " CHH " + nHCH);
     // g.fillText(str, nXX, nYY);
     const gridColHeader = DG.GridCell.createColHeader(this.m_colGrid);
-    gridColHeader.render({context: g, bounds: new DG.Rect(nX, nY, nW, nHCH)});
+    gridColHeader.style.font = fontScaled;
+    gridColHeader.render({context: g, bounds: new DG.Rect(nX, nY, nW * devicePixelRatio, nHCH)});
 
     //Paint Sort Arrow
     if(this.m_colGrid.idx > 0) {

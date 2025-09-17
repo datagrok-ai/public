@@ -6,16 +6,22 @@ import {northwindConfig} from "./apps/northwind-app";
 
 import {CruddyApp} from "./cruddy/app";
 import {chemblConfig} from "./apps/chembl-app";
-
+export * from './package.g';
 export const _package = new DG.Package();
 
-//tags: app
-//meta.browsePath: Dev
-export function northwindDemo() {
-  new CruddyApp(northwindConfig).run();
-}
+export class PackageFunctions{
+  @grok.decorators.app({
+      'browsePath': 'Dev' 
+  })
+  static northwindDemo() {
+  
+    new CruddyApp(northwindConfig).run();
+  }
 
-//tags: app
-export function chemblDemo() {
-  new CruddyApp(chemblConfig).run();
+
+  @grok.decorators.app({})
+  static chemblDemo() {
+  
+    new CruddyApp(chemblConfig).run();
+  }
 }

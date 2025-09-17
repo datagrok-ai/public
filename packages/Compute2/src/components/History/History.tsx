@@ -4,10 +4,9 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
 import {IconFA, ifOverlapping, ToggleInput, Viewer} from '@datagrok-libraries/webcomponents-vue';
-import {historyUtils, RunComparisonView} from '@datagrok-libraries/compute-utils';
-import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
-import {ID_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-components/src/history-input';
-import {FAVORITE_COLUMN_NAME, COMPLETE_COLUMN_NAME, STARTED_COLUMN_NAME, AUTHOR_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME, DESC_COLUMN_NAME, VERSION_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-utils/consts';
+import {getColumnName, getRunsDfFromList, getVisibleProps, historyUtils, RunComparisonView, saveIsFavorite, setGridCellRendering, setGridColumnsRendering} from '@datagrok-libraries/compute-utils';
+import {} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+import {ID_COLUMN_NAME, FAVORITE_COLUMN_NAME, COMPLETE_COLUMN_NAME, STARTED_COLUMN_NAME, AUTHOR_COLUMN_NAME, TAGS_COLUMN_NAME, TITLE_COLUMN_NAME, DESC_COLUMN_NAME, VERSION_COLUMN_NAME} from '@datagrok-libraries/compute-utils/shared-utils/consts';
 import {EditRunMetadataDialog, HistoricalRunsDelete} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {filter, mergeMap, take, toArray} from 'rxjs/operators';
 import {from} from 'rxjs';
@@ -131,7 +130,7 @@ export const History = Vue.defineComponent({
       const editOptions = await editDialog.onMetadataEdit.pipe(take(1)).toPromise();
       try {
         if (!!editOptions.isFavorite !== isFavorite)
-          await Utils.saveIsFavorite(funcCall, !!editOptions.isFavorite);
+          await saveIsFavorite(funcCall, !!editOptions.isFavorite);
         const fullCall = await historyUtils.loadRun(funcCall.id, false, false);
         if (editOptions.title) fullCall.options['title'] = editOptions.title;
         if (editOptions.description) fullCall.options['description'] = editOptions.description;
@@ -153,13 +152,13 @@ export const History = Vue.defineComponent({
 
     const onFavoriteClick = async (cell: DG.GridCell) => {
       const run = getRunByIdx(cell.tableRowIndex!)!;
-      await Utils.saveIsFavorite(run, true);
+      await saveIsFavorite(run, true);
       updateRun(run);
     };
 
     const onUnfavoriteClick = async (cell: DG.GridCell) => {
       const run = getRunByIdx(cell.tableRowIndex!)!;
-      await Utils.saveIsFavorite(run, false);
+      await saveIsFavorite(run, false);
       updateRun(run);
     };
 
@@ -169,7 +168,7 @@ export const History = Vue.defineComponent({
         await historyUtils.deleteRun(loadedRun);
         historicalRuns.value.delete(id);
         Vue.triggerRef(historicalRuns);
-        await Utils.saveIsFavorite(loadedRun, false);
+        await saveIsFavorite(loadedRun, false);
       } catch (e: any) {
         grok.shell.error(e);
       }
@@ -195,7 +194,7 @@ export const History = Vue.defineComponent({
     const historicalRunsDf = Vue.shallowRef(Vue.markRaw(defaultDf));
 
     Vue.watch([historicalRuns, func], async ([historicalRuns, func]) => {
-      const df = await Utils.getRunsDfFromList(
+      const df = await getRunsDfFromList(
         historicalRuns,
         func,
         Vue.toValue(() => ({...props, isHistory: true})),
@@ -236,15 +235,15 @@ export const History = Vue.defineComponent({
         ...showMetadata.value ? [TITLE_COLUMN_NAME]: [],
         ...showMetadata.value ? [DESC_COLUMN_NAME]: [],
         ...(showMetadata.value && allowOtherVersions) ? [VERSION_COLUMN_NAME]: [],
-        ...showInputs.value && currentFunc.value ? Utils.getVisibleProps(currentFunc.value)
+        ...showInputs.value && currentFunc.value ? getVisibleProps(currentFunc.value)
           .map((key) => {
             const param = currentFunc.value.inputs.find((prop) => prop.name === key) ??
               currentFunc.value.outputs.find((prop) => prop.name === key);
 
             if (param)
-              return param.caption ?? Utils.getColumnName(param.name);
+              return param.caption ?? getColumnName(param.name);
             else
-              return Utils.getColumnName(key);
+              return getColumnName(key);
           }): [],
       ];
       currentGrid.value.columns.setVisible(cols);
@@ -271,9 +270,9 @@ export const History = Vue.defineComponent({
           col.format = 'MMM d, h:mm tt';
       }
 
-      Utils.setGridColumnsRendering(grid);
+      setGridColumnsRendering(grid);
 
-      Utils.setGridCellRendering(
+      setGridCellRendering(
         grid,
         historicalRuns.value,
         onEditClick,
@@ -341,15 +340,15 @@ export const History = Vue.defineComponent({
         currentDf.getCol(TITLE_COLUMN_NAME).categories.length > 1 ? [TITLE_COLUMN_NAME]: [],
         ...showMetadata.value &&
         currentDf.getCol(DESC_COLUMN_NAME).categories.length > 1 ? [DESC_COLUMN_NAME]: [],
-        ...currentFunc.value && (showInputs.value && !forceHideInputs.value) ? Utils.getVisibleProps(currentFunc.value)
+        ...currentFunc.value && (showInputs.value && !forceHideInputs.value) ? getVisibleProps(currentFunc.value)
           .map((key) => {
             const param = currentFunc.value.inputs.find((prop) => prop.name === key) ??
             currentFunc.value.outputs.find((prop) => prop.name === key);
 
             if (param)
-              return param.caption ?? Utils.getColumnName(param.name);
+              return param.caption ?? getColumnName(param.name);
             else
-              return Utils.getColumnName(key);
+              return getColumnName(key);
           })
           .filter((columnName) => currentDf.getCol(columnName).categories.length > 1)
           .map((columnName) => columnName): [],

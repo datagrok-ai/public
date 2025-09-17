@@ -44,7 +44,7 @@ export async function registerDGUserHandler(_package: DG.Package) {
 }
 
 export async function newUsersSearch(s: string) {
-  const matches = matchAndParseQuery('new users ${}', s);
+  const matches = matchAndParseQuery('new users ${0}', s);
   if (!matches || !matches[0])
     return null;
 
@@ -76,9 +76,9 @@ export async function newUsersSearch(s: string) {
     firstDate = yesterday.toISOString().split('T')[0];
     secondDate = yesterday.toISOString().split('T')[0];
   } else {
-    const extraMatchMonths = matchAndParseQuery('last ${} months', matchVal);
-    const extraMatchYears = matchAndParseQuery('last ${} years', matchVal);
-    const extraMatchDays = matchAndParseQuery('last ${} days', matchVal);
+    const extraMatchMonths = matchAndParseQuery('last ${0} months', matchVal);
+    const extraMatchYears = matchAndParseQuery('last ${0} years', matchVal);
+    const extraMatchDays = matchAndParseQuery('last ${0} days', matchVal);
     if (extraMatchMonths && extraMatchMonths[0]) {
       const months = parseInt(extraMatchMonths[0]);
       const lastMonth = new Date(curDate.getFullYear(), curDate.getMonth() - months, 3);

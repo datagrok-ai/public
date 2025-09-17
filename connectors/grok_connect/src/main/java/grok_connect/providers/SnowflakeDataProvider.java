@@ -43,8 +43,8 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public Properties getProperties(DataConnection conn) throws GrokConnectException {
-        java.util.Properties properties = defaultConnectionProperties(conn);
+    public Properties getProperties(DataConnection conn) {
+        java.util.Properties properties = super.getProperties(conn);
         if (!conn.hasCustomConnectionString()) {
             setIfNotNull(properties, DbCredentials.DB, conn.getDb());
             setIfNotNull(properties, DbCredentials.WAREHOUSE, conn.get(DbCredentials.WAREHOUSE));
@@ -96,7 +96,8 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
         return String.format("SELECT c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
                         + "c.data_type as data_type, "
                         + "case t.table_type when 'VIEW' then 1 else 0 end as is_view FROM information_schema.columns c "
-                        + "JOIN information_schema.tables t ON t.table_name = c.table_name%s ORDER BY c.table_name, c.ordinal_position;",
+                        + "JOIN information_schema.tables t ON t.table_name = c.table_name AND t.table_schema = c.table_schema AND LOWER(t.table_catalog) = LOWER(c.table_catalog)%s " +
+                        "ORDER BY c.table_name, c.ordinal_position;",
                 isEmptyDb && isEmptySchema && isEmptyTable ? "" : whereClause);
     }
 
@@ -152,7 +153,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
                     DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
         }};
         descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
-        descriptor.credentialsTemplate.add(new Property(Property.STRING_TYPE, DbCredentials.PRIVATE_KEY, null, RSA_METHOD, new Prop("rsa")));
+        descriptor.credentialsTemplate.add(new Property(Property.STRING_TYPE, DbCredentials.PRIVATE_KEY, null, RSA_METHOD, new Prop("rsa"), ".pem,.der"));
         descriptor.credentialsTemplate.add(new Property(Property.STRING_TYPE, "passPhrase", "Passphrase for decrypting private key.", RSA_METHOD, new Prop("password")));
         descriptor.credentialsTemplate.stream().filter(p -> p.name.equals(DbCredentials.LOGIN)).forEach(p -> p.category = "Username/Password," + RSA_METHOD);
         descriptor.nameBrackets = "\"";
@@ -172,6 +173,22 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
             put("binary", Types.BLOB);
         }};
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "stddev(#)", Types.dataFrameNumericTypes));
+        descriptor.jdbcPropertiesTemplate = new ArrayList<Property>() {{
+            add(new Property(Property.INT_TYPE, "loginTimeout",
+                    "Maximum time to wait for login in seconds", new Prop()));
+            add(new Property(Property.INT_TYPE, "networkTimeout",
+                    "Socket read/write timeout in milliseconds", new Prop()));
+            add(new Property(Property.INT_TYPE, "queryTimeout",
+                    "Query execution timeout in seconds", new Prop()));
+            add(new Property(Property.BOOL_TYPE, "CLIENT_SESSION_KEEP_ALIVE",
+                    "Keep the session alive until explicitly closed", new Prop(), "keepAlive"));
+
+
+            add(new Property(Property.INT_TYPE, "CLIENT_PREFETCH_THREADS",
+                    "Number of threads to prefetch result chunks", new Prop(), "prefetchThreads"));
+            add(new Property(Property.BOOL_TYPE, "CLIENT_DISABLE_INCIDENTS",
+                    "Disable sending incidents to Snowflake", new Prop(), "disableIncidents"));
+        }};
     }
 
     private String buildAccount(DataConnection conn) {

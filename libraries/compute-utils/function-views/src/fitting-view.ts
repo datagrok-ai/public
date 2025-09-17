@@ -10,7 +10,7 @@ import {combineLatest} from 'rxjs';
 import {take, filter} from 'rxjs/operators';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
-import {getDefaultValue, getPropViewers} from './shared/utils';
+import {getDefaultValue} from './shared/utils';
 import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossTooltip, FITTING_UI,
   INDICES, NAME, LOSS_FUNC_CHART_OPTS, SIZE,
   MIN_RADAR_COLS_COUNT,
@@ -18,18 +18,20 @@ import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossToolti
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
-import {getErrors, getCategoryWidget, getShowInfoWidget, getLossFuncDf, rgbToHex, lightenRGB, getScalarsGoodnessOfFitViewer, getHelpIcon, getRadarTooltip} from './fitting/fitting-utils';
-import {OptimizationResult, Extremum, TargetTableOutput} from './fitting/optimizer-misc';
+import {getErrors, getCategoryWidget, getShowInfoWidget, getLossFuncDf, rgbToHex, lightenRGB, getScalarsGoodnessOfFitViewer, getHelpIcon, getRadarTooltip, toUseRadar} from './fitting/fitting-utils';
+import {OptimizationResult, Extremum, TargetTableOutput, Setting} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
 import {IVP, IVP2WebWorker, PipelineCreator} from '@datagrok/diff-grok';
 import {getFittedParams} from './fitting/diff-studio/nelder-mead';
 import {getNonSimilar} from './fitting/similarity-utils';
 import {ScalarsFitRadar} from './fitting/scalars-fit-radar';
+import {getPropViewers} from '../../shared-utils/utils';
 
 const colors = DG.Color.categoricalPalette;
 const colorsCount = colors.length;
 
+const miscName = 'Misc';
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
 type OutputTarget = number | DG.DataFrame | null;
@@ -73,11 +75,15 @@ export type RangeDescription = {
   min?: number;
   max?: number;
   step?: number;
+  isPrimary?: boolean;
+  enabled?: boolean;
 }
 
 export type TargetDescription = {
   default?: any;
   argumentCol?: string;
+  isPrimary?: boolean;
+  enabled?: boolean;
 }
 
 type FittingInputsStore = FittingNumericStore | FittingBoolStore | FittingConstStore;
@@ -298,6 +304,23 @@ export class FittingView {
 
     const outputs = func.outputs.filter((prop) => supportedOutputTypes.includes(prop.propertyType))
       .reduce((acc, outputProp) => {
+        const defaultValue = (this.options.targets?.[outputProp.name]?.default != null) ?
+          this.options.targets?.[outputProp.name]?.default :
+          (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? null : getInputValue(outputProp, 'default');
+
+        let defaultArgColName: string | null = null;
+        let defaultColNames: Array<string | null> = [null];
+        let defaultFuncCols: DG.Column[] | undefined = undefined;
+        let defaultTable: DG.DataFrame | undefined = undefined;
+
+        if ((defaultValue != null) && (defaultValue instanceof DG.DataFrame)) {
+          defaultTable = defaultValue;
+          const numericalCols = defaultTable.columns.toList().filter((col) => col.isNumerical);
+          defaultColNames = numericalCols.map((col) => col.name);
+          defaultArgColName = this.options.targets?.[outputProp.name]?.argumentCol ?? defaultColNames[0];
+          defaultFuncCols =numericalCols.filter((col) => col.name !== defaultArgColName);
+        }
+
         const validator = (_: string) => {
           const validation = getValidation(temp);
 
@@ -318,6 +341,7 @@ export class FittingView {
           return validation.msg;
         };
 
+        const isInterest = new BehaviorSubject(false);
         const temp: FittingOutputsStore = {
           prop: outputProp,
           input:
@@ -325,9 +349,10 @@ export class FittingView {
             const caption = outputProp.caption ?? outputProp.name;
             const input = ui.input.forProperty(outputProp);
             input.addCaption(caption);
-            input.value = (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? null : 0;
+            input.value = defaultValue;
             input.setTooltip((outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Target dataframe' : 'Target scalar');
-            input.input.hidden = !this.toSetSwitched;
+            isInterest.subscribe((val) => input.input.hidden = !val);
+
             input.nullable = false;
             ui.tooltip.bind(input.captionLabel, (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Dataframe' : 'Scalar');
 
@@ -375,34 +400,32 @@ export class FittingView {
               this.updateApplicabilityState();
             });
 
-
-            if (outputProp.propertyType === DG.TYPE.DATA_FRAME)
-              (input.root.lastElementChild as HTMLDivElement).hidden = !this.toSetSwitched;
-
             const isInterestInput = getSwitchElement(
-              this.toSetSwitched,
+              isInterest.value,
               (v: boolean) => {
                 temp.isInterest.next(v);
                 this.updateApplicabilityState();
-                input.input.hidden = !v;
-
-                if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
-                  (input.root.lastElementChild as HTMLDivElement).hidden = !v;
-                  temp.argColInput.root.hidden = !v;
-                  temp.funcColsInput.root.hidden = !v;
-                }
               },
               false,
-            ).root;
-            input.root.insertBefore(isInterestInput, input.captionLabel);
+            );
+
+            isInterest.subscribe((val) => {
+              isInterestInput.notify = false;
+              try {
+                isInterestInput.value = val;
+              } finally {
+                isInterestInput.notify = true;
+              }
+            });
+            input.root.insertBefore(isInterestInput.root, input.captionLabel);
 
             return input;
           })(),
-          argName: '_',
+          argName: defaultArgColName ?? '_',
           argColInput: (() => {
             const input = ui.input.choice<string | null>('argument', {
-              value: null,
-              items: [null],
+              value: defaultArgColName,
+              items: defaultColNames,
               tooltipText: 'Independent variable',
               onValueChanged: (value) => {
                 if (value !== null)
@@ -418,23 +441,24 @@ export class FittingView {
 
             const infoIcon = ui.icons.info(() => alert('Hello!'));
             infoIcon.classList.add('sa-switch-input');
-            input.root.hidden = outputProp.propertyType !== DG.TYPE.DATA_FRAME || !this.toSetSwitched;
             input.nullable = false;
             input.addValidator(validator);
+            isInterest.subscribe((val) => input.root.hidden = !val || (outputProp.propertyType !== DG.TYPE.DATA_FRAME));
 
             return input;
           })(),
-          isInterest: new BehaviorSubject<boolean>(this.toSetSwitched),
-          target: (outputProp.propertyType !== DG.TYPE.DATA_FRAME) ? 0 : null,
+          isInterest,
+          target: defaultValue,
           funcColsInput: (() => {
             const input = ui.input.columns('functions', {
+              table: defaultTable,
+              value: defaultFuncCols,
               nullable: false,
               tooltipText: 'Target dependent variables',
               onValueChanged: (cols) => this.updateApplicabilityState(),
             });
             input.root.insertBefore(getSwitchMock(), input.captionLabel);
-            input.root.hidden = outputProp.propertyType !== DG.TYPE.DATA_FRAME || !this.toSetSwitched;
-            this.toSetSwitched = false;
+            isInterest.subscribe((val) => input.root.hidden = !val || (outputProp.propertyType !== DG.TYPE.DATA_FRAME));
             ui.tooltip.bind(input.captionLabel, 'Columns with values of target dependent variables:');
             input.addValidator(validator);
 
@@ -484,6 +508,7 @@ export class FittingView {
     const chosenCall = this.currentFuncCalls[chosenItem-1];
     this.isFittingAccepted = true;
     this.acceptedFitting$.next(chosenCall);
+    this.baseView.close();
   });
 
   private helpIcon = getHelpIcon();
@@ -503,8 +528,6 @@ export class FittingView {
   private gridCellChangeSubscription: any = null;
 
   private failsDF: DG.DataFrame | null = null;
-
-  private toSetSwitched = true;
 
   private samplesCount = FITTING_UI.SAMPLES;
   private samplesCountInput = ui.input.forProperty(DG.Property.fromOptions({
@@ -547,6 +570,8 @@ export class FittingView {
     iterCount: 10,
     learningRate: 0.0001,
   };
+
+  private defaultsOverrides: Record<string, number> = {};
 
   private settingsInputs = new Map<METHOD, DG.InputBase[]>();
 
@@ -604,7 +629,7 @@ export class FittingView {
 
   private constructor(
     public func: DG.Func,
-    baseView: RunComparisonView,
+    private baseView: RunComparisonView,
     public options: {
       parentView?: DG.View,
       parentCall?: DG.FuncCall,
@@ -631,6 +656,9 @@ export class FittingView {
       return;
     }
 
+    nelderMeadSettingsVals.forEach((vals, key) => this.nelderMeadSettings.set(key, vals.default));
+    this.parseDefaultsOverrides();
+
     grok.events.onViewRemoved.pipe(filter((v) => v.id === baseView.id), take(1)).subscribe(() => {
       if (options.acceptMode && !this.isFittingAccepted) {
         this.acceptedFitting$.next(null);
@@ -650,8 +678,6 @@ export class FittingView {
       );
 
       this.comparisonView.grid.columns.byName(RUN_NAME_COL_LABEL)!.visible = false;
-
-      nelderMeadSettingsVals.forEach((vals, key) => this.nelderMeadSettings.set(key, vals.default));
 
       const rbnPanels = [[this.helpIcon, this.runIcon, ...(this.options.acceptMode ? [this.acceptIcon] : [])]];
       this.comparisonView.setRibbonPanels(rbnPanels);
@@ -695,10 +721,15 @@ export class FittingView {
       this.runIcon.classList.add('fas');
 
       this.updateApplicabilityState();
+      //this.processOptionTargets();
     });
 
     this.diffGrok = options.diffGrok;
   } // constructor
+
+  private parseDefaultsOverrides() {
+    this.defaultsOverrides = JSON.parse(this.func.options['fittingSettings'] || '{}');
+  }
 
   /** Check fiiting applicability to the function */
   private isOptimizationApplicable(func: DG.Func): boolean {
@@ -714,17 +745,24 @@ export class FittingView {
   private generateNelderMeadSettingsInputs(): void {
     const inputs: DG.InputBase[] = [];
 
+    let needsInitalUpdate = false;
+
     nelderMeadSettingsVals.forEach((vals, key) => {
       const inp = ui.input.forProperty(DG.Property.fromOptions({
         name: nelderMeadCaptions.get(key),
         inputType: (key !== 'maxIter') ? 'Float' : 'Int',
-        defaultValue: vals.default,
+        defaultValue: this.defaultsOverrides[key] ?? vals.default,
         min: vals.min,
         max: vals.max,
       }));
 
       inp.addCaption(nelderMeadCaptions.get(key)!);
       inp.nullable = false;
+
+      if (this.defaultsOverrides[key] != null) {
+        this.nelderMeadSettings.set(key, this.defaultsOverrides[key]);
+        needsInitalUpdate = true;
+      }
 
       inp.onChanged.subscribe((value) => {
         this.nelderMeadSettings.set(key, value);
@@ -735,6 +773,8 @@ export class FittingView {
     });
 
     this.settingsInputs.set(METHOD.NELDER_MEAD, inputs);
+    if (needsInitalUpdate)
+      this.updateApplicabilityState();
   } // generateNelderMeadSettingsInputs
 
   /** Check correctness of the Nelder-Mead settings */
@@ -754,7 +794,7 @@ export class FittingView {
     const iterInp = ui.input.forProperty(DG.Property.fromOptions({
       name: 'iterations',
       inputType: 'Int',
-      defaultValue: this.gradDescentSettings.iterCount,
+      defaultValue: this.defaultsOverrides.iterCount ?? this.gradDescentSettings.iterCount,
       min: 1,
       max: 10000,
     }));
@@ -763,7 +803,7 @@ export class FittingView {
     const learningRateInp = ui.input.forProperty(DG.Property.fromOptions({
       name: 'Learning rate',
       inputType: 'Float',
-      defaultValue: this.gradDescentSettings.learningRate,
+      defaultValue: this.defaultsOverrides.learningRate ?? this.gradDescentSettings.learningRate,
       min: 1e-6,
       max: 1000,
     }));
@@ -818,28 +858,106 @@ export class FittingView {
     return lookupElement;
   }
 
+  private addFormInputs(
+    form: HTMLElement,
+    inputsByCategories: Map<string, HTMLElement[]>,
+    topCategory: string | null,
+    expandHandler: (r: HTMLElement, isExpanded: boolean, category: string) => void,
+  ) {
+    const newCategoriesElements = new Map<string, HTMLElement>();
+    if (inputsByCategories.size > 1) {
+      if (topCategory !== null) {
+        const roots = inputsByCategories.get(topCategory);
+        const catEl = getCategoryWidget(topCategory, roots!, expandHandler);
+        newCategoriesElements.set(topCategory, catEl);
+        form.append(catEl);
+        form.append(...roots!);
+      }
+
+      inputsByCategories.forEach((roots, category) => {
+        if ((category !== miscName) && (category !== topCategory)) {
+          const catEl = getCategoryWidget(category, roots, expandHandler);
+          newCategoriesElements.set(category, catEl);
+          form.append(catEl);
+          form.append(...roots);
+        }
+      });
+
+      if (topCategory !== miscName) {
+        const miscRoots = inputsByCategories.get(miscName);
+
+        if (miscRoots!.length > 0) {
+          const roots = inputsByCategories.get(miscName)!;
+          const catEl = getCategoryWidget(miscName, roots, expandHandler);
+          newCategoriesElements.set(miscName, catEl);
+          form.append(catEl);
+          form.append(...roots);
+        }
+      }
+    } else
+      form.append(...inputsByCategories.get(miscName)!);
+    return newCategoriesElements;
+  }
+
   /** Build form with inputs */
   private async buildForm(inputsLookup?: string) {
-    //1. Inputs of the function
+    // the main form
     const fitHeader = ui.h1(TITLE.FIT);
     ui.tooltip.bind(fitHeader, 'Select inputs to be fitted');
+    const form = ui.div([fitHeader], {style: {overflowY: 'scroll', width: '100%'}});
 
-    // inputs grouped by categories
-    const inputsByCategories = new Map<string, HTMLElement[]>([['Misc', []]]);
+    //0. Handling primary/secondary inputs outputs, but only if at
+    //least one is set as primray
+    const primaryInputRoots = new Set<HTMLElement>();
+
+    // inputs/outputs grouped by categories
+    const inputsByCategories = new Map<string, HTMLElement[]>([[miscName, []]]);
+    const outputsByCategories = new Map<string, HTMLElement[]>([[miscName, []]]);
+    const collapsedInputCategories = new Set<string>();
+    const collapsedOutputCategories = new Set<string>();
+
+    const primaryToggle = ui.input.toggle('Show only primary', {
+      value: false, onValueChanged: (showPrimaryOnly) => {
+        if (primaryInputRoots.size === 0)
+          return;
+        const iterPayload = [
+          [inputsByCategories, inputCategoriesByName, collapsedInputCategories],
+          [outputsByCategories, outputCategoriesByName, collapsedOutputCategories],
+        ] as const;
+        for (const [rootsMap, catMap, collapsedCats] of iterPayload) {
+          for (const [catName, roots] of rootsMap.entries()) {
+            const hideCat = showPrimaryOnly && !roots.some((root) => primaryInputRoots.has(root));
+            const catEl = catMap.get(catName);
+            if (catEl)
+              catEl.hidden = hideCat;
+            for (const root of roots)
+              root.hidden = collapsedCats.has(catName) || (showPrimaryOnly && !primaryInputRoots.has(root));
+          }
+        }
+      },
+    });
+
+    primaryToggle.root.hidden = true;
+    const paddingDiv = ui.div('', {classes: 'sa-switch-input ui-div'});
+    primaryToggle.root.prepend(paddingDiv);
+    form.append(primaryToggle.root);
+
+    //1. Inputs of the function
 
     // group inputs by categories
     Object.values(this.store.inputs).forEach((inputConfig) => {
       const category = inputConfig.prop.category;
+      const propName = inputConfig.prop.name;
       const roots = [...inputConfig.constForm.map((input) => input.root), ...inputConfig.saForm.map((input) => input.root)];
+      const isPrimary = this.options.ranges?.[propName]?.isPrimary;
+      if (isPrimary)
+        roots.forEach((item) => primaryInputRoots.add(item));
 
       if (inputsByCategories.has(category))
         inputsByCategories.get(category)!.push(...roots);
       else
         inputsByCategories.set(category, roots);
     });
-
-    // the main form
-    const form = ui.div([fitHeader], {style: {overflowY: 'scroll', width: '100%'}});
 
     const lookupElement = await this.getLookupElement(inputsLookup);
     let topCategory: string | null = null;
@@ -855,67 +973,64 @@ export class FittingView {
     }
 
     // add inputs to the main form (grouped by categories)
-    if (inputsByCategories.size > 1) {
-      if (topCategory !== null) {
-        const roots = inputsByCategories.get(topCategory);
-        form.append(getCategoryWidget(topCategory, roots!));
-        form.append(...roots!);
-      }
+    const inputCategoriesByName = this.addFormInputs(form, inputsByCategories, topCategory, (el, isExpanded, catName) => {
+      isExpanded ? collapsedInputCategories.delete(catName) : collapsedInputCategories.add(catName);
+      el.hidden = !isExpanded || (primaryToggle.value && !primaryInputRoots.has(el));
+    });
 
-      inputsByCategories.forEach((roots, category) => {
-        if ((category !== 'Misc') && (category !== topCategory)) {
-          form.append(getCategoryWidget(category, roots));
-          form.append(...roots);
-        }
-      });
-
-      if (topCategory !== 'Misc') {
-        const miscRoots = inputsByCategories.get('Misc');
-
-        if (miscRoots!.length > 0) {
-          const roots = inputsByCategories.get('Misc')!;
-          form.append(getCategoryWidget('Misc', roots));
-          form.append(...roots);
-        }
-      }
-    } else
-      form.append(...inputsByCategories.get('Misc')!);
+    // Check if isChanging is enabled
+    for (const name of Object.keys(this.store.inputs)) {
+      if (this.options.ranges?.[name]?.enabled)
+        this.store.inputs[name].isChanging.next(true);
+    }
 
     // 2. Outputs of the function
     const toGetHeader = ui.h1(TITLE.TARGET);
     ui.tooltip.bind(toGetHeader, 'Select target outputs');
     form.appendChild(toGetHeader);
-    let prevCategory = 'Misc';
 
-    Object.values(this.store.outputs)
-      .reduce((container, outputConfig) => {
-        const prop = outputConfig.prop;
-        if (prop.category !== prevCategory) {
-          container.append(ui.h3(prop.category));
-          prevCategory = prop.category;
-        }
-
-        container.append(outputConfig.input.root);
-
+    // group outputs by categories
+    Object.values(this.store.outputs).forEach((outputConfig) => {
+      const category = outputConfig.prop.category;
+      const roots = [outputConfig.input.root];
+      if (outputConfig.prop.type === DG.TYPE.DATA_FRAME) {
         outputConfig.argColInput.root.insertBefore(getShowInfoWidget(
           outputConfig.input.root,
           outputConfig.prop.caption ?? outputConfig.prop.name,
         ), outputConfig.argColInput.captionLabel);
+        roots.push(outputConfig.argColInput.root, outputConfig.funcColsInput.root);
+      }
+      const propName = outputConfig.prop.name;
+      const isPrimary = this.options.targets?.[propName]?.isPrimary;
+      if (isPrimary)
+        roots.forEach((item) => primaryInputRoots.add(item));
 
-        container.append(outputConfig.argColInput.root);
-        container.append(outputConfig.funcColsInput.root);
+      if (outputsByCategories.has(category))
+        outputsByCategories.get(category)!.push(...roots);
+      else
+        outputsByCategories.set(category, roots);
+    });
 
-        return container;
-      }, form);
+    // add outputs to the main form (grouped by categories)
+    const outputCategoriesByName = this.addFormInputs(form, outputsByCategories, null, (el, isExpanded, catName) => {
+      isExpanded ? collapsedOutputCategories.delete(catName) : collapsedOutputCategories.add(catName);
+      el.hidden = !isExpanded || (primaryToggle.value && !primaryInputRoots.has(el));
+    });
+
+    if (primaryInputRoots.size > 0) {
+      primaryToggle.root.hidden = false;
+      primaryToggle.value = true;
+    }
 
     // 3. Make one output of interest
     let isAnyOutputSelectedAsOfInterest = false;
 
     for (const name of Object.keys(this.store.outputs)) {
-      if (this.store.outputs[name].isInterest.value === true) {
+      if (this.options.targets?.[name]?.enabled)
+        this.store.outputs[name].isInterest.next(true);
+
+      if (this.store.outputs[name].isInterest.value === true)
         isAnyOutputSelectedAsOfInterest = true;
-        break;
-      }
     }
 
     if (!isAnyOutputSelectedAsOfInterest) {
@@ -1021,7 +1136,7 @@ export class FittingView {
 
         areSelectedFilled = areSelectedFilled && cur;
       } else {
-        const val = input.const.input.value;
+        const val = input.const.input.value ?? input.const.input.stringValue;
         cur = (val !== null) && (val !== undefined);
 
         if (!cur)
@@ -1352,11 +1467,13 @@ export class FittingView {
       // Add goodness of fit viewers
       const gofTables = new Array<Map<string, GoFtable>>(rowCount);
 
+      this.currentFuncCalls = [];
       for (let idx = 0; idx < rowCount; ++idx) {
         const gofDfs = new Map<string, GoFtable>();
         const scalarGoFs: GoFtable[] = [];
 
         const calledFuncCall = await getCalledFuncCall(nonSimilarExtrema[idx].point);
+        this.currentFuncCalls.push(calledFuncCall);
 
         outputsOfInterest.forEach((output) => {
           const gofs = this.getOutputGofTable(output.prop, output.target, calledFuncCall, output.argName, toShowTableName);
@@ -1394,8 +1511,9 @@ export class FittingView {
       lossFuncGraphGridCol!.cellType = 'html';
       lossFuncGraphGridCol!.width = GRID_SIZE.LOSS_GRAPH_WIDTH;
 
+      // Check whether to use the radar viewer
       let toAddRadars = false;
-      gofTables[0].forEach((gof) => toAddRadars ||= (gof.table.columns.length >= MIN_RADAR_COLS_COUNT));
+      gofTables[0].forEach((gof) => toAddRadars ||= toUseRadar(gof.table));
 
       // Add viewers to the grid
       let toReorderCols = true;

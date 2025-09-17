@@ -1150,8 +1150,8 @@ export class AddNewColumnDialog {
       if (!this.error)
         ui.empty(this.errorDiv);
       //check if column with the same name already exists
-      if (this.sourceDf?.columns.names().includes(colName) && !this.error &&
-          !(this.edit && this.call.getParamValue('name') === colName)) {
+      if (this.sourceDf?.columns.names().some((name) => name.toLowerCase() === colName.toLowerCase()) && !this.error &&
+        !(this.edit && this.call.getParamValue('name')?.toLowerCase() === colName.toLowerCase())) {
         const unusedColName = this.getResultColumnName().unusedName;
         this.errorDiv.append(ui.divText(
           `Column named ${colName} already exists. Column will be named ${unusedColName}`, 'cm-warning-div'));
@@ -1398,7 +1398,8 @@ export class AddNewColumnDialog {
         const type = this.widget ? this.call.getParamValue('type') : this.getSelectedType()[0];
         const treatAsString = this.widget ? this.call.getParamValue('treatAsString') : this.getSelectedType()[1];
         await colToUpdate.applyFormula(this.codeMirror!.state.doc.toString().trim(), type, treatAsString);
-        colToUpdate.name = name;
+        if (name !== colToUpdate.name)
+          colToUpdate.name = this.sourceDf?.columns.getUnusedName(name) ?? name;
         grok.shell.o = colToUpdate;
       } else
         grok.shell.error(`Column ${this.call!.getParamValue('name')} is missing in the table`);

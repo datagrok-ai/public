@@ -70,7 +70,7 @@ export class TestDashboardWidget extends DG.JsViewer {
   onFrameAttached(dataFrame: DG.DataFrame): void {
     this.root.childNodes.forEach((node, _idx, _parent) => node.remove());
     this.root.appendChild(ui.wait(async () => {
-      let tableNames: RegExp[] = [/Benchmark/, /Test.*Track/];
+      let tableNames: RegExp[] = [/Benchmark/];
       let promises: Promise<void>[] = tableNames.map((name) => new Promise((resolve, reject) => {
         const checkCondition = () => {
           try {
@@ -87,16 +87,15 @@ export class TestDashboardWidget extends DG.JsViewer {
       }));
       await Promise.all(promises);
       let d = ui.div();
+      d.style.padding = '15px';
       let verdicts: Verdict[] = [];
       verdicts.push(...this.verdictsOnCorrectness(dataFrame));
       verdicts.push(...this.verdictsOnPerformance());
-      verdicts.push(...this.verdictsOnTestTrack());
-      verdicts.push(...(await this.unaddressedTests(dataFrame)));
-      verdicts.push(...(await this.verdictsForTickets()));
+      // verdicts.push(...(await this.unaddressedTests(dataFrame)));
       verdicts.push(...this.getBuildInfos(dataFrame));
       let status = Priority.getMaxPriority(verdicts.map((v) => v.priority));
       if (status == Priority.BLOCKER)
-        d.append(ui.h1('Platform is not release-ready ❌❌❌', { style: { color: DG.Color.toRgb(DG.Color.red) } }));
+        d.append(ui.h1('Platform is not release-ready ❌❌❌', { style: { color: DG.Color.toRgb(DG.Color.red), marginBottom: '5px' } }));
       else
         d.append(ui.h1('Green light! 🚀🚀🚀', { style: { color: DG.Color.toRgb(DG.Color.darkGreen) } }));
       
@@ -164,30 +163,51 @@ export class TestDashboardWidget extends DG.JsViewer {
   }
   majorPackages(df: DG.DataFrame): Verdict[] {
     try {
-      let packageList = ['datlas', 'ddt', 'ddtx', 'dinq', 'ApiTests', 'ApiSamples', 'Bio', 'Chem', 'DevTools'];
+      let packageList = [...(new Set(df.col('test')?.categories.map(e => e.split(':')[0]) ?? []))];
+      // let packageList = ['datlas', 'ApiTests', 'ApiSamples', 'Bio', 'Chem', 'DevTools'];
       let testColumn: DG.Column = df.col('test')!;
       let failingColumn: DG.Column<boolean> = df.col('needs_attention')!;
       let brokenPackages: Map<string, string[]> = new Map();
-      for (var i = 0; i < packageList.length; i++)
-        for (var row = 0; row < testColumn.length; row++)
-          if (testColumn.getString(row)?.startsWith(packageList[i]))
+      let checkedPackages = new Set();
+      for (let i = 0; i < packageList.length; i++)
+        for (let row = 0; row < testColumn.length; row++)
+          if (testColumn.getString(row)?.startsWith(packageList[i])) {
+            checkedPackages.add(packageList[i]);
             if (failingColumn.get(row)) {
               if (!brokenPackages.has(packageList[i]))
                 brokenPackages.set(packageList[i], []);
               brokenPackages.get(packageList[i])!.push(testColumn.getString(row).slice(packageList[i].length));
             }
+          }
 
       let verdicts: Verdict[] = [];
       for (const packageName of brokenPackages.keys()) {
-        let widget: DG.Widget = DG.Widget.fromRoot(ui.span(['package ' + packageName + ' has broken tests']));
+        let packageFilter= '';
+        let widget: DG.Widget = DG.Widget.fromRoot(ui.span([packageName + ' has broken tests']));
         widget.root.onclick = (ev: MouseEvent) => {
-          df.filter.init((row) => testColumn.getString(row)?.startsWith(packageName));
+          grok.shell.tv.grid.scrollToCell('test', 0);
+          if (packageFilter.length === 0){
+            df.filter.init((row) => testColumn.getString(row)?.startsWith(packageName));
+            packageFilter = packageName;
+          }
+          else {
+            df.filter.init((row) => true);
+            packageFilter = '';
+          }
           df.selection.init((row) => testColumn.getString(row)?.startsWith(packageName) && (failingColumn.get(row) ?? false));
           grok.shell.tv.grid.sort(['needs_attention'], [false]);
         };
         ui.tooltip.bind(widget.root, 'Click to filter');
         verdicts.push(new Verdict(Priority.BLOCKER, 'Critical package failure', widget.root));
       }
+
+      if (!packageList.every((p) => checkedPackages.has(p))) {
+        for (const packageName of packageList.filter((p) => !checkedPackages.has(p))) {
+          let widget: DG.Widget = DG.Widget.fromRoot(ui.span([packageName + ' tests weren\'t run']));
+          verdicts.push(new Verdict(Priority.BLOCKER, 'Missing required packages tests', widget.root));
+        }
+      }
+
       return verdicts;
     } catch (x) {
       return [new Verdict(Priority.BLOCKER, 'Unhandled exception', ui.div([
@@ -198,24 +218,16 @@ export class TestDashboardWidget extends DG.JsViewer {
   }
   getBuildInfos(df: DG.DataFrame): Verdict[] {
     try {
-      let builds = Array.from(df.columns.toList().filter((col) => col.name.endsWith('date')).map((col) => col.name.split(' ')[0]));
+      debugger
+      let builds = ['1', '2', '3', '4', '5'];
       builds.sort((a, b) => parseInt(a) - parseInt(b));
       let res = ui.table(builds, (build, idx) => {
-          console.log(build);
-          console.log(df.col(build + ' instance')?.categories[0] ?? 'unknown');
-          console.log(df.col(build + ' commit')?.categories[0] ?? 'unknown');
-          let date = null;
-          for (var i = 0; i < df.rowCount; i++) {
-            let curDate = df.get(build + ' build_date', i);
-            if (curDate != undefined) {
-              date = curDate;
-              break;
-            }
-          }
           return [ui.span([build]),
-            ui.tableFromMap({'Instance': df.col(build + ' instance')?.categories[0] ?? 'unknown',
-                             'Commit': df.col(build + ' commit')?.categories[0] ?? 'unknown',
-                             'Build date': date ?? 'unknown'})
+            ui.tableFromMap({
+              'Build': df.col(build)?.tags?.get('build'),              
+              'Instance': df.col(build)?.tags?.get('instance'),
+              'Commit': df.col(build)?.tags?.get('build_commit'),
+              'Build date': df.col(build)?.tags?.get('build_date')})
           ];
         }
       );
@@ -227,73 +239,74 @@ export class TestDashboardWidget extends DG.JsViewer {
       ]))];
     }
   }
-  async unaddressedTests(df: DG.DataFrame): Promise<Verdict[]> {
-    try {
-      let verdicts: Verdict[] = [];
-      let failingColumn: DG.Column<boolean> = df.col('needs_attention')!;
-      let jiraCol = df.col('jira')!;
-      let testColumn: DG.Column = df.col('test')!;
-      let ownerColumn: DG.Column = df.col('owner')!;
+  // async unaddressedTests(df: DG.DataFrame): Promise<Verdict[]> {
+  //   try {
+  //     let verdicts: Verdict[] = [];
+  //     let failingColumn: DG.Column<boolean> = df.col('needs_attention')!;
+  //     let jiraCol = df.col('jira')!;
+  //     let testColumn: DG.Column = df.col('test')!;
+  //     let ownerColumn: DG.Column = df.col('owner')!;
 
-      let unaddressedTests: { [owner: string]: string[] } = {};
-      let predicate: IndexPredicate = (row) => {
-        return failingColumn.get(row)! && (!jiraCol.getString(row) || jiraCol.getString(row).trim() === '');
-      };
+  //     let unaddressedTests: { [owner: string]: string[] } = {};
+  //     let predicate: IndexPredicate = (row) => {
+  //       return failingColumn.get(row)! && (!jiraCol.getString(row) || jiraCol.getString(row).trim() === '');
+  //     };
 
-      for (let i = 0; i < df.rowCount; i++) {
-        if (predicate(i)) {
-          let owner = ownerColumn.getString(i) || 'unknown';
-          if (!unaddressedTests[owner])
-            unaddressedTests[owner] = [];
-          unaddressedTests[owner].push(testColumn.getString(i));
-        }
-      }
+  //     for (let i = 0; i < df.rowCount; i++) {
+  //       if (predicate(i)) {
+  //         let owner = ownerColumn.getString(i) || 'unknown';
+  //         if (!unaddressedTests[owner])
+  //           unaddressedTests[owner] = [];
+  //         unaddressedTests[owner].push(testColumn.getString(i));
+  //       }
+  //     }
 
-      if (Object.keys(unaddressedTests).length > 0) {
-        let summary = ui.div([ui.span(['Owners with failing tests:\n'])]);
-        for (const [owner, tests] of Object.entries(unaddressedTests)) {
-          const login: string = owner.match(/\w+@datagrok.ai/) ? owner.match(/\w+@datagrok.ai/)?.[0].split('@')[0]! : owner
-          let userIcon : HTMLElement | undefined;
-          if (login == null) {
-            userIcon = ui.span([owner]);
-          } else {
-            const user = await grok.dapi.users.filter(`login="${login}"`).first();
-            if (user == undefined)
-              userIcon = ui.span([login]);
-            else
-              userIcon = ui.render(user.toMarkup());
-          }
-          let widget: DG.Widget = DG.Widget.fromRoot(ui.div([userIcon, ui.span([`: ${tests.length} tests`])]));
-          widget.root.onclick = (ev: MouseEvent) => {
-            df.filter.init((row) => ownerColumn.getString(row)?.includes(login));
-            df.selection.init((row) => ownerColumn.getString(row)?.includes(login) && (failingColumn.get(row) ?? false));
-          };
-          ui.tooltip.bind(widget.root, 'Click to filter');
-          summary.appendChild(widget.root);
-        }
-        verdicts.push(new Verdict(Priority.INFO, 'Responsible for tests', ui.div([
-          ui.span([summary]),
-          // ui.button('Copy to Clipboard', () => {
-          //   let slackMessage = '';
-          //   for (const [owner, tests] of Object.entries(unaddressedTests)) {
-          //     const slackOwner = owner.match(/\w+@datagrok.ai/) ? '@' + owner.match(/\w+@datagrok.ai/)?.[0].split('@')[0] : owner;
-          //     slackMessage += `${slackOwner}: ` + tests.length + '\n\n';
-          //   }
+  //     if (Object.keys(unaddressedTests).length > 0) {
+  //       let summary = ui.div([ui.span(['Owners with failing tests:\n'])]);
+  //       for (const [owner, tests] of Object.entries(unaddressedTests)) {
+  //         const login: string = owner.match(/\w+@datagrok.ai/) ? owner.match(/\w+@datagrok.ai/)?.[0].split('@')[0]! : owner
+  //         let userIcon : HTMLElement | undefined;
+  //         if (login == null) {
+  //           userIcon = ui.span([owner]);
+  //         } else {
+  //           const user = await grok.dapi.users.filter(`login="${login}"`).first();
+  //           if (user == undefined)
+  //             userIcon = ui.span([login]);
+  //           else
+  //             userIcon = ui.render(user.toMarkup());
+  //         }
+  //         let widget: DG.Widget = DG.Widget.fromRoot(ui.div([userIcon, ui.span([`: ${tests.length} tests`])]));
+  //         widget.root.onclick = (ev: MouseEvent) => {
+  //           df.filter.init((row) => ownerColumn.getString(row)?.includes(login));
+  //           df.selection.init((row) => ownerColumn.getString(row)?.includes(login) && (failingColumn.get(row) ?? false));
+  //         };
+  //         ui.tooltip.bind(widget.root, 'Click to filter');
+  //         summary.appendChild(widget.root);
+  //       }
+  //       verdicts.push(new Verdict(Priority.INFO, 'Responsible for tests', ui.div([
+  //         ui.span([summary]),
+  //         // ui.button('Copy to Clipboard', () => {
+  //         //   let slackMessage = '';
+  //         //   for (const [owner, tests] of Object.entries(unaddressedTests)) {
+  //         //     const slackOwner = owner.match(/\w+@datagrok.ai/) ? '@' + owner.match(/\w+@datagrok.ai/)?.[0].split('@')[0] : owner;
+  //         //     slackMessage += `${slackOwner}: ` + tests.length + '\n\n';
+  //         //   }
       
-          //   navigator.clipboard.writeText(slackMessage).then(() => {
-          //     grok.shell.info('Summary copied to clipboard');
-          //   });
-          // })
-        ])));
-      }
-      return verdicts;
-    } catch (x) {
-      return [new Verdict(Priority.ERROR, 'Unhandled exception', ui.div([
-        ui.span(['Failed to gather unaddressed tests']),
-        ui.span([x])
-      ]))];
-    }
-  }
+  //         //   navigator.clipboard.writeText(slackMessage).then(() => {
+  //         //     grok.shell.info('Summary copied to clipboard');
+  //         //   });
+  //         // })
+  //       ])));
+  //     }
+  //     return verdicts;
+  //   } catch (x) {
+  //     return [new Verdict(Priority.ERROR, 'Unhandled exception', ui.div([
+  //       ui.span(['Failed to gather unaddressed tests']),
+  //       ui.span([x])
+  //     ]))];
+  //   }
+  // }
+
   ignoredTests(df: DG.DataFrame): Verdict[] {
     let verdicts: Verdict[] = [];
     let testColumn: DG.Column = df.col('test')!;
@@ -301,26 +314,69 @@ export class TestDashboardWidget extends DG.JsViewer {
     let ignoreReasonColumn: DG.Column = df.col('ignoreReason')!;
     let ignoreVersionColumn: DG.Column = df.col('ignoreReason')!;
     let widgets: DG.Widget[] = [];
+    let testCol = grok.shell.tv.grid.dataFrame.getCol('test');
     for (var i = 0; i < df.rowCount; i++) {
       if (ignoreColumn.get(i)) {
-        widgets.push(DG.Widget.fromRoot(ui.span([testColumn.getString(i), ': ', ignoreReasonColumn.getString(i)])));
+        widgets.push(DG.Widget.fromRoot(ui.div([testColumn.getString(i)],{style: {marginBottom: '5px'}})));
+        let test = testColumn.getString(i);
+        widgets[widgets.length - 1].root.onclick = (ev: MouseEvent) => {
+          let df = grok.shell.tv.grid.dataFrame;
+          let rows = df.rows;
+          let idx = -1;
+          for(let j = 0; j < df.rowCount && idx === -1; j++)
+            if (rows.get(j).get('test') ===test)
+              idx = j;
+          
+          if(idx >= 0)
+            grok.shell.tv.grid.scrollToCell('test', idx);
+          
+        }
       }
     }
     for (var i = 0; i < widgets.length; i++)
       verdicts.push(new Verdict(Priority.INFO, `Ignored tests - ${widgets.length} items`, widgets[i].root));
     return verdicts;
   }
+
   performanceDowngrades(df: DG.DataFrame): Verdict[] {
+    function getLastDuration(df: DG.DataFrame, index: number) {
+      let duration = 0;
+      for(let i = 1; i <= 5; i++) {
+        if (!df.getCol(`${i} avg(duration)`).isNone(index)) {
+          duration = df.get(`${i} avg(duration)`, index);
+          break;
+        }
+      }
+      return duration;
+    }
+
     try {
       let verdicts: Verdict[] = [];
+      let verdictGrid: DG.Grid;
+      let performanceObjects= [];
       for (let i = 0; i < df.rowCount; i++) {
         if (df.col('has_suspicious')!.get(i)) {
-          let lastDuration: number = df.col('1 avg(duration)')!.get(i) ?? 0;
+          df.col('1 avg(duration)')?.isNone(i);
+          let lastDuration: number = getLastDuration(df, i) ?? 0;
           let minDuration: number = df.col('min')!.get(i) ?? 0;
           let maxDuration: number = df.col('max')!.get(i) ?? 0;
-          if (lastDuration - minDuration > maxDuration - lastDuration)
-            verdicts.push(new Verdict(Priority.ERROR, 'Performance downgrade', ui.span([df.col('test')!.getString(i) + ` is down ${(maxDuration / minDuration - 1) * 100}% in performance`])));
+          let percentage: number = Number(((lastDuration / minDuration)).toFixed(2)); 
+          if (percentage > 0.20)
+            performanceObjects.push({ 'increased(times)': percentage, test: df.col('test')!.getString(i), from: minDuration, to:  lastDuration});
+          
+          //verdicts.push(new Verdict(Priority.ERROR, 'Performance downgrade', ui.span([df.col('test')!.getString(i) + ` is down ${(maxDuration / minDuration - 1) * 100}% in performance`])));
         }
+      }
+      let verdictDF = DG.DataFrame.fromObjects(performanceObjects);
+     
+      if (verdictDF) {
+        verdictGrid = (DG.Grid.create(verdictDF) )
+        let col = verdictGrid.col('increased(times)');
+        if(col)
+          col.width = 50;
+        let button = ui.button('OPEN IN THE WORKSPACE', ()=> grok.shell.addTableView(verdictDF?.clone()));
+        button.classList.add('performance-downgrade-button');
+        verdicts.push(new Verdict(Priority.ERROR, 'Performance downgrade', ui.divV([button, verdictGrid.root])));
       }
       return verdicts;
     } catch (x) {

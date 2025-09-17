@@ -6,7 +6,7 @@ import {category, test, before, after, expect, expectArray, awaitCheck, delay} f
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {RuleSet, runStructuralAlertsDetection} from '../panels/structural-alerts';
-import {elementalAnalysis} from '../../src/package';
+import {PackageFunctions} from '../../src/package';
 import {readDataframe} from './utils';
 
 
@@ -34,7 +34,7 @@ category('screening tools', () => {
       df = molecules.clone();
     const tv = grok.shell.addTableView(df);
     await delay(10);
-    await elementalAnalysis(df, df.getCol(DG.Test.isInBenchmark ? 'canonical_smiles' : 'smiles'), false, false);
+    await PackageFunctions.elementalAnalysis(df, df.getCol(DG.Test.isInBenchmark ? 'canonical_smiles' : 'smiles'), false, false);
     expect(df.columns.length, DG.Test.isInBenchmark ? 30 : 12); //TODO!! Check number of columns for benchmark
     tv.close();
   }, {benchmark: true});
@@ -42,7 +42,7 @@ category('screening tools', () => {
   test('elementalAnalysis.molV2000', async () => {
     const df = spgi100.clone();
     const tv = grok.shell.addTableView(df);
-    await elementalAnalysis(df, df.getCol('Structure'), false, false);
+    await PackageFunctions.elementalAnalysis(df, df.getCol('Structure'), false, false);
     expect(df.columns.length, 96);
     tv.close();
   });
@@ -50,7 +50,7 @@ category('screening tools', () => {
   test('elementalAnalysis.molV3000', async () => {
     const df = approvedDrugs100.clone();
     const tv = grok.shell.addTableView(df);
-    await elementalAnalysis(df, df.getCol('molecule'), false, false);
+    await PackageFunctions.elementalAnalysis(df, df.getCol('molecule'), false, false);
     expect(df.columns.length, 42);
     tv.close();
   });
@@ -59,7 +59,7 @@ category('screening tools', () => {
     const df = await readDataframe('tests/sar-small_empty_vals.csv');
     await grok.data.detectSemanticTypes(df);
     const tv = grok.shell.addTableView(df);
-    await elementalAnalysis(df, df.getCol('smiles'), false, false);
+    await PackageFunctions.elementalAnalysis(df, df.getCol('smiles'), false, false);
     expect(df.columns.length, 7);
     expectArray(Array.from(df.row(0).cells).map((c) => c.value), ['', 0, 0, 0, 0, 0, 0]);
     tv.close();
@@ -69,7 +69,7 @@ category('screening tools', () => {
     const df = await readDataframe('tests/Test_smiles_malformed.csv');
     await grok.data.detectSemanticTypes(df);
     const tv = grok.shell.addTableView(df);
-    await elementalAnalysis(df, df.getCol('canonical_smiles'), false, false);
+    await PackageFunctions.elementalAnalysis(df, df.getCol('canonical_smiles'), false, false);
     expect(df.columns.length, 30);
     expect(Array.from(df.row(40).cells).map((c) => c.value).join(''),
       '1480010COc1ccc2cc(ccc2c1)C(C)C(=O)OC|CCc3cccnc300040203710400.272729992866516126340');
@@ -115,7 +115,7 @@ category('screening tools: benchmarks', () => {
     await grok.data.detectSemanticTypes(df);
     const col: DG.Column = df.getCol('molecule');
     DG.timeAsync('Elemental Analysis', async () => {
-      await elementalAnalysis(df, col, false, false);
+      await PackageFunctions.elementalAnalysis(df, col, false, false);
     });
   });
 });

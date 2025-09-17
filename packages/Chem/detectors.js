@@ -1,3 +1,6 @@
+const CHEMICAL_MIXTURE_SEM_TYPE = 'ChemicalMixture';
+const MIX_FILE_VERSION = 'mixfileVersion';
+
 class ChemPackageDetectors extends DG.Package {
 
   static likelyNames = [
@@ -51,7 +54,7 @@ class ChemPackageDetectors extends DG.Package {
     let longest = '';
     try {
       longest = col.aggregate('longest') ?? '';
-    } catch(x) {}
+    } catch (x) {}
     if (!likelyMolName && longest.length < 5)
       return null;
 
@@ -63,5 +66,19 @@ class ChemPackageDetectors extends DG.Package {
 
     if (DG.Detector.sampleCategories(col, ChemPackageDetectors.likelyValidSmiles, minUnique, 10, 0.8))
       grok.functions.call('Chem:detectSmiles', { col: col, min: minUnique }).then(() => {});
+  }
+
+  //tags: semTypeDetector
+  //input: column col
+  //output: string semType
+  //meta.skipTest: GROK-17630
+  detectMixture(col) {
+    if (DG.Detector.sampleCategories(col, (s) => {
+      return s.includes(MIX_FILE_VERSION);
+    }, 1)) {
+      col.semType = CHEMICAL_MIXTURE_SEM_TYPE;
+      return col.semType;
+    }
+    return null;
   }
 }

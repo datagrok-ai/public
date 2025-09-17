@@ -8,12 +8,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Properties;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -30,13 +25,7 @@ import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.GroupAggregation;
 import grok_connect.table_query.TableQuery;
-import grok_connect.utils.ConnectionPool;
-import grok_connect.utils.GrokConnectException;
-import grok_connect.utils.GrokConnectUtil;
-import grok_connect.utils.PatternMatcher;
-import grok_connect.utils.PatternMatcherResult;
-import grok_connect.utils.QueryCancelledByUser;
-import grok_connect.utils.QueryMonitor;
+import grok_connect.utils.*;
 import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,8 +47,23 @@ public abstract class JdbcDataProvider extends DataProvider {
         return ConnectionPool.getConnection(getConnectionString(conn), getProperties(conn), driverClassName);
     }
 
-    public Properties getProperties(DataConnection conn) throws GrokConnectException {
-        return defaultConnectionProperties(conn);
+    public Properties getProperties(DataConnection conn) {
+        java.util.Properties props = defaultConnectionProperties(conn);
+        if (conn.parameters.containsKey("jdbcProperties") && this.descriptor.jdbcPropertiesTemplate != null) {
+            Map<String, Object> propMap = (Map<String, Object>) conn.parameters.get("jdbcProperties");
+            if (!propMap.isEmpty()) {
+                for (Property p : this.descriptor.jdbcPropertiesTemplate) {
+                    Object value = propMap.get(p.name);
+                    if (value != null) {
+                        String strValue = value.toString();
+                        if (p.propertyType.equals(Property.INT_TYPE))
+                            strValue = String.valueOf(new Double(strValue).intValue());
+                        props.setProperty(p.name, strValue);
+                    }
+                }
+            }
+        }
+        return props;
     }
 
     public boolean autoInterpolation() {
@@ -361,14 +365,18 @@ public abstract class JdbcDataProvider extends DataProvider {
         queryBuffer.append("?");
     }
 
-    public ResultSet getResultSet(FuncCall queryRun, Connection connection, int fetchSize) throws QueryCancelledByUser, SQLException {
-        Integer providerTimeout = getTimeout();
-        int timeout = providerTimeout != null ? providerTimeout : (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_TIMEOUT_SEC))
-                ? ((Double)queryRun.options.get(DataProvider.QUERY_TIMEOUT_SEC)).intValue() : 300;
+    public void configureAutoCommit(Connection connection) throws SQLException {
         boolean supportsTransactions = connection.getMetaData().supportsTransactions();
         logger.trace("Provider {} transactions", supportsTransactions ? "supports" : "doesn't support");
         if (supportsTransactions)
             connection.setAutoCommit(false);
+    }
+
+    public ResultSet getResultSet(FuncCall queryRun, Connection connection, int fetchSize) throws QueryCancelledByUser, SQLException {
+        Integer providerTimeout = getTimeout();
+        int timeout = providerTimeout != null ? providerTimeout : (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_TIMEOUT_SEC))
+                ? ((Double)queryRun.options.get(DataProvider.QUERY_TIMEOUT_SEC)).intValue() : 300;
+        configureAutoCommit(connection);
         try {
             // Remove header lines
             DataQuery dataQuery = queryRun.func;

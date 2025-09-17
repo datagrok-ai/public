@@ -81,7 +81,7 @@ let search: DG.InputBase;
 const viewersCount = ui.div([], 'vg-counter-label');
 
 export function viewersDialog(currentView: DG.TableView, currentTable: DG.DataFrame) {
-  getViewers(viewers);
+  getViewers(viewers, currentTable);
   getJsViewers(jsViewers, currentTable);
 
   view = currentView;
@@ -98,7 +98,7 @@ export function viewersDialog(currentView: DG.TableView, currentTable: DG.DataFr
   search = ui.input.search('', {value: '', onValueChanged: (value) => findViewer(value)});
   search.input.setAttribute('tabindex', '-1');
   search.input.setAttribute('placeholder', 'Search by name, keywords, description, tag, or package');
-  
+
   var delta = 500;
   var lastKeypressTime = 0;
 
@@ -109,7 +109,7 @@ export function viewersDialog(currentView: DG.TableView, currentTable: DG.DataFr
       if ( thisKeypressTime - lastKeypressTime <= delta ) {
         if (search.value === ''){
           dlg.close();
-        } 
+        }
         thisKeypressTime = 0;
       }
       lastKeypressTime = thisKeypressTime;
@@ -146,7 +146,7 @@ export function viewersDialog(currentView: DG.TableView, currentTable: DG.DataFr
   setTabIndex(rootViewers);
 };
 
-function getViewers(viewers: { [v: string]: { [k: string]: any } }) {
+function getViewers(viewers: { [v: string]: { [k: string]: any } }, table: DG.DataFrame) {
   let viewerList = [];
 
   for (const value of Object.values(DG.VIEWER)) {
@@ -174,11 +174,13 @@ function getViewers(viewers: { [v: string]: { [k: string]: any } }) {
 
   viewerList = [...new Set(viewerList)];
   for (const i in viewerList) {
+    const isViewerEnabledMsg = DG.Viewer.canVisualize(viewerList[i], table);
     Object.assign(viewers, {
       [i]: {
         name: viewerList[i],
         icon: 'grok-icon svg-icon svg-' + viewerList[i].toLowerCase().replace(/(\s)/g, '-'),
-        enabled: true,
+        enabled: isViewerEnabledMsg == null,
+        tooltip: isViewerEnabledMsg == null ? '' : isViewerEnabledMsg,
         group: '',
         type: 'viewer',
       },

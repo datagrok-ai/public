@@ -24,7 +24,7 @@ public class Db2DataProvider extends JdbcDataProvider {
         descriptor.type = "DB2";
         descriptor.description = "Query DB2 database";
         descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
-        descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
+        descriptor.connectionTemplate.add(DbCredentials.getSsl());
         descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
         descriptor.canBrowseSchema = true;
         descriptor.typesMap = new HashMap<String, String>() {{
@@ -74,7 +74,7 @@ public class Db2DataProvider extends JdbcDataProvider {
     public String getSchemaSql(String db, String schema, String table) {
         return String.format("SELECT C.TABSCHEMA as table_schema, C.TABNAME as table_name, C.COLNAME as column_name, "
                 + "C.TYPENAME as data_type, case when T.TYPE = 'V' then 1 else 0 end as is_view FROM SYSCAT.COLUMNS C "
-                + "JOIN SYSCAT.TABLES T ON C.TABNAME = T.TABNAME WHERE C.TABSCHEMA = '%s'%s ORDER BY C.COLNAME;",
+                + "JOIN SYSCAT.TABLES T ON C.TABNAME = T.TABNAME AND C.TABSCHEMA = T.TABSCHEMA WHERE C.TABSCHEMA = '%s'%s ORDER BY C.COLNAME;",
                 schema, table == null ? "" : String.format(" AND C.TABNAME = '%s'", table));
     }
 

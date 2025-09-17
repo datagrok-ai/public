@@ -1,3 +1,5 @@
+import type {HitDesignCampaign} from './types';
+
 export const CampaignIdKey = 'campaignId';
 export const HitDesignCampaignIdKey = 'campaignId';
 export const CampaignTableName = 'enriched_table.csv';
@@ -40,12 +42,27 @@ export const funcTypeNames = {
 } as const;
 
 export const HDCampaignsGroupingLSKey = 'HDCampaignsGrouping';
+export const HDCampaignTableColumnsLSKey = 'HDCampaignTableColumns';
 
-export enum CampaignGroupingType {
+export enum CampaignGrouping {
   None = 'None',
   Template = 'Template',
   Status = 'Status',
   Author = 'Author',
   LastModifiedUser = 'Last Modified User',
 }
+
+export type CampaignGroupingType = CampaignGrouping | `campaignFields.${string}`;
+
+export const DefaultCampaignTableInfoGetters = {
+  'Code': (info: HitDesignCampaign) => info.name,
+  'Created': (info: HitDesignCampaign) => info.createDate,
+  'Author': (info: HitDesignCampaign) => info.authorUserFriendlyName ?? '',
+  'Last Modified by': (info: HitDesignCampaign) => info.lastModifiedUserName ?? '',
+  'Molecules': (info: HitDesignCampaign) => (info.rowCount ?? 0).toString(),
+  'Status': (info: HitDesignCampaign) => info.status,
+} as const;
+
+export type CampaignTableColumns = keyof typeof DefaultCampaignTableInfoGetters | `campaignFields.${string}`;
+
 export const HTFunctionOrderingLSKey = 'HTFunctionOrderingLS';

@@ -107,6 +107,16 @@ export abstract class Tutorial extends DG.Widget {
     progressNodes.last().text(String(track.completed+' / '+track.tutorials.length));
   }
 
+  showToolbox(): void {
+    grok.shell.windows.showToolbox = false;
+    grok.shell.windows.showToolbox = true;
+  }
+
+  showBrowse(): void {
+    grok.shell.windows.showBrowse = false;
+    grok.shell.windows.showBrowse = true;
+  }
+
   async run(): Promise<void> {
     this._addHeader();
 
@@ -455,7 +465,7 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   protected get menuRoot(): HTMLElement {
-    return grok.shell.windows.simpleMode ? grok.shell.v.ribbonMenu.root : grok.shell.topMenu.root;
+    return grok.shell.v.ribbonMenu.root;
   }
 
   protected getMenuItem(name: string, horizontalMenu?: boolean): HTMLElement | null {
@@ -499,7 +509,7 @@ export abstract class Tutorial extends DG.Widget {
   /** Prompts the user to put the specified value into a dialog input. */
   protected async dlgInputAction(dlg: DG.Dialog, instructions: string, caption: string,
     value: string, description: string = '', historyHint: boolean = false, count: number = 0): Promise<void> {
-    const inp = dlg.inputs.filter((input: DG.InputBase) => input.caption == caption)[count];
+    const inp = dlg.inputs.filter((input: DG.InputBase) => input.caption.toLowerCase() == caption.toLowerCase())[count];
     if (inp == null) return;
     await this.action(instructions,
       new Observable((subscriber: any) => {

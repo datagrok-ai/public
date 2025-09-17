@@ -13,6 +13,7 @@ import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
+import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
 import org.postgresql.util.PGobject;
 import serialization.Types;
@@ -25,7 +26,7 @@ public class PostgresDataProvider extends JdbcDataProvider {
         descriptor.type = "Postgres";
         descriptor.description = "Query Postgres database";
         descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
-        descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
+        descriptor.connectionTemplate.add(DbCredentials.getSsl());
         descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
         descriptor.nameBrackets = "\"";
 
@@ -53,17 +54,41 @@ public class PostgresDataProvider extends JdbcDataProvider {
             put("xml", Types.OBJECT);
         }};
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "stddev(#)", Types.dataFrameNumericTypes));
+        descriptor.jdbcPropertiesTemplate = new ArrayList<Property>() {{
+            // Application identification
+            add(new Property(Property.STRING_TYPE, "applicationName",
+                    "Name of the application shown in pg_stat_activity", new Prop()));
+
+            // Timeouts
+            add(new Property(Property.INT_TYPE, "connectTimeout",
+                    "Connection timeout in seconds (0 = infinite, recommended > 0)", new Prop()));
+            add(new Property(Property.INT_TYPE, "socketTimeout",
+                    "Read timeout in seconds (0 = no timeout)", new Prop()));
+            add(new Property(Property.INT_TYPE, "loginTimeout",
+                    "Maximum time to wait for login in seconds", new Prop()));
+            // Performance / batching
+            add(new Property(Property.BOOL_TYPE, "reWriteBatchedInserts",
+                    "Use optimized batched insert rewriting", new Prop()));
+            add(new Property(Property.INT_TYPE, "prepareThreshold",
+                    "Number of executes before using server-side prepared statements", new Prop()));
+            // Misc
+            add(new Property(Property.BOOL_TYPE, "tcpKeepAlive",
+                    "Enable TCP keepalive", new Prop()));
+        }};
+
     }
 
     @Override
     public Properties getProperties(DataConnection conn) {
-        java.util.Properties properties = defaultConnectionProperties(conn);
+        java.util.Properties properties = super.getProperties(conn);
         if (!conn.hasCustomConnectionString() && conn.ssl()) {
             properties.setProperty("ssl", "true");
             properties.setProperty("sslfactory", "org.postgresql.ssl.NonValidatingFactory");
         }
-        properties.setProperty("socketTimeout", "180");
-        properties.setProperty("tcpKeepAlive", "true");
+        if (!properties.containsKey("socketTimeout"))
+            properties.setProperty("socketTimeout", "180");
+        if (!properties.containsKey("tcpKeepAlive"))
+            properties.setProperty("tcpKeepAlive", "true");
         return properties;
     }
 
@@ -96,8 +121,8 @@ public class PostgresDataProvider extends JdbcDataProvider {
         return "SELECT c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
                 + "c.data_type as data_type, "
                 + "case t.table_type when 'VIEW' then 1 else 0 end as is_view FROM information_schema.columns c "
-                + "JOIN information_schema.tables t ON t.table_name = c.table_name " + whereClause +
-                " ORDER BY c.table_name";
+                + "JOIN information_schema.tables t ON t.table_name = c.table_name AND t.table_schema = c.table_schema AND t.table_catalog = c.table_catalog "
+                + whereClause + " ORDER BY c.table_name";
     }
 
     @Override

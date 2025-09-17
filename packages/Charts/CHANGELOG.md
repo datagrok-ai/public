@@ -1,5 +1,21 @@
 # Charts changelog
 
+## 1.6.0 (2025-07-28)
+
+### Bug Fixes
+
+* GROK-18408: Charts | Radar: Console errors when click None in Select columns dialog
+* [3420](https://github.com/datagrok-ai/public/issues/3420): Charts | Tree: Move "Show mouse over line" to Style section in properties
+* [3421](https://github.com/datagrok-ai/public/issues/3421): Charts | Tree: Different row source behavior for changing "on click" property
+* GROK-17772: Charts | Chord: Re-rendered only after click when filtering
+* GROK-18576: Charts | Radar: Errors when switching to earthquakes dataset
+
+## 1.5.5 (2025-07-03)
+
+### Bug Fixes
+
+* [3397](https://github.com/datagrok-ai/public/issues/3397): Tree viewer: selection and clicking issues
+
 ## 1.5.4 (2025-05-29)
 
 ### Bug Fixes

@@ -51,7 +51,7 @@ category('Dapi: connection', () => {
     expect((await query.getProperties()).jsScript, script);
     await query.executeTable();
     await grok.dapi.queries.delete(query);
-  }, { skipReason: 'GROK-11670' });
+  });
 
   after(async () => {
     const connections:DG.DataConnection[] = await grok.dapi.connections.filter(`name="Local DG Test"`).list();
@@ -246,12 +246,12 @@ category('Dapi: TableQuery', () => {
   test('From table', async () => {
     const dtqb = DG.TableQuery.fromTable(fromTable);
     expect(dtqb instanceof DG.TableQueryBuilder, true);
-  }, { skipReason: 'GROK-11670' });
+  });
 
   test('From', async () => {
     const dtqb = DG.TableQuery.from(from);
     expect(dtqb instanceof DG.TableQueryBuilder, true);
-  }, { skipReason: 'GROK-11670' });
+  });
 }, { owner: 'ppolovyi@datagrok.ai'});
 
 /*

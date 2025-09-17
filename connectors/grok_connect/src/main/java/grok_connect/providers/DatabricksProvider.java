@@ -25,7 +25,7 @@ public class DatabricksProvider extends JdbcDataProvider {
         descriptor.type = "Databricks";
         descriptor.description = "Query Databricks warehouse";
         descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
-        descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
+        descriptor.connectionTemplate.add(DbCredentials.getSsl());
         descriptor.credentialsTemplate = new ArrayList<Property>() {{
             add(new Property(Property.STRING_TYPE, DbCredentials.UID,
                     "Set the UID property to an appropriate user name for accessing the Spark server"));

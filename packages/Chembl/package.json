@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/chembl",
   "friendlyName": "ChEMBL",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "description": "ChEMBL integration, commonly used queries and browser",
   "author": {
     "name": "Maria Dolotova",
@@ -14,10 +14,10 @@
     "directory": "packages/Chembl"
   },
   "dependencies": {
-    "@datagrok-libraries/db-explorer": "1.1.4",
-    "@datagrok-libraries/utils": "^4.5.7",
+    "@datagrok-libraries/db-explorer": "^1.2.1",
+    "@datagrok-libraries/utils": "^4.6.3",
     "@types/react-dom": "^17.0.9",
-    "datagrok-api": "^1.25.0",
+    "datagrok-api": "^1.26.0",
     "file-loader": "^6.2.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3"
@@ -27,7 +27,7 @@
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.25",
+    "datagrok-tools": "^4.14.48",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^4.0.0",

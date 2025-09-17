@@ -22,8 +22,10 @@ import dayjs from "dayjs";
 import {IDartApi} from "./api/grok_api.g";
 import {DataSourceType} from "./api/grok_shared.api.g";
 import { Tags } from "./api/ddt.api.g";
-import {View} from "./views/view";
+import {View, ViewBase} from "./views/view";
 import {InputType} from "./api/d4.api.g";
+import {Observable} from "rxjs";
+import {observeStream} from "./events";
 
 declare var grok: any;
 declare var DG: any;
@@ -194,6 +196,9 @@ export class User extends Entity {
 
   /** Security Group */
   get group(): Group { return toJs(api.grok_User_Get_Group(this.dart)); }
+
+  /** Date when user joined */
+  get joined(): dayjs.Dayjs { return dayjs(api.grok_User_Get_Joined(this.dart)); }
 
   static get defaultUsersIds() {
     return {
@@ -377,6 +382,14 @@ export class Project extends Entity {
   /** Project is empty flag */
   get isEmpty(): boolean {
     return api.grok_Project_IsEmpty(this.dart);
+  }
+
+  get isDashboard(): boolean {
+    return api.grok_Project_IsDashboard(this.dart);
+  }
+
+  get isPackage(): boolean {
+    return api.grok_Project_IsPackage(this.dart);
   }
 
   toMarkup(): string {
@@ -1029,6 +1042,10 @@ export class Script extends Func {
 
   static create(script: string): Script { return new Script(api.grok_Script_Create(script)); }
 
+  static fromParams(inputs: Property[], outputs: Property[], script: string = ''): Script {
+    return new Script(api.grok_Script_FromParams(inputs.map((i) => toDart(i)), outputs.map((i) => toDart(i)), script));
+  }
+
   /** Script */
   get script(): string { return api.grok_Script_GetScript(this.dart); }
   set script(s: string) { api.grok_Script_SetScript(this.dart, s); }
@@ -1138,7 +1155,7 @@ export class LogEvent extends Entity {
 
   /** Parameters of the event
    * @type {Array<LogEventParameterValue>} */
-  get parameters(): LogEventParameterValue[] { return api.grok_LogEvent_Get_Parameters(this.dart); }
+  get parameters(): LogEventParameterValue[] { return toJs(api.grok_LogEvent_Get_Parameters(this.dart)); }
 
   /** Type of the event
    * @type {LogEventType} */
@@ -1444,6 +1461,9 @@ export interface IProperty {
   /** Filter for columns, can be numerical, categorical or directly a column type (string, int...)
    * Applicable when type = Column */
   columnTypeFilter?: ColumnType | 'numerical' | 'categorical' | null;
+
+
+  viewer?: string;
 }
 
 
@@ -1528,8 +1548,8 @@ export class Property implements IProperty {
   set nullable(s: boolean) { api.grok_Property_Set_Nullable(this.dart, s); }
 
   /** Initial value used when initializing UI */
-  get initialValue(): any { return toJs(api.grok_Property_Get_InitialValue(this.dart)); }
-  set initialValue(s: any) { api.grok_Property_Set_InitialValue(this.dart, toDart(s)); }
+  get initialValue(): string { return toJs(api.grok_Property_Get_InitialValue(this.dart)); }
+  set initialValue(s: string) { api.grok_Property_Set_InitialValue(this.dart, toDart(s)); }
 
   /** Default value */
   get defaultValue(): any { return toJs(api.grok_Property_Get_DefaultValue(this.dart)); }
@@ -1668,7 +1688,7 @@ export class Property implements IProperty {
     'showSlider': { name: 'showSlider', applicableTo: TYPE.NUMERICAL, type: TYPE.BOOL, description: 'Whether a slider appears next to the number input. Applies to numerical columns only.' },
     'showPlusMinus': { name: 'showPlusMinus', applicableTo: TYPE.NUMERICAL, type: TYPE.BOOL, description: 'Whether a plus/minus clicker appears next to the number input. Applies to numerical columns only.' },
     'choices': { name: 'choices', applicableTo: TYPE.STRING, type: TYPE.STRING_LIST, description: 'List of choices. Applicable to string properties only' },
-    'initialValue': { name: 'initialValue', type: TYPE.OBJECT, description: 'Initial value used when initializing UI. See also {@link defaultValue}' },
+    'initialValue': { name: 'initialValue', type: TYPE.STRING, description: 'Initial value used when initializing UI. See also {@link defaultValue}' },
     'defaultValue': { name: 'defaultValue', type: TYPE.OBJECT, description: 'Default value used for deserialization and cloning. See also {@link initialValue}.' },
     'editor': { name: 'editor', type: TYPE.STRING, description: 'Custom editor (such as slider or text area)' },
     'category': { name: 'category', type: TYPE.STRING, description: 'Corresponding category on the context panel' },
@@ -1910,4 +1930,63 @@ export class ViewInfo extends Entity {
   toJson(): string {
     return api.grok_ViewInfo_ToJson(this.dart);
   }
+}
+
+
+export class ProgressIndicator {
+  dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  static create() {
+    return toJs(api.grok_ProgressIndicator_Create());
+  }
+
+  get percent(): number {
+    return api.grok_ProgressIndicator_Get_Percent(this.dart);
+  }
+
+  /** Flag indicating whether the operation was canceled by the user. */
+  get canceled(): boolean { return api.grok_ProgressIndicator_Get_Canceled(this.dart); }
+
+  get description(): string { return api.grok_ProgressIndicator_Get_Description(this.dart); }
+  set description(s: string) { api.grok_ProgressIndicator_Set_Description(this.dart, s); }
+
+  update(percent: number, description: string): void {
+    api.grok_ProgressIndicator_Update(this.dart, percent, description);
+  }
+
+  log(line: string): void {
+    api.grok_ProgressIndicator_Log(this.dart, line);
+  }
+
+  get onProgressUpdated(): Observable<any> {
+    return observeStream(api.grok_Progress_Updated(this.dart));
+  }
+
+  get onLogUpdated(): Observable<any> {
+    return observeStream(api.grok_Progress_Log_Updated(this.dart));
+  }
+
+  get onCanceled(): Observable<any> {
+    return observeStream(api.grok_Progress_Canceled(this.dart));
+  }
+}
+
+export type ViewSpecificSearchProvider = {
+  isApplicable?: (s: string) => boolean;
+  returnType?: string;
+  search: (s: string, view?: ViewBase) => Promise<{priority?: number, results: any} | null>;
+  getSuggestions?: (s: string) => {priority?: number, suggestionText: string, suggestionValue?: string}[] | null;
+  onValueEnter?: (s: string, view?: ViewBase) => Promise<void>;
+  name: string;
+  description?: string;
+  options?: {relatedViewName?: string, widgetHeight?: number, [key: string]: any}
+}
+
+/** the home view should be under the name home and rest should match the views that they are applicable to */
+export type SearchProvider = {
+  [view: string]: ViewSpecificSearchProvider | ViewSpecificSearchProvider[];
 }

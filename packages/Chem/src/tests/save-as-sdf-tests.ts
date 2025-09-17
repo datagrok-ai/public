@@ -32,13 +32,13 @@ category('save as sdf', async () => {
 
   test('save Smiles column', async () => {
     const savedColumn = inputDf.col('Smiles')!;
-    const sdfString = getSdfString(inputDf, savedColumn);
+    const sdfString = await getSdfString(inputDf, savedColumn);
     expect(sdfString.replace(/\r/g, ''), fileWithSavedSmiles);
   });
 
   test('save Molblock column', async () => {
     const savedColumn = inputDf.col('Scaffold')!;
-    const sdfString = getSdfString(inputDf, savedColumn);
+    const sdfString = await getSdfString(inputDf, savedColumn);
     expect(sdfString.replace(/\r/g, ''), fileWithSavedMolblock);
   });
 });

@@ -12,7 +12,7 @@ import {
   Model,
   ModelColoring,
   Subgroup,
-  TEMPLATES_FOLDER
+  TEMPLATES_FOLDER,
 } from './constants';
 import {FormStateGenerator} from './admetica-form';
 import {CellRenderViewer} from '../viewers/cell-render-viewer';
@@ -21,21 +21,34 @@ import '../css/admetica.css';
 
 export let properties: any;
 export const tablePieChartIndexMap: Map<string, number> = new Map();
-let piechartIndex = 0;
+const piechartIndex = 0;
 
 
 export async function runAdmeticaFunc(csv: string, models: string, raiseException: boolean): Promise<DG.DataFrame> {
-  let df: DG.DataFrame = await grok.functions.call('Admetica:run_admetica', {'csv': csv, 'models': models, 'raiseException': raiseException});
-  df = await convertLD50(df);
-  return df;
+  const df = DG.DataFrame.fromCsv(csv);
+  const smilesCol = df.columns.bySemType(DG.SEMTYPE.MOLECULE);
+
+  let admeticaResults = await grok.functions.call('Admetica:run_admetica', {
+    csv: csv,
+    models: models,
+    raiseException: raiseException,
+  });
+
+  if (smilesCol !== null)
+    admeticaResults = await convertLD50(admeticaResults, smilesCol);
+
+  return admeticaResults;
 }
 
-export async function convertLD50(df: DG.DataFrame): Promise<DG.DataFrame> {
-  const smilesCol = df.columns.bySemType(DG.SEMTYPE.MOLECULE);
-  if (!df.columns.names().includes('LD50')) return df;
+export async function convertLD50(df: DG.DataFrame, smiles: DG.Column): Promise<DG.DataFrame> {
+  if (!df.columns.contains('LD50'))
+    return df;
 
   const ldCol = df.getCol('LD50');
-  const molWeights: DG.Column = await grok.functions.call('Chem: getMolProperty', { molecules: smilesCol, property: "MW" });
+  const molWeights: DG.Column = await grok.functions.call('Chem: getMolProperty', {
+    molecules: smiles,
+    property: 'MW',
+  });
 
   ldCol.init((i) => {
     const molPerKg = Math.pow(10, -ldCol.get(i));
@@ -55,7 +68,7 @@ export async function setProperties() {
 
 export async function performChemicalPropertyPredictions(
   molColumn: DG.Column, viewTable: DG.DataFrame, models: string, template?: string,
-  addPiechart: boolean = false, addForm: boolean = false, update: boolean = false, raiseException: boolean = false
+  addPiechart: boolean = false, addForm: boolean = false, update: boolean = false, raiseException: boolean = false,
 ) {
   if (template) {
     try {
@@ -71,10 +84,9 @@ export async function performChemicalPropertyPredictions(
     progressIndicator.update(10, 'Predicting...');
     const table = await runAdmeticaFunc(csvString, models, raiseException);
     progressIndicator.update(80, 'Results are ready');
-    const molColIdx = viewTable.columns.names().findIndex(name => name === molColumn.name);
-    if (table) {
+    const molColIdx = viewTable.columns.names().findIndex((name) => name === molColumn.name);
+    if (table)
       addResultColumns(table, viewTable, addPiechart, addForm, molColIdx ?? -1, update);
-    }
   } catch (error) {
     if (raiseException) throw error;
     grok.log.error(error);
@@ -129,14 +141,14 @@ export async function getQueryParams(): Promise<string> {
 }
 
 function createPieSettings(table: DG.DataFrame, columnNames: string[], properties: any): any {
-  let sectors: any[] = [];
+  const sectors: any[] = [];
 
   for (const subgroup of properties.subgroup) {
     const subgroupColor = colorsDictionary[subgroup.name];
     const sector: any = {
       name: subgroup.name,
       sectorColor: subgroupColor,
-      subsectors: []
+      subsectors: [],
     };
 
     for (const model of subgroup.models) {
@@ -152,7 +164,7 @@ function createPieSettings(table: DG.DataFrame, columnNames: string[], propertie
             line: line,
             sectorColor: subgroupColor,
             min: min,
-            max: max
+            max: max,
           };
 
           column.setTag('.vlaaivis-metadata', JSON.stringify(updatedMeta));
@@ -175,13 +187,13 @@ function createPieSettings(table: DG.DataFrame, columnNames: string[], propertie
       lowerBound: DEFAULT_LOWER_VALUE,
       upperBound: DEFAULT_UPPER_VALUE,
       values: '',
-      sectors
-    }
+      sectors,
+    },
   };
 }
 
 export function addSparklines(table: DG.DataFrame, columnNames: string[], index: number, name?: string): void {
-  const tv = grok.shell.getTableView(table.name);;
+  const tv = grok.shell.getTableView(table.name); ;
   const { grid } = tv;
   if (!tv) return;
 
@@ -194,7 +206,7 @@ export function addSparklines(table: DG.DataFrame, columnNames: string[], index:
     tablePieChartIndexMap.set(table.name, pieChartIdx);
   }
 
-  const pieName = pieChartIdx === 0 ? "piechart" : `piechart (${pieChartIdx})`
+  const pieName = pieChartIdx === 0 ? 'piechart' : `piechart (${pieChartIdx})`;
   name ??= pieName;
   const pie = grid.columns.add({ gridColumnName: name, cellType: 'piechart' });
 
@@ -244,7 +256,7 @@ export function addCustomTooltip(table: DG.DataFrame): void {
         .find((model: Model) => subgroup.includes(model.name));
       const tooltipContent = getTooltipContent(model, value);
       ui.tooltip.show(ui.divV([
-        ui.divText(tooltipContent)
+        ui.divText(tooltipContent),
       ]), x, y);
       return true;
     }
@@ -253,21 +265,21 @@ export function addCustomTooltip(table: DG.DataFrame): void {
 
 function setAdmeGroups(table: DG.DataFrame, columnNames: string[]): void {
   const isColumnRelatedToSubgroup = (column: string, subgroup: Subgroup): boolean => {
-    return subgroup.models.some(model => column.includes(model.name));
+    return subgroup.models.some((model) => column.includes(model.name));
   };
 
   const createSubgroupDict = (properties: any, columnNames: string[]) => {
     return properties.subgroup.reduce((dict: { [key: string]: { color: string; columns: string[] } }, subgroup: Subgroup) => {
       dict[subgroup.name] = {
         color: colorsDictionary[subgroup.name],
-        columns: columnNames.filter(column => isColumnRelatedToSubgroup(column, subgroup))
+        columns: columnNames.filter((column) => isColumnRelatedToSubgroup(column, subgroup)),
       };
       return dict;
     }, {});
   };
 
   const subgroupDict = createSubgroupDict(properties, columnNames);
-  // Temporary workaround: Addresses the issue where setGroups does not trigger a refresh 
+  // Temporary workaround: Addresses the issue where setGroups does not trigger a refresh
   // when adding to an existing grid. This fix will be removed once the issue is resolved.
   table.temp['.columnGroups'] = subgroupDict;
 }
@@ -285,7 +297,7 @@ export function updateColumnProperties(gridCol: DG.GridColumn, model: any): void
   column.meta.units = model.units;
 
   const subgroupName = properties.subgroup.find((subg: Subgroup) =>
-    subg.models.some((m: Model) => model.name.includes(m.name))
+    subg.models.some((m: Model) => model.name.includes(m.name)),
   )?.name;
   if (subgroupName) {
     gridCol.headerCellStyle.textColor = DG.Color.fromHtml(colorsDictionary[subgroupName]);
@@ -299,13 +311,13 @@ export function addResultColumns(
   addPiechart: boolean = true,
   addForm: boolean = true,
   molColIdx: number,
-  update: boolean = false
+  update: boolean = false,
 ): void {
   if (table.columns.length === 0) return;
 
-  if (table.rowCount > viewTable.rowCount) {
+  if (table.rowCount > viewTable.rowCount)
     table.rows.removeAt(table.rowCount - 1);
-  }
+
 
   const modelNames: string[] = table.columns.names();
   const updatedModelNames: string[] = [];
@@ -379,7 +391,7 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
 
   const update = async (result: HTMLDivElement, modelName: string) => {
     const queryParams = properties.subgroup.find((subg: any) => subg.name === modelName)
-    ['models'].map((model: any) => model.name);
+      ['models'].map((model: any) => model.name);
 
     if (smiles === 'MALFORMED_INPUT_VALUE')
       return result.appendChild(ui.divText(ERROR_MESSAGES.MALFORMED));
@@ -406,9 +418,9 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
 
         if (model) {
           const units = model.units && model.units !== '-' ? model.units : '';
-          const value = typeof firstValue === "string" ? firstValue : `${firstValue.toFixed(3)} ${units}`;
+          const value = typeof firstValue === 'string' ? firstValue : `${firstValue.toFixed(3)} ${units}`;
           map[param] = ui.divText(value, {
-            style: { color: color ? DG.Color.toHtml(color) : 'black' }
+            style: { color: color ? DG.Color.toHtml(color) : 'black' },
           });
         }
       }

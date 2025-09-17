@@ -310,7 +310,7 @@ Supported summary column types:
 * Sparklines
 * Bar Chart
 * Radar
-* Pie Barchart
+* Pie Chart
 <!--* Markup-->
 
 To add sparklines, right-click a cell and select **Add** > **Summary Columns**, then choose your preferred option from the menu. To change selected columns for the summary column, click its header and choose the columns you want in the **Context Panel** under **Renderer**.
@@ -345,7 +345,7 @@ want to show order details alongside customer orders.
 Here's how:
 
 1. [Link the tables](../../transform/link-tables.md).
-1. Right click any cell, select **Add** > **Linked Tables**, and choose the table you want. A column with data from the linked table is added to your dataset. 
+1. Right click any cell, select **Add** > **Linked Tables**, and choose the table you want. A column with data from the linked table is added to your dataset.
 
 ![Linked table data in cell](../../deploy/releases/img/grid-nested-linked-tables.gif) 
 
@@ -370,6 +370,16 @@ If images are not detected automatically, right-click the column header and sele
 * `cell.renderer` to `ImageUrl`.
 
 </details>
+
+
+### Charts in cells
+
+You can embed actual charts directly inside grid cells.
+1. [Link the tables](../../transform/link-tables.md).
+2. Right click any cell, select **Add** > **Linked Tables**, and choose the table you want. A column with data from the linked table will be added to your dataset.
+3. Click the header of the new column. In the **Context Panel** under **Renderer**, select the desired chart type (e.g., Bar Chart, Line Chart, Pie Chart, etc.).
+
+![Charts in cells](img/charts-in-cells.gif)
 
 
 ### Designed forms in cells

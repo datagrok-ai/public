@@ -5,17 +5,17 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
-import {Observable, Subject} from 'rxjs';
+import {Observable} from 'rxjs';
 
 import {
-  HelmType, HelmAtom,
-  MonomerSetType, MonomerType, PolymerType, IWebEditorMonomer,
+  HelmType,
+  MonomerSetType, PolymerType,
 } from '@datagrok-libraries/bio/src/helm/types';
-import {IMonomerLibBase, IMonomerLib, IMonomerSet, Monomer, MonomerLibData, MonomerLibSummaryType, RGroup} from '@datagrok-libraries/bio/src/types';
-import {HELM_OPTIONAL_FIELDS as OPT, HELM_REQUIRED_FIELD as REQ, HELM_RGROUP_FIELDS as RGP} from '@datagrok-libraries/bio/src/utils/const';
+import {IMonomerLibBase, IMonomerLib, Monomer,
+  MonomerLibData, MonomerLibSummaryType} from '@datagrok-libraries/bio/src/types';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
-import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {getUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 
 import {MonomerLibBase, MonomerLibDataType} from './monomer-lib-base';
@@ -87,7 +87,7 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
     if (!this._monomerSets)
       this._monomerSets = {};
     if (!(biotype in this._monomerSets)) {
-      for (const [monomerSymbol, monomer] of Object.entries(this._monomers[polymerType])) {
+      for (const [_monomerSymbol, _monomer] of Object.entries(this._monomers[polymerType])) {
 
       }
     }

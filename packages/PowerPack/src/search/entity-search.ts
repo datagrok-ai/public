@@ -95,18 +95,23 @@ export async function dockerSearch(s: string): Promise<DG.DockerContainer[]> {
   return await grok.dapi.docker.dockerContainers.filter(s).list();
 }
 
-function iframe(src: string): DG.Widget {
-  return new WebWidget({
+function iframe(src: string, caption?: string): DG.Widget {
+  const vw = new WebWidget({
     src: src,
     width: '100%',
     height: '500px',
   });
+  try {
+    if (caption && vw.props.hasProperty('caption'))
+      vw.props.caption = caption;
+  } catch (_) {}
+  return vw;
 }
 
 export async function pubChemSearch(s: string): Promise<DG.Widget | null> {
   return s !== 'aspirin' ?
     null :
-    iframe( 'https://pubchem.ncbi.nlm.nih.gov/compound/aspirin#section=3D-Conformer&embed=true');
+    iframe( 'https://pubchem.ncbi.nlm.nih.gov/compound/aspirin#section=3D-Conformer&embed=true', 'PubChem');
 }
 
 export async function pdbSearch(s: string): Promise<DG.Widget | null> {
@@ -130,7 +135,7 @@ export async function pdbSearch(s: string): Promise<DG.Widget | null> {
 
 export async function wikiSearch(s: string): Promise<DG.Widget | null> {
   return (s.toLowerCase().startsWith('wiki:')) ?
-    iframe(`https://en.m.wikipedia.org/wiki/${s.substring(5).trim()}`) :
+    iframe(`https://en.m.wikipedia.org/wiki/${s.substring(5).trim()}`, 'Wikipedia') :
     null;
 }
 
@@ -163,4 +168,42 @@ export async function denialSearch(s: string, w?: DG.Widget): Promise<DG.Widget 
     console.error('Error fetching denial message:', e);
     return null;
   }
+}
+
+let _homeDataConnectionNamePromise: Promise<string | null> | null = null;
+async function _getHomeConnectionName() {
+  const currentUser = DG.User.current();
+  const currentUserHomeId = currentUser.home.id;
+  const connection = await grok.dapi.connections.find(currentUserHomeId);
+  if (!connection)
+    return null;
+
+  return connection.nqName?.endsWith('/') ? connection.nqName : connection.nqName + '/';
+}
+
+export async function filesSearch(s: string): Promise<DG.FileInfo[]> {
+  s = s?.toLowerCase().trim();
+  if (!s || s.length < 3)
+    return [];
+  // eslint-disable-next-line max-len
+  // there might be too many connections, so does not make sense to search in all of them, instead, search in home and appdata
+  const allFiles: DG.FileInfo[] = [];
+  try {
+    _homeDataConnectionNamePromise ??= _getHomeConnectionName();
+    const homeConnectionName = await _homeDataConnectionNamePromise;
+
+    if (homeConnectionName) {
+      const files = await grok.dapi.files.list(homeConnectionName, true, s);
+      allFiles.push(...files);
+    }
+  } catch (e) {
+    console.error('Error fetching home connection files:', e);
+    // If there is an error fetching home connection, we just skip it
+    // and continue searching in appdata
+  }
+  // search through appdata
+  const appDataFiles = await grok.dapi.files.list('System:AppData/', true, s);
+  allFiles.push(...appDataFiles);
+
+  return allFiles;
 }

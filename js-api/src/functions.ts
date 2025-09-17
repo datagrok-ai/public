@@ -1,7 +1,7 @@
 import {paramsToJs, toDart, toJs} from "./wrappers";
 import {Type} from "./const";
-import {Entity, Func, Property, User} from "./entities";
-import type { InputBase, ProgressIndicator,} from "./widgets";
+import {Entity, Func, Property, User, ProgressIndicator} from "./entities";
+import type { InputBase} from "./widgets";
 import {_toIterable} from "./utils_convert";
 import {MapProxy} from "./proxies";
 import {Observable} from "rxjs";

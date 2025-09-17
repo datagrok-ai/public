@@ -1,0 +1,2637 @@
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/font/Roboto-Regular.woff2
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/funcs/c981b88d-0202-5b27-a48f-975b6384e263?
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/funcs/c981b88d-0202-5b27-a48f-975b6384e263?
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/funcs/c981b88d-0202-5b27-a48f-975b6384e263?
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/js/common/codemirror/codemirror.js
+CONSOLE LOG REQUEST: 200, https://community.datagrok.ai/javascripts/embed-topics.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/js/common/codemirror/codemirror.css
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/funcs/7c7e1a50-9b00-11ef-ed04-ed105eccf13b?
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/funcs/7c7e1a50-9b00-11ef-ed04-ed105eccf13b?
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/funcs/16e64919-5a0c-5077-a438-559da46a545a?
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/DevTools/ssavenko/Vj5Y78Fp5ymsWCgm3zD4c2p0B3zaLPaf/4/dist/package.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/funcs/7c7e1a50-9b00-11ef-ed04-ed105eccf13b?
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/funcs/16e64919-5a0c-5077-a438-559da46a545a?
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/help/datagrok/datagrok.md
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/funcs/16e64919-5a0c-5077-a438-559da46a545a?
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/DevTools/ssavenko/Vj5Y78Fp5ymsWCgm3zD4c2p0B3zaLPaf/4/dist/package-test.js
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/font/Roboto-LightItalic.woff2
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/connectors/connections?text&include=shares.connection&file=true&order=name
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/connectors/connections?text&include=shares.connection&file=true&order=name
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/funcs?text=package.id%2520%253D%2520%252286fc3a90-5e50-11f0-a043-d7dd64264ebd%2522
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Add new column category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Add new column benchmark
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Add new column benchmark for 51875 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/PowerPack/ssavenko/rWEHwtwvya2pkg1ZkSNOnHR9XqNQ2iRt/7/css/power-pack.css
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/Helm/2.10.0.X-e185b37c/QlRCywikyHYqHBJi1lQpGE1razvmAisj/1/detectors.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/Chembl/1.4.4.X-e185b37c/Tq5ka4Pbsv6S2HvLjSIeKE8kjfYZCvTX/1/dist/package.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/GenomeBrowser/ssavenko/559KcKD5p8dFet3urpJj5QMxa7pHWvpr/41/detectors.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/Jiraconnect/ssavenko/EviLrUoUuSKufmQka9Xba5LEFcxV13tn/1/dist/package.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/SequenceTranslator/1.9.9.X-e185b37c/Jv65Tt86fKSeSt7W1s5KfDM1bzRrxDrY/1/detectors.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/PowerGrid/ssavenko/xqxTYxFqW32ECFOIHHRgT00qopK8pYWM/4/dist/package.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/js/common/openchemlib-full.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/UsageAnalysis/ssavenko/0WGqcWDgucsmhNxdAK5bSrmvEjKZs6gn/4/dist/package.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/Arrow/1.4.0.X-e185b37c/SSZb7aIgRJpvO4qbea42PGnnz4HvcAMR/1/dist/package.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/projects?text=%2523demo
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/Jiraconnect/ssavenko/EviLrUoUuSKufmQka9Xba5LEFcxV13tn/1/dist/2687550222d9f7b56ceb.png
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/Jiraconnect/ssavenko/EviLrUoUuSKufmQka9Xba5LEFcxV13tn/1/dist/9f08ee9adf26bda60227.png
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/Jiraconnect/ssavenko/EviLrUoUuSKufmQka9Xba5LEFcxV13tn/1/dist/7e505dae909e20381529.png
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/Jiraconnect/ssavenko/EviLrUoUuSKufmQka9Xba5LEFcxV13tn/1/dist/1c6b2c88cdf173f007cc.png
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: aggregate category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: aggregate avg(height, weight, age)
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: aggregate avg(height, weight, age) for 767 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/credentials/for/a2ec6240-9b00-11ef-d60f-4d531b9caabd?includeEntity=false
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/PowerPack/ssavenko/rWEHwtwvya2pkg1ZkSNOnHR9XqNQ2iRt/7/dist/package.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/properties/schemas?
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/Chem/ssavenko/92ruks13yliawfRENqGIna074DQkaqMY/7/dist/package.js
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/Arrow/1.4.0.X-e185b37c/SSZb7aIgRJpvO4qbea42PGnnz4HvcAMR/1/dist/parquet_wasm_bg.wasm
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/connectors/connections?text=name%253D%2522CHEMBL%2522&limit=1
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: aggregate category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: aggregate avg(height)
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: aggregate avg(height) for 507 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/connectors/connections?text=name%253D%2522Datagrok%2522&limit=1
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: aggregate category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: aggregate stdev(height)
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: aggregate stdev(height) for 1195 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/packages/published/files/Chem/ssavenko/92ruks13yliawfRENqGIna074DQkaqMY/7//dist/RDKit_minimal_1.2.23.wasm
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/images/datasets/no_picture.png?w=208
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/entities/picture/803a9c60-5e50-11f0-e178-313e7535f589?w=208
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/entities/picture/71554970-5e50-11f0-fad9-8703d6dbed7c?w=208
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/entities/picture/6f16a410-5e50-11f0-fe50-378750a37533?w=208
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/entities/picture/78029390-5e50-11f0-d98e-e5cfcd56d8fd?w=208
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/entities/picture/7da8a6e0-5e50-11f0-b0e9-1b8c411da074?w=208
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/entities/picture/7a5228e0-5e50-11f0-ed27-6d8b1cd60961?w=208
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/entities/picture/6c4e0e30-5e50-11f0-ca8c-d71396f197fb?w=208
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: append category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: append bios
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: append bios for 3 ms
+CONSOLE LOG ENTRY: RDKit module package instance was initialized
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: append category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: append cats
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: append cats for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/connectors/connections/System.AppData/file/Chembl%2Fdb-explorer%2Fdb-explorer-config.json?&&flag=274062
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: append category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: append demog
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: append demog for 3 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/connectors/connections/System.AppData/file/PowerPack%2Fdb-explorer%2Fdb-explorer-config.json?&&flag=274088
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: append category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: append wells
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: append wells for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset mutation category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset mutation 10 insertions at the beginning
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: bitset mutation 10 insertions at the beginning for 447 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset mutation category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset mutation 10k deletions of 1000
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: bitset mutation 10k deletions of 1000 for 86 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset mutation category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset mutation 10k insertions at the end
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: bitset mutation 10k insertions at the end for 994 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset mutation category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset mutation and
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: bitset mutation and for 3 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/connectors/connections?text=name%253D%2522Datagrok%2520Admin%2522
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset mutation category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset mutation or
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: bitset mutation or for 3 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/connectors/connections?text=name%253D%2522CHEMBL%2522
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset mutation category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset mutation set even by for loop
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: bitset mutation set even by for loop for 34 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/connectors/connections/5b968fc7-0ff3-5447-a33c-5ff57b6b713e/schema/columns?schema=public
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset mutation category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset mutation set even by init
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: bitset mutation set even by init for 46 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/connectors/connections/d516e731-6863-5b1b-8fa2-61fc91999b23/schema/columns?schema=public
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/connectors/proxy?url=https://reddata.atlassian.net/rest/api/3/project
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset mutation category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset mutation xor
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: bitset mutation xor for 3 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: BitSetPerfTest category
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset all but one set, iteration: iterator
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: bitset all but one set, iteration: iterator for 1993 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/connectors/connections/d516e731-6863-5b1b-8fa2-61fc91999b23/schema/relations?schema=public
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/connectors/connections/5b968fc7-0ff3-5447-a33c-5ff57b6b713e/schema/relations?schema=public
+CONSOLE LOG ENTRY: CHEMBL object handlers registered
+CONSOLE LOG ENTRY: Datagrok user object handlers registered
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset mutation category
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: BitSetPerfTest category
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset all but one set, iteration: manual
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: bitset all but one set, iteration: manual for 1983 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset mutation category
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: BitSetPerfTest category
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset all set, iteration: for loop
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: bitset all set, iteration: for loop for 27 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset mutation category
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: BitSetPerfTest category
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset all set, iteration: iterator
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: bitset all set, iteration: iterator for 201 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset mutation category
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: BitSetPerfTest category
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset all set, iteration: manual
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: bitset all set, iteration: manual for 2048 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset mutation category
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: BitSetPerfTest category
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset even set, iteration: iterator
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: bitset even set, iteration: iterator for 1484 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset mutation category
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: BitSetPerfTest category
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset even set, iteration: manual
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: bitset even set, iteration: manual for 1489 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset mutation category
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: BitSetPerfTest category
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset none set, iteration: iterator
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: bitset none set, iteration: iterator for 5 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset mutation category
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: BitSetPerfTest category
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset none set, iteration: manual
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: bitset none set, iteration: manual for 3 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: bitset mutation category
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: BitSetPerfTest category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: BitSetPerfTest bit checks
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: BitSetPerfTest bit checks for 25 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: BitSetPerfTest category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: BitSetPerfTest bit sets
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: BitSetPerfTest bit sets for 74 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: BitSetPerfTest category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: BitSetPerfTest inlined set
+CONSOLE LOG ENTRY: test inlined set
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: BitSetPerfTest inlined set for 4069 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: BitSetPerfTest category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: BitSetPerfTest set operator
+CONSOLE LOG ENTRY: test set operator
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: BitSetPerfTest set operator for 6395 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: BitSetPerfTest category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: BitSetPerfTest set true
+CONSOLE LOG ENTRY: set operator
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: BitSetPerfTest set true for 1356 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: BitSetPerfTest category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: BitSetPerfTest variable
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: BitSetPerfTest variable for 3888 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: clone category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: clone bios
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: clone bios for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: clone category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: clone cats
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: clone cats for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: clone category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: clone demog
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: clone demog for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: clone category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: clone wells
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: clone wells for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: create category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: create bios
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: create bios for 324 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: create category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: create demog
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: create demog for 403 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: create category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: create wells
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: create wells for 12158 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: ddt benchmarks category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: ddt benchmarks prepare
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: ddt benchmarks prepare for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with bigInt:capped on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with bigInt:capped on constant for 876 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with bigInt:capped on random bigints fixed length
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with bigInt:capped on random bigints fixed length for 639 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with bigInt:capped on random bigints
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with bigInt:capped on random bigints for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with bigInt:capped on range custom step
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with bigInt:capped on range custom step for 578 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with bigInt:capped on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with bigInt:capped on range for 632 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with bigInt:list on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with bigInt:list on constant for 1137 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with bigInt:list on random bigints fixed length
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with bigInt:list on random bigints fixed length for 1041 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with bigInt:list on random bigints
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with bigInt:list on random bigints for 842 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with bigInt:list on range custom step
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with bigInt:list on range custom step for 1272 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with bigInt:list on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with bigInt:list on range for 1264 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with bigInt:raw on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with bigInt:raw on constant for 3732 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with bigInt:raw on random bigints fixed length
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with bigInt:raw on random bigints fixed length for 6060 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with bigInt:raw on random bigints
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with bigInt:raw on random bigints for 3773 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with bigInt:raw on range custom step
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with bigInt:raw on range custom step for 13864 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with bigInt:raw on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with bigInt:raw on range for 11310 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:fcp on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:fcp on biased random doubles for 0 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:fcp on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:fcp on constant for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:fcp on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:fcp on double range for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:fcp on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:fcp on random doubles with trend for 0 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:fcp on random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:fcp on random doubles for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:fcp on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:fcp on random integers for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:fcp on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:fcp on range for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:raw on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:raw on biased random doubles for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:raw on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:raw on constant for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:raw on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:raw on double range for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:raw on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:raw on random doubles with trend for 0 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:raw on random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:raw on random doubles for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:raw on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:raw on random integers for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:raw on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:raw on range for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:raw64 on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:raw64 on biased random doubles for 17 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:raw64 on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:raw64 on constant for 30 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:raw64 on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:raw64 on double range for 25 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:raw64 on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:raw64 on random doubles with trend for 15 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:raw64 on random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:raw64 on random doubles for 51 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:raw64 on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:raw64 on random integers for 48 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:raw64 on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:raw64 on range for 26 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:rle on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:rle on biased random doubles for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:rle on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:rle on constant for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:rle on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:rle on double range for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:rle on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:rle on random doubles with trend for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:rle on random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:rle on random doubles for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:rle on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:rle on random integers for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:rle on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:rle on range for 0 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:rle64 on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:rle64 on biased random doubles for 86 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:rle64 on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:rle64 on constant for 76 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:rle64 on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:rle64 on double range for 108 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:rle64 on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:rle64 on random doubles with trend for 211 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:rle64 on random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:rle64 on random doubles for 63 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:rle64 on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:rle64 on random integers for 64 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with float:rle64 on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with float:rle64 on range for 65 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with int:bitIntList on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with int:bitIntList on biased random doubles for 425 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with int:bitIntList on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with int:bitIntList on constant for 354 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with int:bitIntList on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with int:bitIntList on double range for 329 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with int:bitIntList on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with int:bitIntList on random doubles with trend for 399 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with int:bitIntList on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with int:bitIntList on random integers for 408 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with int:bitIntList on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with int:bitIntList on range for 436 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with int:pattern on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with int:pattern on biased random doubles for 0 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with int:pattern on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with int:pattern on constant for 86 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with int:pattern on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with int:pattern on double range for 114 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with int:pattern on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with int:pattern on random doubles with trend for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with int:pattern on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with int:pattern on random integers for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with int:pattern on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with int:pattern on range for 136 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with int:raw on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with int:raw on biased random doubles for 10 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with int:raw on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with int:raw on constant for 9 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with int:raw on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with int:raw on double range for 11 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with int:raw on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with int:raw on random doubles with trend for 7 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with int:raw on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with int:raw on random integers for 7 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with int:raw on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with int:raw on range for 13 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with int:rle on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with int:rle on biased random doubles for 529 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with int:rle on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with int:rle on constant for 72 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with int:rle on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with int:rle on double range for 63 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with int:rle on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with int:rle on random doubles with trend for 592 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with int:rle on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with int:rle on random integers for 618 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders deserialization with int:rle on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders deserialization with int:rle on range for 74 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with bigInt:capped on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with bigInt:capped on constant for 42 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with bigInt:capped on random bigints fixed length
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with bigInt:capped on random bigints fixed length for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with bigInt:capped on random bigints
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with bigInt:capped on random bigints for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with bigInt:capped on range custom step
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with bigInt:capped on range custom step for 55 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with bigInt:capped on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with bigInt:capped on range for 34 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with bigInt:list on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with bigInt:list on constant for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with bigInt:list on random bigints fixed length
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with bigInt:list on random bigints fixed length for 0 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with bigInt:list on random bigints
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with bigInt:list on random bigints for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with bigInt:list on range custom step
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with bigInt:list on range custom step for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with bigInt:list on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with bigInt:list on range for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with bigInt:raw on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with bigInt:raw on constant for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with bigInt:raw on random bigints fixed length
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with bigInt:raw on random bigints fixed length for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with bigInt:raw on random bigints
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with bigInt:raw on random bigints for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with bigInt:raw on range custom step
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with bigInt:raw on range custom step for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with bigInt:raw on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with bigInt:raw on range for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:fcp on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:fcp on biased random doubles for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:fcp on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:fcp on constant for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:fcp on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:fcp on double range for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:fcp on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:fcp on random doubles with trend for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:fcp on random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:fcp on random doubles for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:fcp on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:fcp on random integers for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:fcp on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:fcp on range for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:raw on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:raw on biased random doubles for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:raw on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:raw on constant for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:raw on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:raw on double range for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:raw on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:raw on random doubles with trend for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:raw on random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:raw on random doubles for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:raw on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:raw on random integers for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:raw on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:raw on range for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:raw64 on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:raw64 on biased random doubles for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:raw64 on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:raw64 on constant for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:raw64 on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:raw64 on double range for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:raw64 on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:raw64 on random doubles with trend for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:raw64 on random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:raw64 on random doubles for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:raw64 on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:raw64 on random integers for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:raw64 on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:raw64 on range for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:rle on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:rle on biased random doubles for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:rle on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:rle on constant for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:rle on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:rle on double range for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:rle on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:rle on random doubles with trend for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:rle on random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:rle on random doubles for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:rle on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:rle on random integers for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:rle on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:rle on range for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:rle64 on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:rle64 on biased random doubles for 50 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:rle64 on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:rle64 on constant for 27 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:rle64 on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:rle64 on double range for 45 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:rle64 on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:rle64 on random doubles with trend for 43 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:rle64 on random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:rle64 on random doubles for 41 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:rle64 on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:rle64 on random integers for 42 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with float:rle64 on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with float:rle64 on range for 28 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with int:bitIntList on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with int:bitIntList on biased random doubles for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with int:bitIntList on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with int:bitIntList on constant for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with int:bitIntList on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with int:bitIntList on double range for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with int:bitIntList on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with int:bitIntList on random doubles with trend for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with int:bitIntList on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with int:bitIntList on random integers for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with int:bitIntList on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with int:bitIntList on range for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with int:pattern on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with int:pattern on biased random doubles for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with int:pattern on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with int:pattern on constant for 10 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with int:pattern on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with int:pattern on double range for 60 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with int:pattern on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with int:pattern on random doubles with trend for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with int:pattern on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with int:pattern on random integers for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with int:pattern on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with int:pattern on range for 70 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with int:raw on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with int:raw on biased random doubles for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with int:raw on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with int:raw on constant for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with int:raw on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with int:raw on double range for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with int:raw on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with int:raw on random doubles with trend for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with int:raw on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with int:raw on random integers for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with int:raw on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with int:raw on range for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with int:rle on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with int:rle on biased random doubles for 48 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with int:rle on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with int:rle on constant for 29 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with int:rle on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with int:rle on double range for 24 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with int:rle on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with int:rle on random doubles with trend for 33 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with int:rle on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with int:rle on random integers for 30 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization estimate with int:rle on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization estimate with int:rle on range for 42 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with bigInt:capped on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with bigInt:capped on constant for 653 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with bigInt:capped on random bigints fixed length
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with bigInt:capped on random bigints fixed length for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with bigInt:capped on random bigints
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with bigInt:capped on random bigints for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with bigInt:capped on range custom step
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with bigInt:capped on range custom step for 728 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with bigInt:capped on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with bigInt:capped on range for 750 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with bigInt:list on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with bigInt:list on constant for 1400 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with bigInt:list on random bigints fixed length
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with bigInt:list on random bigints fixed length for 1354 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with bigInt:list on random bigints
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with bigInt:list on random bigints for 876 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with bigInt:list on range custom step
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with bigInt:list on range custom step for 1346 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with bigInt:list on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with bigInt:list on range for 939 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with bigInt:raw on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with bigInt:raw on constant for 7698 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with bigInt:raw on random bigints fixed length
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with bigInt:raw on random bigints fixed length for 11582 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with bigInt:raw on random bigints
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with bigInt:raw on random bigints for 5635 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with bigInt:raw on range custom step
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with bigInt:raw on range custom step for 17854 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with bigInt:raw on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with bigInt:raw on range for 7376 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:fcp on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:fcp on biased random doubles for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:fcp on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:fcp on constant for 0 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:fcp on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:fcp on double range for 0 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:fcp on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:fcp on random doubles with trend for 0 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:fcp on random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:fcp on random doubles for 0 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:fcp on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:fcp on random integers for 0 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:fcp on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:fcp on range for 0 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:raw on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:raw on biased random doubles for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:raw on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:raw on constant for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:raw on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:raw on double range for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:raw on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:raw on random doubles with trend for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:raw on random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:raw on random doubles for 0 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:raw on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:raw on random integers for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:raw on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:raw on range for 0 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:raw64 on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:raw64 on biased random doubles for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:raw64 on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:raw64 on constant for 3 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:raw64 on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:raw64 on double range for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:raw64 on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:raw64 on random doubles with trend for 3 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:raw64 on random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:raw64 on random doubles for 3 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:raw64 on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:raw64 on random integers for 3 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:raw64 on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:raw64 on range for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:rle on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:rle on biased random doubles for 0 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:rle on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:rle on constant for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:rle on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:rle on double range for 0 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:rle on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:rle on random doubles with trend for 0 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:rle on random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:rle on random doubles for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:rle on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:rle on random integers for 0 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:rle on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:rle on range for 0 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:rle64 on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:rle64 on biased random doubles for 42 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:rle64 on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:rle64 on constant for 10 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:rle64 on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:rle64 on double range for 18 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:rle64 on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:rle64 on random doubles with trend for 19 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:rle64 on random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:rle64 on random doubles for 29 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:rle64 on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:rle64 on random integers for 26 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with float:rle64 on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with float:rle64 on range for 18 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with int:bitIntList on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with int:bitIntList on biased random doubles for 66 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with int:bitIntList on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with int:bitIntList on constant for 65 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with int:bitIntList on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with int:bitIntList on double range for 68 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with int:bitIntList on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with int:bitIntList on random doubles with trend for 76 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with int:bitIntList on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with int:bitIntList on random integers for 66 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with int:bitIntList on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with int:bitIntList on range for 66 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/projects/namespaces?include=user
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with int:pattern on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with int:pattern on biased random doubles for 0 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with int:pattern on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with int:pattern on constant for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with int:pattern on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with int:pattern on double range for 28 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with int:pattern on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with int:pattern on random doubles with trend for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with int:pattern on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with int:pattern on random integers for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with int:pattern on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with int:pattern on range for 29 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with int:raw on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with int:raw on biased random doubles for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with int:raw on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with int:raw on constant for 3 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with int:raw on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with int:raw on double range for 3 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with int:raw on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with int:raw on random doubles with trend for 3 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with int:raw on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with int:raw on random integers for 3 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with int:raw on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with int:raw on range for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with int:rle on biased random doubles
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with int:rle on biased random doubles for 140 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with int:rle on constant
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with int:rle on constant for 13 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with int:rle on double range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with int:rle on double range for 12 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with int:rle on random doubles with trend
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with int:rle on random doubles with trend for 146 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with int:rle on random integers
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with int:rle on random integers for 135 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: Encoders serialization with int:rle on range
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: Encoders serialization with int:rle on range for 12 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: fromBytes(toBytes) category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: fromBytes(toBytes) bios
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: fromBytes(toBytes) bios for 8 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: fromBytes(toBytes) category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: fromBytes(toBytes) cats
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: fromBytes(toBytes) cats for 6 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: fromBytes(toBytes) category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: fromBytes(toBytes) demog
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: fromBytes(toBytes) demog for 8 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: fromBytes(toBytes) category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: fromBytes(toBytes) wells
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: fromBytes(toBytes) wells for 7 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: fromCsv(toCsv) category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: fromCsv(toCsv) bios
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: fromCsv(toCsv) bios for 5 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: fromCsv(toCsv) category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: fromCsv(toCsv) cats
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: fromCsv(toCsv) cats for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: fromCsv(toCsv) category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: fromCsv(toCsv) demog
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: fromCsv(toCsv) demog for 4 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: fromCsv(toCsv) category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: fromCsv(toCsv) wells
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: fromCsv(toCsv) wells for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: join category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: join bios
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: join bios for 3 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: join category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: join demog
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: join demog for 2 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.addNew (10k) category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.addNew (10k) bios
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: rows.addNew (10k) bios for 350 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.addNew (10k) category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.addNew (10k) cats
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: rows.addNew (10k) cats for 237 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.addNew (10k) category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.addNew (10k) demog
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: rows.addNew (10k) demog for 468 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.addNew (10k) category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.addNew (10k) wells
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: rows.addNew (10k) wells for 19691 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.forEach.copyFrom(rows[0]) category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.forEach.copyFrom(rows[0]) bios
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: rows.forEach.copyFrom(rows[0]) bios for 598 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.forEach.copyFrom(rows[0]) category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.forEach.copyFrom(rows[0]) cats
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: rows.forEach.copyFrom(rows[0]) cats for 1029 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.forEach.copyFrom(rows[0]) category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.forEach.copyFrom(rows[0]) demog
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: rows.forEach.copyFrom(rows[0]) demog for 849 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.forEach.copyFrom(rows[0]) category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.forEach.copyFrom(rows[0]) wells
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: rows.forEach.copyFrom(rows[0]) wells for 20402 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.insert category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.insert bios
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: rows.insert bios for 263 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.insert category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.insert cats
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: rows.insert cats for 50 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.insert category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.insert demog
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: rows.insert demog for 309 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.insert category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.insert wells
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: rows.insert wells for 19296 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.remove category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.remove bios
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: rows.remove bios for 170 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.remove category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.remove cats
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: rows.remove cats for 26 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.remove category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.remove demog
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: rows.remove demog for 180 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.remove category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: rows.remove wells
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: rows.remove wells for 20214 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: sort by 1,2 category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: sort by 1,2 bios
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: sort by 1,2 bios for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: sort by 1,2 category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: sort by 1,2 cats
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: sort by 1,2 cats for 0 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: sort by 1,2 category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: sort by 1,2 demog
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: sort by 1,2 demog for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: sort by 1,2 category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: sort by 1,2 wells
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: sort by 1,2 wells for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: sort by 1 category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: sort by 1 bios
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: sort by 1 bios for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: sort by 1,2 category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: sort by 1,2 bios
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: sort by 1,2 bios for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: sort by 1 category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: sort by 1 cats
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: sort by 1 cats for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: sort by 1,2 category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: sort by 1,2 cats
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: sort by 1,2 cats for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: sort by 1 category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: sort by 1 demog
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: sort by 1 demog for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: sort by 1,2 category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: sort by 1,2 demog
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: sort by 1,2 demog for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: sort by 1 category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: sort by 1 wells
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: sort by 1 wells for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: sort by 1,2 category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: sort by 1,2 wells
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: sort by 1,2 wells for 0 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: toByteArray category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: toByteArray bios
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: toByteArray bios for 4 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: toByteArray category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: toByteArray cats
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: toByteArray cats for 6 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: toByteArray category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: toByteArray demog
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: toByteArray demog for 7 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: toByteArray category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: toByteArray wells
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: toByteArray wells for 6 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: toCsv category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: toCsv bios
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: toCsv bios for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: toCsv category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: toCsv cats
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: toCsv cats for 0 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: toCsv category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: toCsv demog
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: toCsv demog for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: toCsv category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Ddt benchmark: toCsv wells
+CONSOLE LOG ENTRY: Finished Core: Ddt benchmark: toCsv wells for 1 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Dml benchmark category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Dml benchmark Clustering CPU performance
+CONSOLE LOG ENTRY: Clustering CPU performance (length: 100000, clusters: 10): 81472.9 ms
+CONSOLE LOG ENTRY: Finished Core: Dml benchmark Clustering CPU performance for 81474 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/projects/namespaces?include=user
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Viewer Benchmarks category
+CONSOLE LOG ENTRY: test GROK-16537
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Viewer Benchmarks category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Viewer Benchmarks Bar chart
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/images/ribbon/ribbon_sprite.svg
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/images/entities/view_layout.svg
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/help/visualize/viewers/bar-chart.md
+CONSOLE LOG REQUEST: 404, https://dev.datagrok.ai/uploads/youtube/visualizations2.png
+CONSOLE LOG ENTRY: Failed to load resource: the server responded with a status of 404 ()
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/help/visualize/viewers/img/bar-chart-dates-thumb.png
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/help/visualize/viewers/img/bar-chart-relative-values-thumb.png
+CONSOLE LOG ENTRY: Finished Core: Viewer Benchmarks Bar chart for 38588 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Viewer Benchmarks category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Viewer Benchmarks Box plot
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/help/datagrok/datagrok.md
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/help/visualize/viewers/box-plot.md
+CONSOLE LOG ENTRY: Finished Core: Viewer Benchmarks Box plot for 72410 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/help/uploads/viewers/box-plot.png
+CONSOLE LOG REQUEST: 404, https://dev.datagrok.ai/uploads/youtube/visualizations2.png
+CONSOLE LOG ENTRY: Failed to load resource: the server responded with a status of 404 ()
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Viewer Benchmarks category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Viewer Benchmarks Calendar
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/help/datagrok/datagrok.md
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/help/visualize/viewers/calendar.md
+CONSOLE LOG REQUEST: 404, https://dev.datagrok.ai/uploads/youtube/visualizations2.png
+CONSOLE LOG ENTRY: Failed to load resource: the server responded with a status of 404 ()
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/help/uploads/viewers/calendar.png
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/users/sessions/current/refresh
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/connectors/connections/cache
+CONSOLE LOG ENTRY: Finished Core: Viewer Benchmarks Calendar for 107739 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Viewer Benchmarks category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Viewer Benchmarks Card
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/help/datagrok/datagrok.md
+CONSOLE LOG ENTRY: Finished Core: Viewer Benchmarks Card for 35801 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Viewer Benchmarks category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Viewer Benchmarks Column Viewer
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/help/datagrok/navigation/panels/column-manager.md
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/font/Roboto-BoldItalic.woff2
+CONSOLE LOG ENTRY: Finished Core: Viewer Benchmarks Column Viewer for 35686 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Viewer Benchmarks category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Viewer Benchmarks Confusion matrix
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/help/datagrok/datagrok.md
+CONSOLE LOG REQUEST: 404, https://dev.datagrok.ai/help/visualize/viewers/confusion-matrix.md
+CONSOLE LOG ENTRY: Failed to load resource: the server responded with a status of 404 ()
+CONSOLE LOG REQUEST: 404, https://dev.datagrok.ai/help/visualize/viewers/confusion-matrix.mdx
+CONSOLE LOG ENTRY: Failed to load resource: the server responded with a status of 404 ()
+CONSOLE LOG ENTRY: Finished Core: Viewer Benchmarks Confusion matrix for 48489 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Viewer Benchmarks category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Viewer Benchmarks Correlation plot
+CONSOLE LOG ENTRY: Package GrokML is not available...
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/help/visualize/viewers/correlation-plot.md
+CONSOLE LOG ENTRY: Finished Core: Viewer Benchmarks Correlation plot for 77195 ms
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/help/uploads/gifs/correlation-plot-thumb.png
+CONSOLE LOG REQUEST: 200, https://dev.datagrok.ai/api/log/tests/package?benchmark=true&ciCd=false
+CONSOLE LOG ENTRY: --------------------
+CONSOLE LOG ENTRY: Running tests
+CONSOLE LOG ENTRY: JSHandle@object
+CONSOLE LOG ENTRY: Started Core: Viewer Benchmarks category
+CONSOLE LOG ENTRY: test false
+CONSOLE LOG ENTRY: Started Core: Viewer Benchmarks Density plot

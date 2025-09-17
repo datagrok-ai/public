@@ -6,8 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import {
   IFitChartData,
   IFitSeries,
-  fitChartDataProperties,
-  fitSeriesProperties, IFitChartOptions, IFitPoint, FitCurve, FitFunction,
+  fitChartDataProperties, IFitChartOptions, IFitPoint, FitCurve,
   FitStatistics,
 } from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
@@ -32,6 +31,7 @@ import {
 } from './render-utils';
 import {merge} from 'rxjs';
 import {calculateSeriesStats, getChartDataAggrStats} from './fit-grid-cell-handler';
+import {Fit, FitFunction, FitFunctionTypes, fitSeriesProperties} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
 
 
 export interface FitCellOutlierToggleArgs {
@@ -131,6 +131,7 @@ export function mergeSeries(series: IFitSeries[]): IFitSeries | null {
     connectDots: series[0].connectDots,
     showFitLine: series[0].showFitLine,
     showPoints: series[0].showPoints,
+    showOutliers: series[0].showOutliers,
     showCurveConfidenceInterval: series[0].showCurveConfidenceInterval,
     errorModel: series[0].errorModel,
     clickToToggle: series[0].clickToToggle,
@@ -184,7 +185,7 @@ function getChartData(tableCell: DG.Cell): IFitChartData {
 }
 
 /** Returns existing, or fits curve for the specified grid cell and series. */
-export function getOrCreateCachedFitCurve(series: IFitSeries, seriesIdx: number, fitFunc: FitFunction,
+export function getOrCreateCachedFitCurve(series: IFitSeries, seriesIdx: number, fitFunc: FitFunction<Fit>,
   chartLogOptions: LogOptions, tableCell?: DG.Cell, useCache = true): FitCurve {
   const dataPoints = getOrCreateCachedCurvesDataPoints(series, seriesIdx, chartLogOptions, false, tableCell, useCache);
   // don't refit when just rerender - using LruCache with key `cellValue_colName_colVersion`
@@ -370,6 +371,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
         continue;
       for (let j = 0; j < data.series![i].points.length!; j++) {
         const p = data.series![i].points[j];
+        if (p.outlier && !data.series![i].showOutliers)
+          continue;
         if (this.hitTest(e, p, viewport)) {
           setOutlier(gridCell, p, i, j, data);
           return;
@@ -437,7 +440,7 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
     for (let i = 0; i < data.series?.length!; i++) {
       const series = data.series![i];
       const containsParams = series.parameters && series.parameters.length > 0;
-      if (series.points.some((point) => point.x === undefined || point.y === undefined))
+      if (series.points.some((point) => point.x === undefined || point.y === undefined) || series.points.length <= 1)
         continue;
       series.points.sort((a, b) => a.x - b.x);
 
@@ -555,6 +558,8 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
           continue;
         for (let j = 0; j < data.series![i].points.length!; j++) {
           const p = data.series![i].points[j];
+          if (p.outlier && !data.series![i].showOutliers)
+            continue;
           if (this.hitTest(e, p, viewport)) {
             ui.tooltip.show(ui.divV([ui.divText(`${data.chartOptions?.xAxisName ?? 'x'}: ${DG.format(p.x, !data.chartOptions?.logX ? '#0.000' : 'scientific')}`),
               ui.divText(`${data.chartOptions?.yAxisName ?? 'y'}: ${DG.format(p.y, !data.chartOptions?.logY ? '#0.000' : 'scientific')}`)]), e.x + 16, e.y + 16);

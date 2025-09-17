@@ -12,13 +12,6 @@ category('viewers', () => {
     test(v, async () => {
       const df = await readDataframe('samples/FASTA_DNA.csv');
       await testViewer(v, df, {detectSemanticTypes: true});
-    }, {
-      skipReason: {
-        'Sequence Similarity Search': 'GROK-13162',
-        'Sequence Diversity Search': 'GROK-13162',
-        'WebLogo': 'GROK-13162',
-        'VdRegions': 'GROK-13162',
-      }[v],
     });
   }
 });

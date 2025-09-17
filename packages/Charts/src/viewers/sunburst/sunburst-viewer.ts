@@ -127,30 +127,32 @@ export class SunburstViewer extends EChartViewer {
       else if (isMultiDeselect && isSectorSelected)
         selectedSectors = selectedSectors.filter((sector) => sector !== pathString);
 
-      if (this.onClick === 'Filter')
-        this.applySelectionFilter(this.dataFrame.filter, path, event);
-      else
+      if (this.onClick === 'Filter') {
+        this.handleDataframeFiltering(path, this.dataFrame);
+        return;
+      } else
         this.applySelectionFilter(this.dataFrame.selection, path, event);
     };
 
     const handleChartMouseover = async (params: any) => {
       const { x, y } = params.event.event;
       const { name, value, data } = params;
+      const displayName = name || 'Nulls';
       const tooltipDiv = ui.div();
 
       ui.tooltip.show(tooltipDiv, x + 10, y);
 
       if (data.semType !== DG.SEMTYPE.MOLECULE) {
-        tooltipDiv.innerText = `${value}\n${name}`;
+        tooltipDiv.innerText = `${value}\n${displayName}`;
         return;
       }
 
       const image = await TreeUtils.getMoleculeImage(name, 150, 100);
       tooltipDiv.appendChild(ui.divText(`${value}\n`));
-      if (name) {
+      if (name)
         tooltipDiv.appendChild(image);
-        return;
-      }
+      else
+        tooltipDiv.appendChild(ui.divText(displayName));
     };
 
     const handleCanvasDblClick = (event: MouseEvent) => {
@@ -211,7 +213,10 @@ export class SunburstViewer extends EChartViewer {
     if (!this.dataFrame)
       return;
     this.subs.push(this.dataFrame.onMetadataChanged.subscribe((_) => this.render()));
-    this.subs.push(grok.events.onEvent('d4-grid-color-coding-changed').subscribe(() => this.render()));
+    this.subs.push(grok.events.onEvent('d4-grid-color-coding-changed').subscribe(() => {
+      if (this.inheritFromGrid)
+        this.render();
+    }));
     this.subs.push(this.dataFrame.onValuesChanged.subscribe((_) => this.render()));
     this.subs.push(grok.events.onEvent('d4-current-viewer-changed').subscribe((args) => {
       const {viewer} = args.args;

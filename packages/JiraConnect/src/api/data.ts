@@ -21,13 +21,13 @@ export async function loadProjectData(host: string, creds: AuthCreds, projectKey
     return project;
 }
 
-export async function loadIssues(host: string, creds: AuthCreds, index: number = 0, count: number = 50, filterObject?: object, keys?: string[]): Promise<JiraIssuesList | null> {
+export async function loadIssues(host: string, creds: AuthCreds, index: number = 0, count: number = 50, filterObject?: object, keys?: string[]): Promise<JiraIssuesList> {
     let url = `https://${host}/rest/api/3/search?startAt=${index}&maxResults=${count}`;
     
     if (filterObject || keys) {
         let trimmedKeys = keys?.map(key => key.trim());
-        let keysParams = trimmedKeys?.join(',').trim();
-        let keysJQL = `key+in+(${keysParams})`;
+        let keysParams = trimmedKeys?.join('+OR+key+=+').trim();
+        let keysJQL = `key+=+${keysParams}`;
         
         let filterData = [];
         for (let filterKey of Object.keys(filterObject ?? {})) {
@@ -43,8 +43,17 @@ export async function loadIssues(host: string, creds: AuthCreds, index: number =
     }
     let requestOptions = buildRequestOptions(url, creds);
     let issues: JiraIssuesList | ErrorMessageResponse = await invokeApiFetch(url, requestOptions);
-    if ((issues as ErrorMessageResponse).errorMessages)
-        throw(new Error((issues as ErrorMessageResponse).errorMessages))
+
+    if ((issues as ErrorMessageResponse).errorMessages) {
+        issues = { maxResults: count, startAt: index, issues: [], total: 0 }
+        for(let issue of keys ?? []) {
+            let issueData = await loadIssueData(host, creds, issue)
+            if (issueData && (issueData as JiraIssue).key) {
+                issues.issues.push(issueData as JiraIssue);
+                issues.total = issues.total + 1;
+            }
+        }
+    }
     return issues as JiraIssuesList;
 }
 

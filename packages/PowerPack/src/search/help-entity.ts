@@ -13,7 +13,7 @@ export class HelpObjectHandler extends DG.ObjectHandler {
 
   renderMarkup(x: HelpObject, context?: any): HTMLElement {
     const icon = ui.icons.info(() => {});
-    const title = ui.span([x.title]);
+    const title = ui.label(x.title);
     const container = ui.divH([icon, title], {style: {alignItems: 'center'}});
     container.addEventListener('click', (e) => {
       e.preventDefault();

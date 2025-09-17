@@ -14,7 +14,7 @@ import {debounceTime, filter} from 'rxjs/operators';
 import wu from 'wu';
 import {TaskBarProgressIndicator, chem} from 'datagrok-api/dg';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
-import {_package, getRdKitModule} from '../package';
+import {_package, PackageFunctions} from '../package';
 import {AVAILABLE_FPS, CHEM_APPLY_FILTER_SYNC, FILTER_SCAFFOLD_TAG, MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT,
   SubstructureSearchType, getSearchProgressEventName, getSearchQueryAndType, getTerminateEventName} from '../constants';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
@@ -242,7 +242,7 @@ export class SubstructureFilter extends DG.Filter {
         if (this.batchResultObservable && !this.batchResultObservable?.closed) {
           this.searchNotCompleted = true; //need this variable to allow continue search when enabling filter again
           this.terminatePreviousSearch();
-          const smarts = _convertMolNotation(this.currentMolfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, getRdKitModule());
+          const smarts = _convertMolNotation(this.currentMolfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, PackageFunctions.getRdKitModule());
           this.finishSearch(getSearchQueryAndType(smarts, this.searchType, this.fp, this.similarityCutOff));
         }
       }));
@@ -364,7 +364,7 @@ export class SubstructureFilter extends DG.Filter {
     //terminating search (in case the search was active at the moment of detach)
     _package.logger.debug(`************finish search in detach ${this.filterId}`);
     this.terminatePreviousSearch();
-    const smarts = _convertMolNotation(this.currentMolfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, getRdKitModule());
+    const smarts = _convertMolNotation(this.currentMolfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, PackageFunctions.getRdKitModule());
     this.finishSearch(getSearchQueryAndType(smarts, this.searchType, this.fp, this.similarityCutOff));
     if (this.column?.temp[FILTER_SCAFFOLD_TAG])
       this.column.temp[FILTER_SCAFFOLD_TAG] = null;
@@ -452,8 +452,14 @@ export class SubstructureFilter extends DG.Filter {
       this.sketcher.setMolFile(state.molBlock);
       this.updateFilterUiOnSketcherChanged(this.currentMolfile);
     }
-    if (state.searchType && state.searchType !== this.searchType)
+    if (state.searchType && state.searchType !== this.searchType) {
+      //for correct synchronization of similarity filters when cloning views, need to firts set cutoff and fp
+      if (state.searchType === SubstructureSearchType.IS_SIMILAR) {
+        this.similarityCutOff = state.simCutOff;
+        this.fp = state.fp;
+      }
       this.searchTypeInput.value = state.searchType;
+    }
     if (state.simCutOff && state.simCutOff !== this.similarityCutOff)
       this.similarityCutOffInput.value = state.simCutOff;
     if (state.fp && state.fp !== this.fp)
@@ -480,7 +486,7 @@ export class SubstructureFilter extends DG.Filter {
   async _onSketchChanged(): Promise<void> {
     const newMolFile = this.sketcher.getMolFile();
     _package.logger.debug(`newMolfile ${newMolFile} , ${this.filterId}`);
-    const newSmarts = _convertMolNotation(newMolFile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, getRdKitModule());
+    const newSmarts = _convertMolNotation(newMolFile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, PackageFunctions.getRdKitModule());
     _package.logger.debug(`newSmarts ${newSmarts}, ${this.filterId}`);
     if (this.currentMolfile !== newMolFile)
       this.updateFilterUiOnSketcherChanged(newMolFile);
@@ -507,6 +513,11 @@ export class SubstructureFilter extends DG.Filter {
     } else if ((wu(this.dataFrame!.rows.filters)
       .has(`${this.columnName}: ${this.getFilterSummary(newMolFile)}`) || this.isFilteringBySameStructure(newMolFile)) &&
       !this.recalculateFilter && !this.searchNotCompleted) {
+      //check if the coordinates have changed and in case align is true - reset the tag on column
+      if (this.currentMolfile !== newMolFile && this.sketcher.align) {
+        this.currentMolfile = newMolFile;
+        this.setFilterScaffoldTag();
+      }
       // some other filter is already filtering for the exact same thing
       // value to pass into has() is created similarly to filterSummary property
       _package.logger.debug(`already filter by the same structure ${this.getFilterSummary(newMolFile)} , ${this.filterId}`);
@@ -541,7 +552,7 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   async getFilterBitset(): Promise<BitArray> {
-    const smarts = _convertMolNotation(this.currentMolfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, getRdKitModule());
+    const smarts = _convertMolNotation(this.currentMolfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, PackageFunctions.getRdKitModule());
     return await chemSubstructureSearchLibrary(this.column!, this.currentMolfile, smarts!, FILTER_TYPES.substructure, false, false,
       this.searchType, this.similarityCutOff, this.fp);
   }
@@ -654,7 +665,7 @@ export class SubstructureFilter extends DG.Filter {
 
   getFilterSummary(molfile: string): string {
     const smarts = _convertMolNotation(molfile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts,
-      getRdKitModule());
+      PackageFunctions.getRdKitModule());
     return this.searchType === SubstructureSearchType.IS_SIMILAR ?
       `${smarts}_${this.searchType}_${this.similarityCutOff}_${this.fp}` : `${smarts}_${this.searchType}`;
   }

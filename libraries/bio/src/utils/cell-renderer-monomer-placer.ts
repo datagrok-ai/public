@@ -186,6 +186,14 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
     lineLayouts: Array<{ lineIdx: number; elements: IMultilineLayoutElement[]; }>;
     lineHeight: number;
     } {
+    if (this.dirty) {
+      try {
+        this.reset();
+      } catch (err) {
+        const [errMsg, errStack] = errInfo(err);
+        this.logger.error(errMsg, undefined, errStack);
+      }
+    }
     // --- 1. Setup ---
     const {lineHeight, monomerSpacing} = this.calculateFontBasedSpacing(g);
     const availableWidth = w - (this.padding * 2);
@@ -472,7 +480,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
   ) {
     // for cases when we render it on somewhere other than grid, gridRow might be null or incorrect (set to 0).
     //for this case we can just recalculate split sequence without caching
-    const isRenderedOnGrid = gridCell.grid?.canvas === g.canvas;
+    const isRenderedOnGrid = gridCell.grid?.dart && gridCell.grid?.canvas === g.canvas;
 
     if (!this.seqHelper) return;
     const tableCol = this.tableCol;
@@ -487,6 +495,12 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         maxLengthOfMonomer = !isNaN(v) && v ? v : 50;
       }
 
+      if (MmcrTemps.maxMonomerLength in tableCol.temp) {
+        const v = tableCol.temp[MmcrTemps.maxMonomerLength];
+        const vn = typeof v === 'number' ? v : parseInt(v);
+        maxLengthOfMonomer = !isNaN(vn) && vn ? vn : 50;
+      }
+
       if (
         tableCol.temp[MmcrTemps.rendererSettingsChanged] === rendererSettingsChangedState.true ||
         this.monomerLengthLimit != maxLengthOfMonomer
@@ -499,6 +513,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
         this.setMonomerLengthLimit(maxLengthOfMonomer);
         this.setSeparatorWidth(sh.isMsa() ? msaGapLength : gapLength);
         tableCol.temp[MmcrTemps.rendererSettingsChanged] = rendererSettingsChangedState.false;
+        this.dirty = true;
       }
 
 
@@ -534,7 +549,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
       const selectedPosition = Number.parseInt(tableCol.getTag(bioTAGS.selectedPosition) ?? '-200');
 
 
-      const shouldUseMultiLine = this.shouldUseMultilineRendering(tableCol) && drawStyle !== DrawStyle.MSA;
+      const shouldUseMultiLine = this.shouldUseMultilineRendering(tableCol);
 
       if (shouldUseMultiLine) {
         const currentCellBounds: IMonomerLayoutData[] = [];

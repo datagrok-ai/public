@@ -76,14 +76,14 @@ category('PolyTool: Convert', () => {
     'cyclized-D(2)-NH2(2)-3-0': {
       src: {seq: 'R-F-D(2)-T-G-H-F-Y-P-NH2(2)'},
       tgt: {
-        helm: 'PEPTIDE1{R.F.D.T.G.H.F.Y.P.[NH2]}$PEPTIDE1,PEPTIDE1,10:R2-3:R3$$$V2.0',
+        helm: 'PEPTIDE1{R.F.D.T.G.H.F.Y.P.[NH2]}$PEPTIDE1,PEPTIDE1,3:R3-10:R2$$$V2.0',
         mol: {atomCount: 81, bondCount: 86, inchiKey: 'CBMGNYKOZWNVNK-AHGCAHLCSA-N'},
       }
     },
     'cyclized-D(2)-NH2(2)-0-0': {
       src: {seq: 'D(2)-T-G-H-F-Y-P-NH2(2)'},
       tgt: {
-        helm: 'PEPTIDE1{D.T.G.H.F.Y.P.[NH2]}$PEPTIDE1,PEPTIDE1,8:R2-1:R3$$$V2.0',
+        helm: 'PEPTIDE1{D.T.G.H.F.Y.P.[NH2]}$PEPTIDE1,PEPTIDE1,1:R3-8:R2$$$V2.0',
         mol: {atomCount: 59, bondCount: 63, inchiKey: 'HGRHAUQBJXFERJ-MUFWPYSASA-N'},
       }
     },

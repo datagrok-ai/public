@@ -1,5 +1,9 @@
 # Tutorials changelog
 
+## 1.9.2 (2025-09-15)
+
+Fixed the Parameters Optimization tutorial
+
 ## 1.8.5 (2025-04-25)
 
 Updated UI in the Multivariate Analysis tutorial

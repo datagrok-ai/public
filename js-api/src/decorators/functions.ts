@@ -86,7 +86,7 @@ export namespace decorators {
     editor?: string;
     nullable?: boolean;
     separators?: string[];
-    choices?: string[];
+    choices?: string[] | string;
     format?: string;
     min?: string;
     max?: string;
@@ -95,9 +95,14 @@ export namespace decorators {
     initialValue?: string;
     viewer?: string;
     units?: string;
+    type?: string;
+    optionsType?: string;
+    step?: string;
+    "meta.url"?: boolean;
+    metaUrl?: boolean;
   }
 
-  interface Input {
+  interface Input extends InputOptions{
     name?: string;
     type?: string;
     options?: InputOptions
@@ -111,6 +116,7 @@ export namespace decorators {
 
   interface Meta {
     cache?: string;
+    cacheInvalidateOn?: string;
     ['cache.invalidateOn']?: string;
     browsePath?: string;
     icon?: string;
@@ -143,11 +149,17 @@ export namespace decorators {
     order?: string;
     autostartImmediate?: string;
     ['scriptHandler.language']?: string;
+    scriptHandlerLanguage?: string;
     ['scriptHandler.extensions']?: string;
+    scriptHandlerExtensions?: string;
     ['scriptHandler.commentStart']?: string;
+    scriptHandlerCommentStart?: string;
     ['scriptHandler.templateScript']?: string;
+    scriptHandlerTemplateScript?: string;
     ['scriptHandler.codeEditorMode']?: string;
+    scriptHandlerCodeEditorMode?: string;
     ['scriptHandler.vectorizationFunction']?: string;
+    scriptHandlerVectorizationFunction?: string;
     url?: string;
     propertyType?: string;
     semType?: string;
@@ -155,49 +167,67 @@ export namespace decorators {
 
   interface FunctionOptions {
     name?: string,
+    friendlyName?: string,
     tags?: string[],
     description?: string,
     meta?: Meta | Record<string, string>,
     outputs?: Output[],
+    result?: Output,
     sidebar?: string;
     editor?: string;
     cache?: string;
     ['cache.invalidateOn']?: string;
+    cacheInvalidateOn?: string;
+    ['top-menu']?: string;
+    topMenu?: string;
+    condition?: string;
+    helpUrl?: string;
+    ['help-url']?: string;
+    connection?: string;
   }
 
-  interface AppOptions extends FunctionOptions{
+  interface AppOptions extends FunctionOptions {
     browsePath?: string,
-    icon?: string, 
+    icon?: string,
     url?: string
   }
 
-  interface ModelOptions extends FunctionOptions{
+  interface DashboardOptions extends FunctionOptions {
+    test?: string,
+    order?: string,
+  }
+
+  interface ModelOptions extends FunctionOptions {
     icon?: string,
     features?: string,
     runOnInput?: string,
     runOnOpen?: string
   }
 
-  interface CellRendererOptions extends FunctionOptions{
+  interface AppTreeBrowserOptions extends FunctionOptions {
+    app?: string;
+  }
+
+  interface CellRendererOptions extends FunctionOptions {
     cellType?: string,
     columnTags?: string
   }
 
-  interface DashboardOptions extends FunctionOptions{
+  interface DashboardOptions extends FunctionOptions {
     order?: string
   }
 
-  interface FileViewerOptions extends FunctionOptions{
+  interface FileViewerOptions extends FunctionOptions {
     fileViewer: string;
     fileViewerCheck?: string;
   }
-  
-  interface FileHandlerOptions extends FunctionOptions{
+
+  interface FileHandlerOptions extends FunctionOptions {
     ext: string;
     fileViewerCheck?: string;
   }
-  
-  interface DemoOptions extends FunctionOptions{
+
+  interface DemoOptions extends FunctionOptions {
     path?: string;
     demoPath?: string;
     demoSkip?: string;
@@ -205,7 +235,7 @@ export namespace decorators {
     test?: { test: string, wait: string, timeout?: string, skip?: string }
   }
 
-  export function func(config: FunctionOptions) {
+  export function func(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -221,7 +251,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function autostart(config: FunctionOptions) {
+  export function autostart(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -229,7 +259,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function init(config: FunctionOptions) {
+  export function init(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -237,7 +267,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function editor(config: FunctionOptions) {
+  export function editor(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -245,7 +275,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function panel(config: FunctionOptions) {
+  export function panel(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -253,7 +283,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function folderViewer(config: FunctionOptions) {
+  export function dashboard(config?: DashboardOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -261,7 +291,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function semTypeDetector(config: FunctionOptions) {
+  export function folderViewer(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -269,7 +299,15 @@ export namespace decorators {
     ) { };
   }
 
-  export function packageSettingsEditor(config: FunctionOptions) {
+  export function semTypeDetector(config?: FunctionOptions) {
+    return function (
+      target: any,
+      propertyKey: string,
+      descriptor: PropertyDescriptor
+    ) { };
+  }
+
+  export function packageSettingsEditor(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -285,7 +323,7 @@ export namespace decorators {
   //   ) { };
   // }
 
-  export function dashboard(config: DashboardOptions) {
+  export function functionAnalysis(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -293,7 +331,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function functionAnalysis(config: FunctionOptions) {
+  export function converter(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -301,7 +339,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function converter(config: FunctionOptions) {
+  export function fileViewer(config?: FileViewerOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -309,15 +347,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function fileViewer(config: FileViewerOptions) {
-    return function (
-      target: any,
-      propertyKey: string,
-      descriptor: PropertyDescriptor
-    ) { };
-  }
-
-  export function fileExporter(config: FunctionOptions) {
+  export function fileExporter(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -341,7 +371,7 @@ export namespace decorators {
     ) { };
   }
 
-  export function treeBrowser(config: FunctionOptions) {
+  export function treeBrowser(config?: FunctionOptions) {
     return function (
       target: any,
       propertyKey: string,
@@ -350,6 +380,14 @@ export namespace decorators {
   }
 
   export function model(config: ModelOptions) {
+    return function (
+      target: any,
+      propertyKey: string,
+      descriptor: PropertyDescriptor
+    ) { };
+  }
+
+  export function appTreeBrowser(config?: AppTreeBrowserOptions) {
     return function (
       target: any,
       propertyKey: string,
