@@ -7,7 +7,7 @@
     "@datagrok-libraries/math": "^1.2.6",
     "@datagrok-libraries/ml": "^6.8.3",
     "@datagrok-libraries/tutorials": "^1.6.1",
-    "@datagrok-libraries/utils": "^4.6.3",
+    "@datagrok-libraries/utils": "^4.6.5",
     "@keckelt/tsne": "^1.0.2",
     "@webgpu/types": "^0.1.40",
     "cash-dom": "^8.1.1",
