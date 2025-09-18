@@ -154,16 +154,22 @@ function getSearchView(viewName: string,
   globalSearchInput.setTooltip('Search using all properties in the database, not just those defined in the template.');
 
   const analysisTypeSelector = ui.input.choice('Analysis', {
-    items: ['None', 'Dose-Response'], // For now, a static list. Can be dynamic later.
+    items: ['None', 'Dose-Response', 'Dose-Ratio'],
     value: 'None',
-    onValueChanged: () => refreshAnalysisUI(), // Call a dedicated UI refresh function for this part
+    onValueChanged: () => refreshAnalysisUI(),
   });
-
   const refreshResults = () => {
+    let analysisName = '';
+    if (analysisTypeSelector.value === 'Dose-Response')
+      analysisName = 'Dose-Response';
+    else if (analysisTypeSelector.value === 'Dose-Ratio')
+      analysisName = 'Dose-Ratio';
+
+
     const query: PlateQuery = {
       plateMatchers: [...searchFormToMatchers(platesTemplateForm), ...searchFormToMatchers(platesOtherForm)],
       wellMatchers: [...searchFormToMatchers(wellsTemplateForm), ...searchFormToMatchers(wellsOtherForm)],
-      analysisMatchers: analysisFormToMatchers(analysisForm, analysisTypeSelector.value === 'Dose-Response' ? 'Dose-Response' : ''),
+      analysisMatchers: analysisFormToMatchers(analysisForm, analysisName),
     };
 
     search(query).then((df) => {
@@ -171,12 +177,24 @@ function getSearchView(viewName: string,
       df.name = viewName;
       onResults(resultsView.grid);
     });
-  };
+  }; ;
 
   const refreshAnalysisUI = () => {
     ui.empty(analysisFormHost);
+
+    let analysisProperties: AnalysisProperty[] = [];
+    let currentAnalysisName = '';
+
     if (analysisTypeSelector.value === 'Dose-Response') {
-      const analysisInputs = drcAnalysisProperties.map((prop) => {
+      analysisProperties = drcAnalysisProperties;
+      currentAnalysisName = 'Dose-Response';
+    } else if (analysisTypeSelector.value === 'Dose-Ratio') {
+      analysisProperties = doseRatioAnalysisProperties;
+      currentAnalysisName = 'Dose-Ratio';
+    }
+
+    if (analysisProperties.length > 0) {
+      const analysisInputs = analysisProperties.map((prop) => {
         const input = ui.input.string(prop.name) as AnalysisPropInput;
         input.prop = prop;
         input.addValidator((s) => NumericMatcher.parse(s) ? null : 'Invalid criteria. Example: ">10"');
@@ -189,6 +207,7 @@ function getSearchView(viewName: string,
 
       DG.debounce(analysisForm.onInputChanged, 500).subscribe((_) => refreshResults());
     }
+
     refreshResults();
   };
 
@@ -249,13 +268,11 @@ function getSearchView(viewName: string,
       ui.divV([ui.h2('Plates'), platesFormHost], {style: {flexGrow: '1'}}),
       ui.divV([ui.h2('Wells'), wellsFormHost], {style: {flexGrow: '1'}})
     ], {style: {width: '100%'}}),
-    // --- START: ADD ANALYSIS UI TO THE PANEL ---
     ui.divV([
       ui.h2('Analysis Results'),
       analysisTypeSelector.root,
       analysisFormHost
     ], {style: {marginTop: '10px'}})
-    // --- END: ADD ANALYSIS UI TO THE PANEL ---
   ], {classes: 'ui-panel'});
 
   filterPanel.style.overflowY = 'auto';
@@ -285,3 +302,14 @@ export function searchPlatesView(): DG.View {
 export function searchWellsView(): DG.View {
   return getSearchView('Search Wells', queryWells, (grid) => {});
 }
+
+
+export const doseRatioAnalysisProperties: AnalysisProperty[] = [
+  {name: 'IC50', type: DG.TYPE.FLOAT, dbColumn: 'ic50'},
+  {name: 'Hill Slope', type: DG.TYPE.FLOAT, dbColumn: 'hill_slope'},
+  {name: 'R Squared', type: DG.TYPE.FLOAT, dbColumn: 'r_squared'},
+  {name: 'Min Value', type: DG.TYPE.FLOAT, dbColumn: 'min_value'},
+  {name: 'Max Value', type: DG.TYPE.FLOAT, dbColumn: 'max_value'},
+  // Note: AUC might not be as relevant for dose-ratio, but keeping for consistency
+  {name: 'AUC', type: DG.TYPE.FLOAT, dbColumn: 'auc'},
+];
