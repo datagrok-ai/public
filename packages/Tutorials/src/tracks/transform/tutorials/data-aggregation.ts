@@ -17,7 +17,7 @@ export class AggregationTutorial extends Tutorial {
     return 'Learn different ways of data aggregation and pivoting';
   }
   get steps(): number {
-    return 13;
+    return 12;
   }
 
   helpUrl: string = 'https://datagrok.ai/help/transform/aggregate-rows';
@@ -35,6 +35,15 @@ export class AggregationTutorial extends Tutorial {
     await this.action('Open Aggregation Editor', grok.functions.onAfterRunAction.pipe(
       filter((call) => call.func.name === 'CmdAggregateRows')), this.getMenuItem('Data'),
       `Select <b>Data > Aggregate Rows</b> in the top menu, or press <b>${platformKeyMap['Alt'][this.platform]}+A</b>.`);
+
+    const pivotViewer = Array.from(grok.shell.tv.viewers).find((v) => v instanceof DG.PivotViewer) as DG.PivotViewer;
+    if (pivotViewer)
+      pivotViewer.setOptions({
+        groupByColumnNames: [],
+        pivotColumnNames: [],
+        aggregateAggTypes: ['avg', 'avg'],
+        aggregateColumnNames: ['AGE', 'HEIGHT']
+      } as unknown as DG.IPivotViewerSettings);
 
     this.describe('The aggregation editor consists of several components: the section on ' +
       'top contains aggregation parameters; the spreadsheet at the bottom shows the result, ' +
@@ -104,21 +113,21 @@ export class AggregationTutorial extends Tutorial {
     );
 
 
-    const viewerPopup = $(aggRoot).find('.d4-combo-popup').get(0);
-    await this.action('Add viewer to visualize aggregation', waitForElementClick(viewerPopup as HTMLElement), viewerPopup,
-      'To change the viewer, click on the combobox.' +
-      'This action will open a dropdown list containing various visualization options for aggregations.' +
-      'You\'ll find a selection of standard viewers like scatterplot, barchart, piechart, and more.'
-    );
+    // const viewerPopup = $(aggRoot).find('.d4-combo-popup').get(0);
+    // await this.action('Add viewer to visualize aggregation', waitForElementClick(viewerPopup as HTMLElement), viewerPopup,
+    //   'To change the viewer, click on the combobox.' +
+    //   'This action will open a dropdown list containing various visualization options for aggregations.' +
+    //   'You\'ll find a selection of standard viewers like scatterplot, barchart, piechart, and more.'
+    // );
 
-    const lineChartEl = $(aggRoot).find('label.ui-label').filter(function() {
-      return $(this).text().trim() === "Line chart";
-    }).closest('div.d4-icon-text.d4-list-item').get(0);
-    await this.action('Choose Line Chart from the viewers list', waitForElementClick(lineChartEl as HTMLElement), lineChartEl,
-      'Now, choose the Line Chart viewer from the list.' +
-      'By doing so, you\'ll be able to visualize the aggregation results in a line chart format.' +
-      'In this scenario, the data has been aggregated based on weight, and the Line Chart will represent this aggregation accordingly.'
-    );
+    // const lineChartEl = $(aggRoot).find('label.ui-label').filter(function() {
+    //   return $(this).text().trim() === "Line chart";
+    // }).closest('div.d4-icon-text.d4-list-item').get(0);
+    // await this.action('Choose Line Chart from the viewers list', waitForElementClick(lineChartEl as HTMLElement), lineChartEl,
+    //   'Now, choose the Line Chart viewer from the list.' +
+    //   'By doing so, you\'ll be able to visualize the aggregation results in a line chart format.' +
+    //   'In this scenario, the data has been aggregated based on weight, and the Line Chart will represent this aggregation accordingly.'
+    // );
 
     this.title('Interactivity');
 
@@ -131,6 +140,13 @@ export class AggregationTutorial extends Tutorial {
       this.t!.selection.onChanged.pipe(filter(() => this.t!.selection.trueCount === 37)), null,
       'Click on the first row in the aggregated table while holding <b>Shift</b>. This way you ' +
       'will select all the corresponding rows in the source table (the values are "Asian, F").');
+
+    await this.action('Remove selection by pressing "Esc"', this.t!.onSelectionChanged.pipe(filter(() =>
+      !this.t!.selection.anyTrue)), null, 'There are multiple ways to deselect all or certain rows, hitting ' +
+      '<b>Esc</b> being the simplest. It removes selection entirely, both from rows and columns.');
+
+    if (pivotViewer)
+      pivotViewer.props.rowSource = DG.RowSet.All;
 
     await this.action('Click on the last row in the aggregated table to filter by it',
       this.t!.filter.onChanged.pipe(filter(() => this.t!.filter.trueCount === 75)), null,
