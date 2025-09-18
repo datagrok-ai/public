@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.4.4 (2025-09-17)
+
+Improved the PCA dialog
+
 ## 1.4.3 (2025-03-28)
 
 Updated grok tools
