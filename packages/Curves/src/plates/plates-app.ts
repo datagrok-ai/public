@@ -17,7 +17,7 @@ export function platesAppView(): DG.View {
   const view = DG.TableView.create(dummy);
 
 
-  crud.queryPlates({plateMatchers: [], wellMatchers: []}).then((df: DG.DataFrame) => {
+  crud.queryPlates({plateMatchers: [], wellMatchers: [], analysisMatchers:[]}).then((df: DG.DataFrame) => {
     df.col('barcode')!.semType = 'Plate Barcode';
     view.dataFrame = df;
     view.grid.columns.add({gridColumnName: 'plate', cellType: 'Plate'})

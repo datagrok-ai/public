@@ -52,6 +52,7 @@ export type PropertyCondition = {
 export type PlateQuery = {
   plateMatchers: PropertyCondition[];
   wellMatchers: PropertyCondition[];
+  analysisMatchers: AnalysisCondition[]; 
 }
 
 export type PlateTemplate = {
@@ -63,12 +64,26 @@ export type PlateTemplate = {
   wellProperties: Partial<PlateProperty>[];
 }
 
-// export const wellProperties: PlateProperty[] = [
-//   {id: 1000, name: 'Volume', type: DG.COLUMN_TYPE.FLOAT},
-//   {id: 1001, name: 'Concentration', type: DG.COLUMN_TYPE.FLOAT},
-//   {id: 1002, name: 'Sample', type: DG.COLUMN_TYPE.STRING},
-//   {id: 1003, name: 'Well Role', type: DG.COLUMN_TYPE.STRING}
-// ];
+export type AnalysisProperty = {
+  name: string; // User-friendly name, e.g., "IC50"
+  type: DG.TYPE; // Data type, e.g., DG.TYPE.FLOAT
+  dbColumn: string; // The actual column name in the database table, e.g., "ic50"
+}
+
+export type AnalysisCondition = {
+  property: AnalysisProperty;
+  matcher: Matcher;
+  analysisName: string; // The analysis this condition applies to, e.g., "Dose-Response"
+}
+export const drcAnalysisProperties: AnalysisProperty[] = [
+  {name: 'IC50', type: DG.TYPE.FLOAT, dbColumn: 'ic50'},
+  {name: 'Hill Slope', type: DG.TYPE.FLOAT, dbColumn: 'hill_slope'},
+  {name: 'R Squared', type: DG.TYPE.FLOAT, dbColumn: 'r_squared'},
+  {name: 'Min Value', type: DG.TYPE.FLOAT, dbColumn: 'min_value'},
+  {name: 'Max Value', type: DG.TYPE.FLOAT, dbColumn: 'max_value'},
+  {name: 'AUC', type: DG.TYPE.FLOAT, dbColumn: 'auc'},
+];
+
 
 export let allProperties: PlateProperty[] = [];
 export let plateTemplates: PlateTemplate[] = [];
@@ -211,7 +226,7 @@ export async function getPlateById(id: number): Promise<Plate> {
 function getPlateSearchSql(query: PlateQuery): string {
   const existsClauses: string[] = [];
 
-  // Handle plate-level property conditions
+  // Handle plate-level property conditions (no change here)
   for (const condition of query.plateMatchers) {
     const dbColumn = plateDbColumn[condition.property.type];
     existsClauses.push(`
@@ -224,7 +239,7 @@ function getPlateSearchSql(query: PlateQuery): string {
       )`);
   }
 
-  // Handle well-level property conditions
+  // Handle well-level property conditions (no change here)
   for (const condition of query.wellMatchers) {
     const dbColumn = plateDbColumn[condition.property.type];
     existsClauses.push(`
@@ -237,8 +252,22 @@ function getPlateSearchSql(query: PlateQuery): string {
       )`);
   }
 
+  // Handle analysis-level result conditions
+  for (const condition of query.analysisMatchers) {
+    existsClauses.push(`
+      EXISTS (
+        SELECT 1
+        FROM plates.analysis_runs ar
+        JOIN plates.analysis_results_curves arc ON ar.id = arc.analysis_run_id
+        WHERE ar.plate_id = p.id
+          AND ar.analysis_name = '${condition.analysisName}'
+          AND (${condition.matcher.toSql(`arc.${condition.property.dbColumn}`)})
+      )`);
+  }
+
   const whereFilter = existsClauses.length > 0 ? `WHERE ${existsClauses.join(' AND ')}` : '';
 
+  // The rest of the query remains the same
   return `
 WITH filtered_plates AS (
   SELECT p.id, p.barcode, p.description
@@ -265,7 +294,7 @@ SELECT
       )
     ) FILTER (WHERE pr.id IS NOT NULL),
     '{}'::jsonb
-  )::text AS properties -- <<< THIS IS THE FIX. Cast the result to text.
+  )::text AS properties
 FROM filtered_plates fp
 LEFT JOIN plates.plate_details pd ON pd.plate_id = fp.id
 LEFT JOIN plates.properties pr ON pr.id = pd.property_id
@@ -322,7 +351,6 @@ function getWellSearchSql(query: PlateQuery): string {
 
   const whereFilter = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
-  // This is the new, corrected query.
   // It queries from the well values table and groups by each unique well.
   return `
 SELECT
@@ -492,7 +520,7 @@ export async function createPlateTemplate(template: Partial<PlateTemplate>): Pro
   for (const property of template.plateProperties ?? []) {
     property.template_id = template.id;
     property.scope = 'plate';
-    const newProp = await createProperty(property); // This should now pass all fields
+    const newProp = await createProperty(property);
     createdPlateProperties.push(newProp);
   }
 
@@ -552,13 +580,32 @@ export async function deletePlateTemplate(template: PlateTemplate): Promise<void
  * @returns The ID of the newly created analysis run.
  */
 export async function createAnalysisRun(plateId: number, analysisName: string, parameters: object): Promise<number> {
+  // Add a defensive check for the plateId right at the start.
+  if (!plateId)
+    throw new Error('Cannot create analysis run: plateId is missing.');
+
   const result = await grok.functions.call('Curves:createAnalysisRun', {
     plateId: plateId,
     analysisName: analysisName,
     parameters: JSON.stringify(parameters)
   });
-  return result;
+
+  // Log what the platform actually returns. This is great for debugging.
+  console.log('createAnalysisRun result:', result);
+
+  if (result === null || result === undefined)
+    throw new Error('Failed to create analysis run in the database. The function call returned null.');
+
+  // The result might be a number directly, or an object like { id: 123 } or a DataFrame.
+  // This handles all common cases.
+  const runId = result.id ?? result.runId ?? (typeof result.get === 'function' ? result.get('id', 0) : result);
+
+  if (typeof runId !== 'number')
+    throw new Error(`Failed to extract a numeric runId. Got: ${JSON.stringify(runId)}`);
+
+  return runId;
 }
+
 
 /**
  * Saves a single curve's results to the database.

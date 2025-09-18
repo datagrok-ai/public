@@ -1,5 +1,5 @@
 /* eslint-disable max-len */
-import {getPlateUniquePropertyValues, getWellUniquePropertyValues, initPlates, PlateQuery, PlateTemplate, PropertyCondition} from '../plates-crud';
+import {AnalysisCondition, AnalysisProperty, drcAnalysisProperties, getPlateUniquePropertyValues, getWellUniquePropertyValues, initPlates, PlateQuery, PlateTemplate, PropertyCondition} from '../plates-crud';
 
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
@@ -15,6 +15,7 @@ import {
 
 
 type PropInput = DG.InputBase & { prop: PlateProperty };
+type AnalysisPropInput = DG.InputBase & { prop: AnalysisProperty };
 
 
 function getSearchForm(
@@ -81,6 +82,21 @@ function getSearchForm(
   return {root, templateForm, otherForm};
 }
 
+function analysisFormToMatchers(form: DG.InputForm, analysisName: string): AnalysisCondition[] {
+  const matchers: AnalysisCondition[] = [];
+  if (!form || !analysisName) return matchers;
+
+  for (const input of form.inputs as AnalysisPropInput[]) {
+    if (input.inputType === DG.InputType.Text && input.value !== '' && NumericMatcher.parse(input.value)) {
+      matchers.push({
+        property: input.prop,
+        matcher: NumericMatcher.parse(input.value)!,
+        analysisName: analysisName,
+      });
+    }
+  }
+  return matchers;
+}
 
 function searchFormToMatchers(form: DG.InputForm): PropertyCondition[] {
   const matchers: PropertyCondition[] = [];
@@ -114,9 +130,12 @@ function getSearchView(viewName: string,
 
   let platesTemplateForm: DG.InputForm; let platesOtherForm: DG.InputForm;
   let wellsTemplateForm: DG.InputForm; let wellsOtherForm: DG.InputForm;
+  let analysisForm: DG.InputForm;
 
   const platesFormHost = ui.div();
   const wellsFormHost = ui.div();
+  const analysisFormHost = ui.div();
+
   let plateTemplate = plateTemplates[0];
 
   const plateTemplateSelector = ui.input.choice('Template', {
@@ -134,10 +153,17 @@ function getSearchView(viewName: string,
   });
   globalSearchInput.setTooltip('Search using all properties in the database, not just those defined in the template.');
 
+  const analysisTypeSelector = ui.input.choice('Analysis', {
+    items: ['None', 'Dose-Response'], // For now, a static list. Can be dynamic later.
+    value: 'None',
+    onValueChanged: () => refreshAnalysisUI(), // Call a dedicated UI refresh function for this part
+  });
+
   const refreshResults = () => {
     const query: PlateQuery = {
       plateMatchers: [...searchFormToMatchers(platesTemplateForm), ...searchFormToMatchers(platesOtherForm)],
-      wellMatchers: [...searchFormToMatchers(wellsTemplateForm), ...searchFormToMatchers(wellsOtherForm)]
+      wellMatchers: [...searchFormToMatchers(wellsTemplateForm), ...searchFormToMatchers(wellsOtherForm)],
+      analysisMatchers: analysisFormToMatchers(analysisForm, analysisTypeSelector.value === 'Dose-Response' ? 'Dose-Response' : ''),
     };
 
     search(query).then((df) => {
@@ -145,6 +171,25 @@ function getSearchView(viewName: string,
       df.name = viewName;
       onResults(resultsView.grid);
     });
+  };
+
+  const refreshAnalysisUI = () => {
+    ui.empty(analysisFormHost);
+    if (analysisTypeSelector.value === 'Dose-Response') {
+      const analysisInputs = drcAnalysisProperties.map((prop) => {
+        const input = ui.input.string(prop.name) as AnalysisPropInput;
+        input.prop = prop;
+        input.addValidator((s) => NumericMatcher.parse(s) ? null : 'Invalid criteria. Example: ">10"');
+        return input;
+      });
+
+      analysisForm = DG.InputForm.forInputs(analysisInputs);
+      analysisForm.root.style.width = '100%';
+      analysisFormHost.appendChild(analysisForm.root);
+
+      DG.debounce(analysisForm.onInputChanged, 500).subscribe((_) => refreshResults());
+    }
+    refreshResults();
   };
 
   const refreshUI = () => {
@@ -204,6 +249,13 @@ function getSearchView(viewName: string,
       ui.divV([ui.h2('Plates'), platesFormHost], {style: {flexGrow: '1'}}),
       ui.divV([ui.h2('Wells'), wellsFormHost], {style: {flexGrow: '1'}})
     ], {style: {width: '100%'}}),
+    // --- START: ADD ANALYSIS UI TO THE PANEL ---
+    ui.divV([
+      ui.h2('Analysis Results'),
+      analysisTypeSelector.root,
+      analysisFormHost
+    ], {style: {marginTop: '10px'}})
+    // --- END: ADD ANALYSIS UI TO THE PANEL ---
   ], {classes: 'ui-panel'});
 
   filterPanel.style.overflowY = 'auto';
@@ -218,6 +270,7 @@ function getSearchView(viewName: string,
   mainView.root.appendChild(splitter);
 
   setTemplate(plateTemplates[0]);
+  refreshAnalysisUI();
   return mainView;
 }
 
