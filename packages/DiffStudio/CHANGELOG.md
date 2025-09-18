@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.4.1 (2025-09-18)
+
+Datagrok utils update
+
 ## 1.4.0 (2025-07-28)
 
 JS-api 1.26.0 release
