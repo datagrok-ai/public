@@ -77,6 +77,12 @@
       "nullable": false
     },
     {
+      "name": "bioinformaticsTrack",
+      "propertyType": "bool",
+      "defaultValue": true,
+      "nullable": false
+    },
+    {
       "name": "dataAccessTrack",
       "propertyType": "bool",
       "defaultValue": true,
