@@ -108,7 +108,7 @@ export class ActivityDashboardWidget extends DG.Widget {
     const allEntities = await grok.dapi.getEntities(uniqueIds);
     console.timeEnd('ActivityDashboardWidget.getEntitiesByIds');
 
-    const byIdMap = new Map(allEntities.map((e) => [e.id, e]));
+    const byIdMap = new Map(allEntities.filter((e) => e != null).map((e) => [e.id, e]));
 
     this.sharedUsers = [];
     this.sharedWithMe = [];
