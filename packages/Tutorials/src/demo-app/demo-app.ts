@@ -422,33 +422,24 @@ export class DemoView extends DG.ViewBase {
           }
 
           const item = treePath.item(directionFuncs[j].name, {path: directionFuncs[j].path});
-          item.root.onmouseover = (event) => {
-            const packageMessage = `Part of the ${directionFuncs[j].func.package.name === 'Tutorials' ?
-              'platform core' : `${directionFuncs[j].func.package.name} package`}`;
-            ui.tooltip.show(directionFuncs[j].func.description ?
-              ui.divV([directionFuncs[j].func.description, ui.element('br'), packageMessage]) :
-              ui.div(packageMessage), event.clientX, event.clientY);
-          };
+          const packageMessage = `Part of the ${directionFuncs[j].func.package.name === 'Tutorials'
+            ? 'platform core'
+            : `${directionFuncs[j].func.package.name} package`}`;
 
-          item.root.onmouseout = (_) => {
-            ui.tooltip.hide();
-          };
+          grok.shell.browsePanel.bindItemTooltip(directionFuncs[j].func.description
+            ? ui.divV([directionFuncs[j].func.description, ui.element('br'), packageMessage])
+            : ui.div(packageMessage), item.root);
         } else {
           const folder = this.tree.getOrCreateGroup(directionFuncs[j].category, {path: path[0]}, false);
           (folder.root.firstElementChild as HTMLElement).dataset.name = directionFuncs[j].category;
           const item = folder.item(directionFuncs[j].name, {path: directionFuncs[j].path});
+          const packageMessage = `Part of the ${directionFuncs[j].func.package.name === 'Tutorials'
+            ? 'platform core'
+            : `${directionFuncs[j].func.package.name} package`}`;
 
-          item.root.onmouseover = (event) => {
-            const packageMessage = `Part of the ${directionFuncs[j].func.package.name === 'Tutorials' ?
-              'platform core' : `${directionFuncs[j].func.package.name} package`}`;
-            ui.tooltip.show(directionFuncs[j].func.description ?
-              ui.divV([directionFuncs[j].func.description, ui.element('br'), packageMessage]) :
-              ui.div(packageMessage), event.clientX, event.clientY);
-          };
-
-          item.root.onmouseout = (_) => {
-            ui.tooltip.hide();
-          };
+          grok.shell.browsePanel.bindItemTooltip(directionFuncs[j].func.description
+            ? ui.divV([directionFuncs[j].func.description, ui.element('br'), packageMessage])
+            : ui.div(packageMessage), item.root);
         }
       }
     }
