@@ -18,7 +18,18 @@ export class ActivityDashboardWidget extends DG.Widget {
 
   static sharedEntityRegex: RegExp = /<span>#{x\.([a-f0-9-]+)\.".*?"}<\/span>/g;
   keywordsToIgnore: string[] = ['"data"', '"data w/', '"fitted data"', '"reduced data"', '"reduceddata"', '"sizingparams"', '"primaryfilter', '"trimmed data"', '"input data from imported file"', '"dataanalysisdf', '"clean data"'/*, 'Ran <span>#{x.'*/];
-  tipsOfTheDay: string[] = ['Double-click a column header to sort the data.', 'Drag and drop a CSV or Excel file into Datagrok to load it as a table.', 'Hover over a column name to see its statistics in the tooltip.', 'Hold Shift and click multiple column headers to select several columns.', 'Use Ctrl+F in a table to search across all values.', 'Resize columns by dragging the separator in the header.', 'Use Layouts to save and restore your favorite viewer arrangements.', 'Use “Add New Column” to create calculated columns with formulas.', 'Right-click a column to see context actions available for it.', 'Try the “Correlation Plot” to quickly see relationships between numeric columns.'];
+  tipsOfTheDay: string[] = [
+    'Double-click a column header to sort the data.',
+    'Drag and drop a CSV or Excel file into Datagrok to load it as a table.',
+    'Hover over a column name to see its statistics in the tooltip.',
+    'Hold Shift and click multiple column headers to select several columns.',
+    'Use Ctrl+F in a table to search across all values.',
+    'Resize columns by dragging the separator in the header.',
+    'Use Layouts to save and restore your favorite viewer arrangements.',
+    'Use “Add New Column” to create calculated columns with formulas.',
+    'Right-click a column to see context actions available for it.',
+    'Try the “Correlation Plot” to quickly see relationships between numeric columns.',
+  ];
   cutoffDate: dayjs.Dayjs = dayjs().subtract(ActivityDashboardWidget.RECENT_TIME_DAYS, 'day');
 
   favoritesEvents: DG.LogEvent[] = [];
