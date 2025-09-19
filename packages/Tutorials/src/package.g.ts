@@ -21,8 +21,8 @@ export function tutorialsInit() : void {
 //name: Demo
 //description: Interactive demo of major Datagrok capabilities
 //tags: app
-//input: string path  { meta.url: true; optional: true }
-//input: string filter  { optional: true }
+//input: string path { meta.url: true; optional: true }
+//input: string filter { optional: true }
 //output: view result
 //meta.browseOnly: true
 //meta.icon: images/icons/demoapp-icon.png

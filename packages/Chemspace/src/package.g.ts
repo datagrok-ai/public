@@ -4,8 +4,8 @@ import * as DG from 'datagrok-api/dg';
 //name: Chemspace
 //tags: app
 //meta.browsePath: Chem
-export async function app() {
-  return PackageFunctions.app();
+export async function app() : Promise<void> {
+  await PackageFunctions.app();
 }
 
 //name: Databases | Chemspace
@@ -14,8 +14,8 @@ export async function app() {
 //input: string smiles { semType: Molecule }
 //output: widget result
 //condition: true
-export async function samplesPanel(smiles: string) {
-  return PackageFunctions.samplesPanel(smiles);
+export async function samplesPanel(smiles: string) : Promise<any> {
+  return await PackageFunctions.samplesPanel(smiles);
 }
 
 //name: Chemspace Prices
@@ -24,29 +24,26 @@ export async function samplesPanel(smiles: string) {
 //input: string id { semType: chemspace-id }
 //output: widget result
 //condition: true
-export async function pricesPanel(id: string) {
-  return PackageFunctions.pricesPanel(id);
+export async function pricesPanel(id: string) : Promise<any> {
+  return await PackageFunctions.pricesPanel(id);
 }
 
-//name: getChemspaceIds
 //input: column<string> molColumn { semType: Molecule }
 //input: string shipToCountry 
 //output: column result
 //meta.vectorFunc: true
-export async function getChemspaceIds(molColumn: DG.Column, shipToCountry: string) {
-  return PackageFunctions.getChemspaceIds(molColumn, shipToCountry);
+export async function getChemspaceIds(molColumn: DG.Column, shipToCountry: string) : Promise<any> {
+  return await PackageFunctions.getChemspaceIds(molColumn, shipToCountry);
 }
 
-//name: getChemspacePrices
 //input: dataframe data 
 //input: column<string> idsColumn { semType: chemspace-id }
 //input: string shipToCountry 
 //output: dataframe res { action: join(data) }
-export async function getChemspacePrices(data: DG.DataFrame, idsColumn: DG.Column, shipToCountry: string) {
-  return PackageFunctions.getChemspacePrices(data, idsColumn, shipToCountry);
+export async function getChemspacePrices(data: DG.DataFrame, idsColumn: DG.Column, shipToCountry: string) : Promise<any> {
+  return await PackageFunctions.getChemspacePrices(data, idsColumn, shipToCountry);
 }
 
-//name: queryMultipart
 //description: Perform query with multipart form data
 //input: string path 
 //input: string formParamsStr 
@@ -54,6 +51,6 @@ export async function getChemspacePrices(data: DG.DataFrame, idsColumn: DG.Colum
 //output: string result
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 1 * *
-export async function queryMultipart(path: string, formParamsStr: string, paramsStr: string) {
-  return PackageFunctions.queryMultipart(path, formParamsStr, paramsStr);
+export async function queryMultipart(path: string, formParamsStr: string, paramsStr?: string) : Promise<string> {
+  return await PackageFunctions.queryMultipart(path, formParamsStr, paramsStr);
 }

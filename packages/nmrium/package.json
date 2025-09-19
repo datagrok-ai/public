@@ -10,7 +10,7 @@
   "dependencies": {
     "@blueprintjs/core": "^5.11.0",
     "@blueprintjs/icons": "^5.11.0",
-    "@datagrok-libraries/utils": "^4.5.7",
+    "@datagrok-libraries/utils": "^4.6.5",
     "@emotion/react": "^11.13.0",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
@@ -41,7 +41,7 @@
     "@types/react-router-dom": "^5.3.3",
     "cross-env": "^7.0.3",
     "css-loader": "^6.7.3",
-    "datagrok-tools": "^4.14.48",
+    "datagrok-tools": "^4.14.55",
     "eslint": "^8.57.0",
     "eslint-config-cheminfo-react": "^13.0.0",
     "eslint-config-cheminfo-typescript": "^15.0.0",

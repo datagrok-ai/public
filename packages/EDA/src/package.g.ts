@@ -1,6 +1,7 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
+//name: info
 export function info() : void {
   PackageFunctions.info();
 }
@@ -13,10 +14,10 @@ export async function init() : Promise<void> {
 //name: DBSCAN
 //description: Density-based spatial clustering of applications with noise (DBSCAN)
 //input: dataframe df 
-//input: column xCol { type: numerical }
-//input: column yCol { type: numerical }
-//input: double epsilon { caption: Epsilon; default: 0.02; description: The maximum distance between two samples for them to be considered as in the same neighborhood. }
-//input: int minPts { caption: Minimum points; default: 4; description: The number of samples (or total weight) in a neighborhood for a point to be considered as a core point. }
+//input: numerical xCol { type: numerical }
+//input: numerical yCol { type: numerical }
+//input: double epsilon = 0.02 { caption: Epsilon; description: The maximum distance between two samples for them to be considered as in the same neighborhood. }
+//input: int minPts = 4 { caption: Minimum points; description: The number of samples (or total weight) in a neighborhood for a point to be considered as a core point. }
 //output: column result
 //top-menu: ML | Cluster | DBSCAN...
 export async function dbScan(df: DG.DataFrame, xCol: DG.Column, yCol: DG.Column, epsilon: number, minPts: number) : Promise<any> {
@@ -26,9 +27,9 @@ export async function dbScan(df: DG.DataFrame, xCol: DG.Column, yCol: DG.Column,
 //description: Principal component analysis (PCA)
 //input: dataframe table { caption: Table }
 //input: column_list features { type: numerical; nullable: false }
-//input: int components { showPlusMinus: true; caption: Components; nullable: false; min: 1; default: 2; description: Number of components. }
-//input: bool center { caption: Center; default: false; description: Indicating whether the variables should be shifted to be zero centered. }
-//input: bool scale { caption: Scale; default: false; description: Indicating whether the variables should be scaled to have unit variance. }
+//input: int components = 2 { showPlusMinus: true; caption: Components; nullable: false; min: 1; description: Number of components. }
+//input: bool center = false { caption: Center; description: Indicating whether the variables should be shifted to be zero centered. }
+//input: bool scale = false { caption: Scale; description: Indicating whether the variables should be scaled to have unit variance. }
 //top-menu: ML | Analyze | PCA...
 //help-url: /help/explore/dim-reduction#pca
 export async function PCA(table: DG.DataFrame, features: DG.ColumnList, components: number, center: boolean, scale: boolean) : Promise<void> {
@@ -39,8 +40,8 @@ export async function PCA(table: DG.DataFrame, features: DG.ColumnList, componen
 //tags: dim-red-postprocessing-function
 //input: column col1 
 //input: column col2 
-//input: double epsilon { default: 0.01; description: Minimum distance between two points to be considered as in the same neighborhood. }
-//input: int minimumPoints { default: 5; description: Minimum number of points to form a dense region. }
+//input: double epsilon = 0.01 { description: Minimum distance between two points to be considered as in the same neighborhood. }
+//input: int minimumPoints = 5 { description: Minimum number of points to form a dense region. }
 //meta.defaultPostProcessingFunction: true
 export async function dbscanPostProcessingFunction(col1: DG.Column, col2: DG.Column, epsilon: number, minimumPoints: number) : Promise<void> {
   await PackageFunctions.dbscanPostProcessingFunction(col1, col2, epsilon, minimumPoints);
@@ -88,11 +89,11 @@ export function GetMCLEditor(call: DG.FuncCall) : void {
 //input: string aggregationMethod 
 //input: list<func> preprocessingFuncs 
 //input: object preprocessingFuncArgs 
-//input: int threshold { default: 80 }
-//input: int maxIterations { default: 10 }
-//input: bool useWebGPU { default: false }
-//input: double inflate { default: 2 }
-//input: int minClusterSize { default: 5 }
+//input: int threshold = 80 
+//input: int maxIterations = 10 
+//input: bool useWebGPU = false 
+//input: double inflate = 2 
+//input: int minClusterSize = 5 
 //top-menu: ML | Cluster | MCL...
 //editor: EDA:GetMCLEditor
 export async function MCLClustering(df: DG.DataFrame, cols: DG.Column[], metrics: any, weights: number[], aggregationMethod: any, preprocessingFuncs: any[], preprocessingFuncArgs: any[], threshold: number, maxIterations: number, useWebGPU: boolean, inflate: number, minClusterSize: number) : Promise<any> {
@@ -111,7 +112,7 @@ export function markovClusteringViewer() : any {
 //input: dataframe table 
 //input: column_list features { type: numerical }
 //input: column predict { type: numerical }
-//input: int components { default: 3 }
+//input: int components = 3 
 //input: column names { type: string }
 //output: object plsResults
 export async function PLS(table: DG.DataFrame, features: DG.ColumnList, predict: DG.Column, components: number, names: DG.Column) : Promise<any> {
@@ -140,7 +141,7 @@ export async function demoMultivariateAnalysis() : Promise<void> {
 
 //input: dataframe df 
 //input: column predictColumn 
-//input: double gamma { category: Hyperparameters; default: 1.0 }
+//input: double gamma = 1.0 { category: Hyperparameters }
 //output: dynamic result
 //meta.mlname: linear kernel LS-SVM
 //meta.mlrole: train
@@ -188,8 +189,8 @@ export async function visualizeLinearKernelSVM(df: DG.DataFrame, targetColumn: D
 
 //input: dataframe df 
 //input: column predictColumn 
-//input: double gamma { category: Hyperparameters; default: 1.0 }
-//input: double sigma { category: Hyperparameters; default: 1.5 }
+//input: double gamma = 1.0 { category: Hyperparameters }
+//input: double sigma = 1.5 { category: Hyperparameters }
 //output: dynamic result
 //meta.mlname: RBF-kernel LS-SVM
 //meta.mlrole: train
@@ -237,9 +238,9 @@ export async function visualizeRBFkernelSVM(df: DG.DataFrame, targetColumn: DG.C
 
 //input: dataframe df 
 //input: column predictColumn 
-//input: double gamma { category: Hyperparameters; default: 1.0 }
-//input: double c { category: Hyperparameters; default: 1 }
-//input: double d { category: Hyperparameters; default: 2 }
+//input: double gamma = 1.0 { category: Hyperparameters }
+//input: double c = 1 { category: Hyperparameters }
+//input: double d = 2 { category: Hyperparameters }
 //output: dynamic result
 //meta.mlname: polynomial kernel LS-SVM
 //meta.mlrole: train
@@ -287,9 +288,9 @@ export async function visualizePolynomialKernelSVM(df: DG.DataFrame, targetColum
 
 //input: dataframe df 
 //input: column predictColumn 
-//input: double gamma { category: Hyperparameters; default: 1.0 }
-//input: double kappa { category: Hyperparameters; default: 1 }
-//input: double theta { category: Hyperparameters; default: 1 }
+//input: double gamma = 1.0 { category: Hyperparameters }
+//input: double kappa = 1 { category: Hyperparameters }
+//input: double theta = 1 { category: Hyperparameters }
 //output: dynamic result
 //meta.mlname: sigmoid kernel LS-SVM
 //meta.mlrole: train
@@ -394,10 +395,10 @@ export function isInteractiveLinearRegression(df: DG.DataFrame, predictColumn: D
 
 //input: dataframe df 
 //input: column predictColumn 
-//input: double rate { category: Hyperparameters; default: 1.0; min: 0.001; max: 20; description: Learning rate. }
-//input: double iterations { category: Hyperparameters; default: 100; min: 1; max: 10000; step: 10; description: Fitting iterations count }
-//input: double penalty { category: Hyperparameters; default: 0.1; min: 0.0001; max: 1; description: Regularization rate. }
-//input: double tolerance { category: Hyperparameters; default: 0.001; min: 0.00001; max: 0.1; description: Fitting tolerance. }
+//input: double rate = 1.0 { category: Hyperparameters; min: 0.001; max: 20; description: Learning rate. }
+//input: double iterations = 100 { category: Hyperparameters; min: 1; max: 10000; step: 10; description: Fitting iterations count }
+//input: double penalty = 0.1 { category: Hyperparameters; min: 0.0001; max: 1; description: Regularization rate. }
+//input: double tolerance = 0.001 { category: Hyperparameters; min: 0.00001; max: 0.1; description: Fitting tolerance. }
 //output: dynamic model
 //meta.mlname: Softmax
 //meta.mlrole: train
@@ -434,7 +435,7 @@ export function isInteractiveSoftmax(df: DG.DataFrame, predictColumn: DG.Column)
 
 //input: dataframe df 
 //input: column predictColumn 
-//input: int components { min: 1; max: 10; default: 3; description: Number of latent components. }
+//input: int components = 3 { min: 1; max: 10; description: Number of latent components. }
 //output: dynamic model
 //meta.mlname: PLS Regression
 //meta.mlrole: train
@@ -482,11 +483,11 @@ export function isInteractivePLSRegression(df: DG.DataFrame, predictColumn: DG.C
 
 //input: dataframe df 
 //input: column predictColumn 
-//input: int iterations { min: 1; max: 100; default: 20; description: Number of training iterations. }
-//input: double eta { caption: Rate; min: 0; max: 1; default: 0.3; description: Learning rate. }
-//input: int maxDepth { min: 0; max: 20; default: 6; description: Maximum depth of a tree. }
-//input: double lambda { min: 0; max: 100; default: 1; description: L2 regularization term. }
-//input: double alpha { min: 0; max: 100; default: 0; description: L1 regularization term. }
+//input: int iterations = 20 { min: 1; max: 100; description: Number of training iterations. }
+//input: double eta = 0.3 { caption: Rate; min: 0; max: 1; description: Learning rate. }
+//input: int maxDepth = 6 { min: 0; max: 20; description: Maximum depth of a tree. }
+//input: double lambda = 1 { min: 0; max: 100; description: L2 regularization term. }
+//input: double alpha = 0 { min: 0; max: 100; description: L1 regularization term. }
 //output: dynamic model
 //meta.mlname: XGBoost
 //meta.mlrole: train

@@ -20,13 +20,6 @@ export namespace funcs {
   }
 
   /**
-  Creates search panel
-  */
-  export async function createSearchPanel(searchMode: any , smiles: string , category: any , shipToCountry: any ): Promise<any> {
-    return await grok.functions.call('EnamineChemSpace:CreateSearchPanel', { searchMode, smiles, category, shipToCountry });
-  }
-
-  /**
   Chemspace Prices
   */
   export async function pricesPanel(id: string ): Promise<any> {

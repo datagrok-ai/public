@@ -32,7 +32,7 @@ export async function TreeWizardEditor(call: DG.FuncCall) : Promise<any> {
 
 //input: string nqName 
 //input: string version 
-//input: dynamic instanceConfig  { type: object }
+//input: object instanceConfig 
 //output: object result
 export async function StartWorkflow(nqName: string, version: string, instanceConfig?: any) {
   return await PackageFunctions.StartWorkflow(nqName, version, instanceConfig);
@@ -54,7 +54,7 @@ export async function HistoryTestApp() : Promise<void> {
 }
 
 //tags: test, compute2
-//input: dynamic params  { type: object }
+//input: object params 
 //output: object result
 //editor: Compute2:TreeWizardEditor
 export async function MockPipeline1(params: any) {
@@ -62,7 +62,7 @@ export async function MockPipeline1(params: any) {
 }
 
 //tags: test, compute2
-//input: dynamic params  { type: object }
+//input: object params 
 //output: object result
 //editor: Compute2:TreeWizardEditor
 export async function MockPipeline2(params: any) {

@@ -12,6 +12,7 @@ import {
   setProperties,
   runAdmeticaFunc,
 } from '../utils/admetica-utils';
+import * as api from './package-api';
 
 category('Admetica', () => {
   let v: DG.TableView;

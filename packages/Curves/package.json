@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@datagrok-libraries/statistics": "^1.9.2",
-    "@datagrok-libraries/utils": "^4.6.3",
+    "@datagrok-libraries/utils": "^4.6.5",
     "@types/wu": "^2.1.42",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "css-loader": "^5.0.0",
-    "datagrok-tools": "^4.14.48",
+    "datagrok-tools": "^4.14.55",
     "source-map-loader": "^4.0.1",
     "style-loader": "^2.0.0",
     "ts-loader": "^9.5.1",

@@ -18,7 +18,7 @@ export namespace funcs {
     return await grok.functions.call('MolTrack:MolTrackApp', {});
   }
 
-  export async function cddVaultAppTreeBrowser(treeNode: any ): Promise<void> {
-    return await grok.functions.call('MolTrack:CddVaultAppTreeBrowser', { treeNode });
+  export async function cddVaultAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<void> {
+    return await grok.functions.call('MolTrack:CddVaultAppTreeBrowser', { treeNode, browseView });
   }
 }

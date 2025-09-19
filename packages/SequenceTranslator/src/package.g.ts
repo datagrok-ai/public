@@ -119,8 +119,8 @@ export async function getPolyToolConvertEditor(call: DG.FuncCall) : Promise<any>
 
 //input: dataframe table 
 //input: column seqCol { caption: Sequence }
-//input: bool generateHelm { default: true }
-//input: bool chiralityEngine { default: true }
+//input: bool generateHelm = true 
+//input: bool chiralityEngine = true 
 //input: object rules 
 //output: column result
 //editor: SequenceTranslator:getPolyToolConvertEditor

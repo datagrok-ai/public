@@ -15,7 +15,7 @@
   "dependencies": {
     "@datagrok-libraries/gridext": "1.5.2",
     "@datagrok-libraries/statistics": "^1.8.0",
-    "@datagrok-libraries/utils": "^4.6.4",
+    "@datagrok-libraries/utils": "^4.6.5",
     "@types/wu": "^2.1.44",
     "cash-dom": "^8.1.5",
     "datagrok-api": "^1.26.2",
@@ -30,7 +30,7 @@
     "@typescript-eslint/parser": "^5.20.0",
     "@webgpu/types": "^0.1.51",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.48",
+    "datagrok-tools": "^4.14.55",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "source-map-loader": "^4.0.1",

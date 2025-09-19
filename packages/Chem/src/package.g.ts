@@ -246,7 +246,7 @@ export function SubstructureSearchTopMenu(molecules: DG.Column) : void {
 //description: Calculates most common substructures for each cluster
 //input: dataframe table 
 //input: column molCol { semType: Molecule }
-//input: column clusterCol 
+//input: column clusterCol { type: string }
 //friendlyName: Cluster MCS
 //top-menu: Chem | Calculate | Cluster MCS...
 export async function clusterMCSTopMenu(table: DG.DataFrame, molCol: DG.Column, clusterCol: DG.Column) : Promise<void> {
@@ -256,7 +256,7 @@ export async function clusterMCSTopMenu(table: DG.DataFrame, molCol: DG.Column, 
 //name: clusterMCS
 //description: Calculates most common substructures for each cluster
 //input: column molCol { semType: Molecule }
-//input: string clusterCol 
+//input: string clusterCol { type: string }
 //output: column result { semType: Molecule }
 //meta.vectorFunc: true
 //friendlyName: Cluster MCS
@@ -277,7 +277,7 @@ export function ChemSpaceEditor(call: DG.FuncCall) : void {
 //input: string fingerprintType = 'Morgan' { caption: Fingerprint type; optional: true; choices: ["Morgan","RDKit","Pattern","AtomPair","MACCS","TopologicalTorsion"] }
 //output: object result
 //meta.supportedSemTypes: Molecule
-//meta.supportedDistanceFunctions: Tanimoto, Asymmetric, Cosine, Sokal
+//meta.supportedDistanceFunctions: Tanimoto,Asymmetric,Cosine,Sokal
 export async function getFingerprints(col: DG.Column, _metric: any, fingerprintType: any) {
   return await PackageFunctions.getFingerprints(col, _metric, fingerprintType);
 }
@@ -381,8 +381,8 @@ export function ActivityCliffsEditor(call: DG.FuncCall) : void {
 //name: Activity Cliffs
 //description: Detects pairs of molecules with similar structure and significant difference in any given property
 //input: dataframe table { description: Input data table }
-//input: column molecules { semType: Molecule }
-//input: numerical activities 
+//input: column molecules { type: categorical; semType: Molecule }
+//input: numerical activities { type: numerical }
 //input: double similarity = 80 { description: Similarity cutoff }
 //input: string methodName { choices: ["UMAP","t-SNE"] }
 //input: string similarityMetric { choices: ["Tanimoto","Asymmetric","Cosine","Sokal"] }
@@ -403,8 +403,8 @@ export async function activityCliffsInitFunction(sp: any) : Promise<void> {
 
 //tags: Transform
 //input: dataframe table { description: Input data table }
-//input: column molecules { semType: Molecule }
-//input: numerical activities 
+//input: column molecules { type: categorical; semType: Molecule }
+//input: numerical activities { type: numerical }
 //input: double similarity = 80 { description: Similarity cutoff }
 //input: string methodName { choices: ["UMAP","t-SNE"] }
 //input: string similarityMetric { choices: ["Tanimoto","Asymmetric","Cosine","Sokal"] }
@@ -450,7 +450,7 @@ export function getInchiKeys(molecules: DG.Column) : any {
 //description: Highlights the fragments that could lead to potential chemical hazards
 //tags: HitTriageFunction
 //input: dataframe table { description: Input data table; caption: Table }
-//input: column molecules { caption: Molecules; semType: Molecule }
+//input: column molecules { caption: Molecules; semType: Molecule; type: categorical }
 //input: bool pains = true { caption: PAINS; description: "Pan Assay Interference Compounds filters" }
 //input: bool bms = false { caption: BMS; description: "Bristol-Myers Squibb HTS Deck filters" }
 //input: bool sureChembl = false { caption: SureChEMBL; description: "MedChem unfriendly compounds from SureChEMBL" }
@@ -467,7 +467,7 @@ export async function structuralAlertsTopMenu(table: DG.DataFrame, molecules: DG
 
 //tags: Transform
 //input: dataframe table { caption: Table; description: Input data table }
-//input: column molecules { caption: Molecules; semType: Molecule }
+//input: column molecules { caption: Molecules; type: categorical; semType: Molecule }
 //input: bool pains = true { caption: PAINS; description: "Pan Assay Interference Compounds filters" }
 //input: bool bms = false { caption: BMS; description: "Bristol-Myers Squibb HTS Deck filters" }
 //input: bool sureChembl = false { caption: SureChEMBL; description: "MedChem unfriendly compounds from SureChEMBL" }
@@ -863,7 +863,7 @@ export function MMPEditor(call: DG.FuncCall) : void {
 //name: Matched Molecular Pairs
 //input: dataframe table 
 //input: column molecules { semType: Molecule }
-//input: column_list activities 
+//input: column_list activities { type: numerical }
 //input: string_list diffTypes 
 //input: string_list scalings 
 //input: double fragmentCutoff = 0.4 { description: Maximum fragment size relative to core }

@@ -1054,7 +1054,7 @@ export namespace queries {
 }
 
 export namespace funcs {
-  export async function info(): Promise<any> {
+  export async function info(): Promise<void> {
     return await grok.functions.call('DBTests:Info', {});
   }
 

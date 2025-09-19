@@ -13,7 +13,7 @@ export async function initPackage() : Promise<void> {
 
 //description: Converts DG.DataFrame to arrow
 //input: dataframe table 
-//input: bool asStream { default: true }
+//input: bool asStream = true 
 //output: blob result
 export function toFeather(table: DG.DataFrame, asStream: boolean) : any {
   return PackageFunctions.toFeather(table, asStream);

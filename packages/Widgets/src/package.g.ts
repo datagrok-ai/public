@@ -20,7 +20,7 @@ export function multiValueFilter() {
 //name: TimeWidget
 //description: Shows current time
 //output: widget result
-export function timeWidget() {
+export function timeWidget() : any {
   return PackageFunctions.timeWidget();
 }
 
@@ -32,15 +32,14 @@ export function tableSummary() {
 }
 
 //name: inputDemo
-export function inputDemo() {
-  return PackageFunctions.inputDemo();
+export function inputDemo() : void {
+  PackageFunctions.inputDemo();
 }
 
-//name: fooInput
 //tags: valueEditor
 //output: object result
 //meta.propertyType: string
 //meta.semType: foo
-export function fooInput() {
+export function fooInput() : any {
   return PackageFunctions.fooInput();
 }

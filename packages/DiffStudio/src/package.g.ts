@@ -6,14 +6,14 @@ export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
 
-//input: dynamic problem  { type: object }
+//input: object problem 
 //output: dataframe result
 export function solve(problem: any) : any {
   return PackageFunctions.solve(problem);
 }
 
-//input: dynamic problem  { type: object }
-//input: dynamic options  { type: object }
+//input: object problem 
+//input: object options 
 //output: dataframe result
 export function solveEquations(problem: any, options: any) : any {
   return PackageFunctions.solveEquations(problem, options);
@@ -63,9 +63,9 @@ export async function runDiffStudioTreeBrowser(treeNode: any) : Promise<void> {
 //input: double roB = 200 { category: Ball; caption: Density; description: Material density; units: kg/m^3; min: 200; max: 1200 }
 //input: double v = 50 { category: Throw parameters; caption: Velocity; min: 40; max: 60; units: m/sec }
 //input: double a = 45 { category: Throw parameters; caption: Angle; min: 20; max: 70; units: deg }
-//output: double maxDist  { caption: Max distance }
-//output: double maxHeight  { caption: Max height }
-//output: dataframe df  { caption: Trajectory; viewer: Line chart(block: 60, multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 40) }
+//output: double maxDist { caption: Max distance }
+//output: double maxHeight { caption: Max height }
+//output: dataframe df { caption: Trajectory; viewer: Line chart(block: 60, multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 40) }
 //editor: Compute:RichFunctionViewEditor
 //sidebar: @compute
 //meta.runOnOpen: true
@@ -132,8 +132,8 @@ export async function demoBioreactor() : Promise<any> {
 
 //description: Run model with Diff Studio UI
 //input: string model 
-//input: double inputsTabDockRatio  { type: int }
-//input: double graphsDockRatio  { type: int }
+//input: int inputsTabDockRatio 
+//input: int graphsDockRatio 
 export async function runModel(model: string, inputsTabDockRatio: number, graphsDockRatio: number) : Promise<void> {
   await PackageFunctions.runModel(model, inputsTabDockRatio, graphsDockRatio);
 }
