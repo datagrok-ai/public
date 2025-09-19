@@ -2284,7 +2284,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
   }
 
   attachGenerateIconTooltip() {
-    this._iconGenerate!.onmouseenter = (e) => {
+    if (!this._iconGenerate) return;
+    this._iconGenerate.onmouseenter = (e) => {
       const tooltipText = (() => {
         if (!this.molColumn) return 'There is no molecule column in the table';
         if (this.molColumn.categories.length >= MAX_MOL_NUMBER)
@@ -2295,7 +2296,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       ui.tooltip.show(tooltipText, e.clientX, e.clientY);
     };
 
-    this._iconGenerate!.onmouseleave = () => ui.tooltip.hide();
+    this._iconGenerate.onmouseleave = () => ui.tooltip.hide();
   }
 
   static validateNodes(childSmiles: string, parentSmiles: string): boolean {
