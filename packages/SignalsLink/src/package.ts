@@ -22,7 +22,9 @@ export class PackageFunctions{
         '- Find contextual information on molecules.\n'
     });
 
-    return DG.View.fromRoot(appHeader);
+    const view = DG.View.fromRoot(appHeader);
+    view.name = 'Signals';
+    return view;
   }
 
   @grok.decorators.func()
