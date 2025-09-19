@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
-import {CampaignGrouping, CampaignGroupingType, CampaignJsonName, CampaignTableColumns, ComputeQueryMolColName, HDCampaignsGroupingLSKey, HDCampaignTableColumnsLSKey, HTFunctionOrderingLSKey, i18n} from './consts';
+import {CampaignGrouping, CampaignGroupingType, CampaignJsonName, CampaignTableColumns, ComputeQueryMolColName, DefaultCampaignTableInfoGetters, HDCampaignsGroupingLSKey, HDCampaignsTableSortingLSKey, HDCampaignTableColumnsLSKey, HTFunctionOrderingLSKey, i18n} from './consts';
 import {AppName, CampaignsType, HitDesignCampaign, HitTriageCampaign, TriagePermissions} from './types';
 import {_package} from '../package';
 
@@ -206,6 +206,59 @@ export function getSavedCampaignsGrouping(): CampaignGroupingType {
 
 export function setSavedCampaignsGrouping(value: CampaignGroupingType) {
   setLocalStorageValue(HDCampaignsGroupingLSKey, value);
+}
+
+export type SavedCampaignsTableSorting = {
+  columnName: CampaignTableColumns,
+  ascending: boolean,
+}
+
+export function getSavedCampaignsSorting(): SavedCampaignsTableSorting | null {
+  const sortingString = getLocalStorageValue<string>(HDCampaignsTableSortingLSKey);
+  if (!sortingString)
+    return null;
+  return JSON.parse(sortingString) as SavedCampaignsTableSorting;
+}
+
+export function setSavedCampaignsSorting(value: SavedCampaignsTableSorting | null) {
+  value ? setLocalStorageValue(HDCampaignsTableSortingLSKey, JSON.stringify(value)) :
+    localStorage.removeItem(HDCampaignsTableSortingLSKey);
+}
+
+export function sortCampaigns(campaigns: HitDesignCampaign[], sorting: SavedCampaignsTableSorting | null) {
+  if (!sorting)
+    return;
+  const getter = sorting.columnName in DefaultCampaignTableInfoGetters ?
+    DefaultCampaignTableInfoGetters[sorting.columnName as keyof typeof DefaultCampaignTableInfoGetters] : (campaign: HitDesignCampaign) =>
+      campaign.campaignFields?.[sorting.columnName.replace('campaignFields.', '') ?? ''] ?? '';
+  const vs: Map<HitDesignCampaign, any> = new Map();
+  campaigns.forEach((c) => {
+    vs.set(c, getter(c));
+  });
+
+  // probe for numbers or dates
+  const allNumbers = Array.from(vs.values()).every((v) => isNil(v) || !isNaN(Number(v?.toString() ?? '')));
+  const allDates = !allNumbers && Array.from(vs.values()).every((v) => isNil(v) || !isNaN(Date.parse(v?.toString() ?? '')));
+  if (allNumbers) {
+    campaigns.forEach((c) => {
+      vs.set(c, isNil(vs.get(c)) ? (sorting.ascending ? Infinity : -Infinity) : Number(vs.get(c)));
+    });
+  } else if (allDates) {
+    campaigns.forEach((c) => {
+      vs.set(c, isNil(vs.get(c)) ? (sorting.ascending ? Infinity : -Infinity) : Date.parse(vs.get(c)?.toString() ?? ''));
+    });
+  }
+
+  campaigns.sort((a, b) => {
+    const aVal = vs.get(a);
+    const bVal = vs.get(b);
+    if (allNumbers || allDates)
+      return sorting.ascending ? aVal - bVal : bVal - aVal;
+    const aa = isNil(aVal) ? '' : aVal.toString();
+    const bb = isNil(bVal) ? '' : bVal.toString();
+    return sorting.ascending ? aa.localeCompare(bb) : bb.localeCompare(aa);
+  });
+  vs.clear();
 }
 
 export function getSavedCampaignTableColumns(): CampaignTableColumns[] {
@@ -504,4 +557,8 @@ export function getFuncPackageNameSafe(func: DG.Func): string | undefined {
   } catch (e) {
     return undefined;
   }
+}
+
+export function isNil(something: any) {
+  return something === '' || something === null || something === undefined || (typeof something == 'number' && isNaN(something));
 }

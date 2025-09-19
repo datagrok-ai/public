@@ -1,5 +1,10 @@
 # HitTriage changelog
 
+## 1.7.7 (2025-09-19)
+
+* Sortable campaigns table columns via doubleclick.
+* Add campaingPropts to both visible columns and groupby options.
+
 ## 1.7.5 (2025-09-03)
 
 * Add Ability to hide or show custom columns in campaigns table.
