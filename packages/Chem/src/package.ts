@@ -668,7 +668,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Fingerprints',
     tags: ['dim-red-preprocessing-function'],
-    meta: {supportedSemTypes: 'Molecule', supportedDistanceFunctions: 'Tanimoto, Asymmetric, Cosine, Sokal'},
+    meta: {supportedSemTypes: 'Molecule', supportedDistanceFunctions: 'Tanimoto,Asymmetric,Cosine,Sokal'},
     outputs: [{type: 'object', name: 'result'}],
   })
   static async getFingerprints(
