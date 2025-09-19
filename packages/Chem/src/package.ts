@@ -599,7 +599,7 @@ export class PackageFunctions {
   static async clusterMCSTopMenu(
     table: DG.DataFrame,
     @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molCol: DG.Column,
-    @grok.decorators.param({type: 'column', options: {type: 'string'}}) clusterCol: DG.Column): Promise<void> {
+    @grok.decorators.param({type: 'column', options: {type: 'categorical'}}) clusterCol: DG.Column): Promise<void> {
     const c = await PackageFunctions.performClusterMCS(molCol, clusterCol);
     c.name = table.columns.getUnusedName(c.name);
     table.columns.add(c);
@@ -960,7 +960,7 @@ export class PackageFunctions {
   static async activityCliffs(
     @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({type: 'column', options: {type: 'categorical', semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({options: {type: 'numerical'}}) activities: DG.Column,
+    @grok.decorators.param({type: 'column', options: {type: 'numerical'}}) activities: DG.Column,
     @grok.decorators.param({options: {description: 'Similarity cutoff', initialValue: '80'}}) similarity: number,
     @grok.decorators.param({type: 'string', options: {choices: ['UMAP', 't-SNE']}}) methodName: DimReductionMethods,
     @grok.decorators.param({type: 'string', options: {choices: ['Tanimoto', 'Asymmetric', 'Cosine', 'Sokal']}}) similarityMetric: BitArrayMetrics,
@@ -1066,7 +1066,7 @@ export class PackageFunctions {
   static async activityCliffsTransform(
     @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({type: 'column', options: {type: 'categorical', semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({options: {type: 'numerical'}}) activities: DG.Column,
+    @grok.decorators.param({type: 'column', options: {type: 'numerical'}}) activities: DG.Column,
     @grok.decorators.param({options: {description: 'Similarity cutoff', initialValue: '80'}}) similarity: number,
     @grok.decorators.param({type: 'string', options: {choices: ['UMAP', 't-SNE']}}) methodName: DimReductionMethods,
     @grok.decorators.param({type: 'string', options: {choices: ['Tanimoto', 'Asymmetric', 'Cosine', 'Sokal']}}) similarityMetric: BitArrayMetrics,
