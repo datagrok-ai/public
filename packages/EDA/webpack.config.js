@@ -1,6 +1,6 @@
 const path = require('path');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, ''); 
-const mode = 'development';
+const mode = 'production';
 const FuncGeneratorPlugin = require('datagrok-tools/plugins/func-gen-plugin');
 
 
