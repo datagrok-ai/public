@@ -171,16 +171,18 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
       type = type.replace(/\[\]$/, '');
       isArray = true;
     }
+
     const annotationType = typesToAnnotation[type ?? ''];
-    if ((input?.options as any)?.type)
-      type = (input?.options as any)?.type;
+    if ((input?.options as any)?.type || (input?.options as any)?.options?.type)
+      type = (input?.options as any)?.type ?? (input?.options as any)?.options?.type;
     else if (annotationType) {
       if (isArray)
         type = `list<${annotationType}>`;
       else
         type = annotationType;
     } else
-      type = 'dynamic';
+      type = 'dynamic'; 
+    
     const options = ((input?.options as any)?.options ? buildStringOfOptions((input as any).options ?? {}) : '');
     const functionName = ((input.options as any)?.name ? (input?.options as any)?.name : ` ${input.name?.replaceAll('.', '')}`)?.trim();
     
@@ -255,18 +257,25 @@ export const inputOptionsNames = [
   'step',
   'meta.url',
   'metaUrl',
-];
+]
+
+const nonquotedValues = ['true', 'false'];
 
 function buildStringOfOptions(input: any) {
   const optionsInString: string[] = [];
   const opt = input.options ?? {};
+  
   let defaultValue = '';
+  if (opt['initialValue'] && /[A-Za-z]/.test(opt['initialValue']) && !opt['initialValue'].includes('\'') && 
+    !opt['initialValue'].includes('"') &&
+    !nonquotedValues.includes(opt['initialValue'])!)
+    opt['initialValue'] = `'${opt['initialValue']}'`;
+
   if (opt['initialValue']) 
     defaultValue = `= ${opt['initialValue']}`; 
   
-
   for (const [key, value] of Object.entries(opt)) {
-    if (key === 'initialValue')
+    if (key === 'initialValue' || key === 'name' || (key === 'type' && !input?.options?.key))
       continue;
     let val = value;
     let option = key;
@@ -277,7 +286,7 @@ function buildStringOfOptions(input: any) {
     optionsInString.push(`${option}: ${val}`);
   }
   const optString = optionsInString.length> 0 ? `{ ${optionsInString.join('; ')} }`: '';
-  return `${defaultValue} ${optString}`;
+  return defaultValue? `${defaultValue} ${optString}` : `${optString}`;
 }
 
 

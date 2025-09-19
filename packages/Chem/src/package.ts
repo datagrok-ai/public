@@ -959,7 +959,7 @@ export class PackageFunctions {
   })
   static async activityCliffs(
     @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
-    @grok.decorators.param({options: {type: 'categorical', semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'column', options: {type: 'categorical', semType: 'Molecule'}}) molecules: DG.Column,
     @grok.decorators.param({options: {type: 'numerical'}}) activities: DG.Column,
     @grok.decorators.param({options: {description: 'Similarity cutoff', initialValue: '80'}}) similarity: number,
     @grok.decorators.param({type: 'string', options: {choices: ['UMAP', 't-SNE']}}) methodName: DimReductionMethods,
@@ -1065,7 +1065,7 @@ export class PackageFunctions {
   })
   static async activityCliffsTransform(
     @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
-    @grok.decorators.param({options: {type: 'categorical', semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'column', options: {type: 'categorical', semType: 'Molecule'}}) molecules: DG.Column,
     @grok.decorators.param({options: {type: 'numerical'}}) activities: DG.Column,
     @grok.decorators.param({options: {description: 'Similarity cutoff', initialValue: '80'}}) similarity: number,
     @grok.decorators.param({type: 'string', options: {choices: ['UMAP', 't-SNE']}}) methodName: DimReductionMethods,
@@ -1139,7 +1139,7 @@ export class PackageFunctions {
   })
   static async structuralAlertsTopMenu(
     @grok.decorators.param({options: {description: 'Input data table', caption: 'Table'}}) table: DG.DataFrame,
-    @grok.decorators.param({options: {caption: 'Molecules', semType: 'Molecule', type: 'categorical'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'column', options: {caption: 'Molecules', semType: 'Molecule', type: 'categorical'}}) molecules: DG.Column,
     @grok.decorators.param({options: {caption: 'PAINS', initialValue: 'true', description: '"Pan Assay Interference Compounds filters"'}}) pains: boolean,
     @grok.decorators.param({options: {caption: 'BMS', initialValue: 'false', description: '"Bristol-Myers Squibb HTS Deck filters"'}}) bms: boolean,
     @grok.decorators.param({options: {caption: 'SureChEMBL', initialValue: 'false', description: '"MedChem unfriendly compounds from SureChEMBL"'}}) sureChembl: boolean,
@@ -1176,7 +1176,7 @@ export class PackageFunctions {
   })
   static async runStructuralAlerts(
     @grok.decorators.param({options: {caption: 'Table', description: 'Input data table'}}) table: DG.DataFrame,
-    @grok.decorators.param({options: {caption: 'Molecules', type: 'categorical', semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'column', options: {caption: 'Molecules', type: 'categorical', semType: 'Molecule'}}) molecules: DG.Column,
     @grok.decorators.param({options: {caption: 'PAINS', initialValue: 'true', description: '"Pan Assay Interference Compounds filters"'}}) pains: boolean,
     @grok.decorators.param({options: {caption: 'BMS', initialValue: 'false', description: '"Bristol-Myers Squibb HTS Deck filters"'}}) bms: boolean,
     @grok.decorators.param({options: {caption: 'SureChEMBL', initialValue: 'false', description: '"MedChem unfriendly compounds from SureChEMBL"'}}) sureChembl: boolean,
