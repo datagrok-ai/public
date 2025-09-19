@@ -183,6 +183,10 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
     } else
       type = 'dynamic'; 
     
+    // if ((input as any)?.options?.type === 'categorical' || (input as any)?.options?.options?.type === 'categorical')
+    //   console.log(input);
+    // console.log(input);
+
     const options = ((input?.options as any)?.options ? buildStringOfOptions((input as any).options ?? {}) : '');
     const functionName = ((input.options as any)?.name ? (input?.options as any)?.name : ` ${input.name?.replaceAll('.', '')}`)?.trim();
     
@@ -257,14 +261,13 @@ export const inputOptionsNames = [
   'step',
   'meta.url',
   'metaUrl',
-]
+];
 
 const nonquotedValues = ['true', 'false'];
 
 function buildStringOfOptions(input: any) {
   const optionsInString: string[] = [];
   const opt = input.options ?? {};
-  
   let defaultValue = '';
   if (opt['initialValue'] && /[A-Za-z]/.test(opt['initialValue']) && !opt['initialValue'].includes('\'') && 
     !opt['initialValue'].includes('"') &&
@@ -273,9 +276,9 @@ function buildStringOfOptions(input: any) {
 
   if (opt['initialValue']) 
     defaultValue = `= ${opt['initialValue']}`; 
-  
+
   for (const [key, value] of Object.entries(opt)) {
-    if (key === 'initialValue' || key === 'name' || (key === 'type' && !input?.options?.key))
+    if (key === 'initialValue')
       continue;
     let val = value;
     let option = key;

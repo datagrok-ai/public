@@ -242,11 +242,11 @@ class FuncGeneratorPlugin {
         resultMap.set(key, this._evalLiteral(prop.value));
     }
     
-    if (optionsToAdd.size > 0)
-      resultMap.set('options', {...(resultMap.get('options') ?? {}), ...Object.fromEntries(optionsToAdd)});
+    for (const [key, value] of optionsToAdd)
+      resultMap.set(key, value);
     if (resultObj)
       resultMap.set('outputs', [resultObj]);
-      
+    
     return resultMap;
   }
 
