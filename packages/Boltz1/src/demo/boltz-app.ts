@@ -267,7 +267,9 @@ export class Boltz1AppView {
   }
 
   public getView(): DG.ViewBase {
-    return DG.View.fromRoot(this.divV);
+    const view = DG.View.fromRoot(this.divV);
+    view.name = 'Boltz-1';
+    return view;
   }
 }
 
