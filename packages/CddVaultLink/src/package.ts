@@ -2,6 +2,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as api from './package-api';
+
 import {u2} from "@datagrok-libraries/utils/src/u2";
 import {MoleculeFieldSearch, queryVaults, MoleculeQueryParams, queryMolecules, queryReadoutRows, querySavedSearches, SavedSearch, querySavedSearchById,
   queryMoleculesAsync, queryReadoutRowsAsync, ApiResponse, MoleculesQueryResult, Protocol, queryProtocolsAsync, Collection,
@@ -60,7 +62,7 @@ export class PackageFunctions{
   @grok.decorators.func()
   static async cddVaultAppTreeBrowser(treeNode: DG.TreeViewGroup) {
     try {
-      const vaults = JSON.parse(await grok.functions.call('CDDVaultLink:getVaults')) as Vault[];
+      const vaults = JSON.parse(await api.funcs.getVaults()) as Vault[];
 
       for (const vault of vaults) {
         //vault node
@@ -147,7 +149,7 @@ export class PackageFunctions{
     @grok.decorators.param({'name': 'mol','options':{'semType':'Molecule'}})  molecule: string): DG.Widget {
     return DG.Widget.fromRoot(ui.wait(async () => {
       try {
-        const vaults = JSON.parse(await grok.functions.call('CDDVaultLink:getVaults')) as Vault[];
+        const vaults = JSON.parse(await api.funcs.getVaults()) as Vault[];
         //looking for molecule in the first vault
         const vaultId = vaults[0].id;
         const cddMols = await queryMolecules(vaultId, { structure: molecule, structure_search_type: "exact"});
@@ -167,7 +169,7 @@ export class PackageFunctions{
   static async CDDVaultSearchEditor(
     call: DG.FuncCall): Promise<void> { //is not used at the moment
     try {
-      const vaults = JSON.parse(await grok.functions.call('CDDVaultLink:getVaults')) as Vault[];
+      const vaults = JSON.parse(await api.funcs.getVaults()) as Vault[];
       const vaultId = vaults[0].id;
       const funcEditor = new SeachEditor(vaultId);
       const dialog = ui.dialog({title: 'CDD search'})

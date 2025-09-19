@@ -1,6 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as api from './package-api';
+
 import { ANY_READOUT_CHOICE, ANY_RUN_CHOICE, CDD_SEARCH_TYPES, CDDVaultSearchType, IN_NOT_IN_COND_CHOICES, PROTOCOL_COND_CHOICES, PROTOCOL_RUN_COND_CHOICES, ProtocolCond, ProtocolRunCond } from './constants';
 import { MoleculeFieldSearch, Protocol, queryProtocols } from './cdd-vault-api';
 
@@ -96,7 +98,7 @@ export class SeachEditor {
 
     async init() {
         try {
-            const protocolsStr = await grok.functions.call('CDDVaultLink:getProtocolsAsync', {vaultId: this.vaultId, timeoutMinutes: 1});
+            const protocolsStr = await api.funcs.getProtocolsAsync(this.vaultId, 1);
             const protocols = protocolsStr !== '' ? JSON.parse(protocolsStr) as Protocol[] : [];
             if (protocols && protocols.length) {
                 protocols.forEach((it) => this.protocols[it.name] = it);

@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import * as api from '../package-api';
 
 import {awaitCheck, expect} from '@datagrok-libraries/utils/src/test';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
@@ -12,17 +13,16 @@ export async function _testActivityCliffsOpen(df: DG.DataFrame, drMethod: DimRed
   similarityMetric: MmDistanceFunctionsNames | BitArrayMetrics, preprocessingFunction: DG.Func,
 ): Promise<void> {
   await grok.data.detectSemanticTypes(df);
-  (await grok.functions.call('Bio:activityCliffs', {
-    table: df,
-    molecules: df.getCol(seqColName),
-    activities: df.getCol(activityColName),
-    similarity: similarityThr,
-    methodName: drMethod,
-    similarityMetric: similarityMetric,
-    preprocessingFunction: preprocessingFunction,
-    options: {[`${BYPASS_LARGE_DATA_WARNING}`]: true},
-    demo: false,
-  })) as DG.Viewer | undefined;
+  (await api.funcs.activityCliffs(df,
+    seqColName,
+    df.getCol(activityColName),
+    similarityThr,
+    drMethod,
+    similarityMetric,
+    preprocessingFunction,
+    {[`${BYPASS_LARGE_DATA_WARNING}`]: true},
+    false,
+  )) as DG.Viewer | undefined;
   const scatterPlot = Array.from(grok.shell.tv.viewers)[1];
   expect(scatterPlot?.type === DG.VIEWER.SCATTER_PLOT, true);
 

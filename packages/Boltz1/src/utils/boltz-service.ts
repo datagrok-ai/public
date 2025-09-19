@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as api from '../package-api';
 
 import * as yaml from 'js-yaml';
 import { BOLTZ_CONFIG_PATH, BOLTZ_PROPERTY_DESCRIPTIONS, BoltzResponse, Config } from '../utils/constants';
@@ -85,7 +86,7 @@ export class BoltzService {
       });
   
       const yamlString = yaml.dump(config);
-      const result = DG.DataFrame.fromCsv(await grok.functions.call('Boltz1:runBoltz', { config: yamlString, msa: '' }));
+      const result = DG.DataFrame.fromCsv(await api.funcs.runBoltz(yamlString, ''));
       resultDf.append(result, true);
     }
   
@@ -128,7 +129,7 @@ export class BoltzService {
       constraints[0].pocket.binder = chainId;
       const updatedConfig = yaml.dump(existingConfig);
       
-      const result = DG.DataFrame.fromCsv(await grok.functions.call('Boltz1:runBoltz', { config: updatedConfig, msa: msaFile}));
+      const result = DG.DataFrame.fromCsv(await  api.funcs.runBoltz(updatedConfig, msaFile));
       resultDf.append(result, true);
 
       sequences.pop();

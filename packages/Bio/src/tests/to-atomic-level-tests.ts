@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as api from '../package-api';
 
 import wu from 'wu';
 
@@ -92,7 +93,7 @@ category('toAtomicLevel', async () => {
   async function getTestResult(source: DG.DataFrame, target: DG.DataFrame): Promise<void> {
     const inputCol = source.getCol(inputColName);
     // await toAtomicLevel(source, inputCol, false);
-    await grok.functions.call('Bio:toAtomicLevel', {table: source, seqCol: inputCol, nonlinear: false});
+    await api.funcs.toAtomicLevel(source, inputCol, false);
     const obtainedCol = source.getCol(outputColName);
     // DG.Utils.download(source.name.endsWith('.csv') ? source.name : source.name + '.csv', source.toCsv());
     const expectedCol = target.getCol(outputColName);

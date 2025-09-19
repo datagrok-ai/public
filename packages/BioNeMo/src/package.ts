@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { CONSTANTS, DiffDockModel, PosesJson } from './diffdock/diffdock-model';
-
+import * as api from './package-api';
 export * from './package.g';
 export const _package = new DG.Package();
 
@@ -20,7 +20,7 @@ export class PackageFunctions {
     @grok.decorators.param({ options: { initialValue: '[H][C@@]12Cc3c[nH]c4cccc(C1=C[C@H](NC(=O)N(CC)CC)CN2C)c34', semType: 'Molecule' } }) smi: string
   ): Promise<void> {
     const apiKey = await getApiKey();
-    const results = await grok.functions.call('BioNeMo:MolMIMGenerate', { algorithm, num_molecules, property_name, minimize, min_similarity, particles, iterations, smi, apiKey });
+    const results = await api.scripts.molMIMGenerate(algorithm, num_molecules, property_name, minimize, min_similarity, particles, iterations, smi, apiKey);
   }
   
   @grok.decorators.func({
@@ -38,7 +38,7 @@ export class PackageFunctions {
       const protein = DG.Column.fromType(DG.TYPE.STRING, 'Protein', sequences.length);
       for (let i = 0; i < sequences.length; ++i) {
         const colValue = sequences.get(i);
-        const predictedValue = await grok.functions.call('BioNeMo:esmfold', { sequence: colValue, api_key: apiKey });
+        const predictedValue = await api.scripts.esmfold(colValue, apiKey);
         protein.set(i, predictedValue);
       }
       protein.setTag(DG.TAGS.SEMTYPE, DG.SEMTYPE.MOLECULE3D);
@@ -64,7 +64,7 @@ export class PackageFunctions {
 
     try {
       const apiKey = await getApiKey();
-      const res = await grok.functions.call('BioNeMo:esmfold', { sequence: sequence.value, api_key: apiKey });
+      const res = await api.scripts.esmfold(sequence.value, apiKey);
       const { success, error, pdb } = JSON.parse(res);
 
       result.root.removeChild(loader);
@@ -98,12 +98,12 @@ export class PackageFunctions {
   static async diffDockModelScript(ligand: string, target: string, poses: number): Promise<string | undefined> {
     try {
       const apiKey = await getApiKey();
-      const encodedPoses = await grok.functions.call('Bionemo:diffdock', {
-        protein: target,
-        ligand: ligand,
-        num_poses: poses,
-        api_key: apiKey
-      });
+      const encodedPoses = await api.scripts.diffdock(
+        target,
+        ligand,
+        poses,
+        apiKey
+      );
       return new TextDecoder().decode(encodedPoses.data);
     } catch (e: any) {
       console.error('Error running DiffDock model:', e.message);

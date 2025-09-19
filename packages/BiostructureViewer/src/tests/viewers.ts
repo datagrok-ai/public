@@ -2,6 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 
+import * as api from '../package-api';
+
 import {category, test, testViewer} from '@datagrok-libraries/utils/src/test';
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb';
 import {IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
@@ -16,7 +18,7 @@ category('Viewers', () => {
   for (const v of viewers) {
     test(v, async () => {
       await testViewer(v, await (async () => {
-        const ph: IPdbHelper = await grok.functions.call('BiostructureViewer:getPdbHelper');
+        const ph: IPdbHelper = await api.funcs.getPdbHelper();
         const pdbFn: string = `System:AppData/${_package.name}/samples/1bdq.pdb`;
         const pdbStr: string = await grok.dapi.files.readAsText(pdbFn);
         const df: DG.DataFrame = await ph.pdbToDf(pdbStr, '1bdq');

@@ -2,6 +2,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as api from './package-api';
+
 import {queryExportStatus, queryExportResult, ExportStatus, ApiResponse, Batch, Project, Vault, Molecule} from "./cdd-vault-api";
 import { ALL_TABS, CDDVaultSearchType, COLLECTIONS_TAB, EXPANDABLE_TABS, MOLECULES_TAB, PROTOCOLS_TAB, SAVED_SEARCHES_TAB, SEARCH_TAB } from './constants';
 import { awaitCheck, delay } from '@datagrok-libraries/utils/src/test';
@@ -545,14 +547,14 @@ export function createCDDContextPanel(obj: Molecule | Batch, vaultId?: number): 
 
 export function createInitialSatistics(statsDiv: HTMLDivElement) {
   
-  grok.functions.call('CDDVaultLink:getVaults').then(async (res: string) => {
+  api.funcs.getVaults().then(async (res: string) => {
     const stats: CDDVaultStats[] = [];
     if (!res)
       return;
     const vaults = JSON.parse(res) as Vault[];
     for (const vault of vaults) {
       try {
-        const resStr = await grok.functions.call('CDDVaultLink:getVaultStats', {vaultId: vault.id, vaultName: vault.name});
+        const resStr = await api.funcs.getVaultStats(vault.id, vault.name);
         stats.push(JSON.parse(resStr));
 
       } catch (e: any) {
@@ -602,11 +604,9 @@ export function createSearchNode(vault: Vault, treeNode: DG.TreeViewGroup) {
   const runButton = ui.bigButton('SEARCH', async () => {
     ui.setUpdateIndicator(gridDiv, true);
     const params = funcEditor.getParams();
-    df = await grok.functions.call('CDDVaultLink:cDDVaultSearchAsync',
-      {
-        vaultId: vault.id, structure: params.structure, structure_search_type: params.structure_search_type,
-        structure_similarity_threshold: params.structure_similarity_threshold, protocol: params.protocol, run: params.run
-      });
+    df = await api.funcs.cDDVaultSearchAsync(vault.id, params.structure ?? null, params.structure_search_type ?? null,
+        params.structure_similarity_threshold ?? null, params.protocol ?? null, params.run ?? null
+      );
     ui.empty(gridDiv);
     if (df) {
       const protocol = params.protocol ? `, protocol: ${params.protocol}` : '';

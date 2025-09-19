@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import { IPdbHelper, getPdbHelper } from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import { MolfileHandler } from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import '../../css/bionemo.css';
+import * as api from '../package-api';
 
 // Constants
 export const CONSTANTS = {
@@ -94,7 +95,7 @@ export class DiffDockModel {
     const ligandValue = isSmiles ? DG.chem.convert(ligand, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock) : ligand;
     const sdf = MolfileHandler.getInstance(ligandValue).z.every((coord) => coord === 0) ?
       (await grok.functions.call('Chem:SmilesTo3DCoordinates', { molecule: ligandValue })).replaceAll('\\n', '\n') : ligandValue;
-    const jsonText = await grok.functions.call('Bionemo:diffDockModelScript', { ligand: sdf, target: this.target, poses: this.poses });
+    const jsonText = await api.funcs.diffDockModelScript(sdf, this.target, this.poses);
     return JSON.parse(jsonText);
   }
 

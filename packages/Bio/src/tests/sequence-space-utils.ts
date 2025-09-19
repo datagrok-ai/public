@@ -1,5 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import * as api from '../package-api';
 
 import {expect} from '@datagrok-libraries/utils/src/test';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
@@ -19,11 +20,11 @@ export async function _testSequenceSpaceReturnsResult(
   const preprocessingFunc = DG.Func.find({package: 'Bio', name: 'macromoleculePreprocessingFunction'})[0];
   if (!preprocessingFunc)
     throw new Error('Preprocessing function not found');
-  await grok.functions.call('Bio:sequenceSpaceTopMenu', {
-    table: df, molecules: df.col(colName)!,
-    methodName: algorithm, similarityMetric: MmDistanceFunctionsNames.LEVENSHTEIN,
-    plotEmbeddings: true, preprocessingFunction: preprocessingFunc, options: {[BYPASS_LARGE_DATA_WARNING]: true}
-  });
+  await api.funcs.sequenceSpaceTopMenu(
+    df, df.col(colName)!,
+    algorithm, MmDistanceFunctionsNames.LEVENSHTEIN,
+    true, preprocessingFunc, {[BYPASS_LARGE_DATA_WARNING]: true}
+  );
   // const sp = await sequenceSpaceTopMenu(df, df.col(colName)!, algorithm, MmDistanceFunctionsNames.LEVENSHTEIN, true,
   //   preprocessingFunc, {[BYPASS_LARGE_DATA_WARNING]: true});
   const tv = grok.shell.tableView(df.name);
