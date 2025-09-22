@@ -14,7 +14,7 @@ enum SpotlightTabNames {
 
 export class ActivityDashboardWidget extends DG.Widget {
   static RECENT_TIME_DAYS = 2;
-  static SPOTLIGHT_ITEMS_LENGTH: 10;
+  static SPOTLIGHT_ITEMS_LENGTH = 8;
 
   static sharedEntityRegex: RegExp = /<span>#{x\.([a-f0-9-]+)\.".*?"}<\/span>/g;
   keywordsToIgnore: string[] = ['"data"', '"data w/', '"fitted data"', '"reduced data"', '"reduceddata"', '"sizingparams"', '"primaryfilter', '"trimmed data"', '"input data from imported file"', '"dataanalysisdf', '"clean data"'/*, 'Ran <span>#{x.'*/];
@@ -358,7 +358,7 @@ export class ActivityDashboardWidget extends DG.Widget {
 
   async getFavoritesTab(): Promise<HTMLElement> {
     console.time('ActivityDashboardWidget.buildFavoritesTab');
-    const root = ui.div([]);
+    const root = ui.div([], 'power-pack-activity-widget-favorites-tab');
     const favorites = grok.shell.favorites;
     if (favorites.length === 0) {
       root.appendChild(ui.divText('No favorites found.'));
@@ -385,7 +385,7 @@ export class ActivityDashboardWidget extends DG.Widget {
 
   async getNotificationsTab(): Promise<HTMLElement> {
     console.time('ActivityDashboardWidget.buildNotificationsTab');
-    const root = ui.div([]);
+    const root = ui.div([], 'power-pack-activity-widget-notifications-tab');
     if (this.recentNotifications.length === 0) {
       root.appendChild(ui.divText('No recent notifications.'));
       return root;
@@ -419,7 +419,7 @@ export class ActivityDashboardWidget extends DG.Widget {
       .filter((a) => a.eventTime?.isAfter(this.cutoffDate))) as DG.LogEvent[])
       .sort((a, b) => b.eventTime?.diff(a.eventTime) ?? 0);
 
-    const root = ui.div([]);
+    const root = ui.div([], 'power-pack-activity-widget-activity-tab');
     if (this.recentUserActivity.length === 0) {
       root.appendChild(ui.divText('No recent user activity.'));
       return root;

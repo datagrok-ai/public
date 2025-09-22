@@ -137,7 +137,20 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
 
 .power-pack-activity-widget-spotlight-tip {
     flex-basis: 100%;
-    text-align: center;
+    margin-left: 20px;
+}
+
+.power-pack-activity-widget-favorites-tab {
+    margin-top: 7px;
+    margin-left: 18px;
+}
+
+.power-pack-activity-widget-notifications-tab {
+    margin-top: 2px;
+}
+
+.power-pack-activity-widget-activity-tab {
+    margin-top: 4px;
 }
 
 .power-pack-widget-header {
