@@ -14,8 +14,8 @@ export async function init() : Promise<void> {
 //name: DBSCAN
 //description: Density-based spatial clustering of applications with noise (DBSCAN)
 //input: dataframe df 
-//input: numerical xCol { type: numerical }
-//input: numerical yCol { type: numerical }
+//input: column xCol { type: numerical }
+//input: column yCol { type: numerical }
 //input: double epsilon = 0.02 { caption: Epsilon; description: The maximum distance between two samples for them to be considered as in the same neighborhood. }
 //input: int minPts = 4 { caption: Minimum points; description: The number of samples (or total weight) in a neighborhood for a point to be considered as a core point. }
 //output: column result

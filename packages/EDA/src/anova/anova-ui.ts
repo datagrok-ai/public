@@ -27,31 +27,36 @@ enum DEFAULT {
 };
 
 /** Add one-way ANOVA results */
-function addVizualization(df: DG.DataFrame, factorsName: string, featuresName: string, report: OneWayAnovaReport) {
+function addVizualization(df: DG.DataFrame, factorsName: string, featuresName: string, report: OneWayAnovaReport): void {
+  const view = grok.shell.getTableView(df.name);
+  grok.shell.v = view;
+  
   const test = report.anovaTable.fStat > report.fCritical;
-
   const shortConclusion = test ?
     `"${factorsName}" affects the "${featuresName}"` :
     `"${factorsName}" doesn't affect the "${featuresName}"`;
 
-  const view = grok.shell.getTableView(df.name);
-  const boxPlot = DG.Viewer.boxPlot(df, {
+  const chart = DG.Viewer.boxPlot(df, {
     categoryColumnNames: [factorsName],
     valueColumnName: featuresName,
     showPValue: false,
     showStatistics: false,
     description: shortConclusion,
     showColorSelector: false,
+    autoLayout: false,
   });
-  const boxPlotNode = view.dockManager.dock(boxPlot.root, DG.DOCK_TYPE.RIGHT, null, 'ANOVA');
 
-  const hypoMd = ui.markdown(`**H0:** the "${factorsName}" 
-  factor does not produce a significant difference in the "${featuresName}" feature.`);
-  ui.tooltip.bind(hypoMd, 'Null hypothesis');
+  let node = view.dockManager.dock(chart, DG.DOCK_TYPE.RIGHT, null, 'ANOVA');
 
-  const testMd = ui.markdown(`**Test result:** ${test ?
-    'means differ significantly.' :
-    'means do not differ significantly.'}`,
+  const nullHypoMd = ui.markdown(`**Null Hypothesis:** all group means are equal.`);  
+  ui.tooltip.bind(nullHypoMd, `The "${factorsName}" factor does not produce a significant difference in the "${featuresName}" feature.`);
+
+  const altHypoMd = ui.markdown(`**Alternative Hypothesis:** at least one group mean differs significantly.`);
+  ui.tooltip.bind(altHypoMd, `The "${factorsName}" factor produces a significant difference in the "${featuresName}" feature.`);
+
+  const testMd = ui.markdown(`**Conclusion:** ${test ?
+    'significant differences exist between groups.' :
+    'no significant differences detected.'}`,
   );
 
   const tooltipDiv = test ?
@@ -69,20 +74,30 @@ function addVizualization(df: DG.DataFrame, factorsName: string, featuresName: s
   ui.tooltip.bind(testMd, () => tooltipDiv);
 
   const divResult = ui.divV([
-    hypoMd,
+    nullHypoMd,
+    altHypoMd,
     testMd,
     ui.link('Learn more',
       () => window.open('https://en.wikipedia.org/wiki/F-test', '_blank'),
-      'Click to open in a new tab',
+      'Click to open in a new tab.',
     ),
   ]);
   divResult.style.marginLeft = '20px';
 
-  const hypoNode = grok.shell.dockManager.dock(divResult, DG.DOCK_TYPE.DOWN, boxPlotNode, 'F-test', 0.3);
+  const reportViewer = getAnovaGrid(report);  
+  const tabControl = ui.tabControl({    
+    'Analysis': ui.panel([reportViewer.root]),
+    'F-test': ui.panel([divResult]),
+  });
 
-  const reportViewer = getAnovaGrid(report);
-  grok.shell.dockManager.dock(reportViewer.root, DG.DOCK_TYPE.FILL, hypoNode, 'Analysis');
-}
+  ui.tooltip.bind(tabControl.getPane('Analysis').header, 'ANOVA results summary.');
+  ui.tooltip.bind(tabControl.getPane('F-test').header, 'Null hypothesis testing.');
+
+
+  view.dockManager.dock(tabControl.root, DG.DOCK_TYPE.DOWN, node, '', 0.25);
+
+  reportViewer.root.style.width = '100%';
+} // addVizualization
 
 /** Create dataframe with one-way ANOVA results. */
 function getAnovaGrid(report: OneWayAnovaReport): DG.Grid {
@@ -99,13 +114,13 @@ function getAnovaGrid(report: OneWayAnovaReport): DG.Grid {
   ]));
 
   const tooltip = new Map([
-    ['Source of variance', 'List of the explored variation sources'],
-    ['SS', 'Sum of squares (SS)'],
-    ['DF', 'Degrees of freedom (DF)'],
-    ['MS', 'Mean square (MS)'],
-    ['F', 'F-statistics (F)'],
-    ['F-critical', `${report.significance}-critical value of F-statistics (F)`],
-    ['p-value', `Probability to obtain F-statistics (F) greater than the actual observation.`],
+    ['Source of variance', 'List of the explored variation sources.'],
+    ['SS', 'Sum of squares (SS). Measure of total variation in the data.'],
+    ['DF', 'Degrees of freedom (DF). Number of independent values that can vary.'],
+    ['MS', 'Mean square (MS). Sum of squares divided by degrees of freedom.'],
+    ['F', 'F-statistics (F). Ratio of between-group to within-group variance.'],
+    ['F-critical', `${report.significance}-critical value of F-statistics.`],
+    ['p-value', `Probability of observing this result if groups have equal means.`],
   ]);
 
   grid.onCellTooltip(function(cell, x, y) {

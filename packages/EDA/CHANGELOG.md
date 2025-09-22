@@ -1,5 +1,16 @@
 # EDA changelog
 
+## 1.4.6 (2025-09-23)
+
+Improved ANOVA:
+
+* Updated the F-test description
+* Implemented the tab control for the results
+
+## 1.4.5 (2025-09-19)
+
+Dependencies update
+
 ## 1.4.4 (2025-09-17)
 
 Improved the PCA dialog
