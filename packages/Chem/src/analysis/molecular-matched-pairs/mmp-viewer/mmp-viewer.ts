@@ -1179,6 +1179,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   detach(): void {
     if ((grok.shell.o as HTMLElement).classList?.contains(MMP_CONTEXT_PANE_CLASS))
       grok.shell.o = ui.div();
+    this.lastOpenedHint?.remove();
     super.detach();
   }
 }
