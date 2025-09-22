@@ -136,7 +136,7 @@ export class PackageFunctions {
     } catch (e) {
       return new DG.Widget(ui.divText('Molecule string is malformed'));
     }
-    const headerHost = ui.divH([]);
+    const headerHost = ui.divH([], {style: {position: 'absolute'}});
     const compsHost = ui.div([ui.loader(), headerHost], 'd4-flex-wrap chem-viewer-grid chem-search-panel-wrapper');
     const panel = ui.divV([compsHost]);
     const searchFunc = substructure ?

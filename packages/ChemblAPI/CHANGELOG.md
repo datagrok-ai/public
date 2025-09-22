@@ -1,5 +1,11 @@
 # ChEMBL API changelog
 
+## 1.2.1 (2025-09-22)
+
+### Bug fixes
+
+* GROK-18932: Similarity Search: Scores are misaligned
+
 ## 1.1.4 (2025-03-06)
 
 Use fetchProxy to do requests. Updated tests.
