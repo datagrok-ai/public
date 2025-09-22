@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.4.2 (2025-09-22)
+
+Version update
+
 ## 1.4.1 (2025-09-18)
 
 Datagrok utils update
