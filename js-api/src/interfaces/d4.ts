@@ -652,6 +652,8 @@ export interface ICalendarSettings {
   date: string;
   dateColumnName: string;
 
+  controlsFont: string;
+
   showHeader: boolean;
 
   redWeekends: boolean;
@@ -676,9 +678,6 @@ export interface ICalendarSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
-
-  /// Viewer controls elements font.
-  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -764,6 +763,8 @@ export enum CardValueSourceType {
 }
 
 export interface ICorrelationPlotSettings {
+  controlsFont: string;
+
   /// Columns to be put on the X axis
   xColumnNames: Array<string>;
 
@@ -792,9 +793,6 @@ export interface ICorrelationPlotSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
-
-  /// Viewer controls elements font.
-  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -1054,6 +1052,8 @@ export interface IFormSettings {
 }
 
 export interface IGridSettings {
+  controlsFont: string;
+
   /// Indicates whether the grid is editable.
   /// See also *Show Add New Row Icon*
   allowEdit: boolean;
@@ -1313,9 +1313,6 @@ export interface IGridSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
-
-  /// Viewer controls elements font.
-  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -2071,6 +2068,8 @@ export enum TextInterpretationMode {
 }
 
 export interface IMatrixPlotSettings {
+  controlsFont: string;
+
   /// Columns to use on the X axis
   xColumnNames: Array<string>;
 
@@ -2100,9 +2099,6 @@ export interface IMatrixPlotSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
-
-  /// Viewer controls elements font.
-  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -3170,6 +3166,8 @@ export interface ISparklinesSettings {
 }
 
 export interface IStatsViewerSettings {
+  controlsFont: string;
+
   columnNames: Array<string>;
 
   stats: Array<string>;
@@ -3185,9 +3183,6 @@ export interface IStatsViewerSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
-
-  /// Viewer controls elements font.
-  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -3289,6 +3284,8 @@ export interface ISummarySettings {
 }
 
 export interface ITileViewerSettings {
+  controlsFont: string;
+
   lanesColumnName: string;
 
   cardMarkup: string;
@@ -3313,9 +3310,6 @@ export interface ITileViewerSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
-
-  /// Viewer controls elements font.
-  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
