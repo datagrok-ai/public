@@ -216,7 +216,7 @@ export class PackageFunctions {
     const params: RequestInit = {method: 'GET', referrerPolicy: 'strict-origin-when-cross-origin'};
     const response = await grok.dapi.fetchProxy(url, params);
     const json = await response.json();
-    return response.status !== 200 || json.error ? {} : json;
+    return response.status !== 200 || json.error ? [] : json;
   }
 
   @grok.decorators.func({'name':'Chembl Get by Id'})
