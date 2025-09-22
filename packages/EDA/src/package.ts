@@ -65,8 +65,8 @@ export class PackageFunctions {
   })
   static async dbScan(
     df: DG.DataFrame,
-    @grok.decorators.param({'options':{'type':'numerical'}})   xCol: DG.Column,
-    @grok.decorators.param({'options':{'type':'numerical'}})   yCol: DG.Column,
+    @grok.decorators.param({type: 'column', 'options':{'type':'numerical'}})   xCol: DG.Column,
+    @grok.decorators.param({type: 'column', 'options':{'type':'numerical'}})   yCol: DG.Column,
     @grok.decorators.param({'options':{'caption':'Epsilon','initialValue':'0.02', description: 'The maximum distance between two samples for them to be considered as in the same neighborhood.'}})   epsilon: number,
     @grok.decorators.param({'type':'int','options':{'caption':'Minimum points','initialValue':'4', description: 'The number of samples (or total weight) in a neighborhood for a point to be considered as a core point.'}})   minPts: number) : Promise<DG.Column> {
 
