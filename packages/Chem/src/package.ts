@@ -2458,7 +2458,7 @@ export class PackageFunctions {
     if (mixtureObj.contents && mixtureObj.contents.length) {
       const contentsAcc = ui.accordion('contents');
       for (let i = 0; i < mixtureObj.contents.length; i++)
-        contentsAcc.addPane(`component ${i + 1}`, () => createComponentPane(mixtureObj.contents![i]));
+        contentsAcc.addPane(mixtureObj.contents![i].name ?? `component ${i + 1}`, () => createComponentPane(mixtureObj.contents![i]));
       resDiv.append(contentsAcc.root);
     }
     return new DG.Widget(resDiv);
