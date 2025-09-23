@@ -1,5 +1,9 @@
 # Arrow changelog
 
+## 1.4.2 (2025-09-23)
+
+* Fixes conversion of 'bigint' columns
+
 ## 1.4.1 (2025-08-27)
 
 * Convert a 'string' column to a UTF-8 column instead of a categorical column.

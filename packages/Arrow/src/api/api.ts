@@ -38,7 +38,7 @@ export function toFeather(table: DG.DataFrame, asStream: boolean = true): Uint8A
       for (let i = 0; i < columnLength; i++)
         array[i] = column.get(i);
       values = array;
-      type = new arrow.Utf8();
+      type = columnType === 'bigint' ? new arrow.Int64() : new arrow.Utf8();
     }
 
     arrays[name] = values;
@@ -59,6 +59,8 @@ export function toFeather(table: DG.DataFrame, asStream: boolean = true): Uint8A
       vectors[name] = arrow.vectorFromArray(arrays[name] as Date[], type);
     else if (type instanceof arrow.Utf8)
       vectors[name] = arrow.vectorFromArray(arrays[name] as string[], type);
+    else if (type instanceof arrow.Int64)
+      vectors[name] = arrow.vectorFromArray(arrays[name] as (bigint | null)[], type);
     else
       throw new Error(`Unsupported type for field ${name}`);
   }
