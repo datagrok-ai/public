@@ -68,6 +68,13 @@
       ],
       "firstLinkingGroup": 3,
       "secondLinkingGroup": 3
+    },
+    {
+      "code": 0,
+      "firstMonomers": [],
+      "secondMonomers": [],
+      "firstLinkingGroup": 1,
+      "secondLinkingGroup": 2
     }
   ],
   "reactionRules": [
