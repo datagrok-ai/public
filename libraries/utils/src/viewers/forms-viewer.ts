@@ -256,7 +256,7 @@ export class FormsViewer extends DG.JsViewer {
             canvas.width = molSize.x * window.devicePixelRatio;
             canvas.height = molSize.y * window.devicePixelRatio;
             const ctx = canvas.getContext('2d')!;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
             
             canvas.setAttribute('column', name);
