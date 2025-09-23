@@ -290,25 +290,37 @@ export class ActivityDashboardWidget extends DG.Widget {
       return root;
     const appHandler = DG.ObjectHandler.forEntity(demoApp);
 
+    const createLinkWithIcon = (text: string, target: Function, appFunc: DG.Func) => {
+      const link = ui.link('', target);
+      const appElement = appHandler?.renderTooltip(DG.toDart(appFunc)).firstChild as HTMLElement;
+      if (appElement) {
+        const appElementLabel = appElement.querySelector('label');
+        if (appElementLabel)
+          appElementLabel.textContent = text;
+        link.appendChild(appElement);
+      }
+      return link;
+    };
+
     const gettingStartedList = ui.list([
-      ui.link('Data Access', async () => await tutorialsApp.apply()),
-      ui.link('Exploratory Data Analysis', async () => await tutorialsApp.apply()),
-      ui.link('Cheminformatics', async () => await tutorialsApp.apply()),
-      ui.link('Explore more Tutorials', async () => await tutorialsApp.apply()),
+      createLinkWithIcon('Data Access', async () => await tutorialsApp.apply(), tutorialsApp),
+      createLinkWithIcon('Exploratory Data Analysis', async () => await tutorialsApp.apply(), tutorialsApp),
+      createLinkWithIcon('Cheminformatics', async () => await tutorialsApp.apply(), tutorialsApp),
+      createLinkWithIcon('Explore more Tutorials', async () => await tutorialsApp.apply(), tutorialsApp),
     ]);
-    gettingStartedList.classList.add('power-pack-activity-widget-subwidget-list-content');
+    gettingStartedList.classList.add('power-pack-activity-widget-subwidget-list-content', 'power-pack-activity-widget-getting-started-subwidget-list-content');
     const gettingStartedRoot = ui.divV([ui.h3(ui.span([ui.span(['Getting Started'])]), 'power-pack-activity-widget-spotlight-column-header'),
-      gettingStartedList], 'power-pack-activity-widget-spotlight-column');
+      gettingStartedList], 'power-pack-activity-widget-spotlight-getting-started-column');
 
     const tryDemoAppsList = ui.list([
-      ui.link('Scatter Plot', async () => await demoApp.apply({path: '/Visualization/General/Scatter-Plot'})),
-      ui.link('Files', async () => await demoApp.apply({path: '/Data-Access/Files'})),
-      ui.link('Matched Molecular Pairs', async () => await demoApp.apply({path: '/Cheminformatics/Matched-Molecular-Pairs'})),
-      ui.link('Curve Fitting', async () => await demoApp.apply({path: '/Curves/Curve-Fitting'})),
+      createLinkWithIcon('Scatter Plot', async () => await demoApp.apply({path: '/Visualization/General/Scatter-Plot'}), demoApp),
+      createLinkWithIcon('Files', async () => await demoApp.apply({path: '/Data-Access/Files'}), demoApp),
+      createLinkWithIcon('Matched Molecular Pairs', async () => await demoApp.apply({path: '/Cheminformatics/Matched-Molecular-Pairs'}), demoApp),
+      createLinkWithIcon('Curve Fitting', async () => await demoApp.apply({path: '/Curves/Curve-Fitting'}), demoApp),
     ]);
-    tryDemoAppsList.classList.add('power-pack-activity-widget-subwidget-list-content');
+    tryDemoAppsList.classList.add('power-pack-activity-widget-subwidget-list-content', 'power-pack-activity-widget-getting-started-subwidget-list-content');
     const tryDemoAppsRoot = ui.divV([ui.h3(ui.span([ui.span(['Try Demo Apps'])]), 'power-pack-activity-widget-spotlight-column-header'),
-      tryDemoAppsList], 'power-pack-activity-widget-spotlight-column');
+      tryDemoAppsList], 'power-pack-activity-widget-spotlight-getting-started-column');
 
     let featuredApps: HTMLElement[] = [];
     const hitDesignApp = DG.Func.find({tags: ['app'], package: 'HitTriage', name: 'hitTriageApp'})[0];
@@ -326,9 +338,9 @@ export class ActivityDashboardWidget extends DG.Widget {
       ...featuredApps,
       ui.link('Explore more Apps', () => setTimeout(() => grok.shell.addView(DG.View.createByType(DG.VIEW_TYPE.APPS)), 100)),
     ]);
-    featuredAppsList.classList.add('power-pack-activity-widget-subwidget-list-content');
+    featuredAppsList.classList.add('power-pack-activity-widget-subwidget-list-content', 'power-pack-activity-widget-getting-started-subwidget-list-content');
     const featuredAppsRoot = ui.divV([ui.h3(ui.span([ui.span(['Featured Apps'])]), 'power-pack-activity-widget-spotlight-column-header'),
-      featuredAppsList], 'power-pack-activity-widget-spotlight-column');
+      featuredAppsList], 'power-pack-activity-widget-spotlight-getting-started-column');
 
     root.append(gettingStartedRoot, tryDemoAppsRoot, featuredAppsRoot);
     return root;

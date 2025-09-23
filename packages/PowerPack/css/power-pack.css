@@ -69,6 +69,10 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     max-height: 220px;
 }
 
+.power-pack-activity-widget-getting-started-subwidget-list-content {
+    margin-left: -7px;
+}
+
 .power-pack-widget-host:has(.power-pack-activity-widget-content) {
     grid-column: 1 / -1;
 }
@@ -102,6 +106,19 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
 .power-pack-activity-widget-spotlight-column {
     margin-right: 13px;
     flex: 1 1 0;
+}
+
+.power-pack-activity-widget-spotlight-getting-started-column {
+    margin-right: 13px;
+    flex: 1 1 0;
+}
+
+.power-pack-activity-widget-spotlight-getting-started-column .d4-entity-markup-row {
+    margin-bottom: 7px;
+}
+
+.power-pack-activity-widget-spotlight-getting-started-column .grok-context-arrow-down {
+    margin-left: 0;
 }
 
 .power-pack-activity-widget-spotlight-column-action-required {
