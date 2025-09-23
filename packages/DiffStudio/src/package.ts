@@ -29,6 +29,27 @@ export class PackageFunctions {
   static async init() {}
 
   @grok.decorators.func({})
+  static dock(): void {
+    const df = grok.data.demo.demog(100);
+    const view = grok.shell.addTableView(df);
+
+    setTimeout(() => {
+      const chart = DG.Viewer.boxPlot(df);
+      let node = view.dockManager.dock(chart, 'right', null, 'ANOVA');
+
+      const div = ui.div([
+        ui.button('Click me', () => {
+          grok.shell.info('Clicked');
+        }),
+      ]);
+      node = view.dockManager.dock(div, 'down', node, 'Title', 0.3);
+
+      const grid = DG.Viewer.grid(grok.data.demo.demog(100));
+      view.dockManager.dock(grid, 'fill', node);
+    }, 100);
+  }
+
+  @grok.decorators.func({})
   static solve(@grok.decorators.param({type: 'object'}) problem: ODEs): DG.DataFrame {
     return solveDefault(problem);
   }
