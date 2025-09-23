@@ -228,9 +228,8 @@ export class RadarViewer extends EChartViewer {
         return numValue !== -2147483648 ? numValue : 0;
       });
 
-      const color = this.colorColumnName ?
-        DG.Color.getRowColor(this.dataFrame.getCol(this.colorColumnName), i) :
-        this.lineColor;
+      const colorColumn = this.dataFrame.col(this.colorColumnName);
+      const color = colorColumn ? DG.Color.getRowColor(colorColumn, i) : this.lineColor;
 
       seriesData.push({
         value: value,
