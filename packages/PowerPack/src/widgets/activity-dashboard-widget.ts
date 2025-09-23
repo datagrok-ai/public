@@ -30,6 +30,7 @@ export class ActivityDashboardWidget extends DG.Widget {
     'Right-click a column to see context actions available for it.',
     'Try the “Correlation Plot” to quickly see relationships between numeric columns.',
   ];
+  demosOfTheDay: DG.Func[] = DG.Func.find({meta: {'demoPath': null}});
   cutoffDate: dayjs.Dayjs = dayjs().subtract(ActivityDashboardWidget.RECENT_TIME_DAYS, 'day');
 
   favoritesEvents: DG.LogEvent[] = [];
@@ -54,7 +55,7 @@ export class ActivityDashboardWidget extends DG.Widget {
   spacesRoot?: HTMLDivElement | null = null;
   recentItemsRoot?: HTMLDivElement | null = null;
   adminRoot?: HTMLDivElement | null = null;
-  subwidgetsAdded: Map<string, HTMLDivElement | null> = new Map<string, HTMLDivElement>();
+  subwidgetsAdded: Map<string, HTMLDivElement | null | undefined> = new Map<string, HTMLDivElement>();
   subwidgetsAmount: number = 0;
   reportAmount?: number = 0;
 
@@ -236,28 +237,28 @@ export class ActivityDashboardWidget extends DG.Widget {
     });
     this.actionRequiredRoot = actionRequired.length > 0 ? createSection(SpotlightTabNames.ACTION_REQUIRED, actionRequired, ui.iconFA('exclamation-circle')) : null;
     if (this.actionRequiredRoot)
-      root.appendChild(this.actionRequiredRoot);
+      root.appendChild(this.actionRequiredRoot!);
     this.subwidgetsAdded.set(SpotlightTabNames.ACTION_REQUIRED, this.actionRequiredRoot);
 
     this.sharedWithMeRoot = this.sharedWithMe.length > 0 ? createSection(SpotlightTabNames.SHARED_WITH_ME, this.sharedWithMe, ui.iconFA('inbox')) : null;
     if (this.sharedWithMeRoot)
-      root.appendChild(this.sharedWithMeRoot);
+      root.appendChild(this.sharedWithMeRoot!);
     this.subwidgetsAdded.set(SpotlightTabNames.SHARED_WITH_ME, this.sharedWithMeRoot);
 
     this.spacesRoot = null;
     if (this.spacesRoot)
-      root.appendChild(this.spacesRoot);
+      root.appendChild(this.spacesRoot!);
     // this.subwidgetsAdded.set(SpotlightTabNames.SPACES, this.spacesRoot);
 
     this.recentItemsRoot = this.recentEntities.length > 0 ? createSection(SpotlightTabNames.RECENT, this.recentEntities, ui.iconFA('history')) : null;
     if (this.recentItemsRoot)
-      root.appendChild(this.recentItemsRoot);
+      root.appendChild(this.recentItemsRoot!);
     this.subwidgetsAdded.set(SpotlightTabNames.RECENT, this.recentItemsRoot);
 
     const adminActivity = this.recentUserActivity.filter((l) => l.description.toLowerCase().includes('published version'));
     this.adminRoot = adminActivity.length > 0 ? createSection(SpotlightTabNames.ADMIN, adminActivity, ui.icons.settings(() => {})) : null;
     if (this.adminRoot)
-      root.appendChild(this.adminRoot);
+      root.appendChild(this.adminRoot!);
     this.subwidgetsAdded.set(SpotlightTabNames.ADMIN, this.adminRoot);
     // }
 
@@ -273,8 +274,19 @@ export class ActivityDashboardWidget extends DG.Widget {
         list], 'power-pack-activity-widget-spotlight-column');
       root.appendChild(listRoot);
     }
-    const randomTip = this.tipsOfTheDay[Math.floor(Math.random() * this.tipsOfTheDay.length)];
-    const tip = ui.divText(`💡 Tip of the day: ${randomTip}`, 'power-pack-activity-widget-spotlight-tip');
+    const randomizedTips = [...this.tipsOfTheDay, ...this.demosOfTheDay];
+    const randomTip = randomizedTips[Math.floor(Math.random() * randomizedTips.length)];
+
+    const tip = ui.divText(`💡 ${randomTip instanceof DG.Func ? 'Demo' : 'Tip'} of the day: ${randomTip instanceof DG.Func ? '' : randomTip}`, 'power-pack-activity-widget-spotlight-tip');
+    if (randomTip instanceof DG.Func) {
+      const demoApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'demoApp'})[0];
+      if (demoApp) {
+        const path = randomTip.options[DG.FUNC_OPTIONS.DEMO_PATH] as string;
+        const pathArray = path.split('|').map((s) => s.trim());
+        const actualPath = pathArray.map((s) => s.replaceAll(' ', '-')).join('/');
+        tip.appendChild(ui.link(pathArray[pathArray.length - 1], async () => await demoApp.apply({path: `/${actualPath}`}), randomTip.description));
+      }
+    }
     root.appendChild(tip);
 
     setTimeout(() => this.cleanLists(), 500);
@@ -309,7 +321,7 @@ export class ActivityDashboardWidget extends DG.Widget {
       createLinkWithIcon('Explore more Tutorials', async () => await tutorialsApp.apply(), tutorialsApp),
     ]);
     gettingStartedList.classList.add('power-pack-activity-widget-subwidget-list-content', 'power-pack-activity-widget-getting-started-subwidget-list-content');
-    const gettingStartedRoot = ui.divV([ui.h3(ui.span([ui.span(['Getting Started'])]), 'power-pack-activity-widget-spotlight-column-header'),
+    const gettingStartedRoot = ui.divV([ui.h3(ui.span([ui.iconFA('rocket'), ui.span([' Getting Started'])]), 'power-pack-activity-widget-spotlight-column-header'),
       gettingStartedList], 'power-pack-activity-widget-spotlight-getting-started-column');
 
     const tryDemoAppsList = ui.list([
@@ -319,7 +331,7 @@ export class ActivityDashboardWidget extends DG.Widget {
       createLinkWithIcon('Curve Fitting', async () => await demoApp.apply({path: '/Curves/Curve-Fitting'}), demoApp),
     ]);
     tryDemoAppsList.classList.add('power-pack-activity-widget-subwidget-list-content', 'power-pack-activity-widget-getting-started-subwidget-list-content');
-    const tryDemoAppsRoot = ui.divV([ui.h3(ui.span([ui.span(['Try Demo Apps'])]), 'power-pack-activity-widget-spotlight-column-header'),
+    const tryDemoAppsRoot = ui.divV([ui.h3(ui.span([ui.iconFA('play-circle'), ui.span([' Try Demo Apps'])]), 'power-pack-activity-widget-spotlight-column-header'),
       tryDemoAppsList], 'power-pack-activity-widget-spotlight-getting-started-column');
 
     let featuredApps: HTMLElement[] = [];
