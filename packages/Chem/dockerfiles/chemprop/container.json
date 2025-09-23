@@ -1,1 +1,1 @@
-{"cpu": 2, "memory": 3072}
+{"gpu": 1, "cpu": 2, "memory": 3072}
