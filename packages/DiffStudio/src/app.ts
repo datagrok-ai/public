@@ -1013,6 +1013,35 @@ export class DiffStudio {
     }
   }; // saveToModelCatalog
 
+  /** Set multi-axis line chart with the solution */
+  private setSolutionViewer(): void {
+    this.solutionViewer = DG.Viewer.lineChart(this.solutionTable,
+      getLineChartOptions(this.solutionTable.columns.names()));
+
+    this.viewerDockNode = this.solverView.dockManager.dock(
+      this.solutionViewer,
+      DG.DOCK_TYPE.TOP,
+      this.solverView.dockManager.findNode(this.solverView.grid.root),
+      TITLE.MULTI_AXIS,
+      this.uiOpts.graphsDockRatio,
+    );
+
+    removeTitle(this.viewerDockNode);
+  } // setSolutionViewer
+
+  /** */
+  private isSolutionViewerPositionValid(): boolean {
+    if (this.solutionViewer == null)
+      return false;
+
+    if (this.viewerDockNode == null)
+      return false;
+
+    return (this.viewerDockNode.parent != null);
+
+    //return (this.solverView.dockManager.findNode(this.solutionViewer.root) != null);
+  }
+
   /** Solve IVP */
   private async solve(ivp: IVP, inputsPath: string): Promise<void> {
     if (this.toPreventSolving)
@@ -1074,20 +1103,22 @@ export class DiffStudio {
       }
 
       // Update the main graph
-      if (!this.solutionViewer) {
-        this.solutionViewer = DG.Viewer.lineChart(this.solutionTable,
-          getLineChartOptions(this.solutionTable.columns.names()));
+      if (!this.solutionViewer)
+        this.setSolutionViewer();
 
-        this.viewerDockNode = grok.shell.dockManager.dock(
-          this.solutionViewer,
-          DG.DOCK_TYPE.TOP,
-          this.solverView.dockManager.findNode(this.solverView.grid.root),
-          TITLE.MULTI_AXIS,
-          this.uiOpts.graphsDockRatio,
-        );
+      // this.solutionViewer = DG.Viewer.lineChart(this.solutionTable,
+      //   getLineChartOptions(this.solutionTable.columns.names()));
 
-        removeTitle(this.viewerDockNode);
-      } else {
+      // this.viewerDockNode = this.solverView.dockManager.dock(
+      //   this.solutionViewer,
+      //   DG.DOCK_TYPE.TOP,
+      //   this.solverView.dockManager.findNode(this.solverView.grid.root),
+      //   TITLE.MULTI_AXIS,
+      //   this.uiOpts.graphsDockRatio,
+      // );
+
+      // removeTitle(this.viewerDockNode);
+      else {
         this.solutionViewer.dataFrame = this.solutionTable;
 
         if (ivp.updates) {
@@ -1108,7 +1139,13 @@ export class DiffStudio {
           this.facetGridDiv = this.getFacetPlot();
 
           setTimeout( () => {
-            this.facetGridNode = grok.shell.dockManager.dock(
+            if (!this.isSolutionViewerPositionValid()) {
+              this.solutionViewer.close();
+              this.viewerDockNode.container.destroy();
+              this.setSolutionViewer();
+            }
+
+            this.facetGridNode = this.solverView.dockManager.dock(
               this.facetGridDiv,
               DG.DOCK_TYPE.FILL,
               this.viewerDockNode,
@@ -1232,7 +1269,7 @@ export class DiffStudio {
 
     if (this.solutionViewer && this.viewerDockNode) {
       this.removeFacetGrid();
-      grok.shell.dockManager.close(this.viewerDockNode);
+      this.solverView.dockManager.close(this.viewerDockNode);
       this.solutionViewer = null;
       this.solverView.path = PATH.EMPTY;
     }
@@ -2195,7 +2232,16 @@ export class DiffStudio {
   /** Remove FacetGrid visualization */
   private removeFacetGrid() {
     if (this.facetGridNode && this.facetGridDiv) {
-      grok.shell.dockManager.close(this.facetGridNode);
+      console.log('Destroying...');
+
+      if (this.facetGridNode.parent)
+        this.solverView.dockManager.close(this.facetGridNode);
+      else {
+        this.facetGridNode.container.float();
+        this.facetGridDiv.remove();
+        this.facetGridNode.container.destroy();
+      }
+
       this.facetGridDiv = null;
     }
   }
