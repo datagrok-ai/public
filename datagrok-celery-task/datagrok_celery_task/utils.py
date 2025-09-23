@@ -2,6 +2,7 @@ import re
 from enum import Enum
 import io
 import pandas as pd
+import numpy as np
 from datetime import datetime
 from typing import Any
 
