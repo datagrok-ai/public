@@ -90,7 +90,7 @@ category('revvity signals functions', () => {
 
   test('getUsers', async () => {
     const users = JSON.parse(await funcs.getUsers());
-    expect(Object.keys(users).length > 0, true, 'Returned empty users list');
+    expect(users.length > 0, true, 'Returned empty users list');
   });
 
   test('getTags', async () => {

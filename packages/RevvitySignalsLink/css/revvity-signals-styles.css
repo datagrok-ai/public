@@ -79,3 +79,7 @@
     visibility: visible;
     padding-bottom: 10px;
 }
+
+.revvity-signals-statistics-hide-header .header {
+    display: none;
+}

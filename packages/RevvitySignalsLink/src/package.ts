@@ -6,14 +6,14 @@ import { u2 } from "@datagrok-libraries/utils/src/u2";
 import '../css/revvity-signals-styles.css';
 import { SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
 import { queryEntities, queryLibraries, queryMaterialById, queryTags, queryTerms, queryUsers, RevvityApiResponse, RevvityData, RevvityUser } from './revvity-api';
-import { dataFrameFromObjects, reorderColummns, transformData, createRevvityResponseWidget, getViewNameByCompoundType } from './utils';
+import { dataFrameFromObjects, reorderColummns, transformData, createRevvityResponseWidget, getViewNameByCompoundType, getAppHeader } from './utils';
 import { addMoleculeStructures, assetsQuery, retrieveQueriesMap } from './compounds';
-import { getRevvityUsersWithMapping } from './users';
 import { createInitialSatistics, getRevvityLibraries, RevvityLibrary, RevvityType } from './libraries';
 import { createViewForExpandabelNode, createViewFromPreDefinedQuery, handleInitialURL } from './view-utils';
 import { createSavedSearchesSatistics, SAVED_SEARCH_STORAGE } from './search-utils';
 import { funcs } from './package-api';
-import { ID_COL_NAME, MOL_COL_NAME } from './constants';
+import { ID_COL_NAME, MOL_COL_NAME, USER_FIELDS } from './constants';
+import { getRevvityUsers } from './users';
 
 
 export const _package = new DG.Package();
@@ -38,18 +38,8 @@ let config: RevvityConfig = { libraries: undefined };
 export async function revvitySignalsLinkApp(path?: string): Promise<DG.ViewBase> {
 
   console.log(path);
-  const appHeader = u2.appHeader({
-    iconPath: _package.webRoot + '/img/revvity.png',
-    learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/RevvitySignalsLink/README.md',
-    description: '- Integrate with your Revvity account.\n' +
-      '- Browse the tenant content.\n' +
-      '- Perfrom searches through you tenant.' +
-      '- Find contextual information on entities like assets, batches etc.\n' +
-      '- Analyze assay data.'
-  });
-
-  const statsDiv = ui.div('', {style: {position: 'relative'}});
-  const view = DG.View.fromRoot(ui.divV([appHeader, statsDiv]));
+  const initViewDiv = ui.divV([]);
+  const view = DG.View.fromRoot(initViewDiv);
   view.name = 'Revvity';
 
   if (path) {
@@ -57,7 +47,7 @@ export async function revvitySignalsLinkApp(path?: string): Promise<DG.ViewBase>
     cddNode.expanded = true;
     handleInitialURL(cddNode, path);
   } else
-    createInitialSatistics(statsDiv);
+    createInitialSatistics(initViewDiv);
 
   return view;
 
@@ -71,7 +61,7 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
   ui.setUpdateIndicator(loadingNode.captionLabel, true);
   let libs;
   try {
-    await getRevvityUsersWithMapping();
+    await getRevvityUsers();
     libs = await getRevvityLibraries();
   } catch(e: any) {
     loadingNode.remove();
@@ -98,7 +88,7 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
     }
   }
 
-  const savedSearchesNode = treeNode.group('Saved searches');
+  const savedSearchesNode = treeNode.group('Saved Searches');
   savedSearchesNode.onSelected.subscribe(() => createViewForExpandabelNode('saved searches', createSavedSearchesSatistics));
   for (const lib of libs) {
     const libNode = savedSearchesNode.group(lib.name);
@@ -137,6 +127,11 @@ export async function searchEntities(query: string, params: string): Promise<DG.
   const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
   const rows = await transformData(data);
   const df = DG.DataFrame.fromObjects(rows)!;
+  USER_FIELDS.forEach((field) => {
+    const col = df.col(field);
+    if (col)
+      col.semType = DG.TYPE.USER;
+  })
   return df;
 }
 
@@ -169,13 +164,13 @@ export async function searchEntitiesWithStructures(query: string, params: string
 //meta.cache.invalidateOn: 0 0 * * *
 //output: string users
 export async function getUsers(): Promise<string> {
-  const users: { [key: string]: RevvityUser } = {};
+  const users: RevvityUser[] = [];
   const response = await queryUsers();
   if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
     return '{}';
   const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
   for (const user of data)
-    users[user.id] = Object.assign({}, user.attributes || {});
+    users.push(user.attributes);
   return JSON.stringify(users);
 }
 

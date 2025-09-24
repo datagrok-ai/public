@@ -5,11 +5,11 @@ import * as DG from 'datagrok-api/dg';
 import { ComplexCondition, Operators, QueryBuilder, QueryBuilderLayout, SUGGESTIONS_FUNCTION } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { convertComplexConditionToSignalsSearchQuery, SignalsSearchQuery } from './signals-search-query';
 import { materialsCondition } from './compounds';
-import { getRevvityLibraries } from './libraries';
+import { createLibsObjectForStatistics, getRevvityLibraries, RevvityLibrary } from './libraries';
 import { getDefaultProperties, REVVITY_FIELD_TO_PROP_TYPE_MAPPING } from './properties';
 import { getTerms } from './package';
-import { createPath, openRevvityNode, setUserColumnsStyle } from './view-utils';
-import { getCompoundTypeByViewName, getViewNameByCompoundType } from './utils';
+import { createPath, createViewForExpandabelNode, createViewFromPreDefinedQuery, openRevvityNode, setUserColumnsStyle } from './view-utils';
+import { getAppHeader, getCompoundTypeByViewName, getViewNameByCompoundType } from './utils';
 
 export const SAVED_SEARCH_STORAGE = 'RevvitySignalsLinkSavedSearch'
 
@@ -262,65 +262,98 @@ async function loadSearchQuery(libName: string, compoundType: string, queryBuild
 
 export async function createSavedSearchesSatistics(statsDiv: HTMLElement, libName?: string, entityType?: string) {
 
-  ui.setUpdateIndicator(statsDiv, true, 'Loading saved searches...');
-  const libs = await getRevvityLibraries();
-  const libObjForTable: any[] = [];
-  for (const lib of libs) {
-    if (libName && lib.name !== libName)
-      continue;
-    for (const libType of lib.types) {
-      if (entityType && libType !== libType)
-        continue;
-      const storageKey = `${lib.name}|${libType.name}`;
-      const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, storageKey) || '{}';
-      const savedSearches: { [key: string]: string } = JSON.parse(savedSearchesStr);
-      const searchNames = Object.keys(savedSearches);
-      for (const search of searchNames)
-        libObjForTable.push({ libName: lib.name, libType: libType.name, search: search });
-    }
-  }
+  const searchesDiv = ui.divV([getAppHeader()]);
+  statsDiv.append(searchesDiv);
+  const tableDiv = ui.div('', { style: { position: 'relative', paddingTop: '15px' } });
+  searchesDiv.append(tableDiv);
+  ui.setUpdateIndicator(tableDiv, true, 'Loading saved searches...');
 
-  const statsElement = createSavedSearchStats(libObjForTable, libName, entityType);
-  statsDiv.append(statsElement);
-  ui.setUpdateIndicator(statsDiv, false);
+  getRevvityLibraries().then(async (libs: RevvityLibrary[]) => {
+    const libObjForTable: any[] = [];
+    for (const lib of libs) {
+      if (libName && lib.name !== libName)
+        continue;
+      for (const libType of lib.types) {
+        if (entityType && libType.name !== entityType)
+          continue;
+        const storageKey = `${lib.name}|${libType.name}`;
+        const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, storageKey) || '{}';
+        const savedSearches: { [key: string]: string } = JSON.parse(savedSearchesStr);
+        const searchNames = Object.keys(savedSearches);
+        for (const search of searchNames)
+          libObjForTable.push({ libName: lib.name, libType: libType.name, search: search });
+      }
+    }
+
+    const statsElement = await createSavedSearchStats(libObjForTable, libName, entityType);
+    tableDiv.append(statsElement);
+    ui.setUpdateIndicator(tableDiv, false);
+  });
 }
 
-function createSavedSearchStats(libObjForTable: any[], libName?: string, libType?: string): HTMLElement {
+async function createSavedSearchStats(savedSearchesForTable: any[], libName?: string, libType?: string): Promise<HTMLElement> {
   const outputArr: string[] = ['Library', 'Type', 'Search'];
+  let libObjForTable: any[] = [];
+  if (!savedSearchesForTable.length) {
+    libObjForTable = await createLibsObjectForStatistics(libName);
+    if (libType)
+      libObjForTable = libObjForTable.filter((it) => it.libType === libType);
+  }
   let header = 'Saved Searches';
 
   if (libName) {
     outputArr.splice(0, 1);
-    header += ` | ${libName}`;
+    header += ` > ${libName}`;
   }
 
   if (libType) {
     outputArr.splice(0, 1);
     const entityTypeName = getViewNameByCompoundType(libType);
-    header += ` | ${entityTypeName.charAt(0).toUpperCase()}${entityTypeName.slice(1)}`;
+    header += ` > ${entityTypeName.charAt(0).toUpperCase()}${entityTypeName.slice(1)}`;
   }
 
-  const table = ui.table(libObjForTable, (search) => {
-    const arr = [
-      search.libName ?? '',
-      search.libType ?? '',
-      ui.link(search.search, () => {
-        const node = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').getOrCreateGroup('Chem').getOrCreateGroup('Revvity Signals');
-        node.expanded = true;
-        openRevvityNode(node, ['saved searches', search.libName, getViewNameByCompoundType(search.libType)], search.search, search.libName, search.libType, undefined, true);
-      }),
-    ];
-    if (libName)
-      arr.splice(0, 1);
+  const createStatsTable = () => {
+    const table = ui.table(!savedSearchesForTable.length ? libObjForTable : savedSearchesForTable, (search) => {
+      const arr = [
+        search.libName ?? '',
+        search.libType ? search.libType.charAt(0).toUpperCase() + search.libType.slice(1) : '',
+        ui.link(savedSearchesForTable.length ? search.search : 'New search', () => {
+          const node = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').getOrCreateGroup('Chem').getOrCreateGroup('Revvity Signals');
+          node.expanded = true;
+          if (!savedSearchesForTable.length)
+            openRevvityNode(node, [search.libName, getViewNameByCompoundType(search.libType)], search.libType, search.libName, search.libType);
+          else
+            openRevvityNode(node, ['saved searches', search.libName, getViewNameByCompoundType(search.libType)], search.search, search.libName, search.libType, undefined, true);
+        }),
+      ];
+      if (libName)
+        arr.splice(0, 1);
 
-    if (libType)
-      arr.splice(0, 1);
+      if (libType)
+        arr.splice(0, 1);
 
-    return arr;
-  },
-    outputArr);
-  return ui.div([
-    ui.h3(header),
-    table
-  ]);
+      return arr;
+    },
+      outputArr);
+    return table;
+  }
+
+  const statsDiv = ui.div([ui.h1(header, {style: {paddingLeft: '10px'}})]);
+
+  if (!savedSearchesForTable.length) {
+    let infoStr = `No searches have been saved `;
+    if (libName) {
+      infoStr += `for ${libName}`;
+      if (libType) {
+        infoStr += ` > ${libType.charAt(0).toUpperCase() + libType.slice(1)}`;
+      }
+    } 
+    statsDiv.append(ui.info(infoStr));
+  }
+
+  const table = createStatsTable();
+  if (outputArr.length === 1)
+      table.classList.add('revvity-signals-statistics-hide-header');
+  statsDiv.append(table);
+  return statsDiv;
 }

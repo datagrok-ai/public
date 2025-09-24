@@ -2,11 +2,14 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
 import * as ui from 'datagrok-api/ui';
-import { getRevvityUsersWithMapping } from './users';
+import { getRevvityUsers } from './users';
 import { queryEntityById, RevvityApiResponse, RevvityData, RevvityUser } from './revvity-api';
 
 import { awaitCheck } from '@datagrok-libraries/utils/src/test';
 import { compoundTypeAndViewNameMapping, ENTITY_FIELDS_TO_EXCLUDE, FIELDS_SECTION_NAME, FIELDS_TO_EXCLUDE_FROM_WIDGET, FIRST_COL_NAMES, MOL_COL_NAME, MOLECULAR_FORMULA_FIELD_NAME, PARAMS_KEY, QUERY_KEY, STORAGE_NAME, SUBMITTER_FIELD_NAME, TABS_TO_EXCLUDE_FROM_WIDGET, TAGS_TO_EXCLUDE, USER_FIELDS } from './constants';
+import { getRevvityLibraries } from './libraries';
+import { u2 } from '@datagrok-libraries/utils/src/u2';
+import { _package } from './package';
 
 
 function extractNameFromJavaObjectString(javaString: string): string {
@@ -306,6 +309,7 @@ export function createRevvityResponseWidget(response: RevvityApiResponse, idSemV
 }
 
 export async function transformData(data: Record<string, any>[]): Promise<Record<string, any>[]> {
+  const users = await getRevvityUsers();
   const items = [];
   for (const item of data) {
         const result: any = { id: item.id };
@@ -316,8 +320,14 @@ export async function transformData(data: Record<string, any>[]): Promise<Record
         continue;
       //handle fileds related to users
       if (USER_FIELDS.includes(key)) {
-        const user = (await getRevvityUsersWithMapping())![value as string].revvityUser as RevvityUser;
-        result[key] = user.userId;
+        let userArr = users?.filter((it) => it.userId === value);
+        let userString = 'unknown user';
+        if (userArr?.length) {
+          const user = userArr[0];
+          userString = user.email ?? user.userName ??
+          (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.userId ?? 'unknown user');
+        }
+        result[key] = userString;
         continue;
       }
       if (Array.isArray(value)) {
@@ -406,4 +416,18 @@ export async function getEntityPropByEntityId(propName: string, id: string): Pro
     grok.shell.error(e.message ?? e);
   }
   return prop;
+}
+
+export function getAppHeader(): HTMLElement {
+  const appHeader = u2.appHeader({
+      iconPath: _package.webRoot + '/img/revvity.png',
+      learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/RevvitySignalsLink/README.md',
+      description: '- Connect to your Revvity account\n' +
+        '- Run, save, and share searches\n' +
+        '- Visualize & analyze assay data: assets, batches, and more',
+      appTitle: 'RevvityLink',
+      appSubTitle: 'Access and analyze your assay data',
+      bottomLine: true
+    });
+  return appHeader;
 }

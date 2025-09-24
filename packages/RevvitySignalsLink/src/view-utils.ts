@@ -8,7 +8,6 @@ import { getCompoundTypeByViewName, getViewNameByCompoundType } from './utils';
 import { retrieveQueriesMap } from './compounds';
 import { ComplexCondition } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { RevvityUser } from './revvity-api';
-import { getRevvityUsersWithMapping } from './users';
 import { USER_FIELDS } from './constants';
 
 
@@ -153,7 +152,7 @@ export async function handleInitialURL(treeNode: DG.TreeViewGroup, url: string) 
 export function createViewForExpandabelNode(viewName: string,
   getElement:(root: HTMLElement, libName?: string, typeName?: string) => Promise<void>, libName?: string, typeName?: string) {
   openedView?.close();
-  const div = ui.div()
+  const div = ui.div();
   openedView = grok.shell.addPreview(DG.View.fromRoot(div));
   const name = typeName ? getViewNameByCompoundType(typeName) : libName ?? viewName;
   openedView.name = name.charAt(0).toUpperCase() + name.slice(1);
@@ -175,8 +174,6 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
   openedView = grok.shell.addTablePreview(df);
   openedView.name = name.charAt(0).toUpperCase() + name.slice(1);
   openedView.path = createPath(path);
-  const users = await getRevvityUsersWithMapping();
-  setUserColumnRenderer(openedView as DG.TableView, users ?? {});
 
   if (isSavedSearch && !initialSearchQuery) {
     const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, `${libName}|${compoundType}`) || '{}';
@@ -217,32 +214,6 @@ export function setUserColumnsStyle(tv: DG.TableView) {
     if (col) {
       col.cellType = 'html';
       col.width = 100;
-    }
-  });
-}
-
-function setUserColumnRenderer(tv: DG.TableView, users: {[key: string]: {revvityUser: RevvityUser, datagrokUser?: DG.User}}) {
-    tv.grid.onCellPrepare(async (gc) => {
-    if (USER_FIELDS.includes(gc.cell.column?.name) && gc.cell.value && !gc.isColHeader) {
-
-        //gc.cell.value is revvity user id
-        const user = users[gc.cell.value];
-        const datagrokUser = user?.datagrokUser;
-        const revvityUser = user?.revvityUser;
-
-        if (datagrokUser) {
-          const icon = DG.ObjectHandler.forEntity(datagrokUser)?.renderIcon(datagrokUser.dart);
-          if (icon) {
-            icon.style.top = 'calc(50% - 8px)';
-            icon.style.left = 'calc(50% - 8px)';
-            gc.style.element = ui.tooltip.bind(icon, () => {
-              return DG.ObjectHandler.forEntity(datagrokUser)?.renderTooltip(datagrokUser.dart)!;
-            });
-          }
-        } else {
-          gc.style.element = ui.divText(revvityUser.firstName && revvityUser.lastName ? `${revvityUser.firstName} ${revvityUser.lastName}` : revvityUser.userName ?? `user #${gc.cell.value}`);
-        }
-      
     }
   });
 }

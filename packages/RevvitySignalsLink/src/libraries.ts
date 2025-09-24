@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { RevvityUser } from "./revvity-api";
 import { openRevvityNode } from './view-utils';
+import { getAppHeader } from './utils';
 
 
 export type RevvityLibrary = {
@@ -28,19 +29,18 @@ export async function getRevvityLibraries(): Promise<RevvityLibrary[]> {
 
 export async function createInitialSatistics(statsDiv: HTMLElement, libName?: string) {
 
-  ui.setUpdateIndicator(statsDiv, true, 'Loading statistics...');
-  const libs = await getRevvityLibraries();
-  const libObjForTable: any[] = [];
-  for (const lib of libs) {
-    if (libName && lib.name !== libName)
-      continue;
-    for (const libType of lib.types)
-      libObjForTable.push({ libName: lib.name, libType: libType.name, count: libType.count });
-  }
+  const header = getAppHeader();
+  statsDiv.append(header);
+
+  const tableDiv = ui.div('', {style: {position: 'relative', paddingTop: '15px'}});
+  statsDiv.append(tableDiv);
+
+  ui.setUpdateIndicator(tableDiv, true, 'Loading statistics...');
+  const libObjForTable: any[] = await createLibsObjectForStatistics();
 
   const statsElement = createLibsStatsTable(libObjForTable, libName);
-  statsDiv.append(statsElement);
-  ui.setUpdateIndicator(statsDiv, false);
+  tableDiv.append(statsElement);
+  ui.setUpdateIndicator(tableDiv, false);
 }
 
 function createLibsStatsTable(libObjForTable: any[], libName?: string): HTMLElement {
@@ -49,7 +49,7 @@ function createLibsStatsTable(libObjForTable: any[], libName?: string): HTMLElem
   const table = ui.table(libObjForTable, (lib) => {
     const arr = [
       lib.libName ?? '',
-      lib.libType ?? '',
+      lib.libType ? lib.libType.charAt(0).toUpperCase() + lib.libType.slice(1) : '',
       ui.link(lib.count, () => {
         const node = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').getOrCreateGroup('Chem').getOrCreateGroup('Revvity Signals');
         node.expanded = true;
@@ -63,5 +63,17 @@ function createLibsStatsTable(libObjForTable: any[], libName?: string): HTMLElem
   },
     output);
 
-  return libName ? ui.div([ui.h3(libName), table]) : table;
+  return libName ? ui.div([ui.h1(libName, {style: {paddingLeft: '10px'}}), table]) : table;
+}
+
+export async function createLibsObjectForStatistics(libName?: string) {
+    const libs = await getRevvityLibraries();
+    const libObjForTable: any[] = [];
+    for (const lib of libs) {
+      if (libName && lib.name !== libName)
+        continue;
+      for (const libType of lib.types)
+        libObjForTable.push({ libName: lib.name, libType: libType.name, count: libType.count });
+    }
+    return libObjForTable;
 }
