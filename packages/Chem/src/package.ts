@@ -2077,7 +2077,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Demo R Group Analysis',
     description: 'R Group Analysis including R-group decomposition and  visual analysis of the obtained R-groups',
-    meta: {demoPath: 'Cheminformatics | R-Group Analysis', demoSkip: 'GROK-14320'},
+    meta: {demoPath: 'Cheminformatics | R-Group Analysis', demoSkip: 'GROK-14320', isDemoDashboard: 'true'},
   })
   static async demoRgroupAnalysis(): Promise<void> {
     await _demoRGroups();
@@ -2087,7 +2087,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Demo Activity Cliffs',
     description: 'Searching similar structures with significant activity difference',
-    meta: {demoPath: 'Cheminformatics | Molecule Activity Cliffs', demoSkip: 'GROK-14320'},
+    meta: {demoPath: 'Cheminformatics | Molecule Activity Cliffs', demoSkip: 'GROK-14320', isDemoDashboard: 'true'},
   })
   static async demoMoleculeActivityCliffs(): Promise<void> {
     await _demoActivityCliffsLayout();
@@ -2096,7 +2096,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Demo Chemical Space',
     description: 'Maps the dataset to 2D plot based on similarity',
-    meta: {demoPath: 'Cheminformatics | Chemical Space', demoSkip: 'GROK-14320'},
+    meta: {demoPath: 'Cheminformatics | Chemical Space', demoSkip: 'GROK-14320', isDemoDashboard: 'true'},
   })
   static async demoChemicalSpace(): Promise<void> {
     await _demoChemicalSpace();

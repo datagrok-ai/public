@@ -535,6 +535,7 @@ export async function demoBioSimilarityDiversity() : Promise<void> {
 }
 
 //description: Exploring sequence space of Macromolecules, comparison with hierarchical clustering results
+//meta.isDemoDashboard: true
 //meta.demoPath: Bioinformatics | Sequence Space
 //meta.path: /apps/Tutorials/Demo/Bioinformatics/Sequence%20Space
 export async function demoBioSequenceSpace() : Promise<void> {

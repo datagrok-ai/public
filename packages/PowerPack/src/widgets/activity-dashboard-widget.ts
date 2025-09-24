@@ -263,7 +263,7 @@ export class ActivityDashboardWidget extends DG.Widget {
     // }
 
     if (root.children.length === 0)
-      root = this.getNewUserInfoColumns();
+      root = await this.getNewUserInfoColumns();
 
     const additionalFuncs = DG.Func.find({meta: {'isActivityWidget': 'true'}});
     for (const func of additionalFuncs) {
@@ -294,7 +294,7 @@ export class ActivityDashboardWidget extends DG.Widget {
     return root;
   }
 
-  getNewUserInfoColumns(): HTMLDivElement {
+  async getNewUserInfoColumns(): Promise<HTMLDivElement> {
     const root = ui.divH([], 'power-pack-activity-widget-spotlight-root');
     const tutorialsApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'trackOverview'})[0];
     const demoApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'demoApp'})[0];
@@ -312,6 +312,28 @@ export class ActivityDashboardWidget extends DG.Widget {
         link.appendChild(appElement);
       }
       return link;
+    };
+
+    const getDemoDashboardName = (demo: DG.Func) => {
+      const path = demo.options[DG.FUNC_OPTIONS.DEMO_PATH] as string;
+      const pathArray = path.split('|').map((s) => s.trim());
+      return pathArray[pathArray.length - 1];
+    };
+
+    const sortDemoDashboards = (items: DG.Func[], priorities: string[]): DG.Entity[] => {
+      const getPriority = (item: DG.Func) => {
+        for (let i = 0; i < priorities.length; i++)
+          if (getDemoDashboardName(item).toLowerCase().includes(priorities[i].toLowerCase()))
+            return i;
+        return priorities.length;
+      };
+      return items.map((item, index) => ({item, index})).sort((a, b) => {
+        const pa = getPriority(a.item);
+        const pb = getPriority(b.item);
+        if (pa !== pb)
+          return pa - pb;
+        return a.index - b.index;
+      }).map((obj) => obj.item);
     };
 
     const gettingStartedList = ui.list([
@@ -334,27 +356,33 @@ export class ActivityDashboardWidget extends DG.Widget {
     const tryDemoAppsRoot = ui.divV([ui.h3(ui.span([ui.iconFA('play-circle'), ui.span([' Try Demo Apps'])]), 'power-pack-activity-widget-spotlight-column-header'),
       tryDemoAppsList], 'power-pack-activity-widget-spotlight-getting-started-column');
 
-    let featuredApps: HTMLElement[] = [];
-    const hitDesignApp = DG.Func.find({tags: ['app'], package: 'HitTriage', name: 'hitTriageApp'})[0];
-    if (hitDesignApp)
-      featuredApps.push((appHandler?.renderTooltip(DG.toDart(hitDesignApp)).firstChild as HTMLElement) ?? null);
-    const admeticaApp = DG.Func.find({tags: ['app'], package: 'Admetica', name: 'admeticaApp'})[0];
-    if (admeticaApp)
-      featuredApps.push((appHandler?.renderTooltip(DG.toDart(admeticaApp)).firstChild as HTMLElement) ?? null);
-    const diffStudioApp = DG.Func.find({tags: ['app'], package: 'DiffStudio', name: 'runDiffStudio'})[0];
-    if (diffStudioApp)
-      featuredApps.push((appHandler?.renderTooltip(DG.toDart(diffStudioApp)).firstChild as HTMLElement) ?? null);
-    featuredApps = featuredApps.filter((app) => !!app);
+    const dashboardsToShow: HTMLElement[] = [];
+    let medChemDashboard: DG.Project | undefined | null = null;
+    const medChemDashboardId = grok.userSettings.getValue('activity-dashboard-storage', 'medChemDashboardId');
+    if (!medChemDashboardId) {
+      const demoProjects = await grok.dapi.projects.filter('#demo').list();
+      medChemDashboard = demoProjects.find((p) => p.name.toLowerCase().includes('medchem'));
+      if (medChemDashboard)
+        grok.userSettings.put('activity-dashboard-storage', {'medChemDashboardId': medChemDashboard.id});
+    }
+    else
+      medChemDashboard = await grok.dapi.projects.find(medChemDashboardId);
 
-    const featuredAppsList = ui.list([
-      ...featuredApps,
-      ui.link('Explore more Apps', () => setTimeout(() => grok.shell.addView(DG.View.createByType(DG.VIEW_TYPE.APPS)), 100)),
-    ]);
-    featuredAppsList.classList.add('power-pack-activity-widget-subwidget-list-content', 'power-pack-activity-widget-getting-started-subwidget-list-content');
-    const featuredAppsRoot = ui.divV([ui.h3(ui.span([ui.span(['Featured Apps'])]), 'power-pack-activity-widget-spotlight-column-header'),
-      featuredAppsList], 'power-pack-activity-widget-spotlight-getting-started-column');
+    const otherDemoDashboards = DG.Func.find({meta: {'isDemoDashboard': 'true'}});
+    const sortedDemoDashboards = sortDemoDashboards(otherDemoDashboards, ['peptide sar', 'sequence space', 'r-group analysis', 'chemical space', 'molecule activity cliffs']);
+    const demoDashboards: DG.Entity[] = [...(medChemDashboard ? [medChemDashboard] : []), ...sortedDemoDashboards];
+    for (let i = 0; i < Math.min(4, demoDashboards.length); i++) {
+      const demo = demoDashboards[i] instanceof DG.Project ? demoDashboards[i] as DG.Project : demoDashboards[i] as DG.Func;
+      const link = demo instanceof DG.Project ? ui.link('', () => demo.open()) : ui.link('', async () => await demo.apply());
+      link.append(ui.iconSvg('project'), ui.span([demo instanceof DG.Project ? demo.friendlyName : getDemoDashboardName(demo)]));
+      dashboardsToShow.push(ui.span([link], 'd4-link-label'));
+    }
+    const dashboardList = ui.list(dashboardsToShow);
+    dashboardList.classList.add('power-pack-activity-widget-subwidget-list-content', 'power-pack-activity-widget-getting-started-subwidget-list-content');
+    const dashboardsRoot = ui.divV([ui.h3(ui.span([ui.iconFA('table'), ui.span([' Demo Datasets'])]), 'power-pack-activity-widget-spotlight-column-header'),
+      dashboardList], 'power-pack-activity-widget-spotlight-getting-started-column');
 
-    root.append(gettingStartedRoot, tryDemoAppsRoot, featuredAppsRoot);
+    root.append(gettingStartedRoot, tryDemoAppsRoot, dashboardsRoot);
     return root;
   }
 

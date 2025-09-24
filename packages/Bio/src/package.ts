@@ -1146,6 +1146,9 @@ export class PackageFunctions {
     description: 'Exploring sequence space of Macromolecules, comparison with hierarchical clustering results',
     demoPath: 'Bioinformatics | Sequence Space',
     path: '/apps/Tutorials/Demo/Bioinformatics/Sequence%20Space',
+    meta: {
+      isDemoDashboard: 'true'
+    }
   })
   static async demoBioSequenceSpace(): Promise<void> {
     await demoSeqSpace();

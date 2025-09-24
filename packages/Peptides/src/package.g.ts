@@ -82,6 +82,7 @@ export function manualAlignment(_monomer: string) : any {
 //name: Peptide SAR
 //description: Peptide SAR Analysis demo on peptide sequences in FASTA format
 //meta.demoPath: Bioinformatics | Peptide SAR
+//meta.isDemoDashboard: true
 export async function macromoleculeSarFastaDemo() : Promise<void> {
   await PackageFunctions.macromoleculeSarFastaDemo();
 }
