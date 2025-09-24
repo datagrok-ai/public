@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.6.7 (2025-09-24)
+
+Additional parameters for application header renderer
+
 ## 4.6.1 (2025-07-28)
 
 Expect support dayjs
