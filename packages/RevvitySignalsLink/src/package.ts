@@ -126,12 +126,12 @@ export async function searchEntities(query: string, params: string): Promise<DG.
   const response = await queryEntities(queryJson, Object.keys(paramsJson).length ? paramsJson : undefined);
   const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
   const rows = await transformData(data);
-  const df = DG.DataFrame.fromObjects(rows)!;
+  const df = rows.length === 0 ? DG.DataFrame.create() : DG.DataFrame.fromObjects(rows)!;
   USER_FIELDS.forEach((field) => {
     const col = df.col(field);
     if (col)
       col.semType = DG.TYPE.USER;
-  })
+  });
   return df;
 }
 
