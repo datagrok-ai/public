@@ -71,7 +71,6 @@ export async function getBrowserPage(
   let url: string = process.env.HOST ?? '';
   const cfg = getDevKey(url);
   url = cfg.url;
-
   const key = cfg.key;
   const token = await getToken(url, key);
   url = await getWebUrl(url, token);
@@ -282,7 +281,7 @@ export async function loadTestsList(packages: string[], core: boolean = false): 
   for (const testPackage of packageTestsData) {
     for (const key in testPackage.tests) {
       if (testPackage.tests.hasOwnProperty(key)) {
-        for (const testValue of testPackage.tests[key].tests) {
+        for (const testValue of testPackage.tests[key]?.tests ?? []) {
           testValue.packageName = testPackage.packageName;
           testsList.push(testValue);
         }
