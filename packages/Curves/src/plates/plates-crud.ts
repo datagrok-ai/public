@@ -1,8 +1,9 @@
+/* eslint-disable prefer-const */
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {Plate} from '../plate/plate';
-import {Matcher} from './numeric_matcher';
+import {Matcher} from './matchers';
 import {Subject} from 'rxjs';
 import * as api from '../package-api';
 
@@ -52,7 +53,7 @@ export type PropertyCondition = {
 export type PlateQuery = {
   plateMatchers: PropertyCondition[];
   wellMatchers: PropertyCondition[];
-  analysisMatchers: AnalysisCondition[]; 
+  analysisMatchers: AnalysisCondition[];
 }
 
 export type PlateTemplate = {
@@ -93,8 +94,11 @@ export let plateTypes: PlateType[] = [
   {id: 3, name: 'Generic 1536 wells', rows: 32, cols: 48},
 ];
 
-export const plateUniquePropertyValues: DG.DataFrame = DG.DataFrame.create();
-export const wellUniquePropertyValues: DG.DataFrame = DG.DataFrame.create();
+// export const plateUniquePropertyValues: DG.DataFrame = DG.DataFrame.create();
+// export const wellUniquePropertyValues: DG.DataFrame = DG.DataFrame.create();
+
+export let plateUniquePropertyValues: DG.DataFrame = DG.DataFrame.create();
+export let wellUniquePropertyValues: DG.DataFrame = DG.DataFrame.create();
 
 export const plateDbColumn: {[key: string]: string} = {
   [DG.COLUMN_TYPE.FLOAT]: 'value_num',
@@ -111,6 +115,14 @@ export async function initPlates(force: boolean = false) {
 
   if (!_initialized)
     events.subscribe((event) => grok.shell.info(`${event.on} ${event.eventType} ${event.objectType}`));
+  const [templatesDf, propertiesDf, typesDf, plateUniquesDf, wellUniquesDf] = await Promise.all([
+    api.queries.getPlateTemplates(),
+    api.queries.getProperties(),
+    api.queries.getPlateTypes(),
+    grok.functions.call('Curves:getUniquePlatePropertyValues'),
+    grok.functions.call('Curves:getUniqueWellPropertyValues'),
+  ]);
+
 
   // Fetch all templates and all properties
   plateTemplates = (await api.queries.getPlateTemplates()).toJson();

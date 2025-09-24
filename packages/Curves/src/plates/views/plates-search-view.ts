@@ -3,7 +3,7 @@ import {AnalysisCondition, AnalysisProperty, drcAnalysisProperties, getPlateUniq
 
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {NumericMatcher, StringInListMatcher} from '../numeric_matcher';
+import {NumericMatcher, StringInListMatcher, StringMatcher} from '../matchers';
 import * as rxjs from 'rxjs';
 import {
   PlateProperty,
@@ -24,6 +24,8 @@ function getSearchForm(
   getUniqueValues: (prop: any) => string[]
 ): { root: HTMLElement, templateForm: DG.InputForm, otherForm: DG.InputForm } {
   const createInput = (prop: PlateProperty): PropInput | null => {
+    let input: PropInput | null = null;
+
     if (prop.choices && prop.choices.length > 0) {
       let choicesList: string[];
       if (typeof prop.choices === 'string') {
@@ -35,49 +37,44 @@ function getSearchForm(
       } else {
         choicesList = prop.choices;
       }
-
-      const input = ui.input.multiChoice(prop.name, {items: choicesList}) as PropInput;
-      input.prop = prop;
-      return input;
-    } else if (prop.type == DG.TYPE.STRING) {
-      const input = ui.input.multiChoice(prop.name, {items: getUniqueValues(prop)}) as PropInput;
-      input.prop = prop;
-      return input;
-    } else if (prop.type == DG.TYPE.FLOAT || prop.type == DG.TYPE.INT) {
-      const input = ui.input.string(prop.name) as PropInput;
-      input.prop = prop;
+      input = ui.input.multiChoice(prop.name, {items: choicesList}) as PropInput;
+    } else if (prop.type === DG.TYPE.STRING) {
+      const uniqueValues = getUniqueValues(prop);
+      if (uniqueValues.length > 0)
+        input = ui.input.multiChoice(prop.name, {items: uniqueValues}) as PropInput;
+      else
+        input = ui.input.string(prop.name) as PropInput;
+    } else if (prop.type === DG.TYPE.FLOAT || prop.type === DG.TYPE.INT) {
+      input = ui.input.string(prop.name) as PropInput;
       input.addValidator((s) => NumericMatcher.parse(s) ? null : 'Invalid numerical criteria. Example: ">10"');
-      return input;
+    } else if (prop.type === DG.TYPE.BOOL) {
+      input = ui.input.bool(prop.name) as PropInput;
     }
-    return null;
-  }; ; ;
+
+    if (input)
+      input.prop = prop;
+
+
+    return input;
+  };
 
   const templatePropNames = new Set(templateProperties.map((p) => p.name));
 
   const templateInputs = templateProperties.map(createInput).filter((i) => i) as PropInput[];
-  // FIXED: Filter from the full list of properties, not just globals.
   const otherInputs = allProperties.filter((p) => !templatePropNames.has(p.name))
     .map(createInput).filter((i) => i) as PropInput[];
 
   const templateForm = DG.InputForm.forInputs(templateInputs);
   const otherForm = DG.InputForm.forInputs(otherInputs);
 
-  const templateContainer = ui.divV([
-    ui.h3('Template Properties', {style: {marginTop: '0px', marginBottom: '2px'}}),
-    templateForm.root
-  ], {
-    style: {
-      border: '1px solid var(--grey-2)',
-      borderRadius: '5px',
-      padding: '8px',
-      marginBottom: '10px'
-    }
-  });
-
   const root = ui.divV([
-    ...(templateInputs.length > 0 ? [templateContainer] : []),
+    ...(templateInputs.length > 0 ? [
+      ui.h3('Template Properties', {style: {marginTop: '0px', marginBottom: '2px'}}),
+      templateForm.root
+    ] : []),
     ...(otherInputs.length > 0 ? [otherForm.root] : [])
   ]);
+
 
   return {root, templateForm, otherForm};
 }
@@ -103,16 +100,22 @@ function searchFormToMatchers(form: DG.InputForm): PropertyCondition[] {
   if (!form) return matchers;
 
   for (const input of form.inputs as PropInput[]) {
-    if (input.inputType == DG.InputType.MultiChoice && input.value.length > 0) {
-      matchers.push({
-        property: input.prop,
-        matcher: new StringInListMatcher(input.value)
-      });
-    } else if (input.inputType == DG.InputType.Text && input.value !== '' && NumericMatcher.parse(input.value)) {
-      matchers.push({
-        property: input.prop,
-        matcher: NumericMatcher.parse(input.value)!
-      });
+    const prop = input.prop;
+    const value = input.value;
+
+    if (value == null || value === '' || (Array.isArray(value) && value.length === 0))
+      continue;
+
+    if (input.inputType === DG.InputType.MultiChoice) {
+      matchers.push({property: prop, matcher: new StringInListMatcher(value)});
+    } else if (input.inputType === DG.InputType.Text) {
+      if (prop.type === DG.TYPE.INT || prop.type === DG.TYPE.FLOAT) {
+        const numericMatcher = NumericMatcher.parse(value);
+        if (numericMatcher)
+          matchers.push({property: prop, matcher: numericMatcher});
+      } else if (prop.type === DG.TYPE.STRING) {
+        matchers.push({property: prop, matcher: new StringMatcher(value)});
+      }
     }
   }
   return matchers;
@@ -175,6 +178,7 @@ function getSearchView(viewName: string,
     search(query).then((df) => {
       resultsView.dataFrame = df;
       df.name = viewName;
+      resultsView.grid.setOptions({allowEdit: false});
       onResults(resultsView.grid);
     });
   }; ;
@@ -265,8 +269,8 @@ function getSearchView(viewName: string,
   const filterPanel = ui.divV([
     ui.divH([plateTemplateSelector.root, globalSearchInput.root]),
     ui.divH([
-      ui.divV([ui.h2('Plates'), platesFormHost], {style: {flexGrow: '1'}}),
-      ui.divV([ui.h2('Wells'), wellsFormHost], {style: {flexGrow: '1'}})
+      ui.divV([ui.h2('Plates'), platesFormHost], {style: {flexGrow: '1', marginRight: '10px'}}),
+      ui.divV([ui.h2('Wells'), wellsFormHost], {style: {flexGrow: '1', marginLeft: '10px'}})
     ], {style: {width: '100%'}}),
     ui.divV([
       ui.h2('Analysis Results'),
@@ -310,6 +314,5 @@ export const doseRatioAnalysisProperties: AnalysisProperty[] = [
   {name: 'R Squared', type: DG.TYPE.FLOAT, dbColumn: 'r_squared'},
   {name: 'Min Value', type: DG.TYPE.FLOAT, dbColumn: 'min_value'},
   {name: 'Max Value', type: DG.TYPE.FLOAT, dbColumn: 'max_value'},
-  // Note: AUC might not be as relevant for dose-ratio, but keeping for consistency
   {name: 'AUC', type: DG.TYPE.FLOAT, dbColumn: 'auc'},
 ];

@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 type Nullable<T> = T | null;
 
 
@@ -23,10 +24,10 @@ export class StringInListMatcher extends Matcher {
   toSql(variable: string): string {
     if (this.values.length === 0)
       return '(1 = 1)';
-    
+
     const escapedValues = this.values
-      .map(v => `'${v.replace(/'/g, "''")}'`)
-      .join(", ");
+      .map((v) => `'${v.replace(/'/g, '\'\'')}'`)
+      .join(', ');
     return `(${variable} IN (${escapedValues}))`;
   }
 }
@@ -80,7 +81,7 @@ export class NumericMatcher {
     orElse?: () => NumericMatcher,
     matchEmptyPattern?: boolean
   }): Nullable<NumericMatcher> {
-    const { orElse, matchEmptyPattern } = options || {};
+    const {orElse, matchEmptyPattern} = options || {};
     const fail = () => orElse ? orElse() : null;
 
     if (matchEmptyPattern && (!query || query.trim() === ''))
@@ -100,7 +101,7 @@ export class NumericMatcher {
       if (op === NumericMatcher.IN || op === NumericMatcher.NOT_IN) {
         const matchValues = NumericMatcher.inRegex.exec(rest);
         if (matchValues) {
-          const values = matchValues[1].split(',').map(s => parseFloat(s.trim()));
+          const values = matchValues[1].split(',').map((s) => parseFloat(s.trim()));
           if (values.some(isNaN)) return fail();
           matcher.values = values;
           return matcher;
@@ -120,12 +121,13 @@ export class NumericMatcher {
       return new NumericMatcher(NumericMatcher.NONE);
 
     const rangeMatch = NumericMatcher.rangeRegex.exec(query);
-    if (rangeMatch)
+    if (rangeMatch) {
       return new NumericMatcher(
         NumericMatcher.RANGE,
         parseFloat(rangeMatch[1]),
         parseFloat(rangeMatch[2])
       );
+    }
 
     const nullMatch = NumericMatcher.isNullRegExp.exec(query);
     if (nullMatch)
@@ -137,7 +139,7 @@ export class NumericMatcher {
   static matches(query: string, x: number, matchEmptyPattern = false): boolean {
     let matcher: NumericMatcher | undefined | null = this.recentMatchers.get(query);
     if (!matcher) {
-      matcher = this.parse(query, { matchEmptyPattern });
+      matcher = this.parse(query, {matchEmptyPattern});
       if (matcher)
         this.recentMatchers.set(query, matcher);
     }
@@ -149,7 +151,7 @@ export class NumericMatcher {
       return this.op === NumericMatcher.NONE || this.op === NumericMatcher.IS_NULL;
 
     switch ((this.op || '').trim()) {
-      case NumericMatcher.NONE: return false;  // we already know x != null;
+      case NumericMatcher.NONE: return false; // we already know x != null;
       case NumericMatcher.GT: return x > this.v1!;
       case NumericMatcher.GTOE: return x >= this.v1!;
       case NumericMatcher.LT: return x < this.v1!;
@@ -187,5 +189,26 @@ export class NumericMatcher {
       default:
         return `(${variable} ${this.op} ${this.v1})`;
     }
+  }
+}
+
+export class StringMatcher extends Matcher {
+  value: string;
+
+  constructor(value: string) {
+    super();
+    this.value = value;
+  }
+
+  match(x: string | null): boolean {
+    if (x === null || x === undefined)
+      return false;
+    return x.toLowerCase().includes(this.value.toLowerCase());
+  }
+
+  toSql(variable: string): string {
+    // Escape single quotes for SQL, then prepare for a case-insensitive LIKE search
+    const escapedValue = this.value.replace(/'/g, '\'\'');
+    return `(${variable} ILIKE '%${escapedValue}%')`;
   }
 }
