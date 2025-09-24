@@ -171,7 +171,8 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
   openedView?.close();
 
   const df = DG.DataFrame.create();
-  openedView = grok.shell.addTablePreview(df);
+  const tv = grok.shell.addTablePreview(df);
+  openedView = tv;
   openedView.name = name.charAt(0).toUpperCase() + name.slice(1);
   openedView.path = createPath(path);
 
@@ -188,7 +189,7 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
     ui.setUpdateIndicator(openedView!.root, false);
     setBreadcrumbsInViewName([libName, compoundType], treeNode);
     const filtersDiv = ui.divV([], 'revvity-signals-filter-panel');
-    initializeFilters(openedView! as DG.TableView, filtersDiv, libName, compoundType, initialSearchQuery, !isSavedSearch);
+    initializeFilters(tv, filtersDiv, libName, compoundType, initialSearchQuery, !isSavedSearch);
   }
 
   if (!initialSearchQuery) {
