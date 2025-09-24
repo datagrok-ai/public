@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.6.8 (2025-09-24)
+
+Query builder: allow empty values for string input with 'equal' and 'not equat' operators
+
 ## 4.6.7 (2025-09-24)
 
 Additional parameters for application header renderer

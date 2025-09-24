@@ -80,9 +80,12 @@ export class BaseConditionEditor<T = any> {
             this.condition.value = undefined as T;
         const initVal = prop.type === DG.TYPE.DATE_TIME && typeof this.condition.value === 'string' ?
             dayjs(this.condition.value as string) : this.condition.value;
+        //allow null value for '=' and '!=' for string type to create 'is empty', 'is not empty' condition
+        const nullable =  prop.type === DG.TYPE.STRING &&
+            (this.condition.operator === Operators.EQ || this.condition.operator === Operators.NOT_EQ);
         const input = ui.input.forProperty(prop, undefined, {
             value: initVal,
-            nullable: false,
+            nullable: nullable,
             onValueChanged: () => {
                 this.condition.value = input.value as T;
                 this.onChanged.next(this.condition);
