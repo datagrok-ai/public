@@ -8,6 +8,7 @@ from typing import Any
 
 import pyarrow.parquet as pq
 import pyarrow as pa
+import json
 
 from .func_call import Type, FuncCallParam
 
@@ -123,50 +124,50 @@ class ReturnValueProcessor:
             param.value = val.to_csv(index=False).encode("utf-8")
 
     @staticmethod
-     def flatten_columns(df, sep="."):
-         c = df.columns
-         if isinstance(c, pd.MultiIndex):
-             df.columns = [sep.join(map(str, filter(None, x))) for x in c.values]
-         elif isinstance(c, pd.CategoricalIndex):
-             df.columns = c.astype(str)
-         elif not all(isinstance(x, str) for x in c):
-             df.columns = list(map(str, c))
+    def flatten_columns(df, sep="."):
+        c = df.columns
+        if isinstance(c, pd.MultiIndex):
+            df.columns = [sep.join(map(str, filter(None, x))) for x in c.values]
+        elif isinstance(c, pd.CategoricalIndex):
+            df.columns = c.astype(str)
+        elif not all(isinstance(x, str) for x in c):
+            df.columns = list(map(str, c))
 
-         for col in df.columns:
-             s = df[col].dropna().head(10).astype(object)
-             if not s.empty and s.apply(lambda x: isinstance(x, (list, dict))).any():
-                 df[col] = df[col].apply(lambda x: json.dumps(x) if pd.notnull(x) else "")
+        for col in df.columns:
+            s = df[col].dropna().head(10).astype(object)
+            if not s.empty and s.apply(lambda x: isinstance(x, (list, dict))).any():
+                df[col] = df[col].apply(lambda x: json.dumps(x) if pd.notnull(x) else "")
 
-     @staticmethod
-     def fill_nulls_for_export(df):
-         for c in df.columns:
-             s = df[c]
-             if pd.api.types.is_integer_dtype(s):
-                 df[c] = s.fillna(-2147483648)
-             elif pd.api.types.is_float_dtype(s):
-                 df[c] = s.fillna(2.6789344063684636e-34)
-             elif pd.api.types.is_object_dtype(s) or pd.api.types.is_categorical_dtype(s):
-                 df[c] = s.fillna("")
+    @staticmethod
+    def fill_nulls_for_export(df):
+        for c in df.columns:
+            s = df[c]
+            if pd.api.types.is_integer_dtype(s):
+                df[c] = s.fillna(-2147483648)
+            elif pd.api.types.is_float_dtype(s):
+                df[c] = s.fillna(2.6789344063684636e-34)
+            elif pd.api.types.is_object_dtype(s) or pd.api.types.is_categorical_dtype(s):
+                df[c] = s.fillna("")
 
-     @staticmethod
-     def downcast_int64_to_int32(df):
-         def is_nullable_integer_dtype(x):
-             return (
-                 pd.api.types.is_extension_array_dtype(x)
-                 and pd.api.types.pandas_dtype(x).name.startswith("Int")
-             )
+    @staticmethod
+    def downcast_int64_to_int32(df):
+        def is_nullable_integer_dtype(x):
+            return (
+                pd.api.types.is_extension_array_dtype(x)
+                and pd.api.types.pandas_dtype(x).name.startswith("Int")
+            )
 
-         mn, mx = -2_147_483_648, 2_147_483_647
-         for c in df.columns:
-             s = df[c]
-             if pd.api.types.is_integer_dtype(s):
-                 v = s.dropna().astype(np.int64)
-                 if not v.empty and v.min() >= mn and v.max() <= mx:
-                     df[c] = (
-                         s.astype("Int32")
-                         if is_nullable_integer_dtype(s)
-                         else s.astype("int32")
-                     )
+        mn, mx = -2_147_483_648, 2_147_483_647
+        for c in df.columns:
+            s = df[c]
+            if pd.api.types.is_integer_dtype(s):
+                v = s.dropna().astype(np.int64)
+                if not v.empty and v.min() >= mn and v.max() <= mx:
+                    df[c] = (
+                        s.astype("Int32")
+                        if is_nullable_integer_dtype(s)
+                        else s.astype("int32")
+                    )
 
     type_map = {
         Type.INT: set_int.__func__,
