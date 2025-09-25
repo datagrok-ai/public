@@ -1,5 +1,12 @@
 # Diff Studio changelog
 
+## 1.4.3 (2025-09-25)
+
+Fixed
+
+* inconsistency in input captions
+* rearranged tabs behavior
+
 ## 1.4.2 (2025-09-22)
 
 Version update
