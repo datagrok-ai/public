@@ -85,18 +85,47 @@ export class ActivityDashboardWidget extends DG.Widget {
   createRandomizedTipOfTheDay(): HTMLElement {
     const randomizedTips = [...this.tipsOfTheDay, ...this.demosOfTheDay];
     const randomTip = randomizedTips[Math.floor(Math.random() * randomizedTips.length)];
+    const usedTipList = [randomTip];
+    let tipIdx = 0;
 
-    const tip = ui.divText(`💡 ${randomTip instanceof DG.Func ? 'Demo' : 'Tip'} of the day: ${randomTip instanceof DG.Func ? '' : randomTip}`, 'power-pack-activity-widget-spotlight-tip');
-    if (randomTip instanceof DG.Func) {
-      const demoApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'demoApp'})[0];
-      if (demoApp) {
-        const path = randomTip.options[DG.FUNC_OPTIONS.DEMO_PATH] as string;
-        const pathArray = path.split('|').map((s) => s.trim());
-        const actualPath = pathArray.map((s) => s.replaceAll(' ', '-')).join('/');
-        tip.appendChild(ui.link(pathArray[pathArray.length - 1], async () => await demoApp.apply({path: `/${actualPath}`}), randomTip.description));
+    const createTip = (newRandomTip: DG.Func | string) => {
+      const tip = ui.divText('', 'power-pack-activity-widget-spotlight-tip');
+      const tipText = ui.span([`💡 ${newRandomTip instanceof DG.Func ? 'Demo' : 'Tip'} of the day: ${newRandomTip instanceof DG.Func ? '' : newRandomTip}`]);
+      tip.appendChild(tipText);
+      let link: HTMLAnchorElement;
+      if (newRandomTip instanceof DG.Func) {
+        const demoApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'demoApp'})[0];
+        if (demoApp) {
+          const path = newRandomTip.options[DG.FUNC_OPTIONS.DEMO_PATH] as string;
+          const pathArray = path.split('|').map((s) => s.trim());
+          const actualPath = pathArray.map((s) => s.replaceAll(' ', '-')).join('/');
+          link = ui.link(pathArray[pathArray.length - 1], async () => await demoApp.apply({path: `/${actualPath}`}), newRandomTip.description);
+          tip.appendChild(link);
+        }
       }
-    }
-    return tip;
+
+      let prevTipIcon: HTMLElement;
+      let nextTipIcon: HTMLElement;
+      const updateTip = (next: boolean) => {
+        next ? tipIdx++ : tipIdx--;
+        tipIdx === 0 ? prevTipIcon.classList.add('tip-prev-hidden') : prevTipIcon.classList.remove('tip-prev-hidden');
+        const newRandomTip = tipIdx < usedTipList.length ? usedTipList[tipIdx] : randomizedTips[Math.floor(Math.random() * randomizedTips.length)];
+        const newTip = createTip(newRandomTip);
+        tip.replaceWith(newTip);
+      };
+
+      prevTipIcon = ui.iconFA('chevron-left', () => updateTip(false), 'Previous tip');
+      prevTipIcon.classList.add('tip-prev');
+      if (tipIdx === 0)
+        prevTipIcon.classList.add('tip-prev-hidden');
+      nextTipIcon = ui.iconFA('chevron-right', () => updateTip(true), 'Next tip');
+      nextTipIcon.classList.add('tip-next');
+      tipText.prepend(prevTipIcon);
+      tip.appendChild(nextTipIcon);
+
+      return tip;
+    };
+    return createTip(randomTip);
   }
 
   async initSpotlightData(): Promise<void> {
