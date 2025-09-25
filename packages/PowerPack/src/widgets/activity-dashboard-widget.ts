@@ -77,7 +77,6 @@ export class ActivityDashboardWidget extends DG.Widget {
     this.tabControl.onTabChanged.subscribe((_) => this.cleanLists());
     this.tabControl.root.style.height = '100%';
     this.tabControl.root.style.width = '100%';
-    (this.tabControl.root.querySelector('.ui-box.d4-tab-content') as HTMLElement)!.style.overflow = 'scroll';
     this.tabControl.root.appendChild(this.createRandomizedTipOfTheDay());
 
     this.root.appendChild(this.tabControl.root);
