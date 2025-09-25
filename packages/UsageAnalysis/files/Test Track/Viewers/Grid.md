@@ -71,7 +71,7 @@
 
 #### 6. Pick Up / Apply   ([#1887](https://github.com/datagrok-ai/public/issues/1887))
 
-1. For **Average mass** set **Color Coding** and edit color scheme
+1. For **Average mass** set the linear **Color Coding** and edit color scheme
 3. **Pick Up/ Apply > Pick Up**
 3. For **TPSA** column, use **Pick Up/ Apply > Apply** - The **TPSA** column should match the **Average mass** column’s color-coding 
 4. Right-click the grid and select **Grid Color Coding > All**
