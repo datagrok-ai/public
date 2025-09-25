@@ -154,6 +154,8 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
 
 .power-pack-activity-widget-spotlight-tip {
     flex-basis: 100%;
+    position: absolute;
+    bottom: 0;
     margin-left: 20px;
 }
 

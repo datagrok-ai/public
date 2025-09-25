@@ -78,8 +78,26 @@ export class ActivityDashboardWidget extends DG.Widget {
     this.tabControl.root.style.height = '100%';
     this.tabControl.root.style.width = '100%';
     (this.tabControl.root.querySelector('.ui-box.d4-tab-content') as HTMLElement)!.style.overflow = 'scroll';
+    this.tabControl.root.appendChild(this.createRandomizedTipOfTheDay());
 
     this.root.appendChild(this.tabControl.root);
+  }
+
+  createRandomizedTipOfTheDay(): HTMLElement {
+    const randomizedTips = [...this.tipsOfTheDay, ...this.demosOfTheDay];
+    const randomTip = randomizedTips[Math.floor(Math.random() * randomizedTips.length)];
+
+    const tip = ui.divText(`💡 ${randomTip instanceof DG.Func ? 'Demo' : 'Tip'} of the day: ${randomTip instanceof DG.Func ? '' : randomTip}`, 'power-pack-activity-widget-spotlight-tip');
+    if (randomTip instanceof DG.Func) {
+      const demoApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'demoApp'})[0];
+      if (demoApp) {
+        const path = randomTip.options[DG.FUNC_OPTIONS.DEMO_PATH] as string;
+        const pathArray = path.split('|').map((s) => s.trim());
+        const actualPath = pathArray.map((s) => s.replaceAll(' ', '-')).join('/');
+        tip.appendChild(ui.link(pathArray[pathArray.length - 1], async () => await demoApp.apply({path: `/${actualPath}`}), randomTip.description));
+      }
+    }
+    return tip;
   }
 
   async initSpotlightData(): Promise<void> {
@@ -274,20 +292,6 @@ export class ActivityDashboardWidget extends DG.Widget {
         list], 'power-pack-activity-widget-spotlight-column');
       root.appendChild(listRoot);
     }
-    const randomizedTips = [...this.tipsOfTheDay, ...this.demosOfTheDay];
-    const randomTip = randomizedTips[Math.floor(Math.random() * randomizedTips.length)];
-
-    const tip = ui.divText(`💡 ${randomTip instanceof DG.Func ? 'Demo' : 'Tip'} of the day: ${randomTip instanceof DG.Func ? '' : randomTip}`, 'power-pack-activity-widget-spotlight-tip');
-    if (randomTip instanceof DG.Func) {
-      const demoApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'demoApp'})[0];
-      if (demoApp) {
-        const path = randomTip.options[DG.FUNC_OPTIONS.DEMO_PATH] as string;
-        const pathArray = path.split('|').map((s) => s.trim());
-        const actualPath = pathArray.map((s) => s.replaceAll(' ', '-')).join('/');
-        tip.appendChild(ui.link(pathArray[pathArray.length - 1], async () => await demoApp.apply({path: `/${actualPath}`}), randomTip.description));
-      }
-    }
-    root.appendChild(tip);
 
     setTimeout(() => this.cleanLists(), 500);
     console.timeEnd('ActivityDashboardWidget.buildSpotlightTab');
