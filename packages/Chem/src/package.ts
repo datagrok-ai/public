@@ -2096,7 +2096,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Demo Chemical Space',
     description: 'Maps the dataset to 2D plot based on similarity',
-    meta: {demoPath: 'Cheminformatics | Chemical Space', demoSkip: 'GROK-14320', isDemoDashboard: 'true'},
+    meta: {demoPath: 'Cheminformatics | Chemical Space', demoSkip: 'GROK-14320'},
   })
   static async demoChemicalSpace(): Promise<void> {
     await _demoChemicalSpace();

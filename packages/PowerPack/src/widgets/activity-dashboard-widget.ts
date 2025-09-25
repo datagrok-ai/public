@@ -342,6 +342,7 @@ export class ActivityDashboardWidget extends DG.Widget {
 
     const gettingStartedList = ui.list([
       createLinkWithIcon('Data Access', async () => await tutorialsApp.apply(), tutorialsApp),
+      createLinkWithIcon('Data Transformation', async () => await tutorialsApp.apply(), tutorialsApp),
       createLinkWithIcon('Exploratory Data Analysis', async () => await tutorialsApp.apply(), tutorialsApp),
       createLinkWithIcon('Cheminformatics', async () => await tutorialsApp.apply(), tutorialsApp),
       createLinkWithIcon('Explore more Tutorials', async () => await tutorialsApp.apply(), tutorialsApp),
@@ -354,6 +355,7 @@ export class ActivityDashboardWidget extends DG.Widget {
       createLinkWithIcon('Scatter Plot', async () => await demoApp.apply({path: '/Visualization/General/Scatter-Plot'}), demoApp),
       createLinkWithIcon('Files', async () => await demoApp.apply({path: '/Data-Access/Files'}), demoApp),
       createLinkWithIcon('Matched Molecular Pairs', async () => await demoApp.apply({path: '/Cheminformatics/Matched-Molecular-Pairs'}), demoApp),
+      createLinkWithIcon('Trellis Plot', async () => await demoApp.apply({path: '/Visualization/Data-Separation/Trellis-Plot'}), demoApp),
       createLinkWithIcon('Curve Fitting', async () => await demoApp.apply({path: '/Curves/Curve-Fitting'}), demoApp),
     ]);
     tryDemoAppsList.classList.add('power-pack-activity-widget-subwidget-list-content', 'power-pack-activity-widget-getting-started-subwidget-list-content');
@@ -373,9 +375,9 @@ export class ActivityDashboardWidget extends DG.Widget {
       medChemDashboard = await grok.dapi.projects.find(medChemDashboardId);
 
     const otherDemoDashboards = DG.Func.find({meta: {'isDemoDashboard': 'true'}});
-    const sortedDemoDashboards = sortDemoDashboards(otherDemoDashboards, ['peptide sar', 'sequence space', 'r-group analysis', 'chemical space', 'molecule activity cliffs']);
+    const sortedDemoDashboards = sortDemoDashboards(otherDemoDashboards, ['peptide sar', 'sequence space', 'r-group analysis', 'molecule activity cliffs']);
     const demoDashboards: DG.Entity[] = [...(medChemDashboard ? [medChemDashboard] : []), ...sortedDemoDashboards];
-    for (let i = 0; i < Math.min(4, demoDashboards.length); i++) {
+    for (let i = 0; i < Math.min(5, demoDashboards.length); i++) {
       const demo = demoDashboards[i] instanceof DG.Project ? demoDashboards[i] as DG.Project : demoDashboards[i] as DG.Func;
       const link = demo instanceof DG.Project ? ui.link('', () => demo.open()) : ui.link('', async () => await demo.apply());
       link.append(ui.iconSvg('project'), ui.span([demo instanceof DG.Project ? demo.friendlyName : getDemoDashboardName(demo)]));

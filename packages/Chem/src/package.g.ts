@@ -943,7 +943,6 @@ export async function demoMoleculeActivityCliffs() : Promise<void> {
 //description: Maps the dataset to 2D plot based on similarity
 //meta.demoPath: Cheminformatics | Chemical Space
 //meta.demoSkip: GROK-14320
-//meta.isDemoDashboard: true
 export async function demoChemicalSpace() : Promise<void> {
   await PackageFunctions.demoChemicalSpace();
 }
