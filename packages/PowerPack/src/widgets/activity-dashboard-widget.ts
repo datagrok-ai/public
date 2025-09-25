@@ -30,7 +30,7 @@ export class ActivityDashboardWidget extends DG.Widget {
     'Right-click a column to see context actions available for it.',
     'Try the “Correlation Plot” to quickly see relationships between numeric columns.',
   ];
-  demosOfTheDay: DG.Func[] = DG.Func.find({meta: {'demoPath': null}});
+  availableDemosOfTheDay: DG.Func[] = DG.Func.find({meta: {'demoPath': null}});
   tutorialsOfTheDay: string[] = ['Grid Customization', 'Viewers', 'Scatter Plot', 'Embedded Viewers', 'Filters', 'Dashboards',
     'Multivariate Analysis', 'Scripting', 'R-Groups Analysis', 'Activity Cliffs', 'Similarity and Diversity Search',
     'Substructure Search and Filtering', 'Data Connectors', 'Data Aggregation', 'Calculated Columns', 'Differential equations',
@@ -81,14 +81,74 @@ export class ActivityDashboardWidget extends DG.Widget {
     this.tabControl.onTabChanged.subscribe((_) => this.cleanLists());
     this.tabControl.root.style.height = '100%';
     this.tabControl.root.style.width = '100%';
-    this.tabControl.root.appendChild(this.createRandomizedTipOfTheDay());
+    this.tabControl.root.appendChild(await this.createRandomizedTipOfTheDay());
 
     this.root.appendChild(this.tabControl.root);
   }
 
-  createRandomizedTipOfTheDay(): HTMLElement {
-    const randomizedTips = [...this.tipsOfTheDay, ...this.demosOfTheDay, ...this.tutorialsOfTheDay];
-    const randomTip = randomizedTips[Math.floor(Math.random() * randomizedTips.length)];
+  async getDemosOfTheDay(): Promise<string[]> {
+    const demoAppHierarchy = await grok.functions.call('Tutorials:getDemoAppHierarchy');
+    if (demoAppHierarchy == null || demoAppHierarchy.length === 0)
+      return [];
+    const parsedHierarchy = JSON.parse(demoAppHierarchy);
+    const flattenDemoHierarchy = (node: any, path: string[] = []) => {
+      const currentPath = [...path, node.name];
+      if (!node.children || node.children.length === 0)
+        return [currentPath.join(' | ')]; // full path "Category | Subcategory | Demo"
+      return node.children.flatMap((child: any) => flattenDemoHierarchy(child, currentPath));
+    };
+    return parsedHierarchy.children.flatMap((child: any) => flattenDemoHierarchy(child));
+  }
+
+  async createRandomizedTipOfTheDay(): Promise<HTMLElement> {
+    const seededRandom = (seed: string) => {
+      let x = 0;
+      for (let i = 0; i < seed.length; i++) {
+        x += seed.charCodeAt(i);
+        x = (x * 9301 + 49297) % 233280;
+      }
+      return x / 233280;
+    };
+    const getISOWeek = (date: Date) => {
+      const tmpDate = new Date(date.getTime());
+      tmpDate.setHours(0, 0, 0, 0);
+      tmpDate.setDate(tmpDate.getDate() + 3 - ((tmpDate.getDay() + 6) % 7)); // Thursday of this week
+      const week1 = new Date(tmpDate.getFullYear(), 0, 4); // first Thursday of the year
+      return 1 + Math.round(((tmpDate.getTime() - week1.getTime()) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
+    };
+    const today = new Date();
+    const year = today.getFullYear();
+    const weekNumber = getISOWeek(today);
+    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const dayName = [0, 6].includes(today.getDay()) ? 'Friday' : dayNames[today.getDay() - 1];
+    const weekSeed = `${year}-W${weekNumber}-${dayName}`;
+
+    const dayTipTypeMap: Record<string, 'tip' | 'demo' | 'tutorial'> = {
+      Monday: 'demo',
+      Tuesday: 'tip',
+      Wednesday: 'tutorial',
+      Thursday: 'tip',
+      Friday: 'demo',
+      Saturday: 'demo', // repeat Friday
+      Sunday: 'demo', // repeat Friday
+    };
+    const tipType = dayTipTypeMap[dayName];
+    const todayItemListFromType = tipType === 'tip' ? this.tipsOfTheDay : tipType === 'tutorial' ? this.tutorialsOfTheDay : [];
+    const randomizedTips = [...this.tipsOfTheDay, ...this.availableDemosOfTheDay, ...this.tutorialsOfTheDay];
+    let randomTip: DG.Func | string;
+    if (tipType === 'demo') {
+      let demosOfTheDay: (string | DG.Func)[] = await this.getDemosOfTheDay();
+      if (demosOfTheDay.length === 0)
+        demosOfTheDay = this.availableDemosOfTheDay;
+      randomTip = demosOfTheDay.length > 0 ? demosOfTheDay[Math.floor(seededRandom(weekSeed) * demosOfTheDay.length)] : '';
+      if (!(randomTip instanceof DG.Func)) {
+        const demoFunc = DG.Func.find({meta: {'demoPath': randomTip}})[0];
+        randomTip = demoFunc ? demoFunc : this.availableDemosOfTheDay[Math.floor(seededRandom(weekSeed) * this.availableDemosOfTheDay.length)];
+      }
+    }
+    else
+      randomTip = todayItemListFromType.length > 0 ? todayItemListFromType[Math.floor(seededRandom(weekSeed) * todayItemListFromType.length)] : '';
+
     const usedTipList: (DG.Func | string)[] = [randomTip];
     let tipIdx = 0;
     const demoApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'demoApp'})[0];
