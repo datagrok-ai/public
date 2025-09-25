@@ -46,7 +46,7 @@ export async function runSearchQuery(libId: string, compoundType: string,
 }
 
 
-export async function initializeFilters(tv: DG.TableView, filtersDiv: HTMLDivElement, libName: string,
+export async function initializeFilters(treeNode: DG.TreeViewGroup, tv: DG.TableView, filtersDiv: HTMLDivElement, libName: string,
   compoundType: string, initialSearchQuery?: ComplexCondition, changePath?: boolean) {
   const libs = await getRevvityLibraries();
   const selectedLib = libs.filter((l) => l.name === libName);
@@ -75,13 +75,13 @@ export async function initializeFilters(tv: DG.TableView, filtersDiv: HTMLDivEle
     
     //save search icon
     const saveSearchIcon = ui.icons.save(() => {
-      saveSearchQuery(selectedLib[0].name, compoundType, qb)
+      saveSearchQuery(treeNode, selectedLib[0].name, compoundType, qb)
     }, 'Save current search query');
 
 
     //load search icon
     const loadSearchIcon = ui.iconFA('folder-open', () => {
-      loadSearchQuery(selectedLib[0].name, compoundType, qb);
+      loadSearchQuery(treeNode, selectedLib[0].name, compoundType, qb);
     }, 'Load saved search query');
     
     const filtersButton = ui.div(externalFilterIcon);
@@ -175,7 +175,7 @@ function updateQueryBuilderLayout(qb: QueryBuilder, width: number, libId: string
 };
 
 // Function to save search query
-async function saveSearchQuery(libName: string, compoundType: string, queryBuilder: QueryBuilder) {
+async function saveSearchQuery(treeNode: DG.TreeViewGroup, libName: string, compoundType: string, queryBuilder: QueryBuilder) {
 
   const storageKey = `${libName}|${compoundType}`;
   const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, storageKey) || '{}';
@@ -202,19 +202,28 @@ async function saveSearchQuery(libName: string, compoundType: string, queryBuild
       // Save the current query condition
       savedSearches[searchName] = JSON.stringify(queryBuilder.condition);
       grok.userSettings.add(SAVED_SEARCH_STORAGE, storageKey, JSON.stringify(savedSearches));
-      
+
       grok.shell.info(`Search query "${searchName}" saved successfully`);
+
+      //add corresponding saved search to browse view tree
+      const savedSearchesNode = getSavedSearchesNode(treeNode, libName, compoundType);
+      const newSearchNode = savedSearchesNode.item(searchName);
+      newSearchNode.onSelected.subscribe(async () => {
+        await createViewFromPreDefinedQuery(treeNode,
+          ['saved searches', libName, getViewNameByCompoundType(compoundType), searchName], libName, compoundType,
+          JSON.parse(savedSearches[searchName]), true);
+      });
     });
 
   dialog.show();
 }
 
 // Function to load search query
-async function loadSearchQuery(libName: string, compoundType: string, queryBuilder: QueryBuilder) {
+async function loadSearchQuery(treeNode: DG.TreeViewGroup, libName: string, compoundType: string, queryBuilder: QueryBuilder) {
   const storageKey = `${libName}|${compoundType}`;
   const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, storageKey) || '{}';
   const savedSearches: { [key: string]: string } = JSON.parse(savedSearchesStr);
-  
+
   const searchNames = Object.keys(savedSearches);
   if (searchNames.length === 0) {
     grok.shell.info('No saved searches found for this view');
@@ -222,6 +231,7 @@ async function loadSearchQuery(libName: string, compoundType: string, queryBuild
   }
 
   const searchNamesDf = DG.DataFrame.fromColumns([DG.Column.fromList('string', 'name', searchNames)]);
+  searchNamesDf.columns.addNewString('delete');
 
   // Create typeahead input with saved search names
   const searchInput = ui.typeAhead('Search name', {
@@ -236,27 +246,71 @@ async function loadSearchQuery(libName: string, compoundType: string, queryBuild
   });
 
   searchInput.onChanged.subscribe(() => {
-      searchNamesDf.rows.filter((row) => (row.name as string).includes(searchInput.value));
+    searchNamesDf.rows.filter((row) => (row.name as string).includes(searchInput.value));
   });
-  
+
+
+  const savedSearchesGrid = searchNamesDf.plot.grid({allowColumnMenu: false, allowSorting: false});
+  savedSearchesGrid.onCellDoubleClick.subscribe((gc: DG.GridCell) => {
+    if (gc.isTableCell && gc.gridColumn.name === 'name') {
+      const searchName = gc.grid.dataFrame.col('name')?.get(gc.gridRow);
+      loadSavedSearchToQueryBuilder(savedSearches, searchName, queryBuilder);
+      dialog.close();
+    }
+  });
+  const deleteSearchCol = savedSearchesGrid.columns.byName('delete');
+
+  if (deleteSearchCol) {
+    deleteSearchCol.cellType = 'html';
+
+    savedSearchesGrid.onCellPrepare(function (gc) {
+      if (gc.isTableCell && gc.gridColumn.name === 'delete') {
+        const removeIcon = ui.div(ui.icons.delete(() => {
+          const searchName = gc.grid.dataFrame.col('name')?.get(gc.gridRow);
+          //remove row from table
+          searchNamesDf.rows.removeAt(gc.gridRow, 1);
+          //remove search from tree
+          const savedSearchesNode = getSavedSearchesNode(treeNode, libName, compoundType);
+          const items = savedSearchesNode.items.filter((it) => it.text === searchName);
+          if (items.length)
+            items[0].remove();
+          //save changes to storage
+          if (savedSearches[searchName])
+            delete savedSearches[searchName];
+          grok.userSettings.add(SAVED_SEARCH_STORAGE, storageKey, JSON.stringify(savedSearches));
+        }), 'revvity-saved-search-delete');
+        gc.style.element = removeIcon;
+      }
+    });
+  }
+
   const dialog = ui.dialog('Load Search Query')
-    .add(ui.divV([searchInput, searchNamesDf.plot.grid().root]))
+    .add(ui.divV([searchInput, savedSearchesGrid.root]))
     .onOK(async () => {
-      if (searchNamesDf.currentRowIdx === -1) {
-        grok.shell.error('Select saved search in the grid');
+      if (searchNamesDf.currentRowIdx === -1)
         return;
-      }
       const selectedSearchName = searchNamesDf.get('name', searchNamesDf.currentRowIdx);
-      // Load the saved query condition into the query builder
-      try {
-        const condition = JSON.parse(savedSearches[selectedSearchName]);
-        queryBuilder.loadCondition(condition);
-      } catch (e) {
-        grok.shell.error('Failed to parse saved search query');
-      }
+      loadSavedSearchToQueryBuilder(savedSearches, selectedSearchName, queryBuilder);
     });
 
   dialog.show();
+}
+
+
+function loadSavedSearchToQueryBuilder(savedSearches: { [key: string]: string }, selectedSearchName: string, queryBuilder: QueryBuilder) {
+  try {
+    const condition = JSON.parse(savedSearches[selectedSearchName]);
+    queryBuilder.loadCondition(condition);
+  } catch (e) {
+    grok.shell.error('Failed to parse saved search query');
+  }
+}
+
+function getSavedSearchesNode(treeNode: DG.TreeViewGroup, libName: string, compoundType: string): DG.TreeViewGroup {
+  const compoundTypeNode = getViewNameByCompoundType(compoundType);
+  const savedSearchesNode = treeNode.getOrCreateGroup('Saved Searches').getOrCreateGroup(libName)
+    .getOrCreateGroup(compoundTypeNode.charAt(0).toUpperCase() + compoundTypeNode.slice(1));
+  return savedSearchesNode;
 }
 
 

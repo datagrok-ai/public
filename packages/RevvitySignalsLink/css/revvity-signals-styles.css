@@ -83,3 +83,12 @@
 .revvity-signals-statistics-hide-header .header {
     display: none;
 }
+
+.revvity-saved-search-delete {
+    padding-left: 5px;
+    padding-top: 5px;
+}
+
+.revvity-saved-search-delete:hover .grok-icon {
+    color: red;
+}
