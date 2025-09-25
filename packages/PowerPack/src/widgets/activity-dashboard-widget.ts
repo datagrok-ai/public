@@ -31,6 +31,10 @@ export class ActivityDashboardWidget extends DG.Widget {
     'Try the “Correlation Plot” to quickly see relationships between numeric columns.',
   ];
   demosOfTheDay: DG.Func[] = DG.Func.find({meta: {'demoPath': null}});
+  tutorialsOfTheDay: string[] = ['Grid Customization', 'Viewers', 'Scatter Plot', 'Embedded Viewers', 'Filters', 'Dashboards',
+    'Multivariate Analysis', 'Scripting', 'R-Groups Analysis', 'Activity Cliffs', 'Similarity and Diversity Search',
+    'Substructure Search and Filtering', 'Data Connectors', 'Data Aggregation', 'Calculated Columns', 'Differential equations',
+    'Sensitivity analysis', 'Parameter optimization'];
   cutoffDate: dayjs.Dayjs = dayjs().subtract(ActivityDashboardWidget.RECENT_TIME_DAYS, 'day');
 
   favoritesEvents: DG.LogEvent[] = [];
@@ -83,25 +87,29 @@ export class ActivityDashboardWidget extends DG.Widget {
   }
 
   createRandomizedTipOfTheDay(): HTMLElement {
-    const randomizedTips = [...this.tipsOfTheDay, ...this.demosOfTheDay];
+    const randomizedTips = [...this.tipsOfTheDay, ...this.demosOfTheDay, ...this.tutorialsOfTheDay];
     const randomTip = randomizedTips[Math.floor(Math.random() * randomizedTips.length)];
-    const usedTipList = [randomTip];
+    const usedTipList: (DG.Func | string)[] = [randomTip];
     let tipIdx = 0;
+    const demoApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'demoApp'})[0];
+    const tutorialsApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'trackOverview'})[0];
 
     const createTip = (newRandomTip: DG.Func | string) => {
       const tip = ui.divText('', 'power-pack-activity-widget-spotlight-tip');
-      const tipText = ui.span([`💡 ${newRandomTip instanceof DG.Func ? 'Demo' : 'Tip'} of the day: ${newRandomTip instanceof DG.Func ? '' : newRandomTip}`]);
+      const tipText = ui.span([`💡 ${newRandomTip instanceof DG.Func ? 'Demo' : this.tutorialsOfTheDay.includes(newRandomTip) ?
+        'Tutorial' : 'Tip'} of the day: ${newRandomTip instanceof DG.Func || this.tutorialsOfTheDay.includes(newRandomTip) ? '' : newRandomTip}`]);
       tip.appendChild(tipText);
       let link: HTMLAnchorElement;
-      if (newRandomTip instanceof DG.Func) {
-        const demoApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'demoApp'})[0];
-        if (demoApp) {
-          const path = newRandomTip.options[DG.FUNC_OPTIONS.DEMO_PATH] as string;
-          const pathArray = path.split('|').map((s) => s.trim());
-          const actualPath = pathArray.map((s) => s.replaceAll(' ', '-')).join('/');
-          link = ui.link(pathArray[pathArray.length - 1], async () => await demoApp.apply({path: `/${actualPath}`}), newRandomTip.description);
-          tip.appendChild(link);
-        }
+      if (newRandomTip instanceof DG.Func && demoApp) {
+        const path = newRandomTip.options[DG.FUNC_OPTIONS.DEMO_PATH] as string;
+        const pathArray = path.split('|').map((s) => s.trim());
+        const actualPath = pathArray.map((s) => s.replaceAll(' ', '-')).join('/');
+        link = ui.link(pathArray[pathArray.length - 1], async () => await demoApp.apply({path: `/${actualPath}`}), newRandomTip.description);
+        tip.appendChild(link);
+      }
+      else if (!(newRandomTip instanceof DG.Func) && this.tutorialsOfTheDay.includes(newRandomTip) && tutorialsApp) {
+        link = ui.link(newRandomTip, async () => await tutorialsApp.apply());
+        tip.appendChild(link);
       }
 
       let prevTipIcon: HTMLElement;
@@ -110,6 +118,8 @@ export class ActivityDashboardWidget extends DG.Widget {
         next ? tipIdx++ : tipIdx--;
         tipIdx === 0 ? prevTipIcon.classList.add('tip-prev-hidden') : prevTipIcon.classList.remove('tip-prev-hidden');
         const newRandomTip = tipIdx < usedTipList.length ? usedTipList[tipIdx] : randomizedTips[Math.floor(Math.random() * randomizedTips.length)];
+        if (tipIdx >= usedTipList.length)
+          usedTipList.push(newRandomTip);
         const newTip = createTip(newRandomTip);
         tip.replaceWith(newTip);
       };
