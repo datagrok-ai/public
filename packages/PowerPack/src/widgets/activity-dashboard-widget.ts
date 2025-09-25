@@ -343,7 +343,7 @@ export class ActivityDashboardWidget extends DG.Widget {
       createLinkWithIcon('Explore more Tutorials', async () => await tutorialsApp.apply(), tutorialsApp),
     ]);
     gettingStartedList.classList.add('power-pack-activity-widget-subwidget-list-content', 'power-pack-activity-widget-getting-started-subwidget-list-content');
-    const gettingStartedRoot = ui.divV([ui.h3(ui.span([ui.iconFA('rocket'), ui.span([' Getting Started'])]), 'power-pack-activity-widget-spotlight-column-header'),
+    const gettingStartedRoot = ui.divV([ui.h3(ui.span([ui.iconFA('rocket'), ui.span([' Interactive Tutorials'])]), 'power-pack-activity-widget-spotlight-column-header'),
       gettingStartedList], 'power-pack-activity-widget-spotlight-getting-started-column');
 
     const tryDemoAppsList = ui.list([
@@ -353,7 +353,7 @@ export class ActivityDashboardWidget extends DG.Widget {
       createLinkWithIcon('Curve Fitting', async () => await demoApp.apply({path: '/Curves/Curve-Fitting'}), demoApp),
     ]);
     tryDemoAppsList.classList.add('power-pack-activity-widget-subwidget-list-content', 'power-pack-activity-widget-getting-started-subwidget-list-content');
-    const tryDemoAppsRoot = ui.divV([ui.h3(ui.span([ui.iconFA('play-circle'), ui.span([' Try Demo Apps'])]), 'power-pack-activity-widget-spotlight-column-header'),
+    const tryDemoAppsRoot = ui.divV([ui.h3(ui.span([ui.iconFA('play-circle'), ui.span([' Demo Apps'])]), 'power-pack-activity-widget-spotlight-column-header'),
       tryDemoAppsList], 'power-pack-activity-widget-spotlight-getting-started-column');
 
     const dashboardsToShow: HTMLElement[] = [];
