@@ -161,7 +161,33 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     flex-basis: 100%;
     position: absolute;
     bottom: 0;
-    margin-left: 20px;
+    left: 20px;
+    right: 20px;
+}
+
+.power-pack-activity-widget-spotlight-tip .tip-prev {
+    margin-right: 5px;
+}
+
+.power-pack-activity-widget-spotlight-tip .tip-prev.tip-prev-hidden {
+    display: none;
+    visibility: hidden;
+}
+
+.power-pack-activity-widget-spotlight-tip .tip-next {
+    margin-left: 5px;
+}
+
+.power-pack-activity-widget-spotlight-tip .tip-prev,
+.power-pack-activity-widget-spotlight-tip .tip-next {
+    opacity: 0;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.power-pack-activity-widget-spotlight-tip:hover .tip-prev,
+.power-pack-activity-widget-spotlight-tip:hover .tip-next {
+    opacity: 1;
 }
 
 .power-pack-activity-widget-favorites-tab {
