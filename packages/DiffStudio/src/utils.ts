@@ -335,6 +335,15 @@ export function removeTitle(node: DG.DockNode) {
   }, UI_TIME.TITLE_REMOVING);
 }
 
+/** Remove titlebar of dock node*/
+export function removeTitleBar(node: DG.DockNode) {
+  setTimeout(() => {
+    const head = node.container.containerElement.querySelector('div[class="panel-titlebar disable-selection"]');
+    if (head)
+      head.remove();
+  }, UI_TIME.TITLE_REMOVING);
+}
+
 /** No models message */
 export function noModels(): void {
   grok.shell.info(`No models`);

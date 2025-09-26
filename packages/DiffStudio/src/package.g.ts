@@ -6,6 +6,11 @@ export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
 
+//name: dock
+export function dock() : void {
+  PackageFunctions.dock();
+}
+
 //input: object problem 
 //output: dataframe result
 export function solve(problem: any) : any {
