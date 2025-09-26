@@ -135,6 +135,13 @@ export class Plate {
     this._markOutlierWithSource(row, flag, source);
   }
 
+  public unregisterLayer(columnName: string): void {
+    if (this.layerRegistry.has(columnName)) {
+      this.layerRegistry.delete(columnName);
+      this.logChange('layer-unregistered', {columnName});
+    }
+  }
+
   markOutlierWithSource(row: number, col: number, flag: boolean = true, source: string = 'user-interaction') {
     const dataRow = this._idx(row, col);
     this._markOutlierWithSource(dataRow, flag, source);

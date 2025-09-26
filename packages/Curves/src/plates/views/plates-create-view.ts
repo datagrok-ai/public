@@ -17,6 +17,7 @@ import './components/plate-analysis-panel/plate-analysis-panel.css';
 import {PlateGridManager} from './components/plate-grid-manager/plate-grid-manager';
 import {PlateDoseRatioAnalysis} from '../../plate/dose-ratio-analysis';
 import {MAPPING_SCOPES} from './shared/scopes';
+import {PlateQpcrAnalysis} from '../../plate/relative-qpcr-analysis';
 
 export function createPlatesView(): DG.View {
   const view = DG.View.create();
@@ -43,7 +44,7 @@ export function createPlatesView(): DG.View {
     display: flex;
     flex-direction: column;
   `;
-  plateWidget.roleSummaryDiv.style.display = 'none';
+  // plateWidget.roleSummaryDiv.style.display = 'none';
 
   const tabControl = ui.tabControl();
   tabControl.root.classList.remove('ui-box');
@@ -116,9 +117,49 @@ export function createPlatesView(): DG.View {
     }
   };
 
+  const createQpcrContent = (): HTMLElement => {
+    try {
+      const activePlate = stateManager.activePlate;
+      const activeIndex = stateManager.currentState?.activePlateIdx ?? -1;
+
+      if (!activePlate || activeIndex < 0)
+        return createAnalysisSkeleton('qPCR Analysis', ['Ct']);
+
+      const currentMappings = stateManager.getScopedMapping(activeIndex, MAPPING_SCOPES.QPCR);
+
+      const handleMap = (target: string, source: string) => {
+        stateManager.remapScopedProperty(activeIndex, MAPPING_SCOPES.QPCR, target, source);
+      };
+
+      const handleUndo = (target: string) => {
+        stateManager.undoScopedMapping(activeIndex, MAPPING_SCOPES.QPCR, target);
+      };
+
+      // --- START: NEW TRIGGER FUNCTION ---
+      const handleDataChanged = () => {
+        stateManager.notifyPlateDataChanged();
+      };
+      // --- END: NEW TRIGGER FUNCTION ---
+
+      return PlateQpcrAnalysis.createAnalysisView(
+        activePlate.plate,
+        currentMappings,
+        handleMap,
+        handleUndo,
+        handleDataChanged // <-- PASS THE NEW TRIGGER HERE
+      );
+    } catch (e: any) {
+      console.error('Error creating qPCR view:', e);
+      return ui.divText(`Error displaying qPCR analysis: ${e.message}`, 'error-message');
+    }
+  };
+  ; ;
+
   tabControl.addPane('Plate View', () => plateWidget.root);
   tabControl.addPane('Dose Response', () => createDrcAnalysisContent());
   tabControl.addPane('Dose Ratio', () => createDoseRatioContent());
+  tabControl.addPane('qPCR Analysis', () => createQpcrContent()); // 2. ADD THE NEW TAB
+
 
   ui.tools.waitForElementInDom(tabControl.root).then(() => {
     tabControl.panes.forEach((pane) => {
@@ -159,7 +200,7 @@ export function createPlatesView(): DG.View {
       plateWidget.refresh();
     }
 
-    plateWidget.updateRoleSummary();
+    // plateWidget.updateRoleSummary();
 
     if (plateWidget.grid)
       plateWidget.grid.invalidate();
@@ -167,10 +208,10 @@ export function createPlatesView(): DG.View {
     if (event.type === 'mapping-changed' ||
       event.type === 'plate-selected' ||
       event.type === 'analysis-mapping-changed' ||
+      event.type === 'plate-data-changed' ||
       event.type === 'plate-added'
     ) {
       const drcPane = tabControl.getPane('Dose Response');
-
       if (drcPane) {
         ui.empty(drcPane.content);
         drcPane.content.appendChild(createDrcAnalysisContent());
@@ -180,6 +221,12 @@ export function createPlatesView(): DG.View {
       if (doseRatioPane) {
         ui.empty(doseRatioPane.content);
         doseRatioPane.content.appendChild(createDoseRatioContent());
+      }
+
+      const qpcrPane = tabControl.getPane('qPCR Analysis');
+      if (qpcrPane) {
+        ui.empty(qpcrPane.content);
+        qpcrPane.content.appendChild(createQpcrContent());
       }
     }
   });

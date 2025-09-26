@@ -15,10 +15,7 @@ export class PlateStateManager {
   private _sourceDataFrame: DG.DataFrame | null = null;
 
   private stateChange$ = new Subject<PlateStateChangeEvent>();
-
-  // START of CHANGE: Replace hardcoded identifiers with a dynamic array
   public identifierColumns: (string | null)[] = [];
-  // END of CHANGE
 
   constructor(
     initialTemplate: PlateTemplate,
@@ -73,8 +70,6 @@ export class PlateStateManager {
   setPlateType(plateType: PlateType): void {
     this._currentPlateType = plateType;
   }
-
-  // START of CHANGE: New method to auto-detect the best initial identifier column
   private autodetectIdentifierColumn(): void {
     if (!this._sourceDataFrame) {
       this.identifierColumns = [];
@@ -94,29 +89,22 @@ export class PlateStateManager {
         return;
       }
     }
-
-    // If no common name is found, initialize with one empty slot for the user to choose
     this.identifierColumns = [null];
   }
-  // END of CHANGE
 
   async loadDataFrame(df: DG.DataFrame): Promise<void> {
     this._sourceDataFrame = df;
-    // START of CHANGE: Call the new auto-detection method
     this.autodetectIdentifierColumn();
-    // END of CHANGE
     await this.reprocessPlates();
   }
 
   async reprocessPlates(): Promise<void> {
     if (!this._sourceDataFrame) return;
 
-    // START of CHANGE: Pass the entire dynamic array to parsePlates
     const parsedPlateResults = parsePlates(
       this._sourceDataFrame,
       this.identifierColumns
     );
-    // END of CHANGE
 
     const currentState = this.templateStates.get(this._currentTemplate.id) ?? {
       plates: [],
@@ -151,8 +139,6 @@ export class PlateStateManager {
     this.templateStates.set(this._currentTemplate.id, currentState);
     this.stateChange$.next({type: 'plate-added'});
   }
-
-  // START of CHANGE: Add methods to manage the identifierColumns array
   public addIdentifierColumn(): void {
     this.identifierColumns.push(null);
     this.reprocessPlates();
@@ -171,10 +157,8 @@ export class PlateStateManager {
     if (index >= 0 && index < this.identifierColumns.length) {
       this.identifierColumns[index] = columnName;
       this.reprocessPlates();
-      // No state change event here, as reprocessPlates already sends one.
     }
   }
-  // END of CHANGE
 
   selectPlate(index: number): void {
     const state = this.currentState;
@@ -212,11 +196,19 @@ export class PlateStateManager {
       plateIndex: index,
     });
   }
-
+  public notifyPlateDataChanged(): void {
+    const state = this.currentState;
+    if (!state) return;
+    console.log('PlateStateManager: Firing "plate-data-changed" event.');
+    this.stateChange$.next({
+      type: 'plate-data-changed',
+      plateIndex: state.activePlateIdx,
+      plate: this.activePlate,
+    });
+  }
   public remapScopedProperty(plateIndex: number, scope: string, target: string, source: string): void {
     const state = this.currentState;
     if (!state || !state.plates[plateIndex]) return;
-
     const plateFile = state.plates[plateIndex];
     plateFile.plate.addScopedAlias(scope, source, target);
 

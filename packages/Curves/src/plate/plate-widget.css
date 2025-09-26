@@ -1,21 +1,55 @@
-  .plate-widget .d4-grid canvas {
-        cursor: pointer !important;
-      }
-      
-      /* Hide the resizing cursors */
-      .plate-widget .d4-grid-col-header-border,
-      .plate-widget .d4-grid-row-header-border {
-        cursor: default !important;
-        pointer-events: none !important;
-      }
-      
-      /* Remove cell selection outline */
-      .plate-widget .d4-grid-cell-current {
-        border: none !important;
-        outline: none !important;
-      }
-      
-      /* Prevent resize handles from appearing */
-      .plate-widget .d4-grid-resize-handle {
-        display: none !important;
-      }
+.plate-widget .d4-grid canvas {
+  cursor: pointer !important;
+}
+
+.plate-widget .d4-grid-col-header-border,
+.plate-widget .d4-grid-row-header-border {
+  cursor: default !important;
+  pointer-events: none !important;
+}
+
+.plate-widget .d4-grid-cell-current {
+  border: none !important;
+  outline: none !important;
+}
+
+.plate-widget .d4-grid-resize-handle {
+  display: none !important;
+}
+.plate-widget-role-tab-header {
+  display: flex;
+  align-items: center;
+  gap: 8px; 
+  padding: 0 4px; 
+}
+
+.d4-tab-header-stripe > .d4-tab-header.plate-widget-role-tab-header {
+  cursor: default;
+}
+
+.plate-widget-role-tab-header .color-square {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid var(--grey-3);
+  flex-shrink: 0;
+}
+
+.plate-widget-role-tab-header .delete-role-icon {
+  color: var(--grey-4);
+  margin-left: auto; 
+  cursor: pointer;
+  visibility: hidden; 
+  opacity: 0;
+  transition: all 0.2s ease;
+  padding: 2px;
+}
+
+.d4-tab-header:hover .delete-role-icon {
+  visibility: visible;
+  opacity: 1;
+}
+
+.plate-widget-role-tab-header .delete-role-icon:hover {
+  color: var(--red-2);
+}

@@ -1,17 +1,22 @@
+/* eslint-disable prefer-const */
 /* eslint-disable camelcase */
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
-import {MARKER_TYPE, TYPE} from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {div} from 'datagrok-api/ui';
 import {mapFromRow, safeLog, toExcelPosition} from './utils';
 import {LayerType, Plate, PLATE_OUTLIER_WELL_NAME} from './plate';
-//@ts-ignore
-import * as jStat from 'jstat';
-import {IPlateWellValidator, plateWellValidators} from './plate-well-validators';
 import {fromEvent, Subject, Subscription} from 'rxjs';
-import {debounceTime, filter, takeUntil, take} from 'rxjs/operators';
+import {filter, take, takeUntil} from 'rxjs/operators';
 import './plate-widget.css';
+import * as grok from 'datagrok-api/grok';
+import {IPlateWellValidator, plateWellValidators} from './plate-well-validators';
+
+const colorPalette = [
+  DG.Color.fromHtml('#e41a1c'), DG.Color.fromHtml('#377eb8'), DG.Color.fromHtml('#4daf4a'),
+  DG.Color.fromHtml('#984ea3'), DG.Color.fromHtml('#ff7f00'), DG.Color.fromHtml('#f781bf'),
+  DG.Color.fromHtml('#a65628'), DG.Color.fromHtml('#999999'), DG.Color.fromHtml('#66c2a5'),
+  DG.Color.fromHtml('#fc8d62'), DG.Color.fromHtml('#8da0cb'), DG.Color.fromHtml('#e78ac3'),
+];
 
 export type AnalysisOptions = {
   roleName: string,
@@ -41,6 +46,7 @@ export interface IAnalysisWidgetCoordinator {
 type InteractionMode = 'default' | 'outlier';
 const DRAG_THRESHOLD = 5;
 
+
 export class PlateWidget extends DG.Widget {
   _colorColumn?: DG.Column | undefined;
   _plate: Plate = new Plate(8, 12);
@@ -59,8 +65,6 @@ export class PlateWidget extends DG.Widget {
   wellValidationErrors: Map<string, string[]> = new Map();
 
   private hoveredCell: { row: number, col: number } | null = null;
-
-  // Drag/selection state
   private _isDragging: boolean = false;
   private _selectionRect: DG.Rect | null = null;
   private _canvas: HTMLCanvasElement | null = null;
@@ -70,7 +74,9 @@ export class PlateWidget extends DG.Widget {
   private interactionMode: InteractionMode = 'default';
   private _dragStartPoint: DG.Point | null = null;
 
-  roleSummaryDiv: HTMLElement = ui.divH([], 'plate-widget__role-summary');
+  private roleColorMap: Map<string, number> = new Map();
+  private nextColorIndex = 0;
+
 
   get editable() { return this._editable; }
   set editable(x: boolean) {
@@ -78,17 +84,30 @@ export class PlateWidget extends DG.Widget {
     this.syncGrids();
   }
 
+  get plate(): Plate { return this._plate; }
+  set plate(p: Plate) {
+    this._plate = p;
+    if (this.outlierSubscription)
+      this.outlierSubscription.unsubscribe();
+
+    this.outlierSubscription = p.onOutlierChanged.subscribe((change) => {
+      this.grid.invalidate();
+      this.notifyAnalysisCoordinators('outlier', change);
+    });
+
+    this.roleColorMap.clear();
+    this.nextColorIndex = 0;
+    this.refresh();
+  }
+
   private isPointInWell(x: number, y: number, gridRow: number, gridCol: number): boolean {
     if (gridRow < 0 || gridCol <= 0) return false;
-
     const cell = this.grid.cell(this.grid.columns.byIndex(gridCol)!.name, gridRow);
     if (!cell) return false;
-
     const bounds = cell.bounds;
     const centerX = bounds.midX;
     const centerY = bounds.midY;
     const radius = Math.min(bounds.height / 2, bounds.width / 2) * 0.8;
-
     const distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
     return distance <= radius;
   }
@@ -105,7 +124,6 @@ export class PlateWidget extends DG.Widget {
 
   constructor() {
     super(ui.div([], 'plate-widget'));
-
     this.tabs.root.classList.add('plate-widget__tabs');
     this.tabsContainer.appendChild(this.tabs.root);
 
@@ -117,7 +135,7 @@ export class PlateWidget extends DG.Widget {
       this.grid.invalidate();
     });
 
-    const mainContainer = ui.divV([this.tabsContainer, this.roleSummaryDiv]);
+    const mainContainer = ui.divV([this.tabsContainer]);
     mainContainer.style.flexGrow = '1';
     mainContainer.style.width = '100%';
     this.root.appendChild(mainContainer);
@@ -131,30 +149,22 @@ export class PlateWidget extends DG.Widget {
   }
 
   private setupGrid() {
-    this.grid.props.allowRowSelection = false;
-    this.grid.props.allowColSelection = false;
-    this.grid.props.allowBlockSelection = false;
-    this.grid.props.showCurrentRowIndicator = false;
-    this.grid.props.showMouseOverRowIndicator = false;
-    this.grid.props.showCurrentCellOutline = false;
-    this.grid.props.showHeatmapScrollbars = false;
-    this.grid.props.colHeaderHeight = 30;
-    this.grid.props.allowColHeaderResizing = false;
-    this.grid.props.allowColResizing = false;
-    this.grid.props.allowRowResizing = false;
-
+    Object.assign(this.grid.props, {
+      allowRowSelection: false, allowColSelection: false, allowBlockSelection: false,
+      showCurrentRowIndicator: false, showMouseOverRowIndicator: false, showCurrentCellOutline: false,
+      showHeatmapScrollbars: false, colHeaderHeight: 30, allowColHeaderResizing: false,
+      allowColResizing: false, allowRowResizing: false,
+    });
     this.grid.onCellRender.subscribe((args) => this.renderCell(args, true));
     this.grid.onCellRendered.subscribe((args) => {
       const cell = args.cell;
-      if (cell.gridRow >= 0 && cell.gridColumn.idx > 0) {
+      if (cell.gridRow !== null && cell.gridRow >= 0 && cell.gridColumn.idx > 0) {
         try {
           const pos = toExcelPosition(cell.gridRow, cell.gridColumn.idx - 1);
           const errors = this.wellValidationErrors.get(pos);
           if (errors && errors.length > 0)
             DG.Paint.marker(args.g, DG.MARKER_TYPE.CROSS_BORDER, cell.bounds.midX, cell.bounds.midY, DG.Color.red, 10);
-        } catch (e) {
-          console.error(e);
-        }
+        } catch (e) { console.error(e); }
       }
     });
 
@@ -163,7 +173,7 @@ export class PlateWidget extends DG.Widget {
     this.grid.onCellClick.subscribe((gc: DG.GridCell) => {
       if (!gc.isTableCell) return;
       if (this.interactionMode === 'outlier' && this.editable) {
-        const row = gc.gridRow;
+        const row = gc.gridRow!;
         const col = gc.gridColumn.idx - 1;
         const currentState = this.plate.isOutlier(row, col);
         this.plate.markOutlierWithSource(row, col, !currentState, 'summary-click-toggle');
@@ -176,7 +186,7 @@ export class PlateWidget extends DG.Widget {
     grid.onCellMouseEnter.subscribe((gc: DG.GridCell) => {
       if (gc.isTableCell) {
         gc.grid.root.style.cursor = 'pointer';
-        this.hoveredCell = {row: gc.gridRow, col: gc.gridColumn.idx - 1};
+        this.hoveredCell = {row: gc.gridRow!, col: gc.gridColumn.idx - 1};
         grid.invalidate();
       }
     });
@@ -196,161 +206,77 @@ export class PlateWidget extends DG.Widget {
     this.analysisCoordinators.forEach((coord) => coord.onPlateDataChanged(changeType, details));
   }
 
-  private refreshTabs(): void {
-    const currentPaneName = this.tabs.currentPane?.name;
-
-    this.tabs.clear();
-    this.grids.clear();
-
-    this.tabs.addPane('Summary', () => this.grid.root);
-
-    const layerInfo: Record<LayerType, { icon: string, layers: string[] }> = {
-      [LayerType.ORIGINAL]: {icon: '', layers: this.plate.getLayersByType(LayerType.ORIGINAL)},
-      [LayerType.LAYOUT]: {icon: '️(Layout)', layers: this.plate.getLayersByType(LayerType.LAYOUT)},
-      [LayerType.DERIVED]: {icon: '(Derived)', layers: this.plate.getLayersByType(LayerType.DERIVED)},
-      [LayerType.OUTLIER]: {icon: 'X', layers: []},
-    };
-
-    const allRegisteredLayers = new Set<string>();
-    for (const type of [LayerType.ORIGINAL, LayerType.LAYOUT, LayerType.DERIVED]) {
-      for (const layerName of layerInfo[type].layers) {
-        allRegisteredLayers.add(layerName);
-        const paneName = `${layerInfo[type].icon} ${this.getDisplayName(layerName, type)}`;
-        this.tabs.addPane(paneName, () => this.createLayerGrid(layerName));
-      }
-    }
-
-    this.tabs.addPane(`X Outliers X`, () => this.grid.root);
-
-    for (const layerName of this.plate.getLayerNames()) {
-      if (!allRegisteredLayers.has(layerName) && layerName !== PLATE_OUTLIER_WELL_NAME)
-        this.tabs.addPane(`❔ ${layerName}`, () => this.createLayerGrid(layerName));
-    }
-
-    if (currentPaneName) {
-      const restoredPane = this.tabs.panes.find((p) => p.name === currentPaneName);
-      if (restoredPane)
-        this.tabs.currentPane = restoredPane;
-    }
-  }
-
-  private layerExists(layerName: string): boolean {
-    return this.tabs.panes.some((pane) =>
-      pane.name.includes(layerName) ||
-      (layerName === PLATE_OUTLIER_WELL_NAME && pane.name.includes('Outliers'))
-    );
-  }
-
   private initSelectionEvents() {
     const interactionElement = this.grid.overlay;
     if (!interactionElement) return;
 
-    fromEvent<MouseEvent>(interactionElement, 'mousedown')
-      .pipe(takeUntil(this._onDestroy))
-      .subscribe((e: MouseEvent) => {
-        if (!this.editable || e.button !== 0) return;
+    fromEvent<MouseEvent>(interactionElement, 'mousedown').pipe(takeUntil(this._onDestroy)).subscribe((e: MouseEvent) => {
+      if (!this.editable || e.button !== 0) return;
+      this._dragStartPoint = new DG.Point(e.offsetX, e.offsetY);
+      const mouseMoveStream = fromEvent<MouseEvent>(document, 'mousemove').pipe(takeUntil(this._onDestroy));
+      const mouseUpStream = fromEvent<MouseEvent>(document, 'mouseup').pipe(takeUntil(this._onDestroy), take(1));
 
-        this._dragStartPoint = new DG.Point(e.offsetX, e.offsetY);
+      mouseMoveStream.pipe(takeUntil(mouseUpStream)).subscribe((move_e: MouseEvent) => {
+        if (!this._dragStartPoint) return;
+        const dx = Math.abs(move_e.offsetX - this._dragStartPoint.x);
+        const dy = Math.abs(move_e.offsetY - this._dragStartPoint.y);
+        if (!this._isDragging && (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD)) {
+          this._isDragging = true;
+          this._selectionRect = new DG.Rect(this._dragStartPoint.x, this._dragStartPoint.y, 0, 0);
+        }
+        if (this._isDragging && this._selectionRect) {
+          move_e.preventDefault();
+          move_e.stopPropagation();
+          const canvasBounds = interactionElement.getBoundingClientRect();
+          const currentX = move_e.clientX - canvasBounds.left;
+          const currentY = move_e.clientY - canvasBounds.top;
+          this._selectionRect.width = currentX - this._selectionRect.x;
+          this._selectionRect.height = currentY - this._selectionRect.y;
+          this.drawSelectionRect();
+        }
+      });
 
-        const mouseMoveStream = fromEvent<MouseEvent>(document, 'mousemove').pipe(takeUntil(this._onDestroy));
-        const mouseUpStream = fromEvent<MouseEvent>(document, 'mouseup').pipe(takeUntil(this._onDestroy));
-
-        mouseMoveStream
-          .pipe(takeUntil(mouseUpStream))
-          .subscribe((move_e: MouseEvent) => {
-            if (!this._dragStartPoint) return;
-
-            const dx = Math.abs(move_e.offsetX - this._dragStartPoint.x);
-            const dy = Math.abs(move_e.offsetY - this._dragStartPoint.y);
-
-            if (!this._isDragging && (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD)) {
-              this._isDragging = true;
-              this._selectionRect = new DG.Rect(this._dragStartPoint.x, this._dragStartPoint.y, 0, 0);
-            }
-
-            if (this._isDragging && this._selectionRect) {
-              move_e.preventDefault();
-              move_e.stopPropagation();
-
-              const canvasBounds = interactionElement.getBoundingClientRect();
-              const currentX = move_e.clientX - canvasBounds.left;
-              const currentY = move_e.clientY - canvasBounds.top;
-              this._selectionRect.width = currentX - this._selectionRect.x;
-              this._selectionRect.height = currentY - this._selectionRect.y;
-
-              this.drawSelectionRect();
-            }
-          });
-
-        mouseUpStream.pipe(take(1)).subscribe((up_e: MouseEvent) => {
-          if (this._isDragging) {
-            this.finalizeDragSelection();
-            const selection = this.plate.data.selection;
-            if (selection.trueCount > 0) {
-              if (this.interactionMode === 'default') {
-                this.showRoleAssignmentPopup();
-              } else if (this.interactionMode === 'outlier') {
-                for (const i of selection.getSelectedIndexes()) {
-                  const [row, col] = this.plate.rowIndexToExcel(i);
-                  this.plate.markOutlierWithSource(row, col, true, 'summary-drag-set');
-                }
-                selection.setAll(false, true);
+      mouseUpStream.subscribe((up_e: MouseEvent) => {
+        if (this._isDragging) {
+          this.finalizeDragSelection();
+          const selection = this.plate.data.selection;
+          if (selection.trueCount > 0) {
+            if (this.interactionMode === 'default') {
+              this.showRoleAssignmentPopup();
+            } else if (this.interactionMode === 'outlier') {
+              for (const i of selection.getSelectedIndexes()) {
+                const [row, col] = this.plate.rowIndexToExcel(i);
+                this.plate.markOutlierWithSource(row, col, true, 'summary-drag-set');
               }
-            }
-          } else if (this._dragStartPoint) {
-            const well = this.hitTest(up_e.offsetX, up_e.offsetY);
-            if (well) {
-              if (this.interactionMode === 'default') {
-                const dataIndex = this.plate._idx(well.row, well.col);
-                const selection = this.plate.data.selection;
-                selection.set(dataIndex, !selection.get(dataIndex), true);
-              } else if (this.interactionMode === 'outlier') {
-                const currentState = this.plate.isOutlier(well.row, well.col);
-                this.plate.markOutlierWithSource(well.row, well.col, !currentState, 'summary-click-toggle');
-              }
+              selection.setAll(false, true);
             }
           }
+        } else if (this._dragStartPoint) {
+          const well = this.hitTest(up_e.offsetX, up_e.offsetY);
+          if (well) {
+            if (this.interactionMode === 'default') {
+              const dataIndex = this.plate._idx(well.row, well.col);
+              const selection = this.plate.data.selection;
+              selection.set(dataIndex, !selection.get(dataIndex), true);
+            } else if (this.interactionMode === 'outlier') {
+              const currentState = this.plate.isOutlier(well.row, well.col);
+              this.plate.markOutlierWithSource(well.row, well.col, !currentState, 'summary-click-toggle');
+            }
+          }
+        }
 
-          this._isDragging = false;
-          this.clearSelectionRect();
-          this._selectionRect = null;
-          this._dragStartPoint = null;
-          this.grid.invalidate();
-        });
+        this._isDragging = false;
+        this.clearSelectionRect();
+        this._selectionRect = null;
+        this._dragStartPoint = null;
+        this.grid.invalidate();
       });
-  }
-
-  updateRoleSummary() {
-    ui.empty(this.roleSummaryDiv);
-    const roleColumn = this.plate.data.col('Role');
-    if (!roleColumn || roleColumn.stats.valueCount === 0) return;
-
-    const countsDf = this.plate.data.groupBy(['Role']).count().aggregate();
-    const roleColumnColors = roleColumn.meta.colors;
-    const originalRolesList = roleColumn.toList();
-
-    for (const row of countsDf.rows) {
-      const role = row.Role;
-      const count = row.count;
-      const firstIndex = originalRolesList.indexOf(role);
-      const color = (firstIndex !== -1) ?
-        DG.Color.toHtml(roleColumnColors.getColor(firstIndex)) :
-        DG.Color.toHtml(DG.Color.lightGray);
-
-      const legendItem = ui.divH([
-        ui.div('', {style: {width: '12px', height: '12px', borderRadius: '3px', backgroundColor: color, border: '1px solid var(--grey-3)'}}),
-        ui.divText(`${role} (${count} wells)`),
-      ], 'role-summary__item');
-      this.roleSummaryDiv.appendChild(legendItem);
-    }
+    });
   }
 
   private finalizeDragSelection() {
-    if (!this._selectionRect || !this.grid || this.grid.columns.length === 0)
-      return;
-
+    if (!this._selectionRect || !this.grid) return;
     const selection = this.plate.data.selection;
-
     const r = this._selectionRect;
     const normalizedRect = new DG.Rect(
       r.width < 0 ? r.x + r.width : r.x,
@@ -358,19 +284,13 @@ export class PlateWidget extends DG.Widget {
       Math.abs(r.width),
       Math.abs(r.height)
     );
-
     for (let row = 0; row < this.plate.rows; row++) {
       for (let col = 0; col < this.plate.cols; col++) {
         const gridCol = this.grid.columns.byIndex(col + 1);
         if (gridCol) {
           const cell = this.grid.cell(gridCol.name, row);
-          if (cell) {
-            const cellBounds = cell.bounds;
-            if (normalizedRect.contains(cellBounds.midX, cellBounds.midY)) {
-              const dataIndex = this.plate._idx(row, col);
-              selection.set(dataIndex, true, false);
-            }
-          }
+          if (cell && normalizedRect.contains(cell.bounds.midX, cell.bounds.midY))
+            selection.set(this.plate._idx(row, col), true, false);
         }
       }
     }
@@ -380,47 +300,62 @@ export class PlateWidget extends DG.Widget {
   private showRoleAssignmentPopup(): void {
     const selection = this.plate.data.selection;
     if (selection.trueCount === 0) return;
+    const roleInput = ui.input.string('Role', {value: 'Sample'});
+    let popup: Element;
+    let anchorDiv: HTMLElement;
 
-    const roles = ['Control', 'Buffer', 'Assay Reagent', 'Sample'];
-    const roleInput = ui.input.multiChoice<string>('Roles', {items: roles, value: []});
+    const assignAction = () => {
+      const roleName = roleInput.value.trim();
+      if (!roleName) {
+        grok.shell.warning('Role name cannot be empty.');
+        return;
+      }
+      const existingRoleCols = this.plate.getLayersByType(LayerType.LAYOUT);
+      const selectedIndexes = selection.getSelectedIndexes();
+
+      for (const colName of existingRoleCols) {
+        const col = this.plate.data.col(colName);
+        if (col) {
+          for (const i of selectedIndexes)
+            col.set(i, false, false);
+        }
+      }
+
+      let newRoleCol = this.plate.data.col(roleName);
+      if (newRoleCol === null) {
+        newRoleCol = this.plate.data.columns.addNewBool(roleName);
+        this.plate.registerLayer(roleName, LayerType.LAYOUT, 'user-assignment');
+      }
+      for (const i of selectedIndexes)
+        newRoleCol.set(i, true, false);
+
+      this.plate.data.fireValuesChanged();
+      // this.updateRoleSummary();
+      this.refresh();
+      selection.setAll(false, true);
+      this.grid.invalidate();
+
+      if (popup && anchorDiv) {
+        popup.remove();
+        anchorDiv.remove();
+      }
+    };
 
     const popupContent = ui.divV([
       ui.h3(`${selection.trueCount} wells selected`),
       roleInput,
-      ui.button('Assign', () => {
-        const selectedRoles = roleInput.value;
-        if (!selectedRoles || selectedRoles.length === 0) return;
+      ui.button('ASSIGN', assignAction)
+    ], {style: {padding: '10px'}});
 
-        let roleCol = this.plate.data.col('Role');
-        if (roleCol === null) {
-          roleCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, 'Role', this.plate.data.rowCount);
-          this.plate.data.columns.add(roleCol);
-          this.plate.registerLayer('Role', LayerType.LAYOUT, 'user-assignment');
-        }
-
-        const selectedIndexes = selection.getSelectedIndexes();
-        for (const i of selectedIndexes)
-          (roleCol as DG.Column<string>).set(i, selectedRoles.join(','));
-
-        this._colorColumn = roleCol;
-        if (this._colorColumn.isCategorical && this._colorColumn.meta.colors.getType() !== DG.COLOR_CODING_TYPE.CATEGORICAL)
-          this._colorColumn.meta.colors.setCategorical();
-
-        this.updateRoleSummary();
-        this.refresh();
-        selection.setAll(false, true);
-        this.grid.invalidate();
-
-        popup.remove();
-        anchorDiv.remove();
-      })
-    ], 'd4-menu-item-container');
-
-    popupContent.style.padding = '10px';
+    roleInput.input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        assignAction();
+      }
+    });
 
     const selectedIndices = selection.getSelectedIndexes();
     let minRow = this.plate.rows; let maxRow = -1; let minCol = this.plate.cols; let maxCol = -1;
-
     for (const idx of selectedIndices) {
       const row = Math.floor(idx / this.plate.cols);
       const col = idx % this.plate.cols;
@@ -433,50 +368,32 @@ export class PlateWidget extends DG.Widget {
     const firstCell = this.grid.cell(this.grid.columns.byIndex(minCol + 1)!.name, minRow);
     const lastCell = this.grid.cell(this.grid.columns.byIndex(maxCol + 1)!.name, maxRow);
     const selectionBounds = firstCell.bounds.union(lastCell.bounds);
-
     const canvasBounds = this.grid.overlay.getBoundingClientRect();
 
-    const anchorDiv = ui.div('', {
+    anchorDiv = ui.div('', {
       style: {
         position: 'absolute',
         left: `${canvasBounds.left + selectionBounds.x + selectionBounds.width / 2}px`,
         top: `${canvasBounds.top + selectionBounds.y}px`,
-        width: '0px',
-        height: '0px',
+        width: '0px', height: '0px',
       }
     });
     document.body.appendChild(anchorDiv);
-
-    const popup = ui.showPopup(popupContent, anchorDiv);
-
-    const closePopup = () => {
-      if (document.body.contains(popup)) popup.remove();
-      if (document.body.contains(anchorDiv)) anchorDiv.remove();
-      document.removeEventListener('mousedown', onMouseDown, true);
-    };
-
-    const onMouseDown = (e: MouseEvent) => {
-      if (!popup.contains(e.target as Node)) closePopup();
-    };
-
-    setTimeout(() => document.addEventListener('mousedown', onMouseDown, true), 0);
+    popup = ui.showPopup(popupContent, anchorDiv);
   }
 
   private drawSelectionRect() {
     if (!this._canvas || !this._selectionRect) return;
     const g = this._canvas.getContext('2d')!;
     g.clearRect(0, 0, this._canvas.width, this._canvas.height);
-    g.strokeStyle = 'rgba(0, 128, 255, 0.7)';
-    g.fillStyle = 'rgba(0, 128, 255, 0.2)';
-    g.lineWidth = 1;
+    Object.assign(g, {strokeStyle: 'rgba(0, 128, 255, 0.7)', fillStyle: 'rgba(0, 128, 255, 0.2)', lineWidth: 1});
     g.strokeRect(this._selectionRect.x, this._selectionRect.y, this._selectionRect.width, this._selectionRect.height);
     g.fillRect(this._selectionRect.x, this._selectionRect.y, this._selectionRect.width, this._selectionRect.height);
   }
 
   private clearSelectionRect() {
     if (!this._canvas) return;
-    const g = this._canvas.getContext('2d')!;
-    g.clearRect(0, 0, this._canvas.width, this._canvas.height);
+    this._canvas.getContext('2d')!.clearRect(0, 0, this._canvas.width, this._canvas.height);
   }
 
   static fromPlate(plate: Plate, useSimpleView: boolean = false) {
@@ -491,177 +408,156 @@ export class PlateWidget extends DG.Widget {
   static detailedView(plate: Plate): PlateWidget {
     const pw = new PlateWidget();
     pw.plate = plate;
-
-    pw.roleSummaryDiv.remove();
-
+    // pw.roleSummaryDiv.remove();
     pw.detailsDiv = ui.divV([], 'plate-widget__details');
     pw.wellDetailsDiv = ui.div();
     pw.detailsDiv.appendChild(pw.wellDetailsDiv);
-
     const gridAndSummaryWrapper = ui.divV([
       pw.tabs.root,
-      pw.roleSummaryDiv,
+      // pw.roleSummaryDiv,
     ], {style: {flexGrow: '1', display: 'flex', flexDirection: 'column'}});
-
     const mainContainer = ui.divH([
       gridAndSummaryWrapper,
       pw.detailsDiv,
     ], 'plate-widget__main-container');
-
     ui.empty(pw.tabsContainer);
     pw.tabsContainer.appendChild(mainContainer);
-
     pw.grid.onCurrentCellChanged
-      .pipe(filter((gc) => gc.gridRow >= 0 && gc.gridColumn.idx > 0))
+      .pipe(filter((gc) => gc.isTableCell && gc.gridRow !== null))
       .subscribe((gc) => {
         if (pw.wellDetailsDiv) {
           ui.empty(pw.wellDetailsDiv);
-          const map = pw.mapFromRowFunc(pw.plate.data.rows.get(plate._idx(gc.gridRow, gc.gridColumn.idx - 1)));
+          const map = pw.mapFromRowFunc(pw.plate.data.rows.get(plate._idx(gc.gridRow!, gc.gridColumn.idx - 1)));
           pw.wellDetailsDiv.appendChild(ui.tableFromMap(map));
         }
       });
-
     return pw;
   }
 
   initPlateGrid(grid: DG.Grid, isSummary: boolean = false) {
-    grid.props.showHeatmapScrollbars = false;
-    grid.props.allowColReordering = false;
-    grid.props.allowRowReordering = false;
-    grid.props.allowSorting = false;
-    grid.props.allowEdit = !isSummary;
-    grid.props.showRowGridlines = false;
-    grid.props.showColumnGridlines = false;
-    grid.props.heatmapColors = false;
-    grid.props.colHeaderHeight = 25;
-
-    grid.props.allowRowSelection = false;
-    grid.props.allowColSelection = false;
-    grid.props.allowBlockSelection = false;
-    grid.props.showCurrentRowIndicator = false;
-    grid.props.showMouseOverRowIndicator = false;
-    grid.props.showCurrentCellOutline = false;
-
-    grid.props.allowColHeaderResizing = false;
-    grid.props.allowColResizing = false;
-    grid.props.allowRowResizing = false;
-
-    grid.props.selectedRowsColor = 0x00000000;
-    grid.props.mouseOverRowColor = 0x00000000;
-    grid.props.currentRowColor = 0x00000000;
-
-    grid.onCellRender.subscribe((args) => this.renderCell(args, isSummary));
-
-    this.setupHoverEvents(grid);
-  }
-
-  get plate(): Plate { return this._plate; }
-  set plate(p: Plate) {
-    this._plate = p;
-
-    if (this.outlierSubscription)
-      this.outlierSubscription.unsubscribe();
-
-    this.outlierSubscription = p.onOutlierChanged.subscribe((change) => {
-      this.grid.invalidate();
-      this.notifyAnalysisCoordinators('outlier', change);
+    Object.assign(grid.props, {
+      showHeatmapScrollbars: false, allowColReordering: false, allowRowReordering: false,
+      allowSorting: false, allowEdit: !isSummary, showRowGridlines: false, showColumnGridlines: false,
+      heatmapColors: false, colHeaderHeight: 25, allowRowSelection: false, allowColSelection: false,
+      allowBlockSelection: false, showCurrentRowIndicator: false, showMouseOverRowIndicator: false,
+      showCurrentCellOutline: false, allowColHeaderResizing: false, allowColResizing: false,
+      allowRowResizing: false, selectedRowsColor: 0x00000000, mouseOverRowColor: 0x00000000,
+      currentRowColor: 0x00000000,
     });
-
-    this.refresh();
+    grid.onCellRender.subscribe((args) => this.renderCell(args, isSummary));
+    this.setupHoverEvents(grid);
   }
 
   private getDisplayName(layerName: string, layerType: LayerType): string {
     return layerName;
   }
 
+  private _getRoleColor(roleName: string): number {
+    if (!this.roleColorMap.has(roleName)) {
+      this.roleColorMap.set(roleName, colorPalette[this.nextColorIndex % colorPalette.length]);
+      this.nextColorIndex++;
+    }
+    return this.roleColorMap.get(roleName)!;
+  }
+
   refresh() {
+    const currentPaneName = this.tabs.currentPane?.name;
     this.tabs.clear();
     this.grids.clear();
     this.tabs.addPane('Summary', () => this.grid.root);
     this.tabs.addPane(`X Outliers X`, () => this.grid.root);
 
-    const layerInfo: Record<LayerType, { icon: string, layers: string[] }> = {
-      [LayerType.ORIGINAL]: {icon: '', layers: this.plate.getLayersByType(LayerType.ORIGINAL)},
-      [LayerType.LAYOUT]: {icon: '️(Layout)', layers: this.plate.getLayersByType(LayerType.LAYOUT)},
-      [LayerType.DERIVED]: {icon: '(Derived)', layers: this.plate.getLayersByType(LayerType.DERIVED)},
-      [LayerType.OUTLIER]: {icon: 'X', layers: []},
+    const layerInfo = {
+      [LayerType.ORIGINAL]: this.plate.getLayersByType(LayerType.ORIGINAL),
+      [LayerType.LAYOUT]: this.plate.getLayersByType(LayerType.LAYOUT),
+      [LayerType.DERIVED]: this.plate.getLayersByType(LayerType.DERIVED),
     };
 
-    const allRegisteredLayers = new Set<string>();
+    for (const layerName of layerInfo[LayerType.LAYOUT]) {
+      this.tabs.addPane(layerName, () => ui.div([]));
+      const pane = this.tabs.getPane(layerName)!;
+      ui.empty(pane.header);
 
-    for (const type of [LayerType.ORIGINAL, LayerType.LAYOUT, LayerType.DERIVED]) {
-      for (const layerName of layerInfo[type].layers) {
-        allRegisteredLayers.add(layerName);
-        const paneName = `${layerInfo[type].icon} ${this.getDisplayName(layerName, type)}`;
-        this.tabs.addPane(paneName, () => this.createLayerGrid(layerName));
-      }
+      const color = this._getRoleColor(layerName);
+
+      const colorSquare = ui.div('', 'color-square');
+      colorSquare.style.backgroundColor = DG.Color.toHtml(color);
+      ui.tooltip.bind(colorSquare, `Role: ${layerName}`);
+
+      const nameLabel = ui.label(layerName);
+
+      const closeIcon = ui.iconFA('times', (e: MouseEvent) => {
+        e.stopPropagation();
+
+        ui.dialog('Confirm Deletion')
+          .add(ui.divText(`Delete the "${layerName}" role assignment?`))
+          .onOK(() => {
+            if (this.plate.data.columns.contains(layerName))
+              this.plate.data.columns.remove(layerName);
+
+            this.plate.unregisterLayer(layerName);
+            this.refresh();
+          })
+          .show();
+      }, 'Delete role');
+      closeIcon.classList.add('delete-role-icon');
+
+      const customHeader = ui.divH([closeIcon, colorSquare, nameLabel], 'plate-widget-role-tab-header');
+
+      customHeader.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+
+      pane.header.appendChild(customHeader);
     }
 
-    for (const layerName of this.plate.getLayerNames()) {
-      if (!allRegisteredLayers.has(layerName) && layerName !== PLATE_OUTLIER_WELL_NAME)
-        this.tabs.addPane(`❔ ${layerName}`, () => this.createLayerGrid(layerName));
+    const otherLayers = [...layerInfo[LayerType.ORIGINAL], ...layerInfo[LayerType.DERIVED]];
+    for (const layerName of otherLayers) {
+      if (layerName !== PLATE_OUTLIER_WELL_NAME)
+        this.tabs.addPane(layerName, () => this.createLayerGrid(layerName, false));
     }
 
-    ui.tools.waitForElementInDom(this.tabs.root).then(() => {
-      if (this.tabs.panes.length > 0)
-        this.tabs.currentPane = this.tabs.getPane('Summary');
-    });
+    if (currentPaneName)
+      this.tabs.currentPane = this.tabs.panes.find((p) => p.name === currentPaneName) ?? this.tabs.getPane('Summary');
+    else if (this.tabs.panes.length > 0)
+      this.tabs.currentPane = this.tabs.getPane('Summary');
 
-    this.syncGrids();
 
     const t = this.plate.data;
-    this._colorColumn =
-      t.columns.firstWhere((c) => c.semType === 'Activity') ??
-      t.columns.firstWhere((c) => c.semType === 'Concentration') ??
-      t.columns.firstWhere((c) => c.name.toLowerCase() === 'activity') ??
-      t.columns.firstWhere((c) => c.name.toLowerCase().includes('concentration')) ??
-      t.columns.firstWhere((c) => c.type === DG.TYPE.FLOAT && !['row', 'col'].includes(c.name.toLowerCase()));
+    const nonLayoutCols = t.columns.toList().filter((c) => this.plate.getLayerType(c.name) !== LayerType.LAYOUT);
+    this._colorColumn = nonLayoutCols.find((c) => c.semType === 'Activity' || c.name.toLowerCase() === 'activity') ??
+                        nonLayoutCols.find((c) => c.semType === 'Concentration' || c.name.toLowerCase().includes('concentration')) ??
+                        nonLayoutCols.find((c) => c.type === DG.TYPE.FLOAT);
 
     this.grid.dataFrame = DG.DataFrame.create(this.plate.rows);
     this.grid.columns.clear();
     for (let i = 0; i <= this.plate.cols; i++)
       this.grid.columns.add({gridColumnName: i.toString(), cellType: 'string'});
 
-    if (this.grid && this.grid.root)
-      this.grid.root.style.width = '100%';
-
+    if (this.grid.root) this.grid.root.style.width = '100%';
     this.grid.invalidate();
   }
 
-  private createLayerGrid(layer: string): HTMLElement {
+
+  private createLayerGrid(layer: string, isRole: boolean): HTMLElement {
     const df = this.plate.toGridDataFrame(layer);
-    const grid = DG.Viewer.heatMap(df);
-    grid.columns.add({gridColumnName: '0', cellType: 'string', index: 1});
-
-    df.onValuesChanged.pipe(debounceTime(1000)).subscribe(() => {
-      const p = this.plate;
-      for (let i = 0; i < df.rowCount; i++) {
-        for (let j = 0; j < df.columns.length - 1; j++) {
-          const newValue = df.get(`${j + 1}`, i);
-          const plateCol = p.getColumn(layer);
-          if (plateCol)
-            plateCol.set(p._idx(i, j), newValue);
-        }
-      }
-    });
-
-    this.initPlateGrid(grid, false);
-    this.grids.set(layer, grid);
+    const grid = DG.Viewer.grid(df);
+    grid.props.showRowHeader = true;
+    grid.props.allowEdit = !isRole;
     return grid.root;
   }
 
   private configureOutlierGrid(grid: DG.Grid, layerName: string): void {
     grid.onCellRender.subscribe((args) => {
-      if (args.cell.gridColumn.idx > 0 && args.cell.gridRow >= 0) {
-        const dataRow = this.plate._idx(args.cell.gridRow, args.cell.gridColumn.idx - 1);
+      if (args.cell.isTableCell) {
+        const dataRow = this.plate._idx(args.cell.gridRow!, args.cell.gridColumn.idx - 1);
         const outlierCol = this.plate.data.col(layerName);
-
-        if (outlierCol && outlierCol.get(dataRow)) {
+        if (outlierCol?.get(dataRow)) {
           const g = args.g;
           const bounds = args.bounds;
           g.fillStyle = 'rgba(255, 0, 0, 0.3)';
           g.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
-
           g.fillStyle = 'red';
           g.font = '12px Arial';
           g.textAlign = 'center';
@@ -690,7 +586,6 @@ export class PlateWidget extends DG.Widget {
     g.textAlign = 'center';
     g.textBaseline = 'middle';
     g.font = `${Math.ceil(Math.min(...[16, w - 1, h - 1]))}px Roboto, Roboto Local`;
-    const isColoredByConc = this._colorColumn?.name?.toLowerCase()?.includes('conc');
 
     const hasRowHeader = gc.grid.columns.byIndex(0)?.cellType === 'row header';
 
@@ -701,44 +596,52 @@ export class PlateWidget extends DG.Widget {
     } else if (gc.isColHeader) {
       args.preventDefault();
       return;
-    } else if ((gc.gridColumn.name == '0' || gc.gridColumn.idx == 0) && gc.gridRow >= 0) {
+    } else if ((gc.gridColumn.name == '0' || gc.gridColumn.idx == 0) && gc.gridRow !== null && gc.gridRow >= 0) {
       g.fillStyle = 'grey';
       const prefix = gc.gridRow > 25 ? 'A' : '';
       g.fillText(prefix + String.fromCharCode(65 + gc.gridRow % 26), x + w / 2, y + h / 2);
       args.preventDefault();
-    } else if (summary && h > 0 && gc.gridRow >= 0 && gc.gridColumn.idx > 0) {
+    } else if (summary && h > 0 && gc.gridRow !== null && gc.gridRow >= 0 && gc.gridColumn.idx > 0) {
       const dataRow = this._plate._idx(gc.gridRow, gc.gridColumn.idx - 1);
-
-      const isHovered = this.hoveredCell &&
-        this.hoveredCell.row === gc.gridRow &&
-        this.hoveredCell.col === gc.gridColumn.idx - 1;
+      const isHovered = this.hoveredCell && this.hoveredCell.row === gc.gridRow && this.hoveredCell.col === gc.gridColumn.idx - 1;
 
       g.beginPath();
       const r = Math.min(h / 2, w / 2) * 0.8;
       g.ellipse(x + w / 2, y + h / 2, r, r, 0, 0, 2 * Math.PI);
 
-      if (this._colorColumn) {
-        if (this._colorColumn.isCategorical && this._colorColumn.meta.colors.getType() !== DG.COLOR_CODING_TYPE.CATEGORICAL)
-          this._colorColumn.meta.colors.setCategorical();
-        const color = this._colorColumn.isNone(dataRow) ? DG.Color.white : this._colorColumn.isNumerical ?
-          this.getColor(dataRow, isColoredByConc) :
-          this._colorColumn.meta.colors.getColor(dataRow);
+      if (this._colorColumn && !this._colorColumn.isNone(dataRow)) {
+        const color = this.getColor(dataRow);
         g.fillStyle = DG.Color.toHtml(color);
-        g.fill();
+      } else {
+        g.fillStyle = DG.Color.toHtml(DG.Color.lightGray);
       }
+      g.fill();
 
       const isSelected = this.plate.data.selection.get(dataRow) && this.interactionMode === 'default';
       if (isHovered || isSelected) {
         g.shadowColor = 'rgba(40, 255, 140, 0.9)';
         g.shadowBlur = 10;
         g.strokeStyle = 'rgba(40, 255, 140, 0.9)';
-        g.lineWidth = isHovered ? 3 : 2;
+        g.lineWidth = isHovered ? 4 : 3;
       } else {
-        g.strokeStyle = 'grey';
-        g.lineWidth = 1;
+        let roleColor: number | null = null;
+        const layoutLayers = this.plate.getLayersByType(LayerType.LAYOUT);
+        for (const layerName of layoutLayers) {
+          if (this.plate.data.get(layerName, dataRow) === true) {
+            roleColor = this._getRoleColor(layerName);
+            break;
+          }
+        }
+
+        if (roleColor !== null) {
+          g.strokeStyle = DG.Color.toHtml(roleColor);
+          g.lineWidth = 3;
+        } else {
+          g.strokeStyle = 'grey';
+          g.lineWidth = 1;
+        }
       }
       g.stroke();
-
       g.shadowBlur = 0;
 
       const outlierCol = this.plate.data.col(PLATE_OUTLIER_WELL_NAME);
@@ -746,11 +649,9 @@ export class PlateWidget extends DG.Widget {
         g.strokeStyle = 'rgba(255, 0, 0, 0.8)';
         g.lineWidth = 3;
         g.lineCap = 'round';
-
         const crossSize = r * 0.8;
         const centerX = x + w / 2;
         const centerY = y + h / 2;
-
         g.beginPath();
         g.moveTo(centerX - crossSize, centerY - crossSize);
         g.lineTo(centerX + crossSize, centerY + crossSize);
@@ -764,11 +665,14 @@ export class PlateWidget extends DG.Widget {
       args.preventDefault();
   }
 
-  getColor(dataRow: number, isLog?: boolean) {
-    const val = this._colorColumn!.get(dataRow)!;
-    const reducedVal = isLog ? safeLog((val - this._colorColumn!.min) * 1e9) : val;
-    const min = (isLog ? safeLog(Math.max(this._colorColumn!.min, 1)) : this._colorColumn!.min);
-    const max = isLog ? safeLog((this._colorColumn!.max - this._colorColumn!.min) * 1e9) : this._colorColumn!.max;
+  getColor(dataRow: number) {
+    if (!this._colorColumn) return DG.Color.white;
+    const isLog = this._colorColumn.name?.toLowerCase()?.includes('conc');
+    const val = this._colorColumn.get(dataRow)!;
+    const stats = this._colorColumn.stats;
+    const reducedVal = isLog ? safeLog(val) : val;
+    const min = isLog ? safeLog(stats.min) : stats.min;
+    const max = isLog ? safeLog(stats.max) : stats.max;
     return DG.Color.scaleColor(reducedVal, min, max, undefined, colorScheme);
   }
 
@@ -778,9 +682,7 @@ export class PlateWidget extends DG.Widget {
   }
 
   detach() {
-    if (this.outlierSubscription)
-      this.outlierSubscription.unsubscribe();
-
+    this.outlierSubscription?.unsubscribe();
     this._onDestroy.next();
     this._onDestroy.complete();
     super.detach();
