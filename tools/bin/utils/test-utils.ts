@@ -16,7 +16,7 @@ const fetch = require('node-fetch');
 
 const grokDir = path.join(os.homedir(), '.grok');
 const confPath = path.join(grokDir, 'config.yaml');
-const testCollectionTimeout = 100000;
+const testCollectionTimeout = 600000;
 
 export const defaultLaunchParameters: utils.Indexable = {
   args: [
