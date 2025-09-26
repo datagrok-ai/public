@@ -145,7 +145,7 @@ Yes, we adhere to secure development and industry best practices across infrastr
 
 ### Governance & access 
 
-#### Authentication & Authorization 
+#### Authentication & authorization 
 
 ##### <b>Q: How does Datagrok handle authentication and authorization?</b>
 
