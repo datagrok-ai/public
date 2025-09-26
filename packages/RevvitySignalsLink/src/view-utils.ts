@@ -198,7 +198,7 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
       params: '{}'
     }).then((res: DG.DataFrame) => {
       (openedView! as DG.TableView).dataFrame = res;
-      setUserColumnsStyle(openedView!  as DG.TableView);
+      setColumnsFormat(openedView! as DG.TableView);
       initFilters();
     })
       .catch((e: any) => {
@@ -209,12 +209,14 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
     initFilters();
 }
 
-export function setUserColumnsStyle(tv: DG.TableView) {
-  USER_FIELDS.forEach((it) => {
-    const col = tv.grid.col(it);
-    if (col) {
-      col.cellType = 'html';
-      col.width = 100;
+export function setColumnsFormat(tv: DG.TableView) {
+  const colNames = tv.dataFrame.columns.names();
+  for (const colName of colNames) {
+    const dfColType = tv.dataFrame.col(colName)!.type;
+    const format = dfColType === DG.TYPE.DATE_TIME ? 'M/d/yyyy' : dfColType === DG.TYPE.FLOAT ? 'two digits after comma' : '';
+    if (format) {
+      const gridCol = tv.grid.col(colName)!
+      gridCol.format = format;
     }
-  });
+  }
 }

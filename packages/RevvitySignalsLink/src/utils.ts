@@ -6,7 +6,7 @@ import { getRevvityUsers, getUserStringIdById } from './users';
 import { queryEntityById, RevvityApiResponse, RevvityData, RevvityUser, search } from './revvity-api';
 
 import { awaitCheck } from '@datagrok-libraries/utils/src/test';
-import { compoundTypeAndViewNameMapping, ENTITY_FIELDS_TO_EXCLUDE, FIELDS_SECTION_NAME, FIELDS_TO_EXCLUDE_FROM_CORPORATE_ID_WIDGET, FIELDS_TO_EXCLUDE_FROM_WIDGET, FIRST_COL_NAMES, MOL_COL_NAME, MOLECULAR_FORMULA_FIELD_NAME, NAME, PARAMS_KEY, QUERY_KEY, STORAGE_NAME, SUBMITTER_FIELD_NAME, TABS_TO_EXCLUDE_FROM_WIDGET, TAGS_TO_EXCLUDE, USER_FIELDS } from './constants';
+import { compoundTypeAndViewNameMapping, ENTITY_FIELDS_TO_EXCLUDE, FIELDS_SECTION_NAME, FIELDS_TO_EXCLUDE_FROM_CORPORATE_ID_WIDGET, FIELDS_TO_EXCLUDE_FROM_WIDGET, FIRST_COL_NAMES, LAST_COL_NAMES, MOL_COL_NAME, MOLECULAR_FORMULA_FIELD_NAME, NAME, PARAMS_KEY, QUERY_KEY, STORAGE_NAME, SUBMITTER_FIELD_NAME, TABS_TO_EXCLUDE_FROM_WIDGET, TAGS_TO_EXCLUDE, USER_FIELDS } from './constants';
 import { getRevvityLibraries } from './libraries';
 import { u2 } from '@datagrok-libraries/utils/src/u2';
 import { _package } from './package';
@@ -441,17 +441,23 @@ export async function transformData(data: Record<string, any>[]): Promise<Record
   return items;
 }
 
-export async function reorderColummns(df: DG.DataFrame) {
-  const colNames = df.columns.names();
-  const newColOrder = [];
-  for (const colName of FIRST_COL_NAMES) {
-    const index = colNames.indexOf(colName);
-    if (index > -1) {
-      colNames.splice(index, 1);
-      newColOrder.push(colName);
+export async function reorderColumns(df: DG.DataFrame) {
+  const colNames = df.columns.names().map((it) => it.toLowerCase());
+  const createColNamesArr = (colsToReorder: string[]) => {
+    const reorderedNames = [];
+    for (const colName of colsToReorder) {
+      const index = colNames.indexOf(colName.toLowerCase());
+      if (index > -1) {
+        colNames.splice(index, 1);
+        reorderedNames.push(colName);
+      }
     }
-  }
-  df.columns.setOrder(newColOrder.concat(colNames));
+    return reorderedNames;
+  } 
+  const firstCols = createColNamesArr(FIRST_COL_NAMES);
+  const lastCols = createColNamesArr(LAST_COL_NAMES);
+
+  df.columns.setOrder(firstCols.concat(colNames).concat(lastCols));
 }
 
 export function getCompoundTypeByViewName(viewName: string): string {

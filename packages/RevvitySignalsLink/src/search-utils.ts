@@ -8,7 +8,7 @@ import { materialsCondition } from './compounds';
 import { createLibsObjectForStatistics, getRevvityLibraries, RevvityLibrary } from './libraries';
 import { getDefaultProperties, REVVITY_FIELD_TO_PROP_TYPE_MAPPING } from './properties';
 import { getTerms } from './package';
-import { createPath, createViewForExpandabelNode, createViewFromPreDefinedQuery, openRevvityNode, setUserColumnsStyle } from './view-utils';
+import { createPath, createViewForExpandabelNode, createViewFromPreDefinedQuery, openRevvityNode, setColumnsFormat } from './view-utils';
 import { getAppHeader, getCompoundTypeByViewName, getViewNameByCompoundType } from './utils';
 
 export const SAVED_SEARCH_STORAGE = 'RevvitySignalsLinkSavedSearch'
@@ -126,7 +126,7 @@ export async function runSearch(qb: QueryBuilder, tv: DG.TableView, libId: strin
   const condition = qb.condition;
   const resultDf = await runSearchQuery(libId, compoundType, condition);
   tv.dataFrame = resultDf;
-  setUserColumnsStyle(tv);
+  setColumnsFormat(tv);
   if (changePath)
     tv.path = createPath([libName, getViewNameByCompoundType(compoundType), 'search', JSON.stringify(condition)]);
   ui.setUpdateIndicator(tv.grid.root, false);

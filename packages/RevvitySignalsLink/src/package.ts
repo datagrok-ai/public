@@ -6,7 +6,7 @@ import { u2 } from "@datagrok-libraries/utils/src/u2";
 import '../css/revvity-signals-styles.css';
 import { SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
 import { queryLibraries, queryMaterialById, queryTags, queryTerms, queryUsers, RevvityApiResponse, RevvityData, RevvityUser, search } from './revvity-api';
-import { dataFrameFromObjects, reorderColummns, transformData, getViewNameByCompoundType, getAppHeader, createRevvityWidgetByCorporateId } from './utils';
+import { dataFrameFromObjects, reorderColumns, transformData, getViewNameByCompoundType, getAppHeader, createRevvityWidgetByCorporateId } from './utils';
 import { addMoleculeStructures, assetsQuery, retrieveQueriesMap } from './compounds';
 import { createInitialSatistics, getRevvityLibraries, RevvityLibrary, RevvityType } from './libraries';
 import { createViewForExpandabelNode, createViewFromPreDefinedQuery, handleInitialURL } from './view-utils';
@@ -163,7 +163,7 @@ export async function searchEntitiesWithStructures(query: string, params: string
       moleculeColumn.semType = DG.SEMTYPE.MOLECULE;
       moleculeColumn.meta.units = DG.UNITS.Molecule.MOLBLOCK;
       df.columns.add(moleculeColumn);
-      reorderColummns(df);
+      reorderColumns(df);
       addMoleculeStructures(moleculeIds, moleculeColumn);
     }
   } catch (e: any) {
