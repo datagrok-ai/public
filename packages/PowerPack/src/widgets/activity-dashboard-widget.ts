@@ -87,7 +87,10 @@ export class ActivityDashboardWidget extends DG.Widget {
   }
 
   async getDemosOfTheDay(): Promise<string[]> {
-    const demoAppHierarchy = await grok.functions.call('Tutorials:getDemoAppHierarchy');
+    const demoAppHierarchyFunc = DG.Func.find({name: 'getDemoAppHierarchy'})[0];
+    if (demoAppHierarchyFunc == null)
+      return [];
+    const demoAppHierarchy = await demoAppHierarchyFunc.apply();
     if (demoAppHierarchy == null || demoAppHierarchy.length === 0)
       return [];
     const parsedHierarchy = JSON.parse(demoAppHierarchy);
