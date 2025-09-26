@@ -5,15 +5,16 @@ import * as DG from 'datagrok-api/dg';
 import { u2 } from "@datagrok-libraries/utils/src/u2";
 import '../css/revvity-signals-styles.css';
 import { SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
-import { queryEntities, queryLibraries, queryMaterialById, queryTags, queryTerms, queryUsers, RevvityApiResponse, RevvityData, RevvityUser } from './revvity-api';
-import { dataFrameFromObjects, reorderColummns, transformData, createRevvityResponseWidget, getViewNameByCompoundType, getAppHeader } from './utils';
+import { queryLibraries, queryMaterialById, queryTags, queryTerms, queryUsers, RevvityApiResponse, RevvityData, RevvityUser, search } from './revvity-api';
+import { dataFrameFromObjects, reorderColummns, transformData, getViewNameByCompoundType, getAppHeader, createRevvityWidgetByCorporateId } from './utils';
 import { addMoleculeStructures, assetsQuery, retrieveQueriesMap } from './compounds';
 import { createInitialSatistics, getRevvityLibraries, RevvityLibrary, RevvityType } from './libraries';
 import { createViewForExpandabelNode, createViewFromPreDefinedQuery, handleInitialURL } from './view-utils';
 import { createSavedSearchesSatistics, SAVED_SEARCH_STORAGE } from './search-utils';
 import { funcs } from './package-api';
-import { ID_COL_NAME, MOL_COL_NAME, USER_FIELDS } from './constants';
+import { HIDDEN_ID_COL_NAME, ID_COL_NAME, MOL_COL_NAME, USER_FIELDS } from './constants';
 import { getRevvityUsers } from './users';
+import { convertIdentifierFormatToRegexp } from './detectors';
 
 
 export const _package = new DG.Package();
@@ -29,6 +30,13 @@ export type RevvityConfig = {
 }
 
 let config: RevvityConfig = { libraries: undefined };
+
+
+//tags: init
+export function init() {
+  const regexp = convertIdentifierFormatToRegexp(Object.values(_package.settings));
+  DG.SemanticValue.registerRegExpDetector('revvity-id', regexp);
+}
 
 //tags: app
 //name: Revvity Signals
@@ -123,7 +131,7 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
 export async function searchEntities(query: string, params: string): Promise<DG.DataFrame> {
   const queryJson: SignalsSearchQuery = JSON.parse(query);
   const paramsJson: SignalsSearchParams = JSON.parse(params);
-  const response = await queryEntities(queryJson, Object.keys(paramsJson).length ? paramsJson : undefined);
+  const response = await search(queryJson, Object.keys(paramsJson).length ? paramsJson : undefined);
   const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
   const rows = await transformData(data);
   const df = rows.length === 0 ? DG.DataFrame.create() : DG.DataFrame.fromObjects(rows)!;
@@ -132,6 +140,9 @@ export async function searchEntities(query: string, params: string): Promise<DG.
     if (col)
       col.semType = DG.TYPE.USER;
   });
+  const idCol = df.col(ID_COL_NAME);
+  if (idCol)
+    idCol.name = HIDDEN_ID_COL_NAME;
   return df;
 }
 
@@ -143,7 +154,9 @@ export async function searchEntitiesWithStructures(query: string, params: string
   let df = DG.DataFrame.create();
   try {
     df = await funcs.searchEntities(query, params);
-    const idCol = df.col(ID_COL_NAME);
+    let idCol = df.col(HIDDEN_ID_COL_NAME);
+    if (!idCol)
+      idCol = df.col(ID_COL_NAME);
     if (idCol) {
       const moleculeIds = idCol.toList();
       const moleculeColumn = DG.Column.fromStrings(MOL_COL_NAME, new Array<string>(moleculeIds.length).fill(''));
@@ -333,10 +346,19 @@ export async function getTerms(fieldName: string, type: string, assetTypeId: str
 
 //name: Revvity Signals
 //tags: panel, widgets
-//input: semantic_value id { semType: RevvitySignalsId }
+//input: semantic_value id { semType: revvity-id }
 //output: widget result
 export async function entityTreeWidget(idSemValue: DG.SemanticValue<string>): Promise<DG.Widget> {
-  const obj = (await queryMaterialById(idSemValue.value)) as RevvityApiResponse;
-  const div = createRevvityResponseWidget(obj, idSemValue);
+  const query = {
+    "query": {
+      "$match": {
+        "field": "name",
+        "value": idSemValue.value,
+        "mode": "keyword"
+      }
+    }
+  }
+  const obj = await search(query);
+  const div = createRevvityWidgetByCorporateId(obj, idSemValue);
   return new DG.Widget(div);
 }

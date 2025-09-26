@@ -1,7 +1,7 @@
 {
   "name": "revvitysignalslink",
   "friendlyName": "RevvitySignalsLink",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Integration with RevvitySignals",
   "author": {
     "name": "Maria Dolotova",
@@ -54,17 +54,18 @@
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/RevvitySignalsLink"
   },
-    "meta": {
-    "semanticTypes": [
-      {
-        "semType": "RevvitySignalsId",
-        "description": "Entity id in Revvity Signals tenant",
-        "parsers": [
-          {
-            "regexp": "^(experiment|request|task|journal|chemicalDrawing|grid|materialsTable|acronym|text|pdf|viewonly|presentation|excel|imageResource|uploadedResource|spotfiredxp|sample|assetType|asset|batch|paraexp|parasubexp|sampleContainer|worksheet):[0-9a-fA-F]+(-[0-9a-fA-F]+)*$"
-          }
-        ]
-      }
-    ]
-  }
+    "properties": [
+    {
+      "name": "revvity-asset",
+      "propertyType": "string",
+      "defaultValue": "DGS-{#######}",
+      "nullable": false
+    },
+    {
+      "name": "revvity-batch",
+      "propertyType": "string",
+      "defaultValue": "DGS-{#######}-{###}",
+      "nullable": false
+    }
+  ]
 }

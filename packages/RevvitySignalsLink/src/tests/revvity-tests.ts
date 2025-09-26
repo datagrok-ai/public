@@ -103,8 +103,8 @@ category('revvity signals functions', () => {
     expect(terms.length > 0, true, 'Returned empty terms list');
   });
 
-  test('getTerms', async () => {
-    const widget = JSON.parse(await funcs.entityTreeWidget(DG.SemanticValue.fromValueType('batch:687a867714c8e27853238590', 'RevvitySignalsId')));
+  test('getWidget', async () => {
+    const widget = JSON.parse(await funcs.entityTreeWidget(DG.SemanticValue.fromValueType('DGS-0000009-001', 'revvity-id')));
     await awaitCheck(() => (widget as HTMLElement).querySelector('table') != null, 'Widget hasn\'t been created', 30000);
   });
 

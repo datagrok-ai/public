@@ -112,7 +112,7 @@ export async function queryUsers(): Promise<RevvityApiResponse> {
   return request('GET', `/users`);
 }
 
-export async function queryEntities(body: SignalsSearchQuery, queryParams?: SignalsSearchParams): Promise<RevvityApiResponse> {
+export async function search(body: SignalsSearchQuery, queryParams?: SignalsSearchParams): Promise<RevvityApiResponse> {
   const paramsStr = queryParams ? `?${encodeURI(paramsStringFromObj(queryParams))}` : '';
   return request('POST', `/entities/search${paramsStr}`, body);
 }

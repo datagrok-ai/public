@@ -8,6 +8,10 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
+  export async function init(): Promise<void> {
+    return await grok.functions.call('RevvitySignalsLink:Init', {});
+  }
+
   export async function revvitySignalsLinkApp(path?: string ): Promise<DG.View> {
     return await grok.functions.call('RevvitySignalsLink:RevvitySignalsLinkApp', { path });
   }

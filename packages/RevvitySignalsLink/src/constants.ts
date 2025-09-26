@@ -10,12 +10,15 @@ export const compoundTypeAndViewNameMapping = [
 
 export const MOL_COL_NAME = 'molecule';
 export const ID_COL_NAME = 'id';
+export const HIDDEN_ID_COL_NAME = '~id';
+export const NAME = 'name';
 
 export const STORAGE_NAME = 'RevvitySignalsSearch';
 export const QUERY_KEY = 'query';
 export const PARAMS_KEY = 'params';
 
-export const ENTITY_FIELDS_TO_EXCLUDE = ['type', 'isTemplate', 'tags', 'eid'];
+export const FIELDS_TO_EXCLUDE_FROM_CORPORATE_ID_WIDGET = ['eid', 'system.ExID', 'system.Keywords'];
+export const ENTITY_FIELDS_TO_EXCLUDE = ['type', 'isTemplate', 'tags', 'eid', 'id'];
 export const TAGS_TO_EXCLUDE = ['system.Keywords'];
 export const USER_FIELDS = ['owner', 'createdBy', 'editedBy'];
 export const FIRST_COL_NAMES = [MOL_COL_NAME, 'id', 'name'];
