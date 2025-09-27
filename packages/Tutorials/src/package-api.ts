@@ -35,6 +35,10 @@ export namespace funcs {
     return await grok.functions.call('Tutorials:DemoAppWidget', {});
   }
 
+  export async function getDemoAppHierarchy(): Promise<string> {
+    return await grok.functions.call('Tutorials:GetDemoAppHierarchy', {});
+  }
+
   /**
   The File Manager is an interface that allows you to manage connections, browse and preview file content, and perform standard file and folder actions such as opening, downloading, deleting, and renaming.
   */

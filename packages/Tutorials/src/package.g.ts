@@ -40,6 +40,11 @@ export function demoAppWidget() : any {
   return PackageFunctions.demoAppWidget();
 }
 
+//output: string result
+export function getDemoAppHierarchy() : string {
+  return PackageFunctions.getDemoAppHierarchy();
+}
+
 //name: filesDemo
 //description: The File Manager is an interface that allows you to manage connections, browse and preview file content, and perform standard file and folder actions such as opening, downloading, deleting, and renaming.
 //meta.demoPath: Data Access | Files

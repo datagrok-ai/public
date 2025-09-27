@@ -15,6 +15,7 @@ import {DemoView} from './demo-app/demo-app';
 import {viewerDemo} from './demo-app/platform-viewers-demo';
 import {DemoAppWidget} from './demo-app/widget';
 import { bio } from './tracks/bio';
+import {DEMO_APP_HIERARCHY} from './demo-app/const';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -147,6 +148,11 @@ export class PackageFunctions {
   static demoAppWidget(): DG.Widget {
 
     return new DemoAppWidget();
+  }
+
+  @grok.decorators.func()
+  static getDemoAppHierarchy(): string {
+    return JSON.stringify(DEMO_APP_HIERARCHY);
   }
 
 
