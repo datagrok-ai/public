@@ -33,3 +33,7 @@ export const SUBMITTER_FIELD_NAME = 'Submitter';
 
 export const API_URL_PARAM_NAME = 'apiUrl';
 export const API_KEY_PARAM_NAME = 'apiKey';
+
+export const REVVITY_LABEL_SEM_TYPE = 'revvity-label';
+
+export const REVVVITY_LABEL_FIELDS = ['materials.project'];

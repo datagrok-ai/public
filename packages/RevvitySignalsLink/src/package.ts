@@ -2,17 +2,16 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { u2 } from "@datagrok-libraries/utils/src/u2";
 import '../css/revvity-signals-styles.css';
 import { SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
-import { queryLibraries, queryMaterialById, queryTags, queryTerms, queryUsers, RevvityApiResponse, RevvityData, RevvityUser, search } from './revvity-api';
-import { dataFrameFromObjects, reorderColumns, transformData, getViewNameByCompoundType, getAppHeader, createRevvityWidgetByCorporateId } from './utils';
-import { addMoleculeStructures, assetsQuery, retrieveQueriesMap } from './compounds';
-import { createInitialSatistics, getRevvityLibraries, RevvityLibrary, RevvityType } from './libraries';
+import { queryLibraries, queryTags, queryTerms, queryUsers, RevvityData, RevvityUser, search } from './revvity-api';
+import { reorderColumns, transformData, getViewNameByCompoundType, createRevvityWidgetByCorporateId, createWidgetByRevvityLabel } from './utils';
+import { addMoleculeStructures } from './compounds';
+import { createInitialSatistics, getRevvityLibraries, RevvityLibrary } from './libraries';
 import { createViewForExpandabelNode, createViewFromPreDefinedQuery, handleInitialURL } from './view-utils';
 import { createSavedSearchesSatistics, SAVED_SEARCH_STORAGE } from './search-utils';
 import { funcs } from './package-api';
-import { HIDDEN_ID_COL_NAME, ID_COL_NAME, MOL_COL_NAME, USER_FIELDS } from './constants';
+import { HIDDEN_ID_COL_NAME, ID_COL_NAME, MOL_COL_NAME, REVVITY_LABEL_SEM_TYPE, REVVVITY_LABEL_FIELDS, USER_FIELDS } from './constants';
 import { getRevvityUsers } from './users';
 import { convertIdentifierFormatToRegexp } from './detectors';
 
@@ -142,6 +141,11 @@ export async function searchEntities(query: string, params: string): Promise<DG.
   const idCol = df.col(ID_COL_NAME);
   if (idCol)
     idCol.name = HIDDEN_ID_COL_NAME;
+  for (const colName of REVVVITY_LABEL_FIELDS) {
+    const col = df.col(colName);
+    if (col)
+      col.semType = REVVITY_LABEL_SEM_TYPE;
+  }
   return df;
 }
 
@@ -216,13 +220,13 @@ export async function registerRevvityIdsFormats() {
     DG.SemanticValue.registerRegExpDetector('revvity-id', regexp);
 }
 
-//name: Get Tags For Field
+//name: Get Tags
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
 //input: string type
 //input: string assetTypeId
 //output: string fields
-export async function getTagsForField(type: string, assetTypeId: string): Promise<string> {
+export async function getTags(type: string, assetTypeId: string): Promise<string> {
   const query = {
     "query": {
       "$and": [
@@ -347,5 +351,14 @@ export async function entityTreeWidget(idSemValue: DG.SemanticValue<string>): Pr
   }
   const obj = await search(query);
   const div = createRevvityWidgetByCorporateId(obj, idSemValue);
+  return new DG.Widget(div);
+}
+
+//name: Revvity Signals
+//tags: panel, widgets
+//input: semantic_value id { semType: revvity-label }
+//output: widget result
+export async function revvityLabelWidget(idSemValue: DG.SemanticValue<string>): Promise<DG.Widget> {
+  const div = await createWidgetByRevvityLabel(idSemValue);
   return new DG.Widget(div);
 }

@@ -8,11 +8,20 @@ import { materialsCondition } from './compounds';
 import { createLibsObjectForStatistics, getRevvityLibraries, RevvityLibrary } from './libraries';
 import { getDefaultProperties, REVVITY_FIELD_TO_PROP_TYPE_MAPPING } from './properties';
 import { getTermsForField } from './package';
-import { applyRevvityLayout, createPath, createViewForExpandabelNode, createViewFromPreDefinedQuery, openRevvityNode, setColumnsFormat } from './view-utils';
+import { applyRevvityLayout, createPath, createViewFromPreDefinedQuery, openedView, openRevvityNode, updateView } from './view-utils';
 import { getAppHeader, getCompoundTypeByViewName, getViewNameByCompoundType } from './utils';
 import { funcs } from './package-api';
 
-export const SAVED_SEARCH_STORAGE = 'RevvitySignalsLinkSavedSearch'
+export type QueryBuilderConfig = {
+  libId: string,
+  libName: string,
+  entityType: string,
+  qb?: QueryBuilder
+}
+
+export const SAVED_SEARCH_STORAGE = 'RevvitySignalsLinkSavedSearch';
+export let currentQueryBuilderConfig: QueryBuilderConfig | undefined = undefined;
+export const filterProperties: {[key: string]: DG.Property[]} = {};
 
 export async function runSearchQuery(libId: string, compoundType: string,
   queryBuilderCondition: ComplexCondition): Promise<DG.DataFrame> {
@@ -45,7 +54,7 @@ export async function runSearchQuery(libId: string, compoundType: string,
 
 
 export async function initializeFilters(treeNode: DG.TreeViewGroup, tv: DG.TableView, filtersDiv: HTMLDivElement, libName: string,
-  compoundType: string, initialSearchQuery?: ComplexCondition, changePath?: boolean): Promise<DG.DockNode | undefined> {
+  compoundType: string, initialSearchQuery?: ComplexCondition, changePath?: boolean) {
   const libs = await getRevvityLibraries();
   const selectedLib = libs.filter((l) => l.name === libName);
   if (selectedLib.length) {
@@ -87,18 +96,21 @@ export async function initializeFilters(treeNode: DG.TreeViewGroup, tv: DG.Table
     const loadButton = ui.div(loadSearchIcon);
     tv.setRibbonPanels(tv.getRibbonPanels().concat([[filtersButton]]));
     //create filters panel
-    const filtersDockedNode = tv.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
+    tv.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
     tv.dockManager.onClosed.subscribe((el: any) => {
       externalFilterIcon.classList.add('revvity-filters-button-icon-show');
     })
     ui.setUpdateIndicator(filtersDiv, true, 'Loading filters...');
-    const qb = await initializeQueryBuilder(selectedLib[0].id, compoundType, initialSearchQuery);
+    const filterFields = await getPropertiesForLibAndEntityType(selectedLib[0].id, compoundType);
+    const qb = new QueryBuilder(filterFields, initialSearchQuery,
+      QueryBuilderLayout.Narrow, `Revvity Signals|${selectedLib[0].id}|${compoundType}`, true);
+    currentQueryBuilderConfig = {libId: selectedLib[0].id, libName, entityType: compoundType, qb};
     qb.validationError.subscribe((isInvalid: boolean) => {
       runSearchButton.disabled = isInvalid;
     });
 
     const runSearchButton = ui.button('Search', async () => {
-      runSearch(qb, tv, filtersDiv, selectedLib[0].id, compoundType, libName, filtersDockedNode, true);
+      runSearch(qb, tv, filtersDiv, selectedLib[0].id, compoundType, libName, true);
     });
 
     //set initial validation status
@@ -114,52 +126,46 @@ export async function initializeFilters(treeNode: DG.TreeViewGroup, tv: DG.Table
     });
 
     if (initialSearchQuery)
-      runSearch(qb, tv, filtersDiv, selectedLib[0].id, compoundType, libName, filtersDockedNode, changePath);
-
-    return filtersDockedNode;
+      runSearch(qb, tv, filtersDiv, selectedLib[0].id, compoundType, libName, changePath);
   }
 }
 
 export async function runSearch(qb: QueryBuilder, tv: DG.TableView, filtersDiv: HTMLDivElement, libId: string, compoundType: string,
-  libName: string, filtersDockNode: DG.DockNode, changePath?: boolean) {
+  libName: string, changePath?: boolean) {
   qb.saveConditionToHistory();
   ui.setUpdateIndicator(tv.grid.root, true, 'Searching...');
   const condition = qb.condition;
   const resultDf = await runSearchQuery(libId, compoundType, condition);
-  tv.dataFrame = resultDf;
-  setColumnsFormat(tv);
-  applyRevvityLayout(`${libName}|${compoundType}`, tv, filtersDiv, filtersDockNode); 
+  updateView(openedView as DG.TableView, resultDf, compoundType, libName, libId, filtersDiv);
   if (changePath)
     tv.path = createPath([libName, getViewNameByCompoundType(compoundType), 'search', JSON.stringify(condition)]);
   ui.setUpdateIndicator(tv.grid.root, false);
 }
 
-
-export async function initializeQueryBuilder(libId: string, compoundType: string,
-  initialSearchQuery?: ComplexCondition): Promise<QueryBuilder> {
-  const filterFields = getDefaultProperties();
-  const tagsStr = await funcs.getTagsForField(compoundType, libId);
-  const tags: { [key: string]: string } = JSON.parse(tagsStr);
-  Object.keys(tags).forEach((tagName) => {
-    const propOptions: { [key: string]: any } = {
-      name: tagName,
-      type: REVVITY_FIELD_TO_PROP_TYPE_MAPPING[tags[tagName]],
-    };
-    const nameArr = tagName.split('.');
-    if (nameArr.length > 1)
-      propOptions.friendlyName = nameArr[1];
-    const prop = DG.Property.fromOptions(propOptions);
-    prop.options[SUGGESTIONS_FUNCTION] = async (text: string) => {
-      const terms = await getTermsForField(tagName, compoundType, libId, true);
-      return terms.filter((it) => it.toLowerCase().includes(text.toLowerCase()));
-    }
-    filterFields.push(prop);
-  });
-
-  return new QueryBuilder(filterFields, initialSearchQuery, QueryBuilderLayout.Narrow, `Revvity Signals|${libId}|${compoundType}`, true);
-
+export async function getPropertiesForLibAndEntityType(libId: string, compoundType: string): Promise<DG.Property[]> {
+  if (!filterProperties[`${libId}|${compoundType}`]) {
+    const filterFields = getDefaultProperties();
+    const tagsStr = await funcs.getTags(compoundType, libId);
+    const tags: { [key: string]: string } = JSON.parse(tagsStr);
+    Object.keys(tags).forEach((tagName) => {
+      const propOptions: { [key: string]: any } = {
+        name: tagName,
+        type: REVVITY_FIELD_TO_PROP_TYPE_MAPPING[tags[tagName]],
+      };
+      const nameArr = tagName.split('.');
+      if (nameArr.length > 1)
+        propOptions.friendlyName = nameArr[1];
+      const prop = DG.Property.fromOptions(propOptions);
+      prop.options[SUGGESTIONS_FUNCTION] = async (text: string) => {
+        const terms = await getTermsForField(tagName, compoundType, libId, true);
+        return terms.filter((it) => it.toLowerCase().includes(text.toLowerCase()));
+      }
+      filterFields.push(prop);
+    });
+    filterProperties[`${libId}|${compoundType}`] = filterFields;
+  }
+  return filterProperties[`${libId}|${compoundType}`];
 }
-
 
 function updateQueryBuilderLayout(qb: QueryBuilder, width: number, libId: string, compoundType: string) {
   if (!qb) return;

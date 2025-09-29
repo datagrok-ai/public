@@ -95,7 +95,7 @@ category('revvity signals functions', () => {
   });
 
   test('getTags', async () => {
-    const tags = JSON.parse(await funcs.getTagsForField('batch', 'assetType:686ecf60e3c7095c954bd94f'));
+    const tags = JSON.parse(await funcs.getTags('batch', 'assetType:686ecf60e3c7095c954bd94f'));
     expect(Object.keys(tags).length > 0, true, 'Returned empty tags list');
   });
 

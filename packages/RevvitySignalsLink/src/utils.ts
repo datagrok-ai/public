@@ -10,6 +10,10 @@ import { compoundTypeAndViewNameMapping, ENTITY_FIELDS_TO_EXCLUDE, FIELDS_SECTIO
 import { getRevvityLibraries } from './libraries';
 import { u2 } from '@datagrok-libraries/utils/src/u2';
 import { _package } from './package';
+import { currentQueryBuilderConfig, runSearchQuery } from './search-utils';
+import { funcs } from './package-api';
+import { ComplexCondition, Operators } from '@datagrok-libraries/utils/src/query-builder/query-builder';
+import { openedView, updateView } from './view-utils';
 
 
 function extractNameFromJavaObjectString(javaString: string): string {
@@ -428,11 +432,10 @@ export async function transformData(data: Record<string, any>[]): Promise<Record
       for (const [tagKey, tagValue] of Object.entries(attrs.tags)) {
         if (TAGS_TO_EXCLUDE.includes(tagKey))
           continue;
-        const fieldName = tagKey.includes('.') ? tagKey.split('.').slice(1).join('.') : tagKey;
         if (Array.isArray(tagValue)) {
-          result[fieldName] = tagValue.join('; ');
+          result[tagKey] = tagValue.join('; ');
         } else {
-          result[fieldName] = tagValue;
+          result[tagKey] = tagValue;
         }
       }
     }
@@ -566,4 +569,50 @@ export function getAppHeader(): HTMLElement {
       bottomLine: true
     });
   return appHeader;
+}
+
+export async function createWidgetByRevvityLabel(idSemValue: DG.SemanticValue<string>) {
+  let div = ui.divText(`No data found for ${idSemValue.value}`);
+  let searchConfig = currentQueryBuilderConfig;
+  if (!searchConfig) {
+    const libs = (await getRevvityLibraries()).filter((it) => it.name.toLowerCase() === 'compounds');
+    if (libs.length)
+      searchConfig = { libId: libs[0].id, libName: 'compounds', entityType: 'batch' } //use compounds|batches as default
+  }
+  if (idSemValue.cell?.column) { //now can search only through materials library - the last true parameter
+    const terms: string[] = await funcs.getTermsForField(idSemValue.cell?.column.name,
+      searchConfig!.entityType, searchConfig!.libId, true);
+    if (terms.length) {
+      const inputName = idSemValue.cell?.column.getTag('friendlyName') ?? idSemValue.cell?.column.name;
+
+      const labelInput = ui.input.choice(inputName, { value: idSemValue.value, items: terms, nullable: false });
+
+      const searchButton = ui.button('Search', async () => {
+        const viewToUpdate = openedView ?? grok.shell.tv;
+        if (viewToUpdate) {
+          ui.setUpdateIndicator(viewToUpdate.root, true, `Searching ${inputName} = ${labelInput.value}`);
+          const queryBuilderCondition: ComplexCondition = {
+            logicalOperator: Operators.Logical.and,
+            conditions: [
+              { field: idSemValue.cell?.column.name, operator: Operators.EQ, value: labelInput.value }]
+          };
+          const df = await runSearchQuery(searchConfig!.libId, searchConfig!.entityType, queryBuilderCondition);
+          const filtersDiv = Array.from(document.getElementsByClassName('revvity-signals-filter-panel'));
+          updateView(viewToUpdate as DG.TableView, df, searchConfig!.entityType, searchConfig!.libName,
+            searchConfig!.libId, filtersDiv.length ? filtersDiv[0] as HTMLDivElement : undefined);
+          ui.setUpdateIndicator(viewToUpdate.root, false);
+          if (searchConfig?.qb)
+            searchConfig?.qb.loadCondition(queryBuilderCondition);
+        }
+      });
+
+      div = ui.divV([
+        labelInput,
+        searchButton
+      ])
+
+    }
+  }
+
+  return div;
 }

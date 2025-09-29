@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import { awaitCheck, delay } from '@datagrok-libraries/utils/src/test';
 import { getRevvityLibraries } from './libraries';
-import { initializeFilters, SAVED_SEARCH_STORAGE } from './search-utils';
+import { filterProperties, getPropertiesForLibAndEntityType, initializeFilters, SAVED_SEARCH_STORAGE } from './search-utils';
 import { getCompoundTypeByViewName, getViewNameByCompoundType } from './utils';
 import { retrieveQueriesMap } from './compounds';
 import { ComplexCondition } from '@datagrok-libraries/utils/src/query-builder/query-builder';
@@ -15,7 +15,25 @@ import { funcs } from './package-api';
 
 const REVVITY_SIGNALS_APP_PATH: string = 'apps/Revvitysignalslink';
 
-let openedView: DG.TableView | DG.ViewBase | null = null;
+export let openedView: DG.TableView | DG.ViewBase | null = null;
+
+export async function updateView(tv: DG.TableView, df: DG.DataFrame, compoundType: string, libName: string, libId?: string, filtersDiv?: HTMLDivElement) {
+  tv.dataFrame = df;
+
+  setColumnsFormat(tv);
+
+  //look for friendly names and set
+  if (!libId) {
+    const libs = await getRevvityLibraries();
+    const lib = libs.filter((it) => it.name.toLowerCase() === libName.toLowerCase());
+    if (lib.length)
+      libId = lib[0].id;
+  }
+  if(libId)
+    await setColumnsFriendlyNames(libId, compoundType, tv.dataFrame);
+
+  applyRevvityLayout(`${libName}|${compoundType}`, tv, filtersDiv); 
+}
 
 export function createPath(viewName?: string[]) {
   let path = `${REVVITY_SIGNALS_APP_PATH}`;
@@ -157,12 +175,13 @@ export function createViewForExpandabelNode(viewName: string,
   getElement(div, libName, typeName);
 }
 
-export function applyRevvityLayout(layoutKey: string, tv: DG.TableView, filtersDiv: HTMLDivElement, filtersDockNode?: DG.DockNode) {
+export async function applyRevvityLayout(layoutKey: string, tv: DG.TableView, filtersDiv?: HTMLDivElement) {
   const savedLayout = grok.userSettings.getValue(LAYOUT_STORAGE, layoutKey);
   if (savedLayout) {
     //first close the filterPanel is opened
-    const filtersOPened = filtersDockNode && filtersDockNode.parent != null;
-    if (filtersOPened) {
+    const filtersDockNode = filtersDiv && tv.dockManager.findNode(filtersDiv);
+    const filtersOpened = filtersDockNode && (filtersDockNode as DG.DockNode).parent != null;
+    if (filtersOpened) {
       tv.dockManager.close(filtersDockNode!);
       filtersDockNode!.container.destroy();
     }
@@ -173,7 +192,7 @@ export function applyRevvityLayout(layoutKey: string, tv: DG.TableView, filtersD
       console.warn('Failed to restore saved layout:', e);
     }
     //open filters again if they were opened
-    if (filtersOPened)
+    if (filtersOpened)
       (openedView! as DG.TableView).dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
   }
 }
@@ -197,19 +216,19 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
   openedView.path = createPath(path);
   const layoutKey = `${libName}|${compoundType}`;
   const filtersDiv = ui.divV([], 'revvity-signals-filter-panel');
-  let filtersDockNode: DG.DockNode | undefined = undefined;
 
   // Add save layout button to ribbon panel
   const saveLayoutButton = ui.button('Save layout', async () => {
     //first close the filterPanel is opened
-    const filtersOPened = filtersDockNode && filtersDockNode.parent != null;
-    if (filtersOPened) {
+    const filtersDockNode = tv.dockManager.findNode(filtersDiv);
+    const filtersOpened = filtersDockNode && (filtersDockNode as DG.DockNode).parent != null;
+    if (filtersOpened) {
       tv.dockManager.close(filtersDockNode!);
       filtersDockNode!.container.destroy();
     }
     const layoutData = tv.saveLayout().toJson();
     //open filters again if they were opened
-    if (filtersOPened)
+    if (filtersOpened)
       (openedView! as DG.TableView).dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
     grok.userSettings.add(LAYOUT_STORAGE, layoutKey, layoutData);
     grok.shell.info(`Layout saved for ${libName} - ${compoundType}`);
@@ -227,16 +246,13 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
   const initFilters = () => {
     ui.setUpdateIndicator(openedView!.root, false);
     setBreadcrumbsInViewName([libName, compoundType], treeNode);
-    initializeFilters(treeNode, tv, filtersDiv, libName, compoundType, initialSearchQuery, !isSavedSearch)
-      .then((res) => filtersDockNode = res);
+    initializeFilters(treeNode, openedView! as DG.TableView, filtersDiv, libName, compoundType, initialSearchQuery, !isSavedSearch);
   }
 
   if (!initialSearchQuery) {
     funcs.searchEntitiesWithStructures(JSON.stringify(retrieveQueriesMap[compoundType]), '{}')
-    .then((res: DG.DataFrame) => {
-      (openedView! as DG.TableView).dataFrame = res;
-      setColumnsFormat(openedView! as DG.TableView);
-      applyRevvityLayout(`${libName}|${compoundType}`, openedView! as DG.TableView, filtersDiv, filtersDockNode); 
+    .then(async (res: DG.DataFrame) => {
+      updateView(openedView as DG.TableView, res, compoundType, libName, undefined, filtersDiv);
       initFilters();
     })
       .catch((e: any) => {
@@ -256,5 +272,15 @@ export function setColumnsFormat(tv: DG.TableView) {
       const gridCol = tv.grid.col(colName)!
       gridCol.format = format;
     }
+  }
+}
+
+export async function setColumnsFriendlyNames(libId: string, entityType: string, dataFrame: DG.DataFrame) {
+  const colNames = dataFrame.columns.names();
+  const props = await getPropertiesForLibAndEntityType(libId, entityType);
+  for (const colName of colNames) {
+    const prop = props.filter((it) => it.name === colName);
+    if (prop.length && prop[0].friendlyName)
+      dataFrame.col(colName)!.setTag('friendlyName', prop[0].friendlyName);
   }
 }

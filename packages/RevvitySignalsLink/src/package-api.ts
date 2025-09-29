@@ -40,8 +40,8 @@ export namespace funcs {
     return await grok.functions.call('RevvitySignalsLink:RegisterRevvityIdsFormats', {});
   }
 
-  export async function getTagsForField(type: string , assetTypeId: string ): Promise<string> {
-    return await grok.functions.call('RevvitySignalsLink:GetTagsForField', { type, assetTypeId });
+  export async function getTags(type: string , assetTypeId: string ): Promise<string> {
+    return await grok.functions.call('RevvitySignalsLink:GetTags', { type, assetTypeId });
   }
 
   export async function searchTerms(query: string ): Promise<string> {
@@ -54,5 +54,9 @@ export namespace funcs {
 
   export async function entityTreeWidget(id: any ): Promise<any> {
     return await grok.functions.call('RevvitySignalsLink:EntityTreeWidget', { id });
+  }
+
+  export async function revvityLabelWidget(id: any ): Promise<any> {
+    return await grok.functions.call('RevvitySignalsLink:RevvityLabelWidget', { id });
   }
 }
