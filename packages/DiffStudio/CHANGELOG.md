@@ -1,5 +1,13 @@
 # Diff Studio changelog
 
+## 1.4.3 (2025-09-29)
+
+Fixed build
+
+## 1.4.3 (2025-09-29)
+
+Fixed dayjs issue
+
 ## 1.4.3 (2025-09-25)
 
 Fixed
