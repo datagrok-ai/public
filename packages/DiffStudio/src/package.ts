@@ -19,7 +19,6 @@ import {Model} from './model';
 
 import utc from 'dayjs/plugin/utc';
 import dayjs from 'dayjs';
-dayjs.extend(utc);
 
 export const _package = new DG.Package();
 
@@ -30,7 +29,9 @@ export function info() {
 
 export class PackageFunctions {
   @grok.decorators.init({})
-  static async init() {}
+  static async init() {
+    dayjs.extend(utc);
+  }
 
   @grok.decorators.func({})
   static dock(): void {
