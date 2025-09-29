@@ -17,6 +17,10 @@ import {UI_TIME} from './ui-constants';
 import {ODEs, SolverOptions} from '@datagrok/diff-grok';
 import {Model} from './model';
 
+import utc from 'dayjs/plugin/utc';
+import dayjs from 'dayjs';
+dayjs.extend(utc);
+
 export const _package = new DG.Package();
 
 //name: info
