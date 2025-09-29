@@ -98,7 +98,7 @@ export async function initializeFilters(treeNode: DG.TreeViewGroup, tv: DG.Table
     });
 
     const runSearchButton = ui.button('Search', async () => {
-      runSearch(qb, tv, selectedLib[0].id, compoundType, libName, true);
+      runSearch(qb, tv, filtersDiv, selectedLib[0].id, compoundType, libName, filtersDockedNode, true);
     });
 
     //set initial validation status
@@ -114,20 +114,21 @@ export async function initializeFilters(treeNode: DG.TreeViewGroup, tv: DG.Table
     });
 
     if (initialSearchQuery)
-      runSearch(qb, tv, selectedLib[0].id, compoundType, libName, changePath);
+      runSearch(qb, tv, filtersDiv, selectedLib[0].id, compoundType, libName, filtersDockedNode, changePath);
 
     return filtersDockedNode;
   }
 }
 
-export async function runSearch(qb: QueryBuilder, tv: DG.TableView, libId: string, compoundType: string, libName: string, changePath?: boolean) {
+export async function runSearch(qb: QueryBuilder, tv: DG.TableView, filtersDiv: HTMLDivElement, libId: string, compoundType: string,
+  libName: string, filtersDockNode: DG.DockNode, changePath?: boolean) {
   qb.saveConditionToHistory();
   ui.setUpdateIndicator(tv.grid.root, true, 'Searching...');
   const condition = qb.condition;
   const resultDf = await runSearchQuery(libId, compoundType, condition);
   tv.dataFrame = resultDf;
   setColumnsFormat(tv);
-  applyRevvityLayout(`${libName}|${compoundType}`); 
+  applyRevvityLayout(`${libName}|${compoundType}`, tv, filtersDiv, filtersDockNode); 
   if (changePath)
     tv.path = createPath([libName, getViewNameByCompoundType(compoundType), 'search', JSON.stringify(condition)]);
   ui.setUpdateIndicator(tv.grid.root, false);

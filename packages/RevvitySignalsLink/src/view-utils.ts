@@ -157,15 +157,24 @@ export function createViewForExpandabelNode(viewName: string,
   getElement(div, libName, typeName);
 }
 
-export function applyRevvityLayout(layoutKey: string) {
-    const savedLayout = grok.userSettings.getValue(LAYOUT_STORAGE, layoutKey);
+export function applyRevvityLayout(layoutKey: string, tv: DG.TableView, filtersDiv: HTMLDivElement, filtersDockNode?: DG.DockNode) {
+  const savedLayout = grok.userSettings.getValue(LAYOUT_STORAGE, layoutKey);
   if (savedLayout) {
+    //first close the filterPanel is opened
+    const filtersOPened = filtersDockNode && filtersDockNode.parent != null;
+    if (filtersOPened) {
+      tv.dockManager.close(filtersDockNode!);
+      filtersDockNode!.container.destroy();
+    }
     try {
       const layout = DG.ViewLayout.fromJson(savedLayout);
       (openedView as DG.TableView).loadLayout(layout);
     } catch (e) {
       console.warn('Failed to restore saved layout:', e);
     }
+    //open filters again if they were opened
+    if (filtersOPened)
+      (openedView! as DG.TableView).dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
   }
 }
 
@@ -192,7 +201,7 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
 
   // Add save layout button to ribbon panel
   const saveLayoutButton = ui.button('Save layout', async () => {
-    //first close the filrePanel is opened
+    //first close the filterPanel is opened
     const filtersOPened = filtersDockNode && filtersDockNode.parent != null;
     if (filtersOPened) {
       tv.dockManager.close(filtersDockNode!);
@@ -227,7 +236,7 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
     .then((res: DG.DataFrame) => {
       (openedView! as DG.TableView).dataFrame = res;
       setColumnsFormat(openedView! as DG.TableView);
-      applyRevvityLayout(`${libName}|${compoundType}`); 
+      applyRevvityLayout(`${libName}|${compoundType}`, openedView! as DG.TableView, filtersDiv, filtersDockNode); 
       initFilters();
     })
       .catch((e: any) => {
