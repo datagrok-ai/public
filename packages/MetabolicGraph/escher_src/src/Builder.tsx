@@ -37,8 +37,9 @@ import './css/Builder.css';
 // uploaded to NPM.
 // @ts-ignore
 import builderEmbed from '!!raw-loader!./css/Builder-embed.css';
-import {CobraModelData, D3Selection, MapData, ReactionSamplingDistribution, SamplingFunctionResult, SettingsType} from './ts/types';
+import {CobraModelData, D3Selection, MapData, ReactionBounds, ReactionSamplingDistribution, SamplingFunctionResult, SettingsType} from './ts/types';
 import {Ref} from 'preact';
+import { stat } from 'fs';
 
 export type BuilderType = Builder;
 export type BuilderConstructor = typeof Builder;
@@ -166,6 +167,7 @@ class Builder {
       reaction_no_data_size: 8,
       // samplingFunction
       samplingFunction: null,
+      runFBA: null,
       // gene
       gene_data: null,
       and_method_in_gene_reaction_rule: 'mean',
@@ -230,6 +232,7 @@ class Builder {
       'metabolite_no_data_color',
       'metabolite_no_data_size',
       'samplingFunction',
+      'runFBA'
     ];
     // this.options and this.settings used to have different functions, but now
     // they are aliases
@@ -290,12 +293,12 @@ class Builder {
 
       this.tooltip_container.passProps(getTooltipProps()); // reactionData misssing
       this.callback_manager.set('load_map', (mpData) => {
-        this.set_reaction_data(null);
+        this.set_reaction_data(null, '');
         oldModel = JSON.parse(JSON.stringify(this.model_data));
         this.tooltip_container.passProps(getTooltipProps());
       });
       this.callback_manager.set('load_model', (modelData) => {
-        this.set_reaction_data(null);
+        this.set_reaction_data(null, '');
         oldModel = JSON.parse(JSON.stringify(this.model_data));
         this.tooltip_container.passProps(getTooltipProps());
       });
@@ -405,6 +408,8 @@ class Builder {
       const dataReceived = (d: SamplingFunctionResult) => {
         if (!d)
           throw new Error('Sampling function did not return any data');
+        if (d.cancled)
+          return; // do not update the distribution if sampling was canceled
         this.reaction_sampling_distribution.lower_bound = d.lower_bound;
         this.reaction_sampling_distribution.upper_bound = d.upper_bound;
         this.reaction_sampling_distribution.data.clear();
@@ -417,6 +422,21 @@ class Builder {
       else
         dataReceived(data);
     }
+  }
+
+  set_reaction_bounds(boundsData: {[reactionName: string]: ReactionBounds}) {
+    if (!this.map || !this.model_data || !this.model_data || !this.model_data.reactions)
+      throw new Error('Cannot set reaction bounds without a map and model loaded');
+    for (const reaction of this.model_data.reactions) {
+      const foundReaction = boundsData[reaction.name] ?? boundsData[reaction.id] ?? boundsData[reaction.bigg_id];
+      if (foundReaction) {
+        reaction.lower_bound = foundReaction.lower_bound;
+        reaction.upper_bound = foundReaction.upper_bound;
+        // reaction data is passed by reference to its children, so technically no need to update anything
+      }
+    }
+
+    // pass props
   }
 
   // builder.options is deprecated
@@ -432,7 +452,7 @@ class Builder {
   /**
    * For documentation of this function, see docs/javascript_api.rst.
    */
-  load_model(modelData, shouldUpdateData = true) { // eslint-disable-line camelcase
+  load_model(modelData: CobraModelData, shouldUpdateData = true) { // eslint-disable-line camelcase
     this.model_data = modelData;
     this.reaction_sampling_distribution.data.clear();
 
@@ -693,7 +713,7 @@ class Builder {
    * Function to pass props for the menu bar
    * @param {Object} props - Props that the menu bar will use
    */
-  passPropsMenuBar(props = {}) {
+  passPropsMenuBar(props: any = {}) {
     this.map.callback_manager.run('pass_props_menu_bar', null, props);
   }
 
@@ -743,8 +763,8 @@ class Builder {
         this.callback_manager.run('clear_model');
       },
       updateRules: () => this.map.convert_map(),
-      setReactionData: (d: { [key: string]: (number | string | null) } | null) => this.set_reaction_data(d),
-      clearReactionData: () => this.set_reaction_data(null),
+      setReactionData: (d: { [key: string]: (number | string | null) } | null) => this.set_reaction_data(d, 'Uploaded File'),
+      clearReactionData: () => this.set_reaction_data(null, ''),
       setGeneData: (d) => this.set_gene_data(d),
       clearGeneData: () => this.set_gene_data(null, true),
       setMetaboliteData: (d) => this.set_metabolite_data(d),
@@ -767,7 +787,8 @@ class Builder {
       full_screen: () => this.full_screen(),
       search: () => this.passPropsSearchBar({display: true}),
       toggleBeziers: () => this.map.toggle_beziers(),
-      renderSettingsMenu: () => this.passPropsSettingsMenu({display: true})
+      renderSettingsMenu: () => this.passPropsSettingsMenu({display: true}),
+      reactionDataInfo: ''
     });
 
     // redraw when beziers change
@@ -970,16 +991,22 @@ class Builder {
     return null;
   }
 
+  private _updateReactionDataSource(dataSource: string) {
+    const textContainer = document.getElementById('d4-escher-reaction-data-source-info');
+    if (textContainer) {
+      textContainer.textContent = dataSource ? `Reaction Flux Source: ${dataSource}` : '';
+    }
+  }
+
   /**
    * For documentation of this function, see docs/javascript_api.rst.
    */
-  set_reaction_data(data: { [key: string]: (number | string | null) } | null) { // eslint-disable-line camelcase
+  set_reaction_data(data: { [key: string]: (number | string | null) } | null, dataSource: string) { // eslint-disable-line camelcase
     this.settings.set('reaction_data', data);
 
     // clear gene data
     if (data)
       this.settings.options.gene_data = null;
-
 
     const messageFn = this._reactionCheckAddAbs();
 
@@ -1003,6 +1030,7 @@ class Builder {
     }
 
     this.tooltip_container.passProps({reactionData: data}); // pass new reaction props.
+    this.passPropsMenuBar({reactionDataInfo: data ? `Reaction Flux Source: ${dataSource}` : ''});
   }
 
   /**
@@ -1563,6 +1591,7 @@ class Builder {
       mapJson: this.map.map_for_export(),
       cobraModel: this.model_data,
       description: '',
+      reactionData: this.settings.get('reaction_data') as { [key: string]: (number | null) } | null,
     };
   }
 
@@ -1590,6 +1619,9 @@ class Builder {
     }
 
     this.map.selectionChanged && this.map.selectionChanged();
+
+    if (state.reactionData)
+      this.set_reaction_data(state.reactionData, 'Loaded from saved state');
   }
 }
 

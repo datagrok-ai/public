@@ -27,7 +27,7 @@ function addCmd(key: string | string[], ctrlEqualsCmd: boolean) {
 export default class KeyManager {
   assignedKeys: any;
   inputList: any;
-  mousetrap: any;
+  mousetrap: Mousetrap.MousetrapInstance;
   ctrlEqualsCmd: any;
   escapeQueue: any;
   removeEscapeListener: any;
@@ -50,7 +50,11 @@ export default class KeyManager {
     // in focus.
     // TODO NOT WORKING https://craig.is/killing/mice
     // consider swithching to https://github.com/PolicyStat/combokeys
-    this.mousetrap.stopCallback = () => false;
+    this.mousetrap.stopCallback = (e, el) => {
+      if (el instanceof HTMLInputElement)
+        return true; // allow inputs to handle key events
+      return false
+    };
 
     this.escapeQueue = [];
     this.removeEscapeListener = null;

@@ -1,19 +1,22 @@
 {
   "name": "@datagrok/metabolicgraph",
   "friendlyName": "Metabolic Graph",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Metabolic graph visualizations and analysis",
   "author": {
     "name": "Dmytro Kovalyov",
     "email": "dkovalyov@datagrok.ai"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.6.5",
+    "glpk.js": "https://github.com/hgourvest/glpk.js",
+    "glpk-wasm": "^0.1.4",
+    "@datagrok-libraries/utils": "^4.3.6",
     "cash-dom": "^8.1.5",
     "datagrok-api": "^1.22.0",
     "dayjs": "^1.11.10"
   },
   "devDependencies": {
+  "copy-webpack-plugin": "^12.0.2",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
     "datagrok-tools": "latest",
@@ -22,7 +25,8 @@
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
     "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^5.1.4",
+    "file-loader": "^6.2.0"
   },
   "scripts": {
     "link-all": "",
