@@ -1,9 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { RevvityUser } from "./revvity-api";
+import { RevvityData, RevvityUser } from "./revvity-api";
 import { openRevvityNode } from './view-utils';
 import { getAppHeader } from './utils';
+import { funcs } from './package-api';
 
 
 export type RevvityLibrary = {
@@ -21,10 +22,49 @@ export let libraries: RevvityLibrary[] | undefined = undefined;
 
 export async function getRevvityLibraries(): Promise<RevvityLibrary[]> {
     if (!libraries) {
-        const librariesStr = await grok.functions.call('RevvitySignalsLink:getLibraries');
-        libraries = JSON.parse(librariesStr);
+        libraries = await getLibrariesWithEntityTypes();
     }
     return libraries!;
+}
+
+export async function getLibrariesWithEntityTypes(): Promise<RevvityLibrary[]> {
+  const data = JSON.parse(await funcs.getLibraries());
+  const libraries: RevvityLibrary[] = [];
+  for (const lib of data) {
+    if (lib.attributes.name && lib.id) {
+      let types: RevvityType[] = [];
+      const query = {
+        "query": {
+          "$and": [
+            {
+              "$match": {
+                "field": "assetTypeEid",
+                "value": `${lib.type}:${lib.id}`,
+              }
+            },
+            {
+              "$not": [
+                {
+                  "$match": {
+                    "field": "type",
+                    "value": "assetType"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "field": "type"
+      }
+      const entityTypesResponse: RevvityData[] = await JSON.parse(await funcs.searchTerms(JSON.stringify(query)));
+
+      types = entityTypesResponse.map((it) => {
+        return { name: it.id, count: it.attributes?.count };
+      });
+      libraries.push({ name: lib.attributes.name, id: `${lib.type}:${lib.id}`, types: types });
+    }
+  }
+  return libraries;
 }
 
 export async function createInitialSatistics(statsDiv: HTMLElement, libName?: string) {

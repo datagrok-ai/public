@@ -53,19 +53,5 @@
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/RevvitySignalsLink"
-  },
-    "properties": [
-    {
-      "name": "revvity-asset",
-      "propertyType": "string",
-      "defaultValue": "DGS-{#######}",
-      "nullable": false
-    },
-    {
-      "name": "revvity-batch",
-      "propertyType": "string",
-      "defaultValue": "DGS-{#######}-{###}",
-      "nullable": false
-    }
-  ]
+  }
 }

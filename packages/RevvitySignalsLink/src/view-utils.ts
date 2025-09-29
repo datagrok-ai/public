@@ -9,6 +9,7 @@ import { retrieveQueriesMap } from './compounds';
 import { ComplexCondition } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { RevvityUser } from './revvity-api';
 import { LAYOUT_STORAGE, USER_FIELDS } from './constants';
+import { funcs } from './package-api';
 
 
 
@@ -222,10 +223,8 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
   }
 
   if (!initialSearchQuery) {
-    grok.functions.call('RevvitySignalsLink:searchEntitiesWithStructures', {
-      query: JSON.stringify(retrieveQueriesMap[compoundType]),
-      params: '{}'
-    }).then((res: DG.DataFrame) => {
+    funcs.searchEntitiesWithStructures(JSON.stringify(retrieveQueriesMap[compoundType]), '{}')
+    .then((res: DG.DataFrame) => {
       (openedView! as DG.TableView).dataFrame = res;
       setColumnsFormat(openedView! as DG.TableView);
       applyRevvityLayout(`${libName}|${compoundType}`); 

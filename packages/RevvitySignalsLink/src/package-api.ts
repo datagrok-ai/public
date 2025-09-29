@@ -36,12 +36,20 @@ export namespace funcs {
     return await grok.functions.call('RevvitySignalsLink:GetLibraries', {});
   }
 
-  export async function getTags(type: string , assetTypeId: string ): Promise<string> {
-    return await grok.functions.call('RevvitySignalsLink:GetTags', { type, assetTypeId });
+  export async function registerRevvityIdsFormats(): Promise<void> {
+    return await grok.functions.call('RevvitySignalsLink:RegisterRevvityIdsFormats', {});
   }
 
-  export async function getTerms(fieldName: string , type: string , assetTypeId: string , isMaterial: boolean ): Promise<string> {
-    return await grok.functions.call('RevvitySignalsLink:GetTerms', { fieldName, type, assetTypeId, isMaterial });
+  export async function getTagsForField(type: string , assetTypeId: string ): Promise<string> {
+    return await grok.functions.call('RevvitySignalsLink:GetTagsForField', { type, assetTypeId });
+  }
+
+  export async function searchTerms(query: string ): Promise<string> {
+    return await grok.functions.call('RevvitySignalsLink:SearchTerms', { query });
+  }
+
+  export async function getTermsForField(fieldName: string , type: string , assetTypeId: string , isMaterial: boolean ): Promise<any> {
+    return await grok.functions.call('RevvitySignalsLink:GetTermsForField', { fieldName, type, assetTypeId, isMaterial });
   }
 
   export async function entityTreeWidget(id: any ): Promise<any> {

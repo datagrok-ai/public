@@ -7,6 +7,7 @@ import { openRevvityNode } from '../view-utils';
 import { Operators } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { funcs } from '../package-api';
 import { MOL_COL_NAME } from '../constants';
+import { getLibrariesWithEntityTypes } from '../libraries';
 
 category('revvity signals app', () => {
 
@@ -83,8 +84,8 @@ category('revvity signals functions', () => {
     await awaitCheck(() => !df.col(MOL_COL_NAME)!.isEmpty, 'Molecules column is not filling with values', 30000);
   });
 
-  test('getLibraries', async () => {
-    const libs = JSON.parse(await funcs.getLibraries());
+  test('getLibrariesWithEntityTypes', async () => {
+    const libs = await getLibrariesWithEntityTypes();
     expect(libs.length > 0, true, 'Returned empty libraries list');
   });
 
@@ -94,12 +95,12 @@ category('revvity signals functions', () => {
   });
 
   test('getTags', async () => {
-    const tags = JSON.parse(await funcs.getTags('batch', 'assetType:686ecf60e3c7095c954bd94f'));
+    const tags = JSON.parse(await funcs.getTagsForField('batch', 'assetType:686ecf60e3c7095c954bd94f'));
     expect(Object.keys(tags).length > 0, true, 'Returned empty tags list');
   });
 
   test('getTerms', async () => {
-    const terms = JSON.parse(await funcs.getTerms('materials.Batch Chemical Name', 'batch', 'assetType:686ecf60e3c7095c954bd94f', true));
+    const terms = await funcs.getTermsForField('materials.Batch Chemical Name', 'batch', 'assetType:686ecf60e3c7095c954bd94f', true);
     expect(terms.length > 0, true, 'Returned empty terms list');
   });
 

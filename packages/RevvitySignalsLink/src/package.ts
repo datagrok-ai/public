@@ -34,8 +34,7 @@ let config: RevvityConfig = { libraries: undefined };
 
 //tags: init
 export function init() {
-  const regexp = convertIdentifierFormatToRegexp(Object.values(_package.settings));
-  DG.SemanticValue.registerRegExpDetector('revvity-id', regexp);
+  registerRevvityIdsFormats();
 }
 
 //tags: app
@@ -194,57 +193,36 @@ export async function getUsers(): Promise<string> {
 //output: string libraries
 export async function getLibraries(): Promise<string> {
   const response = await queryLibraries();
-  const libraries: RevvityLibrary[] = [];
   if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
     return '[]';
   const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
-  for (const lib of data) {
-    if (lib.attributes.name && lib.id) {
-      let types: RevvityType[] = [];
-      const query = {
-        "query": {
-          "$and": [
-            {
-              "$match": {
-                "field": "assetTypeEid",
-                "value": `${lib.type}:${lib.id}`,
-              }
-            },
-            {
-              "$not": [
-                {
-                  "$match": {
-                    "field": "type",
-                    "value": "assetType"
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        "field": "type"
-      }
-      const typesResponse = await queryTerms(query);
-      if (typesResponse.data) {
-        const typesData: Record<string, any>[] = !Array.isArray(typesResponse.data) ? [typesResponse.data!] : typesResponse.data!;
-        types = typesData.map((it) => {
-          return {name: it.id, count: it.attributes?.count};
-        });
-      }
-      libraries.push({ name: lib.attributes.name, id: `${lib.type}:${lib.id}`, types: types });
-    }
-  }
-  return JSON.stringify(libraries);
+  return JSON.stringify(data);
 }
 
 
-//name: Get Tags
+//name Register Revvity Ids Formats
+export async function registerRevvityIdsFormats() {
+  const data = JSON.parse(await funcs.getLibraries());
+  const formats: string[] = [];
+  for (const lib of data) {
+    if (lib.attributes?.assets?.numbering?.format) {
+      formats.push(lib.attributes?.assets?.numbering?.format);
+      if (lib.attributes?.batches?.numbering?.format)
+        formats.push(`${formats[0]}-${lib.attributes?.batches?.numbering?.format}`);
+    }
+  }
+  const regexp = convertIdentifierFormatToRegexp(Object.values(formats));
+  if (regexp)
+    DG.SemanticValue.registerRegExpDetector('revvity-id', regexp);
+}
+
+//name: Get Tags For Field
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
 //input: string type
 //input: string assetTypeId
 //output: string fields
-export async function getTags(type: string, assetTypeId: string): Promise<string> {
+export async function getTagsForField(type: string, assetTypeId: string): Promise<string> {
   const query = {
     "query": {
       "$and": [
@@ -276,21 +254,33 @@ export async function getTags(type: string, assetTypeId: string): Promise<string
   const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
   const tags: { [key: string]: string } = {};
   for (const tag of data) {
-    tags[tag.id] = tag.attributes.types[0].type;
+    if (tag?.attributes?.types && Array.isArray(tag?.attributes?.types) && tag?.attributes?.types.length > 0)
+    tags[tag.id] = tag?.attributes?.types[0].type;
   }
   return JSON.stringify(tags);
 }
 
-
-//name: Get Terms
+//name: Search Terms
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
+//input: string query
+//output: string terms
+export async function searchTerms(query: string): Promise<string> {
+  const response = await queryTerms(JSON.parse(query));
+  if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
+    return '{}';
+  const data: RevvityData[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
+  return JSON.stringify(data);
+}
+
+
+//name: Get Terms For Field
 //input: string fieldName
 //input: string type
 //input: string assetTypeId
 //input: bool isMaterial
-//output: string terms
-export async function getTerms(fieldName: string, type: string, assetTypeId: string, isMaterial: boolean): Promise<string> {
+//output: list<string> terms
+export async function getTermsForField(fieldName: string, type: string, assetTypeId: string, isMaterial: boolean): Promise<string[]> {
   const innerAndConditions: any[] = [
     {
       "$match": {
@@ -335,12 +325,9 @@ export async function getTerms(fieldName: string, type: string, assetTypeId: str
     field: fieldName,
     in: "tags"
   };
-  const response = await queryTerms(query);
-  if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
-    return '{}';
-  const data: RevvityData[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
-  const tags = data.map((it) => it.id).filter((tag) => tag != undefined);
-  return JSON.stringify(tags);
+  const data: RevvityData[] = JSON.parse(await funcs.searchTerms(JSON.stringify(query)));
+  const terms = data.map((it) => it.id).filter((term) => term != undefined);
+  return terms;
 }
 
 

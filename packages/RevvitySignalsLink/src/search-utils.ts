@@ -7,9 +7,10 @@ import { convertComplexConditionToSignalsSearchQuery, SignalsSearchQuery } from 
 import { materialsCondition } from './compounds';
 import { createLibsObjectForStatistics, getRevvityLibraries, RevvityLibrary } from './libraries';
 import { getDefaultProperties, REVVITY_FIELD_TO_PROP_TYPE_MAPPING } from './properties';
-import { getTerms } from './package';
+import { getTermsForField } from './package';
 import { applyRevvityLayout, createPath, createViewForExpandabelNode, createViewFromPreDefinedQuery, openRevvityNode, setColumnsFormat } from './view-utils';
 import { getAppHeader, getCompoundTypeByViewName, getViewNameByCompoundType } from './utils';
+import { funcs } from './package-api';
 
 export const SAVED_SEARCH_STORAGE = 'RevvitySignalsLinkSavedSearch'
 
@@ -38,10 +39,7 @@ export async function runSearchQuery(libId: string, compoundType: string,
   condition.conditions.push(queryBuilderCondition);
   const signalsQuery: SignalsSearchQuery = convertComplexConditionToSignalsSearchQuery(condition);
   console.log(signalsQuery);
-  const resultDf = await grok.functions.call('RevvitySignalsLink:searchEntitiesWithStructures', {
-    query: JSON.stringify(signalsQuery),
-    params: '{}'
-  });
+  const resultDf = await funcs.searchEntitiesWithStructures(JSON.stringify(signalsQuery), '{}');
   return resultDf;
 }
 
@@ -139,10 +137,7 @@ export async function runSearch(qb: QueryBuilder, tv: DG.TableView, libId: strin
 export async function initializeQueryBuilder(libId: string, compoundType: string,
   initialSearchQuery?: ComplexCondition): Promise<QueryBuilder> {
   const filterFields = getDefaultProperties();
-  const tagsStr = await grok.functions.call('RevvitySignalsLink:getTags', {
-    assetTypeId: libId,
-    type: compoundType
-  });
+  const tagsStr = await funcs.getTagsForField(compoundType, libId);
   const tags: { [key: string]: string } = JSON.parse(tagsStr);
   Object.keys(tags).forEach((tagName) => {
     const propOptions: { [key: string]: any } = {
@@ -154,8 +149,7 @@ export async function initializeQueryBuilder(libId: string, compoundType: string
       propOptions.friendlyName = nameArr[1];
     const prop = DG.Property.fromOptions(propOptions);
     prop.options[SUGGESTIONS_FUNCTION] = async (text: string) => {
-      const termsStr = await getTerms(tagName, compoundType, libId, true);
-      const terms: string[] = JSON.parse(termsStr);
+      const terms = await getTermsForField(tagName, compoundType, libId, true);
       return terms.filter((it) => it.toLowerCase().includes(text.toLowerCase()));
     }
     filterFields.push(prop);

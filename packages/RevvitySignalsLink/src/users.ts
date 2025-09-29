@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { RevvityUser } from "./revvity-api";
+import { funcs } from './package-api';
 
 //key is revvity user Id
 export let users: RevvityUser[] | undefined = undefined;
@@ -9,7 +10,7 @@ export const revvityToDatagrokUsersMapping: {[key: string]: DG.User} = {};
 
 export async function getRevvityUsers(): Promise<RevvityUser[] | undefined> {
     if (!users) {
-        const usersStr = await grok.functions.call('RevvitySignalsLink:getUsers');
+        const usersStr = await funcs.getUsers();
         users = JSON.parse(usersStr);
     }
     return users;
