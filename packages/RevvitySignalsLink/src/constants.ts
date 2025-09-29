@@ -17,6 +17,8 @@ export const STORAGE_NAME = 'RevvitySignalsSearch';
 export const QUERY_KEY = 'query';
 export const PARAMS_KEY = 'params';
 
+export const LAYOUT_STORAGE = 'RevvityLayouts';
+
 export const FIELDS_TO_EXCLUDE_FROM_CORPORATE_ID_WIDGET = ['eid', 'system.ExID', 'system.Keywords'];
 export const ENTITY_FIELDS_TO_EXCLUDE = ['type', 'isTemplate', 'tags', 'eid', 'id'];
 export const TAGS_TO_EXCLUDE = ['system.Keywords'];

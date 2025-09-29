@@ -8,7 +8,7 @@ import { materialsCondition } from './compounds';
 import { createLibsObjectForStatistics, getRevvityLibraries, RevvityLibrary } from './libraries';
 import { getDefaultProperties, REVVITY_FIELD_TO_PROP_TYPE_MAPPING } from './properties';
 import { getTerms } from './package';
-import { createPath, createViewForExpandabelNode, createViewFromPreDefinedQuery, openRevvityNode, setColumnsFormat } from './view-utils';
+import { applyRevvityLayout, createPath, createViewForExpandabelNode, createViewFromPreDefinedQuery, openRevvityNode, setColumnsFormat } from './view-utils';
 import { getAppHeader, getCompoundTypeByViewName, getViewNameByCompoundType } from './utils';
 
 export const SAVED_SEARCH_STORAGE = 'RevvitySignalsLinkSavedSearch'
@@ -47,7 +47,7 @@ export async function runSearchQuery(libId: string, compoundType: string,
 
 
 export async function initializeFilters(treeNode: DG.TreeViewGroup, tv: DG.TableView, filtersDiv: HTMLDivElement, libName: string,
-  compoundType: string, initialSearchQuery?: ComplexCondition, changePath?: boolean) {
+  compoundType: string, initialSearchQuery?: ComplexCondition, changePath?: boolean): Promise<DG.DockNode | undefined> {
   const libs = await getRevvityLibraries();
   const selectedLib = libs.filter((l) => l.name === libName);
   if (selectedLib.length) {
@@ -87,9 +87,9 @@ export async function initializeFilters(treeNode: DG.TreeViewGroup, tv: DG.Table
     const filtersButton = ui.div(externalFilterIcon);
     const saveButton = ui.div(saveSearchIcon);
     const loadButton = ui.div(loadSearchIcon);
-    tv.setRibbonPanels([[filtersButton]]);
+    tv.setRibbonPanels(tv.getRibbonPanels().concat([[filtersButton]]));
     //create filters panel
-    tv.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
+    const filtersDockedNode = tv.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
     tv.dockManager.onClosed.subscribe((el: any) => {
       externalFilterIcon.classList.add('revvity-filters-button-icon-show');
     })
@@ -117,6 +117,8 @@ export async function initializeFilters(treeNode: DG.TreeViewGroup, tv: DG.Table
 
     if (initialSearchQuery)
       runSearch(qb, tv, selectedLib[0].id, compoundType, libName, changePath);
+
+    return filtersDockedNode;
   }
 }
 
@@ -127,6 +129,7 @@ export async function runSearch(qb: QueryBuilder, tv: DG.TableView, libId: strin
   const resultDf = await runSearchQuery(libId, compoundType, condition);
   tv.dataFrame = resultDf;
   setColumnsFormat(tv);
+  applyRevvityLayout(`${libName}|${compoundType}`); 
   if (changePath)
     tv.path = createPath([libName, getViewNameByCompoundType(compoundType), 'search', JSON.stringify(condition)]);
   ui.setUpdateIndicator(tv.grid.root, false);

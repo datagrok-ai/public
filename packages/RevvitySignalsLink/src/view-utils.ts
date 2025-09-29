@@ -1,14 +1,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import { awaitCheck } from '@datagrok-libraries/utils/src/test';
+import { awaitCheck, delay } from '@datagrok-libraries/utils/src/test';
 import { getRevvityLibraries } from './libraries';
 import { initializeFilters, SAVED_SEARCH_STORAGE } from './search-utils';
 import { getCompoundTypeByViewName, getViewNameByCompoundType } from './utils';
 import { retrieveQueriesMap } from './compounds';
 import { ComplexCondition } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { RevvityUser } from './revvity-api';
-import { USER_FIELDS } from './constants';
+import { LAYOUT_STORAGE, USER_FIELDS } from './constants';
 
 
 
@@ -82,8 +82,6 @@ export async function openRevvityNode(treeNode: DG.TreeViewGroup, nodesToExpand:
 
 export async function handleInitialURL(treeNode: DG.TreeViewGroup, url: string) {
 
-  const tv = grok.shell.addTablePreview(DG.DataFrame.create());
-  ui.setUpdateIndicator(tv.root, true, 'Loading Revvity Signals...');
   if (url.startsWith('/'))
     url = url.slice(1);
   const componentsArr = url.split('/');
@@ -92,7 +90,6 @@ export async function handleInitialURL(treeNode: DG.TreeViewGroup, url: string) 
     try {
       libs = await getRevvityLibraries();
     } catch(e: any) {
-      ui.setUpdateIndicator(tv.root, false);
       grok.shell.error(`Revvity libraries haven't been loaded: ${e?.message ?? e}`);
       return;
     }
@@ -159,6 +156,18 @@ export function createViewForExpandabelNode(viewName: string,
   getElement(div, libName, typeName);
 }
 
+export function applyRevvityLayout(layoutKey: string) {
+    const savedLayout = grok.userSettings.getValue(LAYOUT_STORAGE, layoutKey);
+  if (savedLayout) {
+    try {
+      const layout = DG.ViewLayout.fromJson(savedLayout);
+      (openedView as DG.TableView).loadLayout(layout);
+    } catch (e) {
+      console.warn('Failed to restore saved layout:', e);
+    }
+  }
+}
+
 export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, path: string[], libName: string,
   compoundType: string, initialSearchQuery?: ComplexCondition, isSavedSearch?: boolean): Promise<void> {
   let name = path[path.length - 1];
@@ -172,9 +181,30 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
 
   const df = DG.DataFrame.create();
   const tv = grok.shell.addTablePreview(df);
+  
   openedView = tv;
   openedView.name = name.charAt(0).toUpperCase() + name.slice(1);
   openedView.path = createPath(path);
+  const layoutKey = `${libName}|${compoundType}`;
+  const filtersDiv = ui.divV([], 'revvity-signals-filter-panel');
+  let filtersDockNode: DG.DockNode | undefined = undefined;
+
+  // Add save layout button to ribbon panel
+  const saveLayoutButton = ui.button('Save layout', async () => {
+    //first close the filrePanel is opened
+    const filtersOPened = filtersDockNode && filtersDockNode.parent != null;
+    if (filtersOPened) {
+      tv.dockManager.close(filtersDockNode!);
+      filtersDockNode!.container.destroy();
+    }
+    const layoutData = tv.saveLayout().toJson();
+    //open filters again if they were opened
+    if (filtersOPened)
+      (openedView! as DG.TableView).dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
+    grok.userSettings.add(LAYOUT_STORAGE, layoutKey, layoutData);
+    grok.shell.info(`Layout saved for ${libName} - ${compoundType}`);
+  });
+  tv.setRibbonPanels(tv.getRibbonPanels().concat([[saveLayoutButton]]));
 
   if (isSavedSearch && !initialSearchQuery) {
     const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, `${libName}|${compoundType}`) || '{}';
@@ -184,12 +214,11 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
 
   ui.setUpdateIndicator(openedView.root, true, `Loading ${name}...`);
 
-
   const initFilters = () => {
     ui.setUpdateIndicator(openedView!.root, false);
     setBreadcrumbsInViewName([libName, compoundType], treeNode);
-    const filtersDiv = ui.divV([], 'revvity-signals-filter-panel');
-    initializeFilters(treeNode, tv, filtersDiv, libName, compoundType, initialSearchQuery, !isSavedSearch);
+    initializeFilters(treeNode, tv, filtersDiv, libName, compoundType, initialSearchQuery, !isSavedSearch)
+      .then((res) => filtersDockNode = res);
   }
 
   if (!initialSearchQuery) {
@@ -199,6 +228,7 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
     }).then((res: DG.DataFrame) => {
       (openedView! as DG.TableView).dataFrame = res;
       setColumnsFormat(openedView! as DG.TableView);
+      applyRevvityLayout(`${libName}|${compoundType}`); 
       initFilters();
     })
       .catch((e: any) => {
