@@ -1,10 +1,14 @@
 # Diff Studio changelog
 
-## 1.4.3 (2025-09-29)
+## 1.4.6 (2025-09-29)
+
+Fixed webpack
+
+## 1.4.5 (2025-09-29)
 
 Fixed build
 
-## 1.4.3 (2025-09-29)
+## 1.4.4 (2025-09-29)
 
 Fixed dayjs issue
 
