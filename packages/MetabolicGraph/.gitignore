@@ -29,4 +29,4 @@ dist/
 .idea/codeStyles/
 
 # Emitted *.js files
-src/**/*.js
+# src/**/*.js
