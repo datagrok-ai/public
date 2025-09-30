@@ -154,7 +154,7 @@ export class MutationController extends ControllerBase<PipelineInstanceConfig | 
   }
 }
 
-export class NameSelectorController extends ControllerBase<any | undefined> implements INameSelectorController {
+export class NodeMetaController extends ControllerBase<any | undefined> implements INameSelectorController {
   constructor(
     public inputs: Record<string, any[]>,
     public inputsSet: Set<string>,
