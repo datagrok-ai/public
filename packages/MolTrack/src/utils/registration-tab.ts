@@ -2,13 +2,15 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {FileInputUtils} from '@datagrok-libraries/tutorials/src/utils/file-input-utils';
+
 import { ErrorHandlingLabels, ScopeLabels, ScopeLabelsReduced } from './constants';
-import '../../css/moltrack.css';
 import { renderMappingEditor, TargetProperty } from '../components/mapping_editor';
 import { MolTrackDockerService } from './moltrack-docker-service';
-import {UiUtils} from '@datagrok-libraries/compute-utils';
 import { fetchSchema } from '../package';
 import { Subscription } from 'rxjs';
+
+import '../../css/moltrack.css';
 
 let openedView: DG.ViewBase | null = null;
 
@@ -21,7 +23,6 @@ export class RegistrationView {
 
   mappingEditorDiv: HTMLDivElement = ui.div();
   uploadedPreviewDiv: HTMLDivElement;
-  // summaryDiv: HTMLDivElement = ui.div([]);
   rightPanel: HTMLDivElement | null = null;
 
   uploadedDf: DG.DataFrame | null = null;
@@ -41,7 +42,6 @@ export class RegistrationView {
     this.createInputs();
     this.addTitle();
     this.uploadedPreviewDiv = ui.div('', 'moltrack-register-preview-div');
-    // this.summaryDiv.style.marginTop = '50px';
     this.buildUI();
     this.addRibbonButtons();
     this.addSubs();
@@ -70,9 +70,9 @@ export class RegistrationView {
       this.errorStrategyInput!,
     ], 'moltrack-input-row');
 
-    const leftPanel = ui.divV([inputRow, this.mappingEditorDiv/*, this.summaryDiv*/]);
+    const leftPanel = ui.divV([inputRow, this.mappingEditorDiv]);
 
-    const dragDropInput = this.createFileInputPane();
+    const dragDropInput = FileInputUtils.createFileInputPane(async (file: File) => await this.loadFile(file));
 
     this.rightPanel = ui.divV([
       dragDropInput,
@@ -81,29 +81,9 @@ export class RegistrationView {
     const container = ui.splitH([
       ui.box(leftPanel, {style: {display: 'flex', flex: '1'}}),
       ui.box(this.rightPanel, {style: {display: 'flex', flex: '2'}}),
-      // leftPanel,
-      // this.rightPanel,
     ], {}, true);
     container.classList.add('moltrack-container');
     this.view.root.append(ui.divV([this.messageContainer, container]));
-  }
-
-  private createFileInputPane() {
-    const fileInputEditor = this.initializeFileInputEditor();
-    this.removeLabels(fileInputEditor.root);
-    this.styleInputEditor(fileInputEditor.root);
-    this.setupDragAndDrop(fileInputEditor.root);
-    this.removeOptionsIcon(fileInputEditor.root);
-    fileInputEditor.root.classList.add('demo-file-input');
-    return ui.divV([fileInputEditor], {classes: 'demo-file-input-container'});
-  }
-
-  private initializeFileInputEditor() {
-    const fileInputEditor = UiUtils.fileInput('', null, async (file: File) => {
-      await this.loadFile(file);
-    }, null);
-    fileInputEditor.stringValue = 'Drag and drop a CSV file here, or click to select a file.';
-    return fileInputEditor;
   }
 
   private async loadFile(file: File) {
@@ -127,59 +107,6 @@ export class RegistrationView {
     this.rightPanel?.appendChild(this.uploadedPreviewDiv);
 
     this.uploadedPreviewDiv.append(this.uploadedDf.plot.grid().root);
-  }
-
-  private removeLabels(root: HTMLElement): void {
-    const labelSelectors = '.ui-label, .ui-input-label';
-    const labels = root.querySelectorAll<HTMLElement>(labelSelectors);
-    labels.forEach((label) => label.remove());
-  }
-
-  private styleInputEditor(root: HTMLElement): void {
-    const inputEditor = root.querySelector<HTMLElement>('.ui-input-editor');
-    if (!inputEditor) return;
-
-    Object.assign(inputEditor.style, {
-      width: '100%',
-      height: '100%',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: '#ffffff',
-      color: '#007bff',
-      fontSize: '14px',
-      cursor: 'pointer',
-      textAlign: 'center',
-      borderBottom: 'none',
-    });
-  }
-
-  private setupDragAndDrop(root: HTMLElement): void {
-    const inputEditor = root.querySelector<HTMLElement>('.ui-input-editor');
-    if (!inputEditor) return;
-
-    const highlightColor = '#e0f7fa';
-    const defaultColor = '#ffffff';
-
-    const setHighlightedStyle = () => inputEditor.style.backgroundColor = highlightColor;
-    const resetStyle = () => inputEditor.style.backgroundColor = defaultColor;
-
-    inputEditor.addEventListener('dragenter', setHighlightedStyle);
-    inputEditor.addEventListener('dragover', (event) => {
-      event.preventDefault();
-      setHighlightedStyle();
-    });
-
-    inputEditor.addEventListener('dragleave', resetStyle);
-    inputEditor.addEventListener('drop', (event) => {
-      event.preventDefault();
-      resetStyle();
-    });
-  }
-
-  private removeOptionsIcon(root: HTMLElement): void {
-    const optionsIcon = root.querySelector<HTMLElement>('.ui-input-options .grok-icon.fal.fa-cloud-upload');
-    optionsIcon?.remove();
   }
 
   private addRibbonButtons() {
@@ -240,8 +167,6 @@ export class RegistrationView {
     const csvFile = DG.FileInfo.fromString('data.csv', csv);
     const loader = ui.loader();
     try {
-      // ui.empty(this.summaryDiv);
-      // this.summaryDiv.appendChild(ui.loader());
       this.registrationStarted = true;
       this.registerButton?.classList.add('dim');
 
@@ -269,30 +194,6 @@ export class RegistrationView {
       this.registrationStarted = false;
     }
   }
-
-  // private createSummary() {
-  //   if (!this.uploadedDf) return;
-  //   ui.empty(this.summaryDiv);
-  //   const statuses = this.uploadedDf.getCol('registration_status').toList();
-
-  //   const successCount = statuses.filter((v) => v === 'success').length;
-  //   const failedCount = statuses.filter((v) => v === 'failed').length;
-  //   const notProcessedCount = statuses.filter((v) => v === 'not_processed').length;
-
-  //   const summary: { [key: string]: number } = {
-  //     'Successful': successCount,
-  //     'Failed': failedCount,
-  //     'Not processed': notProcessedCount,
-  //   };
-
-  //   const summaryTable = ui.table(
-  //     [summary],
-  //     (item) => [item['Successful'], item['Failed'], item['Not processed']],
-  //     Object.keys(summary),
-  //   );
-
-  //   this.summaryDiv.appendChild(summaryTable);
-  // }
 
   private createSummary() {
     if (!this.uploadedDf) return;

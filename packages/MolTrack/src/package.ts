@@ -389,16 +389,16 @@ function flattened(item: any, props: DG.Property[]) {
       if (Array.isArray(value) && key === PROPERTIES) {
         props.forEach((prop: DG.Property) => {
           const valIdx = value.findIndex((it) => it.name.toLowerCase() === prop.name.toLocaleLowerCase());
-          const val = valIdx === -1 ? null : 
-          (value[valIdx] as MolTrackProperty).value_num ??
+          const val = valIdx === -1 ? null :
+            (value[valIdx] as MolTrackProperty).value_num ??
           (value[valIdx] as MolTrackProperty).value_datetime ??
           (value[valIdx] as MolTrackProperty).value_uuid ??
           (value[valIdx] as MolTrackProperty).value_string;
-          row[prop.friendlyName ?? prop.name]  = val;
-        })
+          row[prop.friendlyName ?? prop.name] = val;
+        });
       } else
-        row[key] = JSON.stringify(value)
-    } else 
+        row[key] = JSON.stringify(value);
+    } else
       row[key] = value;
   }
   return row;
