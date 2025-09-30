@@ -5,6 +5,7 @@ import {Extremum, OptimizationResult, InconsistentTables, sleep} from './optimiz
 import {optimizeNM} from './optimizer-nelder-mead';
 import {sampleParams} from './optimizer-sampler';
 import {TIMEOUT} from './constants';
+import {seededRandom} from './fitting-utils';
 
 export async function performNelderMeadOptimization(
   objectiveFunc: (x: Float32Array) => Promise<number>,
@@ -13,7 +14,11 @@ export async function performNelderMeadOptimization(
   settings: Map<string, number>,
   samplesCount: number = 1,
 ): Promise<OptimizationResult> {
-  const params = sampleParams(samplesCount, paramsTop, paramsBottom);
+  const rand = seededRandom(0);
+  const params = sampleParams(samplesCount, paramsTop, paramsBottom, rand);
+
+  console.log('Sampled params:');
+  console.log(params);
 
   const extremums: Extremum[] = [];
   const warnings: string[] = [];

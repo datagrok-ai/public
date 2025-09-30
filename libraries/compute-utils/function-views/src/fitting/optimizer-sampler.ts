@@ -1,16 +1,18 @@
-function sampleUniform(samplesCount: number, top: number, bottom: number): number[] {
+function sampleUniform(samplesCount: number, top: number, bottom: number,
+  rand: () => number = Math.random): number[] {
   const scale = top - bottom;
   const sample = new Array<number>(samplesCount);
 
   for (let i = 0; i < samplesCount; i ++) {
-    const r = Math.random();
+    const r =rand();
     sample[i] = bottom + r*scale;
   }
 
   return sample;
 }
 
-export function sampleParams(samplesCount: number, top: Float32Array, bottom: Float32Array): Float32Array[] {
+export function sampleParams(samplesCount: number, top: Float32Array, bottom: Float32Array,
+  rand: () => number = Math.random): Float32Array[] {
   const dim = top.length;
   const params = new Array<Float32Array>(samplesCount);
   for (let i = 0; i < samplesCount; i ++)
@@ -21,7 +23,7 @@ export function sampleParams(samplesCount: number, top: Float32Array, bottom: Fl
       for (let j = 0; j < samplesCount; j ++)
         params[j][i] = top[i];
     } else {
-      const paramVariations = sampleUniform(samplesCount, top[i], bottom[i]);
+      const paramVariations = sampleUniform(samplesCount, top[i], bottom[i], rand);
       for (let j = 0; j < samplesCount; j ++)
         params[j][i] = paramVariations[j];
     }

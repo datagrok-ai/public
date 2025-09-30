@@ -13,7 +13,7 @@
     "@types/lodash.clonedeepwith": "^4.5.9",
     "@types/uuid": "^10.0.0",
     "cash-dom": "^8.1.4",
-    "datagrok-api": "^1.26.0",
+    "datagrok-api": "^1.26.3",
     "dayjs": "=1.11.10",
     "ebnf": "^1.9.1",
     "exceljs": "^4.3.0",

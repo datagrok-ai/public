@@ -171,3 +171,9 @@ export const LOSS_FUNC_CHART_OPTS = {
 };
 
 export const MIN_RADAR_COLS_COUNT = 4;
+
+/** Modulus for the linear congruential generator of random numbers */
+export const RAND_MOD = 2147483647;
+
+/** Multiplier used in the generator of random numbers */
+export const RAND_MULT = 16807;

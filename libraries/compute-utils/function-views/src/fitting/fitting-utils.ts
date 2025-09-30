@@ -10,7 +10,7 @@ import {Extremum, InconsistentTables} from './optimizer-misc';
 import '../../css/fitting-view.css';
 import '../../css/sens-analysis.css';
 import {GRID_SIZE, HELP_LINK, INDICES, TIMEOUT, TARGET_DATAFRAME_INFO, TITLE, NAME,
-  MIN_RADAR_COLS_COUNT} from './constants';
+  MIN_RADAR_COLS_COUNT, RAND_MOD, RAND_MULT} from './constants';
 
 /** Returns indices corresponding to the closest items */
 export function getIndices(expArg: DG.Column, simArg: DG.Column): Uint32Array {
@@ -95,7 +95,8 @@ export function getErrors(expArg: DG.Column | null, expFuncs: DG.Column[],
 } // getErrors
 
 /** Return widget for show/hide group of inputs */
-export function getCategoryWidget(category: string, roots: HTMLElement[], expandHandler?: (r: HTMLElement, isExpanded: boolean, category: string) => void) {
+export function getCategoryWidget(category: string, roots: HTMLElement[],
+  expandHandler?: (r: HTMLElement, isExpanded: boolean, category: string) => void) {
   const updateWgts = (isExpanded: boolean) => {
     chevronToOpen.hidden = isExpanded;
     chevronToClose.hidden = !isExpanded;
@@ -433,4 +434,15 @@ export function toUseRadar(table: DG.DataFrame): boolean {
     return false;
 
   return (table.columns.length >= MIN_RADAR_COLS_COUNT);
+}
+
+/** Return seeded random generator */
+export function seededRandom(seed: number): () => number {
+  let state = seed % RAND_MOD;
+  if (state <= 0) state += RAND_MOD - 1;
+
+  return function(): number {
+    state = (state * RAND_MULT) % RAND_MOD;
+    return (state - 1) / (RAND_MOD - 1);
+  };
 }
