@@ -2,7 +2,6 @@
 import * as ui from 'datagrok-api/ui';
 import {Plate} from './plate';
 import {AnalysisMappingPanel} from '../plates/views/components/analysis-mapping/analysis-mapping-panel';
-import {PlateWidget} from './plate-widget';
 import './base-analysis-view.css';
 
 export interface AnalysisFieldMapping {
@@ -17,10 +16,6 @@ export interface AnalysisViewConfig {
   createResultsView: (plate: Plate, mappings: Map<string, string>) => HTMLElement | null;
 }
 
-/**
- * Standardized base class for all analysis views.
- * Handles the mapping panel <-> results view pattern consistently.
- */
 export class BaseAnalysisView {
   private container: HTMLElement;
   private contentHost: HTMLElement;

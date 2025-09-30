@@ -23,14 +23,30 @@ import {initPlatesAppTree, platesAppView} from './plates/plates-app';
 import {initPlates} from './plates/plates-crud';
 import {__createDummyPlateData} from './plates/plates-demo';
 import {getPlatesFolderPreview} from './plate/plates-folder-preview';
-import {PlateDrcAnalysis} from './plate/plate-drc-analysis';
+// import {PlateDrcAnalysis} from './plate/plate-drc-analysis';
 import {PlateTemplateHandler} from './plates/objects/plate-template-handler';
 import * as api from './package-api';
 import {convertDataToCurves, dataToCurvesUI, WellTableParentData} from './fit/data-to-curves';
 import {parsePlateFromCsv} from './plate/csv-plates';
 import {layoutsView} from './plates/views/layouts-view';
+import {PlateDrcAnalysis} from './plate/plate-drc-analysis';
+import {AnalysisManager} from './plate/analyses/analysis-manager';
 
 export const _package = new DG.Package();
+
+
+//tags: autostart
+export async function autostart(): Promise<void> {
+  try {
+    console.log('Curves: Initializing AnalysisManager...');
+    await AnalysisManager.instance.init();
+    console.log('Curves: AnalysisManager initialized successfully.');
+  } catch (e) {
+    console.error('Curves: Failed to initialize AnalysisManager:', e);
+  }
+}
+
+
 const SOURCE_COLUMN_TAG = '.sourceColumn';
 const SERIES_NUMBER_TAG = '.seriesNumber';
 const SERIES_AGGREGATION_TAG = '.seriesAggregation';
@@ -304,12 +320,6 @@ static layouts(): DG.View {
    return platesAppView();
  }
 
-//   @grok.decorators.func({})
-// static async getPlateByBarcode(barcode: string): Promise<Plate> {
-//   await initPlates();
-//   const df: DG.DataFrame = await api.queries.getWellValuesByBarcode(barcode);
-//   return Plate.fromDbDataFrame(df);
-// }
 @grok.decorators.func({})
 static async getPlateByBarcode(barcode: string): Promise<Plate> {
   await initPlates();

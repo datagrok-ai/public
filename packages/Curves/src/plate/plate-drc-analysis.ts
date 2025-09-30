@@ -668,7 +668,6 @@ class DrcAnalysisCoordinator implements IAnalysisWidgetCoordinator {
   }
 }
 
-// Add this new function to the file.
 
 async function saveDrcAnalysisResults(
   plate: Plate,
