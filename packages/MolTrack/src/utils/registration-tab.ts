@@ -180,11 +180,33 @@ export class RegistrationView {
         errorHandling: ErrorHandlingLabels[this.errorStrategyInput?.value],
       });
 
-      let corporateId;
-      if (Object.keys(ScopeLabelsReduced).includes(this.entityTypeInput?.value))
-        corporateId = `corporate_${this.entityTypeInput?.value.toLowerCase().replace(/(es|s)$/, '')}_id`;
+      const value = this.entityTypeInput?.value ?? '';
 
-      this.uploadedDf.join(df, ['smiles'], ['smiles'], null, ['registration_status', 'registration_error_message', corporateId!], DG.JOIN_TYPE.INNER, true);
+      const corporateId =
+        value in ScopeLabelsReduced ?
+          `corporate_${value.toLowerCase().replace(/(es|s)$/, '')}_id` :
+          '';
+
+      const joinColumns = [
+        'registration_status',
+        'registration_error_message',
+        ...(corporateId && df.columns.names().includes(corporateId) ? [corporateId] : []),
+      ];
+
+      const smilesCol = this.uploadedDf.columns.bySemType(DG.SEMTYPE.MOLECULE);
+      if (!smilesCol)
+        throw new Error(`No column with semantic type ${DG.SEMTYPE.MOLECULE} found in the uploaded data`);
+
+      this.uploadedDf.join(
+        df,
+        [smilesCol.name],
+        [smilesCol.name],
+        null,
+        joinColumns,
+        DG.JOIN_TYPE.INNER,
+        true,
+      );
+
 
       this.createSummary();
     } catch (err: any) {
@@ -242,7 +264,6 @@ export class RegistrationView {
       { name: 'smiles', required: true, semType: DG.SEMTYPE.MOLECULE },
     ];
 
-    // TODO: Auto-mapping should handle cases where some properties may not exist in the database
     let autoMapping: Map<string, string> = new Map();
     if (this.uploadedDf) {
       await MolTrackDockerService.init();
