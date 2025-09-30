@@ -19,5 +19,6 @@ export async function test(category: string, test: string, testContext: TestCont
 
 //name: initAutoTests
 export async function initAutoTests() {
+  await DG.Func.byName('WebComponents:init').prepare().call();
   await initTests(_package, _package.getModule('package-test.js'));
 }
