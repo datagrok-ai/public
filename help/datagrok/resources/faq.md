@@ -28,7 +28,7 @@ Datagrok supports multiple modalities, including:
 - Peptides with HELM notation, see [Bioinformatics](../solutions/domains/bio/bio.md)  
 - Antibodies, see [Bioinformatics](../solutions/domains/bio/bio.md)  
 
-##### <b>What advanced molecular analyses does Datagrok support?</b>
+##### <b>Q: What advanced molecular analyses does Datagrok support?</b>
 
 - Chemical structure analysis:
 
@@ -191,7 +191,7 @@ Yes, we adhere to secure development and industry best practices across infrastr
 
 ### Governance & access 
 
-#### Authentication & Authorization 
+#### Authentication & authorization 
 
 ##### <b>Q: How does Datagrok handle authentication and authorization?</b>
 
@@ -239,7 +239,7 @@ Yes, all client-server communications use [HTTPS](https://en.wikipedia.org/wiki/
 
 #### Vulnerability & patch management 
 
-##### <b>Q: How does you manage vulnerabilities in the application and cloud infrastructure?</b>
+##### <b>Q: How do you manage vulnerabilities in the application and cloud infrastructure?</b>
 
 We monitor CISA alerts and run daily [Snyk](https://snyk.io/) scans on container
 builds. Vulnerabilities are triaged, remediated via infrastructure-as-code
@@ -332,7 +332,7 @@ See also: [Viewer gallery](https://github.com/datagrok-ai/public/blob/master/hel
 
 ##### <b>Q: Can I create custom visualizations?</b>
 
-Yes. There're several options:
+Yes. Several options are available:
 
 * Custom viewers via JavaScript API – 
 [build custom viewers](../../develop/how-to/viewers/develop-custom-viewer.md) using the
@@ -346,15 +346,15 @@ file viewers for specific formats
 (e.g., PDB files via [NGL viewer](../../visualize/viewers/ngl.md) through the [Biostructure Viewer](https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer#biostructure-viewer) package)
 * [Custom cell renderers](../../develop/how-to/grid/custom-cell-renderers.md) - create custom visualization for cells in data [grid/table](../../visualize/viewers/grid.md).
 
-##### <b>Q: How can I visualizing old and new data side by side?</b>
+##### <b>Q: How can I visualize old and new data side by side?</b>
 
-Multiple [viewer](../../visualize/viewers/viewers.md) and grids can be combined in a single [dashboard](../../datagrok/concepts/project/dashboard.md) to display different datasets side by side. 
+Multiple [viewers](../../visualize/viewers/viewers.md) and grids can be combined in a single [dashboard](../../datagrok/concepts/project/dashboard.md) to display different datasets side by side. 
 Each viewer (scatterplots, charts, etc.) has configurable settings, allowing plots to source data from different tables. There are also multiple ways to [link tables](../../transform/link-tables.md), [join](../../transform/join-tables.md),  [pivot](../../transform/aggregate-rows.md), and apply other [transformations](../../transform/transform.md) 
 to data within the intuitive UI. 
 
 ##### <b>Q: Can Datagrok tables be exported for presentations or analysis?</b>
 
-Yes. Tables can be exported in multiple formats, including images, CSV/TSV, and SDF.  
+Tables can be exported in multiple formats, including images, CSV/TSV, and SDF.  
 Learn more about [Downloading](../navigation/basic-tasks/basic-tasks.md#download)
 
 ##### <b>Q: Can I merge multiple columns into a single "form cell" that displays label-value pairs (e.g., cLogP: 2.09) for these columns as a formatted list within that cell?</b>
@@ -394,7 +394,7 @@ Datagrok provides several advanced search capabilities to help you quickly find 
 
 ##### <b>Q: Can users save and share custom dashboards, analyses, and visualizations in Datagrok?</b>  
 
-Yes. Users can create projects that include data, analyses, and dashboards, then share them with others. Dashboards are dynamic and customizable.   
+Users can create projects that include data, analyses, and dashboards, then share them with others. Dashboards are dynamic and customizable.   
 [Creating and managing projects](../concepts/project/project.md#creating-and-managing-projects) | [Creating dynamic dashboards](../../access/databases/databases.md#creating-dynamic-dashboards-for-query-results)  
 
 ##### <b>Q: How can I link raw data, metadata, and analysis results to compounds or sequences so that this information can be easily recalled and shared across Datagrok dashboards?</b>
@@ -476,9 +476,9 @@ See [Scaling and stability](../../develop/under-the-hood/infrastructure.md#scala
 
 ### Extensibility
 
-##### <b>Q: Can user create custom visualizations?</b>
+##### <b>Q: Can users create custom visualizations?</b>
 
-Yes, Datagrok offers multiple options for creating and embedding custom visualizations.  
+Datagrok offers multiple options for creating and embedding custom visualizations.  
 See:
 * [Custom viewers](../../develop/how-to/viewers/develop-custom-viewer.md)
 * [Custom cell renderers](../../develop/how-to/grid/custom-cell-renderers.md)
@@ -529,6 +529,3 @@ Docker-compose manifest is used to describe and deploy Datagrok applications.
 Also, there are multiple advanced options to deploy application:
 CloudFormation template to deploy to AWS ECS
 Terraform scripts to deploy to AWS ECS-->
-
-
-
