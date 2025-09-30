@@ -32,7 +32,10 @@ export async function updateView(tv: DG.TableView, df: DG.DataFrame, compoundTyp
   if(libId)
     await setColumnsFriendlyNames(libId, compoundType, tv.dataFrame);
 
-  applyRevvityLayout(`${libName}|${compoundType}`, tv, filtersDiv); 
+  applyRevvityLayout(`${libName}|${compoundType}`, tv, filtersDiv);
+  const columns = tv.dataFrame.columns.names();
+  if (columns.length)
+    tv.dataFrame.currentCell = tv.dataFrame.cell(-1, tv.dataFrame.col(columns[0])!.name);
 }
 
 export function createPath(viewName?: string[]) {
