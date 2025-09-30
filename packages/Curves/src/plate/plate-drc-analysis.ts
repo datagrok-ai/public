@@ -9,9 +9,19 @@ import {IPlateWellFilter, Plate, randomizeTableId} from './plate';
 import {FIT_FUNCTION_4PL_REGRESSION, FitCurve, FitMarkerType, IFitChartData, IFitPoint} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {FitConstants} from '../fit/const';
 import {FitCellOutlierToggleArgs, FitChartCellRenderer, setOutlier} from '../fit/fit-renderer';
-import {savePlate, saveDrcAnalysisResults} from '../plates/plates-crud';
+import {savePlate, AnalysisProperty, createAnalysisRun, PlateProperty, getOrCreateProperty, saveAnalysisResult} from '../plates/plates-crud';
 import {BaseAnalysisView} from './base-analysis-view';
 
+
+export const drcAnalysisProperties: AnalysisProperty[] = [
+  {name: 'Curve', type: DG.TYPE.STRING},
+  {name: 'IC50', type: DG.TYPE.FLOAT},
+  {name: 'Hill Slope', type: DG.TYPE.FLOAT},
+  {name: 'R Squared', type: DG.TYPE.FLOAT},
+  {name: 'Min', type: DG.TYPE.FLOAT},
+  {name: 'Max', type: DG.TYPE.FLOAT},
+  {name: 'AUC', type: DG.TYPE.FLOAT},
+];
 
 function _getOptionsForExcel(plate: Plate, defaultOptions: AnalysisOptions): AnalysisOptions {
   const finalOptions = {...defaultOptions};
@@ -539,48 +549,38 @@ export class PlateDrcAnalysis {
       normed
     );
 
-    plateWidget.registerAnalysisCoordinator(coordinator);
-
-
     const saveButton = ui.button('SAVE RESULTS', async () => {
-    // Defensively check for the plate ID again.
+      // Ensure the plate has an ID before proceeding.
       if (!plate.id) {
         grok.shell.warning('Please use the main "CREATE" button to save the plate before saving analysis results.');
         return;
       }
 
-      const pi = DG.TaskBarProgressIndicator.create('Saving DRC results...');
-      try {
-      // The results dataframe is 'df' which was created earlier in this function
-        const resultsDf = df;
+      // This is the results dataframe we've already built.
+      const resultsDf = df;
 
-        // The analysis parameters are in 'actOptions'
-        const analysisParams = {
-          roleName: actOptions.roleName,
-          concentrationName: actOptions.concentrationName,
-          valueName: actOptions.valueName,
-          normalize: actOptions.normalize,
-        };
+      // These are the parameters for the analysis run.
+      const analysisParams = {
+        roleName: actOptions.roleName,
+        concentrationName: actOptions.concentrationName,
+        valueName: actOptions.valueName,
+        normalize: actOptions.normalize,
+      };
 
-        const roleColumnName = actOptions.roleName;
+      const roleColumnName = actOptions.roleName;
 
-        await saveDrcAnalysisResults(plate, resultsDf, analysisParams, roleColumnName);
-      } catch (e: any) {
-      // Improved error logging
-        console.error('Save DRC Results failed:', e);
-        grok.shell.error(`Failed to save DRC results: ${e?.message ?? e}`);
-      } finally {
-        pi.close();
-      }
+      // This now calls the NEWLY REFACTORED saveDrcAnalysisResults function.
+      // The function signature is the same, but its internal logic now correctly
+      // creates a run and saves to the analysis_results table.
+      await saveDrcAnalysisResults(plate, resultsDf, analysisParams, roleColumnName);
     });
+
     saveButton.style.marginTop = '8px';
 
-    // 2. Create the main container for the grid and the button
     const container = ui.divV([
       curvesGrid.root,
       ui.div([saveButton], {style: {display: 'flex', justifyContent: 'flex-end', paddingRight: '4px'}})
     ], 'drc-grid-container');
-
     container.style.width = '100%';
     container.style.height = '100%';
     container.style.display = 'flex';
@@ -665,5 +665,114 @@ class DrcAnalysisCoordinator implements IAnalysisWidgetCoordinator {
     // Update our stored series values
     this.seriesVals.length = 0;
     this.seriesVals.push(...newSeriesVals);
+  }
+}
+
+// Add this new function to the file.
+
+async function saveDrcAnalysisResults(
+  plate: Plate,
+  resultsDf: DG.DataFrame,
+  analysisParams: object, // Mappings, etc.
+  roleColumnName: string
+): Promise<void> {
+  // --- DEBUGGING STEP 0: Add console log to confirm function is called ---
+  console.log('%c--- saveDrcAnalysisResults initiated ---', 'color: blue; font-weight: bold;');
+  if (!plate.id) {
+    grok.shell.error('Plate must be saved before saving analysis results (plate.id is missing).');
+    return;
+  }
+
+  const pi = DG.TaskBarProgressIndicator.create('Saving DRC results...');
+  try {
+    const groups = resultsDf.col(roleColumnName)?.categories;
+    // --- DEBUGGING STEP 1: Validate the groups ---
+    if (!groups || groups.length === 0) {
+      const errorMsg = `Could not find groups in column "${roleColumnName}". Cannot save.`;
+      console.error(errorMsg);
+      grok.shell.error(errorMsg);
+      pi.close();
+      return;
+    }
+    console.log('DEBUG: Found groups:', groups);
+
+    const runId = await createAnalysisRun(plate.id, 'DRC', groups);
+    // --- DEBUGGING STEP 2: Validate the runId ---
+    if (typeof runId !== 'number' || runId <= 0) {
+      const errorMsg = `Failed to create a valid analysis run. Received runId: ${runId}`;
+      console.error(errorMsg);
+      grok.shell.error(errorMsg);
+      pi.close();
+      return;
+    }
+    console.log(`DEBUG: Created AnalysisRun with ID: ${runId}`);
+
+    const columnToDbPropName: Record<string, string> = {
+      'Curve': 'Curve', 'IC50': 'IC50', 'Hill': 'Hill Slope',
+      'rSquared': 'R Squared', 'Min': 'Min', 'Max': 'Max', 'AUC': 'AUC',
+    };
+
+    const propertyCache = new Map<string, PlateProperty>();
+    for (const dbPropName of Object.values(columnToDbPropName)) {
+      const propDef = drcAnalysisProperties.find((p) => p.name === dbPropName);
+      if (propDef)
+        propertyCache.set(dbPropName, await getOrCreateProperty(propDef.name, propDef.type));
+    }
+    // --- DEBUGGING STEP 3: Check the created property cache ---
+    console.log('DEBUG: Property Cache created:', Object.fromEntries(propertyCache.entries()));
+    if (propertyCache.size === 0) {
+      grok.shell.error('Property cache is empty. Check property name definitions.');
+      pi.close();
+      return;
+    }
+
+
+    // --- DEBUGGING STEP 4: Log the first row to be processed ---
+    console.log(`DEBUG: Starting to loop through ${resultsDf.rowCount} result rows.`);
+    let isFirstRow = true;
+
+    for (const row of resultsDf.rows) {
+      const groupKey = row.get(roleColumnName);
+      if (!groupKey) continue;
+      const groupCombination = [groupKey];
+
+      if (isFirstRow)
+        console.log(`DEBUG: Processing first row for group: "${groupKey}"`);
+
+
+      for (const [columnName, dbPropName] of Object.entries(columnToDbPropName)) {
+        if (resultsDf.columns.contains(columnName)) {
+          const propObject = propertyCache.get(dbPropName);
+          if (!propObject) continue;
+
+          const value = row.get(columnName);
+          if (value === null || value === undefined || (typeof value === 'number' && !isFinite(value)))
+            continue;
+
+          if (isFirstRow)
+            console.log(`  - Preparing to save property "${dbPropName}" (from column "${columnName}") with value:`, value);
+
+
+          // This is the actual DB call
+          await saveAnalysisResult({
+            runId: runId,
+            propertyId: propObject.id,
+            propertyType: propObject.type,
+            value: value,
+            groupCombination: groupCombination,
+          });
+        }
+      }
+      isFirstRow = false; // Only log details for the first row to avoid spam
+    }
+    grok.shell.info(`Saved ${resultsDf.rowCount} dose-response curves for plate ${plate.barcode}.`);
+  } catch (e) {
+    // --- DEBUGGING STEP 5: ENHANCED ERROR HANDLING ---
+    // This is the most important part. We will force the error to be visible.
+    console.error('--- ERROR CAUGHT IN saveDrcAnalysisResults ---', e);
+    grok.shell.error('Failed to save DRC results. Check console for details.');
+    grok.shell.error(e instanceof Error ? e.message : String(e));
+  } finally {
+    pi.close();
   }
 }

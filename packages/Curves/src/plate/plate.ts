@@ -18,7 +18,7 @@ import {FitFunctionType, FitSeries} from '@datagrok-libraries/statistics/src/fit
 import {AnalysisOptions} from './plate-widget';
 import {inspectCurve} from '../fit/fit-renderer';
 import {plateDbColumn, allProperties, plateTypes} from '../plates/plates-crud';
-import {PlateDrcAnalysis} from './plate-drc-analysis';
+// import {PlateDrcAnalysis} from './plate-drc-analysis';
 import {IPlateWellValidator} from './plate-well-validators';
 import {Subject} from 'rxjs';
 
@@ -482,6 +482,7 @@ export class Plate {
     //@ts-ignore
     const loadedExcelJS = window.ExcelJS as ExcelJS;
     const workbook = new loadedExcelJS.Workbook() as ExcelJS.Workbook;
+    //@ts-ignore
     const wb = await workbook.xlsx.load(excelBytes);
 
     const platePositions = findPlatePositions(wb);
@@ -490,6 +491,7 @@ export class Plate {
     if (!platePositions.every((pc) => pc.rows == p0.rows || pc.cols == p0.cols))
       throw new Error(`Plate sizes differ in "${name}"`);
     return Plate.fromPlates(platePositions.map((p) => getPlateFromSheet(p)), name);
+    return Plate.fromTableByRow(grok.data.demo.wells(96));
   }
 
   static demo(): Plate {

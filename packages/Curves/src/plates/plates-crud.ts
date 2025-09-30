@@ -65,10 +65,10 @@ export type PlateTemplate = {
   wellProperties: Partial<PlateProperty>[];
 }
 
+// MODIFIED: 'dbColumn' is no longer needed.
 export type AnalysisProperty = {
   name: string; // User-friendly name, e.g., "IC50"
   type: DG.TYPE; // Data type, e.g., DG.TYPE.FLOAT
-  dbColumn: string; // The actual column name in the database table, e.g., "ic50"
 }
 
 export type AnalysisCondition = {
@@ -76,14 +76,6 @@ export type AnalysisCondition = {
   matcher: Matcher;
   analysisName: string; // The analysis this condition applies to, e.g., "Dose-Response"
 }
-export const drcAnalysisProperties: AnalysisProperty[] = [
-  {name: 'IC50', type: DG.TYPE.FLOAT, dbColumn: 'ic50'},
-  {name: 'Hill Slope', type: DG.TYPE.FLOAT, dbColumn: 'hill_slope'},
-  {name: 'R Squared', type: DG.TYPE.FLOAT, dbColumn: 'r_squared'},
-  {name: 'Min Value', type: DG.TYPE.FLOAT, dbColumn: 'min_value'},
-  {name: 'Max Value', type: DG.TYPE.FLOAT, dbColumn: 'max_value'},
-  {name: 'AUC', type: DG.TYPE.FLOAT, dbColumn: 'auc'},
-];
 
 
 export let allProperties: PlateProperty[] = [];
@@ -94,9 +86,6 @@ export let plateTypes: PlateType[] = [
   {id: 3, name: 'Generic 1536 wells', rows: 32, cols: 48},
 ];
 
-// export const plateUniquePropertyValues: DG.DataFrame = DG.DataFrame.create();
-// export const wellUniquePropertyValues: DG.DataFrame = DG.DataFrame.create();
-
 export let plateUniquePropertyValues: DG.DataFrame = DG.DataFrame.create();
 export let wellUniquePropertyValues: DG.DataFrame = DG.DataFrame.create();
 
@@ -106,6 +95,7 @@ export const plateDbColumn: {[key: string]: string} = {
   [DG.COLUMN_TYPE.BOOL]: 'value_bool',
   [DG.COLUMN_TYPE.STRING]: 'value_string',
 };
+export const plateDbJsonColumn = 'value_jsonb';
 
 
 let _initialized = false;
@@ -115,14 +105,6 @@ export async function initPlates(force: boolean = false) {
 
   if (!_initialized)
     events.subscribe((event) => grok.shell.info(`${event.on} ${event.eventType} ${event.objectType}`));
-  const [templatesDf, propertiesDf, typesDf, plateUniquesDf, wellUniquesDf] = await Promise.all([
-    api.queries.getPlateTemplates(),
-    api.queries.getProperties(),
-    api.queries.getPlateTypes(),
-    grok.functions.call('Curves:getUniquePlatePropertyValues'),
-    grok.functions.call('Curves:getUniqueWellPropertyValues'),
-  ]);
-
 
   // Fetch all templates and all properties
   plateTemplates = (await api.queries.getPlateTemplates()).toJson();
@@ -217,119 +199,96 @@ export async function getPlateById(id: number): Promise<Plate> {
   return plate;
 }
 
-
-/**
- * Build SQL that
- *   1) keeps only plates whose plate-level properties match the user's filters
- *   2) returns every plate-level property (name + value) for those plates
- *      packed into a single JSONB column called "properties".
- *
- *   The JSON looks like:
- *   {
- *     "Volume":        "100.0",
- *     "Concentration": "10.5",
- *     "Sample":        "ABC-123",
- *     "Well Role":     "DMSO",
- *     ...
- *   }
- */
-// In src/plates/plates-crud.ts
-
 function getPlateSearchSql(query: PlateQuery): string {
   const existsClauses: string[] = [];
 
-  // Handle plate-level property conditions (no change here)
+  // Plate-level property conditions (no change)
   for (const condition of query.plateMatchers) {
     const dbColumn = plateDbColumn[condition.property.type];
     existsClauses.push(`
-      EXISTS (
-        SELECT 1
-        FROM plates.plate_details pd_f
-        WHERE pd_f.plate_id = p.id
-          AND pd_f.property_id = ${condition.property.id}
-          AND (${condition.matcher.toSql(`pd_f.${dbColumn}`)})
-      )`);
+            EXISTS (
+                SELECT 1 FROM plates.plate_details pd_f
+                WHERE pd_f.plate_id = p.id
+                AND pd_f.property_id = ${condition.property.id}
+                AND (${condition.matcher.toSql(`pd_f.${dbColumn}`)})
+            )`);
   }
 
-  // Handle well-level property conditions (no change here)
+  // Well-level property conditions (no change)
   for (const condition of query.wellMatchers) {
     const dbColumn = plateDbColumn[condition.property.type];
     existsClauses.push(`
-      EXISTS (
-        SELECT 1
-        FROM plates.plate_well_values pwv
-        WHERE pwv.plate_id = p.id
-          AND pwv.property_id = ${condition.property.id}
-          AND (${condition.matcher.toSql(`pwv.${dbColumn}`)})
-      )`);
+            EXISTS (
+                SELECT 1 FROM plates.plate_well_values pwv
+                WHERE pwv.plate_id = p.id
+                AND pwv.property_id = ${condition.property.id}
+                AND (${condition.matcher.toSql(`pwv.${dbColumn}`)})
+            )`);
   }
 
-  // Handle analysis-level result conditions
+  // Analysis-level result conditions (REWRITTEN)
   for (const condition of query.analysisMatchers) {
+    const prop = allProperties.find((p) => p.name === condition.property.name);
+    if (!prop) {
+      console.warn(`Search property "${condition.property.name}" not found. Skipping.`);
+      continue;
+    }
+
+    let dbColumn: string | null = plateDbColumn[prop.type];
+    // Handle JSONB for curve data specifically
+    if (prop.name.toLowerCase().includes('curve'))
+      dbColumn = plateDbJsonColumn;
+
+    if (!dbColumn) {
+      console.warn(`Search property "${condition.property.name}" has an unsupported type "${prop.type}". Skipping.`);
+      continue;
+    }
+
     existsClauses.push(`
-      EXISTS (
-        SELECT 1
-        FROM plates.analysis_runs ar
-        JOIN plates.analysis_results_curves arc ON ar.id = arc.analysis_run_id
-        WHERE ar.plate_id = p.id
-          AND ar.analysis_name = '${condition.analysisName}'
-          AND (${condition.matcher.toSql(`arc.${condition.property.dbColumn}`)})
-      )`);
+            EXISTS (
+                SELECT 1
+                FROM plates.analysis_runs ar
+                JOIN plates.analysis_results res ON ar.id = res.analysis_run_id
+                WHERE ar.plate_id = p.id
+                AND ar.analysis_type = '${condition.analysisName}'
+                AND res.property_id = ${prop.id}
+                AND (${condition.matcher.toSql(`res.${dbColumn}`)})
+            )`);
   }
 
   const whereFilter = existsClauses.length > 0 ? `WHERE ${existsClauses.join(' AND ')}` : '';
 
-  // The rest of the query remains the same
   return `
 WITH filtered_plates AS (
-  SELECT p.id, p.barcode, p.description
-  FROM plates.plates p
-  ${whereFilter}
+    SELECT p.id, p.barcode, p.description
+    FROM plates.plates p
+    ${whereFilter}
 )
 SELECT
-  fp.id AS plate_id,
-  fp.barcode,
-  fp.description,
-  COALESCE(
-    jsonb_object_agg(
-      COALESCE(pr.name, 'unnamed_' || pr.id::text),
-      COALESCE(
-        CASE
-          WHEN pd.value_string IS NOT NULL THEN to_jsonb(pd.value_string)
-          WHEN pd.value_num IS NOT NULL THEN to_jsonb(pd.value_num)
-          WHEN pd.value_bool IS NOT NULL THEN to_jsonb(pd.value_bool)
-          WHEN pd.value_uuid IS NOT NULL THEN to_jsonb(pd.value_uuid::text)
-          WHEN pd.value_datetime IS NOT NULL THEN to_jsonb(pd.value_datetime::text)
-          ELSE 'null'::jsonb
-        END,
-        'null'::jsonb
-      )
-    ) FILTER (WHERE pr.id IS NOT NULL),
-    '{}'::jsonb
-  )::text AS properties
+    fp.id AS plate_id,
+    fp.barcode,
+    fp.description,
+    COALESCE(
+        jsonb_object_agg(
+            pr.name,
+            CASE
+                WHEN pd.value_string IS NOT NULL THEN to_jsonb(pd.value_string)
+                WHEN pd.value_num IS NOT NULL THEN to_jsonb(pd.value_num)
+                WHEN pd.value_bool IS NOT NULL THEN to_jsonb(pd.value_bool)
+                ELSE 'null'::jsonb
+            END
+        ) FILTER (WHERE pr.id IS NOT NULL),
+        '{}'::jsonb
+    )::text AS properties
 FROM filtered_plates fp
 LEFT JOIN plates.plate_details pd ON pd.plate_id = fp.id
 LEFT JOIN plates.properties pr ON pr.id = pd.property_id
 GROUP BY fp.id, fp.barcode, fp.description
 ORDER BY fp.id;
-`.trim();
+    `.trim();
 }
 
-/**
- * Build SQL that
- *   1) keeps only wells whose plate-level and well-level properties match the user's filters
- *   2) returns every well-level property (name + value) for those wells
- *      packed into a single JSONB column called "properties".
- *
- *   The JSON looks like:
- *   {
- *     "Volume":        "100.0",
- *     "Concentration": "10.5",
- *     "Sample":        "ABC-123",
- *     "Well Role":     "DMSO",
- *     ...
- *   }
- */
+
 function getWellSearchSql(query: PlateQuery): string {
   const whereClauses: string[] = [];
 
@@ -407,7 +366,7 @@ export async function queryPlates(query: PlateQuery): Promise<DG.DataFrame> {
 
   // Make sure properties column exists and is valid JSON
   const propsCol = df.col('properties');
-  if (propsCol) {
+  if (propsCol && df.rowCount > 0) {
     try {
       DG.Utils.jsonToColumns(propsCol);
       propsCol.name = '~properties';
@@ -448,9 +407,9 @@ export async function savePlate(plate: Plate, options?: { autoCreateProperties?:
   await initPlates();
 
   const plateSql =
-    `insert into plates.plates(plate_type_id, barcode)
-     values(${plate.plateTypeId}, ${sqlStr(plate.barcode)})
-     returning id`;
+        `insert into plates.plates(plate_type_id, barcode)
+        values(${plate.plateTypeId}, ${sqlStr(plate.barcode)})
+        returning id`;
   plate.id = (await grok.data.db.query('Curves:Plates', plateSql)).get('id', 0);
 
   const globalPlateProperties = allProperties.filter((p) => p.template_id == null && p.scope === 'plate');
@@ -494,25 +453,34 @@ export async function savePlateAsTemplate(plate: Plate, template: PlateTemplate)
 
 function getPlateInsertSql(plate: Plate): string {
   let sql = 'insert into plates.plate_wells(plate_id, row, col) values ' +
-    plate.wells.map((pw) => `  (${plate.id}, ${pw.row}, ${pw.col})`).toArray().join(',\n') + ';';
+        plate.wells.map((pw) => `  (${plate.id}, ${pw.row}, ${pw.col})`).toArray().join(',\n') + ';';
 
-  // Find properties from the unified 'allProperties' cache, filtering by scope
   for (const layer of Object.keys(plate.details)) {
-    const property = allProperties.find((p) => p.scope === 'plate' && p.name.toLowerCase() == layer.toLowerCase())!;
-    const dbCol = plateDbColumn[property.type];
+    const property = allProperties.find((p) => p.scope === 'plate' && p.name.toLowerCase() == layer.toLowerCase());
 
+    if (!property) {
+      console.warn(`Property '${layer}' not found in cache. Skipping save for this plate-level property.`);
+      continue; // Skip to the next property
+    }
+
+    const dbCol = plateDbColumn[property.type];
     sql += `\n insert into plates.plate_details(plate_id, property_id, ${dbCol}) values ` +
-      `(${plate.id}, ${property.id}, ${sqlStr(plate.details[layer])});`;
+            `(${plate.id}, ${property.id}, ${sqlStr(plate.details[layer])});`;
   }
 
-  // well data
   for (const layer of plate.getLayerNames()) {
-    const property = allProperties.find((p) => p.scope === 'well' && p.name.toLowerCase() == layer.toLowerCase())!;
+    const property = allProperties.find((p) => p.scope === 'well' && p.name.toLowerCase() == layer.toLowerCase());
+
+    if (!property) {
+      console.warn(`Property '${layer}' not found in cache. Skipping save for this well-level property.`);
+      continue; // Skip to the next property
+    }
+
     const dbCol = plateDbColumn[property.type];
     sql += `\n\n insert into plates.plate_well_values(plate_id, row, col, property_id, ${dbCol}) values\n` +
-      plate.wells
-        .map((pw) => `  (${plate.id}, ${pw.row}, ${pw.col}, ${property.id}, ${sqlStr(pw[layer])})`)
-        .toArray().join(',\n') + ';';
+            plate.wells
+              .map((pw) => `  (${plate.id}, ${pw.row}, ${pw.col}, ${property.id}, ${sqlStr(pw[layer])})`)
+              .toArray().join(',\n') + ';';
   }
 
   return sql;
@@ -584,100 +552,96 @@ export async function deletePlateTemplate(template: PlateTemplate): Promise<void
   await initPlates(true); // Refresh the cache
 }
 
-/**
- * Creates a record for a new analysis run in the database.
- * @param plateId The ID of the plate the analysis was run on.
- * @param analysisName A string identifier for the analysis type (e.g., 'Dose-Response').
- * @param parameters An object containing the parameters used for the run (e.g., mappings).
- * @returns The ID of the newly created analysis run.
- */
-export async function createAnalysisRun(plateId: number, analysisName: string, parameters: object): Promise<number> {
-  // Add a defensive check for the plateId right at the start.
+export async function createAnalysisRun(plateId: number, analysisType: string, groups: string[]): Promise<number> {
   if (!plateId)
     throw new Error('Cannot create analysis run: plateId is missing.');
 
-  const result = await grok.functions.call('Curves:createAnalysisRun', {
+  // THE FIX: The function call directly returns the number (the runId) because of the `-- output: int runId` annotation in the SQL.
+  // We should not treat it as a DataFrame.
+  const runId: number = await grok.functions.call('Curves:createAnalysisRun', {
     plateId: plateId,
-    analysisName: analysisName,
-    parameters: JSON.stringify(parameters)
+    analysisType: analysisType,
+    groups: groups,
   });
 
-  // Log what the platform actually returns. This is great for debugging.
-  console.log('createAnalysisRun result:', result);
-
-  if (result === null || result === undefined)
-    throw new Error('Failed to create analysis run in the database. The function call returned null.');
-
-  // The result might be a number directly, or an object like { id: 123 } or a DataFrame.
-  // This handles all common cases.
-  const runId = result.id ?? result.runId ?? (typeof result.get === 'function' ? result.get('id', 0) : result);
-
-  if (typeof runId !== 'number')
-    throw new Error(`Failed to extract a numeric runId. Got: ${JSON.stringify(runId)}`);
+  // Validate the result
+  if (typeof runId !== 'number' || runId <= 0)
+    throw new Error(`Failed to create a valid analysis run. Received runId: ${runId}`);
 
   return runId;
 }
 
 
-/**
- * Saves a single curve's results to the database.
- * @param params An object containing all the curve data.
- */
-export async function saveCurveResult(params: {
-  runId: number, seriesName: string | null, curveJson: string, ic50: number | null, hillSlope: number | null,
-  rSquared: number | null, minValue: number | null, maxValue: number | null, auc: number | null
+export async function saveAnalysisRunParameter(params: {
+    runId: number,
+    propertyName: string,
+    propertyType: DG.TYPE,
+    value: any
+}) {
+  const prop = await getOrCreateProperty(params.propertyName, params.propertyType);
+  const callParams: any = {
+    analysisRunId: params.runId,
+    propertyId: prop.id,
+    valueString: null, valueNum: null, valueBool: null, valueJsonb: null
+  };
+
+  const dbColumnKey = Object.keys(plateDbColumn).find((key) => key === params.propertyType);
+  if (!dbColumnKey)
+    throw new Error(`Unsupported property type for parameter: ${params.propertyType}`);
+
+  const dbColumn = plateDbColumn[dbColumnKey];
+  if (dbColumn === 'value_string') callParams.valueString = String(params.value);
+  else if (dbColumn === 'value_num') callParams.valueNum = params.value;
+  else if (dbColumn === 'value_bool') callParams.valueBool = params.value;
+
+  await grok.functions.call('Curves:saveAnalysisRunParameter', callParams);
+}
+
+export async function saveAnalysisResult(params: {
+    runId: number,
+    propertyId: number,
+    propertyType: string,
+    value: any,
+    groupCombination: string[]
 }): Promise<void> {
-  await grok.functions.call('Curves:saveCurveResult', params);
-}
+  const callParams: any = {
+    analysisRunId: params.runId,
+    propertyId: params.propertyId,
+    groupCombination: params.groupCombination,
+    valueString: null, valueNum: null, valueBool: null, valueJsonb: null
+  };
 
-/**
- * High-level orchestrator function to save the complete results of a DRC analysis.
- * @param plate The Plate object the analysis was run on. Must have an ID.
- * @param resultsDf The DataFrame containing the results from the DRC analysis (one row per curve).
- * @param analysisParams The parameters (e.g., column mappings) used to run the analysis.
- * @param roleColumnName The name of the column in resultsDf that contains the series name.
- */
-export async function saveDrcAnalysisResults(
-  plate: Plate,
-  resultsDf: DG.DataFrame,
-  analysisParams: object,
-  roleColumnName: string
-): Promise<void> {
-  if (!plate.id) {
-    grok.shell.error('Plate must be saved before saving analysis results.');
-    return;
+  // Special handling for JSON strings like curve data
+  if (params.propertyType === DG.TYPE.STRING && typeof params.value === 'string' && params.value.startsWith('{')) {
+    callParams.valueJsonb = params.value;
+  } else {
+    const dbColumnKey = Object.keys(plateDbColumn).find((key) => key === params.propertyType);
+    if (!dbColumnKey)
+      throw new Error(`Unsupported property type for DB storage: ${params.propertyType}`);
+
+    const dbColumn = plateDbColumn[dbColumnKey];
+    if (dbColumn === 'value_string') callParams.valueString = String(params.value);
+    else if (dbColumn === 'value_num') callParams.valueNum = params.value;
+    else if (dbColumn === 'value_bool') callParams.valueBool = params.value;
   }
 
-  // 1. Create the single analysis run record
-  const runId = await createAnalysisRun(plate.id, 'Dose-Response', analysisParams);
-
-  // 2. Iterate over the results dataframe and save each curve
-  for (const row of resultsDf.rows) {
-    const fullChartJson = JSON.parse(row.get('Curve'));
-
-    // Create the single-series JSON for storage
-    const singleSeriesJson = JSON.stringify({
-      chartOptions: fullChartJson.chartOptions,
-      series: [fullChartJson.series[0]]
-    });
-    const getNum = (colName: string): number | null => {
-      if (!resultsDf.columns.contains(colName)) return null;
-      const val = row.get(colName);
-      return (typeof val === 'number' && isFinite(val)) ? val : null;
-    };
-
-    await saveCurveResult({
-      runId: runId,
-      seriesName: row.get(roleColumnName),
-      curveJson: singleSeriesJson,
-      ic50: getNum('IC50'),
-      hillSlope: getNum('Hill'),
-      rSquared: getNum('rSquared'),
-      minValue: getNum('Min'),
-      maxValue: getNum('Max'),
-      auc: getNum('AUC')
-    });
-  }
-
-  grok.shell.info(`Saved ${resultsDf.rowCount} dose-response curves for plate ${plate.barcode}.`);
+  await grok.functions.call('Curves:saveAnalysisResult', callParams);
 }
+
+
+// MODIFIED: Renamed from getOrCreateAnalysisProperty to be more generic.
+// No functional change needed here, but it's good practice. It handles properties
+// for both parameters and results.
+export async function getOrCreateProperty(name: string, type: DG.TYPE, scope: 'plate' | 'well' = 'plate'): Promise<PlateProperty> {
+  await initPlates();
+  // A global property is one with no template_id
+  let prop = allProperties.find((p) => p.name === name && p.template_id == null && p.scope == scope);
+  if (prop)
+    return prop;
+
+  console.log(`Creating new global property: ${name}`);
+  const newProp = await createProperty({name: name, type: type, scope: scope, template_id: undefined});
+  await initPlates(true); // Force refresh of the cache
+  return allProperties.find((p) => p.id === newProp.id)!;
+}
+

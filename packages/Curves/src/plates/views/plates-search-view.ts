@@ -1,5 +1,5 @@
 /* eslint-disable max-len */
-import {AnalysisCondition, AnalysisProperty, drcAnalysisProperties, getPlateUniquePropertyValues, getWellUniquePropertyValues, initPlates, PlateQuery, PlateTemplate, PropertyCondition} from '../plates-crud';
+import {AnalysisCondition, AnalysisProperty, getPlateUniquePropertyValues, getWellUniquePropertyValues, initPlates, PlateQuery, PlateTemplate, PropertyCondition} from '../plates-crud';
 
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
@@ -12,6 +12,8 @@ import {
   allProperties,
   plateTemplates
 } from '../plates-crud';
+import {drcAnalysisProperties} from '../../plate/plate-drc-analysis';
+import {doseRatioAnalysisProperties} from '../../plate/dose-ratio-analysis';
 
 
 type PropInput = DG.InputBase & { prop: PlateProperty };
@@ -308,11 +310,3 @@ export function searchWellsView(): DG.View {
 }
 
 
-export const doseRatioAnalysisProperties: AnalysisProperty[] = [
-  {name: 'IC50', type: DG.TYPE.FLOAT, dbColumn: 'ic50'},
-  {name: 'Hill Slope', type: DG.TYPE.FLOAT, dbColumn: 'hill_slope'},
-  {name: 'R Squared', type: DG.TYPE.FLOAT, dbColumn: 'r_squared'},
-  {name: 'Min Value', type: DG.TYPE.FLOAT, dbColumn: 'min_value'},
-  {name: 'Max Value', type: DG.TYPE.FLOAT, dbColumn: 'max_value'},
-  {name: 'AUC', type: DG.TYPE.FLOAT, dbColumn: 'auc'},
-];

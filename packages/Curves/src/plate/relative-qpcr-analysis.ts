@@ -8,6 +8,7 @@ import * as grok from 'datagrok-api/grok';
 import {Plate, LayerType} from './plate';
 import {BaseAnalysisView} from './base-analysis-view';
 import {PlateWidget} from './plate-widget';
+import {createAnalysisRun, getOrCreateProperty, PlateProperty, saveAnalysisResult} from '../plates/plates-crud';
 
 const REQUIRED_ROLES = {
   TARGET: 'Target Gene',
@@ -48,6 +49,7 @@ export class PlateQpcrAnalysis {
     console.log('%c--- Rendering qPCR Analysis View ---', 'color: #2083f5; font-weight: bold;');
     const allPrerequisitesMet = areAllGroupsPresent(plate) && currentMappings.has('Ct');
 
+
     if (allPrerequisitesMet) {
       const resultsView = this.createQpcrResultsUI(plate, currentMappings, onDataChanged);
       if (resultsView)
@@ -70,6 +72,66 @@ export class PlateQpcrAnalysis {
     return analysisView.getRoot();
   }
 
+  static async saveQpcrAnalysisResults(
+    plate: Plate,
+    resultsDf: DG.DataFrame,
+    mappings: Map<string, string>
+  ): Promise<void> {
+    if (!plate.id) {
+      grok.shell.error('Plate must be saved before saving analysis results.');
+      return;
+    }
+
+    const pi = DG.TaskBarProgressIndicator.create('Saving qPCR results...');
+    try {
+      // 1. For qPCR, the groups are the roles themselves.
+      const groups = Object.values(REQUIRED_ROLES);
+      const runId = await createAnalysisRun(plate.id, 'qPCR', groups);
+
+      // Optional: Save the Ct column mapping as a parameter
+      // ...
+
+      // 2. Define the properties to save.
+      const propsToSave: Record<string, string> = {
+        'ΔΔCt': 'Delta Delta Ct',
+        'Fold Change': 'Fold Change',
+      };
+      const propertyMap = new Map<string, PlateProperty>();
+      for (const propName of Object.values(propsToSave))
+        propertyMap.set(propName, await getOrCreateProperty(propName, DG.TYPE.FLOAT));
+
+      // 3. Since these are plate-level results, the group combination is an empty array.
+      const groupCombination: string[] = [];
+
+      // 4. Extract values and save them.
+      const categoryCol = resultsDf.col('Category')!;
+      const valueCol = resultsDf.col('Target Gene')!;
+      for (let i = 0; i < resultsDf.rowCount; i++) {
+        const category = categoryCol.get(i);
+        const dbPropName = propsToSave[category];
+        if (dbPropName) {
+          const propObject = propertyMap.get(dbPropName)!;
+          const value = parseFloat(valueCol.get(i));
+
+          if (!isNaN(value)) {
+            await saveAnalysisResult({
+              runId: runId,
+              propertyId: propObject.id,
+              propertyType: propObject.type,
+              value: value,
+              groupCombination: groupCombination, // Empty array for plate-level results
+            });
+          }
+        }
+      }
+      grok.shell.info('Saved qPCR analysis results.');
+    } catch (e: any) {
+      console.error('Save qPCR Results failed:', e);
+      grok.shell.error(`Failed to save qPCR results: ${e?.message ?? e}`);
+    } finally {
+      pi.close();
+    }
+  }
   private static createQpcrResultsUI(plate: Plate, mappings: Map<string, string>, onDataChanged: () => void): HTMLElement | null {
     if (areAllGroupsPresent(plate)) {
       try {
@@ -77,12 +139,39 @@ export class PlateQpcrAnalysis {
         const resultsDf = this.calculateDeltaDeltaCt(plate, ctColumnName);
         const grid = DG.Viewer.grid(resultsDf);
         grid.props.allowEdit = false;
-        return grid.root;
+
+        const saveButton = ui.button('SAVE RESULTS', async () => {
+          if (!plate.id) {
+            grok.shell.warning('Please use the main "CREATE" button to save the plate before saving analysis results.');
+            return;
+          }
+          await this.saveQpcrAnalysisResults(plate, resultsDf, mappings);
+        });
+
+        saveButton.style.marginTop = '8px';
+
+        const container = ui.divV([
+          grid.root,
+          ui.div([saveButton], {style: {display: 'flex', justifyContent: 'flex-end', paddingRight: '4px'}})
+        ]);
+
+        // START of STYLE FIX
+        container.style.width = '100%';
+        container.style.height = '100%';
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+
+        grid.root.style.width = '100%';
+        grid.root.style.flexGrow = '1';
+        // END of STYLE FIX
+
+        return container;
       } catch (e: any) {
         console.error('qPCR Calculation Error:', e);
         return ui.divText(`Calculation Error: ${e.message}`, 'error-message');
       }
     }
+
 
     const embeddedPlateWidget = new PlateWidget();
     embeddedPlateWidget.plate = plate;

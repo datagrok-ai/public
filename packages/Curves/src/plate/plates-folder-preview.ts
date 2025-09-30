@@ -6,6 +6,7 @@ import * as grok from 'datagrok-api/grok';
 import {Plate} from './plate';
 import {_package} from '../package';
 import {PlateDrcAnalysis} from './plate-drc-analysis';
+// import {PlateDrcAnalysis} from './plate-drc-analysis';
 
 
 export async function getPlatesFolderPreview(files: DG.FileInfo[]): Promise<DG.Widget | DG.ViewBase | undefined> {

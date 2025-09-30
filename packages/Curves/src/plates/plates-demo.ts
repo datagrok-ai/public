@@ -6,18 +6,14 @@ import * as grok from 'datagrok-api/grok';
 import {createPlateTemplate, createNewPlateForTemplate} from './plates-crud';
 import {Plate} from '../plate/plate';
 
-//! DONT FORGET TO SEED THE PLATE TYPES
 
 export async function __createDummyPlateData() {
   await initPlates(true);
-
   await createDummyPlates();
   await createDummyPlatesFromExcel();
-
   await initPlates(true);
 }
 
-/** Demonstrates construction of templates and plates on the fly */
 async function createDummyPlates() {
   const cellCountingTemplate = await createPlateTemplate({
     name: 'Cell counting',

@@ -73,38 +73,12 @@
     margin: 0 !important; /* Override Datagrok defaults */
 }
 
-/* Ensure select dropdowns are properly sized */
-.mapping-editor .ui-input-choice select {
-    height: 28px;
-    padding: 4px 8px;
-    border: 1px solid var(--grey-2);
-    border-radius: 3px;
-    font-size: 12px;
-    background-color: white;
-    width: 100%;
-}
+/* START of CHANGE: Removed custom styling for select and text inputs */
+/* The blocks for '.mapping-editor .ui-input-choice select' and */
+/* '.mapping-editor input[type="text"]' and their focus states */
+/* have been deleted to restore default Datagrok styles. */
+/* END of CHANGE */
 
-.mapping-editor .ui-input-choice select:focus {
-    border-color: var(--blue-2);
-    outline: none;
-    box-shadow: 0 0 0 2px var(--blue-1);
-}
-
-/* Text inputs in dynamic rows */
-.mapping-editor input[type="text"] {
-    height: 28px;
-    padding: 4px 8px;
-    border: 1px solid var(--grey-2);
-    border-radius: 3px;
-    font-size: 12px;
-    width: 100%;
-}
-
-.mapping-editor input[type="text"]:focus {
-    border-color: var(--blue-2);
-    outline: none;
-    box-shadow: 0 0 0 2px var(--blue-1);
-}
 
 /* Remove excessive margins from Datagrok components */
 .mapping-editor-row .d4-input-editor {

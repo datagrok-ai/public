@@ -102,24 +102,11 @@
     gap: 8px;
 }
 
-/* Apply consistent input styling across all template panel inputs */
-.template-panel-form-row .ui-input-choice select,
-.left-panel-section-content .ui-input-choice select {
-    height: 28px;
-    padding: 4px 8px;
-    border: 1px solid var(--grey-2);
-    border-radius: 2px;
-    font-size: 12px;
-    background-color: white;
-    width: 100%;
-}
+/* START of CHANGE: Removed custom styling for choice inputs */
+/* The block for '.template-panel-form-row .ui-input-choice select' */
+/* and its focus state has been removed to restore default styles. */
+/* END of CHANGE */
 
-.template-panel-form-row .ui-input-choice select:focus,
-.left-panel-section-content .ui-input-choice select:focus {
-    border-color: var(--blue-2);
-    outline: none;
-    box-shadow: none;
-}
 
 /* Validation table styling (for the template properties mapping) */
 .plate-validation-table-header {
@@ -274,6 +261,6 @@
 }
 
 .curves-add-button {
-  width: 100%; /* Make the add button span the full width */
+  width: 100%; 
   justify-content: center;
 }

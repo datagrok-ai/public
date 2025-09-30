@@ -13,8 +13,6 @@ ORDER BY name;
 -- end
 
 
-
-
 -- name: getPlateLevelProperties
 -- connection: Curves:plates
 SELECT DISTINCT p.*
@@ -104,7 +102,6 @@ WHERE p.type = 'string';
 -- end
 
 
-
 -- name: createProperty
 -- connection: Curves:plates
 -- input: string propertyName
@@ -122,7 +119,6 @@ RETURNING id;
 -- end
 
 
-
 -- name: createTemplate
 -- connection: Curves:plates
 -- input: string name
@@ -131,19 +127,6 @@ RETURNING id;
 INSERT INTO plates.templates(name, description)
 VALUES(@name, @description)
 RETURNING id;
--- end
-
--- name: getTemplateWellProperties
--- connection: Curves:plates
-SELECT template_id, property_id
-FROM plates.template_well_properties
--- end
-
-
--- name: getTemplatePlateProperties
--- connection: Curves:plates
-SELECT template_id, property_id
-FROM plates.template_plate_properties
 -- end
 
 -- name: getTemplateProperties
@@ -155,7 +138,6 @@ WHERE template_id = @templateId;
 -- end
 
 
-
 -- name: getPlateByBarcode
 -- connection: Curves:Plates
 -- input: string barcode
@@ -165,31 +147,50 @@ SELECT * FROM plates.plates WHERE barcode = @barcode;
 
 
 -- name: createAnalysisRun
+-- MODIFIED: Aligns with the new analysis_runs schema.
 -- connection: Curves:plates
 -- input: int plateId
--- input: string analysisName
--- input: string parameters
+-- input: string analysisType
+-- input: list<string> groups
 -- output: int runId
-INSERT INTO plates.analysis_runs(plate_id, analysis_name, parameters)
-VALUES (@plateId, @analysisName, CAST(@parameters AS jsonb))
+INSERT INTO plates.analysis_runs(plate_id, analysis_type, groups)
+VALUES (@plateId, @analysisType, @groups)
 RETURNING id;
 -- end
 
 
--- name: saveCurveResult
+-- name: saveAnalysisRunParameter
+-- NEW: Saves a single parameter for an analysis run.
 -- connection: Curves:plates
--- input: int runId
--- input: string seriesName {nullable: true}
--- input: string curveJson
--- input: double ic50 {nullable: true}
--- input: double hillSlope {nullable: true}
--- input: double rSquared {nullable: true}
--- input: double minValue {nullable: true}
--- input: double maxValue {nullable: true}
--- input: double auc {nullable: true}
-INSERT INTO plates.analysis_results_curves(
-    analysis_run_id, series_name, curve_json, ic50, hill_slope, r_squared, min_value, max_value, auc
+-- input: int analysisRunId
+-- input: int propertyId
+-- input: string valueString {nullable: true}
+-- input: double valueNum {nullable: true}
+-- input: bool valueBool {nullable: true}
+-- input: string valueJsonb {nullable: true}
+INSERT INTO plates.analysis_run_parameters(
+    analysis_run_id, property_id, value_string, value_num, value_bool, value_jsonb
 ) VALUES (
-    @runId, @seriesName, CAST(@curveJson AS jsonb), @ic50, @hillSlope, @rSquared, @minValue, @maxValue, @auc
+    @analysisRunId, @propertyId, @valueString, @valueNum, @valueBool, CAST(@valueJsonb AS jsonb)
+);
+-- end
+
+
+-- name: saveAnalysisResult
+-- NEW: Saves a single result value for an analysis run.
+-- connection: Curves:plates
+-- input: int analysisRunId
+-- input: list<string> groupCombination
+-- input: int propertyId
+-- input: string valueString {nullable: true}
+-- input: double valueNum {nullable: true}
+-- input: bool valueBool {nullable: true}
+-- input: string valueJsonb {nullable: true}
+INSERT INTO plates.analysis_results(
+    analysis_run_id, group_combination, property_id,
+    value_string, value_num, value_bool, value_jsonb
+) VALUES (
+    @analysisRunId, @groupCombination, @propertyId,
+    @valueString, @valueNum, @valueBool, CAST(@valueJsonb AS jsonb)
 );
 -- end
