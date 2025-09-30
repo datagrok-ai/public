@@ -1,5 +1,8 @@
 package grok_connect.providers;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -98,12 +101,20 @@ public class AthenaDataProvider extends JdbcDataProvider {
         Properties properties = new Properties();
         setIfNotNull(properties, "User", (String )conn.credentials.parameters.get(DbCredentials.ACCESS_KEY));
         setIfNotNull(properties, "Password", (String) conn.credentials.parameters.get(DbCredentials.SECRET_KEY));
+        setIfNotNull(properties, "SessionToken", (String) conn.credentials.parameters.get("token"));
         if (!conn.hasCustomConnectionString()) {
             setIfNotNull(properties, "S3OutputLocation", conn.get(DbCredentials.S3OutputLocation));
             setIfNotNull(properties, "Schema", conn.getDb());
             setIfNotNull(properties, "S3OutputEncOption", conn.get(DbCredentials.S3OutputEncOption));
         }
         return properties;
+    }
+
+    @Override
+    public Connection getConnection(DataConnection conn) throws SQLException, GrokConnectException {
+        return GrokConnectUtil.isNotEmpty((String) conn.credentials.parameters.getOrDefault("expires", null)) ?
+                DriverManager.getConnection(getConnectionString(conn), getProperties(conn))
+                : ConnectionPool.getConnection(getConnectionString(conn), getProperties(conn), driverClassName);
     }
 
     @Override

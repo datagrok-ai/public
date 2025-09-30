@@ -1,6 +1,10 @@
 # Grok Connect changelog
 
-# 2.5.0 (2025-09-19) WIP
+# 2.5.1 (2025-09-30) WIP
+
+* Athena: Apply session token when passed
+
+# 2.5.0 (2025-09-19)
 
 * TableQuery: Support joining between different schemas
 * BigQuery: Support token resolution
