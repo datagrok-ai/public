@@ -329,11 +329,6 @@ export const RichFunctionView = Vue.defineComponent({
       visibleTabLabels.value = [...tabLabels.value];
     }, {immediate: true});
 
-    Vue.onBeforeUnmount(() => {
-      if (inputFormComponentRef.value)
-        inputFormComponentRef.value.clearForm();
-    });
-
     ////
     // Intergrations related
     ////
