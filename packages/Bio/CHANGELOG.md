@@ -1,5 +1,11 @@
 # Bio changelog
 
+## 2.22.12 (2025-09-30)
+
+* Match with Monomer Library tool
+* Fix monomer lib loading for tests
+* Converter improvements
+
 ## 2.22.2 (2025-06-11)
 
 * Harmonized options for Similarity/Diversity viewers

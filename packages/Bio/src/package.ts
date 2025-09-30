@@ -70,12 +70,13 @@ import {GetRegionFuncEditor} from './utils/get-region-func-editor';
 import {sequenceToMolfile} from './utils/sequence-to-mol';
 import {detectMacromoleculeProbeDo} from './utils/detect-macromolecule-probe';
 import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
-import {MonomerManager, standardizeMonomerLibrary} from './utils/monomer-lib/monomer-manager/monomer-manager';
+import {matchMoleculesWithMonomers, MonomerManager, standardizeMonomerLibrary} from './utils/monomer-lib/monomer-manager/monomer-manager';
 import {calculateScoresWithEmptyValues} from './utils/calculate-scores';
 import {SeqHelper} from './utils/seq-helper/seq-helper';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
 import {molecular3DStructureWidget, toAtomicLevelWidget} from './widgets/to-atomic-level-widget';
 import {handleSequenceHeaderRendering} from './widgets/sequence-scrolling-widget';
+import {PolymerType} from '@datagrok-libraries/js-draw-lite/src/types/org';
 export const _package = new BioPackage(/*{debug: true}/**/);
 export * from './package.g';
 
@@ -141,6 +142,14 @@ export class PackageFunctions {
   @grok.decorators.func({})
   static async standardiseMonomerLibrary(library: string): Promise<string> {
     return await standardizeMonomerLibrary(library);
+  }
+
+  @grok.decorators.func({'top-menu': 'Bio | Manage | Match with Monomer Library...', description: 'Matches molecules in a column with monomers from the selected library(s)',})
+  static async matchWithMonomerLibrary(table: DG.DataFrame,
+      @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}})molecules: DG.Column,
+      @grok.decorators.param({type: 'string', options: {choices: ['PEPTIDE', 'RNA', 'CHEM'], initialValue: 'PEPTIDE', caption: 'Polymer Type'}})polymerType: PolymerType = 'PEPTIDE') {
+    const matchDF = await matchMoleculesWithMonomers(table, molecules.name, _package.monomerLib, polymerType);
+    grok.shell.addTableView(matchDF);
   }
 
   // Keep for backward compatibility
