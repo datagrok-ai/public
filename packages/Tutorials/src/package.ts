@@ -16,6 +16,7 @@ import {viewerDemo} from './demo-app/platform-viewers-demo';
 import {DemoAppWidget} from './demo-app/widget';
 import { bio } from './tracks/bio';
 import {DEMO_APP_HIERARCHY} from './demo-app/const';
+import dayjs from 'dayjs';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -53,9 +54,24 @@ export class PackageFunctions {
   }
 
 
+  @grok.decorators.autostart()
+  static tutorialsAutostart() : void {
+    if (DG.User.current().joined.add(4, 'days').diff(dayjs())) {
+      const appsNode = grok.shell.browsePanel.mainTree.children.find((c) => c.text === 'Apps') as DG.TreeViewGroup;
+      if (!appsNode)
+        return;
+      appsNode.expanded = true;
+      waitForChild(appsNode, 'Demo').then((demoNode) => {
+        demoNode.expanded = true;
+        waitForChild(demoNode, 'Cheminformatics').then((chemNode) => {
+          chemNode.expanded = true;
+        });
+      });
+    }
+  }
+
   @grok.decorators.init()
   static tutorialsInit() : void {
-
     const properties = _package.settings;
     setProperties(properties as unknown as { [propertyName: string]: boolean });
 
@@ -559,4 +575,20 @@ function setProperties(properties: { [propertyName: string]: boolean }): void {
     if (property in registry && properties[property])
       tracks.push(registry[property]);
   }
+}
+
+function waitForChild(parent: DG.TreeViewGroup, childText: string): Promise<DG.TreeViewGroup> {
+  return new Promise((resolve) => {
+    const tryFind = () => parent.children.find((c) => c.text === childText) as DG.TreeViewGroup;
+    const existing = tryFind();
+    if (existing)
+      return resolve(existing);
+
+    const sub = parent.onNodeAdded.subscribe((n) => {
+      if ((n as DG.TreeViewGroup).text === childText) {
+        sub.unsubscribe();
+        resolve(n as DG.TreeViewGroup);
+      }
+    });
+  });
 }

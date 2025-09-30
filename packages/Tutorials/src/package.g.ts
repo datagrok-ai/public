@@ -13,6 +13,11 @@ export function tutorialWidget() : any {
   return PackageFunctions.tutorialWidget();
 }
 
+//tags: autostart
+export function tutorialsAutostart() : void {
+  PackageFunctions.tutorialsAutostart();
+}
+
 //tags: init
 export function tutorialsInit() : void {
   PackageFunctions.tutorialsInit();

@@ -16,6 +16,10 @@ export namespace funcs {
     return await grok.functions.call('Tutorials:TutorialWidget', {});
   }
 
+  export async function tutorialsAutostart(): Promise<void> {
+    return await grok.functions.call('Tutorials:TutorialsAutostart', {});
+  }
+
   export async function tutorialsInit(): Promise<void> {
     return await grok.functions.call('Tutorials:TutorialsInit', {});
   }
