@@ -2157,19 +2157,18 @@ export class DiffStudio {
 
   /** Append menu with models from user's files */
   private async appendMenuWithMyModels(menu: DG.Menu) {
-    const submenu = menu.group(TITLE.MY_MODELS);
-
     try {
       const myModelFiles = await getMyModelFiles();
       if (myModelFiles.length < 1)
-        submenu.item(TITLE.NO_MODELS, noModels, null, {description: HINT.NO_MODELS});
-      else
+        menu.item(TITLE.MY_MODELS, noModels, null, {isEnabled: () => HINT.NO_MY_MODELS});
+      else {
+        const submenu = menu.group(TITLE.MY_MODELS);
         myModelFiles.forEach(async (file) => await this.appendMenuWithCustomModel(submenu, file.fullPath as TITLE));
+        submenu.endGroup();
+      }
     } catch (err) {
-      submenu.item(TITLE.NO_MODELS, noModels, null, {description: HINT.NO_MODELS});
+      menu.item(TITLE.MY_MODELS, noModels, null, {isEnabled: () => HINT.FAILED_TO_LOAD_RECENT_MODELS});
     };
-
-    submenu.endGroup();
   }
 
   /** Run last called model */
