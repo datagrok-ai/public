@@ -129,31 +129,12 @@ export class EntityBaseView {
 
     const form = ui.wideForm(inputs);
     form.classList.add('moltrack-compound-form', 'moltrack-form');
-    const section = this.createCollapsibleSection(title, form, initiallyOpen);
 
+    const acc = ui.accordion();
+    const accPane = acc.addPane(title, () => form);
+    accPane.expanded = initiallyOpen;
+    const section = accPane.root;
     return { section, inputs, formBackingObject };
-  }
-
-  private createCollapsibleSection(
-    title: string,
-    form: HTMLElement,
-    initiallyOpen: boolean = false,
-  ): HTMLElement {
-    const chevron = ui.iconFA(
-      initiallyOpen ? 'chevron-down' : 'chevron-right',
-      () => toggleSection(form, chevron, title),
-      `Toggle ${title}`,
-    );
-    chevron.classList.add('moltrack-chevron');
-
-    const headerText = ui.divText(title, 'moltrack-section-title');
-    const header = ui.divH([chevron, headerText], 'moltrack-section-header');
-
-    form.style.display = initiallyOpen ? 'block' : 'none';
-    form.classList.add('moltrack-section-form');
-
-    const section = ui.divV([header, form], 'moltrack-section');
-    return section;
   }
 
   private clearAll() {
@@ -361,12 +342,6 @@ export class EntityBaseView {
     openedView = this.view;
     grok.shell.addPreview(this.view);
   }
-}
-
-function toggleSection(form: HTMLElement, chevron: HTMLElement, title: string) {
-  const isHidden = form.style.display === 'none';
-  form.style.display = isHidden ? 'block' : 'none';
-  chevron.className = `fa fa-chevron-${isHidden ? 'down' : 'right'}`;
 }
 
 function generateExample(pattern: string, index: number = 1): string {
