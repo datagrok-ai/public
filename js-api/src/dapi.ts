@@ -240,7 +240,7 @@ export class Dapi {
     // @ts-ignore
     params.headers['original-method'] = params.method;
     if (params.redirect === 'follow')
-      params.headers['follow-redirects'] = true;
+      (params.headers as any)['follow-redirects'] = true;
     let proxyUrl = `${this.root}/connectors/proxy`;
     if (params.method == 'GET' || params.method == 'HEAD') {
       if (maxAge) {
