@@ -1,5 +1,5 @@
 /* eslint-disable max-len */
-// Specific optimization constants
+// Specific optimization constants and definitions
 
 export enum METHOD {
    NELDER_MEAD = 'Nelder-Mead',
@@ -177,3 +177,12 @@ export const RAND_MOD = 2147483647;
 
 /** Multiplier used in the generator of random numbers */
 export const RAND_MULT = 16807;
+
+/** Reproducibility settings */
+export type ReproSettings = {
+  reproducible: boolean,
+  seed: number,
+};
+
+export const REPRO_DEFAULT = true;
+export const SEED_DEFAULT = 10;

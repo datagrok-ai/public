@@ -18,7 +18,8 @@ import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossToolti
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
-import {getErrors, getCategoryWidget, getShowInfoWidget, getLossFuncDf, rgbToHex, lightenRGB, getScalarsGoodnessOfFitViewer, getHelpIcon, getRadarTooltip, toUseRadar} from './fitting/fitting-utils';
+import {getErrors, getCategoryWidget, getShowInfoWidget, getLossFuncDf, rgbToHex, lightenRGB,
+  getScalarsGoodnessOfFitViewer, getHelpIcon, getRadarTooltip, toUseRadar, getRandomSeedSettings} from './fitting/fitting-utils';
 import {OptimizationResult, Extremum, TargetTableOutput, Setting} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
@@ -512,6 +513,8 @@ export class FittingView {
   });
 
   private helpIcon = getHelpIcon();
+
+  private randInputs = getRandomSeedSettings();
 
   private showFailsBtn = ui.button('Issues', () => {
     switch (this.method) {
@@ -1057,6 +1060,19 @@ export class FittingView {
       this.fittingSettingsDiv.append(input.root);
     }));
 
+    // Add random generator settings
+    this.randInputs.reproducibility.root.insertBefore(
+      getSwitchMock(),
+      this.randInputs.reproducibility.captionLabel,
+    );
+    this.fittingSettingsDiv.appendChild(this.randInputs.reproducibility.root);
+
+    this.randInputs.seed.root.insertBefore(
+      getSwitchMock(),
+      this.randInputs.seed.captionLabel,
+    );
+    this.fittingSettingsDiv.appendChild(this.randInputs.seed.root);
+
     // Add general settings
     [this.lossInput, this.samplesCountInput, this.similarityInput].forEach((inp) => {
       inp.root.insertBefore(getSwitchMock(), inp.captionLabel);
@@ -1368,12 +1384,13 @@ export class FittingView {
               outputsOfInterest[index].funcColsInput.value,
               outputsOfInterest[index].target as DG.DataFrame,
               this.samplesCount,
+              this.randInputs.settings,
             );
           } catch (err) { // run fitting in the main thread if in-webworker run failed
-            optResult = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings, this.samplesCount);
+            optResult = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings, this.samplesCount, this.randInputs.settings);
           }
         } else
-          optResult = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings, this.samplesCount);
+          optResult = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings, this.samplesCount, this.randInputs.settings);
       } else
         throw new Error(`Not implemented the '${this.method}' method`);
 

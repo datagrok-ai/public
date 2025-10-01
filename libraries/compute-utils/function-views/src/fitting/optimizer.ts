@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {Extremum, OptimizationResult, InconsistentTables, sleep} from './optimizer-misc';
 import {optimizeNM} from './optimizer-nelder-mead';
 import {sampleParams} from './optimizer-sampler';
-import {TIMEOUT} from './constants';
+import {TIMEOUT, ReproSettings} from './constants';
 import {seededRandom} from './fitting-utils';
 
 export async function performNelderMeadOptimization(
@@ -13,12 +13,10 @@ export async function performNelderMeadOptimization(
   paramsTop: Float32Array,
   settings: Map<string, number>,
   samplesCount: number = 1,
+  reproSettings: ReproSettings,
 ): Promise<OptimizationResult> {
-  const rand = seededRandom(0);
+  const rand = reproSettings.reproducible ? seededRandom(reproSettings.seed) : Math.random;
   const params = sampleParams(samplesCount, paramsTop, paramsBottom, rand);
-
-  console.log('Sampled params:');
-  console.log(params);
 
   const extremums: Extremum[] = [];
   const warnings: string[] = [];

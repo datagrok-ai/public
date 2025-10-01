@@ -10,7 +10,9 @@ import {Extremum, InconsistentTables} from './optimizer-misc';
 import '../../css/fitting-view.css';
 import '../../css/sens-analysis.css';
 import {GRID_SIZE, HELP_LINK, INDICES, TIMEOUT, TARGET_DATAFRAME_INFO, TITLE, NAME,
-  MIN_RADAR_COLS_COUNT, RAND_MOD, RAND_MULT} from './constants';
+  MIN_RADAR_COLS_COUNT, RAND_MOD, RAND_MULT, ReproSettings,
+  REPRO_DEFAULT,
+  SEED_DEFAULT} from './constants';
 
 /** Returns indices corresponding to the closest items */
 export function getIndices(expArg: DG.Column, simArg: DG.Column): Uint32Array {
@@ -446,3 +448,35 @@ export function seededRandom(seed: number): () => number {
     return (state - 1) / (RAND_MOD - 1);
   };
 }
+
+/** Returns random seed settings */
+export function getRandomSeedSettings() {
+  const settings: ReproSettings = {
+    reproducible: REPRO_DEFAULT,
+    seed: SEED_DEFAULT,
+  };
+
+  const reprInput = ui.input.bool('reproducible', {
+    value: REPRO_DEFAULT,
+    onValueChanged: (val) => {
+      seedInput.root.hidden = !val;
+      settings.reproducible = val;
+    },
+    tooltipText: 'Enable to get reproducible results',
+  });
+
+  const seedInput = ui.input.int('random seed', {
+    value: SEED_DEFAULT,
+    nullable: false,
+    tooltipText: 'Numeric value used to initialize the initial points of the optimization method.',
+    onValueChanged: (val) => {
+      settings.seed = val ?? SEED_DEFAULT;
+    },
+  });
+
+  return {
+    reproducibility: reprInput,
+    seed: seedInput,
+    settings: settings,
+  };
+} // getRandomSeedSettings

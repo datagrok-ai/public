@@ -2,12 +2,13 @@
 import * as DG from 'datagrok-api/dg';
 
 import {IVP, IVP2WebWorker, PipelineCreator, getOutputNames, getInputVector} from '@datagrok/diff-grok';
-import {LOSS} from '../constants';
+import {LOSS, ReproSettings} from '../constants';
 import {ARG_IDX, DEFAULT_SET_VAL, MIN_TARGET_COLS_COUNT, MIN_WORKERS_COUNT, NO_ERRORS,
   RESULT_CODE, WORKERS_COUNT_DOWNSHIFT} from './defs';
 import {sampleParams} from '../optimizer-sampler';
 import {getBatches} from './fitting-utils';
 import {OptimizationResult, Extremum} from '../optimizer-misc';
+import {seededRandom} from '../fitting-utils';
 
 /** Return dataframe summarizing fails of fitting */
 export function getFailesDf(points: Float32Array[], warnings: string[]): DG.DataFrame | null {
@@ -57,7 +58,9 @@ export async function getFittedParams(
   argColName: string,
   funcCols: DG.Column[],
   target: DG.DataFrame,
-  samplesCount: number): Promise<OptimizationResult> {
+  samplesCount: number,
+  reproSettings: ReproSettings,
+): Promise<OptimizationResult> {
   // Extract settings names & values
   const settingNames: string[] = [...settings.keys()];
   const settingVals = settingNames.map((name) => settings.get(name) ?? DEFAULT_SET_VAL);
@@ -98,7 +101,8 @@ export async function getFittedParams(
   const nonParamNames = [t0, t1, h].concat(ivp.deqs.solutionNames);
 
   // Generate starting points
-  const startingPoints = sampleParams(samplesCount, minVals, maxVals);
+  const rand = reproSettings.reproducible ? seededRandom(reproSettings.seed) : Math.random;
+  const startingPoints = sampleParams(samplesCount, minVals, maxVals, rand);
 
   // Create workers
   const nThreads = Math.min(
