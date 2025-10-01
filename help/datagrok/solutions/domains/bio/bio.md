@@ -75,7 +75,7 @@ SQL and NoSQL databases or any other of the
 [30+ supported data sources](../../../../access/databases/connectors/connectors.md),
 retrieve data, and securely share data with others.
 Datagrok can ingest data in [multiple file formats](../../../../access/files/supported-formats.md) (such as Fasta or CSV)
-and multiple notations for nucleotide and amino acid sequences, with natural and modified monomers,
+and multiple notations for nucleotide and amino acid / protein sequences, with natural and modified monomers,
 aligned and non-aligned forms.
 
 You can also create macromolecule queries against data sources using built-in querying tools. To learn more about querying data and data access in general, see the [Access](../../../../access/access.md) section of our documentation.
@@ -169,6 +169,13 @@ For PDB files, cells display a preview of the 3D structure. When you click a cel
 </TabItem>
 </Tabs>
 ```
+
+### Interactive sequence header
+
+Long biological sequences, such as antibodies, are displayed with an interactive, scrollable WebLogo and conservation headers. You can click on any position in the sequence to highlight it and open a position statistics viewer, which shows the distribution of activities across different monomers at that site
+
+![Long Protein Sequences](img/protein-weblogo-header.gif)
+
 
 ### Macromolecule aware viewers
 
