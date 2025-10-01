@@ -191,3 +191,13 @@
     white-space: nowrap;
     overflow: hidden;
 }
+
+.moltrack-panel-register-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.moltrack-panel-register-button {
+  width: 80px!important;
+}

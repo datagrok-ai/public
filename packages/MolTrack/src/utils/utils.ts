@@ -28,14 +28,3 @@ export function flattened(item: any, props: DG.Property[]) {
   }
   return row;
 }
-
-export function safeParse(value: any, fallback = []) {
-  if (typeof value === 'string') {
-    try {
-      return JSON.parse(value);
-    } catch {
-      return fallback;
-    }
-  }
-  return value || fallback;
-}

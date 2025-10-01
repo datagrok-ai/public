@@ -2,21 +2,20 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import { EntityBaseView } from '../views/registration-entity-base';
-import { safeParse } from '../utils/utils';
 import { compoundView } from '../utils/view-utils';
 
-export async function molTrackPropPanel(compound: any): Promise<DG.Widget> {
-  const mol = compound['canonical_smiles'];
-  if (compound.detail) {
+export async function molTrackPropPanel(retrievedCompound: any, initialStructure?: string): Promise<DG.Widget> {
+  const {canonical_smiles: smiles, detail, batches = [], properties = []} = retrievedCompound;
+  if (detail) {
     const registerButton = ui.bigButton('Register', async () => {
       const registrationView = new EntityBaseView(false);
-      registrationView.initialSmiles = mol;
+      if (initialStructure)
+        registrationView.initialSmiles = initialStructure;
       await registrationView.buildUIMethod();
       registrationView.show();
     });
-    registerButton.style.width = '80px';
-    const div = ui.divV([ui.divText('No matches'), registerButton]);
-    div.style.gap = '10px';
+    registerButton.classList.add('moltrack-panel-register-button');
+    const div = ui.divV([ui.divText('No matches'), registerButton], 'moltrack-panel-register-container');
     return DG.Widget.fromRoot(div);
   }
 
@@ -52,23 +51,22 @@ export async function molTrackPropPanel(compound: any): Promise<DG.Widget> {
   const panes = [
     {
       title: 'Batches',
-      content: () => createNestedAccordion(safeParse(compound.batches || '[]'), 'id'),
+      content: () => createNestedAccordion(batches, 'id'),
     },
     {
       title: 'Properties',
-      content: () => createPropertiesTable(safeParse(compound.properties || '[]')),
+      content: () => createPropertiesTable(properties),
     },
   ];
 
   // --- Create the corporate_compound_id link first ---
-  const properties = safeParse(compound.properties || '[]');
   const corpProp = properties.find((p: any) => p.name === 'corporate_compound_id');
   const value = extractPropValue(corpProp);
   const corpLink = ui.link(value.toString() ?? '', async () => {
     await compoundView(value.toString());
   });
 
-  const compoundContent = ui.div(createTableFromObject(compound, ['properties', 'batches']));
+  const compoundContent = ui.div(createTableFromObject(retrievedCompound, ['properties', 'batches']));
 
   for (const pane of panes) acc.addPane(pane.title, pane.content);
 
