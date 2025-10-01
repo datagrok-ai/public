@@ -7,6 +7,7 @@ import {RulesManager} from './rule-manager';
 import {RuleCards} from './pt-rule-cards';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {
+  _package,
   PackageFunctions} from '../../package';
 import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
 import {ReactionEditorProps} from './rule-reaction-editor';
@@ -26,6 +27,7 @@ const NAME_FIRST_LINK = 'firstLinkingGroup';
 const NAME_SECOND_LINK = 'secondLinkingGroup';
 
 export class RuleInputs extends ActiveFiles {
+  static ruleDescriptions: Record<string, Promise<HTMLElement>> = {};
   constructor(
     path: string, userStorageName: string, ext: string,
     options?: { onValueChanged: (value: string[]) => void }
@@ -48,7 +50,69 @@ export class RuleInputs extends ActiveFiles {
 
     return res;
   }
+
+  override async getForm(): Promise<HTMLDivElement> {
+    const form = await super.getForm();
+    this.processRulesForm(form);
+    return form;
+  }
+
+  private async processRulesForm(rulesForm: HTMLElement) {
+    const ruleNameLabels = Array.from(rulesForm.getElementsByTagName('label') ?? [])
+      .filter((l) => l.textContent?.endsWith('.json') && l.parentElement != null);
+    for (const label of ruleNameLabels) {
+      const ruleName = label.textContent!.trim();
+      const inputRoot = label.parentElement!.getElementsByTagName('input')[0]!;
+      ui.tooltip.bind(inputRoot, ui.wait(async () => {
+        RuleInputs.ruleDescriptions[ruleName] ??= (async () => {
+          try {
+            const rule = JSON.parse(await grok.dapi.files.readAsText(`${RULES_PATH}/${ruleName}`));
+            const descDiv = ui.divV([ui.h1(ruleName)]);
+            const linkRules: RuleLink[] = rule.linkRules ?? [];
+            // link rules
+            if (linkRules.length > 0) {
+              descDiv.appendChild(ui.h3('Linkage Rules'));
+              const table = ui.table(linkRules, (item) => [
+                item.code?.toString() ?? '',
+                shortenToMaxLen((item.firstMonomers ?? []).join(', ')),
+                shortenToMaxLen((item.secondMonomers ?? []).join(', ')),
+                item.firstLinkingGroup?.toString() ?? '',
+                item.secondLinkingGroup?.toString() ?? ''
+              ], ['Code', 'M1', 'M2', 'L1', 'L2']);
+              descDiv.appendChild(table);
+            }
+            // reaction rules
+            const reactionRules: RuleReaction[] = rule.reactionRules ?? [];
+            if (reactionRules.length > 0) {
+              descDiv.appendChild(ui.h3('Synthesis Rules'));
+              const table = ui.table(reactionRules, (item) => [
+                item.code?.toString() ?? '',
+                shortenToMaxLen((item.firstMonomers ?? []).join(', ')),
+                shortenToMaxLen((item.secondMonomers ?? []).join(', ')),
+                shortenToMaxLen(item.name ?? ''),
+                grok.chem.drawMolecule(item.reaction?.split('>>')[1] ?? '', 70, 70)
+              ], ['Code', 'M1', 'M2', 'Name', 'Product']);
+              descDiv.appendChild(table);
+            }
+            return descDiv;
+          } catch (e: any) {
+            _package.logger.error(`Failed to load rule ${ruleName}: ${e?.toString?.()}`);
+            console.error(e);
+            return ui.divText(`Failed to load rule ${ruleName}`);
+          }
+        })();
+        return await RuleInputs.ruleDescriptions[ruleName];
+      }));
+    }
+  }
 }
+
+
+function shortenToMaxLen(s: string, maxLen: number = 30): string {
+  if (s.length <= maxLen) return s;
+  return `${s.substring(0, maxLen)}...`;
+}
+
 
 export type RuleLink = {
   code: number,

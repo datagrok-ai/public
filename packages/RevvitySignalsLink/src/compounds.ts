@@ -1,9 +1,6 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { queryStructureById } from './revvity-api';
 import { ComplexCondition, Operators } from '@datagrok-libraries/utils/src/query-builder/query-builder';
-import { OPERATORS } from './signals-search-query';
 
 export const assetsQuery = {
     "query": {
@@ -55,8 +52,6 @@ export const materialsCondition: ComplexCondition = {
         }
     ]
 }
-
-export const MOL_COL_NAME = 'molecule';
 
 export async function addMoleculeStructures(moleculeIds: string[], molCol: DG.Column): Promise<void> {  
     const promises = moleculeIds.map((id, index) => 

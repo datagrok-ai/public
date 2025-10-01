@@ -43,8 +43,9 @@ export const funcTypeNames = {
 
 export const HDCampaignsGroupingLSKey = 'HDCampaignsGrouping';
 export const HDCampaignTableColumnsLSKey = 'HDCampaignTableColumns';
+export const HDCampaignsTableSortingLSKey = 'HDCampaignsTableSorting';
 
-export enum CampaignGroupingType {
+export enum CampaignGrouping {
   None = 'None',
   Template = 'Template',
   Status = 'Status',
@@ -52,7 +53,10 @@ export enum CampaignGroupingType {
   LastModifiedUser = 'Last Modified User',
 }
 
+export type CampaignGroupingType = CampaignGrouping | `campaignFields.${string}`;
+
 export const DefaultCampaignTableInfoGetters = {
+  'Name': (info: HitDesignCampaign) => info.friendlyName ?? info.name,
   'Code': (info: HitDesignCampaign) => info.name,
   'Created': (info: HitDesignCampaign) => info.createDate,
   'Author': (info: HitDesignCampaign) => info.authorUserFriendlyName ?? '',

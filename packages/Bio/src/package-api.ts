@@ -322,6 +322,34 @@ export namespace funcs {
     return await grok.functions.call('Bio:BioSubstructureFilterTest', {});
   }
 
+  export async function webLogoLargeApp(): Promise<void> {
+    return await grok.functions.call('Bio:WebLogoLargeApp', {});
+  }
+
+  export async function webLogoAggApp(): Promise<void> {
+    return await grok.functions.call('Bio:WebLogoAggApp', {});
+  }
+
+  export async function getRegionApp(): Promise<void> {
+    return await grok.functions.call('Bio:GetRegionApp', {});
+  }
+
+  export async function getRegionHelmApp(): Promise<void> {
+    return await grok.functions.call('Bio:GetRegionHelmApp', {});
+  }
+
+  export async function longSeqTableSeparator(): Promise<void> {
+    return await grok.functions.call('Bio:LongSeqTableSeparator', {});
+  }
+
+  export async function longSeqTableFasta(): Promise<void> {
+    return await grok.functions.call('Bio:LongSeqTableFasta', {});
+  }
+
+  export async function longSeqTableHelm(): Promise<void> {
+    return await grok.functions.call('Bio:LongSeqTableHelm', {});
+  }
+
   export async function addCopyMenu(cell: any , menu: any ): Promise<void> {
     return await grok.functions.call('Bio:AddCopyMenu', { cell, menu });
   }

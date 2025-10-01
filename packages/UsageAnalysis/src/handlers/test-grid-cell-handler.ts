@@ -51,13 +51,13 @@ export class TestGridCellHandler extends DG.ObjectHandler {
         buttonsData.classList.add('ui-btn-raised');
         buttonsData.classList.add('ui-btn-test-run');
 
-        const resolveButton = ui.button('Mark as resolved', async () => {
-          let keys = DG.Column.fromStrings('', [semValue.cell.value]);
-          let values = DG.Column.fromType(DG.TYPE.DATE_TIME, 'lastResolved', 1);
-          keys.semType = semValue.semType;
-          values.set(0, Date.now());
-          await grok.dapi.stickyMeta.setAllValues(testSchema, keys, DG.DataFrame.fromColumns([values]));
-        }, 'Should be used after test is fixed so analyzers can ignore previous failures. Expects that tests passes.');
+        // const resolveButton = ui.button('Mark as resolved', async () => {
+        //   let keys = DG.Column.fromStrings('', [semValue.cell.value]);
+        //   let values = DG.Column.fromType(DG.TYPE.DATE_TIME, 'lastResolved', 1);
+        //   keys.semType = semValue.semType;
+        //   values.set(0, Date.now());
+        //   await grok.dapi.stickyMeta.setAllValues(testSchema, keys, DG.DataFrame.fromColumns([values]));
+        // }, 'Should be used after test is fixed so analyzers can ignore previous failures. Expects that tests passes.');
 
         const triageTextInput = ui.input.textArea('Description');
         ui.tooltip.bind(triageTextInput.root, 'Consider adding JIRA tickets to the description');
@@ -70,17 +70,18 @@ export class TestGridCellHandler extends DG.ObjectHandler {
           valueBool.set(0, true);
           await grok.dapi.stickyMeta.setAllValues(testSchema, keys, DG.DataFrame.fromColumns([valueBool, valueString]));
         });
+        ui.tooltip.bind(triageButton, ()=> 'Save tickets related to the test')
         const triageForm = ui.form([
           triageTextInput
         ]);
         ui.forms.addButtons(triageForm, [triageButton]);
-        resolveButton.classList.add('ui-btn-raised');
+        // resolveButton.classList.add('ui-btn-raised');
         triageButton.classList.add('ui-btn-raised');
         const packageDiv = ui.divH([ui.p('package:'), ui.h3(testData[0])]);
         packageDiv.classList.add('ui-test-data');
         panel.addTitle(ui.divV([ui.h1(`${testData[1]}: ${testData[2]}`), packageDiv]));
         panel.addPane('Run Test', () => ui.divV([buttonsData]), true);
-        panel.addPane('Methods to resolve', () => ui.divV([resolveButton, ui.span(['Or do a long term planning']), triageForm]), true);
+        panel.addPane('Methods to resolve', () => ui.divV([ui.span(['Term planning']), triageForm]), true);
         return panel.root;
     }
 }

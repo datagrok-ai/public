@@ -342,15 +342,6 @@ jobs:
           key: ${{ matrix.package }}-${{ github.ref_name }}-webpack-build
           restore-keys: |
             ${{ matrix.package }}-master-webpack-build
-      - name: Remove GPU from docker configuration
-        if: matrix.docker != '' && steps.datagrok-image.outcome == 'success'
-        run: |
-          for dockerfile in $(echo -e ${{ matrix.docker }}); do
-            docker_config_file="$(dirname $dockerfile)/container.json"
-            if [ -f "${docker_config_file}" ]; then
-              jq 'del(.gpu)' ${docker_config_file} > temp.json && mv temp.json ${docker_config_file}
-            fi
-          done
       - name: Build package
         if: ${{ matrix.build == 'build' }}
         id: build

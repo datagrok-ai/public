@@ -8,7 +8,7 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
-  export async function sqlJsInit(): Promise<any> {
+  export async function sqlJsInit(): Promise<void> {
     return await grok.functions.call('SQLite:SqlJsInit', {});
   }
 

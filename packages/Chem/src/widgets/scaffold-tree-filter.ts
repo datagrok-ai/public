@@ -58,6 +58,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
     const state = super.saveState();
     state.savedTree = JSON.stringify(this.viewer.serializeTrees(this.viewer.tree));
     state.colorCodedScaffolds = JSON.stringify(this.viewer.colorCodedScaffolds);
+    state.title = this.viewer.title;
     return state;
   }
 
@@ -71,6 +72,8 @@ export class ScaffoldTreeFilter extends DG.Filter {
       this.viewer.setHighlightTag = state.active; //in case applyState is called on disabled filter with existing scaffolds, the highlight is not set
     if (state.savedTree)
       this.viewer.loadTreeStr(state.savedTree);
+    if (state.title)
+      this.viewer.props.set('title', state.title);
 
     if (state.colorCodedScaffolds)
       this.viewer.colorCodedScaffolds = JSON.parse(state.colorCodedScaffolds);

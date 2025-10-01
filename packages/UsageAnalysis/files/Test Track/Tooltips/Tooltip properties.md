@@ -19,7 +19,7 @@
     - The tooltip should be hidden only for this one viewer, the other viewers should use the tooltip as before,
       regardless of its type (custom or default), e.g., if you have two scatter plots open and you hide a custom tooltip
       for one of them, it will disappear only for this one scatter plot.
-9. Return the tooltip by choosing `Tooltip > Show` in the context menu
+9. Return the tooltip by choosing `Tooltip > Show Custom` in the context menu
     - The tooltip should be visible and contain the same content as before
 10. Check that an alternative way to toggle the custom tooltip visibility works:
     open viewer properties and switch 'Show Tooltip' from 'show custom tooltip' to 'do not show'

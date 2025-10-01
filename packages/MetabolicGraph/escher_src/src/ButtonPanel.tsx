@@ -28,6 +28,18 @@ class ButtonPanel extends Component<{
 
     return (
       <ul className='button-panel'>
+        {this.props.settings.get('runFBA') && (
+          <li>
+            <button
+              className='button btn'
+              onClick={() => this.props.settings.get('runFBA')()}
+              title={'Run FBA'}
+            >
+              <i className='icon-FBA' />
+            </button>
+          </li>
+        )}
+
         {!this.props.settings.get('pathFindingDisabled') && (
           <li>
             <button

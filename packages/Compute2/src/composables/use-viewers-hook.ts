@@ -4,12 +4,12 @@ import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import {useSubscription, from} from '@vueuse/rxjs';
 import {BehaviorSubject, combineLatest, EMPTY, merge, Subject} from 'rxjs';
-import {catchError, switchMap, tap, map, debounceTime, withLatestFrom, share, shareReplay} from 'rxjs/operators';
+import {catchError, switchMap, tap, map, debounceTime, withLatestFrom, shareReplay} from 'rxjs/operators';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 
 type ViewersData = Record<string, DG.Viewer | undefined>;
 
-function runViewersHook(viewersHook: ViewersHook | undefined, io: string, viewers: ViewersData, meta: any) {
+function runViewersHook(viewersHook: ViewersHook | undefined, io: string, viewers: ViewersData, meta: Record<string, any>) {
   if (viewersHook) {
     for (const [type, viewer] of Object.entries(viewers)) {
       if (viewer)
@@ -20,7 +20,7 @@ function runViewersHook(viewersHook: ViewersHook | undefined, io: string, viewer
 
 export function useViewersHook(
   viewersHook: Vue.Ref<ViewersHook | undefined>,
-  metaStates: Vue.Ref<Record<string, BehaviorSubject<any>> | undefined>,
+  metaStates: Vue.Ref<Record<string, BehaviorSubject<Record<string, any>>> | undefined>,
   currentCall: Vue.Ref<DG.FuncCall>,
 ) {
   const metaStates$ = from(metaStates, {immediate: true});

@@ -56,7 +56,7 @@ export namespace funcs {
     return await grok.functions.call('Compute2:TestSub2', { a, b });
   }
 
-  export async function testMul2(a: string , b: number ): Promise<number> {
+  export async function testMul2(a: number , b: number ): Promise<number> {
     return await grok.functions.call('Compute2:TestMul2', { a, b });
   }
 

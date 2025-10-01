@@ -319,7 +319,13 @@ export class TreeViewer extends EChartViewer {
     let currentCount = 0;
 
     for (const path of pathOccurrences) {
-      if (path.endsWith(basePath)) {
+      // Different paths can end with the same node label but still represent distinct nodes.
+      // Therefore, we must compare the final node label for exact equality rather than using endsWith.
+      const lastDelimiterIndex = path.lastIndexOf('|||');
+      const lastToken = lastDelimiterIndex === -1 ?
+        path.trim() || ' ' :
+        path.slice(lastDelimiterIndex + 3).trim() || ' ';
+      if (lastToken === basePath) {
         currentCount++;
         if (currentCount === targetIndex) return path;
       }

@@ -6,13 +6,11 @@ import * as DG from 'datagrok-api/dg';
 //output: view result
 //meta.icon: images/cdd-icon-small.png
 //meta.browsePath: Chem
-export async function molTrackApp() {
-  return PackageFunctions.molTrackApp();
+export async function molTrackApp() : Promise<any> {
+  return await PackageFunctions.molTrackApp();
 }
 
-//name: cddVaultAppTreeBrowser
 //input: dynamic treeNode 
-//input: view browseView 
-export async function cddVaultAppTreeBrowser(appNode: any, browseView: any) {
-  return PackageFunctions.cddVaultAppTreeBrowser(appNode, browseView);
+export async function cddVaultAppTreeBrowser(appNode: any) : Promise<void> {
+  await PackageFunctions.cddVaultAppTreeBrowser(appNode);
 }

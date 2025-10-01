@@ -54,7 +54,7 @@ export async function testFunctions(scope: any) : Promise<any> {
 //input: column<int> col1 
 //input: column<string> col2 
 //input: column<double> col3 
-//input: list<string> out  { optional: true }
+//input: list<string> out { optional: true }
 //output: dataframe result
 //meta.vectorFunc: true
 export async function testFunction(col1: DG.Column, col2: DG.Column, col3: DG.Column, out?: string[]) : Promise<any> {

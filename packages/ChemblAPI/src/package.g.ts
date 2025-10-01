@@ -6,8 +6,8 @@ import * as DG from 'datagrok-api/dg';
 //input: string mol { semType: Molecule }
 //input: string searchType 
 //output: widget result
-export async function chemblSearchWidget(mol: string, substructure: boolean) {
-  return PackageFunctions.chemblSearchWidget(mol, substructure);
+export async function chemblSearchWidget(mol: string, substructure: boolean) : Promise<any> {
+  return await PackageFunctions.chemblSearchWidget(mol, substructure);
 }
 
 //name: Databases | ChEMBL | Substructure Search API
@@ -15,8 +15,8 @@ export async function chemblSearchWidget(mol: string, substructure: boolean) {
 //input: string mol { semType: Molecule }
 //output: widget result
 //condition: true
-export async function chemblSubstructureSearchPanel(mol: string) {
-  return PackageFunctions.chemblSubstructureSearchPanel(mol);
+export async function chemblSubstructureSearchPanel(mol: string) : Promise<any> {
+  return await PackageFunctions.chemblSubstructureSearchPanel(mol);
 }
 
 //name: Databases | ChEMBL | Similarity Search API
@@ -24,20 +24,20 @@ export async function chemblSubstructureSearchPanel(mol: string) {
 //input: string mol { semType: Molecule }
 //output: widget result
 //condition: true
-export async function chemblSimilaritySearchPanel(mol: string) {
-  return PackageFunctions.chemblSimilaritySearchPanel(mol);
+export async function chemblSimilaritySearchPanel(mol: string) : Promise<any> {
+  return await PackageFunctions.chemblSimilaritySearchPanel(mol);
 }
 
 //name: GetCompoundsIds
 //input: string inchiKey 
 //output: object result
-export async function getCompoundsIds(inchiKey: string) {
-  return PackageFunctions.getCompoundsIds(inchiKey);
+export async function getCompoundsIds(inchiKey: string) : Promise<any> {
+  return await PackageFunctions.getCompoundsIds(inchiKey);
 }
 
 //name: Chembl Get by Id
 //input: string id 
 //output: dataframe result
-export async function getById(id: string) {
-  return PackageFunctions.getById(id);
+export async function getById(id: string) : Promise<any> {
+  return await PackageFunctions.getById(id);
 }

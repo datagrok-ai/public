@@ -1,7 +1,7 @@
 ---
 title: "Self-guided learning"
 format: 'mdx'
-sidebar_position: 1
+sidebar_position: 2
 ---
 
 To get you started, we've prepared the following resources:
@@ -176,6 +176,33 @@ Planned
 |Scaffold tree analysis   |<li></li><li></li><li></li> |
 |Matched molecular pair   |<li></li><li></li><li></li> |
 |Dose-response curves    |<li></li><li></li><li></li> |
+
+--->
+
+
+### Bio
+
+<h5>Read</h5>
+
+* [Bioinformatics](../solutions/domains/bio/bio.md)
+* [Peptide SAR](../solutions/domains/bio/peptides-sar.md)
+
+<h5>Watch</h5>
+
+* [Peptide SAR (~8 mins)](https://youtu.be/CPkoZ7TD4qk?si=lBK0IzJh9kxbaaft)
+
+<h5>Experience in Demo app</h5>
+
+* [Bioinformatics capabilities](https://public.datagrok.ai/apps/Tutorials/Demo/Bioinformatics)
+
+<!----
+
+<h5>Complete tutorials</h5>
+
+|Tutorial                 | Description  |
+|-------------------------|--------------|
+|Peptide SAR   |<li></li><li></li><li></li> |
+|Polytool   |<li></li><li></li><li></li> |
 
 --->
 

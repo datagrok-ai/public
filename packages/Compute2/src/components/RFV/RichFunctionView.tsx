@@ -234,6 +234,7 @@ export const RichFunctionView = Vue.defineComponent({
     const tabsData = Vue.shallowRef<RenderStateItem[]>([]);
     const tabLabels = Vue.shallowRef<string[]>([]);
     const visibleTabLabels = Vue.shallowRef([] as string[]);
+    const activePanelTitle = Vue.shallowRef<string | undefined>(undefined);
 
     const isSAenabled = Vue.ref(false);
     const isReportEnabled = Vue.ref(false);
@@ -313,14 +314,20 @@ export const RichFunctionView = Vue.defineComponent({
       }
     };
 
+    const handlePanelChanged = (name: string | null, oldName: string | null) => {
+      if (oldName == null) {
+        const savedName = sessionStorage.getItem(`opened_tab_${currentCall.value.func?.nqName}`);
+        if (savedName)
+          setTimeout(() => activePanelTitle.value = savedName);
+      }
+
+      if (currentCall.value)
+        sessionStorage.setItem(`opened_tab_${currentCall.value.func?.nqName}`, name ?? '');
+    }
+
     Vue.watch(currentCall, () => {
       visibleTabLabels.value = [...tabLabels.value];
     }, {immediate: true});
-
-    Vue.onBeforeUnmount(() => {
-      if (inputFormComponentRef.value)
-        inputFormComponentRef.value.clearForm();
-    });
 
     ////
     // Intergrations related
@@ -470,7 +477,9 @@ export const RichFunctionView = Vue.defineComponent({
         <DockManager class='block h-full'
           style={{overflow: 'hidden !important'}}
           onPanelClosed={handlePanelClose}
+          onUpdate:activePanelTitle={handlePanelChanged}
           key={currentUuid.value}
+          activePanelTitle={activePanelTitle.value}
         >
           { !historyHidden.value && props.historyEnabled &&
             <History

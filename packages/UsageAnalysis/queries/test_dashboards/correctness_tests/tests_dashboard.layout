@@ -3,17 +3,17 @@
   "viewStateMap": {
     "containerType": "horizontal",
     "state": {
-      "width": 1292,
-      "height": 927
+      "width": 1240,
+      "height": 1067
     },
     "children": [
       {
         "containerType": "panel",
         "state": {
-          "width": 252,
-          "height": 927,
+          "width": 241,
+          "height": 1067,
           "element": {
-            "id": "2b3e3870-e920-11ef-bc9d-616edb6d85d3",
+            "id": "8c7b4760-8560-11f0-cef2-f751bc5e4936",
             "type": "testDashboardsViewer",
             "look": {
               "#type": "JsViewerHostLook"
@@ -26,10 +26,10 @@
       {
         "containerType": "panel",
         "state": {
-          "width": 310,
-          "height": 927,
+          "width": 297,
+          "height": 1067,
           "element": {
-            "id": "2b3e5f80-e920-11ef-fa61-1546f3ff66ab",
+            "id": "8c7be3a0-8560-11f0-894b-2783ed406eea",
             "type": "Filters",
             "look": {
               "#type": "FiltersLook",
@@ -88,25 +88,25 @@
       {
         "containerType": "vertical",
         "state": {
-          "width": 728,
-          "height": 927
+          "width": 699,
+          "height": 1067
         },
         "children": [
           {
             "containerType": "fill",
             "state": {
-              "width": 728,
-              "height": 783,
+              "width": 699,
+              "height": 901,
               "documentManager": true
             },
             "children": [
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 728,
-                  "height": 783,
+                  "width": 699,
+                  "height": 901,
                   "element": {
-                    "id": "2b3ed4b0-e920-11ef-bec9-3f22b823be4c",
+                    "id": "8c7e0680-8560-11f0-a833-59531b1af419",
                     "type": "Grid",
                     "look": {
                       "#type": "GridLook",
@@ -116,10 +116,10 @@
                       "colHeaderHeight": 69,
                       "rowHeight": 19,
                       "sortByColumnNames": [
-                        "needs_attention"
+                        "test"
                       ],
                       "sortTypes": [
-                        false
+                        true
                       ],
                       "topLevelDefaultMenu": true,
                       "allowColumnMenu": true,
@@ -148,7 +148,7 @@
                           }
                         },
                         {
-                          "width": 75.75372985088903,
+                          "width": 17.75372985088903,
                           "columnName": "owner",
                           "cellType": "User",
                           "headerCellStyle": {
@@ -161,24 +161,7 @@
                           }
                         },
                         {
-                          "width": 99.96084918665555,
-                          "columnName": "jira",
-                          "cellType": "JIRA Ticket",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 61.149425287356294,
-                          "columnName": "severity",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 52.503628502831404,
+                          "width": 36.503628502831404,
                           "columnName": "needs_attention",
                           "cellType": "bool",
                           "colorCodingCategorical": {
@@ -348,14 +331,13 @@
                               ],
                               "normalization": "Row",
                               "colorCode": "Values",
-                              "zeroScale": false
+                              "zeroScale": true
                             }
                           }
                         },
                         {
-                          "visible": false,
-                          "width": 77.9028141101863,
-                          "columnName": "1 first(flaking)",
+                          "width": 37,
+                          "columnName": "ignore?",
                           "cellType": "bool",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
@@ -363,40 +345,30 @@
                           }
                         },
                         {
-                          "visible": false,
-                          "width": 77.9028141101863,
-                          "columnName": "2 first(flaking)",
-                          "cellType": "bool",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 77.9028141101863,
-                          "columnName": "3 first(flaking)",
-                          "cellType": "bool",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 77.9028141101863,
-                          "columnName": "4 first(flaking)",
-                          "cellType": "bool",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 400,
+                          "width": 91,
                           "columnName": "ignoreReason",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "width": 52,
+                          "columnName": "ignore status",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {
+                            "Fixed": "#2ca02c",
+                            "Partially Fixed (Lowest)": "#ffe51c",
+                            "Partially Fixed (Low)": "#ffa500",
+                            "Partially Fixed (Medium)": "#ff5a00",
+                            "Partially Fixed (Blocker)": "#7b2d24",
+                            "Wasn't Fixed (Lowest)": "#ffe51c",
+                            "Wasn't Fixed (Low)": "#ffa500",
+                            "Wasn't Fixed (Medium)": "#ff5a00",
+                            "Wasn't Fixed (Blocker)": "#7b2d24"
+                          },
+                          "headerCellStyle": {
                             "textWrap": "words"
                           }
                         },
@@ -410,37 +382,30 @@
                           }
                         },
                         {
-                          "width": 171,
-                          "columnName": "1 build_date",
-                          "customFormat": "M/d/yyyy HH:mm:ss.fff",
-                          "cellType": "number",
-                          "format": "M/d/yyyy HH:mm:ss.fff",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 150,
-                          "columnName": "1 instance",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 296,
-                          "columnName": "1 commit",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 400,
+                          "width": 93,
                           "columnName": "1 result",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "width": 54,
+                          "columnName": "1 tickets status",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {
+                            "Fixed": "#2ca02c",
+                            "Partially Fixed (Lowest)": "#ffe51c",
+                            "Partially Fixed (Low)": "#ffa500",
+                            "Partially Fixed (Medium)": "#ff5a00",
+                            "Partially Fixed (Blocker)": "#7b2d24",
+                            "Wasn't Fixed (Lowest)": "#ffe51c",
+                            "Wasn't Fixed (Low)": "#ffa500",
+                            "Wasn't Fixed (Medium)": "#ff5a00",
+                            "Wasn't Fixed (Blocker)": "#7b2d24"
+                          },
+                          "headerCellStyle": {
                             "textWrap": "words"
                           }
                         },
@@ -454,34 +419,7 @@
                           }
                         },
                         {
-                          "width": 171,
-                          "columnName": "2 build_date",
-                          "customFormat": "M/d/yyyy HH:mm:ss.fff",
-                          "cellType": "number",
-                          "format": "M/d/yyyy HH:mm:ss.fff",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 150,
-                          "columnName": "2 instance",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 297,
-                          "columnName": "2 commit",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 400,
+                          "width": 84,
                           "columnName": "2 result",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
@@ -498,34 +436,7 @@
                           }
                         },
                         {
-                          "width": 171,
-                          "columnName": "3 build_date",
-                          "customFormat": "M/d/yyyy HH:mm:ss.fff",
-                          "cellType": "number",
-                          "format": "M/d/yyyy HH:mm:ss.fff",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 150,
-                          "columnName": "3 instance",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 309,
-                          "columnName": "3 commit",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 400,
+                          "width": 77,
                           "columnName": "3 result",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
@@ -542,34 +453,7 @@
                           }
                         },
                         {
-                          "width": 171,
-                          "columnName": "4 build_date",
-                          "customFormat": "M/d/yyyy HH:mm:ss.fff",
-                          "cellType": "number",
-                          "format": "M/d/yyyy HH:mm:ss.fff",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 150,
-                          "columnName": "4 instance",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 302,
-                          "columnName": "4 commit",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 400,
+                          "width": 85,
                           "columnName": "4 result",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
@@ -586,43 +470,7 @@
                           }
                         },
                         {
-                          "width": 171,
-                          "columnName": "5 build_date",
-                          "customFormat": "M/d/yyyy HH:mm:ss.fff",
-                          "cellType": "number",
-                          "format": "M/d/yyyy HH:mm:ss.fff",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 109,
-                          "columnName": "5 first(flaking)",
-                          "cellType": "bool",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 150,
-                          "columnName": "5 instance",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 298,
-                          "columnName": "5 commit",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 400,
+                          "width": 84,
                           "columnName": "5 result",
                           "headerCellStyle": {
                             "vertAlign": "bottom",
@@ -630,16 +478,7 @@
                           }
                         },
                         {
-                          "width": 69,
-                          "columnName": "ignore?",
-                          "cellType": "bool",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "width": 171,
+                          "width": 85,
                           "columnName": "lastResolved",
                           "customFormat": "M/d/yyyy HH:mm:ss.fff",
                           "cellType": "number",
@@ -660,630 +499,233 @@
             ]
           },
           {
-            "containerType": "horizontal",
+            "containerType": "panel",
             "state": {
-              "width": 728,
-              "height": 143
-            },
-            "children": [
-              {
-                "containerType": "panel",
-                "state": {
-                  "width": 610,
-                  "height": 143,
-                  "element": {
-                    "id": "2b3f22d0-e920-11ef-c0b7-71f4d1540b13",
-                    "type": "Bar chart",
-                    "look": {
-                      "#type": "BarChartLook",
-                      "rowSource": "All",
-                      "onClick": "Filter",
-                      "valueColumnName": "test",
-                      "valueAggrType": "count",
-                      "barSortType": "by value",
-                      "barSortOrder": "desc",
-                      "splitColumnName": "~test_0",
-                      "showCategoryValues": false,
-                      "showCategorySelector": false,
-                      "stackColumnName": "needs_attention",
-                      "showStackSelector": false,
-                      "colorColumnName": "",
-                      "maxCategoryWidth": 100,
-                      "minTextHeight": 14,
-                      "legendVisibility": "Never",
-                      "legendPosition": "Right"
-                    },
-                    "title": "Bar chart"
-                  }
+              "width": 699,
+              "height": 165,
+              "element": {
+                "id": "8c7f17f0-8560-11f0-e0ef-a56b00acd90c",
+                "type": "Bar chart",
+                "look": {
+                  "#type": "BarChartLook",
+                  "rowSource": "All",
+                  "onClick": "Filter",
+                  "valueColumnName": "test",
+                  "valueAggrType": "count",
+                  "barSortType": "by value",
+                  "barSortOrder": "desc",
+                  "splitColumnName": "~test_0",
+                  "showCategoryValues": false,
+                  "showCategorySelector": false,
+                  "stackColumnName": "needs_attention",
+                  "showStackSelector": false,
+                  "colorColumnName": "",
+                  "maxCategoryWidth": 100,
+                  "minTextHeight": 14,
+                  "legendVisibility": "Never",
+                  "legendPosition": "Right"
                 },
-                "children": []
-              },
-              {
-                "containerType": "panel",
-                "state": {
-                  "width": 117,
-                  "height": 143,
-                  "element": {
-                    "id": "2b3f9800-e920-11ef-b993-c70ee1039136",
-                    "type": "Heat map",
-                    "look": {
-                      "#type": "GridLook",
-                      "showColumnLabels": false,
-                      "topLevelDefaultMenu": true,
-                      "allowColumnMenu": true,
-                      "heatmapHorzScroll": [
-                        150,
-                        0,
-                        150
-                      ],
-                      "heatmapVertScroll": [
-                        3825,
-                        0,
-                        3825
-                      ],
-                      "columns": [
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "backgroundColor": 4294440951,
-                          "customName": "",
-                          "cellType": "row header",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "test",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "owner",
-                          "cellType": "User",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "1 duration",
-                          "cellType": "number",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "1 build_date",
-                          "cellType": "number",
-                          "format": "M/d/yyyy HH:mm:ss.fff",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "1 first(flaking)",
-                          "cellType": "bool",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "isColorCoded": true,
-                          "width": 30,
-                          "columnName": "1",
-                          "colorCodingType": "Categorical",
-                          "colorCodingCategorical": {
-                            "failed": 4292224808,
-                            "passed": 4288208778,
-                            "skipped": 4292598669
-                          },
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "1 instance",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "1 commit",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "1 result",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "5 duration",
-                          "cellType": "number",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "5 build_date",
-                          "cellType": "number",
-                          "format": "M/d/yyyy HH:mm:ss.fff",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "5 first(flaking)",
-                          "cellType": "bool",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "5 instance",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "5 commit",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "5 result",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "2 duration",
-                          "cellType": "number",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "2 build_date",
-                          "cellType": "number",
-                          "format": "M/d/yyyy HH:mm:ss.fff",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "2 first(flaking)",
-                          "cellType": "bool",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "isColorCoded": true,
-                          "width": 30,
-                          "columnName": "2",
-                          "colorCodingType": "Categorical",
-                          "colorCodingCategorical": {
-                            "failed": 4292224808,
-                            "passed": 4288208778,
-                            "skipped": 4292598669
-                          },
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "2 instance",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "2 commit",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "2 result",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "3 duration",
-                          "cellType": "number",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "3 build_date",
-                          "cellType": "number",
-                          "format": "M/d/yyyy HH:mm:ss.fff",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "3 first(flaking)",
-                          "cellType": "bool",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "isColorCoded": true,
-                          "width": 30,
-                          "columnName": "3",
-                          "colorCodingType": "Categorical",
-                          "colorCodingCategorical": {
-                            "failed": 4292224808,
-                            "passed": 4288208778,
-                            "skipped": 4292598669
-                          },
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "3 instance",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "3 commit",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "3 result",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "4 duration",
-                          "cellType": "number",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "4 build_date",
-                          "cellType": "number",
-                          "format": "M/d/yyyy HH:mm:ss.fff",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "4 first(flaking)",
-                          "cellType": "bool",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "isColorCoded": true,
-                          "width": 30,
-                          "columnName": "4",
-                          "colorCodingType": "Categorical",
-                          "colorCodingCategorical": {
-                            "failed": 4292224808,
-                            "passed": 4288208778,
-                            "skipped": 4292598669
-                          },
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "isColorCoded": true,
-                          "width": 30,
-                          "columnName": "5",
-                          "colorCodingType": "Categorical",
-                          "colorCodingCategorical": {
-                            "failed": 4292224808,
-                            "passed": 4288208778,
-                            "skipped": 4292598669
-                          },
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "4 instance",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "4 commit",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "4 result",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "stable",
-                          "cellType": "bool",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "failing",
-                          "cellType": "bool",
-                          "colorCodingCategorical": {
-                            "false": "#98df8a",
-                            "true": "#d62728"
-                          },
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "flaking",
-                          "cellType": "bool",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "ignore?",
-                          "cellType": "bool",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "ignoreReason",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "lastResolved",
-                          "cellType": "number",
-                          "format": "M/d/yyyy HH:mm:ss.fff",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "needs_attention",
-                          "cellType": "bool",
-                          "colorCodingCategorical": {
-                            "false": 4288208778,
-                            "true": 4292224808
-                          },
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "jira",
-                          "cellType": "JIRA Ticket",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "severity",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "~test_0",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "~test_1",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "~test_2",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "~test_3",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "~test_4",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        },
-                        {
-                          "visible": false,
-                          "width": 30,
-                          "columnName": "~test_5",
-                          "headerCellStyle": {
-                            "vertAlign": "bottom",
-                            "textWrap": "words"
-                          }
-                        }
-                      ]
-                    },
-                    "title": "Heat map"
-                  }
-                },
-                "children": []
+                "title": "Bar chart"
               }
-            ]
+            },
+            "children": []
           }
         ]
       }
     ],
     "floating": [],
-    "tableId": "2d897490-9b00-11ef-bb56-cf322fcdda84",
-    "tableName": "Tests"
+    "tableId": "6e8831f0-8560-11f0-a76b-0350ab1c32c8",
+    "tableName": "0. Tests Dashboard"
   },
-  "name": "Tests",
-  "friendlyName": "Tests"
+  "userData": {
+    ".columnTags": {
+      "1 duration": {
+        ".%initialName": "1 avg(duration)"
+      },
+      "1": {
+        ".%initialName": "1 concat unique(status)"
+      },
+      "1 result": {
+        ".%initialName": "1 concat unique(result)"
+      },
+      "2 duration": {
+        ".%initialName": "2 avg(duration)"
+      },
+      "2": {
+        ".%initialName": "2 concat unique(status)"
+      },
+      "2 result": {
+        ".%initialName": "2 concat unique(result)"
+      },
+      "3 duration": {
+        ".%initialName": "3 avg(duration)"
+      },
+      "3": {
+        ".%initialName": "3 concat unique(status)"
+      },
+      "3 result": {
+        ".%initialName": "3 concat unique(result)"
+      },
+      "4 duration": {
+        ".%initialName": "4 avg(duration)"
+      },
+      "4": {
+        ".%initialName": "4 concat unique(status)"
+      },
+      "4 result": {
+        ".%initialName": "4 concat unique(result)"
+      },
+      "5 duration": {
+        ".%initialName": "5 avg(duration)"
+      },
+      "5": {
+        ".%initialName": "5 concat unique(status)"
+      },
+      "5 result": {
+        ".%initialName": "5 concat unique(result)"
+      },
+      "stable": {
+        "formula": "And(${1}== \"passed\",And(${2}== \"passed\",And(${3}== \"passed\",And(${4}== \"passed\",${5}== \"passed\"))))"
+      },
+      "failing": {
+        "formula": "if (IsEmpty(${1}), Or(${1}== \"failed\",Or(${2}== \"failed\",Or(${3}== \"failed\",Or(${4}== \"failed\",${5}== \"failed\")))), ${1} == \"failed\")"
+      },
+      "flaking": {
+        "formula": "Or(${1 first(flaking)}== true,Or(${2 first(flaking)}== true,Or(${3 first(flaking)}== true,Or(${4 first(flaking)}== true,${5 first(flaking)}== true))))"
+      },
+      "needs_attention": {
+        "formula": "And(${failing}, Not(${ignore?}))"
+      },
+      "1 tickets status": {
+        "formula": "UsageAnalysis:getTicketsVerdict(${1 result})",
+        ".%initialName": "1 concat unique(result) ticket verdict",
+        ".%formula-column-is-vector-func": "true"
+      },
+      "ignore status": {
+        "formula": "UsageAnalysis:getTicketsVerdict(${ignoreReason})",
+        ".%initialName": "ignoreReason ticket verdict",
+        ".%formula-column-is-vector-func": "true"
+      }
+    }
+  },
+  "columns": [
+    {
+      "name": "owner",
+      "type": "string",
+      "semType": "User",
+      "id": "6eebd5c0-8560-11f0-f583-f73db3f6cd23",
+      "friendlyName": "Owner",
+      "entityTags": [
+        {
+          "tag": "aggr.type",
+          "id": "8c7f8d20-8560-11f0-8edc-37e94f152b0b"
+        },
+        {
+          "tag": "aggr.src.col.name",
+          "id": "8c7fb430-8560-11f0-d0f6-5b9c2b582477"
+        },
+        {
+          "tag": "quality",
+          "id": "8c7fb430-8560-11f0-92c7-27161f1f74b5"
+        },
+        {
+          "tag": "cell.renderer",
+          "id": "8c7fb430-8560-11f0-f2a5-176b0eda0289"
+        },
+        {
+          "tag": ".id",
+          "id": "8c7fdb40-8560-11f0-c145-d1a93e0e9822"
+        }
+      ],
+      "metaParams": {
+        "aggr.type": "key",
+        "aggr.src.col.name": "owner",
+        "quality": "User",
+        "cell.renderer": "User",
+        ".id": "6eebd5c0-8560-11f0-f583-f73db3f6cd23"
+      }
+    },
+    {
+      "name": "test",
+      "type": "string",
+      "semType": "autotest",
+      "id": "6eebaeb0-8560-11f0-949b-97c952cf099e",
+      "friendlyName": "Test",
+      "entityTags": [
+        {
+          "tag": "aggr.type",
+          "id": "8c7fdb40-8560-11f0-8a36-5171ee93a7f0"
+        },
+        {
+          "tag": "aggr.src.col.name",
+          "id": "8c7fdb40-8560-11f0-e3d6-c9fffa328942"
+        },
+        {
+          "tag": "quality",
+          "id": "8c7fdb40-8560-11f0-bdc2-fd7614f9c1bc"
+        },
+        {
+          "tag": ".id",
+          "id": "8c800250-8560-11f0-98f8-dff75663449a"
+        }
+      ],
+      "metaParams": {
+        "aggr.type": "key",
+        "aggr.src.col.name": "test",
+        "quality": "autotest",
+        ".id": "6eebaeb0-8560-11f0-949b-97c952cf099e"
+      }
+    },
+    {
+      "name": "~test_0",
+      "type": "string",
+      "id": "8c802960-8560-11f0-9d7c-733483bd16a1",
+      "friendlyName": "~test_0",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "8c802960-8560-11f0-88d7-79216a92268d"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "5"
+      }
+    },
+    {
+      "name": "needs_attention",
+      "type": "bool",
+      "id": "6ef01b80-8560-11f0-8298-e9211e90fdb0",
+      "friendlyName": "Needs_attention",
+      "entityTags": [
+        {
+          "tag": "formula",
+          "id": "8c807780-8560-11f0-e78d-85eeaabd6f65"
+        },
+        {
+          "tag": ".color-coding-categorical",
+          "id": "8c807780-8560-11f0-c655-53fb97d4825d"
+        },
+        {
+          "tag": ".id",
+          "id": "8c807780-8560-11f0-a8c6-1b3cbfa33cb7"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "8c809e90-8560-11f0-9541-676e30bcc993"
+        }
+      ],
+      "metaParams": {
+        "formula": "And(${failing}, Not(${ignore?}))",
+        ".color-coding-categorical": "{\"false\":4288208778,\"true\":4292224808}",
+        ".id": "6ef01b80-8560-11f0-8298-e9211e90fdb0",
+        ".semantic-detection-duration": "3"
+      }
+    }
+  ],
+  "name": "TestsDashboard",
+  "friendlyName": "0. Tests Dashboard",
+  "author": {
+    "id": "f7c9fb10-fec0-11ee-829a-bd6a1fb43c6f"
+  },
+  "createdOn": "2025-09-11T13:45:16.243Z"
 }

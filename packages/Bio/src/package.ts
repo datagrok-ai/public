@@ -70,12 +70,13 @@ import {GetRegionFuncEditor} from './utils/get-region-func-editor';
 import {sequenceToMolfile} from './utils/sequence-to-mol';
 import {detectMacromoleculeProbeDo} from './utils/detect-macromolecule-probe';
 import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
-import {MonomerManager, standardizeMonomerLibrary} from './utils/monomer-lib/monomer-manager/monomer-manager';
+import {matchMoleculesWithMonomers, MonomerManager, standardizeMonomerLibrary} from './utils/monomer-lib/monomer-manager/monomer-manager';
 import {calculateScoresWithEmptyValues} from './utils/calculate-scores';
 import {SeqHelper} from './utils/seq-helper/seq-helper';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
 import {molecular3DStructureWidget, toAtomicLevelWidget} from './widgets/to-atomic-level-widget';
 import {handleSequenceHeaderRendering} from './widgets/sequence-scrolling-widget';
+import {PolymerType} from '@datagrok-libraries/js-draw-lite/src/types/org';
 export const _package = new BioPackage(/*{debug: true}/**/);
 export * from './package.g';
 
@@ -141,6 +142,14 @@ export class PackageFunctions {
   @grok.decorators.func({})
   static async standardiseMonomerLibrary(library: string): Promise<string> {
     return await standardizeMonomerLibrary(library);
+  }
+
+  @grok.decorators.func({'top-menu': 'Bio | Manage | Match with Monomer Library...', description: 'Matches molecules in a column with monomers from the selected library(s)',})
+  static async matchWithMonomerLibrary(table: DG.DataFrame,
+      @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}})molecules: DG.Column,
+      @grok.decorators.param({type: 'string', options: {choices: ['PEPTIDE', 'RNA', 'CHEM'], initialValue: 'PEPTIDE', caption: 'Polymer Type'}})polymerType: PolymerType = 'PEPTIDE') {
+    const matchDF = await matchMoleculesWithMonomers(table, molecules.name, _package.monomerLib, polymerType);
+    grok.shell.addTableView(matchDF);
   }
 
   // Keep for backward compatibility
@@ -939,14 +948,14 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'Identity Scoring',
+    name: 'Identity',
     description: 'Adds a column with fraction of matching monomers',
     'top-menu': 'Bio | Calculate | Identity...',
   })
   static async sequenceIdentityScoring(
-    @grok.decorators.param({options: {description: 'Table containing Macromolecule column'}})table: DG.DataFrame,
+    @grok.decorators.param({options: {description: 'Table containing Macromolecule column'}}) table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Macromolecule', description: 'Sequences to score'}}) macromolecule: DG.Column,
-    @grok.decorators.param({options: {description: 'Sequence,matching column format'}})reference: string
+    @grok.decorators.param({options: {description: 'Sequence,matching column format'}}) reference: string
   ): Promise<DG.Column<number>> {
     const seqHelper = _package.seqHelper;
     const scores = calculateScoresWithEmptyValues(table, macromolecule, reference, SCORE.IDENTITY, seqHelper);
@@ -954,14 +963,14 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'Similarity Scoring',
+    name: 'Similarity',
     description: 'Adds a column with similarity scores, calculated as sum of monomer fingerprint similarities',
     'top-menu': 'Bio | Calculate | Similarity...',
   })
   static async sequenceSimilarityScoring(
-    @grok.decorators.param({options: {description: 'Table containing Macromolecule column'}})table: DG.DataFrame,
+    @grok.decorators.param({options: {description: 'Table containing Macromolecule column'}}) table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Macromolecule', description: 'Sequences to score'}}) macromolecule: DG.Column,
-    @grok.decorators.param({options: {description: 'Sequence,matching column format'}})reference: string
+    @grok.decorators.param({options: {description: 'Sequence,matching column format'}}) reference: string
   ): Promise<DG.Column<number>> {
     const seqHelper = _package.seqHelper;
     const scores = calculateScoresWithEmptyValues(table, macromolecule, reference, SCORE.SIMILARITY, seqHelper);
@@ -1137,7 +1146,6 @@ export class PackageFunctions {
     description: 'Sequence similarity tracking and evaluation dataset diversity',
     demoPath: 'Bioinformatics | Similarity, Diversity',
     path: '/apps/Tutorials/Demo/Bioinformatics/Similarity,%20Diversity',
-    demoSkip: 'GROK-14320'
   })
   static async demoBioSimilarityDiversity(): Promise<void> {
     await demoBioSimDiv();
@@ -1147,7 +1155,9 @@ export class PackageFunctions {
     description: 'Exploring sequence space of Macromolecules, comparison with hierarchical clustering results',
     demoPath: 'Bioinformatics | Sequence Space',
     path: '/apps/Tutorials/Demo/Bioinformatics/Sequence%20Space',
-    demoSkip: 'GROK-14320'
+    meta: {
+      isDemoDashboard: 'true'
+    }
   })
   static async demoBioSequenceSpace(): Promise<void> {
     await demoSeqSpace();
@@ -1157,7 +1167,6 @@ export class PackageFunctions {
     description: 'Activity Cliffs analysis on Macromolecules data',
     demoPath: 'Bioinformatics | Activity Cliffs',
     path: '/apps/Tutorials/Demo/Bioinformatics/Activity%20Cliffs',
-    demoSkip: 'GROK-14320'
   })
   static async demoBioActivityCliffs(): Promise<void> {
     await demoActivityCliffsCyclic();
@@ -1167,7 +1176,6 @@ export class PackageFunctions {
     description: 'Atomic level structure of Macromolecules',
     demoPath: 'Bioinformatics | Atomic Level',
     path: '/apps/Tutorials/Demo/Bioinformatics/Atomic%20Level',
-    demoSkip: 'GROK-14320'
   })
   static async demoBioAtomicLevel(): Promise<void> {
     await demoToAtomicLevel();

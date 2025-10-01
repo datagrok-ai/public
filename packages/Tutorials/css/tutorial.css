@@ -352,3 +352,11 @@ progress[value]::-webkit-progress-value::after {
   margin-left: auto;
   margin-right: 0px;
 }
+
+.ui-hint-popup.ui-hint-popup-green-1 {
+  background: var(--green-1) !important;
+}
+.ui-hint-popup.ui-hint-popup-green-1::before {
+  background: var(--green-1) !important;
+  box-shadow: 0 0 1px 1px var(--green-1), -1px 1px 2px var(--grey-3) !important;
+}

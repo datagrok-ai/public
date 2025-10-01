@@ -410,6 +410,7 @@ async function request<T>(
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
+      redirect: 'follow'
     });
 
     const data = text ? await response.bytes() : await response.json();

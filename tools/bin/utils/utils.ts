@@ -322,8 +322,7 @@ export async function runAll(packagesDir: string, command: string, options: Reco
           console.log(`${packagePath}: ${commandToRun} - Finished`);
       }
       catch (e) {
-          console.log(`${packagePath}: ${commandToRun} - Error`);
-        break;
+        console.log(`${packagePath}: ${commandToRun} - Error`);
       }
     }
   }

@@ -64,7 +64,12 @@ export class ExcelJSService {
             if (result.length === 0)
               return DG.DataFrame.fromCsv('');
 
-            const headers = mapWithFor(result[0], (name, i) => name ?? `col${i + 1}`);
+            const namesUsed = new Set<string>();
+            const headers = mapWithFor(result[0], (name, i) => {
+              const nameToUse = namesUsed.has(name ?? `col${i + 1}`) ? name + ' (1)' : name ?? `col${i + 1}`;
+              namesUsed.add(nameToUse);
+              return nameToUse;
+            });
             const columnCount = headers.length;
             const rowCount = result.length - 1;
 
@@ -289,7 +294,6 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'formulaLinesEditor',
-    'top-menu': 'Data | Formula Lines...',
     outputs: [],
   })
   static formulaLinesDialog(

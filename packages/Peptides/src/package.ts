@@ -250,7 +250,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     meta: {
       demoPath: 'Bioinformatics | Peptide SAR',
-      demoSkip: 'GROK-14320',
+      isDemoDashboard: 'true',
     },
     name: 'Peptide SAR',
     description: 'Peptide SAR Analysis demo on peptide sequences in FASTA format',

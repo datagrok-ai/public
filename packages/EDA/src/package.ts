@@ -65,8 +65,8 @@ export class PackageFunctions {
   })
   static async dbScan(
     df: DG.DataFrame,
-    @grok.decorators.param({'options':{'type':'numerical'}})   xCol: DG.Column,
-    @grok.decorators.param({'options':{'type':'numerical'}})   yCol: DG.Column,
+    @grok.decorators.param({type: 'column', 'options':{'type':'numerical'}})   xCol: DG.Column,
+    @grok.decorators.param({type: 'column', 'options':{'type':'numerical'}})   yCol: DG.Column,
     @grok.decorators.param({'options':{'caption':'Epsilon','initialValue':'0.02', description: 'The maximum distance between two samples for them to be considered as in the same neighborhood.'}})   epsilon: number,
     @grok.decorators.param({'type':'int','options':{'caption':'Minimum points','initialValue':'4', description: 'The number of samples (or total weight) in a neighborhood for a point to be considered as a core point.'}})   minPts: number) : Promise<DG.Column> {
 
@@ -79,17 +79,18 @@ export class PackageFunctions {
     return cluster;
   }
 
-
   @grok.decorators.func({
     'top-menu': 'ML | Analyze | PCA...',
-    'description': 'Principal component analysis (PCA)'
+    'description': 'Principal component analysis (PCA)',
+    helpUrl: '/help/explore/dim-reduction#pca',
   })
   static async PCA(
-      table: DG.DataFrame,
-    @grok.decorators.param({'type':'column_list','options':{'type':'numerical','nullable':false}})   features: DG.ColumnList,
-    @grok.decorators.param({'type':'int','options':{'caption':'Components','nullable':false,'min':'1','initialValue':'2', description: 'Number of components.'}})   components: number,
-    @grok.decorators.param({'type':'bool','options':{'initialValue':'false', description: 'Indicating whether the variables should be shifted to be zero centered.'}})   center: boolean,
-    @grok.decorators.param({'type':'bool','options':{'initialValue':'false', description: 'Indicating whether the variables should be scaled to have unit variance.'}})   scale: boolean): Promise<void> {
+    @grok.decorators.param({'type':'dataframe','options':{'caption':'Table'}})  table: DG.DataFrame,
+    @grok.decorators.param({'type':'column_list','options':{'type':'numerical', 'nullable': false}})   features: DG.ColumnList,
+    //@ts-ignore
+    @grok.decorators.param({'type':'int','options':{'showPlusMinus': true, 'caption':'Components', 'nullable':false, 'min':'1', 'initialValue':'2', description: 'Number of components.'}})   components: number,
+    @grok.decorators.param({'type':'bool', 'options':{'caption':'Center', 'initialValue':'false', description: 'Indicating whether the variables should be shifted to be zero centered.'}})   center: boolean,
+    @grok.decorators.param({'type':'bool','options':{'caption':'Scale', 'initialValue':'false', description: 'Indicating whether the variables should be scaled to have unit variance.'}})   scale: boolean): Promise<void> {
 
     try {
       const pcaTable = await computePCA(table, features, components, center, scale);

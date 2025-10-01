@@ -324,150 +324,150 @@ export namespace scripts {
 
 export namespace queries {
   export async function accessOrders(employeeId: number , shipVia: string , freight: number , shipCountry: string , shipCity: string , freightLess1000: boolean , requiredDate: any , orderDate: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:AccessOrders', { employeeId, shipVia, freight, shipCountry, shipCity, freightLess1000, requiredDate, orderDate });
+    return await grok.data.query('Samples:AccessOrders', { employeeId, shipVia, freight, shipCountry, shipCity, freightLess1000, requiredDate, orderDate });
   }
 
   export async function accessProducts(): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:AccessProducts', {});
+    return await grok.data.query('Samples:AccessProducts', {});
   }
 
   export async function clickHouseStates(): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:ClickHouseStates', {});
+    return await grok.data.query('Samples:ClickHouseStates', {});
   }
 
   export async function clickHouseCountries(): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:ClickHouseCountries', {});
+    return await grok.data.query('Samples:ClickHouseCountries', {});
   }
 
   export async function clickHouseProducts(): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:ClickHouseProducts', {});
+    return await grok.data.query('Samples:ClickHouseProducts', {});
   }
 
   export async function clickHouseEmployees(): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:ClickHouseEmployees', {});
+    return await grok.data.query('Samples:ClickHouseEmployees', {});
   }
 
   export async function clickHouseCustomers(): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:ClickHouseCustomers', {});
+    return await grok.data.query('Samples:ClickHouseCustomers', {});
   }
 
   export async function clickHouseOrderDetailsByQuantityProductNameCountry(quantity: number , productName: string , country: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:ClickHouseOrderDetailsByQuantityProductNameCountry', { quantity, productName, country });
+    return await grok.data.query('Samples:ClickHouseOrderDetailsByQuantityProductNameCountry', { quantity, productName, country });
   }
 
   export async function clickHouseCustomersInCountry(country: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:ClickHouseCustomersInCountry', { country });
+    return await grok.data.query('Samples:ClickHouseCustomersInCountry', { country });
   }
 
   export async function mariaDBOrders(employeeid: number , shipvia: string , freight: number , shipcountry: string , shipcity: string , freightless1000: boolean , requireddate: any , orderdate: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:MariaDBOrders', { employeeid, shipvia, freight, shipcountry, shipcity, freightless1000, requireddate, orderdate });
+    return await grok.data.query('Samples:MariaDBOrders', { employeeid, shipvia, freight, shipcountry, shipcity, freightless1000, requireddate, orderdate });
   }
 
   export async function mariaDBProducts(): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:MariaDBProducts', {});
+    return await grok.data.query('Samples:MariaDBProducts', {});
   }
 
   export async function mssqlall(): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:MSSQLAll', {});
+    return await grok.data.query('Samples:MSSQLAll', {});
   }
 
   export async function mssqlbyInt(orderid: number ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:MSSQLByInt', { orderid });
+    return await grok.data.query('Samples:MSSQLByInt', { orderid });
   }
 
   export async function mssqlbyStringPatternInt(shipVia: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:MSSQLByStringPatternInt', { shipVia });
+    return await grok.data.query('Samples:MSSQLByStringPatternInt', { shipVia });
   }
 
   export async function mssqlbyDouble(freight: number ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:MSSQLByDouble', { freight });
+    return await grok.data.query('Samples:MSSQLByDouble', { freight });
   }
 
   export async function mssqlbyStringChoices(shipCountry: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:MSSQLByStringChoices', { shipCountry });
+    return await grok.data.query('Samples:MSSQLByStringChoices', { shipCountry });
   }
 
   export async function mssqlbyStringPatternString(shipCity: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:MSSQLByStringPatternString', { shipCity });
+    return await grok.data.query('Samples:MSSQLByStringPatternString', { shipCity });
   }
 
   export async function mssqlbyDatetime(requiredDate: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:MSSQLByDatetime', { requiredDate });
+    return await grok.data.query('Samples:MSSQLByDatetime', { requiredDate });
   }
 
   export async function mssqlbyStringPatternDatetime(orderDate: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:MSSQLByStringPatternDatetime', { orderDate });
+    return await grok.data.query('Samples:MSSQLByStringPatternDatetime', { orderDate });
   }
 
   export async function mssqlorders(employeeId: number , shipVia: string , freight: string , shipCountry: string , shipCity: string , freightLess1000: boolean , requiredDate: string , orderDate: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:MSSQLOrders', { employeeId, shipVia, freight, shipCountry, shipCity, freightLess1000, requiredDate, orderDate });
+    return await grok.data.query('Samples:MSSQLOrders', { employeeId, shipVia, freight, shipCountry, shipCity, freightLess1000, requiredDate, orderDate });
   }
 
   export async function mssqlproducts(ProductID: number ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:MSSQLProducts', { ProductID });
+    return await grok.data.query('Samples:MSSQLProducts', { ProductID });
   }
 
   export async function mySQLOrders(employeeId: number , shipVia: string , freight: number , shipCountry: string , shipCity: string , freightLess1000: boolean , requiredDate: any , orderDate: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:MySQLOrders', { employeeId, shipVia, freight, shipCountry, shipCity, freightLess1000, requiredDate, orderDate });
+    return await grok.data.query('Samples:MySQLOrders', { employeeId, shipVia, freight, shipCountry, shipCity, freightLess1000, requiredDate, orderDate });
   }
 
   export async function mySQLProducts(): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:MySQLProducts', {});
+    return await grok.data.query('Samples:MySQLProducts', {});
   }
 
   export async function oracleOrders(employeeId: number , shipVia: string , freight: number , shipCountry: string , shipCity: string , freightLess1000: boolean , requiredDate: any , orderDate: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:OracleOrders', { employeeId, shipVia, freight, shipCountry, shipCity, freightLess1000, requiredDate, orderDate });
+    return await grok.data.query('Samples:OracleOrders', { employeeId, shipVia, freight, shipCountry, shipCity, freightLess1000, requiredDate, orderDate });
   }
 
   export async function oracleProducts(): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:OracleProducts', {});
+    return await grok.data.query('Samples:OracleProducts', {});
   }
 
   export async function postgresStates(): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:PostgresStates', {});
+    return await grok.data.query('Samples:PostgresStates', {});
   }
 
   export async function postgresCountries(): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:PostgresCountries', {});
+    return await grok.data.query('Samples:PostgresCountries', {});
   }
 
   export async function postgresProducts(): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:PostgresProducts', {});
+    return await grok.data.query('Samples:PostgresProducts', {});
   }
 
   export async function postgresEmployees(): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:PostgresEmployees', {});
+    return await grok.data.query('Samples:PostgresEmployees', {});
   }
 
   export async function postgresCustomers(): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:PostgresCustomers', {});
+    return await grok.data.query('Samples:PostgresCustomers', {});
   }
 
   export async function postgresOrderDetailsByQuantityProductNameCountry(quantity: number , productName: string , country: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:PostgresOrderDetailsByQuantityProductNameCountry', { quantity, productName, country });
+    return await grok.data.query('Samples:PostgresOrderDetailsByQuantityProductNameCountry', { quantity, productName, country });
   }
 
   export async function postgresCustomersInCountry(country: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:PostgresCustomersInCountry', { country });
+    return await grok.data.query('Samples:PostgresCustomersInCountry', { country });
   }
 
   export async function postgresProductLookup(lookup: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:PostgresProductLookup', { lookup });
+    return await grok.data.query('Samples:PostgresProductLookup', { lookup });
   }
 
   export async function postgresProductDetails(productName: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:PostgresProductDetails', { productName });
+    return await grok.data.query('Samples:PostgresProductDetails', { productName });
   }
 
   export async function ordersByEmployee(shipCountry: string , shipCity: string , customerId: string , employee: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:OrdersByEmployee', { shipCountry, shipCity, customerId, employee });
+    return await grok.data.query('Samples:OrdersByEmployee', { shipCountry, shipCity, customerId, employee });
   }
 
   export async function domainUsage(): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:DomainUsage', {});
+    return await grok.data.query('Samples:DomainUsage', {});
   }
 
   export async function sqliteOrders(): Promise<DG.DataFrame> {
-    return await grok.functions.call('Samples:SQLiteOrders', {});
+    return await grok.data.query('Samples:SQLiteOrders', {});
   }
 }

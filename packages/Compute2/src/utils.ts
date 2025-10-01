@@ -14,7 +14,7 @@ import {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {zipSync, Zippable} from 'fflate';
 import {dfToViewerMapping, getFuncCallDefaultFilename, replaceForWindowsPath, richFunctionViewReport} from '@datagrok-libraries/compute-utils';
-import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
+import {ConsistencyInfo, FuncCallStateInfo, MetaCallInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
 export type NodeWithPath = {
   state: PipelineState,
@@ -129,11 +129,11 @@ export const hasInconsistencies = (consistencyStates?: Record<string, Consistenc
   return !!firstInconsistency;
 };
 
-export async function reportStep(treeState?: PipelineState) {
+export async function reportTree(treeState?: PipelineState, meta: MetaCallInfo = {}, hasNotSavedEdits?: boolean) {
   if (treeState) {
     const zipConfig = {} as Zippable;
 
-    const reportStep = async (state: PipelineState, previousPath: string = '', idx: number = 1) => {
+    const reportTreeRec = async (state: PipelineState, previousPath: string = '', idx: number = 1) => {
       if (isFuncCallState(state) && state.funcCall) {
         const funccall = state.funcCall;
 
@@ -164,15 +164,18 @@ export async function reportStep(treeState?: PipelineState) {
         if (previousPath.length > 0) validatedNestedPath = `${previousPath}/${validatedNestedPath}`;
 
         for (const [idx, stepState] of state.steps.entries())
-          await reportStep(stepState, validatedNestedPath, idx + 1);
+          await reportTreeRec(stepState, validatedNestedPath, idx + 1);
       }
     };
 
-    await reportStep(treeState);
+    await reportTreeRec(treeState);
 
-    DG.Utils.download(
-      `${treeState.friendlyName ?? treeState.configId}.zip`,
-      new Blob([zipSync(zipConfig) as any]),
-    );
+    const modelName = treeState.friendlyName ?? treeState.configId;
+    const runName = meta.title ? `${modelName} - ${meta.title}` : modelName;
+    const fileName = (meta.started && !hasNotSavedEdits) ? `${runName} - ${meta.started}` : `${runName} - edited`;
+
+    const name = replaceForWindowsPath(`${fileName}.zip`);
+
+    DG.Utils.download(name, new Blob([zipSync(zipConfig) as any]));
   }
 }

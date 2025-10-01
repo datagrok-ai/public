@@ -112,11 +112,13 @@ Uploads a package
 Checks for errors before publishing — the package won't be published if there are any.
 
 Options:
-[--build|--rebuild] [--debug|--release] [-k | --key] [--suffix] [--all] [--refresh] [--link]
+[--all] [--refresh] [--link] [--build] [--release] [--skip-check] 
 
---all             Publish all available packages 
---refresh         Publish all available already loaded packages 
---link  	        Link the package to local utils
+--all             Publish all available packages(run in packages directory)
+--refresh         Publish all available already loaded packages(run in packages directory)
+--link  	        Link the package to local packages
+--build  	        Builds the package
+--release         Publish package as release version
 --skip-check      Skip check stage 
 
 Running \`grok publish\` is the same as running \`grok publish defaultHost --build --debug\`
@@ -138,7 +140,7 @@ const HELP_TEST = `
 Usage: grok test
 
 Options:
-[--package] [--category] [--test] [--host] [--csv] [--gui] [--skip-build] [--skip-publish] [--link] [--catchUnhandled] [--report] [--record] [--verbose] [--platform] [--benchmark] [--stress-test] --[debug]
+[--package] [--category] [--test] [--host] [--csv] [--gui] [--skip-build] [--skip-publish] [--link] [--catchUnhandled] [--report] [--record] [--verbose] [--platform] [--benchmark] [--stress-test] [--debug] [--all]
 
 --package           Specify a package name to run tests for
 --category          Specify a category name to run tests for
@@ -158,6 +160,7 @@ Options:
 --core              Runs package & auto tests & core tests (core tests run only from DevTools package)
 --benchmark   	    Runs tests in benchmark mode
 --stress-test       Runs shuffled stress-test only
+--all               Runs tests for all available packages(run in packages directory)
  
 Run package tests
 
@@ -210,6 +213,7 @@ Options:
 --repo-only         Links packages only from the current repository
 --unlink            Unlinks packages and sets last versions instead of local path in package.json dependencies 
 --verbose           Prints detailed information about linked packages  
+--all               Links all available packages(run in packages directory)
 `;
 
 // const HELP_MIGRATE = `

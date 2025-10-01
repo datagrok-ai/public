@@ -48,6 +48,7 @@ export class ReportingApp {
     this.view.setRibbonPanels([[ui.button('Add rule...', async () =>
       await DG.UserReportsRule.showAddDialog())]]);
     this.empty.root.replaceWith(this.view.root);
+    this.empty.setRibbonPanels(this.view.getRibbonPanels());
     setTimeout(async () => {
       this.view!._onAdded();
       await this.refresh(table, this.view!.grid);

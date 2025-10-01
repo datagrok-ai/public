@@ -6,6 +6,11 @@ export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
 
+//name: dock
+export function dock() : void {
+  PackageFunctions.dock();
+}
+
 //input: object problem 
 //output: dataframe result
 export function solve(problem: any) : any {
@@ -59,13 +64,13 @@ export async function runDiffStudioTreeBrowser(treeNode: any) : Promise<void> {
 //name: Ball flight
 //description: Ball flight simulation
 //tags: model
-//input: double dB  = 0.01 { category: Ball; caption: Diameter; units: m; min: 0.01; max: 0.3 }
-//input: double roB  = 200 { category: Ball; caption: Density; description: Material density; units: kg/m^3; min: 200; max: 1200 }
-//input: double v  = 50 { category: Throw parameters; caption: Velocity; min: 40; max: 60; units: m/sec }
-//input: double a  = 45 { category: Throw parameters; caption: Angle; min: 20; max: 70; units: deg }
-//output: double maxDist  { caption: Max distance }
-//output: double maxHeight  { caption: Max height }
-//output: dataframe df  { caption: Trajectory; viewer: Line chart(block: 60, multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 40) }
+//input: double dB = 0.01 { category: Ball; caption: Diameter; units: m; min: 0.01; max: 0.3 }
+//input: double roB = 200 { category: Ball; caption: Density; description: Material density; units: kg/m^3; min: 200; max: 1200 }
+//input: double v = 50 { category: Throw parameters; caption: Velocity; min: 40; max: 60; units: m/sec }
+//input: double a = 45 { category: Throw parameters; caption: Angle; min: 20; max: 70; units: deg }
+//output: double maxDist { caption: Max distance }
+//output: double maxHeight { caption: Max height }
+//output: dataframe df { caption: Trajectory; viewer: Line chart(block: 60, multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 40) }
 //editor: Compute:RichFunctionViewEditor
 //sidebar: @compute
 //meta.runOnOpen: true

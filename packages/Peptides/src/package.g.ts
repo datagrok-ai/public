@@ -1,35 +1,32 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//name: initPeptides
 //tags: init
-export async function initPeptides() {
-  return PackageFunctions.initPeptides();
+export async function initPeptides() : Promise<void> {
+  await PackageFunctions.initPeptides();
 }
 
-//name: Peptides
 //output: view result
-export function Peptides() {
+export function Peptides() : any {
   return PackageFunctions.Peptides();
 }
 
 //name: Bio Peptides
 //top-menu: Bio | Analyze | SAR...
-export function peptidesDialog() {
+export function peptidesDialog() : any {
   return PackageFunctions.peptidesDialog();
 }
 
-//name: testInitFunctionPeptides
 //input: viewer v 
-export async function testInitFunctionPeptides(v: any) {
-  return PackageFunctions.testInitFunctionPeptides(v);
+export async function testInitFunctionPeptides(v: any) : Promise<void> {
+  await PackageFunctions.testInitFunctionPeptides(v);
 }
 
 //name: Peptides
 //tags: panel, widgets
 //input: column col { semType: Macromolecule }
 //output: widget result
-export function peptidesPanel(col: DG.Column) {
+export function peptidesPanel(col: DG.Column) : any {
   return PackageFunctions.peptidesPanel(col);
 }
 
@@ -38,7 +35,7 @@ export function peptidesPanel(col: DG.Column) {
 //tags: viewer
 //output: viewer result
 //meta.icon: files/icons/peptide-sar-viewer.svg
-export function monomerPosition() {
+export function monomerPosition() : any {
   return PackageFunctions.monomerPosition();
 }
 
@@ -47,7 +44,7 @@ export function monomerPosition() {
 //tags: viewer
 //output: viewer result
 //meta.icon: files/icons/peptide-sar-vertical-viewer.svg
-export function mostPotentResidues() {
+export function mostPotentResidues() : any {
   return PackageFunctions.mostPotentResidues();
 }
 
@@ -55,7 +52,7 @@ export function mostPotentResidues() {
 //tags: viewer
 //output: viewer result
 //meta.icon: files/icons/logo-summary-viewer.svg
-export function logoSummaryTable() {
+export function logoSummaryTable() : any {
   return PackageFunctions.logoSummaryTable();
 }
 
@@ -63,14 +60,14 @@ export function logoSummaryTable() {
 //tags: viewer
 //output: viewer result
 //meta.icon: files/icons/sequence-statistics-viewer.svg
-export function sequencePositionStatistics() {
+export function sequencePositionStatistics() : any {
   return PackageFunctions.sequencePositionStatistics();
 }
 
 //name: Active peptide selection
 //tags: viewer
 //output: viewer result
-export function clusterMaxActivity() {
+export function clusterMaxActivity() : any {
   return PackageFunctions.clusterMaxActivity();
 }
 
@@ -78,16 +75,16 @@ export function clusterMaxActivity() {
 //tags: panel, widgets
 //input: string _monomer { semType: Monomer }
 //output: widget result
-export function manualAlignment(_monomer: string) {
+export function manualAlignment(_monomer: string) : any {
   return PackageFunctions.manualAlignment(_monomer);
 }
 
 //name: Peptide SAR
 //description: Peptide SAR Analysis demo on peptide sequences in FASTA format
 //meta.demoPath: Bioinformatics | Peptide SAR
-//meta.demoSkip: GROK-14320
-export async function macromoleculeSarFastaDemo() {
-  return PackageFunctions.macromoleculeSarFastaDemo();
+//meta.isDemoDashboard: true
+export async function macromoleculeSarFastaDemo() : Promise<void> {
+  await PackageFunctions.macromoleculeSarFastaDemo();
 }
 
 //name: LST Pie Chart
@@ -95,6 +92,6 @@ export async function macromoleculeSarFastaDemo() {
 //output: grid_cell_renderer result
 //meta.cellType: lst-pie-chart
 //meta.gridChart: true
-export function lstPiechartCellRenderer() {
+export function lstPiechartCellRenderer() : any {
   return PackageFunctions.lstPiechartCellRenderer();
 }

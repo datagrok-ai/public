@@ -2,16 +2,18 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { u2 } from "@datagrok-libraries/utils/src/u2";
 import '../css/revvity-signals-styles.css';
 import { SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
-import { queryEntities, queryLibraries, queryMaterialById, queryTags, queryTerms, queryUsers, RevvityApiResponse, RevvityData, RevvityUser } from './revvity-api';
-import { dataFrameFromObjects, reorderColummns, transformData, createRevvityResponseWidget, getViewNameByCompoundType } from './utils';
-import { addMoleculeStructures, assetsQuery, MOL_COL_NAME, retrieveQueriesMap } from './compounds';
+import { queryLibraries, queryTags, queryTerms, queryUsers, RevvityData, RevvityUser, search } from './revvity-api';
+import { reorderColumns, transformData, getViewNameByCompoundType, createRevvityWidgetByCorporateId, createWidgetByRevvityLabel } from './utils';
+import { addMoleculeStructures } from './compounds';
+import { createInitialSatistics, getRevvityLibraries, RevvityLibrary } from './libraries';
+import { createViewForExpandabelNode, createViewFromPreDefinedQuery, handleInitialURL } from './view-utils';
+import { createSavedSearchesSatistics, SAVED_SEARCH_STORAGE } from './search-utils';
+import { funcs } from './package-api';
+import { HIDDEN_ID_COL_NAME, ID_COL_NAME, MOL_COL_NAME, REVVITY_LABEL_SEM_TYPE, REVVVITY_LABEL_FIELDS, USER_FIELDS } from './constants';
 import { getRevvityUsers } from './users';
-import { createInitialSatistics, getRevvityLibraries, RevvityLibrary, RevvityType } from './libraries';
-import { createViewFromPreDefinedQuery, handleInitialURL } from './view-utils';
-import { SAVED_SEARCH_STORAGE } from './search-utils';
+import { convertIdentifierFormatToRegexp } from './detectors';
 
 
 export const _package = new DG.Package();
@@ -28,6 +30,12 @@ export type RevvityConfig = {
 
 let config: RevvityConfig = { libraries: undefined };
 
+
+//tags: init
+export function init() {
+  registerRevvityIdsFormats();
+}
+
 //tags: app
 //name: Revvity Signals
 //input: string path { meta.url: true; optional: true }
@@ -36,18 +44,8 @@ let config: RevvityConfig = { libraries: undefined };
 export async function revvitySignalsLinkApp(path?: string): Promise<DG.ViewBase> {
 
   console.log(path);
-  const appHeader = u2.appHeader({
-    iconPath: _package.webRoot + '/img/revvity.png',
-    learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/RevvitySignalsLink/README.md',
-    description: '- Integrate with your Revvity account.\n' +
-      '- Browse the tenant content.\n' +
-      '- Perfrom searches through you tenant.' +
-      '- Find contextual information on entities like assets, batches etc.\n' +
-      '- Analyze assay data.'
-  });
-
-  const statsDiv = ui.div('', {style: {position: 'relative'}});
-  const view = DG.View.fromRoot(ui.divV([appHeader, statsDiv]));
+  const initViewDiv = ui.divV([]);
+  const view = DG.View.fromRoot(initViewDiv);
   view.name = 'Revvity';
 
   if (path) {
@@ -55,7 +53,7 @@ export async function revvitySignalsLinkApp(path?: string): Promise<DG.ViewBase>
     cddNode.expanded = true;
     handleInitialURL(cddNode, path);
   } else
-    createInitialSatistics(statsDiv);
+    createInitialSatistics(initViewDiv);
 
   return view;
 
@@ -69,7 +67,7 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
   ui.setUpdateIndicator(loadingNode.captionLabel, true);
   let libs;
   try {
-    getRevvityUsers();
+    await getRevvityUsers();
     libs = await getRevvityLibraries();
   } catch(e: any) {
     loadingNode.remove();
@@ -77,8 +75,10 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
     return;
   }
   loadingNode.remove();
+
   for (const lib of libs) {
     const libNode = treeNode.group(lib.name);
+    libNode.onSelected.subscribe(() => createViewForExpandabelNode(lib.name, createInitialSatistics, lib.name));
     for (const libType of lib.types) {
       const viewName = getViewNameByCompoundType(libType.name);
       const typeNode = libNode.item(`${viewName.charAt(0).toUpperCase()}${viewName.slice(1)}`);
@@ -93,13 +93,17 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
       });
     }
   }
-  const savedSearchesNode = treeNode.group('Saved searches');
+
+  const savedSearchesNode = treeNode.group('Saved Searches');
+  savedSearchesNode.onSelected.subscribe(() => createViewForExpandabelNode('saved searches', createSavedSearchesSatistics));
   for (const lib of libs) {
     const libNode = savedSearchesNode.group(lib.name);
+    libNode.onSelected.subscribe(() => createViewForExpandabelNode(lib.name, createSavedSearchesSatistics, lib.name));
     for (const libType of lib.types) {
       const typeName = getViewNameByCompoundType(libType.name);
       const typeNode = libNode.group(`${typeName.charAt(0).toUpperCase()}${typeName.slice(1)}`);
-
+      typeNode.onSelected.subscribe(() => createViewForExpandabelNode(lib.name, createSavedSearchesSatistics, lib.name, libType.name));
+      
       const storageKey = `${lib.name}|${libType.name}`;
       const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, storageKey) || '{}';
       const savedSearches: { [key: string]: string } = JSON.parse(savedSearchesStr);
@@ -123,45 +127,48 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
 //input: string params
 //output: dataframe df
 export async function searchEntities(query: string, params: string): Promise<DG.DataFrame> {
-  let df = DG.DataFrame.create();
-  try {
-    const queryJson: SignalsSearchQuery = JSON.parse(query);
-    const paramsJson: SignalsSearchParams = JSON.parse(params);
-    const response = await queryEntities(queryJson, Object.keys(paramsJson).length ? paramsJson : undefined);
-    const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
-    df = dataFrameFromObjects(data);
-    await grok.data.detectSemanticTypes(df);
-  } catch (e: any) {
-    grok.shell.error(e?.message ?? e);
+  const queryJson: SignalsSearchQuery = JSON.parse(query);
+  const paramsJson: SignalsSearchParams = JSON.parse(params);
+  const response = await search(queryJson, Object.keys(paramsJson).length ? paramsJson : undefined);
+  const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
+  const rows = await transformData(data);
+  const df = rows.length === 0 ? DG.DataFrame.create() : DG.DataFrame.fromObjects(rows)!;
+  USER_FIELDS.forEach((field) => {
+    const col = df.col(field);
+    if (col)
+      col.semType = DG.TYPE.USER;
+  });
+  const idCol = df.col(ID_COL_NAME);
+  if (idCol)
+    idCol.name = HIDDEN_ID_COL_NAME;
+  for (const colName of REVVVITY_LABEL_FIELDS) {
+    const col = df.col(colName);
+    if (col)
+      col.semType = REVVITY_LABEL_SEM_TYPE;
   }
   return df;
 }
 
 //name: Search Entities With Structures
-//meta.cache: all
-//meta.cache.invalidateOn: 0 0 * * *
 //input: string query
 //input: string params
 //output: dataframe df
 export async function searchEntitiesWithStructures(query: string, params: string): Promise<DG.DataFrame> {
   let df = DG.DataFrame.create();
   try {
-    const queryJson: SignalsSearchQuery = JSON.parse(query);
-    const paramsJson: SignalsSearchParams = JSON.parse(params);
-    const response = await queryEntities(queryJson, Object.keys(paramsJson).length ? paramsJson : undefined);
-    if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
-      return DG.DataFrame.create();
-    const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
-
-    const rows = await transformData(data);
-    const moleculeIds = data.map((it) => it.id);
-    df = DG.DataFrame.fromObjects(rows)!;
-    const moleculeColumn = DG.Column.fromStrings(MOL_COL_NAME, new Array<string>(moleculeIds.length).fill(''));
-    moleculeColumn.semType = DG.SEMTYPE.MOLECULE;
-    moleculeColumn.meta.units = DG.UNITS.Molecule.MOLBLOCK;
-    df.columns.add(moleculeColumn);
-    reorderColummns(df);
-    addMoleculeStructures(moleculeIds, moleculeColumn);
+    df = await funcs.searchEntities(query, params);
+    let idCol = df.col(HIDDEN_ID_COL_NAME);
+    if (!idCol)
+      idCol = df.col(ID_COL_NAME);
+    if (idCol) {
+      const moleculeIds = idCol.toList();
+      const moleculeColumn = DG.Column.fromStrings(MOL_COL_NAME, new Array<string>(moleculeIds.length).fill(''));
+      moleculeColumn.semType = DG.SEMTYPE.MOLECULE;
+      moleculeColumn.meta.units = DG.UNITS.Molecule.MOLBLOCK;
+      df.columns.add(moleculeColumn);
+      reorderColumns(df);
+      addMoleculeStructures(moleculeIds, moleculeColumn);
+    }
   } catch (e: any) {
     grok.shell.error(e?.message ?? e);
   }
@@ -173,13 +180,13 @@ export async function searchEntitiesWithStructures(query: string, params: string
 //meta.cache.invalidateOn: 0 0 * * *
 //output: string users
 export async function getUsers(): Promise<string> {
-  const users: { [key: string]: RevvityUser } = {};
+  const users: RevvityUser[] = [];
   const response = await queryUsers();
   if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
     return '{}';
   const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
   for (const user of data)
-    users[user.id] = Object.assign({}, user.attributes || {});
+    users.push(user.attributes);
   return JSON.stringify(users);
 }
 
@@ -190,49 +197,28 @@ export async function getUsers(): Promise<string> {
 //output: string libraries
 export async function getLibraries(): Promise<string> {
   const response = await queryLibraries();
-  const libraries: RevvityLibrary[] = [];
   if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
     return '[]';
   const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
-  for (const lib of data) {
-    if (lib.attributes.name && lib.id) {
-      let types: RevvityType[] = [];
-      const query = {
-        "query": {
-          "$and": [
-            {
-              "$match": {
-                "field": "assetTypeEid",
-                "value": `${lib.type}:${lib.id}`,
-              }
-            },
-            {
-              "$not": [
-                {
-                  "$match": {
-                    "field": "type",
-                    "value": "assetType"
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        "field": "type"
-      }
-      const typesResponse = await queryTerms(query);
-      if (typesResponse.data) {
-        const typesData: Record<string, any>[] = !Array.isArray(typesResponse.data) ? [typesResponse.data!] : typesResponse.data!;
-        types = typesData.map((it) => {
-          return {name: it.id, count: it.attributes?.count};
-        });
-      }
-      libraries.push({ name: lib.attributes.name, id: `${lib.type}:${lib.id}`, types: types });
-    }
-  }
-  return JSON.stringify(libraries);
+  return JSON.stringify(data);
 }
 
+
+//name Register Revvity Ids Formats
+export async function registerRevvityIdsFormats() {
+  const data = JSON.parse(await funcs.getLibraries());
+  const formats: string[] = [];
+  for (const lib of data) {
+    if (lib.attributes?.assets?.numbering?.format) {
+      formats.push(lib.attributes?.assets?.numbering?.format);
+      if (lib.attributes?.batches?.numbering?.format)
+        formats.push(`${formats[0]}-${lib.attributes?.batches?.numbering?.format}`);
+    }
+  }
+  const regexp = convertIdentifierFormatToRegexp(Object.values(formats));
+  if (regexp)
+    DG.SemanticValue.registerRegExpDetector('revvity-id', regexp);
+}
 
 //name: Get Tags
 //meta.cache: all
@@ -272,21 +258,33 @@ export async function getTags(type: string, assetTypeId: string): Promise<string
   const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
   const tags: { [key: string]: string } = {};
   for (const tag of data) {
-    tags[tag.id] = tag.attributes.types[0].type;
+    if (tag?.attributes?.types && Array.isArray(tag?.attributes?.types) && tag?.attributes?.types.length > 0)
+    tags[tag.id] = tag?.attributes?.types[0].type;
   }
   return JSON.stringify(tags);
 }
 
-
-//name: Get Terms
+//name: Search Terms
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
+//input: string query
+//output: string terms
+export async function searchTerms(query: string): Promise<string> {
+  const response = await queryTerms(JSON.parse(query));
+  if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
+    return '{}';
+  const data: RevvityData[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
+  return JSON.stringify(data);
+}
+
+
+//name: Get Terms For Field
 //input: string fieldName
 //input: string type
 //input: string assetTypeId
 //input: bool isMaterial
-//output: string terms
-export async function getTerms(fieldName: string, type: string, assetTypeId: string, isMaterial: boolean): Promise<string> {
+//output: list<string> terms
+export async function getTermsForField(fieldName: string, type: string, assetTypeId: string, isMaterial: boolean): Promise<string[]> {
   const innerAndConditions: any[] = [
     {
       "$match": {
@@ -331,21 +329,36 @@ export async function getTerms(fieldName: string, type: string, assetTypeId: str
     field: fieldName,
     in: "tags"
   };
-  const response = await queryTerms(query);
-  if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
-    return '{}';
-  const data: RevvityData[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
-  const tags = data.map((it) => it.id).filter((tag) => tag != undefined);
-  return JSON.stringify(tags);
+  const data: RevvityData[] = JSON.parse(await funcs.searchTerms(JSON.stringify(query)));
+  const terms = data.map((it) => it.id).filter((term) => term != undefined);
+  return terms;
 }
 
 
 //name: Revvity Signals
 //tags: panel, widgets
-//input: semantic_value id { semType: RevvitySignalsId }
+//input: semantic_value id { semType: revvity-id }
 //output: widget result
 export async function entityTreeWidget(idSemValue: DG.SemanticValue<string>): Promise<DG.Widget> {
-  const obj = (await queryMaterialById(idSemValue.value)) as RevvityApiResponse;
-  const div = createRevvityResponseWidget(obj, idSemValue);
+  const query = {
+    "query": {
+      "$match": {
+        "field": "name",
+        "value": idSemValue.value,
+        "mode": "keyword"
+      }
+    }
+  }
+  const obj = await search(query);
+  const div = createRevvityWidgetByCorporateId(obj, idSemValue);
+  return new DG.Widget(div);
+}
+
+//name: Revvity Signals
+//tags: panel, widgets
+//input: semantic_value id { semType: revvity-label }
+//output: widget result
+export async function revvityLabelWidget(idSemValue: DG.SemanticValue<string>): Promise<DG.Widget> {
+  const div = await createWidgetByRevvityLabel(idSemValue);
   return new DG.Widget(div);
 }

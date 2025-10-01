@@ -1,6 +1,17 @@
 # Grok Connect changelog
 
-# 2.4.0 (2025-07-24) WIP
+# 2.5.1 (2025-09-30) WIP
+
+* Athena: Apply session token when passed
+
+# 2.5.0 (2025-09-19)
+
+* TableQuery: Support joining between different schemas
+* BigQuery: Support token resolution
+* Postgres, Oracle, Snowflake: Additional driver properties to tune
+* DynamoDB: Removed connector from the list, friendly name for ssl
+
+# 2.4.0 (2025-07-24)
 
 * BigQuery: Improved provider support, schem browsing, service account auth
 * Fixed bug with duplicated columns in schemas during browsing

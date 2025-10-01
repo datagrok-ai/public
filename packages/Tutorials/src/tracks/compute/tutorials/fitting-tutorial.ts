@@ -183,7 +183,7 @@ export class FittingTutorial extends Tutorial {
     }
 
     const fitFormRoot = await getElement(fittingView.root, 'div.ui-div.ui-form');
-    const velocityInputRoot = fitFormRoot!.children[9] as HTMLElement;
+    const velocityInputRoot = fitFormRoot!.children[10] as HTMLElement;
     const velocitySwitcher = velocityInputRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
     this.describe('Let\'s find the initial velocity and angle.');
@@ -195,7 +195,7 @@ export class FittingTutorial extends Tutorial {
     );
 
     // 7. Switch Angle
-    const angleFitInputRoot = fitFormRoot!.children[12] as HTMLElement;
+    const angleFitInputRoot = fitFormRoot!.children[13] as HTMLElement;
     const angleSwitcher = angleFitInputRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
     await this.action(
@@ -205,7 +205,7 @@ export class FittingTutorial extends Tutorial {
     );
 
     // 8. Target value
-    const distFitInputRoot = fitFormRoot!.children[16] as HTMLElement;
+    const distFitInputRoot = fitFormRoot!.children[17] as HTMLElement;
     const distSwitcher = distFitInputRoot.querySelector('input.ui-input-editor') as HTMLInputElement;
     const numSource = fromEvent(distSwitcher, 'input').pipe(map((_) => distSwitcher.value), filter((val) => val === '10'));
 
@@ -256,7 +256,7 @@ export class FittingTutorial extends Tutorial {
     this.title('Fit curve');
     this.describe('How to throw a ball so that it follows a given trajectory?\nYou may check the target in <b>Tables > Ball trajectory</b>.');
 
-    const maxDistRoot = fitFormRoot!.children[16] as HTMLElement;
+    const maxDistRoot = fitFormRoot!.children[17] as HTMLElement;
     const maxDistSwitcher = maxDistRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
     await this.action(

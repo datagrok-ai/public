@@ -686,7 +686,7 @@ export class BrowsePanel extends DartWidget {
 
   get localTree(): TreeViewGroup { return api.grok_BrowsePanel_Get_LocalTree(this.dart); }
   get mainTree(): TreeViewGroup { return api.grok_BrowsePanel_Get_MainTree(this.dart); }
-
+  bindItemTooltip(content: string | Element | (() => string | Element), el: Element): void { api.grok_BrowsePanel_BindItemTooltip(this.dart, content, el); }
 }
 
 /** Represents a virtual view, where visual elements are created only when user

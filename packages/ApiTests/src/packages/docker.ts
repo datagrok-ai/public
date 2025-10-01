@@ -9,13 +9,13 @@ category('Packages: Docker', () => {
     if (container.status !== 'started' && container.status !== 'checking')
       await grok.dapi.docker.dockerContainers.run(container.id, true);
     await testResponse(container.id);
-  }, {timeout: 30000, stressTest: true});
+  }, {timeout: 30000});
 
   test('Get build logs', async () => {
     const image = await grok.dapi.docker.dockerImages.filter(containerName).first();
     expect(image.status === 'ready');
     expect(!image.logs || image.logs.length === 0, false);
-  }, {stressTest: true});
+  });
 
   test('Get container logs', async () => {
     const container = await grok.dapi.docker.dockerContainers.filter(containerName).first();

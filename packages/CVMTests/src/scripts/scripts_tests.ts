@@ -71,7 +71,7 @@ for (const lang of languages) {
       const result = await grok.functions.call(`CVMTests:${lang}Map`,
         {'input_map': {'hello': 'world'}, 'unique_key': 'my_key'});
       expectObject(result, {'hello': 'world', 'my_key': 'Datagrok'});
-    }, {skipReason: lang === 'R' || lang === 'Grok' ? 'GROK-12452' : undefined, stressTest: true});
+    }, {stressTest: serverSideLanguages.includes(lang)});
 
     if (!['NodeJS', 'JavaScript', 'Grok'].includes(lang)) {
       test('Graphics output, Column input', async () => {

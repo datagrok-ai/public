@@ -599,7 +599,7 @@ export class PackageFunctions {
   static async clusterMCSTopMenu(
     table: DG.DataFrame,
     @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molCol: DG.Column,
-    @grok.decorators.param({type: 'column', options: {type: 'string'}}) clusterCol: DG.Column): Promise<void> {
+    @grok.decorators.param({type: 'column', options: {type: 'categorical'}}) clusterCol: DG.Column): Promise<void> {
     const c = await PackageFunctions.performClusterMCS(molCol, clusterCol);
     c.name = table.columns.getUnusedName(c.name);
     table.columns.add(c);
@@ -668,7 +668,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Fingerprints',
     tags: ['dim-red-preprocessing-function'],
-    meta: {supportedSemTypes: 'Molecule', supportedDistanceFunctions: 'Tanimoto, Asymmetric, Cosine, Sokal'},
+    meta: {supportedSemTypes: 'Molecule', supportedDistanceFunctions: 'Tanimoto,Asymmetric,Cosine,Sokal'},
     outputs: [{type: 'object', name: 'result'}],
   })
   static async getFingerprints(
@@ -959,8 +959,8 @@ export class PackageFunctions {
   })
   static async activityCliffs(
     @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
-    @grok.decorators.param({options: {type: 'categorical', semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({options: {type: 'numerical'}}) activities: DG.Column,
+    @grok.decorators.param({type: 'column', options: {type: 'categorical', semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'column', options: {type: 'numerical'}}) activities: DG.Column,
     @grok.decorators.param({options: {description: 'Similarity cutoff', initialValue: '80'}}) similarity: number,
     @grok.decorators.param({type: 'string', options: {choices: ['UMAP', 't-SNE']}}) methodName: DimReductionMethods,
     @grok.decorators.param({type: 'string', options: {choices: ['Tanimoto', 'Asymmetric', 'Cosine', 'Sokal']}}) similarityMetric: BitArrayMetrics,
@@ -1065,8 +1065,8 @@ export class PackageFunctions {
   })
   static async activityCliffsTransform(
     @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
-    @grok.decorators.param({options: {type: 'categorical', semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({options: {type: 'numerical'}}) activities: DG.Column,
+    @grok.decorators.param({type: 'column', options: {type: 'categorical', semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'column', options: {type: 'numerical'}}) activities: DG.Column,
     @grok.decorators.param({options: {description: 'Similarity cutoff', initialValue: '80'}}) similarity: number,
     @grok.decorators.param({type: 'string', options: {choices: ['UMAP', 't-SNE']}}) methodName: DimReductionMethods,
     @grok.decorators.param({type: 'string', options: {choices: ['Tanimoto', 'Asymmetric', 'Cosine', 'Sokal']}}) similarityMetric: BitArrayMetrics,
@@ -1139,7 +1139,7 @@ export class PackageFunctions {
   })
   static async structuralAlertsTopMenu(
     @grok.decorators.param({options: {description: 'Input data table', caption: 'Table'}}) table: DG.DataFrame,
-    @grok.decorators.param({options: {caption: 'Molecules', semType: 'Molecule', type: 'categorical'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'column', options: {caption: 'Molecules', semType: 'Molecule', type: 'categorical'}}) molecules: DG.Column,
     @grok.decorators.param({options: {caption: 'PAINS', initialValue: 'true', description: '"Pan Assay Interference Compounds filters"'}}) pains: boolean,
     @grok.decorators.param({options: {caption: 'BMS', initialValue: 'false', description: '"Bristol-Myers Squibb HTS Deck filters"'}}) bms: boolean,
     @grok.decorators.param({options: {caption: 'SureChEMBL', initialValue: 'false', description: '"MedChem unfriendly compounds from SureChEMBL"'}}) sureChembl: boolean,
@@ -1176,7 +1176,7 @@ export class PackageFunctions {
   })
   static async runStructuralAlerts(
     @grok.decorators.param({options: {caption: 'Table', description: 'Input data table'}}) table: DG.DataFrame,
-    @grok.decorators.param({options: {caption: 'Molecules', type: 'categorical', semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'column', options: {caption: 'Molecules', type: 'categorical', semType: 'Molecule'}}) molecules: DG.Column,
     @grok.decorators.param({options: {caption: 'PAINS', initialValue: 'true', description: '"Pan Assay Interference Compounds filters"'}}) pains: boolean,
     @grok.decorators.param({options: {caption: 'BMS', initialValue: 'false', description: '"Bristol-Myers Squibb HTS Deck filters"'}}) bms: boolean,
     @grok.decorators.param({options: {caption: 'SureChEMBL', initialValue: 'false', description: '"MedChem unfriendly compounds from SureChEMBL"'}}) sureChembl: boolean,
@@ -2077,7 +2077,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Demo R Group Analysis',
     description: 'R Group Analysis including R-group decomposition and  visual analysis of the obtained R-groups',
-    meta: {demoPath: 'Cheminformatics | R-Group Analysis', demoSkip: 'GROK-14320'},
+    meta: {demoPath: 'Cheminformatics | R-Group Analysis', demoSkip: 'GROK-14320', isDemoDashboard: 'true'},
   })
   static async demoRgroupAnalysis(): Promise<void> {
     await _demoRGroups();
@@ -2087,7 +2087,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Demo Activity Cliffs',
     description: 'Searching similar structures with significant activity difference',
-    meta: {demoPath: 'Cheminformatics | Molecule Activity Cliffs', demoSkip: 'GROK-14320'},
+    meta: {demoPath: 'Cheminformatics | Molecule Activity Cliffs', demoSkip: 'GROK-14320', isDemoDashboard: 'true'},
   })
   static async demoMoleculeActivityCliffs(): Promise<void> {
     await _demoActivityCliffsLayout();
@@ -2458,7 +2458,7 @@ export class PackageFunctions {
     if (mixtureObj.contents && mixtureObj.contents.length) {
       const contentsAcc = ui.accordion('contents');
       for (let i = 0; i < mixtureObj.contents.length; i++)
-        contentsAcc.addPane(`component ${i + 1}`, () => createComponentPane(mixtureObj.contents![i]));
+        contentsAcc.addPane(mixtureObj.contents![i].name ?? `component ${i + 1}`, () => createComponentPane(mixtureObj.contents![i]));
       resDiv.append(contentsAcc.root);
     }
     return new DG.Widget(resDiv);

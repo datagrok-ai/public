@@ -1,5 +1,5 @@
 1. Go to **Browse > Platform > Models**.
-2. Type `TestDemog` in the search field to find the connection from the previous step.
+2. Type `TestDemog` in the search field to find the model from the previous step.
 3. On the **Context Panel**, check all tabs for the model.
 4. Near the search field, click the **Filter templates** icon and check its content.
 7. Select multiple models from the browser (by CTRL+clicking them)

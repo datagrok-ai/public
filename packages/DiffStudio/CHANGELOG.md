@@ -1,5 +1,32 @@
 # Diff Studio changelog
 
+## 1.4.6 (2025-09-29)
+
+Fixed webpack
+
+## 1.4.5 (2025-09-29)
+
+Fixed build
+
+## 1.4.4 (2025-09-29)
+
+Fixed dayjs issue
+
+## 1.4.3 (2025-09-25)
+
+Fixed
+
+* inconsistency in input captions
+* rearranged tabs behavior
+
+## 1.4.2 (2025-09-22)
+
+Version update
+
+## 1.4.1 (2025-09-18)
+
+Datagrok utils update
+
 ## 1.4.0 (2025-07-28)
 
 JS-api 1.26.0 release

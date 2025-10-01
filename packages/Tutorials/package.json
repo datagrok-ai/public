@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/tutorials",
   "friendlyName": "Tutorials",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "author": {
     "name": "Dmytro Kovalyov",
     "email": "dkovalyov@datagrok.ai"
@@ -13,10 +13,10 @@
     "directory": "packages/Tutorials"
   },
   "dependencies": {
-    "@datagrok-libraries/tutorials": "^1.6.1",
-    "@datagrok-libraries/utils": "^4.5.7",
+    "@datagrok-libraries/tutorials": "^1.7.3",
+    "@datagrok-libraries/utils": "^4.6.5",
     "cash-dom": "^8.1.0",
-    "datagrok-api": "^1.26.0",
+    "datagrok-api": "^1.26.3",
     "dayjs": "^1.10.6",
     "rxjs": "6.6.7",
     "wu": "^2.1.0"
@@ -26,7 +26,7 @@
     "@typescript-eslint/eslint-plugin": "^4.29.1",
     "@typescript-eslint/parser": "^4.29.1",
     "css-loader": "^6.7.1",
-    "datagrok-tools": "^4.14.48",
+    "datagrok-tools": "^4.14.55",
     "eslint": "^7.32.0",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^3.3.1",
@@ -72,6 +72,12 @@
     },
     {
       "name": "cheminformaticsTrack",
+      "propertyType": "bool",
+      "defaultValue": true,
+      "nullable": false
+    },
+    {
+      "name": "bioinformaticsTrack",
       "propertyType": "bool",
       "defaultValue": true,
       "nullable": false

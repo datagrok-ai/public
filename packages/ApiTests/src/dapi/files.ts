@@ -103,7 +103,7 @@ category('Dapi: files', () => {
     expect(dfList.length, 1, `Saved ${dfList.length} dataframes instead of 1`);
     expectTable(dfList[0], df, 'Saved dataframe has wrong data');
     await grok.dapi.files.delete(filePath);
-  }, {skipReason: 'GROK-11670'});
+  });
 
   test('readAsText', async () => {
     const files = await _package.files.list('datasets', true, 'demog.csv');

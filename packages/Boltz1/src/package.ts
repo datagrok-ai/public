@@ -33,14 +33,14 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'Folding',
-    'top-menu': 'Bio | Folding | Boltz-1...'
+    name: 'Boltz',
+    'top-menu': 'Bio | Folding | Boltz...'
   })
   static async folding(
-    df: DG.DataFrame,
+    table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Macromolecule'}}) sequences: DG.Column,
   ): Promise<DG.DataFrame> {
-    return await BoltzService.folding(df, sequences);
+    return await BoltzService.folding(table, sequences);
   }
 
   @grok.decorators.func({

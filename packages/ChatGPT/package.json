@@ -5,13 +5,13 @@
   "description": "ChatGPT integration",
   "author": "oserhiienko@datagrok.ai",
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.5.7",
+    "@datagrok-libraries/utils": "^4.6.5",
     "cash-dom": "latest",
     "datagrok-api": "^1.26.0",
     "dayjs": "latest"
   },
   "devDependencies": {
-    "datagrok-tools": "^4.14.48",
+    "datagrok-tools": "^4.14.55",
     "ts-loader": "latest",
     "typescript": "latest",
     "webpack": "latest",

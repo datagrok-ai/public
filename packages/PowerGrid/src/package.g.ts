@@ -56,7 +56,6 @@ export function _HtmlTestCellRenderer() {
 }
 
 
-//name: barCellRenderer
 //tags: cellRenderer
 //output: grid_cell_renderer result
 //meta.gridChart: true
@@ -115,23 +114,20 @@ export function smartFormCellRenderer() {
   return PackageFunctions.smartFormCellRenderer();
 }
 
-//name: summarizeColumns
 //description: Adds a sparkline column for the selected columns
 //input: list columns { type: numerical }
 //meta.action: Sparklines...
-export function summarizeColumns(columns: DG.Column[]) {
-  return PackageFunctions.summarizeColumns(columns);
+export function summarizeColumns(columns: DG.Column[]) : void {
+  PackageFunctions.summarizeColumns(columns);
 }
 
-//name: addFormColumn
 //description: Adds a 'form' column for the selected columns
 //input: list columns 
 //meta.action: Smart form...
-export function addFormColumn(columns: DG.Column[]) {
-  return PackageFunctions.addFormColumn(columns);
+export function addFormColumn(columns: DG.Column[]) : void {
+  PackageFunctions.addFormColumn(columns);
 }
 
-//name: testUnitsKgCellRenderer
 //tags: cellRenderer
 //output: grid_cell_renderer result
 //meta.cellType: testUnitsKg
@@ -140,7 +136,6 @@ export function testUnitsKgCellRenderer() {
   return PackageFunctions.testUnitsKgCellRenderer();
 }
 
-//name: testUnitsTonCellRenderer
 //tags: cellRenderer
 //output: grid_cell_renderer result
 //meta.cellType: testUnitsTon
@@ -149,22 +144,20 @@ export function testUnitsTonCellRenderer() {
   return PackageFunctions.testUnitsTonCellRenderer();
 }
 
-//name: addPinnedColumn
 //input: object gridCol 
 //output: object result
-export function addPinnedColumn(gridCol: any) {
+export function addPinnedColumn(gridCol: any) : any {
   return PackageFunctions.addPinnedColumn(gridCol);
 }
 
 //name: demoTestUnitsCellRenderer
-export function demoTestUnitsCellRenderer() {
-  return PackageFunctions.demoTestUnitsCellRenderer();
+export function demoTestUnitsCellRenderer() : void {
+  PackageFunctions.demoTestUnitsCellRenderer();
 }
 
-//name: _autoPowerGrid
 //tags: autostart
-export async function _autoPowerGrid() {
-  return PackageFunctions._autoPowerGrid();
+export async function _autoPowerGrid() : Promise<void> {
+  await PackageFunctions._autoPowerGrid();
 }
 
 //name: Forms
@@ -182,44 +175,40 @@ export function formsViewer() {
 //tags: panel, powergrid, widgets
 //input: string imageUrl { semType: ImageUrl }
 //output: widget result
-export function imgContent(imageUrl: string) {
+export function imgContent(imageUrl: string) : any {
   return PackageFunctions.imgContent(imageUrl);
 }
 
 //name: demoCellTypes
-export function demoCellTypes() {
-  return PackageFunctions.demoCellTypes();
+export function demoCellTypes() : void {
+  PackageFunctions.demoCellTypes();
 }
 
-//name: _scWebGPURender
 //tags: scWebGPURender
 //input: dynamic sc 
 //input: bool show 
-export async function _scWebGPURender(sc: any, show: boolean) {
-  return PackageFunctions._scWebGPURender(sc, show);
+export async function _scWebGPURender(sc: any, show: boolean) : Promise<void> {
+  await PackageFunctions._scWebGPURender(sc, show);
 }
 
-//name: _scWebGPUPointHitTest
 //tags: scWebGPUPointHitTest
 //input: dynamic sc 
 //input: dynamic pt 
 //output: int result
 export async function _scWebGPUPointHitTest(sc: any, pt: any) {
-  return PackageFunctions._scWebGPUPointHitTest(sc, pt);
+  return await PackageFunctions._scWebGPUPointHitTest(sc, pt);
 }
 
-//name: isWebGPUAvailable
 //tags: isWebGPUAvailable
 //output: bool result
-export function isWebGPUAvailable() {
+export function isWebGPUAvailable() : boolean {
   return PackageFunctions.isWebGPUAvailable();
 }
 
-//name: isWebGPURenderValid
 //tags: isWebGPURenderValid
 //input: dynamic sc 
 //output: bool result
-export function isWebGPURenderValid(sc: any) {
+export function isWebGPURenderValid(sc: any) : boolean {
   return PackageFunctions.isWebGPURenderValid(sc);
 }
 //name: Scatter Plot

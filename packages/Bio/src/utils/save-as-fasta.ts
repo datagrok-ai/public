@@ -40,7 +40,7 @@ export function saveAsFastaUI(): void {
   const seqDefaultValue = seqGColList.length > 0 ? seqGColList[0] : null;
   const seqColInput = ui.input.column('Seq column', {
     table: dataFrame,
-    value: seqDefaultValue,
+    value: seqDefaultValue!,
     filter: (col) => {
       if (col && col.semType === DG.SEMTYPE.MACROMOLECULE) {
         const sh = _package.seqHelper.getSeqHandler(col);

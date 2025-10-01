@@ -1,5 +1,7 @@
-import { runTests, tests, TestContext , initAutoTests as initTests } from '@datagrok-libraries/utils/src/test';
 import * as DG from 'datagrok-api/dg';
+import {runTests, TestContext, tests, initAutoTests as initTests} from '@datagrok-libraries/utils/src/test';
+
+import './tests/revvity-tests';
 
 export let _package = new DG.Package();
 export { tests };
@@ -15,6 +17,6 @@ export async function test(category: string, test: string, testContext: TestCont
 }
 
 //name: initAutoTests
-export async function initAutoTests() { //@ts-ignore
+export async function initAutoTests() {
   await initTests(_package, _package.getModule('package-test.js'));
 }

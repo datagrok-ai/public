@@ -8,10 +8,6 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
-  export async function a(): Promise<void> {
-    return await grok.functions.call('ChatGPT:A', {});
-  }
-
   export async function init(): Promise<void> {
     return await grok.functions.call('ChatGPT:Init', {});
   }

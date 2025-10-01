@@ -117,8 +117,8 @@ export function ObjectCoolingSelector(params: any) {
 }
 
 //description: Test for optimization: multiple scalars output
-//input: double x1 { caption: param1; min: -3; max: 3; default: 1 }
-//input: double x2 { caption: param2; min: -3; max: 3; default: -1 }
+//input: double x1 = 1 { caption: param1; min: -3; max: 3 }
+//input: double x2 = -1 { caption: param2; min: -3; max: 3 }
 //input: dataframe y { caption: table }
 //input: bool bool 
 //output: int integer

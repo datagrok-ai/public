@@ -95,7 +95,7 @@ export type PipelineReturnConfiguration<P> = PipelineLinkConfigurationBase<P> & 
 };
 
 export type PipelineSelectorConfiguration<P> = PipelineLinkConfigurationBase<P> & {
-  type: 'selector',
+  type: 'nodemeta' | 'selector', // selector for API compat
   actions?: undefined;
   handler: SelectorHandler;
 };

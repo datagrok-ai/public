@@ -159,7 +159,7 @@ export async function getSdfString(
         if (col.semType === DG.SEMTYPE.MOLECULE)
           cellValue = otherMolCols[col.name][rowIdx] ?? '';
         else
-          cellValue = col.isNone(rowIdx) ? '' : col.get(rowIdx);
+          cellValue = col.isNone(rowIdx) ? '' : [DG.COLUMN_TYPE.QNUM, DG.COLUMN_TYPE.FLOAT].includes(col.type as DG.COLUMN_TYPE) ? DG.format(col.get(rowIdx), col.meta.format ?? undefined) : col.get(rowIdx);
         result += `>  <${col.name?.toLowerCase()?.trim() === 'molecule' ? table.columns.getUnusedName(`${col.name} (1)`) : col.name}>\n${cellValue}\n\n`;
       }
     }

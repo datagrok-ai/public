@@ -9,7 +9,7 @@ const FIT_SEM_TYPE = 'fit';
 const TAG_FIT_CHART_FORMAT = '.fitChartFormat';
 const TAG_FIT_CHART_FORMAT_3DX = '3dx';
 const RAW_PNG_SEM_TYPE = 'rawPng';
-const likelyPNGColNames = ['image', 'png', 'thumbnail', 'img'];
+const likelyPNGColNames = ['image', 'png', 'thumbnail', 'img', 'glyph', 'icon', 'picture', 'photo'];
 /// <reference path="../../globals.d.ts" />
 class CurvesPackageDetectors extends DG.Package {
   //tags: semTypeDetector

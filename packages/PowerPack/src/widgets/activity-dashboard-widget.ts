@@ -14,11 +14,27 @@ enum SpotlightTabNames {
 
 export class ActivityDashboardWidget extends DG.Widget {
   static RECENT_TIME_DAYS = 2;
-  static SPOTLIGHT_ITEMS_LENGTH: 10;
+  static SPOTLIGHT_ITEMS_LENGTH = 8;
 
   static sharedEntityRegex: RegExp = /<span>#{x\.([a-f0-9-]+)\.".*?"}<\/span>/g;
   keywordsToIgnore: string[] = ['"data"', '"data w/', '"fitted data"', '"reduced data"', '"reduceddata"', '"sizingparams"', '"primaryfilter', '"trimmed data"', '"input data from imported file"', '"dataanalysisdf', '"clean data"'/*, 'Ran <span>#{x.'*/];
-  tipsOfTheDay: string[] = ['Double-click a column header to sort the data.', 'Drag and drop a CSV or Excel file into Datagrok to load it as a table.', 'Hover over a column name to see its statistics in the tooltip.', 'Hold Shift and click multiple column headers to select several columns.', 'Use Ctrl+F in a table to search across all values.', 'Resize columns by dragging the separator in the header.', 'Use Layouts to save and restore your favorite viewer arrangements.', 'Use “Add New Column” to create calculated columns with formulas.', 'Right-click a column to see context actions available for it.', 'Try the “Correlation Plot” to quickly see relationships between numeric columns.'];
+  tipsOfTheDay: string[] = [
+    'Double-click a column header to sort the data.',
+    'Drag and drop a CSV or Excel file into Datagrok to load it as a table.',
+    'Hover over a column name to see its statistics in the tooltip.',
+    'Hold Shift and click multiple column headers to select several columns.',
+    'Use Ctrl+F in a table to search across all values.',
+    'Resize columns by dragging the separator in the header.',
+    'Use Layouts to save and restore your favorite viewer arrangements.',
+    'Use “Add New Column” to create calculated columns with formulas.',
+    'Right-click a column to see context actions available for it.',
+    'Try the “Correlation Plot” to quickly see relationships between numeric columns.',
+  ];
+  availableDemosOfTheDay: DG.Func[] = DG.Func.find({meta: {'demoPath': null}});
+  tutorialsOfTheDay: string[] = ['Grid Customization', 'Viewers', 'Scatter Plot', 'Embedded Viewers', 'Filters', 'Dashboards',
+    'Multivariate Analysis', 'Scripting', 'R-Groups Analysis', 'Activity Cliffs', 'Similarity and Diversity Search',
+    'Substructure Search and Filtering', 'Data Connectors', 'Data Aggregation', 'Calculated Columns', 'Differential equations',
+    'Sensitivity analysis', 'Parameter optimization'];
   cutoffDate: dayjs.Dayjs = dayjs().subtract(ActivityDashboardWidget.RECENT_TIME_DAYS, 'day');
 
   favoritesEvents: DG.LogEvent[] = [];
@@ -43,7 +59,7 @@ export class ActivityDashboardWidget extends DG.Widget {
   spacesRoot?: HTMLDivElement | null = null;
   recentItemsRoot?: HTMLDivElement | null = null;
   adminRoot?: HTMLDivElement | null = null;
-  subwidgetsAdded: Map<string, HTMLDivElement | null> = new Map<string, HTMLDivElement>();
+  subwidgetsAdded: Map<string, HTMLDivElement | null | undefined> = new Map<string, HTMLDivElement>();
   subwidgetsAmount: number = 0;
   reportAmount?: number = 0;
 
@@ -65,9 +81,124 @@ export class ActivityDashboardWidget extends DG.Widget {
     this.tabControl.onTabChanged.subscribe((_) => this.cleanLists());
     this.tabControl.root.style.height = '100%';
     this.tabControl.root.style.width = '100%';
-    (this.tabControl.root.querySelector('.ui-box.d4-tab-content') as HTMLElement)!.style.overflow = 'scroll';
+    this.tabControl.root.appendChild(await this.createRandomizedTipOfTheDay());
 
     this.root.appendChild(this.tabControl.root);
+  }
+
+  async getDemosOfTheDay(): Promise<string[]> {
+    const demoAppHierarchyFunc = DG.Func.find({name: 'getDemoAppHierarchy'})[0];
+    if (demoAppHierarchyFunc == null)
+      return [];
+    const demoAppHierarchy = await demoAppHierarchyFunc.apply();
+    if (demoAppHierarchy == null || demoAppHierarchy.length === 0)
+      return [];
+    const parsedHierarchy = JSON.parse(demoAppHierarchy);
+    const flattenDemoHierarchy = (node: any, path: string[] = []) => {
+      const currentPath = [...path, node.name];
+      if (!node.children || node.children.length === 0)
+        return [currentPath.join(' | ')]; // full path "Category | Subcategory | Demo"
+      return node.children.flatMap((child: any) => flattenDemoHierarchy(child, currentPath));
+    };
+    return parsedHierarchy.children.flatMap((child: any) => flattenDemoHierarchy(child));
+  }
+
+  async createRandomizedTipOfTheDay(): Promise<HTMLElement> {
+    const seededRandom = (seed: string) => {
+      let x = 0;
+      for (let i = 0; i < seed.length; i++) {
+        x += seed.charCodeAt(i);
+        x = (x * 9301 + 49297) % 233280;
+      }
+      return x / 233280;
+    };
+    const getISOWeek = (date: Date) => {
+      const tmpDate = new Date(date.getTime());
+      tmpDate.setHours(0, 0, 0, 0);
+      tmpDate.setDate(tmpDate.getDate() + 3 - ((tmpDate.getDay() + 6) % 7)); // Thursday of this week
+      const week1 = new Date(tmpDate.getFullYear(), 0, 4); // first Thursday of the year
+      return 1 + Math.round(((tmpDate.getTime() - week1.getTime()) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
+    };
+    const today = new Date();
+    const year = today.getFullYear();
+    const weekNumber = getISOWeek(today);
+    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const dayName = [0, 6].includes(today.getDay()) ? 'Friday' : dayNames[today.getDay() - 1];
+    const weekSeed = `${year}-W${weekNumber}-${dayName}`;
+
+    const dayTipTypeMap: Record<string, 'tip' | 'demo' | 'tutorial'> = {
+      Monday: 'demo',
+      Tuesday: 'tip',
+      Wednesday: 'tutorial',
+      Thursday: 'tip',
+      Friday: 'demo',
+      Saturday: 'demo', // repeat Friday
+      Sunday: 'demo', // repeat Friday
+    };
+    const tipType = dayTipTypeMap[dayName];
+    const todayItemListFromType = tipType === 'tip' ? this.tipsOfTheDay : tipType === 'tutorial' ? this.tutorialsOfTheDay : [];
+    const randomizedTips = [...this.tipsOfTheDay, ...this.availableDemosOfTheDay, ...this.tutorialsOfTheDay];
+    let randomTip: DG.Func | string;
+    if (tipType === 'demo') {
+      let demosOfTheDay: (string | DG.Func)[] = await this.getDemosOfTheDay();
+      if (demosOfTheDay.length === 0)
+        demosOfTheDay = this.availableDemosOfTheDay;
+      randomTip = demosOfTheDay.length > 0 ? demosOfTheDay[Math.floor(seededRandom(weekSeed) * demosOfTheDay.length)] : '';
+      if (!(randomTip instanceof DG.Func)) {
+        const demoFunc = DG.Func.find({meta: {'demoPath': randomTip}})[0];
+        randomTip = demoFunc ? demoFunc : this.availableDemosOfTheDay[Math.floor(seededRandom(weekSeed) * this.availableDemosOfTheDay.length)];
+      }
+    }
+    else
+      randomTip = todayItemListFromType.length > 0 ? todayItemListFromType[Math.floor(seededRandom(weekSeed) * todayItemListFromType.length)] : '';
+
+    const usedTipList: (DG.Func | string)[] = [randomTip];
+    let tipIdx = 0;
+    const demoApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'demoApp'})[0];
+    const tutorialsApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'trackOverview'})[0];
+
+    const createTip = (newRandomTip: DG.Func | string) => {
+      const tip = ui.divText('', 'power-pack-activity-widget-spotlight-tip');
+      const tipText = ui.span([`💡 ${newRandomTip instanceof DG.Func ? 'Demo' : this.tutorialsOfTheDay.includes(newRandomTip) ?
+        'Tutorial' : 'Tip'} of the day: ${newRandomTip instanceof DG.Func || this.tutorialsOfTheDay.includes(newRandomTip) ? '' : newRandomTip}`]);
+      tip.appendChild(tipText);
+      let link: HTMLAnchorElement;
+      if (newRandomTip instanceof DG.Func && demoApp) {
+        const path = newRandomTip.options[DG.FUNC_OPTIONS.DEMO_PATH] as string;
+        const pathArray = path.split('|').map((s) => s.trim());
+        const actualPath = pathArray.map((s) => s.replaceAll(' ', '-')).join('/');
+        link = ui.link(pathArray[pathArray.length - 1], async () => await demoApp.apply({path: `/${actualPath}`}), newRandomTip.description);
+        tip.appendChild(link);
+      }
+      else if (!(newRandomTip instanceof DG.Func) && this.tutorialsOfTheDay.includes(newRandomTip) && tutorialsApp) {
+        link = ui.link(newRandomTip, async () => await tutorialsApp.apply());
+        tip.appendChild(link);
+      }
+
+      let prevTipIcon: HTMLElement;
+      let nextTipIcon: HTMLElement;
+      const updateTip = (next: boolean) => {
+        next ? tipIdx++ : tipIdx--;
+        tipIdx === 0 ? prevTipIcon.classList.add('tip-prev-hidden') : prevTipIcon.classList.remove('tip-prev-hidden');
+        const newRandomTip = tipIdx < usedTipList.length ? usedTipList[tipIdx] : randomizedTips[Math.floor(Math.random() * randomizedTips.length)];
+        if (tipIdx >= usedTipList.length)
+          usedTipList.push(newRandomTip);
+        const newTip = createTip(newRandomTip);
+        tip.replaceWith(newTip);
+      };
+
+      prevTipIcon = ui.iconFA('chevron-left', () => updateTip(false), 'Previous tip');
+      prevTipIcon.classList.add('tip-prev');
+      if (tipIdx === 0)
+        prevTipIcon.classList.add('tip-prev-hidden');
+      nextTipIcon = ui.iconFA('chevron-right', () => updateTip(true), 'Next tip');
+      nextTipIcon.classList.add('tip-next');
+      tipText.prepend(prevTipIcon);
+      tip.appendChild(nextTipIcon);
+
+      return tip;
+    };
+    return createTip(randomTip);
   }
 
   async initSpotlightData(): Promise<void> {
@@ -96,18 +227,19 @@ export class ActivityDashboardWidget extends DG.Widget {
     });
     this.sharedNotifications = sharedCandidates;
 
-    const recentEntityIdCol = mostRecentEntitiesDf.col('id')!;
-    const lastEventTimeCol = mostRecentEntitiesDf.col('last_event_time')!;
-    const recentEntityIds = new Array(recentEntityIdCol.length);
-    for (let i = 0; i < recentEntityIdCol.length; i++)
-      recentEntityIds[i] = recentEntityIdCol.get(i);
+    const recentEntityIdCol = mostRecentEntitiesDf?.col('id')!;
+    const lastEventTimeCol = mostRecentEntitiesDf?.col('last_event_time')!;
+    const recentEntityIds = new Array(recentEntityIdCol?.length ?? 0);
+    if (recentEntityIdCol)
+      for (let i = 0; i < recentEntityIdCol.length; i++)
+        recentEntityIds[i] = recentEntityIdCol.get(i);
 
     const uniqueIds = Array.from(new Set<string>([...sharedUserIds, ...sharedEntityIds, ...recentEntityIds]));
     console.time('ActivityDashboardWidget.getEntitiesByIds');
     const allEntities = await grok.dapi.getEntities(uniqueIds);
     console.timeEnd('ActivityDashboardWidget.getEntitiesByIds');
 
-    const byIdMap = new Map(allEntities.map((e) => [e.id, e]));
+    const byIdMap = new Map(allEntities.filter((e) => e != null).map((e) => [e.id, e]));
 
     this.sharedUsers = [];
     this.sharedWithMe = [];
@@ -131,7 +263,7 @@ export class ActivityDashboardWidget extends DG.Widget {
         ent instanceof DG.UserReport || ent instanceof DG.TableInfo || (ent instanceof DG.Func && !(ent instanceof DG.Script ||
         ent instanceof DG.DataQuery || ent instanceof DG.DataJob)) || ent instanceof DG.ViewInfo || ent instanceof DG.DataConnection || ent == null ||
         //@ts-ignore
-        (ent instanceof DG.Project && (!ent.isDashboard || ent.isPackage)) || (ent.hasOwnProperty('npmScope') && ent['npmScope'] == 'datagrok'))) {
+        (ent instanceof DG.Project && (!ent.isDashboard || ent.isPackage)) || (ent.hasOwnProperty('npmScope') && ent['npmScope'] == 'datagrok')) && lastEventTimeCol && lastEventTimeCol.get(i)) {
         this.recentEntities.push(ent);
         this.recentEntityTimes.push(lastEventTimeCol.get(i));
       }
@@ -224,33 +356,33 @@ export class ActivityDashboardWidget extends DG.Widget {
     });
     this.actionRequiredRoot = actionRequired.length > 0 ? createSection(SpotlightTabNames.ACTION_REQUIRED, actionRequired, ui.iconFA('exclamation-circle')) : null;
     if (this.actionRequiredRoot)
-      root.appendChild(this.actionRequiredRoot);
+      root.appendChild(this.actionRequiredRoot!);
     this.subwidgetsAdded.set(SpotlightTabNames.ACTION_REQUIRED, this.actionRequiredRoot);
 
     this.sharedWithMeRoot = this.sharedWithMe.length > 0 ? createSection(SpotlightTabNames.SHARED_WITH_ME, this.sharedWithMe, ui.iconFA('inbox')) : null;
     if (this.sharedWithMeRoot)
-      root.appendChild(this.sharedWithMeRoot);
+      root.appendChild(this.sharedWithMeRoot!);
     this.subwidgetsAdded.set(SpotlightTabNames.SHARED_WITH_ME, this.sharedWithMeRoot);
 
     this.spacesRoot = null;
     if (this.spacesRoot)
-      root.appendChild(this.spacesRoot);
+      root.appendChild(this.spacesRoot!);
     // this.subwidgetsAdded.set(SpotlightTabNames.SPACES, this.spacesRoot);
 
     this.recentItemsRoot = this.recentEntities.length > 0 ? createSection(SpotlightTabNames.RECENT, this.recentEntities, ui.iconFA('history')) : null;
     if (this.recentItemsRoot)
-      root.appendChild(this.recentItemsRoot);
+      root.appendChild(this.recentItemsRoot!);
     this.subwidgetsAdded.set(SpotlightTabNames.RECENT, this.recentItemsRoot);
 
     const adminActivity = this.recentUserActivity.filter((l) => l.description.toLowerCase().includes('published version'));
     this.adminRoot = adminActivity.length > 0 ? createSection(SpotlightTabNames.ADMIN, adminActivity, ui.icons.settings(() => {})) : null;
     if (this.adminRoot)
-      root.appendChild(this.adminRoot);
+      root.appendChild(this.adminRoot!);
     this.subwidgetsAdded.set(SpotlightTabNames.ADMIN, this.adminRoot);
     // }
 
     if (root.children.length === 0)
-      root = this.getNewUserInfoColumns();
+      root = await this.getNewUserInfoColumns();
 
     const additionalFuncs = DG.Func.find({meta: {'isActivityWidget': 'true'}});
     for (const func of additionalFuncs) {
@@ -261,16 +393,13 @@ export class ActivityDashboardWidget extends DG.Widget {
         list], 'power-pack-activity-widget-spotlight-column');
       root.appendChild(listRoot);
     }
-    const randomTip = this.tipsOfTheDay[Math.floor(Math.random() * this.tipsOfTheDay.length)];
-    const tip = ui.divText(`💡 Tip of the day: ${randomTip}`, 'power-pack-activity-widget-spotlight-tip');
-    root.appendChild(tip);
 
     setTimeout(() => this.cleanLists(), 500);
     console.timeEnd('ActivityDashboardWidget.buildSpotlightTab');
     return root;
   }
 
-  getNewUserInfoColumns(): HTMLDivElement {
+  async getNewUserInfoColumns(): Promise<HTMLDivElement> {
     const root = ui.divH([], 'power-pack-activity-widget-spotlight-root');
     const tutorialsApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'trackOverview'})[0];
     const demoApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'demoApp'})[0];
@@ -278,47 +407,89 @@ export class ActivityDashboardWidget extends DG.Widget {
       return root;
     const appHandler = DG.ObjectHandler.forEntity(demoApp);
 
+    const createLinkWithIcon = (text: string, target: Function, appFunc: DG.Func) => {
+      const link = ui.link('', target);
+      const appElement = appHandler?.renderTooltip(DG.toDart(appFunc)).firstChild as HTMLElement;
+      if (appElement) {
+        const appElementLabel = appElement.querySelector('label');
+        if (appElementLabel)
+          appElementLabel.textContent = text;
+        link.appendChild(appElement);
+      }
+      return link;
+    };
+
+    const getDemoDashboardName = (demo: DG.Func) => {
+      const path = demo.options[DG.FUNC_OPTIONS.DEMO_PATH] as string;
+      const pathArray = path.split('|').map((s) => s.trim());
+      return pathArray[pathArray.length - 1];
+    };
+
+    const sortDemoDashboards = (items: DG.Func[], priorities: string[]): DG.Entity[] => {
+      const getPriority = (item: DG.Func) => {
+        for (let i = 0; i < priorities.length; i++)
+          if (getDemoDashboardName(item).toLowerCase().includes(priorities[i].toLowerCase()))
+            return i;
+        return priorities.length;
+      };
+      return items.map((item, index) => ({item, index})).sort((a, b) => {
+        const pa = getPriority(a.item);
+        const pb = getPriority(b.item);
+        if (pa !== pb)
+          return pa - pb;
+        return a.index - b.index;
+      }).map((obj) => obj.item);
+    };
+
     const gettingStartedList = ui.list([
-      ui.link('Data Access', async () => await tutorialsApp.apply()),
-      ui.link('Exploratory Data Analysis', async () => await tutorialsApp.apply()),
-      ui.link('Cheminformatics', async () => await tutorialsApp.apply()),
-      ui.link('Explore more Tutorials', async () => await tutorialsApp.apply()),
+      createLinkWithIcon('Data Access', async () => await tutorialsApp.apply(), tutorialsApp),
+      createLinkWithIcon('Data Transformation', async () => await tutorialsApp.apply(), tutorialsApp),
+      createLinkWithIcon('Exploratory Data Analysis', async () => await tutorialsApp.apply(), tutorialsApp),
+      createLinkWithIcon('Cheminformatics', async () => await tutorialsApp.apply(), tutorialsApp),
+      createLinkWithIcon('Explore more Tutorials', async () => await tutorialsApp.apply(), tutorialsApp),
     ]);
-    gettingStartedList.classList.add('power-pack-activity-widget-subwidget-list-content');
-    const gettingStartedRoot = ui.divV([ui.h3(ui.span([ui.span(['Getting Started'])]), 'power-pack-activity-widget-spotlight-column-header'),
-      gettingStartedList], 'power-pack-activity-widget-spotlight-column');
+    gettingStartedList.classList.add('power-pack-activity-widget-subwidget-list-content', 'power-pack-activity-widget-getting-started-subwidget-list-content');
+    const gettingStartedRoot = ui.divV([ui.h3(ui.span([ui.iconFA('rocket'), ui.span([' Interactive Tutorials'])]), 'power-pack-activity-widget-spotlight-column-header'),
+      gettingStartedList], 'power-pack-activity-widget-spotlight-getting-started-column');
 
     const tryDemoAppsList = ui.list([
-      ui.link('Scatter Plot', async () => await demoApp.apply({path: '/Visualization/General/Scatter-Plot'})),
-      ui.link('Files', async () => await demoApp.apply({path: '/Data-Access/Files'})),
-      ui.link('Matched Molecular Pairs', async () => await demoApp.apply({path: '/Cheminformatics/Matched-Molecular-Pairs'})),
-      ui.link('Curve Fitting', async () => await demoApp.apply({path: '/Curves/Curve-Fitting'})),
+      createLinkWithIcon('Scatter Plot', async () => await demoApp.apply({path: '/Visualization/General/Scatter-Plot'}), demoApp),
+      createLinkWithIcon('Files', async () => await demoApp.apply({path: '/Data-Access/Files'}), demoApp),
+      createLinkWithIcon('Matched Molecular Pairs', async () => await demoApp.apply({path: '/Cheminformatics/Matched-Molecular-Pairs'}), demoApp),
+      createLinkWithIcon('Trellis Plot', async () => await demoApp.apply({path: '/Visualization/Data-Separation/Trellis-Plot'}), demoApp),
+      createLinkWithIcon('Curve Fitting', async () => await demoApp.apply({path: '/Curves/Curve-Fitting'}), demoApp),
     ]);
-    tryDemoAppsList.classList.add('power-pack-activity-widget-subwidget-list-content');
-    const tryDemoAppsRoot = ui.divV([ui.h3(ui.span([ui.span(['Try Demo Apps'])]), 'power-pack-activity-widget-spotlight-column-header'),
-      tryDemoAppsList], 'power-pack-activity-widget-spotlight-column');
+    tryDemoAppsList.classList.add('power-pack-activity-widget-subwidget-list-content', 'power-pack-activity-widget-getting-started-subwidget-list-content');
+    const tryDemoAppsRoot = ui.divV([ui.h3(ui.span([ui.iconFA('play-circle'), ui.span([' Demo Apps'])]), 'power-pack-activity-widget-spotlight-column-header'),
+      tryDemoAppsList], 'power-pack-activity-widget-spotlight-getting-started-column');
 
-    let featuredApps: HTMLElement[] = [];
-    const hitDesignApp = DG.Func.find({tags: ['app'], package: 'HitTriage', name: 'hitTriageApp'})[0];
-    if (hitDesignApp)
-      featuredApps.push((appHandler?.renderTooltip(DG.toDart(hitDesignApp)).firstChild as HTMLElement) ?? null);
-    const admeticaApp = DG.Func.find({tags: ['app'], package: 'Admetica', name: 'admeticaApp'})[0];
-    if (admeticaApp)
-      featuredApps.push((appHandler?.renderTooltip(DG.toDart(admeticaApp)).firstChild as HTMLElement) ?? null);
-    const diffStudioApp = DG.Func.find({tags: ['app'], package: 'DiffStudio', name: 'runDiffStudio'})[0];
-    if (diffStudioApp)
-      featuredApps.push((appHandler?.renderTooltip(DG.toDart(diffStudioApp)).firstChild as HTMLElement) ?? null);
-    featuredApps = featuredApps.filter((app) => !!app);
+    const dashboardsToShow: HTMLElement[] = [];
+    let medChemDashboard: DG.Project | undefined | null = null;
+    const medChemDashboardId = grok.userSettings.getValue('activity-dashboard-storage', 'medChemDashboardId');
+    if (!medChemDashboardId) {
+      const demoProjects = await grok.dapi.projects.filter('#demo').list();
+      medChemDashboard = demoProjects.find((p) => p.name.toLowerCase().includes('medchem'));
+      if (medChemDashboard)
+        grok.userSettings.put('activity-dashboard-storage', {'medChemDashboardId': medChemDashboard.id});
+    }
+    else
+      medChemDashboard = await grok.dapi.projects.find(medChemDashboardId);
 
-    const featuredAppsList = ui.list([
-      ...featuredApps,
-      ui.link('Explore more Apps', () => setTimeout(() => grok.shell.addView(DG.View.createByType(DG.VIEW_TYPE.APPS)), 100)),
-    ]);
-    featuredAppsList.classList.add('power-pack-activity-widget-subwidget-list-content');
-    const featuredAppsRoot = ui.divV([ui.h3(ui.span([ui.span(['Featured Apps'])]), 'power-pack-activity-widget-spotlight-column-header'),
-      featuredAppsList], 'power-pack-activity-widget-spotlight-column');
+    const otherDemoDashboards = DG.Func.find({meta: {'isDemoDashboard': 'true'}});
+    const sortedDemoDashboards = sortDemoDashboards(otherDemoDashboards, ['peptide sar', 'sequence space', 'r-group analysis', 'molecule activity cliffs']);
+    const demoDashboards: DG.Entity[] = [...(medChemDashboard ? [medChemDashboard] : []), ...sortedDemoDashboards];
+    for (let i = 0; i < Math.min(5, demoDashboards.length); i++) {
+      const demo = demoDashboards[i] instanceof DG.Project ? demoDashboards[i] as DG.Project : demoDashboards[i] as DG.Func;
+      const link = demo instanceof DG.Project ? ui.link('', () => demo.open()) : ui.link('', async () => await demo.apply());
+      link.append(ui.iconSvg('project'), ui.span([demo instanceof DG.Project ? demo.friendlyName : getDemoDashboardName(demo)]));
+      dashboardsToShow.push(ui.span([link], 'd4-link-label'));
+    }
+    const dashboardList = ui.list(dashboardsToShow);
+    dashboardList.classList.add('power-pack-activity-widget-subwidget-list-content', 'power-pack-activity-widget-getting-started-subwidget-list-content');
+    const dashboardsRoot = ui.divV([ui.h3(ui.span([ui.iconFA('table'), ui.span([' Demo Datasets'])]), 'power-pack-activity-widget-spotlight-column-header'),
+      dashboardList], 'power-pack-activity-widget-spotlight-getting-started-column');
 
-    root.append(gettingStartedRoot, tryDemoAppsRoot, featuredAppsRoot);
+    root.append(gettingStartedRoot, tryDemoAppsRoot, dashboardsRoot);
     return root;
   }
 
@@ -346,7 +517,7 @@ export class ActivityDashboardWidget extends DG.Widget {
 
   async getFavoritesTab(): Promise<HTMLElement> {
     console.time('ActivityDashboardWidget.buildFavoritesTab');
-    const root = ui.div([]);
+    const root = ui.div([], 'power-pack-activity-widget-favorites-tab');
     const favorites = grok.shell.favorites;
     if (favorites.length === 0) {
       root.appendChild(ui.divText('No favorites found.'));
@@ -373,7 +544,7 @@ export class ActivityDashboardWidget extends DG.Widget {
 
   async getNotificationsTab(): Promise<HTMLElement> {
     console.time('ActivityDashboardWidget.buildNotificationsTab');
-    const root = ui.div([]);
+    const root = ui.div([], 'power-pack-activity-widget-notifications-tab');
     if (this.recentNotifications.length === 0) {
       root.appendChild(ui.divText('No recent notifications.'));
       return root;
@@ -407,7 +578,7 @@ export class ActivityDashboardWidget extends DG.Widget {
       .filter((a) => a.eventTime?.isAfter(this.cutoffDate))) as DG.LogEvent[])
       .sort((a, b) => b.eventTime?.diff(a.eventTime) ?? 0);
 
-    const root = ui.div([]);
+    const root = ui.div([], 'power-pack-activity-widget-activity-tab');
     if (this.recentUserActivity.length === 0) {
       root.appendChild(ui.divText('No recent user activity.'));
       return root;

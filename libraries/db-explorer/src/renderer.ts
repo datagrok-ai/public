@@ -303,21 +303,51 @@ export class DBExplorerRenderer {
   }
 
   renderAssociations(acc: DG.Accordion, schema: SchemaInfo, curTable: string, curDf: DG.DataFrame) {
-    const attachOpenInWorkspaceMenu = (tableName: string, colName: string, value: any, pane: DG.AccordionPane) => {
-      const menu = DG.Menu.popup();
-      menu.item(`Add all associated ${tableName} entries to workspace`, async () => {
-        const pi = DG.TaskBarProgressIndicator.create('Opening all associated entries');
+
+    const addAllAssociated = async (tableName: string, colName: string, value: any) => {
+      const pi = DG.TaskBarProgressIndicator.create('Opening all associated entries');
+      try {
+
         const assocDf = await this.getTable(tableName, colName, value, this.entryPointOptions.joinOptions);
         if (assocDf) {
+          if (assocDf.rowCount === 0) {
+            grok.shell.info(`No associated ${tableName} entries found`);
+            return;
+          }
           assocDf.name = `${tableName}`;
           grok.shell.addTableView(assocDf);
         }
+      } catch (e) {
+        console.error(e);
+        grok.shell.error(`Failed to open associated ${tableName} entries`);
+      } finally {
         pi.close();
+      }
+    }
+
+    const addIconToPane = (pane: DG.AccordionPane, tableName: string, colName: string, value: any) => {
+      const icon = ui.icons.add(() => {}, `Add all associated ${tableName} entries to workspace`);
+      // need separate event to avoid click on accordion pane
+      icon.addEventListener('click', (e) => {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+        addAllAssociated(tableName, colName, value);
+      });
+      pane.root.getElementsByClassName('d4-accordion-pane-header')?.[0]?.appendChild(icon);
+    }
+
+    const attachOpenInWorkspaceMenu = (tableName: string, colName: string, value: any, pane: DG.AccordionPane) => {
+      const menu = DG.Menu.popup();
+      
+
+      menu.item(`Add all associated ${tableName} entries to workspace`, async () => {
+        addAllAssociated(tableName, colName, value);
       });
       pane.root.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         setTimeout(() => menu.show());
       });
+      addIconToPane(pane, tableName, colName, value);
     };
 
     const refTable = schema.referencedBy[curTable];
@@ -343,8 +373,10 @@ export class DBExplorerRenderer {
               if (refInfos.length === 1) {
                 return ui.wait(async () => {
                   const res = await this.renderMultiRowTable(refInfos[0].refTable, refInfos[0].refColumn, val, this.entryPointOptions.joinOptions);
-                  if (res.rowCount > MAX_MULTIROW_VALUES)
+                  if (res.rowCount > MAX_MULTIROW_VALUES) {
                     singleColPane.name = `${singleColPane.name} (${MAX_MULTIROW_VALUES} / ${res.rowCount})`;
+                    addIconToPane(singleColPane, refInfos[0].refTable, refInfos[0].refColumn, val);
+                  }
                   return res.root;
                 });
               }
@@ -353,8 +385,10 @@ export class DBExplorerRenderer {
                 const colPane = multiTableAcc.addPane(ref.refColumn, () => {
                   return ui.wait(async () => {
                     const res = await this.renderMultiRowTable(ref.refTable, ref.refColumn, val, this.entryPointOptions.joinOptions);
-                    if (res.rowCount > MAX_MULTIROW_VALUES)
+                    if (res.rowCount > MAX_MULTIROW_VALUES) {
                       colPane.name = `${singleColPane.name} (${MAX_MULTIROW_VALUES} / ${res.rowCount})`;
+                      addIconToPane(colPane, ref.refTable, ref.refColumn, val);
+                    }
                     return res.root;
                   });
                 });

@@ -18,7 +18,6 @@ async function postprocess() {
     .pivot('build_index')
     .avg('duration')
     .avg('build_date')
-    .first('flaking')
     .add(DG.STR_AGG.CONCAT_UNIQUE, 'status')
     .add(DG.STR_AGG.CONCAT_UNIQUE, 'instance')
     .add(DG.STR_AGG.CONCAT_UNIQUE, 'build_commit')
@@ -38,7 +37,7 @@ async function postprocess() {
     return res;
   }
   await pivot.columns.addNewCalculated('stable', generateCommonValueFormula("And", ' concat unique(status)}', '== "passed"'), 'bool');
-  await pivot.columns.addNewCalculated('failing', generateCommonValueFormula("Or", ' concat unique(status)}', '== "failed"'), 'bool');
+  await pivot.columns.addNewCalculated('failing', `if (IsEmpty(\${1 concat unique(status)}), ${generateCommonValueFormula("Or", ' concat unique(status)}', '== "failed"')}, \${1 concat unique(status)} == "failed")`, 'bool');
   await pivot.columns.addNewCalculated('flaking', generateCommonValueFormula("Or", ' first(flaking)}', '== true'), 'bool');
   let schemas = await grok.dapi.stickyMeta.getSchemas();
   let schema = schemas.filter((schema) => schema.name == 'Autotests').at(0);
@@ -71,8 +70,21 @@ async function postprocess() {
   
   
   let ticketsStatusCol = await pivot.columns.addNewCalculated(`${builds[0]} tickets status`, `UsageAnalysis:getTicketsVerdict(\${${builds[0]} concat unique(result)})`, DG.TYPE.STRING);
+  let stickyMetaStatusCol = await pivot.columns.addNewCalculated(`ignore status`, `UsageAnalysis:getTicketsVerdict(\${ignoreReason})`, DG.TYPE.STRING);
   if (ticketsStatusCol)
     ticketsStatusCol.colors.setCategorical({
+      'Fixed': '#2ca02c',
+      'Partially Fixed (Lowest)': '#ffe51c',
+      'Partially Fixed (Low)': '#ffa500',
+      'Partially Fixed (Medium)': '#ff5a00',
+      'Partially Fixed (Blocker)': '#7b2d24',
+      'Wasn\'t Fixed (Lowest)': '#ffe51c',
+      'Wasn\'t Fixed (Low)': '#ffa500',
+      'Wasn\'t Fixed (Medium)': '#ff5a00',
+      'Wasn\'t Fixed (Blocker)': '#7b2d24',
+    })
+  if (stickyMetaStatusCol)
+    stickyMetaStatusCol.colors.setCategorical({
       'Fixed': '#2ca02c',
       'Partially Fixed (Lowest)': '#ffe51c',
       'Partially Fixed (Low)': '#ffa500',
@@ -92,8 +104,8 @@ async function postprocess() {
      build_date : (getFirstOfCol(pivot.columns.byName(buildName + ' avg(build_date)'))),
      instance : (getFirstOfCol(pivot.columns.byName(buildName + ' concat unique(instance)')))}
     let colResult = pivot.columns.byName(i + ' concat unique(result)');
-    if (colResult !== null)
-      colResult.semType = 'stackTrace';
+    // if (colResult !== null)
+    //   colResult.semType = 'stackTrace';
     addTagsToColumn(pivot.getCol(buildName + ' avg(duration)'), data);
     addTagsToColumn(pivot.getCol(buildName + ' concat unique(status)'), data);
     replaceColumn(buildName, ' avg(duration)', i, ' duration');

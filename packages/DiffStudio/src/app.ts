@@ -30,7 +30,8 @@ import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools';
 import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN, getCategoryWidget,
   getReducedTable, closeWindows, getRecentModelsTable, getMyModelFiles, getEquationsFromFile,
   getMaxGraphsInFacetGridRow, removeTitle,
-  noModels} from './utils';
+  noModels,
+  removeTitleBar} from './utils';
 
 import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected, getNullOutput} from './error-utils';
 
@@ -393,8 +394,7 @@ export class DiffStudio {
         this.uiOpts.inputsTabDockRatio,
       );
 
-      if (node.container.dart.elementTitle)
-        node.container.dart.elementTitle.hidden = true;
+      removeTitleBar(node);
 
       this.runSolving();
     }, UI_TIME.PREVIEW_RUN_SOLVING);
@@ -541,8 +541,7 @@ export class DiffStudio {
         this.uiOpts.inputsTabDockRatio,
       );
 
-      if (node.container.dart.elementTitle)
-        node.container.dart.elementTitle.hidden = true;
+      removeTitleBar(node);
     };
 
     if (toDockTabCtrl && !isFilePreview) {
@@ -1013,6 +1012,33 @@ export class DiffStudio {
     }
   }; // saveToModelCatalog
 
+  /** Set multi-axis line chart with the solution */
+  private setSolutionViewer(): void {
+    this.solutionViewer = DG.Viewer.lineChart(this.solutionTable,
+      getLineChartOptions(this.solutionTable.columns.names()));
+
+    this.viewerDockNode = this.solverView.dockManager.dock(
+      this.solutionViewer,
+      DG.DOCK_TYPE.TOP,
+      this.solverView.dockManager.findNode(this.solverView.grid.root),
+      TITLE.MULTI_AXIS,
+      this.uiOpts.graphsDockRatio,
+    );
+
+    removeTitle(this.viewerDockNode);
+  } // setSolutionViewer
+
+  /** Check that the main line chart in the valid position */
+  private isSolutionViewerPositionValid(): boolean {
+    if (this.solutionViewer == null)
+      return false;
+
+    if (this.viewerDockNode == null)
+      return false;
+
+    return (this.viewerDockNode.parent != null);
+  }
+
   /** Solve IVP */
   private async solve(ivp: IVP, inputsPath: string): Promise<void> {
     if (this.toPreventSolving)
@@ -1074,20 +1100,9 @@ export class DiffStudio {
       }
 
       // Update the main graph
-      if (!this.solutionViewer) {
-        this.solutionViewer = DG.Viewer.lineChart(this.solutionTable,
-          getLineChartOptions(this.solutionTable.columns.names()));
-
-        this.viewerDockNode = grok.shell.dockManager.dock(
-          this.solutionViewer,
-          DG.DOCK_TYPE.TOP,
-          this.solverView.dockManager.findNode(this.solverView.grid.root),
-          TITLE.MULTI_AXIS,
-          this.uiOpts.graphsDockRatio,
-        );
-
-        removeTitle(this.viewerDockNode);
-      } else {
+      if (!this.solutionViewer)
+        this.setSolutionViewer();
+      else {
         this.solutionViewer.dataFrame = this.solutionTable;
 
         if (ivp.updates) {
@@ -1108,14 +1123,20 @@ export class DiffStudio {
           this.facetGridDiv = this.getFacetPlot();
 
           setTimeout( () => {
-            this.facetGridNode = grok.shell.dockManager.dock(
-              this.facetGridDiv,
-              DG.DOCK_TYPE.FILL,
-              this.viewerDockNode,
-              TITLE.FACET,
-            );
+            try {
+              if (!this.isSolutionViewerPositionValid()) {
+                this.solutionViewer.close();
+                this.viewerDockNode.container.destroy();
+                this.setSolutionViewer();
+              }
 
-            removeTitle(this.facetGridNode);
+              this.facetGridNode = this.solverView.dockManager.dock(
+                this.facetGridDiv,
+                DG.DOCK_TYPE.FILL,
+                this.viewerDockNode,
+                TITLE.FACET,
+              );
+            } catch (err) {}
           }, UI_TIME.FACET_DOCKING);
         } else
           this.facetPlots.forEach((plot) => plot.dataFrame = this.solutionTable);
@@ -1232,7 +1253,7 @@ export class DiffStudio {
 
     if (this.solutionViewer && this.viewerDockNode) {
       this.removeFacetGrid();
-      grok.shell.dockManager.close(this.viewerDockNode);
+      this.solverView.dockManager.close(this.viewerDockNode);
       this.solutionViewer = null;
       this.solverView.path = PATH.EMPTY;
     }
@@ -1365,6 +1386,7 @@ export class DiffStudio {
       //@ts-ignore
       options = getOptions(key, ivp.arg[key], CONTROL_EXPR.ARG);
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
+      input.caption = options.friendlyName ?? options.name;
 
       //@ts-ignore
       input.onChanged.subscribe(async (value) => {
@@ -1383,6 +1405,7 @@ export class DiffStudio {
     ivp.inits.forEach((val, key) => {
       options = getOptions(key, val, CONTROL_EXPR.INITS);
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
+      input.caption = options.friendlyName ?? options.name;
 
       //@ts-ignore
       input.onChanged.subscribe(async (value) => {
@@ -1401,6 +1424,7 @@ export class DiffStudio {
       ivp.params.forEach((val, key) => {
         options = getOptions(key, val, CONTROL_EXPR.PARAMS);
         const input = ui.input.forProperty(DG.Property.fromOptions(options));
+        input.caption = options.friendlyName ?? options.name;
 
         //@ts-ignore
         input.onChanged.subscribe(async (value) => {
@@ -1421,6 +1445,7 @@ export class DiffStudio {
       options.inputType = INPUT_TYPE.INT; // since it's an integer
       options.type = DG.TYPE.INT; // since it's an integer
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
+      input.caption = options.friendlyName ?? options.name;
 
       //@ts-ignore
       input.onChanged.subscribe(async (value) => {
@@ -2195,7 +2220,14 @@ export class DiffStudio {
   /** Remove FacetGrid visualization */
   private removeFacetGrid() {
     if (this.facetGridNode && this.facetGridDiv) {
-      grok.shell.dockManager.close(this.facetGridNode);
+      if (this.facetGridNode.parent)
+        this.solverView.dockManager.close(this.facetGridNode);
+      else {
+        this.facetGridNode.container.float();
+        this.facetGridDiv.remove();
+        this.facetGridNode.container.destroy();
+      }
+
       this.facetGridDiv = null;
     }
   }

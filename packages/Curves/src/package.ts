@@ -83,13 +83,15 @@ export class PackageFunctions {
     @grok.decorators.param({options: {nullable: true}})experimentIDColumn?: string, @grok.decorators.param({options: {nullable: true}})qualifierColumn?: string,
     @grok.decorators.param({options: {nullable: true}})additionalColumns?: string[],
     @grok.decorators.param({options: {nullable: true}})wellLevelJoinCol?: string,
-    @grok.decorators.param({options: {nullable: true}})parentLevelJoinCol?: string
+    @grok.decorators.param({options: {nullable: true}})parentLevelJoinCol?: string,
+    @grok.decorators.param({options: {nullable: true, optional: true}})wellLevelAdditionalColumns?: string[]
   ): Promise<DG.DataFrame> {
     const pt = parentTable;
     const joinInfo = pt && wellLevelJoinCol && parentLevelJoinCol && df.col(wellLevelJoinCol) && pt.col(parentLevelJoinCol) ? {
       wellLevelCol: df.col(wellLevelJoinCol)!,
       parentLevelCol: pt.col(parentLevelJoinCol)!,
     } : undefined;
+    const wellLevelAdditionalColumnsAct = (wellLevelAdditionalColumns ?? []).map((c) => df.col(c)).filter((c) => c != null) as DG.Column[];
     // this needs to work with datasync so we use wide format
     return convertDataToCurves(df, concentrationCol, readoutCol, batchIDCol, assayCol, runIDCol, compoundIDCol, targetEntityCol, excludeOutliersCol, {
       table: pt,
@@ -100,7 +102,7 @@ export class PackageFunctions {
       qualifierColumn: qualifierColumn ? pt?.col(qualifierColumn) ?? undefined : undefined,
       additionalColumns: (additionalColumns ?? []).map((c) => pt?.col(c)).filter((c) => c != null) as DG.Column[],
     },
-    joinInfo
+    joinInfo, wellLevelAdditionalColumnsAct
     );
   }
 

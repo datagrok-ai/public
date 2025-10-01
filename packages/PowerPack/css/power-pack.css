@@ -69,8 +69,17 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     max-height: 220px;
 }
 
+.power-pack-activity-widget-getting-started-subwidget-list-content {
+    margin-left: -7px;
+}
+
 .power-pack-widget-host:has(.power-pack-activity-widget-content) {
     grid-column: 1 / -1;
+}
+
+.power-pack-activity-widget-content .d4-tab-host.d4-tab-vertical .d4-tab-content {
+    overflow: scroll;
+    margin-bottom: 20px;
 }
 
 .power-pack-activity-widget-content .d4-tab-host.d4-tab-vertical .d4-tab-content .d4-flex-col > .d4-entity-markup-row {
@@ -102,6 +111,19 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
 .power-pack-activity-widget-spotlight-column {
     margin-right: 13px;
     flex: 1 1 0;
+}
+
+.power-pack-activity-widget-spotlight-getting-started-column {
+    margin-right: 13px;
+    flex: 1 1 0;
+}
+
+.power-pack-activity-widget-spotlight-getting-started-column .d4-entity-markup-row {
+    margin-bottom: 7px;
+}
+
+.power-pack-activity-widget-spotlight-getting-started-column .grok-context-arrow-down {
+    margin-left: 0;
 }
 
 .power-pack-activity-widget-spotlight-column-action-required {
@@ -137,7 +159,48 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
 
 .power-pack-activity-widget-spotlight-tip {
     flex-basis: 100%;
-    text-align: center;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 20px;
+}
+
+.power-pack-activity-widget-spotlight-tip .tip-prev {
+    margin-right: 5px;
+}
+
+.power-pack-activity-widget-spotlight-tip .tip-prev.tip-prev-hidden {
+    display: none;
+    visibility: hidden;
+}
+
+.power-pack-activity-widget-spotlight-tip .tip-next {
+    margin-left: 5px;
+}
+
+.power-pack-activity-widget-spotlight-tip .tip-prev,
+.power-pack-activity-widget-spotlight-tip .tip-next {
+    opacity: 0;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.power-pack-activity-widget-spotlight-tip:hover .tip-prev,
+.power-pack-activity-widget-spotlight-tip:hover .tip-next {
+    opacity: 1;
+}
+
+.power-pack-activity-widget-favorites-tab {
+    margin-top: 7px;
+    margin-left: 18px;
+}
+
+.power-pack-activity-widget-notifications-tab {
+    margin-top: 2px;
+}
+
+.power-pack-activity-widget-activity-tab {
+    margin-top: 4px;
 }
 
 .power-pack-widget-header {

@@ -24,7 +24,7 @@ export namespace funcs {
     return await grok.functions.call('OligoBatchCalculator:MolecularMass', { sequence, amount, outputUnits });
   }
 
-  export async function molecularWeight(sequence: string , additionalWeightsObj: any ): Promise<number> {
+  export async function molecularWeight(sequence: string , additionalWeightsObj: string ): Promise<number> {
     return await grok.functions.call('OligoBatchCalculator:MolecularWeight', { sequence, additionalWeightsObj });
   }
 

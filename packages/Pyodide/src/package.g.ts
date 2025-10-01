@@ -1,20 +1,17 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//name: initPyodide
 //tags: init
-export async function initPyodide() {
-  return PackageFunctions.initPyodide();
+export async function initPyodide() : Promise<void> {
+  await PackageFunctions.initPyodide();
 }
 
-//name: makeVectorCode
 //input: script script 
 //output: string result
-export function makeVectorCode(script: any) {
+export function makeVectorCode(script: any) : string {
   return PackageFunctions.makeVectorCode(script);
 }
 
-//name: pyodideLanguageHandler
 //tags: scriptHandler
 //input: funccall scriptCall 
 //meta.scriptHandler.language: pyodide
@@ -24,6 +21,6 @@ export function makeVectorCode(script: any) {
 //meta.scriptHandler.codeEditorMode: python
 //meta.scriptHandler.vectorizationFunction: Pyodide:makeVectorCode
 //meta.icon: files/pyodide.png
-export async function pyodideLanguageHandler(scriptCall: DG.FuncCall) {
-  return PackageFunctions.pyodideLanguageHandler(scriptCall);
+export async function pyodideLanguageHandler(scriptCall: DG.FuncCall) : Promise<void> {
+  await PackageFunctions.pyodideLanguageHandler(scriptCall);
 }
