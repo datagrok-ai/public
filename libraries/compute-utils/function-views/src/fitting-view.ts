@@ -1387,10 +1387,25 @@ export class FittingView {
               this.randInputs.settings,
             );
           } catch (err) { // run fitting in the main thread if in-webworker run failed
-            optResult = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings, this.samplesCount, this.randInputs.settings);
+            optResult = await performNelderMeadOptimization(
+              costFunc,
+              minVals,
+              maxVals,
+              this.nelderMeadSettings,
+              this.samplesCount,
+              this.randInputs.settings,
+            );
           }
-        } else
-          optResult = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings, this.samplesCount, this.randInputs.settings);
+        } else {
+          optResult = await performNelderMeadOptimization(
+            costFunc,
+            minVals,
+            maxVals,
+            this.nelderMeadSettings,
+            this.samplesCount,
+            this.randInputs.settings,
+          );
+        }
       } else
         throw new Error(`Not implemented the '${this.method}' method`);
 
