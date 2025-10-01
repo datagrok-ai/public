@@ -438,7 +438,7 @@ Datagrok provides robust capabilities for programmatic integration:
 
 Follow the [step-by-step guide](../../develop/how-to/packages/create-package.md) for creating your own package. If your package is based on a non-standard template, you may need to configure it differently for [debugging](../../develop/advanced/debugging.md). See also a [debug demo](https://youtu.be/PDcXLMsu6UM) for details.
 
-##### <b>Q: How does the DevOps process work?</b>
+##### <b>Q: How does Datagrok handle package development and deployment?</b>
 
 The process includes package deployment, dependency management, and versioning.  
 See [Developer guide](../../develop/develop.md) for details
@@ -454,7 +454,7 @@ Datagrok provides detailed documentation for all functions and APIs to help deve
 
 ##### <b>Q: Does Datagrok provide support and training for users?</b>
 
-Datagrok offers extensive [help documentation](https://datagrok.ai/help/datagrok/), [videos](https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6Ji-iOBYg), [community forum](https://community.datagrok.ai/), [self-guided learning](../resources/self-guided-learning.md), [tutorials](https://public.datagrok.ai/?browse=apps), and [on-platform demos](https://public.datagrok.ai/apps/Tutorials/Demo?browse=apps) to help scientists gain familiarity and mastery of the platform.
+Datagrok offers extensive [help](https://datagrok.ai/help/datagrok/), [videos](https://www.youtube.com/channel/UCXPHEjOd4gyZ6m6Ji-iOBYg), [community forum](https://community.datagrok.ai/), [self-guided learning](../resources/self-guided-learning.md), [tutorials](https://public.datagrok.ai/?browse=apps), and [on-platform demos](https://public.datagrok.ai/apps/Tutorials/Demo?browse=apps) to help scientists gain familiarity and mastery of the platform.
 
 ### Scalability and performance
 
@@ -509,7 +509,7 @@ Datagrok delivers a high-performance, interactive frontend for handling, visuali
 - 2D/3D structure rendering and interaction.  
 See [Cheminformatics](../../datagrok/solutions/domains/chem/chem.md) for details
 - Interactivity features – live data masking, filter by selection, synchronized updates across viewers, multiple input methods including 2D sketching.  
-See [Cheminformatics](../../datagrok/solutions/domains/chem/chem.md) for details
+See [Common actions](../../datagrok/navigation/views/table-view.md#common-actions), [Structure search](../../datagrok/solutions/domains/chem/chem.md#structure-search), and [Sketching and editing](../solutions/domains/bio/bio.md#sketching-and-editing) for details
 - API integration and extensibility. See [JavaScript API](../../develop/packages/js-api.md) for details
 - Frontend scripting scalability. See [Compute](../../compute/compute.md) for details
 
