@@ -26,12 +26,14 @@ export interface IPlateAnalysis {
     outputs: IAnalysisProperty[];
 
     getRequiredFields(): AnalysisRequiredFields[];
+
     createView(
         plate: Plate,
         plateWidget: PlateWidget,
         currentMappings: Map<string, string>,
-        onMap: (target: string, source: string) => void,
-        onUndo: (target: string) => void
+      onMap: (target: string, source: string) => void,
+        onUndo: (target: string) => void,
+    onRerender?: () => void
     ): HTMLElement;
 }
 
@@ -46,24 +48,23 @@ export abstract class AbstractPlateAnalysis implements IPlateAnalysis {
     protected _outputProperties = new Map<string, PlateProperty>();
 
     async registerProperties(): Promise<void> {
+      console.log(`Registering properties for analysis: "${this.friendlyName}"`);
       for (const param of this.parameters)
         this._parameterProperties.set(param.name, await getOrCreateProperty(param.name, param.type));
       for (const output of this.outputs)
         this._outputProperties.set(output.name, await getOrCreateProperty(output.name, output.type));
     }
 
+
     abstract getRequiredFields(): AnalysisRequiredFields[];
-    abstract createView(plate: Plate, plateWidget: PlateWidget, currentMappings: Map<string, string>, onMap: (t: string, s: string) => void, onUndo: (t: string) => void): HTMLElement;
+    abstract createView(plate: Plate, plateWidget: PlateWidget, currentMappings: Map<string, string>, onMap: (t: string, s: string) => void, onUndo: (t: string) => void, onRerender?: () => void): HTMLElement;
+
     protected abstract _getGroups(resultsDf: DG.DataFrame): { groupColumn: string, groups: string[] };
 
-    /** * An optional helper that subclasses can call within their `createView` if they
-     * only need a standard mapping-to-results UI.
-     */
     protected _createStandardMappingView(
       plate: Plate,
       currentMappings: Map<string, string>,
       onMap: (t: string, s: string) => void, onUndo: (t: string) => void,
-      // ✅ FIX: This signature is now synchronous to match BaseAnalysisView's expectation.
       createResultsView: (p: Plate, m: Map<string, string>) => HTMLElement | null
     ): HTMLElement {
       return new BaseAnalysisView(plate, {
@@ -84,7 +85,6 @@ export abstract class AbstractPlateAnalysis implements IPlateAnalysis {
         const {groupColumn, groups} = this._getGroups(resultsDf);
         const runId = await createAnalysisRun(plate.id, this.name, groups);
 
-        // Save parameters
         for (const [name, value] of Object.entries(params)) {
           const prop = this._parameterProperties.get(name);
           if (prop) {
@@ -97,7 +97,6 @@ export abstract class AbstractPlateAnalysis implements IPlateAnalysis {
           }
         }
 
-        // Save results per group
         for (const row of resultsDf.rows) {
           const groupKey = row.get(groupColumn);
           if (!groupKey) continue;

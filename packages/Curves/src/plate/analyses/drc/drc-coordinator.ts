@@ -9,10 +9,6 @@ import {IFitPoint, FitMarkerType} from '@datagrok-libraries/statistics/src/fit/f
 import {Plate} from '../../plate';
 import {PlateWidget} from '../../plate-widget';
 
-/**
- * Handles the complex UI interactions between the main PlateWidget
- * and the DRC results grid, ensuring they stay in sync.
- */
 export class DrcAnalysisCoordinator {
   private subs: Subscription[] = [];
   private prevSelection: {

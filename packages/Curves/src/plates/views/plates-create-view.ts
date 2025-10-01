@@ -251,6 +251,8 @@ export function createPlatesView(): DG.View {
           // This logic is the same as in the initial `createTabContent` factory.
           const activeIndex = stateManager.currentState?.activePlateIdx ?? -1;
           const plateToAnalyze = stateManager.activePlate;
+          const handleRerender = () => stateManager.notifyPlateDataChanged();
+
 
           let newContent: HTMLElement;
           if (!plateToAnalyze || activeIndex < 0) {
@@ -260,7 +262,7 @@ export function createPlatesView(): DG.View {
             const handleMap = (target: string, source: string) => stateManager.remapScopedProperty(activeIndex, analysis.name, target, source);
             const handleUndo = (target: string) => stateManager.undoScopedMapping(activeIndex, analysis.name, target);
 
-            newContent = analysis.createView(plateToAnalyze.plate, plateWidget, currentMappings, handleMap, handleUndo);
+            newContent = analysis.createView(plateToAnalyze.plate, plateWidget, currentMappings, handleMap, handleUndo, handleRerender);
           }
 
           // 3. Replace the old content with the newly generated content.

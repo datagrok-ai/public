@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {Plate} from '../../plate';
 import {PlateWidget} from '../../plate-widget';
-import {AbstractPlateAnalysis, IAnalysisProperty} from '../plate-analysis';
+import {AbstractPlateAnalysis, IAnalysisProperty} from '../base-analysis';
 import {AnalysisRequiredFields} from '../../../plates/views/components/analysis-mapping/analysis-mapping-panel';
 import {FIT_FUNCTION_4PL_REGRESSION} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {DrcAnalysisCoordinator} from './drc-coordinator';
@@ -78,9 +78,6 @@ export class DrcAnalysis extends AbstractPlateAnalysis {
 
     curveCol.init((i) => {
       const currentSeries = seriesVals[i][1];
-      // --- START OF FIX ---
-      // Create a clean object with only the data needed for serialization.
-      // This avoids the circular reference from the original `currentSeries` object.
       const seriesData = {
         points: currentSeries.points,
         name: currentSeries.name,
@@ -89,13 +86,12 @@ export class DrcAnalysis extends AbstractPlateAnalysis {
         droplines: ['IC50'],
         showPoints: 'points',
       };
-      // --- END OF FIX ---
 
       return JSON.stringify({
         chartOptions: {
           xAxisName: concentrationColName, yAxisName: finalValueCol, logX: true, title: `${seriesVals[i][0]}`, ...minMax,
         },
-        series: [seriesData], // Use the new, clean seriesData object here
+        series: [seriesData],
       });
     });
 
@@ -115,11 +111,9 @@ export class DrcAnalysis extends AbstractPlateAnalysis {
     return {resultsDf, seriesVals, finalValueCol};
   }
 
-  createView(plate: Plate, plateWidget: PlateWidget, currentMappings: Map<string, string>, onMap: (t: string, s: string) => void, onUndo: (t: string) => void): HTMLElement {
+  createView(plate: Plate, plateWidget: PlateWidget, currentMappings: Map<string, string>, onMap: (t: string, s: string) => void, onUndo: (t: string) => void, onRerender?:()=>void): HTMLElement {
     return this._createStandardMappingView(plate, currentMappings, onMap, onUndo,
       (mappedPlate, mappedMappings) => {
-        // This inner function is the `createResultsView` callback.
-        // It will only be executed by BaseAnalysisView when all required fields are mapped.
         this.coordinator?.destroy();
         this.plateSubscription?.unsubscribe();
 

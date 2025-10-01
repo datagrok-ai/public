@@ -87,7 +87,12 @@ export class Plate {
 
   private outlierChangeSubject = new Subject<{row: number, col: number, isOutlier: boolean, source: string}>();
   public get onOutlierChanged() { return this.outlierChangeSubject.asObservable(); }
+  private dataChangeSubject = new Subject<void>();
+  public get onDataChanged() { return this.dataChangeSubject.asObservable(); }
 
+  public announceDataChange(): void {
+    this.dataChangeSubject.next();
+  }
 
   private changeLog: Array<{
     timestamp: Date;

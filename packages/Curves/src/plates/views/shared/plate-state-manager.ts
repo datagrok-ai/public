@@ -139,7 +139,6 @@ export class PlateStateManager {
     currentState.activePlateIdx = newActiveIndex;
     this.templateStates.set(this._currentTemplate.id, currentState);
 
-    // Fire a 'plate-selected' event to be explicit about the new active plate.
     this.stateChange$.next({
       type: 'plate-selected',
       plateIndex: newActiveIndex,
