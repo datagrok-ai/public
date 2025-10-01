@@ -12,7 +12,7 @@ import { MOLTRACK_ENTITY_LEVEL, MOLTRACK_IS_STATIC_FIELD, SAVED_SEARCHES_NODE, S
 import { createSearchNode, createSearchView, getSavedSearches, handleSearchURL, loadSearchFields, molTrackSearchFieldsArr } from './views/search';
 import { registerAllData, registerAssayData, updateAllMolTrackSchemas } from './utils/registration-utils';
 import { batchView, compoundView, createPath, initRegisterView } from './utils/view-utils';
-import { flattened } from './utils/utils';
+import { flattened, getCorporateCompoundIdByExactStructure } from './utils/utils';
 import { molTrackPropPanel } from './widgets/moltrack-property-panel';
 
 export const _package = new DG.Package();
@@ -269,14 +269,15 @@ export async function retrieveEntity(scope: string, flatten: boolean = true): Pr
   return DG.DataFrame.fromObjects(processedRes);
 }
 
-// //name: Databases | MolTrack
-// //input: string mol {semType: Molecule}
-// //tags: panel
-// //output: widget res
-// export async function getMoltrackPropPanelByStructure(mol: string): Promise<DG.Widget> {
-//   const compound = await getCompound(mol);
-//   return molTrackPropPanel(compound);
-// }
+//name: Databases | MolTrack
+//input: string mol {semType: Molecule}
+//tags: panel
+//output: widget res
+export async function getMoltrackPropPanelByStructure(mol: string): Promise<DG.Widget> {
+  const corporateCompoundId = await getCorporateCompoundIdByExactStructure(mol) ?? '';
+  const retrievedCompound = await getCompoundByCorporateId(corporateCompoundId);
+  return molTrackPropPanel(retrievedCompound, mol);
+}
 
 //name: Databases | MolTrack
 //input: string id {semType: Grok ID}

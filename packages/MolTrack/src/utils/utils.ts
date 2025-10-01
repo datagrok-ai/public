@@ -1,9 +1,27 @@
 import * as DG from 'datagrok-api/dg';
 import { PROPERTIES } from './constants';
 import { MolTrackProperty } from './types';
+import { MolTrackDockerService } from '../services/moltrack-docker-service';
 
-export async function checkCompoundExists(smiles: string): Promise<boolean> {
-  return false;
+export async function getCorporateCompoundIdByExactStructure(structure: string): Promise<string | null> {
+  try {
+    const query = {
+        'level': 'compounds',
+        'output': ['compounds.canonical_smiles', 'compounds.details.corporate_compound_id'],
+        'filter': {
+          'field': 'compounds.structure',
+          'operator': 'IS SIMILAR',
+          'value': structure,
+          'threshold': 1
+        },
+        'output_format': 'json',
+    };
+    const { data } = await MolTrackDockerService.search(query, 'compounds');
+    return data?.[0]?.['compounds.details.corporate_compound_id'] ?? null;
+  } catch (e) {
+    console.error('Exact structure search failed:', e);
+    return null;
+  }
 }
 
 export function flattened(item: any, props: DG.Property[]) {
