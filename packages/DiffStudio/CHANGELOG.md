@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.4.7 (2025-10-01)
+
+Improved the open model menu
+
 ## 1.4.6 (2025-09-29)
 
 Fixed webpack

@@ -245,8 +245,13 @@ export function closeWindows() {
 
 /** Get dataframe with recent models */
 export async function getRecentModelsTable(): Promise<DG.DataFrame> {
-  const folder = `${grok.shell.user.project.name}:Home/`;
-  const dfs = await grok.dapi.files.readBinaryDataFrames(`${folder}${PATH.RECENT}`);
+  const path = `${grok.shell.user.project.name}:Home/${PATH.RECENT}`;
+  const exist = await grok.dapi.files.exists(path);
+
+  if (!exist)
+    return DG.DataFrame.create(0);
+
+  const dfs = await grok.dapi.files.readBinaryDataFrames(path);
   return dfs[0];
 }
 
