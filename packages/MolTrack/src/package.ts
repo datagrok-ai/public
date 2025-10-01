@@ -83,26 +83,39 @@ export async function molTrackApp(path: string): Promise<DG.ViewBase> {
     description: '- Chemical compound registration system\n' +
       '- Analyze assay data\n' +
       '- Find contextual information on molecules.\n',
+    appTitle: 'MolTrack',
+    appSubTitle: 'Track, analyze, and manage chemical data',
+    bottomLine: true,
   });
 
   const getStatisticsWidget = async () => {
-    const statsMap: Record<string, number> = {};
-    // TODO: Implement retrieval of assay results
-    for (const entity of Object.values(Scope)) {
-      try {
-        const df = await grok.functions.call('MolTrack:retrieveEntity', { scope: entity });
-        statsMap[entity] = df ? df.rowCount : 0;
-      } catch (e) {
-        grok.shell.error(`Failed to retrieve ${entity}: ${e}`);
-      }
-    }
+    const rows: any[][] = await Promise.all(
+      Object.values(Scope).map(async (entity) => {
+        try {
+          const df = await grok.functions.call('MolTrack:retrieveEntity', { scope: entity, flatten: true });
+          const count = df?.rowCount ?? 0;
 
-    return ui.tableFromMap(statsMap);
+          return [
+            entity,
+            ui.link(count.toString(), () => grok.shell.addTableView(df)),
+          ];
+        } catch (e) {
+          grok.shell.error(`Failed to retrieve ${entity}: ${e}`);
+          return [entity, 'Error'];
+        }
+      }),
+    );
+
+    return ui.table(rows, (row) => row);
   };
 
   const viewRoot = ui.divV([appHeader]);
-  if (!isSearchPath)
-    viewRoot.append(ui.wait(async () => await getStatisticsWidget()));
+  if (!isSearchPath) {
+    viewRoot.append(ui.wait(async () => {
+      const statsWidget = await getStatisticsWidget();
+      return ui.div(statsWidget);
+    }));
+  }
 
   return DG.View.fromRoot(viewRoot);
 }
