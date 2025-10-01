@@ -1,15 +1,19 @@
+/* eslint-disable max-len */
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import { u2 } from '@datagrok-libraries/utils/src/u2';
-import { MolTrackDockerService } from './utils/moltrack-docker-service';
-import { RegistrationView } from './utils/registration-tab';
-import { createPath, registerAllData, registerAssayData, updateAllMolTrackSchemas } from './utils/utils';
-import { EntityBaseView } from './utils/registration-entity-base';
-import { MOLTRACK_ENTITY_LEVEL, MOLTRACK_IS_STATIC_FIELD, PROPERTIES, SAVED_SEARCHES_NODE, Scope, SEARCH_NODE } from './utils/constants';
-import { createSearchNode, createSearchView, getSavedSearches, handleSearchURL, loadSearchFields, molTrackSearchFieldsArr } from './utils/search';
-import { MolTrackProperty } from './utils/types';
+
+import { MolTrackDockerService } from './services/moltrack-docker-service';
+import { RegistrationView } from './views/registration-tab';
+import { MOLTRACK_ENTITY_LEVEL, MOLTRACK_IS_STATIC_FIELD, SAVED_SEARCHES_NODE, Scope, SEARCH_NODE } from './utils/constants';
+import { createSearchNode, createSearchView, getSavedSearches, handleSearchURL, loadSearchFields, molTrackSearchFieldsArr } from './views/search';
+import { registerAllData, registerAssayData, updateAllMolTrackSchemas } from './utils/registration-utils';
+import { batchView, compoundView, createPath, initRegisterView } from './utils/view-utils';
+import { flattened } from './utils/utils';
+import { molTrackPropPanel } from './widgets/moltrack-property-panel';
 
 export const _package = new DG.Package();
 
@@ -103,114 +107,6 @@ export async function molTrackApp(path: string): Promise<DG.ViewBase> {
   return DG.View.fromRoot(viewRoot);
 }
 
-async function buildRegistrationView({
-  title,
-  smiles,
-  pathQueryParam,
-  propsList,
-  batchSection,
-  path,
-}: {
-  title: string;
-  smiles: string;
-  pathQueryParam: string;
-  propsList: any[];
-  batchSection: boolean,
-  path: string,
-}) {
-  const registrationView = new EntityBaseView(false);
-  registrationView.initialSmiles = smiles;
-  registrationView.singleRetrieved = true;
-  registrationView.title = title;
-  registrationView.isBatchSectionExpanded = batchSection;
-  await registrationView.buildUIMethod();
-
-  registrationView.formBackingObject = {};
-  for (const prop of propsList) {
-    const value = prop.value_string ?? prop.value_num ?? prop.value_datetime ?? prop.value_uuid;
-    if (value !== null && value !== undefined)
-      registrationView.formBackingObject[prop.name] = value;
-  }
-
-  for (const input of registrationView.inputs) {
-    const propName = input.property.name;
-    if (registrationView.formBackingObject.hasOwnProperty(propName))
-      input.value = registrationView.formBackingObject[propName];
-  }
-
-  registrationView.show();
-  registrationView.view.path = `${createPath(path)}?${pathQueryParam}`;
-
-  return registrationView.view;
-}
-
-async function compoundView(corporateCompoundId: string) {
-  const df = await retrieveEntity(Scope.COMPOUNDS);
-  const idx = findEntityIndex(df!, 'properties', corporateCompoundId);
-  const smiles = df!.get('canonical_smiles', idx);
-  const propertiesJson = df!.get('properties', idx);
-  const properties: any[] = JSON.parse(propertiesJson ?? '[]');
-
-  return buildRegistrationView({
-    title: `Compound: ${corporateCompoundId}`,
-    smiles,
-    pathQueryParam: `corporate_compound_id=${encodeURIComponent(corporateCompoundId)}`,
-    propsList: properties,
-    batchSection: false,
-    path: 'Compound',
-  });
-}
-
-async function batchView(corporateBatchId: string) {
-  const df = await retrieveEntity(Scope.BATCHES);
-  const idx = findEntityIndex(df!, 'properties', corporateBatchId);
-
-  const compoundId = df!.get('compound_id', idx);
-  const compoundInfo = await getCompoundById(compoundId);
-  const smiles = compoundInfo?.get('canonical_smiles', 0);
-
-  const batchProps: any[] = JSON.parse(df!.get('properties', idx) ?? '[]');
-  const compoundProps: any[] = JSON.parse(compoundInfo?.get('properties', 0) ?? '[]');
-  const combinedPropsMap = new Map<string, any>();
-  for (const prop of [...compoundProps, ...batchProps])
-    combinedPropsMap.set(prop.name, prop);
-
-  return buildRegistrationView({
-    title: `Batch: ${corporateBatchId}`,
-    smiles,
-    pathQueryParam: `corporate_batch_id=${encodeURIComponent(corporateBatchId)}`,
-    propsList: Array.from(combinedPropsMap.values()),
-    batchSection: true,
-    path: 'Batch',
-  });
-}
-
-function findEntityIndex(df: DG.DataFrame, colName: string, searchValue: string): number {
-  for (let i = 0; i < df!.rowCount; i++) {
-    if (df!.get(colName, i)?.includes(searchValue))
-      return i;
-  }
-  throw new Error(`Entity with value '${searchValue}' not found in column '${colName}'`);
-}
-
-function initRegisterView(entity: 'Compound' | 'Batch', setPath: boolean = true) {
-  const isBatch = entity === 'Batch';
-  const view = new EntityBaseView(!isBatch);
-
-  if (isBatch) {
-    view.title = `Register a new ${entity.toLowerCase()}`;
-    view.isBatchSectionExpanded = true;
-    view.path = entity;
-    view.buildUIMethod();
-  }
-
-  view.view.name = `Register a ${entity.toLowerCase()}`;
-  if (setPath) view.view.path = createPath(entity);
-
-  view.show();
-  return view.view;
-}
-
 //input: dynamic treeNode
 //input: view browseView
 export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseView: any) {
@@ -246,14 +142,6 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
           .subscribe(() => createSearchView(savedSearch, scope, JSON.parse(savedSearches[savedSearch]), true));
       });
     });
-}
-
-//name: checkMolTrackHealth
-//description: Checks whether the MolTrack service is running and responsive
-//output: string result
-export async function checkMolTrackHealth(): Promise<string> {
-  await MolTrackDockerService.init();
-  return await MolTrackDockerService.checkHealth();
 }
 
 //name: fetchCompoundProperties
@@ -294,13 +182,29 @@ export async function fetchDirectSchema(): Promise<string> {
   return JSON.stringify(res);
 }
 
-//name: updateMolTrackProperties
-//input: string jsonPayload
-//description: Registers compound properties in the MolTrack service based on the given JSON data
-//output: string result
-export async function updateMolTrackSchema(jsonPayload: string): Promise<string> {
+//name: getCompoundByCorporateId
+//input: string corporateValue
+//output: object compound
+export async function getCompoundByCorporateId(corporateValue: string) {
   await MolTrackDockerService.init();
-  return await MolTrackDockerService.updateSchema(jsonPayload);
+  return await MolTrackDockerService.getCompoundByCorporateId(corporateValue);
+}
+
+//name: getBatchByCorporateId
+//input: string corporateValue
+//output: object batch
+export async function getBatchByCorporateId(corporateValue: string) {
+  await MolTrackDockerService.init();
+  return await MolTrackDockerService.getBatchByCorporateId(corporateValue);
+}
+
+// name: registerMolTrackProperties
+// input: string jsonPayload
+// description: Registers compound properties in the MolTrack service using the provided JSON payload
+// output: string result
+export async function registerMolTrackProperties(jsonPayload: string): Promise<string> {
+  await MolTrackDockerService.init();
+  return MolTrackDockerService.updateSchema(jsonPayload);
 }
 
 //name: registerAssays
@@ -327,23 +231,6 @@ export async function registerBulk(
   return await MolTrackDockerService.registerBulk(csvFile, scope, mapping, errorHandling);
 }
 
-//name: searchTest
-//input: string operator
-export async function searchTest(operator: string) {
-  await MolTrackDockerService.init();
-  const query = {
-    'level': 'compounds',
-    'output': ['compounds.canonical_smiles'],
-    'filter': {
-      'field': 'compounds.structure',
-      'operator': operator,
-      'value': 'c1ccccc1',
-    },
-    'output_format': 'json',
-  };
-  return await MolTrackDockerService.search(query, 'compounds');
-}
-
 //name: search
 //input: string query
 //input: string entityEndpoint
@@ -356,62 +243,27 @@ export async function search(query: string, entityEndpoint: string) {
 //name: retrieveEntity
 //input: string scope
 //output: dataframe result
-export async function retrieveEntity(scope: string): Promise<DG.DataFrame | undefined> {
+export async function retrieveEntity(scope: string, flatten: boolean = true): Promise<DG.DataFrame | undefined> {
   await MolTrackDockerService.init();
   const resultJson = await MolTrackDockerService.retrieveEntity(scope);
   await loadSearchFields();
   const dynamicProps = molTrackSearchFieldsArr ?
     molTrackSearchFieldsArr.filter((it) => it.options[MOLTRACK_ENTITY_LEVEL] === scope && !it.options[MOLTRACK_IS_STATIC_FIELD]) : [];
-  const flattenedRes = resultJson.map((item: any) => flattened(item, dynamicProps));
-  return DG.DataFrame.fromObjects(flattenedRes);
+
+  const processedRes = flatten ?
+    resultJson.map((item: any) => flattened(item, dynamicProps)) :
+    resultJson;
+  return DG.DataFrame.fromObjects(processedRes);
 }
 
-export async function getCompoundById(id: number): Promise<DG.DataFrame | undefined> {
-  await MolTrackDockerService.init();
-  const resultJson = await MolTrackDockerService.getCompoundById(id);
-  await loadSearchFields();
-  const dynamicProps = molTrackSearchFieldsArr ?
-    molTrackSearchFieldsArr.filter((it) => it.options[MOLTRACK_ENTITY_LEVEL] === Scope.COMPOUNDS && !it.options[MOLTRACK_IS_STATIC_FIELD]) : [];
-  const flattenedRes = [resultJson].map((item) => flattened(item, dynamicProps));
-  return DG.DataFrame.fromObjects(flattenedRes);
-}
-
-export async function checkCompoundExists(smiles: string): Promise<boolean> {
-  await MolTrackDockerService.init();
-  return await MolTrackDockerService.checkCompoundExists(smiles);
-}
-
-function flattened(item: any, props: DG.Property[]) {
-  const row: any = {};
-  for (const [key, value] of Object.entries(item)) {
-    if (typeof value === 'object' && value !== null) {
-      //handle properties object
-      if (Array.isArray(value) && key === PROPERTIES) {
-        props.forEach((prop: DG.Property) => {
-          const valIdx = value.findIndex((it) => it.name.toLowerCase() === prop.name.toLocaleLowerCase());
-          const val = valIdx === -1 ? null :
-            (value[valIdx] as MolTrackProperty).value_num ??
-          (value[valIdx] as MolTrackProperty).value_datetime ??
-          (value[valIdx] as MolTrackProperty).value_uuid ??
-          (value[valIdx] as MolTrackProperty).value_string;
-          row[prop.friendlyName ?? prop.name] = val;
-        });
-      } else
-        row[key] = JSON.stringify(value);
-    } else
-      row[key] = value;
-  }
-  return row;
-}
-
-//name: Databases | MolTrack
-//input: string mol {semType: Molecule}
-//tags: panel
-//output: widget res
-export async function getMoltrackPropPanelByStructure(mol: string): Promise<DG.Widget> {
-  const compound = await getCompound(mol);
-  return molTrackPropPanel(compound);
-}
+// //name: Databases | MolTrack
+// //input: string mol {semType: Molecule}
+// //tags: panel
+// //output: widget res
+// export async function getMoltrackPropPanelByStructure(mol: string): Promise<DG.Widget> {
+//   const compound = await getCompound(mol);
+//   return molTrackPropPanel(compound);
+// }
 
 //name: Databases | MolTrack
 //input: string id {semType: Grok ID}
@@ -421,106 +273,4 @@ export async function getMoltrackPropPanelById(id: string): Promise<DG.Widget> {
   await MolTrackDockerService.init();
   const compound = await MolTrackDockerService.getCompoundByCorporateId(id);
   return molTrackPropPanel(compound);
-}
-
-async function molTrackPropPanel(compound: any): Promise<DG.Widget> {
-  const mol = compound['canonical_smiles'];
-  if (compound.detail) {
-    const registerButton = ui.bigButton('Register', async () => {
-      const registrationView = new EntityBaseView(false);
-      registrationView.initialSmiles = mol;
-      await registrationView.buildUIMethod();
-      registrationView.show();
-    });
-    registerButton.style.width = '80px';
-    const div = ui.divV([ui.divText('No matches'), registerButton]);
-    div.style.gap = '10px';
-    return DG.Widget.fromRoot(div);
-  }
-
-  const acc = ui.accordion();
-
-  const createTableFromObject = (obj: Record<string, unknown>, excludeKeys: string[] = []) => {
-    const map: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(obj))
-      if (!excludeKeys.includes(key)) map[key] = value;
-
-    return ui.tableFromMap(map);
-  };
-
-  const extractPropValue = (prop: Record<string, any>) =>
-    prop.value_uuid ?? prop.value_num ?? prop.value_string ?? prop.value_qualifier ?? prop.value_datetime ?? null;
-
-  const createPropertiesTable = (properties: any[]) => {
-    if (!properties || !properties.length) return ui.divText('No properties');
-    const map: Record<string, unknown> = {};
-    for (const prop of properties) map[prop.name] = extractPropValue(prop);
-    return ui.tableFromMap(map);
-  };
-
-  const createNestedAccordion = (items: any[], idKey: string) => {
-    if (!items || !items.length) return ui.divText('No items');
-    const nested = ui.accordion();
-    for (const item of items)
-      nested.addPane(item[idKey], () => createTableFromObject(item));
-
-    return nested.root;
-  };
-
-  const panes = [
-    {
-      title: 'Batches',
-      content: () => createNestedAccordion(safeParse(compound.batches || '[]'), 'id'),
-    },
-    {
-      title: 'Properties',
-      content: () => createPropertiesTable(safeParse(compound.properties || '[]')),
-    },
-  ];
-
-  // --- Create the corporate_compound_id link first ---
-  const properties = safeParse(compound.properties || '[]');
-  const corpProp = properties.find((p: any) => p.name === 'corporate_compound_id');
-  const value = extractPropValue(corpProp);
-  const corpLink = ui.link(value.toString() ?? '', async () => {
-    await compoundView(value.toString());
-  });
-
-  const compoundContent = ui.div(createTableFromObject(compound, ['properties', 'batches']));
-
-  for (const pane of panes) acc.addPane(pane.title, pane.content);
-
-  return DG.Widget.fromRoot(ui.divV([corpLink, compoundContent, acc.root]));
-}
-
-export async function getCompound(mol: string) {
-  await MolTrackDockerService.init();
-  const query = {
-    'level': 'compounds',
-    'output': ['compounds.id'],
-    'filter': {
-      'field': 'compounds.canonical_smiles',
-      'operator': 'CONTAINS',
-      'value': mol,
-      'threshold': 1,
-    },
-    'output_format': 'json',
-  };
-
-  // const searchResult = await MolTrackDockerService.search(query, 'compounds');
-  // const id = searchResult.data[0]["compounds.id"];
-  const compoundInfo = await getCompoundById(1);
-  const compound = compoundInfo?.toJson()[0];
-  return compound;
-}
-
-function safeParse(value: any, fallback = []) {
-  if (typeof value === 'string') {
-    try {
-      return JSON.parse(value);
-    } catch {
-      return fallback; // return empty array or object if parsing fails
-    }
-  }
-  return value || fallback;
 }

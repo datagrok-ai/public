@@ -1,61 +1,41 @@
 import * as DG from 'datagrok-api/dg';
+import { PROPERTIES } from './constants';
+import { MolTrackProperty } from './types';
 
-import { registerAssays, registerBulk, updateMolTrackSchema } from '../package';
-import { GITHUB_BASE_URL, Scope } from './constants';
-
-export async function fetchSchema(fileName: string): Promise<any> {
-  const url = `${GITHUB_BASE_URL}${fileName}`;
-
-  const response = await fetch(url);
-  if (!response.ok)
-    throw new Error(`Failed to fetch schema for ${fileName}: ${response.statusText}`);
-  return await response.json();
+export async function checkCompoundExists(smiles: string): Promise<boolean> {
+  return false;
 }
 
-export async function fetchCsv(scope: Scope): Promise<string> {
-  const url = `${GITHUB_BASE_URL}${scope}.csv`;
-  const res = await fetch(url);
-  if (!res.ok)
-    throw new Error(`Failed to fetch CSV for ${scope}: ${res.statusText}`);
-  return await res.text();
+export function flattened(item: any, props: DG.Property[]) {
+  const row: any = {};
+  for (const [key, value] of Object.entries(item)) {
+    if (typeof value === 'object' && value !== null) {
+      //handle properties object
+      if (Array.isArray(value) && key === PROPERTIES) {
+        props.forEach((prop: DG.Property) => {
+          const valIdx = value.findIndex((it) => it.name.toLowerCase() === prop.name.toLocaleLowerCase());
+          const val = valIdx === -1 ? null :
+            (value[valIdx] as MolTrackProperty).value_num ??
+          (value[valIdx] as MolTrackProperty).value_datetime ??
+          (value[valIdx] as MolTrackProperty).value_uuid ??
+          (value[valIdx] as MolTrackProperty).value_string;
+          row[prop.friendlyName ?? prop.name] = val;
+        });
+      } else
+        row[key] = JSON.stringify(value);
+    } else
+      row[key] = value;
+  }
+  return row;
 }
 
-export async function updateAllMolTrackSchemas(): Promise<void> {
-  for (const scope of Object.values(Scope)) {
+export function safeParse(value: any, fallback = []) {
+  if (typeof value === 'string') {
     try {
-      const schemaPayload = await fetchSchema(`${scope}_schema.json`);
-      await updateMolTrackSchema(JSON.stringify(schemaPayload));
-    } catch (err) {
-      console.error(`Error updating ${scope}:`, err);
+      return JSON.parse(value);
+    } catch {
+      return fallback;
     }
   }
+  return value || fallback;
 }
-
-export async function registerAllData(): Promise<void> {
-  for (const scope of Object.values(Scope)) {
-    if (scope !== Scope.ASSAYS) {
-      const csvText = await fetchCsv(scope);
-      const fileInfo = DG.FileInfo.fromString(`${scope}.csv`, csvText);
-      await registerBulk(fileInfo, scope, '', 'reject_row');
-    }
-  }
-}
-
-export async function registerAssayData(): Promise<void> {
-  const assayPayload = await fetchSchema(`${Scope.ASSAYS}.json`);
-  await registerAssays(JSON.stringify(assayPayload));
-}
-
-export function createPath(viewName: string) {
-  let path = `${MOLTRACK_APP_PATH}/`;
-  path += encodeURIComponent(viewName);
-  return path;
-}
-
-export function createPathFromArr(pathComponents: string[]) {
-  let path = `${MOLTRACK_APP_PATH}`;
-  path += `/${pathComponents.map((it) => encodeURIComponent(it)).join('/')}`;
-  return path;
-}
-
-const MOLTRACK_APP_PATH: string = 'apps/MolTrack';

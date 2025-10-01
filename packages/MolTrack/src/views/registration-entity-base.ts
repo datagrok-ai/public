@@ -2,10 +2,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { ErrorHandling, MolTrackProp, Scope } from './constants';
-import { checkCompoundExists, fetchBatchProperties, fetchCompoundProperties, registerBulk } from '../package';
+
+import { ErrorHandling, MolTrackProp, Scope } from '../utils/constants';
+import { checkCompoundExists } from '../utils/utils';
+import { createPath } from '../utils/view-utils';
+import { fetchBatchProperties, fetchCompoundProperties, registerBulk } from '../package';
+
 import RandExp from 'randexp';
-import { createPath } from './utils';
 
 let openedView: DG.ViewBase | null = null;
 

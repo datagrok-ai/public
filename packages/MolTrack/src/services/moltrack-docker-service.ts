@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { ErrorHandling, ResultOutput, scopeToUrl } from './constants';
-import { MolTrackProperty, MolTrackSearchQuery, MolTrackSearchResponse} from './types';
+import { ErrorHandling, ResultOutput, scopeToUrl } from '../utils/constants';
+import { MolTrackProperty, MolTrackSearchQuery, MolTrackSearchResponse} from '../utils/types';
 
 export class MolTrackDockerService {
   private static _container: DG.DockerContainer;
@@ -89,32 +89,34 @@ export class MolTrackDockerService {
     return response.json();
   }
 
-  static async getCompoundById(id: number): Promise<any> {
+  static async fetchByProperty(
+    endpoint: 'compounds' | 'batches',
+    propertyName: string,
+    propertyValue: string,
+  ): Promise<any> {
+    const params = new URLSearchParams({
+      property_name: propertyName,
+      property_value: propertyValue,
+    });
+
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(
       this.container.id,
-      `/v1/compounds/id/${id}`,
+      `/v1/${endpoint}?${params.toString()}`,
       { method: 'GET' },
     );
+
     return response.json();
   }
 
+  // Specific helpers
   static async getCompoundByCorporateId(corporateCompoundId: string): Promise<any> {
-    const response = await grok.dapi.docker.dockerContainers.fetchProxy(
-      this.container.id,
-      `/v1/compounds/${corporateCompoundId}`,
-      { method: 'GET' },
-    );
-    return response.json();
+    return this.fetchByProperty('compounds', 'corporate_compound_id', corporateCompoundId);
   }
 
   static async getBatchByCorporateId(corporateBatchId: string): Promise<any> {
-    const response = await grok.dapi.docker.dockerContainers.fetchProxy(
-      this.container.id,
-      `/v1/batches/${corporateBatchId}`,
-      { method: 'GET' },
-    );
-    return response.json();
+    return this.fetchByProperty('batches', 'corporate_batch_id', corporateBatchId);
   }
+
 
   static async getAutoMapping(columns: string[], entityType: string): Promise<any> {
     const payload = {
@@ -133,23 +135,6 @@ export class MolTrackDockerService {
     );
 
     return response.json();
-  }
-
-
-  static async checkCompoundExists(smiles: string): Promise<boolean> {
-    const response = await grok.dapi.docker.dockerContainers.fetchProxy(
-      this.container.id,
-      `/v1/compounds/check-duplicate?smiles=${smiles}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      },
-    );
-    if (response.ok) {
-      const data = await response.json();
-      return data['exists'];
-    }
-    return false;
   }
 
   static async registerBulk(

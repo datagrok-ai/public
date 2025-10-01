@@ -11,7 +11,7 @@ import {
   ConditionRegistry,
   MoleculeConditionEditor,
 } from '@datagrok-libraries/utils/src/query-builder/query-builder';
-import { MolTrackDockerService } from './moltrack-docker-service';
+import { MolTrackDockerService } from '../services/moltrack-docker-service';
 import {
   MolTrackSearchQuery,
   MolTrackFilter,
@@ -22,7 +22,7 @@ import {
   MolTrackSearchAggregation,
   MolTrackSearch,
   MolTrackSearchHistoryItem,
-} from './types';
+} from '../utils/types';
 import {
   EXCLUDE_SEARCH_FIELDS,
   EXCLUDE_SEARCH_OUTPUT_FIELDS,
@@ -40,13 +40,13 @@ import {
   CORPORATE_COMPOUND_ID_COL_NAME,
   SEARCH_NODE,
   SAVED_SEARCHES_NODE,
-} from './constants';
+} from '../utils/constants';
 import { funcs } from '../package-api';
 import dayjs, { Dayjs } from 'dayjs';
 import { _package } from '../package';
 import { Subject } from 'rxjs';
-import { createPathFromArr } from './utils';
 import { awaitCheck } from '@datagrok-libraries/utils/src/test';
+import { createPathFromArr } from '../utils/view-utils';
 
 export type MolTrackSearchFields = {
   direct?: DG.Property[],

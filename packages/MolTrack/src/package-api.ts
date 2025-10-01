@@ -51,13 +51,6 @@ export namespace funcs {
   }
 
   /**
-  Checks whether the MolTrack service is running and responsive
-  */
-  export async function checkMolTrackHealth(): Promise<string> {
-    return await grok.functions.call('MolTrack:CheckMolTrackHealth', {});
-  }
-
-  /**
   Retrieves all properties defined for the 'compound' scope
   */
   export async function fetchCompoundProperties(): Promise<string> {
@@ -85,11 +78,19 @@ export namespace funcs {
     return await grok.functions.call('MolTrack:FetchDirectSchema', {});
   }
 
+  export async function getCompoundByCorporateId(corporateValue: string ): Promise<any> {
+    return await grok.functions.call('MolTrack:GetCompoundByCorporateId', { corporateValue });
+  }
+
+  export async function getBatchByCorporateId(corporateValue: string ): Promise<any> {
+    return await grok.functions.call('MolTrack:GetBatchByCorporateId', { corporateValue });
+  }
+
   /**
-  Registers compound properties in the MolTrack service based on the given JSON data
+  Registers compound properties in the MolTrack service using the provided JSON payload
   */
-  export async function updateMolTrackSchema(jsonPayload: string ): Promise<string> {
-    return await grok.functions.call('MolTrack:UpdateMolTrackSchema', { jsonPayload });
+  export async function registerMolTrackProperties(jsonPayload: string ): Promise<string> {
+    return await grok.functions.call('MolTrack:RegisterMolTrackProperties', { jsonPayload });
   }
 
   export async function registerAssays(assayPayload: string ): Promise<string> {
@@ -100,20 +101,12 @@ export namespace funcs {
     return await grok.functions.call('MolTrack:RegisterBulk', { csvFile, scope, mapping, errorHandling });
   }
 
-  export async function searchTest(operator: string ): Promise<void> {
-    return await grok.functions.call('MolTrack:SearchTest', { operator });
-  }
-
   export async function search(query: string , entityEndpoint: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('MolTrack:Search', { query, entityEndpoint });
   }
 
   export async function retrieveEntity(scope: string ): Promise<DG.DataFrame> {
     return await grok.functions.call('MolTrack:RetrieveEntity', { scope });
-  }
-
-  export async function getMoltrackPropPanelByStructure(mol: string ): Promise<any> {
-    return await grok.functions.call('MolTrack:GetMoltrackPropPanelByStructure', { mol });
   }
 
   export async function getMoltrackPropPanelById(id: string ): Promise<any> {

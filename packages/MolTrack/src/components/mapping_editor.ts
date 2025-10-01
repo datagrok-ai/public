@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import '../components/mapping_editor.css';
+
 export interface TargetProperty {
   name: string;
   type?: string;

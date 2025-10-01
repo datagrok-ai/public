@@ -4,9 +4,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {FileInputUtils} from '@datagrok-libraries/tutorials/src/utils/file-input-utils';
 
-import { ErrorHandlingLabels, ScopeLabels, ScopeLabelsReduced } from './constants';
+import { ErrorHandlingLabels, ScopeLabels, ScopeLabelsReduced } from '../utils/constants';
 import { renderMappingEditor, TargetProperty } from '../components/mapping_editor';
-import { MolTrackDockerService } from './moltrack-docker-service';
+import { MolTrackDockerService } from '../services/moltrack-docker-service';
 import { fetchSchema } from '../package';
 import { Subscription } from 'rxjs';
 
