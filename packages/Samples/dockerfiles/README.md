@@ -1,3 +1,5 @@
+# Docker for custom model
+
 This folder contains a Docker configuration for running a [custom model](https://datagrok.ai/help/learn/custom-machine-learning-models) as a Celery task in Datagrok:
 
 ```
