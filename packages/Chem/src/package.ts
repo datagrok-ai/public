@@ -1400,11 +1400,11 @@ export class PackageFunctions {
     'tags': ['Transform'],
   })
   static async convertNotation(
-    data: DG.DataFrame,
-    @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molecules: DG.Column<string>,
-    @grok.decorators.param({type: 'string', options: {choices: ['smiles', 'smarts', 'molblock', 'v3Kmolblock'], initialValue: 'smiles'}}) targetNotation: DG.chem.Notation,
-    @grok.decorators.param({options: {initialValue: 'false'}}) overwrite: boolean = false,
-    @grok.decorators.param({options: {initialValue: 'true'}}) join: boolean = true): Promise<DG.Column<string> | void> {
+    @grok.decorators.param({options: {caption: 'Data'}}) data: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'Molecule', caption: 'Molecules'}}) molecules: DG.Column<string>,
+    @grok.decorators.param({type: 'string', options: {caption: 'Target Notation', choices: ['smiles', 'smarts', 'molblock', 'v3Kmolblock'], initialValue: 'smiles'}}) targetNotation: DG.chem.Notation,
+    @grok.decorators.param({options: {caption: 'Overwrite', initialValue: 'false'}}) overwrite: boolean = false,
+    @grok.decorators.param({options: {caption: 'Join', initialValue: 'true'}}) join: boolean = true): Promise<DG.Column<string> | void> {
     const res = await convertNotationForColumn(molecules, targetNotation);
     const units = targetNotation === DG.chem.Notation.MolBlock ? DG.UNITS.Molecule.MOLBLOCK :
       targetNotation === DG.chem.Notation.V3KMolBlock ? DG.UNITS.Molecule.V3K_MOLBLOCK : DG.UNITS.Molecule.SMILES;
@@ -2116,7 +2116,7 @@ export class PackageFunctions {
     'name': 'Names To Smiles',
     'top-menu': 'Chem | Transform | Names To Smiles...',
     'tags': ['Transform']})
-  static async namesToSmiles(data: DG.DataFrame,
+  static async namesToSmiles(@grok.decorators.param({options: {caption: 'Data'}}) data: DG.DataFrame,
     @grok.decorators.param({type: 'column'}) names: DG.Column<string>): Promise<void> {
     const namesList = names.toList();
     const res = await grok.functions.call('Chembl:namesToSmiles', {names: namesList});
@@ -2365,9 +2365,9 @@ export class PackageFunctions {
     'description': 'Generates the new dataset based on the given structure',
   })
   static async deprotect(
-    @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {caption: 'Table', description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({options: {semType: 'Molecule', initialValue: 'O=C([N:1])OCC1c2ccccc2-c2ccccc21'}}) fragment: string): Promise<void> {
+    @grok.decorators.param({options: {caption: 'Fragment', semType: 'Molecule', initialValue: 'O=C([N:1])OCC1c2ccccc2-c2ccccc21'}}) fragment: string): Promise<void> {
     const module = PackageFunctions.getRdKitModule();
     const cut = cutFragments(module, molecules.toList(), fragment);
     const res = cut.map((c) => c[0]);
