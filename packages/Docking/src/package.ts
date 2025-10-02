@@ -22,7 +22,7 @@ export class PackageFunctions{
   static info() {
     grok.shell.info(_package.webRoot);
   }
-  
+
   @grok.decorators.func({
     'outputs': [
       {
@@ -68,13 +68,13 @@ export class PackageFunctions{
   static async dockLigandCached(
     jsonForm: string,
     containerId: string): Promise<string> {
-  
+
     const params: RequestInit = {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: jsonForm,
     };
-    
+
     const path = `/autodock/dock_ligand`;
     const dockingResult = await grok.dapi.docker.dockerContainers.fetchProxy(containerId, path, params);
     const dockingResultText = await dockingResult.json();
@@ -87,14 +87,14 @@ export class PackageFunctions{
       'HitTriageFunction'
     ],
     'top-menu': 'Chem | Docking | AutoDock...',
-    'name': 'Autodock',
+    'name': 'AutoDock',
     'description': 'Autodock plugin UI'
   })
   static async runAutodock5(
-    @grok.decorators.param({'options':{'description': '\'Input data table\''}}) table: DG.DataFrame,
-    @grok.decorators.param({'options':{'type': 'categorical', 'semType':'Molecule', 'description':'\'Small molecules to dock\''}}) ligands: DG.Column,
-    @grok.decorators.param({'options':{'choices':'Docking:getConfigFiles', 'description':'\'Folder with config and macromolecule\''}}) target: string,
-    @grok.decorators.param({'type': 'int', 'options':{'initialValue':'10', 'description': '\'Number of output conformations for each small molecule\''}}) poses: number): Promise<void> {
+    @grok.decorators.param({options: {caption: 'Table', description: '\'Input data table\''}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {type: 'categorical', semType: 'Molecule', description: '\'Small molecules to dock\''}}) ligands: DG.Column,
+    @grok.decorators.param({options: {caption: 'Target', choices: 'Docking:getConfigFiles', description: '\'Folder with config and macromolecule\''}}) target: string,
+    @grok.decorators.param({type: 'int', options: {caption: 'Poses', initialValue: '10', description: '\'Number of output conformations for each small molecule\''}}) poses: number): Promise<void> {
 
     const desirableHeight = 100;
     const desirableWidth = 100;
@@ -113,7 +113,7 @@ export class PackageFunctions{
       const processedResults = processAutodockResults(autodockResults, table);
       for (let col of processedResults.columns)
         table.columns.add(col);
-      
+
       const {grid} = grok.shell.getTableView(table.name);
 
       addColorCoding(grid.columns.byName(BINDING_ENERGY_COL_UNUSED)!);
@@ -162,16 +162,16 @@ export class PackageFunctions{
 
   @grok.decorators.func()
   static async getAutodockSingle(
-    molecule: DG.SemanticValue, showProperties: boolean = true, 
+    molecule: DG.SemanticValue, showProperties: boolean = true,
     table?: DG.DataFrame): Promise<DG.Widget<any> | null> {
-  
+
     const value = molecule.value;
     if (value.toLowerCase().includes(ERROR_COL_NAME))
       return new DG.Widget(ui.divText(value));
 
     const tableView = grok.shell.tv;
     const currentTable = table ?? tableView.dataFrame;
-    
+
     const addedToPdb = value.includes(BINDING_ENERGY_COL);
     if (!addedToPdb)
       return new DG.Widget(ui.divText('Docking has not been run'));
@@ -222,7 +222,7 @@ export class PackageFunctions{
   })
   static async autodockPanel(
     @grok.decorators.param({'options':{'semType':'Molecule'}}) smiles: DG.SemanticValue): Promise<DG.Widget> {
-  
+
     const items = await PackageFunctions.getConfigFiles();
     const target = ui.input.choice('Target', {value: items[0], items: items})
     const poses = ui.input.int('Poses', {value: 10});
@@ -291,16 +291,16 @@ export async function runDocking(
 }
 
 export async function prepareAutoDockData(
-  target: string, 
-  table: DG.DataFrame, 
-  ligandColumn: string, 
+  target: string,
+  table: DG.DataFrame,
+  ligandColumn: string,
   poses: number
 ): Promise<AutoDockDataType | null> {
   const isGpfFile = (file: DG.FileInfo): boolean => file.extension === 'gpf';
   const configFile = (await grok.dapi.files.list(`${TARGET_PATH}/${target}`, true)).find(isGpfFile)!;
   const receptor = (await grok.dapi.files.list(`${TARGET_PATH}/${target}`))
     .find(file => ['pdbqt', 'pdb'].includes(file.extension)) || null;
-  
+
   if (!configFile || !receptor) {
     grok.shell.warning('Missing .gpf or .pdbqt/.pdb file in the target folder.');
     return null;

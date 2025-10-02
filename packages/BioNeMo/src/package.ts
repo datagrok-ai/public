@@ -7,7 +7,7 @@ import { CONSTANTS, DiffDockModel, PosesJson } from './diffdock/diffdock-model';
 export * from './package.g';
 export const _package = new DG.Package();
 
-export class PackageFunctions { 
+export class PackageFunctions {
   @grok.decorators.func({ name: 'MolMIMModel' })
   static async molMIMModel(
     @grok.decorators.param({ options: { initialValue: 'CMA-ES' } }) algorithm: string = 'CMA-ES',
@@ -22,7 +22,7 @@ export class PackageFunctions {
     const apiKey = await getApiKey();
     const results = await grok.functions.call('BioNeMo:MolMIMGenerate', { algorithm, num_molecules, property_name, minimize, min_similarity, particles, iterations, smi, apiKey });
   }
-  
+
   @grok.decorators.func({
     name: 'EsmFold',
     'top-menu': 'Bio | Folding | EsmFold...'
@@ -112,14 +112,14 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'DiffDockModel',
+    name: 'DiffDock',
     'top-menu': 'Chem | Docking | DiffDock...'
   })
   static async diffDockModel(
-    df: DG.DataFrame,
-    @grok.decorators.param({ options: { semType: 'Molecule' } }) ligands: DG.Column,
-    @grok.decorators.param({ options: { choices: 'Bionemo: getTargetFiles' } }) target: string,
-    @grok.decorators.param({ options: { initialValue: '5' } }) poses: number
+    @grok.decorators.param({options: {caption: 'Table'}}) df: DG.DataFrame,
+    @grok.decorators.param({options: {semType: 'Molecule'}}) ligands: DG.Column,
+    @grok.decorators.param({options: {caption: 'Target', choices: 'Bionemo: getTargetFiles'}}) target: string,
+    @grok.decorators.param({options: {caption: 'Poses', initialValue: '5'}}) poses: number
   ): Promise<void> {
     const receptorFile = (await grok.dapi.files.list(`${CONSTANTS.TARGET_PATH}/${target}`)).find((file) => file.extension === 'pdbqt')!;
     const receptor = await grok.dapi.files.readAsText(receptorFile);

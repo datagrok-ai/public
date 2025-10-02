@@ -30,13 +30,13 @@ export async function dockLigandCached(jsonForm: string, containerId: string) : 
   return await PackageFunctions.dockLigandCached(jsonForm, containerId);
 }
 
-//name: Autodock
+//name: AutoDock
 //description: Autodock plugin UI
 //tags: HitTriageFunction
-//input: dataframe table { description: 'Input data table' }
+//input: dataframe table { caption: Table; description: 'Input data table' }
 //input: categorical ligands { type: categorical; semType: Molecule; description: 'Small molecules to dock' }
-//input: string target { choices: Docking:getConfigFiles; description: 'Folder with config and macromolecule' }
-//input: int poses = 10 { description: 'Number of output conformations for each small molecule' }
+//input: string target { caption: Target; choices: Docking:getConfigFiles; description: 'Folder with config and macromolecule' }
+//input: int poses = 10 { caption: Poses; description: 'Number of output conformations for each small molecule' }
 //top-menu: Chem | Docking | AutoDock...
 export async function runAutodock5(table: DG.DataFrame, ligands: DG.Column, target: string, poses: number) : Promise<void> {
   await PackageFunctions.runAutodock5(table, ligands, target, poses);

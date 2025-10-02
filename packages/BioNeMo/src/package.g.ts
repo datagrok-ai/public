@@ -44,11 +44,11 @@ export async function diffDockModelScript(ligand: string, target: string, poses:
   return await PackageFunctions.diffDockModelScript(ligand, target, poses);
 }
 
-//name: DiffDockModel
-//input: dataframe df 
+//name: DiffDock
+//input: dataframe df { caption: Table }
 //input: column ligands { semType: Molecule }
-//input: string target { choices: Bionemo: getTargetFiles }
-//input: double poses = 5 
+//input: string target { caption: Target; choices: Bionemo: getTargetFiles }
+//input: double poses = 5 { caption: Poses }
 //top-menu: Chem | Docking | DiffDock...
 export async function diffDockModel(df: DG.DataFrame, ligands: DG.Column, target: string, poses: number) : Promise<void> {
   await PackageFunctions.diffDockModel(df, ligands, target, poses);

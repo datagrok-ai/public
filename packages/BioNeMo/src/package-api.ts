@@ -31,16 +31,12 @@ export namespace scripts {
 }
 
 export namespace funcs {
-  export async function info(): Promise<void> {
-    return await grok.functions.call('BioNeMo:Info', {});
-  }
-
   export async function molMIMModel(algorithm: string , num_molecules: number , property_name: string , minimize: boolean , min_similarity: number , particles: number , iterations: number , smi: string ): Promise<void> {
     return await grok.functions.call('BioNeMo:MolMIMModel', { algorithm, num_molecules, property_name, minimize, min_similarity, particles, iterations, smi });
   }
 
-  export async function esmFoldModel(df: DG.DataFrame , sequences: DG.Column ): Promise<void> {
-    return await grok.functions.call('BioNeMo:EsmFoldModel', { df, sequences });
+  export async function esmFoldModel(table: DG.DataFrame , sequences: DG.Column ): Promise<void> {
+    return await grok.functions.call('BioNeMo:EsmFoldModel', { table, sequences });
   }
 
   export async function esmFoldModelPanel(sequence: any ): Promise<any> {
