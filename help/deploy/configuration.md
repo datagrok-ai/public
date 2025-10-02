@@ -121,6 +121,11 @@ The environment variable name is derived from the configuration key by applying 
 * `deploy` - Datlas will perform the full deployment.
 * `auto` - Datlas will check the existing database and storage and perform deployment only if needed.
 
+## Settings 
+
+You can set Datargok server settings as a part of `GROK_PARAMETERS`. Get the template JSON in `/settings` view using `{}` button near the server settings section.
+Put any parameter to `settings` map of `GROK_PARAMETERS` respecting the hierarchy. 
+
 ## Useful links
 
 * [Infrastructure](../develop/under-the-hood/infrastructure.md)
