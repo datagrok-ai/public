@@ -23,16 +23,16 @@ export class ActivityDashboardWidget extends DG.Widget {
   static sharedEntityRegex: RegExp = /<span>#{x\.([a-f0-9-]+)\.".*?"}<\/span>/g;
   keywordsToIgnore: string[] = ['"data"', '"data w/', '"fitted data"', '"reduced data"', '"reduceddata"', '"sizingparams"', '"primaryfilter', '"trimmed data"', '"input data from imported file"', '"dataanalysisdf', '"clean data"'/*, 'Ran <span>#{x.'*/];
   tipsOfTheDay: string[] = [
-    'Double-click a column header to sort the data.',
-    'Drag and drop a CSV or Excel file into Datagrok to load it as a table.',
-    'Hover over a column name to see its statistics in the tooltip.',
-    'Hold Shift and click multiple column headers to select several columns.',
-    'Use Ctrl+F in a table to search across all values.',
-    'Resize columns by dragging the separator in the header.',
-    'Use Layouts to save and restore your favorite viewer arrangements.',
-    'Use “Add New Column” to create calculated columns with formulas.',
-    'Right-click a column to see context actions available for it.',
-    'Try the “Correlation Plot” to quickly see relationships between numeric columns.',
+    'To sort the data, double-click a column header.',
+    'To load a CSV or Excel file as a table, drag and drop it into Datagrok.',
+    'To see statistics of a column, hover over its name.',
+    'To select multiple columns, hold Shift and click several column headers.',
+    'To search across all values in a table, use Ctrl+F.',
+    'To resize columns, drag the separator in the header.',
+    'To save and restore your favorite viewer arrangements, use Layouts.',
+    'To create calculated columns with formulas, use “Add New Column”.',
+    'To see context actions for a column, right-click it.',
+    'To quickly explore relationships between numeric columns, try the “Correlation Plot”.',
   ];
   availableDemosOfTheDay: DG.Func[] = DG.Func.find({meta: {'demoPath': null}});
   tutorialsOfTheDay: string[] = ['Grid Customization', 'Viewers', 'Scatter Plot', 'Embedded Viewers', 'Filters', 'Dashboards',
