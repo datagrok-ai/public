@@ -1,9 +1,13 @@
 # Power Pack changelog
 
-## 1.7.7 ()
+## 1.7.7 (2025-10-02)
 
-* GROK-18139: Activity dashboard: Fixed tips of the day
+* GROK-18139: Activity dashboard:
+  * Fixed tips of the day
+  * Removed admin tab
+  * Added check for new users
 * GROK-17174: Customize widgets: Fixed menu is empty
+* GROk-18533: Browse: Fixed scroll position is reset after opening demo
 
 ## 1.7.6 (2025-10-02)
 
