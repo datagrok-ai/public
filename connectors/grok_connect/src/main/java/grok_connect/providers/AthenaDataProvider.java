@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
+
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
@@ -99,9 +100,13 @@ public class AthenaDataProvider extends JdbcDataProvider {
     @Override
     public Properties getProperties(DataConnection conn) {
         Properties properties = new Properties();
-        setIfNotNull(properties, "User", (String )conn.credentials.parameters.get(DbCredentials.ACCESS_KEY));
-        setIfNotNull(properties, "Password", (String) conn.credentials.parameters.get(DbCredentials.SECRET_KEY));
-        setIfNotNull(properties, "SessionToken", (String) conn.credentials.parameters.get("token"));
+        String accessKey = (String) conn.credentials.parameters.get(DbCredentials.ACCESS_KEY);
+        String secretKey = (String) conn.credentials.parameters.get(DbCredentials.SECRET_KEY);
+        if (GrokConnectUtil.isNotEmpty(accessKey) && GrokConnectUtil.isNotEmpty(secretKey)) {
+            properties.put("AwsCredentialsProviderClass", "grok_connect.utils.CustomAthenaSessionCredentialsProvider");
+            properties.put("AwsCredentialsProviderArguments", buildArguments(accessKey, secretKey, (String) conn.credentials.parameters.get("token")));
+        }
+
         if (!conn.hasCustomConnectionString()) {
             setIfNotNull(properties, "S3OutputLocation", conn.get(DbCredentials.S3OutputLocation));
             setIfNotNull(properties, "Schema", conn.getDb());
@@ -163,5 +168,32 @@ public class AthenaDataProvider extends JdbcDataProvider {
     @Override
     protected String getRegexQuery(String columnName, String regexExpression) {
         return String.format("REGEXP_LIKE(%s, '%s')", columnName, regexExpression);
+    }
+
+    private static String escapeArg(String value) {
+        if (value == null) return "";
+        String escaped = value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"");
+        if (escaped.contains(",")) {
+            escaped = "\"" + escaped + "\"";
+        }
+        return escaped;
+    }
+
+    private static String buildArguments(String accessKey, String secretKey, String sessionToken) {
+        if (sessionToken == null || sessionToken.isEmpty()) {
+            return String.join(",",
+                    escapeArg(accessKey),
+                    escapeArg(secretKey)
+            );
+        }
+        else {
+            return String.join(",",
+                    escapeArg(accessKey),
+                    escapeArg(secretKey),
+                    escapeArg(sessionToken)
+            );
+        }
     }
 }

@@ -1,6 +1,10 @@
 # Grok Connect changelog
 
-# 2.5.1 (2025-09-30) WIP
+# 2.5.2 (2025-10-02) WIP
+
+* Athena: Fixed STS token usage
+
+# 2.5.1 (2025-09-30)
 
 * Athena: Apply session token when passed
 
