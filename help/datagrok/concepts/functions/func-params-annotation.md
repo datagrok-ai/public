@@ -708,7 +708,7 @@ Here, the `species` and `organism` parameters are inferred from the search patte
 
 :::
 
-## Custom Function Editors
+## Custom function editors
 
 You can create custom editors for functions to replace the default UI in places such as:
 
@@ -728,7 +728,7 @@ Custom editors enhance the user experience by allowing you to tailor how functio
 
 ---
 
-### Defining an Editor
+### Defining an editor
 
 A custom editor is a function that:
 - Accepts a `DG.FuncCall` object as input
@@ -737,7 +737,7 @@ A custom editor is a function that:
 
 > **Note:** While extending `DG.FuncCallEditor` is optional, the returned widget must expose certain properties to support validation and input change tracking.
 
-#### Required Interface for the Returned Widget
+#### Required interface for the returned widget
 
 | Property        | Type                | Description |
 |----------------|---------------------|-------------|
@@ -748,7 +748,7 @@ A custom editor is a function that:
 
 
 <details>
-<summary> Example Editor </summary>
+<summary> Sample editor </summary>
 <div>
 
 ```ts
@@ -798,7 +798,7 @@ export function dummyEditor(call: DG.FuncCall): DG.Widget {
 </details>
 
 <details>
-<summary> Usage Example </summary>
+<summary> Usage example </summary>
 <div>
 
 ```ts
@@ -821,7 +821,7 @@ This tells the platform to render dummyEditor from the DevTools package as the e
 
 ---
 
-### 🚫 What the Editor Should NOT Do
+### 🚫 What the editor should NOT do
 
 - Do **not** execute the function
 - Do **not** show a **Run** button
