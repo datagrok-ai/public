@@ -17,7 +17,7 @@ import { vectorDistanceMetricsMethods, VectorMetricsNames } from '../typed-metri
 
 export class UMAPOptions {
   learningRate: IDimReductionParam =
-  {uiName: 'Learninig rate', value: 1, tooltip: 'The initial learning rate for the embedding optimization'};
+  {uiName: 'Learninig Rate', value: 1, tooltip: 'The initial learning rate for the embedding optimization'};
   // nComponents: IDimReductionParam =
   // {uiName: 'Components', value: 2, tooltip: 'The number of components (dimensions) to project the data to'};
   nEpochs: IDimReductionParam =
@@ -31,10 +31,10 @@ export class UMAPOptions {
     `The effective scale of embedded points, used with min distance to control 
     the clumped/dispersed nature of the embedding`};
   minDist: IDimReductionParam =
-  {uiName: 'Min distance', value: 0.1,
+  {uiName: 'Min Distance', value: 0.1,
     tooltip: `The effective minimum distance between embedded points, 
   used with spread to control the clumped/dispersed nature of the embedding`};
-  randomSeed: IDimReductionParam<string> = {uiName: 'Random seed', value: null, tooltip: 'Random seed', type: 'string'};
+  randomSeed: IDimReductionParam<string> = {uiName: 'Random Seed', value: null, tooltip: 'Random seed', type: 'string'};
   useWebGPU: IDimReductionParam<boolean> =
     {uiName: 'Use WebGPU', value: false, tooltip: 'Use WebGPU for Distance and UMAP computations', type: 'boolean',
       disableTooltip: 'WebGPU is not available'};
@@ -101,7 +101,7 @@ export class MultiColumnDimReductionEditor {
     methodInput: DG.InputBase<string | null>;
     methodSettingsIcon: HTMLElement;
     methodSettingsAnchor: HTMLElement = ui.div();
-    plotEmbeddingsInput = ui.input.bool('Plot embeddings', {value: true});
+    plotEmbeddingsInput = ui.input.bool('Plot Embeddings', {value: true});
     postProcessingEditor: PostProcessingFuncEditor;
     aggregationMethodInput = ui.input.choice('Aggregation', {value: DistanceAggregationMethods.EUCLIDEAN,
       items: [DistanceAggregationMethods.EUCLIDEAN, DistanceAggregationMethods.MANHATTAN]});
