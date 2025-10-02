@@ -762,7 +762,7 @@ export class PackageFunctions {
     'top-menu': 'Bio | Transform | Fetch PDB Sequences...'
   })
   static async fetchSequencesFromPdb(
-    table: DG.DataFrame,
+    @grok.decorators.param({options: {caption: 'Table'}}) table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'PDB_ID'}}) pdbColumn: DG.Column
   ): Promise<void> {
     await extractSequenceColumns(pdbColumn);

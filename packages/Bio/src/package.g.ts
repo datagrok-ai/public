@@ -25,6 +25,15 @@ export async function standardiseMonomerLibrary(library: string) : Promise<strin
   return await PackageFunctions.standardiseMonomerLibrary(library);
 }
 
+//description: Matches molecules in a column with monomers from the selected library(s)
+//input: dataframe table 
+//input: column molecules { semType: Molecule }
+//input: string polymerType = 'PEPTIDE' { choices: ["PEPTIDE","RNA","CHEM"]; caption: Polymer Type }
+//top-menu: Bio | Manage | Match with Monomer Library...
+export async function matchWithMonomerLibrary(table: DG.DataFrame, molecules: DG.Column, polymerType: any) : Promise<void> {
+  await PackageFunctions.matchWithMonomerLibrary(table, molecules, polymerType);
+}
+
 //output: object monomerLib
 export function getBioLib() : any {
   return PackageFunctions.getBioLib();
@@ -240,7 +249,7 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Co
 
 //name: To Atomic Level
 //description: Converts sequences to molblocks
-//input: dataframe table { description: Input data table }
+//input: dataframe table { caption: Table; description: Input data table }
 //input: column seqCol { semType: Macromolecule; caption: Sequence }
 //input: bool nonlinear = false { caption: Non-linear; description: Slower mode for cycling/branching HELM structures }
 //input: bool highlight = false { caption: Highlight monomers; description: Highlight monomers' substructures of the molecule }
@@ -318,7 +327,7 @@ export function importBam(fileContent: string) : any {
   return PackageFunctions.importBam(fileContent);
 }
 
-//top-menu: Bio | Transform | Convert Notation...
+//top-menu: Bio | Transform | Convert Sequence Notation...
 export function convertDialog() : void {
   PackageFunctions.convertDialog();
 }

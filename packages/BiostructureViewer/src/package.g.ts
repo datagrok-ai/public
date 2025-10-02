@@ -358,7 +358,7 @@ export function structure3D(molecule: DG.SemanticValue) : any {
 
 //name: Fetch PDB Sequences
 //description: For a user-selected table and PDB ID column, fetches protein sequences and adds them as new columns.
-//input: dataframe table 
+//input: dataframe table { caption: Table }
 //input: column pdbColumn { semType: PDB_ID }
 //top-menu: Bio | Transform | Fetch PDB Sequences...
 export async function fetchSequencesFromPdb(table: DG.DataFrame, pdbColumn: DG.Column) : Promise<void> {

@@ -40,6 +40,10 @@ export namespace funcs {
     return await grok.functions.call('Bio:SequenceTooltip', { col });
   }
 
+  export async function standardiseMonomerLibrary(library: string ): Promise<string> {
+    return await grok.functions.call('Bio:StandardiseMonomerLibrary', { library });
+  }
+
   export async function getBioLib(): Promise<any> {
     return await grok.functions.call('Bio:GetBioLib', {});
   }
