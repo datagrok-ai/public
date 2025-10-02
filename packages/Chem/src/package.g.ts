@@ -243,11 +243,11 @@ export function SubstructureSearchTopMenu(molecules: DG.Column) : void {
   PackageFunctions.SubstructureSearchTopMenu(molecules);
 }
 
+//name: Cluster MCS
 //description: Calculates most common substructures for each cluster
-//input: dataframe table 
+//input: dataframe table  { caption: Table }
 //input: column molCol  { semType: Molecule }
 //input: column clusterCol  { type: categorical }
-//friendlyName: Cluster MCS
 //top-menu: Chem | Calculate | Cluster MCS...
 export async function clusterMCSTopMenu(table: DG.DataFrame, molCol: DG.Column, clusterCol: DG.Column) : Promise<void> {
   await PackageFunctions.clusterMCSTopMenu(table, molCol, clusterCol);
@@ -416,7 +416,7 @@ export async function activityCliffsTransform(table: DG.DataFrame, molecules: DG
 
 //name: To InchI
 //tags: Transform
-//input: dataframe table  { description: Input data table }
+//input: dataframe table  { caption: Table; description: Input data table }
 //input: column molecules  { semType: Molecule }
 //top-menu: Chem | Calculate | To InchI...
 export function addInchisTopMenu(table: DG.DataFrame, col: DG.Column) : void {
@@ -432,7 +432,7 @@ export function getInchis(molecules: DG.Column) : any {
 
 //name: To InchI Keys
 //tags: Transform
-//input: dataframe table  { description: Input data table }
+//input: dataframe table  { caption: Table; description: Input data table }
 //input: column molecules  { semType: Molecule }
 //top-menu: Chem | Calculate | To InchI Keys...
 export function addInchisKeysTopMenu(table: DG.DataFrame, col: DG.Column) : void {
@@ -799,7 +799,7 @@ export async function callChemDiversitySearch(col: DG.Column, metricName: any, f
 
 //name: Chemical Properties
 //tags: HitTriageFunction, Transform
-//input: dataframe table  { description: Input data table }
+//input: dataframe table  { caption: Table; description: Input data table }
 //input: column molecules  { semType: Molecule }
 //input: bool MW  = true 
 //input: bool HBA  = false 
@@ -814,7 +814,7 @@ export async function callChemDiversitySearch(col: DG.Column, metricName: any, f
 //meta.method_info.author: Open Chem Lib Team
 //meta.method_info.year: 2024
 //meta.method_info.github: https://github.com/actelion/openchemlib
-//top-menu: Chem | Calculate | Properties...
+//top-menu: Chem | Calculate | Chemical Properties...
 export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: DG.Column, MW?: boolean, HBA?: boolean, HBD?: boolean, logP?: boolean, logS?: boolean, PSA?: boolean, rotatableBonds?: boolean, stereoCenters?: boolean, moleculeCharge?: boolean) : Promise<void> {
   await PackageFunctions.addChemPropertiesColumns(table, molecules, MW, HBA, HBD, logP, logS, PSA, rotatableBonds, stereoCenters, moleculeCharge);
 }
@@ -829,12 +829,12 @@ export async function getMolProperty(molecules: DG.Column, property: string) : P
 
 //name: Toxicity Risks
 //tags: HitTriageFunction, Transform
-//input: dataframe table  { description: Input data table }
+//input: dataframe table  { caption: Table; description: Input data table }
 //input: column molecules  { semType: Molecule }
-//input: bool mutagenicity  = true 
-//input: bool tumorigenicity  = false 
-//input: bool irritatingEffects  = false 
-//input: bool reproductiveEffects  = false 
+//input: bool mutagenicity  = true { caption: Mutagenicity }
+//input: bool tumorigenicity  = false { caption: Tumorigenicity }
+//input: bool irritatingEffects  = false { caption: Irritating Effects }
+//input: bool reproductiveEffects  = false { caption: Reproductive Effects }
 //top-menu: Chem | Calculate | Toxicity Risks...
 export async function addChemRisksColumns(table: DG.DataFrame, molecules: DG.Column, mutagenicity?: boolean, tumorigenicity?: boolean, irritatingEffects?: boolean, reproductiveEffects?: boolean) : Promise<void> {
   await PackageFunctions.addChemRisksColumns(table, molecules, mutagenicity, tumorigenicity, irritatingEffects, reproductiveEffects);

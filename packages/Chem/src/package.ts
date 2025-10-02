@@ -592,12 +592,12 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'friendlyName': 'Cluster MCS',
+    'name': 'Cluster MCS',
     'top-menu': 'Chem | Calculate | Cluster MCS...',
     'description': 'Calculates most common substructures for each cluster',
   })
   static async clusterMCSTopMenu(
-    table: DG.DataFrame,
+    @grok.decorators.param({options: {caption: 'Table'}}) table: DG.DataFrame,
     @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molCol: DG.Column,
     @grok.decorators.param({type: 'column', options: {type: 'categorical'}}) clusterCol: DG.Column): Promise<void> {
     const c = await PackageFunctions.performClusterMCS(molCol, clusterCol);
@@ -1093,7 +1093,7 @@ export class PackageFunctions {
     'tags': ['Transform'],
   })
   static addInchisTopMenu(
-    @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {caption: 'Table', description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({name: 'molecules', options: {semType: 'Molecule'}}) col: DG.Column): void {
     const inchiCol = getInchisImpl(col);
     inchiCol.name = table.columns.getUnusedName(inchiCol.name);
@@ -1115,7 +1115,7 @@ export class PackageFunctions {
     'tags': ['Transform'],
   })
   static addInchisKeysTopMenu(
-    @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {caption: 'Table', description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({name: 'molecules', options: {semType: 'Molecule'}}) col: DG.Column): void {
     const inchiKeyCol = getInchiKeysImpl(col);
     inchiKeyCol.name = table.columns.getUnusedName(inchiKeyCol.name);
@@ -1834,7 +1834,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'top-menu': 'Chem | Calculate | Properties...',
+    'top-menu': 'Chem | Calculate | Chemical Properties...',
     'name': 'Chemical Properties',
     'tags': ['HitTriageFunction', 'Transform'],
     'meta': {
@@ -1844,7 +1844,7 @@ export class PackageFunctions {
       'method_info.github': 'https://github.com/actelion/openchemlib',
     }})
   static async addChemPropertiesColumns(
-    @grok.decorators.param({type: 'dataframe', options: {description: 'Input data table'}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'dataframe', options: {caption: 'Table', description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molecules: DG.Column,
     @grok.decorators.param({options: {initialValue: 'true'}}) MW?: boolean,
     @grok.decorators.param({options: {initialValue: 'false'}}) HBA?: boolean,
@@ -1899,12 +1899,12 @@ export class PackageFunctions {
     'name': 'Toxicity Risks',
     'tags': ['HitTriageFunction', 'Transform']})
   static async addChemRisksColumns(
-    @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {caption: 'Table', description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({options: {initialValue: 'true'}}) mutagenicity?: boolean,
-    @grok.decorators.param({options: {initialValue: 'false'}}) tumorigenicity?: boolean,
-    @grok.decorators.param({options: {initialValue: 'false'}}) irritatingEffects?: boolean,
-    @grok.decorators.param({options: {initialValue: 'false'}}) reproductiveEffects?: boolean,
+    @grok.decorators.param({options: {caption: 'Mutagenicity', initialValue: 'true'}}) mutagenicity?: boolean,
+    @grok.decorators.param({options: {caption: 'Tumorigenicity', initialValue: 'false'}}) tumorigenicity?: boolean,
+    @grok.decorators.param({options: {caption: 'Irritating Effects', initialValue: 'false'}}) irritatingEffects?: boolean,
+    @grok.decorators.param({options: {caption: 'Reproductive Effects', initialValue: 'false'}}) reproductiveEffects?: boolean,
   ): Promise<void> {
     const pb = DG.TaskBarProgressIndicator.create('Toxicity risks ...');
     try {
