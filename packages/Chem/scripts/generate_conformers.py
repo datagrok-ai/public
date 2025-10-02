@@ -1,15 +1,15 @@
-#name: GenerateConformers
+#name: Generate Conformers
 #description: Generates multiple conformers for a molecule using RDKit
 #help-url: https://datagrok.ai/help/domains/chem/functions/conformers
 #language: python
 #tags: demo, chem, rdkit
-#top-menu: Chem | Compute | Generate Conformers
-#input: string molecule = "CCCC" {semType: Molecule}  # Butane - shows anti/gauche conformations
-#input: int num_conformers = 50 [Number of conformers to generate]
-#input: bool optimize = true [Optimize with MMFF94 force field]
-#input: double rms_threshold = 0.1 [RMS threshold for conformer pruning - LOWER for butane]
-#input: int max_attempts = 5000 [Maximum generation attempts]
-#input: int random_seed = 42 [Random seed for reproducibility]
+#top-menu: Chem | Compute | Generate Conformers...
+#input: string molecule = "CCCC" {semType: Molecule; caption: Molecule}  # Butane - shows anti/gauche conformations
+#input: int num_conformers = 50 {caption: Num conformers} [Number of conformers to generate]
+#input: bool optimize = true {caption: Optimize} [Optimize with MMFF94 force field]
+#input: double rms_threshold = 0.1 {caption: RMS threshold} [RMS threshold for conformer pruning - LOWER for butane]
+#input: int max_attempts = 5000 {caption: Max attempts} [Maximum generation attempts]
+#input: int random_seed = 42 {caption: Random seed} [Random seed for reproducibility]
 #output: dataframe conformers
 
 import pandas as pd
@@ -18,15 +18,15 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit.Chem import rdDistGeom
 
-def generate_conformers(mol, num_conformers=50, optimize=True, 
+def generate_conformers(mol, num_conformers=50, optimize=True,
                        rms_threshold=0.1, max_attempts=5000, random_seed=42):
     """
     Generate conformers for a molecule using RDKit's ETKDGv3 method.
     """
-    
+
     # Add hydrogens for better geometry
     mol_with_h = Chem.AddHs(mol)
-    
+
     # Set up conformer generation parameters
     params = rdDistGeom.ETKDGv3()
     params.randomSeed = random_seed
@@ -36,26 +36,26 @@ def generate_conformers(mol, num_conformers=50, optimize=True,
     params.useBasicKnowledge = True
     params.enforceChirality = False
     params.ignoreSmoothingFailures = True
-    
+
     # Generate conformers
     conformer_ids = rdDistGeom.EmbedMultipleConfs(
-        mol_with_h, 
-        numConfs=num_conformers, 
+        mol_with_h,
+        numConfs=num_conformers,
         params=params
     )
-    
+
     # If no conformers generated, try fallback
     if len(conformer_ids) == 0:
         AllChem.EmbedMolecule(mol_with_h, randomSeed=random_seed)
         conformer_ids = [0]
-    
+
     # Optimize conformers if requested
     energies = []
     if optimize and len(conformer_ids) > 0:
         try:
             # Optimize with MMFF94
             results = AllChem.MMFFOptimizeMoleculeConfs(mol_with_h, maxIters=1000)
-            
+
             # Calculate energies
             mp = AllChem.MMFFGetMoleculeProperties(mol_with_h, mmffVariant='MMFF94')
             for conf_id in conformer_ids:
@@ -70,7 +70,7 @@ def generate_conformers(mol, num_conformers=50, optimize=True,
     else:
         # Set energies to NaN if not optimized
         energies = [np.nan] * len(conformer_ids)
-    
+
     # Create separate molecules for each conformer
     conformer_mols = []
     for conf_id in conformer_ids:
@@ -79,7 +79,7 @@ def generate_conformers(mol, num_conformers=50, optimize=True,
         conf_mol.RemoveAllConformers()
         conf_mol.AddConformer(mol_with_h.GetConformer(conf_id))
         conformer_mols.append(conf_mol)
-    
+
     return conformer_mols, energies
 
 # Parse input molecule
@@ -94,14 +94,14 @@ if mol is None:
 else:
     # Generate conformers
     conformer_mols, energies = generate_conformers(
-        mol, 
+        mol,
         num_conformers=num_conformers,
         optimize=optimize,
         rms_threshold=rms_threshold,
         max_attempts=max_attempts,
         random_seed=random_seed
     )
-    
+
     # Calculate RMSD between conformers for diversity analysis
     rmsd_values = []
     if len(conformer_mols) > 1:
@@ -118,7 +118,7 @@ else:
                     rmsd_values.append(np.nan)
     else:
         rmsd_values = [0.0] * len(conformer_mols) if conformer_mols else []
-    
+
     # Prepare data for DataFrame
     data = []
     for i, (conf_mol, energy, rmsd) in enumerate(zip(conformer_mols, energies, rmsd_values)):
@@ -129,7 +129,7 @@ else:
             'energy': energy,
             'rmsd': rmsd
         })
-    
+
     # Create DataFrame
     conformers = pd.DataFrame(data)
 
