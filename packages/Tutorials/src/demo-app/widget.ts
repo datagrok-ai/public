@@ -9,21 +9,20 @@ import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import { TreeViewGroup } from 'datagrok-api/dg';
 
 
-export class DemoAppWidget extends DG.Widget { 
+export class DemoAppWidget extends DG.Widget {
 
     constructor() {
         super(ui.panel([], 'tutorial-widget'));
-        
+
         const demoView = new DemoView();
         const funcs = demoView.funcs;
         const searchInput = ui.input.search('',{value: ''});
-        
-        grok.shell.windows.showToolbox = true;
+
         grok.shell.windows.showRibbon = true;
         grok.shell.windows.showHelp = true;
         grok.shell.windows.showProperties = true;
         grok.shell.windows.help.syncCurrentObject = true;
-       
+
         let tree = ui.tree();
         tree.root.classList.add('demo-app-widget');
 
@@ -31,10 +30,10 @@ export class DemoAppWidget extends DG.Widget {
             const directionFuncs = funcs.filter((func) => {
               return (func.func.options[DG.FUNC_OPTIONS.DEMO_PATH] as string).includes(DEMO_APP_HIERARCHY.children[i].name);
             });
-            
+
             for (let j = 0; j < directionFuncs.length; ++j) {
               const path = directionFuncs[j].path.split('|').map((s) => s.trim());
-      
+
               if (path.length > 2) {
                 let groupPath = path[0];
                 let treePath = tree.getOrCreateGroup(path[0], {path: groupPath}, false);
@@ -44,7 +43,7 @@ export class DemoAppWidget extends DG.Widget {
                   treePath = treePath.getOrCreateGroup(path[i], {path: groupPath}, false);
                   (treePath.root.firstElementChild as HTMLElement).dataset.name = path[i];
                 }
-      
+
                 const item = treePath.item(directionFuncs[j].name, {path: directionFuncs[j].path});
                 item.root.onmouseover = (event) => {
                   const packageMessage = `Part of the ${directionFuncs[j].func.package.name === 'Tutorials' ?
@@ -53,7 +52,7 @@ export class DemoAppWidget extends DG.Widget {
                     ui.divV([directionFuncs[j].func.description, ui.element('br'), packageMessage]) :
                     ui.div(packageMessage), event.clientX, event.clientY);
                 };
-      
+
                 item.root.onmouseout = (_) => {
                   ui.tooltip.hide();
                 };
@@ -61,7 +60,7 @@ export class DemoAppWidget extends DG.Widget {
                 const folder = tree.getOrCreateGroup(directionFuncs[j].category, {path: path[0]}, false);
                 (folder.root.firstElementChild as HTMLElement).dataset.name = directionFuncs[j].category;
                 const item = folder.item(directionFuncs[j].name, {path: directionFuncs[j].path});
-      
+
                 item.root.onmouseover = (event) => {
                   const packageMessage = `Part of the ${directionFuncs[j].func.package.name === 'Tutorials' ?
                     'platform core' : `${directionFuncs[j].func.package.name} package`}`;
@@ -69,7 +68,7 @@ export class DemoAppWidget extends DG.Widget {
                     ui.divV([directionFuncs[j].func.description, ui.element('br'), packageMessage]) :
                     ui.div(packageMessage), event.clientX, event.clientY);
                 };
-      
+
                 item.root.onmouseout = (_) => {
                   ui.tooltip.hide();
                 };
@@ -85,15 +84,15 @@ export class DemoAppWidget extends DG.Widget {
           });
 
           searchInput.onChanged.subscribe((value) => {
-            
+
             const foundFuncs = funcs.filter((func) => {
                 return func.name.toLowerCase().includes(value.toLowerCase()) ||
                   func.func.description.toLowerCase().includes(value.toLowerCase()) ||
                   func.keywords.toLowerCase().includes(value.toLowerCase())
               });
-              
+
               const dom = tree.root.getElementsByClassName('d4-tree-view-node');
-          
+
               for (let i = 0; i < dom.length; i++) {
                 const item = dom[i] as HTMLElement;
                 const foundFunc = foundFuncs.find((func) => func.name.toLowerCase() === item.innerText.toLowerCase());
@@ -123,12 +122,12 @@ export class DemoAppWidget extends DG.Widget {
                 }
               }
           });
-      
+
           searchInput.input.onkeyup = (event) => {
             if (event.key === 'Escape')
               searchInput.fireChanged();
           };
-      
+
           const closeIcon = searchInput.root.getElementsByClassName('ui-input-icon-right')[0] as HTMLElement;
           closeIcon.onclick = () => {
             searchInput.value = '';
