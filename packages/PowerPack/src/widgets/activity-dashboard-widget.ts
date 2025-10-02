@@ -13,6 +13,10 @@ enum SpotlightTabNames {
 }
 
 export class ActivityDashboardWidget extends DG.Widget {
+  public get type(): string {
+    return 'ActivityDashboardWidget';
+  }
+
   static RECENT_TIME_DAYS = 2;
   static SPOTLIGHT_ITEMS_LENGTH = 8;
 
@@ -79,11 +83,11 @@ export class ActivityDashboardWidget extends DG.Widget {
 
     this.tabControl = ui.tabControl(tabs, true);
     this.tabControl.onTabChanged.subscribe((_) => this.cleanLists());
-    this.tabControl.root.style.height = '100%';
+    this.tabControl.root.style.height = '90%';
     this.tabControl.root.style.width = '100%';
-    this.tabControl.root.appendChild(await this.createRandomizedTipOfTheDay());
 
     this.root.appendChild(this.tabControl.root);
+    this.root.appendChild(await this.createRandomizedTipOfTheDay());
   }
 
   async getDemosOfTheDay(): Promise<string[]> {
