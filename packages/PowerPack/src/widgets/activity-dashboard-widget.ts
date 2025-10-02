@@ -9,7 +9,6 @@ enum SpotlightTabNames {
   ACTION_REQUIRED = 'Action required',
   SHARED_WITH_ME = 'Shared with me',
   RECENT = 'Recent',
-  ADMIN = 'Admin',
 }
 
 export class ActivityDashboardWidget extends DG.Widget {
@@ -62,7 +61,6 @@ export class ActivityDashboardWidget extends DG.Widget {
   sharedWithMeRoot?: HTMLDivElement | null = null;
   spacesRoot?: HTMLDivElement | null = null;
   recentItemsRoot?: HTMLDivElement | null = null;
-  adminRoot?: HTMLDivElement | null = null;
   subwidgetsAdded: Map<string, HTMLDivElement | null | undefined> = new Map<string, HTMLDivElement>();
   subwidgetsAmount: number = 0;
   reportAmount?: number = 0;
@@ -321,8 +319,7 @@ export class ActivityDashboardWidget extends DG.Widget {
             if (timeChild)
               timeChild.remove();
           }
-        } else if (item instanceof DG.LogEvent && item.description.toLowerCase().includes('published version'))
-          listChild.querySelector('.d4-markup')!.classList.add('power-pack-activity-widget-spotlight-column-admin-row');
+        }
 
         if (title === SpotlightTabNames.SHARED_WITH_ME && sharedNotification.text) {
           const icon = ui.iconFA('clock');
@@ -352,38 +349,31 @@ export class ActivityDashboardWidget extends DG.Widget {
 
     let root = ui.divH([], 'power-pack-activity-widget-spotlight-root');
 
-    // API changes needed
-    // if (!(DG.User.current().joined > dayjs().subtract(7, 'day')) && false) {
-    const actionRequired = this.recentNotifications.filter((n) => {
-      const text = n.text.toLowerCase();
-      return text.includes('you were assigned') || text.includes('requested a membership');
-    });
-    this.actionRequiredRoot = actionRequired.length > 0 ? createSection(SpotlightTabNames.ACTION_REQUIRED, actionRequired, ui.iconFA('exclamation-circle')) : null;
-    if (this.actionRequiredRoot)
-      root.appendChild(this.actionRequiredRoot!);
-    this.subwidgetsAdded.set(SpotlightTabNames.ACTION_REQUIRED, this.actionRequiredRoot);
+    if (!(DG.User.current().joined > dayjs().subtract(5, 'day'))) {
+      const actionRequired = this.recentNotifications.filter((n) => {
+        const text = n.text.toLowerCase();
+        return text.includes('you were assigned') || text.includes('requested a membership');
+      });
+      this.actionRequiredRoot = actionRequired.length > 0 ? createSection(SpotlightTabNames.ACTION_REQUIRED, actionRequired, ui.iconFA('exclamation-circle')) : null;
+      if (this.actionRequiredRoot)
+        root.appendChild(this.actionRequiredRoot!);
+      this.subwidgetsAdded.set(SpotlightTabNames.ACTION_REQUIRED, this.actionRequiredRoot);
 
-    this.sharedWithMeRoot = this.sharedWithMe.length > 0 ? createSection(SpotlightTabNames.SHARED_WITH_ME, this.sharedWithMe, ui.iconFA('inbox')) : null;
-    if (this.sharedWithMeRoot)
-      root.appendChild(this.sharedWithMeRoot!);
-    this.subwidgetsAdded.set(SpotlightTabNames.SHARED_WITH_ME, this.sharedWithMeRoot);
+      this.sharedWithMeRoot = this.sharedWithMe.length > 0 ? createSection(SpotlightTabNames.SHARED_WITH_ME, this.sharedWithMe, ui.iconFA('inbox')) : null;
+      if (this.sharedWithMeRoot)
+        root.appendChild(this.sharedWithMeRoot!);
+      this.subwidgetsAdded.set(SpotlightTabNames.SHARED_WITH_ME, this.sharedWithMeRoot);
 
-    this.spacesRoot = null;
-    if (this.spacesRoot)
-      root.appendChild(this.spacesRoot!);
-    // this.subwidgetsAdded.set(SpotlightTabNames.SPACES, this.spacesRoot);
+      this.spacesRoot = null;
+      if (this.spacesRoot)
+        root.appendChild(this.spacesRoot!);
+      // this.subwidgetsAdded.set(SpotlightTabNames.SPACES, this.spacesRoot);
 
-    this.recentItemsRoot = this.recentEntities.length > 0 ? createSection(SpotlightTabNames.RECENT, this.recentEntities, ui.iconFA('history')) : null;
-    if (this.recentItemsRoot)
-      root.appendChild(this.recentItemsRoot!);
-    this.subwidgetsAdded.set(SpotlightTabNames.RECENT, this.recentItemsRoot);
-
-    const adminActivity = this.recentUserActivity.filter((l) => l.description.toLowerCase().includes('published version'));
-    this.adminRoot = adminActivity.length > 0 ? createSection(SpotlightTabNames.ADMIN, adminActivity, ui.icons.settings(() => {})) : null;
-    if (this.adminRoot)
-      root.appendChild(this.adminRoot!);
-    this.subwidgetsAdded.set(SpotlightTabNames.ADMIN, this.adminRoot);
-    // }
+      this.recentItemsRoot = this.recentEntities.length > 0 ? createSection(SpotlightTabNames.RECENT, this.recentEntities, ui.iconFA('history')) : null;
+      if (this.recentItemsRoot)
+        root.appendChild(this.recentItemsRoot!);
+      this.subwidgetsAdded.set(SpotlightTabNames.RECENT, this.recentItemsRoot);
+    }
 
     if (root.children.length === 0)
       root = await this.getNewUserInfoColumns();
