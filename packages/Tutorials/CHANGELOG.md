@@ -1,5 +1,28 @@
 # Tutorials changelog
 
+## 1.10.1 ()
+
+* GROK-18767: Fixed opening Demo in learn widget opens empty toolbox
+
+## 1.10.0 (2025-09-30)
+
+* GROK-18139: Added demo app hierarchy as function in Tutorials
+* GROK-18718: Expanded Demo > Cheminformatics by default for new users
+
+## 1.9.6 (2025-09-25)
+
+## 1.9.5 (2025-09-19)
+
+* GROK-18879: Fixed Data aggregation tutorial
+* GROK-17845: Fixed each click opens additional app menu in Tutorials widget
+* GROK-18791: Fixed toolbox isn't shown in Scatterplot tutorial
+* Added Peptides tutorial
+
+## 1.9.3 (2025-09-17)
+
+* Dashboards tutorial: Fixed UI inconsistency in names
+* GROK-17832: Fixes in sync with new Browse UX
+
 ## 1.9.2 (2025-09-15)
 
 Fixed the Parameters Optimization tutorial
