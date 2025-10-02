@@ -817,10 +817,10 @@ export class PackageFunctions {
     'name': 'Elemental Analysis',
   })
   static async elementalAnalysis(
-    table: DG.DataFrame,
+    @grok.decorators.param({options: {caption: 'Table'}}) table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({options: {description: 'Add a standalone radar viewer', initialValue: 'false'}}) radarViewer: boolean,
-    @grok.decorators.param({options: {description: 'Show radar in grid cells', initialValue: 'false'}}) radarGrid: boolean): Promise<void> {
+    @grok.decorators.param({options: {caption: 'Radar Viewer', description: 'Add a standalone radar viewer', initialValue: 'false'}}) radarViewer: boolean,
+    @grok.decorators.param({options: {caption: 'Radar Grid', description: 'Show radar in grid cells', initialValue: 'false'}}) radarGrid: boolean): Promise<void> {
     if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
       grok.shell.info(`The column ${molecules.name} doesn't contain molecules`);
       return;

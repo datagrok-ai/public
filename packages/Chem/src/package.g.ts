@@ -337,10 +337,10 @@ export async function getChemSimilaritiesMatrix(dim: number, col: DG.Column, df:
 }
 
 //name: Elemental Analysis
-//input: dataframe table 
+//input: dataframe table  { caption: Table }
 //input: column molecules  { semType: Molecule }
-//input: bool radarViewer  = false { description: Add a standalone radar viewer }
-//input: bool radarGrid  = false { description: Show radar in grid cells }
+//input: bool radarViewer  = false { caption: Radar Viewer; description: Add a standalone radar viewer }
+//input: bool radarGrid  = false { caption: Radar Grid; description: Show radar in grid cells }
 //top-menu: Chem | Analyze | Elemental Analysis...
 export async function elementalAnalysis(table: DG.DataFrame, molecules: DG.Column, radarViewer: boolean, radarGrid: boolean) : Promise<void> {
   await PackageFunctions.elementalAnalysis(table, molecules, radarViewer, radarGrid);

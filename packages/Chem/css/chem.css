@@ -554,14 +554,14 @@
 }
 
 /* workaround for OCL sketcher to show molecule properties - https://github.com/cheminfo/openchemlib-js/issues/117 */
-.gwt-DialogBox { 
+.gwt-DialogBox {
   z-index: 10000;
 }
 
 .chem-rgroup-settings-icon {
   position: absolute;
   padding-left: 20px;
-  font-size: 14px;
+  font-size: 16px;
   top: 546px;
 }
 
