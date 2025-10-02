@@ -334,7 +334,7 @@ export class PackageFunctions {
     };
     merge(grok.events.onCurrentViewChanging, grok.events.onViewChanging)
       .subscribe((_) => getScrolledChild(document.body));
-    DG.debounce(merge(grok.events.onCurrentViewChanged, grok.events.onViewChanged), 10).subscribe((_) => setScrolls());
+    DG.debounce(merge(grok.events.onCurrentViewChanged, grok.events.onViewChanged), 100).subscribe((_) => setScrolls());
   }
 
 
