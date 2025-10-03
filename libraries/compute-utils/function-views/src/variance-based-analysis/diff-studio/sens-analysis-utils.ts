@@ -1,6 +1,6 @@
 // Sensitivity analysis routine for Diff Studio models
 
-import * as DGL from '@datagrok/diff-grok';
+import * as DGL from 'diff-grok';
 import {AnalysisTask, DEFAULT_NUM} from './defs';
 import {LAST_ROW_IDX, FIRST_ROW_IDX} from '../constants';
 

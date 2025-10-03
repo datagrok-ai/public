@@ -22,7 +22,7 @@ import {getErrors, getCategoryWidget, getShowInfoWidget, getLossFuncDf, rgbToHex
 import {OptimizationResult, Extremum, TargetTableOutput, Setting} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
-import {IVP, IVP2WebWorker, PipelineCreator} from '@datagrok/diff-grok';
+import {IVP, IVP2WebWorker, PipelineCreator} from 'diff-grok';
 import {getFittedParams} from './fitting/diff-studio/nelder-mead';
 import {getNonSimilar} from './fitting/similarity-utils';
 import {ScalarsFitRadar} from './fitting/scalars-fit-radar';

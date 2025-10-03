@@ -1,5 +1,5 @@
 /* eslint-disable valid-jsdoc */
-import {IVP, IVP2WebWorker, solveIvp, applyPipeline} from '@datagrok/diff-grok';
+import {IVP, IVP2WebWorker, solveIvp, applyPipeline} from 'diff-grok';
 import {optimizeNM} from '../optimizer-nelder-mead';
 import {ARG_COL_IDX, ARG_INP_COUNT, NelderMeadInput} from './defs';
 import {Extremum} from '../optimizer-misc';
