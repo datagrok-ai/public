@@ -28,7 +28,6 @@ export function getSettings(): UserWidgetsSettings {
 }
 
 export function saveSettings(): void {
-  console.log(settings);
   const s: {[key: string]: any} = {};
   for (const key of Object.keys(settings))
     s[key] = JSON.stringify(settings[key]);
