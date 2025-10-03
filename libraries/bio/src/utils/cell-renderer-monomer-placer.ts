@@ -590,7 +590,6 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
                   transparencyRate = 0.7;
               }
             }
-
             currentCellBounds.push({
               lineIdx: lineLayout.lineIdx,
               monomerIdx: monomerIndex - positionShift,
@@ -603,7 +602,7 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
               isMultiLineContext: true,
               transparencyRate: transparencyRate,
               selectedPosition: isNaN(selectedPosition) || selectedPosition < 1 ? undefined : selectedPosition,
-              wordIdx: monomerIndex
+              wordIdx: monomerIndex,
             });
           }
         }
@@ -627,9 +626,13 @@ export class MonomerPlacer extends CellRendererBackBase<string> {
             color = this.getMonomerLib()!.getMonomerTextColor(sh.defaultBiotype, cm);
 
           const last = posIdx === subParts.length - 1;
+          // here, the first index of disjointSeqStarts is always 0, so we check from position 1, and also, next index
+          // will show where the next disjoint sequence starts, so we check posIdx + 1
+          const drawnSeparator = (subParts?.graphInfo?.disjointSeqStarts?.indexOf(posIdx + 1) ?? 0) > 0 ? '|' : separator;
+
           const opts: Partial<PrintOptions> = {
             color: color, pivot: 0, left: true, transparencyRate: 0.0,
-            separator: separator, last: last,
+            separator: drawnSeparator, last: last,
             drawStyle: drawStyle, maxWord: maxLengthWordsSum, wordIdx: posIdx - positionShift, gridCell: gridCell,
             referenceSequence: referenceSequence, maxLengthOfMonomer: maxLengthOfMonomer,
             monomerTextSizeMap: this._monomerLengthMap, logger: this.logger,

@@ -41,7 +41,7 @@ export async function _toAtomicLevel(
   const seqUh = seqHelper.getSeqHandler(seqCol);
 
   // convert 'helm' to 'separator' units
-  if (seqUh.notation !== NOTATION.SEPARATOR) {
+  if (seqUh.notation !== NOTATION.SEPARATOR && seqUh.notation !== NOTATION.BILN) {
     srcCol = seqUh.convert(NOTATION.SEPARATOR, '.');
     srcCol.name = seqCol.name; // Replace converted col name 'separator(<original>)' to '<original>';
   }
@@ -74,7 +74,7 @@ export async function _toAtomicLevel(
       const molsV3K = await chiralityFunc.apply({mols: mols});
       res.molCol.init((i) => {
         return molsV3K[i] ? molsV3K[i] : mols[i];
-      })
+      });
     } catch (err: any) {
       console.error(err);
     }
