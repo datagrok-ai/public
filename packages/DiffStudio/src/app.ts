@@ -11,7 +11,7 @@ import {autocompletion} from '@codemirror/autocomplete';
 import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {getFormatted} from '@datagrok-libraries/compute-utils/function-views/src/shared/lookup-tools';
-import {getIvp2WebWorker, getPipelineCreator} from '@datagrok/diff-grok';
+import {getIvp2WebWorker, getPipelineCreator} from 'diff-grok';
 
 import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';

@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## 1.4.9 (2025-10-03)
+
+Updated compute-utils
+
 ## 1.4.8 (2025-10-03)
 
 Updated diff grok and utils versions
