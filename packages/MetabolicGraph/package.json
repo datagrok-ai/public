@@ -12,7 +12,7 @@
     "glpk-wasm": "^0.1.4",
     "@datagrok-libraries/utils": "^4.3.6",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.22.0",
+    "datagrok-api": "^1.26.0",
     "dayjs": "^1.11.10"
   },
   "devDependencies": {
@@ -33,7 +33,7 @@
     "debug-metabolicgraph": "webpack && grok publish",
     "release-metabolicgraph": "webpack && grok publish --release",
     "build-metabolicgraph": "webpack",
-    "build": "webpack",
+    "build": "grok api && grok check --soft && webpack",
     "debug-metabolicgraph-dev": "webpack && grok publish dev",
     "release-metabolicgraph-dev": "webpack && grok publish dev --release",
     "debug-metabolicgraph-public": "webpack && grok publish public",
