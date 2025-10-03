@@ -158,12 +158,17 @@ function validateMapping(
     return issues;
   }
 
-  if (prop.type && (col.type !== prop.type)) {
-    issues.push({
-      message: `Type mismatch: expected ${prop.type}, got ${col.type}`,
-      severity: 'error',
-    });
-    return issues;
+  if (prop.type) {
+    const numericTypes = [DG.TYPE.INT, DG.TYPE.FLOAT];
+    const bothNumeric = numericTypes.includes(prop.type as DG.TYPE) && numericTypes.includes(col.type as DG.TYPE);
+
+    if (!bothNumeric && col.type !== prop.type) {
+      issues.push({
+        message: `Type mismatch: expected ${prop.type}, got ${col.type}`,
+        severity: 'error',
+      });
+      return issues;
+    }
   }
 
   if ((prop.semType && prop.semType === DG.SEMTYPE.MOLECULE) && (col.semType !== prop.semType)) {
