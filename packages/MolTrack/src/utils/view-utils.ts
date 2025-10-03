@@ -1,6 +1,7 @@
 import { getBatchByCorporateId, getCompoundByCorporateId } from '../package';
 import { MOLTRACK_APP_PATH } from './constants';
 import { EntityBaseView } from '../views/registration-entity-base';
+import { RegistrationView } from '../views/registration-tab';
 
 export function createPath(viewName: string) {
   let path = `${MOLTRACK_APP_PATH}/`;
@@ -102,4 +103,11 @@ export function initRegisterView(entity: 'Compound' | 'Batch', setPath: boolean 
 
   view.show();
   return view.view;
+}
+
+export function initBulkRegisterView(setPath: boolean = true) {
+  const registrationView = new RegistrationView();
+  registrationView.view.path = createPath('Bulk');
+  registrationView.show();
+  return registrationView.view;
 }

@@ -11,7 +11,7 @@ import { RegistrationView } from './views/registration-tab';
 import { MOLTRACK_ENTITY_LEVEL, MOLTRACK_IS_STATIC_FIELD, SAVED_SEARCHES_NODE, Scope, SEARCH_NODE } from './utils/constants';
 import { createSearchNode, createSearchView, getSavedSearches, handleSearchURL, loadSearchFields, molTrackSearchFieldsArr } from './views/search';
 import { registerAllData, registerAssayData, updateAllMolTrackSchemas } from './utils/registration-utils';
-import { batchView, compoundView, createPath, initRegisterView } from './utils/view-utils';
+import { batchView, compoundView, createPath, initBulkRegisterView, initRegisterView } from './utils/view-utils';
 import { flattened, getCorporateCompoundIdByExactStructure } from './utils/utils';
 import { molTrackPropPanel } from './widgets/moltrack-property-panel';
 
@@ -52,6 +52,7 @@ export async function molTrackApp(path: string): Promise<DG.ViewBase> {
   const isRegisterPath = hasPath && path.includes('Register');
   const isBatchPath = hasPath && path.includes('Batch');
   const isSearchPath = hasPath && (path.includes(SEARCH_NODE) || path.includes(SAVED_SEARCHES_NODE));
+  const isBulkPath = hasPath && path.includes('Bulk');
 
   const setPathAndReturn = (view: DG.View) => {
     view.path = path;
@@ -64,6 +65,9 @@ export async function molTrackApp(path: string): Promise<DG.ViewBase> {
   } catch (e: any) {
     grok.shell.error(e);
   }
+
+  if (isBulkPath)
+    return setPathAndReturn(initBulkRegisterView(false));
 
   if (corporateCompoundId)
     return await compoundView(corporateCompoundId);
@@ -133,7 +137,7 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
   });
   createRegisterNode('Compound', () => initRegisterView('Compound'));
   createRegisterNode('Batch', () => initRegisterView('Batch'));
-  createRegisterNode('Bulk...', () => new RegistrationView().show());
+  createRegisterNode('Bulk...', () => initBulkRegisterView());
 
   const excludedScopes = [Scope.ASSAY_RUNS, Scope.ASSAY_RESULTS];
 
