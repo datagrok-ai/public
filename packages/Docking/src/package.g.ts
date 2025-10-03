@@ -30,7 +30,7 @@ export async function dockLigandCached(jsonForm: string, containerId: string) : 
   return await PackageFunctions.dockLigandCached(jsonForm, containerId);
 }
 
-//name: Autodock
+//name: AutoDock
 //description: Autodock plugin UI
 //tags: HitTriageFunction
 //input: dataframe table { description: 'Input data table' }

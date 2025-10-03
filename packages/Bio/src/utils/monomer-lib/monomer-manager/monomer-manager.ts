@@ -57,6 +57,53 @@ export async function standardiseMonomers(monomers: Monomer[]) {
   return fixedMonomers;
 }
 
+/// matches molecules in the dataframe with monomers in the library by canonical smiles
+export async function matchMoleculesWithMonomers(molDf: DG.DataFrame, molColName: string, monomerLib: IMonomerLib, polymerType: PolymerType = 'PEPTIDE'): Promise<DG.DataFrame> {
+  const converterFunc = DG.Func.find({package: 'Chem', name: 'convertMoleculeNotation'})[0];
+  if (!converterFunc)
+    throw new Error('Function convertMoleculeNotation not found, please install Chem package');
+  // first: stamdardize monomers
+  const monomers = monomerLib.getMonomerSymbolsByType(polymerType).map((s) => monomerLib.getMonomer(polymerType, s)!).filter((m) => m && (m.smiles || m.molfile));
+  const fixedMonomers = await standardiseMonomers(monomers);
+  const cappedSmilse = fixedMonomers.map((m, i) => ({sym: m.symbol, smiles: capSmiles(m.smiles ?? '', m.rgroups ?? []), original: m.smiles, source: monomers[i]?.lib?.source})).filter((s) => !!s?.smiles && !s.smiles.includes('[*:'));
+  // canonicalize all monomer smiles
+  const monomerSmilesCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'MonomerSmiles', cappedSmilse.map((m) => m.smiles!));
+  monomerSmilesCol.semType = DG.SEMTYPE.MOLECULE;
+  const canonicalizedMonomersSmilesCol: DG.Column = await converterFunc.apply({molecule: monomerSmilesCol, targetNotation: DG.chem.Notation.Smiles});
+  if (!canonicalizedMonomersSmilesCol || canonicalizedMonomersSmilesCol.length !== monomerSmilesCol.length)
+    throw new Error('Error canonicalizing monomer smiles');
+  canonicalizedMonomersSmilesCol.toList().forEach((s, i) => cappedSmilse[i].smiles = s);
+
+  const molecules = molDf.col(molColName)!;
+  const canonicalizedMoleculesCol: DG.Column = await converterFunc.apply({molecule: molecules, targetNotation: DG.chem.Notation.Smiles});
+  if (!canonicalizedMoleculesCol || canonicalizedMoleculesCol.length !== molecules.length)
+    throw new Error('Error canonicalizing molecules');
+
+  const canonicalizedMolecules = canonicalizedMoleculesCol.toList();
+
+  const resultDf = molDf.clone();
+  const matchingMonomerSmilesCol = resultDf.columns.addNewString(resultDf.columns.getUnusedName('Matched monomer smiles'));
+  matchingMonomerSmilesCol.semType = DG.SEMTYPE.MOLECULE;
+  const matchingMonomerSymbolCol = resultDf.columns.addNewString(resultDf.columns.getUnusedName('Matched monomer symbol'));
+  matchingMonomerSymbolCol.semType = 'Monomer';
+  const sourceLibCol = resultDf.columns.addNewString(resultDf.columns.getUnusedName('Matched monomer source'));
+  resultDf.columns.setOrder([molColName, matchingMonomerSymbolCol.name, matchingMonomerSmilesCol.name, sourceLibCol.name]);
+
+  for (let i = 0; i < canonicalizedMolecules.length; i++) {
+    const mol = canonicalizedMolecules[i];
+    if (!mol) continue;
+    for (let j = 0; j < cappedSmilse.length; j++) {
+      if (cappedSmilse[j].smiles === mol) {
+        matchingMonomerSmilesCol.set(i, cappedSmilse[j].original!, false);
+        matchingMonomerSymbolCol.set(i, cappedSmilse[j].sym, false);
+        sourceLibCol.set(i, cappedSmilse[j].source ?? '', false);
+        break;
+      }
+    }
+  }
+  return resultDf;
+}
+
 /** Standardizes the monomer library
  * warning: throws error if the library is not valid or has invalid monomers
  */
@@ -127,7 +174,7 @@ export function getMonomersDataFrame(monomers: Monomer[]) {
           monomers[i].id,
           JSON.stringify(monomers[i].meta ?? {}),
           monomers[i].lib?.source ?? '',
-        ]);
+        ], false);
         // something is wrong with setting dates, so setting it manually for now
         try {
           if (date)

@@ -44,8 +44,8 @@ export async function diffDockModelScript(ligand: string, target: string, poses:
   return await PackageFunctions.diffDockModelScript(ligand, target, poses);
 }
 
-//name: DiffDockModel
-//input: dataframe df 
+//name: DiffDock
+//input: dataframe df { caption: Table }
 //input: column ligands { semType: Molecule }
 //input: string target { choices: Bionemo: getTargetFiles }
 //input: double poses = 5 

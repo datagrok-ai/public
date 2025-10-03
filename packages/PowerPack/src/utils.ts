@@ -28,7 +28,6 @@ export function getSettings(): UserWidgetsSettings {
 }
 
 export function saveSettings(): void {
-  console.log(settings);
   const s: {[key: string]: any} = {};
   for (const key of Object.keys(settings))
     s[key] = JSON.stringify(settings[key]);
@@ -66,6 +65,12 @@ function initWidgetHost(host: HTMLDivElement, w: DG.Widget, title?: string) {
 
   host.querySelector('.power-pack-widget-content')!.appendChild(w.root);
   ui.tools.setHoverVisibility(host, Array.from(host.querySelectorAll('i')));
+  if (w.factory?.name) {
+    const widgetSettings = settings[w.factory.name] ?? (settings[w.factory.name] = { });
+    if (widgetSettings.ignored === undefined || widgetSettings.ignored === null)
+      widgetSettings.ignored = false;
+    saveSettings();
+  }
 }
 
 function createWidgetHost(title: string): HTMLDivElement {

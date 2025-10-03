@@ -31,7 +31,7 @@ There are several types of links/actions:
 - `data`
 - `validator`
 - `meta`
-- `selector`
+- `nodemeta`
 - `funccall`
 - `pipeline`
 
@@ -395,10 +395,10 @@ argumentCol?: string;
 ```
 
 
-### Description links
+### Node meta links
 
 Description links are used to gather workflow metadata and display it
-on ui. They have type `selector`. They have script io as inputs, but
+on ui. They have type `nodemeta`. They have script io as inputs, but
 instead of targeting scripts in outputs, selectors will have the
 following workflow/script nodes targets:
 
@@ -410,7 +410,7 @@ following workflow/script nodes targets:
   that tags here are completely unrelated to `PipelineConfiguration`
   ones. They tag a particular saved instance of a workflow.
 
-Selector controller has an additional method:
+Node meta controller has an additional method:
 
 ```
 setDescriptionItem(name: string, description: any): void;

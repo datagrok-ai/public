@@ -323,7 +323,7 @@ export namespace funcs {
   /**
   Calculates most common substructures for each cluster
   */
-  export async function performClusterMCS(molCol: DG.Column , clusterCol: string ): Promise<DG.Column> {
+  export async function performClusterMCS(molCol: DG.Column , clusterCol: DG.Column ): Promise<DG.Column> {
     return await grok.functions.call('Chem:PerformClusterMCS', { molCol, clusterCol });
   }
 
@@ -377,7 +377,7 @@ export namespace funcs {
   /**
   Detects pairs of molecules with similar structure and significant difference in any given property
   */
-  export async function activityCliffs(table: DG.DataFrame , molecules: DG.Column , activities: any , similarity: number , methodName: string , similarityMetric: string , preprocessingFunction?: any , options?: any , isDemo?: boolean , isTest?: boolean ): Promise<void> {
+  export async function activityCliffs(table: DG.DataFrame , molecules: DG.Column , activities: DG.Column , similarity: number , methodName: string , similarityMetric: string , preprocessingFunction?: any , options?: any , isDemo?: boolean , isTest?: boolean ): Promise<void> {
     return await grok.functions.call('Chem:ActivityCliffs', { table, molecules, activities, similarity, methodName, similarityMetric, preprocessingFunction, options, isDemo, isTest });
   }
 
@@ -385,7 +385,7 @@ export namespace funcs {
     return await grok.functions.call('Chem:ActivityCliffsInitFunction', { sp });
   }
 
-  export async function activityCliffsTransform(table: DG.DataFrame , molecules: DG.Column , activities: any , similarity: number , methodName: string , similarityMetric: string , options?: string , isDemo?: boolean ): Promise<void> {
+  export async function activityCliffsTransform(table: DG.DataFrame , molecules: DG.Column , activities: DG.Column , similarity: number , methodName: string , similarityMetric: string , options?: string , isDemo?: boolean ): Promise<void> {
     return await grok.functions.call('Chem:ActivityCliffsTransform', { table, molecules, activities, similarity, methodName, similarityMetric, options, isDemo });
   }
 

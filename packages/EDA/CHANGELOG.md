@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.4.7 (2025-10-01)
+
+Updated utils and js-api
+
 ## 1.4.6 (2025-09-23)
 
 Improved ANOVA:

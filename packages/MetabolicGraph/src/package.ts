@@ -3,8 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {parsePath, loadStateProxy, sampleReactions, saveStateDialog, loadAnalisisDialog, handleReactionDataUpload, runFBADialog} from './utils';
-import map from './maps/E coli core.Core metabolism.json';
-import model from './maps/E coli core.json';
+import map from './maps/E_coli_Core_metabolism_map.json';
+import model from './maps/E_coli_core_cobra.json';
 import type {MapData, CobraModelData, SettingsType} from '../escher_src/src/ts/types';
 import type {BuilderType, BuilderConstructor} from '../escher_src/src/Builder';
 import { WorkerCobraSolver } from './cobra';
@@ -27,7 +27,7 @@ declare global {
 //input: string filter {optional: true}
 //output: view v
 //meta.browsePath: Misc
-export function metabolicGraphApp(path?: string, filter?: string): DG.ViewBase {
+export function metabolicGraph(path?: string, filter?: string): DG.ViewBase {
   const view = DG.View.create('d4-escher-container');
   view.name = 'Metabolic Graph';
   setTimeout(() => {
@@ -38,7 +38,7 @@ export function metabolicGraphApp(path?: string, filter?: string): DG.ViewBase {
     const b = new Builder(mapData, modelData, null, window.escher.libs.d3_select('.d4-escher-container'),
       {scroll_behavior: 'zoom', fill_screen: false,
         never_ask_before_quit: true,
-        //samplingFunction: (mp: CobraModelData) => sampleReactions(mp, b),
+        samplingFunction: (mp: CobraModelData) => sampleReactions(mp, b),
         saveAction: () => saveStateDialog(b, undefined),
         loadAction: () => loadAnalisisDialog(b),
         runFBA: async () => {runFBADialog(b)},
@@ -88,6 +88,7 @@ export async function escherFileViewer(file: DG.FileInfo) {
     const b = new Builder(mapData, modelData, null, window.escher.libs.d3_select('.d4-escher-container'),
       {scroll_behavior: 'zoom', fill_screen: false,
         never_ask_before_quit: true,
+        samplingFunction: (mp: CobraModelData) => sampleReactions(mp, b),
         saveAction: () => saveStateDialog(b, undefined),
         loadAction: () => loadAnalisisDialog(b),
         runFBA: async () => {runFBADialog(b)},

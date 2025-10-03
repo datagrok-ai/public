@@ -1,17 +1,17 @@
 {
   "name": "@datagrok/eda",
   "friendlyName": "EDA",
-  "version": "1.4.6",
+  "version": "1.4.7",
   "description": "Exploratory Data Analysis Tools",
   "dependencies": {
     "@datagrok-libraries/math": "^1.2.6",
-    "@datagrok-libraries/ml": "^6.8.3",
+    "@datagrok-libraries/ml": "^6.10.6",
     "@datagrok-libraries/tutorials": "^1.6.1",
     "@datagrok-libraries/utils": "^4.6.5",
     "@keckelt/tsne": "^1.0.2",
     "@webgpu/types": "^0.1.40",
     "cash-dom": "^8.1.1",
-    "datagrok-api": "^1.26.0",
+    "datagrok-api": "^1.26.3",
     "dayjs": "^1.11.9",
     "jstat": "^1.9.6",
     "source-map-loader": "^4.0.1",
@@ -72,7 +72,7 @@
           "Random Data...": null
         },
         "Cluster": {
-          "Cluster...": null,
+          "Cluster Data...": null,
           "DBSCAN...": null,
           "MCL...": null
         },

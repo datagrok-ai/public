@@ -1,0 +1,203 @@
+.moltrack-register-preview-div {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.moltrack-register-preview-div .d4-grid,
+.moltrack-register-res-div .d4-grid {
+  width: 100%!important;
+  height: 100%!important;
+}
+
+.moltrack-top-container {
+  display: flex;
+  align-items: flex-start;
+  flex: 1;
+  flex-direction: row;
+  gap: 20px;
+}
+
+.moltrack-info-container {
+  flex: 0 0 11%;
+  overflow: auto;
+}
+
+.moltrack-sketcher-root {
+  flex: 0 0 auto;
+  height: 90%!important;
+}
+
+.moltrack-form {
+  flex: 1 1 auto;
+  min-width: 200px;
+  max-height: 30vh;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.moltrack-compound-form {
+  padding: 12px;
+  margin-bottom: 35px;
+  margin-top: 15px;
+}
+
+.moltrack-title {
+  font-size: 18px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.moltrack-section {
+  width: 100%;
+}
+
+.moltrack-section-header {
+  width: 100%;
+  align-items: center;
+}
+
+.moltrack-section-title {
+  font-weight: bold;
+  margin-left: 8px;
+}
+
+.moltrack-section-form {
+  width: 100%;
+}
+
+.moltrack-chevron {
+  cursor: pointer;
+}
+
+.moltrack-top-sections,
+.moltrack-top-container,
+.moltrack-register-container {
+  width: 100%;
+}
+
+.moltrack-bar-success {
+  background-color: #dcf3e7!important;
+  color: #286344!important;
+}
+
+.moltrack-bar-error {
+  background-color: #fbe0e0!important;
+  color: #763434!important;
+}
+
+.moltrack-filters-button-icon {
+   color:#40607f;
+   width: 24px;
+   height: 24px;
+   padding: 8px;
+   cursor: pointer;
+   display: none;
+}
+
+.moltrack-filters-button-icon-show {
+   display: flex;
+}
+
+.moltrack-container {
+  display: flex;
+  width: 100% !important;
+  height: 90% !important;
+  gap: 16px; /* space between left and right */
+}
+
+.moltrack-input-row {
+  max-height: fit-content;
+  margin-bottom: 35px;
+}
+
+.moltrack-search-aggr-header-div {
+  gap: 5px;
+  align-items: center;
+  padding: 10px 12px 5px;
+}
+
+.moltrack-search-aggr-header-div .grok-icon.fal.fa-plus {
+  color: #2083d5!important;
+}
+
+.moltrack-search-aggr-field .d4-menu-item-container.d4-vert-menu.d4-menu-popup {
+  height: 400px;
+  overflow-y: scroll;
+}
+
+.moltrack-search-aggr-row {
+  padding-left: 12px;
+  padding-right: 15px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  align-items: center;
+  gap: 5px;
+}
+
+.moltrack-search-aggr-row select {
+  width: 125px!important;
+}
+
+.moltrack-search-aggr-row .fa-trash-alt {
+    font-size: 12px;
+    color: #2083D5;
+    padding-top: 5px;
+    padding-left: 4px;
+    display: none;
+}
+
+.moltrack-invalid-aggr-field {
+  color: #eb6767!important;
+  border-color: #eb6767 !important;
+}
+
+.moltrack-search-aggr-row:hover .fa-trash-alt {
+  display: flex;
+}
+
+.demo-file-input {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background-color: #f9f9f9;
+  color: #555;
+  font-size: 16px;
+  transition: background-color 0.3s ease;
+}
+
+.demo-file-input-container {
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.moltrack-saved-searches-icons-div {
+  gap: 10px;
+  padding-left: 12px;
+  padding-bottom: 6px;
+}
+
+.moltrack-serch-history-item {
+    max-width: 1000px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.moltrack-panel-register-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.moltrack-panel-register-button {
+  width: 80px!important;
+}

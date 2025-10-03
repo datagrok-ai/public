@@ -592,7 +592,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'friendlyName': 'Cluster MCS',
+    'name': 'Cluster MCS',
     'top-menu': 'Chem | Calculate | Cluster MCS...',
     'description': 'Calculates most common substructures for each cluster',
   })
@@ -1093,7 +1093,7 @@ export class PackageFunctions {
     'tags': ['Transform'],
   })
   static addInchisTopMenu(
-    @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
+    table: DG.DataFrame,
     @grok.decorators.param({name: 'molecules', options: {semType: 'Molecule'}}) col: DG.Column): void {
     const inchiCol = getInchisImpl(col);
     inchiCol.name = table.columns.getUnusedName(inchiCol.name);
@@ -1834,7 +1834,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'top-menu': 'Chem | Calculate | Properties...',
+    'top-menu': 'Chem | Calculate | Chemical Properties...',
     'name': 'Chemical Properties',
     'tags': ['HitTriageFunction', 'Transform'],
     'meta': {
@@ -2116,7 +2116,8 @@ export class PackageFunctions {
     'name': 'Names To Smiles',
     'top-menu': 'Chem | Transform | Names To Smiles...',
     'tags': ['Transform']})
-  static async namesToSmiles(data: DG.DataFrame,
+  static async namesToSmiles(
+    data: DG.DataFrame,
     @grok.decorators.param({type: 'column'}) names: DG.Column<string>): Promise<void> {
     const namesList = names.toList();
     const res = await grok.functions.call('Chembl:namesToSmiles', {names: namesList});

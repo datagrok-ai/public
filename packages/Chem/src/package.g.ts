@@ -243,11 +243,11 @@ export function SubstructureSearchTopMenu(molecules: DG.Column) : void {
   PackageFunctions.SubstructureSearchTopMenu(molecules);
 }
 
+//name: Cluster MCS
 //description: Calculates most common substructures for each cluster
 //input: dataframe table 
 //input: column molCol { semType: Molecule }
-//input: column clusterCol { type: string }
-//friendlyName: Cluster MCS
+//input: column clusterCol { type: categorical }
 //top-menu: Chem | Calculate | Cluster MCS...
 export async function clusterMCSTopMenu(table: DG.DataFrame, molCol: DG.Column, clusterCol: DG.Column) : Promise<void> {
   await PackageFunctions.clusterMCSTopMenu(table, molCol, clusterCol);
@@ -382,7 +382,7 @@ export function ActivityCliffsEditor(call: DG.FuncCall) : void {
 //description: Detects pairs of molecules with similar structure and significant difference in any given property
 //input: dataframe table { description: Input data table }
 //input: column molecules { type: categorical; semType: Molecule }
-//input: numerical activities { type: numerical }
+//input: column activities { type: numerical }
 //input: double similarity = 80 { description: Similarity cutoff }
 //input: string methodName { choices: ["UMAP","t-SNE"] }
 //input: string similarityMetric { choices: ["Tanimoto","Asymmetric","Cosine","Sokal"] }
@@ -404,7 +404,7 @@ export async function activityCliffsInitFunction(sp: any) : Promise<void> {
 //tags: Transform
 //input: dataframe table { description: Input data table }
 //input: column molecules { type: categorical; semType: Molecule }
-//input: numerical activities { type: numerical }
+//input: column activities { type: numerical }
 //input: double similarity = 80 { description: Similarity cutoff }
 //input: string methodName { choices: ["UMAP","t-SNE"] }
 //input: string similarityMetric { choices: ["Tanimoto","Asymmetric","Cosine","Sokal"] }
@@ -416,7 +416,7 @@ export async function activityCliffsTransform(table: DG.DataFrame, molecules: DG
 
 //name: To InchI
 //tags: Transform
-//input: dataframe table { description: Input data table }
+//input: dataframe table 
 //input: column molecules { semType: Molecule }
 //top-menu: Chem | Calculate | To InchI...
 export function addInchisTopMenu(table: DG.DataFrame, col: DG.Column) : void {
@@ -814,7 +814,7 @@ export async function callChemDiversitySearch(col: DG.Column, metricName: any, f
 //meta.method_info.author: Open Chem Lib Team
 //meta.method_info.year: 2024
 //meta.method_info.github: https://github.com/actelion/openchemlib
-//top-menu: Chem | Calculate | Properties...
+//top-menu: Chem | Calculate | Chemical Properties...
 export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: DG.Column, MW?: boolean, HBA?: boolean, HBD?: boolean, logP?: boolean, logS?: boolean, PSA?: boolean, rotatableBonds?: boolean, stereoCenters?: boolean, moleculeCharge?: boolean) : Promise<void> {
   await PackageFunctions.addChemPropertiesColumns(table, molecules, MW, HBA, HBD, logP, logS, PSA, rotatableBonds, stereoCenters, moleculeCharge);
 }

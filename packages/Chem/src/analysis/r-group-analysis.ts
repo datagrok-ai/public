@@ -143,7 +143,7 @@ export function rGroupAnalysis(col: DG.Column, demo = false): void {
   ui.tooltip.bind(onlyMatchAtRGroupsInput.captionLabel, 'Return matches only for labelled R groups');
 
   //settings button to adjust mcs and r-groups settings
-  const rGroupsSettingsIcon = ui.iconFA('cog', () => {
+  const rGroupsSettingsIcon = ui.icons.settings(() => {
     rGroupSettinsOpened = !rGroupSettinsOpened;
     const display = !rGroupSettinsOpened ? 'none' : 'flex';
     rGroupMatchingStrategy.root.style.display = display;

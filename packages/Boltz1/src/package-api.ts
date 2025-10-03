@@ -20,8 +20,8 @@ export namespace funcs {
     return await grok.functions.call('Boltz1:RunBoltz', { config, msa });
   }
 
-  export async function folding(df: DG.DataFrame , sequences: DG.Column ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Boltz1:Folding', { df, sequences });
+  export async function folding(table: DG.DataFrame , sequences: DG.Column ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Boltz1:Folding', { table, sequences });
   }
 
   export async function docking(df: DG.DataFrame , molecules: DG.Column , config: string ): Promise<DG.DataFrame> {

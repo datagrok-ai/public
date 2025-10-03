@@ -10,7 +10,7 @@ import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of} from '
 import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, finalize, debounceTime, timestamp, distinctUntilChanged, take} from 'rxjs/operators';
 import {callHandler} from '../utils';
 import {defaultLinkHandler} from './default-handler';
-import {ControllerCancelled, FuncallActionController, LinkController, MetaController, MutationController, NameSelectorController, RuntimeReturnController, ValidatorController} from './LinkControllers';
+import {ControllerCancelled, FuncallActionController, LinkController, MetaController, MutationController, NodeMetaController, RuntimeReturnController, ValidatorController} from './LinkControllers';
 import {FuncCallAdapter, MemoryStore} from './FuncCallAdapters';
 import {LinksState} from './LinksState';
 import {PipelineInstanceConfig} from '../config/PipelineInstance';
@@ -32,7 +32,7 @@ export class Link {
   public readonly isValidator = this.matchInfo.spec.type === 'validator';
   public readonly isMeta = this.matchInfo.spec.type === 'meta';
   public readonly isMutation = this.matchInfo.spec.type === 'pipeline';
-  public readonly isSelector = this.matchInfo.spec.type === 'selector';
+  public readonly isNodeMeta =  this.matchInfo.spec.type === 'nodemeta' || this.matchInfo.spec.type === 'selector';
   public readonly isFuncallAction = this.matchInfo.spec.type === 'funccall';
   public readonly isReturn = this.matchInfo.spec.type === 'return';
 
@@ -231,8 +231,8 @@ export class Link {
     if (this.isMutation)
       return new MutationController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
 
-    if (this.isSelector)
-      return new NameSelectorController(inputs, inputSet, new Set(descriptionOutputs), this.matchInfo.spec.id, scope);
+    if (this.isNodeMeta)
+      return new NodeMetaController(inputs, inputSet, new Set(descriptionOutputs), this.matchInfo.spec.id, scope);
 
     if (this.isFuncallAction)
       return new FuncallActionController(inputs, inputSet, outputSet, this.matchInfo.spec.id, scope);
@@ -259,7 +259,7 @@ export class Link {
     return p0;
   }
 
-  private setHandlerResults(controller: LinkController | ValidatorController | MetaController | MutationController | NameSelectorController | FuncallActionController | RuntimeReturnController, state: BaseTree<StateTreeNode>) {
+  private setHandlerResults(controller: LinkController | ValidatorController | MetaController | MutationController | NodeMetaController | FuncallActionController | RuntimeReturnController, state: BaseTree<StateTreeNode>) {
     this.lastPipelineMutations = [];
     if (this.logger) {
       this.logger.logLink('linkRunFinished', {
@@ -295,7 +295,7 @@ export class Link {
           const initConfig = controller.outputs[outputAlias];
           if (initConfig)
             this.lastPipelineMutations.push({path: nodePath, initConfig});
-        } else if (controller instanceof NameSelectorController) {
+        } else if (controller instanceof NodeMetaController) {
           const data = controller.outputs[outputAlias];
           const descrStore = node.getItem().nodeDescription;
           if (ioName === 'tags') {

@@ -19,7 +19,7 @@ category('Dapi', () => {
     await grok.dapi.scripts.first();
     await grok.dapi.projects.first();
     await grok.dapi.environments.first();
-  }, {owner: 'aparamonov@datagrok.ai'});
+  }, {owner: 'aparamonov@datagrok.ai', stressTest: true});
 
   test('logging', async () => {
     const logger = new DG.Logger((m) => (m.params as {[key: string]: any})['jsApiTest2'] = 'jsApiTest3');

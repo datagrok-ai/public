@@ -571,7 +571,9 @@ export function getAppHeader(): HTMLElement {
   return appHeader;
 }
 
+let latestLabel: string | undefined = undefined; //workaround since widget is re-created once search is performed and dataframe in the tv is chenged
 export async function createWidgetByRevvityLabel(idSemValue: DG.SemanticValue<string>) {
+
   let div = ui.divText(`No data found for ${idSemValue.value}`);
   let searchConfig = currentQueryBuilderConfig;
   if (!searchConfig) {
@@ -583,34 +585,38 @@ export async function createWidgetByRevvityLabel(idSemValue: DG.SemanticValue<st
     const terms: string[] = await funcs.getTermsForField(idSemValue.cell?.column.name,
       searchConfig!.entityType, searchConfig!.libId, true);
     if (terms.length) {
-      const inputName = idSemValue.cell?.column.getTag('friendlyName') ?? idSemValue.cell?.column.name;
+      const initValue = latestLabel ?? idSemValue.value;
+      latestLabel = undefined;
+      if (terms.includes(initValue)) {
+        const inputName = idSemValue.cell?.column.getTag('friendlyName') ?? idSemValue.cell?.column.name;
 
-      const labelInput = ui.input.choice(inputName, { value: idSemValue.value, items: terms, nullable: false });
+        const labelInput = ui.input.choice(inputName, { value: initValue, items: terms, nullable: false });
 
-      const searchButton = ui.button('Search', async () => {
-        const viewToUpdate = openedView ?? grok.shell.tv;
-        if (viewToUpdate) {
-          ui.setUpdateIndicator(viewToUpdate.root, true, `Searching ${inputName} = ${labelInput.value}`);
-          const queryBuilderCondition: ComplexCondition = {
-            logicalOperator: Operators.Logical.and,
-            conditions: [
-              { field: idSemValue.cell?.column.name, operator: Operators.EQ, value: labelInput.value }]
-          };
-          const df = await runSearchQuery(searchConfig!.libId, searchConfig!.entityType, queryBuilderCondition);
-          const filtersDiv = Array.from(document.getElementsByClassName('revvity-signals-filter-panel'));
-          updateView(viewToUpdate as DG.TableView, df, searchConfig!.entityType, searchConfig!.libName,
-            searchConfig!.libId, filtersDiv.length ? filtersDiv[0] as HTMLDivElement : undefined);
-          ui.setUpdateIndicator(viewToUpdate.root, false);
-          if (searchConfig?.qb)
-            searchConfig?.qb.loadCondition(queryBuilderCondition);
-        }
-      });
+        const searchButton = ui.button('Search', async () => {
+          latestLabel = labelInput.value!;
+          const viewToUpdate = openedView ?? grok.shell.tv;
+          if (viewToUpdate) {
+            ui.setUpdateIndicator(viewToUpdate.root, true, `Searching ${inputName} = ${labelInput.value}`);
+            const queryBuilderCondition: ComplexCondition = {
+              logicalOperator: Operators.Logical.and,
+              conditions: [
+                { field: idSemValue.cell?.column.name, operator: Operators.EQ, value: labelInput.value }]
+            };
+            const df = await runSearchQuery(searchConfig!.libId, searchConfig!.entityType, queryBuilderCondition);
+            const filtersDiv = Array.from(document.getElementsByClassName('revvity-signals-filter-panel'));
+            updateView(viewToUpdate as DG.TableView, df, searchConfig!.entityType, searchConfig!.libName,
+              searchConfig!.libId, filtersDiv.length ? filtersDiv[0] as HTMLDivElement : undefined);
+            ui.setUpdateIndicator(viewToUpdate.root, false);
+            if (searchConfig?.qb)
+              searchConfig?.qb.loadCondition(queryBuilderCondition);
+          }
+        });
 
-      div = ui.divV([
-        labelInput,
-        searchButton
-      ])
-
+        div = ui.divV([
+          labelInput,
+          searchButton
+        ]);
+      }
     }
   }
 

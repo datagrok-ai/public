@@ -1795,6 +1795,8 @@ export interface ILineChartSettings {
 
   currentLineColor: number;
 
+  selectedRowsColor: number;
+
   statisticalProcessLineColor: number;
 
   statisticalProcessAreaColor: number;

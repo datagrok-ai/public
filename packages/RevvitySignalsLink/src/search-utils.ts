@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { ComplexCondition, Operators, QueryBuilder, QueryBuilderLayout, SUGGESTIONS_FUNCTION } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { convertComplexConditionToSignalsSearchQuery, SignalsSearchQuery } from './signals-search-query';
-import { materialsCondition } from './compounds';
+import { materialsCondition, retrieveQueriesMap } from './compounds';
 import { createLibsObjectForStatistics, getRevvityLibraries, RevvityLibrary } from './libraries';
 import { getDefaultProperties, REVVITY_FIELD_TO_PROP_TYPE_MAPPING } from './properties';
 import { getTermsForField } from './package';
@@ -25,30 +25,36 @@ export const filterProperties: {[key: string]: DG.Property[]} = {};
 
 export async function runSearchQuery(libId: string, compoundType: string,
   queryBuilderCondition: ComplexCondition): Promise<DG.DataFrame> {
-  const condition: ComplexCondition = {
-    logicalOperator: Operators.Logical.and,
-    conditions: [
-      materialsCondition //now we have only materials section in our revvity instance, so adding condition to search through materials
-    ]
+  let condition = '';
+  if (queryBuilderCondition.conditions.length === 0)
+    condition = JSON.stringify(retrieveQueriesMap[compoundType])
+  else {
+    const cond: ComplexCondition = {
+      logicalOperator: Operators.Logical.and,
+      conditions: [
+        materialsCondition //now we have only materials section in our revvity instance, so adding condition to search through materials
+      ]
+    }
+    cond.conditions.push(
+      {
+        field: "assetTypeEid",
+        operator: Operators.EQ,
+        value: libId
+      }
+    );
+    cond.conditions.push(
+      {
+        field: "type",
+        operator: Operators.EQ,
+        value: compoundType
+      }
+    );
+    cond.conditions.push(queryBuilderCondition);
+    const signalsQuery: SignalsSearchQuery = convertComplexConditionToSignalsSearchQuery(cond);
+    console.log(signalsQuery);
+    condition = JSON.stringify(signalsQuery);
   }
-  condition.conditions.push(
-    {
-      field: "assetTypeEid",
-      operator: Operators.EQ,
-      value: libId
-    }
-  );
-  condition.conditions.push(
-    {
-      field: "type",
-      operator: Operators.EQ,
-      value: compoundType
-    }
-  );
-  condition.conditions.push(queryBuilderCondition);
-  const signalsQuery: SignalsSearchQuery = convertComplexConditionToSignalsSearchQuery(condition);
-  console.log(signalsQuery);
-  const resultDf = await funcs.searchEntitiesWithStructures(JSON.stringify(signalsQuery), '{}');
+  const resultDf = await funcs.searchEntitiesWithStructures(condition, '{}');
   return resultDf;
 }
 
@@ -132,7 +138,8 @@ export async function initializeFilters(treeNode: DG.TreeViewGroup, tv: DG.Table
 
 export async function runSearch(qb: QueryBuilder, tv: DG.TableView, filtersDiv: HTMLDivElement, libId: string, compoundType: string,
   libName: string, changePath?: boolean) {
-  qb.saveConditionToHistory();
+  if (qb.condition.conditions.length)
+    qb.saveConditionToHistory();
   ui.setUpdateIndicator(tv.grid.root, true, 'Searching...');
   const condition = qb.condition;
   const resultDf = await runSearchQuery(libId, compoundType, condition);

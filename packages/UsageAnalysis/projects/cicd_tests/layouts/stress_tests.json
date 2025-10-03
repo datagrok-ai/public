@@ -280,6 +280,23 @@
             "children": []
           }
         ]
+      },
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 400,
+          "height": 1185,
+          "element": {
+            "id": "aa1b1570-8560-11f0-9c06-a31c92d5b5f7",
+            "type": "Scripting Viewer",
+            "look": {
+              "#type": "ScriptingViewerLook",
+              "script": "#name: Template\n#language: pyodide\n#input: dataframe df [Data table]\n#output: graphics plot [Number of cells in table]\n\nimport pandas as pd\nimport matplotlib.pyplot as plt\n\n# Convert 'passed' column from string to boolean\ndf['passed'] = df['passed'].astype(str).str.lower() == 'true'\n\n# Group by (backup, totalworkers, batch)\nsummary = (\n    df.groupby(['backup', 'totalworkers', 'batch'])\n    .agg(total=('passed', 'size'),\n         failed=('passed', lambda x: (~x).sum()))\n    .reset_index()\n)\n\n# Add failure percentage\nsummary['failed_pct'] = 100 * summary['failed'] / summary['total']\n\n# ---- Select latest batch per backup if you want only last run ----\n# Or comment this out if you want to show all batches separately\nlatest_batch = summary['batch'].max()\nsummary = summary[summary['batch'] == latest_batch]\n\n# Pivot for plotting: each backup = one line\npivot = summary.pivot(index='totalworkers', columns='backup', values='failed_pct')\n\n# Plot\nplt.figure(figsize=(9, 6))\nfor backup in pivot.columns:\n    plt.plot(pivot.index, pivot[backup], marker='o', label=f'Backup {backup}')\n\nplt.title(\"Failure % vs Number of Workers (per batch)\")\nplt.xlabel(\"Total Workers\")\nplt.ylabel(\"Failed Tests (%)\")\nplt.xticks(sorted(summary['totalworkers'].unique()))\nplt.grid(True, linestyle=\"--\", alpha=0.6)\nplt.legend(title=\"Backup\")\nplt.tight_layout()\nplt.show()\n"
+            },
+            "title": "Scripting Viewer"
+          }
+        },
+        "children": []
       }
     ],
     "floating": [],

@@ -109,7 +109,7 @@ export function getMacromoleculeColumnPropertyPanel(col: DG.Column): DG.Widget {
     const units = col.meta.units;
 
     // Don't show for formats that have their own complex renderers (like Helm).
-    if (units === NOTATION.HELM || units === NOTATION.CUSTOM)
+    if (units === NOTATION.HELM)
       return false;
 
     // For all other cases, including 'UN' (non-canonical), 'fasta', and 'separator' show the multiline toggle.

@@ -29,8 +29,8 @@ export async function folding(table: DG.DataFrame, sequences: DG.Column) : Promi
   return await PackageFunctions.folding(table, sequences);
 }
 
-//name: Docking
-//input: dataframe df 
+//name: Boltz-1
+//input: dataframe df { caption: Table }
 //input: column molecules { semType: Molecule }
 //input: string config { choices: Boltz1:getBoltzConfigFolders; description: 'Folder with config files for docking' }
 //output: dataframe result
