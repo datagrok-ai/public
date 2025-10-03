@@ -19,7 +19,8 @@ import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
 import {getErrors, getCategoryWidget, getShowInfoWidget, getLossFuncDf, rgbToHex, lightenRGB,
-  getScalarsGoodnessOfFitViewer, getHelpIcon, getRadarTooltip, toUseRadar, getRandomSeedSettings} from './fitting/fitting-utils';
+  getScalarsGoodnessOfFitViewer, getHelpIcon, getRadarTooltip, toUseRadar, getRandomSeedSettings,
+  getResultsFilteringInputs} from './fitting/fitting-utils';
 import {OptimizationResult, Extremum, TargetTableOutput, Setting} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
@@ -515,6 +516,7 @@ export class FittingView {
   private helpIcon = getHelpIcon();
 
   private randInputs = getRandomSeedSettings();
+  private filteringInputs = getResultsFilteringInputs();
 
   private showFailsBtn = ui.button('Issues', () => {
     switch (this.method) {
@@ -1072,6 +1074,25 @@ export class FittingView {
       this.randInputs.seed.captionLabel,
     );
     this.fittingSettingsDiv.appendChild(this.randInputs.seed.root);
+
+    // Add filtering results inputs
+    this.filteringInputs.earlyStopping.root.insertBefore(
+      getSwitchMock(),
+      this.filteringInputs.earlyStopping.captionLabel,
+    );
+    this.fittingSettingsDiv.appendChild(this.filteringInputs.earlyStopping.root);
+
+    this.filteringInputs.threshold.root.insertBefore(
+      getSwitchMock(),
+      this.filteringInputs.threshold.captionLabel,
+    );
+    this.fittingSettingsDiv.appendChild(this.filteringInputs.threshold.root);
+
+    this.filteringInputs.stopAtFirst.root.insertBefore(
+      getSwitchMock(),
+      this.filteringInputs.stopAtFirst.captionLabel,
+    );
+    this.fittingSettingsDiv.appendChild(this.filteringInputs.stopAtFirst.root);
 
     // Add general settings
     [this.lossInput, this.samplesCountInput, this.similarityInput].forEach((inp) => {

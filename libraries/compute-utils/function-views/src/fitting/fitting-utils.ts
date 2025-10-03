@@ -12,7 +12,11 @@ import '../../css/sens-analysis.css';
 import {GRID_SIZE, HELP_LINK, INDICES, TIMEOUT, TARGET_DATAFRAME_INFO, TITLE, NAME,
   MIN_RADAR_COLS_COUNT, RAND_MOD, RAND_MULT, ReproSettings,
   REPRO_DEFAULT,
-  SEED_DEFAULT} from './constants';
+  SEED_DEFAULT,
+  EarlyStoppingSettings,
+  EARLY_STOP_DEFAULT,
+  COST_FUNC_THRESH,
+  SINGLE_EXTR_DEFAULT as STOP_AT_FIRST_DEFAULT} from './constants';
 
 /** Returns indices corresponding to the closest items */
 export function getIndices(expArg: DG.Column, simArg: DG.Column): Uint32Array {
@@ -462,7 +466,7 @@ export function getRandomSeedSettings() {
       seedInput.root.hidden = !val;
       settings.reproducible = val;
     },
-    tooltipText: 'Enable to get reproducible results',
+    tooltipText: 'Enable to get reproducible results.',
   });
 
   const seedInput = ui.input.int('random seed', {
@@ -474,9 +478,57 @@ export function getRandomSeedSettings() {
     },
   });
 
+  seedInput.root.hidden = !REPRO_DEFAULT;
+
   return {
     reproducibility: reprInput,
     seed: seedInput,
     settings: settings,
   };
 } // getRandomSeedSettings
+
+/** Returns filtering the computed results settings */
+export function getResultsFilteringInputs() {
+  const settings: EarlyStoppingSettings = {
+    useEarlyStopping: EARLY_STOP_DEFAULT,
+    costFuncThreshold: COST_FUNC_THRESH,
+    stopAtFirst: STOP_AT_FIRST_DEFAULT,
+  };
+
+  const stopAtFirstInput = ui.input.bool('stop at first', {
+    value: STOP_AT_FIRST_DEFAULT,
+    onValueChanged: (val) => {
+      settings.stopAtFirst = val;
+    },
+    tooltipText: 'Stop immediately after finding the first valid extremum.',
+  });
+  stopAtFirstInput.root.hidden = !EARLY_STOP_DEFAULT;
+
+  const earlyStopInput = ui.input.bool('early stopping', {
+    value: EARLY_STOP_DEFAULT,
+    onValueChanged: (val) => {
+      thresholdInput.root.hidden = !val;
+      stopAtFirstInput.root.hidden = !val;
+      settings.useEarlyStopping = val;
+    },
+    tooltipText: 'Enable to stop fitting once the loss function reaches the specified threshold.',
+  });
+
+  const thresholdInput = ui.input.float('threshold', {
+    value: COST_FUNC_THRESH,
+    nullable: false,
+    tooltipText: 'Loss function value at which to stop fitting.',
+    onValueChanged: (val) => {
+      settings.costFuncThreshold = val ?? COST_FUNC_THRESH;
+    },
+  });
+
+  thresholdInput.root.hidden = !EARLY_STOP_DEFAULT;
+
+  return {
+    stopAtFirst: stopAtFirstInput,
+    earlyStopping: earlyStopInput,
+    threshold: thresholdInput,
+    settings: settings,
+  };
+} // getResultsFilteringInputs
