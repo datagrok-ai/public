@@ -27,7 +27,7 @@ declare global {
 //input: string filter {optional: true}
 //output: view v
 //meta.browsePath: Misc
-export function metabolicGraphApp(path?: string, filter?: string): DG.ViewBase {
+export function metabolicGraph(path?: string, filter?: string): DG.ViewBase {
   const view = DG.View.create('d4-escher-container');
   view.name = 'Metabolic Graph';
   setTimeout(() => {
