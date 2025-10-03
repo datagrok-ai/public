@@ -112,8 +112,7 @@ export function renderMappingEditor(
           ui.empty(statusCell);
         }
 
-        // TODO: Add error-checking logic for mapping
-        grok.events.fireCustomEvent(MOLTRACK_MAPPING_VALIDATION_CHANGED, { hasErrors: false });
+        fireValidationEvent(host);
         requestTitleUpdate();
       },
     });
@@ -199,4 +198,9 @@ function validateMapping(
     issues.push({ message: 'Contains empty values', severity: 'warning' });
 
   return issues;
+}
+
+function fireValidationEvent(host: HTMLElement) {
+  const hasErrors = host.querySelector('.moltrack-table .fa-times-circle') !== null;
+  grok.events.fireCustomEvent(MOLTRACK_MAPPING_VALIDATION_CHANGED, { hasErrors: hasErrors });
 }
