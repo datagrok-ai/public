@@ -487,8 +487,8 @@ export function getRandomSeedSettings() {
   };
 } // getRandomSeedSettings
 
-/** Returns filtering the computed results settings */
-export function getResultsFilteringInputs() {
+/** Returns early stopping intpus & settings */
+export function getEarlyStoppingInputs() {
   const settings: EarlyStoppingSettings = {
     useEarlyStopping: EARLY_STOP_DEFAULT,
     costFuncThreshold: COST_FUNC_THRESH,
@@ -531,4 +531,4 @@ export function getResultsFilteringInputs() {
     threshold: thresholdInput,
     settings: settings,
   };
-} // getResultsFilteringInputs
+} // getEarlyStoppingInputs

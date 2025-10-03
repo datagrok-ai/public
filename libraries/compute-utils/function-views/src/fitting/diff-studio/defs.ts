@@ -1,4 +1,4 @@
-import {IVP2WebWorker, Pipeline} from '@datagrok/diff-grok';
+import {IVP2WebWorker, Pipeline} from 'diff-grok';
 
 export const ARG_IDX = 0;
 export const NO_ERRORS = 'Success';

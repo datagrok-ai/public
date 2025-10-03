@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {Extremum, OptimizationResult, InconsistentTables, sleep} from './optimizer-misc';
 import {optimizeNM} from './optimizer-nelder-mead';
 import {sampleParams} from './optimizer-sampler';
-import {TIMEOUT, ReproSettings} from './constants';
+import {TIMEOUT, ReproSettings, EarlyStoppingSettings} from './constants';
 import {seededRandom} from './fitting-utils';
 
 export async function performNelderMeadOptimization(
@@ -14,11 +14,12 @@ export async function performNelderMeadOptimization(
   settings: Map<string, number>,
   samplesCount: number = 1,
   reproSettings: ReproSettings,
+  earlyStoppingSettings: EarlyStoppingSettings,
 ): Promise<OptimizationResult> {
   const rand = reproSettings.reproducible ? seededRandom(reproSettings.seed) : Math.random;
   const params = sampleParams(samplesCount, paramsTop, paramsBottom, rand);
 
-  const extremums: Extremum[] = [];
+  let extremums: Extremum[] = [];
   const warnings: string[] = [];
   const failedInitPoint: Float32Array[] = [];
   let failsCount = 0;
@@ -28,9 +29,15 @@ export async function performNelderMeadOptimization(
   let percentage = 0;
   const pi = DG.TaskBarProgressIndicator.create(`Fitting... (${percentage}%)`);
 
+  const useEarlyStopping = earlyStoppingSettings.useEarlyStopping;
+  const threshold = earlyStoppingSettings.costFuncThreshold;
+  const toStopAtFirst = useEarlyStopping && earlyStoppingSettings.stopAtFirst;
+
   for (i = 0; i < samplesCount; ++i) {
     try {
-      extremums.push(await optimizeNM(objectiveFunc, params[i], settings, paramsBottom, paramsTop));
+      const extremum = await optimizeNM(objectiveFunc, params[i], settings, paramsBottom, paramsTop);
+
+      extremums.push(extremum);
 
       pi.update(100 * (i + 1) / samplesCount, `Fitting...`);
 
@@ -41,6 +48,14 @@ export async function performNelderMeadOptimization(
 
       if ((pi as any).canceled)
         break;
+
+      if (toStopAtFirst) {
+        if (extremum.cost <= threshold) {
+          console.log('Found!', extremum.cost, '<=', threshold);
+          extremums = [extremum];
+          break;
+        }
+      }
     } catch (e) {
       pi.close();
 
