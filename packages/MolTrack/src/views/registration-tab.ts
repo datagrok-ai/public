@@ -87,6 +87,7 @@ export class RegistrationView {
   }
 
   private async loadFile(file: File) {
+    ui.empty(this.uploadedPreviewDiv);
     if (!file) return;
 
     const extension = file.name.split('.').pop()!;
