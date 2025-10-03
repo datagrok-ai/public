@@ -319,7 +319,7 @@ export class PackageFunctions {
   static refineNotationProviderForBiln(
     @grok.decorators.param({type: 'column'}) col: DG.Column<string>,
     @grok.decorators.param({type: 'object'}) stats: {freq: { [key: string]: number; }, sameLength: boolean},
-    @grok.decorators.param({type: 'string', optional: true, options: {nullable: true}}) separator: string | null
+    @grok.decorators.param({type: 'string', options: {nullable: true, optional: true}}) separator: string | null
   ): boolean {
     if (separator !== '-')
       return false;// biln uses '-' as a separator
