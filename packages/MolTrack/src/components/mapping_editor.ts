@@ -21,137 +21,112 @@ export interface MappingEditorOptions {
   onUndo: (target: string) => void;
 }
 
-function createDynamicMappingRow(
-  sourceColumns: string[],
-  onMap: (target: string, source: string) => void,
-  onCancel: () => void,
-): HTMLElement {
-  let propName: string | null = null;
-  let sourceCol: string | null = null;
-
-  const applyMapping = () => {
-    if (propName && sourceCol)
-      onMap(propName, sourceCol);
-  };
-
-  const propInput = ui.input.string('', {placeholder: 'Property name...'});
-  propInput.input.addEventListener('input', () => {propName = propInput.value;});
-  propInput.input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      applyMapping();
-    }
-  });
-
-  const colChoice = ui.input.choice('', {
-    value: null,
-    items: [null, ...sourceColumns],
-    nullable: true,
-    onValueChanged: (value: string | null) => {
-      sourceCol = value;
-      applyMapping();
-    },
-  });
-
-  const cancelBtn = ui.iconFA('times', onCancel, 'Cancel');
-  cancelBtn.classList.add('mapping-cancel-icon');
-  const rightCell = ui.divH([colChoice.root, cancelBtn], 'dynamic-row-right-cell');
-  return ui.divH([propInput.root, rightCell], 'mapping-editor-row');
-}
-
-export function renderMappingEditor(host: HTMLElement, options: MappingEditorOptions, df: DG.DataFrame): void {
-  const {targetProperties, sourceColumns, mappings, onMap, onUndo} = options;
+export function renderMappingEditor(
+  host: HTMLElement,
+  options: MappingEditorOptions,
+  df: DG.DataFrame,
+): void {
+  const { targetProperties, sourceColumns, mappings, onMap, onUndo } = options;
 
   ui.empty(host);
-  host.className = 'mapping-editor';
 
   if (sourceColumns.length === 0) {
     host.appendChild(ui.divText('Import a data file to map columns.', 'info-message'));
     return;
   }
 
-  const tableHost = ui.divV([], 'mapping-editor-table');
-  host.appendChild(tableHost);
+  function getAllTargetProperties(): TargetProperty[] {
+    const allPropsMap = new Map<string, TargetProperty>();
+    for (const p of targetProperties) allPropsMap.set(p.name, p);
+    for (const [targetCol] of mappings) {
+      if (!allPropsMap.has(targetCol))
+        allPropsMap.set(targetCol, { name: targetCol, required: false });
+    }
 
-  const header = ui.divH([
-    ui.divText('Status', {style: {fontWeight: 'bold'}}),
-    ui.divText('Property', {style: {fontWeight: 'bold'}}),
-    ui.divText('Source Column', {style: {fontWeight: 'bold'}}),
-  ], 'mapping-editor-header');
-  tableHost.appendChild(header);
+    return Array.from(allPropsMap.values()).sort((a, b) => {
+      if (a.required !== b.required) return a.required ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+  }
 
-  const allPropsMap = new Map<string, TargetProperty>();
-  targetProperties.forEach((p) => allPropsMap.set(p.name, p));
-  mappings.forEach((_, targetCol) => {
-    if (!allPropsMap.has(targetCol))
-      allPropsMap.set(targetCol, {name: targetCol, required: false});
-  });
-
-  const allTargetProps = Array.from(allPropsMap.values()).sort((a, b) => {
-    if (a.required !== b.required) return a.required ? -1 : 1;
-    return a.name.localeCompare(b.name);
-  });
-
-  allTargetProps.forEach((prop) => {
-    const mappedSource = mappings.get(prop.name);
+  function createPropCell(prop: TargetProperty): HTMLElement {
     const propNameEl = ui.divH([ui.span([prop.name])]);
     if (prop.required) {
       const asterisk = ui.element('sup');
-      asterisk.onmouseenter = (e: any) => ui.tooltip.show('The field is required', e.clientX, e.clientY);
-      asterisk.onmouseleave = (e: any) => ui.tooltip.hide();
-      asterisk.className = 'required-asterisk';
       asterisk.innerText = '*';
+      asterisk.className = 'required-asterisk';
+      asterisk.onmouseenter = (e: MouseEvent) =>
+        ui.tooltip.show('The field is required', e.clientX, e.clientY);
+      asterisk.onmouseleave = () => ui.tooltip.hide();
       propNameEl.appendChild(asterisk);
     }
+    return propNameEl;
+  }
 
-    const choiceControl = ui.input.choice('', {
-      value: mappedSource || null,
+  function createStatusCell(): HTMLElement {
+    return ui.div();
+  }
+
+  function updateStatusCell(statusCell: HTMLElement, issues: ValidationIssue[]): void {
+    ui.empty(statusCell);
+
+    if (issues.length === 0) {
+      const icon = ui.iconFA('check-circle', undefined, 'Valid mapping');
+      icon.style.color = 'green';
+      statusCell.appendChild(icon);
+      return;
+    }
+
+    const mainIssue = issues.find((i) => i.severity === 'error') ?? issues[0];
+    const iconName = mainIssue.severity === 'error' ? 'times-circle' : 'exclamation-triangle';
+    const iconColor = mainIssue.severity === 'error' ? 'red' : 'orange';
+    const icon = ui.iconFA(iconName, undefined, mainIssue.message);
+    icon.style.color = iconColor;
+    statusCell.appendChild(icon);
+  }
+
+  function createChoiceControl(
+    prop: TargetProperty,
+    mappedSource: string | undefined,
+    statusCell: HTMLElement,
+  ): DG.InputBase<string | null> {
+    return ui.input.choice('', {
+      value: mappedSource ?? null,
       items: [null, ...sourceColumns],
       nullable: true,
       onValueChanged: (v: string | null) => {
         if (v) {
           onMap(prop.name, v);
           const issues = validateMapping(prop, v, df);
+          updateStatusCell(statusCell, issues);
+        } else if (mappedSource) {
+          onUndo(prop.name);
           ui.empty(statusCell);
+        }
 
-          if (issues.length > 0) {
-            const mainIssue = issues.find((i) => i.severity === 'error') || issues[0];
-
-            const iconName = mainIssue.severity === 'error' ? 'times-circle' : 'exclamation-triangle';
-            const iconColor = mainIssue.severity === 'error' ? 'red' : 'orange';
-
-            const icon = ui.iconFA(iconName, undefined, mainIssue.message);
-            icon.style.color = iconColor;
-            statusCell.appendChild(icon);
-          } else {
-            const icon = ui.iconFA('check-circle', undefined, 'Valid mapping');
-            icon.style.color = 'green';
-            statusCell.appendChild(icon);
-          }
-
-          grok.events.fireCustomEvent('mappingValidationChanged', {hasErrors: hasMappingErrors(host)});
-          // if issues.length === 0 → mapping is valid (success)
-        } else if (mappedSource) onUndo(prop.name);
+        // TODO: Add error-checking logic for mapping
+        grok.events.fireCustomEvent('mappingValidationChanged', {
+          hasErrors: false,
+        });
       },
     });
+  }
 
-    const statusCell = ui.divH([]);
+  const table = ui.table(
+    getAllTargetProperties(),
+    (prop) => {
+      const mappedSource = mappings.get(prop.name);
+      const statusCell = createStatusCell();
+      const propCell = createPropCell(prop);
+      const choiceControl = createChoiceControl(prop, mappedSource, statusCell);
 
-    choiceControl.fireChanged();
+      choiceControl.fireChanged();
+      return [statusCell, propCell, choiceControl.root];
+    },
+    ['Status', 'Property', 'Source Column'],
+  );
 
-    const row = ui.divH([statusCell, propNameEl, choiceControl.root], 'mapping-editor-row');
-    tableHost.appendChild(row);
-  });
-
-  const addRowHost = ui.divH([], 'mapping-add-row');
-  const addIcon = ui.iconFA('plus', () => {
-    const newDynamicRow = createDynamicMappingRow(sourceColumns, onMap, () => newDynamicRow.remove());
-    tableHost.insertBefore(newDynamicRow, addRowHost);
-    (newDynamicRow.querySelector('input[type="text"]') as HTMLElement)?.focus();
-  }, 'Add new property mapping');
-  addIcon.classList.add('mapping-add-icon');
-  addRowHost.appendChild(addIcon);
-  tableHost.appendChild(addRowHost);
+  host.appendChild(table);
 }
 
 interface ValidationIssue {
@@ -208,10 +183,4 @@ function validateMapping(
     issues.push({ message: 'Contains empty values', severity: 'warning' });
 
   return issues;
-}
-
-function hasMappingErrors(tableHost: HTMLElement): boolean {
-  return Array.from(tableHost.querySelectorAll('.mapping-editor-row')).some((row) =>
-    row.querySelector('.fa-times-circle') !== null,
-  );
 }
