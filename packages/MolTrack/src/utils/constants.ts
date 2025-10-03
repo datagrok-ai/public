@@ -84,3 +84,6 @@ export const SEARCH_NODE = 'Search';
 export const SAVED_SEARCHES_NODE = 'Saved Searches';
 
 export const MOLTRACK_APP_PATH: string = 'apps/MolTrack';
+
+export const MOLTRACK_REQUEST_TITLE_UPDATE = 'moltrack-updateTitleRequested';
+export const MOLTRACK_MAPPING_VALIDATION_CHANGED = 'moltrack-mappingValidationChanged';

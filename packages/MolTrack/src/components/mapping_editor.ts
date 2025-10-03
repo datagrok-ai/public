@@ -3,6 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import '../../css/moltrack.css';
+import { requestTitleUpdate } from '../views/registration-tab';
+import { MOLTRACK_MAPPING_VALIDATION_CHANGED } from '../utils/constants';
 
 export interface TargetProperty {
   name: string;
@@ -111,7 +113,8 @@ export function renderMappingEditor(
         }
 
         // TODO: Add error-checking logic for mapping
-        grok.events.fireCustomEvent('mappingValidationChanged', { hasErrors: false });
+        grok.events.fireCustomEvent(MOLTRACK_MAPPING_VALIDATION_CHANGED, { hasErrors: false });
+        requestTitleUpdate();
       },
     });
 
