@@ -1,4 +1,4 @@
-import type { CobraModelData } from "../../escher_src/src/ts/types";
+import type { CobraModelData } from '../../escher_src/src/ts/types';
 
 export class WorkerCobraSolver {
 
