@@ -30,12 +30,12 @@ export async function performNelderMeadOptimization(
   const pi = DG.TaskBarProgressIndicator.create(`Fitting... (${percentage}%)`);
 
   const useEarlyStopping = earlyStoppingSettings.useEarlyStopping;
-  const threshold = earlyStoppingSettings.costFuncThreshold;
+  const threshold = useEarlyStopping ? earlyStoppingSettings.costFuncThreshold : undefined;
   const toStopAtFirst = useEarlyStopping && earlyStoppingSettings.stopAtFirst;
 
   for (i = 0; i < samplesCount; ++i) {
     try {
-      const extremum = await optimizeNM(objectiveFunc, params[i], settings, paramsBottom, paramsTop);
+      const extremum = await optimizeNM(objectiveFunc, params[i], settings, paramsBottom, paramsTop, threshold);
 
       extremums.push(extremum);
 
@@ -50,8 +50,7 @@ export async function performNelderMeadOptimization(
         break;
 
       if (toStopAtFirst) {
-        if (extremum.cost <= threshold) {
-          console.log('Found!', extremum.cost, '<=', threshold);
+        if (extremum.cost <= threshold!) {
           extremums = [extremum];
           break;
         }

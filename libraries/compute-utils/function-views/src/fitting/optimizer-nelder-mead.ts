@@ -93,7 +93,9 @@ export const optimizeNM:IOptimizer = async function(
   paramsInitial: Float32Array,
   settings: Map<string, number>,
   restrictionsBottom: Float32Array,
-  restrictionsTop: Float32Array) : Promise<Extremum> {
+  restrictionsTop: Float32Array,
+  threshold?: number,
+) : Promise<Extremum> {
   // Settings initialization
   const tolerance = settings.get('tolerance')!;
   const maxIter = settings.get('maxIter')!;
@@ -146,6 +148,11 @@ export const optimizeNM:IOptimizer = async function(
       else {
         ++noImprovment;
         if (noImprovment > 2 * dim)
+          break;
+      }
+
+      if (threshold != null) {
+        if (best <= threshold)
           break;
       }
 

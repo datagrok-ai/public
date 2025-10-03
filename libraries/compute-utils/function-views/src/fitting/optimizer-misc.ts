@@ -33,7 +33,9 @@ export interface IOptimizer {
     paramsInitial: Float32Array,
     settings: Map<string, number>,
     restrictionsBottom: Float32Array,
-    restrictionsTop: Float32Array): Promise<Extremum>;
+    restrictionsTop: Float32Array,
+    threshold?: number,
+  ): Promise<Extremum>;
 };
 
 /** Inconsistent tables error */

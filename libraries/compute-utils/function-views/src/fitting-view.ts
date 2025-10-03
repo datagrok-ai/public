@@ -1267,147 +1267,158 @@ export class FittingView {
 
   /** Perform optimization */
   private async runOptimization(): Promise<void> {
-    //   try {
+    try {
     // check applicability
-    if (!this.canFittingBeRun())
-      return;
+      if (!this.canFittingBeRun())
+        return;
 
-    if (this.samplesCount < 1)
-      return;
+      if (this.samplesCount < 1)
+        return;
 
-    if ((this.similarity < FITTING_UI.SIMILARITY_MIN) || (this.similarity > FITTING_UI.SIMILARITY_MAX))
-      return;
+      if ((this.similarity < FITTING_UI.SIMILARITY_MIN) || (this.similarity > FITTING_UI.SIMILARITY_MAX))
+        return;
 
-    this.failsDF = null;
+      this.failsDF = null;
 
-    // inputs of the source function
-    const inputs: any = {};
+      // inputs of the source function
+      const inputs: any = {};
 
-    // add fixed inputs
-    const fixedInputs = this.getFixedInputs();
-    fixedInputs.forEach((name) => inputs[name] = this.store.inputs[name].const.value);
+      // add fixed inputs
+      const fixedInputs = this.getFixedInputs();
+      fixedInputs.forEach((name) => inputs[name] = this.store.inputs[name].const.value);
 
-    // get varied inputs, optimization is performed with respect to them
-    const variedInputs = this.getFittedInputs();
-    const dim = variedInputs.length;
+      // get varied inputs, optimization is performed with respect to them
+      const variedInputs = this.getFittedInputs();
+      const dim = variedInputs.length;
 
-    // varied inputs specification
-    const variedInputNames: string[] = [];
-    const minVals = new Float32Array(dim);
-    const maxVals = new Float32Array(dim);
-    const variedInputsCaptions = new Array<string>(dim);
+      // varied inputs specification
+      const variedInputNames: string[] = [];
+      const minVals = new Float32Array(dim);
+      const maxVals = new Float32Array(dim);
+      const variedInputsCaptions = new Array<string>(dim);
 
-    // set varied inputs specification
-    variedInputs.forEach((name, idx) => {
-      const propConfig = this.store.inputs[name] as FittingNumericStore;
-      minVals[idx] = propConfig.min.value ?? 0;
-      maxVals[idx] = propConfig.max.value ?? 0;
-      variedInputNames.push(name);
-      variedInputsCaptions[idx] = propConfig.prop.caption ?? propConfig.prop.name;
-    });
-
-    // get selected output
-    const outputsOfInterest = this.getOutputsOfInterest();
-    const outputsCount = outputsOfInterest.length;
-    if (outputsCount < 1) {
-      grok.shell.error('No output is selected for optimization.');
-      return;
-    }
-
-    const toShowTableName = outputsOfInterest.map((item) => item.prop.propertyType).filter((type) => type === DG.TYPE.DATA_FRAME).length > 1;
-
-    /** Get call funcCall with the specified inputs */
-    const getCalledFuncCall = async (x: Float32Array): Promise<DG.FuncCall> => {
-      x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
-      const funcCall = this.func.prepare(inputs);
-      return await funcCall.call();
-    };
-
-    /** Root mean sqaure error (RMSE) cost function */
-    const rmseCostFunc = async (x: Float32Array): Promise<number> => {
-      x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
-      const funcCall = this.func.prepare(inputs);
-      const calledFuncCall = await funcCall.call();
-
-      let sumOfSquaredErrors = 0;
-      let outputsCount = 0;
-      let cur = 0;
-
-      outputsOfInterest.forEach((output) => {
-        if (output.prop.propertyType !== DG.TYPE.DATA_FRAME) {
-          cur = output.target as number;
-          sumOfSquaredErrors += ((cur - calledFuncCall.getParamValue(output.prop.name)) / (cur !== 0 ? cur : 1)) ** 2;
-          ++outputsCount;
-        } else {
-          const df = output.target as DG.DataFrame;
-          getErrors(df.col(output.argName), output.funcColsInput.value, calledFuncCall.getParamValue(output.prop.name), true)
-            .forEach((err) => {
-              sumOfSquaredErrors += err ** 2;
-              ++outputsCount;
-            });
-        }
+      // set varied inputs specification
+      variedInputs.forEach((name, idx) => {
+        const propConfig = this.store.inputs[name] as FittingNumericStore;
+        minVals[idx] = propConfig.min.value ?? 0;
+        maxVals[idx] = propConfig.max.value ?? 0;
+        variedInputNames.push(name);
+        variedInputsCaptions[idx] = propConfig.prop.caption ?? propConfig.prop.name;
       });
 
-      return Math.sqrt(sumOfSquaredErrors / outputsCount);
-    };
+      // get selected output
+      const outputsOfInterest = this.getOutputsOfInterest();
+      const outputsCount = outputsOfInterest.length;
+      if (outputsCount < 1) {
+        grok.shell.error('No output is selected for optimization.');
+        return;
+      }
 
-    /** Maximum absolute deviation (MAD) cost function */
-    const madCostFunc = async (x: Float32Array): Promise<number> => {
-      x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
-      const funcCall = this.func.prepare(inputs);
-      const calledFuncCall = await funcCall.call();
+      const toShowTableName = outputsOfInterest.map((item) => item.prop.propertyType).filter((type) => type === DG.TYPE.DATA_FRAME).length > 1;
 
-      let mad = 0;
+      /** Get call funcCall with the specified inputs */
+      const getCalledFuncCall = async (x: Float32Array): Promise<DG.FuncCall> => {
+        x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
+        const funcCall = this.func.prepare(inputs);
+        return await funcCall.call();
+      };
 
-      outputsOfInterest.forEach((output) => {
-        if (output.prop.propertyType !== DG.TYPE.DATA_FRAME)
-          mad = Math.max(mad, Math.abs(output.target as number - calledFuncCall.getParamValue(output.prop.name)));
-        else {
-          const df = output.target as DG.DataFrame;
-          getErrors(df.col(output.argName), output.funcColsInput.value, calledFuncCall.getParamValue(output.prop.name), false)
-            .forEach((err) => mad = Math.max(mad, Math.abs(err)));
-        }
-      });
+      /** Root mean sqaure error (RMSE) cost function */
+      const rmseCostFunc = async (x: Float32Array): Promise<number> => {
+        x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
+        const funcCall = this.func.prepare(inputs);
+        const calledFuncCall = await funcCall.call();
 
-      return mad;
-    };
+        let sumOfSquaredErrors = 0;
+        let outputsCount = 0;
+        let cur = 0;
 
-    let costFunc;
-    let costTooltip;
+        outputsOfInterest.forEach((output) => {
+          if (output.prop.propertyType !== DG.TYPE.DATA_FRAME) {
+            cur = output.target as number;
+            sumOfSquaredErrors += ((cur - calledFuncCall.getParamValue(output.prop.name)) / (cur !== 0 ? cur : 1)) ** 2;
+            ++outputsCount;
+          } else {
+            const df = output.target as DG.DataFrame;
+            getErrors(df.col(output.argName), output.funcColsInput.value, calledFuncCall.getParamValue(output.prop.name), true)
+              .forEach((err) => {
+                sumOfSquaredErrors += err ** 2;
+                ++outputsCount;
+              });
+          }
+        });
 
-    if (this.loss === LOSS.MAD) {
-      costFunc = madCostFunc;
-      costTooltip = 'scaled maximum absolute deviation';
-    } else {
-      costFunc = rmseCostFunc;
-      costTooltip = 'scaled root mean square error';
-    }
+        return Math.sqrt(sumOfSquaredErrors / outputsCount);
+      };
 
-    let optResult: OptimizationResult;
+      /** Maximum absolute deviation (MAD) cost function */
+      const madCostFunc = async (x: Float32Array): Promise<number> => {
+        x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
+        const funcCall = this.func.prepare(inputs);
+        const calledFuncCall = await funcCall.call();
 
-    // Perform optimization
-    if (this.method === METHOD.NELDER_MEAD) {
-      if (this.diffGrok !== undefined) {
-        try {
-          const index = INDICES.DIFF_STUDIO_OUTPUT;
+        let mad = 0;
 
-          optResult = await getFittedParams(
-            this.loss,
-            this.diffGrok.ivp,
-            this.diffGrok.ivpWW,
-            this.diffGrok.pipelineCreator,
-            this.nelderMeadSettings,
-            variedInputNames,
-            minVals,
-            maxVals,
-            inputs,
-            outputsOfInterest[index].argName,
-            outputsOfInterest[index].funcColsInput.value,
+        outputsOfInterest.forEach((output) => {
+          if (output.prop.propertyType !== DG.TYPE.DATA_FRAME)
+            mad = Math.max(mad, Math.abs(output.target as number - calledFuncCall.getParamValue(output.prop.name)));
+          else {
+            const df = output.target as DG.DataFrame;
+            getErrors(df.col(output.argName), output.funcColsInput.value, calledFuncCall.getParamValue(output.prop.name), false)
+              .forEach((err) => mad = Math.max(mad, Math.abs(err)));
+          }
+        });
+
+        return mad;
+      };
+
+      let costFunc;
+      let costTooltip;
+
+      if (this.loss === LOSS.MAD) {
+        costFunc = madCostFunc;
+        costTooltip = 'scaled maximum absolute deviation';
+      } else {
+        costFunc = rmseCostFunc;
+        costTooltip = 'scaled root mean square error';
+      }
+
+      let optResult: OptimizationResult;
+
+      // Perform optimization
+      if (this.method === METHOD.NELDER_MEAD) {
+        if (this.diffGrok !== undefined) {
+          try {
+            const index = INDICES.DIFF_STUDIO_OUTPUT;
+
+            optResult = await getFittedParams(
+              this.loss,
+              this.diffGrok.ivp,
+              this.diffGrok.ivpWW,
+              this.diffGrok.pipelineCreator,
+              this.nelderMeadSettings,
+              variedInputNames,
+              minVals,
+              maxVals,
+              inputs,
+              outputsOfInterest[index].argName,
+              outputsOfInterest[index].funcColsInput.value,
               outputsOfInterest[index].target as DG.DataFrame,
               this.samplesCount,
               this.randInputs.settings,
-          );
-        } catch (err) { // run fitting in the main thread if in-webworker run failed
+            );
+          } catch (err) { // run fitting in the main thread if in-webworker run failed
+            optResult = await performNelderMeadOptimization(
+              costFunc,
+              minVals,
+              maxVals,
+              this.nelderMeadSettings,
+              this.samplesCount,
+              this.randInputs.settings,
+              this.earlyStoppingInputs.settings,
+            );
+          }
+        } else {
           optResult = await performNelderMeadOptimization(
             costFunc,
             minVals,
@@ -1418,153 +1429,142 @@ export class FittingView {
             this.earlyStoppingInputs.settings,
           );
         }
-      } else {
-        optResult = await performNelderMeadOptimization(
-          costFunc,
-          minVals,
-          maxVals,
-          this.nelderMeadSettings,
-          this.samplesCount,
-          this.randInputs.settings,
-          this.earlyStoppingInputs.settings,
-        );
-      }
-    } else
-      throw new Error(`Not implemented the '${this.method}' method`);
+      } else
+        throw new Error(`Not implemented the '${this.method}' method`);
 
-    console.log(optResult);
+      console.log(optResult);
 
-    const extrema = optResult.extremums;
-    const allExtrCount = extrema.length;
+      const extrema = optResult.extremums;
+      const allExtrCount = extrema.length;
 
-    // Process fails
-    if (optResult.fails != null) {
-      this.failsDF = optResult.fails;
-      const cols = this.failsDF.columns;
+      // Process fails
+      if (optResult.fails != null) {
+        this.failsDF = optResult.fails;
+        const cols = this.failsDF.columns;
 
-      variedInputsCaptions.forEach((cap, idx) => cols.byIndex(idx).name = cols.getUnusedName(cap));
+        variedInputsCaptions.forEach((cap, idx) => cols.byIndex(idx).name = cols.getUnusedName(cap));
 
-      fixedInputs.forEach((name) => {
-        const inp = this.store.inputs[name];
+        fixedInputs.forEach((name) => {
+          const inp = this.store.inputs[name];
 
-        if (inp.prop.propertyType === DG.TYPE.DATA_FRAME)
-          return;
+          if (inp.prop.propertyType === DG.TYPE.DATA_FRAME)
+            return;
 
-        cols.add(DG.Column.fromList(
+          cols.add(DG.Column.fromList(
             inp.prop.propertyType as unknown as DG.COLUMN_TYPE,
             cols.getUnusedName(inp.prop.caption ?? inp.prop.name),
             new Array(this.failsDF?.rowCount).fill(inp.const.value),
-        ));
-      });
-    }
-
-    // Sort all extrema with respect to the loss function
-    extrema.sort((a: Extremum, b: Extremum) => a.cost - b.cost);
-
-    // Extract target dataframes
-    const targetDfs: TargetTableOutput[] = outputsOfInterest
-      .filter((output) => output.prop.propertyType === DG.TYPE.DATA_FRAME)
-      .map((output) => {
-        return {name: output.prop.name, target: output.target as DG.DataFrame, argColName: output.argName};
-      });
-
-    // Get non-similar points
-    const nonSimilarExtrema = await getNonSimilar(extrema, this.similarity, getCalledFuncCall, targetDfs);
-    const rowCount = nonSimilarExtrema.length;
-
-    // Show info/warning reporting results
-    if (optResult.fails != null) {
-      if (allExtrCount < 1) {
-        grok.shell.warning(ui.divV([
-          ui.label(`Failed to find ${this.samplesCount} point${this.samplesCount > 1 ? 's' : ''}`),
-          ui.div([this.showFailsBtn]),
-        ]));
-
-        return;
-      } else {
-        grok.shell.info(ui.divV([
-          ui.label(`Found ${rowCount} point${rowCount > 1 ? 's' : ''}`),
-          ui.div([this.showFailsBtn]),
-        ]));
-      }
-    } else
-      grok.shell.info(`Found ${rowCount} point${rowCount > 1 ? 's' : ''}`);
-
-    this.clearPrev();
-
-    const lossVals = new Float32Array(rowCount);
-    const grid = this.comparisonView.grid;
-    const tooltips = new Map([[TITLE.LOSS as string, `The final loss obtained: ${costTooltip}`]]);
-
-    nonSimilarExtrema.forEach((extr, idx) => lossVals[idx] = extr.cost);
-
-    // Add fitting results to the table: iteration & loss
-    const reportTable = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array(TITLE.LOSS, lossVals)]);
-    this.comparisonView.dataFrame = reportTable;
-    const reportColumns = reportTable.columns;
-
-    // Add fitting results to the table: fitted parameters
-    variedInputsCaptions.forEach((cap, idx, arr) => {
-      cap = reportColumns.getUnusedName(cap);
-      arr[idx] = cap;
-      const raw = new Float32Array(rowCount);
-
-      for (let j = 0; j < rowCount; ++j)
-        raw[j] = nonSimilarExtrema[j].point[idx];
-
-      reportColumns.add(DG.Column.fromFloat32Array(cap, raw));
-      tooltips.set(cap, `Obtained values of '${cap}'`);
-    });
-
-    // Set properties of the grid
-    grid.props.rowHeight = GRID_SIZE.ROW_HEIGHT;
-    grid.props.showAddNewRowIcon = false;
-    grid.props.allowEdit = false;
-
-    // Add goodness of fit viewers
-    const gofTables = new Array<Map<string, GoFtable>>(rowCount);
-
-    this.currentFuncCalls = [];
-    for (let idx = 0; idx < rowCount; ++idx) {
-      const gofDfs = new Map<string, GoFtable>();
-      const scalarGoFs: GoFtable[] = [];
-
-      const calledFuncCall = await getCalledFuncCall(nonSimilarExtrema[idx].point);
-      this.currentFuncCalls.push(calledFuncCall);
-
-      outputsOfInterest.forEach((output) => {
-        const gofs = this.getOutputGofTable(output.prop, output.target, calledFuncCall, output.argName, toShowTableName);
-        gofs.forEach((item) => {
-          if (item.chart !== DG.VIEWER.BAR_CHART)
-            gofDfs.set(item.caption, item);
-          else
-            scalarGoFs.push(item);
+          ));
         });
-      });
-
-      if (scalarGoFs.length > 0) {
-        const gof = this.getScalarsGofTable(scalarGoFs);
-        const name = gof.table.columns.length > 2 ? NAME.SCALARS : gof.table.columns.byIndex(0).name;
-        gofDfs.set(name, gof);
       }
 
-      gofTables[idx] = gofDfs;
-    }
+      // Sort all extrema with respect to the loss function
+      extrema.sort((a: Extremum, b: Extremum) => a.cost - b.cost);
 
-    // Add goodness of fit columns
-    gofTables[0].forEach((_, name) => {
-      reportColumns.addNew(name, DG.COLUMN_TYPE.DATA_FRAME).init((row: number) => gofTables[row].get(name)!.table);
-      tooltips.set(name, 'Goodness of fit');
-      const lossFuncGraphGridCol = grid.columns.byName(name);
+      // Extract target dataframes
+      const targetDfs: TargetTableOutput[] = outputsOfInterest
+        .filter((output) => output.prop.propertyType === DG.TYPE.DATA_FRAME)
+        .map((output) => {
+          return {name: output.prop.name, target: output.target as DG.DataFrame, argColName: output.argName};
+        });
+
+      // Get non-similar points
+      const nonSimilarExtrema = await getNonSimilar(extrema, this.similarity, getCalledFuncCall, targetDfs);
+      const rowCount = nonSimilarExtrema.length;
+
+      // Show info/warning reporting results
+      if (optResult.fails != null) {
+        if (allExtrCount < 1) {
+          grok.shell.warning(ui.divV([
+            ui.label(`Failed to find ${this.samplesCount} point${this.samplesCount > 1 ? 's' : ''}`),
+            ui.div([this.showFailsBtn]),
+          ]));
+
+          return;
+        } else {
+          grok.shell.info(ui.divV([
+            ui.label(`Found ${rowCount} point${rowCount > 1 ? 's' : ''}`),
+            ui.div([this.showFailsBtn]),
+          ]));
+        }
+      } else
+        grok.shell.info(`Found ${rowCount} point${rowCount > 1 ? 's' : ''}`);
+
+      this.clearPrev();
+
+      const lossVals = new Float32Array(rowCount);
+      const grid = this.comparisonView.grid;
+      const tooltips = new Map([[TITLE.LOSS as string, `The final loss obtained: ${costTooltip}`]]);
+
+      nonSimilarExtrema.forEach((extr, idx) => lossVals[idx] = extr.cost);
+
+      // Add fitting results to the table: iteration & loss
+      const reportTable = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array(TITLE.LOSS, lossVals)]);
+      this.comparisonView.dataFrame = reportTable;
+      const reportColumns = reportTable.columns;
+
+      // Add fitting results to the table: fitted parameters
+      variedInputsCaptions.forEach((cap, idx, arr) => {
+        cap = reportColumns.getUnusedName(cap);
+        arr[idx] = cap;
+        const raw = new Float32Array(rowCount);
+
+        for (let j = 0; j < rowCount; ++j)
+          raw[j] = nonSimilarExtrema[j].point[idx];
+
+        reportColumns.add(DG.Column.fromFloat32Array(cap, raw));
+        tooltips.set(cap, `Obtained values of '${cap}'`);
+      });
+
+      // Set properties of the grid
+      grid.props.rowHeight = GRID_SIZE.ROW_HEIGHT;
+      grid.props.showAddNewRowIcon = false;
+      grid.props.allowEdit = false;
+
+      // Add goodness of fit viewers
+      const gofTables = new Array<Map<string, GoFtable>>(rowCount);
+
+      this.currentFuncCalls = [];
+      for (let idx = 0; idx < rowCount; ++idx) {
+        const gofDfs = new Map<string, GoFtable>();
+        const scalarGoFs: GoFtable[] = [];
+
+        const calledFuncCall = await getCalledFuncCall(nonSimilarExtrema[idx].point);
+        this.currentFuncCalls.push(calledFuncCall);
+
+        outputsOfInterest.forEach((output) => {
+          const gofs = this.getOutputGofTable(output.prop, output.target, calledFuncCall, output.argName, toShowTableName);
+          gofs.forEach((item) => {
+            if (item.chart !== DG.VIEWER.BAR_CHART)
+              gofDfs.set(item.caption, item);
+            else
+              scalarGoFs.push(item);
+          });
+        });
+
+        if (scalarGoFs.length > 0) {
+          const gof = this.getScalarsGofTable(scalarGoFs);
+          const name = gof.table.columns.length > 2 ? NAME.SCALARS : gof.table.columns.byIndex(0).name;
+          gofDfs.set(name, gof);
+        }
+
+        gofTables[idx] = gofDfs;
+      }
+
+      // Add goodness of fit columns
+      gofTables[0].forEach((_, name) => {
+        reportColumns.addNew(name, DG.COLUMN_TYPE.DATA_FRAME).init((row: number) => gofTables[row].get(name)!.table);
+        tooltips.set(name, 'Goodness of fit');
+        const lossFuncGraphGridCol = grid.columns.byName(name);
         lossFuncGraphGridCol!.cellType = 'html';
         lossFuncGraphGridCol!.width = GRID_SIZE.LOSS_GRAPH_WIDTH;
-    });
+      });
 
-    // Add dataframe with loss function values
-    const lossGraphColName = reportColumns.getUnusedName(`${this.loss} by iterations`);
-    tooltips.set(lossGraphColName, `Minimizing ${costTooltip}`);
-    reportColumns.addNew(lossGraphColName, DG.COLUMN_TYPE.DATA_FRAME).init((row: number) => getLossFuncDf(nonSimilarExtrema[row]));
-    const lossFuncGraphGridCol = grid.columns.byName(lossGraphColName);
+      // Add dataframe with loss function values
+      const lossGraphColName = reportColumns.getUnusedName(`${this.loss} by iterations`);
+      tooltips.set(lossGraphColName, `Minimizing ${costTooltip}`);
+      reportColumns.addNew(lossGraphColName, DG.COLUMN_TYPE.DATA_FRAME).init((row: number) => getLossFuncDf(nonSimilarExtrema[row]));
+      const lossFuncGraphGridCol = grid.columns.byName(lossGraphColName);
       lossFuncGraphGridCol!.cellType = 'html';
       lossFuncGraphGridCol!.width = GRID_SIZE.LOSS_GRAPH_WIDTH;
 
@@ -1707,9 +1707,9 @@ export class FittingView {
 
       this.gridClickSubscription = grid.onCellClick.subscribe(cellEffect);
       this.gridCellChangeSubscription = grid.onCurrentCellChanged.subscribe(cellEffect);
-      // } catch (error) {
-      //grok.shell.error(error instanceof Error ? error.message : 'The platform issue');
-    // }
+    } catch (error) {
+      grok.shell.error(error instanceof Error ? error.message : 'The platform issue');
+    }
   } // runOptimization
 
   /** Get outputs selected as target */
