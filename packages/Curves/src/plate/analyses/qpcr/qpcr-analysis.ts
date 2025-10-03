@@ -9,7 +9,7 @@ import {Plate, LayerType} from '../../plate';
 import {AbstractPlateAnalysis, IAnalysisProperty} from '../base-analysis';
 import {AnalysisRequiredFields} from '../../../plates/views/components/analysis-mapping/analysis-mapping-panel';
 import {PlateWidget} from '../../plate-widget';
-import {createAnalysisRun, saveAnalysisResult} from '../../../plates/plates-crud';
+import {createAnalysisRun, saveAnalysisResult, saveAnalysisRunParameter} from '../../../plates/plates-crud';
 
 const REQUIRED_ROLES = {
   TARGET: 'Target Gene',
@@ -57,9 +57,10 @@ export class QpcrAnalysis extends AbstractPlateAnalysis {
       grid.props.allowEdit = false;
 
       const saveButton = ui.button('SAVE RESULTS', async () => {
-        await this.saveResults(plate, resultsDf, {});
+        await this.saveResults(plate, resultsDf, {}, mappings); // <-- Pass mappings here
       });
       const container = ui.divV([grid.root, ui.div([saveButton], 'ui-box')], 'drc-grid-container');
+
 
       container.style.cssText = 'display: flex; flex-direction: column; width: 100%; height: 100%;';
       grid.root.style.flexGrow = '1';
@@ -144,7 +145,12 @@ export class QpcrAnalysis extends AbstractPlateAnalysis {
     return ui.divV([ui.h3('Status'), ...statusItems], {style: {marginTop: '20px'}});
   }
 
-  async saveResults(plate: Plate, resultsDf: DG.DataFrame, params: Record<string, any>): Promise<void> {
+  async saveResults(
+    plate: Plate,
+    resultsDf: DG.DataFrame,
+    params: Record<string, any>,
+    currentMappings: Map<string, string>
+  ): Promise<void> {
     if (!plate.id) {
       grok.shell.error('Plate must be saved before saving analysis results.');
       return;
@@ -152,8 +158,18 @@ export class QpcrAnalysis extends AbstractPlateAnalysis {
     const pi = DG.TaskBarProgressIndicator.create('Saving qPCR results...');
     try {
       const runId = await createAnalysisRun(plate.id, this.name, Object.values(REQUIRED_ROLES));
-      const groupCombination: string[] = [];
 
+      for (const [requiredField, actualColumn] of currentMappings.entries()) {
+        const mappingPropName = `Mapping: ${requiredField}`;
+        await saveAnalysisRunParameter({
+          runId: runId,
+          propertyName: mappingPropName,
+          propertyType: DG.TYPE.STRING,
+          value: actualColumn,
+        });
+      }
+
+      const groupCombination: string[] = [];
       const ddCt = parseFloat(resultsDf.cell(3, 'Target Gene').value);
       const foldChange = parseFloat(resultsDf.cell(4, 'Target Gene').value);
 
@@ -174,7 +190,7 @@ export class QpcrAnalysis extends AbstractPlateAnalysis {
   private async saveAnalysisProperty(runId: number, propName: string, value: any, group: string[]): Promise<void> {
     const prop = this._outputProperties.get(propName);
     if (prop && value !== null && value !== undefined)
-      await saveAnalysisResult({runId, propertyId: prop.id, propertyType: prop.type, value, groupCombination: group});
+      await saveAnalysisResult({runId, propertyId: prop.id, propertyName: prop.name, propertyType: prop.type, value, groupCombination: group});
   }
 
 

@@ -12,8 +12,6 @@ import {
   allProperties,
   plateTemplates
 } from '../plates-crud';
-import {drcAnalysisProperties} from '../../plate/plate-drc-analysis';
-import {doseRatioAnalysisProperties} from '../../plate/dose-ratio-analysis';
 
 
 type PropInput = DG.InputBase & { prop: PlateProperty };
@@ -188,16 +186,7 @@ function getSearchView(viewName: string,
   const refreshAnalysisUI = () => {
     ui.empty(analysisFormHost);
 
-    let analysisProperties: AnalysisProperty[] = [];
-    let currentAnalysisName = '';
-
-    if (analysisTypeSelector.value === 'Dose-Response') {
-      analysisProperties = drcAnalysisProperties;
-      currentAnalysisName = 'Dose-Response';
-    } else if (analysisTypeSelector.value === 'Dose-Ratio') {
-      analysisProperties = doseRatioAnalysisProperties;
-      currentAnalysisName = 'Dose-Ratio';
-    }
+    const analysisProperties: AnalysisProperty[] = [];
 
     if (analysisProperties.length > 0) {
       const analysisInputs = analysisProperties.map((prop) => {

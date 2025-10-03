@@ -35,7 +35,6 @@ export class BaseAnalysisView {
   }
 
   private setupLayout(): void {
-    // Consistent container styling that works for both mapping and results
     this.container.style.cssText = `
       width: 100%;
       height: 100%;
@@ -83,7 +82,6 @@ export class BaseAnalysisView {
     });
 
     const panelRoot = mappingPanel.getRoot();
-    // Ensure mapping panel fills the content host properly
     panelRoot.style.cssText = `
       width: 100%;
       flex: 1;
@@ -98,7 +96,6 @@ export class BaseAnalysisView {
     const resultsView = this.config.createResultsView(this.plate, this.currentMappings);
 
     if (resultsView) {
-      // Ensure results view fills the content host properly
       resultsView.style.cssText = `
         width: 100%;
         height: 100%;

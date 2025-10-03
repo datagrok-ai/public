@@ -65,7 +65,6 @@ export type PlateTemplate = {
   wellProperties: Partial<PlateProperty>[];
 }
 
-// MODIFIED: 'dbColumn' is no longer needed.
 export type AnalysisProperty = {
   name: string; // User-friendly name, e.g., "IC50"
   type: DG.TYPE; // Data type, e.g., DG.TYPE.FLOAT
@@ -106,12 +105,10 @@ export async function initPlates(force: boolean = false) {
   if (!_initialized)
     events.subscribe((event) => grok.shell.info(`${event.on} ${event.eventType} ${event.objectType}`));
 
-  // Fetch all templates and all properties
   plateTemplates = (await api.queries.getPlateTemplates()).toJson();
   allProperties = (await api.queries.getProperties()).toJson();
   plateTypes = (await api.queries.getPlateTypes()).toJson();
 
-  // Populate each template with its properties based on template_id and scope
   for (const template of plateTemplates) {
     template.plateProperties = allProperties.filter(
       (p) => p.template_id === template.id && p.scope === 'plate'
@@ -319,7 +316,6 @@ function getWellSearchSql(query: PlateQuery): string {
 
   const whereFilter = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
-  // It queries from the well values table and groups by each unique well.
   return `
 SELECT
     pwv.plate_id,
@@ -583,6 +579,7 @@ export async function saveAnalysisRunParameter(params: {
 export async function saveAnalysisResult(params: {
     runId: number,
     propertyId: number,
+    propertyName: string,
     propertyType: string,
     value: any,
     groupCombination: string[]
@@ -594,7 +591,7 @@ export async function saveAnalysisResult(params: {
     valueString: null, valueNum: null, valueBool: null, valueJsonb: null
   };
 
-  if (params.propertyType === DG.TYPE.STRING && typeof params.value === 'string' && params.value.startsWith('{')) {
+  if (params.propertyName.toLowerCase().includes('curve') && typeof params.value === 'string') {
     callParams.valueJsonb = params.value;
   } else {
     const dbColumnKey = Object.keys(plateDbColumn).find((key) => key === params.propertyType);
@@ -609,6 +606,7 @@ export async function saveAnalysisResult(params: {
 
   await grok.functions.call('Curves:saveAnalysisResult', callParams);
 }
+
 
 export async function getOrCreateProperty(name: string, type: DG.TYPE, scope: 'plate' | 'well' = 'plate'): Promise<PlateProperty> {
   await initPlates();

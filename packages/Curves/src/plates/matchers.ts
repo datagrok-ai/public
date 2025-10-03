@@ -207,7 +207,6 @@ export class StringMatcher extends Matcher {
   }
 
   toSql(variable: string): string {
-    // Escape single quotes for SQL, then prepare for a case-insensitive LIKE search
     const escapedValue = this.value.replace(/'/g, '\'\'');
     return `(${variable} ILIKE '%${escapedValue}%')`;
   }

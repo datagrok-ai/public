@@ -5,7 +5,7 @@ import {Plate} from '../../plate';
 import {PlateWidget} from '../../plate-widget';
 import {AbstractPlateAnalysis, IAnalysisProperty} from '../base-analysis';
 import {AnalysisRequiredFields} from '../../../plates/views/components/analysis-mapping/analysis-mapping-panel';
-import {FIT_FUNCTION_4PL_REGRESSION} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {FIT_FUNCTION_4PL_DOSE_RESPONSE, FIT_FUNCTION_4PL_REGRESSION, IFitSeries} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {DrcAnalysisCoordinator} from './drc-coordinator';
 import {Subscription} from 'rxjs';
 
@@ -36,7 +36,6 @@ export class DrcAnalysis extends AbstractPlateAnalysis {
       {name: 'SampleID', required: true, description: 'Sample/compound identifiers'}
     ];
   }
-
 
   private async run(plate: Plate, params: Record<string, any>, mappings: Map<string, string>): Promise<{resultsDf: DG.DataFrame, seriesVals: Array<[string, any]>, finalValueCol: string} | null> {
     const sampleColName = mappings.get('SampleID')!;
@@ -74,28 +73,36 @@ export class DrcAnalysis extends AbstractPlateAnalysis {
     const minMax = normed ? {minY: -10, maxY: 110} : {};
     const roleCol = DG.Column.string(sampleColName, seriesVals.length).init((i) => seriesVals[i][0]);
     const curveCol = DG.Column.string('Curve', seriesVals.length);
-    curveCol.semType ='fit';
+    curveCol.semType = 'fit';
 
     curveCol.init((i) => {
       const currentSeries = seriesVals[i][1];
-      const seriesData = {
-        points: currentSeries.points,
+      const seriesData: IFitSeries = {
         name: currentSeries.name,
+        points: currentSeries.points,
         fitFunction: FIT_FUNCTION_4PL_REGRESSION,
+        parameters: undefined,
         clickToToggle: true,
         droplines: ['IC50'],
         showPoints: 'points',
       };
 
-      return JSON.stringify({
+      const chartData = {
         chartOptions: {
-          xAxisName: concentrationColName, yAxisName: finalValueCol, logX: true, title: `${seriesVals[i][0]}`, ...minMax,
+          xAxisName: concentrationColName,
+          yAxisName: finalValueCol,
+          logX: true,
+          title: `${seriesVals[i][0]}`,
+          ...minMax,
         },
         series: [seriesData],
-      });
+      };
+
+      return JSON.stringify(chartData);
     });
 
     const resultsDf = DG.DataFrame.fromColumns([roleCol, curveCol]);
+
     const statsToAdd: Record<string, string> = {'interceptX': 'IC50', 'slope': 'Hill Slope', 'rSquared': 'R Squared', 'bottom': 'Min', 'top': 'Max', 'auc': 'AUC'};
 
     for (const [statName, colName] of Object.entries(statsToAdd)) {
@@ -152,7 +159,8 @@ export class DrcAnalysis extends AbstractPlateAnalysis {
             this.coordinator?.regenerateCurves();
           });
 
-          const saveButton = ui.button('SAVE RESULTS', async () => await this.saveResults(mappedPlate, resultsDf, params));
+          const saveButton = ui.button('SAVE RESULTS', async () => await this.saveResults(mappedPlate, resultsDf, params, mappedMappings));
+
           saveButton.style.marginTop = '8px';
 
           const resultsContainer = ui.divV([

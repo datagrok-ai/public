@@ -8,7 +8,7 @@ import {Plate} from '../../plate';
 import {AbstractPlateAnalysis, IAnalysisProperty} from '../base-analysis';
 import {AnalysisRequiredFields} from '../../../plates/views/components/analysis-mapping/analysis-mapping-panel';
 import {FIT_FUNCTION_4PL_REGRESSION, IFitChartData, IFitSeries} from '@datagrok-libraries/statistics/src/fit/fit-curve';
-import {createAnalysisRun, saveAnalysisResult} from '../../../plates/plates-crud';
+import {createAnalysisRun, saveAnalysisResult, saveAnalysisRunParameter} from '../../../plates/plates-crud';
 
 export class DoseRatioAnalysis extends AbstractPlateAnalysis {
   readonly name: string = 'Dose-Ratio';
@@ -39,7 +39,8 @@ export class DoseRatioAnalysis extends AbstractPlateAnalysis {
   async saveResults(
     plate: Plate,
     resultsDf: DG.DataFrame,
-    params: Record<string, any>
+    params: Record<string, any>,
+    currentMappings: Map<string, string>
   ): Promise<void> {
     if (!plate.id) {
       grok.shell.warning('Please save the plate first using the "CREATE" button before saving analysis results.');
@@ -54,6 +55,16 @@ export class DoseRatioAnalysis extends AbstractPlateAnalysis {
     try {
       const groups = this._lastRunConcentrations.map(String);
       const runId = await createAnalysisRun(plate.id, this.name, groups);
+
+      for (const [requiredField, actualColumn] of currentMappings.entries()) {
+        const mappingPropName = `Mapping: ${requiredField}`;
+        await saveAnalysisRunParameter({
+          runId: runId,
+          propertyName: mappingPropName,
+          propertyType: DG.TYPE.STRING,
+          value: actualColumn,
+        });
+      }
 
       for (let i = 0; i < this._lastRunSeries.length; i++) {
         const currentSeries = this._lastRunSeries[i];
@@ -73,6 +84,7 @@ export class DoseRatioAnalysis extends AbstractPlateAnalysis {
           },
           series: [currentSeries],
         };
+
         const singleSeriesJson = JSON.stringify(chartData);
 
         await this.saveAnalysisProperty(runId, 'Curve', singleSeriesJson, groupCombination);
@@ -91,10 +103,11 @@ export class DoseRatioAnalysis extends AbstractPlateAnalysis {
     }
   }
 
+
   private async saveAnalysisProperty(runId: number, propName: string, value: any, group: string[]): Promise<void> {
     const prop = this._outputProperties.get(propName);
     if (prop && value !== null && value !== undefined)
-      await saveAnalysisResult({runId, propertyId: prop.id, propertyType: prop.type, value, groupCombination: group});
+      await saveAnalysisResult({runId, propertyId: prop.id, propertyName: prop.name, propertyType: prop.type, value, groupCombination: group});
   }
 
   createView(plate: Plate, plateWidget: DG.Widget, currentMappings: Map<string, string>, onMap: (t: string, s: string) => void, onUndo: (t: string) => void, onRerender?:()=>void): HTMLElement {
@@ -125,8 +138,9 @@ export class DoseRatioAnalysis extends AbstractPlateAnalysis {
     chartDf.col('curve')!.semType = 'fit';
     const grid = chartDf.plot.grid();
 
+    // The call here needs to be updated to pass the mappings
     const saveButton = ui.button('SAVE RESULTS', async () => {
-      await this.saveResults(plate, chartDf, {});
+      await this.saveResults(plate, chartDf, {}, mappings); // <-- Pass mappings here
     });
     const container = ui.divV([grid.root, ui.div([saveButton], 'ui-box')], 'drc-grid-container');
 

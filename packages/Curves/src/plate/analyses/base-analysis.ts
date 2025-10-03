@@ -74,7 +74,12 @@ export abstract class AbstractPlateAnalysis implements IPlateAnalysis {
       }, currentMappings, onMap, onUndo).getRoot();
     }
 
-    async saveResults(plate: Plate, resultsDf: DG.DataFrame, params: Record<string, any>): Promise<void> {
+    async saveResults(
+      plate: Plate,
+      resultsDf: DG.DataFrame,
+      params: Record<string, any>,
+      currentMappings: Map<string, string> 
+    ): Promise<void> {
       if (!plate.id) {
         grok.shell.warning('Please use the main "CREATE" button to save the plate before saving analysis results.');
         return;
@@ -97,6 +102,16 @@ export abstract class AbstractPlateAnalysis implements IPlateAnalysis {
           }
         }
 
+        for (const [requiredField, actualColumn] of currentMappings.entries()) {
+          const mappingPropName = `Mapping: ${requiredField}`;
+          await saveAnalysisRunParameter({
+            runId: runId,
+            propertyName: mappingPropName,
+            propertyType: DG.TYPE.STRING,
+            value: actualColumn,
+          });
+        }
+
         for (const row of resultsDf.rows) {
           const groupKey = row.get(groupColumn);
           if (!groupKey) continue;
@@ -107,13 +122,14 @@ export abstract class AbstractPlateAnalysis implements IPlateAnalysis {
             if (prop && resultsDf.columns.contains(output.name)) {
               const value = row.get(output.name);
               if (value !== null && value !== undefined)
-                await saveAnalysisResult({runId, propertyId: prop.id, propertyType: prop.type, value, groupCombination});
+                await saveAnalysisResult({runId, propertyId: prop.id, propertyName: prop.name, propertyType: prop.type, value, groupCombination});
             }
           }
         }
         grok.shell.info(`Saved ${this.friendlyName} results for plate ${plate.barcode}.`);
       } catch (e: any) {
-        grok.shell.error(`Failed to save ${this.friendlyName} results.`);
+        const errorMessage = `Failed to save ${this.friendlyName} results. Reason: ${e.message}`;
+        grok.shell.error(errorMessage);
         console.error(e);
       } finally {
         pi.close();

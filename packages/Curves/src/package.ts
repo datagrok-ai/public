@@ -2,7 +2,6 @@
 //@ts-ignore
 export * from './package.g';
 
-
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
@@ -23,14 +22,13 @@ import {initPlatesAppTree, platesAppView} from './plates/plates-app';
 import {initPlates} from './plates/plates-crud';
 import {__createDummyPlateData} from './plates/plates-demo';
 import {getPlatesFolderPreview} from './plate/plates-folder-preview';
-// import {PlateDrcAnalysis} from './plate/plate-drc-analysis';
 import {PlateTemplateHandler} from './plates/objects/plate-template-handler';
 import * as api from './package-api';
 import {convertDataToCurves, dataToCurvesUI, WellTableParentData} from './fit/data-to-curves';
 import {parsePlateFromCsv} from './plate/csv-plates';
 import {layoutsView} from './plates/views/layouts-view';
-import {PlateDrcAnalysis} from './plate/plate-drc-analysis';
 import {AnalysisManager} from './plate/analyses/analysis-manager';
+import { DrcAnalysis } from './plate/analyses/drc/drc-analysis';
 
 export const _package = new DG.Package();
 
@@ -73,15 +71,15 @@ export class PackageFunctions {
     await curveDemo();
   }
 
-  @grok.decorators.func({
-    name: 'Assay Plates',
-    description: 'Assasy plates with concentration, layout and readout data',
-    meta: {demoPath: 'Curves | Assay Plates'},
-  })
-  static async assayPlatesDemo(): Promise<void> {
-    const plateFile = (await grok.dapi.files.list('System:DemoFiles/hts/xlsx_plates'))[0];
-    grok.shell.addView(await PackageFunctions.previewPlateXlsx(plateFile) as DG.ViewBase);
-  }
+  // @grok.decorators.func({
+  //   name: 'Assay Plates',
+  //   description: 'Assasy plates with concentration, layout and readout data',
+  //   meta: {demoPath: 'Curves | Assay Plates'},
+  // })
+  // static async assayPlatesDemo(): Promise<void> {
+  //   const plateFile = (await grok.dapi.files.list('System:DemoFiles/hts/xlsx_plates'))[0];
+  //   grok.shell.addView(await PackageFunctions.previewPlateXlsx(plateFile) as DG.ViewBase);
+  // }
 
   @grok.decorators.init({})
   static _initCurves(): void {
@@ -225,39 +223,39 @@ export class PackageFunctions {
     return [];
   }
 
-  @grok.decorators.fileHandler({outputs: [], ext: 'xlsx', fileViewerCheck: 'Curves:checkExcelIsPlate'})
-  static async importPlateXlsx(fileContent: Uint8Array): Promise<any[]> {
-    const view = DG.View.create();
-    const plate = await PackageFunctions.parseExcelPlate(fileContent);
+  // @grok.decorators.fileHandler({outputs: [], ext: 'xlsx', fileViewerCheck: 'Curves:checkExcelIsPlate'})
+  // static async importPlateXlsx(fileContent: Uint8Array): Promise<any[]> {
+  //   const view = DG.View.create();
+  //   const plate = await PackageFunctions.parseExcelPlate(fileContent);
 
-    const plateWidget = PlateDrcAnalysis.analysisView(plate, {}, 'excel');
+  //   const plateWidget = PlateDrcAnalysis.analysisView(plate, {}, 'excel');
 
-    if (plateWidget) {
-      view.root.appendChild(plateWidget.root);
-    } else {
-      grok.shell.error('Failed to create plate analysis view. Please check data columns.');
-      view.close();
-    }
-    view.name = 'Plate';
-    grok.shell.addView(view);
-    return [];
-  }
+  //   if (plateWidget) {
+  //     view.root.appendChild(plateWidget.root);
+  //   } else {
+  //     grok.shell.error('Failed to create plate analysis view. Please check data columns.');
+  //     view.close();
+  //   }
+  //   view.name = 'Plate';
+  //   grok.shell.addView(view);
+  //   return [];
+  // }
 
-  @grok.decorators.fileViewer({name: 'viewPlateXlsx', fileViewer: 'xlsx', fileViewerCheck: 'Curves:checkExcelIsPlate'})
-  static async previewPlateXlsx(file: DG.FileInfo): Promise<DG.View> {
-    const view = DG.View.create();
-    view.name = file.friendlyName;
-    const plate = await PackageFunctions.parseExcelPlate(await file.readAsBytes());
-    const plateWidget = PlateDrcAnalysis.analysisView(plate, {}, 'excel');
+  // @grok.decorators.fileViewer({name: 'viewPlateXlsx', fileViewer: 'xlsx', fileViewerCheck: 'Curves:checkExcelIsPlate'})
+  // static async previewPlateXlsx(file: DG.FileInfo): Promise<DG.View> {
+  //   const view = DG.View.create();
+  //   view.name = file.friendlyName;
+  //   const plate = await PackageFunctions.parseExcelPlate(await file.readAsBytes());
+  //   const plateWidget = PlateDrcAnalysis.analysisView(plate, {}, 'excel');
 
-    if (plateWidget) {
-      view.root.appendChild(plateWidget.root);
-    } else {
-      grok.shell.error('Failed to create plate analysis view. Please check data columns.');
-      view.close();
-    }
-    return view;
-  }
+  //   if (plateWidget) {
+  //     view.root.appendChild(plateWidget.root);
+  //   } else {
+  //     grok.shell.error('Failed to create plate analysis view. Please check data columns.');
+  //     view.close();
+  //   }
+  //   return view;
+  // }
 
 
 @grok.decorators.func({
@@ -275,27 +273,27 @@ export class PackageFunctions {
     }
   }
 
-@grok.decorators.fileHandler({
-  ext: 'csv',
-  fileViewerCheck: 'Curves:checkCsvIsPlate'
-})
-static async importPlateCsv(fileContent: string, file: DG.FileInfo): Promise<void> {
-  try {
-    const plate = await parsePlateFromCsv(fileContent);
-    const view = DG.View.create();
-    view.name = file.friendlyName;
-    const plateWidget = PlateDrcAnalysis.analysisView(plate[0], {}, 'csv');
-    if (plateWidget) {
-      view.root.appendChild(plateWidget.root);
-    } else {
-      grok.shell.error('Failed to create plate analysis view. Please check data columns.');
-      view.close();
-    }
-    grok.shell.addView(view);
-  } catch (e: any) {
-    grok.shell.error(`Could not import plate from ${file.name}: ${e.message}`);
-  }
-}
+// @grok.decorators.fileHandler({
+//   ext: 'csv',
+//   fileViewerCheck: 'Curves:checkCsvIsPlate'
+// })
+// static async importPlateCsv(fileContent: string, file: DG.FileInfo): Promise<void> {
+//   try {
+//     const plate = await parsePlateFromCsv(fileContent);
+//     const view = DG.View.create();
+//     view.name = file.friendlyName;
+//     const plateWidget = PlateDrcAnalysis.analysisView(plate[0], {}, 'csv');
+//     if (plateWidget) {
+//       view.root.appendChild(plateWidget.root);
+//     } else {
+//       grok.shell.error('Failed to create plate analysis view. Please check data columns.');
+//       view.close();
+//     }
+//     grok.shell.addView(view);
+//   } catch (e: any) {
+//     grok.shell.error(`Could not import plate from ${file.name}: ${e.message}`);
+//   }
+// }
  @grok.decorators.func({
    name: 'Layouts',
    description: 'A standalone view for designing plate layouts.',

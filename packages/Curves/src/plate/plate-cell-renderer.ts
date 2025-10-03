@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import {PlateWidget} from './plate-widget';
 import {GridColumn, x} from 'datagrok-api/dg';
-import {Plate} from "./plate";
+import {Plate} from './plate';
 
 export class PlateCellHandler extends DG.ObjectHandler {
   get type(): string { return 'Plate'; }

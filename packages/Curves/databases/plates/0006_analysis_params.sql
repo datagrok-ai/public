@@ -63,4 +63,5 @@ COMMENT ON COLUMN plates.analysis_results.group_combination IS 'Subset of run gr
 GRANT ALL PRIVILEGES ON TABLE plates.analysis_run_parameters TO :LOGIN;
 GRANT ALL PRIVILEGES ON TABLE plates.analysis_results TO :LOGIN;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA plates TO :LOGIN;
+GRANT ALL PRIVILEGES ON TABLE plates.analysis_runs TO :LOGIN;
 

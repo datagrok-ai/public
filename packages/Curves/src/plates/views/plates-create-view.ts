@@ -7,17 +7,12 @@ import {Plate} from '../../plate/plate';
 import {plateTemplates, plateTypes, savePlate, savePlateAsTemplate, initPlates} from '../plates-crud';
 import {PlateStateManager} from './shared/plate-state-manager';
 import {TemplatePanel} from './components/template-panel/template-panel';
-import {PlateDrcAnalysis} from '../../plate/plate-drc-analysis';
 import {renderValidationResults} from './plates-validation-panel';
 import {Subscription} from 'rxjs';
-
 import './components/template-panel/template-panel.css';
 import './components/plate-grid-manager/plate-grid-manager.css';
 import './components/plate-analysis-panel/plate-analysis-panel.css';
 import {PlateGridManager} from './components/plate-grid-manager/plate-grid-manager';
-import {PlateDoseRatioAnalysis} from '../../plate/dose-ratio-analysis';
-import {MAPPING_SCOPES} from './shared/scopes';
-import {PlateQpcrAnalysis} from '../../plate/relative-qpcr-analysis';
 import {AnalysisManager} from '../../plate/analyses/analysis-manager';
 
 export function createPlatesView(): DG.View {
@@ -45,7 +40,6 @@ export function createPlatesView(): DG.View {
     display: flex;
     flex-direction: column;
   `;
-  // plateWidget.roleSummaryDiv.style.display = 'none';
 
   const tabControl = ui.tabControl();
   tabControl.root.classList.remove('ui-box');
@@ -56,105 +50,6 @@ export function createPlatesView(): DG.View {
     flex-direction: column;
   `;
 
-  // const createDrcAnalysisContent = (): HTMLElement => {
-  //   try {
-  //     const activePlate = stateManager.activePlate;
-  //     const activeIndex = stateManager.currentState?.activePlateIdx ?? -1;
-
-
-  //     if (!activePlate || activeIndex < 0)
-  //       return createAnalysisSkeleton('Dose Response', ['SampleID', 'Concentration', 'Activity']);
-
-  //     const currentMappings = stateManager.getScopedMapping(activeIndex, MAPPING_SCOPES.DRC);
-
-  //     const handleMap = (target: string, source: string) => {
-  //       stateManager.remapScopedProperty(activeIndex, MAPPING_SCOPES.DRC, target, source);
-  //     };
-
-  //     const handleUndo = (target: string) => {
-  //       stateManager.undoScopedMapping(activeIndex, MAPPING_SCOPES.DRC, target);
-  //     };
-
-  //     return PlateDrcAnalysis.createAnalysisViewWithMapping(
-  //       activePlate.plate,
-  //       currentMappings,
-  //       handleMap,
-  //       handleUndo,
-  //       plateWidget
-  //     );
-  //   } catch (e: any) {
-  //     console.error('Error creating Dose Response view:', e);
-  //     return ui.divText(`Error displaying Dose Response analysis: ${e.message}`, 'error-message');
-  //   }
-  // };
-
-  // const createDoseRatioContent = (): HTMLElement => {
-  //   try {
-  //     const activePlate = stateManager.activePlate;
-  //     const activeIndex = stateManager.currentState?.activePlateIdx ?? -1;
-
-  //     if (!activePlate || activeIndex < 0)
-  //       return createAnalysisSkeleton('Dose Ratio', ['Agonist_Concentration_M', 'Antagonist_Concentration_M', 'Percent_Inhibition']);
-
-  //     const currentMappings = stateManager.getScopedMapping(activeIndex, MAPPING_SCOPES.DOSE_RATIO);
-
-  //     const handleMap = (target: string, source: string) => {
-  //       stateManager.remapScopedProperty(activeIndex, MAPPING_SCOPES.DOSE_RATIO, target, source);
-  //     };
-
-  //     const handleUndo = (target: string) => {
-  //       stateManager.undoScopedMapping(activeIndex, MAPPING_SCOPES.DOSE_RATIO, target);
-  //     };
-
-  //     return PlateDoseRatioAnalysis.createAnalysisView(
-  //       activePlate.plate,
-  //       currentMappings,
-  //       handleMap,
-  //       handleUndo
-  //     );
-  //   } catch (e: any) {
-  //     console.error('Error creating Dose Ratio view:', e);
-  //     return ui.divText(`Error displaying Dose Ratio analysis: ${e.message}`, 'error-message');
-  //   }
-  // };
-
-  // const createQpcrContent = (): HTMLElement => {
-  //   try {
-  //     const activePlate = stateManager.activePlate;
-  //     const activeIndex = stateManager.currentState?.activePlateIdx ?? -1;
-
-  //     if (!activePlate || activeIndex < 0)
-  //       return createAnalysisSkeleton('qPCR Analysis', ['Ct']);
-
-  //     const currentMappings = stateManager.getScopedMapping(activeIndex, MAPPING_SCOPES.QPCR);
-
-  //     const handleMap = (target: string, source: string) => {
-  //       stateManager.remapScopedProperty(activeIndex, MAPPING_SCOPES.QPCR, target, source);
-  //     };
-
-  //     const handleUndo = (target: string) => {
-  //       stateManager.undoScopedMapping(activeIndex, MAPPING_SCOPES.QPCR, target);
-  //     };
-
-  //     // --- START: NEW TRIGGER FUNCTION ---
-  //     const handleDataChanged = () => {
-  //       stateManager.notifyPlateDataChanged();
-  //     };
-  //     // --- END: NEW TRIGGER FUNCTION ---
-
-  //     return PlateQpcrAnalysis.createAnalysisView(
-  //       activePlate.plate,
-  //       currentMappings,
-  //       handleMap,
-  //       handleUndo,
-  //       handleDataChanged // <-- PASS THE NEW TRIGGER HERE
-  //     );
-  //   } catch (e: any) {
-  //     console.error('Error creating qPCR view:', e);
-  //     return ui.divText(`Error displaying qPCR analysis: ${e.message}`, 'error-message');
-  //   }
-  // };
-  // ; ;
 
   tabControl.addPane('Plate View', () => plateWidget.root);
   const analysisManager = AnalysisManager.instance;
@@ -167,7 +62,6 @@ export function createPlatesView(): DG.View {
         if (!activePlate || activeIndex < 0)
           return createAnalysisSkeleton(analysis.friendlyName, analysis.getRequiredFields().map((f) => f.name));
 
-        // The analysis's unique `name` (e.g., 'DRC') is used as the scope for its mappings.
         const currentMappings = stateManager.getScopedMapping(activeIndex, analysis.name);
 
         const handleMap = (target: string, source: string) => {
@@ -177,7 +71,6 @@ export function createPlatesView(): DG.View {
           stateManager.undoScopedMapping(activeIndex, analysis.name, target);
         };
 
-        // Each analysis class is now responsible for creating its own view.
         return analysis.createView(activePlate.plate, plateWidget, currentMappings, handleMap, handleUndo);
       } catch (e: any) {
         console.error(`Error creating ${analysis.friendlyName} view:`, e);
@@ -187,9 +80,6 @@ export function createPlatesView(): DG.View {
 
     tabControl.addPane(analysis.friendlyName, createTabContent);
   }
-  // tabControl.addPane('Dose Response', () => createDrcAnalysisContent());
-  // tabControl.addPane('Dose Ratio', () => createDoseRatioContent());
-  // tabControl.addPane('qPCR Analysis', () => createQpcrContent()); // 2. ADD THE NEW TAB
 
 
   ui.tools.waitForElementInDom(tabControl.root).then(() => {
@@ -221,7 +111,6 @@ export function createPlatesView(): DG.View {
   );
 
   stateManager.onStateChange.subscribe(async (event) => {
-    // This part updates the main plate widget itself
     const activePlate = stateManager.activePlate;
     if (activePlate)
       plateWidget.plate = activePlate.plate;
@@ -241,14 +130,10 @@ export function createPlatesView(): DG.View {
     if (eventsThatRequireRefresh.includes(event.type)) {
       const currentPane = tabControl.currentPane;
 
-      // Only refresh if the active tab is an analysis tab (not 'Plate View')
       if (currentPane && currentPane.name !== 'Plate View') {
-        // 1. Find the correct analysis object using the tab's friendly name.
         const analysis = analysisManager.byFriendlyName(currentPane.name);
 
         if (analysis) {
-          // 2. Re-create the content for that analysis using the latest state.
-          // This logic is the same as in the initial `createTabContent` factory.
           const activeIndex = stateManager.currentState?.activePlateIdx ?? -1;
           const plateToAnalyze = stateManager.activePlate;
           const handleRerender = () => stateManager.notifyPlateDataChanged();
@@ -265,7 +150,6 @@ export function createPlatesView(): DG.View {
             newContent = analysis.createView(plateToAnalyze.plate, plateWidget, currentMappings, handleMap, handleUndo, handleRerender);
           }
 
-          // 3. Replace the old content with the newly generated content.
           ui.empty(currentPane.content);
           currentPane.content.appendChild(newContent);
         }
@@ -285,9 +169,7 @@ export function createPlatesView(): DG.View {
 
   view.root.appendChild(mainLayout);
 
-  // START of CHANGE: Set the new 'Plate View' as the default tab.
   tabControl.currentPane = tabControl.getPane('Plate View');
-  // END of CHANGE
 
   stateManager.setTemplate(plateTemplates[0]);
 

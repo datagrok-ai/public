@@ -103,12 +103,6 @@ export function renderValidationResults(
 
   tableElement.className = 'plate-validation-table';
 
-  // const header = ui.divH([
-  //   ui.divText('Property', {style: {fontWeight: 'bold'}}),
-  //   ui.divText('Source Column', {style: {fontWeight: 'bold'}}),
-  // ], 'plate-validation-table-header');
-  // tableElement.appendChild(header);
-
   let conflictCount = 0;
 
   allTargetProps.forEach((prop) => {
