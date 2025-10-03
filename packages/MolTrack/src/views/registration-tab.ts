@@ -73,6 +73,8 @@ export class RegistrationView {
     const leftPanel = ui.divV([inputRow, this.mappingEditorDiv]);
 
     const dragDropInput = FileInputUtils.createFileInputPane(async (file: File) => await this.loadFile(file));
+    const inputEditor = dragDropInput.querySelector('.ui-input-editor') as HTMLElement;
+    inputEditor.style.border = '';
 
     this.rightPanel = ui.divV([
       dragDropInput,
