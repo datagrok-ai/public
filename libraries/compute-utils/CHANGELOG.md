@@ -1,12 +1,20 @@
 # compute-utils changelog
 
+## 1.44.9 (2025-10-06)
+
+Features
+
+- reproducibility
+- early stopping
+- stop at first
+
 ## 1.44.8 (2025-10-03)
 
 - Updated the diff grok library
 
 ## 1.44.7 (2025-09-11)
 
-- Hisotry and export fixes for workflows
+- History and export fixes for workflows
 
 ## 1.44.6 (2025-09-08)
 
