@@ -6,7 +6,7 @@ import wu from 'wu';
 
 /* eslint-disable max-len */
 import {ALIGNMENT, ALPHABET, candidateAlphabets, getSplitterWithSeparator, NOTATION, positionSeparator, splitterAsFasta, splitterAsHelm, TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule/index';
-import {INotationProvider, ISeqSplitted, SeqColStats, SplitterFunc,} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {INotationProvider, ISeqConnection, ISeqSplitted, SeqColStats, SplitterFunc,} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {detectAlphabet, detectHelmAlphabet, splitterAsFastaSimple, StringListSeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 import {mmDistanceFunctions, MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {mmDistanceFunctionType} from '@datagrok-libraries/ml/src/macromolecule-distance-functions/types';
@@ -28,9 +28,21 @@ export class SeqHandler implements ISeqHandler {
   protected readonly _units: string; // units, of the form fasta, separator
   protected readonly _notation: NOTATION; // current notation (without :SEQ:NT, etc.)
   protected readonly _defaultGapOriginal: string;
-  protected readonly notationProvider!: INotationProvider;
+  private _notationProvider: INotationProvider | null = null;
+  private _tempReadForNotProvider = false;
+  protected get notationProvider(): INotationProvider | null {
+    if (!this._tempReadForNotProvider) {
+      this._tempReadForNotProvider = true;
+      this._notationProvider = this._notationProvider ?? this._column.temp[SeqTemps.notationProvider] ?? null;
+    }
+    return this._notationProvider;
+  };
+  protected set notationProvider(v: INotationProvider | null) { this._notationProvider = v; };
 
   private _splitter: SplitterFunc | null = null;
+
+  private _refinerPromise: Promise<void> = Promise.resolve();
+  public get refinerPromise(): Promise<void> { return this._refinerPromise; }
 
   protected constructor(col: DG.Column<string>,
     private readonly seqHelper: SeqHelper,
@@ -44,7 +56,7 @@ export class SeqHandler implements ISeqHandler {
     this._units = units!;
 
     this._notation = this.getNotation();
-    if (this.isCustom()) {
+    if (this.isCustom() || this.isBiln()) {
       // this.column.temp[SeqTemps.notationProvider] must be set at detector stage
       this.notationProvider = this.column.temp[SeqTemps.notationProvider] ?? null;
     }
@@ -52,7 +64,7 @@ export class SeqHandler implements ISeqHandler {
     const defaultGapOriginal = this.isFasta() ? GapOriginals[NOTATION.FASTA] :
       this.isSeparator() ? GapOriginals[NOTATION.SEPARATOR] :
         this.isHelm() ? GapOriginals[NOTATION.HELM] :
-          this.isCustom() ? (this.notationProvider?.defaultGapOriginal ?? GapOriginals[NOTATION.SEPARATOR]) :
+          this.isCustom() || this.isBiln() ? (this.notationProvider?.defaultGapOriginal ?? GapOriginals[NOTATION.SEPARATOR]) :
             undefined;
     if (defaultGapOriginal == undefined)
       throw new Error(`Unexpected defaultGapOriginal for notation '${this.notation}'`);
@@ -70,8 +82,8 @@ export class SeqHandler implements ISeqHandler {
         this.seqHelper.setUnitsToSeparatorColumn(this, separator);
       } else if (this.isHelm())
         this.seqHelper.setUnitsToHelmColumn(this);
-      else if (this.isCustom())
-        this.notationProvider!.setUnits(this);
+      else if (this.isCustom() || this.isBiln())
+        this.notationProvider?.setUnits(this);
       else
         throw new Error(`Unexpected units '${this.column.meta.units}'.`);
     }
@@ -96,8 +108,8 @@ export class SeqHandler implements ISeqHandler {
 
     this.columnVersion = this.column.version;
     // refine separator only at this stage
-    if (this.isSeparator() && (!this.isCustom() || !this.notationProvider) && !col.temp['seqHandlerRefined']) {
-      this.refineSeparatorNotation();
+    if (this.isSeparator() && ((!this.isCustom() && !this.isBiln()) || !this.notationProvider) && !col.temp['seqHandlerRefined']) {
+      this._refinerPromise = this.refineSeparatorNotation();
       col.temp['seqHandlerRefined'] = true;
     }
   }
@@ -138,16 +150,11 @@ export class SeqHandler implements ISeqHandler {
     const stats = getStats(categoriesSample, 3, (s) => s.split(this.separator!));
     let invalidateRequired = false;
 
-    const refinerList = [
-      {package: 'SequenceTranslator', name: 'refineNotationProviderForHarmonizedSequence'},
-    ];
+    const refinerList = DG.Func.find({tags: ['notationRefiner']});
 
     for (const refineFuncFind of refinerList) {
       try {
-        const funcList = DG.Func.find(refineFuncFind);
-        if (funcList.length === 0) continue;
-
-        const funcFc = funcList[0].prepare({col: this.column, stats: stats, separator: this.separator});
+        const funcFc = refineFuncFind.prepare({col: this.column, stats: stats, separator: this.separator});
         const refineRes = (await funcFc.call()).getOutputParamValue();
         invalidateRequired ||= refineRes;
       } catch (err) {
@@ -157,6 +164,8 @@ export class SeqHandler implements ISeqHandler {
 
     if (invalidateRequired) {
     // Applying custom notation provider MUST invalidate SeqHandler
+      // some things might still have the old seqHandler attached, so we need to make sure they have access to notationProvider
+      this._tempReadForNotProvider = false;
       delete this.column.temp[SeqTemps.seqHandler];
 
       this.column.fireValuesChanged();
@@ -371,7 +380,7 @@ export class SeqHandler implements ISeqHandler {
     const seq = this.column.get(rowIdx);
     if (this.notation === NOTATION.HELM)
       resHelm = seq;
-    else if (this.notation === NOTATION.CUSTOM)
+    else if (this.notation === NOTATION.CUSTOM || this.notation === NOTATION.BILN)
       resHelm = this.notationProvider!.getHelm(seq, {});
     else
       resHelm = this.getConverter(NOTATION.HELM)(seq);
@@ -440,6 +449,8 @@ export class SeqHandler implements ISeqHandler {
 
   public isCustom(): boolean { return this.notation === NOTATION.CUSTOM; }
 
+  public isBiln(): boolean { return this.notation === NOTATION.BILN; }
+
   public isRna(): boolean { return this.alphabet === ALPHABET.RNA; }
 
   public isDna(): boolean { return this.alphabet === ALPHABET.DNA; }
@@ -471,6 +482,8 @@ export class SeqHandler implements ISeqHandler {
       return NOTATION.HELM;
     else if (this.units.toLowerCase().startsWith(NOTATION.CUSTOM))
       return NOTATION.CUSTOM;
+    else if (this.units.toLowerCase().startsWith(NOTATION.BILN))
+      return NOTATION.BILN;
     else
       throw new Error(`Column '${this.column.name}' has unexpected notation '${this.units}'.`);
   }
@@ -536,6 +549,12 @@ export class SeqHandler implements ISeqHandler {
     if (tgtNotation == NOTATION.HELM) {
       srcAlphabetSize = this.getAlphabetSize().toString();
       newColumn.setTag(TAGS.alphabetSize, srcAlphabetSize);
+    }
+
+    // if its biln, we need to set it as a separator column, later to be refined
+    if (tgtNotation === NOTATION.BILN) {
+      newColumn.setTag(TAGS.separator, '-');
+      newColumn.meta.units = NOTATION.SEPARATOR;
     }
 
     return newColumn;
@@ -828,6 +847,10 @@ export class SeqHandler implements ISeqHandler {
       res = function(srcSS: ISeqSplitted): string { return joinToHelm(srcSS, wrappers, isDnaOrRna); };
       break;
     }
+    case NOTATION.BILN: {
+      res = function(srcSS: ISeqSplitted): string { return joinToBiln(srcSS); };
+      break;
+    }
     default:
       throw new Error(`Unexpected notation '${notation}'.`);
     }
@@ -846,8 +869,10 @@ export class SeqHandler implements ISeqHandler {
       return function(srcSeq: string) { return srcSh.convertToHelm(srcSeq); };
     else if (tgtUnits === NOTATION.SEPARATOR)
       return function(srcSeq: string) { return srcSh.convertToSeparator(srcSeq, tgtSeparator!); };
+    else if (tgtUnits === NOTATION.BILN)
+      return function(srcSeq: string) { return srcSh.convertToBiln(srcSeq); };
     else
-      throw new Error();
+      throw new Error('Unexpected target units \'' + tgtUnits + '\'.');
   }
 
   /** Gets a column's UnitsHandler object from temp slot or creates a new and stores it to the temp slot. */
@@ -897,9 +922,15 @@ export class SeqHandler implements ISeqHandler {
 
     const wrappers = this.getHelmWrappers();
 
-    const isDnaOrRna = src.startsWith('DNA') || src.startsWith('RNA');
+    const isDnaOrRna = this.isDna() || this.isRna();
     const srcSS = this.splitter(src);
     return joinToHelm(srcSS, wrappers, isDnaOrRna);
+  }
+
+  private convertToBiln(src: string): string {
+    if (this.notation == NOTATION.BILN) return src;
+    const srcSS = this.splitter(src);
+    return joinToBiln(srcSS);
   }
 
   /** Splits Helm sequence adjusting nucleotides to single char symbols. (!) Removes lone phosphorus. */
@@ -921,11 +952,11 @@ export class SeqHandler implements ISeqHandler {
 
   // Custom notation provider
 
-  getRendererBack(gridCol: DG.GridColumn | null, tableCol: DG.Column<string>): CellRendererBackBase<string> {
+  getRendererBack(gridCol: DG.GridColumn | null, tableCol: DG.Column<string>): CellRendererBackBase<string> | null {
     const temp = this.column.temp as GridCellRendererTemp<any>;
     let res = temp.rendererBack;
     if (!res)
-      res = temp.rendererBack = this.notationProvider!.createCellRendererBack(gridCol, tableCol);
+      res = temp.rendererBack = this.notationProvider?.createCellRendererBack(gridCol, tableCol);
     return res;
   }
 }
@@ -950,20 +981,95 @@ function joinToSeparator(seqS: ISeqSplitted, tgtSeparator: string, isHelm: boole
 }
 
 function joinToHelm(srcSS: ISeqSplitted, wrappers: string[], isDnaOrRna: boolean): string {
-  const [prefix, leftWrapper, rightWrapper, postfix] = wrappers;
-  const resOMList: string[] = new Array<string>(srcSS.length);
-  for (let posIdx: number = 0; posIdx < srcSS.length; ++posIdx) {
-    const cm = srcSS.getCanonical(posIdx);
-    let om: string = srcSS.getOriginal(posIdx);
-    if (cm === GAP_SYMBOL)
-      om = GapOriginals[NOTATION.HELM];
-    else {
-      if (isDnaOrRna)
-        om = om.replace(HELM_WRAPPERS_REGEXP, '$1');
-      om = om.length === 1 ? `${leftWrapper}${om}${rightWrapper}` : `${leftWrapper}[${om}]${rightWrapper}`;
+  if (!srcSS.graphInfo || !((srcSS.graphInfo.connections?.length ?? 0) > 0)) {
+    // no graph info - linear sequence
+    const [prefix, leftWrapper, rightWrapper, postfix] = wrappers;
+    const resOMList: string[] = new Array<string>(srcSS.length);
+    for (let posIdx: number = 0; posIdx < srcSS.length; ++posIdx) {
+      const cm = srcSS.getCanonical(posIdx);
+      let om: string = cm;
+      if (cm === GAP_SYMBOL)
+        om = GapOriginals[NOTATION.HELM];
+      else {
+        if (isDnaOrRna)
+          om = om.replace(HELM_WRAPPERS_REGEXP, '$1');
+        om = om.length === 1 ? `${leftWrapper}${om}${rightWrapper}` : `${leftWrapper}[${om}]${rightWrapper}`;
+      }
+      resOMList[posIdx] = om;
     }
-    resOMList[posIdx] = om;
+    return `${prefix}${resOMList.join('.')}${postfix}`;
+  } else {
+    // there is a graph info - so we will need to be a bit tricky here
+    const seqType = isDnaOrRna ? 'RNA' : 'PEPTIDE';
+    const postFix = '$$$'; // three dollar signs - one is placed at the end of sequences
+    const disjointSequenceIdxs = srcSS.graphInfo.disjointSeqStarts;
+    const leftWrapper = wrappers[1];
+    const rightWrapper = wrappers[2];
+    const disjointSequences: string[] = [];
+    for (let i = 0; i < disjointSequenceIdxs.length; i++) {
+      const startIdx = disjointSequenceIdxs[i];
+      const endIdx = i + 1 < disjointSequenceIdxs.length ? disjointSequenceIdxs[i + 1] : srcSS.length;
+      const resOMList: string[] = new Array<string>(endIdx - startIdx);
+      for (let posIdx = startIdx; posIdx < endIdx; ++posIdx) {
+        const cm = srcSS.getCanonical(posIdx);
+        let om: string = cm;
+        if (cm === GAP_SYMBOL)
+          om = GapOriginals[NOTATION.HELM];
+        else {
+          if (isDnaOrRna)
+            om = om.replace(HELM_WRAPPERS_REGEXP, '$1');
+          om = om.length === 1 ? `${leftWrapper}${om}${rightWrapper}` : `${leftWrapper}[${om}]${rightWrapper}`;
+        }
+        resOMList[posIdx - startIdx] = om;
+      }
+      disjointSequences.push(`${seqType}${i + 1}{${resOMList.join('.')}}`);
+    }
+    // PEPTIDE2,PEPTIDE2,16:R2-1:R1|PEPTIDE3,PEPTIDE3,16:R2-1:R1|PEPTIDE3,PEPTIDE2,10:R3-1:R3|PEPTIDE1,PEPTIDE2,1:R2-9:R3$$$V2.0
+    const sequencePart = disjointSequences.join('|');
+
+    const sequenceConnections = srcSS.graphInfo.connections.map((conn) => {
+      return `${seqType}${conn.seqIndex1 + 1},${seqType}${conn.seqIndex2 + 1},${conn.monomerIndex1 + 1}:R${conn.rGroup1}-${conn.monomerIndex2 + 1}:R${conn.rGroup2}`;
+    }).join('|');
+
+    return `${sequencePart}$${sequenceConnections}${postFix}V2.0`;
   }
-  return `${prefix}${resOMList.join('.')}${postfix}`;
+}
+
+function joinToBiln(srcSS: ISeqSplitted): string {
+  if (!srcSS.graphInfo || !((srcSS.graphInfo.connections?.length ?? 0) > 0)) {
+    const resOMList: string[] = new Array<string>(srcSS.length);
+    for (let posIdx: number = 0; posIdx < srcSS.length; ++posIdx) {
+      resOMList[posIdx] = srcSS.getCanonical(posIdx);
+      if (resOMList[posIdx]?.includes('-')) // Biln uses '-' as a separator, need to enclose in []
+        resOMList[posIdx] = `[${resOMList[posIdx]}]`;
+    }
+    return resOMList.join('-'); // Biln uses '-' as a separator
+  } else { // conversion happens only if there is a graph info
+    const disjointSequenceIdxs = srcSS.graphInfo.disjointSeqStarts;
+    const allSeqParts = new Array<string>(srcSS.length);
+    for (let posIdx = 0; posIdx < srcSS.length; ++posIdx) {
+      allSeqParts[posIdx] = srcSS.getCanonical(posIdx);
+      if (allSeqParts[posIdx]?.includes('-')) // Biln uses '-' as a separator, need to enclose in []
+        allSeqParts[posIdx] = `[${allSeqParts[posIdx]}]`;
+    }
+    for (let i = 0; i < srcSS.graphInfo.connections.length; i++) {
+      const conn: ISeqConnection = srcSS.graphInfo.connections[i];
+      const conId = `${i + 1}`;
+      const seq1Idx = conn.seqIndex1;
+      const seq2Idx = conn.seqIndex2;
+      const monomer1Idx = disjointSequenceIdxs[seq1Idx] + conn.monomerIndex1;
+      const monomer2Idx = disjointSequenceIdxs[seq2Idx] + conn.monomerIndex2;
+      const seqPart1 = `${allSeqParts[monomer1Idx]}(${conId},${conn.rGroup1})`;
+      const seqPart2 = `${allSeqParts[monomer2Idx]}(${conId},${conn.rGroup2})`;
+      allSeqParts[monomer1Idx] = seqPart1;
+      allSeqParts[monomer2Idx] = seqPart2;
+    }
+
+    const disjointParts = disjointSequenceIdxs.map((startIdx, i) => {
+      const endIdx = i + 1 < disjointSequenceIdxs.length ? disjointSequenceIdxs[i + 1] : srcSS.length;
+      return allSeqParts.slice(startIdx, endIdx).join('-');
+    });
+    return disjointParts.join('.'); // Biln uses '-' as a separator and '.' between disjoint sequences
+  }
 }
 
