@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
-import '../components/mapping_editor.css';
+import '../../css/moltrack.css';
 
 export interface TargetProperty {
   name: string;
@@ -51,20 +51,25 @@ export function renderMappingEditor(
 
   function createPropCell(prop: TargetProperty): HTMLElement {
     const propNameEl = ui.divH([ui.span([prop.name])]);
+    propNameEl.classList.add('moltrack-flex-row');
+
     if (prop.required) {
       const asterisk = ui.element('sup');
       asterisk.innerText = '*';
-      asterisk.className = 'required-asterisk';
+      asterisk.classList.add('moltrack-required-asterisk');
       asterisk.onmouseenter = (e: MouseEvent) =>
         ui.tooltip.show('The field is required', e.clientX, e.clientY);
       asterisk.onmouseleave = () => ui.tooltip.hide();
       propNameEl.appendChild(asterisk);
     }
+
     return propNameEl;
   }
 
   function createStatusCell(): HTMLElement {
-    return ui.div();
+    const cell = ui.div();
+    cell.classList.add('moltrack-div');
+    return cell;
   }
 
   function updateStatusCell(statusCell: HTMLElement, issues: ValidationIssue[]): void {
@@ -73,6 +78,7 @@ export function renderMappingEditor(
     if (issues.length === 0) {
       const icon = ui.iconFA('check-circle', undefined, 'Valid mapping');
       icon.style.color = 'green';
+      icon.classList.add('moltrack-div');
       statusCell.appendChild(icon);
       return;
     }
@@ -90,7 +96,7 @@ export function renderMappingEditor(
     mappedSource: string | undefined,
     statusCell: HTMLElement,
   ): DG.InputBase<string | null> {
-    return ui.input.choice('', {
+    const choice = ui.input.choice('', {
       value: mappedSource ?? null,
       items: [null, ...sourceColumns],
       nullable: true,
@@ -105,11 +111,12 @@ export function renderMappingEditor(
         }
 
         // TODO: Add error-checking logic for mapping
-        grok.events.fireCustomEvent('mappingValidationChanged', {
-          hasErrors: false,
-        });
+        grok.events.fireCustomEvent('mappingValidationChanged', { hasErrors: false });
       },
     });
+
+    choice.root.classList.add('moltrack-input-editor');
+    return choice;
   }
 
   const table = ui.table(
@@ -126,6 +133,7 @@ export function renderMappingEditor(
     ['Status', 'Property', 'Source Column'],
   );
 
+  table.classList.add('moltrack-table');
   host.appendChild(table);
 }
 
