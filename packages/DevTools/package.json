@@ -4,7 +4,7 @@
   "version": "1.6.3",
   "author": {
     "name": "Savenko Stanislav",
-    "email": "ssavenko@datagrok.ai"
+    "email": "ppolovyi@datagrok.ai"
   },
   "description": "Tools for the Datagrok developers (TestManager, DevPanel).",
   "repository": {
