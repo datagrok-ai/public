@@ -11,13 +11,14 @@ import {propertySchemaView as templateView} from './views/plates-schema-view';
 import {createTemplatesView} from './views/plates-templates-view';
 import {filter} from 'rxjs/operators';
 import {createPlatesView} from './views/plates-create-view';
+import {AnalysisManager} from '../plate/analyses/analysis-manager';
 
 export function platesAppView(): DG.View {
   const dummy = DG.DataFrame.create(5);
   const view = DG.TableView.create(dummy);
 
 
-  crud.queryPlates({plateMatchers: [], wellMatchers: [], analysisMatchers:[]}).then((df: DG.DataFrame) => {
+  crud.queryPlates({plateMatchers: [], wellMatchers: [], analysisMatchers: []}).then((df: DG.DataFrame) => {
     df.col('barcode')!.semType = 'Plate Barcode';
     view.dataFrame = df;
     view.grid.columns.add({gridColumnName: 'plate', cellType: 'Plate'})

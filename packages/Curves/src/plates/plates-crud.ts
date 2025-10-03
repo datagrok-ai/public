@@ -65,7 +65,6 @@ export type PlateTemplate = {
   wellProperties: Partial<PlateProperty>[];
 }
 
-// MODIFIED: 'dbColumn' is no longer needed.
 export type AnalysisProperty = {
   name: string; // User-friendly name, e.g., "IC50"
   type: DG.TYPE; // Data type, e.g., DG.TYPE.FLOAT
@@ -74,7 +73,7 @@ export type AnalysisProperty = {
 export type AnalysisCondition = {
   property: AnalysisProperty;
   matcher: Matcher;
-  analysisName: string; // The analysis this condition applies to, e.g., "Dose-Response"
+  analysisName: string;
 }
 
 
@@ -106,12 +105,10 @@ export async function initPlates(force: boolean = false) {
   if (!_initialized)
     events.subscribe((event) => grok.shell.info(`${event.on} ${event.eventType} ${event.objectType}`));
 
-  // Fetch all templates and all properties
   plateTemplates = (await api.queries.getPlateTemplates()).toJson();
   allProperties = (await api.queries.getProperties()).toJson();
   plateTypes = (await api.queries.getPlateTypes()).toJson();
 
-  // Populate each template with its properties based on template_id and scope
   for (const template of plateTemplates) {
     template.plateProperties = allProperties.filter(
       (p) => p.template_id === template.id && p.scope === 'plate'
@@ -127,7 +124,6 @@ export async function initPlates(force: boolean = false) {
 
 /** Creates a new plate for a user to edit. Does not add it to the database. */
 export async function createNewPlateForTemplate(plateType: PlateType, plateTemplate: PlateTemplate): Promise<Plate> {
-  // ADD THIS CHECK
   if (!plateType)
     throw new Error('Cannot create plate: plateType is undefined. Are plate_types seeded in the database?');
 
@@ -226,7 +222,6 @@ function getPlateSearchSql(query: PlateQuery): string {
             )`);
   }
 
-  // Analysis-level result conditions (REWRITTEN)
   for (const condition of query.analysisMatchers) {
     const prop = allProperties.find((p) => p.name === condition.property.name);
     if (!prop) {
@@ -235,7 +230,6 @@ function getPlateSearchSql(query: PlateQuery): string {
     }
 
     let dbColumn: string | null = plateDbColumn[prop.type];
-    // Handle JSONB for curve data specifically
     if (prop.name.toLowerCase().includes('curve'))
       dbColumn = plateDbJsonColumn;
 
@@ -322,7 +316,6 @@ function getWellSearchSql(query: PlateQuery): string {
 
   const whereFilter = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
-  // It queries from the well values table and groups by each unique well.
   return `
 SELECT
     pwv.plate_id,
@@ -362,9 +355,7 @@ export async function queryWells(query: PlateQuery): Promise<DG.DataFrame> {
 export async function queryPlates(query: PlateQuery): Promise<DG.DataFrame> {
   const df = await grok.data.db.query('Curves:Plates', getPlateSearchSql(query));
 
-  console.log(`Query returned ${df.rowCount} rows.`);
 
-  // Make sure properties column exists and is valid JSON
   const propsCol = df.col('properties');
   if (propsCol && df.rowCount > 0) {
     try {
@@ -372,7 +363,6 @@ export async function queryPlates(query: PlateQuery): Promise<DG.DataFrame> {
       propsCol.name = '~properties';
     } catch (e) {
       console.error('Failed to parse properties JSON:', e);
-      // Handle the error gracefully
     }
   }
 
@@ -397,11 +387,6 @@ export async function createProperty(prop: Partial<PlateProperty>, originPlateId
   return prop as PlateProperty;
 }
 
-/**
- * Saves the plate to the database.
- * When a property is not found in the plateProperties array, it is created automatically
- * if autoCreateProperties is true; otherwise, an error is thrown.
-*/
 export async function savePlate(plate: Plate, options?: { autoCreateProperties?: boolean }) {
   const autoCreateProperties = options?.autoCreateProperties ?? true;
   await initPlates();
@@ -460,7 +445,7 @@ function getPlateInsertSql(plate: Plate): string {
 
     if (!property) {
       console.warn(`Property '${layer}' not found in cache. Skipping save for this plate-level property.`);
-      continue; // Skip to the next property
+      continue;
     }
 
     const dbCol = plateDbColumn[property.type];
@@ -473,7 +458,7 @@ function getPlateInsertSql(plate: Plate): string {
 
     if (!property) {
       console.warn(`Property '${layer}' not found in cache. Skipping save for this well-level property.`);
-      continue; // Skip to the next property
+      continue;
     }
 
     const dbCol = plateDbColumn[property.type];
@@ -496,7 +481,6 @@ export async function createPlateTemplate(template: Partial<PlateTemplate>): Pro
   const createdPlateProperties: PlateProperty[] = [];
   const createdWellProperties: PlateProperty[] = [];
 
-  // Create plate properties with ALL their fields
   for (const property of template.plateProperties ?? []) {
     property.template_id = template.id;
     property.scope = 'plate';
@@ -504,7 +488,6 @@ export async function createPlateTemplate(template: Partial<PlateTemplate>): Pro
     createdPlateProperties.push(newProp);
   }
 
-  // Create well properties with ALL their fields
   for (const property of template.wellProperties ?? []) {
     property.template_id = template.id;
     property.scope = 'well';
@@ -512,7 +495,6 @@ export async function createPlateTemplate(template: Partial<PlateTemplate>): Pro
     createdWellProperties.push(newProp);
   }
 
-  // Assign the complete property objects back
   template.plateProperties = createdPlateProperties;
   template.wellProperties = createdWellProperties;
 
@@ -556,15 +538,12 @@ export async function createAnalysisRun(plateId: number, analysisType: string, g
   if (!plateId)
     throw new Error('Cannot create analysis run: plateId is missing.');
 
-  // THE FIX: The function call directly returns the number (the runId) because of the `-- output: int runId` annotation in the SQL.
-  // We should not treat it as a DataFrame.
   const runId: number = await grok.functions.call('Curves:createAnalysisRun', {
     plateId: plateId,
     analysisType: analysisType,
     groups: groups,
   });
 
-  // Validate the result
   if (typeof runId !== 'number' || runId <= 0)
     throw new Error(`Failed to create a valid analysis run. Received runId: ${runId}`);
 
@@ -600,6 +579,7 @@ export async function saveAnalysisRunParameter(params: {
 export async function saveAnalysisResult(params: {
     runId: number,
     propertyId: number,
+    propertyName: string,
     propertyType: string,
     value: any,
     groupCombination: string[]
@@ -611,8 +591,7 @@ export async function saveAnalysisResult(params: {
     valueString: null, valueNum: null, valueBool: null, valueJsonb: null
   };
 
-  // Special handling for JSON strings like curve data
-  if (params.propertyType === DG.TYPE.STRING && typeof params.value === 'string' && params.value.startsWith('{')) {
+  if (params.propertyName.toLowerCase().includes('curve') && typeof params.value === 'string') {
     callParams.valueJsonb = params.value;
   } else {
     const dbColumnKey = Object.keys(plateDbColumn).find((key) => key === params.propertyType);
@@ -629,19 +608,13 @@ export async function saveAnalysisResult(params: {
 }
 
 
-// MODIFIED: Renamed from getOrCreateAnalysisProperty to be more generic.
-// No functional change needed here, but it's good practice. It handles properties
-// for both parameters and results.
 export async function getOrCreateProperty(name: string, type: DG.TYPE, scope: 'plate' | 'well' = 'plate'): Promise<PlateProperty> {
   await initPlates();
-  // A global property is one with no template_id
   let prop = allProperties.find((p) => p.name === name && p.template_id == null && p.scope == scope);
   if (prop)
     return prop;
-
-  console.log(`Creating new global property: ${name}`);
   const newProp = await createProperty({name: name, type: type, scope: scope, template_id: undefined});
-  await initPlates(true); // Force refresh of the cache
+  await initPlates(true);
   return allProperties.find((p) => p.id === newProp.id)!;
 }
 

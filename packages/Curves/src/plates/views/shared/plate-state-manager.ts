@@ -135,9 +135,15 @@ export class PlateStateManager {
       });
     }
 
-    currentState.activePlateIdx = currentState.plates.length > 0 ? 0 : -1;
+    const newActiveIndex = currentState.plates.length > 0 ? 0 : -1;
+    currentState.activePlateIdx = newActiveIndex;
     this.templateStates.set(this._currentTemplate.id, currentState);
-    this.stateChange$.next({type: 'plate-added'});
+
+    this.stateChange$.next({
+      type: 'plate-selected',
+      plateIndex: newActiveIndex,
+      plate: newActiveIndex === -1 ? undefined : currentState.plates[newActiveIndex],
+    });
   }
   public addIdentifierColumn(): void {
     this.identifierColumns.push(null);

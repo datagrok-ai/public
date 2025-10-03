@@ -18,7 +18,6 @@ import {FitFunctionType, FitSeries} from '@datagrok-libraries/statistics/src/fit
 import {AnalysisOptions} from './plate-widget';
 import {inspectCurve} from '../fit/fit-renderer';
 import {plateDbColumn, allProperties, plateTypes} from '../plates/plates-crud';
-// import {PlateDrcAnalysis} from './plate-drc-analysis';
 import {IPlateWellValidator} from './plate-well-validators';
 import {Subject} from 'rxjs';
 
@@ -87,7 +86,12 @@ export class Plate {
 
   private outlierChangeSubject = new Subject<{row: number, col: number, isOutlier: boolean, source: string}>();
   public get onOutlierChanged() { return this.outlierChangeSubject.asObservable(); }
+  private dataChangeSubject = new Subject<void>();
+  public get onDataChanged() { return this.dataChangeSubject.asObservable(); }
 
+  public announceDataChange(): void {
+    this.dataChangeSubject.next();
+  }
 
   private changeLog: Array<{
     timestamp: Date;
@@ -336,7 +340,6 @@ export class Plate {
     return this.changeLog;
   }
 
-  // --- EXISTING METHODS WITH ALIAS SUPPORT ---
 
   static fromGridDataFrame(table: DG.DataFrame, field?: string): Plate {
     const rows = table.rowCount;

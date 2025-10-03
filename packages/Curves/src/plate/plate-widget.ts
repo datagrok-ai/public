@@ -408,13 +408,11 @@ export class PlateWidget extends DG.Widget {
   static detailedView(plate: Plate): PlateWidget {
     const pw = new PlateWidget();
     pw.plate = plate;
-    // pw.roleSummaryDiv.remove();
     pw.detailsDiv = ui.divV([], 'plate-widget__details');
     pw.wellDetailsDiv = ui.div();
     pw.detailsDiv.appendChild(pw.wellDetailsDiv);
     const gridAndSummaryWrapper = ui.divV([
       pw.tabs.root,
-      // pw.roleSummaryDiv,
     ], {style: {flexGrow: '1', display: 'flex', flexDirection: 'column'}});
     const mainContainer = ui.divH([
       gridAndSummaryWrapper,

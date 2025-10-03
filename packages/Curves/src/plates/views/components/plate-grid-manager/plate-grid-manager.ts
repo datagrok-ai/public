@@ -66,9 +66,8 @@ export class PlateGridManager {
     this.grid.root.style.width = '100%';
 
     this.grid.onCurrentCellChanged.subscribe((gc: DG.GridCell) => {
-      // START OF FIX: Add a null check for the GridCell object
       if (this.isSelecting || !gc || !gc.isTableCell) return;
-      // END OF FIX
+
       const tableRowIndex = this.grid.gridRowToTable(gc.gridRow);
       const state = this.stateManager.currentState;
       if (tableRowIndex !== -1 && state && tableRowIndex !== state.activePlateIdx) {
@@ -80,9 +79,8 @@ export class PlateGridManager {
 
 
     this.grid.onCellClick.subscribe((gc: DG.GridCell) => {
-      // START OF FIX: Add a null check here as well for consistency
       if (!gc || !gc.isTableCell) return;
-      // END OF FIX
+
       const tableRowIndex = this.grid.gridRowToTable(gc.gridRow);
       const state = this.stateManager.currentState;
       if (tableRowIndex !== -1 && state && tableRowIndex !== state.activePlateIdx) {
