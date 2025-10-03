@@ -378,14 +378,13 @@ export class ActivityDashboardWidget extends DG.Widget {
     if (root.children.length === 0)
       root = await this.getNewUserInfoColumns();
 
-    const additionalFuncs = DG.Func.find({meta: {'isActivityWidget': 'true'}});
+    const additionalFuncs = DG.Func.find({meta: {'activityWidgetHeader': null}});
     for (const func of additionalFuncs) {
-      const elements: HTMLElement[] = await func.apply();
-      const list = ui.list(elements);
-      list.classList.add('power-pack-activity-widget-subwidget-list-content');
-      const listRoot = ui.divV([ui.h3(ui.span([ui.span([func.options['activityWidgetHeader'] ?? ''])]), 'power-pack-activity-widget-spotlight-column-header'),
-        list], 'power-pack-activity-widget-spotlight-column');
-      root.appendChild(listRoot);
+      const subWidget: DG.Widget = await func.apply();
+      subWidget.root.classList.add('power-pack-activity-widget-subwidget-list-content');
+      const rootToAppend = ui.divV([ui.h3(ui.span([ui.span([func.options['activityWidgetHeader'] ?? ''])]), 'power-pack-activity-widget-spotlight-column-header'),
+        subWidget.root], 'power-pack-activity-widget-spotlight-column');
+      root.appendChild(rootToAppend);
     }
 
     setTimeout(() => this.cleanLists(), 500);
