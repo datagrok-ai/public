@@ -50,7 +50,7 @@ export class PackageFunctions {
   static async docking(
     @grok.decorators.param({options: {caption: 'Table'}}) df: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({options: {caption: 'Config', choices: 'Boltz1:getBoltzConfigFolders', description: '\'Folder with config files for docking\''}}) config: string,
+    @grok.decorators.param({options: {choices: 'Boltz1:getBoltzConfigFolders', description: '\'Folder with config files for docking\''}}) config: string,
   ): Promise<DG.DataFrame> {
     return await BoltzService.docking(df, molecules, config);
   }

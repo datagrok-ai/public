@@ -249,7 +249,7 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Co
 
 //name: To Atomic Level
 //description: Converts sequences to molblocks
-//input: dataframe table { caption: Table; description: Input data table }
+//input: dataframe table { description: Input data table }
 //input: column seqCol { semType: Macromolecule; caption: Sequence }
 //input: bool nonlinear = false { caption: Non-linear; description: Slower mode for cycling/branching HELM structures }
 //input: bool highlight = false { caption: Highlight monomers; description: Highlight monomers' substructures of the molecule }

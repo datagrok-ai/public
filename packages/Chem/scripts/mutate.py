@@ -4,10 +4,10 @@
 #language: python
 #tags: demo, chem, rdkit
 #top-menu: Chem | Transform | Mutate...
-#input: string molecule = "CN1C(CC(O)C1=O)C1=CN=CC=C1" {caption: Molecule; semType: Molecule}
-#input: int steps = 1 {caption: Steps} [Number of mutation steps]
-#input: bool randomize = true {caption: Randomize} [Randomize mutations]
-#input: int maxRandomResults = 100 {caption: Max Random Results} [Maximum random results to calculate]
+#input: string molecule = "CN1C(CC(O)C1=O)C1=CN=CC=C1" {semType: Molecule}
+#input: int steps = 1 [Number of mutation steps]
+#input: bool randomize = true [Randomize mutations]
+#input: int maxRandomResults = 100 [Maximum random results to calculate]
 #output: dataframe mutations {semType: Molecule}
 
 import pickle

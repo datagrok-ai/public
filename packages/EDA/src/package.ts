@@ -126,8 +126,8 @@ export class PackageFunctions {
   static async dbscanPostProcessingFunction(
     col1: DG.Column,
     col2: DG.Column,
-    @grok.decorators.param({options: {caption: 'Epsilon', initialValue: '0.01', description: 'Minimum distance between two points to be considered as in the same neighborhood.'}})   epsilon: number,
-    @grok.decorators.param({type: 'int', options: {caption: 'Minimum Points', initialValue: '5', description: 'Minimum number of points to form a dense region.'}})   minimumPoints: number) {
+    @grok.decorators.param({options: {initialValue: '0.01', description: 'Minimum distance between two points to be considered as in the same neighborhood.'}})   epsilon: number,
+    @grok.decorators.param({type: 'int', options: {initialValue: '5', description: 'Minimum number of points to form a dense region.'}})   minimumPoints: number) {
 
     const df = col1.dataFrame;
     if (df === null)

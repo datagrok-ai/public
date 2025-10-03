@@ -597,7 +597,7 @@ export class PackageFunctions {
     'description': 'Calculates most common substructures for each cluster',
   })
   static async clusterMCSTopMenu(
-    @grok.decorators.param({options: {caption: 'Table'}}) table: DG.DataFrame,
+    table: DG.DataFrame,
     @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molCol: DG.Column,
     @grok.decorators.param({type: 'column', options: {type: 'categorical'}}) clusterCol: DG.Column): Promise<void> {
     const c = await PackageFunctions.performClusterMCS(molCol, clusterCol);
@@ -817,10 +817,10 @@ export class PackageFunctions {
     'name': 'Elemental Analysis',
   })
   static async elementalAnalysis(
-    @grok.decorators.param({options: {caption: 'Table'}}) table: DG.DataFrame,
+    table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({options: {caption: 'Radar Viewer', description: 'Add a standalone radar viewer', initialValue: 'false'}}) radarViewer: boolean,
-    @grok.decorators.param({options: {caption: 'Radar Grid', description: 'Show radar in grid cells', initialValue: 'false'}}) radarGrid: boolean): Promise<void> {
+    @grok.decorators.param({options: {description: 'Add a standalone radar viewer', initialValue: 'false'}}) radarViewer: boolean,
+    @grok.decorators.param({options: {description: 'Show radar in grid cells', initialValue: 'false'}}) radarGrid: boolean): Promise<void> {
     if (molecules.semType !== DG.SEMTYPE.MOLECULE) {
       grok.shell.info(`The column ${molecules.name} doesn't contain molecules`);
       return;
@@ -1093,7 +1093,7 @@ export class PackageFunctions {
     'tags': ['Transform'],
   })
   static addInchisTopMenu(
-    @grok.decorators.param({options: {caption: 'Table', description: 'Input data table'}}) table: DG.DataFrame,
+    table: DG.DataFrame,
     @grok.decorators.param({name: 'molecules', options: {semType: 'Molecule'}}) col: DG.Column): void {
     const inchiCol = getInchisImpl(col);
     inchiCol.name = table.columns.getUnusedName(inchiCol.name);
@@ -1115,7 +1115,7 @@ export class PackageFunctions {
     'tags': ['Transform'],
   })
   static addInchisKeysTopMenu(
-    @grok.decorators.param({options: {caption: 'Table', description: 'Input data table'}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({name: 'molecules', options: {semType: 'Molecule'}}) col: DG.Column): void {
     const inchiKeyCol = getInchiKeysImpl(col);
     inchiKeyCol.name = table.columns.getUnusedName(inchiKeyCol.name);
@@ -1400,11 +1400,11 @@ export class PackageFunctions {
     'tags': ['Transform'],
   })
   static async convertNotation(
-    @grok.decorators.param({options: {caption: 'Data'}}) data: DG.DataFrame,
-    @grok.decorators.param({type: 'column', options: {semType: 'Molecule', caption: 'Molecules'}}) molecules: DG.Column<string>,
-    @grok.decorators.param({type: 'string', options: {caption: 'Target Notation', choices: ['smiles', 'smarts', 'molblock', 'v3Kmolblock'], initialValue: 'smiles'}}) targetNotation: DG.chem.Notation,
-    @grok.decorators.param({options: {caption: 'Overwrite', initialValue: 'false'}}) overwrite: boolean = false,
-    @grok.decorators.param({options: {caption: 'Join', initialValue: 'true'}}) join: boolean = true): Promise<DG.Column<string> | void> {
+    data: DG.DataFrame,
+    @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molecules: DG.Column<string>,
+    @grok.decorators.param({type: 'string', options: {choices: ['smiles', 'smarts', 'molblock', 'v3Kmolblock'], initialValue: 'smiles'}}) targetNotation: DG.chem.Notation,
+    @grok.decorators.param({options: {initialValue: 'false'}}) overwrite: boolean = false,
+    @grok.decorators.param({options: {initialValue: 'true'}}) join: boolean = true): Promise<DG.Column<string> | void> {
     const res = await convertNotationForColumn(molecules, targetNotation);
     const units = targetNotation === DG.chem.Notation.MolBlock ? DG.UNITS.Molecule.MOLBLOCK :
       targetNotation === DG.chem.Notation.V3KMolBlock ? DG.UNITS.Molecule.V3K_MOLBLOCK : DG.UNITS.Molecule.SMILES;
@@ -1844,7 +1844,7 @@ export class PackageFunctions {
       'method_info.github': 'https://github.com/actelion/openchemlib',
     }})
   static async addChemPropertiesColumns(
-    @grok.decorators.param({type: 'dataframe', options: {caption: 'Table', description: 'Input data table'}}) table: DG.DataFrame,
+    @grok.decorators.param({type: 'dataframe', options: {description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molecules: DG.Column,
     @grok.decorators.param({options: {initialValue: 'true'}}) MW?: boolean,
     @grok.decorators.param({options: {initialValue: 'false'}}) HBA?: boolean,
@@ -1899,12 +1899,12 @@ export class PackageFunctions {
     'name': 'Toxicity Risks',
     'tags': ['HitTriageFunction', 'Transform']})
   static async addChemRisksColumns(
-    @grok.decorators.param({options: {caption: 'Table', description: 'Input data table'}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({options: {caption: 'Mutagenicity', initialValue: 'true'}}) mutagenicity?: boolean,
-    @grok.decorators.param({options: {caption: 'Tumorigenicity', initialValue: 'false'}}) tumorigenicity?: boolean,
-    @grok.decorators.param({options: {caption: 'Irritating Effects', initialValue: 'false'}}) irritatingEffects?: boolean,
-    @grok.decorators.param({options: {caption: 'Reproductive Effects', initialValue: 'false'}}) reproductiveEffects?: boolean,
+    @grok.decorators.param({options: {initialValue: 'true'}}) mutagenicity?: boolean,
+    @grok.decorators.param({options: {initialValue: 'false'}}) tumorigenicity?: boolean,
+    @grok.decorators.param({options: {initialValue: 'false'}}) irritatingEffects?: boolean,
+    @grok.decorators.param({options: {initialValue: 'false'}}) reproductiveEffects?: boolean,
   ): Promise<void> {
     const pb = DG.TaskBarProgressIndicator.create('Toxicity risks ...');
     try {
@@ -2116,7 +2116,8 @@ export class PackageFunctions {
     'name': 'Names To Smiles',
     'top-menu': 'Chem | Transform | Names To Smiles...',
     'tags': ['Transform']})
-  static async namesToSmiles(@grok.decorators.param({options: {caption: 'Data'}}) data: DG.DataFrame,
+  static async namesToSmiles(
+    data: DG.DataFrame,
     @grok.decorators.param({type: 'column'}) names: DG.Column<string>): Promise<void> {
     const namesList = names.toList();
     const res = await grok.functions.call('Chembl:namesToSmiles', {names: namesList});
@@ -2365,9 +2366,9 @@ export class PackageFunctions {
     'description': 'Generates the new dataset based on the given structure',
   })
   static async deprotect(
-    @grok.decorators.param({options: {caption: 'Table', description: 'Input data table'}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({options: {caption: 'Fragment', semType: 'Molecule', initialValue: 'O=C([N:1])OCC1c2ccccc2-c2ccccc21'}}) fragment: string): Promise<void> {
+    @grok.decorators.param({options: {semType: 'Molecule', initialValue: 'O=C([N:1])OCC1c2ccccc2-c2ccccc21'}}) fragment: string): Promise<void> {
     const module = PackageFunctions.getRdKitModule();
     const cut = cutFragments(module, molecules.toList(), fragment);
     const res = cut.map((c) => c[0]);

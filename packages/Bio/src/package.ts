@@ -578,7 +578,7 @@ export class PackageFunctions {
     'top-menu': 'Bio | Transform | To Atomic Level...',
   })
   static async toAtomicLevel(
-    @grok.decorators.param({options: {caption: 'Table', description: 'Input data table'}})table: DG.DataFrame,
+    @grok.decorators.param({options: {description: 'Input data table'}})table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Macromolecule', caption: 'Sequence'}})seqCol: DG.Column,
     @grok.decorators.param({options: {initialValue: 'false', caption: 'Non-linear', description: 'Slower mode for cycling/branching HELM structures'}}) nonlinear: boolean,
     @grok.decorators.param({options: {initialValue: 'false', caption: 'Highlight monomers', description: 'Highlight monomers\' substructures of the molecule'}}) highlight: boolean = false
