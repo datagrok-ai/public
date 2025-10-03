@@ -206,12 +206,12 @@ export class RegistrationView {
         true,
       );
 
-
       this.createSummary();
     } catch (err: any) {
       grok.shell.error(`Registration failed: ${err.message}`);
     } finally {
       this.registerButton?.classList.remove('dim');
+      loader.remove();
       this.registrationStarted = false;
     }
   }
