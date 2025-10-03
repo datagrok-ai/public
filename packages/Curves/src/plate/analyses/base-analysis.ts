@@ -24,9 +24,7 @@ export interface IPlateAnalysis {
     readonly friendlyName: string;
     parameters: IAnalysisProperty[];
     outputs: IAnalysisProperty[];
-
     getRequiredFields(): AnalysisRequiredFields[];
-
     createView(
         plate: Plate,
         plateWidget: PlateWidget,
@@ -54,13 +52,9 @@ export abstract class AbstractPlateAnalysis implements IPlateAnalysis {
       for (const output of this.outputs)
         this._outputProperties.set(output.name, await getOrCreateProperty(output.name, output.type));
     }
-
-
     abstract getRequiredFields(): AnalysisRequiredFields[];
     abstract createView(plate: Plate, plateWidget: PlateWidget, currentMappings: Map<string, string>, onMap: (t: string, s: string) => void, onUndo: (t: string) => void, onRerender?: () => void): HTMLElement;
-
     protected abstract _getGroups(resultsDf: DG.DataFrame): { groupColumn: string, groups: string[] };
-
     protected _createStandardMappingView(
       plate: Plate,
       currentMappings: Map<string, string>,
@@ -78,7 +72,7 @@ export abstract class AbstractPlateAnalysis implements IPlateAnalysis {
       plate: Plate,
       resultsDf: DG.DataFrame,
       params: Record<string, any>,
-      currentMappings: Map<string, string> 
+      currentMappings: Map<string, string>
     ): Promise<void> {
       if (!plate.id) {
         grok.shell.warning('Please use the main "CREATE" button to save the plate before saving analysis results.');
@@ -111,7 +105,6 @@ export abstract class AbstractPlateAnalysis implements IPlateAnalysis {
             value: actualColumn,
           });
         }
-
         for (const row of resultsDf.rows) {
           const groupKey = row.get(groupColumn);
           if (!groupKey) continue;
@@ -119,6 +112,8 @@ export abstract class AbstractPlateAnalysis implements IPlateAnalysis {
 
           for (const output of this.outputs) {
             const prop = this._outputProperties.get(output.name);
+
+
             if (prop && resultsDf.columns.contains(output.name)) {
               const value = row.get(output.name);
               if (value !== null && value !== undefined)

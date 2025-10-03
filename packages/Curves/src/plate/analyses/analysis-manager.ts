@@ -30,6 +30,9 @@ export class AnalysisManager {
   public get analyses(): IPlateAnalysis[] {
     return this._analyses;
   }
+  public getAnalysis(name: string): IPlateAnalysis | undefined {
+    return this._analyses.find((a) => a.name === name);
+  }
   public byFriendlyName(name: string): IPlateAnalysis | undefined {
     return this._analyses.find((a) => a.friendlyName === name);
   }

@@ -28,7 +28,7 @@ import {convertDataToCurves, dataToCurvesUI, WellTableParentData} from './fit/da
 import {parsePlateFromCsv} from './plate/csv-plates';
 import {layoutsView} from './plates/views/layouts-view';
 import {AnalysisManager} from './plate/analyses/analysis-manager';
-import { DrcAnalysis } from './plate/analyses/drc/drc-analysis';
+import {DrcAnalysis} from './plate/analyses/drc/drc-analysis';
 
 export const _package = new DG.Package();
 

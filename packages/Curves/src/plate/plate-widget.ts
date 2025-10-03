@@ -112,6 +112,10 @@ export class PlateWidget extends DG.Widget {
     return distance <= radius;
   }
 
+  public addAnalysisTab(name: string, content: HTMLElement): void {
+    const pane = this.tabs.addPane(name, () => content);
+    this.tabs.currentPane = pane;
+  }
   private hitTest(canvasX: number, canvasY: number): { row: number, col: number } | null {
     for (let row = 0; row < this.plate.rows; row++) {
       for (let col = 0; col < this.plate.cols; col++) {
@@ -181,7 +185,6 @@ export class PlateWidget extends DG.Widget {
       }
     });
   }
-
   private setupHoverEvents(grid: DG.Grid) {
     grid.onCellMouseEnter.subscribe((gc: DG.GridCell) => {
       if (gc.isTableCell) {
