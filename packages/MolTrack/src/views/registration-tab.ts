@@ -194,14 +194,12 @@ export class RegistrationView {
         ...(corporateId && df.columns.names().includes(corporateId) ? [corporateId] : []),
       ];
 
-      const smilesCol = this.uploadedDf.columns.bySemType(DG.SEMTYPE.MOLECULE);
-      if (!smilesCol)
-        throw new Error(`No column with semantic type ${DG.SEMTYPE.MOLECULE} found in the uploaded data`);
+      const firstColName = this.uploadedDf.columns.names()[0];
 
       this.uploadedDf.join(
         df,
-        [smilesCol.name],
-        [smilesCol.name],
+        [firstColName],
+        [firstColName],
         null,
         joinColumns,
         DG.JOIN_TYPE.INNER,
