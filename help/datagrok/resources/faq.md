@@ -305,7 +305,18 @@ See [Explore data](../../explore/explore.md) for more information
 
 ##### <b>Q: What are the maximum dataset sizes?</b>
 
-Datagrok handles millions of data points interactively for visualization and exploration. See [Why Datagrok?](../../datagrok/datagrok.md#why-datagrok) for details. 
+Datagrok handles millions of data points interactively for visualization and exploration. 
+
+The fundamental limitation is the amount of RAM allowed to use by the browser tab, which is different
+between browsers (currently no limit for Firefox, and 4GB for Chrome). With Datagrok's efficient
+[in-memory data engine](../../develop/under-the-hood/performance.md#in-memory-database), 
+even the 4GB lets you work with the following datasets:
+* 10 numerical columns: 100,000,000 rows
+* 100,000 numerical columns: 1,000 rows
+* Small molecules as SMILES: 10,000,000 rows
+
+And if the dataset won't fit in the memory, Datagrok provides 
+powerful [ways to work with the database](../../access/databases/databases.md).
 
 ##### <b>Q: What visualization options does Datagrok provide for data analysis and chemical structures?</b>  
 
