@@ -97,8 +97,8 @@ export function rmse(targetArg: Float64Array, targetFuncs: Float64Array[], scale
 } // rmse
 
 /** Return points splitted into batches */
-export function getBatches(points: Float32Array[], batchesCount: number): Float32Array[][] {
-  const batches = new Array<Float32Array[]>(batchesCount);
+export function getBatches(points: Float64Array[], batchesCount: number): Float64Array[][] {
+  const batches = new Array<Float64Array[]>(batchesCount);
   const samplesCount = points.length;
   const chunkSize = Math.floor(samplesCount / batchesCount);
   let remainder = samplesCount % batchesCount;
@@ -115,7 +115,7 @@ export function getBatches(points: Float32Array[], batchesCount: number): Float3
 } // getBatches
 
 /** Perform Neldel-Mead optimization */
-export async function fit(task: NelderMeadInput, start: Float32Array): Promise<Extremum> {
+export async function fit(task: NelderMeadInput, start: Float64Array): Promise<Extremum> {
   const ivp = task.ivp2ww;
   const pipeline = task.pipeline;
   const inputSize = ARG_INP_COUNT + ivp.deqsCount + ivp.paramNames.length;
@@ -158,7 +158,7 @@ export async function fit(task: NelderMeadInput, start: Float32Array): Promise<E
 
   let solution: Float64Array[];
 
-  const costFunc = async (x: Float32Array): Promise<number> => {
+  const costFunc = async (x: Float64Array): Promise<number> => {
     for (let i = 0; i < dim; ++i)
       ivpInputVals[inpIndex[i]] = x[i];
 
@@ -174,7 +174,7 @@ export async function fit(task: NelderMeadInput, start: Float32Array): Promise<E
     );
   };
 
-  const vec = new Float32Array(dim);
+  const vec = new Float64Array(dim);
 
   for (let i = 0; i < dim; ++i)
     vec[i] = task.variedInpMin[i] + Math.random() * (task.variedInpMax[i] - task.variedInpMin[i]);

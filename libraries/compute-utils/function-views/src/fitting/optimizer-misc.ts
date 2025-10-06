@@ -4,7 +4,7 @@
 import * as DG from 'datagrok-api/dg';
 
 export type Extremum = {
-  point: Float32Array,
+  point: Float64Array,
   cost: number,
   iterCosts: number[],
   iterCount: number,
@@ -25,18 +25,18 @@ export type OptimizationResult = {
 };
 
 export type OptimizationTask = {
-  costFunc: (x: Float32Array) => Promise<number>,
-  minVals: Float32Array,
-  maxVals: Float32Array,
+  costFunc: (x: Float64Array) => Promise<number>,
+  minVals: Float64Array,
+  maxVals: Float64Array,
   samplesCount: number
 };
 
 export interface IOptimizer {
-  (objectiveFunc: (x: Float32Array) => Promise<number>,
-    paramsInitial: Float32Array,
+  (objectiveFunc: (x: Float64Array) => Promise<number>,
+    paramsInitial: Float64Array,
     settings: Map<string, number>,
-    restrictionsBottom: Float32Array,
-    restrictionsTop: Float32Array,
+    restrictionsBottom: Float64Array,
+    restrictionsTop: Float64Array,
     threshold?: number,
   ): Promise<Extremum>;
 };

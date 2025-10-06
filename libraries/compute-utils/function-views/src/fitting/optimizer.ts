@@ -8,9 +8,9 @@ import {TIMEOUT, ReproSettings, EarlyStoppingSettings} from './constants';
 import {seededRandom} from './fitting-utils';
 
 export async function performNelderMeadOptimization(
-  objectiveFunc: (x: Float32Array) => Promise<number>,
-  paramsBottom: Float32Array,
-  paramsTop: Float32Array,
+  objectiveFunc: (x: Float64Array) => Promise<number>,
+  paramsBottom: Float64Array,
+  paramsTop: Float64Array,
   settings: Map<string, number>,
   samplesCount: number = 1,
   reproSettings: ReproSettings,
@@ -21,7 +21,7 @@ export async function performNelderMeadOptimization(
 
   let extremums: Extremum[] = [];
   const warnings: string[] = [];
-  const failedInitPoint: Float32Array[] = [];
+  const failedInitPoint: Float64Array[] = [];
   let failsCount = 0;
   let failsDF: DG.DataFrame | null = null;
 
@@ -71,14 +71,14 @@ export async function performNelderMeadOptimization(
 
   if (failsCount > 0) {
     const dim = paramsTop.length;
-    const raw = new Array<Float32Array>(dim);
+    const raw = new Array<Float64Array>(dim);
 
     for (let i = 0; i < dim; ++i)
-      raw[i] = new Float32Array(failsCount);
+      raw[i] = new Float64Array(failsCount);
 
     failedInitPoint.forEach((point, idx) => point.forEach((val, jdx) => raw[jdx][idx] = val));
 
-    failsDF = DG.DataFrame.fromColumns(raw.map((arr, idx) => DG.Column.fromFloat32Array(`arg${idx}`, arr)));
+    failsDF = DG.DataFrame.fromColumns(raw.map((arr, idx) => DG.Column.fromFloat64Array(`arg${idx}`, arr)));
     failsDF.columns.add(DG.Column.fromStrings('Issue', warnings));
   }
 

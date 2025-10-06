@@ -1294,8 +1294,8 @@ export class FittingView {
 
       // varied inputs specification
       const variedInputNames: string[] = [];
-      const minVals = new Float32Array(dim);
-      const maxVals = new Float32Array(dim);
+      const minVals = new Float64Array(dim);
+      const maxVals = new Float64Array(dim);
       const variedInputsCaptions = new Array<string>(dim);
 
       // set varied inputs specification
@@ -1318,14 +1318,14 @@ export class FittingView {
       const toShowTableName = outputsOfInterest.map((item) => item.prop.propertyType).filter((type) => type === DG.TYPE.DATA_FRAME).length > 1;
 
       /** Get call funcCall with the specified inputs */
-      const getCalledFuncCall = async (x: Float32Array): Promise<DG.FuncCall> => {
+      const getCalledFuncCall = async (x: Float64Array): Promise<DG.FuncCall> => {
         x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
         const funcCall = this.func.prepare(inputs);
         return await funcCall.call();
       };
 
       /** Root mean sqaure error (RMSE) cost function */
-      const rmseCostFunc = async (x: Float32Array): Promise<number> => {
+      const rmseCostFunc = async (x: Float64Array): Promise<number> => {
         x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
         const funcCall = this.func.prepare(inputs);
         const calledFuncCall = await funcCall.call();
@@ -1353,7 +1353,7 @@ export class FittingView {
       };
 
       /** Maximum absolute deviation (MAD) cost function */
-      const madCostFunc = async (x: Float32Array): Promise<number> => {
+      const madCostFunc = async (x: Float64Array): Promise<number> => {
         x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
         const funcCall = this.func.prepare(inputs);
         const calledFuncCall = await funcCall.call();
@@ -1385,6 +1385,8 @@ export class FittingView {
       }
 
       let optResult: OptimizationResult;
+
+      const start = Date.now();
 
       // Perform optimization
       if (this.method === METHOD.NELDER_MEAD) {
@@ -1433,7 +1435,7 @@ export class FittingView {
       } else
         throw new Error(`Not implemented the '${this.method}' method`);
 
-      console.log(optResult);
+      console.log('Time: ', Date.now() - start, 'ms.');
 
       const extrema = optResult.extremums;
       const allExtrCount = extrema.length;
@@ -1493,14 +1495,14 @@ export class FittingView {
 
       this.clearPrev();
 
-      const lossVals = new Float32Array(rowCount);
+      const lossVals = new Float64Array(rowCount);
       const grid = this.comparisonView.grid;
       const tooltips = new Map([[TITLE.LOSS as string, `The final loss obtained: ${costTooltip}`]]);
 
       nonSimilarExtrema.forEach((extr, idx) => lossVals[idx] = extr.cost);
 
       // Add fitting results to the table: iteration & loss
-      const reportTable = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array(TITLE.LOSS, lossVals)]);
+      const reportTable = DG.DataFrame.fromColumns([DG.Column.fromFloat64Array(TITLE.LOSS, lossVals)]);
       this.comparisonView.dataFrame = reportTable;
       const reportColumns = reportTable.columns;
 
@@ -1508,12 +1510,12 @@ export class FittingView {
       variedInputsCaptions.forEach((cap, idx, arr) => {
         cap = reportColumns.getUnusedName(cap);
         arr[idx] = cap;
-        const raw = new Float32Array(rowCount);
+        const raw = new Float64Array(rowCount);
 
         for (let j = 0; j < rowCount; ++j)
           raw[j] = nonSimilarExtrema[j].point[idx];
 
-        reportColumns.add(DG.Column.fromFloat32Array(cap, raw));
+        reportColumns.add(DG.Column.fromFloat64Array(cap, raw));
         tooltips.set(cap, `Obtained values of '${cap}'`);
       });
 
@@ -1876,7 +1878,7 @@ export class FittingView {
 
     // add method's settings
     view.addViewer(DG.Viewer.form(DG.DataFrame.fromColumns(
-      Object.entries(this.nelderMeadSettings).map((e) => DG.Column.fromFloat32Array(nelderMeadSettingsOpts.get(e[0])?.caption ?? e[0], new Float32Array([e[1]]))),
+      Object.entries(this.nelderMeadSettings).map((e) => DG.Column.fromFloat64Array(nelderMeadSettingsOpts.get(e[0])?.caption ?? e[0], new Float64Array([e[1]]))),
     )), {description: 'The Nelder-Mead method settings', showNavigation: false});
 
     // create tooltips

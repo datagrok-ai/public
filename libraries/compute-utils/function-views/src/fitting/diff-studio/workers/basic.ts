@@ -7,7 +7,7 @@ import {NO_ERRORS, NelderMeadInput, RESULT_CODE} from '../defs';
 onmessage = async function(evt) {
   try {
     const task = evt.data.task as NelderMeadInput;
-    const startPoints = evt.data.startPoints as Float32Array[];
+    const startPoints = evt.data.startPoints as Float64Array[];
     const pointsCount = startPoints.length;
     const fitRes = new Array<string>(pointsCount);
     const extremums: Extremum[] = [];

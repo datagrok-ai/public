@@ -11,12 +11,12 @@ function sampleUniform(samplesCount: number, top: number, bottom: number,
   return sample;
 }
 
-export function sampleParams(samplesCount: number, top: Float32Array, bottom: Float32Array,
-  rand: () => number = Math.random): Float32Array[] {
+export function sampleParams(samplesCount: number, top: Float64Array, bottom: Float64Array,
+  rand: () => number = Math.random): Float64Array[] {
   const dim = top.length;
-  const params = new Array<Float32Array>(samplesCount);
+  const params = new Array<Float64Array>(samplesCount);
   for (let i = 0; i < samplesCount; i ++)
-    params[i] = new Float32Array(dim);
+    params[i] = new Float64Array(dim);
 
   for (let i = 0; i < dim; i ++) {
     if (top[i] === bottom[i]) {

@@ -11,19 +11,19 @@ import {OptimizationResult, Extremum} from '../optimizer-misc';
 import {seededRandom} from '../fitting-utils';
 
 /** Return dataframe summarizing fails of fitting */
-export function getFailesDf(points: Float32Array[], warnings: string[]): DG.DataFrame | null {
+export function getFailesDf(points: Float64Array[], warnings: string[]): DG.DataFrame | null {
   const failsCount = points.length;
 
   if (failsCount > 0) {
     const dim = points[0].length;
-    const raw = new Array<Float32Array>(dim);
+    const raw = new Array<Float64Array>(dim);
 
     for (let i = 0; i < dim; ++i)
-      raw[i] = new Float32Array(failsCount);
+      raw[i] = new Float64Array(failsCount);
 
     points.forEach((point, idx) => point.forEach((val, jdx) => raw[jdx][idx] = val));
 
-    const failsDf = DG.DataFrame.fromColumns(raw.map((arr, idx) => DG.Column.fromFloat32Array(`arg${idx}`, arr)));
+    const failsDf = DG.DataFrame.fromColumns(raw.map((arr, idx) => DG.Column.fromFloat64Array(`arg${idx}`, arr)));
     failsDf.columns.add(DG.Column.fromStrings('Issue', warnings));
 
     return failsDf;
@@ -33,7 +33,7 @@ export function getFailesDf(points: Float32Array[], warnings: string[]): DG.Data
 } // getFailesDf
 
 /** Return input vector defined by fitting inputs */
-function getInputVec(variedInputNames: string[], minVals: Float32Array, maxVals: Float32Array,
+function getInputVec(variedInputNames: string[], minVals: Float64Array, maxVals: Float64Array,
   fixedInputs: Record<string, number>, ivp: IVP): Float64Array {
   const allInputs: Record<string, number> = {};
 
@@ -52,8 +52,8 @@ export async function getFittedParams(
   pipelineCreator: PipelineCreator,
   settings: Map<string, number>,
   variedInputNames: string[],
-  minVals: Float32Array,
-  maxVals: Float32Array,
+  minVals: Float64Array,
+  maxVals: Float64Array,
   fixedInputs: Record<string, number>,
   argColName: string,
   funcCols: DG.Column[],
@@ -113,7 +113,7 @@ export async function getFittedParams(
 
   // Structs for optimization results
   const resultsArray: Extremum[] = [];
-  const failedInitPoints: Float32Array[] = [];
+  const failedInitPoints: Float64Array[] = [];
   const warnings: string[] = [];
   const pointBatches = getBatches(startingPoints, nThreads);
 
