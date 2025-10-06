@@ -323,7 +323,7 @@ export namespace funcs {
   /**
   Calculates most common substructures for each cluster
   */
-  export async function performClusterMCS(molCol: DG.Column , clusterCol: DG.Column ): Promise<DG.Column> {
+  export async function performClusterMCS(molCol: DG.Column , clusterCol: string ): Promise<DG.Column> {
     return await grok.functions.call('Chem:PerformClusterMCS', { molCol, clusterCol });
   }
 
@@ -783,6 +783,10 @@ export namespace funcs {
   */
   export async function mpo(): Promise<void> {
     return await grok.functions.call('Chem:Mpo', {});
+  }
+
+  export async function mpoTransformFunction(df: DG.DataFrame , currentProperties: any ): Promise<void> {
+    return await grok.functions.call('Chem:MpoTransformFunction', { df, currentProperties });
   }
 
   export async function mpoProfileEditor(file: DG.FileInfo ): Promise<DG.View> {

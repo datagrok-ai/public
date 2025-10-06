@@ -1,3 +1,4 @@
+/* eslint-disable guard-for-in */
 /* eslint-disable max-params */
 /* eslint-disable max-len */
 /* eslint-disable max-lines */
@@ -84,7 +85,7 @@ import {cutFragments} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-re
 import {oclMol} from './utils/chem-common-ocl';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 import {OCLService} from './open-chem/ocl-service';
-import {_mpoDialog} from './analysis/mpo';
+import {MpoProfileDialog} from './analysis/mpo';
 import {MmmpFunctionEditor, MmpDiffTypes} from './analysis/molecular-matched-pairs/mmp-function-editor';
 import {SCALING_METHODS} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {scaleActivity} from './analysis/molecular-matched-pairs/mmp-viewer/mmpa-utils';
@@ -92,6 +93,7 @@ import {MixtureCellRenderer} from './rendering/mixture-cell-renderer';
 import {createComponentPane, createMixtureWidget, Mixfile} from './utils/mixfile';
 import {biochemicalPropertiesDialog} from './widgets/biochem-properties-widget';
 import {checkCurrentView} from './utils/ui-utils';
+import {mpo, PropertyDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 export {getMCS};
 export * from './package.g';
@@ -2402,8 +2404,42 @@ export class PackageFunctions {
     'description': 'Calculates the MPO score for the column of molecules',
   })
   static async _mpo(): Promise<void> {
-    _mpoDialog(grok.shell.t);
+    const mpoDialog = new MpoProfileDialog();
+    await mpoDialog.showDialog();
   }
+
+  @grok.decorators.func({
+    tags: ['Transform'],
+  })
+  static async mpoTransformFunction(
+    df: DG.DataFrame,
+    currentProperties: { [key: string]: PropertyDesirability },
+  ) {
+    const columns: DG.Column[] = [];
+    for (const propertyName in currentProperties) {
+      const column = df.columns.byName(propertyName);
+      if (!column) {
+        grok.shell.warning(`Column ${propertyName} from template not found in table. Skipping.`);
+        continue;
+      }
+      column.setTag('desirabilityTemplate', JSON.stringify(currentProperties[propertyName]));
+      columns.push(column);
+    }
+
+    if (columns.length === 0) {
+      grok.shell.error('No valid columns found matching the template properties. Cannot calculate MPO score.');
+      return;
+    }
+
+    try {
+      const resultCol = mpo(df, columns);
+      grok.shell.info(`MPO score calculated in column '${resultCol.name}'.`);
+    } catch (e) {
+      console.error('MPO Calculation Error:', e);
+      grok.shell.error(`MPO calculation failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
 
   @grok.decorators.fileViewer({
     fileViewer: 'json',
