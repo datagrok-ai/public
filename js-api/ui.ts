@@ -833,7 +833,7 @@ export namespace input {
   /** Creates input for the specified property, and optionally binds it to the specified object */
   export function forProperty(property: Property, source: any = null, options?: IInputInitOptions): InputBase {
     const input = InputBase.forProperty(property, source);
-    setInputOptions(input, input.inputType, options, true);
+    setInputOptions(input, input?.inputType, options, true);
     return input;
   }
 

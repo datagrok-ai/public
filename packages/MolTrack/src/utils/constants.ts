@@ -48,6 +48,7 @@ export const scopeToUrl: { [key: string]: string } = {
 export type MolTrackProp = {
   name: string;
   value_type: string;
+  entity_type?: string;
   description?: string;
   pattern?: string;
   friendly_name?: string;

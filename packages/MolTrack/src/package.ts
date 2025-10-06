@@ -14,6 +14,7 @@ import { registerAllData, registerAssayData, updateAllMolTrackSchemas } from './
 import { batchView, compoundView, createPath, initBulkRegisterView, initRegisterView } from './utils/view-utils';
 import { flattened, getCorporateCompoundIdByExactStructure } from './utils/utils';
 import { molTrackPropPanel } from './widgets/moltrack-property-panel';
+import { PropertySchemaView } from './views/schema-view';
 
 export const _package = new DG.Package();
 
@@ -138,6 +139,11 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
   createRegisterNode('Compound', () => initRegisterView('Compound'));
   createRegisterNode('Batch', () => initRegisterView('Batch'));
   createRegisterNode('Bulk...', () => initBulkRegisterView());
+  createRegisterNode('Schema', async () => {
+    const schemaView = new PropertySchemaView();
+    await schemaView.init();
+    schemaView.show();
+  });
 
   const excludedScopes = [Scope.ASSAY_RUNS, Scope.ASSAY_RESULTS];
 
