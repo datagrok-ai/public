@@ -466,13 +466,13 @@ export function getRandomSeedSettings() {
       seedInput.root.hidden = !val;
       settings.reproducible = val;
     },
-    tooltipText: 'Enable to get reproducible results.',
+    tooltipText: 'Enable to get reproducible results',
   });
 
   const seedInput = ui.input.int('random seed', {
     value: SEED_DEFAULT,
     nullable: false,
-    tooltipText: 'Numeric value used to initialize the initial points of the optimization method.',
+    tooltipText: 'Numeric value used to initialize the initial points of the optimization method',
     onValueChanged: (val) => {
       settings.seed = val ?? SEED_DEFAULT;
     },
@@ -500,7 +500,7 @@ export function getEarlyStoppingInputs() {
     onValueChanged: (val) => {
       settings.stopAtFirst = val;
     },
-    tooltipText: 'Stop immediately after finding the first valid extremum.',
+    tooltipText: 'Stop immediately after finding the first valid extremum',
   });
   stopAtFirstInput.root.hidden = !EARLY_STOP_DEFAULT;
 
@@ -511,13 +511,13 @@ export function getEarlyStoppingInputs() {
       stopAtFirstInput.root.hidden = !val;
       settings.useEarlyStopping = val;
     },
-    tooltipText: 'Enable to stop fitting once the loss function reaches the specified threshold.',
+    tooltipText: 'Enable to stop fitting once the loss function reaches the specified threshold',
   });
 
   const thresholdInput = ui.input.float('threshold', {
     value: COST_FUNC_THRESH,
     nullable: false,
-    tooltipText: 'Loss function value at which to stop fitting.',
+    tooltipText: 'Loss function value at which to stop fitting',
     onValueChanged: (val) => {
       settings.costFuncThreshold = val ?? COST_FUNC_THRESH;
     },

@@ -12,16 +12,14 @@ import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {getDefaultValue} from './shared/utils';
 import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossTooltip, FITTING_UI,
-  INDICES, NAME, LOSS_FUNC_CHART_OPTS, SIZE,
-  MIN_RADAR_COLS_COUNT,
-  TIMEOUT} from './fitting/constants';
+  INDICES, NAME, LOSS_FUNC_CHART_OPTS, SIZE, TIMEOUT} from './fitting/constants';
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
-import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
-import {getErrors, getCategoryWidget, getShowInfoWidget, getLossFuncDf, rgbToHex, lightenRGB,
+import {nelderMeadSettingsOpts} from './fitting/optimizer-nelder-mead';
+import {getErrors, getCategoryWidget, getShowInfoWidget, getLossFuncDf, lightenRGB,
   getScalarsGoodnessOfFitViewer, getHelpIcon, getRadarTooltip, toUseRadar, getRandomSeedSettings,
   getEarlyStoppingInputs} from './fitting/fitting-utils';
-import {OptimizationResult, Extremum, TargetTableOutput, Setting} from './fitting/optimizer-misc';
+import {OptimizationResult, Extremum, TargetTableOutput} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
 import {IVP, IVP2WebWorker, PipelineCreator} from 'diff-grok';
@@ -198,6 +196,7 @@ export class FittingView {
               inp.root.insertBefore(isChangingInputConst.root, inp.captionLabel);
               inp.addPostfix(inputProp.options['units']);
               inp.setTooltip(`Value of '${caption}'`);
+              ui.tooltip.bind(inp.captionLabel, 'Model input');
               inp.nullable = false;
               return inp;
             })(),
@@ -356,7 +355,7 @@ export class FittingView {
             isInterest.subscribe((val) => input.input.hidden = !val);
 
             input.nullable = false;
-            ui.tooltip.bind(input.captionLabel, (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Dataframe' : 'Scalar');
+            ui.tooltip.bind(input.captionLabel, (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Dataframe output of the model' : 'Scalar output of the model');
 
             if (this.options.targets?.[outputProp.name]?.default != null)
               setTimeout(() => input.value = this.options.targets?.[outputProp.name]?.default, 0);
@@ -661,7 +660,7 @@ export class FittingView {
       return;
     }
 
-    nelderMeadSettingsVals.forEach((vals, key) => this.nelderMeadSettings.set(key, vals.default));
+    nelderMeadSettingsOpts.forEach((vals, key) => this.nelderMeadSettings.set(key, vals.default));
     this.parseDefaultsOverrides();
 
     grok.events.onViewRemoved.pipe(filter((v) => v.id === baseView.id), take(1)).subscribe(() => {
@@ -700,9 +699,9 @@ export class FittingView {
         'About',
       );
       this.methodInput.setTooltip(methodTooltip.get(this.method)!);
-      ui.tooltip.bind(this.methodInput.captionLabel, 'Method for minimizing the loss function');
+      ui.tooltip.bind(this.methodInput.captionLabel, 'Method for finding optimal model parameters');
       this.lossInput.setTooltip(lossTooltip.get(this.loss)!);
-      ui.tooltip.bind(this.lossInput.captionLabel, 'Loss function type');
+      ui.tooltip.bind(this.lossInput.captionLabel, 'Method for measuring the difference between model outputs and target values');
 
       this.showFailsBtn.style.padding = '0px';
 
@@ -711,14 +710,14 @@ export class FittingView {
         this.samplesCount = value;
         this.updateApplicabilityState();
       });
-      this.samplesCountInput.setTooltip('Number of points to be found');
+      this.samplesCountInput.setTooltip('How many different points to find');
 
       this.similarityInput.onChanged.subscribe((value) => {
         this.similarity = value;
         this.updateApplicabilityState();
       });
       this.similarityInput.addCaption(TITLE.SIMILARITY);
-      this.similarityInput.setTooltip('The higher the value, the fewer points will be found');
+      this.similarityInput.setTooltip('Maximum relative difference between points to consider them identical. Lower = more unique results');
       ui.tooltip.bind(this.similarityInput.captionLabel, `Maximum relative deviation (%) between similar fitted points`);
 
       this.updateRunIconStyle();
@@ -752,16 +751,18 @@ export class FittingView {
 
     let needsInitalUpdate = false;
 
-    nelderMeadSettingsVals.forEach((vals, key) => {
+    nelderMeadSettingsOpts.forEach((opts, key) => {
       const inp = ui.input.forProperty(DG.Property.fromOptions({
-        name: nelderMeadCaptions.get(key),
-        inputType: (key !== 'maxIter') ? 'Float' : 'Int',
-        defaultValue: this.defaultsOverrides[key] ?? vals.default,
-        min: vals.min,
-        max: vals.max,
+        name: opts.caption,
+        inputType: opts.inputType,
+        defaultValue: this.defaultsOverrides[key] ?? opts.default,
+        min: opts.min,
+        max: opts.max,
       }));
 
-      inp.addCaption(nelderMeadCaptions.get(key)!);
+      inp.setTooltip(opts.tooltipText);
+
+      inp.addCaption(opts.caption);
       inp.nullable = false;
 
       if (this.defaultsOverrides[key] != null) {
@@ -785,7 +786,7 @@ export class FittingView {
   /** Check correctness of the Nelder-Mead settings */
   private areNelderMeadSettingsCorrect(): boolean {
     for (const [key, val] of this.nelderMeadSettings) {
-      if ((val === null) || (val === undefined) || (val > nelderMeadSettingsVals.get(key)!.max) || (val < nelderMeadSettingsVals.get(key)!.min)) {
+      if ((val === null) || (val === undefined) || (val > nelderMeadSettingsOpts.get(key)!.max) || (val < nelderMeadSettingsOpts.get(key)!.min)) {
         this.updateRunIconDisabledTooltip(`Invalid "${key}": check method settings`);
         return false;
       }
@@ -1875,7 +1876,7 @@ export class FittingView {
 
     // add method's settings
     view.addViewer(DG.Viewer.form(DG.DataFrame.fromColumns(
-      Object.entries(this.nelderMeadSettings).map((e) => DG.Column.fromFloat32Array(nelderMeadCaptions.get(e[0]) ?? e[0], new Float32Array([e[1]]))),
+      Object.entries(this.nelderMeadSettings).map((e) => DG.Column.fromFloat32Array(nelderMeadSettingsOpts.get(e[0])?.caption ?? e[0], new Float32Array([e[1]]))),
     )), {description: 'The Nelder-Mead method settings', showNavigation: false});
 
     // create tooltips

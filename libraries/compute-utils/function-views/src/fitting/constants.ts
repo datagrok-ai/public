@@ -17,8 +17,8 @@ export enum LOSS {
  };
 
 export const lossTooltip = new Map([
-  [LOSS.MAD, 'Maximum absolute deviation'],
-  [LOSS.RMSE, 'Root mean square error'],
+  [LOSS.MAD, 'Maximum Absolute Deviation (MAD) - measures only the single largest deviation, ignoring smaller deviations'],
+  [LOSS.RMSE, 'Root Mean Square Error (RMSE) - measures average deviation, penalizing larger deviations more heavily'],
 ]);
 
 /** Grid elements sizes */

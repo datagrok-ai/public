@@ -1,25 +1,63 @@
 import {Extremum, IOptimizer, Setting} from './optimizer-misc';
 
 /** The Nelder Mead seetings vals */
-export const nelderMeadSettingsVals = new Map<string, Setting>([
-  ['tolerance', {default: 0.000001, min: 1e-20, max: 1e-1}],
-  ['maxIter', {default: 50, min: 1, max: 10000}],
-  ['nonZeroParam', {default: 0.0001, min: 1e-20, max: 1e-1}],
-  ['initialScale', {default: 0.02, min: 1e-20, max: 1e-1}],
-  ['scaleReflaction', {default: 1, min: 1, max: 2}],
-  ['scaleExpansion', {default: 2, min: 1, max: 2}],
-  ['scaleContraction', {default: -0.5, min: -0.5, max: 0}],
-]);
-
-/** Captions for the Nelder-Mead method settings */
-export const nelderMeadCaptions = new Map([
-  ['tolerance', 'tolerance'],
-  ['maxIter', 'max iterations'],
-  ['nonZeroParam', 'non-zero param'],
-  ['initialScale', 'initial scale'],
-  ['scaleReflaction', 'scale reflection'],
-  ['scaleExpansion', 'scale expansion'],
-  ['scaleContraction', 'scale contraction'],
+export const nelderMeadSettingsOpts = new Map<string, Setting>([
+  ['tolerance', {
+    default: 0.000001,
+    min: 1e-20,
+    max: 1e-1,
+    caption: 'tolerance',
+    tooltipText: 'How precise the result should be. Lower value = more accurate result, but longer computation',
+    inputType: 'Float',
+  }],
+  ['maxIter', {
+    default: 50,
+    min: 1,
+    max: 10000,
+    caption: 'max iterations',
+    tooltipText: 'Maximum number of iterations. Higher = better fit',
+    inputType: 'Int',
+  }],
+  ['nonZeroParam', {
+    default: 0.0001,
+    min: 1e-20,
+    max: 1e-1,
+    caption: 'non-zero param',
+    tooltipText: 'Minimum parameter value (to avoid zero values)',
+    inputType: 'Float',
+  }],
+  ['initialScale', {
+    default: 0.02,
+    min: 1e-20,
+    max: 1e-1,
+    caption: 'initial scale',
+    tooltipText: 'Size of the initial search area. Higher value = wider search area',
+    inputType: 'Float',
+  }],
+  ['scaleReflaction', {
+    default: 1,
+    min: 1,
+    max: 2,
+    caption: 'scale reflection',
+    tooltipText: 'How far the algorithm \'bounces back\' from failed attempts',
+    inputType: 'Float',
+  }],
+  ['scaleExpansion', {
+    default: 2,
+    min: 1,
+    max: 2,
+    caption: 'scale expansion',
+    tooltipText: 'How much the algorithm expands search in a promising direction',
+    inputType: 'Float',
+  }],
+  ['scaleContraction', {
+    default: -0.5,
+    min: -0.5,
+    max: 0,
+    caption: 'scale contraction',
+    tooltipText: 'How much the algorithm narrows the search area when approaching the result',
+    inputType: 'Float',
+  }],
 ]);
 
 async function getInitialParams(

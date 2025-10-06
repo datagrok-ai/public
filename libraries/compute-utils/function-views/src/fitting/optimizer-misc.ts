@@ -14,6 +14,9 @@ export type Setting = {
   default: number,
   min: number,
   max: number,
+  caption: string,
+  tooltipText: string,
+  inputType: string,
 }
 
 export type OptimizationResult = {
