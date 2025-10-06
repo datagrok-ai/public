@@ -36,6 +36,12 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
       },
       onInit: (ketcher: Ketcher) => {
         this._sketcher = ketcher;
+        if (this.host && this.host.isInPopupContainer()) { //workaround for sketcher not to be truncated when showed in a popup menu in the end of the screen (on last dataframe column)
+          const ketcherRoot = this.ketcherHost.querySelector('.Ketcher-root');
+          if (ketcherRoot)
+            (ketcherRoot as HTMLElement).style.minWidth = '0px';
+          this.ketcherHost.style.width = '100%';
+        }
         // grok.dapi.userDataStorage.getValue(KETCHER_OPTIONS, KETCHER_USER_STORAGE, true).then((opts: string) => {
         //   if (opts) {
         //     this._sketcher?.editor.setOptions(opts);
