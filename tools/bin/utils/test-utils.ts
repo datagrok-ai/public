@@ -662,23 +662,22 @@ export type OrganizedTests = {
   }
 }
 
-export async function addColumnToCsv(csv: string, columnName: string, defaultValue: string | number | boolean): Promise<string> {
-  let result = csv;
-  Papa.parse(csv, {
+export function addColumnToCsv(
+    csv: string,
+    columnName: string,
+    defaultValue: string | number | boolean
+): string {
+  const results = Papa.parse(csv, {
     header: true,
     skipEmptyLines: true,
-    complete: function(results) {
-      const dataWithDefaultColumn = results.data.map((row: any) => {
-        row[columnName] = defaultValue;
-        return row;
-      });
-
-      result = Papa.unparse(dataWithDefaultColumn, {
-        header: true,
-      });
-    },
   });
-  return result;
+
+  const dataWithDefaultColumn = (results.data as any[]).map((row) => ({
+    ...row,
+    [columnName]: defaultValue,
+  }));
+
+  return Papa.unparse(dataWithDefaultColumn, { header: true });
 }
 
 export function escapeRegex(s: string): string {

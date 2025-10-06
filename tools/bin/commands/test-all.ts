@@ -86,6 +86,7 @@ export async function testAll(args: TestArgs): Promise<boolean> {
   }
 
   if (args.csv) {
+    console.log('Saving')
     saveCsvResults(testsResults.map(result => result.csv), csvReportDir);
   }
 
@@ -148,9 +149,9 @@ async function runTests(browsersOrder: Test[][], browserOptions: BrowserOptions)
   }
   let resultObjects = await Promise.all(browsersPromises);
   for (let i = 0; i < resultObjects.length; i++) {
-    resultObjects[i].csv = await addColumnToCsv(resultObjects[i].csv, "browser", i);
-    resultObjects[i].csv = await addColumnToCsv(resultObjects[i].csv, "stress_test", browserOptions.stressTest ?? false);
-    resultObjects[i].csv = await addColumnToCsv(resultObjects[i].csv, "benchmark", browserOptions.benchmark ?? false);
+    resultObjects[i].csv = addColumnToCsv(resultObjects[i].csv, "browser", i);
+    resultObjects[i].csv = addColumnToCsv(resultObjects[i].csv, "stress_test", browserOptions.stressTest ?? false);
+    resultObjects[i].csv = addColumnToCsv(resultObjects[i].csv, "benchmark", browserOptions.benchmark ?? false);
   }
   return resultObjects;
 }
