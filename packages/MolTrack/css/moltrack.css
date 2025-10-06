@@ -201,3 +201,12 @@
 .moltrack-panel-register-button {
   width: 80px!important;
 }
+
+.moltrack-search-stats-div {
+  position: relative;
+  margin-top: 20px;
+}
+
+.moltrack-statistics-hide-header .header {
+    display: none;
+}

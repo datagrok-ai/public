@@ -1,6 +1,9 @@
-import { getBatchByCorporateId, getCompoundByCorporateId } from '../package';
-import { MOLTRACK_APP_PATH } from './constants';
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import { _package, getBatchByCorporateId, getCompoundByCorporateId } from '../package';
+import { excludedScopes, MOLTRACK_APP_PATH, Scope } from './constants';
 import { EntityBaseView } from '../views/registration-entity-base';
+import { u2 } from '@datagrok-libraries/utils/src/u2';
 
 export function createPath(viewName: string) {
   let path = `${MOLTRACK_APP_PATH}/`;
@@ -103,3 +106,45 @@ export function initRegisterView(entity: 'Compound' | 'Batch', setPath: boolean 
   view.show();
   return view.view;
 }
+
+export function getAppHeader(): HTMLElement {
+  const appHeader = u2.appHeader({
+    iconPath: _package.webRoot + '/images/moltrack.png',
+    learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/MolTrack/README.md',
+    description: '- Chemical compound registration system\n' +
+        '- Analyze assay data\n' +
+        '- Find contextual information on molecules.\n',
+    appTitle: 'MolTrack',
+    appSubTitle: 'Track, analyze, and manage chemical data',
+    bottomLine: true,
+  });
+  return appHeader;
+}
+
+export async function getStatisticsWidget(onCountClick: (...args: any[]) => void, isSearch?: boolean):
+Promise<HTMLTableElement> {
+  let scopes = Object.values(Scope);
+  if (isSearch)
+    scopes = scopes.filter((scope) => !excludedScopes.includes(scope));
+  const rows: any[][] = await Promise.all(
+    scopes.map(async (entity) => {
+      try {
+        const df = await grok.functions.call('MolTrack:retrieveEntity', { scope: entity, flatten: true });
+        const count = df?.rowCount ?? 0;
+
+        return [
+          entity,
+          ui.link(count.toString(), () => {
+            const funcParams = isSearch ? [entity.charAt(0).toUpperCase() + entity.slice(1), entity] : [df];
+            onCountClick(...funcParams);
+          }),
+        ];
+      } catch (e) {
+        grok.shell.error(`Failed to retrieve ${entity}: ${e}`);
+        return [entity, 'Error'];
+      }
+    }),
+  );
+
+  return ui.table(rows, (row) => row);
+};

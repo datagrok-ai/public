@@ -6,15 +6,15 @@ import { MolTrackDockerService } from '../services/moltrack-docker-service';
 export async function getCorporateCompoundIdByExactStructure(structure: string): Promise<string | null> {
   try {
     const query = {
-        'level': 'compounds',
-        'output': ['compounds.canonical_smiles', 'compounds.details.corporate_compound_id'],
-        'filter': {
-          'field': 'compounds.structure',
-          'operator': 'IS SIMILAR',
-          'value': structure,
-          'threshold': 1
-        },
-        'output_format': 'json',
+      'level': 'compounds',
+      'output': ['compounds.canonical_smiles', 'compounds.details.corporate_compound_id'],
+      'filter': {
+        'field': 'compounds.structure',
+        'operator': 'IS SIMILAR',
+        'value': structure,
+        'threshold': 1,
+      },
+      'output_format': 'json',
     };
     const { data } = await MolTrackDockerService.search(query, 'compounds');
     return data?.[0]?.['compounds.details.corporate_compound_id'] ?? null;
