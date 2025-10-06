@@ -10,7 +10,8 @@ import { ComplexCondition } from '@datagrok-libraries/utils/src/query-builder/qu
 import { RevvityUser } from './revvity-api';
 import { LAYOUT_STORAGE, USER_FIELDS } from './constants';
 import { funcs } from './package-api';
-
+import { _package } from './package';
+import { applyRevvityLayout, saveRevvityLayout } from './layout';
 
 
 const REVVITY_SIGNALS_APP_PATH: string = 'apps/Revvitysignalslink';
@@ -32,10 +33,17 @@ export async function updateView(tv: DG.TableView, df: DG.DataFrame, compoundTyp
   if(libId)
     await setColumnsFriendlyNames(libId, compoundType, tv.dataFrame);
 
-  applyRevvityLayout(`${libName}|${compoundType}`, tv, filtersDiv);
+  applyRevvityLayout(tv.grid, `${libName}|${compoundType}`);
   const columns = tv.dataFrame.columns.names();
   if (columns.length)
     tv.dataFrame.currentCell = tv.dataFrame.cell(-1, tv.dataFrame.col(columns[0])!.name);
+
+  DG.debounce(tv.grid.onPropertyValueChanged, 5000).subscribe(() => {
+    saveRevvityLayout(tv.grid, libName, compoundType)
+  });
+  DG.debounce(tv.dataFrame.onMetadataChanged, 5000).subscribe(() => {
+    saveRevvityLayout(tv.grid, libName, compoundType)
+  });
 }
 
 export function createPath(viewName?: string[]) {
@@ -178,28 +186,6 @@ export function createViewForExpandabelNode(viewName: string,
   getElement(div, libName, typeName);
 }
 
-export async function applyRevvityLayout(layoutKey: string, tv: DG.TableView, filtersDiv?: HTMLDivElement) {
-  const savedLayout = grok.userSettings.getValue(LAYOUT_STORAGE, layoutKey);
-  if (savedLayout) {
-    //first close the filterPanel is opened
-    const filtersDockNode = filtersDiv && tv.dockManager.findNode(filtersDiv);
-    const filtersOpened = filtersDockNode && (filtersDockNode as DG.DockNode).parent != null;
-    if (filtersOpened) {
-      tv.dockManager.close(filtersDockNode!);
-      filtersDockNode!.container.destroy();
-    }
-    try {
-      const layout = DG.ViewLayout.fromJson(savedLayout);
-      (openedView as DG.TableView).loadLayout(layout);
-    } catch (e) {
-      console.warn('Failed to restore saved layout:', e);
-    }
-    //open filters again if they were opened
-    if (filtersOpened)
-      (openedView! as DG.TableView).dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
-  }
-}
-
 export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, path: string[], libName: string,
   compoundType: string, initialSearchQuery?: ComplexCondition, isSavedSearch?: boolean): Promise<void> {
   let name = path[path.length - 1];
@@ -213,30 +199,13 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
 
   const df = DG.DataFrame.create();
   const tv = grok.shell.addTablePreview(df);
+  const icon = ui.iconImage('',  `${_package.webRoot}img/revvity.png`);
+  //tv.setIcon(icon); TODO!!! Uncomment when setIcon method is available in js-api
   
   openedView = tv;
   openedView.name = name.charAt(0).toUpperCase() + name.slice(1);
   openedView.path = createPath(path);
-  const layoutKey = `${libName}|${compoundType}`;
   const filtersDiv = ui.divV([], 'revvity-signals-filter-panel');
-
-  // Add save layout button to ribbon panel
-  const saveLayoutButton = ui.button('Save layout', async () => {
-    //first close the filterPanel is opened
-    const filtersDockNode = tv.dockManager.findNode(filtersDiv);
-    const filtersOpened = filtersDockNode && (filtersDockNode as DG.DockNode).parent != null;
-    if (filtersOpened) {
-      tv.dockManager.close(filtersDockNode!);
-      filtersDockNode!.container.destroy();
-    }
-    const layoutData = tv.saveLayout().toJson();
-    //open filters again if they were opened
-    if (filtersOpened)
-      (openedView! as DG.TableView).dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
-    grok.userSettings.add(LAYOUT_STORAGE, layoutKey, layoutData);
-    grok.shell.info(`Layout saved for ${libName} - ${compoundType}`);
-  });
-  tv.setRibbonPanels(tv.getRibbonPanels().concat([[saveLayoutButton]]));
 
   if (isSavedSearch && !initialSearchQuery) {
     const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, `${libName}|${compoundType}`) || '{}';
