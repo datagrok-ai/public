@@ -86,11 +86,11 @@ export async function testAll(args: TestArgs): Promise<boolean> {
   }
 
   if (args.csv) {
-    console.log('Saving')
+    console.log(`Saving ${(testsResults.length)} results`);
     saveCsvResults(testsResults.map(result => result.csv), csvReportDir);
   }
 
-  return !(testsResults.map((test) => test.failed)).some(failStatus => failStatus === true);
+  return testsResults.every(test => !test.failed);
 }
 
 async function filterTests(tests: Test[], tags: string[], stressTest: boolean = false, benchmark: boolean = false): Promise<Test[]> {
