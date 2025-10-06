@@ -14,6 +14,7 @@ from last_builds b
     )
 select
     case r.params ->> 'backup_size' when 'small' then 'S' when 'medium' then 'M' else 'L' end as backup,
+    r.params ->> 'totalWorkers' as totalWorkers,
     r.params ->> 'worker' as worker,
     r.params ->> 'browser' as browser,
     t.name as test,
