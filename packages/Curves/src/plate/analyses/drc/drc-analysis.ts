@@ -30,53 +30,62 @@ export class DrcAnalysis extends AbstractPlateAnalysis {
   ];
 
   override formatResultsForGrid(rawResults: DG.DataFrame): DG.DataFrame {
-    console.log('--- DRC: formatResultsForGrid START (Final Version) ---');
-    if (rawResults.rowCount === 0) return rawResults;
+    console.log('--- DRC: formatResultsForGrid START ---');
+    if (rawResults.rowCount === 0)
+      return rawResults;
 
-    const finalRows: any[] = [];
     const propsCol = rawResults.col('properties');
-
-    // The key is to parse the 'properties' column, which has the complete, reliable data.
     if (!propsCol) {
       console.error('DRC: CRITICAL - `properties` column not found!');
       return DG.DataFrame.create(0);
     }
 
+    const finalRows: any[] = [];
     for (let i = 0; i < rawResults.rowCount; i++) {
+      const row = rawResults.row(i);
       const propsJson = propsCol.get(i);
       if (!propsJson) continue;
 
-      const properties = JSON.parse(propsJson);
+      try {
+        const properties = JSON.parse(propsJson);
+        const groupArray = row.get('group_combination');
 
-      finalRows.push({
-        'run_id': rawResults.get('run_id', i),
-        'plate_id': rawResults.get('plate_id', i),
-        'barcode': rawResults.get('barcode', i),
-        // The user wants to see the specific group for THIS result.
-        // The 'title' or 'name' inside the Curve's JSON is the most reliable source.
-        'Group': properties.Curve?.series[0]?.name ?? `Group ${i + 1}`,
-        'Curve': JSON.stringify(properties.Curve), // Re-stringify to ensure it's a clean string for the 'fit' renderer
-        'IC50': properties.IC50,
-        'Hill Slope': properties['Hill Slope'],
-        'R Squared': properties['R Squared'],
-        'Min': properties.Min,
-        'Max': properties.Max,
-        'AUC': properties.AUC,
-      });
+        finalRows.push({
+          'run_id': row.get('run_id'),
+          'plate_id': row.get('plate_id'),
+          'barcode': row.get('barcode'),
+          'Compound': Array.isArray(groupArray) && groupArray.length > 0 ? groupArray[0] : null,
+          'Curve': properties.Curve,
+          'IC50': properties.IC50,
+          'Hill Slope': properties['Hill Slope'],
+          'R Squared': properties['R Squared'],
+          'Min': properties.Min,
+          'Max': properties.Max,
+          'AUC': properties.AUC,
+        });
+      } catch (e) {
+        console.error(`Failed to parse DRC properties JSON for row ${i}:`, propsJson, e);
+      }
     }
 
-    if (finalRows.length === 0) return DG.DataFrame.create(0);
+    if (finalRows.length === 0)
+      return DG.DataFrame.create(0);
 
-    const finalDf = DG.DataFrame.fromObjects(finalRows)!;
+    const resultDf = DG.DataFrame.fromObjects(finalRows)!;
 
-    // Apply formatting to the new, clean DataFrame
-    finalDf.col('Curve')!.semType = 'fit';
-    finalDf.col('IC50')!.meta.format = 'scientific';
+    // Set semtypes and formats for proper rendering
+    const curveCol = resultDf.col('Curve');
+    if (curveCol)
+      curveCol.semType = 'fit';
+
+    const ic50Col = resultDf.col('IC50');
+    if (ic50Col)
+      ic50Col.meta.format = '0.00e0';
 
     console.log('--- DRC: formatResultsForGrid END ---');
-    console.log('Final DRC DataFrame structure:\n', finalDf.toCsv());
-    return finalDf;
+    return resultDf;
   }
+
 
   getRequiredFields(): AnalysisRequiredFields[] {
     return [

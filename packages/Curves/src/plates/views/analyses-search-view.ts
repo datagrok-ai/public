@@ -174,7 +174,7 @@ function getAnalysesSearchView(
 
 export function searchAnalysesView(): DG.View {
   return getAnalysesSearchView('Search Analyses', queryAnalysesGeneric, (grid, analysisName) => {
-    grid.setOptions({allowEdit: false});
+    grid.setOptions({allowEdit: true});
     const curveCol = grid.col('Curve');
     if (curveCol) {
       grid.props.rowHeight = 250;

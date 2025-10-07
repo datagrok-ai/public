@@ -663,20 +663,15 @@ export type AnalysisQuery = {
 export async function queryAnalysesGeneric(query: AnalysisQuery): Promise<DG.DataFrame> {
   await initPlates();
 
+  // This part that generates the SQL is correct and can remain as is.
   const whereClauses: string[] = [];
-
-  // Add the fixed analysis type condition
   whereClauses.push(`ar.analysis_type = '${query.analysisName.replace(/'/g, '\'\'')}'`);
-
-  // Add the optional group condition
   if (query.group && query.group.length > 0)
     whereClauses.push(`'${query.group.replace(/'/g, '\'\'')}' = ANY(ar.groups)`);
 
-  // Dynamically build an EXISTS clause for each property filter
   for (const condition of query.propertyMatchers) {
     const prop = allProperties.find((p) => p.name === condition.property.name);
     if (!prop) continue;
-
     const dbColumn = plateDbColumn[prop.type] ?? plateDbJsonColumn;
     const existsClause = `
       EXISTS (
@@ -691,7 +686,6 @@ export async function queryAnalysesGeneric(query: AnalysisQuery): Promise<DG.Dat
   }
 
   const finalWhereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
-
   const sqlQuery = `
     SELECT
       ar.id as run_id,
@@ -709,10 +703,11 @@ export async function queryAnalysesGeneric(query: AnalysisQuery): Promise<DG.Dat
         jsonb_object_agg(
           prop.name,
           CASE
+            -- THIS IS THE CHANGE: Force the value_jsonb to be treated as text --
+            WHEN res.value_jsonb IS NOT NULL THEN to_jsonb(res.value_jsonb::text)
             WHEN res.value_string IS NOT NULL THEN to_jsonb(res.value_string)
             WHEN res.value_num IS NOT NULL THEN to_jsonb(res.value_num)
             WHEN res.value_bool IS NOT NULL THEN to_jsonb(res.value_bool)
-            WHEN res.value_jsonb IS NOT NULL THEN res.value_jsonb
             ELSE 'null'::jsonb
           END
         )::text as properties
@@ -729,106 +724,18 @@ export async function queryAnalysesGeneric(query: AnalysisQuery): Promise<DG.Dat
   `;
 
   try {
+    // ADD THIS LINE to see the exact query being sent to the database.
+    console.log('Executing SQL Query:', sqlQuery);
+
     const df = await grok.data.db.query('Curves:Plates', sqlQuery);
-
-    if (df.rowCount === 0)
-      return df;
-
-    // For analyses, we need to handle the properties column differently
-    // Instead of using DG.Utils.jsonToColumns, we'll manually extract the columns we need
-    const propsCol = df.col('properties');
-    if (propsCol) {
-      try {
-        // Try to parse the JSON and extract individual columns
-        const parsedRows: any[] = [];
-        for (let i = 0; i < df.rowCount; i++) {
-          const propsJson = propsCol.get(i);
-          if (propsJson && typeof propsJson === 'string') {
-            try {
-              const parsed = JSON.parse(propsJson);
-              parsedRows.push(parsed);
-            } catch (e) {
-              console.warn('Failed to parse properties JSON at row', i, ':', e);
-              parsedRows.push({});
-            }
-          } else {
-            parsedRows.push({});
-          }
-        }
-
-        // Extract all unique property names
-        const allPropertyNames = new Set<string>();
-        parsedRows.forEach((row) => {
-          Object.keys(row).forEach((key) => allPropertyNames.add(key));
-        });
-
-        // Create columns for each property
-        allPropertyNames.forEach((propName) => {
-          const values = parsedRows.map((row) => row[propName] !== undefined ? row[propName] : null);
-
-          // Determine column type based on first non-null value
-          let colType = DG.TYPE.STRING;
-          const firstNonNull = values.find((v) => v !== null);
-          if (firstNonNull !== undefined) {
-            if (typeof firstNonNull === 'number') colType = DG.TYPE.FLOAT;
-            else if (typeof firstNonNull === 'boolean') colType = DG.TYPE.BOOL;
-            else if (typeof firstNonNull === 'string') colType = DG.TYPE.STRING;
-          }
-
-          let newCol: DG.Column;
-          switch (colType) {
-            case DG.TYPE.FLOAT:
-              newCol = DG.Column.fromList(DG.TYPE.FLOAT, propName, values as number[]);
-              break;
-            case DG.TYPE.BOOL:
-              newCol = DG.Column.fromList(DG.TYPE.BOOL, propName, values as boolean[]);
-              break;
-            default:
-              newCol = DG.Column.fromList(DG.TYPE.STRING, propName, values as string[]);
-          }
-
-          df.columns.add(newCol);
-        });
-
-        // Remove the original properties column
-        df.columns.remove('properties');
-      } catch (e) {
-        console.error('Failed to process properties column:', e);
-        // If processing fails, just keep the properties column as is
-      }
-    }
-
-    // Extract the first group element for simpler display
-    const groupCol = df.col('group_combination');
-    if (groupCol) {
-      const newGroupCol = DG.Column.string('Group', df.rowCount)
-        .init((i) => {
-          const arr = groupCol.get(i);
-          return Array.isArray(arr) && arr.length > 0 ? arr[0] : null;
-        });
-      df.columns.add(newGroupCol);
-      df.columns.remove('group_combination');
-    }
-
-    // // Special handling for Dose Ratio to aggregate multiple curves into one chart
-    // if (query.analysisName === 'Dose-Ratio' && df.rowCount > 0)
-    //   return await processDoseRatioResults(df);
-
-
-    // For DRC analysis, ensure the Curve column has the correct semType
-    if (query.analysisName === 'DRC') {
-      const curveCol = df.col('Curve');
-      if (curveCol)
-        curveCol.semType = 'fit';
-    }
-
     return df;
   } catch (error) {
-    console.error('SQL Query Error:', error);
+    console.error('SQL Query Error in queryAnalysesGeneric:', error);
     console.error('Query was:', sqlQuery);
     throw error;
   }
 }
+
 export async function queryAnalyses(query: AnalysisQuery): Promise<DG.DataFrame> {
   const analysis = AnalysisManager.instance.getAnalysis(query.analysisName);
   if (analysis && 'queryResults' in analysis)

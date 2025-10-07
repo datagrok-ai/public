@@ -22,8 +22,9 @@ export class DoseRatioAnalysis extends AbstractPlateAnalysis {
   outputs: IAnalysisProperty[] = [
     {name: 'Curve', type: DG.TYPE.STRING, category: 'Output'},
     {name: 'Series Name', type: DG.TYPE.STRING, category: 'Output'},
-    {name: 'Min Value', type: DG.TYPE.FLOAT, category: 'Output'},
-    {name: 'Max Value', type: DG.TYPE.FLOAT, category: 'Output'},
+    // CHANGE a: Change type from FLOAT to INT to fix the filter UI component crash.
+    {name: 'Min Value', type: DG.TYPE.INT, category: 'Output'},
+    {name: 'Max Value', type: DG.TYPE.INT, category: 'Output'},
   ];
 
   getRequiredFields(): AnalysisRequiredFields[] {
@@ -192,91 +193,122 @@ export class DoseRatioAnalysis extends AbstractPlateAnalysis {
   protected _getGroups(resultsDf: DG.DataFrame): { groupColumn: string; groups: string[]; } {
     throw new Error('Method not implemented for DoseRatioAnalysis.');
   }
+  // dose-ratio-analysis.ts
+
+  // ... (inside the DoseRatioAnalysis class)
+
   override formatResultsForGrid(rawResults: DG.DataFrame): DG.DataFrame {
-    console.log('--- Dose Ratio: formatResultsForGrid START (Final Version) ---');
-    if (rawResults.rowCount === 0) return rawResults;
+    console.log(`--- Dose Ratio Debug V2: START ---. Received ${rawResults.rowCount} raw rows.`);
+    if (rawResults.rowCount === 0) {
+      console.log('--- Dose Ratio Debug V2: END (no rows to process) ---');
+      return rawResults;
+    }
 
-    const runs = new Map<number, any[]>();
     const propsCol = rawResults.col('properties');
-
     if (!propsCol) {
-      console.error('Dose Ratio: CRITICAL - `properties` column not found!');
+      console.error('Dose Ratio Debug V2: CRITICAL - `properties` column not found!');
       return DG.DataFrame.create(0);
     }
 
-    // Group rows by run_id, extracting clean data from the 'properties' JSON
-    for (let i = 0; i < rawResults.rowCount; i++) {
-      const runId = rawResults.get('run_id', i);
-      const propsJson = propsCol.get(i);
-      if (!propsJson) continue;
+    console.log('Debug V2 Step 1: Grouping rows by run_id...');
+    const runs = new Map<number, { firstRow: DG.Row, seriesList: IFitSeries[] }>();
+    try {
+      for (let i = 0; i < rawResults.rowCount; i++) {
+        const row = rawResults.row(i);
+        const runId = row.get('run_id');
+        const propsJson = propsCol.get(i);
+        console.log(`--- Processing raw row ${i} for runId ${runId} ---`);
 
-      if (!runs.has(runId))
-        runs.set(runId, []);
+        if (!runs.has(runId))
+          runs.set(runId, {firstRow: row, seriesList: []});
 
-      const properties = JSON.parse(propsJson);
+        if (!propsJson || typeof propsJson !== 'string') {
+          console.warn(`Row ${i} FAILED! Properties data is not a valid string. Skipping.`);
+          continue;
+        }
 
-        runs.get(runId)!.push({
-          run_id: runId,
-          plate_id: rawResults.get('plate_id', i),
-          barcode: rawResults.get('barcode', i),
-          Curve: properties.Curve, // This is already a JSON string of a single-series chart
-        });
+        const properties = JSON.parse(propsJson);
+        const singleSeriesChartJson = properties.Curve;
+        console.log(`Row ${i}: Check 1 - 'properties.Curve' is of type [${typeof singleSeriesChartJson}]. Is it a non-empty string? ${typeof singleSeriesChartJson === 'string' && singleSeriesChartJson.length > 0}`);
+
+        if (singleSeriesChartJson && typeof singleSeriesChartJson === 'string') {
+          const chartData = JSON.parse(singleSeriesChartJson);
+          const hasSeries = chartData.hasOwnProperty('series');
+          const seriesIsArray = Array.isArray(chartData.series);
+          console.log(`Row ${i}: Check 2 - Parsed chartData. Does it have a 'series' property? ${hasSeries}. Is 'series' an array? ${seriesIsArray}`);
+
+          if (hasSeries && seriesIsArray && chartData.series.length > 0) {
+            console.log(`Row ${i}: SUCCESS! Pushing series to list for runId ${runId}.`);
+                    runs.get(runId)!.seriesList.push(chartData.series[0]);
+          } else {
+            console.error(`Row ${i}: FAILED! chartData.series is not a valid, non-empty array. Actual value:`, chartData.series);
+          }
+        } else {
+          console.error(`Row ${i}: FAILED! properties.Curve was not a string or was empty.`);
+        }
+      }
+    } catch (e) {
+      console.error('Debug V2 ERROR during Step 1 (Grouping):', e);
+      return DG.DataFrame.create(0);
     }
 
+    console.log(`Debug V2 Step 1 Complete. Found ${runs.size} unique runs.`);
+    // NEW: Log a summary of what was collected before proceeding
+    runs.forEach((value, key) => {
+      console.log(`Summary for Run ID ${key}: Collected ${value.seriesList.length} series.`);
+    });
 
+
+    // The rest of the function remains the same as our V2 debug version
+    console.log('Debug V2 Step 2: Aggregating runs into final rows...');
     const finalRows: any[] = [];
+    try {
+      for (const [runId, runData] of runs.entries()) {
+        if (runData.seriesList.length === 0) continue;
 
-    for (const [runId, runRows] of runs.entries()) {
-      const allSeries: IFitSeries[] = [];
-      const firstRow = runRows[0]; // For common info like barcode
-
-      runRows.forEach((rowObj) => {
-        // The 'Curve' column contains a stringified IFitChartData with a *single* series.
-        // We need to extract that single series object.
-        const curveJson = rowObj.Curve;
-        if (curveJson && typeof curveJson === 'string') {
-          try {
-            const chartData: IFitChartData = JSON.parse(curveJson);
-            if (chartData.series && chartData.series.length > 0)
-              allSeries.push(chartData.series[0]);
-          } catch (e) {
-            console.error(`Failed to parse curve JSON for run ${runId}:`, curveJson, e);
+        let runMin = Infinity; let runMax = -Infinity;
+        for (const series of runData.seriesList) {
+          if (!series.points || !Array.isArray(series.points)) continue;
+          for (const point of series.points) {
+            if (!point.outlier && point.y != null) {
+              if (point.y < runMin) runMin = point.y;
+              if (point.y > runMax) runMax = point.y;
+            }
           }
         }
-      });
 
-      if (allSeries.length > 0) {
-        // Construct the new, aggregated chart data containing all series for the run
         const combinedChartData: IFitChartData = {
           chartOptions: {
-            title: `Dose Ratio for Plate ${firstRow.barcode}`,
-            xAxisName: 'Agonist Concentration (M)',
-            yAxisName: 'Percent Inhibition',
-            logX: true,
+            title: `Dose Ratio for Plate ${runData.firstRow.get('barcode')}`,
+            xAxisName: 'Agonist Concentration (M)', yAxisName: 'Percent Inhibition', logX: true,
           },
-          series: allSeries,
+          series: runData.seriesList,
         };
 
-        // Create the final aggregated row for our new DataFrame
         finalRows.push({
-          'run_id': runId,
-          'plate_id': firstRow.plate_id,
-          'barcode': firstRow.barcode,
-          'Curve': JSON.stringify(combinedChartData),
+          'run_id': runId, 'plate_id': runData.firstRow.get('plate_id'),
+          'barcode': runData.firstRow.get('barcode'), 'Curve': JSON.stringify(combinedChartData),
+          'Min Value': runMin === Infinity ? null : Math.round(runMin),
+          'Max Value': runMax === -Infinity ? null : Math.round(runMax),
         });
       }
-    }
-
-    if (finalRows.length === 0)
+    } catch (e) {
+      console.error('Debug V2 ERROR during Step 2 (Aggregation):', e);
       return DG.DataFrame.create(0);
+    }
+    console.log(`Debug V2 Step 2 Complete. Created ${finalRows.length} final rows.`);
+
+    console.log('Debug V2 Step 3: Creating final DataFrame.');
+    if (finalRows.length === 0) {
+      console.log('--- Dose Ratio Debug V2: END (no valid final rows to display) ---');
+      return DG.DataFrame.create(0);
+    }
 
     const resultDf = DG.DataFrame.fromObjects(finalRows)!;
     const curveCol = resultDf.col('Curve');
-    if (curveCol)
-      curveCol.semType = 'fit';
-    console.log('--- Dose Ratio: formatResultsForGrid END ---');
-    console.log('Final Dose Ratio DataFrame structure:\n', resultDf.toCsv());
+    if (curveCol) curveCol.semType = 'fit';
 
+    console.log('--- Dose Ratio Debug V2: END (SUCCESS) ---');
     return resultDf;
   }
 }

@@ -50,24 +50,51 @@ export class QpcrAnalysis extends AbstractPlateAnalysis {
   }
 
   override formatResultsForGrid(rawResults: DG.DataFrame): DG.DataFrame {
+    console.log('--- qPCR: formatResultsForGrid START ---');
     if (rawResults.rowCount === 0)
       return rawResults;
 
-    // The generic query expands the properties JSON into columns. We just need to format them.
-    const ddCtCol = rawResults.col('Delta Delta Ct');
-    if (ddCtCol)
-      ddCtCol.meta.format = '0.000';
+    const propsCol = rawResults.col('properties');
+    if (!propsCol) {
+      console.error('qPCR: CRITICAL - `properties` column not found!');
+      return DG.DataFrame.create(0);
+    }
 
-    const foldChangeCol = rawResults.col('Fold Change');
-    if (foldChangeCol)
-      foldChangeCol.meta.format = '0.000';
+    const finalRows: any[] = [];
+    for (let i = 0; i < rawResults.rowCount; i++) {
+      const row = rawResults.row(i);
+      const propsJson = propsCol.get(i);
+      if (!propsJson) continue;
 
-    // The group_combination column is empty/irrelevant for qPCR, so we remove it.
-    if (rawResults.columns.contains('group_combination'))
-      rawResults.columns.remove('group_combination');
+      try {
+        const properties = JSON.parse(propsJson);
+        finalRows.push({
+          'run_id': row.get('run_id'),
+          'plate_id': row.get('plate_id'),
+          'barcode': row.get('barcode'),
+          'Delta Delta Ct': properties['Delta Delta Ct'],
+          'Fold Change': properties['Fold Change'],
+        });
+      } catch (e) {
+        console.error(`Failed to parse qPCR properties JSON for row ${i}:`, propsJson, e);
+      }
+    }
 
-    return rawResults;
+    if (finalRows.length === 0)
+      return DG.DataFrame.create(0);
+
+    const resultDf = DG.DataFrame.fromObjects(finalRows)!;
+
+    const ddCtCol = resultDf.col('Delta Delta Ct');
+    if (ddCtCol) ddCtCol.meta.format = '0.000';
+
+    const foldChangeCol = resultDf.col('Fold Change');
+    if (foldChangeCol) foldChangeCol.meta.format = '0.000';
+
+    console.log('--- qPCR: formatResultsForGrid END ---');
+    return resultDf;
   }
+
   private _createResultsGrid(plate: Plate, mappings: Map<string, string>): HTMLElement {
     try {
       const ctColumnName = mappings.get('Ct')!;
