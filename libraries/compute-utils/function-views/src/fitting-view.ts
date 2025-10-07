@@ -1423,6 +1423,7 @@ export class FittingView {
               outputsOfInterest[index].target as DG.DataFrame,
               this.samplesCount,
               this.randInputs.settings,
+              this.earlyStoppingInputs.settings,
             );
           } catch (err) { // run fitting in the main thread if in-webworker run failed
             optResult = await performNelderMeadOptimization(

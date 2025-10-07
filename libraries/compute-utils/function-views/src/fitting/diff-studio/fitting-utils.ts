@@ -3,7 +3,7 @@ import {IVP, IVP2WebWorker, solveIvp, applyPipeline} from 'diff-grok';
 import {optimizeNM} from '../optimizer-nelder-mead';
 import {ARG_COL_IDX, ARG_INP_COUNT, NelderMeadInput} from './defs';
 import {Extremum} from '../optimizer-misc';
-import {LOSS} from '../constants';
+import {COST_FUNC_THRESH, LOSS} from '../constants';
 
 /** Return true if in-worker fitting is applicable */
 export function isWorkerApplicable(ivp: IVP | undefined, ivpWW: IVP2WebWorker | undefined): boolean {
@@ -183,7 +183,11 @@ export async function fit(task: NelderMeadInput, start: Float64Array): Promise<E
 
   const settings = new Map<string, number>(task.settingNames.map((name, idx) => [name, task.settingVals[idx]]));
 
-  const res = await optimizeNM(costFunc, start, settings, task.variedInpMin, task.variedInpMax);
+  const threshold = task.earlyStoppingSettings.useEarlyStopping ?
+    (task.earlyStoppingSettings.costFuncThreshold ?? COST_FUNC_THRESH) :
+    undefined;
+
+  const res = await optimizeNM(costFunc, start, settings, task.variedInpMin, task.variedInpMax, threshold);
 
   return res;
 } // fit

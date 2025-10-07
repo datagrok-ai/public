@@ -1,4 +1,5 @@
 import {IVP2WebWorker, Pipeline} from 'diff-grok';
+import {EarlyStoppingSettings} from '../constants';
 
 export const ARG_IDX = 0;
 export const NO_ERRORS = 'Success';
@@ -34,4 +35,5 @@ export type NelderMeadInput = {
   scaleVals: Float64Array,
   samplesCount: number,
   outputNames: string[],
+  earlyStoppingSettings: EarlyStoppingSettings,
 };

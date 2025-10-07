@@ -2,7 +2,7 @@
 import * as DG from 'datagrok-api/dg';
 
 import {IVP, IVP2WebWorker, PipelineCreator, getOutputNames, getInputVector} from 'diff-grok';
-import {LOSS, ReproSettings} from '../constants';
+import {EarlyStoppingSettings, LOSS, ReproSettings} from '../constants';
 import {ARG_IDX, DEFAULT_SET_VAL, MIN_TARGET_COLS_COUNT, MIN_WORKERS_COUNT, NO_ERRORS,
   RESULT_CODE, WORKERS_COUNT_DOWNSHIFT} from './defs';
 import {sampleParams} from '../optimizer-sampler';
@@ -60,6 +60,7 @@ export async function getFittedParams(
   target: DG.DataFrame,
   samplesCount: number,
   reproSettings: ReproSettings,
+  earlyStoppingSettings: EarlyStoppingSettings,
 ): Promise<OptimizationResult> {
   // Extract settings names & values
   const settingNames: string[] = [...settings.keys()];
@@ -145,6 +146,7 @@ export async function getFittedParams(
           scaleVals: scaleVals,
           samplesCount: samplesCount,
           outputNames: getOutputNames(ivp),
+          earlyStoppingSettings: earlyStoppingSettings,
         },
         startPoints: pointBatches[idx],
       });
