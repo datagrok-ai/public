@@ -424,8 +424,9 @@ async function runTests(testsParams: { package: any, params: any }[], stopOnFail
         countFailed += 1;
         failed = true;
       }
-      if ((success !== true && skipped !== true) && stopOnFail)
+      if ((success !== true && skipped !== true) && stopOnFail) {
         break;
+      }
     }
 
     if ((<any>window).DG.Test.isInDebug) {
@@ -450,14 +451,14 @@ async function runTests(testsParams: { package: any, params: any }[], stopOnFail
     }
   } catch (e) {
     failed = true;
-
-    error = lastTest ? 
-      `category: ${
-        lastTest.params.category}, name: ${
-        lastTest.params.test}, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}` :
-      `test: null, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}`;
+    console.log(`DEBUG: runTests: IN CATCH: ERROR: ${e}`);
+    error = lastTest ?
+        `category: ${
+            lastTest.params.category}, name: ${
+            lastTest.params.test}, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}` :
+        `test: null, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}`;
   }
-
+  console.log(`DEBUG: runTests: BEFORE RETURN: RES: ${res.length}, FAILED: ${failed}, ERROR: ${error}`);
   return {
     failed: failed,
     verbosePassed: verbosePassed,
