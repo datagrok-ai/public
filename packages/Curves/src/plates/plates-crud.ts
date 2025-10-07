@@ -10,7 +10,6 @@ import {FIT_FUNCTION_4PL_REGRESSION, IFitChartData, IFitSeries} from '@datagrok-
 import {AnalysisManager} from '../plate/analyses/analysis-manager';
 
 export const events: Subject<CrudEvent> = new Subject();
-
 /** Events emitted by the plates CRUD layer. */
 export type CrudEvent = {
   on: 'before' | 'after';
@@ -71,6 +70,12 @@ export type AnalysisProperty = {
   name: string; // User-friendly name, e.g., "IC50"
   type: DG.TYPE; // Data type, e.g., DG.TYPE.FLOAT
 }
+export type AnalysisQuery = {
+  analysisName: string;
+  propertyMatchers: PropertyCondition[];
+  group?: string;
+}
+
 
 export type AnalysisCondition = {
   property: AnalysisProperty;
@@ -653,17 +658,10 @@ export async function getOrCreateProperty(name: string, type: DG.TYPE, scope: 'p
   return allProperties.find((p) => p.id === newProp.id)!;
 }
 
-// Add this type definition at the top with other type exports
-export type AnalysisQuery = {
-  analysisName: string;
-  propertyMatchers: PropertyCondition[];
-  group?: string;
-}
 
 export async function queryAnalysesGeneric(query: AnalysisQuery): Promise<DG.DataFrame> {
   await initPlates();
 
-  // This part that generates the SQL is correct and can remain as is.
   const whereClauses: string[] = [];
   whereClauses.push(`ar.analysis_type = '${query.analysisName.replace(/'/g, '\'\'')}'`);
   if (query.group && query.group.length > 0)
@@ -724,24 +722,18 @@ export async function queryAnalysesGeneric(query: AnalysisQuery): Promise<DG.Dat
   `;
 
   try {
-    // ADD THIS LINE to see the exact query being sent to the database.
-    console.log('Executing SQL Query:', sqlQuery);
-
     const df = await grok.data.db.query('Curves:Plates', sqlQuery);
     return df;
   } catch (error) {
-    console.error('SQL Query Error in queryAnalysesGeneric:', error);
-    console.error('Query was:', sqlQuery);
     throw error;
   }
 }
 
+// fallback
 export async function queryAnalyses(query: AnalysisQuery): Promise<DG.DataFrame> {
   const analysis = AnalysisManager.instance.getAnalysis(query.analysisName);
   if (analysis && 'queryResults' in analysis)
     return await (analysis as any).queryResults(query);
-
-  // Fallback to generic if analysis doesn't implement custom querying
   return queryAnalysesGeneric(query);
 }
 

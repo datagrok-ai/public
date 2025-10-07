@@ -50,7 +50,6 @@ export class QpcrAnalysis extends AbstractPlateAnalysis {
   }
 
   override formatResultsForGrid(rawResults: DG.DataFrame): DG.DataFrame {
-    console.log('--- qPCR: formatResultsForGrid START ---');
     if (rawResults.rowCount === 0)
       return rawResults;
 
@@ -91,7 +90,6 @@ export class QpcrAnalysis extends AbstractPlateAnalysis {
     const foldChangeCol = resultDf.col('Fold Change');
     if (foldChangeCol) foldChangeCol.meta.format = '0.000';
 
-    console.log('--- qPCR: formatResultsForGrid END ---');
     return resultDf;
   }
 
@@ -103,7 +101,7 @@ export class QpcrAnalysis extends AbstractPlateAnalysis {
       grid.props.allowEdit = false;
 
       const saveButton = ui.button('SAVE RESULTS', async () => {
-        await this.saveResults(plate, resultsDf, {}, mappings); // <-- Pass mappings here
+        await this.saveResults(plate, resultsDf, {}, mappings);
       });
       const container = ui.divV([grid.root, ui.div([saveButton], 'ui-box')], 'drc-grid-container');
 
@@ -223,7 +221,6 @@ export class QpcrAnalysis extends AbstractPlateAnalysis {
         await this.saveAnalysisProperty(runId, 'Delta Delta Ct', ddCt, groupCombination);
       if (!isNaN(foldChange))
         await this.saveAnalysisProperty(runId, 'Fold Change', foldChange, groupCombination);
-
       grok.shell.info('Saved qPCR analysis results.');
     } catch (e: any) {
       grok.shell.error(`Failed to save qPCR results: ${e.message}`);

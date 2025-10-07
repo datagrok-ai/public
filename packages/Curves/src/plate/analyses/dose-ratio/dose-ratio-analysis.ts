@@ -193,7 +193,6 @@ export class DoseRatioAnalysis extends AbstractPlateAnalysis {
   }
 
   override formatResultsForGrid(rawResults: DG.DataFrame): DG.DataFrame {
-    console.log('--- Dose Ratio (Corrected Logic): formatResultsForGrid START ---');
     if (rawResults.rowCount === 0)
       return rawResults;
 

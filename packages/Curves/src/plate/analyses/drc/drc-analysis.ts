@@ -49,12 +49,16 @@ export class DrcAnalysis extends AbstractPlateAnalysis {
       try {
         const properties = JSON.parse(propsJson);
         const groupArray = row.get('group_combination');
+        const compound = Array.isArray(groupArray) && groupArray.length > 0 ? groupArray[0] : null;
 
         finalRows.push({
           'run_id': row.get('run_id'),
           'plate_id': row.get('plate_id'),
           'barcode': row.get('barcode'),
-          'Compound': Array.isArray(groupArray) && groupArray.length > 0 ? groupArray[0] : null,
+          // These are the updated lines
+          'Compound': compound,
+          'group_combination': groupArray,
+          // End of updated lines
           'Curve': properties.Curve,
           'IC50': properties.IC50,
           'Hill Slope': properties['Hill Slope'],
@@ -73,7 +77,6 @@ export class DrcAnalysis extends AbstractPlateAnalysis {
 
     const resultDf = DG.DataFrame.fromObjects(finalRows)!;
 
-    // Set semtypes and formats for proper rendering
     const curveCol = resultDf.col('Curve');
     if (curveCol)
       curveCol.semType = 'fit';
@@ -95,7 +98,6 @@ export class DrcAnalysis extends AbstractPlateAnalysis {
     ];
   }
   getSearchableProperties(): IAnalysisProperty[] {
-    // DRC can search by all its outputs
     return this.outputs;
   }
 
@@ -220,11 +222,8 @@ export class DrcAnalysis extends AbstractPlateAnalysis {
           this.plateSubscription = mappedPlate.onOutlierChanged.subscribe(() => {
             this.coordinator?.regenerateCurves();
           });
-
           const saveButton = ui.button('SAVE RESULTS', async () => await this.saveResults(mappedPlate, resultsDf, params, mappedMappings));
-
           saveButton.style.marginTop = '8px';
-
           const resultsContainer = ui.divV([
             resultsGrid.root,
             ui.div([saveButton], {style: {display: 'flex', justifyContent: 'flex-end', paddingRight: '4px'}}),
