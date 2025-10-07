@@ -147,7 +147,6 @@ SELECT * FROM plates.plates WHERE barcode = @barcode;
 
 
 -- name: createAnalysisRun
--- MODIFIED: Aligns with the new analysis_runs schema.
 -- connection: Curves:plates
 -- input: int plateId
 -- input: string analysisType
@@ -160,7 +159,6 @@ RETURNING id;
 
 
 -- name: saveAnalysisRunParameter
--- NEW: Saves a single parameter for an analysis run.
 -- connection: Curves:plates
 -- input: int analysisRunId
 -- input: int propertyId
@@ -177,7 +175,6 @@ INSERT INTO plates.analysis_run_parameters(
 
 
 -- name: saveAnalysisResult
--- NEW: Saves a single result value for an analysis run.
 -- connection: Curves:plates
 -- input: int analysisRunId
 -- input: list<string> groupCombination
@@ -193,4 +190,61 @@ INSERT INTO plates.analysis_results(
     @analysisRunId, @groupCombination, @propertyId,
     @valueString, @valueNum, @valueBool, CAST(@valueJsonb AS jsonb)
 );
+-- end
+
+
+-- name: getAnalysisRunGroups
+-- connection: Curves:plates
+-- input: string analysisType
+-- output: dataframe result
+SELECT DISTINCT unnest(ar.groups) AS "group"
+FROM plates.analysis_runs ar
+WHERE ar.analysis_type = @analysisType
+ORDER BY "group";
+-- end
+
+
+-- name: queryAnalyses
+-- connection: Curves:plates
+-- input: string fullQuery
+-- output: dataframe result
+@fullQuery
+-- end
+
+-- name: queryAnalysesTemplate
+SELECT
+    ar.id as run_id,
+    p.id as plate_id,
+    p.barcode,
+    res_pivot.group_combination,
+    res_pivot.properties
+FROM
+    plates.analysis_runs ar
+JOIN
+    plates.plates p ON ar.plate_id = p.id
+CROSS JOIN LATERAL (
+    SELECT
+        res.group_combination,
+        jsonb_object_agg(
+            prop.name,
+            CASE
+                WHEN res.value_string IS NOT NULL THEN to_jsonb(res.value_string)
+                WHEN res.value_num IS NOT NULL THEN to_jsonb(res.value_num)
+                WHEN res.value_bool IS NOT NULL THEN to_jsonb(res.value_bool)
+                WHEN res.value_jsonb IS NOT NULL THEN res.value_jsonb
+                ELSE 'null'::jsonb
+            END
+        )::text as properties
+    FROM
+        plates.analysis_results res
+    JOIN
+        plates.properties prop ON res.property_id = prop.id
+    WHERE
+        res.analysis_run_id = ar.id
+    GROUP BY
+        res.group_combination
+) as res_pivot
+WHERE
+    ar.analysis_type = '${analysisType}'
+    ${finalWhereClause}
 -- end

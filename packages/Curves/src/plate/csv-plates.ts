@@ -10,11 +10,7 @@ export interface PlateFile {
 
 function findCommonProperties(plateDf: DG.DataFrame): Map<string, any> {
   const commonProperties = new Map<string, any>();
-  const IGNORED_PROPERTIES = new Set([
-    'Well Position', 'Robust Inhibition (%)', 'Concentration (M)', 'Signal Emission',
-    'Destination Plate Barcode', 'Plate Number', 'Technical Duplicate ID', 'Vial Barcode',
-    'Automatic Data Point Exclusion (\'Excluded\', NA)', 'Manual Data Point Exclusion (\'Excluded\', NA)',
-    'SMILES', 'Compound Iso ID'
+  const IGNORED_PROPERTIES = new Set<string>([
   ]);
 
   for (const col of plateDf.columns) {

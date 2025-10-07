@@ -1,6 +1,8 @@
 /* eslint-disable max-len */
-import {AnalysisCondition, AnalysisProperty, getPlateUniquePropertyValues, getWellUniquePropertyValues, initPlates, PlateQuery, PlateTemplate, PropertyCondition} from '../plates-crud';
+import {AnalysisCondition, AnalysisProperty, getPlateUniquePropertyValues, getWellUniquePropertyValues, initPlates, PlateQuery, PlateTemplate, PropertyCondition, getAnalysisRunGroups} from '../plates-crud';
 
+import * as grok from 'datagrok-api/grok';
+import {AnalysisManager} from '../../plate/analyses/analysis-manager';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {NumericMatcher, StringInListMatcher, StringMatcher} from '../matchers';
@@ -83,11 +85,24 @@ function analysisFormToMatchers(form: DG.InputForm, analysisName: string): Analy
   const matchers: AnalysisCondition[] = [];
   if (!form || !analysisName) return matchers;
 
-  for (const input of form.inputs as AnalysisPropInput[]) {
-    if (input.inputType === DG.InputType.Text && input.value !== '' && NumericMatcher.parse(input.value)) {
+  for (const input of form.inputs) {
+    if (input.value == null || input.value === '') continue;
+
+    // Handle group condition
+    if (input.caption === 'Group') {
       matchers.push({
-        property: input.prop,
-        matcher: NumericMatcher.parse(input.value)!,
+        analysisName: analysisName,
+        group: input.value,
+      } as AnalysisCondition);
+      continue;
+    }
+
+    // Handle property conditions
+    const propInput = input as AnalysisPropInput;
+    if (propInput.prop && propInput.inputType === DG.InputType.Text && NumericMatcher.parse(propInput.value)) {
+      matchers.push({
+        property: propInput.prop,
+        matcher: NumericMatcher.parse(propInput.value)!,
         analysisName: analysisName,
       });
     }
@@ -147,27 +162,16 @@ function getSearchView(viewName: string,
     onValueChanged: (v) => setTemplate(plateTemplates.find((pt) => pt.name === v)!)
   });
 
-  const globalSearchInput = ui.input.bool('Search all properties', {
-    value: false,
-    onValueChanged: () => {
-      plateTemplateSelector.enabled = !globalSearchInput.value;
-      refreshUI();
-    }
-  });
-  globalSearchInput.setTooltip('Search using all properties in the database, not just those defined in the template.');
 
   const analysisTypeSelector = ui.input.choice('Analysis', {
-    items: ['None', 'Dose-Response', 'Dose-Ratio'],
+    items: ['None', ...AnalysisManager.instance.analyses.map((a) => a.friendlyName)],
     value: 'None',
     onValueChanged: () => refreshAnalysisUI(),
   });
-  const refreshResults = () => {
-    let analysisName = '';
-    if (analysisTypeSelector.value === 'Dose-Response')
-      analysisName = 'Dose-Response';
-    else if (analysisTypeSelector.value === 'Dose-Ratio')
-      analysisName = 'Dose-Ratio';
 
+  const refreshResults = () => {
+    const selectedAnalysis = AnalysisManager.instance.byFriendlyName(analysisTypeSelector.value as string);
+    const analysisName = selectedAnalysis ? selectedAnalysis.name : '';
 
     const query: PlateQuery = {
       plateMatchers: [...searchFormToMatchers(platesTemplateForm), ...searchFormToMatchers(platesOtherForm)],
@@ -183,25 +187,49 @@ function getSearchView(viewName: string,
     });
   }; ;
 
-  const refreshAnalysisUI = () => {
+  const refreshAnalysisUI = async () => {
     ui.empty(analysisFormHost);
+    const selectedAnalysisName = analysisTypeSelector.value;
 
-    const analysisProperties: AnalysisProperty[] = [];
-
-    if (analysisProperties.length > 0) {
-      const analysisInputs = analysisProperties.map((prop) => {
-        const input = ui.input.string(prop.name) as AnalysisPropInput;
-        input.prop = prop;
-        input.addValidator((s) => NumericMatcher.parse(s) ? null : 'Invalid criteria. Example: ">10"');
-        return input;
-      });
-
-      analysisForm = DG.InputForm.forInputs(analysisInputs);
-      analysisForm.root.style.width = '100%';
-      analysisFormHost.appendChild(analysisForm.root);
-
-      DG.debounce(analysisForm.onInputChanged, 500).subscribe((_) => refreshResults());
+    if (selectedAnalysisName === 'None' || selectedAnalysisName === null) {
+      analysisForm = DG.InputForm.forInputs([]);
+      refreshResults();
+      return;
     }
+
+    const analysis = AnalysisManager.instance.byFriendlyName(selectedAnalysisName);
+    if (!analysis) {
+      console.error(`Analysis "${selectedAnalysisName}" not found.`);
+      refreshResults();
+      return;
+    }
+
+    const inputs: DG.InputBase[] = [];
+
+    if (analysis.name === 'DRC' || analysis.name === 'Dose-Ratio') {
+      const groups = await getAnalysisRunGroups(analysis.name);
+      if (groups.length > 0) {
+        const groupInput = ui.typeAhead('Group', {
+          source: {local: groups}
+        });
+        inputs.push(groupInput);
+      }
+    }
+
+    for (const prop of analysis.outputs) {
+      if (prop.type === DG.TYPE.FLOAT || prop.type === DG.TYPE.INT) {
+        const input = ui.input.string(prop.name) as AnalysisPropInput;
+        input.prop = prop as AnalysisProperty;
+        input.addValidator((s) => (s === '' || NumericMatcher.parse(s)) ? null : 'Invalid criteria. Example: ">10"');
+        inputs.push(input);
+      }
+    }
+
+    analysisForm = DG.InputForm.forInputs(inputs);
+    analysisForm.root.style.width = '100%';
+    analysisFormHost.appendChild(analysisForm.root);
+
+    DG.debounce(analysisForm.onInputChanged, 500).subscribe((_) => refreshResults());
 
     refreshResults();
   };
@@ -213,21 +241,8 @@ function getSearchView(viewName: string,
     const currentTemplatePlateProps = plateTemplate?.plateProperties?.map((p) => p as PlateProperty) ?? [];
     const currentTemplateWellProps = plateTemplate?.wellProperties?.map((p) => p as PlateProperty) ?? [];
 
-    const allPlateProps = globalSearchInput.value ?
-      Array.from(new Map(
-        allProperties
-          .filter((p) => p.scope === 'plate')
-          .map((p) => [p.name, p])
-      ).values()) :
-      currentTemplatePlateProps;
-
-    const allWellProps = globalSearchInput.value ?
-      Array.from(new Map(
-        allProperties
-          .filter((p) => p.scope === 'well')
-          .map((p) => [p.name, p])
-      ).values()) :
-      currentTemplateWellProps;
+    const allPlateProps = currentTemplatePlateProps;
+    const allWellProps = currentTemplateWellProps;
 
     const platesFormsResult = getSearchForm(allPlateProps, currentTemplatePlateProps, getPlateUniquePropertyValues);
     const wellsFormsResult = getSearchForm(allWellProps, currentTemplateWellProps, getWellUniquePropertyValues);
@@ -252,13 +267,14 @@ function getSearchView(viewName: string,
 
     refreshResults();
   };
+
   const setTemplate = (template: PlateTemplate) => {
     plateTemplate = template;
     refreshUI();
   };
 
   const filterPanel = ui.divV([
-    ui.divH([plateTemplateSelector.root, globalSearchInput.root]),
+    ui.divH([plateTemplateSelector.root]),
     ui.divH([
       ui.divV([ui.h2('Plates'), platesFormHost], {style: {flexGrow: '1', marginRight: '10px'}}),
       ui.divV([ui.h2('Wells'), wellsFormHost], {style: {flexGrow: '1', marginLeft: '10px'}})
@@ -297,5 +313,3 @@ export function searchPlatesView(): DG.View {
 export function searchWellsView(): DG.View {
   return getSearchView('Search Wells', queryWells, (grid) => {});
 }
-
-

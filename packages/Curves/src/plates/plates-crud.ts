@@ -3,9 +3,10 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {Plate} from '../plate/plate';
-import {Matcher} from './matchers';
+import {Matcher, NumericMatcher} from './matchers';
 import {Subject} from 'rxjs';
 import * as api from '../package-api';
+import {IFitChartData, IFitSeries} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 
 export const events: Subject<CrudEvent> = new Subject();
 
@@ -47,7 +48,7 @@ export interface PlateProperty extends DG.IProperty {
 
 export type PropertyCondition = {
   property: PlateProperty;
-  matcher: Matcher;
+  matcher: Matcher | NumericMatcher;
 }
 
 export type PlateQuery = {
@@ -74,6 +75,8 @@ export type AnalysisCondition = {
   property: AnalysisProperty;
   matcher: Matcher;
   analysisName: string;
+  // MODIFIED: Add an optional 'group' property to filter by a specific group (e.g., a compound).
+  group?: string;
 }
 
 
@@ -167,6 +170,12 @@ export function getWellUniquePropertyValues(prop: PlateProperty): string[] {
   return getUniquePropertyValues(prop, wellUniquePropertyValues);
 }
 
+export async function getAnalysisRunGroups(analysisType: string): Promise<string[]> {
+  await initPlates();
+  const df = await grok.functions.call('Curves:getAnalysisRunGroups', {analysisType: analysisType});
+  return df.col('group').toList();
+}
+
 function getValueType(x: any): string {
   if (typeof x === 'string')
     return DG.TYPE.STRING;
@@ -195,59 +204,84 @@ export async function getPlateById(id: number): Promise<Plate> {
   return plate;
 }
 
+
 function getPlateSearchSql(query: PlateQuery): string {
   const existsClauses: string[] = [];
 
-  // Plate-level property conditions (no change)
   for (const condition of query.plateMatchers) {
     const dbColumn = plateDbColumn[condition.property.type];
     existsClauses.push(`
-            EXISTS (
-                SELECT 1 FROM plates.plate_details pd_f
-                WHERE pd_f.plate_id = p.id
-                AND pd_f.property_id = ${condition.property.id}
-                AND (${condition.matcher.toSql(`pd_f.${dbColumn}`)})
-            )`);
+      EXISTS (
+        SELECT 1 FROM plates.plate_details pd_f
+        WHERE pd_f.plate_id = p.id
+        AND pd_f.property_id = ${condition.property.id}
+        AND (${condition.matcher.toSql(`pd_f.${dbColumn}`)})
+      )`);
   }
 
-  // Well-level property conditions (no change)
   for (const condition of query.wellMatchers) {
     const dbColumn = plateDbColumn[condition.property.type];
     existsClauses.push(`
-            EXISTS (
-                SELECT 1 FROM plates.plate_well_values pwv
-                WHERE pwv.plate_id = p.id
-                AND pwv.property_id = ${condition.property.id}
-                AND (${condition.matcher.toSql(`pwv.${dbColumn}`)})
-            )`);
+      EXISTS (
+        SELECT 1 FROM plates.plate_well_values pwv
+        WHERE pwv.plate_id = p.id
+        AND pwv.property_id = ${condition.property.id}
+        AND (${condition.matcher.toSql(`pwv.${dbColumn}`)})
+      )`);
   }
 
+  const analysisConditionsByType = new Map<string, AnalysisCondition[]>();
   for (const condition of query.analysisMatchers) {
-    const prop = allProperties.find((p) => p.name === condition.property.name);
-    if (!prop) {
-      console.warn(`Search property "${condition.property.name}" not found. Skipping.`);
-      continue;
+    if (!analysisConditionsByType.has(condition.analysisName))
+      analysisConditionsByType.set(condition.analysisName, []);
+    analysisConditionsByType.get(condition.analysisName)!.push(condition);
+  }
+
+  for (const [analysisName, conditions] of analysisConditionsByType.entries()) {
+    const selectedGroup = conditions.find((c) => c.group)?.group;
+    const propertyConditions = conditions.filter((c) => c.property);
+
+    let analysisSubClauses: string[] = [];
+
+    for (const condition of propertyConditions) {
+      const prop = allProperties.find((p) => p.name === condition.property.name);
+      if (!prop) continue;
+
+      const dbColumn = plateDbColumn[prop.type] ?? plateDbJsonColumn;
+
+      let subClause = `
+        EXISTS (
+          SELECT 1 FROM plates.analysis_results res
+          WHERE res.analysis_run_id = ar.id
+          AND res.property_id = ${prop.id}
+          AND (${condition.matcher.toSql(`res.${dbColumn}`)})
+      `;
+
+      if (selectedGroup) {
+        // Assuming single-item group_combination arrays like {'compound 9'}
+        subClause += ` AND res.group_combination = ARRAY['${selectedGroup}']`;
+      }
+
+      subClause += `)`;
+      analysisSubClauses.push(subClause);
     }
 
-    let dbColumn: string | null = plateDbColumn[prop.type];
-    if (prop.name.toLowerCase().includes('curve'))
-      dbColumn = plateDbJsonColumn;
+    let analysisClause = `
+      EXISTS (
+        SELECT 1 FROM plates.analysis_runs ar
+        WHERE ar.plate_id = p.id AND ar.analysis_type = '${analysisName}'
+    `;
 
-    if (!dbColumn) {
-      console.warn(`Search property "${condition.property.name}" has an unsupported type "${prop.type}". Skipping.`);
-      continue;
-    }
+    if (selectedGroup && propertyConditions.length === 0)
+      analysisClause += ` AND '${selectedGroup}' = ANY(ar.groups)`;
 
-    existsClauses.push(`
-            EXISTS (
-                SELECT 1
-                FROM plates.analysis_runs ar
-                JOIN plates.analysis_results res ON ar.id = res.analysis_run_id
-                WHERE ar.plate_id = p.id
-                AND ar.analysis_type = '${condition.analysisName}'
-                AND res.property_id = ${prop.id}
-                AND (${condition.matcher.toSql(`res.${dbColumn}`)})
-            )`);
+
+    if (analysisSubClauses.length > 0)
+      analysisClause += ` AND ${analysisSubClauses.join(' AND ')}`;
+
+
+    analysisClause += `)`;
+    existsClauses.push(analysisClause);
   }
 
   const whereFilter = existsClauses.length > 0 ? `WHERE ${existsClauses.join(' AND ')}` : '';
@@ -618,3 +652,147 @@ export async function getOrCreateProperty(name: string, type: DG.TYPE, scope: 'p
   return allProperties.find((p) => p.id === newProp.id)!;
 }
 
+// Add this type definition at the top with other type exports
+export type AnalysisQuery = {
+  analysisName: string;
+  propertyMatchers: PropertyCondition[];
+  group?: string;
+}
+
+export async function queryAnalyses(query: AnalysisQuery): Promise<DG.DataFrame> {
+  await initPlates();
+
+  const whereClauses: string[] = [];
+
+  // Add the fixed analysis type condition
+  whereClauses.push(`ar.analysis_type = '${query.analysisName.replace(/'/g, '\'\'')}'`);
+
+  // Add the optional group condition
+  if (query.group && query.group.length > 0)
+    whereClauses.push(`'${query.group.replace(/'/g, '\'\'')}' = ANY(ar.groups)`);
+
+  // Dynamically build an EXISTS clause for each property filter
+  for (const condition of query.propertyMatchers) {
+    const prop = allProperties.find((p) => p.name === condition.property.name);
+    if (!prop) continue;
+
+    const dbColumn = plateDbColumn[prop.type] ?? plateDbJsonColumn;
+    const existsClause = `
+      EXISTS (
+          SELECT 1
+          FROM plates.analysis_results filter_res
+          WHERE filter_res.analysis_run_id = ar.id
+            AND filter_res.group_combination = res_pivot.group_combination
+            AND filter_res.property_id = ${prop.id}
+            AND (${condition.matcher.toSql(`filter_res.${dbColumn}`)})
+      )`;
+    whereClauses.push(existsClause);
+  }
+
+  const finalWhereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+  const sqlQuery = `
+    SELECT
+      ar.id as run_id,
+      p.id as plate_id,
+      p.barcode,
+      res_pivot.group_combination,
+      res_pivot.properties
+    FROM
+      plates.analysis_runs ar
+    JOIN
+      plates.plates p ON ar.plate_id = p.id
+    CROSS JOIN LATERAL (
+      SELECT
+          res.group_combination,
+          jsonb_object_agg(
+              prop.name,
+              CASE
+                  WHEN res.value_string IS NOT NULL THEN to_jsonb(res.value_string)
+                  WHEN res.value_num IS NOT NULL THEN to_jsonb(res.value_num)
+                  WHEN res.value_bool IS NOT NULL THEN to_jsonb(res.value_bool)
+                  WHEN res.value_jsonb IS NOT NULL THEN res.value_jsonb
+                  ELSE 'null'::jsonb
+              END
+          )::text as properties
+      FROM
+          plates.analysis_results res
+      JOIN
+          plates.properties prop ON res.property_id = prop.id
+      WHERE
+          res.analysis_run_id = ar.id
+      GROUP BY
+          res.group_combination
+    ) as res_pivot
+    ${finalWhereClause};
+  `;
+
+  const df = await grok.data.db.query('Curves:Plates', sqlQuery);
+
+  if (df.rowCount === 0)
+    return df;
+
+  // Process the returned JSON properties into columns
+  const propsCol = df.col('properties');
+  if (propsCol) {
+    DG.Utils.jsonToColumns(propsCol);
+    propsCol.name = '~properties';
+  }
+
+  // Extract the first group element for simpler display
+  const groupCol = df.col('group_combination');
+  if (groupCol) {
+    const newGroupCol = DG.Column.string('Group', df.rowCount)
+      .init((i) => {
+        const arr = groupCol.get(i);
+        return Array.isArray(arr) && arr.length > 0 ? arr[0] : null;
+      });
+    df.columns.add(newGroupCol);
+    df.columns.remove('group_combination');
+  }
+
+  // Special handling for Dose Ratio to aggregate multiple curves into one chart
+  if (query.analysisName === 'Dose-Ratio' && df.rowCount > 0) {
+    const runs = new Map<number, any[]>();
+    for (const row of df.rows)
+      runs.set(row.get('run_id'), (runs.get(row.get('run_id')) ?? []).concat(row.toObject()));
+
+    const finalRows: any[] = [];
+    for (const [runId, runRows] of runs.entries()) {
+      const allSeries: IFitSeries[] = [];
+      let plateBarcode = '';
+      runRows.forEach((rowObj) => {
+        plateBarcode = rowObj.barcode;
+        const curveJson = rowObj.Curve;
+        if (curveJson) {
+          try {
+            const chartData = JSON.parse(curveJson);
+            if (chartData.series)
+              allSeries.push(...chartData.series);
+          } catch (e) {
+            console.error(`Failed to parse curve JSON for run ${runId}:`, e);
+          }
+        }
+      });
+
+      if (allSeries.length > 0) {
+        const combinedChartData: IFitChartData = {
+          chartOptions: {
+            title: `Dose Ratio for Plate ${plateBarcode}`,
+            xAxisName: 'Agonist Concentration (M)', yAxisName: 'Percent Inhibition',
+            logX: true, minY: -10, maxY: 110,
+          },
+          series: allSeries,
+        };
+        finalRows.push({
+          'run_id': runId,
+          'barcode': plateBarcode,
+          'Curve': JSON.stringify(combinedChartData),
+        });
+      }
+    }
+    return DG.DataFrame.fromObjects(finalRows)!;
+  }
+
+  return df;
+}
