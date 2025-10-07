@@ -710,7 +710,7 @@ export class FittingView {
         this.samplesCount = value;
         this.updateApplicabilityState();
       });
-      this.samplesCountInput.setTooltip('How many different points to find');
+      this.samplesCountInput.setTooltip('Number of initial points used to start the optimization process. Higher value = higher chance of finding more distinct points');
 
       this.similarityInput.onChanged.subscribe((value) => {
         this.similarity = value;
@@ -1099,7 +1099,7 @@ export class FittingView {
     [this.lossInput, this.samplesCountInput, this.similarityInput].forEach((inp) => {
       inp.root.insertBefore(getSwitchMock(), inp.captionLabel);
       inp.nullable = false;
-      form.appendChild(inp.root);
+      this.fittingSettingsDiv.appendChild(inp.root);
     });
 
     $(form).addClass('ui-form');

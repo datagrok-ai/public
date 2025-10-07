@@ -7,6 +7,7 @@ Features
 - reproducibility
 - early stopping
 - stop at first
+- Float64-based computations
 
 ## 1.44.8 (2025-10-03)
 
