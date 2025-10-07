@@ -311,7 +311,7 @@ export class PackageFunctions {
     initSearch();
 
     _properties = await _package.getProperties();
-    registerDGUserHandler(_package); // lazy without await
+    // registerDGUserHandler(_package); // lazy without await
 
     // saving and restoring the scrolls when changing views
     const maxDepth = 40;
