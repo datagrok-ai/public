@@ -1,5 +1,9 @@
 # Tutorials changelog
 
+## 1.10.2 (2025-10-07)
+
+* Demo app: Fixed the issue that names with `-` in name sometimes can't open
+
 ## 1.10.1 (2025-10-07)
 
 * GROK-18767: Fixed opening Demo in learn widget opens empty toolbox

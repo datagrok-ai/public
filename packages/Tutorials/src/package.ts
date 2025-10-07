@@ -149,7 +149,10 @@ export class PackageFunctions {
     const demoView = new DemoView();
     if (pathSegments.length > 0) {
       const pathElements = pathSegments.map((elem) => elem.replaceAll('-', ' '));
-      const node = demoView.tree.items.find((node) => node.text === pathElements[pathElements.length - 1])?.root;
+      const node = demoView.tree.items.find((node) => {
+        const nodeText = node.text.replaceAll('-', ' ');
+        return nodeText === pathElements[pathElements.length - 1];
+      })?.root;
       node?.click();
     }
     return demoView;
