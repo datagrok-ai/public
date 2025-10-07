@@ -160,7 +160,6 @@ export class ActivityDashboardWidget extends DG.Widget {
     else
       randomTip = todayItemListFromType.length > 0 ? todayItemListFromType[Math.floor(seededRandom(weekSeed) * todayItemListFromType.length)] : '';
 
-    const usedTipList: (DG.Func | string)[] = [randomTip];
     let tipIdx = 0;
     const demoApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'demoApp'})[0];
     const tutorialsApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'trackOverview'})[0];
@@ -182,28 +181,16 @@ export class ActivityDashboardWidget extends DG.Widget {
         link = ui.link(newRandomTip, async () => await tutorialsApp.apply());
         tip.appendChild(link);
       }
-
-      let prevTipIcon: HTMLElement;
-      let nextTipIcon: HTMLElement;
-      const updateTip = (next: boolean) => {
-        next ? tipIdx++ : tipIdx--;
-        tipIdx === 0 ? prevTipIcon.classList.add('tip-prev-hidden') : prevTipIcon.classList.remove('tip-prev-hidden');
-        const newRandomTip = tipIdx < usedTipList.length ? usedTipList[tipIdx] : randomizedTips[Math.floor(Math.random() * randomizedTips.length)];
-        if (tipIdx >= usedTipList.length)
-          usedTipList.push(newRandomTip);
+      const updateTip = () => {
+        tipIdx++;
+        const newRandomTip = randomizedTips[Math.floor(Math.random() * randomizedTips.length)];
         const newTip = createTip(newRandomTip);
         tip.replaceWith(newTip);
       };
 
-      prevTipIcon = ui.iconFA('chevron-left', () => updateTip(false), 'Previous tip');
-      prevTipIcon.classList.add('tip-prev');
-      if (tipIdx === 0)
-        prevTipIcon.classList.add('tip-prev-hidden');
-      nextTipIcon = ui.iconFA('chevron-right', () => updateTip(true), 'Next tip');
+      const nextTipIcon = ui.iconFA('chevron-right', updateTip, 'Next tip');
       nextTipIcon.classList.add('tip-next');
-      tipText.prepend(prevTipIcon);
-      tip.appendChild(nextTipIcon);
-
+      tip.prepend(nextTipIcon);
       return tip;
     };
     return createTip(randomTip);
