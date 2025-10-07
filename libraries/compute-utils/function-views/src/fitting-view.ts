@@ -351,8 +351,22 @@ export class FittingView {
             const input = ui.input.forProperty(outputProp);
             input.addCaption(caption);
             input.value = defaultValue;
-            input.setTooltip((outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Target dataframe' : 'Target scalar');
-            isInterest.subscribe((val) => input.input.hidden = !val);
+
+            /** dataframe input icons*/
+            let dfInputIcons: HTMLElement | null = null;
+
+            if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
+              input.setTooltip('Target dataframe');
+              dfInputIcons = input.root.querySelector('div[class = "ui-input-options"]');
+            } else
+              input.setTooltip('Target scalar');
+
+            isInterest.subscribe((val) => {
+              input.input.hidden = !val;
+
+              if (dfInputIcons != null)
+                dfInputIcons.hidden = !val;
+            });
 
             input.nullable = false;
             ui.tooltip.bind(input.captionLabel, (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Dataframe output of the model' : 'Scalar output of the model');
