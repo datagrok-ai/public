@@ -2,7 +2,7 @@
 import * as DG from 'datagrok-api/dg';
 
 import {IVP, IVP2WebWorker, PipelineCreator, getOutputNames, getInputVector} from 'diff-grok';
-import {EarlyStoppingSettings, LOSS, ReproSettings} from '../constants';
+import {EarlyStoppingSettings, LOSS, ReproSettings, STOP_AFTER_DEFAULT} from '../constants';
 import {ARG_IDX, DEFAULT_SET_VAL, MIN_TARGET_COLS_COUNT, MIN_WORKERS_COUNT, NO_ERRORS,
   RESULT_CODE, WORKERS_COUNT_DOWNSHIFT} from './defs';
 import {sampleParams} from '../optimizer-sampler';
@@ -113,7 +113,7 @@ export async function getFittedParams(
   const workers = new Array(nThreads).fill(null).map((_) => new Worker(new URL('workers/basic.ts', import.meta.url)));
 
   // Structs for optimization results
-  const resultsArray: Extremum[] = [];
+  let resultsArray: Extremum[] = [];
   const failedInitPoints: Float64Array[] = [];
   const warnings: string[] = [];
   const pointBatches = getBatches(startingPoints, nThreads);
@@ -188,6 +188,15 @@ export async function getFittedParams(
   await Promise.all(promises);
 
   pi.close();
+
+  if (earlyStoppingSettings.useEarlyStopping) {
+    const count = earlyStoppingSettings.stopAfter ?? STOP_AFTER_DEFAULT;
+
+    if (resultsArray.length > count) {
+      resultsArray.sort((a: Extremum, b: Extremum) => a.cost - b.cost);
+      resultsArray = resultsArray.slice(0, count);
+    }
+  }
 
   return {
     extremums: resultsArray,
