@@ -2413,7 +2413,7 @@ export class PackageFunctions {
   })
   static async mpoTransformFunction(
     df: DG.DataFrame,
-    currentProperties: { [key: string]: PropertyDesirability },
+    @grok.decorators.param({type: 'object'}) currentProperties: { [key: string]: PropertyDesirability },
   ) {
     const columns: DG.Column[] = [];
     for (const propertyName in currentProperties) {

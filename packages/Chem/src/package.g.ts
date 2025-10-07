@@ -1076,7 +1076,7 @@ export async function _mpo() : Promise<void> {
 
 //tags: Transform
 //input: dataframe df 
-//input: dynamic currentProperties 
+//input: object currentProperties 
 export async function mpoTransformFunction(df: DG.DataFrame, currentProperties: any) : Promise<void> {
   await PackageFunctions.mpoTransformFunction(df, currentProperties);
 }
