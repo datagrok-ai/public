@@ -80,12 +80,18 @@ export class ActivityDashboardWidget extends DG.Widget {
     };
 
     this.tabControl = ui.tabControl(tabs, true);
-    this.tabControl.onTabChanged.subscribe((_) => this.cleanLists());
+    this.subs.push(this.tabControl.onTabChanged.subscribe((_) => this.cleanLists()));
     this.tabControl.root.style.height = '90%';
     this.tabControl.root.style.width = '100%';
 
     this.root.appendChild(this.tabControl.root);
     this.root.appendChild(await this.createRandomizedTipOfTheDay());
+    // TODO: uncomment when JS API 1.27/1.26.5 is released
+    // this.subs.push((grok.events.onCurrentObjectChanged.subscribe((args) => {
+    //   const trigger = args.args.trigger;
+    //   if (this.root.contains(trigger))
+    //     grok.shell.windows.context.visible = true;
+    // })));
   }
 
   async getDemosOfTheDay(): Promise<string[]> {
