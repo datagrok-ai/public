@@ -1,8 +1,9 @@
 # Tutorials changelog
 
-## 1.10.1 ()
+## 1.10.1 (2025-10-07)
 
 * GROK-18767: Fixed opening Demo in learn widget opens empty toolbox
+* Fixed Demo > Cheminformatics is opened even for old users
 
 ## 1.10.0 (2025-09-30)
 
