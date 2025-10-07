@@ -380,6 +380,7 @@ async function runTests(testsParams: { package: any, params: any }[], stopOnFail
       }
 
       let row = df.rows.get(0);
+      console.log(`DEBUG: runTests: IN A LOOP: rows in df ${df.rowCount}`);
       if (df.rowCount > 1) {
         const unhandledErrorRow = df.rows.get(1);
         if (!unhandledErrorRow.get('success')) {
@@ -404,8 +405,13 @@ async function runTests(testsParams: { package: any, params: any }[], stopOnFail
 
       if (resultDF === undefined)
         resultDF = df;
-      else
+      else {
+        console.log(`DEBUG: COLUMN NAMES IN RESULT_DF: ${resultDF.columns.names()}`);
+        console.log(`DEBUG: COLUMN TYPES IN RESULT_DF: ${resultDF.columns.names().map((c) => `${c}: ${resultDF.col(c)?.type}`)}`);
+        console.log(`DEBUG: COLUMN NAMES IN DF: ${df.columns.names()}`);
+        console.log(`DEBUG: COLUMN TYPES IN DF: ${df.columns.names().map((c) => `${c}: ${df.col(c)?.type}`)}`);
         resultDF = resultDF.append(df);
+      }
 
       if (row['skipped']) {
         verboseSkipped += `Test result : Skipped : ${time} : ${category}: ${testName} :  ${result}\n`;
@@ -428,6 +434,7 @@ async function runTests(testsParams: { package: any, params: any }[], stopOnFail
     }
 
     res = '';
+    console.log(`DEBUG: runTests: AFTER THE LOOP: rows in resultDF ${resultDF?.rowCount}`);
     if (resultDF) {
       const bs = (<any>window).DG.BitSet.create(resultDF.rowCount);
       bs.setAll(true);
@@ -437,7 +444,9 @@ async function runTests(testsParams: { package: any, params: any }[], stopOnFail
         
       }
       resultDF = resultDF.clone(bs);
+      console.log(`DEBUG: runTests: IN IF CONDITION: rows in resultDF ${resultDF.rowCount}`);
       res = resultDF.toCsv();
+      console.log(`DEBUG: runTests: IN IF CONDITION: csv length ${res?.length}`);
     }
   } catch (e) {
     failed = true;
