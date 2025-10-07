@@ -85,3 +85,5 @@ export const SAVED_SEARCHES_NODE = 'Saved Searches';
 
 export const MOLTRACK_APP_PATH: string = 'apps/MolTrack';
 export const excludedScopes = [Scope.ASSAY_RUNS, Scope.ASSAY_RESULTS];
+
+export const LAYOUT_STORAGE = 'MolTrackLayouts';

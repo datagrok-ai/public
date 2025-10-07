@@ -218,7 +218,7 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
   const initFilters = () => {
     ui.setUpdateIndicator(openedView!.root, false);
     setBreadcrumbsInViewName([libName, compoundType], treeNode);
-    initializeFilters(treeNode, openedView! as DG.TableView, filtersDiv, libName, compoundType, initialSearchQuery, !isSavedSearch);
+    initializeFilters(treeNode, tv, filtersDiv, libName, compoundType, initialSearchQuery, !isSavedSearch);
   }
 
   if (!initialSearchQuery) {

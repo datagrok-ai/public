@@ -146,5 +146,5 @@ Promise<HTMLTableElement> {
     }),
   );
 
-  return ui.table(rows, (row) => row);
+  return ui.table(rows, (row) => row, ['Type', 'Count']);
 };

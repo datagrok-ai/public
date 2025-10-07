@@ -48,6 +48,7 @@ import { _package } from '../package';
 import { Subject } from 'rxjs';
 import { awaitCheck } from '@datagrok-libraries/utils/src/test';
 import { createPathFromArr, getAppHeader, getStatisticsWidget } from '../utils/view-utils';
+import { applyMolTrackLayout, saveMolTrackLayout } from '../utils/layout';
 
 export type MolTrackSearchFields = {
   direct?: DG.Property[],
@@ -91,7 +92,7 @@ async function saveSearch(entityLevel: Scope, savedSearch: MolTrackSearch) {
 
       //add corresponding saved search to browse view tree
       const savedSearchesNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps')
-        .getOrCreateGroup('Chem').getOrCreateGroup('MolTrack').getOrCreateGroup('Saved Searches')
+        .getOrCreateGroup('Chem').getOrCreateGroup('MolTrack').getOrCreateGroup(SAVED_SEARCHES_NODE)
         .getOrCreateGroup(entityLevel.charAt(0).toUpperCase() + entityLevel.slice(1));
       const newSearchNode = savedSearchesNode.item(searchName);
       newSearchNode.onSelected.subscribe(async () => {
@@ -152,7 +153,7 @@ function openSavedSearch(entityLevel: Scope, queryBuilder: QueryBuilder, outputs
     deleteSearchCol.cellType = 'html';
 
     const savedSearchesNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps')
-      .getOrCreateGroup('Chem').getOrCreateGroup('MolTrack').getOrCreateGroup('Saved Searches')
+      .getOrCreateGroup('Chem').getOrCreateGroup('MolTrack').getOrCreateGroup(SAVED_SEARCHES_NODE)
       .getOrCreateGroup(entityLevel.charAt(0).toUpperCase() + entityLevel.slice(1));
     savedSearchesGrid.onCellPrepare(function(gc) {
       if (gc.isTableCell && gc.gridColumn.name === 'delete') {
@@ -268,7 +269,7 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope, in
         return;
       }
       const filterFields: DG.Property[] = molTrackSearchFieldsArr
-        .filter((it) => it.options[MOLTRACK_ENTITY_LEVEL] === entityLevel);
+        .filter((it) => it.options[MOLTRACK_ENTITY_LEVEL] === entityLevel && !EXCLUDE_SEARCH_FIELDS.includes(it.name));
       if (!filterFields.length) {
         grok.shell.warning(`No search fields found for ${entityLevel}`);
         return;
@@ -281,9 +282,10 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope, in
         runSearchButton.disabled = error;
       });
       const df = DG.DataFrame.create();
-      const outputFields = filterFields
-        .filter((it) => !EXCLUDE_SEARCH_OUTPUT_FIELDS.includes(it.name) && it.name !== STRUCTURE_SEARCH_FIELD);
-      const defaultFields = STRUCTURE_FIELDS.concat(filterFields.map((it) => it.name));
+      const outputFields = molTrackSearchFieldsArr
+        .filter((it) => it.options[MOLTRACK_ENTITY_LEVEL] === entityLevel &&
+          !EXCLUDE_SEARCH_OUTPUT_FIELDS.includes(it.name));
+      const defaultFields = outputFields.map((it) => it.name);
       outputFields.forEach((it) => df.columns
         .add(DG.Column.fromType((it.type as string === 'uuid' ? 'string' : it.type) as any, it.name)));
       //adding structure fields to return
@@ -453,13 +455,10 @@ export async function runSearch(tv: DG.TableView, search: MolTrackSearch, entity
           colName.replace(`${entityLevel.toLowerCase()}.`, '').replace(`details.`, '');
         resultDf.col(colName)!.setTag('friendlyName', friendlyName);
       });
-      await grok.data.detectSemanticTypes(resultDf);
-      reorderSearchResColummns(resultDf);
       //save history in case of successful search
       saveSearchHistory(`${_package.name}|${entityLevel}`, JSON.stringify(search));
     }
-    tv.dataFrame = resultDf ?? DG.DataFrame.create();
-    tv.dataFrame.name = tv.name;
+    updateView(tv, resultDf ?? DG.DataFrame.create(), entityLevel, tv.name);
   } catch (e: any) {
     grok.shell.error(e?.message ?? e);
     tv.dataFrame = DG.DataFrame.create();
@@ -511,8 +510,6 @@ export async function createSearchFileds(): Promise<DG.Property[]> {
 
   const addProperties = (props: MolTrackProperty[], isStatic: boolean) => {
     for (const prop of props) {
-      if (EXCLUDE_SEARCH_FIELDS.includes(prop.name))
-        continue;
       const isStructureField = STRUCTURE_FIELDS.includes(prop.name);
       const structureAlreadyExists = propArr.filter((it) => it.options[MOLTRACK_ENTITY_TYPE] === prop.entity_type &&
             it.name === STRUCTURE_SEARCH_FIELD).length > 0;
@@ -782,7 +779,7 @@ function updateAggregationOptions(aggregationInputDiv: any, fieldType: any, aggr
 }
 
 
-export function createSearchNode(appNode:DG.TreeViewGroup, scope: string, initialQuery?: MolTrackSearch) {
+export function createSearchNode(appNode:DG.TreeViewGroup, scope: Scope, initialQuery?: MolTrackSearch) {
   const formattedScope = scope
     .toLowerCase()
     .replace(/_/g, ' ')
@@ -793,7 +790,7 @@ export function createSearchNode(appNode:DG.TreeViewGroup, scope: string, initia
   });
 }
 
-export async function createSearchView(viewName: string, scope: string, initialQuery?: MolTrackSearch,
+export async function createSearchView(viewName: string, scope: Scope, initialQuery?: MolTrackSearch,
   isSavedSearch?: boolean): Promise<DG.TableView> {
   if (openedSearchView?.name === viewName) {
     grok.shell.v = openedSearchView;
@@ -818,15 +815,39 @@ export async function createSearchView(viewName: string, scope: string, initialQ
     ui.setUpdateIndicator(openedSearchView.root, true, `Loading ${viewName.toLowerCase()}...`);
     try {
       const data: DG.DataFrame = await grok.functions.call('MolTrack:retrieveEntity', { scope });
-      (openedSearchView as DG.TableView).dataFrame = data;
-      (openedSearchView as DG.TableView).dataFrame.name = viewName;
+      updateView(tv, data, scope, viewName);
     } finally {
       ui.setUpdateIndicator(openedSearchView.root, false);
     }
   }
-  createSearchPanel((openedSearchView as DG.TableView)!, scope as Scope, initialQuery, !isSavedSearch);
+  createSearchPanel(tv, scope as Scope, initialQuery, !isSavedSearch);
   return openedSearchView as DG.TableView;
 }
+
+export async function updateView(tv: DG.TableView, df: DG.DataFrame, scope: Scope, viewName?: string) {
+  await grok.data.detectSemanticTypes(df);
+  reorderSearchResColummns(df);
+  tv.dataFrame = df;
+  if (viewName)
+    tv.dataFrame.name = viewName;
+
+  applyMolTrackLayout(tv.grid, scope);
+  const columns = tv.dataFrame.columns.names();
+  if (columns.length)
+    tv.dataFrame.currentCell = tv.dataFrame.cell(-1, tv.dataFrame.col(columns[0])!.name);
+
+  /* subscribe afetr 2 seconds for onPropertyValueChanged and onMetadataChanged
+  triggered by applyMolTrackLayout have time to finish */
+  setTimeout(() => {
+    DG.debounce(tv.grid.onPropertyValueChanged, 2000).subscribe(() => {
+      saveMolTrackLayout(tv.grid, scope);
+    });
+    DG.debounce(tv.dataFrame.onMetadataChanged, 2000).subscribe(() => {
+      saveMolTrackLayout(tv.grid, scope);
+    });
+  }, 2000);
+}
+
 
 export async function reorderSearchResColummns(df: DG.DataFrame) {
   const colNames = df.columns.names();
@@ -876,7 +897,7 @@ export async function handleSearchURL(url: string): Promise<DG.TableView> {
           initialSearch = JSON.parse(componentsArr[2]);
 
         openMolTrackSearchNode(nodesToExpand);
-        return await createSearchView(scope, scope.toLowerCase(), initialSearch, false);
+        return await createSearchView(scope, scope.toLowerCase() as Scope, initialSearch, false);
       }
       //in case of saved search
       if (componentsArr.length > idx) {
@@ -884,12 +905,12 @@ export async function handleSearchURL(url: string): Promise<DG.TableView> {
         const savedSearches = getSavedSearches(scope as Scope);
         if (savedSearches[savedSearchName]) {
           openMolTrackSearchNode(nodesToExpand);
-          return await createSearchView(savedSearchName, scope.toLowerCase(),
+          return await createSearchView(savedSearchName, scope.toLowerCase() as Scope,
             JSON.parse(savedSearches[savedSearchName]), true);
         } else {
           grok.shell.error(`Search ${savedSearchName} not found for ${scope}`);
-          createSearchView(scope, scope.toLowerCase(), undefined, false);
-          return await createSearchView(scope, scope.toLowerCase(), undefined, false);
+          createSearchView(scope, scope.toLowerCase() as Scope, undefined, false);
+          return await createSearchView(scope, scope.toLowerCase() as Scope, undefined, false);
         }
       }
     }
@@ -955,7 +976,7 @@ async function createSavedSearchStats(savedSearchesForTable: any[], scope?: stri
       scopesObjForTable = scopesObjForTable.filter((it) => it.scope === scope);
   }
 
-  let header = 'Saved Searches';
+  let header = SAVED_SEARCHES_NODE;
 
   if (scope) {
     outputArr.splice(0, 1);
