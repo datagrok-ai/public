@@ -89,6 +89,15 @@ async function saveSearch(entityLevel: Scope, savedSearch: MolTrackSearch) {
         return;
       }
 
+      //add corresponding saved search to browse view tree
+      const savedSearchesNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps')
+        .getOrCreateGroup('Chem').getOrCreateGroup('MolTrack').getOrCreateGroup('Saved Searches')
+        .getOrCreateGroup(entityLevel.charAt(0).toUpperCase() + entityLevel.slice(1));
+      const newSearchNode = savedSearchesNode.item(searchName);
+      newSearchNode.onSelected.subscribe(async () => {
+        createSearchView(searchName, entityLevel, JSON.parse(savedSearches[searchName]), true);
+      });
+
       // Save the current query condition
       savedSearches[searchName] = JSON.stringify(savedSearch);
       grok.userSettings.add(SAVED_SEARCH_STORAGE, entityLevel, JSON.stringify(savedSearches));
@@ -109,6 +118,7 @@ function openSavedSearch(entityLevel: Scope, queryBuilder: QueryBuilder, outputs
   }
 
   const searchNamesDf = DG.DataFrame.fromColumns([DG.Column.fromList('string', 'name', searchNames)]);
+  searchNamesDf.columns.addNewString('delete');
 
   // Create typeahead input with saved search names
   const searchInput = ui.typeAhead('Search name', {
@@ -126,8 +136,46 @@ function openSavedSearch(entityLevel: Scope, queryBuilder: QueryBuilder, outputs
     searchNamesDf.rows.filter((row) => (row.name as string).includes(searchInput.value));
   });
 
+  const savedSearchesGrid = searchNamesDf.plot.grid({allowColumnMenu: false, allowSorting: false});
+  savedSearchesGrid.onCellDoubleClick.subscribe((gc: DG.GridCell) => {
+    if (gc.isTableCell && gc.gridColumn.name === 'name') {
+      const searchName = gc.grid.dataFrame.col('name')?.get(gc.gridRow);
+      const search: MolTrackSearch = JSON.parse(savedSearches[searchName]);
+      loadSearchQuery(search, queryBuilder, outputsFieldsInput, aggrContainer, menuFieldsForAggr,
+        aggregations, validationErrorSubj);
+      dialog.close();
+    }
+  });
+  const deleteSearchCol = savedSearchesGrid.columns.byName('delete');
+
+  if (deleteSearchCol) {
+    deleteSearchCol.cellType = 'html';
+
+    const savedSearchesNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps')
+      .getOrCreateGroup('Chem').getOrCreateGroup('MolTrack').getOrCreateGroup('Saved Searches')
+      .getOrCreateGroup(entityLevel.charAt(0).toUpperCase() + entityLevel.slice(1));
+    savedSearchesGrid.onCellPrepare(function(gc) {
+      if (gc.isTableCell && gc.gridColumn.name === 'delete') {
+        const removeIcon = ui.div(ui.icons.delete(() => {
+          const searchName = gc.grid.dataFrame.col('name')?.get(gc.gridRow);
+          //remove row from table
+          searchNamesDf.rows.removeAt(gc.gridRow, 1);
+          //remove search from tree
+          const items = savedSearchesNode.items.filter((it) => it.text === searchName);
+          if (items.length)
+            items[0].remove();
+          //save changes to storage
+          if (savedSearches[searchName])
+            delete savedSearches[searchName];
+          grok.userSettings.add(SAVED_SEARCH_STORAGE, entityLevel, JSON.stringify(savedSearches));
+        }), 'moltrack-saved-search-delete');
+        gc.style.element = removeIcon;
+      }
+    });
+  }
+
   const dialog = ui.dialog('Open saved search')
-    .add(ui.divV([searchInput, searchNamesDf.plot.grid().root]))
+    .add(ui.divV([searchInput, savedSearchesGrid.root]))
     .onOK(async () => {
       if (searchNamesDf.currentRowIdx === -1) {
         grok.shell.error('Select saved search in the grid');
