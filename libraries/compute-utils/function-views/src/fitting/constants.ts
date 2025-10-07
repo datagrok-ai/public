@@ -185,9 +185,10 @@ export const SEED_DEFAULT = 10;
 export type EarlyStoppingSettings = {
   useEarlyStopping: boolean,
   costFuncThreshold: number,
-  stopAtFirst: boolean,
+  stopAfter: number,
 };
 
 export const EARLY_STOP_DEFAULT = false;
 export const COST_FUNC_THRESH = 1e-5;
-export const SINGLE_EXTR_DEFAULT = false;
+export const STOP_AFTER_DEFAULT = 1;
+export const STOP_AFTER_MIN = 1;

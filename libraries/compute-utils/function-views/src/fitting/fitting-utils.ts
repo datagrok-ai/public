@@ -16,7 +16,8 @@ import {GRID_SIZE, HELP_LINK, INDICES, TIMEOUT, TARGET_DATAFRAME_INFO, TITLE, NA
   EarlyStoppingSettings,
   EARLY_STOP_DEFAULT,
   COST_FUNC_THRESH,
-  SINGLE_EXTR_DEFAULT as STOP_AT_FIRST_DEFAULT} from './constants';
+  STOP_AFTER_DEFAULT,
+  STOP_AFTER_MIN} from './constants';
 
 /** Returns indices corresponding to the closest items */
 export function getIndices(expArg: DG.Column, simArg: DG.Column): Uint32Array {
@@ -492,15 +493,19 @@ export function getEarlyStoppingInputs() {
   const settings: EarlyStoppingSettings = {
     useEarlyStopping: EARLY_STOP_DEFAULT,
     costFuncThreshold: COST_FUNC_THRESH,
-    stopAtFirst: STOP_AT_FIRST_DEFAULT,
+    stopAfter: STOP_AFTER_DEFAULT,
   };
 
-  const stopAtFirstInput = ui.input.bool('stop at first', {
-    value: STOP_AT_FIRST_DEFAULT,
+  const stopAtFirstInput = ui.input.int('stop after', {
+    value: STOP_AFTER_DEFAULT,
     onValueChanged: (val) => {
-      settings.stopAtFirst = val;
+      settings.stopAfter = val;
     },
-    tooltipText: 'Stop immediately after finding the first valid extremum',
+    tooltipText: 'Stop the optimization once this number of valid points is found',
+    showPlusMinus: true,
+    min: STOP_AFTER_MIN,
+    nullable: false,
+    property: DG.Property.fromOptions({units: 'point(s)'}),
   });
   stopAtFirstInput.root.hidden = !EARLY_STOP_DEFAULT;
 

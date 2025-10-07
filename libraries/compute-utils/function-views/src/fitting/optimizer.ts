@@ -31,7 +31,9 @@ export async function performNelderMeadOptimization(
 
   const useEarlyStopping = earlyStoppingSettings.useEarlyStopping;
   const threshold = useEarlyStopping ? earlyStoppingSettings.costFuncThreshold : undefined;
-  const toStopAtFirst = useEarlyStopping && earlyStoppingSettings.stopAtFirst;
+  const maxValidPoints = earlyStoppingSettings.stopAfter;
+
+  let validPointsCount = 0;
 
   for (i = 0; i < samplesCount; ++i) {
     try {
@@ -49,11 +51,12 @@ export async function performNelderMeadOptimization(
       if ((pi as any).canceled)
         break;
 
-      if (toStopAtFirst) {
-        if (extremum.cost <= threshold!) {
-          extremums = [extremum];
+      if (useEarlyStopping) {
+        if (extremum.cost <= threshold!)
+          ++validPointsCount;
+
+        if (validPointsCount >= maxValidPoints)
           break;
-        }
       }
     } catch (e) {
       pi.close();
@@ -68,6 +71,9 @@ export async function performNelderMeadOptimization(
   }
 
   pi.close();
+
+  if (useEarlyStopping && (extremums.length > validPointsCount))
+    extremums = extremums.slice(0, validPointsCount);
 
   if (failsCount > 0) {
     const dim = paramsTop.length;

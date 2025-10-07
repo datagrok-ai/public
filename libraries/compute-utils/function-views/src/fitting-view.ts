@@ -1055,13 +1055,13 @@ export class FittingView {
     const settingsHeader = ui.h2('with settings');
     ui.tooltip.bind(settingsHeader, () => `Settings of the ${this.method} method`);
     this.fittingSettingsDiv.appendChild(settingsHeader);
-    this.generateSettingInputs();
-    this.showHideSettingInputs();
-    form.appendChild(this.fittingSettingsDiv);
-    this.settingsInputs.forEach((array) => array.forEach((input) => {
-      input.root.insertBefore(getSwitchMock(), input.captionLabel);
-      this.fittingSettingsDiv.append(input.root);
-    }));
+
+    // Add general settings
+    [this.lossInput, this.samplesCountInput, this.similarityInput].forEach((inp) => {
+      inp.root.insertBefore(getSwitchMock(), inp.captionLabel);
+      inp.nullable = false;
+      this.fittingSettingsDiv.appendChild(inp.root);
+    });
 
     // Add random generator settings
     this.randInputs.reproducibility.root.insertBefore(
@@ -1095,12 +1095,14 @@ export class FittingView {
     );
     this.fittingSettingsDiv.appendChild(this.earlyStoppingInputs.stopAtFirst.root);
 
-    // Add general settings
-    [this.lossInput, this.samplesCountInput, this.similarityInput].forEach((inp) => {
-      inp.root.insertBefore(getSwitchMock(), inp.captionLabel);
-      inp.nullable = false;
-      this.fittingSettingsDiv.appendChild(inp.root);
-    });
+    // Add input related to the methods
+    this.generateSettingInputs();
+    this.showHideSettingInputs();
+    form.appendChild(this.fittingSettingsDiv);
+    this.settingsInputs.forEach((array) => array.forEach((input) => {
+      input.root.insertBefore(getSwitchMock(), input.captionLabel);
+      this.fittingSettingsDiv.append(input.root);
+    }));
 
     $(form).addClass('ui-form');
 
@@ -1386,8 +1388,6 @@ export class FittingView {
 
       let optResult: OptimizationResult;
 
-      const start = Date.now();
-
       // Perform optimization
       if (this.method === METHOD.NELDER_MEAD) {
         if (this.diffGrok !== undefined) {
@@ -1434,8 +1434,6 @@ export class FittingView {
         }
       } else
         throw new Error(`Not implemented the '${this.method}' method`);
-
-      console.log('Time: ', Date.now() - start, 'ms.');
 
       const extrema = optResult.extremums;
       const allExtrCount = extrema.length;
