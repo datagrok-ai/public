@@ -6,7 +6,8 @@ import {Plate} from '../plate/plate';
 import {Matcher, NumericMatcher} from './matchers';
 import {Subject} from 'rxjs';
 import * as api from '../package-api';
-import {IFitChartData, IFitSeries} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {FIT_FUNCTION_4PL_REGRESSION, IFitChartData, IFitSeries} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {AnalysisManager} from '../plate/analyses/analysis-manager';
 
 export const events: Subject<CrudEvent> = new Subject();
 
@@ -659,7 +660,7 @@ export type AnalysisQuery = {
   group?: string;
 }
 
-export async function queryAnalyses(query: AnalysisQuery): Promise<DG.DataFrame> {
+export async function queryAnalysesGeneric(query: AnalysisQuery): Promise<DG.DataFrame> {
   await initPlates();
 
   const whereClauses: string[] = [];
@@ -704,95 +705,137 @@ export async function queryAnalyses(query: AnalysisQuery): Promise<DG.DataFrame>
       plates.plates p ON ar.plate_id = p.id
     CROSS JOIN LATERAL (
       SELECT
-          res.group_combination,
-          jsonb_object_agg(
-              prop.name,
-              CASE
-                  WHEN res.value_string IS NOT NULL THEN to_jsonb(res.value_string)
-                  WHEN res.value_num IS NOT NULL THEN to_jsonb(res.value_num)
-                  WHEN res.value_bool IS NOT NULL THEN to_jsonb(res.value_bool)
-                  WHEN res.value_jsonb IS NOT NULL THEN res.value_jsonb
-                  ELSE 'null'::jsonb
-              END
-          )::text as properties
+        res.group_combination,
+        jsonb_object_agg(
+          prop.name,
+          CASE
+            WHEN res.value_string IS NOT NULL THEN to_jsonb(res.value_string)
+            WHEN res.value_num IS NOT NULL THEN to_jsonb(res.value_num)
+            WHEN res.value_bool IS NOT NULL THEN to_jsonb(res.value_bool)
+            WHEN res.value_jsonb IS NOT NULL THEN res.value_jsonb
+            ELSE 'null'::jsonb
+          END
+        )::text as properties
       FROM
-          plates.analysis_results res
+        plates.analysis_results res
       JOIN
-          plates.properties prop ON res.property_id = prop.id
+        plates.properties prop ON res.property_id = prop.id
       WHERE
-          res.analysis_run_id = ar.id
+        res.analysis_run_id = ar.id
       GROUP BY
-          res.group_combination
+        res.group_combination
     ) as res_pivot
     ${finalWhereClause};
   `;
 
-  const df = await grok.data.db.query('Curves:Plates', sqlQuery);
+  try {
+    const df = await grok.data.db.query('Curves:Plates', sqlQuery);
 
-  if (df.rowCount === 0)
-    return df;
+    if (df.rowCount === 0)
+      return df;
 
-  // Process the returned JSON properties into columns
-  const propsCol = df.col('properties');
-  if (propsCol) {
-    DG.Utils.jsonToColumns(propsCol);
-    propsCol.name = '~properties';
-  }
-
-  // Extract the first group element for simpler display
-  const groupCol = df.col('group_combination');
-  if (groupCol) {
-    const newGroupCol = DG.Column.string('Group', df.rowCount)
-      .init((i) => {
-        const arr = groupCol.get(i);
-        return Array.isArray(arr) && arr.length > 0 ? arr[0] : null;
-      });
-    df.columns.add(newGroupCol);
-    df.columns.remove('group_combination');
-  }
-
-  // Special handling for Dose Ratio to aggregate multiple curves into one chart
-  if (query.analysisName === 'Dose-Ratio' && df.rowCount > 0) {
-    const runs = new Map<number, any[]>();
-    for (const row of df.rows)
-      runs.set(row.get('run_id'), (runs.get(row.get('run_id')) ?? []).concat(row.toObject()));
-
-    const finalRows: any[] = [];
-    for (const [runId, runRows] of runs.entries()) {
-      const allSeries: IFitSeries[] = [];
-      let plateBarcode = '';
-      runRows.forEach((rowObj) => {
-        plateBarcode = rowObj.barcode;
-        const curveJson = rowObj.Curve;
-        if (curveJson) {
-          try {
-            const chartData = JSON.parse(curveJson);
-            if (chartData.series)
-              allSeries.push(...chartData.series);
-          } catch (e) {
-            console.error(`Failed to parse curve JSON for run ${runId}:`, e);
+    // For analyses, we need to handle the properties column differently
+    // Instead of using DG.Utils.jsonToColumns, we'll manually extract the columns we need
+    const propsCol = df.col('properties');
+    if (propsCol) {
+      try {
+        // Try to parse the JSON and extract individual columns
+        const parsedRows: any[] = [];
+        for (let i = 0; i < df.rowCount; i++) {
+          const propsJson = propsCol.get(i);
+          if (propsJson && typeof propsJson === 'string') {
+            try {
+              const parsed = JSON.parse(propsJson);
+              parsedRows.push(parsed);
+            } catch (e) {
+              console.warn('Failed to parse properties JSON at row', i, ':', e);
+              parsedRows.push({});
+            }
+          } else {
+            parsedRows.push({});
           }
         }
-      });
 
-      if (allSeries.length > 0) {
-        const combinedChartData: IFitChartData = {
-          chartOptions: {
-            title: `Dose Ratio for Plate ${plateBarcode}`,
-            xAxisName: 'Agonist Concentration (M)', yAxisName: 'Percent Inhibition',
-            logX: true, minY: -10, maxY: 110,
-          },
-          series: allSeries,
-        };
-        finalRows.push({
-          'run_id': runId,
-          'barcode': plateBarcode,
-          'Curve': JSON.stringify(combinedChartData),
+        // Extract all unique property names
+        const allPropertyNames = new Set<string>();
+        parsedRows.forEach((row) => {
+          Object.keys(row).forEach((key) => allPropertyNames.add(key));
         });
+
+        // Create columns for each property
+        allPropertyNames.forEach((propName) => {
+          const values = parsedRows.map((row) => row[propName] !== undefined ? row[propName] : null);
+
+          // Determine column type based on first non-null value
+          let colType = DG.TYPE.STRING;
+          const firstNonNull = values.find((v) => v !== null);
+          if (firstNonNull !== undefined) {
+            if (typeof firstNonNull === 'number') colType = DG.TYPE.FLOAT;
+            else if (typeof firstNonNull === 'boolean') colType = DG.TYPE.BOOL;
+            else if (typeof firstNonNull === 'string') colType = DG.TYPE.STRING;
+          }
+
+          let newCol: DG.Column;
+          switch (colType) {
+            case DG.TYPE.FLOAT:
+              newCol = DG.Column.fromList(DG.TYPE.FLOAT, propName, values as number[]);
+              break;
+            case DG.TYPE.BOOL:
+              newCol = DG.Column.fromList(DG.TYPE.BOOL, propName, values as boolean[]);
+              break;
+            default:
+              newCol = DG.Column.fromList(DG.TYPE.STRING, propName, values as string[]);
+          }
+
+          df.columns.add(newCol);
+        });
+
+        // Remove the original properties column
+        df.columns.remove('properties');
+      } catch (e) {
+        console.error('Failed to process properties column:', e);
+        // If processing fails, just keep the properties column as is
       }
     }
-    return DG.DataFrame.fromObjects(finalRows)!;
-  }
 
-  return df;
+    // Extract the first group element for simpler display
+    const groupCol = df.col('group_combination');
+    if (groupCol) {
+      const newGroupCol = DG.Column.string('Group', df.rowCount)
+        .init((i) => {
+          const arr = groupCol.get(i);
+          return Array.isArray(arr) && arr.length > 0 ? arr[0] : null;
+        });
+      df.columns.add(newGroupCol);
+      df.columns.remove('group_combination');
+    }
+
+    // // Special handling for Dose Ratio to aggregate multiple curves into one chart
+    // if (query.analysisName === 'Dose-Ratio' && df.rowCount > 0)
+    //   return await processDoseRatioResults(df);
+
+
+    // For DRC analysis, ensure the Curve column has the correct semType
+    if (query.analysisName === 'DRC') {
+      const curveCol = df.col('Curve');
+      if (curveCol)
+        curveCol.semType = 'fit';
+    }
+
+    return df;
+  } catch (error) {
+    console.error('SQL Query Error:', error);
+    console.error('Query was:', sqlQuery);
+    throw error;
+  }
 }
+export async function queryAnalyses(query: AnalysisQuery): Promise<DG.DataFrame> {
+  const analysis = AnalysisManager.instance.getAnalysis(query.analysisName);
+  if (analysis && 'queryResults' in analysis)
+    return await (analysis as any).queryResults(query);
+
+  // Fallback to generic if analysis doesn't implement custom querying
+  return queryAnalysesGeneric(query);
+}
+
+

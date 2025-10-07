@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {AnalysisManager} from '../../plate/analyses/analysis-manager';
-import {AnalysisProperty, AnalysisQuery, getAnalysisRunGroups, queryAnalyses, PropertyCondition, allProperties} from '../plates-crud';
+import {AnalysisProperty, AnalysisQuery, getAnalysisRunGroups, queryAnalysesGeneric, PropertyCondition, allProperties, queryAnalyses} from '../plates-crud';
 import {NumericMatcher} from '../matchers';
 import * as rxjs from 'rxjs';
 
@@ -73,12 +73,17 @@ function getAnalysesSearchView(
       analysisName: selectedAnalysis.name,
     };
 
-    search(query).then((df) => {
+    // Use the analysis-specific query method
+    const searchPromise = selectedAnalysis.queryResults ?
+      selectedAnalysis.queryResults(query) :
+      queryAnalyses(query); // fallback to generic
+
+    searchPromise.then((df) => {
       resultsView.dataFrame = df;
       df.name = viewName;
       onResults(resultsView.grid, selectedAnalysis.name);
     });
-  };
+  }; ;
 
   const refreshAnalysisUI = async () => {
     ui.empty(analysisFormHost);
@@ -106,15 +111,28 @@ function getAnalysesSearchView(
         inputs.push(ui.input.choice('Group', {items: ['', ...groups], value: ''}));
       }
     }
-
-    for (const prop of analysis.outputs) {
+    const searchableProps = analysis.getSearchableProperties ?
+      analysis.getSearchableProperties() :
+      analysis.outputs;
+    for (const prop of searchableProps) {
       if (prop.type === DG.TYPE.FLOAT || prop.type === DG.TYPE.INT) {
         const input = ui.input.string(prop.name) as AnalysisPropInput;
         input.prop = prop as AnalysisProperty;
-        input.addValidator((s) => (s === '' || NumericMatcher.parse(s)) ? null : 'Invalid criteria. Example: ">10"');
+        input.addValidator((s) =>
+          (s === '' || NumericMatcher.parse(s)) ? null : 'Invalid criteria. Example: ">10"'
+        );
         inputs.push(input);
       }
     }
+
+    // for (const prop of analysis.outputs) {
+    //   if (prop.type === DG.TYPE.FLOAT || prop.type === DG.TYPE.INT) {
+    //     const input = ui.input.string(prop.name) as AnalysisPropInput;
+    //     input.prop = prop as AnalysisProperty;
+    //     input.addValidator((s) => (s === '' || NumericMatcher.parse(s)) ? null : 'Invalid criteria. Example: ">10"');
+    //     inputs.push(input);
+    //   }
+    // }
 
     analysisForm = DG.InputForm.forInputs(inputs);
     analysisForm.root.style.width = '100%';
@@ -155,7 +173,7 @@ function getAnalysesSearchView(
 }
 
 export function searchAnalysesView(): DG.View {
-  return getAnalysesSearchView('Search Analyses', queryAnalyses, (grid, analysisName) => {
+  return getAnalysesSearchView('Search Analyses', queryAnalysesGeneric, (grid, analysisName) => {
     grid.setOptions({allowEdit: false});
     const curveCol = grid.col('Curve');
     if (curveCol) {

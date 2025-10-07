@@ -49,6 +49,25 @@ export class QpcrAnalysis extends AbstractPlateAnalysis {
     });
   }
 
+  override formatResultsForGrid(rawResults: DG.DataFrame): DG.DataFrame {
+    if (rawResults.rowCount === 0)
+      return rawResults;
+
+    // The generic query expands the properties JSON into columns. We just need to format them.
+    const ddCtCol = rawResults.col('Delta Delta Ct');
+    if (ddCtCol)
+      ddCtCol.meta.format = '0.000';
+
+    const foldChangeCol = rawResults.col('Fold Change');
+    if (foldChangeCol)
+      foldChangeCol.meta.format = '0.000';
+
+    // The group_combination column is empty/irrelevant for qPCR, so we remove it.
+    if (rawResults.columns.contains('group_combination'))
+      rawResults.columns.remove('group_combination');
+
+    return rawResults;
+  }
   private _createResultsGrid(plate: Plate, mappings: Map<string, string>): HTMLElement {
     try {
       const ctColumnName = mappings.get('Ct')!;
@@ -264,7 +283,8 @@ export class QpcrAnalysis extends AbstractPlateAnalysis {
     ])!;
   }
 
-  protected _getGroups(resultsDf: DG.DataFrame): { groupColumn: string; groups: string[]; } {
-    throw new Error('Method not implemented for qPCR Analysis.');
+  protected override _getGroups(resultsDf: DG.DataFrame): { groupColumn: string; groups: string[]; } {
+    // qPCR analysis results are aggregated for the whole plate, so there are no specific groups.
+    return {groupColumn: '', groups: []};
   }
 }

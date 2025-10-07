@@ -6,7 +6,9 @@ import {Plate} from '../plate';
 import {PlateWidget} from '../plate-widget';
 import {BaseAnalysisView} from '../base-analysis-view';
 import {
+  AnalysisQuery,
   createAnalysisRun, getOrCreateProperty, PlateProperty,
+  queryAnalysesGeneric,
   saveAnalysisResult, saveAnalysisRunParameter
 } from '../../plates/plates-crud';
 import {AnalysisRequiredFields} from '../../plates/views/components/analysis-mapping/analysis-mapping-panel';
@@ -32,7 +34,11 @@ export interface IPlateAnalysis {
       onMap: (target: string, source: string) => void,
         onUndo: (target: string) => void,
     onRerender?: () => void
+
     ): HTMLElement;
+ queryResults(query: AnalysisQuery): Promise<DG.DataFrame>;
+    formatResultsForGrid(rawResults: DG.DataFrame): DG.DataFrame;
+    getSearchableProperties(): IAnalysisProperty[];
 }
 
 export abstract class AbstractPlateAnalysis implements IPlateAnalysis {
@@ -45,12 +51,29 @@ export abstract class AbstractPlateAnalysis implements IPlateAnalysis {
     protected _parameterProperties = new Map<string, PlateProperty>();
     protected _outputProperties = new Map<string, PlateProperty>();
 
+
     async registerProperties(): Promise<void> {
       console.log(`Registering properties for analysis: "${this.friendlyName}"`);
       for (const param of this.parameters)
         this._parameterProperties.set(param.name, await getOrCreateProperty(param.name, param.type));
       for (const output of this.outputs)
         this._outputProperties.set(output.name, await getOrCreateProperty(output.name, output.type));
+    }
+    async queryResults(query: AnalysisQuery): Promise<DG.DataFrame> {
+      // Use the generic query but then format results
+      const rawResults = await queryAnalysesGeneric(query);
+      return this.formatResultsForGrid(rawResults);
+    }
+
+    abstract formatResultsForGrid(rawResults: DG.DataFrame): DG.DataFrame;
+
+    getSearchableProperties(): IAnalysisProperty[] {
+      // By default, return all output properties that can be searched
+      return this.outputs.filter((o) =>
+        o.type === DG.TYPE.FLOAT ||
+            o.type === DG.TYPE.INT ||
+            o.type === DG.TYPE.STRING
+      );
     }
     abstract getRequiredFields(): AnalysisRequiredFields[];
     abstract createView(plate: Plate, plateWidget: PlateWidget, currentMappings: Map<string, string>, onMap: (t: string, s: string) => void, onUndo: (t: string) => void, onRerender?: () => void): HTMLElement;

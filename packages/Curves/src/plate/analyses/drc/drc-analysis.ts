@@ -29,12 +29,65 @@ export class DrcAnalysis extends AbstractPlateAnalysis {
     {name: 'AUC', type: DG.TYPE.FLOAT, category: 'Output'},
   ];
 
+  override formatResultsForGrid(rawResults: DG.DataFrame): DG.DataFrame {
+    console.log('--- DRC: formatResultsForGrid START (Final Version) ---');
+    if (rawResults.rowCount === 0) return rawResults;
+
+    const finalRows: any[] = [];
+    const propsCol = rawResults.col('properties');
+
+    // The key is to parse the 'properties' column, which has the complete, reliable data.
+    if (!propsCol) {
+      console.error('DRC: CRITICAL - `properties` column not found!');
+      return DG.DataFrame.create(0);
+    }
+
+    for (let i = 0; i < rawResults.rowCount; i++) {
+      const propsJson = propsCol.get(i);
+      if (!propsJson) continue;
+
+      const properties = JSON.parse(propsJson);
+
+      finalRows.push({
+        'run_id': rawResults.get('run_id', i),
+        'plate_id': rawResults.get('plate_id', i),
+        'barcode': rawResults.get('barcode', i),
+        // The user wants to see the specific group for THIS result.
+        // The 'title' or 'name' inside the Curve's JSON is the most reliable source.
+        'Group': properties.Curve?.series[0]?.name ?? `Group ${i + 1}`,
+        'Curve': JSON.stringify(properties.Curve), // Re-stringify to ensure it's a clean string for the 'fit' renderer
+        'IC50': properties.IC50,
+        'Hill Slope': properties['Hill Slope'],
+        'R Squared': properties['R Squared'],
+        'Min': properties.Min,
+        'Max': properties.Max,
+        'AUC': properties.AUC,
+      });
+    }
+
+    if (finalRows.length === 0) return DG.DataFrame.create(0);
+
+    const finalDf = DG.DataFrame.fromObjects(finalRows)!;
+
+    // Apply formatting to the new, clean DataFrame
+    finalDf.col('Curve')!.semType = 'fit';
+    finalDf.col('IC50')!.meta.format = 'scientific';
+
+    console.log('--- DRC: formatResultsForGrid END ---');
+    console.log('Final DRC DataFrame structure:\n', finalDf.toCsv());
+    return finalDf;
+  }
+
   getRequiredFields(): AnalysisRequiredFields[] {
     return [
       {name: 'Activity', required: true, description: 'Response/activity values'},
       {name: 'Concentration', required: true, description: 'Concentration/dose values'},
       {name: 'SampleID', required: true, description: 'Sample/compound identifiers'}
     ];
+  }
+  getSearchableProperties(): IAnalysisProperty[] {
+    // DRC can search by all its outputs
+    return this.outputs;
   }
 
   private async run(plate: Plate, params: Record<string, any>, mappings: Map<string, string>): Promise<{resultsDf: DG.DataFrame, seriesVals: Array<[string, any]>, finalValueCol: string} | null> {

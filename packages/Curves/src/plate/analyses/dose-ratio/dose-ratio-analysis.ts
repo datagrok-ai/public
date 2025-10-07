@@ -192,4 +192,91 @@ export class DoseRatioAnalysis extends AbstractPlateAnalysis {
   protected _getGroups(resultsDf: DG.DataFrame): { groupColumn: string; groups: string[]; } {
     throw new Error('Method not implemented for DoseRatioAnalysis.');
   }
+  override formatResultsForGrid(rawResults: DG.DataFrame): DG.DataFrame {
+    console.log('--- Dose Ratio: formatResultsForGrid START (Final Version) ---');
+    if (rawResults.rowCount === 0) return rawResults;
+
+    const runs = new Map<number, any[]>();
+    const propsCol = rawResults.col('properties');
+
+    if (!propsCol) {
+      console.error('Dose Ratio: CRITICAL - `properties` column not found!');
+      return DG.DataFrame.create(0);
+    }
+
+    // Group rows by run_id, extracting clean data from the 'properties' JSON
+    for (let i = 0; i < rawResults.rowCount; i++) {
+      const runId = rawResults.get('run_id', i);
+      const propsJson = propsCol.get(i);
+      if (!propsJson) continue;
+
+      if (!runs.has(runId))
+        runs.set(runId, []);
+
+      const properties = JSON.parse(propsJson);
+
+        runs.get(runId)!.push({
+          run_id: runId,
+          plate_id: rawResults.get('plate_id', i),
+          barcode: rawResults.get('barcode', i),
+          Curve: properties.Curve, // This is already a JSON string of a single-series chart
+        });
+    }
+
+
+    const finalRows: any[] = [];
+
+    for (const [runId, runRows] of runs.entries()) {
+      const allSeries: IFitSeries[] = [];
+      const firstRow = runRows[0]; // For common info like barcode
+
+      runRows.forEach((rowObj) => {
+        // The 'Curve' column contains a stringified IFitChartData with a *single* series.
+        // We need to extract that single series object.
+        const curveJson = rowObj.Curve;
+        if (curveJson && typeof curveJson === 'string') {
+          try {
+            const chartData: IFitChartData = JSON.parse(curveJson);
+            if (chartData.series && chartData.series.length > 0)
+              allSeries.push(chartData.series[0]);
+          } catch (e) {
+            console.error(`Failed to parse curve JSON for run ${runId}:`, curveJson, e);
+          }
+        }
+      });
+
+      if (allSeries.length > 0) {
+        // Construct the new, aggregated chart data containing all series for the run
+        const combinedChartData: IFitChartData = {
+          chartOptions: {
+            title: `Dose Ratio for Plate ${firstRow.barcode}`,
+            xAxisName: 'Agonist Concentration (M)',
+            yAxisName: 'Percent Inhibition',
+            logX: true,
+          },
+          series: allSeries,
+        };
+
+        // Create the final aggregated row for our new DataFrame
+        finalRows.push({
+          'run_id': runId,
+          'plate_id': firstRow.plate_id,
+          'barcode': firstRow.barcode,
+          'Curve': JSON.stringify(combinedChartData),
+        });
+      }
+    }
+
+    if (finalRows.length === 0)
+      return DG.DataFrame.create(0);
+
+    const resultDf = DG.DataFrame.fromObjects(finalRows)!;
+    const curveCol = resultDf.col('Curve');
+    if (curveCol)
+      curveCol.semType = 'fit';
+    console.log('--- Dose Ratio: formatResultsForGrid END ---');
+    console.log('Final Dose Ratio DataFrame structure:\n', resultDf.toCsv());
+
+    return resultDf;
+  }
 }
