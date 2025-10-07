@@ -103,7 +103,7 @@ export class Events {
 
   get onCurrentViewChanging(): rxjs.Observable<EventData<ViewArgs>> { return __obs('d4-current-view-changing'); }
 
-  get onCurrentObjectChanged(): rxjs.Observable<any> { return __obs('d4-current-object-changed'); }
+  get onCurrentObjectChanged(): rxjs.Observable<EventData<EventArgs>> { return __obs('d4-current-object-changed'); }
 
   get onCurrentCellChanged(): rxjs.Observable<any> { return __obs('d4-current-cell-changed'); }
 
@@ -353,4 +353,10 @@ export interface DataFrameArgs {
 
 export interface InputArgs {
   input: InputBase;
+}
+
+export interface EventArgs {
+  value: any;
+  trigger: HTMLElement;
+  event: UIEvent;
 }
