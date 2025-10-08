@@ -16,10 +16,14 @@ export function saveMolTrackLayout(grid: DG.Grid, scope: Scope) {
     tags[colName] = Object.entries(grid.dataFrame.col(colName)?.tags);
 
   const moltrackLayout: MolTrackLayout = { look, tags };
+  //TODO: uncomment user settings when size of storage is increased
+  //grok.userSettings.add(LAYOUT_STORAGE, scope, JSON.stringify(moltrackLayout));
   window.localStorage.setItem(`${LAYOUT_STORAGE}|${scope}`, JSON.stringify(moltrackLayout));
 }
 
 export async function applyMolTrackLayout(grid: DG.Grid, scope: Scope) {
+  //TODO: uncomment user settings when size of storage is increased
+  //const savedLayout = grok.userSettings.getValue(LAYOUT_STORAGE, scope);
   const savedLayout = window.localStorage.getItem(`${LAYOUT_STORAGE}|${scope}`);
   if (savedLayout) {
     try {
