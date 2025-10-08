@@ -416,8 +416,8 @@ export namespace funcs {
     return await grok.functions.call('Chem:RunStructuralAlerts', { table, molecules, pains, bms, sureChembl, mlsmr, dundee, inpharmatica, lint, glaxo });
   }
 
-  export async function runStructuralAlert(molecules: DG.Column , alert: string ): Promise<DG.Column> {
-    return await grok.functions.call('Chem:RunStructuralAlert', { molecules, alert });
+  export async function getStructuralAlerts(molecules: DG.Column , alerts: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:GetStructuralAlerts', { molecules, alerts });
   }
 
   export async function molColumnPropertyPanel(molColumn: DG.Column ): Promise<any> {

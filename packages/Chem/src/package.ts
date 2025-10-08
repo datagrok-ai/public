@@ -1201,28 +1201,21 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'runStructuralAlert',
+    name: 'getStructuralAlerts',
     meta: {vectorFunc: 'true'},
-    outputs: [{name: 'res', type: 'column'}],
   })
-  static async runStructuralAlert(
+  static async getStructuralAlerts(
     @grok.decorators.param({type: 'column<string>', options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({type: 'string'}) alert: RuleId): Promise<DG.Column | void> {
-    let col: DG.Column = DG.Column.string(alert, molecules.length).init(`Error calculating ${alert}`);
-    try {
-      const ruleSet: {[key: string]: boolean} = {};
-      for (const rule of STRUCT_ALERTS_RULES_NAMES)
-        ruleSet[rule] = alert.toLocaleLowerCase() === rule.toLocaleLowerCase();
+    @grok.decorators.param({type: 'list<string>'}) alerts: string[]): Promise<DG.DataFrame> {
+    const lowerCaseAlerts = alerts.map((it) => it.toLowerCase());
+    const ruleSet: {[key: string]: boolean} = {};
+    for (const rule of STRUCT_ALERTS_RULES_NAMES)
+      ruleSet[rule] = lowerCaseAlerts.includes(rule.toLowerCase());
 
-      const resultDf = await getStructuralAlertsByRules(molecules, ruleSet as RuleSet);
-      if (resultDf) {
-        if (!resultDf.columns.names().length)
-          col = DG.Column.string(alert, molecules.length).init(`Incorrect alert`);
-        else
-          col = resultDf.columns.byIndex(0);
-      }
-    } catch (e) {}
-    return col;
+    const resultDf = await getStructuralAlertsByRules(molecules, ruleSet as RuleSet);
+    if (!resultDf)
+      throw Error(`Structural alerts haven't been calculated`);
+    return resultDf;
   }
 
   //#endregion

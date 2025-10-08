@@ -24,7 +24,7 @@ category('vector functions', () => {
 
     test('chemDescriptor', async () => {
         await ensureContainerRunning('name = "chem-chem"', CONTAINER_TIMEOUT);
-        await testVectorFunc('Chem:chemDescriptor(${smiles}, \'MolWt\')', 'MolWt', [0, 9],
+        await testVectorFunc('Chem:getDescriptors(${smiles}, [\'MolWt\'])', 'MolWt', [0, 9],
             [259.27099609375, 192.01600646972656]);
     }, {timeout: 30000 + CONTAINER_TIMEOUT});
 
@@ -40,7 +40,7 @@ category('vector functions', () => {
     });
 
     test('runStructuralAlert', async () => {
-        await testVectorFunc('Chem:runStructuralAlert(${smiles}, \'Dundee\')', 'Dundee', [0, 2], [false, true]);
+        await testVectorFunc('Chem:getStructuralAlerts(${smiles}, [\'Dundee\'])', 'Dundee', [0, 2], [false, true]);
     });
 
     test('getInchiKeys', async () => {
