@@ -593,10 +593,12 @@ export function convertQueryBuilderConditionToMolTrackQuery(
   const query: MolTrackSearchQuery = {
     level: level,
     output: output,
-    filter: cond.conditions.length === 1 && isSimpleCondition(cond.conditions[0]) ?
-      convertSimpleCondition(cond.conditions[0], level, type):
-      convertComplexCondition(cond, level, type),
   };
+  if (cond.conditions.length) {
+    query.filter = cond.conditions.length === 1 && isSimpleCondition(cond.conditions[0]) ?
+      convertSimpleCondition(cond.conditions[0], level, type) :
+      convertComplexCondition(cond, level, type);
+  }
   if (aggregations.length)
     query.aggregations = aggregations;
 

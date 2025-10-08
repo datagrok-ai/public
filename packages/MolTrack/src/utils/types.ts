@@ -71,7 +71,7 @@ export interface MolTrackSearchAggregation {
 export interface MolTrackSearchQuery {
   level: string;
   output: string[];
-  filter: MolTrackFilter;
+  filter?: MolTrackFilter;
   aggregations?: MolTrackSearchAggregation[];
 }
 
