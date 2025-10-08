@@ -1,5 +1,9 @@
 # Tutorials changelog
 
+## 1.10.3 (2025-10-08)
+
+* GROK-18139: Activity dashboard: Retired Learn widget and added it to the activity dashboard instead
+
 ## 1.10.2 (2025-10-07)
 
 * Demo app: Fixed the issue that names with `-` in name sometimes can't open
