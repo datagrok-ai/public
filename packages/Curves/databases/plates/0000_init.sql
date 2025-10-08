@@ -35,7 +35,6 @@ CREATE TABLE plates.properties (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     template_id INTEGER REFERENCES plates.templates(id),
     scope TEXT,
-    origin_plate_id INTEGER,
     
     CONSTRAINT check_scope CHECK (scope IN ('plate', 'well'))
 );
