@@ -639,6 +639,10 @@ export namespace funcs {
     return await grok.functions.call('Chem:AddChemRisksColumns', { table, molecules, mutagenicity, tumorigenicity, irritatingEffects, reproductiveEffects });
   }
 
+  export async function getToxicityRisks(molecules: DG.Column , risks: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:GetToxicityRisks', { molecules, risks });
+  }
+
   /**
   Generates a hierarchical tree based on the scaffolds presented in dataset
   */

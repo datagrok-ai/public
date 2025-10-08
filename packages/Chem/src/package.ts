@@ -29,7 +29,7 @@ import {drugLikenessWidget} from './widgets/drug-likeness';
 import {addPropertiesAsColumns, getChemPropertyFunc, getPropertiesAsColumns, propertiesWidget} from './widgets/properties';
 import {structuralAlertsWidget} from './widgets/structural-alerts';
 import {structure2dWidget} from './widgets/structure2d';
-import {addRisksAsColumns, toxicityWidget} from './widgets/toxicity';
+import {getToxicityRisksColumns, toxicityWidget} from './widgets/toxicity';
 
 //panels imports
 import {getInchiKeysImpl, getInchisImpl} from './panels/inchi';
@@ -1908,10 +1908,28 @@ export class PackageFunctions {
   ): Promise<void> {
     const pb = DG.TaskBarProgressIndicator.create('Toxicity risks ...');
     try {
-      await addRisksAsColumns(table, molecules, {mutagenicity, tumorigenicity, irritatingEffects, reproductiveEffects});
+      const toxCols = await getToxicityRisksColumns(molecules, {mutagenicity, tumorigenicity, irritatingEffects, reproductiveEffects});
+      toxCols.forEach((col) => table.columns.add(col));
     } finally {
       pb.close();
     }
+  }
+
+
+  @grok.decorators.func({
+    name: 'getToxicityRisks',
+    meta: {vectorFunc: 'true'},
+  })
+  static async getToxicityRisks(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'list<string>'}) risks: string[]): Promise<DG.DataFrame> {
+    const toxCols = await getToxicityRisksColumns(molecules, {
+      mutagenicity: risks.includes('mutagenicity'),
+      tumorigenicity: risks.includes('tumorigenicity'),
+      irritatingEffects: risks.includes('irritatingEffects'),
+      reproductiveEffects: risks.includes('reproductiveEffects'),
+    });
+    return DG.DataFrame.fromColumns(toxCols);
   }
 
   @grok.decorators.func({
