@@ -76,6 +76,7 @@ export async function getEmbeddings(sentences: string[]) : Promise<any> {
 //name: Sentence Similarity Search
 //tags: viewer
 //output: viewer result
+//meta.showInGallery: false
 export function sentenceSearchViewer() : any {
   return PackageFunctions.sentenceSearchViewer();
 }

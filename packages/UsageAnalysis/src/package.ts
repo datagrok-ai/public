@@ -8,11 +8,11 @@ import '../css/usage_analysis.css';
 import '../css/test_track.css';
 import {ViewHandler} from './view-handler';
 import {TestTrack} from './test-track/app';
-import {ReportsWidget} from "./widgets/reports-widget";
-import {ReportingApp} from "./reporting/reporting_app";
+import {ReportsWidget} from './widgets/reports-widget';
+import {ReportingApp} from './reporting/reporting_app';
 import {TestAnalysisManager} from './test-analysis/test-analysis-manager';
 import {getDate} from './utils';
-import {ServiceLogsApp} from "./service_logs/service_logs";
+import {ServiceLogsApp} from './service_logs/service_logs';
 import {TestGridCellHandler} from './handlers/test-grid-cell-handler';
 import {initTestStickyMeta} from './test-analysis/sticky-meta-initialization';
 import {TestDashboardWidget} from './viewers/ua-test-dashboard-viewer';
@@ -25,7 +25,7 @@ let AVAILABLE_SERVICES: string[];
 
 
 const highestPriorityIndex = 3;
-const  priorityLevels : Record<string, number> = {
+const priorityLevels : Record<string, number> = {
   'Lowest': 0,
   'Low': 1,
   'Medium': 2,
@@ -42,17 +42,17 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'meta': {
-      'url': '/tests/list'
-    }
+      'url': '/tests/list',
+    },
   })
   static async TestsList(): Promise<DG.DataFrame| undefined> {
     const pacakageTests = await TestAnalysisManager.collectPackageTests();
     const packageTestsListMapped = pacakageTests.map((elem) => {
-      return { 'name':  "test-package " + elem.packageName + ": " + elem.test.category + ": " + elem.test.name };
+      return {'name': 'test-package ' + elem.packageName + ': ' + elem.test.category + ': ' + elem.test.name};
     });
     const manualTest = await TestAnalysisManager.collectManualTestNames();
     const manualTestsListMapped = manualTest.map((elem) => {
-      return { 'name':  "test-manual " + elem };
+      return {'name': 'test-manual ' + elem};
     });
     const resultTestsList = manualTestsListMapped.concat(packageTestsListMapped);
     return DG.DataFrame.fromObjects(resultTestsList);
@@ -61,17 +61,17 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'meta': {
-      'url': '/tests/joinedlist'
-    }
+      'url': '/tests/joinedlist',
+    },
   })
   static async TestsListJoined(): Promise<DG.DataFrame| undefined> {
     const pacakageTests = await TestAnalysisManager.collectPackageTests();
     const packageTestsListMapped = pacakageTests.map((elem) => {
-      return { 'type':  "package ", 'test': elem.packageName + ": " + elem.test.category + ": " + elem.test.name };
+      return {'type': 'package ', 'test': elem.packageName + ': ' + elem.test.category + ': ' + elem.test.name};
     });
     const manualTest = await TestAnalysisManager.collectManualTestNames();
     const manualTestsListMapped = manualTest.map((elem) => {
-      return { 'type':  "manual ", 'test': 'Test Track: ' + elem };
+      return {'type': 'manual ', 'test': 'Test Track: ' + elem};
     });
     const resultTestsList = DG.DataFrame.fromObjects(manualTestsListMapped.concat(packageTestsListMapped));
 
@@ -85,47 +85,45 @@ export class PackageFunctions {
 
   @grok.decorators.func()
   static async TestAnalysisReportForCurrentDay(
-    @grok.decorators.param({'type':'datetime'})  date: any) : Promise<DG.DataFrame> {
-
+    @grok.decorators.param({'type': 'datetime'}) date: any) : Promise<DG.DataFrame> {
     const tests = await TestAnalysisManager.collectPackageTests();
     const testsListMapped = tests.map((elem) => {
-      return { 'name':  "test-package " + elem.packageName + ": " + elem.test.category + ": " + elem.test.name };
+      return {'name': 'test-package ' + elem.packageName + ': ' + elem.test.category + ': ' + elem.test.name};
     });
-    const testRuns = await grok.functions.call('UsageAnalysis:getServerStartTestResults', { 'date': getDate(new Date(date)), 'testslist': DG.DataFrame.fromObjects(testsListMapped) });
+    const testRuns = await grok.functions.call('UsageAnalysis:getServerStartTestResults', {'date': getDate(new Date(date)), 'testslist': DG.DataFrame.fromObjects(testsListMapped)});
     return testRuns;
   }
 
   @grok.decorators.app({
     'url': '/',
     'browsePath': 'Admin',
-    'name': 'Usage Analysis'
+    'name': 'Usage Analysis',
   })
   static async usageAnalysisApp(
-    @grok.decorators.param({'options':{'optional':true,'meta.url':true}})  path?: string,
-    @grok.decorators.param({'options':{'optional':true}})   date?: string,
-    @grok.decorators.param({'options':{'optional':true}})   groups?: string,
-    @grok.decorators.param({'options':{'optional':true}})   packages?: string,
-    @grok.decorators.param({'options':{'optional':true}})   tags?: string,
-    @grok.decorators.param({'options':{'optional':true}})   categories?: string,
-    @grok.decorators.param({'options':{'optional':true}})   projects?: string): Promise<DG.ViewBase | null> {
-
+    @grok.decorators.param({'options': {'optional': true, 'meta.url': true}}) path?: string,
+    @grok.decorators.param({'options': {'optional': true}}) date?: string,
+    @grok.decorators.param({'options': {'optional': true}}) groups?: string,
+    @grok.decorators.param({'options': {'optional': true}}) packages?: string,
+    @grok.decorators.param({'options': {'optional': true}}) tags?: string,
+    @grok.decorators.param({'options': {'optional': true}}) categories?: string,
+    @grok.decorators.param({'options': {'optional': true}}) projects?: string): Promise<DG.ViewBase | null> {
     const handler = new ViewHandler();
     await handler.init(date, groups, packages, tags, categories, projects, path);
     return handler.view;
   }
-  
+
   @grok.decorators.func({meta: {vectorFunc: 'true'}})
-  static async getTicketsVerdict(@grok.decorators.param({type:'column<string>'})  ticketColumn: DG.Column): Promise<DG.Column | undefined>  {
+  static async getTicketsVerdict(@grok.decorators.param({type: 'column<string>'}) ticketColumn: DG.Column): Promise<DG.Column | undefined> {
     const ticketsMap = new Map<string, {status: string, severity: string}>();
     const ticketRegex = /GROK-\d*/g;
     const ticketColumnList = ticketColumn.toList();
     for (let i = 0; i < ticketColumnList.length; i++) {
       if (ticketColumnList[i]) {
-        let tickets = ticketColumnList[i].matchAll(ticketRegex);
-        for (let ticket of tickets) {
-          let status = (await grok.functions.call('JiraConnect:issueData', {issueKey: ticket}));
+        const tickets = ticketColumnList[i].matchAll(ticketRegex);
+        for (const ticket of tickets) {
+          const status = (await grok.functions.call('JiraConnect:issueData', {issueKey: ticket}));
           if (status && !ticketsMap.has(ticket[0]))
-            ticketsMap.set(ticket[0], { status: status.fields.status.name, severity: status.fields.priority.name });
+            ticketsMap.set(ticket[0], {status: status.fields.status.name, severity: status.fields.priority.name});
         }
       }
     }
@@ -133,26 +131,22 @@ export class PackageFunctions {
     const resultCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, `${ticketColumn} ticket verdict`, ticketColumn.length);
     for (let i = 0; i < ticketColumnList.length; i++) {
       if (ticketColumnList[i]) {
-        let tickets = ticketColumnList[i].matchAll(ticketRegex);
-        let resultStatuses = [];
+        const tickets = ticketColumnList[i].matchAll(ticketRegex);
+        const resultStatuses = [];
         let status = undefined;
-        for (let ticket of tickets) {
-          if (ticketsMap.has(ticket[0])){
-            resultStatuses.push(ticketsMap.get(ticket[0]))
-          }
+        for (const ticket of tickets) {
+          if (ticketsMap.has(ticket[0]))
+            resultStatuses.push(ticketsMap.get(ticket[0]));
         }
 
-        if (resultStatuses.length > 0)
-        {
-          if (resultStatuses.some(e=> e?.status !== 'Done'))
-          {
-            let priority = this.getHighestPriorityLevel(resultStatuses as any);
-            if (resultStatuses.some(e=> e?.status === 'Done'))
+        if (resultStatuses.length > 0) {
+          if (resultStatuses.some((e)=> e?.status !== 'Done')) {
+            const priority = this.getHighestPriorityLevel(resultStatuses as any);
+            if (resultStatuses.some((e)=> e?.status === 'Done'))
               status = `Partially Fixed (${priority})`;
             else
               status = `Wasn\'t Fixed (${priority})`;
-          }
-          else
+          } else
             status = 'Fixed';
           resultCol.set(i, status);
         }
@@ -162,15 +156,14 @@ export class PackageFunctions {
     return resultCol;
   }
 
-  static getHighestPriorityLevel(ticketsMap: {status: string, severity: string}[]){
+  static getHighestPriorityLevel(ticketsMap: {status: string, severity: string}[]) {
     let highestPriority = 'Lowest';
     let highestPriorityIndex = 0;
-    for(let [key, value] of ticketsMap.entries())
-    {
-      let index = priorityLevels[value.severity];
+    for (const [key, value] of ticketsMap.entries()) {
+      const index = priorityLevels[value.severity];
       if (index > highestPriorityIndex) {
         highestPriority = (value.severity);
-        highestPriorityIndex = index
+        highestPriorityIndex = index;
       }
       if (index >= highestPriorityIndex)
         break;
@@ -181,10 +174,9 @@ export class PackageFunctions {
   @grok.decorators.app({
     'url': '/tests/manager',
     'browsePath': 'Admin',
-    'name': 'Test Track'
+    'name': 'Test Track',
   })
   static testTrackApp(): void {
-
     if (!grok.shell.dockManager.findNode(TestTrack.getInstance().root))
       TestTrack.getInstance().init();
     else
@@ -195,11 +187,10 @@ export class PackageFunctions {
   @grok.decorators.app({
     'url': '/reports',
     'browsePath': 'Admin',
-    'name': 'Reports'
+    'name': 'Reports',
   })
   static async reportsApp(
-    @grok.decorators.param({'options':{'optional':true,'meta.url':true}})  path?: string): Promise<DG.ViewBase> {
-
+    @grok.decorators.param({'options': {'optional': true, 'meta.url': true}}) path?: string): Promise<DG.ViewBase> {
     const parent = grok.functions.getCurrentCall();
     const app = new ReportingApp(parent);
     app.init(path).catch((e) => console.log(e));
@@ -210,12 +201,12 @@ export class PackageFunctions {
   @grok.decorators.app({
     'url': '/service-logs',
     'browsePath': 'Admin',
-    'name': 'Service Logs'
+    'name': 'Service Logs',
   })
   static serviceLogsApp(
-    @grok.decorators.param({'options':{'optional':true, 'meta.url':true}}) path?: string,
-    @grok.decorators.param({'type':'map','options':{'optional':true}}) params?: any,
-    @grok.decorators.param({'type':'int','options':{'optional':true}}) limit?: number): DG.ViewBase {
+    @grok.decorators.param({'options': {'optional': true, 'meta.url': true}}) path?: string,
+    @grok.decorators.param({'type': 'map', 'options': {'optional': true}}) params?: any,
+    @grok.decorators.param({'type': 'int', 'options': {'optional': true}}) limit?: number): DG.ViewBase {
     if (path && path.startsWith('/'))
       path = path.slice(1);
     const view = DG.View.fromViewAsync(async () => {
@@ -243,9 +234,9 @@ export class PackageFunctions {
 
       const getItem = (service: string) => {
         let icon: HTMLElement;
-        if (services.some((s) => service.includes(s))) {
+        if (services.some((s) => service.includes(s)))
           icon = ui.image('/images/entities/grok.png', 10, 10);
-        }
+
         else
           icon = ui.iconFA('server');
         icon.style.marginRight = '3px';
@@ -283,7 +274,7 @@ export class PackageFunctions {
 
   @grok.decorators.dashboard({
     'meta': {
-      'canView': 'Developers,Administrators'
+      'canView': 'Developers,Administrators',
     },
     'name': 'Usage',
     'test': 'usageWidget()',
@@ -293,9 +284,9 @@ export class PackageFunctions {
   }
 
   @grok.decorators.dashboard({
-    'meta': {'canView': 'Developers,Administrators' },
+    'meta': {'canView': 'Developers,Administrators'},
     'name': 'Reports',
-    'test': 'reportsWidget()'
+    'test': 'reportsWidget()',
   })
   static reportsWidget(): DG.Widget {
     return new ReportsWidget();
@@ -304,24 +295,24 @@ export class PackageFunctions {
 
   @grok.decorators.func({})
   static packageUsageWidget(
-    @grok.decorators.param({'type':'object'}) pckg: DG.Package): DG.Widget {
+    @grok.decorators.param({'type': 'object'}) pckg: DG.Package): DG.Widget {
     return new PackageUsageWidget(pckg);
   }
 
 
   @grok.decorators.func({
     'tags': [
-      'viewer'
+      'viewer',
     ],
-    outputs: [
+    'meta': {showInGallery: 'false'},
+    'outputs': [
       {
         type: 'viewer',
-        name: 'result'
-      }
-    ]
+        name: 'result',
+      },
+    ],
   })
   static testDashboardsViewer(): TestDashboardWidget {
-
     return new TestDashboardWidget();
   }
 
@@ -335,7 +326,7 @@ export class PackageFunctions {
           try {
             widget = PackageFunctions.packageUsageWidget(ent).root;
           } catch (e) {
-            widget = ui.divText('Error on loading', { style: { color: 'var(--failure)' } });
+            widget = ui.divText('Error on loading', {style: {color: 'var(--failure)'}});
           }
           return widget;
         }));
@@ -353,9 +344,9 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'name': 'Create JIRA ticket',
-    'description': 'Creates JIRA ticket using current error log'
+    'description': 'Creates JIRA ticket using current error log',
   })
-  static createJiraTicket(){
+  static createJiraTicket() {
     grok.data.query('JiraCreateIssue', {
       'createRequest': JSON.stringify({
         'fields': {
@@ -363,7 +354,7 @@ export class PackageFunctions {
             'key': 'GROK',
           },
           'summary': 'test',
-          'description':'',
+          'description': '',
           'issuetype': {
             'name': 'Bug',
           },
