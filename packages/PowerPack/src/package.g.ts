@@ -49,14 +49,6 @@ export function htmlWidget() : any {
   return PackageFunctions.htmlWidget();
 }
 
-//name: Learn
-//tags: dashboard
-//output: widget result
-//meta.order: 5
-export function learnWidget() : any {
-  return PackageFunctions.learnWidget();
-}
-
 //output: widget result
 export function kpiWidget() : any {
   return PackageFunctions.kpiWidget();

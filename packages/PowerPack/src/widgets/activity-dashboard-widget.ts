@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import dayjs from 'dayjs';
 import {queries} from '../package-api';
+import {LearningWidget} from './learning-widget';
 
 
 enum SpotlightTabNames {
@@ -77,10 +78,15 @@ export class ActivityDashboardWidget extends DG.Widget {
       'Favorites': () => ui.wait(async () => await this.getFavoritesTab()),
       'Notifications': () => ui.wait(async () => await this.getNotificationsTab()),
       'My Activity': () => ui.wait(async () => await this.getActivityTab()),
+      'Learn': () => new LearningWidget().root,
     };
 
     this.tabControl = ui.tabControl(tabs, true);
-    this.subs.push(this.tabControl.onTabChanged.subscribe((_) => this.cleanLists()));
+    this.subs.push(this.tabControl.onTabChanged.subscribe((tabPane: DG.TabPane) => {
+      this.cleanLists();
+      tabPane.name === 'Learn' ? tabPane.content.parentElement?.classList.add('power-pack-overflow-hidden') :
+        tabPane.content.parentElement?.classList.remove('power-pack-overflow-hidden');
+    }));
     this.tabControl.root.style.height = '90%';
     this.tabControl.root.style.width = '100%';
 

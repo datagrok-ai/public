@@ -9,7 +9,6 @@ import {FormulaLinesDialog, DEFAULT_OPTIONS, EditorOptions} from './dialogs/form
 import {RecentProjectsWidget} from './widgets/recent-projects-widget';
 import {CommunityWidget} from './widgets/community-widget';
 import {WebWidget} from './widgets/web-widget';
-import {LearningWidget} from './widgets/learning-widget';
 import {appSearch, connectionsSearch,
   dockerSearch, filesSearch, functionSearch, groupsSearch,
   helpSearch, jsSamplesSearch, pdbSearch, pubChemSearch, querySearch,
@@ -172,16 +171,6 @@ export class PackageFunctions {
   static htmlWidget(): DG.Widget {
     return new HtmlWidget();
   }
-
-
-  @grok.decorators.dashboard({
-    order: '5',
-    name: 'Learn',
-  })
-  static learnWidget(): DG.Widget {
-    return new LearningWidget();
-  }
-
 
   @grok.decorators.func()
   static kpiWidget(): DG.Widget {
