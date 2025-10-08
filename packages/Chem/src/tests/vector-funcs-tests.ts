@@ -52,8 +52,8 @@ category('vector functions', () => {
         await testVectorFunc('Chem:convertMoleculeNotation(${smiles}, \'molblock\')', 'molblock', [0], [mol1]);
     });
 
-    test('getMolProperty', async () => {
-        await testVectorFunc('Chem:getMolProperty(${smiles}, \'LogP\')', 'LogP', [0, 9],
+    test('getProperties', async () => {
+        await testVectorFunc('Chem:getProperties(${smiles}, [\'LogP\'])', 'LogP', [0, 9],
             [2.939000129699707, -0.6422999501228333]);
     });
 

@@ -631,8 +631,8 @@ export namespace funcs {
     return await grok.functions.call('Chem:AddChemPropertiesColumns', { table, molecules, MW, HBA, HBD, logP, logS, PSA, rotatableBonds, stereoCenters, moleculeCharge });
   }
 
-  export async function getMolProperty(molecules: DG.Column , property: string ): Promise<DG.Column> {
-    return await grok.functions.call('Chem:GetMolProperty', { molecules, property });
+  export async function getProperties(molecules: DG.Column , selected: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:GetProperties', { molecules, selected });
   }
 
   export async function addChemRisksColumns(table: DG.DataFrame , molecules: DG.Column , mutagenicity: boolean , tumorigenicity: boolean , irritatingEffects: boolean , reproductiveEffects: boolean ): Promise<void> {

@@ -517,9 +517,9 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({outputs: [{name: 'descriptors', type: 'object'}]})
-    static async chemDescriptorsTree(): Promise<object> {
-      return await fetchWrapper(() => getDescriptorsTree());
-    }
+  static async chemDescriptorsTree(): Promise<object> {
+    return await fetchWrapper(() => getDescriptorsTree());
+  }
 
   @grok.decorators.func({
     'name': 'Map Identifiers',
@@ -1862,28 +1862,22 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'getMolProperty',
+    name: 'getProperties',
     meta: {vectorFunc: 'true'},
   })
-  static async getMolProperty(
+  static async getProperties(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({options: {choices: ['MW', 'HBA', 'HBD', 'LogP', 'LogS', 'PSA', 'Rotatable bonds', 'Stereo centers', 'Molecule charge']}}) property: string): Promise<DG.Column> {
-    let col: DG.Column = DG.Column.string(property, molecules.length).init(`Error calculating ${alert}`);
-    try {
-      const propNames = Object.keys(CHEM_PROP_MAP);
-      let props: string[] = [];
+    @grok.decorators.param({type: 'list<string>'}) selected: string[]): Promise<DG.DataFrame> {
+    const propNames = Object.keys(CHEM_PROP_MAP);
+    let props: string[] = [];
 
-      for (const propName of propNames)
-        props = props.concat(propName === property ? [property] : []);
+    for (const propName of propNames)
+      props = props.concat(selected.includes(propName) ? [propName] : []);
 
-      const cols = await getPropertiesAsColumns(molecules, props);
-      if (!cols.length)
-        col = DG.Column.string(property, molecules.length).init(`Incorrect property`);
-      else
-        col = cols[0];
-    } catch (e) {}
+    const cols = await getPropertiesAsColumns(molecules, props);
 
-    return col;
+
+    return DG.DataFrame.fromColumns(cols);
   }
 
 
