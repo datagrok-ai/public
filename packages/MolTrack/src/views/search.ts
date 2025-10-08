@@ -61,7 +61,7 @@ const FIRST_COL_NAMES = [
 export const SAVED_SEARCH_STORAGE = 'MolTrackSavedSearch';
 
 export let molTrackSearchFieldsArr: DG.Property[] | null = null;
-let openedSearchView: DG.ViewBase | null = null;
+export let openedSearchView: DG.ViewBase | null = null;
 
 export function getSavedSearches(entityLevel: Scope): {[key: string]: string} {
   const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, entityLevel) || '{}';
@@ -430,7 +430,7 @@ export async function runSearch(tv: DG.TableView, search: MolTrackSearch, entity
   try {
     ui.setUpdateIndicator(tv.grid.root, true, 'Searching...');
     if (changePath)
-      tv.path = createPathFromArr([SEARCH_NODE, entityLevel, JSON.stringify(search)]);
+      tv.path = createPathFromArr(tv, [SEARCH_NODE, entityLevel, JSON.stringify(search)]);
     if (!search.outputCols.length)
       throw new Error(`At least one input field should be selected`);
     const outputFields = search.outputCols!
@@ -809,7 +809,7 @@ export async function createSearchView(viewName: string, scope: Scope, initialQu
     initPath.push(viewName);
   else if (initialQuery)
     initPath.push(JSON.stringify(initialQuery));
-  openedSearchView.path = createPathFromArr(initPath);
+  openedSearchView.path = createPathFromArr(openedSearchView, initPath);
   //if there is no initial search query - retrieve all data to initially show in the view
   if (!initialQuery) {
     ui.setUpdateIndicator(openedSearchView.root, true, `Loading ${viewName.toLowerCase()}...`);
@@ -876,7 +876,7 @@ export async function openMolTrackSearchNode(nodesToExpand: string[]) {
   }
 }
 
-export async function handleSearchURL(url: string): Promise<DG.TableView> {
+export async function handleSearchURL(url: string): Promise<DG.ViewBase> {
   if (url.startsWith('/'))
     url = url.slice(1);
   const componentsArr = url.split('/');
@@ -885,11 +885,30 @@ export async function handleSearchURL(url: string): Promise<DG.TableView> {
     const nodesToExpand = [];
     nodesToExpand.push(componentsArr[0]);
     idx++;
+    if (componentsArr.length === idx) {
+      openMolTrackSearchNode(nodesToExpand);
+      if (nodesToExpand[0].toLowerCase() === SEARCH_NODE.toLowerCase())
+        return await createSearcExpandablehNode([SEARCH_NODE], getStatisticsWidget, [createSearchView, true]);
+      if (nodesToExpand[0].toLowerCase() === SAVED_SEARCHES_NODE.toLowerCase())
+        return await createSearcExpandablehNode([SAVED_SEARCHES_NODE], createSavedSearchesSatistics, [undefined]);
+    }
     if (componentsArr.length > idx) {
       const scope = componentsArr[1];
-      if (componentsArr[0] === SAVED_SEARCHES_NODE) {
-        nodesToExpand.push(componentsArr[1]);
+      if (componentsArr[0].toLowerCase() === SAVED_SEARCHES_NODE.toLowerCase()) {
+        const scope = componentsArr[1];
+        nodesToExpand.push(scope);
         idx++;
+        if (componentsArr.length === idx) {
+          openMolTrackSearchNode(nodesToExpand);
+          if ((Object.values(Scope) as string[]).includes(scope.toLowerCase())) {
+            return await createSearcExpandablehNode([SAVED_SEARCHES_NODE, scope],
+              createSavedSearchesSatistics, [scope]);
+          } else {
+            grok.shell.error(`Entity ${scope} doesn't exist in Moltrack`);
+            return await createSearcExpandablehNode([SAVED_SEARCHES_NODE],
+              createSavedSearchesSatistics, [undefined]);
+          }
+        }
       } else {
         let initialSearch = undefined;
         //check for initial query in case of search url
@@ -918,35 +937,25 @@ export async function handleSearchURL(url: string): Promise<DG.TableView> {
   throw Error(`incorrect search path`);
 }
 
-
-export async function createSearcExpandablehNode() {
+export async function createSearcExpandablehNode(viewpath: string[],
+  getElement: (...args: any[]) => Promise<HTMLElement>,
+  args: any[]): Promise<DG.ViewBase> {
   openedSearchView?.close();
-  const contentDiv = ui.div('', 'moltrack-search-stats-div');
   const header = getAppHeader();
+  const contentDiv = ui.div('', 'moltrack-search-stats-div');
   openedSearchView = grok.shell.addPreview(DG.View.fromRoot(ui.divV([header, contentDiv])));
-  ui.setUpdateIndicator(contentDiv);
-  getStatisticsWidget(createSearchView, true)
+  openedSearchView.name = viewpath[viewpath.length - 1];
+  openedSearchView.path = createPathFromArr(openedSearchView, viewpath);
+  ui.setUpdateIndicator(contentDiv, true, `Loading ${viewpath[viewpath.length - 1]}...`);
+
+  getElement(...args)
     .then((res) => contentDiv.append(res))
     .catch((e) => grok.shell.error(e))
     .finally(() => ui.setUpdateIndicator(contentDiv, false));
+  return openedSearchView;
 }
 
-export function createSavedSearchExpandableNode(scope?: Scope) {
-  openedSearchView?.close();
-  const div = ui.div();
-  openedSearchView = grok.shell.addPreview(DG.View.fromRoot(div));
-  openedSearchView.name = scope ? scope.charAt(0).toUpperCase() + scope.slice(1) : SAVED_SEARCHES_NODE;
-  createSavedSearchesSatistics(div, scope);
-}
-
-
-export async function createSavedSearchesSatistics(statsDiv: HTMLElement, scope?: Scope) {
-  const searchesDiv = ui.divV([getAppHeader()]);
-  statsDiv.append(searchesDiv);
-  const tableDiv = ui.div('', { style: { position: 'relative', paddingTop: '15px' } });
-  searchesDiv.append(tableDiv);
-  ui.setUpdateIndicator(tableDiv, true, 'Loading saved searches...');
-
+export async function createSavedSearchesSatistics(scope?: Scope): Promise<HTMLElement> {
   const objForTable: any[] = [];
   const scopes = scope ? [scope] : Object.values(Scope).filter((scope) => !excludedScopes.includes(scope));
   const collectSearchesForScope = (scope: Scope) => {
@@ -960,8 +969,7 @@ export async function createSavedSearchesSatistics(statsDiv: HTMLElement, scope?
   scopes.forEach((it) => collectSearchesForScope(it));
 
   const statsElement = await createSavedSearchStats(objForTable, scope);
-  tableDiv.append(statsElement);
-  ui.setUpdateIndicator(tableDiv, false);
+  return statsElement;
 }
 
 async function createSavedSearchStats(savedSearchesForTable: any[], scope?: string): Promise<HTMLElement> {

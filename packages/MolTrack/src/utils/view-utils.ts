@@ -1,5 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
 import { _package, getBatchByCorporateId, getCompoundByCorporateId } from '../package';
 import { excludedScopes, MOLTRACK_APP_PATH, Scope } from './constants';
 import { EntityBaseView } from '../views/registration-entity-base';
@@ -11,8 +12,8 @@ export function createPath(viewName: string) {
   return path;
 }
 
-export function createPathFromArr(pathComponents: string[]) {
-  let path = `${MOLTRACK_APP_PATH}`;
+export function createPathFromArr(view: DG.ViewBase, pathComponents: string[]) {
+  let path = view.path.toLowerCase().includes(MOLTRACK_APP_PATH.toLowerCase()) ? `` : `${MOLTRACK_APP_PATH}`;
   path += `/${pathComponents.map((it) => encodeURIComponent(it)).join('/')}`;
   return path;
 }
@@ -146,5 +147,5 @@ Promise<HTMLTableElement> {
     }),
   );
 
-  return ui.table(rows, (row) => row, ['Type', 'Count']);
+  return ui.table(rows, (row) => row);
 };

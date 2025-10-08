@@ -7,7 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import { MolTrackDockerService } from './services/moltrack-docker-service';
 import { RegistrationView } from './views/registration-tab';
 import { excludedScopes, MOLTRACK_ENTITY_LEVEL, MOLTRACK_IS_STATIC_FIELD, SAVED_SEARCHES_NODE, Scope, SEARCH_NODE } from './utils/constants';
-import { createSavedSearchExpandableNode, createSearcExpandablehNode, createSearchNode, createSearchView, getSavedSearches, handleSearchURL, loadSearchFields, molTrackSearchFieldsArr } from './views/search';
+import { createSavedSearchesSatistics, createSearcExpandablehNode, createSearchNode, createSearchView, getSavedSearches, handleSearchURL, loadSearchFields, molTrackSearchFieldsArr } from './views/search';
 import { registerAllData, registerAssayData, updateAllMolTrackSchemas } from './utils/registration-utils';
 import { batchView, compoundView, createPath, getAppHeader, getStatisticsWidget, initRegisterView } from './utils/view-utils';
 import { flattened, getCorporateCompoundIdByExactStructure } from './utils/utils';
@@ -104,19 +104,20 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
   const searchNode = appNode.getOrCreateGroup(SEARCH_NODE);
   const searchableScopes = Object.values(Scope)
     .filter((scope) => !excludedScopes.includes(scope));
-  searchNode.onSelected.subscribe(() => createSearcExpandablehNode());
+  searchNode.onSelected.subscribe(() =>
+    createSearcExpandablehNode([SEARCH_NODE], getStatisticsWidget, [createSearchView, true]));
 
   //search section
   searchableScopes.forEach((scope) => createSearchNode(appNode, scope));
 
   //saved searches section
   const savedSearchesNode = appNode.getOrCreateGroup(SAVED_SEARCHES_NODE);
-  savedSearchesNode.onSelected.subscribe(() => createSavedSearchExpandableNode());
+  savedSearchesNode.onSelected.subscribe(() => createSearcExpandablehNode([SAVED_SEARCHES_NODE], createSavedSearchesSatistics, [undefined]));
   Object.values(Scope)
     .filter((scope) => !excludedScopes.includes(scope))
     .forEach((scope) => {
       const entityGroup = savedSearchesNode.getOrCreateGroup(`${scope.charAt(0).toUpperCase()}${scope.slice(1)}`);
-      entityGroup.onSelected.subscribe(() => createSavedSearchExpandableNode(scope));
+      entityGroup.onSelected.subscribe(() => createSearcExpandablehNode([SAVED_SEARCHES_NODE, scope], createSavedSearchesSatistics, [scope]));
       const savedSearches = getSavedSearches(scope);
       Object.keys(savedSearches).forEach((savedSearch) => {
         const savedSearchNode = entityGroup.item(savedSearch);
