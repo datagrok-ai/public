@@ -489,6 +489,7 @@ export class PackageFunctions {
     await openDescriptorsDialogDocker();
   }
 
+  //function with tranfrom tag to be able to run within data sync projects, adds column to dataframe
   @grok.decorators.func({
     name: 'calculateDescriptorsTransform',
     tags: ['Transform'],
@@ -502,10 +503,23 @@ export class PackageFunctions {
     addDescriptorsColsToDf(table, cols);
   }
 
-  @grok.decorators.func({outputs: [{name: 'descriptors', type: 'object'}]})
-  static async chemDescriptorsTree(): Promise<object> {
-    return await fetchWrapper(() => getDescriptorsTree());
+  //vector function to run in add new column dialog
+  @grok.decorators.func({
+    name: 'getDescriptors',
+    meta: {vectorFunc: 'true'},
+  })
+  static async getDescriptors(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'list<string>'}) selected: string[],
+  ): Promise<DG.DataFrame> {
+    const cols = (await calculateDescriptors(molecules, selected)).filter((col) => col != null);
+    return DG.DataFrame.fromColumns(cols);
   }
+
+  @grok.decorators.func({outputs: [{name: 'descriptors', type: 'object'}]})
+    static async chemDescriptorsTree(): Promise<object> {
+      return await fetchWrapper(() => getDescriptorsTree());
+    }
 
   @grok.decorators.func({
     'name': 'Map Identifiers',
@@ -525,22 +539,6 @@ export class PackageFunctions {
     const descCols = await fetchWrapper(() => calculateDescriptors(molecules, descriptors));
     addDescriptorsColsToDf(table, descCols);
   }
-
-  @grok.decorators.func({
-    meta: {vectorFunc: 'true'},
-  })
-  static async chemDescriptor(
-    @grok.decorators.param({options: {semType: 'Molecule'}})molecules: DG.Column, descriptor: string): Promise<DG.Column> {
-    let descCol: DG.Column;
-    try {
-      const descCols = await fetchWrapper(() => calculateDescriptors(molecules, [descriptor]));
-      descCol = descCols.length ? descCols.filter((it) => it)[0] : DG.Column.string(descriptor, molecules.length).init(`Error calculating ${descriptor}`);
-    } catch (e) {
-      descCol = DG.Column.string(descriptor, molecules.length).init(`Error calculating ${descriptor}`);
-    }
-    return descCol;
-  }
-
 
   @grok.decorators.editor({name: 'SearchSubstructureEditor'})
   static searchSubstructureEditor(call: DG.FuncCall): void {

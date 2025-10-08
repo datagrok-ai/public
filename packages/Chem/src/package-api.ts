@@ -285,6 +285,10 @@ export namespace funcs {
     return await grok.functions.call('Chem:CalculateDescriptorsTransform', { table, molecules, selected });
   }
 
+  export async function getDescriptors(molecules: DG.Column , selected: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:GetDescriptors', { molecules, selected });
+  }
+
   export async function chemDescriptorsTree(): Promise<any> {
     return await grok.functions.call('Chem:ChemDescriptorsTree', {});
   }
@@ -299,10 +303,6 @@ export namespace funcs {
 
   export async function chemDescriptors(table: DG.DataFrame , molecules: DG.Column , descriptors: any ): Promise<void> {
     return await grok.functions.call('Chem:ChemDescriptors', { table, molecules, descriptors });
-  }
-
-  export async function chemDescriptor(molecules: DG.Column , descriptor: string ): Promise<DG.Column> {
-    return await grok.functions.call('Chem:ChemDescriptor', { molecules, descriptor });
   }
 
   export async function searchSubstructureEditor(call: any ): Promise<void> {
@@ -323,7 +323,7 @@ export namespace funcs {
   /**
   Calculates most common substructures for each cluster
   */
-  export async function performClusterMCS(molCol: DG.Column , clusterCol: string ): Promise<DG.Column> {
+  export async function performClusterMCS(molCol: DG.Column , clusterCol: DG.Column ): Promise<DG.Column> {
     return await grok.functions.call('Chem:PerformClusterMCS', { molCol, clusterCol });
   }
 
