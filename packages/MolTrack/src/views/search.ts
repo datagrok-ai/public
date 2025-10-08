@@ -284,12 +284,10 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope, in
       const df = DG.DataFrame.create();
       const outputFields = molTrackSearchFieldsArr
         .filter((it) => it.options[MOLTRACK_ENTITY_LEVEL] === entityLevel &&
-          !EXCLUDE_SEARCH_OUTPUT_FIELDS.includes(it.name));
+          !EXCLUDE_SEARCH_OUTPUT_FIELDS.includes(it.name) && !STRUCTURE_FIELDS.includes(it.name));
       const defaultFields = outputFields.map((it) => it.name);
       outputFields.forEach((it) => df.columns
         .add(DG.Column.fromType((it.type as string === 'uuid' ? 'string' : it.type) as any, it.name)));
-      //adding structure fields to return
-      STRUCTURE_FIELDS.forEach((it) => df.columns.addNewString(it));
       const outputFieldsInput = ui.input.columns('Output', {
         table: df,
         value: df.columns.toList(),
@@ -384,8 +382,10 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope, in
       filtersDiv.append(ui.div(runSearchButton, { style: { paddingLeft: '4px', paddingTop: '10px' } }));
       createFiltersIcon(tv, filtersDiv);
       if (initialQuery) {
-        loadSearchQuery(initialQuery, queryBuilder, outputFieldsInput, aggregationsContainer, menuFieldsForAggr,
-          aggregations, validationErrorSubj);
+        if (initialQuery.condition.conditions.length) {
+          loadSearchQuery(initialQuery, queryBuilder, outputFieldsInput, aggregationsContainer, menuFieldsForAggr,
+            aggregations, validationErrorSubj);
+        }
         await runSearch(tv, initialQuery, entityLevel, entityType, endpoint, !!changePath);
       }
     } catch (e: any) {
@@ -423,6 +423,28 @@ export function molTrackSerachToString(search: MolTrackSearch, queryBuilder?: Qu
   }
 
   return parts.length > 0 ? parts.join(' | ') : 'Empty search';
+}
+
+export async function createEmptyMolTrackQuery(scope: Scope): Promise<MolTrackSearch> {
+  await loadSearchFields();
+  let outputFields: { name: string, type: string }[] = [];
+  if (!molTrackSearchFieldsArr) {
+    grok.shell.warning(`Properties haven't been loaded for ${scope}`);
+    outputFields = [{ name: CORPORATE_COMPOUND_ID_COL_NAME, type: DG.TYPE.STRING }];
+  } else {
+    outputFields = (molTrackSearchFieldsArr
+      .filter((it) => it.options[MOLTRACK_ENTITY_LEVEL] === scope &&
+        !EXCLUDE_SEARCH_OUTPUT_FIELDS.includes(it.name))).map((it) => {return { name: it.name, type: it.type };});
+  }
+
+  const search: MolTrackSearch = {
+    condition: {
+      logicalOperator: Operators.Logical.and,
+      conditions: [],
+    },
+    outputCols: outputFields,
+  };
+  return search;
 }
 
 export async function runSearch(tv: DG.TableView, search: MolTrackSearch, entityLevel: Scope,
@@ -813,16 +835,9 @@ export async function createSearchView(viewName: string, scope: Scope, initialQu
     initPath.push(JSON.stringify(initialQuery));
   openedSearchView.path = createPathFromArr(openedSearchView, initPath);
   //if there is no initial search query - retrieve all data to initially show in the view
-  if (!initialQuery) {
-    ui.setUpdateIndicator(openedSearchView.root, true, `Loading ${viewName.toLowerCase()}...`);
-    try {
-      const data: DG.DataFrame = await grok.functions.call('MolTrack:retrieveEntity', { scope });
-      updateView(tv, data, scope, viewName);
-    } finally {
-      ui.setUpdateIndicator(openedSearchView.root, false);
-    }
-  }
-  createSearchPanel(tv, scope as Scope, initialQuery, !isSavedSearch);
+  if (!initialQuery)
+    initialQuery = await createEmptyMolTrackQuery(scope);
+  createSearchPanel(tv, scope as Scope, initialQuery, !isSavedSearch && initialQuery.condition.conditions.length > 0);
   return openedSearchView as DG.TableView;
 }
 
