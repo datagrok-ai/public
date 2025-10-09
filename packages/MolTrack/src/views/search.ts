@@ -201,6 +201,7 @@ export function loadSearchQuery(savedSearch: MolTrackSearch, queryBuilder: Query
   aggregations: MolTrackSearchAggregation[],
   validationErrorSubj: Subject<string>) {
   queryBuilder.loadCondition(savedSearch.condition);
+  savedSearch.condition = queryBuilder.condition;
   outputsFieldsInput.value = savedSearch.outputCols
     .map((it) => DG.Column.fromType((it.type as string === 'uuid' ? 'string' : it.type) as any, it.name));
   ui.empty(aggrContainer);
