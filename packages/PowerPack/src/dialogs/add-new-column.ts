@@ -900,8 +900,9 @@ export class AddNewColumnDialog {
       } else if (property.propertyType === DG.TYPE.LIST) {
         if (!Array.isArray(funcCall.inputs[property.name]))
           return `Function ${funcCall.func.name} '${property.name}' param should be array type`;
+        //check type of array if array is not empty
         if (property.propertySubType && property.propertySubType !== actualInputType &&
-          !mappingMatch(property.propertySubType, actualInputType))
+          !mappingMatch(property.propertySubType, actualInputType) && funcCall.inputs[property.name].length > 0)
           // eslint-disable-next-line max-len
           return `Function ${funcCall.func.name} '${property.name}' param should be array of ${property.propertySubType}`;
         //check for typed lists

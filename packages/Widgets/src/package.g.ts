@@ -27,6 +27,7 @@ export function timeWidget() : any {
 //name: TableSummary
 //tags: viewer
 //output: viewer result
+//meta.showInGallery: false
 export function tableSummary() {
   return PackageFunctions.tableSummary();
 }

@@ -134,6 +134,11 @@ export class DemoAppWidget extends DG.Widget {
             searchInput.fireChanged();
           };
 
+          const updateTreeScroll = () => tree.root.scrollHeight - tree.root.clientHeight > 2 ?
+            tree.root.classList.remove('demo-app-widget-overflow-hidden') : tree.root.classList.add('demo-app-widget-overflow-hidden');
+          updateTreeScroll();
+          tree.onChildNodeExpandedChanged.subscribe((node) => updateTreeScroll());
+
           this.root.append(ui.divV([searchInput.root, tree.root]));
     }
 

@@ -113,6 +113,7 @@ export function packageUsageWidget(pckg: any) : any {
 
 //tags: viewer
 //output: viewer result
+//meta.showInGallery: false
 export function testDashboardsViewer() : any {
   return PackageFunctions.testDashboardsViewer();
 }

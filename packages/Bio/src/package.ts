@@ -30,7 +30,7 @@ import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/sr
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {RDModule as _RDMoule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
-import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
+import {ISeqHandler, SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
 
 import {getMacromoleculeColumns} from './utils/ui-utils';
@@ -77,6 +77,7 @@ import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomi
 import {molecular3DStructureWidget, toAtomicLevelWidget} from './widgets/to-atomic-level-widget';
 import {handleSequenceHeaderRendering} from './widgets/sequence-scrolling-widget';
 import {PolymerType} from '@datagrok-libraries/js-draw-lite/src/types/org';
+import {BilnNotationProvider} from './utils/biln';
 export const _package = new BioPackage(/*{debug: true}/**/);
 export * from './package.g';
 
@@ -295,6 +296,49 @@ export class PackageFunctions {
   })
   static separatorSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
     return new MacromoleculeSequenceCellRenderer();
+  }
+
+  @grok.decorators.func({
+    name: 'bilnSequenceCellRenderer',
+    tags: ['cellRenderer'],
+    meta: {
+      cellType: 'sequence',
+      columnTags: 'quality=Macromolecule, units=biln'
+    },
+    outputs: [{type: 'grid_cell_renderer', name: 'result'}]
+  })
+  static bilnSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
+    return new MacromoleculeSequenceCellRenderer();
+  }
+
+  @grok.decorators.func({
+    name: 'refineNotationProviderForBiln',
+    tags: ['notationRefiner'],
+    outputs: [{type: 'bool', name: 'result'}]
+  })
+  static refineNotationProviderForBiln(
+    @grok.decorators.param({type: 'column'}) col: DG.Column<string>,
+    @grok.decorators.param({type: 'object'}) stats: {freq: { [key: string]: number; }, sameLength: boolean},
+    @grok.decorators.param({type: 'string', options: {nullable: true, optional: true}}) separator: string | null
+  ): boolean {
+    if (separator !== '-')
+      return false;// biln uses '-' as a separator
+    const reCons = Object.keys(stats.freq).some((om) => om.match(/^.+\(\d{1,2},\d{1,2}\)$/));
+    if (!reCons) {
+      // biln might also encode monomers with hyphens in names encoded by []
+      // here we know that there are no monomers with connections like (1,2) in names, so we can check for []
+      const reBrackets = Object.keys(stats.freq).some((om) => om.includes('[') || om.includes(']'));
+      if (!reBrackets)
+        return false;
+    }
+    // refine the notation provider
+    col.setTag('aligned', 'SEQ');
+    col.setTag('alphabet', 'UN');
+    col.setTag('.alphabetIsMultichar', 'true');
+    col.meta.units = NOTATION.BILN;
+    col.temp[SeqTemps.notationProvider] = new BilnNotationProvider(separator, _package.seqHelper, col);
+
+    return true;
   }
 
   // // -- Property panels --
@@ -578,7 +622,7 @@ export class PackageFunctions {
     'top-menu': 'Bio | Transform | To Atomic Level...',
   })
   static async toAtomicLevel(
-    @grok.decorators.param({options: {caption: 'Table', description: 'Input data table'}})table: DG.DataFrame,
+    @grok.decorators.param({options: {description: 'Input data table'}})table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Macromolecule', caption: 'Sequence'}})seqCol: DG.Column,
     @grok.decorators.param({options: {initialValue: 'false', caption: 'Non-linear', description: 'Slower mode for cycling/branching HELM structures'}}) nonlinear: boolean,
     @grok.decorators.param({options: {initialValue: 'false', caption: 'Highlight monomers', description: 'Highlight monomers\' substructures of the molecule'}}) highlight: boolean = false

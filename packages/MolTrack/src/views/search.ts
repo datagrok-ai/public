@@ -40,13 +40,15 @@ import {
   CORPORATE_COMPOUND_ID_COL_NAME,
   SEARCH_NODE,
   SAVED_SEARCHES_NODE,
+  excludedScopes,
 } from '../utils/constants';
 import { funcs } from '../package-api';
 import dayjs, { Dayjs } from 'dayjs';
 import { _package } from '../package';
 import { Subject } from 'rxjs';
 import { awaitCheck } from '@datagrok-libraries/utils/src/test';
-import { createPathFromArr } from '../utils/view-utils';
+import { createPathFromArr, getAppHeader, getStatisticsWidget } from '../utils/view-utils';
+import { applyMolTrackLayout, saveMolTrackLayout } from '../utils/layout';
 
 export type MolTrackSearchFields = {
   direct?: DG.Property[],
@@ -59,7 +61,7 @@ const FIRST_COL_NAMES = [
 export const SAVED_SEARCH_STORAGE = 'MolTrackSavedSearch';
 
 export let molTrackSearchFieldsArr: DG.Property[] | null = null;
-let openedSearchView: DG.TableView | null = null;
+export let openedSearchView: DG.ViewBase | null = null;
 
 export function getSavedSearches(entityLevel: Scope): {[key: string]: string} {
   const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, entityLevel) || '{}';
@@ -88,6 +90,15 @@ async function saveSearch(entityLevel: Scope, savedSearch: MolTrackSearch) {
         return;
       }
 
+      //add corresponding saved search to browse view tree
+      const savedSearchesNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps')
+        .getOrCreateGroup('Chem').getOrCreateGroup('MolTrack').getOrCreateGroup(SAVED_SEARCHES_NODE)
+        .getOrCreateGroup(entityLevel.charAt(0).toUpperCase() + entityLevel.slice(1));
+      const newSearchNode = savedSearchesNode.item(searchName);
+      newSearchNode.onSelected.subscribe(async () => {
+        createSearchView(searchName, entityLevel, JSON.parse(savedSearches[searchName]), true);
+      });
+
       // Save the current query condition
       savedSearches[searchName] = JSON.stringify(savedSearch);
       grok.userSettings.add(SAVED_SEARCH_STORAGE, entityLevel, JSON.stringify(savedSearches));
@@ -108,6 +119,7 @@ function openSavedSearch(entityLevel: Scope, queryBuilder: QueryBuilder, outputs
   }
 
   const searchNamesDf = DG.DataFrame.fromColumns([DG.Column.fromList('string', 'name', searchNames)]);
+  searchNamesDf.columns.addNewString('delete');
 
   // Create typeahead input with saved search names
   const searchInput = ui.typeAhead('Search name', {
@@ -125,8 +137,46 @@ function openSavedSearch(entityLevel: Scope, queryBuilder: QueryBuilder, outputs
     searchNamesDf.rows.filter((row) => (row.name as string).includes(searchInput.value));
   });
 
+  const savedSearchesGrid = searchNamesDf.plot.grid({allowColumnMenu: false, allowSorting: false});
+  savedSearchesGrid.onCellDoubleClick.subscribe((gc: DG.GridCell) => {
+    if (gc.isTableCell && gc.gridColumn.name === 'name') {
+      const searchName = gc.grid.dataFrame.col('name')?.get(gc.gridRow);
+      const search: MolTrackSearch = JSON.parse(savedSearches[searchName]);
+      loadSearchQuery(search, queryBuilder, outputsFieldsInput, aggrContainer, menuFieldsForAggr,
+        aggregations, validationErrorSubj);
+      dialog.close();
+    }
+  });
+  const deleteSearchCol = savedSearchesGrid.columns.byName('delete');
+
+  if (deleteSearchCol) {
+    deleteSearchCol.cellType = 'html';
+
+    const savedSearchesNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps')
+      .getOrCreateGroup('Chem').getOrCreateGroup('MolTrack').getOrCreateGroup(SAVED_SEARCHES_NODE)
+      .getOrCreateGroup(entityLevel.charAt(0).toUpperCase() + entityLevel.slice(1));
+    savedSearchesGrid.onCellPrepare(function(gc) {
+      if (gc.isTableCell && gc.gridColumn.name === 'delete') {
+        const removeIcon = ui.div(ui.icons.delete(() => {
+          const searchName = gc.grid.dataFrame.col('name')?.get(gc.gridRow);
+          //remove row from table
+          searchNamesDf.rows.removeAt(gc.gridRow, 1);
+          //remove search from tree
+          const items = savedSearchesNode.items.filter((it) => it.text === searchName);
+          if (items.length)
+            items[0].remove();
+          //save changes to storage
+          if (savedSearches[searchName])
+            delete savedSearches[searchName];
+          grok.userSettings.add(SAVED_SEARCH_STORAGE, entityLevel, JSON.stringify(savedSearches));
+        }), 'moltrack-saved-search-delete');
+        gc.style.element = removeIcon;
+      }
+    });
+  }
+
   const dialog = ui.dialog('Open saved search')
-    .add(ui.divV([searchInput, searchNamesDf.plot.grid().root]))
+    .add(ui.divV([searchInput, savedSearchesGrid.root]))
     .onOK(async () => {
       if (searchNamesDf.currentRowIdx === -1) {
         grok.shell.error('Select saved search in the grid');
@@ -151,6 +201,7 @@ export function loadSearchQuery(savedSearch: MolTrackSearch, queryBuilder: Query
   aggregations: MolTrackSearchAggregation[],
   validationErrorSubj: Subject<string>) {
   queryBuilder.loadCondition(savedSearch.condition);
+  savedSearch.condition = queryBuilder.condition;
   outputsFieldsInput.value = savedSearch.outputCols
     .map((it) => DG.Column.fromType((it.type as string === 'uuid' ? 'string' : it.type) as any, it.name));
   ui.empty(aggrContainer);
@@ -219,7 +270,7 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope, in
         return;
       }
       const filterFields: DG.Property[] = molTrackSearchFieldsArr
-        .filter((it) => it.options[MOLTRACK_ENTITY_LEVEL] === entityLevel);
+        .filter((it) => it.options[MOLTRACK_ENTITY_LEVEL] === entityLevel && !EXCLUDE_SEARCH_FIELDS.includes(it.name));
       if (!filterFields.length) {
         grok.shell.warning(`No search fields found for ${entityLevel}`);
         return;
@@ -232,13 +283,12 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope, in
         runSearchButton.disabled = error;
       });
       const df = DG.DataFrame.create();
-      const outputFields = filterFields
-        .filter((it) => !EXCLUDE_SEARCH_OUTPUT_FIELDS.includes(it.name) && it.name !== STRUCTURE_SEARCH_FIELD);
-      const defaultFields = STRUCTURE_FIELDS.concat(filterFields.map((it) => it.name));
+      const outputFields = molTrackSearchFieldsArr
+        .filter((it) => it.options[MOLTRACK_ENTITY_LEVEL] === entityLevel &&
+          !EXCLUDE_SEARCH_OUTPUT_FIELDS.includes(it.name) && !STRUCTURE_FIELDS.includes(it.name));
+      const defaultFields = outputFields.map((it) => it.name);
       outputFields.forEach((it) => df.columns
         .add(DG.Column.fromType((it.type as string === 'uuid' ? 'string' : it.type) as any, it.name)));
-      //adding structure fields to return
-      STRUCTURE_FIELDS.forEach((it) => df.columns.addNewString(it));
       const outputFieldsInput = ui.input.columns('Output', {
         table: df,
         value: df.columns.toList(),
@@ -333,8 +383,10 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope, in
       filtersDiv.append(ui.div(runSearchButton, { style: { paddingLeft: '4px', paddingTop: '10px' } }));
       createFiltersIcon(tv, filtersDiv);
       if (initialQuery) {
-        loadSearchQuery(initialQuery, queryBuilder, outputFieldsInput, aggregationsContainer, menuFieldsForAggr,
-          aggregations, validationErrorSubj);
+        if (initialQuery.condition.conditions.length) {
+          loadSearchQuery(initialQuery, queryBuilder, outputFieldsInput, aggregationsContainer, menuFieldsForAggr,
+            aggregations, validationErrorSubj);
+        }
         await runSearch(tv, initialQuery, entityLevel, entityType, endpoint, !!changePath);
       }
     } catch (e: any) {
@@ -374,12 +426,34 @@ export function molTrackSerachToString(search: MolTrackSearch, queryBuilder?: Qu
   return parts.length > 0 ? parts.join(' | ') : 'Empty search';
 }
 
+export async function createEmptyMolTrackQuery(scope: Scope): Promise<MolTrackSearch> {
+  await loadSearchFields();
+  let outputFields: { name: string, type: string }[] = [];
+  if (!molTrackSearchFieldsArr) {
+    grok.shell.warning(`Properties haven't been loaded for ${scope}`);
+    outputFields = [{ name: CORPORATE_COMPOUND_ID_COL_NAME, type: DG.TYPE.STRING }];
+  } else {
+    outputFields = (molTrackSearchFieldsArr
+      .filter((it) => it.options[MOLTRACK_ENTITY_LEVEL] === scope &&
+        !EXCLUDE_SEARCH_OUTPUT_FIELDS.includes(it.name))).map((it) => {return { name: it.name, type: it.type };});
+  }
+
+  const search: MolTrackSearch = {
+    condition: {
+      logicalOperator: Operators.Logical.and,
+      conditions: [],
+    },
+    outputCols: outputFields,
+  };
+  return search;
+}
+
 export async function runSearch(tv: DG.TableView, search: MolTrackSearch, entityLevel: Scope,
   entityType: MolTrackEntityType, endpoint: string, changePath: boolean) {
   try {
     ui.setUpdateIndicator(tv.grid.root, true, 'Searching...');
     if (changePath)
-      tv.path = createPathFromArr([SEARCH_NODE, entityLevel, JSON.stringify(search)]);
+      tv.path = createPathFromArr(tv, [SEARCH_NODE, entityLevel, JSON.stringify(search)]);
     if (!search.outputCols.length)
       throw new Error(`At least one input field should be selected`);
     const outputFields = search.outputCols!
@@ -404,13 +478,10 @@ export async function runSearch(tv: DG.TableView, search: MolTrackSearch, entity
           colName.replace(`${entityLevel.toLowerCase()}.`, '').replace(`details.`, '');
         resultDf.col(colName)!.setTag('friendlyName', friendlyName);
       });
-      await grok.data.detectSemanticTypes(resultDf);
-      reorderSearchResColummns(resultDf);
       //save history in case of successful search
       saveSearchHistory(`${_package.name}|${entityLevel}`, JSON.stringify(search));
     }
-    tv.dataFrame = resultDf ?? DG.DataFrame.create();
-    tv.dataFrame.name = tv.name;
+    updateView(tv, resultDf ?? DG.DataFrame.create(), entityLevel, tv.name);
   } catch (e: any) {
     grok.shell.error(e?.message ?? e);
     tv.dataFrame = DG.DataFrame.create();
@@ -462,8 +533,6 @@ export async function createSearchFileds(): Promise<DG.Property[]> {
 
   const addProperties = (props: MolTrackProperty[], isStatic: boolean) => {
     for (const prop of props) {
-      if (EXCLUDE_SEARCH_FIELDS.includes(prop.name))
-        continue;
       const isStructureField = STRUCTURE_FIELDS.includes(prop.name);
       const structureAlreadyExists = propArr.filter((it) => it.options[MOLTRACK_ENTITY_TYPE] === prop.entity_type &&
             it.name === STRUCTURE_SEARCH_FIELD).length > 0;
@@ -547,10 +616,12 @@ export function convertQueryBuilderConditionToMolTrackQuery(
   const query: MolTrackSearchQuery = {
     level: level,
     output: output,
-    filter: cond.conditions.length === 1 && isSimpleCondition(cond.conditions[0]) ?
-      convertSimpleCondition(cond.conditions[0], level, type):
-      convertComplexCondition(cond, level, type),
   };
+  if (cond.conditions.length) {
+    query.filter = cond.conditions.length === 1 && isSimpleCondition(cond.conditions[0]) ?
+      convertSimpleCondition(cond.conditions[0], level, type) :
+      convertComplexCondition(cond, level, type);
+  }
   if (aggregations.length)
     query.aggregations = aggregations;
 
@@ -733,7 +804,7 @@ function updateAggregationOptions(aggregationInputDiv: any, fieldType: any, aggr
 }
 
 
-export function createSearchNode(appNode:DG.TreeViewGroup, scope: string, initialQuery?: MolTrackSearch) {
+export function createSearchNode(appNode:DG.TreeViewGroup, scope: Scope, initialQuery?: MolTrackSearch) {
   const formattedScope = scope
     .toLowerCase()
     .replace(/_/g, ' ')
@@ -744,15 +815,16 @@ export function createSearchNode(appNode:DG.TreeViewGroup, scope: string, initia
   });
 }
 
-export async function createSearchView(viewName: string, scope: string, initialQuery?: MolTrackSearch,
+export async function createSearchView(viewName: string, scope: Scope, initialQuery?: MolTrackSearch,
   isSavedSearch?: boolean): Promise<DG.TableView> {
-  if (openedSearchView?.name === viewName && openedSearchView.dockNode.parent) {
+  if (openedSearchView?.name === viewName) {
     grok.shell.v = openedSearchView;
     return grok.shell.tv;
   }
   const df = DG.DataFrame.create();
   openedSearchView?.close();
-  openedSearchView = grok.shell.addTablePreview(df);
+  const tv = grok.shell.addTablePreview(df);
+  openedSearchView = tv;
   openedSearchView.name = viewName;
   const initPath = [
     isSavedSearch ? SAVED_SEARCHES_NODE : SEARCH_NODE,
@@ -762,21 +834,38 @@ export async function createSearchView(viewName: string, scope: string, initialQ
     initPath.push(viewName);
   else if (initialQuery)
     initPath.push(JSON.stringify(initialQuery));
-  openedSearchView.path = createPathFromArr(initPath);
+  openedSearchView.path = createPathFromArr(openedSearchView, initPath);
   //if there is no initial search query - retrieve all data to initially show in the view
-  if (!initialQuery) {
-    ui.setUpdateIndicator(openedSearchView.root, true, `Loading ${viewName.toLowerCase()}...`);
-    try {
-      const data: DG.DataFrame = await grok.functions.call('MolTrack:retrieveEntity', { scope });
-      openedSearchView.dataFrame = data;
-      openedSearchView.dataFrame.name = viewName;
-    } finally {
-      ui.setUpdateIndicator(openedSearchView.root, false);
-    }
-  }
-  createSearchPanel(openedSearchView!, scope as Scope, initialQuery, !isSavedSearch);
-  return openedSearchView;
+  if (!initialQuery)
+    initialQuery = await createEmptyMolTrackQuery(scope);
+  createSearchPanel(tv, scope as Scope, initialQuery, !isSavedSearch && initialQuery.condition.conditions.length > 0);
+  return openedSearchView as DG.TableView;
 }
+
+export async function updateView(tv: DG.TableView, df: DG.DataFrame, scope: Scope, viewName?: string) {
+  await grok.data.detectSemanticTypes(df);
+  reorderSearchResColummns(df);
+  tv.dataFrame = df;
+  if (viewName)
+    tv.dataFrame.name = viewName;
+
+  applyMolTrackLayout(tv.grid, scope);
+  const columns = tv.dataFrame.columns.names();
+  if (columns.length)
+    tv.dataFrame.currentCell = tv.dataFrame.cell(-1, tv.dataFrame.col(columns[0])!.name);
+
+  /* subscribe afetr 2 seconds for onPropertyValueChanged and onMetadataChanged
+  triggered by applyMolTrackLayout have time to finish */
+  setTimeout(() => {
+    DG.debounce(tv.grid.onPropertyValueChanged, 2000).subscribe(() => {
+      saveMolTrackLayout(tv.grid, scope);
+    });
+    DG.debounce(tv.dataFrame.onMetadataChanged, 2000).subscribe(() => {
+      saveMolTrackLayout(tv.grid, scope);
+    });
+  }, 2000);
+}
+
 
 export async function reorderSearchResColummns(df: DG.DataFrame) {
   const colNames = df.columns.names();
@@ -805,22 +894,39 @@ export async function openMolTrackSearchNode(nodesToExpand: string[]) {
   }
 }
 
-export async function handleSearchURL(url: string): Promise<DG.TableView> {
+export async function handleSearchURL(url: string): Promise<DG.ViewBase> {
   if (url.startsWith('/'))
     url = url.slice(1);
   const componentsArr = url.split('/');
   if (componentsArr.length && (componentsArr[0] === SEARCH_NODE || componentsArr[0] === SAVED_SEARCHES_NODE)) {
-    const tv = grok.shell.addTablePreview(DG.DataFrame.create());
-    ui.setUpdateIndicator(tv.root, true, 'Loading Revvity Signals...');
     let idx = 0;
     const nodesToExpand = [];
     nodesToExpand.push(componentsArr[0]);
     idx++;
+    if (componentsArr.length === idx) {
+      openMolTrackSearchNode(nodesToExpand);
+      if (nodesToExpand[0].toLowerCase() === SEARCH_NODE.toLowerCase())
+        return await createSearcExpandablehNode([SEARCH_NODE], getStatisticsWidget, [createSearchView, true]);
+      if (nodesToExpand[0].toLowerCase() === SAVED_SEARCHES_NODE.toLowerCase())
+        return await createSearcExpandablehNode([SAVED_SEARCHES_NODE], createSavedSearchesSatistics, [undefined]);
+    }
     if (componentsArr.length > idx) {
       const scope = componentsArr[1];
-      if (componentsArr[0] === SAVED_SEARCHES_NODE) {
-        nodesToExpand.push(componentsArr[1]);
+      if (componentsArr[0].toLowerCase() === SAVED_SEARCHES_NODE.toLowerCase()) {
+        const scope = componentsArr[1];
+        nodesToExpand.push(scope);
         idx++;
+        if (componentsArr.length === idx) {
+          openMolTrackSearchNode(nodesToExpand);
+          if ((Object.values(Scope) as string[]).includes(scope.toLowerCase())) {
+            return await createSearcExpandablehNode([SAVED_SEARCHES_NODE, scope],
+              createSavedSearchesSatistics, [scope]);
+          } else {
+            grok.shell.error(`Entity ${scope} doesn't exist in Moltrack`);
+            return await createSearcExpandablehNode([SAVED_SEARCHES_NODE],
+              createSavedSearchesSatistics, [undefined]);
+          }
+        }
       } else {
         let initialSearch = undefined;
         //check for initial query in case of search url
@@ -828,7 +934,7 @@ export async function handleSearchURL(url: string): Promise<DG.TableView> {
           initialSearch = JSON.parse(componentsArr[2]);
 
         openMolTrackSearchNode(nodesToExpand);
-        return await createSearchView(scope, scope.toLowerCase(), initialSearch, false);
+        return await createSearchView(scope, scope.toLowerCase() as Scope, initialSearch, false);
       }
       //in case of saved search
       if (componentsArr.length > idx) {
@@ -836,17 +942,113 @@ export async function handleSearchURL(url: string): Promise<DG.TableView> {
         const savedSearches = getSavedSearches(scope as Scope);
         if (savedSearches[savedSearchName]) {
           openMolTrackSearchNode(nodesToExpand);
-          return await createSearchView(savedSearchName, scope.toLowerCase(),
+          return await createSearchView(savedSearchName, scope.toLowerCase() as Scope,
             JSON.parse(savedSearches[savedSearchName]), true);
         } else {
           grok.shell.error(`Search ${savedSearchName} not found for ${scope}`);
-          return await createSearchView(scope, scope.toLowerCase(), undefined, false);
+          createSearchView(scope, scope.toLowerCase() as Scope, undefined, false);
+          return await createSearchView(scope, scope.toLowerCase() as Scope, undefined, false);
         }
       }
     }
   }
   throw Error(`incorrect search path`);
 }
+
+export async function createSearcExpandablehNode(viewpath: string[],
+  getElement: (...args: any[]) => Promise<HTMLElement>,
+  args: any[]): Promise<DG.ViewBase> {
+  openedSearchView?.close();
+  const header = getAppHeader();
+  const contentDiv = ui.div('', 'moltrack-search-stats-div');
+  openedSearchView = grok.shell.addPreview(DG.View.fromRoot(ui.divV([header, contentDiv])));
+  openedSearchView.name = viewpath[viewpath.length - 1];
+  openedSearchView.path = createPathFromArr(openedSearchView, viewpath);
+  ui.setUpdateIndicator(contentDiv, true, `Loading ${viewpath[viewpath.length - 1]}...`);
+
+  getElement(...args)
+    .then((res) => contentDiv.append(res))
+    .catch((e) => grok.shell.error(e))
+    .finally(() => ui.setUpdateIndicator(contentDiv, false));
+  return openedSearchView;
+}
+
+export async function createSavedSearchesSatistics(scope?: Scope): Promise<HTMLElement> {
+  const objForTable: any[] = [];
+  const scopes = scope ? [scope] : Object.values(Scope).filter((scope) => !excludedScopes.includes(scope));
+  const collectSearchesForScope = (scope: Scope) => {
+    const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, scope) || '{}';
+    const savedSearches: { [key: string]: string } = JSON.parse(savedSearchesStr);
+    const searchNames = Object.keys(savedSearches);
+    for (const search of searchNames)
+      objForTable.push({ scope: scope, search: search });
+  };
+
+  scopes.forEach((it) => collectSearchesForScope(it));
+
+  const statsElement = await createSavedSearchStats(objForTable, scope);
+  return statsElement;
+}
+
+async function createSavedSearchStats(savedSearchesForTable: any[], scope?: string): Promise<HTMLElement> {
+  const outputArr: string[] = ['Scope', 'Search'];
+
+
+  let scopesObjForTable: any[] = [];
+  if (!savedSearchesForTable.length) {
+    scopesObjForTable = Object.values(Scope)
+      .filter((scope) => !excludedScopes.includes(scope)).map((it) => {return {scope: it};});
+    if (scope)
+      scopesObjForTable = scopesObjForTable.filter((it) => it.scope === scope);
+  }
+
+  let header = SAVED_SEARCHES_NODE;
+
+  if (scope) {
+    outputArr.splice(0, 1);
+    header += ` > ${scope.charAt(0).toUpperCase() + scope.slice(1)}`;
+  }
+
+  const createStatsTable = () => {
+    const table = ui.table(!savedSearchesForTable.length ? scopesObjForTable : savedSearchesForTable, (search) => {
+      const arr = [
+        search.scope ? search.scope.charAt(0).toUpperCase() + search.scope.slice(1) : '',
+        ui.link(savedSearchesForTable.length ? search.search : 'New search', () => {
+          const node = grok.shell.browsePanel.mainTree
+            .getOrCreateGroup('Apps').getOrCreateGroup('Chem').getOrCreateGroup('MolTrack');
+          node.expanded = true;
+          if (!savedSearchesForTable.length)
+            createSearchView(search.scope.charAt(0).toUpperCase() + search.scope.slice(1), search.scope);
+          else
+            createSearchView(search.search, search.scope, undefined, true);
+        }),
+      ];
+
+      if (scope)
+        arr.splice(0, 1);
+
+      return arr;
+    },
+    outputArr);
+    return table;
+  };
+
+  const statsDiv = ui.div([ui.h1(header, {style: {paddingLeft: '10px'}})]);
+
+  if (!savedSearchesForTable.length) {
+    let infoStr = `No searches have been saved `;
+    if (scope)
+      infoStr += `for ${scope}`;
+    statsDiv.append(ui.info(infoStr));
+  }
+
+  const table = createStatsTable();
+  if (outputArr.length === 1)
+    table.classList.add('moltrack-statistics-hide-header');
+  statsDiv.append(table);
+  return statsDiv;
+}
+
 
 //register operators for molecule semType, applicable for MolTrack
 ConditionRegistry.getInstance()

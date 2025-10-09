@@ -463,6 +463,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     tags: ['viewer'],
     name: 'Sentence Similarity Search',
+    meta: {showInGallery: 'false'},
     outputs: [{type: 'viewer', name: 'result'}],
   })
   static sentenceSearchViewer() : DG.Viewer {

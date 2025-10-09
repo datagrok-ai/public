@@ -118,8 +118,8 @@ export class PackageFunctions {
   static async diffDockModel(
     @grok.decorators.param({options: {caption: 'Table'}}) df: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Molecule'}}) ligands: DG.Column,
-    @grok.decorators.param({options: {caption: 'Target', choices: 'Bionemo: getTargetFiles'}}) target: string,
-    @grok.decorators.param({options: {caption: 'Poses', initialValue: '5'}}) poses: number
+    @grok.decorators.param({options: {choices: 'Bionemo: getTargetFiles'}}) target: string,
+    @grok.decorators.param({options: {initialValue: '5'}}) poses: number
   ): Promise<void> {
     const receptorFile = (await grok.dapi.files.list(`${CONSTANTS.TARGET_PATH}/${target}`)).find((file) => file.extension === 'pdbqt')!;
     const receptor = await grok.dapi.files.readAsText(receptorFile);

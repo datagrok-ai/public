@@ -4,9 +4,9 @@
 #language: python
 #tags: demo, chem, rdkit
 #top-menu: Chem | Compute | Generate Conformers...
-#input: string molecule = "CCCC" {semType: Molecule; caption: Molecule}  # Butane - shows anti/gauche conformations
+#input: string molecule = "CCCC" {semType: Molecule}  # Butane - shows anti/gauche conformations
 #input: int num_conformers = 50 {caption: Num conformers} [Number of conformers to generate]
-#input: bool optimize = true {caption: Optimize} [Optimize with MMFF94 force field]
+#input: bool optimize = true [Optimize with MMFF94 force field]
 #input: double rms_threshold = 0.1 {caption: RMS threshold} [RMS threshold for conformer pruning - LOWER for butane]
 #input: int max_attempts = 5000 {caption: Max attempts} [Maximum generation attempts]
 #input: int random_seed = 42 {caption: Random seed} [Random seed for reproducibility]

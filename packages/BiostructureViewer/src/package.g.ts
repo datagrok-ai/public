@@ -209,6 +209,7 @@ export function molstarViewer() {
 //tags: panel, viewer
 //output: viewer result
 //meta.keywords: PDB, track
+//meta.showInGallery: false
 export function saguaroViewer() {
   return PackageFunctions.saguaroViewer();
 }
@@ -358,7 +359,7 @@ export function structure3D(molecule: DG.SemanticValue) : any {
 
 //name: Fetch PDB Sequences
 //description: For a user-selected table and PDB ID column, fetches protein sequences and adds them as new columns.
-//input: dataframe table { caption: Table }
+//input: dataframe table 
 //input: column pdbColumn { semType: PDB_ID }
 //top-menu: Bio | Transform | Fetch PDB Sequences...
 export async function fetchSequencesFromPdb(table: DG.DataFrame, pdbColumn: DG.Column) : Promise<void> {

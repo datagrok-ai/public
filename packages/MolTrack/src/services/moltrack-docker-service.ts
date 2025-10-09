@@ -3,6 +3,13 @@ import * as DG from 'datagrok-api/dg';
 import { ErrorHandling, ResultOutput, scopeToUrl } from '../utils/constants';
 import { MolTrackProperty, MolTrackSearchQuery, MolTrackSearchResponse} from '../utils/types';
 
+async function handleError(response: Response) {
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`MolTrack API error: ${response.status} ${errorText}`);
+  }
+}
+
 export class MolTrackDockerService {
   private static _container: DG.DockerContainer;
 
@@ -25,28 +32,31 @@ export class MolTrackDockerService {
       headers: { 'Content-Type': 'application/json' },
       body: jsonPayload,
     });
+    await handleError(response);
     return response.text();
   }
 
   static async checkHealth(): Promise<string> {
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id, '/v1/health');
+    await handleError(response);
     return response.text();
   }
 
   static async fetchCompoundProperties(): Promise<string> {
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id, '/v1/schema/compounds');
+    await handleError(response);
     return response.text();
   }
 
   static async fetchBatchProperties(): Promise<string> {
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id, '/v1/schema/batches');
+    await handleError(response);
     return response.text();
   }
 
   static async fetchSchema(): Promise<MolTrackProperty[]> {
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id, '/v1/schema/');
-    if (!response.ok)
-      throw new Error(`HTTP error!: ${response.status}`, { cause: response.status });
+    await handleError(response);
     const res = await response.json();
     return res;
   }
@@ -54,6 +64,7 @@ export class MolTrackDockerService {
 
   static async fetchDirectSchema(): Promise<Partial<MolTrackProperty>[]> {
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id, '/v1/schema-direct/');
+    await handleError(response);
     const data = await response.json();
     return data.flat();
   }
@@ -65,8 +76,7 @@ export class MolTrackDockerService {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(query),
       });
-    if (!response.ok)
-      throw new Error(`HTTP error!: ${response.status}`, { cause: response.status });
+    await handleError(response);
     return await response.json();
   }
 
@@ -84,8 +94,7 @@ export class MolTrackDockerService {
       `/v1/${scope}/`,
       { method: 'GET'},
     );
-    if (!response.ok)
-      throw new Error(`HTTP error!: ${response.status}`, { cause: response.status });
+    await handleError(response);
     return response.json();
   }
 
@@ -104,6 +113,8 @@ export class MolTrackDockerService {
       `/v1/${endpoint}?${params.toString()}`,
       { method: 'GET' },
     );
+
+    await handleError(response);
 
     return response.json();
   }
@@ -134,6 +145,8 @@ export class MolTrackDockerService {
       },
     );
 
+    await handleError(response);
+
     return response.json();
   }
 
@@ -151,10 +164,7 @@ export class MolTrackDockerService {
         { method: 'POST', body: formData },
       );
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`MolTrack API error: ${response.status} ${errorText}`);
-      }
+      await handleError(response);
 
       const json = await response.json();
       return DG.DataFrame.fromJson(JSON.stringify(json));

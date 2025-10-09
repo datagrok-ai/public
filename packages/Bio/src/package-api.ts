@@ -44,6 +44,13 @@ export namespace funcs {
     return await grok.functions.call('Bio:StandardiseMonomerLibrary', { library });
   }
 
+  /**
+  Matches molecules in a column with monomers from the selected library(s)
+  */
+  export async function matchWithMonomerLibrary(table: DG.DataFrame , molecules: DG.Column , polymerType: string ): Promise<void> {
+    return await grok.functions.call('Bio:MatchWithMonomerLibrary', { table, molecules, polymerType });
+  }
+
   export async function getBioLib(): Promise<any> {
     return await grok.functions.call('Bio:GetBioLib', {});
   }

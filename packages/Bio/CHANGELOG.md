@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.23.0 (2025-10-03)
+
+* Full BILN support: conversion to/from HELM/separator/fasta/molecular form, parsing, rendering, monomer library handling.
+
 ## 2.22.12 (2025-09-30)
 
 * Match with Monomer Library tool

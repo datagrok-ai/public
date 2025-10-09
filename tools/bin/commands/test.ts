@@ -163,8 +163,8 @@ async function runTesting(args: TestArgs): Promise<ResultObject> {
             r = await updateResultsByReproduced(r, reproducedTest, test);
         }
       }
-      r.csv = await addColumnToCsv(r.csv, 'stress_test', args['stress-test'] ?? false);
-      r.csv = await addColumnToCsv(r.csv, 'benchmark', args.benchmark ?? false);
+      r.csv = addColumnToCsv(r.csv, 'stress_test', args['stress-test'] ?? false);
+      r.csv = addColumnToCsv(r.csv, 'benchmark', args.benchmark ?? false);
       testsResults.push(r);
       organized = testsLeft;
       browserId++;

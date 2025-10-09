@@ -8,10 +8,10 @@
     "email": "mdolotova@datagrok.ai"
   },
   "dependencies": {
-    "datagrok-api": "^1.26.0",
+    "datagrok-api": "../../js-api",
     "cash-dom": "^8.1.5",
     "dayjs": "^1.11.13",
-    "@datagrok-libraries/utils": "../../libraries/utils",
+    "@datagrok-libraries/utils": "^4.6.8",
     "rxjs": "^6.5.5"
   },
   "devDependencies": {

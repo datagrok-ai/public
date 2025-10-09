@@ -1,6 +1,6 @@
 // Sensitivity Analysis definitions for Diff Studio models
 
-import {IVP2WebWorker, Pipeline} from '@datagrok/diff-grok';
+import {IVP2WebWorker, Pipeline} from 'diff-grok';
 
 /** Task for sensitivity analysis of Diff Studio model */
 export type AnalysisTask = {

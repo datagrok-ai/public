@@ -8,7 +8,7 @@ import { materialsCondition, retrieveQueriesMap } from './compounds';
 import { createLibsObjectForStatistics, getRevvityLibraries, RevvityLibrary } from './libraries';
 import { getDefaultProperties, REVVITY_FIELD_TO_PROP_TYPE_MAPPING } from './properties';
 import { getTermsForField } from './package';
-import { applyRevvityLayout, createPath, createViewFromPreDefinedQuery, openedView, openRevvityNode, updateView } from './view-utils';
+import { createPath, createViewFromPreDefinedQuery, openedView, openRevvityNode, updateView } from './view-utils';
 import { getAppHeader, getCompoundTypeByViewName, getViewNameByCompoundType } from './utils';
 import { funcs } from './package-api';
 

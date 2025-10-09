@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.44.8 (2025-10-03)
+
+- Updated the diff grok library
+
 ## 1.44.7 (2025-09-11)
 
 - Hisotry and export fixes for workflows

@@ -83,12 +83,48 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     margin-bottom: 5px;
 }
 
+.power-pack-activity-widget-content .d4-tab-host.d4-tab-vertical .d4-tab-content.power-pack-overflow-hidden {
+    overflow: hidden;
+}
+
+.power-pack-activity-widget-content .d4-tab-host.d4-tab-vertical .d4-tab-content .demo-app-widget.d4-tree-view-root {
+    max-height: 170px;
+}
+
+.power-pack-activity-widget-content-learning-widget {
+    margin-left: 8px;
+}
+
 .power-pack-activity-widget-content .d4-tab-host.d4-tab-vertical .d4-tab-content .d4-flex-col > .d4-entity-markup-row {
     margin-left: 12px;
 }
 
 .power-pack-activity-widget-content .d4-tab-host.d4-tab-vertical .d4-tab-content .ui-div {
     padding-right: 7px;
+}
+
+.power-pack-activity-widget-content .d4-tab-host.d4-tab-vertical .d4-tab-content .ui-div.tutorial-widget.tutorial-widget-demo {
+    overflow: hidden !important;
+}
+
+.power-pack-activity-widget-content .d4-tab-vertical .d4-tab-host .d4-tab-header-stripe {
+    flex-direction: row;
+}
+
+.power-pack-activity-widget-content .d4-tab-vertical .d4-tab-host .d4-tab-header {
+    cursor: pointer;
+    color: #2083d5;
+    padding: 8px 16px;
+    position: relative;
+    border-bottom: 2px solid transparent;
+    border-right: none;
+}
+
+.power-pack-activity-widget-content .d4-tab-vertical .d4-tab-host .d4-tab-header.selected {
+    border-bottom: 2px solid #2083d5;
+    border-right: none;
+    color: #2083d5;
+    cursor: default;
 }
 
 .power-pack-activity-widget-row {

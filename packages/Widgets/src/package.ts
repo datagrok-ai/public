@@ -44,6 +44,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     tags: ['viewer'],
     name: 'TableSummary',
+    meta: {showInGallery: 'false'},
     outputs: [{type: 'viewer', name: 'result'}],
   })
   static tableSummary() {

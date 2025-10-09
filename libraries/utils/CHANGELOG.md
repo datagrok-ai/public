@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.6.9 (2025-10-09)
+
+Query builder: converting strings in dates inputs
+
 ## 4.6.8 (2025-09-24)
 
 Query builder: allow empty values for string input with 'equal' and 'not equat' operators

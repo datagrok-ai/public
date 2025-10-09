@@ -1,8 +1,17 @@
 # Tutorials changelog
 
-## 1.10.1 ()
+## 1.10.3 (2025-10-08)
+
+* GROK-18139: Activity dashboard: Retired Learn widget and added it to the activity dashboard instead
+
+## 1.10.2 (2025-10-07)
+
+* Demo app: Fixed the issue that names with `-` in name sometimes can't open
+
+## 1.10.1 (2025-10-07)
 
 * GROK-18767: Fixed opening Demo in learn widget opens empty toolbox
+* Fixed Demo > Cheminformatics is opened even for old users
 
 ## 1.10.0 (2025-09-30)
 

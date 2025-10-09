@@ -4,14 +4,14 @@
 #language: python
 #sample: chem/chem_standards.csv
 #tags: demo, chem, rdkit
-#input: dataframe data {caption: Data} [Input data table]
+#input: dataframe data [Input data table]
 #input: column molecules {type:categorical; semType: Molecule}
-#input: bool kekulization = false {caption: Kekulization}
-#input: bool normalization = false {caption: Normalization}
-#input: bool reionization = false {caption: Reionization}
-#input: bool neutralization = false {caption: Neutralization}
-#input: bool tautomerization = false {caption: Tautomerization}
-#input: bool mainFragment = false {caption: Main Fragment}
+#input: bool kekulization = false
+#input: bool normalization = false
+#input: bool reionization = false
+#input: bool neutralization = false
+#input: bool tautomerization = false
+#input: bool mainFragment = false
 #output: dataframe curated {action:join(data); semType: Molecule} [Molecules, in SMILES format]
 
 import numpy as np

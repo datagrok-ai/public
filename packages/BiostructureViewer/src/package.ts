@@ -346,7 +346,8 @@ export class PackageFunctions {
     tags: ['viewer'],
     outputs: [{type: 'viewer', name: 'result'}],
     meta: {
-      keywords: 'PDB, track'
+      keywords: 'PDB, track',
+      showInGallery: 'false',
     }
   })
   static saguaroViewer(): DG.JsViewer & IBiotrackViewer {
@@ -762,7 +763,7 @@ export class PackageFunctions {
     'top-menu': 'Bio | Transform | Fetch PDB Sequences...'
   })
   static async fetchSequencesFromPdb(
-    @grok.decorators.param({options: {caption: 'Table'}}) table: DG.DataFrame,
+    table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'PDB_ID'}}) pdbColumn: DG.Column
   ): Promise<void> {
     await extractSequenceColumns(pdbColumn);

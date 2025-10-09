@@ -32,7 +32,7 @@ export async function folding(table: DG.DataFrame, sequences: DG.Column) : Promi
 //name: Boltz-1
 //input: dataframe df { caption: Table }
 //input: column molecules { semType: Molecule }
-//input: string config { caption: Config; choices: Boltz1:getBoltzConfigFolders; description: 'Folder with config files for docking' }
+//input: string config { choices: Boltz1:getBoltzConfigFolders; description: 'Folder with config files for docking' }
 //output: dataframe result
 //top-menu: Chem | Docking | Boltz-1...
 export async function docking(df: DG.DataFrame, molecules: DG.Column, config: string) : Promise<any> {

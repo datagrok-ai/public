@@ -580,6 +580,49 @@ result = `${country} - ${orders.rowCount * factor}`;
 
 </details>
 
+### Complex calculated columns
+
+Complex calculated columns let you define a single function that generates **multiple calculated columns at once**, all
+automatically managed by Datagrok. Each resulting column is added to the source table and kept synchronized —
+recalculated automatically whenever the input data changes.
+
+To enable this behavior:
+
+* Set `meta.vectorFunc: true` in your function annotation.
+* Return a `dataframe` from the function — each column in the returned dataframe becomes a separate calculated column
+in the source table, all sharing the same formula.
+
+Inputs can include regular columns or scalar parameters.
+
+You can also define an optional `list<string>` input to let the user choose **which specific result columns** to
+create — for example, particular computed properties. When used, this `list<string>` parameter should be placed
+**last** in the function signature, since it is optional.
+
+This approach is especially useful when several related columns are derived from the same source data and should be
+computed together efficiently.
+
+<details>
+<summary> Example: Computing chemical properties from the Chem package </summary>
+
+
+```ts
+//input: column molecules {semType: Molecule} 
+//input: list<string> out {optional: true}
+//meta.vectorFunc: true
+//output: dataframe result
+export async function getProperties(molecules: DG.Column, out?: string[]): Promise<DG.DataFrame> { 
+  const propNames = Object.keys(CHEM_PROP_MAP);
+  const props = !out || out.length === 0
+    ? propNames
+    : propNames.filter((p) => out.includes(p));
+
+  const cols = await getPropertiesAsColumns(molecules, props);
+  return DG.DataFrame.fromColumns(cols); 
+}
+```
+
+</details>
+
 ### Input types
 
 Input fields such as text boxes or combo boxes get generated automatically based on

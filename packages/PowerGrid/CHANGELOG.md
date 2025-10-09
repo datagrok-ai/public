@@ -2,6 +2,8 @@
 
 ## 1.7.9 (2025-09-23)
 
+* GROK-18814: Forms Viewer: Add substructure highlighting support
+
 ## 1.7.8 (2025-09-23)
 
 ## 1.7.7 (2025-08-28)

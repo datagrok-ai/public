@@ -23,7 +23,7 @@ category('Packages: Docker', () => {
       await grok.dapi.docker.dockerContainers.run(container.id, true);
     const logs = await grok.dapi.docker.dockerContainers.getContainerLogs(container.id);
     expect(!logs || logs.length === 0, false);
-  }, {stressTest: true});
+  });
 }, { owner: 'ppolovyi@datagrok.ai'});
 
 async function testResponse(containerId: string): Promise<void> {
