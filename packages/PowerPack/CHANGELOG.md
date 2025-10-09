@@ -1,5 +1,9 @@
 # Power Pack changelog
 
+## 1.7.10 (2025-10-09)
+
+* Add new column dialog: Fixed validation error when passing empty array to vector functions
+
 ## 1.7.9 (2025-10-08)
 
 * GROK-18237: Widgets: Removed the Settings button for widgets
