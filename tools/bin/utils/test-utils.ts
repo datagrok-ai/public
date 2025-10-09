@@ -177,11 +177,17 @@ export async function loadPackages(
   release?: boolean): Promise<string[]> {
   const packagesToRun = new Map<string, boolean>();
   const hostString = host === undefined ? `` : `${host}`;
-  if (packagesToLoad !== 'all') {
-    for (const pacakgeName of (packagesToLoad ?? '').split(' ')) {
-      if ((pacakgeName ?? '').length !== 0)
-        packagesToRun.set(spaceToCamelCase(pacakgeName).toLocaleLowerCase(), false);
-    }
+  if (packagesToLoad && packagesToLoad !== 'all') {
+    const packageNames = packagesToLoad
+        .split(' ')
+        .map((p) => p.trim())
+        .filter((p) => p.length > 0);
+
+    if (skipPublish && skipBuild && !linkPackage)
+      return packageNames;
+
+    for (const name of packageNames)
+      packagesToRun.set(spaceToCamelCase(name).toLowerCase(), false);
   }
 
   for (const dirName of fs.readdirSync(packagesDir)) {
@@ -222,8 +228,8 @@ export async function loadPackages(
   }
   console.log();
   return Array.from(packagesToRun)
-    .filter(([key, value]) => value === true)
-    .map(([key]) => key); ;
+    .filter(([_, value]) => value)
+    .map(([key, _]) => key);
 }
 
 export async function loadTestsList(packages: string[], core: boolean = false): Promise<Test[]> {
