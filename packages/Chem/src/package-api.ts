@@ -285,7 +285,7 @@ export namespace funcs {
     return await grok.functions.call('Chem:CalculateDescriptorsTransform', { table, molecules, selected });
   }
 
-  export async function getDescriptors(molecules: DG.Column , selected: any ): Promise<DG.DataFrame> {
+  export async function getDescriptors(molecules: DG.Column , selected?: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('Chem:GetDescriptors', { molecules, selected });
   }
 
@@ -416,7 +416,7 @@ export namespace funcs {
     return await grok.functions.call('Chem:RunStructuralAlerts', { table, molecules, pains, bms, sureChembl, mlsmr, dundee, inpharmatica, lint, glaxo });
   }
 
-  export async function getStructuralAlerts(molecules: DG.Column , alerts: any ): Promise<DG.DataFrame> {
+  export async function getStructuralAlerts(molecules: DG.Column , alerts?: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('Chem:GetStructuralAlerts', { molecules, alerts });
   }
 
@@ -631,7 +631,7 @@ export namespace funcs {
     return await grok.functions.call('Chem:AddChemPropertiesColumns', { table, molecules, MW, HBA, HBD, logP, logS, PSA, rotatableBonds, stereoCenters, moleculeCharge });
   }
 
-  export async function getProperties(molecules: DG.Column , selected: any ): Promise<DG.DataFrame> {
+  export async function getProperties(molecules: DG.Column , selected?: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('Chem:GetProperties', { molecules, selected });
   }
 
@@ -639,7 +639,7 @@ export namespace funcs {
     return await grok.functions.call('Chem:AddChemRisksColumns', { table, molecules, mutagenicity, tumorigenicity, irritatingEffects, reproductiveEffects });
   }
 
-  export async function getToxicityRisks(molecules: DG.Column , risks: any ): Promise<DG.DataFrame> {
+  export async function getToxicityRisks(molecules: DG.Column , risks?: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('Chem:GetToxicityRisks', { molecules, risks });
   }
 

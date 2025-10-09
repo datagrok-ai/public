@@ -271,7 +271,7 @@ function openDescriptorsDialog(selected: any, onOK: onOk, dataFrame?: DG.DataFra
 }
 
 //description: Get selected descriptors
-async function getSelected() : Promise<any> {
+export async function getSelected() : Promise<string[]> {
   if (!descriptors)
     descriptors = await getDescriptorsTree();
   const str = grok.userSettings.getValue(_STORAGE_NAME, _KEY);

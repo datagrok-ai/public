@@ -20,7 +20,7 @@ import {MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT, EMPTY_MOLECULE_MESSAGE,
   SMARTS_MOLECULE_MESSAGE, elementsTable} from './constants';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {calculateDescriptors, getDescriptorsTree} from './docker/api';
-import {addDescriptorsColsToDf, getDescriptorsSingle, openDescriptorsDialogDocker} from './descriptors/descriptors-calculation';
+import {addDescriptorsColsToDf, getDescriptorsSingle, getSelected, openDescriptorsDialogDocker} from './descriptors/descriptors-calculation';
 import {identifiersWidget, openMapIdentifiersDialog, textToSmiles} from './widgets/identifiers';
 
 //widget imports
@@ -510,8 +510,10 @@ export class PackageFunctions {
   })
   static async getDescriptors(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({type: 'list<string>'}) selected: string[],
+    @grok.decorators.param({type: 'list<string>', optional: true}) selected?: string[],
   ): Promise<DG.DataFrame> {
+    if (!selected || selected.length === 0)
+      selected = await getSelected();
     const cols = (await calculateDescriptors(molecules, selected)).filter((col) => col != null);
     return DG.DataFrame.fromColumns(cols);
   }
@@ -1206,11 +1208,11 @@ export class PackageFunctions {
   })
   static async getStructuralAlerts(
     @grok.decorators.param({type: 'column<string>', options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({type: 'list<string>'}) alerts: string[]): Promise<DG.DataFrame> {
-    const lowerCaseAlerts = alerts.map((it) => it.toLowerCase());
+    @grok.decorators.param({type: 'list<string>', optional: true}) alerts?: string[]): Promise<DG.DataFrame> {
+    const lowerCaseAlerts = alerts?.map((it) => it.toLowerCase());
     const ruleSet: {[key: string]: boolean} = {};
     for (const rule of STRUCT_ALERTS_RULES_NAMES)
-      ruleSet[rule] = lowerCaseAlerts.includes(rule.toLowerCase());
+      ruleSet[rule] = !lowerCaseAlerts || lowerCaseAlerts.length === 0 ? true : lowerCaseAlerts.includes(rule.toLowerCase());
 
     const resultDf = await getStructuralAlertsByRules(molecules, ruleSet as RuleSet);
     if (!resultDf)
@@ -1867,15 +1869,17 @@ export class PackageFunctions {
   })
   static async getProperties(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({type: 'list<string>'}) selected: string[]): Promise<DG.DataFrame> {
+    @grok.decorators.param({type: 'list<string>', optional: true}) selected?: string[]): Promise<DG.DataFrame> {
     const propNames = Object.keys(CHEM_PROP_MAP);
     let props: string[] = [];
-
-    for (const propName of propNames)
-      props = props.concat(selected.includes(propName) ? [propName] : []);
+    if (!selected || selected.length === 0)
+      props = propNames;
+    else {
+      for (const propName of propNames)
+        props = props.concat(selected.includes(propName) ? [propName] : []);
+    }
 
     const cols = await getPropertiesAsColumns(molecules, props);
-
 
     return DG.DataFrame.fromColumns(cols);
   }
@@ -1909,12 +1913,12 @@ export class PackageFunctions {
   })
   static async getToxicityRisks(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({type: 'list<string>'}) risks: string[]): Promise<DG.DataFrame> {
+    @grok.decorators.param({type: 'list<string>', optional: true}) risks?: string[]): Promise<DG.DataFrame> {
     const toxCols = await getToxicityRisksColumns(molecules, {
-      mutagenicity: risks.includes('mutagenicity'),
-      tumorigenicity: risks.includes('tumorigenicity'),
-      irritatingEffects: risks.includes('irritatingEffects'),
-      reproductiveEffects: risks.includes('reproductiveEffects'),
+      mutagenicity: !risks || !risks.length ? true : risks.includes('mutagenicity'),
+      tumorigenicity: !risks || !risks.length ? true : risks.includes('tumorigenicity'),
+      irritatingEffects: !risks || !risks.length ? true : risks.includes('irritatingEffects'),
+      reproductiveEffects: !risks || !risks.length ? true : risks.includes('reproductiveEffects'),
     });
     return DG.DataFrame.fromColumns(toxCols);
   }
