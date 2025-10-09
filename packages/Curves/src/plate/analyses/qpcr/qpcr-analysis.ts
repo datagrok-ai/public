@@ -1,15 +1,15 @@
 /* eslint-disable camelcase */
 /* eslint-disable max-len */
-// src/plate/analyses/qpcr/qpcr-analysis.ts
 
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import {Plate, LayerType} from '../../plate';
-import {AbstractPlateAnalysis, IAnalysisProperty} from '../base-analysis';
+import {AnalysisBase, IAnalysisProperty} from '../base-analysis';
 import {AnalysisRequiredFields} from '../../../plates/views/components/analysis-mapping/analysis-mapping-panel';
 import {PlateWidget} from '../../plate-widget';
 import {createAnalysisRun, saveAnalysisResult, saveAnalysisRunParameter} from '../../../plates/plates-crud';
+import './../plate-analyses.css';
 
 const REQUIRED_ROLES = {
   TARGET: 'Target Gene',
@@ -18,7 +18,7 @@ const REQUIRED_ROLES = {
   TREATED: 'Treated',
 };
 
-export class QpcrAnalysis extends AbstractPlateAnalysis {
+export class QpcrAnalysis extends AnalysisBase {
   readonly name: string = 'qPCR';
   readonly friendlyName: string = 'qPCR Analysis';
 
@@ -101,17 +101,20 @@ export class QpcrAnalysis extends AbstractPlateAnalysis {
       grid.props.allowEdit = false;
 
       const saveButton = ui.button('SAVE RESULTS', async () => {
-        await this.saveResults(plate, resultsDf, {}, mappings);
+        ui.setUpdateIndicator(saveButton, true);
+        try {
+          await this.saveResults(plate, resultsDf, {}, mappings);
+        } catch (e) {
+        } finally {
+          ui.setUpdateIndicator(saveButton, false);
+        }
       });
-      const container = ui.divV([grid.root, ui.div([saveButton], 'ui-box')], 'drc-grid-container');
 
-
-      container.style.cssText = 'display: flex; flex-direction: column; width: 100%; height: 100%;';
-      grid.root.style.flexGrow = '1';
+      const container = ui.divV([grid.root, ui.div([saveButton], 'ui-box')], 'assay_plates__analysis-grid-container');
       return container;
     } catch (e: any) {
       console.error('qPCR Calculation Error:', e);
-      return ui.divText(`Calculation Error: ${e.message}`, 'error-message');
+      return ui.divText(`Calculation Error: ${e.message}`, 'assay_plates__error-message');
     }
   }
 
@@ -153,7 +156,6 @@ export class QpcrAnalysis extends AbstractPlateAnalysis {
       });
     }
 
-
     const assignmentPanel = ui.divV([
       ui.h3('Assign Roles'),
       ui.p('Select wells on the plate below, then assign a role.'),
@@ -166,15 +168,12 @@ export class QpcrAnalysis extends AbstractPlateAnalysis {
         createAssignButton(REQUIRED_ROLES.TREATED, REQUIRED_ROLES.CONTROL),
       ]),
       statusPanel,
-    ], 'ui-box');
-    assignmentPanel.style.maxWidth = '300px';
+    ], 'ui-box assay_plates__qpcr-assignment-panel');
 
     const container = ui.divH([
       embeddedPlateWidget.root,
       assignmentPanel,
-    ], {style: {width: '100%', height: '100%'}});
-
-    embeddedPlateWidget.root.style.flexGrow = '1';
+    ], 'assay_plates__qpcr-role-view-container');
 
     return container;
   }
@@ -183,10 +182,15 @@ export class QpcrAnalysis extends AbstractPlateAnalysis {
     const statusItems = Object.values(REQUIRED_ROLES).map((role) => {
       const isAssigned = plate.data.columns.contains(role);
       const icon = ui.iconFA(isAssigned ? 'check-circle' : 'times-circle', null, isAssigned ? 'Assigned' : 'Not Assigned');
-      icon.style.color = isAssigned ? 'var(--green-2)' : 'var(--red-3)';
-      return ui.divH([icon, ui.label(role)], {style: {padding: '2px 0'}});
+
+      icon.classList.add(
+        'assay_plates__qpcr-status-icon',
+        isAssigned ? 'assay_plates__qpcr-status-icon--assigned' : 'assay_plates__qpcr-status-icon--unassigned'
+      );
+
+      return ui.divH([icon, ui.label(role)], 'assay_plates__qpcr-status-item');
     });
-    return ui.divV([ui.h3('Status'), ...statusItems], {style: {marginTop: '20px'}});
+    return ui.divV([ui.h3('Status'), ...statusItems], 'assay_plates__qpcr-status-panel');
   }
 
   async saveResults(

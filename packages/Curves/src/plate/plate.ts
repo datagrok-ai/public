@@ -186,7 +186,6 @@ export class Plate {
 
       outlierCol.setTag('outlier.sources', JSON.stringify(sources));
     } catch (e) {
-      console.warn('Failed to update outlier sources:', e);
       // Fallback: just ensure the tag exists
       outlierCol.setTag('outlier.sources', '{}');
     }
@@ -302,7 +301,6 @@ export class Plate {
       const sources: Record<number, string[]> = JSON.parse(sourcesJson);
       return sources[dataRow] || [];
     } catch (e) {
-      console.warn('Failed to parse outlier sources:', e);
       return [];
     }
   }
@@ -314,7 +312,6 @@ export class Plate {
       const sourcesJson = outlierCol.getTag('outlier.sources') || '{}';
       return JSON.parse(sourcesJson);
     } catch (e) {
-      console.warn('Failed to parse outlier sources:', e);
       return {};
     }
   }
@@ -647,17 +644,12 @@ export class Plate {
       series[group].meta.push(v.innerDfRow);
 
       const isOutlier = this._isOutlier(v.innerDfRow);
-      console.log(`[DEBUG] doseResponseSeries: Row ${v.innerDfRow} isOutlier=${isOutlier}`);
       series[group].outlier.push(isOutlier);
     }
 
-    console.log('--- Debugging doseResponseSeries ---');
-    console.log(`Grouping by column: '${options?.groupBy ?? 'undefined'}' on plate with barcode: '${this.barcode}'`);
     const seriesPointCounts = Object.fromEntries(
       Object.entries(series).map(([key, value]) => [key, value.x.length])
     );
-    console.log('Found series and their point counts:', seriesPointCounts);
-    console.log('Full series data for inspection:', series);
 
     return Object.fromEntries(Object.entries(series).map(([k, v]) => {
       const fitSeries = new FitSeries(v.x.map((_, i) => ({x: v.x[i], y: v.y[i], outlier: v.outlier[i], meta: v.meta[i]})).sort((a, b) => a.x - b.x));

@@ -111,10 +111,9 @@ WHERE p.type = 'string';
 -- input: string choices { nullable: true }
 -- input: double min { nullable: true }
 -- input: double max { nullable: true }
--- input: int originPlateId { nullable: true }
 -- output: int propertyId
-INSERT INTO plates.properties(name, type, template_id, scope, choices, min, max, origin_plate_id)
-VALUES(@propertyName, @valueType, @templateId, @scope, @choices, @min, @max, @originPlateId)
+INSERT INTO plates.properties(name, type, template_id, scope, choices, min, max)
+VALUES(@propertyName, @valueType, @templateId, @scope, @choices, @min, @max)
 RETURNING id;
 -- end
 

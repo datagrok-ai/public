@@ -5,12 +5,13 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import {Plate} from '../../plate';
-import {AbstractPlateAnalysis, IAnalysisProperty} from '../base-analysis';
+import {AnalysisBase, IAnalysisProperty} from '../base-analysis';
 import {AnalysisRequiredFields} from '../../../plates/views/components/analysis-mapping/analysis-mapping-panel';
 import {FIT_FUNCTION_4PL_REGRESSION, IFitChartData, IFitSeries} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {createAnalysisRun, saveAnalysisResult, saveAnalysisRunParameter} from '../../../plates/plates-crud';
+import './../plate-analyses.css';
 
-export class DoseRatioAnalysis extends AbstractPlateAnalysis {
+export class DoseRatioAnalysis extends AnalysisBase {
   readonly name: string = 'Dose-Ratio';
   readonly friendlyName: string = 'Dose Ratio';
 
@@ -139,12 +140,18 @@ export class DoseRatioAnalysis extends AbstractPlateAnalysis {
     const grid = chartDf.plot.grid();
 
     const saveButton = ui.button('SAVE RESULTS', async () => {
-      await this.saveResults(plate, chartDf, {}, mappings);
+      ui.setUpdateIndicator(saveButton, true);
+      try {
+        await this.saveResults(plate, chartDf, {}, mappings);
+      } catch (e) {
+      } finally {
+        ui.setUpdateIndicator(saveButton, false);
+      }
     });
-    const container = ui.divV([grid.root, ui.div([saveButton], 'ui-box')], 'drc-grid-container');
+    
+    // Use the new scoped class name and remove inline styles
+    const container = ui.divV([grid.root, ui.div([saveButton], 'ui-box')], 'assay_plates__analysis-grid-container');
 
-    container.style.cssText = 'display: flex; flex-direction: column; width: 100%; height: 100%;';
-    grid.root.style.flexGrow = '1';
     ui.tools.handleResize(container, (w: number, h: number) => {
       if (grid.col('curve')) {
         grid.col('curve')!.width = w - 20;

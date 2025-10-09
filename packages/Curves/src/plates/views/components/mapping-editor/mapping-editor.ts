@@ -1,18 +1,18 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import './mapping-editor.css';
+import './../template-panel/template-panel-and-mapping.css';
 
 export interface TargetProperty {
-  name: string;
-  required?: boolean;
+    name: string;
+    required?: boolean;
 }
 
 export interface MappingEditorOptions {
-  targetProperties: TargetProperty[];
-  sourceColumns: string[];
-  mappings: Map<string, string>;
-  onMap: (target: string, source: string) => void;
-  onUndo: (target: string) => void;
+    targetProperties: TargetProperty[];
+    sourceColumns: string[];
+    mappings: Map<string, string>;
+    onMap: (target: string, source: string) => void;
+    onUndo: (target: string) => void;
 }
 
 function createDynamicMappingRow(
@@ -48,30 +48,24 @@ function createDynamicMappingRow(
   });
 
   const cancelBtn = ui.iconFA('times', onCancel, 'Cancel');
-  cancelBtn.classList.add('mapping-cancel-icon');
-  const rightCell = ui.divH([colChoice.root, cancelBtn], 'dynamic-row-right-cell');
-  return ui.divH([propInput.root, rightCell], 'mapping-editor-row');
+  cancelBtn.classList.add('assay_plates__mapping-cancel-icon');
+  const rightCell = ui.divH([colChoice.root, cancelBtn], 'assay_plates__dynamic-row-right-cell');
+  return ui.divH([propInput.root, rightCell], 'assay_plates__mapping-editor-row');
 }
 
 export function renderMappingEditor(host: HTMLElement, options: MappingEditorOptions): void {
   const {targetProperties, sourceColumns, mappings, onMap, onUndo} = options;
 
   ui.empty(host);
-  host.className = 'mapping-editor';
+  host.className = 'assay_plates__mapping-editor';
 
   if (sourceColumns.length === 0) {
-    host.appendChild(ui.divText('Import a data file to map columns.', 'info-message'));
+    host.appendChild(ui.divText('Import a data file to map columns.', 'assay_plates__info-message'));
     return;
   }
 
-  const tableHost = ui.divV([], 'mapping-editor-table');
+  const tableHost = ui.divV([], 'assay_plates__mapping-editor-table');
   host.appendChild(tableHost);
-
-  // const header = ui.divH([
-  //   ui.divText('Property', {style: {fontWeight: 'bold'}}),
-  //   ui.divText('Source Column', {style: {fontWeight: 'bold'}}),
-  // ], 'mapping-editor-header');
-  // tableHost.appendChild(header);
 
   const allPropsMap = new Map<string, TargetProperty>();
   targetProperties.forEach((p) => allPropsMap.set(p.name, p));
@@ -90,7 +84,7 @@ export function renderMappingEditor(host: HTMLElement, options: MappingEditorOpt
     const propNameEl = ui.divH([ui.span([prop.name])]);
     if (prop.required) {
       const asterisk = ui.element('sup');
-      asterisk.className = 'required-asterisk';
+      asterisk.className = 'assay_plates__required-asterisk';
       asterisk.innerText = '*';
       propNameEl.appendChild(asterisk);
     }
@@ -105,24 +99,24 @@ export function renderMappingEditor(host: HTMLElement, options: MappingEditorOpt
       },
     });
 
-    const rightCell = ui.divH([choiceControl.root], 'mapping-input-container');
+    const rightCell = ui.divH([choiceControl.root], 'assay_plates__mapping-input-container');
     if (mappedSource) {
       const undoIcon = ui.iconFA('times', () => onUndo(prop.name), 'Undo mapping');
-      undoIcon.classList.add('mapping-undo-icon');
+      undoIcon.classList.add('assay_plates__mapping-undo-icon');
       rightCell.appendChild(undoIcon);
     }
 
-    const row = ui.divH([propNameEl, rightCell], 'mapping-editor-row');
+    const row = ui.divH([propNameEl, rightCell], 'assay_plates__mapping-editor-row');
     tableHost.appendChild(row);
   });
 
-  const addRowHost = ui.divH([], 'mapping-add-row');
+  const addRowHost = ui.divH([], 'assay_plates__mapping-add-row');
   const addIcon = ui.iconFA('plus', () => {
     const newDynamicRow = createDynamicMappingRow(sourceColumns, onMap, () => newDynamicRow.remove());
     tableHost.insertBefore(newDynamicRow, addRowHost);
     (newDynamicRow.querySelector('input[type="text"]') as HTMLElement)?.focus();
   }, 'Add new property mapping');
-  addIcon.classList.add('mapping-add-icon');
+  addIcon.classList.add('assay_plates__mapping-add-icon');
   addRowHost.appendChild(addIcon);
   tableHost.appendChild(addRowHost);
 }

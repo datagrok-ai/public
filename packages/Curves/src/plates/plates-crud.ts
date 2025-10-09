@@ -410,7 +410,7 @@ export async function queryPlates(query: PlateQuery): Promise<DG.DataFrame> {
 }
 
 
-export async function createProperty(prop: Partial<PlateProperty>, originPlateId?: number): Promise<PlateProperty> {
+export async function createProperty(prop: Partial<PlateProperty>): Promise<PlateProperty> {
   prop.id = await grok.functions.call('Curves:createProperty', {
     propertyName: prop.name!,
     valueType: prop.type!,
@@ -419,7 +419,6 @@ export async function createProperty(prop: Partial<PlateProperty>, originPlateId
     choices: prop.choices ? JSON.stringify(prop.choices) : null,
     min: prop.min,
     max: prop.max,
-    originPlateId: originPlateId,
   });
 
   events.next({on: 'after', eventType: 'created', objectType: TYPE.PROPERTY, object: prop});
@@ -444,7 +443,7 @@ export async function savePlate(plate: Plate, options?: { autoCreateProperties?:
     const prop = findProp(globalPlateProperties, layer);
     if (autoCreateProperties && !prop) {
       const valueType = getValueType(plate.details[layer]);
-      await createProperty({name: layer, type: valueType, scope: 'plate'}, plate.id);
+      await createProperty({name: layer, type: valueType, scope: 'plate'});
       grok.shell.info('Global plate property created: ' + layer);
     } else if (!prop) {
       throw new Error(`Global property ${layer} not found`);
@@ -454,7 +453,7 @@ export async function savePlate(plate: Plate, options?: { autoCreateProperties?:
   for (const col of plate.data.columns) {
     const prop = findProp(globalWellProperties, col.name);
     if (autoCreateProperties && !prop) {
-      await createProperty({name: col.name, type: col.type, scope: 'well'}, plate.id);
+      await createProperty({name: col.name, type: col.type, scope: 'well'});
       grok.shell.info('Global well property created: ' + col.name);
     } else if (!prop) {
       throw new Error(`Global property ${col.name} not found`);
@@ -647,7 +646,6 @@ export async function saveAnalysisResult(params: {
   await grok.functions.call('Curves:saveAnalysisResult', callParams);
 }
 
-
 export async function getOrCreateProperty(name: string, type: DG.TYPE, scope: 'plate' | 'well' = 'plate'): Promise<PlateProperty> {
   await initPlates();
   let prop = allProperties.find((p) => p.name === name && p.template_id == null && p.scope == scope);
@@ -736,5 +734,3 @@ export async function queryAnalyses(query: AnalysisQuery): Promise<DG.DataFrame>
     return await (analysis as any).queryResults(query);
   return queryAnalysesGeneric(query);
 }
-
-

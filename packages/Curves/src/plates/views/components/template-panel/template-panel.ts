@@ -9,11 +9,12 @@ import {PlateWidget} from '../../../../plate/plate-widget';
 import {renderMappingEditor, TargetProperty} from '../mapping-editor/mapping-editor';
 import {renderValidationResults} from '../../plates-validation-panel';
 import {MAPPING_SCOPES} from '../../shared/scopes';
+import './template-panel-and-mapping.css';
 
 function createFormRow(label: string, input: DG.InputBase<any>): HTMLElement {
   const labelEl = ui.divText(label, 'ui-label');
   input.root.querySelector('label')?.remove();
-  return ui.divH([labelEl, input.root], 'template-panel-form-row');
+  return ui.divH([labelEl, input.root], 'assay_plates__form-row');
 }
 
 export class TemplatePanel {
@@ -29,7 +30,7 @@ export class TemplatePanel {
   private plateWidget: PlateWidget,
   private onManageMappings: () => void
   ) {
-    this.root = ui.divV([], 'template-panel');
+    this.root = ui.divV([], 'assay_plates__template-panel');
     this.platePropertiesHost = ui.divV([]);
     this.validationHost = ui.divV([]);
     this.wellPropsHeaderHost = ui.div();
@@ -67,12 +68,10 @@ export class TemplatePanel {
 
   private createImportSection(): HTMLElement {
     const fileInput = this.createFileInput();
-    // START of CHANGE: Use the new single host for identifier controls
     const content = ui.divV([
       fileInput.root,
       this.identifierControlsHost
     ]);
-    // END of CHANGE
     this.updateIdentifierControls();
     return this.createCollapsiblePanel(ui.h2('Import'), content, true);
   }
@@ -84,13 +83,13 @@ export class TemplatePanel {
         try {
           const df = DG.DataFrame.fromCsv(await file.readAsString());
           await this.stateManager.loadDataFrame(df);
-          this.updateIdentifierControls(); // This will now get the auto-detected column
+          this.updateIdentifierControls();
         } catch (e: any) {
           grok.shell.error(`Failed to parse CSV: ${e.message}`);
         }
       },
     });
-    fileInput.root.classList.add('plate-import-input');
+    fileInput.root.classList.add('assay_plates__plate-import-input');
     const fileInputButton = fileInput.root.querySelector('button');
     if (fileInputButton) {
       ui.empty(fileInputButton);
@@ -101,63 +100,53 @@ export class TemplatePanel {
     ui.tooltip.bind(fileInput.root, 'Import a plate from a CSV file');
     return fileInput;
   }
-
-  // START of CHANGE: Replace the three update...Control methods with a single dynamic one.
   private updateIdentifierControls(): void {
     ui.empty(this.identifierControlsHost);
     const df = this.stateManager.sourceDataFrame;
 
     if (!df) return;
 
-    // START of CHANGE: Logic to prevent duplicate index columns
     const allDfColumns = df.columns.names();
     const selectedIdentifiers = this.stateManager.identifierColumns.filter((c): c is string => c !== null);
 
     this.stateManager.identifierColumns.forEach((colName, index) => {
-      // For each dropdown, the available choices are all columns MINUS those already selected in OTHER dropdowns.
       const otherSelected = selectedIdentifiers.filter((c) => c !== colName);
       const availableColumns = allDfColumns.filter((c) => !otherSelected.includes(c));
 
       const choiceInput = ui.input.choice<string | null>('', {
         value: colName,
-        items: [null, ...availableColumns], // Use the filtered list
+        items: [null, ...availableColumns],
         onValueChanged: (newColumn) => {
           this.stateManager.setIdentifierColumn(index, newColumn);
         },
       });
       ui.tooltip.bind(choiceInput.root, 'Select a column to identify unique plates.');
 
-      // START of CHANGE: Improved remove button UI
       const removeBtn = ui.button(ui.iconFA('trash-alt'), () => {
         this.stateManager.removeIdentifierColumn(index);
       }, 'Remove this index column');
-      removeBtn.classList.add('curves-icon-button', 'curves-remove-button');
-      // END of CHANGE
+      removeBtn.classList.add('assay_plates__icon-button', 'assay_plates__remove-button');
 
       const formRow = createFormRow(`Plate Index ${index + 1}`, choiceInput);
-      const controlRow = ui.divH([formRow, removeBtn], {style: {alignItems: 'center', flexWrap: 'nowrap'}});
-      (formRow.lastChild as HTMLElement).style.flexGrow = '1';
+      const controlRow = ui.divH([formRow, removeBtn], 'assay_plates__identifier-control-row');
 
       this.identifierControlsHost.appendChild(controlRow);
     });
 
-    // START of CHANGE: Improved add button UI
     const addBtn = ui.button(ui.iconFA('plus'), () => {
       this.stateManager.addIdentifierColumn();
     }, 'Add another index column');
-    addBtn.classList.add('curves-icon-button', 'curves-add-button');
-    // END of CHANGE
+    addBtn.classList.add('assay_plates__icon-button', 'assay_plates__add-button');
 
-    this.identifierControlsHost.appendChild(ui.div(addBtn, {style: {marginTop: '8px'}}));
+    this.identifierControlsHost.appendChild(ui.div(addBtn, 'assay_plates__add-identifier-container'));
   }
-  // END of CHANGE
 
   private createTemplateSection(): HTMLElement {
     const templateIcon = ui.iconFA('file-alt', null, 'Template-defined properties');
     templateIcon.classList.add('legend-icon', 'legend-icon-template');
     const templateHeader = ui.divH(
       [ui.h2('Template'), templateIcon],
-      {style: {alignItems: 'center', gap: '8px', flexGrow: '1'}}
+      'assay_plates__collapsible-header'
     );
     const plateTypeSelector = ui.input.choice('', {
       value: this.stateManager.currentPlateType.name,
@@ -180,7 +169,7 @@ export class TemplatePanel {
     const templateRow = createFormRow('Template', plateTemplateSelector);
     const templateContent = ui.divV(
       [plateTypeRow, templateRow],
-      'left-panel-section-content'
+      'assay_plates__left-panel-section-content'
     );
     return this.createCollapsiblePanel(templateHeader, templateContent, true);
   }
@@ -196,17 +185,15 @@ export class TemplatePanel {
       icon.classList.toggle('fa-chevron-down', !isExpanded);
       icon.classList.toggle('fa-chevron-right', isExpanded);
     });
-    icon.style.marginRight = '8px';
-    icon.style.color = 'var(--grey-4)';
-    icon.style.cursor = 'pointer';
-    header.style.cursor = 'pointer';
+    icon.classList.add('assay_plates__collapsible-icon');
+
     header.onclick = () => icon.click();
-    const headerContainer = ui.divH([icon, header]);
-    headerContainer.style.alignItems = 'center';
+    const headerContainer = ui.divH([icon, header], 'assay_plates__collapsible-header-container');
+
     content.style.display = expanded ? 'block' : 'none';
-    content.style.paddingLeft = '24px';
-    content.classList.add('left-panel-section-content');
-    return ui.divV([headerContainer, content], 'left-panel-section');
+    content.classList.add('assay_plates__left-panel-section-content', 'assay_plates__collapsible-content');
+
+    return ui.divV([headerContainer, content], 'assay_plates__left-panel-section');
   }
 
   private subscribeToStateChanges(): void {
@@ -240,7 +227,6 @@ export class TemplatePanel {
       });
     }
 
-    // For numeric properties with min/max
     if (prop.type === DG.TYPE.FLOAT || prop.type === DG.TYPE.INT) {
       const input = prop.type === DG.TYPE.INT ?
         ui.input.int(prop.name, {value: currentValue || 0}) :
@@ -262,12 +248,9 @@ export class TemplatePanel {
       return input;
     }
 
-    // For boolean properties
     if (prop.type === DG.TYPE.BOOL)
       return ui.input.bool(prop.name, {value: currentValue || false});
 
-
-    // Default to string input
     return ui.input.string(prop.name, {value: currentValue || ''});
   }
 
@@ -307,13 +290,12 @@ export class TemplatePanel {
 
       renderMappingEditor(this.validationHost, {
         targetProperties: templateProps,
-        sourceColumns: availableSourceColumns, // Use the filtered list here
+        sourceColumns: availableSourceColumns,
         mappings: currentMappings,
         onMap: handleMapping,
         onUndo: handleUndo,
       });
 
-      // Create proper inputs for plate properties
       const platePropertyInputs: HTMLElement[] = [];
       for (const prop of template.plateProperties) {
         if (!prop || !prop.name || !prop.type) continue;
@@ -321,7 +303,6 @@ export class TemplatePanel {
         const currentValue = activePlate.plate.details?.[prop.name!];
         const input = this.createPropertyInput(prop, currentValue);
 
-        // Update the plate details when value changes
         input.onChanged.subscribe(() => {
           if (!activePlate.plate.details)
             activePlate.plate.details = {};
@@ -332,7 +313,7 @@ export class TemplatePanel {
       }
 
       if (platePropertyInputs.length > 0) {
-        const form = ui.divV(platePropertyInputs, 'template-plate-properties-form');
+        const form = ui.divV(platePropertyInputs);
         this.platePropertiesHost.appendChild(form);
       }
     } else {
@@ -344,7 +325,6 @@ export class TemplatePanel {
         onUndo: () => {},
       });
 
-      // Create proper inputs even when no plate is active
       const platePropertyInputs: HTMLElement[] = [];
       for (const prop of template.plateProperties) {
         if (!prop || !prop.name || !prop.type) continue;
@@ -354,7 +334,7 @@ export class TemplatePanel {
       }
 
       if (platePropertyInputs.length > 0) {
-        const form = ui.divV(platePropertyInputs, 'template-plate-properties-form');
+        const form = ui.divV(platePropertyInputs);
         this.platePropertiesHost.appendChild(form);
       }
     }

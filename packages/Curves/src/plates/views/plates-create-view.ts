@@ -9,16 +9,16 @@ import {PlateStateManager} from './shared/plate-state-manager';
 import {TemplatePanel} from './components/template-panel/template-panel';
 import {renderValidationResults} from './plates-validation-panel';
 import {Subscription} from 'rxjs';
-import './components/template-panel/template-panel.css';
 import './components/plate-grid-manager/plate-grid-manager.css';
-import './components/plate-analysis-panel/plate-analysis-panel.css';
 import {PlateGridManager} from './components/plate-grid-manager/plate-grid-manager';
 import {AnalysisManager} from '../../plate/analyses/analysis-manager';
+import './plates-create-view.css';
 
 export function createPlatesView(): DG.View {
   const view = DG.View.create();
   view.name = 'Create Plate';
-  view.root.classList.add('create-plate-view');
+
+  view.root.classList.add('assay_plates__create-plate-view');
 
   const plateType = plateTypes[0];
   const plateTemplate = plateTemplates[0];
@@ -34,21 +34,10 @@ export function createPlatesView(): DG.View {
   const plateWidget = new PlateWidget();
   plateWidget.editable = true;
   plateWidget.plate = new Plate(plateType.rows, plateType.cols);
-  plateWidget.root.style.cssText = `
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  `;
 
   const tabControl = ui.tabControl();
   tabControl.root.classList.remove('ui-box');
-  tabControl.root.style.cssText = `
-    width: 100%;
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-  `;
+  tabControl.root.classList.add('assay_plates__create-plate-view__tab-control'); // Added class
 
 
   tabControl.addPane('Plate View', () => plateWidget.root);
@@ -81,26 +70,8 @@ export function createPlatesView(): DG.View {
     tabControl.addPane(analysis.friendlyName, createTabContent);
   }
 
-
-  ui.tools.waitForElementInDom(tabControl.root).then(() => {
-    tabControl.panes.forEach((pane) => {
-      pane.content.style.cssText = `
-        width: 100%;
-        height: 100%;
-        max-width: none;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-      `;
-    });
-  });
-
-  const tabContentHost = tabControl.root.querySelector('.d4-tab-host');
-  if (tabContentHost) {
-    (tabContentHost as HTMLElement).style.flexGrow = '1';
-    (tabContentHost as HTMLElement).style.width = '100%';
-    (tabContentHost as HTMLElement).style.display = 'flex';
-  }
+  // The logic to apply styles via waitForElementInDom has been removed and moved to plates-create-view.css
+  // The direct styling of tabContentHost has also been removed and moved to plates-create-view.css
 
   const plateGridManager = new PlateGridManager(stateManager);
 
@@ -138,7 +109,6 @@ export function createPlatesView(): DG.View {
           const plateToAnalyze = stateManager.activePlate;
           const handleRerender = () => stateManager.notifyPlateDataChanged();
 
-
           let newContent: HTMLElement;
           if (!plateToAnalyze || activeIndex < 0) {
             newContent = createAnalysisSkeleton(analysis.friendlyName, analysis.getRequiredFields().map((f) => f.name));
@@ -160,11 +130,11 @@ export function createPlatesView(): DG.View {
   const rightPanel = ui.divV([
     plateGridManager.root,
     tabControl.root,
-  ], 'create-plate-view__right-panel');
+  ], 'assay_plates__create-plate-view__right-panel');
 
   const mainLayout = ui.divH(
     [templatePanel.root, rightPanel],
-    'create-plate-view__main-layout'
+    'assay_plates__create-plate-view__main-layout'
   );
 
   view.root.appendChild(mainLayout);
@@ -283,11 +253,7 @@ function createAnalysisSkeleton(analysisType: string, requiredColumns: string[] 
   const messageText = `To see ${analysisType.toLowerCase()} curves, please map the following required properties: ${requiredColumns.join(', ')}.`;
   const message = ui.divText(messageText);
 
-  const skeleton = ui.divV([svgDiv, message], 'drc-skeleton');
-  skeleton.style.cssText = `
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    width: 100%; flex-grow: 1; text-align: center;
-    border: 1px dashed var(--grey-2); border-radius: 8px; background-color: var(--grey-0);`;
+  const skeleton = ui.divV([svgDiv, message], 'assay_plates__drc-skeleton');
 
   return skeleton;
 }

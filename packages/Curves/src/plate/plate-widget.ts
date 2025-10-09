@@ -57,7 +57,7 @@ export class PlateWidget extends DG.Widget {
   plateDetailsDiv?: HTMLElement;
   plateActionsDiv?: HTMLElement;
   tabs: DG.TabControl = DG.TabControl.create(true);
-  tabsContainer: HTMLElement = ui.divH([], 'plate-widget__tabs-container');
+  tabsContainer: HTMLElement = ui.divH([], 'assay_plates__plate-widget__tabs-container');
   _editable: boolean = false;
   mapFromRowFunc: (row: DG.Row) => Record<string, any> = mapFromRow;
   grids: Map<string, DG.Grid> = new Map();
@@ -127,8 +127,9 @@ export class PlateWidget extends DG.Widget {
   }
 
   constructor() {
-    super(ui.div([], 'plate-widget'));
-    this.tabs.root.classList.add('plate-widget__tabs');
+    super(ui.div([], 'assay_plates__plate-widget'));
+    this.tabs.root.classList.add('assay_plates__plate-widget__tabs');
+
     this.tabsContainer.appendChild(this.tabs.root);
 
     this.tabs.onTabChanged.subscribe(() => {
@@ -139,9 +140,7 @@ export class PlateWidget extends DG.Widget {
       this.grid.invalidate();
     });
 
-    const mainContainer = ui.divV([this.tabsContainer]);
-    mainContainer.style.flexGrow = '1';
-    mainContainer.style.width = '100%';
+    const mainContainer = ui.divV([this.tabsContainer], 'assay_plates__plate-widget__main-content');
     this.root.appendChild(mainContainer);
 
     this.setupGrid();
@@ -411,18 +410,20 @@ export class PlateWidget extends DG.Widget {
   static detailedView(plate: Plate): PlateWidget {
     const pw = new PlateWidget();
     pw.plate = plate;
-    pw.detailsDiv = ui.divV([], 'plate-widget__details');
+
+    ui.empty(pw.root);
+
+    pw.detailsDiv = ui.divV([], 'assay_plates__plate-widget__details');
     pw.wellDetailsDiv = ui.div();
     pw.detailsDiv.appendChild(pw.wellDetailsDiv);
-    const gridAndSummaryWrapper = ui.divV([
-      pw.tabs.root,
-    ], {style: {flexGrow: '1', display: 'flex', flexDirection: 'column'}});
+
     const mainContainer = ui.divH([
-      gridAndSummaryWrapper,
+      pw.tabs.root,
       pw.detailsDiv,
-    ], 'plate-widget__main-container');
-    ui.empty(pw.tabsContainer);
-    pw.tabsContainer.appendChild(mainContainer);
+    ], 'assay_plates__plate-widget__main-container');
+
+    pw.root.appendChild(mainContainer);
+
     pw.grid.onCurrentCellChanged
       .pipe(filter((gc) => gc.isTableCell && gc.gridRow !== null))
       .subscribe((gc) => {
@@ -536,7 +537,7 @@ export class PlateWidget extends DG.Widget {
     for (let i = 0; i <= this.plate.cols; i++)
       this.grid.columns.add({gridColumnName: i.toString(), cellType: 'string'});
 
-    if (this.grid.root) this.grid.root.style.width = '100%';
+    // Removed inline style from here
     this.grid.invalidate();
   }
 
