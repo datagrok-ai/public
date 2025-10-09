@@ -31,8 +31,7 @@
     "link": "npm link",
     "prepublishOnly": "babel bin --extensions .ts -d bin",
     "babel": "babel bin --extensions .ts -d bin",
-    "build": "babel bin --extensions .ts -d bin",
-    "debug-source-map": "babel bin --extensions .ts -d bin --source-maps true"
+    "build": "babel bin --extensions .ts -d bin"
   },
   "bin": {
     "datagrok-upload": "./bin/_deprecated/upload.js",
