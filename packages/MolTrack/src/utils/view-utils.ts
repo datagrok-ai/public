@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import { _package, getBatchByCorporateId, getCompoundByCorporateId } from '../package';
 import { excludedScopes, MOLTRACK_APP_PATH, Scope } from './constants';
 import { EntityBaseView } from '../views/registration-entity-base';
+import { RegistrationView } from '../views/registration-tab';
 import { u2 } from '@datagrok-libraries/utils/src/u2';
 
 export function createPath(viewName: string) {
@@ -108,6 +109,12 @@ export function initRegisterView(entity: 'Compound' | 'Batch', setPath: boolean 
   return view.view;
 }
 
+export function initBulkRegisterView(setPath: boolean = true) {
+  const registrationView = new RegistrationView();
+  registrationView.view.path = createPath('Bulk');
+  registrationView.show();
+  return registrationView.view;
+}
 export function getAppHeader(): HTMLElement {
   const appHeader = u2.appHeader({
     iconPath: _package.webRoot + '/images/moltrack.png',

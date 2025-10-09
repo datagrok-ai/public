@@ -12,7 +12,7 @@
     "@datagrok-libraries/tutorials": "../../libraries/tutorials",
     "@datagrok-libraries/compute-utils": "../../libraries/compute-utils",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.26.3",
+    "datagrok-api": "../../js-api",
     "dayjs": "^1.11.13",
     "randexp": "^0.5.3",
     "rxjs": "^6.5.5"

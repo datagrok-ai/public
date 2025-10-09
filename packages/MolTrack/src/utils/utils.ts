@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import { PROPERTIES } from './constants';
+import { MolTrackProp, PROPERTIES } from './constants';
 import { MolTrackProperty } from './types';
 import { MolTrackDockerService } from '../services/moltrack-docker-service';
 
@@ -22,6 +22,37 @@ export async function getCorporateCompoundIdByExactStructure(structure: string):
     console.error('Exact structure search failed:', e);
     return null;
   }
+}
+
+export function buildPropertyOptions(
+  p: MolTrackProp,
+  opts?: { reserved?: string[], skipReservedCheck?: boolean },
+): any {
+  const options: any = {
+    name: p.name,
+    friendlyName: p.friendly_name,
+    type: p.value_type,
+  };
+
+  if (p.description)
+    options.description = p.description;
+
+  const reserved = opts?.reserved ?? [];
+  const skipReservedCheck = opts?.skipReservedCheck ?? false;
+
+  if (p.pattern && (!skipReservedCheck || !reserved.includes(p.name))) {
+    const regex = new RegExp(p.pattern);
+    options.valueValidators = [
+      (val: any) =>
+        val == null || val === '' ?
+          null :
+          regex.test(String(val)) ?
+            null :
+            `Value does not match pattern: ${p.pattern}`,
+    ];
+  }
+
+  return options;
 }
 
 export function flattened(item: any, props: DG.Property[]) {

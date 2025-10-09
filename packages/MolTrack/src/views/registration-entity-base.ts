@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import { ErrorHandling, MolTrackProp, Scope } from '../utils/constants';
 import { createPath } from '../utils/view-utils';
-import { getCorporateCompoundIdByExactStructure } from '../utils/utils';
+import { buildPropertyOptions, getCorporateCompoundIdByExactStructure } from '../utils/utils';
 
 import { fetchBatchProperties, fetchCompoundProperties, registerBulk } from '../package';
 
@@ -63,28 +63,9 @@ export class EntityBaseView {
   }
 
   protected convertToDGProperty(p: MolTrackProp): DG.Property {
-    const options: any = {
-      name: p.name,
-      friendlyName: p.friendly_name,
-      type: p.value_type,
-    };
-
-    if (p.description)
-      options.description = p.description;
-
-    if (p.pattern && !reservedProperties.includes(p.name)) {
-      const regex = new RegExp(p.pattern);
-      options.valueValidators = [
-        (val: any) =>
-          val == null || val === '' ?
-            null :
-            regex.test(String(val)) ?
-              null :
-              `Value does not match pattern: ${p.pattern}`,
-      ];
-    }
-
-    return DG.Property.fromOptions(options);
+    return DG.Property.fromOptions(
+      buildPropertyOptions(p, {reserved: reservedProperties, skipReservedCheck: true}),
+    );
   }
 
   private async createPropertySection(
