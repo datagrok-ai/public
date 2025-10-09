@@ -4,28 +4,14 @@ import * as grok from 'datagrok-api/grok';
 import {PlateStateManager} from '../../shared/plate-state-manager';
 import {MappingDialogOptions, PlateFile} from '../../shared/types';
 import {Subscription} from 'rxjs';
+import './plate-grid-manager.css'; // Import the refactored stylesheet
 
 function createPlateGridSkeleton(): HTMLElement {
   const icon = ui.iconFA('table', null, 'Plates Table');
-  icon.style.fontSize = '48px';
-  icon.style.color = 'var(--grey-3)';
+  icon.classList.add('assay_plates__skeleton-icon');
 
-  const message = ui.divText('Import a file to see the list of plates', 'info-message');
-  message.style.marginTop = '12px';
-
-  const skeleton = ui.divV([icon, message], 'plate-grid-skeleton');
-  skeleton.style.cssText = `
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    min-height: 150px;
-    border: 1px dashed var(--grey-2);
-    border-radius: 4px;
-    background-color: var(--grey-0);
-  `;
+  const message = ui.divText('Import a file to see the list of plates', 'assay_plates__info-message');
+  const skeleton = ui.divV([icon, message], 'assay_plates__plate-grid-skeleton');
   return skeleton;
 }
 
@@ -38,21 +24,12 @@ export class PlateGridManager {
   private loadingIndicator: HTMLElement | null = null;
 
   constructor(private stateManager: PlateStateManager) {
-    this.root = ui.divV([], 'plate-grid-manager');
+    this.root = ui.divV([], 'assay_plates__plate-grid-manager');
     this.grid = DG.Grid.create(DG.DataFrame.create());
 
-    this.buildComponent();
+    this.root.appendChild(this.grid.root);
     this.initGrid();
     this.subscribeToStateChanges();
-  }
-
-  private buildComponent(): void {
-    this.root.style.width = '100%';
-    this.root.style.display = 'flex';
-    this.root.style.flexDirection = 'column';
-    this.grid.root.style.width = '100%';
-    this.grid.root.style.flexGrow = '1';
-    this.root.appendChild(this.grid.root);
   }
 
   private initGrid(): void {
@@ -63,7 +40,6 @@ export class PlateGridManager {
     this.grid.props.showColumnGridlines = false;
     this.grid.props.showRowGridlines = true;
     this.grid.props.rowHeight = 45;
-    this.grid.root.style.width = '100%';
 
     this.grid.onCurrentCellChanged.subscribe((gc: DG.GridCell) => {
       if (this.isSelecting || !gc || !gc.isTableCell) return;
@@ -121,7 +97,6 @@ export class PlateGridManager {
         g.fillText('Wells Failed', bounds.x + 28, bounds.y + bounds.height / 2);
         g.restore();
         args.preventDefault();
-        return;
       }
     });
   }
@@ -132,18 +107,17 @@ export class PlateGridManager {
       if (!this.skeletonEl) {
         this.skeletonEl = createPlateGridSkeleton();
         this.root.appendChild(this.skeletonEl);
-        this.setupDroppableArea(); // <-- ATTACH DROPPABLE LISTENER
+        this.setupDroppableArea();
       }
-      this.skeletonEl.style.display = 'flex';
-      this.grid.root.style.display = 'none'; // HIDE the grid
+      this.skeletonEl.classList.remove('assay_plates--hidden');
+      this.grid.root.classList.add('assay_plates--hidden');
       return;
     }
 
     if (this.skeletonEl)
-      this.skeletonEl.style.display = 'none';
+      this.skeletonEl.classList.add('assay_plates--hidden');
 
-
-    this.grid.root.style.display = ''; // SHOW the grid by resetting its display style
+    this.grid.root.classList.remove('assay_plates--hidden');
 
     const plateFiles: PlateFile[] = state.plates;
 
@@ -192,39 +166,26 @@ export class PlateGridManager {
     }
   }
 
-  // --- NEW METHODS FOR DROPPABLE FUNCTIONALITY ---
-
   private setupDroppableArea(): void {
     if (!this.skeletonEl) return;
+    const dragOverClass = 'assay_plates__plate-grid-skeleton--drag-over';
 
-    // Visual feedback for drag-and-drop
-    const highlightColor = 'var(--blue-2)';
-    const defaultColor = 'var(--grey-0)';
-    const defaultBorder = '1px dashed var(--grey-2)';
-    const highlightBorder = '1px solid var(--blue-5)';
-
-    this.skeletonEl.addEventListener('dragenter', () => this.skeletonEl!.style.backgroundColor = highlightColor);
+    this.skeletonEl.addEventListener('dragenter', () => this.skeletonEl!.classList.add(dragOverClass));
     this.skeletonEl.addEventListener('dragover', (event) => {
       event.preventDefault();
-      this.skeletonEl!.style.backgroundColor = highlightColor;
-      this.skeletonEl!.style.border = highlightBorder;
+      this.skeletonEl!.classList.add(dragOverClass);
     });
-    this.skeletonEl.addEventListener('dragleave', () => {
-      this.skeletonEl!.style.backgroundColor = defaultColor;
-      this.skeletonEl!.style.border = defaultBorder;
-    });
+    this.skeletonEl.addEventListener('dragleave', () => this.skeletonEl!.classList.remove(dragOverClass));
 
     ui.makeDroppable(this.skeletonEl, {
       acceptDrop: (dragObject) => {
-        // The dragged object can be a File from the OS or a Datagrok FileInfo
         const file = dragObject instanceof File ? dragObject : (dragObject as any)?.file;
         return !!file && file.name.toLowerCase().endsWith('.csv');
       },
       doDrop: (dragObject) => {
         const file = dragObject instanceof File ? dragObject : (dragObject as any)?.file;
         if (file) {
-          this.skeletonEl!.style.backgroundColor = defaultColor;
-          this.skeletonEl!.style.border = defaultBorder;
+          this.skeletonEl!.classList.remove(dragOverClass);
           this.processDroppedFile(file);
         }
       }
@@ -234,11 +195,7 @@ export class PlateGridManager {
   private async processDroppedFile(file: File): Promise<void> {
     this.showLoadingIndicator();
     try {
-      const csvString = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target!.result as string);
-        reader.readAsText(file);
-      });
+      const csvString = await file.text();
       const df = DG.DataFrame.fromCsv(csvString);
       await this.stateManager.loadDataFrame(df);
     } catch (e: any) {
@@ -253,21 +210,7 @@ export class PlateGridManager {
     this.loadingIndicator = ui.divV([
       ui.loader(),
       ui.divText('Loading...')
-    ], 'loading-indicator');
-    this.loadingIndicator.style.cssText = `
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(255, 255, 255, 0.8);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      border-radius: 4px;
-    `;
+    ], 'assay_plates__loading-indicator');
     this.skeletonEl.appendChild(this.loadingIndicator);
   }
 
@@ -276,29 +219,26 @@ export class PlateGridManager {
     this.loadingIndicator = null;
   }
 
-  // --- EXISTING METHODS (UNCHANGED) ---
-
   showMultiPlateMappingDialog(options: MappingDialogOptions): void {
     const dialog = ui.dialog('Apply Field Mappings');
-    dialog.root.style.minWidth = '500px';
-    const content = ui.divV([], {style: {gap: '20px'}});
+    dialog.root.classList.add('assay_plates__mapping-dialog');
+    const content = ui.divV([], 'assay_plates__mapping-dialog-content');
 
-    const mappingsSection = ui.divV([], {style: {gap: '8px'}});
-    mappingsSection.appendChild(ui.h3('Mappings to Apply'));
+    const mappingsSection = ui.divV([ui.h3('Mappings to Apply')], 'assay_plates__mapping-dialog-section');
 
     if (options.sourceMappings.size > 0) {
-      const mappingsList = ui.divV([], 'mapping-summary-list');
+      const mappingsList = ui.divV([], 'assay_plates__mapping-summary-list');
       options.sourceMappings.forEach((oldName, newName) => {
         const row = ui.divH([
-          ui.divText(oldName, 'mapping-summary-old-name'),
+          ui.divText(oldName, 'assay_plates__mapping-summary-old-name'),
           ui.iconFA('long-arrow-alt-right', null, 'maps to'),
-          ui.divText(newName, 'mapping-summary-new-name'),
+          ui.divText(newName, 'assay_plates__mapping-summary-new-name'),
           ui.iconFA('times', () => {
             options.onUndo(newName);
             dialog.close();
             grok.shell.info(`Mapping for '${newName}' has been reset. Open "Manage Mappings" again to proceed.`);
           }, 'Undo this mapping definition')
-        ], 'mapping-summary-row');
+        ], 'assay_plates__mapping-summary-row');
         mappingsList.appendChild(row);
       });
       mappingsSection.appendChild(mappingsList);
@@ -306,34 +246,25 @@ export class PlateGridManager {
       mappingsSection.appendChild(
         ui.divText(
           'No mappings defined yet. Use the validation panel to map columns on the active plate.',
-          'info-message'
+          'assay_plates__info-message'
         )
       );
     }
 
-    const platesSection = ui.divV([], {style: {gap: '8px'}});
-    platesSection.appendChild(ui.h3('Apply to Plates'));
-
+    const platesSection = ui.divV([ui.h3('Apply to Plates')], 'assay_plates__mapping-dialog-section');
     const plateCheckboxes: DG.InputBase<boolean>[] = [];
-    const plateSelectionHost = ui.divV([], 'plate-selection-host');
+    const plateSelectionHost = ui.divV([], 'assay_plates__plate-selection-host');
 
     options.allPlates.forEach((plateFile, idx) => {
-      // For now, we'll just default to selecting the active plate,
-      // since the old mapping indicators have been removed.
       const isSelected = (idx === this.stateManager.currentState?.activePlateIdx);
-
-      const cb = ui.input.bool(plateFile.plate.barcode ?? `Plate ${idx + 1}`, {
-        value: isSelected
-      });
+      const cb = ui.input.bool(plateFile.plate.barcode ?? `Plate ${idx + 1}`, {value: isSelected});
       plateCheckboxes.push(cb);
       plateSelectionHost.appendChild(cb.root);
     });
 
     const allPlatesCheckbox = ui.input.bool('Select All', {
       value: false,
-      onValueChanged: (v) => {
-        plateCheckboxes.forEach((cb) => cb.value = v);
-      }
+      onValueChanged: (v) => plateCheckboxes.forEach((cb) => cb.value = v)
     });
     allPlatesCheckbox.value = plateCheckboxes.every((cb) => cb.value);
 
@@ -353,7 +284,6 @@ export class PlateGridManager {
       if (options.sourceMappings.size > 0)
         options.onSync(options.sourceMappings, selectedIndexes);
     });
-
     dialog.show();
   }
 

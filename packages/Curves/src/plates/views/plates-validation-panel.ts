@@ -44,10 +44,10 @@ function createDynamicMappingRow(
   });
 
   const cancelBtn = ui.iconFA('times', onCancel, 'Cancel');
-  cancelBtn.classList.add('mapping-cancel-icon');
+  cancelBtn.classList.add('assay_plates__mapping-cancel-icon');
 
-  const rightCell = ui.divH([colChoice.root, cancelBtn], 'dynamic-row-right-cell');
-  const newRow = ui.divH([propInput.root, rightCell], 'plate-validation-table-row');
+  const rightCell = ui.divH([colChoice.root, cancelBtn], 'assay_plates__dynamic-row-right-cell');
+  const newRow = ui.divH([propInput.root, rightCell], 'assay_plates__validation-table-row');
 
   propInput.input.focus();
   return newRow;
@@ -97,11 +97,11 @@ export function renderValidationResults(
 
   ui.empty(tableElement);
   if (sourceColumns.length === 0) {
-    tableElement.appendChild(ui.divText('Import a CSV file to map columns.', 'info-message'));
+    tableElement.appendChild(ui.divText('Import a CSV file to map columns.', 'assay_plates__info-message'));
     return {element: tableElement, conflictCount: 0};
   }
 
-  tableElement.className = 'plate-validation-table';
+  tableElement.className = 'assay_plates__validation-table';
 
   let conflictCount = 0;
 
@@ -111,7 +111,7 @@ export function renderValidationResults(
     const propNameEl = ui.divH([ui.span([prop.name])]);
     if (prop.isRequired) {
       const asterisk = ui.element('sup');
-      asterisk.className = 'required-asterisk';
+      asterisk.className = 'assay_plates__required-asterisk';
       asterisk.innerText = '*';
       propNameEl.appendChild(asterisk);
       if (!mappedSource)
@@ -130,24 +130,24 @@ export function renderValidationResults(
       },
     });
 
-    const rightCell = ui.divH([choiceControl.root], 'mapping-input-container');
+    const rightCell = ui.divH([choiceControl.root], 'assay_plates__mapping-input-container');
     if (mappedSource) {
       const undoIcon = ui.iconFA('times', () => onUndo(prop.name), 'Undo mapping');
-      undoIcon.classList.add('mapping-undo-icon');
+      undoIcon.classList.add('assay_plates__mapping-undo-icon');
       rightCell.appendChild(undoIcon);
     }
 
-    const row = ui.divH([propNameEl, rightCell], 'plate-validation-table-row');
+    const row = ui.divH([propNameEl, rightCell], 'assay_plates__validation-table-row');
     tableElement.appendChild(row);
   });
 
-  const skeletonRow = ui.divH([], 'plate-validation-add-row');
+  const skeletonRow = ui.divH([], 'assay_plates__validation-add-row');
 
   const addBtn = ui.button(ui.iconFA('plus'), () => {
     const newRow = createDynamicMappingRow(sourceColumns, onMap, () => newRow.remove());
     tableElement.insertBefore(newRow, skeletonRow);
   }, 'Add new property mapping');
-  addBtn.classList.add('curves-icon-button', 'curves-add-button');
+  addBtn.classList.add('assay_plates__icon-button', 'assay_plates__add-button');
   skeletonRow.appendChild(addBtn);
   tableElement.appendChild(skeletonRow);
 

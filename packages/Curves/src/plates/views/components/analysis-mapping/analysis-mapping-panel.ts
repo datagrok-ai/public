@@ -13,8 +13,8 @@ export interface AnalysisMappingConfig {
   sourceColumns: string[];
   currentMappings: Map<string, string>;
 
-  onMap: (target: string, source: string) => void; // Fix: swap the order
-  onUndo: (target: string) => void; // Fix: change parameter nam
+  onMap: (target: string, source: string) => void;
+  onUndo: (target: string) => void;
 }
 
 export class AnalysisMappingPanel {
@@ -28,13 +28,11 @@ export class AnalysisMappingPanel {
   }
 
   private buildPanel(): void {
-    // Create header
     const header = ui.divH([
       ui.h3(`${this.config.analysisName} Required Fields`),
     ], 'analysis-mapping-header');
     header.style.marginBottom = '12px';
 
-    // Info text
     const infoText = ui.divText(
       `Map your data columns to the required fields for ${this.config.analysisName} analysis.`,
       'analysis-mapping-info'

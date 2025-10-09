@@ -39,7 +39,6 @@ CREATE TABLE plates.properties (
     CONSTRAINT check_scope CHECK (scope IN ('plate', 'well'))
 );
 CREATE UNIQUE INDEX properties_template_unique ON plates.properties(template_id, scope, name) WHERE template_id IS NOT NULL;
-COMMENT ON COLUMN plates.properties.origin_plate_id IS 'For global properties, stores the ID of the plate that first created this property.';
 
 CREATE TABLE plates.property_allowed_values (
     id SERIAL PRIMARY KEY,
@@ -78,7 +77,6 @@ CREATE TABLE plates.plates (
     created_by UUID
 );
 
-ALTER TABLE plates.properties ADD CONSTRAINT fk_properties_origin_plate FOREIGN KEY (origin_plate_id) REFERENCES plates.plates(id) ON DELETE SET NULL;
 
 CREATE TABLE plates.analysis_runs (
     id SERIAL PRIMARY KEY,

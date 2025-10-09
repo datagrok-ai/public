@@ -1,55 +1,140 @@
-.plate-widget .d4-grid canvas {
-  cursor: pointer !important;
+.assay_plates__plate-widget {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
-.plate-widget .d4-grid-col-header-border,
-.plate-widget .d4-grid-row-header-border {
-  cursor: default !important;
-  pointer-events: none !important;
+.assay_plates__plate-widget__tabs-container {
+    width: 100%;
+    display: flex;
+    height: 100%;
+    flex-grow: 1;
 }
 
-.plate-widget .d4-grid-cell-current {
-  border: none !important;
-  outline: none !important;
+.assay_plates__plate-widget__tabs {
+    width: 100%;
+    flex-grow: 1;
+    display: flex; /* Ensure tab control fills space */
 }
 
-.plate-widget .d4-grid-resize-handle {
-  display: none !important;
-}
-.plate-widget-role-tab-header {
-  display: flex;
-  align-items: center;
-  gap: 8px; 
-  padding: 0 4px; 
-}
-
-.d4-tab-header-stripe > .d4-tab-header.plate-widget-role-tab-header {
-  cursor: default;
+/* This is the main container for the detailed view (tabs on left, details on right) */
+.assay_plates__plate-widget__main-container {
+    width: 100%;
+    display: flex;
+    flex-direction: row; 
+    gap: 15px;
+    height: 100%;
+    flex-grow: 1;
 }
 
-.plate-widget-role-tab-header .color-square {
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-  border: 1px solid var(--grey-3);
-  flex-shrink: 0;
+/* Make the first child (the TabControl) take up the available space */
+.assay_plates__plate-widget__main-container > div:first-child {
+    flex-grow: 1;
 }
 
-.plate-widget-role-tab-header .delete-role-icon {
-  color: var(--grey-4);
-  margin-left: auto; 
-  cursor: pointer;
-  visibility: hidden; 
-  opacity: 0;
-  transition: all 0.2s ease;
-  padding: 2px;
+.assay_plates__plate-widget__details {
+    /* Define a size for the details panel on the right */
+    min-width: 250px;
+    max-width: 300px;
+    overflow-y: auto;
 }
 
-.d4-tab-header:hover .delete-role-icon {
-  visibility: visible;
-  opacity: 1;
+
+/* --- Vertical TabControl Styles --- */
+
+/* Target the header strip within your vertical tabs. */
+.assay_plates__plate-widget__tabs .d4-tab-header-strip {
+    /* Arrange the tab headers in a vertical column */
+    flex-direction: column;
+    width: 180px;
+    min-width: 180px;
+
+    /* Remove the default bottom border used for horizontal tabs */
+    border-bottom: none;
+
+    /* Add a right border to separate headers from the content panel */
+    border-right: 1px solid var(--grey-2);
 }
 
-.plate-widget-role-tab-header .delete-role-icon:hover {
-  color: var(--red-2);
+/* Ensure the container for the headers themselves also stacks them vertically */
+.assay_plates__plate-widget__tabs .d4-tab-headers {
+    flex-direction: column;
+    width: 100%;
+}
+
+/* Style the individual tab buttons for a vertical layout */
+.assay_plates__plate-widget__tabs .d4-tab-header {
+    /* Align tab text to the left */
+    justify-content: flex-start;
+    padding: 8px 12px;
+    width: 100%;
+
+    /* Remove styles meant for horizontal tabs */
+    border-bottom: none;
+}
+/*
+  Override the generic platform style that sets a fixed height on .ui-box elements.
+  This more specific selector ensures that any .ui-box inside the plate widget
+  has its height reset, allowing it to grow and fill the available space.
+
+  Unfortunately, this is a clusterfuck and doesn't work. Davit found some black magic way to fix this, have to ask again...
+*/ 
+.assay_plates__plate-widget .ui-box {
+    height: 100%;
+}
+/* Make the Datagrok Grid inside the widget expand to fill all available space */
+.assay_plates__plate-widget .d4-grid {
+    flex-grow: 1;
+}
+.d4-tab-host .ui-box .d4-tab-vertical .assay_plates__plate-widget__tabs{
+    height: 100%;
+}
+
+.assay_plates__create-plate-view__tab-control {
+    width: 100%;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.assay_plates__create-plate-view__tab-control > .d4-tab-host {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.assay_plates__create-plate-view__tab-control > .d4-tab-host > .d4-tab-contents {
+    width: 100% !important;
+}
+
+/* Make this more specific as well */
+.assay_plates__create-plate-view__tab-control > .d4-tab-host .d4-tab-content,
+.assay_plates__create-plate-view__tab-control > .d4-tab-host .d4-tab-pane-content {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+/* This rule is fine as-is */
+.assay_plates__create-plate-view .d4-grid {
+    width: 100% !important;
+}
+
+/* This rule is also fine */
+.assay_plates__create-plate-view .d4-tab-content .assay_plates__plate-widget {
+    flex-grow: 1;
+    display: flex;
+    min-width: 0;
+}
+
+.assay_plates__create-plate-view .d4-tab-content .assay_plates__plate-widget > :last-child {
+    flex-grow: 1;
+    min-width: 0;
 }

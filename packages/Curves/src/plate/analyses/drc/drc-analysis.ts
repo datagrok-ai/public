@@ -3,13 +3,14 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {Plate} from '../../plate';
 import {PlateWidget} from '../../plate-widget';
-import {AbstractPlateAnalysis, IAnalysisProperty} from '../base-analysis';
+import {AnalysisBase, IAnalysisProperty} from '../base-analysis';
 import {AnalysisRequiredFields} from '../../../plates/views/components/analysis-mapping/analysis-mapping-panel';
-import {FIT_FUNCTION_4PL_DOSE_RESPONSE, FIT_FUNCTION_4PL_REGRESSION, IFitSeries} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {FIT_FUNCTION_4PL_REGRESSION, IFitSeries} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {DrcAnalysisCoordinator} from './drc-coordinator';
 import {Subscription} from 'rxjs';
+import './../plate-analyses.css';
 
-export class DrcAnalysis extends AbstractPlateAnalysis {
+export class DrcAnalysis extends AnalysisBase {
   readonly name: string = 'DRC';
   readonly friendlyName: string = 'Dose Response';
 
@@ -30,15 +31,13 @@ export class DrcAnalysis extends AbstractPlateAnalysis {
   ];
 
   override formatResultsForGrid(rawResults: DG.DataFrame): DG.DataFrame {
-    console.log('--- DRC: formatResultsForGrid START ---');
     if (rawResults.rowCount === 0)
       return rawResults;
 
     const propsCol = rawResults.col('properties');
-    if (!propsCol) {
-      console.error('DRC: CRITICAL - `properties` column not found!');
+    if (!propsCol)
       return DG.DataFrame.create(0);
-    }
+
 
     const finalRows: any[] = [];
     for (let i = 0; i < rawResults.rowCount; i++) {
@@ -55,10 +54,8 @@ export class DrcAnalysis extends AbstractPlateAnalysis {
           'run_id': row.get('run_id'),
           'plate_id': row.get('plate_id'),
           'barcode': row.get('barcode'),
-          // These are the updated lines
           'Compound': compound,
           'group_combination': groupArray,
-          // End of updated lines
           'Curve': properties.Curve,
           'IC50': properties.IC50,
           'Hill Slope': properties['Hill Slope'],
@@ -84,8 +81,6 @@ export class DrcAnalysis extends AbstractPlateAnalysis {
     const ic50Col = resultDf.col('IC50');
     if (ic50Col)
       ic50Col.meta.format = '0.00e0';
-
-    console.log('--- DRC: formatResultsForGrid END ---');
     return resultDf;
   }
 
@@ -107,7 +102,7 @@ export class DrcAnalysis extends AbstractPlateAnalysis {
     const activityColName = mappings.get('Activity')!;
 
     if (!plate.data.columns.contains(sampleColName) || !plate.data.columns.contains(concentrationColName) || !plate.data.columns.contains(activityColName))
-      return null;
+      throw new Error(`DRC: CRITICAL - Required columns (${concentrationColName}, ${activityColName}, ${sampleColName}) not found in plate data.`);
 
     let finalValueCol = activityColName;
     let normed = false;
@@ -188,25 +183,20 @@ export class DrcAnalysis extends AbstractPlateAnalysis {
         this.coordinator?.destroy();
         this.plateSubscription?.unsubscribe();
 
-        const container = ui.divV([ui.loader()], 'drc-analysis-container');
-        container.style.width = '100%';
-        container.style.height = '100%';
-
+        const container = ui.divV([ui.loader()], 'assay_plates__drc-analysis-container');
         const params = {'Normalize': this.parameters.find((p) => p.name === 'Normalize')?.defaultValue ?? true};
 
         this.run(mappedPlate, params, mappedMappings).then((runOutput) => {
           ui.empty(container);
 
           if (!runOutput) {
-            container.appendChild(ui.divText('Analysis failed: Not enough data to fit curves. Check mappings.', 'warning-message'));
+            container.appendChild(ui.divText('Analysis failed: Not enough data to fit curves. Check mappings.', 'assay_plates__warning-message'));
             return;
           }
 
           const {resultsDf, seriesVals, finalValueCol} = runOutput;
           const resultsGrid = resultsDf.plot.grid();
           resultsGrid.props.rowHeight = 200;
-          resultsGrid.root.style.width = '100%';
-          resultsGrid.root.style.flexGrow = '1';
 
           setTimeout(() => { if (resultsGrid.col('Curve')) resultsGrid.col('Curve')!.width = 400; }, 200);
 
@@ -222,14 +212,21 @@ export class DrcAnalysis extends AbstractPlateAnalysis {
           this.plateSubscription = mappedPlate.onOutlierChanged.subscribe(() => {
             this.coordinator?.regenerateCurves();
           });
-          const saveButton = ui.button('SAVE RESULTS', async () => await this.saveResults(mappedPlate, resultsDf, params, mappedMappings));
-          saveButton.style.marginTop = '8px';
+          const saveButton = ui.button('SAVE RESULTS', async () => {
+            ui.setUpdateIndicator(saveButton, true);
+            try {
+              await this.saveResults(mappedPlate, resultsDf, params, mappedMappings);
+            } catch (e) {
+            } finally {
+              ui.setUpdateIndicator(saveButton, false);
+            }
+          });
+          saveButton.classList.add('assay_plates__drc-save-button');
+
           const resultsContainer = ui.divV([
             resultsGrid.root,
-            ui.div([saveButton], {style: {display: 'flex', justifyContent: 'flex-end', paddingRight: '4px'}}),
-          ]);
-          resultsContainer.style.cssText = 'display: flex; flex-direction: column; width: 100%; height: 100%;';
-          resultsGrid.root.style.flexGrow = '1';
+            ui.div([saveButton], 'assay_plates__drc-save-button-container'),
+          ], 'assay_plates__analysis-grid-container');
 
           container.appendChild(resultsContainer);
         });

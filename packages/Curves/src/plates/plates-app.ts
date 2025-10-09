@@ -12,7 +12,7 @@ import {createTemplatesView} from './views/plates-templates-view';
 import {filter} from 'rxjs/operators';
 import {createPlatesView} from './views/plates-create-view';
 import {AnalysisManager} from '../plate/analyses/analysis-manager';
-import { searchAnalysesView } from './views/analyses-search-view';
+import {searchAnalysesView} from './views/analyses-search-view';
 
 export function platesAppView(): DG.View {
   const dummy = DG.DataFrame.create(5);
@@ -33,6 +33,14 @@ export function platesAppView(): DG.View {
 export async function initPlatesAppTree(treeNode: DG.TreeViewGroup): Promise<void> {
   await crud.initPlates();
 
+  try {
+    console.log('Curves: Initializing AnalysisManager...');
+    await AnalysisManager.instance.init();
+    console.log('Curves: AnalysisManager initialized successfully.');
+  } catch (e) {
+    console.error('Curves: Failed to initialize AnalysisManager:', e);
+  }
+
   const createPlatesNode = treeNode.item('Create');
   const searchPlatesNode = treeNode.item('Search plates');
   const searchWellsNode = treeNode.item('Search wells');
@@ -42,7 +50,7 @@ export async function initPlatesAppTree(treeNode: DG.TreeViewGroup): Promise<voi
   searchPlatesNode.onSelected.subscribe(async (_) => grok.shell.addPreview(await searchPlatesView()));
   searchWellsNode.onSelected.subscribe(async (_) => grok.shell.addPreview(await searchWellsView()));
   searchAnalysesNode.onSelected.subscribe(async (_) => grok.shell.addPreview(await searchAnalysesView())); // <-- AND THIS ONE
-  
+
 
   const templatesNode = treeNode.group('Templates');
   templatesNode.onSelected.subscribe(async (_) => grok.shell.addPreview(createTemplatesView()));

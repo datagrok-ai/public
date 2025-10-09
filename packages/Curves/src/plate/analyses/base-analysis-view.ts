@@ -1,8 +1,8 @@
 // base-analysis-view.ts
 import * as ui from 'datagrok-api/ui';
-import {Plate} from './plate';
-import {AnalysisMappingPanel} from '../plates/views/components/analysis-mapping/analysis-mapping-panel';
-import './base-analysis-view.css';
+import {Plate} from '../plate';
+import {AnalysisMappingPanel} from '../../plates/views/components/analysis-mapping/analysis-mapping-panel';
+import './plate-analyses.css'; // Import the new stylesheet
 
 export interface AnalysisFieldMapping {
   name: string;
@@ -27,32 +27,13 @@ export class BaseAnalysisView {
     private onMap: (target: string, source: string) => void,
     private onUndo: (target: string) => void
   ) {
-    this.container = ui.divV([], 'analysis-view-container');
-    this.contentHost = ui.divV([], 'analysis-content-host');
+    this.container = ui.divV([], 'assay_plates__analysis-view-container');
+    this.contentHost = ui.divV([], 'assay_plates__analysis-content-host');
 
-    this.setupLayout();
+    this.container.appendChild(this.contentHost);
     this.render();
   }
 
-  private setupLayout(): void {
-    this.container.style.cssText = `
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      min-height: 400px;
-    `;
-
-    this.contentHost.style.cssText = `
-      width: 100%;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    `;
-
-    this.container.appendChild(this.contentHost);
-  }
 
   private render(): void {
     ui.empty(this.contentHost);
@@ -82,12 +63,7 @@ export class BaseAnalysisView {
     });
 
     const panelRoot = mappingPanel.getRoot();
-    panelRoot.style.cssText = `
-      width: 100%;
-      flex: 1;
-      padding: 16px;
-      box-sizing: border-box;
-    `;
+    panelRoot.classList.add('assay_plates__analysis-mapping-panel-root');
 
     this.contentHost.appendChild(panelRoot);
   }
@@ -96,29 +72,13 @@ export class BaseAnalysisView {
     const resultsView = this.config.createResultsView(this.plate, this.currentMappings);
 
     if (resultsView) {
-      resultsView.style.cssText = `
-        width: 100%;
-        height: 100%;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-      `;
+      resultsView.classList.add('assay_plates__results-view');
       this.contentHost.appendChild(resultsView);
     } else {
       const errorMsg = ui.divText(
         `Unable to create ${this.config.analysisName.toLowerCase()} with current mapping.`,
-        'warning-message'
+        'assay_plates__warning-message'
       );
-      errorMsg.style.cssText = `
-        width: 100%;
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        color: var(--orange-2);
-        font-style: italic;
-      `;
       this.contentHost.appendChild(errorMsg);
     }
   }

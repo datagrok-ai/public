@@ -26,23 +26,15 @@ import {PlateTemplateHandler} from './plates/objects/plate-template-handler';
 import * as api from './package-api';
 import {convertDataToCurves, dataToCurvesUI, WellTableParentData} from './fit/data-to-curves';
 import {parsePlateFromCsv} from './plate/csv-plates';
-import {layoutsView} from './plates/views/layouts-view';
 import {AnalysisManager} from './plate/analyses/analysis-manager';
 import {DrcAnalysis} from './plate/analyses/drc/drc-analysis';
 
 export const _package = new DG.Package();
 
 
-//tags: autostart
-export async function autostart(): Promise<void> {
-  try {
-    console.log('Curves: Initializing AnalysisManager...');
-    await AnalysisManager.instance.init();
-    console.log('Curves: AnalysisManager initialized successfully.');
-  } catch (e) {
-    console.error('Curves: Failed to initialize AnalysisManager:', e);
-  }
-}
+// //tags: autostart
+// export async function autostart(): Promise<void> {
+// }
 
 
 const SOURCE_COLUMN_TAG = '.sourceColumn';
@@ -223,6 +215,8 @@ export class PackageFunctions {
     return [];
   }
 
+  // NOTE: I commented this out for now because analyses classes have been refactored and PlateDrcAnalysis no longer exists in this form,
+  // NOTE: but i am leaving this here to reimplent correctly when i'm adressing xlsx handling (focused solely on csv recently ).
   // @grok.decorators.fileHandler({outputs: [], ext: 'xlsx', fileViewerCheck: 'Curves:checkExcelIsPlate'})
   // static async importPlateXlsx(fileContent: Uint8Array): Promise<any[]> {
   //   const view = DG.View.create();
@@ -241,6 +235,8 @@ export class PackageFunctions {
   //   return [];
   // }
 
+  // NOTE: I commented this out for now because analyses classes have been refactored and PlateDrcAnalysis no longer exists in this form,
+  // NOTE: but i am leaving this here to reimplent correctly when i'm adressing xlsx handling (focused solely on csv recently ).
   // @grok.decorators.fileViewer({name: 'viewPlateXlsx', fileViewer: 'xlsx', fileViewerCheck: 'Curves:checkExcelIsPlate'})
   // static async previewPlateXlsx(file: DG.FileInfo): Promise<DG.View> {
   //   const view = DG.View.create();
@@ -273,50 +269,22 @@ export class PackageFunctions {
     }
   }
 
-// @grok.decorators.fileHandler({
-//   ext: 'csv',
-//   fileViewerCheck: 'Curves:checkCsvIsPlate'
-// })
-// static async importPlateCsv(fileContent: string, file: DG.FileInfo): Promise<void> {
-//   try {
-//     const plate = await parsePlateFromCsv(fileContent);
-//     const view = DG.View.create();
-//     view.name = file.friendlyName;
-//     const plateWidget = PlateDrcAnalysis.analysisView(plate[0], {}, 'csv');
-//     if (plateWidget) {
-//       view.root.appendChild(plateWidget.root);
-//     } else {
-//       grok.shell.error('Failed to create plate analysis view. Please check data columns.');
-//       view.close();
-//     }
-//     grok.shell.addView(view);
-//   } catch (e: any) {
-//     grok.shell.error(`Could not import plate from ${file.name}: ${e.message}`);
-//   }
-// }
- @grok.decorators.func({
-   name: 'Layouts',
-   description: 'A standalone view for designing plate layouts.',
- })
-static layouts(): DG.View {
-  return layoutsView();
+
+static async parseExcelPlate(content: string | Uint8Array, name?: string):Promise<Plate> {
+  if (typeof content === 'string') {
+    const blob = new Blob([content], {type: 'application/octet-binary'});
+    const buf = await blob.arrayBuffer();
+    const plate = await Plate.fromExcel(new Uint8Array(buf), name);
+    return plate;
+  } else {
+    return await Plate.fromExcel(content, name);
+  }
 }
 
- static async parseExcelPlate(content: string | Uint8Array, name?: string) {
-   if (typeof content === 'string') {
-     const blob = new Blob([content], {type: 'application/octet-binary'});
-     const buf = await blob.arrayBuffer();
-     const plate = await Plate.fromExcel(new Uint8Array(buf), name);
-     return plate;
-   } else {
-     return await Plate.fromExcel(content, name);
-   }
- }
-
 @grok.decorators.app({name: 'Browse', browsePath: 'Plates'})
- static platesApp(): DG.View {
-   return platesAppView();
- }
+static platesApp(): DG.View {
+  return platesAppView();
+}
 
 @grok.decorators.func({})
 static async getPlateByBarcode(barcode: string): Promise<Plate> {
