@@ -9,6 +9,10 @@ import {getSettings, saveSettings} from './utils';
 // }
 
 export class PowerPackSettingsEditor extends DG.Widget {
+  get type(): string {
+    return 'PowerPackSettingsEditor';
+  }
+
   constructor() {
     super(ui.div());
 

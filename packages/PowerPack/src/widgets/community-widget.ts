@@ -4,6 +4,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 export class CommunityWidget extends DG.Widget {
+  get type(): string {
+    return 'CommunityWidget';
+  }
+
   caption: string;
 
   constructor() {

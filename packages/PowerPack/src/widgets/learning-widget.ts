@@ -17,6 +17,10 @@ interface HelpLink {
 }
 
 export class LearningWidget extends DG.Widget {
+  get type(): string {
+    return 'LearningWidget';
+  }
+
   caption: string;
 
   constructor() {

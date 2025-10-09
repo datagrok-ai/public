@@ -13,7 +13,7 @@ enum SpotlightTabNames {
 }
 
 export class ActivityDashboardWidget extends DG.Widget {
-  public get type(): string {
+  get type(): string {
     return 'ActivityDashboardWidget';
   }
 

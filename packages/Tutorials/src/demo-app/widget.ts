@@ -10,6 +10,9 @@ import { TreeViewGroup } from 'datagrok-api/dg';
 
 
 export class DemoAppWidget extends DG.Widget {
+    get type(): string {
+      return 'DemoAppWidget';
+    }
 
     constructor() {
         super(ui.panel([], 'tutorial-widget'));

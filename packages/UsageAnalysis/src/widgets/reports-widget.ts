@@ -3,6 +3,10 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 export class ReportsWidget extends DG.Widget {
+  get type(): string {
+    return 'ReportsWidget';
+  }
+
   caption: string;
   order: string;
 

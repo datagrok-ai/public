@@ -6,6 +6,10 @@ import {TutorialRunner} from './tutorial-runner';
 import '../css/tutorial.css';
 
 export class TutorialWidget extends DG.Widget {
+  get type(): string {
+    return 'TutorialWidget';
+  }
+
   caption: string;
   order: string;
   totalTracks: number = 0;

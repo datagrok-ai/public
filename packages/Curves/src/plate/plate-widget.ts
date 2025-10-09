@@ -34,6 +34,10 @@ export const dimensions = new Map([
 
 /** Visualizes multiple layers of {@link Plate} in tabbed interface and lets you edit it */
 export class PlateWidget extends DG.Widget {
+  get type(): string {
+    return 'PlateWidget';
+  }
+
   _colorColumn?: DG.Column | undefined;
   _plate: Plate = new Plate(8, 12);
   grid: DG.Grid = DG.Viewer.heatMap(DG.DataFrame.create());

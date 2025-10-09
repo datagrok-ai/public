@@ -9,6 +9,10 @@ import {Track} from './track';
 
 /** A base class for tutorials */
 export abstract class Tutorial extends DG.Widget {
+  get type(): string {
+    return 'Tutorial';
+  }
+
   abstract get name(): string;
   abstract get description(): string;
   abstract get steps(): number;
