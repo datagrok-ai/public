@@ -950,13 +950,13 @@ Medicinal chemistry is a balancing act: potency must rise while properties like 
 
 * **Property rules & gates.** Start with simple filters to eliminate obvious non-starters. These are fast guardrails but can be blunt and may miss promising trade-offs.
 
-  Calculate ADME/physchem properties across a column (Top menu: Chem → ADME/Tox → Calculations) with the Admetica
+  Calculate ADME/physchem properties across a column (Top menu: Chem → Admetica → Calculate...) with the Admetica
  plugin and built-in calculators. New numeric columns are added for immediate charting and filtering. Some of the viewers, like [parallel coordinates plot](../../../../visualize/viewers/pc-plot.md) or
  [radar](../../../../visualize/viewers/radar.md), are especially useful for that purpose.
 
 * **Desirability/utility functions & composite scores.** Map each property to a 0–1 “desirability” curve, then combine (sum/mean/weighted) into a single score that encodes the team’s preferences. A well-known example that is included by default is CNS MPO from Pfizer, which combines six physicochemical properties into a 0–6 score and correlates with clinical CNS success. 
 
-  Available from `Chem -> Compute`:
+  Available from `Chem -> Calculate -> MPO Score...`:
 
   ![](mpo-desirability-functions.png)
 
