@@ -264,14 +264,41 @@
 }
 
 .moltrack-statistics-hide-header .header {
-    display: none;
+  display: none;
 }
 
 .moltrack-saved-search-delete {
-    padding-left: 5px;
-    padding-top: 5px;
+  padding-left: 5px;
+  padding-top: 5px;
 }
 
 .moltrack-saved-search-delete:hover .grok-icon {
-    color: red;
+  color: red;
+}
+
+.moltrack-quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.moltrack-bolt-icon {
+  color: #FFD700;
+  font-size: 16px;
+}
+
+.moltrack-quick-label {
+  font-weight: bold;
+}
+
+.moltrack-quick-links {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.moltrack-quick-container {
+  display: flex;
+  flex-direction: column;
 }

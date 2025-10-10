@@ -6,9 +6,9 @@ import * as DG from 'datagrok-api/dg';
 
 import { MolTrackDockerService } from './services/moltrack-docker-service';
 import { excludedScopes, MOLTRACK_ENTITY_LEVEL, MOLTRACK_IS_STATIC_FIELD, SAVED_SEARCHES_NODE, Scope, SEARCH_NODE } from './utils/constants';
-import { createSavedSearchesSatistics, createSearcExpandablehNode, createSearchNode, createSearchView, getSavedSearches, handleSearchURL, loadSearchFields, molTrackSearchFieldsArr } from './views/search';
+import { createSavedSearchesSatistics, createSearchExpandableNode, createSearchNode, createSearchView, getSavedSearches, handleSearchURL, loadSearchFields, molTrackSearchFieldsArr } from './views/search';
 import { registerAllData, registerAssayData, updateAllMolTrackSchemas } from './utils/registration-utils';
-import { batchView, compoundView, createPath, getAppHeader, getStatisticsWidget, initBulkRegisterView, initRegisterView } from './utils/view-utils';
+import { batchView, compoundView, createPath, getQuickActionsWidget, getStatisticsWidget, initBulkRegisterView, initRegisterView } from './utils/view-utils';
 import { flattened, getCorporateCompoundIdByExactStructure } from './utils/utils';
 import { molTrackPropPanel } from './widgets/moltrack-property-panel';
 import { PropertySchemaView } from './views/schema-view';
@@ -79,15 +79,10 @@ export async function molTrackApp(path: string): Promise<DG.ViewBase> {
   if (isBatchPath)
     return setPathAndReturn(initRegisterView('Batch', false));
 
-  const appHeader = getAppHeader();
-
-  const viewRoot = ui.divV([appHeader]);
-  viewRoot.append(ui.wait(async () => {
-    const statsWidget = await getStatisticsWidget(grok.shell.addTableView);
-    return ui.div(statsWidget);
-  }));
-
-  return DG.View.fromRoot(viewRoot);
+  const statisticsWidget = await getStatisticsWidget(createSearchView);
+  const quickActionsWidget = getQuickActionsWidget();
+  const viewRoot = ui.divH([statisticsWidget, quickActionsWidget], { style: { gap: '50px' } });
+  return createSearchExpandableNode([''], async () => viewRoot);
 }
 
 //input: dynamic treeNode
@@ -114,19 +109,19 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
   const searchableScopes = Object.values(Scope)
     .filter((scope) => !excludedScopes.includes(scope));
   searchNode.onSelected.subscribe(() =>
-    createSearcExpandablehNode([SEARCH_NODE], getStatisticsWidget, [createSearchView, true]));
+    createSearchExpandableNode([SEARCH_NODE], () => getStatisticsWidget(createSearchView)));
 
   //search section
   searchableScopes.forEach((scope) => createSearchNode(appNode, scope));
 
   //saved searches section
   const savedSearchesNode = appNode.getOrCreateGroup(SAVED_SEARCHES_NODE);
-  savedSearchesNode.onSelected.subscribe(() => createSearcExpandablehNode([SAVED_SEARCHES_NODE], createSavedSearchesSatistics, [undefined]));
+  savedSearchesNode.onSelected.subscribe(() => createSearchExpandableNode([SAVED_SEARCHES_NODE], () => createSavedSearchesSatistics(undefined)));
   Object.values(Scope)
     .filter((scope) => !excludedScopes.includes(scope))
     .forEach((scope) => {
       const entityGroup = savedSearchesNode.getOrCreateGroup(`${scope.charAt(0).toUpperCase()}${scope.slice(1)}`);
-      entityGroup.onSelected.subscribe(() => createSearcExpandablehNode([SAVED_SEARCHES_NODE, scope], createSavedSearchesSatistics, [scope]));
+      entityGroup.onSelected.subscribe(() => createSearchExpandableNode([SAVED_SEARCHES_NODE, scope], () => createSavedSearchesSatistics(scope)));
       const savedSearches = getSavedSearches(scope);
       Object.keys(savedSearches).forEach((savedSearch) => {
         const savedSearchNode = entityGroup.item(savedSearch);

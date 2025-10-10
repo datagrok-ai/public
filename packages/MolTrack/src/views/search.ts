@@ -906,9 +906,9 @@ export async function handleSearchURL(url: string): Promise<DG.ViewBase> {
     if (componentsArr.length === idx) {
       openMolTrackSearchNode(nodesToExpand);
       if (nodesToExpand[0].toLowerCase() === SEARCH_NODE.toLowerCase())
-        return await createSearcExpandablehNode([SEARCH_NODE], getStatisticsWidget, [createSearchView, true]);
+        return await createSearchExpandableNode([SEARCH_NODE], () => getStatisticsWidget(createSearchView));
       if (nodesToExpand[0].toLowerCase() === SAVED_SEARCHES_NODE.toLowerCase())
-        return await createSearcExpandablehNode([SAVED_SEARCHES_NODE], createSavedSearchesSatistics, [undefined]);
+        return await createSearchExpandableNode([SAVED_SEARCHES_NODE], () => createSavedSearchesSatistics(undefined));
     }
     if (componentsArr.length > idx) {
       const scope = componentsArr[1];
@@ -919,12 +919,12 @@ export async function handleSearchURL(url: string): Promise<DG.ViewBase> {
         if (componentsArr.length === idx) {
           openMolTrackSearchNode(nodesToExpand);
           if ((Object.values(Scope) as string[]).includes(scope.toLowerCase())) {
-            return await createSearcExpandablehNode([SAVED_SEARCHES_NODE, scope],
-              createSavedSearchesSatistics, [scope]);
+            return await createSearchExpandableNode([SAVED_SEARCHES_NODE, scope],
+              () => createSavedSearchesSatistics(scope as Scope));
           } else {
             grok.shell.error(`Entity ${scope} doesn't exist in Moltrack`);
-            return await createSearcExpandablehNode([SAVED_SEARCHES_NODE],
-              createSavedSearchesSatistics, [undefined]);
+            return await createSearchExpandableNode([SAVED_SEARCHES_NODE],
+              () => createSavedSearchesSatistics(undefined));
           }
         }
       } else {
@@ -955,9 +955,9 @@ export async function handleSearchURL(url: string): Promise<DG.ViewBase> {
   throw Error(`incorrect search path`);
 }
 
-export async function createSearcExpandablehNode(viewpath: string[],
-  getElement: (...args: any[]) => Promise<HTMLElement>,
-  args: any[]): Promise<DG.ViewBase> {
+export async function createSearchExpandableNode(viewpath: string[],
+  getElement: () => Promise<HTMLElement>,
+): Promise<DG.ViewBase> {
   openedSearchView?.close();
   const header = getAppHeader();
   const contentDiv = ui.div('', 'moltrack-search-stats-div');
@@ -966,7 +966,7 @@ export async function createSearcExpandablehNode(viewpath: string[],
   openedSearchView.path = createPathFromArr(openedSearchView, viewpath);
   ui.setUpdateIndicator(contentDiv, true, `Loading ${viewpath[viewpath.length - 1]}...`);
 
-  getElement(...args)
+  getElement()
     .then((res) => contentDiv.append(res))
     .catch((e) => grok.shell.error(e))
     .finally(() => ui.setUpdateIndicator(contentDiv, false));

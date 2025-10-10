@@ -115,6 +115,7 @@ export function initBulkRegisterView(setPath: boolean = true) {
   registrationView.show();
   return registrationView.view;
 }
+
 export function getAppHeader(): HTMLElement {
   const appHeader = u2.appHeader({
     iconPath: _package.webRoot + '/images/moltrack.png',
@@ -129,30 +130,73 @@ export function getAppHeader(): HTMLElement {
   return appHeader;
 }
 
-export async function getStatisticsWidget(onCountClick: (...args: any[]) => void, isSearch?: boolean):
-Promise<HTMLTableElement> {
-  let scopes = Object.values(Scope);
-  if (isSearch)
-    scopes = scopes.filter((scope) => !excludedScopes.includes(scope));
-  const rows: any[][] = await Promise.all(
+const snakeCaseToTitleCase = (str: string) =>
+  str.replace(/(^|_)([a-z])/g, (_, __, c) => ' ' + c.toUpperCase()).trim();
+
+export async function getStatisticsWidget(
+  onCountClick: (...args: any[]) => void,
+): Promise<HTMLTableElement> {
+  const scopes = Object.values(Scope);
+  const rows: (string | HTMLElement)[][] = await Promise.all(
     scopes.map(async (entity) => {
       try {
         const df = await grok.functions.call('MolTrack:retrieveEntity', { scope: entity, flatten: true });
         const count = df?.rowCount ?? 0;
+        const entityTitle = snakeCaseToTitleCase(entity);
 
-        return [
-          entity,
-          ui.link(count.toString(), () => {
-            const funcParams = isSearch ? [entity.charAt(0).toUpperCase() + entity.slice(1), entity] : [df];
-            onCountClick(...funcParams);
-          }),
-        ];
-      } catch (e) {
-        grok.shell.error(`Failed to retrieve ${entity}: ${e}`);
-        return [entity, 'Error'];
+        const link = ui.link(count.toString(), () => {
+          const args = [entityTitle, entity];
+          onCountClick(...args);
+        });
+
+        return [entityTitle, link];
+      } catch (e: any) {
+        grok.shell.error(`Failed to retrieve ${entity}: ${e.message ?? e}`);
+        return [snakeCaseToTitleCase(entity), 'Error'];
       }
     }),
   );
 
   return ui.table(rows, (row) => row);
-};
+}
+
+export function getQuickActionsWidget(): HTMLElement {
+  const boltIcon = ui.iconFA('bolt');
+  boltIcon.classList.add('moltrack-bolt-icon');
+
+  const quickActionsLabel = ui.label('Quick Actions');
+  quickActionsLabel.classList.add('moltrack-quick-label');
+
+  const quickActionsTitle = ui.divH([boltIcon, quickActionsLabel]);
+  quickActionsTitle.classList.add('moltrack-quick-actions');
+
+  const linksConfig: { label: string; createView: () => DG.View }[] = [
+    {
+      label: 'Register compound',
+      createView: () => initRegisterView('Compound', true),
+    },
+    {
+      label: 'Register batch',
+      createView: () => initRegisterView('Batch', true),
+    },
+    {
+      label: 'Register bulk...',
+      createView: () => initBulkRegisterView(true),
+    },
+  ];
+
+  const quickLinks = ui.divV(
+    linksConfig.map((cfg) =>
+      ui.link(cfg.label, () => {
+        grok.shell.v.close();
+        cfg.createView();
+      }),
+    ),
+  );
+  quickLinks.classList.add('moltrack-quick-links');
+
+  const container = ui.divV([quickActionsTitle, quickLinks]);
+  container.classList.add('moltrack-quick-container');
+
+  return container;
+}
