@@ -12,6 +12,7 @@ import { batchView, compoundView, createPath, getQuickActionsWidget, getStatisti
 import { flattened, getCorporateCompoundIdByExactStructure } from './utils/utils';
 import { molTrackPropPanel } from './widgets/moltrack-property-panel';
 import { PropertySchemaView } from './views/schema-view';
+import { registerSemanticTypes } from './utils/detectors';
 
 export const _package = new DG.Package();
 
@@ -20,6 +21,7 @@ export async function init(): Promise<void> {
   try {
     await grok.functions.call('Chem:initChemAutostart');
   } catch (e) {}
+  registerSemanticTypes();
   // This will be used for the updated docker setup later.
   const connection = await grok.dapi.connections.filter('name = "moltrack"').first();
   const queries = await grok.dapi.queries.filter(`connection.id = "${connection.id}"`).list();
