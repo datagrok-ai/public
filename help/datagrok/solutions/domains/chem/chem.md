@@ -944,6 +944,28 @@ Use built-in tools to explore and analyze the prediction results.
 
 </details>
 
+## Multiparameter optimization
+
+Medicinal chemistry is a balancing act: potency must rise while properties like solubility, permeability, clearance, safety, and selectivity stay in acceptable ranges. In practice, teams use a mix of complementary methods to optimize across many (often conflicting) endpoints:
+
+* **Property rules & gates.** Start with simple filters to eliminate obvious non-starters. These are fast guardrails but can be blunt and may miss promising trade-offs.
+
+  Calculate ADME/physchem properties across a column (Top menu: Chem → ADME/Tox → Calculations) with the Admetica
+ plugin and built-in calculators. New numeric columns are added for immediate charting and filtering. Some of the viewers, like [parallel coordinates plot](../../../../visualize/viewers/pc-plot.md) or
+ [radar](../../../../visualize/viewers/radar.md), are especially useful for that purpose.
+
+* **Desirability/utility functions & composite scores.** Map each property to a 0–1 “desirability” curve, then combine (sum/mean/weighted) into a single score that encodes the team’s preferences. A well-known example that is included by default is CNS MPO from Pfizer, which combines six physicochemical properties into a 0–6 score and correlates with clinical CNS success. 
+
+  Available from `Chem -> Compute`:
+
+  ![](mpo-desirability-functions.png)
+
+* **Pareto (multi-objective) optimization.** Instead of collapsing objectives, identify the Pareto front: compounds for which no property can be improved without worsening another. Common in modern DDD pipelines and often paired with evolutionary algorithms or scalarization for ranking. 
+
+* **Active/Bayesian multi-objective optimization.** Use surrogate models to propose new compounds that efficiently move the Pareto front (or a scalarized objective), reducing screening cost and focusing make/test cycles. 
+
+* **Desirability-based QSAR/MQSAR.** Use the built-in [predictive modeling capabilities](#predictive-modeling) to predict property desirabilities directly (or predict properties first, then score). 
+
 ## Generative chemistry
 
 Generate novel compounds optimized for specific properties using [Reinvent4](https://github.com/MolecularAI/REINVENT4). 
