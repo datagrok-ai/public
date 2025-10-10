@@ -1,23 +1,31 @@
 /** the Nelder-Mead optimizer */
 import * as DG from 'datagrok-api/dg';
 
-import {Extremum, OptimizationResult, InconsistentTables, sleep} from './optimizer-misc';
+import {Extremum, OptimizationResult, InconsistentTables, ValueBoundsData, throttle} from './optimizer-misc';
 import {optimizeNM} from './optimizer-nelder-mead';
-import {sampleParams} from './optimizer-sampler';
+import {sampleParamsWithFormulaBounds} from './optimizer-sampler';
 import {TIMEOUT, ReproSettings, EarlyStoppingSettings} from './constants';
 import {seededRandom} from './fitting-utils';
 
 export async function performNelderMeadOptimization(
-  objectiveFunc: (x: Float64Array) => Promise<number>,
-  paramsBottom: Float64Array,
-  paramsTop: Float64Array,
-  settings: Map<string, number>,
-  samplesCount: number = 1,
-  reproSettings: ReproSettings,
-  earlyStoppingSettings: EarlyStoppingSettings,
+  {
+    objectiveFunc,
+    inputsBounds,
+    samplesCount = 1,
+    settings,
+    reproSettings,
+    earlyStoppingSettings,
+  }: {
+    objectiveFunc: (x: Float64Array) => Promise<number>;
+    inputsBounds: Record<string, ValueBoundsData>;
+    samplesCount: number,
+    settings: Map<string, number>;
+    reproSettings: ReproSettings;
+    earlyStoppingSettings: EarlyStoppingSettings;
+  },
 ): Promise<OptimizationResult> {
   const rand = reproSettings.reproducible ? seededRandom(reproSettings.seed) : Math.random;
-  const params = sampleParams(samplesCount, paramsTop, paramsBottom, rand);
+  const [params, paramsBottom, paramsTop] = sampleParamsWithFormulaBounds(samplesCount, inputsBounds, rand);
 
   let extremums: Extremum[] = [];
   const warnings: string[] = [];
@@ -34,35 +42,35 @@ export async function performNelderMeadOptimization(
   const maxValidPoints = earlyStoppingSettings.stopAfter;
 
   let validPointsCount = 0;
+  let lastWorkStartTs: number | undefined;
 
   for (i = 0; i < samplesCount; ++i) {
     try {
-      const extremum = await optimizeNM(objectiveFunc, params[i], settings, paramsBottom, paramsTop, threshold);
-
-      extremums.push(extremum);
-
-      pi.update(100 * (i + 1) / samplesCount, `Fitting...`);
-
-      percentage = Math.floor(100 * (i + 1) / samplesCount);
-      pi.update(percentage, `Fitting... (${percentage}%)`);
-
-      await sleep(TIMEOUT.MS_TO_SLEEP);
+      lastWorkStartTs = await throttle(TIMEOUT.MS_TO_SLEEP * 4, TIMEOUT.MS_TO_SLEEP, lastWorkStartTs);
 
       if ((pi as any).canceled)
         break;
 
+      const extremum = await optimizeNM(objectiveFunc, params[i], settings, paramsBottom[i], paramsTop[i], threshold);
+
       if (useEarlyStopping) {
-        if (extremum.cost <= threshold!)
+        if (extremum.cost <= threshold!) {
+          extremums.push(extremum);
           ++validPointsCount;
+        }
 
         if (validPointsCount >= maxValidPoints)
           break;
-      }
-    } catch (e) {
-      pi.close();
+      } else
+        extremums.push(extremum);
 
-      if (e instanceof InconsistentTables)
+      percentage = Math.floor(100 * (i + 1) / samplesCount);
+      pi.update(percentage, `Fitting... (${percentage}%)`);
+    } catch (e) {
+      if (e instanceof InconsistentTables) {
+        pi.close();
         throw new Error(`Inconsistent dataframes: ${e.message}`);
+      }
 
       ++failsCount;
       warnings.push((e instanceof Error) ? e.message : 'Platform issue');
@@ -71,9 +79,6 @@ export async function performNelderMeadOptimization(
   }
 
   pi.close();
-
-  if (useEarlyStopping && (extremums.length > validPointsCount))
-    extremums = extremums.slice(0, validPointsCount);
 
   if (failsCount > 0) {
     const dim = paramsTop.length;

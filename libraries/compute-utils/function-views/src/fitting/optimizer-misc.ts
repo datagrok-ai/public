@@ -41,6 +41,59 @@ export interface IOptimizer {
   ): Promise<Extremum>;
 };
 
+/** JS package level API (should expose some in the next compute api) */
+
+interface BoundCommon {
+  name: string,
+}
+
+export interface BoundValue extends BoundCommon {
+  type: 'value',
+  value: number,
+}
+
+export interface BoundFormula extends BoundCommon {
+  type: 'formula',
+  formula: string,
+}
+
+export type BoundData = BoundValue | BoundFormula;
+
+export interface ConstValue {
+  type: 'const',
+  value: any,
+}
+
+export interface ChangingValue {
+  type: 'changing',
+  top: BoundData,
+  bottom: BoundData
+}
+
+export type ValueBoundsData = ConstValue | ChangingValue;
+export type OptimizerInputsConfig = Record<string, ValueBoundsData>;
+
+interface OutputTargetCommon {
+  propName: string
+}
+
+export interface OutputTargetScalar extends OutputTargetCommon {
+  type: DG.TYPE.INT | DG.TYPE.BIG_INT | DG.TYPE.FLOAT,
+  target: number,
+}
+
+export interface OutputTargetDataFrame extends OutputTargetCommon {
+  type: DG.TYPE.DATA_FRAME,
+  target: DG.DataFrame,
+  argName: string,
+  cols: DG.Column[],
+}
+
+export type OutputTargetItem = OutputTargetScalar | OutputTargetDataFrame;
+
+export type OptimizerOutputsConfig = OutputTargetItem[];
+
+
 /** Inconsistent tables error */
 export class InconsistentTables extends Error {
   constructor(msg: string) {
@@ -52,6 +105,19 @@ export class InconsistentTables extends Error {
 export function sleep(ms: number) {
   return new Promise((resolve, reject) => setTimeout(resolve, ms));
 };
+
+
+export async function throttle(
+  desiredWorkIntervalMs: number, sleepIntervalMs: number, lastWorkStartTs: number = performance.now()
+): Promise<number> {
+  const now = performance.now();
+  if (now - lastWorkStartTs >= desiredWorkIntervalMs) {
+    await sleep(sleepIntervalMs);
+    return performance.now();
+  } else {
+    return lastWorkStartTs;
+  }
+}
 
 /** Target dataframe */
 export type TargetTableOutput = {
