@@ -163,13 +163,13 @@ export class FittingView {
 
     const getFormulaInput = (input: DG.Property, key: keyof RangeDescription) => {
       const formula = getRangeFormula(input, key) ?? '';
-      const caption = input.caption ?? input.name;
+      const caption = `${input.caption ?? input.name} (${key})`;
       return ui.input.string(caption, {value: formula});
     };
 
     const getFormulaToggleInput = (input: DG.Property, key: keyof RangeDescription, inputNumber: DG.InputBase, inputFormula: DG.InputBase) => {
       const formula = getRangeFormula(input, key);
-      const boolInput = ui.input.bool('Use formula', {
+      const boolInput = ui.input.bool('Use initial point formula', {
         value: !!formula,
         onValueChanged(val) {
           if (val) {
