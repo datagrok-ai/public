@@ -10,7 +10,14 @@ import {Extremum, InconsistentTables} from './optimizer-misc';
 import '../../css/fitting-view.css';
 import '../../css/sens-analysis.css';
 import {GRID_SIZE, HELP_LINK, INDICES, TIMEOUT, TARGET_DATAFRAME_INFO, TITLE, NAME,
-  MIN_RADAR_COLS_COUNT} from './constants';
+  MIN_RADAR_COLS_COUNT, RAND_MOD, RAND_MULT, ReproSettings,
+  REPRO_DEFAULT,
+  SEED_DEFAULT,
+  EarlyStoppingSettings,
+  EARLY_STOP_DEFAULT,
+  COST_FUNC_THRESH,
+  STOP_AFTER_DEFAULT,
+  STOP_AFTER_MIN} from './constants';
 
 /** Returns indices corresponding to the closest items */
 export function getIndices(expArg: DG.Column, simArg: DG.Column): Uint32Array {
@@ -95,7 +102,8 @@ export function getErrors(expArg: DG.Column | null, expFuncs: DG.Column[],
 } // getErrors
 
 /** Return widget for show/hide group of inputs */
-export function getCategoryWidget(category: string, roots: HTMLElement[], expandHandler?: (r: HTMLElement, isExpanded: boolean, category: string) => void) {
+export function getCategoryWidget(category: string, roots: HTMLElement[],
+  expandHandler?: (r: HTMLElement, isExpanded: boolean, category: string) => void) {
   const updateWgts = (isExpanded: boolean) => {
     chevronToOpen.hidden = isExpanded;
     chevronToClose.hidden = !isExpanded;
@@ -434,3 +442,102 @@ export function toUseRadar(table: DG.DataFrame): boolean {
 
   return (table.columns.length >= MIN_RADAR_COLS_COUNT);
 }
+
+/** Return seeded random generator */
+export function seededRandom(seed: number): () => number {
+  let state = seed % RAND_MOD;
+  if (state <= 0) state += RAND_MOD - 1;
+
+  return function(): number {
+    state = (state * RAND_MULT) % RAND_MOD;
+    return (state - 1) / (RAND_MOD - 1);
+  };
+}
+
+export const defaultRandomSeedSettings: ReproSettings = {
+  reproducible: REPRO_DEFAULT,
+  seed: SEED_DEFAULT,
+};
+
+/** Returns random seed settings */
+export function getRandomSeedSettings(overrides: Record<string, any> = {}) {
+  const settings = {...defaultRandomSeedSettings, ...overrides};
+
+  const reprInput = ui.input.bool('reproducible', {
+    value: settings.reproducible,
+    onValueChanged: (val) => {
+      seedInput.root.hidden = !val;
+      settings.reproducible = val;
+    },
+    tooltipText: 'Enable to get reproducible results',
+  });
+
+  const seedInput = ui.input.int('random seed', {
+    value: settings.seed,
+    nullable: false,
+    tooltipText: 'Numeric value used to initialize the initial points of the optimization method',
+    onValueChanged: (val) => {
+      settings.seed = val ?? SEED_DEFAULT;
+    },
+  });
+
+  seedInput.root.hidden = !settings.reproducible;
+
+  return {
+    reproducibility: reprInput,
+    seed: seedInput,
+    settings: settings,
+  };
+} // getRandomSeedSettings
+
+export const defaultEarlyStoppingSettings: EarlyStoppingSettings = {
+  useEarlyStopping: EARLY_STOP_DEFAULT,
+  costFuncThreshold: COST_FUNC_THRESH,
+  stopAfter: STOP_AFTER_DEFAULT,
+};
+
+/** Returns early stopping intpus & settings */
+export function getEarlyStoppingInputs(overrides: Record<string, any> = {}) {
+  const settings = {...defaultEarlyStoppingSettings, ...overrides};
+
+  const stopAtFirstInput = ui.input.int('stop after', {
+    value: settings.stopAfter,
+    onValueChanged: (val) => {
+      settings.stopAfter = val;
+    },
+    tooltipText: 'Stop the optimization once this number of valid points is found',
+    showPlusMinus: true,
+    min: STOP_AFTER_MIN,
+    nullable: false,
+    property: DG.Property.fromOptions({units: 'point(s)'}),
+  });
+  stopAtFirstInput.root.hidden = !settings.useEarlyStopping;
+
+  const earlyStopInput = ui.input.bool('early stopping', {
+    value: settings.useEarlyStopping,
+    onValueChanged: (val) => {
+      thresholdInput.root.hidden = !val;
+      stopAtFirstInput.root.hidden = !val;
+      settings.useEarlyStopping = val;
+    },
+    tooltipText: 'Enable to stop fitting once the loss function reaches the specified threshold',
+  });
+
+  const thresholdInput = ui.input.float('threshold', {
+    value: settings.costFuncThreshold,
+    nullable: false,
+    tooltipText: 'Loss function value at which to stop fitting',
+    onValueChanged: (val) => {
+      settings.costFuncThreshold = val ?? COST_FUNC_THRESH;
+    },
+  });
+
+  thresholdInput.root.hidden = !settings.useEarlyStopping;
+
+  return {
+    stopAtFirst: stopAtFirstInput,
+    earlyStopping: earlyStopInput,
+    threshold: thresholdInput,
+    settings: settings,
+  };
+} // getEarlyStoppingInputs
