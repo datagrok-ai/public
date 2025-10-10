@@ -2,7 +2,7 @@
 title: "Multi curve viewer"
 ---
   
-The Multi curve viewer is a specialized visualization component that superimposes multiple in-cell curves onto a single chart, enabling comparative analysis of fitted curves across different data series.  
+ Multi curve viewer displays multiple in-cell curves on one chart, making it easy to compare fitted curves from different data series.
   
 ## Overview  
   
