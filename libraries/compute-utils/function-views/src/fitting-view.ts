@@ -13,13 +13,12 @@ import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {getDefaultValue} from './shared/utils';
 import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossTooltip, FITTING_UI,
   INDICES, NAME, LOSS_FUNC_CHART_OPTS, SIZE, TIMEOUT} from './fitting/constants';
-import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {nelderMeadSettingsOpts} from './fitting/optimizer-nelder-mead';
-import {getErrors, getCategoryWidget, getShowInfoWidget, getLossFuncDf, lightenRGB,
+import {getCategoryWidget, getShowInfoWidget, getLossFuncDf, lightenRGB,
   getScalarsGoodnessOfFitViewer, getHelpIcon, getRadarTooltip, toUseRadar, getRandomSeedSettings,
   getEarlyStoppingInputs} from './fitting/fitting-utils';
-import {OptimizationResult, Extremum, TargetTableOutput} from './fitting/optimizer-misc';
+import {OptimizationResult, Extremum, TargetTableOutput, ValueBoundsData, OutputTargetItem} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
 import {IVP, IVP2WebWorker, PipelineCreator} from 'diff-grok';
@@ -27,6 +26,8 @@ import {getFittedParams} from './fitting/diff-studio/nelder-mead';
 import {getNonSimilar} from './fitting/similarity-utils';
 import {ScalarsFitRadar} from './fitting/scalars-fit-radar';
 import {getPropViewers} from '../../shared-utils/utils';
+import {runFormula} from './fitting/formulas-resolver';
+import {runOptimizer} from './fitting/optimizer-api';
 
 const colors = DG.Color.categoricalPalette;
 const colorsCount = colors.length;
@@ -38,6 +39,13 @@ type OutputTarget = number | DG.DataFrame | null;
 
 type InputWithValue<T = number> = {input: DG.InputBase, value: T};
 
+type InputRangeBounds = {
+  input: DG.InputBase<number>,
+  formula: DG.InputBase<string>,
+  useFormula: DG.InputBase<boolean>,
+  value: number
+};
+
 type InputValues = {
   isChanging: BehaviorSubject<boolean>,
   const: InputWithValue<boolean | number | string | DG.DataFrame>,
@@ -48,8 +56,8 @@ type InputValues = {
 type FittingNumericStore = {
   prop: DG.Property,
   type: DG.TYPE.INT | DG.TYPE.BIG_INT | DG.TYPE.FLOAT,
-  min: InputWithValue,
-  max: InputWithValue,
+  min: InputRangeBounds,
+  max: InputRangeBounds,
 } & InputValues;
 
 type FittingBoolStore = {
@@ -72,8 +80,8 @@ type GoFtable = {
 
 export type RangeDescription = {
   default?: number;
-  min?: number;
-  max?: number;
+  min?: number | string;
+  max?: number | string;
   step?: number;
   isPrimary?: boolean;
   enabled?: boolean;
@@ -142,9 +150,39 @@ export class FittingView {
   generateInputFields = (func: DG.Func) => {
     const getInputValue = (input: DG.Property, key: keyof RangeDescription) => {
       const range = this.options.ranges?.[input.name];
-      if (range?.[key] != undefined)
+      if (range?.[key] != undefined && typeof range?.[key] !== 'string')
         return range[key];
-      return input.options[key] === undefined ? getDefaultValue(input) : Number(input.options[key]);
+      return input.options[key] != null ? getDefaultValue(input) : Number(input.options[key]);
+    };
+
+    const getRangeFormula = (input: DG.Property, key: keyof RangeDescription) => {
+      const range = this.options.ranges?.[input.name];
+      if (range?.[key] != undefined && typeof range?.[key] === 'string')
+        return range[key];
+    }
+
+    const getFormulaInput = (input: DG.Property, key: keyof RangeDescription) => {
+      const formula = getRangeFormula(input, key) ?? '';
+      const caption = input.caption ?? input.name;
+      return ui.input.string(caption, {value: formula});
+    };
+
+    const getFormulaToggleInput = (input: DG.Property, key: keyof RangeDescription, inputNumber: DG.InputBase, inputFormula: DG.InputBase) => {
+      const formula = getRangeFormula(input, key);
+      const boolInput = ui.input.bool('Use formula', {
+        value: !!formula,
+        onValueChanged(val) {
+          if (val) {
+            $(inputNumber.root).hide();
+            $(inputFormula.root).show();
+          } else {
+            $(inputNumber.root).show();
+            $(inputFormula.root).hide();
+          }
+        }
+      });
+      boolInput.fireChanged();
+      return boolInput;
     };
 
     const getSwitchElement = (defaultValue: boolean, f: (v: boolean) => any, isInput: boolean = true) => {
@@ -171,7 +209,7 @@ export class FittingView {
       const defaultValue = getInputValue(inputProp, 'default');
 
       if (inputProp.propertyType === DG.TYPE.FLOAT) {
-        const isChangingInputMin = getSwitchElement(false, (v: boolean) => {
+        const isChangingInput = getSwitchElement(false, (v: boolean) => {
           ref.isChanging.next(v);
           this.updateApplicabilityState();
         });
@@ -183,88 +221,106 @@ export class FittingView {
 
         const caption = inputProp.caption ?? inputProp.name;
 
-        const temp = {
+        const constInput = (() => {
+          const inp = ui.input.float(caption, {
+            value: defaultValue, onValueChanged: (value) => {
+              ref.const.value = value;
+              this.updateApplicabilityState();
+            }
+          });
+          inp.root.insertBefore(isChangingInputConst.root, inp.captionLabel);
+          inp.addPostfix(inputProp.options['units']);
+          inp.setTooltip(`Value of '${caption}'`);
+          ui.tooltip.bind(inp.captionLabel, 'Model input');
+          inp.nullable = false;
+          return inp;
+        })();
+
+        const minInput = (() => {
+          const inp = ui.input.float(`${caption} (min)`, {
+            value: getInputValue(inputProp, 'min'), onValueChanged: (value) => {
+              (ref).min.value = value;
+              this.updateApplicabilityState();
+            }
+          });
+          inp.addValidator((s: string) => (Number(s) > ref.max.value) ? 'Greater than max' : null);
+          inp.addPostfix(inputProp.options['units']);
+          inp.setTooltip(`Min value '${caption}'`);
+          inp.nullable = false;
+          return inp as DG.InputBase<number>;
+        })();
+
+        const minFormulaInput = getFormulaInput(inputProp, 'min');
+        const minUseFormulaInput = getFormulaToggleInput(inputProp, 'min', minInput, minFormulaInput);
+
+        const maxInput = (() => {
+          const inp = ui.input.float(`${caption} (max)`, {
+            value: getInputValue(inputProp, 'max'), onValueChanged: (value) => {
+              (ref).max.value = value;
+              this.updateApplicabilityState();
+            }
+          });
+          inp.addValidator((s: string) => (Number(s) < ref.min.value) ? 'Smaller than min' : null);
+          inp.addPostfix(inputProp.options['units']);
+          inp.setTooltip(`Max value of '${caption}'`);
+          inp.nullable = false;
+          return inp as DG.InputBase<number>;
+        })();
+
+        const maxFormulaInput = getFormulaInput(inputProp, 'max');
+        const maxUseFormulaInput = getFormulaToggleInput(inputProp, 'max', maxInput, maxFormulaInput);
+
+        const ref = {
           type: inputProp.propertyType,
           prop: inputProp,
           const: {
-            input:
-            (() => {
-              const inp = ui.input.float(caption, {value: defaultValue, onValueChanged: (value) => {
-                ref.const.value = value;
-                this.updateApplicabilityState();
-              }});
-              inp.root.insertBefore(isChangingInputConst.root, inp.captionLabel);
-              inp.addPostfix(inputProp.options['units']);
-              inp.setTooltip(`Value of '${caption}'`);
-              ui.tooltip.bind(inp.captionLabel, 'Model input');
-              inp.nullable = false;
-              return inp;
-            })(),
+            input: constInput,
             value: defaultValue,
           },
           min: {
-            input:
-              (() => {
-                const inp = ui.input.float(`${caption} (min)`, {value: getInputValue(inputProp, 'min'), onValueChanged: (value) => {
-                  (ref as FittingNumericStore).min.value = value;
-                  this.updateApplicabilityState();
-                }});
-                inp.addValidator((s:string) => (Number(s) > temp.max.value) ? 'Greater than max': null);
-                inp.root.insertBefore(isChangingInputMin.root, inp.captionLabel);
-                inp.addPostfix(inputProp.options['units']);
-                inp.setTooltip(`Min value '${caption}'`);
-                inp.nullable = false;
-                return inp;
-              })(),
+            input: minInput,
             value: getInputValue(inputProp, 'min'),
+            formula: minFormulaInput,
+            useFormula: minUseFormulaInput,
           },
           max: {
-            input: (() => {
-              const inp = ui.input.float(`${caption} (max)`, {value: getInputValue(inputProp, 'max'), onValueChanged: (value) => {
-                (ref as FittingNumericStore).max.value = value;
-                this.updateApplicabilityState();
-              }});
-              inp.addValidator((s:string) => (Number(s) < temp.min.value) ? 'Smaller than min': null);
-              inp.addPostfix(inputProp.options['units']);
-              inp.setTooltip(`Max value of '${caption}'`);
-              inp.nullable = false;
-              return inp;
-            })(),
+            input: maxInput,
             value: getInputValue(inputProp, 'max'),
+            formula: maxFormulaInput,
+            useFormula: maxUseFormulaInput
           },
           isChanging: new BehaviorSubject<boolean>(false),
+          constForm: [constInput],
+          saForm: [
+            isChangingInput,
+            minInput,
+            minFormulaInput,
+            minUseFormulaInput,
+            maxInput,
+            maxFormulaInput,
+            maxUseFormulaInput
+          ],
         };
 
-        [temp.max.input].forEach((input) => {
-          input.root.insertBefore(getSwitchMock(), input.captionLabel);
-          $(input.root).removeProp('display');
-        });
+        acc[inputProp.name] = ref;
 
-        acc[inputProp.name] = {
-          ...temp,
-          constForm: [temp.const.input],
-          saForm: [
-            temp.min.input,
-            temp.max.input,
-          ],
-        } as FittingNumericStore;
-
-        const ref = acc[inputProp.name] as FittingNumericStore;
         ref.isChanging.subscribe((val) => {
-          isChangingInputMin.notify = false;
-          isChangingInputMin.value = val;
-          isChangingInputMin.notify = true;
+          isChangingInput.notify = false;
+          isChangingInput.value = val;
+          isChangingInput.notify = true;
 
           isChangingInputConst.notify = false;
           isChangingInputConst.value = val;
           isChangingInputConst.notify = true;
         });
         combineLatest([
-          temp.isChanging,
+          ref.isChanging,
         ]).subscribe(([isChanging]) => {
           if (isChanging) {
             ref.constForm.forEach((input) => $(input.root).hide());
             ref.saForm.forEach((input) => $(input.root).css('display', 'flex'));
+            minUseFormulaInput.fireChanged();
+            maxUseFormulaInput.fireChanged();
           } else {
             ref.constForm.forEach((input) => $(input.root).css('display', 'flex'));
             ref.saForm.forEach((input) => $(input.root).hide());
@@ -528,8 +584,8 @@ export class FittingView {
 
   private helpIcon = getHelpIcon();
 
-  private randInputs = getRandomSeedSettings();
-  private earlyStoppingInputs = getEarlyStoppingInputs();
+  private randInputs: ReturnType<typeof getRandomSeedSettings> = getRandomSeedSettings();
+  private earlyStoppingInputs: ReturnType<typeof getEarlyStoppingInputs> = getEarlyStoppingInputs();
 
   private showFailsBtn = ui.button('Issues', () => {
     switch (this.method) {
@@ -589,7 +645,7 @@ export class FittingView {
     learningRate: 0.0001,
   };
 
-  private defaultsOverrides: Record<string, number> = {};
+  private defaultsOverrides: Record<string, any> = {};
 
   private settingsInputs = new Map<METHOD, DG.InputBase[]>();
 
@@ -676,6 +732,13 @@ export class FittingView {
 
     nelderMeadSettingsOpts.forEach((vals, key) => this.nelderMeadSettings.set(key, vals.default));
     this.parseDefaultsOverrides();
+
+    this.randInputs = getRandomSeedSettings(this.defaultsOverrides);
+    this.earlyStoppingInputs = getEarlyStoppingInputs(this.defaultsOverrides);
+    if (this.defaultsOverrides.samples) {
+      this.samplesCount = this.defaultsOverrides.samples;
+      this.samplesCountInput.value = this.samplesCount;
+    }
 
     grok.events.onViewRemoved.pipe(filter((v) => v.id === baseView.id), take(1)).subscribe(() => {
       if (options.acceptMode && !this.isFittingAccepted) {
@@ -1156,29 +1219,57 @@ export class FittingView {
       this.runIcon.style.color = 'var(--grey-3)';
   } // updateRunIconStyle
 
+  // make inputs with formulas bounds last
+  private splitInputs() {
+    return Object.entries(this.store.inputs).reduce((acc, item) => {
+      const [, val] = item;
+      if (!val.isChanging.value ||
+        (!(val as FittingNumericStore).min.useFormula.value && !(val as FittingNumericStore).max.useFormula.value))
+        acc.nonFormulaInputs.push(item);
+      else
+        acc.formulaInputs.push(item);
+      return acc;
+    }, {nonFormulaInputs: [], formulaInputs: []} as { nonFormulaInputs: [string, FittingInputsStore][], formulaInputs: [string, FittingInputsStore][] });
+  } // splitInputs
+
+  private getStoreInputsAndBounds(fittingStore: FittingNumericStore, minContext: Record<string, any>, maxContext: Record<string, any>) {
+    const minInp = fittingStore.min.useFormula.value ? fittingStore.min.formula : fittingStore.min.input;
+    const maxInp = fittingStore.max.useFormula.value ? fittingStore.max.formula : fittingStore.max.input;
+    const minFormula = fittingStore.min.useFormula.value ? fittingStore.min.formula.value : undefined;
+    const maxFormula = fittingStore.max.useFormula.value ? fittingStore.max.formula.value : undefined;
+    const min = fittingStore.min.useFormula.value ? runFormula(minFormula!, minContext) : fittingStore.min.input.value;
+    const max = fittingStore.max.useFormula.value ? runFormula(maxFormula!, maxContext) : fittingStore.max.input.value;
+    return {minInp, maxInp, min, max, minFormula, maxFormula};
+  } // getStoreInputsAndBounds
+
   /** Check inputs */
   private areInputsReady(): boolean {
     let isAnySelected = false;
-    let areSelectedFilled = true;
-    let cur: boolean;
 
-    for (const propName of Object.keys(this.store.inputs)) {
-      const input = this.store.inputs[propName];
+    const errors: string[] = [];
+
+    // make inputs with formulas bounds last
+    const {nonFormulaInputs, formulaInputs} = this.splitInputs();
+
+    const minContext: Record<string, any> = {};
+    const maxContext: Record<string, any> = {};
+
+    // deal with non-formula inputs first, same approach as in sampleParamsWithFormulaBounds,
+    // only checking top and bottom points
+    for (const [name, input] of [...nonFormulaInputs, ...formulaInputs]) {
       const caption = input.prop.caption ?? input.prop.name;
 
       if (input.isChanging.value === true) {
         isAnySelected = true;
-        const minInp = (input as FittingNumericStore).min.input;
-        const maxInp = (input as FittingNumericStore).max.input;
-        const min = minInp.value;
-        const max = maxInp.value;
+        const fittingStore = (input as FittingNumericStore);
+        const {minInp, maxInp, min, max} = this.getStoreInputsAndBounds(fittingStore, minContext, maxContext);
 
-        cur = (min !== null) && (min !== undefined) && (max !== undefined) && (max !== undefined);
+        minContext[name] = min;
+        maxContext[name] = max;
 
-        if (cur) {
+        if (min != null && max != null) {
           if (min > max) {
-            cur = false;
-            this.updateRunIconDisabledTooltip(`Invalid min & max of "${caption}"`);
+            errors.push(`Invalid min & max of "${caption}"`);
             minInp.input.classList.add('d4-invalid');
             maxInp.input.classList.add('d4-invalid');
           } else {
@@ -1186,24 +1277,24 @@ export class FittingView {
             maxInp.input.classList.remove('d4-invalid');
           }
         } else
-          this.updateRunIconDisabledTooltip(`Incomplete "${caption}"`);
-
-        areSelectedFilled = areSelectedFilled && cur;
+          errors.push(`Incomplete "${caption}"`);
       } else {
         const val = input.const.input.value ?? input.const.input.stringValue;
-        cur = (val !== null) && (val !== undefined);
+        minContext[name] = val;
+        maxContext[name] = val;
 
-        if (!cur)
-          this.updateRunIconDisabledTooltip(`Incomplete "${caption}"`);
-
-        areSelectedFilled = areSelectedFilled && cur;
+        if (val == null)
+          errors.push(`Incomplete "${caption}"`);
       }
     }
 
     if (!isAnySelected)
-      this.updateRunIconDisabledTooltip(`No parameters for fitting selected`);
+      errors.push(`No parameters for fitting selected`);
 
-    return isAnySelected && areSelectedFilled;
+    if (errors.length > 0)
+      this.updateRunIconDisabledTooltip(errors.join('\n'));
+
+    return errors.length === 0;
   } // areInputsReady
 
   /** Check outputs */
@@ -1282,6 +1373,80 @@ export class FittingView {
       .filter((propName) => (this.store.inputs[propName].type === DG.TYPE.FLOAT) && this.store.inputs[propName].isChanging.value);
   }
 
+  private makeOptimizerInputsConfig() {
+    // make input bounds payload
+    const {nonFormulaInputs, formulaInputs} = this.splitInputs();
+    const inputsBounds: Record<string, ValueBoundsData> = {};
+    const minContext: Record<string, any> = {};
+    const maxContext: Record<string, any> = {};
+    for (const [name, input] of [...nonFormulaInputs, ...formulaInputs]) {
+      if (input.isChanging.value === true) {
+        const fittingStore = (input as FittingNumericStore);
+        const {min, max, minFormula, maxFormula} = this.getStoreInputsAndBounds(fittingStore, minContext, maxContext);
+        minContext[name] = min;
+        maxContext[name] = max;
+
+        const bottom = minFormula ? {
+          name,
+          type: 'formula' as const,
+          formula: minFormula,
+        } : {
+          name,
+          type: 'value' as const,
+          value: min!,
+        };
+
+        const top = maxFormula ? {
+          name,
+          type: 'formula' as const,
+          formula: maxFormula,
+        } : {
+          name,
+          type: 'value' as const,
+          value: max!,
+        };
+
+        inputsBounds[name] = {
+          type: 'changing',
+          top,
+          bottom,
+        };
+      } else {
+        const value = input.const.input.value ?? input.const.input.stringValue;
+        inputsBounds[name] = {
+          type: 'const',
+          value,
+        };
+        minContext[name] = value;
+        maxContext[name] = value;
+      }
+    }
+    return inputsBounds;
+  }
+
+  private makeOptimizerOutputsConfig(): OutputTargetItem[] {
+    // make outputs payload
+    const outputsOfInterest = this.getOutputsOfInterest();
+    const outputTargets: OutputTargetItem[] = outputsOfInterest.map((item) => {
+      if (item.prop.propertyType !== DG.TYPE.DATA_FRAME) {
+        return {
+          type: item.prop.propertyType as DG.TYPE.INT | DG.TYPE.BIG_INT | DG.TYPE.FLOAT,
+          propName: item.prop.name,
+          target: item.target as number,
+        };
+      } else {
+        return {
+          type: item.prop.propertyType,
+          propName: item.prop.name,
+          target: item.target as DG.DataFrame,
+          argName: item.argName,
+          cols: item.funcColsInput.value,
+        };
+      }
+    });
+    return outputTargets;
+  }
+
   /** Perform optimization */
   private async runOptimization(): Promise<void> {
     try {
@@ -1310,15 +1475,11 @@ export class FittingView {
 
       // varied inputs specification
       const variedInputNames: string[] = [];
-      const minVals = new Float64Array(dim);
-      const maxVals = new Float64Array(dim);
       const variedInputsCaptions = new Array<string>(dim);
 
       // set varied inputs specification
       variedInputs.forEach((name, idx) => {
         const propConfig = this.store.inputs[name] as FittingNumericStore;
-        minVals[idx] = propConfig.min.value ?? 0;
-        maxVals[idx] = propConfig.max.value ?? 0;
         variedInputNames.push(name);
         variedInputsCaptions[idx] = propConfig.prop.caption ?? propConfig.prop.name;
       });
@@ -1340,73 +1501,29 @@ export class FittingView {
         return await funcCall.call();
       };
 
-      /** Root mean sqaure error (RMSE) cost function */
-      const rmseCostFunc = async (x: Float64Array): Promise<number> => {
-        x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
-        const funcCall = this.func.prepare(inputs);
-        const calledFuncCall = await funcCall.call();
+      // get optimizer inputs/outputs config
+      const inputsBounds = this.makeOptimizerInputsConfig();
+      const outputTargets = this.makeOptimizerOutputsConfig();
+      const hasFormulas = Object.values(inputsBounds).find(
+        (bound) => bound.type === 'changing' && (bound.top.type === 'formula' || bound.bottom.type === 'formula'));
 
-        let sumOfSquaredErrors = 0;
-        let outputsCount = 0;
-        let cur = 0;
-
-        outputsOfInterest.forEach((output) => {
-          if (output.prop.propertyType !== DG.TYPE.DATA_FRAME) {
-            cur = output.target as number;
-            sumOfSquaredErrors += ((cur - calledFuncCall.getParamValue(output.prop.name)) / (cur !== 0 ? cur : 1)) ** 2;
-            ++outputsCount;
-          } else {
-            const df = output.target as DG.DataFrame;
-            getErrors(df.col(output.argName), output.funcColsInput.value, calledFuncCall.getParamValue(output.prop.name), true)
-              .forEach((err) => {
-                sumOfSquaredErrors += err ** 2;
-                ++outputsCount;
-              });
-          }
-        });
-
-        return Math.sqrt(sumOfSquaredErrors / outputsCount);
-      };
-
-      /** Maximum absolute deviation (MAD) cost function */
-      const madCostFunc = async (x: Float64Array): Promise<number> => {
-        x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
-        const funcCall = this.func.prepare(inputs);
-        const calledFuncCall = await funcCall.call();
-
-        let mad = 0;
-
-        outputsOfInterest.forEach((output) => {
-          if (output.prop.propertyType !== DG.TYPE.DATA_FRAME)
-            mad = Math.max(mad, Math.abs(output.target as number - calledFuncCall.getParamValue(output.prop.name)));
-          else {
-            const df = output.target as DG.DataFrame;
-            getErrors(df.col(output.argName), output.funcColsInput.value, calledFuncCall.getParamValue(output.prop.name), false)
-              .forEach((err) => mad = Math.max(mad, Math.abs(err)));
-          }
-        });
-
-        return mad;
-      };
-
-      let costFunc;
-      let costTooltip;
-
-      if (this.loss === LOSS.MAD) {
-        costFunc = madCostFunc;
-        costTooltip = 'scaled maximum absolute deviation';
-      } else {
-        costFunc = rmseCostFunc;
-        costTooltip = 'scaled root mean square error';
-      }
+      const costTooltip = this.loss === LOSS.MAD ? 'scaled maximum absolute deviation' : 'scaled root mean square error';
 
       let optResult: OptimizationResult;
 
       // Perform optimization
       if (this.method === METHOD.NELDER_MEAD) {
-        if (this.diffGrok !== undefined) {
+        if (this.diffGrok !== undefined && !hasFormulas) {
           try {
             const index = INDICES.DIFF_STUDIO_OUTPUT;
+
+            const minVals = new Float64Array(dim);
+            const maxVals = new Float64Array(dim);
+            variedInputs.forEach((name, idx) => {
+              const propConfig = this.store.inputs[name] as FittingNumericStore;
+              minVals[idx] = propConfig.min.value ?? 0;
+              maxVals[idx] = propConfig.max.value ?? 0;
+            });
 
             optResult = await getFittedParams(
               this.loss,
@@ -1426,26 +1543,28 @@ export class FittingView {
               this.earlyStoppingInputs.settings,
             );
           } catch (err) { // run fitting in the main thread if in-webworker run failed
-            optResult = await performNelderMeadOptimization(
-              costFunc,
-              minVals,
-              maxVals,
-              this.nelderMeadSettings,
-              this.samplesCount,
-              this.randInputs.settings,
-              this.earlyStoppingInputs.settings,
-            );
+            optResult = await runOptimizer({
+              lossType: this.loss,
+              func: this.func,
+              inputsBounds,
+              outputTargets,
+              samplesCount: this.samplesCount,
+              settings: this.nelderMeadSettings,
+              reproSettings: this.randInputs.settings,
+              earlyStoppingSettings: this.earlyStoppingInputs.settings,
+            });
           }
         } else {
-          optResult = await performNelderMeadOptimization(
-            costFunc,
-            minVals,
-            maxVals,
-            this.nelderMeadSettings,
-            this.samplesCount,
-            this.randInputs.settings,
-            this.earlyStoppingInputs.settings,
-          );
+          optResult = await runOptimizer({
+            lossType: this.loss,
+            func: this.func,
+            inputsBounds,
+            outputTargets,
+            samplesCount: this.samplesCount,
+            settings: this.nelderMeadSettings,
+            reproSettings: this.randInputs.settings,
+            earlyStoppingSettings: this.earlyStoppingInputs.settings,
+          });
         }
       } else
         throw new Error(`Not implemented the '${this.method}' method`);
@@ -1566,6 +1685,9 @@ export class FittingView {
 
         gofTables[idx] = gofDfs;
       }
+
+      if (gofTables.length === 0)
+        return;
 
       // Add goodness of fit columns
       gofTables[0].forEach((_, name) => {

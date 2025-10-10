@@ -454,15 +454,17 @@ export function seededRandom(seed: number): () => number {
   };
 }
 
+export const defaultRandomSeedSettings: ReproSettings = {
+  reproducible: REPRO_DEFAULT,
+  seed: SEED_DEFAULT,
+};
+
 /** Returns random seed settings */
-export function getRandomSeedSettings() {
-  const settings: ReproSettings = {
-    reproducible: REPRO_DEFAULT,
-    seed: SEED_DEFAULT,
-  };
+export function getRandomSeedSettings(overrides: Record<string, any> = {}) {
+  const settings = {...defaultRandomSeedSettings, ...overrides};
 
   const reprInput = ui.input.bool('reproducible', {
-    value: REPRO_DEFAULT,
+    value: settings.reproducible,
     onValueChanged: (val) => {
       seedInput.root.hidden = !val;
       settings.reproducible = val;
@@ -471,7 +473,7 @@ export function getRandomSeedSettings() {
   });
 
   const seedInput = ui.input.int('random seed', {
-    value: SEED_DEFAULT,
+    value: settings.seed,
     nullable: false,
     tooltipText: 'Numeric value used to initialize the initial points of the optimization method',
     onValueChanged: (val) => {
@@ -479,7 +481,7 @@ export function getRandomSeedSettings() {
     },
   });
 
-  seedInput.root.hidden = !REPRO_DEFAULT;
+  seedInput.root.hidden = !settings.reproducible;
 
   return {
     reproducibility: reprInput,
@@ -488,16 +490,18 @@ export function getRandomSeedSettings() {
   };
 } // getRandomSeedSettings
 
+export const defaultEarlyStoppingSettings: EarlyStoppingSettings = {
+  useEarlyStopping: EARLY_STOP_DEFAULT,
+  costFuncThreshold: COST_FUNC_THRESH,
+  stopAfter: STOP_AFTER_DEFAULT,
+};
+
 /** Returns early stopping intpus & settings */
-export function getEarlyStoppingInputs() {
-  const settings: EarlyStoppingSettings = {
-    useEarlyStopping: EARLY_STOP_DEFAULT,
-    costFuncThreshold: COST_FUNC_THRESH,
-    stopAfter: STOP_AFTER_DEFAULT,
-  };
+export function getEarlyStoppingInputs(overrides: Record<string, any> = {}) {
+  const settings = {...defaultEarlyStoppingSettings, ...overrides};
 
   const stopAtFirstInput = ui.input.int('stop after', {
-    value: STOP_AFTER_DEFAULT,
+    value: settings.stopAfter,
     onValueChanged: (val) => {
       settings.stopAfter = val;
     },
@@ -507,10 +511,10 @@ export function getEarlyStoppingInputs() {
     nullable: false,
     property: DG.Property.fromOptions({units: 'point(s)'}),
   });
-  stopAtFirstInput.root.hidden = !EARLY_STOP_DEFAULT;
+  stopAtFirstInput.root.hidden = !settings.useEarlyStopping;
 
   const earlyStopInput = ui.input.bool('early stopping', {
-    value: EARLY_STOP_DEFAULT,
+    value: settings.useEarlyStopping,
     onValueChanged: (val) => {
       thresholdInput.root.hidden = !val;
       stopAtFirstInput.root.hidden = !val;
@@ -520,7 +524,7 @@ export function getEarlyStoppingInputs() {
   });
 
   const thresholdInput = ui.input.float('threshold', {
-    value: COST_FUNC_THRESH,
+    value: settings.costFuncThreshold,
     nullable: false,
     tooltipText: 'Loss function value at which to stop fitting',
     onValueChanged: (val) => {
@@ -528,7 +532,7 @@ export function getEarlyStoppingInputs() {
     },
   });
 
-  thresholdInput.root.hidden = !EARLY_STOP_DEFAULT;
+  thresholdInput.root.hidden = !settings.useEarlyStopping;
 
   return {
     stopAtFirst: stopAtFirstInput,
