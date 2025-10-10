@@ -20,6 +20,9 @@ The multi curve viewer is part of the [Curves](https://github.com/datagrok-ai/pu
 1. On the menu ribbon, click the **Add viewer** icon. A dialog opens.
 2. In the dialog, select  **MultiCurve Viewer**.
 
+> Developers: To add the viewer from the console, use:
+`grok.shell.tv.addViewer('MultiCurveViewer');`
+
 ## Configuring a multi curve viewer  
   
 To configure a multi curve viewer, click the **Gear** icon on top of the viewer and
