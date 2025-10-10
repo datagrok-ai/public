@@ -8,6 +8,7 @@ import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {addCopyIcon} from '../utils/ui-utils';
 import {IChemProperty, OCLService, CHEM_PROP_MAP as PROP_MAP} from '../open-chem/ocl-service';
+import {prop} from '@datagrok-libraries/utils/src/add-icon-utils';
 
 const DGTypeMap = {
   'float': DG.TYPE.FLOAT,
@@ -50,36 +51,34 @@ export function propertiesWidget(semValue: DG.SemanticValue<string>): DG.Widget 
   return new DG.Widget(host);
 }
 
-export function getPropertiesMap(semValue: DG.SemanticValue<string>, host?: HTMLElement):
- {[k: string]: {value: any, addColumnIcon: HTMLElement | null}} {
+export function getPropertiesMap(
+  semValue: DG.SemanticValue<string>,
+  host?: HTMLElement,
+): { [k: string]: { value: any, addColumnIcon: HTMLElement | null } } {
   const mol = oclMol(semValue.value);
+  const map: { [k: string]: { value: any, addColumnIcon: HTMLElement | null } } = {};
 
-  function prop(p: IChemProperty, mol: OCL.Molecule): {value: any, addColumnIcon: HTMLElement | null} {
-    let addColumnIcon: HTMLElement | null = null;
-    if (host && semValue?.cell?.dart && semValue.cell.dataFrame && semValue.cell.column) {
-      addColumnIcon = ui.iconFA('plus', async () => {
-        const res = await addPropertiesAsColumns(semValue.cell.dataFrame, semValue.cell.column, [p.name]);
+  for (const key of Object.keys(PROP_MAP)) {
+    const chemProp = PROP_MAP[key];
+    const {value, addColumnIcon} = prop(
+      () => chemProp.valueFunc(mol),
+      host && semValue?.cell?.dart &&
+        semValue.cell.dataFrame && semValue.cell.column ? host : null,
+      `Calculate ${chemProp.name} for the whole table`,
+      async () => {
+        if (!semValue?.cell?.dataFrame || !semValue.cell.column) return;
+        const res = await addPropertiesAsColumns(
+          semValue.cell.dataFrame,
+          semValue.cell.column,
+          [chemProp.name],
+        );
         const col = res[0];
-        col.setTag('CHEM_WIDGET_PROPERTY', p.name);
+        col.setTag('CHEM_WIDGET_PROPERTY', chemProp.name);
         col.setTag('CHEM_ORIG_MOLECULE_COLUMN', semValue.cell.column.name);
-      }, `Calculate ${p.name} for the whole table`);
-
-      ui.tools.setHoverVisibility(host, [addColumnIcon]);
-      $(addColumnIcon)
-        .css('color', '#2083d5')
-        .css('position', 'absolute')
-        .css('top', '2px')
-        .css('left', '-12px')
-        .css('margin-right', '5px');
-    }
-
-    return {value: p.valueFunc(mol), addColumnIcon: addColumnIcon};
+      },
+    );
+    map[key] = {value, addColumnIcon};
   }
-
-  const map : {[k: string]: {value: any, addColumnIcon: HTMLElement | null}} = {};
-  const props = Object.keys(PROP_MAP);
-  for (let n = 0; n < props.length; ++n)
-    map[props[n]] = prop(PROP_MAP[props[n]], mol);
 
   return map;
 }

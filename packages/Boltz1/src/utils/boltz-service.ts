@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import * as yaml from 'js-yaml';
 import { BOLTZ_CONFIG_PATH, BOLTZ_PROPERTY_DESCRIPTIONS, BoltzResponse, Config } from '../utils/constants';
 import { _package } from '../package';
-import { getFromPdbs, prop } from '../utils/utils';
+import { getFromPdbs, propFunc } from '../utils/utils';
 
 export class BoltzService {
   static async getBoltzConfigFolders(): Promise<string[]> {
@@ -159,7 +159,7 @@ export class BoltzService {
     for (let i = 0; i < boltzResults!.columns.length; ++i) {
       const columnName = boltzResults!.columns.names()[i];
       const propertyCol = boltzResults!.col(columnName);
-      map[columnName] = prop(molecule, propertyCol!, result, BOLTZ_PROPERTY_DESCRIPTIONS);
+      map[columnName] = propFunc(molecule, propertyCol!, result, BOLTZ_PROPERTY_DESCRIPTIONS);
     }
     result.appendChild(ui.tableFromMap(map));
     widget.root.append(result);

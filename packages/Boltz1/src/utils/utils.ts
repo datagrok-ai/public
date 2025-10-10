@@ -2,8 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import $ from 'cash-dom';
-
+import { prop } from '@datagrok-libraries/utils/src/add-icon-utils';
 import { CACHED_RESULTS } from './constants';
 
 export function getFromPdbs(pdb: DG.SemanticValue): DG.DataFrame {
@@ -34,22 +33,17 @@ export function getFromPdbs(pdb: DG.SemanticValue): DG.DataFrame {
   return resultDf;
 }
   
-export function prop(molecule: DG.SemanticValue, propertyCol: DG.Column, host: HTMLElement, descriptions: { [colName: string]: string }) : HTMLElement {
-  const addColumnIcon = ui.iconFA('plus', () => {
-    const df = molecule.cell.dataFrame;
-    propertyCol.name = df.columns.getUnusedName(propertyCol.name);
-    propertyCol.setTag(DG.TAGS.DESCRIPTION, descriptions[propertyCol.name]);
-    df.columns.add(propertyCol);
-  }, `Calculate ${propertyCol.name} for the whole table`);
-  
-  ui.tools.setHoverVisibility(host, [addColumnIcon]);
-  $(addColumnIcon)
-    .css('color', '#2083d5')
-    .css('position', 'absolute')
-    .css('top', '2px')
-    .css('left', '-12px')
-    .css('margin-right', '5px');
-
-  const idx = molecule.cell.rowIndex;
-  return ui.divH([addColumnIcon, propertyCol.get(idx)], {style: {'position': 'relative'}});
+export function propFunc(molecule: DG.SemanticValue, propertyCol: DG.Column, host: HTMLElement, descriptions: { [colName: string]: string }) : HTMLElement {
+  const { value, addColumnIcon } = prop(
+    () => propertyCol.get(molecule.cell.rowIndex),
+    host,
+    `Calculate ${propertyCol.name} for the whole table`,
+    () => {
+      const df = molecule.cell.dataFrame;
+      propertyCol.name = df.columns.getUnusedName(propertyCol.name);
+      propertyCol.setTag(DG.TAGS.DESCRIPTION, descriptions[propertyCol.name]);
+      df.columns.add(propertyCol);
+    }
+  );
+  return ui.divH([addColumnIcon, value], {style: {'position': 'relative'}});
 }
