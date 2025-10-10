@@ -547,7 +547,7 @@ export async function createSearchFileds(): Promise<DG.Property[]> {
         }:
         {
           name: prop.name,
-          type: prop.value_type,
+          type: prop.value_type === 'uuid' ? 'string' : prop.value_type,
           semType: prop.semantic_type?.name,
           friendlyName: prop.friendly_name,
         };
@@ -678,7 +678,7 @@ function convertSimpleCondition(cond: any, level: Scope, type: MolTrackEntityTyp
   return {
     field: `${level}${isDynamicProp ? '.details': ''}.${cond.field}`,
     operator: cond.operator,
-    value: cond.value instanceof dayjs ? convertDateToString(cond.value) : cond.value,
+    value: cond.value ? cond.value instanceof dayjs ? convertDateToString(cond.value) : cond.value : null,
     threshold: cond.threshold || null,
   };
 }

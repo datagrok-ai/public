@@ -4,7 +4,7 @@ ENV PYTHONUNBUFFERED=1
 
 RUN apt-get update && apt-get install -y jq && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir dg-mol-track==0.6.13
+RUN pip install --no-cache-dir dg-mol-track==0.6.14
 
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 

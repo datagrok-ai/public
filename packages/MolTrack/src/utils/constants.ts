@@ -57,9 +57,10 @@ export type MolTrackProp = {
 export const GITHUB_BASE_URL =
   'https://raw.githubusercontent.com/datagrok-ai/mol-track/main/data/black/';
 
+export const USER_FIELDS = ['created_by', 'updated_by', 'deleted_by'];
 
 export const EXCLUDE_SEARCH_FIELDS = ['id', 'molregno', 'batch_regno', 'original_molfile', 'hash_mol',
-  'hash_tautomer', 'created_by', 'updated_by', 'deleted_by', 'hash_canonical_smiles', 'hash_no_stereo_smiles',
+  'hash_tautomer', 'hash_canonical_smiles', 'hash_no_stereo_smiles',
   'hash_no_stereo_tautomer'];
 
 export const EXCLUDE_SEARCH_OUTPUT_FIELDS = ['id', 'molregno', 'batch_regno', 'hash_mol', 'hash_tautomer', 'uuid',
