@@ -2,13 +2,13 @@
 title: "Trellis plot"
 ---
 
-Trellis Charts are useful for finding the structure and patterns in complex data. A Trellis Chart is a layout of smaller
+Trellis plot is useful for finding the structure and patterns in complex data. A trellis plot is a layout of smaller
 charts in a grid with consistent scales. Each smaller chart represents rows that belong to a corresponding category. The
-grid layout looks similar to a garden trellis, hence the name Trellis Chart.
+grid layout looks similar to a garden trellis, hence the name trellis plot.
 
 There are two ways to add a trellis plot, visualized below:
 
-* click on the "Trellis Plot" icon in the toolbox, and then customize the inner chart by clicking on the "gear" icon on
+* click on the **Trellis plot** icon in the toolbox, and then customize the inner chart by clicking on the "gear" icon on
   the left
 * create a viewer that you want to eventually become an inner chart, customize it the way you like, and then click
   on `Viewer | Use in Trellis`
@@ -16,7 +16,7 @@ There are two ways to add a trellis plot, visualized below:
 > Developers: To add the viewer from the console, use:
 `grok.shell.tv.addViewer('Trellis plot');`
 
-![Trellis Plot](../../uploads/gifs/trellis-plot.gif "Trellis Plot")
+![Trellis Plot](img/trellis-plot.gif "Trellis Plot")
 
 ![viewers-as-trellis](img/viewers-as-trellis.gif)
 

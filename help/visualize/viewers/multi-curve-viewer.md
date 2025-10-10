@@ -33,6 +33,9 @@ use info panels on the **Context Panel**. You can:
 * Enable merging of series from different columns or individual cells with the **Merge Column Series** and **Merge Cell Series** checkboxes.
 * Enable logarithmic scales for the X / Y axes using the **log X** / **log Y** checkboxes.
 
+![ Multi curve viewer](img/multi-curve-viewer.gif " Multi curve viewer")
+
+
 ### In trellis plot  
   
 The multi curve viewer is particularly useful as an inner viewer in [trellis plot](trellis-plot.md), allowing you to compare curves across different categories or conditions. This enables multi-dimensional analysis of dose-response data or other fitted curves.
