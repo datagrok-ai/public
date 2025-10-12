@@ -261,24 +261,20 @@ export class TemplatePanel {
     ui.empty(this.platePropertiesHost);
     ui.empty(this.wellPropsHeaderHost);
 
-
-    if (activePlate) {
+    if (activePlate && state) {
       const handleMapping = (targetProperty: string, sourceColumn: string) => {
-        const currentState = this.stateManager.currentState;
-        if (currentState)
-          this.stateManager.remapScopedProperty(currentState.activePlateIdx, MAPPING_SCOPES.TEMPLATE, targetProperty, sourceColumn);
+        this.stateManager.setMapping(state.activePlateIdx, MAPPING_SCOPES.TEMPLATE, targetProperty, sourceColumn);
       };
 
       const handleUndo = (targetProperty: string) => {
-        const currentState = this.stateManager.currentState;
-        if (currentState)
-          this.stateManager.undoScopedMapping(currentState.activePlateIdx, MAPPING_SCOPES.TEMPLATE, targetProperty);
+        this.stateManager.removeMapping(state.activePlateIdx, MAPPING_SCOPES.TEMPLATE, targetProperty);
       };
+
       const identifierColumns = this.stateManager.identifierColumns.filter((c): c is string => c !== null);
       const allSourceColumns = activePlate.plate.data.columns.names();
       const availableSourceColumns = allSourceColumns.filter((c) => !identifierColumns.includes(c));
 
-      const currentMappings = activePlate.plate.getScopedAliases(MAPPING_SCOPES.TEMPLATE);
+      const currentMappings = this.stateManager.getMappings(state.activePlateIdx, MAPPING_SCOPES.TEMPLATE);
 
       const MOCKED_REQUIRED_TEMPLATE_FIELDS = ['Target', 'Assay Format'];
       const templateProps: TargetProperty[] = template.wellProperties
@@ -299,16 +295,13 @@ export class TemplatePanel {
       const platePropertyInputs: HTMLElement[] = [];
       for (const prop of template.plateProperties) {
         if (!prop || !prop.name || !prop.type) continue;
-
         const currentValue = activePlate.plate.details?.[prop.name!];
         const input = this.createPropertyInput(prop, currentValue);
-
         input.onChanged.subscribe(() => {
           if (!activePlate.plate.details)
             activePlate.plate.details = {};
           activePlate.plate.details[prop.name!] = input.value;
         });
-
         platePropertyInputs.push(createFormRow(prop.name!, input));
       }
 
@@ -328,7 +321,6 @@ export class TemplatePanel {
       const platePropertyInputs: HTMLElement[] = [];
       for (const prop of template.plateProperties) {
         if (!prop || !prop.name || !prop.type) continue;
-
         const input = this.createPropertyInput(prop, null);
         platePropertyInputs.push(createFormRow(prop.name!, input));
       }

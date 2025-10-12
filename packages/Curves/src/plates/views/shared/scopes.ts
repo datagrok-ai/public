@@ -5,4 +5,4 @@ export const MAPPING_SCOPES = {
   QPCR: 'qpcr'
 } as const;
 
-export type MappingScope = typeof MAPPING_SCOPES[keyof typeof MAPPING_SCOPES];
+// export type MappingScope = typeof MAPPING_SCOPES[keyof typeof MAPPING_SCOPES];

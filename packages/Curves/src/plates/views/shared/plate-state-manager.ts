@@ -13,6 +13,7 @@ export class PlateStateManager {
   private _currentTemplate: PlateTemplate;
   private _currentPlateType: PlateType;
   private _sourceDataFrame: DG.DataFrame | null = null;
+  private plateMappings = new Map<number, Map<string, Map<string, string>>>();
 
   private stateChange$ = new Subject<PlateStateChangeEvent>();
   public identifierColumns: (string | null)[] = [];
@@ -24,6 +25,73 @@ export class PlateStateManager {
     this._currentTemplate = initialTemplate;
     this._currentPlateType = initialPlateType;
   }
+  public setMapping(plateIndex: number, scope: string, target: string, source: string): void {
+    if (!this.plateMappings.has(plateIndex))
+      this.plateMappings.set(plateIndex, new Map());
+    const plateMaps = this.plateMappings.get(plateIndex)!;
+    if (!plateMaps.has(scope))
+      plateMaps.set(scope, new Map());
+  plateMaps.get(scope)!.set(target, source);
+
+  this.stateChange$.next({
+    type: scope === MAPPING_SCOPES.TEMPLATE ? 'mapping-changed' : 'analysis-mapping-changed',
+    plateIndex,
+    analysisType: scope as any,
+    plate: this.currentState?.plates[plateIndex],
+  });
+  }
+
+  public removeMapping(plateIndex: number, scope: string, target: string): void {
+    const plateMaps = this.plateMappings.get(plateIndex);
+    if (plateMaps?.has(scope))
+    plateMaps.get(scope)!.delete(target);
+
+    this.stateChange$.next({
+      type: scope === MAPPING_SCOPES.TEMPLATE ? 'mapping-changed' : 'analysis-mapping-changed',
+      plateIndex,
+      analysisType: scope as any,
+      plate: this.currentState?.plates[plateIndex],
+    });
+  }
+
+  public getMappings(plateIndex: number, scope: string): Map<string, string> {
+    const plateMaps = this.plateMappings.get(plateIndex);
+    if (plateMaps?.has(scope))
+      return new Map(plateMaps.get(scope)!);
+    return new Map();
+  }
+
+  public resolveColumn(plateIndex: number, scope: string, nameOrAlias: string): DG.Column | null {
+    const state = this.currentState;
+    if (!state || !state.plates[plateIndex]) return null;
+    const plate = state.plates[plateIndex].plate;
+
+    const plateMaps = this.plateMappings.get(plateIndex);
+    if (plateMaps?.has(scope)) {
+      const scopeMap = plateMaps.get(scope)!;
+      for (const [alias, columnName] of scopeMap) {
+        if (alias === nameOrAlias)
+          return plate.data.col(columnName);
+      }
+    }
+
+    if (plate.data.columns.contains(nameOrAlias))
+      return plate.data.col(nameOrAlias);
+    return null;
+  }
+
+  public remapScopedProperty(plateIndex: number, scope: string, target: string, source: string): void {
+    this.setMapping(plateIndex, scope, target, source);
+  }
+
+  public undoScopedMapping(plateIndex: number, scope: string, targetProperty: string): void {
+    this.removeMapping(plateIndex, scope, targetProperty);
+  }
+
+  public getScopedMapping(plateIndex: number, scope: string): Map<string, string> {
+    return this.getMappings(plateIndex, scope);
+  }
+
 
   get onStateChange(): Observable<PlateStateChangeEvent> {
     return this.stateChange$.asObservable();
@@ -100,45 +168,26 @@ export class PlateStateManager {
 
   async processPlates(): Promise<void> {
     if (!this._sourceDataFrame) return;
-
-    const parsedPlateResults = parsePlates(
-      this._sourceDataFrame,
-      this.identifierColumns
-    );
-
+    const parsedPlateResults = parsePlates(this._sourceDataFrame, this.identifierColumns);
     const currentState = this.templateStates.get(this._currentTemplate.id) ?? {
       plates: [],
       activePlateIdx: -1,
     };
-
     currentState.plates = [];
     for (const parsedResult of parsedPlateResults) {
       const dummyFile = {
         name: `Plate: ${parsedResult.plate.barcode}`,
         fullPath: '',
       } as DG.FileInfo;
-      const plate = parsedResult.plate;
-      const sourceCols = new Set(plate.data.columns.names());
-      const templateOnlyProps = this.currentTemplate.wellProperties
-        .map((p) => p.name)
-        .filter((p): p is string => !!p);
-
-      for (const prop of templateOnlyProps) {
-        if (sourceCols.has(prop))
-          plate.addScopedAlias(MAPPING_SCOPES.TEMPLATE, prop, prop);
-      }
-
       currentState.plates.push({
-        plate: plate,
+        plate: parsedResult.plate,
         file: dummyFile,
         commonProperties: parsedResult.commonProperties,
       });
     }
-
     const newActiveIndex = currentState.plates.length > 0 ? 0 : -1;
     currentState.activePlateIdx = newActiveIndex;
     this.templateStates.set(this._currentTemplate.id, currentState);
-
     this.stateChange$.next({
       type: 'plate-selected',
       plateIndex: newActiveIndex,
@@ -187,22 +236,6 @@ export class PlateStateManager {
     }
   }
 
-  removePlate(index: number): void {
-    const state = this.currentState;
-    if (!state) return;
-
-    state.plates.splice(index, 1);
-    if (state.activePlateIdx >= index)
-      state.activePlateIdx = Math.max(0, state.activePlateIdx - 1);
-
-    if (state.plates.length === 0)
-      this.templateStates.delete(this._currentTemplate.id);
-
-    this.stateChange$.next({
-      type: 'plate-removed',
-      plateIndex: index,
-    });
-  }
 
   public notifyPlateDataChanged(): void {
     const state = this.currentState;
@@ -213,42 +246,6 @@ export class PlateStateManager {
       plateIndex: state.activePlateIdx,
       plate: this.activePlate,
     });
-  }
-
-  public remapScopedProperty(plateIndex: number, scope: string, target: string, source: string): void {
-    const state = this.currentState;
-    if (!state || !state.plates[plateIndex]) return;
-    const plateFile = state.plates[plateIndex];
-    plateFile.plate.addScopedAlias(scope, source, target);
-
-    this.stateChange$.next({
-      type: scope === MAPPING_SCOPES.TEMPLATE ? 'mapping-changed' : 'analysis-mapping-changed',
-      plateIndex,
-      analysisType: scope as any,
-      plate: plateFile,
-    });
-  }
-
-  public undoScopedMapping(plateIndex: number, scope: string, targetProperty: string): void {
-    const state = this.currentState;
-    if (!state || !state.plates[plateIndex]) return;
-
-    const plateFile = state.plates[plateIndex];
-    plateFile.plate.removeScopedAlias(scope, targetProperty);
-
-    this.stateChange$.next({
-      type: scope === MAPPING_SCOPES.TEMPLATE ? 'mapping-changed' : 'analysis-mapping-changed',
-      plateIndex,
-      analysisType: scope as any,
-      plate: plateFile,
-    });
-  }
-
-  public getScopedMapping(plateIndex: number, scope: string): Map<string, string> {
-    const state = this.currentState;
-    if (!state || !state.plates[plateIndex]) return new Map();
-
-    return state.plates[plateIndex].plate.getScopedAliases(scope);
   }
 
   async getOrCreateDefaultPlate(): Promise<Plate> {

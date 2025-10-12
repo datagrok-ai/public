@@ -4,7 +4,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {mapFromRow, safeLog, toExcelPosition} from './utils';
-import {LayerType, Plate, PLATE_OUTLIER_WELL_NAME} from './plate';
+import {Plate, PLATE_OUTLIER_WELL_NAME} from './plate';
 import {fromEvent, Subject, Subscription} from 'rxjs';
 import {filter, take, takeUntil} from 'rxjs/operators';
 import './plate-widget.css';
@@ -74,8 +74,8 @@ export class PlateWidget extends DG.Widget {
   private interactionMode: InteractionMode = 'default';
   private _dragStartPoint: DG.Point | null = null;
 
-  private roleColorMap: Map<string, number> = new Map();
-  private nextColorIndex = 0;
+  // private roleColorMap: Map<string, number> = new Map();
+  // private nextColorIndex = 0;
 
 
   get editable() { return this._editable; }
@@ -95,8 +95,8 @@ export class PlateWidget extends DG.Widget {
       this.notifyAnalysisCoordinators('outlier', change);
     });
 
-    this.roleColorMap.clear();
-    this.nextColorIndex = 0;
+    // this.roleColorMap.clear();
+    // this.nextColorIndex = 0;
     this.refresh();
   }
 
@@ -179,7 +179,8 @@ export class PlateWidget extends DG.Widget {
         const row = gc.gridRow!;
         const col = gc.gridColumn.idx - 1;
         const currentState = this.plate.isOutlier(row, col);
-        this.plate.markOutlierWithSource(row, col, !currentState, 'summary-click-toggle');
+
+        this.plate.markOutlier(row, col, !currentState);
         this.grid.invalidate();
       }
     });
@@ -244,11 +245,12 @@ export class PlateWidget extends DG.Widget {
           const selection = this.plate.data.selection;
           if (selection.trueCount > 0) {
             if (this.interactionMode === 'default') {
-              this.showRoleAssignmentPopup();
+              // this.showRoleAssignmentPopup();
             } else if (this.interactionMode === 'outlier') {
               for (const i of selection.getSelectedIndexes()) {
                 const [row, col] = this.plate.rowIndexToExcel(i);
-                this.plate.markOutlierWithSource(row, col, true, 'summary-drag-set');
+
+                this.plate.markOutlier(row, col, true);
               }
               selection.setAll(false, true);
             }
@@ -262,7 +264,8 @@ export class PlateWidget extends DG.Widget {
               selection.set(dataIndex, !selection.get(dataIndex), true);
             } else if (this.interactionMode === 'outlier') {
               const currentState = this.plate.isOutlier(well.row, well.col);
-              this.plate.markOutlierWithSource(well.row, well.col, !currentState, 'summary-click-toggle');
+
+              this.plate.markOutlier(well.row, well.col, !currentState);
             }
           }
         }
@@ -299,90 +302,90 @@ export class PlateWidget extends DG.Widget {
     selection.fireChanged();
   }
 
-  private showRoleAssignmentPopup(): void {
-    const selection = this.plate.data.selection;
-    if (selection.trueCount === 0) return;
-    const roleInput = ui.input.string('Role', {value: 'Sample'});
-    let popup: Element;
-    let anchorDiv: HTMLElement;
+  // private showRoleAssignmentPopup(): void {
+  //   const selection = this.plate.data.selection;
+  //   if (selection.trueCount === 0) return;
+  //   const roleInput = ui.input.string('Role', {value: 'Sample'});
+  //   let popup: Element;
+  //   let anchorDiv: HTMLElement;
 
-    const assignAction = () => {
-      const roleName = roleInput.value.trim();
-      if (!roleName) {
-        grok.shell.warning('Role name cannot be empty.');
-        return;
-      }
-      const existingRoleCols = this.plate.getLayersByType(LayerType.LAYOUT);
-      const selectedIndexes = selection.getSelectedIndexes();
+  //   const assignAction = () => {
+  //     const roleName = roleInput.value.trim();
+  //     if (!roleName) {
+  //       grok.shell.warning('Role name cannot be empty.');
+  //       return;
+  //     }
+  //     const existingRoleCols = this.plate.getLayersByType(LayerType.LAYOUT);
+  //     const selectedIndexes = selection.getSelectedIndexes();
 
-      for (const colName of existingRoleCols) {
-        const col = this.plate.data.col(colName);
-        if (col) {
-          for (const i of selectedIndexes)
-            col.set(i, false, false);
-        }
-      }
+  //     for (const colName of existingRoleCols) {
+  //       const col = this.plate.data.col(colName);
+  //       if (col) {
+  //         for (const i of selectedIndexes)
+  //           col.set(i, false, false);
+  //       }
+  //     }
 
-      let newRoleCol = this.plate.data.col(roleName);
-      if (newRoleCol === null) {
-        newRoleCol = this.plate.data.columns.addNewBool(roleName);
-        this.plate.registerLayer(roleName, LayerType.LAYOUT, 'user-assignment');
-      }
-      for (const i of selectedIndexes)
-        newRoleCol.set(i, true, false);
+  //     let newRoleCol = this.plate.data.col(roleName);
+  //     if (newRoleCol === null) {
+  //       newRoleCol = this.plate.data.columns.addNewBool(roleName);
+  //       this.plate.registerLayer(roleName, LayerType.LAYOUT, 'user-assignment');
+  //     }
+  //     for (const i of selectedIndexes)
+  //       newRoleCol.set(i, true, false);
 
-      this.plate.data.fireValuesChanged();
-      // this.updateRoleSummary();
-      this.refresh();
-      selection.setAll(false, true);
-      this.grid.invalidate();
+  //     this.plate.data.fireValuesChanged();
+  //     // this.updateRoleSummary();
+  //     this.refresh();
+  //     selection.setAll(false, true);
+  //     this.grid.invalidate();
 
-      if (popup && anchorDiv) {
-        popup.remove();
-        anchorDiv.remove();
-      }
-    };
+  //     if (popup && anchorDiv) {
+  //       popup.remove();
+  //       anchorDiv.remove();
+  //     }
+  //   };
 
-    const popupContent = ui.divV([
-      ui.h3(`${selection.trueCount} wells selected`),
-      roleInput,
-      ui.button('ASSIGN', assignAction)
-    ], {style: {padding: '10px'}});
+  //   const popupContent = ui.divV([
+  //     ui.h3(`${selection.trueCount} wells selected`),
+  //     roleInput,
+  //     ui.button('ASSIGN', assignAction)
+  //   ], {style: {padding: '10px'}});
 
-    roleInput.input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        assignAction();
-      }
-    });
+  //   roleInput.input.addEventListener('keydown', (e) => {
+  //     if (e.key === 'Enter') {
+  //       e.preventDefault();
+  //       assignAction();
+  //     }
+  //   });
 
-    const selectedIndices = selection.getSelectedIndexes();
-    let minRow = this.plate.rows; let maxRow = -1; let minCol = this.plate.cols; let maxCol = -1;
-    for (const idx of selectedIndices) {
-      const row = Math.floor(idx / this.plate.cols);
-      const col = idx % this.plate.cols;
-      if (row < minRow) minRow = row;
-      if (row > maxRow) maxRow = row;
-      if (col < minCol) minCol = col;
-      if (col > maxCol) maxCol = col;
-    }
+  //   const selectedIndices = selection.getSelectedIndexes();
+  //   let minRow = this.plate.rows; let maxRow = -1; let minCol = this.plate.cols; let maxCol = -1;
+  //   for (const idx of selectedIndices) {
+  //     const row = Math.floor(idx / this.plate.cols);
+  //     const col = idx % this.plate.cols;
+  //     if (row < minRow) minRow = row;
+  //     if (row > maxRow) maxRow = row;
+  //     if (col < minCol) minCol = col;
+  //     if (col > maxCol) maxCol = col;
+  //   }
 
-    const firstCell = this.grid.cell(this.grid.columns.byIndex(minCol + 1)!.name, minRow);
-    const lastCell = this.grid.cell(this.grid.columns.byIndex(maxCol + 1)!.name, maxRow);
-    const selectionBounds = firstCell.bounds.union(lastCell.bounds);
-    const canvasBounds = this.grid.overlay.getBoundingClientRect();
+  //   const firstCell = this.grid.cell(this.grid.columns.byIndex(minCol + 1)!.name, minRow);
+  //   const lastCell = this.grid.cell(this.grid.columns.byIndex(maxCol + 1)!.name, maxRow);
+  //   const selectionBounds = firstCell.bounds.union(lastCell.bounds);
+  //   const canvasBounds = this.grid.overlay.getBoundingClientRect();
 
-    anchorDiv = ui.div('', {
-      style: {
-        position: 'absolute',
-        left: `${canvasBounds.left + selectionBounds.x + selectionBounds.width / 2}px`,
-        top: `${canvasBounds.top + selectionBounds.y}px`,
-        width: '0px', height: '0px',
-      }
-    });
-    document.body.appendChild(anchorDiv);
-    popup = ui.showPopup(popupContent, anchorDiv);
-  }
+  //   anchorDiv = ui.div('', {
+  //     style: {
+  //       position: 'absolute',
+  //       left: `${canvasBounds.left + selectionBounds.x + selectionBounds.width / 2}px`,
+  //       top: `${canvasBounds.top + selectionBounds.y}px`,
+  //       width: '0px', height: '0px',
+  //     }
+  //   });
+  //   document.body.appendChild(anchorDiv);
+  //   popup = ui.showPopup(popupContent, anchorDiv);
+  // }
 
   private drawSelectionRect() {
     if (!this._canvas || !this._selectionRect) return;
@@ -450,17 +453,17 @@ export class PlateWidget extends DG.Widget {
     this.setupHoverEvents(grid);
   }
 
-  private getDisplayName(layerName: string, layerType: LayerType): string {
-    return layerName;
-  }
+  // private getDisplayName(layerName: string, layerType: LayerType): string {
+  //   return layerName;
+  // }
 
-  private _getRoleColor(roleName: string): number {
-    if (!this.roleColorMap.has(roleName)) {
-      this.roleColorMap.set(roleName, colorPalette[this.nextColorIndex % colorPalette.length]);
-      this.nextColorIndex++;
-    }
-    return this.roleColorMap.get(roleName)!;
-  }
+  // private _getRoleColor(roleName: string): number {
+  //   if (!this.roleColorMap.has(roleName)) {
+  //     this.roleColorMap.set(roleName, colorPalette[this.nextColorIndex % colorPalette.length]);
+  //     this.nextColorIndex++;
+  //   }
+  //   return this.roleColorMap.get(roleName)!;
+  // }
 
   refresh() {
     const currentPaneName = this.tabs.currentPane?.name;
@@ -469,75 +472,29 @@ export class PlateWidget extends DG.Widget {
     this.tabs.addPane('Summary', () => this.grid.root);
     this.tabs.addPane(`X Outliers X`, () => this.grid.root);
 
-    const layerInfo = {
-      [LayerType.ORIGINAL]: this.plate.getLayersByType(LayerType.ORIGINAL),
-      [LayerType.LAYOUT]: this.plate.getLayersByType(LayerType.LAYOUT),
-      [LayerType.DERIVED]: this.plate.getLayersByType(LayerType.DERIVED),
-    };
+    const allColumns = this.plate.data.columns.toList()
+      .filter((c) => c.name !== PLATE_OUTLIER_WELL_NAME);
 
-    for (const layerName of layerInfo[LayerType.LAYOUT]) {
-      this.tabs.addPane(layerName, () => ui.div([]));
-      const pane = this.tabs.getPane(layerName)!;
-      ui.empty(pane.header);
+    for (const col of allColumns)
+      this.tabs.addPane(col.name, () => this.createLayerGrid(col.name, false));
 
-      const color = this._getRoleColor(layerName);
-
-      const colorSquare = ui.div('', 'color-square');
-      colorSquare.style.backgroundColor = DG.Color.toHtml(color);
-      ui.tooltip.bind(colorSquare, `Role: ${layerName}`);
-
-      const nameLabel = ui.label(layerName);
-
-      const closeIcon = ui.iconFA('times', (e: MouseEvent) => {
-        e.stopPropagation();
-
-        ui.dialog('Confirm Deletion')
-          .add(ui.divText(`Delete the "${layerName}" role assignment?`))
-          .onOK(() => {
-            if (this.plate.data.columns.contains(layerName))
-              this.plate.data.columns.remove(layerName);
-
-            this.plate.unregisterLayer(layerName);
-            this.refresh();
-          })
-          .show();
-      }, 'Delete role');
-      closeIcon.classList.add('delete-role-icon');
-
-      const customHeader = ui.divH([closeIcon, colorSquare, nameLabel], 'plate-widget-role-tab-header');
-
-      customHeader.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      });
-
-      pane.header.appendChild(customHeader);
-    }
-
-    const otherLayers = [...layerInfo[LayerType.ORIGINAL], ...layerInfo[LayerType.DERIVED]];
-    for (const layerName of otherLayers) {
-      if (layerName !== PLATE_OUTLIER_WELL_NAME)
-        this.tabs.addPane(layerName, () => this.createLayerGrid(layerName, false));
-    }
 
     if (currentPaneName)
       this.tabs.currentPane = this.tabs.panes.find((p) => p.name === currentPaneName) ?? this.tabs.getPane('Summary');
     else if (this.tabs.panes.length > 0)
       this.tabs.currentPane = this.tabs.getPane('Summary');
 
-
     const t = this.plate.data;
-    const nonLayoutCols = t.columns.toList().filter((c) => this.plate.getLayerType(c.name) !== LayerType.LAYOUT);
+    const nonLayoutCols = t.columns.toList();
     this._colorColumn = nonLayoutCols.find((c) => c.semType === 'Activity' || c.name.toLowerCase() === 'activity') ??
-                        nonLayoutCols.find((c) => c.semType === 'Concentration' || c.name.toLowerCase().includes('concentration')) ??
-                        nonLayoutCols.find((c) => c.type === DG.TYPE.FLOAT);
+                      nonLayoutCols.find((c) => c.semType === 'Concentration' || c.name.toLowerCase().includes('concentration')) ??
+                      nonLayoutCols.find((c) => c.type === DG.TYPE.FLOAT);
 
     this.grid.dataFrame = DG.DataFrame.create(this.plate.rows);
     this.grid.columns.clear();
     for (let i = 0; i <= this.plate.cols; i++)
       this.grid.columns.add({gridColumnName: i.toString(), cellType: 'string'});
 
-    // Removed inline style from here
     this.grid.invalidate();
   }
 
@@ -626,22 +583,8 @@ export class PlateWidget extends DG.Widget {
         g.strokeStyle = 'rgba(40, 255, 140, 0.9)';
         g.lineWidth = isHovered ? 4 : 3;
       } else {
-        let roleColor: number | null = null;
-        const layoutLayers = this.plate.getLayersByType(LayerType.LAYOUT);
-        for (const layerName of layoutLayers) {
-          if (this.plate.data.get(layerName, dataRow) === true) {
-            roleColor = this._getRoleColor(layerName);
-            break;
-          }
-        }
-
-        if (roleColor !== null) {
-          g.strokeStyle = DG.Color.toHtml(roleColor);
-          g.lineWidth = 3;
-        } else {
-          g.strokeStyle = 'grey';
-          g.lineWidth = 1;
-        }
+        g.strokeStyle = 'grey';
+        g.lineWidth = 1;
       }
       g.stroke();
       g.shadowBlur = 0;

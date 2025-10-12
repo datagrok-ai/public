@@ -110,7 +110,8 @@ export class DrcAnalysisCoordinator {
 
       const point: IFitPoint = args.series.points[args.pointIdx];
       if (point.meta !== null) {
-        this.plate._markOutlierWithSource(point.meta, !!point.outlier, 'user-click-grid');
+        const [row, col] = this.plate.rowIndexToExcel(point.meta);
+        this.plate.markOutlier(row, col, !!point.outlier);
         this.plateWidget.grid.invalidate();
       }
     });

@@ -54,10 +54,10 @@ export function createPlatesView(): DG.View {
         const currentMappings = stateManager.getScopedMapping(activeIndex, analysis.name);
 
         const handleMap = (target: string, source: string) => {
-          stateManager.remapScopedProperty(activeIndex, analysis.name, target, source);
+          stateManager.setMapping(activeIndex, analysis.name, target, source);
         };
         const handleUndo = (target: string) => {
-          stateManager.undoScopedMapping(activeIndex, analysis.name, target);
+          stateManager.removeMapping(activeIndex, analysis.name, target);
         };
 
         return analysis.createView(activePlate.plate, plateWidget, currentMappings, handleMap, handleUndo);

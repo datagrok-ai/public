@@ -4,7 +4,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
-import {Plate, LayerType} from '../../plate';
+import {Plate} from '../../plate';
 import {AnalysisBase, IAnalysisProperty} from '../base-analysis';
 import {AnalysisRequiredFields} from '../../../plates/views/components/analysis-mapping/analysis-mapping-panel';
 import {PlateWidget} from '../../plate-widget';
@@ -133,7 +133,7 @@ export class QpcrAnalysis extends AnalysisBase {
 
         const selectedIndexes = selection.getSelectedIndexes();
         const roleCol = plate.data.columns.contains(roleToAssign) ? plate.data.col(roleToAssign)! : plate.data.columns.addNewBool(roleToAssign);
-        plate.registerLayer(roleToAssign, LayerType.LAYOUT);
+        // plate.registerLayer(roleToAssign, LayerType.LAYOUT);
         for (const i of selectedIndexes) roleCol.set(i, true);
         if (mutuallyExclusiveRole && plate.data.columns.contains(mutuallyExclusiveRole)) {
           const exclusiveCol = plate.data.col(mutuallyExclusiveRole)!;

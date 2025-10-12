@@ -15,7 +15,6 @@ import {
 import type ExcelJS from 'exceljs';
 import {findPlatePositions, getPlateFromSheet} from './excel-plates';
 import {FitFunctionType, FitSeries} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
-import {AnalysisOptions} from './plate-widget';
 import {inspectCurve} from '../fit/fit-renderer';
 import {plateDbColumn, allProperties, plateTypes} from '../plates/plates-crud';
 import {IPlateWellValidator} from './plate-well-validators';
@@ -49,20 +48,6 @@ interface ISeriesData {
   y: number[];
 }
 
-export enum LayerType {
-  ORIGINAL = 'original',
-  DERIVED = 'derived',
-  LAYOUT = 'layout',
-  OUTLIER = 'outlier'
-}
-
-
-export interface LayerMetadata {
-  type: LayerType;
-  source?: string;
-  createdAt: Date;
-}
-
 export const PLATE_OUTLIER_WELL_NAME = 'Outlier';
 
 export function randomizeTableId() {
@@ -81,11 +66,10 @@ export class Plate {
   rows: number = 8;
   cols: number = 12;
 
-  private layerRegistry: Map<string, LayerMetadata> = new Map();
-  private scopedAliases: Map<string, Map<string, string>> = new Map();
 
   private outlierChangeSubject = new Subject<{row: number, col: number, isOutlier: boolean, source: string}>();
   public get onOutlierChanged() { return this.outlierChangeSubject.asObservable(); }
+
   private dataChangeSubject = new Subject<void>();
   public get onDataChanged() { return this.dataChangeSubject.asObservable(); }
 
@@ -93,11 +77,6 @@ export class Plate {
     this.dataChangeSubject.next();
   }
 
-  private changeLog: Array<{
-    timestamp: Date;
-    action: string;
-    details: any;
-  }> = [];
 
   constructor(rows: number, cols: number) {
     this.data = DG.DataFrame.create(rows * cols);
@@ -105,7 +84,6 @@ export class Plate {
     this.cols = cols;
     this.plateTypeId = plateTypes.find((pt) => pt.rows == this.rows && pt.cols == this.cols)?.id;
     this.barcode = Math.round(Math.random() * 10000).toString().padStart(10, '0');
-    this.logChange('plate-created', {rows, cols});
   }
 
   static autoSize(positions: Iterable<[number, number]>): Plate {
@@ -125,245 +103,66 @@ export class Plate {
     return [Math.floor(dataFrameRow / cols), dataFrameRow % cols];
   }
 
-  _markOutlier(row: number, flag: boolean = true) {
+  private _markOutlier(dataframeRow: number, flag: boolean = true) {
     const outlierCol = this.data.columns.getOrCreate(PLATE_OUTLIER_WELL_NAME, DG.TYPE.BOOL);
-
-    if (!this.layerRegistry.has(PLATE_OUTLIER_WELL_NAME)) {
-      this.registerLayer(PLATE_OUTLIER_WELL_NAME, LayerType.OUTLIER, 'user-interaction');
-      outlierCol.setTag('outlier.sources', '{}');
-    }
-
-    outlierCol.set(row, flag);
-    const source = 'user-interaction';
-    this._updateOutlierSource(outlierCol, row, flag, source);
-    this._markOutlierWithSource(row, flag, source);
-  }
-
-  public unregisterLayer(columnName: string): void {
-    if (this.layerRegistry.has(columnName)) {
-      this.layerRegistry.delete(columnName);
-      this.logChange('layer-unregistered', {columnName});
-    }
-  }
-
-  markOutlierWithSource(row: number, col: number, flag: boolean = true, source: string = 'user-interaction') {
-    const dataRow = this._idx(row, col);
-    this._markOutlierWithSource(dataRow, flag, source);
-  }
-
-  _markOutlierWithSource(row: number, flag: boolean = true, source: string = 'user-interaction') {
-    const outlierCol = this.data.columns.getOrCreate(PLATE_OUTLIER_WELL_NAME, DG.TYPE.BOOL);
-
-
-    // Register the outlier column as an OUTLIER layer when first created
-    if (!this.layerRegistry.has(PLATE_OUTLIER_WELL_NAME)) {
-      this.registerLayer(PLATE_OUTLIER_WELL_NAME, LayerType.OUTLIER, 'user-interaction');
-      outlierCol.setTag('outlier.sources', '{}');
-    }
-
-    outlierCol.set(row, flag);
-    this._updateOutlierSource(outlierCol, row, flag, source);
-    // Emitting change event
-    const [plateRow, plateCol] = this.rowIndexToExcel(row);
-    this.outlierChangeSubject.next({row: plateRow, col: plateCol, isOutlier: flag, source});
-  }
-
-  // Helper method to manage source tracking via column tags
-  private _updateOutlierSource(outlierCol: DG.Column, row: number, flag: boolean, source: string) {
-    try {
-      const sourcesJson = outlierCol.getTag('outlier.sources') || '{}';
-      const sources: Record<number, string[]> = JSON.parse(sourcesJson);
-
-      if (!sources[row])
-        sources[row] = [];
-
-      if (flag && !sources[row].includes(source)) {
-        sources[row].push(source);
-      } else if (!flag) {
-      // Clear sources when unmarking outlier
-        sources[row] = [];
-      }
-
-      outlierCol.setTag('outlier.sources', JSON.stringify(sources));
-    } catch (e) {
-      // Fallback: just ensure the tag exists
-      outlierCol.setTag('outlier.sources', '{}');
-    }
+    outlierCol.set(dataframeRow, flag);
+    const [row, col] = this.rowIndexToExcel(dataframeRow);
+    this.outlierChangeSubject.next({row, col, isOutlier: flag, source: ''});
   }
 
   markOutlier(row: number, col: number, flag: boolean = true) {
     this._markOutlier(this._idx(row, col), flag);
   }
 
-  _isOutlier(row: number): boolean {
-    const outlierCol = this.data.columns.getOrCreate(PLATE_OUTLIER_WELL_NAME, DG.TYPE.BOOL);
-    return outlierCol.get(row);
+  _isOutlier(dataframeRow: number): boolean {
+    const outlierCol = this.data.col(PLATE_OUTLIER_WELL_NAME);
+    return outlierCol ? outlierCol.get(dataframeRow) : false;
   }
 
   isOutlier(row: number, col: number): boolean {
     return this._isOutlier(this._idx(row, col));
   }
 
-  markOutliersWhere(field: string, valueFunc: (fieldValue: any) => boolean, filter?: IPlateWellFilter, source: string = 'auto-filter') {
+
+  markOutliersWhere(field: string, valueFunc: (fieldValue: any) => boolean, filter?: IPlateWellFilter) {
     this.values([field], filter).forEach((v) => {
       if (valueFunc(v[field]))
-        this._markOutlierWithSource(v.innerDfRow, true, source);
+        this._markOutlier(v.innerDfRow, true);
     });
   }
 
   /**
    * Get a column by its name or any of its aliases
    */
-  getColumn(nameOrAlias: string): DG.Column | null {
-  // First check direct column name
-    if (this.data.columns.contains(nameOrAlias))
-      return this.data.col(nameOrAlias);
-    // Then search all scopes for this alias
-    for (const scopeMap of this.scopedAliases.values()) {
-      if (scopeMap.has(nameOrAlias))
-        return this.data.col(scopeMap.get(nameOrAlias)!);
-    }
+  getColumn(name: string): DG.Column | null {
+    if (this.data.columns.contains(name))
+      return this.data.col(name);
     return null;
   }
 
-  addScopedAlias(scope: string, originalColumnName: string, alias: string): void {
-    if (!this.data.columns.contains(originalColumnName))
-      throw new Error(`Column ${originalColumnName} does not exist`);
-    if (!this.scopedAliases.has(scope))
-      this.scopedAliases.set(scope, new Map());
-    // Remove this alias from any other column in this scope first
-    this.removeScopedAlias(scope, alias);
-    this.scopedAliases.get(scope)!.set(alias, originalColumnName);
-    this.logChange('scoped-alias-added', {originalColumnName, scope, alias});
-  }
-
-  removeScopedAlias(scope: string, alias: string): void {
-    const scopeMap = this.scopedAliases.get(scope);
-    if (scopeMap && scopeMap.has(alias)) {
-      const originalColumnName = scopeMap.get(alias)!;
-      scopeMap.delete(alias);
-      this.logChange('scoped-alias-removed', {originalColumnName, scope, alias});
-    }
-  }
-
-  getScopedAliases(scope: string): Map<string, string> {
-    return this.scopedAliases.get(scope) || new Map();
-  }
-
-  getScopedColumn(scope: string, nameOrAlias: string): DG.Column | null {
-  // First try direct column name
-    if (this.data.columns.contains(nameOrAlias))
-      return this.data.col(nameOrAlias);
-    // Then check scoped alias
-    const scopeMap = this.scopedAliases.get(scope);
-    if (scopeMap && scopeMap.has(nameOrAlias)) {
-      const originalColumnName = scopeMap.get(nameOrAlias)!;
-      return this.data.col(originalColumnName);
-    }
-    return null;
-  }
-
-  /**
-   * Register a column as a layer with metadata
-   */
-  registerLayer(columnName: string, type: LayerType, source?: string): void {
-    if (!this.data.columns.contains(columnName))
-      throw new Error(`Column ${columnName} does not exist`);
-
-
-    if (!this.layerRegistry.has(columnName)) {
-      this.layerRegistry.set(columnName, {
-        type,
-        source: source || 'unknown',
-        createdAt: new Date(),
-      });
-
-      this.logChange('layer-registered', {columnName, type, source});
-    }
-  }
-
-  getLayerType(columnName: string): LayerType | undefined {
-    return this.layerRegistry.get(columnName)?.type;
-  }
-
-  getOutlierSources(row: number, col: number): string[] {
-    const dataRow = this._idx(row, col);
-    const outlierCol = this.data.col(PLATE_OUTLIER_WELL_NAME);
-    if (!outlierCol) return [];
-
-    try {
-      const sourcesJson = outlierCol.getTag('outlier.sources') || '{}';
-      const sources: Record<number, string[]> = JSON.parse(sourcesJson);
-      return sources[dataRow] || [];
-    } catch (e) {
-      return [];
-    }
-  }
-
-  getAllOutlierSources(): Record<number, string[]> {
-    const outlierCol = this.data.col(PLATE_OUTLIER_WELL_NAME);
-    if (!outlierCol) return {};
-
-    try {
-      const sourcesJson = outlierCol.getTag('outlier.sources') || '{}';
-      return JSON.parse(sourcesJson);
-    } catch (e) {
-      return {};
-    }
-  }
-
-  getLayersByType(type: LayerType): string[] {
-    const layers: string[] = [];
-    for (const [name, metadata] of this.layerRegistry) {
-      if (metadata.type === type)
-        layers.push(name);
-    }
-    return layers;
-  }
-
-  private logChange(action: string, details: any): void {
-    this.changeLog.push({
-      timestamp: new Date(),
-      action,
-      details
-    });
-  }
-
-  getChangeLog(): ReadonlyArray<any> {
-    return this.changeLog;
-  }
 
   static fromGridDataFrame(table: DG.DataFrame, field?: string): Plate {
     const rows = table.rowCount;
     function containsRowLetters(c: DG.Column): boolean {
       return c.type == DG.TYPE.STRING && DG.range(rows).every((i) => numToExcel(i) == c.get(i).toUpperCase());
     }
-
     const dataColumns = wu(table.columns).filter((c) => !containsRowLetters(c)).toArray();
     const cols = dataColumns.length;
     const plate = new Plate(rows, cols);
-
     const nonEmptyCols = dataColumns.filter((c) => c.stats.missingValueCount != rows);
     const toString = (nonEmptyCols.length > 0 && nonEmptyCols.findIndex((c) => c.type != nonEmptyCols[0].type) != -1);
     const type = toString ?
       DG.TYPE.STRING :
       firstWhere(dataColumns, (c) => c.stats.missingValueCount != rows)?.type ?? DG.TYPE.STRING;
-
     const dataColumn = plate.data.columns.addNew(table.name ?? field, type);
-
     for (let colIdx = 0; colIdx < dataColumns.length; colIdx ++) {
       if (dataColumns[colIdx].stats.missingValueCount != rows) {
         for (let i = 0; i < rows; i++)
           dataColumn.set(plate._idx(i, colIdx), type != DG.TYPE.STRING ? dataColumns[colIdx].get(i) : dataColumns[colIdx].getString(i), false);
       }
     }
-
-    // Register imported column as ORIGINAL
-    plate.registerLayer(dataColumn.name, LayerType.ORIGINAL, 'grid-import');
-
     return plate;
   }
-
   toGridDataFrame(layer: string): DG.DataFrame {
     const df = DG.DataFrame.create(this.rows, layer);
     const col = this.getColumn(layer) || this.data.columns.byName(layer);
@@ -374,46 +173,32 @@ export class Plate {
     return df;
   }
 
-  static fromTableByRow(
-    table: DG.DataFrame, options?: {
-      posColName?: string,
-      rowColName?: string,
-      colColName?: string
-    }): Plate {
+  static fromTableByRow(table: DG.DataFrame, options?: {posColName?: string, rowColName?: string, colColName?: string}): Plate {
     const posCol = wu(table.columns).find((c) =>
       (!options?.posColName || c.name.toLowerCase() == options.posColName) &&
-      c.type == DG.TYPE.STRING && /^([A-Za-z]+)(\d+)$/.test(c.get(0)));
-
+    c.type == DG.TYPE.STRING && /^([A-Za-z]+)(\d+)$/.test(c.get(0)));
     const rowColName = options?.rowColName ?? 'row';
     const colColName = options?.colColName ?? 'col';
     const rowCol = table.col(rowColName)?.type === DG.TYPE.INT ? table.col(rowColName) : null;
     const colCol = table.col(colColName)?.type === DG.TYPE.INT ? table.col(colColName) : null;
-
     const rowToPos: ((i: number) => [row: number, col: number]) | null = posCol ?
       ((i) => parseExcelPosition(posCol!.get(i))) :
       rowCol && colCol ? ((i) => [rowCol!.get(i), colCol?.get(i)]) :
         standardPlateSizes[table.rowCount] ? ((i) => Plate._idxToPos(i, standardPlateSizes[table.rowCount][1])) :
           null;
-
     if (rowToPos == null)
       throw new Error('Columns with well positions not identified');
-
     const positions = DG.range(table.rowCount).map(rowToPos);
     const [rows, cols] = toStandardSize(getMaxPosition(positions));
     const plate = new Plate(rows, cols);
-
     for (const col of table.columns) {
       if (col.isEmpty || col == posCol || col == rowCol || col == colCol)
         continue;
-
       const plateCol = plate.data.columns.addNew(col.name, col.type);
       for (let r = 0; r < col.length; r++) {
         const [wellRow, wellCol] = rowToPos!(r);
         plateCol.set(plate._idx(wellRow, wellCol), col.get(r), false);
       }
-
-      // Register imported columns as ORIGINAL
-      plate.registerLayer(col.name, LayerType.ORIGINAL, 'table-by-row');
     }
     return plate;
   }
@@ -429,9 +214,6 @@ export class Plate {
       //@ts-ignore
       const newCol = plate.data.columns.addNew(property.name, property.type)
         .init((i) => valueColumn.get(start + i));
-
-      // Register database columns as ORIGINAL
-      plate.registerLayer(property.name, LayerType.ORIGINAL, 'database');
     }
 
     return plate;
@@ -524,12 +306,6 @@ export class Plate {
     const originalCol = this.getColumn(field) || this.data.getCol(field);
     const col = inplace ? originalCol : this.data.columns.addNewFloat(this.data.columns.getUnusedName(`${field}_normalized`));
     col.init((i) => originalCol.isNone(i) ? null : f(originalCol.get(i)));
-
-    // Register normalized column as DERIVED
-    if (!inplace)
-      this.registerLayer(col.name, LayerType.DERIVED, 'normalization');
-
-
     return col;
   }
 
@@ -654,20 +430,14 @@ export class Plate {
   }
 
   merge(plate: Plate) {
-    for (const col of plate.data.columns) {
+    for (const col of plate.data.columns)
       this.data.columns.add(col.clone());
-      // Register merged columns, preserving their type if known
-      const sourceType = plate.getLayerType(col.name);
-      if (sourceType)
-        this.registerLayer(col.name, sourceType, 'merged');
-    }
     return this;
   }
 
   clone(): Plate {
     const cloned = new Plate(this.rows, this.cols);
     cloned.data = this.data.clone();
-    cloned.layerRegistry = new Map(this.layerRegistry);
     cloned.details = {...this.details};
     return cloned;
   }
@@ -683,21 +453,4 @@ export class Plate {
       }
     }
   }
-
-//   validateWells(validators: IPlateWellValidator[]): Map<string, string[]> {
-//     const result = new Map<string, string[]>();
-//     for (const validator of validators) {
-//       for (let row = 0; row < this.rows; row++) {
-//         for (let col = 0; col < this.cols; col++) {
-//           const error = validator.validate(this, row, col);
-//           if (error) {
-//             const errors = result.get(`${numToExcel(row)}${col}`) ?? [];
-//             errors.push(error);
-//             result.set(`${toExcelPosition(row, col)}`, errors);
-//           }
-//         }
-//       }
-//     }
-//     return result;
-//   }
 }
