@@ -150,7 +150,7 @@ export class DoseRatioAnalysis extends AnalysisBase {
     });
     
     // Use the new scoped class name and remove inline styles
-    const container = ui.divV([grid.root, ui.div([saveButton], 'ui-box')], 'assay_plates__analysis-grid-container');
+    const container = ui.divV([grid.root, ui.div([saveButton], 'ui-box')], 'assay-plates--analysis-grid-container');
 
     ui.tools.handleResize(container, (w: number, h: number) => {
       if (grid.col('curve')) {

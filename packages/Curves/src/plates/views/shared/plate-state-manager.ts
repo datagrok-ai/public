@@ -25,7 +25,6 @@ export class PlateStateManager {
     this._currentPlateType = initialPlateType;
   }
 
-
   get onStateChange(): Observable<PlateStateChangeEvent> {
     return this.stateChange$.asObservable();
   }
@@ -70,6 +69,7 @@ export class PlateStateManager {
   setPlateType(plateType: PlateType): void {
     this._currentPlateType = plateType;
   }
+
   private autodetectIdentifierColumn(): void {
     if (!this._sourceDataFrame) {
       this.identifierColumns = [];
@@ -95,10 +95,10 @@ export class PlateStateManager {
   async loadDataFrame(df: DG.DataFrame): Promise<void> {
     this._sourceDataFrame = df;
     this.autodetectIdentifierColumn();
-    await this.reprocessPlates();
+    await this.processPlates();
   }
 
-  async reprocessPlates(): Promise<void> {
+  async processPlates(): Promise<void> {
     if (!this._sourceDataFrame) return;
 
     const parsedPlateResults = parsePlates(
@@ -145,16 +145,17 @@ export class PlateStateManager {
       plate: newActiveIndex === -1 ? undefined : currentState.plates[newActiveIndex],
     });
   }
+
   public addIdentifierColumn(): void {
     this.identifierColumns.push(null);
-    this.reprocessPlates();
+    this.processPlates();
     this.stateChange$.next({type: 'identifier-changed'});
   }
 
   public removeIdentifierColumn(index: number): void {
     if (index >= 0 && index < this.identifierColumns.length) {
       this.identifierColumns.splice(index, 1);
-      this.reprocessPlates();
+      this.processPlates();
       this.stateChange$.next({type: 'identifier-changed'});
     }
   }
@@ -162,7 +163,7 @@ export class PlateStateManager {
   public setIdentifierColumn(index: number, columnName: string | null): void {
     if (index >= 0 && index < this.identifierColumns.length) {
       this.identifierColumns[index] = columnName;
-      this.reprocessPlates();
+      this.processPlates();
     }
   }
 
@@ -202,6 +203,7 @@ export class PlateStateManager {
       plateIndex: index,
     });
   }
+
   public notifyPlateDataChanged(): void {
     const state = this.currentState;
     if (!state) return;
@@ -212,6 +214,7 @@ export class PlateStateManager {
       plate: this.activePlate,
     });
   }
+
   public remapScopedProperty(plateIndex: number, scope: string, target: string, source: string): void {
     const state = this.currentState;
     if (!state || !state.plates[plateIndex]) return;

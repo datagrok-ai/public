@@ -1,5 +1,5 @@
 /* === Plate Grid Manager Styles (Scoped) === */
-.assay_plates__plate-grid-manager {
+.assay-plates--plate-grid-manager {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -9,7 +9,7 @@
   position: relative; /* For loading indicator positioning */
 }
 
-.assay_plates__plate-grid-manager > .d4-grid {
+.assay-plates--plate-grid-manager > .d4-grid {
   flex-grow: 1;
   width: 100% !important;
   border: 1px solid var(--grey-2);
@@ -18,27 +18,27 @@
 }
 
 /* Add padding to cells and style row selection */
-.assay_plates__plate-grid-manager .d4-grid-cell {
+.assay-plates--plate-grid-manager .d4-grid-cell {
   padding: 0 10px !important;
   display: flex;
   align-items: center;
 }
 
-.assay_plates__plate-grid-manager .d4-grid-row.d4-current {
+.assay-plates--plate-grid-manager .d4-grid-row.d4-current {
   background-color: var(--blue-0) !important;
 }
 
-.assay_plates__plate-grid-manager .d4-grid-row.d4-mouse-over {
+.assay-plates--plate-grid-manager .d4-grid-row.d4-mouse-over {
   background-color: var(--grey-1) !important;
 }
 
 /* Ensure the grid's root element takes full width */
-.assay_plates__plate-grid-manager .d4-grid-root {
+.assay-plates--plate-grid-manager .d4-grid-root {
   width: 100% !important;
 }
 
 /* === Skeleton / Drop Zone Styles === */
-.assay_plates__plate-grid-skeleton {
+.assay-plates--plate-grid-skeleton {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -53,39 +53,39 @@
   position: relative; /* For loading indicator */
 }
 
-.assay_plates__skeleton-icon {
+.assay-plates--skeleton-icon {
   font-size: 48px;
   color: var(--grey-3);
 }
 
-.assay_plates__plate-grid-skeleton .assay_plates__info-message {
+.assay-plates--plate-grid-skeleton .assay-plates--info-message {
   margin-top: 12px;
 }
 
 /* Drag-over state for the skeleton drop zone */
-.assay_plates__plate-grid-skeleton--drag-over {
+.assay-plates--plate-grid-skeleton--drag-over {
   background-color: var(--blue-0);
   border: 1px solid var(--blue-5);
 }
 
 /* === Mapping Dialog Styles === */
-.assay_plates__mapping-dialog .d4-dialog-contents {
+.assay-plates--mapping-dialog .d4-dialog-contents {
   min-width: 500px;
 }
 
-.assay_plates__mapping-dialog-content {
+.assay-plates--mapping-dialog-content {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.assay_plates__mapping-dialog-section {
+.assay-plates--mapping-dialog-section {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.assay_plates__mapping-summary-list {
+.assay-plates--mapping-summary-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -93,7 +93,7 @@
   overflow-y: auto;
 }
 
-.assay_plates__mapping-summary-row {
+.assay-plates--mapping-summary-row {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -103,26 +103,26 @@
   border: 1px solid var(--grey-2);
 }
 
-.assay_plates__mapping-summary-old-name {
+.assay-plates--mapping-summary-old-name {
   color: var(--grey-6);
   font-style: italic;
   font-family: var(--font-family-mono);
   flex: 1;
 }
 
-.assay_plates__mapping-summary-new-name {
+.assay-plates--mapping-summary-new-name {
   font-weight: 500;
   color: var(--grey-8);
   font-family: var(--font-family-mono);
   flex: 1;
 }
 
-.assay_plates__mapping-summary-row > .grok-icon:nth-of-type(1) {
+.assay-plates--mapping-summary-row > .grok-icon:nth-of-type(1) {
   color: var(--grey-4);
   flex-shrink: 0;
 }
 
-.assay_plates__mapping-summary-row > .grok-icon:nth-of-type(2) {
+.assay-plates--mapping-summary-row > .grok-icon:nth-of-type(2) {
   margin-left: auto;
   color: var(--grey-4);
   cursor: pointer;
@@ -131,12 +131,12 @@
   flex-shrink: 0;
 }
 
-.assay_plates__mapping-summary-row > .grok-icon:nth-of-type(2):hover {
+.assay-plates--mapping-summary-row > .grok-icon:nth-of-type(2):hover {
   color: var(--red-3);
   background-color: var(--grey-1);
 }
 
-.assay_plates__plate-selection-host {
+.assay-plates--plate-selection-host {
   max-height: 200px;
   overflow-y: auto;
   border: 1px solid var(--grey-2);
@@ -146,14 +146,14 @@
 }
 
 /* === Utility Styles === */
-.assay_plates__info-message {
+.assay-plates--info-message {
   color: var(--grey-5);
   padding: 20px;
   text-align: center;
   font-style: italic;
 }
 
-.assay_plates__loading-indicator {
+.assay-plates--loading-indicator {
   position: absolute;
   top: 0;
   left: 0;

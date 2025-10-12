@@ -27,8 +27,8 @@ export class BaseAnalysisView {
     private onMap: (target: string, source: string) => void,
     private onUndo: (target: string) => void
   ) {
-    this.container = ui.divV([], 'assay_plates__analysis-view-container');
-    this.contentHost = ui.divV([], 'assay_plates__analysis-content-host');
+    this.container = ui.divV([], 'assay-plates--analysis-view-container');
+    this.contentHost = ui.divV([], 'assay-plates--analysis-content-host');
 
     this.container.appendChild(this.contentHost);
     this.render();
@@ -63,7 +63,7 @@ export class BaseAnalysisView {
     });
 
     const panelRoot = mappingPanel.getRoot();
-    panelRoot.classList.add('assay_plates__analysis-mapping-panel-root');
+    panelRoot.classList.add('assay-plates--analysis-mapping-panel-root');
 
     this.contentHost.appendChild(panelRoot);
   }
@@ -72,12 +72,12 @@ export class BaseAnalysisView {
     const resultsView = this.config.createResultsView(this.plate, this.currentMappings);
 
     if (resultsView) {
-      resultsView.classList.add('assay_plates__results-view');
+      resultsView.classList.add('assay-plates--results-view');
       this.contentHost.appendChild(resultsView);
     } else {
       const errorMsg = ui.divText(
         `Unable to create ${this.config.analysisName.toLowerCase()} with current mapping.`,
-        'assay_plates__warning-message'
+        'assay-plates--warning-message'
       );
       this.contentHost.appendChild(errorMsg);
     }

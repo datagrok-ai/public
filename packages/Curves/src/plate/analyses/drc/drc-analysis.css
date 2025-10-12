@@ -1,4 +1,4 @@
-.assay_plates__drc-skeleton {
+.assay-plates--drc-skeleton {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -14,24 +14,24 @@
     color: var(--grey-5);
 }
 
-.assay_plates__drc-skeleton > .d4-div-text {
+.assay-plates--drc-skeleton > .d4-div-text {
     font-style: italic;
     line-height: 1.4;
 }
 
-.assay_plates__drc-grid-container {
+.assay-plates--drc-grid-container {
     width: 100%;
     height: 100%;
     display: flex;
     flex-direction: column;
 }
 
-.assay_plates__drc-grid-container .d4-grid {
+.assay-plates--drc-grid-container .d4-grid {
     width: 100% !important;
     flex-grow: 1;
 }
 
-.assay_plates__warning-message {
+.assay-plates--warning-message {
     color: var(--orange-3);
     padding: 12px;
     text-align: center;

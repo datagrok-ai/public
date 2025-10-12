@@ -150,6 +150,7 @@ export class Plate {
     const dataRow = this._idx(row, col);
     this._markOutlierWithSource(dataRow, flag, source);
   }
+
   _markOutlierWithSource(row: number, flag: boolean = true, source: string = 'user-interaction') {
     const outlierCol = this.data.columns.getOrCreate(PLATE_OUTLIER_WELL_NAME, DG.TYPE.BOOL);
 
@@ -175,7 +176,6 @@ export class Plate {
 
       if (!sources[row])
         sources[row] = [];
-
 
       if (flag && !sources[row].includes(source)) {
         sources[row].push(source);
@@ -218,26 +218,23 @@ export class Plate {
   // First check direct column name
     if (this.data.columns.contains(nameOrAlias))
       return this.data.col(nameOrAlias);
-
     // Then search all scopes for this alias
     for (const scopeMap of this.scopedAliases.values()) {
       if (scopeMap.has(nameOrAlias))
         return this.data.col(scopeMap.get(nameOrAlias)!);
     }
-
     return null;
   }
+
   addScopedAlias(scope: string, originalColumnName: string, alias: string): void {
     if (!this.data.columns.contains(originalColumnName))
       throw new Error(`Column ${originalColumnName} does not exist`);
-
     if (!this.scopedAliases.has(scope))
       this.scopedAliases.set(scope, new Map());
     // Remove this alias from any other column in this scope first
     this.removeScopedAlias(scope, alias);
-
-  this.scopedAliases.get(scope)!.set(alias, originalColumnName);
-  this.logChange('scoped-alias-added', {originalColumnName, scope, alias});
+    this.scopedAliases.get(scope)!.set(alias, originalColumnName);
+    this.logChange('scoped-alias-added', {originalColumnName, scope, alias});
   }
 
   removeScopedAlias(scope: string, alias: string): void {
@@ -257,14 +254,12 @@ export class Plate {
   // First try direct column name
     if (this.data.columns.contains(nameOrAlias))
       return this.data.col(nameOrAlias);
-
     // Then check scoped alias
     const scopeMap = this.scopedAliases.get(scope);
     if (scopeMap && scopeMap.has(nameOrAlias)) {
       const originalColumnName = scopeMap.get(nameOrAlias)!;
       return this.data.col(originalColumnName);
     }
-
     return null;
   }
 
@@ -287,10 +282,10 @@ export class Plate {
     }
   }
 
-
   getLayerType(columnName: string): LayerType | undefined {
     return this.layerRegistry.get(columnName)?.type;
   }
+
   getOutlierSources(row: number, col: number): string[] {
     const dataRow = this._idx(row, col);
     const outlierCol = this.data.col(PLATE_OUTLIER_WELL_NAME);
@@ -304,6 +299,7 @@ export class Plate {
       return [];
     }
   }
+
   getAllOutlierSources(): Record<number, string[]> {
     const outlierCol = this.data.col(PLATE_OUTLIER_WELL_NAME);
     if (!outlierCol) return {};
@@ -336,7 +332,6 @@ export class Plate {
   getChangeLog(): ReadonlyArray<any> {
     return this.changeLog;
   }
-
 
   static fromGridDataFrame(table: DG.DataFrame, field?: string): Plate {
     const rows = table.rowCount;

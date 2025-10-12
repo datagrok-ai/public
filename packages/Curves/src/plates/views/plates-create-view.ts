@@ -18,7 +18,7 @@ export function createPlatesView(): DG.View {
   const view = DG.View.create();
   view.name = 'Create Plate';
 
-  view.root.classList.add('assay_plates__create-plate-view');
+  view.root.classList.add('assay-plates--create-plate-view');
 
   const plateType = plateTypes[0];
   const plateTemplate = plateTemplates[0];
@@ -37,7 +37,7 @@ export function createPlatesView(): DG.View {
 
   const tabControl = ui.tabControl();
   tabControl.root.classList.remove('ui-box');
-  tabControl.root.classList.add('assay_plates__create-plate-view__tab-control'); // Added class
+  tabControl.root.classList.add('assay-plates--create-plate-view__tab-control'); // Added class
 
 
   tabControl.addPane('Plate View', () => plateWidget.root);
@@ -130,11 +130,11 @@ export function createPlatesView(): DG.View {
   const rightPanel = ui.divV([
     plateGridManager.root,
     tabControl.root,
-  ], 'assay_plates__create-plate-view__right-panel');
+  ], 'assay-plates--create-plate-view__right-panel');
 
   const mainLayout = ui.divH(
     [templatePanel.root, rightPanel],
-    'assay_plates__create-plate-view__main-layout'
+    'assay-plates--create-plate-view__main-layout'
   );
 
   view.root.appendChild(mainLayout);
@@ -253,7 +253,7 @@ function createAnalysisSkeleton(analysisType: string, requiredColumns: string[] 
   const messageText = `To see ${analysisType.toLowerCase()} curves, please map the following required properties: ${requiredColumns.join(', ')}.`;
   const message = ui.divText(messageText);
 
-  const skeleton = ui.divV([svgDiv, message], 'assay_plates__drc-skeleton');
+  const skeleton = ui.divV([svgDiv, message], 'assay-plates--drc-skeleton');
 
   return skeleton;
 }

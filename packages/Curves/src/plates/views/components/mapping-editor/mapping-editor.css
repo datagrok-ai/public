@@ -1,19 +1,19 @@
-.assay_plates__mapping-editor {
+.assay-plates--mapping-editor {
     display: flex;
     flex-direction: column;
     width: 100%;
     max-width: 100%;
 }
 
-.assay_plates__mapping-editor-table {
+.assay-plates--mapping-editor-table {
     display: flex;
     flex-direction: column;
     width: 100%;
     gap: 2px; 
 }
 
-.assay_plates__mapping-editor-header,
-.assay_plates__mapping-editor-row {
+.assay-plates--mapping-editor-header,
+.assay-plates--mapping-editor-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
@@ -22,7 +22,7 @@
     min-height: 32px; 
 }
 
-.assay_plates__mapping-editor-header {
+.assay-plates--mapping-editor-header {
     color: var(--grey-5);
     font-weight: 600;
     font-size: 12px;
@@ -33,19 +33,19 @@
     margin-bottom: 4px;
 }
 
-.assay_plates__mapping-editor-row {
+.assay-plates--mapping-editor-row {
     border-radius: 4px;
     background-color: white;
     transition: all 0.15s ease;
 }
 
-.assay_plates__mapping-editor-row:hover {
+.assay-plates--mapping-editor-row:hover {
     border-color: var(--blue-2);
     background-color: var(--blue-0);
 }
 
 /* Property name styling */
-.assay_plates__mapping-editor-row > div:first-child {
+.assay-plates--mapping-editor-row > div:first-child {
     display: flex;
     align-items: center;
     font-size: 13px;
@@ -53,38 +53,38 @@
     color: var(--grey-5);
 }
 
-.assay_plates__required-asterisk {
+.assay-plates--required-asterisk {
     color: var(--red-3);
     font-weight: bold;
     margin-left: 2px;
 }
 
 /* Input container styling */
-.assay_plates__mapping-input-container {
+.assay-plates--mapping-input-container {
     display: flex;
     align-items: center;
     gap: 8px;
     min-height: 24px;
 }
 
-.assay_plates__mapping-input-container .ui-input-root {
+.assay-plates--mapping-input-container .ui-input-root {
     flex: 1;
     margin: 0 !important; /* Override Datagrok defaults */
 }
 
 /* Remove excessive margins from Datagrok components */
-.assay_plates__mapping-editor-row .d4-input-editor {
+.assay-plates--mapping-editor-row .d4-input-editor {
     margin: 0;
 }
 
-.assay_plates__mapping-editor .ui-input-editor {
+.assay-plates--mapping-editor .ui-input-editor {
     margin: 0 !important;
 }
 
 /* Icon styling */
-.assay_plates__mapping-undo-icon,
-.assay_plates__mapping-cancel-icon,
-.assay_plates__mapping-add-icon {
+.assay-plates--mapping-undo-icon,
+.assay-plates--mapping-cancel-icon,
+.assay-plates--mapping-add-icon {
     color: var(--grey-4);
     cursor: pointer;
     transition: color 0.15s;
@@ -94,36 +94,36 @@
     flex-shrink: 0;
 }
 
-.assay_plates__mapping-undo-icon:hover,
-.assay_plates__mapping-cancel-icon:hover {
+.assay-plates--mapping-undo-icon:hover,
+.assay-plates--mapping-cancel-icon:hover {
     color: var(--red-2);
     background-color: var(--red-0);
 }
 
-.assay_plates__mapping-add-icon:hover {
+.assay-plates--mapping-add-icon:hover {
     color: var(--blue-2);
     background-color: var(--blue-0);
 }
 
-.assay_plates__mapping-add-row {
+.assay-plates--mapping-add-row {
     display: flex;
     justify-content: center;
     padding: 8px 0;
     margin-top: 8px;
 }
 
-.assay_plates__dynamic-row-right-cell {
+.assay-plates--dynamic-row-right-cell {
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
-.assay_plates__dynamic-row-right-cell .ui-input-choice {
+.assay-plates--dynamic-row-right-cell .ui-input-choice {
     flex: 1;
 }
 
 /* Info message styling */
-.assay_plates__info-message {
+.assay-plates--info-message {
     text-align: center;
     color: var(--grey-3);
     font-style: italic;
@@ -134,34 +134,34 @@
 }
 
 /* Analysis mapping panel integration */
-.assay_plates__analysis-mapping-panel {
+.assay-plates--analysis-mapping-panel {
     width: 100%;
 }
 
-.assay_plates__analysis-mapping-header {
+.assay-plates--analysis-mapping-header {
     margin-bottom: 8px;
 }
 
-.assay_plates__analysis-mapping-info {
+.assay-plates--analysis-mapping-info {
     margin-bottom: 12px;
     line-height: 1.4;
     font-size: 12px;
     color: var(--grey-3);
 }
 
-.template-panel .assay_plates__mapping-editor {
+.template-panel .assay-plates--mapping-editor {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
 }
 
-.template-panel .assay_plates__mapping-editor-table {
+.template-panel .assay-plates--mapping-editor-table {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
 }
 
-.template-panel .assay_plates__mapping-editor-row {
+.template-panel .assay-plates--mapping-editor-row {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;

@@ -2,7 +2,7 @@
 /* A consolidated and scoped stylesheet for the Assay Plates feature. */
 
 /* == Main Panel Layout == */
-.assay_plates__template-panel {
+.assay-plates--template-panel {
   flex-shrink: 0;
   width: 410px;
   max-width: 450px;
@@ -15,7 +15,7 @@
 }
 
 /* == Collapsible Sections == */
-.assay_plates__left-panel-section {
+.assay-plates--left-panel-section {
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -23,12 +23,12 @@
   margin-bottom: 12px;
 }
 
-.assay_plates__collapsible-header-container {
+.assay-plates--collapsible-header-container {
   display: flex;
   align-items: center;
 }
 
-.assay_plates__collapsible-header {
+.assay-plates--collapsible-header {
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -36,13 +36,13 @@
   flex-grow: 1;
 }
 
-.assay_plates__collapsible-icon {
+.assay-plates--collapsible-icon {
   margin-right: 8px;
   color: var(--grey-4);
   cursor: pointer;
 }
 
-.assay_plates__left-panel-section h2 {
+.assay-plates--left-panel-section h2 {
   margin: 0 !important;
   font-size: 18px;
   font-weight: 500;
@@ -52,19 +52,19 @@
   line-height: 1.2;
 }
 
-.assay_plates__left-panel-section-content {
+.assay-plates--left-panel-section-content {
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 8px 0 16px 0;
 }
 
-.assay_plates__collapsible-content {
+.assay-plates--collapsible-content {
   padding-left: 24px;
 }
 
 /* == Generic Form & Input Controls == */
-.assay_plates__form-row {
+.assay-plates--form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   align-items: center;
@@ -74,48 +74,48 @@
   background: transparent;
 }
 
-.assay_plates__form-row .ui-label {
+.assay-plates--form-row .ui-label {
   font-size: 13px;
   font-weight: 500;
   color: var(--grey-5);
 }
 
-.assay_plates__form-row .d4-input-root {
+.assay-plates--form-row .d4-input-root {
   width: 100%;
   margin: 0 !important;
 }
 
-.assay_plates__plate-import-input {
+.assay-plates--plate-import-input {
   width: 100%;
 }
 
-.assay_plates__plate-import-input .ui-input-editor {
+.assay-plates--plate-import-input .ui-input-editor {
   width: 100%;
 }
 
-.assay_plates__plate-import-input button {
+.assay-plates--plate-import-input button {
   width: 100%;
   justify-content: center !important;
   gap: 8px;
 }
 
 /* == Plate Identifier Controls == */
-.assay_plates__identifier-control-row {
+.assay-plates--identifier-control-row {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
 }
 
-.assay_plates__identifier-control-row .assay_plates__form-row > :last-child {
+.assay-plates--identifier-control-row .assay-plates--form-row > :last-child {
   flex-grow: 1;
 }
 
-.assay_plates__add-identifier-container {
+.assay-plates--add-identifier-container {
   margin-top: 8px;
 }
 
 /* == Icon Buttons == */
-.assay_plates__icon-button {
+.assay-plates--icon-button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -128,40 +128,40 @@
   width: 30px;
 }
 
-.assay_plates__icon-button:hover {
+.assay-plates--icon-button:hover {
   border-color: var(--blue-2);
   background-color: var(--grey-1);
 }
 
-.assay_plates__icon-button i.grok-icon {
+.assay-plates--icon-button i.grok-icon {
   font-size: 16px;
   margin: 0 !important;
 }
 
-.assay_plates__add-button i.grok-icon {
+.assay-plates--add-button i.grok-icon {
   color: var(--blue-3);
 }
 
-.assay_plates__remove-button i.grok-icon {
+.assay-plates--remove-button i.grok-icon {
   color: var(--red-3);
 }
 
-.assay_plates__add-button {
+.assay-plates--add-button {
   width: 100%;
   justify-content: center;
 }
 
 
 /* == Mapping Editor / Validation Table == */
-.assay_plates__mapping-editor,
-.assay_plates__validation-table {
+.assay-plates--mapping-editor,
+.assay-plates--validation-table {
   display: flex;
   flex-direction: column;
   width: 100%;
 }
 
-.assay_plates__mapping-editor-row,
-.assay_plates__validation-table-row {
+.assay-plates--mapping-editor-row,
+.assay-plates--validation-table-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
@@ -172,14 +172,14 @@
   transition: all 0.15s ease;
 }
 
-.assay_plates__mapping-editor-row:hover,
-.assay_plates__validation-table-row:hover {
+.assay-plates--mapping-editor-row:hover,
+.assay-plates--validation-table-row:hover {
   background-color: var(--blue-0);
 }
 
 /* Property name styling */
-.assay_plates__mapping-editor-row > div:first-child,
-.assay_plates__validation-table-row > div:first-child {
+.assay-plates--mapping-editor-row > div:first-child,
+.assay-plates--validation-table-row > div:first-child {
   display: flex;
   align-items: center;
   font-size: 13px;
@@ -187,14 +187,14 @@
   color: var(--grey-5);
 }
 
-.assay_plates__required-asterisk {
+.assay-plates--required-asterisk {
   color: var(--red-3);
   margin-left: 2px;
   font-weight: bold;
 }
 
 /* Mapping input container */
-.assay_plates__mapping-input-container {
+.assay-plates--mapping-input-container {
   position: relative;
   width: 100%;
   display: flex;
@@ -203,15 +203,15 @@
   min-height: 24px;
 }
 
-.assay_plates__mapping-input-container .ui-input-root {
+.assay-plates--mapping-input-container .ui-input-root {
   flex: 1;
   margin: 0 !important;
 }
 
 /* Mapping icons (Undo, Cancel, Add) */
-.assay_plates__mapping-undo-icon,
-.assay_plates__mapping-cancel-icon,
-.assay_plates__mapping-add-icon {
+.assay-plates--mapping-undo-icon,
+.assay-plates--mapping-cancel-icon,
+.assay-plates--mapping-add-icon {
   color: var(--grey-4);
   cursor: pointer;
   transition: color 0.15s;
@@ -221,50 +221,50 @@
   flex-shrink: 0;
 }
 
-.assay_plates__mapping-undo-icon {
+.assay-plates--mapping-undo-icon {
   visibility: hidden; /* Only show on row hover */
 }
 
-.assay_plates__mapping-editor-row:hover .assay_plates__mapping-undo-icon,
-.assay_plates__validation-table-row:hover .assay_plates__mapping-undo-icon {
+.assay-plates--mapping-editor-row:hover .assay-plates--mapping-undo-icon,
+.assay-plates--validation-table-row:hover .assay-plates--mapping-undo-icon {
   visibility: visible;
 }
 
-.assay_plates__mapping-undo-icon:hover,
-.assay_plates__mapping-cancel-icon:hover {
+.assay-plates--mapping-undo-icon:hover,
+.assay-plates--mapping-cancel-icon:hover {
   color: var(--red-2);
   background-color: var(--red-0);
 }
 
-.assay_plates__mapping-add-icon:hover {
+.assay-plates--mapping-add-icon:hover {
   color: var(--blue-2);
   background-color: var(--blue-0);
 }
 
-.assay_plates__mapping-add-row {
+.assay-plates--mapping-add-row {
   display: flex;
   justify-content: center;
   padding: 8px 0;
   margin-top: 8px;
 }
-.assay_plates__validation-add-row {
+.assay-plates--validation-add-row {
   padding: 8px 0;
   margin-top: 8px;
 }
 
 /* Dynamic row for adding new properties */
-.assay_plates__dynamic-row-right-cell {
+.assay-plates--dynamic-row-right-cell {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.assay_plates__dynamic-row-right-cell .ui-input-choice {
+.assay-plates--dynamic-row-right-cell .ui-input-choice {
   flex: 1;
 }
 
 /* Info message */
-.assay_plates__info-message {
+.assay-plates--info-message {
   text-align: center;
   color: var(--grey-3);
   font-style: italic;
@@ -275,13 +275,13 @@
 }
 
 /* Legacy support for grid styling inside section content */
-.assay_plates__left-panel-section-content .d4-input-base {
+.assay-plates--left-panel-section-content .d4-input-base {
   display: grid !important;
   grid-template-columns: 1fr 1fr;
   align-items: center;
   gap: 12px;
 }
 
-.assay_plates__left-panel-section-content .d4-input-label {
+.assay-plates--left-panel-section-content .d4-input-label {
   margin-bottom: 0 !important;
 }

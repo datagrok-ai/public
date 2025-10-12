@@ -183,14 +183,14 @@ export class DrcAnalysis extends AnalysisBase {
         this.coordinator?.destroy();
         this.plateSubscription?.unsubscribe();
 
-        const container = ui.divV([ui.loader()], 'assay_plates__drc-analysis-container');
+        const container = ui.divV([ui.loader()], 'assay-plates--drc-analysis-container');
         const params = {'Normalize': this.parameters.find((p) => p.name === 'Normalize')?.defaultValue ?? true};
 
         this.run(mappedPlate, params, mappedMappings).then((runOutput) => {
           ui.empty(container);
 
           if (!runOutput) {
-            container.appendChild(ui.divText('Analysis failed: Not enough data to fit curves. Check mappings.', 'assay_plates__warning-message'));
+            container.appendChild(ui.divText('Analysis failed: Not enough data to fit curves. Check mappings.', 'assay-plates--warning-message'));
             return;
           }
 
@@ -198,7 +198,10 @@ export class DrcAnalysis extends AnalysisBase {
           const resultsGrid = resultsDf.plot.grid();
           resultsGrid.props.rowHeight = 200;
 
-          setTimeout(() => { if (resultsGrid.col('Curve')) resultsGrid.col('Curve')!.width = 400; }, 200);
+          setTimeout(() => {
+            if (resultsGrid.col('Curve'))
+              resultsGrid.col('Curve')!.width = 400;
+          }, 200);
 
           this.coordinator = new DrcAnalysisCoordinator(
             mappedPlate, plateWidget, resultsGrid, resultsDf.col('Curve')!, seriesVals,
@@ -221,12 +224,12 @@ export class DrcAnalysis extends AnalysisBase {
               ui.setUpdateIndicator(saveButton, false);
             }
           });
-          saveButton.classList.add('assay_plates__drc-save-button');
+          saveButton.classList.add('assay-plates--drc-save-button');
 
           const resultsContainer = ui.divV([
             resultsGrid.root,
-            ui.div([saveButton], 'assay_plates__drc-save-button-container'),
-          ], 'assay_plates__analysis-grid-container');
+            ui.div([saveButton], 'assay-plates--drc-save-button-container'),
+          ], 'assay-plates--analysis-grid-container');
 
           container.appendChild(resultsContainer);
         });

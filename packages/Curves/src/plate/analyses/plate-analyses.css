@@ -1,6 +1,6 @@
 /* Styles for the Base Analysis View and its components */
 
-.assay_plates__analysis-view-container {
+.assay-plates--analysis-view-container {
   width: 100%;
   height: 100%;
   display: flex;
@@ -8,7 +8,7 @@
   min-height: 400px;
 }
 
-.assay_plates__analysis-content-host {
+.assay-plates--analysis-content-host {
   width: 100%;
   flex: 1;
   display: flex;
@@ -17,7 +17,7 @@
 }
 
 /* Added to the root of the mapping panel to ensure it fills the space */
-.assay_plates__analysis-mapping-panel-root {
+.assay-plates--analysis-mapping-panel-root {
   width: 100%;
   flex: 1;
   padding: 16px;
@@ -25,7 +25,7 @@
 }
 
 /* Added to the root of the results view */
-.assay_plates__results-view {
+.assay-plates--results-view {
   width: 100%;
   height: 100%;
   flex: 1;
@@ -34,7 +34,7 @@
 }
 
 /* A general-purpose warning message style */
-.assay_plates__warning-message {
+.assay-plates--warning-message {
   width: 100%;
   flex: 1;
   display: flex;
@@ -45,18 +45,18 @@
   font-style: italic;
 }
 /* == Shared Styles for Analysis Results Views == */
-.assay_plates__analysis-grid-container {
+.assay-plates--analysis-grid-container {
   display: flex;
   flex-direction: column;
   width: 100%;
   height: 100%;
 }
 
-.assay_plates__analysis-grid-container > .d4-grid {
+.assay-plates--analysis-grid-container > .d4-grid {
   flex-grow: 1;
 }
 
-.assay_plates__error-message {
+.assay-plates--error-message {
   padding: 12px;
   color: var(--red-3);
   font-style: italic;
@@ -66,63 +66,63 @@
 /* == qPCR Analysis Specific Styles == */
 
 /* Main container for the role assignment view (plate + panel) */
-.assay_plates__qpcr-role-view-container {
+.assay-plates--qpcr-role-view-container {
   width: 100%;
   height: 100%;
   display: flex; /* from ui.divH */
 }
 
 /* Ensures the plate widget expands to fill available space */
-.assay_plates__qpcr-role-view-container > .d4-plate-widget {
+.assay-plates--qpcr-role-view-container > .d4-plate-widget {
   flex-grow: 1;
 }
 
 /* Side panel for assigning roles */
-.assay_plates__qpcr-assignment-panel {
+.assay-plates--qpcr-assignment-panel {
   max-width: 300px;
 }
 
 /* Container for the status icons and labels */
-.assay_plates__qpcr-status-panel {
+.assay-plates--qpcr-status-panel {
   margin-top: 20px;
 }
 
 /* A single row in the status panel */
-.assay_plates__qpcr-status-item {
+.assay-plates--qpcr-status-item {
   display: flex; /* from ui.divH */
   padding: 2px 0;
 }
 
 /* Base style for the status icon */
-.assay_plates__qpcr-status-icon {
+.assay-plates--qpcr-status-icon {
   /* Base styles can go here if needed */
 }
 
 /* Modifier for an assigned role status */
-.assay_plates__qpcr-status-icon--assigned {
+.assay-plates--qpcr-status-icon--assigned {
   color: var(--green-2);
 }
 
 /* Modifier for an unassigned role status */
-.assay_plates__qpcr-status-icon--unassigned {
+.assay-plates--qpcr-status-icon--unassigned {
   color: var(--red-3);
 }
 /* == DRC Analysis Specific Styles == */
 
 /* The top-level container for the DRC view */
-.assay_plates__drc-analysis-container {
+.assay-plates--drc-analysis-container {
   width: 100%;
   height: 100%;
 }
 
 /* A container for the save button, aligns it to the right */
-.assay_plates__drc-save-button-container {
+.assay-plates--drc-save-button-container {
   display: flex;
   justify-content: flex-end;
   padding-right: 4px;
 }
 
 /* Margin for the save button */
-.assay_plates__drc-save-button {
+.assay-plates--drc-save-button {
   margin-top: 8px;
 }

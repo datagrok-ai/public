@@ -1,10 +1,10 @@
-.assay_plates__create-plate-view {
+.assay-plates--create-plate-view {
     height: 100%;
     width: 100%;
     overflow: hidden;
 }
 
-.assay_plates__create-plate-view__main-layout {
+.assay-plates--create-plate-view__main-layout {
     display: flex;
     flex-direction: row;
     gap: 20px;
@@ -13,7 +13,7 @@
     overflow: hidden;
 }
 
-.assay_plates__create-plate-view__right-panel {
+.assay-plates--create-plate-view__right-panel {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
@@ -24,7 +24,7 @@
 }
 
 
-.assay_plates__create-plate-view__right-panel > .assay_plates__plate-grid-manager {
+.assay-plates--create-plate-view__right-panel > .assay-plates--plate-grid-manager {
   flex: 1 1 50%; /* Grow/shrink equally from a 50% basis */
   min-height: 0;  /* Allows the component to shrink correctly */
   width: 100%;
@@ -33,7 +33,7 @@
   flex-direction: column;
 }
 
-.assay_plates__create-plate-view__right-panel > :last-child {
+.assay-plates--create-plate-view__right-panel > :last-child {
   flex: 1 1 50%; /* Grow/shrink equally from a 50% basis */
   min-height: 0;
   width: 100% !important;

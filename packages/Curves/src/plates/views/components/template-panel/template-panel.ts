@@ -14,7 +14,7 @@ import './template-panel-and-mapping.css';
 function createFormRow(label: string, input: DG.InputBase<any>): HTMLElement {
   const labelEl = ui.divText(label, 'ui-label');
   input.root.querySelector('label')?.remove();
-  return ui.divH([labelEl, input.root], 'assay_plates__form-row');
+  return ui.divH([labelEl, input.root], 'assay-plates--form-row');
 }
 
 export class TemplatePanel {
@@ -30,7 +30,7 @@ export class TemplatePanel {
   private plateWidget: PlateWidget,
   private onManageMappings: () => void
   ) {
-    this.root = ui.divV([], 'assay_plates__template-panel');
+    this.root = ui.divV([], 'assay-plates--template-panel');
     this.platePropertiesHost = ui.divV([]);
     this.validationHost = ui.divV([]);
     this.wellPropsHeaderHost = ui.div();
@@ -89,7 +89,7 @@ export class TemplatePanel {
         }
       },
     });
-    fileInput.root.classList.add('assay_plates__plate-import-input');
+    fileInput.root.classList.add('assay-plates--plate-import-input');
     const fileInputButton = fileInput.root.querySelector('button');
     if (fileInputButton) {
       ui.empty(fileInputButton);
@@ -125,10 +125,10 @@ export class TemplatePanel {
       const removeBtn = ui.button(ui.iconFA('trash-alt'), () => {
         this.stateManager.removeIdentifierColumn(index);
       }, 'Remove this index column');
-      removeBtn.classList.add('assay_plates__icon-button', 'assay_plates__remove-button');
+      removeBtn.classList.add('assay-plates--icon-button', 'assay-plates--remove-button');
 
       const formRow = createFormRow(`Plate Index ${index + 1}`, choiceInput);
-      const controlRow = ui.divH([formRow, removeBtn], 'assay_plates__identifier-control-row');
+      const controlRow = ui.divH([formRow, removeBtn], 'assay-plates--identifier-control-row');
 
       this.identifierControlsHost.appendChild(controlRow);
     });
@@ -136,9 +136,9 @@ export class TemplatePanel {
     const addBtn = ui.button(ui.iconFA('plus'), () => {
       this.stateManager.addIdentifierColumn();
     }, 'Add another index column');
-    addBtn.classList.add('assay_plates__icon-button', 'assay_plates__add-button');
+    addBtn.classList.add('assay-plates--icon-button', 'assay-plates--add-button');
 
-    this.identifierControlsHost.appendChild(ui.div(addBtn, 'assay_plates__add-identifier-container'));
+    this.identifierControlsHost.appendChild(ui.div(addBtn, 'assay-plates--add-identifier-container'));
   }
 
   private createTemplateSection(): HTMLElement {
@@ -146,7 +146,7 @@ export class TemplatePanel {
     templateIcon.classList.add('legend-icon', 'legend-icon-template');
     const templateHeader = ui.divH(
       [ui.h2('Template'), templateIcon],
-      'assay_plates__collapsible-header'
+      'assay-plates--collapsible-header'
     );
     const plateTypeSelector = ui.input.choice('', {
       value: this.stateManager.currentPlateType.name,
@@ -169,7 +169,7 @@ export class TemplatePanel {
     const templateRow = createFormRow('Template', plateTemplateSelector);
     const templateContent = ui.divV(
       [plateTypeRow, templateRow],
-      'assay_plates__left-panel-section-content'
+      'assay-plates--left-panel-section-content'
     );
     return this.createCollapsiblePanel(templateHeader, templateContent, true);
   }
@@ -185,15 +185,15 @@ export class TemplatePanel {
       icon.classList.toggle('fa-chevron-down', !isExpanded);
       icon.classList.toggle('fa-chevron-right', isExpanded);
     });
-    icon.classList.add('assay_plates__collapsible-icon');
+    icon.classList.add('assay-plates--collapsible-icon');
 
     header.onclick = () => icon.click();
-    const headerContainer = ui.divH([icon, header], 'assay_plates__collapsible-header-container');
+    const headerContainer = ui.divH([icon, header], 'assay-plates--collapsible-header-container');
 
     content.style.display = expanded ? 'block' : 'none';
-    content.classList.add('assay_plates__left-panel-section-content', 'assay_plates__collapsible-content');
+    content.classList.add('assay-plates--left-panel-section-content', 'assay-plates--collapsible-content');
 
-    return ui.divV([headerContainer, content], 'assay_plates__left-panel-section');
+    return ui.divV([headerContainer, content], 'assay-plates--left-panel-section');
   }
 
   private subscribeToStateChanges(): void {

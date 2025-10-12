@@ -57,7 +57,7 @@ export class PlateWidget extends DG.Widget {
   plateDetailsDiv?: HTMLElement;
   plateActionsDiv?: HTMLElement;
   tabs: DG.TabControl = DG.TabControl.create(true);
-  tabsContainer: HTMLElement = ui.divH([], 'assay_plates__plate-widget__tabs-container');
+  tabsContainer: HTMLElement = ui.divH([], 'assay-plates--plate-widget__tabs-container');
   _editable: boolean = false;
   mapFromRowFunc: (row: DG.Row) => Record<string, any> = mapFromRow;
   grids: Map<string, DG.Grid> = new Map();
@@ -127,8 +127,8 @@ export class PlateWidget extends DG.Widget {
   }
 
   constructor() {
-    super(ui.div([], 'assay_plates__plate-widget'));
-    this.tabs.root.classList.add('assay_plates__plate-widget__tabs');
+    super(ui.div([], 'assay-plates--plate-widget'));
+    this.tabs.root.classList.add('assay-plates--plate-widget__tabs');
 
     this.tabsContainer.appendChild(this.tabs.root);
 
@@ -140,7 +140,7 @@ export class PlateWidget extends DG.Widget {
       this.grid.invalidate();
     });
 
-    const mainContainer = ui.divV([this.tabsContainer], 'assay_plates__plate-widget__main-content');
+    const mainContainer = ui.divV([this.tabsContainer], 'assay-plates--plate-widget__main-content');
     this.root.appendChild(mainContainer);
 
     this.setupGrid();
@@ -413,14 +413,14 @@ export class PlateWidget extends DG.Widget {
 
     ui.empty(pw.root);
 
-    pw.detailsDiv = ui.divV([], 'assay_plates__plate-widget__details');
+    pw.detailsDiv = ui.divV([], 'assay-plates--plate-widget__details');
     pw.wellDetailsDiv = ui.div();
     pw.detailsDiv.appendChild(pw.wellDetailsDiv);
 
     const mainContainer = ui.divH([
       pw.tabs.root,
       pw.detailsDiv,
-    ], 'assay_plates__plate-widget__main-container');
+    ], 'assay-plates--plate-widget__main-container');
 
     pw.root.appendChild(mainContainer);
 

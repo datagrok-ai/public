@@ -8,10 +8,10 @@ import './plate-grid-manager.css'; // Import the refactored stylesheet
 
 function createPlateGridSkeleton(): HTMLElement {
   const icon = ui.iconFA('table', null, 'Plates Table');
-  icon.classList.add('assay_plates__skeleton-icon');
+  icon.classList.add('assay-plates--skeleton-icon');
 
-  const message = ui.divText('Import a file to see the list of plates', 'assay_plates__info-message');
-  const skeleton = ui.divV([icon, message], 'assay_plates__plate-grid-skeleton');
+  const message = ui.divText('Import a file to see the list of plates', 'assay-plates--info-message');
+  const skeleton = ui.divV([icon, message], 'assay-plates--plate-grid-skeleton');
   return skeleton;
 }
 
@@ -24,7 +24,7 @@ export class PlateGridManager {
   private loadingIndicator: HTMLElement | null = null;
 
   constructor(private stateManager: PlateStateManager) {
-    this.root = ui.divV([], 'assay_plates__plate-grid-manager');
+    this.root = ui.divV([], 'assay-plates--plate-grid-manager');
     this.grid = DG.Grid.create(DG.DataFrame.create());
 
     this.root.appendChild(this.grid.root);
@@ -168,7 +168,7 @@ export class PlateGridManager {
 
   private setupDroppableArea(): void {
     if (!this.skeletonEl) return;
-    const dragOverClass = 'assay_plates__plate-grid-skeleton--drag-over';
+    const dragOverClass = 'assay-plates--plate-grid-skeleton--drag-over';
 
     this.skeletonEl.addEventListener('dragenter', () => this.skeletonEl!.classList.add(dragOverClass));
     this.skeletonEl.addEventListener('dragover', (event) => {
@@ -210,7 +210,7 @@ export class PlateGridManager {
     this.loadingIndicator = ui.divV([
       ui.loader(),
       ui.divText('Loading...')
-    ], 'assay_plates__loading-indicator');
+    ], 'assay-plates--loading-indicator');
     this.skeletonEl.appendChild(this.loadingIndicator);
   }
 
@@ -221,24 +221,24 @@ export class PlateGridManager {
 
   showMultiPlateMappingDialog(options: MappingDialogOptions): void {
     const dialog = ui.dialog('Apply Field Mappings');
-    dialog.root.classList.add('assay_plates__mapping-dialog');
-    const content = ui.divV([], 'assay_plates__mapping-dialog-content');
+    dialog.root.classList.add('assay-plates--mapping-dialog');
+    const content = ui.divV([], 'assay-plates--mapping-dialog-content');
 
-    const mappingsSection = ui.divV([ui.h3('Mappings to Apply')], 'assay_plates__mapping-dialog-section');
+    const mappingsSection = ui.divV([ui.h3('Mappings to Apply')], 'assay-plates--mapping-dialog-section');
 
     if (options.sourceMappings.size > 0) {
-      const mappingsList = ui.divV([], 'assay_plates__mapping-summary-list');
+      const mappingsList = ui.divV([], 'assay-plates--mapping-summary-list');
       options.sourceMappings.forEach((oldName, newName) => {
         const row = ui.divH([
-          ui.divText(oldName, 'assay_plates__mapping-summary-old-name'),
+          ui.divText(oldName, 'assay-plates--mapping-summary-old-name'),
           ui.iconFA('long-arrow-alt-right', null, 'maps to'),
-          ui.divText(newName, 'assay_plates__mapping-summary-new-name'),
+          ui.divText(newName, 'assay-plates--mapping-summary-new-name'),
           ui.iconFA('times', () => {
             options.onUndo(newName);
             dialog.close();
             grok.shell.info(`Mapping for '${newName}' has been reset. Open "Manage Mappings" again to proceed.`);
           }, 'Undo this mapping definition')
-        ], 'assay_plates__mapping-summary-row');
+        ], 'assay-plates--mapping-summary-row');
         mappingsList.appendChild(row);
       });
       mappingsSection.appendChild(mappingsList);
@@ -246,14 +246,14 @@ export class PlateGridManager {
       mappingsSection.appendChild(
         ui.divText(
           'No mappings defined yet. Use the validation panel to map columns on the active plate.',
-          'assay_plates__info-message'
+          'assay-plates--info-message'
         )
       );
     }
 
-    const platesSection = ui.divV([ui.h3('Apply to Plates')], 'assay_plates__mapping-dialog-section');
+    const platesSection = ui.divV([ui.h3('Apply to Plates')], 'assay-plates--mapping-dialog-section');
     const plateCheckboxes: DG.InputBase<boolean>[] = [];
-    const plateSelectionHost = ui.divV([], 'assay_plates__plate-selection-host');
+    const plateSelectionHost = ui.divV([], 'assay-plates--plate-selection-host');
 
     options.allPlates.forEach((plateFile, idx) => {
       const isSelected = (idx === this.stateManager.currentState?.activePlateIdx);

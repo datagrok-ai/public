@@ -110,11 +110,11 @@ export class QpcrAnalysis extends AnalysisBase {
         }
       });
 
-      const container = ui.divV([grid.root, ui.div([saveButton], 'ui-box')], 'assay_plates__analysis-grid-container');
+      const container = ui.divV([grid.root, ui.div([saveButton], 'ui-box')], 'assay-plates--analysis-grid-container');
       return container;
     } catch (e: any) {
       console.error('qPCR Calculation Error:', e);
-      return ui.divText(`Calculation Error: ${e.message}`, 'assay_plates__error-message');
+      return ui.divText(`Calculation Error: ${e.message}`, 'assay-plates--error-message');
     }
   }
 
@@ -168,12 +168,12 @@ export class QpcrAnalysis extends AnalysisBase {
         createAssignButton(REQUIRED_ROLES.TREATED, REQUIRED_ROLES.CONTROL),
       ]),
       statusPanel,
-    ], 'ui-box assay_plates__qpcr-assignment-panel');
+    ], 'ui-box assay-plates--qpcr-assignment-panel');
 
     const container = ui.divH([
       embeddedPlateWidget.root,
       assignmentPanel,
-    ], 'assay_plates__qpcr-role-view-container');
+    ], 'assay-plates--qpcr-role-view-container');
 
     return container;
   }
@@ -184,13 +184,13 @@ export class QpcrAnalysis extends AnalysisBase {
       const icon = ui.iconFA(isAssigned ? 'check-circle' : 'times-circle', null, isAssigned ? 'Assigned' : 'Not Assigned');
 
       icon.classList.add(
-        'assay_plates__qpcr-status-icon',
-        isAssigned ? 'assay_plates__qpcr-status-icon--assigned' : 'assay_plates__qpcr-status-icon--unassigned'
+        'assay-plates--qpcr-status-icon',
+        isAssigned ? 'assay-plates--qpcr-status-icon--assigned' : 'assay-plates--qpcr-status-icon--unassigned'
       );
 
-      return ui.divH([icon, ui.label(role)], 'assay_plates__qpcr-status-item');
+      return ui.divH([icon, ui.label(role)], 'assay-plates--qpcr-status-item');
     });
-    return ui.divV([ui.h3('Status'), ...statusItems], 'assay_plates__qpcr-status-panel');
+    return ui.divV([ui.h3('Status'), ...statusItems], 'assay-plates--qpcr-status-panel');
   }
 
   async saveResults(

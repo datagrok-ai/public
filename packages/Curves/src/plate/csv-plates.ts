@@ -26,7 +26,7 @@ function findCommonProperties(plateDf: DG.DataFrame): Map<string, any> {
 export function parsePlates(
   sourceDf: DG.DataFrame,
   identifierColNames: (string | null)[]
-): { plate: Plate, commonProperties: Map<string, any> }[] {
+): Array<{ plate: Plate, commonProperties: Map<string, any> }> {
   const results: { plate: Plate, commonProperties: Map<string, any> }[] = [];
 
   const validIdentifierNames = identifierColNames.filter((name): name is string =>
