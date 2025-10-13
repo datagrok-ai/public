@@ -15,11 +15,6 @@ import { ColumnData, ColumnsData, Indexable, markerPosition, markerType, timePoi
 import '../../../css/timelines-viewer.css';
 
 
-@grok.decorators.viewer({
-  name: 'Timelines',
-  description: 'Creates a timelines viewer',
-  icon: 'icons/timelines-viewer.svg',
-})
 export class TimelinesViewer extends EChartViewer {
   splitByColumnName: string;
   startColumnName: string;
