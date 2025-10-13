@@ -40,7 +40,7 @@ use info panels on the **Context Panel**. You can:
   
 The multi curve viewer is particularly useful as an inner viewer in [trellis plot](trellis-plot.md), allowing you to compare curves across different categories or conditions. This enables multi-dimensional analysis of dose-response data or other fitted curves.
   
-## See Also  
+## See also  
   
 - [Viewers](viewers.md)
 - [Trellis plot](trellis-plot.md)  
