@@ -359,7 +359,7 @@ export class JsViewer extends Viewer {
   addRowSourceAndFormula() {
     this.rowSource = this.string('rowSource', 'Filtered',
         { choices: ['All', 'Filtered', 'Selected', 'SelectedOrCurrent', 'FilteredSelected', 'MouseOverGroup', 'CurrentRow', 'MouseOverRow']});
-    this.formulaFilter = this.string('filter', '', {fieldName: 'formulaFilter'});
+    this.formulaFilter = this.string('filter', '', {fieldName: 'formulaFilter', category: 'Data'});
   }
 
   onFrameAttached(dataFrame: DataFrame): void {

@@ -19,7 +19,7 @@ export class TimelinesViewer extends EChartViewer {
   splitByColumnName: string;
   startColumnName: string;
   endColumnName: string;
-  colorByColumnName: string;
+  colorColumnName: string;
   showOpenIntervals: boolean;
   eventColumnName: string;
   eventsColumnNames: string[];
@@ -57,11 +57,11 @@ export class TimelinesViewer extends EChartViewer {
     this.splitByColumnName = this.string('splitByColumnName');
     this.startColumnName = this.string('startColumnName');
     this.endColumnName = this.string('endColumnName');
-    this.colorByColumnName = this.string('colorByColumnName');
+    this.colorColumnName = this.string('colorColumnName', null, {category: 'Color'});
     this.showOpenIntervals = this.bool('showOpenIntervals', false);
-    this.eventColumnName = this.string('eventColumnName');
+    this.eventColumnName = this.string('eventColumnName', null, {category: 'Tooltip'});
     this.eventsColumnNames = this.addProperty('eventsColumnNames', DG.TYPE.COLUMN_LIST);
-    this.showEventInTooltip = this.bool('showEventInTooltip', true);
+    this.showEventInTooltip = this.bool('showEventInTooltip', true, {category: 'Tooltip'});
 
     this.marker = <markerType> this.string('marker', 'circle', { choices: ['circle', 'rect', 'ring', 'diamond'] });
     this.markerSize = this.int('markerSize', 6);
@@ -161,7 +161,7 @@ export class TimelinesViewer extends EChartViewer {
     } else if (property.name.endsWith('ColumnName') || property.name.endsWith('ColumnNames')) {
       if (property.get(this)) {
         const columnData = this.updateColumnData(property);
-        if (property.name === 'colorByColumnName') {
+        if (property.name === 'colorColumnName') {
           this.colorMap = this.getColorMap(columnData!.categories);
           this.updateLegend(columnData!.column);
           this.switchLegendVisibility(this.legendVisibility);
@@ -173,7 +173,7 @@ export class TimelinesViewer extends EChartViewer {
         }
       } else {
         this.columnData[property.name] = null;
-        if (property.name === 'colorByColumnName') {
+        if (property.name === 'colorColumnName') {
           this.hideLegend();
           this.colorMap = null;
         }
@@ -183,7 +183,7 @@ export class TimelinesViewer extends EChartViewer {
         this.columnData.eventsColumnNames![columnName]!.column) : [])].filter((col) => col) as DG.Column[];
       if (this.timeOptionsApplicable(timeColumns))
         this.dateFormat = this.selectDateFormat(timeColumns);
-    } else if (property.name === 'legendVisibility' && this.colorByColumnName)
+    } else if (property.name === 'legendVisibility' && this.colorColumnName)
       this.switchLegendVisibility(property.get(this));
 
     this.render();
@@ -256,16 +256,16 @@ export class TimelinesViewer extends EChartViewer {
     this.startColumnName = (this.findColumn(columns, this.startRegexps, numericalTypes) || numColumns[0]).name;
     this.endColumnName = (this.findColumn(columns, this.endRegexps, numericalTypes) ||
       numColumns[numColumns.length - 1]).name;
-    this.colorByColumnName = (this.findColumn(columns, this.colorByRegexps, [DG.COLUMN_TYPE.STRING]) ||
+    this.colorColumnName = (this.findColumn(columns, this.colorByRegexps, [DG.COLUMN_TYPE.STRING]) ||
       strColumns[0]).name;
     this.eventColumnName = (this.findColumn(columns, this.eventRegexps, [DG.COLUMN_TYPE.STRING]) || strColumns[0]).name;
 
     const columnPropNames = [
-      'splitByColumnName', 'startColumnName', 'endColumnName', 'colorByColumnName', 'eventColumnName',
+      'splitByColumnName', 'startColumnName', 'endColumnName', 'colorColumnName', 'eventColumnName',
     ];
 
     const columnNames = [
-      this.splitByColumnName, this.startColumnName, this.endColumnName, this.colorByColumnName, this.eventColumnName,
+      this.splitByColumnName, this.startColumnName, this.endColumnName, this.colorColumnName, this.eventColumnName,
     ];
 
     this.columnData = columnPropNames.reduce((map, v, i) => {
@@ -285,8 +285,8 @@ export class TimelinesViewer extends EChartViewer {
       this.columnData.endColumnName = null;
     }
 
-    this.colorMap = this.getColorMap(this.columnData.colorByColumnName!.categories!);
-    this.updateLegend(this.columnData.colorByColumnName!.column);
+    this.colorMap = this.getColorMap(this.columnData.colorColumnName!.categories!);
+    this.updateLegend(this.columnData.colorColumnName!.column);
     this.switchLegendVisibility(this.legendVisibility);
 
     const timeColumns = [this.columnData.startColumnName?.column, this.columnData.endColumnName?.column,
@@ -481,7 +481,7 @@ export class TimelinesViewer extends EChartViewer {
   }
 
   switchLegendVisibility(mode: visibilityMode): void {
-    const { column, categories } = this.columnData.colorByColumnName as ColumnData;
+    const { column, categories } = this.columnData.colorColumnName as ColumnData;
     const autoShow = column.matches(DG.TYPE.CATEGORICAL) && categories!.length < 100;
     if (mode === VISIBILITY_MODE.ALWAYS || (mode === VISIBILITY_MODE.AUTO && autoShow))
       this.showLegend();
@@ -521,8 +521,8 @@ export class TimelinesViewer extends EChartViewer {
     this.data.length = 0;
     const tempObj: Indexable = {};
 
-    const colorCategories = this.columnData.colorByColumnName?.categories;
-    const colorBuf = this.columnData.colorByColumnName?.data;
+    const colorCategories = this.columnData.colorColumnName?.categories;
+    const colorBuf = this.columnData.colorColumnName?.data;
     const eventCategories = this.columnData.eventColumnName?.categories;
     const eventBuf = this.columnData.eventColumnName?.data;
     const startColumn = this.columnData.startColumnName?.column;
@@ -538,7 +538,7 @@ export class TimelinesViewer extends EChartViewer {
 
     for (const i of this.filter.getSelectedIndexes()) {
       const id = this.getStrValue(this.columnData.splitByColumnName!, i);
-      const color = this.colorByColumnName ? colorCategories![colorBuf![i]] : this.defaultColor;
+      const color = this.colorColumnName ? colorCategories![colorBuf![i]] : this.defaultColor;
       let start = startColumn ? this.getSafeValue(this.columnData.startColumnName!, i) : null;
       let end = endColumn ? this.getSafeValue(this.columnData.endColumnName!, i) : null;
       if (start === end && end === null && (!this.eventsColumnNames || this.eventsColumnNames.length === 0)) continue;
@@ -644,7 +644,7 @@ export class TimelinesViewer extends EChartViewer {
 
   updateContainers(): void {
     $(this.titleDiv).removeClass().empty();
-    if (this.colorByColumnName)
+    if (this.colorColumnName)
       this.switchLegendVisibility(this.legendVisibility);
     $(this.chart.getDom()).show();
   }
