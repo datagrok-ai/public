@@ -57,7 +57,7 @@ export class TimelinesViewer extends EChartViewer {
     this.splitByColumnName = this.string('splitByColumnName');
     this.startColumnName = this.string('startColumnName');
     this.endColumnName = this.string('endColumnName');
-    this.colorColumnName = this.string('colorColumnName', null, {category: 'Color'});
+    this.colorColumnName = this.string('colorColumnName', null, {category: 'Color', columnTypeFilter: DG.TYPE.STRING});
     this.showOpenIntervals = this.bool('showOpenIntervals', false);
     this.eventColumnName = this.string('eventColumnName', null, {category: 'Tooltip'});
     this.eventsColumnNames = this.addProperty('eventsColumnNames', DG.TYPE.COLUMN_LIST);
