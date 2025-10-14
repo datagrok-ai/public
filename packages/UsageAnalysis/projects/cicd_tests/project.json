@@ -18,6 +18,11 @@
         "path": "Stress_Tests.csv",
         "creationScript": "Result = UsageAnalysis:StressTestsDashboard(3)",
         "id": "56209430-8560-11f0-adc2-636035fa442a"
+      },
+      {
+        "path": "StressTestsAggregation.csv",
+        "creationScript": "Result = Aggregate('Stress_ Tests', fields = ['batch', 'backup', 'totalworkers'], pivots = [], aggregations = ['sum(passed_int)', 'count(passed_int)'], groupByFields = ['batch', 'backup', 'totalworkers'], joins = [], whereClauses = [], filter = Filtered(null)) //{'timestamp': 1760441721206}\nAddNewColumn(Result, '(${count(passed_int)} - ${sum(passed_int)}) / 100', 'failure') //{'timestamp': 1760441777699}",
+        "id": "dde962d0-8560-11f0-e7f6-cb949007e22c"
       }
     ]
   }
