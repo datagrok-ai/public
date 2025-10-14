@@ -10,14 +10,13 @@ import {
   jstatStatistics,
   JSTATStatistics,
   numToExcel,
-  parseExcelPosition, standardPlateSizes, toExcelPosition, toStandardSize
+  parseExcelPosition, standardPlateSizes, toStandardSize
 } from './utils';
 import type ExcelJS from 'exceljs';
 import {findPlatePositions, getPlateFromSheet} from './excel-plates';
 import {FitFunctionType, FitSeries} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
 import {inspectCurve} from '../fit/fit-renderer';
 import {plateDbColumn, allProperties, plateTypes} from '../plates/plates-crud';
-import {IPlateWellValidator} from './plate-well-validators';
 import {Subject} from 'rxjs';
 
 /** Represents a well in the experimental plate */

@@ -82,11 +82,9 @@ export function createPlatesView(): DG.View {
       if (!plateWidget.editable)
         return;
 
-
       if (currentMode === 'outlier-marking') {
         const currentState = plateWidget.plate.isOutlier(clickEvent.row, clickEvent.col);
         plateWidget.plate.markOutlier(clickEvent.row, clickEvent.col, !currentState);
-
         plateWidget.plate.data.selection.setAll(false, true);
       } else if (currentMode === 'view') {
         const selection = plateWidget.plate.data.selection;

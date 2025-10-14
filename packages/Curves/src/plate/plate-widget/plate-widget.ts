@@ -5,8 +5,8 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {mapFromRow, safeLog, toExcelPosition} from './../utils';
 import {Plate, PLATE_OUTLIER_WELL_NAME} from './../plate';
-import {Subject, Subscription} from 'rxjs';
-import {filter} from 'rxjs/operators';
+import {fromEvent, Subject, Subscription} from 'rxjs';
+import {filter, takeUntil} from 'rxjs/operators';
 import './plate-widget.css';
 import {IPlateWellValidator, plateWellValidators} from './../plate-well-validators';
 
@@ -69,24 +69,53 @@ export class PlateWidget extends DG.Widget {
   }
 
   public hitTest(canvasX: number, canvasY: number): { row: number, col: number } | null {
-    for (let row = 0; row < this.plate.rows; row++) {
-      for (let col = 0; col < this.plate.cols; col++) {
-        if (this.isPointInWell(canvasX, canvasY, row, col + 1))
-          return {row, col};
-      }
+    const gridCell = this.grid.hitTest(canvasX, canvasY);
+
+    if (!gridCell || gridCell.gridRow == null || gridCell.gridColumn?.idx == null || gridCell.gridColumn.idx === 0)
+      return null;
+
+
+    const gridRow = gridCell.gridRow;
+    const gridCol = gridCell.gridColumn.idx;
+
+    const bounds = gridCell.bounds;
+    const centerX = bounds.midX;
+    const centerY = bounds.midY;
+    const radius = Math.min(bounds.height / 2, bounds.width / 2) * 0.8;
+    const distance = Math.sqrt(Math.pow(canvasX - centerX, 2) + Math.pow(canvasY - centerY, 2));
+
+    if (distance <= radius) {
+      return {
+        row: gridRow,
+        col: gridCol - 1
+      };
     }
+
     return null;
   }
-
   private isPointInWell(x: number, y: number, gridRow: number, gridCol: number): boolean {
-    if (gridRow < 0 || gridCol <= 0) return false;
-    const cell = this.grid.cell(this.grid.columns.byIndex(gridCol)!.name, gridRow);
-    if (!cell) return false;
+    if (gridRow < 0 || gridCol <= 0)
+      return false;
+
+
+    const column = this.grid.columns.byIndex(gridCol);
+    if (!column)
+      return false;
+
+
+    const cell = this.grid.cell(column.name, gridRow);
+    if (!cell)
+      return false;
+
+
     const bounds = cell.bounds;
+
     const centerX = bounds.midX;
     const centerY = bounds.midY;
     const radius = Math.min(bounds.height / 2, bounds.width / 2) * 0.8;
     const distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
+
+
     return distance <= radius;
   }
 
@@ -103,13 +132,7 @@ export class PlateWidget extends DG.Widget {
     const mainContainer = ui.divV([this.tabsContainer], 'assay-plates--plate-widget__main-content');
     this.root.appendChild(mainContainer);
 
-    this.setupGrid(); // This will no longer have the click handler
-
-    // // This will now be the ONLY place the click handler is set up
-    // ui.tools.waitForElementInDom(this.grid.root).then(() => {
-    //   console.log('[PlateWidget] Grid root in DOM, setting up click handler');
-    //   this.setupClickHandler();
-    // });
+    this.setupGrid();
   }
   public fireWellClick(row: number, col: number): void {
     const dataIndex = this.plate._idx(row, col);
@@ -143,22 +166,28 @@ export class PlateWidget extends DG.Widget {
     });
 
     this.setupHoverEvents(this.grid);
+    fromEvent<MouseEvent>(this.grid.canvas, 'click')
+      .pipe(takeUntil(this._onDestroy))
+      .subscribe((event: MouseEvent) => {
+        const gridCell = this.grid.hitTest(event.offsetX, event.offsetY);
 
-    // this.grid.onCellClick.subscribe((gc: DG.GridCell) => {
-    //   console.log('[PlateWidget] Cell clicked:', {isTableCell: gc.isTableCell, row: gc.gridRow, col: gc.gridColumn.idx});
-    //   if (!gc.isTableCell) return;
+        if (!gridCell || !gridCell.isTableCell || gridCell.gridColumn.idx === 0)
+          return;
 
-    //   const row = gc.gridRow!;
-    //   const col = gc.gridColumn.idx - 1;
-    //   const dataIndex = this.plate._idx(row, col);
+        const gridRow = gridCell.gridRow;
+        const gridColIdx = gridCell.gridColumn.idx; // 1-based index
 
-    //   console.log('[PlateWidget] Emitting wellClick:', {row, col, dataIndex});
-    //   this.wellClickSubject.next({
-    //     row,
-    //     col,
-    //     dataIndex
-    //   });
-    // });
+        if (this.isPointInWell(event.offsetX, event.offsetY, gridRow, gridColIdx)) {
+          const wellCol = gridColIdx - 1; /// Convert to 0-based
+          const dataIndex = this.plate._idx(gridRow, wellCol);
+
+          this.wellClickSubject.next({
+            row: gridRow,
+            col: wellCol,
+            dataIndex: dataIndex,
+          });
+        }
+      });
   }
 
   private setupHoverEvents(grid: DG.Grid) {

@@ -57,9 +57,7 @@ export class PlateSelectionController {
 
   private initSelectionEvents(): void {
     const interactionElement = this.canvas;
-    if (!interactionElement)
-      return;
-
+    if (!interactionElement) return;
 
     fromEvent<MouseEvent>(interactionElement, 'mousedown')
       .pipe(takeUntil(this._onDestroy))
@@ -67,6 +65,9 @@ export class PlateSelectionController {
         if (!this._enabled || e.button !== 0) return;
 
         this._dragStartPoint = new DG.Point(e.offsetX, e.offsetY);
+        this._isDragging = false; // Reset drag state
+        this._selectionRect = null;
+
         const mouseMoveStream = fromEvent<MouseEvent>(document, 'mousemove').pipe(takeUntil(this._onDestroy));
         const mouseUpStream = fromEvent<MouseEvent>(document, 'mouseup').pipe(takeUntil(this._onDestroy), take(1));
 
@@ -107,24 +108,22 @@ export class PlateSelectionController {
                 isDrag: true
               });
             }
-          } else if (this._dragStartPoint) {
+          } else {
             const well = this.plateWidget.hitTest(up_e.offsetX, up_e.offsetY);
+
             if (well) {
-              // In passthrough mode, we don't handle selection but we DO fire the wellClick event
-              // so the parent can handle it for outlier marking
-              if (this._mode === 'passthrough')
-                this.plateWidget.fireWellClick(well.row, well.col);
-              else
-                this.plateWidget.fireWellClick(well.row, well.col);
+              this.plateWidget.fireWellClick(well.row, well.col);
+            } else {
             }
           }
 
+          // Reset state
           this._isDragging = false;
           this.clearSelectionRect();
           this._selectionRect = null;
           this._dragStartPoint = null;
           this.plateWidget.grid.invalidate();
-        }); ;
+        });
       });
   }
 

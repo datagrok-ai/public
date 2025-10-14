@@ -11,7 +11,6 @@ import {MAPPING_SCOPES} from './scopes';
 export class PlateStateManager {
   private templateStates = new Map<number, TemplateState>();
   private plateMappings = new Map<number, Map<string, Map<string, string>>>();
-
   public currentTemplate: PlateTemplate;
   public currentPlateType: PlateType;
   public sourceDataFrame: DG.DataFrame | null = null;
