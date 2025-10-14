@@ -603,9 +603,9 @@ consistent recalculation when input data changes.
 To define a complex calculated column function:
 
 1. Add the annotation
-```ts
-//meta.vectorFunc: true
-```
+    ```ts
+    //meta.vectorFunc: true
+    ```
 2. Make your function return a **dataframe** — each column in the returned dataframe becomes a calculated column in the
 source table.
 3. Optionally, add a `list<string>` **parameter** to let users select which specific result columns to create (for
