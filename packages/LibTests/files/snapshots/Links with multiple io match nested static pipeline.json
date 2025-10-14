@@ -1,0 +1,60 @@
+[
+  {
+    "inputs": {
+      "in1": [
+        {
+          "path": [
+            {
+              "id": "pipeline1",
+              "idx": 0
+            },
+            {
+              "id": "step1",
+              "idx": 0
+            }
+          ],
+          "ioName": "res"
+        }
+      ],
+      "in2": [
+        {
+          "path": [
+            {
+              "id": "pipeline1",
+              "idx": 0
+            },
+            {
+              "id": "step1",
+              "idx": 0
+            }
+          ],
+          "ioName": "a"
+        }
+      ]
+    },
+    "outputs": {
+      "out1": [
+        {
+          "path": [
+            {
+              "id": "step2",
+              "idx": 1
+            }
+          ],
+          "ioName": "a"
+        }
+      ],
+      "out2": [
+        {
+          "path": [
+            {
+              "id": "step2",
+              "idx": 1
+            }
+          ],
+          "ioName": "b"
+        }
+      ]
+    }
+  }
+]

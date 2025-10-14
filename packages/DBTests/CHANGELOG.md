@@ -1,4 +1,12 @@
-# DBTests changelog
+# DB Tests changelog
+
+## 1.3.0 (2025-07-28)
+
+* Datagrok api dependency >= 1.26.0
+
+## 1.1.3 (2025-02-18)
+
+* Test fixes
 
 ## 1.1.1 (2024-10-21)
 

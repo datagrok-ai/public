@@ -96,7 +96,7 @@ export class SubstructureSearchDialog {
       ]))
       .onOK(async () => {
         let substructure = this.units === NOTATION.HELM ? df.get(SUBSTR_HELM_COL_NAME, 0) : this.substructureInput.value;
-        if (this.units === NOTATION.SEPARATOR && this.separatorInput.value !== this.separator && this.separatorInput.value !== '')
+        if (this.units === NOTATION.SEPARATOR && this.separatorInput.value !== this.separator && !!this.separatorInput.value)
           substructure = substructure.replaceAll(this.separatorInput.value, this.separator);
         let matches: DG.BitSet;
         if (this.units === NOTATION.HELM)

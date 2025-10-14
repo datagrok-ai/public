@@ -307,7 +307,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     const representation: ngl.StructureRepresentationType = this.representation;
     const df: DG.DataFrame = this.dataFrame;
 
-    const dataVal: Blob = this.dataEff.binary ? new Blob([this.dataEff.data as Uint8Array]) :
+    const dataVal: Blob = this.dataEff.binary ? new Blob([this.dataEff.data as BlobPart]) :
       new Blob([this.dataEff.data as string], {type: 'text/plain'});
     await stage.loadFile(dataVal, {
       ext: this.dataEff.ext, compressed: false, binary: this.dataEff.binary, name: '<Name>',

@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
-import {CampaignGroupingType, CampaignJsonName, ComputeQueryMolColName, HDCampaignsGroupingLSKey, i18n} from './consts';
+import {CampaignGrouping, CampaignGroupingType, CampaignJsonName, CampaignTableColumns, ComputeQueryMolColName, DefaultCampaignTableInfoGetters, HDCampaignsGroupingLSKey, HDCampaignsTableSortingLSKey, HDCampaignTableColumnsLSKey, HTFunctionOrderingLSKey, i18n} from './consts';
 import {AppName, CampaignsType, HitDesignCampaign, HitTriageCampaign, TriagePermissions} from './types';
 import {_package} from '../package';
 
@@ -11,6 +11,24 @@ export const toFormatedDateString = (d: Date): string => {
   return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
 };
 
+/**
+ * Modifies the current URL by updating or adding a query parameter with the specified key and value.
+ * Updates the browser's history state without reloading the page.
+ *
+ * @param key - The query parameter key to be added or updated in the URL.
+ * @param value - The value to be assigned to the specified query parameter key.
+ *
+ * @remarks
+ * This function uses the `history.replaceState` method to update the URL and browser history state.
+ * It ensures that the base URL remains unchanged and appends the query parameter.
+ * If `history.replaceState` is not supported, the function will not modify the URL.
+ *
+ * @example
+ * ```typescript
+ * modifyUrl('page', '2');
+ * // Updates the URL to something like: http://example.com/?page=2
+ * ```
+ */
 export function modifyUrl(key: string, value: string) {
   const title = document.title;
   const url = window.location.href.split('?')[0] + '?' + key + '=' + value;
@@ -120,14 +138,14 @@ export async function loadCampaigns<T extends AppName>(
   const campaignFolders = (await _package.files.list(`${appName}/campaigns`))
     .filter((f) => deletedCampaigns.indexOf(f.name) === -1);
   const campaignNamesMap: {[name: string]: CampaignsType[T]} = {};
-  for (const folder of campaignFolders) {
+  const campaignPromises = campaignFolders.map(async (folder) => {
     try {
       const campaignJson: CampaignsType[T] = JSON.parse(await _package.files
         .readAsText(`${appName}/campaigns/${folder.name}/${CampaignJsonName}`));
       if (campaignJson.authorUserId && campaignJson.permissions &&
         !await checkViewPermissions(campaignJson.authorUserId, campaignJson.permissions)
       )
-        continue;
+        return null;
       if (campaignJson.authorUserId && !campaignJson.authorUserFriendlyName) {
         const user = await grok.dapi.users.find(campaignJson.authorUserId);
         if (user)
@@ -135,9 +153,11 @@ export async function loadCampaigns<T extends AppName>(
       }
       campaignNamesMap[campaignJson.name] = campaignJson;
     } catch (e) {
-      continue;
+      console.error(e);
     }
-  }
+    return null;
+  });
+  await Promise.all(campaignPromises);
   return campaignNamesMap;
 }
 
@@ -154,8 +174,10 @@ async function checkPermissions(authorId: string, groupIdList: string[]): Promis
       const user = await grok.dapi.groups.getUser(group);
       if (user?.id === userId)
         return true;
-    } else if (userGroupId && group.members.length > 0) {
-      if (group.members.some((memberGroup) => memberGroup.id === userGroupId))
+    } else if (userGroupId) {
+      if ((group.members?.length ?? 0) > 0 && group.members.some((memberGroup) => memberGroup.id === userGroupId))
+        return true;
+      if ((group.adminMembers?.length ?? 0) > 0 && group.adminMembers.some((memberGroup) => memberGroup.id === userGroupId))
         return true;
     }
   }
@@ -179,31 +201,109 @@ export function setLocalStorageValue(key: string, value: string) {
 }
 
 export function getSavedCampaignsGrouping(): CampaignGroupingType {
-  return getLocalStorageValue<CampaignGroupingType>(HDCampaignsGroupingLSKey) ?? CampaignGroupingType.None;
+  return getLocalStorageValue<CampaignGroupingType>(HDCampaignsGroupingLSKey) ?? CampaignGrouping.None;
 }
 
 export function setSavedCampaignsGrouping(value: CampaignGroupingType) {
   setLocalStorageValue(HDCampaignsGroupingLSKey, value);
 }
 
+export type SavedCampaignsTableSorting = {
+  columnName: CampaignTableColumns,
+  ascending: boolean,
+}
+
+export function getSavedCampaignsSorting(): SavedCampaignsTableSorting | null {
+  const sortingString = getLocalStorageValue<string>(HDCampaignsTableSortingLSKey);
+  if (!sortingString)
+    return null;
+  return JSON.parse(sortingString) as SavedCampaignsTableSorting;
+}
+
+export function setSavedCampaignsSorting(value: SavedCampaignsTableSorting | null) {
+  value ? setLocalStorageValue(HDCampaignsTableSortingLSKey, JSON.stringify(value)) :
+    localStorage.removeItem(HDCampaignsTableSortingLSKey);
+}
+
+export function sortCampaigns(campaigns: HitDesignCampaign[], sorting: SavedCampaignsTableSorting | null) {
+  if (!sorting)
+    return;
+  const getter = sorting.columnName in DefaultCampaignTableInfoGetters ?
+    DefaultCampaignTableInfoGetters[sorting.columnName as keyof typeof DefaultCampaignTableInfoGetters] : (campaign: HitDesignCampaign) =>
+      campaign.campaignFields?.[sorting.columnName.replace('campaignFields.', '') ?? ''] ?? '';
+  const vs: Map<HitDesignCampaign, any> = new Map();
+  campaigns.forEach((c) => {
+    vs.set(c, getter(c));
+  });
+
+  // probe for numbers or dates
+  const allNumbers = Array.from(vs.values()).every((v) => isNil(v) || !isNaN(Number(v?.toString() ?? '')));
+  const allDates = !allNumbers && Array.from(vs.values()).every((v) => isNil(v) || !isNaN(Date.parse(v?.toString() ?? '')));
+  if (allNumbers) {
+    campaigns.forEach((c) => {
+      vs.set(c, isNil(vs.get(c)) ? (sorting.ascending ? Infinity : -Infinity) : Number(vs.get(c)));
+    });
+  } else if (allDates) {
+    campaigns.forEach((c) => {
+      vs.set(c, isNil(vs.get(c)) ? (sorting.ascending ? Infinity : -Infinity) : Date.parse(vs.get(c)?.toString() ?? ''));
+    });
+  }
+
+  campaigns.sort((a, b) => {
+    const aVal = vs.get(a);
+    const bVal = vs.get(b);
+    if (allNumbers || allDates)
+      return sorting.ascending ? aVal - bVal : bVal - aVal;
+    const aa = isNil(aVal) ? '' : aVal.toString();
+    const bb = isNil(bVal) ? '' : bVal.toString();
+    return sorting.ascending ? aa.localeCompare(bb) : bb.localeCompare(aa);
+  });
+  vs.clear();
+}
+
+export function getSavedCampaignTableColumns(): CampaignTableColumns[] {
+  const columnsString = getLocalStorageValue<string>(HDCampaignTableColumnsLSKey);
+  const defaultCols: CampaignTableColumns[] = ['Code', 'Created', 'Author', 'Last Modified by', 'Molecules', 'Status'];
+  if (!columnsString)
+    return defaultCols;
+  try {
+    const columnsP = JSON.parse(columnsString);
+    if (Array.isArray(columnsP) && columnsP.every((c) => typeof c === 'string'))
+      return columnsP as CampaignTableColumns[];
+    return defaultCols;
+  } catch (e) {
+    console.error('error parsing campaign table columns', e);
+    return defaultCols;
+  }
+}
+
+export function setSavedCampaignTableColumns(columns: CampaignTableColumns[]) {
+  setLocalStorageValue(HDCampaignTableColumnsLSKey, JSON.stringify(columns));
+}
+
+
 export const getGroupingKey = <T extends HitDesignCampaign | HitTriageCampaign = HitDesignCampaign>(grouping: CampaignGroupingType, campaign: T): string => {
   switch (grouping) {
-  case CampaignGroupingType.Template:
+  case CampaignGrouping.Template:
     return campaign.template?.key ?? campaign.templateName;
-  case CampaignGroupingType.Status:
+  case CampaignGrouping.Status:
     return campaign.status;
-  case CampaignGroupingType.Author:
+  case CampaignGrouping.Author:
     return campaign.authorUserFriendlyName ?? i18n.noInformation;
-  case CampaignGroupingType.LastModifiedUser:
+  case CampaignGrouping.LastModifiedUser:
     return campaign.lastModifiedUserName ?? i18n.noInformation;
   default:
+    if (grouping.startsWith('campaignFields.')) {
+      const fieldName = grouping.replace('campaignFields.', '');
+      return campaign.campaignFields?.[fieldName] ?? i18n.noInformation;
+    }
     return '';
   }
 };
 
 export function getGroupedCampaigns<T extends HitDesignCampaign | HitTriageCampaign = HitDesignCampaign>(campaigns: T[], grouping: CampaignGroupingType):
   {[key: string]: T[]} {
-  if (grouping === CampaignGroupingType.None)
+  if (grouping === CampaignGrouping.None)
     return {'': campaigns};
   const groupedCampaigns: {[key: string]: T[]} = {};
   for (const campaign of campaigns) {
@@ -321,4 +421,144 @@ export function editableTableField(field: HTMLElement, options?: EditableFieldOp
   const container = ui.divH([field, editIcon], {style: {display: 'flex', alignItems: 'center'}});
   editIcon.style.marginLeft = '5px';
   return container;
+}
+
+export async function checkFileExists(path: string) {
+  if (!path || path.trim() === '') {
+    grok.shell.error('Path can not be empty');
+    return false;
+  }
+  const exists = await grok.dapi.files.exists(path);
+  if (!exists) {
+    grok.shell.error('Given folder does not exist');
+    return false;
+  }
+  return true;
+}
+
+export function timeoutOneTimeEventListener(element: HTMLElement, eventName: string, callback: () => void, timeout = 4000) {
+  function listener() {
+    callback();
+    element.removeEventListener(eventName, listener);
+  };
+  element.addEventListener(eventName, listener);
+  setTimeout(() => {
+    element.removeEventListener(eventName, listener);
+  }, timeout);
+}
+
+// //name: Demo Design with reinvent
+// //input: int numberOfMolecules
+// //tags: HitDesignerFunction
+// //output: dataframe result
+// export async function demoDesignWithReinvent(numberOfMolecules: number): Promise<DG.DataFrame> {
+//   const df = grok.data.demo.molecules(numberOfMolecules);
+//   df.name = 'Reinvent Design';
+//   return df;
+// }
+
+// #region Function ordering
+
+export type FunctionOrdering = {
+  order: string[],
+  hidden: string[]
+}
+
+export function getSavedFunctionOrdering(): FunctionOrdering {
+  const orderingString = getLocalStorageValue<string>(HTFunctionOrderingLSKey) ?? '{}';
+  try {
+    const orderingP = JSON.parse(orderingString);
+    const ordering: FunctionOrdering = {
+      order: orderingP?.order ?? [],
+      hidden: orderingP?.hidden ?? [],
+    };
+    return ordering;
+  } catch (e) {
+    console.error('error parsing function ordering', e);
+  }
+  return {order: [], hidden: []};
+}
+
+export function setSavedFunctionOrdering(ordering: FunctionOrdering) {
+  setLocalStorageValue(HTFunctionOrderingLSKey, JSON.stringify(ordering));
+}
+
+export function getReorderedFunctionTabArgs(args: {[key: string]: HTMLElement}) {
+  const ordering = getSavedFunctionOrdering();
+  const orderedArgs: {[key: string]: HTMLElement} = {};
+  for (const key of ordering.order) {
+    if (args[key])
+      orderedArgs[key] = args[key];
+  }
+  for (const key in args) {
+    if (!orderedArgs[key] && !ordering.hidden.includes(key))
+      orderedArgs[key] = args[key];
+  }
+  return orderedArgs;
+}
+
+export function getReorderingInput(functions: string[], onOk: (ordering: FunctionOrdering) => void) {
+  const order = getSavedFunctionOrdering();
+  const dataFrame = DG.DataFrame.fromColumns(functions.map((f) => DG.Column.fromStrings(f, [f])));
+  dataFrame.columns.setOrder(order.order ?? []);
+  const columnsEditor = ui.input.columns('reorder', {table: dataFrame, value: dataFrame.columns.toList().filter((c) => !order.hidden.includes(c.name))});
+  columnsEditor.onChanged.subscribe(() => {
+    try {
+      const chosenColumns = columnsEditor.value.map((c) => c.name);
+      const hiddenColumns = functions.filter((f) => !chosenColumns.includes(f));
+      const newOrdering = {
+        order: columnsEditor.value.map((c) => c.name),
+        hidden: hiddenColumns,
+      };
+      dataFrame.columns.setOrder(newOrdering.order);
+      setSavedFunctionOrdering(newOrdering);
+      onOk(newOrdering);
+    } catch (e) {
+      console.error(e);
+    }
+  });
+
+  const children = Array.from(columnsEditor.root.children) as HTMLElement[];
+  setTimeout(() => {
+    children.forEach((child) => {
+      child.style.maxWidth = '0px';
+      child.style.overflow = 'hidden';
+      child.style.padding = '0px';
+      child.style.paddingRight = '0px';
+      child.style.visibility = 'hidden';
+      if (child instanceof HTMLLabelElement)
+        child.style.display = 'none';
+    });
+  }, 200);
+  columnsEditor.root.style.justifyContent = 'end';
+  columnsEditor.root.style.width = '40px';
+  columnsEditor.root.style.height = '0px';
+  columnsEditor.root.style.overflow = 'visible';
+  columnsEditor.root.style.padding = '0px';
+
+
+  const editIcon = ui.icons.edit(() => {
+    children.forEach((child) => {
+      child.click();
+    });
+  }, 'Order or hide functions');
+
+  columnsEditor.addOptions(editIcon);
+  (Array.from(columnsEditor.root.children) as HTMLElement[]).forEach((child) => {
+    child.style.borderBottom = 'unset';
+  });
+  editIcon.style.fontSize = '16px';
+  return columnsEditor.root;
+}
+
+export function getFuncPackageNameSafe(func: DG.Func): string | undefined {
+  try {
+    return func.package?.name;
+  } catch (e) {
+    return undefined;
+  }
+}
+
+export function isNil(something: any) {
+  return something === '' || something === null || something === undefined || (typeof something == 'number' && isNaN(something));
 }

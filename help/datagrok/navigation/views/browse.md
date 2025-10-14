@@ -209,8 +209,8 @@ When clicking a file, what you see depends on the file's format and the data ins
 :::note developers
 
 You can create custom viewers for
-[files](../../../develop/how-to/create-custom-file-viewers.md) and
-[folders](../../../develop/how-to/folder-content-preview.md).
+[files](../../../develop/how-to/files/create-custom-file-viewers.md) and
+[folders](../../../develop/how-to/files/folder-content-preview.md).
 
 :::
 
@@ -277,7 +277,7 @@ a widget or adjust its settings using the [Context Panel](../panels/panels.md#co
 
 :::note developers
 
-You can [build custom widgets](../../../develop/how-to/home-page-widgets.md) to show up on the Home page.
+You can [build custom widgets](../../../develop/how-to/packages/home-page-widgets.md) to show up on the Home page.
 
 :::
 

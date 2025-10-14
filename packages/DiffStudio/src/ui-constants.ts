@@ -28,7 +28,7 @@ export enum HINT {
   BIO = 'Bioreactor simulation',
   POLL = 'The chemical reaction part of the air pollution model',
   CLEAR = 'Clear model',
-  TO_JS = 'Export model to JavaScript script',
+  TO_JS = 'Open in script editor',
   APP = 'Export model to platform application with user interface',
   OPEN_DS = 'Open model in Diff Studio',
   SAVE = 'Save changes',
@@ -39,13 +39,20 @@ export enum HINT {
   MAX_TIME = `Max computation time, ${COMPUTATION_TIME_UNITS}.`,
   CLICK_RUN = `Click to run`,
   SOLVE = `Solve equations (${HOT_KEY.RUN})`,
+  NO_MY_MODELS = 'No models in My files',
+  FAILED_TO_LOAD_MY_MODELS = 'Failed to load models from My files: file system error',
+  NO_RECENT_MODELS = 'No recent models',
+  FAILED_TO_LOAD_RECENT_MODELS = 'Failed to load recent models: file system error',
+  CORRUPTED_DATA_FILE = 'Failed to load recent models: corrupted data file',
+  EDIT = 'Edit',
+  UPDATE = 'Apply all changes to the current file',
 }; // HINT
 
 /** UI titles */
 export enum TITLE {
   LOAD = 'Load...',
-  FROM_FILE = 'From file...',
-  SAVE_TO = 'Save to',
+  IMPORT = 'Import...',
+  SAVE_TO_MY_FILES = 'Save to My files',
   LOCAL_FILE = 'Local file...',
   MY_FILES = 'My files...',
   TO_MY_FILES = 'Save to My Files...',
@@ -54,7 +61,7 @@ export enum TITLE {
   BASIC = 'Basic',
   ADV = 'Advanced',
   EXT = 'Extended',
-  EXAMP = 'Examples',
+  LIBRARY = 'Library',
   RECENT = 'Recent',
   CHEM = 'Chem reactions',
   ROB = `Robertson's model`,
@@ -69,19 +76,26 @@ export enum TITLE {
   TO_JS = 'js',
   MISC = 'Misc',
   VARY = 'Vary inputs',
-  MODEL = 'Model',
-  IPUTS = 'Run',
+  EDIT = 'Edit',
+  SOLVE = 'Solve',
   FIT = 'Fit',
   SOLUTION = 'Solution',
   OPEN = 'Open',
   BROWSE = 'Browse',
   SAVE = 'Save',
   APPS = 'Apps',
+  COMP = 'Compute',
   DIF_ST = 'Diff Studio',
   NAME = 'Name',
   TYPE = 'Type',
   INFO = 'Info',
   IS_CUST = 'Custom model',
+  MY_MODELS = 'My Models',
+  NO_MODELS = 'None',
+  MULTI_AXIS = 'Multiaxis',
+  FACET = 'Facet',
+  UPDATE = 'Update',
+  CONTROLS = 'Model controls',
 }; // TITLE
 
 /** Titles of template models */
@@ -110,19 +124,23 @@ export const MODEL_HINT = new Map([
 /** Help links */
 export enum LINK {
   DIF_STUDIO_REL = '/help/compute/diff-studio',
+  MODELS = '/help/compute/models',
   DIF_STUDIO = 'https://datagrok.ai/help/compute/diff-studio',
-  SENS_AN = 'https://datagrok.ai/help/compute/function-analysis#sensitivity-analysis',
-  FITTING = 'https://datagrok.ai/help/compute/function-analysis#parameter-optimization',
-  CHEM_REACT = `${DIF_STUDIO_REL}#chem-reactions`,
-  FERMENTATION = `${DIF_STUDIO_REL}#fermentation`,
-  GA_PRODUCTION = `${DIF_STUDIO_REL}#acid-production`,
-  NIMOTUZUMAB = `${DIF_STUDIO_REL}#nimotuzumab`,
-  PK = `${DIF_STUDIO_REL}#pk`,
-  PKPD = `${DIF_STUDIO_REL}#pk-pd`,
-  ROBERTSON = `${DIF_STUDIO_REL}#robertson-model`,
-  BIOREACTOR = `${DIF_STUDIO_REL}#bioreactor`,
-  POLLUTION = `${DIF_STUDIO_REL}#pollution`,
+  SENS_AN = '/help/compute/function-analysis#sensitivity-analysis',
+  FITTING = '/help/compute/function-analysis#parameter-optimization',
+  CHEM_REACT = `${MODELS}#chem-reactions`,
+  FERMENTATION = `${MODELS}#fermentation`,
+  GA_PRODUCTION = `${MODELS}#acid-production`,
+  NIMOTUZUMAB = `${MODELS}#nimotuzumab`,
+  PK = `${MODELS}#pk`,
+  PKPD = `${MODELS}#pk-pd`,
+  ROBERTSON = `${MODELS}#robertson-model`,
+  BIOREACTOR = `${MODELS}#bioreactor`,
+  POLLUTION = `${MODELS}#pollution`,
   COMPUTE = 'https://datagrok.ai/help/compute',
+  LOAD_SAVE = `${DIF_STUDIO_REL}#working-with-models`,
+  MODEL_COMPONENTS = `${DIF_STUDIO_REL}#model-components-and-syntax`,
+  INTERFACE = `${DIF_STUDIO_REL}#user-interface-options`,
 };
 
 /** Error messages */
@@ -132,10 +150,10 @@ export enum ERROR_MSG {
   EXPORT_TO_SCRIPT_FAILS = 'Export to JavaScript script fails',
   SCRIPTING_ISSUE = 'Platform scripting issue',
   UI_ISSUE = 'UI creating issue',
-  MISSING_CLOSING_BRACKET = 'Annotation: "]" is missing',
-  INCORRECT_BRACES_USE = 'Annotation: incorrect use of "{}"',
-  MISSING_COLON = 'Annotation: ":" is missing',
-  CHECK_ARGUMENTS = ' (check the "argument" section)',
+  MISSING_CLOSING_BRACKET = 'Annotation error: **"]"** is missing',
+  INCORRECT_BRACES_USE = 'Annotation error: incorrect use of **"{}"**',
+  MISSING_COLON = 'Annotation error: **":"** is missing',
+  CHECK_ARGUMENTS = ' (check the **#argument** block)',
   INCORRECT_ARG_SEGM = 'Incorrect limits for the argument',
   OPEN_IN_DIF_STUD = 'To change the model, open it in Diff Studio.',
   FAILED_TO_SAVE = 'Failed to save model to the file',
@@ -144,6 +162,7 @@ export enum ERROR_MSG {
   FITTING_FAILS = 'Fitting fails',
   PLATFORM_ISSUE = 'Platform issue',
   INCORTECT_INPUT = 'Incorrect input caption',
+  NANS_OBTAINED = 'Failed computations: obtained NaN-s. Check inputs and formulas.',
 };
 
 /** Lookup table fails */
@@ -167,15 +186,17 @@ export enum LOOKUP_EXPR_FAIL {
 /** Other UI constants */
 export enum MISC {
   VIEW_DEFAULT_NAME = 'Template',
-  IVP_EXT = 'ivp',
-  TXT_EXT = 'txt',
-  FILE_DEFAULT_NAME = `equations.${IVP_EXT}`,
+  MODEL_FILE_EXT = 'ivp',
+  FILE_DEFAULT_NAME = `equations.${MODEL_FILE_EXT}`,
   DEFAULT = 'Default',
   CHOICES = 'choices',
   NAME = 'name',
   CATEGORY = 'category',
   CAPTION = 'caption',
   TOOLTIP = 'tooltip',
+  IS_NOT_DEF = 'is not defined',
+  UNEXPECTED = 'Unexpected identifier',
+  PROP_OF_NULL = 'Cannot set properties of null',
 };
 
 /** Warning dialog lines */
@@ -188,7 +209,7 @@ export enum WARNING {
   CHECK_PERF = 'Check time',
   TIME_LIM = 'Time limit',
   UNITS = COMPUTATION_TIME_UNITS,
-  PREVIEW = `Model preview is unavailble for this type. Use "${MISC.IVP_EXT}" instead`,
+  PREVIEW = `Model preview is unavailble for this type. Use "${MISC.MODEL_FILE_EXT}" instead`,
 };
 
 /** Code completion infos */
@@ -218,23 +239,28 @@ In-browser solver of ordinary differential equations
 ([ODEs](https://en.wikipedia.org/wiki/Ordinary_differential_equation))
 
 # Interactivity
-Play with model inputs on the **${TITLE.IPUTS}** tab.
+Play with the model inputs. Move sliders to explore its behavior.
 
 # Model
-Go to the **${TITLE.MODEL}** tab and modify formulas.
+Turn on the **${TITLE.EDIT}** toggle on the top panel to modify formulas.
 
 # No-code
 Define equations in a declarative form.
 
 # Examples
-Click <i class="fas fa-folder-open"></i> **Open** icon and explore **Examples**.
+Click <i class="fas fa-folder-open d4-combo-popup" style="min-width: 0px; cursor: default"></i> icon and
+explore **Library**.
 
 # Scripting
-Click **JS** button and export model to JavaScript script.
+Click **</>** icon to export model to JavaScript script.
 
 # Analysis
-* Click <i class="fas fa-analytics"></i> to run [sensitivity analysis](${LINK.SENS_AN}).
-* Click <i class="fas fa-chart-line"></i> to [optimize inputs](${LINK.FITTING}).
+Turn off the **${TITLE.EDIT}** toggle, and perform analysis:
+* Click the **Fit** icon on the top panel to [optimize inputs](${LINK.FITTING}).
+* Click the **Sensitivity** icon to run [sensitivity analysis](${LINK.SENS_AN}).
+
+# Catalog
+Click <i class="fas fa-layer-plus"></i> icon to save model to **Model Hub**.
 
 # Learn more
 * [Diff Studio](${LINK.DIF_STUDIO})
@@ -261,6 +287,8 @@ export enum PATH {
   MY_FILES = 'Myfiles',
   HOME = 'Home',
   SYSTEM = 'System',
+  FILE = 'file',
+  SLASH = '/',
 };
 
 /** UI time constants */
@@ -270,8 +298,11 @@ export enum UI_TIME {
   APP_RUN_SOLVING = 100,
   SOLV_DEFAULT_TIME_SEC = 5,
   SOLV_TIME_MIN_SEC = 1,
-  BROWSING = APP_RUN_SOLVING + 300,
-  SWITCH_TO_FOLDER = 1,
+  BROWSING = APP_RUN_SOLVING + 500,
+  SWITCH_TO_FOLDER = 100,
+  WGT_CLICK = 10,
+  FACET_DOCKING = 100,
+  TITLE_REMOVING = 500,
 };
 
 /** Numerical methods names */
@@ -281,7 +312,11 @@ export enum METHOD {
   ROS34PRw = 'ros34prw',
 };
 
-export const DOCK_RATIO = 0.3;
+/** Dock ratios */
+export enum DOCK_RATIO {
+  INPUTS_TAB = 0.2,
+  GRAPHS = 0.8,
+};
 
 export const MAX_RECENT_COUNT = 10;
 
@@ -309,3 +344,6 @@ export enum INPUTS_DF {
   INP_NAMES_IDX = 0,
   INPUT_SETS_COL_IDX = 0,
 };
+
+/** Max number of facet grid graphs count */
+export const MAX_FACET_GRAPHS_COUNT = 20;

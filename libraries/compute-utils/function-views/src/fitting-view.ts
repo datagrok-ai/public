@@ -4,21 +4,34 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {BehaviorSubject} from 'rxjs';
+import {BehaviorSubject, Subject} from 'rxjs';
 import {RunComparisonView} from './run-comparison-view';
 import {combineLatest} from 'rxjs';
+import {take, filter} from 'rxjs/operators';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
-import {getPropViewers} from './shared/utils';
-import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossTooltip, FITTING_UI} from './fitting/constants';
-import {getIndeces} from './fitting/fitting-utils';
+import {getDefaultValue} from './shared/utils';
+import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossTooltip, FITTING_UI,
+  INDICES, NAME, LOSS_FUNC_CHART_OPTS, SIZE,
+  MIN_RADAR_COLS_COUNT,
+  TIMEOUT} from './fitting/constants';
 import {performNelderMeadOptimization} from './fitting/optimizer';
 
 import {nelderMeadSettingsVals, nelderMeadCaptions} from './fitting/optimizer-nelder-mead';
-import {getErrors} from './fitting/fitting-utils';
-import {OptimizationResult, Extremum, distance} from './fitting/optimizer-misc';
+import {getErrors, getCategoryWidget, getShowInfoWidget, getLossFuncDf, rgbToHex, lightenRGB, getScalarsGoodnessOfFitViewer, getHelpIcon, getRadarTooltip, toUseRadar} from './fitting/fitting-utils';
+import {OptimizationResult, Extremum, TargetTableOutput, Setting} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
+import {IVP, IVP2WebWorker, PipelineCreator} from 'diff-grok';
+import {getFittedParams} from './fitting/diff-studio/nelder-mead';
+import {getNonSimilar} from './fitting/similarity-utils';
+import {ScalarsFitRadar} from './fitting/scalars-fit-radar';
+import {getPropViewers} from '../../shared-utils/utils';
+
+const colors = DG.Color.categoricalPalette;
+const colorsCount = colors.length;
+
+const miscName = 'Misc';
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
 type OutputTarget = number | DG.DataFrame | null;
@@ -50,12 +63,76 @@ type FittingConstStore = {
 } & InputValues;
 
 /** Goodness of fit (GoF) viewer */
-type GoFViewer = {
+type GoFtable = {
   caption: string,
-  root: HTMLElement,
+  table: DG.DataFrame,
+  chart: DG.VIEWER,
+  opts: Partial<DG.IBarChartSettings | DG.IScatterPlotSettings>,
 };
 
+export type RangeDescription = {
+  default?: number;
+  min?: number;
+  max?: number;
+  step?: number;
+  isPrimary?: boolean;
+  enabled?: boolean;
+}
+
+export type TargetDescription = {
+  default?: any;
+  argumentCol?: string;
+  isPrimary?: boolean;
+  enabled?: boolean;
+}
+
 type FittingInputsStore = FittingNumericStore | FittingBoolStore | FittingConstStore;
+
+type FittingOutputsStore = {
+  prop: DG.Property,
+  input: DG.InputBase,
+  isInterest: BehaviorSubject<boolean>,
+  target: OutputTarget,
+  argName: string,
+  argColInput: DG.ChoiceInput<string | null>,
+  funcColsInput: DG.InputBase<DG.Column[]>,
+};
+
+type ValidationInfo = {
+  isValid: boolean,
+  msg: string,
+};
+
+/** Check validness of outputs */
+function getValidation(store: FittingOutputsStore): ValidationInfo {
+  if (store.prop.propertyType !== DG.TYPE.DATA_FRAME)
+    return {isValid: true, msg: ''};
+
+  const argName = store.argName;
+  const funcColsVals = store.funcColsInput.value;
+
+  if ((funcColsVals === null) || (funcColsVals === null)) {
+    return {
+      isValid: false,
+      msg: `Incomplete the "${store.input.caption}" target`,
+    };
+  }
+
+  if (funcColsVals.map((col) => col.name).includes(argName)) {
+    return {
+      isValid: false,
+      msg: `Invalid ${store.input.caption}: functions should not contain argument ('${argName}')`,
+    };
+  }
+
+  return {isValid: true, msg: ''};
+}
+
+export type DiffGrok = {
+  ivp: IVP,
+  ivpWW: IVP2WebWorker,
+  pipelineCreator: PipelineCreator,
+};
 
 const getSwitchMock = () => ui.div([], 'sa-switch-input');
 
@@ -63,9 +140,12 @@ const isValidForFitting = (prop: DG.Property) => ((prop.propertyType === DG.TYPE
 
 export class FittingView {
   generateInputFields = (func: DG.Func) => {
-    const getInputValue = (input: DG.Property, key: string) => (
-      input.options[key] === undefined ? input.defaultValue : Number(input.options[key])
-    );
+    const getInputValue = (input: DG.Property, key: keyof RangeDescription) => {
+      const range = this.options.ranges?.[input.name];
+      if (range?.[key] != undefined)
+        return range[key];
+      return input.options[key] === undefined ? getDefaultValue(input) : Number(input.options[key]);
+    };
 
     const getSwitchElement = (defaultValue: boolean, f: (v: boolean) => any, isInput: boolean = true) => {
       const input = ui.input.toggle(' ', {value: defaultValue, onValueChanged: (value) => f(value)});
@@ -224,106 +304,214 @@ export class FittingView {
 
     const outputs = func.outputs.filter((prop) => supportedOutputTypes.includes(prop.propertyType))
       .reduce((acc, outputProp) => {
-        const temp = {
+        const defaultValue = (this.options.targets?.[outputProp.name]?.default != null) ?
+          this.options.targets?.[outputProp.name]?.default :
+          (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? null : getInputValue(outputProp, 'default');
+
+        let defaultArgColName: string | null = null;
+        let defaultColNames: Array<string | null> = [null];
+        let defaultFuncCols: DG.Column[] | undefined = undefined;
+        let defaultTable: DG.DataFrame | undefined = undefined;
+
+        if ((defaultValue != null) && (defaultValue instanceof DG.DataFrame)) {
+          defaultTable = defaultValue;
+          const numericalCols = defaultTable.columns.toList().filter((col) => col.isNumerical);
+          defaultColNames = numericalCols.map((col) => col.name);
+          defaultArgColName = this.options.targets?.[outputProp.name]?.argumentCol ?? defaultColNames[0];
+          defaultFuncCols =numericalCols.filter((col) => col.name !== defaultArgColName);
+        }
+
+        const validator = (_: string) => {
+          const validation = getValidation(temp);
+
+          if (validation.isValid) {
+            temp.argColInput.input.classList.remove('d4-invalid');
+            temp.funcColsInput.input.classList.remove('d4-invalid');
+            ui.tooltip.bind(temp.argColInput.input, 'Independent variable');
+            ui.tooltip.bind(temp.funcColsInput.input, 'Target dependent variables');
+
+            return null;
+          }
+
+          temp.argColInput.input.classList.add('d4-invalid');
+          temp.funcColsInput.input.classList.add('d4-invalid');
+          ui.tooltip.bind(temp.argColInput.input, validation.msg);
+          ui.tooltip.bind(temp.funcColsInput.input, validation.msg);
+
+          return validation.msg;
+        };
+
+        const isInterest = new BehaviorSubject(false);
+        const temp: FittingOutputsStore = {
           prop: outputProp,
           input:
           (() => {
             const caption = outputProp.caption ?? outputProp.name;
             const input = ui.input.forProperty(outputProp);
             input.addCaption(caption);
-            input.value = 0;
-            input.setTooltip(this.toSetSwitched ?
-              'Target value' :
-              (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Output dataframe' : 'Output scalar');
-            input.input.hidden = !this.toSetSwitched;
+            input.value = defaultValue;
+            input.setTooltip((outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Target dataframe' : 'Target scalar');
+            isInterest.subscribe((val) => input.input.hidden = !val);
+
             input.nullable = false;
-            ui.tooltip.bind(input.captionLabel, (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Output dataframe' : 'Output scalar');
+            ui.tooltip.bind(input.captionLabel, (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Dataframe' : 'Scalar');
+
+            if (this.options.targets?.[outputProp.name]?.default != null)
+              setTimeout(() => input.value = this.options.targets?.[outputProp.name]?.default, 0);
 
             input.onChanged.subscribe((value) => {
               temp.target = input.value; // fixing the bug https://reddata.atlassian.net/browse/GROK-16642
 
-              if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
+              const clearInputs = () => {
+                temp.argColInput.items = [null];
+                temp.argColInput.value = null;
+
+                ui.input.setColumnsInputTable(temp.funcColsInput, grok.data.demo.randomWalk(2, 2), (col: DG.Column) => false);
+              };
+
+              if (input.value === null)
+                clearInputs();
+              else if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
                 if (temp.target) {
                   const colNames: string[] = [];
+                  const numericalCols: DG.Column[] = [];
 
                   for (const col of (input.value as DG.DataFrame).columns) {
-                    if (col.type === DG.COLUMN_TYPE.FLOAT || col.type === DG.COLUMN_TYPE.INT)
+                    if (col.isNumerical) {
                       colNames.push(col.name);
+                      numericalCols.push(col);
+                    }
                   }
 
-                  temp.colNameInput.items = colNames;
-                  temp.colNameInput.value = colNames[0];
-                } else {
-                  temp.colNameInput.items = [null];
-                  temp.colNameInput.value = null;
-                }
+                  if (colNames.length > 1) {
+                    temp.argColInput.items = colNames;
+                    temp.argColInput.value = colNames[0];
+
+                    ui.input.setColumnsInputTable(temp.funcColsInput, input.value as DG.DataFrame, (col: DG.Column) => col.isNumerical);
+                    temp.funcColsInput.value = numericalCols.slice(1);
+                  } else {
+                    grok.shell.warning(`Not enough of numerical columns: ${colNames.length}, expected: > 1`);
+                    clearInputs();
+                  }
+                } else
+                  clearInputs();
               }
 
               this.updateApplicabilityState();
             });
 
-            if (outputProp.propertyType === DG.TYPE.DATA_FRAME)
-              (input.root.lastElementChild as HTMLDivElement).hidden = !this.toSetSwitched;
-
             const isInterestInput = getSwitchElement(
-              this.toSetSwitched,
+              isInterest.value,
               (v: boolean) => {
                 temp.isInterest.next(v);
                 this.updateApplicabilityState();
-                input.input.hidden = !v;
-                input.setTooltip(v ? 'Target value' :
-                  (outputProp.propertyType === DG.TYPE.DATA_FRAME) ? 'Output dataframe' : 'Output scalar');
-                if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
-                  (input.root.lastElementChild as HTMLDivElement).hidden = !v;
-                  temp.colNameInput.root.hidden = !v;
-                }
               },
               false,
-            ).root;
-            input.root.insertBefore(isInterestInput, input.captionLabel);
+            );
+
+            isInterest.subscribe((val) => {
+              isInterestInput.notify = false;
+              try {
+                isInterestInput.value = val;
+              } finally {
+                isInterestInput.notify = true;
+              }
+            });
+            input.root.insertBefore(isInterestInput.root, input.captionLabel);
 
             return input;
           })(),
-          colNameInput: (() => {
-            const input = ui.input.choice<string|null>('argument', {value: null, items: [null], onValueChanged: (value) => {temp.colName = value!;}});
-            input.setTooltip('Column with argument values');
-            input.root.insertBefore(getSwitchMock(), input.captionLabel);
-            input.root.hidden = outputProp.propertyType !== DG.TYPE.DATA_FRAME || !this.toSetSwitched;
-            this.toSetSwitched = false;
+          argName: defaultArgColName ?? '_',
+          argColInput: (() => {
+            const input = ui.input.choice<string | null>('argument', {
+              value: defaultArgColName,
+              items: defaultColNames,
+              tooltipText: 'Independent variable',
+              onValueChanged: (value) => {
+                if (value !== null)
+                  temp.argName = value;
+                else
+                  temp.argName = '_';
+
+                this.updateApplicabilityState();
+              },
+            });
+
+            ui.tooltip.bind(input.captionLabel, 'Column with values of the independent variable');
+
+            const infoIcon = ui.icons.info(() => alert('Hello!'));
+            infoIcon.classList.add('sa-switch-input');
             input.nullable = false;
+            input.addValidator(validator);
+            isInterest.subscribe((val) => input.root.hidden = !val || (outputProp.propertyType !== DG.TYPE.DATA_FRAME));
 
             return input;
           })(),
-          isInterest: new BehaviorSubject<boolean>(this.toSetSwitched),
-          target: (outputProp.propertyType !== DG.TYPE.DATA_FRAME) ? 0 : null,
-          colName: '',
+          isInterest,
+          target: defaultValue,
+          funcColsInput: (() => {
+            const input = ui.input.columns('functions', {
+              table: defaultTable,
+              value: defaultFuncCols,
+              nullable: false,
+              tooltipText: 'Target dependent variables',
+              onValueChanged: (cols) => this.updateApplicabilityState(),
+            });
+            input.root.insertBefore(getSwitchMock(), input.captionLabel);
+            isInterest.subscribe((val) => input.root.hidden = !val || (outputProp.propertyType !== DG.TYPE.DATA_FRAME));
+            ui.tooltip.bind(input.captionLabel, 'Columns with values of target dependent variables:');
+            input.addValidator(validator);
+
+            return input;
+          })(),
         };
 
         acc[outputProp.name] = temp;
 
         return acc;
-      }, {} as Record<string, {
-      prop: DG.Property,
-      input: DG.InputBase,
-      isInterest: BehaviorSubject<boolean>,
-      target: OutputTarget,
-      colName: string,
-      colNameInput: DG.InputBase,
-    }>);
+      }, {} as Record<string, FittingOutputsStore>);
 
     return {inputs, outputs};
   };
 
   private readyToRun = false;
+  private isFittingRunning = false;
 
   private runIcon = ui.iconFA('play', async () => {
-    if (this.readyToRun)
+    if (this.readyToRun) {
+      this.isFittingRunning = true;
+      this.updateApplicabilityState();
+      this.updateRunIconDisabledTooltip('In progress...');
+
       await this.runOptimization();
+
+      this.isFittingRunning = false;
+      this.updateApplicabilityState();
+    }
   });
 
-  private helpIcon = ui.iconFA('question', () => {
-    window.open('https://datagrok.ai/help/compute/function-analysis#parameter-optimization', '_blank');
-  }, 'Open help in a new tab');
+  private acceptIcon = ui.iconFA('ballot-check', async () => {
+    const choiceItems = Array.from({length: this.currentFuncCalls.length}, (_, i) => i + 1);
+    let chosenItem = -1;
+    const input = ui.input.choice('Select fitting', {items: choiceItems, onValueChanged: (x) => chosenItem = x});
+    const confirmed = await new Promise((resolve, _reject) => {
+      ui.dialog({title: 'Accept fitting'})
+        .add(ui.div([input]))
+        .onOK(() => resolve(true))
+        .onCancel(() => resolve(false))
+        .show({modal: true, fullScreen: true, width: 600, height: 200, center: true});
+    });
+    if (!confirmed || chosenItem < 0)
+      return;
+
+    this.acceptIcon.remove();
+    const chosenCall = this.currentFuncCalls[chosenItem-1];
+    this.isFittingAccepted = true;
+    this.acceptedFitting$.next(chosenCall);
+    this.baseView.close();
+  });
+
+  private helpIcon = getHelpIcon();
 
   private showFailsBtn = ui.button('Issues', () => {
     switch (this.method) {
@@ -340,8 +528,6 @@ export class FittingView {
   private gridCellChangeSubscription: any = null;
 
   private failsDF: DG.DataFrame | null = null;
-
-  private toSetSwitched = true;
 
   private samplesCount = FITTING_UI.SAMPLES;
   private samplesCountInput = ui.input.forProperty(DG.Property.fromOptions({
@@ -361,7 +547,9 @@ export class FittingView {
     name: TITLE.SIMILARITY,
     inputType: 'Float',
     defaultValue: this.similarity,
-    min: 0,
+    min: FITTING_UI.SIMILARITY_MIN,
+    max: FITTING_UI.SIMILARITY_MAX,
+    units: '%',
   }));
 
   // Auxiliary dock nodes with results
@@ -383,6 +571,8 @@ export class FittingView {
     learningRate: 0.0001,
   };
 
+  private defaultsOverrides: Record<string, number> = {};
+
   private settingsInputs = new Map<METHOD, DG.InputBase[]>();
 
   store = this.generateInputFields(this.func);
@@ -395,16 +585,30 @@ export class FittingView {
 
   private fittingSettingsDiv = ui.divV([]);
 
+  private diffGrok: DiffGrok | undefined = undefined;
+
+  private currentFuncCalls: DG.FuncCall[] = [];
+  private isFittingAccepted = false;
+  public acceptedFitting$ = new Subject<DG.FuncCall | null>();
+
   static async fromEmpty(
     func: DG.Func,
     options: {
       parentView?: DG.View,
       parentCall?: DG.FuncCall,
       inputsLookup?: string,
+      ranges?: Record<string, RangeDescription>,
+      targets?: Record<string, TargetDescription>,
+      acceptMode?: boolean,
+      diffGrok?: DiffGrok,
     } = {
       parentView: undefined,
       parentCall: undefined,
       inputsLookup: undefined,
+      ranges: undefined,
+      targets: undefined,
+      acceptMode: false,
+      diffGrok: undefined,
     },
   ) {
     const cardView = [...grok.shell.views].find((view) => view.type === CARD_VIEW_TYPE);
@@ -416,26 +620,34 @@ export class FittingView {
       });
     grok.shell.addView(v);
 
-    new this(
+    return new this(
       func,
       v,
       options,
     );
   }
 
-  constructor(
+  private constructor(
     public func: DG.Func,
-    baseView: DG.TableView,
+    private baseView: RunComparisonView,
     public options: {
       parentView?: DG.View,
       parentCall?: DG.FuncCall,
       configFunc?: undefined,
       inputsLookup?: string,
+      ranges?: Record<string, RangeDescription>,
+      targets?: Record<string, TargetDescription>,
+      acceptMode?: boolean,
+      diffGrok?: DiffGrok,
     } = {
       parentView: undefined,
       parentCall: undefined,
       configFunc: undefined,
       inputsLookup: undefined,
+      ranges: undefined,
+      targets: undefined,
+      acceptMode: false,
+      diffGrok: undefined,
     },
   ) {
     if (!this.isOptimizationApplicable(func)) {
@@ -443,6 +655,16 @@ export class FittingView {
       baseView.close();
       return;
     }
+
+    nelderMeadSettingsVals.forEach((vals, key) => this.nelderMeadSettings.set(key, vals.default));
+    this.parseDefaultsOverrides();
+
+    grok.events.onViewRemoved.pipe(filter((v) => v.id === baseView.id), take(1)).subscribe(() => {
+      if (options.acceptMode && !this.isFittingAccepted) {
+        this.acceptedFitting$.next(null);
+        this.isFittingAccepted = true;
+      }
+    });
 
     this.buildForm(options.inputsLookup).then((form) => {
       this.comparisonView = baseView;
@@ -457,10 +679,7 @@ export class FittingView {
 
       this.comparisonView.grid.columns.byName(RUN_NAME_COL_LABEL)!.visible = false;
 
-      nelderMeadSettingsVals.forEach((vals, key) => this.nelderMeadSettings.set(key, vals.default));
-
-      const rbnPanels = this.comparisonView.getRibbonPanels();
-      rbnPanels.push([this.helpIcon, this.runIcon]);
+      const rbnPanels = [[this.helpIcon, this.runIcon, ...(this.options.acceptMode ? [this.acceptIcon] : [])]];
       this.comparisonView.setRibbonPanels(rbnPanels);
       this.fittingSettingsDiv.hidden = true;
 
@@ -495,13 +714,22 @@ export class FittingView {
       });
       this.similarityInput.addCaption(TITLE.SIMILARITY);
       this.similarityInput.setTooltip('The higher the value, the fewer points will be found');
-      ui.tooltip.bind(this.similarityInput.captionLabel, `Max scaled deviation between similar fitted points`);
+      ui.tooltip.bind(this.similarityInput.captionLabel, `Maximum relative deviation (%) between similar fitted points`);
 
       this.updateRunIconStyle();
       this.updateRunIconDisabledTooltip('Select inputs for fitting');
       this.runIcon.classList.add('fas');
+
+      this.updateApplicabilityState();
+      //this.processOptionTargets();
     });
+
+    this.diffGrok = options.diffGrok;
   } // constructor
+
+  private parseDefaultsOverrides() {
+    this.defaultsOverrides = JSON.parse(this.func.options['fittingSettings'] || '{}');
+  }
 
   /** Check fiiting applicability to the function */
   private isOptimizationApplicable(func: DG.Func): boolean {
@@ -517,17 +745,24 @@ export class FittingView {
   private generateNelderMeadSettingsInputs(): void {
     const inputs: DG.InputBase[] = [];
 
+    let needsInitalUpdate = false;
+
     nelderMeadSettingsVals.forEach((vals, key) => {
       const inp = ui.input.forProperty(DG.Property.fromOptions({
         name: nelderMeadCaptions.get(key),
         inputType: (key !== 'maxIter') ? 'Float' : 'Int',
-        defaultValue: vals.default,
+        defaultValue: this.defaultsOverrides[key] ?? vals.default,
         min: vals.min,
         max: vals.max,
       }));
 
       inp.addCaption(nelderMeadCaptions.get(key)!);
       inp.nullable = false;
+
+      if (this.defaultsOverrides[key] != null) {
+        this.nelderMeadSettings.set(key, this.defaultsOverrides[key]);
+        needsInitalUpdate = true;
+      }
 
       inp.onChanged.subscribe((value) => {
         this.nelderMeadSettings.set(key, value);
@@ -538,6 +773,8 @@ export class FittingView {
     });
 
     this.settingsInputs.set(METHOD.NELDER_MEAD, inputs);
+    if (needsInitalUpdate)
+      this.updateApplicabilityState();
   } // generateNelderMeadSettingsInputs
 
   /** Check correctness of the Nelder-Mead settings */
@@ -557,7 +794,7 @@ export class FittingView {
     const iterInp = ui.input.forProperty(DG.Property.fromOptions({
       name: 'iterations',
       inputType: 'Int',
-      defaultValue: this.gradDescentSettings.iterCount,
+      defaultValue: this.defaultsOverrides.iterCount ?? this.gradDescentSettings.iterCount,
       min: 1,
       max: 10000,
     }));
@@ -566,7 +803,7 @@ export class FittingView {
     const learningRateInp = ui.input.forProperty(DG.Property.fromOptions({
       name: 'Learning rate',
       inputType: 'Float',
-      defaultValue: this.gradDescentSettings.learningRate,
+      defaultValue: this.defaultsOverrides.learningRate ?? this.gradDescentSettings.learningRate,
       min: 1e-6,
       max: 1000,
     }));
@@ -605,6 +842,7 @@ export class FittingView {
     this.settingsInputs.forEach((inputsArray, method) => inputsArray.forEach((input) => input.root.hidden = method !== this.method));
   }
 
+  /** Return value lookup widget */
   private async getLookupElement(inputsLookup?: string) {
     if (inputsLookup === undefined)
       return null;
@@ -620,28 +858,106 @@ export class FittingView {
     return lookupElement;
   }
 
+  private addFormInputs(
+    form: HTMLElement,
+    inputsByCategories: Map<string, HTMLElement[]>,
+    topCategory: string | null,
+    expandHandler: (r: HTMLElement, isExpanded: boolean, category: string) => void,
+  ) {
+    const newCategoriesElements = new Map<string, HTMLElement>();
+    if (inputsByCategories.size > 1) {
+      if (topCategory !== null) {
+        const roots = inputsByCategories.get(topCategory);
+        const catEl = getCategoryWidget(topCategory, roots!, expandHandler);
+        newCategoriesElements.set(topCategory, catEl);
+        form.append(catEl);
+        form.append(...roots!);
+      }
+
+      inputsByCategories.forEach((roots, category) => {
+        if ((category !== miscName) && (category !== topCategory)) {
+          const catEl = getCategoryWidget(category, roots, expandHandler);
+          newCategoriesElements.set(category, catEl);
+          form.append(catEl);
+          form.append(...roots);
+        }
+      });
+
+      if (topCategory !== miscName) {
+        const miscRoots = inputsByCategories.get(miscName);
+
+        if (miscRoots!.length > 0) {
+          const roots = inputsByCategories.get(miscName)!;
+          const catEl = getCategoryWidget(miscName, roots, expandHandler);
+          newCategoriesElements.set(miscName, catEl);
+          form.append(catEl);
+          form.append(...roots);
+        }
+      }
+    } else
+      form.append(...inputsByCategories.get(miscName)!);
+    return newCategoriesElements;
+  }
+
   /** Build form with inputs */
   private async buildForm(inputsLookup?: string) {
-    //1. Inputs of the function
+    // the main form
     const fitHeader = ui.h1(TITLE.FIT);
     ui.tooltip.bind(fitHeader, 'Select inputs to be fitted');
+    const form = ui.div([fitHeader], {style: {overflowY: 'scroll', width: '100%'}});
 
-    // inputs grouped by categories
-    const inputsByCategories = new Map<string, HTMLElement[]>([['Misc', []]]);
+    //0. Handling primary/secondary inputs outputs, but only if at
+    //least one is set as primray
+    const primaryInputRoots = new Set<HTMLElement>();
+
+    // inputs/outputs grouped by categories
+    const inputsByCategories = new Map<string, HTMLElement[]>([[miscName, []]]);
+    const outputsByCategories = new Map<string, HTMLElement[]>([[miscName, []]]);
+    const collapsedInputCategories = new Set<string>();
+    const collapsedOutputCategories = new Set<string>();
+
+    const primaryToggle = ui.input.toggle('Show only primary', {
+      value: false, onValueChanged: (showPrimaryOnly) => {
+        if (primaryInputRoots.size === 0)
+          return;
+        const iterPayload = [
+          [inputsByCategories, inputCategoriesByName, collapsedInputCategories],
+          [outputsByCategories, outputCategoriesByName, collapsedOutputCategories],
+        ] as const;
+        for (const [rootsMap, catMap, collapsedCats] of iterPayload) {
+          for (const [catName, roots] of rootsMap.entries()) {
+            const hideCat = showPrimaryOnly && !roots.some((root) => primaryInputRoots.has(root));
+            const catEl = catMap.get(catName);
+            if (catEl)
+              catEl.hidden = hideCat;
+            for (const root of roots)
+              root.hidden = collapsedCats.has(catName) || (showPrimaryOnly && !primaryInputRoots.has(root));
+          }
+        }
+      },
+    });
+
+    primaryToggle.root.hidden = true;
+    const paddingDiv = ui.div('', {classes: 'sa-switch-input ui-div'});
+    primaryToggle.root.prepend(paddingDiv);
+    form.append(primaryToggle.root);
+
+    //1. Inputs of the function
 
     // group inputs by categories
     Object.values(this.store.inputs).forEach((inputConfig) => {
       const category = inputConfig.prop.category;
+      const propName = inputConfig.prop.name;
       const roots = [...inputConfig.constForm.map((input) => input.root), ...inputConfig.saForm.map((input) => input.root)];
+      const isPrimary = this.options.ranges?.[propName]?.isPrimary;
+      if (isPrimary)
+        roots.forEach((item) => primaryInputRoots.add(item));
 
       if (inputsByCategories.has(category))
         inputsByCategories.get(category)!.push(...roots);
       else
         inputsByCategories.set(category, roots);
     });
-
-    // the main form
-    const form = ui.div([fitHeader], {style: {overflowY: 'scroll', width: '100%'}});
 
     const lookupElement = await this.getLookupElement(inputsLookup);
     let topCategory: string | null = null;
@@ -657,58 +973,64 @@ export class FittingView {
     }
 
     // add inputs to the main form (grouped by categories)
-    if (inputsByCategories.size > 1) {
-      if (topCategory !== null) {
-        form.append(ui.h3(topCategory));
-        form.append(...inputsByCategories.get(topCategory)!);
-      }
+    const inputCategoriesByName = this.addFormInputs(form, inputsByCategories, topCategory, (el, isExpanded, catName) => {
+      isExpanded ? collapsedInputCategories.delete(catName) : collapsedInputCategories.add(catName);
+      el.hidden = !isExpanded || (primaryToggle.value && !primaryInputRoots.has(el));
+    });
 
-      inputsByCategories.forEach((roots, category) => {
-        if ((category !== 'Misc') && (category !== topCategory)) {
-          form.append(ui.h3(category));
-          form.append(...roots);
-        }
-      });
-
-      if (topCategory !== 'Misc') {
-        const miscRoots = inputsByCategories.get('Misc');
-
-        if (miscRoots!.length > 0) {
-          form.append(ui.h3('Misc'));
-          form.append(...inputsByCategories.get('Misc')!);
-        }
-      }
-    } else
-      form.append(...inputsByCategories.get('Misc')!);
+    // Check if isChanging is enabled
+    for (const name of Object.keys(this.store.inputs)) {
+      if (this.options.ranges?.[name]?.enabled)
+        this.store.inputs[name].isChanging.next(true);
+    }
 
     // 2. Outputs of the function
     const toGetHeader = ui.h1(TITLE.TARGET);
     ui.tooltip.bind(toGetHeader, 'Select target outputs');
     form.appendChild(toGetHeader);
-    let prevCategory = 'Misc';
 
-    Object.values(this.store.outputs)
-      .reduce((container, outputConfig) => {
-        const prop = outputConfig.prop;
-        if (prop.category !== prevCategory) {
-          container.append(ui.h3(prop.category));
-          prevCategory = prop.category;
-        }
+    // group outputs by categories
+    Object.values(this.store.outputs).forEach((outputConfig) => {
+      const category = outputConfig.prop.category;
+      const roots = [outputConfig.input.root];
+      if (outputConfig.prop.type === DG.TYPE.DATA_FRAME) {
+        outputConfig.argColInput.root.insertBefore(getShowInfoWidget(
+          outputConfig.input.root,
+          outputConfig.prop.caption ?? outputConfig.prop.name,
+        ), outputConfig.argColInput.captionLabel);
+        roots.push(outputConfig.argColInput.root, outputConfig.funcColsInput.root);
+      }
+      const propName = outputConfig.prop.name;
+      const isPrimary = this.options.targets?.[propName]?.isPrimary;
+      if (isPrimary)
+        roots.forEach((item) => primaryInputRoots.add(item));
 
-        container.append(outputConfig.input.root);
-        container.append(outputConfig.colNameInput.root);
+      if (outputsByCategories.has(category))
+        outputsByCategories.get(category)!.push(...roots);
+      else
+        outputsByCategories.set(category, roots);
+    });
 
-        return container;
-      }, form);
+    // add outputs to the main form (grouped by categories)
+    const outputCategoriesByName = this.addFormInputs(form, outputsByCategories, null, (el, isExpanded, catName) => {
+      isExpanded ? collapsedOutputCategories.delete(catName) : collapsedOutputCategories.add(catName);
+      el.hidden = !isExpanded || (primaryToggle.value && !primaryInputRoots.has(el));
+    });
+
+    if (primaryInputRoots.size > 0) {
+      primaryToggle.root.hidden = false;
+      primaryToggle.value = true;
+    }
 
     // 3. Make one output of interest
     let isAnyOutputSelectedAsOfInterest = false;
 
     for (const name of Object.keys(this.store.outputs)) {
-      if (this.store.outputs[name].isInterest.value === true) {
+      if (this.options.targets?.[name]?.enabled)
+        this.store.outputs[name].isInterest.next(true);
+
+      if (this.store.outputs[name].isInterest.value === true)
         isAnyOutputSelectedAsOfInterest = true;
-        break;
-      }
     }
 
     if (!isAnyOutputSelectedAsOfInterest) {
@@ -750,6 +1072,9 @@ export class FittingView {
       'padding-left': '12px',
       'overflow-y': 'scroll',
       'padding-right': '4px',
+      'position': 'relative',
+      'z-index': '2',
+      'background-color': 'white',
     });
     return form;
   } // buildForm
@@ -765,7 +1090,7 @@ export class FittingView {
 
   /** Check applicability of fitting */
   private updateApplicabilityState(): void {
-    this.readyToRun = this.canFittingBeRun();
+    this.readyToRun = this.canFittingBeRun() && (!this.isFittingRunning);
     this.updateRunIconStyle();
   } // updateApplicabilityState
 
@@ -811,7 +1136,7 @@ export class FittingView {
 
         areSelectedFilled = areSelectedFilled && cur;
       } else {
-        const val = input.const.input.value;
+        const val = input.const.input.value ?? input.const.input.stringValue;
         cur = (val !== null) && (val !== undefined);
 
         if (!cur)
@@ -841,8 +1166,19 @@ export class FittingView {
         const val = output.input.value;
         cur = (val !== null) && (val !== undefined);
 
-        if (output.prop.propertyType === DG.TYPE.DATA_FRAME)
-          cur = cur && (output.colNameInput.value !== null) && (output.colName !== '');
+        if (output.prop.propertyType === DG.TYPE.DATA_FRAME) {
+          const validation = getValidation(output);
+
+          if (!validation.isValid) {
+            this.updateRunIconDisabledTooltip(validation.msg);
+            return false;
+          }
+
+          cur &&= (output.funcColsInput.value !== null);
+
+          if (cur)
+            cur &&= (output.argColInput.value !== null) && (output.argName !== '') && (output.funcColsInput.value.length > 0);
+        }
 
         if (!cur)
           this.updateRunIconDisabledTooltip(`Incomplete the "${output.input.caption}" target`);
@@ -868,7 +1204,7 @@ export class FittingView {
 
   /** Check similarity */
   private isSimilarityValid(): boolean {
-    if (this.similarity >= FITTING_UI.SIMILARITY_MIN)
+    if ((this.similarity >= FITTING_UI.SIMILARITY_MIN) && (this.similarity <= FITTING_UI.SIMILARITY_MAX))
       return true;
 
     this.updateRunIconDisabledTooltip(`Invalid "${TITLE.SIMILARITY}"`);
@@ -902,7 +1238,7 @@ export class FittingView {
       if (this.samplesCount < 1)
         return;
 
-      if (this.similarity < FITTING_UI.SIMILARITY_MIN)
+      if ((this.similarity < FITTING_UI.SIMILARITY_MIN) || (this.similarity > FITTING_UI.SIMILARITY_MAX))
         return;
 
       this.failsDF = null;
@@ -966,7 +1302,8 @@ export class FittingView {
             sumOfSquaredErrors += ((cur - calledFuncCall.getParamValue(output.prop.name)) / (cur !== 0 ? cur : 1)) ** 2;
             ++outputsCount;
           } else {
-            getErrors(output.colName, output.target as DG.DataFrame, calledFuncCall.getParamValue(output.prop.name), true)
+            const df = output.target as DG.DataFrame;
+            getErrors(df.col(output.argName), output.funcColsInput.value, calledFuncCall.getParamValue(output.prop.name), true)
               .forEach((err) => {
                 sumOfSquaredErrors += err ** 2;
                 ++outputsCount;
@@ -989,7 +1326,8 @@ export class FittingView {
           if (output.prop.propertyType !== DG.TYPE.DATA_FRAME)
             mad = Math.max(mad, Math.abs(output.target as number - calledFuncCall.getParamValue(output.prop.name)));
           else {
-            getErrors(output.colName, output.target as DG.DataFrame, calledFuncCall.getParamValue(output.prop.name), false)
+            const df = output.target as DG.DataFrame;
+            getErrors(df.col(output.argName), output.funcColsInput.value, calledFuncCall.getParamValue(output.prop.name), false)
               .forEach((err) => mad = Math.max(mad, Math.abs(err)));
           }
         });
@@ -1002,22 +1340,45 @@ export class FittingView {
 
       if (this.loss === LOSS.MAD) {
         costFunc = madCostFunc;
-        costTooltip = 'maximum absolute devation';
+        costTooltip = 'scaled maximum absolute deviation';
       } else {
         costFunc = rmseCostFunc;
-        costTooltip = 'root mean square error';
+        costTooltip = 'scaled root mean square error';
       }
 
       let optResult: OptimizationResult;
 
       // Perform optimization
-      if (this.method === METHOD.NELDER_MEAD)
-        optResult = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings, this.samplesCount);
-      else
+      if (this.method === METHOD.NELDER_MEAD) {
+        if (this.diffGrok !== undefined) {
+          try {
+            const index = INDICES.DIFF_STUDIO_OUTPUT;
+
+            optResult = await getFittedParams(
+              this.loss,
+              this.diffGrok.ivp,
+              this.diffGrok.ivpWW,
+              this.diffGrok.pipelineCreator,
+              this.nelderMeadSettings,
+              variedInputNames,
+              minVals,
+              maxVals,
+              inputs,
+              outputsOfInterest[index].argName,
+              outputsOfInterest[index].funcColsInput.value,
+              outputsOfInterest[index].target as DG.DataFrame,
+              this.samplesCount,
+            );
+          } catch (err) { // run fitting in the main thread if in-webworker run failed
+            optResult = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings, this.samplesCount);
+          }
+        } else
+          optResult = await performNelderMeadOptimization(costFunc, minVals, maxVals, this.nelderMeadSettings, this.samplesCount);
+      } else
         throw new Error(`Not implemented the '${this.method}' method`);
 
-      const allExtremums = optResult.extremums;
-      const allExtrCount = allExtremums.length;
+      const extrema = optResult.extremums;
+      const allExtrCount = extrema.length;
 
       // Process fails
       if (allExtrCount < this.samplesCount) {
@@ -1040,19 +1401,19 @@ export class FittingView {
         });
       }
 
-      const extremums: Extremum[] = [];
-      const dist = this.similarity;
+      // Sort all extrema with respect to the loss function
+      extrema.sort((a: Extremum, b: Extremum) => a.cost - b.cost);
 
-      allExtremums.forEach((extr) => {
-        let toPush = true;
+      // Extract target dataframes
+      const targetDfs: TargetTableOutput[] = outputsOfInterest
+        .filter((output) => output.prop.propertyType === DG.TYPE.DATA_FRAME)
+        .map((output) => {
+          return {name: output.prop.name, target: output.target as DG.DataFrame, argColName: output.argName};
+        });
 
-        extremums.forEach((cur) => toPush &&= (distance(cur.point, extr.point, minVals, maxVals) > dist));
-
-        if (toPush)
-          extremums.push(extr);
-      });
-
-      const rowCount = extremums.length;
+      // Get non-similar points
+      const nonSimilarExtrema = await getNonSimilar(extrema, this.similarity, getCalledFuncCall, targetDfs);
+      const rowCount = nonSimilarExtrema.length;
 
       // Show info/warning reporting results
       if (allExtrCount < this.samplesCount) {
@@ -1073,43 +1434,12 @@ export class FittingView {
         grok.shell.info(`Found ${rowCount} point${rowCount > 1 ? 's' : ''}`);
 
       this.clearPrev();
-      extremums.sort((a: Extremum, b: Extremum) => a.cost - b.cost);
 
       const lossVals = new Float32Array(rowCount);
       const grid = this.comparisonView.grid;
-      const gofViewers = new Array<Map<string, HTMLElement>>(rowCount);
-      const calledFuncCalls = new Array<DG.FuncCall>(rowCount);
-      const lossFuncGraphRoots = new Array<HTMLElement>(rowCount);
       const tooltips = new Map([[TITLE.LOSS as string, `The final loss obtained: ${costTooltip}`]]);
-      let toAddGofCols = true;
-      const outputColNames: string[] = [];
 
-      extremums.forEach(async (extr, idx) => {
-        lossVals[idx] = extr.cost;
-        const lossRoot = this.getLossGraph(extr);
-        lossFuncGraphRoots[idx] = lossRoot;
-
-        const gofElems = new Map<string, HTMLElement>();
-        const calledFuncCall = await getCalledFuncCall(extr.point);
-        calledFuncCalls[idx] = calledFuncCall;
-        outputsOfInterest.forEach((output) => {
-          const gofs = this.getOutputGof(output.prop, output.target, calledFuncCall, output.colName, toShowTableName);
-          gofs.forEach((item) => gofElems.set(item.caption, item.root));
-        });
-        gofViewers[idx] = gofElems;
-
-        if (toAddGofCols) {
-          gofElems.forEach((_, name) => {
-            tooltips.set(name, 'Goodness of fit');
-            this.comparisonView.table?.columns.addNew(name, DG.COLUMN_TYPE.STRING);
-            const gridCol = this.comparisonView.grid.columns.byName(name);
-            gridCol!.cellType = 'html';
-            gridCol!.width = GRID_SIZE.GOF_VIEWER_WIDTH;
-            outputColNames.push(name);
-          });
-          toAddGofCols = false;
-        }
-      });
+      nonSimilarExtrema.forEach((extr, idx) => lossVals[idx] = extr.cost);
 
       // Add fitting results to the table: iteration & loss
       const reportTable = DG.DataFrame.fromColumns([DG.Column.fromFloat32Array(TITLE.LOSS, lossVals)]);
@@ -1123,7 +1453,7 @@ export class FittingView {
         const raw = new Float32Array(rowCount);
 
         for (let j = 0; j < rowCount; ++j)
-          raw[j] = extremums[j].point[idx];
+          raw[j] = nonSimilarExtrema[j].point[idx];
 
         reportColumns.add(DG.Column.fromFloat32Array(cap, raw));
         tooltips.set(cap, `Obtained values of '${cap}'`);
@@ -1134,13 +1464,56 @@ export class FittingView {
       grid.props.showAddNewRowIcon = false;
       grid.props.allowEdit = false;
 
-      // Add linecharts of loss function
+      // Add goodness of fit viewers
+      const gofTables = new Array<Map<string, GoFtable>>(rowCount);
+
+      this.currentFuncCalls = [];
+      for (let idx = 0; idx < rowCount; ++idx) {
+        const gofDfs = new Map<string, GoFtable>();
+        const scalarGoFs: GoFtable[] = [];
+
+        const calledFuncCall = await getCalledFuncCall(nonSimilarExtrema[idx].point);
+        this.currentFuncCalls.push(calledFuncCall);
+
+        outputsOfInterest.forEach((output) => {
+          const gofs = this.getOutputGofTable(output.prop, output.target, calledFuncCall, output.argName, toShowTableName);
+          gofs.forEach((item) => {
+            if (item.chart !== DG.VIEWER.BAR_CHART)
+              gofDfs.set(item.caption, item);
+            else
+              scalarGoFs.push(item);
+          });
+        });
+
+        if (scalarGoFs.length > 0) {
+          const gof = this.getScalarsGofTable(scalarGoFs);
+          const name = gof.table.columns.length > 2 ? NAME.SCALARS : gof.table.columns.byIndex(0).name;
+          gofDfs.set(name, gof);
+        }
+
+        gofTables[idx] = gofDfs;
+      }
+
+      // Add goodness of fit columns
+      gofTables[0].forEach((_, name) => {
+        reportColumns.addNew(name, DG.COLUMN_TYPE.DATA_FRAME).init((row: number) => gofTables[row].get(name)!.table);
+        tooltips.set(name, 'Goodness of fit');
+        const lossFuncGraphGridCol = grid.columns.byName(name);
+        lossFuncGraphGridCol!.cellType = 'html';
+        lossFuncGraphGridCol!.width = GRID_SIZE.LOSS_GRAPH_WIDTH;
+      });
+
+      // Add dataframe with loss function values
       const lossGraphColName = reportColumns.getUnusedName(`${this.loss} by iterations`);
       tooltips.set(lossGraphColName, `Minimizing ${costTooltip}`);
-      reportColumns.addNew(lossGraphColName, DG.COLUMN_TYPE.STRING);
+      reportColumns.addNew(lossGraphColName, DG.COLUMN_TYPE.DATA_FRAME).init((row: number) => getLossFuncDf(nonSimilarExtrema[row]));
       const lossFuncGraphGridCol = grid.columns.byName(lossGraphColName);
       lossFuncGraphGridCol!.cellType = 'html';
       lossFuncGraphGridCol!.width = GRID_SIZE.LOSS_GRAPH_WIDTH;
+
+      // Check whether to use the radar viewer
+      let toAddRadars = false;
+      gofTables[0].forEach((gof) => toAddRadars ||= toUseRadar(gof.table));
 
       // Add viewers to the grid
       let toReorderCols = true;
@@ -1154,12 +1527,33 @@ export class FittingView {
         if (gc.isColHeader || gc.isRowHeader) return;
 
         if (gc.isTableCell && gc.gridColumn.name === lossGraphColName && gc.cell.value !== null)
-          gc.style.element = lossFuncGraphRoots[gc.gridRow];
+          gc.style.element = gc.cell.value.plot.line(LOSS_FUNC_CHART_OPTS).root;
 
-        outputColNames.forEach((name) => {
-          if (gc.isTableCell && gc.gridColumn.name === name && gc.cell.value !== null && gofViewers[gc.gridRow] !== undefined)
-            gc.style.element = gofViewers[gc.gridRow].get(name) ?? ui.label('');
-        });
+        const row = gc.gridRow;
+
+        if (gc.isTableCell && (row < rowCount)) {
+          const gof = gofTables[row].get(gc.gridColumn.name);
+
+          if (gof !== undefined) {
+            if (gof.chart === DG.VIEWER.SCATTER_PLOT)
+              gc.style.element = gc.cell.value.plot.scatter(gof.opts).root;
+            else {
+              if (toAddRadars) {
+                const container = ui.divV([], {style: {height: `${GRID_SIZE.ROW_HEIGHT}px`}});
+                ui.tooltip.bind(container, () => getRadarTooltip());
+                gc.style.element = container;
+                setTimeout(async () => {
+                  const rViewer = new ScalarsFitRadar(gc.cell.value as DG.DataFrame);
+                  const root = await rViewer.getRoot();
+                  root.style.marginTop = '0px';
+                  root.style.marginLeft = '0px';
+                  container.append(root);
+                }, TIMEOUT.RADAR);
+              } else
+                gc.style.element = getScalarsGoodnessOfFitViewer(gc.cell.value as DG.DataFrame);
+            }
+          }
+        }
       });
 
       // Set loss-column format & sort by loss-vals
@@ -1172,8 +1566,14 @@ export class FittingView {
           const cellCol = cell.tableColumn;
           if (cellCol) {
             const name = cell.tableColumn.name;
-            const msg = tooltips.get(name);
-            ui.tooltip.show(msg ?? '', x, y);
+
+            if ((name === NAME.SCALARS) && toAddRadars)
+              ui.tooltip.show(getRadarTooltip(), x, y);
+            else {
+              const msg = tooltips.get(name);
+              ui.tooltip.show(msg ?? '', x, y);
+            }
+
             return true;
           }
         }
@@ -1188,7 +1588,8 @@ export class FittingView {
           return;
 
         const row = cell.tableRowIndex ?? 0;
-        const selectedRun = calledFuncCalls[row];
+        //const selectedRun = calledFuncCalls[row];
+        const selectedRun = await getCalledFuncCall(nonSimilarExtrema[row].point);
 
         const scalarParams = ([...selectedRun.outputParams.values()])
           .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
@@ -1268,30 +1669,27 @@ export class FittingView {
     return outputsOfInterest;
   } // getOutputsOfInterest
 
-  /** Return loss function line chart root  */
-  private getLossGraph(extr: Extremum): HTMLElement {
-    return DG.Viewer.lineChart(
-      DG.DataFrame.fromColumns([
-        DG.Column.fromList(DG.COLUMN_TYPE.INT, TITLE.ITER, [...Array(extr.iterCount).keys()].map((i) => i + 1)),
-        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, TITLE.LOSS, extr.iterCosts.slice(0, extr.iterCount))]),
-      {
-        showYAxis: true,
-        showXAxis: true,
-        showXSelector: true,
-        showYSelectors: true,
-        lineColoringType: 'custom',
-        lineColor: 15274000,
-        markerColor: 15274000,
-      }).root;
-  } // getLossGraph
+  /** Return a table with scalar output results */
+  private getScalarsGofTable(gofs: GoFtable[]): GoFtable {
+    const cols: DG.Column[] = [];
+    gofs.forEach((gof) => cols.push(gof.table.columns.byIndex(INDICES.SCALAR_VALS_COL)));
+    cols.push(DG.Column.fromStrings(NAME.CATEGORY, [NAME.SIMULATION, NAME.TARGET]));
 
-  /** Return output goodness of fit (GOF) viewer root */
-  private getOutputGof(prop: DG.Property, target: OutputTarget, call: DG.FuncCall, argColName: string, toShowDfCaption: boolean): GoFViewer[] {
+    return {
+      caption: NAME.SCALARS,
+      table: DG.DataFrame.fromColumns(cols),
+      chart: cols.length > 2 ? DG.VIEWER.RADAR_VIEWER : DG.VIEWER.BAR_CHART,
+      opts: {},
+    };
+  } // getScalarsGofTable
+
+  /** Return output goodness of fit (GOF) table */
+  private getOutputGofTable(prop: DG.Property, target: OutputTarget, call: DG.FuncCall, argColName: string, toShowDfCaption: boolean): GoFtable[] {
     const type = prop.propertyType;
     const name = prop.name;
     const caption = prop.caption ?? name;
 
-    // Provide an approprate viewer for each output
+    // Provide an appropriate viewer for each output
     switch (type) {
     // bar chart for each scalar
     case DG.TYPE.FLOAT:
@@ -1299,99 +1697,90 @@ export class FittingView {
     case DG.TYPE.BIG_INT:
       return [{
         caption: caption,
-        root: DG.Viewer.barChart(
-          DG.DataFrame.fromColumns([
-            DG.Column.fromStrings(caption, ['obtained', 'target']),
-            DG.Column.fromList(type as unknown as DG.COLUMN_TYPE, TITLE.VALUE, [call.getParamValue(name), target]),
-          ]),
-          {
-            valueColumnName: TITLE.VALUE,
-            splitColumnName: caption,
-            valueAggrType: DG.AGG.AVG,
-            showValueSelector: false,
-            showCategorySelector: false,
-            showStackSelector: false,
-            showEmptyBars: true,
-          },
-        ).root,
+        chart: DG.VIEWER.BAR_CHART,
+        table: DG.DataFrame.fromColumns([
+          DG.Column.fromStrings(NAME.SCALARS, [NAME.SIMULATION, NAME.TARGET]),
+          DG.Column.fromList(type as unknown as DG.COLUMN_TYPE, caption, [call.getParamValue(name), target]),
+        ]),
+        opts: {},
       }];
 
     // a set of linecharts comparing columns of output dataframe to their targets
     case DG.TYPE.DATA_FRAME:
-      const result: GoFViewer[] = [];
+      const result: GoFtable[] = [];
       const simDf = call.getParamValue(name) as DG.DataFrame;
       const expDf = target as DG.DataFrame;
       const simArgCol = simDf.col(argColName);
       const expArgCol = expDf.col(argColName);
 
-      const configs = getPropViewers(prop).config;
-
       if ((simArgCol === null) || (expArgCol === null))
         throw new Error('Creating viewer fails: incorrect argument column name');
 
-      const simArgRaw = simArgCol.getRawData();
-      const indeces = getIndeces(expArgCol, simArgCol);
-      const rowCount = indeces.length;
-      const argVals = Array<number>(rowCount);
-      indeces.forEach((val, idx) => argVals[idx] = simArgRaw[val]);
+      // Create a table with results: experiment vs. simulation
+      const expCols = expDf.columns;
+      const expVsSimDf = simDf.clone(null, expCols.names());
 
-      // Line chart segments features
-      let segmentCol: DG.Column<DG.COLUMN_TYPE.STRING> | null = null;
+      // Add columns from a table with experiment
+      expVsSimDf.append(DG.DataFrame.fromColumns(expCols.toList().map((col) => {
+        // To avoid columns of different type
+        const simCol = expVsSimDf.col(col.name);
 
-      configs.filter((conf) => conf['type'] as string === DG.VIEWER.LINE_CHART)
-        .forEach((conf) => {
-          const segmentColName = conf['segmentColumnName'];
+        if (simCol === null)
+          throw new Error(`Inconsistent dataframes: no column "${col.name}" in output of of the function`);
 
-          if (segmentColName) {
-            const segmData = Array<string>(rowCount);
-            indeces.forEach((val, idx) => segmData[idx] = simDf.col(segmentColName as string)!.get(val));
-            segmentCol = DG.Column.fromStrings(segmentColName as string, segmData);
-          }
+        return col.convertTo(simCol.type);
+      })), true);
+
+      // Add category column (for splitting data)
+      const funcColNames = expVsSimDf.columns.names().filter((name) => name !== argColName);
+
+      // Add style cols
+      const categories = new Array<string>(simDf.rowCount).fill(NAME.SIMULATION).concat(new Array<string>(expDf.rowCount).fill(NAME.TARGET));
+      const rowsCount = categories.length;
+
+      funcColNames.forEach((name) => {
+        expVsSimDf.columns.add(DG.Column.fromStrings(`${NAME.CATEGORY}_${name}`, categories));
+      });
+
+      const sizes = new Int32Array(rowsCount).fill(SIZE.SIMULATION, 0, simDf.rowCount).fill(SIZE.TARGET, simDf.rowCount);
+      expVsSimDf.columns.add(DG.Column.fromInt32Array(NAME.SIZE, sizes));
+
+      // Coloring scheme
+      const simFuncColNames = simDf.columns.names().filter((name) => name !== argColName);
+
+      // Create linecharts
+      funcColNames.forEach((name) => {
+        const catColName = `${NAME.CATEGORY}_${name}`;
+        const catCol = expVsSimDf.col(catColName);
+        const colorIdx = simFuncColNames.indexOf(name) % colorsCount;
+        const color = colors[colorIdx];
+        const rgb = DG.Color.toRgb(color);
+
+        catCol!.colors.setCategorical({
+          'Simulation': color,
+          'Target': simFuncColNames.length > 1 ? lightenRGB(rgb, SIZE.LIGHTER_PERC) : colors[colorIdx + 1],
         });
 
-      let rawBuf: Uint32Array | Float32Array | Int32Array | Float64Array;
-      let col: DG.Column | null;
-
-      // add viewers for each non-argument column of the target dataframe
-      expDf.columns.names().forEach((name) => {
-        if (name !== argColName) {
-          col = simDf.col(name);
-
-          if (col === null)
-            throw new Error(`Creating viewer fails: no '${name}' column in the output dataframe`);
-
-          rawBuf = col.getRawData();
-          const simVals = Array<number>(rowCount);
-          indeces.forEach((val, idx) => simVals[idx] = rawBuf[val]);
-
-          col = expDf.col(name);
-
-          if (col === null)
-            throw new Error(`Creating viewer fails: no '${name}' column in the target dataframe`);
-
-          rawBuf = col.getRawData();
-          const expVals = Array<number>(rowCount);
-          indeces.forEach((_, idx) => expVals[idx] = rawBuf[idx]);
-          const options: Partial<DG.ILineChartSettings> = {
-            multiAxis: true,
-            yGlobalScale: true,
-          };
-          const df = DG.DataFrame.fromColumns([
-            expArgCol,
-            DG.Column.fromList(col.type, TITLE.OBTAINED, simVals),
-            DG.Column.fromList(col.type, TITLE.TARGET, expVals),
-          ]);
-
-          if (segmentCol) {
-            df.columns.add(segmentCol);
-            options.segmentColumnName = segmentCol.name;
-          }
-
-          result.push({
-            caption: toShowDfCaption ? `${caption}: [${name}]` : `[${name}]`,
-            root: DG.Viewer.lineChart(df, options).root,
-          });
-        }
+        result.push({
+          caption: toShowDfCaption ? `${caption}: [${name}]` : `[${name}]`,
+          table: expVsSimDf,
+          chart: DG.VIEWER.SCATTER_PLOT,
+          opts: {
+            xColumnName: argColName,
+            yColumnName: name,
+            showColorSelector: false,
+            showSizeSelector: false,
+            legendVisibility: 'Always',
+            legendPosition: 'Top',
+            linesWidth: SIZE.LINE_CHART_LINE_WIDTH,
+            linesOrderColumnName: argColName,
+            markerType: DG.MARKER_TYPE.CIRCLE,
+            markerMinSize: SIZE.MIN_MARKER,
+            markerMaxSize: SIZE.MAX_MARKER,
+            colorColumnName: catColName,
+            sizeColumnName: NAME.SIZE,
+          } as DG.IScatterPlotSettings,
+        });
       });
 
       return result;
@@ -1399,7 +1788,7 @@ export class FittingView {
     default:
       throw new Error('Unsupported output type');
     }
-  } // getOutputGof
+  } // getOutputGofTable
 
   /** Clear previous results: close dock nodes and unsubscribe from events */
   private clearPrev(): void {

@@ -31,6 +31,7 @@ import {CellRendererWithMonomerLibBackBase} from './monomer-cell-renderer-base';
 import * as C from './constants';
 
 import {_package} from '../package';
+import {SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 
 type TempType = { [tagName: string]: any };
 
@@ -59,6 +60,7 @@ type RendererGridCellTemp = {
   [MmcrTemps.monomerPlacer]: MonomerPlacer
 }
 
+// @grok.decorators.cellRenderer({name: 'customSequenceCellRenderer', cellType: 'sequence', columnTags: 'quality=Macromolecule, units=custom'})
 export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   private readonly seqHelper: ISeqHelper;
 
@@ -70,6 +72,8 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
   get defaultWidth(): number | null { return 230; }
 
+  hasMouseOver: boolean = false;
+
   constructor() {
     super();
     this.seqHelper = _package.seqHelper;
@@ -77,10 +81,9 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
   getRendererBack(gridCell: DG.GridCell): CellRendererBackBase<string> | null {
     const [gridCol, tableCol, _temp] = getGridCellColTemp<string, any>(gridCell);
-    if (tableCol.meta.units !== NOTATION.CUSTOM)
+    if (_temp.rendererBack)
       return _temp.rendererBack;
     let back: CellRendererBackBase<string> | null = null;
-
     if (this.seqHelper) {
       const sh = this.seqHelper.getSeqHandler(tableCol);
       back = sh.getRendererBack(gridCol, tableCol);
@@ -92,15 +95,14 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const colTemp: TempType = gridCell.cell.column.temp;
     colTemp[tempTAGS.currentWord] = gridCell.cell.value;
     gridCell.grid.invalidate();
-    if (gridCell.cell.column.meta.units === NOTATION.CUSTOM) {
-      const back = this.getRendererBack(gridCell);
-      back?.onClick(gridCell, _e);
-    }
+    const back = this.getRendererBack(gridCell);
+    back?.onClick(gridCell, _e);
   }
 
   override onMouseEnter(gridCell: DG.GridCell, e: MouseEvent) {
     const back = this.getRendererBack(gridCell);
     back?.onMouseEnter(gridCell, e);
+    this.hasMouseOver = true;
   }
 
   override onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
@@ -110,6 +112,14 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
   override onMouseLeave(gridCell: DG.GridCell, _e: MouseEvent) {
     execMonomerHoverLinks(gridCell, null);
+    if (gridCell?.grid) {
+      const sub = gridCell.grid.onEvent('d4-grid-show-tooltip').subscribe((e) => {
+        sub.unsubscribe();
+        if (this.hasMouseOver)
+          e.preventDefault();
+      });
+    }
+    this.hasMouseOver = false;
   }
 
   override onDoubleClick(gridCell: DG.GridCell, e: MouseEvent) {
@@ -182,12 +192,11 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   }
 
   override render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell, cellStyle: DG.GridCellStyle): void {
-    if (gridCell.cell.column?.meta?.units === NOTATION.CUSTOM) {
-      const back = this.getRendererBack(gridCell);
+    const back = this.getRendererBack(gridCell);
+    if (back)
       back?.render(g, x, y, w, h, gridCell, cellStyle);
-      return;
-    }
-    this.renderInt(g, x, y, w, h, gridCell, cellStyle);
+    else
+      this.renderInt(g, x, y, w, h, gridCell, cellStyle);
   }
 }
 
@@ -211,7 +220,7 @@ export class MacromoleculeDifferenceCellRendererBack extends CellRendererWithMon
     w = getUpdatedWidth(grid, g, x, w, dpr);
     //TODO: can this be replaced/merged with splitSequence?
     const [s1, s2] = s.split('#');
-    const splitter = getSplitter(units, separator);
+    const splitter = this.tableCol.temp[SeqTemps.notationProvider]?.separatorSplitter ?? getSplitter(units, separator);
     const s1SS = splitter(s1);
     const s2SS = splitter(s2);
     const subParts1 = wu.count(0).take(s1SS.length).map((posIdx) => s1SS.getCanonical(posIdx)).toArray();

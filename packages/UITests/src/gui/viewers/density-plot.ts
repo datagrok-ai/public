@@ -89,4 +89,4 @@ category('Viewers: Density plot', () => {
     grok.shell.closeAll();
     await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with Density plot').first());
   }); 
-});
+}, { owner: 'agolovko@datagrok.ai' });

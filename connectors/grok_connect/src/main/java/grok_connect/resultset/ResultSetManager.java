@@ -24,7 +24,7 @@ public interface ResultSetManager {
      * @param index Column index
      * @param queryLogger Logger
      */
-    void processValue(Object o, int index, Logger queryLogger);
+    void processValue(Object o, int index);
 
     /**
      * Return filled Columns
@@ -36,5 +36,5 @@ public interface ResultSetManager {
     /**
      * Empty all columns for reuse without the need to init ResultSetManager again
      */
-    void empty();
+    void empty(int newColSize);
 }

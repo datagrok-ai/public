@@ -1,4 +1,4 @@
---name: Orders
+--name: Oracle Orders
 --friendlyName: Orders
 --connection: OracleNorthwind
 --input: int employeeId = 5
@@ -21,7 +21,7 @@ SELECT * FROM Orders WHERE (employeeId = @employeeId)
 
 --end
 
---name: Products
+--name: Oracle Products
 --friendlyName: Products
 --connection: OracleNorthwind
 

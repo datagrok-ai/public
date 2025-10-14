@@ -12,20 +12,21 @@ Datagrok lets you create, edit, import, link, and apply Notebooks into tables.
 
 ## Create a notebook
 
-Creating a new notebook is very easy. There are several ways to do this:
+There are several ways to create a new notebook:
 
-1. Click `Functions | Notebooks | New Notebook`
-2. Run #\{x.CmdNewNotebook} from the [Console](../datagrok/navigation/panels/panels.md#console)
-3. Select one or more tables and click `Actions | Open in Notebooks` on
-   the [Context Panel](../datagrok/navigation/panels/panels.md#context-panel).
+1. From the **Top Menu**, select **ML** > **Notebooks** > **New Notebook..**  
+2. Go to **Browse** > **Platform** > **Notebooks** and click **NEW NOTEBOOK** from the notebook toolbar.  
+3. Run `CmdNewNotebook()` from the 
+   [Console](../datagrok/navigation/panels/panels.md#console).  
+4. Select a table and click **Actions** > **Open in Notebooks** in the 
+   [Context Panel](../datagrok/navigation/panels/panels.md#context-panel).
+5. Right-click the table's header and select **Table** > **Open in Notebook**.
 
-If you want to link a notebook to one or more tables, please use the third method.
+If you want to link a notebook to a table, use one of the last two methods.
 
 ## Notebooks browser
 
-In the [Notebooks Browser](https://public.datagrok.ai/notebooks), you can navigate over all available notebooks. If any
-of notebooks can be applicable to any of opened tables, it will be marked with
-"Applicable to" note. Also filtering can be used to filter only applicable notebooks.
+In the [Notebooks Browser](https://public.datagrok.ai/notebooks), you can navigate over all available notebooks. If a notebook can be applied to any of the opened tables, an **Apply to** option will be available in its context menu.
 
 ## Apply existing notebooks into tables
 
@@ -43,16 +44,16 @@ Use simple function called "grok". Example:
 
 where table in a Pandas dataframe.
 
-## Supported languages
+## Supported language
 
-* Python (3.7)
+* Python (3.8)
 
-Optionally: R, Julia and JavaScript.
+<!--Optionally: R, Julia and JavaScript.-->
 
 ## Environments
 
 Each script can be run in an isolated environment, with predefined packages configuration, same as for
-[Script Environments](scripting/under-the-hood.mdx#environment-isolation). The environment can be specified in the notebook properties.
+[Script Environments](scripting/advanced-scripting/under-the-hood.mdx#environment-isolation). The environment can be specified in the notebook properties.
 
 ## Importing notebooks
 

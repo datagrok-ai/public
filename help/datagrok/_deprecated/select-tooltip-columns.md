@@ -7,7 +7,7 @@ shown, if the table contains less than 21 columns, and no columns are shown, if 
 
 ## Viewer tooltips
 
-One of the unique [exploratory data analysis](../solutions/domains/use-cases/eda.md)-related features of Datagrok is the ability
+One of the unique [exploratory data analysis](../solutions/workflows/eda.md)-related features of Datagrok is the ability
 to interactively visualize
 _group of rows_ on an arbitrary viewer when the mouse is over a visual that represents multiple rows.
 

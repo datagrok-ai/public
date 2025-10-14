@@ -6,6 +6,8 @@ import {HitDesignApp} from '../hit-design-app';
 import {_package} from '../../package';
 import {HitDesignTemplate} from '../types';
 import {HitBaseView} from '../base-view';
+import {HitTriageSubmitTag} from '../consts';
+import {getFuncPackageNameSafe} from '../utils';
 
 export class HitDesignSubmitView extends HitBaseView<HitDesignTemplate, HitDesignApp> {
   private statusInput: DG.InputBase<string | undefined>;
@@ -46,7 +48,7 @@ export class HitDesignSubmitView extends HitBaseView<HitDesignTemplate, HitDesig
     return this.statusInput.value ?? this.app.campaign?.status ?? 'No Status';
   }
 
-  render(): HTMLDivElement {
+  render() {
     this.statusInput.value = this.app.campaign?.status ?? '';
     ui.empty(this.content);
 
@@ -55,17 +57,62 @@ export class HitDesignSubmitView extends HitBaseView<HitDesignTemplate, HitDesig
       ui.div([ui.tableFromMap(this.app.getSummary())]),
       this.statusInput.root,
     ]);
-    return this.content;
+
+
+    const dlg = ui.dialog('Submit');
+    dlg.add(this.content);
+    dlg.addButton('Save', () => {
+      this.app.campaign!.status = this.getStatus();
+      this.app.saveCampaign();
+      dlg.close();
+    });
+    //dlg.addButton('Submit', ()=>{this.submit(); dlg.close();}, undefined, 'Submit the campaign file to the specified function');
+    dlg.show();
+
+    const submitFunctions = DG.Func.find({tags: [HitTriageSubmitTag]});
+    const submitFunctionMap = submitFunctions.reduce((acc, fn) => {
+      acc[fn.friendlyName ?? fn.name] = fn;
+      return acc;
+    }, {} as Record<string, DG.Func>);
+    if (submitFunctions.length > 0) {
+      const chosenFunctionParams = this.app.submitParams;
+      const foundFunction = chosenFunctionParams ? submitFunctions.find((fn) => fn.name === chosenFunctionParams.fName && getFuncPackageNameSafe(fn) == chosenFunctionParams.package) : undefined;
+      const foundFunctionKey = foundFunction?.friendlyName ?? foundFunction?.name;
+      const submitFunctionInput = ui.input.choice('Submit function', {
+        value: foundFunctionKey,
+        items: [...Object.keys(submitFunctionMap)],
+        nullable: true,
+      });
+
+      submitFunctionInput.onChanged.subscribe(() => {
+        const selectedFunction = submitFunctionMap[submitFunctionInput.value ?? ''];
+        this.app.campaign!.template!.submit = selectedFunction ? {
+          fName: selectedFunction.name,
+          package: getFuncPackageNameSafe(selectedFunction),
+        } : undefined;
+        dlg.getButton('Submit')?.remove();
+        if (selectedFunction) {
+          dlg.addButton('Submit', () => {
+            this.submit();
+            dlg.close();
+          }, undefined, 'Submit the campaign file to the specified function');
+        }
+      });
+      submitFunctionInput.fireChanged();
+      this.content.appendChild(submitFunctionInput.root);
+    }
   }
 
   onActivated(): void {
-    this.render();
   }
 
   async submit(): Promise<any> {
-    const submitParams= this.app.template?.submit;
-    if (!submitParams)
+    const submitParams= this.app.submitParams;
+    if (!submitParams) {
+      grok.shell.error('No submit function selected. Please select a function to submit the campaign.');
       return;
+    }
+
     const submitFn = DG.Func.find({name: submitParams.fName, package: submitParams.package})[0];
     if (!submitFn) {
       grok.shell.error(`Function ${submitParams.fName} not found.`);

@@ -88,12 +88,17 @@ category('toAtomicLevel-ui', () => {
       await _testToAtomicLevelFunc(seqCol, false, testData.tgt);
     });
   }
-  for (const [testName, testData] of Object.entries(tests)) {
-    test(`${testName}-nonlinear`, async () => {
-      const seqCol = await getSeqCol(testData);
-      await _testToAtomicLevelFunc(seqCol, true, testData.tgt);
-    });
-  }
+
+  //test non-linear cases only if helm package is installed
+  const helmPackInstalled = DG.Func.find({package: 'Helm', name: 'getHelmHelper'}).length;
+  if (helmPackInstalled) {
+    for (const [testName, testData] of Object.entries(tests)) {
+      test(`${testName}-nonlinear`, async () => {
+        const seqCol = await getSeqCol(testData);
+        await _testToAtomicLevelFunc(seqCol, true, testData.tgt);
+      });
+    }
+  } 
 
   async function _testToAtomicLevelFunc(
     seqCol: DG.Column<string>, nonlinear: boolean, tgt: TestDataTargetType,

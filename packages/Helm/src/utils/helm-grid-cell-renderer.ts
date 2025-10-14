@@ -23,7 +23,7 @@ import {getHoveredMonomerFromEditorMol, getSeqMonomerFromHelmAtom} from './get-h
 import {_package, getHelmService} from '../package';
 
 export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProps, HelmAux> {
-  private _auxList: (HelmAux | null)[];
+  private _auxList: Map<string, HelmAux | null>;
 
   private sysMonomerLib: IMonomerLibBase | null = null;
   private helmHelper: IHelmHelper | null = null;
@@ -70,7 +70,7 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
     const logPrefix = `${this.toLog()}.reset()`;
     this.logger.debug(`${logPrefix}, start`);
     super.reset();
-    this._auxList = new Array<HelmAux | null>(this.tableCol.length).fill(null);
+    this._auxList = new Map<string, HelmAux | null>();
     this.invalidateGrid();
     this.logger.debug(`${logPrefix}, end`);
   }
@@ -89,8 +89,8 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
   protected override storeAux(gridCell: DG.GridCell, aux: HelmAux): void {
     const logPrefix = `${this.toLog()}.storeAux()`;
     this.logger.debug(`${logPrefix}, start`);
-    if (gridCell.tableRowIndex !== null)
-      this._auxList[gridCell.tableRowIndex] = aux;
+    if (!!gridCell.cell?.value)
+      this._auxList.set(gridCell.cell.value, aux);
   }
 
   /** Renders cell from image data (cache), returns true to update the cell by service.
@@ -104,9 +104,11 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
 
     const gcb = gridCellBounds;
     const dpr = window.devicePixelRatio;
-    if (gridCell.tableRowIndex === null) return false;
-    const aux = this._auxList[gridCell.tableRowIndex];
-    if (!aux) return true;
+    if (!gridCell.cell?.value)
+      return false;
+    const aux = this._auxList.get(gridCell.cell.value);
+    if (!aux)
+      return true;
 
     const [cellWidth, cellHeight] = [gcb.width * dpr - 2, gcb.height * dpr - 2];
     const cellDScale = Math.min(0.95 * cellWidth / aux.dBox.width, 0.95 * cellHeight / aux.dBox.height);
@@ -158,8 +160,8 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
   }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
-    if (gridCell.tableRowIndex === null || !this._auxList) return;
-    const aux = this._auxList[gridCell.tableRowIndex];
+    if (!gridCell.cell?.value || !this._auxList || !!e.buttons) return;
+    const aux = this._auxList.get(gridCell.cell.value);
     if (!aux) return;
 
     const logPrefix = `${this.toLog()}.onMouseMove()`;
@@ -192,8 +194,11 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
       // Tooltip for missing monomers
       ui.tooltip.hide();
     }
-
     execMonomerHoverLinks(gridCell, seqMonomer);
+
+    e.preventDefault();
+    e.stopPropagation();
+
   }
 
   onMouseLeave(gridCell: DG.GridCell, e: MouseEvent): void {
@@ -237,9 +242,6 @@ export class HelmGridCellRenderer extends DG.GridCellRenderer {
     } catch (err: any) {
       const [errMsg, errStack] = errInfo(err);
       _package.logger.error(errMsg, undefined, errStack);
-    } finally {
-      e.preventDefault();
-      e.stopPropagation();
     }
   }
 

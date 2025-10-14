@@ -15,12 +15,14 @@ export function welcomeView(): DG.View | undefined {
 
   const input = ui.element('input', 'ui-input-editor') as HTMLInputElement;
   input.placeholder = 'Search everywhere. Try "aspirin" or "7JZK"';
+  const inputContainer = ui.div([
+    input,
+  ], 'ui-input-root,ui-input-type-ahead');
   const inputHost = ui.div([
     ui.iconFA('search'),
-    ui.div([
-      input,
-    ], 'ui-input-root,ui-input-type-ahead'),
+    inputContainer,
   ], 'd4-search-bar');
+  suggestionMenuKeyNavigation(inputContainer);
 
   const searchHost = ui.block([], 'power-pack-search-host');
   const widgetsHost = ui.div([], 'power-pack-widgets-host');
@@ -42,8 +44,8 @@ export function welcomeView(): DG.View | undefined {
 
       for (const f of widgetFunctions) {
         const canView: string[] = f.options['canView']?.split(',') ?? [];
-        if (canView.length === 0 || (userGroup.memberships.some((g) => canView.includes(g.friendlyName))
-            || userGroup.adminMemberships.some((g) => canView.includes(g.friendlyName)))) {
+        if (canView.length === 0 || (userGroup.memberships.some((g) => canView.includes(g.friendlyName)) ||
+            userGroup.adminMemberships.some((g) => canView.includes(g.friendlyName)))) {
           if (!settings[f.name] || !settings[f.name].ignored)
             widgetsHost.appendChild(widgetHosts[f.name] ??= widgetHostFromFunc(f));
         }
@@ -58,14 +60,14 @@ export function welcomeView(): DG.View | undefined {
     const existingNames = Object.keys(settings).filter((name) => DG.Func.byName(name));
 
     grok.shell.o = ui.form(
-        existingNames.map((name) => ui.input.bool(DG.Func.byName(name).friendlyName, {
-          value: !settings[name].ignored,
-          onValueChanged: (value, input) => {
-            settings[name].ignored = !value;
-            refresh();
-            saveSettings();
-          }
-        }))
+      existingNames.map((name) => ui.input.bool(DG.Func.byName(name).friendlyName, {
+        value: !settings[name].ignored,
+        onValueChanged: (value, input) => {
+          settings[name].ignored = !value;
+          refresh();
+          saveSettings();
+        },
+      })),
     );
   }
 
@@ -77,7 +79,7 @@ export function welcomeView(): DG.View | undefined {
     widgetsPanel.style.display = (search ? 'none' : '');
     searchHost.style.display = (search ? '' : 'none');
     if (search != null)
-      powerSearch(s, searchHost);
+      powerSearch(s, searchHost, input);
     view.path = search ? `search?q=${s}` : 'search';
   }
 
@@ -86,4 +88,29 @@ export function welcomeView(): DG.View | undefined {
   if (searchStr != null)
     doSearch(searchStr);
   return view;
+}
+
+function suggestionMenuKeyNavigation(inputContainer: HTMLElement) {
+  inputContainer.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' && e.key !== 'Enter')
+      return;
+    const currentlySelected: HTMLElement | null = inputContainer.querySelector('.d4-menu-item-hover');
+    const allItems: HTMLElement[] = Array.from(inputContainer.querySelectorAll('.d4-menu-item') ?? []);
+    if (!allItems || allItems.length === 0)
+      return;
+    allItems.sort((a, b) => a.offsetTop - b.offsetTop); // sort by vertical position
+
+    let currentIndex = currentlySelected ? allItems.indexOf(currentlySelected) : -1;
+    if (e.key === 'ArrowDown')
+      currentIndex = (currentIndex + 1) % allItems.length;
+    else if (e.key === 'ArrowUp')
+      currentIndex = (currentIndex - 1 + allItems.length) % allItems.length;
+    else if (e.key === 'Enter' && currentlySelected) {
+      currentlySelected.click();
+      e.preventDefault();
+      return;
+    }
+    currentlySelected?.classList?.remove('d4-menu-item-hover');
+    allItems[currentIndex]?.classList?.add('d4-menu-item-hover');
+  });
 }

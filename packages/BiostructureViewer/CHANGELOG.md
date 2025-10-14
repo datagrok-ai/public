@@ -1,4 +1,20 @@
-# BiostructureViewer changelog
+# Biostructure Viewer changelog
+
+## 1.4.2 (2025-04-17)
+
+ * Error handling for ligands and semtype check fix
+
+## 1.3.3 (2025-02-06)
+
+* * [#3244](https://github.com/datagrok-ai/public/issues/3244): BsV: Does not maintain opened structure file
+
+## 1.3.2 (2025-01-21)
+
+Fix for renderers in non-grid views
+
+## 1.3.1 (2025-01-09)
+
+Support PDB-ID renderer in tooltips
 
 ## 1.2.4 (2024-11-29)
 

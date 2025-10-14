@@ -7,7 +7,7 @@ import {_package} from '../package-test';
 import {Fingerprint} from '../utils/chem-common';
 import {createTableView, readDataframe, molV2000, molV3000} from './utils';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import {findSimilar, getSimilarities} from '../package';
+import {PackageFunctions} from '../package';
 import {chemDiversitySearch, ChemDiversityViewer} from '../analysis/chem-diversity-viewer';
 import {chemSimilaritySearch, ChemSimilarityViewer} from '../analysis/chem-similarity-viewer';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
@@ -37,19 +37,19 @@ category('top menu similarity/diversity', () => {
   });
 
   test('findSimilar.chem.smiles', async () => {
-    await _testFindSimilar(findSimilar);
+    await _testFindSimilar(PackageFunctions.findSimilar);
   }, {benchmark: true});
 
   test('findSimilar.chem.molV2000', async () => {
-    await _testFindSimilar(findSimilar, molV2000, 'V2000');
+    await _testFindSimilar(PackageFunctions.findSimilar, molV2000, 'V2000');
   });
 
   test('findSimilar.chem.molV3000', async () => {
-    await _testFindSimilar(findSimilar, molV3000, 'V3000');
+    await _testFindSimilar(PackageFunctions.findSimilar, molV3000, 'V3000');
   });
 
   test('getSimilarities.chem.molecules', async () => {
-    await _testGetSimilarities(getSimilarities, molecules);
+    await _testGetSimilarities(PackageFunctions.getSimilarities, molecules);
   });
 
   test('similarity.emptyValues', async () => {
@@ -132,16 +132,19 @@ category('top menu similarity/diversity', () => {
 
   test('testDiversitySearch.smiles', async () => {
     const df = DG.Test.isInBenchmark ? await readDataframe('tests/smi10K.csv') : molecules;
+    //@ts-ignore
     await chemDiversitySearch(df.getCol('smiles'), tanimotoSimilarity, 10, 'Morgan' as Fingerprint,
       DG.BitSet.create(df.rowCount).setAll(true));
   }, {benchmark: true});
 
   test('testDiversitySearch.molV2000', async () => {
+    //@ts-ignore
     await chemDiversitySearch(spgi100.getCol('Structure'), tanimotoSimilarity, 10, Fingerprint.Morgan as Fingerprint,
       DG.BitSet.create(spgi100.rowCount).setAll(true));
   });
 
   test('testDiversitySearch.molV3000', async () => {
+    //@ts-ignore
     await chemDiversitySearch(approvedDrugs100.getCol('molecule'), tanimotoSimilarity, 10,
       Fingerprint.Morgan as Fingerprint, DG.BitSet.create(approvedDrugs100.rowCount).setAll(true));
   });
@@ -150,10 +153,8 @@ category('top menu similarity/diversity', () => {
     const tv = grok.shell.addTableView(empty);
     const viewer: ChemDiversityViewer = (await tv.dataFrame.plot
       .fromType('Chem Diversity Search')) as ChemDiversityViewer;
-    await testEvent(viewer.renderCompleted, () => {}, () => {}, 5000);
-    try {
-      expect(viewer.renderMolIds.length, 12);
-    } finally {tv.close();}
+    await awaitCheck(() => viewer.renderMolIds.length === 12, `Molecules haven't been rendered`, 10000);
+    tv.close()
   });
 
   test('diversity.malformedData', async () => {
@@ -161,9 +162,8 @@ category('top menu similarity/diversity', () => {
     DG.Balloon.closeAll();
     const viewer: ChemDiversityViewer = (await tv.dataFrame.plot
       .fromType('Chem Diversity Search')) as ChemDiversityViewer;
-    await testEvent(viewer.renderCompleted, () => {}, () => {}, 5000);
     try {
-      expect(viewer.renderMolIds.length, 12);
+      await awaitCheck(() => viewer.renderMolIds.length === 12, `Molecules haven't been rendered`, 10000);
       await awaitCheck(() => document.querySelector('.d4-balloon-content')?.children[0].children[0].innerHTML ===
         '2 molecules with indexes 31,41 are possibly malformed and are not included in analysis',
       'cannot find warning balloon', 1000);
@@ -296,11 +296,10 @@ async function _testDiversitySearchViewerOpen() {
   const molecules = await createTableView('tests/sar-small_test.csv');
   const diversitySearchviewer: ChemDiversityViewer = (await molecules.dataFrame.plot
     .fromType('Chem Diversity Search')) as ChemDiversityViewer;
-  await testEvent(diversitySearchviewer.renderCompleted, () => {}, () => {}, 5000);
+  await awaitCheck(() => diversitySearchviewer.renderMolIds.length > 0, `Molecules haven't been rendered`, 10000);
   expect(diversitySearchviewer.fingerprint, Fingerprint.Morgan);
   expect(diversitySearchviewer.distanceMetric, BitArrayMetricsNames.Tanimoto);
   expect(diversitySearchviewer.initialized, true);
-  expect(diversitySearchviewer.renderMolIds.length > 0, true);
   molecules.close();
 }
 

@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
 import {MolList, RDModule, RDMol, RGroupDecomp} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {IMolContext, getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
@@ -5,6 +6,7 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {RuleId} from '../panels/structural-alerts';
 import {SubstructureSearchType} from '../constants';
 import {stringArrayToMolList} from '../utils/chem-common';
+import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 
 export enum MolNotation {
   Smiles = 'smiles',
@@ -24,6 +26,13 @@ export interface IRGroupAnalysisResult {
 export interface IMmpFragmentsResult {
   frags: [string, string][][];
   smiles: string[];
+}
+
+export type InverseSubstructureRes = {
+  inverse1: (ISubstruct | null)[],
+  inverse2: (ISubstruct | null)[],
+  fromAligned: string[],
+  toAligned: string[]
 }
 
 const MALFORMED_MOL_V2000 = `
@@ -66,7 +75,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     if (!molecules)
       throw new Error('Chem | Molecules for substructure serach haven\'t been provided');
 
-    const queryMol = getQueryMolSafe(queryMolString, queryMolBlockFailover, this._rdKitModule); 
+    const queryMol = getQueryMolSafe(queryMolString, queryMolBlockFailover, this._rdKitModule);
     let queryCanonicalSmiles = '';
     if (queryMol !== null) {
       if (searchType === SubstructureSearchType.EXACT_MATCH) {
@@ -92,7 +101,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       return matches.buffer;
     const details = JSON.stringify({sanitize: false, removeHs: false, assignStereo: false});
     for (let i = 0; i < molecules.length; ++i) {
-      const terminationCheckDelay = queryCanonicalSmiles ? this._terminationCheckDelay * 10 : this._terminationCheckDelay;
+      const terminationCheckDelay = queryCanonicalSmiles ?
+        this._terminationCheckDelay * 10 :
+        this._terminationCheckDelay;
 
       if (i % terminationCheckDelay === 0) //every N molecules check for termination flag
         await new Promise((r) => setTimeout(r, 0));
@@ -151,6 +162,50 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     }
   }
 
+  async beautifyMoleculesV3K(molecules: string[]) {
+    if (!molecules || this._requestTerminated)
+      return [];
+    // no need to cache these
+    const results = new Array<string>(molecules.length).fill('');
+    for (let i = 0; i < molecules!.length; ++i) {
+      if (i % this._terminationCheckDelay === 0)
+        await new Promise((r) => setTimeout(r, 0));
+      if (this._requestTerminated)
+        return results;
+      const item = molecules[i];
+      if (!item) {
+        results[i] = '';
+        continue;
+      }
+      let isInCache = false;
+      let rdMol = this._molsCache?.get(molecules[i]);
+      if (!rdMol) {
+        const mol: IMolContext = getMolSafe(item, {}, this._rdKitModule);
+        rdMol = mol?.mol;
+        if (rdMol)
+          rdMol.is_qmol = mol?.isQMol;
+      } else
+        isInCache = true;
+
+      if (rdMol) {
+        try {
+          rdMol.set_new_coords();
+          rdMol.normalize_depiction(1);
+          rdMol.straighten_depiction(true);
+          results[i] = rdMol.get_v3Kmolblock();
+        } catch {
+          // nothing to do, fp is already null
+        } finally {
+          if (!isInCache) {
+            //do not delete mol in case it is in cache
+            rdMol?.delete();
+          }
+        }
+      }
+    }
+    return results;
+  }
+
   async convertMolNotation(molecules: string[], targetNotation: string): Promise<string[]> {
     if (!molecules || this._requestTerminated)
       return [];
@@ -186,8 +241,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
             results[i] = rdMol.get_molblock();
             break;
           case MolNotation.Smiles:
-            if (!rdMol.is_qmol)
-              results[i] = rdMol.get_smiles();
+            results[i] = rdMol.get_smiles();
             break;
           case MolNotation.V3KMolBlock:
             results[i] = rdMol.get_v3Kmolblock();
@@ -210,7 +264,6 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         }
       }
     }
-    console.log('Finished Worker ' + results.length);
     return results;
   }
 
@@ -260,11 +313,13 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
             continue;
           }
 
-          const matches = mol.get_substruct_match(smarts);
-          if (matches !== '{}') {
-            resultValues[rule]!.setTrue(molIdx);
-            break;
-          }
+          try {
+            const matches = mol.get_substruct_match(smarts);
+            if (matches !== '{}') {
+              resultValues[rule]!.setTrue(molIdx);
+              break;
+            }
+          } catch (e) {}
         }
       }
       mol.delete();
@@ -326,9 +381,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       let counter = 0;
       if (totalColsNum > 0) {
         const atomsToHighlight = Array<Array<Uint32Array>>(totalColsNum - numOfNonRGroupCols)
-          .fill([]).map((u) => [] as Uint32Array[]);
+          .fill([]).map((_u) => [] as Uint32Array[]);
         const bondsToHighlight = Array<Array<Uint32Array>>(totalColsNum - numOfNonRGroupCols)
-          .fill([]).map((u) => [] as Uint32Array[]);
+          .fill([]).map((_u) => [] as Uint32Array[]);
         for (let i = 0; i < totalColsNum; i++) {
           const isRGroupCol = colNames[i] !== coreColName;
           const col = Array<string>(molecules.length);
@@ -336,9 +391,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
             if (unmatches[counter] !== j) {
               const rgroup = cols[colNames[i]]!.at(j - counter);
               if (isRGroupCol) {
-                if(rgroup.has_prop(rgroupTargetAtomsPropName))
+                if (rgroup.has_prop(rgroupTargetAtomsPropName))
                   atomsToHighlight[i - numOfNonRGroupCols][j] = new Uint32Array(JSON.parse(rgroup.get_prop(rgroupTargetAtomsPropName)));
-                if(rgroup.has_prop(rgroupTargetBondsPropName))
+                if (rgroup.has_prop(rgroupTargetBondsPropName))
                   bondsToHighlight[i - numOfNonRGroupCols][j] = new Uint32Array(JSON.parse(rgroup.get_prop(rgroupTargetBondsPropName)));
               }
               col[j] = rgroup.get_smiles();
@@ -505,7 +560,6 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         mol2?.mol?.delete();
       }
     }
-
     return res;
   }
 

@@ -13,6 +13,8 @@
           "units": "cm/s",
           "min": -6,
           "max": -5.5,
+          "line": [[-6, 0], [-6, 1], [-4, 0]],
+          "weight": 0.8,
           "properties": [
             {
               "property": {
@@ -53,6 +55,8 @@
           "units": "log-ratio",
           "min": 0,
           "max": 5,
+          "line": [[0, 0], [2, 1], [3, 1], [5, 0.5]],
+          "weight": 1,
           "properties": [
             {
               "property": {
@@ -95,6 +99,8 @@
           "units": "log mol/L",
           "min": -4.5,
           "max": -1,
+          "line": [[-4.5, 0.9], [0, 1]],
+          "weight": 1,
           "properties": [
             {
               "property": {
@@ -104,20 +110,6 @@
               },
               "object": {
                 "description": "Indicates the fraction of compound that can be solved in water solution, e.g. plasma. This characterestic is specific to analyzed problem."
-              }
-            },
-            {
-              "property": {
-                "name": "direction",
-                "inputType": "Radio",
-                "choices": [
-                  "Lower is better",
-                  "Higher is better"
-                ],
-                "enable": false
-              },
-              "object": {
-                "direction": "Higher is better"
               }
             }
           ],
@@ -143,6 +135,8 @@
           "units": "%",
           "min": 40,
           "max": 90,
+          "line": [[40, 0.9], [90, 1]],
+          "weight": 0.3,
           "properties": [
             {
               "property": {
@@ -152,20 +146,6 @@
               },
               "object": {
                 "description": "This value stands for plasma protein binding. PPB strongly influences drug behavior as only free drug is able to penetrate mebranes. Low values indicate good permeability characteristics."
-              }
-            },
-            {
-              "property": {
-                "name": "direction",
-                "inputType": "Radio",
-                "choices": [
-                  "Lower is better",
-                  "Higher is better"
-                ],
-                "enable": true
-              },
-              "object": {
-                "direction": "Higher is better"
               }
             },
             {
@@ -197,6 +177,8 @@
           "units": "L/kg",
           "min": 1,
           "max": 2,
+          "line": [[1, 0.9], [2, 1]],
+          "weight": 0.6,
           "properties": [
             {
               "property": {
@@ -206,20 +188,6 @@
               },
               "object": {
                 "description": "Volume of distribution (L) is a pharmacokinetic parameter representing the ability of drug to remain in plasma or redistribute to other tissues. High VD has a propensity to leave the plasma to other tissues, low VD indicates the ability of drug to achieve desired concentration at lower doses."
-              }
-            },
-            {
-              "property": {
-                "name": "direction",
-                "inputType": "Radio",
-                "choices": [
-                  "Lower is better",
-                  "Higher is better"
-                ],
-                "enable": true
-              },
-              "object": {
-                "direction": "Higher is better"
               }
             },
             {
@@ -259,6 +227,8 @@
           "units": "-",
           "min": 0,
           "max": 1,
+          "line": [[0, 0.9], [1, 1]],
+          "weight": 0.2,
           "properties": [
             {
               "property": {
@@ -268,20 +238,6 @@
               },
               "object": {
                 "description": "A probability of being an inhibitor of cytochrome CYP1A2 which catalyzes drug metabolism. Inhibiting CYP1A2 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc."
-              }
-            },
-            {
-              "property": {
-                "name": "direction",
-                "inputType": "Radio",
-                "choices": [
-                  "Lower is better",
-                  "Higher is better"
-                ],
-                "enable": true
-              },
-              "object": {
-                "direction": "Higher is better"
               }
             }
           ],
@@ -299,6 +255,8 @@
           "units": "-",
           "min": 0,
           "max": 1,
+          "line": [[0, 0.9], [1, 1]],
+          "weight": 0.25,
           "properties": [
             {
               "property": {
@@ -308,20 +266,6 @@
               },
               "object": {
                 "description": "A probability of being an inhibitor of cytochrome CYP2C19 which catalyzes drug metabolism. Inhibiting CYP2C19 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc."
-              }
-            },
-            {
-              "property": {
-                "name": "direction",
-                "inputType": "Radio",
-                "choices": [
-                  "Lower is better",
-                  "Higher is better"
-                ],
-                "enable": true
-              },
-              "object": {
-                "direction": "Higher is better"
               }
             }
           ],
@@ -339,6 +283,8 @@
           "units": "-",
           "min": 0,
           "max": 1,
+          "line": [[0, 0.9], [1, 1]],
+          "weight": 0.75,
           "properties": [
             {
               "property": {
@@ -348,20 +294,6 @@
               },
               "object": {
                 "description": "A probability of being an inhibitor of cytochrome CYP2C9 which catalyzes drug metabolism. Inhibiting CYP2C9 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc."
-              }
-            },
-            {
-              "property": {
-                "name": "direction",
-                "inputType": "Radio",
-                "choices": [
-                  "Lower is better",
-                  "Higher is better"
-                ],
-                "enable": true
-              },
-              "object": {
-                "direction": "Higher is better"
               }
             }
           ],
@@ -379,6 +311,8 @@
           "units": "-",
           "min": 0,
           "max": 1,
+          "line": [[0, 0.9], [1, 1]],
+          "weight": 0.4,
           "properties": [
             {
               "property": {
@@ -388,20 +322,6 @@
               },
               "object": {
                 "description": "A probability of being an inhibitor of substrate CYP2C9 which catalyzes drug metabolism. Binding CYP2C9 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc."
-              }
-            },
-            {
-              "property": {
-                "name": "direction",
-                "inputType": "Radio",
-                "choices": [
-                  "Lower is better",
-                  "Higher is better"
-                ],
-                "enable": true
-              },
-              "object": {
-                "direction": "Higher is better"
               }
             }
           ],
@@ -419,6 +339,8 @@
           "units": "-",
           "min": 0,
           "max": 1,
+          "line": [[0, 0.9], [1, 1]],
+          "weight": 0.8,
           "properties": [
             {
               "property": {
@@ -428,20 +350,6 @@
               },
               "object": {
                 "description": "A probability of being an inhibitor of cytochrome CYP2D6 which catalyzes drug metabolism. Inhibiting CYP2D6 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc."
-              }
-            },
-            {
-              "property": {
-                "name": "direction",
-                "inputType": "Radio",
-                "choices": [
-                  "Lower is better",
-                  "Higher is better"
-                ],
-                "enable": true
-              },
-              "object": {
-                "direction": "Higher is better"
               }
             }
           ],
@@ -459,6 +367,8 @@
           "units": "-",
           "min": 0,
           "max": 1,
+          "line": [[0, 0.9], [1, 1]],
+          "weight": 0.9,
           "properties": [
             {
               "property": {
@@ -468,20 +378,6 @@
               },
               "object": {
                 "description": "A probability of being an inhibitor of substrate CYP2D6 which catalyzes drug metabolism. Binding CYP2D6 could be both a desired and undesired property depending on drug development goals: elongation/reduction of drug effect, drug-drug interactions etc."
-              }
-            },
-            {
-              "property": {
-                "name": "direction",
-                "inputType": "Radio",
-                "choices": [
-                  "Lower is better",
-                  "Higher is better"
-                ],
-                "enable": true
-              },
-              "object": {
-                "direction": "Higher is better"
               }
             }
           ],
@@ -507,6 +403,8 @@
           "units": "mL/min",
           "min": 10,
           "max": 100,
+          "line": [[10, 0.9], [100, 1]],
+          "weight": 0.5,
           "properties": [
             {
               "property": {
@@ -515,21 +413,7 @@
                 "enable": false
               },
               "object": {
-                "description": "Estimate for a hepatocyte clearance is excretion characteristic which contributes to  pojection of dose and drug exposure. This characterestic is specific to analyzed problem."
-              }
-            },
-            {
-              "property": {
-                "name": "direction",
-                "inputType": "Radio",
-                "choices": [
-                  "Lower is better",
-                  "Higher is better"
-                ],
-                "enable": true
-              },
-              "object": {
-                "direction": "Higher is better"
+                "description": "Estimate for a hepatocyte clearance is excretion characteristic which contributes to projection of dose and drug exposure. This characterestic is specific to analyzed problem."
               }
             },
             {
@@ -561,6 +445,8 @@
           "units": "μL/min/million",
           "min": 10,
           "max": 100,
+          "line": [[10, 0.9], [100, 1]],
+          "weight": 0.1,
           "properties": [
             {
               "property": {
@@ -570,20 +456,6 @@
               },
               "object": {
                 "description": "Estimates intrinsic clearance which is related ro compound's metabolic stability. This characterestic is specific to analyzed problem."
-              }
-            },
-            {
-              "property": {
-                "name": "direction",
-                "inputType": "Radio",
-                "choices": [
-                  "Lower is better",
-                  "Higher is better"
-                ],
-                "enable": true
-              },
-              "object": {
-                "direction": "Higher is better"
               }
             },
             {
@@ -615,6 +487,8 @@
           "units": "hours",
           "min": 2,
           "max": 24,
+          "line": [[2, 0.9], [24, 1]],
+          "weight": 0.7,
           "properties": [
             {
               "property": {
@@ -624,20 +498,6 @@
               },
               "object": {
                 "description": "This estimates metabolic half-time of the drug or the time when concentration drops by half. This characterestic is specific to analyzed problem."
-              }
-            },
-            {
-              "property": {
-                "name": "direction",
-                "inputType": "Radio",
-                "choices": [
-                  "Lower is better",
-                  "Higher is better"
-                ],
-                "enable": true
-              },
-              "object": {
-                "direction": "Lower is better"
               }
             }
           ],
@@ -663,6 +523,8 @@
           "units": "-",
           "min": 0,
           "max": 1,
+          "line": [[0, 0.9], [1, 1]],
+          "weight": 0.4,
           "properties": [
             {
               "property": {
@@ -672,20 +534,6 @@
               },
               "object": {
                 "description": "Inhibition of the hERG (human Ether-à-go-go-Related Gene) current causes QT interval prolongation and lead to life threatening arrhythmia. Inhibition of hERG is considered as precaution."
-              }
-            },
-            {
-              "property": {
-                "name": "direction",
-                "inputType": "Radio",
-                "choices": [
-                  "Lower is better",
-                  "Higher is better"
-                ],
-                "enable": false
-              },
-              "object": {
-                "direction": "Lower is better"
               }
             }
           ],
@@ -703,6 +551,8 @@
           "units": "mg/kg",
           "min": 1,
           "max": 5000,
+          "line": [[1, 0.9], [5000, 1]],
+          "weight": 0.9,
           "properties": [
             {
               "property": {
@@ -716,20 +566,6 @@
             },
             {
               "property": {
-                "name": "direction",
-                "inputType": "Radio",
-                "choices": [
-                  "Lower is better",
-                  "Higher is better"
-                ],
-                "enable": false
-              },
-              "object": {
-                "direction": "Higher is better"
-              }
-            },
-            {
-              "property": {
                 "name": "ranges",
                 "inputType": "Map",
                 "enable": false,
@@ -737,9 +573,9 @@
               },
               "object": {
                 "ranges": {
-                  "<= 5": "Fatal is swallowed",
-                  "5 - 50": "Fatal is swallowed",
-                  "50 - 300": "Toxic is swallowed",
+                  "<= 5": "Fatal if swallowed",
+                  "5 - 50": "Fatal if swallowed",
+                  "50 - 300": "Toxic if swallowed",
                   "300 - 2000": "Harmful if swallowed",
                   "2000 - 5000": "May be harmful if swallowed",
                   "> 5000": "Non-toxic"

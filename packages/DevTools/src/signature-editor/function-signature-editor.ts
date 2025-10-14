@@ -270,7 +270,7 @@ async function openFse(v: DG.View, functionCode: string) {
 
     const helpIcon = ui.iconFA('question', () => {
       window.open(
-        'https://datagrok.ai/help/datagrok/functions/func-params-annotation', 
+        'https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation', 
         '_blank'
       );
     });
@@ -365,7 +365,7 @@ async function openFse(v: DG.View, functionCode: string) {
       ui.icons.delete(() => {
         functionParamsCopy.splice(rowIdx, 1);
         functionParamsState.next(functionParamsCopy);
-      }, 'Remove the param'), { style: { 'text-align': 'center', 'margin': '6px' } },
+      }, 'Remove the param'), { style: { textAlign: 'center', 'margin': '6px' } },
     );
 
 
@@ -418,7 +418,7 @@ async function openFse(v: DG.View, functionCode: string) {
     const btn = ui.button(
       [
         ui.div(ui.icons.add(() => {
-        }, 'Add the param'), { style: { 'text-align': 'center', 'margin': '6px'} }),
+        }, 'Add the param'), { style: { textAlign: 'center', 'margin': '6px'} }),
       ],
       () => {
         const newParam = {

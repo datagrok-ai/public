@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
@@ -15,7 +16,8 @@ import {getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-rendere
 import {IPdbGridCellRenderer} from './types';
 import {_getNglGlService} from '../package-utils';
 
-import {_package} from '../package';
+import {_package, } from '../package';
+import {LruCache} from 'datagrok-api/dg';
 
 export const enum Temps {
   renderer = '.renderer.pdb',
@@ -30,6 +32,9 @@ export class PdbGridCellRendererBack extends CellRendererBackAsyncBase<NglGlProp
     super(gridCol, tableCol, _package.logger, true);
   }
 
+  override get minHeight(): number { return 30; }
+  override get minWidth(): number { return 30; }
+
   protected getRenderService(): RenderServiceBase<NglGlProps, NglGlAux> {
     return _getNglGlService();
   }
@@ -43,22 +48,22 @@ export class PdbGridCellRendererBack extends CellRendererBackAsyncBase<NglGlProp
   protected override storeAux(_gridCell: DG.GridCell, _aux: NglGlAux): void {}
 
   onClick(gridCell: DG.GridCell, _e: MouseEvent): void {
-    this.createViewer(gridCell).then(async ({ tview, viewer }) => {
+    this.createViewer(gridCell).then(async ({tview, viewer}) => {
       if (tview && viewer) {
         const currentViewer = wu(tview.viewers).find((v) => {
           return v.type === 'Biostructure' || v.type === 'NGL';
         }) as DG.Viewer & IBiostructureViewer;
 
-        if (!currentViewer) {
+        if (!currentViewer)
           tview.dockManager.dock(viewer.root, DG.DOCK_TYPE.RIGHT, null, 'Biostructure Viewer', 0.3);
-        } else {
+        else {
           // Update existing viewer
           await new Promise<void>((resolve) => {
             testEvent(viewer!.onRendered, () => {
               this._onClicked.next();
               resolve();
             }, () => {
-              currentViewer.setOptions({ pdb: gridCell.cell.value });
+              currentViewer.setOptions({pdb: gridCell.cell.value});
               currentViewer.invalidate('onClick()'); // To trigger viewer.onRendered
             }, 10000);
           });
@@ -71,7 +76,7 @@ export class PdbGridCellRendererBack extends CellRendererBackAsyncBase<NglGlProp
     const df: DG.DataFrame = gridCell.grid.dataFrame;
     const tableCol: DG.Column | null = gridCell.tableColumn;
     if (!tableCol)
-      return { tview: undefined, viewer: null };
+      return {tview: undefined, viewer: null};
 
     const dockingRole: string = tableCol.getTag(DockingTags.dockingRole);
     const value: string = gridCell.cell.value;
@@ -80,31 +85,27 @@ export class PdbGridCellRendererBack extends CellRendererBackAsyncBase<NglGlProp
       .find((tv) => tv.dataFrame.id === df.id);
 
     if (!tview)
-      return { tview: undefined, viewer: null };
+      return {tview: undefined, viewer: null};
 
     let viewer: (DG.Viewer & IBiostructureViewer) | undefined;
 
     switch (dockingRole) {
-      case DockingRole.ligand: {
-        // Biostructure, NGL viewers track current, selected rows to display ligands
-        break;
-      }
-
-      case DockingRole.target:
-      default: {
-        viewer = await df.plot.fromType('Biostructure', { pdb: value }) as DG.Viewer & IBiostructureViewer;
-        await new Promise<void>((resolve) => {
-          testEvent(viewer!.onRendered, () => {
-            this._onClicked.next();
-            resolve();
-          }, () => {
+    case DockingRole.ligand:
+    case DockingRole.target:
+    default: {
+      viewer = await df.plot.fromType('Biostructure', {pdb: value}) as DG.Viewer & IBiostructureViewer;
+      await new Promise<void>((resolve) => {
+        testEvent(viewer!.onRendered, () => {
+          this._onClicked.next();
+          resolve();
+        }, () => {
             viewer!.invalidate('onClick()'); // To trigger viewer.onRendered
-          }, 10000);
-        });
-      }
+        }, 10000);
+      });
+    }
     }
 
-    return { tview, viewer };
+    return {tview, viewer};
   }
 
   static getOrCreate(gridCell: DG.GridCell): PdbGridCellRendererBack {
@@ -123,9 +124,9 @@ export class PdbGridCellRendererBack extends CellRendererBackAsyncBase<NglGlProp
 }
 
 export class PdbGridCellRenderer extends DG.GridCellRenderer {
-  get name(): string { return 'xray'; }
+  get name(): string { return 'Molecule3D'; }
 
-  get cellType(): string { return 'xray'; }
+  get cellType(): string { return 'Molecule3D'; }
 
   get defaultHeight(): number { return 300; }
 
@@ -160,5 +161,75 @@ export class PdbGridCellRenderer extends DG.GridCellRenderer {
       return;
     const back = PdbGridCellRendererBack.getOrCreate(gridCell);
     back.render(g, x, y, w, h, gridCell, cellStyle);
+  }
+}
+
+/// Shows PDB id when the cell is small, and renders protein if the cell is higher than 40 pixels
+export class PdbIdGridCellRenderer extends DG.GridCellRenderer {
+  imageCache: LruCache<string, HTMLImageElement> = new LruCache<string, HTMLImageElement>();
+  pdbIdHeight: number = 25;
+
+  get defaultWidth() { return 100; }
+  get defaultHeight() { return 100; }
+  get name(): string { return 'PDB_ID'; }
+  get cellType(): string { return 'PDB_ID'; }
+
+  render(
+    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle,
+  ): void {
+    const renderedOnGrid = gridCell.gridColumn && gridCell.grid?.canvas === g.canvas;
+    const cellValue = (renderedOnGrid ? gridCell.cell.valueString : (gridCell.cell?.value ?? '').toString()).toLowerCase();
+
+    if (h < 40 || cellValue.length < 4 || w < 40) {
+      // Small cell - render text only
+      DG.GridCellRenderer.byName('string')?.render(g, x, y, w, h, gridCell, cellStyle);
+    } else {
+      // Large cell - render image with text header
+      this.renderLargeCell(g, x, y, w, h, gridCell, cellStyle, cellValue, renderedOnGrid);
+    }
+  }
+
+  private renderLargeCell(
+    g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
+    gridCell: DG.GridCell, cellStyle: DG.GridCellStyle, cellValue: string, renderedOnGrid: boolean
+  ): void {
+    const pdb = cellValue;
+    const url = `https://cdn.rcsb.org/images/structures/${pdb}_assembly-1.jpeg`;
+    const cache = this.imageCache;
+
+    if (this.imageCache.has(url)) {
+      const img = this.imageCache.get(url);
+      if (img) {
+        const fit = new DG.Rect(x, y + this.pdbIdHeight, w, h - this.pdbIdHeight).fit(img.width, img.height);
+        g.drawImage(img, fit.x, fit.y, fit.width, fit.height);
+        
+        // Render text in header
+        DG.GridCellRenderer.byName('string')?.render(g, x, y, w, this.pdbIdHeight, gridCell, cellStyle);
+      }
+    } else {
+      // Render text in header while loading
+      DG.GridCellRenderer.byName('string')?.render(g, x, y, w, this.pdbIdHeight, gridCell, cellStyle);
+
+      fetch(url).then(async (response) => {
+        if (!response.ok) {
+          g.fillStyle = 'red';
+          g.fillRect(x + w - 5, y, 5, 5);
+          return;
+        }
+
+        const blob = await response.blob();
+        const img = new Image();
+        img.src = URL.createObjectURL(blob);
+        img.onload = () => {
+          cache.set(url, img);
+          if (renderedOnGrid)
+            gridCell.render();
+          else
+            this.render(g, x, y + this.pdbIdHeight, w, h - this.pdbIdHeight, gridCell, cellStyle);
+          URL.revokeObjectURL(img.src);
+        };
+      }).catch((_) => { });
+    }
   }
 }

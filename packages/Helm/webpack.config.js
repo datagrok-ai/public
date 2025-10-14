@@ -1,6 +1,8 @@
+
 const path = require('path');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
-
+const FuncGeneratorPlugin = require('datagrok-tools/plugins/func-gen-plugin');
+  
 const mode = process.env.NODE_ENV ?? 'production';
 if (mode !== 'production')
   console.warn(`Building '${packageName}' in '${mode}' mode.`);
@@ -61,4 +63,7 @@ module.exports = {
     libraryTarget: 'var',
     path: path.resolve(__dirname, 'dist'),
   },
+  plugins:[
+    new FuncGeneratorPlugin({outputPath: './src/package.g.ts'})
+  ]
 };

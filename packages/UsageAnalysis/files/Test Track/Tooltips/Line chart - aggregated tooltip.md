@@ -6,7 +6,7 @@ To ensure that the aggregated tooltip is correctly displayed on the Line Chart e
 2. Add Line Chart Viewer
 - Set the X Axis to Chemist521.
 - Set the Y Axis to CAST Idea ID.
-3. Open the tooltip settings in the Line Chart viewer. Add Aggregated Tooltip (for example, Stereo Category - contact unique; Average Mass - min)
+3. Open the tooltip settings in the Line Chart viewer. Add Aggregated Tooltip (for example, Stereo Category - concat unique; Average Mass - min)
 4. Split the chart by a specific column, such as Stereo Category. Verify that the chart is now divided into multiple lines based on the split column.
 5. Hover Over the Line Chart. Move the mouse pointer over different points (dots) on the line chart.
 6. Verify Tooltip Display:

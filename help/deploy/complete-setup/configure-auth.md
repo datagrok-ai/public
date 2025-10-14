@@ -9,6 +9,8 @@ Datagrok supports many [authentication](../../govern/access-control/access-contr
 * [LDAP](#ldap-authentication)
 * [Google](#oauth-authentication)
 * [OpenID](#openid-authentication)
+* [SAML](#saml-authentication)
+* [IAP](#iap-authentication)
 * GitHub
 * Facebook
 
@@ -58,6 +60,11 @@ Datagrok integrates with your LDAP or Active Directory server enabling the smoot
 8. Set LDAP User DN. It should look like `CN=USER-DATAGROK,OU=users,DC=datagrok,DC=ai`
 9. Set LDAP User password
 
+>Note: To ensure only domain-managed users can access the platform:
+>
+>1. Disable 'Signup Allowed' to prevent unauthorized users from registering directly on Datagrok.
+>2. Enable 'Signup Enabled' in _'Domain Authentication'_ to allow new users already registered in the organization's LDAP or Active Directory (AD) system to log in.
+
 ## Oauth authentication
 
 Datagrok supports Google, Facebook and GitHub OAUTH authentication.
@@ -81,3 +88,17 @@ Datagrok supports the OpenID protocol to allow users to be authenticated using O
    provide optional claims for the application
 7. OpenID auto-login can be enabled using the 'Open Id Auto Login' option
 8. Make sure the correct Web Root is set in 'Admin' section
+9. Check Keep Token if you want to enable seamless integration with services. Datagrok requests offline scope and keeps encrypted external token in session metadata. 
+
+## SAML authentication
+
+1. Go to Datagrok Settings section 'Users and Sessions'
+2. Enable SAML authentication
+3. Copy ACS URI and Entity ID to SAML provider (i.e. Google or Azure AD)
+4. Copy SSO URI to Datagrok as IdP Endpoint and Certificate. Make sure you switch to a multiline edit mode when copying certificate.
+5. Make sure you have mappings in your authentication provided: email, first_name, last_name 
+
+## IAP authentication
+
+Datagrok supports [Google IAP](https://cloud.google.com/security/products/iap) out of the box. 
+Configure Identity-Aware Proxy for Datagrok server for automatic login.

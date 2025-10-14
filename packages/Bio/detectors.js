@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* eslint-disable max-lines-per-function */
 /* eslint-disable max-lines */
 'use strict';
@@ -11,6 +12,7 @@
  * TODO: Use detectors from WebLogo pickUp.. methods
  */
 // eslint-disable-next-line max-lines
+/// <reference path="../../globals.d.ts" />
 
 const SEQ_SAMPLE_LIMIT = 100;
 const SEQ_SAMPLE_LENGTH_LIMIT = 100;
@@ -88,7 +90,11 @@ class BioPackageDetectors extends DG.Package {
   }
 
   /** Parts of the column name required in the column's name under the detector. It must be in lowercase. */
-  likelyColNamePartList = ['seq', 'msa', 'dna', 'rna', 'fasta', 'helm', 'sense', 'protein'];
+  likelyColNamePartList = ['seq', 'msa', 'dna', 'rna', 'fasta', 'helm', 'sense', 'protein', 'pep', 'enumerated'];
+
+  veryLikelyColNamePartList = ['peptide', 'oligo', 'sequence', 'enumerated',
+    'heavy_chain', 'light_chain', 'heay-chain', 'light-chain', 'heavychain', 'lightchain',
+    'heavy chain', 'light chain'];
 
   peptideFastaAlphabet = new Set([
     'G', 'L', 'Y', 'S', 'E', 'Q', 'D', 'N', 'F', 'A',
@@ -152,7 +158,9 @@ class BioPackageDetectors extends DG.Package {
       const colName = col.name;
       const colNameLikely = this.likelyColNamePartList.some(
         (requiredColNamePart) => colName.toLowerCase().includes(requiredColNamePart));
-      const seqMinLength = colNameLikely ? 7 : 10;
+      const colNameVeryLikely = this.veryLikelyColNamePartList.some(
+        (requiredColNamePart) => colName.toLowerCase().includes(requiredColNamePart));
+      const seqMinLength = colNameVeryLikely ? 3 : colNameLikely ? 7 : 10;
       const maxBadRatio = colNameLikely ? 0.05 : 0.005;
 
       // Fail early
@@ -166,7 +174,7 @@ class BioPackageDetectors extends DG.Package {
         this.sample(col, SEQ_SAMPLE_LIMIT))
         .map((seq) => !!seq ? seq.substring(0, SEQ_SAMPLE_LENGTH_LIMIT * 5) : '')
         .filter((seq) => seq.length !== 0/* skip empty values for detector */),
-      )];
+      )].map((s) => s?.trim());
       last.categoriesSample = categoriesSample;
 
       // To collect alphabet freq three strategies can be used:
@@ -189,10 +197,24 @@ class BioPackageDetectors extends DG.Package {
         return DG.SEMTYPE.MACROMOLECULE;
       }
 
+      //not HELM
+      const dotIsLikelyBilnSplitter = categoriesSample.every((s) => {
+        const parts = s.split('.');
+        // each part should be connected
+        return parts.length == 1 || parts.every((p) => /\(\d{1,2},\d{1,2}\)/g.test(p));
+      });
+      // if the dot (dissalowed character for macromolecules) is likely a biln separator,
+      // we can just replace it with '-' and remove all connection parts to help detector detect it as separator
+      if (dotIsLikelyBilnSplitter) {
+        for (let i = 0; i < categoriesSample.length; i++)
+          categoriesSample[i] = categoriesSample[i].replaceAll(/\(\d{1,2},\d{1,2}\)/g, '').replaceAll('.', '-');
+      }
+
+      const multiplier = colNameVeryLikely ? 1.4 : colNameLikely ? 1.2 : 1.0;
       const decoyAlphabets = [
-        ['NUMBERS', this.numbersRawAlphabet, 0.25, undefined],
-        ['SMILES', this.smilesRawAlphabet, 0.25, (seq) => seq.replaceAll()],
-        ['SMARTS', this.smartsRawAlphabet, 0.45, undefined],
+        ['NUMBERS', this.numbersRawAlphabet, 0.25 * multiplier, undefined],
+        ['SMILES', this.smilesRawAlphabet, 0.25 * multiplier, (seq) => seq.replaceAll()],
+        ['SMARTS', this.smartsRawAlphabet, 0.45 * multiplier, undefined],
       ];
 
       const candidateAlphabets = [
@@ -304,7 +326,6 @@ class BioPackageDetectors extends DG.Package {
           col.setTag(SeqHandler.TAGS.alphabetIsMultichar, alphabetIsMultichar ? 'true' : 'false');
         }
 
-        refineSeqSplitter(col, stats, separator).then(() => { });
         col.setTag(DG.TAGS.CELL_RENDERER, 'sequence');
         return DG.SEMTYPE.MACROMOLECULE;
       }
@@ -619,37 +640,60 @@ class BioPackageDetectors extends DG.Package {
         event.preventDefault();
         return true;
       }
+
+      if (event.args.item && event.args.item instanceof DG.GridColumn && event.args.item.column && // there might be cases where PDS sequences with spaces are detected as text
+        event.args.item.column.type === DG.TYPE.STRING && (!event.args.item.column.semType || event.args.item.column.semType === DG.SEMTYPE.TEXT)) {
+        const contextMenu = event.args.menu;
+        const column = event.args.item.column;
+        try {
+          this.addForceDetectionDialog(column, contextMenu);
+        } catch (err) {
+          console.error(err);
+        }
+        event.preventDefault();
+        return true;
+      }
     });
   }
-}
 
-async function refineSeqSplitter(col, stats, separator) {
-  let invalidateRequired = false;
+  addForceDetectionDialog(column, menu) {
+    const menuGroup = menu.group('Bio');
+    const notations = ['separator', 'fasta'];
+    const separators = ['-', '/', '.'];
 
-  const refinerList = [
-    {package: 'SequenceTranslator', name: 'refineNotationProviderForHarmonizedSequence'},
-  ];
+    menuGroup.item('Set As Macromolecule', () => {
+      const sampleCategories = column.categories.slice(0, 40).filter((c) => !!c);
+      // detect if the column is potentially a custom notation
+      //const isCustom = sampleCategories.filter((c) => /\(\d\)/.test(c)).length > sampleCategories.length / 2;
 
-  for (const refineFuncFind of refinerList) {
-    try {
-      const funcList = DG.Func.find(refineFuncFind);
-      if (funcList.length === 0) continue;
+      const detectedSeparator = separators
+        .map((sep) => ({sep, minCount: sampleCategories.map((c) => c.split(sep).length).reduce((a, b) => Math.min(a, b), Infinity)}))
+        .reduce((a, b) => (((b.minCount > a.minCount && b.minCount != Infinity) || a.minCount == Infinity) ? b : a), {sep: '', minCount: 0});
+      const defaultAlphabet = 'UN'; // no way that canonical alphabet is not detected, this will only be used for times when MM is not detected
 
-      const funcFc = funcList[0].prepare({col: col, stats: stats, separator: separator});
-      const refineRes = (await funcFc.call()).getOutputParamValue();
-      invalidateRequired ||= refineRes;
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  if (invalidateRequired) {
-    // Applying custom notation provider MUST invalidate SeqHandler
-    delete col.temp[SeqTemps.seqHandler];
-
-    for (const view of grok.shell.tableViews) {
-      if (view.dataFrame === col.dataFrame)
-        view.grid.invalidate();
-    }
+      const defaultSeparator = ((detectedSeparator.sep && detectedSeparator.minCount !== Infinity && detectedSeparator.minCount > 2) ? detectedSeparator.sep : undefined);
+      const defaultNotation = defaultSeparator ? 'separator' : 'fasta';
+      const notationInput = ui.input.choice('Notation', {value: defaultNotation, items: notations, nullable: false});
+      const separatorInput = ui.input.choice('Separator', {value: defaultSeparator, items: separators, nullable: true});
+      ui.dialog('Set Column As Macromolecule')
+        .add(notationInput)
+        .add(separatorInput)
+        .show()
+        .onOK(() => {
+          const splitSamples = sampleCategories.map((s) => s.split(separatorInput.value ?? ''));
+          const splitLengths = splitSamples.map((s) => s.length).filter((l) => l > 0);
+          const isMultichar = splitSamples.some((s) => s.some((ss) => ss.length > 1)); // if any of the split samples has a length more than 1, then it is multichar
+          //const medianLength = splitSamples[Math.floor(splitSamples.length / 2)];
+          const averageLength = splitLengths.reduce((a, b) => a + b, 0) / splitSamples.length;
+          const std = Math.sqrt(splitLengths.map((x) => Math.pow(x - averageLength, 2)).reduce((a, b) => a + b, 0) / splitSamples.length);
+          const isPotentiallyMSA = averageLength > 1 && std < 2; // if the average length is more than 1 and the std is less than 0.5, then it is potentially MSA
+          column.setTag('units', notationInput.value);
+          separatorInput.value && column.setTag('separator', separatorInput.value);
+          column.setTag('aligned', isPotentiallyMSA ? 'SEQ.MSA' : 'SEQ');
+          column.setTag('alphabet', defaultAlphabet);
+          isMultichar && column.setTag('.alphabetIsMultichar', 'true');
+          column.semType = 'Macromolecule';
+        });
+    });
   }
 }

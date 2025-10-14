@@ -36,7 +36,8 @@ export const getSearchProgressEventName =
 export const getSearchQueryAndType = (molecule: string | null, type: string, fp: string, similarity: number) =>
   molecule ? type !== SubstructureSearchType.IS_SIMILAR ? `${molecule}_${type}` : `${molecule}_${type}_${fp}_${similarity}` : '';
 export const FILTER_SCAFFOLD_TAG = 'chem-scaffold-filter';
-export const ALIGN_BY_SCAFFOLD_TAG = '.chem-scaffold-align';
+export const ALIGN_BY_SCAFFOLD_TAG = '.chem-scaffold-align'; // todo: Remove this tag in future, should be replaced with ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG
+export const ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG = '.%chem-scaffold-align';
 export const HIGHLIGHT_BY_SCAFFOLD_TAG = '.%chem-scaffold-highlight';
 export const SCAFFOLD_COL = 'scaffold-col';
 export const PARENT_MOL_COL = 'parent-mol-col';
@@ -51,7 +52,7 @@ export enum SubstructureSearchType {
   NOT_CONTAINS = 'Not contains',
   NOT_INCLUDED_IN = 'Not included in'
 }
-export const FILTER_TYPE_TAG = '.filter-type'
+export const FILTER_TYPE_TAG = '.filter-type';
 export const AVAILABLE_FPS = [Fingerprint.Morgan, Fingerprint.AtomPair, Fingerprint.MACCS,
   Fingerprint.RDKit, Fingerprint.TopologicalTorsion];
 export const SCAFFOLD_TREE_HIGHLIGHT = '.chem-scaffold-tree-highlight';

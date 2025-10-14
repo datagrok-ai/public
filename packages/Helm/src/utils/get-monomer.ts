@@ -69,9 +69,13 @@ export function rewriteLibraries(monomerLib: IMonomerLib): void {
         });
         webEditorMonomer.at = at;
       } else if (monomer[SMILES] != null) {
-        // @ts-ignore
-        webEditorMonomer.rs = Object.keys(getRS(monomer[SMILES].toString())).length;
-        webEditorMonomer.at = monomerLib.getRS(monomer[SMILES].toString());
+        const rs = monomerLib.getRS(monomer[SMILES].toString());
+        if(rs == null || Object.keys(rs).length === 0) {
+          isBroken = true;
+        } else {
+          webEditorMonomer.rs = Object.keys(rs).length;
+          webEditorMonomer.at = rs;
+        }
       } else
         isBroken = true;
 

@@ -1,12 +1,14 @@
 export enum StringMetricsNames {
     Levenshtein = 'Levenshtein',
     JaroWinkler = 'Jaro-Winkler',
-    Manhattan = 'Manhattan',
+    Manhattan = 'Manhattan String',
     Onehot = 'One-Hot',
   }
 
 export enum VectorMetricsNames {
     Euclidean = 'Euclidean',
+    Manhattan = 'Manhattan',
+    Cosine = 'Vector Cosine',
   }
 
 export enum BitArrayMetricsNames {
@@ -21,7 +23,7 @@ export enum BitArrayMetricsNames {
     Russel = 'Russel',
     Sokal = 'Sokal',
     Hamming = 'Hamming',
-    Euclidean = 'Euclidean',
+    Euclidean = 'Euclidean BitArray',
   }
 
 export enum IntArrayMetricsNames {
