@@ -10,7 +10,7 @@ import TabItem from '@theme/TabItem';
 
 ## Domains
 
-Datagrok core is data-agnostic. Using [plugins](../../develop/how-to/create-package.md), you can 
+Datagrok core is data-agnostic. Using [plugins](../../develop/how-to/packages/create-package.md), you can 
 customize the platform for any domain of knowledge. For example:
 
 * Automatic recognition of domain-specific data types, e.g., molecules
@@ -23,7 +23,7 @@ customize the platform for any domain of knowledge. For example:
 <Tabs>
 <TabItem value="chem" label="Cheminformatics" default>
 
-* Automatic detection of chemical structures upon data import. Support for [multiple formats](../../access/files/supported-formats.md#molecule-structure-formats)
+* Automatic detection of chemical structures upon data import. Support for [multiple formats](../../access/files/supported-formats.md#cheminformatics)
 * Highly customized 2D (RDKit or OpenChemLib) and 3D (NGL) rendering of molecules
 * Multiple molecular sketchers
 * Powerful, chemical spreadsheet and other chemically-aware viewers
@@ -65,7 +65,7 @@ clustering and other tasks, [dimensionality reduction using WebGPU](../../explor
 <TabItem value="data-science" label="Data science" default>
 
 * Support for all major data science tasks, from data preparation to PCA/PCL
-* [Exploratory data analysis](domains/use-cases/eda.md) with built-in statistics
+* [Exploratory data analysis](workflows/eda.md) with built-in statistics
 * Integration with [Jupyter Notebook](../../compute/jupyter-notebook.md)
 * [Predictive modeling](../../learn/learn.md)
 * [Dimensionality reduction using WebGPU](../../explore/dim-reduction.md)
@@ -104,8 +104,8 @@ clustering and other tasks, [dimensionality reduction using WebGPU](../../explor
   encryption, and audit trails. Data catalog
 * Collaboration features with version control across projects
 * Scales well
-* Extensive customization options through [plugins](../../develop/how-to/create-package.md)
+* Extensive customization options through [plugins](../../develop/how-to/packages/create-package.md)
 * Real-time data processing and analytics. [Usage analysis](../../govern/audit/usage-analysis.md)
 * Flexible deployment options: cloud-based, on-premises, hybrid
 
-[**Visit the Enterprise IT page >**](enterprise/enterprise.md)
+[**Visit the Enterprise IT page >**](teams/it/enterprise.md)

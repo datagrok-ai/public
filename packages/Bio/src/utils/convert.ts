@@ -6,7 +6,7 @@ import $ from 'cash-dom';
 import {Subscription} from 'rxjs';
 
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 
 let convertDialog: DG.Dialog | null = null;
@@ -15,13 +15,14 @@ let convertDialogSubs: Subscription[] = [];
 /**
  * Converts notations of a Macromolecule column
  *
- * @param {DG.column} col Column with 'Macromolecule' semantic type
+ * @param {DG.Column<string>} col Column with 'Macromolecule' semantic type
+ * @param {ISeqHelper} seqHelper
  */
-export function convert(col?: DG.Column): void {
+export function convert(col: DG.Column<string> | undefined, seqHelper: ISeqHelper): void {
   let srcCol = col ?? grok.shell.t.columns.bySemType('Macromolecule')!;
   if (!srcCol)
     throw new Error('No column with Macromolecule semantic type found');
-  let converterSh = SeqHandler.forColumn(srcCol);
+  let converterSh = seqHelper.getSeqHandler(srcCol);
   let currentNotation: NOTATION = converterSh.notation;
   const dialogHeader = ui.divText(
     'Current notation: ' + currentNotation,
@@ -38,22 +39,20 @@ export function convert(col?: DG.Column): void {
     NOTATION.FASTA,
     NOTATION.SEPARATOR,
     NOTATION.HELM,
+    NOTATION.BILN
   ];
   const toggleColumn = (newCol: DG.Column) => {
-    if (newCol.semType !== DG.SEMTYPE.MACROMOLECULE) {
-      targetColumnInput.value = srcCol;
-      return;
-    }
-
     srcCol = newCol;
-    converterSh = SeqHandler.forColumn(srcCol);
+    converterSh = seqHelper.getSeqHandler(srcCol);
     currentNotation = converterSh.notation;
     if (currentNotation === NOTATION.HELM)
       separatorInput.value = '/'; // helm monomers can have - in the name like D-aThr;
     dialogHeader.textContent = 'Current notation: ' + currentNotation;
-    filteredNotations = notations.filter((e) => e !== currentNotation);
-    targetNotationInput = ui.input.choice('Convert to', {value: filteredNotations[0], items: filteredNotations,
-      onValueChanged: toggleSeparator});
+    filteredNotations = notations;//.filter((e) => e !== currentNotation); TEMPORARY DO NOT FORGET TO UNCOMMENT
+    targetNotationInput = ui.input.choice('Convert to', {
+      value: filteredNotations[0], items: filteredNotations,
+      onValueChanged: toggleSeparator
+    });
     toggleSeparator();
     convertDialog?.clear();
     convertDialog?.add(ui.div([
@@ -64,11 +63,15 @@ export function convert(col?: DG.Column): void {
     ]));
   };
 
-  const targetColumnInput = ui.input.column('Column', {table: grok.shell.t, value: srcCol,
-    onValueChanged: (value) => toggleColumn(value)});
+  const targetColumnInput = ui.input.column('Column', {
+    table: grok.shell.t, value: srcCol,
+    filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE,
+    nullable: false,
+    onValueChanged: (value) => toggleColumn(value)
+  });
 
   const separatorArray = ['-', '.', '/'];
-  let filteredNotations = notations.filter((e) => e !== currentNotation);
+  let filteredNotations = notations;//.filter((e) => e !== currentNotation); // TEMPORARY DO NOT FORGET TO UNCOMMENT
 
   const separatorInput = ui.input.choice('Separator', {value: separatorArray[0], items: separatorArray});
 
@@ -79,8 +82,10 @@ export function convert(col?: DG.Column): void {
     else
       $(separatorInput.root).show();
   };
-  let targetNotationInput = ui.input.choice('Convert to', {value: filteredNotations[0], items: filteredNotations,
-    onValueChanged: toggleSeparator});
+  let targetNotationInput = ui.input.choice('Convert to', {
+    value: filteredNotations[0], items: filteredNotations,
+    onValueChanged: toggleSeparator
+  });
 
   // set correct visibility on init
   toggleSeparator();
@@ -101,7 +106,7 @@ export function convert(col?: DG.Column): void {
         const targetNotation = targetNotationInput.value as NOTATION;
         const separator: string | undefined = targetNotation === NOTATION.SEPARATOR ? separatorInput.value! : undefined;
 
-        await convertDo(srcCol, targetNotation, separator);
+        await convertDo(srcCol, seqHelper, targetNotation, separator);
       })
       .show({x: 350, y: 100});
 
@@ -118,8 +123,8 @@ export function convert(col?: DG.Column): void {
  * @param {NOTATION} targetNotation Target notation
  * @param {string | null} separator Separator for SEPARATOR notation
  */
-export async function convertDo(srcCol: DG.Column, targetNotation: NOTATION, separator?: string): Promise<DG.Column> {
-  const converterSh = SeqHandler.forColumn(srcCol);
+export async function convertDo(srcCol: DG.Column, seqHelper: ISeqHelper, targetNotation: NOTATION, separator?: string): Promise<DG.Column> {
+  const converterSh = seqHelper.getSeqHandler(srcCol);
   const newColumn = converterSh.convert(targetNotation, separator);
   srcCol.dataFrame.columns.add(newColumn);
 

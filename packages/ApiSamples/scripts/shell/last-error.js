@@ -4,4 +4,4 @@
 // Then comment this bad line above and run the script again.
 // The alert will contain the error's text.
 
-alert(grok.shell.lastError);
+alert(await grok.shell.lastError);

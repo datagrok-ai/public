@@ -15,7 +15,7 @@ import {
   getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {getSeqHelper, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 
 import {_package} from '../package-test';
@@ -60,11 +60,13 @@ category('toAtomicLevel', async () => {
   /** Backup actual user's monomer libraries settings */
   let userLibSettings: UserLibSettings;
 
+  let seqHelper: ISeqHelper;
   let monomerLib: IMonomerLib;
   let rdKitModule: RDModule;
 
   before(async () => {
     rdKitModule = await getRdKitModule();
+    seqHelper = await getSeqHelper();
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
     // Clear settings to test default
@@ -76,6 +78,7 @@ category('toAtomicLevel', async () => {
       const inputPath = testData.inPath;
 
       sourceDf[testName] = DG.DataFrame.fromCsv((await fileSource.readAsText(testData.inPath)).replace(/\n$/, ''));
+      sourceDf[testName].name = testData.inPath.split('/').pop()!;
       await grok.data.detectSemanticTypes(sourceDf[testName]);
       targetDf[testName] = DG.DataFrame.fromCsv((await fileSource.readAsText(testData.outPath)).replace(/\n$/, ''));
     }
@@ -91,6 +94,7 @@ category('toAtomicLevel', async () => {
     // await toAtomicLevel(source, inputCol, false);
     await grok.functions.call('Bio:toAtomicLevel', {table: source, seqCol: inputCol, nonlinear: false});
     const obtainedCol = source.getCol(outputColName);
+    // DG.Utils.download(source.name.endsWith('.csv') ? source.name : source.name + '.csv', source.toCsv());
     const expectedCol = target.getCol(outputColName);
     const obtainedArray: string[] = wu(obtainedCol.values()).map((mol) => polishMolfile(mol)).toArray();
     const expectedArray: string[] = wu(expectedCol.values()).map((mol) => polishMolfile(mol)).toArray();
@@ -214,8 +218,10 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr
     seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
     seqCol.meta.units = NOTATION.FASTA;
     seqCol.setTag(bioTAGS.alphabet, ALPHABET.PT);
-    const sh = SeqHandler.forColumn(seqCol);
+    const sh = seqHelper.getSeqHandler(seqCol);
     const resCol = (await _testToAtomicLevel(srcDf, 'seq', monomerLibHelper))!;
+    // DG.Utils.download('molfile.mol', polishMolfile(resCol.get(0)));
+
     expect(polishMolfile(resCol.get(0)), polishMolfile(tgtMol));
   });
 
@@ -223,7 +229,7 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Thr_PO3H2.Aca.Tyr
     df: DG.DataFrame, seqColName: string = 'seq', monomerLibHelper: IMonomerLibHelper
   ): Promise<DG.Column | null> {
     const seqCol: DG.Column<string> = df.getCol(seqColName);
-    const res = await _toAtomicLevel(df, seqCol, monomerLib, rdKitModule);
+    const res = await _toAtomicLevel(df, seqCol, monomerLib, seqHelper, rdKitModule);
     if (res.warnings.length > 0)
       _package.logger.warning(`_toAtomicLevel() warnings ${res.warnings.join('\n')}`);
     return res.molCol;

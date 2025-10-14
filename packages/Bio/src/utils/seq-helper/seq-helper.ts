@@ -9,15 +9,17 @@ import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {MolfileWithMap} from '@datagrok-libraries/bio/src/monomer-works/types';
-import {getMolColName, hexToPercentRgb} from '@datagrok-libraries/bio/src/monomer-works/utils';
+import {getMolColName} from '@datagrok-libraries/bio/src/monomer-works/utils';
 import {ChemTags} from '@datagrok-libraries/chem-meta/src/consts';
-import {getMolHighlight} from '@datagrok-libraries/bio/src/monomer-works/seq-to-molfile';
 import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/index';
 
 import {HelmToMolfileConverter} from '../helm-to-molfile/converter';
-import {MonomerLibManager} from '../monomer-lib/lib-manager';
-
-import {_package, getMonomerLibHelper} from '../../package';
+import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
+import {SeqHandler} from './seq-handler';
+import {Column} from 'datagrok-api/dg';
+import {NOTATION, TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+import {_package} from '../../package';
 
 type SeqHelperWindowType = Window & { $seqHelperPromise?: Promise<SeqHelper> };
 declare const window: SeqHelperWindowType;
@@ -25,12 +27,53 @@ declare const window: SeqHelperWindowType;
 export class SeqHelper implements ISeqHelper {
   constructor(
     private readonly libHelper: IMonomerLibHelper,
-    private readonly helmHelper: IHelmHelper,
     private readonly rdKitModule: RDModule
   ) {}
 
-  getHelmToMolfileConverter(monomerLib: IMonomerLibBase): HelmToMolfileConverter {
-    return new HelmToMolfileConverter(this.helmHelper, this.rdKitModule, monomerLib);
+  getSeqHandler(seqCol: DG.Column<string>): ISeqHandler {
+    return SeqHandler.forColumn(seqCol, this);
+  }
+
+  getSeqMonomers(seqCol: Column<string>): string[] {
+    const sh = this.getSeqHandler(seqCol);
+    return Object.keys(sh.stats.freq);
+  }
+
+  // TODO: Move to the Helm package
+  async getHelmToMolfileConverter(monomerLib: IMonomerLibBase): Promise<HelmToMolfileConverter> {
+    const helmHelper: IHelmHelper = await getHelmHelper();
+    return new HelmToMolfileConverter(helmHelper, this.rdKitModule, monomerLib);
+  }
+
+  helmToAtomicLevelSingle(
+    helm: string, converter: HelmToMolfileConverter, chiralityEngine?: boolean, beautifyMol: boolean = true) {
+    if (!helm)
+      return MolfileWithMap.createEmpty();
+    const molfileV3k = converter.convertToMolfileV3K([helm])[0];
+    if (!molfileV3k || !molfileV3k.molfile)
+      return MolfileWithMap.createEmpty();
+    let mol: RDMol | null = null;
+    try {
+      let v3k = molfileV3k.molfile;
+      if (beautifyMol) {
+        mol = this.rdKitModule.get_mol(v3k);
+        if (!mol)
+          return MolfileWithMap.createEmpty();
+        mol.set_new_coords();
+        mol.normalize_depiction(1);
+        mol.straighten_depiction(true);
+        v3k = mol.get_v3Kmolblock();
+      }
+      if (chiralityEngine)
+        v3k = converter.molV3KtoMolV3KOCL(v3k);
+      return new MolfileWithMap(v3k, molfileV3k.monomers);
+    } catch (err) {
+      const [errMsg, errStack] = errInfo(err);
+      _package.logger.error(errMsg, undefined, errStack);
+      return MolfileWithMap.createEmpty();
+    } finally {
+      mol?.delete();
+    }
   }
 
   async helmToAtomicLevel(
@@ -41,42 +84,40 @@ export class SeqHelper implements ISeqHelper {
     const df: DG.DataFrame = helmCol.dataFrame;
     const molColName: string = getMolColName(df, helmCol.name);
 
-    const converter = this.getHelmToMolfileConverter(monomerLib);
-
-    //#region From HelmToMolfileConverter.convertToRdKitBeautifiedMolfileColumn
-
-    const molfilesV3K = converter.convertToMolfileV3K(helmCol, this.rdKitModule, monomerLib);
-
-    const beautifiedMolList: (RDMol | null)[] = molfilesV3K.map((item) => {
-      const molfile = item.molfile;
-      if (molfile === '')
-        return null;
-      const mol = this.rdKitModule.get_mol(molfile);
-      if (!mol)
-        return null;
-      mol.set_new_coords();
-      mol.normalize_depiction(1);
-      mol.straighten_depiction(true);
-      return mol;
-    });
-
-    let molList: string[];
-    if (chiralityEngine) {
-      molList = converter.getMolV3000ViaOCL(beautifiedMolList, molColName).toList();
-      // TODO: Cleanup mol objects
-    } else {
-      molList = beautifiedMolList.map((mol) => {
-        if (mol === null)
-          return '';
-        const molBlock = mol.get_v3Kmolblock();
-        mol!.delete();
-        return molBlock;
-      });
-    }
+    const converter = await this.getHelmToMolfileConverter(monomerLib);
 
     //#endregion From HelmToMolfileConverter
+    const helmList = helmCol.toList();
+    const molList = new Array<string>(helmCol.length);
+    // this function is paralelized and in threads, so will not block the UI. OFC, we prefer to use it.
+    // if not found, we will use the default one running in main thread...
+    const beautifyMolsChemFunc = DG.Func.find({package: 'Chem', name: 'beautifyMols'})[0];
+    // similarly, OCL Function is also paralelized and in threads, so will not block the UI.
+    const OCLFunc = DG.Func.find({package: 'Chem', name: 'convertToV3KViaOCL'})[0];
 
-    const molHlList = molfilesV3K.map((item: MolfileWithMap) => getMolHighlight(item.monomers.values(), monomerLib));
+    // depending on the function found, we will use it or not. if not, use internal OCL and beautification
+    for (let i = 0; i < helmCol.length; i++) {
+      molList[i] = (this.helmToAtomicLevelSingle(helmList[i], converter,
+        chiralityEngine && !OCLFunc, !beautifyMolsChemFunc)).molfile;
+    }
+    // need to beautify the molfiles
+    if (beautifyMolsChemFunc) {
+      const beautifiedMols = await beautifyMolsChemFunc.apply({mols: molList});
+      if (beautifiedMols && Array.isArray(beautifiedMols) && beautifiedMols.length === helmCol.length) {
+        for (let i = 0; i < helmCol.length; i++)
+          beautifiedMols[i] && (molList[i] = beautifiedMols[i]);
+      }
+    }
+    // handle OCL
+    if (chiralityEngine && OCLFunc) {
+      const oclMols = await OCLFunc.apply({mols: molList});
+      if (oclMols && Array.isArray(oclMols) && oclMols.length === helmCol.length) {
+        for (let i = 0; i < helmCol.length; i++)
+          oclMols[i] && (molList[i] = oclMols[i]);
+      } else
+        grok.shell.warning('OCL function returned an unexpected result');
+    }
+    //const molHlList = molfilesV3K.map((item: MolfileWithMap) => getMolHighlight(item.monomers.values(), monomerLib));
 
     const molCol = DG.Column.fromStrings(molColName, molList);
     molCol.semType = DG.SEMTYPE.MOLECULE;
@@ -86,17 +127,30 @@ export class SeqHelper implements ISeqHelper {
     return {molCol: molCol, warnings: []};
   }
 
-  static getInstance(): Promise<SeqHelper> {
-    let res = window.$seqHelperPromise;
-    if (res == undefined) {
-      res = window.$seqHelperPromise = (async () => {
-        if (!_package.initialized)
-          throw new Error('Bio package is not initialized, call Bio:getSeqHelper');
-        const instance = new SeqHelper(
-          await MonomerLibManager.getInstance(), await getHelmHelper(), _package.rdKitModule);
-        return instance;
-      })();
-    }
-    return res;
+  public setUnitsToFastaColumn(uh: SeqHandler) {
+    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE || uh.column.meta.units !== NOTATION.FASTA)
+      throw new Error(`The column of notation '${NOTATION.FASTA}' must be '${DG.SEMTYPE.MACROMOLECULE}'.`);
+
+    uh.column.meta.units = NOTATION.FASTA;
+    SeqHandler.setTags(uh);
+  }
+
+  public setUnitsToSeparatorColumn(uh: SeqHandler, separator?: string) {
+    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE)
+      throw new Error(`The column of notation '${NOTATION.SEPARATOR}' must be '${DG.SEMTYPE.MACROMOLECULE}'.`);
+    if (!separator)
+      throw new Error(`The column of notation '${NOTATION.SEPARATOR}' must have the separator tag.`);
+
+    uh.column.meta.units = NOTATION.SEPARATOR;
+    uh.column.setTag(TAGS.separator, separator);
+    SeqHandler.setTags(uh);
+  }
+
+  public setUnitsToHelmColumn(uh: SeqHandler) {
+    if (uh.column.semType !== DG.SEMTYPE.MACROMOLECULE)
+      throw new Error(`The column of notation '${NOTATION.HELM}' must be '${DG.SEMTYPE.MACROMOLECULE}'`);
+
+    uh.column.meta.units = NOTATION.HELM;
+    SeqHandler.setTags(uh);
   }
 }

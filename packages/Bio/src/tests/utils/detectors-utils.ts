@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 
 import {ALIGNMENT, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {expect} from '@datagrok-libraries/utils/src/test';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 export type DetectorTestData = { [testName: string]: { csv: string, neg?: string[], pos?: { [colName: string]: PosCol } } };
 
@@ -35,8 +35,8 @@ export async function _testNeg(readDf: DfReaderFunc, colName: string) {
 }
 
 export async function _testPos(
-  readDf: DfReaderFunc, colName: string, units: string, aligned: string | null,
-  alphabet: string | null, alphabetSize: number, alphabetIsMultichar?: boolean,
+  readDf: DfReaderFunc, colName: string, seqHelper: ISeqHelper,
+  units: string, aligned: string | null, alphabet: string | null, alphabetSize: number, alphabetIsMultichar?: boolean,
   separator: string | null = null,
 ) {
   const df: DG.DataFrame = await readDf();
@@ -53,7 +53,7 @@ export async function _testPos(
   if (separator)
     expect(col.getTag(bioTAGS.separator), separator);
 
-  const sh = SeqHandler.forColumn(col);
+  const sh = seqHelper.getSeqHandler(col);
   expect(sh.getAlphabetSize(), alphabetSize);
   expect(sh.getAlphabetIsMultichar(), alphabetIsMultichar);
   if (!sh.isHelm()) {

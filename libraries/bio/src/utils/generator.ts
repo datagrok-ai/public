@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 
 import {ALPHABET, getAlphabet, NOTATION, TAGS} from './macromolecule';
-import {SeqHandler} from './seq-handler';
+import {ISeqHelper} from './seq-helper';
 import {StringListSeqSplitted} from './macromolecule/utils';
 import {IMonomerLib} from '../types/index';
 import {PolymerTypes} from '../helm/consts';
@@ -19,8 +19,8 @@ export function generateManySequences(): DG.Column[] {
   return columns;
 }
 
-/** Generates the column 'MSA' with sequences length of order 10^6 and the 'Activity' float column. */
-export function generateLongSequence(length: number = 10 ** 5): DG.Column[] {
+/** Generates the column 'MSA' with sequences length of order 10^5 and the 'Activity' float column. */
+export function generateLongSequence(length: number = 10 ** 4): DG.Column[] {
   const longSequence =
     `meI/hHis/Aca/N//dE/Thr_PO3H2/Aca/D-Tyr_Et/Tyr_ab-dehydroMe`.repeat(Math.ceil(length / 10)).slice(0, -1);
   const msaCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'MSA', new Array(10 ** 2).fill(longSequence));
@@ -36,7 +36,7 @@ export function generateLongSequence(length: number = 10 ** 5): DG.Column[] {
   return columns;
 }
 
-export function generateLongSequence2(
+export function generateLongSequence2(seqHelper: ISeqHelper,
   notation: NOTATION = NOTATION.SEPARATOR, alphabet: ALPHABET = ALPHABET.PT,
   separator: string | undefined = (notation === NOTATION.SEPARATOR ? '-' : undefined),
   monomerLib: IMonomerLib | undefined = undefined,
@@ -52,7 +52,7 @@ export function generateLongSequence2(
   col.setTag(TAGS.alphabet, alphabet);
   if (notation == NOTATION.SEPARATOR) col.setTag(TAGS.separator, separator!);
 
-  const sh = SeqHandler.forColumn(col);
+  const sh = seqHelper.getSeqHandler(col);
   for (let rowI = 0; rowI < rowCount; rowI++) {
     const seqMList: string[] = wu.count(0).take(seqLength)
       .map((i) => { return alphabetSet[Math.floor(Math.random() * alphabetSize)]; })

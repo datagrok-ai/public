@@ -1,0 +1,15 @@
+{
+  "tags": [
+    "demo",
+    "default",
+    "scripting viewer",
+    "pyodide"
+  ],
+  "description": "This dataset contains an information about all of the mountains in Scotland above 3000 feet. Scripting viewer plots height against latitude",
+  "tables": [
+    {
+      "path": "demo/geo/scottish_hills.csv",
+      "id": "493e67e0-73f0-11ef-de85-2f2f9c113cfb"
+    }
+  ]
+}

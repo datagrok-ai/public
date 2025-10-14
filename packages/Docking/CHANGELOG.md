@@ -1,5 +1,17 @@
 # Docking changelog
 
+## 1.1.2 (2024-10-21)
+
+### Bug Fixes
+
+* Docking: Increased timeout for clinfo test
+
+## 1.1.1 (2024-10-18)
+
+### Bug Fixes
+
+* Docking: Fixed dockLigandColumn test
+
 ## 1.0.4 (2024-08-23)
 
 ### Features
@@ -13,7 +25,7 @@ Add description to the Docking demo card.
 
 ## 1.0.2 (2024-04-12)
 
-### Bug fixes
+### Bug Fixes
 
 * Upgraded BiostructureViewer package to a newer version
 
@@ -32,7 +44,7 @@ Add description to the Docking demo card.
 * [#2568](https://github.com/datagrok-ai/public/issues/2568): Docking: Input UI
 * [#2732](https://github.com/datagrok-ai/public/issues/2732): Docking: Handle docking error for a particular ligand
 
-### Bug fixes
+### Bug Fixes
 
 * Fix AutoDock for pose_count param
 * Fix AutoDock convert, add tests

@@ -4,12 +4,12 @@ import {Bond} from './types';
 
 export class ConnectionList {
   constructor(connectionList: string) {
-    const splitted = connectionList.split(HELM_ITEM_SEPARATOR);
+    const splitted = connectionList.split(HELM_ITEM_SEPARATOR).filter((ci) => ci);
     splitted.forEach((connectionItem: string) => this.validateConnectionItem(connectionItem));
     this.connectionItems = splitted;
   }
 
-  private connectionItems: string[];
+  public connectionItems: string[];
 
   private validateConnectionItem(connectionItem: string): void {
     const allowedType = `(${HELM_POLYMER_TYPE.PEPTIDE}|${HELM_POLYMER_TYPE.RNA})`;
@@ -18,10 +18,10 @@ export class ConnectionList {
       throw new Error(`Cannot parse connection item from ${connectionItem}`);
   }
 
-  getConnectionData(): {polymerId: string, bond: Bond}[][] {
-    const result: {polymerId: string, bond: Bond}[][] = [];
+  getConnectionData(): { polymerId: string, bond: Bond }[][] {
+    const result: { polymerId: string, bond: Bond }[][] = [];
     this.connectionItems.forEach((connectionItem: string) => {
-      const pair: {polymerId: string, bond: Bond}[] = [];
+      const pair: { polymerId: string, bond: Bond }[] = [];
       const splitted = connectionItem.split(',');
       splitted[2].split('-').forEach((item, idx) => {
         const polymerId = splitted[idx];

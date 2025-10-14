@@ -1,14 +1,76 @@
 # utils changelog
 
+## 4.6.9 (2025-10-09)
+
+Query builder: converting strings in dates inputs
+
+## 4.6.8 (2025-09-24)
+
+Query builder: allow empty values for string input with 'equal' and 'not equat' operators
+
+## 4.6.7 (2025-09-24)
+
+Additional parameters for application header renderer
+
+## 4.6.1 (2025-07-28)
+
+Expect support dayjs
+Expect support checking for addinal keys/colums
+Json serialization added dayjs
+
+## 4.6.0 (2025-07-25)
+
+Compatibility with 1.26.0
+
+## 4.5.8 (2025-05-02)
+
+Fixes JSON serialization for NaN/Infinity
+
+## 4.5.6 (2025-04-22)
+
+Fixed error in invokeTestsInCategory
+
+## 4.5.5 (2025-04-22)
+
+Fixed tests failing due to DG.Widget.getAll() errors
+
+## 4.5.3 (2025-04-14)
+
+Added the drawLines method
+
+## 4.4.2 (2025-03-10)
+
+Added a method to verify that a container is running, starting it if necessary
+
+## 4.4.1 (2025-14-01)
+
+Testing output info minor update
+
+## 4.3.9 (2024-13-07)
+
+Added ability to set test owner in core tests
+
+## 4.3.9 (2024-11-07)
+
+Added ability to set category responsivness
+
+## 4.3.8 (2024-11-06)
+
+Added ability to set test responsivness
+
+## 4.3.7 (2024-10-31)
+
+Fix svgToImage for non Latin1 chars
+
 ## 4.3.6 (2024-10-03)
 
 Add new item getting from items grid
 
-## 4.3.4 (2024-09-25) 
+## 4.3.4 (2024-09-25)
 
 utils lib: Add setActive and onValueChanged for ActiveFiles for dialog history
 
-## 4.3.5 (2024-09-26) 
+## 4.3.5 (2024-09-26)
 
 utils lib: Add setActive and onValueChanged for ActiveFiles for dialog history
 

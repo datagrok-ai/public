@@ -1,4 +1,3 @@
-//tags: FileInfo
 //help-url: https://datagrok.ai/help/develop/how-to/access-data
 // JS API methods for working with files
 
@@ -24,16 +23,23 @@
 
   // Search files
   let recursive = true;
-  let searchPattern = 'world';
-  res = await grok.dapi.files.list('System:AppData/Samples/geo', recursive, searchPattern);
+  let searchPattern = 'test';
+  res = await grok.dapi.files.list('System:AppData/Samples/', recursive, searchPattern);
   console.log(`list: ${res}`);
 
-  // Move files
+  //Create Directory
+  await grok.dapi.files.createDirectory('System:AppData/Samples/geo')
+  
+  // Move files 
   await grok.dapi.files.move(['System:AppData/Samples/testFile.txt'], 'Samples/geo');
   res = await grok.dapi.files.exists('System:AppData/Samples/geo/testFile.txt');
   console.log(`testFile.txt was moved to geo: ${res}`);
 
+  //Remove Directory
+  await grok.dapi.files.delete('System:AppData/Samples/geo')
+  
   // Delete files
   await grok.dapi.files.delete('System:AppData/Samples/geo/testFile.txt');
   await grok.dapi.files.delete('System:AppData/Samples/testFile.dat');
+  await grok.dapi.files.delete('System:AppData/Samples/renamed.txt');
 })();

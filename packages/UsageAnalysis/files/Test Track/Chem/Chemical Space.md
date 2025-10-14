@@ -6,7 +6,7 @@
 6. Click OK to run a function with edited parameters.
 ---
 {
-  "order": 4,
+  "order": 8,
   "datasets": [
     "System:DemoFiles/chem/smiles.csv"
   ]

@@ -16,6 +16,7 @@ module.exports = {
     "@typescript-eslint"
   ],
   "rules": {
+    "@typescript-eslint/no-unused-vars": ["warn", { "varsIgnorePattern": "^(_|ui$|grok$|DG$)", "argsIgnorePattern": "^_"}],
     "no-trailing-spaces": "off",
     "indent": [
       "error",

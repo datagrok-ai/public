@@ -24,7 +24,7 @@ COPY --chown=grok:grok --from=pip_builder $VIRTUAL_ENV $VIRTUAL_ENV
 ENV PATH ${VIRTUAL_ENV}/bin:$PATH
 
 COPY . .
-EXPOSE 5353
+EXPOSE 15353
 CMD ["python", "app.py"]
 
 # hello

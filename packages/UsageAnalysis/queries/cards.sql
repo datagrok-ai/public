@@ -7,39 +7,44 @@
 --connection: System:Datagrok
 --test: UniqueUsersCount(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'], ['all'])
 with recursive selected_groups as (
-  select id from groups
-  where id::varchar = any(@groups)
-  union
-  select gr.child_id as id from selected_groups sg
-  join groups_relations gr on sg.id = gr.parent_id
+    select id from groups where id = any(@groups)
+    union
+    select gr.child_id from selected_groups sg
+    join groups_relations gr on sg.id = gr.parent_id
 ),
-_dates as (
-select min(event_time) as min_date, max(event_time) as max_date from events WHERE @date(event_time)
+_dates as (select min(event_time) as min_date, max(event_time) as max_date from events where @date(event_time)),
+dates as (select min_date - (max_date - min_date) as min_prev_date, min_date, max_date from _dates),
+relevant_events as (
+    select id, event_time, session_id
+    from events
+    where event_time between (select min_prev_date from dates) and (select max_date from dates)
 ),
-dates as (
-select min_date - (max_date - min_date) as min_prev_date, min_date, max_date from _dates
+relevant_parameters as (select id from event_parameters where name = 'package' or type = 'entity_id'),
+relevant_epv as (
+    select distinct on (epv.event_id) epv.*
+    from event_parameter_values epv
+    where epv.parameter_id in (select id from relevant_parameters)
+    and epv.value_uuid is not null and epv.value <> 'null'
 ),
-res AS (
-select u.id as uid, case when e.event_time < min_date then 1 else 2 end as period
-from events e
-inner join event_types et on e.event_type_id = et.id
-left join entities en on et.id = en.id
-left join published_packages pp on en.package_id = pp.id
-left join event_parameter_values epv inner join event_parameters ep on epv.parameter_id = ep.id and ep.name = 'package'
-on epv.event_id = e.id
-left join published_packages pp1 on pp1.id = epv.value_uuid
-left join event_parameter_values epv1 inner join event_parameters ep1 on epv1.parameter_id = ep1.id and ep1.type = 'entity_id'
-inner join entities e1 on epv1.value != 'null' and e1.id = epv1.value_uuid
-inner join published_packages pp2 inner join packages p2 on p2.id = pp2.package_id on e1.package_id = pp2.id
-on epv1.event_id = e.id
-inner join users_sessions s on e.session_id = s.id
-inner join users u on u.id = s.user_id
-inner join dates d on e.event_time between d.min_prev_date and d.max_date
-inner join selected_groups sg on u.group_id = sg.id
-where (coalesce(pp.name, pp1.name, pp2.name, 'Core') = any(@packages) or @packages = ARRAY['all']::varchar[])
-)
-select (select count(distinct res.uid) as count1 from res where period = 1),
-(select count(distinct res.uid) as count2 from res where period = 2)
+joined as (
+select
+    u.id as uid,
+    case when e.event_time < d.min_date then 1 else 2 end as period
+from relevant_events e
+    join relevant_epv epv on epv.event_id = e.id
+    join entities en on en.id = epv.value_uuid
+    left join published_packages pp on pp.id = en.package_id
+    left join published_packages pp1 on pp1.id = en.id
+    join users_sessions s on e.session_id = s.id
+    join users u on u.id = s.user_id
+    join selected_groups sg on u.group_id = sg.id
+    cross join dates d
+where coalesce(pp.name, pp1.name, 'Core') = any(@packages) or @packages = ARRAY['all']
+    )
+select
+    count(distinct uid) filter (where period=1) as count1,
+        count(distinct uid) filter (where period=2) as count2
+from joined
 --end
 
 
@@ -52,7 +57,7 @@ select (select count(distinct res.uid) as count1 from res where period = 1),
 --test: NewUsersCount(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'])
 with recursive selected_groups as (
   select id from groups
-  where id::varchar = any(@groups)
+  where id = any(@groups)
   union
   select gr.child_id as id from selected_groups sg
   join groups_relations gr on sg.id = gr.parent_id
@@ -83,7 +88,7 @@ select (select count(distinct res.uid) as count1 from res where period = 1),
 --test: SessionsCount(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'])
 with recursive selected_groups as (
   select id from groups
-  where id::varchar = any(@groups)
+  where id = any(@groups)
   union
   select gr.child_id as id from selected_groups sg
   join groups_relations gr on sg.id = gr.parent_id
@@ -118,7 +123,7 @@ select (select count(distinct res.eid) as count1 from res where period = 1),
 --test1: ViewsCount(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'])
 with recursive selected_groups as (
   select id from groups
-  where id::varchar = any(@groups)
+  where id = any(@groups)
   union
   select gr.child_id as id from selected_groups sg
   join groups_relations gr on sg.id = gr.parent_id
@@ -151,7 +156,7 @@ select (select count(distinct res.qid) as count1 from res where period = 1),
 --test: ConnectionsCount(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'], ['all'])
 with recursive selected_groups as (
   select id from groups
-  where id::varchar = any(@groups)
+  where id = any(@groups)
   union
   select gr.child_id as id from selected_groups sg
   join groups_relations gr on sg.id = gr.parent_id
@@ -171,7 +176,7 @@ inner join users u on u.id = c.author_id
 inner join dates d on c.created_on between d.min_prev_date and d.max_date
 inner join selected_groups sg on u.group_id = sg.id
 where en.is_deleted = false
-and (coalesce(pp.name, 'Core') = any(@packages) or @packages = ARRAY['all']::varchar[])
+and (coalesce(pp.name, 'Core') = any(@packages) or @packages = ARRAY['all'])
 )
 select (select count(distinct res.cid) as count1 from res where period = 1),
 (select count(distinct res.cid) as count2 from res where period = 2)
@@ -188,7 +193,7 @@ select (select count(distinct res.cid) as count1 from res where period = 1),
 --test: QueriesCount(date='today', ['1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5'], ['all'])
 with recursive selected_groups as (
   select id from groups
-  where id::varchar = any(@groups)
+  where id = any(@groups)
   union
   select gr.child_id as id from selected_groups sg
   join groups_relations gr on sg.id = gr.parent_id
@@ -208,7 +213,7 @@ inner join users u on u.id = q.author_id
 inner join dates d on q.created_on between d.min_prev_date and d.max_date
 inner join selected_groups sg on u.group_id = sg.id
 where en.is_deleted = false
-and (coalesce(pp.name, 'Core') = any(@packages) or @packages = ARRAY['all']::varchar[])
+and (coalesce(pp.name, 'Core') = any(@packages) or @packages = ARRAY['all'])
 )
 select (select count(distinct res.qid) as count1 from res where period = 1),
 (select count(distinct res.qid) as count2 from res where period = 2)

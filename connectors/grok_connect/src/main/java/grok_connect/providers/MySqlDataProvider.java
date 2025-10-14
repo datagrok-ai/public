@@ -25,8 +25,8 @@ public class MySqlDataProvider extends JdbcDataProvider {
         descriptor.type = "MySQL";
         descriptor.description = "Query MySQL database";
         descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
-        descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
-        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
+        descriptor.connectionTemplate.add(DbCredentials.getSsl());
+        descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
         descriptor.canBrowseSchema = true;
         descriptor.nameBrackets = "`";
         descriptor.commentStart = "-- ";
@@ -69,6 +69,7 @@ public class MySqlDataProvider extends JdbcDataProvider {
                 properties.setProperty("verifyServerCertificate", "false");
             }
         }
+        properties.setProperty("socketTimeout", "180000");
         return properties;
     }
 
@@ -103,7 +104,7 @@ public class MySqlDataProvider extends JdbcDataProvider {
         return "SELECT c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
                 + "c.data_type as data_type, "
                 + "case t.table_type when 'VIEW' then 1 else 0 end as is_view FROM information_schema.columns c "
-                + "JOIN information_schema.tables t ON t.table_name = c.table_name " + whereClause +
+                + "JOIN information_schema.tables t ON t.table_name = c.table_name AND t.table_schema = c.table_schema AND t.table_catalog = c.table_catalog " + whereClause +
                 " ORDER BY c.ORDINAL_POSITION;";
     }
 

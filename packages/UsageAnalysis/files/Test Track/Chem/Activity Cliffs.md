@@ -12,7 +12,7 @@
 11. Click OK to run a function with edited parameters.
 ---
 {
-  "order": 3,
+  "order": 7,
   "datasets": [
     "System:DemoFiles/SPGI.csv",
     "System:DemoFiles/chem/smiles.csv",

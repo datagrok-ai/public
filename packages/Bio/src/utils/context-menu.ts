@@ -1,30 +1,31 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
-import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {_package} from '../package';
+import {TAGS as bioTags} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 
-export function addCopyMenuUI(cell: DG.Cell, menu: DG.Menu): void {
-  const sh = SeqHandler.forColumn(cell.column);
-  const tgtNotationList: string[] = Object.values(NOTATION).filter((v) => v !== sh.units);
+export function addCopyMenuUI(cell: DG.Cell, menu: DG.Menu, seqHelper: ISeqHelper): void {
+  const tgtNotationList: string[] = Object.values(NOTATION).filter((v) => v !== NOTATION.CUSTOM);
 
   menu.group('Copy')
     .items(tgtNotationList, (tgtNotation) => {
       const srcCol = cell.column;
       const srcRowIdx = cell.rowIndex;
-      const srcSh = SeqHandler.forColumn(srcCol);
-      const separator = tgtNotation === NOTATION.SEPARATOR ? _package.properties.defaultSeparator : undefined;
+      const srcSh = seqHelper.getSeqHandler(srcCol);
+      const separator = tgtNotation === NOTATION.SEPARATOR ? (_package.properties.defaultSeparator ?? '-') : undefined;
       const joiner = srcSh.getJoiner({notation: tgtNotation as NOTATION, separator});
       const srcSS = srcSh.getSplitted(srcRowIdx);
       const tgtSeq = joiner(srcSS);
 
-      if (!navigator.clipboard) {
+      if (!navigator.clipboard)
         grok.shell.warning('The clipboard functionality requires a secure origin — either HTTPS or localhost');
-      } else {
+      else {
         navigator.clipboard.writeText(tgtSeq);
         grok.shell.info(`Value of notation '${tgtNotation}' copied to clipboard`);
       }

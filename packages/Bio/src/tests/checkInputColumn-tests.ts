@@ -2,12 +2,20 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, expect} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {getSeqHelper, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+
 import {checkInputColumn} from '../utils/check-input-column';
 
 category('checkInputColumn', () => {
+  let seqHelper: ISeqHelper;
+
+  before(async () => {
+    seqHelper = await getSeqHelper();
+  });
+
   const csv = `seq
 seq1,
 seq2,
@@ -22,9 +30,8 @@ seq4`;
     col.setTag(bioTAGS.alphabet, ALPHABET.DNA);
     col.setTag(bioTAGS.aligned, 'SEQ');
 
-    const [res, _msg]: [boolean, string] = checkInputColumn(
-      col, 'Test', [NOTATION.FASTA],
-      [ALPHABET.DNA, ALPHABET.RNA, ALPHABET.PT]);
+    const [res, _msg]: [boolean, string] = checkInputColumn(col, 'Test', seqHelper,
+      [NOTATION.FASTA], [ALPHABET.DNA, ALPHABET.RNA, ALPHABET.PT]);
 
     expect(res, true);
   });
@@ -37,9 +44,8 @@ seq4`;
     // col.setTag(bio.TAGS.alphabetSize, '11');
     col.setTag(bioTAGS.alphabetIsMultichar, 'true');
 
-    const [res, _msg]: [boolean, string] = checkInputColumn(
-      col, 'Test', [NOTATION.FASTA],
-      [ALPHABET.DNA, ALPHABET.RNA, ALPHABET.PT]);
+    const [res, _msg]: [boolean, string] = checkInputColumn(col, 'Test', seqHelper,
+      [NOTATION.FASTA], [ALPHABET.DNA, ALPHABET.RNA, ALPHABET.PT]);
 
     expect(res, false);
   });
@@ -54,9 +60,8 @@ seq4`;
     col.setTag(bioTAGS.alphabetIsMultichar, 'true');
     col.setTag(bioTAGS.aligned, 'SEQ');
 
-    const [res, _msg]: [boolean, string] = checkInputColumn(
-      col, 'Test', [NOTATION.FASTA],
-      [ALPHABET.DNA, ALPHABET.RNA, ALPHABET.PT]);
+    const [res, _msg]: [boolean, string] = checkInputColumn(col, 'Test', seqHelper,
+      [NOTATION.FASTA], [ALPHABET.DNA, ALPHABET.RNA, ALPHABET.PT]);
 
     expect(res, false);
   });

@@ -1,14 +1,24 @@
+/* eslint-disable max-lines */
+/* eslint-disable max-lines-per-function */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
 import {NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 
 import {ConverterFunc} from './types';
+import {_testBilnToHelm, _testHelmToBiln, bilnToHelmTestsData, helmToBilnTestsData} from './biln-tests';
 
 
 category('converters', () => {
+  let seqHelper: ISeqHelper;
+
+  before(async () => {
+    seqHelper = await getSeqHelper();
+  });
+
   enum Samples {
     fastaPt = 'fastaPt',
     separatorPt = 'separatorPt',
@@ -133,7 +143,7 @@ RNA1{p.r(U)p.r(U)p.r(C)p.r(A)p.r(A)p.r(C)p.r(U)p.r(U)p.r(C)p.r(A)p.r(A)p.r(C)p.p
       throw new Error(`Argument 'separator' is mandatory for target notation '${tgtNotation.toString()}'.`);
 
     return function(srcCol: DG.Column): DG.Column {
-      const converterSh = SeqHandler.forColumn(srcCol);
+      const converterSh = seqHelper.getSeqHandler(srcCol);
       const resCol = converterSh.convert(tgtNotation, tgtSeparator);
       expect(resCol.meta.units, tgtNotation);
       return resCol;
@@ -152,8 +162,8 @@ RNA1{p.r(U)p.r(U)p.r(C)p.r(A)p.r(A)p.r(C)p.r(U)p.r(U)p.r(C)p.r(A)p.r(A)p.r(C)p.p
     const tgtCol: DG.Column = tgtDf.getCol('seq');
 
     expectArray(resCol.toList(), tgtCol.toList());
-    const srcSh: SeqHandler = SeqHandler.forColumn(srcCol);
-    const resSh: SeqHandler = SeqHandler.forColumn(resCol);
+    const srcSh: ISeqHandler = seqHelper.getSeqHandler(srcCol);
+    const resSh: ISeqHandler = seqHelper.getSeqHandler(resCol);
     for (const [tagName, tgtTagValue] of Object.entries(tgtCol.tags)) {
       if (
         !bioTagsSet.has(tagName) ||
@@ -280,4 +290,15 @@ RNA1{p.r(U)p.r(U)p.r(C)p.r(A)p.r(A)p.r(C)p.r(U)p.r(U)p.r(C)p.r(A)p.r(A)p.r(C)p.p
   test('testHelmLonePhosphorus', async () => {
     await _testConvert(Samples.helmLonePhosphorus, converter(NOTATION.FASTA), Samples.fastaRna);
   });
+
+  for (const sample of bilnToHelmTestsData) {
+    test(`testBilnToHelm_${sample.name}`, async () => {
+      await _testBilnToHelm(sample.biln, sample.helm, seqHelper);
+    });
+  }
+  for (const sample of helmToBilnTestsData) {
+    test(`testHelmToBiln_${sample.name}`, async () => {
+      await _testHelmToBiln(sample.helm, sample.biln, seqHelper);
+    });
+  }
 });

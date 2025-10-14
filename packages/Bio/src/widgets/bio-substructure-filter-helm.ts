@@ -10,15 +10,17 @@ import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {delay} from '@datagrok-libraries/utils/src/test';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {updateDivInnerHTML} from '../utils/ui-utils';
 import {helmSubstructureSearch} from '../substructure-search/substructure-search';
-import {BioFilterBase, BioFilterProps} from './bio-substructure-filter-types';
+import {BioFilterBase, BioFilterProps}
+  from '@datagrok-libraries/bio/src/substructure-filter/bio-substructure-filter-types';
 
 import {_package} from '../package';
 
 export class HelmBioFilter extends BioFilterBase<BioFilterProps> /* implements IRenderer */ {
-  readonly emptyProps = new BioFilterProps('');
+  readonly emptyProps = new BioFilterProps('', undefined, _package.logger);
 
   helmEditor: IHelmWebEditor;
   _filterPanel = ui.div('', {style: {cursor: 'pointer'}});
@@ -32,7 +34,9 @@ export class HelmBioFilter extends BioFilterBase<BioFilterProps> /* implements I
 
   get type(): string { return 'HelmBioFilter'; }
 
-  constructor() {
+  constructor(
+    private readonly seqHelper: ISeqHelper,
+  ) {
     super();
     this.logger = _package.logger;
   }
@@ -65,7 +69,7 @@ export class HelmBioFilter extends BioFilterBase<BioFilterProps> /* implements I
             try {
               const webEditorValue = webEditorApp!.canvas!.getHelm(true)
                 .replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
-              this.props = new BioFilterProps(webEditorValue);
+              this.props = new BioFilterProps(webEditorValue, undefined, _package.logger);
             } catch (err: any) {
               this.logger.error(err);
             } finally {
@@ -138,7 +142,7 @@ export class HelmBioFilter extends BioFilterBase<BioFilterProps> /* implements I
     _package.logger.debug(`${logPrefix}, start`);
     try {
       await delay(10);
-      const res = await helmSubstructureSearch(this.props.substructure, column);
+      const res = await helmSubstructureSearch(this.props.substructure, column, this.seqHelper);
       return res;
     } finally {
       _package.logger.debug(`${logPrefix}, end`);

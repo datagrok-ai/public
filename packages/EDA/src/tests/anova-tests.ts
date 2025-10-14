@@ -83,5 +83,5 @@ category('ANOVA', () => {
 
     // check F-critical
     expect(eq(analysis.fCritical, EXPECTED.F_CRIT), true, 'Incorrect F-critical');
-  }, {timeout: TIMEOUT, benchmark: true});
+  }, {timeout: TIMEOUT});
 });

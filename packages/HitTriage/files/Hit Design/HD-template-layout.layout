@@ -1,0 +1,475 @@
+{
+  "#type": "ViewLayout",
+  "viewStateMap": {
+    "containerType": "horizontal",
+    "state": {
+      "width": 1773,
+      "height": 962
+    },
+    "children": [
+      {
+        "containerType": "vertical",
+        "state": {
+          "width": 216,
+          "height": 962
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 216,
+              "height": 637,
+              "element": {
+                "id": "30599300-9b00-11ef-83aa-ade2dad747c7",
+                "type": "Filters",
+                "look": {
+                  "#type": "FiltersLook",
+                  "filters": [
+                    {
+                      "type": "Chem:substructureFilter",
+                      "column": "Molecule",
+                      "active": true,
+                      "columnName": "Molecule",
+                      "molBlock": "\n     RDKit          2D\n\n  0  0  0  0  0  0  0  0  0  0999 V2000\nM  END\n",
+                      "searchType": "Contains",
+                      "simCutOff": 0.8,
+                      "fp": "Morgan",
+                      "boolInput": null
+                    },
+                    {
+                      "type": "categorical",
+                      "column": "Mutagenicity",
+                      "active": true,
+                      "boolInput": null
+                    },
+                    {
+                      "type": "categorical",
+                      "column": "Tumorigenicity",
+                      "active": true,
+                      "boolInput": null
+                    },
+                    {
+                      "type": "categorical",
+                      "column": "Stage",
+                      "active": true,
+                      "boolInput": null
+                    },
+                    {
+                      "type": "categorical",
+                      "column": "V-iD",
+                      "active": true,
+                      "boolInput": null
+                    },
+                    {
+                      "type": "histogram",
+                      "column": "MolWt",
+                      "active": true,
+                      "filterOutMissingValues": false,
+                      "showMissingValuesOnly": false,
+                      "showHistogram": true,
+                      "showSlider": true,
+                      "showMinMax": false,
+                      "boolInput": null
+                    },
+                    {
+                      "type": "histogram",
+                      "column": "MolWt",
+                      "active": true,
+                      "filterOutMissingValues": false,
+                      "showMissingValuesOnly": false,
+                      "showHistogram": true,
+                      "showSlider": true,
+                      "showMinMax": false,
+                      "boolInput": null
+                    }
+                  ]
+                },
+                "title": "Filters"
+              }
+            },
+            "children": []
+          },
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 216,
+              "height": 324,
+              "element": {
+                "id": "3059ba10-9b00-11ef-e008-ad86b971aeb5",
+                "type": "Bar chart",
+                "look": {
+                  "#type": "BarChartLook",
+                  "valueColumnName": "MolWt",
+                  "valueAggrType": "count",
+                  "barSortType": "by value",
+                  "barSortOrder": "desc",
+                  "splitColumnName": "Molecule"
+                },
+                "title": "Bar chart"
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "containerType": "vertical",
+        "state": {
+          "width": 1556,
+          "height": 962
+        },
+        "children": [
+          {
+            "containerType": "fill",
+            "state": {
+              "width": 1556,
+              "height": 636,
+              "documentManager": true
+            },
+            "children": [
+              {
+                "containerType": "panel",
+                "state": {
+                  "width": 1556,
+                  "height": 636,
+                  "element": {
+                    "id": "3059e120-9b00-11ef-8b1e-990055203570",
+                    "type": "Grid",
+                    "look": {
+                      "#type": "GridLook",
+                      "showAddNewRowIcon": true,
+                      "addNewRowOnLastRowEdit": true,
+                      "rowHeight": 100,
+                      "topLevelDefaultMenu": true,
+                      "allowColumnMenu": true,
+                      "columns": [
+                        {
+                          "width": 20,
+                          "backgroundColor": 4294440951,
+                          "customName": "",
+                          "cellType": "row header",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 200,
+                          "columnName": "Molecule",
+                          "cellType": "Molecule",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "width": 140,
+                          "columnName": "Stage",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {},
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 72,
+                          "columnName": "V-iD",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 96,
+                          "columnName": "MolWt",
+                          "customFormat": "0.0000000",
+                          "cellType": "number",
+                          "format": "0.0000000",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 111,
+                          "columnName": "Stereo centers",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "width": 101,
+                          "columnName": "Mutagenicity",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {},
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "width": 113,
+                          "columnName": "Tumorigenicity",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {},
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 136,
+                          "columnName": "CHEMBL molregno",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 0,
+                          "columnName": "~Molecule.Pattern",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 0,
+                          "columnName": "~Molecule.canonicalSmiles",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        }
+                      ]
+                    },
+                    "title": "Molecules",
+                    "default": true
+                  }
+                },
+                "children": []
+              }
+            ]
+          },
+          {
+            "containerType": "horizontal",
+            "state": {
+              "width": 1556,
+              "height": 325
+            },
+            "children": [
+              {
+                "containerType": "panel",
+                "state": {
+                  "width": 481,
+                  "height": 325,
+                  "element": {
+                    "id": "305a0830-9b00-11ef-90b8-75c470bdaf95",
+                    "type": "Bar chart",
+                    "look": {
+                      "#type": "BarChartLook",
+                      "valueColumnName": "MolWt",
+                      "valueAggrType": "count",
+                      "barSortType": "by value",
+                      "barSortOrder": "desc",
+                      "splitColumnName": "Mutagenicity"
+                    },
+                    "title": "Bar chart"
+                  }
+                },
+                "children": []
+              },
+              {
+                "containerType": "panel",
+                "state": {
+                  "width": 481,
+                  "height": 325,
+                  "element": {
+                    "id": "305a0830-9b00-11ef-ebe8-3b953a944959",
+                    "type": "Bar chart",
+                    "look": {
+                      "#type": "BarChartLook",
+                      "valueColumnName": "MolWt",
+                      "valueAggrType": "count",
+                      "barSortType": "by value",
+                      "barSortOrder": "desc",
+                      "splitColumnName": "Tumorigenicity"
+                    },
+                    "title": "Bar chart"
+                  }
+                },
+                "children": []
+              },
+              {
+                "containerType": "panel",
+                "state": {
+                  "width": 592,
+                  "height": 325,
+                  "element": {
+                    "id": "305a0830-9b00-11ef-c87b-c190d4f85135",
+                    "type": "Bar chart",
+                    "look": {
+                      "#type": "BarChartLook",
+                      "valueColumnName": "MolWt",
+                      "valueAggrType": "count",
+                      "barSortType": "by value",
+                      "barSortOrder": "desc",
+                      "splitColumnName": "Stage"
+                    },
+                    "title": "Bar chart"
+                  }
+                },
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "floating": [],
+    "tableId": "c4df3f50-9b00-11ef-dfe1-65915ab0c65f",
+    "tableName": "Table"
+  },
+  "columns": [
+    {
+      "name": "MolWt",
+      "type": "double",
+      "id": "305a5650-9b00-11ef-c10b-6bafc66c4948",
+      "friendlyName": "Mol Wt",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "305a2f40-9b00-11ef-c73e-2332a8594c2d"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "305a5650-9b00-11ef-8acd-21d48f2dd064"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "305a5650-9b00-11ef-d3df-25a3433c37aa"
+        }
+      ],
+      "metaParams": {
+        "format": "0.0000000",
+        ".source-precision": "7",
+        ".semantic-detection-duration": "6"
+      }
+    },
+    {
+      "name": "Stage",
+      "type": "string",
+      "id": "305a7d60-9b00-11ef-d625-65bb361131ca",
+      "friendlyName": "Stage",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "305a5650-9b00-11ef-ce78-89c9011260dd"
+        },
+        {
+          "tag": ".color-coding-type",
+          "id": "305a7d60-9b00-11ef-879b-2fd05b9f7bd5"
+        },
+        {
+          "tag": ".color-coding-categorical",
+          "id": "305a7d60-9b00-11ef-c4a6-65e8c6710147"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "5",
+        ".color-coding-type": "Categorical",
+        ".color-coding-categorical": "{}"
+      }
+    },
+    {
+      "name": "Tumorigenicity",
+      "type": "string",
+      "id": "305aa470-9b00-11ef-84d1-9989edad33ec",
+      "friendlyName": "Tumorigenicity",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "305a7d60-9b00-11ef-90ca-497fe67c78f2"
+        },
+        {
+          "tag": ".color-coding-type",
+          "id": "305a7d60-9b00-11ef-af4e-cb342a568ce4"
+        },
+        {
+          "tag": ".color-coding-categorical",
+          "id": "305a7d60-9b00-11ef-9e85-f30db7736c67"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".color-coding-type": "Categorical",
+        ".color-coding-categorical": "{}"
+      }
+    },
+    {
+      "name": "V-iD",
+      "type": "string",
+      "id": "305aa470-9b00-11ef-efe1-75b1b8bb81a7",
+      "friendlyName": "V-i D",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "305aa470-9b00-11ef-e19d-1d7c17d5196a"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1"
+      }
+    },
+    {
+      "name": "Molecule",
+      "type": "string",
+      "semType": "Molecule",
+      "id": "305acb80-9b00-11ef-fede-25da1bb0e7c6",
+      "friendlyName": "Molecule",
+      "entityTags": [
+        {
+          "tag": "quality",
+          "id": "305aa470-9b00-11ef-c786-4b1c9136a8d5"
+        },
+        {
+          "tag": "cell.renderer",
+          "id": "305acb80-9b00-11ef-8add-d7c457e22bdc"
+        }
+      ],
+      "metaParams": {
+        "quality": "Molecule",
+        "cell.renderer": "Molecule"
+      }
+    },
+    {
+      "name": "Mutagenicity",
+      "type": "string",
+      "id": "305acb80-9b00-11ef-dc29-778524833966",
+      "friendlyName": "Mutagenicity",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "305acb80-9b00-11ef-8d11-cdd92eb194c1"
+        },
+        {
+          "tag": ".color-coding-type",
+          "id": "305acb80-9b00-11ef-87f8-874bb1d02c39"
+        },
+        {
+          "tag": ".color-coding-categorical",
+          "id": "305acb80-9b00-11ef-c2a2-3f66fc08f262"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".color-coding-type": "Categorical",
+        ".color-coding-categorical": "{}"
+      }
+    }
+  ],
+  "name": "Table",
+  "friendlyName": "Table",
+  "author": {
+    "id": "878c42b0-9a50-11e6-c537-6bf8e9ab02ee"
+  },
+  "createdOn": "2024-11-28T13:46:37.484Z"
+}

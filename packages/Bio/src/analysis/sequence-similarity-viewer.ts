@@ -1,17 +1,19 @@
+/* eslint-disable max-len */
+/* eslint-disable space-infix-ops */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {SequenceSearchBaseViewer} from './sequence-search-base-viewer';
-import {getMonomericMols} from '../calculations/monomerLevelMols';
 import {createDifferenceCanvas, createDifferencesWithPositions} from './sequence-activity-cliffs';
-import {updateDivInnerHTML} from '../utils/ui-utils';
+import {adjustGridcolAfterRender, updateDivInnerHTML} from '../utils/ui-utils';
 import {Subject} from 'rxjs';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {alignSequencePair} from '@datagrok-libraries/bio/src/utils/macromolecule/alignment';
 import {KnnResult, SparseMatrixService} from '@datagrok-libraries/ml/src/distance-matrix/sparse-matrix-service';
 import {getEncodedSeqSpaceCol} from './sequence-space';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
+import {MmcrTemps, tempTAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
 
 export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   cutoff: number;
@@ -31,9 +33,20 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   knn?: KnnResult;
   kPrevNeighbors: number = 0;
   demo?: boolean;
+  analysisGrid?: DG.Grid;
+  subInited: boolean = false;
 
-  constructor(demo?: boolean) {
-    super('similarity');
+  // Track last parameters to avoid unnecessary recomputation
+  private lastDistanceMetric: string = '';
+  private lastFingerprint: string = '';
+  private lastGapOpen: number = 0;
+  private lastGapExtend: number = 0;
+
+  constructor(
+    private readonly seqHelper: ISeqHelper,
+    demo?: boolean,
+  ) {
+    super('similarity', DG.SEMTYPE.MACROMOLECULE);
     this.cutoff = this.float('cutoff', 0.01, {min: 0, max: 1});
     this.hotSearch = this.bool('hotSearch', true);
     this.similarColumnLabel = this.string('similarColumnLabel', null);
@@ -48,68 +61,99 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
   override async renderInt(computeData: boolean): Promise<void> {
     if (!this.beforeRender())
       return;
-    if (this.moleculeColumn) {
+    if (this.targetColumn) {
       this.curIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-      if (computeData && !this.gridSelect) {
-        this.targetMoleculeIdx = this.dataFrame!.currentRowIdx == -1 ? 0 : this.dataFrame!.currentRowIdx;
-        const sh = SeqHandler.forColumn(this.moleculeColumn!);
 
-        await (!sh.isHelm() ? this.computeByMM() : this.computeByChem());
+      // Force recomputation if parameters changed
+      const parametersChanged =
+        this.lastDistanceMetric !== this.distanceMetric ||
+        this.lastFingerprint !== this.fingerprint ||
+        this.lastGapOpen !== this.gapOpen ||
+        this.lastGapExtend !== this.gapExtend;
+
+      if ((computeData && !this.gridSelect) || parametersChanged) {
+        this.targetMoleculeIdx = (this.dataFrame!.currentRowIdx ?? -1) < 0 ? 0 : this.dataFrame!.currentRowIdx; await this.computeByMM();
         const similarColumnName: string = this.similarColumnLabel != null ? this.similarColumnLabel :
-          `similar (${this.moleculeColumnName})`;
+          `similar (${this.targetColumn})`;
         this.molCol = DG.Column.string(similarColumnName,
-          this.idxs!.length).init((i) => this.moleculeColumn?.get(this.idxs?.get(i)));
+          this.idxs!.length).init((i) => this.targetColumn?.get(this.idxs?.get(i)));
         this.molCol.semType = DG.SEMTYPE.MACROMOLECULE;
-        this.tags.forEach((tag) => this.molCol!.setTag(tag, this.moleculeColumn!.getTag(tag)));
+        this.tags.forEach((tag) => this.molCol!.setTag(tag, this.targetColumn!.getTag(tag)));
         const resDf = DG.DataFrame.fromColumns([this.idxs!, this.molCol!, this.scores!]);
-        resDf.onCurrentRowChanged.subscribe((_: any) => {
+        await resDf.meta.detectSemanticTypes();
+        await grok.data.detectSemanticTypes(resDf);
+        this.molCol.temp[tempTAGS.referenceSequence] = this.targetColumn!.get(this.targetMoleculeIdx);
+        this.molCol.temp[MmcrTemps.maxMonomerLength] = 4;
+        let prevTimer: any = null;
+        const _ = resDf.onCurrentRowChanged.subscribe((_: any) => {
+          prevTimer && clearTimeout(prevTimer);
+          if ((resDf.currentRowIdx ?? -1) < 0)
+            return;
           this.dataFrame.currentRowIdx = resDf.col('indexes')!.get(resDf.currentRowIdx);
-          setTimeout(() => { this.createPropertyPanel(resDf); }, 1000);
+          prevTimer = setTimeout(() => { this.createPropertyPanel(resDf); }, 300);
           this.gridSelect = true;
         });
-        const grid = resDf.plot.grid();
-        grid.col('indexes')!.visible = false;
+        if (!this.analysisGrid) {
+          this.analysisGrid = resDf.plot.grid();
+          updateDivInnerHTML(this.root, this.analysisGrid.root);
+        } else {
+          this.analysisGrid.dataFrame = resDf;
+          this.analysisGrid.invalidate();
+        }
+        this.analysisGrid.col('indexes')!.visible = false;
+        adjustGridcolAfterRender(this.analysisGrid, this.molCol!.name, 450, 30, true);
         const targetMolRow = this.idxs?.getRawData().findIndex((it) => it == this.targetMoleculeIdx);
-        const targetScoreCell = grid.cell('score', targetMolRow!);
+        const targetScoreCell = this.analysisGrid.cell('score', targetMolRow!);
         targetScoreCell.cell.value = null;
-        const view = this.demo ? (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView : grok.shell.v as DG.TableView;
-        view.grid.root.addEventListener('click', (_event: MouseEvent) => {
-          this.gridSelect = false;
-        });
-        updateDivInnerHTML(this.root, grid.root);
+        const view = grok.shell.tv;
+        if (!this.subInited) {
+          view.grid.root.addEventListener('click', (_event: MouseEvent) => {
+            this.gridSelect = false;
+          });
+          this.subInited = true;
+        }
         this.computeCompleted.next(true);
       }
     }
   }
 
-  private async computeByChem() {
-    const monomericMols = await getMonomericMols(this.moleculeColumn!);
-    //need to create df to calculate fingerprints
-    const _monomericMolsDf = DG.DataFrame.fromColumns([monomericMols]);
-    const df = await grok.functions.call('Chem:callChemSimilaritySearch', {
-      df: this.dataFrame,
-      col: monomericMols,
-      molecule: monomericMols.get(this.targetMoleculeIdx),
-      metricName: this.distanceMetric,
-      limit: this.limit,
-      minScore: this.cutoff,
-      fingerprint: this.fingerprint,
-    });
-    this.idxs = df.getCol('indexes');
-    this.scores = df.getCol('score');
-  }
-
   private async computeByMM() {
-    const len = this.moleculeColumn!.length;
+    const len = this.targetColumn!.length;
     const actualLimit = Math.min(this.limit, len - 1);
-    if (!this.knn || this.kPrevNeighbors !== actualLimit) {
-      const encodedSequences =
-        (await getEncodedSeqSpaceCol(this.moleculeColumn!, MmDistanceFunctionsNames.LEVENSHTEIN)).seqList;
 
+    // Check if need to recalculate knn due to parameter changes
+    const needsRecalculation = !this.knn ||
+      this.kPrevNeighbors !== actualLimit ||
+      this.lastDistanceMetric !== this.distanceMetric ||
+      this.lastFingerprint !== this.fingerprint ||
+      this.lastGapOpen !== this.gapOpen ||
+      this.lastGapExtend !== this.gapExtend;
+
+    if (needsRecalculation) {
+      const distanceFunction = this.distanceMetric as MmDistanceFunctionsNames;
+
+      // Call with individual parameters instead of params object
+      const encodedResult = await getEncodedSeqSpaceCol(
+        this.targetColumn!,
+        distanceFunction,
+        this.fingerprint,
+        this.gapOpen,
+        this.gapExtend
+      );
+      const encodedSequences = encodedResult.seqList;
+      const options = encodedResult.options;
+
+      // Store current parameters for next comparison
+      this.lastDistanceMetric = this.distanceMetric;
+      this.lastFingerprint = this.fingerprint;
+      this.lastGapOpen = this.gapOpen;
+      this.lastGapExtend = this.gapExtend;
       this.kPrevNeighbors = actualLimit;
+
       this.knn = await (new SparseMatrixService()
-        .getKNN(encodedSequences, MmDistanceFunctionsNames.LEVENSHTEIN, Math.min(this.limit, len - 1)));
+        .getKNN(encodedSequences, distanceFunction, actualLimit, options));
     }
+
     const indexWScore = new Array(actualLimit).fill(0).map((_, i) => ({
       idx: this.knn!.knnIndexes[this.targetMoleculeIdx][i],
       score: 1 - this.knn!.knnDistances[this.targetMoleculeIdx][i],
@@ -125,12 +169,13 @@ export class SequenceSimilarityViewer extends SequenceSearchBaseViewer {
     const molDifferences: { [key: number]: HTMLCanvasElement } = {};
     const molColName = this.molCol?.name!;
     const resCol: DG.Column<string> = resDf.col(molColName)!;
-    const molColSh = SeqHandler.forColumn(this.moleculeColumn!);
-    const resSh = SeqHandler.forColumn(resCol);
+    const molColSh = this.seqHelper.getSeqHandler(this.targetColumn!);
+    const resSh = this.seqHelper.getSeqHandler(resCol);
     const subParts1 = molColSh.getSplitted(this.targetMoleculeIdx);
     const subParts2 = resSh.getSplitted(resDf.currentRowIdx);
     const alignment = alignSequencePair(subParts1, subParts2);
-    const canvas = createDifferenceCanvas(alignment.seq1Splitted, alignment.seq2Splitted, resSh.defaultBiotype, molDifferences);
+    const canvas =
+      createDifferenceCanvas(alignment.seq1Splitted, alignment.seq2Splitted, resSh.defaultBiotype, molDifferences);
     propPanel.append(ui.div(canvas, {style: {width: '300px', overflow: 'scroll'}}));
     if (subParts1.length !== subParts2.length) {
       propPanel.append(ui.divV([

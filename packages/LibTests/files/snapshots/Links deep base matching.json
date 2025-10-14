@@ -1,0 +1,76 @@
+[
+  [
+    {
+      "basePath": [
+        {
+          "id": "pipeline1",
+          "idx": 1
+        },
+        {
+          "id": "pipeline1",
+          "idx": 2
+        },
+        {
+          "id": "stepMul",
+          "idx": 4
+        }
+      ],
+      "inputs": {},
+      "outputs": {}
+    },
+    {
+      "basePath": [
+        {
+          "id": "pipeline1",
+          "idx": 1
+        },
+        {
+          "id": "pipeline1",
+          "idx": 2
+        },
+        {
+          "id": "stepMul",
+          "idx": 10
+        }
+      ],
+      "inputs": {},
+      "outputs": {}
+    },
+    {
+      "basePath": [
+        {
+          "id": "pipeline1",
+          "idx": 1
+        },
+        {
+          "id": "pipeline1",
+          "idx": 7
+        },
+        {
+          "id": "stepMul",
+          "idx": 4
+        }
+      ],
+      "inputs": {},
+      "outputs": {}
+    },
+    {
+      "basePath": [
+        {
+          "id": "pipeline1",
+          "idx": 1
+        },
+        {
+          "id": "pipeline1",
+          "idx": 7
+        },
+        {
+          "id": "stepMul",
+          "idx": 10
+        }
+      ],
+      "inputs": {},
+      "outputs": {}
+    }
+  ]
+]

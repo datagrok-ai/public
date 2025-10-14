@@ -3,8 +3,8 @@ title: "AWS Terraform"
 sidebar_position: 2
 ---
 
-The deployment consists of a few docker containers, [database](../../develop/under-the-hood/infrastructure.md#database) for storing metadata,
-and [persistent file storage](../../develop/under-the-hood/infrastructure.md#storage) for storing files
+The deployment consists of a few docker containers, [database](../../develop/under-the-hood/infrastructure.md#1-core-components) for storing metadata,
+and [persistent file storage](../../develop/under-the-hood/infrastructure.md#1-core-components) for storing files
 
 This document contains instructions to deploy Datagrok using [Terraform](https://www.terraform.io/)
 on [AWS ECS cluster](https://aws.amazon.com/ecs/) with [AWS RDS](https://aws.amazon.com/rds/)
@@ -38,7 +38,7 @@ More information about Datagrok design and components:
 ## Deploy Datagrok components
 
 1. Download Terraform
-   Template: [link](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/terraform/terraform.tf)
+   Template: [link](https://github.com/datagrok-ai/public/blob/master/help/deploy/aws/terraform/terraform.tf)
    .
 
 2. Replace the placeholders in the template with the actual values
@@ -59,18 +59,6 @@ More information about Datagrok design and components:
 5. After the Datagrok container starts, the Datagrok server will deploy the database. You can check the status by
    checking the running task log in [CloudWatch](https://aws.amazon.com/cloudwatch/)
 
-### Configure Datagrok settings
-
-1. Go into the web browser to `DATAGROK_DNS`, login to Datagrok using username `admin` and unique password, which was
-   generated during terraform run. You can find it in the `GROK_PARAMETERS` environment variable in the datagrok task
-   definition.
-2. Edit settings in the Datagrok (Tools | Settings...). Remember to click Apply to save new settings.
-
-   * Scripting:
-     * CVM URL Client: `https://<CVM_DNS>`
-   * Dev:
-     * CVM Url: `https://<CVM_DNS>`
-
 ## Advanced usage
 
 The Terraform code is highly configurable. Feel free to adapt the code and variables to meet your needs and
@@ -78,4 +66,3 @@ requirements.
 Terraform modules documentation:
 
 * [Datagrok Core README](https://github.com/datagrok-ai/tf-module-datagrok-core/blob/main/aws/README.md)
-* [Datagrok CVM README](https://github.com/datagrok-ai/tf-module-datagrok-cvm/blob/main/aws/README.md)

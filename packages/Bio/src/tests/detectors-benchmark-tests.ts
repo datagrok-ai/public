@@ -1,17 +1,21 @@
+/* eslint-disable max-lines-per-function */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {before, category, test, expect} from '@datagrok-libraries/utils/src/test';
 import {ALPHABET, getAlphabet, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {_package} from '../package-test';
 
+
 category('detectorsBenchmark', () => {
+  let seqHelper: ISeqHelper;
   let detectFunc: DG.Func;
 
   before(async () => {
+    seqHelper = await getSeqHelper();
     const funcList: DG.Func[] = DG.Func.find({package: 'Bio', name: 'detectMacromolecule'});
     detectFunc = funcList[0];
 
@@ -23,7 +27,7 @@ category('detectorsBenchmark', () => {
   // -- fasta --
 
   test('fastaDnaShorts50Few50', async () => {
-    await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 50, 50);
+    await detectMacromoleculeBenchmark(20, NOTATION.FASTA, ALPHABET.DNA, 50, 50);
   });
 
   test('fastaDnaShorts50Many1E6', async () => {
@@ -37,7 +41,7 @@ category('detectorsBenchmark', () => {
   // -- separator --
 
   test('separatorDnaShorts50Few50', async () => {
-    await detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 50, '/');
+    await detectMacromoleculeBenchmark(20, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 50, '/');
   });
 
   test('separatorDnaShorts50Many1E6', async () => {
@@ -125,7 +129,7 @@ category('detectorsBenchmark', () => {
   }
 
   function checkDetectorRes(col: DG.Column, tgt: TgtType): void {
-    const sh = SeqHandler.forColumn(col);
+    const sh = seqHelper.getSeqHandler(col);
     expect(col.semType === tgt.semType, true);
     expect(sh.notation === tgt.notation, true);
     expect(sh.alphabet === tgt.alphabet, true);

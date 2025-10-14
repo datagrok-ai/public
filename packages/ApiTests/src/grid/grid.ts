@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {before, category, expect, test} from '@datagrok-libraries/utils/src/test';
+import { before, category, expect, test } from '@datagrok-libraries/utils/src/test';
 
 
 export function hasTag(colTags: string[], colTagValue: string): boolean {
@@ -31,6 +31,22 @@ category('Grid', () => {
     expect(secondCol?.name, 'age');
   });
 
+  test('getRowOrder', async () => {
+    const bitset = DG.BitSet.create(grid.dataFrame.rowCount, (_) => true);
+    bitset.setAll(true);
+    grid.dataFrame.filter.copyFrom(bitset);
+    expect(grid.getRowOrder().length, grid.dataFrame.rowCount);
+    bitset.setAll(true);
+    bitset.set(1, false);
+    grid.dataFrame.filter.copyFrom(bitset);
+    let order = grid.getRowOrder();
+    expect(order[0], 0);
+    expect(order[1], 2);
+
+    bitset.setAll(true);
+    grid.dataFrame.filter.copyFrom(bitset);
+  });
+
   test('resizeColumn', async () => {
     grid.columns.byName('age')!.width = 200;
     expect(grid.columns.byName('age')!.width, 200);
@@ -49,8 +65,9 @@ category('Grid', () => {
       'Other': 0XFFE4DD47,
     };
 
-    demog.col('height')?.meta.colors.setConditional({'20-170': '#00FF00', '170-190': '#220505'});
-    demog.col('age')?.meta.colors.setLinear([DG.Color.orange, DG.Color.green]);
+    demog.col('height')?.meta.colors.setConditional({ '20-170': '#00FF00', '170-190': '#220505' });
+    demog.col('age')?.meta.colors.setLinear([DG.Color.orange, DG.Color.green], {min: 25, max: 55});
+    demog.col('weight')?.meta.colors.setLinearAbsolute({58.31: '#73aff5', 97.98: '#ff5140', 137.65: '#ffa500', 177.32: '#50af28', 197.16: '#d9d9d9', 217: '#9467bd'}, {belowMinColor: '#000000', aboveMaxColor: '#ffffff'});
 
     //categorical RACE column check
     const raceCol = demog.col('race')!;
@@ -66,8 +83,20 @@ category('Grid', () => {
     //numerical AGE column check for Linear ColorCoding
     const ageCol = demog.col('age')!;
     if (ageCol.meta.colors.getType() !== DG.COLOR_CODING_TYPE.LINEAR ||
-      ageCol.getTag(DG.TAGS.COLOR_CODING_LINEAR) !== '[4294944000,4278255360]')
+      ageCol.getTag(DG.TAGS.COLOR_CODING_LINEAR) !== '[4294944000,4278255360]' ||
+      ageCol.getTag(DG.TAGS.COLOR_CODING_SCHEME_MIN) !== '25' ||
+      ageCol.getTag(DG.TAGS.COLOR_CODING_SCHEME_MAX) !== '55')
       throw new Error('Linear Color Coding error');
+
+    // numerical WEIGHT column check for Linear ColorCoding with absolute values
+    const weightCol = demog.col('weight')!;
+    if (weightCol.meta.colors.getType() !== DG.COLOR_CODING_TYPE.LINEAR ||
+      weightCol.getTag(DG.TAGS.COLOR_CODING_LINEAR) !== '[4285771765,4294922560,4294944000,4283477800,4292467161,4287915965]' ||
+      weightCol.getTag(DG.TAGS.COLOR_CODING_LINEAR_IS_ABSOLUTE) !== 'true' ||
+      weightCol.getTag(DG.TAGS.COLOR_CODING_LINEAR_ABSOLUTE) !== '{"58.31":"#73aff5","97.98":"#ff5140","137.65":"#ffa500","177.32":"#50af28","197.16":"#d9d9d9","217":"#9467bd"}' ||
+      weightCol.getTag(DG.TAGS.COLOR_CODING_LINEAR_BELOW_MIN_COLOR) !== '#000000' ||
+      weightCol.getTag(DG.TAGS.COLOR_CODING_LINEAR_ABOVE_MAX_COLOR) !== '#ffffff')
+      throw new Error('Linear Color Coding with absolute values error');
   });
 
   test('columnVisibility', async () => {
@@ -91,8 +120,11 @@ category('Grid', () => {
     for (const col of demog.columns.numerical)
       expect(grid.col(col.name)?.renderer.cellType, 'number');
 
-    for (const col of demog.columns.categorical)
+    for (const col of demog.columns.categorical) {
+      if (col.type !== DG.TYPE.STRING)
+        continue; // skip bool columns
       expect(grid.col(col.name)?.renderer.cellType, DG.TYPE.STRING);
+    }
   });
 
   test('getOptions', async () => {
@@ -100,7 +132,7 @@ category('Grid', () => {
   });
 
   test('setOptions', async () => {
-    grid.setOptions({allowEdit: false, showColumnLabels: false, colHeaderHeight: 100});
+    grid.setOptions({ allowEdit: false, showColumnLabels: false, colHeaderHeight: 100 });
     expect(Object.keys(grid.getOptions().look).length, 5);
   });
-});
+}, { owner: 'dkovalyov@datagrok.ai' });

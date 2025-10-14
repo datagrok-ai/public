@@ -24,7 +24,7 @@
 }
 
 .chemspace-prices-grid {
-  width: 400px;
+  width: 100%!important;
   height: 300px;
 }
 

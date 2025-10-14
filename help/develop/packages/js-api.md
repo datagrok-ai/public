@@ -3,7 +3,7 @@ title: "JavaScript API"
 
 ---
 
-[Datagrok JS API](https://datagrok.ai/js-api) allows to control all aspects of the Datagrok platform. The API can be
+[Datagrok JS API](https://datagrok.ai/api/js/api) allows to control all aspects of the Datagrok platform. The API can be
 used either from ad-hoc [scripts](../../compute/scripting/scripting.mdx) (`Functions | Scripts | New JavaScript Script`)
 or from [packages](../develop.md#packages).
 
@@ -24,9 +24,9 @@ This document covers the following areas:
 
 There are three entry points to the API:
 
-* [**grok**](https://datagrok.ai/js-api/grok) for easy discoverability of the functionality,
-* [**ui**](https://datagrok.ai/js-api/ui) for building user interfaces, and
-* [**DG**](https://datagrok.ai/js-api/dg) for instantiating classes directly.
+* [**grok**](https://datagrok.ai/api/js/api/grok) for easy discoverability of the functionality,
+* [**ui**](https://datagrok.ai/api/js/api/ui) for building user interfaces, and
+* [**DG**](https://datagrok.ai/api/js/api/dg) for instantiating classes directly.
 
 ### Grok
 
@@ -42,7 +42,7 @@ For example, to import a dataframe from a CSV file:
 
 :::note
 
-When you need more control, use the [DG namespace](https://datagrok.ai/js-api/dg#namespaces).
+When you need more control, use the [DG namespace](https://datagrok.ai/api/js/api/dg#namespaces).
 
 :::
 
@@ -61,20 +61,20 @@ ui.dialog('Windows')
 
 ### DG
 
-Check out [JS API Class Reference](https://datagrok.ai/js-api/)
+Check out [JS API Class Reference](https://datagrok.ai/api/js/api/)
 
 ### Shell
 
 Datagrok visual shell is used to get access to top-level views, tables, methods, and platform states.
 
-Learn more here: [Datagrok Shell reference](https://datagrok.ai/js-api/dg/classes/Shell)
+Learn more here: [Datagrok Shell reference](https://datagrok.ai/api/js/api/dg/classes/Shell)
 
 ## Data manipulation
 
 ### Dataframe
 
-Use [DataFrame](https://datagrok.ai/js-api/dg/classes/DataFrame), [Column](https://datagrok.ai/js-api/dg/classes/Column)
-, [ColumnList](https://datagrok.ai/js-api/dg/classes/ColumnList), and [Row](https://datagrok.ai/js-api/dg/classes/Row)
+Use [DataFrame](https://datagrok.ai/api/js/api/dg/classes/DataFrame), [Column](https://datagrok.ai/api/js/api/dg/classes/Column)
+, [ColumnList](https://datagrok.ai/api/js/api/dg/classes/ColumnList), and [Row](https://datagrok.ai/api/js/api/dg/classes/Row)
 classes for table manipulation.
 
 ```javascript
@@ -94,8 +94,8 @@ demog.set('age', 1, 44);
 
 ### BitSet
 
-Each [DataFrame](https://datagrok.ai/js-api/dg/classes/DataFrame) is associated with
-two [bitsets](https://datagrok.ai/js-api/dg/classes/BitSet): selection and filter.
+Each [DataFrame](https://datagrok.ai/api/js/api/dg/classes/DataFrame) is associated with
+two [bitsets](https://datagrok.ai/api/js/api/dg/classes/BitSet): selection and filter.
 
 ```javascript
 // bit set (same applies to filter)
@@ -235,7 +235,7 @@ Docking code snippets:
 Use `grok.dapi` entry point for managing server-based objects, such as datasets, connection, users, credentials, jobs,
 packages, etc.
 
-See also [HttpDataSource](https://datagrok.ai/js-api/dg/classes/HttpDataSource) subclasses.
+See also [HttpDataSource](https://datagrok.ai/api/js/api/dg/classes/HttpDataSource) subclasses.
 
 Code snippets:
 

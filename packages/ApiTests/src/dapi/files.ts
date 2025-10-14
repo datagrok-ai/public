@@ -103,7 +103,7 @@ category('Dapi: files', () => {
     expect(dfList.length, 1, `Saved ${dfList.length} dataframes instead of 1`);
     expectTable(dfList[0], df, 'Saved dataframe has wrong data');
     await grok.dapi.files.delete(filePath);
-  }, {skipReason: 'GROK-11670'});
+  });
 
   test('readAsText', async () => {
     const files = await _package.files.list('datasets', true, 'demog.csv');
@@ -114,7 +114,7 @@ category('Dapi: files', () => {
   after(async () => {
     await grok.dapi.files.delete(testTextFilePath);
   });
-});
+}, {owner: 'aparamonov@datagrok.ai'});
 
 category('Dapi: files: formats', () => {
   const extensions = ['csv', 'd42', 'json', 'tar', 'tar.gz', 'tsv', 'txt', 'xlsx', 'xml', 'zip', 'kmz', 'kml'];
@@ -127,4 +127,4 @@ category('Dapi: files: formats', () => {
       });
     }, ['kmz', 'kml'].includes(ext) ? {skipReason: 'GROK-13263'} : undefined);
   }
-});
+}, {owner: 'aparamonov@datagrok.ai'});

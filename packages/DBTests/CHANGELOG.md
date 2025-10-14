@@ -1,4 +1,22 @@
-# DBTests changelog
+# DB Tests changelog
+
+## 1.3.0 (2025-07-28)
+
+* Datagrok api dependency >= 1.26.0
+
+## 1.1.3 (2025-02-18)
+
+* Test fixes
+
+## 1.1.1 (2024-10-21)
+
+* Test fixes
+* Eslint version update
+* Visible only for developers
+
+## 1.1.0 (2024-09-09)
+
+* Datagrok api dependency > 1.21.1
 
 ## 1.0.14 (2024-08-01)
 

@@ -5,17 +5,17 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
-import {Observable, Subject} from 'rxjs';
+import {Observable} from 'rxjs';
 
 import {
-  HelmType, HelmAtom,
-  MonomerSetType, MonomerType, PolymerType, IWebEditorMonomer,
+  HelmType,
+  MonomerSetType, PolymerType,
 } from '@datagrok-libraries/bio/src/helm/types';
-import {IMonomerLibBase, IMonomerLib, IMonomerSet, Monomer, MonomerLibData, MonomerLibSummaryType, RGroup} from '@datagrok-libraries/bio/src/types';
-import {HELM_OPTIONAL_FIELDS as OPT, HELM_REQUIRED_FIELD as REQ, HELM_RGROUP_FIELDS as RGP} from '@datagrok-libraries/bio/src/utils/const';
+import {IMonomerLibBase, IMonomerLib, Monomer,
+  MonomerLibData, MonomerLibSummaryType} from '@datagrok-libraries/bio/src/types';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
-import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {getUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 
 import {MonomerLibBase, MonomerLibDataType} from './monomer-lib-base';
@@ -39,14 +39,10 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
 
   constructor(
     monomers: MonomerLibDataType,
-    public readonly source: string | undefined = undefined,
+    source: string,
     public readonly error: string | undefined = undefined,
   ) {
-    super(monomers);
-    for (const [_monomerType, monomersOfType] of Object.entries(this._monomers)) {
-      for (const [_monomerSymbol, monomer] of Object.entries(monomersOfType))
-        monomer.lib = this;
-    }
+    super(monomers, source);
   }
 
   toJSON(): Monomer[] {
@@ -91,7 +87,7 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
     if (!this._monomerSets)
       this._monomerSets = {};
     if (!(biotype in this._monomerSets)) {
-      for (const [monomerSymbol, monomer] of Object.entries(this._monomers[polymerType])) {
+      for (const [_monomerSymbol, _monomer] of Object.entries(this._monomers[polymerType])) {
 
       }
     }
@@ -110,10 +106,6 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
     });
 
     return res;
-  }
-
-  getMonomerSymbolsByType(polymerType: PolymerType): string[] {
-    return Object.keys(this._monomers[polymerType]);
   }
 
   /** Get a list of monomers with specified element attached to specified
@@ -241,20 +233,32 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
     return resStr;
   }
 
-  override(data: MonomerLibData): IMonomerLibBase {
-    return new OverriddenMonomerLib(data, this);
+  static overrideCounter: number = 0;
+
+  override(data: MonomerLibData, source: string): IMonomerLibBase {
+    return new OverriddenMonomerLib(data, `override: ${++MonomerLib.overrideCounter}, ${source}`, this);
   }
 }
 
 class OverriddenMonomerLib extends MonomerLibBase {
   constructor(
     private readonly data: MonomerLibData,
+    source: string,
     private readonly base: MonomerLibBase
   ) {
-    super(data);
+    super(data, source);
   }
 
   get onChanged(): Observable<any> { return this.base.onChanged; }
+
+  override getMonomerSymbolsByType(polymerType: PolymerType): string[] {
+    const resList = this.base.getMonomerSymbolsByType(polymerType);
+    for (const overrideSymbol of Object.keys(this.data[polymerType] ?? {})) {
+      if (!resList.includes(overrideSymbol))
+        resList.push(overrideSymbol);
+    }
+    return resList;
+  }
 
   addMissingMonomer(polymerType: PolymerType, monomerSymbol: string): Monomer {
     return this.base.addMissingMonomer(polymerType, monomerSymbol);

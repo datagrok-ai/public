@@ -2,14 +2,21 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
-import {category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
+import {before, category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+
 import {saveAsFastaDo, wrapSequence} from '../utils/save-as-fasta';
-import {NOTATION, splitterAsFasta} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 
 type SaveAsFastaTestArgs = { srcCsv: string, idCols: string [], seqCol: string, lineWidth: number, tgtFasta: string };
 
 category('fastaExport', () => {
+  let seqHelper: ISeqHelper;
+
+  before(async () => {
+    seqHelper = await getSeqHelper();
+  });
+
   enum WrapDataTest {
     single = 'single',
     multi = 'multi'
@@ -92,7 +99,7 @@ MRGGL
     const col = DG.Column.fromStrings('src', [srcSeq]);
     col.semType = DG.SEMTYPE.MACROMOLECULE;
     col.meta.units = NOTATION.FASTA;
-    const sh = SeqHandler.forColumn(col);
+    const sh = seqHelper.getSeqHandler(col);
     const srcSS = sh.getSplitted(0);
     const wrapRes: string[] = wrapSequence(srcSS, lineWidth);
     const wrapTgt: string[] = wrapData[testKey].tgt;
@@ -108,7 +115,8 @@ MRGGL
     seqCol.meta.units = NOTATION.FASTA;
     const idCols: DG.Column[] = args.idCols.map((colName) => df.getCol(colName));
 
-    const fastaRes: string = saveAsFastaDo(idCols, seqCol, args.lineWidth);
+    const seqHandler = seqHelper.getSeqHandler(seqCol);
+    const fastaRes: string = saveAsFastaDo(idCols, seqHandler, args.lineWidth);
     expect(fastaRes, args.tgtFasta);
   }
 });

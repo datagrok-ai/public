@@ -7,7 +7,6 @@
 * Go to Top Menu > ML > Models > Train Model….
 * In the Predict field, select “Price”.
 * In the Features field, select all columns except “Price” and “Model”.
-* Apply checkbox "One-hot encode string features"
 * In the Model Engine dropdown, select “Eda: Linear Regression”. 
 
 **Expected Results:**

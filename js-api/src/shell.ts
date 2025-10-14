@@ -1,25 +1,33 @@
 import { DataFrame } from "./dataframe";
-import {BrowseView, TableView, View, ViewBase} from "./views/view";
-import { Project, User } from "./entities";
+import {BrowsePanel, TableView, View, ViewBase} from "./views/view";
+import {Entity, Project, User} from './entities';
 import { toDart, toJs } from "./wrappers";
 import { Menu, TabControl } from "./widgets";
 import { DockManager } from "./docking";
 import { DockType, DOCK_TYPE } from "./const";
 import { JsViewer, Viewer } from "./viewer";
-import {_toIterable} from "./utils";
+import {_toIterable} from "./utils_convert";
 import { FuncCall } from "./functions";
 import { SettingsInterface } from './api/xamgle.api.g';
 import {IDartApi} from "./api/grok_api.g";
 import {ComponentBuildInfo, Dapi} from "./dapi";
 import {UserSettingsStorage} from "./user_settings_storage";
 
+declare let DG: any;
 declare let ui: any;
 declare let grok: { shell: Shell, dapi: Dapi, userSettings:  UserSettingsStorage};
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 class AppBuildInfo {
   get client(): ComponentBuildInfo { return api.grok_Shell_GetClientBuildInfo(); }
   server: ComponentBuildInfo = new ComponentBuildInfo();
+}
+
+export interface BalloonOptions {
+  oneTimeKey?: string // the messages with the same oneTimeKey will only be shown once
+  copyText?: string; // will be copied to the clipboard when user clicks on the "copy to clipboard" icon
+  autoHide?: boolean; // auto hide icon after timeout, default is true
+  timeout?: number; // timeout in seconds after which balloon will be automatically hidden, default is 5
 }
 
 /**
@@ -31,14 +39,13 @@ export class Shell {
   windows: Windows = new Windows();
   settings: Settings & SettingsInterface = new Settings() as Settings & SettingsInterface;
   build: AppBuildInfo = new AppBuildInfo();
-  isInDemo: boolean = false;
 
   testError(s: String): void {
     return api.grok_Test_Error(s);
   }
 
   async reportTest(type: String, params: object): Promise<void> {
-    await fetch(`${grok.dapi.root}/log/tests/${type}?benchmark=${(<any>window).DG.Test.isInBenchmark}`, {
+    await fetch(`${grok.dapi.root}/log/tests/${type}?benchmark=${DG.Test.isInBenchmark}&ciCd=${DG.Test.isCiCd}`, {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       credentials: 'same-origin',
       body: api.grok_JSON_encode(toDart(params))
@@ -89,8 +96,8 @@ export class Shell {
   get o(): any { return toJs(api.grok_Get_CurrentObject(), false); }
   set o(x: any) { this.setCurrentObject(x, true); }
 
-  setCurrentObject(x: any, freeze: boolean) {
-    api.grok_Set_CurrentObject(toDart(x), freeze);
+  setCurrentObject(x: any, freeze: boolean, force?: boolean) {
+    api.grok_Set_CurrentObject(toDart(x), freeze, force ?? false);
   }
 
   /** Current viewer */
@@ -117,22 +124,34 @@ export class Shell {
     return api.grok_Get_BottomPanel();
   }
 
+  get browsePanel(): BrowsePanel {
+    return api.grok_Get_BrowsePanel();
+  }
+
+  get favorites(): Entity[] {
+    return toJs(api.grok_Get_Favorites());
+  }
+
   /** Shows information message (green background)
-   * @param {string} x - message */
-  info(x: any): void {
-    api.grok_Balloon(typeof x == "string" || x instanceof HTMLElement ? x : JSON.stringify(x), 'info');
+   * @param {string} x - message
+   * @param options */
+  info(x: any, options?: BalloonOptions): void {
+    api.grok_Balloon(typeof x == "string" || x instanceof HTMLElement ? x : JSON.stringify(x),
+        'info', toDart(options ?? {}));
   }
 
   /** Shows information message (red background)
+   * @param options
    * @param {string} s - message */
-  error(s: string | HTMLElement): void {
-    api.grok_Balloon(s, 'error');
+  error(s: string | HTMLElement, options?: BalloonOptions): void {
+    api.grok_Balloon(s, 'error', toDart(options ?? {}));
   }
 
   /** Shows warning message (yellow background)
+   * @param options
    * @param {string} s - message */
-  warning(s: string | HTMLElement): void {
-    api.grok_Balloon(s, 'warning');
+  warning(s: string | HTMLElement, options?: BalloonOptions): void {
+    api.grok_Balloon(s, 'warning', toDart(options ?? {}));
   }
 
   /** Docks element in a separate window.
@@ -168,20 +187,17 @@ export class Shell {
 
   /** Adds a view. */
   addView(v: ViewBase, dockType: DockType = DOCK_TYPE.FILL, width: number | null = null, context: FuncCall | null = null): ViewBase {
-    if (api.grok_AddView == null) {
-      document.body.append(v.root);
-      v.root.style.width = '100vw';
-      v.root.style.height = '100vh';
-    } else {
-      if (context != null)
-        v.parentCall = context;
-      if (this.isInDemo && grok.shell.view('Browse') !== null) {
-        const bv = grok.shell.view('Browse') as BrowseView;
-        bv.preview = v as View;
-      }
-      else
-        api.grok_AddView(v.dart, dockType, width);
-    }
+    if (context != null)
+      v.parentCall = context;
+    api.grok_AddView(v.dart, dockType, width, false);
+    return v;
+  }
+
+  /** Adds a preview for current Browse Panel node. */
+  addPreview(v: ViewBase, dockType: DockType = DOCK_TYPE.FILL, width: number | null = null, context: FuncCall | null = null): ViewBase {
+    if (context != null)
+      v.parentCall = context;
+    api.grok_AddView(v.dart, dockType, width, true);
     return v;
   }
 
@@ -202,20 +218,22 @@ export class Shell {
     return view;
   }
 
+  /** Adds a preview for the specified table.
+   * @param {DataFrame} table
+   * @param {DockType} dockType
+   * @param {number} width
+   * @returns {TableView} */
+  addTablePreview(table: DataFrame, dockType: DockType | null = DOCK_TYPE.FILL, width: number | null = null): TableView {
+    return toJs(api.grok_AddTableView(table.dart, dockType, width, true));
+  }
+
   /** Adds a view for the specified table.
    * @param {DataFrame} table
    * @param {DockType} dockType
    * @param {number} width
    * @returns {TableView} */
   addTableView(table: DataFrame, dockType: DockType | null = DOCK_TYPE.FILL, width: number | null = null): TableView {
-    if (this.isInDemo && grok.shell.view('Browse') !== null) {
-      const tv = TableView.create(table, false);
-      const bv = grok.shell.view('Browse') as BrowseView;
-      bv.preview = tv;
-      return tv;
-    }
-    else
-      return toJs(api.grok_AddTableView(table.dart, dockType, width));
+    return toJs(api.grok_AddTableView(table.dart, dockType, width, false));
   }
 
   /**
@@ -226,6 +244,11 @@ export class Shell {
   //Obsolete
   getTableView(tableName: string): TableView {
     return toJs(api.grok_GetTableView(tableName));
+  }
+
+  /** Opens a dialog for opening a file with tabular data (CSV, XSLS, etc) */
+  openFileOpenDialog() {
+    api.grok_Shell_OpenFileDialog();
   }
 
   /** Closes everything (views, tables, projects) and returns the platform to the initial state. */
@@ -344,6 +367,12 @@ export class ShellHelpPanel {
 /** Represents context panel that shows properties for the current object
  and is toggleable by pressing F1 */
 export class ShellContextPanel {
+
+  /** Context panel node, if it is currently visible, or null otherwise. */
+  get root(): HTMLDivElement | null {
+    return document.body.querySelector('.grok-prop-panel');
+  }
+
   /** Controls whether the context panel shows context for the current object as it changes */
   get syncCurrentObject(): boolean { return api.grok_ContextPanel_Get_SyncCurrentObject(); }
   set syncCurrentObject(x: boolean) { api.grok_ContextPanel_Set_SyncCurrentObject(x); }
@@ -367,6 +396,18 @@ export class Windows {
   /** Controls the visibility of the toolbox. */
   get showToolbox(): boolean { return api.grok_Windows_Get_ShowToolbox(); }
   set showToolbox(x: boolean) { api.grok_Windows_Set_ShowToolbox(x); }
+
+  /** Controls the visibility of the browse. */
+  get showBrowse(): boolean { return api.grok_Windows_Get_ShowBrowse(); }
+  set showBrowse(x: boolean) { api.grok_Windows_Set_ShowBrowse(x); }
+
+  /** Controls the visibility of the Projects. */
+  get showProjects(): boolean { return api.grok_Windows_Get_ShowProjects(); }
+  set showProjects(x: boolean) { api.grok_Windows_Set_ShowProjects(x); }
+
+  /** Controls the visibility of the Favorites. */
+  get showFavorites(): boolean { return api.grok_Windows_Get_ShowFavorites(); }
+  set showFavorites(x: boolean) { api.grok_Windows_Set_ShowFavorites(x); }
 
   /** Controls the visibility of the status bar. */
   get showStatusBar(): boolean { return api.grok_Windows_Get_ShowStatusBar(); }
@@ -436,16 +477,6 @@ export class Settings {
         return true;
       }
     });
-  }
-
-  /** Jupyter Notebook URL */
-  get jupyterNotebook(): string {
-    return api.grok_Settings_Get_JupyterNotebook();
-  }
-
-  /** Jupyter Notebook Token */
-  get jupyterNotebookToken(): string {
-    return api.grok_Settings_Get_JupyterNotebookToken();
   }
 }
 

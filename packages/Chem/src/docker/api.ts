@@ -10,8 +10,8 @@ let descriptorsCached: object[];
 async function getContainer() {
   if (!chemContainer)
     chemContainer = await grok.dapi.docker.dockerContainers.filter('name = "chem-chem"').first();
-  if (chemContainer.status !== 'started' && chemContainer.status !== 'checking')
-    await grok.dapi.docker.dockerContainers.run(chemContainer.id, true);
+  // if (chemContainer.status !== 'started' && chemContainer.status !== 'checking')
+  //   await grok.dapi.docker.dockerContainers.run(chemContainer.id, true);
   return chemContainer;
 }
 
@@ -26,13 +26,15 @@ export async function getDescriptorsTree(): Promise<object> {
   return descriptorsCached;
 }
 
-export async function calculateDescriptors(table: DG.DataFrame, molecules: DG.Column, descriptors: string[]): Promise<void> {
+export async function calculateDescriptors(molecules: DG.Column, descriptors: string[]): Promise<DG.Column[]> {
   const result: object = await gzipPostRequest({'molecules': molecules.toList(), 'descriptors': descriptors},
     '/chem/descriptors');
+  const colArray = Array<DG.Column>(Object.entries(result).length);
   for (const [key, value] of Object.entries(result)) {
-    const column = DG.Column.fromList(value['type'], table.columns.getUnusedName(key), value['value']);
-    table.columns.add(column);
+    const column = DG.Column.fromList(value['type'], key, value['value']);
+    colArray.push(column);
   }
+  return colArray;
 }
 
 export async function smilesToCanonical(smiles: string[]): Promise<string[]> {

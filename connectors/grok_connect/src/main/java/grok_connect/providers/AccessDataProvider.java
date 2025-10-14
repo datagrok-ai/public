@@ -81,22 +81,6 @@ public class AccessDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    protected String aggrToSql(GroupAggregation aggr) {
-        AggrFunctionInfo funcInfo = null;
-        for (AggrFunctionInfo info: descriptor.aggregations) {
-            if (info.functionName.equals(aggr.aggType)) {
-                funcInfo = info;
-                break;
-            }
-        }
-        if (funcInfo != null) {
-            String sql = funcInfo.dbFunctionName.replaceAll("#", aggr.colName);
-            return String.format("%s AS [%s]", sql, sql);
-        } else
-            return null;
-    }
-
-    @Override
     public DataFrame getForeignKeys(DataConnection conn, String schema) throws GrokConnectException {
         try (Connection connection = getConnection(conn)) {
             DatabaseMetaData meta = connection.getMetaData();

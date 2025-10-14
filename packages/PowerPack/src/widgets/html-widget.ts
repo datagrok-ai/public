@@ -8,6 +8,10 @@ import $ from "cash-dom";
  * All occurrences of ${p1}, ${p2} and ${p3} are replaced with the values of the corresponding properties.
  * */
 export class HtmlWidget extends DG.Widget {
+  get type(): string {
+    return 'HtmlWidget';
+  }
+
   html: string;
   p1: string;
   p2: string;

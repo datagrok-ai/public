@@ -3,10 +3,30 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {CellRendererBackBase} from '../cell-renderer-back-base';
+import {ISeqHandler} from './seq-handler';
 
 export type SeqSplittedBase = ArrayLike<string> & Iterable<string>;
 
+export interface ISeqConnection {
+  seqIndex1: number;
+  seqIndex2: number;
+  monomerIndex1: number;
+  monomerIndex2: number;
+  rGroup1: number;
+  rGroup2: number;
+}
+
+export interface ISeqGraphInfo {
+  /**  Connections between monomers with numbers - note that monomer numbers are 0-based*/
+  connections: ISeqConnection[];
+  /// Start positions of disjoint sequence parts in the original sequence
+  disjointSeqStarts: number[];
+}
+
 export interface ISeqSplitted {
+
+  graphInfo?: ISeqGraphInfo;
+
   isGap(posIdx: number): boolean;
 
   /** */
@@ -15,13 +35,30 @@ export interface ISeqSplitted {
   /** For fasta and Helm must not be enclosed to square brackets [meA].*/
   getOriginal(posIdx: number): string;
 
+  // TODO: Get ISeqMonomer for seq position
+  // get(posIdx: number): ISeqMonomer;
+
   length: number;
+
+  /** Returns list of canonical monomers in the region specified */
+  getCanonicalRegion(start: number, end: number): string[];
+
+  /** Returns the list of original monomers in the region specified */
+  getOriginalRegion(start: number, end: number): string[];
+
+  get gapOriginal(): string;
 }
 
 export interface INotationProvider {
+  get defaultGapOriginal(): string;
+
+  /** Adjust {@link seqHandler} units, {@link seqHandler.column.tags} by {@link seqHandler} constructor */
+  setUnits(seqHandler: ISeqHandler): void;
+
   get splitter(): SplitterFunc;
 
-  getHelm(seqCol: DG.Column<string>, options?: any): Promise<DG.Column<string>>;
+  /** Any Macromolecule can be presented as Helm notation */
+  getHelm(seq: string, options: any): string;
 
   createCellRendererBack(gridCol: DG.GridColumn | null, tableCol: DG.Column<string>): CellRendererBackBase<string>;
 }

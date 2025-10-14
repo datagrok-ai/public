@@ -7,10 +7,32 @@ import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import {handleError} from './utils';
 import {SequenceDiversityViewer} from '../analysis/sequence-diversity-viewer';
 import {SequenceSimilarityViewer} from '../analysis/sequence-similarity-viewer';
+import {getSeqHelper, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {adjustGridcolAfterRender} from '../utils/ui-utils';
+import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
 
 const dataFn: string = 'samples/FASTA_PT_activity.csv';
 
-export async function demoBio01UI() {
+export async function demoBioSimDiv() {
+  const t = await _package.files.readCsv('samples/peptides-non-natural.csv');
+  t.name = 'Similarity and Diversity Demo';
+  t.col('activity')!.setTag('format', '3 significant digits');
+  t.col('sequence')!.temp[MmcrTemps.maxMonomerLength] = 4;
+  const tv = grok.shell.addTableView(t);
+  await t.meta.detectSemanticTypes();
+  await grok.data.detectSemanticTypes(t);
+  const simV = tv.addViewer('Sequence Similarity Search', {limit: 20});
+  const dn = tv.dockManager.dock(simV, DG.DOCK_TYPE.RIGHT, null, 'Similarity search', 0.45);
+  adjustGridcolAfterRender(tv.grid, 'sequence', 500, 30);
+  const divV = tv.addViewer('Sequence Diversity Search', {limit: 20});
+  tv.dockManager.dock(divV, DG.DOCK_TYPE.DOWN, dn, 'Diversity search', 0.4);
+  grok.functions.call('Dendrogram:HierarchicalClustering',
+    {df: grok.shell.t, colNameList: ['sequence'], distance: 'euclidian', linkage: 'complete'});
+}
+
+export async function demoBio01UISteps() {
+  const seqHelper: ISeqHelper = await getSeqHelper();
+
   let view: DG.TableView;
   let df: DG.DataFrame;
 
@@ -37,7 +59,7 @@ export async function demoBio01UI() {
         delay: 2000,
       })
       .step('Find the most similar sequences to the current one', async () => {
-        const simViewer = new SequenceSimilarityViewer(true);
+        const simViewer = new SequenceSimilarityViewer(seqHelper, true);
         view.addViewer(simViewer, {
           moleculeColumnName: 'sequence',
           similarColumnLabel: 'Similar to current',

@@ -3,11 +3,8 @@ import {toDart} from './wrappers';
 import {Package} from './entities';
 import {IDartApi} from "./api/grok_api.g";
 import dayjs from "dayjs";
-import {Accordion} from "./widgets";
-import {toJs} from "./wrappers";
-import {DataFrame} from "./dataframe";
 
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 export type LogMessage = {level: LOG_LEVEL, message: string, params?: object, type?: string, stackTrace?: string};
 
@@ -79,7 +76,8 @@ export class Logger {
   _log(msg: LogMessage) {
     if (this.putCallback != null)
       this.putCallback(msg);
-    msg.stackTrace ??= new Error().stack;
+    if (msg.level === LOG_LEVEL.ERROR)
+      msg.stackTrace ??= new Error().stack;
     api.grok_Log(this.dart, msg.level, msg.message, toDart(msg.params), msg.type, msg.stackTrace);
   }
 

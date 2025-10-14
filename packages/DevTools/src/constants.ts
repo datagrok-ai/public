@@ -28,15 +28,15 @@ export const entExtract = {
 };
 
 export const helpUrls = {
-  Column: {wiki: 'https://datagrok.ai/help/datagrok/concepts/table#column', class: 'https://datagrok.ai/js-api/classes/dg.Column'},
-  DataConnection: {wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/classes/dg.DataConnection'},
-  DataFrame: {wiki: 'https://datagrok.ai/help/datagrok/concepts/table', class: 'https://datagrok.ai/js-api/classes/dg.DataFrame'},
-  DataQuery: {wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/classes/dg.DataQuery'},
-  FileInfo: {wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/classes/dg.FileInfo'},
-  Script: {wiki: 'https://datagrok.ai/help/compute/scripting', class: 'https://datagrok.ai/js-api/classes/dg.Script'},
-  ViewLayout: {wiki: 'https://datagrok.ai/help/develop/how-to/layouts', class: 'https://datagrok.ai/js-api/classes/dg.ViewLayout',
+  Column: {wiki: 'https://datagrok.ai/help/datagrok/concepts/table#column', class: 'https://datagrok.ai/js-api/dg/classes/Column'},
+  DataConnection: {wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/dg/classes/DataConnection'},
+  DataFrame: {wiki: 'https://datagrok.ai/help/datagrok/concepts/table', class: 'https://datagrok.ai/js-api/dg/classes/DataFrame'},
+  DataQuery: {wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/dg/classes/DataQuery'},
+  FileInfo: {wiki: 'https://datagrok.ai/help/develop/how-to/access-data', class: 'https://datagrok.ai/js-api/dg/classes/FileInfo'},
+  Script: {wiki: 'https://datagrok.ai/help/compute/scripting', class: 'https://datagrok.ai/js-api/dg/classes/Script'},
+  ViewLayout: {wiki: 'https://datagrok.ai/help/develop/how-to/layouts', class: 'https://datagrok.ai/js-api/dg/classes/ViewLayout',
     additional: {'How to upload data': 'https://datagrok.ai/help/develop/how-to/upload-data'}},
-  View: {wiki: 'https://datagrok.ai/help/develop/advanced/ui#views', class: 'https://datagrok.ai/js-api/classes/dg.View'},
+  View: {wiki: 'https://datagrok.ai/help/develop/advanced/ui#views', class: 'https://datagrok.ai/js-api/dg/classes/View'},
 };
 
 export const tags = {
@@ -51,10 +51,10 @@ const str = await grok.dapi.files.readAsText("${ent.fullPath}");
 
 // Read as dataframe
 const df = await grok.data.files.openTable("${ent.fullPath}");`,
-  DataConnection: (ent: DG.DataConnection) =>
-    `const connection = await grok.dapi.connections.find('${ent.id}');
-
-// Test the connection
+  DataConnection: (ent: DG.DataConnection) => {
+    let code = `const connection = await grok.dapi.connections.find('${ent.id}')\n`;
+    if (!DG.DataSourceType.fileDataSources.includes(ent.dataSource))
+      code += `// Test the connection
 const t = await grok.data.db.query(connection.nqName, 'select 1');
 grok.shell.addTableView(t);
 
@@ -63,7 +63,18 @@ grok.shell.info(JSON.stringify(connection.parameters));
 
 // Find the connection's queries
 const queries = await grok.dapi.queries.filter(\`connection.id = "\${connection.id}"\`).list();
-grok.shell.info('Found queries: ' + queries.length);`,
+grok.shell.info('Found queries: ' + queries.length);`;
+    else
+      code += `// test connection
+await connection.test();
+
+// list all files
+const list = await grok.dapi.files.list(\`\${connection.nqName}/\`, true);
+const filesCount = list.filter((f) => f.isFile).length;
+const foldersCount = list.filter((f) => f.isDirectory).length;
+grok.shell.info(\`Total of \${filesCount} files and \${foldersCount} folders\`);`;
+    return code;
+  },
 
   DataQuery: (ent: DG.DataQuery) =>
     `const q = await grok.dapi.queries.find("${ent.id}");

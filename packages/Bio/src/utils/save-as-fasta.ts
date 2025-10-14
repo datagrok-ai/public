@@ -3,40 +3,52 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
 import wu from 'wu';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
+
+import {_package} from '../package';
 
 const FASTA_LINE_WIDTH = 60;
 
 /** Shows dialog to select id columns list and seq column, builds and downloads FASTA content */
-export function saveAsFastaUI() {
+export function saveAsFastaUI(): void {
   // Use grid for column order adjusted by user
   const grid: DG.Grid = grok.shell.tv.grid;
+  const dataFrame: DG.DataFrame = grid.dataFrame;
 
-  const idGColList: DG.GridColumn[] = wu.count(0).take(grid.columns.length)
-    .map((colI: number) => grid.columns.byIndex(colI)!)
-    .filter((gcol: DG.GridColumn) => gcol.column ? gcol.column.semType !== DG.SEMTYPE.MACROMOLECULE : false).toArray();
-  const defaultIdGCol: DG.GridColumn | undefined = idGColList
-    .find((gcol: DG.GridColumn) => gcol.name.toLowerCase().indexOf('id') !== -1);
-  const idDefaultValue = defaultIdGCol ? [defaultIdGCol.name] : [];
+  const idGColList: DG.Column[] = wu.count(0).take(dataFrame.columns.length)
+    .map((colI: number) => dataFrame.columns.byIndex(colI)!)
+    .filter((col: DG.Column) => col.semType !== DG.SEMTYPE.MACROMOLECULE).toArray();
+  const defaultIdGCol: DG.Column | undefined = idGColList
+    .find((col: DG.Column) => col.name.toLowerCase().indexOf('id') !== -1);
+  const idDefaultValue = defaultIdGCol ? [defaultIdGCol] : [];
 
-  const idGColListInput = ui.input.multiChoice('Seq id columns', {value: idDefaultValue,
-    items: idGColList.map((gcol: DG.GridColumn) => gcol.name)});
+  const idGColListInput = ui.input.columns('Seq id columns', {table: dataFrame, value: idDefaultValue,
+    filter: (col: DG.Column) => col.semType !== DG.SEMTYPE.MACROMOLECULE});
 
-  const seqGColList: DG.GridColumn[] = wu.count(0).take(grid.columns.length)/* range rom 0 to grid.columns.length */
-    .map((colI: number) => grid.columns.byIndex(colI)!)
-    .filter((gc: DG.GridColumn) => {
-      const col: DG.Column | null = gc.column;
+  const seqGColList: DG.Column[] = wu.count(0).take(dataFrame.columns.length)/* range rom 0 to grid.columns.length */
+    .map((colI: number) => dataFrame.columns.byIndex(colI)!)
+    .filter((col: DG.Column) => {
       if (col && col.semType === DG.SEMTYPE.MACROMOLECULE) {
-        const sh = SeqHandler.forColumn(col);
+        const sh = _package.seqHelper.getSeqHandler(col);
         return sh.isFasta();
       }
       return false;
     }).toArray();
 
-  const seqDefaultValue = seqGColList.length > 0 ? seqGColList[0].name : [];
-  const seqColInput = ui.input.choice('Seq column', {value: seqDefaultValue,
-    items: seqGColList.map((gCol: DG.GridColumn) => gCol.name)});
+  const seqDefaultValue = seqGColList.length > 0 ? seqGColList[0] : null;
+  const seqColInput = ui.input.column('Seq column', {
+    table: dataFrame,
+    value: seqDefaultValue!,
+    filter: (col) => {
+      if (col && col.semType === DG.SEMTYPE.MACROMOLECULE) {
+        const sh = _package.seqHelper.getSeqHandler(col);
+        return sh.isFasta();
+      }
+      return false;
+    }
+  });
 
   const lineWidthInput = ui.input.int('FASTA line width', {value: FASTA_LINE_WIDTH});
 
@@ -47,16 +59,15 @@ export function saveAsFastaUI() {
       lineWidthInput,
     ]))
     .onOK(() => {
-      const valueIdColList: DG.Column[] = idGColListInput.value ?
-        idGColListInput.value.map((colName: string) => grid.columns.byName(colName)!.column!) : [];
-      const valueSeqCol: DG.Column | null = seqColInput.value ?
-        grid.columns.byName(seqColInput.value as string)!.column : null;
+      const valueIdColList: DG.Column[] = idGColListInput.value ?? [];
+      const valueSeqCol: DG.Column | null = seqColInput.value ?? null;
       const valueLineWidth = lineWidthInput.value ?? FASTA_LINE_WIDTH;
 
       if (!valueSeqCol)
         grok.shell.warning(`Seq column is mandatory to save as FASTA.`);
 
-      const resFastaTxt: string = saveAsFastaDo(valueIdColList, valueSeqCol!, valueLineWidth);
+      const seqHandler = _package.seqHelper.getSeqHandler(valueSeqCol!);
+      const resFastaTxt: string = saveAsFastaDo(valueIdColList, seqHandler, valueLineWidth);
 
       const aEl: HTMLAnchorElement = document.createElement('a');
       aEl.setAttribute('href', `data:text/plain;charset=utf-8,${encodeURIComponent(resFastaTxt)}`);
@@ -75,17 +86,16 @@ export function saveAsFastaUI() {
  * @return {string} FASTA content
  */
 export function saveAsFastaDo(
-  idColList: DG.Column[], seqCol: DG.Column, lineWidth: number = FASTA_LINE_WIDTH, lineSeparator: string = '\n',
+  idColList: DG.Column[], seqHandler: ISeqHandler, lineWidth: number = FASTA_LINE_WIDTH, lineSeparator: string = '\n',
 ): string {
-  const sh = SeqHandler.forColumn(seqCol);
   const fastaLines: string[] = [];
 
-  for (let rowIdx: number = 0; rowIdx < seqCol.length; rowIdx++) {
+  for (let rowIdx: number = 0; rowIdx < seqHandler.length; rowIdx++) {
     // multiple identifiers separated by vertical bars
     // https://en.wikipedia.org/wiki/FASTA_format
 
     const seqId: string = idColList.map((col) => col.get(rowIdx).toString()).join('|');
-    const srcSS = sh.getSplitted(rowIdx);
+    const srcSS = seqHandler.getSplitted(rowIdx);
     const seqLineList: string[] = wrapSequence(srcSS, lineWidth);
 
     fastaLines.push(`>${seqId}${lineSeparator}`);

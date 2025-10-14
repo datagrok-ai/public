@@ -19,6 +19,7 @@ following:
 | [Cassandra](./cassandra.md)      |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
 | [ClickHouse](./clickhouse.md)    |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
 | [DB2](./db2.md)                  |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
+| [Databricks](./databricks.md)            |  ✓      | ✓    | ✓   |               | ✓            | ✓             | ✓   | ✓                 |      |         |                                                        |
 | [Denodo](./denodo.md)            |  ✓      | ✓    | ✓   |               | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
 | [Firebird](./firebird.md)        |  ✓      | ✓    | ✓   |               | ✓            | ✓             |     | ✓                 | ✓     | ✓        |                                                        |
 | [HBase](./hbase.md)              |  ✓      | ✓    | ✓   |               | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
@@ -39,7 +40,6 @@ following:
 | [Redshift](./redshift.md)        |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
 | [SAP HANA](./sap-hana.md)        |  ✓      | ✓    | ✓   | ✓             |              |               |     |                   | ✓     | ✓        | [See the list](./sap-hana.md#connection-parameters)    |
 | [Snowflake](./snowflake.md)      |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |
-| [Socrata](./socrata.md)             |        |      |     |               |              |               |     |                   |       |          | [See the list](./socrata.md#connection-parameters)     |
 | [Sparql](./sparql.md)            |          |      |     |               |              |               |     |                   |       |          | [See the list](./sparql.md#connection-parameters)      |
 | [SQLite](./sqlite.md)            |         |      | ✓   | ✓             | ✓            |               |     | ✓                 | ✓     | ✓        |                                                        |
 | [Teradata](./teradata.md)        |  ✓      | ✓    | ✓   | ✓             | ✓            | ✓             | ✓   | ✓                 | ✓     | ✓        |                                                        |

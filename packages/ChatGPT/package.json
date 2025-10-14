@@ -1,0 +1,55 @@
+{
+  "name": "@datagrok/chatgpt",
+  "friendlyName": "ChatGPT",
+  "version": "0.0.31",
+  "description": "ChatGPT integration",
+  "author": "oserhiienko@datagrok.ai",
+  "dependencies": {
+    "@datagrok-libraries/utils": "^4.6.5",
+    "cash-dom": "latest",
+    "datagrok-api": "^1.26.0",
+    "dayjs": "latest"
+  },
+  "devDependencies": {
+    "datagrok-tools": "^4.14.55",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "webpack": "latest",
+    "webpack-cli": "latest"
+  },
+  "scripts": {
+    "link-all": "grok link",
+    "debug-chatgpt": "webpack && grok publish",
+    "release-chatgpt": "webpack && grok publish --release",
+    "build-chatgpt": "webpack",
+    "build": "grok api && grok check --soft && webpack",
+    "debug-chatgpt-dev": "webpack && grok publish dev",
+    "release-chatgpt-dev": "webpack && grok publish dev --release",
+    "debug-chatgpt-public": "webpack && grok publish public",
+    "release-chatgpt-public": "webpack && grok publish public --release"
+  },
+  "canEdit": [
+    "Administrators"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/ChatGPT"
+  },
+  "properties": [
+    {
+      "name": "apiKey",
+      "propertyType": "string",
+      "defaultValue": "Enter ChatGPT API key",
+      "nullable": false
+    },
+    {
+      "name": "claudeApiKey",
+      "propertyType": "string",
+      "nullable": true
+    }
+  ]
+}

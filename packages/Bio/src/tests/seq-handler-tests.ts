@@ -2,9 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, expect} from '@datagrok-libraries/utils/src/test';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {category, test, expect, before} from '@datagrok-libraries/utils/src/test';
 import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
+import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 
 const seqDna = `seq
 ACGTCACGTC
@@ -28,6 +29,12 @@ PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.D-Chg.dV.Thr_PO3H
 PEPTIDE1{meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.D-Chg.dV.Thr_PO3H2.N.D-Orn.D-aThr.Phe_4Me}$$$$`;
 
 category('SeqHandler', () => {
+  let seqHelper: ISeqHelper;
+
+  before(async () => {
+    seqHelper = await getSeqHelper();
+  });
+
   test('Seq-Fasta', async () => {
     const [_df, sh] = await loadCsvWithDetection(seqDna);
     expect(sh.notation, NOTATION.FASTA);
@@ -78,38 +85,38 @@ category('SeqHandler', () => {
     const seqCol = df.getCol('seq');
 
     // col.version will change because of changing .tags
-    const sh1 = SeqHandler.forColumn(seqCol);
+    const sh1 = seqHelper.getSeqHandler(seqCol);
 
     const v1 = seqCol.version;
     // col.version MUST NOT change and the same object returned
-    const sh2 = SeqHandler.forColumn(seqCol);
+    const sh2 = seqHelper.getSeqHandler(seqCol);
     const v2 = seqCol.version;
     expect(v1, v2, 'Unexpected column version changed');
     expect(sh1, sh2, 'Unexpected SeqHandler object changed');
 
     df.rows.addNew(['TACCCCTTCAAC']);
-    const sh3 = SeqHandler.forColumn(seqCol);
+    const sh3 = seqHelper.getSeqHandler(seqCol);
     const v3 = seqCol.version;
     expect(v2 < v3, true, 'Stalled column version on add row');
     expect(sh2 !== sh3, true, 'Stalled SeqHandler object on add row');
 
     seqCol.set(1, 'CAGTGTCCCCGT');
-    const sh4 = SeqHandler.forColumn(seqCol);
+    const sh4 = seqHelper.getSeqHandler(seqCol);
     const v4 = seqCol.version;
     expect(v3 < v4, true, 'Stalled column version on change data');
     expect(sh3 !== sh4, true, 'Stalled SeqHandler object on change data');
 
     seqCol.setTag('testTag', 'testValue');
-    const sh5 = SeqHandler.forColumn(seqCol);
+    const sh5 = seqHelper.getSeqHandler(seqCol);
     const v5 = seqCol.version;
     expect(v4 < v5, true, 'Stalled column version on set tag');
     expect(sh4 !== sh5, true, 'Stalled SeqHandler object on set tag');
   });
 
-  async function loadCsvWithDetection(csv: string): Promise<[df: DG.DataFrame, sh: SeqHandler]> {
+  async function loadCsvWithDetection(csv: string): Promise<[df: DG.DataFrame, sh: ISeqHandler]> {
     const df = DG.DataFrame.fromCsv(csv);
     await grok.data.detectSemanticTypes(df);
-    const sh = SeqHandler.forColumn(df.getCol('seq'));
+    const sh = seqHelper.getSeqHandler(df.getCol('seq'));
     return [df, sh];
   }
 
@@ -121,7 +128,7 @@ category('SeqHandler', () => {
   //   col.semType = DG.SEMTYPE.MACROMOLECULE;
   //   if (value === NOTATION.SEPARATOR)
   //     col.setTag(TAGS.separator, '-');
-  //   const sh = SeqHandler.forColumn(df.getCol('seq'));
+  //   const sh = seqHelper.getSeqHandler(df.getCol('seq'));
   //   return [df, sh];
   // }
 });

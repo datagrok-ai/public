@@ -1,6 +1,6 @@
-# HitDesign
+# Hit Design
 
-HitDesign streamlines the process of designing new molecules and collaborating on molecular ideas.
+Hit Design streamlines the process of designing new molecules and collaborating on molecular ideas.
 You can sketch molecules,
 calculate or predict chemical and biological properties, enrich data with information
 from the proprietary databases, filter based on these properties or substructure search, select hits, 
@@ -13,17 +13,19 @@ seamless integration.
 
 ## Templates
 
-Templates in HitDesign contain essential configurations for conducting a campaign. Template configuration includes:
+Templates in Hit Design contain essential configurations for conducting a campaign. Template configuration includes:
 
 - **Name** : Identifies the template.
 
-- **Campaign Prefix** : A code used as a prefix for campaign names (e.g., TMP-1, TMP-2).
+- **Key** : A code used as a prefix for campaign names (e.g., TMP-1, TMP-2).
+
+- **Layout** : Template can be created with default layout for the campaign table. Layouts can be loaded from local computer or file share mounted on Datagrok. This layout can be applied to the campaign table at any time using the 'Apply Layout' button on ribbon pannel. If layout was loaded from mounted file share, it will be synced with the original file source, so any changes made to the layout file will be automatically applied to the campaign table.
 
 - **Additional fields** : Configure additional fields for the template, which will be prompted for input during campaign creation. These fields include name, type, and whether they are required or not. For example, additional field for a campaign can be a target protein name, Head scientist name, deadlile, etc.
 
 - **Stages** : Define stages for the campaign. Tiles view provides a versatile way to organize molecules in the campaign. Users can drag and drop molecules between stages. For example, stages can be used to organize molecules by their readiness for synthesis.
 
-- **Compute functions** : HitDesign aggregates compute functions tagged with `HitTriageFunction` from Datagrok packages. Users can select from these functions to perform calculations (e.g., mass, solubility, mutagenicity, partial charges, toxicity risks, etc.) on the dataset.
+- **Compute functions** : Hit Design aggregates compute functions tagged with `HitTriageFunction` from Datagrok packages. Users can select from these functions to perform calculations (e.g., mass, solubility, mutagenicity, partial charges, toxicity risks, etc.) on the dataset.
 Every time user changes given molecule or adds new molecule to a dataframe, compute functions are executed automatically for that row.
 
 - **Submit function** : Define custom submit functions (tagged with `HitTriageSubmitFunction`) to further process or save the filtered and computed dataset. This could include saving to a private database or additional calculations.
@@ -41,6 +43,10 @@ Campaigns are built based on templates and encompass the actual hit design proce
 - **Functionality**: Once a campaign starts, you can add extra calculated columns, add new rows to dataframe and sketch molecules, apply changes, fileter, save or submit the campaign.
 
 ![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/campaign-HD.png?raw=true)
+
+Campaigns can be groupped either by template key, status or be ungroupped. The groupping setting can be changed by clicking 'Group By' icon next to 'Comntinue Campaign' header.
+
+![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-modify-groupping.gif?raw=true)
 
 ## Getting started
 
@@ -60,13 +66,21 @@ After the campaign starts, users can sketch new molecules, filter, modify or add
 
 ![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-save-campaign.gif?raw=true)
 
-Hit design campaign consists of two views, a main design view and a tiles view. You can access the tiles view from the views list. Tiles view provides a versatile way to organize molecules in the campaign. Users can drag and drop molecules between stages, which were defined in the template.
+Hit design campaign consists of two views, a main design view and a tiles view. You can access the tiles view from by clicking the 'Progrss Tracker' button on the ribbon pannel. Tiles view provides a versatile way to organize molecules in the campaign. Users can drag and drop molecules between stages, which were defined in the template.
 
 ![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-tiles.gif?raw=true)
 
+As mentioned previously, "Stages" or tiles are defined in the template, but users can also modify them after starting the campaign. To do so, open the Progress Tracker and click the "Modify Stages" button. You can add, remove or rename stages. After clicking OK, the changes will be saved and reflected in the Progress Tracker view. If you remove a stage which had some molecules in it, those molecules will be automatically moved to the first stage.
+
+![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-tiles-modify-stages.gif?raw=true)
+
+Campaign status can be changed through 'Submit' menu. You can set status to anything. When you start typing, you will be suggested other statuses that are already in use.
+
+![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-modify-status.gif?raw=true)
+
 ## Adding custom compute and submit functions
 
-HitDesign allows users to define custom compute and submit functions, and these functions can be written in any Datagrok package that is installed in the environment. 
+Hit Design allows users to define custom compute and submit functions, and these functions can be written in any Datagrok package that is installed in the environment. 
 
 ### Compute Functions
 
@@ -175,6 +189,10 @@ from unnest(@molecules) as molecules
 where is_valid_smiles(Cast(molecules as cstring))
 ```
 
+If the number of functions is getting large, you might prefer to see only relevant ones in the order you prefer. You can hide/reorder the functions in functions dialog or template using the pencil (✎) icon on the top right corner.
+
+![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-Reorder-functions.gif?raw=true)
+
 ### Submit Functions
 
 Submit functions are used to save or submit the filtered and computed dataset. This could include saving to a private database or additional calculations. Submit functions are defined in the same way as compute functions, but they are tagged with `HitTriageSubmitFunction` tag. The function should accept only two inputs, `Dataframe` `df` and `String` `molecules`, which are the resulting dataframe and name of molecules column respectively. For example, we can create a function that saves the filtered and computed dataset to a database:
@@ -198,6 +216,15 @@ By default, any new campaign will be shared with all users. To manage who can vi
 
 ![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-permissions.gif?raw=true)
 
-Similarly, users can manage view permissions, which will restrict access to viewing the campaign or accessing it directly via link. If all users are removed from `view` permissions, only the creator of the campaign will be able to view it.
+Similarly, you can manage view permissions, which will restrict access to viewing the campaign or accessing it directly via link. If all users are removed from `view` permissions, only the creator of the campaign will be able to view it.
 
 ![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/HD-view-permissions.gif?raw=true)
+
+You can also modify the default sharing permissions for all newly created campaigns. To do so, modify the HitTriage package settings.
+
+1. Go to `Browse` → `Platform` and click on `Plugins` (or directly via a link at `{your_datagrok_url}/packages`).
+2. Under Cheminformatics, click on `HitTriage` package.
+3. On the context panel, expand the `Settings` pane.
+4. Modify the `Default view permissions` and `Default edit permissions` fields to set the default permissions for all newly created campaigns.
+
+![hitDesignReadmeImg](https://github.com/datagrok-ai/public/blob/master/help/uploads/hittriage/edit-default-hd-sharing.gif?raw=true)

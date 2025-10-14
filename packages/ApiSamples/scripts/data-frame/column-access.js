@@ -5,6 +5,8 @@ let d = grok.data.demo.demog();
 
 let ageColumn = d.getCol('age');
 ageColumn = d.columns.byName('age');
-ageColumn = d.columns['age'];
-ageColumn = d.columns.byIndex(3);
-ageColumn = d.columns[3];
+console.log('Column by name:');
+console.log(ageColumn);
+ageColumn = d.columns.byIndex(3); 
+console.log('Column by index:');
+console.log(ageColumn);

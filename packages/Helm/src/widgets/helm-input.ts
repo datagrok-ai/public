@@ -7,12 +7,14 @@ import {fromEvent, Observable, Unsubscribable} from 'rxjs';
 
 import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/index';
 import {HelmInputBase, IHelmHelper, IHelmInputInitOptions} from '@datagrok-libraries/bio/src/helm/helm-helper';
-import {HelmAtom, HelmMol, HelmString, IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmAtom, HelmMol, HelmString, IHelmEditorOptions, IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
+import {SeqValueBase} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
+import {MonomerNumberingTypes} from '@datagrok-libraries/bio/src/helm/consts';
+import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 import {defaultErrorHandler} from '../utils/err-info';
 import {getHoveredMonomerFromEditorMol, getSeqMonomerFromHelmAtom} from '../utils/get-hovered';
 
-import {MonomerNumberingTypes} from '@datagrok-libraries/bio/src/helm/consts';
 
 import {_package} from '../package';
 
@@ -31,20 +33,27 @@ export class HelmInput extends HelmInputBase {
     return this.viewerHost;
   }
 
-  getValue(): HelmString {
-    return this.viewer.editor.getHelm();
+  private _seqValue: SeqValueBase;
+
+  getValue(): SeqValueBase { return this._seqValue; }
+
+  setValue(value: SeqValueBase): void {
+    this._seqValue = value;
+    this.viewer.editor.setHelm(this._seqValue.helm);
   }
 
-  setValue(value: HelmString): void {
-    this.viewer.editor.setHelm(value);
-  }
-
-  getStringValue(): string {
-    return this.viewer.editor.getHelm();
-  }
+  getStringValue(): string { return this._seqValue?.helm ?? ''; }
 
   setStringValue(value: string): void {
-    this.viewer.editor.setHelm(value);
+    if (!this._seqValue) {
+      let seqCol: DG.Column;
+      DG.DataFrame.fromColumns([seqCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'seq', [value])]);
+      seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
+      seqCol.meta.units = NOTATION.HELM;
+      const sh = this.helmHelper.seqHelper.getSeqHandler(seqCol);
+      this._seqValue = sh.getValue(0);
+    }
+    this.viewer.editor.setHelm(this._seqValue.value = value);
   }
 
   // -- IHelmInput --
@@ -55,6 +64,7 @@ export class HelmInput extends HelmInputBase {
 
   set molValue(value: HelmMol) {
     this.viewer.editor.setMol(value);
+    this._seqValue.value = this.viewer.editor.getHelm();
   }
 
   get onMouseMove(): Observable<MouseEvent> { return fromEvent<MouseEvent>(this.viewer.host, 'mousemove'); }
@@ -85,9 +95,7 @@ export class HelmInput extends HelmInputBase {
       classes: 'ui-input-editor',
       style: {width: '100%', height: '100%', overflow: 'hidden'},
     });
-    this.viewer = this.helmHelper.createHelmWebEditor(this.viewerHost, {
-      monomerNumbering: MonomerNumberingTypes.continuous
-    });
+    this.viewer = this.helmHelper.createHelmWebEditor(this.viewerHost, options?.editorOptions);
 
     this.editHintDiv = ui.divH([
       ui.link('Click to edit', () => { this.viewer.host.click(); }, undefined, {}),
@@ -140,16 +148,8 @@ export class HelmInput extends HelmInputBase {
   ): HelmInput {
     const input = new HelmInput(helmHelper, monomerLib, name, options);
     // TODO: Apply options
-    const value: HelmMol | string | undefined = options?.value;
-    if (value !== undefined) {
-      if (value instanceof String || typeof value === 'string')
-        input.stringValue = value as any as string;
-      else if (typeof value === 'object' /* && value.T === 'MOL'*/)
-        input.molValue = value;
-      else
-        throw new Error(`Unsupported value of type '${typeof value}'.`);
-    }
-
+    if (options?.value != null)
+      input.value = options.value;
     return input;
   }
 
@@ -181,7 +181,7 @@ export class HelmInput extends HelmInputBase {
     const mol = this.viewer.editor.m;
     const hoveredAtom = getHoveredMonomerFromEditorMol(argsX, argsY, mol, this.viewer.editor.div.clientHeight);
     if (hoveredAtom) {
-      const seqMonomer = getSeqMonomerFromHelmAtom(hoveredAtom);
+      const seqMonomer = getSeqMonomerFromHelmAtom(this.value, hoveredAtom);
       const monomerLib = _package.monomerLib;
       const tooltipEl = monomerLib ? monomerLib.getTooltip(seqMonomer.biotype, seqMonomer.symbol) :
         ui.divText('Monomer library is not available');

@@ -4,12 +4,12 @@ import * as grok from 'datagrok-api/grok';
 
 import {after, before, category, expect, expectObject, test, timeout} from '@datagrok-libraries/utils/src/test';
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
 import {
   getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {generateLongSequence} from '@datagrok-libraries/bio/src/utils/generator';
+import {getSeqHelper, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {initHelmMainPackage} from './utils';
 import {getPropertiesDict, SeqPropertiesError} from '../widgets/properties-widget';
@@ -72,12 +72,14 @@ const TestsData: {
 };
 
 category('properties-widget', () => {
+  let seqHelper: ISeqHelper;
   let monomerLibHelper: IMonomerLibHelper;
   /** Backup actual user's monomer libraries settings */
   let userLibSettings: any = null;
 
   before(async () => {
     await initHelmMainPackage();
+    seqHelper = await getSeqHelper();
 
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = getUserLibSettings();
@@ -101,7 +103,7 @@ category('properties-widget', () => {
     const df = DG.DataFrame.fromColumns(colList);
     const col = df.getCol('MSA');
 
-    const sh = SeqHandler.forColumn(col);
+    const sh = seqHelper.getSeqHandler(col);
     let errCatched = true;
     try {
       const _actPropDict = getPropertiesDict(col.get(0), sh);
@@ -111,17 +113,17 @@ category('properties-widget', () => {
     }
     expect(errCatched, true);
   });
-});
 
-function testPropertiesDict(
-  seq: string, units: NOTATION, separator: string | undefined, alphabet: ALPHABET | undefined, expPropDict: {}
-) {
-  const col = DG.Column.fromStrings('seq', [seq]) as DG.Column<string>;
-  col.semType = DG.SEMTYPE.MACROMOLECULE;
-  col.meta.units = units;
-  if (separator) col.setTag(bioTAGS.separator, separator);
-  if (alphabet) col.setTag(bioTAGS.alphabet, alphabet);
-  const sh = SeqHandler.forColumn(col);
-  const actPropDict = getPropertiesDict(seq, sh);
-  expectObject(actPropDict, expPropDict);
-}
+  function testPropertiesDict(
+    seq: string, units: NOTATION, separator: string | undefined, alphabet: ALPHABET | undefined, expPropDict: {}
+  ) {
+    const col = DG.Column.fromStrings('seq', [seq]) as DG.Column<string>;
+    col.semType = DG.SEMTYPE.MACROMOLECULE;
+    col.meta.units = units;
+    if (separator) col.setTag(bioTAGS.separator, separator);
+    if (alphabet) col.setTag(bioTAGS.alphabet, alphabet);
+    const sh = seqHelper.getSeqHandler(col);
+    const actPropDict = getPropertiesDict(seq, sh);
+    expectObject(actPropDict, expPropDict);
+  }
+});

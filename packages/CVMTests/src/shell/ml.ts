@@ -9,7 +9,7 @@ category('ML', () => {
   let df: DG.DataFrame;
 
   before(async () => {
-    df = await grok.data.files.openTable('System:AppData/ApiTests/datasets/demog.csv');
+    df = await grok.data.demo.loadDemoTable('demog.csv');
   });
 
   // test('Apply Model', async () => {

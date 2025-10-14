@@ -10,9 +10,8 @@ async function generate() {
   await grok.ml.randomData(t, 'binomial', {size: 100, prob: 0.7}, 77);
 }
 
-generate().then(function () {
-  let view = grok.shell.addTableView(t);
-  view.histogram({value: 'normal'});
-  view.histogram({value: 'uniform'});
-  view.histogram({value: 'binomial'});
-});
+await generate();
+let view = grok.shell.addTableView(t);
+view.histogram({value: 'normal'});
+view.histogram({value: 'uniform'});
+view.histogram({value: 'binomial'});

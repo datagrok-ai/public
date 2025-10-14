@@ -1,5 +1,160 @@
 # bio changelog
 
+## 5.55.0 (2025-10-03)
+
+* Full BILN support: conversion to/from HELM/separator/fasta/molecular form, parsing, rendering, monomer library handling.
+
+## 5.54.1 (2025-06-25)
+
+* To Atomic Level: Handling of terminal monomers with 1 R group, wrongly configured r-groups, and incorrect notations.
+
+## 5.53.3 (2025-06-02)
+
+* MSA header tracks
+* Faster methods for getting regions from ISeqSplitted
+
+## 5.52.0 (2025-05-12)
+
+Sequence rendering with shift configuration. MSA improvements
+
+## 5.51.1 (2025-04-22)
+
+Update weblogo defaults 
+
+## 5.51.0 (2025-04-08)
+
+To Atomic level fixes for terminal monomers with 1 R group, wrongly configured r-groups and incorrect notations
+
+## 5.50.1 (2025-02-20)
+
+Remove helm dependency in toAtomicLevel for Linear sequences
+
+## 5.50.0 (2025-02-20)
+
+Support toAtomicLevel and POM conversion for all notations
+
+## 5.49.1 (2025-02-17)
+
+Fix helm splitter for marginal cases
+
+## 5.49.0 (2025-02-17)
+
+To-Tomic-level support for RNA/DNA sequences
+
+## 5.48.3 (2025-02-05)
+
+Remove healthCheck method from the IAutoDockService interface
+
+## 5.48.2 (2025-01-22)
+
+Async renderer caching improvement
+
+## 5.48.1 (2025-01-22)
+
+Improve cell renderer in non grid places
+
+## 5.48.0 (2025-01-21)
+
+Async grid renderer support for other places than grid
+
+## 5.47.2 (2024-01-07)
+
+Use gCell bounds to remove scroll dependency in CellRendererAsyncBase
+
+## 5.47.1 (2024-12-30)
+
+Moved bio substructure filter types from Bio package to bio library
+
+## 5.46.2 (2024-12-23)
+
+Add healthCheck method to the IAutoDockService interface
+
+## 5.46.1 (2024-12-02)
+
+Add terminate method to the IAutoDockService interface
+
+## 5.46.0 (2024-11-19)
+
+Sequence renderer: Support font resize
+
+## 5.45.11 (2024-11-15)
+
+Async cell renderer correct invalidation
+
+## 5.45.10 (2024-11-07)
+
+Remove the startDockerContainer method from the IAutoDockService interface
+
+## 5.45.9 (2024-11-01)
+
+Unknown pallete correct initialization
+
+## 5.45.8 (2024-11-01)
+
+Correct loading of unknown pallete
+
+## 5.45.7 (2024-11-01)
+
+Unknown pallete correct initialization
+
+## 5.45.6 (2024-10-31)
+
+### Bug fixes
+
+* Fix SeqValueBase adding seqHandler, getSplitted, helm
+* Fix HelmInputBase for SeqValueBase
+* Fix ISeqHandler adding getHelm, splitter
+* Fix INotationProvider adding setUnits, getHelm
+
+## 5.45.5 (2024-10-24)
+
+### Bug fixes
+
+* Fix splitterAsHelm for multiple simple polymers
+* Fix IHelmHelper adding .seqHelper
+* Fix exporting HWE IBio, HelmBio
+
+## 5.45.4 (2024-10-22)
+
+### Bug fixes
+
+* Fix ISeqHandler getValue of type MacromoleculeValueBase
+* Fix CellRendererAsyncBase for LRU imageCache, cacheEnabled
+
+## 5.45.3 (2024-10-16)
+
+### Bug fixes
+
+* Fix splitterWithSeparator
+* Fix MonomerPlacer onMouseMove handling
+
+## 5.45.2 (2024-10-11)
+
+### Bug fixes
+
+* Fix moving setUnits methods to ISeqHelper
+* Fix dependencies version
+
+## 5.45.1 (2024-10-11)
+
+### Bug fixes
+
+* Fix ISeqHelper adding getSeqMonomers
+
+## 5.45.0 (2024-10-10)
+
+### New features
+
+* Add SeqHelper factory for SeqHandler moving to the Bio package
+
+### Bug fixes
+
+* Fix toAtomicLevel for monomers without peptide bond (NH2)
+* Fix createHelmWebEditor drawOptions to options
+* Fix MonomerPlacer to get tooltip from overridden monomer lib
+* Fix Helm cell renderer props adding overridden monomer lib
+* Fix monomer lib loading timout on palettes
+
 ## 5.44.5 (2024-10-03)
 
 ### Bug fixes

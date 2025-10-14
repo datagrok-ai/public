@@ -1,0 +1,100 @@
+{
+  "#type": "ViewLayout",
+  "viewStateMap": {
+    "containerType": "fill",
+    "state": {
+      "width": 1208,
+      "height": 754,
+      "documentManager": true
+    },
+    "children": [
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 1208,
+          "height": 754,
+          "element": {
+            "id": "9f91f240-e920-11ef-e64c-cf7f9b69f191",
+            "type": "Grid",
+            "look": {
+              "#type": "GridLook",
+              "showAddNewRowIcon": true,
+              "addNewRowOnLastRowEdit": true,
+              "rowHeight": 79,
+              "topLevelDefaultMenu": true,
+              "allowColumnMenu": true,
+              "columns": [
+                {
+                  "width": 28,
+                  "backgroundColor": 4294440951,
+                  "customName": "",
+                  "cellType": "row header",
+                  "headerCellStyle": {
+                    "vertAlign": "bottom",
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 77,
+                  "columnName": "Cmpd_ID",
+                  "headerCellStyle": {
+                    "vertAlign": "bottom",
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 157.6503735822687,
+                  "columnName": "SMILES",
+                  "cellType": "Molecule",
+                  "headerCellStyle": {
+                    "vertAlign": "bottom",
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "width": 137.15824915824922,
+                  "columnName": "AutoDock poses",
+                  "cellType": "Molecule3D",
+                  "headerCellStyle": {
+                    "vertAlign": "bottom",
+                    "textWrap": "words"
+                  }
+                },
+                {
+                  "isColorCoded": true,
+                  "isTextColorCoded": true,
+                  "width": 112,
+                  "columnName": "binding energy",
+                  "customFormat": "0.00",
+                  "cellType": "number",
+                  "format": "0.00",
+                  "colorCodingType": "Linear",
+                  "colorCodingLinear": [
+                    4278255360,
+                    4294901760
+                  ],
+                  "headerCellStyle": {
+                    "vertAlign": "bottom",
+                    "textWrap": "words"
+                  }
+                }
+              ]
+            },
+            "title": "Grid",
+            "default": true
+          }
+        },
+        "children": []
+      }
+    ],
+    "floating": [],
+    "tableId": "93f62500-e920-11ef-e4e2-37bef8eababd",
+    "tableName": "docking_demo"
+  },
+  "name": "DockingDemo",
+  "friendlyName": "docking_demo",
+  "author": {
+    "id": "ca82ee60-6280-11ee-df26-75193ba005c5"
+  },
+  "createdOn": "2025-03-25T11:45:17.667Z"
+}

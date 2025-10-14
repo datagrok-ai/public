@@ -1,5 +1,31 @@
 # Admetica changelog
 
+## 1.3.1 (2025-09-17)
+
+### Bug Fixes:
+
+* Admetica: Resolved issue with empty string conversion causing `Could not convert '' with type str: tried to convert to double`
+
+## 1.1.0 (2025-03-07)
+
+### Features
+
+* Admetica: Demo application showcasing main functionality
+
+### Bug Fixes
+
+* Admetica: Form: Wraps content properly when space is limited
+* Admetica: Added units to the calculated ADMET values for cell
+* Admetica: Fixed issue with the summary pane not working for molblocks
+* Admetica: Grid groups for property organization
+
+## 1.0.2 (2024-10-18)
+
+### Bug Fixes
+
+* Admetica: Fixed tests
+* Admetica: Support CPU usage when no GPU is available
+
 ## 1.0.1 (2024-09-30)
 
 ### Features

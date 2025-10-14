@@ -22,7 +22,7 @@ export enum COLUMN_NAMES {
 export async function searchWidget(molString: string, searchType: SEARCH_TYPE, dbdf: DG.DataFrame,
 ): Promise<DG.Widget> {
   const headerHost = ui.div();
-  const compsHost = ui.div([], 'd4-flex-wrap chem-viewer-grid');
+  const compsHost = ui.div([], 'd4-flex-wrap chem-viewer-grid chem-search-panel-wrapper');
   const panel = ui.divV([headerHost, compsHost]);
 
   let table: DG.DataFrame | null;
@@ -60,12 +60,10 @@ export async function searchWidget(molString: string, searchType: SEARCH_TYPE, d
     const piv = bitsetIndexes[n];
     const molfile = moleculeCol.get(piv)!;
     const molHost = ui.divV([]);
-    grok.functions.call('Chem:drawMolecule', {'molStr': molfile, 'w': WIDTH, 'h': HEIGHT, 'popupMenu': true})
-      .then((res: HTMLElement) => {
-        molHost.append(res);
-        if (searchType === SEARCH_TYPE.SIMILARITY)
-          molHost.append(ui.divText(`Score: ${similarityCol?.get(n)?.toFixed(2)}`));
-      });
+    const res = grok.chem.drawMolecule(molfile, WIDTH, HEIGHT, true);
+    molHost.append(res);
+    if (searchType === SEARCH_TYPE.SIMILARITY)
+      molHost.append(ui.divText(`Score: ${similarityCol?.get(n)?.toFixed(2)}`));
 
     ui.tooltip.bind(molHost, () => ui.divText(`Common name: ${nameCol.get(piv)!}\nClick to open in DrugBank Online`));
     molHost.addEventListener('click', () => window.open(`https://go.drugbank.com/drugs/${idCol.get(piv)}`, '_blank'));

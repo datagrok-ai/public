@@ -1,11 +1,27 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+
 import {IMonomerLibBase} from '../types';
+
+import {ISeqHandler} from './macromolecule/seq-handler';
+import {MolfileWithMap} from '../monomer-works/types';
+import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 export type ToAtomicLevelRes = {
   molCol: DG.Column<string> | null,
   warnings: string[],
+}
+
+export interface IHelmToMolfileConverter {
+  convertToSmiles(helmCol: DG.Column<string>): DG.Column<string>;
+  molV3KtoMolV3KOCL(molV3k: string): string;
+  getMolV3000ViaOCL(beautifiedMols: (RDMol | null)[], columnName: string): DG.Column<string>;
+  convertToRdKitBeautifiedMolfileColumn(
+    helmCol: DG.Column<string>, chiralityEngine: boolean, rdKitModule: RDModule, monomerLib: IMonomerLibBase
+  ): DG.Column<string>;
+  convertToMolfileV3KColumn(helmCol: DG.Column<string>): DG.Column<string>;
+  convertToMolfileV3K(helmList: string[]): MolfileWithMap[];
 }
 
 export interface ISeqHelper {
@@ -18,6 +34,20 @@ export interface ISeqHelper {
   helmToAtomicLevel(
     helmCol: DG.Column<string>, chiralityEngine?: boolean, highlight?: boolean, overrideMonomerLib?: IMonomerLibBase
   ): Promise<ToAtomicLevelRes>;
+
+  //sync method
+  helmToAtomicLevelSingle(
+    helm: string, converter: IHelmToMolfileConverter, chiralityEngine?: boolean, beautifyMol?: boolean
+  ): MolfileWithMap;
+
+  getSeqHandler(seqCol: DG.Column<string>): ISeqHandler;
+
+  getSeqMonomers(seqCol: DG.Column<string>): string[];
+
+  setUnitsToFastaColumn(sh: ISeqHandler): void;
+  setUnitsToSeparatorColumn(sh: ISeqHandler): void;
+  setUnitsToHelmColumn(sh: ISeqHandler): void;
+  getHelmToMolfileConverter(monomerLib: IMonomerLibBase): Promise<IHelmToMolfileConverter>
 }
 
 export async function getSeqHelper(): Promise<ISeqHelper> {

@@ -26,8 +26,8 @@ public class HiveDataProvider extends JdbcDataProvider {
         descriptor.type = "Hive";
         descriptor.description = "Query Hive database";
         descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
-        descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
-        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
+        descriptor.connectionTemplate.add(DbCredentials.getSsl());
+        descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
         descriptor.canBrowseSchema = true;
         descriptor.typesMap = new HashMap<String, String>() {{
             put("smallint", Types.INT);
@@ -65,7 +65,7 @@ public class HiveDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public Connection getConnection(DataConnection conn) throws SQLException {
+    public Connection getConnection(DataConnection conn) throws SQLException, GrokConnectException {
         return DriverManager.getConnection(getConnectionString(conn), getProperties(conn));
     }
 

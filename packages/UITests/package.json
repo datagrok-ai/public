@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/ui-tests",
   "friendlyName": "UI Tests",
-  "version": "1.0.12",
+  "version": "1.3.0",
   "author": {
     "name": "Savenko Stanislav",
     "email": "ssavenko@datagrok.ai"
@@ -9,29 +9,30 @@
   "servicePackage": true,
   "description": "Automated UI tests",
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.3.0",
-    "cash-dom": "latest",
-    "datagrok-api": "^1.21.1",
-    "dayjs": "latest",
-    "wu": "latest",
-    "@types/wu": "^2.1.42"
+    "@datagrok-libraries/utils": "^4.6.5",
+    "@types/wu": "^2.1.42",
+    "cash-dom": "^8.1.5",
+    "datagrok-api": "^1.26.0",
+    "dayjs": "^1.11.13",
+    "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "latest",
-    "@typescript-eslint/parser": "latest",
-    "eslint": "latest",
-    "eslint-config-google": "latest",
-    "ts-loader": "latest",
-    "typescript": "latest",
-    "webpack": "latest",
-    "webpack-cli": "latest"
+    "@typescript-eslint/eslint-plugin": "^8.8.1",
+    "@typescript-eslint/parser": "^8.8.1",
+    "datagrok-tools": "^4.14.55",
+    "eslint": "^8.57.1",
+    "eslint-config-google": "^0.14.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.6.3",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "link-all": "npm link datagrok-api @datagrok-libraries/utils",
     "debug-uitests": "webpack && grok publish",
     "release-uitests": "webpack && grok publish --release",
     "build-uitests": "webpack",
-    "build": "webpack",
+    "build": "grok api && grok check --soft && webpack",
     "debug-uitests-dev": "webpack && grok publish dev",
     "release-uitests-dev": "webpack && grok publish dev --release",
     "debug-uitests-public": "webpack && grok publish public",
@@ -46,10 +47,10 @@
     "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm run build"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
-    "All users"
+    "Administrators"
   ],
   "category": "Development",
   "repository": {

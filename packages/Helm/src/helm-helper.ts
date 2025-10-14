@@ -6,11 +6,13 @@ import $ from 'cash-dom';
 
 /* eslint-disable max-len */
 import {
-  App, Point, HelmAtom, HelmBond, HelmMol, HelmType, GetMonomerFunc, GetMonomerResType,
+  App, Point, HelmType, IHelmBio, HelmAtom, HelmBond, HelmMol, GetMonomerFunc, GetMonomerResType,
   MonomerExplorer, TabDescType, MonomersFuncs, MonomerSetType, ISeqMonomer, PolymerType, MonomerType,
-  DojoType, JSDraw2ModuleType,
+  DojoType, JSDraw2ModuleType, IHelmEditorOptions, IHelmDrawOptions,
+  Editor,
+  IBio,
 } from '@datagrok-libraries/bio/src/helm/types';
-import {HelmTypes, MonomerTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
+import {HelmTabKeys, HelmTypes, MonomerTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {
@@ -18,8 +20,8 @@ import {
 } from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
 import {IMonomerLib, IMonomerLibBase, IMonomerLinkData, IMonomerSetPlaceholder} from '@datagrok-libraries/bio/src/types/index';
-import {HelmTabKeys, IHelmDrawOptions} from '@datagrok-libraries/helm-web-editor/src/types/org-helm';
 import {GAP_SYMBOL, GapOriginals, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {HelmWebEditor} from './helm-web-editor';
 import {OrgHelmModule, ScilModule} from './types';
@@ -28,6 +30,7 @@ import {getHoveredMonomerFromEditorMol} from './utils/get-hovered';
 /* eslint-enable max-len */
 
 import {_package} from './package';
+import { IEditorOptions } from '@datagrok-libraries/js-draw-lite/src/types/jsdraw2';
 
 declare const dojo: DojoType;
 declare const JSDraw2: JSDraw2ModuleType;
@@ -40,6 +43,7 @@ export class HelmHelper implements IHelmHelper {
   private static instanceCount: number = 0;
 
   constructor(
+    public readonly seqHelper: ISeqHelper,
     private readonly logger: ILogger
   ) {
     // Watchdog for singleton
@@ -49,7 +53,7 @@ export class HelmHelper implements IHelmHelper {
 
   createHelmInput(name?: string, options?: IHelmInputInitOptions): HelmInputBase {
     try {
-      const monomerLib: IMonomerLibBase = _package.libHelper!.getMonomerLib();
+      const monomerLib: IMonomerLibBase = _package._libHelper!.getMonomerLib();
       return HelmInput.create(this, monomerLib, name, options);
     } catch (err: any) {
       const [errMsg, errStack] = errInfo(err);
@@ -58,8 +62,8 @@ export class HelmHelper implements IHelmHelper {
     }
   }
 
-  createHelmWebEditor(host?: HTMLDivElement, drawOptions?: Partial<IHelmDrawOptions>): IHelmWebEditor {
-    return new HelmWebEditor(host, drawOptions);
+  createHelmWebEditor(host?: HTMLDivElement, options?: Partial<IHelmEditorOptions>): IHelmWebEditor {
+    return new HelmWebEditor(host, options);
   }
 
   createWebEditorApp(host: HTMLDivElement, helm: string): App {
@@ -148,7 +152,7 @@ export class HelmHelper implements IHelmHelper {
   }
 
   public onShowTabPlaceholdersSets(mex: MonomerExplorer, div: HTMLDivElement): void {
-    const monomerSets = _package.libHelper!.getMonomerSets();
+    const monomerSets = _package._libHelper!.getMonomerSets();
 
     const phSet: { [polymerType: string]: { [helmType: string]: IMonomerSetPlaceholder[] } } = {};
     for (const ph of monomerSets.placeholders) {
@@ -262,7 +266,8 @@ export class HelmHelper implements IHelmHelper {
         const logPrefixInt = `${logPrefix}, org.helm.webeditor.Monomers.getMonomer()`;
         try {
           // logger.debug(`${logPrefixInt}, a: ${JSON.stringify(a, helmJsonReplacer)}, name: '${name}'`);
-
+          if (name?.startsWith('[') && name.endsWith(']'))
+            name = name.substring(1, name.length - 1);
           // Creates monomers in lib
           const dgWem = monomerLib.getWebEditorMonomer(a, name);
 
@@ -324,25 +329,53 @@ export class HelmHelper implements IHelmHelper {
     return getHoveredMonomerFromEditorMol(x, y, mol, height);
   }
 
+  //if molfiles are accessed too often, it is better to cache it
+  private _molfilesEditor: Editor<unknown, IBio<unknown>, IEditorOptions> | null = null;
+  private _molfilesEditorHost: HTMLDivElement | null = null;
+  private get molfilesEditor(): Editor<unknown, IBio<unknown>, IEditorOptions> {
+    if (this._molfilesEditorRemovingTimer)
+      clearTimeout(this._molfilesEditorRemovingTimer);
+    if (this._molfilesEditor == null) {
+      this._molfilesEditorHost = ui.div([], {style: {width: '0px', height: '0px', position: 'fixed'}});
+      document.documentElement.appendChild(this._molfilesEditorHost);
+      this._molfilesEditor = new JSDraw2.Editor(this._molfilesEditorHost, {viewonly: true});
+    }
+    this._molfilesEditorRemovingTimer = setTimeout(() => {
+      this.removeMolfilesEditor();
+    }, 1000);
+    return this._molfilesEditor;
+  }
+
+  // after batch conversion, remove the editor to avoid sliding pages
+  private _molfilesEditorRemovingTimer: any = null;
+  private removeMolfilesEditor(): void {
+    if (this._molfilesEditorHost) {
+      $(this._molfilesEditorHost).empty();
+      this._molfilesEditorHost.remove();
+      this._molfilesEditorHost = null;
+      this._molfilesEditor = null;
+    }
+  }
+
   public getMolfiles(helmStrList: string[]): string[] {
-    const host = ui.div([], {style: {width: '0', height: '0'}});
-    document.documentElement.appendChild(host);
     try {
-      const editor = new JSDraw2.Editor(host, {viewonly: true});
+      const editor = this.molfilesEditor;
       const resList = helmStrList.map((helmStr, i) => {
+        //no-draw instruction to avoid time spent on rendering
+        editor.helm && (editor.helm.noDraw = true);
         editor.setHelm(helmStr);
         const mol = editor.getMolfile();
         return mol;
       });
       return resList;
     } finally {
-      $(host).empty();
-      host.remove();
+      // $(host).empty();
+      // host.remove();
     }
   }
 
   public parse(helm: string, origin?: Point): HelmMol {
-    const molHandler = new JSDraw2.MolHandler<HelmType>();
+    const molHandler = new JSDraw2.MolHandler<HelmType, IHelmBio, IHelmEditorOptions>();
     const plugin = new org.helm.webeditor.Plugin(molHandler);
     org.helm.webeditor.IO.parseHelm(plugin, helm, origin ?? new JSDraw2.Point(0, 0));
     return plugin.jsd.m;
@@ -399,7 +432,7 @@ export class HelmHelper implements IHelmHelper {
 
     for (let aI: number = 0; aI < mol.atoms.length; ++aI) {
       const a: HelmAtom = mol.atoms[aI];
-      monomerMap.set(parseInt(a.bio!.continuousId as string) - 1, aI);
+      monomerMap.set(a.bio!.continuousId - 1, aI);
     }
 
     const resHelm = org.helm.webeditor.IO.getHelm(mol)!;

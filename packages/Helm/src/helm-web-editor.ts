@@ -6,7 +6,7 @@ import {Unsubscribable} from 'rxjs';
 
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {
-  App, Editor, HelmType, IHelmWebEditor, HelmEditor, IHelmDrawOptions
+  App, Editor, HelmType, IHelmWebEditor, HelmEditor, IHelmEditorOptions
 } from '@datagrok-libraries/bio/src/helm/types';
 
 import {JSDraw2Module, OrgHelmModule, ScilModule} from './types';
@@ -27,7 +27,7 @@ export class HelmWebEditor implements IHelmWebEditor {
 
   constructor(
     host?: HTMLDivElement,
-    drawOptions?: Partial<IHelmDrawOptions>,
+    options?: Partial<IHelmEditorOptions>,
     private logger: ILogger = _package.logger
   ) {
     this.host = host ?? ui.div([], {style: {width: `${this.w}px`, height: `${this.h}px`}});
@@ -36,10 +36,8 @@ export class HelmWebEditor implements IHelmWebEditor {
       width: this.host.style.width, height: this.host.style.height,
       overflow: this.host.style.overflow
     };
-    this.editor = new JSDraw2.Editor(this.host, {
-      width: this.w, height: this.h, viewonly: true,
-      drawOptions: drawOptions
-    });
+    this.editor = new JSDraw2.Editor(this.host,
+      Object.assign({width: this.w, height: this.h, viewonly: true}, options));
     this.host.style.width = styleBackup.width;
     this.host.style.height = styleBackup.height;
     this.host.style.overflow = styleBackup.overflow;

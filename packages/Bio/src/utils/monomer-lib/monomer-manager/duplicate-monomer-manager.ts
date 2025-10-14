@@ -47,12 +47,12 @@ class MonomerCard {
 
 class DuplicateSymbolRow {
   root: HTMLElement = ui.divH([],
-      {style: {
-        alignItems: 'center',
-        width: '100%',
-        overflow: 'hidden',
-        visibility: 'visible',
-      }, classes: 'duplicate-monomer-symbol-row'}
+    {style: {
+      alignItems: 'center',
+      width: '100%',
+      overflow: 'hidden',
+      visibility: 'visible',
+    }, classes: 'duplicate-monomer-symbol-row'}
   );
   monomerCards: MonomerCard[];
   constructor(
@@ -97,6 +97,8 @@ export class DuplicateMonomerManager {
       DuplicateMonomerManager._instance = new DuplicateMonomerManager();
       await DuplicateMonomerManager._instance.refresh();
       const libManager = await MonomerLibManager.getInstance();
+      // reason: subscription happens only once, and is needed throught the lifetime of the app
+      // eslint-disable-next-line rxjs/no-async-subscribe, rxjs/no-ignored-subscription
       libManager.getMonomerLib().onChanged.subscribe(async () => await DuplicateMonomerManager._instance.refresh());
     }
     DuplicateMonomerManager._instance.refresh();
@@ -124,18 +126,65 @@ export class DuplicateMonomerManager {
               this.settings.duplicateMonomerPreferences[polymerType] = this.settings.duplicateMonomerPreferences[polymerType] ?? {};
               this.settings.duplicateMonomerPreferences[polymerType][monomerSymbol] = monomer.lib.source;
               await setUserLibSettings(this.settings);
-              grok.shell.info(`Monomer '${monomer.name}' from source '${monomer.lib.source}' selected for symbol '${monomerSymbol}'.`);
               libManager.assignDuplicatePreferances(this.settings);
+              grok.shell.info(`Monomer '${monomer.name}' from source '${monomer.lib.source}' selected for symbol '${monomerSymbol}'.`);
             });
           }));
       }
     }
+    const setAllMonomersToSourceButton = ui.divText('Set Default');
+    setAllMonomersToSourceButton.addEventListener('click', async () => {
+      if (Object.keys(this.monomers ?? {}).length === 0) {
+        grok.shell.info('No Duplicate Monomers found');
+        return;
+      }
+      const uniqueLibSet = new Set<string>();
+      for (const polymerType in this.monomers) {
+        for (const monomerSymbol in this.monomers[polymerType]) {
+          for (const monomer of this.monomers[polymerType][monomerSymbol]) {
+            if (monomer.lib?.source)
+              uniqueLibSet.add(monomer.lib.source);
+          }
+        }
+      }
+      if (uniqueLibSet.size === 0) {
+        grok.shell.info('No Duplicate Monomers found');
+        return;
+      }
+      const uniqueLibs = Array.from(uniqueLibSet);
+      const libSelector = ui.input.choice('Default Library', {items: uniqueLibs, nullable: true});
+      ui.dialog('Set Default Monomer Source for Duplicates')
+        .add(libSelector)
+        .onOK(async () => {
+          if (!libSelector.value) {
+            grok.shell.info('No library selected');
+            return;
+          }
+          for (const polymerType in this.monomers) {
+            for (const monomerSymbol in this.monomers[polymerType]) {
+              const monomers = this.monomers[polymerType][monomerSymbol];
+              if (!monomers?.some((mon) => mon.lib?.source === libSelector.value))
+                continue;
+              this.settings.duplicateMonomerPreferences = this.settings.duplicateMonomerPreferences ?? {};
+              this.settings.duplicateMonomerPreferences[polymerType] = this.settings.duplicateMonomerPreferences[polymerType] ?? {};
+              this.settings.duplicateMonomerPreferences[polymerType][monomerSymbol] = libSelector.value;
+            }
+          }
+          await setUserLibSettings(this.settings);
+          libManager.assignDuplicatePreferances(this.settings);
+          grok.shell.info(`Default Monomer Source for Duplicates set to '${libSelector.value}'.`);
+          setTimeout(() => this.refresh(), 100);
+        })
+        .show();
+    });
+
     this.filteredMonomerRows = this.monomerCardRows;
     if (!this.vv) {
       this.vv = ui.virtualView(this.monomerCardRows.length, (i) => { this.monomerCardRows[i].render(); return this.monomerCardRows[i].root; });
       this.vv.root.classList.add('duplicate-monomers-virtual-view');
       this.searchInput = ui.input.string('Search', {placeholder: 'Monomer Symbol', value: '', onValueChanged: () => search(this.searchInput.value)});
       this.searchInput.root.style.justifyContent = 'center';
+      this.searchInput.addOptions(setAllMonomersToSourceButton);
       this.searchInput.input.style.width = '200px';
       this._root = ui.divV([ui.h1('Manage Duplicate Monomer Symbols', {style: {textAlign: 'center'}}),
         this.searchInput.root, ui.divV([this.vv.root], {style: {overflowY: 'auto', height: '100%'}})], {style: {height: '100%'}});

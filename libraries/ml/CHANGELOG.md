@@ -1,5 +1,33 @@
 # ml changelog
 
+## 6.10.3 (2025-06-30)
+
+Activity cliffs: Fixed activities choice in the function editor
+
+## 6.10.1 (2025-05-07)
+
+Activity cliffs: Fixed bug with re-applying cliffs filter on re-drawing scatter plot
+
+## 6.8.3 (2025-03-07)
+
+Vector distance support on webGPU and without
+
+## 6.8.2 (2025-02-28)
+
+MCL: Sparse matrix pruning to avoid browser crash
+
+## 6.8.1 (2025-02-03)
+
+MCL: Add History support
+
+## 6.8.0 (2025-01-06)
+
+Refork MCL Viewer
+
+## 6.7.4 (2024-10-08)
+
+MCL: Better layout for similar size clusters
+
 ## 6.7.3 (2024-10-01)
 
 GROK-16730: Demo: Activity cliffs: Fixed 'Cannot read properties of null'

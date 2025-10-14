@@ -21,6 +21,10 @@ category('UI: Users', () => {
       .find((el) => el.textContent === 'Users') as HTMLElement;
     groups.click();
     await delay(500);
+
+    let userToDelete = await grok.dapi.users.filter('login = "newlogin"').first();;
+    if (userToDelete)
+      grok.dapi.users.delete(userToDelete);
   });
 
   /*
@@ -66,13 +70,14 @@ category('UI: Users', () => {
     user.status = DG.USER_STATUS.STATUS_NEW;
     user.firstName = 'new';
     user.lastName = 'user';
-    // TODO: add save and delete when will work
-  }, { skipReason: 'GROK-11318' });
+    await grok.dapi.users.save(user);
+    await grok.dapi.users.delete(user);
+  });
 
   test('actions.addServiceUser', async () => {
     const dialogsBefore = DG.Dialog.getOpenDialogs().length;
     await showDialog('Service User...');
-    await awaitCheck(() => DG.Dialog.getOpenDialogs().length ===  dialogsBefore + 1, 'Add Service User dialog was not shown', 1000);
+    await awaitCheck(() => DG.Dialog.getOpenDialogs().length === dialogsBefore + 1, 'Add Service User dialog was not shown', 1000);
     const diag = DG.Dialog.getOpenDialogs()[0];
     const cancel = diag.root.querySelector('[class="ui-btn ui-btn-ok"]') as HTMLElement;
     cancel.click();
@@ -117,7 +122,7 @@ category('UI: Users', () => {
 
   async function showDialog(label: string) {
     const cng = Array.from(document.querySelectorAll('.ui-btn'))
-      .find((el) => el.textContent === 'New'); 
+      .find((el) => el.textContent === 'New');
     if (cng === undefined) throw new Error(`cannot find New User button`);
     (cng as HTMLButtonElement).focus();
     (cng as HTMLButtonElement).click();
@@ -125,7 +130,7 @@ category('UI: Users', () => {
 
     const pageX = window.pageXOffset + rect.left;
     const pageY = window.pageYOffset + rect.top;
- 
+
     const mouseDown = new MouseEvent('mousedown', {
       bubbles: true,
       cancelable: true,
@@ -146,4 +151,4 @@ category('UI: Users', () => {
     // (optn as HTMLElement).parentElement?.addEventListener('click', () => grok.shell.error('CLICK'));
     optn.click();
   };
-}, { clear: false });
+}, { clear: false, owner: 'aparamonov@datagrok.ai' });

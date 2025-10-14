@@ -1,7 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {getSettingsBase, names, SummarySettingsBase, createTooltip, distance, Hit,
-  SparklineType, isSummarySettingsBase} from './shared';
+import {
+  getSettingsBase, SummarySettingsBase, createTooltip, distance, Hit,
+  SparklineType, isSummarySettingsBase, SummaryColumnColoringType, createBaseInputs, getRenderColor, getScaledNumber,
+  NormalizationType, getSparklinesContextPanel,
+} from './shared';
 
 
 class it {
@@ -19,11 +22,14 @@ interface RadarChartSettings extends SummarySettingsBase {
 }
 
 function getSettings(gc: DG.GridColumn): RadarChartSettings {
-  return isSummarySettingsBase(gc.settings) ? gc.settings :
+  const settings = isSummarySettingsBase(gc.settings) ? gc.settings :
     (gc.settings[SparklineType.Radar] as RadarChartSettings) ??= {
       ...getSettingsBase(gc, SparklineType.Radar),
       // ...{radius: 10,},
     };
+  settings.normalization ??= NormalizationType.Column;
+  settings.colorCode ??= SummaryColumnColoringType.Off;
+  return settings;
 }
 
 
@@ -33,7 +39,7 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   const settings = getSettings(gridCell.gridColumn);
   const box = new DG.Rect(gridCell.bounds.x, gridCell.bounds.y, gridCell.bounds.width, gridCell.bounds.height)
     .fitSquare().inflate(-2, -2);
-  const cols = df.columns.byNames(settings.columnNames);
+  const cols = df.columns.byNames(settings.columnNames).filter((c) => c != null);
   const vectorX = e.offsetX - gridCell.bounds.midX;
   const vectorY = e.offsetY - gridCell.bounds.midY;
   const atan2 = Math.atan2(vectorY, vectorX);
@@ -73,7 +79,7 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
     const hitData: Hit = onHit(gridCell, e);
     if (hitData.isHit)
-      ui.tooltip.show(ui.divV(createTooltip(hitData.cols, hitData.activeColumn, hitData.row)), e.x + 16, e.y + 16);
+      ui.tooltip.show(createTooltip(hitData.cols, hitData.activeColumn, hitData.row), e.x + 16, e.y + 16);
     else
       ui.tooltip.hide();
   }
@@ -90,7 +96,7 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
     const settings = getSettings(gridCell.gridColumn);
     const box = new DG.Rect(x, y, w, h).fitSquare().inflate(-2, -2);
     const row = gridCell.cell.row.idx;
-    const cols = df.columns.byNames(settings.columnNames);
+    const cols = df.columns.byNames(settings.columnNames).filter((c) => c != null);
 
     g.strokeStyle = 'lightgray';
 
@@ -107,7 +113,7 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
 
 
     const path = it.range(cols.length)
-      .map((i) => p(i, !cols[i].isNone(row) ? cols[i].scale(row) : 0));
+      .map((i) => p(i, !cols[i].isNone(row) ? getScaledNumber(cols, row, cols[i], {normalization: settings.normalization}) : 0));
     g.setFillStyle('#00cdff')
       .polygon(path)
       .fill();
@@ -124,8 +130,10 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
     }
     it.range(cols.length).map(function(i) {
       if (!cols[i].isNone(row)) {
-        DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, p(i, cols[i].scale(row)).x, p(i, cols[i].scale(row)).y,
-          DG.Color.fromHtml('#1E90FF'), 3);
+        const scaledNumber = getScaledNumber(cols, row, cols[i], {normalization: settings.normalization});
+        const point = p(i, scaledNumber);
+        DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, point.x, point.y,
+          getRenderColor(settings, DG.Color.fromHtml('#1E90FF'), {column: cols[i], colIdx: i, rowIdx: row}), 3);
       }
     });
   }
@@ -133,15 +141,11 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
   renderSettings(gc: DG.GridColumn): Element {
     const settings: RadarChartSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
       gc.settings[SparklineType.Radar] ??= getSettings(gc);
+    return ui.inputs(createBaseInputs(gc, settings));
+  }
 
-    const columnNames = settings?.columnNames ?? names(gc.grid.dataFrame.columns.numerical);
-    return ui.inputs([
-      ui.input.columns('Сolumns', {value: gc.grid.dataFrame.columns.byNames(columnNames),
-        table: gc.grid.dataFrame, onValueChanged: (value) => {
-          settings.columnNames = names(value);
-          gc.grid.invalidate();
-        }, available: names(gc.grid.dataFrame.columns.numerical),
-      }),
-    ]);
+  hasContextValue(gridCell: DG.GridCell): boolean { return true; }
+  async getContextValue (gridCell: DG.GridCell): Promise<any> {
+    return getSparklinesContextPanel(gridCell, getSettings(gridCell.gridColumn).columnNames);
   }
 }

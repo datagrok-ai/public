@@ -5,7 +5,5 @@
 ---
 {
   "order": 4,
-  "datasets": [
-    "System:DemoFiles/chem/smiles.csv"
-  ]
+  "datasets": ["System:DemoFiles/chem/smiles.csv"]
 }

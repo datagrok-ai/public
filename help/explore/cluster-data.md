@@ -12,26 +12,21 @@ Clustering algorithm is based on **k-means clustering**. It aims to partition _n
 _k_ clusters in which each observation belongs to the cluster with the nearest mean, serving as a prototype of the
 cluster. This results in a partitioning of the data space into _Voronoi cells_.
 
-## Run
+## Usage
 
 * Open table
-* Run from menu: **ML** | **Cluster** | **Cluster...**
+* Run from menu: **ML** | **Cluster** | **Cluster Data...**
 * Select numerical feature columns that will be used for clustering
 * Select number of required clusters. Integer number 1..n
-* Set **"Show scatter plot"** to open scatter plot after clustering
+* Set **"Show Scatter Plot"** to open scatter plot after clustering
 * Run clustering
 
-Result will be concatenated to source table as column with name "Cluster" and contains index of cluster for each table
-row.
-
-## Usage examples
-
-"Cluster" column can be used as "COLOR" parameter in scatter plot.
+![](cluster-data.gif)
 
 ## Notes
 
 * Works only with numerical data
-* New scatter plot will be opened only, if there are no opened ones.
+* Previously added scatterplot gets reused if possible, otherwise a new one is open
 
 See also:
 

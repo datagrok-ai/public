@@ -6,6 +6,7 @@ export enum NOTATION {
   SEPARATOR = 'separator',
   HELM = 'helm',
   /* Requires notation handler */ CUSTOM = 'custom',
+  /* Requires notation handler */ BILN = 'biln',
 }
 
 export const enum ALIGNMENT {
@@ -31,7 +32,11 @@ export enum TAGS {
   positionNames = '.positionNames',
   positionLabels = '.positionLabels',
   regions = '.regions',
+  positionShift = '.positionShift',
+  selectedPosition = '.selectedPosition'
 }
+
+export {TAGS as BioTags};
 
 export const positionSeparator: string = ', ';
 
@@ -66,4 +71,7 @@ export const GapOriginals: {
   [NOTATION.FASTA]: '-',
   [NOTATION.SEPARATOR]: '',
   [NOTATION.HELM]: '*',
+  [NOTATION.BILN]: '',
 };
+
+export const MONOMER_MOTIF_SPLITTER = ' , ';

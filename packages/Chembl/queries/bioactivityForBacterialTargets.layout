@@ -1,0 +1,216 @@
+{
+  "#type": "ViewLayout",
+  "viewStateMap": {
+    "containerType": "horizontal",
+    "state": {
+      "width": 1878,
+      "height": 1249
+    },
+    "children": [
+      {
+        "containerType": "fill",
+        "state": {
+          "width": 935,
+          "height": 1249,
+          "documentManager": true
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 935,
+              "height": 1249,
+              "element": {
+                "id": "921fc3e0-9b00-11ef-9491-2d306e180366",
+                "type": "Grid",
+                "look": {
+                  "#type": "GridLook",
+                  "showAddNewRowIcon": true,
+                  "addNewRowOnLastRowEdit": true,
+                  "rowHeight": 100,
+                  "topLevelDefaultMenu": true,
+                  "allowColumnMenu": true,
+                  "columns": [
+                    {
+                      "width": 28,
+                      "backgroundColor": 4294440951,
+                      "customName": "",
+                      "cellType": "row header",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 152,
+                      "columnName": "compound_chembl_id",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 200,
+                      "columnName": "canonical_smiles",
+                      "cellType": "Molecule",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 108,
+                      "columnName": "standard_type",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 114,
+                      "columnName": "standard_value",
+                      "cellType": "number",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 111,
+                      "columnName": "standard_units",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 125,
+                      "columnName": "target_chembl_id",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 179,
+                      "columnName": "organism",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 107,
+                      "columnName": "pref_name",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    }
+                  ]
+                },
+                "title": "Bioactivity for bacterial targets for Acinetobacter genomosp. 3",
+                "default": true
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "containerType": "vertical",
+        "state": {
+          "width": 942,
+          "height": 1249
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 942,
+              "height": 620,
+              "element": {
+                "id": "921fc3e0-9b00-11ef-dbb1-07e441dbf19e",
+                "type": "Bar chart",
+                "look": {
+                  "#type": "BarChartLook",
+                  "valueColumnName": "standard_value",
+                  "valueAggrType": "avg",
+                  "barSortType": "by value",
+                  "barSortOrder": "desc",
+                  "axisType": "logarithmic",
+                  "splitColumnName": "standard_type",
+                  "colorColumnName": "standard_value",
+                  "title": "Average Standard Value"
+                },
+                "title": "Average Standard Value"
+              }
+            },
+            "children": []
+          },
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 942,
+              "height": 628,
+              "element": {
+                "id": "921feaf0-9b00-11ef-aed5-75829be71ff2",
+                "type": "Pie chart",
+                "look": {
+                  "#type": "PieChartLook",
+                  "categoryColumnName": "standard_type",
+                  "categoryFunction": "",
+                  "segmentAngleColumnName": "standard_value"
+                },
+                "title": "Pie chart"
+              }
+            },
+            "children": []
+          }
+        ]
+      }
+    ],
+    "floating": [],
+    "tableId": "f172f3e0-9b00-11ef-cbf6-694273d20e2b",
+    "tableName": "Bioactivity for bacterial targets for Acinetobacter genomosp. 3"
+  },
+  "columns": [
+    {
+      "name": "standard_value",
+      "type": "double",
+      "id": "f1f67bc0-9b00-11ef-b4ce-63aa29ca6f79",
+      "friendlyName": "Standard_value",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "921feaf0-9b00-11ef-b748-a5130948878d"
+        },
+        {
+          "tag": ".id",
+          "id": "921feaf0-9b00-11ef-a6b3-afafc6f66a3b"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "4",
+        ".id": "f1f67bc0-9b00-11ef-b4ce-63aa29ca6f79"
+      }
+    },
+    {
+      "name": "standard_type",
+      "type": "string",
+      "id": "f1f67bc0-9b00-11ef-9c1d-bd42c1780793",
+      "friendlyName": "Standard_type",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "921feaf0-9b00-11ef-c518-2d61cb14f727"
+        },
+        {
+          "tag": ".id",
+          "id": "921feaf0-9b00-11ef-d24a-c78af2a08be1"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "5",
+        ".id": "f1f67bc0-9b00-11ef-9c1d-bd42c1780793"
+      }
+    }
+  ],
+  "name": "BioactivityForBacterialTargets",
+  "friendlyName": "Bioactivity for bacterial targets",
+  "author": {
+    "id": "9e9f6b50-6280-11ee-9466-b1c86e676b97"
+  },
+  "createdOn": "2024-12-06T15:27:14.717Z"
+}

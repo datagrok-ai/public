@@ -13,8 +13,8 @@ grok.events.onViewerAdded.subscribe((data) => {
 // this property is now editable
 let view = grok.shell.addTableView(grok.data.demo.demog());
 let plot = view.scatterPlot();
-// plot.onAfterDrawScene.subscribe((_) => {
-//   if (showStats) {
-//     plot.
-//   }
-// });
+plot.onAfterDrawScene.subscribe((_) => {
+  if (showStats) {
+    grok.shell.info(`showStats enabled`);
+  }
+});

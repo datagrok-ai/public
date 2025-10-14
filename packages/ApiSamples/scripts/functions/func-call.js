@@ -7,8 +7,8 @@ grok.shell.info(f.name +  '(' + inputs + ')' + ': ' + outputs);
 
 // simple way: f.apply
 // Any function can be called asynchronously
-f.apply({x: 0.5}).then((result) => grok.shell.info(result));
-
+let result = await f.apply({x: 0.5});
+grok.shell.info(result);
 // If we know that this is sync function, AND it's either a core function or a plugin is loaded already,
 // then we can call it synchronously using applySync:
 grok.shell.info('Sync call: ' + f.applySync({x: 0.5}));
@@ -20,4 +20,5 @@ grok.shell.info('Input name and type: ' + fc.inputParams['x'].name + ' ' + fc.in
 grok.shell.info('Input value:' + fc.inputs['x']);
 
 grok.shell.info(fc.inputs['x']);
-fc.call().then((call) => grok.shell.info(call.outputs['result']));
+let call = await fc.call();
+grok.shell.info(call.outputs['result'])

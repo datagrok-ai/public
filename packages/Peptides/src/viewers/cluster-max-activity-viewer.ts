@@ -112,7 +112,7 @@ export class ClusterMaxActivityViewer extends DG.JsViewer implements IClusterMax
       return null;
     }
     const clusterSizeCol = this.dataFrame.columns.getOrCreate(ClusterMaxActivityViewer.clusterSizeColName,
-      DG.TYPE.INT, this.dataFrame.rowCount);
+      DG.TYPE.INT);
     const clusterSizeMap: {[key: number | string]: number} = {};
     for (let i = 0; i < this.dataFrame.rowCount; i++) {
       const cluster: string | number = clusterCol.get(i);
@@ -156,7 +156,7 @@ export class ClusterMaxActivityViewer extends DG.JsViewer implements IClusterMax
     }
 
     const maxAtivityInClusterSizeCol = this.dataFrame.columns.getOrCreate(
-      ClusterMaxActivityViewer.maxActivityInClusterColName, DG.COLUMN_TYPE.INT, this.dataFrame.rowCount);
+      ClusterMaxActivityViewer.maxActivityInClusterColName, DG.COLUMN_TYPE.INT);
     maxAtivityInClusterSizeCol.init((i) => {
       if (clusterCol.isNone(i))
         return 0;
@@ -164,7 +164,7 @@ export class ClusterMaxActivityViewer extends DG.JsViewer implements IClusterMax
     });
 
     const maxConnectivityInClusterSizeCol = this.dataFrame.columns.getOrCreate(
-      ClusterMaxActivityViewer.maxConnectivityInClusterColName, DG.COLUMN_TYPE.INT, this.dataFrame.rowCount);
+      ClusterMaxActivityViewer.maxConnectivityInClusterColName, DG.COLUMN_TYPE.INT);
     maxConnectivityInClusterSizeCol.init((i) => {
       if (clusterCol.isNone(i))
         return 0;
@@ -172,7 +172,7 @@ export class ClusterMaxActivityViewer extends DG.JsViewer implements IClusterMax
     });
 
     const synSelectionCol = this.dataFrame.columns.getOrCreate(
-      ClusterMaxActivityViewer.synSelectionColName, DG.TYPE.STRING, this.dataFrame.rowCount);
+      ClusterMaxActivityViewer.synSelectionColName, DG.TYPE.STRING);
 
     synSelectionCol.init((i) => {
       if (clusterCol.isNone(i))

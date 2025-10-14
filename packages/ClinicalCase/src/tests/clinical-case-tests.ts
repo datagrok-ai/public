@@ -3,7 +3,7 @@ import { _testBaselineEndpoint, _testCumulativeEnrollment, _testHysLaw, _testLab
 
 category('clinicalCase', () => {
 
-    test('clinicalCase.openApp', async () => {
+    test('clinicalCase.appOpensWithountExceptions', async () => {
         await _testOpenApp();
     })
 

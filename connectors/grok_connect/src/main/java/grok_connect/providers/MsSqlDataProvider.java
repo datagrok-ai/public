@@ -1,10 +1,8 @@
 package grok_connect.providers;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
 import grok_connect.managers.ColumnManager;
 import grok_connect.managers.bool_column.MySqlMssqlBoolColumnManager;
 import grok_connect.connectors_info.DataConnection;
@@ -33,8 +31,8 @@ public class MsSqlDataProvider extends JdbcDataProvider {
         descriptor.category = "Database";
         descriptor.description = "Query MS SQL database";
         descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
-        descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
-        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
+        descriptor.connectionTemplate.add(DbCredentials.getSsl());
+        descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
         descriptor.canBrowseSchema = true;
         descriptor.defaultSchema = "dbo";
         descriptor.limitAtEnd = false;
@@ -121,7 +119,7 @@ public class MsSqlDataProvider extends JdbcDataProvider {
         return "SELECT c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
                 + "c.data_type as data_type, "
                 + "case t.table_type when 'VIEW' then 1 else 0 end as is_view FROM information_schema.columns c "
-                + "JOIN information_schema.tables t ON t.table_name = c.table_name " + whereClause +
+                + "JOIN information_schema.tables t ON t.table_name = c.table_name AND t.table_schema = c.table_schema AND t.table_catalog = c.table_catalog " + whereClause +
                 " ORDER BY c.table_name";
     }
 
@@ -142,6 +140,13 @@ public class MsSqlDataProvider extends JdbcDataProvider {
         String values = String.join(",", list);
         statement.setObject(n, values);
         return 0;
+    }
+
+    @Override
+    public Properties getProperties(DataConnection conn) {
+        java.util.Properties properties = defaultConnectionProperties(conn);
+        properties.setProperty("socketTimeout", "180000");
+        return properties;
     }
 
     @Override

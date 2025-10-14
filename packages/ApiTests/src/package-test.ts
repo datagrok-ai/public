@@ -34,6 +34,8 @@ import './dapi/tables';
 import './dapi/sticky_meta';
 import './dapi/users';
 import './dapi/benchmarks';
+import './dapi/functions-annotations';
+import './dapi/vector-functions-and-scripts'
 import './widgets/files-widget';
 import './widgets/legend';
 import './widgets/tree-view';
@@ -42,7 +44,10 @@ import './utils/color';
 import './packages/properties';
 import './packages/docker';
 import './packages/user-settings-storage';
+import './packages/upload-migrations';
 import './grid/grid';
+import './grid/filterGroup';
+import './shell/events';
 import './grid/color-coding';
 import './grid/multi-value-column';
 import './stats/stats';
@@ -50,6 +55,7 @@ import './stats/stats';
 import './valuematcher/valuematcher';
 import './property/property';
 import './widgets/input-form';
+import './utils/progressIndicator';
 
 import { runTests, tests, TestContext, initAutoTests as initTests } from '@datagrok-libraries/utils/src/test';
 

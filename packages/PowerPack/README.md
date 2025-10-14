@@ -1,9 +1,9 @@
-# PowerPack
+# Power Pack
 
 Commonly used platform enhancements
 
-Owner: [Andrew Skalkin](https://github.com/skalkin)
-Issues: <https://github.com/datagrok-ai/public/projects/2>
+Owner: [Andrew Skalkin](https://github.com/skalkin) 
+Issues: [Tracker](https://github.com/datagrok-ai/public/projects/2)
 
 ## Power widgets
 
@@ -55,12 +55,23 @@ Now, when you enter `CHEMBL123456` in the search box, the following page appears
 ## Power Expressions
 
 `Add New Column` dialog that lets you add derived columns by applying a formula to existing columns.
-To activate, click on the `Add New Column` icon on the toolbar. Here are some of the features:
+To activate, click on the `Add New Column` icon on the toolbar or go to top menu `Edit` -> `Add New Column`. Key features are:
 
-* Support for functions implemented with Python, R, Julia, JavaScript, C++, and others
+* Support for functions implemented with Python, R, Julia, JavaScript, C++, and others. To add function to an editor, type it manually, drag and drop from
+functions registry on the right or use *plus* icon. You can combine functions written in different languages in one formula.
+![add function](./img/add_function_to_editor.gif)
+* Auto-suggested functions based on the column type and semantic type. To use:
+  * set functions sorting type in function registry to 'By relevance'
+  * select column of interest
+  * the functions in functions registry are sorted automatically. More relevant functions are on top of the list.
+  * drag and drop function to the editor field or click *plus* icon. Corresponding parameter is prefilled automatically with selected column.
+![functions suggestions](./img/add_new_column_functions_suggestions.gif)
 * Interactive preview of results as you type
-* Functions registry
-* Auto-suggested functions based on the column type and semantic type
+* Autocompletion for functions (including packages names) and columns. Suggestions appear as you type.
+* Different highlights within formula for better readability. For instance, column names are highlighted with in bold blue font.
+* Validation against various types of mistakes including syntax errors, missing columns detection, incorrect data types, unmatching brackets.
+* Resulting column type autodetection
+* Fast function and column search
 * History, saving and reusing formulas
 
 # Windows Manager

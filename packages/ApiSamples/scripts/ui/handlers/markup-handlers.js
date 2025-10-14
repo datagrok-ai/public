@@ -22,7 +22,7 @@ class FruitHandler extends DG.ObjectHandler {
 
   renderIcon(x) { return ui.iconFA(`apple-alt`); }
   renderMarkup(x) { let m = ui.span([this.renderIcon(x), ui.label(x.name)]); $(m).css('color', x.color); return m; }
-  
+
   // Is used by platform to detect markup description of Fruit
   get markupRegexp() {
     return "fruit\\.([a-zA-Z]+)\\.([a-zA-Z]+)";
@@ -32,7 +32,7 @@ class FruitHandler extends DG.ObjectHandler {
   toMarkup(x) {
      return `fruit.${x.name}.${x.color}`;
   }
-  
+
   // Deserialize object from parsed markup
   // Accepts list of strings, that comes from regexp group matches
   // In our case, matches = ["fruit.apple.red", "apple", "red"]
@@ -55,3 +55,6 @@ let orange = new Fruit('orange', 'orange');
 // Highlight custom markup objects with "#"
 grok.log.usage('@user liked #fruit', {'user': DG.User.current(), '#fruit': apple});
 grok.log.usage('@user disliked #fruit', {'user': DG.User.current(), '#fruit': orange});
+
+let logObject = await grok.dapi.log.filter('description = "@user liked #fruit"').first();
+grok.shell.info(ui.render(logObject));

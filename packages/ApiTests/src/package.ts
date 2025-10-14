@@ -6,6 +6,8 @@ import * as DG from 'datagrok-api/dg';
 import {expect, expectTable as _expectTable} from '@datagrok-libraries/utils/src/test';
 import dayjs from "dayjs";
 
+export const _package = new DG.Package();
+
 //name: getTable
 //input: string name
 //input: string path {optional: true}
@@ -45,7 +47,6 @@ export function getCell(table: DG.DataFrame, rowIndex: number, columnName: strin
 }
 
 //name: expectTable
-//shortName: expectTable
 //input: dataframe actual
 //input: dataframe expected
 //output: bool result
@@ -96,10 +97,95 @@ export function CustomStringInput(params: any) {
   return defaultInput;
 }
 
+//name: testOutputAnnotationJoinDf
+//input: dataframe data
+//input: column col
+//output: dataframe res {action:join(data)}
+export function testOutputAnnotationJoinDf(data: DG.DataFrame, col: DG.Column<string>): DG.DataFrame {
+  const colRes = DG.Column.string('joined', data.rowCount).init((i) => `${col.get(i)}_abc`);
+  return DG.DataFrame.fromColumns([colRes]);
+}
+
+//name: testOutputAnnotationJoinCol
+//input: dataframe data
+//input: column col
+//output: column res {action:join(data)}
+export function testOutputAnnotationJoinCol(data: DG.DataFrame, col: DG.Column<string>): DG.Column {
+  const colRes = DG.Column.string('joined', data.rowCount).init((i) => `${col.get(i)}_abc`);
+  return colRes;
+}
+
+//name: testOutputAnnotationJoinColList
+//input: dataframe data
+//input: column col
+//output: column res {action:join(data)}
+export function testOutputAnnotationJoinColList(data: DG.DataFrame, col: DG.Column<string>): DG.ColumnList {
+  const colRes = DG.Column.string('joined', data.rowCount).init((i) => `${col.get(i)}_abc`);
+  return DG.DataFrame.fromColumns([colRes]).columns;
+}
+
+//name: testOutputAnnotationReplaceDf
+//input: dataframe data
+//input: column col
+//output: dataframe res {action:replace(data)}
+export function testOutputAnnotationReplaceDf(data: DG.DataFrame, col: DG.Column<string>): DG.DataFrame {
+  const colRes = DG.Column.string('val', data.rowCount).init((i) => `${col.get(i)}_abc`);
+  return DG.DataFrame.fromColumns([colRes]);
+}
+
+//name: testOutputAnnotationReplaceCol
+//input: dataframe data
+//input: column col
+//output: column res {action:replace(data)}
+export function testOutputAnnotationReplaceCol(data: DG.DataFrame, col: DG.Column<string>): DG.Column {
+  const colRes = DG.Column.string('val', data.rowCount).init((i) => `${col.get(i)}_abc`);
+  return colRes;
+}
+
+//name: testOutputAnnotationReplaceColList
+//input: dataframe data
+//input: column col
+//output: column res {action:replace(data)}
+export function testOutputAnnotationReplaceColList(data: DG.DataFrame, col: DG.Column<string>): DG.ColumnList {
+  const colRes = DG.Column.string('val', data.rowCount).init((i) => `${col.get(i)}_abc`);
+  return DG.DataFrame.fromColumns([colRes]).columns;
+}
+
+//name: testOutputWithoutAction
+//input: dataframe data
+//input: column col
+//output: column res
+export function testOutputWithoutAction(data: DG.DataFrame, col: DG.Column<string>): DG.Column {
+  const res = DG.Column.string('val', data.rowCount).init((i) => `${col.get(i)}_abc`);
+  return res;
+}
+
 //name: expectDate
-//shortName: expectDate
 //input: datetime actual
 //input: datetime expected
 export function expectDate(actual: dayjs.Dayjs, expected: dayjs.Dayjs): void {
   expect(actual.valueOf(), expected.valueOf());
+}
+
+
+//name: testVectorFunc
+//meta.vectorFunc: true
+//input: column col
+//input: string prefix
+//output: column res
+export function testVectorFunc(col: DG.Column, prefix: string) {
+  const res = DG.Column.string('result', col.length).init((i) => `${prefix}_${col.get(i)}`);
+  return res;
+}
+
+
+//name: testVectorFuncNonVectorizableParam
+//meta.vectorFunc: true
+//input: column col
+//input: string prefix
+//input: column postfix
+//output: column res
+export function testVectorFuncNonVectorizableParam(col: DG.Column, prefix: string, postfix: DG.Column) {
+  const res = DG.Column.string('result', col.length).init((i) => `${prefix}_${col.get(i)}_${postfix.get(i)}`);
+  return res;
 }

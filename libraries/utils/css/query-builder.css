@@ -1,0 +1,215 @@
+.query-builder-search-query-operator .fa-trash-alt {
+    font-size: 12px;
+    color: #2083D5;
+}
+
+.query-builder-search-query-operator .fa-trash-alt:hover {
+    color: red;
+}
+
+.query-builder-nested-condition-operators .fa-trash-alt {
+    padding: 0px 7px 0px 5px;
+    font-size: 12px !important;
+    margin-top: 2px;
+}
+
+.query-builder-nested-condition-operators .fa-trash-alt:hover {
+    color: red;
+}
+
+.query-builder-search-query-operator .fa-plus {
+    color: #2083D5;
+}
+
+.query-builder-nested-condition-operators .fa-plus {
+    padding: 1px 5px 1px 5px;
+}
+
+.query-builder-search-query-operator {
+    border: none;
+    padding-left: 12px;
+    position: relative;
+}
+
+.query-builder-search-query-operator[data-nesting-level] {
+    border-left: 3px solid var(--nesting-color, #e0e0e0);
+}
+
+.query-builder-search-query-operator .ui-input-text {
+    width: 95%;
+}
+
+.query-builder-filter-inputs {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    min-height: 32px;
+    flex-wrap: nowrap;
+}
+
+.query-builder-filter-inputs .query-builder-filter-field,
+.query-builder-filter-inputs .query-builder-filter-operator,
+.query-builder-filter-inputs .query-builder-filter-value {
+    flex: 0 0 auto;
+    min-width: 0;
+}
+
+.query-builder-filter-inputs .ui-input-editor {
+    width: auto!important;
+}
+
+.query-builder-filter-inputs .ui-input-root {
+    width: auto!important;
+}
+
+.property-query-builder-and-or-operator {
+    font-size: 10px;
+    margin: 0px!important;
+    height: 12px!important;
+}
+
+.query-builder-nested-condition-operators .property-query-builder-and-or-operator {
+    padding: 2px 5px 0px 5px!important;
+    display: none!important;
+}
+
+.property-query-builder-multipe-filelds > .query-builder-nested-condition-operators .property-query-builder-and-or-operator {
+    display: flex!important;
+}
+
+.query-builder-nested-condition-operators {
+    align-items: center;
+}
+
+.query-builder-match-div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.query-builder-nested-condition-operators select {
+    width: 50px!important;
+}
+
+.query-builder-filter-inputs .add-delete-icons {
+    visibility: hidden;
+    gap: 10px;
+    padding-top: 15px;
+}
+
+.query-builder-filter-inputs:hover .add-delete-icons {
+    visibility: visible;
+}
+
+.nested-add-delete-icons {
+    visibility: hidden;
+}
+
+.query-builder-search-query-operator:hover .nested-add-delete-icons {
+    visibility: visible !important;
+}
+
+/* Hide dropdown arrow on select elements by default, show only on hover */
+.query-builder-filter-inputs select.ui-input-editor {
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    background-image: none !important;
+    background: none !important;
+}
+
+.query-builder-filter-inputs select.ui-input-editor:hover {
+    background-image: url("../img/chevron.svg") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 0px top 50% !important;
+}
+
+.query-builder-filter-inputs-narrow {
+    display: flex;
+    flex-direction: column;
+    padding-top: 8px;
+}
+
+.query-builder-filter-inputs-narrow .query-builder-filter-field,
+.query-builder-filter-inputs-narrow .query-builder-filter-operator,
+.query-builder-filter-inputs-narrow .query-builder-filter-value {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 32px;
+    width: 100%;
+}
+
+.query-builder-filter-inputs-narrow .add-delete-icons {
+    justify-content: flex-end;
+    padding-right: 10px;
+    padding-top: 5px;
+}
+
+.query-builder-filter-inputs-narrow .ui-input-editor {
+    width: 100% !important;
+}
+
+/* Ensure consistent field sizing and prevent height jumping */
+.query-builder-filter-field,
+.query-builder-filter-operator,
+.query-builder-filter-value {
+    display: flex;
+    align-items: center;
+    min-height: 32px;
+    transition: all 0.2s ease;
+}
+
+.query-builder-filter-field .ui-input-editor,
+.query-builder-filter-operator .ui-input-editor,
+.query-builder-filter-value .ui-input-editor {
+    min-height: 28px;
+    box-sizing: border-box;
+}
+
+/* Prevent field height changes during layout switching */
+.query-builder-filter-inputs,
+.query-builder-filter-inputs-narrow {
+    transition: flex-direction 0.2s ease;
+}
+
+.add-delete-icons {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+/* History icon styling */
+.query-builder-history-icon {
+    bottom: 10px;
+    left: 10px;
+    font-size: 16px;
+    transition: opacity 0.2s ease;
+    visibility: hidden;
+    padding-top: 5px;
+    width: 20px;
+}
+
+
+.query-builder-narrow .query-builder-history-icon {
+    padding-top: 0px;
+}
+
+
+/* Only show history icon when history is enabled */
+.query-builder-search-query-operator[data-history="true"]:hover .query-builder-history-icon {
+    visibility: visible;
+}
+
+.query-builder-search-query-operator[data-history="false"] .query-builder-history-icon,
+.query-builder-search-query-operator:not([data-history]) .query-builder-history-icon {
+    visibility: hidden;
+}
+
+.boolean-input .query-builder-filter-operator {
+    display: none;
+}
+

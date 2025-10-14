@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {SeqHandler} from '@datagrok-libraries/bio/src/utils/seq-handler';
+import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {_package} from '../package';
 
@@ -33,12 +33,14 @@ export class GetRegionFuncEditor {
   }();
 
   constructor(
-    private readonly call: DG.FuncCall
+    private readonly call: DG.FuncCall,
+    private readonly seqHelper: ISeqHelper,
   ) {
     const getDesc = (paramName: string) => this.call.inputParams[paramName].property.description;
 
     this.inputs.table = ui.input.table('Table', {value: this.call.inputParams['table'].value ?? grok.shell.tv.dataFrame});
 
+    //@formatter:off
     const seqColValue = this.call.inputParams['sequence'].value ??
       this.inputs.table.value!.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
     this.inputs.sequence = ui.input.column('Sequence', {table: grok.shell.tv.dataFrame, value: seqColValue,
@@ -52,6 +54,7 @@ export class GetRegionFuncEditor {
     this.inputs.name = ui.input.string('Column name', {value: this.getDefaultName(),
       onValueChanged: this.nameInputChanged.bind(this), clearIcon: true});
     this.inputs.name.onInput.subscribe(() => this.nameInputInput.bind(this)); // To catch clear event
+    //@formatter:on
 
     // tooltips
     for (const paramName in this.call.inputParams) {
@@ -65,7 +68,7 @@ export class GetRegionFuncEditor {
 
   private sequenceInputChanged(): void {
     const seqCol = this.inputs.sequence.value;
-    const sh = seqCol ? SeqHandler.forColumn(seqCol) : null;
+    const sh = seqCol ? this.seqHelper.getSeqHandler(seqCol) : null;
     this.updateRegionItems();
     this.updateStartEndInputItems();
     this.updateRegion(true);
@@ -84,7 +87,7 @@ export class GetRegionFuncEditor {
         this.inputs.start.value = reg?.start;
         this.inputs.end.value = reg?.end;
       } else {
-        const sh = SeqHandler.forColumn(this.inputs.sequence.value!);
+        const sh = this.seqHelper.getSeqHandler(this.inputs.sequence.value!);
         this.inputs.start.value = sh.posList[0];
         this.inputs.end.value = sh.posList[sh.posList.length - 1];
       }
@@ -117,7 +120,7 @@ export class GetRegionFuncEditor {
 
   private updateStartEndInputItems(): void {
     const seqCol = this.inputs.sequence.value;
-    const sh = seqCol ? SeqHandler.forColumn(seqCol) : null;
+    const sh = seqCol ? this.seqHelper.getSeqHandler(seqCol) : null;
 
     const startSE = (this.inputs.start.input as HTMLSelectElement);
     const endSE = (this.inputs.end.input as HTMLSelectElement);

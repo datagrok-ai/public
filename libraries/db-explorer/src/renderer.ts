@@ -41,7 +41,7 @@ export function moleculeRenderer(value: string) {
   return textRenderer(value);
 }
 
-export function imageRenderer(fullUrl: string) {
+export function imageRenderer(fullUrl: string, useProxy: boolean = true) {
   const nameHost = textRenderer(fullUrl);
   const loaderDiv = getLoaderDiv();
   const host = ui.divH([nameHost, loaderDiv]);
@@ -49,7 +49,7 @@ export function imageRenderer(fullUrl: string) {
 
   async function replaceWithImage() {
     try {
-      const qRes = await grok.dapi.fetchProxy(fullUrl, {});
+      const qRes = useProxy ? await grok.dapi.fetchProxy(fullUrl, {}) : await fetch(fullUrl);
       if (!qRes) throw new Error('');
       const blob = await qRes.blob();
       if (!blob) throw new Error('');
@@ -74,11 +74,40 @@ export function imageRenderer(fullUrl: string) {
   return host;
 }
 
+export function rawImageRenderer(rawImage: string) {
+  const nameHost = textRenderer('image');
+  const loaderDiv = getLoaderDiv();
+  const host = ui.divH([nameHost, loaderDiv]);
+  ui.tooltip.bind(nameHost, 'Unable to render image');
+  async function replaceWithImage() {
+    try {
+      if (!rawImage) throw new Error('Empty image string');
+      const canvas = ui.canvas(200, 200);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('');
+      const image = new Image();
+      image.onload = () => {
+        ctx.drawImage(image, 0, 0, 200, 200);
+      };
+      image.src = 'data:image/png;base64,' + rawImage;
+
+      nameHost.remove();
+      host.appendChild(canvas);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      loaderDiv.remove();
+    }
+  }
+  replaceWithImage();
+  return host;
+}
+
 export function ownIdRenderer(id: string | number, tableName: string, colName: string) {
   const nameHost = textRenderer(id.toString(), false);
   nameHost.style.color = 'var(--blue-1)';
   nameHost.style.cursor = 'pointer';
-  ui.tooltip.bind(nameHost, 'Click to make it current object');
+  ui.tooltip.bind(nameHost, 'Click to explore');
   nameHost.addEventListener('click', (e) => {
     e.stopImmediatePropagation();
     grok.shell.o = new DBValueObject(tableName, colName, id);
@@ -243,8 +272,16 @@ export class DBExplorerRenderer {
     const clearedDF = removeEmptyCols(df);
     let entries = Object.entries(clearedDF.toJson()[0]) as [string, string | number][];
 
-    if (this.customSelectedColumns[tableName])
+    if (this.customSelectedColumns[tableName]) {
       entries = entries.filter(([key]) => this.customSelectedColumns[tableName].has(key));
+    // reorder entries according to customSelectedColumns if present
+      const cols = Array.from(this.customSelectedColumns[tableName]);
+      entries.sort((a, b) => { 
+        return cols.indexOf(a[0]) - cols.indexOf(b[0]);
+      });
+    }
+
+
 
     const mainTable = ui.table(entries, (entry) => {
       const key = entry[0];
@@ -266,21 +303,51 @@ export class DBExplorerRenderer {
   }
 
   renderAssociations(acc: DG.Accordion, schema: SchemaInfo, curTable: string, curDf: DG.DataFrame) {
-    const attachOpenInWorkspaceMenu = (tableName: string, colName: string, value: any, pane: DG.AccordionPane) => {
-      const menu = DG.Menu.popup();
-      menu.item(`Add all associated ${tableName} entries to workspace`, async () => {
-        const pi = DG.TaskBarProgressIndicator.create('Opening all associated entries');
+
+    const addAllAssociated = async (tableName: string, colName: string, value: any) => {
+      const pi = DG.TaskBarProgressIndicator.create('Opening all associated entries');
+      try {
+
         const assocDf = await this.getTable(tableName, colName, value, this.entryPointOptions.joinOptions);
         if (assocDf) {
+          if (assocDf.rowCount === 0) {
+            grok.shell.info(`No associated ${tableName} entries found`);
+            return;
+          }
           assocDf.name = `${tableName}`;
           grok.shell.addTableView(assocDf);
         }
+      } catch (e) {
+        console.error(e);
+        grok.shell.error(`Failed to open associated ${tableName} entries`);
+      } finally {
         pi.close();
+      }
+    }
+
+    const addIconToPane = (pane: DG.AccordionPane, tableName: string, colName: string, value: any) => {
+      const icon = ui.icons.add(() => {}, `Add all associated ${tableName} entries to workspace`);
+      // need separate event to avoid click on accordion pane
+      icon.addEventListener('click', (e) => {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+        addAllAssociated(tableName, colName, value);
+      });
+      pane.root.getElementsByClassName('d4-accordion-pane-header')?.[0]?.appendChild(icon);
+    }
+
+    const attachOpenInWorkspaceMenu = (tableName: string, colName: string, value: any, pane: DG.AccordionPane) => {
+      const menu = DG.Menu.popup();
+      
+
+      menu.item(`Add all associated ${tableName} entries to workspace`, async () => {
+        addAllAssociated(tableName, colName, value);
       });
       pane.root.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         setTimeout(() => menu.show());
       });
+      addIconToPane(pane, tableName, colName, value);
     };
 
     const refTable = schema.referencedBy[curTable];
@@ -306,8 +373,10 @@ export class DBExplorerRenderer {
               if (refInfos.length === 1) {
                 return ui.wait(async () => {
                   const res = await this.renderMultiRowTable(refInfos[0].refTable, refInfos[0].refColumn, val, this.entryPointOptions.joinOptions);
-                  if (res.rowCount > MAX_MULTIROW_VALUES)
+                  if (res.rowCount > MAX_MULTIROW_VALUES) {
                     singleColPane.name = `${singleColPane.name} (${MAX_MULTIROW_VALUES} / ${res.rowCount})`;
+                    addIconToPane(singleColPane, refInfos[0].refTable, refInfos[0].refColumn, val);
+                  }
                   return res.root;
                 });
               }
@@ -316,8 +385,10 @@ export class DBExplorerRenderer {
                 const colPane = multiTableAcc.addPane(ref.refColumn, () => {
                   return ui.wait(async () => {
                     const res = await this.renderMultiRowTable(ref.refTable, ref.refColumn, val, this.entryPointOptions.joinOptions);
-                    if (res.rowCount > MAX_MULTIROW_VALUES)
+                    if (res.rowCount > MAX_MULTIROW_VALUES) {
                       colPane.name = `${singleColPane.name} (${MAX_MULTIROW_VALUES} / ${res.rowCount})`;
+                      addIconToPane(colPane, ref.refTable, ref.refColumn, val);
+                    }
                     return res.root;
                   });
                 });

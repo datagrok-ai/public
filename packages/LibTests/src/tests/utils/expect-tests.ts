@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {category, test, before} from '@datagrok-libraries/utils/src/test';
 import {defaulCheckersSeq, expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
+import dayjs from 'dayjs';
 
 // TODO: move to the lib later?
 function throwTester(fn: Function, expectedMessage?: any) {
@@ -21,6 +22,13 @@ function throwTester(fn: Function, expectedMessage?: any) {
 
 category('Utils: expectDeepEqual', async () => {
   before(async () => {
+  });
+
+  test('NaN equal values', async () => {
+    throwTester(
+      () => {
+        expectDeepEqual(NaN, NaN);
+      });
   });
 
   test('null equal values', async () => {
@@ -94,6 +102,22 @@ category('Utils: expectDeepEqual', async () => {
       });
   });
 
+  test('BigInt equal values', async () => {
+    throwTester(
+      () => {
+        // @ts-ignore:next-line
+        expectDeepEqual(1n, 1n);
+      });
+  });
+
+  test('BigInt non-equal values', async () => {
+    throwTester(
+      () => {
+        // @ts-ignore:next-line
+        expectDeepEqual(1n, 2n);
+      }, `Expected 2, got 1`);
+  });
+
   test('non-equal different types', async () => {
     throwTester(
       () => {
@@ -116,19 +140,28 @@ category('Utils: expectDeepEqual', async () => {
     );
   });
 
+  test('map allow additional props', async () => {
+    throwTester(
+      () => {
+        expectDeepEqual(new Map([['a', 1], ['b', 2]]), new Map([['a', 1]]));
+      },
+    );
+  });
+
+  test('map forbid additional props', async () => {
+    throwTester(
+      () => {
+        expectDeepEqual(new Map([['a', 1], ['b', 2]]), new Map([['a', 1]]), { forbidAdditionalProps: true });
+      },
+      `Additional key/col item in actual data found: b`
+    );
+  });
+
   test('map deel equal', async () => {
     throwTester(
       () => {
         expectDeepEqual(new Map([['a', {a: 1}], ['b', {b: 2}]]), new Map([['a', {a: 1}], ['b', {b: 2}]]));
       },
-    );
-  });
-
-  test('map different size', async () => {
-    throwTester(
-      () => {
-        expectDeepEqual(new Map([['a', 1], ['b', 2], ['c', 3]]), new Map([['a', 1], ['b', 2]]));
-      }, 'Maps are of different size: actual map size is 3 and expected map size is 2',
     );
   });
 
@@ -260,6 +293,45 @@ category('Utils: expectDeepEqual', async () => {
         `['f'].['1'].['b']: Expected 4, got 2`);
   });
 
+  test('object allow additional props', async () => {
+    const o1 = { a: 2, b: 1, c: null };
+    const o2 = { a: 2, };
+    throwTester(
+      () => {
+        expectDeepEqual(o1, o2, { floatTolerance: 0.1 });
+      },
+    );
+  });
+
+  test('object forbid additonal props', async () => {
+    const o1 = { a: 2, b: 1, c: null };
+    const o2 = { a: 2, };
+    throwTester(
+      () => {
+        expectDeepEqual(o1, o2, { floatTolerance: 0.1, forbidAdditionalProps: true });
+      },
+      `Additional key/col item in actual data found: b\nAdditional key/col item in actual data found: c`
+    );
+  });
+
+  test('dayjs equal', async () => {
+    const d1 = dayjs('2025-01-01');
+    const d2 = dayjs('2025-01-01');
+    throwTester(
+      () => {
+        expectDeepEqual(d1, d2);
+      });
+  });
+
+  test('dayjs non-equal', async () => {
+    const d1 = dayjs('2025-01-01');
+    const d2 = dayjs('2025-01-02');
+    throwTester(
+      () => {
+        expectDeepEqual(d1, d2);
+      }, `Different date, expected 2025-01-01T21:00:00.000Z actual 2024-12-31T21:00:00.000Z`);
+  });
+
   test('dataframe equal', async () => {
     const c1 = [true, false];
     const c2 = [1, 2];
@@ -282,6 +354,49 @@ category('Utils: expectDeepEqual', async () => {
       () => {
         expectDeepEqual(df1, df2, {floatTolerance: 0.1});
       });
+  });
+
+  test('dataframe allow additional columns', async () => {
+    const c1 = [true, false];
+    const c2 = [1, 2];
+    const c3 = ['asdf', 'fdsa'];
+    const c4 = [1.01, 1.09];
+    const df1 = DG.DataFrame.fromColumns([
+      DG.Column.fromList('bool', 'c1', c1),
+      DG.Column.fromList('int', 'c2', c2),
+      DG.Column.fromList('string', 'c3', c3),
+      DG.Column.fromList('double', 'c4', c4),
+    ]);
+    const df2 = DG.DataFrame.fromColumns([
+      DG.Column.fromList('bool', 'c1', c1),
+      DG.Column.fromList('int', 'c2', c2),
+    ]);
+    throwTester(
+      () => {
+        expectDeepEqual(df1, df2, {floatTolerance: 0.1});
+      });
+  });
+
+  test('dataframe forbid additional columns', async () => {
+    const c1 = [true, false];
+    const c2 = [1, 2];
+    const c3 = ['asdf', 'fdsa'];
+    const c4 = [1.01, 1.09];
+    const df1 = DG.DataFrame.fromColumns([
+      DG.Column.fromList('bool', 'c1', c1),
+      DG.Column.fromList('int', 'c2', c2),
+      DG.Column.fromList('string', 'c3', c3),
+      DG.Column.fromList('double', 'c4', c4),
+    ]);
+    const df2 = DG.DataFrame.fromColumns([
+      DG.Column.fromList('bool', 'c1', c1),
+      DG.Column.fromList('int', 'c2', c2),
+    ]);
+    throwTester(
+      () => {
+        expectDeepEqual(df1, df2, {floatTolerance: 0.1, forbidAdditionalProps: true});
+      },
+      `Additional key/col item in actual data found: c3\nAdditional key/col item in actual data found: c4`);
   });
 
   test('dataframe different row count', async () => {
@@ -308,6 +423,19 @@ category('Utils: expectDeepEqual', async () => {
       () => {
         expectDeepEqual(df1, df2);
       }, `Column c2 not found`);
+  });
+
+  test('dataframe datetime columns', async () => {
+    const df1 = DG.DataFrame.fromColumns([
+      DG.Column.fromList('datetime', 'c1', [dayjs('2025-01-01'), dayjs('2025-01-02')]),
+    ]);
+    const df2 = DG.DataFrame.fromColumns([
+      DG.Column.fromList('datetime', 'c1', [dayjs('2025-01-01'), dayjs('2025-01-02')]),
+    ]);
+    throwTester(
+      () => {
+        expectDeepEqual(df1, df2);
+      });
   });
 
   test('complex nested structures equal', async () => {

@@ -1,0 +1,60 @@
+name: 'Slack Post Message'
+description: 'Post Message'
+author: 'Sofiia Podolskaia'
+inputs:
+  slack-token:
+    description: 'Slack bot token'
+    required: true
+  message:
+    description: 'The message to post to the Slack user'
+    required: true
+  channel:
+    description: Channel to post message
+    required: false
+runs:
+  using: "composite"
+  steps:
+    - name: Post Slack Message
+      id: slack-prepare
+      shell: bash
+      env:
+        SLACK_BOT_TOKEN: ${{ inputs.slack-token }}
+      run: |
+        branch=${{ github.event.workflow_run.head_branch || github.ref }}
+        branch="${branch#refs/heads/}"
+
+        context="*GitHub Workflow:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} ${{ github.run_number }}>\n*Branch:* <${{ github.server_url }}/${{ github.repository }}/tree/${branch}|${branch}>\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|$(echo "${{ github.sha }}" | cut -c1-8) $(echo -e "${{ github.event.head_commit.message }}" | head -n1 | sed -e 's/"/\\"/g')>"
+        echo SLACK_MESSAGE_CONTEXT=$context >> $GITHUB_ENV
+
+        # Create the JSON payload with blocks
+        SLACK_MESSAGE=$(cat <<EOF
+        {
+          "channel": "${{ inputs.channel }}",
+          "blocks": [
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "${{ inputs.message }}"
+              }
+            },
+            {
+              "type": "context",
+              "elements": [
+                {
+                  "type": "mrkdwn",
+                  "text": "$context"
+                }
+              ]
+            }
+          ]
+        }
+        EOF
+        )
+
+        # Use the prepared JSON message and call the Slack API
+        RESPONSE=$(bash ./.github/scripts/slack_api_request.sh \
+          "https://slack.com/api/chat.postMessage" \
+          "POST" \
+          "${{ env.SLACK_BOT_TOKEN }}" \
+          "$SLACK_MESSAGE")

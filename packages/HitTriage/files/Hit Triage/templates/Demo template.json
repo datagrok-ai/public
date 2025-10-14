@@ -1,1 +1,0 @@
-{"name":"Demo template","key":"DMT","campaignFields":[{"name":"Chemist","type":"String","required":true}],"dataSourceType":"Query","compute":{"descriptors":{"enabled":true,"args":["MolWt"]},"functions":[]},"submit":{"fName":"demoFileSubmit1","package":"HitTriage"},"queryFunctionName":"Demo Molecules variable"}
