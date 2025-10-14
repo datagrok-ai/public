@@ -21,7 +21,7 @@
       },
       {
         "path": "StressTestsAggregation.csv",
-        "creationScript": "Result = Aggregate('Stress_ Tests', fields = ['batch', 'backup', 'totalworkers'], pivots = [], aggregations = ['sum(passed_int)', 'count(passed_int)'], groupByFields = ['batch', 'backup', 'totalworkers'], joins = [], whereClauses = [], filter = Filtered(null)) //{'timestamp': 1760441721206}\nAddNewColumn(Result, '(${count(passed_int)} - ${sum(passed_int)}) / 100', 'failure') //{'timestamp': 1760441777699}",
+        "creationScript": "Result = Aggregate('Stress_ Tests', fields = ['batch', 'backup', 'totalworkers'], pivots = [], aggregations = ['sum(passed_int)', 'count(passed_int)'], groupByFields = ['batch', 'backup', 'totalworkers'], joins = [], whereClauses = [], filter = Filtered(null)) //{'timestamp': 1760441721206}\nAddNewColumn(Result, '(${count(passed_int)} - ${sum(passed_int)}) / 100', 'failure') //{'timestamp': 1760441777699}\nChangeType(Result, 'totalworkers', 'int', nonConvertibleValue = '') //{'timestamp': 1760462693878}",
         "id": "dde962d0-8560-11f0-e7f6-cb949007e22c"
       }
     ]
