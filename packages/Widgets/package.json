@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/widgets",
   "friendlyName": "Widgets",
-  "version": "0.2.2",
+  "version": "0.4.0",
   "author": {
     "name": "Andrew Skalkin",
     "email": "askalkin@datagrok.ai"
@@ -13,34 +13,35 @@
     "directory": "packages/Widgets"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
-    "Developers"
+    "Administrators"
   ],
   "dependencies": {
-    "datagrok-api": "^1.17.0",
-    "rxjs": "^6.5.5",
-    "cash-dom": "^8.1.5"
+    "cash-dom": "^8.1.5",
+    "datagrok-api": "^1.26.0",
+    "rxjs": "^6.5.5"
   },
   "devDependencies": {
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4",
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.6.3",
-    "style-loader": "^4.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.8.1",
+    "@typescript-eslint/parser": "^8.8.1",
     "css-loader": "^7.1.2",
+    "datagrok-tools": "^4.14.55",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
-    "@typescript-eslint/eslint-plugin": "^8.8.1",
-    "@typescript-eslint/parser": "^8.8.1"
+    "style-loader": "^4.0.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.6.3",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "link-api": "npm link datagrok-api",
     "debug-widgets": "grok publish",
     "release-widgets": "grok publish --release",
     "build-widgets": "webpack",
-    "build": "webpack",
+    "build": "grok api && grok check --soft && webpack",
     "debug-widgets-dev": "grok publish dev",
     "release-widgets-dev": "grok publish dev --release",
     "debug-widgets-local": "grok publish local",

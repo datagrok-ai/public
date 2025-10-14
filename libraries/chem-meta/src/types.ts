@@ -4,7 +4,8 @@ export interface ISubstruct {
   atoms?: number[],
   bonds?: number[],
   highlightAtomColors?: { [key: number]: number[] | null },
-  highlightBondColors?: { [key: number]: number[] | null }
+  highlightBondColors?: { [key: number]: number[] | null },
+  alignByScaffold?: string,
 }
 
 export function mergeSubstructs(substructs: ISubstruct[]): ISubstruct {

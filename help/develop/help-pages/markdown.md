@@ -76,6 +76,9 @@ In the first paragraph of the document, provide an overview of the topic and/or 
 
 ## Content
 
+Use only standard Markdown syntax and a limited set of the extended MDX features listed below for document text. 
+Avoid complex formatting, additional MDX capabilities, or HTML tags, as these are not supported by Datagrok widgets.
+
 <Tabs
   defaultValue="tabs"
   values={[

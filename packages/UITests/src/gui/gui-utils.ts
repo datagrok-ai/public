@@ -41,6 +41,12 @@ export function isViewerPresent(viewers: DG.Viewer[], viewerName: string): void 
     throw new Error(viewerName + ' not found');
 }
 
+export function showToolbox() {
+  if (grok.shell.windows.showToolbox)
+    grok.shell.windows.showToolbox = false;
+  grok.shell.windows.showToolbox = true;
+}
+
 export function checkViewer(viewers: DG.Viewer[], viewerName: string): boolean {
   return viewers.filter((v) => v.type == viewerName).length > 0;
 }

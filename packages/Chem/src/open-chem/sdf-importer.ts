@@ -4,6 +4,10 @@ import * as OCL from 'openchemlib/full';
 
 export function _importSdf(bytes: Uint8Array): DG.DataFrame[] {
   const str = new TextDecoder().decode(bytes);
+  return _importSdfString(str);
+}
+
+export function _importSdfString(str: string): DG.DataFrame[] {
   // @ts-ignore
   let parser = new OCL.SDFileParser(str, null);
   const fieldNames = parser.getFieldNames(100);

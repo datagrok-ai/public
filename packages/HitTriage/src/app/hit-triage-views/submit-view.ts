@@ -27,7 +27,7 @@ export class SubmitView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
   }
 
   public async submit(): Promise<any> {
-    const submitParams= this.app.template?.submit;
+    const submitParams= this.app.submitParams;
     if (!submitParams)
       return;
     const submitFn = DG.Func.find({name: submitParams.fName, package: submitParams.package})[0];

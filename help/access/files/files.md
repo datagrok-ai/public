@@ -8,26 +8,27 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 ```
 
-Datagrok lets you work with files and directories on your system from the
-convenience of a web browser. You can browse, preview, open, create, delete,
-rename, download, clone, and share files and directories. When you sign up for
-Datagrok, a personal directory called **Home** is automatically created for you.
-Additionally, you can connect to [popular file systems](shares/shares.md), 
-including the [Amazon S3 bucket](shares/s3.md),
-[Dropbox](shares/dropbox.md), [Google Drive](shares/googlecloud.md), and
+Datagrok lets you work with files and directories right from the web browser. 
+It supports all [popular file systems](shares/shares.md), 
+including [S3](shares/s3.md),
+[Dropbox](shares/dropbox.md), [Google Drive](shares/googlecloud.md), [Sharepoint](shares/sharepoint.md), 
+[Azure](shares/azure.md), [CoreWeave](shares/coreweave.md), and
 [Git](shares/git.md), as well as [Windows and Linux network shares](shares/files.md).
+
+Once a connection is established, you can browse, preview, open, create, delete,
+rename, download, clone, and share files and directories.
 
 :::note
 
-Connecting to an SMB file storage is only available for on-premise deployment
-and is not available on the public Datagrok instance (public.datagrok.ai).
+When you sign up for
+Datagrok, a personal directory called **Home** is automatically created for you.
 
 :::
 
 :::note developers
 
 You can [create custom connectors](../databases/create-custom-connectors.md) 
-and [read files programmatically](../../develop/how-to/access-data.md#reading-files).
+and [read files programmatically](../../develop/how-to/db/access-data.md#reading-files).
 
 :::
 
@@ -131,13 +132,13 @@ To learn how searching works in Datagrok, see [Smart search](../../datagrok/navi
 
 ## File Manager
 
-The **File Manager** is an interface that allows you to manage connections,
-browse and preview file content, and perform standard file and folder actions
-such as opening, downloading, deleting, and renaming. To access an object's
-context actions, right-click it or left-click and expand the **Actions** pane in
-the **Context Panel** on the left. By clicking a file or folder in the **File
-Manager**, you can open its preview. Double-clicking a file opens it in
-Datagrok, and double-clicking a folder expands its content.
+**File Manager** allows you to manage connections,
+browse and preview file content, and perform standard actions
+such as opening, downloading, deleting, and renaming. Right-click on an object to see
+available context actions, or left-click and expand the **Actions** pane in
+the **Context Panel** on the right. 
+Click on an object to see its preview. 
+Double-click to open the object in the workspace.
 
 :::note
 
@@ -171,13 +172,15 @@ HTML files.
 
 File preview is limited to files under 10MB. The platform won't display larger
 files. Unsupported file formats cannot be previewed, but you can download them.
+File upload is limited to 100MB if no explicit limit is set. Format-specific
+limits also apply: XLSX – ~80MB, CSV – ~536MB, XML – 10MB, D42 – 500MB, ZIP – 50MB.
 
 :::
 
 :::note developers
 
-You can [add custom formats using package extensions](../../develop/how-to/create-package.md). 
-In addition, you can create organization-specific previews:
+You can develop custom file viewers, folder viewers, and content viewers 
+[as plugins](../../develop/how-to/packages/create-package.md). 
 
 <details>
 <summary>Example: Create custom file viewers</summary>
@@ -193,14 +196,14 @@ To add a custom viewer, you have two options:
 * Develop in JavaScript using the [Datagrok JavaScript API](../../develop/packages/js-api.md).
 * Use the visualizations available for popular programming languages like Python, R, or Julia.
 
-To learn more about each option, see [Develop custom viewer](../../develop/how-to/develop-custom-viewer.md).
+To learn more about each option, see [Develop custom viewer](../../develop/how-to/viewers/develop-custom-viewer.md).
 
 </details>
 
 <details>
 <summary>Example: Create custom folder viewers</summary>
 
-In this example, a [script](../../develop/how-to/folder-content-preview.md) is
+In this example, a [script](../../develop/how-to/files/folder-content-preview.md) is
 executed against the folder content. If the folder contains files matching the
 file extension parameter, the **Preview** shows a custom
 [widget](../../visualize/widgets.md) (in this case - the application launch
@@ -212,7 +215,7 @@ link) every time the folder is opened.
 <details>
 <summary>Example: Create custom cell renderers</summary>
 
-In this example, a [script](../../develop/how-to/custom-cell-renderers.md) is executed 
+In this example, a [script](../../develop/how-to/grid/custom-cell-renderers.md) is executed 
 against the [SMILES](https://en.wikipedia.org/wiki/Simplified_molecular-input_line-entry_system) 
 strings within the CSV file. The script computes the structure graph and 2D positional data, 
 and renders the structure graphically.
@@ -237,13 +240,13 @@ the column under **Stats**, or its data and semantic types under **Details**.
 :::note developers
 
 **Context Panel** can be extended. You can add custom 
-[info panes](../../develop/how-to/add-info-panel.md) and 
-[context actions](../../develop/how-to/context-actions.md).
+[info panes](../../develop/how-to/ui/add-info-panel.md) and 
+[context actions](../../develop/how-to/ui/context-actions.md).
 
 <details>
 <summary> Example: Image augmentation </summary>
 
-In this example, a [Python script](../../develop/how-to/create-custom-file-viewers.md) 
+In this example, a [Python script](../../develop/how-to/files/create-custom-file-viewers.md) 
 creates a custom _info pane_ called **Cell Imaging Segmentation**. This script executes 
 against JPEG and JPG files during the indexing process and extracts custom metadata 
 (such as the number of cells) and performs predefined transformations (such as cell segmentation). 
@@ -283,12 +286,22 @@ in the **Context Panel**.
 
 :::
 
-## Caching files shares
+## Caching
 
-When creating or editing a file connection, you can enable caching and set invalidation schedule for cached files using 
-[cron expressions](https://en.wikipedia.org/wiki/Cron#Cron_expression). Caching will be applied to all files reads and 
-folder listings and results will be stored both in browser cache and server cache.
-When you perform some write/delete/rename operations under files and folders cache will be restored.
+You can cache file share content, and set invalidation (flushing)
+schedule using [cron expressions](https://en.wikipedia.org/wiki/Cron#Cron_expression). Caching applies to all files reads and 
+folder listings. Results are stored both in browser cache and server cache. 
+
+As an example, let's imagine you open a large CSV file from the cached folder in the morning. 
+The first time you did it, it might take some time since the content has to be parsed
+and the data needs to be transferred over the network. The second time you open it later this day,
+it opens instantaneously since the parsed file is already in your browser cache. You colleague
+opens the file in the afternoon, and it opens faster than for you in the morning because the 
+_parsed_ (as a highly efficient and compressed binary format) CSV is cached on the server.  
+
+When the content of the folder is modified via the Datagrok API, the cache is flushed. You can also
+flush the cache manually by right-clicking on the connection and choosing "Clear cache", or 
+programmatically.
 
 You can also configure cache individually per file or folder:
 

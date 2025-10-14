@@ -1,0 +1,1 @@
+declare type WithImplicitCoercion<T extends string | number | boolean | ArrayBuffer | SharedArrayBuffer> = T;

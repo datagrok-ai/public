@@ -44,7 +44,8 @@ export class TreeMapViewer extends EChartViewer {
     return TreeUtils.toForest(
       this.dataFrame,
       this.getColumnNames(),
-      this.filter);
+      this.filter,
+    );
   }
 
   getLevelOption() {

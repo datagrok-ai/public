@@ -3,184 +3,127 @@ title: "Peptides SAR"
 sidebar_position: 1
 ---
 
-Datagrok provides the Peptides package to analyze peptide [structure-activity relationship](https://en.wikipedia.org/wiki/Structure%E2%80%93activity_relationship).
-From the computational and analytical point of view, peptides are an intermediate case between small molecules and
-large proteins. Analyzing peptides requires the use of different analytical methods with adequate precautions.
+Datagrok's Peptides package provides tools for analyzing peptide [structure-activity relationship (SAR)](https://en.wikipedia.org/wiki/Structure%E2%80%93activity_relationship). Datagrok automatically detects biological sequences in various formats like HELM, Fasta, Separator, highlights monomers, understands their structure and provides analysis tools. Among these, the Peptides SAR tool enables you to explore sequence-activity trends efficiently, offering interactive visualizations and meaningful insights. 
 
-Datagrok automatically detects peptide sequences from data and highlights hydrophobic/hydrophilic regions:
+To analyze a dataset containing macromolecules and activities:
 
-![Representation of HELM sequence](img/helm-rendering.png)
+1. Select Bio > Analyze > SAR... from the top menu
+2. In the dialog:
+    * Select the sequence column, activities column and scaling method.
+    * Visualize the distribution of activities and sequence WebLogo.
+    * Optionally specify cluster column, or use Markov clustering with configurable parameters.
+3. Click OK to start the analysis.
 
-You can perform SAR analysis on any dataset containing macromolecules and activities:
+![Peptides SAR Dialog](img/peptides/SAR-menu.png)
 
-1. Click **Bio > SAR > Peptides...** in the top menu to prepare for the analysis. The dialog containing analysis
-options will appear. In the dialog, you can preview the composition analysis with WebLogo.
-2. Choose the sequences column, this can be any Macromolecule column.
-3. Choose the activity column, this can be any numeric column.
-4. Choose an activity scaling method. On the right of the inputs, you can find the distribution of the scaled
-activity.
-5. Optionally, choose a clusters column and a target column. The clusters column enables composition analysis and
-   useful statistics for each of the clusters.
-6. Click "OK" to start the analysis.
+The results of SAR analysis are presented in multiple integrated tables and viewers, which all work together, allowing you to:
 
-![Analyze Peptides dialog](img/analyze-peptides-dialog.png)
+* **Cluster** sequences using various algorithms such as [MCL](https://micans.org/mcl/), [UMAP](https://en.wikipedia.org/wiki/Nonlinear_dimensionality_reduction#Uniform_manifold_approximation_and_projection), [t-SNE](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding), [Hierarchical Clustering](https://en.wikipedia.org/wiki/Hierarchical_clustering), and others.
+* **Analyze cluster compositions** using [WebLogo summary table](../../../../visualize/viewers/logo-summary-table.md), along with useful statistics and other aggregated data.
+* **Visualize** point-mutations and sequence variability for every monomer-position.
+* **Explore** Mutation cliffs that lead to significant changes in activity.
+* **Predict** Most potent residues for every monomer-position based on activity statistics.
 
-# Analysis View
+![Peptide SAR Analysis](img/peptides/pep-analysis-view.png)
 
-The analysis view consists of 5 main parts:
+## Table View
 
-1. **Table view** contains sequences, activities and composition analysis.
-2. **Monomer-position viewer** is a matrix-like table with positions as columns and monomers as rows.
-The monomer-position viewer can work in two modes: Mutation Cliffs and Invariant Map.
-3. **Most Potent Residues viewer** attempts to build a sequence, using the most potent monomers for each position.
-4. **Logo Summary Table viewer** is a table with WebLogo, activity distribution and other statistics for each cluster.
-5. **Sequence Space viewer** is a scatter plot that shows embeddings of sequences.
+The table view displays sequences split by position along with activity values. Position columns show monomers, and column headers contain composition analysis.
 
-![Analysis view](img/analysis-view.png)
+Position columns render monomers according to the [configured monomer library](bio.md#manage-monomers). Hovering over monomer cells displays chemical structure tooltips for both natural and non-natural amino acid residues.
 
-## Table view
+Column headers show the proportion of monomers at each position. Hovering over monomers in the WebLogo displays activity distribution and statistical metrics. Clicking a monomer selects all rows containing that monomer at the specified position.
 
-The default table view contains a set of columns corresponding to the positions of sequences and a scaled activity
-column. The table contains hidden columns from the original data. Users can show, hide and reorder columns in the
-table view. Read more about column actions [here](../../../../visualize/viewers/grid.md#show-hide-or-reorder-columns).
+![Table View](./img/peptides/table-view.gif)
 
-![Table view](img/table-view.png)
+## Sequence Variability Map
 
-### Monomer structure rendering
+This matrix-style viewer displays positions as columns and monomers as rows, operating in two distinct modes that can be toggled via radio buttons in the header:
 
-The position columns contain monomers and render them according to amino acid residues classification highlighting
-hydrophobic/hydrophilic regions. You can hover over the monomer cells and the tooltip with its structure will pop up.
-The structure for non-natural amino acid residues is provided with a monomer library. More about the monomer library
-can be found [here](../bio/bio.md#manage-monomer-libraries).
+1. **Mutation Cliffs Mode** shows sequences that differ by a single point mutation at every monomer-position, indicating significant activity changes:
 
-![Monomer structure](img/monomer-structure-tooltip.png)
+    * Circle size represents the number of unique sequences forming a mutation cliff
+    * Circle Color indicates mean activity difference and its sign (blue: negative, red: positive, white: zero)
+    * Numbers in cells show the ammount of sequence pairs forming a mutation cliff
+    * Selecting a cell will add [mutation cliffs section](#interactive-features) to the context panel, allowing you to inspect cliff pairs and their corresponding sequences.
+    * Configuration options include maximum mutations (1 by default to target single mutation point cliffs) and minimum activity difference threshold.
 
-### Composition analysis
+    ![Mutation Cliffs](./img/peptides/mutation-cliffs.gif)
 
-The table view contains composition analysis in the position columns header, which shows the proportion of the
-monomers at the position. You can hover over the monomers in WebLogo to see the distribution of activities for
-sequences that contain the corresponding monomer at that position, compared to the activity distribution of all
-the sequences, and additional metrics.
+2. **Invariant Map Mode** displays the number of sequences containing each monomer-position combination.
 
-![Monomer-Position tooltip](img/statistics-tooltip.png)
+    * Numbers in cells indicate the number of sequences containing the corresponding monomer at the specified position
+    * Background color represents the aggregated activity value
+    * Configurable options include activity and color columns, their aggregation functions and color scale.
 
-Click on the monomer to select the rows that contain a given monomer at a given position. More about selection with
-viewers can be found [here](../../../navigation/views/table-view.md#select-and-filter). The selected monomer-position will
-be highlighted in composition analysis, in the monomer-position viewer and the most potent residues viewer.
+    ![Invariant Map](./img/peptides/invariant-map.gif)
 
-## Monomer-Position viewer
+- Hovering over a cell displays detailed tooltip with activity statistics, distribution comparison and other aggregated data.
+- Selecting a cell selects every sequence that corresponds to given mutation cliff or monomer-position combination.
+- Select additional columns from viewer properties to aggregate them alongside each monomer-position, enabling the display of their aggregated values in tooltips or within the [distributions](#interactive-features) section of the context panel.
+- Choose a target filter to compute mutation cliffs and position invariants specifically for selected sequence groups.
 
-Monomer-Position viewer is a matrix-like table that contains positions as columns and monomers as rows.
-This viewer has two modes: Mutation Cliffs and Invariant Map. Click the radio button in the viewer header to switch
-between modes. Hover over any non-empty cell to see the tooltip with activity distribution and statistics.
-Click the cell to select the mutation cliffs sequences in mutation cliffs mode, or the sequences containing
-monomer-position in invariant map mode.
 
-### Mutation Cliffs mode
+## Most Potent Residues
 
-Mutation Cliffs mode shows the significance of the monomer position regarding activity with circles.
-The circle size corresponds to the mean difference between the sequences containing monomer-position vs. all.
-The color intensity represents the p-value. Red circles represent negative mean difference and blue circles represent
-positive mean difference. Some of the cells contain the number of sequences that form mutation cliffs pairs. You can
-configure the maximum number of mutations or the minimum activity difference between two sequences in viewer properties.
+This viewer identifies the most significant monomers for each position based on mean activity difference and their p-values
 
-![Mutation-Cliffs mode](img/mutation-cliffs-mode.png)
+* Numbers show sequence counts for each monomer-position
+* Circle size represents mean activity difference
+* Circle color indicates p-value significance
+* Hovering over a circle displays detailed statistics and distribution comparison
+* Clicking a circle selects all sequences containing the corresponding monomer at the specified position
 
-Choose the target column and category in viewer properties to calculate the mutation cliffs for that target.
-Learn more about viewer properties [here](../../../../datagrok/navigation/views/table-view.md#viewer-properties).
+Configurable options include activity column, scaling method and activity target (minimize or maximize).
 
-### Invariant Map mode
+![Most Potent Residues](./img/peptides/mpr.png)
 
-Invariant Map represents the number of sequences that contain a given monomer-position. The background color
-corresponds to the aggregated value of some numeric column - by default, it is set to be the average of scaled
-activity for a given monomer-position. You can modify the column and the aggregation function in viewer properties
-under the Invariant Map section.
+## Logo Summary Table and Clustering
 
-![Invariant Map mode](img/invariant-map-mode.png)
+The analysis uses Markov clustering to group sequences based on their distances and visualizes the clusters on a [scatterplot](../../../../visualize/viewers/scatter-plot.md) with connecting lines. These lines indicate that the distance between two sequences is below a specified threshold. During clustering, some connections are removed while others are reinforced, leading to distinct clusters that may still be interconnected.
 
-## Most Potent Residues viewer
+From these clusters, the analysis generates a Logo Summary Table, which provides the following details for each cluster:
 
-Most Potent Residues viewer shows the most significant monomer for each position and its statistics.
-Hover over the Diff column cells to see the tooltip with statistics and click to select the corresponding sequences.
+* WebLogo representation of the cluster along with members count
+* Activity distribution of the squences in the cluster vs the whole dataset
+* Statistical metrics including p-value and mean difference
+* Other aggregated data
 
-![Most Potent Residues viewer](img/most-potent-residues.png)
+Configurable options include sequence, cluster and activity columns, WebLogo mode and other aggregated columns.
 
-## Logo Summary Table viewer
+Hovering over a cluster in the table shows tooltip with detailed statistics and highlights the sequences in scatterplot and other viewers.
 
-Logo Summary Table viewer is a table that contains cluster information such as the number of members, WebLogo,
-activity distribution and statistics such as p-value and mean difference.
+![Logo Summary Table](./img/peptides/LST.gif)
 
-You can set the WebLogo rendering mode and members ratio threshold in viewer properties. WebLogo rendering mode can
-be either full-height or entropy (defaults to entropy). Learn more about WebLogo
-[here](https://github.com/datagrok-ai/public/tree/master/packages/Bio#web-logo).
-The member ratio threshold property filters out the clusters that have a ratio of members below the threshold, relative
-to the cluster with the most members (defaults to 0.3).
+## Interactive Features
 
-Hover over the Clusters column values to see the tooltip with the activity distribution and statistics.
-Click to select the cluster.
+The context panel updates dynamically based on current selections and filtering, with several sections:
 
-![Logo Summary Table viewer](img/logo-summary-table.png)
+* **Selection Sources** displays information about current selections from clusters, monomer-positions, most potent residues, mutation cliffs, and WebLogo.
+* **Actions** provides the following options for the current selection:
+    * **New cluster**: Creates a cluster from the intersection of filter and selection
+    * **Remove cluster**: Deletes selected custom cluster
+    * **New view**: Creates and adds a new table from current selection with Logo Summary Table
+* **Mutation Cliffs Pairs** displays sequence pairs and unique sequences forming mutation cliffs. Filter by specific monomers or expand to full screen for detailed examination.
+* **Distribution** shows statistics and activity distribution of selected sequences compared to all sequences. Optional breakdown by monomers, positions, or clusters is available via checkboxes.
+* **Selection Table** Lists selected sequences with corresponding activity values and a summary WebLogo header.
 
-# Interactivity
+![Context Panel](./img/peptides/context-panel.gif)
 
-The property panel gets updated according to the current selection and filtering. There are three main sections in
-the property panel: actions, mutation cliff pairs and distribution.
+## Analysis options
 
-## Actions
+You can modify parameters such as activity column, sequence column, other aggregations and parameters through individual viewer settings or change them globally in the Peptides SAR settings dialog, which can be accessed from the `wrench` icon in the ribbon panel. The dialog contains following sections:
 
-The Actions panel contains the following actions:
+* **General** - Set sequence column, activity column and scaling method.
+* **Viewers** - Add or remove supplementary viewers such as Dendrogram, Sequence Space, and Active Peptide Selection.
+* **Columns** - Select numeric columns to include in tooltips, summaries, and visualizations with configurable aggregation functions.
+* **Sequence Space and Markov Clustering** - Configure parameters including distance functions, fingerprint types, gap penalties, and sequence embedding options.
 
-1. **New cluster** creates and adds the new cluster from the intersection of the applied filter and selection.
-2. **Remove cluster** deletes selected custom clusters.
-3. **New view** button creates a new table view from the intersection of the current filter and selection and adds
-a Logo Summary Table for that view.
+## Sharing Analysis Results
 
-![New view](img/new-view.png)
-
-## Mutation Cliffs pairs
-
-The Mutation Cliffs pairs panel contains the table with the sequence pairs and the table with the unique sequences
-that form the mutation cliffs pairs. You can input a monomer in the "Mutated to" field to filter the sequence pairs
-table. Click the sequence pair to filter the unique sequences table.
-
-## Distribution
-
-The Distribution panel shows the distribution of the activities of selected sequences compared to all, and statistics
-such as the number of selected sequences, mean difference and p-value.
-
-Use checkboxes "Monomers", "Positions" and "Clusters" to see separate distributions and statistics for each of
-the monomers, positions or clusters groups.
-
-# Settings
-
-You can find analysis settings in the top menu under the wrench icon. The settings contain four sections:
-general, viewers, columns and sequence space.
-
-![Settings dialog](img/settings.png)
-
-## General
-
-The General section has settings for the activity column and activity scaling method.
-
-## Viewers
-
-The Viewers section contains inputs to add and remove additional viewers. Dendrogram is one of the supported viewers.
-Learn more about dendrogram [here](../../../../visualize/viewers/dendrogram.md).
-
-![Dendrogram viewer](img/dendrogram.png)
-
-## Columns
-
-The Columns section lists all the numeric columns in the dataset, except activity. Enable the checkbox near the
-column name and choose the aggregation function to add the aggregated value to all the tooltips with statistics,
-Logo Summary Table and Distribution panel. The column also appears in the table view and Mutation Cliffs pairs panel.
-
-## Sequence Space
-
-The Sequence Space section contains settings for the Sequence Space viewer such as distance function, fingerprint type,
-gap open and gat extend penalties, whether to perform clustering on sequence embeddings, etc.
-
-# Analysis sharing
-
-You can easily save and share Peptide analysis with Datagrok projects. Learn more about Datagrok project saving and
+Analysis results can be saved and shared using Datagrok projects for collaboration purposes. Learn more about Datagrok project saving and
 sharing [here](../../../concepts/project/project.md).
+
+## Videos
+
+[![Peptides SAR](./img/peptides/pep-analysis-view.png)](https://www.youtube.com/watch?v=CPkoZ7TD4qk)

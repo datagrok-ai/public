@@ -1,6 +1,6 @@
 /// this file was generated automatically from ddt classes declarations
 import { toDart } from "../wrappers";
-let api = <any>window;
+let api = (typeof window !== 'undefined' ? window : global.window) as any;
 
 export function histogram(col: any, bitset: any, flag: boolean, options?: {bins?: number, logScale?: boolean}): Int32List
   { return api.grok_histogram(toDart(col), toDart(bitset), toDart(flag), toDart(options?.bins), toDart(options?.logScale)); }
@@ -32,6 +32,14 @@ export class Tags {
   static ColorCodingText = '.color-coding-text';
 
   static ColorCodingLinear = '.color-coding-linear';
+
+  static ColorCodingLinearIsAbsolute = '.%color-coding-linear-is-absolute';
+
+  static ColorCodingLinearAbsolute = '.%color-coding-linear-absolute';
+
+  static ColorCodingLinearBelowMinColor = '.%color-coding-linear-below-min-color';
+
+  static ColorCodingLinearAboveMaxColor = '.%color-coding-linear-above-max-color';
 
   static ColorCodingConditional = '.color-coding-conditional';
 
@@ -83,6 +91,10 @@ export class Tags {
   static SourcePrecision = '.source-precision';
 
   static Formula = 'formula';
+
+  static FormulaColumnIsVectorFunc = '.%formula-column-is-vector-func';
+
+  static IgnoreFormulaColumnRecalculation = '.%ignore-formula-column-recalculation';
 
   /// JSON-encoded list of strings to be used in a cell editor.
   /// Applicable for string columns only.
@@ -171,6 +183,8 @@ export class Tags {
 
   static TableSchema = 'table_schema';
 
+  static ReferencesSchema = 'references_schema';
+
   static ReferencesTable = 'references_table';
 
   static ReferencesColumn = 'references_column';
@@ -220,8 +234,12 @@ export class Tags {
   static LinkClickBehavior = '.linkClickBehavior';
 
   /// Pipe-separated path that defines where this column is within the hierarchy
-  /// Used for dynamic forms construction, etc
-  static Hierarchy = 'hierarchy';
+  /// Used for dynamic forms construction, etc. Applies to columns.
+  static Group = 'group';
+
+  /// JSON string containing [JS API: GroupsDescription].
+  /// Used to initialize the grid with group columns, colors, etc
+  static ColumnGroups = '.columnGroups';
 
   /// Links column and db property
   static DbPropertyName = 'dbPropertyName';
@@ -241,6 +259,15 @@ export class Tags {
   /// Boolean flag that allows not to show property panel for the cell/column
   static ShowPropPanels = '.show-prop-panels';
 
+  /// Indicates whether the column should be excluded from the filter selection dialog
+  static ExcludeFromFilterColumnSelect = '.exclude-from-filter-column-select';
+
+  /// Specifies if the color picker control should appear in the legend to allow color selection
+  static AllowColorPicking = '.allow-color-picking';
+
+  /// Used to preserve the column's original name, set only once (on the first rename)
+  static ColumnInitialName = '.%initialName';
+
 }
 export class FuncOptions {
   /// Fully qualified name of the function that edits corresponding function calls
@@ -253,6 +280,8 @@ export class FuncOptions {
   static Toolbox = 'toolbox';
 
   static AutostartImmediate = 'autostartImmediate';
+
+  static OmitFromCreationScript = 'omitFromCreationScript';
 
   /// Applies to [FuncTypes.CellRenderer].
   /// Comma-separated list of key-value pairs that represent
@@ -331,12 +360,18 @@ export class FuncOptions {
   /// name should be used as target.
   static ScriptHandlerVectorization = 'scriptHandler.vectorizationFunction';
 
+  /// Specifies function that will handle parsing of text into Scritp object.
+  static ScriptHandlerParserFunc = 'scriptHandler.parserFunction';
+
   /// Specifies template script for this [FuncTypes.ScriptHandler].
   static ScriptHandlerTemplate = 'scriptHandler.templateScript';
 
   /// Specifies code editor mode that will be used in CodeMirror for this [FuncTypes.ScriptHandler].
   /// Defaults to language.
   static ScriptHandlerEditorMode = 'scriptHandler.codeEditorMode';
+
+  /// Allows to add this function results as a column from the context menu
+  static AllowAddAsColumn = 'allowAddAsColumn';
 
 }
 export class FuncParamOptions {

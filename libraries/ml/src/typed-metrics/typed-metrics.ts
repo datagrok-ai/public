@@ -6,7 +6,7 @@ import {
   braunBlanquetDistance,
   cosineDistance,
   diceDistance,
-  euclideanDistance,
+  euclideanDistanceBitArray,
   hammingDistance,
   kulczynskiDistance,
   mcConnaugheyDistance,
@@ -17,9 +17,11 @@ import {
   numericDistance,
   tanimotoDistanceIntArray,
   inverseCommonItemsCount,
+  vectorEuclideanDistance,
+  vectorManhattenDistance,
+  vectorCosineDistance,
 } from '../distance-metrics-methods';
 
-import {calculateEuclideanDistance} from '@datagrok-libraries/utils/src/vector-operations';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {Vector, StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 import {mmDistanceFunctions, MmDistanceFunctionsNames} from '../macromolecule-distance-functions';
@@ -29,7 +31,9 @@ import {DistanceMetricsSubjects, BitArrayMetricsNames,
 
 
 export const vectorDistanceMetricsMethods: { [name: string]: (x: Vector, y: Vector) => number } = {
-  [VectorMetricsNames.Euclidean]: calculateEuclideanDistance,
+  [VectorMetricsNames.Euclidean]: vectorEuclideanDistance,
+  [VectorMetricsNames.Manhattan]: vectorManhattenDistance,
+  [VectorMetricsNames.Cosine]: vectorCosineDistance,
 };
 
 export const stringDistanceMetricsMethods: { [name: string]: (x: string, y: string) => number } = {
@@ -51,7 +55,7 @@ export const bitArrayDistanceMetricsMethods: { [name: string]: (x: BitArray, y: 
   [BitArrayMetricsNames.Russel]: russelDistance,
   [BitArrayMetricsNames.Sokal]: sokalDistance,
   [BitArrayMetricsNames.Hamming]: hammingDistance,
-  [BitArrayMetricsNames.Euclidean]: euclideanDistance,
+  [BitArrayMetricsNames.Euclidean]: euclideanDistanceBitArray,
 };
 
 export const intArrayDistanceMetricsMethods: { [name: string]: (x: Uint32Array, y: Uint32Array) => number } = {
@@ -70,6 +74,8 @@ export const numberArrayDistanceMetrics:
 export const AvailableMetrics = {
   [DistanceMetricsSubjects.Vector]: {
     [VectorMetricsNames.Euclidean]: vectorDistanceMetricsMethods[VectorMetricsNames.Euclidean],
+    [VectorMetricsNames.Manhattan]: vectorDistanceMetricsMethods[VectorMetricsNames.Manhattan],
+    [VectorMetricsNames.Cosine]: vectorDistanceMetricsMethods[VectorMetricsNames.Cosine],
   },
   [DistanceMetricsSubjects.String]: {
     [StringMetricsNames.Levenshtein]: stringDistanceMetricsMethods[StringMetricsNames.Levenshtein],

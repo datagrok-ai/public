@@ -86,19 +86,19 @@ Here are a few sources that you might want to run through to learn more about Da
 
 * [Packages](./_packages.md)
 
-[Manipulate data]: https://datagrok.ai/help/develop/js-api#data-manipulation
+[Manipulate data]: https://datagrok.ai/api/js/api#data-manipulation
 
-[Add views]: https://datagrok.ai/help/develop/js-api#views
+[Add views]: https://datagrok.ai/api/js/api#views
 
 [viewers]: https://datagrok.ai/help/develop/how-to/manipulate-viewers
 
 [Develop custom viewers]: https://datagrok.ai/help/develop/how-to/develop-custom-viewer
 
-[Register functions]: https://datagrok.ai/help/develop/js-api#registering-functions
+[Register functions]: https://datagrok.ai/api/js/api#registering-functions
 
-[Train and apply predictive models]: https://datagrok.ai/help/learn/predictive-modeling
+[Train and apply predictive models]: https://datagrok.ai/help/learn/
 
-[Build custom apps]: https://datagrok.ai/help/develop/package-function-types
+[Build custom apps]: https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation
 
 [datagrok-production-environment]: https://public.datagrok.ai/
 
@@ -106,9 +106,9 @@ Here are a few sources that you might want to run through to learn more about Da
 
 [JavaScript code samples]: https://public.datagrok.ai/js
 
-[JavaScript API]: https://datagrok.ai/help/develop/js-api
+[JavaScript API]: https://datagrok.ai/api/js/api
 
-[reference]: https://datagrok.ai/js-api/
+[reference]: https://datagrok.ai/api/js/api/
 
 [Datagrok community]: https://community.datagrok.ai/
 

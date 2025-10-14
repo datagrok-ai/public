@@ -1,5 +1,133 @@
 # Diff Studio changelog
 
+## 1.4.9 (2025-10-03)
+
+Updated compute-utils
+
+## 1.4.8 (2025-10-03)
+
+Updated diff grok and utils versions
+
+## 1.4.7 (2025-10-01)
+
+Improved the open model menu
+
+## 1.4.6 (2025-09-29)
+
+Fixed webpack
+
+## 1.4.5 (2025-09-29)
+
+Fixed build
+
+## 1.4.4 (2025-09-29)
+
+Fixed dayjs issue
+
+## 1.4.3 (2025-09-25)
+
+Fixed
+
+* inconsistency in input captions
+* rearranged tabs behavior
+
+## 1.4.2 (2025-09-22)
+
+Version update
+
+## 1.4.1 (2025-09-18)
+
+Datagrok utils update
+
+## 1.4.0 (2025-07-28)
+
+JS-api 1.26.0 release
+
+## 1.3.6 (2025-05-12)
+
+Sensitivity analysis in workers
+
+## 1.3.5 (2025-04-22)
+
+Updated parameters optimization:
+
+* Improved color scheme
+* Fixed target column selection input
+
+## 1.3.4 (2025-04-14)
+
+Improved inputs precision when using lookup tables
+
+## 1.3.3 (2025-04-10)
+
+Updated the Fitting feature:
+
+* Added progress bar;
+* Target columns selection
+* Similar curves control
+* Navigation for users
+
+## 1.3.2 (2025-04-04)
+
+Tutorials library update
+
+## 1.3.1 (2025-03-31)
+
+* Updated tags
+* Updated built-in models
+
+## 1.3.0 (2025-03-29)
+
+* Implemented the "Save to Model Hub" feature
+* Updated the Bioreactor and PK-PD models and demos
+* Updated with respect to new Browse UX
+
+## 1.2.6 (2025-03-10)
+
+* Fitting in webworkers for cyclic models
+* Updated tests for pipelines
+
+## 1.2.5 (2025-03-06)
+
+* Fitting in webworkers for models with updates
+* Added tests for pipelines
+
+## 1.2.4 (2025-02-20)
+
+* Implemented the use of Diff Grok library
+* Updated compute-utils
+
+## 1.2.3 (2025-02-12)
+
+* Fixed the Open model menu
+* Updated performance info
+
+## 1.2.2 (2025-02-10)
+
+* Implemented the use of Diff Studio Lib solvers
+* Added correctness tests
+
+## 1.2.1 (2025-02-01)
+
+Added facet grid plot
+
+## 1.2.0 (2024-12-01)
+
+UI/UX updates:
+
+* Edit/Consumption modes toggle
+* Reorganized top menu
+* Improved icon placement and visibility
+* Implemented run of the app with last called model
+* Collapsability of input categories
+* Sources and comments in the examples
+* Model error indication
+
+Fixes:
+
+* The Acid Production example
+* The behavior on the NaN-s case
+
 ## 1.1.6 (2024-11-18)
 
 * Updated computations the loop & update features

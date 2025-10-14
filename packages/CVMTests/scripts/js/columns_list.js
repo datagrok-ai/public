@@ -5,5 +5,5 @@
 //input: column_list cols
 //output: dataframe result
 
-columns = df.columns.remove(cols[0]);
+columns = df.columns.remove(cols.toList()[0]);
 result = DG.DataFrame.fromColumns(columns.toList());

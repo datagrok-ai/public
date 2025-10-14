@@ -1,3 +1,3 @@
-# UITests
+# UI Tests
 
-UITests is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai) platform.
+UI Tests is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai) platform.

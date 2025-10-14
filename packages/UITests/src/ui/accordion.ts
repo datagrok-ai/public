@@ -54,4 +54,4 @@ category('UI: Accordion', () => {
   after(async () => {
     grok.shell.closeAll();
   });
-}, {clear: false});
+}, {clear: false , owner: 'aparamonov@datagrok.ai' });

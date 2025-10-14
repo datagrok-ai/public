@@ -16,7 +16,7 @@ export const CONSTANTS = {
   CONFIDENCE_COLUMN_WIDTH: 150
 };
 
-interface PosesJson {
+export interface PosesJson {
   ligand_positions: string[];
   position_confidence: number[];
   receptor: string;
@@ -57,7 +57,7 @@ export class DiffDockModel {
       const posesJson = await this.getPosesJson(this.ligands.get(i), this.ligands.getTag(DG.TAGS.UNITS));
       const pdbHelper: IPdbHelper = await getPdbHelper();
       const { bestId, bestPose, confidence } = this.findBestPose(posesJson);
-  
+
       posesColumn.set(i, await pdbHelper.molToPdb(bestPose));
       posesColumn.setTag(DG.TAGS.SEMTYPE, DG.SEMTYPE.MOLECULE3D);
       posesColumn.setTag('docking.role', 'ligand');
@@ -70,14 +70,14 @@ export class DiffDockModel {
       posesJson.receptor = this.target;
       virtualPosesColumn.set(i, JSON.stringify(posesJson));
     }
-  
+
     this.df.columns.add(posesColumn);
     this.df.columns.add(confidenceColumn);
     this.df.columns.add(virtualPosesColumn);
     await grok.data.detectSemanticTypes(this.df);
 
     grid.onCellRender.subscribe(() => this.configureGrid(grid));
-  
+
     return { posesColumn, confidenceColumn, virtualPosesColumn };
   }
 
@@ -93,8 +93,8 @@ export class DiffDockModel {
     const isSmiles = units === DG.UNITS.Molecule.SMILES;
     const ligandValue = isSmiles ? DG.chem.convert(ligand, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock) : ligand;
     const sdf = MolfileHandler.getInstance(ligandValue).z.every((coord) => coord === 0) ?
-    (await grok.functions.call('Chem:SmilesTo3DCoordinates', {molecule: ligandValue})).replaceAll('\\n', '\n') : ligandValue;
-    const jsonText = await grok.functions.call('Bionemo:diffDockModelScript', {ligand: sdf, target: this.target, poses: this.poses});
+      (await grok.functions.call('Chem:SmilesTo3DCoordinates', { molecule: ligandValue })).replaceAll('\\n', '\n') : ligandValue;
+    const jsonText = await grok.functions.call('Bionemo:diffDockModelScript', { ligand: sdf, target: this.target, poses: this.poses });
     return JSON.parse(jsonText);
   }
 
@@ -140,7 +140,7 @@ export class DiffDockModel {
         semType: DG.SEMTYPE.MOLECULE,
         units: DG.UNITS.Molecule.MOLBLOCK,
       };
-      molstarViewer.apply({ 'ligandValue': JSON.stringify(ligandObject)});
+      molstarViewer.apply({ 'ligandValue': JSON.stringify(ligandObject) });
       molstarViewer.onPropertyChanged(ligandValueProp!);
       molstarViewer.onPropertyChanged(ligandColProp!);
     });
@@ -173,7 +173,7 @@ export class DiffDockModel {
       const poses = (JSON.parse(this.virtualPosesColumn.get(currentRow)) as PosesJson);
       const { bestId, bestPose, confidence } = this.findBestPose(poses);
       const combinedControl = await this.createCombinedControl(poses, bestPose, bestId);
-      
+
       const view = grok.shell.getTableView(this.df.name);
       if (this.currentViewer)
         view.dockManager.close(this.currentViewer);

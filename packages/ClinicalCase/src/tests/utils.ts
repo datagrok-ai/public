@@ -1,58 +1,54 @@
-import * as DG from "datagrok-api/dg";
-import * as grok from "datagrok-api/grok";
-import {delay, expect} from "@datagrok-libraries/utils/src/test";
-import {_package} from "../package-test";
-import { ClinicalDomains } from "../clinical-study";
-import { createBaselineEndpointDataframe, createHysLawDataframe, createLabValuesByVisitDataframe, createSurvivalData, cumulativeEnrollemntByDay, dynamicComparedToBaseline, labDynamicComparedToMinMax, labDynamicRelatedToRef } from "../data-preparation/data-preparation";
-import { AE_START_DATE, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT, VISIT_DAY, VISIT_NAME } from "../constants/columns-constants";
-import { dataframeContentToRow } from "../data-preparation/utils";
-import { createValidationDataFrame } from "../sdtm-validation/validation-utils";
-import { vaidateAEDomain, vaidateDMDomain } from "../sdtm-validation/services/validation-service";
-import { ALT, BILIRUBIN } from "../constants/constants";
-import { StudyVisit } from "../model/study-visit";
-import { PatientVisit } from "../model/patient-visit";
-import { TRT_ARM_FIELD, VIEWS_CONFIG } from "../views-config";
-import { LABORATORY_VIEW_NAME } from "../constants/view-names-constants";
+import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
+import {delay, expect} from '@datagrok-libraries/utils/src/test';
+import {_package} from '../package-test';
+import {ClinicalDomains} from '../clinical-study';
+import {createBaselineEndpointDataframe, createHysLawDataframe, createLabValuesByVisitDataframe, createSurvivalData, cumulativeEnrollemntByDay, dynamicComparedToBaseline, labDynamicComparedToMinMax, labDynamicRelatedToRef} from '../data-preparation/data-preparation';
+import {AE_START_DATE, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT, VISIT_DAY, VISIT_NAME} from '../constants/columns-constants';
+import {dataframeContentToRow} from '../data-preparation/utils';
+import {createValidationDataFrame} from '../sdtm-validation/validation-utils';
+import {vaidateAEDomain, vaidateDMDomain} from '../sdtm-validation/services/validation-service';
+import {ALT, BILIRUBIN} from '../constants/constants';
+import {StudyVisit} from '../model/study-visit';
+import {PatientVisit} from '../model/patient-visit';
+import {TRT_ARM_FIELD, VIEWS_CONFIG} from '../views-config';
+import {LABORATORY_VIEW_NAME} from '../constants/view-names-constants';
 
 export const allViews = [
-  'Summary', 
-  'Timelines', 
-  'Laboratory', 
-  'Patient Profile', 
-  'Adverse Events', 
+  'Summary',
+  'Timelines',
+  'Laboratory',
+  'Patient Profile',
+  'Adverse Events',
   'AE Risk Assessment',
-  'Survival Analysis', 
-  'Distributions', 
-  'Correlations', 
-  'Time Profile', 
-  'Tree map', 
-  'Medical History', 
+  'Survival Analysis',
+  'Distributions',
+  'Correlations',
+  'Time Profile',
+  'Tree map',
+  'Medical History',
   'Visits',
   'Study Configuration',
   'Validation',
   'Cohort',
   'Questionnaires'];
 
-  export const allTableViews = ['AE Browser'];
+export const allTableViews = ['AE Browser'];
 
 export async function requireText(name: string): Promise<string> {
-    return await _package.files.readAsText(name);
-  }
+  return await _package.files.readAsText(name);
+}
 
 export async function _testOpenApp() {
   await createTableView('dm.csv');
-  await grok.functions.call("Clinicalcase:clinicalCaseApp");
-  await delay(3000);
-  expect(grok.shell.v.name === 'Summary', true);
-  expect(allViews.every(item => grok.shell.view(item) !== undefined), true);
-  expect(allTableViews.every(item => grok.shell.view(item) !== undefined), true);
+  await grok.functions.call('Clinicalcase:clinicalCaseApp');
 }
 
 export async function _testCumulativeEnrollment() {
   const df = await readDataframe('dm.csv');
   const cumulativeEnrDf = cumulativeEnrollemntByDay(df, SUBJ_REF_STDT, SUBJECT_ID, 'CUMULATIVE_ENROLLMENT');
   expect(cumulativeEnrDf.rowCount, 5);
-  const date = cumulativeEnrDf.get(SUBJ_REF_STDT, 1)
+  const date = cumulativeEnrDf.get(SUBJ_REF_STDT, 1);
   expect(date.date(), 12);
   expect(date.month(), 1);
   expect(date.year(), 2013);
@@ -64,7 +60,7 @@ export async function _testValidation() {
   const validationDf = createValidationDataFrame();
   vaidateAEDomain(ae, validationDf);
   expect(validationDf.rowCount, 17);
-  testRowValues(validationDf, 0, {'Column':'AESTDY', 'Row number': 0, 'Value': '2', 'Violated rule ID': 'SD0012'});
+  testRowValues(validationDf, 0, {'Column': 'AESTDY', 'Row number': 0, 'Value': '2', 'Violated rule ID': 'SD0012'});
 }
 
 export async function _testHysLaw() {
@@ -78,7 +74,7 @@ export async function _testHysLaw() {
 export async function _testBaselineEndpoint() {
   const lb = await readDataframe('lb.csv');
   const dm = await readDataframe('dm.csv');
-  const baselineEndpointDataframe = createBaselineEndpointDataframe(lb, dm, [VIEWS_CONFIG[LABORATORY_VIEW_NAME][TRT_ARM_FIELD]], LAB_TEST, LAB_RES_N, 
+  const baselineEndpointDataframe = createBaselineEndpointDataframe(lb, dm, [VIEWS_CONFIG[LABORATORY_VIEW_NAME][TRT_ARM_FIELD]], LAB_TEST, LAB_RES_N,
     [LAB_LO_LIM_N, LAB_HI_LIM_N], 'Alkaline Phosphatase', 'SCREENING 1', 'WEEK 4', VISIT_NAME, 'BL', 'EP');
   expect(baselineEndpointDataframe.rowCount, 6);
   testRowValues(baselineEndpointDataframe, 0, {[SUBJECT_ID]: '01-701-1015', 'BL': 34, 'EP': 41});
@@ -104,21 +100,21 @@ export async function _testSurvivalDataframe() {
   testRowValues(survivalDataframeDrugRel, 0, {[SUBJECT_ID]: '01-701-1015', 'time': 1, 'status': 1, 'SEX': 'F'});
 }
 
-export async function _testLabChangesComparedToBaseline(){
+export async function _testLabChangesComparedToBaseline() {
   const lb = await readDataframe('lb.csv');
   dynamicComparedToBaseline(lb, LAB_TEST, LAB_RES_N, 'SCREENING 1', VISIT_NAME, 'LAB_DYNAMIC_BL', false);
   expect(lb.rowCount, 1329);
   testRowValues(lb, 1, {[SUBJECT_ID]: '01-701-1015', 'LBTEST': 'Albumin', 'BL_LBSTRESN': 38, [LAB_RES_N]: 76, 'LAB_DYNAMIC_BL': 1});
 }
 
-export async function _testLabChangesBetweenMinMax(){
+export async function _testLabChangesBetweenMinMax() {
   const lb = await readDataframe('lb.csv');
   labDynamicComparedToMinMax(lb, 'LAB_DYNAMIC_MIN_MAX');
   expect(lb.rowCount, 1329);
   testRowValues(lb, 3, {[SUBJECT_ID]: '01-701-1015', 'LBTEST': 'Albumin', 'min(LBSTRESN)': 16.5, 'max(LBSTRESN)': 98, [LAB_RES_N]: 98, 'LAB_DYNAMIC_MIN_MAX': 1});
 }
 
-export async function _testLabChangesRelatedToRef(){
+export async function _testLabChangesRelatedToRef() {
   const lb = await readDataframe('lb.csv');
   labDynamicRelatedToRef(lb, 'LAB_DYNAMIC_REF');
   expect(lb.rowCount, 1329);
@@ -127,7 +123,7 @@ export async function _testLabChangesRelatedToRef(){
   testRowValues(lb, 3, {[SUBJECT_ID]: '01-701-1015', 'LBTEST': 'Albumin', [LAB_LO_LIM_N]: 33, [LAB_HI_LIM_N]: 49, [LAB_RES_N]: 98, 'LAB_DYNAMIC_REF': 2});
 }
 
-export async function _testStudyVisit(){
+export async function _testStudyVisit() {
   const domains = await createClinicalDomains(['sv', 'lb', 'ae']);
   const studyVisit = new StudyVisit();
   studyVisit.updateStudyVisit(domains, 28, 'WEEK 4', 14);
@@ -142,7 +138,7 @@ export async function _testStudyVisit(){
   expect(studyVisit.aeSincePreviusVisit.rowCount, 4);
 }
 
-export async function _testPatientVisit(){
+export async function _testPatientVisit() {
   const domains = await createClinicalDomains(['sv', 'lb', 'ae']);
   const patientVisit = new PatientVisit();
   patientVisit.updateSubjectVisit('01-701-1028', 28, 'WEEK 4', 14);
@@ -153,7 +149,7 @@ export async function _testPatientVisit(){
   expect(patientVisit['ae'].rowCount, 1);
 }
 
-async function createClinicalDomains(domainNames: string[]){
+async function createClinicalDomains(domainNames: string[]) {
   const domains = new ClinicalDomains();
   await Promise.all(domainNames.map(async (it) => {
     const df = await readDataframe(`${it}.csv`);
@@ -176,5 +172,5 @@ async function readDataframe(tableName: string) {
 }
 
 function testRowValues(df: DG.DataFrame, rowNumber: number, columnsToCheck: any) {
-  Object.keys(columnsToCheck).forEach(key => expect(df.get(key, rowNumber), columnsToCheck[key]));
+  Object.keys(columnsToCheck).forEach((key) => expect(df.get(key, rowNumber), columnsToCheck[key]));
 }

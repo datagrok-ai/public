@@ -13,5 +13,5 @@ category('Grid: Color Coding Benchmarks', () => {
 
     for (let i = 0; i < t.rowCount; i++)
       v.grid.invalidate();
-  }, { benchmark: true });
+  }, { benchmark: true, owner: 'dkovalyov@datagrok.ai'});
 });

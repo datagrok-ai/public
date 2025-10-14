@@ -1,5 +1,5 @@
 ---
-title: "Release highlights"
+title: "What's new"
 format: mdx
 keywords:
   - release history
@@ -9,14 +9,83 @@ keywords:
 
 See details: [issues](release-history.md), [plugin changelogs](plugins/plugins.mdx), [JS API compatibility](compatibility/compatibility.mdx)
 
+## 1.25 || 2025-Mar
+
+### Navigation and usability 
+
+|<div style={{ width:220 }}></div>| <div style={{ width:500 }}></div> |
+|----------------- | -----------------------------------|
+| **Smarter file viewers**: Previously, viewer selection was based solely on file format (e.g., XLSX). Now, Datagrok also analyzes file content to choose the appropriate viewer.<br/><br/>For example, XLSX files with regular data open in the [table view](../../datagrok/navigation/views/table-view.md), while XLSX files with plate-like content open using the [plate reader](https://github.com/datagrok-ai/public/tree/master/packages/Curves#plate-readers) | ![Smarter file viewer](img/1.25-file-viewer-xlsx-format.gif) |
+
+### Developer updates
+
+* **Breaking changes**: Site markup, UI API, and CSS styles have been updated. If your packages or integrations rely on specific UI elements or styling, it is recommended to check for compatibility and make the necessary adjustments.
+
+## 1.24 || 2025-Feb
+
+### Visualization and analysis
+
+|<div style={{ width:220 }}></div>| <div style={{ width:500 }}></div> |
+|----------------- | -----------------------------------|
+|**Grid**: Rows and columns now resize together when you change row heights. This creates a zoom effect, where cell content adapts for optimal viewing. Zooming out shows the big picture. Zooming in shows details. This works especially well with dynamic content like proteins, user profiles, [forms](../../visualize/viewers/grid.md#summary-columns), and JIRA tickets. |![grid dynamic column width](img/grid-dynamic-column-widths.gif)|
+|**Grid**: We now support right-click panning. Hold the right mouse button to drag and move around your data. This feature is particularly useful when exploring extensive datasets in the zoomed-out mode.|![grid mouse pan](img/grid-mouse-pan-content.gif)|
+|**Grid**: You can now create [column groups](../../visualize/viewers/grid.md#column-groups)|![grid column groups](img/grid-column-groups.gif)|
+|**Grid**: You can now easily [(un)hide columns](../../visualize/viewers/grid.md#hiding-and-unhiding-columns)|![grid unhide columns](img/grid-unhide-columns.gif)|
+|**Cell renderers**: [Tags](../../visualize/viewers/grid.md#cell-renderers) cell renderer now works with boolean columns (previously, it required comma-separated values)|![grid tags renderer](img/grid-tags-renderer.gif)|
+|**Cell renderers**: [Sparklines](../../visualize/viewers/grid.md#summary-columns) now support multiple normalization options - by row, column, or global values|![sparklines normalization](img/sparklines-normalization-demo.gif)|
+|**Cell renderers**: We now support adaptive rendering of files in cells|![grid-files in cells](img/grid-files-in-cells.gif)|
+
+### Developer updates
+
+**JS API changes**:
+
+* New features:
+  * Classes: 0
+  * Functions: 10
+* [Breaking changes](http://localhost:3000/help/deploy/releases/compatibility/?from=1.23.1&to=1.24.0&breakingchanges=true)
+
+
+## 1.23 || 2024-Dec
+
+### New tools and apps
+
+|<div style={{ width:220 }}></div>| <div style={{ width:500 }}></div> |
+|----------------- | -----------------------------------|
+| **Pyodide**:<br/><br/> Run Python in the browser | <iframe src="https://www.youtube.com/embed/mphWv6yfEkc?start=1470" width="512" height="288" frameborder="0" allowfullscreen></iframe>  |
+| **Admetica**:<br/><br/> Predict, visualize, and analyze 20+ ADMET properties using Datagrok's open-source ADMET predictor<br/><br/>[Learn more](https://github.com/datagrok-ai/admetica)| <iframe src="https://www.youtube.com/embed/mphWv6yfEkc?start=2100" width="512" height="288" frameborder="0" allowfullscreen></iframe>|
+
+
+### Data access and management
+
+|<div style={{ width:220 }}></div>| <div style={{ width:500 }}></div> |
+|----------------- | -----------------------------------|
+| New **Visual Query Builder**:<br/><br/>Seamlessly join tables, aggregate, and pivot from one user interface| <iframe src="https://www.youtube.com/embed/mphWv6yfEkc?start=87" width="512" height="288" frameborder="0" allowfullscreen></iframe> |
+
+### Visualization and analysis
+
+|<div style={{ width:220 }}></div>| <div style={{ width:500 }}></div> |
+|----------------- | -----------------------------------|
+| **Grid**:<br/><br/>Group multiple columns together and apply style for multiple columns at once| ![Grid grouped columns](../../visualize/viewers/img/grid-grouped-columns.gif)   |
+| **Scatterplot**:<br/><br/><li>Interactively explore tens of millions of data points</li><li>Customize how labels appear and behave</li><li>Define columns for scatterplot whiskers to highlight data distribution</li> | <iframe src="https://www.youtube.com/embed/mphWv6yfEkc?start=3370" width="512" height="288" frameborder="0" allowfullscreen></iframe>|
+
+
+### Developer updates
+
+**JS API changes**:
+
+* New features:
+  * Classes: 1
+  * Functions: 0
+* [Breaking changes](https://datagrok.ai/help/deploy/releases/compatibility/?from=1.22.0&to=1.23.0&breakingchanges=true)
+
 ## 1.22 || 2024-Nov
 
 ### Data access and management
 
 |<div style={{ width:220 }}></div>| <div style={{ width:500 }}></div> |
 |----------------- | -----------------------------------|
-|**Custom identifier registration**:<br/>Register custom identifiers (e.g., compound IDs) to search, link, and analyze entity data across the platform<br/><br/>[Video demo](https://www.youtube.com/watch?v=4_NS3q7uvjs&t=2932s)<br/>[Developers: Learn more](https://datagrok.ai/help/develop/how-to/register-identifiers)|![custom identifiers](img/register-idenitifiers.gif)|
-|**Query annotation**:<br/>Annotate queries with search patterns to display query results when users search with matching terms<br/><br/>[Learn more](../../access/databases/databases.md#search-integrated-queries) |![Search-integrated queries](../../access/databases/img/search-integrated-queries.gif)|
+|**Custom identifier registration**:<br/>Register custom identifiers (e.g., compound IDs) to search, link, and analyze entity data across the platform<br/><br/>[Video demo](https://www.youtube.com/watch?v=4_NS3q7uvjs&t=2932s)<br/>[Developers: Learn more](https://datagrok.ai/help/develop/how-to/grid/register-identifiers)|![custom identifiers](img/register-idenitifiers.gif)|
+|**Search integrated functions**:<br/>Annotate queries and other functions with search patterns to display results when users search with matching terms<br/><br/>[Learn more](../../datagrok/concepts/functions/func-params-annotation.md#search-integrated-functions) |![Search-integrated queries](../../datagrok/concepts/functions/search-integrated-queries.gif)|
 |**Plugin databases**|You can now ship a Postgres database (such as chemical registration system) with your plugin|
 
 ### Visualization and analysis
@@ -118,7 +187,7 @@ We've introduced caching for [file shares](../../access/files/files.md) (includi
 * Configurable caching for individual files and file shares
 * Automatic cache invalidation when files are modified within the platform
 
-[Learn more](../../develop/how-to/function_results_cache.md).
+[Learn more](../../develop/how-to/functions/cache-function-results.md).
 
 
 ## 1.19 || 2024-Jun
@@ -300,7 +369,7 @@ You can now integrate with Datagrok using Datagrok's [REST API](../../develop/pa
 
 ### Platform performance
 
-We now support client and server-side [caching for function results](../../develop/how-to/function_results_cache.md). This feature is
+We now support client and server-side [caching for function results](../../develop/how-to/functions/cache-function-results.md). This feature is
 particularly useful for functions that produce consistent outputs, like queries
 and scripts. The client-side cache, limited to 100 MB or 100,000 records, speeds
 up data access and improves network efficiency. The unrestricted server-side

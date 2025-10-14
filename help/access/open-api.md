@@ -3,11 +3,16 @@ title: "Webservices"
 sidebar_position: 3
 ---
 
-[OpenAPI](https://swagger.io/docs/specification/about/), also known as Swagger, is a popular format that describes the structure of the server APIs allowing machines to read the document and use the service. Datagrok seamlessly integrates with OpenAPI and supports both major versions (OpenAPI 2.x and OpenAPI 3.x), making it easy to connect to webservices and execute queries using the platform's features.
+[OpenAPI](https://swagger.io/docs/specification/about/), also known as Swagger, is a popular format that describes the structure of the server APIs, 
+allowing machines to read the document and use the service. Datagrok ingests OpenAPI specifications (v 2.x and 3.x) 
+and converts them to [functions](../datagrok/concepts/functions/functions.md), making it easy to connect to webservices and execute queries via the
+automatically built user interface.
 
 ## Connecting to a webservice
 
-To upload an OpenAPI document, drag and drop a YAML or JSON file into Datagrok. Datagrok detects different attributes of a Swagger file and automatically creates a data connection and associated queries:
+To upload an OpenAPI document, drag and drop a YAML or JSON file into Datagrok. 
+Datagrok detects different attributes of a Swagger file and automatically creates a data connection and
+associated queries:
 
 | Swagger file    | Datagrok                                             |
 |-----------------|------------------------------------------------------|
@@ -17,7 +22,7 @@ To upload an OpenAPI document, drag and drop a YAML or JSON file into Datagrok. 
 | summary         | Data query name                                      |
 | parameters      | Data query parameters                                |
 
-When the file import is complete, the data connection, along with all associated queries, appears in the [Webservices Manager](https://public.datagrok.ai/webservices) (**Data** > **Webservices**).
+When the file import is complete, the data connection, along with all associated queries, appears in the [Webservices Manager](https://public.datagrok.ai/web) (**Browse** > **Platform** > **Functions** > **OpenAPI**).
 
 :::tip
 
@@ -166,7 +171,11 @@ Datagrok can work with both parameterized queries and queries without parameters
 
 ### Credentials
 
-The Swagger file doesn't define access parameters for an OpenAPI service directly. Instead, it describes the types and access parameters in the `securityDefinitions:` section (for OpenAPI 2.x) and `securitySchemes` block under the `components` section (for OpenAPI 3.x). In the AirNow example, the `api_key` type is used with the `"API_KEY"` parameter, following the provider's naming requirement:
+The Swagger file doesn't define access parameters for an OpenAPI service directly. 
+Instead, it describes the types and access parameters in the `securityDefinitions:` section 
+(for OpenAPI 2.x) and `securitySchemes` block under the `components` section (for OpenAPI 3.x). 
+In the AirNow example, the `api_key` type is used with the `"API_KEY"` parameter, 
+following the provider's naming requirement:
 
 ```yaml
 securityDefinitions:
@@ -190,12 +199,12 @@ Datagrok supports all types of secret access for Swagger, such as:
 
 :::
 
-When webservices don't require secret access, omit the `securityDefinitions:` block inside the Swagger file. See this [sample Swagger file without the security definitions](https://github.com/datagrok-ai/public/blob/master/packages/Swaggers/swaggers/countries.yaml)
+When webservices don't require secret access, omit the `securityDefinitions:` block inside the Swagger file. See this [sample Swagger file without the security definitions](https://github.com/datagrok-ai/public/blob/master/packages/Samples/swaggers/rat-genome-database-api.yaml)
 .
 
 ### Packages
 
-In addition to uploading Swagger files via drag-and-drop, Datagrok supports import of these files from [external packages](../develop/develop.md). Here's one such [package](https://github.com/datagrok-ai/public/tree/master/packages/Swaggers), which contains our Swagger demo files. The package includes many Swagger examples for different services in various formats (YAML, JSON).
+In addition to uploading Swagger files via drag-and-drop, Datagrok supports import of these files from [external packages](../develop/develop.md). Here's one such [package](https://github.com/datagrok-ai/public/tree/master/packages/Samples/swaggers), which contains our Swagger demo files. The package includes many Swagger examples for different services in various formats (YAML, JSON).
 
 When Swagger files are stored in this manner, they are imported to Datagrok (and new data connections appear) simultaneously as the corresponding package is published.
 
@@ -203,7 +212,9 @@ When Swagger files are stored in this manner, they are imported to Datagrok (and
 
 To edit the original Swagger file provided by the service or enhance the file with simpler queries not present in the original Swagger file, we recommend using [Postman](https://www.postman.com/). You can import a Swagger JSON/YAML file into Postman for introspection, manipulation, and pruning using the "Import" button. If you need to remove some Swagger items, do it directly in Datagrok after uploading or importing it.
 
-Usually, a Swagger file from the API service's Swagger UI works well with both Datagrok and Postman. Import issues, if any, usually arise due to Swagger version differences or parser inconsistencies. First, ensure the Swagger name is included under the `"info"` > `"title"` section. If import errors persist, consider these steps:
+Usually, a Swagger file from the API service's Swagger UI works well with both Datagrok and Postman.
+If you encounter import issues, fist make sure that the Swagger name is included under the `"info"` > `"title"` section.
+If this does not help, try the following:
 
 <details>
 <summary> Issue: Datagrok loads the Swagger file successfully but `basePath` or `host` are missing along with the Swagger icon </summary>
@@ -236,19 +247,19 @@ Solution 2. If `"version"` isn't present in the original file, add a `"version"`
 
 The **Webservices Manager** provides a convenient interface for hierarchical browsing and managing connections and associated queries. To access the context actions for a connection or a query, right-click it. If you don't see a certain action, it may be due to insufficient permissions. In such cases, contact your Datagrok administrator for assistance.
 
-When you import the Swagger file, the following connection and queries appear in Datagrok (below, we use the Swagger file from AirNow, a site that provides information about outdoor air quality):
+After importing the Swagger file (here, the one from stormglass.io, which supplies weather forecasts and historical data), Datagrok automatically creates the corresponding connection and queries:
 
-![AirNow connection](../uploads/features/open-api-airnow-connection.png "AirNow")
+![OpenWeatherMap connection](../uploads/features/open-api-weather-map-connection.png "OpenWeatherMap")
 
 The queries are now standard [Datagrok queries](access.md#data-query), with all platform features available. For example, you can run queries using a convenient [UI for entering parameters](databases/databases.md#running-queries) or edit queries with [built-in editors](databases/databases.md#working-with-queries). Data governance and automation capabilities also apply.
 
 Whenever you click a connection or query in  the **Webservices Manager**, the [**Context Panel**](../datagrok/navigation/panels/panels.md#context-panel) to the right displays the object's properties and context actions. For example, when you click a query, the **Context Panel** lets you view the query's details, run, edit, or share it, and access other relevant information and options:
 
-![AirNow query](../uploads/features/open-api-airnow-query.png "AirNow")
+![OpenWeatherMap query](../uploads/features/open-api-weathermap-query.png "OpenWeatherMap")
 
 Running a query opens it in Datagrok as an [interactive grid](../visualize/viewers/grid.md):
 
-![AirNow results](../uploads/features/open-api-airnow-results.png "AirNow")
+![OpenWeatherMap results](../uploads/features/open-api-weathermap-results.png "OpenWeatherMap")
 
 You can now explore the query results further, create [query views and dynamic dashboards](databases/databases.md#creating-dynamic-dashboards-for-query-results) and [share them with others](databases/databases.md#sharing-query-results).
 

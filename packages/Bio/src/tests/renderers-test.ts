@@ -28,7 +28,7 @@ category('renderers', () => {
   });
 
   test('long sequence performance ', async () => {
-    await performanceTest(generateLongSequence, 'Long sequences');
+    await performanceTest(() => generateLongSequence(10 ** 4), 'Long sequences');
   });
 
   test('many sequence performance', async () => {

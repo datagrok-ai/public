@@ -11,11 +11,10 @@ import logging
 import multiprocessing
 import signal
 
-logging_level = logging.WARNING
+logging_level = logging.DEBUG
 logging.basicConfig(level=logging_level)
 
 app = Flask(__name__)
-logging.warning('autodock app started version -- 12 -- ')
 
 processes = {}
 

@@ -14,7 +14,7 @@ category('Algorithms', () => {
   let targetCol: type.RawColumn;
 
   before(async () => {
-    await PeptideUtils.loadSeqHelper();
+    await PeptideUtils.loadComponents();
 
     activityCol = DG.Column.fromList('int', 'test', [1, 2, 5]).getRawData();
     monomerColumns = [

@@ -104,4 +104,4 @@ category('Viewers: Bar Chart', () => {
     grok.shell.closeAll();
     await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with Bar Chart').first());
   }); 
-});
+}, { owner: 'dkovalyov@datagrok.ai' });

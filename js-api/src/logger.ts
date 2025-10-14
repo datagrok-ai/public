@@ -3,11 +3,8 @@ import {toDart} from './wrappers';
 import {Package} from './entities';
 import {IDartApi} from "./api/grok_api.g";
 import dayjs from "dayjs";
-import {Accordion} from "./widgets";
-import {toJs} from "./wrappers";
-import {DataFrame} from "./dataframe";
 
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 export type LogMessage = {level: LOG_LEVEL, message: string, params?: object, type?: string, stackTrace?: string};
 

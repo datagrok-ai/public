@@ -7,10 +7,13 @@ export const DEMO_APP_HIERARCHY = {
 					name: 'Overview',
 				},
 				{
-					name: 'ADMETox',
+					name: 'Admetica',
 				},
 				{
-					name: 'Chemical Databases',
+					name: 'Chemical Space'
+				},
+				{
+					name: 'Database Queries',
 				},
 				{
 					name: 'Matched Molecular Pairs',
@@ -19,7 +22,7 @@ export const DEMO_APP_HIERARCHY = {
 					name: 'Molecule Activity Cliffs',
 				},
 				{
-					name: 'R Group Analysis',
+					name: 'R-Group Analysis',
 				},
 				{
 					name: 'Similarity & Diversity Search',
@@ -53,22 +56,13 @@ export const DEMO_APP_HIERARCHY = {
 					name: 'Atomic Level',
 				},
 				{
-					name: 'DiffDock',
-				},
-				{
 					name: 'Docking',
 				},
 				{
 					name: 'Docking Conformations',
 				},
 				{
-					name: 'Folding',
-				},
-				{
-					name: 'Helm, MSA, Sequence Space',
-				},
-				{
-					name: 'Macromolecule SAR Analysis',
+					name: 'Peptide SAR',
 				},
 				{
 					name: 'Proteins',
@@ -89,6 +83,12 @@ export const DEMO_APP_HIERARCHY = {
 				},
 				{
 					name: 'Databases',
+				},
+				{
+					name: 'OpenAPI',
+				},
+				{
+					name: 'Python',
 				},
 				{
 					name: 'Table Linking',
@@ -148,7 +148,7 @@ export const DEMO_APP_HIERARCHY = {
 							name: 'Heatmap',
 						},
 						{
-							name: 'Histogram',	
+							name: 'Histogram',
 						},
 						{
 							name: 'Line Chart',
@@ -254,6 +254,9 @@ export const DEMO_APP_HIERARCHY = {
 		{
 			name: 'Curves',
 			children: [
+				{
+					name: 'Assay Plates',
+				},
 				{
 					name: 'Curve Fitting',
 				},

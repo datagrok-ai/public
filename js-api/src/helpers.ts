@@ -1,7 +1,7 @@
 import {toJs} from './wrappers';
 import {IDartApi} from "./api/grok_api.g";
 
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 /**
  * FormulaLine available parameters.
@@ -27,6 +27,8 @@ export interface FormulaLine {
   style?: string;
   // Specific to bands:
   column2?: string;
+  xMap?: string;
+  yMap?: string;
 }
 
 /**

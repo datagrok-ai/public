@@ -4,12 +4,10 @@ import * as DG from 'datagrok-api/dg';
 
 import '../../css/choice_input.css';
 import Choices from 'choices.js';
+import {ChoiceInputBase} from "./choice-input-base";
 
 
-export class ChoiceInputPackages {
-  choices: Choices;
-  field: DG.InputBase;
-
+export class ChoiceInputPackages extends ChoiceInputBase {
   static async construct() {
     const field = ui.input.choice('Packages');
 
@@ -23,7 +21,7 @@ export class ChoiceInputPackages {
       searchChoices: true,
       itemSelectText: '',
     });
-    field.input.addEventListener('change', (event) =>
+    field.input.addEventListener('change', (_) =>
       (document.querySelector('.ua-apply-button') as HTMLButtonElement).disabled = false);
     const packages = (await grok.dapi.packages.list()).filter((value, index, self) =>
       index === self.findIndex((t) => (t.name === value.name)));
@@ -44,19 +42,6 @@ export class ChoiceInputPackages {
   }
 
   private constructor(choices: Choices, field: DG.InputBase) {
-    this.choices = choices;
-    this.field = field;
-  }
-
-  getSelectedPackages(): string[] {
-    const packages = this.choices?.getValue(true) as string[];
-    if (packages && packages.length > 0 && packages[0] !== '[]')
-      return packages;
-    else
-      return ['all'];
-  }
-
-  addItems(items: string[]) {
-    items.forEach((i) => this.choices?._addItem({value: i}));
+    super(choices, field);
   }
 }

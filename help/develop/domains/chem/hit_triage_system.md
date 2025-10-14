@@ -10,7 +10,7 @@ With Datagrok, creating a light-weighted hit triage system using your database a
   let data = await grok.functions.call('Chembl:_compoundActivityDetailsForTarget', {target: "CHEMBL1827"})
   ```
 
-Here we used an existing data query. However, if you want to learn more about query creation, go to this [link](https://datagrok.ai/help/develop/how-to/access-data#creating-queries).
+Here we used an existing data query. However, if you want to learn more about query creation, go to this [link](../../../develop/how-to/db/access-data.md#creating-queries)
 
 - Add required columns to the received results and add tableView
 
@@ -41,4 +41,4 @@ For more information on setting privileges, visit this [link](https://datagrok.a
     tableView.loadLayout(layouts[0]);
     ```
 
-For more information on manipulating layouts, check out this [link](https://datagrok.ai/help/develop/how-to/layouts)
+For more information on manipulating layouts, check out this [link](../../../develop/how-to/views/layouts.md)

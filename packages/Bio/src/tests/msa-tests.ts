@@ -140,7 +140,7 @@ async function _testMsaIsCorrect(srcCsv: string, tgtCsv: string): Promise<void> 
   expect(srcCol.semType, DG.SEMTYPE.MACROMOLECULE);
 
   const tgtCol: DG.Column = tgtDf.getCol('seq')!;
-  const resCol: DG.Column = await runKalign(srcCol, true);
+  const resCol: DG.Column = await runKalign(srcDf, srcCol, true);
   expectArray(resCol.toList(), tgtCol.toList());
 }
 

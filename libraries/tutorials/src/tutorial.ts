@@ -9,6 +9,10 @@ import {Track} from './track';
 
 /** A base class for tutorials */
 export abstract class Tutorial extends DG.Widget {
+  get type(): string {
+    return 'Tutorial';
+  }
+
   abstract get name(): string;
   abstract get description(): string;
   abstract get steps(): number;
@@ -63,7 +67,17 @@ export abstract class Tutorial extends DG.Widget {
 
   async updateStatus(): Promise<void> {
     const info = await grok.userSettings.getValue(Tutorial.DATA_STORAGE_KEY, this.name);
-    this.status = !!info;
+    let neededStatus = info;
+    if (info !== null && info !== undefined) {
+      try {
+        const parsedInfo = JSON.parse(info);
+        neededStatus = parsedInfo.isCompleted;
+      } catch (e) {
+
+      } finally {
+        this.status = !!neededStatus;
+      }
+    }
   }
 
   constructor() {
@@ -79,6 +93,33 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   protected abstract _run(): Promise<void>;
+
+  updateProgress(track: any) {
+    const tutorials = this.track?.tutorials!;
+    const id = tutorials.indexOf(this);
+    const trackRoot = $(`.tutorials-track[data-name ='${track?.name}']`);
+    const root = trackRoot.find(`.tutorials-card[data-name='${track.tutorials[id].name}']`);
+    root.find('.tutorials-card-status').show();
+    root.find('.tutorials-card-title').css('color', 'var(--grey-4)');
+    root.find('.tutorials-card-description').css('color', 'var(--grey-4)');
+    root.find('.ui-image').css('mix-blend-mode', 'luminosity').css('opacity', '0.7');
+    trackRoot
+      .find('progress')
+      .prop('value', (100/track.tutorials.length*(track.completed)).toFixed());
+    const progressNodes = $(`.tutorials-track[data-name ='${track?.name}'] > .tutorials-track-details`).children();
+    progressNodes.first().text(trackRoot.find('progress').prop('value')+'% complete');
+    progressNodes.last().text(String(track.completed+' / '+track.tutorials.length));
+  }
+
+  showToolbox(): void {
+    grok.shell.windows.showToolbox = false;
+    grok.shell.windows.showToolbox = true;
+  }
+
+  showBrowse(): void {
+    grok.shell.windows.showBrowse = false;
+    grok.shell.windows.showBrowse = true;
+  }
 
   async run(): Promise<void> {
     this._addHeader();
@@ -135,27 +176,15 @@ export abstract class Tutorial extends DG.Widget {
     this.title('Congratulations!');
     this.describe('You have successfully completed this tutorial.');
 
-    await grok.userSettings.add(Tutorial.DATA_STORAGE_KEY, this.name, new Date().toUTCString());
+    const dataToSave = JSON.stringify({date: new Date().toUTCString(), isCompleted: this.progress.value === this.steps});
+    await grok.userSettings.add(Tutorial.DATA_STORAGE_KEY, this.name, dataToSave);
     const statusMap = await this.track?.updateStatus();
-
-    function updateProgress(track:any) {
-      const trackRoot = $(`.tutorials-track[data-name ='${track?.name}']`);
-      trackRoot
-        .find(`.tutorials-card[data-name='${track.tutorials[id].name}']`)
-        .children('.tutorials-card-status').show();
-      trackRoot
-        .find('progress')
-        .prop('value', (100/track.tutorials.length*(track.completed)).toFixed());
-      const progressNodes = $(`.tutorials-track[data-name ='${track?.name}'] > .tutorials-track-details`).children();
-      progressNodes.first().text(trackRoot.find('progress').prop('value')+'% complete');
-      progressNodes.last().text(String(track.completed+' / '+track.tutorials.length));
-    }
 
     if (statusMap && Object.values(statusMap).every((v) => v)) {
       this.root.append(ui.div([
-        ui.divText(this.track?.name+'is complete!'),
+        ui.divText(this.track?.name + ' is complete!'),
         ui.bigButton('Complete', ()=>{
-          updateProgress(this.track);
+          this.updateProgress(this.track);
           this._closeAll();
           this.clearRoot();
           $('.tutorial').show();
@@ -189,14 +218,14 @@ export abstract class Tutorial extends DG.Widget {
         ui.divText(`Next "${nextTutorial.name}"`, {style: {margin: '5px 0'}}),
         ui.divH([
           ui.bigButton('Start', () => {
-            updateProgress(this.track);
+            this.updateProgress(this.track);
             this.clearRoot();
             tutorialNode.html('');
             tutorialNode.append(nextTutorial.root);
             nextTutorial.run();
           }),
           ui.button('Cancel', () => {
-            updateProgress(this.track);
+            this.updateProgress(this.track);
             this._closeAll();
             this.clearRoot();
             $('.tutorial').show();
@@ -241,7 +270,11 @@ export abstract class Tutorial extends DG.Widget {
     // }, 'Self-paced mode');
     // if (this.manualMode)
     //   $(manualMode.firstChild).toggleClass('fal fas');
-    const closeTutorial = ui.button(ui.iconFA('times-circle'), () => this.close());
+    const closeTutorial = ui.button(ui.iconFA('times-circle'), () => {
+      if (this.progress.value === this.steps)
+        this.updateProgress(this.track);
+      this.close();
+    });
 
     const linkIcon = ui.button(ui.iconFA('link'), () => {
       navigator.clipboard.writeText(this.url);
@@ -436,18 +469,18 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   protected get menuRoot(): HTMLElement {
-    return grok.shell.windows.simpleMode ? grok.shell.v.ribbonMenu.root : grok.shell.topMenu.root;
+    return grok.shell.v.ribbonMenu.root;
   }
 
   protected getMenuItem(name: string, horizontalMenu?: boolean): HTMLElement | null {
     return this.getElement(this.menuRoot, `div.d4-menu-item.d4-menu-group${horizontalMenu ? '.d4-menu-item-horz' : ''}`,
-      (idx, el) => Array.from(el.children).some((c) => c.textContent === name));
+      (idx, el) => Array.from(el.children).some((c) => c.textContent?.toLowerCase() === name.toLowerCase()));
   }
 
   protected getSidebarHints(paneName: string, commandName: string): HTMLElement[] {
     const pane = grok.shell.sidebar.getPane(paneName);
     const command = this.getElement(pane.content, `div.d4-toggle-button[data-view=${commandName}]`) ??
-      this.getElement(pane.content, 'div.d4-toggle-button', (idx, el) => el.textContent === commandName)!;
+      this.getElement(pane.content, 'div.d4-toggle-button', (idx, el) => el.textContent?.toLowerCase() === commandName.toLowerCase())!;
     return [pane.header, command];
   }
 
@@ -480,7 +513,7 @@ export abstract class Tutorial extends DG.Widget {
   /** Prompts the user to put the specified value into a dialog input. */
   protected async dlgInputAction(dlg: DG.Dialog, instructions: string, caption: string,
     value: string, description: string = '', historyHint: boolean = false, count: number = 0): Promise<void> {
-    const inp = dlg.inputs.filter((input: DG.InputBase) => input.caption == caption)[count];
+    const inp = dlg.inputs.filter((input: DG.InputBase) => input.caption.toLowerCase() == caption.toLowerCase())[count];
     if (inp == null) return;
     await this.action(instructions,
       new Observable((subscriber: any) => {
@@ -498,7 +531,7 @@ export abstract class Tutorial extends DG.Widget {
   protected async textInpAction(root: HTMLElement, instructions: string,
     caption: string, value: string, description: string = ''): Promise<void> {
     const inputRoot = this.getElement(root, 'div.ui-input-root', (idx, inp) =>
-      $(inp).find('label.ui-label.ui-input-label')[0]?.textContent === caption);
+      $(inp).find('label.ui-label.ui-input-label')[0]?.textContent?.toLowerCase() === caption.toLowerCase());
     if (inputRoot == null) return;
     const input = this.getElement(inputRoot, 'input.ui-input-editor') as HTMLInputElement;
     const source = fromEvent(input, 'input').pipe(map((_) => input.value), filter((val) => val === value));
@@ -553,7 +586,7 @@ export abstract class Tutorial extends DG.Widget {
 
   protected async buttonClickAction(root: HTMLElement, instructions: string,
     caption: string, description: string = '') {
-    const btn = this.getElement(root, 'button.ui-btn', (idx, btn) => btn.textContent === caption);
+    const btn = this.getElement(root, 'button.ui-btn', (idx, btn) => btn.textContent?.toLowerCase() === caption.toLowerCase());
     if (btn == null) return;
     const source = fromEvent(btn, 'click');
     await this.action(instructions, source, btn, description);

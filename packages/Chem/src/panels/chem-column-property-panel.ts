@@ -1,6 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { ALIGN_BY_SCAFFOLD_TAG, SCAFFOLD_COL, REGENERATE_COORDS, HIGHLIGHT_BY_SCAFFOLD_COL } from '../constants';
+import {ALIGN_BY_SCAFFOLD_TAG, SCAFFOLD_COL, REGENERATE_COORDS, HIGHLIGHT_BY_SCAFFOLD_COL, ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG} from '../constants';
 
 enum StructureFilterType {
   Sketch = 'Sketch',
@@ -16,7 +16,7 @@ enum StructureFilterType {
  *  */
 export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
   const NONE = 'None';
-  const scaffoldColName = col.temp[SCAFFOLD_COL] ?? NONE;
+  const scaffoldColName = col.tags[SCAFFOLD_COL] ?? col.temp?.[SCAFFOLD_COL] ?? NONE;
 
   // TODO: replace with an efficient version, bySemTypesExact won't help; GROK-8094
   const columnsList = Array.from(col.dataFrame.columns as any).filter(
@@ -26,23 +26,25 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
 
   const scaffoldColumnChoice = ui.input.choice('Scaffold column', {value: scaffoldColName, items: [NONE].concat([...columnsSet].sort()),
     onValueChanged: (value) => {
-      col.temp[SCAFFOLD_COL] = value === NONE ? null : value;
+      col.tags[SCAFFOLD_COL] = value === NONE ? null : value;
       col.dataFrame?.fireValuesChanged();
     }});
   scaffoldColumnChoice.setTooltip('Align structures to a scaffold defined in another column');
 
+  const highlightScaffoldInitValue = col.tags[HIGHLIGHT_BY_SCAFFOLD_COL] ?? col.temp?.[HIGHLIGHT_BY_SCAFFOLD_COL];
   const highlightScaffoldsCheckbox = ui.input.bool('Highlight scaffold',
-    {value: col?.temp && col.temp[HIGHLIGHT_BY_SCAFFOLD_COL] === 'true',
+    {value: highlightScaffoldInitValue === 'true',
       onValueChanged: (value) => {
-        col.temp[HIGHLIGHT_BY_SCAFFOLD_COL] = value.toString();
+        col.tags[HIGHLIGHT_BY_SCAFFOLD_COL] = value.toString();
         col.dataFrame?.fireValuesChanged();
       }});
   highlightScaffoldsCheckbox.setTooltip('Highlight scaffold defined above');
 
+  const regenerateCoordsInitValue = col.tags[REGENERATE_COORDS] ?? col.temp?.[REGENERATE_COORDS];
   const regenerateCoordsCheckbox = ui.input.bool('Regen coords',
-    {value: col?.temp && col.temp[REGENERATE_COORDS] === 'true',
+    {value: regenerateCoordsInitValue === 'true',
       onValueChanged: (value) => {
-        col.temp[REGENERATE_COORDS] = value.toString();
+        col.tags[REGENERATE_COORDS] = value.toString();
         col.dataFrame?.fireValuesChanged();
       }});
   regenerateCoordsCheckbox.setTooltip('Force regeneration of coordinates even for MOLBLOCKS');
@@ -68,11 +70,12 @@ export function getMolColumnPropertyPanel(col: DG.Column): DG.Widget {
   ]);
   const sketcher = new DG.chem.Sketcher(DG.chem.SKETCHER_MODE.EXTERNAL);
   sketcher.syncCurrentObject = false;
-  sketcher.setMolFile(col.tags[ALIGN_BY_SCAFFOLD_TAG]);
+  sketcher.setMolFile(col.tags[ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG] || col.tags[ALIGN_BY_SCAFFOLD_TAG]);
   sketcher.onChanged.subscribe((_: any) => {
     const molFile = sketcher.getMolFile();
-    col.tags[ALIGN_BY_SCAFFOLD_TAG] = molFile;
-    col.temp[ALIGN_BY_SCAFFOLD_TAG] = molFile;
+    if (col.tags[ALIGN_BY_SCAFFOLD_TAG])
+      delete col.tags[ALIGN_BY_SCAFFOLD_TAG];
+    col.tags[ALIGN_BY_SCAFFOLD_LAYOUT_PERSISTED_TAG] = molFile;
     col.dataFrame?.fireValuesChanged();
   });
   sketcher.root.classList.add('ui-input-editor');

@@ -72,7 +72,7 @@ category('MolstarPreview', () => {
     _package.logger.debug(`${logPrefix}, expect checks`);
     expect(noException, false);
     _package.logger.debug(`${logPrefix}, end`);
-  }, {skipReason: 'GROK-16546'});
+  });
 
   category('MolstarPreview: DemoFiles', () => {
     let demoFilesNqName: string | undefined;

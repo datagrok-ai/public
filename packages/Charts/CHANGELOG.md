@@ -1,5 +1,116 @@
 # Charts changelog
 
+## 1.6.0 (2025-07-28)
+
+### Bug Fixes
+
+* GROK-18408: Charts | Radar: Console errors when click None in Select columns dialog
+* [3420](https://github.com/datagrok-ai/public/issues/3420): Charts | Tree: Move "Show mouse over line" to Style section in properties
+* [3421](https://github.com/datagrok-ai/public/issues/3421): Charts | Tree: Different row source behavior for changing "on click" property
+* GROK-17772: Charts | Chord: Re-rendered only after click when filtering
+* GROK-18576: Charts | Radar: Errors when switching to earthquakes dataset
+
+## 1.5.5 (2025-07-03)
+
+### Bug Fixes
+
+* [3397](https://github.com/datagrok-ai/public/issues/3397): Tree viewer: selection and clicking issues
+
+## 1.5.4 (2025-05-29)
+
+### Bug Fixes
+
+* Charts: Sunburst: Limit number of rendered columns
+
+## 1.5.3 (2025-05-27)
+
+### Bug Fixes
+
+* [3377](https://github.com/datagrok-ai/public/issues/3377): Sunburst: Tooltip displays wrong number of rows
+
+## 1.5.2 (2025-05-12)
+
+### Features
+
+* [3298](https://github.com/datagrok-ai/public/issues/3298): Tree:
+  * Added Ctrl+Click support for branch selection to enable filtering
+  * Implemented collaborative filtering
+
+### Bug Fixes
+
+* GROK-18010: Charts | Sunburst: Viewer formatting reset on property changes
+* GROK-18011: Charts | Sunburst: Molecules appear smaller/bigger than expected
+* GROK-18009: Charts | Sunburst: Errors after changing table with opened 'Select columns' dialog
+* GROK-18036: Charts | Sankey: Selecting an empty column in the context panel causes errors
+* GROK-18035: Charts | Sankey: Errors on hover after applying filters
+* GROK-18087: Charts | Tree viewer: Size aggregation types 'nulls' and '#selected' break the viewer
+* GROK-18085: Charts | Radar: Empty chart after restoring from project
+
+## 1.5.1 (2025-04-01)
+
+### Bug Fixes
+
+* GROK-17944: Multiplot: New plot is added to CloseAll context menu
+
+## 1.5.0 (2025-03-31)
+
+### Features
+
+* Moved Multiplot from separate package to Charts
+
+### Bug Fixes
+
+* [3307](https://github.com/datagrok-ai/public/issues/3307): Tree viewer not clickable upper node
+* GROK-17781: Tree: Exception opening city_gps dataset
+* GROK-17769: Radar: "Columns" on null
+* GROK-17819: Console contains many messages
+
+## 1.4.4 (2024-02-27)
+
+### Features
+
+* [#3249](https://github.com/datagrok-ai/public/issues/3249): Tree: Add cross-viewer selection
+
+### Bug Fixes
+
+* [3245](https://github.com/datagrok-ai/public/issues/3245): Tree: Usability issues:
+  * Combination "Row Source: All - On Click: Filter" works differently in several cases
+  * The viewer re-renders on every branch click, even when the row source remains unchanged
+  * Pressing ESC on the keyboard deselects rows in the table, but the highlighting remains on the viewer
+* GROK-17619: Charts | Tree viewer: Symbol size changes when aggregation function is set
+
+## 1.4.3 (2024-01-30)
+
+### Features
+
+* [#3221](https://github.com/datagrok-ai/public/issues/3221): Tree: Improvements:
+  * Display row counts for each branch
+  * Allow selection of sets in each branch to be either filtered or selected in the grid
+  * Enable font size customization
+  * Fix issue where the last-level categories are not readable in horizontal view
+  * Add a setting to hide null values
+  * Support structure rendering
+  * Use standard tooltips
+
+### Bug Fixes
+
+* GROK-17376: Charts | Tree: "NaN.floor()" error while changing Color in properties
+* GROK-17405: Charts | Tree: Changing Size in properties caused errors
+* GROK-17414: Charts | Tree: Dragging down the three causes errors
+* GROK-17420: Charts | Tree: Prevent view reset when changing Symbol size, Label rotation, or Font size
+* GROK-17424: Charts | Tree: Flickering structures when ShowMouseOverLine is enabled
+
+## 1.4.2 (2024-12-19)
+
+### Bug Fixes
+
+* GROK-16954: Charts: Fixed globe throws errors if no column found
+* Charts: Sunburst: Improved logic for labels rendering
+* Charts: Word cloud: Fixed cases when no column selected
+* [#3196](https://github.com/datagrok-ai/public/issues/3196): Charts: Sunburst causes performance issues
+* Charts: Sunburst: Resolved an issue where certain columns were not used when applying the row source
+* Charts: Sunburst: Increased the size of rendered structures in the tooltip and implemented dynamic size adjustments based on segment size
+
 ## 1.4.1 (2024-10-03)
 
 ### Bug Fixes

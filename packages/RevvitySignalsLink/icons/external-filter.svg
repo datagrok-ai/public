@@ -1,0 +1,12 @@
+<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Funnel Body -->
+  <path d="M4 4H15L10 10V17L8 19V10L4 4Z" stroke="var(--icon-color, currentColor)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- The arrow group is rotated -45 degrees around point (16, 13) -->
+  <g transform="rotate(-45, 16, 13)">
+    <!-- Long Horizontal Arrow Line -->
+    <path d="M16 13H24" stroke="var(--icon-color, currentColor)" stroke-width="1.5" stroke-linecap="round"/>
+    <!-- Arrowhead -->
+    <path d="M21 10L24 13L21 16" stroke="var(--icon-color, currentColor)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

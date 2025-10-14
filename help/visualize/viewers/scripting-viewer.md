@@ -8,11 +8,10 @@ use [scripting](../../compute/scripting/scripting.mdx) for integration with the 
 While not as interactive as the core Datagrok [viewers](../viewers/viewers.md), they allow to easily use thousands of
 visualizations already developed for these languages.
 
-To add an existing viewer to a table view, select it from the
-`Add | Scripting Viewers` menu.
+To add an existing viewer to a table view, on the menu ribbon, click the **Add viewer** icon and select  **Scripting Viewer** in the opened dialog.
 
-To edit the rest of the properties, either click on the `gear` icon on top of the viewer, or press F4 when the viewer
-has focus, or open the hamburger menu and select `Viewer | Properties`.
+To edit the rest of the properties, either click the **Gear** icon on top of the viewer, or press F4 when the viewer
+has focus, or open the hamburger menu and select  **Properties**.
 
 ## Customize scripting viewer scripts
 
@@ -51,8 +50,8 @@ print(plotScatter)
 
 ## Demo project
 
-Open [Time Series Decomposition](https://public.datagrok.ai/p/demo.timeseriesdecomposition) project as an example of
-scripting viewer usage for time series decomposition.
+Open [Scottish Hills Visualization](https://public.datagrok.ai/p/samples.scottishhillspyodide/scottish_hills) project as an example of
+scripting viewer usage.
 
 ### Videos
 

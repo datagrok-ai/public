@@ -8,6 +8,7 @@
 # Java files
 /connectors/grok_connect/target
 /connectors/serialization/target
+/connectors/grok_connect/*.log
 /packages/Tika/src/target
 dependency-reduced-pom.xml
 *.class
@@ -66,7 +67,7 @@ pubspec.lock
 docusaurus/access.log
 docusaurus/error.log
 docusaurus/.env
-docusaurus/js-api
+docusaurus/api
 docusaurus/temp_*
 docusaurus/output.csv
 

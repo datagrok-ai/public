@@ -1,0 +1,12 @@
+.optimization-type-input {
+    font-size: 14px;
+    font-weight: bold;
+    max-width: 90px;
+    border: white;
+}
+
+.optimization-view-help-icon {
+    font-size: large;
+    margin-right: 8px;
+    font-weight: bold;
+}

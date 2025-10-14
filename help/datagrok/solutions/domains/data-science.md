@@ -10,7 +10,7 @@ Out of the box, Datagrok provides all tools necessary for
 [data ingestion](../../../access/files/files.md),
 [transformation](../../../transform/transform.md),
 [visualization](../../../visualize/viewers/viewers.md),
-[analysis](use-cases/eda.md),
+[analysis](../workflows/eda.md),
 [modeling](../../../learn/learn.md), as well as [deploying models](../../../learn/learn.md#deployment)
 and scientific analyses. Scripts and models can be written in any language, such as R or Python.
 
@@ -77,7 +77,7 @@ the specified parameters.
 
 ### Multivariate analysis
 
-[Multivariate Analysis](../../../explore/multivariate-analysis/pls.md) plugin implements partial least squares (PLS)
+[Multivariate Analysis](../../../explore/multivariate-analysis.md) plugin implements partial least squares (PLS)
 algorithm. It is an easy-to-interpret, commonly used approach for multidimensional data analysis. It shows the following
 on the interactive viewers: scores, explained variance, correlation loadings, predicted vs. reference, and regression
 coefficients.
@@ -107,4 +107,4 @@ model was trained on.
 
 See also:
 
-* [Life sciences](use-cases/life-sciences.md)
+* [Life sciences](../workflows/life-sciences.md)

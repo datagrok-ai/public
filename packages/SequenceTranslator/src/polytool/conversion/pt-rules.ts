@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -5,7 +6,11 @@ import {ActiveFiles} from '@datagrok-libraries/utils/src/settings/active-files-b
 import {RulesManager} from './rule-manager';
 import {RuleCards} from './pt-rule-cards';
 import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {applyNotationProviderForCyclized} from '../../package';
+import {
+  _package,
+  PackageFunctions} from '../../package';
+import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
+import {ReactionEditorProps} from './rule-reaction-editor';
 
 export const RULES_PATH = 'System:AppData/SequenceTranslator/polytool-rules/';
 export const RULES_STORAGE_NAME = 'Polytool';
@@ -22,6 +27,7 @@ const NAME_FIRST_LINK = 'firstLinkingGroup';
 const NAME_SECOND_LINK = 'secondLinkingGroup';
 
 export class RuleInputs extends ActiveFiles {
+  static ruleDescriptions: Record<string, Promise<HTMLElement>> = {};
   constructor(
     path: string, userStorageName: string, ext: string,
     options?: { onValueChanged: (value: string[]) => void }
@@ -44,7 +50,69 @@ export class RuleInputs extends ActiveFiles {
 
     return res;
   }
+
+  override async getForm(): Promise<HTMLDivElement> {
+    const form = await super.getForm();
+    this.processRulesForm(form);
+    return form;
+  }
+
+  private async processRulesForm(rulesForm: HTMLElement) {
+    const ruleNameLabels = Array.from(rulesForm.getElementsByTagName('label') ?? [])
+      .filter((l) => l.textContent?.endsWith('.json') && l.parentElement != null);
+    for (const label of ruleNameLabels) {
+      const ruleName = label.textContent!.trim();
+      const inputRoot = label.parentElement!.getElementsByTagName('input')[0]!;
+      ui.tooltip.bind(inputRoot, ui.wait(async () => {
+        RuleInputs.ruleDescriptions[ruleName] ??= (async () => {
+          try {
+            const rule = JSON.parse(await grok.dapi.files.readAsText(`${RULES_PATH}/${ruleName}`));
+            const descDiv = ui.divV([ui.h1(ruleName)]);
+            const linkRules: RuleLink[] = rule.linkRules ?? [];
+            // link rules
+            if (linkRules.length > 0) {
+              descDiv.appendChild(ui.h3('Linkage Rules'));
+              const table = ui.table(linkRules, (item) => [
+                item.code?.toString() ?? '',
+                shortenToMaxLen((item.firstMonomers ?? []).join(', ')),
+                shortenToMaxLen((item.secondMonomers ?? []).join(', ')),
+                item.firstLinkingGroup?.toString() ?? '',
+                item.secondLinkingGroup?.toString() ?? ''
+              ], ['Code', 'M1', 'M2', 'L1', 'L2']);
+              descDiv.appendChild(table);
+            }
+            // reaction rules
+            const reactionRules: RuleReaction[] = rule.reactionRules ?? [];
+            if (reactionRules.length > 0) {
+              descDiv.appendChild(ui.h3('Synthesis Rules'));
+              const table = ui.table(reactionRules, (item) => [
+                item.code?.toString() ?? '',
+                shortenToMaxLen((item.firstMonomers ?? []).join(', ')),
+                shortenToMaxLen((item.secondMonomers ?? []).join(', ')),
+                shortenToMaxLen(item.name ?? ''),
+                grok.chem.drawMolecule(item.reaction?.split('>>')[1] ?? '', 70, 70)
+              ], ['Code', 'M1', 'M2', 'Name', 'Product']);
+              descDiv.appendChild(table);
+            }
+            return descDiv;
+          } catch (e: any) {
+            _package.logger.error(`Failed to load rule ${ruleName}: ${e?.toString?.()}`);
+            console.error(e);
+            return ui.divText(`Failed to load rule ${ruleName}`);
+          }
+        })();
+        return await RuleInputs.ruleDescriptions[ruleName];
+      }));
+    }
+  }
 }
+
+
+function shortenToMaxLen(s: string, maxLen: number = 30): string {
+  if (s.length <= maxLen) return s;
+  return `${s.substring(0, maxLen)}...`;
+}
+
 
 export type RuleLink = {
   code: number,
@@ -60,6 +128,15 @@ export type RuleReaction = {
   secondMonomers: string[],
   reaction: string,
   name: string
+}
+
+export type LinkRuleRowArgs = {
+  row?: number,
+  code: number,
+  firstMonomers: string,
+  secondMonomers: string,
+  firstLinkingGroup: number,
+  secondLinkingGroup: number
 }
 
 export class Rules {
@@ -94,39 +171,54 @@ export class Rules {
       this.reactionRules.push(rules[j]);
   }
 
-  getLinkRulesDf(): DG.DataFrame {
+  getLinkRulesDf() {
     const length = this.linkRules.length;
     const codeCol = DG.Column.int(NAME_CODE, length);
     codeCol.setTag('friendlyName', 'Code');
     //ui.tooltip.bind(codeCol.root, 'Click to zoom');
     const firstMonomerCol = DG.Column.string(NAME_FIRST_MONOMERS, length);
+    firstMonomerCol.temp[MmcrTemps.fontSize] = 16;
     firstMonomerCol.setTag('friendlyName', 'First monomers');
     firstMonomerCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    applyNotationProviderForCyclized(firstMonomerCol, ',');
+    PackageFunctions.applyNotationProviderForCyclized(firstMonomerCol, ',');
 
     const secondMonomerCol = DG.Column.string(NAME_SECOND_MONOMERS, length);
     secondMonomerCol.setTag('friendlyName', 'Second monomers');
+    secondMonomerCol.temp[MmcrTemps.fontSize] = 16;
     secondMonomerCol.semType = DG.SEMTYPE.MACROMOLECULE;
-    applyNotationProviderForCyclized(secondMonomerCol, ',');
+    PackageFunctions.applyNotationProviderForCyclized(secondMonomerCol, ',');
 
-    const firstLinkingGroup = DG.Column.int(NAME_FIRST_LINK, length);
-    firstLinkingGroup.setTag('friendlyName', 'First group');
-    const secondLinkingGroup = DG.Column.int(NAME_SECOND_LINK, length);
-    secondLinkingGroup.setTag('friendlyName', 'Second group');
+    const firstLinkingGroupCol = DG.Column.int(NAME_FIRST_LINK, length);
+    firstLinkingGroupCol.setTag('friendlyName', 'First group');
+    const secondLinkingGroupCol = DG.Column.int(NAME_SECOND_LINK, length);
+    secondLinkingGroupCol.setTag('friendlyName', 'Second group');
 
     for (let i = 0; i < length; i++) {
       codeCol.set(i, this.linkRules[i].code);
       firstMonomerCol.set(i, this.linkRules[i].firstMonomers.toString());
       secondMonomerCol.set(i, this.linkRules[i].secondMonomers.toString());
-      firstLinkingGroup.set(i, this.linkRules[i].firstLinkingGroup);
-      secondLinkingGroup.set(i, this.linkRules[i].secondLinkingGroup);
+      firstLinkingGroupCol.set(i, this.linkRules[i].firstLinkingGroup);
+      secondLinkingGroupCol.set(i, this.linkRules[i].secondLinkingGroup);
     }
 
     const res = DG.DataFrame.fromColumns([
-      codeCol, firstMonomerCol, secondMonomerCol, firstLinkingGroup, secondLinkingGroup
+      codeCol, firstMonomerCol, secondMonomerCol, firstLinkingGroupCol, secondLinkingGroupCol
     ]);
 
-    return res;
+    const addNewRow = (rowObj: LinkRuleRowArgs) => {
+      if (rowObj.row != undefined && rowObj.row < res.rowCount && rowObj.row >= 0) {
+        codeCol.set(rowObj.row, rowObj.code);
+        firstMonomerCol.set(rowObj.row, rowObj.firstMonomers);
+        secondMonomerCol.set(rowObj.row, rowObj.secondMonomers);
+        firstLinkingGroupCol.set(rowObj.row, rowObj.firstLinkingGroup);
+        secondLinkingGroupCol.set(rowObj.row, rowObj.secondLinkingGroup);
+      } else {
+        const {code, firstMonomers, secondMonomers, firstLinkingGroup, secondLinkingGroup} = rowObj;
+        res.rows.addNew([code, firstMonomers ?? '', secondMonomers ?? '', firstLinkingGroup ?? 1, secondLinkingGroup ?? 2]);
+      }
+    };
+
+    return {res, addNewRow};
   }
 
   async getLinkCards(): Promise<RuleCards[]> {
@@ -143,7 +235,7 @@ export class Rules {
     return cards;
   }
 
-  getSynthesisRulesDf(): DG.DataFrame {
+  getSynthesisRulesDf() {
     const length = this.reactionRules.length;
     const codeCol = DG.Column.int(NAME_CODE, length);
     codeCol.setTag('friendlyName', 'Code');
@@ -151,6 +243,15 @@ export class Rules {
     firstMonomerCol.setTag('friendlyName', 'First monomers');
     const secondMonomerCol = DG.Column.string(NAME_SECOND_MONOMERS, length);
     secondMonomerCol.setTag('friendlyName', 'Second monomers');
+    // set these columns as macromolecule for better visualization
+    firstMonomerCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    firstMonomerCol.temp[MmcrTemps.fontSize] = 16;
+    PackageFunctions.applyNotationProviderForCyclized(firstMonomerCol, ',');
+    secondMonomerCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    secondMonomerCol.temp[MmcrTemps.fontSize] = 16;
+    PackageFunctions.applyNotationProviderForCyclized(secondMonomerCol, ',');
+    secondMonomerCol.setTag(DG.TAGS.CELL_RENDERER, 'Sequence');
+    firstMonomerCol.setTag(DG.TAGS.CELL_RENDERER, 'Sequence');
     const name = DG.Column.string(NAME_REACTION_NAME, length);
     name.setTag('friendlyName', 'Name');
     const firstReactant = DG.Column.string('firstReactant', length);
@@ -178,9 +279,27 @@ export class Rules {
     product.semType = DG.SEMTYPE.MOLECULE;
 
 
-    return DG.DataFrame.fromColumns([
+    const df = DG.DataFrame.fromColumns([
       name, firstReactant, secondReactant, product, codeCol, firstMonomerCol, secondMonomerCol
     ]);
+
+    const addNewRow = (rowObj: ReactionEditorProps) => {
+      if (rowObj.rowIndex != undefined && rowObj.rowIndex < df.rowCount && rowObj.rowIndex >= 0) {
+        name.set(rowObj.rowIndex, rowObj.resultMonomerName);
+        codeCol.set(rowObj.rowIndex, rowObj.code);
+        firstMonomerCol.set(rowObj.rowIndex, rowObj.firstMonomers.join(','));
+        secondMonomerCol.set(rowObj.rowIndex, rowObj.secondMonomers.join(','));
+        firstReactant.set(rowObj.rowIndex, rowObj.firstReactantSmiles);
+        secondReactant.set(rowObj.rowIndex, rowObj.secondReactantSmiles);
+        product.set(rowObj.rowIndex, rowObj.productSmiles);
+      } else {
+        const {resultMonomerName, code, firstMonomers, secondMonomers,
+          firstReactantSmiles, secondReactantSmiles, productSmiles} = rowObj;
+        df.rows.addNew([resultMonomerName, firstReactantSmiles, secondReactantSmiles,
+          productSmiles, code, firstMonomers.join(','), secondMonomers.join(',')]);
+      }
+    };
+    return {df, addNewRow};
   }
 
   setLinkRules(df: DG.DataFrame) : void {

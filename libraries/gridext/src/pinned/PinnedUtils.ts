@@ -322,9 +322,9 @@ export function registerPinnedColumns() {
     }
   });
 
-  grok.events.onViewLayoutApplied.subscribe((layout : DG.ViewInfo) => {
-    const view : DG.TableView = layout.view as TableView;
-    if(view === null) {
+  const onViewLayoutApplied = (view: DG.View, layout?: DG.ViewInfo) => {
+    try {
+      if(view === null || !(view instanceof DG.TableView)) {
       //console.error("View cannot be null; layout.view = null; grok.events.onViewLayoutApplied");
       return;
     }
@@ -342,7 +342,7 @@ export function registerPinnedColumns() {
 
       PinnedUtils.installPinnedColumns(viewer as DG.Grid);
       const grid: DG.Grid = viewer as DG.Grid;
-      const strRowHeight = layout.getUserDataValue(TABLE_ROW_HEIGHT_KEY);
+      const strRowHeight = (layout ?? view.saveLayout()).getUserDataValue(TABLE_ROW_HEIGHT_KEY);
       if (strRowHeight !== null && strRowHeight !== undefined) {
         setTimeout(() => {
           grid.setOptions({rowHeight: parseInt(strRowHeight)});
@@ -358,39 +358,56 @@ export function registerPinnedColumns() {
         }, 200);
       }
     }
+    } catch (e) {
+      console.error('PinnedUtils.onViewLayoutApplied: ' + e);
+    }
+  }
+
+  grok.events.onViewLayoutApplied.subscribe((layout : DG.ViewInfo) => {
+    onViewLayoutApplied(layout.view, layout);
   });
 
-  grok.events.onProjectOpened.subscribe((project: DG.Project) => {
-    const viewInfos = project.children.filter((child) => child instanceof DG.ViewInfo) as DG.ViewInfo[];
-    for (let i = 0; i < viewInfos.length; i++) {
-      const viewInfo = viewInfos[i];
-      const view = viewInfo.view;
-      if (view instanceof DG.TableView) {
-        if (!view.viewers)
-          continue;
-        const viewers = Array.from(view.viewers);
-        for (let j = 0; j < viewers.length; j++) {
-          if (viewers[j].type !== DG.VIEWER.GRID)
+  const onProjectOpened = (project: DG.Project) => {
+    try {
+      const viewInfos = project.children.filter((child) => child instanceof DG.ViewInfo) as DG.ViewInfo[];
+      for (let i = 0; i < viewInfos.length; i++) {
+        const viewInfo = viewInfos[i];
+        const view = viewInfo.view;
+        if (view instanceof DG.TableView) {
+          if (!view.viewers)
             continue;
-          const grid = viewers[j] as DG.Grid;
-          PinnedUtils.installPinnedColumns(grid);
-          const strRowHeight = viewInfo.getUserDataValue(TABLE_ROW_HEIGHT_KEY);
-          if (strRowHeight !== null && strRowHeight !== undefined) {
-            setTimeout(() => {
-              grid.setOptions({rowHeight: parseInt(strRowHeight)});
-              grid.columns.byIndex(0)!.visible = false;
-              const pinnedColCount = PinnedUtils.getPinnedColumnCount(grid);
-              for (let k = 0; k < pinnedColCount; k++) {
-                const pinnedCol = PinnedUtils.getPinnedColumn(k, grid);
-                pinnedCol.getGridColumn()!.settings
-                pinnedCol.invalidate();
-              }
-            }, 200);
+          const viewers = Array.from(view.viewers);
+          for (let j = 0; j < viewers.length; j++) {
+            if (viewers[j].type !== DG.VIEWER.GRID)
+              continue;
+            const grid = viewers[j] as DG.Grid;
+            PinnedUtils.installPinnedColumns(grid);
+            const strRowHeight = viewInfo.getUserDataValue(TABLE_ROW_HEIGHT_KEY);
+            if (strRowHeight !== null && strRowHeight !== undefined) {
+              setTimeout(() => {
+                grid.setOptions({rowHeight: parseInt(strRowHeight)});
+                grid.columns.byIndex(0)!.visible = false;
+                const pinnedColCount = PinnedUtils.getPinnedColumnCount(grid);
+                for (let k = 0; k < pinnedColCount; k++) {
+                  const pinnedCol = PinnedUtils.getPinnedColumn(k, grid);
+                  pinnedCol.getGridColumn()!.settings
+                  pinnedCol.invalidate();
+                }
+              }, 200);
+            }
           }
         }
       }
+    } catch (e) {
+      console.error('PinnedUtils.onProjectOpened: ' + e);
     }
+  }
+
+  grok.events.onProjectOpened.subscribe((project: DG.Project) => {
+    onProjectOpened(project);
   });
+  // check if at this moment of loading and installing, there already are tables opened
+  Array.from(grok.shell.tableViews).forEach((v) => onViewLayoutApplied(v));
 
   PINNED_COLUMNS_REGISTERED = true;
 }

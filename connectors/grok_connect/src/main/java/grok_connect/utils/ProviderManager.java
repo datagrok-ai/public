@@ -45,7 +45,7 @@ public class ProviderManager {
             add(new SnowflakeDataProvider());
             add(new ClickHouseProvider());
             add(new NeptuneDataProvider());
-            add(new DynamoDBDataProvider());
+//            add(new DynamoDBDataProvider());
             add(new SapHanaDataProvider());
             add(new DatabricksProvider());
         }};

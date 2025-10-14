@@ -29,10 +29,10 @@ export class ActivityCliffsEditor extends DimReductionBaseEditor {
 
     constructor(editorSettings: DimReductionEditorOptions = {}) {
       super({...editorSettings, enableMCL: true});
-      const numericalColumns = this.tableInput.value!.columns.numericalNoDateTime;
+      const numericalColumns = Array.from(this.tableInput.value!.columns.numericalNoDateTime);
       this.activitiesInput = ui.input.column('Activities', {table: this.tableInput.value!,
-        value: DG.Utils.firstOrNull(numericalColumns),
-        filter: (col: DG.Column) => Array.from(numericalColumns).includes(col)} as ColumnInputOptions);
+        value: numericalColumns.length ? numericalColumns[0] : null,
+        filter: (col: DG.Column) => numericalColumns.includes(col)} as ColumnInputOptions);
       this.activitiesInputRoot = this.activitiesInput.root;
       this.similarityInput = ui.input.int('Similarity cutoff', {value: 80});
       this.methodsParams[MCLMethodName] = new MCLOptions() as any;
@@ -42,10 +42,10 @@ export class ActivityCliffsEditor extends DimReductionBaseEditor {
       super.onTableInputChanged();
       if (this.activitiesInputRoot) {
         ui.empty(this.activitiesInputRoot);
-        const numericalColumns = this.tableInput.value!.columns.numerical;
+        const numericalColumns = Array.from(this.tableInput.value!.columns.numerical);
         this.activitiesInput = ui.input.column('Activities', {table: this.tableInput.value!,
-          value: DG.Utils.firstOrNull(numericalColumns),
-          filter: (col: DG.Column) => Array.from(numericalColumns).includes(col)} as ColumnInputOptions);
+          value: numericalColumns.length ? numericalColumns[0] : null,
+          filter: (col: DG.Column) => numericalColumns.includes(col)} as ColumnInputOptions);
         Array.from(this.activitiesInput.root.children).forEach((it) => this.activitiesInputRoot.append(it));
       }
     }

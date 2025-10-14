@@ -1,7 +1,8 @@
 import * as DG from 'datagrok-api/dg';
-import {runTests, tests, TestContext, initAutoTests as initTests } from '@datagrok-libraries/utils/src/test';
+import {runTests, tests, TestContext, initAutoTests as initTests} from '@datagrok-libraries/utils/src/test';
 
 import './tests/searches';
+import './tests/chem-panels';
 
 export const _package = new DG.Package();
 export {tests};

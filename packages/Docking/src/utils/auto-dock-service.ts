@@ -1,15 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import wu from 'wu';
-
-import {
-  AutoDockRunResult, GridSize, IAutoDockService
-} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
-import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
+import {GridSize, IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
+import {BiostructureData} from '@datagrok-libraries/bio/src/pdb/types';
 import {getPdbHelper, IPdbHelper} from '@datagrok-libraries/bio/src/pdb/pdb-helper';
 import {DockerContainerStatus, awaitStatus} from '@datagrok-libraries/bio/src/utils/docker';
-import {delay, expectExceptionAsync} from '@datagrok-libraries/utils/src/test';
 import {Molecule3DUnitsHandler} from '@datagrok-libraries/bio/src/molecule-3d/molecule-3d-units-handler';
 import {MoleculeUnitsHandler} from '@datagrok-libraries/bio/src/molecule/molecule-units-handler';
 
@@ -101,7 +96,6 @@ export class AutoDockService implements IAutoDockService {
   }
 
   // -- Methods --
-
   async checkOpenCl(): Promise<number> {
     const path = '/check_opencl';
     const params: RequestInit = {
@@ -140,17 +134,12 @@ export class AutoDockService implements IAutoDockService {
       autodock_gpf: autodockGpf,
       pose_count: poseCount,
     };
-    const params: RequestInit = {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(form),
-    };
 
-    const path = `/autodock/dock_ligand`;
-    // const adResStr = (await grok.dapi.docker.dockerContainers.request(this.dc.id, path, params))!;
-    // const adRes: Forms.runRes = JSON.parse(adResStr) as Forms.runRes;
-    // TODO: Use the new dockerContainers API
-    const adRes = (await this.fetchAndCheck(path, params)) as Forms.dockLigandRes;
+    const dockingResult = await grok.functions.call('Docking:dockLigandCached', {
+      jsonForm: JSON.stringify(form), containerId: this.dc.id
+    });
+
+    const adRes = dockingResult as Forms.dockLigandRes;
     const result = adRes as unknown as Forms.LigandResults;
     const poses = result.poses;
 
@@ -232,11 +221,7 @@ export class AutoDockService implements IAutoDockService {
       // throw new Error(errMsg);
     }
     const adRes = (await adResponse.json()) as Forms.dockLigandRes;
-    if ('datagrok-error' in adRes) {
-      const errVal = adRes['datagrok-error'];
-      const errMsg = errVal ? errVal.toString() : 'Unknown error';
-      throw new Error(errMsg);
-    }
+    ensureNoDockingError(adRes);
     return adRes;
   }
 
@@ -246,6 +231,20 @@ export class AutoDockService implements IAutoDockService {
     return svc;
   }
 }
+
+export function ensureNoDockingError(response: any) {
+  let messageResponse: any;
+  if ('message' in response) {
+    try {
+      messageResponse = JSON.parse(response.message);
+    } catch (e) {}
+  }
+
+  const datagrokError = response['datagrok-error'] ?? messageResponse?.['datagrok-error'];
+  if (datagrokError)
+    throw new Error(datagrokError);
+}
+
 
 export async function _runAutodock(
   receptor: DG.FileInfo, ligand: DG.FileInfo, npts: GridSize

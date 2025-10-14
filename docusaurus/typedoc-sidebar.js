@@ -1,29 +1,25 @@
-/**
- * Creating a sidebar enables you to:
- - create an ordered group of docs
- - render a sidebar for each doc of that group
- - provide next/previous navigation
-
- The sidebars can be generated from the filesystem, or explicitly defined here.
-
- Create as many sidebars as you want.
- */
-
 // @ts-check
-
 /** @type {import('@docusaurus/plugin-content-docs').SidebarsConfig} */
 const sidebars = {
-    typedocSidebar: [
+    api: [
+        {
+            type: 'doc',
+            id: 'index',
+            label: 'API Overview',
+        },
         {
             type: 'category',
             label: 'JavaScript API',
-            link: {
-                type: 'doc',
-                id: 'index',
-            },
-            items: require('./js-api/typedoc-sidebar.cjs'),
+            link: { type: "doc", id: "js/index" },
+            items: require('./api/js/typedoc-sidebar'),
+        },
+        {
+            type: 'category',
+            label: 'Python API',
+            link: { type: "doc", id: "py/index" },
+            items: require('./api/py/typedoc-sidebar'),
         },
     ],
 };
 
-export default sidebars;
+module.exports = sidebars;

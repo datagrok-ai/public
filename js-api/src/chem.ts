@@ -15,7 +15,7 @@ import '../css/styles.css';
 import { MolfileHandler } from "@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler";
 import {IDartApi} from "./api/grok_api.g";
 
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 declare let grok: any;
 
@@ -365,6 +365,11 @@ export namespace chem {
         this._mode = SKETCHER_MODE.EXTERNAL;
     }
 
+    isInPopupContainer(): boolean {
+      console.log(this.root.closest('.d4-popup-host'))
+      return !!this.root.closest('.d4-popup-host');
+    }
+
     resize() {
       if (this.sketcher?.isInitialized) {
         this.sketcher?.resize();
@@ -523,9 +528,25 @@ export namespace chem {
         }
       });
 
-      let optionsIcon = ui.iconFA('bars', () => {
+      let optionsIcon = ui.iconFA('bars', (event: MouseEvent) => {
         const menuHost = ui.div([], {style: {position: 'fixed', zIndex: '100'}});
         this.host.parentElement?.prepend(menuHost);
+        
+        // Calculate optimal popup position to ensure it fits on screen
+        const calculatePopupPosition = (element: HTMLElement, menuWidth: number = 160) => {
+          const viewportWidth = window.innerWidth;
+          let x = element.offsetWidth + 10;
+                 
+          // Adjust horizontal position if menu would go off-screen to the right
+          if (element.getBoundingClientRect().left + x + menuWidth > viewportWidth)
+            x -= menuWidth;
+          
+          // Ensure x is not negative (menu goes off-screen to the left)
+          if (x < 0)
+            x = 0;
+          return x;
+        };
+        
         Menu.popup()
           .item('Copy as SMILES', () => navigator.clipboard.writeText(this.getSmiles()))
           .item('Copy as MOLBLOCK', () => navigator.clipboard.writeText(this.getMolFile()))
@@ -551,7 +572,7 @@ export namespace chem {
               isChecked: (item) => item === currentSketcherType, toString: item => item,
               radioGroup: 'sketcher type'
             })
-          .show({element: menuHost, x: (this.host.parentElement?.offsetWidth ?? 0) + 10, y: 10});
+          .show({element: menuHost, x: this.host.parentElement ? calculatePopupPosition(this.host.parentElement) : 10, y: 10});
       });
       $(optionsIcon).addClass('d4-input-options');
       molInputDiv.append(ui.div([this.molInput, optionsIcon], 'grok-sketcher-input'));
@@ -587,6 +608,8 @@ export namespace chem {
         ui.empty(this.host);
         this.host.appendChild(this.sketcher!.root);
         this._setSketcherSize(); //update sketcher size according to base sketcher width and height
+        if (this.isInPopupContainer()) //workaround for sketcher not to be truncated when showed in a popup menu in the end of the screen (on last dataframe column)
+          this.host.style.minWidth = `0px`;
         await this.sketcher!.init(this);
         ui.setUpdateIndicator(this.host, false);
         this._sketcherTypeChanged = false;
