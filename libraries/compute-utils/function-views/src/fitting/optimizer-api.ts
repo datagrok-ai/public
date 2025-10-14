@@ -4,9 +4,10 @@ import * as DG from 'datagrok-api/dg';
 import {EarlyStoppingSettings, LOSS, ReproSettings} from './constants';
 import {makeConstFunction} from './cost-functions';
 import {performNelderMeadOptimization} from './optimizer';
-import {OptimizerInputsConfig, OptimizerOutputsConfig, ValueBoundsData} from './optimizer-misc';
+import {Extremum, OptimizationResult, OptimizerInputsConfig, OptimizerOutputsConfig, TargetTableOutput, ValueBoundsData} from './optimizer-misc';
 import {nelderMeadSettingsOpts} from './optimizer-nelder-mead';
-import {defaultEarlyStoppingSettings, defaultRandomSeedSettings} from './fitting-utils';
+import {defaultEarlyStoppingSettings, defaultRandomSeedSettings, makeGetCalledFuncCall} from './fitting-utils';
+import {getNonSimilar} from './similarity-utils';
 
 
 function getInputsData(inputBounds: Record<string, ValueBoundsData>) {
@@ -24,28 +25,32 @@ function getInputsData(inputBounds: Record<string, ValueBoundsData>) {
 
 // Public API for Compute2 to expose as a platform function
 
+export type OptimizerParams = {
+  lossType: LOSS;
+  func: DG.Func;
+  inputBounds: OptimizerInputsConfig;
+  outputTargets: OptimizerOutputsConfig;
+  samplesCount?: number;
+  similarity?: number;
+  settings?: Map<string, number>;
+  reproSettings?: Partial<ReproSettings>;
+  earlyStoppingSettings?: Partial<EarlyStoppingSettings>;
+};
+
 export async function runOptimizer(
   {
     lossType = LOSS.RMSE,
     func,
-    inputsBounds,
+    inputBounds,
     outputTargets,
-    samplesCount = 1,
+    samplesCount,
+    similarity,
     settings,
     reproSettings,
     earlyStoppingSettings,
-  }: {
-    lossType: LOSS;
-    func: DG.Func;
-    inputsBounds: OptimizerInputsConfig;
-    outputTargets: OptimizerOutputsConfig;
-    samplesCount: number;
-    settings?: Map<string, number>;
-    reproSettings?: Partial<ReproSettings>;
-    earlyStoppingSettings?: Partial<EarlyStoppingSettings>;
-  },
-) {
-  const {variedInputNames, fixedInputs} = getInputsData(inputsBounds);
+  }: OptimizerParams
+): Promise<[OptimizationResult, DG.FuncCall[]]> {
+  const {variedInputNames, fixedInputs} = getInputsData(inputBounds);
 
   const objectiveFunc = makeConstFunction(lossType, func, fixedInputs, variedInputNames, outputTargets);
 
@@ -57,16 +62,37 @@ export async function runOptimizer(
       settings.set(key, defaultsOverrides[key] ?? opts.default);
   });
 
+  samplesCount = samplesCount ?? defaultsOverrides.samplesCount ?? 1;
+  similarity = similarity ?? defaultsOverrides.similarity ?? 10;
+
   const reproSettingsFull = {...defaultRandomSeedSettings, ...defaultsOverrides, ...(reproSettings ?? {})};
   const earlyStoppingSettingsFull = {...defaultEarlyStoppingSettings, ...defaultsOverrides, ...(earlyStoppingSettings ?? {})};
 
   const optResult = await performNelderMeadOptimization({
     objectiveFunc,
-    inputsBounds,
+    inputsBounds: inputBounds,
     settings,
-    samplesCount,
+    samplesCount: samplesCount!,
     reproSettings: reproSettingsFull,
     earlyStoppingSettings: earlyStoppingSettingsFull,
   });
-  return optResult;
+  const extrema = optResult.extremums;
+  extrema.sort((a: Extremum, b: Extremum) => a.cost - b.cost);
+
+  const getCalledFuncCall = makeGetCalledFuncCall(func, fixedInputs, variedInputNames);
+  const targetDfs: TargetTableOutput[] = outputTargets
+    .filter((output) => output.type === DG.TYPE.DATA_FRAME)
+    .map((output) => {
+      return { name: output.propName, target: output.target as DG.DataFrame, argColName: output.argName };
+    });
+
+  const nonSimilarExtrema = await getNonSimilar(extrema, similarity!, getCalledFuncCall, targetDfs);
+
+  const calls: DG.FuncCall[] = [];
+  for (const extrema of nonSimilarExtrema) {
+    const calledFuncCall = await getCalledFuncCall(extrema.point);
+    calls.push(calledFuncCall);
+  }
+
+  return [optResult, calls];
 }

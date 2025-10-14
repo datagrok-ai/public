@@ -101,6 +101,17 @@ export function getErrors(expArg: DG.Column | null, expFuncs: DG.Column[],
   return errors;
 } // getErrors
 
+
+/** Get call funcCall with the specified inputs */
+export function makeGetCalledFuncCall(func: DG.Func, inputsIn: Record<string, any>, variedInputNames: string[]) {
+  return async function getCalledFuncCall(x: Float64Array): Promise<DG.FuncCall> {
+    const inputs = { ...inputsIn }; // copy since modifying function param
+    x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
+    const funcCall = func.prepare(inputs);
+    return await funcCall.call();
+  }
+} // makeGetCalledFuncCall
+
 /** Return widget for show/hide group of inputs */
 export function getCategoryWidget(category: string, roots: HTMLElement[],
   expandHandler?: (r: HTMLElement, isExpanded: boolean, category: string) => void) {

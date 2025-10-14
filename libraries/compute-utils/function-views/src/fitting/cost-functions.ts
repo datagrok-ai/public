@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {LOSS} from './constants';
-import {getErrors} from './fitting-utils';
+import {getErrors, makeGetCalledFuncCall} from './fitting-utils';
 import {OutputTargetItem} from './optimizer-misc';
 
 
@@ -19,10 +19,9 @@ export function makeConstFunction(
 
 function makeMadCostFunc(func: DG.Func, inputs: Record<string, any>, variedInputNames: string[], outputTargets: OutputTargetItem[]) {
   /** Maximum absolute deviation (MAD) cost function */
+  const getCalledFuncCall = makeGetCalledFuncCall(func, inputs, variedInputNames);
   const madCostFunc = async (x: Float64Array): Promise<number> => {
-    x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
-    const funcCall = func.prepare(inputs);
-    const calledFuncCall = await funcCall.call();
+    const calledFuncCall = await getCalledFuncCall(x);
 
     let mad = 0;
 
@@ -43,10 +42,9 @@ function makeMadCostFunc(func: DG.Func, inputs: Record<string, any>, variedInput
 
 function makeRmseCostFunc(func: DG.Func, inputs: Record<string, any>, variedInputNames: string[], outputTargets: OutputTargetItem[]) {
   /** Root mean sqaure error (RMSE) cost function */
+  const getCalledFuncCall = makeGetCalledFuncCall(func, inputs, variedInputNames);
   const rmseCostFunc = async (x: Float64Array): Promise<number> => {
-    x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
-    const funcCall = func.prepare(inputs);
-    const calledFuncCall = await funcCall.call();
+    const calledFuncCall = await getCalledFuncCall(x);
 
     let sumOfSquaredErrors = 0;
     let outputsCount = 0;

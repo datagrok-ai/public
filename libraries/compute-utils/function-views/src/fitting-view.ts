@@ -17,7 +17,8 @@ import {STARTING_HELP, TITLE, GRID_SIZE, METHOD, methodTooltip, LOSS, lossToolti
 import {nelderMeadSettingsOpts} from './fitting/optimizer-nelder-mead';
 import {getCategoryWidget, getShowInfoWidget, getLossFuncDf, lightenRGB,
   getScalarsGoodnessOfFitViewer, getHelpIcon, getRadarTooltip, toUseRadar, getRandomSeedSettings,
-  getEarlyStoppingInputs} from './fitting/fitting-utils';
+  getEarlyStoppingInputs,
+  makeGetCalledFuncCall} from './fitting/fitting-utils';
 import {OptimizationResult, Extremum, TargetTableOutput, ValueBoundsData, OutputTargetItem} from './fitting/optimizer-misc';
 import {getLookupChoiceInput} from './shared/lookup-tools';
 
@@ -735,9 +736,13 @@ export class FittingView {
 
     this.randInputs = getRandomSeedSettings(this.defaultsOverrides);
     this.earlyStoppingInputs = getEarlyStoppingInputs(this.defaultsOverrides);
-    if (this.defaultsOverrides.samples) {
-      this.samplesCount = this.defaultsOverrides.samples;
+    if (this.defaultsOverrides.samplesCount) {
+      this.samplesCount = this.defaultsOverrides.samplesCount;
       this.samplesCountInput.value = this.samplesCount;
+    }
+    if (this.defaultsOverrides.similarity) {
+      this.similarity = this.defaultsOverrides.similarity;
+      this.similarityInput.value = this.similarity;
     }
 
     grok.events.onViewRemoved.pipe(filter((v) => v.id === baseView.id), take(1)).subscribe(() => {
@@ -1495,16 +1500,12 @@ export class FittingView {
       const toShowTableName = outputsOfInterest.map((item) => item.prop.propertyType).filter((type) => type === DG.TYPE.DATA_FRAME).length > 1;
 
       /** Get call funcCall with the specified inputs */
-      const getCalledFuncCall = async (x: Float64Array): Promise<DG.FuncCall> => {
-        x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
-        const funcCall = this.func.prepare(inputs);
-        return await funcCall.call();
-      };
+      const getCalledFuncCall = makeGetCalledFuncCall(this.func, inputs, variedInputNames);
 
       // get optimizer inputs/outputs config
-      const inputsBounds = this.makeOptimizerInputsConfig();
+      const inputBounds = this.makeOptimizerInputsConfig();
       const outputTargets = this.makeOptimizerOutputsConfig();
-      const hasFormulas = Object.values(inputsBounds).find(
+      const hasFormulas = Object.values(inputBounds).find(
         (bound) => bound.type === 'changing' && (bound.top.type === 'formula' || bound.bottom.type === 'formula'));
 
       const costTooltip = this.loss === LOSS.MAD ? 'scaled maximum absolute deviation' : 'scaled root mean square error';
@@ -1543,24 +1544,26 @@ export class FittingView {
               this.earlyStoppingInputs.settings,
             );
           } catch (err) { // run fitting in the main thread if in-webworker run failed
-            optResult = await runOptimizer({
+            [optResult] = await runOptimizer({
               lossType: this.loss,
               func: this.func,
-              inputsBounds,
+              inputBounds,
               outputTargets,
               samplesCount: this.samplesCount,
+              similarity: this.similarity,
               settings: this.nelderMeadSettings,
               reproSettings: this.randInputs.settings,
               earlyStoppingSettings: this.earlyStoppingInputs.settings,
             });
           }
         } else {
-          optResult = await runOptimizer({
+          [optResult] = await runOptimizer({
             lossType: this.loss,
             func: this.func,
-            inputsBounds,
+            inputBounds,
             outputTargets,
             samplesCount: this.samplesCount,
+            similarity: this.similarity,
             settings: this.nelderMeadSettings,
             reproSettings: this.randInputs.settings,
             earlyStoppingSettings: this.earlyStoppingInputs.settings,
@@ -1607,6 +1610,8 @@ export class FittingView {
       const nonSimilarExtrema = await getNonSimilar(extrema, this.similarity, getCalledFuncCall, targetDfs);
       const rowCount = nonSimilarExtrema.length;
 
+      this.clearPrev();
+
       // Show info/warning reporting results
       if (optResult.fails != null) {
         if (allExtrCount < 1) {
@@ -1625,7 +1630,8 @@ export class FittingView {
       } else
         grok.shell.info(`Found ${rowCount} point${rowCount > 1 ? 's' : ''}`);
 
-      this.clearPrev();
+      if (allExtrCount < 1)
+        return;
 
       const lossVals = new Float64Array(rowCount);
       const grid = this.comparisonView.grid;
@@ -1685,9 +1691,6 @@ export class FittingView {
 
         gofTables[idx] = gofDfs;
       }
-
-      if (gofTables.length === 0)
-        return;
 
       // Add goodness of fit columns
       gofTables[0].forEach((_, name) => {
