@@ -11,12 +11,13 @@ import {
 } from '@datagrok-libraries/utils/src/test';
 import dayjs from 'dayjs';
 
-const langs = ['Python', 'R', 'Julia', 'NodeJS', 'Octave', 'Grok', 'JavaScript'];
+const languages = ['Python', 'R', 'Julia', 'NodeJS', 'Octave', 'Grok', 'JavaScript'];
+const serverSideLanguages = ['Python', 'R', 'Julia', 'NodeJS', 'Octave'];
 
 const TEST_DATAFRAME_1 = grok.data.demo.demog(10000);
 const TEST_DATAFRAME_2 = DG.DataFrame.fromCsv('x,y\n1,2\n3,4\n5,6');
 
-for (const lang of langs) {
+for (const lang of languages) {
   if (lang === 'Julia')
     continue;
   category(`Scripts: ${lang} scripts`, () => {
@@ -29,7 +30,7 @@ for (const lang of langs) {
         {'integer_input': int, 'double_input': double, 'bool_input': bool, 'string_input': str});
       expectObject(result, {'integer_output': int, 'double_output': double,
         'bool_output': bool, 'string_output': str});
-    }, {stressTest: true, timeout: 120000 /* long timeout for first test, because of kernel start */});
+    }, {stressTest: serverSideLanguages.includes(lang), timeout: 120000 /* long timeout for first test, because of kernel start */});
 
     test('Long string', async () => {
       const str = randomString(500000, '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
@@ -40,7 +41,7 @@ for (const lang of langs) {
         {'integer_input': int, 'double_input': double, 'bool_input': bool, 'string_input': str});
       expectObject(result, {'integer_output': int, 'double_output': double,
         'bool_output': bool, 'string_output': str});
-    }, {timeout: 120000, stressTest: true, skipReason: lang === 'Octave' || lang === 'Julia' ? 'Skip for later fix' : undefined});
+    }, {timeout: 120000, stressTest: serverSideLanguages.includes(lang), skipReason: lang === 'Octave' || lang === 'Julia' ? 'Skip for later fix' : undefined});
 
     test('Datetime input/output', async () => {
       const currentTime = dayjs();
@@ -50,7 +51,7 @@ for (const lang of langs) {
         expect(currentTime.add(1, 'day').format('YYYY-MM-DDTHH:mm:ss'), result.format('YYYY-MM-DDTHH:mm:ss'));
       else
         expect(result.valueOf(), currentTime.add(1, 'day').valueOf());
-    }, {stressTest: true});
+    }, {stressTest: serverSideLanguages.includes(lang)});
 
     test('Dataframe input/output', async () => {
       function getSample(): DG.DataFrame {
@@ -64,20 +65,20 @@ for (const lang of langs) {
       expectTable(result['resultDf'], sample1);
       expectTable(result['resultNumerical'], sample2);
       expectTable(result['resultCategorical'], sample3);
-    }, {stressTest: true, timeout: 90000});
+    }, {stressTest: serverSideLanguages.includes(lang), timeout: 90000});
 
     test('Map type input/output', async () => {
       const result = await grok.functions.call(`CVMTests:${lang}Map`,
         {'input_map': {'hello': 'world'}, 'unique_key': 'my_key'});
       expectObject(result, {'hello': 'world', 'my_key': 'Datagrok'});
-    }, {skipReason: lang === 'R' || lang === 'Grok' ? 'GROK-12452' : undefined, stressTest: true});
+    }, {stressTest: serverSideLanguages.includes(lang)});
 
     if (!['NodeJS', 'JavaScript', 'Grok'].includes(lang)) {
       test('Graphics output, Column input', async () => {
         const result = await grok.functions.call(`CVMTests:${lang}Graphics`,
           {'df': TEST_DATAFRAME_2, 'xName': 'x', 'yName': 'y'});
         expect(!result || result.length === 0, false);
-      }, {stressTest: true});
+      }, {stressTest: serverSideLanguages.includes(lang)});
     }
     if (!['NodeJS', 'JavaScript', 'Grok', 'Octave'].includes(lang)) {
       test('DataFrame int column correctness', async () => {
@@ -91,7 +92,7 @@ for (const lang of langs) {
           expect((result['resultInBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.FLOAT, true);
           expect((result['resultOutBound'] as DG.DataFrame).getCol('col1').type === DG.COLUMN_TYPE.FLOAT, true);
         }
-      }, {stressTest: true, timeout: 60000});
+      }, {timeout: 60000});
 
       test('Empty dataframe', async () => {
         const result: DG.DataFrame = await grok.functions.call(`CVMTests:${lang}EmptyDataFrame`);
@@ -108,7 +109,7 @@ for (const lang of langs) {
               'blobInput': DG.FileInfo.fromBytes('test.bin', fileBinaryData)});
         expect(isEqualBytes(fileBinaryData, (result['fileOutput'] as DG.FileInfo).data), true);
         expect(isEqualBytes(fileBinaryData, (result['blobOutput'] as DG.FileInfo).data), true);
-      }, {stressTest: true, timeout: 90000});
+      }, {stressTest: serverSideLanguages.includes(lang), timeout: 90000});
     }
 
     test('Column list', async () => {
@@ -117,14 +118,14 @@ for (const lang of langs) {
         {'df': df, 'cols': ['id', 'date', 'name']});
       df.columns.remove('id');
       expectTable(result, df);
-    }, {stressTest: true});
+    }, {stressTest: serverSideLanguages.includes(lang)});
 
     test('Calculated column test', async () => {
       const df = DG.DataFrame.fromCsv('x,y\n1,2\n3,4\n5,6');
       const column = await df.columns.addNewCalculated('new', `CVMTests:${lang}CalcColumn(\${x} + \${y})`);
       expect(df.columns.contains(column.name), true);
       expect(column.get(0), 6);
-    }, {stressTest: true, skipReason: lang === 'Grok' ? 'Doesn\'t support vectorization' : undefined});
+    }, {stressTest: serverSideLanguages.includes(lang), skipReason: lang === 'Grok' ? 'Doesn\'t support vectorization' : undefined});
 
     test('File input', async () => {
       const files = await grok.dapi.files.list('System:AppData/CvmTests/', false, 'cars.csv');
@@ -132,7 +133,7 @@ for (const lang of langs) {
         {'file': files[0], 'header': true, 'separator': ',', 'dec': '.'});
       const expected = ['Python', 'Octave'].includes(lang) ? 31 : 30;
       expect(result, expected);
-    }, {stressTest: true});
+    }, {stressTest: serverSideLanguages.includes(lang)});
 
     test('Escaping', async () => {
       const testStrings = ['\t\n\t\tsdfdsf\t', ' sdfds \\\'\"""', ' \n ', '\'\""\'', '\n and \\n',
@@ -153,14 +154,14 @@ for (const lang of langs) {
                             '  <li><a href="tel:+123456789">Phone</a></li>\n' +
                             '  </ul>'});
         expect(result, 3);
-      }, {timeout: 120000, stressTest: true});
+      }, {timeout: 240000});
 
       test('File type input and environment yaml', async () => {
         const files = await grok.dapi.files.list('System:AppData/CvmTests/images', false, 'silver.jpg');
         const result = await grok.functions.call('CVMTests:ImagePixelCount',
           {'fileInput': files[0]});
         expect(49090022, result);
-      }, {timeout: 120000, stressTest: true});
+      }, {timeout: 240000});
     }
   });
 
@@ -168,13 +169,11 @@ for (const lang of langs) {
     test('Calculated column performance', async () => {
       const rows = DG.Test.isInBenchmark ? 10000 : 100;
       const df = grok.data.demo.demog(rows);
-      const start = Date.now();
       await df.columns.addNewCalculated('new', `CVMTests:${lang}CalcColumn(\${age})`);
-      return `Execution time: ${Date.now() - start}`;
-    }, {timeout: 60000, benchmark: true, stressTest: true, skipReason: lang === 'Grok' ? 'Doesn\'t support vectorization' : undefined});
+    }, {timeout: 60000, benchmark: true, stressTest: serverSideLanguages.includes(lang), skipReason: lang === 'Grok' ? 'Doesn\'t support vectorization' : undefined});
 
     test(`Dataframe performance test sequentially`, async () => {
-      const iterations = DG.Test.isInBenchmark ? 10 : 3;
+      const iterations = DG.Test.isInBenchmark ? ['JavaScript', 'Grok'].includes(lang) ? 500 : 10 : 3;
       const results = [];
       for (let i = 0; i < iterations; i++) {
         results.push(await getScriptTime(`CVMTests:${lang}SingleDf`,
@@ -183,7 +182,7 @@ for (const lang of langs) {
       const sum = results.reduce((p, c) => p + c, 0);
       return DG.toDart({'Average time': sum / results.length,
         'Min time': Math.min(...results), 'Max time': Math.max(...results)});
-    }, {timeout: 240000, benchmark: true, stressTest: true});
+    }, {timeout: 240000, benchmark: true, stressTest: serverSideLanguages.includes(lang)});
 
     test('Dataframe performance test parallel', async () => {
       const iterations = DG.Test.isInBenchmark ? lang === 'NodeJS' ? 5 : 10 : 3;

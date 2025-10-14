@@ -10,7 +10,7 @@
     "https"
   ],
   "paths": {
-    "/compound/substructure/{format}/{mol}/JSON": {
+    "/compound/fastsubstructure/{format}/{mol}/cids/XML": {
       "get": {
         "parameters": [
           {
@@ -58,18 +58,18 @@
         "description": ""
       }
     },
-    "/compound/superstructure/{format}/{mol}": {
+    "/compound/fastsuperstructure/{format}/{mol}/cids/XML": {
       "get": {
         "parameters": [
           {
-            "name": "format",
-            "in": "query",
+            "name": "mol",
+            "in": "path",
             "required": true,
             "type": "string"
           },
           {
-            "name": "mol",
-            "in": "query",
+            "name": "format",
+            "in": "path",
             "required": true,
             "type": "string"
           }
@@ -82,289 +82,23 @@
         "description": ""
       }
     },
-    "/substructure/{smile}": {
+    "/compound/fastsimilarity_2d/smiles/{smiles}/cids/XML": {
       "get": {
         "parameters": [
           {
-            "name": "smile",
-            "in": "path",
-            "required": true,
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "description": "",
-              "type": "object",
-              "properties": {
-                "molecules": {
-                  "type": "array",
-                  "uniqueItems": true,
-                  "minItems": 1,
-                  "items": {
-                    "required": [
-                      "molecule_structures",
-                      "molecule_chembl_id",
-                      "molecule_properties"
-                    ],
-                    "properties": {
-                      "atc_classifications": {
-                        "type": "string"
-                      },
-                      "availability_type": {
-                        "type": "number"
-                      },
-                      "biotherapeutic": {
-                        "type": "string"
-                      },
-                      "black_box_warning": {
-                        "type": "string"
-                      },
-                      "chebi_par_id": {
-                        "type": "string"
-                      },
-                      "chirality": {
-                        "type": "number"
-                      },
-                      "cross_references": {
-                        "type": "string"
-                      },
-                      "dosed_ingredient": {
-                        "type": "string"
-                      },
-                      "first_approval": {
-                        "type": "string"
-                      },
-                      "first_in_class": {
-                        "type": "number"
-                      },
-                      "helm_notation": {
-                        "type": "string"
-                      },
-                      "indication_class": {
-                        "type": "string"
-                      },
-                      "inorganic_flag": {
-                        "type": "number"
-                      },
-                      "max_phase": {
-                        "type": "number"
-                      },
-                      "molecule_chembl_id": {
-                        "name": "chembl_id",
-                        "type": "string"
-                      },
-                      "molecule_hierarchy": {
-                        "type": "object",
-                        "properties": {
-                          "molecule_chembl_id": {
-                            "type": "string"
-                          },
-                          "parent_chembl_id": {
-                            "type": "string"
-                          }
-                        }
-                      },
-                      "molecule_properties": {
-                        "name": "properties",
-                        "type": "object",
-                        "properties": {
-                          "alogp": {
-                            "type": "string"
-                          },
-                          "aromatic_rings": {
-                            "type": "string"
-                          },
-                          "cx_logd": {
-                            "type": "string"
-                          },
-                          "cx_logp": {
-                            "type": "string"
-                          },
-                          "cx_most_apka": {
-                            "type": "string"
-                          },
-                          "cx_most_bpka": {
-                            "type": "string"
-                          },
-                          "full_molformula": {
-                            "type": "string"
-                          },
-                          "hba": {
-                            "type": "string"
-                          },
-                          "hba_lipinski": {
-                            "type": "string"
-                          },
-                          "hbd": {
-                            "type": "string"
-                          },
-                          "heavy_atoms": {
-                            "type": "string"
-                          },
-                          "molecular_species": {
-                            "type": "string"
-                          },
-                          "mw_freebase": {
-                            "type": "string"
-                          },
-                          "mw_monoisotopic": {
-                            "type": "string"
-                          },
-                          "full_mwt": {
-                            "type": "string"
-                          },
-                          "num_lipinski_ro5_violations": {
-                            "type": "string"
-                          },
-                          "num_ro5_violations": {
-                            "type": "string"
-                          },
-                          "psa": {
-                            "type": "string"
-                          },
-                          "qed_weighted": {
-                            "type": "string"
-                          },
-                          "ro3_pass": {
-                            "type": "string"
-                          },
-                          "rtb": {
-                            "type": "string"
-                          }
-                        }
-                      },
-                      "molecule_structures": {
-                        "name": "structures",
-                        "type": "object",
-                        "properties": {
-                          "name": "smiles_molecule",
-                          "canonical_smiles": {
-                            "type": "string"
-                          },
-                          "molfile": {
-                            "name": "molfile_molecule",
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "canonical_smiles",
-                          "molfile"
-                        ]
-                      },
-                      "molecule_synonyms": {
-                        "type": "string"
-                      },
-                      "molecule_type": {
-                        "type": "string"
-                      },
-                      "natural_product": {
-                        "type": "string"
-                      },
-                      "oral": {
-                        "type": "string"
-                      },
-                      "parenteral": {
-                        "type": "string"
-                      },
-                      "polymer_flag": {
-                        "type": "string"
-                      },
-                      "pref_name": {
-                        "type": "string"
-                      },
-                      "prodrug": {
-                        "type": "string"
-                      },
-                      "structure_type": {
-                        "type": "string"
-                      },
-                      "therapeutic_flag": {
-                        "type": "string"
-                      },
-                      "topical": {
-                        "type": "string"
-                      },
-                      "usan_stem": {
-                        "type": "string"
-                      },
-                      "usan_stem_definition": {
-                        "type": "string"
-                      },
-                      "usan_substem": {
-                        "type": "string"
-                      },
-                      "usan_year": {
-                        "type": "string"
-                      },
-                      "withdrawn_class": {
-                        "type": "string"
-                      },
-                      "withdrawn_country": {
-                        "type": "string"
-                      },
-                      "withdrawn_flag": {
-                        "type": "string"
-                      },
-                      "withdrawn_reason": {
-                        "type": "string"
-                      },
-                      "withdrawn_year": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                },
-                "page_meta": {
-                  "type": "object",
-                  "properties": {
-                    "limit": {
-                      "type": "number"
-                    },
-                    "previous": {
-                      "type": "string"
-                    },
-                    "next": {
-                      "type": "string"
-                    },
-                    "offset": {
-                      "type": "number"
-                    },
-                    "total_count": {
-                      "type": "number"
-                    }
-                  },
-                  "required": [
-                    "next"
-                  ]
-                }
-              },
-              "required": [
-                "molecules",
-                "meta"
-              ]
-            }
-          }
-        },
-        "description": ""
-      }
-    },
-    "/similarity/{smile}/{score}": {
-      "get": {
-        "parameters": [
-          {
-            "name": "smile",
+            "name": "smiles",
             "in": "path",
             "required": true,
             "type": "string"
           },
           {
-            "name": "score",
-            "in": "path",
-            "required": true,
-            "type": "integer"
+            "name": "Threshold",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "default": 90,
+            "minimum": 0,
+            "maximum": 100
           }
         ],
         "responses": {

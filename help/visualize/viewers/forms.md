@@ -18,7 +18,10 @@ The viewer also works together with the grid:
 * To go to a particular cell in a grid, click on a field
 * To make a column current, click on the column name.
 
+![Forms viewer](img/forms.gif)
+
+To reorder the fields in Forms viewer, go to Froms viewer settings, open Fileds option and just drag-n-drop corresponding fields in the ‘Select columns…’ dialog.
+
+![Forms viewer](img/reorder_fields_in_forms_viewer.gif)
 
 The viewer is a part of the [PowerGrid](https://github.com/datagrok-ai/public/tree/master/packages/PowerGrid) package.
-
-![Forms viewer](img/forms.gif)

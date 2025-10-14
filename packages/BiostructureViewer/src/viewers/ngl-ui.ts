@@ -36,7 +36,7 @@ export function previewNglUI(file: DG.FileInfo): { view: DG.View, loadingPromise
   const loadingPromise = new Promise<void>(async (resolve, reject) => {
     try {
       const data = await file.readAsBytes();
-      const blob = new Blob([data], {type: 'application/octet-binary'});
+      const blob = new Blob([data as BlobPart], {type: 'application/octet-binary'});
       await stage.loadFile(blob, {defaultRepresentation: true, ext: file.extension});
     } catch (err: any) {
       reject(err);
@@ -62,7 +62,9 @@ export function nglWidgetUI(pdbId: string): DG.Widget {
 
   //const pdbIdPath: string = `rcsb://${pdbId}`;
   // Link `rcsb://${pdbId}` causes CORS error
-  const pdbIdPath: string = `https://files.rcsb.org/download/${pdbId}.cif`;
+  // Using PDB format due to an NGL Viewer issue rendering certain mmCIF/CIF files  
+  // Reference: https://github.com/nglviewer/ngl/issues/999  
+  const pdbIdPath: string = `https://files.rcsb.org/download/${pdbId}.pdb`;
 
   stage.loadFile(pdbIdPath, {defaultRepresentation: true})
     .then(() => {

@@ -16,7 +16,8 @@ export class ChemblIdHandler extends DG.ObjectHandler {
     const id = (x as SemanticValue).value;
     return ui.divV([
       ui.h3(id),
-      ui.wait(async () => ui.bind(x, grok.chem.drawMolecule(await grok.functions.call('Chembl:chemblIdToSmiles', {id: id})))),
+      ui.wait(async () =>
+        ui.bind(x, grok.chem.drawMolecule(await grok.functions.call('Chembl:chemblIdToSmiles', {id: id})))),
     ], {style: {width: '220px', height: '150px'}});
   }
 

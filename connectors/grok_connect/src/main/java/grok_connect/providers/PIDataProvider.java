@@ -42,7 +42,7 @@ public class PIDataProvider extends JdbcDataProvider {
             add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
                     DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
         }};
-        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
+        descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
         descriptor.nameBrackets = "\"";
         descriptor.canBrowseSchema = true;
         descriptor.limitAtEnd = false;

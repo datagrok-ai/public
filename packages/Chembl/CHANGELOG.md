@@ -1,4 +1,40 @@
-# Chembl changelog
+# ChEMBL changelog
+
+## 1.4.3 (2025-04-01)
+
+* Fixed MolregnoInfo panel
+
+## 1.4.2 (2025-03-31)
+
+* Fixed error in demo when result is null
+
+## 1.4.1 (2025-03-29)
+
+* Correct help display in Database Queries demo
+
+## 1.4.0 (2025-03-29)
+
+* Datagrok api >= 1.25.0
+
+## 1.3.0 (2025-03-25)
+
+* Updated chemical databases demo
+
+## 1.2.3 (2025-03-17)
+
+* Showing update indicator in context panel when waiting for request
+
+## 1.2.2 (2025-01-16)
+
+* Fixed 'Compound Names' query
+
+## 1.2.1 (2024-12-26)
+
+* Moved Chemical Databases demo to Chembl package from Chem
+
+## 1.1.6 (2024-12-06)
+
+* Add Search integrated queries
 
 ## 1.1.5 (2024-10-23)
 

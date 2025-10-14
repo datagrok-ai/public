@@ -14,12 +14,13 @@ import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {updateDivInnerHTML} from '../utils/ui-utils';
 import {helmSubstructureSearch} from '../substructure-search/substructure-search';
-import {BioFilterBase, BioFilterProps} from './bio-substructure-filter-types';
+import {BioFilterBase, BioFilterProps}
+  from '@datagrok-libraries/bio/src/substructure-filter/bio-substructure-filter-types';
 
 import {_package} from '../package';
 
 export class HelmBioFilter extends BioFilterBase<BioFilterProps> /* implements IRenderer */ {
-  readonly emptyProps = new BioFilterProps('');
+  readonly emptyProps = new BioFilterProps('', undefined, _package.logger);
 
   helmEditor: IHelmWebEditor;
   _filterPanel = ui.div('', {style: {cursor: 'pointer'}});
@@ -68,7 +69,7 @@ export class HelmBioFilter extends BioFilterBase<BioFilterProps> /* implements I
             try {
               const webEditorValue = webEditorApp!.canvas!.getHelm(true)
                 .replace(/<\/span>/g, '').replace(/<span style='background:#bbf;'>/g, '');
-              this.props = new BioFilterProps(webEditorValue);
+              this.props = new BioFilterProps(webEditorValue, undefined, _package.logger);
             } catch (err: any) {
               this.logger.error(err);
             } finally {

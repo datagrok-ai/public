@@ -25,3 +25,11 @@
     z-index: 2999;
 }
 
+.bsv-container-info-panel {
+    position: relative;
+    width: 100%;
+    padding-bottom: 100%;
+    background-position: left;
+    background-repeat: no-repeat;
+    background-size: contain;
+}

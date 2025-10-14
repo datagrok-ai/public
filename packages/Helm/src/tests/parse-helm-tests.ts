@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 
 import {after, before, category, delay, expect, test, expectArray, timeout} from '@datagrok-libraries/utils/src/test';
-import {HelmType, IHelmEditorOptions, Mol, OrgType} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmMol, HelmType, IHelmBio, IHelmEditorOptions, Mol, OrgType} from '@datagrok-libraries/bio/src/helm/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
@@ -104,13 +104,13 @@ function _testParseHelmWithEditor(src: string, tgt: TestTgtType): void {
   const io = org.helm.webeditor.IO;
 
   const editorHost = ui.div();
-  const editor = new JSDraw2.Editor<HelmType, IHelmEditorOptions>(editorHost, {viewonly: true});
+  const editor = new JSDraw2.Editor<HelmType, IHelmBio, IHelmEditorOptions>(editorHost, {viewonly: true});
 
   const plugin = new org.helm.webeditor.Plugin(editor);
   const origin = new JSDraw2.Point(0, 0);
   io.parseHelm(plugin, src, origin, undefined);
 
-  const m: Mol<HelmType> = plugin.jsd.m;
+  const m: HelmMol = plugin.jsd.m;
   expect(m.atoms.length, tgt.atomCount);
   expect(m.bonds.length, tgt.bondCount);
 }
@@ -132,13 +132,13 @@ function _testParseHelmWithHelmHelper(src: string, tgt: TestTgtType, helmHelper:
 function _testParseHelmWithoutDOM(src: string, tgt: TestTgtType): void {
   const io = org.helm.webeditor.IO;
 
-  const molHandler = new JSDraw2.MolHandler<HelmType, IHelmEditorOptions>();
+  const molHandler = new JSDraw2.MolHandler<HelmType, IHelmBio, IHelmEditorOptions>();
 
   const plugin = new org.helm.webeditor.Plugin(molHandler);
   const origin = new JSDraw2.Point(0, 0);
   io.parseHelm(plugin, src, origin, undefined);
 
-  const m: Mol<HelmType> = plugin.jsd.m;
+  const m: HelmMol = plugin.jsd.m;
   const resHelm = io.getHelm(m);
   expect(m.atoms.length, tgt.atomCount);
   expect(m.bonds.length, tgt.bondCount);

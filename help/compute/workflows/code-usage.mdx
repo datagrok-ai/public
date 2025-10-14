@@ -1,0 +1,26 @@
+---
+title: "Programmatic usage"
+sidebar_position: 4
+---
+
+It is possible to start a workflow from code and even obtain workflow
+results provided a top level has `onReturn` hook. There will be a
+special ui accpect button to run the hook and exit, otherwise
+undefined will be returned on a regular close.
+
+
+
+```
+const startFunc = DG.Func.find({package: 'Compute2', name: 'StartWorkflow'})[0];
+const funcCall = startFunc.prepare({nqName: 'SomePackage:SomeWorkflow, version: '1.0'})
+
+await funcCall.call();
+const result = funcCall.getOutputParamValue();
+```
+
+
+For dynamic workflow it is also possible to configure which dynamic
+steps will be initially used in the workflow via `instanceConfig` option.
+```
+const funcCall = startFunc.prepare({nqName: 'SomePackage:SomeWorkflow, version: '1.0', instanceConfig: {id: 'some_wworkflow', steps: [{id: 'load', initialValues: {deviceClass: 'Bioreactor Class'}, inputRestrictions: {deviceClass: 'disabled'}}]}})
+```

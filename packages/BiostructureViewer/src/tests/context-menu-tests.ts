@@ -63,12 +63,12 @@ category('ContextMenu', () => {
       }
     } finally {
       console.warn('BsV: Tests: ContextMenu: RowHeader, finally');
-      if (menu !== null) {
+      if (menu != null) {
         // Cleanup or hide menu
         // @ts-ignore
         menu.root.style.display = 'none';
       }
     }
-  }, {skipReason: 'GROK-15931'});
+  }, {skipReason: 'Unhandled exception in CI'});
 });
 

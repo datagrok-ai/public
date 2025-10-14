@@ -1,5 +1,160 @@
 # compute-utils changelog
 
+## 1.44.8 (2025-10-03)
+
+- Updated the diff grok library
+
+## 1.44.7 (2025-09-11)
+
+- Hisotry and export fixes for workflows
+
+## 1.44.6 (2025-09-08)
+
+- Fix funcCall reactive updates edge case
+
+## 1.44.5 (2025-09-05)
+
+- Fix optimizer returned funcCall redraw
+
+## 1.44.4 (2025-09-04)
+
+- Small bug fixes
+
+## 1.44.3 (2025-08-15)
+
+- Optimization view support primary params filtering
+- Optimization view support support per script defaults
+
+## 1.44.2 (2025-08-08)
+
+- Optimization view Compute2 integration fixes
+
+## 1.44.1 (2025-07-22)
+
+- Update dependencies
+- Optimize/fix deepEq for FuncCall inputs/outputs
+
+## 1.44.0 (2025-07-22)
+
+- New platform version
+
+## 1.43.11 (2025-07-22)
+
+- Template links syntax
+- Allow multiple meta handlers targiting the same io
+- Improve string pasing
+
+## 1.43.10 (2025-06-30)
+
+- Fix edge cases with pipeline edit action
+
+## 1.43.9 (2025-06-09)
+
+- Updated UI/UX in the Sensitivity Analysis view
+- Implemented the MOEA/D method for multi-objective optimization
+- Added the optimization view
+
+## 1.43.8 (2025-06-03)
+
+Compute2 help improvements
+
+## 1.43.7 (2025-05-28)
+
+Compute help related fixes
+
+## 1.43.6 (2025-05-28)
+
+Compute2 related typings tweak
+
+## 1.43.5 (2025-05-12)
+
+In-webworkers sensitivity analysis for Diff Studio based models
+
+## 1.43.4 (2025-05-02)
+
+Update Compute2 API
+
+## 1.43.3 (2025-04-24)
+
+Update Compute2 public API
+
+## 1.43.2 (2025-04-22)
+
+Updated the Fitting feature:
+
+- target columns selection
+- fitting results displaying
+- goodness of fit viewers creation
+
+## 1.43.1 (2025-04-14)
+
+- Fitting, Sensitivity Analysis: Fixed precision of the values lookup feature
+
+## 1.43.0 (2025-04-14)
+
+- Compute2 related changes/fixes
+
+## 1.42.1 (2025-04-10)
+
+Updated the Fitting feature:
+
+- Added progress bar;
+- Target columns selection
+- The hide similar curves feature
+- Navigation for users
+
+## 1.41.3 (2025-03-07)
+
+- FittingView: Diff Studio models: Updated input vector computation
+
+## 1.41.2 (2025-03-03)
+
+- FittingView: Diff Studio models: Optimization using pipelines
+
+## 1.41.1 (2025-02-28)
+
+- FittingView: in-webworker parameters optimization of Diff Studio models
+
+## 1.41.0 (2025-02-19)
+
+- Compute2 related fixes
+- ModelCatalog refactored
+- API updated for 1.24.0
+
+## 1.40.4 (2025-01-28)
+
+- ModelHandler: help disable sync
+
+## 1.40.3 (2025-01-28)
+
+- ModelHandler: help fix
+
+## 1.40.2 (2025-01-27)
+
+- Build fix
+
+## 1.40.1 (2024-12-25)
+
+- History fixes and removing obsolete API calls
+
+## 1.40.0 (2024-12-24)
+
+- Added reactive tree driver
+
+## 1.39.7 (2024-11-25)
+
+- Added method to render model preview in BrowseTree
+
+## 1.39.6 (2024-11-22)
+
+- Updated style options to CSSOptions type
+
+## 1.39.5 (2024-11-06)
+
+- RFV: Added validation rules for export options
+- ModelCatalog: Fixes for JS API 1.22
+- RFV: Moved JSON loading to TestRunner menu for Developers
+
 ## 1.39.4 (2024-09-30)
 
 - Sensitivity Analysis & Fitting: Added the use of lookup tables
@@ -16,21 +171,9 @@
 
 - Fixed DF input in the Fitting view
 
-## 1.38.0-rc.2 (2024-09-09)
-
-- Fixed DF input processing with no viewers
-
-## 1.38.0-rc (2024-09-06)
-
-- Preparing 1.21.1 release
-
 ## 1.37.0 (2024-09-05)
 
 - Release for 1.21.0
-
-## 1.37.0-rc (2024-09-04)
-
-- Preparing 1.21.0 release
 
 ## 1.36.7 (2024-08-05)
 

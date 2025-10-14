@@ -6,7 +6,7 @@
 import {DataFrame} from "./dataframe";
 import {IDartApi} from "./api/grok_api.g";
 
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 export namespace ml {
   /** Applies predictive model to the specified table.

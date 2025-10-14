@@ -1,7 +1,7 @@
 :root {
     --brand-primary-dark: #2e4d69;
     --brand-primary: var(--brand-color);
-    --brand-accent: #4BB2D1;
+    --brand-accent: #5192a5;
 }
 .new .navbar-toggler {
     border: 0px solid var(--ifm-color-gray-200);
@@ -24,7 +24,8 @@
     padding-left: 40px;
 }
 .new .navbar .nav-item > a.nav-link{
-    color: var(--ifm-color-gray-800);
+    color: var(--brand-color);
+    text-transform: uppercase;
 }
 
 .new .dropdown-toggle::after {
@@ -64,6 +65,7 @@
     transition-timing-function: ease-in-out;
 }
 .new .nav-item.dropdown > .dropdown-menu > a.dropdown-item {
+    color: var(--brand-color);
     border-radius: 8px;
 }
 
@@ -137,17 +139,17 @@
 
 .new .btn-outline, 
 .new a.nav-link.btn-outline {
-    border: 1px solid var(--ifm-color-gray-200);
+    border: 1px solid var(--brand-color);
     background-color: white;
-    color: var(--ifm-color-gray-800);
+    color: var(--brand-color);
 }
 
 .new .btn-outline:hover, 
 .new a.nav-link.btn-outline:hover  {
-    background-color: var(--ifm-color-gray-200);
-    border-color: var(--ifm-color-gray-200);
-    transition: background-color 0.25s linear, border-color 0.25s linear;
-    color: var(--ifm-color-gray-900);
+    background-color: var(--brand-color);
+    border-color: var(--brand-color);
+    filter: brightness(105%);
+    color: white;
 }
 
 .new .btn-outline:active, 
@@ -179,12 +181,12 @@
     color: white;
 }
 
-.new h1 { font-size: 3rem; font-weight: 600;}
-.new h2 { font-size: 2.5rem; font-weight: 600;}
-.new h3 { font-size: 2rem; font-weight: 600;}
-.new h4 { font-size: 1.8rem; font-weight: 500;}
-.new h5 { font-size: 1.6rem; font-weight: 500;}
-.new h6 { font-size: 1.4rem; font-weight: 500;}
+.new h1 { font-size: 3rem; }
+.new h2 { font-size: 2.5rem; }
+.new h3 { font-size: 2rem; }
+.new h4 { font-size: 1.8rem; }
+.new h5 { font-size: 1.6rem;}
+.new h6 { font-size: 1.4rem;}
 
 .new h1, 
 .new h2, 
@@ -192,32 +194,45 @@
 .new h4, 
 .new h5, 
 .new h6 {
-    color: var(--ifm-color-gray-900);
-    font-family: 'Inter', sans-serif;
+    color: var(--brand-primary);
     padding: 0;
     border: none;
 }
 .new p,
 .new div {
-    color: var(--ifm-color-gray-700);
+    color: #4a5f7c;
     font-family: 'Inter', sans-serif;
     padding: 0;
     border: none;
 }
 
-.new h1, 
-.new h2 {
-    color: var(--ifm-color-gray-900);
-    margin: 1.5rem 0;
-    padding: 0;
-    border: none;
+.new div.h4 {
+    font-family: 'Nunito', sans-serif;
+    color: var(--brand-primary);
+    font-size: 27px;
+    margin-bottom: 1.25rem;
+    font-weight: normal!important;
+    /* padding-bottom: 12px; */
 }
 
-.new h3, 
+.new h1,
+.new h2,
+.new h3,
 .new h4 {
-    color: var(--ifm-color-gray-900);
-    margin: 1.25rem 0;
+    margin: 1.25rem 0 0 0;
+    padding: 0;
+    border: none;
+    line-height: 1.5em ;
 }
+
+
+.new h1:not(:last-child),
+.new h2:not(:last-child),
+.new h3:not(:last-child),
+.new h4:not(:last-child) {
+    margin-bottom: 1.25rem;
+}
+
 .new .section {border-radius: 1rem;}
 .new .section-content > h1, 
 .new .section-content > h2, 
@@ -236,7 +251,7 @@
     max-width: 920px;
     margin-left: auto;
     margin-right: auto;
-    margin-top: 0.5rem;
+    margin-top: 0;
 }
 .new .hero-container {
     background-size: 'cover';
@@ -270,7 +285,7 @@
 .new .browser > .browser-header > .dot:first-child {background-color: #ED594A;}
 .new .browser > .browser-header > .dot:last-child {background-color: #5AC05A;}
 
-.new #features-nav-tab {
+.new .features-nav-tab {
     justify-content: center;
     border: none;
     gap:.5rem;
@@ -287,8 +302,11 @@
     border-radius: 16px;
     border:none;
 }
-.new .carousel img {
-    border-radius: 8px;
+
+.new .carousel-inner {
+    box-shadow: #f9fafb 0 0 20px 10px;
+    border-bottom-right-radius: 8px;
+    border-top-right-radius: 8px;
 }
 
 .new .nav-tabs > .nav-item > a {
@@ -312,7 +330,6 @@
 }
 .new .nav.accesscarousel > .nav-item > .nav-link {
     color: var(--ifm-color-gray-900);
-    font-weight: 500;
 }
 .new .nav.accesscarousel > .nav-item > .nav-link:hover{
     transition: background-color 0.25s linear;
@@ -442,4 +459,8 @@
 .new .footer-icons a:hover{
     cursor: pointer;
     opacity: 1;
+}
+
+body[data-path="/"] .navbar {
+    display: none;
 }

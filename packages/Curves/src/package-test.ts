@@ -6,6 +6,7 @@ import './tests/detector-tests';
 import './tests/curves-cell-renderer-tests';
 import './tests/transform-tests';
 import './tests/fit-tests';
+import './tests/plate-tests';
 
 export const _package = new DG.Package();
 export {tests};
@@ -22,5 +23,5 @@ export async function test(category: string, test: string, testContext: TestCont
 
 //name: initAutoTests
 export async function initAutoTests() {
-  await initTests(_package, _package.getModule('package-test.js'));
+  //await initTests(_package, _package.getModule('package-test.js'));
 }

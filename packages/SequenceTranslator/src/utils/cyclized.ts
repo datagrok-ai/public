@@ -13,10 +13,12 @@ import {CellRendererBackBase} from '@datagrok-libraries/bio/src/utils/cell-rende
 import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 import {monomerToShort, StringListSeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
+import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
-import {Chain} from '../polytool/pt-conversion';
+import {Chain} from '../polytool/conversion/pt-chain';
 
 import {_package} from '../package';
+import {CyclizedCellRendererBack} from './cell-renderer-cyclized';
 
 /* eslint-enable max-len */
 
@@ -24,13 +26,17 @@ export class CyclizedNotationProvider implements INotationProvider {
   private readonly separatorSplitter: SplitterFunc;
   public readonly splitter: SplitterFunc;
 
+  get defaultGapOriginal(): string { return ''; }
+
   constructor(
     public readonly separator: string,
-    protected readonly seqHelper: ISeqHelper
+    protected readonly helmHelper: IHelmHelper
   ) {
     this.separatorSplitter = getSplitterWithSeparator(this.separator);
     this.splitter = this._splitter.bind(this);
   }
+
+  setUnits(): void {}
 
   private _splitter(seq: string): ISeqSplitted {
     const baseSS: ISeqSplitted = this.separatorSplitter(seq);
@@ -39,28 +45,19 @@ export class CyclizedNotationProvider implements INotationProvider {
       GapOriginals[NOTATION.SEPARATOR]);
   }
 
-  public async getHelm(seq: string, options?: any): Promise<DG.SemanticValue<string>> {
-    const seqChain = await Chain.parseNotation(seq);
-    const seqPseudoHelm = seqChain.getNotationHelm();
-
-    const resPseudoHelmSV = DG.SemanticValue.fromValueType(seqPseudoHelm,
-      DG.SEMTYPE.MACROMOLECULE, NOTATION.HELM);
-    resPseudoHelmSV.tags['pt-role'] = 'template';
-    return resPseudoHelmSV;
+  public getHelm(seq: string, options?: any): string {
+    const seqChain = Chain.fromSeparator(seq, this.helmHelper);
+    const resPseudoHelm = seqChain.getHelm();
+    return resPseudoHelm;
   }
 
-  public createCellRendererBack(gridCol: DG.GridColumn | null, tableCol: DG.Column<string>): CellRendererBackBase<string> {
-    let maxLengthOfMonomer: number = 4; // (_package.bioProperties ? _package.bioProperties.maxMonomerLength : 4) ?? 50;
-    const back = new MonomerPlacer(gridCol, tableCol, _package.logger, maxLengthOfMonomer,
-      () => {
-        const sh = this.seqHelper.getSeqHandler(tableCol);
-        return {
-          seqHandler: sh,
-          monomerCharWidth: 7,
-          separatorWidth: 11,
-          monomerToShort: monomerToShort,
-        };
-      });
+  public createCellRendererBack(gridCol: DG.GridColumn | null, tableCol: DG.Column<string>):
+  CellRendererBackBase<string> {
+    const maxLengthOfMonomer: number = 4;
+    // (_package.bioProperties ? _package.bioProperties.maxMonomerLength : 4) ?? 50;
+    const back = new CyclizedCellRendererBack(gridCol, tableCol,
+      maxLengthOfMonomer, this.helmHelper.seqHelper);
+
     back.init().then(() => {});
     return back;
   }
@@ -68,23 +65,23 @@ export class CyclizedNotationProvider implements INotationProvider {
 
 /** Gets canonical monomers for original ones with cyclization marks */
 export class CyclizedSeqSplitted extends StringListSeqSplitted {
-  private readonly seqCList: (string | null)[];
-
   override getCanonical(posIdx: number): string {
     if (this.isGap(posIdx)) return GAP_SYMBOL;
 
-    let cmRes: string | null = this.seqCList[posIdx];
-    if (cmRes === null) {
-      const om = this.getOriginal(posIdx);
-      cmRes = om;
-      if (om[om.length - 1] === ')')
-        cmRes = this.seqCList[posIdx] = om.replace(/\(\d+\)$/, '');
-    }
+    const om = this.getOriginal(posIdx);
+    let cmRes = om;
+    if (om.startsWith('{'))
+      cmRes = om.slice(1);
+    else if (om.endsWith('}'))
+      cmRes = om.slice(0, -1);
+    else if (om.startsWith('('))
+      cmRes = om.replace(/^\(.\d+\)/, '');
+    else if (om.endsWith(')'))
+      cmRes = om.replace(/\(\d+\)$/, '');
     return cmRes;
   }
 
   constructor(seqOList: SeqSplittedBase, gapOriginalMonomer: string) {
     super(seqOList, gapOriginalMonomer);
-    this.seqCList = new Array<string | null>(this.length).fill(null);
   }
 }

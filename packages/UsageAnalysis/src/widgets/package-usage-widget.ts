@@ -5,6 +5,10 @@ import * as grok from 'datagrok-api/grok';
 import {getUsersTable} from '../tabs/packages';
 
 export class PackageUsageWidget extends DG.Widget {
+  get type(): string {
+    return 'PackageUsageWidget';
+  }
+
   date: string = 'this week';
   groupsP: Promise<DG.Group[]> = grok.dapi.groups.getGroupsLookup('All users');
 

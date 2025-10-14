@@ -4,7 +4,7 @@
 2. Open grid properties and enable `Show Visible Columns In Tooltip`
 3. Open a scatter plot and a box plot
 4. Right-click on a viewer and select `Tooltip > Edit...`
-   - dialog 'Set tooltip' should open
+   - dialog 'Edit tooltip' should open
    - 'Search' checkbox should be checked, all variants should be picked (the current state: all columns are selected)
    - below the two checkboxes, there should be a grid listing the column type, name, and selection (three columns total)
    - try searching a column by its name in the search input over the grid

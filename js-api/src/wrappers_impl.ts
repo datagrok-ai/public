@@ -2,6 +2,7 @@ import {Property} from "./entities";
 import {FLOAT_NULL, TYPE, TYPES_SCALAR} from "./const";
 import dayjs from "dayjs";
 import { TypedEventArgs } from "./widgets";
+let api: any = (typeof window !== 'undefined' ? window : global.window);
 
 /** Converts list of Dart objects to JavaScript objects by calling {@link toJs}
  * @param {object[]} params
@@ -9,7 +10,7 @@ import { TypedEventArgs } from "./widgets";
 export function paramsToJs(params: any): any {
   let result = <any>[];
   for (let i = 0; i < params.length; i++) {
-    let type = (<any>window).grok_GetType(params[i]);
+    let type = api.grok_GetType(params[i]);
     if (type !== null && (!TYPES_SCALAR.has(type) || type === TYPE.LIST || type === TYPE.MAP))
       result.push(toJs(params[i]));
     else
@@ -31,14 +32,14 @@ export function toJs(dart: any, check: boolean = false): any {
     return null;
   if (dart == undefined)
     return undefined;
-  let type = (<any>window).grok_GetType(dart);
+  let type = api.grok_GetType(dart);
   if (dart === FLOAT_NULL)
     return null;
   else if (type === TYPE.MAP) {
-    let wrapper = (<any>window).grok_GetWrapper(dart);
+    let wrapper = api.grok_GetWrapper(dart);
     for (let key in wrapper) {
       if (wrapper.hasOwnProperty(key)) {
-        let type = (<any>window).grok_GetType(wrapper[key]);
+        let type = api.grok_GetType(wrapper[key]);
         if (type !== null && (!TYPES_SCALAR.has(type) || type === TYPE.LIST || type === TYPE.MAP))
           wrapper[key] = toJs(wrapper[key]);
       }
@@ -53,8 +54,9 @@ export function toJs(dart: any, check: boolean = false): any {
   } else if (type === TYPE.BYTE_ARRAY) {
     return dart;
   }
-
-  let wrapper = (<any>window).grok_GetWrapper(dart);
+  else if (type === TYPE.BIG_INT)
+    return BigInt(api.grok_BigInt_To_BigIntJs(dart));
+  let wrapper = api.grok_GetWrapper(dart);
   if (wrapper != null)
     return wrapper;
 
@@ -75,13 +77,15 @@ export function toDart(x: any): any {
   if (x === undefined || x === null)
     return x;
   if (x instanceof dayjs)
-    return (<any>window).grok_DayJs_To_DateTime(x.valueOf());
+    return api.grok_DayJs_To_DateTime(x.valueOf());
   if (typeof x.toDart === 'function')
     return x.toDart();
   if (typeof x.dart !== 'undefined')
     return x.dart;
   if (isPlainObject(x))
-    return (<any>window).grok_JS_To_Map(x);
+    return api.grok_JS_To_Map(x);
+  if (typeof x === 'bigint')
+    return api.grok_BigIntJs_To_BigInt(x.toString());
   return x;
 }
 

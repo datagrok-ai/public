@@ -1,0 +1,57 @@
+{
+  "name": "@datagrok/moltrack",
+  "friendlyName": "Mol Track",
+  "version": "0.0.2",
+  "description": "",
+  "author": {
+    "name": "Andrew Skalkin",
+    "email": "askalkin@datagrok.ai"
+  },
+  "dependencies": {
+    "@datagrok-libraries/utils": "^4.6.9",
+    "@datagrok-libraries/tutorials": "../../libraries/tutorials",
+    "@datagrok-libraries/compute-utils": "../../libraries/compute-utils",
+    "cash-dom": "^8.1.5",
+    "datagrok-api": "../../js-api",
+    "dayjs": "^1.11.13",
+    "randexp": "^0.5.3",
+    "rxjs": "^6.5.5"
+  },
+  "devDependencies": {
+    "@types/wu": "^2.1.44",
+    "@typescript-eslint/eslint-plugin": "^8.39.0",
+    "@typescript-eslint/parser": "^8.39.0",
+    "css-loader": "^7.1.2",
+    "eslint": "^8.57.1",
+    "eslint-config-google": "^0.14.0",
+    "datagrok-tools": "^4.14.55",
+    "style-loader": "^4.0.0",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "scripts": {
+    "link-all": "grok link",
+    "debug-molTrack": "webpack && grok publish",
+    "release-molTrack": "webpack && grok publish --release",
+    "build-molTrack": "webpack",
+    "build": "grok api && grok check --soft && webpack",
+    "debug-molTrack-dev": "webpack && grok publish dev",
+    "release-molTrack-dev": "webpack && grok publish dev --release",
+    "debug-molTrack-public": "webpack && grok publish public",
+    "release-molTrack-public": "webpack && grok publish public --release"
+  },
+  "canEdit": [
+    "Administrators"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/labs.git",
+    "directory": "users/askalkin/MolTrack/MolTrack"
+  },
+  "category": "Cheminformatics"
+}

@@ -1,9 +1,9 @@
 # Tutorials
 
-The package contains a collection of interactive materials helping users explore the [Datagrok](https://datagrok.ai) platform.
+Interactive tutorials helping users explore the [Datagrok](https://datagrok.ai) platform. 
+Check out the [video](https://www.youtube.com/watch?v=Q3Dn5NSDSEY&t=1920s) to see it in action. 
 
-Issue tracker: <https://github.com/datagrok-ai/public/projects/3>
-Presentation: <https://www.youtube.com/watch?v=Q3Dn5NSDSEY&t=1920s>
+[Issue tracker](https://github.com/datagrok-ai/public/projects/3)
 
 ## Available tracks
 
@@ -11,6 +11,7 @@ Presentation: <https://www.youtube.com/watch?v=Q3Dn5NSDSEY&t=1920s>
 - [Data Access](src/tracks/data-access/README.md)
 - [Exploratory Data Analysis](src/tracks/eda/README.md)
 - [Machine Learning](src/tracks/ml/README.md)
+- [Scientific Computing](src/tracks/compute/README.md)
 
 ## Properties
 

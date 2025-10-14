@@ -1,6 +1,6 @@
 /// this file was generated automatically from xamgle classes declarations
 import { toDart } from "../wrappers";
-let api = <any>window;
+let api = (typeof window !== 'undefined' ? window : global.window) as any;
 
 export interface SettingsInterface {
   /// Automatically save workspace locally
@@ -17,6 +17,9 @@ export interface SettingsInterface {
 
   /// Show hamburger link on docked viewers
   dockShowMenuLink: boolean;
+
+  /// Show full screen link on docked viewers
+  dockShowFullScreenLink: boolean;
 
   /// Show notification when a file is imported
   notifyOnFileImport: boolean;
@@ -44,6 +47,9 @@ export interface SettingsInterface {
 
   /// Determines when to show range sliders
   showRangeSlidersOnViewers: string;
+
+  /// (Experimental) Use WebGPU for rendering and hit testing. 
+  scatterPlotWebGPUAcceleration: boolean;
 
   /// Auto-apply existing layout after selected rows are extracted
   applyLayoutWhenExtractingRows: boolean;
@@ -79,6 +85,12 @@ export interface SettingsInterface {
 
   showToolbox: boolean;
 
+  showBrowse: boolean;
+
+  showProjects: boolean;
+
+  showFavorites: boolean;
+
   showStatusBar: boolean;
 
   showVariables: boolean;
@@ -95,16 +107,11 @@ export interface SettingsInterface {
 
   allowEventScripts: boolean;
 
-  /// Whenever an error occurs, automatically reports extended logs to the server. Use UsageAnalysis to browse them.
-  /// This includes console logs, server logs, data connectivity logs, Docker logs, etc.
-  autoReportExtendedLogs: boolean;
+  enableIndexedDBTablesCache: boolean;
 
   /// Displays Index Files check box in connection edit dialog. If it is disabled then check
   /// box will not be shown to the user and indexing of files will not be configurable.
   enableConnectionIndexFiles: boolean;
-
-  // When true, use WebGPU for rendering and advanced computations if possible.
-  enableScatterPlotWebGPUAcceleration: boolean;
 
   dateFormat: string;
 
@@ -122,20 +129,15 @@ export interface SettingsInterface {
   /// If not empty, will be used to load package.js instead of the Datagrok backend
   webpackDevUrl: string;
 
-  /// CVM URL.
-  cvmUrl: string;
-
-  /// Datlas API URL.
-  apiUrl: string;
-
-  /// Jupyter Notebook instance token.
-  jupyterNotebookToken: string;
-
   clientFuncCacheEnabled: boolean;
 
   clientFilesCacheEnabled: boolean;
 
   dataFrameBatchSize: number;
+
+  /// Whenever an error occurs, automatically create report with extended logs and send it to the server. Use UsageAnalysis to browse them.
+  /// This includes console logs, server logs, data connectivity logs, Docker logs, etc.
+  autoReportErrors: boolean;
 
 
 }

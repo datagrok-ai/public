@@ -146,7 +146,7 @@ Certain viewers include statistical features:
 
 * Box [plots](../../../visualize/viewers/box-plot.md) show the [p-value](../../../visualize/viewers/box-plot.md#t-test), allowing you to determine
   whether the findings are statistically significant.
-* Scatterplots can show one or more [regression lines](../../../visualize/viewers/scatter-plot.md#calculations-and-trends) with
+* Scatterplots can show one or more [regression lines](../../../visualize/viewers/scatter-plot.md#formula-lines) with
   associated equations and color-coding. [Correlation plots](../../../visualize/viewers/correlation-plot.md) highlight the values of
   Pearson's correlation coefficient, making it easy to trace the strength of the
   relationship between given variables.
@@ -441,13 +441,13 @@ Commands:
 
 Many viewers support the following:
 
-|                 |                 |
-|-----------------|-----------------|
-| Double-click    | Reset View      |
-| Alt+drag        | Zoom            |
-| Mouse drag      | Pan             |
-| Properties | Show viewer properties in the [Context Panel](../panels/panels.md#context-panel)                                                                                        |
-| Reset View | Reset zoom level. Use in: [scatterplot](../../../visualize/viewers/scatter-plot.md), [line chart](../../../visualize/viewers/line-chart.md), [bar chart](../../../visualize/viewers/bar-chart.md), [3D scatterplot](../../../visualize/viewers/3d-scatter-plot.md), and [box plot](../../../visualize/viewers/box-plot.md) |
+|              |                                                                                                                                                                                                                                                                                                                            |
+|--------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Double-click | Reset View                                                                                                                                                                                                                                                                                                                 |
+| Alt+drag     | Zoom                                                                                                                                                                                                                                                                                                                       |
+| Mouse drag   | Pan                                                                                                                                                                                                                                                                                                                        |
+| Properties   | Show viewer properties in the [Context Panel](../panels/panels.md#context-panel)                                                                                                                                                                                                                                           |
+| Reset View   | Reset zoom level. Use in: [scatterplot](../../../visualize/viewers/scatter-plot.md), [line chart](../../../visualize/viewers/line-chart.md), [bar chart](../../../visualize/viewers/bar-chart.md), [3D scatterplot](../../../visualize/viewers/3d-scatter-plot.md), and [box plot](../../../visualize/viewers/box-plot.md) |
 
 General commands available under the **General** submenu:
 

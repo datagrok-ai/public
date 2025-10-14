@@ -1,5 +1,68 @@
 # Helm changelog
 
+## 2.10.0 (2025-04-14)
+
+Non-Drawing HWE for faster pseudo-molfile retrieval
+
+## 2.8.3 (2025-03-27)
+
+Fix MAJOR bug with overcached renderer after using polytool rules
+
+## 2.8.2 (2025-03-26)
+
+Fix Helm Service editor moving datagrok page up
+
+## 2.8.1 (2025-03-03)
+
+### Bug fixes
+Fix error on empty R group in HELM
+
+## 2.8.0 (2025-02-20)
+
+Supporting all notations for hovering, conversion and context actions
+
+## 2.7.4 (2025-02-17)
+
+Fix Helm Splitter for marginal cases and tests
+
+## 2.7.3 (2025-02-17)
+
+Support for DNA/RNA for hover and other effects
+
+## 2.7.2 (2025-01-21)
+
+Support for async rendering in non-grid views
+
+## 2.7.1 (2024-12-30)
+
+Moved some tests from Bio package to Helm package (for Bio not to depend on Helm)
+
+## 2.6.0 (2024-11-18)
+
+Correct helm loading
+
+## 2.5.10 (2024-11-15)
+
+Fix async renderer invalidation on cached rendering
+
+## 2.5.9 (2024-11-01)
+
+Correct initialization of the Helm
+
+## 2.5.8 (2024-10-31)
+
+### Bug fixes
+
+* Fix HelmInput for SeqValueBase
+* Fix HelmGridCellRenderer for original and canonical symbols
+* Fix using HelmAtom
+
+## 2.5.7 (2024-10-24)
+
+### Bug fixes
+
+* Fix HelmHelper adding .seqHelper
+
 ## 2.5.6 (2024-10-22)
 
 ### Bug fixes

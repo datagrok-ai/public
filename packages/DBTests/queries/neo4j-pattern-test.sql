@@ -90,7 +90,7 @@ MATCH(p:Person) WHERE p.some_number = @some_number RETURN p.id AS id, p.first_na
 //name: Neo4jStringTypePatternDoubleOpMore
 //connection: Neo4jDBTests
 //input: string some_number = ">975" {pattern: double}
-//test: Dbtests:expectTable(Neo4jStringTypePatternDoubleOpMore('>975'), OpenFile('System:AppData/Dbtests/common/data10,26.d42')) // cat: Neo4j
+//test: Dbtests:expectTable(Neo4jStringTypePatternDoubleOpMore('>975'), OpenFile('System:AppData/Dbtests/common/data1026.d42')) // cat: Neo4j
 MATCH(p:Person) WHERE @some_number(p.some_number) RETURN p.id AS id, p.first_name AS first_name,
     p.last_name AS last_name, p.email AS email, p.gender AS gender, p.ip_address AS ip_address,
     p.bool AS bool, p.country AS country, p.date AS date, p.some_number AS some_number;
@@ -99,7 +99,7 @@ MATCH(p:Person) WHERE @some_number(p.some_number) RETURN p.id AS id, p.first_nam
 //name: Neo4jStringTypePatternDoubleOpMoreEq
 //connection: Neo4jDBTests
 //input: string some_number = ">=975" {pattern: double}
-//test: Dbtests:expectTable(Neo4jStringTypePatternDoubleOpMoreEq('>=975'), OpenFile('System:AppData/Dbtests/common/data10,26.d42')) // cat: Neo4j
+//test: Dbtests:expectTable(Neo4jStringTypePatternDoubleOpMoreEq('>=975'), OpenFile('System:AppData/Dbtests/common/data1026.d42')) // cat: Neo4j
 MATCH(p:Person) WHERE @some_number(p.some_number) RETURN p.id AS id, p.first_name AS first_name,
     p.last_name AS last_name, p.email AS email, p.gender AS gender, p.ip_address AS ip_address,
     p.bool AS bool, p.country AS country, p.date AS date, p.some_number AS some_number;
@@ -144,7 +144,7 @@ MATCH(p:Person) WHERE @first_name(p.first_name) RETURN p.id AS id, p.first_name 
 //name: Neo4jStringTypePatternStringOpEndsWith
 //connection: Neo4jDBTests
 //input: string first_name = "ends with y" {pattern: string}
-//test: Dbtests:expectTable(Neo4jStringTypePatternStringOpEndsWith(first_name = 'ends with y'), OpenFile('System:AppData/Dbtests/common/data6,23,25.d42')) // cat: Neo4j
+//test: Dbtests:expectTable(Neo4jStringTypePatternStringOpEndsWith(first_name = 'ends with y'), OpenFile('System:AppData/Dbtests/common/data62325.d42')) // cat: Neo4j
 MATCH(p:Person) WHERE @first_name(p.first_name) RETURN p.id AS id, p.first_name AS first_name,
     p.last_name AS last_name, p.email AS email, p.gender AS gender, p.ip_address AS ip_address,
     p.bool AS bool, p.country AS country, p.date AS date, p.some_number AS some_number;
@@ -153,7 +153,7 @@ MATCH(p:Person) WHERE @first_name(p.first_name) RETURN p.id AS id, p.first_name 
 //name: Neo4jStringTypePatternStringOpIn
 //connection: Neo4jDBTests
 //input: string country = "in (Poland, Brazil)" {pattern: string}
-//test: Dbtests:expectTable(Neo4jStringTypePatternStringOpIn(country='in (Poland, Brazil)'), OpenFile('System:AppData/Dbtests/common/data2,5,20.d42')) // cat: Neo4j
+//test: Dbtests:expectTable(Neo4jStringTypePatternStringOpIn(country='in (Poland, Brazil)'), OpenFile('System:AppData/Dbtests/common/data2520.d42')) // cat: Neo4j
 MATCH(p:Person) WHERE @country(p.country) RETURN p.id AS id, p.first_name AS first_name,
     p.last_name AS last_name, p.email AS email, p.gender AS gender, p.ip_address AS ip_address,
     p.bool AS bool, p.country AS country, p.date AS date, p.some_number AS some_number;

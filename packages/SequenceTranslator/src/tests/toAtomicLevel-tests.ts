@@ -15,8 +15,8 @@ import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 import {_package} from '../package-test';
-import {getNewMonomer} from '../polytool/pt-conversion';
-import {getRules, RuleReaction} from '../polytool/pt-rules';
+import {getNewMonomers} from '../polytool/conversion/pt-synthetic';
+import {getRules, RuleReaction} from '../polytool/conversion/pt-rules';
 
 category('toAtomicLevel', () => {
   let userLibSettings: UserLibSettings;
@@ -24,7 +24,6 @@ category('toAtomicLevel', () => {
   let rdKitModule: RDModule;
 
   before(async () => {
-
     monomerLibHelper = await getMonomerLibHelper();
     userLibSettings = await getUserLibSettings();
     rdKitModule = await getRdKitModule();
@@ -79,15 +78,15 @@ category('toAtomicLevel', () => {
     const rules = await getRules(['rules_example.json']);
     const reactionRule = rules.reactionRules.find((r) => r.name == 'GGaz')!;
 
-    const [newSymbol, newMonomer] = getNewMonomer(rdKitModule, systemMonomerLib, reactionRule);
-    expect(newSymbol, reactionRule.name);
+    const [newSymbols, newMonomers] = getNewMonomers(rdKitModule, systemMonomerLib, reactionRule);
+    expect(newSymbols[0], 'azG_GGaz');
 
-    const mol = rdKitModule.get_mol(newMonomer.molfile);
+    const mol = rdKitModule.get_mol(newMonomers[0].molfile);
     try {
       const molInchi = mol.get_inchi();
       const molInchiKey = rdKitModule.get_inchikey_for_inchi(molInchi);
-      expect(mol.get_num_bonds(), 18);
-      expect(mol.get_num_atoms(), 18);
+      expect(mol.get_num_bonds(), 7);
+      expect(mol.get_num_atoms(), 8);
       // TODO: Check inchi key for the new monomer molfile
       // expect(molInchiKey, 'V2H10N2O3S-UHFFFAOYSA-N');
     } finally {

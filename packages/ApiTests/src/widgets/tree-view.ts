@@ -8,5 +8,5 @@ category('TreeView', () => {
     expect(g.expanded, false);
     g.expanded = true;
     expect(g.expanded, true);
-  });
+  }, {owner: 'dkovalyov@datagrok.ai'});
 });

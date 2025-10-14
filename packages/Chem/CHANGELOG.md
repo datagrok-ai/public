@@ -1,5 +1,147 @@
 # Chem changelog
 
+## 1.16.5 (2025-09-15)
+
+* Add layout persistant tag for scaffold alignment
+
+## 1.16.4 (2025-09-05)
+
+* Fixed issues with tableview getting for cloned views in functions.
+
+## 1.16.3 (2025-08-26)
+
+### Features
+
+* Removed on demand from docker containers
+
+## 1.16.2 (2025-08-07)
+
+### Bug fixes
+
+* GROK-18622: Implement logic to check and switch TableView if needed
+* [#3445](https://github.com/datagrok-ai/public/issues/3445) Structure filter does not realign when coordinates change but structure does not
+
+## 1.16.1 (2025-08-04)
+
+### Bug fixes
+
+* GROK-18609: MMP: Demo throws errors: Cannot read properties of null (reading 'toList')
+
+## 1.16.0 (2025-07-28)
+
+### Features
+
+* Chem: MMP: Added hints
+* Chem: Similarity/Diversity: Show error in case no molecule column was found
+* Chem: MMP: Collaborative filtering with parent table
+* Chem: MMP: Ability to filter fragments/pairs
+* Chem: MMP: View results on PC plot, select activity difference function with scaling, in cell pc plots for activities, show trellis filters in popup, added trellis legend
+* Chem: Added description to scatter plot for chemical space and activity cliffs
+* Chem: Mixtures renderer, mixtures widgets and semantic type
+* [#3426](https://github.com/datagrok-ai/public/pull/3426) CPC: Moved to chem, factored into a separate widget file
+
+### Bug fixes
+
+* Chem: Scaffold Tree: Fix bitset not updating on structure change
+* Chem: Scaffold Tree: Check if viewer is detached
+* GROK-18069: Chem | Scaffold tree: Error when closing
+* GROK-18074 Chem: Context Panel: Content tab: df flickers when filtering by Scaffold Tree and Activity Cliffs simultaneously
+* Chem: Deprotect: Column already exists
+* GROK-18103: Chem | Scaffold Tree: Skip processing if column is empty
+* Chem: Correct most diverse structures logic
+* GROK-18066: Chem: Context Panel: Structural Alerts: calculate for whole dataset doesn't work for some data
+* GROK-18061: Chem: Prevent from running functions which add viewers not on the active table view
+* Chem: Scaffold Tree: Exclude fragment column from Select columns dialog
+* GROK-18283: Chem | Scaffold Tree: Error when changing scaffold size
+* GROK-18284: Chem | Scaffold Tree: Resetting Description > Title creates duplicates
+* GROK-18305: Chem | Scaffold tree: Error when uploading tree for non-molecular dataset
+* GROK-18269: Chem: Scaffold Tree: Viewer is empty when opening a project
+* Chem: MMP: Do not interpret missing values as zero
+* GROK-18290 : Substructure filter: multiple identical filters issue
+* [#3346](https://github.com/datagrok-ai/public/issues/3346): Export as SDF: Fixed none values are written as numbers ant not as empty strings
+* GROK-18388: Chem | Scaffold tree filter: Error after Close All
+* [#3399](https://github.com/datagrok-ai/public/issues/3399): Do not allow to modify Scaffold colors from Scatterplot or other viewers
+* Chem: do not allow multiple substructure filters
+* GROK-18391: Chem: the project opens with different filtering results before and after clearing the cache
+* GROK-18409: Chem: R-group analysis: column prefix in dialog not working
+* GROK-18405: Chem | Scaffold tree: Incorrect filtering after layout application
+* GROK-18417: Chem: Fix column parent in structural alerts
+* GROK-18419: Chem: MMP: activity list is empty
+* GROK-18495: Chem: Fix errors on current row unselection
+* GROK-18477: Chem: MMP: Update legend when changing activities on tp
+* GROK-18491: Chem: MMP: Fragments: "Full screen" trellis plot icon is not working
+* GROK-18479: Chem: MMP: Generation: should be no empty values
+* GROK-18493: Chem: MMP: Fragments: trellis legend optimization in case of big amount of legend items
+* GROK-18494: Chem: MMP: Properties: changing Molecules name cause no effect and triggers "reading 'toList'" errors in console
+* GROK-18570: Chem | Structural Alerts: Broken styles
+* GROK-18530 Chem: Substructure Filter: incorrect filtering in the cloned view when using the "Similar" option
+* GROK-18567: Chem | Chemprop: Cross validation fails for mol1k.csv
+
+## 1.15.1 (2025-04-23)
+
+### Features
+
+* [#3302](https://github.com/datagrok-ai/public/issues/3302): Multiple scaffold trees: Naming/coloring should be saved in projects
+
+### Bug fixes
+
+* GROK-17929: Chem: Similarity sorting checks
+* GROK-17958: Chem: some demos overwrite Datagrok tab name
+
+## 1.15.0 (2025-03-29)
+
+### Features
+
+* [#3273](https://github.com/datagrok-ai/public/issues/3273): Scaffold tree: add the ability to apply Scaffold tree colors to Scatterplot or other viewers
+* GROK-17731: Chem | Scaffold Tree: Remember previous hide/show state
+* GROK-17867: Chem: Demo improvements
+* Add caching to Gasteiger charges
+* [#3302](https://github.com/datagrok-ai/public/issues/3302): Multiple scaffold trees: add the ability to apply Scaffold tree colors to Scatterplot
+* MMP: Open scatter plot context menu when right click on cliffs sp, separate generations scatter plots for each activity, cliffs tab scatter plot improvements, trellis filters improvements, use column descriptions instead of custom tooltips for non molecule columns, added help url
+* Chem: Cluster MCL Implementation
+* [#3314](https://github.com/datagrok-ai/public/pull/3314): Chem: Scaffold Tree: Demo improvements
+* Chem: Parallel beautification
+
+### Bug fixes
+
+* GROK-17761: Chem: Demo: Chem: Activity cliffs: Viewer initialization function failed
+* GROK-17791: Chem: Scaffold tree: Coloring the scaffold tree element triggers the grid scroll to the end
+* Chem: Similarity/DIversity search: some progress bar related fixes
+* GROK-17892: Chem | Scaffold tree: Errors on closing viewer
+* GROK-17867: Chem: Demo: Added setTimeout for showing help
+
+## 1.14.0 (2025-02-24)
+
+### Features
+
+* New improved MMP implementation
+* Integration with Reinvent
+* Copy molecule as image
+* Context actions for chemical columns
+
+### Bug fixes
+
+* GROK-17483: Chem: Structure filter is not reset on reseting the filtering in some cases
+* GROK-17461: Scaffold tree: Error when uploading the saved tree
+* GROK-17511: Chem | ChemProp: Error when training a model
+* GROK-17555: Filter Panel: Reset filter causes errors in some cases
+* GROK-17471: Chem: Incorrect filter UI when adding filter via 'Use as filter' or 'Add filter'
+* GROK-17597: Chem: Wrong filtering when opening the project
+
+## 1.13.1 (2025-01-06)
+
+### Bug fixes
+
+* Fix RDKit cell renderer isolating MonomerHoverData.getSubstruct
+* Fix RDKit cell renderer isolating ISubstructProvider.getSubstruct
+
+## 1.13.0 (2024-10-25)
+
+### Bug Fixes
+
+* [#3055](https://github.com/datagrok-ai/public/issues/3055): Page is freezing after applying layout with multiple
+  scaffold trees with large number of structures
+
 ## 1.12.4 (2024-10-18)
 
 ### Bug fixes
@@ -26,12 +168,20 @@
 * Expect GPU to be unavailable on some browsers
 * Fix MMPa crushing without errors
 
+## 1.11.6 (2024-09-20)
+
+### Bug Fixes
+
+* [#3055](https://github.com/datagrok-ai/public/issues/3055): Page is freezing after applying layout with multiple
+  scaffold trees with large number of structures
+
 ## 1.11.5 (2024-08-27)
 
 ### Bug fixes
 
 * Add tableView to runChemSpace for reduce dimensionality ui options
-* [#3004](https://github.com/datagrok-ai/public/issues/3004): Chem: Scaffold tree is based on wrong table by default in some cases
+* [#3004](https://github.com/datagrok-ai/public/issues/3004): Chem: Scaffold tree is based on wrong table by default in
+  some cases
 * GROK-15938: Chem | Scaffold Tree: Array length differ
 * Chem: MMPA: Fix demo
 
@@ -71,7 +221,8 @@
 ### Bug Fixes
 
 * Chem: MMPA: Fixes for cliffs tab and lines improvements
-* [#2964](https://github.com/datagrok-ai/public/issues/2964): Scaffold Tree: 'Selection to filter' reset immediately for some data if scaffold tree is present
+* [#2964](https://github.com/datagrok-ai/public/issues/2964): Scaffold Tree: 'Selection to filter' reset immediately for
+  some data if scaffold tree is present
 
 ## 1.11.1 (2024-07-25)
 
@@ -116,13 +267,15 @@
 
 ### Features
 
-* R Group analysis improvements: ability to select 'Only match at R groups', saving R group user settings, small UI improvements
+* R Group analysis improvements: ability to select 'Only match at R groups', saving R group user settings, small UI
+  improvements
 
 ## 1.9.1 (2024-04-12)
 
 ### Features
 
-* R Group analysis: in browser R group analysis using RDKit JS, highlight of r groups, ability to define enumerated R groups in core
+* R Group analysis: in browser R group analysis using RDKit JS, highlight of r groups, ability to define enumerated R
+  groups in core
 * Similarity/Diversity search: ability to recalculate results on filtering
 
 ## 1.9.0 (2024-03-21)
@@ -130,9 +283,12 @@
 ### Features
 
 * [#2495](https://github.com/datagrok-ai/public/issues/2495): Chem: MMP - initial vesrion
-* [#2540](https://github.com/datagrok-ai/public/issues/2540): Chem | Substructure search: Add an option to toggle the realignment of molecules by molecular filter
-* [#2525](https://github.com/datagrok-ai/public/issues/2525): Chem | Scaffold Tree: Remove the intermediate dialog before the color picker
-* [#2504](https://github.com/datagrok-ai/public/issues/2504): Filter panel: The question mark hovering doesn’t show the filtering of the scaffold tree viewer
+* [#2540](https://github.com/datagrok-ai/public/issues/2540): Chem | Substructure search: Add an option to toggle the
+  realignment of molecules by molecular filter
+* [#2525](https://github.com/datagrok-ai/public/issues/2525): Chem | Scaffold Tree: Remove the intermediate dialog
+  before the color picker
+* [#2504](https://github.com/datagrok-ai/public/issues/2504): Filter panel: The question mark hovering doesn’t show the
+  filtering of the scaffold tree viewer
 
 ### Bug Fixes
 
@@ -152,15 +308,19 @@
 
 ### Bug Fixes
 
-* Fixed multiple substructure search calls with the same structure (in case multiple layouts are applied to cloned views at once)
+* Fixed multiple substructure search calls with the same structure (in case multiple layouts are applied to cloned views
+  at once)
 
 ## 1.8.11 (2024-02-08)
 
 ### Bug Fixes
 
-* [#2642](https://github.com/datagrok-ai/public/issues/2642): Filtering done using viewers is unexpectedly reset on applying other filters in some cases
-* [#2639](https://github.com/datagrok-ai/public/issues/2639): Structure in filter is unexpectedly changed when there are two views in some cases
-* [#2646](https://github.com/datagrok-ai/public/issues/2646): Structure highlighting is not removed when filters panel is closed
+* [#2642](https://github.com/datagrok-ai/public/issues/2642): Filtering done using viewers is unexpectedly reset on
+  applying other filters in some cases
+* [#2639](https://github.com/datagrok-ai/public/issues/2639): Structure in filter is unexpectedly changed when there are
+  two views in some cases
+* [#2646](https://github.com/datagrok-ai/public/issues/2646): Structure highlighting is not removed when filters panel
+  is closed
 
 ## 1.8.10 (2024-01-19)
 
@@ -170,9 +330,12 @@
 
 ### Bug Fixes
 
-* [#2626](https://github.com/datagrok-ai/public/issues/2626): Unexpected warning on adding child node to the scaffold tree if parent contains 'H' atom
-* [#2628](https://github.com/datagrok-ai/public/issues/2628): Structure filter is not applied in some cases when there are two views opened
-* [#2629](https://github.com/datagrok-ai/public/issues/2629): Structure filter filters out all molecules in the presence of filter-by-zoom scatterplot and multiple views
+* [#2626](https://github.com/datagrok-ai/public/issues/2626): Unexpected warning on adding child node to the scaffold
+  tree if parent contains 'H' atom
+* [#2628](https://github.com/datagrok-ai/public/issues/2628): Structure filter is not applied in some cases when there
+  are two views opened
+* [#2629](https://github.com/datagrok-ai/public/issues/2629): Structure filter filters out all molecules in the presence
+  of filter-by-zoom scatterplot and multiple views
 * GROK-14542: Filter Panel | Structure filter: incorrect behavior on deleting a filter in a cloned view
 
 ## 1.8.9 (2024-01-09)
@@ -188,7 +351,8 @@
 * GROK-14411: Demo: Exception while closing Scaffold Tree
 * GROK-14409: Chem | R-Group Analysis: Error with prefix
 * GROK-14375: Chem | Activity cliffs: Implement scatter plot lines renderer
-* [#2612](https://github.com/datagrok-ai/public/issues/2612): Chem | Scaffold tree: Structure part containing H atom is replaced with '?' in some cases
+* [#2612](https://github.com/datagrok-ai/public/issues/2612): Chem | Scaffold tree: Structure part containing H atom is
+  replaced with '?' in some cases
 
 ## 1.8.8 (2023-12-07)
 
@@ -200,7 +364,8 @@
 
 ### Features
 
-* [#2550](https://github.com/datagrok-ai/public/issues/2550): Chem: Scaffold Tree: Counter is not updated when applying the filters
+* [#2550](https://github.com/datagrok-ai/public/issues/2550): Chem: Scaffold Tree: Counter is not updated when applying
+  the filters
 * [#2525](https://github.com/datagrok-ai/public/issues/2525): Chem: Scaffold Tree: Highlighting improvements:
   * More specific fragments should be drawn on top
   * New icons for different coloring states
@@ -208,7 +373,8 @@
 ### Bug Fixes
 
 * [#2536](https://github.com/datagrok-ai/public/issues/2536): Chem: Substructure Filter: Not terminated on fiter reset
-* [#2553](https://github.com/datagrok-ai/public/issues/2553): Chem | Scaffold tree: Realignment issue when the scaffold color is set
+* [#2553](https://github.com/datagrok-ai/public/issues/2553): Chem | Scaffold tree: Realignment issue when the scaffold
+  color is set
 * GROK-14305: Chem | Scaffold Tree: Error when deleting rows in grid
 
 ## 1.8.6 (2023-11-17)
@@ -220,7 +386,8 @@
   * Add a tooltip for NOT
 * [#2526](https://github.com/datagrok-ai/public/issues/2526): Chem: Molecules realignment improvements:
   * Scaffold tree shouldn't reorient molecules in the grid
-* [#2533](https://github.com/datagrok-ai/public/issues/2533): RdKitService stays unresponsive as terminateFlag is not reset after substructure search has completed
+* [#2533](https://github.com/datagrok-ai/public/issues/2533): RdKitService stays unresponsive as terminateFlag is not
+  reset after substructure search has completed
 
 ## 1.8.5 (2023-11-14)
 
@@ -232,8 +399,10 @@
 
 ### Bug Fixes
 
-* [#2511](https://github.com/datagrok-ai/public/issues/2511): Scaffold tree: highlighting is not updated when structure is edited
-* [#2512](https://github.com/datagrok-ai/public/issues/2512): Filtering options (contains, exact, included in etc.) are not synchronised for structure filters on different tabs in some cases
+* [#2511](https://github.com/datagrok-ai/public/issues/2511): Scaffold tree: highlighting is not updated when structure
+  is edited
+* [#2512](https://github.com/datagrok-ai/public/issues/2512): Filtering options (contains, exact, included in etc.) are
+  not synchronised for structure filters on different tabs in some cases
 
 ## 1.8.4 (2023-11-07)
 
@@ -248,10 +417,14 @@
 
 ### Bug Fixes
 
-* [#2474](https://github.com/datagrok-ai/public/issues/2474): Chem | Scaffold tree: Colour is not inherited by child node properly
-* [#2476](https://github.com/datagrok-ai/public/issues/2476): Chem | Scaffold tree: Rows are shown as filtered for a while after applying structure even if checkbox is not selected
-* [#2448](https://github.com/datagrok-ai/public/issues/2448): Some structures are displayed incorrectly when highlighted if they are in SMILES format
-* [#2473](https://github.com/datagrok-ai/public/issues/2473): Structure filter: 'current value > use as filter' breaks filtering in some cases
+* [#2474](https://github.com/datagrok-ai/public/issues/2474): Chem | Scaffold tree: Colour is not inherited by child
+  node properly
+* [#2476](https://github.com/datagrok-ai/public/issues/2476): Chem | Scaffold tree: Rows are shown as filtered for a
+  while after applying structure even if checkbox is not selected
+* [#2448](https://github.com/datagrok-ai/public/issues/2448): Some structures are displayed incorrectly when highlighted
+  if they are in SMILES format
+* [#2473](https://github.com/datagrok-ai/public/issues/2473): Structure filter: 'current value > use as filter' breaks
+  filtering in some cases
 
 ## 1.8.3 (2023-10-26)
 
@@ -263,14 +436,18 @@
   * Make the icon more noticeable
 * [#2420](https://github.com/datagrok-ai/public/issues/2420): Chem | Scaffold Tree coloring:
   * The custom coloring should override the default one
-  * Coloring for child structures - it's very inconvenient that you can't click the icon again to return to the custom color
+  * Coloring for child structures - it's very inconvenient that you can't click the icon again to return to the custom
+    color
   * Add the icon for removing the specific node of the scaffold tree
 
 ### Bug Fixes
 
-* [#2399](https://github.com/datagrok-ai/public/issues/2399): Scaffold tree viewer: coloring can't be saved to the Layout
-* [#2450](https://github.com/datagrok-ai/public/issues/2450): Scaffold tree imported from file is not restored on applying saved layout
-* [#2448](https://github.com/datagrok-ai/public/issues/2448): Some structures are displayed incorrectly when highlighted if they are in SMILES format
+* [#2399](https://github.com/datagrok-ai/public/issues/2399): Scaffold tree viewer: coloring can't be saved to the
+  Layout
+* [#2450](https://github.com/datagrok-ai/public/issues/2450): Scaffold tree imported from file is not restored on
+  applying saved layout
+* [#2448](https://github.com/datagrok-ai/public/issues/2448): Some structures are displayed incorrectly when highlighted
+  if they are in SMILES format
 
 ## 1.8.2 (2023-10-22)
 
@@ -314,7 +491,8 @@
 * GROK-13791: Chem | Chemical space (using t-SNE) fails on smiles dataset
 * [#2135](https://github.com/datagrok-ai/public/issues/2135):
   * The structure rendering is too small.
-* [#2322](https://github.com/datagrok-ai/public/issues/2322): Properties panel is unexpectedly reset on changing viewer properties if there is a scaffold tree filter in filters panel 
+* [#2322](https://github.com/datagrok-ai/public/issues/2322): Properties panel is unexpectedly reset on changing viewer
+  properties if there is a scaffold tree filter in filters panel
 * GROK-13848: Chem: Substructure search results flickering
 
 ## 1.7.0 (2023-08-09)
@@ -346,7 +524,8 @@
 * [#2135](https://github.com/datagrok-ai/public/issues/2135):
   * The counts and controls are partially hidden
   * When change the drawing of a scaffold, then selection (checkbox) of all other scaffolds gets reset (to unchecked)
-* [#2139](https://github.com/datagrok-ai/public/issues/2139): Scaffold tree stops working after adding an invalid structure
+* [#2139](https://github.com/datagrok-ai/public/issues/2139): Scaffold tree stops working after adding an invalid
+  structure
 
 ## 1.6.20 (2023-07-21)
 
@@ -359,19 +538,24 @@ This release focuses on improvements and bug fixes.
 * Set default values in all dialogs where appropriate.
 * Unified the layout of the search panel results.
 * Work with DBs APIs: Added links to sources, similarity search viewer style, reproduce for ChemicalSpace, Enamine.
-* **Elemental Analysis**: the resulting column name now includes the specific column for which calculations were conducted.
+* **Elemental Analysis**: the resulting column name now includes the specific column for which calculations were
+  conducted.
 * **R-Groups Analysis**: a new option to choose between searching for MCS exact atoms or MCS exact bonds.
-* **Similarity Search**: a new **Follow Current Row** setting prevent recalculation when the current row is changed. 
+* **Similarity Search**: a new **Follow Current Row** setting prevent recalculation when the current row is changed.
 * For proper handling of properties and rendering, we now check for smarts and molecular fragments separately.
 * Ability to copy data from the **Descriptors** and **Properties** tabs on the **Context Pane**.
-* Moved **Descriptors** and **Fingerprints** from the  **Context Pane**  to the **Top Menu** ( **Chem** > **Calculate**).
+* Moved **Descriptors** and **Fingerprints** from the  **Context Pane**  to the **Top Menu** ( **Chem** > **Calculate
+  **).
 * Added **Substructure Search** to the **Top Menu** ( **Chem** > **Search**)
 * Modified the tooltip for dialog and drag-n-drop to prevent it from overlapping with the data.
 * Implemented RDKit rendering for Chembl, ChemblAPI, PubChem, and DrugBank databases if OCL is used currently.
-* UI polishing: harmonized input field names, repositioned elements in dialogs, added tooltips, and organized the top menu items into groups: Calculate, ADME/Tox, Search, Analyze, and Transform.
+* UI polishing: harmonized input field names, repositioned elements in dialogs, added tooltips, and organized the top
+  menu items into groups: Calculate, ADME/Tox, Search, Analyze, and Transform.
 * Scaffold Tree improvements:
-  * [#1730](https://github.com/datagrok-ai/public/issues/1730): Implemented Scaffold Tree integration to the **Filters Panel**.
-  * [#1998](https://github.com/datagrok-ai/public/issues/1998): Now a scaffold tree shows a confirmation dialog before dropping all trees on the **Clear** icon click.
+  * [#1730](https://github.com/datagrok-ai/public/issues/1730): Implemented Scaffold Tree integration to the **Filters
+    Panel**.
+  * [#1998](https://github.com/datagrok-ai/public/issues/1998): Now a scaffold tree shows a confirmation dialog before
+    dropping all trees on the **Clear** icon click.
   * Added the **Allow Generate** property for the viewer in order to control autogeneration.
 
 ### Bug Fixes

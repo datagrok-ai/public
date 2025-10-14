@@ -46,6 +46,8 @@ import './packages/docker';
 import './packages/user-settings-storage';
 import './packages/upload-migrations';
 import './grid/grid';
+import './grid/filterGroup';
+import './shell/events';
 import './grid/color-coding';
 import './grid/multi-value-column';
 import './stats/stats';
@@ -53,6 +55,7 @@ import './stats/stats';
 import './valuematcher/valuematcher';
 import './property/property';
 import './widgets/input-form';
+import './utils/progressIndicator';
 
 import { runTests, tests, TestContext, initAutoTests as initTests } from '@datagrok-libraries/utils/src/test';
 

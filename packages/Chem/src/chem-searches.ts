@@ -111,7 +111,7 @@ function invalidatedColumnKey(col: DG.Column): string {
 function checkForSavedColumns(col: DG.Column, colTags: (Fingerprint | string) []): {[key: string | Fingerprint] : DG.Column<any>} {
 
   //in case column has not been subsribed to onDataChange, then do it and set column value change counter to 0
-  if (!col.temp[DATA_CHANGED_TAG]) {
+  if (col.temp[DATA_CHANGED_TAG] == null) {
     col.temp[DATA_CHANGED_TAG] = 0;
     col.dataFrame?.onDataChanged.pipe(filter((args: any) => {
       return args?.args?.column?.name === col.name && args?.args?.indexes?.length
@@ -153,7 +153,7 @@ function saveColumn(col: DG.Column, data: (Uint8Array | string | null)[],
     throw new Error('Column has no parent dataframe');
 
   const savedColumnName = '~' + col.name + '.' + tagName;
-  const newCol = col.dataFrame.columns.getOrCreate(savedColumnName, colType, data.length);
+  const newCol = col.dataFrame.columns.getOrCreate(savedColumnName, colType);
 
   newCol.init((i) => data[i]);
   newCol.meta.includeInCsvExport = false;

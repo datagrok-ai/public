@@ -51,4 +51,4 @@ category('DataFrame', () => {
     c.set(1, null);
     expect(c.get(1), null);
   });
-});
+}, {owner: 'aparamonov@datagrok.ai'});

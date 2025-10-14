@@ -10,7 +10,7 @@ import {MolfileWrapperFactory} from './mol-wrapper-factory';
 export class MonomerWrapper {
   private readonly molfileWrapper: MolfileWrapper;
   private capGroupElements: string[] = [];
-
+  private static molfileV2KToV3KCache: Map<string, string> = new Map();
   constructor(
     public readonly monomerSymbol: string,
     public readonly monomerIdx: number,
@@ -39,12 +39,16 @@ export class MonomerWrapper {
   public get bondCount() { return this.molfileWrapper.bondCount; }
 
   private convertMolfileToV3KFormat(molfileV2K: string, monomerSymbol: string, rdKitModule: RDModule): string {
+    if (MonomerWrapper.molfileV2KToV3KCache.has(molfileV2K))
+      return MonomerWrapper.molfileV2KToV3KCache.get(molfileV2K)!;
     let mol: RDMol | null = null;
     try {
       mol = rdKitModule.get_mol(molfileV2K, JSON.stringify({mergeQueryHs: true}));
-      if (mol)
-        return mol.get_v3Kmolblock();
-      else
+      if (mol) {
+        const res = mol.get_v3Kmolblock();
+        MonomerWrapper.molfileV2KToV3KCache.set(molfileV2K, res);
+        return res;
+      } else
         throw new Error(`Cannot convert ${monomerSymbol} to molV3000`);
     } finally {
       mol?.delete();

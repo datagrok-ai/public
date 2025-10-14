@@ -1,2 +1,2 @@
-grok.data.query('UsageAnalysis:TopPackageErrors', {date: 'this week', users: ['all']})
-  .then((t) => grok.shell.addTableView(t));
+let errors = await grok.data.query('UsageAnalysis:TopErrors', {date: 'this week'})
+grok.shell.addTableView(errors)

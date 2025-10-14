@@ -2,14 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {RUN_ID_COL_LABEL, RUN_NAME_COL_LABEL, VIEWER_PATH, viewerTypesMapping} from '../../../shared-utils/consts';
-import wu from 'wu';
-import {Observable} from 'rxjs';
-import {SubscriptionLike} from '../../../shared-utils/input-wrappers';
-
-export const delay = (delayInms: number) => {
-  return new Promise((resolve) => setTimeout(resolve, delayInms));
-};
+import {RUN_ID_COL_LABEL, RUN_NAME_COL_LABEL, VIEWER_PATH} from '../../../shared-utils/consts';
+import {getPropViewers, getStarted} from '../../../shared-utils/utils';
 
 export const getDefaultValue = (prop: DG.Property) => {
   // Before 1.19 the default value was in .defaultValue. In 1.19 it was moved to options.default
@@ -32,41 +26,6 @@ export function properUpdateIndicator(e: HTMLElement, state: boolean) {
     $(e).removeClass('ui-box');
   }
 }
-
-export function getObservable<T>(onInput: (f: Function) => SubscriptionLike): Observable<T> {
-  return new Observable((observer: any) => {
-    const sub = onInput((val: T) => {
-      observer.next(val);
-    });
-    return () => sub.unsubscribe();
-  });
-}
-
-export const getPropViewers = (prop: DG.Property): {name: string, config: Record<string, string | boolean>[]} => {
-  const viewersRawConfig = prop.options[VIEWER_PATH];
-  return (viewersRawConfig !== undefined) ?
-    // true and false values are retrieved as string, so we parse them separately
-    {name: prop.name, config: JSON.parse(viewersRawConfig, (k, v) => {
-      if (v === 'true') return true;
-      if (v === 'false') return false;
-      // Converting internal Dart labels to JS DG.VIEWER labels
-      if (k === 'type') return viewerTypesMapping[v] || v;
-
-      if (!k.toLowerCase().includes('color')) {
-        const parsed = Number.parseFloat(v);
-
-        if (!Number.isNaN(parsed))
-          return parsed;
-      }
-
-      return v;
-    })}:
-    {name: prop.name, config: []};
-};
-
-export const getFuncRunLabel = (func: DG.Func) => {
-  return func.options['runLabel'];
-};
 
 export const getDfFromRuns = (
   comparedRuns: DG.FuncCall[],
@@ -244,13 +203,4 @@ export const getDfFromRuns = (
   });
 
   return comparisonDf;
-};
-
-export const getStarted = (call: DG.FuncCall) => {
-  try {
-    return call.started.toDate()
-      .toLocaleString('en-us', {month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric'});
-  } catch {
-    return 'Not completed';
-  }
 };

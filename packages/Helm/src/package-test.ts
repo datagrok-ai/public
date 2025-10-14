@@ -19,6 +19,9 @@ import './tests/parse-helm-tests';
 import './tests/helm-web-editor-tests';
 import './tests/helm-input-tests';
 import './tests/helm-helper-tests';
+import './tests/helm-substructure-filter';
+import './tests/helm-activity-cliffs';
+import './tests/to-atomic-level-ui-non-linear';
 
 export const _package = new DG.Package();
 export {tests};

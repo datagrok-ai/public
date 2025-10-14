@@ -4,7 +4,8 @@ import {toOffsetForm} from '../umap/utils';
 
 export async function generationsGPU(structuresN: number, activityN: number, moleculesArray: string[],
   allStructures: string[], allInitActivities: Float32Array, activityName: string[], activities: Float32Array[],
-  activityNames: string[], frags: [string, string][][], meanDiffs: Float32Array[], prediction: Float32Array,
+  activityNames: string[], frags: {fragCodes: [number, number][][], idToName: string[], sizes: Uint32Array},
+  meanDiffs: Float32Array[], prediction: Float32Array,
   cores: string[], from: string[], to: string[], rulesFrom: ArrayLike<number>, rulesTo: ArrayLike<number>,
   rulesFromCats: string[], rulesToCats: string[]
 ) {
@@ -13,7 +14,7 @@ export async function generationsGPU(structuresN: number, activityN: number, mol
   const emptyCoreIndex = 0;
   fragsMap[''] = emptyCoreIndex;
   let fragHashCounter = 1;
-  const fragsLens = frags.map((val) => val.length);
+  const fragsLens = frags.fragCodes.map((val) => val.length);
   const fragsTotalLen = fragsLens.reduce((a, b) => a + b, 0);
   const fragsOffsets = toOffsetForm(fragsLens);
   const initCores = new Uint32Array(fragsTotalLen);
@@ -36,9 +37,9 @@ export async function generationsGPU(structuresN: number, activityN: number, mol
       activityName[j * structuresN + i] = activityNames[j];
     }
 
-    for (let j = 0; j < frags[i].length; j++) {
-      const core = frags[i][j][0];
-      const subst = frags[i][j][1];
+    for (let j = 0; j < frags.fragCodes[i].length; j++) {
+      const core = frags.idToName[frags.fragCodes[i][j][0]];
+      const subst = frags.idToName[frags.fragCodes[i][j][1]];
       const coreNum = (fragsMap[core] ??= ++fragHashCounter);
       const substNum = (fragsMap[subst] ??= ++fragHashCounter);
       initCores[fragsCounter] = coreNum;

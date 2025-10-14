@@ -3,6 +3,13 @@ title: "Datagrok: Swiss Army Knife for Data"
 
 ---
 
+:::tip [Ask DeepWiki](https://deepwiki.com/datagrok-ai/public)
+
+Need quick answers about functionality, troubleshooting, or advanced features? Ask **DeepWiki**.  
+Try questions like: "How do I add a regression line to a scatterplot?" or  "How do I publish a package?"
+
+:::
+
 ## Why Datagrok?
 
 Datagrok helps you understand data and take action.
@@ -68,7 +75,7 @@ suggestions.
 
 * [50+ interactive viewers](../visualize/viewers/viewers.md) for synchronized, dynamic dashboards
 * [Integration with visualizations in R, Python, or Julia](../visualize/viewers/scripting-viewer.md)
-* Built-in [regression and formula lines](../visualize/viewers/scatter-plot.md#calculations-and-trends),
+* Built-in [regression and formula lines](../visualize/viewers/scatter-plot.md#formula-lines),
   confidence intervals, correlations, and statistics
 * Automatic detection of outliers, [missing values](../explore/missing-values-imputation.md),
  or incorrect data types
@@ -94,7 +101,7 @@ No-code modeling. State-of-the-art cheminformatics engines and ML toolkit includ
 * [Train, assess, apply, and share models](../learn/learn.md) (or integrate your own)
 * Native support for R, Python, Julia, Matlab, and Octave
 * Open any dataset with a [Jupyter notebook](../compute/jupyter-notebook.md)
-* ML toolkit: [statistical hypothesis testing](solutions/domains/data-science.md#statistical-hypothesis-testing), [multivariate analysis](../explore/multivariate-analysis/pls.md), [dimensionality reduction](../explore/dim-reduction.md), [data clustering](../explore/cluster-data.md), [variance analysis](../explore/anova.md).
+* ML toolkit: [statistical hypothesis testing](solutions/domains/data-science.md#statistical-hypothesis-testing), [multivariate analysis](../explore/multivariate-analysis.md), [dimensionality reduction](../explore/dim-reduction.md), [data clustering](../explore/cluster-data.md), [variance analysis](../explore/anova.md).
 
 #### Collaborate
 
@@ -117,7 +124,7 @@ Customize anything, from context actions to UI elements. Fast development and
 deployment time with seamless integration.
 
 * [JavaScript API](../develop/packages/js-api.md) for [extending Datagrok](../develop/packages/extensions.md#what-can-be-extended)
-* App marketplace: use or customize [ours](https://public.datagrok.ai/packages), [build your own](../develop/how-to/build-an-app.md), or integrate with third party apps
+* App marketplace: use or customize [ours](https://public.datagrok.ai/packages), [build your own](../develop/how-to/apps/build-an-app.md), or integrate with third party apps
 * [Developer tools](../develop/dev-process/tools/inspector.md), [UI toolkit](../develop/advanced/ui.md)
 * Comprehensive help: [wiki](../develop/develop.md), [exercises](../develop/onboarding/exercises.md), [community forum](https://community.datagrok.ai/).
 
@@ -127,12 +134,12 @@ deployment time with seamless integration.
 detects the semantics, like zip codes or molecules, and has built-in support
 for areas like [cheminformatics](solutions/domains/chem/chem.md),
 [bioinformatics](solutions/domains/bio/bio.md), [data science](solutions/domains/data-science.md),
- and others. Need more? Create [your own plugin](../develop/how-to/create-package.md).
+ and others. Need more? Create [your own plugin](../develop/how-to/packages/create-package.md).
 
 **Skillset**: Datagrok is for anyone who works with data: 
 
 * Chemists analyzing SAR tables? [Perfect fit](solutions/domains/chem/chem.md#chemically-aware-spreadsheet).
-* Data analysts? Drag and drop your local files to start analyzing. 
+* [Data analysts](solutions/teams/analysts.md)? Drag and drop your local files to start analyzing. 
 * Data scientists mapping new store locations? [Excellent for strategic planning](https://www.youtube.com/watch?v=tVwpRB8fikQ).
 * Research scientists running complex simulations? [Absolutely](../compute/compute.md).
 * Data engineers? Automatically convert queries to [dynamic dashboards](../access/databases/databases.md#creating-dynamic-dashboards-for-query-results), no coding needed. 
@@ -140,7 +147,7 @@ for areas like [cheminformatics](solutions/domains/chem/chem.md),
 
 **Team size**: Datagrok is for individuals and teams of all sizes - from
 startups<!--insert link to customer stories--> to large enterprises<!--insert link to customer stories-->. The
-platform is [enterprise-ready](solutions/enterprise/enterprise.md),
+platform is [enterprise-ready](solutions/teams/it/enterprise.md),
 [scalable](../develop/under-the-hood/scaling.md), and ideal for sharing and collaboration.
 
 ## What makes it so flexible?
@@ -245,13 +252,13 @@ and [performance optimization](../develop/under-the-hood/performance.md).
 
 ## Solutions
 
-* [Self-service analytics](solutions/domains/use-cases/eda.md)
+* [Self-service analytics](solutions/workflows/eda.md)
 * [Data science](solutions/domains/data-science.md)
 * Life sciences
   * [Chem](solutions/domains/chem/chem.md)
   * [Bio](solutions/domains/bio/bio.md)
 * [NLP](solutions/domains/nlp/nlp.md)
-* [Enterprise IT](solutions/enterprise/enterprise.md)
+* [Enterprise IT](solutions/teams/it/enterprise.md)
 * [Plugins](plugins.md)
 
 <!--

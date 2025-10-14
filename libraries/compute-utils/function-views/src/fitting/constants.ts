@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 // Specific optimization constants
 
 export enum METHOD {
@@ -23,9 +24,11 @@ export const lossTooltip = new Map([
 /** Grid elements sizes */
 export enum GRID_SIZE {
   LOSS_COL_WIDTH = 60,
-  ROW_HEIGHT = 180,
-  LOSS_GRAPH_WIDTH = 360,
-  GOF_VIEWER_WIDTH = 240,
+  ROW_HEIGHT = 280,
+  LOSS_GRAPH_WIDTH = 320,
+  GOF_VIEWER_WIDTH = 320,
+  RADAR_WIDTH = 280,
+  BAR_HEIGHT = 100,
 }
 
 /** UI titles */
@@ -59,15 +62,21 @@ enum HELP_ITEMS {
   SIMILARITY = '`' + TITLE.SIMILARITY + '`',
 };
 
-/** Progress bar time to sleep */
-export const MS_TO_SLEEP = 10;
+export enum TIMEOUT {
+  MS_TO_SLEEP = 10,
+  STYLE_TIMEOUT = 3000,
+  RADAR = 200,
+};
 
 /** Fitting UI constants */
 export enum FITTING_UI {
   SIMILARITY_MIN = 0,
-  SIMILARITY_DEFAULT = 0.01,
+  SIMILARITY_MAX = 100, // %
+  SIMILARITY_DEFAULT = 10, // %
   SAMPLES = 10,
 };
+
+export const HELP_LINK = 'https://datagrok.ai/help/compute/function-analysis#parameter-optimization';
 
 /** Starting help markdown */
 export const STARTING_HELP = `# Fitting
@@ -89,7 +98,7 @@ It computes inputs minimizing deviation measured by [loss function](https://en.w
 
 5. Enter the number of points to be found (in the ${HELP_ITEMS.SAMPLES} field).
 
-6. Set the maximum scaled deviation between similar fitted points (in the ${HELP_ITEMS.SIMILARITY} field).
+6. Set the maximum relative deviation (%) in the ${HELP_ITEMS.SIMILARITY} field. It defines the threshold for determining whether fitted points are similar.
 
 7. Press the "Run" icon <i class="fas fa-play"></i> on the top panel to perform fitting. You will get a
 [grid](https://datagrok.ai/help/visualize/viewers/grid) containing 
@@ -101,10 +110,64 @@ It computes inputs minimizing deviation measured by [loss function](https://en.w
 
 8. Open ${HELP_ITEMS.CONTEXT}. You will get the function run corresponding to the selected grid row.
 
-9. Press <i class="grok-icon fal fa-question"></i> on the top panel to learn more about 
-[parameters optimization](https://datagrok.ai/help/compute/function-analysis#parameter-optimization).
+9. Press **?** on the top panel to learn more about 
+[parameters optimization](${HELP_LINK}).
 
 # Learn more
 
-* [Parameters optimization](https://datagrok.ai/help/compute/function-analysis#parameter-optimization)
+* [Parameters optimization](${HELP_LINK})
 * [Nelder-Mead method](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method)`;
+
+export enum INDICES {
+  SINGLE_VAL = 0,
+  SINGLE_CAT = 1,
+  DOUBLE_VAL1 = 0,
+  DOUBLE_VAL2 = 1,
+  DOUBLE_CAT = 2,
+  DIFF_STUDIO_OUTPUT = 0,
+  SCALAR_VALS_COL = 1,
+  OLIVE = 8,
+  LIGHT_OLIVE = 16,
+  GREY = 7,
+  LIGHT_GREY = 15,
+  BLUE = 0,
+  ORANGE = 1,
+};
+
+export enum NAME {
+  CATEGORY = '__Category__',
+  SIZE = '__Size__',
+  SIMULATION = 'Simulation',
+  TARGET = 'Target',
+  SCALARS = 'Scalars',
+  NULL = 'Null',
+};
+
+export enum SIZE {
+  LINE_CHART_LINE_WIDTH = 2,
+  SIMULATION = 1,
+  TARGET = 2,
+  MIN_MARKER = 1,
+  MAX_MARKER = 7,
+  LIGHTER_PERC = 50,
+};
+
+/** Info panel content */
+export const TARGET_DATAFRAME_INFO = `1. Set a dataframe with function(s) values
+
+2. Select a column with the independent variable in the **argument** field
+
+3. Specify one or more target columns with the dependent variable(s) in the **functions** field`;
+
+/** Loss function line chart options */
+export const LOSS_FUNC_CHART_OPTS = {
+  showYAxis: true,
+  showXAxis: true,
+  showXSelector: true,
+  showYSelectors: true,
+  lineColoringType: 'custom',
+  lineColor: 4288600805,
+  markerColor: 4288600805,
+};
+
+export const MIN_RADAR_COLS_COUNT = 4;

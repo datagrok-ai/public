@@ -1,0 +1,9 @@
+import {PackageFunctions} from './package';
+import * as DG from 'datagrok-api/dg';
+
+//name: Ketcher
+//tags: moleculeSketcher
+//output: widget result
+export function ketcherSketcher() : any {
+  return PackageFunctions.ketcherSketcher();
+}

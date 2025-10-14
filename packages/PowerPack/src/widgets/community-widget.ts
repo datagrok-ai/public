@@ -4,8 +4,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 export class CommunityWidget extends DG.Widget {
+  get type(): string {
+    return 'CommunityWidget';
+  }
+
   caption: string;
-  order: string;
 
   constructor() {
     super(ui.panel([], 'welcome-community-widget'));
@@ -21,7 +24,6 @@ export class CommunityWidget extends DG.Widget {
 
     // properties
     this.caption = super.addProperty('caption', DG.TYPE.STRING, 'Community');
-    this.order = super.addProperty('order', DG.TYPE.STRING, '6');
   }
 }
 

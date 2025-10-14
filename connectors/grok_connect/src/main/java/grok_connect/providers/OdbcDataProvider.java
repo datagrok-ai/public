@@ -12,7 +12,7 @@ public class OdbcDataProvider extends JdbcDataProvider {
         descriptor.type = "ODBC";
         descriptor.description = "Query database via ODBC";
         descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
-        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
+        descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
     }
 
     public String getConnectionStringImpl(DataConnection conn) {

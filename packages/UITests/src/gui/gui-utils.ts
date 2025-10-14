@@ -41,6 +41,12 @@ export function isViewerPresent(viewers: DG.Viewer[], viewerName: string): void 
     throw new Error(viewerName + ' not found');
 }
 
+export function showToolbox() {
+  if (grok.shell.windows.showToolbox)
+    grok.shell.windows.showToolbox = false;
+  grok.shell.windows.showToolbox = true;
+}
+
 export function checkViewer(viewers: DG.Viewer[], viewerName: string): boolean {
   return viewers.filter((v) => v.type == viewerName).length > 0;
 }
@@ -167,7 +173,7 @@ export async function waitForElement(selector: string, error: string, wait=3000)
  * @param  {DG.DockNode} TM
  * @return {Promise<void>}
  */
-export async function testApp(app: DG.Func, TM: DG.DockNode): Promise<void> {
+export async function testApp(app: DG.Func): Promise<void> {
   // const nodes = [...grok.shell.dockManager.rootNode.children];
   // const lastNode = nodes[0];
   // console.log(nodes);

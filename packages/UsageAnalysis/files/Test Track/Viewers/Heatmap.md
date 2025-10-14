@@ -1,27 +1,41 @@
-1. Open SPGI, SPGI-linked1, SPGI-linked2 by pressing 'star' icon in TestTrack (with tooltip "Open test data").
-2. Go to **Tables > SPGI**.
-3. On the **Viewers tab**, click **Heatmap**.
-4. On the **heatmap** viewer, click the **Gear** icon. The **Property Pane** opens.
-5. Go to the **Data** info panel and check all the properties, including the following:
-    1. Tables switching (SPGI, SPGI-linked2, SPGI-linked1).
-    2. Save to Layout. Check
-6. Custom sorting of categorical columns:
-    1. Go to the grid.
-    2. Right-click the Primary Series Name column’s header and select **Sort > Custom** from the context menu.
-    3. Move the empty value to the first place. Click Apply, OK
-    4. Right-click the Primary Series Name column’s header and select **Sort > Ascending** (empty value should be in the first place), **Descending**.
-7. Layouts saving & visualization:
-* Open new **SPGI** dataset. On the **Viewers tab**, click **Heatmap**.
-* In the **Property Pane**:
-  * increase 'Max Heatmap Columns' to 100.
-  * switch off 'Is heatmap' option.
-  * move scrollbar position
-* Save and re-apply layout.
-* Switch on 'Is heatmap' option in the **Property Pane**. 
-* **Expected Results**: 
-  * After applying the layout, the Heatmap visualization should be identical to the view before the 'Is heatmap' option was switched off. 
-  * The scrollbar position should be saved for layout
-  * There should be no visible differences in the Heatmap display.
+#### Heatmap Viewer
+
+1. Load test data
+- In TestTrack, click the **Star icon** with the tooltip "Open test data".
+- This action should **open the following datasets**:
+  - SPGI
+  - SPGI-linked1
+  - SPGI-linked2
+2. Open Heatmap viewer
+- Go to Tables > SPGI
+- Open the **Viewers tab**, then click **Heatmap**
+- Click the **Gear** icon on the viewer to open **the Context Panel**
+3. Verify data properties
+- In **the Context Panel**, check that table switching works correctly:     
+  - Switch between SPGI, SPGI-linked1, and SPGI-linked2
+  - The configuration can be saved to a Layout and reopened correctly
+4. Test **custom sorting** on **categorical column**
+- In the SPGI, right-click the column header **Primary Series Name**
+- Select **Sort > Custom**. Move the empty value to the top of the list
+- Click Apply, then OK. 
+- Right-click the same column again:
+  - Choose Sort > Ascending → Confirm the empty value appears first
+  - Choose Sort > Descending → Confirm sorting order is reversed correctly
+5. Test **Layout saving** and visualization restoration
+- Open a new instance of the SPGI dataset
+- Open Heatmap from the Viewers tab
+- In the Property Pane:
+  - Increase Max Heatmap Columns to 100
+  - Uncheck Is heatmap
+  - Scroll horizontally in the viewer
+- Save this view as a Layout
+- Switch to another layout, then come back to the saved one
+- Enable Is heatmap again in the Property Pane
+- **Expected Results:** 
+  - The Heatmap should restore to the exact same configuration it had before you disabled Is heatmap
+  - The scrollbar position should be preserved 
+  - No visual differences should appear after applying the layout
+
 
 ---
 {

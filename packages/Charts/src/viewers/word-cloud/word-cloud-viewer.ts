@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
@@ -72,7 +73,6 @@ export class WordCloudViewer extends DG.JsViewer {
   }
 
   onTableAttached() {
-    this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render()));
 
@@ -81,10 +81,8 @@ export class WordCloudViewer extends DG.JsViewer {
     const columns = this.dataFrame.columns.toList();
     this.strColumns = columns.filter((col) => col.type === DG.TYPE.STRING);
 
-    if (this._testColumns()) {
-      this.strColumnName = this.strColumns.reduce((prev, curr) =>
-        prev.categories.length < curr.categories.length ? prev : curr).name;
-    }
+    if (this._testColumns())
+      this.strColumnName = this.strColumns.filter((col) => col.categories.length <= MAX_UNIQUE_CATEGORIES_NUMBER && col.categories.length > 1)[0]?.name ?? '';
 
     this.render();
   }
@@ -114,8 +112,7 @@ export class WordCloudViewer extends DG.JsViewer {
       this._showMessage('Not enough data to produce the result.', ERROR_CLASS);
       return;
     }
-    if (this.strColumnName === null || this.strColumnName === '' ||
-      this.dataFrame.getCol(this.strColumnName).categories.length > MAX_UNIQUE_CATEGORIES_NUMBER) {
+    if (!this.strColumnName || this.dataFrame.getCol(this.strColumnName).categories.length > MAX_UNIQUE_CATEGORIES_NUMBER) {
       this._showMessage('The Word cloud viewer requires categorical column with 500 or fewer unique categories', ERROR_CLASS);
       return;
     }
@@ -181,7 +178,7 @@ export class WordCloudViewer extends DG.JsViewer {
     this.chart
       .on('mouseover', (d: any) => ui.tooltip.showRowGroup(table, (i) => {
         return d.name === strColumn.get(i);
-      }, 10, 10))
+      }, d.event.event.x + 10, d.event.event.y + 10))
       .on('mouseout', () => ui.tooltip.hide())
       .on('mousedown', (d: any) => {
         table.selection.handleClick((i) => {

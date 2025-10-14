@@ -3,6 +3,7 @@
 #language: python
 #tags: nlp, panel, extractor
 #input: file file [A file that contains text]
+#input: string extension
 #output: string text {semType: text} [Extracted text]
 #condition: file.isFile && 0 < file.size && file.size < 1e6 && supportedExtExtract(file.name)
 
@@ -11,7 +12,7 @@ import pycountry
 import textract
 import cleantext
 
-params = {'filename': file, 'extension': file[file.rfind('.', 0, -10) : -10]}
+params = {'filename': file, 'extension': extension}
 
 if file.endswith(('gif', 'jpg', 'jpeg', 'png', 'tiff', 'tif')):
     text = textract.process(**params).decode().strip()

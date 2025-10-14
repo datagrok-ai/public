@@ -1,4 +1,4 @@
-# UITests changelog
+# UI Tests changelog
 
 ## 1.0.12 (2024-09-02)
 

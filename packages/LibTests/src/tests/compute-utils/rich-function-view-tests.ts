@@ -5,7 +5,7 @@ import {take, filter} from 'rxjs/operators';
 import {applyTransformations, serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {getFuncCallIO} from '../utils';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {InputVariants} from '@datagrok-libraries/compute-utils/function-views/src/rich-function-view';
+import {InputVariants} from '@datagrok-libraries/compute-utils/old-views/src/rich-function-view';
 import fc1 from '../snapshots/fc1.json';
 
 category('ComputeUtils: RichFunctionView Inputs', async () => {
@@ -62,7 +62,6 @@ category('ComputeUtils: RichFunctionView Inputs', async () => {
     expectDeepEqual(getFuncCallIO(view.lastCall!), expected, {prefix: 'lastCall'});
     for (const [name, val] of Object.entries(inputValues))
       expectDeepEqual(inputsMap[name].value, val, {prefix: `input ${name}`});
-
   });
 
   test('Simple inputs inputs tweak', async () => {
@@ -232,7 +231,7 @@ category('ComputeUtils: RichFunctionView Inputs', async () => {
 
   test('Simple inputs default values', async () => {
     const view = new RichFunctionView('Libtests:simpleInputsDefaultValues', {historyEnabled: false, isTabbed: false});
-    
+
     await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
     await delay(100);
     const expected = {
@@ -266,7 +265,6 @@ category('ComputeUtils: RichFunctionView Inputs', async () => {
     view.afterInputPropertyRender.subscribe(({prop, input}) => {
       inputsMap[prop.name] = input;
     });
-    await view.funcCallReplaced.pipe(take(1)).toPromise();
     view.funcCall.setParamValue('df', inputValues['df']);
     view.funcCall.setParamValue('data', inputValues['data']);
     await view.doRun();
@@ -363,7 +361,6 @@ category('ComputeUtils: RichFunctionView Inputs', async () => {
     expectDeepEqual(getFuncCallIO(view.lastCall!), applyTransformations(fc1), {prefix: 'lastCall'});
     expectDeepEqual(inputsMap.data.value, inputValues.data, {prefix: 'data'});
   });
-
 });
 
 category('ComputeUtils: RichFunctionView Validation', async () => {
@@ -510,5 +507,4 @@ category('ComputeUtils: RichFunctionView Validation', async () => {
       },
     );
   });
-
 });

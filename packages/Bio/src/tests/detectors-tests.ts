@@ -1,3 +1,5 @@
+/* eslint-disable max-lines */
+/* eslint-disable max-lines-per-function */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -8,6 +10,8 @@ import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-librarie
 import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {_testNeg, _testPos, DetectorTestData, DfReaderFunc, PosCol} from './utils/detectors-utils';
+import { SeqTemps } from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
+import { _testBilnDetection, detectorTestsDataForBiln } from './biln-tests';
 
 /*
 // snippet to list df columns of semType='Macromolecule' (false positive)
@@ -271,6 +275,7 @@ MWRSWY-CKHPMWRSWY-CKHP`;
     testSpgi = 'testSpgi',
     testSpgi100 = 'testSpgi100',
     testUrl = 'testUrl',
+    fastaNegativeWords = 'fasta_negative_words'
   }
 
   const samples: { [key: string]: string } = {
@@ -295,6 +300,7 @@ MWRSWY-CKHPMWRSWY-CKHP`;
     [Samples.testSpgi100]: 'System:AppData/Bio/tests/testSpgi100.csv',
     [Samples.testSpgi]: 'System:AppData/Bio/tests/SPGI-derived.csv',
     [Samples.testUrl]: 'System:AppData/Bio/tests/testUrl.csv',
+    [Samples.fastaNegativeWords]: 'System:AppData/Bio/tests/fasta_negative_words.csv',
   };
 
   const _samplesDfs: { [key: string]: Promise<DG.DataFrame> } = {};
@@ -414,6 +420,11 @@ MWRSWY-CKHPMWRSWY-CKHP`;
     }, seqHelper);
   });
 
+  for (const bilnT of detectorTestsDataForBiln) {
+    test(bilnT.name, async () => {
+      await _testBilnDetection(bilnT.seqs, seqHelper, bilnT.negative);
+    });
+  }
   // test('samplesFastaFasta', async () => {
   //   await _testDf(readSamples(Samples.fastaFasta), {
   //     'sequence': new PosCol(NOTATION.FASTA, ALIGNMENT.SEQ, ALPHABET.PT, 20, false),
@@ -504,6 +515,10 @@ MWRSWY-CKHPMWRSWY-CKHP`;
 
   test('samplesTestUrl', async () => {
     await _testDf(readSamples(Samples.testUrl), {} /* no positive */, seqHelper);
+  });
+
+  test('samplesFastaNegativeWords', async () => {
+    await _testDf(readSamples(Samples.fastaNegativeWords), {} /* no positive */, seqHelper);
   });
 });
 

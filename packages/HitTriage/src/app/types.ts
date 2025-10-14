@@ -1,6 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 
-export type AppName = 'Hit Triage' | 'Hit Design' | 'PeptiHit';
+export type AppName = keyof CampaignsType;
 
 export type CampaignsType = {
     'Hit Triage': HitTriageCampaign,
@@ -62,6 +62,7 @@ export type HitTriageTemplate = {
     queryFunctionName?: string,
     isDataSourceQuery?: boolean,
     layoutViewState?: string,
+    localLayoutPath?: string,
 }
 
 export const CampaignFieldTypes = {
@@ -97,13 +98,14 @@ export type HitTriageTemplateCompute = {
 
 export type HitTriageTemplateSubmit = {
     fName: string,
-    package: string
+    package?: string | undefined
 };
 
-export type HitTriageCampaignStatus = 'In Progress' | 'Submitted';
+export type HitTriageCampaignStatus = string;
 
 export type HitTriageCampaign = {
     name: string,
+    friendlyName?: string,
     templateName: string,
     template?: HitDesignTemplate,
     savePath?: string,
@@ -119,7 +121,9 @@ export type HitTriageCampaign = {
     columnTypes?: {[key: string]: string},
     version?: number,
     permissions?: TriagePermissions,
-    authorUserId?: string
+    authorUserId?: string,
+    authorUserFriendlyName?: string,
+    lastModifiedUserName?: string,
 };
 
 export type TriagePermissions = {

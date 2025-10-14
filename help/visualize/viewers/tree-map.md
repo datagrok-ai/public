@@ -26,7 +26,7 @@ table and builds a treemap.
 ## Settings
 
 You can set the hierarchy and customize a treemap viewer. To do that, click the
-**Gear** icon on top of the viewer and use settings on the **Context Pane**. For
+**Gear** icon on top of the viewer and use settings on the **Context Panel**. For
 example, you can:
 
 * **Set tree hierarchy**

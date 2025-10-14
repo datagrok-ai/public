@@ -1,7 +1,7 @@
 import { toJs } from "./wrappers";
 import { IDartApi } from "./api/grok_api.g";
 
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 /**
  * Functionality to store key-value pairs with settings for further reuse.

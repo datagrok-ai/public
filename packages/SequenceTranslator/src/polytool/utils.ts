@@ -12,7 +12,7 @@ import {
 } from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 
 declare const org: OrgType;
-const LIB_PATH = 'System:AppData/Bio/monomer-libraries/';
+export const LIB_PATH = 'System:AppData/Bio/monomer-libraries/';
 
 export function _setPeptideColumn(col: DG.Column): void {
   addCommonTags(col);

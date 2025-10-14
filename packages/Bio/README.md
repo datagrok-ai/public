@@ -11,9 +11,16 @@ formats (such as fasta or csv) and multiple notations for natural and modified r
 nucleotide and amino acid sequences. The sequences are automatically detected and classified while preserving their
 initial notation. Datagrok allows you to convert sequences between different notations as well.
 
+To convert sequences, go to **Bio** > **Convert** > **Notation...** and configure the parameters:
+
+- **Data**: Select the table containing the sequences.
+- **Sequences**: Choose the column with sequence data.
+- **Target Notation**: Select the desired output format (fasta, helm, separator).
+- **Separator**: If converting to **separator**, specify the delimiter (e.g., `-`, `.`, `/`).
+
 ![Notation converter](../../help/uploads/macromolecules/macromolecules-notation-converter-800.gif "Notation converter")
 
-See:
+See: 
 
 * [detectMacromolecule()](../Bio/detectors.js)
 * [class SeqHandler](../../libraries/bio/src/utils/seq-handler.ts)
@@ -104,7 +111,7 @@ is not specified, then the Logo will be plotted from the first (till the last) p
 | positionMargin       | 0 or 4   | 4 - for sequences of multichar monomers, 0 - single char                                                                |
 | positionHeight       | '100%'   | choices: ['100%', 'Entropy'] The way to calculate overall monomers stack height at position                             |
 
-![Web Logo](../../help/visualize/viewers/web-logo-properties.gif "Web Logo")
+![Web Logo](../../help/visualize/viewers/img/web-logo-properties.gif "Web Logo")
 
 See also:
 

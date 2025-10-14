@@ -4,11 +4,9 @@ import * as DG from 'datagrok-api/dg';
 import {after, before, category, test} from '@datagrok-libraries/utils/src/test';
 import {testApp} from './gui-utils';
 
-category('Apps', () => {
-  let TM: DG.DockNode;
+category('Apps', () => { 
 
-  before(async () => {
-    TM = Array.from(grok.shell.dockManager.rootNode.children)[0].dart.a.cx;
+  before(async () => { 
     grok.shell.windows.showContextPanel = false;
   });
 
@@ -16,7 +14,7 @@ category('Apps', () => {
   for (const app of apps) {
     test(app.friendlyName, async () => {
       //@ts-ignore
-      await testApp(app, TM);
+      await testApp(app);
     });
   }
 

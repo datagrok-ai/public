@@ -4,8 +4,6 @@ import * as grok from 'datagrok-api/grok';
 import {delay, expect, testEvent} from '@datagrok-libraries/utils/src/test';
 import {asRenderer, IRenderer, isRenderer} from '@datagrok-libraries/bio/src/types/renderer';
 
-import {startDockerContainer} from '../utils/docker';
-
 import {_package} from '../package-test';
 import {CellRendererBackBase, getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 
