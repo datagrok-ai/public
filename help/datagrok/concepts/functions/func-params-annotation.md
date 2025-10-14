@@ -582,28 +582,39 @@ result = `${country} - ${orders.rowCount * factor}`;
 
 ### Complex calculated columns
 
-Complex calculated columns let you define a single function that generates **multiple calculated columns at once**, all
-automatically managed by Datagrok. Each resulting column is added to the source table and kept synchronized —
-recalculated automatically whenever the input data changes.
+When you need to compute **several related columns from the same data**, complex calculated columns let you do it
+through a **single function**.
 
-To enable this behavior:
+This approach improves both **efficiency** and **user experience**: instead of defining multiple separate calculated
+columns with nearly identical logic, you define one formula that returns several results at once. Each of these results
+becomes its own calculated column in the table.
 
-* Set `meta.vectorFunc: true` in your function annotation.
-* Return a `dataframe` from the function — each column in the returned dataframe becomes a separate calculated column
-in the source table, all sharing the same formula.
+This is particularly useful when several properties are derived from the same source data, for example:
 
-Inputs can include regular columns or scalar parameters.
+* Computing multiple **ADME properties** (absorption, distribution, metabolism, excretion).
+* Calculating **chemical descriptors** such as logP, TPSA, molecular weight, or others.
+* Generating **statistical summaries** (mean, median, standard deviation, etc.) for related data columns.
 
-You can also define an optional `list<string>` input to let the user choose **which specific result columns** to
-create — for example, particular computed properties. When used, this `list<string>` parameter should be placed
-**last** in the function signature, since it is optional.
+Since all the derived columns are computed together, Datagrok can **reuse cached computations**, ensuring fast and
+consistent recalculation when input data changes.
 
-This approach is especially useful when several related columns are derived from the same source data and should be
-computed together efficiently.
+#### How It Works
 
-<details>
-<summary> Example: Computing chemical properties from the Chem package </summary>
+To define a complex calculated column function:
 
+1. Add the annotation
+```ts
+//meta.vectorFunc: true
+```
+2. Make your function return a **dataframe** — each column in the returned dataframe becomes a calculated column in the
+source table.
+3. Optionally, add a `list<string>` **parameter** to let users select which specific result columns to create (for
+instance, particular chemical properties or statistical measures). This parameter should be placed **last** in the
+function signature, since it’s optional.
+
+Inputs can include both regular columns and scalar parameters.
+
+<details><summary> Example: Computing chemical properties from the Chem package </summary>
 
 ```ts
 //input: column molecules {semType: Molecule} 
@@ -621,7 +632,22 @@ export async function getProperties(molecules: DG.Column, out?: string[]): Promi
 }
 ```
 
+This function calculates several chemical properties (such as logP, TPSA, or molecular weight) at once. Users can
+select which properties to generate, and each one will appear as a calculated column in the table.
 </details>
+
+#### Integration with “Add New Column”
+
+You can use complex calculated column functions **directly in the** [Add new column](../../../transform/add-new-column.md)
+**dialog** — just type or insert such a function into the formula editor.
+
+If the function has the `meta.vectorFunc: true` annotation, Datagrok automatically:
+
+* Adds all resulting columns from the returned dataframe to your table.
+* Keeps them **synchronized and efficiently recalculated** as data changes.
+
+This allows you to create multiple derived columns (for example, several computed chemical descriptors) from one
+unified expression — all from the familiar **Add new column** interface.
 
 ### Input types
 

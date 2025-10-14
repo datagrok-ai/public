@@ -35,6 +35,10 @@ Adding columns to formulas:
 * vector function
   * To reference a whole column, specify its name in the curly brackets, preceded by the dollar sign: `${molecule}`. For example you can use this expression in function like that: `Chem:getInchis(${molecule})`.
 
+> **Tip:** Some vector functions can return several related columns at once (for example, multiple chemical or statistical properties).
+> These are called **[complex calculated columns](../datagrok/concepts/functions/func-params-annotation.md#complex-calculated-columns)**.  
+> When you use such a function in the “Add New Column” dialog, Datagrok automatically adds all resulting columns to your table and keeps them synchronized.
+
 To add a column to a formula, drag it to the editor. Alternatively, use the keyboard:
 
 1. Open a column list popup by pressing '**$**'.
@@ -73,6 +77,7 @@ corresponding sections of the help system:
 
 See also:
 
+- [Complex calculated columns](../datagrok/concepts/functions/func-params-annotation.md#complex-calculated-columns)
 - [Scripting](../develop/under-the-hood/grok-script.md)
 - [Function](../datagrok/concepts/functions/functions.md)
 - [Column selectors](../visualize/viewers/column-selectors.md)
