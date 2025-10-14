@@ -614,7 +614,8 @@ function signature, since it’s optional.
 
 Inputs can include both regular columns and scalar parameters.
 
-<details><summary> Example: Computing chemical properties from the Chem package </summary>
+<details>
+<summary> Example: Computing chemical properties from the Chem package </summary>
 
 ```ts
 //input: column molecules {semType: Molecule} 
@@ -634,6 +635,7 @@ export async function getProperties(molecules: DG.Column, out?: string[]): Promi
 
 This function calculates several chemical properties (such as logP, TPSA, or molecular weight) at once. Users can
 select which properties to generate, and each one will appear as a calculated column in the table.
+
 </details>
 
 #### Integration with “Add New Column”
