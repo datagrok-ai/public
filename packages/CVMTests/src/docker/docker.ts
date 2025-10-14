@@ -1,26 +1,44 @@
 import * as grok from 'datagrok-api/grok';
-import {delay, category, expect, test, expectObject, expectExceptionAsync} from '@datagrok-libraries/utils/src/test';
+import * as DG from 'datagrok-api/dg';
+import {
+  delay,
+  category,
+  expect,
+  test,
+  expectObject,
+  expectExceptionAsync,
+  before
+} from '@datagrok-libraries/utils/src/test';
 
 category('Docker', () => {
   const containerOnDemandName: string = 'Cvmtests-docker-test1';
   const containerSimple: string = 'Cvmtests-docker-test2';
+  const incorrectId: string = '00000000-0000-0000-0000-000000000000';
+
+  before(async () => {
+    await stopContainer(containerOnDemandName);
+    await startContainer(containerSimple);
+  });
 
   test('Get response: On demand', async () => {
-    const container = await grok.dapi.docker.dockerContainers.filter(containerOnDemandName).first();
-    if (!container.status.startsWith('stopped'))
-      await grok.dapi.docker.dockerContainers.stop(container.id, true);
+    const container = await stopContainer(containerOnDemandName);
     await testResponse(container.id);
-  }, {timeout: 120000, stressTest: true});
+  }, {timeout: 240000, /*stressTest: true*/});
 
-  test('Get response: Incorrect', async () => {
-    const incorrectId = crypto.randomUUID();
+  test('Container timeout', async () => {
+    let container = await stopContainer(containerOnDemandName);
+    await grok.dapi.docker.dockerContainers.run(container.id, true);
+    await delay(90000);
+    container = await grok.dapi.docker.dockerContainers.filter(containerOnDemandName).first();
+    expect(container.status.startsWith('stop'), true);
+  }, {timeout: 240000, /*stressTest: true*/});
+
+  test('Get response and logs: Incorrect', async () => {
     let response = await grok.dapi.docker.dockerContainers.fetchProxy(incorrectId, '/square?number=4');
     // container not found
     expect(response.status, 404, 'Status should be 404 indicating that container doesn\'t exist');
-    const container = await grok.dapi.docker.dockerContainers.filter(containerSimple).first();
+    const container = await startContainer(containerSimple);
     try {
-      if (container.status.startsWith('stopped'))
-        await grok.dapi.docker.dockerContainers.run(container.id, true);
       response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/foo?number=4');
       // response from docker with 404 - no such path mapping
       expect(response.status, 404, 'Status should be 404 indicating that in container there is not mapping for this url');
@@ -31,38 +49,68 @@ category('Docker', () => {
       response = await grok.dapi.docker.dockerContainers.fetchProxy(container.id, '/square?number=4');
       // response from server, container status is stopped
       expect(response.status, 400, 'Status should be 400 indicating that container is stopped and it is bad request');
-    } finally {
-      grok.dapi.docker.dockerContainers.run(container.id).then((_) => {}).catch((_) => {});
-    }
-  }, {timeout: 120000, stressTest: true});
 
-  test('Container timeout', async () => {
-    let container = await grok.dapi.docker.dockerContainers.filter(containerOnDemandName).first();
-    if (!container.status.startsWith('stopped'))
-      await grok.dapi.docker.dockerContainers.stop(container.id, true);
-    await grok.dapi.docker.dockerContainers.run(container.id, true);
-    await delay(90000);
-    container = await grok.dapi.docker.dockerContainers.filter(containerOnDemandName).first();
-    expect(container.status.startsWith('stopped'), true);
-  }, {timeout: 180000, stressTest: true});
-
-  test('Get container logs: Incorrect', async () => {
-    const incorrectId = crypto.randomUUID();
-    await expectExceptionAsync(async () => {
-      await grok.dapi.docker.dockerContainers.getContainerLogs(incorrectId);
-    });
-    const container = await grok.dapi.docker.dockerContainers.filter(containerSimple).first();
-    try {
-      if (!container.status.startsWith('stopped'))
-        await grok.dapi.docker.dockerContainers.stop(container.id, true);
+      // requesting logs of container with incorrect id
       await expectExceptionAsync(async () => {
         await grok.dapi.docker.dockerContainers.getContainerLogs(incorrectId);
       });
     } finally {
       grok.dapi.docker.dockerContainers.run(container.id).then((_) => {}).catch((_) => {});
     }
-  },{timeout: 120000, stressTest: true});
+  }, {timeout: 240000, /*stressTest: true*/});
+
+  test('Proxy WebSocket', async () => {
+    let ws: WebSocket | undefined;
+    try {
+      const container = await startContainer(containerSimple);
+      ws = await grok.dapi.docker.dockerContainers.webSocketProxy(container.id, '/ws');
+      const testMessage = 'Hello World!';
+      await new Promise<void>((res, rej) => {
+        const onMessage = (event: MessageEvent) => {
+          if (event.data === testMessage) {
+            cleanup();
+            res();
+          }
+          else {
+            cleanup();
+            rej(new Error(`First message wasn't the same as expected: ${event.data}`))
+          }
+        };
+
+        const onError = (_: Event) => {
+          cleanup();
+          rej(new Error("WebSocket encountered an error"));
+        };
+
+        function cleanup() {
+          ws!.removeEventListener("message", onMessage);
+          ws!.removeEventListener("error", onError);
+        }
+
+        ws!.addEventListener("message", onMessage);
+        ws!.addEventListener("error", onError);
+        ws!.send(testMessage);
+      });
+    } finally {
+      ws?.close();
+    }
+  });
 });
+
+async function stopContainer(containerName: string): Promise<DG.DockerContainer> {
+  const container = await grok.dapi.docker.dockerContainers.filter(containerName).first();
+  //@ts-ignore
+  if (!container.status.startsWith('stopped') && !(container.status.startsWith('pending') || container.status === 'stopping'))
+    await grok.dapi.docker.dockerContainers.stop(container.id, true);
+  return container;
+}
+
+async function startContainer(containerName: string): Promise<DG.DockerContainer> {
+  const container = await grok.dapi.docker.dockerContainers.filter(containerName).first();
+  if (container.status.startsWith('stopped'))
+    await grok.dapi.docker.dockerContainers.run(container.id, true);
+  return container;
+}
 
 async function testResponse(containerId: string): Promise<void> {
   const path = '/square?number=4';

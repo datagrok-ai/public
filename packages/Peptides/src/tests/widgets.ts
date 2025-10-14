@@ -26,7 +26,7 @@ category('Widgets: Settings', () => {
   let scaledActivityCol: DG.Column<number>;
 
   before(async () => {
-    await PeptideUtils.loadSeqHelper();
+    await PeptideUtils.loadComponents();
 
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
     activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
@@ -73,7 +73,7 @@ category('Widgets: Distribution panel', () => {
   let scaledActivityCol: DG.Column<number>;
 
   before(async () => {
-    await PeptideUtils.loadSeqHelper();
+    await PeptideUtils.loadComponents();
 
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
     activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
@@ -114,7 +114,7 @@ category('Widgets: Mutation cliffs', () => {
   let scaledActivityCol: DG.Column<number>;
 
   before(async () => {
-    await PeptideUtils.loadSeqHelper();
+    await PeptideUtils.loadComponents();
 
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
     activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
@@ -159,7 +159,7 @@ category('Widgets: Actions', () => {
   let scaledActivityCol: DG.Column<number>;
 
   before(async () => {
-    await PeptideUtils.loadSeqHelper();
+    await PeptideUtils.loadComponents();
 
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
     await df.meta.detectSemanticTypes();

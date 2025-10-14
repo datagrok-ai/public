@@ -100,17 +100,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
       - name: Run merge script
-        working-directory: ./help/deploy/aws/cloudformation/templates
-        run: |
-          pip install pyyaml deepmerge argparse
-          python cf_template_merge.py -i create_network.template.yml -i fargate.template.yml -i r53.template.yml -i marketplace.template.yml -i versions.template.yml -o ../network-fargate-r53-marketplace.yml
-          python cf_template_merge.py -i create_network.template.yml -i fargate.template.yml -i dns.template.yml -i marketplace.template.yml -i versions.template.yml -o ../network-fargate-dns-marketplace.yml
-          python cf_template_merge.py -i choose_vpc.template.yml -i fargate.template.yml -i dns.template.yml -i marketplace.template.yml -i versions.template.yml -o ../vpc-fargate-dns-marketplace.yml
-          python cf_template_merge.py -i choose_vpc.template.yml -i fargate.template.yml -i r53.template.yml -i marketplace.template.yml -i versions.template.yml -o ../vpc-fargate-r53-marketplace.yml
-          python cf_template_merge.py -i create_network.template.yml -i fargate.template.yml -i r53.template.yml -i basic.template.yml -i versions.template.yml -o ../network-fargate-r53-basic.yml
-          python cf_template_merge.py -i choose_vpc.template.yml -i fargate.template.yml -i r53.template.yml -i basic.template.yml -i versions.template.yml -o ../vpc-fargate-r53-basic.yml
-          python cf_template_merge.py -i create_network.template.yml -i fargate.template.yml -i dns.template.yml -i basic.template.yml -i versions.template.yml -o ../network-fargate-dns-basic.yml
-          python cf_template_merge.py -i choose_vpc.template.yml -i fargate.template.yml -i dns.template.yml -i basic.template.yml -i versions.template.yml -o ../vpc-fargate-dns-basic.yml
+        run: bash .github/scripts/iac-cfn-deploy.sh merge,lint
       - name: Commit IaC scripts
         id: git
         continue-on-error: true

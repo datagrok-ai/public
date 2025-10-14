@@ -7,7 +7,26 @@ import {ISeqHandler} from './seq-handler';
 
 export type SeqSplittedBase = ArrayLike<string> & Iterable<string>;
 
+export interface ISeqConnection {
+  seqIndex1: number;
+  seqIndex2: number;
+  monomerIndex1: number;
+  monomerIndex2: number;
+  rGroup1: number;
+  rGroup2: number;
+}
+
+export interface ISeqGraphInfo {
+  /**  Connections between monomers with numbers - note that monomer numbers are 0-based*/
+  connections: ISeqConnection[];
+  /// Start positions of disjoint sequence parts in the original sequence
+  disjointSeqStarts: number[];
+}
+
 export interface ISeqSplitted {
+
+  graphInfo?: ISeqGraphInfo;
+
   isGap(posIdx: number): boolean;
 
   /** */
@@ -20,6 +39,14 @@ export interface ISeqSplitted {
   // get(posIdx: number): ISeqMonomer;
 
   length: number;
+
+  /** Returns list of canonical monomers in the region specified */
+  getCanonicalRegion(start: number, end: number): string[];
+
+  /** Returns the list of original monomers in the region specified */
+  getOriginalRegion(start: number, end: number): string[];
+
+  get gapOriginal(): string;
 }
 
 export interface INotationProvider {

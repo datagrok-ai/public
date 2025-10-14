@@ -6,20 +6,20 @@ import {AppName, HitDesignCampaign, HitDesignTemplate, IFunctionArgs, TriagePerm
 import {HitDesignInfoView} from './hit-design-views/info-view';
 import {CampaignIdKey, CampaignJsonName, CampaignTableName,
   HTQueryPrefix, HTScriptPrefix, HitDesignCampaignIdKey,
-  HitDesignMolColName, TileCategoriesColName, ViDColName, i18n} from './consts';
-import {calculateColumns, calculateSingleCellValues, getNewVid} from './utils/calculate-single-cell';
+  HitDesignMolColName, HitDesignerFunctionTag, TileCategoriesColName, ViDColName, i18n} from './consts';
+import {calculateColumns, calculateCellValues, getNewVid} from './utils/calculate-single-cell';
 import '../../css/hit-triage.css';
 import {_package} from '../package';
-import {addBreadCrumbsToRibbons, checkRibbonsHaveSubmit, editableTableField, modifyUrl, toFormatedDateString} from './utils';
+import {addBreadCrumbsToRibbons, checkFileExists, checkRibbonsHaveSubmit, editableTableField, modifyUrl, toFormatedDateString} from './utils';
 import {HitDesignSubmitView} from './hit-design-views/submit-view';
 import {getTilesViewDialog} from './hit-design-views/tiles-view';
 import {HitAppBase} from './hit-app-base';
 import {HitBaseView} from './base-view';
 import {chemFunctionsDialog} from './dialogs/functions-dialog';
-import {Subscription} from 'rxjs';
+import {Observable, Subscription} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import {defaultPermissions, PermissionsDialog} from './dialogs/permissions-dialog';
-import {getDefaultSharingSettings} from '../packageSettingsEditor';
+import {getDefaultCampaignStorageSettings, getDefaultSharingSettings} from '../packageSettingsEditor';
 
 export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> extends HitAppBase<T> {
   multiView: DG.MultiView;
@@ -50,13 +50,83 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     this.multiView.parentCall = c;
 
     this.mainView = this.multiView;
-    this._initViewChangeSub();
+    this._initViewSubs();
   }
 
-  _initViewChangeSub() {
+  async handleJoiningDataframe(df: DG.DataFrame) {
+    const molCols = df.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE);
+    if (!molCols || molCols.length === 0) {
+      grok.shell.error('No molecule column found');
+      return;
+    }
+    const molCol = molCols.find((c) => c?.name?.toLowerCase() === 'smiles' || c?.name?.toLowerCase() === 'molecule') ?? molCols[0];
+    if (!molCol) {
+      grok.shell.error('No molecule column found');
+      return;
+    }
+
+    const compute = this.campaign?.template?.compute ?? this.template?.compute;
+    if (!compute) {
+      grok.shell.error('No compute functions found');
+      return;
+    }
+    const mols = molCol.toList();
+    const descriptors = compute.descriptors.enabled ? compute.descriptors.args ?? [] : [];
+    const calcDf = await calculateCellValues(mols, descriptors, compute.functions, compute.scripts, compute.queries);
+    //merge  into adding dataframe
+    this.unionDataframes(calcDf, df, HitDesignMolColName, molCol.name);
+
+    if (this.stages.length > 0 && this.dataFrame!.columns.contains(TileCategoriesColName)) {
+      const newTilesCol = df.columns.getOrCreate(TileCategoriesColName, DG.TYPE.STRING);
+      for (let i = 0; i < df.rowCount; i++) {
+        if (newTilesCol.isNone(i))
+          newTilesCol.set(i, this.stages[0], false);
+      }
+    }
+
+    //merge changes into existing dataframe
+    this.unionDataframes(df, this.dataFrame!, molCol.name, this.molColName);
+    this.updateAllVids();
+    this.saveCampaign(false);
+  }
+
+  public get submitParams() {
+    return this.campaign?.template?.submit ?? this.template?.submit;
+  }
+
+  private updateAllVids() {
+    const molCol = this.dataFrame!.col(this.molColName);
+    const vidCol = this.dataFrame!.col(ViDColName);
+    if (!molCol || !vidCol)
+      return;
+    const molSmiles = molCol.toList().map((m) => _package.convertToSmiles(m));
+    const molVidMap = new Map<string, string>();
+    for (let i = 0; i < molSmiles.length; i++) {
+      const mol = molSmiles[i];
+      if (!mol)
+        continue;
+      const vid = vidCol.isNone(i) ? null : vidCol.get(i);
+      if (vid) {
+        if (molVidMap.has(mol)) {
+          if (vid === molVidMap.get(mol))
+            continue;
+          else
+            vidCol.set(i, molVidMap.get(mol), false);
+        } else
+          molVidMap.set(mol, vid);
+      } else
+        vidCol.set(i, molVidMap.get(mol) ?? getNewVid(vidCol), false);
+    }
+    //force invalidation of VID column
+    const oldValue = vidCol.get(0);
+    vidCol.set(0, null, false);
+    vidCol.set(0, oldValue, true);
+  }
+
+  _initViewSubs() {
     this.multiView.subs.push(grok.events.onCurrentViewChanged.subscribe(async () => {
       try {
-        if (grok.shell.v?.name === this.currentDesignViewId) {
+        if (grok.shell.v === this._designView) {
           grok.shell.windows.showHelp = false;
 
           this.setBaseUrl();
@@ -68,11 +138,90 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
             this._infoView.init();
             sub.unsubscribe();
           });
-        }
+        } else if (grok.shell.v === this.mainView)
+          this.setBaseUrl();
       } catch (e) {
         console.error(e);
       }
     }));
+
+    this.multiView.subs.push((grok.events.onFileImportRequest as unknown as Observable<DG.EventData<DG.FileImportArgs>>).subscribe((args) => {
+      if (!grok.shell.tv || !this._designView || grok.shell.tv !== this._designView)
+        return;
+      if (!args?.args?.file)
+        return;
+      const file = args.args.file;
+
+      if (!file.name?.endsWith('.csv') && !HitAppBase.molFileExtReaders.some((ext) => file.name?.endsWith(ext.ext)))
+        return;
+      // at this point, we can start checking the file, and prevent default behavior
+      args.preventDefault();
+      this.handleUploadingDataframe(file);
+    }));
+  }
+
+  private async handleUploadingDataframe(file: File) {
+    // TODO: Expose api for file readers
+    try {
+      let df: DG.DataFrame | null = null;
+
+      if (file.name.endsWith('.csv'))
+        df = DG.DataFrame.fromCsv(await file.text());
+      else {
+        const fileBytes: Uint8Array | null = await new Promise(async (resolve) => {
+          const reader = new FileReader();
+          let timeout: any = null;
+          let result: Uint8Array | null = null;
+          reader.onload = () => {
+            result = reader.result ? new Uint8Array(reader.result as ArrayBuffer) : null;
+            timeout && clearTimeout(timeout);
+            resolve(result);
+          };
+          reader.readAsArrayBuffer(file);
+          timeout = setTimeout(() => {
+            reader.abort();
+            resolve(null);
+          }, 10000);
+        });
+        if (!fileBytes) {
+          grok.shell.error('Failed to read file');
+          return;
+        }
+        // since we are here, we can assume that the file extention reader exists
+        const readerFunc = HitAppBase.molFileExtReaders.find((ext) => file.name.endsWith(ext.ext))!.handlerFunc!;
+        const bytesArg = readerFunc.inputs[0].name;
+        df = (await readerFunc.apply({[bytesArg]: fileBytes}))[0];
+      }
+
+      if (!df)
+        throw new Error('Failed to read file');
+      df.name = file.name.slice(0, file.name.lastIndexOf('.'));
+      await df.meta.detectSemanticTypes();
+      await grok.data.detectSemanticTypes(df);
+      // TODO: Support choosing molecule column if there are multiple
+      const molCol = df.columns.bySemType(DG.SEMTYPE.MOLECULE);
+      if (!molCol) {
+        // default behavior: add dataframe
+        grok.shell.addTableView(df);
+        return;
+      }
+
+      const dialog = ui.dialog('Uploading table with molecules')
+        .add(ui.divText('Add new table to workspace or join with existing Hit Design campaign'))
+        .addButton('Add to workspace', () => {
+          dialog.close();
+          grok.shell.addTableView(df);
+        })
+        .addButton('Add to existing campaign', () => {
+          dialog.close();
+          this.handleJoiningDataframe(df);
+        });
+      dialog.getButton('CANCEL')?.remove();
+      dialog.show();
+    } catch (e) {
+      grok.shell.error('Hit Design Failed to read file');
+      console.error(e);
+    }
   }
 
   public get stages() {
@@ -123,7 +272,10 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
       this._designView = undefined;
       campaignId = await this.getNewCampaignName(`${this.appName}/campaigns`, template.key);
       modifyUrl(HitDesignCampaignIdKey, campaignId);
-      this._filePath = `System.AppData/HitTriage/${this.appName}/campaigns/${campaignId}/${CampaignTableName}`;
+      let defaultFolderPath = await getDefaultCampaignStorageSettings();
+      if (!defaultFolderPath.endsWith('/'))
+        defaultFolderPath += '/';
+      this._filePath = `${defaultFolderPath}${this.appName}/campaigns/${campaignId}/${CampaignTableName}`;
     } else {
       const fileLoc = `System.AppData/HitTriage/${this.appName}/campaigns`;
       this._filePath = this.campaign?.savePath ?? `${fileLoc}/${campaignId}/${CampaignTableName}`;
@@ -223,8 +375,8 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
       return;
 
     const calcDf =
-              await calculateSingleCellValues(
-                newValue, computeObj.descriptors.args, computeObj.functions, computeObj.scripts, computeObj.queries);
+              await calculateCellValues(
+                [newValue], computeObj.descriptors.args, computeObj.functions, computeObj.scripts, computeObj.queries);
 
     for (const col of calcDf.columns.toList()) {
       if (col.name === HitDesignMolColName) continue;
@@ -238,7 +390,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
           this.saveCampaign(false);
   }
 
-  protected initDesignViewRibbons(view: DG.TableView, subs: Subscription[]) {
+  protected initDesignViewRibbons(view: DG.TableView, subs: Subscription[], addDesignerButton = false) {
     const onRemoveSub = grok.events.onViewRemoved.subscribe((v) => {
       if (v.id === view?.id) {
         subs.forEach((s) => s.unsubscribe());
@@ -249,6 +401,14 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
     if (ribbons) {
       const hasSubmit = checkRibbonsHaveSubmit(ribbons);
       if (!hasSubmit) {
+        setTimeout(() => {
+          const {sub} = addBreadCrumbsToRibbons(view, this.appName, view.name, () => {
+            grok.shell.v = this.mainView;
+            view?.close();
+            this._infoView.init();
+            sub.unsubscribe();
+          });
+        }, 1000);
         const getComputeDialog = async () => {
           chemFunctionsDialog(this, async (resultMap) => {
             const oldDescriptors = this.template!.compute.descriptors.args;
@@ -346,20 +506,10 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
         });
 
         const submitButton = ui.bigButton('Submit...', () => {
-          const dialogContent = this._submitView?.render();
-          if (dialogContent) {
-            const dlg = ui.dialog('Submit');
-            dlg.add(dialogContent);
-            dlg.addButton('Save', () => {
-              this._campaign!.status = this._submitView!.getStatus();
-              this.saveCampaign();
-              dlg.close();
-            });
-            if (this.template?.submit?.fName && this.template?.submit?.package && DG.Func.find({name: this.template.submit.fName, package: this.template.submit.package})?.length > 0)
-              dlg.addButton('Submit', ()=>{this._submitView?.submit(); dlg.close();});
-            dlg.show();
-          }
+          this._submitView?.render();
         });
+
+        const designerFuncs = DG.Func.find({tags: [HitDesignerFunctionTag]}).filter((f) => f.outputs.length === 1 && f.outputs[0].propertyType === DG.TYPE.DATA_FRAME);
         submitButton.classList.add('hit-design-submit-button');
         const ribbonButtons: HTMLElement[] = [submitButton];
         if (this.stages.length > 0)
@@ -372,6 +522,45 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
           ribbonButtons.unshift(applyLayoutButton);
         if (this.hasEditPermission)
           ribbonButtons.unshift(permissionsButton);
+        if (designerFuncs.length > 0 && addDesignerButton) {
+          // TODO: Support multiple functions
+          const designerFunc = designerFuncs[0];
+          const designerButton = ui.iconFA('pen-nib', async () => {
+            const prepareObj: any = {};
+            if (designerFunc.inputs.length > 0 && this.dataFrame && this.dataFrame.currentRowIdx >=0 && designerFunc.inputs[0].semType === DG.SEMTYPE.MOLECULE) {
+              const mol = _package.convertToSmiles(this.dataFrame.col(this.molColName)?.get(this.dataFrame.currentRowIdx));
+              if (mol)
+                prepareObj[designerFunc.inputs[0].name] = mol;
+            }
+            const fc = designerFunc.prepare(prepareObj);
+            // the editor we get here will be editing the funccall, so then we can just call it.
+            const dialogContent = await fc.getEditor();
+            ui.dialog(designerFunc.friendlyName)
+              .add(dialogContent)
+              .onOK(async () => {
+                const pg = DG.TaskBarProgressIndicator.create(`Running ${designerFunc.friendlyName}`);
+                try {
+                  await fc.call();
+                  const res: DG.DataFrame = fc.getOutputParamValue();
+                  if (!res || !res.rowCount) {
+                    grok.shell.warning(`${designerFunc.friendlyName} returned an empty result`);
+                    pg.close();
+                    return;
+                  }
+                  await res.meta.detectSemanticTypes();
+                  await grok.data.detectSemanticTypes(res);
+                  await this.handleJoiningDataframe(res);
+                } catch (e) {
+                  grok.shell.error(`Failed to run ${designerFunc.friendlyName}`);
+                  _package.logger.error(e);
+                } finally {
+                  pg.close();
+                }
+              })
+              .show();
+          }, designerFunc.description ? designerFunc.description : designerFunc.friendlyName);
+          ribbonButtons.unshift(designerButton);
+        }
         ribbonButtons.unshift(calculateRibbon);
         ribbonButtons.unshift(addNewRowButton);
 
@@ -522,7 +711,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
       this.initGridSubs(view, subs);
     }));
 
-    this.initDesignViewRibbons(view, subs);
+    this.initDesignViewRibbons(view, subs, true);
     view.parentCall = this.parentCall;
     return view;
   }
@@ -657,22 +846,8 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
           labelElement.remove();
         newPathInput.root.style.width = '100%';
 
-        async function checkFolder() {
-          const newPath = newPathInput.value;
-          if (!newPath || newPath.trim() === '') {
-            grok.shell.error('Path can not be empty');
-            return false;
-          }
-          const exists = await grok.dapi.files.exists(newPath);
-          if (!exists) {
-            grok.shell.error('Given folder does not exist');
-            return false;
-          }
-          return true;
-        }
-
         const saveButton = ui.button('Save', async () => {
-          const exists = await checkFolder();
+          const exists = await checkFileExists(newPathInput.value);
           if (!exists)
             return;
           const newPath = newPathInput.value;
@@ -803,7 +978,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
         if (await grok.dapi.files.exists(this._filePath)) {
           try {
             const prevCampDf = await grok.dapi.files.readCsv(this._filePath);
-            const joined = this.unionDataframes(prevCampDf, enrichedDf, this.molColName);
+            const joined = this.unionDataframes(prevCampDf, enrichedDf, this.molColName, this.molColName);
             resDf = joined;
           } catch (e) {
             console.error(e);
@@ -822,8 +997,7 @@ export class HitDesignApp<T extends HitDesignTemplate = HitDesignTemplate> exten
       campaign.layout = newLayout.viewState;
     campaign.template = this.template;
 
-    await _package.files.writeAsText(campaignPath,
-      JSON.stringify(campaign));
+    await _package.saveCampaignJson(this.appName, campaign);
     notify && grok.shell.info('Campaign saved successfully.');
     !notify && isCreating && grok.shell.info('Campaign created successfully.');
     this.campaign = campaign;

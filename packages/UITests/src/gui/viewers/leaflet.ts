@@ -41,4 +41,4 @@ category('Viewers: Leaflet', () => {
     tv.close();
     grok.shell.closeTable(demog);
   }); 
-});
+}, { owner: 'dkovalyov@datagrok.ai' });

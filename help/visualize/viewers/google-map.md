@@ -1,5 +1,6 @@
 ---
 title: "Google Map viewer"
+unlisted: true
 ---
 
 Google Map Viewer overlays latitude/longitude data from the corresponding table on top of the Google Map.

@@ -1,21 +1,21 @@
 .scatter_plot_link {
-    position: absolute!important;
     right: 10px;
 }
 
-.cliffs_grid {
-    top: 10px;
+.cliffs_div {
+    flex-grow: initial!important;
+    justify-content: flex-end;
+    flex-wrap: wrap;
 }
 
-.show_only_cliffs {
-    top: 30px;
+.cliffs_grid {
+   margin: 0!important;
 }
 
 .ml-dim-reduction-settings-input i.grok-icon.grok-font-icon-settings {
     font-size: 18px;
     position: absolute;
     height: 28px;
-    
 }
 
 .ml-dim-reduction-settings-input i.grok-icon.grok-font-icon-settings:not(.ml-dim-reduction-column-editor-input-root i) {

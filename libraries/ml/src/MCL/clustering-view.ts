@@ -8,6 +8,7 @@ import {KnownMetrics} from '../typed-metrics';
 import {DistanceAggregationMethod} from '../distance-matrix/types';
 import {PreprocessFunctionReturnType} from '../functionEditors/dimensionality-reduction-editor';
 import {Options} from '@datagrok-libraries/utils/src/type-declarations';
+import * as rxjs from 'rxjs';
 
 
 export type MCLClusterViewerResult = {
@@ -17,6 +18,8 @@ export type MCLClusterViewerResult = {
   clusterCol: DG.Column;
   clusterCounterCol: DG.Column;
   connectivityCol: DG.Column;
+  i: ArrayLike<number>;
+  j: ArrayLike<number>;
 }
 
 export async function markovCluster(
@@ -31,9 +34,13 @@ export async function markovCluster(
     showXSelector: false,
     showYSelector: false,
   };
-  const tv = grok.shell.tableView(df.name) ?? grok.shell.addTableView(df);
 
-  const sc = scp ?? tv.scatterPlot({...scatterPlotProps, title: 'MCL'});
+  let tv: DG.TableView | null = null;
+  let sc: DG.ScatterPlotViewer | undefined = scp;
+  if (!sc) {
+    tv = grok.shell.tableView(df.name) ?? grok.shell.addTableView(df);
+    sc = tv.scatterPlot({...scatterPlotProps, title: 'MCL'});
+  }
 
   ui.setUpdateIndicator(sc.root, true);
   const distanceFnArgs: Options[] = [];
@@ -151,27 +158,81 @@ export async function markovCluster(
   }
 
 
-  const _scLines = new ScatterPlotLinesRenderer(sc, emberdXColName, emberdYColName,
-    {from: new Uint32Array(filteredIs) as any, to: new Uint32Array(filteredJs) as any,
-      drawArrows: false, opacity: 0.3, skipMultiLineCalculation: true,
-      skipShortLines: true, skipMouseOverDetection: true, shortLineThreshold: 6, width: 0.75, color: '128,128,128'},
-    ScatterPlotCurrentLineStyle.none);
+  // const _scLines = new ScatterPlotLinesRenderer(sc, emberdXColName, emberdYColName,
+  //   {from: new Uint32Array(filteredIs) as any, to: new Uint32Array(filteredJs) as any,
+  //     drawArrows: false, opacity: 0.3, skipMultiLineCalculation: true,
+  //     skipShortLines: true, skipMouseOverDetection: true, shortLineThreshold: 6, width: 0.75, color: '128,128,128'},
+  //   ScatterPlotCurrentLineStyle.none);
 
-  // _scLines.lineClicked.subscribe((args) => {
-  //   const id = args.id;
-  //   args.event.preventDefault();
-  //   args.event.stopImmediatePropagation();
-  //   if ((id ?? -1) === -1)
-  //     return;
-  //   const i = _scLines.lines.from[id];
-  //   const j = _scLines.lines.to[id];
-  //   df.selection.init((index) => index === i || index === j);
-  // });
+  //const _scLines = new SCLinesRenderer(sc, filteredIs, filteredJs, 6, 0.75, '128,128,128');
 
   ui.setUpdateIndicator(sc.root, false);
   // sc.close();
   // const scLinesViewer = new ScatterPlotWithLines(sc, res.is, res.js, emberdXColName, emberdYColName);
   // tv.addViewer(scLinesViewer);
-  return {sc, embedXCol, embedYCol, clusterCol, clusterCounterCol, connectivityCol};
+
+  return {sc, embedXCol, embedYCol, clusterCol, clusterCounterCol, connectivityCol, i: filteredIs, j: filteredJs};
 }
 
+
+export class SCLinesRenderer {
+  private renderFlag = false;
+  renderSub: rxjs.Subscription;
+  constructor(public sc: DG.ScatterPlotViewer, public from: ArrayLike<number>,
+    public to: ArrayLike<number>, public shortLineThreshold: number, public width: number, public color: string) {
+    this.renderSub = DG.debounce(sc.onAfterDrawScene, 200).subscribe(() => {
+      if (this.renderFlag) {
+        this.renderFlag = false;
+        return;
+      }
+      this.renderFlag = true;
+      const tempSub = sc.onBeforeDrawScene.subscribe((_) => {
+        this.render();
+        tempSub.unsubscribe();
+      });
+      setTimeout(() => {
+        this.sc.invalidateCanvas();
+        // this.renderFlag = false;
+      });
+    });
+    sc.subs.push(this.renderSub);
+  }
+
+  render() {
+    const xCol = this.sc.dataFrame.getCol(this.sc.props.xColumnName);
+    const yCol = this.sc.dataFrame.getCol(this.sc.props.yColumnName);
+    const filter = this.sc.filter;
+    const positions = new Array(this.sc.dataFrame.rowCount).fill(null)
+      .map((_, i) => !xCol.isNone(i) && !yCol.isNone(i) && filter.get(i) ? this.sc.pointToScreen(i) : null);
+    const canvas = this.sc.canvas;
+    const ctx = canvas.getContext('2d');
+    if (!ctx)
+      return;
+    ctx.strokeStyle = `rgba(${this.color}, 0.3)`;
+    ctx.lineWidth = this.width;
+    const shortLineSquared = this.shortLineThreshold * this.shortLineThreshold;
+    for (let i = 0; i < this.from.length; i++) {
+      ctx.beginPath();
+      const from = this.from[i];
+      const to = this.to[i];
+      if (positions[from] && positions[to]) {
+        const fromPos = positions[from];
+        const toPos = positions[to];
+        const dx = toPos.x - fromPos.x;
+        const dy = toPos.y - fromPos.y;
+        const dist = dx * dx + dy * dy;
+        if (dist < shortLineSquared)
+          continue;
+        ctx.moveTo(fromPos.x, fromPos.y);
+        ctx.lineTo(toPos.x, toPos.y);
+        ctx.stroke();
+        ctx.closePath();
+        // interestingly, doing stroke for each line turns to be 20 times faster than doing stroke for all lines at once
+      }
+    }
+  }
+
+  destroy() {
+    this.renderSub.unsubscribe();
+  }
+}

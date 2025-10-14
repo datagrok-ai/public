@@ -1,7 +1,6 @@
 package grok_connect.utils;
 
-import java.util.*;
-
+import java.util.List;
 
 public class Property {
     public static final String BOOL_TYPE = "bool";
@@ -12,9 +11,12 @@ public class Property {
     public static final String MAP_TYPE = "map";
 
     public String name;
+    public String friendlyName;
     public String propertyType;
     public String propertySubType;
     public String description;
+    public String category;
+    public String format;
     public List<String> choices;
     public Prop info;
 
@@ -35,10 +37,42 @@ public class Property {
         this.description = description;
     }
 
+    public Property(String propertyType, String name, String description, String category) {
+        this.name = name;
+        this.propertyType = propertyType;
+        this.description = description;
+        this.category = category;
+    }
+
     public Property(String propertyType, String name, String description, Prop info) {
         this.name = name;
         this.propertyType = propertyType;
         this.description = description;
         this.info = info;
+    }
+
+    public Property(String propertyType, String name, String description, Prop info, String friendlyName) {
+        this.name = name;
+        this.propertyType = propertyType;
+        this.description = description;
+        this.info = info;
+        this.friendlyName = friendlyName;
+    }
+
+    public Property(String propertyType, String name, String description, String category, Prop info) {
+        this.name = name;
+        this.propertyType = propertyType;
+        this.description = description;
+        this.category = category;
+        this.info = info;
+    }
+
+    public Property(String propertyType, String name, String description, String category, Prop info, String format) {
+        this.name = name;
+        this.propertyType = propertyType;
+        this.description = description;
+        this.category = category;
+        this.info = info;
+        this.format = format;
     }
 }

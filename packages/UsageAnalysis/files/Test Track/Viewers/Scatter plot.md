@@ -32,8 +32,7 @@
     1. On the scatter plot, use **Shift+Mouse Drag** to select points. Check the selection in the grid.
     2. Check the **Misc** > **Mouse Drag** (Pan or Select) setting
     3. Go to the scatter **plot > Property Pane > Misc**. Check the **Lasso Tool** checkbox. Use it on the scatter plot. Check the selection in the grid.
-    4. Save to Layout. Check
-    5. Select some points. Use Ctrl+Shift+Drag for deselection.
+    4. Select some points. Use Ctrl+Shift+Drag for deselection.
 10. Tooltip:
     1. Right-click the scatter plot and check all options on the **Tooltip** tab.
     2. Save to Layout. Check
@@ -41,8 +40,8 @@
     4. Save to Layout. Check
 11. Formula lines (dataframe lines, viewer-specific lines):
     1. Right-click the scatter plot and select **Tools > Formula Lines.** A **Formula Lines** editor opens. Click the ADD NEW button and select every option from the menu.
-    2. Check the Viewer and Dataframe tabs
-    3. Save to Layout. Check
+    2. Check the Viewer and Dataframe tabs (Viewer -- you see it only on he current viewer, DF -- All DF viewers)
+    3. Save to Layout. Check (only viewer formula lines are saved)
     4. Delete created lines.
 12. Using structures as axes:
     1. Change the X axis to Structure. Check the visibility of the structures.

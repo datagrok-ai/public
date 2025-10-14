@@ -27,6 +27,16 @@ HETATM 2695  H3  UAO A 500      -4.212   1.582 -17.394  1.00  0.00           H
 HETATM 2696  H2  UAO A 500      -2.823  -0.322 -16.625  1.00  0.00           H  
 HETATM 2697  H1  UAO A 500      -3.865  -2.521 -16.209  1.00  0.00           H  
 ","COMPND    
+REMARK   1 receptor.    kras J.
+REMARK   2 name.     J.
+REMARK   3 binding energy.    -7.65 J.
+REMARK   4 intermolecular (1).    -7.95 J.
+REMARK   5 electrostatic.    -0.05 J.
+REMARK   6 ligand fixed.    -7.95 J.
+REMARK   7 ligand moving.    0 J.
+REMARK   8 total internal (2).    -0.36 J.
+REMARK   9 torsional free (3).    0.3 J.
+REMARK   10 unbound systems (4).    -0.36 J.
 HETATM   15  N   UAO A 500      -1.549  -8.087  -1.461 -0.20  0.08           N  
 HETATM   16  O   UAO A 500      -3.428  -9.260  -1.956 -0.50  0.05           O  
 HETATM    1  C4  UAO A 500       1.303  -3.696   1.369 -0.51  0.00           C  

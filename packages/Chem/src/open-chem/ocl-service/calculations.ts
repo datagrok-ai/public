@@ -19,7 +19,7 @@ export const CHEM_PROP_MAP: {[k: string]: IChemProperty} = {
 export function getMoleculeCharge(mol: OCL.Molecule): number {
   const atomsNumber = mol.getAllAtoms();
   let moleculeCharge = 0;
-  for (let atomIndx = 0; atomIndx <= atomsNumber; ++atomIndx)
+  for (let atomIndx = 0; atomIndx < atomsNumber; ++atomIndx)
     moleculeCharge += mol.getAtomCharge(atomIndx);
 
   return moleculeCharge;

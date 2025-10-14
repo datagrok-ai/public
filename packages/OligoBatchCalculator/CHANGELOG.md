@@ -1,4 +1,4 @@
-# OligoBatchCalculator changelog
+# Oligo Batch Calculator changelog
 
 ## 1.0.7 (2024-07-23)
 

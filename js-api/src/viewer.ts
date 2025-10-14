@@ -1,13 +1,14 @@
 /** A viewer that is typically docked inside a [TableView]. */
 import {FILTER_TYPE, TYPE, VIEWER, ViewerPropertyType, ViewerType} from "./const";
 import {BitSet, DataFrame} from "./dataframe.js";
-import {Property, PropertyOptions} from "./entities";
+import {Property, IProperty} from "./entities";
 import {Menu, ObjectPropertyBag, Widget, Filter, TypedEventArgs} from "./widgets";
-import {_toJson, MapProxy} from "./utils";
+import {_toJson} from "./utils_convert";
+import {MapProxy} from "./proxies";
 import {toJs, toDart} from "./wrappers";
 import {__obs, EventData, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
-import {Subscription} from "rxjs";
+import {Subscription} from 'rxjs';
 import {filter, map} from 'rxjs/operators';
 import {Grid, Point, Rect} from "./grid";
 import {FormulaLinesHelper} from "./helpers";
@@ -18,7 +19,7 @@ import {ViewerEvent} from './api/d4.api.g';
 
 declare let DG: any;
 declare let ui: any;
-let api = <any>window;
+let api = (typeof window !== 'undefined' ? window : global.window) as any;
 
 /**
  * Represents a {@link https://datagrok.ai/help/visualize/viewers | viewer}.
@@ -48,8 +49,8 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   }
 
   /** combined filter of the viewer */
-  get filter(): BitSet { 
-    return this._filter ??= this.dart ? toJs(api.grok_Viewer_Get_Filter(this.dart)) : BitSet.create(0); 
+  get filter(): BitSet {
+    return this._filter ??= this.dart ? toJs(api.grok_Viewer_Get_Filter(this.dart)) : BitSet.create(0);
   }
   set filter(f: BitSet) {
     this._filter = f;
@@ -81,7 +82,12 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return toJs(api.grok_Viewer_FromType(viewerType, table.dart, _toJson(options)));
   }
 
-  static getViewerTypes(): ViewerType[] {
+  /** Gets all available viewer types
+   * Core means the viewer is already loaded and all methods and properties are available synchronously.
+   * */
+  static getViewerTypes(options?: {core?: boolean}): ViewerType[] {
+    if (options?.core)
+      return Viewer.CORE_VIEWER_TYPES;
     return api.grok_Viewer_GetViewerTypes();
   }
 
@@ -171,8 +177,8 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return <Viewer>Viewer.fromType(VIEWER.BAR_CHART, t, options);
   }
 
-  static heatMap(t: DataFrame, options?: Partial<interfaces.IGridSettings>): Viewer<interfaces.IGridSettings> {
-    return <Viewer>Viewer.fromType(VIEWER.HEAT_MAP, t, options);
+  static heatMap(t: DataFrame, options?: Partial<interfaces.IGridSettings>): Grid {
+    return new DG.Grid(Viewer.fromType(VIEWER.HEAT_MAP, t, options).dart);
   }
 
   static boxPlot(t: DataFrame, options?: Partial<interfaces.IBoxPlotSettings>): Viewer<interfaces.IBoxPlotSettings> {
@@ -292,6 +298,9 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     );
   }
 
+  /** Occurs when viewer is detached. */
+  get onDetached(): rxjs.Observable<any> { return api.grok_Viewer_OnDetached(this.dart); }
+
   copyViewersLook(other: Viewer) {
     api.grok_Viewer_Copy_Viewers_Look(this.dart, other.dart);
   }
@@ -299,11 +308,26 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   removeFromView() {
     return toJs(api.grok_Viewer_Remove_From_View(this.dart));
   }
+
+  static canVisualize(viewerType: string, dataFrame: DataFrame): string | null {
+    return api.grok_Viewer_CanVisualize(viewerType, dataFrame.dart);
+  }
+
+  static CORE_VIEWER_TYPES: string[] = [
+    VIEWER.HISTOGRAM, VIEWER.BAR_CHART, VIEWER.BOX_PLOT, VIEWER.CALENDAR,
+    VIEWER.CORR_PLOT, VIEWER.DENSITY_PLOT, VIEWER.FILTERS, VIEWER.FORM,
+    VIEWER.GRID, VIEWER.GOOGLE_MAP, VIEWER.HEAT_MAP,
+    VIEWER.LINE_CHART, VIEWER.SHAPE_MAP, VIEWER.MARKUP, VIEWER.MATRIX_PLOT,
+    VIEWER.NETWORK_DIAGRAM, VIEWER.PC_PLOT, VIEWER.PIE_CHART, VIEWER.SCATTER_PLOT,
+    VIEWER.SCATTER_PLOT_3D, VIEWER.STATISTICS, VIEWER.TILE_VIEWER, VIEWER.TREE_MAP,
+    VIEWER.TRELLIS_PLOT, VIEWER.WORD_CLOUD,
+    VIEWER.PIVOT_TABLE
+  ];
 }
 
 
 /** Subclass JsViewer to implement a DataFrame-bound Datagrok viewer in JavaScript.
- *  See an example on github: {@link https://github.com/datagrok-ai/public/tree/master/packages/Leaflet}
+ *  See an example on github: {@link https://github.com/datagrok-ai/labs/tree/master/packages/Leaflet}
  *  */
 export class JsViewer extends Viewer {
   public dart: any;
@@ -335,7 +359,7 @@ export class JsViewer extends Viewer {
   addRowSourceAndFormula() {
     this.rowSource = this.string('rowSource', 'Filtered',
         { choices: ['All', 'Filtered', 'Selected', 'SelectedOrCurrent', 'FilteredSelected', 'MouseOverGroup', 'CurrentRow', 'MouseOverRow']});
-    this.formulaFilter = this.string('filter', '', {fieldName: 'formulaFilter'});
+    this.formulaFilter = this.string('filter', '', {fieldName: 'formulaFilter', category: 'Data'});
   }
 
   onFrameAttached(dataFrame: DataFrame): void {
@@ -383,41 +407,41 @@ export class JsViewer extends Viewer {
 
   /** Returns the column bound to the specified data property.
    *  Note that "ColumnName" suffix (this determines whether this is a data property) should be omitted. */
-  protected column(dataPropertyName: string, options: { [key: string]: any } & PropertyOptions | null = null): string {
+  protected column(dataPropertyName: string, options: { [key: string]: any } & IProperty | null = null): string {
     return this.addProperty(`${dataPropertyName}ColumnName`, TYPE.STRING, null, options);
   }
 
-  protected columnList(propertyName: ViewerPropertyType, defaultValue: string[] | null = null, options: { [key: string]: any } & PropertyOptions | null = null): string[] {
+  protected columnList(propertyName: ViewerPropertyType, defaultValue: string[] | null = null, options: { [key: string]: any } & IProperty | null = null): string[] {
     return this.addProperty(propertyName, DG.TYPE.COLUMN_LIST, defaultValue, options);
   }
 
   /** Registers an integer property with the specified name and defaultValue */
-  protected int(propertyName: ViewerPropertyType, defaultValue: number | null = null, options: { [key: string]: any } & PropertyOptions | null = null): number {
+  protected int(propertyName: ViewerPropertyType, defaultValue: number | null = null, options: { [key: string]: any } & IProperty | null = null): number {
     return this.addProperty(propertyName, TYPE.INT, defaultValue, options);
   }
 
   /** Registers a floating point property with the specified name and defaultValue */
-  protected float(propertyName: ViewerPropertyType, defaultValue: number | null = null, options: { [key: string]: any } & PropertyOptions | null = null): number {
+  protected float(propertyName: ViewerPropertyType, defaultValue: number | null = null, options: { [key: string]: any } & IProperty | null = null): number {
     return this.addProperty(propertyName, TYPE.FLOAT, defaultValue, options);
   }
 
   /** Registers a string property with the specified name and defaultValue */
-  protected string(propertyName: ViewerPropertyType, defaultValue: string | null = null, options: { [key: string]: any } & PropertyOptions | null = null): string {
+  protected string(propertyName: ViewerPropertyType, defaultValue: string | null = null, options: { [key: string]: any } & IProperty | null = null): string {
     return this.addProperty(propertyName, TYPE.STRING, defaultValue, options);
   }
 
   /** Registers a string list property with the specified name and defaultValue */
-  protected stringList(propertyName: ViewerPropertyType, defaultValue: string[] | null = null, options: { [key: string]: any } & PropertyOptions | null = null): string[] {
+  protected stringList(propertyName: ViewerPropertyType, defaultValue: string[] | null = null, options: { [key: string]: any } & IProperty | null = null): string[] {
     return this.addProperty(propertyName, TYPE.STRING_LIST, defaultValue, options);
   }
 
   /** Registers a boolean property with the specified name and defaultValue */
-  protected bool(propertyName: ViewerPropertyType, defaultValue: boolean | null = null, options: { [key: string]: any } & PropertyOptions | null = null): boolean {
+  protected bool(propertyName: ViewerPropertyType, defaultValue: boolean | null = null, options: { [key: string]: any } & IProperty | null = null): boolean {
     return this.addProperty(propertyName, TYPE.BOOL, defaultValue, options);
   }
 
   /** Registers a datetime property with the specified name and defaultValue */
-  protected dateTime(propertyName: ViewerPropertyType, defaultValue: dayjs.Dayjs | null = null, options: { [key: string]: any } & PropertyOptions | null = null): dayjs.Dayjs {
+  protected dateTime(propertyName: ViewerPropertyType, defaultValue: dayjs.Dayjs | null = null, options: { [key: string]: any } & IProperty | null = null): dayjs.Dayjs {
     return this.addProperty(propertyName, TYPE.DATE_TIME, defaultValue, options);
   }
 }
@@ -464,6 +488,10 @@ export class FilterGroup extends Viewer {
 
   setExpanded(filter: Filter | Widget, active: boolean) {
     api.grok_FilterGroup_SetExpanded(this.dart, filter, active);
+  }
+
+  setActive(active: boolean, notify = true) {
+    api.grok_FilterGroup_SetActive(this.dart, active, notify);
   }
 
   remove(filter: Filter | Widget) {
@@ -674,6 +702,16 @@ export class ViewerMetaHelper {
     this._viewer = viewer;
     this.formulaLines = new ViewerFormulaLinesHelper(this._viewer);
   }
+}
+
+export class TrellisPlotViewer extends Viewer<interfaces.ITrellisPlotSettings> {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  get onInnerViewerClicked(): rxjs.Observable<number[]> { return this.onEvent('d4-trellis-plot-inner-viewer-clicked'); }
+  get onTrellisCurrentCellChanged(): rxjs.Observable<CategoryDataArgs> { return this.onEvent('d4-trellis-plot-current-cell-changed'); }
+  get onViewerTypeChanged(): rxjs.Observable<string> { return this.onEvent('d4-trellis-plot-viewer-type-changed'); }
 }
 
 export class ViewerFormulaLinesHelper extends FormulaLinesHelper {

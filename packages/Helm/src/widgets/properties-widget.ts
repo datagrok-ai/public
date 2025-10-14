@@ -54,7 +54,7 @@ export function getPropertiesWidget(value: DG.SemanticValue<string>): DG.Widget 
   try {
     const propDict = getPropertiesDict(value.value, sh);
     return new DG.Widget(
-      ui.tableFromMap(propDict)
+      ui.tableFromMap(propDict, true)
     );
   } catch (err: any) {
     if (err instanceof SeqPropertiesError) {

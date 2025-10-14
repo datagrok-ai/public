@@ -86,20 +86,10 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
   grok.shell.windows.help.syncCurrentObject = false;
 
   if (['Form', 'Trellis plot', 'Grid', 'Filters'].includes(viewerName)) {
-    if (viewerName === DG.VIEWER.FORM) {
-      // In browse view, the dataFrame name may be null. To ensure settings are correctly associated,
-      // we assign a default name ('Table') when it is not provided.
-      tableView.dataFrame.name = 'Table';
-      DG.debounce(df.onSemanticTypeDetected, 800).subscribe(async (_) => {
-        await loadViewerDemoLayout(tableView, viewerName);
-      });
-      return;
-    }
-
-    await loadViewerDemoLayout(tableView, viewerName);   
+    await loadViewerDemoLayout(tableView, viewerName);
     return;
   }
-  
+
   if (viewerName === DG.VIEWER.TILE_VIEWER) {
     DG.debounce(df.onSemanticTypeDetected, 800).subscribe((_) => {
       const viewer = tableView.addViewer(viewerName, options);
@@ -110,10 +100,8 @@ export async function viewerDemo(viewerName: string, options?: object | null) {
   }
 
   const viewer = tableView.addViewer(viewerName, options);
-  
-  // because of GROK-13028
-  if (viewerName === DG.VIEWER.NETWORK_DIAGRAM) {
-    await delay(500);
+
+  if (viewerName === DG.VIEWER.NETWORK_DIAGRAM) {;
     viewer.props.node1ColumnName = 'Source';
     viewer.props.node2ColumnName = 'Target';
     (viewer.root.firstElementChild as HTMLElement).style.width = '100%';

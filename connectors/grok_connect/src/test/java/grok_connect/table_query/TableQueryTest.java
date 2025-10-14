@@ -1,8 +1,10 @@
 package grok_connect.table_query;
 
+import grok_connect.GrokConnect;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.providers.JdbcDataProvider;
 import grok_connect.utils.PatternMatcher;
+import grok_connect.utils.ProviderManager;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +45,7 @@ abstract class TableQueryTest {
 
     public TableQueryTest(JdbcDataProvider provider) {
         this.provider = provider;
+        GrokConnect.providerManager = new ProviderManager();
     }
 
     @BeforeEach
@@ -157,13 +160,11 @@ abstract class TableQueryTest {
         testTableQuery.groupByFields = fields;
         testTableQuery.limit = 50;
         Map<String, Object> options = new HashMap<>();
-        options.put("op", PatternMatcher.IN);
-        FieldPredicate fieldPredicate = new FieldPredicate("source", "in", "string");
+        options.put("op", ">");
+        HavingPredicate fieldPredicate = new HavingPredicate("sum", "source", ">1", "int");
         List<String> values = new ArrayList<>();
         options.put("values", values);
-        values.add("func");
-        values.add("query");
-        values.add("script");
+        values.add("1");
         fieldPredicate.matcher = new PatternMatcher(options, "source");
         testTableQuery.having.add(fieldPredicate);
         testQuery(testTableQuery, getAggregationAndGroupByAndHavingLimitWithoutDot());
@@ -182,13 +183,12 @@ abstract class TableQueryTest {
         testTableQuery.groupByFields = fields;
         testTableQuery.limit = 50;
         Map<String, Object> options = new HashMap<>();
-        options.put("op", PatternMatcher.IN);
-        FieldPredicate fieldPredicate = new FieldPredicate("events.source", "in", "string");
+        options.put("op", ">");
+        HavingPredicate fieldPredicate = new HavingPredicate("sum", "events.source", ">1", "int");
+
         List<String> values = new ArrayList<>();
         options.put("values", values);
-        values.add("func");
-        values.add("query");
-        values.add("script");
+        values.add("1");
         fieldPredicate.matcher = new PatternMatcher(options, "events.source");
         testTableQuery.having.add(fieldPredicate);
         testQuery(testTableQuery, getAggregationAndGroupByAndHavingLimitWithDot());
@@ -297,7 +297,7 @@ abstract class TableQueryTest {
     public abstract String[] getSeveralOnJoin();
 
     private void testQuery(TableQuery tableQuery, String[] expected) {
-        String actual = provider.queryTableSql(tableQuery.connection, tableQuery);
+        String actual = provider.queryTableSql(tableQuery);
         String expectedQuery = getExpectedQuery(expected);
         Assertions.assertEquals(expectedQuery, actual);
     }

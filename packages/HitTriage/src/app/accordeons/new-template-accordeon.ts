@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
@@ -10,6 +11,7 @@ import {chemFunctionsDialog} from '../dialogs/functions-dialog';
 import {ItemType, ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
 import {HitAppBase} from '../hit-app-base';
 import {getLayoutInput} from './layout-input';
+import {getFuncPackageNameSafe} from '../utils';
 
 
 export async function createTemplateAccordeon(app: HitAppBase<any>,
@@ -165,7 +167,7 @@ export async function createTemplateAccordeon(app: HitAppBase<any>,
               });
             }),
         },
-        ...(submitFunction ? {submit: {fName: submitFunction.name, package: submitFunction.package.name}} : {}),
+        ...(submitFunction ? {submit: {fName: submitFunction.name, package: getFuncPackageNameSafe(submitFunction)}} : {}),
         queryFunctionName: (ingestTypeInput.value === 'Query') ? dataSourceFunctionInput.value ?? undefined : undefined,
       };
       saveTemplate(out);

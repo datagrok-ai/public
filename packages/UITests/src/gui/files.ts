@@ -53,5 +53,5 @@ and friendlyName="Test Connection to S3"`).first();
       if (testConnection != undefined)
         throw new Error('Test connection has not been deleted');
     }
-  }, {skipReason: 'GROK-11670'});
+  });
 });

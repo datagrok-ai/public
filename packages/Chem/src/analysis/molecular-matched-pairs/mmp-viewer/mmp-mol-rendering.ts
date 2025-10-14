@@ -1,7 +1,7 @@
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 
-import {getUncommonAtomsAndBonds} from '../../../utils/chem-common-rdkit';
+import {getUncommonAtomsAndBonds} from '../../../utils/chem-common';
 
 
 export async function getInverseSubstructuresAndAlign(cores: string[],
@@ -41,7 +41,11 @@ export async function getInverseSubstructuresAndAlign(cores: string[],
       fromAligned[i] = mol1.get_molblock();
       toAligned[i] = mol2.get_molblock();
       res1[i] = getUncommonAtomsAndBonds(from[i], mcsMol, module, '#bc131f');
+      //@ts-ignore
+      res1[i]['highlightBondWidthMultiplier'] = 40;
       res2[i] = getUncommonAtomsAndBonds(to[i], mcsMol, module, '#49bead');
+      //@ts-ignore
+      res2[i]['highlightBondWidthMultiplier'] = 40;
     } catch (e: any) {
       fromAligned[i] = '';
       toAligned[i] = '';

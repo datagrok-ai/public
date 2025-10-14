@@ -1,38 +1,38 @@
---name: states
+--name: click house states
 --connection: ClickHouseNorthwind
 select distinct stateabbr from usstates order by stateabbr
 --end
 
 
---name: countries
+--name: click house countries
 --connection: ClickHouseNorthwind
 select distinct country from customers order by country
 --end
 
 
---name: products
+--name: click house products
 --connection: ClickHouseNorthwind
 select * from products
 --end
 
 
---name: employees
+--name: click house employees
 --connection: ClickHouseNorthwind
 select * from employees
 --end
 
 
---name: customers
+--name: click house customers
 --connection: ClickHouseNorthwind
 select * from customers
 --end
 
 
---name: order details by @quantity, @productName, @country
+--name: click house order details by @quantity, @productName, @country
 --connection: ClickHouseNorthwind
 --input: int quantity = '40'
 --input: string productName = 'Manjimup Dried Apples'
---input: string country { choices: Samples:NorthwindDemo:countries }
+--input: string country { choices: Samples:ClickHouseCountries }
 select
   order_details.orderid,
   order_details.unitprice,
@@ -57,7 +57,7 @@ where
 --end
 
 
---name: customers in @country
+--name: click house customers in @country
 --connection: ClickHouseNorthwind
 --input: string country
 select * from customers where country = @country

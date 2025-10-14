@@ -1,8 +1,9 @@
 import {paramsToJs, toDart, toJs} from "./wrappers";
 import {Type} from "./const";
-import {Entity, Func, Property, User} from "./entities";
-import {DartWidget, InputBase, ProgressIndicator,} from "./widgets";
-import {MapProxy, _toIterable} from "./utils";
+import {Entity, Func, Property, User, ProgressIndicator} from "./entities";
+import type { InputBase} from "./widgets";
+import {_toIterable} from "./utils_convert";
+import {MapProxy} from "./proxies";
 import {Observable} from "rxjs";
 import {__obs, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
@@ -12,7 +13,7 @@ import {ViewBase} from "./views/view";
 import {Logger} from "./logger";
 declare let grok: any;
 declare let DG: any;
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 
 
@@ -279,7 +280,7 @@ type FuncCallParams = {
 } & { values(): FuncCallParam[]; }
 
 /** Represents a function call
- * {@link https://datagrok.ai/help/datagrok/functions/function-call*}
+ * {@link https://datagrok.ai/help/datagrok/concepts/functions/function-call}
  * */
 export class FuncCall extends Entity {
   declare readonly dart: any;

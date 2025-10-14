@@ -4,8 +4,8 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 
 const getBalloonContainer = () => {
-  return document.querySelector('.d4-balloon-container')
-}
+  return document.querySelector('.d4-balloon-container');
+};
 
 export class OutliersSelectionViewer extends DG.JsViewer {
   constructor() {
@@ -28,13 +28,18 @@ export class OutliersSelectionViewer extends DG.JsViewer {
 
     const inputData = this.dataFrame;
     const IS_OUTLIER_COL_LABEL = 'isOutlier';
+    const IS_OUTLIER_SECONDARY_COL_LABEL = 'isOutlierSecondary';
     const OUTLIER_RATIONALE_COL_LABEL = 'Rationale';
     const OUTLIER_COUNT_COL_LABEL = 'Count';
     const IS_GROUP_CONFIRMED_LABEL = 'isConfirmed';
 
     if (!inputData.columns.byName(IS_OUTLIER_COL_LABEL)) {
       inputData.columns
-        .add(DG.Column.fromBitSet(IS_OUTLIER_COL_LABEL, DG.BitSet.create(inputData.rowCount, () => false)));
+        .add(DG.Column.fromList(DG.TYPE.STRING, IS_OUTLIER_COL_LABEL, new Array(inputData.rowCount).fill('Inlier')));
+    }
+    if (!inputData.columns.byName(IS_OUTLIER_SECONDARY_COL_LABEL)) {
+      inputData.columns
+        .add(DG.Column.fromList(DG.TYPE.STRING, IS_OUTLIER_SECONDARY_COL_LABEL, new Array(inputData.rowCount).fill('Inlier')));
     }
 
     if (!inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL)) {
@@ -61,19 +66,27 @@ export class OutliersSelectionViewer extends DG.JsViewer {
         ui.divV([
           groupsListGrid.root,
         ], {style: {'height': '75%'}}),
-      ], {style: {'height': '100%'}})
+      ], {style: {'height': '100%'}}),
     );
 
-    const confirmOutliers =  () => {
+    const confirmOutliers = () => {
       if (!groupsListGrid.dataFrame) return;
 
-      inputData.col(IS_OUTLIER_COL_LABEL)?.meta.markers.assign('true', DG.MARKER_TYPE.OUTLIER);
+      inputData.col(IS_OUTLIER_COL_LABEL)?.meta.markers.assign('Outlier', DG.MARKER_TYPE.OUTLIER);
+      inputData.col(IS_OUTLIER_COL_LABEL)?.meta.markers.assign('Last Inlier', DG.MARKER_TYPE.STAR);
+      inputData.col(IS_OUTLIER_COL_LABEL)?.meta.colors.setCategorical({'Outlier': DG.Color.scatterPlotMarker,
+        'Inlier': DG.Color.scatterPlotMarker, 'Last Inlier': DG.Color.red});
+      inputData.col(IS_OUTLIER_SECONDARY_COL_LABEL)?.meta.markers.assign('Outlier', DG.MARKER_TYPE.OUTLIER);
+      inputData.col(IS_OUTLIER_SECONDARY_COL_LABEL)?.meta.markers.assign('Last Inlier', DG.MARKER_TYPE.STAR);
+      inputData.col(IS_OUTLIER_SECONDARY_COL_LABEL)?.meta.colors.setCategorical({'Outlier': DG.Color.cyan,
+        'Inlier': DG.Color.cyan, 'Last Inlier': DG.Color.red});
 
       const newRationale =
         groupsListGrid.dataFrame?.cell(groupsListGrid.dataFrame.rowCount-1, OUTLIER_RATIONALE_COL_LABEL).value;
 
       inputData.selection.getSelectedIndexes().forEach((selectedIndex: number) => {
-        inputData.col(IS_OUTLIER_COL_LABEL)!.set(selectedIndex, true, false);
+        inputData.col(IS_OUTLIER_COL_LABEL)!.set(selectedIndex, 'Outlier', false);
+        inputData.col(IS_OUTLIER_SECONDARY_COL_LABEL)!.set(selectedIndex, 'Outlier', false);
         inputData.col(OUTLIER_RATIONALE_COL_LABEL)!.set(
           selectedIndex,
           newRationale,
@@ -89,23 +102,23 @@ export class OutliersSelectionViewer extends DG.JsViewer {
     const cancelOutliers = () => {
       if (!groupsListGrid.dataFrame) return;
 
-      groupsListGrid.dataFrame.rows.removeAt(groupsListGrid.dataFrame.rowCount-1);
+      groupsListGrid.dataFrame.rows.removeAt(groupsListGrid.dataFrame.rowCount - 1);
       inputData.selection.setAll(false);
 
       $(getBalloonContainer()).empty();
-    }
+    };
 
     groupsListGrid.onCellPrepare((gc) => {
-      if (!gc.isTableCell) {
+      if (!gc.isTableCell)
         return;
-      }
+
 
       const confirmBtn = () => ui.div(
-        ui.iconFA('check', confirmOutliers, 'Confirm the outliers'), {style: {textAlign: 'center', 'margin': '6px'}},
+        ui.iconFA('check', confirmOutliers, 'Confirm the outliers'), {style: {'textAlign': 'center', 'margin': '6px'}},
       );
 
       const cancelBtn = () => ui.div(
-        ui.iconFA('times', cancelOutliers, 'Cancel the outliers'), {style: {textAlign: 'center', 'margin': '6px'}},
+        ui.iconFA('times', cancelOutliers, 'Cancel the outliers'), {style: {'textAlign': 'center', 'margin': '6px'}},
       );
 
       const deleteBtn = (rationale: string) => ui.div(
@@ -113,7 +126,8 @@ export class OutliersSelectionViewer extends DG.JsViewer {
           for (let i = 0; i < inputData.rowCount; i++) {
             if (inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL).get(i) === rationale) {
               inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL).set(i, '', false);
-              inputData.columns.byName(IS_OUTLIER_COL_LABEL).set(i, false, false);
+              inputData.columns.byName(IS_OUTLIER_COL_LABEL).set(i, 'Inlier', false);
+              inputData.columns.byName(IS_OUTLIER_SECONDARY_COL_LABEL).set(i, 'Inlier', false);
             }
           }
           inputData.fireValuesChanged();
@@ -145,23 +159,20 @@ export class OutliersSelectionViewer extends DG.JsViewer {
 
       for (let i = 0; i < inputData.rowCount; i++) {
         const currentCellValue = inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL).get(i);
-        if (currentCellValue != '' && !uniqueValues.has(currentCellValue)) {
+        if (currentCellValue != '' && !uniqueValues.has(currentCellValue))
           inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL).set(i, editedCell.cell.value);
-        }
       }
     });
 
     const updateGroupsDf = () => {
       if ((inputData.columns as DG.ColumnList).byName(OUTLIER_RATIONALE_COL_LABEL)) {
         for (let i = 0; i < inputData.rowCount; i++) {
-          if (inputData.columns.byName(IS_OUTLIER_COL_LABEL).get(i)) {
-            if (inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL).get(i) === '') {
-              (inputData.columns as DG.ColumnList).byName(OUTLIER_RATIONALE_COL_LABEL).set(i, "Manual", false)
-            }
+          if (inputData.columns.byName(IS_OUTLIER_COL_LABEL).get(i) === 'Outlier') {
+            if (inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL).get(i) === '')
+              (inputData.columns as DG.ColumnList).byName(OUTLIER_RATIONALE_COL_LABEL).set(i, 'Manual', false);
           } else {
-            if (inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL).get(i) !== '') {
-              (inputData.columns as DG.ColumnList).byName(OUTLIER_RATIONALE_COL_LABEL).set(i, '', false)
-            }
+            if (inputData.columns.byName(OUTLIER_RATIONALE_COL_LABEL).get(i) !== '')
+              (inputData.columns as DG.ColumnList).byName(OUTLIER_RATIONALE_COL_LABEL).set(i, '', false);
           }
         }
       }
@@ -197,9 +208,9 @@ export class OutliersSelectionViewer extends DG.JsViewer {
           ui.divText('Confirm selected points as outliers?'),
           ui.divH([
             ui.bigButton('Confirm', confirmOutliers),
-            ui.button('Cancel', cancelOutliers)
-          ])
-        ]))
+            ui.button('Cancel', cancelOutliers),
+          ]),
+        ]));
       }
 
       const isConfirmedColumn = (groupsListGrid.dataFrame.columns as DG.ColumnList)

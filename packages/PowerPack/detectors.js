@@ -5,6 +5,7 @@
  * The class name consists of <PackageName> and the `PackageDetectors` suffix.
  * Follow this naming convention to ensure that your detectors are properly loaded.
  */
+/// <reference path="../../globals.d.ts" />
 class PowerPackPackageDetectors extends DG.Package {
   /* @param s {String} - string to check
    * @returns {boolean} */
@@ -17,6 +18,7 @@ class PowerPackPackageDetectors extends DG.Package {
   //tags: semTypeDetector
   //input: column col
   //output: string semType
+  //meta.skipTest: GROK-17759
   detectText(col) {
     if (col.type === DG.COLUMN_TYPE.STRING && col.name === 'Questions')
       col.semType = DG.SEMTYPE.TEXT;

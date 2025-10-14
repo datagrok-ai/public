@@ -4,14 +4,16 @@
 #meta.cache: all
 #meta.cache.invalidateOn: 0 * * * *
 #input: string sequence
-#output: string response
+#input: string api_key
+#output: string result
 
 import requests
+import json
 
 invoke_url = "https://health.api.nvidia.com/v1/biology/nvidia/esmfold"
 
 headers = {
-    "Authorization": "Bearer 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",
+    "Authorization": f"Bearer {api_key}",
     "Accept": "application/json",
 }
 
@@ -22,8 +24,13 @@ payload = {
 # re-use connections
 session = requests.Session()
 
-response = session.post(invoke_url, headers=headers, json=payload)
+try:
+  response = session.post(invoke_url, headers=headers, json=payload)
+  response.raise_for_status()
+  response_body = response.json()
+  response = response_body['pdbs'][0]
+  result = {"success": True, "pdb": response}
+except requests.exceptions.RequestException as e:
+  result = {"success": False, "error": str(e)}
 
-response.raise_for_status()
-response_body = response.json()
-response = response_body['pdbs'][0]
+result = json.dumps(result)

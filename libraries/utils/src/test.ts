@@ -44,6 +44,25 @@ export interface TestOptions {
   tags?: string[];
 }
 
+export interface TestResult { 
+  date: string; 
+  category: string; 
+  name: string; 
+  success: boolean; 
+  result: any; 
+  ms: number; 
+  skipped: boolean; 
+  logs: string; 
+  owner: string; 
+  package: string;
+  flaking: boolean;
+}
+
+
+export interface TestResultExtended extends TestResult{ 
+  widgetsDifference: number;
+}
+
 export interface CategoryOptions {
   clear?: boolean;
   timeout?: number;
@@ -79,7 +98,17 @@ export class Test {
       return new Promise(async (resolve, reject) => {
         let result = '';
         try {
-          result = await test();
+          if (DG.Test.isInDebug)
+            debugger;
+          
+          let res = await test();
+          try {
+            result = res?.toString() ?? '';
+          }
+          catch (e) { 
+            result = 'Can\'t convert test\'s result to string';
+            console.error(`Can\'t convert test\'s result to string in the ${this.category}:${this.name} test`);
+          }
         } catch (e: any) {
           reject(e);
         }
@@ -116,7 +145,7 @@ export class TestExecutionOptions {
 
 export async function testEvent<T>(event: Observable<T>,
   handler: (args: T) => void, trigger: () => void, ms: number = 0, reason: string = `timeout`
-): Promise<string> {
+): Promise<any> {
   return new Promise((resolve, reject) => {
     const sub = event.subscribe((args: T) => {
       try {
@@ -140,7 +169,7 @@ export async function testEvent<T>(event: Observable<T>,
 
 export async function testEventAsync<T>(event: Observable<T>,
   handler: (args: T) => Promise<void>, trigger: () => void, ms: number = 0, reason: string = `timeout`
-): Promise<string> {
+): Promise<any> {
   return new Promise((resolve, reject) => {
     const sub = event.subscribe((args: T) => {
       handler(args).then(() => {
@@ -284,12 +313,6 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
   const packageId = package_.id;
   if (wasRegistered[packageId]) return;
   const moduleTests = module ? module.tests : tests;
-  if (moduleTests[autoTestsCatName] !== undefined ||
-    moduleTests[demoCatName] !== undefined ||
-    Object.keys(moduleTests).find((c) => c.startsWith(autoTestsCatName) || c.startsWith(coreCatName))) {
-    wasRegistered[packageId] = true;
-    return;
-  }
   if (package_.name === 'DevTools' || (!!module && module._package.name === 'DevTools')) {
     for (const f of (<any>window).dartTests) {
       const arr = f.name.split(/\s*\|\s*!/g);
@@ -302,7 +325,7 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
       cat = fullName.join(': ');
       if (moduleTests[cat] === undefined)
         moduleTests[cat] = { tests: [], clear: true };
-      moduleTests[cat].tests.push(new Test(cat, name, f.test, { isAggregated: false, timeout: f.options?.timeout ?? STANDART_TIMEOUT, skipReason: f.options?.skipReason, owner: f.options?.owner }));
+      moduleTests[cat].tests.push(new Test(cat, name, f.test, { isAggregated: false, timeout: f.options?.timeout ?? STANDART_TIMEOUT, skipReason: f.options?.skipReason, owner: f.options?.owner, benchmark: f.options?.benchmark ?? false }));
     }
   }
   const moduleAutoTests = [];
@@ -323,28 +346,29 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
           else if (arr[0].startsWith('cat')) map['cat'] = arr[3];
           else if (arr[0].startsWith('timeout')) map['timeout'] = parseInt(arr[4]);
         });
-        const test = new Test(autoTestsCatName, tests.length === 1 ? f.name : `${f.name} ${i + 1}`, async () => {
+        const test = new Test(map.cat ?? autoTestsCatName, tests.length === 1 ? f.name : `${f.name} ${i + 1}`, async () => {
           const res = await grok.functions.eval(addNamespace(tests[i], f));
           if (map.wait) await delay(map.wait);
           // eslint-disable-next-line no-throw-literal
           if (typeof res === 'boolean' && !res) throw `Failed: ${tests[i]}, expected true, got ${res}`;
         }, { skipReason: map.skip, timeout: DG.Test.isInBenchmark ? map.benchmarkTimeout ?? BENCHMARK_TIMEOUT : map.timeout ?? STANDART_TIMEOUT });
         if (map.cat) {
-          const cat: string = autoTestsCatName + ': ' + map.cat;
-          test.category = cat;
+          const cat: string = map.cat;
           if (moduleTests[cat] === undefined)
             moduleTests[cat] = { tests: [], clear: true };
+
+          // only before/after can be defined in ts files tests under the category
+          if (!moduleTests[cat].tests)
+            moduleTests[cat].tests = [];
           moduleTests[cat].tests.push(test);
-        } else
+        }
+        else
           moduleAutoTests.push(test);
       }
     }
     if (demo) {
       const wait = f.options['demoWait'] ? parseInt(f.options['demoWait']) : undefined;
       const test = new Test(demoCatName, f.friendlyName, async () => {
-        grok.shell.isInDemo = true;
-        if (grok.shell.view(DG.View.BROWSE) === undefined)
-          grok.shell.v = DG.View.createByType(DG.View.BROWSE);
         await delay(300);
         grok.shell.clearLastError();
         await f.apply();
@@ -352,7 +376,6 @@ export async function initAutoTests(package_: DG.Package, module?: any) {
         const unhandled = await grok.shell.lastError;
         if (unhandled)
           throw new Error(unhandled);
-        grok.shell.isInDemo = false;
       }, { skipReason: f.options['demoSkip'] });
       moduleDemo.push(test);
     }
@@ -417,14 +440,14 @@ function resetConsole(): void {
   console.error = stdError;
 }
 
-export async function runTests(options?: TestExecutionOptions) {
-  const package_ = grok.functions.getCurrentCall()?.func?.package;
+export async function runTests(options?: TestExecutionOptions) : Promise<TestResultExtended[]>{
+  console.log('--------------------')
+  const package_ = grok.functions.getCurrentCall()?.func?.package!;
+  const packageOwner = ((package_?.packageOwner ?? '').match(new RegExp('[^<]*<([^>]*)>')) ?? ['', ''])[1];
   await initAutoTests(package_);
-  const results: {
-    category?: string, name?: string, success: boolean,
-    result: string, ms: number, skipped: boolean, logs?: string, owner?: string
-  }[] = [];
+  const results:TestResultExtended[] = [];
   console.log(`Running tests`);
+  console.log(options);
   options ??= {};
   options!.testContext ??= new TestContext();
   grok.shell.clearLastError();
@@ -439,8 +462,8 @@ export async function runTests(options?: TestExecutionOptions) {
   }
   return results;
 
-  async function InvokeCategoryMethod(method: (() => Promise<void>) | undefined, category: string): Promise<string | undefined> {
-    var invokationResult = undefined;
+  async function invokeCategoryMethod(method: (() => Promise<void>) | undefined, category: string): Promise<string | undefined> {
+    let invokationResult = undefined;
     try {
       if (method !== undefined) {
         await timeout(async () => {
@@ -453,17 +476,96 @@ export async function runTests(options?: TestExecutionOptions) {
     return invokationResult
   }
 
+  async function invokeTestsInCategory(category: Category, options: TestExecutionOptions): Promise<TestResultExtended[]> {
+    let t = category.tests ?? [];
+    const res : TestResultExtended[] = [];
+    // let memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
+    const widgetsBefore = getWidgetsCountSafe();
+
+    if (category.clear) {
+      for (let i = 0; i < t.length; i++) {
+
+        if (t[i].options) {
+          if (t[i].options?.benchmark === undefined) {
+            if (!t[i].options)
+              t[i].options = {}
+            t[i].options!.benchmark = category.benchmarks ?? false;
+          }
+        }
+        let test = t[i];
+        if (options.test)
+          if (options.test.toLowerCase() !== test.name.toLowerCase())
+            continue;
+        if (test?.options) {
+          test.options.owner = t[i].options?.owner ?? category?.owner ?? packageOwner ?? '';
+        }
+        // let isGBEnable = (window as any).gc && test.options?.skipReason == undefined;
+        // console.log(`********${isGBEnable}`);
+        // if (isGBEnable)
+        //   await (window as any).gc();
+        // memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
+        let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout ?? STANDART_TIMEOUT, package_.name, options.verbose);
+
+        // if (isGBEnable)
+        //   await (window as any).gc();
+        if (testRun)
+          res.push({ ...testRun,  widgetsDifference: getWidgetsCountSafe() - widgetsBefore });
+        // res.push({ ...testRun, memoryDelta: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDelta: getWidgetsCountSafe() - widgetsBefore });
+
+        grok.shell.closeAll();
+        DG.Balloon.closeAll();
+      }
+    } else {
+      for (let i = 0; i < t.length; i++) {
+        let test = t[i];
+        if (options.test)
+          if (options.test.toLowerCase() !== test.name.toLowerCase())
+            continue;
+
+        if (test?.options) {
+          test.options.owner = t[i].options?.owner ?? category?.owner ?? packageOwner ?? '';
+        }
+        // let isGBEnable = (window as any).gc && test.options?.skipReason == undefined;
+        // console.log(`********${isGBEnable}`);
+        // if (isGBEnable)
+        //   await (window as any).gc();
+        // memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
+        let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout, package_.name, options.verbose);
+
+        // if (isGBEnable)
+        //   await (window as any).gc();
+        
+        if (testRun)
+          res.push({ ...testRun, widgetsDifference: getWidgetsCountSafe() - widgetsBefore });
+        // res.push({ ...testRun, memoryDelta: (window?.performance as any)?.memory?.usedJSHeapSize - memoryUsageBefore, widgetsDifference: getWidgetsCountSafe() - widgetsBefore });
+
+      }
+    }
+    return res;
+  }
+
+  function getWidgetsCountSafe() {
+    let length = -1;
+    try {
+      length = DG.Widget.getAll().length;
+    } catch (e: any) {
+      console.warn(e.message ?? e);
+    }
+    return length;
+  }
+
   async function invokeTests(categoriesToInvoke: { [key: string]: Category }, options: TestExecutionOptions) {
     try {
       for (const [key, value] of Object.entries(categoriesToInvoke)) {
-        if ((!!options?.category && !key.toLowerCase().startsWith(options?.category.toLowerCase())) ||
-          options.exclude?.some((c) => key.startsWith(c)))
+        if ((!options?.category || options.exclude?.some((c) => key.startsWith(c))))
           continue;
-
+        if (!(key.toLowerCase().startsWith(`${options?.category.toLowerCase().trim()} :`) && !options.test) && key.toLowerCase().trim() !== options?.category.toLowerCase().trim())
+          continue;
         stdLog(`Started ${key} category`);
-        const skipped = value.tests?.every((t) => t.options?.skipReason);
+        //@ts-ignore
+        const skipped = value.tests?.every((t: Test) => t.options?.skipReason);
         if (!skipped)
-          value.beforeStatus = await InvokeCategoryMethod(value.before, options.category ?? '');
+          value.beforeStatus = await invokeCategoryMethod(value.before, options.category ?? '');
 
         let t = value.tests ?? [];
 
@@ -478,49 +580,27 @@ export async function runTests(options?: TestExecutionOptions) {
           );
         }
 
-        const res = [];
-        if (value.clear) {
-          for (let i = 0; i < t.length; i++) {
-            if (t[i].options) {
-              if (t[i].options?.benchmark === undefined) {
-                if (!t[i].options)
-                  t[i].options = {}
-                t[i].options!.benchmark = value.benchmarks ?? false;
-              }
-            }
-            let test = t[i];
-            if (test?.options) {
-              test.options.owner = t[i].options?.owner ?? value?.owner;
-            } 
-            let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout ?? STANDART_TIMEOUT, package_.name, options.verbose);
-            if (testRun)
-              res.push(testRun);
-            grok.shell.closeAll();
-            DG.Balloon.closeAll();
-          }
-        } else {
-          for (let i = 0; i < t.length; i++) {
-            let test = t[i];
-            if (test?.options) {
-              test.options.owner = t[i].options?.owner ?? value?.owner;
-            } 
-            let testRun = await execTest(test, options?.test, logs, DG.Test.isInBenchmark ? t[i].options?.benchmarkTimeout ?? BENCHMARK_TIMEOUT : t[i].options?.timeout, package_.name, options.verbose);
-            if (testRun)
-              res.push(testRun);
-          }
+        let res: TestResultExtended[];
+        if (value.beforeStatus) {
+          res = Array.from(t.map((testElem) => {
+            return {  date: new Date().toISOString(), category: key, name: testElem.name, success: false, result: 'before() failed', ms: 0, skipped: false, logs: '',owner: package_?.packageOwner, package: package_.name, widgetsDifference:  0, flaking: DG.Test.isReproducing };
+          }));
+          res.forEach(async (test) => reportTest('package', test));
         }
-        const data = res.filter((d) => d.result != 'skipped');
+        else
+          res = await invokeTestsInCategory(value, options);
+        const data : TestResultExtended[] = res.filter((d) => d.result != 'skipped');
 
         if (!skipped)
-          value.afterStatus = await InvokeCategoryMethod(value.after, options.category ?? '');
+          value.afterStatus = await invokeCategoryMethod(value.after, options.category ?? '');
 
         // Clear after category
         // grok.shell.closeAll();
         // DG.Balloon.closeAll();
         if (value.afterStatus)
-          data.push({ date: new Date().toISOString(), logs: '', category: key, name: 'after', result: value.afterStatus, success: false, ms: 0, skipped: false });
+          data.push({ date: new Date().toISOString(), category: key, name: 'after', success: false, result: value.afterStatus, ms: 0, skipped: false, logs: '',owner: package_?.packageOwner, package: package_.name, widgetsDifference:  0, flaking: DG.Test.isReproducing });
         if (value.beforeStatus)
-          data.push({ date: new Date().toISOString(), logs: '', category: key, name: 'before', result: value.beforeStatus, success: false, ms: 0, skipped: false });
+          data.push({ date: new Date().toISOString(), category: key, name: 'before', success: false, result: value.beforeStatus, ms: 0, skipped: false, logs: '',owner: package_?.packageOwner, package: package_.name, widgetsDifference:  0, flaking: DG.Test.isReproducing});
         results.push(...data);
       }
     } finally {
@@ -529,26 +609,36 @@ export async function runTests(options?: TestExecutionOptions) {
     if (options.testContext!.catchUnhandled && (!DG.Test.isInBenchmark)) {
       await delay(1000);
       const error = await grok.shell.lastError;
-      const params = {
+      const params : any = {
         logs: '',
         date: new Date().toISOString(),
         category: 'Unhandled exceptions',
         name: 'Exception',
-        result: error ?? '', success: !error, ms: 0, skipped: false, 
-        'flaking': DG.Test.isReproducing && !error
+        result: error ?? '', 
+        success: !error, 
+        ms: 0, 
+        skipped: false,
+        owner: packageOwner ?? '',
+        'package': package_.name,
+        widgetsDifference: 0
       };
-      results.push(params);
+        
+      results.push({...params, 'flaking': DG.Test.isReproducing && !error});
       (<any>params).package = package_.name;
-      if ((<any>grok.shell).reportTest != null)
-        await (<any>grok.shell).reportTest('package', params);
-      else {
-        await fetch(`${grok.dapi.root}/log/tests/package`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          credentials: 'same-origin',
-          body: JSON.stringify(params)
-        });
-      }
+      await reportTest('package', params);
     }
+  }
+}
+
+async function reportTest(type: string, params: any): Promise<void> {
+  if ((<any>grok.shell).reportTest != null)
+    await (<any>grok.shell).reportTest(type, params);
+  else {
+    await fetch(`${grok.dapi.root}/log/tests/${type}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify(params)
+    });
   }
 }
 
@@ -557,13 +647,14 @@ async function getResult(x: any): Promise<string> {
 }
 
 async function execTest(t: Test, predicate: string | undefined, logs: any[],
-  testTimeout?: number, packageName?: string, verbose?: boolean): Promise<any> {
+  testTimeout?: number, packageName?: string, verbose?: boolean): Promise<TestResult | undefined> {
   logs.length = 0;
-  let r: { date: string, category?: string, name?: string, success: boolean, result: any, ms: number, skipped: boolean, logs?: string, owner?: string };
+  let r: TestResult;
   let type: string = 'package';
   const filter = predicate != undefined && (t.name.toLowerCase() !== predicate.toLowerCase());
   let skip = t.options?.skipReason || filter;
   let skipReason = filter ? 'skipped' : t.options?.skipReason;
+  console.log(test.name, skip);
 
   if (DG.Test.isInBenchmark && !t.options?.benchmark) {
     stdLog(`SKIPPED: ${t.category} ${t.name} doesnt available in benchmark mode`);
@@ -573,16 +664,26 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   if (!skip)
     stdLog(`Started ${t.category} ${t.name}`);
   const start = Date.now();
+  const startDate = new Date(start).toISOString();
   try {
     if (skip)
-      r = { date: new Date().toISOString(), success: true, result: skipReason!, ms: 0, skipped: true };
+      r = { name: t.name, owner:t.options?.owner ?? '', category: t.category, logs: '', date: startDate, success: true, result: skipReason!, ms: 0, skipped: true, package: packageName ?? '', flaking: DG.Test.isReproducing};
     else {
       let timeout_ = testTimeout ?? STANDART_TIMEOUT;
-      r = { date: new Date().toISOString(), success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false };
+
+      if (DG.Test.isProfiling)
+        console.profile(`${t.category}: ${t.name}`);
+
+      r = { name: t.name, owner:t.options?.owner ?? '', category: t.category, logs: '', date: startDate, success: true, result: (await timeout(t.test, timeout_)).toString() ?? 'OK', ms: 0, skipped: false , package: packageName ?? '', flaking: DG.Test.isReproducing};
+
+      if (DG.Test.isProfiling) {
+        console.profileEnd(`${t.category}: ${t.name}`);
+        grok.shell.info(`Profiling of ${t.category}: ${t.name} finished \n Please ensure that you have opened DevTools (F12) / Performance panel before test starts.`);
+      }
     }
   } catch (x: any) {
     stdError(x);
-    r = { date: new Date().toISOString(), success: false, result: await getResult(x), ms: 0, skipped: false };
+    r = { name: t.name, owner:t.options?.owner ?? '', category: t.category, logs: '', date: startDate, success: false, result: await getResult(x), ms: 0, skipped: false, package: packageName ?? '', flaking: false};
   }
   if (t.options?.isAggregated && r.result.constructor === DG.DataFrame) {
     const col = r.result.col('success');
@@ -605,10 +706,10 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
   r.owner = t.options?.owner ?? '';
   if (!filter) {
     let params = {
-      'success': r.success, 'result': r.result, 'ms': r.ms,
-      'skipped': r.skipped, 'package': packageName, 'category': t.category, 'name': t.name, 'logs': r.logs, 'owner': r.owner,
+      'success': r.success, 'result': r.result, 'ms': r.ms, 'date': r.date,
+      'skipped': r.skipped, 'category': t.category, 'name': t.name, 'logs': r.logs, 'owner': r.owner,
       'flaking': DG.Test.isReproducing && r.success,
-      'timeoutWarning' : DG.Test.isInBenchmark  && (t.options?.benchmarkWarnTimeout && r.ms > t.options?.benchmarkWarnTimeout)
+      'package': r.package
     };
     if (r.result.constructor == Object) {
       const res = Object.keys(r.result).reduce((acc, k) => ({ ...acc, ['result.' + k]: r.result[k] }), {});
@@ -618,15 +719,7 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
     if (params.result instanceof DG.DataFrame)
       params.result = JSON.stringify(params.result?.toJson()) || '';
 
-    if ((<any>grok.shell).reportTest != null)
-      await (<any>grok.shell).reportTest(type, params);
-    else {
-      await fetch(`${grok.dapi.root}/log/tests/${type}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify(params)
-      });
-    }
+    await reportTest(type, params);
   }
   return r;
 }
@@ -635,7 +728,7 @@ export function shuffle(array: any[]): any[] {
   const newArr = array.slice();
   newArr.sort(() => Math.random() - 0.5);
   return newArr;
-};
+}
 
 /* Waits [ms] milliseconds */
 export async function delay(ms: number) {
@@ -643,7 +736,7 @@ export async function delay(ms: number) {
 }
 
 export async function awaitCheck(checkHandler: () => boolean,
-  error: string = 'Timeout exceeded', wait: number = 500, interval: number = 50): Promise<void> {
+  error: string = 'Timeout exceeded', wait: number = 500, interval: number = 50): Promise<any> {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       clearInterval(intervalId);
@@ -653,7 +746,7 @@ export async function awaitCheck(checkHandler: () => boolean,
     const intervalId: Timeout = setInterval(() => {
       if (checkHandler()) {
         clearInterval(intervalId);
-        resolve();
+        resolve(null);
       }
     }, interval);
   });

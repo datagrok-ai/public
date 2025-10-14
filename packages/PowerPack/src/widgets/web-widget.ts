@@ -5,6 +5,10 @@ import * as DG from 'datagrok-api/dg';
 import $ from "cash-dom";
 
 export class WebWidget extends DG.Widget {
+  get type(): string {
+    return 'WebWidget';
+  }
+
   caption: string;
   url: string;
   p1: string;

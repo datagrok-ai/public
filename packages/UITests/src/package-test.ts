@@ -18,7 +18,6 @@ import './ui/users';
 import './ui/groups';
 import './ui/tags';
 import './ui/sharing';
-import './ui/get-all-top100';
 import './gui/dialogs';
 import './gui/files';
 import './gui/grid';
@@ -32,6 +31,7 @@ import './viewers/viewers';
 import './viewers/filters';
 import './gui/viewers/scatter-plot';
 import './shell/windows';
+import './gui/balloon';
 
 // import './gui/apps';
 

@@ -4,8 +4,12 @@ Chemspace is a [package](https://datagrok.ai/help/develop/#packages) for the [Da
 platform that provides integration with the [Chemspace](https://chem-space.com/), a service for online
 shopping for the chemical building blocks.
 
+To get started set Chemspace apiKey in package credentials manager.
+
 There are two ways to use it: as an [application](https://datagrok.ai/help/develop/how-to/build-an-app),
 or as an [info panel](https://datagrok.ai/help/explore/data-augmentation/info-panels) for chemical structures.
+
+Note that package queries external source, the structure you are searching with is sent to Chemspace as a query parameter.
 
 ## Application
 

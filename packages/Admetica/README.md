@@ -12,7 +12,7 @@ To evaluate predictions for a single molecule:
 * Navigate to **Context Pane > Admetica**.
 * Expand the relevant panes (Absorption, Distribution, Excretion, Toxicity, Summary) to view detailed results.
 
-![Predictions for a single molecule](../Admetica/vendor/admetica-cell.gif)
+![Predictions for a single molecule](vendor/admetica-cell.gif)
 
 To calculate the properties for the whole column:
 * Go to the **Top menu > Chem > Admetica > Calculate…**
@@ -27,7 +27,7 @@ To calculate the properties for the whole column:
 
 After that molecules with desired properties can be simply filtered using standard tools the platform provides. 
 
-![Predictions for the molecule column](../Admetica/vendor/admetica-column.gif)
+![Predictions for the molecule column](vendor/admetica-column.gif)
 
 See also: 
 * [Docker Containers](https://datagrok.ai/help/develop/how-to/docker_containers)

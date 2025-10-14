@@ -471,9 +471,10 @@ class ColumnInputsManager {
   private selectColumnIfTableNotNull(
     table: DG.DataFrame | null, columnName: string, columnLabel: REQUIRED_COLUMN_LABEL
   ): void {
-    if (table !== null) {
-      const selectedColumn = table.getCol(columnName);
-      this.eventBus.selectColumn(columnLabel, selectedColumn);
+    if (table !== null && columnName) {
+      const selectedColumn = table.col(columnName);
+      if (selectedColumn)
+        this.eventBus.selectColumn(columnLabel, selectedColumn);
     }
   }
 }

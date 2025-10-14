@@ -1,0 +1,35 @@
+---
+title: "Low-code workflows"
+---
+
+Every Datagrok [script](../scripting) is a function that consumes and returns data.
+However, Datagrok scripts are not interactive.
+
+To enable interactive multi-step data processing, Datagrok provides the low-code workflow capabilities.
+A workflow consists of a series of connected steps, where outputs from one step can serve as inputs for another.
+Users can execute these workflows step-by-step,
+examining intermediate results and adjusting parameters for subsequent steps.
+
+## Datagrok low-code workflow capabilities
+
+* Organize a series of steps into a workflow.
+* Change inputs and review outputs for each step
+* Ensure workflow consistency – identify and rerun all steps which input data have changed.
+* Dynamically modify the workflow scheme: change step order, add/remove steps, apply the same step several times
+* Put restrictions on step order and connections
+* Make nested workflows — use a workflow as a step of another workflow.
+
+Simply put, workflows create a flexible sequence of steps that users can modify,
+with automatic input population based on outputs from previous steps.
+Any individual script can serve as a building block within a workflow.
+The platform automatically generates a user interface for each script using
+[RichFunctionView](../scripting/advanced-scripting/rich-function-view).
+
+## Where to go from here
+
+* For a general overview of the workflow capabilities,
+  visit the [overview](./overview.mdx) section.
+* For step-by-step walkthrough, visit the
+  [Tutorial and examples](examples.mdx) section.
+
+

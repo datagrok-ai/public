@@ -10,15 +10,20 @@ import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {_package} from '../package-test';
 import {buildDefaultAutodockGpf} from '../utils/auto-dock-service';
 import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
+import {ensureContainerRunning} from '@datagrok-libraries/utils/src/test-container-utils';
 
+export const CONTAINER_TIMEOUT = 300000;
 
 category('AutoDock', () => {
   let adSvc: IAutoDockService | null;
 
   before(async () => {
     try {
-      adSvc = await getAutoDockService();
-    } catch (err: any) {
+      // Initialize the service if not already initialized
+      if (!adSvc)
+        adSvc = await getAutoDockService();
+    } catch (err: unknown) {
+      // Log any errors during initialization
       const [errMsg, errStack] = errInfo(err);
       _package.logger.error(errMsg, undefined, errStack);
     }
@@ -27,13 +32,15 @@ category('AutoDock', () => {
   test('clinfo', async () => {
     if (!adSvc) return;
 
+    await ensureContainerRunning('docking', CONTAINER_TIMEOUT);
     const clinfoCount = await fetchWrapper(() => adSvc!.checkOpenCl());
     expect(clinfoCount > 0, true, 'OpenCL platform not found.');
-  }, {timeout: 50000});
+  }, {timeout: CONTAINER_TIMEOUT + 25000});
 
   test('dock ligand', async () => {
     if (!adSvc) return;
 
+    await ensureContainerRunning('docking', CONTAINER_TIMEOUT);
     const receptorPdb = await _package.files.readAsText('samples/1bdq-wo-ligands.pdb');
     const ligandPdb = await _package.files.readAsText('samples/1bdq-ligand-0.by-babel.pdb');
     if (receptorPdb === '' && ligandPdb === '')
@@ -43,13 +50,14 @@ category('AutoDock', () => {
     const ligandData: BiostructureData = {binary: false, ext: 'pdb', data: ligandPdb};
     const npts = new GridSize(20, 20, 20);
     const autodockGpf = buildDefaultAutodockGpf('1bdq', npts);
-    const posesDf = await fetchWrapper(() => adSvc!.dockLigand(receptorData, ligandData, autodockGpf));
-    expect(posesDf.rowCount, 30);
-  }, {timeout: 60000});
+    const posesDf = await fetchWrapper(() => adSvc!.dockLigand(receptorData, ligandData, autodockGpf, 10));
+    expect(posesDf.rowCount, 10);
+  }, {timeout: CONTAINER_TIMEOUT + 25000});
 
   test('dock ligand column', async () => {
     if (!adSvc) return;
     
+    await ensureContainerRunning('docking', CONTAINER_TIMEOUT);
     const receptorPdb = await _package.files.readAsText('samples/1bdq-wo-ligands.pdb');
     const sdfBytes: Uint8Array = await _package.files.readAsBytes('samples/1bdq-short.sdf');
     const ligandDf: DG.DataFrame = (await grok.functions.call('Chem:importSdf', {bytes: sdfBytes}))[0];
@@ -62,7 +70,7 @@ category('AutoDock', () => {
     const receptorData: BiostructureData = {binary: false, ext: 'pdb', data: receptorPdb};
     const npts = new GridSize(20, 20, 20);
     const autodockGpf = buildDefaultAutodockGpf('1bdq', npts);
-    const posesDf = await adSvc.dockLigandColumn(receptorData, ligandCol, autodockGpf);
-    expect(posesDf.rowCount, 90);
-  }, {timeout: 200000, stressTest: true});
-});
+    const posesDf = await adSvc.dockLigandColumn(receptorData, ligandCol, autodockGpf, 10);
+    expect(posesDf.rowCount, 30);
+  }, {timeout: CONTAINER_TIMEOUT + 25000});
+}, {owner: 'oserhiienko@datagrok.ai'});

@@ -65,7 +65,7 @@ clustering, dimensionality reduction techniques, imputation, PCA/PLS, and other 
 * [Extensible environment](#customizing-and-extending-the-platform)
   * Ability to add or customize any functionality using [scripts](../../../../compute/scripting/scripting.mdx) in Python, R, Matlab, and other supported languages.
   * Ability to create custom plugins and fit-for-purpose applications.
-* [Enterprise-grade platform](../../../solutions/enterprise/enterprise-evaluation-faq.md) for efficient data access and management.
+* [Enterprise-grade platform](../../teams/it/enterprise-evaluation-faq.md) for efficient data access and management.
 
 ## Data access
 
@@ -75,7 +75,7 @@ SQL and NoSQL databases or any other of the
 [30+ supported data sources](../../../../access/databases/connectors/connectors.md),
 retrieve data, and securely share data with others.
 Datagrok can ingest data in [multiple file formats](../../../../access/files/supported-formats.md) (such as Fasta or CSV)
-and multiple notations for nucleotide and amino acid sequences, with natural and modified monomers,
+and multiple notations for nucleotide and amino acid / protein sequences, with natural and modified monomers,
 aligned and non-aligned forms.
 
 You can also create macromolecule queries against data sources using built-in querying tools. To learn more about querying data and data access in general, see the [Access](../../../../access/access.md) section of our documentation.
@@ -170,6 +170,13 @@ For PDB files, cells display a preview of the 3D structure. When you click a cel
 </Tabs>
 ```
 
+### Interactive sequence header
+
+Long biological sequences, such as antibodies, are displayed with an interactive, scrollable WebLogo and conservation headers. You can click on any position in the sequence to highlight it and open a position statistics viewer, which shows the distribution of activities across different monomers at that site
+
+![Long Protein Sequences](img/protein-weblogo-header.gif)
+
+
 ### Macromolecule aware viewers
 
 Datagrok _viewers_ recognize and display macromolecules. The majority of the viewers were built from scratch to take
@@ -220,7 +227,7 @@ To learn how to use viewers to explore data, complete [this tutorial](https://pu
 
 :::note developers
 
-You can [add custom viewers](../../../../develop/how-to/develop-custom-viewer.md).
+You can [add custom viewers](../../../../develop/how-to/viewers/develop-custom-viewer.md).
 
 :::
 

@@ -11,6 +11,10 @@ import './styles/widgets.css';
  * Widget demo
  * */
 export class TimeWidget extends DG.Widget {
+  get type(): string {
+    return 'TimeWidget';
+  }
+
   caption: string;
 
   constructor() {
@@ -41,7 +45,7 @@ export class TimeWidget extends DG.Widget {
 export class TableSummaryViewer extends DG.JsViewer {
   caption: string;
 
-  public get type(): string { return 'TableSummary' };
+  get type(): string {return 'TableSummary'};
 
   constructor() {
     super();

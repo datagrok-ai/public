@@ -44,14 +44,8 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
       }));
       if (value.stats.missingValueCount !== 0)
         grok.shell.info('Sequences column contains missing values. They will be ignored during analysis');
-    }, filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE});
+    }, filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE, nullable: false});
     seqColInput.setTooltip('Macromolecule column in FASTA, HELM or separated format');
-  } else if (!(col.getTag(bioTAGS.aligned) === ALIGNMENT.SEQ_MSA) &&
-    col.getTag(DG.TAGS.UNITS) !== NOTATION.HELM) {
-    return {
-      host: ui.label('Peptides analysis only works with aligned sequences'),
-      callback: async (): Promise<boolean> => false,
-    };
   }
 
   let funcs = DG.Func.find({package: 'Bio', name: 'webLogoViewer'});
@@ -96,7 +90,7 @@ export function analyzePeptidesUI(df: DG.DataFrame, col?: DG.Column<string>): Di
     if (activityColumnChoice.value!.stats.missingValueCount !== 0)
       grok.shell.info('Activity column contains missing values. They will be ignored during analysis');
   };
-  const activityColumnChoice = ui.input.column('Activity', {table: df, value: defaultActivityColumn!,
+  const activityColumnChoice = ui.input.column('Activity', {table: df, value: defaultActivityColumn!, nullable: false,
     onValueChanged: activityScalingMethodState, filter: (col: DG.Column) => col.type === DG.TYPE.INT || col.type === DG.TYPE.FLOAT || col.type === DG.TYPE.QNUM});
   activityColumnChoice.setTooltip('Numerical activity column');
   const clustersColumnChoice = ui.input.column('Clusters', {table: df, onValueChanged: (value) => {
@@ -263,20 +257,28 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
   const progress = DG.TaskBarProgressIndicator.create('Loading SAR...');
 
   // Prepare new DF
-  const newDf = DG.DataFrame.create(sourceDf.rowCount);
-  newDf.name = 'Peptides analysis';
-  const newDfCols = newDf.columns;
-  newDfCols.add(scaledCol);
-  for (const col of sourceDf.columns) {
-    if (col.getTag(C.TAGS.ANALYSIS_COL) !== `${true}`) {
-      if (col.name.toLowerCase() === scaledCol.name.toLowerCase())
-        col.name = sourceDf.columns.getUnusedName(col.name);
+  // const newDf = DG.DataFrame.create(sourceDf.rowCount);
+  // newDf.name = 'Peptides analysis';
+  // const newDfCols = newDf.columns;
+  // newDfCols.add(scaledCol);
+  // for (const col of sourceDf.columns) {
+  //   if (col.getTag(C.TAGS.ANALYSIS_COL) !== `${true}`) {
+  //     if (col.name.toLowerCase() === scaledCol.name.toLowerCase())
+  //       col.name = sourceDf.columns.getUnusedName(col.name);
+  //     newDfCols.add(col);
+  //   }
+  // }
 
+  //make sure the data sync is turned off for the dataframe:
+  sourceDf.tags.delete && sourceDf.tags.delete('.script');
 
-      newDfCols.add(col);
-    }
-  }
-
+  const sourceCols = sourceDf.columns;
+  const oldActivityCol = sourceDf.col(scaledCol.name);
+  if (oldActivityCol)
+    oldActivityCol.name = sourceCols.getUnusedName(oldActivityCol.name);
+  const scaleColRawData = scaledCol.getRawData();
+  sourceDf.columns.addNew(scaledCol.name, scaledCol.type).init((i) => scaleColRawData[i]);
+  sourceCols.setOrder([scaledCol.name, peptidesCol.name, ...sourceCols.names().filter((name) => name !== peptidesCol.name && name !== scaledCol.name)]);
   const settings: type.PeptidesSettings = {
     sequenceColumnName: peptidesCol.name, activityColumnName: activityColumn.name, activityScaling: scaling,
     columns: {}, showDendrogram: false, showSequenceSpace: false,
@@ -285,18 +287,18 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
   };
 
   if (clustersColumn) {
-    const clusterCol = newDf.getCol(clustersColumn.name);
+    const clusterCol = sourceDf.getCol(clustersColumn.name);
     if (clusterCol.type !== DG.COLUMN_TYPE.STRING)
-      newDfCols.replace(clusterCol, clusterCol.convertTo(DG.COLUMN_TYPE.STRING));
+      sourceCols.replace(clusterCol, clusterCol.convertTo(DG.COLUMN_TYPE.STRING));
   }
-  newDf.setTag(C.TAGS.SETTINGS, JSON.stringify(settings));
+  sourceDf.setTag(C.TAGS.SETTINGS, JSON.stringify(settings));
 
-  const bitset = DG.BitSet.create(sourceDf.rowCount,
-    (i) => !activityColumn.isNone(i) && !peptidesCol.isNone(i) && sourceDf.filter.get(i));
+  // const bitset = DG.BitSet.create(sourceDf.rowCount,
+  //   (i) => !activityColumn.isNone(i) && !peptidesCol.isNone(i) && sourceDf.filter.get(i));
 
   // Cloning dataframe with applied filter. If filter is not applied, cloning is
   // needed anyway to allow filtering on the original dataframe
-  model = PeptidesModel.getInstance(newDf.clone(bitset));
+  model = PeptidesModel.getInstance(sourceDf);
   model.init(settings);
   if (clustersColumn) {
     const lstProps: ILogoSummaryTable = {
@@ -347,6 +349,15 @@ export async function startAnalysis(activityColumn: DG.Column<number>, peptidesC
     }
   }
 
+  const selectionGrid = model.df.plot.grid({
+    rowSource: DG.RowSet.Selected,
+    selectedRowsColor: DG.Color.fromHtml('#ffffff'),
+    title: 'Selection',
+  });
+
+  const logoViewerNode = (model?.findViewerNode(VIEWER_TYPE.LOGO_SUMMARY_TABLE));
+  if (logoViewerNode)
+    model.analysisView.dockManager.dock(selectionGrid, DG.DOCK_TYPE.DOWN, logoViewerNode, 'Selection', 0.4);
 
   progress.close();
   return model;

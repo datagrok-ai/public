@@ -1,35 +1,40 @@
 {
   "name": "datagrok-api",
-  "version": "1.22.2",
+  "version": "1.26.0",
   "description": "",
   "dependencies": {
+    "@babel/core": "^7.27.1",
     "@datagrok-libraries/chem-meta": "^1.0.12",
     "@types/react": "^18.3.11",
     "@types/wu": "^2.1.44",
-    "cash-dom": "^8.0.0",
+    "cash-dom": "^8.1.5",
     "dayjs": "^1.11.10",
     "openchemlib": "^7.2.3",
     "react": "^18.3.1",
     "rxjs": "^6.5.5",
+    "typeahead-standalone": "4.14.1",
     "wu": "^2.1.0",
-    "typeahead-standalone": "4.14.1"
+    "ws": "^8.18.2"
   },
   "devDependencies": {
-    "typescript": "^4.2.3",
+    "@babel/preset-env": "^7.21.4",
     "@types/node": "^18.11.18",
     "@typescript-eslint/eslint-plugin": "^4.20.0",
     "@typescript-eslint/parser": "^4.20.0",
+    "babel-loader": "^9.1.2",
     "css-loader": "^5.0.0",
+    "null-loader": "^4.0.1",
     "eslint": "^7.23.0",
+    "source-map-loader": "^4.0.1",
     "style-loader": "^2.0.0",
     "svg-loader": "^0.0.2",
     "ts-loader": "^8.1.0",
-    "source-map-loader": "^4.0.1",
     "tui-jsdoc-template": "^1.2.2",
+    "typescript": "^4.2.3",
     "webpack": "^5.64.1",
     "webpack-cli": "^4.6.0",
-    "babel-loader": "^9.1.2",
-    "@babel/preset-env": "^7.21.4"
+    "utf-8-validate": "^6.0.5",
+    "bufferutil": "^4.0.9"
   },
   "scripts": {
     "link": "npm link",

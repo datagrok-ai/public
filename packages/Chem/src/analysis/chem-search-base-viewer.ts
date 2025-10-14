@@ -129,6 +129,12 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
 
   async render(computeData = true): Promise<void> {
     try {
+      if (!this.moleculeColumn) {
+        ui.empty(this.root);
+        this.root.append(ui.div(ui.divText(`No molecule columns found in dataset`, {style: {color: 'red'}}),
+          'chem-similarity-diversity-search-error'));
+        return;
+      }
       await this.renderInternal(computeData);
     } finally {
       if (this.isComputing) {
@@ -201,7 +207,7 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
       .filter((name) => name !== this.moleculeColumn!.getTag(fingerprintTag) && name !== this.moleculeColumn!.name);
   }
 
-  closeWithError(error: string, progressBar?: DG.TaskBarProgressIndicator) {
+  closeWithError(error: string, progressBar?: DG.TaskBarProgressIndicator | null) {
     this.error = error;
     this.clearResults();
     this.root.append(ui.divText(this.error));

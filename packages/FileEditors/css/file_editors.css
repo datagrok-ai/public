@@ -5,3 +5,15 @@
 .fe-docx-preview > style {
   display: revert !important;
 }
+
+.fe-latex-viewer-ribbon-text {    
+    font-weight: normal;
+    margin-left: 2px;
+    margin-right: 8px;
+}
+
+.fe-latex-viewer-ribbon-download {    
+    font-weight: normal;
+    margin-left: 8px;
+    margin-right: 8px;
+}

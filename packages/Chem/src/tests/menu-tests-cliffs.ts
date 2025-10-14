@@ -9,7 +9,7 @@ import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cli
 import {createPropPanelElement, createTooltipElement} from '../analysis/activity-cliffs';
 import {MALFORMED_DATA_WARNING_CLASS} from '../constants';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
-import { activityCliffs } from '../package';
+import { PackageFunctions } from '../package';
 
 
 category('top menu activity cliffs', async () => {
@@ -73,7 +73,7 @@ async function _testActivityCliffsOpen(df: DG.DataFrame, molCol: string, activit
     'Activity cliffs table view hasn\'t been created', 1000);
   if (molCol === 'molecule') actCliffsTableView.dataFrame.rows.removeAt(51, 489);
   const encodingFunc = DG.Func.find({name: 'getFingerprints', package: 'Chem'})[0];
-  await activityCliffs(df, df.col(molCol)!, actCliffsTableView.dataFrame.getCol(activityCol), simCutOff,
+  await PackageFunctions.activityCliffs(df, df.col(molCol)!, actCliffsTableView.dataFrame.getCol(activityCol), simCutOff,
     DimReductionMethods.UMAP, BitArrayMetricsNames.Tanimoto, encodingFunc, undefined, undefined, true);
   let scatterPlot: DG.Viewer | null = null;
   for (const i of actCliffsTableView.viewers) {
@@ -82,13 +82,12 @@ async function _testActivityCliffsOpen(df: DG.DataFrame, molCol: string, activit
   }
   expect(scatterPlot != null, true);
   const checkScatterPlotInitialized = () => {
-    const cliffsLink = Array.from(scatterPlot!.root.children)
-    .filter((it) => it.className === 'ui-btn ui-btn-ok scatter_plot_link cliffs_grid');
-    return !!cliffsLink.length && ((cliffsLink[0] as HTMLElement).innerText.toLowerCase() === `${numberCliffs} cliffs`)
+    const cliffsLink = scatterPlot!.root.getElementsByClassName('scatter_plot_link');
+    return cliffsLink.length > 0 && ((cliffsLink[0] as HTMLElement).innerText.toLowerCase() === `${numberCliffs} cliffs`)
   }
   await awaitCheck(() => {
     return checkScatterPlotInitialized();
-  }, 'activity cliffs failed', layout ? 1000 : 60000);
+  }, 'activity cliffs failed', layout ? 2000 : 60000);
   if (layout) {
     const layout = actCliffsTableView.saveLayout();
     scatterPlot?.close();
