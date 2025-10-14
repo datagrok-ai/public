@@ -51,7 +51,8 @@ export function createPlatesView(): DG.View {
         if (!activePlate || activeIndex < 0)
           return createAnalysisSkeleton(analysis.friendlyName, analysis.getRequiredFields().map((f) => f.name));
 
-        const currentMappings = stateManager.getScopedMapping(activeIndex, analysis.name);
+        const currentMappings = stateManager.getMappings(activeIndex, analysis.name);
+
 
         const handleMap = (target: string, source: string) => {
           stateManager.setMapping(activeIndex, analysis.name, target, source);
@@ -81,7 +82,7 @@ export function createPlatesView(): DG.View {
     () => { console.warn('[DEBUG] TemplatePanel is not implemented'); }
   );
 
-  stateManager.onStateChange.subscribe(async (event) => {
+  stateManager.onStateChange$.subscribe(async (event) => {
     const activePlate = stateManager.activePlate;
     if (activePlate)
       plateWidget.plate = activePlate.plate;
@@ -113,9 +114,9 @@ export function createPlatesView(): DG.View {
           if (!plateToAnalyze || activeIndex < 0) {
             newContent = createAnalysisSkeleton(analysis.friendlyName, analysis.getRequiredFields().map((f) => f.name));
           } else {
-            const currentMappings = stateManager.getScopedMapping(activeIndex, analysis.name);
-            const handleMap = (target: string, source: string) => stateManager.remapScopedProperty(activeIndex, analysis.name, target, source);
-            const handleUndo = (target: string) => stateManager.undoScopedMapping(activeIndex, analysis.name, target);
+            const currentMappings = stateManager.getMappings(activeIndex, analysis.name); // Use getMappings
+            const handleMap = (target: string, source: string) => stateManager.setMapping(activeIndex, analysis.name, target, source); // Use setMapping
+            const handleUndo = (target: string) => stateManager.removeMapping(activeIndex, analysis.name, target); // Use removeMapping
 
             newContent = analysis.createView(plateToAnalyze.plate, plateWidget, currentMappings, handleMap, handleUndo, handleRerender);
           }

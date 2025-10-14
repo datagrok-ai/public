@@ -29,7 +29,10 @@ function createDynamicMappingRow(
   };
 
   const propInput = ui.input.string('', {placeholder: 'Property name...'});
-  propInput.input.addEventListener('input', () => { propName = propInput.value; });
+  propInput.onChanged.subscribe(() => {
+    propName = propInput.value;
+  });
+
   propInput.input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();

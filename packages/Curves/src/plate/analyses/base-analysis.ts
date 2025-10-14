@@ -12,6 +12,7 @@ import {
   saveAnalysisResult, saveAnalysisRunParameter
 } from '../../plates/plates-crud';
 import {AnalysisRequiredFields} from '../../plates/views/components/analysis-mapping/analysis-mapping-panel';
+import {_package} from '../../package';
 
 export interface IAnalysisProperty {
     name: string;
@@ -153,9 +154,7 @@ export abstract class AnalysisBase implements IPlateAnalysis {
         grok.shell.info(`Saved ${this.friendlyName} results for plate ${plate.barcode}.`);
       } catch (e: any) {
         const errorMessage = `Failed to save ${this.friendlyName} results. Reason: ${e.message}`;
-        grok.shell.error(errorMessage);
-        console.error(e);
-
+        _package.logger.debug(errorMessage);
         if (runId) {
           try {
             await grok.data.db.query('Curves:Plates', `DELETE FROM plates.analysis_runs WHERE id = ${runId};`);

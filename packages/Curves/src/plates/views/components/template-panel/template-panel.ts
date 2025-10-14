@@ -7,7 +7,6 @@ import {Subscription} from 'rxjs';
 import {PlateTemplate, plateTemplates, plateTypes} from '../../../plates-crud';
 import {PlateWidget} from '../../../../plate/plate-widget';
 import {renderMappingEditor, TargetProperty} from '../mapping-editor/mapping-editor';
-import {renderValidationResults} from '../../plates-validation-panel';
 import {MAPPING_SCOPES} from '../../shared/scopes';
 import './template-panel-and-mapping.css';
 
@@ -26,9 +25,9 @@ export class TemplatePanel {
   private identifierControlsHost: HTMLElement;
 
   constructor(
-  private stateManager: PlateStateManager,
-  private plateWidget: PlateWidget,
-  private onManageMappings: () => void
+    private stateManager: PlateStateManager,
+    private plateWidget: PlateWidget,
+    private onManageMappings: () => void
   ) {
     this.root = ui.divV([], 'assay-plates--template-panel');
     this.platePropertiesHost = ui.divV([]);
@@ -38,6 +37,7 @@ export class TemplatePanel {
     this.buildPanel();
     this.subscribeToStateChanges();
   }
+
   private updateWellPropsHeader(template: PlateTemplate, state: any): void {
     const header = ui.h2('Template Properties');
     const headerContainer = ui.divH(
@@ -100,10 +100,10 @@ export class TemplatePanel {
     ui.tooltip.bind(fileInput.root, 'Import a plate from a CSV file');
     return fileInput;
   }
+
   private updateIdentifierControls(): void {
     ui.empty(this.identifierControlsHost);
     const df = this.stateManager.sourceDataFrame;
-
     if (!df) return;
 
     const allDfColumns = df.columns.names();
@@ -129,7 +129,6 @@ export class TemplatePanel {
 
       const formRow = createFormRow(`Plate Index ${index + 1}`, choiceInput);
       const controlRow = ui.divH([formRow, removeBtn], 'assay-plates--identifier-control-row');
-
       this.identifierControlsHost.appendChild(controlRow);
     });
 
@@ -137,7 +136,6 @@ export class TemplatePanel {
       this.stateManager.addIdentifierColumn();
     }, 'Add another index column');
     addBtn.classList.add('assay-plates--icon-button', 'assay-plates--add-button');
-
     this.identifierControlsHost.appendChild(ui.div(addBtn, 'assay-plates--add-identifier-container'));
   }
 
@@ -174,11 +172,7 @@ export class TemplatePanel {
     return this.createCollapsiblePanel(templateHeader, templateContent, true);
   }
 
-  private createCollapsiblePanel(
-    header: HTMLElement,
-    content: HTMLElement,
-    expanded: boolean = true
-  ): HTMLElement {
+  private createCollapsiblePanel(header: HTMLElement, content: HTMLElement, expanded: boolean = true): HTMLElement {
     const icon = ui.iconFA(expanded ? 'chevron-down' : 'chevron-right', () => {
       const isExpanded = content.style.display !== 'none';
       content.style.display = isExpanded ? 'none' : 'block';
@@ -197,7 +191,7 @@ export class TemplatePanel {
   }
 
   private subscribeToStateChanges(): void {
-    const sub = this.stateManager.onStateChange.subscribe((event) => {
+    const sub = this.stateManager.onStateChange$.subscribe((event) => {
       if (event.type === 'identifier-changed')
         this.updateIdentifierControls();
       else
@@ -207,51 +201,8 @@ export class TemplatePanel {
   }
 
   private createPropertyInput(prop: any, currentValue: any): DG.InputBase {
-    if (prop.choices) {
-      let choicesList: string[];
-      if (typeof prop.choices === 'string') {
-        try {
-          choicesList = JSON.parse(prop.choices);
-        } catch {
-          choicesList = [prop.choices];
-        }
-      } else if (Array.isArray(prop.choices)) {
-        choicesList = prop.choices;
-      } else {
-        choicesList = [];
-      }
-
-      return ui.input.choice(prop.name, {
-        items: choicesList,
-        value: currentValue || choicesList[0]
-      });
-    }
-
-    if (prop.type === DG.TYPE.FLOAT || prop.type === DG.TYPE.INT) {
-      const input = prop.type === DG.TYPE.INT ?
-        ui.input.int(prop.name, {value: currentValue || 0}) :
-        ui.input.float(prop.name, {value: currentValue || 0});
-
-      if (prop.min !== undefined || prop.max !== undefined) {
-        input.addValidator((valueStr: string) => {
-          const value = parseFloat(valueStr);
-          if (isNaN(value))
-            return 'Invalid number';
-          if (prop.min !== undefined && value < prop.min)
-            return `Minimum value is ${prop.min}`;
-          if (prop.max !== undefined && value > prop.max)
-            return `Maximum value is ${prop.max}`;
-          return null;
-        });
-      }
-
-      return input;
-    }
-
-    if (prop.type === DG.TYPE.BOOL)
-      return ui.input.bool(prop.name, {value: currentValue || false});
-
-    return ui.input.string(prop.name, {value: currentValue || ''});
+    const property = DG.Property.fromOptions(prop);
+    return ui.input.forProperty(property, null, {value: currentValue});
   }
 
   private updatePanelContent(): void {
@@ -273,7 +224,6 @@ export class TemplatePanel {
       const identifierColumns = this.stateManager.identifierColumns.filter((c): c is string => c !== null);
       const allSourceColumns = activePlate.plate.data.columns.names();
       const availableSourceColumns = allSourceColumns.filter((c) => !identifierColumns.includes(c));
-
       const currentMappings = this.stateManager.getMappings(state.activePlateIdx, MAPPING_SCOPES.TEMPLATE);
 
       const MOCKED_REQUIRED_TEMPLATE_FIELDS = ['Target', 'Assay Format'];
@@ -330,10 +280,8 @@ export class TemplatePanel {
         this.platePropertiesHost.appendChild(form);
       }
     }
-
     this.updateWellPropsHeader(template, state);
   }
-
 
   destroy(): void {
     this.subscriptions.forEach((sub) => sub.unsubscribe());
