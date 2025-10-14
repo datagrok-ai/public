@@ -41,7 +41,7 @@ runs:
       shell: bash
       run: |
         EMAIL=${{ inputs.emails }}
-        echo "DATAGROK_EMAIL=$EMAIL" >> $GITHUB_ENV
+        echo "DATAGROK_EMAIL=${EMAIL/mdolotova@datagrok.ai/maria.dolotova@softwarecountry.com}" >> $GITHUB_ENV
 
     # Step 2: Fetch Slack User ID by email (if email is provided)
     - name: Get Slack User ID by Email

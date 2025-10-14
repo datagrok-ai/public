@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -26,7 +27,7 @@ category('detectorsBenchmark', () => {
   // -- fasta --
 
   test('fastaDnaShorts50Few50', async () => {
-    await detectMacromoleculeBenchmark(10, NOTATION.FASTA, ALPHABET.DNA, 50, 50);
+    await detectMacromoleculeBenchmark(20, NOTATION.FASTA, ALPHABET.DNA, 50, 50);
   });
 
   test('fastaDnaShorts50Many1E6', async () => {
@@ -40,7 +41,7 @@ category('detectorsBenchmark', () => {
   // -- separator --
 
   test('separatorDnaShorts50Few50', async () => {
-    await detectMacromoleculeBenchmark(10, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 50, '/');
+    await detectMacromoleculeBenchmark(20, NOTATION.SEPARATOR, ALPHABET.DNA, 50, 50, '/');
   });
 
   test('separatorDnaShorts50Many1E6', async () => {

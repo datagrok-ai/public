@@ -11,3 +11,31 @@
 .u2-panel {
     gap: 10px;
 }
+
+.u2-app-header-bottom-line {
+    border-bottom: solid 1px lightgrey;
+}
+
+.u2-app-header-with-name {
+    gap: 60px;
+}
+
+.u2-app-header-with-name .ui-app-header-icon{
+    width: 90px;
+    height: 90px;
+}
+
+.u2-app-header-app-name-and-slogan-div {
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.u2-app-header-app-name-div {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.u2-app-header-description {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}

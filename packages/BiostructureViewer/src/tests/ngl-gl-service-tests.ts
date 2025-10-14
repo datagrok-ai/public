@@ -52,7 +52,7 @@ category('NglGlService', () => {
       }, 15000, 'render pdb timeout');
 
     expect(nglSvc.errorCount, 0, 'There was errors in NglGlService.');
-    expect(consumerId !== null, true, 'consumerId not assigned');
+    expect(consumerId != null, true, 'consumerId not assigned');
     _package.logger.debug('tests NglGlService/pdb, end');
   }, {timeout: 25000});
 });

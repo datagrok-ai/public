@@ -48,7 +48,7 @@ export class PeptiHitApp extends HitDesignApp<PeptiHitTemplate> {
     }
   }
 
-  protected getDesignView(): DG.TableView {
+  protected override getDesignView(): DG.TableView {
     const subs: Subscription[] = [];
     const isNew = this.dataFrame!.col(this.helmColName)?.toList().every((m) => !m && m === '');
     const helmCol = this.dataFrame!.col(this.helmColName);
@@ -154,7 +154,7 @@ export class PeptiHitApp extends HitDesignApp<PeptiHitTemplate> {
     view?.grid && subs.push(view.grid.onCellValueEdited.subscribe(async (gc) => {
       try {
         if (gc.tableColumn?.name === TileCategoriesColName) {
-          await this.saveCampaign(undefined, false);
+          await this.saveCampaign(false);
           return;
         }
         if (gc.tableColumn?.name !== this.helmColName)

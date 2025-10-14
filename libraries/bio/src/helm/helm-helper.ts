@@ -10,12 +10,14 @@ import {
 } from './types';
 import {IMonomerLibBase} from '../types/index';
 import {ISeqHelper} from '../utils/seq-helper';
+import {SeqValueBase} from '../utils/macromolecule/seq-handler';
 
-export type IHelmInputInitOptions = ui.input.IInputInitOptions<HelmString | HelmMol> & {
+export type IHelmInputInitOptions = ui.input.IInputInitOptions<SeqValueBase> & {
+  editorOptions: Partial<IHelmEditorOptions>;
   editable: boolean;
 };
 
-export abstract class HelmInputBase extends DG.JsInputBase<HelmString> {
+export abstract class HelmInputBase extends DG.JsInputBase<SeqValueBase> {
   abstract get molValue(): HelmMol;
   abstract set molValue(value: HelmMol);
 

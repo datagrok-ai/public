@@ -2,7 +2,7 @@
 title: "NGL viewer"
 ---
 
-NGL Viewer is used for visualizing and analyzing macromolecules.
+NGL viewer is used for visualizing and analyzing macromolecules.
 
 It allows you to view 3D structures, explore docking results,
 and offers multiple rendering modes for different visual representations.
@@ -12,8 +12,8 @@ The viewer is based on the  [NGL Viewer](https://github.com/nglviewer/ngl) libra
 
 ## Creating an NGL viewer
 
-1. Navigate to the **Menu Ribbon**
-2. Select **Add > Javascript Viewers > NGL**.
+1. On the menu ribbon, click the **Add viewer** icon. A dialog opens.
+2. In the dialog, select **NGL**.
 3. Load the macromolecule file by using the "**Open...**"
 link in the center of the viewer.
 
@@ -21,10 +21,10 @@ link in the center of the viewer.
     The user interface for loading macromolecules from a file share is not implemented.
     You have to save the macromolecule to your local device before opening it in the NGL Viewer.
 
-The NglViewer detects a column of semantic type 'Molecule' in the table
+The NGL viewer detects a column of semantic type 'Molecule' in the table
 and displays molecules along with the structure.
 
-## Configuring a NGL viewer
+## Configuring an NGL viewer
 
 You can set the source column for the small molecules
 and customize visualization options.
@@ -40,7 +40,7 @@ You can:
 
 ## Interaction with other viewers
 
-The **NGL** viewer shows small molecules (ligands) together with the macromolecule
+The NGL viewer shows small molecules (ligands) together with the macromolecule
 when you select it or just hover mouse over it.
 
 If only one ligand is selected,
@@ -63,4 +63,4 @@ and selected rows ligands are displayed in orange.
 
 * [Viewers](../viewers/viewers.md)
 * [NGLView library](https://github.com/nglviewer/nglview)
-* [MolStar](https://molstar.org/)
+* [Biostructure viewer](biostructure.md)

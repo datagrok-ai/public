@@ -66,9 +66,11 @@
   overflow: hidden;
 }
 
+/** Setting height to 100% is misleading when calculating visible nodes, which is why optimization for visible nodes fails */
 .d4-filter-element .ui-box:has(.chem-scaffold-tree-toolbar) {
   position: relative;
-  height: 100%;
+  min-height: 100px;
+  height: auto;
 }
 
 .d4-filter-element .grok-loader {
@@ -149,7 +151,6 @@
   top: 40%;
   font-size: 13px;
   width: 100% !important;
-  height: 33px !important;
   visibility: hidden;
 }
 
@@ -241,6 +242,7 @@
 }
 
 .chem-scaffold-tree-toolbar {
+  min-height: 24px;
   max-height: 24px;
   margin: 0 0 2px 2px;
   visibility: hidden;
@@ -552,14 +554,14 @@
 }
 
 /* workaround for OCL sketcher to show molecule properties - https://github.com/cheminfo/openchemlib-js/issues/117 */
-.gwt-DialogBox { 
+.gwt-DialogBox {
   z-index: 10000;
 }
 
 .chem-rgroup-settings-icon {
   position: absolute;
   padding-left: 20px;
-  font-size: 14px;
+  font-size: 16px;
   top: 546px;
 }
 
@@ -596,22 +598,58 @@
 
 .chem-mmpa-transformation-tab-header {
   padding: 4px;
-  margin: 0px,
+  font-size: 13px;
+  margin-left: 10px;
+  min-width: 132px;
 }
 
 .chem-mmpa-add-to-workspace-button {
-  padding-top: 6px;
-  padding-left: 3px;
+  margin-top: 5px;
+  margin-left: 5px;
+  color: #2083d5;
 }
 
-.chem-mmpa-add-generation-to-workspace-button {
+.chem-mmpa-grid-help-icon {
+  font-size: 17px;
+  padding-top: 3px;
+  padding-left: 2px;
+}
+
+.chem-mmpa-add-tab-header-button {
   position: absolute;
   padding-left: 3px;
+  padding-top: 2px;
   visibility: hidden;
 }
 
-.selected > .chem-mmpa-add-generation-to-workspace-button {
+.chem-mmpa-fragments-filters-icon {
+  padding-left: 5px;
+  padding-top: 6px;
+  font-size: 12px;
+}
+
+.chem-mmpa-fragments-sort-icon-x-axis {
+  padding-left: 5px;
+  padding-top: 6px;
+  font-size: 12px;
+  position: absolute;
+}
+
+.chem-mmpa-fragments-sort-icon-y-axis {
+    font-size: 12px;
+    position: absolute;
+    transform: rotate(90deg);
+    padding-bottom: 5px;
+    padding-left: 6px;
+}
+
+.selected > .chem-mmpa-add-tab-header-button {
   visibility: visible;
+}
+
+.cliffs-help-button {
+  padding-top: 1px;
+  font-size: 14px;
 }
 
 .mmpa-loader {
@@ -632,18 +670,17 @@
 .mmpa-slider-roots {
   position: absolute;
   z-index: 1;
-  right: 0px;
+  margin-left: 10px;
 }
 
 .mmpa-slider-input {
   margin-left: 5px;
   padding-right: 5px;
-  width: 150px;
 }
 
 .mmpa-slider-input > .ui-input-label {
-  min-width: 50px;
-  max-width: 50px;
+  min-width: 80px;
+  max-width: 80px;
   margin-right: 0px !important;
 }
 
@@ -652,7 +689,15 @@
 }
 
 .mmpa-slider-input > .ui-input-options {
-  width: 40px;
+  width: 45px;
+}
+
+.mmp-pairs-grid-cliffs-tab.cliffs-closed {
+  display: none!important;
+}
+
+.mmp-pairs-grid-cliffs-tab.cliffs-opened {
+  display:flex;
 }
 
 .mmpa-bool-input {
@@ -703,7 +748,220 @@
   display: none;
 }
 
+.chem-mmpa-no-fragments-error {
+  position: absolute;
+  top: 100px;
+  z-index: 1000;
+  left: 200px;
+  color: red;
+  display: none !important;
+}
+
+.chem-mmp-no-fragments .chem-mmpa-no-fragments-error {
+  display: flex !important;
+}
+
+.chem-mmpa-no-pairs-warning {
+  position: absolute;
+  top: 100px;
+  z-index: 1000;
+  left: 200px;
+  display: none !important;
+}
+
+.chem-mmp-no-pairs .chem-mmpa-no-pairs-warning {
+  display: flex !important;
+}
+
 .chem-search-panel-wrapper {
   overflow: hidden;
   max-height: 400px;
+}
+
+.chem-mmp-trellis-plot-sort-div {
+  padding: 5px;
+}
+
+.chem-mmp-trellis-plot {
+  height: 100%!important;
+}
+
+.chem-mmp-trellis-plot div[name="viewer selector"] {
+  display: none;
+}
+
+.chem-mmp-trellis-plot i[name="icon-expand-arrows"] {
+  z-index: 1000;
+}
+
+.chem-mmp-trellis-plot [name="SummaryLook"] {
+  display: none;
+}
+
+.mmp-trellis-summary-column {
+  padding-left: 7px;
+  padding-top: 4px;
+}
+
+.chem-mmp-trellis-filters-div {
+    max-height: 600px;
+    overflow-y: scroll;
+}
+
+
+.chem-mmp-trellis-filters-div .d4-filter-group-wrapper {
+  flex-direction: column;
+}
+
+.chem-mmp-trellis-filters-div .d4-filter-group {
+  width: 100%!important;
+  height: 100%!important;
+}
+
+.mmp-trellis-summary-col-dlg select {
+  display: none;
+}
+
+.chem-mmp-trellis-plot .d4-column-selector-triangle {
+  display: none;
+}
+
+.chem-mmp-trellis-plot .d4-column-selector {
+  pointer-events: none;
+}
+
+.chem-mmp-trellis-sort-type-invisible {
+  display: none!important;
+}
+
+.chem-mmp-trellis-column-picker {
+  margin-left: 7px;
+  margin-top: 3px;
+
+}
+
+.chem-mmp-fragments-grid-mode-choice {
+  padding-left: 7px;
+  margin-top: -2px;
+  padding-right: 7px;
+}
+
+.chem-mmp-fragments-grid-mode-choice select {
+  width: 65px!important;
+}
+
+.chem-mmp-grid-info-message div {
+  font-size: 12px;
+  padding-right: 10px;
+  color: var(--grey-5);
+}
+
+.chem-mmp-context-pane-headers {
+  padding-top: 5px;
+  padding-right: 10px;
+}
+
+.chem-mmp-context-pane-item {
+  padding-top: 5px;
+  align-content: center
+}
+
+.chem-mmp-context-pane-mol-header {
+  align-content: center;
+}
+
+.chem-mmp-show-pairs-checkbox {
+  padding-right: 5px;
+  padding-left: 10px;
+  margin-top: -5px;
+}
+
+.chem-mmp-show-pairs-checkbox label {
+  margin-right: 3px!important;
+}
+
+.chem-mmpa-generation-tab-cp-header {
+  margin-left: 10px;
+}
+
+.chem-activity-cliffs-tooltip {
+  font-weight: bold;
+  justify-content: space-between;
+}
+
+.chem-activity-cliffs-context-panel {
+  font-weight: bold;
+  gap: 180px;
+}
+
+.chem-activity-cliffs-context-panel-content {
+  gap: 8px;
+}
+
+.chem-similarity-diversity-search-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+}
+
+.chem-mmp-active-hint-element {
+  border: solid grey 2px;
+}
+
+.chem-mmp-active-hint-element-horz {
+  width: 98%!important;
+}
+
+.chem-mmp-active-hint-adjust-vert-2px {
+  padding-top: 2px;
+}
+
+.chem-mmp-active-hint-adjust-vert-5px {
+  padding-top: 5px;
+}
+
+.chem-mmp-fragments-grid-follow-current-row {
+  padding-left: 10px;
+  padding-bottom: 8px;
+  padding-right: 5px;
+}
+
+.mmpa-substitutions-context-panel {
+  height: 100%;
+}
+
+.mmpa-pc-plot {
+  height: 100%!important;
+  width: 100%!important;
+}
+
+.mmpa-hide-context-panel {
+  display: none;
+}
+
+.mmpa-pc-plot-title {
+  position: absolute;
+  z-index: 1000;
+  width: 100%;
+  text-align: center;
+}
+
+.mmpa-trellis-legend-item {
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 100px;
+  padding-top: 4px;
+}
+
+.mmpa-trellis-legend {
+  padding-left: 20px;
+  gap: 10px;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.chem-mixture-widget-add-table-to-workspace {
+  color: #2083d5!important;
 }

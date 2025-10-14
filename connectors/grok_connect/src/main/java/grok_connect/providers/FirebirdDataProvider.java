@@ -11,7 +11,7 @@ public class FirebirdDataProvider extends JdbcDataProvider {
         descriptor.type = "Firebird";
         descriptor.description = "Query Firebird database";
         descriptor.connectionTemplate = DbCredentials.dbConnectionTemplate;
-        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
+        descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
     }
 
     public String getConnectionStringImpl(DataConnection conn) {

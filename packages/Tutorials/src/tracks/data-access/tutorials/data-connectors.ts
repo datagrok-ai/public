@@ -14,16 +14,24 @@ export class DataConnectorsTutorial extends Tutorial {
     return 'Direct connection to data sources and databases using the connector server';
   }
   get steps() { return 12; }
-  
+
   demoTable: string = '';
   helpUrl: string = '';
   prerequisites: TutorialPrerequisites = {grokConnect: true};
 
   protected async _run() {
+    this.showBrowse();
+    const databasesNode = grok.shell.browsePanel.mainTree.children.find((child) => child.text === 'Databases') as DG.TreeViewGroup;
+    if (databasesNode) {
+      databasesNode.expanded = true;
+      const postgresNode = databasesNode.children.find((child) => child.text === 'Postgres') as DG.TreeViewGroup;
+      if (postgresNode)
+        postgresNode.expanded = true;
+    }
     this.header.textContent = this.name;
     this.describe('In this tutorial, we will browse the tree of connections and learn how to ' +
       'create new connections to query the database.');
-    
+
     this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML);
 
     const dbViewInfo = 'In this view, you can create queries to data connectors from the list. ' +
@@ -37,6 +45,9 @@ export class DataConnectorsTutorial extends Tutorial {
     const dlg = await this.openDialog('Create a connection to Postgres server', 'Add new connection',
       providerRoot, `${dbViewInfo}\nOpen the context menu on the Postgres connector and click "Add connection..."`);
 
+    // UI generation delay
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
     await this.dlgInputAction(dlg, 'Set "Name" to "Starbucks"', 'Name', 'Starbucks');
     await this.dlgInputAction(dlg, 'Set "Server" to "db.datagrok.ai"', 'Server', 'db.datagrok.ai');
     await this.dlgInputAction(dlg, 'Set "Port" to "54324"', 'Port', '54324');
@@ -45,10 +56,11 @@ export class DataConnectorsTutorial extends Tutorial {
     await this.dlgInputAction(dlg, 'Set "Password" to "KKfIh6ooS7vjzHYrNiRrderyz3KUyglrhSJF"', 'Password', 'KKfIh6ooS7vjzHYrNiRrderyz3KUyglrhSJF');
     await this.action('Click "OK"', dlg.onClose, $(dlg.root).find('button.ui-btn.ui-btn-ok')[0]);
 
+    const starbucksNodes = $(providerRoot).find('div.d4-tree-view-group-label').filter((idx, el) =>
+      el.textContent === 'Starbucks');
     const dqv = await this.openViewByType('Create a data query to the "Starbucks" data connection',
-      'DataQueryView', $(providerRoot).find('div.d4-tree-view-group-label').filter((idx, el) =>
-        el.textContent === 'Starbucks')[0],
-      'Open the context menu on Postgres | Starbucks and click "Add query..."');
+      'DataQueryView', starbucksNodes[starbucksNodes.length - 1],
+      'Open the context menu on Postgres | Starbucks and click "New Query..."');
 
     // UI generation delay
     await new Promise((resolve) => setTimeout(resolve, 1500));

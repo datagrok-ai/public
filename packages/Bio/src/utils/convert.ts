@@ -39,20 +39,16 @@ export function convert(col: DG.Column<string> | undefined, seqHelper: ISeqHelpe
     NOTATION.FASTA,
     NOTATION.SEPARATOR,
     NOTATION.HELM,
+    NOTATION.BILN
   ];
   const toggleColumn = (newCol: DG.Column) => {
-    if (newCol.semType !== DG.SEMTYPE.MACROMOLECULE) {
-      targetColumnInput.value = srcCol;
-      return;
-    }
-
     srcCol = newCol;
     converterSh = seqHelper.getSeqHandler(srcCol);
     currentNotation = converterSh.notation;
     if (currentNotation === NOTATION.HELM)
       separatorInput.value = '/'; // helm monomers can have - in the name like D-aThr;
     dialogHeader.textContent = 'Current notation: ' + currentNotation;
-    filteredNotations = notations.filter((e) => e !== currentNotation);
+    filteredNotations = notations;//.filter((e) => e !== currentNotation); TEMPORARY DO NOT FORGET TO UNCOMMENT
     targetNotationInput = ui.input.choice('Convert to', {
       value: filteredNotations[0], items: filteredNotations,
       onValueChanged: toggleSeparator
@@ -69,11 +65,13 @@ export function convert(col: DG.Column<string> | undefined, seqHelper: ISeqHelpe
 
   const targetColumnInput = ui.input.column('Column', {
     table: grok.shell.t, value: srcCol,
+    filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MACROMOLECULE,
+    nullable: false,
     onValueChanged: (value) => toggleColumn(value)
   });
 
   const separatorArray = ['-', '.', '/'];
-  let filteredNotations = notations.filter((e) => e !== currentNotation);
+  let filteredNotations = notations;//.filter((e) => e !== currentNotation); // TEMPORARY DO NOT FORGET TO UNCOMMENT
 
   const separatorInput = ui.input.choice('Separator', {value: separatorArray[0], items: separatorArray});
 

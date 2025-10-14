@@ -6,6 +6,8 @@ import './connections/queries-test';
 import './sync/data-sync-test';
 import './benchmarks/benchmark';
 import './cache/cache-test';
+import './connections/table-query-test';
+import './tests/categories';
 
 export const _package = new DG.Package();
 export {tests};

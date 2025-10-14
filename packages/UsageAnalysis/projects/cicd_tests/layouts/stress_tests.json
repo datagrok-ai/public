@@ -1,0 +1,462 @@
+{
+  "#type": "ViewLayout",
+  "table": {
+    "id": "56209430-8560-11f0-adc2-636035fa442a"
+  },
+  "type": "TableView",
+  "viewStateMap": {
+    "containerType": "horizontal",
+    "state": {
+      "width": 2256,
+      "height": 1185
+    },
+    "children": [
+      {
+        "containerType": "vertical",
+        "state": {
+          "width": 848,
+          "height": 1185
+        },
+        "children": [
+          {
+            "containerType": "fill",
+            "state": {
+              "width": 848,
+              "height": 681,
+              "documentManager": true
+            },
+            "children": [
+              {
+                "containerType": "panel",
+                "state": {
+                  "width": 848,
+                  "height": 681,
+                  "element": {
+                    "id": "813ab300-8560-11f0-8cc2-612b4b671dde",
+                    "type": "Grid",
+                    "look": {
+                      "#type": "GridLook",
+                      "showAddNewRowIcon": true,
+                      "addNewRowOnLastRowEdit": true,
+                      "sortByColumnNames": [
+                        "test"
+                      ],
+                      "sortTypes": [
+                        false
+                      ],
+                      "topLevelDefaultMenu": true,
+                      "allowColumnMenu": true,
+                      "columns": [
+                        {
+                          "width": 48,
+                          "backgroundColor": 4294440951,
+                          "customName": "",
+                          "cellType": "row header",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "width": 58,
+                          "columnName": "backup",
+                          "colorCodingType": "Categorical",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 58,
+                          "columnName": "worker",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 57,
+                          "columnName": "browser",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 143,
+                          "columnName": "test",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 67,
+                          "columnName": "passed",
+                          "cellType": "bool",
+                          "colorCodingCategorical": {
+                            "false": 4292224808,
+                            "true": 4281114668
+                          },
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 82,
+                          "columnName": "duration",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 105,
+                          "columnName": "started",
+                          "customFormat": "M/d/yyyy HH:mm:ss.fff",
+                          "cellType": "number",
+                          "format": "M/d/yyyy HH:mm:ss.fff",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 37,
+                          "columnName": "batch",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 80,
+                          "columnName": "category",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 68,
+                          "columnName": "package",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 98,
+                          "columnName": "totalworkers",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 88,
+                          "columnName": "passed_int",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        }
+                      ]
+                    },
+                    "title": "result",
+                    "default": true
+                  }
+                },
+                "children": []
+              }
+            ]
+          },
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 848,
+              "height": 503,
+              "element": {
+                "id": "813ab300-8560-11f0-838b-017f570fdc61",
+                "type": "Trellis plot",
+                "look": {
+                  "#type": "TrellisPlotLook",
+                  "xColumnNames": [
+                    "batch"
+                  ],
+                  "yColumnNames": [
+                    "backup"
+                  ],
+                  "allowViewerFullScreen": false,
+                  "innerViewerLook": {
+                    "#type": "PieChartLook",
+                    "categoryColumnName": "passed",
+                    "includeNulls": false,
+                    "autoLayout": false,
+                    "segmentAngleColumnName": "started",
+                    "showInnerLabel": false,
+                    "showColumnSelector": false,
+                    "showMouseOverRowGroup": false,
+                    "marginLeft": 5,
+                    "marginTop": 5,
+                    "marginRight": 5,
+                    "marginBottom": 5,
+                    "legendVisibility": "Never",
+                    "table": "Stress_ Tests",
+                    "legendPosition": "Auto"
+                  },
+                  "globalScale": true,
+                  "title": "Pass rate by backup size",
+                  "legendPosition": "Auto"
+                },
+                "title": "Pass rate by backup size"
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "containerType": "horizontal",
+        "state": {
+          "width": 1407,
+          "height": 1185
+        },
+        "children": [
+          {
+            "containerType": "vertical",
+            "state": {
+              "width": 703,
+              "height": 1185
+            },
+            "children": [
+              {
+                "containerType": "panel",
+                "state": {
+                  "width": 703,
+                  "height": 767,
+                  "element": {
+                    "id": "813ada10-8560-11f0-876a-afe82601c9f8",
+                    "type": "Box plot",
+                    "look": {
+                      "#type": "BoxPlotLook",
+                      "categoryColumnNames": [
+                        "batch",
+                        "backup"
+                      ],
+                      "category1ColumnName": "batch",
+                      "category2ColumnName": "backup",
+                      "valueColumnName": "duration",
+                      "markerColorColumnName": "backup",
+                      "markerSizeColumnName": "",
+                      "title": "Boxplot of duration grouped by backup size",
+                      "legendPosition": "Auto"
+                    },
+                    "title": "Boxplot of duration grouped by backup size"
+                  }
+                },
+                "children": []
+              },
+              {
+                "containerType": "panel",
+                "state": {
+                  "width": 703,
+                  "height": 417,
+                  "element": {
+                    "id": "813ada10-8560-11f0-f231-4595c19f69bd",
+                    "type": "Trellis plot",
+                    "look": {
+                      "#type": "TrellisPlotLook",
+                      "xColumnNames": [
+                        "category"
+                      ],
+                      "yColumnNames": [
+                        "batch",
+                        "backup"
+                      ],
+                      "innerViewerLook": {
+                        "#type": "PieChartLook",
+                        "categoryColumnName": "passed",
+                        "autoLayout": false,
+                        "segmentAngleColumnName": "started",
+                        "showInnerLabel": false,
+                        "showColumnSelector": false,
+                        "showMouseOverRowGroup": false,
+                        "marginLeft": 5,
+                        "marginTop": 5,
+                        "marginRight": 5,
+                        "marginBottom": 5,
+                        "legendVisibility": "Never",
+                        "table": "Stress_ Tests",
+                        "legendPosition": "Auto"
+                      },
+                      "title": "Pass rate by test category",
+                      "legendPosition": "Auto"
+                    },
+                    "title": "Pass rate by test category"
+                  }
+                },
+                "children": []
+              }
+            ]
+          },
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 703,
+              "height": 1185,
+              "element": {
+                "id": "813ada10-8560-11f0-9fe0-c51f2a5f7d66",
+                "type": "Line chart",
+                "look": {
+                  "#type": "LineChartLook",
+                  "splitColumnNames": [
+                    "batch",
+                    "backup"
+                  ],
+                  "overviewColumnName": "count(passed_int)",
+                  "yAggrTypes": [
+                    "avg"
+                  ],
+                  "xColumnName": "totalworkers",
+                  "yColumnNames": [
+                    "failure"
+                  ],
+                  "chartTypes": [
+                    "Line Chart"
+                  ],
+                  "title": "Failure % vs Number of Workers (per batch and backup)",
+                  "table": "Stress Tests Aggregation",
+                  "legendPosition": "Auto"
+                },
+                "title": "Failure % vs Number of Workers (per batch and backup)"
+              }
+            },
+            "children": []
+          }
+        ]
+      }
+    ],
+    "floating": [],
+    "tableId": "56209430-8560-11f0-adc2-636035fa442a",
+    "tableName": "Stress Tests"
+  },
+  "columns": [
+    {
+      "name": "batch",
+      "type": "string",
+      "id": "66625d00-8560-11f0-eb7f-617aaaa232f4",
+      "friendlyName": "Batch",
+      "entityTags": [
+        {
+          "tag": ".id",
+          "id": "813b0120-8560-11f0-9a76-33fced9e2595"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "813b0120-8560-11f0-d7b0-e5eebec50d66"
+        }
+      ],
+      "metaParams": {
+        ".id": "66625d00-8560-11f0-eb7f-617aaaa232f4",
+        ".semantic-detection-duration": "1"
+      }
+    },
+    {
+      "name": "backup",
+      "type": "string",
+      "id": "666235f0-8560-11f0-9960-3f4cbf502594",
+      "friendlyName": "Backup",
+      "entityTags": [
+        {
+          "tag": ".id",
+          "id": "813b0120-8560-11f0-f79e-e1f8bc3d17e0"
+        },
+        {
+          "tag": ".color-coding-type",
+          "id": "813b0120-8560-11f0-bd0e-6f5112d17ae1"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "813b0120-8560-11f0-cb3e-afdc5a7a5480"
+        }
+      ],
+      "metaParams": {
+        ".id": "666235f0-8560-11f0-9960-3f4cbf502594",
+        ".color-coding-type": "Categorical",
+        ".semantic-detection-duration": "3"
+      }
+    },
+    {
+      "name": "duration",
+      "type": "int",
+      "id": "666235f0-8560-11f0-d199-a3c4d018e45a",
+      "friendlyName": "Duration",
+      "entityTags": [
+        {
+          "tag": ".id",
+          "id": "813b0120-8560-11f0-c347-3590e1196fa6"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "813b0120-8560-11f0-d16a-2f765940d0e6"
+        }
+      ],
+      "metaParams": {
+        ".id": "666235f0-8560-11f0-d199-a3c4d018e45a",
+        ".semantic-detection-duration": "2"
+      }
+    },
+    {
+      "name": "category",
+      "type": "string",
+      "id": "66625d00-8560-11f0-97ab-ad6c6a122e63",
+      "friendlyName": "Category",
+      "entityTags": [
+        {
+          "tag": ".id",
+          "id": "813b0120-8560-11f0-cd8f-5f5b7ca1d91d"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "813b2830-8560-11f0-cf66-2f9c049f7ba3"
+        }
+      ],
+      "metaParams": {
+        ".id": "66625d00-8560-11f0-97ab-ad6c6a122e63",
+        ".semantic-detection-duration": "1"
+      }
+    },
+    {
+      "name": "totalworkers",
+      "type": "string",
+      "id": "666235f0-8560-11f0-efb8-570686c4e502",
+      "friendlyName": "Totalworkers",
+      "entityTags": [
+        {
+          "tag": ".id",
+          "id": "813b2830-8560-11f0-be74-0d50c7d0b069"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "813b2830-8560-11f0-8b87-5d55c232d650"
+        }
+      ],
+      "metaParams": {
+        ".id": "666235f0-8560-11f0-efb8-570686c4e502",
+        ".semantic-detection-duration": "2"
+      }
+    }
+  ],
+  "id": "8994ba80-8560-11f0-becb-77e8fdebb5be",
+  "name": "StressTests_3",
+  "friendlyName": "Stress Tests",
+  "author": {
+    "id": "f7c9fb10-fec0-11ee-829a-bd6a1fb43c6f"
+  },
+  "createdOn": "2025-09-11T14:28:09.691Z",
+  "updatedOn": "2025-09-11T14:28:09.691Z"
+}

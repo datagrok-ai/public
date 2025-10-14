@@ -6,7 +6,7 @@ import {applyTransformations} from '@datagrok-libraries/utils/src/json-serializa
 import {getFuncCallIO} from '../utils';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import fc1 from '../snapshots/fc1.json';
-import {InputVariants} from '@datagrok-libraries/compute-utils/function-views/src/rich-function-view';
+import {InputVariants} from '@datagrok-libraries/compute-utils/old-views/src/rich-function-view';
 
 category('Compute API: RFV Inputs', async () => {
   before(async () => {
@@ -63,7 +63,6 @@ category('Compute API: RFV Inputs', async () => {
     expectDeepEqual(getFuncCallIO(view.lastCall!), expected, {prefix: 'lastCall'});
     for (const [name, val] of Object.entries(inputValues))
       expectDeepEqual(inputsMap[name].value, val, {prefix: `input ${name}`});
-
   });
 
   test('Simple inputs inputs tweak', async () => {
@@ -233,7 +232,7 @@ category('Compute API: RFV Inputs', async () => {
 
   test('Simple inputs default values', async () => {
     const view = createRFV('Libtests:simpleInputsDefaultValues', {historyEnabled: false, isTabbed: false});
-    
+
     await view.isReady.pipe(filter((x) => x), take(1)).toPromise();
     await delay(100);
     const expected = {
@@ -267,7 +266,6 @@ category('Compute API: RFV Inputs', async () => {
     view.afterInputPropertyRender.subscribe(({prop, input}) => {
       inputsMap[prop.name] = input;
     });
-    await view.funcCallReplaced.pipe(take(1)).toPromise();
     view.funcCall.setParamValue('df', inputValues['df']);
     view.funcCall.setParamValue('data', inputValues['data']);
     await view.doRun();
@@ -364,7 +362,6 @@ category('Compute API: RFV Inputs', async () => {
     expectDeepEqual(getFuncCallIO(view.lastCall!), applyTransformations(fc1), {prefix: 'lastCall'});
     expectDeepEqual(inputsMap.data.value, inputValues.data, {prefix: 'data'});
   });
-
 });
 
 category('Compute API: RFV Validation', async () => {
@@ -512,5 +509,4 @@ category('Compute API: RFV Validation', async () => {
       },
     );
   });
-
 });

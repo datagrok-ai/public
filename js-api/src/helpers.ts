@@ -1,7 +1,7 @@
 import {toJs} from './wrappers';
 import {IDartApi} from "./api/grok_api.g";
 
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 /**
  * FormulaLine available parameters.
@@ -27,6 +27,8 @@ export interface FormulaLine {
   style?: string;
   // Specific to bands:
   column2?: string;
+  xMap?: string;
+  yMap?: string;
 }
 
 /**
@@ -112,5 +114,9 @@ export class StringUtils {
       hash |= 0; // Convert to 32bit integer
     }
     return hash;
+  }
+
+  public static camelCaseToSentence(s: string, o?: {capitalizeFirst?: boolean, capitalizeNext?: boolean, capitalizeConjunctions?: boolean}) {
+    return api.grok_StringUtils_CamelCaseToSentence(s, o?.capitalizeFirst ?? true, o?.capitalizeNext ?? false, o?.capitalizeConjunctions ?? false);
   }
 }

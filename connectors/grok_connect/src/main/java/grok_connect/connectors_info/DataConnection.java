@@ -18,7 +18,11 @@ public class DataConnection
     public String getDb() { return (String)parameters.get(DB); }
     public String getPort() {
         Object port = parameters.get(PORT);
-        return port == null ? null : String.valueOf(((Double)parameters.get(PORT)).intValue());
+        if (port == null)
+            return null;
+        if (port instanceof String)
+            return (String) port;
+        return String.valueOf(((Double) parameters.get(PORT)).intValue());
     }
 
     public Map<String, Object> parameters = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);

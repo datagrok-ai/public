@@ -44,7 +44,7 @@ category('Settings', () => {
     } finally {
       gss.showSelectedRowsInProperties = true;
     }
-  }, {skipReason: 'GROK-11670'});
+  });
 
   test('Windows Settings', async () => {
     expect(gss.showMenu, !grok.shell.windows.simpleMode, 'showMenu');
@@ -57,4 +57,4 @@ category('Settings', () => {
     expect(gss.showConsole, grok.shell.windows.showConsole, 'showConsole');
     // expect(gss.showHelp, grok.shell.windows.showHelp, 'showHelp');
   });
-});
+}, {owner: 'aparamonov@datagrok.ai'});

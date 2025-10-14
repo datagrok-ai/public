@@ -6,6 +6,7 @@ import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
 import { interval, merge } from 'rxjs';
 import $ from 'cash-dom';
 import { waitForElementClick } from './utils';
+import { getPlatform, Platform, platformKeyMap } from '../../shortcuts';
 
 export class ViewersTutorial extends Tutorial {
   get name() { return 'Viewers'; }
@@ -13,10 +14,12 @@ export class ViewersTutorial extends Tutorial {
     return 'Learn how to use different viewers together';
   }
   get steps() { return 14; }
-  
+
   helpUrl: string = 'https://datagrok.ai/help/visualize/viewers';
+  platform: Platform = getPlatform();
 
   protected async _run() {
+    this.showToolbox();
     this.header.textContent = this.name;
     this.title('Opening viewers');
 
@@ -36,21 +39,21 @@ export class ViewersTutorial extends Tutorial {
     const ribbonPanels = grok.shell.v.getRibbonPanels();
     const addViewerIcon = ribbonPanels[1][1];
     await this.action(
-      'Locate and click the Add viewer icon', 
+      'Locate and click the Add viewer icon',
       waitForElementClick(addViewerIcon), addViewerIcon);
 
     const chartsSpanDiv = Array.from(document.querySelectorAll('.vg-tags .ui-div div')).find(div => {
       const span = div.querySelector('span');
       return span && span.textContent === 'Charts';
-    }) as HTMLElement;      
+    }) as HTMLElement;
     await this.action('Locate the Charts section and click on it', waitForElementClick(chartsSpanDiv), chartsSpanDiv);
-  
+
     const radarViewerElement = Array.from(document.querySelectorAll('.viewer-gallery-root .d4-item-card.viewer-gallery .card-label'))
       .find(label => label.textContent === 'Radar')
       ?.closest('.d4-item-card.viewer-gallery') as HTMLElement ?? null;
-    await this.action('Locate the card containing Radar viewer', 
+    await this.action('Locate the card containing Radar viewer',
     waitForElementClick(radarViewerElement), radarViewerElement);
-    
+
     const sp = await this.openPlot('scatter plot', (x) => x.type === DG.VIEWER.SCATTER_PLOT);
     const hist = await this.openPlot('histogram', (x) => x.type === DG.VIEWER.HISTOGRAM);
     const pie = await this.openPlot('pie chart', (x) => x.type === DG.VIEWER.PIE_CHART);
@@ -69,7 +72,7 @@ export class ViewersTutorial extends Tutorial {
       'you will see the corresponding records being highlighted on both scatter plot ' +
       'and grid. The same concept applies to the rest of the viewers, such as a pie chart ' +
       'or histogram. To select multiple data points, click on a segment while holding <b>Shift</b>. ' +
-      'To deselect, hold <b>Ctrl+Shift</b> while clicking. To invert, hold <b>Ctrl</b> while clicking.';
+      `To deselect, hold <b>${platformKeyMap['Ctrl'][this.platform]}+Shift</b> while clicking. To invert, hold <b>${platformKeyMap['Ctrl'][this.platform]}</b> while clicking.`;
     await this.action('Select one of the bins on the histogram', this.t!.onSelectionChanged, null, selectionSync);
 
     const currentRecord = 'Move the mouse over records on the scatter plot and grid, ' +

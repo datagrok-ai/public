@@ -17,6 +17,7 @@ export * from './src/api/d4.api.g';
 export * from './src/shell';
 export * from './src/functions';
 export * from './src/grid';
+export * from './src/color';
 export * from './src/widgets';
 export * from './src/views/view';
 export * from './src/views/card_view';
@@ -36,6 +37,8 @@ export * from './src/logger';
 export * from './src/chem';
 export * from './src/ml';
 export * from './src/utils';
+export * from './src/proxies';
+export * from './src/utils_convert';
 export * from './src/ui/tree-view';
 
 import * as grok from './grok';

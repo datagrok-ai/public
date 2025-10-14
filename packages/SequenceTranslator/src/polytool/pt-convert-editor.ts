@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {_package} from '../package';
 import {defaultErrorHandler} from '../utils/err-info';
 import {PT_UI_DIALOG_CONVERSION, PT_UI_RULES_USED} from './const';
-import {RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './pt-rules';
+import {RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './conversion/pt-rules';
 
 /** Inputs of polyToolConvert2 package function */
 export enum P {
@@ -35,7 +35,7 @@ export class PolyToolConvertFuncEditor {
 
   private async initInputs(): Promise<void> {
     const getParam = (pName: string) => this.call.inputParams[pName];
-
+    const rulesForm = await this.ruleInputs.getForm();
     this.inputs = {
       table: (() => {
         const p = getParam(P.table);
@@ -49,7 +49,7 @@ export class PolyToolConvertFuncEditor {
       chiralityEngine: ui.input.forProperty(getParam(P.chiralityEngine).property),
       rules: {
         header: ui.inlineText([PT_UI_RULES_USED]),
-        form: await this.ruleInputs.getForm(),
+        form: rulesForm,
       }
     };
   }

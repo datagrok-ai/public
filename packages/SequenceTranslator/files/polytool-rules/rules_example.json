@@ -1,44 +1,137 @@
-[
-  {
-    "type": "link",
-    "code": "1",
-    "monomericSubstitution": {
-      "firstMonomer": "C",
-      "secondMonomer": "C",
-      "firstLinkingGroup": "3",
-      "secondLinkingGroup": "3",
-      "firstSubstitution": "C",
-      "secondSubstitution": "C"
+{
+  "homodimerCode": "#2",
+  "heterodimerCode": "$2",
+  "linkRules": [
+    {
+      "code": 2,
+      "firstMonomers": [
+        "D"
+      ],
+      "secondMonomers": [
+        "NH2"
+      ],
+      "firstLinkingGroup": 3,
+      "secondLinkingGroup": 2
+    },
+    {
+      "code": 1,
+      "firstMonomers": [
+        "C",
+        "dC"
+      ],
+      "secondMonomers": [
+        "C",
+        "dC"
+      ],
+      "firstLinkingGroup": 3,
+      "secondLinkingGroup": 3
+    },
+    {
+      "code": 10,
+      "firstMonomers": [
+        "C",
+        "D",
+        "E",
+        "K"
+      ],
+      "secondMonomers": [
+        "C",
+        "D",
+        "E",
+        "K"
+      ],
+      "firstLinkingGroup": 3,
+      "secondLinkingGroup": 2
+    },
+    {
+      "code": 11,
+      "firstMonomers": [
+        "C",
+        "E",
+        "K"
+      ],
+      "secondMonomers": [
+        "NH2"
+      ],
+      "firstLinkingGroup": 3,
+      "secondLinkingGroup": 2
+    },
+    {
+      "code": 1,
+      "firstMonomers": [
+        "C",
+        "dC"
+      ],
+      "secondMonomers": [
+        "THA",
+        "MG3"
+      ],
+      "firstLinkingGroup": 3,
+      "secondLinkingGroup": 3
+    },
+    {
+      "code": 0,
+      "firstMonomers": [],
+      "secondMonomers": [],
+      "firstLinkingGroup": 1,
+      "secondLinkingGroup": 2
     }
-  },
-  {
-    "type": "link",
-    "code": "2",
-    "monomericSubstitution": {
-      "firstMonomer": "NH2",
-      "secondMonomer": "D",
-      "firstLinkingGroup": "2",
-      "secondLinkingGroup": "3",
-      "firstSubstitution": "NH2",
-      "secondSubstitution": "D"
-    }
-  },
-  {
-    "type": "reaction",
-    "code": "4",
-    "monomericSubstitution": {
-      "firstMonomer": "azG",
-      "secondMonomer": "aG",
+  ],
+  "reactionRules": [
+    {
+      "code": 4,
+      "firstMonomers": [
+        "azG"
+      ],
+      "secondMonomers": [
+        "aG"
+      ],
       "reaction": "[C:1]N=[N+]=[N-].[C:2]C#C>>[C:1]N1-N=NC=C1[C:2]",
       "name": "GGaz"
+    },
+    {
+      "code": 8,
+      "firstMonomers": [
+        "DRR1"
+      ],
+      "secondMonomers": [
+        "DRR2"
+      ],
+      "reaction": "C=C[C:1].C=C/C=C/[C:2]>>C1=CC([C:2])C([C:1])CC1",
+      "name": "DARR"
+    },
+    {
+      "code": 8,
+      "firstMonomers": [
+        "ODAR1"
+      ],
+      "secondMonomers": [
+        "ODAR2"
+      ],
+      "reaction": "C=CC(=O)[C:1].C=C[C:2]>>C1CC([C:1])OC([C:2])C1",
+      "name": "ODARR"
+    },
+    {
+      "code": 7,
+      "firstMonomers": [
+        "PHAR1"
+      ],
+      "secondMonomers": [
+        "PHAR2"
+      ],
+      "reaction": "C=C[C:1].C=C[C:2]>>C1CC([C:2])C1[C:1]",
+      "name": "PHAR_CIS"
+    },
+    {
+      "code": 6,
+      "firstMonomers": [
+        "PHAR1"
+      ],
+      "secondMonomers": [
+        "PHAR2"
+      ],
+      "reaction": "C=C[C:1].C=C[C:2]>>C1C([C:1])CC1[C:2]",
+      "name": "PHAR_TRANS"
     }
-  },
-  {
-    "type": "fragmentDuplication",
-    "code": "#3"
-  },
-  {
-    "type": "differentFragments",
-    "code": "$3"
-  }
-]
+  ]
+}

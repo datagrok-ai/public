@@ -1,3 +1,7 @@
+/* eslint-disable max-lines */
+/* eslint-disable max-len */
+/* eslint-disable max-params */
+/* eslint-disable max-lines-per-function */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -26,9 +30,10 @@ import {HelmType} from '@datagrok-libraries/bio/src/helm/types';
 import {undefinedColor} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 
 import {AggFunc, getAgg} from '../utils/agg';
-import {buildCompositionTable} from '../widgets/composition-analysis-widget';
 
-import {_package, getMonomerLibHelper} from '../package';
+import {_package, PackageFunctions} from '../package';
+import {numbersWithinMaxDiff} from './utils';
+import {buildCompositionTable} from '@datagrok-libraries/bio/src/utils/composition-table';
 
 declare global {
   interface HTMLCanvasElement {
@@ -203,11 +208,11 @@ export class PositionInfo {
 
   render(g: CanvasRenderingContext2D,
     fontStyle: string, uppercaseLetterAscent: number, uppercaseLetterHeight: number,
-    biotype: HelmType, monomerLib: IMonomerLibBase | null
+    biotype: HelmType, monomerLib: IMonomerLibBase | null, maxMonomerLetters: number
   ) {
     for (const [monomer, pmInfo] of Object.entries(this._freqs)) {
       if (monomer !== GAP_SYMBOL) {
-        const monomerTxt = monomerToShort(monomer, 5);
+        const monomerTxt = monomerToShort(monomer, maxMonomerLetters);
         const b = pmInfo.bounds!;
         const left = b.left;
 
@@ -281,6 +286,7 @@ export enum PROPS {
   fitArea = 'fitArea',
   minHeight = 'minHeight',
   maxHeight = 'maxHeight',
+  maxMonomerLetters = 'maxMonomerLetters',
   showPositionLabels = 'showPositionLabels',
   positionMarginState = 'positionMarginState',
   positionMargin = 'positionMargin',
@@ -343,7 +349,8 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
   public minHeight: number;
   public backgroundColor: number = 0xFFFFFFFF;
-  public maxHeight: number;
+  public maxHeight: number | null;
+  public maxMonomerLetters: number;
   public showPositionLabels: boolean;
   public positionMarginState: PositionMarginStates;
   /** Gets value from properties or setOptions */ public positionMargin: number = 0;
@@ -395,32 +402,32 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
     // -- Data --
     this.sequenceColumnName = this.string(PROPS.sequenceColumnName, defaults.sequenceColumnName,
-      {category: PROPS_CATS.DATA, semType: DG.SEMTYPE.MACROMOLECULE});
+      {category: PROPS_CATS.DATA, semType: DG.SEMTYPE.MACROMOLECULE, description: 'Column with sequences'});
     const aggExcludeList = [DG.AGG.KEY, DG.AGG.PIVOT, DG.AGG.MISSING_VALUE_COUNT, DG.AGG.SKEW, DG.AGG.KURT,
       DG.AGG.SELECTED_ROWS_COUNT];
     const aggChoices = Object.values(DG.AGG).filter((agg) => !aggExcludeList.includes(agg));
-    this.valueAggrType = this.string(PROPS.valueAggrType, defaults.valueAggrType,
-      {category: PROPS_CATS.DATA, choices: aggChoices}) as DG.AggregationType;
     this.valueColumnName = this.string(PROPS.valueColumnName, defaults.valueColumnName,
-      {category: PROPS_CATS.DATA, columnTypeFilter: 'numerical'});
+      {category: PROPS_CATS.DATA, columnTypeFilter: 'numerical', description: 'Column with values used in aggregation for position heights'});
+    this.valueAggrType = this.string(PROPS.valueAggrType, defaults.valueAggrType,
+      {category: PROPS_CATS.DATA, choices: aggChoices, description: 'Aggregation method for value column'}) as DG.AggregationType;
     this.startPositionName = this.string(PROPS.startPositionName, defaults.startPositionName,
-      {category: PROPS_CATS.DATA});
+      {category: PROPS_CATS.DATA, description: 'Position or column name for start position. If column with given name is found, its values will be used as start position. If number is supplied, it will be used as start position of WebLogo.'});
     this.endPositionName = this.string(PROPS.endPositionName, defaults.endPositionName,
-      {category: PROPS_CATS.DATA});
+      {category: PROPS_CATS.DATA, description: 'Position or column name for end position. If column with given name is found, its values will be used as end position. If number is supplied, it will be used as end position of WebLogo.'});
     this.skipEmptySequences = this.bool(PROPS.skipEmptySequences, defaults.skipEmptySequences,
-      {category: PROPS_CATS.DATA});
+      {category: PROPS_CATS.DATA, description: 'Skip sequences which are empty in all positions'});
     this.skipEmptyPositions = this.bool(PROPS.skipEmptyPositions, defaults.skipEmptyPositions,
-      {category: PROPS_CATS.DATA});
+      {category: PROPS_CATS.DATA, description: 'Skip positions which are empty in all sequences'});
     this.shrinkEmptyTail = this.bool(PROPS.shrinkEmptyTail, defaults.shrinkEmptyTail,
-      {category: PROPS_CATS.DATA});
+      {category: PROPS_CATS.DATA, description: 'Skip empty tail (if found for all sequences within a subset) in WebLogo'});
 
     // -- Style --
     this.backgroundColor = this.int(PROPS.backgroundColor, defaults.backgroundColor,
-      {category: PROPS_CATS.STYLE});
+      {category: PROPS_CATS.STYLE, description: 'Background color of WebLogo canvas'});
     this.positionHeight = this.string(PROPS.positionHeight, defaults.positionHeight,
-      {category: PROPS_CATS.STYLE, choices: Object.values(PositionHeight)}) as PositionHeight;
+      {category: PROPS_CATS.STYLE, choices: Object.values(PositionHeight), description: 'Monomer-Position height mode. Entropy of 100%(full height)'}) as PositionHeight;
     this._positionWidth = this.positionWidth = this.float(PROPS.positionWidth, defaults.positionWidth,
-      {category: PROPS_CATS.STYLE/* editor: 'slider', min: 4, max: 64, postfix: 'px' */});
+      {category: PROPS_CATS.LAYOUT, editor: 'slider', min: 4, max: 100, description: 'Width of position in WebLogo. If "Fit Area" is enabled, width will be calculated to fit horizontal space'});
 
     // -- Layout --
     this.verticalAlignment = this.string(PROPS.verticalAlignment, defaults.verticalAlignment,
@@ -430,23 +437,25 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     this.fixWidth = this.bool(PROPS.fixWidth, defaults.fixWidth,
       {category: PROPS_CATS.LAYOUT, userEditable: false});
     this.fitArea = this.bool(PROPS.fitArea, defaults.fitArea,
-      {category: PROPS_CATS.LAYOUT});
-    this.minHeight = this.float(PROPS.minHeight, defaults.minHeight,
-      {category: PROPS_CATS.LAYOUT/*, editor: 'slider', min: 25, max: 250, postfix: 'px'*/});
-    this.maxHeight = this.float(PROPS.maxHeight, defaults.maxHeight,
-      {category: PROPS_CATS.LAYOUT/*, editor: 'slider', min: 25, max: 500, postfix: 'px'*/});
+      {category: PROPS_CATS.LAYOUT, description: 'Fit WebLogo to the horizontal space. Calculates position width as maximum between provided width value and value needed to fit whole horizontal space.'});
+    this.minHeight = this.int(PROPS.minHeight, defaults.minHeight,
+      {category: PROPS_CATS.LAYOUT, editor: 'slider', min: 10, max: 250, description: 'Minimum height of WebLogo'});
+    this.maxHeight = this.int(PROPS.maxHeight, defaults.maxHeight,
+      {category: PROPS_CATS.LAYOUT, editor: 'slider', min: 25, max: Math.max(window.innerHeight ?? 0, 1000), nullable: true, description: 'Maximum height of WebLogo'});
+    this.maxMonomerLetters = this.int(PROPS.maxMonomerLetters, defaults.maxMonomerLetters,
+      {category: PROPS_CATS.LAYOUT, editor: 'slider', min: 1, max: 40, description: 'Maximum monomer letters to display before shortening'});
     this.showPositionLabels = this.bool(PROPS.showPositionLabels, defaults.showPositionLabels,
-      {category: PROPS_CATS.LAYOUT});
+      {category: PROPS_CATS.LAYOUT, description: 'Show position labels on top of the weblogo'});
     this.positionMarginState = this.string(PROPS.positionMarginState, defaults.positionMarginState,
-      {category: PROPS_CATS.LAYOUT, choices: Object.values(PositionMarginStates)}) as PositionMarginStates;
+      {category: PROPS_CATS.LAYOUT, choices: Object.values(PositionMarginStates), description: 'Calculate optimal margins between positions or turn it on/off'}) as PositionMarginStates;
     let defaultValueForPositionMargin = 0;
     if (this.positionMarginState === 'auto') defaultValueForPositionMargin = 4;
     this.positionMargin = this.int(PROPS.positionMargin, defaultValueForPositionMargin,
-      {category: PROPS_CATS.LAYOUT, min: 0, max: 16});
+      {category: PROPS_CATS.LAYOUT, min: 0, max: 25, description: 'Margin between positions in WebLogo'});
 
     // -- Behavior --
     this.filterSource = this.string(PROPS.filterSource, defaults.filterSource,
-      {category: PROPS_CATS.BEHAVIOR, choices: Object.values(FilterSources)}) as FilterSources;
+      {category: PROPS_CATS.BEHAVIOR, choices: Object.values(FilterSources), description: 'Data source for weblogo. Selected or filtered rows.'}) as FilterSources;
 
     const style: DG.SliderOptions = {style: 'barbell'};
     this.slider = ui.rangeSlider(0, 100, 0, 20, false, style);
@@ -454,7 +463,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     this.canvas.classList.value = 'bio-wl-canvas';
     this.canvas.style.width = '100%';
 
-    getMonomerLibHelper().then((libHelper) => {
+    PackageFunctions.getMonomerLibHelper().then((libHelper) => {
       this.monomerLib = libHelper.getMonomerLib();
       this.render(WlRenderLevel.Render, 'monomerLib');
       this.subs.push(this.monomerLib.onChanged.subscribe(() => {
@@ -548,7 +557,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
         style: {
           display: 'flex',
           flexDirection: 'row',
-          flexGrow: 0,
+          flexGrow: '0',
           /** For alignContent to have an effect */ flexWrap: 'wrap',
           /* backgroundColor: '#EEFFEE' */
         }
@@ -669,15 +678,15 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
     if (this.fixWidth)
       this.calcLayoutFixWidth(dpr);
-    else if (this.fitArea)
-      this.calcLayoutFitArea(dpr);
+    // else if (this.fitArea)
+    //   this.calcLayoutFitArea(dpr);
     else
       this.calcLayoutNoFitArea(dpr);
 
     this.slider.root.style.width = `${this.host.clientWidth}px`;
   }
 
-  /** */
+  /** Only used from outside, useful for embedding weblogo into a viewer or smth else*/
   private calcLayoutFixWidth(dpr: number): void {
     if (!this.host || !this.canvas || !this.slider) return; // for es-lint
 
@@ -685,7 +694,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     this.canvas.classList.add('bio-wl-fitArea');
 
     const areaWidth: number = this._positionWidthWithMargin * this.Length;
-    const areaHeight: number = Math.min(Math.max(this.minHeight, this.root.clientHeight), this.maxHeight);
+    const areaHeight: number = Math.min(Math.max(this.minHeight, this.root.clientHeight), this.maxHeight ?? this.root.clientHeight);
 
     this.host.style.justifyContent = HorizontalAlignments.LEFT;
     this.host.style.removeProperty('margin-left');
@@ -708,15 +717,21 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   private calcLayoutNoFitArea(dpr: number): void {
     if (!this.host || !this.canvas || !this.slider) return; // for es-lint
 
-    const areaWidth: number = this._positionWidthWithMargin * this.Length;
-    const areaHeight: number = Math.min(Math.max(this.minHeight, this.root.clientHeight), this.maxHeight);
+    let areaWidth: number = this._positionWidthWithMargin * this.Length;
+    let width = Math.min(this.root.clientWidth, areaWidth);
+    if (this.fitArea && areaWidth < this.root.clientWidth) { // if weblogo has some space to grow
+      this._positionWidth = Math.floor(this._positionWidth * this.root.clientWidth / areaWidth);
+      this._positionWidthWithMargin = this._positionWidth + this.positionMarginValue;
+      areaWidth = this._positionWidthWithMargin * this.Length;
+      width = Math.min(this.root.clientWidth, areaWidth);
+    }
+    const areaHeight: number = Math.min(Math.max(this.minHeight, this.root.clientHeight), this.maxHeight ?? this.root.clientHeight);
 
     const height = areaHeight;
-    const width = Math.min(this.root.clientWidth, areaWidth);
 
     this.canvas.style.width = `${width}px`;
     this.canvas.style.height = `${height}px`;
-    this.host.style.width = `${width}px`;
+    this.host.style.width = `${this.root.clientWidth}px`;
     this.host.style.height = `${this.root.clientHeight}px`;
 
     // host style flex-direction: row;
@@ -729,10 +744,10 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
     if (this.root.clientHeight < this.minHeight) {
       this.host.style.alignContent = 'start'; /* For vertical scroller to work properly */
-      this.host.style.width = `${width + 6}px`; /* */
+      this.host.style.width = `${width + 8}px`; /* */
     }
 
-    this.host.style.width = `${this.host}px`;
+    //this.host.style.width = `${this.host}px`;
 
     const sliderVisibility = areaWidth > width;
     this.setSliderVisibility(sliderVisibility);
@@ -740,30 +755,32 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       this.slider.root.style.removeProperty('display');
       this.host.style.justifyContent = 'left'; /* For horizontal scroller to prevent */
       this.host.style.height = `${this.root.clientHeight - this.slider.root.offsetHeight}px`;
+      this.canvas.style.height = `${height - this.slider.root.offsetHeight}px`;
       this.slider.root.style.top = `${this.host.offsetHeight}px`;
 
       let newMin = Math.min(Math.max(0, this.slider.min), this.Length - 0.001);
       let newMax = Math.min(Math.max(0, this.slider.max), this.Length - 0.001);
 
-      const visibleLength = this.root.clientWidth / this._positionWidthWithMargin;
+      const visibleLength = this.canvas.clientWidth / this._positionWidthWithMargin;
       newMax = Math.min(Math.max(newMin, 0) + visibleLength, this.Length - 0.001);
       newMin = Math.max(0, Math.min(newMax, this.Length - 0.001) - visibleLength);
 
-      this.slider.setValues(0, Math.max(this.Length - 0.001), newMin, newMax);
+      this.safeUpdateSlider(0, Math.max(this.Length - 0.001), newMin, newMax);
     } else {
       //
-      this.slider.setValues(0, Math.max(0, this.Length - 0.001), 0, Math.max(0, this.Length - 0.001));
+      this.safeUpdateSlider(0, Math.max(0, this.Length - 0.001), 0, Math.max(0, this.Length - 0.001));
     }
 
     this.canvas.width = width * dpr;
     this.canvas.height = height * dpr;
   }
 
+  /** Deprecated and currently not in use. */
   private calcLayoutFitArea(dpr: number): void {
     if (!this.host || !this.canvas || !this.slider) return; // for es-lint
 
     const originalAreaWidthWoMargins: number = this._positionWidth * this.Length;
-    const originalAreaHeight: number = Math.min(Math.max(this.minHeight, this.root.clientHeight), this.maxHeight);
+    const originalAreaHeight: number = Math.min(Math.max(this.minHeight, this.root.clientHeight), this.maxHeight ?? this.root.clientHeight);
 
     // TODO: scale
     const xScale = originalAreaWidthWoMargins > 0 ?
@@ -815,14 +832,23 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       newMax = Math.min(Math.max(newMin, 0) + visibleLength, this.Length - 0.001);
       newMin = Math.max(0, Math.min(newMax, this.Length - 0.001) - visibleLength);
 
-      this.slider.setValues(0, Math.max(0, this.Length - 0.001), newMin, newMax);
+      this.safeUpdateSlider(0, Math.max(0, this.Length - 0.001), newMin, newMax);
     } else {
       //
-      this.slider.setValues(0, Math.max(0, this.Length - 0.001), 0, Math.max(0, this.Length - 0.001));
+      this.safeUpdateSlider(0, Math.max(0, this.Length - 0.001), 0, Math.max(0, this.Length - 0.001));
     }
 
     this.canvas.width = width * dpr;
     this.canvas.height = height * dpr;
+  }
+
+  /** makes sure that slider actually needs to be updated before updating it. if values are same, no update */
+  private safeUpdateSlider(minRange: number, maxRange: number, min: number, max: number): void {
+    if (!numbersWithinMaxDiff(minRange, this.slider.minRange, 0.1) ||
+      !numbersWithinMaxDiff(maxRange, this.slider.maxRange, 0.1) ||
+      !numbersWithinMaxDiff(min, this.slider.min, 0.1) ||
+      !numbersWithinMaxDiff(max, this.slider.max, 0.1))
+      this.slider.setValues(minRange, maxRange, min, max);
   }
 
 
@@ -853,6 +879,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     }
     case PROPS.minHeight:
     case PROPS.maxHeight:
+    case PROPS.maxMonomerLetters:
     case PROPS.positionWidth:
     case PROPS.showPositionLabels:
     case PROPS.fixWidth:
@@ -1143,7 +1170,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       const uppercaseLetterHeight = 12.2;
       const biotype = this.seqHandler!.defaultBiotype;
       for (let jPos = firstPos; jPos <= lastPos; jPos++)
-        this.positions[jPos].render(g, fontStyle, uppercaseLetterAscent, uppercaseLetterHeight, biotype, this.monomerLib);
+        this.positions[jPos].render(g, fontStyle, uppercaseLetterAscent, uppercaseLetterHeight, biotype, this.monomerLib, this.maxMonomerLetters);
     } finally {
       g.restore();
     }
@@ -1182,9 +1209,18 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
         min: this.slider.min, max: this.slider.max,
         maxRange: this.slider.maxRange
       };
-      _package.logger.debug(
-        `${this.toLog()}.sliderOnValuesChanged( ${JSON.stringify(val)} ), start`);
-      this.render(WlRenderLevel.Layout, 'sliderOnValuesChanged');
+      // _package.logger.debug(
+      //   `${this.toLog()}.sliderOnValuesChanged( ${JSON.stringify(val)} ), start`);
+      // this.render(WlRenderLevel.Layout, 'sliderOnValuesChanged');
+      if (this.canvas && this.canvas.offsetWidth > 0 && (this._positionWidthWithMargin ?? 0) > 0) {
+        const newRange = val.max - val.min;
+        const newPositionWidth = this.canvas.offsetWidth / newRange - this.positionMarginValue;
+        // if the range was changed on the slider
+        if (!numbersWithinMaxDiff(newPositionWidth, this.positionWidth, 0.1))
+          this.getProperty(PROPS.positionWidth)?.set(this, newPositionWidth);
+        else // if range was not changed, but slider was moved
+          this.render(WlRenderLevel.Layout, 'sliderOnValuesChanged');
+      }
     } catch (err: any) {
       const errMsg = errorToConsole(err);
       _package.logger.error(`${this.toLog()}.sliderOnValuesChanged() error:\n` + errMsg);
@@ -1235,6 +1271,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
           tooltipRows.push(pi.buildCompositionTable(biotype, this.monomerLib));
         }
         const tooltipEl = ui.divV(tooltipRows);
+        tooltipEl.style.maxHeight = '80vh';
         ui.tooltip.show(tooltipEl, args.x + 16, args.y + 16);
       } else if (pi !== null && monomer && this.dataFrame && this.seqCol && this.seqHandler) {
         // Monomer at position tooltip

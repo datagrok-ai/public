@@ -1,3 +1,5 @@
+/* eslint-disable max-lines */
+/* eslint-disable max-lines-per-function */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
@@ -7,6 +9,7 @@ import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-he
 import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 
 import {ConverterFunc} from './types';
+import {_testBilnToHelm, _testHelmToBiln, bilnToHelmTestsData, helmToBilnTestsData} from './biln-tests';
 
 
 category('converters', () => {
@@ -287,4 +290,15 @@ RNA1{p.r(U)p.r(U)p.r(C)p.r(A)p.r(A)p.r(C)p.r(U)p.r(U)p.r(C)p.r(A)p.r(A)p.r(C)p.p
   test('testHelmLonePhosphorus', async () => {
     await _testConvert(Samples.helmLonePhosphorus, converter(NOTATION.FASTA), Samples.fastaRna);
   });
+
+  for (const sample of bilnToHelmTestsData) {
+    test(`testBilnToHelm_${sample.name}`, async () => {
+      await _testBilnToHelm(sample.biln, sample.helm, seqHelper);
+    });
+  }
+  for (const sample of helmToBilnTestsData) {
+    test(`testHelmToBiln_${sample.name}`, async () => {
+      await _testHelmToBiln(sample.helm, sample.biln, seqHelper);
+    });
+  }
 });

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
@@ -49,7 +50,7 @@ category('renderers: monomerPlacer', () => {
         {src: {row: 1, x: 6}, tgt: {pos: 0}},
         {src: {row: 1, x: 26}, tgt: {pos: 1}},
         {src: {row: 1, x: 160}, tgt: {pos: 6}},
-        {src: {row: 1, x: 185}, tgt: {pos: 7}},
+        {src: {row: 1, x: 190}, tgt: {pos: 7}},
         {src: {row: 2, x: 140}, tgt: {pos: 5}},
         {src: {row: 2, x: 145}, tgt: {pos: 5}},
       ]
@@ -115,7 +116,8 @@ id3,QHIRE--LT
       const colTemp: MonomerPlacer = new MonomerPlacer(null, seqCol, _package.logger, monLength,
         () => {
           return {
-            monomerCharWidth: charWidth,
+            font: '12px monospace',
+            fontCharWidth: charWidth,
             separatorWidth: sepWidth,
             monomerToShort: monomerToShort,
           };
@@ -209,7 +211,8 @@ id3,QHIRE--LT
       const sepWidth: number = 12;
       const colTemp = new MonomerPlacer(null, seqCol, _package.logger, monLengthLimit, () => {
         return {
-          monomerCharWidth: charWidth,
+          fontCharWidth: charWidth,
+          font: '12px monospace',
           separatorWidth: sepWidth,
           monomerToShort: monomerToShort,
         };

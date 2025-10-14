@@ -5,6 +5,10 @@ import * as grok from 'datagrok-api/grok';
 import {ILineChartSettings} from "datagrok-api/dg";
 
 export class UsageWidget extends DG.Widget {
+  get type(): string {
+    return 'UsageWidget';
+  }
+
   caption: string;
   order: string;
 

@@ -1,17 +1,20 @@
-import {Balloon, Color} from './widgets';
+import {Balloon} from './widgets';
+import {Color} from './color';
 import {toDart, toJs} from './wrappers';
-import {MARKER_TYPE, ViewerType} from './const';
-import {Point, Rect} from './grid';
+import {COLUMN_TYPE, MARKER_TYPE, ViewerType, ColumnType} from './const';
+import type {Point, Rect} from './grid';
 import {IDartApi} from './api/grok_api.g';
 import * as rxjs from 'rxjs';
 import {StreamSubscription} from './events';
-import {DataFrame} from './dataframe';
+import {Column, DataFrame} from './dataframe';
 import {TableView} from './views/view';
+import wu from 'wu';
+import { MapProxy } from './proxies';
 
 declare let DG: any;
 declare let grok: any;
 
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 declare global {
   interface CanvasRenderingContext2D {
@@ -22,6 +25,8 @@ declare global {
     roundRect(x: number, y: number, w: number, h: number, r: number): CanvasRenderingContext2D
 
     line(x1: number, y1: number, x2: number, y2: number, color: number): CanvasRenderingContext2D;
+
+    lines(points: Iterable<Point>): CanvasRenderingContext2D;
 
     /**
      * Use stroke() or fill() after.
@@ -34,53 +39,70 @@ declare global {
   }
 }
 
-HTMLCanvasElement.prototype.g2 = function() { return this.getContext('2d')!; }
-
-CanvasRenderingContext2D.prototype.setFillStyle = function (fill: string | CanvasGradient | CanvasPattern) {
-  this.fillStyle = fill;
-  return this;
-}
-
-CanvasRenderingContext2D.prototype.setStrokeStyle = function (stroke: string | CanvasGradient | CanvasPattern) {
-  this.strokeStyle = stroke;
-  return this;
-}
-
-CanvasRenderingContext2D.prototype.roundRect = function (x: number, y: number, w: number, h: number, r: number) {
-  if (w < 2 * r) r = w / 2;
-  if (h < 2 * r) r = h / 2;
-  this.beginPath();
-  this.moveTo(x + r, y);
-  this.arcTo(x + w, y, x + w, y + h, r);
-  this.arcTo(x + w, y + h, x, y + h, r);
-  this.arcTo(x, y + h, x, y, r);
-  this.arcTo(x, y, x + w, y, r);
-  this.closePath();
-  return this;
-}
-
-CanvasRenderingContext2D.prototype.line = function (x1, y1, x2, y2, color) {
-  this.beginPath();
-  this.strokeStyle = Color.toRgb(color);
-  this.moveTo(x1, y1);
-  this.lineTo(x2, y2);
-  this.stroke();
-
-  return this;
-}
-
-CanvasRenderingContext2D.prototype.polygon = function (pa: Point[]) {
-  this.beginPath();
-
-  const last_p = pa[pa.length - 1]
-  this.moveTo(last_p.x, last_p.y);
-
-  for (let p of pa) {
-    this.lineTo(p.x, p.y);
+if (typeof HTMLCanvasElement != 'undefined') {
+  HTMLCanvasElement.prototype.g2 = function () {
+    return this.getContext('2d')!;
   }
-  this.closePath();
 
-  return this;
+  CanvasRenderingContext2D.prototype.setFillStyle = function (fill: string | CanvasGradient | CanvasPattern) {
+    this.fillStyle = fill;
+    return this;
+  }
+
+  CanvasRenderingContext2D.prototype.setStrokeStyle = function (stroke: string | CanvasGradient | CanvasPattern) {
+    this.strokeStyle = stroke;
+    return this;
+  }
+
+  CanvasRenderingContext2D.prototype.roundRect = function (x: number, y: number, w: number, h: number, r: number) {
+    if (w < 2 * r) r = w / 2;
+    if (h < 2 * r) r = h / 2;
+    this.beginPath();
+    this.moveTo(x + r, y);
+    this.arcTo(x + w, y, x + w, y + h, r);
+    this.arcTo(x + w, y + h, x, y + h, r);
+    this.arcTo(x, y + h, x, y, r);
+    this.arcTo(x, y, x + w, y, r);
+    this.closePath();
+    return this;
+  }
+
+  CanvasRenderingContext2D.prototype.line = function (x1, y1, x2, y2, color) {
+    this.beginPath();
+    this.strokeStyle = Color.toRgb(color);
+    this.moveTo(x1, y1);
+    this.lineTo(x2, y2);
+    this.stroke();
+
+    return this;
+  }
+
+  CanvasRenderingContext2D.prototype.lines = function (points: Iterable<Point>) {
+    let first = true;
+    for (const point of points) {
+      if (first) {
+        this.moveTo(point.x, point.y);
+        first = false;
+      } else {
+        this.lineTo(point.x, point.y);
+      }
+    }
+    return this;
+  }
+
+  CanvasRenderingContext2D.prototype.polygon = function (pa: Point[]) {
+    this.beginPath();
+
+    const last_p = pa[pa.length - 1]
+    this.moveTo(last_p.x, last_p.y);
+
+    for (let p of pa) {
+      this.lineTo(p.x, p.y);
+    }
+    this.closePath();
+
+    return this;
+  }
 }
 
 
@@ -131,13 +153,13 @@ export namespace Paint {
   /** Renders a PNG image from bytes */
   export function pngImage(g: CanvasRenderingContext2D, bounds: Rect, imageBytes: Uint8Array) {
     let r = new FileReader();
-    r.readAsBinaryString(new Blob([imageBytes]));
+    r.readAsBinaryString(new Blob([new Uint8Array(imageBytes)]));
 
     r.onload = function() {
       let img = new Image();
 
       img.onload = function() {
-        bounds = new Rect(bounds.x, bounds.y, bounds.width, bounds.height).fit(img.width, img.height)
+        bounds = new DG.Rect(bounds.x, bounds.y, bounds.width, bounds.height).fit(img.width, img.height)
         g.drawImage(img, bounds.x, bounds.y, bounds.width, bounds.height);
       }
 
@@ -159,6 +181,11 @@ export class Utils {
     for (let i = 0; i < length; i++)
       res[i] = i;
     return res;
+  }
+
+  /** Returns random element from the array. Useful for demo data, tests, etc. */
+  static random<T>(items: T[]): T {
+    return items[Math.floor(Math.random() * items.length)];
   }
 
   static replaceAll(string: string, search: string, replace: string) {
@@ -230,7 +257,37 @@ export class Utils {
     );
   }
 
-  static async executeTests(testsParams: { package: any, params: any }[]): Promise<any> {
+  static getJsonValueType(x: any): ColumnType | null {
+    if (!x)
+      return null;
+
+    if (typeof x === 'string')
+      return DG.TYPE.STRING;
+    if (typeof x === 'number')
+      return DG.TYPE.FLOAT;
+    if (typeof x === 'boolean')
+      return DG.TYPE.BOOL;
+    throw 'Not supported type';
+  }
+
+  /** Expands a column of JSON strings into multiple columns, one per unique key */
+  static jsonToColumns(column: Column<string>) {
+    const rows = column.dataFrame.rowCount;
+    const jsons = range(rows).map(i => column.isNone(i) ? null : JSON.parse(column.get(i)!)).toArray();
+
+    for (let i = 0; i < rows; i++) {
+      for (const [key, value] of Object.entries(jsons[i])) {
+        if (value !== null && !column.dataFrame.columns.contains(key))
+          column.dataFrame.columns
+            //@ts-ignore
+            .addNew(key, Utils.getJsonValueType(value)!)
+            .init(j => jsons[j] === null ? null : jsons[j][key]);
+      }
+    }
+  }
+
+  static async executeTests(testsParams: { package: any, params: any }[], stopOnFail?: boolean): Promise<any> {
+    console.log(`********** Entered executeTests func`);
     let failed = false;
     let csv = "";
     let verbosePassed = "";
@@ -240,61 +297,75 @@ export class Utils {
     let countSkipped = 0;
     let countFailed = 0;
     let resultDF: DataFrame | undefined = undefined;
-
-    for (let testParam of testsParams) {
-      let df: DataFrame = await grok.functions.call(testParam.package + ':test', testParam.params);
-
-      if (df.rowCount === 0) {
-        verboseFailed += `Test result : Invocation Fail : ${testParam.params.category}: ${testParam.params.test}\n`;
-        countFailed += 1;
-        failed = true;
-        continue;
-      }
-
-      let row = df.rows.get(0);
-      if (df.rowCount > 1) {
-        let unhandledErrorRow = df.rows.get(1);
-        if (!unhandledErrorRow.get("success")) {
-          unhandledErrorRow["category"] = row.get("category");
-          unhandledErrorRow["name"] = row.get("name");
-          row = unhandledErrorRow;
+    let lastTest: any = null;
+    let res: string  = '';
+    try {
+      for (let testParam of testsParams) {
+        lastTest = testParam;
+        let df: DataFrame = await grok.functions.call(testParam.package + ':test', testParam.params);
+        let flakingCol = DG.Column.fromType(DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount);
+        df.columns.add(flakingCol);
+        let packageNameCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'package', Array(df.rowCount).fill(testParam.package));
+        df.columns.add(packageNameCol);
+        if (df.rowCount === 0) {
+          verboseFailed += `Test result : Invocation Fail : ${testParam.params.category}: ${testParam.params.test}\n`;
+          countFailed += 1;
+          failed = true;
+          continue;
         }
-      }
-      const category = row.get("category");
-      const testName = row.get("name");
-      const time = row.get("ms");
-      const result = row.get("result");
 
-      if (resultDF === undefined)
-        resultDF = df;
-      else
-        resultDF = resultDF.append(df);
-
-      if (row["skipped"]) {
-        verboseSkipped += `Test result : Skipped : ${time} : ${category}: ${testName} :  ${result}\n`;
-        countSkipped += 1;
-      }
-      else if (row["success"]) {
-        verbosePassed += `Test result : Success : ${time} : ${category}: ${testName} :  ${result}\n`;
-        countPassed += 1;
-      }
-      else {
-        verboseFailed += `Test result : Failed : ${time} : ${category}: ${testName} :  ${result}\n`;
-        countFailed += 1;
-        failed = true;
-      }
-    }
-
-    if (resultDF) {
-      const bs = DG.BitSet.create(resultDF.rowCount)
-      bs.setAll(true);
-      for(let i = 0; i < resultDF.rowCount; i++){
-        if(resultDF.rows.get(i).get('category') === 'Unhandled exceptions'){
-          bs.set(i, false);
+        let row = df.rows.get(0);
+        if (df.rowCount > 1) {
+          let unhandledErrorRow = df.rows.get(1);
+          if (!unhandledErrorRow.get("success")) {
+            unhandledErrorRow["category"] = row.get("category");
+            unhandledErrorRow["name"] = row.get("name");
+            row = unhandledErrorRow;
+          }
         }
+        const category = row.get("category");
+        const testName = row.get("name");
+        const time = row.get("ms");
+        const result = row.get("result");
+        const success = row.get("success");
+        const skipped = row.get("skipped");
+        row["flaking"] = success && DG.Test.isReproducing;
+
+        df.changeColumnType('result', COLUMN_TYPE.STRING);
+        df.changeColumnType('logs', COLUMN_TYPE.STRING);
+        df.changeColumnType('memoryDelta', COLUMN_TYPE.BIG_INT);
+
+        if (resultDF === undefined)
+          resultDF = df;
+        else
+          resultDF = resultDF.append(df);
+
+        if (row["skipped"]) {
+          verboseSkipped += `Test result : Skipped : ${time} : ${category}: ${testName} :  ${result}\n`;
+          countSkipped += 1;
+        }
+        else if (row["success"]) {
+          verbosePassed += `Test result : Success : ${time} : ${category}: ${testName} :  ${result}\n`;
+          countPassed += 1;
+        }
+        else {
+          verboseFailed += `Test result : Failed : ${time} : ${category}: ${testName} :  ${result}\n`;
+          countFailed += 1;
+          failed = true;
+        }
+        if ((success !== true && skipped !== true) && stopOnFail)
+          break;
       }
-      resultDF =  resultDF.clone(bs);
-      csv = resultDF.toCsv()       
+      if (DG.Test.isInDebug) {
+        console.log('on browser closing debug point');
+        debugger
+      }
+      res = Utils.createResultsCsv(resultDF);
+
+    } catch (e) {
+      failed = true;
+      verboseFailed = lastTest ? `category: ${lastTest.params.category}, name: ${lastTest.params.test}, error: ${e}, ${await DG.Logger.translateStackTrace((e as any).stack)}` :
+        `test: null, error: ${e}, ${await DG.Logger.translateStackTrace((e as any).stack)}`;
     }
 
     return {
@@ -305,59 +376,36 @@ export class Utils {
       passedAmount: countPassed,
       skippedAmount: countSkipped,
       failedAmount: countFailed,
-      csv: csv
+      csv: res,
       // df: resultDF?.toJson()
     };
   }
-}
-
-
-/** A proxy to a Dart `List<T>`. */
-export class DartList<T> implements Iterable<T> {
-  dart: any;
-
-  /** Creates a proxy to an existing Dart list. */
-  static fromDart<T>(dart: any): DartList<T> {
-    let list = new DartList();
-    list.dart = dart;
-    return list as DartList<T>;
+  
+  /**
+   * Detects natural hierarchy in the list of categorical columns based on their values.
+   * Mind that the function can be n^2 in the worst case scenario, although in most cases, it is quite fast
+   * as it exits early if missmatch is found.
+   * @param columns - List of columns to detect hierarchy in.
+   * @param maxDepth - Maximum depth of the hierarchy to detect.
+   * @returns 
+   */
+  static detectColumnHierarchy(columns: Column[], maxDepth: number = 3): string[] {
+    return api.grok_Utils_DetectColumnHierarchy(columns.map((c) => c.dart), maxDepth);
   }
 
-  [key: number]: any;
-
-  /** Returns the number of objects in this list. */
-  get length(): number { return api.grok_List_Get_Length(this.dart); }
-
-  /** Removes all objects from this list; the length of the list becomes zero. */
-  clear() { api.grok_List_Clear(this.dart); }
-
-  /** Sorts this list. */
-  sort() { api.grok_List_Sort(this.dart); }
-
-  /** Adds [value] to the end of this list, extending the length by one. */
-  push(value: T) { api.grok_List_Add(this.dart, value); }
-
-  /** Returns the object at the given [index] in the list. */
-  get(index: number): T { return api.grok_List_Get(this.dart, index); }
-
-  /** Sets the value at the given [index] in the list to [value]. */
-  set(index: number, value: T): T { return api.grok_List_Set(this.dart, index, value); }
-
-  /** Removes the first occurrence of [value] from the list. */
-  remove(value: T) { api.grok_List_Remove(this.dart, value); }
-
-  includes(item: T, start?: number) {
-    const length = this.length;
-    for (let i = (start ? start : 0); i < length; i++) {
-      if (this.get(i) === item)
-        return true;
+  static createResultsCsv(resultDF?: DataFrame): string {
+    if (resultDF) {
+      const bs = DG.BitSet.create(resultDF.rowCount)
+      bs.setAll(true);
+      for (let i = 0; i < resultDF.rowCount; i++) {
+        if (resultDF.rows.get(i).get('category') === 'Unhandled exceptions') {
+          bs.set(i, false);
+        }
+      }
+      resultDF = resultDF.clone(bs);
+      return resultDF.toCsv();
     }
-    return false;
-  }
-
-  * [Symbol.iterator](): Iterator<T> {
-    for (let i = 0; i < this.length; i++)
-      yield this.get(i);
+    return '';
   }
 }
 
@@ -371,146 +419,26 @@ export namespace HtmlUtils {
   }
 
   export function htmlGetBounds(element: HTMLElement): Rect {
-    return Rect.fromDart(api.grok_HtmlUtils_HtmlGetBounds(element));
+    return DG.Rect.fromDart(api.grok_HtmlUtils_HtmlGetBounds(element));
   }
-}
-
-/**
- * Proxies a Dart Map, API-compliant to ES 2015+
- */
-export const MapProxy = new Proxy(class {
-    dart: any;
-    objectName: string | null;
-    valueType: string | null;
-    constructor(dart: any, objectName: string | null = null, valueType: string | null = null) {
-      this.dart = dart;
-      this.objectName = objectName;
-      this.valueType = valueType;
-    }
-    keys(): Iterable<any> {
-      return _toIterable(api.grok_Map_Keys(this.dart));
-    }
-    values() {
-      return _toIterable(toJs(api.grok_Map_Values(this.dart)));
-    }
-    * [Symbol.iterator] () {
-      for (let key of this.keys()) {
-        const value = toJs(api.grok_Map_Get(this.dart, key));
-        yield [key, toJs(value)];
-      }
-    }
-    entries() {
-      return this;
-    }
-    forEach(callback: (key: string, value: any) => void) {
-      for (const [key, value] of this) {
-        callback(key, toJs(value));
-      }
-    }
-    delete(key: string) {
-      return toJs(api.grok_Map_Delete(this.dart, toDart(key)));
-    }
-    get(key: any) {
-      return toJs(api.grok_Map_Get(this.dart, key));
-    }
-    has(key: string) {
-      return api.grok_Map_Has(this.dart, toDart(key));
-    }
-    set(key: string, value: any) {
-      api.grok_Map_Set(this.dart, key, toDart(value));
-      return this;
-    }
-    clear() {
-      api.grok_Map_Clear(this.dart);
-    }
-    size() {
-      return toJs(api.grok_Map_Size(this.dart));
-    }
-  }, {
-    construct(target, args) {
-      // @ts-ignore
-      return new Proxy(new target(...args), {
-        get: function (target: any, prop) {
-          const val = target[prop];
-          if (typeof val === 'function') {
-            return function (...args :string[]) {
-              return val.apply(target, args);
-            };
-          } else {
-            return toJs(api.grok_Map_Get(target.dart, prop));
-          }
-        },
-        set: function (target, prop, value) {
-          const valueType = typeof(value);
-          if (!target.valueType || target.valueType === valueType) {
-            api.grok_Map_Set(target.dart, prop, toDart(value));
-          } else {
-            throw new Error(`Entries of ${target.objectName} require type '${target.valueType}', passed '${valueType}'`);
-          }
-          return true;
-        },
-        deleteProperty: function (target, prop) {
-          api.grok_Map_Delete(target.dart, toDart(prop));
-          return true;
-        },
-        has: function (target, prop) {
-          return api.grok_Map_Has(target.dart, toDart(prop));
-        },
-        getOwnPropertyDescriptor(target, prop) {
-          return {
-            enumerable: true,
-            configurable: true
-          };
-        },
-        ownKeys: function (target) {
-          return Array.from(target.keys());
-        }
-      });
-    }
-  }
-);
-
-// export class PropProxy {
-//     constructor(dart) {
-//         this.dart = dart;
-//         return new Proxy({}, {
-//             get: function(target, prop) { return DG.toJs(api.grok_PropMixin_Get(dart, prop)); },
-//             set: function(target, prop, value) { api.grok_PropMixin_Set(dart, prop, DG.toDart(value)); }
-//         })
-//     }
-// }
-
-
-export function _toIterable(dart: any): Iterable<any> {
-  let iterable = {};
-  // @ts-ignore
-  iterable[Symbol.iterator] = () => _getIterator(dart);
-  // @ts-ignore
-  return iterable;
-}
-
-export function _getIterator(dart: any) {
-  let iterator = api.grok_Iterable_Get_Iterator(dart);
-  return {
-    next: function () {
-      return api.grok_Iterator_MoveNext(iterator) ?
-        {value: toJs(api.grok_Iterator_Current(iterator)), done: false} :
-        {done: true};
-    }
-  };
 }
 
 export function _isDartium() {
+  if (typeof document.head == 'undefined')
+    return false;
   return document.head.querySelectorAll('script[src*=".dart.js"]').length == 0;
 }
 
-export function _toJson(x: any) {
-  return x === null ? null : JSON.stringify(x);
-}
 
-export function* range(length: number) {
+function* _range(length: number): IterableIterator<number> {
   for (let i = 0; i < length; i++)
     yield i;
+}
+
+/** Generates [count] increasing integer numbers, starting with 0. */
+export function range(length: number): wu.WuIterable<number> {
+
+  return wu(_range(length));
 }
 
 /** Returns an 'identity' array where the element in idx-th position is equals to idx. */
@@ -715,11 +643,7 @@ export class LruCache<K = any, V = any> {
   }
 }
 
-/**
- * @param {HTMLElement} element
- * @param {string | ElementOptions | null} options
- * @returns {HTMLElement}
- * */
+
 export function _options(element: HTMLElement, options: any) {
   if (options == null)
     return element;
@@ -738,57 +662,6 @@ export function _options(element: HTMLElement, options: any) {
   return element;
 }
 
-/**
- * Converts entity properties between JavaScript and Dart.
- * See also: {@link include}
- */
-export function _propsToDart(s: string, cls: string): string {
-  const jsToDart: { [indes:string] : {[index: string]: string} } = {
-    'Group' : {
-      'adminMemberships': 'parents.parent',
-      'memberships': 'parents.parent',
-      'members': 'children.child',
-      'adminMembers': 'children.child',
-    },
-    'Project': {
-      'children': 'relations.entity',
-      'links': 'relations.entity'
-    },
-    'Function': {
-      'inputs': 'params',
-      'outputs': 'params'
-    }
-  };
-
-  let propsMap = jsToDart[cls];
-  if (!propsMap)
-    return s;
-  let res = '';
-  if (s === res) return res;
-  let ents = s.split(',');
-  for (let ent of ents) {
-    let props = ent.trim();
-
-    while (props) {
-      let idx = props.indexOf('.');
-      let match = propsMap[props];
-      if (match) res += match;
-      else {
-        let p = (idx === -1) ? props : props.slice(0, idx);
-        res += propsMap[p] || p;
-      }
-      if (idx === -1) props = '';
-      else {
-        props = props.slice(idx + 1);
-        res += '.';
-      }
-    }
-
-    res += ',';
-  }
-  return res;
-}
-
 export function format(x: number, format?: string): string {
   return api.grok_Utils_FormatNumber(x, format);
 }
@@ -797,7 +670,6 @@ export function format(x: number, format?: string): string {
 export async function delay(ms: number) {
   await new Promise((r) => setTimeout(r, ms));
 }
-
 
 /** Autotest-related helpers */
 export namespace Test {
@@ -815,6 +687,10 @@ export namespace Test {
    * different conditions, etc.
    * */
   export let isInBenchmark = false;
+  export let isReproducing = false;
+  export let isInDebug = false;
+  export let isCiCd = false;
+  export let isProfiling = false;
 
   export function getTestDataGeneratorByType(type: string) {
     return api.grok_Test_GetTestDataGeneratorByType(type);

@@ -26,6 +26,7 @@ on:
       - 'help/**/*.bmp'
       - 'docusaurus/**'
       - 'js-api/**'
+      - 'python-api/**'
       - 'help/deploy/releases/plugins/**'
       - 'packages/*/CHANGELOG.md'
   pull_request:
@@ -42,6 +43,7 @@ on:
       - 'help/**/*.bmp'
       - 'docusaurus/**'
       - 'js-api/**'
+      - 'python-api/**'
       - 'help/deploy/releases/plugins/**'
       - 'packages/*/CHANGELOG.md'
 
@@ -88,6 +90,7 @@ jobs:
             help
             packages
             js-api
+            python-api
       - uses: actions/setup-node@v4
         with:
           node-version: 18
@@ -124,6 +127,7 @@ jobs:
             sed -i "s/Links: 'throw'/Links: 'warn'/g" docusaurus.config.js
             sed -i "s/Anchors: 'throw'/Anchors: 'warn'/g" docusaurus.config.js
           fi
+          chmod +x ./generate_docs_py.sh
           npm run build > ../help/_docusaurus_build.txt 2>&1
           cat ../help/_docusaurus_build.txt
         working-directory: ./docusaurus
@@ -273,7 +277,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           sparse-checkout: |
-            docusaurus
+            docusaurus/docsearch.json
+
       - uses: celsiusnarhwal/typesense-scraper@v2
         continue-on-error: true
         with:
@@ -282,3 +287,21 @@ jobs:
           port: '443'
           protocol: 'https'
           config: docusaurus/docsearch.json
+
+# TODO: Experiment with direct run to be able to cancel workflow. 05.11.2024: It fails with missing Pipfile because of working directory.
+#      - name: Run DocSearch Scraper
+#        uses: docker://typesense/docsearch-scraper:latest
+#        continue-on-error: true
+#        env:
+#          TYPESENSE_API_KEY: ${{ secrets.TYPESENSE_API_KEY }}
+#          TYPESENSE_HOST: 'typesense.datagrok.ai'
+#          TYPESENSE_PORT: '443'
+#          TYPESENSE_PROTOCOL: 'https'
+#          CONFIG: 'docusaurus/docsearch.json'
+#          WORKON_HOME: '/home/seleuser/.local/share'
+#        with:
+#          args: |
+#            bash -c "
+#              cd /home/seleuser &&
+#              pipenv run python -m src.index
+#            "

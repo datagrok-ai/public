@@ -34,7 +34,7 @@ export async function sequenceToMolfile(
       df.columns.add(helmCol, false);
     }
     try {
-      res = await seqHelper.helmToAtomicLevel(helmCol, true, true);
+      res = await seqHelper.helmToAtomicLevel(helmCol, true, true, monomerLib);
     } finally {
       if (helmCol !== macroMolecule) {
         df.columns.remove(helmCol.name);
@@ -53,7 +53,7 @@ export async function sequenceToMolfile(
     res.molCol.name = molColName;
     df.columns.add(res.molCol, true);
 
-    buildMonomerHoverLink(macroMolecule, res.molCol, monomerLib, seqHelper, rdKitModule);
+    await buildMonomerHoverLink(macroMolecule, res.molCol, monomerLib, seqHelper, rdKitModule, nonlinear);
     res.molCol.setTag(ChemTags.SEQUENCE_SRC_HL_MONOMERS, String(highlight));
     await grok.data.detectSemanticTypes(df);
   }

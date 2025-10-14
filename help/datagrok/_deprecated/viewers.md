@@ -35,7 +35,7 @@ drag the viewer's border.
 
 For quick profiling, use the **Plots** info pane. Datagrok automatically generates visualizations when you select one or more columns.
 
-![](../../deploy/releases/platform/img/plots-info-pane.gif)
+![](../../deploy/releases/img/plots-info-pane.gif)
 
 :::
 

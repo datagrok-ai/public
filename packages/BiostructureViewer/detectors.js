@@ -14,7 +14,7 @@ class BiostructureViewerPackageDetectors extends DG.Package {
     if (DG.Detector.sampleCategories(col,
       // (s) => s.includes('COMPND') && s.includes('ATOM') && s.includes('END'), 1)
       (s) => s.match(/^COMPND/m) && s.match(/^END/m) &&
-        (s.match(/^ATOM/m) || s.match(/^HETATM/m)),
+        (s.match(/^ATOM/m) || s.match(/^HETATM/m)), 1
     )) {
       col.meta.units = 'pdb';
       return 'Molecule3D';
@@ -38,9 +38,8 @@ class BiostructureViewerPackageDetectors extends DG.Package {
     if (col.type === DG.TYPE.STRING &&
       col.name.toLowerCase().includes('pdb') &&
       DG.Detector.sampleCategories(col, (s) => s.length === 4)
-    ) {
+    )
       res = 'PDB_ID';
-    }
     return res;
   }
 
@@ -56,24 +55,50 @@ class BiostructureViewerPackageDetectors extends DG.Package {
   autostartContextMenu() {
     const logPrefix = 'BsV: detectors.js: autostartContextMenu()';
     this.logger.debug(`${logPrefix}, start`);
+
+    const catchError = (err) => {
+      this.logger.error(`${logPrefix} error`);
+      this.logger.error(err?.message ?? String(err));
+    };
+
     grok.events.onContextMenu.subscribe((event) => {
       this.logger.debug(`${logPrefix}, onContextMenu, start`);
-      if (event.args.item) {
+      try {
+        if (!event || !event.args || !event.args.item || !event.args.menu)
+          return;
         const item = event.args.item;
-        // TODO: TreeViewNode.value is not real DG.FileInfo (no extension property)
-        // if (item instanceof DG.TreeViewNode)
-        //   item = item.value;
-
-        if (item && (
-          (item instanceof DG.GridCell || item.constructor.name === 'GridCell') ||
-          (item instanceof DG.FileInfo || item.constructor.name === 'FileInfo'))
-        ) {
-          grok.functions.call('BiostructureViewer:addContextMenu', {event: event})
-            .catch((err) => {
-              this.logger.error('addContextMenu must not throw any exception');
-              this.logger.error(err?.message ?? String(err));
+        const menu = event.args.menu;
+        const packageName = this.name;
+        if (item.tableColumn && item.cell) {
+          // if its grid cell
+          if ((item instanceof DG.GridCell || item.constructor?.name === 'GridCell') &&
+          item.tableColumn.semType === DG.SEMTYPE.MOLECULE3D) {
+            menu.item('Copy', () => {
+              grok.functions.call(`${packageName}:copyRawBiostructureValue`, {gridCell: item}).catch(catchError);
             });
+            menu.item('Download', () => {
+              grok.functions.call(`${packageName}:downloadRawBiostructureValue`, {gridCell: item}).catch(catchError);
+            });
+            const group = menu.group('Show');
+            group.item('Biostructure', () => {
+              grok.functions.call(`${packageName}:showBiostructureViewerMenuItem`, {gridCell: item}).catch(catchError);
+            }, null,
+            {description: 'Show with Biostructure (mol*) viewer'});
+            group.item('NGL', () => {
+              grok.functions.call(`${packageName}:showNglViewerMenuItem`, {gridCell: item}).catch(catchError);
+            }, null,
+            {description: 'Show with NGL viewer'});
+          }
+        } else if ((item instanceof DG.FileInfo || item.constructor.name == 'FileInfo') &&
+          item.extension.toLowerCase() === 'pdb') {
+          menu.item('Open table residues', () => {
+            grok.functions.call(`${packageName}:openTableResiduesMenuItem`, {fi: item}).catch(catchError);
+          });
         }
+      } catch (error) {
+        this.logger.error(`${logPrefix}, error`);
+        if (!window.$biostructureViewer) window.$biostructureViewer = {};
+        window.$biostructureViewer.contextMenuError = error;
       }
       this.logger.debug(`${logPrefix}, onContextMenu, end`);
     });

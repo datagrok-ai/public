@@ -5,14 +5,39 @@ title: "Add new column"
 Adds a column of the specified type to the current table, and initializes it using the specified expression (
 mathematical function, constants, platform objects properties and functions).
 
-To add new columns, you can use data from existing columns as follows:
+To add new columns, click on the `Add New Column` icon on the toolbar or go to top menu `Edit` -> `Add New Column`. Key features are:
 
-- To reference each row of a column, specify its name in the curly brackets, preceded by the dollar sign: `${Width}`.
-  For example you can use this expression in function like that: `Round(${Width})`
-  .
+* Support for functions implemented with Python, R, Julia, JavaScript, C++, and others. To add function to an editor, type it manually, drag and drop from
+functions registry on the right or use *plus* icon. You can combine functions written in different languages in one formula.
+![add function](./add_function_to_editor.gif)
+* Auto-suggested functions based on the column type and semantic type. To use:
+  * set functions sorting type in function registry to 'By relevance'
+  * select column of interest
+  * the functions in functions registry are sorted automatically. More relevant functions are on top of the list.
+  * drag and drop function to the editor field or click *plus* icon. Corresponding parameter is prefilled automatically with selected column.
+![functions suggestions](./add_new_column_functions_suggestions.gif)
+* Interactive preview of results as you type
+* Autocompletion for functions (including packages names) and columns. Suggestions appear as you type.
+* Different highlights within formula for better readability. For instance, column names are highlighted with in bold blue font.
+* Validation against various types of mistakes including syntax errors, missing columns detection, incorrect data types, unmatching brackets.
+* Resulting column type autodetection
+* Fast function and column search
+* History, saving and reusing formulas
 
-- To reference a whole column, specify its name in the square brackets, preceded by the dollar sign: `$[Width]`. For
+Adding columns to formulas:
+
+* scalar functions
+  * To reference each row of a column, specify its name in the curly brackets, preceded by the dollar sign: `${Width}`.
+  For example you can use this expression in function like that: `Round(${Width})`.
+  * To reference a whole column, specify its name in the square brackets, preceded by the dollar sign: `$[Width]`. For
   example you can use this expression in function like that: `Avg($[Width])`.
+
+* vector function
+  * To reference a whole column, specify its name in the curly brackets, preceded by the dollar sign: `${molecule}`. For example you can use this expression in function like that: `Chem:getInchis(${molecule})`.
+
+> **Tip:** Some vector functions can return several related columns at once (for example, multiple chemical or statistical properties).
+> These are called **[complex calculated columns](../datagrok/concepts/functions/func-params-annotation.md#complex-calculated-columns)**.  
+> When you use such a function in the “Add New Column” dialog, Datagrok automatically adds all resulting columns to your table and keeps them synchronized.
 
 To add a column to a formula, drag it to the editor. Alternatively, use the keyboard:
 
@@ -52,6 +77,7 @@ corresponding sections of the help system:
 
 See also:
 
+- [Complex calculated columns](../datagrok/concepts/functions/func-params-annotation.md#complex-calculated-columns)
 - [Scripting](../develop/under-the-hood/grok-script.md)
 - [Function](../datagrok/concepts/functions/functions.md)
 - [Column selectors](../visualize/viewers/column-selectors.md)

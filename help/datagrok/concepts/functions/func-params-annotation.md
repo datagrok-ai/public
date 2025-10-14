@@ -67,8 +67,8 @@ the functions of interest.
 
 ## Inputs and outputs
 
-Each input and output definition take one line that starts with the comment, followed 
-by type, name, optional default value, options, and optional description, just like here:
+Each input and output definition takes one line, starting with a comment, followed 
+by type, name, optional initial value used to pre-fill the UI, options, and optional description, just like here:
 
 ```
 #input: string country {choices: ["USA", "Canada"]} [Country to ship from]
@@ -223,6 +223,25 @@ For example, to create an optional string parameter with the initial value:
 --input: string shipCountry = "France" { nullable: true }
 SELECT * FROM customers where shipCountry = @shipCountry
 ```
+
+### Nullable vs Optional
+
+It’s important to distinguish between **nullable** and **optional** parameters:
+
+* **Nullable** parameters can explicitly accept `null`, but are still **required positional parameters**. You must pass
+them in the function call, even if the value is `null`.
+
+```
+Func(1, null, 3)
+```
+
+* **Optional** parameters are **named parameters** with default values and can be skipped entirely in function calls.
+```
+Func(1, 3, optional = 4)
+```
+
+**In the UI forms**, both nullable and optional parameters appear similarly (users can leave the field empty), but
+their behavior in code differs.
 
 ### Filter patterns
 
@@ -561,6 +580,77 @@ result = `${country} - ${orders.rowCount * factor}`;
 
 </details>
 
+### Complex calculated columns
+
+When you need to compute **several related columns from the same data**, complex calculated columns let you do it
+through a **single function**.
+
+This approach improves both **efficiency** and **user experience**: instead of defining multiple separate calculated
+columns with nearly identical logic, you define one formula that returns several results at once. Each of these results
+becomes its own calculated column in the table.
+
+This is particularly useful when several properties are derived from the same source data, for example:
+
+* Computing multiple **ADME properties** (absorption, distribution, metabolism, excretion).
+* Calculating **chemical descriptors** such as logP, TPSA, molecular weight, or others.
+* Generating **statistical summaries** (mean, median, standard deviation, etc.) for related data columns.
+
+Since all the derived columns are computed together, Datagrok can **reuse cached computations**, ensuring fast and
+consistent recalculation when input data changes.
+
+#### How It Works
+
+To define a complex calculated column function:
+
+1. Add the annotation
+    ```ts
+    //meta.vectorFunc: true
+    ```
+2. Make your function return a **dataframe** — each column in the returned dataframe becomes a calculated column in the
+source table.
+3. Optionally, add a `list<string>` **parameter** to let users select which specific result columns to create (for
+instance, particular chemical properties or statistical measures). This parameter should be placed **last** in the
+function signature, since it’s optional.
+
+Inputs can include both regular columns and scalar parameters.
+
+<details>
+<summary> Example: Computing chemical properties from the Chem package </summary>
+
+```ts
+//input: column molecules {semType: Molecule} 
+//input: list<string> out {optional: true}
+//meta.vectorFunc: true
+//output: dataframe result
+export async function getProperties(molecules: DG.Column, out?: string[]): Promise<DG.DataFrame> { 
+  const propNames = Object.keys(CHEM_PROP_MAP);
+  const props = !out || out.length === 0
+    ? propNames
+    : propNames.filter((p) => out.includes(p));
+
+  const cols = await getPropertiesAsColumns(molecules, props);
+  return DG.DataFrame.fromColumns(cols); 
+}
+```
+
+This function calculates several chemical properties (such as logP, TPSA, or molecular weight) at once. Users can
+select which properties to generate, and each one will appear as a calculated column in the table.
+
+</details>
+
+#### Integration with “Add New Column”
+
+You can use complex calculated column functions **directly in the** [Add new column](../../../transform/add-new-column.md)
+**dialog** — just type or insert such a function into the formula editor.
+
+If the function has the `meta.vectorFunc: true` annotation, Datagrok automatically:
+
+* Adds all resulting columns from the returned dataframe to your table.
+* Keeps them **synchronized and efficiently recalculated** as data changes.
+
+This allows you to create multiple derived columns (for example, several computed chemical descriptors) from one
+unified expression — all from the familiar **Add new column** interface.
+
 ### Input types
 
 Input fields such as text boxes or combo boxes get generated automatically based on
@@ -605,7 +695,7 @@ that you do not have to specify):
 Check out [interactive snippet](https://public.datagrok.ai/js/samples/ui/inputs/advanced/all-input-types)
 for more input types.  
 
-For developers: [DG.InputBase](https://datagrok.ai/js-api/classes/dg.InputBase)
+For developers: [DG.InputBase](https://datagrok.ai/api/js/dg/classes/InputBase)
 
 ### Inputs for semantic types
 
@@ -626,6 +716,191 @@ a molecule, a molecule sketcher pops up.
 ![](molecule-input.png)
 
 </details>
+
+## Search integrated functions
+
+Datagrok allows you to define a special patterns for calling any function or query with a human-readable sentence and visualize the resulting dashboard directly from the platform search.
+
+When you create a function, script, or query that results in a table, you can annotate it with the `meta.searchPattern` tag. This tag will be used to call the function with the specified parameters within the sentence.
+
+The `searchPattern` tag can be any sentence that contains placeholders for the parameters. For example, if the annotation of the query is as follows:
+
+```sql
+--input: string target = "CHEMBL1827"
+--meta.searchPattern: "compound activity details for target ${target}"
+```
+
+Searching for "compound activity details for target CHEMBL1827" in the **Search Everywhere** bar will call the query and pass "CHEMBL1827" as the `target` parameter. The number of parameters is not limited, and they can be used in any order in the sentence.
+
+![Search integrated queries](search-integrated-queries.gif)
+
+:::tip
+
+Use the **Search Everywhere** bar to visualize the following queries directly from the search results:
+- *Bioactivity for bacterial targets for Shigella*
+- *Pharmacokinetic Data for LEVOFLOXACIN*
+- *Compound activity details for target CHEMBL1827*
+
+You can also add the resulting dashboard to the workspace by clicking on the **+** icon in the search results.
+
+
+<details>
+<summary>Example query</summary>
+
+```sql
+--name: bioactivity data for bacterial targets for @organism
+--friendlyName: Browse | Bioactivity for bacterial targets for @organism
+--connection: Chembl
+--input: string organism {suggestions: Chembl:organisms}
+--input: string species
+--meta.searchPattern: "Bioactivity for ${species} targets for ${organism}"
+SELECT md.chembl_id AS compound_chembl_id,
+cs.canonical_smiles,
+act.standard_type,
+act.standard_value,
+act.standard_units,
+td.chembl_id AS target_chembl_id,
+td.organism,   td.pref_name
+FROM target_dictionary td
+  JOIN assays a ON td.tid = a.tid
+  JOIN activities act ON a.assay_id = act.assay_id
+  JOIN molecule_dictionary md ON act.molregno = md.molregno
+  JOIN compound_structures cs ON md.molregno   = cs.molregno
+  JOIN organism_class oc ON td.tax_id = oc.tax_id
+    AND td.organism ILIKE @organism
+    AND oc.L1 = @species;
+--end
+
+```
+
+Here, the `species` and `organism` parameters are inferred from the search pattern. For example, if you search for "Bioactivity for bacteria targets for Shigella", the `species` parameter will be set to "bacteria" and the `organism` parameter will be set to "shigella".
+
+</details>
+
+:::
+
+## Custom function editors
+
+You can create custom editors for functions to replace the default UI in places such as:
+
+- Function preview
+- Property panel
+- "Run" dialog
+
+Custom editors enhance the user experience by allowing you to tailor how function inputs are handled. For example, you can:
+- Pre-fill values based on context
+- Group related parameters together
+- Add live validation of input formats
+- Customize layout and interactivity
+- Replace standard inputs with custom UI
+
+> ⚠️ **Important:** Custom editors let you control how a function's parameters are presented and edited,
+> and should be responsible only for editing parameters — not for executing the function or displaying its results.
+
+---
+
+### Defining an editor
+
+A custom editor is a function that:
+- Accepts a `DG.FuncCall` object as input
+- Returns a `DG.Widget`
+- Is marked with `//tags: editor` and an `//output: widget <name>` annotation
+
+> **Note:** While extending `DG.FuncCallEditor` is optional, the returned widget must expose certain properties to support validation and input change tracking.
+
+#### Required interface for the returned widget
+
+| Property        | Type                | Description |
+|----------------|---------------------|-------------|
+| `root`          | `HTMLElement`        | Root element of the widget |
+| `isValid`       | `boolean`            | Indicates whether the inputs are valid |
+| `onInputChanged`| `Observable<any>`    | Emits when user modifies inputs |
+| `inputFor?`     | `(name: string) => DG.InputBase<any>` | Optional method to retrieve the input for a parameter name |
+
+
+<details>
+<summary> Sample editor </summary>
+<div>
+
+```ts
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import { InputBase } from 'datagrok-api/ui';
+
+// Optional: Extend DG.FuncCallEditor for convenience
+class MyDummyEditor extends DG.FuncCallEditor {
+  boolCheck: InputBase<boolean>;
+  numInput: InputBase<number | null>;
+
+  constructor(call: DG.FuncCall) {
+    const root = ui.divV([]);
+    super(root);
+
+    this.boolCheck = ui.input.bool('Bool check', call.inputs['bool'] ?? false);
+    this.numInput = ui.input.int('Num', call.inputs['num'] ?? 0, {
+      onValueChanged: (value) => call.inputs['num'] = value,
+    });
+
+    this.boolCheck.onChanged.subscribe(() => call.inputs['bool'] = this.boolCheck.value);
+
+    root.append(this.boolCheck.root, this.numInput.root);
+  }
+
+  get onInputChanged(): rx.Observable<any> {
+    return rx.merge(this.boolCheck.onChanged, this.numInput.onChanged);
+  }
+
+  get isValid(): boolean {
+    return this.numInput.validate() && this.boolCheck.validate();
+  }
+}
+
+//name: dummyEditor
+//tags: editor
+//input: funccall call
+//output: widget dialog
+export function dummyEditor(call: DG.FuncCall): DG.Widget {
+  return new MyDummyEditor(call);
+}
+
+```
+
+</div>
+</details>
+
+<details>
+<summary> Usage example </summary>
+<div>
+
+```ts
+//name: dummyScalar
+//input: int num
+//output: int res
+//editor: DevTools:dummyEditor
+export function dummyScalar(num: number): number {
+  return num * 102;
+}
+```
+
+<p>
+This tells the platform to render dummyEditor from the DevTools package as the editor for this function.
+</p>
+
+</div>
+
+</details>
+
+---
+
+### 🚫 What the editor should NOT do
+
+- Do **not** execute the function
+- Do **not** show a **Run** button
+- Do **not** handle result display or side effects
+
+The purpose of the editor is solely to edit function parameters.
+
+---
 
 ## Examples
 

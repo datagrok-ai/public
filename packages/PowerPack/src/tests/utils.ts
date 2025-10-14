@@ -13,11 +13,11 @@ export const FUNC_TESTS: {[f: string]: {[test: string]: any}} = {
     'DateAdd(Date(2020, 1, 1), 3605000)': dayjs.utc('2020-01-01').add(1, 'h').add(5, 's'),
   },
   Avg: {
-    'Avg($[age])': 55.599998474121094
+    'Avg($[age])': 55.599998474121094,
   },
   Abs: {
-    'Abs(${height})': 162
-  }
+    'Abs(${height})': 162,
+  },
 };
 
 export const FUNC_VALIDATION: { [f: string]: string } = {
@@ -29,6 +29,7 @@ i`,
   'DateParse(Abs(1))': `Function DateParse 's' param should be string type instead of num`,
   'Abs(': `Possible syntax error`,
   'Abs(${age1})': `Column age1 is missing`,
+  'BinBySpecificLimits(${Age}, [18, 30, 45, 60, 75])': '',
 };
 
 

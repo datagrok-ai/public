@@ -10,7 +10,7 @@ import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
 import {defaultErrorHandler} from '../utils/err-info';
 import {doPolyToolUnrule} from './pt-unrule';
-import {getRules, RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './pt-rules';
+import {getRules, RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './conversion/pt-rules';
 import {PT_ERROR_DATAFRAME, PT_UI_DIALOG_UNRULE, PT_UI_RULES_USED} from './const';
 
 import {_package} from '../package';

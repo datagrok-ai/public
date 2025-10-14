@@ -57,7 +57,7 @@ async function loadSADataset(): Promise<void> {
 export async function structuralAlertsWidget(molecule: string): Promise<DG.Widget> {
   const colors = [NO_HIGHLIGHT].concat(DG.Color.categoricalPalette.slice(0, 10));
   rdKitModule ??= getRdKitModule();
-  let alerts = [];
+  let alerts: any[] = [];
   try {
     alerts = await getStructuralAlerts(molecule);
   } catch (e) {
@@ -129,7 +129,7 @@ export async function structuralAlertsWidget(molecule: string): Promise<DG.Widge
     return host;
   }), {classes: 'd4-flex-wrap chem-search-panel-wrapper'});
 
-  return new DG.Widget(ui.divV([calcForWholeButton, ui.box(list)]));
+  return new DG.Widget(ui.divV([calcForWholeButton, ui.box(list, {style: {height: '100%'}})]));
 }
 
 function getColoredDiv(color: number): HTMLDivElement {

@@ -31,7 +31,7 @@ completion.
 **Know where to get help**.
 
 * [JS API examples](https://public.datagrok.ai/js)
-* [JS API documentation](https://datagrok.ai/js-api)
+* [JS API documentation](https://datagrok.ai/api/js/api)
 
 ## Exercise 1: chembl browser
 

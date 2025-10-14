@@ -1,0 +1,21 @@
+npts 72 72 72                        # num.grid points in xyz
+gridfld kras.maps.fld                # grid_data_file
+spacing 0.375                        # spacing(A)
+receptor_types A C HD N NA OA SA     # receptor atom types
+ligand_types A C HD N NA OA SA Cl F S # ligand atom types
+receptor kras.pdbqt                  # macromolecule
+gridcenter -10.684 -3.536 -8.261     # xyz-coordinates or auto
+smooth 0.5                           # store minimum energy w/in rad(A)
+map kras.A.map                       # atom-specific affinity map
+map kras.C.map                       # atom-specific affinity map
+map kras.HD.map                      # atom-specific affinity map
+map kras.N.map                       # atom-specific affinity map
+map kras.NA.map                      # atom-specific affinity map
+map kras.OA.map                      # atom-specific affinity map
+map kras.SA.map                      # atom-specific affinity map
+map kras.Cl.map                      # atom-specific affinity map
+map kras.F.map                       # atom-specific affinity map
+map kras.S.map                       # atom-specific affinity map
+elecmap kras.e.map                   # electrostatic potential map
+dsolvmap kras.d.map              # desolvation potential map
+dielectric -0.1465                   # <0, AD4 distance-dep.diel;>0, constant

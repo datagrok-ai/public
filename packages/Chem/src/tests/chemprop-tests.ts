@@ -2,41 +2,42 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {category, test, before, expect} from '@datagrok-libraries/utils/src/test';
-import {_package, getContainer, applyModelChemprop, trainModelChemprop} from '../package';
-import {readDataframe} from './utils';
+import {ensureContainerRunning} from '@datagrok-libraries/utils/src/test-container-utils';
+import {_package, PackageFunctions} from '../package';
+import {CONTAINER_TIMEOUT, readDataframe} from './utils';
 import JSZip from 'jszip';
-import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
+import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 
-category('chemprop', () => {
-  let container: DG.DockerContainer;
+category('w_chemprop', () => {
   let binBlob: Uint8Array;
   let table: DG.DataFrame;
 
   before(async () => {
     table = await readDataframe('tests/smiles_test.csv');
-    container = await getContainer();
   });
 
   test('trainModel', async () => {
+    await ensureContainerRunning('chemprop', CONTAINER_TIMEOUT);
     const parameterValues = getParameterValues();
     const tableForPrediction = DG.DataFrame.fromColumns(table.columns.byNames(['canonical_smiles', 'molregno']));
-    const modelBlob = await fetchWrapper(() => trainModelChemprop(tableForPrediction.toCsv(), 'molregno', parameterValues));
+    const modelBlob = await fetchWrapper(() => PackageFunctions.trainModelChemprop(tableForPrediction.toCsv(), 'molregno', parameterValues));
 
     const zip = new JSZip();
     const archive = await zip.loadAsync(modelBlob);
     const file = archive.file('blob.bin');
     binBlob = await file?.async('uint8array')!;
-        
-    expect(file !== null, true);
-  }, {timeout: 60000});
 
-  test('applyModel', async () => {
+    expect(file !== null, true);
+  }, {timeout: 90000 + CONTAINER_TIMEOUT});
+
+  test('utilizeModel', async () => {
+    await ensureContainerRunning('chemprop', CONTAINER_TIMEOUT);
     const smilesColumn = table.columns.byName('canonical_smiles');
-    const column = await fetchWrapper(() => applyModelChemprop(binBlob, DG.DataFrame.fromColumns([smilesColumn]).toCsv()));
-        
-    expect(column.length, 30);
-  }, {stressTest: true});
-});
+    const column = await fetchWrapper(() => PackageFunctions.applyModelChemprop(binBlob, DG.DataFrame.fromColumns([smilesColumn]).toCsv()));
+
+    expect(column.length, 20);
+  });
+}, {timeout: 90000 + CONTAINER_TIMEOUT});
 
 function getParameterValues() {
   return {
@@ -62,6 +63,6 @@ function getParameterValues() {
     'data_seed': 0,
     'split_sizes': [0.8, 0.1, 0.1],
     'split_type': 'random',
-    'warmup_epochs': 2.0
+    'warmup_epochs': 2.0,
   };
 }

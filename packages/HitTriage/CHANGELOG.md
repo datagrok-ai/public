@@ -1,5 +1,92 @@
 # HitTriage changelog
 
+## 1.7.7 (2025-09-19)
+
+* Sortable campaigns table columns via doubleclick.
+* Add campaingPropts to both visible columns and groupby options.
+
+## 1.7.5 (2025-09-03)
+
+* Add Ability to hide or show custom columns in campaigns table.
+* Improved styling of icons in the info view.
+
+## 1.7.3 (2025-05-01)
+
+* Fix descriptors tree not scrolling
+
+## 1.7.2 (2025-04-09)
+
+* Ability to reorder/hide functions in new template or functions dialog.
+
+## 1.7.0 (2025-04-01)
+
+* Fix not saving campaigns
+
+## 1.5.0 (2025-03-01)
+
+* Add caching to loaded campaigns.
+* Parallel loading of campaigns.
+* Lazy loading of function dialogs.
+* Fixes to url logic.
+* Working with new browse version.
+
+## 1.4.4 (2025-02-07)
+
+* Fix permission check for admin members
+* Add Default file storage for campaign files
+
+## 1.4.3 (2025-02-06)
+
+* Fix campaign auto-naming when creating new campaigns
+
+## 1.4.2 (2025-02-03)
+
+Correctly set semantic types for all columns in joining dataframes
+
+## 1.4.1 (2025-01-31)
+
+* Support current molecule sending to designer functions
+* Support multiple molecule columns in joining dataframe
+
+## 1.4.0 (2025-01-16)
+
+* Support adding tables to hit design campaigns
+* Support molecular generation functions such as reinvent
+
+## 1.3.11 (2024-12-11)
+
+* Add loader to campaigns app view
+
+## 1.3.10 (2024-12-04)
+
+* Bump dependencies versions
+
+## 1.3.9 (2024-11-29)
+
+* Enable working with molblocks without overwriting original data with smiles.
+* Template layouts, data sync.
+
+## 1.3.8 (2024-11-20)
+
+* Add Campaign name setting and changing.
+
+## 1.3.7 (2024-11-17)
+
+* Add Package level management of default sharing permissions.
+
+## 1.3.6 (2024-11-08)
+
+* Correct grouping of campaigns table, Added author/last modified user info.
+
+## 1.3.5 (2024-11-07)
+
+Correct readme links
+
+## 1.3.4 (2024-11-07)
+
+* Groupping of campaigns
+* Status change of campaigns
+
 ## 1.3.3 (2024-10-28)
 
 * Modification of HD Stages within campaign.

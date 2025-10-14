@@ -1,0 +1,108 @@
+[
+  [
+    {
+      "basePath": [
+        {
+          "id": "stepMul",
+          "idx": 4
+        }
+      ],
+      "inputs": {
+        "in1": [
+          {
+            "path": [
+              {
+                "id": "stepAdd",
+                "idx": 2
+              }
+            ],
+            "ioName": "res"
+          },
+          {
+            "path": [
+              {
+                "id": "stepAdd",
+                "idx": 3
+              }
+            ],
+            "ioName": "res"
+          }
+        ]
+      },
+      "outputs": {
+        "out1": [
+          {
+            "path": [
+              {
+                "id": "stepDiv",
+                "idx": 5
+              }
+            ],
+            "ioName": "a"
+          },
+          {
+            "path": [
+              {
+                "id": "stepDiv",
+                "idx": 6
+              }
+            ],
+            "ioName": "a"
+          }
+        ]
+      }
+    },
+    {
+      "basePath": [
+        {
+          "id": "stepMul",
+          "idx": 10
+        }
+      ],
+      "inputs": {
+        "in1": [
+          {
+            "path": [
+              {
+                "id": "stepAdd",
+                "idx": 8
+              }
+            ],
+            "ioName": "res"
+          },
+          {
+            "path": [
+              {
+                "id": "stepAdd",
+                "idx": 9
+              }
+            ],
+            "ioName": "res"
+          }
+        ]
+      },
+      "outputs": {
+        "out1": [
+          {
+            "path": [
+              {
+                "id": "stepDiv",
+                "idx": 11
+              }
+            ],
+            "ioName": "a"
+          },
+          {
+            "path": [
+              {
+                "id": "stepDiv",
+                "idx": 12
+              }
+            ],
+            "ioName": "a"
+          }
+        ]
+      }
+    }
+  ]
+]

@@ -9,9 +9,10 @@ import {
 } from '@datagrok-libraries/bio/src/helm/types';
 
 
-import {Chain} from './conversion/pt-chain';
+import {PtBio} from './conversion/pt-tools-helmmol';
 import {getAvailableMonomers} from './utils';
-import {PolyToolEnumeratorParams, PolyToolEnumeratorTypes, PolyToolPlaceholder, PolyToolBreadthPlaceholder} from './types';
+import {PolyToolEnumeratorParams, PolyToolEnumeratorTypes,
+  PolyToolPlaceholder, PolyToolBreadthPlaceholder} from './types';
 
 // For example keep monomers presented in HELMCoreLibrary.json only (not [NH2])
 export const PT_HELM_EXAMPLE = 'PEPTIDE1{R.[Aca].T.G.H.F.G.A.A.Y.P.E.[meI]}$$$$';
@@ -76,7 +77,7 @@ function getPtEnumeratorBreadth(m: HelmMol, placeholdersBreadth: PolyToolBreadth
 export function doPolyToolEnumerateHelm(
   helm: string, id: string, params: PolyToolEnumeratorParams
 ): [ /* helm */ string, /* id */ string][] {
-  const molHandler = new JSDraw2.MolHandler<HelmType, IHelmEditorOptions>();
+  const molHandler = new JSDraw2.MolHandler<HelmType, PtBio, IHelmEditorOptions>();
   const plugin = new org.helm.webeditor.Plugin(molHandler);
   org.helm.webeditor.IO.parseHelm(plugin, helm, new JSDraw2.Point(0, 0), undefined);
   const m = molHandler.m;
@@ -97,14 +98,15 @@ export function doPolyToolEnumerateHelm(
   }
 
   let resBreadthMolList: HelmMol[] = [];
-  if (params.breadthPlaceholders) {
+  if (params.breadthPlaceholders)
     resBreadthMolList = getPtEnumeratorBreadth(molHandler.m, params.breadthPlaceholders);
-  }
+
   resMolList = resMolList.concat(resBreadthMolList);
 
   if (params.keepOriginal)
     resMolList = [m, ...resMolList];
 
-  const resList = resMolList.map<[string, string]>((m: HelmMol) => { return [org.helm.webeditor.IO.getHelm(m)!, m.name!]; });
+  const resList = resMolList
+    .map<[string, string]>((m: HelmMol) => { return [org.helm.webeditor.IO.getHelm(m)!, m.name!]; });
   return resList;
 }

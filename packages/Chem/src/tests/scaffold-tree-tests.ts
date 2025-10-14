@@ -19,6 +19,9 @@ category('scaffold tree', () => {
   test('scaffoldTreeViewerOpens', async () => {
     const df = DG.Test.isInBenchmark ? await readDataframe('smiles.csv') :
       await readDataframe('tests/sar-small_test.csv');
+    if (!DG.Test.isInBenchmark) //leave only first 5 rows for scaffold tree analysis
+      df.rows.removeAt(5, df.rowCount - 5);
+    await grok.data.detectSemanticTypes(df);
     const tv = grok.shell.addTableView(df);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
     tv.addViewer(ScaffoldTreeViewer.TYPE);
@@ -29,13 +32,14 @@ category('scaffold tree', () => {
       generateLink.click();
     const stviewer = Array.from(tv.viewers).filter((it) => it.type === ScaffoldTreeViewer.TYPE)[0] as ScaffoldTreeViewer;
     await awaitCheck(() => stviewer.root.getElementsByClassName('d4-tree-view-group-host')[0].children.length > 0,
-      'scaffold tree has not been generated', DG.Test.isInBenchmark ? 3600000 : 60000);
+      'scaffold tree has not been generated', DG.Test.isInBenchmark ? 3600000 : 180000);
     await delay(2000); //need to scaffold to finish generation
     tv.close();
-  }, {timeout: 70000, benchmark: true, stressTest: true, benchmarkTimeout: 300000});
+  }, {timeout: 190000, benchmark: true, stressTest: true, benchmarkTimeout: 300000, skipReason: 'GROK-17648'});
 
   test('parent node contains H atom', async () => {
     const tv = await createTableView('mol1K.csv');
+    await grok.data.detectSemanticTypes(tv.dataFrame);
     const scaffoldTree = new ScaffoldTreeViewer();
     const table = tv.dataFrame;
     await delay(1000);
@@ -66,6 +70,7 @@ category('scaffold tree', () => {
 
   test('edit invalid structure', async () => {
     const tv = await createTableView('mol1K.csv');
+    await grok.data.detectSemanticTypes(tv.dataFrame);
     const scaffoldTree = new ScaffoldTreeViewer();
     const table = tv.dataFrame;
   

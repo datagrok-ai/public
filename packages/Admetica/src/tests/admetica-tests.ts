@@ -1,32 +1,50 @@
-import {awaitCheck, before, category, delay, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { runAdmetica, performChemicalPropertyPredictions, getQueryParams, properties, setProperties } from '../utils/admetica-utils';
-import { fetchWrapper } from '@datagrok-libraries/utils/src/fetch-utils';
+
+import {awaitCheck, before, category, delay, expect, expectArray, test, timeout} from '@datagrok-libraries/utils/src/test';
+
+import {
+  performChemicalPropertyPredictions,
+  getQueryParams,
+  properties,
+  setProperties,
+  runAdmeticaFunc,
+} from '../utils/admetica-utils';
+import * as api from './package-api';
 
 category('Admetica', () => {
   let v: DG.TableView;
   let molecules: DG.DataFrame;
   let smilesColumn: DG.Column;
-    
+
   before(async () => {
     grok.shell.closeAll();
     grok.shell.windows.showProperties = false;
-    await setProperties();
-  });
-    
-  test('Container', async () => {
-    const admetDockerfile = await grok.dapi.docker.dockerContainers.filter('admetica').first();
-    expect(admetDockerfile != null, true);
+
+    try {
+      await timeout(
+        () => grok.functions.call('Admetica:check_health', {}),
+        180000,
+        'Health check timed out',
+      );
+    } catch (err: any) {
+      throw new Error(`Health check failed: ${err}`);
+    }
+
+    await Promise.all([
+      setProperties(),
+      delay(1000),
+    ]);
   });
 
   test('Container. Post request', async () => {
     const smiles = `smiles
     O=C1Nc2ccccc2C(C2CCCCC2)=NC1`;
-    const bbbResults = await fetchWrapper(() => runAdmetica(smiles, 'PPBR,VDss', 'false'));
-    expect(bbbResults != null, true);
-  }, {timeout: 100000});
+    const distributionResults = await runAdmeticaFunc(smiles, 'PPBR,VDss', false);
+    expect(distributionResults != null, true);
+  }, {timeout: 25000});
 
   test('Calculate dialog. UI', async () => {
     molecules = grok.data.demo.molecules(100);
@@ -44,11 +62,11 @@ category('Admetica', () => {
       'column inside Admetica dialog is different than expected', 5000);
     const models = properties.subgroup
       .flatMap((subgroup: any) => subgroup.models
-      .map((model: any) => model.name));
+        .map((model: any) => model.name));
     expectArray(Array.from(admeticaDialog!.querySelectorAll('.d4-tree-view-item-label')).map((item) => item.innerHTML), models);
     v.close();
     grok.shell.o = ui.div();
-  });
+  }, {timeout: 25000});
 
   test('Calculate dialog. Added properties', async () => {
     molecules = grok.data.demo.molecules(5);
@@ -57,6 +75,7 @@ category('Admetica', () => {
     smilesColumn = molecules.columns.bySemType(DG.SEMTYPE.MOLECULE)!;
     const newTableColumn = 'Caco2';
     await performChemicalPropertyPredictions(smilesColumn, v.dataFrame, newTableColumn);
+    await delay(2000);
     expect(molecules.columns.names().includes(newTableColumn), true, `${newTableColumn} column has not been added`);
     expect(parseFloat(molecules.col(newTableColumn)!.get(0).toFixed(2)), -4.62, `Calculated value for ${newTableColumn} is incorrect`);
     expect(molecules.col(newTableColumn)!.getTag('.color-coding-type'), DG.COLOR_CODING_TYPE.LINEAR, `Expected ${DG.COLOR_CODING_TYPE.LINEAR} color coding type, but got a different value`);
@@ -66,74 +85,63 @@ category('Admetica', () => {
   test('Calculate. For single cell', async () => {
     const molecules = grok.data.demo.molecules(20);
     const v = grok.shell.addTableView(molecules);
-    await awaitCheck(() => document.querySelector('canvas') !== null, 'Cannot load table', 3000);
+    await awaitCheck(() => document.querySelector('canvas') !== null, 'Table failed to load', 3000);
+
     grok.shell.windows.showProperties = true;
-  
+
     const table = v.dataFrame;
     table.currentCell = table.cell(0, 'smiles');
-    await delay(1000);
-  
+    await delay(3000);
+
     const pp = document.querySelector('.grok-prop-panel') as HTMLElement;
     await awaitPanel(pp, 'Biology', 6000);
-  
-    const biologyPanel = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
-      .find((el) => el.textContent === 'Biology') as HTMLElement;
-    if (biologyPanel && !biologyPanel.classList.contains('expanded')) {
-      biologyPanel.click();
-    }
-    
-    await delay(2000);
-  
+
+    const expandPanel = async (panelTitle: string, timeout = 3000) => {
+      const panel = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
+        .find((el) => el.textContent === panelTitle) as HTMLElement;
+
+      if (!panel) throw new Error(`Panel "${panelTitle}" not found`);
+
+      if (!panel.classList.contains('expanded')) {
+        panel.click();
+        await awaitCheck(() => panel.classList.contains('expanded'), `Failed to expand "${panelTitle}"`, timeout);
+      }
+    };
+
+    await expandPanel('Biology');
+    await awaitPanel(pp, 'Admetica');
+    await expandPanel('Admetica');
+    await awaitPanel(pp, 'Distribution');
+    await expandPanel('Distribution');
+
     const admePanel = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
       .find((el) => el.textContent === 'Admetica') as HTMLElement;
-    if (admePanel && !admePanel.classList.contains('expanded')) {
-      admePanel.click();
-    }
-  
-    await delay(2000);
-    
-    const distribution = Array.from(pp.querySelectorAll('div.d4-accordion-pane-header'))
-      .find((el) => el.textContent === 'Distribution') as HTMLElement;
-    if (distribution && !distribution.classList.contains('expanded')) {
-      distribution.click();
-    }
-  
-    await delay(1000);
-  
-    await awaitCheck(() => 
-      (admePanel?.parentElement?.getElementsByClassName('d4-table d4-item-table d4-info-table')[0] as HTMLElement)?.innerText.trim() !== '',
-      'Properties weren’t calculated',
-      8000
-    );
-  }, { timeout: 100000 });  
+
+    const propertiesTable = admePanel?.parentElement?.querySelector('.d4-table.d4-item-table.d4-info-table') as HTMLElement;
+    await awaitCheck(() => propertiesTable?.innerText.trim() !== '', 'Properties weren’t calculated', 8000);
+  }, { timeout: 100000 });
 
   test('Calculate.Benchmark column', async () => {
     const runAdmeticaBenchmark = async (moleculesCount: number) => {
       const molecules = grok.data.demo.molecules(moleculesCount);
       molecules.columns.remove('logD');
-      const args = [molecules.toCsv(), await getQueryParams(), 'false'];
-      return await runOnce(runAdmetica, ...args);
+      const args = [molecules.toCsv(), await getQueryParams(), false];
+      return await runOnce(runAdmeticaFunc, ...args);
     };
-
-    const mol1k = await runAdmeticaBenchmark(1000);
-    const mol5k = await runAdmeticaBenchmark(5000);
-    const mol10k = await runAdmeticaBenchmark(10000);
-
-    return DG.toDart({"1k molecules": mol1k, "5k molecules": mol5k, "10k molecules": mol10k});
+    await DG.timeAsync('Admetica column', async () => await runAdmeticaBenchmark(5000));
   }, {timeout: 10000000000, benchmark: true });
 
   test('Calculate.Benchmark cell', async () => {
     const smiles = `smiles
     O=C1Nc2ccccc2C(C2CCCCC2)=NC1`;
-    const distributionSubgroup = properties.subgroup.find((subgroup: any) => subgroup.name === "Distribution");
+    const distributionSubgroup = properties.subgroup.find((subgroup: any) => subgroup.name === 'Distribution');
     const distributionModels = distributionSubgroup ? distributionSubgroup.models.map((model: any) => model.name) : [];
-    const args = [smiles, distributionModels, 'false'];
-    const cellResults = await runOnce(runAdmetica, ...args);
-    return DG.toDart({"results": cellResults});
+    const args = [smiles, distributionModels, false];
+    await DG.timeAsync('Admetica cell', async () => await runOnce(runAdmeticaFunc, ...args));
   }, {timeout: 1000000, benchmark: true});
 });
-  
-async function runOnce(func: (...args: string[]) => Promise<string | null>, ...args: string[]) {
+
+async function runOnce(func: (...args: any[]) => Promise<DG.DataFrame | null>, ...args: any[]) {
   return await func(...args);
 }
 

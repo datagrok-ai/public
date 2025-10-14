@@ -1,6 +1,165 @@
 # Bio changelog
 
-## 2.16.7 (WIP)
+## 2.23.0 (2025-10-03)
+
+* Full BILN support: conversion to/from HELM/separator/fasta/molecular form, parsing, rendering, monomer library handling.
+
+## 2.22.12 (2025-09-30)
+
+* Match with Monomer Library tool
+* Fix monomer lib loading for tests
+* Converter improvements
+
+## 2.22.2 (2025-06-11)
+
+* Harmonized options for Similarity/Diversity viewers
+* Force detection of macromolecules for arbitrary columns
+
+## 2.22.0 (2025-06-03)
+
+* MSA header tracks (Conseration and WebLogo)
+* Tooltips for WebLogo header
+* Speedup calculations for conservation and weblogo, corrected limits
+
+## 2.21.11 (2025-05-29)
+
+* Add faster methods for getting monomers at given positions
+
+## 2.21.10 (2025-05-22)
+
+* Fix all monomers script
+* Optional Sequence scrolling header for short sequences
+
+## 2.21.9 (2025-05-15)
+
+* Correct scrolling header alignment with sequences.
+* Correct detection of max length sequence
+* Better display of current position
+* Fix keyboard navigation for sequence position scroller
+
+## 2.21.7 (2025-05-14)
+
+* Enable Header scrolling for non-MSA
+
+## 2.21.6 (2025-05-14)
+
+* Sequence position scrolling header
+
+## 2.21.5 (2025-05-12)
+
+* Shifted sequence rendering support
+
+## 2.21.4 (2025-05-12)
+
+* Support monomer renderer in viewers
+
+## 2.21.3 (2025-05-01)
+
+* Similarity search viewer: Fix for clearing selection
+* Substructure filter: Corrected even management for setting separator
+
+## 2.21.2 (2025-04-28)
+
+Monomer Manager:
+
+* Style fixes
+* Calculations of missing monomer properties when saving/loading monomer libraries
+* Date column fixes
+* Null meta fixes
+
+## 2.21.1 (2025-04-22)
+
+* Weblogo: Fix behavior, correct fitting, reaction to slider, property harmonization
+* Better formatting of source monomer lib name
+* Support of sequence space for custom notation
+
+## 2.21.0 (2025-04-14)
+
+* Move separator refinement to seq-handler stage
+* Add support for custom notation macromolecule difference rendering
+
+## 2.20.5 (2025-04-14)
+
+* Non blocking behavior of OCL mol converter
+
+## 2.20.4 (2025-04-08)
+
+* Fix linearization, wrong rgroups and notation problems for toAtomicLevel 
+
+## 2.20.2 (2025-03-31)
+
+* Detectors: more sensitive for very likely column names
+* Add to atomic level panel widget
+
+## 2.20.1 (2025-03-29)
+
+* Improve Activity cliffs demo
+* Fix Sim/Div viewers
+
+## 2.19.0 (2025-02-20)
+
+* Correct conversion and highlighting of toAtomicLevel
+* Added context actions
+
+## 2.18.4 (2025-02-17)
+
+* ToAtomicLevel support for DNA/RNA
+* Monomer manager: Fix correcting R-group lines
+
+## 2.18.3 (2025-02-10)
+
+Correct molblock conversion in monomer library extraction
+
+## 2.18.2 (2025-01-22)
+
+Improve grid cell renderer
+
+## 2.18.1 (2024-12-30)
+
+* Removed dependency from Helm package
+* Moved substructure filter types to bio library
+* Updated tests
+
+## 2.17.6 (2024-12-11)
+
+* Add monomer manager app view with library dashboards
+* Improve detectors
+ 
+## 2.17.5 (2024-12-09)
+
+Monomer manager: Correct loading.
+
+## 2.17.3 (2024-11-27)
+
+Monomer managers as apps
+
+## 2.17.2 (2024-11-19)
+
+* Support Sequence renderer resizing 
+
+## 2.17.1 (2024-11-15)
+
+* Fix Tests
+* Fix Fix monomer manager styles
+* Fix Monomer manager incorrect loading
+* Add R-groups validations
+
+## 2.17.0 (2024-11-06)
+
+Cell renderer: Harmonize macromolecule renderers
+
+## 2.16.9 (2024-11-01)
+
+Correct package initialization
+
+## 2.16.8 (2024-10-31)
+
+### Bug fixes
+
+* Fix SeqHandler check for custom notation
+* Fix SeqHandler adding splitter, getHelm, isCustom
+
+## 2.16.7 (2024-10-30)
 
 ### Bug fixes
 

@@ -4,7 +4,7 @@
 4. On the **Pie chart** viewer, click the **Gear** icon. The **Context Pane** opens.
 5. Check aggregation functions
 7. Selection
-    1. Go to the grid and select the first 50 columns. The selection should be reflected on pie chart
+    1. Go to the grid and select the first 50 rows. The selection should be reflected on pie chart
     3. Click the bar chart and check the selection in grid.
 8. Filtering
     1. Go to **Tables** and click the **Filter** icon

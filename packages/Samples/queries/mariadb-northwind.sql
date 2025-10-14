@@ -1,4 +1,4 @@
---name: Orders
+--name: MariaDB Orders
 --friendlyName: Orders
 --connection: MariaDBNorthwind
 --input: int employeeid = 5
@@ -23,7 +23,7 @@ WHERE (employeeid = @employeeid)
 
 --end
 
---name: Products
+--name: MariaDB Products
 --friendlyName: Products
 --connection: MariaDBNorthwind
 

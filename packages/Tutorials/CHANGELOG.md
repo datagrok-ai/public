@@ -1,5 +1,73 @@
 # Tutorials changelog
 
+## 1.10.3 (2025-10-08)
+
+* GROK-18139: Activity dashboard: Retired Learn widget and added it to the activity dashboard instead
+
+## 1.10.2 (2025-10-07)
+
+* Demo app: Fixed the issue that names with `-` in name sometimes can't open
+
+## 1.10.1 (2025-10-07)
+
+* GROK-18767: Fixed opening Demo in learn widget opens empty toolbox
+* Fixed Demo > Cheminformatics is opened even for old users
+
+## 1.10.0 (2025-09-30)
+
+* GROK-18139: Added demo app hierarchy as function in Tutorials
+* GROK-18718: Expanded Demo > Cheminformatics by default for new users
+
+## 1.9.6 (2025-09-25)
+
+## 1.9.5 (2025-09-19)
+
+* GROK-18879: Fixed Data aggregation tutorial
+* GROK-17845: Fixed each click opens additional app menu in Tutorials widget
+* GROK-18791: Fixed toolbox isn't shown in Scatterplot tutorial
+* Added Peptides tutorial
+
+## 1.9.3 (2025-09-17)
+
+* Dashboards tutorial: Fixed UI inconsistency in names
+* GROK-17832: Fixes in sync with new Browse UX
+
+## 1.9.2 (2025-09-15)
+
+Fixed the Parameters Optimization tutorial
+
+## 1.8.5 (2025-04-25)
+
+Updated UI in the Multivariate Analysis tutorial
+
+## 1.8.4 (2025-04-22)
+
+Fixed the behavior of hints in the Parameters Optimization tutorial
+
+## 1.8.3 (2025-04-11)
+
+Updated the Parameters Optimization tutorial
+
+## 1.8.2 (2025-04-04)
+
+Updated Demos
+
+## 1.8.1 (2025-03-31)
+
+Updated the Scientific Computing tutorials with respect to new Model Hub UI
+
+## 1.8.0 (2025-03-29)
+
+Updated demo features and the Scientific Computing tutorials with respect to new Browse UX
+
+## 1.7.3 (2025-01-10)
+
+Added scientific computing tutorials:
+
+* Differential equations
+* Sensitivity analysis
+* Parameters optimization
+
 ## 1.3.27 (2024-07-19)
 
 ### Bug fixes

@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject} from 'rxjs';
 import {filter, map, take} from 'rxjs/operators';
+import {getContextHelp} from '../../shared-utils/utils';
 
 function addPopover(popover: HTMLElement) {
   stylePopover(popover);
@@ -38,6 +39,13 @@ function stylePopover(popover: HTMLElement): void {
   popover.style.color = 'var(--gray-6)';
 }
 
+function getBulletIcon() {
+  const bulletIcon = ui.iconFA('times');
+  bulletIcon.style.marginRight = '6px';
+  bulletIcon.classList.remove('grok-icon');
+  return bulletIcon;
+}
+
 async function requestMembership(groupName: string) {
   try {
     const groups = await grok.dapi.groups.filter(`friendlyName="${groupName}"`).list();
@@ -63,6 +71,10 @@ export class ModelHandler extends DG.ObjectHandler {
     return 'Model';
   }
 
+  override get helpUrl() {
+    return null;
+  }
+
   override async getById(id: string): Promise<DG.Func> {
     return await grok.dapi.functions.find(id);
   }
@@ -72,14 +84,9 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   static async openHelp(func: DG.Func) {
-    if (func.options['readme'] != null) {
-      grok.shell.windows.showHelp = true;
-      await new Promise((r) => setTimeout(r, 100));
-      const path = `System:AppData/${func.package.name}/${func.options['readme']}`;
-      grok.dapi.files.readAsText(path).then((readmeText) => {
-        grok.shell.windows.help.showHelp(ui.markdown(readmeText));
-      });
-    }
+    const readmeText = await getContextHelp(func);
+    grok.shell.windows.showHelp = true;
+    grok.shell.windows.help.showHelp(ui.markdown(readmeText ?? ''));
   }
 
   static openModel(x: DG.Func) {
@@ -89,6 +96,36 @@ export class ModelHandler extends DG.ObjectHandler {
 
   static openModelFromFunccall(funcCall: DG.FuncCall) {
     funcCall.edit();
+  }
+
+  static async getUserGroups() {
+    // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14159
+    const userGroups = (await(await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[]);
+    return userGroups;
+  }
+
+  static getMissingGroups(func: DG.Func, userGroups: DG.Group[]) {
+    const mandatoryUserGroups = JSON.parse(
+      func.options['mandatoryUserGroups'] ? `${func.options['mandatoryUserGroups']}` : '[]') as {name: string, help?: string}[];
+    const missingMandatoryGroups = mandatoryUserGroups
+      .filter((group) => !userGroups.map((userGroup) => userGroup.friendlyName).includes(group.name));
+    return missingMandatoryGroups;
+  }
+
+  static openVersionSelectDialog(func: DG.Func) {
+    const versions = JSON.parse(func.options['versions'] ? `${func.options['versions']}` : '[]') as string[];
+    if ((versions?.length ?? 0) < 2) {
+      grok.shell.info('No other versions avaliable');
+      return;
+    }
+    const dlg = ui.dialog({title: 'Choose version'});
+    const selInput = ui.input.choice('Select version', {items: versions, value: versions[0]});
+    dlg.add(selInput).onOK(() => {
+      const version = selInput.value;
+      const fc = func.prepare({params: {version}});
+      fc.edit();
+    });
+    dlg.show();
   }
 
   // Checks whether this is the handler for [x]
@@ -110,34 +147,16 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   override renderMarkup(x: DG.Func): HTMLElement {
-    const markup = ui.divH([], {style: {'justify-content': 'space-between', 'width': '100%'}});
+    const markup = ui.divH([], {style: {justifyContent: 'space-between', width: '100%'}});
 
     setTimeout(async () => {
       const userGroups = await this.awaitUserGroups();
-      const mandatoryUserGroups = JSON.parse(x.options['mandatoryUserGroups'] ? `${x.options['mandatoryUserGroups']}` : '[]') as {name: string, help?: string}[];
-      const missingMandatoryGroups = mandatoryUserGroups.filter((group) => !userGroups.map((userGroup) => userGroup.friendlyName).includes(group.name));
+      const missingMandatoryGroups = ModelHandler.getMissingGroups(x, userGroups);
       const hasMissingMandatoryGroups = missingMandatoryGroups.length > 0;
       const mandatoryGroupsIcon = ui.iconFA('exclamation-triangle', null);
       mandatoryGroupsIcon.classList.remove('grok-icon');
 
-      const getBulletIcon = () => {
-        const bulletIcon = ui.iconFA('times');
-        bulletIcon.style.marginRight = '6px';
-        bulletIcon.classList.remove('grok-icon');
-        return bulletIcon;
-      };
-
-      const mandatoryGroupsInfo = ui.div(ui.divV([
-        ui.label('You should be a member of the following group(s):', {style: {marginLeft: '0px'}}),
-        ...missingMandatoryGroups.map((group) => ui.divV([
-          ui.span([getBulletIcon(), group.name], {style: {'font-weight': 600}}),
-          ...group.help ? [ui.span([group.help], {style: {marginLeft: '16px'}})]: [],
-          ui.link(`Request group membership`, async () => {
-            await requestMembership(group.name);
-            hidePopover(mandatoryGroupsInfo);
-          }, undefined, {style: {marginLeft: '16px'}}),
-        ])),
-      ], {style: {gap: '10px'}})) as HTMLElement;
+      const mandatoryGroupsInfo = this.makeMandatoryGroupsInfo(missingMandatoryGroups);
 
       const label = ui.span([
         this.renderIcon(x),
@@ -164,9 +183,8 @@ export class ModelHandler extends DG.ObjectHandler {
 
       markup.append(label);
       if (hasMissingMandatoryGroups)
-        markup.append(ui.span([mandatoryGroupsIcon]));
+        markup.append(ui.span([mandatoryGroupsIcon], {style: {paddingLeft: '10px'}}));
     });
-
 
     return markup;
   }
@@ -189,18 +207,43 @@ export class ModelHandler extends DG.ObjectHandler {
     return ui.iconImage(func.package.name, iconUrl);
   }
 
-  override renderPreview(x: DG.Func) {
-    const editorName = x.options.editor ?? 'Compute:RichFunctionViewEditor';
+  override renderView(x: DG.Func) {
+    return this.renderPreview(x).root;
+  }
+
+  override renderPreview(x: DG.Func): DG.View {
+    const v = super.renderPreview(x);
+    v.name = (x.friendlyName ?? x.name) + ' description';
     return DG.View.fromViewAsync(async () => {
-      const editor = await grok.functions.find(editorName);
-      if (editor !== null && editor instanceof DG.Func) {
-        const viewCall = editor.prepare({'call': x.prepare()});
-        await viewCall.call(false, undefined, {processed: true});
-        const view = viewCall.getOutputParamValue();
-        if (view instanceof DG.View)
-          return view;
-      }
-      return super.renderPreview(x);
+      const help = await getContextHelp(x);
+      const userGroups = await this.awaitUserGroups();
+      const missingMandatoryGroups = ModelHandler.getMissingGroups(x, userGroups);
+      const startBtnDiv = missingMandatoryGroups.length ?
+        ui.div([this.makeMandatoryGroupsInfo(missingMandatoryGroups)], {style: {
+          border: '2px solid var(--red-3)',
+          padding: '10px',
+          maxWidth: '400px',
+        }}) :
+        ui.div([ui.bigButton('Launch', () => x.prepare().edit())]);
+      v.append(
+        ui.div(
+          [
+            ui.h1(x.friendlyName ?? x.name),
+            ui.divText(x.description ?? x.name, {style: {marginBottom: '10px'}}),
+            startBtnDiv,
+            ui.div([], {style: {padding: '20px '}}),
+            ui.markdown(help ?? ''),
+          ],
+          {
+            style: {
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%',
+              overflow: 'auto',
+            },
+          }),
+      );
+      return v;
     });
   }
 
@@ -239,15 +282,47 @@ export class ModelHandler extends DG.ObjectHandler {
   }
 
   override init(): void {
+    this.registerParamFunc('Choose version', (func: DG.Func) => {
+      ModelHandler.openVersionSelectDialog(DG.toJs(func));
+    });
+
     this.registerParamFunc('Help', (func: DG.Func) => {
       ModelHandler.openHelp(DG.toJs(func));
     });
 
+    const funcs = new DG.Functions();
+    const isFavoritesApplicable = (func: DG.Func) => func instanceof DG.Entity;
+    const isFavorite = (func: DG.Func) => grok.shell.favorites.some((f) => f.id == func.id);
+    //@ts-ignore
+    funcs.registerParamFunc('Add to Favorites', (this.type as DG.Type), async (func: DG.Func) => await DG.Favorites.add(DG.toJs(func)), (func: DG.Func) => {
+      const properFunc = DG.toJs(func);
+      return this.isApplicable(properFunc) && isFavoritesApplicable(properFunc) && !isFavorite(properFunc);
+    });
+    //@ts-ignore
+    funcs.registerParamFunc('Remove from Favorites', (this.type as DG.Type), async (func: DG.Func) => await DG.Favorites.remove(DG.toJs(func)), (func: DG.Func) => {
+      const properFunc = DG.toJs(func);
+      return this.isApplicable(properFunc) && isFavoritesApplicable(properFunc) && isFavorite(properFunc);
+    });
+
     setTimeout(async () => {
-      // Workaround till JS API is not ready: https://reddata.atlassian.net/browse/GROK-14159
-      const userGroups = (await(await fetch(`${window.location.origin}/api/groups/all_parents`)).json() as DG.Group[]);
+      const userGroups = await ModelHandler.getUserGroups();
       this.userGroups.next(userGroups);
     });
+  }
+
+  private makeMandatoryGroupsInfo(missingMandatoryGroups: {name: string, help?: string}[]) {
+    const mandatoryGroupsInfo = ui.div(ui.divV([
+      ui.label('You should be a member of the following group(s):', {style: {marginLeft: '0px'}}),
+      ...missingMandatoryGroups.map((group) => ui.divV([
+        ui.span([getBulletIcon(), group.name], {style: {fontWeight: '600'}}),
+        ...group.help ? [ui.span([group.help], {style: {marginLeft: '16px'}})]: [],
+        ui.link(`Request group membership`, async () => {
+          await requestMembership(group.name);
+          hidePopover(mandatoryGroupsInfo);
+        }, undefined, {style: {marginLeft: '16px'}}),
+      ])),
+    ], {style: {gap: '10px'}})) as HTMLElement;
+    return mandatoryGroupsInfo;
   }
 
   private async awaitUserGroups() {

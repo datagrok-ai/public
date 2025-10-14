@@ -5,7 +5,7 @@
     "email": "ppolovyi@datagrok.ai"
   },
   "friendlyName": "Usage Analysis",
-  "version": "2.2.0",
+  "version": "2.4.2",
   "description": "Platform usage analysis system",
   "repository": {
     "type": "git",
@@ -13,21 +13,21 @@
     "directory": "packages/UsageAnalysis"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.3.0",
+    "@datagrok-libraries/utils": "^4.6.5",
     "acorn": "^8.5.0",
     "cash-dom": "^8.1.0",
     "choices.js": "^10.1.0",
     "color-hash": "^2.0.2",
-    "datagrok-api": "^1.22.0",
+    "datagrok-api": "^1.26.3",
+    "dayjs": "^1.11.13",
     "moment": "^2.29.1",
-    "rxjs": "^6.5.5",
-    "dayjs": "^1.11.13"
+    "rxjs": "^6.5.5"
   },
   "scripts": {
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
     "debug-usageanalysis": "webpack && grok publish",
-    "build": "webpack",
+    "build": "grok api && grok check --soft && webpack",
     "release-usageanalysis": "webpack && grok publish --release",
     "debug-usageanalysis-dev": "webpack && grok publish dev",
     "release-usageanalysis-dev": "webpack && grok publish dev --release",
@@ -46,6 +46,7 @@
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
     "css-loader": "^6.4.0",
+    "datagrok-tools": "^4.14.55",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^3.3.0",
@@ -55,7 +56,7 @@
     "webpack-cli": "^4.7.2"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"
@@ -64,5 +65,13 @@
   "meta": {
     "url": "/usage",
     "dartium": false
-  }
+  },
+  "properties": [
+    {
+      "name": "Platform version",
+      "propertyType": "string",
+      "defaultValue": "1.24.0",
+      "nullable": false
+    }
+  ]
 }

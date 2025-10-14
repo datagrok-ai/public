@@ -62,13 +62,13 @@ function setButtonsToggleState() {
 
 export function windowsManagerPanel() {
   const root = ui.div([
-    ui.tooltip.bind(topmenuToggle, ()=>{ return ui.div(['Tabs ', ui.span([''], {style:{color:'var(--grey-4)'}})])}),
-    ui.tooltip.bind(toolboxToogle, ()=>{ return ui.div(['Toolbox ', ui.span([''], {style:{color:'var(--grey-4)'}})])}),
-    ui.tooltip.bind(propertiesToggle, ()=>{ return ui.div(['Context Panel ', ui.span(['F4'], {style:{color:'var(--grey-4)'}})])}),
-    ui.tooltip.bind(helpToggle, ()=>{ return ui.div(['Context Help ', ui.span(['F1'], {style:{color:'var(--grey-4)'}})])}),
-    ui.tooltip.bind(vairablesToggle, ()=>{ return ui.div(['Variables ', ui.span(['ALT+V'], {style:{color:'var(--grey-4)'}})])}),
-    ui.tooltip.bind(consoleToggle, ()=>{ return ui.div(['Console ', ui.span([''], {style:{color:'var(--grey-4)'}})])}),
-    ui.tooltip.bind(presentationToggle, ()=>{ return ui.div(['Presentation mode ', ui.span(['F7'], {style:{color:'var(--grey-4)'}})])}),
+    ui.tooltip.bind(topmenuToggle, () => ui.div(['Tabs ', ui.span([''], {style: {color: 'var(--grey-4)'}})]), 'top'),
+    ui.tooltip.bind(toolboxToogle, () => ui.div(['Toolbox ', ui.span([''], {style: {color: 'var(--grey-4)'}})]), 'top'),
+    ui.tooltip.bind(propertiesToggle, () => ui.div(['Context Panel ', ui.span(['F4'], {style: {color: 'var(--grey-4)'}})]), 'top'),
+    ui.tooltip.bind(helpToggle, () => ui.div(['Context Help ', ui.span(['F1'], {style: {color: 'var(--grey-4)'}})]), 'top'),
+    ui.tooltip.bind(vairablesToggle, () => ui.div(['Variables ', ui.span(['ALT+V'], {style: {color: 'var(--grey-4)'}})]), 'top'),
+    ui.tooltip.bind(consoleToggle, () => ui.div(['Console ', ui.span([''], {style: {color: 'var(--grey-4)'}})]), 'top'),
+    ui.tooltip.bind(presentationToggle, () => ui.div(['Presentation mode ', ui.span(['F7'], {style: {color: 'var(--grey-4)'}})]), 'top'),
   ]);
 
   root.className = 'windows-manager-statusbar';

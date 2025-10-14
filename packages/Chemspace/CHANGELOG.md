@@ -1,5 +1,48 @@
 # Chemspace changelog
 
+## 1.2.3 (2025-05-06)
+
+Fixed token request
+
+## 1.2.2 (2025-04-22)
+
+Removed swagger file
+
+## 1.2.1 (2025-03-29)
+
+Moved application under Chem section in browse tree
+
+## 1.2.0 (2025-03-29)
+
+Datagrok api >= 1.25.0
+
+## 1.1.6 (2025-02-25)
+
+Updated README
+
+## 1.1.5 (2025-02-17)
+
+### Features
+
+* Updated tests
+
+## 1.1.4 (2024-11-18)
+
+### Features
+
+* Added function to add Chemspace ids via 'Add new column' dialog
+* Highligh chemspace_id semantic type
+
+### Bug Fixes
+
+* Improved errors reporting
+
+## 1.1.3 (2024-11-18)
+
+### Bug Fixes
+
+* GROK-17022: Chemspace: opening Similar in context panel causes errors
+
 ## 1.1.2 (2024-10-16)
 
 * Fixed cache invalidating

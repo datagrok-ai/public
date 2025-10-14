@@ -1,5 +1,4 @@
 // https://datagrok.ai/help/visualize/viewers/globe
 
-grok.data.getDemoTable('geo/earthquakes.csv').then((t) => {
-  grok.shell.addTableView(t).addViewer('Globe');
-});
+let t = await grok.data.getDemoTable('geo/earthquakes.csv');
+grok.shell.addTableView(t).addViewer('Globe');

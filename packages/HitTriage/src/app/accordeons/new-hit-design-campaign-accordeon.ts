@@ -10,6 +10,7 @@ import {getNewVid} from '../utils/calculate-single-cell';
 type NewHitDesignCampaignRes = {
     df: DG.DataFrame,
     campaignProps: {[key: string]: any}
+    name: string,
 }
 
 type HitDesignCampaignAccordeon = {
@@ -50,12 +51,15 @@ export function newHitDesignCampaignAccordeon(template: HitDesignTemplate, pepti
         {name: field.name, type: CampaignFieldTypes[field.type as keyof typeof CampaignFieldTypes],
           nullable: !field.required, ...(field.semtype ? {semType: field.semtype} : {})}));
   const campaignPropsObject: {[key: string]: any} = {};
+  const campaignNameInput = ui.input.string('Campaing Name', {tooltipText: 'New campaign name. If empty, campaign code will be used.'});
   const campaignPropsForm = ui.input.form(campaignPropsObject, campaignProps);
+  campaignPropsForm.prepend(campaignNameInput.root);
   campaignPropsForm.classList.remove('ui-form');
   const form = ui.div([
     ...(template.campaignFields?.length > 0 ? []: []),
     campaignPropsForm,
   ]);
+
   const buttonsDiv = ui.buttonsInput([]); // div for create and cancel buttons
   form.appendChild(buttonsDiv);
   const okPromise = new Promise<NewHitDesignCampaignRes>((resolve) => {
@@ -69,7 +73,7 @@ export function newHitDesignCampaignAccordeon(template: HitDesignTemplate, pepti
             }
           }
         }
-        resolve({df, campaignProps: campaignPropsObject});
+        resolve({df, campaignProps: campaignPropsObject, name: campaignNameInput.value});
       });
     buttonsDiv.appendChild(startCampaignButton);
   });

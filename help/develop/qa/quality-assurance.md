@@ -81,9 +81,9 @@ executed automatically on a server using a headless browser mode.
 platform.  Each test is associated with a separate story, which describes the
 intended objective, actions, and expected outcome of the user. To emulate user
 input, we use Selenium. It also checks the expected result.
-* [**Package tests**](../../develop/how-to/add-package-tests.md). These tests include
-[unit tests](../../develop/how-to/add-package-tests.md#adding-unit-tests) and
-[function tests](../../develop/how-to/add-package-tests.md#testing-functions). We provide
+* [**Package tests**](../how-to/tests/add-package-tests.md). These tests include
+[unit tests](../how-to/tests/add-package-tests.md#adding-unit-tests) and
+[function tests](../how-to/tests/add-package-tests.md#testing-functions). We provide
 function tests for packages, scripts, and APIs, as they all utilize the
 concept of
 [functions](../../datagrok/concepts/functions/functions.md).
@@ -96,7 +96,7 @@ spawning many virtual machines that have Selenium installed on them and
 executing selected UI tests on them. This helps us identify steps responsible
 for the performance degradation.  For more details on different environments,
 tests, and interpretation of results, see
-[stress testing results](../../datagrok/solutions/enterprise/stress-testing-results.md).
+[stress testing results](../../datagrok/solutions/teams/it/stress-testing-results.md).
 
 ## Manual testing
 
@@ -136,7 +136,7 @@ features, and upcoming changes. You can also track our latest updates in [Releas
 
 ### GrokTester
 
-Is an integrated monitoring system that runs automated package tests every hour. It's also possible to run [package testing locally](../../develop/how-to/test-packages#local-testing) before publishing.
+Is an integrated monitoring system that runs automated package tests every hour. It's also possible to run [package testing locally](../how-to/tests/test-packages.md#local-testing) before publishing.
 
 ### Test tracking system
 
@@ -146,7 +146,7 @@ promptly access, execute, and report the completion status of stories.
 Additionally, it lets us quickly navigate to the corresponding JIRA issues as we
 have integrated JIRA with Datagrok's OpenAPI capabilities.
 
-![Test Tracking System](../../datagrok/solutions/enterprise/test-tracking-system.png)
+![Test Tracking System](../../datagrok/solutions/teams/it/test-tracking-system.png)
 
 ### Test Manager
 
@@ -154,7 +154,7 @@ Test Manager is a tool within the Datagrok platform that provides a convenient i
 selecting and running package unit tests with additional capabilities for
 exploring the test results. **Test manager** is a component of the
 [**DevTools** package](https://github.com/datagrok-ai/public/tree/master/packages/DevTools).
-See [Test Manager](../../develop/how-to/test-packages.md#test-manager) to learn more.
+See [Test Manager](../how-to/tests/test-packages.md#test-manager) to learn more.
 
 ### Usage Analysis
 

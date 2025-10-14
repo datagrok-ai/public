@@ -2,6 +2,6 @@
 //
 // https://datagrok.ai/help/transform/missing-values-imputation
 
-grok.data.loadTable('https://public.datagrok.ai/demo/demog.csv')
-  .then(t => grok.ml.missingValuesImputation(t, ['age', 'height', 'weight'], ['age', 'height', 'weight'], 5)
-    .then(t => grok.shell.addTableView(t)));
+let t1 = await grok.data.loadTable('https://public.datagrok.ai/demo/demog.csv');
+let t2 = await grok.ml.missingValuesImputation(t1, ['age', 'height', 'weight'], ['age', 'height', 'weight'], 5);
+grok.shell.addTableView(t2);

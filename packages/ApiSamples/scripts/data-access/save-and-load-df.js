@@ -2,9 +2,10 @@
 
 let df = DG.DataFrame.fromColumns([DG.Column.fromStrings('myColumn', ['first row', 'second row', 'third row'])]);
 df.name = 'my data frame';
-grok.dapi.tables.uploadDataFrame(df).then((id) => {
-    grok.shell.info('Data frame id: ' + id);
-    grok.dapi.tables.getTable(id).then((loadedDf) => grok.shell.addTableView(loadedDf));
+let id = await grok.dapi.tables.uploadDataFrame(df);
 
-    grok.dapi.tables.find(id).then((meta) => grok.shell.info('Data frame name: ' + meta.name));
-});
+grok.shell.info('Data frame id: ' + id);
+let loadedDf = await grok.dapi.tables.getTable(id);
+grok.shell.addTableView(loadedDf);
+let meta = await grok.dapi.tables.find(id);
+grok.shell.info('Data frame name: ' + meta.name);

@@ -275,7 +275,7 @@ export async function runKNNImputer(df?: DG.DataFrame): Promise<void> {
         grok.shell.error(`${ERROR_MSG.KNN_FAILS}: ${ERROR_MSG.CORE_ISSUE}`);
       reject(err);
     }
-  });
+  }, undefined, HINT.RUN);
 
   dlg.add(targetColInput)
     .add(featuresInput)

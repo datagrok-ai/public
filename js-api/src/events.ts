@@ -5,13 +5,14 @@ import {filter} from 'rxjs/operators';
 import {toJs} from './wrappers';
 import {FileInfo, Package} from './entities';
 import {Accordion, Dialog, InputBase, TreeViewNode} from "./widgets";
-import {View, ViewInfo, ViewLayout} from './views/view';
+import {View} from './views/view';
+import {ViewInfo} from './entities';
 import {Viewer} from "./viewer";
 import {Column, DataFrame} from "./dataframe";
 import {GridCell} from "./grid";
 import {IDartApi} from "./api/grok_api.g";
 
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 
 export function debounce<T>(observable: rxjs.Observable<T>, milliseconds: number = 100): rxjs.Observable<T> {
@@ -100,7 +101,9 @@ export class Events {
 
   get onCurrentViewChanged(): rxjs.Observable<any> { return __obs('d4-current-view-changed'); }
 
-  get onCurrentObjectChanged(): rxjs.Observable<any> { return __obs('d4-current-object-changed'); }
+  get onCurrentViewChanging(): rxjs.Observable<EventData<ViewArgs>> { return __obs('d4-current-view-changing'); }
+
+  get onCurrentObjectChanged(): rxjs.Observable<EventData<EventArgs>> { return __obs('d4-current-object-changed'); }
 
   get onCurrentCellChanged(): rxjs.Observable<any> { return __obs('d4-current-cell-changed'); }
 
@@ -118,6 +121,8 @@ export class Events {
   get onQueryFinished(): rxjs.Observable<any> { return __obs('d4-query-finished'); }
 
   get onViewChanged(): rxjs.Observable<any> { return __obs('grok-view-changed'); }
+
+  get onViewChanging(): rxjs.Observable<any> { return __obs('grok-view-changing'); }
 
   get onViewAdded(): rxjs.Observable<View> { return __obs('grok-view-added'); }
 
@@ -175,7 +180,7 @@ export class Events {
 
   get onPackageLoaded(): rxjs.Observable<Package> { return __obs('d4-package-loaded'); }
 
-  get onFileImportRequest(): rxjs.Observable<FileImportArgs> { return __obs('d4-file-import-request'); }
+  get onFileImportRequest(): rxjs.Observable<EventData<FileImportArgs>> { return __obs('d4-file-import-request'); }
 
   get onGridCellLinkClicked(): rxjs.Observable<EventData<GridCellArgs>> {return __obs('d4-grid-cell-link-clicked-global'); }
 
@@ -348,4 +353,10 @@ export interface DataFrameArgs {
 
 export interface InputArgs {
   input: InputBase;
+}
+
+export interface EventArgs {
+  value: any;
+  trigger: HTMLElement;
+  event: UIEvent;
 }

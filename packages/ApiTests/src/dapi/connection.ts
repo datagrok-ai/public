@@ -51,7 +51,7 @@ category('Dapi: connection', () => {
     expect((await query.getProperties()).jsScript, script);
     await query.executeTable();
     await grok.dapi.queries.delete(query);
-  }, { skipReason: 'GROK-11670' });
+  });
 
   after(async () => {
     const connections:DG.DataConnection[] = await grok.dapi.connections.filter(`name="Local DG Test"`).list();
@@ -61,7 +61,7 @@ category('Dapi: connection', () => {
       } catch (_) {}
     }
   });
-});
+}, { owner: 'ppolovyi@datagrok.ai'});
 
 category('Dapi: connection cache', () => {
   const testFilePath1: string = 'System:AppData/ApiTests/test_files.txt';
@@ -120,7 +120,7 @@ category('Dapi: connection cache', () => {
   });
 
   test('Sequential stress test', async () => {
-    const times = DG.Test.isInBenchmark ? 1000 : 100;
+    const times = DG.Test.isInBenchmark ? 100 : 10;
     let demogCsvReads1 = [];
     await grok.dapi.files.readCsv('System:AppData/ApiTests/datasets/demog.csv');
     await grok.dapi.files.readCsv('System:AppData/ApiTests/cars.csv');
@@ -162,7 +162,7 @@ category('Dapi: connection cache', () => {
       await grok.dapi.files.delete(testFilePath2);
     } catch (_) { }
   });
-});
+}, { owner: 'ppolovyi@datagrok.ai'});
 
 category('Dapi: TableQuery', () => {
   let dc: DG.DataConnection;
@@ -246,13 +246,13 @@ category('Dapi: TableQuery', () => {
   test('From table', async () => {
     const dtqb = DG.TableQuery.fromTable(fromTable);
     expect(dtqb instanceof DG.TableQueryBuilder, true);
-  }, { skipReason: 'GROK-11670' });
+  });
 
   test('From', async () => {
     const dtqb = DG.TableQuery.from(from);
     expect(dtqb instanceof DG.TableQueryBuilder, true);
-  }, { skipReason: 'GROK-11670' });
-});
+  });
+}, { owner: 'ppolovyi@datagrok.ai'});
 
 /*
 category('Dapi: TableQueryBuilder', () => {

@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {before, after, category, expect, test, expectArray, testEvent, delay} from '@datagrok-libraries/utils/src/test';
 import {Chain} from '../polytool/conversion/pt-chain';
 import {getInnerIdx, getOuterIdx} from '../polytool/conversion/pt-misc';
-import {getRules} from '../polytool/pt-rules';
+import {getRules} from '../polytool/conversion/pt-rules';
 import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
 category('PolyTool: Chain: parseNotation', () => {
@@ -49,7 +49,7 @@ category('PolyTool: Chain: parseNotation', () => {
   for (const [testName, testData] of Object.entries(tests)) {
     test(`${testName}`, async () => {
       const rules = await getRules(['rules_example.json']);
-      const resChain = await Chain.parseNotation(testData.src.seq, helmHelper);
+      const resChain = await Chain.fromSeparator(testData.src.seq, helmHelper);
       //expectArray(resChain.monomers.map((mL) => mL.length), testData.tgt.monomerCount);
       //expect(resChain.linkages.length, testData.tgt.linkageCount);
       // expect(resChain.getNotationHelm(), testData.tgt.helm);
@@ -60,7 +60,7 @@ category('PolyTool: Chain: parseNotation', () => {
       hwe.editor.setMol(resMol!);
       const resMolHelm = hwe.editor.getHelm();
 
-      const resHelm = resChain.getNotationHelm();
+      const resHelm = resChain.getHelm();
 
       expect(resMolHelm, testData.tgt.helm);
       expect(resHelm, testData.tgt.helm);
