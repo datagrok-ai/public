@@ -33,6 +33,8 @@ public class DataSource
 
     public List<Property> queryTemplate;
 
+    public List<Property> jdbcPropertiesTemplate;
+
     public List<AggrFunctionInfo> aggregations = new ArrayList<AggrFunctionInfo>() {{
         add(new AggrFunctionInfo(Stats.AVG, "avg(#)", Types.dataFrameNumericTypes));
         add(new AggrFunctionInfo(Stats.MIN, "min(#)", Types.dataFrameNumericTypes));

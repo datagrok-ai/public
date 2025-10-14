@@ -43,6 +43,7 @@ import {
 import {
   MonomerPosition,
 } from '../viewers/sar-viewer';
+import {PeptideUtils} from '../peptideUtils';
 
 category('Model: Settings', () => {
   let df: DG.DataFrame;
@@ -62,7 +63,10 @@ category('Model: Settings', () => {
   };
 
   before(async () => {
+    await PeptideUtils.loadComponents();
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
+    df.name = 'HELM_small';
+    //df.id ??= `HELM_small-${Date.now()}`;
     activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
     sequenceCol = df.getCol(TEST_COLUMN_NAMES.SEQUENCE);
     sequenceCol.semType = DG.SEMTYPE.MACROMOLECULE;

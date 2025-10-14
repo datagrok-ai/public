@@ -1,4 +1,28 @@
-# LibTests changelog
+# Lib Tests changelog
+
+## 1.7.8 (2025-07-28)
+
+- Release for 1.26.0
+
+## 1.7.0 (2025-03-30)
+
+- Release for 1.25.0
+
+## 1.5.0 (2025-02-19)
+
+- Release for 1.24.0
+
+## 1.4.3 (2025-01-29)
+
+- Deps update
+
+## 1.4.2 (2025-01-07)
+
+- Updated tests for synchronouy RFV
+
+## 1.4.1 (2024-12-25)
+
+- Release for 1.23.0
 
 ## 1.3.0 (2024-09-05)
 

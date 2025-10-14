@@ -1,5 +1,82 @@
 # EDA changelog
 
+## 1.4.7 (2025-10-01)
+
+Updated utils and js-api
+
+## 1.4.6 (2025-09-23)
+
+Improved ANOVA:
+
+* Updated the F-test description
+* Implemented the tab control for the results
+
+## 1.4.5 (2025-09-19)
+
+Dependencies update
+
+## 1.4.4 (2025-09-17)
+
+Improved the PCA dialog
+
+## 1.4.3 (2025-03-28)
+
+Updated grok tools
+
+## 1.4.2 (2025-03-28)
+
+Updated Multivariate Analysis:
+
+* Implemented the Quadratic PLS regression
+* Improved MVA and PLS UI/UX
+
+## 1.3.5 (2025-03-07)
+
+Vector distance functions support for dimensionality reduction on webGPU and without
+
+## 1.3.4 (2025-02-28)
+
+MCL: Updated ML library to support large MCL matrices
+
+## 1.3.3 (2025-02-20)
+
+* Updated the MVA demo
+
+## 1.3.2 (2025-02-03)
+
+* Add History support in MCL Dialog
+
+## 1.3.1 (2025-01-06)
+
+* Rework MCL Viewer
+
+## 1.2.6 (2024-11-05)
+
+Fixed:
+
+* Samples naming in Multivariate Analysis
+
+## 1.2.5 (2024-11-05)
+
+Fixed:
+
+* Labels in Multivariate Analysis
+
+## 1.2.4 (2024-10-31)
+
+Fixed:
+
+* Labels and help links in the PLS tools
+* Fixed k-NN imputer description
+* PCA computations
+
+## 1.2.3 (2024-10-25)
+
+Fixed:
+
+* k-NN imputer input form
+* console output
+
 ## 1.2.2 (2024-09-12)
 
 Updated ANOVA:
@@ -14,10 +91,6 @@ Updated ANOVA:
 ## 1.2.0 (2024-09-10)
 
 * 1.21.1 release
-
-## 1.1.36-rc (2024-09-06)
-
-* Preparing 1.21.1 release
 
 ## 1.1.35 (2024-08-28)
 

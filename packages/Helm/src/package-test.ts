@@ -14,12 +14,14 @@ import './tests/helm-service-tests';
 import './tests/renderers-tests';
 import './tests/get-molfiles-tests';
 import './tests/properties-widget-tests';
-import './tests/get-all-parts-tests';
 import './tests/get-monomer-tests';
 import './tests/parse-helm-tests';
 import './tests/helm-web-editor-tests';
 import './tests/helm-input-tests';
 import './tests/helm-helper-tests';
+import './tests/helm-substructure-filter';
+import './tests/helm-activity-cliffs';
+import './tests/to-atomic-level-ui-non-linear';
 
 export const _package = new DG.Package();
 export {tests};

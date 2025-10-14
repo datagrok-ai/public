@@ -126,3 +126,9 @@ input::placeholder {
 .grok-notebook-view select {
     box-sizing: border-box;
 }
+
+.jp-NotebookPanel-notebook {
+    height: 100% !important;
+    width: 100% !important;
+}
+  

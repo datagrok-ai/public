@@ -13,6 +13,12 @@ export enum ERROR_MSG {
   NO_COLS = 'No numeric columns without missing values',
   ONE_COL = 'No columns to be used as features (just one numeric columns without missing values)',
   EMPTY_DF = 'Dataframe is empty',
+  PREDICT = 'Predictors must not contain a response variable',
+  ENOUGH = 'Not enough of features',
+  COMP_LIN_PLS = 'Components count must be less than the number of features',
+  COMP_QUA_PLS = 'Too large components count for the quadratic PLS regression',
+  COMPONENTS = 'Components count must be greater than 1',
+  INV_INP = 'Invalid inputs',
 }
 
 /** Widget titles */
@@ -36,6 +42,8 @@ export enum TITLE {
   EXPLORE = 'Explore',
   FEATURES = 'Feature names',
   BROWSE = 'Browse',
+  ANALYSIS = 'Features Analysis',
+  QUADRATIC = 'Quadratic',
 }
 
 /** Tooltips */
@@ -46,17 +54,18 @@ export enum HINT {
   PLS = 'Compute PLS components',
   MVA = 'Perform multivariate analysis',
   NAMES = 'Names of data samples',
+  QUADRATIC = 'Specifies whether to include squared terms as additional predictors in the PLS model',
 }
 
 /** Links to help */
 export enum LINK {
-  PLS = 'https://datagrok.ai/help/explore/multivariate-analysis/pls#pls-components',
-  MVA = 'https://datagrok.ai/help/explore/multivariate-analysis/pls',
-  MODEL = 'https://datagrok.ai/help/explore/multivariate-analysis/plots/predicted-vs-reference',
-  COEFFS = 'https://datagrok.ai/help/explore/multivariate-analysis/plots/regression-coefficients',
-  LOADINGS = 'https://datagrok.ai/help/explore/multivariate-analysis/plots/loadings',
-  EXPL_VARS = 'https://datagrok.ai/help/explore/multivariate-analysis/plots/explained-variance',
-  SCORES = 'https://datagrok.ai/help/explore/multivariate-analysis/plots/scores',
+  PLS = '/help/explore/multivariate-analysis#pls-components',
+  MVA = '/help/explore/multivariate-analysis',
+  MODEL = '/help/explore/multivariate-analysis#observed-vs-predicted',
+  COEFFS = '/help/explore/multivariate-analysis#regression-coefficients',
+  LOADINGS = '/help/explore/multivariate-analysis#loadings',
+  EXPL_VARS = '/help/explore/multivariate-analysis#explained-variance',
+  SCORES = '/help/explore/multivariate-analysis#scores',
 }
 
 /** Components consts */
@@ -95,6 +104,9 @@ export const DELAY = 2000;
 export enum COLOR {
   AXIS = '#838383',
   CIRCLE = '#0000FF',
+  INVALID = '#EB6767',
+  VALID_TEXT = '#4d5261',
+  VALID_LINE = '#dbdcdf',
 };
 
 /** Intro markdown for demo app */
@@ -130,7 +142,7 @@ export const DEMO_RESULTS = [
   },
   {
     caption: TITLE.REGR_COEFS,
-    text: 'Parameters of the obtained linear model: features make different contribution to the prediction.',
+    text: 'Parameters of the obtained model: features make different contribution to the prediction.',
   },
   {
     caption: TITLE.EXPL_VAR,

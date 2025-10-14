@@ -2,12 +2,13 @@ import {toDart, toJs} from "./wrappers";
 import {__obs, _sub, EventData, InputArgs, observeStream, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
 import {fromEvent, Observable, Subject, Subscription} from "rxjs";
-import {Func, Property, PropertyOptions} from "./entities";
+import {Func, Property, IProperty, Entity, Group, ProgressIndicator} from "./entities";
 import {Cell, Column, DataFrame} from "./dataframe";
 import {LegendPosition, Type} from "./const";
 import {filter, map} from 'rxjs/operators';
-import $ from "cash-dom";
-import {MapProxy, Completer} from "./utils";
+//import $ from "cash-dom";
+import {Completer, Utils} from './utils';
+import {MapProxy} from "./proxies";
 import dayjs from "dayjs";
 import typeahead from 'typeahead-standalone';
 import {Dictionary, typeaheadConfig} from 'typeahead-standalone/dist/types';
@@ -21,11 +22,12 @@ import '../css/tags-input.css';
 import {FuncCall} from "./functions";
 import {IDartApi} from "./api/grok_api.g";
 import {HttpDataSource} from "./dapi";
+import {ColumnGrid} from "./grid";
 
 declare let grok: any;
 declare let DG: any;
 declare let ui: any;
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 
 export class TypedEventArgs<TData> {
@@ -66,6 +68,9 @@ export type ICodeEditorOptions = {
   root?: HTMLDivElement;
 }
 export type TypeAheadConfig = Omit<typeaheadConfig<Dictionary>, 'input' | 'className'>;
+export type MarkdownConfig = {
+  value?: string;
+};
 export type CodeConfig = {
   script?: string;
   mode?: string;
@@ -309,7 +314,7 @@ export class Widget<TSettings = any> {
    * @returns {*}
    * @private
    */
-  addProperty(propertyName: string, propertyType: Type, defaultValue: any = null, options: { [key: string]: any } & PropertyOptions | null = null): any {
+  addProperty(propertyName: string, propertyType: Type, defaultValue: any = null, options: { [key: string]: any } & IProperty | null = null): any {
     const fieldName = options?.fieldName ?? propertyName;
 
     let obj = this;
@@ -346,6 +351,17 @@ export class Widget<TSettings = any> {
   // }
 }
 
+/**
+ * Base class for widgets or views that serve as editors for `FuncCall`. Extend it and use it in editor functions.
+ * Editor functions should return an implementation of this class for the platform to handle validation correctly.
+ * An editor function can be attached to another function using the `editor` tag: `editor: Plugin:EditorFuncName`.
+ */
+export abstract class FuncCallEditor extends Widget {
+  abstract get isValid(): boolean;
+  abstract get onInputChanged(): Observable<any>;
+
+  inputFor?(propertyName: string): InputBase;
+}
 
 /** Base class for DataFrame-bound filtering controls.
  * Supports collaborative filtering by efficiently working together with
@@ -378,7 +394,7 @@ export abstract class Filter extends Widget {
     this.indicator = ui.div([], 'd4-filter-indicator');
     this.controls = ui.div([], 'd4-flex-row');
 
-    $(this.indicator).hide();
+    this.indicator.style.display = 'none';
   }
 
   // static create(type: FILTER_TYPE | null, column: Column): Filter {
@@ -692,7 +708,7 @@ export class ToolboxPage {
  *   .onOK(() => { grok.shell.info('OK!'); })
  *   .show();
  * */
-export class Dialog extends DartWidget {
+  export class Dialog<Inputs extends Record<string, InputBase<any> > = {} > extends DartWidget {
 
   constructor(dart: any) {
     super(dart);
@@ -728,9 +744,10 @@ export class Dialog extends DartWidget {
   /**
    * Sets the OK button handler, and shows the OK button
    * @param {Function} handler
+   * @param {Object} options
    * @returns {Dialog} */
-  onOK(handler: Function): Dialog {
-    api.grok_Dialog_OnOK(this.dart, handler);
+  onOK(handler: Function, options?: {closeOnEnter?: boolean}): Dialog<Inputs> {
+    api.grok_Dialog_OnOK(this.dart, handler, options?.closeOnEnter ?? true);
     return this;
   }
 
@@ -754,7 +771,7 @@ export class Dialog extends DartWidget {
    * Sets the CANCEL button handler
    * @param {Function} handler
    * @returns {Dialog} */
-  onCancel(handler: Function): Dialog {
+  onCancel(handler: Function): Dialog<Inputs> {
     api.grok_Dialog_OnCancel(this.dart, handler);
     return this;
   }
@@ -771,24 +788,41 @@ export class Dialog extends DartWidget {
   /** @returns {Dialog}
    * @param {{modal: boolean, fullScreen: boolean, center: boolean, centerAt: Element, x: number, y: number, width: number, height: number}|{}} options
    * */
-  show(options?: { modal?: boolean; resizable?: boolean; fullScreen?: boolean; center?: boolean; centerAt?: Element; x?: number; y?: number; width?: number; height?: number; backgroundColor?: string; showNextTo?: HTMLElement}): Dialog {
+  show(options?: { modal?: boolean; resizable?: boolean; fullScreen?: boolean; center?: boolean; centerAt?: Element; x?: number; y?: number; width?: number; height?: number; backgroundColor?: string; showNextTo?: HTMLElement}): Dialog<Inputs> {
     api.grok_Dialog_Show(this.dart, options?.modal, options?.resizable, options?.fullScreen, options?.center, options?.centerAt, options?.x, options?.y, options?.width, options?.height, options?.backgroundColor, options?.showNextTo);
     return this;
   }
 
   /** @returns {Dialog}
    * @param {boolean} fullScreen  */
-  showModal(fullScreen: boolean): Dialog {
+  showModal(fullScreen: boolean): Dialog<Inputs> {
     api.grok_Dialog_Show(this.dart, true, null, fullScreen, false, null, null, null, null, null, null, null);
     return this;
   }
 
-  /** Adds content to the dialog.
+  /** Adds content to the dialog. using addInput() for inputs is preferred, as it provides better type safety.
    * @param {HTMLElement | Widget | InputBase} content
    * @returns {Dialog} */
-  add(content: HTMLElement | Widget | InputBase): Dialog {
+  add(content: HTMLElement | Widget | InputBase): Dialog<Inputs> {
     api.grok_Dialog_Add(this.dart, toDart(content));
     return this;
+  }
+
+  /** Adds named input, which than can be used in combo with namedInputs, to get inputs in type-safe way*/
+  addInput<K extends string, V extends InputBase<any>>(caption: K, input: V): Dialog<Record<K, V> & Inputs > {
+    input.caption = caption;
+    api.grok_Dialog_Add(this.dart, toDart(input));
+    return this as unknown as Dialog<Record<K, V> & Inputs>;
+  }
+
+  /** gets typed inputs with captions as keys.*/
+  get namedInputs() : Inputs {
+    return this.inputs.reduce((acc, input) => {
+      if (input.caption) {
+        acc[input.caption] = input;
+      }
+      return acc;
+    }, {} as Record<string, InputBase>) as Inputs;
   }
 
   /** Closes the dialog. */
@@ -811,7 +845,7 @@ export class Dialog extends DartWidget {
    * @param tooltip
    * @returns {Dialog}
    * */
-  addButton(text: string, action: Function, index: number = 0, tooltip: any = null): Dialog {
+  addButton(text: string, action: Function, index: number = 0, tooltip: any = null): Dialog<Inputs> {
     api.grok_Dialog_AddButton(this.dart, text, action, index, tooltip);
     return this;
   }
@@ -821,7 +855,7 @@ export class Dialog extends DartWidget {
    * @param {Function} action
    * @returns {Dialog}
    * */
-  addContextAction(text: string, action: Function): Dialog {
+  addContextAction(text: string, action: Function): Dialog<Inputs> {
     api.grok_Dialog_AddContextAction(this.dart, text, action);
     return this;
   }
@@ -835,7 +869,7 @@ export class Dialog extends DartWidget {
   }
 
   /** Initializes default history. */
-  initDefaultHistory(): Dialog {
+  initDefaultHistory(): Dialog<Inputs> {
     api.grok_Dialog_InitDefaultHistory(this.dart);
     return this;
   }
@@ -848,6 +882,11 @@ export class Dialog extends DartWidget {
   /** Returns currently open dialogs. */
   static getOpenDialogs(): Dialog[] {
     return api.grok_Dialog_GetOpenDialogs();
+  }
+
+  /** Initializes the dialog properties from local storage. */
+  initFromLocalStorage(): void {
+    api.grok_Dialog_InitFromLocalStorage(this.dart);
   }
 }
 
@@ -872,6 +911,126 @@ export interface IMenuItemsOptions<T = any> {
 
   /** Identifies a group of items where only one can be checked at a time. */
   radioGroup?: string;
+}
+
+/** See {@link Menu.colorPalette} */
+export interface IMenuColorPaletteOptions {
+
+  /** Returns value put into the selector as initial or to reset. */
+  getInitialValue?: () => number[];
+
+  /** Called when color is selected by click.
+   * @param {number[]} list - A sequence of selected color palette.
+  */
+  onSelect?: (list: number[]) => void;
+
+  /** Called when color is hovered or reset.
+   * @param {number[]} list - A sequence of selected color palette.
+  */
+  onPreview?: (list: number[]) => void;
+
+  /** Either the current item is a separate subgroup by defined `string` name or inside main menu. */
+  asGroup?: string | null;
+
+  /** Whether the current item is visible. */
+  visible?: boolean | null;
+
+  /** Either the palette is displayed as a gradient (if `false`) or as a separate colors sequence (if `true`). */
+  categorical?: boolean;
+
+  /** Whether hover effect preview is allowed. */
+  allowPreview?: boolean;
+
+  /** Delay when color value reset to default after leaving hovered item. */
+  resetColorMs?: number;
+
+  /** Whether to close the menu after color is selected. */
+  closeOnClick?: boolean;
+}
+
+/** See {@link Menu.fontEditor} */
+export interface IMenuFontEditorOptions {
+  /** Minimum font size. */
+  fontSizeMin: number;
+
+  /** Maximum font size. */
+  fontSizeMax: number;
+
+  /** Step of font size. */
+  fontSizeStep: number;
+
+  /** List of available font families. */
+  fontFamilies: Iterable<String>;
+
+  /** A name of the group in the menu. */
+  asGroup: string;
+
+  /** Called when font is changed */
+  onChange: (value: string) => void;
+}
+
+/** See {@link IMenuSingleColumnSelectorOptions} and {@link IMenuMultiColumnSelectorOptions} */
+export interface IMenuColumnSelectorOptions<T> {
+
+  /** Value put into the selector as initial or to reset. */
+  initialValue?: T;
+
+  /** Called when selector value is changed */
+  onChange?: (...args: any[]) => void;
+
+  /** Either the current item is a separate subgroup by defined `string` name or inside main menu. */
+  asGroup?: string | null,
+
+  /** Whether the current item is visible. */
+  visible?: boolean;
+
+  /** Whether the current item can be changed or its visibility can be toggled. */
+  editable?: boolean;
+
+  /** Filters set selector columns to be displayed. */
+  columnFilter?: (c: Column) => boolean;
+}
+
+/** See {@link Menu.singleColumnSelector} */
+export interface IMenuSingleColumnSelectorOptions extends IMenuColumnSelectorOptions<string> {
+
+  /** Called when selector value is changed.
+   * @param {ColumnGrid} g - selector column grid instance.
+   * @param {Column} c - A column to be selected.
+   * @param {boolean} currentRowChanged - Either the current row is changed by click or just selected on hover.
+  */
+  onChange?: (grid: ColumnGrid, column: Column, currentRowChanged: boolean) => void;
+
+  /** Whether selector contains empty value to indicate none selected. */
+  nullable?: boolean;
+
+  /** Whether the current item is closed after click. */
+  closeOnClick?: boolean;
+
+  /** Whether a hovered value is selected. */
+  changeOnHover?: boolean;
+}
+
+/** See {@link Menu.multiColumnSelector} */
+export interface IMenuMultiColumnSelectorOptions extends IMenuColumnSelectorOptions<string[]> {
+
+  /** Called when selector value is changed.
+   * @param {ColumnGrid} g - selector column grid instance.
+  */
+  onChange?: (grid: ColumnGrid) => void;
+}
+
+/** See {@link Menu.header} */
+export interface IMenuHeaderOptions {
+
+  /** Called when header is clicked. */
+  onClick?: (item: any) => void;
+
+  /** Whether hover effect is applied. */
+  hasHoverEffect?: boolean;
+
+  /** Tooltip to be shown on the menu item. */
+  getDescription?: () => string;
 }
 
 export interface IMenuItemOptions {
@@ -939,6 +1098,9 @@ export class Menu {
 
   get root(): HTMLElement { return api.grok_Menu_Get_Root(this.dart); }
 
+  get closeOnClick(): boolean { return api.grok_Menu_Get_CloseOnClick(this.dart); }
+  set closeOnClick(value: boolean) { api.grok_Menu_Set_CloseOnClick(this.dart, value); }
+
   /** Finds a child menu item with the specified text. */
   find(text: string): Menu {
     return toJs(api.grok_Menu_Find(this.dart, text));
@@ -966,7 +1128,7 @@ export class Menu {
   }
 
   /** Ends a group of menu items and returns to the higher menu level.
-   * @returns {Menu} */
+   * @returns {Menu} `this` menu itself. */
   endGroup(): Menu {
     return toJs(api.grok_Menu_EndGroup(this.dart));
   }
@@ -983,6 +1145,53 @@ export class Menu {
       options?.getTooltip, options?.onMouseEnter, options?.radioGroup));
   }
 
+  /** Adds color palettes colors to menu.
+   * @param colors - Array of arrays of color choices.
+   * @param options - Optional params and functions, see {@link IMenuColorPaletteOptions}.
+   * @returns {Menu} `this` menu itself. */
+  colorPalette(colors: number[][], options?: IMenuColorPaletteOptions): Menu {
+    return toJs(api.grok_Menu_ColorPalette(this.dart, colors, options?.getInitialValue, options?.onSelect,
+      options?.onPreview, options?.asGroup, options?.visible, options?.categorical ?? false, options?.resetColorMs ?? 200, options?.closeOnClick ?? true));
+  }
+
+  /** Adds font editor to menu.
+   * @param initial - Initial font to be set first or reset.
+   * @param options - Optional params and functions, see {@link IMenuFontEditorOptions}.
+   * @returns {Menu} `this` menu itself. */
+  fontEditor(initial: string, options?: IMenuFontEditorOptions): Menu {
+    return toJs(api.grok_Menu_FontEditor(this.dart, initial, options?.fontSizeMin, options?.fontSizeMax,
+      options?.fontSizeStep ?? 1, options?.fontFamilies, options?.asGroup, options?.onChange));
+  }
+
+  /** Adds single-column selector to menu.
+   * @param dataFrame - Data frame to be used for the selector,where column choices are taken from.
+   * @param options - Optional params and functions, see {@link IMenuSingleColumnSelectorOptions}.
+   * @returns {Menu} `this` menu itself. */
+  singleColumnSelector(dataFrame: DataFrame, options?: IMenuSingleColumnSelectorOptions): Menu {
+    return toJs(api.grok_Menu_SingleColumSelector(this.dart, dataFrame.dart, options?.initialValue,
+      !options?.onChange ? null : (grid: any, c: any, currentRowChanged: boolean) => options?.onChange?.(toJs(grid), toJs(c), currentRowChanged),
+      options?.asGroup, options?.nullable ?? false, options?.visible ?? true, options?.editable ?? false, options?.closeOnClick ?? false,
+      options?.changeOnHover ?? true, (c: any) => options?.columnFilter?.(toJs(c)) ?? true));
+  }
+
+  /** Adds multi-column selector to menu.
+   * @param dataFrame - Data frame to be used for the selector,where column choices are taken from.
+   * @param options - Optional params and functions, see {@link IMenuMultiColumnSelectorOptions}.
+   * @returns {Menu} `this` menu itself. */
+  multiColumnSelector(dataFrame: DataFrame, options?: IMenuMultiColumnSelectorOptions): Menu {
+    return toJs(api.grok_Menu_MultiColumSelector(this.dart, dataFrame.dart, options?.initialValue,
+      !options?.onChange ? null : (grid: any) => options?.onChange?.(toJs(grid)),
+      options?.asGroup, options?.visible ?? true, options?.editable ?? false, (c: any) => options?.columnFilter?.(toJs(c)) ?? true));
+  }
+
+  /** Adds a header title.
+   * @param text - Header title text.
+   * @param options - Optional params and functions, see {@link IMenuHeaderOptions}.
+   * @returns {Menu} `this` menu itself. */
+  header(text: string, options?: IMenuHeaderOptions): Menu {
+    return toJs(api.grok_Menu_Header(this.dart, text, options?.onClick, options?.hasHoverEffect ?? false, options?.getDescription));
+  }
+
   /** Adds a separator line.
    *  @returns {Menu} */
   separator(): Menu {
@@ -990,9 +1199,13 @@ export class Menu {
   }
 
   /** Shows the menu.
-   * @returns {Menu} */
+   * @returns {Menu} `this` menu itself. */
   show(options?: IShowMenuOptions): Menu {
     return toJs(api.grok_Menu_Show(this.dart, options?.element, options?.causedBy, options?.x, options?.y, options?.nextToElement));
+  }
+
+  hide(): void {
+    api.grok_Menu_Hide(this.dart);
   }
 
   /** Binds the menu to the specified {@link options.element} */
@@ -1018,13 +1231,17 @@ export class Menu {
 export class Balloon {
 
   /** Shows information message (green background) */
-  info(s: string | HTMLElement): void {
-    api.grok_Balloon(s, 'info');
+   info(s: string | HTMLElement): void {
+    api.grok_Balloon(s, 'info', toDart({}));
   }
 
   /** Shows information message (red background) */
   error(s: string | HTMLElement): void {
-    api.grok_Balloon(s, 'error');
+    api.grok_Balloon(s, 'error', toDart({}));
+  }
+
+  warning(s: string | HTMLElement): void {
+    api.grok_Balloon(s, 'warning', toDart({}));
   }
 
   /** Closes all balloons currently shown */
@@ -1207,6 +1424,15 @@ export class InputBase<T = any> {
   };
 
   get classList(): DOMTokenList { return this.root.classList; }
+
+  /**
+   * Performs immediate validation of the input and returns the result.
+   *
+   * @returns {boolean} True if the input is valid; otherwise, false.
+   */
+  validate(): boolean {
+    return api.grok_InputBase_Validate(this.dart);
+  }
 }
 
 
@@ -1224,17 +1450,23 @@ export class InputForm extends DartWrapper {
   constructor(dart: any) { super(dart); }
 
   /** Creates an InputForm for the specified function call. */
-  static async forFuncCall(funcCall: FuncCall, options?: { twoWayBinding?: boolean }): Promise<InputForm> {
-    return new InputForm(await api.grok_InputForm_ForFuncCallAsync(funcCall.dart, options?.twoWayBinding ?? true));
+  static async forFuncCall(funcCall: FuncCall, options?: { twoWayBinding?: boolean, skipDefaultInit?: boolean }): Promise<InputForm> {
+    return new InputForm(await api.grok_InputForm_ForFuncCallAsync(funcCall.dart, options?.twoWayBinding ?? true, options?.skipDefaultInit ?? false));
   }
 
   static forInputs(inputs: InputBase[]): InputForm {
+    inputs = inputs.filter((input) => input != null);
     return new InputForm(api.grok_InputForm_ForInputs(inputs.map((input) => input.dart)));
   }
 
   get root(): HTMLElement { return api.grok_InputForm_Get_Root(this.dart); };
 
   getInput(propertyName: string): InputBase { return toJs(api.grok_InputForm_GetInput(this.dart, propertyName)); }
+
+  /** All inputs added to the form */
+  get inputs(): InputBase[] {
+    return api.grok_InputForm_GetInputs(this.dart);
+  }
 
   get source(): any { return toJs(api.grok_InputForm_Get_Source(this.dart)); };
 
@@ -1246,6 +1478,7 @@ export class InputForm extends DartWrapper {
   /** Occurs after the form is validated, no matter whether it is valid or not. */
   get onValidationCompleted(): Observable<any> { return observeStream(api.grok_InputForm_OnValidationCompleted(this.dart)); }
 
+  /** Returns true if all inputs are valid. */
   get isValid(): boolean { return api.grok_InputForm_Get_IsValid(this.dart); }
 }
 
@@ -1304,49 +1537,6 @@ export class ChoiceInput<T> extends InputBase<T> {
 
   get items(): T[] { return toJs(api.grok_ChoiceInput_Get_Items(this.dart)); }
   set items(s: T[]) { api.grok_ChoiceInput_Set_Items(this.dart, toDart(s)); }
-}
-
-
-export class ProgressIndicator {
-  dart: any;
-
-  constructor(dart: any) {
-    this.dart = dart;
-  }
-
-  static create() {
-    return toJs(api.grok_ProgressIndicator_Create());
-  }
-
-  get percent(): number {
-    return api.grok_ProgressIndicator_Get_Percent(this.dart);
-  }
-
-  /** Flag indicating whether the operation was canceled by the user. */
-  get canceled(): boolean { return api.grok_ProgressIndicator_Get_Canceled(this.dart); }
-
-  get description(): string { return api.grok_ProgressIndicator_Get_Description(this.dart); }
-  set description(s: string) { api.grok_ProgressIndicator_Set_Description(this.dart, s); }
-
-  update(percent: number, description: string): void {
-    api.grok_ProgressIndicator_Update(this.dart, percent, description);
-  }
-
-  log(line: string): void {
-    api.grok_ProgressIndicator_Log(this.dart, line);
-  }
-
-  get onProgressUpdated(): Observable<any> {
-    return observeStream(api.grok_Progress_Updated(this.dart));
-  }
-
-  get onLogUpdated(): Observable<any> {
-    return observeStream(api.grok_Progress_Log_Updated(this.dart));
-  }
-
-  get onCanceled(): Observable<any> {
-    return observeStream(api.grok_Progress_Canceled(this.dart));
-  }
 }
 
 
@@ -1423,274 +1613,6 @@ export class TagElement {
 }
 
 
-/** Color-related routines. */
-export class Color {
-
-  /** Returns a color associated with the specified cell as an ARGB-formatted integer.
-   * To convert to html color, use {@link getCellColorHtml} or {@link toHtml}. */
-  static getCellColor(cell: Cell): number {
-    return api.grok_Color_FromCell(cell.dart);
-  }
-
-  /** Returns a string representation of the color associated with the specified cell.
-   * For batch color manipulations, use {@link getCellColor}. */
-  static getCellColorHtml(cell: Cell): string {
-    return Color.toHtml(Color.getCellColor(cell));
-  }
-
-  /** Returns a color associated with the specified category within a column.
-   * Returns ARGB-formatted integer. To convert to html color, use {@link toHtml}. */
-  static getCategoryColor(column: Column, category: any): number {
-    return api.grok_Color_FromCategory(column.dart, category);
-  }
-
-  /** Returns the Alpha component of the color represented as ARGB-formatted integer. */
-  static a(c: number): number { return (c >> 24) & 0xFF; }
-
-  /** Returns the Red component of the color represented as ARGB-formatted integer. */
-  static r(c: number): number { return (c >> 16) & 0xFF; }
-
-  /** Returns the Green component of the color represented as ARGB-formatted integer. */
-  static g(c: number): number { return (c >> 8) & 0xFF; }
-
-  /** Returns the Blue component of the color represented as ARGB-formatted integer. */
-  static b(c: number): number { return c & 0xFF; }
-
-  static argb(a: number, r: number, g: number, b: number) {
-    return ((a << 24) | (r << 16) | (g << 8) | b) >>> 0;
-  }
-
-  /** Returns the color with the specified alpha component (0-255). */
-  static setAlpha(color: number, alpha: number) {
-    return Color.argb(alpha, Color.r(color), Color.g(color), Color.b(color));
-  }
-
-  /** Returns i-th categorical color (looping over the palette if needed) */
-  static getCategoricalColor(i: number): number {
-    return Color.categoricalPalette[i % Color.categoricalPalette.length];
-  }
-
-  /** Returns either black or white color, depending on which one would be most contrast to the specified [color]. */
-  static getContrastColor(color: number): number {
-    return api.grok_Color_GetContrastColor(color);
-  }
-
- /** Converts ARGB-formatted integer color to a HTML-formatted string (such as `#ffffff`). See also {@link toRgb}. */
-  static toHtml(color: number): string { return api.grok_Color_ToHtml(color); }
-
-  /** Convert HTML-formatted string (such as `#ffffff`) to ARGB-fromatted integer color */
-  static fromHtml(htmlColor: string): number { return api.grok_Color_FromHtml(htmlColor); }
-
-  /** Converts ARGB-formatted integer color to a HTML-formatted string (such as `rbg(20, 46, 124)`). See also {@link toHtml. }*/
-  static toRgb(color: number): string {
-    return color === null ? '' : `rgb(${Color.r(color)},${Color.g(color)},${Color.b(color)})`;
-  }
-
-  /** For RDKit molecule substruct highlight */
-  static hexToPercentRgb(hex: string): number[] | null {
-    const result = hex.length === 7 ? /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex) :
-      /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? [
-      parseInt(result[1], 16) / 256,
-      parseInt(result[2], 16) / 256,
-      parseInt(result[3], 16) / 256,
-      result.length > 4 ? parseInt(result[4], 16) / 256 : 0.3
-    ] : null;
-  }
-
-
-  /** Returns the standard palette of the categorical colors used across all visualizations in Datagrok. */
-  static get categoricalPalette(): number[] {
-    return api.grok_Color_CategoricalPalette();
-  }
-
-  /** Returns the map of existing palettes used in Datagrok. */
-  static get categoricalPalettes(): {[key: string]: any} {
-    return new MapProxy(api.grok_Color_GetCategoricalPalettes());
-  }
-
-  static scaleColor(x: number, min: number, max: number, alpha?: number, colorScheme?: number[]): number {
-    return api.grok_Color_ScaleColor(x, min, max, alpha ? alpha : null, colorScheme ? colorScheme : null);
-  }
-
-  static highlight(color: number): number {
-    return api.grok_Color_Highlight(color);
-  }
-
-  static darken(color: number, diff: number): number {
-    return api.grok_Color_Darken(color, diff);
-  }
-
-  static  getRowColor(column: Column, row: number): number {
-    return api.grok_Color_GetRowColor(column.dart, row);
-  }
-
-  static scale(x: number, min: number, max: number): number {
-    return min === max ? min : (x - min) / (max - min);
-  }
-
-  static get gray(): number {
-    return 0xFF808080;
-  }
-
-  static get lightLightGray(): number {
-    return 0xFFF0F0F0;
-  }
-
-  static get lightGray(): number {
-    return 0xFFD3D3D3;
-  }
-
-  static get darkGray(): number {
-    return 0xFF838383;
-  }
-
-  static get blue(): number {
-    return 0xFF0000FF;
-  }
-
-  static get green(): number {
-    return 0xFF00FF00;
-  }
-
-  static get darkGreen(): number {
-    return 0xFF006400;
-  }
-
-  static get black(): number {
-    return 0xFF000000;
-  }
-
-  static get yellow(): number {
-    return 0xFFFFFF00;
-  }
-
-  static get white(): number {
-    return 0xFFFFFFFF;
-  }
-
-  static get red(): number {
-    return 0xFFFF0000;
-  }
-
-  static get darkRed(): number {
-    return 0xFF8b0000;
-  }
-
-  static get maroon(): number {
-    return 0xFF800000;
-  }
-
-  static get olive(): number {
-    return 0xFF808000;
-  }
-
-  static get orange(): number {
-    return 0xFFFFA500;
-  }
-
-  static get darkOrange(): number {
-    return 0xFFFF8C00;
-  }
-
-  static get lightBlue(): number {
-    return 0xFFADD8E6;
-  }
-
-  static get darkBlue(): number {
-    return 0xFF0000A0;
-  }
-
-  static get purple(): number {
-    return 0xFF800080;
-  }
-
-  static get whitesmoke(): number {
-    return 0xFFF5F5F5;
-  }
-
-  static get navy(): number {
-    return 0xFF000080;
-  }
-
-  static get cyan(): number {
-    return 0xFF00ffff;
-  }
-
-  static get filteredRows(): number {
-    return 0xff1f77b4;
-  }
-
-  static get filteredOutRows(): number {
-    return Color.lightLightGray;
-  }
-
-  static get selectedRows(): number {
-    return Color.darkOrange;
-  }
-
-  static get missingValueRows(): number {
-    return Color.filteredOutRows;
-  }
-
-  static get mouseOverRows(): number {
-    return 0xFFAAAAAA;
-  }
-
-  static get currentRow(): number {
-    return 0xFF38B738;
-  }
-
-  static get histogramBar(): number {
-    return Color.filteredRows;
-  }
-
-  static get barChart(): number {
-    return 0xFF24A221;
-  }
-
-  static get scatterPlotMarker(): number {
-    return 0xFF40699c;
-  }
-
-  static get scatterPlotSelection(): number {
-    return 0x80323232;
-  }
-
-  static get scatterPlotZoom(): number {
-    return 0x80626200;
-  }
-
-  static get areaSelection(): number {
-    return Color.lightBlue;
-  }
-
-  static get rowSelection(): number {
-    return 0x60dcdca0;
-  }
-
-  static get colSelection(): number {
-    return 0x60dcdca0;
-  }
-
-  static get areaZoom(): number {
-    return 0x80323232;
-  }
-
-  static get gridWarningBackground(): number {
-    return 0xFFFFB9A7;
-  }
-
-  static get success(): number {
-    return 0xFF3cb173;
-  }
-
-  static get failure(): number {
-    return 0xFFeb6767;
-  }
-}
-
-
 /** Tree view node.
  * Sample: {@link https://public.datagrok.ai/js/samples/ui/tree-view}
  * */
@@ -1742,7 +1664,7 @@ export class TreeViewNode<T = any> {
 
   /** Node value */
   get value(): T { return api.grok_TreeViewNode_Get_Value(this.dart); };
-  set value(v: T) { api.grok_TreeViewNode_Set_Value(this.dart, v); };
+  set value(v: T) { api.grok_TreeViewNode_Set_Value(this.dart, v)};
 
   /** Enables checkbox */
   enableCheckBox(checked: boolean = false): void {
@@ -1772,8 +1694,8 @@ export class TreeViewGroup extends TreeViewNode {
 
       //
       const pathItems = items
-        .filter((item) => props.every((p: string) => !(options?.removeEmpty ?? false) || item[p] != null))
-        .filter((item) => path.every((p, i) => item[props[i]] == path[i]));
+          .filter((item) => props.every((p: string) => !(options?.removeEmpty ?? false) || item[p] != null))
+          .filter((item) => path.every((p, i) => item[props[i]] == path[i]));
 
       // leafs
       if (path.length == props.length) {
@@ -1811,6 +1733,18 @@ export class TreeViewGroup extends TreeViewNode {
   /** Gets the node's children */
   get children(): TreeViewNode[] {
     return api.grok_TreeViewNode_Children(this.dart).map((i: any) => toJs(i));
+  }
+
+  /** Removes all children (going down recursively) that satisfy the predicate */
+  removeChildrenWhere(predicate: (node: TreeViewNode) => boolean): void {
+    for (const child of this.children) {
+      if (predicate(child)) {
+        child.remove();
+      }
+      else if (child instanceof TreeViewGroup) {
+        child.removeChildrenWhere(predicate);
+      }
+    }
   }
 
   get expanded(): boolean { return api.grok_TreeViewNode_Get_Expanded(this.dart); }
@@ -1864,7 +1798,6 @@ export class TreeViewGroup extends TreeViewNode {
     return api.grok_TreeViewGroup_Load_Sources(this.dart, source.dart);
   }
 }
-
 
 /** A slider that lets user control both min and max values. */
 export class RangeSlider extends DartWidget {
@@ -1926,8 +1859,7 @@ export class HtmlTable extends DartWidget {
     super(dart);
   }
 
-  /** Creates a visual table based on [items], [renderer], and [columnNames]
-   * @returns {HtmlTable} */
+  /** Creates a visual table based on [items], [renderer], and [columnNames] */
   static create(items: any, renderer: any, columnNames: any = null): HtmlTable {
     return toJs(api.grok_HtmlTable(items, renderer !== null ? (object: any, ind: number) => renderer(toJs(object), ind) : null, columnNames));
   }
@@ -2001,7 +1933,18 @@ export class Legend extends DartWidget {
     api.grok_Legend_Set_OnViewerLegendChanged(this.dart, handler);
   }
 
-  get filterBy() { return api.grok_Legend_Get_FilterBy(this.dart); }
+  /** Mapped indices of filtered (selected) categories. */
+  get selectedCategories(): number[] | null {
+    return api.grok_Legend_Get_SelectedCategories(this.dart);
+  }
+
+  /** Mapped indices of extra (selected) categories. */
+  get selectedExtraCategories(): number[] | null {
+    return api.grok_Legend_Get_SelectedExtraCategories(this.dart);
+  }
+
+  /** Whether the legend is in tooltip (collapsed) mode. */
+  get isTooltipMode(): boolean { return api.grok_Legend_Get_IsToolTipMode(this.dart); }
 }
 
 
@@ -2307,47 +2250,91 @@ export class TagsInput extends InputBase {
   }
 }
 
-export class MarkdownInput extends InputBase {
-  editor: any; // Quill.js instance - loaded from the core .min.js file
-  private _onValueChanged: Subject<string> = new Subject<string>();
+export class MarkdownInput extends JsInputBase<string> {
+  // Quill.js instance - loaded from the core .min.js file
+  private editor: any;
+  private readonly _editorRoot: HTMLDivElement = ui.div([], 'markdown-input');
+  private _textToSet?: string | null;
 
-  constructor(name: string) {
-    super(ui.input.textArea(name).dart);
+  private constructor(caption?: string) {
+    super();
+    this.root.classList.add('markdown-input-root');
+    this.addCaption(caption ?? '');
   }
 
-  static async create(name: string): Promise<MarkdownInput> {
-    const input = new MarkdownInput(name);
-    input.input.style.display = 'none';
-
-    const editorDiv = ui.div();
-    const editorParentDiv = ui.div([editorDiv]);
-    editorParentDiv.style.minHeight = '200px';
-    input.root.append(editorParentDiv);
-
-    await DG.Utils.loadJsCss([
+  static create(caption?: string, options?: MarkdownConfig): MarkdownInput {
+    const input = new MarkdownInput(caption);
+    ui.setUpdateIndicator(input.root, true, 'Loading markdown input...');
+    Utils.loadJsCss([
       '/js/common/quill/quill.min.js',
       '/js/common/quill/quill.snow.css',
-    ])
-    //@ts-ignore
-    input.editor = new Quill(editorDiv, {
-      modules: {
-        toolbar: [
-          [{ header: [1, 2, false] }],
-          ['bold', 'italic', 'underline', 'strike'],
-          [{ list: 'ordered' }, { list: 'bullet' }],
-          ['blockquote', 'code-block', 'image'],
-        ],
-      },
-      theme: 'snow', // or 'bubble'
+      '/js/common/quill/quilljs-markdown.min.js',
+    ]).then(() => {
+      //@ts-ignore
+      input.editor = new Quill(input._editorRoot, {
+        modules: {
+          toolbar: [
+            [{ header: [1, 2, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ list: 'ordered' }, { list: 'bullet' }],
+            ['blockquote', 'code-block', 'image'],
+          ],
+        },
+        theme: 'snow', // or 'bubble'
+      });
+      if (input._textToSet != null || (options && options.value != null && options.value !== '')) {
+        //@ts-ignore
+        input.editor.setText(input._textToSet ?? options.value);
+        input._textToSet = null;
+      }
+      input.editor.on('text-change', (_: any, __: any, source: string) => {
+        if (source === 'api')
+          input.fireChanged();
+        else if (source === 'user')
+          input.fireInput();
+      });
+      //@ts-ignore
+      new QuillMarkdown(input.editor, {
+        syntax: true, // enables code blocks, etc.
+        preview: true,
+      });
+      ui.setUpdateIndicator(input.root, false);
+    }).catch((_) => {
+      ui.setUpdateIndicator(input.root, false);
     });
-    input.editor.on('text-change', () => input._onValueChanged.next(input.value));
+
     return input;
   }
 
-  get value(): string { return this.editor.getText(); }
-  set value(x: string) { this.editor.setText(x); }
+  getInput(): HTMLElement { return this._editorRoot; }
 
-  get onValueChanged(): Observable<string> { return this._onValueChanged; }
+  get inputType(): string { return 'markdown'; }
+
+  get dataType(): string { return `${DG.TYPE.STRING}`; }
+
+  get attachedImages(): string[] {
+    const ops: { [key:string]: any; }[] = this.editor?.getContents()['ops'] ?? [];
+    return ops
+        .filter((op) => op['insert']?.constructor === Object
+            && (op['insert']['image']?.startsWith('data:image') ?? false))
+        .map((op) => op['insert']['image']);
+  }
+
+  getStringValue(): string {
+    return this.editor?.getText() ?? '';
+  }
+
+  getValue(): string {
+    return this.editor?.root?.innerHTML;
+  }
+
+  setStringValue(value: string): void {
+    this.editor ? this.editor.setText(value): this._textToSet = value;
+  }
+
+  setValue(value: any): void {
+    this.editor ? this.editor.setText(value): this._textToSet = value;
+  }
 }
 
 export class CodeInput extends InputBase {
@@ -2395,4 +2382,18 @@ export class FunctionsWidget extends DartWidget {
 
   get onActionClicked(): rxjs.Observable<Func> { return this.onEvent('d4-action-click'); }
   get onActionPlusIconClicked(): rxjs.Observable<Func> { return this.onEvent('d4-action-plus-icon-click'); }
+}
+
+export class Favorites extends DartWidget {
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  static async add(entity: Entity, group?: Group): Promise<void> {
+    await api.grok_Favorites_Add(entity.dart, group?.dart);
+  }
+
+  static async remove(entity: Entity, group?: Group): Promise<void> {
+    await api.grok_Favorites_Remove(entity.dart, group?.dart);
+  }
 }

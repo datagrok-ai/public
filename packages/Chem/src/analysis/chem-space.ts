@@ -55,7 +55,7 @@ export async function runChemSpace(table: DG.DataFrame, molecules: DG.Column, me
     plotEmbeddings, clusterEmbeddings ?? false,
     /* dimRedOptions */ {...options, preprocessingFuncArgs: [options.preprocessingFuncArgs ?? {}]},
     /* uiOptions */{
-      fastRowCount: 10000,
+      fastRowCount: options.fastRowCount ?? 10000,
       scatterPlotName: 'Chemical space',
       bypassLargeDataWarning: options?.[BYPASS_LARGE_DATA_WARNING],
       tableView: tableView,

@@ -1,0 +1,47 @@
+{
+  "name": "@datagrok/signals-link",
+  "friendlyName": "Signals Link",
+  "version": "0.0.2",
+  "description": "",
+  "author": {
+    "name": "Andrew Skalkin",
+    "email": "askalkin@datagrok.ai"
+  },
+  "dependencies": {
+    "@datagrok-libraries/utils": "^4.6.5",
+    "cash-dom": "^8.1.5",
+    "datagrok-api": "^1.26.0",
+    "dayjs": "^1.11.13"
+  },
+  "devDependencies": {
+    "css-loader": "^7.1.2",
+    "datagrok-tools": "^4.14.55",
+    "style-loader": "^4.0.0",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "scripts": {
+    "link-all": "grok link",
+    "debug-signalslink": "webpack && grok publish",
+    "release-signalslink": "webpack && grok publish --release",
+    "build-signalslink": "webpack",
+    "build": "grok api && grok check --soft && webpack",
+    "debug-signalslink-dev": "webpack && grok publish dev",
+    "release-signalslink-dev": "webpack && grok publish dev --release",
+    "debug-signalslink-public": "webpack && grok publish public",
+    "release-signalslink-public": "webpack && grok publish public --release"
+  },
+  "canEdit": [
+    "Administrators"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/SignalsLink"
+  }
+}

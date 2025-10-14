@@ -125,7 +125,7 @@ credentials.
 
 ![Credentials retrieving process diagram](../../uploads/security/credentials-fetch-diagram.png "Credentials retrieving process diagram")
 
-If your organization already uses a specialized credential vault like AWS
+If your organization already uses a specialized credential vault like AWS or GCP
 Secrets Manager, you can [configure Datagrok to use it](data-connection-credentials.md).
 
 To store credentials in Datagrok's credentials storage programmatically, send a `POST` request to `$(GROK_HOST)/api/credentials/for/$(ENTITY_NAME)` with a raw body containing JSON, such as `{"login": "abc", "password": "123"}`, and headers `{"Authorization": $(API_KEY), "Content-Type": "application/json"}`. Take the API key from your profile page in Datagrok, e.g., [https://public.datagrok.ai/u](https://public.datagrok.ai/u).

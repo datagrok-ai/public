@@ -54,8 +54,14 @@ export async function getGPUAdapterDescription() {
     if (gpuAdapter == null)
       return null;
   }
-  const info = await gpuAdapter.requestAdapterInfo();
-  if (!info) return null;
+
+  let info: GPUAdapterInfo | null = null;
+  if ('info' in (gpuAdapter as any))
+    info = (gpuAdapter as any).info as GPUAdapterInfo;
+  // this option is sort of deprecated but still available in every initial release
+  // else if ('requestAdapterInfo' in gpuAdapter && typeof gpuAdapter.requestAdapterInfo === 'function')
+  //   info = (await gpuAdapter.requestAdapterInfo()) as GPUAdapterInfo;
+  if (!info) return 'No GPU description available';
 
   const outString = replaceEmptyString(
     info.description, replaceEmptyString(info.vendor, 'No GPU description available'));

@@ -39,7 +39,7 @@ We recommend to avoid using Snap and follow installation instructions provided a
 
 ## Next steps
 
-Now you are ready to [create your first package](../how-to/create-package.md).
+Now you are ready to [create your first package](../how-to/packages/create-package.md).
 
 See also:
 

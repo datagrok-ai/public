@@ -94,8 +94,7 @@ class Engine(object):
         """
         return
 
-    def estimate_performance_impl(self, id: str, model_blob, table: pd.DataFrame, predict: str,
-                                  cancelled: bool) -> dict:
+    def estimate_performance_impl(self, id: str, model_blob, table: pd.DataFrame, predict: str) -> dict:
         """
         Predicts outcome, engine specific implementation.
 
@@ -105,10 +104,8 @@ class Engine(object):
         :param predict: Predict column name.
         :return: Dictionary with model performance.
         """
-        metrics_names = ['mse', 'rmse', 'corr', 'nobs', 'r2', 'logloss', 'auc']
-        if cancelled:
-            return dict(zip(metrics_names, ['null'] * 7))
-        predicted = self.predict_impl(id, model_blob, table, estimate_performance=True)
+        predicted = self.predict_impl(id, model_blob, table)
+        predicted.columns = [predict]
         y_true = np.array(table[predict])
         y_pred = np.array(predicted[predict])
 
@@ -116,6 +113,9 @@ class Engine(object):
                 (~np.isnan(y_true)) & (~np.isnan(y_pred))
         y_true = y_true[index]
         y_pred = y_pred[index]
+
+        print(f'Y_true: {y_true}')
+        print(f'Y_pred: {y_pred}')
 
         try:
             fpr, tpr = metrics.roc_curve(y_true, y_pred, pos_label=2)
@@ -151,12 +151,17 @@ class Engine(object):
         for param in parameter_values.keys():
             value = parameter_values[param]
             if value != self.parameters[param]['default_value'] or \
-                    ('required' in self.parameters[param] and self.parameters[param]['required']):
+                ('required' in self.parameters[param] and self.parameters[param]['required']):
                 if self.parameters[param]['type'] == Types.LIST:
                     param = param.replace('_', '-')
                     params.append('--' + param)
                     for number in value:
                         params.append(str(number))
+                    continue
+                if self.parameters[param]['type'] == Types.BOOL:
+                    if value:
+                        param = param.replace('_', '-')
+                        params.append('--' + param)
                     continue
                 str_value = str(value)
                 param = param.replace('_', '-')

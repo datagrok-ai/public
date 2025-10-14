@@ -46,4 +46,9 @@ experiment 3`
 testDf.columns.byName('experiment').setTag('source', experimentTag);
 
 // Fetch sticky meta related to the test dataframe.
-const dataFrameWithMeta = await grok.dapi.stickyMeta.getAllValues(schema, testDf.columns.byName('experiment'));
+const metaDataframe = await grok.dapi.stickyMeta.getAllValues(schema, testDf.columns.byName('experiment'));
+
+// Show the result
+for (var col of metaDataframe.columns)
+  testDf.columns.add(col);
+grok.shell.addTableView(testDf);

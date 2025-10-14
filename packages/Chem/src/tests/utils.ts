@@ -1,8 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {expect} from '@datagrok-libraries/utils/src/test';
+import {awaitCheck, expect} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
-import {searchSubstructure} from '../package';
+import {PackageFunctions} from '../package';
+
+export const CONTAINER_TIMEOUT = 90000;
 
 export async function loadFileAsText(name: string): Promise<string> {
   return await _package.files.readAsText(name);
@@ -26,8 +28,7 @@ export async function createTableView(tableName: string): Promise<DG.TableView> 
 }
 
 export async function readDataframe(tableName: string): Promise<DG.DataFrame> {
-  const file = await loadFileAsText(tableName);
-  const df = DG.DataFrame.fromCsv(file);
+  const df = await grok.dapi.files.readCsv(`System:AppData/Chem/${tableName}`);
   df.name = tableName.replace('.csv', '');
   return df;
 }
@@ -35,7 +36,7 @@ export async function readDataframe(tableName: string): Promise<DG.DataFrame> {
 export async function _testSearchSubstructure(df: DG.DataFrame, colName: string,
   pattern: string, trueIndices: number[]): Promise<void> {
   const col = df.columns.byName(colName);
-  const bitSet: DG.BitSet = (await searchSubstructure(col, pattern, '')).get(0);
+  const bitSet: DG.BitSet = (await PackageFunctions.searchSubstructure(col, pattern, '')).get(0);
   expect(bitSet !== null, true);
   checkBitSetIndices(bitSet, trueIndices);
 }
@@ -56,7 +57,7 @@ export async function _testSearchSubstructureSARSmall(): Promise<void> {
 
   const df = DG.DataFrame.fromCsv(file);
   const col = df.columns.byIndex(0);
-  const bitset: DG.BitSet = (await searchSubstructure(col, 'O=C1CN=C(C2CCCCC2)c2ccccc2N1', '')).get(0);
+  const bitset: DG.BitSet = (await PackageFunctions.searchSubstructure(col, 'O=C1CN=C(C2CCCCC2)c2ccccc2N1', '')).get(0);
   const countDataframe = col.length;
   const countResult = bitset.trueCount;
   expect(countDataframe, 200);

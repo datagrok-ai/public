@@ -8,9 +8,7 @@ export class ChordViewer extends EChartViewer {
     super();
 
     this.top = this.string('top', '50px');
-    this.left = this.string('left', '100px');
     this.bottom = this.string('bottom', '50px');
-    this.right = this.string('right', '100px');
 
     this.animationDuration = this.int('animationDuration', 500);
     this.animationDurationUpdate = this.int('animationDurationUpdate', 750);

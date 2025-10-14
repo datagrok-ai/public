@@ -1,0 +1,31 @@
+.fit-view-inputs-category {    
+    font-size: 13px;
+    font-weight: bold;
+    margin-top: 18px;
+    padding-right: 5px;
+}
+
+.fit-view-chevron-right {
+    padding-right: 10px;
+}
+
+.fit-view-chevron-down {
+    padding-right: 5px;
+}
+
+.fit-view-svg-icon {    
+    height: 24px;
+    width: 24px;
+}
+
+.fit-view-help-icon {
+    font-size: large;
+    margin-right: 8px;
+    font-weight: bold;
+}
+
+.fit-view-ribbon-text {    
+    font-weight: normal;
+    margin-left: 2px;
+    margin-right: 8px;
+}

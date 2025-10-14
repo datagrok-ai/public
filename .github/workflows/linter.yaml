@@ -116,7 +116,7 @@ jobs:
         with:
           configFile: commitlint.config.js
           failOnWarnings: false
-          helpURL: https://datagrok.ai/help/develop/advanced/git-policy#commit-message-policy
+          helpURL: https://datagrok.ai/help/develop/dev-process/git-policy#commit-message-policy
 
   pr-name:
     name: PR name

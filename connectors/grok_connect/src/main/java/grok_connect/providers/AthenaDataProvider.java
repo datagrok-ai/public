@@ -1,16 +1,20 @@
 package grok_connect.providers;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
+
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
-import grok_connect.utils.GrokConnectUtil;
-import grok_connect.utils.Prop;
-import grok_connect.utils.Property;
+import grok_connect.utils.*;
+import serialization.DataFrame;
+import serialization.StringColumn;
 import serialization.Types;
 
 public class AthenaDataProvider extends JdbcDataProvider {
@@ -96,8 +100,13 @@ public class AthenaDataProvider extends JdbcDataProvider {
     @Override
     public Properties getProperties(DataConnection conn) {
         Properties properties = new Properties();
-        setIfNotNull(properties, "User", (String )conn.credentials.parameters.get(DbCredentials.ACCESS_KEY));
-        setIfNotNull(properties, "Password", (String) conn.credentials.parameters.get(DbCredentials.SECRET_KEY));
+        String accessKey = (String) conn.credentials.parameters.get(DbCredentials.ACCESS_KEY);
+        String secretKey = (String) conn.credentials.parameters.get(DbCredentials.SECRET_KEY);
+        if (GrokConnectUtil.isNotEmpty(accessKey) && GrokConnectUtil.isNotEmpty(secretKey)) {
+            properties.put("AwsCredentialsProviderClass", "grok_connect.utils.CustomAthenaSessionCredentialsProvider");
+            properties.put("AwsCredentialsProviderArguments", buildArguments(accessKey, secretKey, (String) conn.credentials.parameters.get("token")));
+        }
+
         if (!conn.hasCustomConnectionString()) {
             setIfNotNull(properties, "S3OutputLocation", conn.get(DbCredentials.S3OutputLocation));
             setIfNotNull(properties, "Schema", conn.getDb());
@@ -107,16 +116,32 @@ public class AthenaDataProvider extends JdbcDataProvider {
     }
 
     @Override
+    public Connection getConnection(DataConnection conn) throws SQLException, GrokConnectException {
+        return GrokConnectUtil.isNotEmpty((String) conn.credentials.parameters.getOrDefault("expires", null)) ?
+                DriverManager.getConnection(getConnectionString(conn), getProperties(conn))
+                : ConnectionPool.getConnection(getConnectionString(conn), getProperties(conn), driverClassName);
+    }
+
+    @Override
     public String getSchemasSql(String db) {
         return "SELECT DISTINCT table_schema FROM information_schema.columns";
     }
 
     @Override
-    public String getSchemaSql(String db, String schema, String table) {
-        List<String> filters = new ArrayList<String>() {{
-            add("c.table_schema = '" + ((schema != null) ? schema : descriptor.defaultSchema) + "'");
-        }};
+    public DataFrame getSchemas(DataConnection connection) throws QueryCancelledByUser, GrokConnectException {
+        if (GrokConnectUtil.isNotEmpty(connection.getDb())) {
+            DataFrame dataFrame = DataFrame.fromColumns(new StringColumn("TABLE_SCHEMA"));
+            dataFrame.addRow(connection.getDb());
+            return dataFrame;
+        }
+        return super.getSchemas(connection);
+    }
 
+    @Override
+    public String getSchemaSql(String db, String schema, String table) {
+        List<String> filters = new ArrayList<>();
+        if (GrokConnectUtil.isNotEmpty(db))
+            filters.add("c.table_schema = '" + db + "'");
         if (GrokConnectUtil.isNotEmpty(table))
             filters.add("c.table_name = '" + table + "'");
 
@@ -125,7 +150,8 @@ public class AthenaDataProvider extends JdbcDataProvider {
         return "SELECT c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
                 + "c.data_type as data_type, "
                 + "case t.table_type when 'VIEW' then 1 else 0 end as is_view FROM information_schema.columns c "
-                + "JOIN information_schema.tables t ON t.table_name = c.table_name " + whereClause +
+                + "JOIN information_schema.tables t ON t.table_name = c.table_name "
+                + whereClause +
                 " ORDER BY c.table_name";
     }
 
@@ -142,5 +168,32 @@ public class AthenaDataProvider extends JdbcDataProvider {
     @Override
     protected String getRegexQuery(String columnName, String regexExpression) {
         return String.format("REGEXP_LIKE(%s, '%s')", columnName, regexExpression);
+    }
+
+    private static String escapeArg(String value) {
+        if (value == null) return "";
+        String escaped = value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"");
+        if (escaped.contains(",")) {
+            escaped = "\"" + escaped + "\"";
+        }
+        return escaped;
+    }
+
+    private static String buildArguments(String accessKey, String secretKey, String sessionToken) {
+        if (sessionToken == null || sessionToken.isEmpty()) {
+            return String.join(",",
+                    escapeArg(accessKey),
+                    escapeArg(secretKey)
+            );
+        }
+        else {
+            return String.join(",",
+                    escapeArg(accessKey),
+                    escapeArg(secretKey),
+                    escapeArg(sessionToken)
+            );
+        }
     }
 }

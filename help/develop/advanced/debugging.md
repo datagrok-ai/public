@@ -112,7 +112,7 @@ Below we explain what the debugging configuration does. The first file, `launch.
 It allows VS Code to launch an isolated Chrome session in debugging mode linked to IDE, targeting the desired web
 address from `url`. In case you are working on a [package application](../function-roles.md#applications), put the
 application's URL in the configuration: `https://<GROK_HOST>/apps/<APP_NAME>` (see the
-[article](../how-to/build-an-app.md#launching-applications) on applications).
+[article](../how-to/apps/build-an-app.md#launching-applications) on applications).
 
 The second file, `tasks.json`, contains the following:
 
@@ -256,7 +256,7 @@ to debug JavaScript from JetBrains IDEs. In February 2021 JetBrains has removed 
 ## Logger
 
 You can use a package logger to report debug records to the server. Datagrok JS API has a class called
-[DG.PackageLogger](https://datagrok.ai/js-api/classes/dg.PackageLogger). Here is an example of accessing a logger object
+[DG.PackageLogger](https://datagrok.ai/api/js/dg/classes/PackageLogger). Here is an example of accessing a logger object
 in your package code:
 
 ```ts

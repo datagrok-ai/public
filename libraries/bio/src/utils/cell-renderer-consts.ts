@@ -15,6 +15,7 @@ export const enum MmcrTemps {
   highlightDifference = '.mm.cellRenderer.highlightDifference',
   gapLength = '.mm.cellRenderer.gapLength',
   monomerPlacer = '.mm.cellRenderer.monomerPlacer',
+  fontSize = '.mm.cellRenderer.fontSize',
 
   rendererSettingsChanged = '.mm.cellRenderer.settingsChanged',
   overriddenLibrary = '.mm.cellRenderer.overriddenLibrary',
@@ -24,3 +25,9 @@ export const enum tempTAGS {
   referenceSequence = 'reference-sequence',
   currentWord = 'current-word',
 }
+
+export const MULTILINE_TAGS = {
+  renderMultiline: '.mm.cellRenderer.renderMultiline',
+  monomersPerLine: '.mm.cellRenderer.monomersPerLine',
+  maxVisibleLines: '.mm.cellRenderer.maxVisibleLines'
+};

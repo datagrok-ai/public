@@ -13,7 +13,7 @@ First of all, to work with your project, you need a utility to publish
 for installation instructions and usage examples. Upon completing package setup, you will see a set of default
 dependencies listed in the `package.json`
 file. One of them is `datagrok-api` that provides TypeScript API to the platform's core functionality. Whenever you need
-details about a particular class or endpoint, consult the [API reference](https://datagrok.ai/js-api).
+details about a particular class or endpoint, consult the [API reference](https://datagrok.ai/api/js).
 
 _Links:_
 
@@ -53,10 +53,8 @@ _Links:_
 
 The platform comes with a diverse set of visualizations (see the
 [Viewers](../../../visualize/viewers/viewers.md) article). Moreover, it is possible to
-[create a custom viewer](../../how-to/develop-custom-viewer.md) using our API. For this task, you can use such libraries
-as `d3`, `three.js`, or `echarts`. Datagrok's public repository contains packages with examples:
-[Viewers](https://github.com/datagrok-ai/public/tree/master/packages/Viewers)
-and [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts). For scientific applications, you may
+[create a custom viewer](../../how-to/viewers/develop-custom-viewer.md) using our API. For this task, you can use such libraries
+as `d3`, `three.js`, or `echarts`. Datagrok’s public repository offers an example implementation in the [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts) package. For scientific applications, you may
 find useful such projects as
 [NGL](https://www.npmjs.com/package/ngl), [RDKit](https://www.npmjs.com/package/@rdkit/rdkit),
 and [OpenChemLib](https://www.npmjs.com/package/openchemlib), but first look at what solutions already exist to

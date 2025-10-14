@@ -24,7 +24,7 @@ export function getGridCellColTemp<TValue, TBack extends CellRendererBackBase<TV
   } catch { [gridCol, temp] = [null, null]; }
 
   const tableCol: DG.Column<TValue> = gridCell.cell.column;
-  temp = temp ?? tableCol.temp;
+  temp = temp ?? (tableCol ? tableCol.temp : null);
 
   if (!temp)
     throw new Error(`Grid cell renderer back store (GridColumn or Column) not found.`);
@@ -64,6 +64,14 @@ export abstract class CellRendererBackBase<TValue> extends CellRendererBackStub 
       this.subs.push(this.tableCol.dataFrame.onDataChanged.subscribe(() => {
         this.dirty = true;
       }));
+
+      this.subs.push(this.tableCol.dataFrame.onColumnsRemoved.subscribe((_) => {
+        try {
+          // this way we can check if the column is still in the dataframe
+          if (!this.destroyed && this.tableCol && !this.tableCol.dataFrame)
+            this.destroy();
+        } catch (err) { this.logger.error(err); }
+      }));
     }
 
     if (this.tableCol) {
@@ -91,7 +99,7 @@ export abstract class CellRendererBackBase<TValue> extends CellRendererBackStub 
   }
 
   private static viewerCounter: number = -1;
-  private readonly viewerId: number = ++CellRendererBackBase.viewerCounter;
+  protected readonly viewerId: number = ++CellRendererBackBase.viewerCounter;
 
   protected toLog(): string {
     return `${this.constructor.name}<${this.viewerId}>`;

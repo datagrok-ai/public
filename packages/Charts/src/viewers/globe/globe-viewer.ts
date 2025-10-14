@@ -95,13 +95,34 @@ export class GlobeViewer extends DG.JsViewer {
   onTableAttached() {
     this.init();
     this.filter = this.dataFrame.filter;
-    this.latitudeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE)?.name || '';
-    this.longitudeColumnName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE)?.name || '';
-    if (!this.latitudeColumnName) grok.shell.warning('Cannot find latitude column!');
+    let longitudeColName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LONGITUDE)?.name;
+    if (!longitudeColName) {
+      const longColNames = this.dataFrame.columns.toList().filter((col) => ['long', 'lon', 'lng', 'longitude', 'x']
+        .some((name) => col.name.toLowerCase().includes(name)));
+      if (longColNames.length !== 0)
+        longitudeColName = longColNames[0].name;
+    }
+    let latitudeColName = this.dataFrame.columns.bySemType(DG.SEMTYPE.LATITUDE)?.name;
+    if (!latitudeColName) {
+      const latColNames = this.dataFrame.columns.toList().filter((col) => ['lat', 'ltt', 'latitude', 'y']
+        .some((name) => col.name.toLowerCase().includes(name)));
+      if (latColNames.length !== 0)
+        latitudeColName = latColNames[0].name;
+    }
+    this.longitudeColumnName = longitudeColName || '';
+    this.latitudeColumnName = latitudeColName || '';
     if (!this.longitudeColumnName) grok.shell.warning('Cannot find longitude column!');
-    const magnitudeColumn = this.dataFrame.columns.bySemType('Magnitude')!;
-    if (magnitudeColumn !== null) this.magnitudeColumnName = magnitudeColumn.name;
-    else {
+    if (!this.latitudeColumnName) grok.shell.warning('Cannot find latitude column!');
+
+    let magnitudeColName = this.dataFrame.columns.bySemType('Magnitude')?.name;
+    if (!magnitudeColName) {
+      const magnColNames = this.dataFrame.columns.toList().filter((col) => ['magn', 'mag', 'mgn', 'magnitude', 'z']
+        .some((name) => col.name.toLowerCase().includes(name)));
+      if (magnColNames.length !== 0)
+        magnitudeColName = magnColNames[0].name;
+    }
+    this.magnitudeColumnName = magnitudeColName || '';
+    if (!magnitudeColName) {
       const numColumns = this.dataFrame.columns.toList().filter((col) => ['double', 'int'].includes(col.type));
       if (numColumns.length !== 0)
         this.magnitudeColumnName = numColumns[0].name;
@@ -122,20 +143,6 @@ export class GlobeViewer extends DG.JsViewer {
 
   onPropertyChanged(property: DG.Property) {
     super.onPropertyChanged(property);
-    const newVal = property.get(this);
-    if (property.name.endsWith('ColumnName')) {
-      switch (property.name) {
-      case 'latitudeColumnName':
-        this.latitudeColumnName = this.dataFrame.col(newVal)?.semType === DG.SEMTYPE.LATITUDE ? newVal : '';
-        break;
-      case 'longitudeColumnName':
-        this.longitudeColumnName = this.dataFrame.col(newVal)?.semType === DG.SEMTYPE.LONGITUDE ? newVal : '';
-        break;
-      case 'magnitudeColumnName':
-        if (this.dataFrame.col(newVal)?.semType === 'Magnitude') this.magnitudeColumnName = newVal;
-        break;
-      }
-    }
     if (this.initialized) {
       this.orbControls!.autoRotate = this.autorotation;
       this.render();

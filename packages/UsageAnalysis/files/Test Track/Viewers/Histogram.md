@@ -22,7 +22,7 @@
     5. Disable the **Filtering Enabled** option by navigating to Context Pane > Properties > Data.
     6. Dataset should not be filtered.
 9. Selection
-    1. Go to the grid and select the first 50 columns. The selection should be reflected on the histogram.
+    1. Go to the grid and select the first 50 rows. The selection should be reflected on the histogram.
     2. Go to the Context Pane > Selection. Toggle the checkboxes:
         1. Show Current row: green dot on the X axis should indicate current selected row
         2. Show Mouse over Row: gray dot on the X axis should indicate current hovered row
@@ -36,13 +36,6 @@
     2. Add a title and a description.
     3. Change their position
     4. Check the range slider functionality
-11. Layouts:
-     1. On Toolbox Click Save on Layout accordion.
-     2. Right-click on sidebar > Close all
-     3. Open SPGI dataset
-     4. On Toolbox open Layouts accordion, wait several seconds
-     5. Click on the loaded layout to apply it to opened dataset
-     6. Check that everything from the configured data from previous step is applied correctly
 
 ---
 {

@@ -33,7 +33,9 @@ public class DbCredentials
     public static final String S3OutputEncOption = "S3OutputEncOption";
     public static final String ACCESS_KEY = "accessKey";
     public static final String SECRET_KEY = "secretKey";
+    public static final String PRIVATE_KEY = "privateKey";
     public static final String VPC_ENDPOINT = "VPCEndpoint";
+    public static final String OAUTH_SERVICE_ACCOUNT_EMAIL = "serviceEmail";
     public static final String ROLE = "role";
     public static final String UID = "UID";
     public static final String PWD = "PWD";
@@ -63,10 +65,17 @@ public class DbCredentials
                 DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
     }};
 
-    public static List<Property> dbCredentialsTemplate = new ArrayList<Property>() {{
-        add(new Property(Property.STRING_TYPE, DbCredentials.LOGIN));
-        add(new Property(Property.STRING_TYPE, DbCredentials.PASSWORD, new Prop("password")));
-    }};
+    public static List<Property> getDbCredentialsTemplate() {
+        return new ArrayList<Property>() {{
+            add(new Property(Property.STRING_TYPE, DbCredentials.LOGIN, null, "Username/Password"));
+            add(new Property(Property.STRING_TYPE, DbCredentials.PASSWORD, null, "Username/Password", new Prop("password")));
+        }};
+    }
+
+    public static Property getSsl() {
+        return new Property(Property.BOOL_TYPE, DbCredentials.SSL, "Encrypts the connection using SSL/TLS. Enable this if your database requires secure connections.",
+                new Prop(), "SSL");
+    }
 
     public DbCredentials(Map<String, Object> map)
     {

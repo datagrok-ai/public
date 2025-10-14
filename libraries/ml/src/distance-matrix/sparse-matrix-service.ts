@@ -19,6 +19,45 @@ export class SparseMatrixService {
       this._workerCount = Math.max(navigator.hardwareConcurrency - 2, 1);
     }
 
+    static pruneSparseMatrix(orig: SparseMatrixResult, maxNum = 1_000_000): SparseMatrixResult {
+      // bin values
+      const mult = 200;
+      const binRanges = new Uint32Array(mult);
+      const len = orig.distance.length;
+      const distances = orig.distance;
+      for (let i = 0; i < len; i++) {
+        const r = Math.floor(distances[i] * mult);
+        binRanges[r]++;
+      }
+
+      // get the max distance
+      let acum = 0;
+      let maxIndex = 0
+      for (let i = 0; i < mult; i++) {
+        acum += binRanges[i];
+        maxIndex = i;
+        if (acum >= maxNum)
+          break;
+      }
+      
+      const resIs = new Uint32Array(acum);
+      const resJs = new Uint32Array(acum);
+      const resDs = new Float32Array(acum);
+      const is = orig.i;
+      const js = orig.j;
+      let ind = 0;
+      const maxDistance = (maxIndex + 1) / mult;
+      for (let i = 0; i < len; i++) {
+        if (distances[i] < maxDistance) {
+          resIs[ind] = is[i];
+          resJs[ind] = js[i];
+          resDs[ind] = distances[i];
+          ind ++;
+        }
+      }
+      return {i: resIs, j: resJs, distance: resDs};
+    }
+
     public async calcMultiColumn(values: Array<any[]>, fnNames: KnownMetrics[],
       threshold: number, opts: {[_: string]: any}[] = [{}], weights: number[] = [1],
       aggregationMethod: DistanceAggregationMethod = DistanceAggregationMethods.EUCLIDEAN
@@ -144,6 +183,51 @@ export class SparseMatrixService {
         }
       }
       return knnRes;
+    }
+
+    public async multiColumnSingleValueKNN(values: Array<any[]>, targetIdx: number, fnNames: KnownMetrics[], nNeighbours: number = 15,
+      opts: {[_: string]: any}[], weights: number[], aggregationMethod: DistanceAggregationMethod = DistanceAggregationMethods.EUCLIDEAN
+    ) {
+      if (values.length !== fnNames.length || values.length !== opts.length || values.length !== weights.length)
+        throw new Error('values, distance functions, options and weights arrays should have the same length');
+
+      if (values.some((v) => v.length !== values[0].length))
+        throw new Error('all values arrays should have the same length');
+
+      const workers = new Array(this._workerCount)
+        .fill(null).map(() => new Worker(new URL('./single-value-knn-worker', import.meta.url)));
+      const promises =
+        new Array<Promise<{knnDistances: Array<number>, knnIndexes: Array<number>}>>(this._workerCount);
+      const fullSize = values[0].length;
+      const target = values.map((v) => v[targetIdx]);
+      const chunkSize = Math.ceil(fullSize / this._workerCount);
+      for (let idx = 0; idx < this._workerCount; idx++) {
+        promises[idx] = new Promise((resolveWorker, rejectWorker) => {
+          const startIdx = idx * chunkSize;
+          const endIdx = idx === this._workerCount - 1 ? fullSize : (idx + 1) * chunkSize;
+          if (endIdx <= startIdx)
+            resolveWorker({knnDistances: new Array(0), knnIndexes: new Array(0)});
+          workers[idx].postMessage({values: values.map((v) => v.slice(startIdx, endIdx)), target, fnNames, opts, nNeighbours, weights, aggregationMethod, startIdx});
+          workers[idx].onmessage = ({data: {error, knnDistances, knnIndexes}}): void => {
+            if (error) {
+              workers[idx].terminate();
+              rejectWorker(error);
+            } else {
+              workers[idx].terminate();
+              resolveWorker({knnDistances, knnIndexes});
+            }
+          };
+        });
+      }
+
+      const results = await Promise.all(promises);
+      const singleValueKnn = {knnDistances: new Array(nNeighbours).fill(99999) , knnIndexes: new Array(nNeighbours).fill(-1)} as {knnDistances: Array<number>, knnIndexes: Array<number>};
+
+      for (const res of results) {
+          for (let j = 0; j < (res.knnDistances?.length ?? 0); ++j)
+            insertSmaller(singleValueKnn.knnDistances, singleValueKnn.knnIndexes, res.knnDistances[j], res.knnIndexes[j]);
+      }
+      return singleValueKnn;
     }
 
     public async multiColumnKNN(values: Array<Array<any>>, fnNames: KnownMetrics[], nNeighbours: number = 15,

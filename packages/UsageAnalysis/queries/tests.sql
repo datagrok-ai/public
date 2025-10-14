@@ -41,7 +41,7 @@ Select * from (
   r.params::json->>'start' as start
 from tests t full join builds b on 1 = 1
 left join test_runs r on r.test_name = t.name and r.build_name = b.name   
-where t.type = 'manual' and t.name =  concat('Unknown: ', @path) 
+where t.type = 'manual' and (t.name =  concat('Test Track: ', @path) or t.name = concat('Unknown: ', @path))
 and NOT (r.params::json->>'batchName') =  @batchToExclude   and not r.passed is null
 order by   (r.params::json->>'batchName'), r.date_time desc 
 limit 5 ) as testsData
@@ -51,16 +51,15 @@ order by testsData.date desc
 --name: TestingNames
 --connection: System:Datagrok 
 --output: dataframe df
-select * from (
-Select distinct on ((r.params::json->>'batchName'))   
+select * from (Select distinct on ((r.params::json->>'batchName'))   
   (r.params::json->>'batchName') as batchName,
   (r.params::json->>'version') as version, 
   (r.params::json->>'start')as start,
     r.date_time as date
 from tests t full join builds b on 1 = 1
 left join test_runs r on r.test_name = t.name and r.build_name = b.name   
-where t.type = 'manual' 
-order by (r.params::json->>'batchName')) as a
+where t.type = 'manual' and not (r.params::json->>'batchName') = '' 
+order by (r.params::json->>'batchName'), r.date_time) as a
 order by a.date desc
 --end
 
@@ -78,7 +77,7 @@ Select distinct on ((r.params::json->'batchName')::varchar(255))
 from tests t full join builds b on 1 = 1
 left join test_runs r on r.test_name = t.name and r.build_name = b.name   
 where t.type = 'manual' 
-  and (r.params::json->>'uid')::varchar(255) = @uid 
+  and (r.params::json->>'uid')::varchar(255) = @uid::varchar
   and (r.params::json->>'version')::varchar(255) =  @version
   and (r.params::json->>'start')::varchar(255) = @start
 order by (r.params::json->'batchName')::varchar(255), r.date_time 

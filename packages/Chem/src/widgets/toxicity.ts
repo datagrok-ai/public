@@ -34,8 +34,8 @@ export function getRisks(molStr: string): {[index: string]: string} {
   return risks;
 }
 
-export async function addRisksAsColumns(table: DG.DataFrame, col: DG.Column,
-  toxRisks: {[_ in keyof typeof ToxRiskArgs]?: boolean}) {
+export async function getToxicityRisksColumns(col: DG.Column,
+  toxRisks: {[_ in keyof typeof ToxRiskArgs]?: boolean}): Promise<DG.Column[]> {
   // ids are from 0 to 3 in the order of arguments
   const toxRiskIds: number[] = [];
 
@@ -45,12 +45,14 @@ export async function addRisksAsColumns(table: DG.DataFrame, col: DG.Column,
   const oclService = new OCLService();
   const risks = await oclService.getChemToxicity(col, toxRiskIds);
   oclService.terminate();
+  const cols: DG.Column[] = [];
   toxRiskIds.forEach((riskId) => {
     const riskName = riskTypes[riskId];
     const toxCol = DG.Column.fromStrings(riskName, risks[riskId].map((risk) => riskLevels[risk]));
-    table.columns.add(toxCol);
     toxCol.meta.colors.setCategorical(riskColorCoding);
+    cols.push(toxCol);
   });
+  return cols;
 }
 
 export function toxicityWidget(molSemValue: DG.SemanticValue): DG.Widget {
@@ -76,7 +78,9 @@ export function toxicityWidget(molSemValue: DG.SemanticValue): DG.Widget {
         try {
           const riskName = Object.keys(ToxRiskArgs)
             .find((key) => ToxRiskArgs[key as keyof typeof ToxRiskArgs] === numTypeId)!;
-          await addRisksAsColumns(molSemValue.cell.dataFrame, molSemValue.cell.column, {[riskName]: true});
+          const col = await getToxicityRisksColumns(molSemValue.cell.column, {[riskName]: true});
+          if (col.length)
+            molSemValue.cell.dataFrame.columns.add(col[0]);
         } catch (e) {
           console.error(e);
         } finally {

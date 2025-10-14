@@ -1,5 +1,7 @@
+/* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {getDiverseSubset} from '@datagrok-libraries/utils/src/similarity-metrics';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
@@ -11,7 +13,7 @@ import {defaultMorganFpLength, defaultMorganFpRadius, Fingerprint,
 import {renderMolecule} from '../rendering/render-molecule';
 import {ChemSearchBaseViewer, DIVERSITY} from './chem-search-base-viewer';
 import {malformedDataWarning} from '../utils/malformed-data-utils';
-import {getRdKitModule} from '../package';
+import {PackageFunctions} from '../package';
 import {getMolSafe} from '../utils/mol-creation_rdkit';
 
 export class ChemDiversityViewer extends ChemSearchBaseViewer {
@@ -22,7 +24,7 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
   constructor(tooltipUse = false, col?: DG.Column) {
     super(DIVERSITY, col);
     this.renderMolIds = [];
-    this.updateMetricsLink(this, { fontSize: '13px', fontWeight: 'normal', paddingBottom: '15px' });
+    this.updateMetricsLink(this, {fontSize: '13px', fontWeight: 'normal', paddingBottom: '15px'});
     this.tooltipUse = tooltipUse;
   }
 
@@ -36,17 +38,25 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
         this.closeWithError('Incorrect target column type');
         return;
       }
-      let progressBar: DG.TaskBarProgressIndicator;
-      if (!this.tooltipUse)
-        progressBar = DG.TaskBarProgressIndicator.create(`Diversity search running...`);
+      let progressBar: DG.TaskBarProgressIndicator | null = null;
+      try {
+        if (computeData) {
+          if (!this.tooltipUse)
+            progressBar = DG.TaskBarProgressIndicator.create(`Diversity search running...`);
 
-      if (computeData) {
-        this.isComputing = true;
-        this.renderMolIds =
-          await chemDiversitySearch(
-            this.moleculeColumn, similarityMetric[this.distanceMetric], this.limit,
-            this.fingerprint as Fingerprint, this.getRowSourceIndexes(), this.tooltipUse);
+          this.isComputing = true;
+          this.renderMolIds =
+            await chemDiversitySearch(
+              this.moleculeColumn, similarityMetric[this.distanceMetric], this.limit,
+              this.fingerprint as Fingerprint, this.getRowSourceIndexes(), this.tooltipUse);
+        }
+      } catch (e: any) {
+        grok.shell.error(e.message);
+        return;
+      } finally {
+        progressBar?.close();
       }
+
       if (this.root.hasChildNodes())
         this.root.removeChild(this.root.childNodes[0]);
 
@@ -62,10 +72,10 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
             this.moleculeColumn!.get(this.renderMolIds[i]),
             {
               width: this.sizesMap[this.size].width, height: this.sizesMap[this.size].height,
-              popupMenu: !this.tooltipUse
+              popupMenu: !this.tooltipUse,
             }),
           molProps],
-          { style: { margin: '5px', padding: '3px', position: 'relative' } },
+        {style: {margin: '5px', padding: '3px', position: 'relative'}},
         );
 
         let divClass = 'd4-flex-col';
@@ -96,10 +106,9 @@ export class ChemDiversityViewer extends ChemSearchBaseViewer {
         grids[cnt2++] = grid;
       }
 
-      panel[cnt++] = ui.div(grids, { classes: 'd4-flex-wrap chem-diversity-search' });
-      this.root.appendChild(ui.div(panel, { style: { margin: '5px' } }));
-      if (!this.tooltipUse)
-        progressBar!.close();
+      panel[cnt++] = ui.div(grids, {classes: 'd4-flex-wrap chem-diversity-search'});
+      this.root.appendChild(ui.div(panel, {style: {margin: '5px'}}));
+      progressBar?.close();
     }
   }
 }
@@ -108,12 +117,15 @@ export async function chemDiversitySearch(
   moleculeColumn: DG.Column, similarity: (a: BitArray, b: BitArray) => number,
   limit: number, fingerprint: Fingerprint, rowSourceIndexes: DG.BitSet, tooltipUse: boolean = false): Promise<number[]> {
   let fingerprintArray: (BitArray | null)[];
+  let randomIndexes: number[] | null = null;
   if (tooltipUse) {
-    const size = Math.min(moleculeColumn.length, 1000);
+    let size = Math.min(moleculeColumn.categories.length, 1000);
+    randomIndexes = size < 1000 ? Array.from({length: size}, (_, i) => i) : Array.from(new Set(Array.from({length: size}, () => Math.floor(Math.random() * moleculeColumn.categories.length))));
+    size = randomIndexes.length;
     fingerprintArray = new Array<BitArray | null>(size).fill(null);
-    const randomIndexes = Array.from({length: size}, () => Math.floor(Math.random() * moleculeColumn.length));
+    const rdkit = PackageFunctions.getRdKitModule();
     for (let i = 0; i < randomIndexes.length; ++i) {
-      const mol = getMolSafe(moleculeColumn.get(randomIndexes[i]), {}, getRdKitModule()).mol;
+      const mol = getMolSafe(moleculeColumn.categories[randomIndexes[i]], {}, rdkit).mol;
       if (mol) {
         try {
           const fp = mol.get_morgan_fp_as_uint8array(JSON.stringify({
@@ -131,7 +143,7 @@ export async function chemDiversitySearch(
     fingerprintArray = await chemGetFingerprints(moleculeColumn, fingerprint, false);
 
   let indexes = ArrayUtils.indexesOf(fingerprintArray, (f) => !!f && !f.allFalse);
-  if (moleculeColumn.dataFrame)
+  if (moleculeColumn.dataFrame && !tooltipUse)
     indexes = indexes.filter((it) => rowSourceIndexes.get(it));
   if (!tooltipUse)
     malformedDataWarning(fingerprintArray, moleculeColumn);
@@ -142,7 +154,7 @@ export async function chemDiversitySearch(
 
   const molIds: number[] = [];
   for (let i = 0; i < limit; i++)
-    molIds[i] = indexes[diverseIndexes[i]];
-
+    molIds[i] = randomIndexes ? randomIndexes[indexes[diverseIndexes[i]]] : indexes[diverseIndexes[i]];
+  // these molIds will be indexes of categories in case of tooltip
   return molIds;
 }

@@ -1,39 +1,28 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from "datagrok-api/dg";
-
-export let _package = new DG.Package();
-
-import '@jupyterlab/application/style/index.css';
-import '@jupyterlab/codemirror/style/index.css';
-import '@jupyterlab/completer/style/index.css';
-import '@jupyterlab/documentsearch/style/index.css';
-import '@jupyterlab/notebook/style/index.css';
-import '../css/application-base.css'
 import '../css/notebooks.css';
-import '../css/theme-light-extension-index.css';
-import '../css/ui-components-base.css';
 
 import {PageConfig} from '@jupyterlab/coreutils';
 import {CommandRegistry} from '@lumino/commands';
-import {Widget} from '@lumino/widgets';
-import {ServiceManager, ServerConnection} from '@jupyterlab/services';
+import {ServerConnection, ServiceManager} from '@jupyterlab/services';
 import {MathJaxTypesetter} from '@jupyterlab/mathjax2';
 import {
-  NotebookPanel,
-  NotebookWidgetFactory,
-  NotebookModelFactory,
+  CellTypeSwitcher,
   NotebookActions,
-  CellTypeSwitcher
+  NotebookModelFactory,
+  NotebookPanel,
+  NotebookWidgetFactory
 } from '@jupyterlab/notebook';
-import {CompleterModel, Completer, CompletionHandler, KernelConnector} from '@jupyterlab/completer';
+import {Completer, CompleterModel, CompletionHandler, KernelConnector} from '@jupyterlab/completer';
 import {editorServices} from '@jupyterlab/codemirror';
 import {DocumentManager} from '@jupyterlab/docmanager';
 import {DocumentRegistry} from '@jupyterlab/docregistry';
 import {RenderMimeRegistry, standardRendererFactories as initialFactories} from '@jupyterlab/rendermime';
 import {SetupCommands} from './commands';
-import {sessionContextDialogs} from '@jupyterlab/apputils';
+import {removeChildren, editNotebook, setupEnvironment, getAuthToken} from './utils';
 
+export let _package = new DG.Package();
 
 class NotebookView extends DG.ViewBase {
   constructor(params, path) {
@@ -148,11 +137,18 @@ class NotebookView extends DG.ViewBase {
     await this.initNotebook();
     removeChildren(this.root);
     if (this.html === null)
-      this.html = await this.notebook.toHtml();
+      this.html = await toHtml(this.notebook);
     let iframe = document.createElement('iframe');
-    iframe.src = 'data:text/html;base64,' + btoa(this.html.replace(/\u00a0/g, " "));
+    const blob = new Blob([this.html.replace(/\u00a0/g, " ")], { type: 'text/html' });
+    iframe.src = URL.createObjectURL(blob);
     iframe.classList.add('grok-notebook-view-iframe');
-    let container = ui.div([iframe], 'grok-notebook-view-container');
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(".grok-notebook-view-iframe {width: 100%; height:100%; border: none;display: flex;flex-grow: 1;}");
+
+    let container = ui.div(null, 'grok-notebook-view-container');
+    let shadowRoot = container.attachShadow({'mode': 'open'});
+    shadowRoot.appendChild(iframe);
+    shadowRoot.adoptedStyleSheets = [sheet];
     let view = ui.div([container], 'd4-root,d4-flex-col');
     this.setRibbonPanels([[this.saveAsComboPopup, this.editIcon]], true);
     this.editIcon.parentNode.parentNode.style.flexShrink = '0';
@@ -175,10 +171,10 @@ class NotebookView extends DG.ViewBase {
         this.notebook.environment = environment.name;
         if (environment.name !== 'default') {
           ui.setUpdateIndicator(this.root, true);
-          await environment.setup();
+          await setupEnvironment(environment, CONTAINER_ID);
           ui.setUpdateIndicator(this.root, false);
         }
-        this.editorMode();
+        this.editMode();
       }
     });
     return environmentInput;
@@ -193,17 +189,9 @@ class NotebookView extends DG.ViewBase {
         this.name = e.name;
     }));
 
-    let notebookPath = await this.notebook.edit();
+    let notebookPath = await editNotebook(this.notebook, CONTAINER_ID);
     const manager = new ServiceManager({serverSettings: NotebookView.getSettings()});
     await manager.ready;
-
-    // Initialize the command registry with the bindings.
-    // Setup the keydown listener for the document.
-    const commands = new CommandRegistry();
-    const useCapture = true;
-    document.addEventListener('keydown', event => {
-      commands.processKeydownEvent(event);
-    }, useCapture);
 
     const renderMime = new RenderMimeRegistry({
       initialFactories: initialFactories,
@@ -214,7 +202,7 @@ class NotebookView extends DG.ViewBase {
     });
 
     const opener = {
-      open: (widget) => {
+      open: (_) => {
       }
     };
     const docRegistry = new DocumentRegistry();
@@ -251,19 +239,76 @@ class NotebookView extends DG.ViewBase {
       NotebookActions.runAll(nbWidget.content, nbWidget.context.sessionContext).then();
     });
 
-    handler.editor = editor;
+    const iframe = document.createElement('iframe');
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.border = 'none';
+    this.root.appendChild(iframe);
 
+    // Get iframe's document and append the nbWidget to its body
+    const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+    iframeDocument.open();
+    iframeDocument.write('<html><head></head><body></body></html>');
+    iframeDocument.close();
+    function addLink(path) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.href = _package.webRoot + 'dist/' + path;
+      iframeDocument.head.append(link);
+    }
+    addLink('styles/jupyter-styles.css');
+    iframe.style.pointerEvents = 'auto';
+    iframeDocument.body.style.backgroundColor = 'white';
+    const container = iframeDocument.createElement('div');
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.height = '100%';
+    container.style.overflow = 'auto';
+    iframeDocument.body.append(container);
+    iframeDocument.documentElement.style.overflow = 'auto';
+    iframeDocument.body.style.overflow = 'auto';
+
+    handler.editor = editor;
     nbWidget.content.activeCellChanged.connect((sender, cell) => {
       handler.editor = cell !== null && cell !== undefined ? cell.editor : null;
+      if (cell && cell.editor) cell.editor.focus();
     });
 
+    nbWidget.content.node.addEventListener('click', (event) => {
+      const cells = nbWidget.content.widgets; // all cells in the notebook
+      for (let i = 0; i < cells.length; i++) {
+         if (cells[i].node.contains(event.target)) {
+             nbWidget.content.activeCellIndex = i; // sets the active cell by index
+             break;
+         }
+      }
+   });
+
+    // Initialize the command registry with the bindings.
+    // Setup the keydown listener for the document.
+    const commands = new CommandRegistry();
+    const useCapture = true;
+    iframeDocument.addEventListener('keydown', event => {
+      commands.processKeydownEvent(event);
+    }, useCapture);
+    // iframe.addEventListener('mousemove', _event => {
+    //   iframe.contentWindow.focus();
+    // }, useCapture);
     completer.hide();
 
-    Widget.attach(nbWidget, this.root);
-    Widget.attach(completer, this.root);
+    // container.append(nbWidget.node);
+    // container.append(completer.node);
+    // MessageLoop.sendMessage(nbWidget, Widget.Msg.BeforeAttach);
+    container.appendChild(nbWidget.node);
+    // MessageLoop.sendMessage(nbWidget, Widget.Msg.AfterAttach);
+    // MessageLoop.sendMessage(completer, Widget.Msg.BeforeAttach);
+    container.appendChild(completer.node);
+    // MessageLoop.sendMessage(completer, Widget.Msg.AfterAttach);
 
-    if (this.environmentInput === undefined)
-      this.environmentInput = await this.getEnvironmentsInput();
+
+    // if (this.environmentInput === undefined)
+    //   this.environmentInput = await this.getEnvironmentsInput();
 
     this.setRibbonPanels([
       [
@@ -273,22 +318,30 @@ class NotebookView extends DG.ViewBase {
         }, 'Open as script')
       ],
       [
-        ui.iconFA('save', () => nbWidget.context.save(), 'Save notebook'),
+        ui.iconFA('save', () => {
+        nbWidget.context.save();
+      }, 'Save notebook'),
         ui.iconFA('plus', () => NotebookActions.insertBelow(nbWidget.content), 'Insert a cell before'),
         ui.iconFA('cut', () => NotebookActions.cut(nbWidget.content), 'Cut cell'),
         ui.iconFA('copy', () => NotebookActions.copy(nbWidget.content), 'Copy cell'),
         ui.iconFA('paste', () => NotebookActions.copy(nbWidget.content), 'Paste cell'),
         ui.iconFA('play', () => NotebookActions.runAndAdvance(nbWidget.content, nbWidget.context.sessionContext), 'Run cell'),
         ui.iconFA('stop', () => nbWidget.context.sessionContext.session.kernel.interrupt(), 'Interrupt Kernel'),
-        ui.iconFA('redo', () => sessionContextDialogs.restart(nbWidget.context.sessionContext), 'Restart Kernel'),
-        ui.iconFA('forward', () => sessionContextDialogs.restart(nbWidget.context.sessionContext)
-            .then(restarted => {
-              if (restarted) NotebookActions.runAll(nbWidget.content, nbWidget.context.sessionContext);
-            }),
-          'Restart Kernel and run all cells'),
+        ui.iconFA('redo', () => {
+          ui.dialog({ title: 'Restart Kernel' })
+          .onOK(() => sessionContext.restartKernel())
+          .show();
+        }),
+        ui.iconFA('forward', () => {
+          ui.dialog({ title: 'Restart Kernel and run all cells' })
+          .onOK(() => sessionContext.restartKernel().then(restarted => {
+            if (restarted) NotebookActions.runAll(nbWidget.content, nbWidget.context.sessionContext)
+          }))
+          .show();
+        }),
         new CellTypeSwitcher(nbWidget.content).node,
       ],
-      [this.environmentInput.root],
+      // [this.environmentInput.root],
     ], true);
     nbWidget.toolbar.hide();
     this.openAsHtmlIcon.parentNode.parentNode.style.flexShrink = '0';
@@ -299,8 +352,8 @@ class NotebookView extends DG.ViewBase {
   }
 
   notebookToCode(jnb) {
-    let inputRegex = /(.*) = grok_read/g;
-    let outputRegex = /grok\((.*)\)/g;
+    let inputRegex = /(.*) = download_table/g;
+    let outputRegex = /(.*) = upload_table\((.*)\)/g;
     let script = [
       `#name: ${this.notebook.name}\n`,
       `#description: ${this.notebook.description}\n`,
@@ -318,7 +371,8 @@ class NotebookView extends DG.ViewBase {
           lines[n] = `#${lines[n]}\n`;
         body.push(...lines);
         body.push('\n');
-      } else if (cell.model.type === 'code') {
+      }
+      else if (cell.model.type === 'code') {
         let lines = text.split('\n').filter(l => !l.startsWith('%'));
         for (let line of lines) {
           let match = inputRegex.exec(line);
@@ -328,8 +382,7 @@ class NotebookView extends DG.ViewBase {
           if (match !== null)
             outputs.push(`#output: dataframe ${match[1]}\n`);
         }
-        lines = lines.filter(l => !l.includes('grok')).join('\n');
-        body.push(lines);
+        body.push(lines.join('\n'));
         body.push('\n\n');
       }
     });
@@ -341,8 +394,7 @@ class NotebookView extends DG.ViewBase {
 
   static getSettings() {
     const _settings = {
-      baseUrl: grok.settings.jupyterNotebook,
-      token: grok.settings.jupyterNotebookToken,
+      baseUrl: 'http://localhost:8080/notebook', // host will be removed, needed only to extract path and use it in proxy request to container
       mathjaxUrl: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js',
       mathjaxConfig: 'TeX-AMS_CHTML-full,Safe'
     };
@@ -350,6 +402,37 @@ class NotebookView extends DG.ViewBase {
     for (let key in _settings) PageConfig.setOption(key, _settings[key]);
 
     let settings = ServerConnection.defaultSettings;
+
+    settings.fetch = async (info, _) => {
+      let url = new URL(info.url);
+      let path = url.pathname + url.search;
+      const params = {method: info.method, headers: info.headers};
+      if (info.body && info.body instanceof ReadableStream) {
+        const reader = info.body.getReader();
+        const chunks = [];
+        let totalLength = 0;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          chunks.push(value);
+          totalLength += value.length;
+        }
+        const bodyBuffer = new Uint8Array(totalLength);
+        let offset = 0;
+        for (const chunk of chunks) {
+          bodyBuffer.set(chunk, offset);
+          offset += chunk.length;
+        }
+
+        params.body = bodyBuffer.buffer;
+      }
+      return await grok.dapi.docker.dockerContainers.fetchProxy(CONTAINER_ID, path, params);
+    }
+
+    settings.WebSocket = DockerWebSocket;
+
     settings.baseUrl = PageConfig.getBaseUrl();
     settings.wsUrl = PageConfig.getWsUrl();
     settings.token = PageConfig.getToken();
@@ -358,6 +441,89 @@ class NotebookView extends DG.ViewBase {
   }
 }
 
+function createDockerWebSocket(url, _) {
+  let uri = new URL(url);
+  return grok.dapi.docker.dockerContainers.webSocketProxySync(CONTAINER_ID, uri.pathname + uri.search);
+}
+
+const DockerWebSocket = new Proxy(createDockerWebSocket, {
+  construct(target, args) {
+    const ws = target(...args);
+    let connected = false;
+    const buffer = [];
+    return new Proxy(ws, {
+      set(target, prop, value) {
+        if (prop === 'onmessage') {
+          target[prop] = function(event) {
+            if (event.data === "CONNECTED") {
+              connected = true;
+              if (buffer.length !== 0) {
+                for (let m of buffer)
+                  ws.send(m);
+                buffer.length = 0;
+              }
+              return;
+            }
+            value(event);
+          };
+        }
+        else {
+          target[prop] = value;
+        }
+        return true;
+      },
+
+      get(target, prop) {
+        if (prop === 'send') {
+          return new Proxy(target[prop], {
+            apply: (sendMethod, thisArg, argumentsList) => {
+              if (typeof argumentsList[0] === 'string')
+                argumentsList[0] = argumentsList[0].replace(/@USER_API_KEY/g, `'${SESSION_TOKEN}'`);
+              if (!connected)
+                buffer.push(argumentsList[0])
+              else
+                return Reflect.apply(sendMethod, target, argumentsList);
+            }
+          });
+        }
+        else if (prop === 'close') {
+          // Intercept close method to ensure correct context
+          return function(...args) {
+            console.log("Calling WebSocket close...");
+            return Reflect.apply(target[prop], target, args); // Call close on the actual WebSocket
+          };
+        }
+        else
+          return Reflect.get(target, prop);
+      }
+    });
+  }
+});
+
+let CONTAINER_ID;
+let SESSION_TOKEN;
+
+async function toHtml(notebook) {
+  const arrayBuffer = await convertNotebook(JSON.stringify(notebook.notebook));
+  return new TextDecoder("utf-8").decode(arrayBuffer);
+}
+
+//tags: init
+export async function initContainer() {
+  const container = await grok.dapi.docker.dockerContainers.filter('Notebooks-jupyter-notebook').first();
+  CONTAINER_ID = container.id;
+  if (container.status !== 'started' && !container.status.startsWith('pending') && container.status !== 'checking') {
+    const progress = DG.TaskBarProgressIndicator.create('Starting Jupyter Notebook...');
+    try {
+      await grok.dapi.docker.dockerContainers.run(CONTAINER_ID, true);
+      // wait additional time, because nginx tends to start faster
+      await new Promise((res, _) => setTimeout(() => res(), 3000));
+    } finally {
+      progress.close();
+    }
+  }
+  SESSION_TOKEN = getAuthToken();
+}
 
 //name: Notebook
 //description: Creates a Notebook View
@@ -369,8 +535,17 @@ export function notebookView(params = null, path = '') {
   return new NotebookView(params, path);
 }
 
-
-function removeChildren(node) {
-  while (node.firstChild)
-    node.removeChild(node.firstChild);
+//name: convertNotebook
+//description: Converts notebook file content into specified format
+//input: string notebook
+//input: string format
+//input: bool execute
+//output: blob result
+export async function convertNotebook(notebook, format = 'html', execute = false) {
+  notebook = notebook.replace(/@USER_API_KEY/g, `'${SESSION_TOKEN}'`);
+  const response = await grok.dapi.docker.dockerContainers.fetchProxy(CONTAINER_ID, `/notebook/helper/notebooks/convert?format=${format}&execute=${execute}`,
+      {method: 'POST', body: new TextEncoder().encode(notebook)})
+  if (response.status > 201)
+    throw response.statusText;
+  return response.arrayBuffer();
 }

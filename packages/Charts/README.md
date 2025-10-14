@@ -87,7 +87,7 @@ categories.
 
 The `Radar` viewer is a visual tool for understanding multivariate data. It plots values across multiple variables, making comparisons easy and aiding in decision-making by revealing patterns.
 
-Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/beer.csv>
+Demo dataset: https://dev.datagrok.ai/f/Demo.Files/beer.csv
 
 ![radar](./img/radar.gif)
 
@@ -96,7 +96,7 @@ Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/beer.csv>
 The `Chord` viewer is used to visualize weighted relationships between several entities.
 
 Status: `experimental`.
-Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/energy_uk.csv>
+Demo dataset: https://dev.datagrok.ai/f/Demo.Files/energy_uk.csv
 
 ![chord](./img/chord.gif)
 
@@ -109,7 +109,7 @@ performance of the first one.
 The `Sankey` viewer is used to depict a flow from one set of values to another.
 
 Status: `experimental`.
-Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/energy_uk.csv>
+Demo dataset: https://dev.datagrok.ai/f/Demo.Files/energy_uk.csv
 
 ![sankey](./img/sankey.gif)
 
@@ -123,7 +123,7 @@ The `Globe` viewer is used to represent data visualization layers on a
 3-dimensional globe in a spherical projection (e.g., earthquakes, sickness cases).
 
 Status: `experimental`.
-Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/covid-19-cases.csv>
+Demo dataset: https://dev.datagrok.ai/f/Demo.Files/covid-19-cases.csv
 
 ![globe](./img/globe.gif)
 
@@ -132,7 +132,7 @@ Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/covid-19-cases.csv>
 The `Group analysis` viewer is used to group data by different options.
 
 Status: `experimental`.
-Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
+Demo dataset: https://dev.datagrok.ai/f/Demo.Files/demog.csv
 
 ![analysis](./img/group-analysis.gif)
 
@@ -141,7 +141,7 @@ Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
 The `Sunburst` viewer is utilized for visualizing hierarchical data.
 
 Status: `experimental`.
-Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
+Demo dataset: https://dev.datagrok.ai/f/Demo.Files/demog.csv
 
 ![sunburst](./img/sunburst.gif)
 
@@ -151,7 +151,7 @@ The `Surface plot` viewer is used to display a set of three-dimensional data
 as a mesh surface.
 
 Status: `experimental`.
-Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
+Demo dataset: https://dev.datagrok.ai/f/Demo.Files/demog.csv
 
 ![surface](./img/surface-plot.gif)
 
@@ -161,7 +161,7 @@ The `TreeMap` viewer is used to display hierarchical data with rectangles of
 decreasing sizes.
 
 Status: `experimental`.
-Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
+Demo dataset: https://dev.datagrok.ai/f/Demo.Files/demog.csv
 
 ![](./img/tree-map.gif) -->
 
@@ -184,7 +184,7 @@ In the viewer properties, you can adjust marker settings, change a tree layout,
 or toggle certain behaviors, such as animation, expanding or collapsing nodes,
 etc.
 
-Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
+Demo dataset: https://dev.datagrok.ai/f/Demo.Files/demog.csv
 
 ![tree](./img/tree-viewer.gif)
 
@@ -208,7 +208,7 @@ Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
 The `WordCloud` viewer is used to visualize unstructured text data.
 
 Status: `experimental`.
-Demo dataset: <https://dev.datagrok.ai/f/Demo.Files/demog.csv>
+Demo dataset: https://dev.datagrok.ai/f/Demo.Files/demog.csv
 
 ![word](./img/word-cloud.gif)
 

@@ -1,4 +1,40 @@
-# BiostructureViewer changelog
+# Biostructure Viewer changelog
+
+## 1.4.2 (2025-04-17)
+
+ * Error handling for ligands and semtype check fix
+
+## 1.3.3 (2025-02-06)
+
+* * [#3244](https://github.com/datagrok-ai/public/issues/3244): BsV: Does not maintain opened structure file
+
+## 1.3.2 (2025-01-21)
+
+Fix for renderers in non-grid views
+
+## 1.3.1 (2025-01-09)
+
+Support PDB-ID renderer in tooltips
+
+## 1.2.4 (2024-11-29)
+
+### Features
+
+* GROK-11759: BsV: Switch molecule representation (cartoon, balls and sticks)
+
+### Bug Fixes
+
+* BsV: Initialize properties before setting the data
+* BsV: Implement resizing for the Mol* viewer within widgets
+* BsV: Resolve styling issues when building view without data
+
+## 1.2.3 (2024-11-22)
+
+Moved Context menu items to detector
+
+## 1.2.2 (2024-10-32)
+
+Fix opening files
 
 ## 1.2.1 (2024-09-26)
 

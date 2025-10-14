@@ -27,3 +27,5 @@ dist/
 .idea/**/dictionaries
 .idea/**/shelf
 .idea/codeStyles/
+
+**/*.d.ts

@@ -1,10 +1,9 @@
+/* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {ScaffoldTreeViewer, BitwiseOp, isOrphans} from './scaffold-tree';
-import {filter, debounce} from 'rxjs/operators';
-import {interval} from 'rxjs';
-import { SCAFFOLD_TREE_HIGHLIGHT } from '../constants';
+import {ScaffoldTreeViewer, BitwiseOp} from './scaffold-tree';
+import {filter} from 'rxjs/operators';
 
 const COLUMN_NAME_CHANGED = 'column-name-changed';
 
@@ -59,6 +58,7 @@ export class ScaffoldTreeFilter extends DG.Filter {
     const state = super.saveState();
     state.savedTree = JSON.stringify(this.viewer.serializeTrees(this.viewer.tree));
     state.colorCodedScaffolds = JSON.stringify(this.viewer.colorCodedScaffolds);
+    state.title = this.viewer.title;
     return state;
   }
 
@@ -72,24 +72,24 @@ export class ScaffoldTreeFilter extends DG.Filter {
       this.viewer.setHighlightTag = state.active; //in case applyState is called on disabled filter with existing scaffolds, the highlight is not set
     if (state.savedTree)
       this.viewer.loadTreeStr(state.savedTree);
+    if (state.title)
+      this.viewer.props.set('title', state.title);
 
     if (state.colorCodedScaffolds)
       this.viewer.colorCodedScaffolds = JSON.parse(state.colorCodedScaffolds);
   }
 
   applyFilter(): void {
-    if (this.dataFrame && this.viewer.bitset && !this.isDetached) {
-      this.viewer.setHighlightTag = true;
-      this.viewer.updateFilters(false);
-      this.dataFrame!.filter.and(this.viewer.bitset!);
-      this.dataFrame!.rows.addFilterState(this.saveState());
-    }
+    if (!this.dataFrame || !this.viewer.bitset || this.isDetached) return;
+    this.viewer.setHighlightTag = true;
+    this.viewer.updateFilters(false);
+    this.dataFrame.filter.and(this.viewer.bitset);
+    this.dataFrame.rows.addFilterState(this.saveState());
   }
-  
+
   detach(): void {
     super.detach();
-    this.viewer.clearFilters();
-    this.viewer.setScaffoldTag(this.viewer.molCol!, [], true);
+    this.viewer.detach();
   }
 
   createViewer(dataFrame: DG.DataFrame) {
@@ -98,8 +98,21 @@ export class ScaffoldTreeFilter extends DG.Filter {
     this.viewer.applyFilter = false;
     this.viewer.resizable = true;
     this.viewer.molCol = this.column;
-    this.viewer.MoleculeColumn = this.columnName!;
+    this.viewer.moleculeColumnName = this.columnName!;
     this.viewer.dataFrame = dataFrame;
     this.root.appendChild(this.viewer.root);
+
+    /** Temporary workaround to avoid setting height to 100% */
+    requestAnimationFrame(() => {
+      const wrapper = this.root.closest('.d4-root.d4-filter-group.d4-viewer.d4-filters.ui-box') as HTMLElement;
+      if (!wrapper) return;
+
+      const viewerContainer = wrapper.querySelector(
+        '.d4-filter-element .ui-box:has(.chem-scaffold-tree-toolbar)',
+      ) as HTMLElement;
+
+      if (viewerContainer)
+        viewerContainer.style.maxHeight = `${wrapper.clientHeight}px`;
+    });
   }
 }

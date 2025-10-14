@@ -10,7 +10,7 @@ Open linked datasets
 
 1. Set a filter.
 2. Close the filter panel.
-3. Use Current value > Use as filter.
+3. Use Current value > Use as filter. Check that filter UI is correct
 
 ***
 
@@ -22,37 +22,10 @@ Open linked datasets
 
 ***
 
-1. Add filters.
-2. View > layout > clone.
-3. Disable filters on the clone.
-3. Close-open the filter panel.
-4. Enable filters.
-5. Clear filters on clone.
-
-***
-
-1. Clone a view.
-2. Open the FP on the original view.
-3. Open the FP on the clone.
-2. Add a structure filter on the clone.
-3. Close the filter on the clone.
-3. Go to the original view and close the FP - the highlight shouldn't remain.
-
-***
-
 1. Remove Structure filter.
 2. Current value > Use as filter - check:
    * the molecule is sketched corectly,
    * the Structure filter is the first on the Filter Panel.
-
-***
-
-Chem: Substructure Filter: Not terminated on filter disable:
-1. Open tests/smi10K.csv dataset or other dataset with more than 10K structures
-2. Open filter panel and start the structure search.
-3. While search is ongoing, disable filter.
-
-Expected result: search is terminated.
 
 ***
 

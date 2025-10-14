@@ -1,8 +1,12 @@
-1. Find the project from the previous steps (Uploading)
+>Note: make sure this is the last test case
+
+1. Find the projects from the previous steps
 2. Right-click the project and select **Delete project** from the context menu. A dialog opens.
-3. Click **YES** in the confirmation dialog.
-4. Check that the project has been deleted and is no longer present in other braches of the Browse tree.
+Optionally, delete it using the drop-down menu next to the project name on the **Context Panel**
+3. Click **YES** in the confirmation dialog
+4. Check that the project has been deleted and is no longer present
+
 ---
 {
-  "order": 4
+  "order": 6
 }

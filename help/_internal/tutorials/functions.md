@@ -73,6 +73,7 @@ let tj = grok.data.joinTables(queryData, filesData,
 ```
 See also:
 - [Scripts](scripting/scripting.mdx)
+- [Package APi](../../develop/advanced/package-api.md)
 - [Join Tables](https://public.datagrok.ai/js/samples/data-frame/join-link/join-tables)
 
 You can also use Grok Script as a script language:

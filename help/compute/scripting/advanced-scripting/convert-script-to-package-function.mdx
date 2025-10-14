@@ -1,0 +1,71 @@
+---
+title: "Convert script to a package function"
+sidebar_position: 5
+---
+
+```mdx-code-block
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import BrowserWindow from '@site/src/components/browser-window';
+```
+
+You can convert a script to a package function to:
+- Save the script in the version control system (e.g., Git).
+- Call your script from other scripts or fucntions by a stable name.
+
+Follow these steps to achieve it:
+
+1. Create a TypeScript [package](../../../develop/develop.md#packages).
+
+  ```shell
+  grok create package_name --ts
+  ```
+
+2. Add your script to the package.
+
+    a. For Python, R, Julia, and other server-side languages, create
+    the `scripts` folder in your package directory and place your
+    script file in it.
+
+    b. If you are writing in Javascript/Typescript, you can convert
+    your script to a package function, annotate it, and add directly
+    to `src` package.ts file:
+
+    ```typescript
+    //name: DemoScript
+    //tags: demo
+    //input: int input1
+    //output: int result
+    export async function DemoScript(input1: number) {
+      return 1;
+    }
+    ```
+
+3. Compile and [publish](../../../develop/develop.md#publishing) the package:
+
+    ```shell
+    npm run build && grok publish your_environment
+    ```
+
+    To make your package publicly available, use the `--release` [publishing mode](../../../develop/develop.md#publishing-modes).
+
+    ```shell
+    npm run build && grok publish your_environment --release
+    ```
+
+Now you can call your function using:
+
+    ```typescript
+    const result = await grok.functions.call('package_name:DemoScript', { input1: 10 }); // result = 1
+    ```
+
+For a JS function with a single output, the output will be returned
+directly. If there are multiple outputs, a function will return an
+Object with key value results.
+
+:::note
+
+To return multiple outputs from a function inside package.ts, just
+return an Object with key value results.
+
+:::

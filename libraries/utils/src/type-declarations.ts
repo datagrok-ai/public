@@ -65,5 +65,5 @@ export type StringDictionary = {[key: string]: string};
 
 
 export type ColumnInputOptions = {
-    filter?: (col: DG.Column) => boolean | null;
+    filter?: (col: DG.Column) => boolean;
 };

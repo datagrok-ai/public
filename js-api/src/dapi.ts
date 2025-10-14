@@ -19,18 +19,18 @@ import {
   Package,
   UserSession,
   Property,
-  FileInfo, HistoryEntry, ProjectOpenOptions, Func, UserReport, UserReportsRule
-} from "./entities";
+  FileInfo, ProjectOpenOptions, Func, UserReport, UserReportsRule, ViewLayout, ViewInfo, UserNotification,
+} from './entities';
 import { DockerImage } from "./api/grok_shared.api.g";
-import {ViewLayout, ViewInfo} from "./views/view";
 import {toJs, toDart} from "./wrappers";
-import {_propsToDart} from "./utils";
+import {_propsToDart} from "./utils_convert";
 import {FuncCall} from "./functions";
 import {IDartApi} from "./api/grok_api.g";
 import { StickyMeta } from "./sticky_meta";
 import {CsvImportOptions} from "./const";
+import dayjs from 'dayjs';
 
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 export class ComponentBuildInfo {
   branch: string = '';
@@ -52,6 +52,22 @@ export class Dapi {
   get root(): string {
     return api.grok_Dapi_Root();
   }
+  set root(root: string) {
+    // @ts-ignore
+    api.grok_Dapi_Set_Root(root);
+  }
+
+
+  get token(): string {
+    // @ts-ignore
+    return api.grok_Dapi_Get_Token();
+  }
+  // @ts-ignore
+  set token(token?: string | undefined) {
+
+    // @ts-ignore
+
+     api.grok_Dapi_Set_Token(token); }
 
   /** Retrieves entities from server by list of IDs
    *  @returns {Promise<Entity[]>} */
@@ -223,6 +239,8 @@ export class Dapi {
     params.headers['original-url'] = `${url}`;
     // @ts-ignore
     params.headers['original-method'] = params.method;
+    if (params.redirect === 'follow')
+      (params.headers as any)['follow-redirects'] = true;
     let proxyUrl = `${this.root}/connectors/proxy`;
     if (params.method == 'GET' || params.method == 'HEAD') {
       if (maxAge) {
@@ -245,8 +263,8 @@ export class Dapi {
 
   /** Logging API endpoint
    *  @type {HttpDataSource<LogEvent>} */
-  get log(): HttpDataSource<LogEvent> {
-    return new HttpDataSource(api.grok_Dapi_Log());
+  get log(): LogDataSource {
+    return new LogDataSource(api.grok_Dapi_Log());
   }
 
   /** Logging API endpoint
@@ -350,7 +368,7 @@ export class HttpDataSource<T> {
   /** Applies filter to current request.
    *  Also can be set with {@link list} method "options" parameter
    *  See example: {@link https://public.datagrok.ai/js/samples/dapi/projects-list}
-   *  Smart filter: {@link https://datagrok.ai/help/datagrok/smart-search}
+   *  Smart filter: {@link https://datagrok.ai/help/datagrok/navigation/views/browse#entity-search}
    *  @param {string} w
    *  @returns {HttpDataSource} */
   filter(w: string): HttpDataSource<T> {
@@ -387,6 +405,12 @@ export class UsersDataSource extends HttpDataSource<User> {
   /** @constructs UsersDataSource*/
   constructor(s: any) {
     super(s);
+  }
+
+  /** Notifications API endpoint
+   *  @type {NotificationsDataSource} */
+  get notifications(): NotificationsDataSource {
+    return new NotificationsDataSource(api.grok_Dapi_Notifications());
   }
 
   /** Returns current user
@@ -578,6 +602,11 @@ export class EntitiesDataSource extends HttpDataSource<Entity> {
     super(s);
   }
 
+  /** Returns recent entities */
+  getRecentEntities(): Promise<Entity[]> {
+    return toJs(api.grok_EntitiesDataSource_GetRecent(this.dart));
+  }
+
   /** Allows to set properties for entities
    * @param {Map[]} props
    * @returns {Promise} */
@@ -603,7 +632,7 @@ export class EntitiesDataSource extends HttpDataSource<Entity> {
 /**
  * Functionality for handling connections collection from server and working with credentials remote endpoint
  * Allows to manage {@link DataConnection}
- * See also: {@link https://datagrok.ai/help/govern/security}
+ * See also: {@link https://datagrok.ai/help/datagrok/solutions/enterprise/security}
  * @extends HttpDataSource
  * */
 export class DataConnectionsDataSource extends HttpDataSource<DataConnection> {
@@ -657,7 +686,7 @@ export class FuncsDataSource extends HttpDataSource<Func> {
 /**
  * Functionality for handling credentials collection from server and working with credentials remote endpoint
  * Allows to manage {@link Credentials}
- * See also: {@link https://datagrok.ai/help/govern/security}
+ * See also: {@link https://datagrok.ai/help/datagrok/solutions/enterprise/security#credentials}
  * @extends HttpDataSource
  * */
 export class CredentialsDataSource extends HttpDataSource<Credentials> {
@@ -708,7 +737,7 @@ export class LayoutsDataSource extends HttpDataSource<ViewLayout> {
  * @extends HttpDataSource
  * */
 export class ViewsDataSource extends HttpDataSource<ViewInfo> {
-  /** @constructs ViewInfoDataSource*/
+  /** @constructs ViewsDataSource*/
   constructor(s: any) {
     super(s);
   }
@@ -845,7 +874,11 @@ export class ProjectsDataSource extends HttpDataSource<Project> {
     return this
       .filter(name)
       .first()
-      .then(p => p.open(options));
+      .then(p => {
+        if (p)
+          return p.open(options);
+        return Promise.reject(`Project ${name} not found`);
+      });
   }
 
   /** Saves the Project */
@@ -897,7 +930,7 @@ export class DockerDataSource {
     return new DockerContainersDataSource(api.grok_Dapi_DockerContainers());
   }
 
-  getServiceLogs(serviceName: string, limit: number): Promise<DataFrame> {
+  getServiceLogs(serviceName: string, limit: number): Promise<string> {
     return api.grok_Dapi_DockersDataSource_GetServiceLogs(serviceName, limit);
   }
 
@@ -955,7 +988,7 @@ export class DockerContainersDataSource extends HttpDataSource<DockerContainer> 
   }
 
   /**
-   * Proxies URL requests to docker containers via Datagrok server with the same interface as [fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API). Returns response
+   * Proxies URL requests to Docker containers via Datagrok server with the same interface as [fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API). Returns response
    * from the containers as it is. If an error occurs on the server side returns a response with "application/json"
    * Content-Type and JSON body with field "datagrok-error" that describes the cause. If container status is incorrect
    * for performing requests returns a response with a 400 status code. If something goes wrong in the server workflow,
@@ -974,10 +1007,110 @@ export class DockerContainersDataSource extends HttpDataSource<DockerContainer> 
   }
 
   /**
-   * @deprecated The method will be removed soon. Use {@link fetchProxy}.
+   * Proxies WebSocket connection to Docker containers via Datagrok server. Returns ready WebSocket that is connected through the server to the
+   * Docker container WebSocket endpoint. If container status is incorrect or there is error while establishing WebSocket connection to Docker container, caller will receive an error.
+   * After the WebSocket is returned, caller can do anything with it and should take care of reconnection. After the caller closes the connection, server will close
+   * proxied Docker WebSocket connection.
+   * @param containerId - ID of the {@link DockerContainer} to which the WebSocket connection will be established.
+   * @param path - URI without scheme and authority component that points to endpoint inside  the Docker container
+   * @param timeout - Timeout in ms for initial connection establishment. Set it to higher values if you are using container with on_demand configuration set to `true`.
    */
-  request(id: string, path: string, params: ResponseInit): Promise<string | null> {
-    return api.grok_Dapi_DockerContainersDataSource_ProxyRequest(this.dart, id, path, params);
+  async webSocketProxy(containerId: string, path: string, timeout: number = 60000): Promise<WebSocket> {
+    if (!path.startsWith('/')) path = `/${path}`;
+
+    return new Promise<WebSocket>((resolve, reject) => {
+      const socket = new WebSocket(`${api.grok_Dapi_WS_Root()}/docker/containers/proxy-ws/${containerId}${path}`);
+
+      let timeoutTimer = setTimeout(() => {
+        cleanup();
+        socket.close(4001, "Timeout waiting for Docker container");
+        reject(new Error("Timeout waiting for Docker container"));
+      }, timeout);
+
+      // Wait for the CONNECTED message from the server.
+      // Message indicates that this and Docker container WebSockets are connected to each other.
+      const onMessage = (event: MessageEvent) => {
+        if (event.data === "CONNECTED") {
+          clearTimeout(timeoutTimer);
+          cleanup();
+          resolve(socket);
+        }
+      };
+
+      const onClose = (event: CloseEvent) => {
+        clearTimeout(timeoutTimer);
+        cleanup();
+        reject(new Error(`Could not open WebSocket connection: ${event.reason}`));
+      };
+
+      // Unfortunately, event doesn't have error reference
+      const onError = (_: Event) => {
+        clearTimeout(timeoutTimer);
+        cleanup();
+        reject(new Error("WebSocket encountered an error"));
+      };
+
+      function cleanup() {
+        socket.removeEventListener("message", onMessage);
+        socket.removeEventListener("close", onClose);
+        socket.removeEventListener("error", onError);
+      }
+
+      socket.addEventListener("message", onMessage);
+      socket.addEventListener("close", onClose);
+      socket.addEventListener("error", onError);
+    });
+  }
+
+  /**
+   * This is the synchronous version of the function {@link webSocketProxy}. Note that the container won't be
+   * ready to accept messages immediately after this function returns. If your application logic requires sending
+   * a message right away, consider using the asynchronous version.
+   * @param containerId - ID of the {@link DockerContainer} to which the WebSocket connection will be established.
+   * @param path - URI without scheme and authority component that points to endpoint inside  the Docker container
+   * @param timeout - Timeout in ms for initial connection establishment. Set it to higher values if you are using container with on_demand configuration set to `true`.
+   */
+  webSocketProxySync(containerId: string, path: string, timeout: number = 60000): WebSocket {
+    const socket = new WebSocket(`${api.grok_Dapi_WS_Root()}/docker/containers/proxy-ws/${containerId}${path}`);
+    new Promise((resolve, reject) => {
+      let timeoutTimer = setTimeout(() => {
+        cleanup();
+        socket.close(4001, "Timeout waiting for Docker container");
+        reject(new Error("Timeout waiting for Docker container"));
+      }, timeout);
+
+      const onMessage = (event: MessageEvent) => {
+        if (event.data === "CONNECTED") {
+          clearTimeout(timeoutTimer);
+          cleanup();
+          resolve(socket);
+        }
+      };
+
+      const onClose = (event: CloseEvent) => {
+        clearTimeout(timeoutTimer);
+        cleanup();
+        reject(new Error(`Could not open WebSocket connection: ${event.reason}`));
+      };
+
+      const onError = (_: Event) => {
+        clearTimeout(timeoutTimer);
+        cleanup();
+        socket.close(4001, "WebSocket encountered an error");
+        reject(new Error("WebSocket encountered an error"));
+      };
+
+      function cleanup() {
+        socket.removeEventListener("message", onMessage);
+        socket.removeEventListener("close", onClose);
+        socket.removeEventListener("error", onError);
+      }
+
+      socket.addEventListener("message", onMessage);
+      socket.addEventListener("close", onClose);
+      socket.addEventListener("error", onError);
+    }).catch((e) => console.error(e));
+    return socket;
   }
 
   /**
@@ -1005,6 +1138,46 @@ export class UserReportsDataSource extends HttpDataSource<UserReport> {
 export class UserReportsRulesDataSource extends HttpDataSource<UserReportsRule> {
   constructor(s: any) {
     super(s);
+  }
+}
+
+export class NotificationsDataSource extends HttpDataSource<UserNotification> {
+  constructor(s: any) {
+    super(s);
+  }
+
+  forCurrentUser(): NotificationsDataSource {
+    return new NotificationsDataSource(api.grok_Dapi_Notifications_ForCurrentUser());
+  }
+
+  async countUnread(): Promise<number> {
+    return api.grok_Dapi_Notifications_CountUnread();
+  }
+}
+
+export class LogDataSource extends HttpDataSource<LogEvent> {
+  constructor(s: any) {
+    super(s);
+  }
+
+  /** Activity API endpoint
+   *  @type {ActivityDataSource} */
+  get activity(): ActivityDataSource {
+    return new ActivityDataSource(api.grok_Dapi_Activity());
+  }
+
+  where(options?: {entityId?: string, start?: dayjs.Dayjs, end?: dayjs.Dayjs, favoritesOnly?: boolean}): LogDataSource {
+    return new LogDataSource(api.grok_Dapi_Log_Where(this.dart, options?.entityId ?? '', toDart(options?.start), toDart(options?.end), options?.favoritesOnly ?? false));
+  }
+}
+
+export class ActivityDataSource extends HttpDataSource<LogEvent> {
+  constructor(s: any) {
+    super(s);
+  }
+
+  where(options?: {userId?: string, start?: dayjs.Dayjs, end?: dayjs.Dayjs}): ActivityDataSource {
+    return new ActivityDataSource(api.grok_Dapi_Activity_Where(this.dart, options?.userId ?? '', toDart(options?.start), toDart(options?.end)));
   }
 }
 
@@ -1077,6 +1250,75 @@ export class FileSource {
     return toJs(await api.grok_Dapi_UserFiles_List(file, recursive, searchPattern, this.root));
   }
 
+  /**
+   * Reads the entire contents of a folder and returns an object.
+   * The resulting object's keys are the file names relative to the folder path, and the corresponding values are of the Blob type.
+   * @param {FileInfo | string} folder
+   * @param recursive - whether to read files in folders recursively
+   * @param ext - files extension
+   */
+  async readFilesAsBlobs(folder: FileInfo | string, recursive: boolean = false, ext: string | undefined = undefined): Promise<{[key: string]: Blob}> {
+    const folderPath = this.setRoot(folder);
+    const conn = folderPath.replace(":", ".").split('/')[0];
+    let url = `${api.grok_Dapi_Root()}/connectors/connections/${conn}/folder/${folderPath.substring(folderPath.indexOf('/') + 1)}?recursive=${recursive}`;
+    if (ext) {
+      if (!ext.startsWith('.'))
+        ext = `.${ext}`;
+      url += `&ext=${ext}`;
+    }
+    const response = await fetch(url);
+    if (response.status == 204)
+      return {};
+    const formData: FormData = await response.formData();
+    const files: {[key: string]: any} = {};
+
+    formData.forEach((value: Blob | string, filename) => {
+      if (value instanceof Blob)
+        files[filename] = value;
+    });
+
+    return files;
+  }
+
+  /**
+   * Reads the entire contents of a folder and returns an object.
+   * The resulting object's keys are the file names relative to the folder path, and the corresponding values are JSON objects.
+   * If conversion to a JSON fails, the file will be skipped.
+   * @param {FileInfo | string} folder
+   * @param recursive - whether to read files in folders recursively
+   * @param ext - files extension
+   */
+  async readFilesAsJson(folder: FileInfo | string, recursive: boolean = false, ext: string | undefined = undefined): Promise<{[key: string]: any}> {
+    const filesBlobs: {[key: string]: Blob} = await this.readFilesAsBlobs(folder, recursive, ext);
+    const jsons: {[key: string]: any} = {};
+    for (const [name, blob] of Object.entries(filesBlobs)) {
+      try {
+        jsons[name] = JSON.parse(await blob.text());
+      } catch (_) {}
+    }
+    return jsons;
+  }
+
+  /**
+   * Reads the entire contents of a folder and returns an object.
+   * The resulting object's keys are the file names relative to the folder path, and the corresponding values are strings.
+   * If conversion to a string fails, the file will be skipped.
+   * @param {FileInfo | string} folder
+   * @param recursive - whether to read files in folders recursively
+   * @param ext - files extension
+   */
+  async readFilesAsString(folder: FileInfo | string, recursive: boolean = false, ext: string | undefined = undefined): Promise<{[key: string]: string}> {
+    const filesBlobs: {[key: string]: Blob} = await this.readFilesAsBlobs(folder, recursive, ext);
+    const files: {[key: string]: string} = {};
+    for (const [name, blob] of Object.entries(filesBlobs)) {
+      try {
+        files[name] = await blob.text();
+      } catch (_) {}
+    }
+    return files;
+  }
+
+
   /** Reads a file as string.
    * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
    * @param {FileInfo | string} file
@@ -1118,6 +1360,14 @@ export class FileSource {
   async writeBinaryDataFrames(file: FileInfo | string, dataFrames: DataFrame[]): Promise<void> {
     file = this.setRoot(file);
     return api.grok_Dapi_UserFiles_WriteBinaryDataFrames(file, dataFrames.map((df) => df.dart));
+  }
+
+  /** Creates directory
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/files}
+   * @param {FileInfo | string} file*/
+  async createDirectory(file: FileInfo | string): Promise<void> {
+    file = this.setRoot(file);
+    return api.grok_Dapi_UserFiles_CreateDirectory(file);
   }
 
   /** Writes a file.

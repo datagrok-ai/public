@@ -1,6 +1,7 @@
 let v = grok.shell.newView('list');
 
-grok.dapi.users.list().then((users) => v.root.appendChild(ui.list(users)));
+let users = await grok.dapi.users.list();
+v.root.appendChild(ui.list(users))
 
 v.append(ui.h3("Let's hide the tooltip for users that have 'a' in the name!"))
 grok.events.onTooltipRequest.subscribe((args) => {

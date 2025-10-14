@@ -1,5 +1,9 @@
 # gridext changelog
 
+## 1.3.77 (2024-11-18)
+
+* Grid scrolling and current row fixes for pinned columns
+
 ## 1.3.73 (2024-10-01)
 
 * [#2683](https://github.com/datagrok-ai/public/issues/2683): Fixed left-clicking on the column name does not change the Context Panel display

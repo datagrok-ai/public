@@ -2,6 +2,17 @@
 
 The BioNeMo package integrates advanced models for protein structure prediction and molecular docking. It features **EsmFold**, which predicts 3D protein structures from amino acid sequences, and **DiffDock**, which predicts molecular interactions with proteins.
 
+## Setup  
+
+To use **BioNeMo**, you need an **NGC API key** for either cloud or local access. 
+
+- **Cloud access** – Run **EsmFold, DiffDock, and MolMIM** without installation using your API key.  
+- **Local setup** – Install **DiffDock** or **MolMIM** on your system:  
+  - [DiffDock Setup](https://docs.nvidia.com/nim/bionemo/diffdock/latest/getting-started.html)  
+  - [MolMIM Setup](https://docs.nvidia.com/nim/bionemo/molmim/latest/quickstart-guide.html)  
+
+Make sure your API key is properly configured for your chosen setup.
+
 ## EsmFold model
 
 EsmFold predicts 3D structures of proteins based on their amino acid sequences.

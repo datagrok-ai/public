@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -6,11 +7,13 @@ import wu from 'wu';
 import {Observable, Subject} from 'rxjs';
 
 import {IMonomerLibBase, Monomer, RGroup} from '@datagrok-libraries/bio/src/types/index';
-import {HelmAtom, HelmType, IMonomerColors, IWebEditorMonomer, MonomerType, PolymerType} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmAtom, HelmType, IMonomerColors,
+  IWebEditorMonomer, MonomerType, PolymerType} from '@datagrok-libraries/bio/src/helm/types';
 import {getMonomerHandleArgs} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {HelmTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
-import {HELM_OPTIONAL_FIELDS as OPT, HELM_REQUIRED_FIELD as REQ, HELM_RGROUP_FIELDS as RGP} from '@datagrok-libraries/bio/src/utils/const';
+import {HELM_OPTIONAL_FIELDS as OPT, HELM_REQUIRED_FIELD as REQ,
+  HELM_RGROUP_FIELDS as RGP} from '@datagrok-libraries/bio/src/utils/const';
 import {GAP_SYMBOL, GapOriginals, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {Vector} from '@datagrok-libraries/utils/src/type-declarations';
 import {vectorAdd, vectorDotProduct, vectorLength} from '@datagrok-libraries/utils/src/vector-operations';
@@ -24,6 +27,12 @@ import {_package} from '../../package';
 const monomerRe = /[\w()]+/;
 //** Do not mess with monomer symbol with parenthesis enclosed in square brackets */
 const ambMonomerRe = RegExp(String.raw`\(${monomerRe}(,${monomerRe})+\)`);
+
+const drawMoleculeCall = (s: string) => {
+  const canvas = ui.canvas(250, 250);
+  grok.chem.canvasMol(0, 0, 250, 250, canvas, s);
+  return canvas;
+};
 
 export type MonomerLibDataType = { [polymerType: string]: { [monomerSymbol: string]: Monomer } };
 
@@ -46,6 +55,10 @@ export class MonomerLibBase implements IMonomerLibBase {
   ) {
     this._isEmpty = !this._monomers || Object.keys(this._monomers).length === 0 ||
       Object.entries(this._monomers).every(([_, ptMonomers]) => Object.keys(ptMonomers).length === 0);
+    for (const [_monomerType, monomersOfType] of Object.entries(this._monomers)) {
+      for (const [_monomerSymbol, monomer] of Object.entries(monomersOfType))
+        monomer.lib = this;
+    }
   }
 
   getMonomerSymbolsByType(polymerType: PolymerType): string[] {
@@ -161,19 +174,19 @@ export class MonomerLibBase implements IMonomerLibBase {
   getTooltip(biotype: HelmType, monomerSymbol: string): HTMLElement {
     const polymerType = helmTypeToPolymerType(biotype);
     const res = ui.div([], {classes: 'ui-form ui-tooltip'});
+    const wem = this.getWebEditorMonomer(biotype, monomerSymbol)!;
     const monomer = this.getMonomer(polymerType, monomerSymbol);
     if (monomer) {
       // Symbol & Name
       const symbol = monomer[REQ.SYMBOL];
       const _name = monomer[REQ.NAME];
-      const wem = this.getWebEditorMonomer(biotype, monomerSymbol)!;
-
-      const htmlColor = wem.backgroundcolor;
+      const [color, backgroundColor, lineColor] =
+        wem ? [wem.textcolor, wem.backgroundcolor, wem.linecolor] : ['#202020', '#A0A0A0', '#202020'];
       res.append(ui.divH([
         ui.div([symbol], {
           style: {
             /* fontWeight: 'bolder', */ textWrap: 'nowrap', marginLeft: '4px', marginRight: '4px',
-            color: wem.textcolor, backgroundColor: wem.backgroundcolor, borderColor: wem.linecolor,
+            color: color, backgroundColor: backgroundColor, borderColor: lineColor,
             borderWidth: '1px', borderStyle: 'solid', borderRadius: '2px', padding: '3px',
             minWidth: '24px', textAlign: 'center',
           }
@@ -182,13 +195,13 @@ export class MonomerLibBase implements IMonomerLibBase {
       ], {style: {display: 'flex', flexDirection: 'row', justifyContent: 'left'}}));
 
       // Structure
-      const chemOptions = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
+      //const chemOptions = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
       let structureEl: HTMLElement;
       if (monomer.molfile)
-        structureEl = grok.chem.svgMol(monomer.molfile, undefined, undefined, chemOptions);
+        structureEl = drawMoleculeCall(monomer.molfile);
       else if (monomer.smiles) {
         structureEl = ui.divV([
-          grok.chem.svgMol(monomer.smiles, undefined, undefined, chemOptions),
+          drawMoleculeCall(monomer.smiles),
           ui.divText('from smiles', {style: {fontSize: 'smaller'}}),
         ]);
       } else {
@@ -199,8 +212,22 @@ export class MonomerLibBase implements IMonomerLibBase {
         {style: {display: 'flex', flexDirection: 'row', justifyContent: 'center', margin: '6px'}}));
 
       // Source
-      if (monomer.symbol != GAP_SYMBOL)
-        res.append(ui.divText(monomer.lib?.source ?? 'Missed in libraries'));
+      if (monomer.symbol != GAP_SYMBOL) {
+        let source = monomer.lib?.source;
+        if (!source)
+          res.append(ui.divText('Missed in libraries'));
+        else {
+          // remove.json extension
+          if (source.endsWith('.json'))
+            source = source.substring(0, source.length - 5);
+          // convert campelCase/snake_case/kebab-case to space separated words
+          source = source
+            .replace(/_/g, ' ')
+            .replace(/-/g, ' ')
+            .replace(/([a-z])([a-z])([A-Z])/g, '$1$2 $3');
+          res.append(ui.divText(source));
+        }
+      }
     } else {
       res.append(ui.divV([
         ui.divText(`Monomer '${monomerSymbol}' of type '${polymerType}' not found.`),
@@ -252,9 +279,19 @@ export class MonomerLibBase implements IMonomerLibBase {
     let res: any;
     if (monomer) {
       if (monomer.meta && monomer.meta.colors) {
+        // due to some weird formatting, meta.colors can be a string
+        if (typeof monomer.meta.colors === 'string') {
+          try {
+            monomer.meta.colors = JSON.parse(monomer.meta.colors);
+          } catch (e) {
+            _package.logger.error(`Bio: MonomerLib.getMonomerColors() failed to parse monomer.meta.colors: ${e}`);
+          }
+        }
         const monomerColors: { [colorSchemaName: string]: any } = monomer.meta.colors;
-        if (!(currentMonomerSchema in monomerColors)) monomerSchema = 'default';
-        res = monomerColors[monomerSchema];
+        if (monomerColors && typeof monomerColors != 'string' && !(currentMonomerSchema in monomerColors))
+          monomerSchema = 'default';
+        if (monomerColors && typeof monomerColors != 'string' && monomerSchema in monomerColors)
+          res = monomerColors[monomerSchema];
       }
 
       if (!res) {
@@ -267,13 +304,12 @@ export class MonomerLibBase implements IMonomerLibBase {
       }
 
       const naSymbol: string | undefined = monomer[OPT.NATURAL_ANALOG];
-      if (!res && naSymbol) {
+      if (!res && naSymbol)
         return this.getMonomerColors(biotype, naSymbol);
-      }
     }
 
     if (!res)
-      res = {textColor: "#202020", lineColor: "#202020", backgroundColor: "#A0A0A0"};
+      res = {textColor: '#202020', lineColor: '#202020', backgroundColor: '#A0A0A0'};
 
     return {
       textcolor: res.text ?? res.textColor,

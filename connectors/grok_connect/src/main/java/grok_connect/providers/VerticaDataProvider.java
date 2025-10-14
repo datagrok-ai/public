@@ -28,8 +28,8 @@ public class VerticaDataProvider extends JdbcDataProvider {
         descriptor.type = "Vertica";
         descriptor.description = "Query Vertica database";
         descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
-        descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
-        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
+        descriptor.connectionTemplate.add(DbCredentials.getSsl());
+        descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
         descriptor.canBrowseSchema = true;
         descriptor.typesMap = new HashMap<String, String>() {{
             put("#.*char.*", Types.STRING);

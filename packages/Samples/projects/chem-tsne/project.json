@@ -1,0 +1,15 @@
+{
+  "tags": [
+    "demo",
+    "default",
+    "chem"
+  ],
+  "name": "Chemical Space Using tSNE",
+  "description": "Chemical Space Using tSNE (t-distributed Stochastic Neighbor Embedding). Plots Spanning Tree, Linkage Tree and Chemical Space",
+  "tables": [
+    {
+      "path": "demo/chem/sar_small.csv",
+      "id": "295154f0-3260-11e9-8102-71a1f74ba434"
+    }
+  ]
+}

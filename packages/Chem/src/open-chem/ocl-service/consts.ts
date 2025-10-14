@@ -2,6 +2,7 @@ export const enum OCLServiceCall {
   TOXICITY = 'toxicity',
   CHEM_PROPERTIES = 'chem_properties',
   DRUG_LIKENESS = 'drug_likeness',
+  Molfile_To_V3K = 'Molfile_To_V3K',
 };
 
 export const riskTypes: {[index: number]: string} = {

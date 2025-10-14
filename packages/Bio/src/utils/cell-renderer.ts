@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* eslint-disable max-lines */
 /* eslint-disable max-params */
 /* eslint-disable max-lines-per-function */
@@ -22,7 +23,7 @@ import {getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule/utils
 import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types';
 import {GapOriginals} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {execMonomerHoverLinks} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
-import {getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
+import {CellRendererBackBase, getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {MmcrTemps, rendererSettingsChangedState, tempTAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
 
@@ -30,6 +31,7 @@ import {CellRendererWithMonomerLibBackBase} from './monomer-cell-renderer-base';
 import * as C from './constants';
 
 import {_package} from '../package';
+import {SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 
 type TempType = { [tagName: string]: any };
 
@@ -53,10 +55,12 @@ export function processSequence(subParts: string[]): [string[], boolean] {
   return [text, simplified];
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 type RendererGridCellTemp = {
   [MmcrTemps.monomerPlacer]: MonomerPlacer
 }
 
+// @grok.decorators.cellRenderer({name: 'customSequenceCellRenderer', cellType: 'sequence', columnTags: 'quality=Macromolecule, units=custom'})
 export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   private readonly seqHelper: ISeqHelper;
 
@@ -68,25 +72,69 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
   get defaultWidth(): number | null { return 230; }
 
+  hasMouseOver: boolean = false;
+
   constructor() {
     super();
     this.seqHelper = _package.seqHelper;
   }
 
-  onClick(gridCell: DG.GridCell, _e: MouseEvent): void {
+  getRendererBack(gridCell: DG.GridCell): CellRendererBackBase<string> | null {
+    const [gridCol, tableCol, _temp] = getGridCellColTemp<string, any>(gridCell);
+    if (_temp.rendererBack)
+      return _temp.rendererBack;
+    let back: CellRendererBackBase<string> | null = null;
+    if (this.seqHelper) {
+      const sh = this.seqHelper.getSeqHandler(tableCol);
+      back = sh.getRendererBack(gridCol, tableCol);
+    }
+    return back;
+  }
+
+  override onClick(gridCell: DG.GridCell, _e: MouseEvent): void {
     const colTemp: TempType = gridCell.cell.column.temp;
     colTemp[tempTAGS.currentWord] = gridCell.cell.value;
     gridCell.grid.invalidate();
+    const back = this.getRendererBack(gridCell);
+    back?.onClick(gridCell, _e);
+  }
+
+  override onMouseEnter(gridCell: DG.GridCell, e: MouseEvent) {
+    const back = this.getRendererBack(gridCell);
+    back?.onMouseEnter(gridCell, e);
+    this.hasMouseOver = true;
   }
 
   override onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
-    const [gridCol, tableCol, temp] = getGridCellColTemp<string, MonomerPlacer>(gridCell);
-    const back = temp.rendererBack;
-    back.onMouseMove(gridCell, e);
+    const back = this.getRendererBack(gridCell);
+    back?.onMouseMove(gridCell, e);
   }
 
-  override onMouseLeave(gridCell: DG.GridCell, e: MouseEvent) {
+  override onMouseLeave(gridCell: DG.GridCell, _e: MouseEvent) {
     execMonomerHoverLinks(gridCell, null);
+    if (gridCell?.grid) {
+      const sub = gridCell.grid.onEvent('d4-grid-show-tooltip').subscribe((e) => {
+        sub.unsubscribe();
+        if (this.hasMouseOver)
+          e.preventDefault();
+      });
+    }
+    this.hasMouseOver = false;
+  }
+
+  override onDoubleClick(gridCell: DG.GridCell, e: MouseEvent) {
+    const back = this.getRendererBack(gridCell);
+    back?.onDoubleClick(gridCell, e);
+  }
+
+  override onKeyDown(gridCell: DG.GridCell, e: KeyboardEvent) {
+    const back = this.getRendererBack(gridCell);
+    back?.onKeyDown(gridCell, e);
+  }
+
+  override onKeyPress(gridCell: DG.GridCell, e: KeyboardEvent) {
+    const back = this.getRendererBack(gridCell);
+    back?.onKeyPress(gridCell, e);
   }
 
   /**
@@ -99,13 +147,12 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
    * @param {number} h height of the cell.
    * @param {DG.GridCell} gridCell Grid cell.
    * @param {DG.GridCellStyle} _cellStyle Cell style.
-   * @memberof AlignedSequenceCellRenderer
    */
-  render(
+  renderInt(
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
     _cellStyle: DG.GridCellStyle
   ): void {
-    const logPrefix: string = 'MacromoleculeSequenceCellRenderer.render()';
+    const _logPrefix: string = 'MacromoleculeSequenceCellRenderer.render()';
 
     const [gridCol, tableCol, temp] =
       getGridCellColTemp<string, MonomerPlacer>(gridCell);
@@ -113,7 +160,7 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const tableColTemp: TempType = tableCol.temp;
     const sh = this.seqHelper.getSeqHandler(tableCol);
 
-    let gapLength = 0;
+    const gapLength = 0;
     const msaGapLength = 8;
 
     // Cell renderer settings
@@ -131,8 +178,9 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     if (!seqColTemp) {
       seqColTemp = temp.rendererBack = new MonomerPlacer(gridCol, tableCol, _package.logger, maxLengthOfMonomer,
         () => {
+          const {font, fontWidth} = MonomerPlacer.getFontSettings(tableCol);
           return {
-            monomerCharWidth: 7, separatorWidth: !sh.isMsa() ? gapLength : msaGapLength,
+            font: font, fontCharWidth: fontWidth, separatorWidth: !sh.isMsa() ? gapLength : msaGapLength,
             monomerToShort: monomerToShortFunction,
           };
         });
@@ -141,6 +189,14 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     }
 
     seqColTemp.render(g, x, y, w, h, gridCell, _cellStyle);
+  }
+
+  override render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell, cellStyle: DG.GridCellStyle): void {
+    const back = this.getRendererBack(gridCell);
+    if (back)
+      back?.render(g, x, y, w, h, gridCell, cellStyle);
+    else
+      this.renderInt(g, x, y, w, h, gridCell, cellStyle);
   }
 }
 
@@ -153,7 +209,7 @@ export class MacromoleculeDifferenceCellRendererBack extends CellRendererWithMon
   }
 
   render(g: CanvasRenderingContext2D,
-    x: number, y: number, w: number, h: number, gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
+    x: number, y: number, w: number, h: number, gridCell: DG.GridCell, _cellStyle: DG.GridCellStyle
   ): void {
     const dpr = window.devicePixelRatio;
     const grid = gridCell.grid;
@@ -164,7 +220,7 @@ export class MacromoleculeDifferenceCellRendererBack extends CellRendererWithMon
     w = getUpdatedWidth(grid, g, x, w, dpr);
     //TODO: can this be replaced/merged with splitSequence?
     const [s1, s2] = s.split('#');
-    const splitter = getSplitter(units, separator);
+    const splitter = this.tableCol.temp[SeqTemps.notationProvider]?.separatorSplitter ?? getSplitter(units, separator);
     const s1SS = splitter(s1);
     const s2SS = splitter(s2);
     const subParts1 = wu.count(0).take(s1SS.length).map((posIdx) => s1SS.getCanonical(posIdx)).toArray();
@@ -174,7 +230,7 @@ export class MacromoleculeDifferenceCellRendererBack extends CellRendererWithMon
     drawMoleculeDifferenceOnCanvas(g, x, y, w, h, subParts1, subParts2, biotype, this.monomerLib, undefined, undefined);
   }
 
-  async awaitRendered(timeout: number = 10000, reason: string = `${timeout} timeout`): Promise<void> {
+  async awaitRendered(timeout: number = 10000, _reason: string = `${timeout} timeout`): Promise<void> {
     return Promise.resolve();
   }
 
@@ -260,15 +316,15 @@ export function drawMoleculeDifferenceOnCanvas(
       const amino2 = subParts2[i];
 
       let color1 = undefinedColor;
-      if (monomerLib) {
+      if (monomerLib)
         color1 = monomerLib.getMonomerTextColor(biotype, amino1);
-      }
+
 
       if (amino1 != amino2) {
         let color2 = undefinedColor;
-        if (monomerLib) {
+        if (monomerLib)
           color2 = monomerLib.getMonomerTextColor(biotype, amino2);
-        }
+
         const subX0 = printLeftOrCentered(g, amino1, updatedX, updatedY - vShift, w, h,
           {color: color1, pivot: 0, left: true});
         const subX1 = printLeftOrCentered(g, amino2, updatedX, updatedY + vShift, w, h,

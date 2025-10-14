@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
@@ -7,7 +8,7 @@ import {vectorDotProduct, vectorLength} from '@datagrok-libraries/utils/src/vect
 
 import {
   CandidateSimType,
-  CandidateType, ISeqSplitted,
+  CandidateType, ISeqGraphInfo, ISeqSplitted,
   MonomerFreqs,
   SeqColStats, SeqSplittedBase,
   SplitterFunc
@@ -20,14 +21,21 @@ import {UnknownSeqPalettes} from '../../unknown';
 import {ISeqHelper} from '../seq-helper';
 
 import {ISeqHandler} from './seq-handler';
+import {cleanupHelmSymbol} from '../../helm/utils';
+
 
 export class StringListSeqSplitted implements ISeqSplitted {
   get length(): number { return this.mList.length; }
+
+  get graphInfo(): ISeqGraphInfo | undefined {
+    return undefined;
+  };
 
   isGap(posIdx: number): boolean {
     return this.getOriginal(posIdx) === this.gapOriginalMonomer;
   }
 
+  /** @param {number} posIdx monomer position 0-based index */
   getCanonical(posIdx: number): string {
     if (this.length <= posIdx)
       throw new Error('Index out of bounds');
@@ -41,11 +49,165 @@ export class StringListSeqSplitted implements ISeqSplitted {
     return this.mList[posIdx];
   }
 
+  getCanonicalRegion(start: number, end: number): string[] {
+    const actStart = Math.min(Math.max(0, start), this.length);
+    const actEnd = Math.max(Math.min(this.length, end), 0);
+    const len = actEnd - actStart;
+    const gap = this.gapOriginalMonomer;
+    return new Array(len).fill(null).map((_, i) => { const om = this.mList[i + actStart]; return om === gap ? GAP_SYMBOL : om; });
+  }
+
+  getOriginalRegion(start: number, end: number): string[] {
+    const actStart = Math.min(Math.max(0, start), this.length);
+    const actEnd = Math.max(Math.min(this.length, end), 0);
+    const len = actEnd - actStart;
+    return new Array(len).fill(null).map((_, i) => this.mList[i + actStart]);
+  }
+  get gapOriginal(): string {
+    return this.gapOriginalMonomer;
+  }
+
   constructor(
     private readonly mList: SeqSplittedBase,
     private readonly gapOriginalMonomer: string
   ) {}
 }
+
+
+/** Same as string list splitted, but for helm will also encode the graph info, and define a getter for it
+ *
+ */
+export class HelmSplitted extends StringListSeqSplitted {
+  constructor(
+    protected mListSeparated: string[][], // list of lists of monomers (separated by | in helm notation
+    private readonly connections: string, // string part of helm defining connections between monomers
+    gapOriginalMonomer: string,
+  ) {
+    super(mListSeparated.flat(), gapOriginalMonomer);
+  }
+  protected _graphInfo: ISeqGraphInfo | undefined = undefined;
+  get graphInfo(): ISeqGraphInfo {
+    this._graphInfo ??= this.parseConnections();
+    return this._graphInfo;
+  }
+
+  protected parseConnections(): ISeqGraphInfo {
+    const graphInfo: ISeqGraphInfo = {
+      connections: [],
+      disjointSeqStarts: []
+    };
+    if ((this.connections?.length ?? 0) > 0) {
+    // parse helm connections
+      let seqStart = 0;
+      for (let i = 0; i < this.mListSeparated.length; ++i) {
+        graphInfo.disjointSeqStarts.push(seqStart);
+        seqStart += this.mListSeparated[i].length;
+      };
+      // parse connections like PEPTIDE2,PEPTIDE2,16:R2-1:R1
+      const connectionParts = (this.connections ?? '').split('|').filter((cp) => (cp?.length ?? 0) > 0);
+      const sequenceConSeqIdxRe = /^(PEPTIDE|RNA)\d{1,2}$/;
+      const sequenceConRe = /^\d{1,2}:R\d{1}-\d{1,2}:R\d{1}$/;
+      for (const cp of connectionParts) {
+        const cpParts = cp.split(',');
+        if (cpParts.length !== 3 || !sequenceConRe.test(cpParts[2]) || !sequenceConSeqIdxRe.test(cpParts[0]) || !sequenceConSeqIdxRe.test(cpParts[1]))
+          continue;
+        const seq1 = parseInt(cpParts[0].substring(7)) - 1;
+        const seq2 = parseInt(cpParts[1].substring(7)) - 1;
+        if (seq1 < 0 || seq1 >= this.mListSeparated.length || seq2 < 0 || seq2 >= this.mListSeparated.length)
+          continue;
+        const conParts = cpParts[2].split('-');
+        if (conParts.length !== 2)
+          continue;
+        const con1Parts = conParts[0].split(':');
+        const con2Parts = conParts[1].split(':');
+        if (con1Parts.length !== 2 || con2Parts.length !== 2)
+          continue;
+        const con1 = parseInt(con1Parts[0]) - 1;
+        const con2 = parseInt(con2Parts[0]) - 1;
+        if (con1 < 0 || con1 >= this.mListSeparated[seq1].length || con2 < 0 || con2 >= this.mListSeparated[seq2].length)
+          continue;
+        graphInfo.connections.push({
+          seqIndex1: seq1,
+          seqIndex2: seq2,
+          monomerIndex1: con1,
+          monomerIndex2: con2,
+          rGroup1: parseInt(con1Parts[1].substring(1)),
+          rGroup2: parseInt(con2Parts[1].substring(1)),
+        });
+      }
+    }
+    return graphInfo;
+  }
+}
+
+/** Gets canonical monomers for original ones with cyclization marks */
+export class BilnSeqSplitted extends HelmSplitted {
+  override getCanonical(posIdx: number): string {
+    if (this.isGap(posIdx)) return GAP_SYMBOL;
+    const om = this.getOriginal(posIdx);
+    let cmRes = om;
+    const re = /\(\d{1,2},\d{1,2}\)$/; // there can be multiple cyclization marks
+    while (re.test(cmRes))
+      cmRes = cmRes.replace(re, '');
+    return cmRes;
+  }
+
+  override getOriginal(posIdx: number): string {
+    const om = super.getOriginal(posIdx);
+    // replace [] with '' for biln
+    return om.replace(/^\[(.*)\]/, '$1');
+  }
+
+  constructor(seqListSplit: string[][], gapOriginalMonomer: string) {
+    super(seqListSplit, '', gapOriginalMonomer);
+  }
+
+  protected override parseConnections(): ISeqGraphInfo {
+    // create graph info for cyclization marks
+    // EG: A(1,2).G(1,1)(2,2).C(2,1) -> first number is the bond identifier, second is the R group (1-based)
+    // . is used as separator between different sequences
+    const graphInfo: ISeqGraphInfo = {connections: [], disjointSeqStarts: []};
+    const connectionStorage: {[bondId: string]: {seqIndex: number, monomerIndex: number, rGroup: number}} = {};
+    let seqLengthCounter = 0;
+    for (let i = 0; i < this.mListSeparated.length; i++) {
+      const ss = this.mListSeparated[i];
+      graphInfo.disjointSeqStarts.push(seqLengthCounter);
+      seqLengthCounter += ss.length;
+      for (let j = 0; j < ss.length; j++) {
+        const om = ss[j];
+        const re = /\(\d{1,2},\d{1,2}\)$/; // there can be multiple cyclization marks
+        let cmRes = om;
+        while (re.test(cmRes)) {
+          const con = /\(\d{1,2},\d{1,2}\)$/.exec(cmRes)?.[0];
+          cmRes = cmRes.replace(re, '');
+          if (con != null) {
+            const nums = con.substring(1, con.length - 1).split(',').map((s) => parseInt(s, 10));
+            if (nums.length !== 2 || nums.some((n) => n == null || Number.isNaN(n)))
+              continue; // this should never happen, but just in case
+            const bondId = nums[0].toString();
+            const rGroup = nums[1];
+            if (bondId in connectionStorage) {
+              // there is already a monomer with this bondId
+              const prev = connectionStorage[bondId];
+              graphInfo.connections.push({
+                seqIndex1: prev.seqIndex,
+                seqIndex2: i,
+                monomerIndex1: prev.monomerIndex,
+                monomerIndex2: j,
+                rGroup1: prev.rGroup,
+                rGroup2: rGroup
+              });
+              delete connectionStorage[bondId];
+            } else
+              connectionStorage[bondId] = {seqIndex: i, monomerIndex: j, rGroup: rGroup}; // store for later
+          }
+        }
+      }
+    }
+    return graphInfo;
+  }
+}
+
 
 export class FastaSimpleSeqSplitted implements ISeqSplitted {
   get length(): number { return this.seqS.length; }
@@ -66,6 +228,27 @@ export class FastaSimpleSeqSplitted implements ISeqSplitted {
     if (this.length <= posIdx)
       throw new Error('Index out of bounds');
     return this.seqS[posIdx];
+  }
+
+  getCanonicalRegion(start: number, end: number): string[] {
+    const actStart = Math.max(0, start);
+    const actEnd = Math.min(this.length, end);
+    const len = actEnd - actStart;
+    const gap = GapOriginals[NOTATION.FASTA];
+    return new Array(len).fill(null).map((_, i) => {
+      const om = this.seqS[i + actStart];
+      return om === gap ? GAP_SYMBOL : om;
+    });
+  }
+
+  getOriginalRegion(start: number, end: number): string[] {
+    const actStart = Math.max(0, start);
+    const actEnd = Math.min(this.length, end);
+    return this.seqS.slice(actStart, actEnd) as unknown as string[]; // hacky way but quite effective
+  }
+
+  get gapOriginal(): string {
+    return GapOriginals[NOTATION.FASTA];
   }
 
   constructor(
@@ -145,16 +328,10 @@ export function getSplitterWithSeparator(separator: string, limit: number | unde
       return new StringListSeqSplitted([], GapOriginals[NOTATION.SEPARATOR]);
     else {
       let mmList: string[];
-      const mRe = new RegExp(String.raw`"-"|'-'|[^${separator}]+`, 'g'); // depends on separator args
-      if (limit !== undefined) {
+      const mRe = new RegExp(`(?<=^|\\${separator})("-"|'-'|[^\\${separator}]*)(?=\\${separator}|$)`, 'g'); // depends on separator args
+      if (limit != undefined) {
         mRe.lastIndex = 0;
-        mmList = new Array<string>(Math.ceil(limit));
-
-        let mEa: RegExpExecArray | null = null;
-        let mI = 0;
-        while ((mEa = mRe.exec(seq)) !== null && mI < limit)
-          mmList[mI++] = mEa[0].replace(`"-"`, '').replace(`'-'`, '');
-        mmList.splice(mI);
+        mmList = wu(seq.matchAll(mRe)).take(limit).map((ea) => ea[0]).toArray();
       } else
         mmList = seq.replaceAll('\"-\"', '').replaceAll('\'-\'', '').split(separator, limit);
 
@@ -163,33 +340,53 @@ export function getSplitterWithSeparator(separator: string, limit: number | unde
   };
 }
 
-const helmRe: RegExp = /(PEPTIDE1|DNA1|RNA1)\{([^}]+)}/g;
-const helmPp1Re: RegExp = /\[([^\[\]]+)]/g;
-
-
 /** Splits Helm string to monomers, but does not replace monomer names to other notation (e.g. for RNA).
  * Only for linear polymers, does not split RNA for ribose and phosphate monomers.
+ * EG byciclic helm: PEPTIDE1{F}|PEPTIDE2{[dI].[Trp_Ome].[Asp_OMe].[Cys_Bn].[meG].[Phe_3Cl].[dD].T.[dI].T.[dK].[aG].[3Pal].[xiIle].[meD].[Ala_tBu]}|PEPTIDE3{L.[Pro_4Me3OH].S.[NMe2Abz].Q.[3Pal].[xiIle].[D-Hyp].[Ala_tBu].[dI].[Trp_Ome].[Asp_OMe].N.[meG].[Phe_34diCl].[Phe_34diCl]}$PEPTIDE2,PEPTIDE2,16:R2-1:R1|PEPTIDE3,PEPTIDE3,16:R2-1:R1|PEPTIDE3,PEPTIDE2,10:R3-1:R3|PEPTIDE1,PEPTIDE2,1:R2-9:R3$$$V2.0
  * @param {string} seq Source string of HELM notation
  * @param {ISeqSource} src Source of the {@link seq} string
  * @return {string[]}
  */
-export const splitterAsHelm: SplitterFunc = (seq: any): ISeqSplitted => {
-  helmRe.lastIndex = 0;
-  const ea: RegExpExecArray | null = helmRe.exec(seq.toString());
-  const inSeq: string | null = ea ? ea[2] : null;
+export const splitterAsHelm: SplitterFunc = (seq: string): ISeqSplitted => {
+  const helmParts = seq.split('$');
+  const spList = helmParts[0].split('|');
+  const mListSplit = spList
+    .map((sp: string) => (sp.match(/(?<=\{).+(?=})/)?.[0]?.split('.') ?? [])
+      .map((m) => cleanupHelmSymbol(m)));
+  const res = new HelmSplitted(mListSplit, helmParts[1] ?? '', GapOriginals[NOTATION.HELM]);
 
-  const mmPostProcess = (mm: string): string => {
-    helmPp1Re.lastIndex = 0;
-    const pp1M = helmPp1Re.exec(mm);
-    if (pp1M && pp1M.length >= 2)
-      return pp1M[1];
-    else
-      return mm;
-  };
-
-  const mmList: string[] = inSeq ? inSeq.split('.') : [];
-  return new StringListSeqSplitted(mmList.map(mmPostProcess), GapOriginals[NOTATION.HELM]);
+  return res;
 };
+
+export function splitterAsBiln(seq: string): ISeqSplitted {
+  const disjointPartsRaw = seq.split('.')
+    .map((ds) => ds.replaceAll('\"-\"', '').replaceAll('\'-\'', ''));
+    // some monomers might contain '-', and need to be enclosed in [], e.g. A-[D-Arg]-C
+    // replace all separators inside [] with some temporary string, then split by separator, then restore
+  const tempSep = '___TEMP___';
+  for (let i = 0; i < disjointPartsRaw.length; i++) {
+    const re = /\[([^\]]+)\]/g;
+    let match;
+    let dp = disjointPartsRaw[i];
+    while ((match = re.exec(disjointPartsRaw[i])) !== null) {
+      const inside = match[1];
+      const replaced = inside.replaceAll('-', tempSep);
+      dp = dp.replace(inside, replaced);
+    }
+    disjointPartsRaw[i] = dp;
+  }
+  const disjointParts: string[][] = disjointPartsRaw
+    .map((ds) => ds.split('-')
+      .map((m) => m.replaceAll(tempSep, '-')));
+
+  //const totalLength = disjointParts.reduce((acc, ss) => acc + ss.length, 0);
+  const res = new BilnSeqSplitted(
+    disjointParts,
+    GapOriginals[NOTATION.SEPARATOR]);
+
+  return res;
+}
+
 
 /** Func type to shorten a {@link monomerLabel} with length {@link limit} */
 export type MonomerToShortFunc = (monomerLabel: string, limit: number) => string;
@@ -207,6 +404,8 @@ export function getSplitter(units: string, separator: string, limit: number | un
     return getSplitterWithSeparator(separator, limit);
   else if (units.toLowerCase().startsWith(NOTATION.HELM))
     return splitterAsHelm;
+  else if (units.toLowerCase().startsWith(NOTATION.BILN))
+    return splitterAsBiln;
   else
     throw new Error(`Unexpected units ${units} .`);
 
@@ -278,6 +477,23 @@ export function detectAlphabet(freq: MonomerFreqs, candidates: CandidateType[], 
   } else
     alphabetName = ALPHABET.UN;
   return alphabetName;
+}
+
+export function detectHelmAlphabet(freq: MonomerFreqs, candidates: CandidateType[], gapSymbol: string = '-') {
+  // helm can contain DNA/RNA and other monomers. need to check that
+  const mons = Object.keys(freq);
+  const helmNucleotideFullRe = /\(|\)/;
+  // heuristic for detecting dna/rna
+  const hasBranching = mons.filter((m) => m.split(helmNucleotideFullRe).filter((p) => !!p).length === 3).length > mons.length * 0.8;
+  const correctedFreqs = hasBranching ? Object.entries(freq)
+    .reduce((acc, [m, f]) => {
+      const split = m.split(helmNucleotideFullRe);
+      const actualMonomer = split[1]; // the inside part is the actual monomer (for example r(A)p)
+      if (actualMonomer)
+        acc[actualMonomer] = f; return acc;
+    },
+      {} as Record<string, number>) : freq;
+  return detectAlphabet(correctedFreqs, candidates, gapSymbol);
 }
 
 /** Selects a suitable palette based on column data

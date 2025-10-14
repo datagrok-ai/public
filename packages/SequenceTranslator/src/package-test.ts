@@ -14,6 +14,7 @@ import './tests/polytool-unrule-tests';
 import './tests/polytool-enumerate-tests';
 import './tests/polytool-enumerate-breadth-tests';
 import './tests/polytool-chain-parse-notation-tests';
+import './tests/polytool-chain-from-notation-tests';
 import './tests/toAtomicLevel-tests';
 
 import {OligoToolkitTestPackage} from './tests/utils';
@@ -33,5 +34,5 @@ export async function test(category: string, test: string, testContext: TestCont
 
 //name: initAutoTests
 export async function initAutoTests() {
-  await initTests(_package, _package.getModule('package-test.js'));
+  await initTests(_package as any, _package.getModule('package-test.js'));
 }

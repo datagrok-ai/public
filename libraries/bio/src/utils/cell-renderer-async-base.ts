@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 
 import wu from 'wu';
 import {Observable, Subject, Unsubscribable} from 'rxjs';
+import {LRUCache} from 'lru-cache';
 
 import {testEvent} from '@datagrok-libraries/utils/src/test';
 
@@ -272,8 +273,10 @@ export abstract class RenderServiceBase<TProps extends PropsBase, TAux> {
 
 export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
   extends CellRendererBackBase<string> {
-  protected readonly taskQueueMap = new Map<number, RenderTask<TProps, TAux>>;
-  protected imageCache = new Map<number, ImageData>();
+  protected readonly taskQueueMap = new Map<string, RenderTask<TProps, TAux>>;
+  protected imageCache = new LRUCache<string, ImageData>({max: 300});
+  protected get minWidth(): number { return 25; }
+  protected get minHeight(): number { return 25; }
 
   /** Consumer identifier of the render service */
   protected consumerId: number | null = null;
@@ -292,7 +295,7 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
       // for (const cellImageData of this.imageCache.values())
       //   cellImageData.remove();
     }
-    this.imageCache = new Map<number, ImageData>();
+    this.imageCache.clear();
     super.reset();
   }
 
@@ -319,17 +322,20 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
     }
 
     const dpr = window.devicePixelRatio;
-    const rowIdx: number = gridCell.tableRowIndex;
+    let rowIdx: number = gridCell.tableRowIndex;
     this.logger.debug('PdbRenderer.render() start ' + `rowIdx=${rowIdx}`);
-
+    const cellValue = gridCell?.cell?.value ?? '';
+    if (!cellValue)
+      return;
     g.save();
     try {
-      const cellImageData = this.imageCache.has(rowIdx) ? this.imageCache.get(rowIdx) : null;
+      const renderedOnGrid = gridCell.gridColumn && gridCell.grid && g.canvas === gridCell.grid.canvas;
+      const cellImageData = this.imageCache.has(cellValue) ? this.imageCache.get(cellValue) : null;
       const bd = new DG.Rect(x, y, w, h);
       let gridCellWidth: number;
       let gridCellHeight: number;
       let backColor: number | null;
-      if (this.gridCol) {
+      if (renderedOnGrid) {
         // Rendering for a grid
         gridCellWidth = gridCell.gridColumn.width * dpr - 2;
         gridCellHeight = gridCell.grid.props.rowHeight * dpr - 2;
@@ -337,20 +343,29 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
         backColor = backColor ?? (this.gridCol ? this.gridCol.grid.props.backColor : null);
         backColor = backColor ?? DG.Color.argb(0, 0, 0, 0);
       } else {
-        // Rendering probably for row tooltip (scatter plot)
+        // Rendering probably for row tooltip (scatter plot), or in viewer
+        rowIdx = Math.floor(Math.random() * 10000000);
         gridCellWidth = w * dpr - 2;
         gridCellHeight = h * dpr - 2;
         backColor = DG.Color.argb(0, 0, 0, 0);
       }
+      if (gridCellWidth < this.minWidth * dpr || gridCellHeight < this.minHeight * dpr) {
+        this.logger.debug('PdbRenderer.render(), skip too small cell ' +
+          `rowIdx=${rowIdx}, width=${gridCellWidth}, height=${gridCellHeight}`);
+        return;
+      }
 
       if (!this.cacheEnabled || !cellImageData ||
-        Math.abs(cellImageData.width / dpr - gridCellWidth) > 0.5 ||
-        Math.abs(cellImageData.height / dpr - gridCellHeight) > 0.5
+        Math.abs(cellImageData.width - gridCellWidth) > 1 ||
+        Math.abs(cellImageData.height - gridCellHeight) > 1
       ) {
         let toUpdate: boolean = true;
         if (cellImageData)
           toUpdate = this.renderCellImageData(g, bd, gridCell, cellImageData);
-        if (!toUpdate) return;
+        if (!toUpdate) {
+          this._onRendered.next();
+          return;
+        }
 
         const task = new RenderTask<TProps, TAux>(
           gridCell.cell.rowIndex.toString(),
@@ -369,12 +384,13 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
               }
 
               const cellCanvasData = cellCanvasCtx.getImageData(0, 0, cellCanvas.width, cellCanvas.height);
-              this.renderOnGrid(g, new DG.Rect(x, y, w, h), gridCell, cellCanvasData);
+              this.renderCellImageData(g, new DG.Rect(x, y, w, h), gridCell, cellCanvasData);
 
-              this.imageCache.set(rowIdx, cellCanvasData);
+              if (this.cacheEnabled)
+                this.imageCache.set(cellValue, cellCanvasData);
             } finally {
               g.restore();
-              this.taskQueueMap.delete(rowIdx);
+              this.taskQueueMap.delete(cellValue);
               if (this.taskQueueMap.size === 0)
                 this._onRendered.next();
             }
@@ -384,11 +400,11 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
             return (grid.vertScroll.min - 1) <= gridCell.gridRow && gridCell.gridRow <= grid.vertScroll.max;
           });
 
-        this.taskQueueMap.set(rowIdx, task);
+        this.taskQueueMap.set(cellValue, task);
         this.consumerId = service.render(this.consumerId, task, rowIdx);
       } else {
         this.logger.debug('PdbRenderer.render(), ' + `from imageCache[${rowIdx}]`);
-        this.renderOnGrid(g, bd, gridCell, cellImageData);
+        this.renderCellImageData(g, bd, gridCell, cellImageData);
       }
 
       if (!this.consumerId || !service.isBusy(this.consumerId)) {
@@ -462,20 +478,13 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
     try {
       gCtx.resetTransform();
 
-      if (this.gridCol) {
-        const grid = this.gridCol.grid;
-        const vertScrollMin: number = Math.floor(grid.vertScroll.min);
-        // Correction for vert scrolling happened between task and render, calculate bd.y directly
-        bd.y = ((gCell.gridRow - vertScrollMin) * grid.props.rowHeight +
-          grid.colHeaderHeight) * dpr;
-
-        // Correction for horz scrolling happened between task and render, calculate bd.x directly
-        let left: number = 0;
-        for (let colI = 0; colI < this.gridCol.idx; colI++) {
-          const col: DG.GridColumn = grid.columns.byIndex(colI)!;
-          left += col.visible ? col.width : 0;
-        }
-        bd.x = (left - grid.horzScroll.min) * dpr;
+      if (this.gridCol && this.gridCol.grid && this.gridCol.grid.canvas === gCtx.canvas) {
+        // Use gCell bounds directly to avoid dependency on scroll values
+        bd.y = gCell.bounds.y * dpr;
+        bd.x = gCell.bounds.x * dpr;
+      } else {
+        bd.x *= dpr;
+        bd.y *= dpr;
       }
 
       /** Clip rect*/ const cr = new DG.Rect(bd.x + dpr, bd.y + dpr, (bd.width - 1) * dpr, (bd.height - 1) * dpr);
@@ -486,7 +495,6 @@ export abstract class CellRendererBackAsyncBase<TProps extends PropsBase, TAux>
       gCtx.beginPath();
       gCtx.rect(cr.x, cr.y, cr.width, cr.height);
       gCtx.clip();
-
       //gCtx.drawImage(cellImageData, cr.x, cr.y, cr.width, cr.height);
       gCtx.putImageData(cellImageData, bd.x + dpr, bd.y + dpr); // does not respect clip
     } finally {

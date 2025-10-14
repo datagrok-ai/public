@@ -1,4 +1,4 @@
-# PhyloTreeViewer changelog
+# PhyloTree Viewer changelog
 
 ## 1.2.12 (2024-09-02)
 

@@ -24,6 +24,10 @@ After implementing features from ticket [GROK-16545](https://reddata.atlassian.n
 7. Install/Uninstall from Context Pane and Files View:
 * Use the context pane to install a new package / reinstall a previously uninstalled package / svitch a version of a package. Verify that the action is successful.
 
+8. Verify that the package does not flicker in "Permanent Installation" after installation
+* Go to Browse > Platform > Plugins. Install the package. Observe the package's status and behavior after installation.
+* **Expected Result**: The package should appear stable and not flicker as installation is in progress.
+
 ---
 {
   "order": 5

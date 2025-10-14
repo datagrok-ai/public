@@ -6,7 +6,7 @@
 4. Right-click on a viewer and select `Tooltip > Hide`
    - there should be no tooltip on hover over grid, scatter plot, box plot viewers
    - the tooltip for other viewers should not be affected
-5. Right-click on a viewer and select `Tooltip > Show` (the option should appear instead of `Tooltip > Hide`)
+5. Right-click on a viewer and select `Tooltip > Show Custom` (the option should appear instead of `Tooltip > Hide`)
    - the tooltip should be displayed on hover over all opened viewers
 
 ---

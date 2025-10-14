@@ -34,7 +34,7 @@ USER $MAMBA_USER
 
 WORKDIR /app
 
-COPY environment.yml /app/
+COPY --chown=$MAMBA_USER:$MAMBA_USER environment.yml /app/
 
 RUN micromamba install -n base -c conda-forge awscli -y && \
     micromamba run -n base aws s3 cp s3://datagrok-data/models/admetox /app --no-sign-request --recursive --region us-east-2 && \
@@ -42,13 +42,15 @@ RUN micromamba install -n base -c conda-forge awscli -y && \
     micromamba clean -afy
 
 RUN set -ex ; \
-    micromamba env create -f environment.yml ; \
+    micromamba env create -f environment.yml -y ; \
     micromamba clean -afy
 
-COPY . /app
-
-SHELL ["micromamba","run","-n","myenv", "/bin/bash","-c"]
+COPY --chown=$MAMBA_USER:$MAMBA_USER . /app
 
 EXPOSE 8000
 
-ENTRYPOINT ["micromamba", "run", "-n", "myenv", "gunicorn", "-w", "1", "-b", "0.0.0.0:8000", "--timeout", "3000", "Admetica:app"]
+ENTRYPOINT micromamba run -n myenv celery -A Admetica worker \
+    --loglevel=info \
+    --hostname=$CELERY_HOSTNAME \
+    --concurrency=1 \
+    -Q $TASK_QUEUE_NAME

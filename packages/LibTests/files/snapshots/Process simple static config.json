@@ -1,0 +1,99 @@
+{
+  "id": "pipeline1",
+  "type": "static",
+  "steps": [
+    {
+      "id": "step1",
+      "nqName": "LibTests:TestAdd2",
+      "io": [
+        {
+          "id": "a",
+          "type": "double",
+          "direction": "input"
+        },
+        {
+          "id": "b",
+          "type": "double",
+          "direction": "input"
+        },
+        {
+          "id": "res",
+          "type": "double",
+          "direction": "output"
+        }
+      ],
+      "actions": []
+    },
+    {
+      "id": "step2",
+      "nqName": "LibTests:TestMul2",
+      "io": [
+        {
+          "id": "a",
+          "type": "double",
+          "direction": "input"
+        },
+        {
+          "id": "b",
+          "type": "double",
+          "direction": "input"
+        },
+        {
+          "id": "res",
+          "type": "double",
+          "direction": "output"
+        }
+      ],
+      "actions": []
+    }
+  ],
+  "links": [
+    {
+      "id": "link1",
+      "from": [
+        {
+          "name": "in1",
+          "segments": [
+            {
+              "ids": [
+                "step1"
+              ],
+              "selector": "first",
+              "stopIds": []
+            },
+            {
+              "ids": [
+                "res"
+              ],
+              "selector": "first",
+              "stopIds": []
+            }
+          ]
+        }
+      ],
+      "to": [
+        {
+          "name": "out1",
+          "segments": [
+            {
+              "ids": [
+                "step2"
+              ],
+              "selector": "first",
+              "stopIds": []
+            },
+            {
+              "ids": [
+                "a"
+              ],
+              "selector": "first",
+              "stopIds": []
+            }
+          ]
+        }
+      ],
+      "base": []
+    }
+  ],
+  "actions": []
+}

@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_package, activityCliffs} from '../package';
+import {_package, PackageFunctions} from '../package';
 import $ from 'cash-dom';
 
 import {TEMPS as acTEMPS} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
@@ -28,7 +28,7 @@ export async function demoBio01bUI() {
 
   try {
     const demoScript = new DemoScript('Activity Cliffs', 'Activity Cliffs analysis on Macromolecules data', false,
-      {autoStartFirstStep: true});
+      {autoStartFirstStep: true, path: 'Bioinformatics/Activity Cliffs'});
     await demoScript
       .step(`Load DNA sequences`, async () => {
         grok.shell.windows.showContextPanel = false;
@@ -51,7 +51,7 @@ export async function demoBio01bUI() {
       })
       .step('Find activity cliffs', async () => {
         const seqEncodingFunc = DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0];
-        activityCliffsViewer = (await activityCliffs(
+        activityCliffsViewer = (await PackageFunctions.activityCliffs(
           df, df.getCol('Sequence'), df.getCol('Activity'),
           80, dimRedMethod, MmDistanceFunctionsNames.LEVENSHTEIN, seqEncodingFunc, {}, true)) as DG.ScatterPlotViewer;
         view.dockManager.dock(activityCliffsViewer, DG.DOCK_TYPE.RIGHT, null, 'Activity Cliffs', 0.35);
@@ -106,4 +106,41 @@ export async function demoBio01bUI() {
   } catch (err: any) {
     handleError(err);
   }
+}
+
+export async function demoActivityCliffsCyclic() {
+  const df = await _package.files.readCsv('tests/helm_cyclic_cliffs.csv');
+  df.name = 'Activity Cliffs Demo';
+  await grok.data.detectSemanticTypes(df);
+  await df.meta.detectSemanticTypes();
+  const tv = grok.shell.addTableView(df);
+  ui.setUpdateIndicator(tv.root, true);
+  try {
+    const seqEncodingFunc = DG.Func.find({name: 'macromoleculePreprocessingFunction', package: 'Bio'})[0];
+    const activityCliffsViewer = (await PackageFunctions.activityCliffs(
+      df, df.getCol('Sequence'), df.getCol('Activity'),
+      96, DimReductionMethods.UMAP, MmDistanceFunctionsNames.MONOMER_CHEMICAL_DISTANCE,
+      seqEncodingFunc, {}, true)) as DG.ScatterPlotViewer;
+    tv.dockManager.dock(activityCliffsViewer, DG.DOCK_TYPE.RIGHT, null, 'Activity Cliffs', 0.65);
+    await DG.delay(100);
+    const cliffsLink: HTMLButtonElement = $(activityCliffsViewer.root)
+      .find('button.scatter_plot_link,cliffs_grid').get()[0] as HTMLButtonElement;
+    cliffsLink.click();
+    await DG.delay(100);
+    tv.grid.props.rowHeight = 180;
+    tv.grid.col('sequence') && (tv.grid.col('sequence')!.width = 300);
+    tv.grid.col('structure') && (tv.grid.col('structure')!.width = 300);
+    const cliffsGrid = Array.from(tv.viewers).find((v) => v !== tv.grid && v.type === DG.VIEWER.GRID) as DG.Grid;
+    if (cliffsGrid) {
+      cliffsGrid.props.rowHeight = 40;
+      cliffsGrid.col('seq_diff')!.width = 600;
+      tv.dockManager.dock(cliffsGrid, DG.DOCK_TYPE.DOWN, null, 'Cliffs', 0.35);
+      tv.dockManager.dock(activityCliffsViewer, DG.DOCK_TYPE.RIGHT, null, 'Activity Cliffs', 0.55);
+    }
+  } catch (err: any) {
+    handleError(err);
+  } finally {
+    ui.setUpdateIndicator(tv.root, false);
+  }
+  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/bio/bio.md#activity-cliffs');
 }

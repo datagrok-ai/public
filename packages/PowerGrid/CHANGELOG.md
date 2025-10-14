@@ -1,4 +1,83 @@
-# PowerGrid changelog
+# Power Grid changelog
+
+## 1.7.9 (2025-09-23)
+
+* GROK-18814: Forms Viewer: Add substructure highlighting support
+
+## 1.7.8 (2025-09-23)
+
+## 1.7.7 (2025-08-28)
+
+## 1.7.6 (2025-08-15)
+
+## 1.7.5 (2025-08-14)
+
+* Summary columns: Added `onDetached` for viewers and some improvements on events with summary columns
+* Smartforms: Show only first 10 columns by default
+
+## 1.7.4 (2025-08-08)
+
+* Made correct restoring of pinned columns
+
+## 1.7.3 (2025-08-07)
+
+* Fixed pinned columns issues
+
+## 1.7.2 (2025-07-29)
+
+* GROK-18597 Smart form: can't add add categorical columns from the Context Panel
+* GROK-18596 Smart Form: incorrect rendering on column resize
+
+## 1.6.2 (2025-04-18)
+
+* Removed dependency from datagrok=tools
+
+## 1.5.5 (2025-03-07)
+
+* GROK-17680: ImageUrl: Supported images with Datagrok paths, added docs
+
+## 1.5.4 (2025-03-03) - 1.4.11
+
+### Features
+
+* Made pinned columns apply the same column header style as the standard grid
+* GROK-17292: Implemented normalization for sparklines (row/column/global) with backward compatibility
+* GROK-17359: Enabled renderer to define context values for sparklines in the context panel
+* GROK-17600: Added zeroScale to sparklines, allowing them to be based at zero or a minimum value
+* Allowed cross-origin images in canvas
+* Tags cell renderer:
+  * Added support for boolean columns
+  * Minor rendering improvements
+* Vlaaivis renderer:
+  * Ensured no borders or filled segments for cells smaller than 40x40
+  * Render only a light border
+
+### Bug Fixes
+
+* Fixed pinned columns not applying grid cell styles
+* GROK-14428: Fixed duplicated row numbers in pinned columns
+* GROK-16985: Fixed text not visible when editing in pinned columns
+* [#3229](https://github.com/datagrok-ai/public/issues/3229): Fixed incorrect order in pinned columns after reordering by another column
+* GROK-17599:
+  * Different normalizations applied to all sparklines
+  * Proper rendering in the context panel.
+  * Fixed number formatting
+  * Added margins and column name in the context panel
+  * Fixed cases where `currentRow = -1`
+* Fixed NaN errors in sparklines
+* Fixed cases where the column is null in sparklines settings
+* GROK-17550: Fixed error when saving to a project in some cases
+* Fixed alignment in summary column tooltips
+* GROK-17303: Fixed column name and value misalignment
+* GROK-17293: Fixed invisible text in SmartForm when the column text is colored
+
+## 1.4.10 (2024-11-18)
+
+* Grid scrolling and current row fixes for pinned columns
+
+## 1.4.5 (2024-10-25)
+
+* WebGPU colors and different marker types for ScatterPlot
 
 ## 1.4.3 (2024-10-11)
 

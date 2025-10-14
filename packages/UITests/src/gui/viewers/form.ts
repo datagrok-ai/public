@@ -3,7 +3,7 @@ import {after, before, category, delay, expect,
 import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {isViewerPresent} from '../gui-utils';
+import {isViewerPresent, showToolbox} from '../gui-utils';
 
 
 category('Viewers: Form', () => {
@@ -11,21 +11,22 @@ category('Viewers: Form', () => {
   let demog: DG.DataFrame;
 
   before(async () => {
+    showToolbox();
     demog = grok.data.demo.demog(1000);
-    tv = grok.shell.addTableView(demog);
   });
 
   test('form.visual', async () => {
+    tv = grok.shell.addTableView(demog);
     const formIcon = document.getElementsByClassName('svg-form')[0] as HTMLElement;
     formIcon.click();
     await awaitCheck(() => document.querySelector('.d4-form') !== null, 'cannot find form', 3000);
     isViewerPresent(Array.from(tv.viewers), 'Form');
     const form = document.querySelector('[name=viewer-Form]') as HTMLElement;
-    const left = form.getElementsByClassName('grok-icon fal fa-chevron-left')[0] as HTMLElement; 
+    const left = form.getElementsByClassName('grok-icon fal fa-chevron-left')[0] as HTMLElement;
     const right = form.getElementsByClassName('grok-icon fal fa-chevron-right')[0] as HTMLElement;
     const select = form.getElementsByClassName('grok-icon fal fa-square')[0] as HTMLElement;
     const edit = form.getElementsByClassName('grok-icon fal fa-edit')[0] as HTMLElement;
-    const design = form.getElementsByClassName('grok-icon fal fa-object-ungroup')[0] as HTMLElement; 
+    const design = form.getElementsByClassName('grok-icon fal fa-object-ungroup')[0] as HTMLElement;
     for (let i = 0; i < 10; i++) {
       right.click();
       if (i % 2 === 0) select.click();
@@ -60,6 +61,8 @@ category('Viewers: Form', () => {
   });
 
   test('form.api', async () => {
+    tv = grok.shell.addTableView(demog);
+    debugger
     const form = tv.form({
       title: 'SuperTitle',
       description: 'SuperDescription',
@@ -69,26 +72,27 @@ category('Viewers: Form', () => {
       throw new Error('title has not been set');
     if (form.props.description != 'SuperDescription')
       throw new Error('description has not been set');
-    const titleElem = document.querySelector('#elementContent .d4-viewer-title > textarea') as HTMLTextAreaElement;
+    const titleElemList = Array.from(document.querySelectorAll('#elementContent .panel-titlebar .panel-titlebar-text')) as HTMLElement[];
     const descElem = document.querySelector('#elementContent .d4-viewer-description p') as HTMLElement;
-    if (titleElem.value != 'SuperTitle')
+    if (titleElemList.every((e)=> e.innerText != 'SuperTitle'))
       throw new Error('title property has not been set');
     if (descElem.innerHTML != 'SuperDescription')
       throw new Error('description property has not been set');
-  }, {skipReason: 'GROK-11670'});
+  });
 
   test('form.serialization', async () => {
+    tv = grok.shell.addTableView(demog);
     tv.form();
     await awaitCheck(() => document.querySelector('.d4-form') !== null, 'cannot find form', 3000);
     const layout = tv.saveLayout();
     tv.resetLayout();
     tv.loadLayout(layout);
     await awaitCheck(() => document.querySelector('.d4-form') !== null, 'cannot find form', 3000);
-    isViewerPresent(Array.from(tv.viewers), 'Form');    
+    isViewerPresent(Array.from(tv.viewers), 'Form');
   });
 
   after(async () => {
-    tv.close();
+    tv?.close();
     grok.shell.closeTable(demog);
-  }); 
-});
+  });
+}, { owner: 'dkovalyov@datagrok.ai' });

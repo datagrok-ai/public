@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 
-import {HelmType, Mol} from '../helm/types';
+import {HelmMol, HelmType, IHelmBio, Mol} from '../helm/types';
 import {PropsBase, RenderServiceBase} from '../utils/cell-renderer-async-base';
 import {IMonomerLibBase} from '../types/index';
 
@@ -18,8 +18,9 @@ export class HelmProps extends PropsBase {
 }
 
 export type HelmAux = {
-  /** The molecule made of atoms (monomers) and bonds */ mol: Mol<HelmType>,
+  /** The molecule made of atoms (monomers) and bonds */ mol: HelmMol,
   /** SVG bounding box */ bBox: DG.Rect,
+  /** Draw bounding box */ dBox: DG.Rect,
   /** Cell box {0, 0, w, h} */ cBox: DG.Rect,
 }
 

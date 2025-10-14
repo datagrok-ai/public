@@ -5,7 +5,7 @@ position: 4 # float position is supported
 
 We follow one of the most common versioning strategies for our
 products ([packages](https://datagrok.ai/help/develop/#packages), [libraries](https://github.com/datagrok-ai/public/tree/master/libraries),
-[JS API](https://datagrok.ai/help/develop/js-api), [Docker images](https://hub.docker.com/u/datagrok)):
+[JS API](https://datagrok.ai/api/js), [Docker images](https://hub.docker.com/u/datagrok)):
 [Semantic versioning](https://semver.org/). This convention helps to
 
 - Understand the severity of changes in each new distribution
@@ -22,7 +22,7 @@ The Semantic versioning scheme is fully documented on the [official website](htt
 sheet](#versioning-rules) to help you understand our products' versioning basics.
 
 The software in the below instruction can be
-either [Datagrok JS API](https://datagrok.ai/help/develop/js-api),
+either [Datagrok JS API](https://datagrok.ai/api/js),
 [Datagrok package](https://datagrok.ai/help/develop/#packages),
 [Datagrok library](https://github.com/datagrok-ai/public/tree/master/libraries),
 or [Datagrok Docker image](https://hub.docker.com/u/datagrok).

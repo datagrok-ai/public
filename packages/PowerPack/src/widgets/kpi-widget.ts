@@ -5,6 +5,9 @@ import * as DG from 'datagrok-api/dg';
 import {Property} from "datagrok-api/dg";
 
 export class KpiWidget extends DG.Widget {
+  get type(): string {
+    return 'KpiWidget';
+  }
 
   caption: string;
   format: string;

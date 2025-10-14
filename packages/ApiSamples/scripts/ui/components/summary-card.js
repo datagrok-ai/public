@@ -6,7 +6,8 @@ let card = (project) => ui.cards.summary(
   ]
 );
 
-grok.dapi.projects
+grok.shell.windows.showProperties = true;
+let projects = await grok.dapi.projects
   .filter('#demo')
-  .list({pageSize: 5})
-  .then((projects) => grok.shell.o = ui.divV(projects.map(card)));
+  .list({pageSize: 5});
+grok.shell.o = ui.divV(projects.map(card));

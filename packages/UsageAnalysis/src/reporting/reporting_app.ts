@@ -6,6 +6,8 @@ import * as rx from "rxjs";
 import {delay} from 'rxjs/operators'
 
 export class ReportingApp {
+  static readonly APP_NAME = 'Reports';
+  empty: DG.View = DG.View.create();
   view?: DG.TableView;
   users: { [_: string]: any; } = {};
   parentCall: DG.FuncCall;
@@ -14,6 +16,13 @@ export class ReportingApp {
 
   constructor(parentCall: DG.FuncCall) {
     this.parentCall = parentCall;
+    this.empty.name = ReportingApp.APP_NAME;
+    const loader: HTMLElement = ui.loader();
+    loader.style.flexGrow = 'initial!important';
+    this.empty.root.append(loader);
+    this.empty.root.style.display = 'flex';
+    this.empty.root.style.alignItems = 'center';
+    this.empty.root.style.justifyContent = 'center';
   }
 
   async init(path?: string): Promise<void> {
@@ -35,9 +44,11 @@ export class ReportingApp {
     this.view = DG.TableView.create(table, false);
     this.view.parentCall = this.parentCall;
     this.view.path = '';
-    this.view.name = 'Reports';
+    this.view.name = ReportingApp.APP_NAME;
     this.view.setRibbonPanels([[ui.button('Add rule...', async () =>
       await DG.UserReportsRule.showAddDialog())]]);
+    this.empty.root.replaceWith(this.view.root);
+    this.empty.setRibbonPanels(this.view.getRibbonPanels());
     setTimeout(async () => {
       this.view!._onAdded();
       await this.refresh(table, this.view!.grid);
@@ -82,6 +93,15 @@ export class ReportingApp {
       table.getCol('first_occurrence').setTag('friendlyName', 'first');
       table.getCol('description').semType = 'Text';
       table.getCol('error_stack_trace').semType = 'Text';
+
+      // table.getCol('reporter').semType = 'User';
+      // table.getCol('reporter').setTag('cell.renderer', 'User');
+      //
+      // table.getCol('assignee').semType = 'User';
+      // table.getCol('assignee').setTag('cell.renderer', 'User');
+      table.getCol('jira').semType = 'JIRA Ticket';
+      table.getCol('jira').setTag('cell.renderer', 'JIRA Ticket');
+
       this.applyStyle(grid);
       grid.onCellPrepare(async (gc) => {
         if ((gc.gridColumn.name === 'reporter' || gc.gridColumn.name === 'assignee') && gc.cell.value) {
@@ -95,72 +115,67 @@ export class ReportingApp {
             });
           }
         }
-        if (gc.gridColumn.name === 'jira' && gc.cell.value) {
-          const link = ui.link((gc.cell.value as string).replace('GROK-', ''), `https://reddata.atlassian.net/jira/software/c/projects/GROK/issues/${gc.cell.value}`);
-          link.addEventListener('click', (e) => {
-            e.preventDefault();
-            window.open(link.href, '_blank');
-          });
-          link.style.position = 'absolute';
-          link.style.top = 'calc(50% - 8px)';
-          link.style.left = '3px';
-          gc.style.element = ui.tooltip.bind(link, () => 'Link to JIRA ticket');
-        }
+        // if (gc.gridColumn.name === 'jira' && gc.cell.value) {
+        //   const link = ui.link((gc.cell.value as string).replace('GROK-', ''), `https://reddata.atlassian.net/jira/software/c/projects/GROK/issues/${gc.cell.value}`);
+        //   link.addEventListener('click', (e) => {
+        //     e.preventDefault();
+        //     window.open(link.href, '_blank');
+        //   });
+        //   link.style.position = 'absolute';
+        //   link.style.top = 'calc(50% - 8px)';
+        //   link.style.left = '3px';
+        //   gc.style.element = ui.tooltip.bind(link, () => 'Link to JIRA ticket');
+        // }
       });
-      const isAcknowledged = table.getCol('is_resolved');
-      grid.onCellRender.subscribe((gc) => {
-        if (isAcknowledged.get(gc.cell.tableRowIndex ?? gc.cell.gridRow))
-          gc.cell.style.textColor = 0xFFB8BAC0;
-      });
-
-
-      rx.zip(grid.onCellClick, table.onCurrentRowChanged).pipe(delay(100))
-          .subscribe(async (_) => await this.showPropertyPanel(table));
-
-
-      // grid.onCellClick.subscribe((_) => setTimeout(async () => await this.showPropertyPanel(table), 200));
-
-      // table.onCurrentRowChanged.subscribe(async (_) => await this.showPropertyPanel(table));
       table.getCol('labels').meta.multiValueSeparator = ',';
-      table.onValuesChanged.subscribe(async () => {
-        grid.sort(['is_resolved', 'last_occurrence', 'errors_count'], [true, false, false]);
-        // this._scroll(grid);
-      });
-      grok.events.onEvent('d4-report-changed').subscribe((r: DG.UserReport) => {
-        const idCol = table.getCol('id');
-        const length = idCol.length;
-        for (let i = 0; i < length; i++) {
-          if (idCol.get(i) === r.id) {
-            table.cell(i, 'is_resolved').value = r.isResolved;
-            table.cell(i, 'jira').value = r.jiraTicket;
-            table.cell(i, 'assignee').value = r.assignee?.friendlyName;
+      this.view!.subs.push(
+          grid.onCellRender.subscribe((gc) => {
+            const isAcknowledged = table.getCol('is_resolved');
+            if (isAcknowledged.get(gc.cell.tableRowIndex ?? gc.cell.gridRow))
+              gc.cell.style.textColor = 0xFFB8BAC0;
+          }),
+          rx.zip(grid.onCellClick, table.onCurrentRowChanged).pipe(delay(100))
+              .subscribe(async (_) => await this.showPropertyPanel(table)),
+          table.onValuesChanged.subscribe(async () => {
+            if (grid.dataFrame)
+              grid.sort(['is_resolved', 'last_occurrence', 'errors_count'], [true, false, false]);
+            // this._scroll(grid);
+          }),
+          grok.events.onEvent('d4-report-changed').subscribe((r: DG.UserReport) => {
+            const idCol = table.getCol('id');
+            const length = idCol.length;
+            for (let i = 0; i < length; i++) {
+              if (idCol.get(i) === r.id) {
+                table.cell(i, 'is_resolved').value = r.isResolved;
+                table.cell(i, 'jira').value = r.jiraTicket;
+                table.cell(i, 'assignee').value = r.assignee?.friendlyName;
+                table.fireValuesChanged();
+              }
+            }
+          }),
+          grok.events.onEvent('d4-report-deleted').subscribe((id: string) => {
+            table.rows.removeWhere((r) => r.get('id') === id);
+            if (table.rowCount > 0) {
+              table.currentRowIdx = 0;
+            }
+          }),
+          grok.events.onEvent('d4-report-batch-changed').subscribe((data: {[_:string]: any}) => {
+            const affectedIds = new Set(data['affected']);
+            const fields = data['fields'];
+            const idCol = table.getCol('id');
+            const length = idCol.length;
+            for (let i = 0; i < length; i++) {
+              if (affectedIds.has(idCol.get(i))) {
+                table.cell(i, 'is_resolved').value = fields['is_resolved'];
+                table.cell(i, 'assignee').value = fields['assignee'];
+                if (fields['label'])
+                  table.cell(i, 'labels').value =  `${table.cell(i, 'labels').value},${fields['label']}`;
+              }
+            }
             table.fireValuesChanged();
-          }
-        }
-      });
+          })
+      );
 
-      grok.events.onEvent('d4-report-deleted').subscribe((id: string) => {
-        table.rows.removeWhere((r) => r.get('id') === id);
-        if (table.rowCount > 0) {
-          table.currentRowIdx = 0;
-        }
-      });
-
-      grok.events.onEvent('d4-report-batch-changed').subscribe((data: {[_:string]: any}) => {
-        const affectedIds = new Set(data['affected']);
-        const fields = data['fields'];
-        const idCol = table.getCol('id');
-        const length = idCol.length;
-        for (let i = 0; i < length; i++) {
-          if (affectedIds.has(idCol.get(i))) {
-            table.cell(i, 'is_resolved').value = fields['is_resolved'];
-            table.cell(i, 'assignee').value = fields['assignee'];
-            if (fields['label'])
-              table.cell(i, 'labels').value =  `${table.cell(i, 'labels').value},${fields['label']}`;
-          }
-        }
-        table.fireValuesChanged();
-      });
       this.refreshFilter(table);
       this.isInit = true;
       if (table.currentRowIdx === -1) {
@@ -229,11 +244,12 @@ export class ReportingApp {
 
   updatePath(reportNumber: number): void {
     const segments = window.location.href.split('/');
-    const last = segments[segments.length - 1];
-    if (last === 'reports')
+    if (segments[segments.length - 1] === 'reports?browse=apps')
+      segments[segments.length - 1] = 'reports';
+    if (segments[segments.length - 1] === 'reports')
       segments.push(reportNumber.toString());
     else {
-      if (/^-?\d+$/.test(last))
+      if (/^-?\d+$/.test(segments[segments.length - 1]))
         segments[segments.length - 1] = reportNumber.toString();
       else
         return;

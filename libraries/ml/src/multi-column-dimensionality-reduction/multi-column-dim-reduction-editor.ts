@@ -13,10 +13,11 @@ import {IDimReductionParam, ITSNEOptions, IUMAPOptions} from './multi-column-dim
 import {Subject} from 'rxjs';
 import '../../css/styles.css';
 import {getGPUAdapterDescription} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
+import { vectorDistanceMetricsMethods, VectorMetricsNames } from '../typed-metrics';
 
 export class UMAPOptions {
   learningRate: IDimReductionParam =
-  {uiName: 'Learninig rate', value: 1, tooltip: 'The initial learning rate for the embedding optimization'};
+  {uiName: 'Learninig Rate', value: 1, tooltip: 'The initial learning rate for the embedding optimization'};
   // nComponents: IDimReductionParam =
   // {uiName: 'Components', value: 2, tooltip: 'The number of components (dimensions) to project the data to'};
   nEpochs: IDimReductionParam =
@@ -30,10 +31,10 @@ export class UMAPOptions {
     `The effective scale of embedded points, used with min distance to control 
     the clumped/dispersed nature of the embedding`};
   minDist: IDimReductionParam =
-  {uiName: 'Min distance', value: 0.1,
+  {uiName: 'Min Distance', value: 0.1,
     tooltip: `The effective minimum distance between embedded points, 
   used with spread to control the clumped/dispersed nature of the embedding`};
-  randomSeed: IDimReductionParam<string> = {uiName: 'Random seed', value: null, tooltip: 'Random seed', type: 'string'};
+  randomSeed: IDimReductionParam<string> = {uiName: 'Random Seed', value: null, tooltip: 'Random seed', type: 'string'};
   useWebGPU: IDimReductionParam<boolean> =
     {uiName: 'Use WebGPU', value: false, tooltip: 'Use WebGPU for Distance and UMAP computations', type: 'boolean',
       disableTooltip: 'WebGPU is not available'};
@@ -89,7 +90,6 @@ export class MultiColumnDimReductionEditor {
     columnOptEditorsRoot: HTMLElement = ui.div();
     columnParamsEditorRoot: HTMLElement = ui.div();
     columnParamsEditorAccordion: DG.Accordion;
-    weightsEditorRoot: HTMLElement = ui.div();
     columnFunctionsMap: {[key: string]: string[]} = {};
     methodsParams: {[key: string]: UMAPOptions | TSNEOptions} = {
       [DimReductionMethods.UMAP]: new UMAPOptions(),
@@ -101,14 +101,16 @@ export class MultiColumnDimReductionEditor {
     methodInput: DG.InputBase<string | null>;
     methodSettingsIcon: HTMLElement;
     methodSettingsAnchor: HTMLElement = ui.div();
-    plotEmbeddingsInput = ui.input.bool('Plot embeddings', {value: true});
+    plotEmbeddingsInput = ui.input.bool('Plot Embeddings', {value: true});
     postProcessingEditor: PostProcessingFuncEditor;
     aggregationMethodInput = ui.input.choice('Aggregation', {value: DistanceAggregationMethods.EUCLIDEAN,
       items: [DistanceAggregationMethods.EUCLIDEAN, DistanceAggregationMethods.MANHATTAN]});
+    vectorDistanceInput: DG.InputBase<string | null> = ui.input.choice('Distance metric', {value: VectorMetricsNames.Euclidean, items:[VectorMetricsNames.Euclidean, VectorMetricsNames.Manhattan, VectorMetricsNames.Cosine]});
 
     onColumnsChanged: Subject<void>;
     constructor(editorSettings: DimReductionEditorOptions = {}) {
       this.aggregationMethodInput.setTooltip('Aggregation method for combining distances between columns');
+      this.vectorDistanceInput.root.style.display = 'none';
       this.onColumnsChanged = new Subject();
       this.editorSettings = editorSettings;
       this.columnParamsEditorAccordion = ui.accordion();
@@ -163,7 +165,7 @@ export class MultiColumnDimReductionEditor {
       this.columnParamsEditorAccordion.addPane('Column options', () => this.columnOptEditorsRoot, true, null, false);
       this.columnParamsEditorAccordion.root.style.display = 'none';
       this.columnParamsEditorRoot.appendChild(this.columnParamsEditorAccordion.root);
-      this.columnParamsEditorRoot.appendChild(this.weightsEditorRoot);
+      this.columnParamsEditorRoot.appendChild(this.vectorDistanceInput.root);
     }
 
     onTableInputChanged() {
@@ -171,7 +173,6 @@ export class MultiColumnDimReductionEditor {
       if (!table)
         return;
       ui.empty(this.columnOptEditorsRoot);
-      ui.empty(this.weightsEditorRoot);
 
       this.columnFunctionsMap = {};
       const columns = table.columns.toList();
@@ -195,7 +196,6 @@ export class MultiColumnDimReductionEditor {
       const columnsInput = ui.input.columns('Columns', {table: table, onValueChanged: (value) => {
         this.onColumnsChanged.next();
         ui.empty(this.columnOptEditorsRoot);
-        ui.empty(this.weightsEditorRoot);
         if (!value || value?.length < 2)
           this.aggregationMethodInput.root.style.display = 'none';
         else
@@ -235,6 +235,14 @@ export class MultiColumnDimReductionEditor {
           this.columnParamsEditorAccordion.root.style.display = 'flex';
         table.classList.add('ml-dim-reduction-column-editor-table-root');
         this.columnOptEditorsRoot.appendChild(table);
+
+        if (value.every((it) => it.isNumerical)) {
+          this.aggregationMethodInput.root.style.display = 'none';
+          this.columnParamsEditorAccordion.root.style.display = 'none';
+          this.vectorDistanceInput.root.style.display = 'flex';
+        } else {
+          this.vectorDistanceInput.root.style.display = 'none';
+        }
       }, available: supportedColNames});
       columnsInput.fireChanged();
       if (!this.columnsInputRoot) {
@@ -323,7 +331,8 @@ export class MultiColumnDimReductionEditor {
         clusterEmbeddings: false,
         postProcessingFunction: this.postProcessingEditor.postProcessingFunction,
         postProcessingFunctionArgs: this.postProcessingEditor.args,
-        aggreaggregationMethod: this.aggregationMethodInput.value
+        aggreaggregationMethod: this.aggregationMethodInput.value,
+        vectorDistanceMetric: this.vectorDistanceInput.value as VectorMetricsNames | undefined
       };
     }
 
@@ -340,7 +349,8 @@ export class MultiColumnDimReductionEditor {
         plotEmbeddings: this.plotEmbeddingsInput.value,
         postProcessingFunction: this.postProcessingEditor.postProcessingFunctionInput.value ?? null,
         postProcessingFunctionArgs: this.postProcessingEditor.args,
-        aggreaggregationMethod: this.aggregationMethodInput.value
+        aggreaggregationMethod: this.aggregationMethodInput.value,
+        vectorDistanceMetric: this.vectorDistanceInput.value
       };
     }
 
@@ -392,6 +402,8 @@ export class MultiColumnDimReductionEditor {
         }
 
         await this.postProcessingEditor.onFunctionChanged(input.postProcessingFunctionArgs);
+
+        this.vectorDistanceInput.value = input.vectorDistanceMetric;
       } catch (e) {
         grok.shell.error('Error applying input from history');
         console.error(e);

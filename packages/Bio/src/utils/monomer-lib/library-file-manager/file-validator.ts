@@ -54,7 +54,7 @@ export class MonomerLibFileValidator {
           `Bio: Monomer Library File Validator file ${fileName}, monomer '${name}' violating JSON schema:`,
           monomer,
           '\nError reason: ',
-          this.validateMonomerSchema.errors,
+          JSON.stringify(this.validateMonomerSchema.errors ?? {}),
           `\nThere may be other errors in ${fileName} since the validation is stopped after the first error.`,
           ' Please, verify that the monomer library file satisfies the JSON schema'
         );

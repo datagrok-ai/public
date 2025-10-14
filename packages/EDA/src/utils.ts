@@ -11,6 +11,9 @@ const FEATURES_COUNT_MIN = 1;
 const PERCENTAGE_MIN = 0;
 const PERCENTAGE_MAX = 100;
 const MAX_ELEMENTS_COUNT = 100000000;
+export const NIPALS_PREFER_COLS_COUNT = 900;
+
+const TINY = 0.000001;
 
 // Error messages
 const COMP_POSITVE_MES = 'components must be positive.';
@@ -24,7 +27,7 @@ const UNSUPPORTED_COLUMN_TYPE_MES = 'unsupported column type: ';
 const INCORRECT_MIN_DIST_MES = 'min distance must be positive.';
 const INCORRECT_SPREAD_MES = 'spread must be positive.';
 const INCORRECT_EPOCH_MES = 'number of epoch must be at least 1.';
-const INCORRECT_NEIBORS_MES = 'number of neibors must be at least 2 and not greater than samples count.';
+const INCORRECT_NEIBORS_MES = 'number of neighbors must be at least 2 and not greater than samples count.';
 const INCORRECT_ITERATIONS_MES = 'number of iterations must be at least 1.';
 const INCORRECT_LEARNING_RATE_MES = 'learning rate must be positive.';
 const INCORRECT_PERPLEXITY_MES = 'perplexity must be at least 2 and not greater than samples count.';
@@ -179,4 +182,137 @@ export function getRowsOfNumericalColumnns(columnList: DG.ColumnList): any[][] {
   }
 
   return output;
+}
+
+/** Return centered data */
+function centerDf(df: DG.DataFrame): DG.DataFrame {
+  const rowCount = df.rowCount;
+
+  for (const col of df.columns) {
+    if (col.isNumerical) {
+      const avg = col.stats.avg;
+
+      if (Math.abs(avg) > TINY) {
+        const raw = col.getRawData();
+
+        for (let i = 0; i < rowCount; ++i)
+          raw[i] -= avg;
+      }
+    }
+  }
+  return df;
+}
+
+/** Return scaled & centered data */
+function centerScaleDf(df: DG.DataFrame): DG.DataFrame {
+  const rowCount = df.rowCount;
+
+  for (const col of df.columns) {
+    if (col.isNumerical) {
+      const stdev = col.stats.stdev;
+      const avg = col.stats.avg;
+      const raw = col.getRawData();
+
+      if (stdev > 0) {
+        for (let i = 0; i < rowCount; ++i)
+          raw[i] = (raw[i] - avg) / stdev;
+      } else {
+        for (let i = 0; i < rowCount; ++i)
+          raw[i] -= avg;
+      }
+    }
+  }
+  return df;
+}
+
+/** Return scaled data */
+function scaleDf(df: DG.DataFrame): DG.DataFrame {
+  const rowCount = df.rowCount;
+
+  for (const col of df.columns) {
+    if (col.isNumerical) {
+      const stdev = col.stats.stdev;
+
+      if (Math.abs(stdev - 1) > TINY && (stdev > 0)) {
+        const raw = col.getRawData();
+
+        for (let i = 0; i < rowCount; ++i)
+          raw[i] /= stdev;
+      }
+    }
+  }
+  return df;
+}
+
+/** Return standardized dataframe */
+export function centerScaleDataFrame(df: DG.DataFrame, toCenter: boolean, toScale: boolean): DG.DataFrame {
+  if (toCenter) {
+    if (toScale)
+      return centerScaleDf(df);
+    else
+      return centerDf(df);
+  }
+
+  if (toScale)
+    return scaleDf(df);
+
+  return df;
+}
+
+/** Return table of columns with non-zero variance */
+export function extractNonConstantColsDf(features: DG.ColumnList): DG.DataFrame {
+  const cols: DG.Column[]= [];
+
+  for (const col of features) {
+    if ((col.stats.stdev > 0) && (col.stats.missingValueCount < 1))
+      cols.push(col);
+  }
+
+  return DG.DataFrame.fromColumns(cols);
+}
+
+/** Describe viewers and return the Done button */
+export function describeElements(roots: HTMLElement[], description: string[], position: string[]): HTMLButtonElement {
+  if (roots.length !== description.length)
+    throw new Error('Non-equal size of viewer roots and descriptions');
+
+  let idx = 0;
+  let closeIcn: HTMLElement;
+  let msg: HTMLDivElement;
+  let popup: HTMLDivElement;
+
+  const nextBtn = ui.button('next', () => {
+    popup.remove();
+    ++idx;
+    step();
+  }, 'Go to the next viewer');
+
+  const prevBtn = ui.button('prev', () => {
+    idx -= 1;    
+    popup.remove();
+    step();
+  }, 'Go to the previous viewer');
+
+  const doneBtn = ui.button('done', () => popup.remove(), 'Go to the next step');
+
+  const btnsDiv = ui.divH([prevBtn, nextBtn, doneBtn]);
+ btnsDiv.style.marginLeft = 'auto';
+ btnsDiv.style.marginRight = '0px';
+
+  const step = () => {
+    if (idx < roots.length) {
+      msg = ui.divV([ui.markdown(description[idx]), btnsDiv]);
+      popup = ui.hints.addHint(roots[idx], msg, position[idx] as ui.hints.POSITION);
+      doneBtn.hidden = (idx < roots.length - 1);
+      nextBtn.hidden = (idx === roots.length - 1);
+      prevBtn.hidden = (idx < 1);
+      
+      closeIcn = popup.querySelector('i') as HTMLElement;
+      closeIcn.onclick = () => doneBtn.click();
+    }
+  };
+
+  step();
+
+  return doneBtn;
 }

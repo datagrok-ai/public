@@ -56,6 +56,5 @@ let orange = new Fruit('orange', 'orange');
 grok.log.usage('@user liked #fruit', {'user': DG.User.current(), '#fruit': apple});
 grok.log.usage('@user disliked #fruit', {'user': DG.User.current(), '#fruit': orange});
 
-grok.dapi.log.filter('description = "@user liked #fruit"').first().then((logObject) => {
-  grok.shell.info(ui.render(logObject));
-});
+let logObject = await grok.dapi.log.filter('description = "@user liked #fruit"').first();
+grok.shell.info(ui.render(logObject));

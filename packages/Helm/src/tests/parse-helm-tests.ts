@@ -4,12 +4,13 @@ import * as DG from 'datagrok-api/dg';
 
 
 import {after, before, category, delay, expect, test, expectArray, timeout} from '@datagrok-libraries/utils/src/test';
-import {HelmType, IHelmEditorOptions, Mol, OrgType} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmMol, HelmType, IHelmBio, IHelmEditorOptions, Mol, OrgType} from '@datagrok-libraries/bio/src/helm/types';
 import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
   getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {IHelmHelper, getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 
 import {JSDraw2Module} from '../types';
 import {initHelmMainPackage} from './utils';
@@ -37,10 +38,28 @@ category('parseHelm', () => {
     },
     'RNA': {
       src: 'RNA1{[dhp]([m1A])p.r(T)p.r(T)p.r(G)p}$$$$V2.0',
-      tgt: {atomCount: 12, bondCount: 11, helm: 'RNA1{[dhp]([m1A])p.r(T)p.r(T)p.r(G)p}$$$$V2.0',}
-    }
+      tgt: {
+        atomCount: 12, bondCount: 11,
+        helm: 'RNA1{[dhp]([m1A])p.r(T)p.r(T)p.r(G)p}$$$$V2.0',
+      }
+    },
+    'PT-with-gap': {
+      src: 'PEPTIDE1{[meY].*.C.R.N.P.C.T}$$$$V2.0',
+      tgt: {
+        atomCount: 8, bondCount: 7,
+        helm: 'PEPTIDE1{[meY].*.C.R.N.P.C.T}$$$$V2.0',
+      }
+    },
+    'PT-with-gap-at-connection': {
+      src: 'PEPTIDE1{[meY].*.C.R.N.P.C.T}$PEPTIDE1,PEPTIDE1,2:R3-7:R3$$$V2.0',
+      tgt: {
+        atomCount: 8, bondCount: 8,
+        helm: 'PEPTIDE1{[meY].*.C.R.N.P.C.T}$PEPTIDE1,PEPTIDE1,2:R3-7:R3$$$V2.0',
+      }
+    },
   };
 
+  let helmHelper: IHelmHelper;
   let libHelper: IMonomerLibHelper;
   /** Backup actual user's monomer libraries settings */
   let userLibSettings: UserLibSettings;
@@ -48,10 +67,10 @@ category('parseHelm', () => {
   before(async () => {
     await initHelmMainPackage();
 
-    libHelper = await getMonomerLibHelper();
+    helmHelper = await getHelmHelper();
 
-    await timeout(async () => { userLibSettings = await getUserLibSettings(); }, 5000,
-      'get user lib settings for backup');
+    libHelper = await getMonomerLibHelper();
+    userLibSettings = await getUserLibSettings();
 
     // parseHelm is dependent on monomers RGroups available, test requires default monomer library
     await libHelper.loadMonomerLibForTests();
@@ -69,9 +88,15 @@ category('parseHelm', () => {
   }
 
   for (const [testName, {src, tgt}] of Object.entries(testData)) {
+    test(`HelmHelper-${testName}`, async () => {
+      _testParseHelmWithHelmHelper(src, tgt, helmHelper);
+    });
+  }
+
+  for (const [testName, {src, tgt}] of Object.entries(testData)) {
     test(`woDOM-${testName}`, async () => {
       _testParseHelmWithoutDOM(src, tgt);
-    }, testName == 'RNA' ? {skipReason: 'GROK-16721'} : undefined);
+    });
   }
 });
 
@@ -79,29 +104,45 @@ function _testParseHelmWithEditor(src: string, tgt: TestTgtType): void {
   const io = org.helm.webeditor.IO;
 
   const editorHost = ui.div();
-  const editor = new JSDraw2.Editor<HelmType, IHelmEditorOptions>(editorHost, {viewonly: true});
+  const editor = new JSDraw2.Editor<HelmType, IHelmBio, IHelmEditorOptions>(editorHost, {viewonly: true});
 
   const plugin = new org.helm.webeditor.Plugin(editor);
   const origin = new JSDraw2.Point(0, 0);
   io.parseHelm(plugin, src, origin, undefined);
 
-  const m: Mol<HelmType> = plugin.jsd.m;
+  const m: HelmMol = plugin.jsd.m;
   expect(m.atoms.length, tgt.atomCount);
   expect(m.bonds.length, tgt.bondCount);
+}
+
+function _testParseHelmWithHelmHelper(src: string, tgt: TestTgtType, helmHelper: IHelmHelper): void {
+  const io = org.helm.webeditor.IO;
+
+  const origin = new JSDraw2.Point(0, 0);
+  const resMol = helmHelper.parse(src, origin);
+
+  const resHelm = io.getHelm(resMol);
+  expect(resMol.atoms.length, tgt.atomCount);
+  expect(resMol.bonds.length, tgt.bondCount);
+  expect(resHelm, tgt.helm);
+  expect(resMol.atoms.every((a) => !a.elem.startsWith('[') && !a.elem.endsWith(']')), true,
+    'Atoms should not contain square braces.');
 }
 
 function _testParseHelmWithoutDOM(src: string, tgt: TestTgtType): void {
   const io = org.helm.webeditor.IO;
 
-  const molHandler = new JSDraw2.MolHandler<HelmType, IHelmEditorOptions>();
+  const molHandler = new JSDraw2.MolHandler<HelmType, IHelmBio, IHelmEditorOptions>();
 
   const plugin = new org.helm.webeditor.Plugin(molHandler);
   const origin = new JSDraw2.Point(0, 0);
   io.parseHelm(plugin, src, origin, undefined);
 
-  const m: Mol<HelmType> = plugin.jsd.m;
+  const m: HelmMol = plugin.jsd.m;
   const resHelm = io.getHelm(m);
   expect(m.atoms.length, tgt.atomCount);
   expect(m.bonds.length, tgt.bondCount);
   expect(resHelm, tgt.helm);
+  expect(m.atoms.every((a) => !a.elem.startsWith('[') && !a.elem.endsWith(']')), true,
+    'Atoms should not contain square braces.');
 }

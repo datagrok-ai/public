@@ -1,10 +1,16 @@
 {
   "connectionName": "CHEMBL",
   "schemaName": "public",
+  "dataSourceName": "postgres",
   "entryPoints": {
     "CHEMBL_ID": {
       "table": "molecule_dictionary",
-      "column": "chembl_id"
+      "column": "chembl_id",
+      "regexpExample": {
+        "example": "CHEMBL1234",
+        "nonVariablePart": "CHEMBL",
+        "regexpMarkup": "CHEMBL[0-9]+"
+      }
     },
     "molregno": {
       "table": "molecule_dictionary",

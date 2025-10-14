@@ -11,6 +11,10 @@ import {_package} from '../package';
 
 /** Used in Macromolecule column tooltip */
 export class MacromoleculeColumnWidget extends DG.Widget {
+  get type(): string {
+    return 'MacromoleculeColumnWidget';
+  }
+
   private viewed: boolean = false;
 
   private wlViewer: WebLogoViewer | null = null;

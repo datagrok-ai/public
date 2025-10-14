@@ -198,6 +198,7 @@ export enum VIEW_TYPE {
   PACKAGE_REPOSITORIES = 'repositories',
   JS_EDITOR = 'js',
   BROWSE = 'browse',
+  HOME = 'datagrok',
 }
 
 ///////
@@ -217,12 +218,19 @@ export const SEMTYPE = {
   STREET_ADDRESS: 'Street Address',
   TEXT: 'Text',
   DURATION: 'Duration',
+
   LATITUDE: 'Latitude',
   LONGITUDE: 'Longitude',
+
   IP_ADDRESS: 'IP Address',
+
   MOLECULE: 'Molecule',
   MACROMOLECULE: 'Macromolecule',
   MOLECULE3D: 'Molecule3D',
+
+  CONCENTRATION: 'Concentration',
+  VOLUME: 'Volume',
+
   PDB_ID: 'PDB_ID',
   NEWICK: 'Newick',
   HELM: 'HELM',
@@ -230,7 +238,11 @@ export const SEMTYPE = {
   MONEY: 'Money',
   IMAGE: 'Image',
   FILE: 'File',
-  CHEMICAL_REACTION: 'ChemicalReaction'
+  CHEMICAL_REACTION: 'ChemicalReaction',
+
+  IC50: 'IC50',  //	[nM, µM] Half-maximal inhibitory concentration (lower = more potent)
+  EC50: 'EC50',  // [nM, µM] Half-maximal effective concentration
+  Ki: 'Ki',      // [nM, µM] Inhibition constant (binding affinity to target)
 }
 
 export const UNITS = {
@@ -284,6 +296,10 @@ export const TAGS = {
   COLOR_CODING_CONDITIONAL: '.color-coding-conditional',
   COLOR_CODING_CATEGORICAL: '.color-coding-categorical',
   COLOR_CODING_LINEAR: '.color-coding-linear',
+  COLOR_CODING_LINEAR_BELOW_MIN_COLOR: '.%color-coding-linear-below-min-color',
+  COLOR_CODING_LINEAR_ABOVE_MAX_COLOR: '.%color-coding-linear-above-max-color',
+  COLOR_CODING_LINEAR_ABSOLUTE: '.%color-coding-linear-absolute',
+  COLOR_CODING_LINEAR_IS_ABSOLUTE: '.%color-coding-linear-is-absolute',
   COLOR_CODING_SCHEME_MAX: '.color-coding-scheme-max',
   COLOR_CODING_SCHEME_MIN: '.color-coding-scheme-min',
   COLOR_CODING_MATCH_TYPE: '.color-coding-match-type',
@@ -321,6 +337,7 @@ export const TAGS = {
   },
 
   LINK_CLICK_BEHAVIOR: '.linkClickBehavior',
+  GROUP: 'group',
 }
 
 export enum LINK_CLICK_BEHAVIOR {
@@ -566,18 +583,24 @@ export enum DEMO_DATASET {
 
 /** @enum {DOCK_TYPE} */
 export enum DOCK_TYPE {
-  LEFT = "left",
-  RIGHT = "right",
-  TOP = "up",
-  DOWN = "down",
-  FILL = "fill",
+  LEFT = 'left',
+  RIGHT = 'right',
+  TOP = 'up',
+  DOWN = 'down',
+  FILL = 'fill',
 }
 
 export enum LEGEND_POSITION {
-  LEFT = "left",
-  RIGHT = "right",
-  TOP = "top",
-  BOTTOM = "bottom",
+  AUTO = 'auto',
+  LEFT = 'left',
+  RIGHT = 'right',
+  TOP = 'top',
+  BOTTOM = 'bottom',
+  // TODO: commented temporarily
+  // LEFT_TOP = 'left top',
+  // LEFT_BOTTOM = 'left bottom',
+  // RIGHT_TOP = 'right top',
+  // RIGHT_BOTTOM = 'right bottom'
 }
 
 export enum COLOR_CODING_TYPE {
@@ -697,11 +720,12 @@ export type CsvImportOptions = {
 export type IndexPredicate = (ind: number) => boolean;
 export type StringPredicate = (str: string) => boolean;
 export type ScriptingLanguage = `${SCRIPT_LANGUAGE}`;
+type CSSProperties = Partial<Record<keyof CSSStyleDeclaration, string>>;
 
 export type ElementOptions = {
   id?: string;
   classes?: string;
-  style?: object;
+  style?: CSSProperties;
   //tooltip?: string;
   processNode?: (node: HTMLElement) => void;
   onClick?: (event: PointerEvent) => void;

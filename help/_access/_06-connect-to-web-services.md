@@ -3,7 +3,7 @@
 In addition to all the data sources like files or databases, it's possible to
 use web services. We can ingest them in multiple different ways. Of course it is
 always possible to write a custom JavaScript / TypeScript code using [Datagrok
-API]( https://datagrok.ai/help/develop/js-api) to do exactly what is needed.
+API](https://datagrok.ai/api/js) to do exactly what is needed.
 However, for web services that provide an OpenAPI decription we have a solution
 that works out of the box.
 

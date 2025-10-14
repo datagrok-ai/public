@@ -31,7 +31,7 @@ category('App', () => {
         `expected ${num[i]}, got ${document.querySelectorAll(s).length}`, 45000);
       if (err)
         throw new Error(err);
-    }, {stressTest: true});
+    });
   }
 
   after(async () => {

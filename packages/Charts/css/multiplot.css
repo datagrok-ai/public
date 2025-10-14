@@ -1,0 +1,13 @@
+.multiplot-plot-type-input {
+    position: absolute !important;
+    right: 28px;
+    flex-direction: row !important;
+    width: 65px !important;
+}
+
+.edit-plot-input {
+    position: absolute !important;
+    right: 130px;
+    flex-direction: row !important;
+    width: 150px !important;
+}

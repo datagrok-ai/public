@@ -85,6 +85,7 @@ category('monomerLibraries', () => {
 
     const overriddenMonomerLib = monomerLib.override({[overMon.polymerType]: {[overMon.symbol]: overMon}}, 'test');
     const resOverMon = overriddenMonomerLib.getMonomer(overMon.polymerType, overMon.symbol);
+    if (resOverMon) resOverMon.lib = undefined; // cleanup to prevent infinite recursive comparison
     expectObject(resOverMon as any, overMon);
   });
 });

@@ -56,9 +56,12 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
   // patch window.dojox.gfx.svg.Text.prototype.getTextWidth hangs
   /** get the text width in pixels */
   const pi = DG.TaskBarProgressIndicator.create('Loading Helm Web Editor ...');
+  const requireBackup = window.require;
+  //@ts-ignore
+  const defineBackup = window['define'];
   try {
-    const requireBackup = window.require;
 
+    // Dojo modules required by JDraw2 and HELMWebEditor
     // 'dojo.window','dojo.io.script','dojo.io.iframe','dojo.dom',
     // 'dojox.gfx','dojox.gfx.svg','dojox.gfx.shape','dojox.charting'
     const dojoTargetList: { name: string, checker: () => boolean }[] = [
@@ -87,7 +90,7 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
 
     try {
       // Preliminary loading BiostructureViewer package because of NGL and dojo interference
-      await initNgl();
+      //await initNgl();
 
       await timeout(async () => {
         await new Promise<void>((resolve, reject) => {
@@ -111,7 +114,7 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
               },
             },
           };
-          // Load dojo without package/sources section for the settings dojoConfig to take effect
+          // Load dojo without package/sources section for the settings dojoConfig to take effect, calleback will be called and promise resolved
           DG.Utils.loadJsCss([
             // 'https://ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js.uncompressed.js',
             // `${_package.webRoot}/vendor/dojo-1.10.10/dojo/dojo.js.uncompressed.js`,
@@ -140,6 +143,8 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
             _package.logger.debug(`${logPrefix}, window.require( ${JSON.stringify(args)} )`);
             dojoRequire(...args);
           };
+
+          
         }
 
         /** List of dojo modules not ready yet */ let dojoNotReadyList: string[];
@@ -189,6 +194,9 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
     };
     _package.logger.debug(`${logPrefix}, end`);
   } finally {
+    window.require = requireBackup;
+    // @ts-ignore
+    window['define'] = defineBackup;
     pi.close();
   }
 }
@@ -206,19 +214,16 @@ export const helmJsonReplacer = (key: string, value: any): any => {
 export class HelmPackage extends DG.Package {
   public alertOriginal: ((s: string) => void) | null = null;
 
-  private _seqHelper: ISeqHelper;
-  public get seqHelper(): ISeqHelper {
-    if (!this._seqHelper)
-      throw new Error('Package Helm .seqHelper is not initialized');
-    return this._seqHelper;
-  }
-
-  private _helmHelper: IHelmHelper;
+  private _helmHelper?: IHelmHelper;
   public get helmHelper(): IHelmHelper {
     if (!this._helmHelper)
       throw new Error('Package Helm .helmHelper is not initialized');
     return this._helmHelper;
   };
+
+  public get seqHelper(): ISeqHelper {
+    return this.helmHelper!.seqHelper;
+  }
 
   public _libHelper!: IMonomerLibHelper;
 
@@ -327,8 +332,7 @@ export class HelmPackage extends DG.Package {
   private _initialized: boolean = false;
 
   /** Requires both Bio & HELMWebEditor initialized */
-  completeInit(seqHelper: ISeqHelper, helmHelper: IHelmHelper, libHelper: IMonomerLibHelper): void {
-    this._seqHelper = seqHelper;
+  completeInit(helmHelper: IHelmHelper, libHelper: IMonomerLibHelper): void {
     this._helmHelper = helmHelper;
     this._libHelper = libHelper;
 

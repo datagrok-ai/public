@@ -179,6 +179,7 @@ async function getLinearRegressionParamsUsingPLS(features: DG.ColumnList,
     predict: targets,
     components: components,
     names: undefined,
+    isQuadratic: false,
   });
 
   return plsAnalysis.regressionCoefficients.getRawData() as Float32Array;

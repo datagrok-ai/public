@@ -262,6 +262,7 @@ export async function multiColWebGPUKNN(
     //device.queue.writeBuffer(computeInfoBuffer, computeInfoOffSet, info.flatSourceArray, 0, chunkByteSize);
     const ArrayConstructor = info.EncodedArrayConstructor;
     const chunkSize = info.sourceArraySize;
+    //@ts-ignore reason: new typescript shinanigens
     const dataView = new ArrayConstructor(mappedComputeInfoArrayBuffer, computeInfoOffSet, chunkSize);//new ArrayConstructor(computeInfoBuffer.getMappedRange(computeInfoOffSet, chunkByteSize));
     dataView.set(info.flatSourceArray);
     computeInfoOffSet += chunkSize * ArrayConstructor.BYTES_PER_ELEMENT;
@@ -294,6 +295,7 @@ export async function multiColWebGPUKNN(
   for (const info of processInfo) {
     if (info.suppInfoBuffer && info.suppInfoBuffer.byteLength > 0 && info.suppInfoSize > 0) {
       const ArrayConstructor = info.suppInfoType === WGPUENTRYTYPE.UINT32ARRAY ? Uint32Array : Float32Array;
+      //@ts-ignore reason: new typescript shinanigens
       const suppInfoView = new ArrayConstructor(mappedSuppInfoArrayBuffer, suppInfoOffSet, info.suppInfoBuffer.length); //new ArrayConstructor(suppInfoBuffer.getMappedRange(suppInfoOffSet, info.suppInfoBuffer.byteLength));
       suppInfoView.set(info.suppInfoBuffer);
       suppInfoOffSet += info.suppInfoBuffer.byteLength; // info.suppInfoBuffer.length * ArrayConstructor.BYTES_PER_ELEMENT;

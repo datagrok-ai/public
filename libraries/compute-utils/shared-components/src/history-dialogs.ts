@@ -2,31 +2,43 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subject, fromEvent} from 'rxjs';
+import {ItemMetadata} from '../../reactive-tree-driver/src/view/ViewCommunication';
+import {take} from 'rxjs/operators';
 
 type EditOptions = {
-  title: string | null,
-  description: string | null,
-  tags: string[],
-  favorite: 'favorited' | 'unfavorited' | 'same'
+  title?: string,
+  description?: string,
+  isFavorite?: boolean,
+  tags?: string[],
 }
 
-export class HistoricalRunEdit extends DG.Dialog {
+export type EditItemMetadata = ItemMetadata;
+
+export class EditRunMetadataDialog extends DG.Dialog {
   private _onMetadataEdit = new Subject<EditOptions>();
   public onMetadataEdit = this._onMetadataEdit.asObservable();
 
-  constructor(funcCall: DG.FuncCall, oldIsFavorite: boolean) {
-    const dlg = ui.dialog({title: 'Edit run metadata'});
+  static forFuncCall(funcCall: DG.FuncCall, isFavorite = false) {
+    const title = funcCall.options['title'] ?? '';
+    const description = funcCall.options['description'] ?? '';
+    const tags = funcCall.options['tags'] ?? [];
+    const editDialog = new EditRunMetadataDialog({title, description, tags, isFavorite});
+    return editDialog;
+  }
+
+  constructor(metadata?: EditItemMetadata) {
+    const dlg = ui.dialog({title: 'Save model state'});
 
     super(dlg.dart);
 
-    let title = funcCall.options['title'] ?? '';
-    let description = funcCall.options['description'] ?? '';
-    let isFavorite = oldIsFavorite;
+    let title = metadata?.title ?? '';
+    let description = metadata?.description ?? '';
+    let isFavorite = metadata?.isFavorite ?? false;
     const titleInput = ui.input.string('Title', {value: title, onValueChanged: (value) => title = value});
 
     const dummyInput = ui.input.string(' ', {value: ''});
     const tagsLine = DG.TagEditor.create();
-    (funcCall.options['tags'] ?? []).forEach((tag: string) => {
+    (metadata?.tags ?? []).forEach((tag: string) => {
       tagsLine.addTag(tag);
     });
     dummyInput.input.replaceWith(tagsLine.root);
@@ -53,8 +65,10 @@ export class HistoricalRunEdit extends DG.Dialog {
 
     const descInput = ui.input.string('Description', {value: description,
       onValueChanged: (value) => description = value});
-    const favInput = ui.input.bool('Favorites', {value: isFavorite,
+
+    const favInput = ui.input.bool('Is favorite', {value: isFavorite,
       onValueChanged: (value) => isFavorite = value});
+
     this.add(ui.form([
       titleInput,
       descInput,
@@ -69,15 +83,11 @@ export class HistoricalRunEdit extends DG.Dialog {
         return;
       }
 
-      let favorite = 'same';
-      if (isFavorite && !oldIsFavorite) favorite = 'favorited';
-      if (!isFavorite && oldIsFavorite) favorite = 'unfavorited';
-
       const editOptions = {
         title: (title !== '') ? title : null,
         description: (description !== '') ? description : null,
+        isFavorite,
         tags: tagsLine.tags.map((el) => el as any),
-        favorite,
       } as EditOptions;
 
       this._onMetadataEdit.next(editOptions);

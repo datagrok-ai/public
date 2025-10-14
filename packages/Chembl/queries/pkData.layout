@@ -1,0 +1,381 @@
+{
+  "#type": "ViewLayout",
+  "viewStateMap": {
+    "containerType": "horizontal",
+    "state": {
+      "width": 1496,
+      "height": 988
+    },
+    "children": [
+      {
+        "containerType": "fill",
+        "state": {
+          "width": 723,
+          "height": 988,
+          "documentManager": true
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 723,
+              "height": 988,
+              "element": {
+                "id": "40708900-9b00-11ef-83de-7be79b1a46af",
+                "type": "Grid",
+                "look": {
+                  "#type": "GridLook",
+                  "showAddNewRowIcon": true,
+                  "addNewRowOnLastRowEdit": true,
+                  "topLevelDefaultMenu": true,
+                  "allowColumnMenu": true,
+                  "columns": [
+                    {
+                      "width": 36,
+                      "backgroundColor": 4294440951,
+                      "customName": "",
+                      "cellType": "row header",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "width": 75,
+                      "columnName": "dose",
+                      "colorCodingType": "Categorical",
+                      "colorCodingCategorical": {},
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "width": 98,
+                      "columnName": "age_range",
+                      "colorCodingType": "Categorical",
+                      "colorCodingCategorical": {},
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "width": 113,
+                      "columnName": "tissue",
+                      "colorCodingType": "Categorical",
+                      "colorCodingCategorical": {},
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "isColorCoded": true,
+                      "width": 157,
+                      "columnName": "gender",
+                      "colorCodingType": "Categorical",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 108,
+                      "columnName": "standard_type",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 114,
+                      "columnName": "standard_value",
+                      "cellType": "number",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 111,
+                      "columnName": "standard_units",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 400,
+                      "columnName": "title",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 124,
+                      "columnName": "dataset",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 89,
+                      "columnName": "assay_id",
+                      "cellType": "number",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 400,
+                      "columnName": "description",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 167,
+                      "columnName": "dosed_compound_name",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 102,
+                      "columnName": "dosage_form",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 73,
+                      "columnName": "regimen",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 56,
+                      "columnName": "route",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 400,
+                      "columnName": "health_status",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 89,
+                      "columnName": "molregno",
+                      "cellType": "number",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 125,
+                      "columnName": "compound_name",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 96,
+                      "columnName": "activity_id",
+                      "cellType": "number",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 75,
+                      "columnName": "toid",
+                      "cellType": "number",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 127,
+                      "columnName": "standard_relation",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    },
+                    {
+                      "width": 400,
+                      "columnName": "activity_comment",
+                      "headerCellStyle": {
+                        "textWrap": "words"
+                      }
+                    }
+                  ]
+                },
+                "title": "result",
+                "default": true
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "containerType": "vertical",
+        "state": {
+          "width": 772,
+          "height": 988
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 772,
+              "height": 489,
+              "element": {
+                "id": "4070b010-9b00-11ef-d36c-27c0c772abd0",
+                "type": "Bar chart",
+                "look": {
+                  "#type": "BarChartLook",
+                  "valueColumnName": "standard_value",
+                  "valueAggrType": "count",
+                  "barSortType": "by value",
+                  "barSortOrder": "desc",
+                  "splitColumnName": "gender",
+                  "colorColumnName": "standard_value",
+                  "title": "Genders"
+                },
+                "title": "Genders"
+              }
+            },
+            "children": []
+          },
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 772,
+              "height": 498,
+              "element": {
+                "id": "4070b010-9b00-11ef-f030-8decb28b645d",
+                "type": "Pie chart",
+                "look": {
+                  "#type": "PieChartLook",
+                  "categoryColumnName": "dose",
+                  "categoryFunction": "",
+                  "segmentAngleColumnName": "assay_id"
+                },
+                "title": "Pie chart"
+              }
+            },
+            "children": []
+          }
+        ]
+      }
+    ],
+    "floating": [],
+    "tableId": "12bded40-9b00-11ef-cf6c-d72277c5de92",
+    "tableName": "result"
+  },
+  "columns": [
+    {
+      "name": "standard_value",
+      "type": "double",
+      "id": "3c99b770-9b00-11ef-d1d1-d5e223408aa3",
+      "friendlyName": "Standard_value",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "4070d720-9b00-11ef-8f42-25c7facb345f"
+        },
+        {
+          "tag": ".id",
+          "id": "4070d720-9b00-11ef-b4c9-b9d52428ac98"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".id": "3c99b770-9b00-11ef-d1d1-d5e223408aa3"
+      }
+    },
+    {
+      "name": "gender",
+      "type": "string",
+      "id": "3c99b770-9b00-11ef-b5b9-334f71d439b4",
+      "friendlyName": "Gender",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "4070d720-9b00-11ef-9917-538455e10f90"
+        },
+        {
+          "tag": ".color-coding-type",
+          "id": "4070d720-9b00-11ef-8445-abde4255d220"
+        },
+        {
+          "tag": ".id",
+          "id": "4070d720-9b00-11ef-97a9-7755908c37af"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "2",
+        ".color-coding-type": "Categorical",
+        ".id": "3c99b770-9b00-11ef-b5b9-334f71d439b4"
+      }
+    },
+    {
+      "name": "dose",
+      "type": "string",
+      "id": "3c99b770-9b00-11ef-974a-1d77c86a68b1",
+      "friendlyName": "Dose",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "4070d720-9b00-11ef-ac57-8d33e99288d0"
+        },
+        {
+          "tag": ".color-coding-type",
+          "id": "4070d720-9b00-11ef-d66d-fdc6ce480a42"
+        },
+        {
+          "tag": ".id",
+          "id": "4070d720-9b00-11ef-e13e-bfdae5745cd8"
+        },
+        {
+          "tag": ".color-coding-categorical",
+          "id": "4070d720-9b00-11ef-96c4-a72d0538bb08"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".color-coding-type": "Categorical",
+        ".id": "3c99b770-9b00-11ef-974a-1d77c86a68b1",
+        ".color-coding-categorical": "{}"
+      }
+    },
+    {
+      "name": "assay_id",
+      "type": "bigint",
+      "id": "3c99b770-9b00-11ef-c8fe-611eef941ddf",
+      "friendlyName": "Assay_id",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "4070fe30-9b00-11ef-8407-0f0c0c1575b3"
+        },
+        {
+          "tag": ".id",
+          "id": "4070fe30-9b00-11ef-928c-73da2cbaeb4a"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".id": "3c99b770-9b00-11ef-c8fe-611eef941ddf"
+      }
+    }
+  ],
+  "name": "PK Data",
+  "friendlyName": "PK Data",
+  "author": {
+    "id": "9e9f6b50-6280-11ee-9466-b1c86e676b97"
+  },
+  "createdOn": "2024-12-06T16:22:13.647Z"
+}

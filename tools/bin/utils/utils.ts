@@ -1,5 +1,5 @@
 import fs from 'fs';
-import path from 'path';
+import path, { sep } from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
@@ -22,6 +22,12 @@ export function isPackageDir(dir: string): boolean {
 export function kebabToCamelCase(s: string, firstUpper: boolean = true): string {
   s = s.replace(/-./g, (x) => x.toUpperCase()[1]);
   return (firstUpper ? s[0].toUpperCase() : s[0].toLowerCase()) + s.slice(1);
+}
+
+export function descriptionToComment(s: string) {
+  if (s.length === 0)
+    return '';
+  return '/**\n' + s + '\n*/\n';
 }
 
 export function spaceToCamelCase(s: string, firstUpper: boolean = true): string {
@@ -82,15 +88,18 @@ export const replacers: Indexable = {
   NAME_LOWERCASE: (s: string, name: string) => s.replace(/#{NAME_LOWERCASE}/g, name.toLowerCase()),
   NAME_PREFIX: (s: string, name: string) => s.replace(/#{NAME_PREFIX}/g, name.slice(0, 3)),
   PACKAGE_DETECTORS_NAME: (s: string, name: string) => s.replace(/#{PACKAGE_DETECTORS_NAME}/g, kebabToCamelCase(name)),
-  PACKAGE_NAMESPACE: (s: string, name: string) => s.replace(/#{PACKAGE_NAMESPACE}/g, kebabToCamelCase(removeScope(name))),
+  PACKAGE_NAMESPACE: (s: string, name: string) => s.replace(/#{PACKAGE_NAMESPACE}/g, name),
+  FUNC_DESCRIPTION: (s: string, desc: string) => s.replace(/#{FUNC_DESCRIPTION}/g, descriptionToComment(desc)),
   FUNC_NAME: (s: string, name: string) => s.replace(/#{FUNC_NAME}/g, friendlyNameToName(name)),
   FUNC_NAME_LOWERCASE: (s: string, name: string) => s.replace(/#{FUNC_NAME_LOWERCASE}/g, friendlyNameToName(name, false)),
   PARAMS_OBJECT: (s: string, params: { name?: string; type?: string }[]) => s.replace(/#{PARAMS_OBJECT}/g, params.length ?
     `{ ${params.map((p) => p.name).join(', ')} }` : `{}`),
   OUTPUT_TYPE: (s: string, type: string) => s.replace(/#{OUTPUT_TYPE}/g, type),
-  TYPED_PARAMS: (s: string, params: { name?: string; type?: string }[]) => s.replace(/#{TYPED_PARAMS}/g,
-    params.map((p) => `${p.name}: ${p.type}`).join(', ')),
+  TYPED_PARAMS: (s: string, params: { name?: string; type?: string; isOptional?: boolean; nullable?: boolean }[]) => s.replace(/#{TYPED_PARAMS}/g,
+    params.map((p) => `${p.name}${p.isOptional ? '?' : ''}: ${p.type} ${p.nullable ? '| null' : ''}`).join(', ')),
 };
+
+
 
 export class TemplateBuilder {
   static sep = '\n';
@@ -135,9 +144,10 @@ export const commentMap: Indexable = {
 };
 
 export const queryExtension = '.sql';
+export const jsExtention = '.js';
 export const scriptExtensions = ['.jl', '.m', '.py', '.R'];
 export function checkScriptLocation(filepath: string): boolean {
-  if (!(filepath.startsWith('scripts/') || filepath.startsWith('projects/') || filepath.startsWith('dockerfiles/')) &&
+  if (!(filepath.startsWith('scripts/') || filepath.startsWith('projects/') || filepath.startsWith('dockerfiles/') || filepath.startsWith('python/')) &&
     scriptExtensions.some((ext: any) => filepath.endsWith(ext)))
     return false;
 
@@ -156,9 +166,9 @@ export function getParam(name: string, script: string, comment: string = '#'): s
   return match ? match[1]?.trim() : null;
 };
 
-export const cahceValues = ['all', 'server' , 'client', 'true'];
+export const cacheValues = ['all', 'server', 'client', 'true'];
 
-export function isValidCron(cronExpression: string) : boolean {
+export function isValidCron(cronExpression: string): boolean {
   const cronRegex = /^(\*|([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])|\*\/([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])) (\*|([0-9]|1[0-9]|2[0-3])|\*\/([0-9]|1[0-9]|2[0-3])) (\*|([1-9]|1[0-9]|2[0-9]|3[0-1])|\*\/([1-9]|1[0-9]|2[0-9]|3[0-1])) (\*|([1-9]|1[0-2])|\*\/([1-9]|1[0-2])) (\*|([0-6])|\*\/([0-6]))$/;
   return cronRegex.test(cronExpression);
 }
@@ -173,58 +183,85 @@ export const dgToTsTypeMap: Indexable = {
   column: 'DG.Column',
   column_list: 'string[]',
   file: 'DG.FileInfo',
+  view: 'DG.View',
+  void: 'void',
 };
 
 export const propertyTypes = [
   'bool', 'int', 'double', 'string', 'datetime', 'object',
-  'column', 'dataframe', 'bitset', 'cell', 'string_list', 'map',
+  'column', 'dataframe', 'bitset', 'cell', 'string_list', 'map'
 ];
 
 export const headerTags = [
   'name', 'description', 'help-url', 'input', 'output', 'tags',
   'sample', 'language', 'returns', 'test', 'sidebar', 'condition',
   'top-menu', 'environment', 'require', 'editor-for', 'schedule',
-  'reference', 'editor', 'meta',
+  'reference', 'editor', 'meta', 'connection', 'friendlyName'
 ];
- 
+
 export const fileParamRegex = {
-  py: new RegExp(`^\#\\s*((?:${headerTags.join('|')})[^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`),
-  ts: new RegExp(`^\/\/\\s*((?:${headerTags.join('|')})[^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`),
-  js: new RegExp(`^\/\/\\s*((?:${headerTags.join('|')})[^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`), 
-  sql: new RegExp(`^--\\s*((?:${headerTags.join('|')})[^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`)
+  py: new RegExp(`^\#\\s*([^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`),
+  ts: new RegExp(`^\/\/\\s*([^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`),
+  js: new RegExp(`^\/\/\\s*([^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`),
+  sql: new RegExp(`^--\\s*([^:]*): *([^\\s\\[\\{]+) ?([^\\s\\[\\{]+)?[^\\n]*$`)
 }
 
-export const nameAnnRegex = /\/\/\s*(name[^:]*): ([^\n\r\[\{]+)/;
+export const nameAnnRegex = /\s*(name[^:]*): ([^\n\r\[\{]+)/;
 
-export const nameRegex = /(?:|static|export\s+function|export\s+async\s+function)\s+([a-zA-Z_][a-zA-Z0-9_$]*)\s*\((.*?)\).*/;
+export const nameRegex = /(?:|(?:static)(?:export )(?:async ))\s+function\s+([a-zA-Z_][a-zA-Z0-9_$]*)\s*\((.*?).*/;
 
 export const absUrlRegex = new RegExp('^(?:[a-z+]+:)?//', 'i');
 
 export function getScriptOutputType(script: string, comment: string = '#'): string {
-  const regex = new RegExp(`${comment}\\s*output:\\s?([a-z_]+)\\s*`);
-  const match = script.match(regex);
-  if (!match) return 'void';
-  return dgToTsTypeMap[match[1]] || 'any';
+  const regex = /\s*output:\s?([a-z_]+)\s*([^\s]*)/g;
+  const matches = script.matchAll(regex);
+  if (!matches) return 'void';
+  let resType = 'void';
+  let firstItemName = '';
+  let wasSecond = false;
+  for (let match of matches) {
+    if (resType === 'void') {
+      resType = dgToTsTypeMap[match[1]] ?? 'any';
+      firstItemName = match[2];
+    }
+    else {
+      if (!wasSecond) {
+        resType = `${firstItemName}: ${resType}`;
+        wasSecond = true;
+      }
+      resType = [resType, `${match[2]}: ${dgToTsTypeMap[match[1]] ?? 'any'}`].join(', ');
+    }
+  }
+  return wasSecond ? `{${resType}}` : resType;
 };
 
 export function getScriptInputs(script: string, comment: string = '#'): object[] {
-  const regex = new RegExp(`${comment}\\s*input:\\s?([a-z_]+)\\s+(\\w+)`, 'g');
+  const regex = new RegExp(`${comment}\\s*input:\\s?([a-z_]+)(?:<[^>]*>)?\\s+(\\w+)(?:[^{\\n]*{[^}\\n]*})?`, 'g');
   const inputs = [];
   for (const match of script.matchAll(regex)) {
+    const isOptional = /isOptional\s*:\s*true/.test(match[0]) || /optional\s*:\s*true/.test(match[0]);
+    const nullable = /nullable\s*:\s*true/.test(match[0]);
     const type = dgToTsTypeMap[match[1]] || 'any';
     const name = match[2];
-    inputs.push({ type, name });
+    inputs.push({ type, name, isOptional, nullable });
   }
   return inputs;
 };
 
-export const dgImports = `import * as grok from 'datagrok-api/grok';\nimport * as DG from 'datagrok-api/dg';\n\n`;
+export function getScriptDescription(script: string, comment: string = '#'): string {
+  const regex = new RegExp(`${comment}\\s*description:\\s([^\n]*)`);
+  const rexegRes = script.match(regex) || [];
+  const desc = rexegRes[1] || '';
+  return desc;
+};
 
-export const scriptWrapperTemplate = `export async function #{FUNC_NAME_LOWERCASE}(#{TYPED_PARAMS}): Promise<#{OUTPUT_TYPE}> {
+export const dgImports = `import * as grok from 'datagrok-api/grok';\nimport * as DG from 'datagrok-api/dg';\n`;
+
+export const scriptWrapperTemplate = `#{FUNC_DESCRIPTION}export async function #{FUNC_NAME_LOWERCASE}(#{TYPED_PARAMS}): Promise<#{OUTPUT_TYPE}> {
   return await grok.functions.call('#{PACKAGE_NAMESPACE}:#{FUNC_NAME}', #{PARAMS_OBJECT});
 }`;
 
-export const queryWrapperTemplate = `export async function #{FUNC_NAME_LOWERCASE}(#{TYPED_PARAMS}): Promise<#{OUTPUT_TYPE}> {
+export const queryWrapperTemplate = `#{FUNC_DESCRIPTION}export async function #{FUNC_NAME_LOWERCASE}(#{TYPED_PARAMS}): Promise<#{OUTPUT_TYPE}> {
   return await grok.data.query('#{PACKAGE_NAMESPACE}:#{FUNC_NAME}', #{PARAMS_OBJECT});
 }`;
 
@@ -242,8 +279,6 @@ export interface Config {
 
 export interface Indexable { [key: string]: any }
 
-
-
 export async function runScript(script: string, path: string, verbose: boolean = false) {
   try {
     const { stdout, stderr } = await execAsync(script, { cwd: path });
@@ -255,7 +290,7 @@ export async function runScript(script: string, path: string, verbose: boolean =
     }
   } catch (error: any) {
     console.error(`Execution failed: ${error.message}`);
-    throw new Error("Cant run script");
+    throw new Error(`Error executing '${script}'. Error message: ${error.message}`);
   }
 }
 
@@ -272,4 +307,42 @@ export function setHost(host: any, configFile: any) {
     process.env.HOST = configFile.default;
     console.log('Environment variable `HOST` is set to', configFile.default);
   }
+}
+
+export async function runAll(packagesDir: string, command: string, options: Record<string, any>, packagesToLoad:string[] = ['all']) {
+  const packages = fs.readdirSync(packagesDir);
+  const commandToRun = `${command} ${optionsToString(options)}`;
+  for (const packageName of packages) {
+    const packagePath = path.join(...[packagesDir, packageName]);
+    const packageJsonPath = path.join(...[packagesDir, packageName, 'package.json']);
+    if (fs.statSync(packagePath).isDirectory() && fs.existsSync(packageJsonPath)) {
+      try {
+        console.log(`${packagePath}: ${commandToRun} - Started`);
+        await runScript(commandToRun, packagePath, options.verbose);
+          console.log(`${packagePath}: ${commandToRun} - Finished`);
+      }
+      catch (e) {
+        console.log(`${packagePath}: ${commandToRun} - Error`);
+      }
+    }
+  }
+  return;
+}
+
+function optionsToString(options: Record<string, any>) {
+  const parts: string[] = []; 
+
+  for (const [key, value] of Object.entries(options)) {
+    if (key === '_' || key === 'all') continue;
+
+    if (typeof value === 'boolean') {
+      if (value) {
+        parts.push(`--${key}`);
+      }
+    } else if (value !== undefined && value !== null) {
+      parts.push(`--${key}="${value}"`);
+    }
+  }
+
+  return parts.join(' ');
 }

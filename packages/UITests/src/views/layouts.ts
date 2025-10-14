@@ -95,7 +95,7 @@ category('Layouts', () => {
   after(async () => {
     grok.shell.closeAll();
   });
-}, {clear: false});
+}, {clear: false, owner: 'aparamonov@datagrok.ai'});
 
 category('Layouts: Apply', () => {
   const df: DG.DataFrame = grok.data.demo.demog(100);
@@ -182,4 +182,4 @@ category('Layouts: Apply', () => {
     if (p2)
       (p2.querySelector('.panel-titlebar-button-close') as HTMLElement).click();
   });
-});
+}, { owner: 'aparamonov@datagrok.ai' });

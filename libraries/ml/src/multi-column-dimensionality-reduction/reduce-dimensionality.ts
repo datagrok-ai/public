@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {KnownMetrics} from '../typed-metrics';
+import {KnownMetrics, VectorMetricsNames} from '../typed-metrics';
 import {BYPASS_LARGE_DATA_WARNING, SHOW_SCATTERPLOT_PROGRESS} from '../functionEditors/consts';
 import {Matrix, Options} from '@datagrok-libraries/utils/src/type-declarations';
 import {IDBScanOptions, getDbscanWorker} from '@datagrok-libraries/math';
@@ -37,7 +37,7 @@ export async function multiColReduceDimensionality(table: DG.DataFrame, columns:
   aggregationMethod: DistanceAggregationMethod, plotEmbeddings: boolean = true, clusterEmbeddings: boolean = false,
   dimRedOptions: (IUMAPOptions | ITSNEOptions) & Partial<IDBScanOptions> & {preprocessingFuncArgs: Options[]} &
     Options = {preprocessingFuncArgs: []},
-  uiOptions: DimRedUiOptions = {}, postProcessingFunc: DG.Func | null = null, postProcFuncArgs: Options = {}
+  uiOptions: DimRedUiOptions = {}, postProcessingFunc: DG.Func | null = null, postProcFuncArgs: Options = {}, vectorDistanceFunc?: VectorMetricsNames
 ): Promise<DG.ScatterPlotViewer | undefined> {
   const scatterPlotProps = {
     showXAxis: false,
@@ -110,27 +110,46 @@ export async function multiColReduceDimensionality(table: DG.DataFrame, columns:
           try {
             resolveF = resolve;
             const encodedColEntries: PreprocessFunctionReturnType[] = [];
-            for (let i = 0; i < preprocessingFunctions.length; ++i) {
-              const pf = preprocessingFunctions[i];
-              if (!dimRedOptions.distanceFnArgs)
-                dimRedOptions.distanceFnArgs = [];
-              if (pf) {
-                const colInputName = pf.inputs[0].name;
-                const metricInputName = pf.inputs[1].name;
-                const {entries, options}: PreprocessFunctionReturnType =
-                await pf.apply({[colInputName]: columns[i], [metricInputName]: metrics[i],
-                  ...(dimRedOptions.preprocessingFuncArgs[i] ?? {})});
-                encodedColEntries.push({entries, options});
-                dimRedOptions.distanceFnArgs.push(options);
-              } else {
-                const entries = columns[i].toList();
-                const options = {};
-                encodedColEntries.push({entries, options});
-                dimRedOptions.distanceFnArgs.push(options);
+            let actualMetrics = metrics;
+            let actualWeights = weights;
+            let actualAggregationMethod = aggregationMethod;
+            // if all columns are numerical and vector distance function is provided, use it and skip preprocessing
+            if (vectorDistanceFunc && columns.every((it) => it.isNumerical)) {
+              const actVals = columns.map((it) => it.toList());
+              const r = new Array(table.rowCount).fill(0).map((_, i) => new Float32Array(columns.length));
+              for (let i = 0; i < columns.length; ++i) {
+                for (let j = 0; j < table.rowCount; ++j) {
+                  r[j][i] = actVals[i][j];
+                }
+              }
+              dimRedOptions.distanceFnArgs = [{}];
+              encodedColEntries.push({entries: r, options: {}});
+              actualMetrics = [vectorDistanceFunc];
+              actualWeights = [1];
+              actualAggregationMethod = 'MANHATTAN';
+            } else {
+              for (let i = 0; i < preprocessingFunctions.length; ++i) {
+                const pf = preprocessingFunctions[i];
+                if (!dimRedOptions.distanceFnArgs)
+                  dimRedOptions.distanceFnArgs = [];
+                if (pf) {
+                  const colInputName = pf.inputs[0].name;
+                  const metricInputName = pf.inputs[1].name;
+                  const {entries, options}: PreprocessFunctionReturnType =
+                  await pf.apply({[colInputName]: columns[i], [metricInputName]: metrics[i],
+                    ...(dimRedOptions.preprocessingFuncArgs[i] ?? {})});
+                  encodedColEntries.push({entries, options});
+                  dimRedOptions.distanceFnArgs.push(options);
+                } else {
+                  const entries = columns[i].toList();
+                  const options = {};
+                  encodedColEntries.push({entries, options});
+                  dimRedOptions.distanceFnArgs.push(options);
+                }
               }
             }
             const res = await getNormalizedEmbeddings(encodedColEntries.map((it) => it.entries), method,
-              metrics, weights, aggregationMethod, dimRedOptions,
+              actualMetrics, actualWeights, aggregationMethod, dimRedOptions,
               uiOptions[BYPASS_LARGE_DATA_WARNING] ? undefined : progressFunc);
             resolve(res);
           } catch (e) {

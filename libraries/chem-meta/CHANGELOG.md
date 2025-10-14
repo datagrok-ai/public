@@ -1,5 +1,17 @@
 # chem-meta changelog
 
+## 1.2.8 (2024-11-01)
+
+### New features
+
+Added alignByScaffolf field into ISubstruct type
+
+## 1.2.8 (2024-11-01)
+
+### New features
+
+Add mergeSubstructs
+
 ## 1.2.7 (2024-09-24)
 
 ### New features

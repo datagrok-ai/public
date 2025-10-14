@@ -28,4 +28,4 @@ category('Viewers: Scatter Plot', () => {
   test('Wrong range #1858', async () => {
     await testViewer(DG.VIEWER.SCATTER_PLOT, await readDataframe('#1858.csv'), {readOnly: true});
   });
-});
+}, { owner: 'dkovalyov@datagrok.ai' });

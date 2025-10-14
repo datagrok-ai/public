@@ -13,13 +13,16 @@ export function _principalComponentAnalysis(table, columns, componentsCount, cen
   return callWasm(EDA, 'principalComponentAnalysis', [columns, componentsCount, centerNum, scaleNum]);
 }
 
-export async function _principalComponentAnalysisInWebWorker(table, columns, componentsCount, centerNum, scaleNum) {
+export async function _principalComponentAnalysisInWebWorker(table, columns, componentsCount) {
   return new Promise((resolve, reject) => {
-    const worker = new Worker(new URL('../wasm/workers/principalComponentAnalysisWorker.js', import.meta.url));
-    worker.postMessage(getCppInput(EDA['principalComponentAnalysis'].arguments,[columns, componentsCount, centerNum, scaleNum]));
+    const worker = new Worker(new URL('../wasm/workers/principalComponentAnalysisWorkerUpd.js', import.meta.url));
+    worker.postMessage(getCppInput(EDA['principalComponentAnalysis'].arguments, [columns, componentsCount, 1, 0]));
     worker.onmessage = function(e) {
       worker.terminate();
-      resolve(getResult(EDA['principalComponentAnalysis'], e.data));
+      if (e.data.callResult === 0)
+        resolve(getResult(EDA['principalComponentAnalysis'], e.data));
+      else
+        resolve(-1);
     }
   });
 }
@@ -35,6 +38,21 @@ export async function _errorInWebWorker(df, col1, col2) {
     worker.onmessage = function(e) {
       worker.terminate();
       resolve(getResult(EDA['error'], e.data));
+    }
+  });
+}
+
+export function _principalComponentAnalysisNipals(table, columns, componentsCount) {
+  return callWasm(EDA, 'principalComponentAnalysisNipals', [columns, componentsCount]);
+}
+
+export async function _principalComponentAnalysisNipalsInWebWorker(table, columns, componentsCount) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL('../wasm/workers/principalComponentAnalysisNipalsWorker.js', import.meta.url));
+    worker.postMessage(getCppInput(EDA['principalComponentAnalysisNipals'].arguments,[columns, componentsCount]));
+    worker.onmessage = function(e) {
+      worker.terminate();
+      resolve(getResult(EDA['principalComponentAnalysisNipals'], e.data));
     }
   });
 }
