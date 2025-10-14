@@ -10,9 +10,10 @@ let detailsView = null;
 
 tickers.onCurrentRowChanged.subscribe(async (_) => {
   let t = await grok.data.loadTable(
-    `https://calmcode.io/static/data/${tickers.currentRow.ticker}.csv`
+    `https://calmcode.io/static/data/${tickers.currentRow.chickWeight}.csv`
   );
 
   if (detailsView === null) detailsView = grok.shell.addTableView(t);
   else detailsView.dataFrame = t;
 });
+  

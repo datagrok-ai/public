@@ -9,7 +9,7 @@ const properties = [
   {
     "name": "structure",
     "type": "string",
-    //"semType": "Molecule"
+    "semType": "Molecule"
   },
   {
     "name": "weight",

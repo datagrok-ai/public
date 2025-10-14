@@ -2,8 +2,6 @@
 
 ![Oligo Batch Calculator](img/screen.jpg)
 
-Presentation: <https://www.youtube.com/watch?v=2xuxJjpjXi4&t=4908s>
-
 **Calculates the following oligonucleotide properties:**
 
 1. Length
@@ -25,3 +23,6 @@ the mistakes manually, or press "REMOVE ERRORS" to remove the unrecognized symbo
 All supported sequence representations are listed [here](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator#sequence-representations).
 
 The functionality of this application was inspired by [Oligo Properties Calculator](https://www.biosyn.com/Oligo-Calculator.aspx)
+
+See also:
+* [YouTube video](https://www.youtube.com/watch?v=2xuxJjpjXi4&t=4908s).

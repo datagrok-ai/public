@@ -5,24 +5,29 @@ import * as grok from 'datagrok-api/grok';
 import {getDiverseSubset} from '@datagrok-libraries/utils/src/similarity-metrics';
 import {SequenceSearchBaseViewer} from './sequence-search-base-viewer';
 import {getMonomericMols} from '../calculations/monomerLevelMols';
-import {updateDivInnerHTML} from '../utils/ui-utils';
+import {adjustGridcolAfterRender, updateDivInnerHTML} from '../utils/ui-utils';
 import {Subject} from 'rxjs';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {getEncodedSeqSpaceCol} from './sequence-space';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {DistanceMatrixService, dmLinearIndex} from '@datagrok-libraries/ml/src/distance-matrix';
+import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
+
+const MAX_SAMPLE_SIZE = 10000;
 
 export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
-  diverseColumnLabel: string | null; // Use postfix Label to prevent activating table column selection editor
+  diverseColumnLabel: string | null;
 
   renderMolIds: number[] | null = null;
   columnNames = [];
   computeCompleted = new Subject<boolean>();
 
+  private sampledIndices: number[] | null = null;
+
   constructor(
     private readonly seqHelper: ISeqHelper,
   ) {
-    super('diversity');
+    super('diversity', DG.SEMTYPE.MACROMOLECULE);
     this.diverseColumnLabel = this.string('diverseColumnLabel', null);
   }
 
@@ -30,49 +35,114 @@ export class SequenceDiversityViewer extends SequenceSearchBaseViewer {
     if (!this.beforeRender())
       return;
     if (this.dataFrame) {
-      if (computeData && this.moleculeColumn) {
-        const sh = this.seqHelper.getSeqHandler(this.moleculeColumn);
-        await (sh.isFasta() ? this.computeByMM() : this.computeByChem());
+      if (computeData && this.targetColumn) {
+        await this.computeByMM();
 
         const diverseColumnName: string = this.diverseColumnLabel != null ? this.diverseColumnLabel :
-          `diverse (${this.moleculeColumnName})`;
+          `diverse (${this.targetColumnName})`;
         const resCol = DG.Column.string(diverseColumnName, this.renderMolIds!.length)
-          .init((i) => this.moleculeColumn?.get(this.renderMolIds![i]));
+          .init((i) => this.targetColumn?.get(this.renderMolIds![i]));
         resCol.semType = DG.SEMTYPE.MACROMOLECULE;
-        this.tags.forEach((tag) => resCol.setTag(tag, this.moleculeColumn!.getTag(tag)));
+        this.tags.forEach((tag) => resCol.setTag(tag, this.targetColumn!.getTag(tag)));
         const resDf = DG.DataFrame.fromColumns([resCol]);
-        resDf.onCurrentRowChanged.subscribe(
-          (_: any) => { this.dataFrame.currentRowIdx = this.renderMolIds![resDf.currentRowIdx]; });
-        updateDivInnerHTML(this.root, resDf.plot.grid().root);
+        resCol.temp[MmcrTemps.maxMonomerLength] = 4;
+
+        const _ = resDf.onCurrentRowChanged.subscribe((_: any) => {
+          this.dataFrame.currentRowIdx = this.renderMolIds![resDf.currentRowIdx];
+        });
+
+        const grid = resDf.plot.grid();
+        adjustGridcolAfterRender(grid, resCol.name, 450, 30);
+
+        updateDivInnerHTML(this.root, grid.root);
         this.computeCompleted.next(true);
       }
     }
   }
 
-  private async computeByChem() {
-    const monomericMols = await getMonomericMols(this.moleculeColumn!, this.seqHelper);
-    //need to create df to calculate fingerprints
-    const _monomericMolsDf = DG.DataFrame.fromColumns([monomericMols]);
-    this.renderMolIds = await grok.functions.call('Chem:callChemDiversitySearch', {
-      col: monomericMols,
-      metricName: this.distanceMetric,
-      limit: this.limit,
-      fingerprint: this.fingerprint,
-    });
+  private async computeByMM() {
+    const totalLength = this.targetColumn!.length;
+    let workingIndices: number[];
+
+    // Determine if we need to sample the data
+    if (this.requiresSampling && totalLength > MAX_SAMPLE_SIZE) {
+      workingIndices = this.createRandomSample(totalLength, MAX_SAMPLE_SIZE);
+      this.sampledIndices = workingIndices;
+    } else {
+      workingIndices = Array.from({length: totalLength}, (_, i) => i);
+      this.sampledIndices = null;
+    }
+
+    const distanceFunction = this.distanceMetric as MmDistanceFunctionsNames;
+
+    // Call with individual parameters instead of params object
+    const encodedResult = await getEncodedSeqSpaceCol(
+      this.targetColumn!,
+      distanceFunction,
+      this.fingerprint,
+      this.gapOpen,
+      this.gapExtend
+    );
+    const fullEncodedSequences = encodedResult.seqList;
+    const options = encodedResult.options;
+
+    // Extract only the sequences we need for the working set
+    const workingEncodedSequences = workingIndices.map((idx) => fullEncodedSequences[idx]);
+
+    const distanceMatrixService = new DistanceMatrixService(true, false);
+    const distanceMatrixData = await distanceMatrixService.calc(
+      workingEncodedSequences,
+      distanceFunction,
+      true, // normalize
+      options
+    );
+    distanceMatrixService.terminate();
+
+    const workingLength = workingIndices.length;
+    const linearizeFunc = dmLinearIndex(workingLength);
+
+    const diverseIndicesInWorkingSet = getDiverseSubset(
+      workingLength,
+      Math.min(workingLength, this.limit),
+      (i1: number, i2: number) => {
+        return distanceMatrixData[linearizeFunc(i1, i2)];
+      }
+    );
+
+    // Map back to original indices
+    this.renderMolIds = diverseIndicesInWorkingSet.map((workingIndex) => workingIndices[workingIndex]);
   }
 
-  private async computeByMM() {
-    const encodedSequences =
-      (await getEncodedSeqSpaceCol(this.moleculeColumn!, MmDistanceFunctionsNames.LEVENSHTEIN)).seqList;
-    const distanceMatrixService = new DistanceMatrixService(true, false);
-    const distanceMatrixData = await distanceMatrixService.calc(encodedSequences, MmDistanceFunctionsNames.LEVENSHTEIN);
-    distanceMatrixService.terminate();
-    const len = this.moleculeColumn!.length;
-    const linearizeFunc = dmLinearIndex(len);
-    this.renderMolIds = getDiverseSubset(len, Math.min(len, this.limit),
-      (i1: number, i2: number) => {
-        return this.moleculeColumn!.isNone(i1) || this.moleculeColumn!.isNone(i2) ? 0 :
-          distanceMatrixData[linearizeFunc(i1, i2)];
-      });
+  private createRandomSample(totalLength: number, sampleSize: number): number[] {
+    const validIndices: number[] = [];
+    for (let i = 0; i < totalLength; i++) {
+      if (!this.targetColumn!.isNone(i))
+        validIndices.push(i);
+    }
+
+    if (validIndices.length <= sampleSize)
+      return validIndices;
+
+    for (let i = validIndices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = validIndices[i];
+      validIndices[i] = validIndices[j];
+      validIndices[j] = temp;
+    }
+
+    return validIndices.slice(0, sampleSize);
   }
+
+  // // Helper method to get information about sampling (useful for debugging/info)
+  // getSamplingInfo(): {isSampled: boolean, originalSize?: number, sampleSize?: number, sampledIndices?: number[]} {
+  //   if (this.sampledIndices) {
+  //     return {
+  //       isSampled: true,
+  //       originalSize: this.targetColumn?.length,
+  //       sampleSize: this.sampledIndices.length,
+  //       sampledIndices: this.sampledIndices
+  //     };
+  //   }
+  //   return {isSampled: false};
+  // }
 }

@@ -8,18 +8,19 @@ Mappings:
     GrokConnect:
       domain: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
       repo: "datagrok/grok_connect"
+    GrokPipe:
+      domain: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
+      repo: "datagrok/grok_pipe"
+    Rabbitmq:
+      domain: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
+      repo: "datagrok/rabbitmq"
     GrokSpawner:
       domain: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
       repo: "datagrok/grok_spawner"
     JKG:
       domain: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
       repo: "datagrok/jupyter_kernel_gateway"
-    JN:
-      domain: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
-      repo: "datagrok/jupyter_notebook"
-    H2o:
-      domain: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
-      repo: "datagrok/h2o"
+
     Kaniko:
       domain: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
       repo: "datagrok/kaniko"

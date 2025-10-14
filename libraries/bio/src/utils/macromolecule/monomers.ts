@@ -297,6 +297,8 @@ export async function mostSimilarNaturalAnalog(molString: string, monomerType: s
     return null;
   const morganFp = await getMorganFingerprint(molString);
   if (!morganFp) return null;
+  if (!naturalMonomerFps[monomerType as keyof typeof naturalMonomerFps])
+    return null;
   const naturalFps = naturalMonomerFps[monomerType as keyof typeof naturalMonomerFps];
   let maxSim = 0;
   let mostSimilar = null;

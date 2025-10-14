@@ -90,7 +90,7 @@ viewer updates the current row in all other viewers, including grid.
 
 To further aid with data exploration, the **Context Panel** dynamically updates
 to show [info panes](../../datagrok/navigation/panels/info-panels.md) specific to
-the current molecule.
+the current object, e.g., a molecule.
 
 ![](img/grid-rows-interactivity.gif)
 
@@ -144,7 +144,7 @@ To open, on the **Status Bar**, click **Columns:**
 
 <br/>
 
-![](../../deploy/releases/platform/img/column-preview-filter-by-type.gif)
+![](../../deploy/releases/img/column-preview-filter-by-type.gif)
 
 </TabItem>
 <TabItem value="repositioning" label="Repositioning">
@@ -164,7 +164,7 @@ their content is automatically visualized in the **Context Panel**.
 
 <br/>
 
-![](../../deploy/releases/platform/img/plots-info-pane.gif)
+![](../../deploy/releases/img/plots-info-pane.gif)
 
 </TabItem>
 </Tabs>
@@ -187,6 +187,27 @@ and visualize the content.
 
 You can also [resize selected columns](#resizing-columns) by mouse-dragging column border in the header.
 
+:::tip
+
+Select multiple colors and apply colors and styles at once for quick formatting. Assign groups for quick filtering, selection, and navigation 
+
+![img](img/grid-grouped-columns.gif)
+
+:::
+
+### Hiding and unhiding columns
+
+There are many ways to hide a column:
+* [Resize](#resizing-columns) it, bringing its width to 0
+* Right-click, select "Order or hide columns...", and uncheck corresponding checkboxes
+* Select a number of columns and click "Hide" on the context panel
+
+You can tell whether there are hidden columns by looking at the column header separators -
+it gets bolder and darker if there are hidden columns. To unhide a column, double-click
+on the corresponding column separator, like shown on the picture below:
+
+![](img/grid-unhide-columns.gif)
+
 ### Resizing columns
 
 There are multiple ways to resize a column:
@@ -194,6 +215,39 @@ There are multiple ways to resize a column:
 * Right-click on the grid, and choose one of the options under "Column sizing" 
 
 ![](img/grid-resize-multiple-columns.gif)
+
+### Resizing rows and columns
+
+When you resize row heights, columns widths automatically adjust in order to provide
+the best experience. This lets you "zoom out" to see the bigger picture, or the opposite -
+zoom in to see additional details in the cell (especially useful for dynamic cells that
+render differently depending on your zoom level, such as proteins, users, forms, or 
+JIRA tickets).
+
+![](img/grid-dynamic-column-widths.gif)
+
+You can do mouse-panning (with the right mouse button) just like in a Google map! It is 
+particularly useful if you are exploring a big and wide dataset in the zoomed-out mode.
+
+![](img/grid-mouse-pan-content.gif)
+
+### Adding new columns
+
+To add a new column, on the **Top Menu**, click the **Add new column** (![Add new column icon](../../uploads/icons/add-new-column.png))
+icon. This opens a dialog where you can specify a column name, type, and
+formula, as applicable.  
+
+For more details, including formula syntax, read [Add new column](../../transform/add-new-column.md) or watch [this video](https://youtu.be/4_NS3q7uvjs?si=yGXl0Y4PCD0S-MBG&t=1655).
+
+### Column groups
+
+Group columns together by selecting them and then choosing the "Group columns..." action 
+in the context panel. You can also specify group color. Once columns are grouped, group name will appear above 
+columns names. You can use it for selecting and moving all columns at once.
+
+You can quickly show or hide groups of columns from [filters](filters.md).
+
+![](img/grid-column-groups.gif)
 
 ## Cells
 
@@ -217,13 +271,13 @@ To apply a cell renderer manually:
   >additional parameters. 
 1. Click **OK**.
 
-![](../../deploy/releases/platform/img/release1.18-cellrend-tags-multichoice-dropdown.gif)
+![](../../deploy/releases/img/release1.18-cellrend-tags-multichoice-dropdown.gif)
 
 Examples of built-in renderers include molecules, URL based images, fit lines, comboboxes, and more. <!--For the full list, see [Supported cell renderers].  //TODO: New doc: supported-cell-renderers.md-->
 
 :::note developers
 
-[Create custom cell renderers](../../develop/how-to/custom-cell-renderers.md)
+[Create custom cell renderers](../../develop/how-to/grid/custom-cell-renderers.md)
 
 :::
 
@@ -244,7 +298,7 @@ To add a smart form, right-click a cell and select **Add** > **Summary Columns**
 
 <br/>
 
-![smart forms](../../deploy/releases/platform/img/smart-forms.gif)
+![smart forms](../../deploy/releases/img/smart-forms.gif)
 
 </TabItem>
 <TabItem value="sparklines" label="Sparklines">
@@ -256,7 +310,7 @@ Supported summary column types:
 * Sparklines
 * Bar Chart
 * Radar
-* Pie Barchart
+* Pie Chart
 <!--* Markup-->
 
 To add sparklines, right-click a cell and select **Add** > **Summary Columns**, then choose your preferred option from the menu. To change selected columns for the summary column, click its header and choose the columns you want in the **Context Panel** under **Renderer**.
@@ -291,9 +345,9 @@ want to show order details alongside customer orders.
 Here's how:
 
 1. [Link the tables](../../transform/link-tables.md).
-1. Right click any cell, select **Add** > **Linked Tables**, and choose the table you want. A column with data from the linked table is added to your dataset. 
+1. Right click any cell, select **Add** > **Linked Tables**, and choose the table you want. A column with data from the linked table is added to your dataset.
 
-![Linked table data in cell](../../deploy/releases/platform/img/grid-nested-linked-tables.gif) 
+![Linked table data in cell](../../deploy/releases/img/grid-nested-linked-tables.gif) 
 
 ### Images
 
@@ -301,9 +355,11 @@ Datagrok supports two types of images in cells: embedded and linked. Supported f
 
 To embed an image, double click a cell and select the source file.
 
-![](../../develop/how-to/binary-cell-renderer.gif)
+![](../../develop/how-to/grid/binary-cell-renderer.gif)
 
-For linked images, Datagrok automatically detects and visualizes images saved as URLs (those starting with "http://" or "https://", and ending with one of the supported image formats) using a [cell renderer](#cell-renderers). 
+For linked images, Datagrok automatically detects and visualizes images from URLs (starting with "http://" or "https://"
+and ending with a supported image extension) as well as images stored as Datagrok paths (beginning with "System:" and
+ending with a supported image extension) using a [cell renderer](#cell-renderers).
 
 <details>
 <summary>Troubleshooting</summary>
@@ -314,6 +370,16 @@ If images are not detected automatically, right-click the column header and sele
 * `cell.renderer` to `ImageUrl`.
 
 </details>
+
+
+### Charts in cells
+
+You can embed actual charts directly inside grid cells.
+1. [Link the tables](../../transform/link-tables.md).
+2. Right click any cell, select **Add** > **Linked Tables**, and choose the table you want. A column with data from the linked table will be added to your dataset.
+3. Click the header of the new column. In the **Context Panel** under **Renderer**, select the desired chart type (e.g., Bar Chart, Line Chart, Pie Chart, etc.).
+
+![Charts in cells](img/charts-in-cells.gif)
 
 
 ### Designed forms in cells
@@ -342,7 +408,7 @@ visualizations, including SVG:
 
 ![](img/grid-custom-html-form.gif)
 
-::note fun fact
+:::note fun fact
 
 The EEG recording in the video above was recorded from Andrew Skalkin's head while he was helping build 
 [JAKE](https://pubmed.ncbi.nlm.nih.gov/30872988/#&gid=article-figures&pid=figure-3-uid-2) 
@@ -351,7 +417,7 @@ sometime around 2016, back at Johnson & Johnson. Fun times! :)
 Datagrok is one of the very few web application capable of interactively working with sensor data - you can open
 datasets with up to a billion data points OR a million columns (not at the same time, of course).
 
-::
+:::
 
 ### Adaptive number formatting
 
@@ -436,7 +502,7 @@ Click the hamburger menu on the right of the input field to access these options
 
 <!--To edit column permissions, use:
 `table.col('myColumn').tags['editableBy'] = "username"`. <br/>-->
-[Customize the grid programmatically](../../develop/how-to/customize-grid.md)
+[Customize the grid programmatically](../../develop/how-to/grid/customize-grid.md)
 
 :::
 
@@ -468,7 +534,7 @@ To change a cell's format:
 See:
 
 * [Formatting notation](../../govern/catalog/tags.md#format) for dates and numbers
-* [Formatting via JS API](../../develop/how-to/customize-grid.md#formatting)
+* [Formatting via JS API](../../develop/how-to/grid/customize-grid.md#formatting)
 
 :::
 
@@ -556,7 +622,7 @@ or press Alt+C.
 
 * YouTube:
 
-   [![Grid](../../uploads/youtube/visualizations2.png "Open on Youtube")](https://www1.youtube.com/watch?v=7MBXWzdC0-I&t=2971s)
+   [![Grid](../../uploads/youtube/visualizations2.png "Open on Youtube")](https://www.youtube.com/watch?v=7MBXWzdC0-I&t=2971s)
 
 See also:
 

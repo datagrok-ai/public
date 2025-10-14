@@ -4,8 +4,8 @@ let t = grok.data.demo.demog();
 
 // Linear or conditional color coding for numerical or datetime columns
 t.col('height').meta.colors.setConditional({"20-170": "#00FF00", "170-190": "#220505"});
-t.col('age').meta.colors.setLinear([DG.Color.orange, DG.Color.green]);
 t.col('started').meta.colors.setLinear([DG.Color.white, DG.Color.red]);
+t.col('age').meta.colors.setLinearAbsolute({19: '#bcbd22', 31.75: '#17becf', 44.50: '#ff9896', 70: '#c5b0d5'});
 t.col('weight').meta.colors.setConditional({'<100': DG.Color.green, '100-200': '#ff0000'});
 
 // Categorical for string columns

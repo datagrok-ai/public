@@ -3,6 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import { processFeatures, loadModel } from './utils';
 import { prepareAndTrainNN } from './nn';
 export let _package = new DG.Package();
+
+
 //name: trainNN
 //description: Train a neural network using TensorFlow.js
 //meta.mlname: tfjsNN
@@ -55,6 +57,8 @@ export async function trainNN(df, predictColumn, activationFunc = 'relu', hidden
     let result = await prepareAndTrainNN(df, predictColumn, activationFunc, hiddenLayersSizes, initializer, constantValue, normalMean, normalStddev, minValue, maxValue, varianceScale, varianceFanningMode, varianceDistribution, hiddenRepresentationNormalization, normalizationAxis, normalizationMomentum, normalizationEpsilon, normalizationCenter, normalizationScale, dropoutRate, regularizationL1, regularizationL2, kernelRegularization, biasRegularization, activityRegularization, finalActivation, optimizer, learningRate, lossFunc, metrics, batchSize, epochs, validationSplit, seed, monitor, minDelta, patience, mode, baseline);
     return result;
 }
+
+
 //name: applyNN
 //meta.mlname: tfjsNN
 //meta.mlrole: apply
@@ -72,6 +76,7 @@ export async function applyNN(df, model) {
     // }
     return DG.DataFrame.fromColumns([DG.Column.fromList(DG.TYPE.FLOAT, "pred", predictions)]);
 }
+
 
 //name: isApplicableNN
 //meta.mlname: tfjsNN

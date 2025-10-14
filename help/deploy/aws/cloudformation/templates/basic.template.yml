@@ -8,22 +8,22 @@ Mappings:
     GrokConnect:
       domain: "docker.io"
       repo: "datagrok/grok_connect"
+    GrokPipe:
+      domain: "docker.io"
+      repo: "datagrok/grok_pipe"
+    Rabbitmq:
+      domain: "docker.io"
+      repo: "rabbitmq"
     GrokSpawner:
       domain: "docker.io"
       repo: "datagrok/grok_spawner"
     JKG:
       domain: "docker.io"
       repo: "datagrok/jupyter_kernel_gateway"
-    JN:
-      domain: "docker.io"
-      repo: "datagrok/jupyter_notebook"
-    H2o:
-      domain: "docker.io"
-      repo: "datagrok/h2o"
     Kaniko:
       domain: "gcr.io"
       repo: "kaniko-project/executor"
-      version: "v1.12.1"
+      version: "v1.19.1"
     Searchdomain:
       domain: "docker.io"
       repo: "docker/ecs-searchdomain-sidecar"

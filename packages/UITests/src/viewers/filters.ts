@@ -53,7 +53,7 @@ id1_0003,id2_003,id3_3`;
       return true;
     }, 'cannot find all filters', 3000);
   });
-});
+}, { owner: 'drizhinashvili@datagrok.ai' });
 
 
 category('Viewers: Filters: Collaborative filtering', () => {

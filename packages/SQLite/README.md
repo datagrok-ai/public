@@ -7,6 +7,6 @@ that provides support for importing and previewing SQLite files.
 
 See also:
 
-* [Custom file handlers](../../help/develop/how-to/file-handlers.md)
+* [Custom file handlers](../../help/develop/how-to/files/file-handlers.md)
 * [Browsing files](../../help/access/files/files.md)
 * [SQLite home page](https://www.sqlite.org/index.html)

@@ -152,4 +152,4 @@ category('View: Events', () => {
   after(async () => {
     grok.shell.closeAll();
   });
-}, {clear: false});
+}, {clear: false, owner: 'aparamonov@datagrok.ai' });

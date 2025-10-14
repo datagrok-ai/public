@@ -203,3 +203,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
 }
+
+.performance-downgrade-button {
+  justify-content: flex-start !important;
+}

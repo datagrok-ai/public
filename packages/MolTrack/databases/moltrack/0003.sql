@@ -1,0 +1,2 @@
+ALTER TABLE moltrack.properties
+ADD COLUMN nullable BOOLEAN NOT NULL DEFAULT TRUE;

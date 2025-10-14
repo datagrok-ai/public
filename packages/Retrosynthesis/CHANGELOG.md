@@ -1,0 +1,28 @@
+# REtrosynthesis changelog
+
+## 1.0.5 (2025-05-29)
+
+* Ability to add results to workspace
+* Ability to use user specific configuration
+
+## 1.0.4 (2025-04-07)
+
+* Removed Retrosynthesis function from top menu
+* Some styles fixes
+
+## 1.0.3 (2025-04-03)
+
+* Adjusted container resources
+
+## 1.0.2 (2025-04-01)
+
+* Use multiprocessing.Manager to terminate concurrent requests.
+
+## 1.0.1 (2025-03-31)
+
+* Add ability to terminate concurrent requests.
+
+## 1.0.0 (2025-03-29)
+
+Application which works backward from a target molecule (the desired final product) to identify simpler,
+commercially available starting materials and the synthetic reactions needed to reach the target.

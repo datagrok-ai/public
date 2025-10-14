@@ -4,24 +4,23 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 public class QueryMonitor {
     private static QueryMonitor instance;
-    private final List<String> statementIdsToCancel;
+    private final Set<String> statementIdsToCancel;
     private final Set<String> resultSetIdsToCancel;
     private final Multimap<String, Statement> runningStatements;
-    private final List<String> cancelledStatementIds;
+    private final Set<String> cancelledStatementIds;
 
     private QueryMonitor() {
-        statementIdsToCancel = Collections.synchronizedList(new ArrayList<>());
+        statementIdsToCancel = Collections.synchronizedSet(new HashSet<>());
         resultSetIdsToCancel = Collections.synchronizedSet(new HashSet<>());
         runningStatements = ArrayListMultimap.create();
-        cancelledStatementIds = Collections.synchronizedList(new ArrayList<>());
+        cancelledStatementIds = Collections.synchronizedSet(new HashSet<>());
     }
 
     public static synchronized QueryMonitor getInstance() {
@@ -31,21 +30,20 @@ public class QueryMonitor {
         return instance;
     }
 
-    public boolean addNewStatement(String id, Statement statement) {
+    public void addNewStatement(String id, Statement statement) {
         synchronized(QueryMonitor.class) {
             if (id == null)
-                return true;
+                return;
             if (statementIdsToCancel.contains(id)) {
                 statementIdsToCancel.remove(id);
-                return false;
+                return;
             }
             runningStatements.put(id, statement);
-            return true;
         }
     }
 
-    public boolean addCancelledResultSet(String id) {
-        return resultSetIdsToCancel.add(id);
+    public void addCancelledResultSet(String id) {
+        resultSetIdsToCancel.add(id);
     }
 
     public void removeStatement(String id) {
@@ -54,24 +52,24 @@ public class QueryMonitor {
     }
 
     public void cancelStatement(String id) {
-        synchronized(QueryMonitor.class) {
-            if (runningStatements.containsKey(id)) {
-                runningStatements.get(id).forEach(s -> {
+        if (runningStatements.containsKey(id)) {
+            synchronized(QueryMonitor.class) {
+                cancelledStatementIds.add(id);
+
+                Collection<Statement> statements = runningStatements.removeAll(id);
+                for (Statement s: statements) {
                     try {
                         s.cancel();
-                        runningStatements.removeAll(id);
-                        cancelledStatementIds.add(id);
+                    } catch (SQLException e) {
+                        e.printStackTrace();
                     }
-                    catch (SQLException throwables) {
-                        throwables.printStackTrace();
-                    }
-                });
+                }
             }
         }
     }
 
-    public boolean removeResultSet(String id) {
-        return resultSetIdsToCancel.remove(id);
+    public void removeResultSet(String id) {
+        resultSetIdsToCancel.remove(id);
     }
 
     public boolean checkCancelledId(String id) {

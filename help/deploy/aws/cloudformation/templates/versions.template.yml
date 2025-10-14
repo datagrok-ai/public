@@ -8,51 +8,57 @@ Metadata:
         Parameters:
           - DatagrokVersion
           - GrokConnectVersion
+          - GrokPipeVersion
+          - RabbitmqVersion
           - GrokSpawnerVersion
           - JKGVersion
-          - JNVersion
-          - H2oVersion
+      - Label:
+          default: "Advanced"
+        Parameters:
+          - Postfix
     ParameterLabels:
       DatagrokVersion:
         default: 'Datagrok Version'
       GrokConnectVersion:
         default: 'Grok Connect Version'
+      GrokPipeVersion:
+        default: 'Grok Pipe Version'
+      RabbitmqVersion:
+        default: 'RabbitMQ Version'
       GrokSpawnerVersion:
         default: 'Grok Spawner Version'
       JKGVersion:
         default: 'Jupyter Kernel Gateway Version'
-      JNVersion:
-        default: 'Jupyter Notebook Version'
-      H2oVersion:
-        default: 'H2O Version'
 Parameters:
   DatagrokVersion:
     Type: String
-    Default: 1.19.1
+    Default: 1.26.0
     AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|stable|bleeding-edge"
     Description: Enter Datagrok docker image version.
   GrokConnectVersion:
     Type: String
-    Default: 2.1.17
+    Default: 2.4.0
     AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|bleeding-edge"
     Description: Enter Grok Connect docker image version.
+  GrokPipeVersion:
+    Type: String
+    Default: 1.0.1
+    AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|bleeding-edge"
+    Description: Enter Grok Pipe docker image version.
+  RabbitmqVersion:
+    Type: String
+    Default: 4.0.5-management
+    Description: Enter rabbitmq docker image version.
   GrokSpawnerVersion:
     Type: String
-    Default: 1.7.0
+    Default: 1.11.1
     AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|bleeding-edge"
     Description: Enter Grok Spawner docker image version.
   JKGVersion:
     Type: String
-    Default: 1.9.0
+    Default: 1.15.0
     AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|bleeding-edge"
     Description: Enter Datagrok Jupyter Kernel Gateway docker image version.
-  JNVersion:
+  Postfix:
     Type: String
-    Default: 1.1.1
-    AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|bleeding-edge"
-    Description: Enter Datagrok Jupyter Notebook docker image version.
-  H2oVersion:
-    Type: String
-    Default: 1.1.1
-    AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|bleeding-edge"
-    Description: Enter Datagrok H2O docker image version. 
+    Description: URL postfix for backward compatibility. Leave blank for new installations

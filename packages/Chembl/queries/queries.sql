@@ -4,30 +4,6 @@
 select protein_class_id, parent_id, pref_name, definition, class_level from protein_classification
 --end
 
-
---name: _bioactivity data for bacterial targets for @organism
---friendlyName: Browse | Bioactivity for bacterial targets for @organism
---connection: Chembl
---input: string organism = "Shigella" {suggestions: Chembl:organisms}
---tags: unit-test
-SELECT md.chembl_id AS compound_chembl_id,
-cs.canonical_smiles,
-act.standard_type,
-act.standard_value,
-act.standard_units,
-td.chembl_id AS target_chembl_id,
-td.organism,   td.pref_name
-FROM target_dictionary td
-  JOIN assays a ON td.tid = a.tid
-  JOIN activities act ON a.assay_id = act.assay_id
-  JOIN molecule_dictionary md ON act.molregno = md.molregno
-  JOIN compound_structures cs ON md.molregno   = cs.molregno
-  JOIN organism_class oc ON td.tax_id = oc.tax_id
-    AND td.organism ILIKE @organism
-    AND oc.L1 = 'Bacteria';
---end
-
-
 --name: _compounds which are selective to one target over a second target
 --friendlyName: Browse | Compounds selective to one target over a second target
 --connection: Chembl
@@ -59,49 +35,6 @@ AND act.standard_units        = 'nM'
 AND act.standard_value        > 200
 AND td.chembl_id              = @over;
 --end
-
-
---name: _PK data from 'Curated Drug Pharmacokinetic Data' source for @drug
---friendlyName: Browse | PK for @drug
---connection: Chembl
---input: string drug = "LEVOFLOXACIN"
-SELECT DISTINCT
-  d.title,
-  min(case when ap.standard_type = 'DATASET' then coalesce(ap.standard_value::text, ap.standard_text_value) else null end)         dataset,
-  a.assay_id,
-  a.description,
-  min(case when actp.standard_type = 'DOSED_COMPOUND_NAME' then coalesce(actp.standard_value::text, actp.standard_text_value) || ' ' || actp.standard_units  else null end)  dosed_compound_name,
-  min(case when actp.standard_type = 'DOSE'                then coalesce(actp.standard_value::text, actp.standard_text_value) || ' ' || actp.standard_units  else null end)  dose,
-  min(case when actp.standard_type = 'DOSAGE_FORM'         then coalesce(actp.standard_value::text, actp.standard_text_value) || ' ' || actp.standard_units  else null end)  dosage_form,
-  min(case when actp.standard_type = 'REGIMEN'             then coalesce(actp.standard_value::text, actp.standard_text_value) || ' ' || actp.standard_units  else null end)  regimen,
-  min(case when actp.standard_type = 'ROUTE'               then coalesce(actp.standard_value::text, actp.standard_text_value)  else null end) route,
-  min(case when actp.standard_type = 'GENDER'              then coalesce(actp.standard_value::text, actp.standard_text_value)  else null end) gender,
-  min(case when actp.standard_type = 'AGE_RANGE'           then coalesce(actp.standard_value::text, actp.standard_text_value)  else null end) age_range,
-  min(case when actp.standard_type = 'HEALTH_STATUS'       then coalesce(actp.standard_value::text, actp.standard_text_value)  else null end) health_status,
-  min(case when actp.standard_type = 'TISSUE'              then coalesce(actp.standard_value::text, actp.standard_text_value)  else null end) tissue,
-  cr.molregno,
-  cr.compound_name,
-  act.activity_id,
-  act.toid,
-  act.standard_type,
-  act.standard_relation,
-  act.standard_value,
-  act.standard_units,
-  act.activity_comment
-FROM source s
-  JOIN compound_records cr ON s.src_id = cr.src_id
-  JOIN docs d ON d.doc_id = cr.doc_id
-  JOIN activities act ON cr.record_id = act.record_id AND cr.doc_id = act.doc_id
-  JOIN activity_properties actp ON act.activity_id = actp.activity_id
-  JOIN assays a ON act.assay_id = a.assay_id
-  JOIN assay_parameters ap ON a.assay_id = ap.assay_id
-                              AND s.src_description = 'Curated Drug Pharmacokinetic Data'
-                              AND cr.compound_name ILIKE @drug
-GROUP BY d.title, a.assay_id, a.description, cr.molregno, cr.compound_name, act.activity_id, act.toid,
-  act.standard_type, act.standard_relation, act.standard_value, act.standard_units, act.activity_comment
-ORDER BY cr.compound_name, act.toid, act.standard_type;
---end
-
 
 --name: compound activity details for all targets containing @protein
 --friendlyName: Browse | Compound activity details for all targets containing @protein
@@ -207,7 +140,7 @@ WHERE chembl_id IN (
 --name: MolregnoInfo
 --connection: Chembl
 --tags: panel, widget
---input: string molregno {semType: molregno}
+--input: int molregno {semType: molregno}
 SELECT DISTINCT s.canonical_smiles as smiles, COALESCE(r.country, 'Not found') as country
 FROM compound_structures s
 LEFT JOIN drug_mechanism d
@@ -234,4 +167,27 @@ ON s.molregno = m.molregno
 LEFT JOIN research_companies r
 ON m.res_stem_id = r.res_stem_id
 WHERE md.chembl_id = @chemblId
+--end
+
+
+--name: FracClassificationWithSubstructure
+--friendlyName: Search | FRAC classification with substructure search
+--connection: Chembl 
+--input: string level1 = 'STEROL BIOSYNTHESIS IN MEMBRANES' {choices: Query("SELECT DISTINCT level1_description FROM frac_classification")}
+--input: string level2 {nullable: true; choices: Query("SELECT DISTINCT level2_description FROM frac_classification where level1_description = @level1")}
+--input: string level3 {nullable: true; choices: Query("SELECT DISTINCT level3_description FROM frac_classification where level2_description = @level2")}
+--input: string level4 {nullable: true; choices: Query("SELECT DISTINCT level4_description FROM frac_classification where level3_description = @level3")}
+--input: string substructure = "Clc1ccccc1" {semType: Substructure}
+SELECT s.*, f.level1_description, f.level2_description, f.level3_description, f.level4_description
+FROM compound_structures s
+JOIN molecule_frac_classification m
+ON s.molregno = m.molregno
+JOIN frac_classification f
+ON m.frac_class_id = f.frac_class_id
+WHERE
+  (@level1 is null or @level1 = '' or f.level1_description = @level1) and
+  (@level2 is null or @level2 = '' or f.level2_description = @level2) and
+  (@level3 is null or @level3 = '' or f.level3_description = @level3) and
+  (@level4 is null or @level4 = '' or f.level4_description = @level4) and
+ s.canonical_smiles::mol @>@substructure::qmol
 --end

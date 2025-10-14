@@ -1,6 +1,6 @@
-# PowerGrid
+# Power Grid
 
-PowerGrid contains popular spreadsheet extensions, such as [sparklines](#sparklines) and support for [images](#images).
+Power Grid contains popular spreadsheet extensions, such as [sparklines](#sparklines) and support for [images](#images).
 
 ## Sparklines
 
@@ -27,14 +27,14 @@ code:  ```dataFrame.columns.addNewBytes('my image')```.
 
 To add an image, double-click on the cell and choose the file. Supported extensions are `.jpg`, `.png`, and `.jpeg`.
 
-![adding image](../../help/develop/how-to/binary-cell-renderer.gif "adding image")
+![adding image](../../help/develop/how-to/grid/binary-cell-renderer.gif "adding image")
 
 ### Linked images
 
-Datagrok automatically detects and visualizes images saved as URLs (those starting with "http://"
-or "https://", and ending with one of the supported image extensions). In case the image did not
-get automatically detected, click on the column, press `F2` to open the column properties, and set
-the following:
+Datagrok automatically detects and visualizes images from URLs (starting with "http://" or "https://" and ending with a
+supported image extension) as well as images stored as Datagrok paths (beginning with "System:" and ending with a
+supported image extension). If the image is not automatically detected, click on the column, press `F2` to open the
+column properties, and set the following:
 
 * `quality` to `ImageUrl`
 * `cell.renderer` to `ImageUrl`.
@@ -60,7 +60,7 @@ The viewer also works together with the grid:
 * To go to a particular cell in a grid, click on a field
 * To make a column current, click on the column name.
 
-![Forms viewer](../../help/visualize/viewers/forms.gif)
+![Forms viewer](../../help/visualize/viewers/img/forms.gif)
 
 See also:
 

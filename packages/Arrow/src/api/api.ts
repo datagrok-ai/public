@@ -3,34 +3,71 @@ import * as arrow from 'apache-arrow';
 import {Compression,  readParquet, Table, writeParquet, WriterPropertiesBuilder} from "parquet-wasm";
 
 export function toFeather(table: DG.DataFrame, asStream: boolean = true): Uint8Array | null {
-  //todo: use direct creation of vectors from typed arrays
-  if (!table) return null;
-  let column_names = table.columns.names();
-  const t: { [_: string]: any } = {};
-  for (let i = 0; i < column_names.length; i++) {
-    let column = table.columns.byName(column_names[i]);
-    let columnType = column.type;
-    if (columnType === 'double' || columnType === 'qnum' || columnType === 'int') {
-      const rawData = (column.getRawData()).subarray(0, column.length);
-      const nan = columnType !== 'int' ? DG.FLOAT_NULL : DG.INT_NULL;
-      t[column_names[i]] = Array.from(rawData, (v, _) => v === nan ? null : v);
+  const arrays: { [key: string]: any[] } = {};
+  const fields: arrow.Field[] = [];
+
+  for (const name of table.columns.names()) {
+    const column = table.columns.byName(name);
+    const columnType = column.type;
+
+    let values: any[] = [];
+    let type: arrow.DataType;
+
+    if (columnType === 'double' || columnType === 'qnum') {
+      const raw = (column.getRawData() as Float64Array).subarray(0, column.length);
+      values = Array.from(raw, v => v === DG.FLOAT_NULL ? null : v);
+      type = inferNumberType(values as number[]);
+    }
+    else if (columnType === 'int') {
+      const raw = (column.getRawData() as Int32Array).subarray(0, column.length);
+      values = Array.from(raw, v => v === DG.INT_NULL ? null : v);
+      type = new arrow.Int32();
     }
     else if (columnType === 'datetime') {
-      const rawData: Float64Array = (column.getRawData() as Float64Array).subarray(0, column.length);
-      t[column_names[i]] = Array.from(rawData, (v, _) => v === DG.FLOAT_NULL ? null : new Date(v / 1000));
+      const raw = (column.getRawData() as Float64Array).subarray(0, column.length);
+      values = Array.from(raw, v => v === DG.FLOAT_NULL ? null : new Date(v / 1000));
+      type = new arrow.TimestampMillisecond();
     }
-    else if (columnType === 'string')
-      t[column_names[i]] = column.toList();
+    else if (columnType === 'string') {
+      values = column.toList();
+      type = new arrow.Utf8();  // plain string, no dictionary
+    }
     else {
       const columnLength = column.length;
       const array = new Array(columnLength);
       for (let i = 0; i < columnLength; i++)
         array[i] = column.get(i);
-      t[column_names[i]] = array;
+      values = array;
+      type = columnType === 'bigint' ? new arrow.Int64() : new arrow.Utf8();
     }
+
+    arrays[name] = values;
+    fields.push(new arrow.Field(name, type, true));
   }
-  const res = arrow.tableFromArrays(t);
-  return arrow.tableToIPC(res, asStream ? "stream" : "file");
+
+  // Build Arrow vectors
+  const vectors: { [key: string]: arrow.Vector<any> } = {};
+  for (const field of fields) {
+    const name = field.name;
+    const type = field.type;
+
+    if (type instanceof arrow.Float64)
+      vectors[name] = arrow.vectorFromArray(arrays[name] as number[], type);
+    else if (type instanceof arrow.Int32)
+      vectors[name] = arrow.vectorFromArray(arrays[name] as number[], type);
+    else if (type instanceof arrow.TimestampMillisecond)
+      vectors[name] = arrow.vectorFromArray(arrays[name] as Date[], type);
+    else if (type instanceof arrow.Utf8)
+      vectors[name] = arrow.vectorFromArray(arrays[name] as string[], type);
+    else if (type instanceof arrow.Int64)
+      vectors[name] = arrow.vectorFromArray(arrays[name] as (bigint | null)[], type);
+    else
+      throw new Error(`Unsupported type for field ${name}`);
+  }
+
+  const schema = new arrow.Schema(fields);
+  const tableArrow = new arrow.Table(schema, vectors);
+  return arrow.tableToIPC(tableArrow, asStream ? "stream" : "file");
 }
 
 export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
@@ -51,8 +88,12 @@ export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
       else
         values = unpackDictionaryColumn(vector);
     }
-    else
+    else {
       values = vector.toArray();
+      // values = new Array(table.numRows);
+      // for (let i = 0; i < table.numRows; i++)
+      //   values[i] = vector.get(i);
+    }
 
     switch (type.typeId) {
       case arrow.Type.Int8:
@@ -96,7 +137,8 @@ export function fromFeather(bytes: Uint8Array): DG.DataFrame | null {
         break;
       case arrow.Type.Date:
       case arrow.Type.Timestamp:
-        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME as DG.ColumnType, name, values));
+        columns.push(DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME as DG.ColumnType, name, values instanceof BigInt64Array
+            ? Array.from(values, b => timestampBigIntToDate(b, type.unit)) : values));
         break;
       case arrow.Type.Time:
         if (type?.bitWidth < 64)
@@ -183,4 +225,29 @@ function convertInt64Column(array: BigInt64Array | BigUint64Array, name: string)
   for (let i = 0; i < array.length; i++)
     result[i] = Number(array[i]);
   return DG.Column.fromInt32Array(name, result);
+}
+
+function inferNumberType(values: number[]): arrow.DataType {
+  return values.every(v => Number.isInteger(v)) ? new arrow.Int32() : new arrow.Float64();
+}
+
+function timestampBigIntToDate(value: bigint, unit: number): Date {
+  let ms: number;
+  switch (unit) {
+    case 0: // SECOND
+      ms = Number(value) * 1000;
+      break;
+    case 1: // MILLISECOND
+      ms = Number(value);
+      break;
+    case 2: // MICROSECOND
+      ms = Number(value / 1000n);
+      break;
+    case 3: // NANOSECOND
+      ms = Number(value / 1000000n);
+      break;
+    default:
+      throw new Error(`Unsupported time unit: ${unit}`);
+  }
+  return new Date(ms);
 }

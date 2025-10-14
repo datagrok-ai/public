@@ -2,8 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import {after, awaitCheck, category, delay, expect, test} from '@datagrok-libraries/utils/src/test';
-import { createTableView } from './utils';
-import { RGroupDecompRes } from '../analysis/r-group-analysis';
+import {createTableView} from './utils';
+import {RGroupDecompRes} from '../analysis/r-group-analysis';
 
 
 category('projects', () => {
@@ -33,6 +33,16 @@ category('projects', () => {
     await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runToInchiKeys, ['smiles', 'inchi_key'], '', true);
   });
 
+  test('descriptors', async () => {
+    await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runDescriptors,
+      ['MolWt', 'HeavyAtomMolWt', 'ExactMolWt', 'FractionCSP3', 'HeavyAtomCount', 'NHOHCount'], '');
+  });
+
+  test('descriptors_sync', async () => {
+    await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runDescriptors,
+      ['MolWt', 'HeavyAtomMolWt', 'ExactMolWt', 'FractionCSP3', 'HeavyAtomCount', 'NHOHCount'], '', true);
+  });
+
   test('toxicity_risks', async () => {
     await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runAddChemRisksColumns,
       ['smiles', 'Mutagenicity'], '');
@@ -56,16 +66,22 @@ category('projects', () => {
   test('curate', async () => {
     await runSaveAndOpenProjectTest('tests/sar-small_test.csv', runCurate,
       ['smiles', 'curated_molecule'], '');
-  }, {timeout: 50000});
+  }, {timeout: 90000, skipReason: 'GROK-18029'});
 
   test('names_to_smiles', async () => {
-    await runSaveAndOpenProjectTest('tests/names_to_smiles.csv', runNamesToSmiles,
-      ['Name', 'canonical_smiles'], '');
+    const chemblPackInstalled = DG.Func.find({package: 'ChemblApi', name: 'getCompoundsIds'}).length;
+    if (chemblPackInstalled) {
+      await runSaveAndOpenProjectTest('tests/names_to_smiles.csv', runNamesToSmiles,
+        ['Name', 'canonical_smiles'], '');
+    }
   });
 
   test('names_to_smiles_sync', async () => {
-    await runSaveAndOpenProjectTest('tests/names_to_smiles.csv', runNamesToSmiles,
-      ['Name', 'canonical_smiles'], '', true);
+    const chemblPackInstalled = DG.Func.find({package: 'ChemblApi', name: 'getCompoundsIds'}).length;
+    if (chemblPackInstalled) {
+      await runSaveAndOpenProjectTest('tests/names_to_smiles.csv', runNamesToSmiles,
+        ['Name', 'canonical_smiles'], '', true);
+    }
   });
 
   test('convert_notation', async () => {
@@ -143,13 +159,13 @@ category('projects', () => {
 //colList: list of columns which have been added to dataframe by analysis
 //viewerType: viewer which has been created by analysis
 async function runSaveAndOpenProjectTest(tableName: string, analysisFunc: (tv: DG.TableView) => Promise<void>,
-colList: string[], viewerType: string, dataSync?: boolean,
-additionalChecks?: (tv: DG.TableView) => Promise<void>) {
+  colList: string[], viewerType: string, dataSync?: boolean,
+  additionalChecks?: (tv: DG.TableView) => Promise<void>) {
   let tv;
   if (dataSync) {
-    await DG.Func.find({ name: 'OpenFile'})[0].prepare({
-      fullPath: `System:AppData/Chem/${tableName}`
-    }).call(undefined, undefined, { processed: false });
+    await DG.Func.find({name: 'OpenFile'})[0].prepare({
+      fullPath: `System:AppData/Chem/${tableName}`,
+    }).call(undefined, undefined, {processed: false});
     tv = grok.shell.tv;
     await grok.data.detectSemanticTypes(tv.dataFrame);
   } else
@@ -167,7 +183,7 @@ additionalChecks?: (tv: DG.TableView) => Promise<void>) {
 }
 
 async function runActivityCliffs(tv: DG.TableView): Promise<void> {
-  await DG.Func.find({ package: 'Chem', name: 'activityCliffs' })[0].prepare({
+  await DG.Func.find({package: 'Chem', name: 'activityCliffs'})[0].prepare({
     table: tv.dataFrame,
     molecules: tv.dataFrame.col('smiles'),
     activities: tv.dataFrame.col('Activity'),
@@ -175,13 +191,13 @@ async function runActivityCliffs(tv: DG.TableView): Promise<void> {
     methodName: 'UMAP',
     similarityMetric: 'Tanimoto',
     preprocessingFunction: undefined,
-  }).call(undefined, undefined, { processed: false });
+  }).call(undefined, undefined, {processed: false});
   //need for scatter plot to render
   await delay(10);
 }
 
 async function runChemicalSpace(tv: DG.TableView): Promise<void> {
-  await DG.Func.find({ package: 'Chem', name: 'chemSpaceTopMenu' })[0].prepare({
+  await DG.Func.find({package: 'Chem', name: 'chemSpaceTopMenu'})[0].prepare({
     table: tv.dataFrame,
     molecules: tv.dataFrame.col('smiles'),
     methodName: 'UMAP',
@@ -211,33 +227,33 @@ async function runStructuralAlerts(tv: DG.TableView): Promise<void> {
 }
 
 async function runElementalAnalysis(tv: DG.TableView): Promise<void> {
-  await DG.Func.find({ package: 'Chem', name: 'elementalAnalysis' })[0].prepare({
+  await DG.Func.find({package: 'Chem', name: 'elementalAnalysis'})[0].prepare({
     table: tv.dataFrame,
     molecules: tv.dataFrame.col('smiles'),
     radarViewer: true,
-    radarGrid: true
-  }).call(undefined, undefined, { processed: false });
+    radarGrid: true,
+  }).call(undefined, undefined, {processed: false});
 }
 
 async function runConvertNotation(tv: DG.TableView): Promise<void> {
-  await DG.Func.find({ package: 'Chem', name: 'convertNotation' })[0].prepare({
+  await DG.Func.find({package: 'Chem', name: 'convertNotation'})[0].prepare({
     data: tv.dataFrame,
     molecules: tv.dataFrame.col('smiles'),
     targetNotation: 'molblock',
     overwrite: false,
-    join: true
-  }).call(undefined, undefined, { processed: false });
+    join: true,
+  }).call(undefined, undefined, {processed: false});
 }
 
 async function runNamesToSmiles(tv: DG.TableView): Promise<void> {
-  await DG.Func.find({ package: 'Chem', name: 'namesToSmiles' })[0].prepare({
+  await DG.Func.find({package: 'Chem', name: 'namesToSmiles'})[0].prepare({
     data: tv.dataFrame,
     names: tv.dataFrame.col('Name'),
-  }).call(undefined, undefined, { processed: false });
+  }).call(undefined, undefined, {processed: false});
 }
 
 async function runCurate(tv: DG.TableView): Promise<void> {
-  const df = await grok.functions.call(`Chem:Curate`, {
+  await grok.functions.call(`Chem:Curate`, {
     data: tv.dataFrame,
     molecules: tv.dataFrame.col('smiles'),
     kekulization: true,
@@ -250,7 +266,7 @@ async function runCurate(tv: DG.TableView): Promise<void> {
 }
 
 async function runAddChemPropertiesColumns(tv: DG.TableView): Promise<void> {
-  await DG.Func.find({ package: 'Chem', name: 'addChemPropertiesColumns' })[0].prepare({
+  await DG.Func.find({package: 'Chem', name: 'addChemPropertiesColumns'})[0].prepare({
     table: tv.dataFrame,
     molecules: tv.dataFrame.col('smiles'),
     MW: true,
@@ -262,43 +278,51 @@ async function runAddChemPropertiesColumns(tv: DG.TableView): Promise<void> {
     rotatableBonds: false,
     stereoCenters: false,
     moleculeCharge: false,
-  }).call(undefined, undefined, { processed: false });
+  }).call(undefined, undefined, {processed: false});
 }
 
 async function runToInchiKeys(tv: DG.TableView): Promise<void> {
-  await DG.Func.find({ package: 'Chem', name: 'addInchisKeysTopMenu' })[0].prepare({
+  await DG.Func.find({package: 'Chem', name: 'addInchisKeysTopMenu'})[0].prepare({
     table: tv.dataFrame,
     molecules: tv.dataFrame.col('smiles'),
-  }).call(undefined, undefined, { processed: false });
+  }).call(undefined, undefined, {processed: false});
+}
+
+async function runDescriptors(tv: DG.TableView): Promise<void> {
+  await DG.Func.find({package: 'Chem', name: 'calculateDescriptorsTransform'})[0].prepare({
+    table: tv.dataFrame,
+    molecules: tv.dataFrame.col('smiles'),
+    selected: ['MolWt', 'HeavyAtomMolWt', 'ExactMolWt', 'FractionCSP3', 'HeavyAtomCount', 'NHOHCount'],
+  }).call(undefined, undefined, {processed: false});
 }
 
 async function runToInchi(tv: DG.TableView): Promise<void> {
-  await DG.Func.find({ package: 'Chem', name: 'addInchisTopMenu' })[0].prepare({
+  await DG.Func.find({package: 'Chem', name: 'addInchisTopMenu'})[0].prepare({
     table: tv.dataFrame,
     molecules: tv.dataFrame.col('smiles'),
-  }).call(undefined, undefined, { processed: false });
+  }).call(undefined, undefined, {processed: false});
 }
 
 async function runAddChemRisksColumns(tv: DG.TableView): Promise<void> {
-  await DG.Func.find({ package: 'Chem', name: 'addChemRisksColumns' })[0].prepare({
+  await DG.Func.find({package: 'Chem', name: 'addChemRisksColumns'})[0].prepare({
     table: tv.dataFrame,
     molecules: tv.dataFrame.col('smiles'),
     mutagenicity: true,
     tumorigenicity: false,
     irritatingEffects: false,
     reproductiveEffects: false,
-  }).call(undefined, undefined, { processed: false });
+  }).call(undefined, undefined, {processed: false});
 }
 
 async function runRGroupAnalysis(tv: DG.TableView): Promise<void> {
-  const funcCall = await DG.Func.find({ package: 'Chem', name: 'rGroupDecomposition' })[0].prepare({
+  const funcCall = await DG.Func.find({package: 'Chem', name: 'rGroupDecomposition'})[0].prepare({
     df: tv.dataFrame,
     molColName: 'smiles',
     core: '[#8]=[#6]1-[#6]-[#7]=[#6](-[#6])-[#6]2:[#6](-[#7]-1):[#6]:[#6]:[#6]:[#6]:2',
     rGroupName: 'R',
     rGroupMatchingStrategy: 'Greedy',
-    onlyMatchAtRGroups: false
-  }).call(undefined, undefined, { processed: false });
+    onlyMatchAtRGroups: false,
+  }).call(undefined, undefined, {processed: false});
   const res: RGroupDecompRes = funcCall.getOutputParamValue();
   tv.trellisPlot({
     xColumnNames: [res.xAxisColName],
@@ -307,15 +331,15 @@ async function runRGroupAnalysis(tv: DG.TableView): Promise<void> {
 }
 
 async function saveAndOpenProject(tv: DG.TableView, dataSync?: boolean): Promise<void> {
-  let project = DG.Project.create();
-  let tableInfo = tv.dataFrame.getTableInfo();
+  const project = DG.Project.create();
+  const tableInfo = tv.dataFrame.getTableInfo();
   if (dataSync) {
     //@ts-ignore
     tableInfo.tags[DG.Tags.DataSync] = 'sync';
     //@ts-ignore
-    tableInfo.tags[DG.Tags.CreationScript] = grok.shell.tv.dataFrame.getTag(DG.Tags.CreationScript);  
+    tableInfo.tags[DG.Tags.CreationScript] = grok.shell.tv.dataFrame.getTag(DG.Tags.CreationScript);
   }
-  let layoutInfo = tv.getInfo();
+  const layoutInfo = tv.getInfo();
   project.addChild(tableInfo);
   project.addChild(layoutInfo);
   await grok.dapi.tables.uploadDataFrame(tv.dataFrame);
@@ -330,7 +354,7 @@ async function saveAndOpenProject(tv: DG.TableView, dataSync?: boolean): Promise
 
 async function dataFrameContainsColumns(colArr: string[]): Promise<void> {
   let col = '';
-  const getError = () => `${col} hasn't been added to dataframe`; 
+  const getError = () => `${col} hasn't been added to dataframe`;
   await awaitCheck(() => {
     if (!grok.shell.tv.dataFrame)
       return false;
@@ -346,7 +370,7 @@ async function dataFrameContainsColumns(colArr: string[]): Promise<void> {
 
 async function checkViewerAdded(viewerType: string): Promise<void> {
   await awaitCheck(() => {
-    for (let v of grok.shell.tv.viewers) {
+    for (const v of grok.shell.tv.viewers) {
       if (v.type === viewerType)
         return true;
     }
@@ -354,10 +378,16 @@ async function checkViewerAdded(viewerType: string): Promise<void> {
   }, `${viewerType} hasn\'t been added`, 5000);
 }
 
-export async function checkActivityCliffsCustomInit(): Promise<void> {
+export async function checkActivityCliffsCustomInit(tv: DG.TableView): Promise<void> {
+  //get activity cliffs scatter plot
+  let sp: DG.Viewer | null = null;
+  for (const v of grok.shell.tv.viewers) {
+    if (v.type === DG.VIEWER.SCATTER_PLOT)
+      sp = v;
+  }
   await awaitCheck(() => {
-    const links = document.getElementsByClassName('scatter_plot_link');
-    return links.length === 2 && (links[0] as HTMLElement).innerText.toLowerCase() === `15 cliffs`
+    const link = sp?.root.getElementsByClassName('scatter_plot_link');
+    return !link || !link.length ? false : (link[0] as HTMLElement).innerText.toLowerCase() === `15 cliffs`;
   }, 'Initialization function hasn\'t been applied on scatter plot', 5000);
 }
 

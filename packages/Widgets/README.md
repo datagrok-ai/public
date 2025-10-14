@@ -6,7 +6,7 @@ This package is a collection of commonly used widgets, viewers, filters, and cel
 
 See also:
 
-* [Grok API](https://datagrok.ai/help/develop/js-api)
+* [Grok API](https://datagrok.ai/js-api)
 * [Packages](https://datagrok.ai/help/develop/develop#packages)
 * [Widgets](https://datagrok.ai/help/visualize/widgets)
 * [Viewers](https://datagrok.ai/help/visualize/viewers)

@@ -1,0 +1,72 @@
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+import { BaseConditionEditor, ConditionRegistry, Operators, SUGGESTIONS_FUNCTION } from '@datagrok-libraries/utils/src/query-builder/query-builder';
+import { getUserIdByUserString, getUsersSuggestions, getUserStringIdById } from './users';
+
+export const REVVITY_USER = 'revvity_user';
+
+export const created = DG.Property.create('createdAt', DG.TYPE.DATE_TIME, (x: any) => x, (x: any, v) => x = v);
+created.friendlyName = 'Created';
+export const edited = DG.Property.create('modifiedAt', DG.TYPE.DATE_TIME, (x: any) => x, (x: any, v) => x = v);
+edited.friendlyName = 'Edited';
+export const creator = DG.Property.create('createdBy', DG.TYPE.STRING, (x: any) => x, (x: any, v) => x = v);
+creator.semType = REVVITY_USER;
+creator.options[SUGGESTIONS_FUNCTION] = getUsersSuggestions;
+creator.friendlyName = 'Creator';
+export const editor = DG.Property.create('editedBy', DG.TYPE.STRING, (x: any) => x, (x: any, v) => x = v);
+editor.semType = REVVITY_USER;
+editor.options[SUGGESTIONS_FUNCTION] = getUsersSuggestions;
+editor.friendlyName = 'Editor';
+
+export const structure = DG.Property.create('Structure', DG.TYPE.STRING, (x: any) => x, (x: any, v) => x = v);
+//export const id = DG.Property.create('Id_float', DG.TYPE.FLOAT, (x: any) => x, (x: any, v) => x = v);
+//export const idInt = DG.Property.create('Id_int', DG.TYPE.INT, (x: any) => x, (x: any, v) => x = v);
+structure.semType = DG.SEMTYPE.MOLECULE;
+
+export function getDefaultProperties(): DG.Property[] {
+    return [created, edited, creator, editor, structure];
+}
+
+
+export const NOT_IN_TAGS = [ 'createdAt', 'modifiedAt', 'createdBy', 'editedBy', 'Structure', 'isMaterial', 'type', 'assetTypeEid'];
+
+export const REVVITY_FIELD_TO_PROP_TYPE_MAPPING: {[key: string]: DG.TYPE} = {
+    'double': DG.TYPE.FLOAT,
+    'text': DG.TYPE.STRING,
+    'date': DG.TYPE.DATE_TIME,
+}
+
+export class RevvityUserConditionEditor extends BaseConditionEditor<string> {
+    override async initializeEditor(prop: DG.Property): Promise<DG.InputBase[]> {
+        if (!this.condition.value)
+            return [this.createUserInput('', prop)];
+        else {
+            const userString = await getUserStringIdById(this.condition.value);
+            return [this.createUserInput(userString, prop)];
+        }
+    }
+
+    createUserInput(initValue: string, prop: DG.Property) {
+        const userInput = ui.input.string('', {
+            nullable: false,
+            value: initValue,
+            onValueChanged: async () => {
+                this.condition.value = await getUserIdByUserString(userInput.value);
+                this.onChanged.next(this.condition);
+                this.addSuggestions(prop, userInput);
+            }
+        });
+        this.root.append(userInput.root);
+        this.initializeSuggestions(prop, userInput);
+        return userInput;
+    }
+}
+
+//register operators for string type, applicable for Revvity
+ConditionRegistry.getInstance().registerTypeOperators(DG.TYPE.STRING, [Operators.STARTS_WITH, Operators.EQ, Operators.NOT_EQ, Operators.IN]);
+//register operators for molecule semType, applicable for Revvity
+ConditionRegistry.getInstance().registerSemTypeOperators(DG.SEMTYPE.MOLECULE, [Operators.CONTAINS, Operators.IS_SIMILAR]);
+//register operators for user semtype
+ConditionRegistry.getInstance().registerSemTypeOperators(REVVITY_USER, [Operators.EQ]);
+ConditionRegistry.getInstance().registerEditor(DG.TYPE.STRING, REVVITY_USER, Operators.EQ, RevvityUserConditionEditor);

@@ -1,4 +1,4 @@
---name: Orders
+--name: MySQL Orders
 --friendlyName: Orders
 --connection: MySQLNorthwind
 --input: int employeeId = 5
@@ -23,7 +23,7 @@ WHERE (employeeId = @employeeId)
 
 --end
 
---name: Products
+--name: MySQL Products
 --friendlyName: Products
 --connection: MySQLNorthwind
 

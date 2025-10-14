@@ -29,6 +29,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.servlet.ServletOutputStream;
 import javax.ws.rs.core.MediaType;
+
 import grok_connect.handlers.QueryHandler;
 import spark.Response;
 
@@ -36,17 +37,17 @@ public class GrokConnect {
     private static final int DEFAULT_PORT = 1234;
     private static final String VERSION = "version";
     private static final String NAME = "artifactId";
-    private static final String DEFAULT_URI = String.format("http://localhost:%s", DEFAULT_PORT);
     private static final String DEFAULT_LOG_EXCEPTION_MESSAGE = "An exception was thrown";
     private static final Logger PARENT_LOGGER = (Logger) LoggerFactory.getLogger(GrokConnect.class);
-    private static final Gson gson = new GsonBuilder()
-            .registerTypeAdapter(Property.class, new PropertyAdapter())
-            .create();
     private static final String LOG_LEVEL_PREFIX = "LogLevel";
+    private static ExecutorService threadPool;
+    public static final Gson gson = new GsonBuilder()
+            .registerTypeAdapter(Property.class, new PropertyAdapter())
+            .registerTypeAdapter(DataQuery.class, new DataQueryDeserializer())
+            .create();
     public static boolean needToReboot = false;
     public static ProviderManager providerManager;
     public static Properties properties;
-    private static ExecutorService threadPool;
 
     public static void main(String[] args) {
         properties = getInfo();
@@ -56,10 +57,11 @@ public class GrokConnect {
         threadPool = Executors.newCachedThreadPool();
         PARENT_LOGGER.info(getStringLogMemory());
         providerManager = new ProviderManager();
-        port(DEFAULT_PORT);
+        int listenPort = getListenPort();
+        port(listenPort);
         connectorsModule();
         PARENT_LOGGER.info("grok_connect with Hikari pool");
-        PARENT_LOGGER.info("grok_connect: Running on {}", DEFAULT_URI);
+        PARENT_LOGGER.info("grok_connect: Running on {}", listenPort);
         PARENT_LOGGER.info("grok_connect: Connectors: {}", providerManager.getAllProvidersTypes());
     }
 
@@ -69,7 +71,6 @@ public class GrokConnect {
 
     private static void connectorsModule() {
         webSocket("/query_socket", QueryHandler.class);
-        // webSocket("/query_table", new QueryHandler(QueryType.tableQuery));
 
         before((request, response) -> {
             PARENT_LOGGER.debug("Endpoint {} was called", request.pathInfo());
@@ -152,7 +153,7 @@ public class GrokConnect {
                 DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
                 tableQuery = gson.fromJson(connection.get("queryTable"), TableQuery.class);
                 DataProvider provider = providerManager.getByName(connection.dataSource);
-                tableQuery.query = provider.queryTableSql(connection, tableQuery);
+                tableQuery.query = provider.queryTableSql(tableQuery);
             } catch (Exception ex) {
                 PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
                 buildExceptionResponse(response, printError(ex));
@@ -356,6 +357,19 @@ public class GrokConnect {
         if (level.isPresent()) {
             String property = System.getProperty(level.get());
             PARENT_LOGGER.setLevel(Level.toLevel(property));
+        }
+    }
+
+    private static int getListenPort() {
+        String value = System.getenv("GROK_CONNECT_PORT");
+        if (value == null || value.isEmpty()) {
+            return DEFAULT_PORT;
+        }
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            System.out.println("Incorrect value of GROK_CONNECT_PORT was passed: " + value + ". Using default port " + DEFAULT_PORT);
+            return DEFAULT_PORT;
         }
     }
 }

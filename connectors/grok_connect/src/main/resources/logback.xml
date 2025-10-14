@@ -5,6 +5,8 @@
         </encoder>
     </appender>
 
+    <appender name="SESSION" class="grok_connect.log.QueryStreamAppender"/>
+
     <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
         <appender-ref ref="STDOUT" />
         <discardingThreshold>0</discardingThreshold>
@@ -14,6 +16,7 @@
     </appender>
 
     <root level="debug">
+        <appender-ref ref="SESSION" />
         <appender-ref ref="ASYNC" />
     </root>
 
@@ -26,4 +29,10 @@
     <logger name="com.wisecoders.dbschema" level="warn" />
     <logger name="org.neo4j" level="warn" />
     <logger name="org.mariadb.jdbc" level="warn" />
+    <logger name="io.grpc.netty.shaded" level="warn" />
+    <logger name="io.grpc.netty" level="warn" />
+    <logger name="io.netty" level="warn" />
+    <logger name="com.simba" level="WARN" />
+    <logger name="com.google.api.client" level="WARN" />
+    <logger name="com.google.auth" level="WARN" />
 </configuration>

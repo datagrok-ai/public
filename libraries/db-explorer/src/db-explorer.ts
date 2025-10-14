@@ -15,17 +15,27 @@ export class DBExplorer {
   private objHandlers: DBExplorerObjectHandler[] = [];
   constructor(
     private connectionName: string,
-    private schemaName: string
+    private schemaName: string,
+    private nqName?: string,
+    private dataSourceName?: string
   ) {
     this._dbLoadPromise = this.loadDbSchema();
   }
 
   public get dbSchema(): Promise<SchemaInfo> {
-    return this._dbLoadPromise.then(() => ({references: this.references, referencedBy: this.referencedBy}));
+    return this._dbLoadPromise
+      .then(() => ({references: this.references, referencedBy: this.referencedBy}))
+      .catch((e) => {
+        console.error(e);
+        return {references: {}, referencedBy: {}};
+      });
   }
 
   private async loadDbSchema() {
-    this.connection = await grok.dapi.connections.filter(`name="${this.connectionName}"`).first();
+    const connections = await grok.dapi.connections.filter(`name="${this.connectionName}"`).list();
+
+    this.connection = connections.find((c) => (!this.nqName || c.nqName?.toLowerCase() === this.nqName.toLowerCase()) && (!this.dataSourceName || c.dataSource?.toLowerCase() === this.dataSourceName.toLowerCase())) ?? null;
+
     if (this.connection == null)
       throw new Error(`Connection ${this.connectionName} not found`);
 
@@ -64,8 +74,11 @@ export class DBExplorer {
   }
 
   public async addCustomRelation(tableName: string, columnName: string, refTable: string, refColumn: string) {
-    if (!this.schemasLoaded)
-      await this._dbLoadPromise;
+    if (!this.schemasLoaded) {
+      try {
+        await this._dbLoadPromise;
+      } catch (e) {}
+    }
     if (!this.references[tableName])
       this.references[tableName] = {};
     this.references[tableName][columnName] = {refTable, refColumn};
@@ -136,9 +149,9 @@ export class DBExplorer {
   }
 
   public static async initFromConfig(config: DBExplorerConfig) {
-    const exp = new DBExplorer(config.connectionName, config.schemaName);
+    const exp = new DBExplorer(config.connectionName, config.schemaName, config.nqName, config.dataSourceName);
     for (const [semType, entry] of Object.entries(config.entryPoints))
-      await exp.addEntryPoint(semType, entry.table, entry.column);
+      await exp.addEntryPoint(semType, entry.table, entry.column, {regexpExample: entry.regexpExample});
     if (config.joinOptions)
       exp.addJoinOptions(config.joinOptions);
     if (config.headerNames)

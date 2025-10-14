@@ -1,0 +1,13 @@
+name: myenv
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.8
+  - pip
+  - numpy=1.24.*
+  - pandas=1.5.*
+  - scikit-learn=1.2.*
+  - pip:
+    - datagrok-celery-task==0.1.8
+    - celery

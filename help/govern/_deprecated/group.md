@@ -60,9 +60,9 @@ specific link, for example, after watching a demo.
 
 ![Granting membership via URL](../img/group-membership.gif)
 
-## Groups as roles
+## Groups and roles
 
-Authorization system is based on user groups. There are one group called "All users", that contains all users by default
+Authorization system is based on user groups and roles. There are one group called "All users", that contains all users by default
 and unlimited quantity of other groups:
 ![group all users](../img/group-all-users.png)
 All groups can be a member of any other group, but circular membership is forbidden. Each user has a personal security
@@ -72,6 +72,11 @@ A [user group](group.md) might have a number of rules associated with it. A rule
 grants a privilege to a list of [entities](../../datagrok/concepts/objects.md) of the specified type that pass a
 [specified filter](#defining-entities-for-a-rule). You can think of a group with defined privileges as a 'role'.
 
+Although, there are classic roles if you want to separate defined privileges.
+
+Roles can be assigned to either users or groups.
+Each role includes a “Can assign” option. When this option is enabled, the selected user or group is granted the ability to assign that role to other users or groups.
+
 ## Defining entities for a rule
 
 There are three ways to define entities for a rule (filters 1 and 2 can be combined):
@@ -79,6 +84,10 @@ There are three ways to define entities for a rule (filters 1 and 2 can be combi
 1. specified entity
 2. entities marked with a specified tag
 3. entities of the specified type
+
+## Favorites 
+
+Drag-and-drop app to group favorites, and it will appear on sidebar at the startup for all group users.
 
 ## Examples
 

@@ -15,7 +15,7 @@ import {PeptideUtils} from '../peptideUtils';
 category('Core', () => {
   const alignedSequenceCol = 'AlignedSequence';
   before(async () => {
-    await PeptideUtils.loadSeqHelper();
+    await PeptideUtils.loadComponents();
   });
   let model: PeptidesModel | null = null;
   test('Start analysis: simple', async () => {

@@ -1,7 +1,7 @@
 ### Files & Sharing
 
 1. File Preview:
-- Navigate to Browse > Files > App Data > Diff Studio > examples.
+- Navigate to Browse > Files > App Data > Diff Studio > Library.
 - Click on the file pk.ivp.
 - Expected Result: The file preview opens successfully.
 2. Modify Inputs:
@@ -12,7 +12,7 @@
 - Copy the URL of the model with the modified inputs.
 - Open a new tab in your browser. Paste the copied URL into the address bar and load the page.
 - Expected Result: The same model with the same inputs as set in step 2 should appear.
-
+4. REMARK. In the case of 1, 2 and 3 curves, there is just linechart (no Multiaxis & Facet)
 
 
 

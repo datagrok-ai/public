@@ -1,6 +1,6 @@
 /// this file was generated automatically from grok_shared classes declarations
 import { toDart } from "../wrappers";
-let api = <any>window;
+let api = (typeof window !== 'undefined' ? window : global.window) as any;
 
 export class DataSourceType {
   static Access = 'Access';
@@ -73,6 +73,8 @@ export class DataSourceType {
 
   static S3 = 'S3';
 
+  static EFS = 'Amazon EFS';
+
   static SharePoint = 'SharePoint';
 
   static Http = 'HTTP';
@@ -85,9 +87,13 @@ export class DataSourceType {
 
   static CoreWeave = 'CoreWeave';
 
-  static fileDataSources = ['Azure Blob', 'Dropbox', 'Files', 'GitHub', 'GoogleCloud', 'S3', 'CoreWeave', 'SharePoint'];
+  static get GCP(): any { return api.grok_DataSourceType_Get_GCP(); };
 
-  static systemDataSources = ['AWS', 'PostgresDart'];
+  static fileDataSources = ['Azure Blob', 'Dropbox', 'Files', 'GitHub', 'GoogleCloud', 'S3', 'CoreWeave', 'SharePoint', 'Amazon EFS'];
+
+  static systemDataSources = ['AWS', 'GCP', 'PostgresDart'];
+
+  static secureSources = ['AWS', 'GCP'];
 
 }
 export class ScriptLanguage {
@@ -106,6 +112,8 @@ export class ScriptLanguage {
   static JavaScript = 'javascript';
 
   static Octave = 'octave';
+
+  static PythonDocker = 'docker';
 
 }
 import {Entity} from '../entities'

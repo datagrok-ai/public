@@ -9,12 +9,6 @@ All fucntions should be tested on sample_FASTA.csv, sample_HELM.csv, and sample_
 2. For the composition analysis, on the viewer, click the **Gear** icon and check all settings on the Context Panel.
 3. Run the function once more with arbitrary changed parameters.
 
-***
-
-1. On the menu ribbon, open **Bio** > **Analyze** > **Hierarchical Clustering**.
-2. In the dialog, set Features to the sequence column. Click Ok.
-3. Run the **Hierarchical Clustering** once more with arbitrary changed parameters.
-
 ---
 {
   "order": 1

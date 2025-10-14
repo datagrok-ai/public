@@ -35,7 +35,7 @@ export class PolyToolConvertFuncEditor {
 
   private async initInputs(): Promise<void> {
     const getParam = (pName: string) => this.call.inputParams[pName];
-
+    const rulesForm = await this.ruleInputs.getForm();
     this.inputs = {
       table: (() => {
         const p = getParam(P.table);
@@ -49,7 +49,7 @@ export class PolyToolConvertFuncEditor {
       chiralityEngine: ui.input.forProperty(getParam(P.chiralityEngine).property),
       rules: {
         header: ui.inlineText([PT_UI_RULES_USED]),
-        form: await this.ruleInputs.getForm(),
+        form: rulesForm,
       }
     };
   }

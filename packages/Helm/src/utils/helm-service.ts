@@ -29,7 +29,7 @@ export class HelmService extends HelmServiceBase {
 
     this.hostDiv = ui.box();
     // this.hostDiv.style.display = 'none'; // Disables drawing at all
-    this.hostDiv.style.position = 'absolute';
+    this.hostDiv.style.position = 'fixed';
     this.hostDiv.style.left = '0px';
     this.hostDiv.style.right = '0px';
     this.hostDiv.style.width = '0px';
@@ -38,6 +38,18 @@ export class HelmService extends HelmServiceBase {
     document.body.appendChild(this.hostDiv);
 
     this.editorLruCache = new LRUCache<string, HelmEditor>({max: 20});
+  }
+
+  private getNewEditorHost() {
+    const hostDiv = ui.box();
+    hostDiv.style.position = 'absolute';
+    hostDiv.style.left = '0px';
+    hostDiv.style.right = '0px';
+    hostDiv.style.width = '0px';
+    hostDiv.style.height = '0px';
+    hostDiv.style.visibility = 'hidden';
+    this.hostDiv.appendChild(hostDiv);
+    return hostDiv;
   }
 
   protected override toLog(): string {
@@ -50,7 +62,8 @@ export class HelmService extends HelmServiceBase {
     let resEditor: HelmEditor | undefined = this.editorLruCache.get(editorKey);
     if (!resEditor) {
       const getMonomerFuncs = _package.helmHelper.buildMonomersFuncsFromLib(props.monomerLib, );
-      resEditor = new JSDraw2.Editor<HelmType, IHelmBio, IHelmEditorOptions>(this.hostDiv, {
+      const hostDiv = this.getNewEditorHost();
+      resEditor = new JSDraw2.Editor<HelmType, IHelmBio, IHelmEditorOptions>(hostDiv, {
         width: props.width, height: props.height, skin: 'w8', viewonly: true,
         drawOptions: {getMonomer: getMonomerFuncs.getMonomer},
       });

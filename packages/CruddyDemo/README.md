@@ -1,4 +1,4 @@
-# CruddyDemo
+# Cruddy Demo
 
 Cruddy is a framework for building database-driven applications
 on top of Datagrok.  

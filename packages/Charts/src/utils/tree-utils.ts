@@ -1,15 +1,19 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as utils from './utils';
 
 export class TreeUtils {
+  static colorCache: DG.LruCache = new DG.LruCache<string, Record<string, string>>();
 
   static async toTree(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet,
     visitNode: ((arg0: TreeDataType) => void) | null = null, aggregations:
-      AggregationInfo[] = [], linkSelection: boolean = true, selection?: boolean, inherit?: boolean): Promise<TreeDataType> {
+      AggregationInfo[] = [], linkSelection: boolean = true, selection?: boolean, inherit?: boolean,
+    includeNulls?: boolean, markSelected: boolean = true): Promise<TreeDataType> {
     const data: TreeDataType = {
       name: 'All',
+      collapsed: false,
       value: 0,
       path: null,
       label: {},
@@ -27,7 +31,14 @@ export class TreeUtils {
       builder.add(aggregation.type, aggregation.columnName, aggregation.propertyName);
     }
 
-    const aggregated = builder.aggregate();
+    let aggregated = builder.aggregate();
+    if (!includeNulls) {
+      const colList: DG.Column[] = aggregated.columns.toList().filter((col) => splitByColumnNames.includes(col.name));
+      const filter = DG.BitSet.create(aggregated.rowCount, (rowI: number) => {
+        return colList.every((col) => !col.isNone(rowI));
+      });
+      aggregated = aggregated.clone(filter);
+    }
 
     if (linkSelection) {
       grok.data.linkTables(dataFrame, aggregated, splitByColumnNames,
@@ -46,6 +57,7 @@ export class TreeUtils {
     const markSelectedNodes = (node: TreeDataType): boolean => {
       if (selectedPaths.includes(node.path!)) {
         node.itemStyle = selectedNodeStyle;
+        node.lineStyle = selectedNodeStyle;
         return true;
       }
       if (node.children && node.children.length > 0) {
@@ -55,10 +67,33 @@ export class TreeUtils {
 
         if (parentSelected) {
           node.itemStyle = selectedNodeStyle;
+          node.lineStyle = selectedNodeStyle;
           return true;
         }
       }
       return false;
+    };
+
+    const precomputeCategoryColors = (column: DG.Column) => {
+      const colors: Record<string, string> = {};
+      column.categories.forEach((cat, idx) => {
+        colors[cat] = DG.Color.toHtml(DG.Color.getCategoricalColor(idx));
+      });
+      this.colorCache.set(column.name, colors);
+    };
+
+    const getCategoryColor = (column: DG.Column, i: number, inherit: boolean) => {
+      if (inherit)
+        return DG.Color.toHtml(DG.Color.getRowColor(column, i));
+
+      let colors = this.colorCache.get(column.name);
+      if (!colors) {
+        precomputeCategoryColors(column);
+        colors = this.colorCache.get(column.name)!;
+      }
+
+      const category = column.get(i);
+      return colors[category];
     };
 
     function aggregateParentNodes(): void {
@@ -78,7 +113,7 @@ export class TreeUtils {
             if (propNames.includes(column.name))
               props[column.name] = column.get(i);
             else
-              path = (path ? path + ' | ' : '') + column.getString(i);
+              path = (path ? path + ' ||| ' : '') + column.getString(i);
           }
           paths[path] = props;
         }
@@ -94,8 +129,11 @@ export class TreeUtils {
             node[prop] = node[prop] ?? paths[node.path][prop];
           if (!data[`${prop}-meta`])
             continue;
-          data[`${prop}-meta`].min = Math.min(data[`${prop}-meta`].min, node[prop]);
-          data[`${prop}-meta`].max = Math.max(data[`${prop}-meta`].max, node[prop]);
+
+          const value = node[prop];
+          if (!value) continue;
+          data[`${prop}-meta`].min = Math.min(data[`${prop}-meta`].min, value);
+          data[`${prop}-meta`].max = Math.max(data[`${prop}-meta`].max, value);
         }
         node.children?.forEach(updatePropMeta);
       }
@@ -112,47 +150,33 @@ export class TreeUtils {
         (obj[col.name] = col.get(i), obj), <{ [key: string]: number }>{});
 
       if (aggregated.selection.get(i) && !selection)
-        selectedPaths.push(columns.map((col) => col.getString(i)).join(' | '));
+        selectedPaths.push(columns.map((col) => col.getString(i)).join(' ||| '));
 
       for (let colIdx = idx; colIdx < columns.length; colIdx++) {
         const value = columns[colIdx].get(i);
         const parentNode = colIdx === 0 ? data : parentNodes[colIdx - 1];
-        const name = value ? value.toString() : '';
+        const name = value == null ? ' ' : value.toString();
+        /**
+         * ' ||| ' is used as a temporary separator because a single '|' fails
+         * to handle certain edge cases in the tree viewer.
+         */
         const node: TreeDataType = {
           semType: columns[colIdx].semType,
           name: name,
-          path: parentNode?.path == null ? name : parentNode.path + ' | ' + name,
+          collapsed: false,
+          path: parentNode?.path == null ? name : parentNode.path + ' ||| ' + name,
           value: 0,
         };
 
         if (value === '') {
           node.itemStyle = {
-            color: '#c7c7c7'
-          }
-        }
-
-        const colorCodingType = columns[colIdx].meta.colors.getType();
-        if (colorCodingType !== DG.COLOR_CODING_TYPE.OFF && colorCodingType !== null && inherit) {
-          node.itemStyle = {
-            color: DG.Color.toHtml(columns[colIdx].meta.colors.getColor(i)),
+            color: '#c7c7c7',
           };
         }
 
-        if (columns[colIdx].semType === DG.SEMTYPE.MOLECULE) {
-          const image = await TreeUtils.getMoleculeImage(name);
-          const img = new Image();
-          img.src = image!.toDataURL('image/png');
-          node.label = {
-            show: true,
-            formatter: '{b}',
-            color: 'rgba(0,0,0,0)',
-            height: '80',
-            width: '70',
-            backgroundColor: {
-              image: img.src,
-            },
-          }
-        }
+        node.itemStyle = {
+          color: getCategoryColor(columns[colIdx], i, inherit!),
+        };
 
         if (colIdx === columns.length - 1)
           propNames.forEach((prop) => node[prop] = aggrValues[prop]);
@@ -174,24 +198,32 @@ export class TreeUtils {
     if (aggregations.length > 0)
       aggregateParentNodes();
 
-    markSelectedNodes(data);
+    if (markSelected) markSelectedNodes(data);
 
     return data;
   }
 
-  static async toForestAsync(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet, selection: boolean = false, inherit: boolean = false) {
-    const tree = await TreeUtils.toTree(dataFrame, splitByColumnNames, rowMask, (node) => node.value = 0, [], false, selection, inherit);
+  static async toForestAsync(
+    dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet,
+    includeNulls: boolean = true, selection: boolean = false, inherit: boolean = false,
+  ) {
+    const tree = await TreeUtils.toTree(
+      dataFrame, splitByColumnNames, rowMask, (node) => node.value = 0, [], false, selection, inherit, includeNulls,
+    );
     return tree.children;
   }
 
-  static toForest(dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet, selection: boolean = false, inherit: boolean = false) {
-    return TreeUtils.toForestAsync(dataFrame, splitByColumnNames, rowMask, selection, inherit);
+  static toForest(
+    dataFrame: DG.DataFrame, splitByColumnNames: string[], rowMask: DG.BitSet,
+    includeNulls: boolean = true, selection: boolean = false, inherit: boolean = false,
+  ) {
+    return TreeUtils.toForestAsync(dataFrame, splitByColumnNames, rowMask, includeNulls, selection, inherit);
   }
 
-  static async getMoleculeImage(name: string): Promise<HTMLCanvasElement> {
+  static async getMoleculeImage(name: string, width: number, height: number): Promise<HTMLCanvasElement> {
     const image: HTMLCanvasElement = ui.canvas();
-    image.width = 70;
-    image.height = 80;
+    image.width = width;
+    image.height = height;
     await grok.chem.canvasMol(0, 0, image.width, image.height, image, name);
     return image;
   }
@@ -218,7 +250,7 @@ export class TreeUtils {
    * @param {String} path - pipe-separated values
    */
   static pathToPattern(columnNames: string[], path: string): {[key: string]: string} {
-    const values = path.split(' | ');
+    const values = path.split(' ||| ');
     const pattern: {[key: string]: string} = {};
     for (let i = 0; i < columnNames.length; i++)
       pattern[columnNames[i]] = values[i];
@@ -226,6 +258,6 @@ export class TreeUtils {
   }
 }
 
-export type TreeDataType = { name: string, value: number, semType?: null | string, path?: null | string, label?: {}, children?: TreeDataType[],
+export type TreeDataType = { name: string, collapsed: boolean, value: number, semType?: null | string, path?: null | string, label?: {}, children?: TreeDataType[],
   itemStyle?: { color?: string }, [prop: string]: any };
 export type AggregationInfo = { type: DG.AggregationType, columnName: string, propertyName: string };

@@ -1,0 +1,570 @@
+[
+  [
+    {
+      "spec": {
+        "id": "link1",
+        "base": [
+          {
+            "name": "base",
+            "segments": [
+              {
+                "type": "selector",
+                "selector": "expand",
+                "ids": [
+                  "pipeline2",
+                  "pipeline4"
+                ],
+                "stopIds": []
+              },
+              {
+                "type": "selector",
+                "selector": "expand",
+                "ids": [
+                  "pipeline3",
+                  "pipeline5"
+                ],
+                "stopIds": []
+              },
+              {
+                "type": "tag",
+                "selector": "expand",
+                "tags": [
+                  "taggedStep"
+                ]
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "from": [
+          {
+            "name": "in1",
+            "segments": [
+              {
+                "type": "tag",
+                "selector": "same",
+                "tags": [
+                  "taggedStep"
+                ],
+                "ref": "base"
+              },
+              {
+                "type": "selector",
+                "ids": [
+                  "res"
+                ],
+                "selector": "first",
+                "stopIds": []
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "to": [
+          {
+            "name": "out1",
+            "segments": [
+              {
+                "type": "tag",
+                "selector": "after",
+                "tags": [
+                  "taggedStep"
+                ],
+                "ref": "base"
+              },
+              {
+                "type": "selector",
+                "ids": [
+                  "a"
+                ],
+                "selector": "first",
+                "stopIds": []
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "type": "meta",
+        "not": [],
+        "actions": []
+      },
+      "basePath": [
+        {
+          "id": "pipeline2",
+          "idx": 0
+        },
+        {
+          "id": "pipeline3",
+          "idx": 1
+        },
+        {
+          "id": "step1",
+          "idx": 0
+        }
+      ],
+      "actions": {},
+      "inputs": {
+        "in1": [
+          {
+            "path": [
+              {
+                "id": "pipeline2",
+                "idx": 0
+              },
+              {
+                "id": "pipeline3",
+                "idx": 1
+              },
+              {
+                "id": "step1",
+                "idx": 0
+              }
+            ],
+            "ioName": "res"
+          }
+        ]
+      },
+      "outputs": {
+        "out1": [
+          {
+            "path": [
+              {
+                "id": "pipeline2",
+                "idx": 0
+              },
+              {
+                "id": "step2",
+                "idx": 2
+              }
+            ],
+            "ioName": "a"
+          }
+        ]
+      }
+    },
+    {
+      "spec": {
+        "id": "link1",
+        "base": [
+          {
+            "name": "base",
+            "segments": [
+              {
+                "type": "selector",
+                "selector": "expand",
+                "ids": [
+                  "pipeline2",
+                  "pipeline4"
+                ],
+                "stopIds": []
+              },
+              {
+                "type": "selector",
+                "selector": "expand",
+                "ids": [
+                  "pipeline3",
+                  "pipeline5"
+                ],
+                "stopIds": []
+              },
+              {
+                "type": "tag",
+                "selector": "expand",
+                "tags": [
+                  "taggedStep"
+                ]
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "from": [
+          {
+            "name": "in1",
+            "segments": [
+              {
+                "type": "tag",
+                "selector": "same",
+                "tags": [
+                  "taggedStep"
+                ],
+                "ref": "base"
+              },
+              {
+                "type": "selector",
+                "ids": [
+                  "res"
+                ],
+                "selector": "first",
+                "stopIds": []
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "to": [
+          {
+            "name": "out1",
+            "segments": [
+              {
+                "type": "tag",
+                "selector": "after",
+                "tags": [
+                  "taggedStep"
+                ],
+                "ref": "base"
+              },
+              {
+                "type": "selector",
+                "ids": [
+                  "a"
+                ],
+                "selector": "first",
+                "stopIds": []
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "type": "meta",
+        "not": [],
+        "actions": []
+      },
+      "basePath": [
+        {
+          "id": "pipeline4",
+          "idx": 1
+        },
+        {
+          "id": "pipeline5",
+          "idx": 1
+        },
+        {
+          "id": "step1",
+          "idx": 0
+        }
+      ],
+      "actions": {},
+      "inputs": {
+        "in1": [
+          {
+            "path": [
+              {
+                "id": "pipeline4",
+                "idx": 1
+              },
+              {
+                "id": "pipeline5",
+                "idx": 1
+              },
+              {
+                "id": "step1",
+                "idx": 0
+              }
+            ],
+            "ioName": "res"
+          }
+        ]
+      },
+      "outputs": {
+        "out1": [
+          {
+            "path": [
+              {
+                "id": "pipeline4",
+                "idx": 1
+              },
+              {
+                "id": "step2",
+                "idx": 2
+              }
+            ],
+            "ioName": "a"
+          }
+        ]
+      }
+    }
+  ],
+  [
+    {
+      "spec": {
+        "id": "link2",
+        "base": [
+          {
+            "name": "base",
+            "segments": [
+              {
+                "type": "tag",
+                "selector": "expand",
+                "tags": [
+                  "taggedPipeline"
+                ]
+              },
+              {
+                "type": "selector",
+                "selector": "expand",
+                "ids": [
+                  "pipeline3",
+                  "pipeline5"
+                ],
+                "stopIds": []
+              },
+              {
+                "type": "tag",
+                "selector": "expand",
+                "tags": [
+                  "taggedStep"
+                ]
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "from": [
+          {
+            "name": "in1",
+            "segments": [
+              {
+                "type": "tag",
+                "selector": "same",
+                "tags": [
+                  "taggedStep"
+                ],
+                "ref": "base"
+              },
+              {
+                "type": "selector",
+                "ids": [
+                  "res"
+                ],
+                "selector": "first",
+                "stopIds": []
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "to": [
+          {
+            "name": "out1",
+            "segments": [
+              {
+                "type": "tag",
+                "selector": "after",
+                "tags": [
+                  "taggedStep"
+                ],
+                "ref": "base"
+              },
+              {
+                "type": "selector",
+                "ids": [
+                  "a"
+                ],
+                "selector": "first",
+                "stopIds": []
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "type": "meta",
+        "not": [],
+        "actions": []
+      },
+      "basePath": [
+        {
+          "id": "pipeline2",
+          "idx": 0
+        },
+        {
+          "id": "pipeline3",
+          "idx": 1
+        },
+        {
+          "id": "step1",
+          "idx": 0
+        }
+      ],
+      "actions": {},
+      "inputs": {
+        "in1": [
+          {
+            "path": [
+              {
+                "id": "pipeline2",
+                "idx": 0
+              },
+              {
+                "id": "pipeline3",
+                "idx": 1
+              },
+              {
+                "id": "step1",
+                "idx": 0
+              }
+            ],
+            "ioName": "res"
+          }
+        ]
+      },
+      "outputs": {
+        "out1": [
+          {
+            "path": [
+              {
+                "id": "pipeline2",
+                "idx": 0
+              },
+              {
+                "id": "step2",
+                "idx": 2
+              }
+            ],
+            "ioName": "a"
+          }
+        ]
+      }
+    },
+    {
+      "spec": {
+        "id": "link2",
+        "base": [
+          {
+            "name": "base",
+            "segments": [
+              {
+                "type": "tag",
+                "selector": "expand",
+                "tags": [
+                  "taggedPipeline"
+                ]
+              },
+              {
+                "type": "selector",
+                "selector": "expand",
+                "ids": [
+                  "pipeline3",
+                  "pipeline5"
+                ],
+                "stopIds": []
+              },
+              {
+                "type": "tag",
+                "selector": "expand",
+                "tags": [
+                  "taggedStep"
+                ]
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "from": [
+          {
+            "name": "in1",
+            "segments": [
+              {
+                "type": "tag",
+                "selector": "same",
+                "tags": [
+                  "taggedStep"
+                ],
+                "ref": "base"
+              },
+              {
+                "type": "selector",
+                "ids": [
+                  "res"
+                ],
+                "selector": "first",
+                "stopIds": []
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "to": [
+          {
+            "name": "out1",
+            "segments": [
+              {
+                "type": "tag",
+                "selector": "after",
+                "tags": [
+                  "taggedStep"
+                ],
+                "ref": "base"
+              },
+              {
+                "type": "selector",
+                "ids": [
+                  "a"
+                ],
+                "selector": "first",
+                "stopIds": []
+              }
+            ],
+            "flags": []
+          }
+        ],
+        "type": "meta",
+        "not": [],
+        "actions": []
+      },
+      "basePath": [
+        {
+          "id": "pipeline4",
+          "idx": 1
+        },
+        {
+          "id": "pipeline5",
+          "idx": 1
+        },
+        {
+          "id": "step1",
+          "idx": 0
+        }
+      ],
+      "actions": {},
+      "inputs": {
+        "in1": [
+          {
+            "path": [
+              {
+                "id": "pipeline4",
+                "idx": 1
+              },
+              {
+                "id": "pipeline5",
+                "idx": 1
+              },
+              {
+                "id": "step1",
+                "idx": 0
+              }
+            ],
+            "ioName": "res"
+          }
+        ]
+      },
+      "outputs": {
+        "out1": [
+          {
+            "path": [
+              {
+                "id": "pipeline4",
+                "idx": 1
+              },
+              {
+                "id": "step2",
+                "idx": 2
+              }
+            ],
+            "ioName": "a"
+          }
+        ]
+      }
+    }
+  ]
+]

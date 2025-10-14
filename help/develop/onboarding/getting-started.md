@@ -21,7 +21,7 @@ Here are a few examples of the said packages and plugins:
 * [Biosignals]
 * [Cheminformatics]
 * [Cell renderers]
-* [Viewers]
+* [Charts]
 * [Filters]
 
 ## 3. Tooling for local development
@@ -85,7 +85,7 @@ extensions.
 
 [Extending and customizing Datagrok]: ../packages/extensions.md
 
-[Building an application]: ../how-to/build-an-app.md
+[Building an application]: ../how-to/apps/build-an-app.md
 
 [Building a UI]: ../advanced/ui.md
 
@@ -111,11 +111,11 @@ extensions.
 
 [a few JavaScript samples]: https://public.datagrok.ai/js
 
-[powerful JavaScript API]: https://datagrok.ai/js-api/
+[powerful JavaScript API]: https://datagrok.ai/api/js/api/
 
-[Digital Signal Processing]: https://github.com/datagrok-ai/public/tree/master/packages/DSP
+[Digital Signal Processing]: https://github.com/datagrok-ai/labs/tree/master/packages/DSP
 
-[Biosignals]: https://github.com/datagrok-ai/public/tree/master/packages/BioSignals
+[Biosignals]: https://github.com/datagrok-ai/labs/tree/master/packages/BioSignals
 
 [Cheminformatics]: https://github.com/datagrok-ai/public/tree/master/packages/Chem
 
@@ -123,7 +123,7 @@ extensions.
 
 [Cell renderers]:https://github.com/datagrok-ai/public/blob/master/libraries/chem-meta/src/rdkit-api.ts
 
-[viewers]: https://github.com/datagrok-ai/public/tree/master/packages/Viewers
+[Charts]: https://github.com/datagrok-ai/public/tree/master/packages/Charts
 
 [filters]: https://github.com/datagrok-ai/public/blob/master/packages/Widgets/src/filters/radio-button-filter.ts
 

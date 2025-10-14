@@ -101,4 +101,4 @@ category('Viewers: Box Plot', () => {
     grok.shell.closeAll();
     await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test project with Box Plot').first());
   });
-});
+}, { owner: 'dkovalyov@datagrok.ai' });

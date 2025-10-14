@@ -5,6 +5,7 @@ import {filter, map} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
 import {interval} from 'rxjs';
 import wu from 'wu';
+import { getPlatform, Platform, platformKeyMap } from '../../shortcuts';
 
 
 export class VirtualScreeningTutorial extends Tutorial {
@@ -28,6 +29,7 @@ export class VirtualScreeningTutorial extends Tutorial {
   prerequisites: TutorialPrerequisites = {packages: ['Chem', 'PowerPack'], jupyter: true, grokCompute: true, h2o: true};
   demoTable: string = 'chem/tutorials/training-data.csv';
   helpUrl: string = 'https://datagrok.ai/help/datagrok/solutions/domains/chem/#curation';
+  platform: Platform = getPlatform();
 
   protected async _run(): Promise<void> {
     // Save the view with experimental data
@@ -237,8 +239,8 @@ export class VirtualScreeningTutorial extends Tutorial {
     null, 'It should be in the first row after sorting. Make sure to pick the curated form.');
     const firstIndex = screeningData.currentCell.rowIndex;
 
-    const filterDescription = 'Find the funnel icon <i class="grok-icon far fa-filter grok-icon-filter"></i> ' +
-      'in the toolbox or press <b>Ctrl+F</b>. The panel should show a sketcher for better filtering on molecular data.';
+    const filterDescription = `Find the funnel icon <i class="grok-icon far fa-filter grok-icon-filter"></i> ' +
+      'in the toolbox or press <b>${platformKeyMap['Ctrl'][this.platform]}+F</b>. The panel should show a sketcher for better filtering on molecular data.`;
     const filters = await this.openPlot('filters', (x) => x.type === DG.VIEWER.FILTERS, filterDescription);
 
     const filterColumns = filters.props.columnNames;

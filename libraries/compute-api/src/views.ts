@@ -7,17 +7,13 @@ import type {
   ComputationView as ComputationViewType,
   RichFunctionView as RichFunctionViewType,
   PipelineView as PipelineViewType,
-  CompositionPipeline as CompositionPipelineType,
-  PipelineCompositionConfiguration as PipelineCompositionConfigurationType,
-  PipelineConfiguration as PipelineConfigurationType,
+  CustomFunctionView as CustomFunctionViewType,
 } from '@datagrok-libraries/compute-utils';
 
 export type ComputationView = ComputationViewType;
 export type RichFunctionView = RichFunctionViewType;
 export type PipelineView = PipelineViewType;
-export type CompositionPipeline = CompositionPipelineType;
-export type PipelineCompositionConfiguration = PipelineCompositionConfigurationType;
-export type PipelineConfiguration = PipelineConfigurationType;
+export type CustomFunctionView = CustomFunctionViewType;
 
 export function createCompView(
   ...args: ConstructorParameters<typeof ComputationViewType>
@@ -37,14 +33,8 @@ export function createPipeline(
   return new window.compute.Pipeline(...args);
 };
 
-export function createCompositionPipeline(
-  ...args: ConstructorParameters<typeof CompositionPipelineType>
-): CompositionPipelineType {
-  return new window.compute.CompositionPipeline(...args);
+export function createCFV(
+  ...args: ConstructorParameters<typeof CustomFunctionViewType>
+): CustomFunctionViewType {
+  return new window.compute.CFV(...args);
 };
-
-export function composeCompositionPipeline(
-  ...args: Parameters<typeof CompositionPipelineType.compose>
-): ReturnType<typeof CompositionPipelineType.compose> {
-  return window.compute.CompositionPipeline.compose(...args);
-}

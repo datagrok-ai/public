@@ -1,5 +1,95 @@
 # Curves changelog
 
+## 1.10.12 (2025-09-16)
+
+* GROK-18808: Provided consistent names for Data top menu
+* Plates: Skip rendering too small plates
+
+## 1.10.11 (2025-09-12)
+
+* Data-To-Curves: Well level additional columns
+
+## 1.10.10 (2025-09-09)
+
+* Extended PNG detector
+
+## 1.10.9 (2025-08-27)
+
+* MultiCurveViewer: Added showOutliers parameter
+
+## 1.10.8 (2025-08-21)
+
+* Data-to-Curves: Correct exclude heuristic
+
+## 1.10.7 (2025-08-21)
+
+* Rendering: Added showOutliers parameter
+
+## 1.10.6 (2025-08-20)
+
+* TestData: Wells: Improved concentration/activity, samples, barcodes generation for plates
+* TreeBrowser function: Removed unnecessary browsePanel input
+* Added MSR script
+* Updated MSR env
+
+## 1.10.5 (2025-08-20)
+
+## 1.10.4 (2025-08-14)
+
+* MultiCurveViewer:
+  * Fixed issues with min/max x/y
+  * Fixed slider is added on min/max x/y fields
+  * Added legendColumnName property
+
+## 1.10.3 (2025-08-01)
+
+## 1.10.2 (2025-07-31)
+
+* Data-to-curves: Added joining options
+
+## 1.10.1 (2025-07-30)
+
+* Data-to-curves: Fixed mismatched keys
+
+## 1.10.0 (2025-07-29)
+
+### Features
+* 4plDoseResponse: Added 4PL dose-response curve fitting function
+* Data-to-curves: fully covered script with history, datasync and 2 tier support
+* Raw PNG renderer
+
+## 1.6.0 - 1.8.0 (2025-03-31)
+
+### Features
+
+* GROK-17295: Fitting caching:
+   * Performance improvements
+   * Cached fitting and wrote tests
+   * Fixed margins
+* Fit: Disabled caching for non valid row indexes
+* Outliers: Made outlier toggling not to invalidate the whole grid
+* Added custom event for outlier toggling
+* Added 4pl-regression fit function
+* #3195: Plate Viewer:
+   * Supported plate handling
+   * Implemented automatic plate import from Excel
+   * Added new fluent API
+   * Enabled DRC with grouping
+   * Supported multi-plate file folders
+   * Added details, stats column, IC50, curve preview, statistics recalculation, outlier marking, configuration options
+   * Implemented content-dependent file import
+   * Added rendering for 1536-well plates
+   * Enabled inspection of single series in plate
+   * Added demo
+* Plate readers: Added Delfia Envision and Spectramax parsers
+* Added docs on plate DRC
+
+### Bug fixes
+
+* Fixed MultiCurveViewer issues
+* Fit panel: Fixed namings and inputs
+* GROK-17492: Fixed error when adding statistics column if the series has no name
+
 ## 1.5.0 (2024-08-23)
 
 ### Features

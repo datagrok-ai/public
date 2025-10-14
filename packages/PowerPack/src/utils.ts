@@ -28,15 +28,14 @@ export function getSettings(): UserWidgetsSettings {
 }
 
 export function saveSettings(): void {
-  console.log(settings);
-  let s: {[key: string]: any} = {};
+  const s: {[key: string]: any} = {};
   for (const key of Object.keys(settings))
     s[key] = JSON.stringify(settings[key]);
   grok.userSettings.addAll(WIDGETS_STORAGE, s);
 }
 
 
-function initWidgetHost(host: HTMLDivElement, w: DG.Widget) {
+function initWidgetHost(host: HTMLDivElement, w: DG.Widget, title?: string) {
   function remove(): void {
     host.remove();
     if (w.factory?.name) {
@@ -49,9 +48,13 @@ function initWidgetHost(host: HTMLDivElement, w: DG.Widget) {
   if (w.props.hasProperty('order'))
     host.style.order = w.props.order;
 
-  const header = host.querySelector('.d4-dialog-header')!;
-  header.appendChild(ui.icons.settings(() => {grok.shell.o = w;}, 'Edit settings'));
-  header.appendChild(ui.icons.close(remove, 'Remove'));
+  const header = host.querySelector('.d4-dialog-header')! as HTMLElement;
+  if (title === '') {
+    header.classList.add('d4-dialog-header-hidden');
+    w.root.appendChild(ui.icons.close(remove, 'Remove'));
+  }
+  else
+    header.appendChild(ui.icons.close(remove, 'Remove'));
 
   if (w.root.classList.contains('widget-narrow'))
     host.classList.add('widget-narrow');
@@ -60,10 +63,16 @@ function initWidgetHost(host: HTMLDivElement, w: DG.Widget) {
 
   host.querySelector('.power-pack-widget-content')!.appendChild(w.root);
   ui.tools.setHoverVisibility(host, Array.from(host.querySelectorAll('i')));
+  if (w.factory?.name) {
+    const widgetSettings = settings[w.factory.name] ?? (settings[w.factory.name] = { });
+    if (widgetSettings.ignored === undefined || widgetSettings.ignored === null)
+      widgetSettings.ignored = false;
+    saveSettings();
+  }
 }
 
 function createWidgetHost(title: string): HTMLDivElement {
-  const header = ui.div([ui.divText(title, 'd4-dialog-title'),], 'd4-dialog-header');
+  const header = ui.div([ui.divText(title, 'd4-dialog-title')], 'd4-dialog-header');
   const host = ui.box(null, 'power-pack-widget-host');
   host.appendChild(header);
   host.appendChild(ui.box(null, 'power-pack-widget-content'));
@@ -71,23 +80,23 @@ function createWidgetHost(title: string): HTMLDivElement {
 }
 
 export function widgetHostFromFunc(f: DG.Func) {
-  const host: HTMLDivElement = createWidgetHost(f.friendlyName);
+  const title = f.options['showName'] === 'false' ? '' : f.friendlyName;
+  const host: HTMLDivElement = createWidgetHost(title);
   const contentDiv: HTMLElement = (host.querySelector('.power-pack-widget-content')!) as HTMLElement;
 
   f.apply().then(function(w: DG.Widget) {
-      if (w) {
-        w.factory = f;
-        initWidgetHost(host, w);
-      }
-      else
-        host.remove();
+    if (w) {
+      w.factory = f;
+      initWidgetHost(host, w, title);
+    } else
+      host.remove();
   })
-  .catch((e) => {
-    host.style.display = 'none';
-    host.remove();
-    console.error(`Error creating widget ${f.name}`, e);
-  })
- .finally(() => ui.setUpdateIndicator(contentDiv, false, ''));
+    .catch((e) => {
+      host.style.display = 'none';
+      host.remove();
+      console.error(`Error creating widget ${f.name}`, e);
+    })
+    .finally(() => ui.setUpdateIndicator(contentDiv, false, ''));
 
   setTimeout(() => {
     if (contentDiv!.children.length == 0)
@@ -102,8 +111,9 @@ export function widgetHostFromFunc(f: DG.Func) {
 
 
 export function widgetHost(w: DG.Widget/*, widgetHeader?: HTMLDivElement*/): HTMLElement {
-  const host = createWidgetHost(w.props.caption ?? '');
-  initWidgetHost(host, w);
+  const title = w.props.hasProperty('caption') ? w.props.caption ?? '' : '';
+  const host = createWidgetHost(title);
+  initWidgetHost(host, w, title);
   //widgetHeader ??= ui.div();
 
   return host;

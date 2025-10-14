@@ -1,4 +1,4 @@
-// UI for solving differential equations
+// UI for solving initial value problem for ordinary differential equations
 
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -10,22 +10,37 @@ import {python} from '@codemirror/lang-python';
 import {autocompletion} from '@codemirror/autocomplete';
 import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
+import {getFormatted} from '@datagrok-libraries/compute-utils/function-views/src/shared/lookup-tools';
+import {getIvp2WebWorker, getPipelineCreator} from 'diff-grok';
 
 import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
 import {USE_CASES} from './use-cases';
+
 import {HINT, TITLE, LINK, HOT_KEY, ERROR_MSG, INFO, DOCK_RATIO, TEMPLATE_TITLES, EXAMPLE_TITLES,
   WARNING, MISC, demoInfo, INPUT_TYPE, PATH, UI_TIME, MODEL_HINT, MAX_RECENT_COUNT,
-  modelImageLink, CUSTOM_MODEL_IMAGE_LINK, INPUTS_DF} from './ui-constants';
+  modelImageLink, CUSTOM_MODEL_IMAGE_LINK, INPUTS_DF, MAX_FACET_GRAPHS_COUNT} from './ui-constants';
+
 import {getIVP, getScriptLines, getScriptParams, IVP, Input, SCRIPTING,
   BRACE_OPEN, BRACE_CLOSE, BRACKET_OPEN, BRACKET_CLOSE, ANNOT_SEPAR,
   CONTROL_SEP, STAGE_COL_NAME, ARG_INPUT_KEYS, DEFAULT_SOLVER_SETTINGS} from './scripting-tools';
-import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools/solver-defs';
-import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo} from './utils';
+
+import {CallbackAction, DEFAULT_OPTIONS} from './solver-tools';
+
+import {unusedFileName, getTableFromLastRows, getInputsTable, getLookupsInfo, hasNaN, getCategoryWidget,
+  getReducedTable, closeWindows, getRecentModelsTable, getMyModelFiles, getEquationsFromFile,
+  getMaxGraphsInFacetGridRow, removeTitle,
+  noModels,
+  removeTitleBar} from './utils';
+
+import {ModelError, showModelErrorHint, getIsNotDefined, getUnexpected, getNullOutput} from './error-utils';
 
 import '../css/app-styles.css';
 
 import {_package} from './package';
+
+const COLORS = DG.Color.categoricalPalette;
+const COLORS_COUNT = COLORS.length;
 
 /** State of IVP code editor */
 enum EDITOR_STATE {
@@ -60,7 +75,7 @@ function stateToPath(state: EDITOR_STATE): string {
     return `/${TITLE.TEMPL}/${state}`;
 
   default:
-    return `/${TITLE.EXAMP}/${state}`;
+    return `/${TITLE.LIBRARY}/${state}`;
   }
 }
 
@@ -146,6 +161,9 @@ function getLink(state: EDITOR_STATE): string {
   case EDITOR_STATE.POLLUTION:
     return LINK.POLLUTION;
 
+  case EDITOR_STATE.EXTENDED_TEMPLATE:
+    return LINK.INTERFACE;
+
   default:
     return LINK.DIF_STUDIO_REL;
   }
@@ -154,7 +172,6 @@ function getLink(state: EDITOR_STATE): string {
 /** Completions of control expressions */
 const completions = [
   {label: `${CONTROL_EXPR.NAME}: `, type: 'keyword', info: INFO.NAME},
-  {label: `${CONTROL_EXPR.TAGS}: `, type: 'keyword', info: INFO.TAGS},
   {label: `${CONTROL_EXPR.DESCR}: `, type: 'keyword', info: INFO.DESCR},
   {label: `${CONTROL_EXPR.DIF_EQ}:\n  `, type: 'keyword', info: INFO.DIF_EQ},
   {label: `${CONTROL_EXPR.EXPR}:\n  `, type: 'keyword', info: INFO.EXPR},
@@ -171,7 +188,7 @@ const completions = [
   {label: `${CONTROL_EXPR.INPUTS}: `, type: 'keyword', info: INFO.INPUS},
 ];
 
-/** Control expressions completion utilite */
+/** Control expressions completion utility */
 function contrCompletions(context: any) {
   const before = context.matchBefore(/[#]\w*/);
 
@@ -206,51 +223,62 @@ const strToVal = (s: string) => {
 /** Browse properties */
 type Browsing = {
   treeNode: DG.TreeViewGroup,
-  browseView: DG.BrowseView,
+  browsePanel: DG.BrowsePanel,
+};
+
+/** Last called model specification */
+type LastModel = {
+  info: string,
+  isCustom: boolean,
+};
+
+/** Lookup data specification */
+type LookupData = {
+  arr: Int32Array | Uint32Array | Float32Array | Float64Array,
+  format: string | null | undefined,
+};
+
+/** Docking options */
+export type UiOptions = {
+  inputsTabDockRatio: number,
+  graphsDockRatio: number,
 };
 
 /** Solver of differential equations */
 export class DiffStudio {
   /** Run Diff Studio application */
   public async runSolverApp(content?: string, state?: EDITOR_STATE, path?: string): Promise<DG.ViewBase> {
-    this.createEditorView(content, true);
+    closeWindows();
+    this.createEditorView(content);
+    this.solverView.setRibbonPanels(this.getRibbonPanels());
+    this.updateRibbonWgts();
 
-    const panels = ((state !== undefined) || (path !== undefined)) ?
-      [[this.sensAnIcon, this.fittingIcon]] :
-      [
-        [this.openIcon, this.saveIcon],
-        [this.exportButton, this.sensAnIcon, this.fittingIcon],
-        [this.runIcon, this.helpIcon],
-      ];
-
-    this.solverView.setRibbonPanels(panels);
     this.toChangePath = true;
 
     setTimeout(async () => {
-    // routing
-      if (content) {
+      if (content) { // Solve equations passed to the solver
         this.fromFileHandler = true;
 
         if (path) {
           this.isRecentRun = true;
-          this.solverMainPath = path;
+          this.entityPath = path;
         } else
-          this.solverMainPath = `${PATH.APPS_DS}${PATH.CUSTOM}`;
-        await this.runSolving(true);
-      } else if (state) {
+          this.entityPath = `${PATH.APPS_DS}${PATH.CUSTOM}`;
+        await this.runSolving();
+      } else if (state) { // Set the passed state
         this.inBrowseRun = true;
         await this.setState(state);
-      } else {
+      } else { // Process starting URL
         const modelIdx = this.startingPath.lastIndexOf('/') + 1;
         const paramsIdx = this.startingPath.indexOf(PATH.PARAM);
 
-        if (paramsIdx > -1) {
+        if (paramsIdx > -1) { // There are parameters in URL
           const model = this.startingPath.slice(modelIdx, (paramsIdx > -1) ? paramsIdx : undefined);
 
-          if (MODELS.includes(model)) {
+          if (MODELS.includes(model)) { // Check & run built-in model
             this.startingInputs = new Map<string, number>();
 
-            if (modelIdx < paramsIdx) {
+            if (modelIdx < paramsIdx) { // Check correctness of URL & extract inputs
               try {
                 this.startingPath.slice(paramsIdx + PATH.PARAM.length).split(PATH.AND).forEach((equality) => {
                   const eqIdx = equality.indexOf(PATH.EQ);
@@ -262,33 +290,33 @@ export class DiffStudio {
             }
 
             await this.setState(model as EDITOR_STATE, false);
-          } else
-            await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
-        } else {
+          } else // Unknown model, run last called model
+            await this.runLastCalledModel();
+        } else { // Check folder with models
           const folderName = this.startingPath.slice(modelIdx);
           const node = this.appTree.items.find((node) => node.text === folderName);
 
-          if (node !== undefined) {
-            setTimeout(() => node.root.click(), UI_TIME.SWITCH_TO_FOLDER);
-            return DG.View.create();
-          } else
-            await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
+          if (node !== undefined) { // Folder exists
+            setTimeout(() => {
+              node.root.click();
+              this.solverView.close();
+            }, UI_TIME.SWITCH_TO_FOLDER);
+          } else // Run last called model
+            await this.runLastCalledModel();
         }
       }
-    },
-    UI_TIME.APP_RUN_SOLVING);
+    }, UI_TIME.APP_RUN_SOLVING);
 
     return this.solverView;
   } // runSolverApp
 
   /** Run Diff Studio demo application */
   public async runSolverDemoApp(): Promise<void> {
-    this.createEditorView(DEMO_TEMPLATE, true);
-    this.solverView.setRibbonPanels([
-      [this.openIcon, this.saveIcon],
-      [this.exportButton, this.sensAnIcon, this.fittingIcon],
-      [this.runIcon, this.helpIcon],
-    ]);
+    this.createEditorView(DEMO_TEMPLATE);
+    closeWindows();
+    this.solverView.setRibbonPanels(this.getRibbonPanels());
+    this.updateRibbonWgts();
+
     this.toChangePath = false;
     const helpMD = ui.markdown(demoInfo);
     helpMD.classList.add('diff-studio-demo-app-div-md');
@@ -298,18 +326,27 @@ export class DiffStudio {
     grok.shell.windows.showContextPanel = false;
     grok.shell.windows.showProperties = false;
     grok.shell.windows.help.visible = true;
-    await this.runSolving(true);
+    await this.runSolving();
   } // runSolverDemoApp
 
   /** Return file preview view */
   public async getFilePreview(file: DG.FileInfo, path: string): Promise<DG.View> {
+    closeWindows();
     const equations = await file.readAsString();
-    await this.saveModelToRecent(file.fullPath, true);
-    this.createEditorView(equations, false);
-    this.toChangePath = true;
-    this.solverView.setRibbonPanels([]);
 
-    const saveBtn = ui.button(TITLE.SAVE, async () => {
+    if (file.fullPath.includes(PATH.SLASH)) // Check that current file is from platform files, not drag-n-dropped
+      await this.saveModelToRecent(file.fullPath, true);
+
+    this.createEditorView(equations);
+
+    // Set the "model from file" routing
+    this.mainPath = `${PATH.FILE}/${file.fullPath.replace(':', '.')}`;
+    this.entityPath = '';
+
+    this.toChangePath = true;
+
+    /** Save change button */
+    const saveBtn = ui.button(TITLE.UPDATE, async () => {
       const source = new DG.FileSource();
 
       try {
@@ -319,16 +356,18 @@ export class DiffStudio {
       }
 
       saveBtn.hidden = true;
-    }, HINT.SAVE);
+    }, HINT.UPDATE);
     this.solverView.append(saveBtn);
     saveBtn.hidden = true;
 
-    const ribbonPnls = this.browseView!.getRibbonPanels();
-    ribbonPnls.push([this.sensAnIcon, this.fittingIcon]);
-    ribbonPnls.push([this.runIcon, saveBtn, this.helpIcon]);
-    this.browseView!.setRibbonPanels(ribbonPnls);
+    const panels = this.getRibbonPanels();
+    panels[panels.length - 1].push(saveBtn);
 
-    // routing
+    this.solverView.setRibbonPanels(panels);
+
+    this.updateRibbonWgts();
+
+    // Process URL & extract input values
     const paramsIdx = path.indexOf(PATH.PARAM);
     if (paramsIdx > -1) {
       try {
@@ -352,25 +391,60 @@ export class DiffStudio {
         DG.DOCK_TYPE.LEFT,
         null,
         undefined,
-        DOCK_RATIO,
+        this.uiOpts.inputsTabDockRatio,
       );
 
-      if (node.container.dart.elementTitle)
-        node.container.dart.elementTitle.hidden = true;
+      removeTitleBar(node);
 
-      this.runSolving(true);
+      this.runSolving();
     }, UI_TIME.PREVIEW_RUN_SOLVING);
 
     return this.solverView;
   } // getFilePreview
 
+  /** Run Diff Studio with the specified content */
+  public async handleContent(content: string): Promise<void> {
+    closeWindows();
+    this.createEditorView(content);
+    this.solverView.setRibbonPanels(this.getRibbonPanels());
+    this.updateRibbonWgts();
+    this.toChangePath = true;
+    this.solverView.basePath = PATH.APPS_DS;
+    this.entityPath = PATH.CUSTOM;
+
+    setTimeout(async () => {
+      await this.runSolving();
+    }, UI_TIME.APP_RUN_SOLVING);
+  } // handleContent
+
+  /** Run Diff Studio with the specified content */
+  public async runModel(content: string): Promise<void> {
+    closeWindows();
+    this.createEditorView(content);
+    this.solverView.setRibbonPanels([[this.fittingWgt, this.sensAnWgt]]);
+    this.updateRibbonWgts();
+    this.toChangePath = false;
+
+    setTimeout(async () => {
+      await this.runSolving();
+    }, UI_TIME.APP_RUN_SOLVING);
+  } // handleContent
+
+  /** Set starting pass */
+  public setStartingPath(path: string): void {
+    this.startingPath = path;
+  }
+
   static isStartingUriProcessed: boolean = false;
 
   private solutionTable = DG.DataFrame.create();
-  private startingPath = window.location.href;
+  private startingPath = '';
   private startingInputs: Map<string, number> | null = null;
   private solverView: DG.TableView;
-  private solverMainPath: string = PATH.CUSTOM;
+
+  private entityPath: string = PATH.CUSTOM;
+  private mainPath: string = PATH.APPS_DS;
+
   private solutionViewer: DG.Viewer | null = null;
   private viewerDockNode: DG.DockNode | null = null;
   private toChangeSolutionViewerProps = false;
@@ -389,24 +463,15 @@ export class DiffStudio {
   private toShowPerformanceDlg = true;
   private isStartingRun = true;
   private secondsLimit = UI_TIME.SOLV_DEFAULT_TIME_SEC;
-  private modelPane: DG.TabPane;
-  private runPane: DG.TabPane;
+  private editPane: DG.TabPane;
+  private solvePane: DG.TabPane;
   private editorView: EditorView | undefined;
-  private openMenu: DG.Menu;
-  private saveMenu: DG.Menu;
-  private openIcon: HTMLElement;
-  private saveIcon: HTMLElement;
-  private helpIcon: HTMLElement;
-  private runIcon: HTMLElement;
-  private exportButton: HTMLButtonElement;
-  private sensAnIcon: HTMLElement;
-  private fittingIcon: HTMLElement;
   private performanceDlg: DG.Dialog | null = null;
   private inBrowseRun = false;
   private fromFileHandler = false;
   private appTree: DG.TreeViewGroup | null = null;
   private recentFolder: DG.TreeViewGroup | null = null;
-  private browseView: DG.BrowseView | null = null;
+  private browsePanel: DG.BrowsePanel | null = null;
   private isRecentRun = false;
 
   private inputsByCategories = new Map<string, DG.InputBase[]>();
@@ -414,15 +479,45 @@ export class DiffStudio {
   private inputByName: Map<string, DG.InputBase> | null = null;
   private topCategory: string | null = null;
 
+  private toSwitchToModelTab: boolean = true;
+
+  private isEditState = false;
+
+  private openComboMenu = this.getOpenComboMenu();
+  private addNewWgt = this.getAddNewWgt();
+  private appStateInputWgt = this.getEditToggle();
+  private saveBtn = this.getSaveBtn();
+  private downLoadIcon = this.getDownLoadIcon();
+  private helpIcon = this.getHelpIcon();
+  private openHelpInNewTabIcon = this.getHelpInNewTabIcon();
+  private exportToJsWgt = this.getExportToJsWgt();
+  private refreshWgt = this.getRefreshWgt();
+  private sensAnWgt = this.getSensAnWgt();
+  private fittingWgt = this.getFitWgt();
+
+  private addToModelCatalogWgt = this.getAddToModelHubWgt();
+
+  private facetGridDiv: HTMLDivElement | null = null;
+  private facetGridNode: DG.DockNode | null = null;
+  private facetPlots: DG.Viewer[] = [];
+
+  private uiOpts: UiOptions;
+
   constructor(toAddTableView: boolean = true, toDockTabCtrl: boolean = true, isFilePreview: boolean = false,
-    browsing?: Browsing) {
-    this.solverView = toAddTableView ?
-      grok.shell.addTableView(this.solutionTable) :
-      DG.TableView.create(this.solutionTable, false);
+    browsing?: Browsing, dockOptions?: UiOptions) {
+    this.solverView = DG.TableView.create(this.solutionTable, false);
+    if (toAddTableView)
+      grok.shell.addView(this.solverView);
+
+    this.uiOpts = dockOptions ?? {
+      inputsTabDockRatio: DOCK_RATIO.INPUTS_TAB,
+      graphsDockRatio: DOCK_RATIO.GRAPHS,
+    };
 
     this.solverView.helpUrl = LINK.DIF_STUDIO_REL;
     this.solverView.name = MISC.VIEW_DEFAULT_NAME;
-    this.modelPane = this.tabControl.addPane(TITLE.MODEL, () => {
+    this.solvePane = this.tabControl.addPane(TITLE.SOLVE, () => this.inputsPanel);
+    this.editPane = this.tabControl.addPane(TITLE.EDIT, () => {
       setTimeout(() => {
         this.modelDiv.style.height = '100%';
         if (this.editorView)
@@ -430,11 +525,11 @@ export class DiffStudio {
       }, 10);
       return this.modelDiv;
     });
-    this.runPane = this.tabControl.addPane(TITLE.IPUTS, () => this.inputsPanel);
+    this.tabControl.header.hidden = true;
 
     this.tabControl.onTabChanged.subscribe(async (_) => {
-      if ((this.tabControl.currentPane === this.runPane) && this.toChangeInputs)
-        await this.runSolving(true);
+      if ((this.tabControl.currentPane === this.solvePane) && this.toChangeInputs)
+        await this.runSolving();
     });
 
     const dockTabCtrl = () => {
@@ -442,12 +537,11 @@ export class DiffStudio {
         this.tabControl.root,
         DG.DOCK_TYPE.LEFT,
         null,
-        undefined,
-        DOCK_RATIO,
+        TITLE.CONTROLS,
+        this.uiOpts.inputsTabDockRatio,
       );
 
-      if (node.container.dart.elementTitle)
-        node.container.dart.elementTitle.hidden = true;
+      removeTitleBar(node);
     };
 
     if (toDockTabCtrl && !isFilePreview) {
@@ -457,23 +551,210 @@ export class DiffStudio {
         dockTabCtrl();
     }
 
-    this.openMenu = this.getOpenMenu();
-    this.saveMenu = this.getSaveMenu();
-    this.openIcon = ui.iconFA('folder-open', () => this.openMenu.show(), HINT.OPEN);
-    this.saveIcon = ui.iconFA('save', async () => this.saveMenu.show(), HINT.SAVE_MODEL);
-    this.helpIcon = ui.iconFA('question', () => {window.open(LINK.DIF_STUDIO, '_blank');}, HINT.HELP);
-    this.exportButton = ui.bigButton(TITLE.TO_JS, async () => {await this.exportToJS();}, HINT.TO_JS);
-    this.sensAnIcon = ui.iconFA('analytics', async () => {await this.runSensitivityAnalysis();}, HINT.SENS_AN);
-    this.fittingIcon = ui.iconFA('chart-line', async () => {await this.runFitting();}, HINT.FITTING);
-    this.runIcon = ui.iconFA('play', async () => {await this.runSolving(true);}, HINT.SOLVE);
-    this.runIcon.classList.add('fas', 'diff-studio-app-run-icon');
-    this.runIcon.hidden = true;
-
     this.createTree(browsing);
+
+    this.solverView.ribbonMenu = DG.Menu.create();
   }; // constructor
 
+  /** Return ribbon panels */
+  private getRibbonPanels(): HTMLElement[][] {
+    return [
+      [this.openComboMenu, this.addNewWgt],
+      [this.refreshWgt, this.exportToJsWgt, this.helpIcon, this.fittingWgt, this.sensAnWgt],
+      [this.addToModelCatalogWgt, this.saveBtn, this.downLoadIcon, this.appStateInputWgt],
+    ];
+  } // getRibbonPanels
+
+  /** Update ribbon panel widgets */
+  private updateRibbonWgts() {
+    this.sensAnWgt.hidden = this.isEditState;
+    this.fittingWgt.hidden = this.isEditState;
+    this.refreshWgt.hidden = !this.isEditState;
+    this.exportToJsWgt.hidden = !this.isEditState;
+    this.helpIcon.hidden = !this.isEditState;
+    this.openHelpInNewTabIcon.hidden = !this.isEditState;
+  }
+
+  /** Return the save model button */
+  private getSaveBtn(): HTMLButtonElement {
+    const btn = ui.bigButton(TITLE.SAVE, async () => await this.saveToMyFiles(), HINT.SAVE_MY);
+    btn.disabled = true;
+    return btn;
+  }
+
+  /** Return the download model widget */
+  private getDownLoadIcon(): HTMLElement {
+    const icon = ui.iconFA('arrow-to-bottom', async () => await this.saveToLocalFile(), HINT.SAVE_LOC);
+    icon.classList.add('diff-studio-ribbon-download');
+
+    return icon;
+  }
+
+  /** Return the run fitting widget */
+  private getFitWgt(): HTMLElement {
+    const span = ui.span(['Fit']);
+    span.classList.add('diff-studio-ribbon-text');
+    const icn = ui.iconImage('Fit', `${_package.webRoot}files/icons/diff-studio-icon-chart-dots.svg`);
+    icn.classList.add('diff-studio-svg-icon');
+
+    const wgt = ui.divH([icn, span]);
+    wgt.onclick = async () => await this.runFitting();
+    ui.tooltip.bind(wgt, 'Fit parameters. Opens a separate view');
+
+    return wgt;
+  }
+
+  /** Return the run sensitivity analysis widget */
+  private getSensAnWgt(): HTMLElement {
+    const span = ui.span(['Sensitivity']);
+    span.classList.add('diff-studio-ribbon-text');
+
+    const icn = ui.iconImage('Fit', `${_package.webRoot}files/icons/diff-studio-icon-chart-sensitivity.svg`);
+    icn.classList.add('diff-studio-svg-icon');
+
+    icn.classList.add('diff-studio-ribbon-sa-icon');
+    const wgt = ui.divH([icn, span]);
+    wgt.onclick = async () => await this.runSensitivityAnalysis();
+    ui.tooltip.bind(wgt, 'Run sensitivity analysis. Opens a separate view');
+
+    return wgt;
+  }
+
+  /** Return the edit toggle widget */
+  private getEditToggle(): HTMLElement {
+    const input = ui.input.toggle('', {value: this.isEditState});
+
+    const span = ui.span([TITLE.EDIT]);
+    span.classList.add('diff-studio-ribbon-text');
+
+    const wgt = ui.divH([input.root, span]);
+
+    ui.tooltip.bind(wgt, this.isEditState ? 'Finish editing' : 'Edit equations');
+
+    wgt.onclick = (e) => {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+
+      this.isEditState = !this.isEditState;
+      input.value = this.isEditState;
+      ui.tooltip.bind(wgt, this.isEditState ? 'Finish editing' : 'Edit equations');
+      this.tabControl.currentPane = this.isEditState ? this.editPane : this.solvePane;
+      this.updateRibbonWgts();
+      this.updateRefreshWidget(this.isModelChanged);
+    };
+
+    return wgt;
+  }
+
+  /** Return the open model in a new view widget */
+  private getAddNewWgt(): HTMLElement {
+    const span = ui.span(['New']);
+    span.classList.add('diff-studio-ribbon-text');
+    const wgt = ui.divH([ui.iconFA('plus'), span]);
+    wgt.onclick = async () => {
+      const solver = new DiffStudio();
+      await solver.handleContent(this.editorView!.state.doc.toString());
+    };
+    ui.tooltip.bind(wgt, 'Open a copy of the current model in a new view');
+
+    return wgt;
+  }
+
+  /** Return the open help widget */
+  private getHelpIcon(): HTMLElement {
+    const icon = ui.icons.help(() => {
+      grok.shell.windows.showHelp = true;
+      this.tabControl.currentPane.content.click();
+    });
+    icon.classList.add('diff-studio-help-icon');
+
+    return icon;
+  }
+
+  /** Return a widget for opening help in a new window */
+  private getHelpInNewTabIcon(): HTMLElement {
+    const icon = ui.icons.help(() => window.open(LINK.DIF_STUDIO, '_blank'), HINT.HELP);
+    icon.classList.add('diff-studio-help-icon');
+
+    return icon;
+  }
+
+  /** Return the export to JavaScript widget */
+  private getExportToJsWgt(): HTMLElement {
+    const wgt = ui.span(['</>']);
+    wgt.classList.add('d4-ribbon-name');
+    wgt.classList.add();
+    wgt.style.minWidth = '20px';
+    wgt.style.marginLeft = '7px';
+    wgt.style.marginRight = '14px';
+    wgt.onclick = async () => await this.exportToJS();
+    ui.tooltip.bind(wgt, HINT.TO_JS);
+
+    return wgt;
+  }
+
+  /** Return the export to JavaScript widget */
+  private getAddToModelHubWgt(): HTMLElement {
+    const icon = ui.iconFA(
+      'layer-plus',
+      async () => await this.saveToModelHub(),
+      'Save to Model Hub',
+    );
+
+    icon.classList.add('diff-studio-ribbon-save-to-model-catalog-icon');
+
+    return icon;
+  }
+
+  /** Return the refresh solution widget */
+  private getRefreshWgt(): HTMLElement {
+    const span = ui.span(['Refresh']);
+    span.classList.add('diff-studio-ribbon-text');
+    span.style.color = this.isModelChanged ? '#40607F' : 'var(--grey-3)';
+
+    const icn = ui.iconFA('sync');
+    icn.style.color = this.isModelChanged ? '#40607F' : 'var(--grey-3)';
+
+    const wgt = ui.divH([icn, span]);
+    wgt.onclick = async () => {
+      if (this.isModelChanged) {
+        await this.runSolving();
+        this.updateRefreshWidget(this.isModelChanged);
+      }
+    };
+
+    ui.tooltip.bind(wgt, 'Apply changes (F5)');
+
+    return wgt;
+  }
+
+  /** Return widget color */
+  private getColor(enabled: boolean) {
+    return enabled ? '#40607F' : 'var(--grey-3)';
+  }
+
+  /** Update state of the refresh solution widget */
+  private updateRefreshWidget(enabled: boolean) {
+    const ch = this.refreshWgt.children;
+    const color = this.getColor(enabled);
+    (ch.item(0) as HTMLElement).style.color = color;
+    (ch.item(1) as HTMLElement).style.color = color;
+  }
+
+  /** Update state of the export to JavaScript widget */
+  private updateExportToJsWidget(enabled: boolean) {
+    const color = this.getColor(enabled);
+    this.exportToJsWgt.style.color = color;
+  }
+
+  /** Update state of the save to Model Hub widget */
+  private updateSaveToModelCatalogWidget(enabled: boolean) {
+    const color = this.getColor(enabled);
+    this.addToModelCatalogWgt.style.color = color;
+  }
+
   /** Create model editor */
-  private createEditorView(content?: string, toAddContextMenu?: boolean): void {
+  private createEditorView(content?: string): void {
     this.editorView = new EditorView({
       doc: content ?? TEMPLATES.BASIC,
       extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
@@ -484,115 +765,30 @@ export class DiffStudio {
       if (e.key !== HOT_KEY.RUN) {
         this.isModelChanged = true;
         this.toChangeInputs = true;
-        this.solverView.path = PATH.CUSTOM;
-        this.solverMainPath = PATH.CUSTOM;
+
+        if (!this.mainPath.includes(PATH.FILE))
+          this.entityPath = PATH.CUSTOM;
+
         this.startingInputs = null;
         this.solverView.helpUrl = LINK.DIF_STUDIO_REL;
         this.isSolvingSuccess = false;
         this.toRunWhenFormCreated = true;
         this.toChangeSolutionViewerProps = true;
-        this.setCallWidgetsVisibility(true);
-        this.runIcon.hidden = false;
+        this.toSwitchToModelTab = true;
+        this.saveBtn.disabled = false;
+        this.updateRefreshWidget(true);
+        this.updateExportToJsWidget(true);
+        this.updateSaveToModelCatalogWidget(true);
       } else {
         e.stopImmediatePropagation();
         e.preventDefault();
 
-        if ( this.toChangeInputs )
-          await this.runSolving(true);
-        else
-          this.tabControl.currentPane = this.runPane;
+        await this.runSolving();
       }
     });
 
     this.editorView.dom.classList.add('diff-studio-eqs-editor');
-
-    if (toAddContextMenu) {
-      this.editorView.dom.addEventListener<'contextmenu'>('contextmenu', (event) => {
-        event.preventDefault();
-        this.showContextMenu();
-      });
-    }
   } // createEditorView
-
-  /** Return the open model menu */
-  private getOpenMenu(): DG.Menu {
-    return DG.Menu.popup()
-      .item(TITLE.FROM_FILE, async () => await this.overwrite(), undefined, {description: HINT.LOAD})
-      .group(TITLE.TEMPL)
-      .item(TITLE.BASIC, async () =>
-        await this.overwrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: HINT.BASIC},
-      )
-      .item(TITLE.ADV, async () =>
-        await this.overwrite(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: HINT.ADV},
-      )
-      .item(TITLE.EXT, async () =>
-        await this.overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT})
-      .endGroup()
-      .group(TITLE.EXAMP)
-      .item(TITLE.CHEM, async () => await this.overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM})
-      .item(TITLE.ROB, async () => await this.overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
-      .item(TITLE.FERM, async () => await this.overwrite(EDITOR_STATE.FERM), undefined, {description: HINT.FERM})
-      .item(TITLE.PK, async () => await this.overwrite(EDITOR_STATE.PK), undefined, {description: HINT.PK})
-      .item(TITLE.PKPD, async () => await this.overwrite(EDITOR_STATE.PKPD), undefined, {description: HINT.PKPD})
-      .item(TITLE.ACID, async () => await this.overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: HINT.ACID})
-      .item(TITLE.NIM, async () => await this.overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM})
-      .item(TITLE.BIO, async () => await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO})
-      .item(TITLE.POLL, async () => await this.overwrite(EDITOR_STATE.POLLUTION), undefined, {description: HINT.POLL})
-      .endGroup();
-  } // getOpenMenu
-
-  /** Return the save model menu */
-  private getSaveMenu(): DG.Menu {
-    return DG.Menu.popup()
-      .item(TITLE.TO_MY_FILES, async () => await this.saveToMyFiles(), undefined, {description: HINT.SAVE_MY})
-      .item(TITLE.AS_LOCAL, async () => await this.saveToLocalFile(), undefined, {description: HINT.SAVE_LOC});
-  } // getOpenMenu
-
-  /** Show context menu */
-  private showContextMenu(): void {
-    DG.Menu.popup()
-      .item(TITLE.LOAD, async () => await this.overwrite(), undefined, {description: HINT.LOAD})
-      .group(TITLE.SAVE_TO)
-      .item(TITLE.MY_FILES, async () => await this.saveToMyFiles(), undefined, {description: HINT.SAVE_MY})
-      .item(TITLE.LOCAL_FILE, async () => await this.saveToLocalFile(), undefined, {description: HINT.SAVE_LOC})
-      .endGroup()
-      .separator()
-      .group(TITLE.TEMPL)
-      .item(TITLE.BASIC, async () =>
-        await this.overwrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: HINT.BASIC},
-      )
-      .item(TITLE.ADV, async () =>
-        await this.overwrite(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: HINT.ADV},
-      )
-      .item(TITLE.EXT, async () =>
-        await this.overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT},
-      )
-      .endGroup()
-      .group(TITLE.EXAMP)
-      .item(TITLE.CHEM, async () =>
-        await this.overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM},
-      )
-      .item(TITLE.ROB, async () => await this.overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
-      .item(TITLE.FERM, async () => await this.overwrite(EDITOR_STATE.FERM), undefined, {description: HINT.FERM})
-      .item(TITLE.PK, async () => await this.overwrite(EDITOR_STATE.PK), undefined, {description: HINT.PK})
-      .item(TITLE.PKPD, async () => await this.overwrite(EDITOR_STATE.PKPD), undefined, {description: HINT.PKPD})
-      .item(TITLE.ACID, async () =>
-        await this.overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: HINT.ACID},
-      )
-      .item(TITLE.NIM, async () =>
-        await this.overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM},
-      )
-      .item(TITLE.BIO, async () =>
-        await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO},
-      )
-      .item(TITLE.POLL, async () =>
-        await this.overwrite(EDITOR_STATE.POLLUTION), undefined, {description: HINT.POLL},
-      )
-      .endGroup()
-      .separator()
-      .item(TITLE.CLEAR, async () => await this.overwrite(EDITOR_STATE.EMPTY), undefined, {description: HINT.CLEAR})
-      .show();
-  } // showContextMenu
 
   /** Load IVP from file */
   private async loadFn(): Promise<void> {
@@ -606,6 +802,8 @@ export class DiffStudio {
       const reader = new FileReader();
       reader.addEventListener('load', () => {
         text = reader.result as string;
+        this.mainPath = PATH.APPS_DS;
+        this.entityPath = PATH.CUSTOM;
         this.setState(EDITOR_STATE.FROM_FILE, true, text);
         dlg.close();
       }, false);
@@ -633,11 +831,11 @@ export class DiffStudio {
     const modelCode = this.editorView!.state.doc.toString();
     const modelName = getIVP(modelCode).name.replaceAll(' ', '-');
     const login = grok.shell.user.project.name;
-    const folder = login.charAt(0).toUpperCase() + login.slice(1) + ':Home/';
+    const folder = login.charAt(0).toUpperCase() + login.slice(1) + `:${PATH.HOME}/`;
     const files = await grok.dapi.files.list(folder);
 
     // get model file names in from the user's folder
-    const existingNames = files.filter((file) => file.extension === MISC.IVP_EXT).map((file) => file.name);
+    const existingNames = files.filter((file) => file.extension === MISC.MODEL_FILE_EXT).map((file) => file.name);
 
     let fileName = unusedFileName(modelName, existingNames);
     const nameInput = ui.input.string(TITLE.NAME, {
@@ -652,20 +850,8 @@ export class DiffStudio {
       },
     });
 
-    let extension = MISC.IVP_EXT;
-    const extInput = ui.input.choice<MISC>(TITLE.TYPE, {
-      value: extension,
-      items: [MISC.IVP_EXT, MISC.TXT_EXT],
-      nullable: false,
-      onValueChanged: () => {
-        extension = extInput.value;
-        if (extension !== MISC.IVP_EXT)
-          grok.shell.warning(WARNING.PREVIEW);
-      },
-    });
-
     const save = async () => {
-      const path = `${folder}${fileName}.${MISC.IVP_EXT}`;
+      const path = `${folder}${fileName}.${MISC.MODEL_FILE_EXT}`;
 
       try {
         await grok.dapi.files.writeAsText(path, modelCode);
@@ -678,11 +864,10 @@ export class DiffStudio {
       dlg.close();
     };
 
-    const dlg = ui.dialog({title: TITLE.SAVE_TO})
+    const dlg = ui.dialog({title: TITLE.SAVE_TO_MY_FILES, helpUrl: LINK.LOAD_SAVE})
       .add(nameInput)
-      .add(extInput)
       .addButton(TITLE.SAVE, async () => {
-        if (!existingNames.includes(`${fileName}.${extension}`))
+        if (!existingNames.includes(`${fileName}.${MISC.MODEL_FILE_EXT}`))
           await save();
         else {
           ui.dialog({title: WARNING.TITLE})
@@ -690,6 +875,8 @@ export class DiffStudio {
             .onOK(async () => await save())
             .show();
         }
+
+        this.saveBtn.disabled = true;
       }, undefined, HINT.SAVE_MY)
       .show();
   }; // saveToMyFiles
@@ -699,6 +886,7 @@ export class DiffStudio {
     toClearStartingInputs: boolean = true, text?: string | undefined): Promise<void> {
     this.toChangeSolutionViewerProps = true;
     this.isModelChanged = false;
+    this.saveBtn.disabled = true;
     this.editorState = state;
     this.solutionTable = DG.DataFrame.create();
     this.solverView.dataFrame = this.solutionTable;
@@ -715,32 +903,32 @@ export class DiffStudio {
     this.editorView!.setState(newState);
 
     // set path
-    this.solverMainPath = `${(this.fromFileHandler) ? PATH.APPS_DS : ''}${stateToPath(state)}`;
+    if (state !== EDITOR_STATE.FROM_FILE)
+      this.entityPath = `${stateToPath(state)}`;
 
     // save model to recent
-
     switch (state) {
     case EDITOR_STATE.EMPTY:
       this.clearSolution();
       break;
 
     case EDITOR_STATE.FROM_FILE:
-      await this.runSolving(true);
+      await this.runSolving();
       break;
 
     case EDITOR_STATE.BASIC_TEMPLATE:
-      await this.runSolving(this.isStartingRun);
+      await this.runSolving();
       break;
 
     case EDITOR_STATE.ADVANCED_TEMPLATE:
     case EDITOR_STATE.EXTENDED_TEMPLATE:
       await this.saveModelToRecent(state, false);
-      await this.runSolving(this.isStartingRun);
+      await this.runSolving();
       break;
 
     default:
       await this.saveModelToRecent(state, false);
-      await this.runSolving(true);
+      await this.runSolving();
       break;
     }
 
@@ -785,11 +973,71 @@ export class DiffStudio {
       const sView = DG.ScriptView.create(script);
       grok.shell.addView(sView);
     } catch (err) {
-      this.clearSolution();
-      grok.shell.error(`${ERROR_MSG.EXPORT_TO_SCRIPT_FAILS}:
-      ${err instanceof Error ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);
+      this.processError(err);
     }
   }; // exportToJS
+
+  /** Get JS-script for solving the current IVP */
+  private async saveToModelHub(): Promise<void> {
+    try {
+      const model = this.editorView!.state.doc.toString();
+      const ivp = getIVP(model);
+      await this.tryToSolve(ivp);
+
+      let lines = [
+        `//name: ${ivp.name}`,
+        '//language: javascript',
+      ];
+
+      if (ivp.descr)
+        lines.push(`//description: ${ivp.descr}`);
+
+      lines = lines.concat([
+        '//tags: model',
+        '',
+        `const model = \`${model}\`;`,
+        '',
+        `await grok.functions.call('DiffStudio:runModel', {`,
+        `  'model': model,`,
+        `  'inputsTabDockRatio': ${this.uiOpts.inputsTabDockRatio},`,
+        `  'graphsDockRatio': ${this.uiOpts.graphsDockRatio},`,
+        '});',
+      ]);
+
+      const script = DG.Script.create(lines.join('\n'));
+      grok.dapi.scripts.save(script);
+      grok.shell.info('Saved to Model Hub');
+    } catch (err) {
+      this.processError(err);
+    }
+  }; // saveToModelCatalog
+
+  /** Set multi-axis line chart with the solution */
+  private setSolutionViewer(): void {
+    this.solutionViewer = DG.Viewer.lineChart(this.solutionTable,
+      getLineChartOptions(this.solutionTable.columns.names()));
+
+    this.viewerDockNode = this.solverView.dockManager.dock(
+      this.solutionViewer,
+      DG.DOCK_TYPE.TOP,
+      this.solverView.dockManager.findNode(this.solverView.grid.root),
+      TITLE.MULTI_AXIS,
+      this.uiOpts.graphsDockRatio,
+    );
+
+    removeTitle(this.viewerDockNode);
+  } // setSolutionViewer
+
+  /** Check that the main line chart in the valid position */
+  private isSolutionViewerPositionValid(): boolean {
+    if (this.solutionViewer == null)
+      return false;
+
+    if (this.viewerDockNode == null)
+      return false;
+
+    return (this.viewerDockNode.parent != null);
+  }
 
   /** Solve IVP */
   private async solve(ivp: IVP, inputsPath: string): Promise<void> {
@@ -799,15 +1047,8 @@ export class DiffStudio {
     const customSettings = (ivp.solverSettings !== DEFAULT_SOLVER_SETTINGS);
 
     try {
-      if (this.toChangePath) {
-        this.solverView.path = `${this.solverMainPath}${PATH.PARAM}${inputsPath}`;
-
-        if (this.inBrowseRun)
-          this.browseView.path = `/${PATH.BROWSE}${PATH.APPS_DS}${this.solverView.path}`;
-
-        if (this.isRecentRun)
-          this.browseView.path = this.solverView.path;
-      }
+      if (this.toChangePath)
+        this.solverView.path = `${this.mainPath}${this.entityPath}${PATH.PARAM}${inputsPath}`;
 
       const start = ivp.arg.initial.value;
       const finish = ivp.arg.final.value;
@@ -843,7 +1084,13 @@ export class DiffStudio {
       }
 
       this.solutionTable = call.outputs[DF_NAME];
-      this.solverView.dataFrame = call.outputs[DF_NAME];
+
+      if (hasNaN(this.solutionTable)) {
+        grok.shell.warning(ERROR_MSG.NANS_OBTAINED);
+        this.solutionTable = getReducedTable(this.solutionTable);
+      }
+
+      this.solverView.dataFrame = this.solutionTable;
       this.solverView.name = this.solutionTable.name;
 
       if (ivp.updates) {
@@ -852,15 +1099,10 @@ export class DiffStudio {
           .filter((name) => name !== STAGE_COL_NAME));
       }
 
-      if (!this.solutionViewer) {
-        this.solutionViewer = DG.Viewer.lineChart(this.solutionTable,
-          getLineChartOptions(this.solutionTable.columns.names()));
-        this.viewerDockNode = grok.shell.dockManager.dock(
-          this.solutionViewer,
-          DG.DOCK_TYPE.TOP,
-          this.solverView.dockManager.findNode(this.solverView.grid.root),
-        );
-      } else {
+      // Update the main graph
+      if (!this.solutionViewer)
+        this.setSolutionViewer();
+      else {
         this.solutionViewer.dataFrame = this.solutionTable;
 
         if (ivp.updates) {
@@ -875,12 +1117,39 @@ export class DiffStudio {
         }
       }
 
+      // Update the facet grid plot
+      if (this.solutionTable.columns.length > MAX_LINE_CHART) {
+        if (!this.facetGridDiv && this.solutionViewer) {
+          this.facetGridDiv = this.getFacetPlot();
+
+          setTimeout( () => {
+            try {
+              if (!this.isSolutionViewerPositionValid()) {
+                this.solutionViewer.close();
+                this.viewerDockNode.container.destroy();
+                this.setSolutionViewer();
+              }
+
+              this.facetGridNode = this.solverView.dockManager.dock(
+                this.facetGridDiv,
+                DG.DOCK_TYPE.FILL,
+                this.viewerDockNode,
+                TITLE.FACET,
+              );
+            } catch (err) {}
+          }, UI_TIME.FACET_DOCKING);
+        } else
+          this.facetPlots.forEach((plot) => plot.dataFrame = this.solutionTable);
+      } else
+        this.removeFacetGrid();
+
       this.isSolvingSuccess = true;
-      this.runPane.header.hidden = false;
+      this.solvePane.header.hidden = false;
+      this.toSwitchToModelTab = false;
     } catch (error) {
       if (error instanceof CallbackAction) {
         this.isSolvingSuccess = true;
-        this.runPane.header.hidden = false;
+        this.solvePane.header.hidden = false;
 
         if (this.toShowPerformanceDlg && !customSettings) {
           ivp.solverSettings = DEFAULT_SOLVER_SETTINGS;
@@ -890,105 +1159,111 @@ export class DiffStudio {
       } else {
         this.clearSolution();
         this.isSolvingSuccess = false;
-        grok.shell.error(error instanceof Error ? error.message : ERROR_MSG.SCRIPTING_ISSUE);
+
+        if (error instanceof Error) {
+          if (error.message.includes(MISC.IS_NOT_DEF))
+            throw getIsNotDefined(error.message);
+          else if (error.message.includes(MISC.UNEXPECTED))
+            throw getUnexpected(error.message);
+          else if (error.message.includes(MISC.PROP_OF_NULL))
+            throw getNullOutput();
+          else
+            grok.shell.error(error.message);
+        } else
+          grok.shell.error(ERROR_MSG.SCRIPTING_ISSUE);
       }
     }
   }; // solve
 
+  /** Return inputs form */
+  private getInputsForm() {
+    const form = ui.form([]);
+    const miscInputs = this.inputsByCategories.get(TITLE.MISC);
+
+    if (this.inputsByCategories.size === 1)
+      miscInputs.forEach((input) => form.append(input.root));
+    else {
+      if (this.topCategory !== null) {
+        form.append(ui.h2(this.topCategory));
+
+        this.inputsByCategories.get(this.topCategory).forEach((inp) => {form.append(inp.root);});
+      }
+
+      this.inputsByCategories.forEach((inputs, category) => {
+        if ((category !== TITLE.MISC) && (category !== this.topCategory)) {
+          form.append(getCategoryWidget(category, inputs));
+          inputs.forEach((inp) => {form.append(inp.root);});
+        }
+      });
+
+      if ((miscInputs.length > 0) && (this.topCategory !== TITLE.MISC)) {
+        form.append(getCategoryWidget(TITLE.MISC, miscInputs));
+        miscInputs.forEach((inp) => {form.append(inp.root);});
+      }
+    }
+
+    form.style.height = '100%';
+
+    return form;
+  } // getInputsForm
+
   /** Run solving the current IVP */
-  private async runSolving(toShowInputsForm: boolean): Promise<void> {
-    this.runIcon.hidden = true;
+  private async runSolving(): Promise<void> {
+    this.isModelChanged = false;
 
     try {
       const ivp = getIVP(this.editorView!.state.doc.toString());
-      await this.getInputsForm(ivp);
-      this.setCallWidgetsVisibility(this.isSolvingSuccess);
+      this.removeFacetGrid();
+      await this.generateInputs(ivp);
 
       if (this.isSolvingSuccess) {
         this.toChangeInputs = false;
-        this.tabControl.currentPane = this.runPane;
+        this.tabControl.currentPane = this.solvePane;
 
         if (this.prevInputsNode !== null)
           this.inputsPanel.removeChild(this.prevInputsNode);
 
-        const form = ui.form([]);
-        const miscInputs = this.inputsByCategories.get(TITLE.MISC);
-
-        if (this.inputsByCategories.size === 1)
-          miscInputs.forEach((input) => form.append(input.root));
-        else {
-          if (this.topCategory !== null) {
-            form.append(ui.h2(this.topCategory));
-            this.inputsByCategories.get(this.topCategory).forEach((inp) => {
-              form.append(inp.root);
-            });
-          }
-
-          this.inputsByCategories.forEach((inputs, category) => {
-            if ((category !== TITLE.MISC) && (category !== this.topCategory)) {
-              form.append(ui.h2(category));
-              inputs.forEach((inp) => {
-                form.append(inp.root);
-              });
-            }
-          });
-
-          if ((miscInputs.length > 0) && (this.topCategory !== TITLE.MISC)) {
-            form.append(ui.h2(TITLE.MISC));
-            miscInputs.forEach((inp) => {
-              form.append(inp.root);
-            });
-          }
-        }
-
-        form.style.overflowY = 'hidden';
+        const form = this.getInputsForm();
         this.prevInputsNode = this.inputsPanel.appendChild(form);
 
-        if (!toShowInputsForm)
-          setTimeout(() => this.tabControl.currentPane = this.modelPane, 5);
-      } else
-        this.tabControl.currentPane = this.modelPane;
+        if (this.isEditState)
+          setTimeout(() => this.tabControl.currentPane = this.editPane, 5);
+      }
     } catch (error) {
       if (error instanceof CallbackAction)
         grok.shell.warning(error.message);
-      else {
-        this.clearSolution();
-        grok.shell.error(error instanceof Error ? error.message : ERROR_MSG.SCRIPTING_ISSUE);
-      }
+      else
+        this.processError(error);
     }
   }; // runSolving
-
-  /** Show/hide model call widgets */
-  private setCallWidgetsVisibility(toShow: boolean): void {
-    this.runPane.header.hidden = !toShow;
-    this.exportButton.disabled = !toShow;
-    this.sensAnIcon.hidden = !toShow;
-    this.fittingIcon.hidden = !toShow;
-  }
 
   /** Clear solution table & viewer */
   private clearSolution() {
     this.solutionTable = DG.DataFrame.create();
     this.solverView.dataFrame = this.solutionTable;
-    this.setCallWidgetsVisibility(false);
+    //this.setCallWidgetsVisibility(false);
 
-    if (this.prevInputsNode !== null)
-      this.inputsPanel.removeChild(this.prevInputsNode);
-    this.prevInputsNode = null;
-    this.tabControl.currentPane = this.modelPane;
+    if (this.toSwitchToModelTab) {
+      //this.tabControl.currentPane = this.editPane;
+
+      if (this.prevInputsNode !== null)
+        this.inputsPanel.removeChild(this.prevInputsNode);
+      this.prevInputsNode = null;
+    }
 
     if (this.solutionViewer && this.viewerDockNode) {
-      grok.shell.dockManager.close(this.viewerDockNode);
+      this.removeFacetGrid();
+      this.solverView.dockManager.close(this.viewerDockNode);
       this.solutionViewer = null;
       this.solverView.path = PATH.EMPTY;
     }
   } // clearSolution
 
-  /** Return form with model inputs */
-  private async getInputsForm(ivp: IVP): Promise<void> {
+  /** Generate model inputs */
+  private async generateInputs(ivp: IVP): Promise<void> {
     /** Return options with respect to the model input specification */
     const getOptions = (name: string, modelInput: Input, modelBlock: string) => {
-      const options: DG.PropertyOptions = {
+      const options: DG.IProperty = {
         name: name,
         defaultValue: modelInput.value,
         type: DG.TYPE.FLOAT,
@@ -1003,8 +1278,13 @@ export class DiffStudio {
         let posClose = annot.indexOf(BRACKET_CLOSE);
 
         if (posOpen !== -1) {
-          if (posClose === -1)
-            throw new Error(`${ERROR_MSG.MISSING_CLOSING_BRACKET}, see '${name}' in ${modelBlock}-block`);
+          if (posClose === -1) {
+            throw new ModelError(
+              `${ERROR_MSG.MISSING_CLOSING_BRACKET}. Correct annotation in the **${modelBlock}** block.`,
+              LINK.INTERFACE,
+              annot,
+            );
+          }
 
           descr = annot.slice(posOpen + 1, posClose);
 
@@ -1014,8 +1294,13 @@ export class DiffStudio {
         posOpen = annot.indexOf(BRACE_OPEN);
         posClose = annot.indexOf(BRACE_CLOSE);
 
-        if (posOpen >= posClose)
-          throw new Error(`${ERROR_MSG.INCORRECT_BRACES_USE}, see '${name}' in ${modelBlock}-block`);
+        if (posOpen >= posClose) {
+          throw new ModelError(
+            `${ERROR_MSG.INCORRECT_BRACES_USE}. Correct annotation in the ***${modelBlock}** block.`,
+            LINK.INTERFACE,
+            annot,
+          );
+        }
 
         let pos: number;
         let key: string;
@@ -1024,19 +1309,24 @@ export class DiffStudio {
         annot.slice(posOpen + 1, posClose).split(ANNOT_SEPAR).forEach((str) => {
           pos = str.indexOf(CONTROL_SEP);
 
-          if (pos === -1)
-            throw new Error(`${ERROR_MSG.MISSING_COLON}, see '${name}' in ${modelBlock}-block`);
+          if (pos === -1) {
+            throw new ModelError(
+              `${ERROR_MSG.MISSING_COLON}. Correct annotation in the **${modelBlock}** block.`,
+              LINK.INTERFACE,
+              annot,
+            );
+          }
 
           key = str.slice(0, pos).trim();
           val = str.slice(pos + 1).trim();
 
           // @ts-ignore
-          options[key] = strToVal(val);
+          options[key !== 'caption' ? key : 'friendlyName'] = strToVal(val);
         });
 
         options.description = descr ?? '';
-        options.name = options.caption ?? options.name;
-        options.caption = options.name;
+        options.name = options.friendlyName ?? options.name;
+        options.friendlyName = options.name;
       }
 
       if (this.startingInputs) {
@@ -1053,10 +1343,10 @@ export class DiffStudio {
     this.topCategory = null;
     this.inputByName = toSaveInputs ? new Map<string, DG.InputBase>() : null;
     inputsByCategories.set(TITLE.MISC, []);
-    let options: DG.PropertyOptions;
+    let options: DG.IProperty;
 
     /** Pull input to appropriate category & add tooltip */
-    const categorizeInput = (options: DG.PropertyOptions, input: DG.InputBase) => {
+    const categorizeInput = (options: DG.IProperty, input: DG.InputBase) => {
       const category = options.category;
 
       if (category === undefined)
@@ -1096,6 +1386,7 @@ export class DiffStudio {
       //@ts-ignore
       options = getOptions(key, ivp.arg[key], CONTROL_EXPR.ARG);
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
+      input.caption = options.friendlyName ?? options.name;
 
       //@ts-ignore
       input.onChanged.subscribe(async (value) => {
@@ -1114,6 +1405,7 @@ export class DiffStudio {
     ivp.inits.forEach((val, key) => {
       options = getOptions(key, val, CONTROL_EXPR.INITS);
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
+      input.caption = options.friendlyName ?? options.name;
 
       //@ts-ignore
       input.onChanged.subscribe(async (value) => {
@@ -1132,6 +1424,7 @@ export class DiffStudio {
       ivp.params.forEach((val, key) => {
         options = getOptions(key, val, CONTROL_EXPR.PARAMS);
         const input = ui.input.forProperty(DG.Property.fromOptions(options));
+        input.caption = options.friendlyName ?? options.name;
 
         //@ts-ignore
         input.onChanged.subscribe(async (value) => {
@@ -1152,6 +1445,7 @@ export class DiffStudio {
       options.inputType = INPUT_TYPE.INT; // since it's an integer
       options.type = DG.TYPE.INT; // since it's an integer
       const input = ui.input.forProperty(DG.Property.fromOptions(options));
+      input.caption = options.friendlyName ?? options.name;
 
       //@ts-ignore
       input.onChanged.subscribe(async (value) => {
@@ -1182,7 +1476,6 @@ export class DiffStudio {
       return;
 
     const inputsDf = await getInputsTable(lookupInfo.choices);
-    //const inputsDf = await getInputsTable('OpenFile("System:AppData/DiffStudio/examples/bioreactor-inputs.csv")');
 
     if (inputsDf === null)
       return;
@@ -1204,16 +1497,20 @@ export class DiffStudio {
     });
 
     const tableInputs = new Map<string, Map<string, number>>(); // set <-> {(input <-> value)}
-    const colsRaw = new Map<string, Int32Array | Uint32Array | Float32Array | Float64Array>();
+    const colsRaw = new Map<string, LookupData>();
 
     for (const col of cols) {
-      if (col.isNumerical)
-        colsRaw.set(col.name, col.getRawData());
+      if (col.isNumerical) {
+        colsRaw.set(col.name, {
+          arr: col.getRawData(),
+          format: col.meta.format,
+        });
+      }
     }
 
     for (let row = 0; row < rowCount; ++row) {
       const inputs = new Map<string, number>();
-      colsRaw.forEach((arr, name) => inputs.set(name, arr[row]));
+      colsRaw.forEach((info, name) => inputs.set(name, getFormatted(info.arr[row], info.format)));
       tableInputs.set(inpSetsNames[row], inputs);
     }
 
@@ -1256,11 +1553,14 @@ export class DiffStudio {
       const script = DG.Script.create(scriptText);
       await SensitivityAnalysisView.fromEmpty(script, {
         inputsLookup: ivp.inputsLookup !== null ? ivp.inputsLookup : undefined,
+        diffGrok: {
+          ivp: ivp,
+          ivpWW: getIvp2WebWorker(ivp),
+          pipelineCreator: getPipelineCreator(ivp),
+        },
       });
     } catch (err) {
-      this.clearSolution();
-      grok.shell.error(`${ERROR_MSG.SENS_AN_FAILS}:
-      ${(err instanceof Error) ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);
+      this.processError(err);
     }
   }
 
@@ -1271,13 +1571,17 @@ export class DiffStudio {
       await this.tryToSolve(ivp);
       const scriptText = getScriptLines(ivp, true, true).join('\n');
       const script = DG.Script.create(scriptText);
+
       await FittingView.fromEmpty(script, {
         inputsLookup: ivp.inputsLookup !== null ? ivp.inputsLookup : undefined,
+        diffGrok: {
+          ivp: ivp,
+          ivpWW: getIvp2WebWorker(ivp),
+          pipelineCreator: getPipelineCreator(ivp),
+        },
       });
     } catch (err) {
-      this.clearSolution();
-      grok.shell.error(`${ERROR_MSG.SENS_AN_FAILS}:
-        ${(err instanceof Error) ? err.message : ERROR_MSG.SCRIPTING_ISSUE}`);
+      this.processError(err);
     }
   }
 
@@ -1295,13 +1599,25 @@ export class DiffStudio {
       const params = getScriptParams(ivp);
       const call = script.prepare(params);
       await call.call();
-    } catch (err) {
-      if (!(err instanceof CallbackAction))
-        throw new Error((err instanceof Error) ? err.message : ERROR_MSG.SCRIPTING_ISSUE);
+    } catch (error) {
+      if (!(error instanceof CallbackAction)) {
+        this.clearSolution();
+        this.isSolvingSuccess = false;
+
+        if (error instanceof Error) {
+          if (error.message.includes(MISC.IS_NOT_DEF))
+            throw getIsNotDefined(error.message);
+          else if (error.message.includes(MISC.UNEXPECTED))
+            throw getUnexpected(error.message);
+          else
+            grok.shell.error(error.message);
+        } else
+          grok.shell.error(ERROR_MSG.SCRIPTING_ISSUE);
+      }
     }
   }
 
-  /** Close previousely opened performance dialog */
+  /** Close previously opened performance dialog */
   private closePerformanceDlg(): void {
     this.performanceDlg?.close();
     this.performanceDlg = null;
@@ -1324,7 +1640,6 @@ export class DiffStudio {
     };
     const maxTimeInput = ui.input.forProperty(DG.Property.fromOptions(opts));
 
-    //@ts-ignore
     maxTimeInput.onInput.subscribe(() => {
       if (maxTimeInput.value >= UI_TIME.SOLV_TIME_MIN_SEC)
         this.secondsLimit = maxTimeInput.value;
@@ -1351,23 +1666,20 @@ export class DiffStudio {
   /** Browse tree */
   private async createTree(browsing?: Browsing) {
     if (browsing) {
-      this.browseView = browsing.browseView;
+      this.browsePanel = browsing.browsePanel;
       this.appTree = browsing.treeNode;
     } else {
-      if (grok.shell.view(TITLE.BROWSE) === undefined)
-        grok.shell.v = DG.View.createByType('browse');
-
-      this.browseView = grok.shell.view(TITLE.BROWSE) as DG.BrowseView;
-      const appsGroup = this.browseView.mainTree.getOrCreateGroup(TITLE.APPS, null, false);
-      this.appTree = appsGroup.getOrCreateGroup(TITLE.DIF_ST);
+      this.browsePanel = grok.shell.browsePanel;
+      const appsGroup = this.browsePanel.mainTree.getOrCreateGroup(TITLE.APPS, null, false);
+      const computeGroup = appsGroup.getOrCreateGroup(TITLE.COMP, null, false);
+      this.appTree = computeGroup.getOrCreateGroup(TITLE.DIF_ST);
     }
-
 
     if (this.appTree.items.length > 0)
       this.recentFolder = this.appTree.getOrCreateGroup(TITLE.RECENT, null, false);
     else {
       const templatesFolder = this.getFolderWithBultInModels(TEMPLATE_TITLES, TITLE.TEMPL);
-      const examplesFolder = this.getFolderWithBultInModels(EXAMPLE_TITLES, TITLE.EXAMP);
+      const examplesFolder = this.getFolderWithBultInModels(EXAMPLE_TITLES, TITLE.LIBRARY);
 
       const putModelsToFolder = (models: TITLE[], folder: DG.TreeViewGroup) => {
         models.forEach((name) => this.putBuiltInModelToFolder(name, folder));
@@ -1380,7 +1692,7 @@ export class DiffStudio {
 
       // Add recent models to the Recent folder
       try {
-        const folder = `${grok.shell.user.project.name}:Home/`;
+        const folder = `${grok.shell.user.project.name}:${PATH.HOME}/`;
         const files = await grok.dapi.files.list(folder);
         const names = files.map((file) => file.name);
 
@@ -1417,10 +1729,10 @@ export class DiffStudio {
       const treeNodeY = panelRoot.scrollTop!;
 
       const solver = new DiffStudio(false);
-      this.browseView.preview = await solver.runSolverApp(
+      grok.shell.addView( await solver.runSolverApp(
         undefined,
         STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
-      ) as DG.View;
+      ) as DG.View, undefined, null, null);
 
       setTimeout(() => {
         panelRoot.scrollTo(0, treeNodeY);
@@ -1451,14 +1763,9 @@ export class DiffStudio {
         const treeNodeY = panelRoot.scrollTop!;
 
         if (exist) {
-          const equations = await file.readAsString();
-
-          const solver = new DiffStudio(false);
-          this.browseView.preview = await solver.runSolverApp(
-            equations,
-            undefined,
-            `files/${file.fullPath.replace(':', '.').toLowerCase()}`,
-          ) as DG.View;
+          const solver = new DiffStudio(false, true, true);
+          grok.shell.addView(await solver.getFilePreview(file, path));
+          await this.saveModelToRecent(path, true);
         } else
           grok.shell.warning(`File not found: ${path}`);
 
@@ -1486,40 +1793,59 @@ export class DiffStudio {
 
   /** Save model to recent models file */
   private async saveModelToRecent(modelSpecification: string, isCustom: boolean) {
-    const folder = `${grok.shell.user.project.name}:Home/`;
+    const folder = `${grok.shell.user.project.name}:${PATH.HOME}/`;
     const files = await grok.dapi.files.list(folder);
     const names = files.map((file) => file.name);
     const info = isCustom ? modelSpecification : TITLE_BY_STATE.get(modelSpecification);
 
-    const dfToAdd = DG.DataFrame.fromColumns([
-      DG.Column.fromStrings(TITLE.INFO, [info]),
-      DG.Column.fromList(DG.COLUMN_TYPE.BOOL, TITLE.IS_CUST, [isCustom]),
-    ]);
-
     try {
-      if (names.includes(PATH.RECENT)) {
+      if (names.includes(PATH.RECENT)) { // a file with recent models exists
         const dfs = await grok.dapi.files.readBinaryDataFrames(`${folder}${PATH.RECENT}`);
         const recentDf = dfs[0];
 
-        if (!recentDf.col(TITLE.INFO).toList().includes(info)) {
-          recentDf.append(dfToAdd, true);
+        const recentInfo = recentDf.col(TITLE.INFO).toList() as string[];
+        const recentIsCust = recentDf.col(TITLE.IS_CUST).toList() as boolean[];
 
-          await grok.dapi.files.writeBinaryDataFrames(`${folder}${PATH.RECENT}`, [
-            getTableFromLastRows(recentDf, MAX_RECENT_COUNT),
-          ]);
+        const newIsCust: boolean[] = [];
+        const newInfo: string[] = [];
+        const items = this.recentFolder.items;
+        let removed = false;
 
-          const items = this.recentFolder.items;
+        recentInfo.forEach((val, idx) => {
+          if (val !== info) {
+            newIsCust.push(recentIsCust[idx]);
+            newInfo.push(val);
+          } else {
+            items[idx]?.remove();
+            removed = true;
+          }
+        });
 
-          if (items.length >= MAX_RECENT_COUNT)
-            items[0].remove();
+        if (!removed && items.length >= MAX_RECENT_COUNT)
+          items[0]?.remove();
 
-          if (isCustom)
-            this.putCustomModelToRecents(info);
-          else
-            this.putBuiltInModelToFolder(info, this.recentFolder);
-        }
-      } else
-        await grok.dapi.files.writeBinaryDataFrames(`${folder}${PATH.RECENT}`, [dfToAdd]);
+        newInfo.push(info);
+        newIsCust.push(isCustom);
+
+        await grok.dapi.files.writeBinaryDataFrames(`${folder}${PATH.RECENT}`, [
+          getTableFromLastRows(DG.DataFrame.fromColumns([
+            DG.Column.fromStrings(TITLE.INFO, newInfo),
+            DG.Column.fromList(DG.COLUMN_TYPE.BOOL, TITLE.IS_CUST, newIsCust),
+          ]), MAX_RECENT_COUNT),
+        ]);
+
+        if (isCustom)
+          this.putCustomModelToRecents(info);
+        else
+          this.putBuiltInModelToFolder(info, this.recentFolder);
+      } else { // a file with reccent models doesn't exist
+        await grok.dapi.files.writeBinaryDataFrames(`${folder}${PATH.RECENT}`, [
+          DG.DataFrame.fromColumns([
+            DG.Column.fromStrings(TITLE.INFO, [info]),
+            DG.Column.fromList(DG.COLUMN_TYPE.BOOL, TITLE.IS_CUST, [isCustom]),
+          ]),
+        ]);
+      }
     } catch (err) {
       grok.shell.warning(`Failed to save recent models: ${(err instanceof Error) ? err.message : 'platfrom issue'}`);
     }
@@ -1539,12 +1865,15 @@ export class DiffStudio {
     return view;
   } // getBuiltInModelsCardsView
 
-  /** Return foldwer with built-in models (examples/templates) */
+  /** Return folder with built-in models (examples/templates) */
   private getFolderWithBultInModels(models: TITLE[], title: string): DG.TreeViewGroup {
     const folder = this.appTree.getOrCreateGroup(title, null, false);
     folder.onSelected.subscribe(() => {
-      this.browseView.preview = this.getBuiltInModelsCardsView(models);
-      this.browseView.path = `browse/apps/DiffStudio/${title}`;
+      const view = this.getBuiltInModelsCardsView(models);
+      view.name = title;
+      grok.shell.addView(view, undefined, undefined, null);
+      view.basePath = 'apps/DiffStudio/';
+      view.path = `${title}`;
     });
 
     return folder;
@@ -1556,10 +1885,9 @@ export class DiffStudio {
 
     folder.onSelected.subscribe(async () => {
       const view = DG.View.create();
-      this.browseView.path = `browse/apps/DiffStudio/${TITLE.RECENT}`;
 
       try {
-        const folder = `${grok.shell.user.project.name}:Home/`;
+        const folder = `${grok.shell.user.project.name}:${PATH.HOME}/`;
         const files = await grok.dapi.files.list(folder);
         const names = files.map((file) => file.name);
 
@@ -1587,7 +1915,10 @@ export class DiffStudio {
         } else
           view.append(ui.h2('No recent models'));
 
-        this.browseView.preview = view;
+        view.name = TITLE.RECENT;
+        grok.shell.addView(view, undefined, undefined, null);
+        view.basePath = 'apps/DiffStudio/';
+        view.path = TITLE.RECENT;
       } catch (err) {
         grok.shell.warning(`Failed to open recents: ${(err instanceof Error) ? err.message : 'platfrom issue'}`);
       };
@@ -1630,11 +1961,14 @@ export class DiffStudio {
     const card = this.getCard(name, MODEL_HINT.get(name) ?? '', modelImageLink.get(name));
 
     card.onclick = async () => {
-      const solver = new DiffStudio(false);
-      this.browseView.preview = await solver.runSolverApp(
-        undefined,
-        STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
-      ) as DG.View;
+      setTimeout(async () => {
+        const solver = new DiffStudio();
+        const v = await solver.runSolverApp(
+          undefined,
+          STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
+        ) as DG.TableView;
+        grok.shell.v = v;
+      }, UI_TIME.BROWSING);
     };
 
     ui.tooltip.bind(card, HINT.CLICK_RUN);
@@ -1665,14 +1999,10 @@ export class DiffStudio {
 
       card.onclick = async () => {
         if (exist) {
-          const equations = await file.readAsString();
+          const solver = new DiffStudio(false, true, true);
+          grok.shell.addView(await solver.getFilePreview(file, path));
 
-          const solver = new DiffStudio(false);
-          this.browseView.preview = await solver.runSolverApp(
-            equations,
-            undefined,
-            `files/${file.fullPath.replace(':', '.').toLowerCase()}`,
-          ) as DG.View;
+          await this.saveModelToRecent(path, true);
         } else
           grok.shell.warning(`File not found: ${path}`);
       };
@@ -1682,4 +2012,292 @@ export class DiffStudio {
       grok.shell.warning(`Failed to add ivp-file to recents: ${(e instanceof Error) ? e.message : 'platfrom issue'}`);
     }
   } // getCardWithBuiltInModel
-};
+
+  /** Return last called model */
+  private async getLastCalledModel(): Promise<LastModel> {
+    const lastModel: LastModel = {info: TITLE.BASIC, isCustom: false};
+
+    try {
+      const folder = `${grok.shell.user.project.name}:${PATH.HOME}/`;
+      const files = await grok.dapi.files.list(folder);
+      const names = files.map((file) => file.name);
+
+      if (names.includes(PATH.RECENT)) {
+        const dfs = await grok.dapi.files.readBinaryDataFrames(`${folder}${PATH.RECENT}`);
+        const recentDf = dfs[0];
+        const size = recentDf.rowCount;
+        const infoCol = recentDf.col(TITLE.INFO);
+        const isCustomCol = recentDf.col(TITLE.IS_CUST);
+
+        if ((infoCol !== null) && (isCustomCol !== null)) {
+          lastModel.info = infoCol.get(size - 1);
+          lastModel.isCustom = isCustomCol.get(size - 1);
+        }
+      }
+    } catch (err) {};
+
+    return lastModel;
+  }
+
+  /** Return the Open model combo menu */
+  private getOpenComboMenu(): HTMLElement {
+    const menu = ui.div(ui.iconFA('folder-open', () => {}, HINT.OPEN));
+    menu.classList.add('d4-combo-popup');
+    menu.classList.add('diff-studio-ribbon-widget');
+    ui.tooltip.bind(menu, HINT.OPEN);
+    menu.onclick = async () => (await this.getOpenModelMenu()).show();
+
+    return menu;
+  }
+
+  /** Return open menu */
+  private async getOpenModelMenu(): Promise<DG.Menu> {
+    const menu = DG.Menu.popup();
+    menu.item(TITLE.IMPORT, async () => await this.overwrite(), undefined, {description: HINT.LOAD}).separator();
+
+    await this.appendMenuWithMyModels(menu);
+    await this.appendMenuWithRecentModels(menu);
+    menu.separator();
+
+    menu.group(TITLE.TEMPL)
+      .item(TITLE.BASIC, async () =>
+        await this.overwrite(EDITOR_STATE.BASIC_TEMPLATE), undefined, {description: HINT.BASIC},
+      )
+      .item(TITLE.ADV, async () =>
+        await this.overwrite(EDITOR_STATE.ADVANCED_TEMPLATE), undefined, {description: HINT.ADV},
+      )
+      .item(TITLE.EXT, async () =>
+        await this.overwrite(EDITOR_STATE.EXTENDED_TEMPLATE), undefined, {description: HINT.EXT})
+      .endGroup()
+      .group(TITLE.LIBRARY)
+      .item(TITLE.CHEM, async () => await this.overwrite(EDITOR_STATE.CHEM_REACT), undefined, {description: HINT.CHEM})
+      .item(TITLE.ROB, async () => await this.overwrite(EDITOR_STATE.ROBERT), undefined, {description: HINT.ROB})
+      .item(TITLE.FERM, async () => await this.overwrite(EDITOR_STATE.FERM), undefined, {description: HINT.FERM})
+      .item(TITLE.PK, async () => await this.overwrite(EDITOR_STATE.PK), undefined, {description: HINT.PK})
+      .item(TITLE.PKPD, async () => await this.overwrite(EDITOR_STATE.PKPD), undefined, {description: HINT.PKPD})
+      .item(TITLE.ACID, async () => await this.overwrite(EDITOR_STATE.ACID_PROD), undefined, {description: HINT.ACID})
+      .item(TITLE.NIM, async () => await this.overwrite(EDITOR_STATE.NIMOTUZUMAB), undefined, {description: HINT.NIM})
+      .item(TITLE.BIO, async () => await this.overwrite(EDITOR_STATE.BIOREACTOR), undefined, {description: HINT.BIO})
+      .item(TITLE.POLL, async () => await this.overwrite(EDITOR_STATE.POLLUTION), undefined, {description: HINT.POLL})
+      .endGroup();
+
+    return menu;
+  } // getOpenMenu
+
+  /** Append menu with my and recent models */
+  private async appendMenuWithRecentModels(menu: DG.Menu) {
+    try {
+      const recentDf = await getRecentModelsTable();
+      const size = recentDf.rowCount;
+      const infoCol = recentDf.col(TITLE.INFO);
+      const isCustomCol = recentDf.col(TITLE.IS_CUST);
+
+      if (size > 0) { // the list of recent models is not empty
+        if ((infoCol === null) || (isCustomCol === null)) { // incorrect dataframe with recent models
+          menu.item(TITLE.RECENT, () => {}, null, {isEnabled: () => HINT.CORRUPTED_DATA_FILE});
+          return;
+        }
+
+        const submenu = menu.group(TITLE.RECENT);
+
+        for (let i = 0; i < size; ++i) {
+          const name = infoCol.get(i);
+
+          if (isCustomCol.get(i))
+            await this.appendMenuWithCustomModel(submenu, name);
+          else
+            this.appendMenuWithBuiltInModel(submenu, name);
+        }
+
+        submenu.endGroup();
+      } else // empty list of recent models
+        menu.item(TITLE.RECENT, () => {}, null, {isEnabled: () => HINT.NO_RECENT_MODELS});
+    } catch (err) { // file system error
+      menu.item(TITLE.RECENT, () => {}, null, {isEnabled: () => HINT.FAILED_TO_LOAD_RECENT_MODELS});
+    };
+  } // appendMenuWithRecentModels
+
+  /** Append menu with built-in model model */
+  private appendMenuWithBuiltInModel(menu: DG.Menu, name: TITLE) {
+    menu.item(name, async () => {
+      const solver = new DiffStudio();
+      await solver.runSolverApp(
+        undefined,
+        STATE_BY_TITLE.get(name) ?? EDITOR_STATE.BASIC_TEMPLATE,
+      ) as DG.View;
+    }, null, {description: MODEL_HINT.get(name) ?? ''});
+  }
+
+  /** Append menu with custom model */
+  private async appendMenuWithCustomModel(menu: DG.Menu, path: TITLE) {
+    try {
+      if (await grok.dapi.files.exists(path)) {
+        const idx = path.lastIndexOf('/');
+        const name = path.slice(idx + 1, path.length);
+        const folderPath = path.slice(0, idx + 1);
+        const fileList = await grok.dapi.files.list(folderPath);
+        const file = fileList.find((file) => file.nqName === path);
+
+        menu.item(name, async () => {
+          try {
+            const equations = await file.readAsString();
+            this.mainPath = `${PATH.FILE}/${path}`;
+            this.entityPath = '';
+            await this.setState(EDITOR_STATE.FROM_FILE, true, equations);
+            await this.saveModelToRecent(path, true);
+          } catch (err) {
+            grok.shell.warning(`File not found: ${path}`);
+          }
+        }, null, {description: path});
+      }
+    } catch (e) {
+      grok.shell.warning(`Failed to add ivp-file to recents: ${(e instanceof Error) ? e.message : 'platfrom issue'}`);
+    }
+  } // appendMenuWithCustomModel
+
+  /** Append menu with models from user's files */
+  private async appendMenuWithMyModels(menu: DG.Menu) {
+    try {
+      const myModelFiles = await getMyModelFiles();
+      if (myModelFiles.length < 1)
+        menu.item(TITLE.MY_MODELS, noModels, null, {isEnabled: () => HINT.NO_MY_MODELS});
+      else {
+        const submenu = menu.group(TITLE.MY_MODELS);
+        myModelFiles.forEach(async (file) => await this.appendMenuWithCustomModel(submenu, file.fullPath as TITLE));
+        submenu.endGroup();
+      }
+    } catch (err) {
+      menu.item(TITLE.MY_MODELS, noModels, null, {isEnabled: () => HINT.FAILED_TO_LOAD_RECENT_MODELS});
+    };
+  }
+
+  /** Run last called model */
+  private async runLastCalledModel() {
+    const lastModel = await this.getLastCalledModel();
+
+    if (lastModel.isCustom) {
+      const equations = await getEquationsFromFile(lastModel.info);
+
+      if (equations !== null) {
+        const newState = EditorState.create({
+          doc: equations,
+          extensions: [basicSetup, python(), autocompletion({override: [contrCompletions]})],
+        });
+
+        this.editorView!.setState(newState);
+        this.entityPath = PATH.CUSTOM;
+        await this.runSolving();
+      } else
+        await this.setState(EDITOR_STATE.BASIC_TEMPLATE);
+    } else
+      await this.setState(STATE_BY_TITLE.get(lastModel.info as TITLE) ?? EDITOR_STATE.BASIC_TEMPLATE);
+  }
+
+  /** Show model error */
+  private showModelError(err: ModelError) {
+    if (!this.isEditState) {
+      setTimeout(() => {
+        this.appStateInputWgt.click();
+        showModelErrorHint(err, this.tabControl);
+      }, UI_TIME.WGT_CLICK);
+    } else
+      showModelErrorHint(err, this.tabControl);
+  }
+
+  /** Process error */
+  private processError(error: any) {
+    this.clearSolution();
+    if (error instanceof ModelError)
+      this.showModelError(error);
+    else
+      grok.shell.error(error instanceof Error ? error.message : ERROR_MSG.SCRIPTING_ISSUE);
+
+    this.isModelChanged = false;
+    this.updateRefreshWidget(false);
+    this.updateExportToJsWidget(false);
+    this.updateSaveToModelCatalogWidget(false);
+  }
+
+  /** Remove FacetGrid visualization */
+  private removeFacetGrid() {
+    if (this.facetGridNode && this.facetGridDiv) {
+      if (this.facetGridNode.parent)
+        this.solverView.dockManager.close(this.facetGridNode);
+      else {
+        this.facetGridNode.container.float();
+        this.facetGridDiv.remove();
+        this.facetGridNode.container.destroy();
+      }
+
+      this.facetGridDiv = null;
+    }
+  }
+
+  /** Return div with facet grid plot */
+  private getFacetPlot(): HTMLDivElement {
+    const cols = this.solutionTable.columns;
+    const colNames = cols.names();
+
+    const toShowSegments = colNames.includes(STAGE_COL_NAME);
+
+    const colsCount= cols.length - (toShowSegments ? 1 : 0);
+    const colsToShowCount = Math.min(MAX_FACET_GRAPHS_COUNT, colsCount - 1);
+    const maxInRow = getMaxGraphsInFacetGridRow(colsToShowCount);
+
+    const facetColumnPlots = new Array<DG.Viewer[]>(maxInRow);
+
+    this.facetPlots = [];
+
+    for (let i = 0; i < maxInRow; ++i)
+      facetColumnPlots[i] = [];
+
+    let idx = 0;
+    let color = 0;
+
+    for (let i = 1; i <= colsToShowCount; ++i) {
+      color = COLORS[(i - 1) % COLORS_COUNT];
+
+      const plot = DG.Viewer.lineChart(this.solutionTable, {
+        xColumnName: colNames[0],
+        yColumnNames: [colNames[i]],
+        autoLayout: true,
+        showXAxis: true,
+        showYAxis: true,
+        showXSelector: false,
+        showSplitSelector: false,
+        lineWidth: 2,
+        segmentColumnName: toShowSegments ? STAGE_COL_NAME : undefined,
+        lineColoringType: 'Custom',
+        lineColor: color,
+        markerColor: color,
+
+      });
+
+      this.facetPlots.push(plot);
+
+      facetColumnPlots[idx].push(plot);
+
+      ++idx;
+
+      if (idx === maxInRow)
+        idx = 0;
+    }
+
+    facetColumnPlots.forEach((col) => col[col.length - 1].setOptions({showXSelector: true}));
+
+    const rowsCount = facetColumnPlots[0].length;
+
+    const col2Roots = (col: DG.Viewer[]) => {
+      const roots = col.map((plot) => plot.root);
+      if (col.length < rowsCount)
+        roots.push(ui.div(''));
+
+      return roots;
+    };
+
+    const splitCols = facetColumnPlots.map((col) => ui.splitV(col2Roots(col)));
+    const facet = ui.splitH(splitCols);
+
+    return facet;
+  } // getFacetPlot
+}; // DiffStudio

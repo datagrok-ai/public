@@ -20,12 +20,17 @@
 * Switch to another layout and then reapply the saved layout.
 * **Expected Result**: The viewer title should be saved and persist in the layout, even if it was edited directly in the viewer's header. After switching and reapplying the layout, the title should remain consistent. Coloring settings are present.
 8. Open the **demog** dataset with **Pivot table** viewer on it. 
-* Apply colouring for some columns.
+* Apply coloring for some columns.
 * **Property Pane** change row source form 'Filtered' to 'Selected' and than change back to 'Filtered'.
 * **Expected Result**: Row source changes shouldn't reset coloring setting. 
 9. Editing the viewer properties (changes done in the viewer itself and in its properties panel):
 * Columns selected in viewer should be reflected in properties panel
 * Columns selected in the panel should be applied to the viewer
+10. Open Pivot Table data in new workspace
+- Open the **demog** dataset with **Pivot table** viewer on it. 
+- Locate and click the **ADD** (Open in Workspace) button in the top-right corner of the Pivot Table viewer.
+- A new workspace should open with the pivot table data as a new dataset.
+
 
 ---
 {
