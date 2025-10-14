@@ -2,13 +2,14 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {Plate} from '../../plate';
-import {PlateWidget} from '../../plate-widget';
+// import {PlateWidget} from '../../plate-widget';
 import {AnalysisBase, IAnalysisProperty} from '../base-analysis';
 import {AnalysisRequiredFields} from '../../../plates/views/components/analysis-mapping/analysis-mapping-panel';
 import {FIT_FUNCTION_4PL_REGRESSION, IFitSeries} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {DrcAnalysisCoordinator} from './drc-coordinator';
 import {Subscription} from 'rxjs';
 import './../plate-analyses.css';
+import {PlateWidget} from '../../plate-widget/plate-widget';
 
 export class DrcAnalysis extends AnalysisBase {
   readonly name: string = 'DRC';

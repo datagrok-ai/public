@@ -2,7 +2,6 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {PlateWidget} from '../../plate/plate-widget';
 import {Plate} from '../../plate/plate';
 import {plateTemplates, plateTypes, savePlate, savePlateAsTemplate, initPlates} from '../plates-crud';
 import {PlateStateManager} from './shared/plate-state-manager';
@@ -13,6 +12,10 @@ import './components/plate-grid-manager/plate-grid-manager.css';
 import {PlateGridManager} from './components/plate-grid-manager/plate-grid-manager';
 import {AnalysisManager} from '../../plate/analyses/analysis-manager';
 import './plates-create-view.css';
+import {PlateWidget} from '../../plate/plate-widget/plate-widget';
+import {PlateSelectionController} from '../../plate/plate-widget/plate-selection-controller';
+
+type InteractionMode = 'view' | 'outlier-marking';
 
 export function createPlatesView(): DG.View {
   const view = DG.View.create();
@@ -35,12 +38,90 @@ export function createPlatesView(): DG.View {
   plateWidget.editable = true;
   plateWidget.plate = new Plate(plateType.rows, plateType.cols);
 
+
+  let currentMode: InteractionMode = 'view';
+  let selectionController: PlateSelectionController | null = null;
+
+  const setInteractionMode = (mode: InteractionMode) => {
+    currentMode = mode;
+
+    selectionController?.enable();
+
+    if (mode === 'outlier-marking') {
+      selectionController?.setMode('passthrough');
+      plateWidget.grid.root.classList.add('outlier-mode');
+      plateWidget.plate.data.selection.setAll(false, true);
+    } else {
+      selectionController?.setMode('select');
+      plateWidget.grid.root.classList.remove('outlier-mode');
+    }
+
+    plateWidget.grid.invalidate();
+  };
+
+  ui.tools.waitForElementInDom(plateWidget.grid.root).then(() => {
+    selectionController = new PlateSelectionController(plateWidget, plateWidget.grid.overlay!);
+
+    const isOutlierTab = plateWidget.tabs.currentPane?.name.includes('Outliers');
+    setInteractionMode(isOutlierTab ? 'outlier-marking' : 'view');
+
+    const plateTabChangeSub = plateWidget.tabs.onTabChanged.subscribe(() => {
+      const tabName = plateWidget.tabs.currentPane?.name || '';
+      const isOutlierTab = tabName.includes('Outliers');
+      const isSummaryTab = tabName === 'Summary';
+      if (isOutlierTab)
+        setInteractionMode('outlier-marking');
+      else if (isSummaryTab)
+        setInteractionMode('view');
+      else
+        selectionController?.disable();
+    });
+    subscriptions.push(plateTabChangeSub);
+
+    const wellClickSub = plateWidget.onWellClick.subscribe((clickEvent) => {
+      if (!plateWidget.editable)
+        return;
+
+
+      if (currentMode === 'outlier-marking') {
+        const currentState = plateWidget.plate.isOutlier(clickEvent.row, clickEvent.col);
+        plateWidget.plate.markOutlier(clickEvent.row, clickEvent.col, !currentState);
+
+        plateWidget.plate.data.selection.setAll(false, true);
+      } else if (currentMode === 'view') {
+        const selection = plateWidget.plate.data.selection;
+        selection.set(clickEvent.dataIndex, !selection.get(clickEvent.dataIndex), true);
+      }
+    });
+
+    subscriptions.push(wellClickSub);
+
+    const selectionSub = selectionController.onSelectionComplete.subscribe((selectionEvent) => {
+      if (currentMode === 'outlier-marking') {
+        if (selectionEvent.isDrag) {
+          const allAreOutliers = selectionEvent.wells.every((well) =>
+            plateWidget.plate.isOutlier(well.row, well.col)
+          );
+          const shouldMark = !allAreOutliers;
+
+
+          selectionEvent.wells.forEach((well) => {
+            plateWidget.plate.markOutlier(well.row, well.col, shouldMark);
+          });
+        }
+    selectionController!.clearSelection();
+    plateWidget.grid.invalidate();
+      } else if (currentMode === 'view') {
+      }
+    });
+    subscriptions.push(selectionSub);
+  });
+
   const tabControl = ui.tabControl();
   tabControl.root.classList.remove('ui-box');
-  tabControl.root.classList.add('assay-plates--create-plate-view__tab-control'); // Added class
-
-
+  tabControl.root.classList.add('assay-plates--create-plate-view__tab-control');
   tabControl.addPane('Plate View', () => plateWidget.root);
+
   const analysisManager = AnalysisManager.instance;
   for (const analysis of analysisManager.analyses) {
     const createTabContent = () => {
@@ -53,7 +134,6 @@ export function createPlatesView(): DG.View {
 
         const currentMappings = stateManager.getMappings(activeIndex, analysis.name);
 
-
         const handleMap = (target: string, source: string) => {
           stateManager.setMapping(activeIndex, analysis.name, target, source);
         };
@@ -63,16 +143,12 @@ export function createPlatesView(): DG.View {
 
         return analysis.createView(activePlate.plate, plateWidget, currentMappings, handleMap, handleUndo);
       } catch (e: any) {
-        console.error(`Error creating ${analysis.friendlyName} view:`, e);
         return ui.divText(`Error displaying ${analysis.friendlyName} analysis: ${e.message}`, 'error-message');
       }
     };
 
     tabControl.addPane(analysis.friendlyName, createTabContent);
   }
-
-  // The logic to apply styles via waitForElementInDom has been removed and moved to plates-create-view.css
-  // The direct styling of tabContentHost has also been removed and moved to plates-create-view.css
 
   const plateGridManager = new PlateGridManager(stateManager);
 
@@ -93,7 +169,7 @@ export function createPlatesView(): DG.View {
     if (plateWidget.grid)
       plateWidget.grid.invalidate();
 
-    // This part handles refreshing the content of the currently active analysis tab
+    // Refresh analysis tabs when needed
     const eventsThatRequireRefresh = [
       'mapping-changed', 'plate-selected', 'analysis-mapping-changed',
       'plate-data-changed', 'plate-added'
@@ -114,9 +190,9 @@ export function createPlatesView(): DG.View {
           if (!plateToAnalyze || activeIndex < 0) {
             newContent = createAnalysisSkeleton(analysis.friendlyName, analysis.getRequiredFields().map((f) => f.name));
           } else {
-            const currentMappings = stateManager.getMappings(activeIndex, analysis.name); // Use getMappings
-            const handleMap = (target: string, source: string) => stateManager.setMapping(activeIndex, analysis.name, target, source); // Use setMapping
-            const handleUndo = (target: string) => stateManager.removeMapping(activeIndex, analysis.name, target); // Use removeMapping
+            const currentMappings = stateManager.getMappings(activeIndex, analysis.name);
+            const handleMap = (target: string, source: string) => stateManager.setMapping(activeIndex, analysis.name, target, source);
+            const handleUndo = (target: string) => stateManager.removeMapping(activeIndex, analysis.name, target);
 
             newContent = analysis.createView(plateToAnalyze.plate, plateWidget, currentMappings, handleMap, handleUndo, handleRerender);
           }
@@ -126,7 +202,7 @@ export function createPlatesView(): DG.View {
         }
       }
     }
-  }); ;
+  });
 
   const rightPanel = ui.divV([
     plateGridManager.root,
@@ -221,6 +297,7 @@ export function createPlatesView(): DG.View {
   const originalDetach = view.detach.bind(view);
   view.detach = () => {
     subscriptions.forEach((sub) => sub.unsubscribe());
+    selectionController?.destroy();
     stateManager.destroy();
     templatePanel.destroy();
     plateGridManager.destroy();

@@ -7,9 +7,10 @@ import * as grok from 'datagrok-api/grok';
 import {Plate} from '../../plate';
 import {AnalysisBase, IAnalysisProperty} from '../base-analysis';
 import {AnalysisRequiredFields} from '../../../plates/views/components/analysis-mapping/analysis-mapping-panel';
-import {PlateWidget} from '../../plate-widget';
+// import {PlateWidget} from '../../plate-widget';
 import {createAnalysisRun, saveAnalysisResult, saveAnalysisRunParameter} from '../../../plates/plates-crud';
 import './../plate-analyses.css';
+import { PlateWidget } from '../../plate-widget/plate-widget';
 
 const REQUIRED_ROLES = {
   TARGET: 'Target Gene',

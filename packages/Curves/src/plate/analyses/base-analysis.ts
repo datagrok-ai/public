@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {Plate} from '../plate';
-import {PlateWidget} from '../plate-widget';
+// import {PlateWidget} from '../plate-widget';
 import {BaseAnalysisView} from './base-analysis-view';
 import {
   AnalysisQuery,
@@ -13,6 +13,7 @@ import {
 } from '../../plates/plates-crud';
 import {AnalysisRequiredFields} from '../../plates/views/components/analysis-mapping/analysis-mapping-panel';
 import {_package} from '../../package';
+import { PlateWidget } from '../plate-widget/plate-widget';
 
 export interface IAnalysisProperty {
     name: string;

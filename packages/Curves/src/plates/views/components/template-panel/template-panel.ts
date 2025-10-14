@@ -5,10 +5,11 @@ import * as grok from 'datagrok-api/grok';
 import {PlateStateManager} from '../../shared/plate-state-manager';
 import {Subscription} from 'rxjs';
 import {PlateTemplate, plateTemplates, plateTypes} from '../../../plates-crud';
-import {PlateWidget} from '../../../../plate/plate-widget';
+// import {PlateWidget} from '../../../../plate/plate-widget';
 import {renderMappingEditor, TargetProperty} from '../mapping-editor/mapping-editor';
 import {MAPPING_SCOPES} from '../../shared/scopes';
 import './template-panel-and-mapping.css';
+import { PlateWidget } from '../../../../plate/plate-widget/plate-widget';
 
 function createFormRow(label: string, input: DG.InputBase<any>): HTMLElement {
   const labelEl = ui.divText(label, 'ui-label');

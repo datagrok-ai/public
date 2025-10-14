@@ -8,7 +8,8 @@ import {Plate} from '../plate/plate';
 // @ts-ignore
 import * as jStat from 'jstat';
 import {excelToNum, numToExcel} from '../plate/utils';
-import {PlateWidget} from '../plate/plate-widget';
+import { PlateWidget } from '../plate/plate-widget/plate-widget';
+// import {PlateWidget} from '../plate/plate-widget';
 
 
 function getPlate(): Plate {

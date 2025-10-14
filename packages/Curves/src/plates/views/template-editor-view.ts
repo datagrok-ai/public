@@ -3,8 +3,9 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {PlateTemplate} from '../plates-crud';
-import {PlateWidget} from '../../plate/plate-widget';
+// import {PlateWidget} from '../../plate/plate-widget';
 import {Plate} from '../../plate/plate';
+import { PlateWidget } from '../../plate/plate-widget/plate-widget';
 
 /**
  * Creates a view for editing a template's properties and

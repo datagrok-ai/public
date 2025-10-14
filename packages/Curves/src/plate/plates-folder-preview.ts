@@ -9,7 +9,8 @@ import {Plate} from './plate';
 import {_package} from '../package';
 import {DrcAnalysis} from './analyses/drc/drc-analysis';
 import {AnalysisManager} from './analyses/analysis-manager';
-import {PlateWidget} from './plate-widget';
+import { PlateWidget } from './plate-widget/plate-widget';
+// import {PlateWidget} from './plate-widget';
 
 
 export async function getPlatesFolderPreview(files: DG.FileInfo[]): Promise<DG.Widget | DG.ViewBase | undefined> {

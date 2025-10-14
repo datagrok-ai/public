@@ -1,13 +1,13 @@
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
-// ✅ FIX: Corrected 'import *grok' to 'import * as grok'
 import * as grok from 'datagrok-api/grok';
 import {Subscription} from 'rxjs';
 import {FitConstants} from '../../../fit/const';
 import {FitCellOutlierToggleArgs} from '../../../fit/fit-renderer';
 import {IFitPoint, FitMarkerType} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {Plate} from '../../plate';
-import {PlateWidget} from '../../plate-widget';
+import { PlateWidget } from '../../plate-widget/plate-widget';
+// import {PlateWidget} from '../../plate-widget';
 
 export class DrcAnalysisCoordinator {
   private subs: Subscription[] = [];
