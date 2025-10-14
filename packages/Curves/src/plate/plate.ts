@@ -73,7 +73,7 @@ export class Plate {
   private dataChangeSubject = new Subject<void>();
   public get onDataChanged() { return this.dataChangeSubject.asObservable(); }
 
-  public announceDataChange(): void {
+  public fireDataChange(): void {
     this.dataChangeSubject.next();
   }
 
