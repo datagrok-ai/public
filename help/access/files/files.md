@@ -259,6 +259,23 @@ displays the augmented file preview and the number of detected cell segments.
 
 :::
 
+# Creating dynamic dashboards from files
+
+Similarly to [database queries](../databases/databases.md#creating-dynamic-dashboards-for-query-results),
+you can create and publish dashboards with a file as a data source. This file
+is re-read each time a dashboard is open (see also [caching](#caching)), providing you
+up-to-data data.
+
+To create a dashboard with a file as a data source:
+
+1. From the [file manager](#file-manager), double-click a file to open it.
+2. Design your dashboard using the built-in [visualizations](../../visualize/viewers/viewers.md).
+3. Click **SAVE** on top to upload and share the project. The file loading script
+  will be under the  "Creation script" section. 
+  
+Sharing the dashboard with a file as a data source also grants the
+"read" privilege to the corresponding file connection.
+
 ## File sharing and access control
 
 Datagrok lets you control who can access file shares, and grant them read or write privileges.
