@@ -259,7 +259,7 @@ displays the augmented file preview and the number of detected cell segments.
 
 :::
 
-# Creating dynamic dashboards from files
+## Creating dynamic dashboards from files
 
 Similarly to [database queries](../databases/databases.md#creating-dynamic-dashboards-for-query-results),
 you can create and publish dashboards with a file as a data source. This file
