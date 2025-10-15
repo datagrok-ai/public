@@ -99,6 +99,7 @@ export class GroupAnalysisViewer extends DG.JsViewer {
   name = 'group';
   groupByColumnNames: string[];
   analyzedColumns: IAnalyzedColumn[];
+  analyzedColumnsEncoded: string;
   totalColumns: string[] | undefined = undefined;
   grouppedDf: DG.DataFrame | undefined = undefined;
   parentViewers: {[key: string]: DG.Viewer};
@@ -111,6 +112,7 @@ export class GroupAnalysisViewer extends DG.JsViewer {
   constructor() {
     super();
     this.groupByColumnNames = this.addProperty('groupByColumnNames', DG.TYPE.COLUMN_LIST);
+    this.analyzedColumnsEncoded = this.string('analyzedColumnsEncoded', '[]', {userEditable: false});
     this.analyzedColumns = [];
     this.parentViewers = {};
   }
@@ -147,6 +149,10 @@ export class GroupAnalysisViewer extends DG.JsViewer {
   onPropertyChanged(p: DG.Property) {
     if (p?.name === 'groupByColumnNames') {
       this.updateColumnChoices(this.groupByColumnNames, 'Group by', this.grouppingColsDiv);
+      this.updateGrid();
+    }
+    if (p?.name === 'analyzedColumnsEncoded') {
+      this.analyzedColumns = JSON.parse(this.analyzedColumnsEncoded);
       this.updateGrid();
     }
   }
@@ -216,6 +222,7 @@ export class GroupAnalysisViewer extends DG.JsViewer {
       if (col) {
         columnToAdd.gridColName = col.name;
         this.analyzedColumns.push(columnToAdd);
+        this.analyzedColumnsEncoded = JSON.stringify(this.analyzedColumns);
         this.addColumnAndSetWidth(col, type);
       }
     }
