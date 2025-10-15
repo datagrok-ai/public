@@ -11,7 +11,7 @@ import TabItem from '@theme/TabItem';
 Datagrok lets you work with files and directories right from the web browser. 
 It supports all [popular file systems](shares/shares.md), 
 including [S3](shares/s3.md),
-[Dropbox](shares/dropbox.md), [Google Cloud](shares/googlecloud.md), [Sharepoint](shares/sharepoint.md), 
+[Dropbox](shares/dropbox.md), [Google Cloud Storage](shares/googlecloud.md), [Sharepoint](shares/sharepoint.md), 
 [Azure](shares/azure.md), [CoreWeave](shares/coreweave.md), and
 [GitHub](shares/git.md), as well as [Windows and Linux network shares](shares/files.md).
 
