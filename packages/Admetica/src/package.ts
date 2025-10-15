@@ -92,7 +92,7 @@ export class PackageFunctions {
   })
   static async admeticaMenu(
     @grok.decorators.param({options: { description: 'Input data table' }}) table: DG.DataFrame,
-    @grok.decorators.param({options: { type: 'categorical', semType: 'Molecule' }}) molecules: DG.Column,
+    @grok.decorators.param({options: { semType: 'Molecule' }}) molecules: DG.Column,
       template: string,
       models: string[],
       addPiechart: boolean,
