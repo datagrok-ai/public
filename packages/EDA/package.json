@@ -1,12 +1,12 @@
 {
   "name": "@datagrok/eda",
   "friendlyName": "EDA",
-  "version": "1.4.7",
+  "version": "1.4.8",
   "description": "Exploratory Data Analysis Tools",
   "dependencies": {
     "@datagrok-libraries/math": "^1.2.6",
     "@datagrok-libraries/ml": "^6.10.6",
-    "@datagrok-libraries/tutorials": "^1.6.1",
+    "@datagrok-libraries/tutorials": "^1.7.4",
     "@datagrok-libraries/utils": "^4.6.5",
     "@keckelt/tsne": "^1.0.2",
     "@webgpu/types": "^0.1.40",
