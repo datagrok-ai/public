@@ -149,27 +149,28 @@ const isValidForFitting = (prop: DG.Property) => ((prop.propertyType === DG.TYPE
 
 export class FittingView {
   generateInputFields = (func: DG.Func) => {
-    const getInputValue = (input: DG.Property, key: keyof RangeDescription) => {
-      const range = this.options.ranges?.[input.name];
-      if (range?.[key] != undefined && typeof range?.[key] !== 'string')
+    const getInputValue = (inputProp: DG.Property, key: keyof RangeDescription) => {
+      const range = this.options.ranges?.[inputProp.name];
+      // treat strings as formulas for valid fitting target types, otherwise use string as a value
+      if (range?.[key] != undefined && (typeof range?.[key] !== 'string' || !isValidForFitting(inputProp)))
         return range[key];
-      return input.options[key] != null ? getDefaultValue(input) : Number(input.options[key]);
+      return getDefaultValue(inputProp);
     };
 
-    const getRangeFormula = (input: DG.Property, key: keyof RangeDescription) => {
-      const range = this.options.ranges?.[input.name];
+    const getRangeFormula = (inputProp: DG.Property, key: keyof RangeDescription) => {
+      const range = this.options.ranges?.[inputProp.name];
       if (range?.[key] != undefined && typeof range?.[key] === 'string')
         return range[key];
-    }
+    };
 
-    const getFormulaInput = (input: DG.Property, key: keyof RangeDescription) => {
-      const formula = getRangeFormula(input, key) ?? '';
-      const caption = `${input.caption ?? input.name} (${key})`;
+    const getFormulaInput = (inputProp: DG.Property, key: keyof RangeDescription) => {
+      const formula = getRangeFormula(inputProp, key) ?? '';
+      const caption = `${inputProp.caption ?? inputProp.name} (${key})`;
       return ui.input.string(caption, {value: formula});
     };
 
-    const getFormulaToggleInput = (input: DG.Property, key: keyof RangeDescription, inputNumber: DG.InputBase, inputFormula: DG.InputBase) => {
-      const formula = getRangeFormula(input, key);
+    const getFormulaToggleInput = (inputProp: DG.Property, key: keyof RangeDescription, inputNumber: DG.InputBase, inputFormula: DG.InputBase) => {
+      const formula = getRangeFormula(inputProp, key);
       const boolInput = ui.input.bool('Use initial point formula', {
         value: !!formula,
         onValueChanged(val) {
@@ -1224,6 +1225,10 @@ export class FittingView {
       this.runIcon.style.color = 'var(--grey-3)';
   } // updateRunIconStyle
 
+  private getInputValue(input: DG.InputBase) {
+    return input.inputType === "Choice" ? input.stringValue : input.value;
+  }
+
   // make inputs with formulas bounds last
   private splitInputs() {
     return Object.entries(this.store.inputs).reduce((acc, item) => {
@@ -1284,11 +1289,11 @@ export class FittingView {
         } else
           errors.push(`Incomplete "${caption}"`);
       } else {
-        const val = input.const.input.value ?? input.const.input.stringValue;
+        const val = this.getInputValue(input.const.input);
         minContext[name] = val;
         maxContext[name] = val;
 
-        if (val == null)
+        if (val == null && !JSON.parse(input.prop.options.optional ?? 'false'))
           errors.push(`Incomplete "${caption}"`);
       }
     }
@@ -1417,7 +1422,7 @@ export class FittingView {
           bottom,
         };
       } else {
-        const value = input.const.input.value ?? input.const.input.stringValue;
+        const value = this.getInputValue(input.const.input);
         inputsBounds[name] = {
           type: 'const',
           value,
