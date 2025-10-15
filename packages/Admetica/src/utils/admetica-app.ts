@@ -77,9 +77,9 @@ export class AdmeticaViewApp extends BaseViewApp {
     }
 
     const molIdx = this.tableView?.dataFrame.columns.names().indexOf('smiles');
-    await addSparklines(this.tableView!.dataFrame, models.split(','), molIdx! + 1);
+    await addSparklines(this.tableView!.dataFrame, models, molIdx! + 1);
 
-    const form = createDynamicForm(this.tableView!.dataFrame, models.split(','), 'smiles', true);
+    const form = createDynamicForm(this.tableView!.dataFrame, models, 'smiles', true);
     const ribbon = form.root.querySelector('.d4-ribbon');
     if (ribbon)
       ribbon.remove();

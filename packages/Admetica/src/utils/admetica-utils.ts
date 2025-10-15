@@ -18,29 +18,11 @@ import {FormStateGenerator} from './admetica-form';
 import {CellRenderViewer} from '../viewers/cell-render-viewer';
 
 import '../css/admetica.css';
+import { getAdmeProperties } from '../package';
 
 export let properties: any;
 export const tablePieChartIndexMap: Map<string, number> = new Map();
 const piechartIndex = 0;
-
-
-export async function runAdmeticaFunc(
-  csv: string, models: string, raiseException: boolean,
-): Promise<DG.DataFrame> {
-  const df = DG.DataFrame.fromCsv(csv);
-  const smilesCol = df.columns.bySemType(DG.SEMTYPE.MOLECULE);
-
-  let admeticaResults = await grok.functions.call('Admetica:run_admetica', {
-    csv: csv,
-    models: models,
-    raiseException: raiseException,
-  });
-
-  if (smilesCol !== null)
-    admeticaResults = await convertLD50(admeticaResults, smilesCol);
-
-  return admeticaResults;
-}
 
 export async function convertLD50(df: DG.DataFrame, smiles: DG.Column): Promise<DG.DataFrame> {
   if (!df.columns.contains('LD50'))
@@ -69,7 +51,7 @@ export async function setProperties() {
 }
 
 export async function performChemicalPropertyPredictions(
-  molColumn: DG.Column, viewTable: DG.DataFrame, models: string, template?: string,
+  molColumn: DG.Column, viewTable: DG.DataFrame, models: string[], template?: string,
   addPiechart: boolean = false, addForm: boolean = false, update: boolean = false, raiseException: boolean = false,
 ) {
   if (template) {
@@ -82,9 +64,8 @@ export async function performChemicalPropertyPredictions(
   }
   const progressIndicator = DG.TaskBarProgressIndicator.create('Running Admetica...');
   try {
-    const csvString = DG.DataFrame.fromColumns([molColumn]).toCsv();
     progressIndicator.update(10, 'Predicting...');
-    const table = await runAdmeticaFunc(csvString, models, raiseException);
+    const table = await getAdmeProperties(molColumn, models);
     progressIndicator.update(80, 'Results are ready');
     const molColIdx = viewTable.columns.names().findIndex((name) => name === molColumn.name);
     if (table)
@@ -138,10 +119,10 @@ function createConditionalColoringRules(coloring: ModelColoring): { [index: stri
   }, {} as { [index: string]: string | number });
 }
 
-export async function getQueryParams(): Promise<string> {
+export async function getQueryParams(): Promise<string[]> {
   await setProperties();
   return properties.subgroup.flatMap((subg: Subgroup) => subg.models)
-    .map((model: Model) => model.name).join(',');
+    .map((model: Model) => model.name);
 }
 
 function createPieSettings(table: DG.DataFrame, columnNames: string[], properties: any): any {
@@ -405,7 +386,7 @@ export async function getModelsSingle(smiles: string, semValue: DG.SemanticValue
 
     result.appendChild(ui.loader());
     try {
-      const table = await runAdmeticaFunc(`smiles\n${smiles}`, queryParams.join(','), false);
+      const table = await getAdmeProperties(DG.Column.fromStrings('smiles', [smiles]), queryParams);
       ui.empty(result);
       table.name = DEFAULT_TABLE_NAME;
       addColorCoding(table, queryParams, true, props);
@@ -480,9 +461,8 @@ async function createPieChartPane(semValue: DG.SemanticValue): Promise<HTMLEleme
 
   const parsedValue = units === DG.UNITS.Molecule.MOLBLOCK ? `"${value}"` : value;
   const params = await getQueryParams();
-  const query = `smiles\n${parsedValue}`;
-  const result: DG.DataFrame = await runAdmeticaFunc(query, params, false);
-  const pieSettings = createPieSettings(dataFrame, params.split(','), properties);
+  const result = await getAdmeProperties(DG.Column.fromStrings('molecules', [parsedValue]), params);
+  const pieSettings = createPieSettings(dataFrame, params, properties);
   pieSettings.sectors.values = result.toCsv()!;
   gridCol!.settings = pieSettings;
 
