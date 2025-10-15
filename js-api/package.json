@@ -1,6 +1,6 @@
 {
   "name": "datagrok-api",
-  "version": "1.26.3",
+  "version": "1.26.4",
   "description": "",
   "dependencies": {
     "@babel/core": "^7.27.1",
