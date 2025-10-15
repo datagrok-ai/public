@@ -164,6 +164,7 @@ export class AddNewColumnDialog {
   applyFormulaButton?: HTMLButtonElement;
   colNameWidget = '';
   colTypeWidget = '';
+  autocompleteOpened = false;
 
   constructor(call: DG.FuncCall, widget?: DG.Widget) {
     this.codeMirrorDiv.classList.add(this.widget ? 'add-new-column-widget-cm-div' : 'add-new-column-dialog-cm-div');
@@ -603,10 +604,12 @@ export class AddNewColumnDialog {
                 }, 100);
               } else if (fullFuncName?.includes(':')) {
                 const packAndFuncNames = fullFuncName.split(':');
-                if (!this.packageNames.some((it) => it.toLowerCase() === packAndFuncNames[0].toLowerCase()))
+                const packName: string | undefined =
+                  getKeyCaseInsensitive(this.packageFunctionsNames, packAndFuncNames[0]);
+                if (!packName || !this.packageNames.includes(packName))
                   this.error = `Package ${packAndFuncNames[0]} not found`;
-                else if (packAndFuncNames[1] &&
-                    !this.packageFunctionsNames[packAndFuncNames[0]]
+                else if (packAndFuncNames[1] && packName &&
+                    !this.packageFunctionsNames[packName]
                       .some((it) => it.toLowerCase() === packAndFuncNames[1].toLowerCase()))
                   this.error = `Function ${packAndFuncNames[1]} not found in ${packAndFuncNames[0]} package`;
                 else {
@@ -622,7 +625,8 @@ export class AddNewColumnDialog {
             }
             this.packageAutocomplete = false;
             this.functionAutocomplete = false;
-            this.updateError();
+            if (!this.autocompleteOpened)
+              this.updateError();
             //in case of syntax error we try to run expression to save string interpolation functionality
             this.updatePreviewEvent
               .next({expression: cmValue, changeName: false});
@@ -636,13 +640,16 @@ export class AddNewColumnDialog {
       mutationsList.forEach((m) => {
         if (Array.from(m.removedNodes)
           .filter((it) => (it as HTMLElement).classList.contains('cm-tooltip-autocomplete')).length) {
+          this.autocompleteOpened = false;
           ui.empty(this.errorDiv);
           this.errorDiv.append(ui.divText(this.error, 'cm-error-div'));
           return;
         }
         if (Array.from(m.addedNodes)
-          .filter((it) => (it as HTMLElement).classList.contains('cm-tooltip-autocomplete')).length)
+          .filter((it) => (it as HTMLElement).classList.contains('cm-tooltip-autocomplete')).length) {
+          this.autocompleteOpened = true;
           ui.empty(this.errorDiv);
+        }
       });
     });
     this.mutationObserver.observe(cm.dom, {attributes: true, childList: true});

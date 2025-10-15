@@ -1,5 +1,9 @@
 # Power Pack changelog
 
+## 1.7.12 (2025-10-15)
+
+* Add new column dialog: Some validation fixes
+
 ## 1.7.11 (2025-10-15)
 
 * Add new column dialog: Case insensitive packages search for hints
