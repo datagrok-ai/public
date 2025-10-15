@@ -64,7 +64,10 @@ export async function testAll(args: TestArgs): Promise<boolean> {
   utils.setHost(args.host, config);
   let packagesToRun = await testUtils.loadPackages(curDir, args.packages, args.host, args['skip-publish'], args['skip-build']);
 
-  let testsObj = await loadTestsList(packagesToRun, args.core);
+  console.log('Loading tests');
+  let start = Date.now();
+  let testsObj = await loadTestsList(packagesToRun, args.core ?? false, args.record ?? false);
+  console.log(`Loaded tests in ${Date.now() - start} ms`);
   let filteredTests: Test[] = await filterTests(testsObj, (args.tags ?? "").split(" "), args['stress-test'], args.benchmark);
   let browsersOrder = await setBrowsersOrder(filteredTests, getEnumOrder(args.order ?? ''), args['browsers-count'], args.testRepeat);
 

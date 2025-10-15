@@ -232,13 +232,33 @@ export async function loadPackages(
     .map(([key, _]) => key);
 }
 
-export async function loadTestsList(packages: string[], core: boolean = false): Promise<Test[]> {
+export async function loadTestsList(packages: string[], core: boolean = false, record: boolean = false): Promise<Test[]> {
   const packageTestsData = await timeout(async () => {
     const params = Object.assign({}, defaultLaunchParameters);
-    // params['headless'] = false;
     const out = await getBrowserPage(puppeteer, params);
     const browser: Browser = out.browser;
     const page: Page = out.page;
+
+    let recorder = null;
+    if (record) {
+      const suffix = process.env.BACKUP_SIZE && process.env.WORKER_ID && process.env.TOTAL_WORKERS
+          ? `_${process.env.BACKUP_SIZE}_${process.env.WORKER_ID}_${process.env.TOTAL_WORKERS}`
+          : '';
+      const logsDir = `./load-test-console-output${suffix}.log`;
+      const recordDir = `./load-test-record${suffix}.mp4`;
+
+      recorder = new PuppeteerScreenRecorder(page, recorderConfig);
+      await recorder.start(recordDir);
+      await page.exposeFunction('addLogsToFile', addLogsToFile);
+
+      fs.writeFileSync(logsDir, ``);
+      page.on('console', (msg) => {addLogsToFile(logsDir, `CONSOLE LOG ENTRY: ${msg.text()}\n`);});
+      page.on('pageerror', (error) => {addLogsToFile(logsDir, `CONSOLE LOG ERROR: ${error.message}\n`);});
+      page.on('response', (response) => {
+        addLogsToFile(logsDir, `CONSOLE LOG REQUEST: ${response.status()}, ${response.url()}\n`);
+      });
+    }
+
     const r = await page.evaluate((packages, coreTests): Promise<LoadedPackageData[] | { failReport: string }> => {
       return new Promise<LoadedPackageData[] | { failReport: string }>((resolve, reject) => {
         const promises: any[] = [];
@@ -276,9 +296,9 @@ export async function loadTestsList(packages: string[], core: boolean = false): 
           });
       });
     }, packages, core);
-    if (browser != null) 
-      await browser.close();
-    
+
+    await recorder?.stop();
+    await browser?.close();
 
     return r;
   }, testCollectionTimeout);
