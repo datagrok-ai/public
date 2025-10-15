@@ -266,9 +266,9 @@ The dialog has the following inputs:
 * **Table**: The table containing the column of sequences.
 * **Column**: The column containing the sequences.
 * **Encoding function**: The encoding function that will be used for pre-processing of molecules. Currently, only one encoding function is available, that will use [chemical fingerprint](https://www.rdkit.org/UGM/2012/Landrum_RDKit_UGM.Fingerprints.Final.pptx.pdf) distances between each molecule to calculate pairwise distances. The `Fingerprints` function has 1 parameter which you can adjust using the gear (⚙️) button next to the encoding function selection: 
-    * Fingerprint type: The type of molecular fingerprints that will be used to generate monomer substitution matrix. Options are `Morgan`, `Pattern` or `RDKit`.
+  * Fingerprint type: The type of molecular fingerprints that will be used to generate monomer substitution matrix. Options are `Morgan`, `Pattern` or `RDKit`.
 * **Method**: The dimensionality reduction method that will be used. The options are:
-    * UMAP: [UMAP](https://umap-learn.readthedocs.io/en/latest/) is a dimensionality reduction technique that can be used for visualization similarly to t-SNE, but also for general non-linear dimension reduction.
+  * UMAP: [UMAP](https://umap-learn.readthedocs.io/en/latest/) is a dimensionality reduction technique that can be used for visualization similarly to t-SNE, but also for general non-linear dimension reduction.
     * t-SNE: [t-SNE](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding) is a machine learning algorithm for dimensionality reduction developed by Geoffrey Hinton and Laurens van der Maaten. It is a nonlinear dimensionality reduction technique that is particularly well-suited for embedding high-dimensional data into a space of two or three dimensions, which can then be visualized in a scatterplot.
 
     Other parameters for dimensionality reduction method can be accessed through the gear (⚙️) button next to the method selection.
@@ -276,11 +276,11 @@ The dialog has the following inputs:
 
 * **Plot embeddings**: If checked, the plot of the embeddings will be shown after the calculation is finished.
 * **Postprocessing**: The postprocessing function that will be applied to the resulting embeddings. The options are:
-    * **None**: No postprocessing will be applied.
-    * **DBSCAN**: The DBSCAN algorithm groups together points that are closely packed together (points with many nearby neighbors), marking as outliers points that lie alone in low-density regions (whose nearest neighbors are too far away). The DBSCAN algorithm has two parameters that you can adjust through the gear (⚙️) button next to the postprocessing selection:
+  * **None**: No postprocessing will be applied.
+  * **DBSCAN**: The DBSCAN algorithm groups together points that are closely packed together (points with many nearby neighbors), marking as outliers points that lie alone in low-density regions (whose nearest neighbors are too far away). The DBSCAN algorithm has two parameters that you can adjust through the gear (⚙️) button next to the postprocessing selection:
         * **Epsilon**: The maximum distance between two points for them to be considered as in the same neighborhood.
         * **Minimum points**: The number of samples (or total weight) in a neighborhood for a point to be considered as a core point. This includes the point itself.
-    * **Radial Coloring**: The radial coloring function will color the points based on their distance from the center of the plot. The color will be calculated as a gradient from the center to the border of the plot.
+  * **Radial Coloring**: The radial coloring function will color the points based on their distance from the center of the plot. The color will be calculated as a gradient from the center to the border of the plot.
 
 **WebGPU (experimental)**
 
@@ -533,8 +533,8 @@ Each node represents a scaffold. Nodes form a hierarchy where:
  1. On the viewer, click **Generate** to build the tree. Generation may take several minutes for large datasets.
 
 **Load from your computer**:
-   * **To download**, click the **Download** icon at the top of the viewer.
-   * **To upload**, click the **Open** icon at the top of the viewer and select your file.
+* **To download**, click the **Download** icon at the top of the viewer.
+* **To upload**, click the **Open** icon at the top of the viewer and select your file.
 
 **Sketch manually**:
  1. Go to **Top Menu** > **Chem** > **Analyze** > **Scaffold Tree**. This adds the viewer to your dataset.
@@ -576,8 +576,8 @@ Each node represents a scaffold. Nodes form a hierarchy where:
 
 To select or filter by multiple scaffolds, select the checkbox to the left of each desired scaffold. 
 Use the **AND/OR** control at the top of the viewer to define the logic:
-  * **OR** (default): includes rows matching _any_ selected scaffold
-  * **AND**: includes only rows matching _all_ selected scaffolds
+* **OR** (default): includes rows matching _any_ selected scaffold
+* **AND**: includes only rows matching _all_ selected scaffolds
 
 Selections and filters sync across all viewers in your dataset. 
 You can use the scaffold tree in combination with other [filters](../../../../visualize/viewers/filters.md). 
@@ -930,7 +930,7 @@ Panel**, making it easy to assess compounds during screening and optimization.
 <summary>How to use</summary>
 
 **For a single molecule:** 
- * Click on a molecule in your dataset. The **Context
+* Click on a molecule in your dataset. The **Context
 Panel** automatically updates, showing ADMET predictions in the **Admetica** info
 pane.
 
