@@ -948,11 +948,9 @@ Use built-in tools to explore and analyze the prediction results.
 
 Medicinal chemistry is a balancing act: potency must rise while properties like solubility, permeability, clearance, safety, and selectivity stay in acceptable ranges. In practice, teams use a mix of complementary methods to optimize across many (often conflicting) endpoints:
 
-* **Property rules & gates.** Start with simple filters to eliminate obvious non-starters. These are fast guardrails but can be blunt and may miss promising trade-offs.
+* **Property rules & gates.** Start with simple [filters](../../../../visualize/viewers/filters.md) to eliminate obvious non-starters. These are fast guardrails but can be blunt and may miss promising trade-offs.
 
-  Calculate ADME/physchem properties across a column (Top menu: Chem → Admetica → Calculate...) with the Admetica
- plugin and built-in calculators. New numeric columns are added for immediate charting and filtering. Some of the viewers, like [parallel coordinates plot](../../../../visualize/viewers/pc-plot.md) or
- [radar](../../../../visualize/viewers/radar.md), are especially useful for that purpose.
+  New numeric columns can be added for immediate charting and filtering such as physical chemical properties (Top menu: Chem → Calculate → Chemical Properties...) or ADME properties with the Admetica plugin (Top menu: Chem → Admetica → Calculate...). Custom properties, like Ligand Efficiency (LE) or Lipophilic Ligand Efficiency (LLE), can be calculated using the [Add New Column](../../../../transform/add-new-column.md) feature.  Viewers, like [parallel coordinates plot](../../../../visualize/viewers/pc-plot.md), [radar](../../../../visualize/viewers/radar.md) or [row-level pie bar charts](../../../../visualize/viewers/grid.md#summary-columns), are especially useful for examining the profile of properties.  
 
 * **Desirability/utility functions & composite scores.** Map each property to a 0–1 “desirability” curve, then combine (sum/mean/weighted) into a single score that encodes the team’s preferences. A well-known example that is included by default is CNS MPO from Pfizer, which combines six physicochemical properties into a 0–6 score and correlates with clinical CNS success. 
 
