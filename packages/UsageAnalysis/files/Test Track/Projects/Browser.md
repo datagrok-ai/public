@@ -8,7 +8,7 @@
 6. Check for notifications both in email and on the platform
 7. Right-click the project and select **Details**
 8. On the **Context Panel**, review all tabs
-
+9. Run some old projects
 ---
 {
   "order": 2
