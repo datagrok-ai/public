@@ -1,5 +1,9 @@
 # Power Pack changelog
 
+## 1.7.11 (2025-10-15)
+
+* Add new column dialog: Case insensitive packages search for hints
+
 ## 1.7.10 (2025-10-09)
 
 * Add new column dialog: Fixed validation error when passing empty array to vector functions

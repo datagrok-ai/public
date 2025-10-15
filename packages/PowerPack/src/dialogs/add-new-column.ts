@@ -603,10 +603,11 @@ export class AddNewColumnDialog {
                 }, 100);
               } else if (fullFuncName?.includes(':')) {
                 const packAndFuncNames = fullFuncName.split(':');
-                if (!this.packageNames.includes(packAndFuncNames[0]))
+                if (!this.packageNames.some((it) => it.toLowerCase() === packAndFuncNames[0].toLowerCase()))
                   this.error = `Package ${packAndFuncNames[0]} not found`;
                 else if (packAndFuncNames[1] &&
-                  !this.packageFunctionsNames[packAndFuncNames[0]].includes(packAndFuncNames[1]))
+                    !this.packageFunctionsNames[packAndFuncNames[0]]
+                      .some((it) => it.toLowerCase() === packAndFuncNames[1].toLowerCase()))
                   this.error = `Function ${packAndFuncNames[1]} not found in ${packAndFuncNames[0]} package`;
                 else {
                   this.error = this.validateFormula(cmValue, columnsAndSelections.columnNames,
@@ -1453,8 +1454,9 @@ export class AddNewColumnDialog {
       };
       if (word.text.includes(':')) {
         const colonIdx = word.text.indexOf(':');
-        const packName = word.text.substring(0, word.text.indexOf(':'));
-        if (packageFunctionsNames[packName]) {
+        const packNameCaseIns = word.text.substring(0, word.text.indexOf(':'));
+        const packName = getKeyCaseInsensitive(packageFunctionsNames, packNameCaseIns);
+        if (packName) {
           packageFunctionsNames[packName].forEach((name: string, idx: number) => {
             options.push({
               label: name,
@@ -1583,4 +1585,13 @@ export function prepareAddNewColumnFuncCall(col: DG.Column): DG.FuncCall {
     'type': col.type,
   });
   return fc;
+}
+
+function getKeyCaseInsensitive(obj: Record<string, any>, keyCaseIns: string): string | undefined {
+  let key;
+  for (const objKey of Object.keys(obj)) {
+    if (objKey.toLowerCase() === keyCaseIns.toLowerCase())
+      key = objKey;
+  }
+  return key;
 }
