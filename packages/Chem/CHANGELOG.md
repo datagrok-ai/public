@@ -1,5 +1,9 @@
 # Chem changelog
 
+## 1.16.6 (2025-10-16)
+
+* GROK-19062 Similarity Search viewer: incorrect coloring after sorting a dataset
+
 ## 1.16.5 (2025-09-15)
 
 * Add layout persistant tag for scaffold alignment
