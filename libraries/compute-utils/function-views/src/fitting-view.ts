@@ -166,7 +166,9 @@ export class FittingView {
     const getFormulaInput = (inputProp: DG.Property, key: keyof RangeDescription) => {
       const formula = getRangeFormula(inputProp, key) ?? '';
       const caption = `${inputProp.caption ?? inputProp.name} (${key})`;
-      return ui.input.string(caption, {value: formula});
+      const inp = ui.input.textArea(caption, {value: formula})
+      inp.setTooltip(`Formula for '${caption}', variable: ${inputProp.name}`);
+      return inp;
     };
 
     const getFormulaToggleInput = (inputProp: DG.Property, key: keyof RangeDescription, inputNumber: DG.InputBase, inputFormula: DG.InputBase) => {
@@ -232,8 +234,7 @@ export class FittingView {
           });
           inp.root.insertBefore(isChangingInputConst.root, inp.captionLabel);
           inp.addPostfix(inputProp.options['units']);
-          inp.setTooltip(`Value of '${caption}'`);
-          ui.tooltip.bind(inp.captionLabel, 'Model input');
+          inp.setTooltip(`Value of '${caption}', variable: ${inputProp.name}`);
           inp.nullable = false;
           return inp;
         })();
@@ -247,7 +248,7 @@ export class FittingView {
           });
           inp.addValidator((s: string) => (Number(s) > ref.max.value) ? 'Greater than max' : null);
           inp.addPostfix(inputProp.options['units']);
-          inp.setTooltip(`Min value '${caption}'`);
+          inp.setTooltip(`Min value '${caption}', variable: ${inputProp.name}`);
           inp.nullable = false;
           return inp as DG.InputBase<number>;
         })();
@@ -264,7 +265,7 @@ export class FittingView {
           });
           inp.addValidator((s: string) => (Number(s) < ref.min.value) ? 'Smaller than min' : null);
           inp.addPostfix(inputProp.options['units']);
-          inp.setTooltip(`Max value of '${caption}'`);
+          inp.setTooltip(`Max value of '${caption}', variable: ${inputProp.name}`);
           inp.nullable = false;
           return inp as DG.InputBase<number>;
         })();
