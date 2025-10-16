@@ -1,5 +1,11 @@
 # Bio changelog
 
+## 2.23.1 (2025-10-16)
+
+* Monomer Cell: Support polymer type source
+* Support multy polymer type helm
+* Speedup Monomer lib loading
+
 ## 2.23.0 (2025-10-03)
 
 * Full BILN support: conversion to/from HELM/separator/fasta/molecular form, parsing, rendering, monomer library handling.

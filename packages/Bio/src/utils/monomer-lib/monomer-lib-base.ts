@@ -304,7 +304,7 @@ export class MonomerLibBase implements IMonomerLibBase {
       }
 
       const naSymbol: string | undefined = monomer[OPT.NATURAL_ANALOG];
-      if (!res && naSymbol)
+      if (!res && naSymbol && naSymbol !== monomer.symbol)
         return this.getMonomerColors(biotype, naSymbol);
     }
 
