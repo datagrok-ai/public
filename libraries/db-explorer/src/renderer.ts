@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {DBValueObject, EntryPointOptions, QueryJoinOptions, SchemaInfo} from './types';
+import {DBValueObject, EntryPointOptions, QueryJoinOptions, SchemaAndConnection} from './types';
 import {queryDB} from './query';
 
 export const MAX_MULTIROW_VALUES = 10;
@@ -143,8 +143,7 @@ export class DBExplorerRenderer {
   private customSelectedColumns: {[tableName: string]: Set<string>} = {};
   private defaultHeaderReplacerColumns: string[] = ['name'];
   constructor(
-    private schemaInfo: SchemaInfo,
-    private connection: DG.DataConnection,
+    private schemaInfoPromise: () => Promise<SchemaAndConnection | null>,
     private schemaName: string,
     private entryPointOptions: EntryPointOptions
   ) {}
@@ -202,7 +201,7 @@ export class DBExplorerRenderer {
           const replacer = this.valueReplacers.find((replacer) => replacer.check(tableName, colName, id));
           if (replacer) nameHost.textContent = replacer.replacer(clearedDF, id);
 
-          ui.tooltip.bind(nameHost, () => this.renderDataFrame(clearedDF, tableName));
+          ui.tooltip.bind(nameHost, () => ui.wait(async () => await this.renderDataFrame(clearedDF, tableName)));
           nameHost.addEventListener('click', (e) => {
             e.stopImmediatePropagation();
             grok.shell.o = new DBValueObject(tableName, colName, id);
@@ -221,7 +220,8 @@ export class DBExplorerRenderer {
   }
 
   async getTable(tableName: string, match: string, matchValue: string | number, joinOptions: QueryJoinOptions[] = []) {
-    const res = await queryDB(this.connection, tableName, match, matchValue, this.schemaName, joinOptions);
+    const schemaAndConnection = await this.schemaInfoPromise();
+    const res = await queryDB(schemaAndConnection?.connection ?? null, tableName, match, matchValue, this.schemaName, joinOptions);
     return res;
   }
 
@@ -251,7 +251,7 @@ export class DBExplorerRenderer {
         const rowBitset = DG.BitSet.create(df.rowCount);
         rowBitset.set(i, true);
         const rowDf = df.clone(rowBitset);
-        return this.renderDataFrame(rowDf, tableName);
+        return ui.wait(async () => await this.renderDataFrame(rowDf, tableName));
       });
     }
     return {root: acc.root, rowCount: df.rowCount};
@@ -268,30 +268,32 @@ export class DBExplorerRenderer {
     return this.renderDataFrame(df, tableName);
   }
 
-  renderDataFrame(df: DG.DataFrame, tableName: string) {
+  async renderDataFrame(df: DG.DataFrame, tableName: string) {
+    const schemaAndConnection = await this.schemaInfoPromise();
+    if (!schemaAndConnection)
+      return ui.divText('Schema information is not available');
     const clearedDF = removeEmptyCols(df);
     let entries = Object.entries(clearedDF.toJson()[0]) as [string, string | number][];
 
     if (this.customSelectedColumns[tableName]) {
       entries = entries.filter(([key]) => this.customSelectedColumns[tableName].has(key));
-    // reorder entries according to customSelectedColumns if present
+      // reorder entries according to customSelectedColumns if present
       const cols = Array.from(this.customSelectedColumns[tableName]);
-      entries.sort((a, b) => { 
+      entries.sort((a, b) => {
         return cols.indexOf(a[0]) - cols.indexOf(b[0]);
       });
     }
-
 
 
     const mainTable = ui.table(entries, (entry) => {
       const key = entry[0];
       const value = entry[1];
       const cutomRenderer = this.customRenderers.find((renderer) => renderer.check(tableName, key, value));
-      if (cutomRenderer) return [textRenderer(key), cutomRenderer.renderer(value, this.connection)];
+      if (cutomRenderer) return [textRenderer(key), cutomRenderer.renderer(value, schemaAndConnection.connection)];
 
-      const refInfo = this.schemaInfo.references?.[tableName]?.[key];
+      const refInfo = schemaAndConnection.schema.references?.[tableName]?.[key];
       if (refInfo)
-        return [textRenderer(key), this.refIdRenderer(this.connection, value, refInfo.refTable, refInfo.refColumn)];
+        return [textRenderer(key), this.refIdRenderer( schemaAndConnection.connection, value, refInfo.refTable, refInfo.refColumn)];
       const isUnqueCol = this.uniqueColNames[tableName] === key;
       if (isUnqueCol)
         return [textRenderer(key), ownIdRenderer(value, tableName, key)];
@@ -302,12 +304,13 @@ export class DBExplorerRenderer {
     return ui.divV([mainTable]);
   }
 
-  renderAssociations(acc: DG.Accordion, schema: SchemaInfo, curTable: string, curDf: DG.DataFrame) {
-
+  async renderAssociations(acc: DG.Accordion, schemaPromise: () => Promise<SchemaAndConnection | null>, curTable: string, curDf: DG.DataFrame) {
+    const schemaAndConnection = await schemaPromise();
+    if (!schemaAndConnection)
+      return;
     const addAllAssociated = async (tableName: string, colName: string, value: any) => {
       const pi = DG.TaskBarProgressIndicator.create('Opening all associated entries');
       try {
-
         const assocDf = await this.getTable(tableName, colName, value, this.entryPointOptions.joinOptions);
         if (assocDf) {
           if (assocDf.rowCount === 0) {
@@ -323,7 +326,7 @@ export class DBExplorerRenderer {
       } finally {
         pi.close();
       }
-    }
+    };
 
     const addIconToPane = (pane: DG.AccordionPane, tableName: string, colName: string, value: any) => {
       const icon = ui.icons.add(() => {}, `Add all associated ${tableName} entries to workspace`);
@@ -334,11 +337,11 @@ export class DBExplorerRenderer {
         addAllAssociated(tableName, colName, value);
       });
       pane.root.getElementsByClassName('d4-accordion-pane-header')?.[0]?.appendChild(icon);
-    }
+    };
 
     const attachOpenInWorkspaceMenu = (tableName: string, colName: string, value: any, pane: DG.AccordionPane) => {
       const menu = DG.Menu.popup();
-      
+
 
       menu.item(`Add all associated ${tableName} entries to workspace`, async () => {
         addAllAssociated(tableName, colName, value);
@@ -350,10 +353,12 @@ export class DBExplorerRenderer {
       addIconToPane(pane, tableName, colName, value);
     };
 
-    const refTable = schema.referencedBy[curTable];
+    const refTable = schemaAndConnection.schema.referencedBy[curTable];
     if (!refTable || Object.keys(refTable).length == 0) return;
     const _linksPane = acc.addPane('Links', () => {
       const linksAcc = ui.accordion(`Links to ${curTable}`);
+      if ((curDf?.rowCount ?? 0) === 0)
+        return ui.divText('No data');
       Object.entries(refTable).forEach(([refedColumn, refInfo]) => {
         const val = curDf.col(refedColumn)?.get(0);
         if (!val) return;

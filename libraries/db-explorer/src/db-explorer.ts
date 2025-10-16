@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {DBExplorerConfig, EntryPointOptions,
-  QueryJoinOptions, ReferencedByObject, ReferenceObject, SchemaInfo} from './types';
+  QueryJoinOptions, ReferencedByObject, ReferenceObject, SchemaAndConnection} from './types';
 import {DBExplorerObjectHandler, SemValueObjectHandler} from './object-handlers';
 
 export class DBExplorer {
@@ -11,73 +11,92 @@ export class DBExplorer {
   private connection: DG.DataConnection | null = null;
   private references: ReferenceObject = {};
   private referencedBy: ReferencedByObject = {};
-  private _dbLoadPromise: Promise<void>;
+  private _dbLoadPromise?: Promise<void>;
   private objHandlers: DBExplorerObjectHandler[] = [];
+  private loadingFailed: boolean = false;
   constructor(
     private connectionName: string,
     private schemaName: string,
     private nqName?: string,
     private dataSourceName?: string
   ) {
-    this._dbLoadPromise = this.loadDbSchema();
-  }
-
-  public get dbSchema(): Promise<SchemaInfo> {
-    return this._dbLoadPromise
-      .then(() => ({references: this.references, referencedBy: this.referencedBy}))
-      .catch((e) => {
-        console.error(e);
-        return {references: {}, referencedBy: {}};
-      });
-  }
-
-  private async loadDbSchema() {
-    const connections = await grok.dapi.connections.filter(`name="${this.connectionName}"`).list();
-
-    this.connection = connections.find((c) => (!this.nqName || c.nqName?.toLowerCase() === this.nqName.toLowerCase()) && (!this.dataSourceName || c.dataSource?.toLowerCase() === this.dataSourceName.toLowerCase())) ?? null;
-
-    if (this.connection == null)
-      throw new Error(`Connection ${this.connectionName} not found`);
-
-    const tables = await grok.dapi.connections.getSchema(this.connection, this.schemaName);
-    if (!tables)
-      throw new Error(`Schema ${this.schemaName} not found`);
-
-    tables.forEach((table) => {
-      const tableName = table.friendlyName ?? table.name;
-      this.references[tableName] = {};
-      const t = this.references[tableName];
-      table.columns.forEach((column) => {
-        const ref = column.referenceInfo;
-        if (ref && ref.table && ref.column) {
-          t[column.name] = {refTable: ref.table, refColumn: ref.column};
-          if (!this.referencedBy[ref.table])
-            this.referencedBy[ref.table] = {};
-
-          if (!this.referencedBy[ref.table][ref.column])
-            this.referencedBy[ref.table][ref.column] = [];
-
-          this.referencedBy[ref.table][ref.column].push({refTable: tableName, refColumn: column.name});
-        }
-      });
-    });
-
     const handler = new DBExplorerObjectHandler(
-      {valueConverter: (a) => a, joinOptions: []},
-      {references: this.references, referencedBy: this.referencedBy},
-      this.connection!,
+      {valueConverter: (a) => a,
+        joinOptions: []},
+      async () => {
+        return await this.dbSchema;
+      },
       this.schemaName
     );
     DG.ObjectHandler.register(handler);
     this.objHandlers.push(handler);
-    this.schemasLoaded = true;
+  }
+
+  public get dbSchema(): Promise<SchemaAndConnection | null> {
+    if (this.loadingFailed)
+      return Promise.resolve(null);
+    this._dbLoadPromise ??= this.loadDbSchema();
+    return this._dbLoadPromise
+      .then(() => ({schema: {references: this.references, referencedBy: this.referencedBy}, connection: this.connection} as SchemaAndConnection))
+      .catch((e) => {
+        console.error(e);
+        return null;
+      });
+  }
+
+  private async loadDbSchema() {
+    try {
+      const connections = await grok.dapi.connections.filter(`name="${this.connectionName}"`).list();
+
+      this.connection = connections.find((c) => (!this.nqName || c.nqName?.toLowerCase() === this.nqName.toLowerCase()) && (!this.dataSourceName || c.dataSource?.toLowerCase() === this.dataSourceName.toLowerCase())) ?? null;
+
+      if (this.connection == null) {
+        console.warn(`Connection ${this.connectionName} not found, Object handlers not registered`);
+        this.loadingFailed = true;
+        return;
+      }
+
+      const tables = await grok.dapi.connections.getSchema(this.connection, this.schemaName);
+      if (!tables)
+        throw new Error(`Schema ${this.schemaName} not found`);
+
+      tables.forEach((table) => {
+        const tableName = table.friendlyName ?? table.name;
+        this.references[tableName] = {};
+        const t = this.references[tableName];
+        table.columns.forEach((column) => {
+          const ref = column.referenceInfo;
+          if (ref && ref.table && ref.column) {
+            t[column.name] = {refTable: ref.table, refColumn: ref.column};
+            if (!this.referencedBy[ref.table])
+              this.referencedBy[ref.table] = {};
+
+            if (!this.referencedBy[ref.table][ref.column])
+              this.referencedBy[ref.table][ref.column] = [];
+
+            this.referencedBy[ref.table][ref.column].push({refTable: tableName, refColumn: column.name});
+          }
+        });
+      });
+      this.schemasLoaded = true;
+    } catch (_e) {
+      this.loadingFailed = true;
+      console.warn('Failed to load DB schema, Object handlers not registered');
+      console.error(_e);
+    }
   }
 
   public async addCustomRelation(tableName: string, columnName: string, refTable: string, refColumn: string) {
     if (!this.schemasLoaded) {
       try {
         await this._dbLoadPromise;
-      } catch (e) {}
+      } catch (_e) {
+        console.error(_e);
+      }
+    }
+    if (!this.schemasLoaded || !this.connection || !this.references || !this.referencedBy) {
+      console.warn('Failed to add custom relation, DB schema not loaded');
+      return;
     }
     if (!this.references[tableName])
       this.references[tableName] = {};
@@ -88,21 +107,20 @@ export class DBExplorer {
     this.referencedBy[refTable][refColumn].push({refTable: tableName, refColumn: columnName});
   }
 
-  public async addEntryPoint(
+  public addEntryPoint(
     semanticType: string,
     tableName: string,
     columnName: string,
     options?: Partial<EntryPointOptions>
   ) {
-    const schema = await this.dbSchema;
+    const schemaPromise = () => this.dbSchema;
     const fullOpts = {...{valueConverter: (a: string | number) => a, joinOptions: []}, ...(options ?? {})};
     const handler = new SemValueObjectHandler(
       semanticType,
       tableName,
       columnName,
       fullOpts,
-      schema,
-      this.connection!,
+      schemaPromise,
       this.schemaName
     );
     DG.ObjectHandler.register(handler);
@@ -143,15 +161,15 @@ export class DBExplorer {
     return this;
   }
 
-  public async addCustomSelectedColumns(columns: {[tableName: string]: string[]}) {
+  public addCustomSelectedColumns(columns: {[tableName: string]: string[]}) {
     this.objHandlers.forEach((handler) => handler.addCustomSelectedColumns(columns));
     return this;
   }
 
-  public static async initFromConfig(config: DBExplorerConfig) {
+  public static initFromConfig(config: DBExplorerConfig) {
     const exp = new DBExplorer(config.connectionName, config.schemaName, config.nqName, config.dataSourceName);
     for (const [semType, entry] of Object.entries(config.entryPoints))
-      await exp.addEntryPoint(semType, entry.table, entry.column, {regexpExample: entry.regexpExample});
+      exp.addEntryPoint(semType, entry.table, entry.column, {regexpExample: entry.regexpExample});
     if (config.joinOptions)
       exp.addJoinOptions(config.joinOptions);
     if (config.headerNames)
@@ -159,7 +177,7 @@ export class DBExplorer {
     if (config.uniqueColumns)
       exp.addUniqueColumns(config.uniqueColumns);
     if (config.customSelectedColumns)
-      await exp.addCustomSelectedColumns(config.customSelectedColumns);
+      exp.addCustomSelectedColumns(config.customSelectedColumns);
     return exp;
   }
 
