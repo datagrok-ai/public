@@ -5,17 +5,13 @@ import {DBExplorer} from '@datagrok-libraries/db-explorer/src/db-explorer';
 import {imageRenderer} from '@datagrok-libraries/db-explorer/src/renderer';
 import {matchAndParseQuery} from '@datagrok-libraries/db-explorer/src/search/search-widget-utils';
 import {powerSearchQueryTable} from '@datagrok-libraries/db-explorer/src/search/search-widget-utils';
+import {DBExplorerConfig} from '@datagrok-libraries/db-explorer/src/types';
 
-export async function registerDGUserHandler(_package: DG.Package) {
+export async function registerDGUserHandler() {
   // chech if datagrok connection is available
-  const dgConn = await grok.dapi.connections.filter('name="Datagrok"').first();
-  if (!dgConn) {
-    console.warn('Datagrok connection not found. Datagrok user object handlers not registered');
-    return;
-  }
-  const exp = await DBExplorer.initFromConfigPath(_package);
+  const exp = DBExplorer.initFromConfig(exlorerConfig);
   if (!exp) {
-    grok.shell.error('Failed to load db-explorer config');
+    console.warn('Failed to load db-explorer config for Datagrok user object handler');
     return;
   }
   exp.addEntryPointValueConverter((v) => {
@@ -125,3 +121,31 @@ export async function newUsersSearch(s: string) {
     return null;
   }
 }
+
+const exlorerConfig: DBExplorerConfig = {
+  connectionName: 'Datagrok',
+  schemaName: 'public',
+  nqName: 'System:Datagrok',
+  dataSourceName: 'postgres',
+  entryPoints: {
+    DG_USER_LOGIN: {
+      table: 'users',
+      column: 'login',
+      regexpExample: {
+        example: 'DGUSER-{User Login}',
+        nonVariablePart: 'DGUSER-',
+        regexpMarkup: 'DGUSER-{User Login}',
+      },
+    },
+  },
+  customSelectedColumns: {
+    users: [
+      'picture',
+      'first_name',
+      'last_name',
+      'joined',
+      'email',
+      'status',
+    ],
+  },
+};

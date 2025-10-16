@@ -300,7 +300,7 @@ export class PackageFunctions {
     initSearch();
 
     _properties = await _package.getProperties();
-    // registerDGUserHandler(_package); // lazy without await
+    registerDGUserHandler(); // lazy without await
 
     // saving and restoring the scrolls when changing views
     const maxDepth = 40;
@@ -348,7 +348,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.fileViewer({
-    fileViewer: 'md,mdx'
+    fileViewer: 'md,mdx',
   })
   static async markdownFileViewer(
     file: DG.FileInfo): Promise<DG.View> {
