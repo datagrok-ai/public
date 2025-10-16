@@ -5,7 +5,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {Extremum, InconsistentTables} from './optimizer-misc';
+import {Extremum, InconsistentTables, ValueBoundsData} from './optimizer-misc';
 
 import '../../css/fitting-view.css';
 import '../../css/sens-analysis.css';
@@ -118,6 +118,21 @@ export function makeGetCalledFuncCall(func: DG.Func, inputs: Record<string, any>
     return funcCall.call();
   }
 } // makeGetCalledFuncCall
+
+
+/** Convert bounds data to inputs */
+export function getInputsData(inputBounds: Record<string, ValueBoundsData>) {
+  const variedInputNames: string[] = [];
+  const fixedInputs: Record<string, any> = {};
+  for (const [name, bound] of Object.entries(inputBounds)) {
+    if (bound.type === 'const')
+      fixedInputs[name] = bound.value;
+    else
+      variedInputNames.push(name);
+  }
+  return {variedInputNames, fixedInputs};
+} // getInputsData
+
 
 /** Return widget for show/hide group of inputs */
 export function getCategoryWidget(category: string, roots: HTMLElement[],

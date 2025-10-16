@@ -61,11 +61,11 @@ export const nelderMeadSettingsOpts = new Map<string, Setting>([
 ]);
 
 async function getInitialParams(
-  objectiveFunc: (x: Float64Array) => Promise<number>,
+  objectiveFunc: (x: Float64Array) => Promise<number|undefined>,
   settings: Map<string, number>,
   paramsInitial: Float64Array,
-  restrictionsBottom: Float64Array,
-  restrictionsTop: Float64Array): Promise<[Float64Array[], number[]]> {
+  costOutside: number
+): Promise<[Float64Array[], number[]]> {
   const dim = paramsInitial.length + 1;
   const dimParams = paramsInitial.length;
   const nonZeroParam = settings.get('nonZeroParam')!;
@@ -84,14 +84,10 @@ async function getInitialParams(
         else
           optParams[i][j] += initScale * paramsInitial[i - 1];
 
-        if (optParams[i][j] < restrictionsBottom[j])
-          optParams[i][j] = restrictionsBottom[j];
-        else if (optParams[i][j] > restrictionsTop[j])
-          optParams[i][j] = restrictionsTop[j];
       }
     }
 
-    pointObjectives[i] = await objectiveFunc(optParams[i]);
+    pointObjectives[i] = await objectiveFunc(optParams[i]) ?? costOutside;
   }
 
   return [optParams, pointObjectives];
@@ -113,25 +109,18 @@ function fillPoint(
   centroid: Float64Array, point: Float64Array,
   lastIndex: number, optParams: Float64Array[],
   scale: number, dimParams: number,
-  restrictionsBottom: Float64Array,
-  restrictionsTop: Float64Array) {
+) {
   for (let i = 0; i < dimParams; i++) {
     point[i] = centroid[i];
     point[i] += scale * (centroid[i] - optParams[lastIndex][i]);
 
-    if (point[i] < restrictionsBottom[i])
-      point[i] = restrictionsBottom[i];
-    else if (point[i] > restrictionsTop[i])
-      point[i] = restrictionsTop[i];
   }
 }
 
-export const optimizeNM:IOptimizer = async function(
-  objectiveFunc: (x: Float64Array) => Promise<number>,
+export const optimizeNM: IOptimizer = async function(
+  objectiveFunc: (x: Float64Array) => Promise<number|undefined>,
   paramsInitial: Float64Array,
   settings: Map<string, number>,
-  restrictionsBottom: Float64Array,
-  restrictionsTop: Float64Array,
   threshold?: number,
 ) : Promise<Extremum> {
   // Settings initialization
@@ -144,8 +133,10 @@ export const optimizeNM:IOptimizer = async function(
   const dim = paramsInitial.length + 1;
   const dimParams = paramsInitial.length;
 
+  const costOutside = 2*(await objectiveFunc(paramsInitial) ?? Infinity);
+
   const [optParams, pointObjectives] =
-    await getInitialParams(objectiveFunc, settings, paramsInitial, restrictionsBottom, restrictionsTop);
+    await getInitialParams(objectiveFunc, settings, paramsInitial, costOutside);
 
   const indexes = new Array<number>(dim);
   for (let i = 0; i < dim; i++)
@@ -201,15 +192,15 @@ export const optimizeNM:IOptimizer = async function(
 
       // reflection
       fillPoint(centroid, reflectionPoint, indexes[lastIndex],
-        optParams, scaleReflection, dimParams, restrictionsBottom, restrictionsTop);
-      const reflectionScore = await objectiveFunc(reflectionPoint);
+        optParams, scaleReflection, dimParams);
+      const reflectionScore = await objectiveFunc(reflectionPoint) ?? costOutside;
 
       // expansion
       if (reflectionScore < pointObjectives[indexes[lastIndex]]) {
         fillPoint(centroid, expansionPoint, indexes[lastIndex],
-          optParams, scaleExpansion, dimParams, restrictionsBottom, restrictionsTop);
+          optParams, scaleExpansion, dimParams);
 
-        const expansionScore = await objectiveFunc(expansionPoint);
+        const expansionScore = await objectiveFunc(expansionPoint) ?? costOutside;
 
         if (expansionScore < reflectionScore) {
           pointObjectives[indexes[lastIndex]] = expansionScore;
@@ -230,9 +221,9 @@ export const optimizeNM:IOptimizer = async function(
 
       // Contraction
       fillPoint(centroid, contractionPoint, indexes[lastIndex],
-        optParams, scaleContraction, dimParams, restrictionsBottom, restrictionsTop);
+        optParams, scaleContraction, dimParams);
 
-      const contractionScore = await objectiveFunc(contractionPoint);
+      const contractionScore = await objectiveFunc(contractionPoint) ?? costOutside;
 
       if (contractionScore < pointObjectives[indexes[lastIndex]]) {
         pointObjectives[indexes[lastIndex]] = contractionScore;

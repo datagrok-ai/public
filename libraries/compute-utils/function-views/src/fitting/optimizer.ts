@@ -16,7 +16,7 @@ export async function performNelderMeadOptimization(
     reproSettings,
     earlyStoppingSettings,
   }: {
-    objectiveFunc: (x: Float64Array) => Promise<number>;
+    objectiveFunc: (x: Float64Array) => Promise<number|undefined>;
     inputsBounds: Record<string, ValueBoundsData>;
     samplesCount: number,
     settings: Map<string, number>;
@@ -25,7 +25,7 @@ export async function performNelderMeadOptimization(
   },
 ): Promise<OptimizationResult> {
   const rand = reproSettings.reproducible ? seededRandom(reproSettings.seed) : Math.random;
-  const [params, paramsBottom, paramsTop] = sampleParamsWithFormulaBounds(samplesCount, inputsBounds, rand);
+  const params = sampleParamsWithFormulaBounds(samplesCount, inputsBounds, rand);
 
   let extremums: Extremum[] = [];
   const warnings: string[] = [];
@@ -51,7 +51,7 @@ export async function performNelderMeadOptimization(
       if ((pi as any).canceled)
         break;
 
-      const extremum = await optimizeNM(objectiveFunc, params[i], settings, paramsBottom[i], paramsTop[i]);
+      const extremum = await optimizeNM(objectiveFunc, params[i], settings);
 
       if (useEarlyStopping) {
         if (extremum.cost <= threshold!) {
@@ -81,7 +81,7 @@ export async function performNelderMeadOptimization(
   pi.close();
 
   if (failsCount > 0) {
-    const dim = paramsTop.length;
+    const dim = params.length;
     const raw = new Array<Float64Array>(dim);
 
     for (let i = 0; i < dim; ++i)

@@ -32,11 +32,9 @@ export type OptimizationTask = {
 };
 
 export interface IOptimizer {
-  (objectiveFunc: (x: Float64Array) => Promise<number>,
+  (objectiveFunc: (x: Float64Array) => Promise<number|undefined>,
     paramsInitial: Float64Array,
     settings: Map<string, number>,
-    restrictionsBottom: Float64Array,
-    restrictionsTop: Float64Array,
     threshold?: number,
   ): Promise<Extremum>;
 };

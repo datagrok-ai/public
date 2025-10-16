@@ -6,21 +6,9 @@ import {makeConstFunction} from './cost-functions';
 import {performNelderMeadOptimization} from './optimizer';
 import {Extremum, OptimizationResult, OptimizerInputsConfig, OptimizerOutputsConfig, TargetTableOutput, ValueBoundsData} from './optimizer-misc';
 import {nelderMeadSettingsOpts} from './optimizer-nelder-mead';
-import {defaultEarlyStoppingSettings, defaultRandomSeedSettings, makeGetCalledFuncCall} from './fitting-utils';
+import {defaultEarlyStoppingSettings, defaultRandomSeedSettings, getInputsData, makeGetCalledFuncCall} from './fitting-utils';
 import {getNonSimilar} from './similarity-utils';
-
-
-function getInputsData(inputBounds: Record<string, ValueBoundsData>) {
-  const variedInputNames: string[] = [];
-  const fixedInputs: Record<string, any> = {};
-  for (const [name, bound] of Object.entries(inputBounds)) {
-    if (bound.type === 'const')
-      fixedInputs[name] = bound.value;
-    else
-      variedInputNames.push(name);
-  }
-  return {variedInputNames, fixedInputs};
-}
+import {compileFormula} from './formulas-resolver';
 
 
 // Public API for Compute2 to expose as a platform function
@@ -50,9 +38,10 @@ export async function runOptimizer(
     earlyStoppingSettings,
   }: OptimizerParams
 ): Promise<[OptimizationResult, DG.FuncCall[]]> {
+
   const {variedInputNames, fixedInputs} = getInputsData(inputBounds);
 
-  const objectiveFunc = makeConstFunction(lossType, func, fixedInputs, variedInputNames, outputTargets);
+  const objectiveFunc = makeConstFunction(lossType, func, inputBounds, outputTargets);
 
   const defaultsOverrides = JSON.parse(func.options['fittingSettings'] || '{}');
 

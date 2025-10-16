@@ -187,7 +187,7 @@ export async function fit(task: NelderMeadInput, start: Float64Array): Promise<E
     (task.earlyStoppingSettings.costFuncThreshold ?? COST_FUNC_THRESH) :
     undefined;
 
-  const res = await optimizeNM(costFunc, start, settings, task.variedInpMin, task.variedInpMax, threshold);
+  const res = await optimizeNM(costFunc, start, settings, threshold);
 
   return res;
 } // fit

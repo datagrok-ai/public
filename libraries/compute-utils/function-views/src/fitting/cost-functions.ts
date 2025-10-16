@@ -2,25 +2,33 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {LOSS} from './constants';
-import {getErrors, makeGetCalledFuncCall} from './fitting-utils';
-import {OutputTargetItem} from './optimizer-misc';
+import {getErrors, getInputsData, makeGetCalledFuncCall} from './fitting-utils';
+import {OutputTargetItem, ValueBoundsData} from './optimizer-misc';
+import {makeBoundsChecker} from './optimizer-sampler';
 
 
 export function makeConstFunction(
   type: LOSS,
-  func: DG.Func, inputs: Record<string, any>, variedInputNames: string[], outputTargets: OutputTargetItem[],
+  func: DG.Func,
+  bounds: Record<string, ValueBoundsData>,
+  outputTargets: OutputTargetItem[],
 ) {
+  const {variedInputNames, fixedInputs} = getInputsData(bounds);
   if (type === LOSS.MAD)
-    return makeMadCostFunc(func, inputs, variedInputNames, outputTargets);
+    return makeMadCostFunc(func, bounds, fixedInputs, variedInputNames, outputTargets);
   if (type === LOSS.RMSE)
-    return makeRmseCostFunc(func, inputs, variedInputNames, outputTargets);
+    return makeRmseCostFunc(func, bounds, fixedInputs, variedInputNames, outputTargets);
   throw new Error(`Unknown type ${type}`);
 }
 
-function makeMadCostFunc(func: DG.Func, inputs: Record<string, any>, variedInputNames: string[], outputTargets: OutputTargetItem[]) {
+function makeMadCostFunc(func: DG.Func, bounds: Record<string, ValueBoundsData>, inputs: Record<string, any>, variedInputNames: string[], outputTargets: OutputTargetItem[]) {
   /** Maximum absolute deviation (MAD) cost function */
   const getCalledFuncCall = makeGetCalledFuncCall(func, inputs, variedInputNames);
-  const madCostFunc = async (x: Float64Array): Promise<number> => {
+  const boundsChecker = makeBoundsChecker(bounds, variedInputNames)
+  const madCostFunc = async (x: Float64Array): Promise<number | undefined> => {
+    if(!boundsChecker(x))
+      return;
+
     const calledFuncCall = await getCalledFuncCall(x);
 
     let mad = 0;
@@ -40,10 +48,14 @@ function makeMadCostFunc(func: DG.Func, inputs: Record<string, any>, variedInput
   return madCostFunc;
 }
 
-function makeRmseCostFunc(func: DG.Func, inputs: Record<string, any>, variedInputNames: string[], outputTargets: OutputTargetItem[]) {
+function makeRmseCostFunc(func: DG.Func,  bounds: Record<string, ValueBoundsData>, inputs: Record<string, any>, variedInputNames: string[], outputTargets: OutputTargetItem[]) {
   /** Root mean sqaure error (RMSE) cost function */
   const getCalledFuncCall = makeGetCalledFuncCall(func, inputs, variedInputNames);
-  const rmseCostFunc = async (x: Float64Array): Promise<number> => {
+  const boundsChecker = makeBoundsChecker(bounds, variedInputNames)
+  const rmseCostFunc = async (x: Float64Array): Promise<number| undefined> => {
+    if(!boundsChecker(x))
+      return;
+
     const calledFuncCall = await getCalledFuncCall(x);
 
     let sumOfSquaredErrors = 0;
