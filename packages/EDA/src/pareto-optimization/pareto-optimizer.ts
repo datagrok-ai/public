@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import '../../css/pareto.css';
+import { NumericArray, Sense, paretoMaskFromCoordinates} from './pareto-computations';
 
 export enum OPT_TYPE {
   MIN = 'Minimize',
@@ -35,8 +36,9 @@ export function runParetoOptimizer(): void {
   const form = ui.form([]);
   form.classList.add('pareto-input-form');
 
-  let optCol = df.col('_optimality');
-  let isOptColName = optCol?.name;
+  //let optCol = df.col('__Optimality');
+  //let isOptColName = optCol?.name;
+  let optColName = '__Optimality';
 
   form.append(ui.h1('Optimize'));
 
@@ -54,6 +56,7 @@ export function runParetoOptimizer(): void {
       items: [OPT_TYPE.MIN, OPT_TYPE.MAX],
       onValueChanged: (val) => {
         feature.optType = val;
+        computeParetoFront();
         updateViewer();
       },
     });
@@ -66,6 +69,7 @@ export function runParetoOptimizer(): void {
       onValueChanged: (val) => {
         feature.toOptimize = val;
         typeInp.input.hidden = !val;
+        computeParetoFront();
         updateViewer();
       },
     });
@@ -96,6 +100,25 @@ export function runParetoOptimizer(): void {
   let scatter = DG.Viewer.scatterPlot(df, {labelColumnNames: labelCols});  
   view.dockManager.dock(scatter, DG.DOCK_TYPE.RIGHT, null, undefined, 0.5);
 
+  const computeParetoFront = () => {
+    const data: NumericArray[] = [];
+    const sense: Sense[] = [];
+
+    features.forEach((fea, name) => {
+      if (fea.toOptimize) {
+        data.push(df.col(name)!.getRawData());
+        sense.push(fea.optType === OPT_TYPE.MAX ? "max" : "min");
+      }
+    });
+
+    if (data.length > 0) {
+      const mask = paretoMaskFromCoordinates(data, sense, rowCount);
+      const colOpt = DG.Column.fromStrings('__Optimality', mask);
+      df.columns.remove('__Optimality', true);
+      df.columns.add(colOpt);
+    }      
+  };
+
   const updateViewer = () => {
     const colNames: string[] = [];
 
@@ -104,7 +127,7 @@ export function runParetoOptimizer(): void {
         colNames.push(name);
     });
 
-    scatter.setOptions({colorColumnName: isOptColName});
+    scatter.setOptions({colorColumnName: '__Optimality'});
 
     if (colNames.length > 0)
       scatter.setOptions({xColumnName: colNames[0]});
@@ -113,5 +136,6 @@ export function runParetoOptimizer(): void {
       scatter.setOptions({yColumnName: colNames[1]});
   }; // updateViewer
 
+  computeParetoFront();
   updateViewer();
 } // runParetoOptimizer
