@@ -17,6 +17,7 @@ import {LIB_PATH} from '../consts';
 
 import '../../../../css/monomer-manager.css';
 import {MONOMER_RENDERER_TAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
+import {BioTags} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 
 // columns of monomers dataframe, note that rgroups is hidden and will be displayed as separate columns
 export enum MONOMER_DF_COLUMN_NAMES {
@@ -50,7 +51,7 @@ export const MONOMER_DF_COLUMNS = {
 } as const;
 
 export async function standardiseMonomers(monomers: Monomer[]) {
-  const df = getMonomersDataFrame(monomers);
+  const df = await getMonomersDataFrame(monomers);
   if (monomers.length !== df.rowCount)
     throw new Error(`Monomers length ${monomers.length} does not match dataframe row count ${df.rowCount}`);
   const fixedMonomers = await Promise.all(new Array(monomers.length).fill(null).map(async (_, i) => monomerFromDfRow(df.rows.get(i))));
@@ -117,7 +118,7 @@ export async function standardizeMonomerLibrary(libraryString: string) {
   return libraryStringFixed;
 }
 
-export function getMonomersDataFrame(monomers: Monomer[]) {
+export async function getMonomersDataFrame(monomers: Monomer[]) {
   try {
     const df = DG.DataFrame.create(monomers.length);
 
@@ -136,11 +137,14 @@ export function getMonomersDataFrame(monomers: Monomer[]) {
           df.columns.addNew(rgroupName, DG.COLUMN_TYPE.STRING);
       }
     }
-      df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.semType = 'Monomer';
-      df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.setTag(MONOMER_RENDERER_TAGS.applyToBackground, 'true');
-
-
-      for (let i = 0; i < monomers.length; i++) {
+    df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.semType = 'Monomer';
+    df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.setTag(MONOMER_RENDERER_TAGS.applyToBackground, 'true');
+    df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.setTag(BioTags.polymerTypeColumnName, MONOMER_DF_COLUMN_NAMES.POLYMER_TYPE);
+    const pg = DG.TaskBarProgressIndicator.create('Creating Monomers DataFrame...');
+    for (let i = 0; i < monomers.length; i++) {
+      if (i % 20 === 0)
+        pg.update(((i + 1) / monomers.length) * 100, 'Creating Monomers DataFrame...');
+      const doFill = () => {
         let molSmiles = getCorrectedSmiles(monomers[i].rgroups, monomers[i].smiles, monomers[i].molfile);
         molSmiles = fixRGroupsAsElementsSmiles(molSmiles);
         // r-groups here might be broken, so need to make sure they are correct
@@ -182,12 +186,33 @@ export function getMonomersDataFrame(monomers: Monomer[]) {
         } catch (e) {
           console.error(`Error setting date ${monomers[i].createDate}`, e);
         }
-      }
-      df.col(MONOMER_DF_COLUMN_NAMES.MONOMER)!.semType = DG.SEMTYPE.MOLECULE;
-      uniqueRgroupNames.forEach((rgName) => {
-        df.col(rgName)!.semType = DG.SEMTYPE.MOLECULE;
+      };
+      await new Promise<void>((resolve) => {
+        // this is done not to block the UI thread for too long
+        const inProm = () => {
+          try {
+            doFill();
+            resolve();
+          } catch (e) {
+            console.error('Error in doFill', e);
+            resolve();
+          }
+        };
+        if (i % 20 === 0) {
+          setTimeout(() => {
+            inProm();
+          });
+        } else
+          inProm();
       });
-      return df;
+    }
+    pg.close();
+    df.col(MONOMER_DF_COLUMN_NAMES.MONOMER)!.semType = DG.SEMTYPE.MOLECULE;
+
+    uniqueRgroupNames.forEach((rgName) => {
+        df.col(rgName)!.semType = DG.SEMTYPE.MOLECULE;
+    });
+    return df;
   } catch (e) {
     grok.shell.error('Error creating monomers dataframe');
     console.error(e);
@@ -506,7 +531,7 @@ export class MonomerManager implements IMonomerManager {
           return this.activeMonomerLib!.getMonomer(polymerType, symbol)!;
         });
       });
-      const df = getMonomersDataFrame(monomers);
+      const df = await getMonomersDataFrame(monomers);
       return df;
     } catch (e) {
       grok.shell.error('Error creating monomers dataframe');
