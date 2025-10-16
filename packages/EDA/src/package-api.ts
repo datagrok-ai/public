@@ -260,4 +260,11 @@ export namespace funcs {
   export async function isApplicableXGBooster(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
     return await grok.functions.call('EDA:IsApplicableXGBooster', { df, predictColumn });
   }
+
+  /**
+  Perform optimization across multiple objectives: analyze trade-offs between conflicting objectives and identify Pareto-optimal points.
+  */
+  export async function optimizeFeatures(): Promise<void> {
+    return await grok.functions.call('EDA:OptimizeFeatures', {});
+  }
 }

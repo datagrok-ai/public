@@ -36,6 +36,7 @@ import {SoftmaxClassifier} from './softmax-classifier';
 
 import {initXgboost} from '../wasm/xgbooster';
 import {XGBooster} from './xgbooster';
+import {runParetoOptimizer} from './pareto-optimization/pareto-optimizer';
 
 export const _package = new DG.Package();
 export * from './package.g';
@@ -1013,5 +1014,15 @@ export class PackageFunctions {
        predictColumn: DG.Column): boolean {
 
     return XGBooster.isApplicable(df.columns, predictColumn);
+  }
+
+  @grok.decorators.func({
+    'top-menu': 'ML | Optimize Features...',
+    'name': 'Optimize features',
+    'description': 'Perform optimization across multiple objectives: analyze trade-offs between conflicting objectives and identify Pareto-optimal points.'
+  })
+  static optimizeFeatures(): void {
+
+    runParetoOptimizer();
   }
 }
