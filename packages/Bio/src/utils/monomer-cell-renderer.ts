@@ -3,14 +3,15 @@ import * as DG from 'datagrok-api/dg';
 import {GridCell} from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {ALPHABET, monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {GAP_SYMBOL, MONOMER_MOTIF_SPLITTER, TAGS as bioTAGS,} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {BioTags, GAP_SYMBOL, MONOMER_MOTIF_SPLITTER, TAGS as bioTAGS,} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {MONOMER_RENDERER_TAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 import {getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 
 import {CellRendererWithMonomerLibBackBase} from './monomer-cell-renderer-base';
 import * as C from './constants';
 import {undefinedColor} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
-import {HelmTypes} from '@datagrok-libraries/js-draw-lite/src/types/org';
+import {HelmType, HelmTypes, PolymerType, PolymerTypes} from '@datagrok-libraries/js-draw-lite/src/types/org';
+import {polymerTypeToHelmType} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 
 const Tags = new class {
   tooltipHandlerTemp = 'tooltip-handler.Monomer';
@@ -54,15 +55,17 @@ export class MonomerCellRendererBack extends CellRendererWithMonomerLibBackBase 
       const biotype = alphabet === ALPHABET.RNA || alphabet === ALPHABET.DNA ? HelmTypes.NUCLEOTIDE : HelmTypes.AA;
       for (let i = 0; i < shortSymbols.length; i++) {
         const symbol: string = symbols[i];
+        const actBioType: HelmType = this.getHelmType(gridCell, biotype);
+
         let textcolor = undefinedColor;
         let backgroundcolor = 'rgb(255, 255, 255)';
         if (this.monomerLib) {
           if (applyToBackground) {
-            const colors = this.monomerLib.getMonomerColors(biotype, symbol);
+            const colors = this.monomerLib.getMonomerColors(actBioType, symbol);
             textcolor = colors?.textcolor ?? textcolor;
             backgroundcolor = colors?.backgroundcolor ?? backgroundcolor;
           } else
-            textcolor = this.monomerLib.getMonomerTextColor(biotype, symbol);
+            textcolor = this.monomerLib.getMonomerTextColor(actBioType, symbol);
         }
         if (applyToBackground && symbols.length == 1) {
           g.fillStyle = backgroundcolor;
@@ -101,7 +104,12 @@ export class MonomerCellRendererBack extends CellRendererWithMonomerLibBackBase 
 
     const biotype = alphabet === ALPHABET.RNA || alphabet === ALPHABET.DNA ? HelmTypes.NUCLEOTIDE : HelmTypes.AA;
     const tooltipEls = monomerName.split(MONOMER_MOTIF_SPLITTER)
-      .map((s) => !s || s === GAP_SYMBOL || s === DASH_GAP_SYMBOL ? ui.divText('gap') : this.monomerLib!.getTooltip(biotype, s));
+      .map((s) => {
+        if (!s || s === GAP_SYMBOL || s === DASH_GAP_SYMBOL)
+          return ui.divText('gap');
+        const actBioType: HelmType = this.getHelmType(gridCell, biotype);
+        return this.monomerLib!.getTooltip(actBioType, s);
+      });
     const tooltipEl = ui.divH(tooltipEls, {style: {alignItems: 'top'}});
     // tooltip max width is 600px, so we need to shrink the canvases a bit if needed. by default, it is 250px
     const canvases = Array.from(tooltipEl.querySelectorAll('canvas'));
@@ -115,6 +123,20 @@ export class MonomerCellRendererBack extends CellRendererWithMonomerLibBackBase 
     ui.tooltip.show(tooltipEl, x1, y1);
 
     return true; // To prevent default tooltip behaviour
+  }
+
+  private getHelmType(gridCell: GridCell, defaultType: HelmType): HelmType {
+    let biotype = defaultType;
+    if ((gridCell.tableRowIndex ?? -1) > -1 && gridCell.tableColumn?.getTag(BioTags.polymerTypeColumnName)) {
+      const ptColName = gridCell.tableColumn.getTag(BioTags.polymerTypeColumnName);
+      const ptCol = gridCell.tableColumn.dataFrame?.col(ptColName);
+      if (ptCol) {
+        const ptrString = ptCol.get(gridCell.tableRowIndex!);
+        if (ptrString && [PolymerTypes.BLOB, PolymerTypes.CHEM, PolymerTypes.G, PolymerTypes.PEPTIDE, PolymerTypes.RNA].includes(ptrString))
+          biotype = polymerTypeToHelmType(ptrString as PolymerType);
+      }
+    }
+    return biotype;
   }
 
   override async awaitRendered(timeout: number = 10000, reason: string = `${timeout} timeout`): Promise<void> {
@@ -162,5 +184,6 @@ export class MonomerCellRenderer extends DG.GridCellRenderer {
   onMouseMove(gridCell: GridCell, e: MouseEvent) {
     const back = MonomerCellRendererBack.getOrCreate(gridCell);
     back.onMouseMove(gridCell, e);
+    e.preventDefault();
   }
 }
