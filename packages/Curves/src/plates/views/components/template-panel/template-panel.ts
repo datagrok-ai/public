@@ -202,7 +202,30 @@ export class TemplatePanel {
   }
 
   private createPropertyInput(prop: any, currentValue: any): DG.InputBase {
-    const property = DG.Property.fromOptions(prop);
+  // Check if this is a choices property
+    if (prop.choices) {
+      let choices = prop.choices;
+      if (typeof choices === 'string') {
+        try {
+          choices = JSON.parse(choices);
+        } catch (e) {
+          console.warn('Failed to parse choices:', choices);
+        }
+      }
+
+      return ui.input.choice('', {
+        value: currentValue || (Array.isArray(choices) ? choices[0] : null),
+        items: Array.isArray(choices) ? choices : [choices],
+      });
+    }
+
+    const property = DG.Property.fromOptions({
+      ...prop,
+      choices: prop.choices ?
+        (typeof prop.choices === 'string' ? JSON.parse(prop.choices) : prop.choices) :
+        undefined
+    });
+
     return ui.input.forProperty(property, null, {value: currentValue});
   }
 

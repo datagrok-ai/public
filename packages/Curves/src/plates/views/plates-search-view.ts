@@ -11,7 +11,6 @@ import {
   PlateProperty,
   queryPlates,
   queryWells,
-  allProperties,
   plateTemplates
 } from '../plates-crud';
 
