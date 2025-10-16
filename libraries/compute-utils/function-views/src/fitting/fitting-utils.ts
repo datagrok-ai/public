@@ -103,12 +103,19 @@ export function getErrors(expArg: DG.Column | null, expFuncs: DG.Column[],
 
 
 /** Get call funcCall with the specified inputs */
-export function makeGetCalledFuncCall(func: DG.Func, inputsIn: Record<string, any>, variedInputNames: string[]) {
+export function makeGetCalledFuncCall(func: DG.Func, inputs: Record<string, any>, variedInputNames: string[]) {
+  const funcCall = func.prepare(inputs);
+  const resetSharedCall = () => {
+    for (const param of funcCall.inputParams.values())
+      funcCall.inputs[param.name] = inputs[param.name];
+    for (const param of funcCall.outputParams.values())
+      funcCall.outputs[param.name] = undefined;
+  }
+
   return async function getCalledFuncCall(x: Float64Array): Promise<DG.FuncCall> {
-    const inputs = { ...inputsIn }; // copy since modifying function param
-    x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
-    const funcCall = func.prepare(inputs);
-    return await funcCall.call();
+    resetSharedCall();
+    x.forEach((val, idx) => funcCall.inputs[variedInputNames[idx]] = val);
+    return funcCall.call();
   }
 } // makeGetCalledFuncCall
 

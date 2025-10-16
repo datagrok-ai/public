@@ -51,7 +51,7 @@ export async function performNelderMeadOptimization(
       if ((pi as any).canceled)
         break;
 
-      const extremum = await optimizeNM(objectiveFunc, params[i], settings, paramsBottom[i], paramsTop[i], threshold);
+      const extremum = await optimizeNM(objectiveFunc, params[i], settings, paramsBottom[i], paramsTop[i]);
 
       if (useEarlyStopping) {
         if (extremum.cost <= threshold!) {

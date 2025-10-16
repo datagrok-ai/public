@@ -1635,8 +1635,11 @@ export class FittingView {
       } else
         grok.shell.info(`Found ${rowCount} point${rowCount > 1 ? 's' : ''}`);
 
-      if (allExtrCount < 1)
+      if (allExtrCount < 1) {
+        this.currentFuncCalls = [];
+        this.comparisonView.dataFrame = DG.DataFrame.fromColumns([DG.Column.fromFloat64Array(TITLE.LOSS, [] as any)])
         return;
+      }
 
       const lossVals = new Float64Array(rowCount);
       const grid = this.comparisonView.grid;
