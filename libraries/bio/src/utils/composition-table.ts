@@ -7,7 +7,8 @@ import {IMonomerLibBase} from './../types';
 import {HelmType} from './../helm/types';
 
 export function buildCompositionTable(
-  counts: { [m: string]: number }, biotype: HelmType, monomerLib: IMonomerLibBase
+  counts: { [m: string]: number }, biotype: HelmType, monomerLib: IMonomerLibBase,
+  monomerBioTypes?: { [m: string]: HelmType }
 ): HTMLTableElement {
   let sumValue: number = 0;
   let maxValue: number | null = null;
@@ -22,7 +23,8 @@ export function buildCompositionTable(
       const ratio = value / sumValue;
       let color: string;
       try {
-        const colors = monomerLib.getMonomerColors(biotype, cm);
+        const actBioType = monomerBioTypes ? (monomerBioTypes[cm] || biotype) : biotype;
+        const colors = monomerLib.getMonomerColors(actBioType, cm);
         color = colors?.backgroundcolor || '#CCCCCC';
       } catch (error) {
         console.warn(`Failed to get colors for monomer ${cm}:`, error);

@@ -22,6 +22,8 @@ import {ISeqHelper} from '../seq-helper';
 
 import {ISeqHandler} from './seq-handler';
 import {cleanupHelmSymbol} from '../../helm/utils';
+import {HelmTypes, PolymerTypes} from '../../helm/consts';
+import {HelmType, PolymerType} from '../../helm/types';
 
 
 export class StringListSeqSplitted implements ISeqSplitted {
@@ -78,12 +80,15 @@ export class StringListSeqSplitted implements ISeqSplitted {
  *
  */
 export class HelmSplitted extends StringListSeqSplitted {
+  private polymerTypes: PolymerTypes[];
   constructor(
     protected mListSeparated: string[][], // list of lists of monomers (separated by | in helm notation
     private readonly connections: string, // string part of helm defining connections between monomers
+    polymerTypes: PolymerTypes[], // polymer types for each disjoint sequence part
     gapOriginalMonomer: string,
   ) {
     super(mListSeparated.flat(), gapOriginalMonomer);
+    this.polymerTypes = mListSeparated.map((n, i) => new Array(n.length).fill(polymerTypes[i])).flat();
   }
   protected _graphInfo: ISeqGraphInfo | undefined = undefined;
   get graphInfo(): ISeqGraphInfo {
@@ -94,7 +99,8 @@ export class HelmSplitted extends StringListSeqSplitted {
   protected parseConnections(): ISeqGraphInfo {
     const graphInfo: ISeqGraphInfo = {
       connections: [],
-      disjointSeqStarts: []
+      disjointSeqStarts: [],
+      polymerTypes: this.polymerTypes
     };
     if ((this.connections?.length ?? 0) > 0) {
     // parse helm connections
@@ -105,14 +111,16 @@ export class HelmSplitted extends StringListSeqSplitted {
       };
       // parse connections like PEPTIDE2,PEPTIDE2,16:R2-1:R1
       const connectionParts = (this.connections ?? '').split('|').filter((cp) => (cp?.length ?? 0) > 0);
-      const sequenceConSeqIdxRe = /^(PEPTIDE|RNA)\d{1,2}$/;
+      const sequenceConSeqIdxRe = /^(PEPTIDE|RNA|BLOB|CHEM)\d{1,2}$/;
       const sequenceConRe = /^\d{1,2}:R\d{1}-\d{1,2}:R\d{1}$/;
       for (const cp of connectionParts) {
         const cpParts = cp.split(',');
         if (cpParts.length !== 3 || !sequenceConRe.test(cpParts[2]) || !sequenceConSeqIdxRe.test(cpParts[0]) || !sequenceConSeqIdxRe.test(cpParts[1]))
           continue;
-        const seq1 = parseInt(cpParts[0].substring(7)) - 1;
-        const seq2 = parseInt(cpParts[1].substring(7)) - 1;
+        const seq1 = parseInt(cpParts[0].replace(/^(PEPTIDE|RNA|BLOB|CHEM)/, '')) - 1;
+        const seq2 = parseInt(cpParts[1].replace(/^(PEPTIDE|RNA|BLOB|CHEM)/, '')) - 1;
+        const seq1Type = cpParts[0].replace(/\d{1,2}$/, '') as PolymerTypes;
+        const seq2Type = cpParts[1].replace(/\d{1,2}$/, '') as PolymerTypes;
         if (seq1 < 0 || seq1 >= this.mListSeparated.length || seq2 < 0 || seq2 >= this.mListSeparated.length)
           continue;
         const conParts = cpParts[2].split('-');
@@ -127,6 +135,8 @@ export class HelmSplitted extends StringListSeqSplitted {
         if (con1 < 0 || con1 >= this.mListSeparated[seq1].length || con2 < 0 || con2 >= this.mListSeparated[seq2].length)
           continue;
         graphInfo.connections.push({
+          seq1Type: seq1Type as PolymerTypes,
+          seq2Type: seq2Type as PolymerTypes,
           seqIndex1: seq1,
           seqIndex2: seq2,
           monomerIndex1: con1,
@@ -159,7 +169,7 @@ export class BilnSeqSplitted extends HelmSplitted {
   }
 
   constructor(seqListSplit: string[][], gapOriginalMonomer: string) {
-    super(seqListSplit, '', gapOriginalMonomer);
+    super(seqListSplit, '', seqListSplit.map(() => PolymerTypes.PEPTIDE), gapOriginalMonomer);
   }
 
   protected override parseConnections(): ISeqGraphInfo {
@@ -190,6 +200,8 @@ export class BilnSeqSplitted extends HelmSplitted {
               // there is already a monomer with this bondId
               const prev = connectionStorage[bondId];
               graphInfo.connections.push({
+                seq1Type: PolymerTypes.PEPTIDE, // for biln, its always peptides
+                seq2Type: PolymerTypes.PEPTIDE,
                 seqIndex1: prev.seqIndex,
                 seqIndex2: i,
                 monomerIndex1: prev.monomerIndex,
@@ -353,7 +365,8 @@ export const splitterAsHelm: SplitterFunc = (seq: string): ISeqSplitted => {
   const mListSplit = spList
     .map((sp: string) => (sp.match(/(?<=\{).+(?=})/)?.[0]?.split('.') ?? [])
       .map((m) => cleanupHelmSymbol(m)));
-  const res = new HelmSplitted(mListSplit, helmParts[1] ?? '', GapOriginals[NOTATION.HELM]);
+  const polymerTypes = spList.map((sp) => sp.replace(/\d{1,2}\{.+\}/, '')) as PolymerTypes[];
+  const res = new HelmSplitted(mListSplit, helmParts[1] ?? '', polymerTypes, GapOriginals[NOTATION.HELM]);
 
   return res;
 };
@@ -476,6 +489,7 @@ export function detectAlphabet(freq: MonomerFreqs, candidates: CandidateType[], 
     alphabetName = sim.name;
   } else
     alphabetName = ALPHABET.UN;
+  console.log(maxSim, alphabetName);
   return alphabetName;
 }
 
@@ -537,4 +551,19 @@ export function pickUpSeqCol(df: DG.DataFrame): DG.Column<string> | null {
   if (!resCol && semTypeColList.length > 0)
     resCol = semTypeColList[0];
   return resCol;
+}
+
+export function polymerTypeToHelmType(pt: PolymerType): HelmType {
+  switch (pt) {
+  case PolymerTypes.PEPTIDE:
+    return HelmTypes.AA;
+  case PolymerTypes.RNA:
+    return HelmTypes.NUCLEOTIDE;
+  case PolymerTypes.CHEM:
+    return HelmTypes.CHEM;
+  case PolymerTypes.BLOB:
+    return HelmTypes.BLOB;
+  default:
+    return HelmTypes.AA;
+  }
 }

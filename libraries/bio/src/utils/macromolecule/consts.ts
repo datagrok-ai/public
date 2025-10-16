@@ -33,7 +33,8 @@ export enum TAGS {
   positionLabels = '.positionLabels',
   regions = '.regions',
   positionShift = '.positionShift',
-  selectedPosition = '.selectedPosition'
+  selectedPosition = '.selectedPosition',
+  polymerTypeColumnName = '.polymerTypeColumnName',
 }
 
 export {TAGS as BioTags};
