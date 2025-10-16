@@ -1,3 +1,5 @@
 # Biologics changelog
 
-## 0.0.1 (2025-09-08)
+## 1.0.0 (2025-10-16)
+
+* Initial release with DB Explorer integration
