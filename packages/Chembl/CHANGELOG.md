@@ -1,5 +1,9 @@
 # ChEMBL changelog
 
+## 1.4.6 (2025-10-16)
+
+* Lazy loaded DBExplorer in Chembl package
+
 ## 1.4.3 (2025-04-01)
 
 * Fixed MolregnoInfo panel
