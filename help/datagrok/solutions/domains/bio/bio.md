@@ -156,6 +156,16 @@ Peptide sequences are color-coded based on amino acid properties. DNA sequences 
 
 ![FASTA rendering](img/fasta-format-0.png)
 
+
+```mdx-code-block
+</TabItem>
+<TabItem value="display-for-biln" label="BILN">
+```
+
+Various sseparated formats, such as BILN, '.', '-' or '/' separators are supported. Such sequences can encode non-canonical monomers (see [Monome Manager](#manage-monomers)), multiple chains, branching and cyclic structures.
+
+![BILN rendering](img/biln.png)
+
 ```mdx-code-block
 </TabItem>
 <TabItem value="display-for-pdb" label="PDB">
