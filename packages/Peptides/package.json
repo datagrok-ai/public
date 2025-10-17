@@ -17,7 +17,7 @@
     "@datagrok-libraries/math": "^1.2.6",
     "@datagrok-libraries/ml": "^6.10.6",
     "@datagrok-libraries/statistics": "^1.2.12",
-    "@datagrok-libraries/tutorials": "^1.6.1",
+    "@datagrok-libraries/tutorials": "^1.7.4",
     "@datagrok-libraries/utils": "^4.6.9",
     "@webgpu/types": "^0.1.40",
     "cash-dom": "^8.1.5",
