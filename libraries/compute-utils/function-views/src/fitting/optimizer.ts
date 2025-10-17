@@ -1,7 +1,7 @@
 /** the Nelder-Mead optimizer */
 import * as DG from 'datagrok-api/dg';
 
-import {Extremum, OptimizationResult, InconsistentTables, ValueBoundsData, throttle} from './optimizer-misc';
+import {Extremum, OptimizationResult, InconsistentTables, ValueBoundsData} from './optimizer-misc';
 import {optimizeNM} from './optimizer-nelder-mead';
 import {sampleParamsWithFormulaBounds} from './optimizer-sampler';
 import {TIMEOUT, ReproSettings, EarlyStoppingSettings} from './constants';
@@ -42,12 +42,9 @@ export async function performNelderMeadOptimization(
   const maxValidPoints = earlyStoppingSettings.stopAfter;
 
   let validPointsCount = 0;
-  let lastWorkStartTs: number | undefined;
 
   for (i = 0; i < samplesCount; ++i) {
     try {
-      lastWorkStartTs = await throttle(TIMEOUT.MS_TO_SLEEP * 4, TIMEOUT.MS_TO_SLEEP, lastWorkStartTs);
-
       if ((pi as any).canceled)
         break;
 

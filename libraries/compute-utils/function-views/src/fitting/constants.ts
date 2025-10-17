@@ -63,7 +63,7 @@ enum HELP_ITEMS {
 };
 
 export enum TIMEOUT {
-  MS_TO_SLEEP = 10,
+  MS_TO_SLEEP = 5,
   STYLE_TIMEOUT = 3000,
   RADAR = 200,
 };
@@ -81,7 +81,7 @@ export const HELP_LINK = 'https://datagrok.ai/help/compute/function-analysis#par
 /** Starting help markdown */
 export const STARTING_HELP = `# Fitting
 
-Use fitting to solve an inverse problem: find input conditions leading to specified output constraints. 
+Use fitting to solve an inverse problem: find input conditions leading to specified output constraints.
 It computes inputs minimizing deviation measured by [loss function](https://en.wikipedia.org/wiki/Loss_function).
 
 1. In the ${HELP_ITEMS.FIT} block, use switchers to specify inputs to be found:
@@ -95,7 +95,7 @@ It computes inputs minimizing deviation measured by [loss function](https://en.w
 3. Choose ${HELP_ITEMS.METHOD}. Press <i class="grok-icon fal fa-cog"></i> to specify its settings.
 
 4. Press the "Run" icon <i class="fas fa-play"></i> on the top panel to perform fitting. You will get a
-[grid](https://datagrok.ai/help/visualize/viewers/grid) containing 
+[grid](https://datagrok.ai/help/visualize/viewers/grid) containing
 
    * loss function values
    * fitted inputs
@@ -104,7 +104,7 @@ It computes inputs minimizing deviation measured by [loss function](https://en.w
 
 5. Open ${HELP_ITEMS.CONTEXT}. You will get the function run corresponding to the selected grid row.
 
-6. Press **?** on the top panel to learn more about 
+6. Press **?** on the top panel to learn more about
 [parameters optimization](${HELP_LINK}).
 
 # Learn more

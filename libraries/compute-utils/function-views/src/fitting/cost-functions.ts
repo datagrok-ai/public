@@ -1,9 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {LOSS} from './constants';
+import {LOSS, TIMEOUT} from './constants';
 import {getErrors, getInputsData, makeGetCalledFuncCall} from './fitting-utils';
-import {OutputTargetItem, ValueBoundsData} from './optimizer-misc';
+import {OutputTargetItem, throttle, ValueBoundsData} from './optimizer-misc';
 import {makeBoundsChecker} from './optimizer-sampler';
 
 
@@ -24,12 +24,15 @@ export function makeConstFunction(
 function makeMadCostFunc(func: DG.Func, bounds: Record<string, ValueBoundsData>, inputs: Record<string, any>, variedInputNames: string[], outputTargets: OutputTargetItem[]) {
   /** Maximum absolute deviation (MAD) cost function */
   const getCalledFuncCall = makeGetCalledFuncCall(func, inputs, variedInputNames);
-  const boundsChecker = makeBoundsChecker(bounds, variedInputNames)
+  const boundsChecker = makeBoundsChecker(bounds, variedInputNames);
+  let lastWorkStartTs: number | undefined = undefined
+
   const madCostFunc = async (x: Float64Array): Promise<number | undefined> => {
     if(!boundsChecker(x))
       return;
 
     const calledFuncCall = await getCalledFuncCall(x);
+    lastWorkStartTs = await throttle(TIMEOUT.MS_TO_SLEEP * 19, TIMEOUT.MS_TO_SLEEP, lastWorkStartTs);
 
     let mad = 0;
 
@@ -51,12 +54,14 @@ function makeMadCostFunc(func: DG.Func, bounds: Record<string, ValueBoundsData>,
 function makeRmseCostFunc(func: DG.Func,  bounds: Record<string, ValueBoundsData>, inputs: Record<string, any>, variedInputNames: string[], outputTargets: OutputTargetItem[]) {
   /** Root mean sqaure error (RMSE) cost function */
   const getCalledFuncCall = makeGetCalledFuncCall(func, inputs, variedInputNames);
-  const boundsChecker = makeBoundsChecker(bounds, variedInputNames)
+  const boundsChecker = makeBoundsChecker(bounds, variedInputNames);
+  let lastWorkStartTs: number | undefined = undefined
   const rmseCostFunc = async (x: Float64Array): Promise<number| undefined> => {
     if(!boundsChecker(x))
       return;
 
     const calledFuncCall = await getCalledFuncCall(x);
+    lastWorkStartTs = await throttle(TIMEOUT.MS_TO_SLEEP * 19, TIMEOUT.MS_TO_SLEEP, lastWorkStartTs);
 
     let sumOfSquaredErrors = 0;
     let outputsCount = 0;
