@@ -4,8 +4,8 @@
   "version": "0.0.2",
   "description": "",
   "author": {
-    "name": "Andrew Skalkin",
-    "email": "askalkin@datagrok.ai"
+    "name": "Oleksandra Serhiienko",
+    "email": "oserhiienko@datagrok.ai"
   },
   "dependencies": {
     "@datagrok-libraries/utils": "^4.6.9",

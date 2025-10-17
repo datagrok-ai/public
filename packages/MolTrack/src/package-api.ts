@@ -109,11 +109,7 @@ export namespace funcs {
     return await grok.functions.call('MolTrack:RetrieveEntity', { scope });
   }
 
-  export async function getMoltrackPropPanelByStructure(mol: string ): Promise<any> {
-    return await grok.functions.call('MolTrack:GetMoltrackPropPanelByStructure', { mol });
-  }
-
-  export async function getMoltrackPropPanelById(id: string ): Promise<any> {
+  export async function getMoltrackPropPanelById(id: any ): Promise<any> {
     return await grok.functions.call('MolTrack:GetMoltrackPropPanelById', { id });
   }
 }
