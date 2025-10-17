@@ -17,6 +17,7 @@ import {HistoryApp} from './apps/HistoryApp';
 import {Subject} from 'rxjs';
 import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
+import {OptimizerParams, runOptimizer} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
 
 declare global {
   var initialURLHandled: boolean;
@@ -169,6 +170,13 @@ export class PackageFunctions {
     return promise;
   }
 
+  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
+  static async RunOptimizer(
+    @grok.decorators.param({'type': 'object'}) params: OptimizerParams,
+  ) {
+    const [,calls] = await runOptimizer(params);
+    return calls;
+  }
 
   @grok.decorators.func({
     tags: [

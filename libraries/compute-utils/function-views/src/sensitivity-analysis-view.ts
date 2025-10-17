@@ -833,7 +833,7 @@ export class SensitivityAnalysisView {
     // switchInputs for inputs
     for (const propName of Object.keys(this.store.inputs)) {
       const inpType = this.store.inputs[propName].prop.propertyType;
-      if (inpType === DG.TYPE.BOOL || inpType === DG.TYPE.STRING)
+      if (inpType !== DG.TYPE.FLOAT)
         continue;
 
       const propConfig = this.store.inputs[propName];
