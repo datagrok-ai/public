@@ -35,7 +35,7 @@ export async function performNelderMeadOptimization(
 
   let i: number;
   let percentage = 0;
-  const pi = DG.TaskBarProgressIndicator.create(`Fitting... (${percentage}%)`);
+  const pi = DG.TaskBarProgressIndicator.create(`Fitting... (${percentage}%)`, { cancelable: true });
 
   const useEarlyStopping = earlyStoppingSettings.useEarlyStopping;
   const threshold = useEarlyStopping ? earlyStoppingSettings.costFuncThreshold : undefined;
