@@ -100,7 +100,7 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
   });
   createRegisterNode('Compound', () => initRegisterView('Compound'));
   createRegisterNode('Batch', () => initRegisterView('Batch'));
-  createRegisterNode('Bulk...', () => initBulkRegisterView());
+  createRegisterNode('Bulk', () => initBulkRegisterView());
   createRegisterNode('Schema', async () => {
     const schemaView = new PropertySchemaView();
     await schemaView.init();
@@ -246,21 +246,12 @@ export async function retrieveEntity(scope: string, flatten: boolean = true): Pr
 }
 
 //name: Databases | MolTrack
-//input: string mol {semType: Molecule}
+//input: semantic_value id {semType: Grok ID}
 //tags: panel
 //output: widget res
-export async function getMoltrackPropPanelByStructure(mol: string): Promise<DG.Widget> {
-  const corporateCompoundId = await getCorporateCompoundIdByExactStructure(mol) ?? '';
-  const retrievedCompound = await getCompoundByCorporateId(corporateCompoundId);
-  return molTrackPropPanel(retrievedCompound, mol);
-}
-
-//name: Databases | MolTrack
-//input: string id {semType: Grok ID}
-//tags: panel
-//output: widget res
-export async function getMoltrackPropPanelById(id: string): Promise<DG.Widget> {
+export async function getMoltrackPropPanelById(id: DG.SemanticValue): Promise<DG.Widget> {
+  const {value: idValue} = id;
   await MolTrackDockerService.init();
-  const compound = await MolTrackDockerService.getCompoundByCorporateId(id);
-  return molTrackPropPanel(compound);
+  const compound = await MolTrackDockerService.getCompoundByCorporateId(idValue);
+  return molTrackPropPanel(compound, id.cell.column);
 }

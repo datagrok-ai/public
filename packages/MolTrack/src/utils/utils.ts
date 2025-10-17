@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import { MolTrackProp, PROPERTIES } from './constants';
+import { MolTrackProp, PROPERTIES, ResultOutput } from './constants';
 import { MolTrackProperty } from './types';
 import { MolTrackDockerService } from '../services/moltrack-docker-service';
 
@@ -14,7 +14,7 @@ export async function getCorporateCompoundIdByExactStructure(structure: string):
         'value': structure,
         'threshold': 1,
       },
-      'output_format': 'json',
+      'output_format': ResultOutput.JSON,
     };
     const { data } = await MolTrackDockerService.search(query, 'compounds');
     return data?.[0]?.['compounds.details.corporate_compound_id'] ?? null;
@@ -22,6 +22,23 @@ export async function getCorporateCompoundIdByExactStructure(structure: string):
     console.error('Exact structure search failed:', e);
     return null;
   }
+}
+
+export async function getBatchInfoBySynonym(
+  synonymName: string, synonymValues: string[], outputFields: string[],
+): Promise<any[]> {
+  const query = {
+    'level': 'compounds',
+    'output': outputFields,
+    'filter': {
+      'field': synonymName,
+      'operator': 'IN',
+      'value': synonymValues,
+    },
+    'output_format': ResultOutput.JSON,
+  };
+  const { data } = await MolTrackDockerService.search(query, 'compounds');
+  return data;
 }
 
 export function buildPropertyOptions(

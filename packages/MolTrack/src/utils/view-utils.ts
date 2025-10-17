@@ -180,7 +180,7 @@ export function getQuickActionsWidget(): HTMLElement {
       createView: () => initRegisterView('Batch', true),
     },
     {
-      label: 'Register bulk...',
+      label: 'Register bulk',
       createView: () => initBulkRegisterView(true),
     },
   ];

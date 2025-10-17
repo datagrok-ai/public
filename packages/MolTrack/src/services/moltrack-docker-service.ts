@@ -104,8 +104,8 @@ export class MolTrackDockerService {
     propertyValue: string,
   ): Promise<any> {
     const params = new URLSearchParams({
-      property_name: propertyName,
       property_value: propertyValue,
+      property_name: propertyName,
     });
 
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(
@@ -127,7 +127,6 @@ export class MolTrackDockerService {
   static async getBatchByCorporateId(corporateBatchId: string): Promise<any> {
     return this.fetchByProperty('batches', 'corporate_batch_id', corporateBatchId);
   }
-
 
   static async getAutoMapping(columns: string[], entityType: string): Promise<any> {
     const payload = {
