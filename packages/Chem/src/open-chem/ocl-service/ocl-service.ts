@@ -71,9 +71,9 @@ export class OCLService {
     let accum = 0;
     for (let i = 0; i < scatterRes.length; i++) {
       const res = scatterRes[i].res;
-      for (let j = 0; j < res.length; j++) {
+      for (let j = 0; j < res.length; j++)
         result[j + accum] = res[j];
-      }
+
       accum += res.length;
     }
     return result;
@@ -81,6 +81,11 @@ export class OCLService {
 
   async molfileToV3K(molCol: Array<string>): Promise<Array<string>> {
     return this.doParallelArrayResult(molCol, [], OCLServiceCall.Molfile_To_V3K, MolNotationType.MOLBLOCK);
+  }
+
+  async recalculateCoordinates(molCol: Array<string>): Promise<Array<string>> {
+    const notationType = DG.chem.isMolBlock(molCol[0]) ? MolNotationType.MOLBLOCK : MolNotationType.SMILES;
+    return this.doParallelArrayResult(molCol, [], OCLServiceCall.RECALCULATE_COORDINATES, notationType);
   }
 
   async getChemProperties(molCol: DG.Column, propList: string[]): Promise<{[key: string]: Array<number>}> {

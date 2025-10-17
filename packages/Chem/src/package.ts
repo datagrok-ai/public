@@ -95,8 +95,39 @@ import {biochemicalPropertiesDialog} from './widgets/biochem-properties-widget';
 import {checkCurrentView} from './utils/ui-utils';
 import {mpo, PropertyDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo';
 
+
 export {getMCS};
 export * from './package.g';
+
+/** Temporary polyfill */
+
+function getDecoratorFunc() {
+  return function(args: any) {
+    return function(
+      target: any,
+      propertyKey: string,
+      descriptor: PropertyDescriptor
+    ) { };
+  };
+}
+
+// Ensure decorators object exists and polyfill missing decorators
+if (!grok.decorators)
+  (grok as any).decorators = {};
+
+const decorators = [
+  'func', 'init', 'param', 'panel', 'editor', 'demo', 'app',
+  'appTreeBrowser', 'fileHandler', 'fileExporter', 'model', 'viewer', 'filter', 'cellRenderer', 'autostart',
+  'dashboard', 'folderViewer', 'semTypeDetector', 'packageSettingsEditor', 'functionAnalysis', 'converter',
+  'fileViewer', 'model', 'treeBrowser', 'polyfill'
+];
+
+decorators.forEach((decorator) => {
+  if (!(grok.decorators as any)[decorator])
+    (grok.decorators as any)[decorator] = getDecoratorFunc();
+});
+
+/** End temporary polyfill */
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -175,6 +206,23 @@ export class PackageFunctions {
 
   @grok.decorators.autostart()
   static async initChemAutostart(): Promise<void> { }
+
+  @grok.decorators.func({'top-menu': 'Chem | Transform | Recalculate Coordinates...', 'name': 'Recalculate Coordinates',
+    'description': 'Recalculates 2D coordinates for molecules in the column using Open Chem Lib', 'tags': ['Transform'],
+  })
+  static async recalculateCoordsViaOCL(@grok.decorators.param({}) table: DG.DataFrame,
+  @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
+  @grok.decorators.param({options: {initialValue: 'true'}}) join: boolean = true,
+  ): Promise<DG.Column | void> {
+    const oclService = new OCLService();
+    const newMols = await oclService.recalculateCoordinates(molecules.toList());
+    oclService.terminate();
+    const newCol = DG.Column.fromStrings(table.columns.getUnusedName(`${molecules.name}_recalcCoords`), newMols);
+    newCol.semType = 'Molecule';
+    if (!join)
+      return newCol;
+    table.columns.add(newCol);
+  }
 
   @grok.decorators.func({
     name: 'Chemistry | Most Diverse Structures',
