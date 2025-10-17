@@ -173,7 +173,7 @@ export class FittingView {
 
     const getFormulaToggleInput = (inputProp: DG.Property, key: keyof RangeDescription, inputNumber: DG.InputBase, inputFormula: DG.InputBase) => {
       const formula = getRangeFormula(inputProp, key);
-      const boolInput = ui.input.bool('Use initial point formula', {
+      const boolInput = ui.input.bool('Use formula', {
         value: !!formula,
         onValueChanged(val) {
           if (val) {
