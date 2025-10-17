@@ -1120,7 +1120,7 @@ export class MonomerPosition extends SARViewer {
     $(expand).addClass('pep-help-icon');
     this.targetColumnInput && (this.targetColumnInput.root.style.maxWidth = '50%');
     this.monomerSearchInput.root.style.marginRight = '8px';
-    const targetInputsHost = ui.divH([this.monomerSearchInput.root, this.targetColumnInput?.root ?? ui.div(), this.targetCategoryInput.root],
+    const targetInputsHost = ui.divH([this.monomerSearchInput.input, this.targetColumnInput?.root ?? ui.div(), this.targetCategoryInput.root],
       {style: {alignSelf: 'center', justifyContent: 'center', width: '100%', flexWrap: 'wrap'}});
     targetInputsHost.style.display = this.showFilterControls ? 'flex' : 'none';
     const header = ui.divH([expand, switchHost, targetInputsHost], {style: {alignSelf: 'center', lineHeight: 'normal', flexDirection: 'column', width: '100%'}});
