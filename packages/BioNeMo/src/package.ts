@@ -116,14 +116,14 @@ export class PackageFunctions {
     'top-menu': 'Chem | Docking | DiffDock...'
   })
   static async diffDockModel(
-    @grok.decorators.param({options: {caption: 'Table'}}) df: DG.DataFrame,
+    table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Molecule'}}) ligands: DG.Column,
     @grok.decorators.param({options: {choices: 'Bionemo: getTargetFiles'}}) target: string,
-    @grok.decorators.param({options: {initialValue: '5'}}) poses: number
+    @grok.decorators.param({options: {initialValue: '10'}}) poses: number
   ): Promise<void> {
     const receptorFile = (await grok.dapi.files.list(`${CONSTANTS.TARGET_PATH}/${target}`)).find((file) => file.extension === 'pdbqt')!;
     const receptor = await grok.dapi.files.readAsText(receptorFile);
-    const diffDockModel = new DiffDockModel(df, ligands, receptor, receptorFile.name, poses);
+    const diffDockModel = new DiffDockModel(table, ligands, receptor, receptorFile.name, poses);
     await diffDockModel.run();
   }
 
