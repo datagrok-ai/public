@@ -98,6 +98,14 @@ export namespace funcs {
     return await grok.functions.call('Bio:SeparatorSequenceCellRenderer', {});
   }
 
+  export async function bilnSequenceCellRenderer(): Promise<any> {
+    return await grok.functions.call('Bio:BilnSequenceCellRenderer', {});
+  }
+
+  export async function refineNotationProviderForBiln(col: DG.Column , stats: any , separator?: string | null): Promise<boolean> {
+    return await grok.functions.call('Bio:RefineNotationProviderForBiln', { col, stats, separator });
+  }
+
   export async function macroMolColumnPropertyPanel(molColumn: DG.Column ): Promise<any> {
     return await grok.functions.call('Bio:MacroMolColumnPropertyPanel', { molColumn });
   }

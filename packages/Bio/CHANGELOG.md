@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.23.2 (2025-10-17)
+
+* Fix Helm converter to support multi type polymers
+
 ## 2.23.1 (2025-10-16)
 
 * Monomer Cell: Support polymer type source

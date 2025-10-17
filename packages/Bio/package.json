@@ -5,7 +5,7 @@
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
   },
-  "version": "2.23.1",
+  "version": "2.23.2",
   "description": "Bioinformatics support (import/export of sequences, conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.",
   "repository": {
     "type": "git",
@@ -65,7 +65,7 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@datagrok-libraries/helm-web-editor": "^1.1.14",
+    "@datagrok-libraries/helm-web-editor": "^1.1.16",
     "@datagrok-libraries/js-draw-lite": "^0.0.10",
     "@datagrok/chem": "^1.15.0",
     "@datagrok/dendrogram": "^1.2.33",

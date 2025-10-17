@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import {HELM_POLYMER_TYPE} from '@datagrok-libraries/bio/src/utils/const';
 import {HELM_ITEM_SEPARATOR} from './const';
 import {Bond} from './types';
@@ -12,7 +13,7 @@ export class ConnectionList {
   public connectionItems: string[];
 
   private validateConnectionItem(connectionItem: string): void {
-    const allowedType = `(${HELM_POLYMER_TYPE.PEPTIDE}|${HELM_POLYMER_TYPE.RNA})`;
+    const allowedType = `(${HELM_POLYMER_TYPE.PEPTIDE}|${HELM_POLYMER_TYPE.RNA}|${HELM_POLYMER_TYPE.CHEM}|${HELM_POLYMER_TYPE.BLOB})`;
     const regex = new RegExp(`${allowedType}[0-9]+,${allowedType}[0-9]+,[0-9]+:R[0-9]+-[0-9]+:R[0-9]+`, 'g');
     if (!connectionItem.match(regex))
       throw new Error(`Cannot parse connection item from ${connectionItem}`);

@@ -110,6 +110,23 @@ export function separatorSequenceCellRenderer() : any {
   return PackageFunctions.separatorSequenceCellRenderer();
 }
 
+//tags: cellRenderer
+//output: grid_cell_renderer result
+//meta.cellType: sequence
+//meta.columnTags: quality=Macromolecule, units=biln
+export function bilnSequenceCellRenderer() : any {
+  return PackageFunctions.bilnSequenceCellRenderer();
+}
+
+//tags: notationRefiner
+//input: column col 
+//input: object stats 
+//input: string separator { nullable: true; optional: true }
+//output: bool result
+export function refineNotationProviderForBiln(col: DG.Column<any>, stats: any, separator: any) : boolean {
+  return PackageFunctions.refineNotationProviderForBiln(col, stats, separator);
+}
+
 //name: Bioinformatics | Sequence Renderer
 //tags: panel
 //input: column molColumn { semType: Macromolecule }
