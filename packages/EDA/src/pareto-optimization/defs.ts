@@ -14,7 +14,7 @@ export type NumericArray = Float32Array | Float64Array | Int32Array | Uint32Arra
 export type ParetoLabel = 'optimal' | 'non-optimal';
 
 export const DIFFERENCE = 2;
-export enum DOCK_RATIO {
+export enum RATIO {
   FORM = 0.2,
   VIEWER = 0.5,
 };
