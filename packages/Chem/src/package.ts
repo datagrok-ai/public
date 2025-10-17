@@ -558,7 +558,7 @@ export class PackageFunctions {
   })
   static async getDescriptors(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({type: 'list<string>', optional: true}) selected?: string[],
+    @grok.decorators.param({type: 'list<string>', options: {optional: true}}) selected?: string[],
   ): Promise<DG.DataFrame> {
     if (!selected || selected.length === 0)
       selected = await getSelected();
@@ -1256,7 +1256,7 @@ export class PackageFunctions {
   })
   static async getStructuralAlerts(
     @grok.decorators.param({type: 'column<string>', options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({type: 'list<string>', optional: true}) alerts?: string[]): Promise<DG.DataFrame> {
+    @grok.decorators.param({type: 'list<string>', options: {optional: true}}) alerts?: string[]): Promise<DG.DataFrame> {
     const lowerCaseAlerts = alerts?.map((it) => it.toLowerCase());
     const ruleSet: {[key: string]: boolean} = {};
     for (const rule of STRUCT_ALERTS_RULES_NAMES)
@@ -1917,7 +1917,7 @@ export class PackageFunctions {
   })
   static async getProperties(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({type: 'list<string>', optional: true}) selected?: string[]): Promise<DG.DataFrame> {
+    @grok.decorators.param({type: 'list<string>', options: {optional: true}}) selected?: string[]): Promise<DG.DataFrame> {
     const propNames = Object.keys(CHEM_PROP_MAP);
     let props: string[] = [];
     if (!selected || selected.length === 0)
@@ -1961,7 +1961,7 @@ export class PackageFunctions {
   })
   static async getToxicityRisks(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({type: 'list<string>', optional: true}) risks?: string[]): Promise<DG.DataFrame> {
+    @grok.decorators.param({type: 'list<string>', options: {optional: true}}) risks?: string[]): Promise<DG.DataFrame> {
     const toxCols = await getToxicityRisksColumns(molecules, {
       mutagenicity: !risks || !risks.length ? true : risks.includes('mutagenicity'),
       tumorigenicity: !risks || !risks.length ? true : risks.includes('tumorigenicity'),

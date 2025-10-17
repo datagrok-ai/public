@@ -156,7 +156,10 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     const propsDict: {[key: string]: any} = {};
     if (!grok.shell.tv)
       return ui.div();
-    const grid = grok.shell.tv?.grid;
+    const grid = grok.shell.tv.grid;
+    let pinnedRowsCount = 0;
+    for (const row of grid.pinnedRows)
+      pinnedRowsCount++;
     if (similarity) {
       if (refMolecule)
         propsDict['Reference'] = {val: ''};
@@ -170,8 +173,11 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
         const colorCoding = propCol.meta.colors.getType();
         if (colorCoding && colorCoding !== DG.COLOR_CODING_TYPE.OFF) {
           const gridIdx = grid.getRowOrder().indexOf(idx);
-          propsDict[col].color = grid?.cell(col, gridIdx).color;
-          propsDict[col].isTextColorCoded = grid?.col(col)?.isTextColorCoded;
+          if (gridIdx !== -1) {
+            const gridIdxWithPinned = grid.getRowOrder().indexOf(idx) + pinnedRowsCount;
+            propsDict[col].color = grid?.cell(col, gridIdxWithPinned).color;
+            propsDict[col].isTextColorCoded = grid?.col(col)?.isTextColorCoded;
+          }
         }
       }
     }

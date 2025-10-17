@@ -2,7 +2,25 @@
 
 ## 1.16.6 (2025-10-16)
 
+### Bug fixes
+
 * GROK-19062 Similarity Search viewer: incorrect coloring after sorting a dataset
+* GROK-18817: Chem | Scaffold tree: Add explanation tooltip why the tree can't be generated
+* GROK-18901: Chem | Scaffold tree: Error when loading the layout
+* Chem: Fix Distance functions
+* GROK-18916: Chem: Remove hint on viewer close
+* GROK-18931: Chem | Properties: Molecule charge is NaN
+* GROK-18944: Chemprop: train model: 'Creating interactive model preview' step takes too long
+* GROK-18945: Chem | Scaffold Tree: Color column not restored when reapplying saved layout
+* GROK-18815, GROK-18816, GROK-18820: Top Menu: UI/UX improvements: Fixed names, captions
+* [#3497](https://github.com/datagrok-ai/public/pull/3497): Chem: MPO: Update to work correctly with data sync
+
+
+### Features
+
+* Chem: Mixtures widget in context panel: show components names where available
+* Chem: calculate context panel descriptors via docker
+* Ability to run Descriptors, Properties, Toxicity risks, Structural alerts using Add new column dialog
 
 ## 1.16.5 (2025-09-15)
 
