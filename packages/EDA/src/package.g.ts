@@ -523,9 +523,9 @@ export function isApplicableXGBooster(df: DG.DataFrame, predictColumn: DG.Column
   return PackageFunctions.isApplicableXGBooster(df, predictColumn);
 }
 
-//name: Optimize features
+//name: Pareto Front
 //description: Perform optimization across multiple objectives: analyze trade-offs between conflicting objectives and identify Pareto-optimal points.
-//top-menu: ML | Optimize Features...
-export function optimizeFeatures() : void {
-  PackageFunctions.optimizeFeatures();
+//top-menu: ML | Pareto Front...
+export function paretoFront() : void {
+  PackageFunctions.paretoFront();
 }

@@ -264,7 +264,7 @@ export namespace funcs {
   /**
   Perform optimization across multiple objectives: analyze trade-offs between conflicting objectives and identify Pareto-optimal points.
   */
-  export async function optimizeFeatures(): Promise<void> {
-    return await grok.functions.call('EDA:OptimizeFeatures', {});
+  export async function paretoFront(): Promise<void> {
+    return await grok.functions.call('EDA:ParetoFront', {});
   }
 }
