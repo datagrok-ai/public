@@ -29,7 +29,6 @@ export class PlateGridManager {
     this.grid.props.showRowGridlines = true;
     this.grid.props.rowHeight = 45;
 
-    // Handle row selection via cell click
     this.grid.onCellClick.subscribe((gc: DG.GridCell) => {
       if (!gc || !gc.isTableCell || this.isSelecting) return;
 

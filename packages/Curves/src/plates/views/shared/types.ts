@@ -15,7 +15,7 @@ export type TemplateState = {
 };
 
 export interface PlateStateChangeEvent {
- type: 'plate-added' | 'plate-removed' | 'plate-selected' | 'mapping-changed' | 'template-changed' | 'analysis-mapping-changed'| 'identifier-changed' | 'plate-data-changed'; // <-- ADD THIS
+ type: 'plate-added' | 'plate-removed' | 'plate-selected' | 'mapping-changed' | 'template-changed' | 'analysis-mapping-changed'| 'identifier-changed' | 'plate-data-changed';
  templateId?: number;
  plateIndex?: number;
  plate?: PlateFile;

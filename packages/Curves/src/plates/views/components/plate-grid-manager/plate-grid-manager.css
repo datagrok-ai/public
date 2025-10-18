@@ -2,14 +2,15 @@
 .assay-plates--plate-grid-manager {
   display: flex;
   flex-direction: column;
-  width: 100% !important;
+  width: 100%;
   height: 100%;
   min-height: 0;
+  min-width: 0; 
 }
 
 .assay-plates--plate-grid-manager > .d4-grid {
-  flex-grow: 1;
-  width: 100% !important;
+  flex: 1;
+  width: 100%;
   border: 1px solid var(--grey-2);
   border-radius: 4px;
   min-height: 150px;
@@ -33,5 +34,5 @@
 }
 
 .assay-plates--plate-grid-manager .d4-grid-root {
-  width: 100% !important;
+  width: 100%;
 }

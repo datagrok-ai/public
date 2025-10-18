@@ -59,7 +59,6 @@
     margin-left: 2px;
 }
 
-/* Input container styling */
 .assay-plates--mapping-input-container {
     display: flex;
     align-items: center;
@@ -69,10 +68,9 @@
 
 .assay-plates--mapping-input-container .ui-input-root {
     flex: 1;
-    margin: 0 !important; /* Override Datagrok defaults */
+    margin: 0 !important; 
 }
 
-/* Remove excessive margins from Datagrok components */
 .assay-plates--mapping-editor-row .d4-input-editor {
     margin: 0;
 }
@@ -122,7 +120,6 @@
     flex: 1;
 }
 
-/* Info message styling */
 .assay-plates--info-message {
     text-align: center;
     color: var(--grey-3);
@@ -133,7 +130,6 @@
     border-radius: 4px;
 }
 
-/* Analysis mapping panel integration */
 .assay-plates--analysis-mapping-panel {
     width: 100%;
 }

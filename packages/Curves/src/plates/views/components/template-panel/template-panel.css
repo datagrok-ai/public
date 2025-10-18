@@ -3,37 +3,44 @@
 
 /* == Main Panel Layout == */
 .assay-plates--template-panel {
-  flex-shrink: 0;
-  width: 410px;
-  max-width: 450px;
+  flex: 0 0 auto;
+  min-width: 350px;
+  max-width: 600px;
+  width: auto;
   display: flex;
   flex-direction: column;
   gap: 1px;
   overflow-y: auto;
   border-right: 1px solid var(--grey-2);
-  /* FIX: Remove padding to prevent content being cut off and allow full width usage */
   padding: 0;
   box-sizing: border-box;
 }
 
-/* == Collapsible Sections == */
 .assay-plates--left-panel-section {
   display: flex;
   flex-direction: column;
   border-bottom: 1px solid var(--grey-1);
-  margin: 0 12px 16px 12px; /* Add margin for spacing instead of padding on parent */
+  margin: 0 12px 16px 12px;
   padding-bottom: 8px;
+  min-width: 0; 
+}
+
+.assay-plates--template-selector-section {
+  border-bottom: none !important;
+  margin-bottom: 0 !important;
 }
 
 .assay-plates--collapsible-header-container {
   display: flex;
   align-items: center;
-  cursor: pointer;
+  min-width: 0; 
 }
 
 .assay-plates--collapsible-icon {
   margin-right: 8px;
   color: var(--grey-4);
+  cursor: pointer;
+  flex-shrink: 0; 
 }
 
 .assay-plates--left-panel-section h2 {
@@ -41,26 +48,31 @@
   font-size: 18px;
   font-weight: 500;
   color: var(--grey-8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0; 
 }
 
 .assay-plates--collapsible-content {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  /* FIX: Removed left padding to eliminate unwanted indentation */
   padding: 8px 0;
+  min-width: 0;
 }
 
-/* == Universal Form Row for Consistent Layout == */
 .assay-plates--form-row {
   display: grid;
-  grid-template-columns: 140px 1fr;
+  grid-template-columns: minmax(100px, 140px) 1fr;
   align-items: center;
-  gap: 12px;
+  gap: 8px; 
   min-height: 32px;
   padding: 4px 0;
   border-radius: 4px;
   transition: background-color 0.15s ease;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 .assay-plates--form-row:hover {
@@ -76,6 +88,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .assay-plates--required-asterisk {
@@ -87,23 +100,35 @@
 .assay-plates--form-row .ui-input-root {
   width: 100%;
   margin: 0 !important;
+  min-width: 0; 
 }
 
-/* == Import & Identifier Controls == */
+.assay-plates--form-row input,
+.assay-plates--form-row select,
+.assay-plates--form-row .ui-input-editor {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
+}
+
 .assay-plates--plate-import-input button {
   width: 100%;
   justify-content: center !important;
   gap: 8px;
+  min-width: 0; 
 }
 
 .assay-plates--identifier-control-row {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
+  min-width: 0;
 }
 
 .assay-plates--identifier-control-row > .assay-plates--form-row {
-  flex-grow: 1;
+  flex: 1;
+  min-width: 0; 
 }
 
 .assay-plates--add-identifier-container,
@@ -111,7 +136,6 @@
   margin-top: 8px;
 }
 
-/* == Icon Buttons (Add/Remove) == */
 .assay-plates--icon-button {
   display: flex;
   align-items: center;
@@ -142,16 +166,16 @@
 .assay-plates--add-button i.grok-icon { color: var(--blue-3); }
 .assay-plates--remove-button i.grok-icon { color: var(--red-3); }
 
-
-/* == Mapping Specific Controls == */
 .assay-plates--mapping-input-container {
   display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
+  min-width: 0;
 }
 .assay-plates--mapping-input-container .ui-input-root {
-  flex-grow: 1;
+  flex: 1;
+  min-width: 0; 
 }
 
 .assay-plates--mapping-undo-icon,
@@ -159,6 +183,7 @@
   color: var(--grey-4);
   cursor: pointer;
   visibility: hidden;
+  flex-shrink: 0; /* Prevent icons from shrinking */
 }
 
 .assay-plates--form-row:hover .assay-plates--mapping-undo-icon,
@@ -171,7 +196,6 @@
   color: var(--red-2);
 }
 
-/* == Info Message == */
 .assay-plates--info-message {
   text-align: center;
   color: var(--grey-3);
@@ -180,4 +204,63 @@
   background-color: var(--grey-0);
   border: 1px solid var(--grey-1);
   border-radius: 4px;
+}
+
+.assay-plates--template-properties-panel {
+  display: flex;
+  flex-direction: column;
+  margin: 0 12px 16px 12px;
+  padding-bottom: 8px;
+  min-width: 0; 
+}
+
+.assay-plates--properties-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  margin-bottom: 8px;
+  min-width: 0; 
+}
+
+.assay-plates--properties-subheader {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--grey-7);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0; 
+}
+
+.assay-plates--properties-template-name {
+  font-size: 12px;
+  color: var(--grey-5);
+  font-family: var(--font-family-mono);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0; 
+  margin-left: 8px; 
+}
+
+.assay-plates--properties-template-dot {
+  color: var(--grey-4);
+  margin-right: 6px;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.assay-plates--properties-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-sizing: border-box;
+  min-width: 0; 
+}
+
+.assay-plates--template-dropdown .ui-input-editor {
+  font-family: var(--font-family-mono);
+  width: 100% !important;
 }

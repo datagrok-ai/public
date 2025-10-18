@@ -54,7 +54,7 @@ function getAnalysesSearchView(
   const mainView = DG.View.create();
   mainView.name = viewName;
   const resultsView = DG.TableView.create(DG.DataFrame.create(0), false);
-  resultsView._onAdded(); // <-- ADD THIS LINE to initialize the grid view properly
+  resultsView._onAdded();
 
   let analysisForm: DG.InputForm;
 

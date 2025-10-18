@@ -157,6 +157,10 @@ export function createPlatesView(): DG.View {
     () => { console.warn('[DEBUG] TemplatePanel is not implemented'); }
   );
 
+
+  templatePanel.root.style.minWidth = '350px'; // Optional: set a minimum but allow expansion
+  templatePanel.root.style.maxWidth = '600px'; // Optional: set a maximum
+
   stateManager.onStateChange$.subscribe(async (event) => {
     const activePlate = stateManager.activePlate;
     if (activePlate)
@@ -202,17 +206,47 @@ export function createPlatesView(): DG.View {
       }
     }
   });
+  // ... (end of stateManager.onStateChange$)
 
-  const rightPanel = ui.divV([
+  // [!] 2. REPLACE THE LAYOUT SECTION WITH THIS:
+
+  // 1. Create the resizable vertical split for the right side
+  // 1. Create the resizable vertical split for the right side
+  const rightSideSplitter = ui.splitV([
     plateGridManager.root,
     tabControl.root,
+  ], {
+    style: {
+      flex: '1',
+      minHeight: '0',
+      width: '100%', // Explicitly set width
+      minWidth: '0' // Allow shrinking
+    }
+  }, true);
+
+  // Force the tab control to be flexible
+  tabControl.root.style.flex = '1';
+  tabControl.root.style.minHeight = '0';
+  tabControl.root.style.minWidth = '0';
+
+  // Force the plate grid manager to be flexible
+  plateGridManager.root.style.flex = '1';
+  plateGridManager.root.style.minHeight = '0';
+  plateGridManager.root.style.minWidth = '0';
+
+  // 2. Create the wrapper div
+  const rightPanelWrapper = ui.divV([
+    rightSideSplitter
   ], 'assay-plates--create-plate-view__right-panel');
 
-  const mainLayout = ui.divH(
-    [templatePanel.root, rightPanel],
-    'assay-plates--create-plate-view__main-layout'
+  // 3. Create the main horizontal split
+  // 3. Create the main horizontal split
+  const mainLayout = ui.splitH(
+    [templatePanel.root, rightPanelWrapper],
+    {style: {width: '100%', height: '100%', minHeight: '0'}},
+    true
   );
-
+  mainLayout.classList.add('assay-plates--create-plate-view__main-layout');
   view.root.appendChild(mainLayout);
 
   tabControl.currentPane = tabControl.getPane('Plate View');
@@ -306,7 +340,6 @@ export function createPlatesView(): DG.View {
         grok.shell.warning('No active plate to save as template.');
         return;
       }
-
       await savePlateAsTemplate(plateToSave, stateManager.currentTemplate);
       await initPlates(true);
       grok.shell.info(`Plate template updated: ${stateManager.currentTemplate.name}`);

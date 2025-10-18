@@ -183,14 +183,14 @@
 
 .assay-plates--mapping-editor-row,
 .assay-plates--validation-table-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  align-items: center;
-  min-height: 32px;
-  padding: 8px 0;
-  border-radius: 4px;
-  transition: all 0.15s ease;
+display: grid;
+grid-template-columns: 140px 1fr; /* <-- This is the fix */
+gap: 12px;
+align-items: center;
+min-height: 32px;
+padding: 8px 0;
+border-radius: 4px;
+transition: all 0.15s ease;
 }
 
 .assay-plates--mapping-editor-row:hover,

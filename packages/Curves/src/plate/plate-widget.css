@@ -3,99 +3,84 @@
     height: 100%;
     display: flex;
     flex-direction: column;
+    min-width: 0;
 }
 
 .assay-plates--plate-widget__tabs-container {
     width: 100%;
     display: flex;
     height: 100%;
-    flex-grow: 1;
+    flex: 1;
+    min-width: 0;
 }
 
 .assay-plates--plate-widget__tabs {
     width: 100%;
-    flex-grow: 1;
-    display: flex; /* Ensure tab control fills space */
+    flex: 1;
+    display: flex;
+    min-width: 0; 
 }
 
-/* This is the main container for the detailed view (tabs on left, details on right) */
 .assay-plates--plate-widget__main-container {
     width: 100%;
     display: flex;
     flex-direction: row; 
     gap: 15px;
     height: 100%;
-    flex-grow: 1;
+    flex: 1;
+    min-width: 0;
 }
 
-/* Make the first child (the TabControl) take up the available space */
 .assay-plates--plate-widget__main-container > div:first-child {
-    flex-grow: 1;
+    flex: 1;
+    min-width: 0; 
 }
 
 .assay-plates--plate-widget__details {
-    /* Define a size for the details panel on the right */
     min-width: 250px;
     max-width: 300px;
     overflow-y: auto;
 }
 
-
-/* --- Vertical TabControl Styles --- */
-
-/* Target the header strip within your vertical tabs. */
 .assay-plates--plate-widget__tabs .d4-tab-header-strip {
-    /* Arrange the tab headers in a vertical column */
     flex-direction: column;
     width: 180px;
     min-width: 180px;
-
-    /* Remove the default bottom border used for horizontal tabs */
     border-bottom: none;
-
-    /* Add a right border to separate headers from the content panel */
     border-right: 1px solid var(--grey-2);
 }
 
-/* Ensure the container for the headers themselves also stacks them vertically */
 .assay-plates--plate-widget__tabs .d4-tab-headers {
     flex-direction: column;
     width: 100%;
 }
 
-/* Style the individual tab buttons for a vertical layout */
 .assay-plates--plate-widget__tabs .d4-tab-header {
-    /* Align tab text to the left */
     justify-content: flex-start;
     padding: 8px 12px;
     width: 100%;
-
-    /* Remove styles meant for horizontal tabs */
     border-bottom: none;
 }
-/*
-  Override the generic platform style that sets a fixed height on .ui-box elements.
-  This more specific selector ensures that any .ui-box inside the plate widget
-  has its height reset, allowing it to grow and fill the available space.
 
-  Unfortunately, this is a clusterfuck and doesn't work. Davit found some black magic way to fix this, have to ask again...
-*/ 
 .assay-plates--plate-widget .ui-box {
     height: 100%;
 }
-/* Make the Datagrok Grid inside the widget expand to fill all available space */
+
 .assay-plates--plate-widget .d4-grid {
-    flex-grow: 1;
+    flex: 1;
+    min-width: 0;
 }
+
 .d4-tab-host .ui-box .d4-tab-vertical .assay-plates--plate-widget__tabs{
     height: 100%;
 }
 
 .assay-plates--create-plate-view__tab-control {
     width: 100%;
-    flex-grow: 1;
+    flex: 1;
     display: flex;
     flex-direction: column;
+    min-width: 0;
 }
 
 .assay-plates--create-plate-view__tab-control > .d4-tab-host {
@@ -103,38 +88,37 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    flex-grow: 1;
+    flex: 1;
+    min-width: 0;
 }
 
 .assay-plates--create-plate-view__tab-control > .d4-tab-host > .d4-tab-contents {
-    width: 100% !important;
+    width: 100%;
 }
 
-/* Make this more specific as well */
 .assay-plates--create-plate-view__tab-control > .d4-tab-host .d4-tab-content,
 .assay-plates--create-plate-view__tab-control > .d4-tab-host .d4-tab-pane-content {
     width: 100%;
     height: 100%;
     max-width: none;
-    flex-grow: 1;
+    flex: 1;
     display: flex;
     flex-direction: column;
     min-height: 0;
+    min-width: 0;
 }
 
-/* This rule is fine as-is */
 .assay-plates--create-plate-view .d4-grid {
-    width: 100% !important;
+    width: 100%;
 }
 
-/* This rule is also fine */
 .assay-plates--create-plate-view .d4-tab-content .assay-plates--plate-widget {
-    flex-grow: 1;
+    flex: 1;
     display: flex;
     min-width: 0;
 }
 
 .assay-plates--create-plate-view .d4-tab-content .assay-plates--plate-widget > :last-child {
-    flex-grow: 1;
+    flex: 1;
     min-width: 0;
 }
