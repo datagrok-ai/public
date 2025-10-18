@@ -461,7 +461,7 @@ export async function savePlate(plate: Plate, options?: { autoCreateProperties?:
     if (autoCreateProperties && !prop) {
       const valueType = getValueType(plate.details[layer]);
       await createProperty({name: layer, type: valueType, scope: 'plate'});
-      grok.shell.info('Global plate property created: ' + layer);
+      // grok.shell.info('Global plate property created: ' + layer);
     } else if (!prop) {
       throw new Error(`Global property ${layer} not found`);
     }
@@ -469,12 +469,11 @@ export async function savePlate(plate: Plate, options?: { autoCreateProperties?:
 
   for (const col of plate.data.columns) {
     const prop = findProp(globalWellProperties, col.name);
-    if (autoCreateProperties && !prop) {
+    if (autoCreateProperties && !prop)
       await createProperty({name: col.name, type: col.type, scope: 'well'});
-      grok.shell.info('Global well property created: ' + col.name);
-    } else if (!prop) {
+      // grok.shell.info('Global well property created: ' + col.name);
+    else if (!prop)
       throw new Error(`Global property ${col.name} not found`);
-    }
   }
 
   await initPlates(true);
@@ -482,7 +481,7 @@ export async function savePlate(plate: Plate, options?: { autoCreateProperties?:
   await grok.data.db.query('Curves:Plates', sql);
 
   events.next({on: 'after', eventType: 'created', objectType: TYPE.PLATE, object: plate});
-  grok.shell.info('Plate saved');
+  // grok.shell.info('Plate saved');
 }
 
 export async function savePlateAsTemplate(plate: Plate, template: PlateTemplate) {

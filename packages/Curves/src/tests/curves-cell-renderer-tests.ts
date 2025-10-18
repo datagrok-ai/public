@@ -20,20 +20,20 @@ export function createIFitChartData(seriesLength: number): IFitChartData {
 
   const points = createSigmoidPoints(seriesLength, step);
   const color = DG.Color.toHtml(DG.Color.scatterPlotMarker);
-	chartData.series![0] = {
-	  fitLineColor: color,
-	  pointColor: color,
-	  markerType: DG.MARKER_TYPE.CIRCLE,
-	  showFitLine: true,
-	  showPoints: 'points',
-	  showCurveConfidenceInterval: true,
-	  fitFunction: 'sigmoid',
-	  points: wu.count().take(seriesLength)
-	    .map(function(i) { return {x: points.x[i], y: points.y[i]}; })
-	    .toArray()
-	};
+chartData.series![0] = {
+  fitLineColor: color,
+  pointColor: color,
+  markerType: DG.MARKER_TYPE.CIRCLE,
+  showFitLine: true,
+  showPoints: 'points',
+  showCurveConfidenceInterval: true,
+  fitFunction: 'sigmoid',
+  points: wu.count().take(seriesLength)
+    .map(function(i) { return {x: points.x[i], y: points.y[i]}; })
+    .toArray()
+};
 
-	return chartData;
+return chartData;
 }
 
 export async function scrollTable(el: HTMLElement, delta: number, cycles: number, secDelay: number) {

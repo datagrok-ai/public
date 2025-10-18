@@ -14,6 +14,7 @@ import {AnalysisManager} from '../../plate/analyses/analysis-manager';
 import './plates-create-view.css';
 import {PlateWidget} from '../../plate/plate-widget/plate-widget';
 import {PlateSelectionController} from '../../plate/plate-widget/plate-selection-controller';
+import {MAPPING_SCOPES} from './shared/scopes';
 
 type InteractionMode = 'view' | 'outlier-marking';
 
@@ -226,25 +227,77 @@ export function createPlatesView(): DG.View {
         return;
       }
 
-      const activePlate = stateManager.activePlate;
-      if (activePlate) {
-        const dummyTableElement = ui.div();
-        const validation = renderValidationResults(
-          dummyTableElement,
-          plateToSave,
-          stateManager.currentTemplate,
-          () => {},
-          new Map(),
-          () => {}
-        );
+      const template = stateManager.currentTemplate;
+      const activeIndex = stateManager.currentState?.activePlateIdx ?? -1;
 
-        if (validation.conflictCount > 0)
-          grok.shell.warning('Saving plate with unresolved validation issues.');
+      if (activeIndex < 0) {
+        grok.shell.warning('No active plate is selected.');
+        return;
+      }
+
+      const wellPropertyMappings = stateManager.getMappings(activeIndex, MAPPING_SCOPES.TEMPLATE);
+      const plateDetails = plateToSave.details || {};
+      const requiredPropIds = new Set(template.required_props.map((tuple) => tuple[0]));
+
+      const missingPlateProps: string[] = template.plateProperties
+        .filter((p) => p && p.name && requiredPropIds.has(p.id!))
+        .filter((prop) => {
+          const value = plateDetails[prop.name!];
+          return value === null || value === undefined || value === '';
+        })
+        .map((prop) => prop.name!);
+
+      const missingWellProps: string[] = template.wellProperties
+        .filter((p) => p && p.name && requiredPropIds.has(p.id!))
+        .filter((prop) => !wellPropertyMappings.has(prop.name!))
+        .map((prop) => prop.name!);
+
+      const totalErrors = missingPlateProps.length + missingWellProps.length;
+
+      if (totalErrors > 0) {
+        const plateErrors = missingPlateProps.map((prop) => {
+          const li = ui.element('li');
+          li.appendChild(ui.span([prop], 'ui-label'));
+          return li;
+        });
+        const wellErrors = missingWellProps.map((prop) => {
+          const li = ui.element('li');
+          li.appendChild(ui.span([prop], 'ui-label'));
+          return li;
+        });
+
+        const errorContent = ui.divV([]);
+
+        if (missingPlateProps.length > 0) {
+          errorContent.appendChild(ui.h3('Missing Plate Properties:'));
+          const plateErrorList = ui.element('ul', 'ui-list');
+          plateErrors.forEach((li) => plateErrorList.appendChild(li));
+          errorContent.appendChild(plateErrorList);
+        }
+
+        if (missingWellProps.length > 0) {
+          errorContent.appendChild(ui.h3('Missing Well Mappings:'));
+          const wellErrorList = ui.element('ul', 'ui-list');
+          wellErrors.forEach((li) => wellErrorList.appendChild(li));
+          errorContent.appendChild(wellErrorList);
+        }
+
+        ui.dialog('Validation Failed')
+          .add(ui.divText('Please resolve the following required items before creating the plate:'))
+          .add(errorContent)
+          .onOK(() => {})
+          .show();
+
+        return;
       }
 
       plateToSave.plateTemplateId = stateManager.currentTemplate.id;
       await savePlate(plateToSave);
-      grok.shell.info(`Plate created: ${plateToSave.barcode}`);
+      const plateInfo = ui.divV([
+        ui.divText(`Barcode: ${plateToSave.barcode}`),
+        ui.divText(`Template: ${template.name}`),
+      ]);
+      grok.shell.info(ui.divV([ui.h3('Plate Created Successfully'), plateInfo]));
     }),
 
     ui.button('SAVE TEMPLATE', async () => {

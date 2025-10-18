@@ -208,6 +208,10 @@ export class TemplatePanel {
       const currentValue = activePlate?.plate.details?.[prop.name!];
       const isRequired = requiredPropIds.has(prop.id!);
       const input = this.createPropertyInput(prop, currentValue, isRequired);
+      if (currentValue === undefined && input.value !== null && input.value !== undefined && activePlate) {
+        if (!activePlate.plate.details) activePlate.plate.details = {};
+        activePlate.plate.details[prop.name!] = input.value;
+      }
 
       input.onChanged.subscribe(() => {
         if (activePlate) {

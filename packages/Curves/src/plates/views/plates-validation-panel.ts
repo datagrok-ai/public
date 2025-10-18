@@ -4,11 +4,6 @@ import * as ui from 'datagrok-api/ui';
 import {Plate} from '../../plate/plate';
 import {PlateTemplate} from '../plates-crud';
 
-const REQUIRED_ANALYSIS_FIELDS = [
-  {name: 'Activity', required: true},
-  {name: 'Concentration', required: true},
-  {name: 'SampleID', required: true},
-];
 
 function createDynamicMappingRow(
   sourceColumns: string[],
@@ -71,20 +66,15 @@ export function renderValidationResults(
       isRequired: requiredPropIds.has(p.id!),
     }));
 
-  const analysisProps = REQUIRED_ANALYSIS_FIELDS.map((p) => ({
-    name: p.name,
-    isRequired: p.required,
-  }));
 
   const allPropsMap = new Map<string, { name: string, isRequired: boolean }>();
-  [...templateProps, ...analysisProps].forEach((p) => {
+  [...templateProps].forEach((p) => {
     const existing = allPropsMap.get(p.name);
     if (existing)
       existing.isRequired = existing.isRequired || p.isRequired;
     else
       allPropsMap.set(p.name, {...p});
   });
-
   reconciliationMap.forEach((_, targetCol) => {
     if (!allPropsMap.has(targetCol))
       allPropsMap.set(targetCol, {name: targetCol, isRequired: false});
