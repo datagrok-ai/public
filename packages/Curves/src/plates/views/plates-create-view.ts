@@ -6,7 +6,6 @@ import {Plate} from '../../plate/plate';
 import {plateTemplates, plateTypes, savePlate, savePlateAsTemplate, initPlates} from '../plates-crud';
 import {PlateStateManager} from './shared/plate-state-manager';
 import {TemplatePanel} from './components/template-panel/template-panel';
-import {renderValidationResults} from './plates-validation-panel';
 import {Subscription} from 'rxjs';
 import './components/plate-grid-manager/plate-grid-manager.css';
 import {PlateGridManager} from './components/plate-grid-manager/plate-grid-manager';
@@ -21,7 +20,6 @@ type InteractionMode = 'view' | 'outlier-marking';
 export function createPlatesView(): DG.View {
   const view = DG.View.create();
   view.name = 'Create Plate';
-
   view.root.classList.add('assay-plates--create-plate-view');
 
   const plateType = plateTypes[0];
@@ -152,14 +150,12 @@ export function createPlatesView(): DG.View {
   const plateGridManager = new PlateGridManager(stateManager);
 
   const templatePanel = new TemplatePanel(
-    stateManager,
-    plateWidget,
-    () => { console.warn('[DEBUG] TemplatePanel is not implemented'); }
+    stateManager
   );
 
 
-  templatePanel.root.style.minWidth = '350px'; // Optional: set a minimum but allow expansion
-  templatePanel.root.style.maxWidth = '600px'; // Optional: set a maximum
+  templatePanel.root.style.minWidth = '350px';
+  templatePanel.root.style.maxWidth = '600px';
 
   stateManager.onStateChange$.subscribe(async (event) => {
     const activePlate = stateManager.activePlate;
@@ -206,12 +202,7 @@ export function createPlatesView(): DG.View {
       }
     }
   });
-  // ... (end of stateManager.onStateChange$)
 
-  // [!] 2. REPLACE THE LAYOUT SECTION WITH THIS:
-
-  // 1. Create the resizable vertical split for the right side
-  // 1. Create the resizable vertical split for the right side
   const rightSideSplitter = ui.splitV([
     plateGridManager.root,
     tabControl.root,
@@ -234,13 +225,10 @@ export function createPlatesView(): DG.View {
   plateGridManager.root.style.minHeight = '0';
   plateGridManager.root.style.minWidth = '0';
 
-  // 2. Create the wrapper div
   const rightPanelWrapper = ui.divV([
     rightSideSplitter
   ], 'assay-plates--create-plate-view__right-panel');
 
-  // 3. Create the main horizontal split
-  // 3. Create the main horizontal split
   const mainLayout = ui.splitH(
     [templatePanel.root, rightPanelWrapper],
     {style: {width: '100%', height: '100%', minHeight: '0'}},

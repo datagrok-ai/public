@@ -7,8 +7,8 @@ import {Subscription} from 'rxjs';
 import {plateTemplates, plateTypes} from '../../../plates-crud';
 import {MAPPING_SCOPES} from '../../shared/scopes';
 import './template-panel.css';
-import {PlateWidget} from '../../../../plate/plate-widget/plate-widget';
 import {TargetProperty} from '../mapping-editor/mapping-editor';
+import { createDynamicMappingRow } from '../../shared/mapping-utils';
 function createFormRow(label: string | HTMLElement, input: DG.InputBase<any> | HTMLElement): HTMLElement {
   const labelEl = typeof label === 'string' ? ui.divText(label, 'ui-label') : label;
   const inputEl = (input instanceof DG.InputBase) ? input.root : input;
@@ -27,7 +27,7 @@ export class TemplatePanel {
 
 
   constructor(
-    private stateManager: PlateStateManager,
+    private stateManager: PlateStateManager
   ) {
     this.root = ui.divV([], 'assay-plates--template-panel');
     this.platePropertiesHost = ui.divV([], 'assay-plates--properties-content');
@@ -294,23 +294,8 @@ export class TemplatePanel {
       onUndo: handleUndo,
     });
   }
-
   private createDynamicMappingRow(sourceColumns: string[], onMap: (target: string, source: string) => void, onCancel: () => void): HTMLElement {
-    let propName: string | null = null; let sourceCol: string | null = null;
-    const applyMapping = () => { if (propName && sourceCol) onMap(propName, sourceCol); };
-
-    const propInput = ui.input.string('', {placeholder: 'Property name...'});
-    propInput.onChanged.subscribe(() => { propName = propInput.value; });
-    propInput.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); applyMapping(); } });
-
-    const colChoice = ui.input.choice('', {value: null, items: [null, ...sourceColumns], nullable: true, onValueChanged: (v: string|null) => { sourceCol = v; applyMapping(); }});
-    const cancelBtn = ui.iconFA('times', onCancel, 'Cancel');
-    cancelBtn.classList.add('assay-plates--mapping-cancel-icon');
-
-    const inputContainer = ui.divH([colChoice.root, cancelBtn], 'assay-plates--mapping-input-container');
-    const row = createFormRow(propInput.root, inputContainer);
-    (propInput.input as HTMLElement).focus();
-    return row;
+    return createDynamicMappingRow({sourceColumns, onMap, onCancel});
   }
 
   private renderWellPropertyMappings(host: HTMLElement, options: any): void {

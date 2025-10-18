@@ -3,47 +3,18 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {Plate} from '../../plate/plate';
 import {PlateTemplate} from '../plates-crud';
+import {createDynamicMappingRow} from './shared/mapping-utils';
 
-
-function createDynamicMappingRow(
+function createMappingRow(
   sourceColumns: string[],
   onMap: (source: string, target: string) => void,
   onCancel: () => void
 ): HTMLElement {
-  let propName: string | null = null;
-  let sourceCol: string | null = null;
-
-  const tryApplyMapping = () => {
-    if (propName && sourceCol)
-      onMap(sourceCol, propName);
-  };
-
-  const propInput = ui.input.string('', {
-    placeholder: 'Property name...',
-    onValueChanged: (value) => {
-      propName = value;
-      tryApplyMapping();
-    }
+  return createDynamicMappingRow({
+    sourceColumns,
+    onMap: (target, source) => onMap(source, target),
+    onCancel
   });
-
-  const colChoice = ui.input.choice('', {
-    value: null,
-    items: [null, ...sourceColumns],
-    nullable: true,
-    onValueChanged: (value: string | null) => {
-      sourceCol = value;
-      tryApplyMapping();
-    }
-  });
-
-  const cancelBtn = ui.iconFA('times', onCancel, 'Cancel');
-  cancelBtn.classList.add('assay-plates--mapping-cancel-icon');
-
-  const rightCell = ui.divH([colChoice.root, cancelBtn], 'assay-plates--dynamic-row-right-cell');
-  const newRow = ui.divH([propInput.root, rightCell], 'assay-plates--validation-table-row');
-
-  propInput.input.focus();
-  return newRow;
 }
 
 
@@ -134,7 +105,7 @@ export function renderValidationResults(
   const skeletonRow = ui.divH([], 'assay-plates--validation-add-row');
 
   const addBtn = ui.button(ui.iconFA('plus'), () => {
-    const newRow = createDynamicMappingRow(sourceColumns, onMap, () => newRow.remove());
+    const newRow = createMappingRow(sourceColumns, onMap, () => newRow.remove());
     tableElement.insertBefore(newRow, skeletonRow);
   }, 'Add new property mapping');
   addBtn.classList.add('assay-plates--icon-button', 'assay-plates--add-button');

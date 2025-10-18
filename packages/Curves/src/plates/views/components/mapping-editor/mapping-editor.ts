@@ -1,7 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import './../template-panel/template-panel-and-mapping.css';
-
+import {createDynamicMappingRow} from '../../shared/mapping-utils';
+// Remove the local function and import the shared one
 
 export interface TargetProperty {
     name: string;
@@ -15,46 +16,46 @@ export interface MappingEditorOptions {
     onUndo: (target: string) => void;
 }
 
-function createDynamicMappingRow(
-  sourceColumns: string[],
-  onMap: (target: string, source: string) => void,
-  onCancel: () => void
-): HTMLElement {
-  let propName: string | null = null;
-  let sourceCol: string | null = null;
+// function createDynamicMappingRow(
+//   sourceColumns: string[],
+//   onMap: (target: string, source: string) => void,
+//   onCancel: () => void
+// ): HTMLElement {
+//   let propName: string | null = null;
+//   let sourceCol: string | null = null;
 
-  const applyMapping = () => {
-    if (propName && sourceCol)
-      onMap(propName, sourceCol);
-  };
+//   const applyMapping = () => {
+//     if (propName && sourceCol)
+//       onMap(propName, sourceCol);
+//   };
 
-  const propInput = ui.input.string('', {placeholder: 'Property name...'});
-  propInput.onChanged.subscribe(() => {
-    propName = propInput.value;
-  });
+//   const propInput = ui.input.string('', {placeholder: 'Property name...'});
+//   propInput.onChanged.subscribe(() => {
+//     propName = propInput.value;
+//   });
 
-  propInput.input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      applyMapping();
-    }
-  });
+//   propInput.input.addEventListener('keydown', (e) => {
+//     if (e.key === 'Enter') {
+//       e.preventDefault();
+//       applyMapping();
+//     }
+//   });
 
-  const colChoice = ui.input.choice('', {
-    value: null,
-    items: [null, ...sourceColumns],
-    nullable: true,
-    onValueChanged: (value: string | null) => {
-      sourceCol = value;
-      applyMapping();
-    },
-  });
+//   const colChoice = ui.input.choice('', {
+//     value: null,
+//     items: [null, ...sourceColumns],
+//     nullable: true,
+//     onValueChanged: (value: string | null) => {
+//       sourceCol = value;
+//       applyMapping();
+//     },
+//   });
 
-  const cancelBtn = ui.iconFA('times', onCancel, 'Cancel');
-  cancelBtn.classList.add('assay-plates--mapping-cancel-icon');
-  const rightCell = ui.divH([colChoice.root, cancelBtn], 'assay-plates--dynamic-row-right-cell');
-  return ui.divH([propInput.root, rightCell], 'assay-plates--mapping-editor-row');
-}
+//   const cancelBtn = ui.iconFA('times', onCancel, 'Cancel');
+//   cancelBtn.classList.add('assay-plates--mapping-cancel-icon');
+//   const rightCell = ui.divH([colChoice.root, cancelBtn], 'assay-plates--dynamic-row-right-cell');
+//   return ui.divH([propInput.root, rightCell], 'assay-plates--mapping-editor-row');
+// }
 
 export function renderMappingEditor(host: HTMLElement, options: MappingEditorOptions): void {
   const {targetProperties, sourceColumns, mappings, onMap, onUndo} = options;
@@ -115,7 +116,13 @@ export function renderMappingEditor(host: HTMLElement, options: MappingEditorOpt
 
   const addRowHost = ui.divH([], 'assay-plates--mapping-add-row');
   const addIcon = ui.iconFA('plus', () => {
-    const newDynamicRow = createDynamicMappingRow(sourceColumns, onMap, () => newDynamicRow.remove());
+    const newDynamicRow = createDynamicMappingRow(
+      {
+        sourceColumns,
+        onMap,
+        onCancel: () => newDynamicRow.remove()
+      }
+    );
     tableHost.insertBefore(newDynamicRow, addRowHost);
     (newDynamicRow.querySelector('input[type="text"]') as HTMLElement)?.focus();
   }, 'Add new property mapping');
