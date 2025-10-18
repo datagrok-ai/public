@@ -2,11 +2,11 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import './../template-panel/template-panel-and-mapping.css';
 
+
 export interface TargetProperty {
     name: string;
     required?: boolean;
 }
-
 export interface MappingEditorOptions {
     targetProperties: TargetProperty[];
     sourceColumns: string[];

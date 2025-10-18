@@ -1,7 +1,8 @@
+
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {plateTemplates} from '../plates-crud';
+import {plateTemplates, PlateTemplate} from '../plates-crud';
 import {propertySchemaView} from './plates-schema-view';
 import {PlateTemplateHandler} from '../objects/plate-template-handler';
 
@@ -20,7 +21,7 @@ export function createTemplatesView(): DG.View {
 
   view.setRibbonPanels([[
     ui.bigButton('CREATE NEW', async () => {
-      const newTemplate = {
+      const newTemplate: PlateTemplate = {
         name: 'New Template',
         description: '',
         plateProperties: [],
@@ -30,7 +31,8 @@ export function createTemplatesView(): DG.View {
           {name: 'Sample', type: DG.COLUMN_TYPE.STRING},
         ],
         id: -1,
-        plate_layout_id: -1
+        plate_layout_id: -1,
+        required_props: []
       };
 
       grok.shell.addPreview(propertySchemaView(newTemplate));
@@ -39,3 +41,4 @@ export function createTemplatesView(): DG.View {
 
   return view;
 }
+

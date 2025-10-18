@@ -1,0 +1,183 @@
+/* --- template-panel.css --- */
+/* A consolidated and scoped stylesheet for the template panel. */
+
+/* == Main Panel Layout == */
+.assay-plates--template-panel {
+  flex-shrink: 0;
+  width: 410px;
+  max-width: 450px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow-y: auto;
+  border-right: 1px solid var(--grey-2);
+  /* FIX: Remove padding to prevent content being cut off and allow full width usage */
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* == Collapsible Sections == */
+.assay-plates--left-panel-section {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--grey-1);
+  margin: 0 12px 16px 12px; /* Add margin for spacing instead of padding on parent */
+  padding-bottom: 8px;
+}
+
+.assay-plates--collapsible-header-container {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.assay-plates--collapsible-icon {
+  margin-right: 8px;
+  color: var(--grey-4);
+}
+
+.assay-plates--left-panel-section h2 {
+  margin: 0 !important;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--grey-8);
+}
+
+.assay-plates--collapsible-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  /* FIX: Removed left padding to eliminate unwanted indentation */
+  padding: 8px 0;
+}
+
+/* == Universal Form Row for Consistent Layout == */
+.assay-plates--form-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  align-items: center;
+  gap: 12px;
+  min-height: 32px;
+  padding: 4px 0;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+}
+
+.assay-plates--form-row:hover {
+    background-color: var(--blue-0);
+}
+
+.assay-plates--form-row .ui-label,
+.assay-plates--form-row > span {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--grey-5);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.assay-plates--required-asterisk {
+  color: var(--red-3);
+  margin-left: 2px;
+  font-weight: bold;
+}
+
+.assay-plates--form-row .ui-input-root {
+  width: 100%;
+  margin: 0 !important;
+}
+
+/* == Import & Identifier Controls == */
+.assay-plates--plate-import-input button {
+  width: 100%;
+  justify-content: center !important;
+  gap: 8px;
+}
+
+.assay-plates--identifier-control-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.assay-plates--identifier-control-row > .assay-plates--form-row {
+  flex-grow: 1;
+}
+
+.assay-plates--add-identifier-container,
+.assay-plates--add-row-container {
+  margin-top: 8px;
+}
+
+/* == Icon Buttons (Add/Remove) == */
+.assay-plates--icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  border: 1px solid var(--grey-2);
+  background-color: var(--grey-0);
+  margin-left: 8px;
+  height: 30px;
+  width: 30px;
+  flex-shrink: 0;
+}
+
+.assay-plates--icon-button:hover {
+  border-color: var(--blue-2);
+  background-color: var(--grey-1);
+}
+
+.assay-plates--icon-button i.grok-icon {
+  margin: 0 !important;
+}
+
+.assay-plates--add-button {
+  width: 100%;
+  justify-content: center;
+}
+.assay-plates--add-button i.grok-icon { color: var(--blue-3); }
+.assay-plates--remove-button i.grok-icon { color: var(--red-3); }
+
+
+/* == Mapping Specific Controls == */
+.assay-plates--mapping-input-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.assay-plates--mapping-input-container .ui-input-root {
+  flex-grow: 1;
+}
+
+.assay-plates--mapping-undo-icon,
+.assay-plates--mapping-cancel-icon {
+  color: var(--grey-4);
+  cursor: pointer;
+  visibility: hidden;
+}
+
+.assay-plates--form-row:hover .assay-plates--mapping-undo-icon,
+.assay-plates--identifier-control-row:hover .assay-plates--remove-button {
+  visibility: visible;
+}
+
+.assay-plates--mapping-undo-icon:hover,
+.assay-plates--mapping-cancel-icon:hover {
+  color: var(--red-2);
+}
+
+/* == Info Message == */
+.assay-plates--info-message {
+  text-align: center;
+  color: var(--grey-3);
+  font-style: italic;
+  padding: 24px;
+  background-color: var(--grey-0);
+  border: 1px solid var(--grey-1);
+  border-radius: 4px;
+}

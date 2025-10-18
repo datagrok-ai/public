@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 /* eslint-disable prefer-const */
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
@@ -40,7 +41,7 @@ export interface PlateProperty extends DG.IProperty {
   id: number;
   name: string;
   type: string;
-  template_id?: number;
+  // template_id?: number;
   scope?: 'plate' | 'well';
   min?: number;
   max?: number;
@@ -64,8 +65,17 @@ export type PlateTemplate = {
   plate_layout_id: number;
   plateProperties: Partial<PlateProperty>[];
   wellProperties: Partial<PlateProperty>[];
+  required_props: [number, string][];
 }
-
+export type PlateTemplateInput = Partial<Omit<PlateTemplate, 'plateProperties' | 'wellProperties' | 'required_props' | 'id'>> & {
+  name: string;
+  plateProperties?: TemplatePropertyInput[];
+  wellProperties?: TemplatePropertyInput[];
+}
+export type TemplatePropertyInput = Partial<PlateProperty> & {
+  is_required?: boolean;
+  default_value?: string | null;
+}
 export type AnalysisProperty = {
   name: string; // User-friendly name, e.g., "IC50"
   type: DG.TYPE; // Data type, e.g., DG.TYPE.FLOAT
@@ -119,12 +129,20 @@ export async function initPlates(force: boolean = false) {
   plateTypes = (await api.queries.getPlateTypes()).toJson();
 
   for (const template of plateTemplates) {
-    template.plateProperties = allProperties.filter(
-      (p) => p.template_id === template.id && p.scope === 'plate'
-    );
-    template.wellProperties = allProperties.filter(
-      (p) => p.template_id === template.id && p.scope === 'well'
-    );
+    const platePropsDf = await grok.functions.call('Curves:getTemplatePlateProperties', {templateId: template.id});
+    const wellPropsDf = await grok.functions.call('Curves:getTemplateWellProperties', {templateId: template.id});
+
+    const plateProps: any[] = platePropsDf.toJson();
+    const wellProps: any[] = wellPropsDf.toJson();
+
+    template.plateProperties = plateProps;
+    template.wellProperties = wellProps;
+
+    template.required_props = [];
+    for (const prop of [...plateProps, ...wellProps]) {
+      if (prop.is_required)
+        template.required_props.push([prop.id, prop.name]);
+    }
   }
 
   _initialized = true;
@@ -414,7 +432,6 @@ export async function createProperty(prop: Partial<PlateProperty>): Promise<Plat
   prop.id = await grok.functions.call('Curves:createProperty', {
     propertyName: prop.name!,
     valueType: prop.type!,
-    templateId: prop.template_id,
     scope: prop.scope,
     choices: prop.choices ? JSON.stringify(prop.choices) : null,
     min: prop.min,
@@ -431,13 +448,13 @@ export async function savePlate(plate: Plate, options?: { autoCreateProperties?:
   await initPlates();
 
   const plateSql =
-        `insert into plates.plates(plate_type_id, barcode)
-        values(${plate.plateTypeId}, ${sqlStr(plate.barcode)})
-        returning id`;
+ `insert into plates.plates(plate_type_id, barcode)
+  values(${plate.plateTypeId}, ${sqlStr(plate.barcode)})
+ returning id`;
   plate.id = (await grok.data.db.query('Curves:Plates', plateSql)).get('id', 0);
 
-  const globalPlateProperties = allProperties.filter((p) => p.template_id == null && p.scope === 'plate');
-  const globalWellProperties = allProperties.filter((p) => p.template_id == null && p.scope === 'well');
+  const globalPlateProperties = allProperties.filter((p) => p.scope === 'plate');
+  const globalWellProperties = allProperties.filter((p) => p.scope === 'well');
 
   for (const layer of Object.keys(plate.details)) {
     const prop = findProp(globalPlateProperties, layer);
@@ -511,35 +528,73 @@ function getPlateInsertSql(plate: Plate): string {
 }
 
 
-export async function createPlateTemplate(template: Partial<PlateTemplate>): Promise<PlateTemplate> {
-  template.id = await grok.functions.call('Curves:createTemplate', {
+export async function createPlateTemplate(template: PlateTemplateInput): Promise<PlateTemplate> {
+  const templateId = await grok.functions.call('Curves:createTemplate', {
     name: template.name,
     description: template.description
   });
 
-  const createdPlateProperties: PlateProperty[] = [];
-  const createdWellProperties: PlateProperty[] = [];
+  const createdPlateProperties: Partial<PlateProperty>[] = [];
+  const createdWellProperties: Partial<PlateProperty>[] = [];
+  const required_props: [number, string][] = [];
+
+  const getOrCreateGlobalProperty = async (prop: Partial<PlateProperty>): Promise<PlateProperty> => {
+    await initPlates();
+    let existingProp = allProperties.find((p) => p.name === prop.name && p.scope === prop.scope);
+    if (existingProp)
+      return existingProp;
+    return await createProperty(prop);
+  };
 
   for (const property of template.plateProperties ?? []) {
-    property.template_id = template.id;
     property.scope = 'plate';
-    const newProp = await createProperty(property);
+    const newProp = await getOrCreateGlobalProperty(property);
+
+    const isRequired = property.is_required ?? false;
+
+    await grok.functions.call('Curves:addTemplatePlateProperty', {
+      templateId: templateId,
+      propertyId: newProp.id,
+      isRequired: isRequired,
+      defaultValue: property.default_value ?? null
+    });
+
     createdPlateProperties.push(newProp);
+    if (isRequired)
+      required_props.push([newProp.id, newProp.name]);
   }
 
   for (const property of template.wellProperties ?? []) {
-    property.template_id = template.id;
     property.scope = 'well';
-    const newProp = await createProperty(property);
+    const newProp = await getOrCreateGlobalProperty(property);
+
+    const isRequired = property.is_required ?? false;
+
+    await grok.functions.call('Curves:addTemplateWellProperty', {
+      templateId: templateId,
+      propertyId: newProp.id,
+      isRequired: isRequired,
+      defaultValue: property.default_value ?? null
+    });
+
     createdWellProperties.push(newProp);
+    if (isRequired)
+      required_props.push([newProp.id, newProp.name]);
   }
 
-  template.plateProperties = createdPlateProperties;
-  template.wellProperties = createdWellProperties;
+  const finalTemplate: PlateTemplate = {
+    id: templateId,
+    name: template.name!,
+    description: template.description || '',
+    plate_layout_id: (template as any).plate_layout_id, // keep dynamic for now
+    plateProperties: createdPlateProperties,
+    wellProperties: createdWellProperties,
+    required_props: required_props,
+  };
 
-  plateTemplates.push(template as PlateTemplate);
-  events.next({on: 'after', eventType: 'created', objectType: TYPE.TEMPLATE, object: template});
-  return template as PlateTemplate;
+  plateTemplates.push(finalTemplate);
+  events.next({on: 'after', eventType: 'created', objectType: TYPE.TEMPLATE, object: finalTemplate});
+  return finalTemplate;
 }
 /** Checks if a plate template's properties are being used in any plates */
 export async function plateTemplatePropertiesUsed(template: PlateTemplate): Promise<boolean> {
@@ -648,10 +703,12 @@ export async function saveAnalysisResult(params: {
 
 export async function getOrCreateProperty(name: string, type: DG.TYPE, scope: 'plate' | 'well' = 'plate'): Promise<PlateProperty> {
   await initPlates();
-  let prop = allProperties.find((p) => p.name === name && p.template_id == null && p.scope == scope);
+
+  let prop = allProperties.find((p) => p.name === name && p.scope == scope);
   if (prop)
     return prop;
-  const newProp = await createProperty({name: name, type: type, scope: scope, template_id: undefined});
+
+  const newProp = await createProperty({name: name, type: type, scope: scope});
   await initPlates(true);
   return allProperties.find((p) => p.id === newProp.id)!;
 }

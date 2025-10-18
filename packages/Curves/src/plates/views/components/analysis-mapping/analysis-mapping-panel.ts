@@ -1,6 +1,7 @@
 import * as ui from 'datagrok-api/ui';
 import {renderMappingEditor, TargetProperty} from '../mapping-editor/mapping-editor';
 
+
 export interface AnalysisRequiredFields {
   name: string;
   required: boolean;

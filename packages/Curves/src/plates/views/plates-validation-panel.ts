@@ -10,8 +10,6 @@ const REQUIRED_ANALYSIS_FIELDS = [
   {name: 'SampleID', required: true},
 ];
 
-const MOCKED_REQUIRED_TEMPLATE_FIELDS = ['Target', 'Assay Format'];
-
 function createDynamicMappingRow(
   sourceColumns: string[],
   onMap: (source: string, target: string) => void,
@@ -64,11 +62,13 @@ export function renderValidationResults(
 ): { element: HTMLElement, conflictCount: number } {
   const sourceColumns = plate.data.columns.names();
 
+  const requiredPropIds = new Set(template.required_props.map((tuple) => tuple[0]));
+
   const templateProps = template.wellProperties
     .filter((p) => p && p.name)
     .map((p) => ({
       name: p.name!,
-      isRequired: MOCKED_REQUIRED_TEMPLATE_FIELDS.includes(p.name!),
+      isRequired: requiredPropIds.has(p.id!),
     }));
 
   const analysisProps = REQUIRED_ANALYSIS_FIELDS.map((p) => ({
@@ -110,9 +110,9 @@ export function renderValidationResults(
 
     const propNameEl = ui.divH([ui.span([prop.name])]);
     if (prop.isRequired) {
-      const asterisk = ui.element('sup');
-      asterisk.className = 'assay-plates--required-asterisk';
-      asterisk.innerText = '*';
+      const asterisk = ui.span([' *'], 'assay-plates--required-asterisk');
+      asterisk.style.color = 'red';
+      asterisk.style.marginLeft = '2px';
       propNameEl.appendChild(asterisk);
       if (!mappedSource)
         conflictCount++;

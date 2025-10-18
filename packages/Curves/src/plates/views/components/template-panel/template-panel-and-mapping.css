@@ -64,9 +64,10 @@
 }
 
 /* == Generic Form & Input Controls == */
+/* Replace the existing .assay-plates--form-row with this */
 .assay-plates--form-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 140px 1fr; /* Fixed width for labels */
   align-items: center;
   gap: 12px;
   padding: 8px 0;
@@ -78,7 +79,27 @@
   font-size: 13px;
   font-weight: 500;
   color: var(--grey-5);
+  text-align: left; /* Ensure left alignment */
 }
+
+.assay-plates--form-row .d4-input-root {
+  width: 100%;
+  margin: 0 !important;
+}
+
+/* Ensure ALL input types maintain consistent width */
+.assay-plates--form-row .d4-input-root input,
+.assay-plates--form-row .d4-input-root select,
+.assay-plates--form-row .d4-input-root .ui-input-editor {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Prevent focus/active states from changing layout */
+.assay-plates--form-row .d4-input-root:focus-within {
+  margin: 0 !important;
+}
+
 
 .assay-plates--form-row .d4-input-root {
   width: 100%;
@@ -284,4 +305,19 @@
 
 .assay-plates--left-panel-section-content .d4-input-label {
   margin-bottom: 0 !important;
+}
+/* Ensure consistent spacing across all collapsible sections */
+.assay-plates--left-panel-section {
+  padding: 0;
+  margin-bottom: 16px;
+}
+
+.assay-plates--left-panel-section-content {
+  padding: 12px 0 16px 24px; /* Consistent left padding for indentation */
+}
+
+/* Ensure all form rows in all sections use the same grid */
+.assay-plates--left-panel-section .assay-plates--form-row,
+.assay-plates--identifier-control-row .assay-plates--form-row {
+  grid-template-columns: 140px 1fr; /* Same fixed width across all sections */
 }

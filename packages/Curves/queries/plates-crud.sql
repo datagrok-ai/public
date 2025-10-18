@@ -106,14 +106,13 @@ WHERE p.type = 'string';
 -- connection: Curves:plates
 -- input: string propertyName
 -- input: string valueType
--- input: int templateId { nullable: true }
 -- input: string scope
 -- input: string choices { nullable: true }
 -- input: double min { nullable: true }
 -- input: double max { nullable: true }
 -- output: int propertyId
-INSERT INTO plates.properties(name, type, template_id, scope, choices, min, max)
-VALUES(@propertyName, @valueType, @templateId, @scope, @choices, @min, @max)
+INSERT INTO plates.properties(name, type, scope, choices, min, max)
+VALUES(@propertyName, @valueType, @scope, @choices, @min, @max)
 RETURNING id;
 -- end
 
@@ -246,4 +245,66 @@ CROSS JOIN LATERAL (
 WHERE
     ar.analysis_type = '${analysisType}'
     ${finalWhereClause}
+-- end
+
+
+
+-- name: addTemplatePlateProperty
+-- connection: Curves:plates
+-- input: int templateId
+-- input: int propertyId
+-- input: bool isRequired
+-- input: string defaultValue { nullable: true }
+INSERT INTO plates.template_plate_properties (template_id, property_id, is_required, default_value)
+VALUES (@templateId, @propertyId, @isRequired, @defaultValue)
+ON CONFLICT (template_id, property_id) 
+DO UPDATE SET is_required = EXCLUDED.is_required, default_value = EXCLUDED.default_value;
+-- end
+
+-- name: addTemplateWellProperty
+-- connection: Curves:plates
+-- input: int templateId
+-- input: int propertyId
+-- input: bool isRequired
+-- input: string defaultValue { nullable: true }
+INSERT INTO plates.template_well_properties (template_id, property_id, is_required, default_value)
+VALUES (@templateId, @propertyId, @isRequired, @defaultValue)
+ON CONFLICT (template_id, property_id) 
+DO UPDATE SET is_required = EXCLUDED.is_required, default_value = EXCLUDED.default_value;
+-- end
+
+-- name: getTemplatePlateProperties
+-- connection: Curves:plates
+-- input: int templateId
+SELECT p.*, tpp.is_required, tpp.default_value
+FROM plates.template_plate_properties tpp
+JOIN plates.properties p ON tpp.property_id = p.id
+WHERE tpp.template_id = @templateId
+ORDER BY p.name;
+-- end
+
+-- name: getTemplateWellProperties
+-- connection: Curves:plates
+-- input: int templateId
+SELECT p.*, twp.is_required, twp.default_value
+FROM plates.template_well_properties twp
+JOIN plates.properties p ON twp.property_id = p.id
+WHERE twp.template_id = @templateId
+ORDER BY p.name;
+-- end
+
+-- name: removeTemplatePlateProperty
+-- connection: Curves:plates
+-- input: int templateId
+-- input: int propertyId
+DELETE FROM plates.template_plate_properties 
+WHERE template_id = @templateId AND property_id = @propertyId;
+-- end
+
+-- name: removeTemplateWellProperty
+-- connection: Curves:plates
+-- input: int templateId
+-- input: int propertyId
+DELETE FROM plates.template_well_properties 
+WHERE template_id = @templateId AND property_id = @propertyId;
 -- end

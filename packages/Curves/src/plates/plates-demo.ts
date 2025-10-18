@@ -19,13 +19,13 @@ async function createDummyPlates() {
     name: 'Cell counting',
     description: 'Microscopy-based cell counting',
     plateProperties: [
-      {name: 'Imaging device', choices: ['Kodak', 'Nikon'], type: DG.COLUMN_TYPE.STRING},
-      {name: 'Status', choices: ['Pending', 'Filling', 'Measuring', 'Done'], type: DG.COLUMN_TYPE.STRING},
-      {name: 'Plate cell count', min: 0, max: 10000, type: DG.COLUMN_TYPE.INT}
+      {name: 'Imaging device', choices: ['Kodak', 'Nikon'], type: DG.COLUMN_TYPE.STRING, is_required: true},
+      {name: 'Status', choices: ['Pending', 'Filling', 'Measuring', 'Done'], type: DG.COLUMN_TYPE.STRING, is_required: true, default_value: 'Pending'},
+      {name: 'Plate cell count', min: 0, max: 10000, type: DG.COLUMN_TYPE.INT, is_required: false}
     ],
     wellProperties: [
-      {name: 'Well cell count', min: 0, max: 100, type: DG.COLUMN_TYPE.INT},
-      {name: 'Sample', choices: ['GRK-1', 'GRK-2', 'GRK-3', 'GRK-4', 'GRK-5', 'GRK-6'], type: DG.COLUMN_TYPE.STRING}
+      {name: 'Well cell count', min: 0, max: 100, type: DG.COLUMN_TYPE.INT, is_required: false},
+      {name: 'Sample', choices: ['GRK-1', 'GRK-2', 'GRK-3', 'GRK-4', 'GRK-5', 'GRK-6'], type: DG.COLUMN_TYPE.STRING, is_required: true}
     ]
   });
 
@@ -33,22 +33,21 @@ async function createDummyPlates() {
     name: 'Dose-response',
     description: 'Dose-response campaign',
     plateProperties: [
-      {name: 'Project', type: DG.COLUMN_TYPE.STRING, choices: ['Modulators of mGluR5', 'Agonists for GPCR GPR139', 'Glutaminase Inhibitors for TNBC']},
-      {name: 'Stage', type: DG.COLUMN_TYPE.STRING, choices: ['Lead generation', 'Lead optimization']},
-      {name: 'Chemist', type: DG.COLUMN_TYPE.STRING, choices: ['John Marlowski', 'Mary Hopton']},
-      {name: 'Biologist', type: DG.COLUMN_TYPE.STRING, choices: ['Anna Fei', 'Joan Dvorak']},
-      {name: 'QC Passed', type: DG.COLUMN_TYPE.BOOL},
-      {name: 'Z-Score', min: 0, max: 3, type: DG.COLUMN_TYPE.FLOAT},
+      {name: 'Project', type: DG.COLUMN_TYPE.STRING, choices: ['Modulators of mGluR5', 'Agonists for GPCR GPR139', 'Glutaminase Inhibitors for TNBC'], is_required: true},
+      {name: 'Stage', type: DG.COLUMN_TYPE.STRING, choices: ['Lead generation', 'Lead optimization'], is_required: false},
+      {name: 'Chemist', type: DG.COLUMN_TYPE.STRING, choices: ['John Marlowski', 'Mary Hopton'], is_required: true},
+      {name: 'Biologist', type: DG.COLUMN_TYPE.STRING, choices: ['Anna Fei', 'Joan Dvorak'], is_required: true},
+      {name: 'QC Passed', type: DG.COLUMN_TYPE.BOOL, is_required: true, default_value: 'false'},
+      {name: 'Z-Score', min: 0, max: 3, type: DG.COLUMN_TYPE.FLOAT, is_required: false},
     ],
     wellProperties: [
-      {name: 'Sample', choices: ['GRK-1', 'GRK-2', 'GRK-3', 'GRK-4', 'GRK-5', 'GRK-6'], type: DG.COLUMN_TYPE.STRING},
-      {name: 'Role', choices: ['Control', 'Treatment'], type: DG.COLUMN_TYPE.STRING},
-      {name: 'Concentration', min: 0, max: 100, type: DG.COLUMN_TYPE.FLOAT},
-      {name: 'Volume', min: 0, max: 100, type: DG.COLUMN_TYPE.FLOAT},
-      {name: 'Activity', min: 0, max: 100, type: DG.COLUMN_TYPE.FLOAT},
+      {name: 'Sample', choices: ['GRK-1', 'GRK-2', 'GRK-3', 'GRK-4', 'GRK-5', 'GRK-6'], type: DG.COLUMN_TYPE.STRING, is_required: false},
+      {name: 'Role', choices: ['Control', 'Treatment'], type: DG.COLUMN_TYPE.STRING, is_required: true, default_value: 'Treatment'},
+      {name: 'Concentration', min: 0, max: 100, type: DG.COLUMN_TYPE.FLOAT, is_required: true},
+      {name: 'Volume', min: 0, max: 100, type: DG.COLUMN_TYPE.FLOAT, is_required: false},
+      {name: 'Activity', min: 0, max: 100, type: DG.COLUMN_TYPE.FLOAT, is_required: true},
     ]
   });
-
   await initPlates(true);
 
   const getDemoValue = (property: PlateProperty) =>
