@@ -1,39 +1,39 @@
 {
   "name": "@datagrok/metabolicgraph",
   "friendlyName": "Metabolic Graph",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Metabolic graph visualizations and analysis",
   "author": {
     "name": "Dmytro Kovalyov",
     "email": "dkovalyov@datagrok.ai"
   },
   "dependencies": {
-    "glpk.js": "https://github.com/hgourvest/glpk.js",
-    "glpk-wasm": "^0.1.4",
     "@datagrok-libraries/utils": "^4.3.6",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.26.0",
-    "dayjs": "^1.11.10"
+    "datagrok-api": "^1.22.0",
+    "dayjs": "^1.11.10",
+    "glpk-wasm": "^0.1.4",
+    "glpk.js": "^4.0.2"
   },
   "devDependencies": {
-  "copy-webpack-plugin": "^12.0.2",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
-    "datagrok-tools": "^4.14.57",
+    "copy-webpack-plugin": "^12.0.2",
+    "datagrok-tools": "latest",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
+    "file-loader": "^6.2.0",
     "ts-loader": "^9.5.1",
     "typescript": "^5.6.3",
     "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4",
-    "file-loader": "^6.2.0"
+    "webpack-cli": "^5.1.4"
   },
   "scripts": {
     "link-all": "",
     "debug-metabolicgraph": "webpack && grok publish",
     "release-metabolicgraph": "webpack && grok publish --release",
     "build-metabolicgraph": "webpack",
-    "build": "grok api && grok check --soft && webpack",
+    "build": "webpack",
     "debug-metabolicgraph-dev": "webpack && grok publish dev",
     "release-metabolicgraph-dev": "webpack && grok publish dev --release",
     "debug-metabolicgraph-public": "webpack && grok publish public",

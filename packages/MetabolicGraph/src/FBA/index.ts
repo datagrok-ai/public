@@ -1,5 +1,5 @@
+import type { CobraModelData } from "../../escher_src/src/ts/types";
 import { modelFromJsonData, Solution } from "./cobraSolver";
-import type { CobraModelData } from '../../escher_src/src/ts/types';
 
 // DEPRECATED, use WorkerCobraSolver from './cobra' instead
 class WorkerCobraSolver {
