@@ -4,7 +4,8 @@ import * as DG from 'datagrok-api/dg';
 
 import '../../css/pareto.css';
 import {paretoMaskFromCoordinates} from './pareto-computations';
-import {NumericFeature, OPT_TYPE, NumericArray, DIFFERENCE, RATIO, OPTIMALITY_COL_NAME, PC_MAX_COLS} from './defs';
+import {NumericFeature, OPT_TYPE, NumericArray, DIFFERENCE, RATIO, OPTIMALITY_COL_NAME,
+  PC_MAX_COLS, scatterAxisNames} from './defs';
 
 
 export class ParetoOptimizer {
@@ -151,11 +152,23 @@ export class ParetoOptimizer {
   private updateScatter(colNames: string[]): void {
     this.scatter.setOptions({colorColumnName: this.resultColName});
 
-    if (colNames.length > 0)
-      this.scatter.setOptions({xColumnName: colNames[0]});
+    // update axis
+    const prevAxisCols = scatterAxisNames.map((axis) => this.scatter.getOptions().look[axis]);
 
-    if (colNames.length > 1)
-      this.scatter.setOptions({yColumnName: colNames[1]});
+    let toUpdateScatterAxisCols = false;
+
+    colNames.forEach((name) => {
+      if (!prevAxisCols.includes(name))
+        toUpdateScatterAxisCols = true;
+    });
+
+    if (toUpdateScatterAxisCols) {
+      scatterAxisNames.forEach((axis, idx) => {
+        const opt: Record<string, string> = {};
+        opt[axis] = colNames[idx];
+        this.scatter.setOptions(opt);
+      });
+    }
   } // updateScatter
 
   private update3dScatter(colNames: string[]): void {
@@ -180,14 +193,14 @@ export class ParetoOptimizer {
     if (this.toUpdatePcCols) {
       const prevColNames = this.pcPlot.getOptions().look['columnNames'];
 
-      let toUpdateScatterColNames = false;
+      let toUpdatePcPlotColNames = false;
 
       colNames.forEach((name) => {
         if (!prevColNames.includes(name))
-          toUpdateScatterColNames = true;
+          toUpdatePcPlotColNames = true;
       });
 
-      if (toUpdateScatterColNames) {
+      if (toUpdatePcPlotColNames) {
         const valColNames = [...colNames];
         const notIncluded = this.numColNames.filter((name) => !valColNames.includes(name));
         valColNames.push(...notIncluded.slice(0, PC_MAX_COLS - colNames.length));

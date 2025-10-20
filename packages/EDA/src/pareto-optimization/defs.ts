@@ -20,5 +20,6 @@ export enum RATIO {
 };
 
 export const OPTIMALITY_COL_NAME = 'Pareto optimality';
-
 export const PC_MAX_COLS = 10;
+
+export const scatterAxisNames = ['xColumnName', 'yColumnName'];
