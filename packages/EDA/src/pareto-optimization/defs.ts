@@ -23,9 +23,20 @@ export enum RATIO {
   VIEWER = 0.5,
 };
 
-export const OPTIMALITY_COL_NAME = 'Pareto optimality';
+export enum COL_NAME {
+  OPT = 'Pareto optimality',
+  SIZE = '_size',
+};
+
 export const PC_MAX_COLS = 10;
+export enum SIZE {
+  OPTIMAL = 8,
+  NON_OPT = 4,
+};
 
 export const AXIS_NAMES = ['xColumnName', 'yColumnName'];
 export const AXIS_NAMES_3D = ['xColumnName', 'yColumnName', 'zColumnName'];
 export type ColorOpt = Record<string, string | undefined>;
+
+export const SCATTER_ROW_LIM = 5000;
+export const SCATTER3D_ROW_LIM = 1000;

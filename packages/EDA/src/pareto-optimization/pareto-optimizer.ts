@@ -4,8 +4,11 @@ import * as DG from 'datagrok-api/dg';
 
 import '../../css/pareto.css';
 import {paretoMaskFromCoordinates} from './pareto-computations';
-import {NumericFeature, OPT_TYPE, NumericArray, DIFFERENCE, RATIO, OPTIMALITY_COL_NAME,
-  PC_MAX_COLS, AXIS_NAMES, ColorOpt, AXIS_NAMES_3D, LABEL} from './defs';
+import {NumericFeature, OPT_TYPE, NumericArray, DIFFERENCE, RATIO, COL_NAME,
+  PC_MAX_COLS, AXIS_NAMES, ColorOpt, AXIS_NAMES_3D, LABEL,
+  SIZE,
+  SCATTER_ROW_LIM,
+  SCATTER3D_ROW_LIM} from './defs';
 
 export class ParetoOptimizer {
   private df: DG.DataFrame;
@@ -17,10 +20,14 @@ export class ParetoOptimizer {
   private view: DG.TableView;
   private scatter: DG.ScatterPlotViewer;
   private resultColName: string;
+  private sizeColName: string;
   private labelColumnNames: string[];
   private scatter3d: DG.Viewer<DG.IScatterPlot3dSettings> | null = null;
   private pcPlot: DG.Viewer<DG.IPcPlotSettings>;
   private toUpdatePcCols = false;
+  private toChangeScatterMarkerSize = false;
+  private toChange3dScatterMarkerSize = false;
+  private toAddSizeCol = false;
 
   constructor(df: DG.DataFrame) {
     this.df = df;
@@ -32,7 +39,20 @@ export class ParetoOptimizer {
     this.rowCount = df.rowCount;
     this.view = grok.shell.getTableView(df.name);
     this.labelColumnNames = this.getLabelColNames();
-    this.scatter = DG.Viewer.scatterPlot(df, {labelColumnNames: this.labelColumnNames, legendPosition: 'Top'});
+    this.scatter = DG.Viewer.scatterPlot(df, {
+      labelColumnNames: this.labelColumnNames,
+      legendPosition: 'Top',
+      markerType: DG.MARKER_TYPE.CIRCLE,
+      autoLayout: false,
+    });
+
+    this.toChangeScatterMarkerSize = this.rowCount > SCATTER_ROW_LIM;
+    this.toChange3dScatterMarkerSize = this.rowCount > SCATTER3D_ROW_LIM;
+    this.toAddSizeCol = this.toChangeScatterMarkerSize || this.toChange3dScatterMarkerSize;
+
+    if (this.toChangeScatterMarkerSize)
+      this.scatter.setOptions({markerMinSize: SIZE.NON_OPT, markerMaxSize: SIZE.OPTIMAL});
+
     const scatterNode = this.view.dockManager.dock(this.scatter, DG.DOCK_TYPE.RIGHT, null, undefined, RATIO.VIEWER);
 
     this.pcPlot = DG.Viewer.pcPlot(df, {legendPosition: 'Top'});
@@ -45,7 +65,8 @@ export class ParetoOptimizer {
       this.view.dockManager.dock(this.scatter3d, DG.DOCK_TYPE.FILL, scatterNode);
     }
 
-    this.resultColName = cols.getUnusedName(OPTIMALITY_COL_NAME);
+    this.resultColName = cols.getUnusedName(COL_NAME.OPT);
+    this.sizeColName = cols.getUnusedName(COL_NAME.SIZE);
   } // constructor
 
   private getLabelColNames(): string[] {
@@ -142,14 +163,22 @@ export class ParetoOptimizer {
 
     if (data.length > 0) {
       const mask = paretoMaskFromCoordinates(data, sense, this.rowCount);
-      const colOpt = DG.Column.fromStrings(
-        this.resultColName,
-        mask.map((res) => res ? LABEL.OPTIMAL : LABEL.NON_OPT),
-      );
+      const colOpt = DG.Column.fromStrings(this.resultColName, mask.map((res) => res ? LABEL.OPTIMAL : LABEL.NON_OPT));
       this.df.columns.remove(this.resultColName, true);
       this.df.columns.add(colOpt);
-    } else
+
+      if (this.toAddSizeCol) {
+        const sizeCol = DG.Column.fromInt32Array(
+          this.sizeColName,
+          new Int32Array(mask.map((res) => res ? SIZE.OPTIMAL : SIZE.NON_OPT)),
+        );
+        this.df.columns.remove(this.sizeColName, true);
+        this.df.columns.add(sizeCol);
+      }
+    } else {
       this.df.columns.remove(this.resultColName, true);
+      this.df.columns.remove(this.sizeColName, true);
+    }
   } // computeParetoFront
 
   private updateScatter(plot: DG.Viewer | null, axisNames: string[], colNames: string[], colorOpt: ColorOpt): void {
@@ -200,6 +229,20 @@ export class ParetoOptimizer {
     }
   } // updatePcPlot
 
+  private setMarkers(): void {
+    if (this.toChangeScatterMarkerSize) {
+      this.scatter.setOptions({
+        'sizeColumnName': this.sizeColName,
+        'markerMinSize': SIZE.NON_OPT,
+        'markerMaxSize': SIZE.OPTIMAL,
+        'markerType': DG.MARKER_TYPE.CIRCLE,
+      });
+    }
+
+    if (this.toChange3dScatterMarkerSize && (this.scatter3d !== null))
+      this.scatter3d.setOptions({'size': this.sizeColName});
+  } // setMarkers
+
   private updateVisualization(): void {
     const colNames: string[] = [];
 
@@ -212,5 +255,6 @@ export class ParetoOptimizer {
     this.updateScatter(this.scatter, AXIS_NAMES, colNames, colorOpt);
     this.updateScatter(this.scatter3d, AXIS_NAMES_3D, colNames, colorOpt);
     this.updatePcPlot(colNames, colorOpt);
+    this.setMarkers();
   } // updateVisualization
 } // ParetoOptimizer
