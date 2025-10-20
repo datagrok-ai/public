@@ -112,49 +112,106 @@ export class PackageFunctions {
     return handler.view;
   }
 
-  @grok.decorators.func({meta: {vectorFunc: 'true'}})
-  static async getTicketsVerdict(@grok.decorators.param({type: 'column<string>'}) ticketColumn: DG.Column): Promise<DG.Column | undefined> {
-    const ticketsMap = new Map<string, {status: string, severity: string}>();
+  @grok.decorators.func({ meta: { vectorFunc: 'true' } })
+  static async getTicketsVerdict(
+      @grok.decorators.param({ type: 'column<string>' }) ticketColumn: DG.Column,
+      @grok.decorators.param({ type: 'column<string>' }) resultColumn: DG.Column,
+      @grok.decorators.param({ type: 'object' }) progress: DG.ProgressIndicator,
+  ): Promise<void> {
+
     const ticketRegex = /GROK-\d*/g;
-    const ticketColumnList = ticketColumn.toList();
-    for (let i = 0; i < ticketColumnList.length; i++) {
-      if (ticketColumnList[i]) {
-        const tickets = ticketColumnList[i].matchAll(ticketRegex);
-        for (const ticket of tickets) {
-          const status = (await grok.functions.call('JiraConnect:issueData', {issueKey: ticket}));
-          if (status && !ticketsMap.has(ticket[0]))
-            ticketsMap.set(ticket[0], {status: status.fields.status.name, severity: status.fields.priority.name});
+    const ticketsMap = new Map<string, { status: string; severity: string }>();
+    const n = ticketColumn.length;
+
+    for (let i = 0; i < n; i++) {
+      const cellValue = ticketColumn.get(i);
+      if (!cellValue)
+        continue;
+
+      const matches = cellValue.matchAll(ticketRegex);
+      const resultStatuses: { status: string; severity: string }[] = [];
+
+      for (const match of matches) {
+        const ticket = match[0];
+        let info = ticketsMap.get(ticket);
+
+        if (!info) {
+          const status = await grok.functions.call('JiraConnect:issueData', { issueKey: ticket });
+          if (progress.canceled)
+            return;
+          if (!status)
+            continue;
+
+          info = { status: status.fields.status.name, severity: status.fields.priority.name };
+          ticketsMap.set(ticket, info);
         }
+
+        resultStatuses.push(info);
       }
-    }
 
-    const resultCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, `${ticketColumn} ticket verdict`, ticketColumn.length);
-    for (let i = 0; i < ticketColumnList.length; i++) {
-      if (ticketColumnList[i]) {
-        const tickets = ticketColumnList[i].matchAll(ticketRegex);
-        const resultStatuses = [];
-        let status = undefined;
-        for (const ticket of tickets) {
-          if (ticketsMap.has(ticket[0]))
-            resultStatuses.push(ticketsMap.get(ticket[0]));
-        }
+      if (resultStatuses.length === 0)
+        continue;
 
-        if (resultStatuses.length > 0) {
-          if (resultStatuses.some((e)=> e?.status !== 'Done')) {
-            const priority = this.getHighestPriorityLevel(resultStatuses as any);
-            if (resultStatuses.some((e)=> e?.status === 'Done'))
-              status = `Partially Fixed (${priority})`;
-            else
-              status = `Wasn\'t Fixed (${priority})`;
-          } else
-            status = 'Fixed';
-          resultCol.set(i, status);
-        }
+      let verdict: string;
+      if (resultStatuses.some((e) => e.status !== 'Done')) {
+        const priority = this.getHighestPriorityLevel(resultStatuses as any);
+        if (resultStatuses.some((e) => e.status === 'Done'))
+          verdict = `Partially Fixed (${priority})`;
+        else
+          verdict = `Wasn't Fixed (${priority})`;
+      } else {
+        verdict = 'Fixed';
       }
-    }
 
-    return resultCol;
+      resultColumn.set(i, verdict);
+    }
   }
+
+
+  // @grok.decorators.func({meta: {vectorFunc: 'true'}})
+  // static async getTicketsVerdict(@grok.decorators.param({type: 'column<string>'}) ticketColumn: DG.Column): Promise<DG.Column | undefined> {
+  //   const ticketsMap = new Map<string, {status: string, severity: string}>();
+  //   const ticketRegex = /GROK-\d*/g;
+  //   const ticketColumnList = ticketColumn.toList();
+  //   for (let i = 0; i < ticketColumnList.length; i++) {
+  //     if (ticketColumnList[i]) {
+  //       const matches = ticketColumnList[i].matchAll(ticketRegex);
+  //       for (const match of matches) {
+  //         const ticket: string = match[0];
+  //         const status = (await grok.functions.call('JiraConnect:issueData', {issueKey: ticket}));
+  //         if (status && !ticketsMap.has(ticket))
+  //           ticketsMap.set(ticket, {status: status.fields.status.name, severity: status.fields.priority.name});
+  //       }
+  //     }
+  //   }
+  //
+  //   const resultCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, `${ticketColumn} ticket verdict`, ticketColumn.length);
+  //   for (let i = 0; i < ticketColumnList.length; i++) {
+  //     if (ticketColumnList[i]) {
+  //       const matches = ticketColumnList[i].matchAll(ticketRegex);
+  //       const resultStatuses = [];
+  //       let status = undefined;
+  //       for (const match of matches) {
+  //         if (ticketsMap.has(match[0]))
+  //           resultStatuses.push(ticketsMap.get(match[0]));
+  //       }
+  //
+  //       if (resultStatuses.length > 0) {
+  //         if (resultStatuses.some((e)=> e?.status !== 'Done')) {
+  //           const priority = this.getHighestPriorityLevel(resultStatuses as any);
+  //           if (resultStatuses.some((e)=> e?.status === 'Done'))
+  //             status = `Partially Fixed (${priority})`;
+  //           else
+  //             status = `Wasn\'t Fixed (${priority})`;
+  //         } else
+  //           status = 'Fixed';
+  //         resultCol.set(i, status);
+  //       }
+  //     }
+  //   }
+  //
+  //   return resultCol;
+  // }
 
   static getHighestPriorityLevel(ticketsMap: {status: string, severity: string}[]) {
     let highestPriority = 'Lowest';

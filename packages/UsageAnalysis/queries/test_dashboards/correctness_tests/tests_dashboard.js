@@ -8,6 +8,32 @@ function getFirstOfCol(col) {
   return '';
 }
 
+function prepareTicketsVerdict(
+    pivot,
+    ticketColumn,
+    resultColumnName,
+    progressLabel,
+) {
+  const progress = DG.TaskBarProgressIndicator.create(progressLabel, { cancelable: true });
+  const resultColumn = pivot.columns.getOrCreate(resultColumnName, DG.COLUMN_TYPE.STRING);
+  const ticketRegex = /GROK-\d*/;
+
+  for (let i = 0; i < ticketColumn.length; i++) {
+    const cellValue = ticketColumn.get(i);
+    if (typeof cellValue === 'string' && ticketRegex.test(cellValue))
+      resultColumn.set(i, 'Loading...');
+  }
+
+  grok.functions.call('UsageAnalysis:getTicketsVerdict', {
+    ticketColumn,
+    resultColumn,
+    progress,
+  });
+
+  return resultColumn;
+}
+
+
 
 async function postprocess() {
 
@@ -67,10 +93,17 @@ async function postprocess() {
   pivot.columns.byName('owner').semType = 'User';
   pivot.columns.byName('owner').setTag('cell.renderer', 'User');
   pivot.columns.byName('test').semType = 'autotest';
-  
-  
-  let ticketsStatusCol = await pivot.columns.addNewCalculated(`${builds[0]} tickets status`, `UsageAnalysis:getTicketsVerdict(\${${builds[0]} concat unique(result)})`, DG.TYPE.STRING);
-  let stickyMetaStatusCol = await pivot.columns.addNewCalculated(`ignore status`, `UsageAnalysis:getTicketsVerdict(\${ignoreReason})`, DG.TYPE.STRING);
+
+
+  const rCol = pivot.getCol(`${builds[0]} concat unique(result)`);
+  const ticketsStatusCol = prepareTicketsVerdict(pivot, rCol, `${rCol} ticket verdict`, 'Loading verdicts column');
+
+  const ignoreReasonCol = pivot.getCol('ignoreReason');
+  const stickyMetaStatusCol = prepareTicketsVerdict(pivot, ignoreReasonCol, 'ignore status', 'Loading ignore status column');
+
+
+  // let ticketsStatusCol = await pivot.columns.addNewCalculated(`${builds[0]} tickets status`, `UsageAnalysis:getTicketsVerdict(\${${builds[0]} concat unique(result)})`, DG.TYPE.STRING);
+  //let stickyMetaStatusCol = await pivot.columns.addNewCalculated(`ignore status`, `UsageAnalysis:getTicketsVerdict(\${ignoreReason})`, DG.TYPE.STRING);
   if (ticketsStatusCol)
     ticketsStatusCol.colors.setCategorical({
       'Fixed': '#2ca02c',
@@ -112,9 +145,6 @@ async function postprocess() {
     replaceColumn(buildName, ' first(flaking)', i, ' flaking');
     replaceColumn(buildName, ' concat unique(result)', i, ' result');
     replaceColumn(buildName, ' concat unique(status)', i, ''); 
-  }
-
-  for (let i = 0; i < pivot.rowCount; i++) {
   }
 
   for (let i = 1; i <= builds.length; i++) {
