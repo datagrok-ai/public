@@ -5,7 +5,9 @@ import * as DG from 'datagrok-api/dg';
 import '../../css/pareto.css';
 import {paretoMaskFromCoordinates} from './pareto-computations';
 import {NumericFeature, OPT_TYPE, NumericArray, DIFFERENCE, RATIO, OPTIMALITY_COL_NAME,
-  PC_MAX_COLS, scatterAxisNames} from './defs';
+  PC_MAX_COLS, scatterAxisNames,
+  ParetoLabel,
+  ColorOpt} from './defs';
 
 
 export class ParetoOptimizer {
@@ -146,11 +148,12 @@ export class ParetoOptimizer {
       const colOpt = DG.Column.fromStrings(this.resultColName, mask);
       this.df.columns.remove(this.resultColName, true);
       this.df.columns.add(colOpt);
-    }
+    } else
+      this.df.columns.remove(this.resultColName, true);
   } // computeParetoFront
 
-  private updateScatter(colNames: string[]): void {
-    this.scatter.setOptions({colorColumnName: this.resultColName});
+  private updateScatter(colNames: string[], colorOpt: ColorOpt): void {
+    this.scatter.setOptions(colorOpt);
 
     // update axis
     const prevAxisCols = scatterAxisNames.map((axis) => this.scatter.getOptions().look[axis]);
@@ -171,9 +174,9 @@ export class ParetoOptimizer {
     }
   } // updateScatter
 
-  private update3dScatter(colNames: string[]): void {
+  private update3dScatter(colNames: string[], colorOpt: ColorOpt): void {
     if (this.scatter3d !== null) {
-      this.scatter3d.setOptions({colorColumnName: this.resultColName});
+      this.scatter3d.setOptions(colorOpt);
 
       if (colNames.length > 0)
         this.scatter3d.setOptions({xColumnName: colNames[0]});
@@ -186,8 +189,8 @@ export class ParetoOptimizer {
     }
   } // update3dScatter
 
-  private updatePcPlot(colNames: string[]): void {
-    this.pcPlot.setOptions({colorColumnName: this.resultColName});
+  private updatePcPlot(colNames: string[], colorOpt: ColorOpt): void {
+    this.pcPlot.setOptions(colorOpt);
 
     // update value columns: check that optimized cols are included
     if (this.toUpdatePcCols) {
@@ -217,9 +220,11 @@ export class ParetoOptimizer {
         colNames.push(name);
     });
 
-    this.updateScatter(colNames);
-    this.update3dScatter(colNames);
-    this.updatePcPlot(colNames);
+    const colorOpt: ColorOpt = {'colorColumnName': (colNames.length > 0) ? this.resultColName: undefined};
+
+    this.updateScatter(colNames, colorOpt);
+    this.update3dScatter(colNames, colorOpt);
+    this.updatePcPlot(colNames, colorOpt);
   } // updateVisualization
 } // ParetoOptimizer
 
