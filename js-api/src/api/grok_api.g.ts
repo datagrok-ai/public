@@ -593,6 +593,9 @@ export interface IDartApi {
   grok_ChoiceInput_Set_Items(input: any, x: any): any;
   grok_RadioInput_Set_Items(input: any, x: any): any;
   grok_MultiChoiceInput_Set_Items(input: any, x: any): any;
+  grok_TagsInput_Set_Items(input: any, x: any): any;
+  grok_TagsInput_Set_Allow_New(input: any, x: any): any;
+  grok_TagsInput_Set_Multi_Value(input: any, x: any): any;
   grok_StringInput_AddClearIcon(input: any, x: any): any;
   grok_StringInput_AddEscClears(input: any, x: any): any;
   grok_StringInput_AddIcon(input: any, x: any): any;
@@ -1264,6 +1267,7 @@ export interface IDartApi {
   grok_Group_Set_Personal(g: any, x: any): any;
   grok_Group_Get_Hidden(g: any): any;
   grok_Group_Set_Hidden(g: any, x: any): any;
+  grok_Group_Get_User(g: any): any;
   grok_Group_AllUsers(): any;
   grok_Group_Developers(): any;
   grok_Group_NeedToCreate(): any;
@@ -1687,10 +1691,10 @@ export interface IDartApi {
   grok_FuncOptions_Create(): any;
   grok_FuncParamOptions_Create(): any;
 
-  // Generated from ../d4/lib/src/common/common.api.g.dart
+  // Generated from ../d4\lib\src\common\common.api.g.dart
   grok_UsageType_Create(): any;
 
-  // Generated from ../d4/lib/src/grid/grid.api.g.dart
+  // Generated from ../d4\lib\src\grid\grid.api.g.dart
   grok_GridCellStyle_Create(): any;
   grok_GridCellStyle_Get_defaultStyle(): any;
   grok_GridCellStyle_Set_defaultStyle(v: any): any;
@@ -1740,7 +1744,7 @@ export interface IDartApi {
   grok_GridCellStyle_Set_choices(x: any, v: any): any;
   grok_renderMultipleHistograms(g: any, bounds: any, histograms: any, categoryColumn: any, colors: any, tension: Num, normalize: Bool, markerSize: Num, fill: Bool, minBin: Num, maxBin: Num, localMaximum: Bool, highlightedHistogram: Num): any;
 
-  // Generated from ../d4/lib/src/viewer_base/viewer_base.api.g.dart
+  // Generated from ../d4\lib\src\viewer_base\viewer_base.api.g.dart
   grok_ViewerEvent_Create(): any;
   grok_ViewerEvent_Get_viewer(x: any): any;
   grok_ViewerEvent_Set_viewer(x: any, v: any): any;
@@ -1756,6 +1760,6 @@ export interface IDartApi {
   grok_ViewerEvent_Set_mouseEvent(x: any, v: any): any;
   grok_ViewerEvent_Get_bitset(x: any): any;
 
-  // Generated from ../d4/lib/src/widgets/widgets.api.g.dart
+  // Generated from ../d4\lib\src\widgets\widgets.api.g.dart
   grok_InputType_Create(): any;
 }

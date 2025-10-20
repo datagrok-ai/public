@@ -84,6 +84,9 @@ export class InputType {
 
   static MultiChoice = 'MultiChoice';
 
+  static Tags = 'Tags';
+
+
   static Table = 'Table';
 
   static Molecule = 'Molecule';
