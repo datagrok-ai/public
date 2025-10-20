@@ -30,16 +30,13 @@ export class PlateGridManager {
     this.grid.props.rowHeight = 45;
 
     this.grid.onCellClick.subscribe((gc: DG.GridCell) => {
-      if (!gc || !gc.isTableCell || this.isSelecting) return;
+      if (!gc || !gc.isTableCell) return;
 
       const tableRowIndex = this.grid.gridRowToTable(gc.gridRow);
       const state = this.stateManager.currentState;
 
-      if (tableRowIndex !== -1 && state && tableRowIndex !== state.activePlateIdx) {
-        this.isSelecting = true;
+      if (tableRowIndex !== -1 && state && tableRowIndex !== state.activePlateIdx)
         this.stateManager.selectPlate(tableRowIndex);
-        this.isSelecting = false;
-      }
     });
 
     this.grid.onCellRender.subscribe((args: DG.GridCellRenderArgs) => {
@@ -125,7 +122,6 @@ export class PlateGridManager {
     ];
 
     this.grid.dataFrame = DG.DataFrame.fromColumns(finalColumns);
-
     const barcodeCol = this.grid.columns.byName('Barcode');
     if (barcodeCol) barcodeCol.width = 200;
 
@@ -137,19 +133,33 @@ export class PlateGridManager {
 
     const qcCol = this.grid.columns.byName('QC');
     if (qcCol) qcCol.width = 40;
-
-    if (state.activePlateIdx !== -1 && !this.isSelecting) {
-      setTimeout(() => {
-        if (this.grid.dataFrame && this.grid.dataFrame.currentRowIdx !== state.activePlateIdx)
-          this.grid.dataFrame.currentRowIdx = state.activePlateIdx;
-      }, 0);
+    if (state.activePlateIdx !== -1) {
+      if (this.grid.dataFrame && state.activePlateIdx < this.grid.dataFrame.rowCount)
+        this.grid.dataFrame.currentRowIdx = state.activePlateIdx;
     }
+
+    // if (state.activePlateIdx !== -1 && !this.isSelecting) {
+    //   setTimeout(() => {
+    //     if (this.grid.dataFrame && this.grid.dataFrame.currentRowIdx !== state.activePlateIdx)
+    //       this.grid.dataFrame.currentRowIdx = state.activePlateIdx;
+    //   }, 0);
+    // }
   }
+
 
   private subscribeToStateChanges(): void {
     const sub = this.stateManager.onStateChange$.subscribe((event) => {
       console.log('PlateGridManager: State changed', event);
-      this.renderGrid();
+
+      if (event.type === 'plate-selected') {
+        const newIndex = event.plateIndex;
+        if (newIndex !== undefined && newIndex !== -1 && this.grid.dataFrame) {
+          if (this.grid.dataFrame.currentRowIdx !== newIndex)
+            this.grid.dataFrame.currentRowIdx = newIndex;
+        }
+      } else {
+        this.renderGrid();
+      }
     });
     this.subscriptions.push(sub);
   }

@@ -127,6 +127,7 @@ export class PlateStateManager {
     await this.processPlates();
   }
 
+
   async processPlates(): Promise<void> {
     if (!this.sourceDataFrame) return;
 
@@ -144,7 +145,7 @@ export class PlateStateManager {
     this.templateStates.set(this.currentTemplate.id, currentState);
 
     this.onStateChange$.next({
-      type: 'plate-selected',
+      type: 'plate-added',
       plateIndex: newActiveIndex,
       plate: newActiveIndex === -1 ? undefined : currentState.plates[newActiveIndex],
     });
