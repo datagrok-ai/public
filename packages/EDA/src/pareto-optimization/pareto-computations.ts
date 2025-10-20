@@ -1,5 +1,4 @@
-import {NumericArray, OPT_TYPE} from './defs';
-export type ParetoLabel = 'optimal' | 'non-optimal';
+import {NumericArray, OPT_TYPE, ParetoLabel} from './defs';
 
 /**
  * Optimized Pareto mask computation (coordinate-wise input)
@@ -81,21 +80,3 @@ function paretoMaskOptimized(data: NumericArray[], sense: OPT_TYPE[], nPoints: n
 
   return mask;
 }
-
-/*
-const x = new Float32Array([0, 0, 0, 1, 2, 2, 4, 4.5]);
-const y = new Float32Array([4, 2, 0, 1, 0, 3, 1, 0]);
-
-// Example usage (coordinate-wise input):
-const data: NumericArray[] = [
-  x, // first dimension
-  y, // second dimension
-];
-
-const sense: Sense[] = ["max", "max"];
-
-const mask = paretoMaskFromCoordinates(data, sense, x.length);
-
-for (let i = 0; i < mask.length; ++i)
-    console.log('(', x[i], ',', y[i], ') <--> ', mask[i]);
-*/

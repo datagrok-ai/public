@@ -4,12 +4,13 @@ import * as DG from 'datagrok-api/dg';
 
 import '../../css/pareto.css';
 import {paretoMaskFromCoordinates} from './pareto-computations';
-import {NumericFeature, OPT_TYPE, NumericArray, DIFFERENCE, RATIO, OPTIMALITY_COL_NAME} from './defs';
+import {NumericFeature, OPT_TYPE, NumericArray, DIFFERENCE, RATIO, OPTIMALITY_COL_NAME, PC_MAX_COLS} from './defs';
 
 
 export class ParetoOptimizer {
   private df: DG.DataFrame;
   private numCols: DG.Column[];
+  private numColNames: string[] = [];
   private numColsCount: number;
   private rowCount: number;
   private features = new Map<string, NumericFeature>();
@@ -19,25 +20,29 @@ export class ParetoOptimizer {
   private labelColumnNames: string[];
   private scatter3d: DG.Viewer<DG.IScatterPlot3dSettings> | null = null;
   private pcPlot: DG.Viewer<DG.IPcPlotSettings>;
+  private toUpdatePcCols = false;
 
   constructor(df: DG.DataFrame) {
     this.df = df;
     const cols = df.columns;
     const colList = cols.toList();
     this.numCols = colList.filter((col) => col.isNumerical);
+    this.numColNames = this.numCols.map((col) => col.name);
     this.numColsCount = this.numCols.length;
     this.rowCount = df.rowCount;
     this.view = grok.shell.getTableView(df.name);
     this.labelColumnNames = this.getLabelColNames();
     this.scatter = DG.Viewer.scatterPlot(df, {labelColumnNames: this.labelColumnNames, legendPosition: 'Top'});
-    const node = this.view.dockManager.dock(this.scatter, DG.DOCK_TYPE.RIGHT, null, '2D Pareto front', RATIO.VIEWER);
+    const scatterNode = this.view.dockManager.dock(this.scatter, DG.DOCK_TYPE.RIGHT, null, undefined, RATIO.VIEWER);
 
     this.pcPlot = DG.Viewer.pcPlot(df, {legendPosition: 'Top'});
-    this.view.dockManager.dock(this.pcPlot, DG.DOCK_TYPE.DOWN, node, undefined, RATIO.VIEWER);
+    const gridNode = this.view.dockManager.findNode(this.view.grid.root) ?? scatterNode;
+    this.view.dockManager.dock(this.pcPlot, DG.DOCK_TYPE.DOWN, gridNode, undefined, RATIO.VIEWER);
+    this.toUpdatePcCols = this.numColNames.length > PC_MAX_COLS;
 
     if (this.numColsCount > 2) {
       this.scatter3d = DG.Viewer.scatterPlot3d(df);
-      this.view.dockManager.dock(this.scatter3d, DG.DOCK_TYPE.FILL, node, '3D Pareto front');
+      this.view.dockManager.dock(this.scatter3d, DG.DOCK_TYPE.FILL, scatterNode);
     }
 
     this.resultColName = cols.getUnusedName(OPTIMALITY_COL_NAME);
@@ -168,6 +173,18 @@ export class ParetoOptimizer {
     }
   } // update3dScatter
 
+  private updatePcPlot(colNames: string[]): void {
+    this.pcPlot.setOptions({colorColumnName: this.resultColName});
+
+    // update value columns: check that optimized cols are included
+    if (this.toUpdatePcCols) {
+      const valColNames = [...colNames];
+      const notIncluded = this.numColNames.filter((name) => !valColNames.includes(name));
+      valColNames.push(...notIncluded.slice(0, PC_MAX_COLS - colNames.length));
+      this.pcPlot.setOptions({columnNames: valColNames});
+    }
+  } // updatePcPlot
+
   private updateVisualization(): void {
     const colNames: string[] = [];
 
@@ -178,8 +195,12 @@ export class ParetoOptimizer {
 
     this.updateScatter(colNames);
     this.update3dScatter(colNames);
-    this.pcPlot.setOptions({colorColumnName: this.resultColName});
+    this.updatePcPlot(colNames);
   } // updateVisualization
+
+  private switchToApproprateViewer(): void {
+
+  } // switchToApproprateViewer
 } // ParetoOptimizer
 
 export function runParetoOptimizer(): void {
