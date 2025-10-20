@@ -1,5 +1,9 @@
 # Clinical Case changelog
 
+## 1.3.3 (2025-10-20)
+
+* GROK-19038: Clinical case: Invalid argument error for study
+
 ## 1.3.2 (2025-04-01)
 
 * Modified application initial view
