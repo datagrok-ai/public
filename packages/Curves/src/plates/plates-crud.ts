@@ -738,12 +738,13 @@ export async function queryAnalysesGeneric(query: AnalysisQuery): Promise<DG.Dat
   }
 
   const finalWhereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
   const sqlQuery = `
     SELECT
       ar.id as run_id,
       p.id as plate_id,
       p.barcode,
-      res_pivot.group_combination,
+      array_to_string(res_pivot.group_combination, ', ') as group_combination,
       res_pivot.properties
     FROM
       plates.analysis_runs ar
@@ -755,7 +756,6 @@ export async function queryAnalysesGeneric(query: AnalysisQuery): Promise<DG.Dat
         jsonb_object_agg(
           prop.name,
           CASE
-            -- THIS IS THE CHANGE: Force the value_jsonb to be treated as text --
             WHEN res.value_jsonb IS NOT NULL THEN to_jsonb(res.value_jsonb::text)
             WHEN res.value_string IS NOT NULL THEN to_jsonb(res.value_string)
             WHEN res.value_num IS NOT NULL THEN to_jsonb(res.value_num)

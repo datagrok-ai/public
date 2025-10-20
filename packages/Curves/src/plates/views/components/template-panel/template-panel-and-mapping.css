@@ -184,7 +184,7 @@
 .assay-plates--mapping-editor-row,
 .assay-plates--validation-table-row {
 display: grid;
-grid-template-columns: 140px 1fr; /* <-- This is the fix */
+grid-template-columns: 140px 1fr; 
 gap: 12px;
 align-items: center;
 min-height: 32px;

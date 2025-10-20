@@ -5,7 +5,6 @@ import * as ui from 'datagrok-api/ui';
 import {AnalysisManager} from '../../plate/analyses/analysis-manager';
 import {AnalysisProperty, AnalysisQuery, getAnalysisRunGroups, queryAnalysesGeneric, PropertyCondition, allProperties, queryAnalyses} from '../plates-crud';
 import {NumericMatcher} from '../matchers';
-import * as rxjs from 'rxjs';
 
 type AnalysisPropInput = DG.InputBase & { prop: AnalysisProperty };
 
@@ -106,10 +105,8 @@ function getAnalysesSearchView(
 
     if (analysis.name === 'DRC' || analysis.name === 'Dose-Ratio') {
       const groups = await getAnalysisRunGroups(analysis.name);
-      if (groups.length > 0) {
-        // Using ui.input.choice is more robust than ui.typeAhead in this context
+      if (groups.length > 0)
         inputs.push(ui.input.choice('Group', {items: ['', ...groups], value: ''}));
-      }
     }
     const searchableProps = analysis.getSearchableProperties ?
       analysis.getSearchableProperties() :
@@ -158,8 +155,6 @@ function getAnalysesSearchView(
   filterPanel.style.overflowY = 'auto';
   filterPanel.style.padding = '0 12px';
 
-
-  // To this:
   const splitter = ui.splitV(
     [filterPanel, resultsView.root],
     {style: {width: '100%', height: '100%'}},
@@ -176,14 +171,21 @@ export function searchAnalysesView(): DG.View {
   return getAnalysesSearchView('Search Analyses', queryAnalysesGeneric, (grid, analysisName) => {
     grid.setOptions({allowEdit: true});
     const curveCol = grid.col('Curve');
+    grid.dataFrame.getCol('Curve').semType ='fit';
+    grid.dataFrame.getCol('Curve').setTag(DG.TAGS.CELL_RENDERER, 'fit');
+
     if (curveCol) {
       grid.props.rowHeight = 250;
       setTimeout(() => {
-        if (grid.col('Curve')) { // Check if column still exists
+        if (grid.col('Curve')) {
             grid.col('Curve')!.width = 400;
             grid.invalidate();
         }
       }, 200);
     }
+
+    // const groupCol = grid.dataFrame.getCol('group_combination');
+    // if (groupCol)
+    //   groupCol.setTag(DG.TAGS.CELL_RENDERER, 'Tags');
   });
 }
