@@ -1,11 +1,8 @@
-import {NumericArray, OPT_TYPE, ParetoLabel} from './defs';
+// Pareto front computations
 
-/**
- * Optimized Pareto mask computation (coordinate-wise input)
- * @param data Array of numeric arrays where each array contains one dimension for all points
- * @param sense Array of "min" or "max" for each dimension
- */
-export function paretoMaskFromCoordinates(data: NumericArray[], sense: OPT_TYPE[], nPoints: number): ParetoLabel[] {
+import {NumericArray, OPT_TYPE} from './defs';
+
+export function paretoMaskFromCoordinates(data: NumericArray[], sense: OPT_TYPE[], nPoints: number): boolean[] {
   const nDims = data.length;
   if (nDims === 0) return [];
   //const nPoints = data[0].length;
@@ -27,12 +24,9 @@ export function paretoMaskFromCoordinates(data: NumericArray[], sense: OPT_TYPE[
 
   // Reuse optimized Pareto mask function
   return paretoMaskOptimized(points, sense, nPoints);
-}
+} // paretoMaskFromCoordinates
 
-/**
- * Optimized Pareto mask function for points
- */
-function paretoMaskOptimized(data: NumericArray[], sense: OPT_TYPE[], nPoints: number): ParetoLabel[] {
+function paretoMaskOptimized(data: NumericArray[], sense: OPT_TYPE[], nPoints: number): boolean[] {
   //const nPoints = data.length;
   if (nPoints === 0) return [];
   const nDims = data[0].length;
@@ -42,7 +36,7 @@ function paretoMaskOptimized(data: NumericArray[], sense: OPT_TYPE[], nPoints: n
   // Sort by first dimension according to sense
   points.sort((a, b) => (sense[0] === OPT_TYPE.MIN ? a.point[0] - b.point[0] : b.point[0] - a.point[0]));
 
-  const mask: ParetoLabel[] = Array(nPoints).fill('optimal');
+  const mask: boolean[] = Array(nPoints).fill(true);
   const paretoFront: NumericArray[] = [];
 
   for (const {point, index} of points) {
@@ -73,10 +67,10 @@ function paretoMaskOptimized(data: NumericArray[], sense: OPT_TYPE[], nPoints: n
     }
 
     if (dominated)
-      mask[index] = 'non-optimal';
+      mask[index] = false;
     else
       paretoFront.push(point);
   }
 
   return mask;
-}
+} // paretoMaskOptimized

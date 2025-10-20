@@ -36,7 +36,7 @@ import {SoftmaxClassifier} from './softmax-classifier';
 
 import {initXgboost} from '../wasm/xgbooster';
 import {XGBooster} from './xgbooster';
-import {ParetoOptimizer, runParetoOptimizer} from './pareto-optimization/pareto-optimizer';
+import {ParetoOptimizer} from './pareto-optimization/pareto-optimizer';
 
 export const _package = new DG.Package();
 export * from './package.g';
