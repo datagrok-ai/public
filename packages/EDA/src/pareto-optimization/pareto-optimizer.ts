@@ -178,10 +178,21 @@ export class ParetoOptimizer {
 
     // update value columns: check that optimized cols are included
     if (this.toUpdatePcCols) {
-      const valColNames = [...colNames];
-      const notIncluded = this.numColNames.filter((name) => !valColNames.includes(name));
-      valColNames.push(...notIncluded.slice(0, PC_MAX_COLS - colNames.length));
-      this.pcPlot.setOptions({columnNames: valColNames});
+      const prevColNames = this.pcPlot.getOptions().look['columnNames'];
+
+      let toUpdateScatterColNames = false;
+
+      colNames.forEach((name) => {
+        if (!prevColNames.includes(name))
+          toUpdateScatterColNames = true;
+      });
+
+      if (toUpdateScatterColNames) {
+        const valColNames = [...colNames];
+        const notIncluded = this.numColNames.filter((name) => !valColNames.includes(name));
+        valColNames.push(...notIncluded.slice(0, PC_MAX_COLS - colNames.length));
+        this.pcPlot.setOptions({columnNames: valColNames});
+      }
     }
   } // updatePcPlot
 
@@ -197,10 +208,6 @@ export class ParetoOptimizer {
     this.update3dScatter(colNames);
     this.updatePcPlot(colNames);
   } // updateVisualization
-
-  private switchToApproprateViewer(): void {
-
-  } // switchToApproprateViewer
 } // ParetoOptimizer
 
 export function runParetoOptimizer(): void {
