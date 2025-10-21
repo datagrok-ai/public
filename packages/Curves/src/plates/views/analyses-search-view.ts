@@ -10,7 +10,7 @@ type AnalysisPropInput = DG.InputBase & { prop: AnalysisProperty };
 
 function analysisFormToQuery(form: DG.InputForm, analysisName: string): Omit<AnalysisQuery, 'analysisName'> {
   const propertyMatchers: PropertyCondition[] = [];
-  let group: string | undefined;
+  let group: string | string[] | undefined;
 
   if (!form || !analysisName) return {propertyMatchers, group};
 
@@ -18,11 +18,10 @@ function analysisFormToQuery(form: DG.InputForm, analysisName: string): Omit<Ana
     if (input.value == null || input.value === '' || (Array.isArray(input.value) && input.value.length === 0))
       continue;
 
-    if (input.caption === 'Group') {
+    if (input.caption === 'Groups' && Array.isArray(input.value) && input.value.length > 0) {
       group = input.value;
       continue;
     }
-
     const propInput = input as AnalysisPropInput;
     const analysisProp = propInput.prop;
 
@@ -72,10 +71,9 @@ function getAnalysesSearchView(
       analysisName: selectedAnalysis.name,
     };
 
-    // Use the analysis-specific query method
     const searchPromise = selectedAnalysis.queryResults ?
       selectedAnalysis.queryResults(query) :
-      queryAnalyses(query); // fallback to generic
+      queryAnalyses(query);
 
     searchPromise.then((df) => {
       resultsView.dataFrame = df;
@@ -102,11 +100,18 @@ function getAnalysesSearchView(
     }
 
     const inputs: DG.InputBase[] = [];
-
     if (analysis.name === 'DRC' || analysis.name === 'Dose-Ratio') {
       const groups = await getAnalysisRunGroups(analysis.name);
-      if (groups.length > 0)
-        inputs.push(ui.input.choice('Group', {items: ['', ...groups], value: ''}));
+      if (groups.length > 0) {
+        const groupInput = ui.input.multiChoice('Groups', {
+          items: groups, 
+          value: [],
+        });
+
+        groupInput.root.style.minWidth = '200px';
+
+        inputs.push(groupInput);
+      }
     }
     const searchableProps = analysis.getSearchableProperties ?
       analysis.getSearchableProperties() :

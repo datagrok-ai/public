@@ -83,9 +83,8 @@ export type AnalysisProperty = {
 export type AnalysisQuery = {
   analysisName: string;
   propertyMatchers: PropertyCondition[];
-  group?: string;
+  group?: string | string[];
 }
-
 
 export type AnalysisCondition = {
   property: AnalysisProperty;
@@ -714,73 +713,144 @@ export async function getOrCreateProperty(name: string, type: DG.TYPE, scope: 'p
 
 export async function queryAnalysesGeneric(query: AnalysisQuery): Promise<DG.DataFrame> {
   await initPlates();
+  const selectedGroups = Array.isArray(query.group) ? query.group :
+    (query.group ? [query.group] : []);
 
+  let sqlQuery: string;
 
-  const whereClauses: string[] = [];
-  whereClauses.push(`ar.analysis_type = '${query.analysisName.replace(/'/g, '\'\'')}'`);
+  if (selectedGroups.length > 0) {
+    const groupsArray = selectedGroups.map((g) => `'${g.replace(/'/g, '\'\'')}'`).join(',');
 
-  for (const condition of query.propertyMatchers) {
-    const prop = allProperties.find((p) => p.name === condition.property.name);
-    if (!prop) continue;
-    const dbColumn = plateDbColumn[prop.type] ?? plateDbJsonColumn;
-    const existsClause = `
-      EXISTS (
-          SELECT 1
-          FROM plates.analysis_results filter_res
-          WHERE filter_res.analysis_run_id = ar.id
-            AND filter_res.group_combination = res_pivot.group_combination
-            AND filter_res.property_id = ${prop.id}
-            AND (${condition.matcher.toSql(`filter_res.${dbColumn}`)})
-      )`;
-    whereClauses.push(existsClause);
-  }
+    const crossJoinWithGroupFilter = `
+      CROSS JOIN LATERAL (
+        SELECT
+          res.group_combination,
+          jsonb_object_agg(
+            prop.name,
+            CASE
+              WHEN res.value_jsonb IS NOT NULL THEN to_jsonb(res.value_jsonb::text)
+              WHEN res.value_string IS NOT NULL THEN to_jsonb(res.value_string)
+              WHEN res.value_num IS NOT NULL THEN to_jsonb(res.value_num)
+              WHEN res.value_bool IS NOT NULL THEN to_jsonb(res.value_bool)
+              ELSE 'null'::jsonb
+            END
+          )::text as properties
+        FROM
+          plates.analysis_results res
+        JOIN
+          plates.properties prop ON res.property_id = prop.id
+        WHERE
+          res.analysis_run_id = ar.id
+          AND res.group_combination && ARRAY[${groupsArray}]
+        GROUP BY
+          res.group_combination
+      ) as res_pivot`;
 
-  if (query.group && query.group.length > 0)
-    whereClauses.push(`res_pivot.group_combination = ARRAY['${query.group.replace(/'/g, '\'\'')}']`);
+    const whereClauses: string[] = [];
+    whereClauses.push(`ar.analysis_type = '${query.analysisName.replace(/'/g, '\'\'')}'`);
 
+    for (const condition of query.propertyMatchers) {
+      const prop = allProperties.find((p) => p.name === condition.property.name);
+      if (!prop) continue;
+      const dbColumn = plateDbColumn[prop.type] ?? plateDbJsonColumn;
 
-  const finalWhereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+      const existsClause = `
+        EXISTS (
+            SELECT 1
+            FROM plates.analysis_results filter_res
+            WHERE filter_res.analysis_run_id = ar.id
+              AND filter_res.group_combination = res_pivot.group_combination
+              AND filter_res.property_id = ${prop.id}
+              AND (${condition.matcher.toSql(`filter_res.${dbColumn}`)})
+        )`;
 
-  const sqlQuery = `
-    SELECT
-      ar.id as run_id,
-      p.id as plate_id,
-      p.barcode,
-      array_to_string(res_pivot.group_combination, ', ') as group_combination,
-      res_pivot.properties
-    FROM
-      plates.analysis_runs ar
-    JOIN
-      plates.plates p ON ar.plate_id = p.id
-    CROSS JOIN LATERAL (
+      whereClauses.push(existsClause);
+    }
+
+    const finalWhereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+    sqlQuery = `
       SELECT
-        res.group_combination,
-        jsonb_object_agg(
-          prop.name,
-          CASE
-            WHEN res.value_jsonb IS NOT NULL THEN to_jsonb(res.value_jsonb::text)
-            WHEN res.value_string IS NOT NULL THEN to_jsonb(res.value_string)
-            WHEN res.value_num IS NOT NULL THEN to_jsonb(res.value_num)
-            WHEN res.value_bool IS NOT NULL THEN to_jsonb(res.value_bool)
-            ELSE 'null'::jsonb
-          END
-        )::text as properties
+        ar.id as run_id,
+        p.id as plate_id,
+        p.barcode,
+        array_to_string(res_pivot.group_combination, ', ') as group_combination,
+        res_pivot.properties
       FROM
-        plates.analysis_results res
+        plates.analysis_runs ar
       JOIN
-        plates.properties prop ON res.property_id = prop.id
-      WHERE
-        res.analysis_run_id = ar.id
-      GROUP BY
-        res.group_combination
-    ) as res_pivot
-    ${finalWhereClause};
-  `;
+        plates.plates p ON ar.plate_id = p.id
+      ${crossJoinWithGroupFilter}
+      ${finalWhereClause}
+      ORDER BY ar.id, res_pivot.group_combination;
+    `;
+  } else {
+    // for single group case
+    const whereClauses: string[] = [];
+    whereClauses.push(`ar.analysis_type = '${query.analysisName.replace(/'/g, '\'\'')}'`);
 
+    for (const condition of query.propertyMatchers) {
+      const prop = allProperties.find((p) => p.name === condition.property.name);
+      if (!prop) continue;
+      const dbColumn = plateDbColumn[prop.type] ?? plateDbJsonColumn;
+
+      const existsClause = `
+        EXISTS (
+            SELECT 1
+            FROM plates.analysis_results filter_res
+            WHERE filter_res.analysis_run_id = ar.id
+              AND filter_res.group_combination = res_pivot.group_combination
+              AND filter_res.property_id = ${prop.id}
+              AND (${condition.matcher.toSql(`filter_res.${dbColumn}`)})
+        )`;
+
+      whereClauses.push(existsClause);
+    }
+
+    const finalWhereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+    sqlQuery = `
+      SELECT
+        ar.id as run_id,
+        p.id as plate_id,
+        p.barcode,
+        array_to_string(res_pivot.group_combination, ', ') as group_combination,
+        res_pivot.properties
+      FROM
+        plates.analysis_runs ar
+      JOIN
+        plates.plates p ON ar.plate_id = p.id
+      CROSS JOIN LATERAL (
+        SELECT
+          res.group_combination,
+          jsonb_object_agg(
+            prop.name,
+            CASE
+              WHEN res.value_jsonb IS NOT NULL THEN to_jsonb(res.value_jsonb::text)
+              WHEN res.value_string IS NOT NULL THEN to_jsonb(res.value_string)
+              WHEN res.value_num IS NOT NULL THEN to_jsonb(res.value_num)
+              WHEN res.value_bool IS NOT NULL THEN to_jsonb(res.value_bool)
+              ELSE 'null'::jsonb
+            END
+          )::text as properties
+        FROM
+          plates.analysis_results res
+        JOIN
+          plates.properties prop ON res.property_id = prop.id
+        WHERE
+          res.analysis_run_id = ar.id
+        GROUP BY
+          res.group_combination
+      ) as res_pivot
+      ${finalWhereClause}
+      ORDER BY ar.id, res_pivot.group_combination;
+    `;
+  }
 
   try {
     const df = await grok.data.db.query('Curves:Plates', sqlQuery);
-    return df;
+    if (df.rowCount > 0)
+      return df;
   } catch (error) {
     throw error;
   }
