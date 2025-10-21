@@ -154,7 +154,14 @@ export class FittingView {
       // treat strings as formulas for valid fitting target types, otherwise use string as a value
       if (range?.[key] != undefined && (typeof range?.[key] !== 'string' || !isValidForFitting(inputProp)))
         return range[key];
-      return getDefaultValue(inputProp);
+      switch (key) {
+        case 'min':
+          return inputProp.min;
+        case 'max':
+          return inputProp.max;
+        default:
+          return getDefaultValue(inputProp);
+      }
     };
 
     const getRangeFormula = (inputProp: DG.Property, key: keyof RangeDescription) => {
