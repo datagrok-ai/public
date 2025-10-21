@@ -12,6 +12,18 @@ CREATE TABLE moltrack.users (
   updated_by uuid NOT NULL REFERENCES moltrack.users (id) DEFERRABLE INITIALLY DEFERRED
 );
 
+CREATE TABLE moltrack.validators (
+  id serial PRIMARY KEY,
+  created_at timestamp with time zone DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+  updated_at timestamp with time zone DEFAULT (CURRENT_TIMESTAMP) NOT NULL,
+  created_by uuid NOT NULL REFERENCES moltrack.users (id),
+  updated_by uuid NOT NULL REFERENCES moltrack.users (id),
+  name text NOT NULL UNIQUE, -- e.g., "is_email", "is_url", "is_uuid", "is_smiles", "is_inchi", "is_inchikey"
+  description text,
+  entity_type text check (entity_type in ('BATCH', 'COMPOUND', 'ASSAY', 'ASSAY_RUN', 'ASSAY_RESULT')) NOT NULL,
+  expression text NOT NULL
+);
+
 -- Explains the meaning of a scalar property.
 CREATE TABLE moltrack.semantic_types (
   id serial PRIMARY KEY,
@@ -40,7 +52,12 @@ CREATE TABLE moltrack.properties (
   unit text,
   entity_type text check (entity_type in ('BATCH', 'COMPOUND', 'ASSAY', 'ASSAY_RUN', 'ASSAY_RESULT', 'SYSTEM')) NOT NULL,
   pattern text, -- regex for validating string value_type properties, e.g., identifier: CHEMBL.* 
+  min float, -- minimum value for numeric properties
+  max float, -- maximum value for numeric properties
+  choices text, -- JSON-encoded list of choices. Applicable to string properties only
+  validators text, -- JSON-encoded list of validators. Applicable to string properties only
   friendly_name text,
+  nullable bool NOT NULL DEFAULT true,
   UNIQUE(name, entity_type) -- Ensure unique property names within each entity_type
 );
 
