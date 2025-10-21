@@ -1,5 +1,5 @@
 /* eslint-disable max-len */
-// Specific optimization constants
+// Specific optimization constants and definitions
 
 export enum METHOD {
    NELDER_MEAD = 'Nelder-Mead',
@@ -17,8 +17,8 @@ export enum LOSS {
  };
 
 export const lossTooltip = new Map([
-  [LOSS.MAD, 'Maximum absolute deviation'],
-  [LOSS.RMSE, 'Root mean square error'],
+  [LOSS.MAD, 'Maximum Absolute Deviation (MAD) - measures only the single largest deviation, ignoring smaller deviations'],
+  [LOSS.RMSE, 'Root Mean Square Error (RMSE) - measures average deviation, penalizing larger deviations more heavily'],
 ]);
 
 /** Grid elements sizes */
@@ -41,7 +41,7 @@ export enum TITLE {
    METHOD = 'method',
    VALUE = 'Value',
    OBJECTIVE = TARGET,
-   SAMPLES = 'samples',
+   SAMPLES = 'initial points',
    ID = 'id',
    OBTAINED = 'Simulation',
    LOSS_LOW = 'loss',
@@ -63,7 +63,7 @@ enum HELP_ITEMS {
 };
 
 export enum TIMEOUT {
-  MS_TO_SLEEP = 10,
+  MS_TO_SLEEP = 5,
   STYLE_TIMEOUT = 3000,
   RADAR = 200,
 };
@@ -81,7 +81,7 @@ export const HELP_LINK = 'https://datagrok.ai/help/compute/function-analysis#par
 /** Starting help markdown */
 export const STARTING_HELP = `# Fitting
 
-Use fitting to solve an inverse problem: find input conditions leading to specified output constraints. 
+Use fitting to solve an inverse problem: find input conditions leading to specified output constraints.
 It computes inputs minimizing deviation measured by [loss function](https://en.wikipedia.org/wiki/Loss_function).
 
 1. In the ${HELP_ITEMS.FIT} block, use switchers to specify inputs to be found:
@@ -94,23 +94,17 @@ It computes inputs minimizing deviation measured by [loss function](https://en.w
 
 3. Choose ${HELP_ITEMS.METHOD}. Press <i class="grok-icon fal fa-cog"></i> to specify its settings.
 
-4. Specify the loss function type (in the ${HELP_ITEMS.LOSS} field).
-
-5. Enter the number of points to be found (in the ${HELP_ITEMS.SAMPLES} field).
-
-6. Set the maximum relative deviation (%) in the ${HELP_ITEMS.SIMILARITY} field. It defines the threshold for determining whether fitted points are similar.
-
-7. Press the "Run" icon <i class="fas fa-play"></i> on the top panel to perform fitting. You will get a
-[grid](https://datagrok.ai/help/visualize/viewers/grid) containing 
+4. Press the "Run" icon <i class="fas fa-play"></i> on the top panel to perform fitting. You will get a
+[grid](https://datagrok.ai/help/visualize/viewers/grid) containing
 
    * loss function values
    * fitted inputs
    * viewers visualizing the goodness of fit:
    * [line chart](https://datagrok.ai/help/visualize/viewers/line-chart) showing the loss function minimization
 
-8. Open ${HELP_ITEMS.CONTEXT}. You will get the function run corresponding to the selected grid row.
+5. Open ${HELP_ITEMS.CONTEXT}. You will get the function run corresponding to the selected grid row.
 
-9. Press **?** on the top panel to learn more about 
+6. Press **?** on the top panel to learn more about
 [parameters optimization](${HELP_LINK}).
 
 # Learn more
@@ -171,3 +165,30 @@ export const LOSS_FUNC_CHART_OPTS = {
 };
 
 export const MIN_RADAR_COLS_COUNT = 4;
+
+/** Modulus for the linear congruential generator of random numbers */
+export const RAND_MOD = 2147483647;
+
+/** Multiplier used in the generator of random numbers */
+export const RAND_MULT = 16807;
+
+/** Reproducibility settings */
+export type ReproSettings = {
+  reproducible: boolean,
+  seed: number,
+};
+
+export const REPRO_DEFAULT = true;
+export const SEED_DEFAULT = 10;
+
+/** Early stopping settings */
+export type EarlyStoppingSettings = {
+  useEarlyStopping: boolean,
+  costFuncThreshold: number,
+  stopAfter: number,
+};
+
+export const EARLY_STOP_DEFAULT = false;
+export const COST_FUNC_THRESH = 1e-5;
+export const STOP_AFTER_DEFAULT = 1;
+export const STOP_AFTER_MIN = 1;
