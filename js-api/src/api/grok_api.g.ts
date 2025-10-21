@@ -102,6 +102,7 @@ export interface IDartApi {
   grok_View_ResetLayout(v: any): any;
   grok_View_CreateJsViewHost(v: any): any;
   grok_View_Get_Viewers(v: any): any;
+  grok_View_SetIcon(v: any, icon: any): any;
   grok_TableView(d: any, addToWorkspace: Bool): any;
   grok_TableView_Get_SyncCurrentObject(tv: any): any;
   grok_TableView_Set_SyncCurrentObject(tv: any, x: Bool): any;
