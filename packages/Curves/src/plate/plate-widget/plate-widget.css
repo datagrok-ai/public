@@ -44,17 +44,13 @@
 /* --- Vertical TabControl Styles --- */
 
 /* Target the header strip within your vertical tabs. */
-.assay-plates--plate-widget__tabs .d4-tab-header-strip {
-    /* Arrange the tab headers in a vertical column */
+.assay-plates--plate-widget__tabs .d4-tab-header-stripe {
     flex-direction: column;
     width: 180px;
     min-width: 180px;
-
-    /* Remove the default bottom border used for horizontal tabs */
     border-bottom: none;
-
-    /* Add a right border to separate headers from the content panel */
     border-right: 1px solid var(--grey-2);
+    overflow-y: auto;
 }
 
 /* Ensure the container for the headers themselves also stacks them vertically */
@@ -69,6 +65,7 @@
     padding: 8px 12px;
     width: 100%;
     border-bottom: none;
+    box-sizing: border-box;
 }
 
 .assay-plates--plate-widget .ui-box {

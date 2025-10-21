@@ -126,7 +126,6 @@ export class PlateSelectionController {
         });
       });
   }
-
   private finalizeDragSelection(): void {
     if (!this._selectionRect || !this.plateWidget.grid) return;
 
@@ -141,18 +140,42 @@ export class PlateSelectionController {
       Math.abs(r.height)
     );
 
+    // Collect wells in the selection area and count selected/unselected
+    const wellsInSelection: Array<{row: number, col: number, dataIndex: number}> = [];
+    let selectedCount = 0;
+    let unselectedCount = 0;
+
     for (let row = 0; row < plate.rows; row++) {
       for (let col = 0; col < plate.cols; col++) {
         const gridCol = this.plateWidget.grid.columns.byIndex(col + 1);
         if (gridCol) {
           const cell = this.plateWidget.grid.cell(gridCol.name, row);
-          if (cell && normalizedRect.contains(cell.bounds.midX, cell.bounds.midY))
-            selection.set(plate._idx(row, col), true, false);
+          if (cell && normalizedRect.contains(cell.bounds.midX, cell.bounds.midY)) {
+            const dataIndex = plate._idx(row, col);
+            const isSelected = selection.get(dataIndex);
+
+            wellsInSelection.push({row, col, dataIndex});
+            if (isSelected)
+              selectedCount++;
+            else
+              unselectedCount++;
+          }
         }
       }
     }
 
-    selection.fireChanged();
+    // a bit of majority rule: if the selection eventually contains some selected and some UNselected wells -- set all to the reverse of the majority.
+    // this is nicer because if the user casually drags over mixed-state wells they most of the time intend to change the minority group to match the majority.
+    // Otheriwse we could just toggle the selection state.
+    if (wellsInSelection.length > 0) {
+      const targetState = selectedCount < unselectedCount; // true = select, false = unselect
+
+      for (const well of wellsInSelection)
+        selection.set(well.dataIndex, targetState, false);
+
+
+      selection.fireChanged();
+    }
   }
 
   private getSelectedWells(): Array<{row: number, col: number, dataIndex: number}> {

@@ -141,6 +141,7 @@ export class PlateWidget extends DG.Widget {
 
 
   private setupGrid() {
+    this.grid.props.allowColReordering=false;
     this.grid.props.allowRowSelection = false;
     this.grid.props.allowColSelection = false;
     this.grid.props.allowBlockSelection = false;
