@@ -259,8 +259,6 @@ export class PackageFunctions {
   description: 'Checks if a CSV file can be parsed as a plate.'
 })
   static async checkCsvIsPlate(file: DG.FileInfo): Promise<boolean> {
-  @grok.decorators.func()
-  static async checkExcelIsPlate(content: Uint8Array): Promise<boolean> {
     try {
       const contentSample = await file.readAsString();
       const firstLine = contentSample.substring(0, contentSample.indexOf('\n')).toLowerCase();
@@ -277,21 +275,12 @@ export class PackageFunctions {
     if (content.length > 1_000_000)
       return false;
     return PlateReader.getReader(content) != null;
-static async parseExcelPlate(content: string | Uint8Array, name?: string):Promise<Plate> {
-  if (typeof content === 'string') {
-    const blob = new Blob([content], {type: 'application/octet-binary'});
-    const buf = await blob.arrayBuffer();
-    const plate = await Plate.fromExcel(new Uint8Array(buf), name);
-    return plate;
-  } else {
-    return await Plate.fromExcel(content, name);
   }
-}
 
-@grok.decorators.app({name: 'Browse', browsePath: 'Plates'})
-static platesApp(): DG.View {
-  return platesAppView();
-}
+  // @grok.decorators.app({name: 'Browse', browsePath: 'Plates'})
+  static platesApp(): DG.View {
+    return platesAppView();
+  }
 
   @grok.decorators.func()
   static async getPlateByBarcode(barcode: string): Promise<Plate> {
@@ -304,13 +293,8 @@ static platesApp(): DG.View {
   static async createDummyPlateData(): Promise<void> {
     await __createDummyPlateData();
   }
-  return Plate.fromDbDataFrame(df);
 }
-  @grok.decorators.func({})
-static async createDummyPlateData(): Promise<void> {
-  await __createDummyPlateData();
-}
-}
+
 
 //name: platesAppTreeBrowser
 //input: dynamic treeNode
