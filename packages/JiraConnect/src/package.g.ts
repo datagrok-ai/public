@@ -41,3 +41,11 @@ export async function getJiraField(ticketColumn: DG.Column, field: string) : Pro
 export async function getJiraTicketsByFilter(filter?: any) : Promise<any> {
   return await PackageFunctions.getJiraTicketsByFilter(filter);
 }
+
+//input: list issueIdsOrKeys 
+//input: list fields 
+//input: list expand 
+//output: object result
+export async function getJiraTicketsBulk(issueIdsOrKeys: string[], fields?: string[], expand?: string[]) : Promise<any> {
+  return await PackageFunctions.getJiraTicketsBulk(issueIdsOrKeys, fields, expand);
+}

@@ -1,8 +1,8 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { loadProjectsList, loadIssues, loadIssueData, loadProjectData } from './api/data';
-import { ErrorMessageResponse, JiraIssue, Project } from './api/objects';
+import { loadProjectsList, loadIssues, loadIssueData, loadProjectData, loadIssuesBulk } from './api/data';
+import {ErrorMessageResponse, JiraIssue, JiraIssuesBulkList, Project} from './api/objects';
 import { AuthCreds } from './api/objects';
 import { getJiraCreds } from './app/credentials';
 import { addJiraDetector } from './detectors';
@@ -110,8 +110,8 @@ export class PackageFunctions {
           if (Array.isArray(current))
             current = (current ?? ['']).join(', ');
 
-          if (loadedIssues?.issues[i].key)
-            ticketsMap.set(loadedIssues?.issues[i].key, (current ?? '') as string);
+          if (loadedIssues?.issues[i]?.key)
+            ticketsMap.set(loadedIssues.issues[i].key, (current ?? '') as string);
         }
       } catch (error) {
         console.error(`Error loading issues for index range ${index} - ${index + chunkSize}`, error);
@@ -149,6 +149,42 @@ export class PackageFunctions {
         break;
       startAt += chunkSize;
     }
+    return result;
+  }
+
+  @grok.decorators.func({outputs: [{name: 'result', type: 'object'}]})
+  static async getJiraTicketsBulk(
+      @grok.decorators.param({type: 'list'}) issueIdsOrKeys: string[],
+      @grok.decorators.param({type: 'list'}) fields?: string[],
+      @grok.decorators.param({type: 'list'}) expand?: string[]
+  ): Promise<JiraIssuesBulkList> {
+    const jiraCreds = await getJiraCreds();
+    if (!jiraCreds)
+      throw new Error('JiraConnect: Missing credentials');
+
+    const result: JiraIssuesBulkList = {
+      expand: expand ?? ['names', 'schema'],
+      issues: [],
+      issueErrors: []
+    };
+
+    const chunkSize = 100;
+    let index = 0;
+
+    while (index < issueIdsOrKeys.length) {
+      const keysToLoad = issueIdsOrKeys.slice(index, index + chunkSize);
+      try {
+        const loadedIssues = await loadIssuesBulk(jiraCreds.host, new AuthCreds(jiraCreds.userName, jiraCreds.authKey),
+            keysToLoad, expand, fields);
+        result.issues.push(...loadedIssues.issues);
+        result.issueErrors.push(...loadedIssues.issueErrors);
+
+      } catch (error) {
+        console.error(`Error loading issues for index range ${index} - ${index + chunkSize}`, error);
+      }
+      index += chunkSize;
+    }
+
     return result;
   }
 }

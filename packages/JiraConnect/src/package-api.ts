@@ -8,6 +8,10 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
+  export async function info(): Promise<void> {
+    return await grok.functions.call('JiraConnect:Info', {});
+  }
+
   export async function init(): Promise<void> {
     return await grok.functions.call('JiraConnect:Init', {});
   }
