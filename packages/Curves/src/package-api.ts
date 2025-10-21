@@ -12,16 +12,10 @@ export namespace queries {
     return await grok.data.query('Curves:GetPlates', {});
   }
 
-  /**
-  Get all well level properties (either used in a well or specified in a template)
-  */
   export async function getWellLevelProperties(): Promise<DG.DataFrame> {
     return await grok.data.query('Curves:GetWellLevelProperties', {});
   }
 
-  /**
-  Get all plate level properties (either used in a plate or specified in a template)
-  */
   export async function getPlateLevelProperties(): Promise<DG.DataFrame> {
     return await grok.data.query('Curves:GetPlateLevelProperties', {});
   }
@@ -36,6 +30,10 @@ export namespace queries {
 
   export async function getPlateTemplates(): Promise<DG.DataFrame> {
     return await grok.data.query('Curves:GetPlateTemplates', {});
+  }
+
+  export async function getProperties(): Promise<DG.DataFrame> {
+    return await grok.data.query('Curves:GetProperties', {});
   }
 
   export async function getWellRoles(): Promise<DG.DataFrame> {
@@ -62,20 +60,68 @@ export namespace queries {
     return await grok.data.query('Curves:GetUniqueWellPropertyValues', {});
   }
 
-  export async function createProperty(propertyName: string , valueType: string ): Promise<number> {
-    return await grok.data.query('Curves:CreateProperty', { propertyName, valueType });
+  export async function createProperty(propertyName: string , valueType: string , scope: string , choices: string | null, min: number | null, max: number | null): Promise<number> {
+    return await grok.data.query('Curves:CreateProperty', { propertyName, valueType, scope, choices, min, max });
   }
 
   export async function createTemplate(name: string , description: string ): Promise<number> {
     return await grok.data.query('Curves:CreateTemplate', { name, description });
   }
 
-  export async function getTemplateWellProperties(): Promise<DG.DataFrame> {
-    return await grok.data.query('Curves:GetTemplateWellProperties', {});
+  export async function getTemplateProperties(templateId: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('Curves:GetTemplateProperties', { templateId });
   }
 
-  export async function getTemplatePlateProperties(): Promise<DG.DataFrame> {
-    return await grok.data.query('Curves:GetTemplatePlateProperties', {});
+  export async function getPlateByBarcode(barcode: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('Curves:GetPlateByBarcode', { barcode });
+  }
+
+  export async function createAnalysisRun(plateId: number , analysisType: string , groups: any ): Promise<number> {
+    return await grok.data.query('Curves:CreateAnalysisRun', { plateId, analysisType, groups });
+  }
+
+  export async function saveAnalysisRunParameter(analysisRunId: number , propertyId: number , valueString: string | null, valueNum: number | null, valueBool: boolean | null, valueJsonb: string | null): Promise<DG.DataFrame> {
+    return await grok.data.query('Curves:SaveAnalysisRunParameter', { analysisRunId, propertyId, valueString, valueNum, valueBool, valueJsonb });
+  }
+
+  export async function saveAnalysisResult(analysisRunId: number , groupCombination: any , propertyId: number , valueString: string | null, valueNum: number | null, valueBool: boolean | null, valueJsonb: string | null): Promise<DG.DataFrame> {
+    return await grok.data.query('Curves:SaveAnalysisResult', { analysisRunId, groupCombination, propertyId, valueString, valueNum, valueBool, valueJsonb });
+  }
+
+  export async function getAnalysisRunGroups(analysisType: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('Curves:GetAnalysisRunGroups', { analysisType });
+  }
+
+  export async function queryAnalyses(fullQuery: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('Curves:QueryAnalyses', { fullQuery });
+  }
+
+  export async function queryAnalysesTemplate(): Promise<DG.DataFrame> {
+    return await grok.data.query('Curves:QueryAnalysesTemplate', {});
+  }
+
+  export async function addTemplatePlateProperty(templateId: number , propertyId: number , isRequired: boolean , defaultValue: string | null): Promise<DG.DataFrame> {
+    return await grok.data.query('Curves:AddTemplatePlateProperty', { templateId, propertyId, isRequired, defaultValue });
+  }
+
+  export async function addTemplateWellProperty(templateId: number , propertyId: number , isRequired: boolean , defaultValue: string | null): Promise<DG.DataFrame> {
+    return await grok.data.query('Curves:AddTemplateWellProperty', { templateId, propertyId, isRequired, defaultValue });
+  }
+
+  export async function getTemplatePlateProperties(templateId: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('Curves:GetTemplatePlateProperties', { templateId });
+  }
+
+  export async function getTemplateWellProperties(templateId: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('Curves:GetTemplateWellProperties', { templateId });
+  }
+
+  export async function removeTemplatePlateProperty(templateId: number , propertyId: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('Curves:RemoveTemplatePlateProperty', { templateId, propertyId });
+  }
+
+  export async function removeTemplateWellProperty(templateId: number , propertyId: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('Curves:RemoveTemplateWellProperty', { templateId, propertyId });
   }
 }
 
@@ -100,13 +146,6 @@ export namespace funcs {
   */
   export async function curveFitDemo(): Promise<void> {
     return await grok.functions.call('Curves:CurveFitDemo', {});
-  }
-
-  /**
-  Assasy plates with concentration, layout and readout data
-  */
-  export async function assayPlatesDemo(): Promise<void> {
-    return await grok.functions.call('Curves:AssayPlatesDemo', {});
   }
 
   export async function initCurves(): Promise<void> {
@@ -141,23 +180,11 @@ export namespace funcs {
     return await grok.functions.call('Curves:ImportPlate', { fileContent });
   }
 
-  export async function importPlateXlsx(fileContent: any ): Promise<void> {
-    return await grok.functions.call('Curves:ImportPlateXlsx', { fileContent });
-  }
-
-  export async function previewPlateXlsx(file: DG.FileInfo ): Promise<DG.View> {
-    return await grok.functions.call('Curves:PreviewPlateXlsx', { file });
-  }
-
   /**
   Checks if a CSV file can be parsed as a plate.
   */
   export async function checkCsvIsPlate(file: DG.FileInfo ): Promise<boolean> {
     return await grok.functions.call('Curves:CheckCsvIsPlate', { file });
-  }
-
-  export async function importPlateCsv(fileContent: string , file: DG.FileInfo ): Promise<void> {
-    return await grok.functions.call('Curves:ImportPlateCsv', { fileContent, file });
   }
 
   export async function platesApp(): Promise<DG.View> {

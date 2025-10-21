@@ -32,13 +32,6 @@ export async function curveFitDemo() {
   return PackageFunctions.curveFitDemo();
 }
 
-//name: Assay Plates
-//description: Assasy plates with concentration, layout and readout data
-//meta.demoPath: Curves | Assay Plates
-export async function assayPlatesDemo() {
-  return PackageFunctions.assayPlatesDemo();
-}
-
 //name: _initCurves
 //tags: init
 export function _initCurves() {
@@ -129,48 +122,12 @@ export async function importPlate(fileContent: string) {
   return PackageFunctions.importPlate(fileContent);
 }
 
-//name: importPlateXlsx
-//tags: file-handler
-//input: blob fileContent 
-//meta.ext: xlsx
-//meta.fileViewerCheck: Curves:checkExcelIsPlate
-export async function importPlateXlsx(fileContent: Uint8Array) {
-  return PackageFunctions.importPlateXlsx(fileContent);
-}
-
-//name: viewPlateXlsx
-//tags: fileViewer
-//input: file file 
-//output: view result
-//meta.fileViewer: xlsx
-//meta.fileViewerCheck: Curves:checkExcelIsPlate
-export async function previewPlateXlsx(file: DG.FileInfo) {
-  return PackageFunctions.previewPlateXlsx(file);
-}
-
 //name: checkCsvIsPlate
 //description: Checks if a CSV file can be parsed as a plate.
 //input: file file 
 //output: bool result
 export async function checkCsvIsPlate(file: DG.FileInfo) {
   return PackageFunctions.checkCsvIsPlate(file);
-}
-
-//name: importPlateCsv
-//tags: file-handler
-//input: string fileContent 
-//input: file file 
-//meta.ext: csv
-//meta.fileViewerCheck: Curves:checkCsvIsPlate
-export async function importPlateCsv(fileContent: string, file: DG.FileInfo) {
-  return PackageFunctions.importPlateCsv(fileContent, file);
-}
-
-//name: Layouts
-//description: A standalone view for designing plate layouts.
-//output: view result
-export function layouts() {
-  return PackageFunctions.layouts();
 }
 
 //name: Browse

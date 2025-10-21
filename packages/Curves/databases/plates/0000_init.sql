@@ -1,4 +1,3 @@
-CREATE SCHEMA IF NOT EXISTS plates;
 
 CREATE TABLE plates.templates (
     id SERIAL PRIMARY KEY,
@@ -146,8 +145,8 @@ INSERT INTO plates.plate_types (id, name, rows, cols) VALUES
 INSERT INTO plates.properties (id, name, type, units, scope) VALUES 
     (1000, 'Volume', 'double', 'uL', 'well'),
     (1001, 'Concentration', 'double', 'uM', 'well'),
-    (1002, 'Sample', 'string', 'well'),
-    (1003, 'Well Role', 'string', 'well');
+    (1002, 'Sample', 'string', '', 'well'),
+    (1003, 'Well Role', 'string', '', 'well');
 
 INSERT INTO plates.property_allowed_values (property_id, value_string)
 VALUES
