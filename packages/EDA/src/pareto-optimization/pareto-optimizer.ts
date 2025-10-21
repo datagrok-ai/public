@@ -26,7 +26,7 @@ export class ParetoOptimizer {
   private toChangeScatterMarkerSize = false;
   private toChange3dScatterMarkerSize = false;
   private toAddSizeCol = false;
-  private updateAxesInput = ui.input.bool('Pareto Axes', {
+  private useAxesInput = ui.input.bool('Pareto Axes', {
     value: true,
     tooltipText: 'Use optimized variables as scatter plot axes',
     onValueChanged: (val) => {
@@ -77,8 +77,10 @@ export class ParetoOptimizer {
     this.sizeColName = cols.getUnusedName(COL_NAME.SIZE);
 
     const ribPanels = this.view.getRibbonPanels();
-    ribPanels.push([this.updateAxesInput.root]);
+    ribPanels.push([this.useAxesInput.root]);
     this.view.setRibbonPanels(ribPanels);
+
+    this.updateUseAxesInput();
   } // constructor
 
   private getLabelColNames(): string[] {
@@ -201,7 +203,7 @@ export class ParetoOptimizer {
     plot.setOptions(colorOpt);
 
     // update axis
-    if (!this.updateAxesInput.value)
+    if (!this.useAxesInput.value)
       return;
 
     const prevAxisCols = axisNames.map((axis) => plot.getOptions().look[axis]);
@@ -286,7 +288,7 @@ export class ParetoOptimizer {
 
   private markResColWithColor(col: DG.Column): void {
     col.colors.setCategorical({
-      'optimal': '#ff5140',
+      'optimal': '#2ca02c',
       'non-optimal': '#e3e3e3',
     });
   } // markResColWithColor
@@ -333,4 +335,11 @@ export class ParetoOptimizer {
       }
     });
   } // updateTooltips
+
+  private updateUseAxesInput(): void {
+    this.useAxesInput.captionLabel.style.fontSize = '10pt';
+    this.useAxesInput.captionLabel.style.position = 'relative';
+    this.useAxesInput.captionLabel.style.top = '-2px';
+    this.useAxesInput.root.style.paddingTop = '5px';
+  } // updateUseAxesInput
 } // ParetoOptimizer
