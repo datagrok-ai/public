@@ -478,8 +478,8 @@ export namespace funcs {
     return await grok.functions.call('UsageAnalysis:UsageAnalysisApp', { path, date, groups, packages, tags, categories, projects });
   }
 
-  export async function getTicketsVerdict(ticketColumn: DG.Column ): Promise<DG.Column> {
-    return await grok.functions.call('UsageAnalysis:GetTicketsVerdict', { ticketColumn });
+  export async function getTicketsVerdict(ticketColumn: DG.Column , resultColumn: DG.Column , progress: any ): Promise<void> {
+    return await grok.functions.call('UsageAnalysis:GetTicketsVerdict', { ticketColumn, resultColumn, progress });
   }
 
   export async function testTrackApp(): Promise<void> {

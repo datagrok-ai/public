@@ -170,6 +170,8 @@ export class ViewBase {
   /** @returns {HTMLElement} View icon. Override in subclasses. */
   getIcon(): HTMLElement | null { return null; }
 
+  setIcon(icon: HTMLElement) {api.grok_View_SetIcon(this.dart, icon)};
+
   /** @returns {Object} Viewer state map. Override in subclasses. */
   saveStateMap(): object | null { return null; }
 

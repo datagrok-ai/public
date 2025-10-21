@@ -281,9 +281,8 @@ export class FormsViewer extends DG.JsViewer {
 
               if (this.colorCode) {
                 if (grid) {
-                  const gridCellIdx = grid.getRowOrder().indexOf(row);
-                  if (gridCellIdx !== -1) {
-                    const color = grid.cell(name, gridCellIdx).color;
+                  const color = this.dataFrame.col(name)?.meta.colors.getColor(row);
+                  if (color) {
                     if (grid.col(name)?.isTextColorCoded)
                       input.input.setAttribute('style', `color:${DG.Color.toHtml(color)}!important;`);
                     else {

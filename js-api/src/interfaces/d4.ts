@@ -784,6 +784,10 @@ export interface ICorrelationPlotSettings {
 
   backColor: number;
 
+  defaultCellFont: string;
+
+  colHeaderFont: string;
+
   /// Determines the rows shown on the plot.
   rowSource: keyof typeof RowSet;
 

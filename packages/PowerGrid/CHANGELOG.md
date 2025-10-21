@@ -1,5 +1,9 @@
 # Power Grid changelog
 
+## 1.7.10 (2025-10-21)
+
+* GROK-19073: Forms Viewer: display incorrect row coloring when scrolling grid with pinned rows
+
 ## 1.7.9 (2025-09-23)
 
 * GROK-18814: Forms Viewer: Add substructure highlighting support

@@ -8,15 +8,20 @@ interface JiraCredsData {
     host: string;
 }
 
-export async function getJiraCreds(): Promise<JiraCredsData|null> {
-    let credentials =  (await _package.getCredentials());
-    if(!(credentials))
+let credentialsPromise: Promise<any> | null = null;
+let credentials: any | null = null;
+
+export async function getJiraCreds(): Promise<JiraCredsData | null> {
+    if (!credentialsPromise)
+        credentialsPromise = _package.getCredentials();
+    credentials ??= await credentialsPromise;
+    if (!credentials)
         return null;
     let credentialsParams = credentials.parameters;
     let authKey = credentialsParams[constants.AUTH_KEY];
     let userName = credentialsParams[constants.USERNAME];
     let host = credentialsParams[constants.HOST_NAME];
-    if(!(authKey && userName && host))
+    if (!(authKey && userName && host))
         return null;
     return { authKey: authKey, userName: userName, host: host };
 }
