@@ -56,7 +56,7 @@ export class PackageFunctions {
 
   @grok.decorators.autostart()
   static tutorialsAutostart() : void {
-    if (DG.User.current().joined.add(4, 'days').diff(dayjs())) {
+    if (DG.User.current().joined.add(4, 'days').diff(dayjs() as any)) {
       const appsNode = grok.shell.browsePanel.mainTree.children.find((c) => c.text === 'Apps') as DG.TreeViewGroup;
       if (!appsNode)
         return;
