@@ -30,9 +30,11 @@ export async function calculateDescriptors(molecules: DG.Column, descriptors: st
   const result: object = await gzipPostRequest({'molecules': molecules.toList(), 'descriptors': descriptors},
     '/chem/descriptors');
   const colArray = Array<DG.Column>(Object.entries(result).length);
+  let counter = 0;
   for (const [key, value] of Object.entries(result)) {
     const column = DG.Column.fromList(value['type'], key, value['value']);
-    colArray.push(column);
+    colArray[counter] = column;
+    counter++;
   }
   return colArray;
 }
