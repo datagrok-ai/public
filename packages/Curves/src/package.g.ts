@@ -1,3 +1,6 @@
+import {RawPNGRenderer} from './pngRenderer';
+import {PlateGridCellRenderer} from './plate/plate-cell-renderer';
+import {PackageFunctions} from './package';
 import {MultiCurveViewer} from './fit/multi-curve-viewer';
 import {FitChartCellRenderer} from './fit/fit-renderer';
 import * as DG from 'datagrok-api/dg';
@@ -52,14 +55,16 @@ export function _initCurves() : void {
 //input: list<string> additionalColumns { nullable: true }
 //input: string wellLevelJoinCol { nullable: true }
 //input: string parentLevelJoinCol { nullable: true }
+//input: list<string> wellLevelAdditionalColumns { nullable: true; optional: true }
 //output: dataframe result
-export async function dataToCurves(df: DG.DataFrame, concentrationCol: DG.Column, readoutCol: DG.Column, batchIDCol: DG.Column, assayCol: DG.Column, runIDCol: DG.Column, compoundIDCol: DG.Column, targetEntityCol: DG.Column, excludeOutliersCol?: DG.Column, parentTable?: DG.DataFrame, fitParamColumns?: string[], reportedIC50Column?: string, reportedQualifiedIC50Column?: string, experimentIDColumn?: string, qualifierColumn?: string, additionalColumns?: string[], wellLevelJoinCol?: string, parentLevelJoinCol?: string) : Promise<any> {
-  return await PackageFunctions.dataToCurves(df, concentrationCol, readoutCol, batchIDCol, assayCol, runIDCol, compoundIDCol, targetEntityCol, excludeOutliersCol, parentTable, fitParamColumns, reportedIC50Column, reportedQualifiedIC50Column, experimentIDColumn, qualifierColumn, additionalColumns, wellLevelJoinCol, parentLevelJoinCol);
+export async function dataToCurves(df: DG.DataFrame, concentrationCol: DG.Column, readoutCol: DG.Column, batchIDCol: DG.Column, assayCol: DG.Column, runIDCol: DG.Column, compoundIDCol: DG.Column, targetEntityCol: DG.Column, excludeOutliersCol?: DG.Column, parentTable?: DG.DataFrame, fitParamColumns?: string[], reportedIC50Column?: string, reportedQualifiedIC50Column?: string, experimentIDColumn?: string, qualifierColumn?: string, additionalColumns?: string[], wellLevelJoinCol?: string, parentLevelJoinCol?: string, wellLevelAdditionalColumns?: string[]) : Promise<any> {
+  return await PackageFunctions.dataToCurves(df, concentrationCol, readoutCol, batchIDCol, assayCol, runIDCol, compoundIDCol, targetEntityCol, excludeOutliersCol, parentTable, fitParamColumns, reportedIC50Column, reportedQualifiedIC50Column, experimentIDColumn, qualifierColumn, additionalColumns, wellLevelJoinCol, parentLevelJoinCol, wellLevelAdditionalColumns);
 }
 
+//output: dynamic result
 //top-menu: Data | Curves | Data to Curves
-export async function dataToCurvesTopMenu() : Promise<void> {
-  await PackageFunctions.dataToCurvesTopMenu();
+export async function dataToCurvesTopMenu() {
+  return await PackageFunctions.dataToCurvesTopMenu();
 }
 
 //tags: Transform
@@ -87,8 +92,9 @@ export function addAggrStatisticsColumn(table: DG.DataFrame, colName: string, pr
 //tags: folderViewer
 //input: file folder 
 //input: list<file> files 
-export async function platesFolderPreview(folder: DG.FileInfo, files: DG.FileInfo[]) : Promise<void> {
-  await PackageFunctions.platesFolderPreview(folder, files);
+//output: dynamic result
+export async function platesFolderPreview(folder: DG.FileInfo, files: DG.FileInfo[]) {
+  return await PackageFunctions.platesFolderPreview(folder, files);
 }
 
 //tags: fileViewer
@@ -116,12 +122,10 @@ export async function checkCsvIsPlate(file: DG.FileInfo) : Promise<boolean> {
   return await PackageFunctions.checkCsvIsPlate(file);
 }
 
-//name: Browse
-//tags: app
-//output: view result
-//meta.browsePath: Plates
-export function platesApp() : any {
-  return PackageFunctions.platesApp();
+//input: string content 
+//output: bool result
+export function checkFileIsPlate(content: string) : boolean {
+  return PackageFunctions.checkFileIsPlate(content);
 }
 
 //input: string barcode 

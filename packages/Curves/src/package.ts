@@ -271,11 +271,11 @@ export class PackageFunctions {
 
 
   @grok.decorators.func()
-  static checkFileIsPlate(content: string): boolean {
-    if (content.length > 1_000_000)
-      return false;
-    return PlateReader.getReader(content) != null;
-  }
+static checkFileIsPlate(content: string): boolean {
+  if (content.length > 1_000_000)
+    return false;
+  return PlateReader.getReader(content) != null;
+}
 
   // @grok.decorators.app({name: 'Browse', browsePath: 'Plates'})
   static platesApp(): DG.View {

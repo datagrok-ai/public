@@ -10,7 +10,7 @@ import {
   jstatStatistics,
   JSTATStatistics,
   numToExcel,
-  parseExcelPosition, standardPlateSizes, toStandardSize
+  parseExcelPosition, standardPlateSizes, toExcelPosition, toStandardSize
 } from './utils';
 import type ExcelJS from 'exceljs';
 import {findPlatePositions, getPlateFromSheet} from './excel-plates';
@@ -18,6 +18,7 @@ import {FitFunctionType, FitSeries} from '@datagrok-libraries/statistics/src/fit
 import {inspectCurve} from '../fit/fit-renderer';
 import {plateDbColumn, allProperties, plateTypes} from '../plates/plates-crud';
 import {Subject} from 'rxjs';
+import { IPlateWellValidator } from './plate-well-validators';
 
 /** Represents a well in the experimental plate */
 export interface PlateWell {
@@ -451,5 +452,22 @@ export class Plate {
           DG.range(this.cols).map((col) => fieldCol.getString(this._idx(row, col))).toArray().join(',\t'));
       }
     }
+  }
+
+  validateWells(validators: IPlateWellValidator[]): Map<string, string[]> {
+    const result = new Map<string, string[]>();
+    for (const validator of validators) {
+      for (let row = 0; row < this.rows; row++) {
+        for (let col = 0; col < this.cols; col++) {
+          const error = validator.validate(this, row, col);
+          if (error) {
+            const errors = result.get(`${numToExcel(row)}${col}`) ?? [];
+            errors.push(error);
+            result.set(`${toExcelPosition(row, col)}`, errors);
+          }
+        }
+      }
+    }
+    return result;
   }
 }
