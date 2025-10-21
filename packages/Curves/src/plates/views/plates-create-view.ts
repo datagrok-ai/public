@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {Plate} from '../../plate/plate';
-import {plateTemplates, plateTypes, savePlate, savePlateAsTemplate, initPlates} from '../plates-crud';
+import {plateTemplates, plateTypes, savePlate, initPlates} from '../plates-crud';
 import {PlateStateManager} from './shared/plate-state-manager';
 import {TemplatePanel} from './components/template-panel/template-panel';
 import {Subscription} from 'rxjs';
@@ -322,15 +322,16 @@ export function createPlatesView(): DG.View {
       grok.shell.info(ui.divV([ui.h3('Plate Created Successfully'), plateInfo]));
     }),
 
-    ui.button('SAVE TEMPLATE', async () => {
+    ui.button('Create Template from Current Plate', async () => {
+      grok.shell.warning('This is not yet implemented.');
       const plateToSave = await stateManager.getOrCreateDefaultPlate();
       if (!plateToSave) {
         grok.shell.warning('No active plate to save as template.');
         return;
       }
-      await savePlateAsTemplate(plateToSave, stateManager.currentTemplate);
-      await initPlates(true);
-      grok.shell.info(`Plate template updated: ${stateManager.currentTemplate.name}`);
+      // await savePlateAsTemplate(plateToSave, stateManager.currentTemplate);
+      // await initPlates(true);
+      // grok.shell.info(`Plate template updated: ${stateManager.currentTemplate.name}`);
     }),
   ]]);
 

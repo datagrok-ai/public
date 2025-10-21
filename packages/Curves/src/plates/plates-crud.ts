@@ -62,7 +62,6 @@ export type PlateTemplate = {
   id: number;
   name: string;
   description: string;
-  plate_layout_id: number;
   plateProperties: Partial<PlateProperty>[];
   wellProperties: Partial<PlateProperty>[];
   required_props: [number, string][];
@@ -153,17 +152,13 @@ export async function createNewPlateForTemplate(plateType: PlateType, plateTempl
   if (!plateType)
     throw new Error('Cannot create plate: plateType is undefined. Are plate_types seeded in the database?');
 
-  if (!plateTemplate.plate_layout_id) {
-    const plate = new Plate(plateType.rows, plateType.cols);
-    for (const property of plateTemplate.wellProperties)
-      plate.data.columns.addNew(property.name!, property.type! as DG.ColumnType);
+  // Always create a new empty plate based on the plate type
+  const plate = new Plate(plateType.rows, plateType.cols);
+  // Add columns for well properties
+  for (const property of plateTemplate.wellProperties)
+    plate.data.columns.addNew(property.name!, property.type! as DG.ColumnType);
 
-    return plate;
-  }
-
-  const p = await getPlateById(plateTemplate.plate_layout_id);
-  p.id = undefined;
-  return p;
+  return plate;
 }
 
 
@@ -483,11 +478,12 @@ export async function savePlate(plate: Plate, options?: { autoCreateProperties?:
   // grok.shell.info('Plate saved');
 }
 
-export async function savePlateAsTemplate(plate: Plate, template: PlateTemplate) {
-  await savePlate(plate);
-  const sql = `update plates.templates set plate_layout_id = ${plate.id} where id = ${template.id}`;
-  await grok.data.db.query('Curves:Plates', sql);
-}
+// This should be expanded on as a part of the "Template from data" feature, but currently uses obsolete layout field.
+// export async function savePlateAsTemplate(plate: Plate, template: PlateTemplate) {
+//   await savePlate(plate);
+//   const sql = `update plates.templates set plate_layout_id = ${plate.id} where id = ${template.id}`;
+//   await grok.data.db.query('Curves:Plates', sql);
+// }
 
 
 function getPlateInsertSql(plate: Plate): string {
@@ -584,7 +580,6 @@ export async function createPlateTemplate(template: PlateTemplateInput): Promise
     id: templateId,
     name: template.name!,
     description: template.description || '',
-    plate_layout_id: (template as any).plate_layout_id, // keep dynamic for now
     plateProperties: createdPlateProperties,
     wellProperties: createdWellProperties,
     required_props: required_props,
@@ -785,7 +780,6 @@ export async function queryAnalysesGeneric(query: AnalysisQuery): Promise<DG.Dat
       ORDER BY ar.id, res_pivot.group_combination;
     `;
   } else {
-    // for single group case
     const whereClauses: string[] = [];
     whereClauses.push(`ar.analysis_type = '${query.analysisName.replace(/'/g, '\'\'')}'`);
 
@@ -847,11 +841,17 @@ export async function queryAnalysesGeneric(query: AnalysisQuery): Promise<DG.Dat
     `;
   }
 
+  console.log('Generated SQL Query:', sqlQuery);
+
   try {
     const df = await grok.data.db.query('Curves:Plates', sqlQuery);
+    console.log('Query returned dataframe with', df.rowCount, 'rows');
     if (df.rowCount > 0)
-      return df;
+      console.log('Group combinations in result:', df.getCol('group_combination')?.toList());
+
+    return df;
   } catch (error) {
+    console.error('Query failed:', error);
     throw error;
   }
 }

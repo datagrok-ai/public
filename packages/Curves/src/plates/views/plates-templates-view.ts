@@ -31,7 +31,6 @@ export function createTemplatesView(): DG.View {
           {name: 'Sample', type: DG.COLUMN_TYPE.STRING},
         ],
         id: -1,
-        plate_layout_id: -1,
         required_props: []
       };
 
