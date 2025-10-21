@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.6.10 (2025-10-21)
+
+Froms viewers: extract coloring from dataframe instead of grid
+
 ## 4.6.9 (2025-10-09)
 
 Query builder: converting strings in dates inputs
