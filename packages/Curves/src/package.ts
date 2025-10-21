@@ -16,7 +16,7 @@ import {FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {FitConstants} from './fit/const';
 import {PlateCellHandler} from './plate/plate-cell-renderer';
 import {Plate} from './plate/plate';
-import {PlateWidget} from './plate/plate-widget';
+// import {PlateWidget} from './plate/plate-widget';
 import {PlateReader} from './plate/plate-reader';
 import {initPlatesAppTree, platesAppView} from './plates/plates-app';
 import {initPlates} from './plates/plates-crud';
@@ -28,6 +28,7 @@ import {convertDataToCurves, dataToCurvesUI, WellTableParentData} from './fit/da
 import {parsePlateFromCsv} from './plate/csv-plates';
 import {AnalysisManager} from './plate/analyses/analysis-manager';
 import {DrcAnalysis} from './plate/analyses/drc/drc-analysis';
+import {PlateWidget} from './plate/plate-widget/plate-widget';
 
 export const _package = new DG.Package();
 
@@ -295,10 +296,8 @@ static async getPlateByBarcode(barcode: string): Promise<Plate> {
     console.error(`Plate with barcode '${barcode}' not found in the database.`);
     throw new Error(`Plate not found: ${barcode}`);
   }
-
   return Plate.fromDbDataFrame(df);
 }
-
   @grok.decorators.func({})
 static async createDummyPlateData(): Promise<void> {
   await __createDummyPlateData();

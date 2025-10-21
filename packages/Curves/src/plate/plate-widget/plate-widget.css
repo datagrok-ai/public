@@ -65,21 +65,12 @@
 
 /* Style the individual tab buttons for a vertical layout */
 .assay-plates--plate-widget__tabs .d4-tab-header {
-    /* Align tab text to the left */
     justify-content: flex-start;
     padding: 8px 12px;
     width: 100%;
-
-    /* Remove styles meant for horizontal tabs */
     border-bottom: none;
 }
-/*
-  Override the generic platform style that sets a fixed height on .ui-box elements.
-  This more specific selector ensures that any .ui-box inside the plate widget
-  has its height reset, allowing it to grow and fill the available space.
 
-  Unfortunately, this is a clusterfuck and doesn't work. Davit found some black magic way to fix this, have to ask again...
-*/ 
 .assay-plates--plate-widget .ui-box {
     height: 100%;
 }
