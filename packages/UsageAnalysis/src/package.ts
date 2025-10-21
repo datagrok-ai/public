@@ -115,13 +115,16 @@ export class PackageFunctions {
   @grok.decorators.func({ meta: { vectorFunc: 'true' } })
   static async getTicketsVerdict(
       @grok.decorators.param({ type: 'column<string>' }) ticketColumn: DG.Column,
-      @grok.decorators.param({ type: 'column<string>' }) resultColumn: DG.Column,
-      @grok.decorators.param({ type: 'object' }) progress: DG.ProgressIndicator,
+      @grok.decorators.param({ type: 'column<string>' }) resultColumn: DG.Column
   ): Promise<void> {
 
-    const ticketRegex = /GROK-\d*/g;
-    const ticketsMap = new Map<string, { status: string; severity: string }>();
     const n = ticketColumn.length;
+    if (n != resultColumn.length)
+      throw new Error('Ticket column and result column should have the same length.');
+
+    const ticketRegex = /GROK-\d*/g;
+    const issueIdToIdx = new Map<number, Set<string>>();
+    const issueIdsOrKeys = new Set<string>();
 
     for (let i = 0; i < n; i++) {
       const cellValue = ticketColumn.get(i);
@@ -129,25 +132,29 @@ export class PackageFunctions {
         continue;
 
       const matches = cellValue.matchAll(ticketRegex);
-      const resultStatuses: { status: string; severity: string }[] = [];
 
       for (const match of matches) {
         const ticket = match[0];
-        let info = ticketsMap.get(ticket);
-
-        if (!info) {
-          const status = await grok.functions.call('JiraConnect:issueData', { issueKey: ticket });
-          if (progress.canceled)
-            return;
-          if (!status)
-            continue;
-
-          info = { status: status.fields.status.name, severity: status.fields.priority.name };
-          ticketsMap.set(ticket, info);
-        }
-
-        resultStatuses.push(info);
+        if (issueIdToIdx.has(i))
+          issueIdToIdx.get(i).add(ticket);
+        else
+          issueIdToIdx.set(i, new Set<string>([ticket]));
+        issueIdsOrKeys.add(ticket);
       }
+    }
+    const { issues } = await grok.functions.call('JiraConnect:getJiraTicketsBulk',
+        { 'issueIdsOrKeys': [...issueIdsOrKeys], 'fields': ['status', 'priority']});
+    const resultIssuesInfo = new Map(issues.map(issue => [issue.key, issue]));
+
+    for (let i = 0; i < n; i++) {
+      if (!issueIdToIdx.has(i))
+        continue;
+
+      const resultStatuses: { status: string; severity: string }[] = [...issueIdToIdx.get(i)].map((k) => {
+        const issueData = resultIssuesInfo.get(k);
+        return issueData ? { status: issueData.fields.status.name, severity: issueData.fields.priority.name }
+            : null;
+      }).filter((s): s is { status: string; severity: string } => s !== null);
 
       if (resultStatuses.length === 0)
         continue;
@@ -159,13 +166,68 @@ export class PackageFunctions {
           verdict = `Partially Fixed (${priority})`;
         else
           verdict = `Wasn't Fixed (${priority})`;
-      } else {
-        verdict = 'Fixed';
       }
+      else
+        verdict = 'Fixed';
 
       resultColumn.set(i, verdict);
     }
   }
+
+  // @grok.decorators.func({ meta: { vectorFunc: 'true' } })
+  // static async getTicketsVerdict(
+  //     @grok.decorators.param({ type: 'column<string>' }) ticketColumn: DG.Column,
+  //     @grok.decorators.param({ type: 'column<string>' }) resultColumn: DG.Column,
+  //     @grok.decorators.param({ type: 'object' }) progress: DG.ProgressIndicator,
+  // ): Promise<void> {
+  //
+  //   const ticketRegex = /GROK-\d*/g;
+  //   const ticketsMap = new Map<string, { status: string; severity: string }>();
+  //   const n = ticketColumn.length;
+  //
+  //   for (let i = 0; i < n; i++) {
+  //     const cellValue = ticketColumn.get(i);
+  //     if (!cellValue)
+  //       continue;
+  //
+  //     const matches = cellValue.matchAll(ticketRegex);
+  //     const resultStatuses: { status: string; severity: string }[] = [];
+  //
+  //     for (const match of matches) {
+  //       const ticket = match[0];
+  //       let info = ticketsMap.get(ticket);
+  //
+  //       if (!info) {
+  //         const status = await grok.functions.call('JiraConnect:issueData', { issueKey: ticket });
+  //         if (progress.canceled)
+  //           return;
+  //         if (!status)
+  //           continue;
+  //
+  //         info = { status: status.fields.status.name, severity: status.fields.priority.name };
+  //         ticketsMap.set(ticket, info);
+  //       }
+  //
+  //       resultStatuses.push(info);
+  //     }
+  //
+  //     if (resultStatuses.length === 0)
+  //       continue;
+  //
+  //     let verdict: string;
+  //     if (resultStatuses.some((e) => e.status !== 'Done')) {
+  //       const priority = this.getHighestPriorityLevel(resultStatuses as any);
+  //       if (resultStatuses.some((e) => e.status === 'Done'))
+  //         verdict = `Partially Fixed (${priority})`;
+  //       else
+  //         verdict = `Wasn't Fixed (${priority})`;
+  //     } else {
+  //       verdict = 'Fixed';
+  //     }
+  //
+  //     resultColumn.set(i, verdict);
+  //   }
+  // }
 
 
   // @grok.decorators.func({meta: {vectorFunc: 'true'}})
