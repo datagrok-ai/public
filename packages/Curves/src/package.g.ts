@@ -32,6 +32,7 @@ export async function curveFitDemo() : Promise<void> {
   await PackageFunctions.curveFitDemo();
 }
 
+//name: _initCurves
 //tags: init
 export function _initCurves() : void {
   PackageFunctions._initCurves();
@@ -112,6 +113,7 @@ export async function importPlate(fileContent: string) : Promise<any> {
   return await PackageFunctions.importPlate(fileContent);
 }
 
+//name: checkCsvIsPlate
 //description: Checks if a CSV file can be parsed as a plate.
 //input: file file 
 //output: bool result

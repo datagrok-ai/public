@@ -168,8 +168,8 @@ INSERT INTO plates.semantic_types (name) values ('Image');
 INSERT INTO plates.properties (id, name, type, units, scope) VALUES 
     (1000, 'Volume', 'double', 'uL', 'well'),
     (1001, 'Concentration', 'double', 'uM', 'well'),
-    (1002, 'Sample', 'string', 'well'),
-    (1003, 'Well Role', 'string', 'well');
+    (1002, 'Sample', 'string', '', 'well'),
+    (1003, 'Well Role', 'string', '', 'well');
 
 -- Insert initial data
 INSERT INTO plates.plate_types (id, name, rows, cols) VALUES 
