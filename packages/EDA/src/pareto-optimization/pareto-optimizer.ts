@@ -5,10 +5,8 @@ import * as DG from 'datagrok-api/dg';
 import '../../css/pareto.css';
 import {paretoMaskFromCoordinates} from './pareto-computations';
 import {NumericFeature, OPT_TYPE, NumericArray, DIFFERENCE, RATIO, COL_NAME,
-  PC_MAX_COLS, AXIS_NAMES, ColorOpt, AXIS_NAMES_3D, LABEL,
-  SIZE,
-  SCATTER_ROW_LIM,
-  SCATTER3D_ROW_LIM} from './defs';
+  PC_MAX_COLS, AXIS_NAMES, ColorOpt, AXIS_NAMES_3D, LABEL, SIZE, SCATTER_ROW_LIM, SCATTER3D_ROW_LIM} from './defs';
+import {getColorScaleDiv, getOutputPalette, PALETTE} from './utils';
 
 export class ParetoOptimizer {
   private df: DG.DataFrame;
@@ -52,6 +50,7 @@ export class ParetoOptimizer {
       legendPosition: 'Top',
       markerType: DG.MARKER_TYPE.CIRCLE,
       autoLayout: false,
+      showSizeSelector: false,
     });
 
     this.toChangeScatterMarkerSize = this.rowCount > SCATTER_ROW_LIM;
@@ -274,6 +273,8 @@ export class ParetoOptimizer {
     this.updatePcPlot(colNames, colorOpt);
     this.setMarkers();
     this.hideSizeCol();
+    this.markOptColsWithColor();
+    this.updateTooltips();
   } // updateVisualization
 
   private hideSizeCol(): void {
@@ -289,4 +290,47 @@ export class ParetoOptimizer {
       'non-optimal': '#e3e3e3',
     });
   } // markResColWithColor
+
+  private markOptColsWithColor(): void {
+    this.numCols.forEach((col) => col.colors.setDisabled());
+
+    this.features.forEach((fea, name) => {
+      if (!fea.toOptimize)
+        return;
+
+      const col = this.df.col(name);
+
+      if (col != null)
+        col.colors.setLinear(getOutputPalette(fea.optType), {min: col.stats.min, max: col.stats.max});
+    });
+  } // markOptColsWithColor
+
+  private updateTooltips(): void {
+    const features = this.features;
+
+    this.view.grid.onCellTooltip(function(cell, x, y) {
+      if (cell.isColHeader) {
+        const cellCol = cell.tableColumn;
+        if (cellCol) {
+          const name = cell.tableColumn.name;
+          const feature = features.get(name);
+
+          if (feature !== undefined) {
+            const elems = [ui.markdown(`**${name}**`)];
+
+            if (feature.toOptimize) {
+              elems.push(ui.markdown(`This feature is **${feature.optType}d** during Pareto optimization.`));
+              elems.push(getColorScaleDiv(feature.optType));
+            }
+
+            ui.tooltip.show(ui.divV(elems), x, y);
+
+            return true;
+          }
+
+          return false;
+        }
+      }
+    });
+  } // updateTooltips
 } // ParetoOptimizer
