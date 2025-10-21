@@ -172,12 +172,15 @@ export class PlateSelectionController {
 
     const g = this.canvas.getContext('2d')!;
     g.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    g.strokeStyle = 'rgba(0, 128, 255, 0.7)';
+    g.fillStyle = 'rgba(0, 128, 255, 0.2)';
+    g.lineWidth = 1;
 
-    Object.assign(g, {
-      strokeStyle: 'rgba(0, 128, 255, 0.7)',
-      fillStyle: 'rgba(0, 128, 255, 0.2)',
-      lineWidth: 1
-    });
+    // Object.assign(g, {
+    //   strokeStyle: 'rgba(0, 128, 255, 0.7)',
+    //   fillStyle: 'rgba(0, 128, 255, 0.2)',
+    //   lineWidth: 1
+    // });
 
     g.strokeRect(
       this._selectionRect.x,

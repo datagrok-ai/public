@@ -136,18 +136,22 @@ export class PlateWidget extends DG.Widget {
   }
   public fireWellClick(row: number, col: number): void {
     const dataIndex = this.plate._idx(row, col);
-    console.log('[PlateWidget] Firing wellClick from controller:', {row, col, dataIndex});
     this.wellClickSubject.next({row, col, dataIndex});
   }
 
 
   private setupGrid() {
-    Object.assign(this.grid.props, {
-      allowRowSelection: false, allowColSelection: false, allowBlockSelection: false,
-      showCurrentRowIndicator: false, showMouseOverRowIndicator: false, showCurrentCellOutline: false,
-      showHeatmapScrollbars: false, colHeaderHeight: 30, allowColHeaderResizing: false,
-      allowColResizing: false, allowRowResizing: false,
-    });
+    this.grid.props.allowRowSelection = false;
+    this.grid.props.allowColSelection = false;
+    this.grid.props.allowBlockSelection = false;
+    this.grid.props.showCurrentRowIndicator = false;
+    this.grid.props.showMouseOverRowIndicator = false;
+    this.grid.props.showCurrentCellOutline = false;
+    this.grid.props.showHeatmapScrollbars = false;
+    this.grid.props.colHeaderHeight = 30;
+    this.grid.props.allowColHeaderResizing = false;
+    this.grid.props.allowColResizing = false;
+    this.grid.props.allowRowResizing = false;
 
 
     this.grid.onCellRender.subscribe((args) => this.renderCell(args, true));
@@ -253,15 +257,27 @@ export class PlateWidget extends DG.Widget {
   }
 
   initPlateGrid(grid: DG.Grid, isSummary: boolean = false) {
-    Object.assign(grid.props, {
-      showHeatmapScrollbars: false, allowColReordering: false, allowRowReordering: false,
-      allowSorting: false, allowEdit: !isSummary, showRowGridlines: false, showColumnGridlines: false,
-      heatmapColors: false, colHeaderHeight: 25, allowRowSelection: false, allowColSelection: false,
-      allowBlockSelection: false, showCurrentRowIndicator: false, showMouseOverRowIndicator: false,
-      showCurrentCellOutline: false, allowColHeaderResizing: false, allowColResizing: false,
-      allowRowResizing: false, selectedRowsColor: 0x00000000, mouseOverRowColor: 0x00000000,
-      currentRowColor: 0x00000000,
-    });
+    grid.props.showHeatmapScrollbars = false;
+    grid.props.allowColReordering = false;
+    grid.props.allowRowReordering = false;
+    grid.props.allowSorting = false;
+    grid.props.allowEdit = !isSummary;
+    grid.props.showRowGridlines = false;
+    grid.props.showColumnGridlines = false;
+    grid.props.heatmapColors = false;
+    grid.props.colHeaderHeight = 25;
+    grid.props.allowRowSelection = false;
+    grid.props.allowColSelection = false;
+    grid.props.allowBlockSelection = false;
+    grid.props.showCurrentRowIndicator = false;
+    grid.props.showMouseOverRowIndicator = false;
+    grid.props.showCurrentCellOutline = false;
+    grid.props.allowColHeaderResizing = false;
+    grid.props.allowColResizing = false;
+    grid.props.allowRowResizing = false;
+    grid.props.selectedRowsColor = 0x00000000;
+    grid.props.mouseOverRowColor = 0x00000000;
+    grid.props.currentRowColor = 0x00000000;
     grid.onCellRender.subscribe((args) => this.renderCell(args, isSummary));
     this.setupHoverEvents(grid);
   }

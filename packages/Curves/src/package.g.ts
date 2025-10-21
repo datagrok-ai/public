@@ -28,24 +28,15 @@ export function _MultiCurveViewer() {
 //description: Curve fitting is the process of constructing a curve, or mathematical function, that has the best fit to a series of data points
 //meta.demoPath: Curves | Curve Fitting
 //test: curveFitDemo() //wait: 2000 
-export async function curveFitDemo() {
-  return PackageFunctions.curveFitDemo();
+export async function curveFitDemo() : Promise<void> {
+  await PackageFunctions.curveFitDemo();
 }
 
-//name: Assay Plates
-//description: Assasy plates with concentration, layout and readout data
-//meta.demoPath: Curves | Assay Plates
-export async function assayPlatesDemo() {
-  return PackageFunctions.assayPlatesDemo();
-}
-
-//name: _initCurves
 //tags: init
-export function _initCurves() {
-  return PackageFunctions._initCurves();
+export function _initCurves() : void {
+  PackageFunctions._initCurves();
 }
 
-//name: dataToCurves
 //input: dataframe df 
 //input: column concentrationCol 
 //input: column readoutCol 
@@ -65,18 +56,15 @@ export function _initCurves() {
 //input: string wellLevelJoinCol { nullable: true }
 //input: string parentLevelJoinCol { nullable: true }
 //output: dataframe result
-export async function dataToCurves(df: DG.DataFrame, concentrationCol: DG.Column, readoutCol: DG.Column, batchIDCol: DG.Column, assayCol: DG.Column, runIDCol: DG.Column, compoundIDCol: DG.Column, targetEntityCol: DG.Column, excludeOutliersCol: DG.Column, parentTable: DG.DataFrame, fitParamColumns: string[], reportedIC50Column: string, reportedQualifiedIC50Column: string, experimentIDColumn: string, qualifierColumn: string, additionalColumns: string[], wellLevelJoinCol: string, parentLevelJoinCol: string) {
-  return PackageFunctions.dataToCurves(df, concentrationCol, readoutCol, batchIDCol, assayCol, runIDCol, compoundIDCol, targetEntityCol, excludeOutliersCol, parentTable, fitParamColumns, reportedIC50Column, reportedQualifiedIC50Column, experimentIDColumn, qualifierColumn, additionalColumns, wellLevelJoinCol, parentLevelJoinCol);
+export async function dataToCurves(df: DG.DataFrame, concentrationCol: DG.Column, readoutCol: DG.Column, batchIDCol: DG.Column, assayCol: DG.Column, runIDCol: DG.Column, compoundIDCol: DG.Column, targetEntityCol: DG.Column, excludeOutliersCol?: DG.Column, parentTable?: DG.DataFrame, fitParamColumns?: string[], reportedIC50Column?: string, reportedQualifiedIC50Column?: string, experimentIDColumn?: string, qualifierColumn?: string, additionalColumns?: string[], wellLevelJoinCol?: string, parentLevelJoinCol?: string) : Promise<any> {
+  return await PackageFunctions.dataToCurves(df, concentrationCol, readoutCol, batchIDCol, assayCol, runIDCol, compoundIDCol, targetEntityCol, excludeOutliersCol, parentTable, fitParamColumns, reportedIC50Column, reportedQualifiedIC50Column, experimentIDColumn, qualifierColumn, additionalColumns, wellLevelJoinCol, parentLevelJoinCol);
 }
 
-//name: dataToCurvesTopMenu
-//output: dynamic result
 //top-menu: Data | Curves | Data to Curves
-export async function dataToCurvesTopMenu() {
-  return PackageFunctions.dataToCurvesTopMenu();
+export async function dataToCurvesTopMenu() : Promise<void> {
+  await PackageFunctions.dataToCurvesTopMenu();
 }
 
-//name: addStatisticsColumn
 //tags: Transform
 //input: dataframe table 
 //input: string colName 
@@ -84,11 +72,10 @@ export async function dataToCurvesTopMenu() {
 //input: int seriesNumber 
 //output: column result
 //meta.vectorFunc: true
-export function addStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, seriesNumber: number) {
+export function addStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, seriesNumber: number) : any {
   return PackageFunctions.addStatisticsColumn(table, colName, propName, seriesNumber);
 }
 
-//name: addAggrStatisticsColumn
 //tags: Transform
 //input: dataframe table 
 //input: string colName 
@@ -96,101 +83,59 @@ export function addStatisticsColumn(table: DG.DataFrame, colName: string, propNa
 //input: string aggrType 
 //output: column result
 //meta.vectorFunc: true
-export function addAggrStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, aggrType: string) {
+export function addAggrStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, aggrType: string) : any {
   return PackageFunctions.addAggrStatisticsColumn(table, colName, propName, aggrType);
 }
 
-//name: platesFolderPreview
 //tags: folderViewer
 //input: file folder 
 //input: list<file> files 
-//output: dynamic result
-export async function platesFolderPreview(folder: DG.FileInfo, files: DG.FileInfo[]) {
-  return PackageFunctions.platesFolderPreview(folder, files);
+export async function platesFolderPreview(folder: DG.FileInfo, files: DG.FileInfo[]) : Promise<void> {
+  await PackageFunctions.platesFolderPreview(folder, files);
 }
 
-//name: previewPlate
 //tags: fileViewer
 //input: file file 
 //output: view result
 //meta.fileViewer: txt
 //meta.fileViewerCheck: Curves:checkFileIsPlate
-export function previewPlate(file: DG.FileInfo) {
+export function previewPlate(file: DG.FileInfo) : any {
   return PackageFunctions.previewPlate(file);
 }
 
-//name: importPlate
 //tags: file-handler
 //input: string fileContent 
-//output: list result
+//output: list<dataframe> result
 //meta.ext: txt
 //meta.fileViewerCheck: Curves:checkFileIsPlate
-export async function importPlate(fileContent: string) {
-  return PackageFunctions.importPlate(fileContent);
+export async function importPlate(fileContent: string) : Promise<any> {
+  return await PackageFunctions.importPlate(fileContent);
 }
 
-//name: importPlateXlsx
-//tags: file-handler
-//input: blob fileContent 
-//meta.ext: xlsx
-//meta.fileViewerCheck: Curves:checkExcelIsPlate
-export async function importPlateXlsx(fileContent: Uint8Array) {
-  return PackageFunctions.importPlateXlsx(fileContent);
-}
-
-//name: viewPlateXlsx
-//tags: fileViewer
-//input: file file 
-//output: view result
-//meta.fileViewer: xlsx
-//meta.fileViewerCheck: Curves:checkExcelIsPlate
-export async function previewPlateXlsx(file: DG.FileInfo) {
-  return PackageFunctions.previewPlateXlsx(file);
-}
-
-//name: checkCsvIsPlate
 //description: Checks if a CSV file can be parsed as a plate.
 //input: file file 
 //output: bool result
-export async function checkCsvIsPlate(file: DG.FileInfo) {
-  return PackageFunctions.checkCsvIsPlate(file);
-}
-
-//name: importPlateCsv
-//tags: file-handler
-//input: string fileContent 
-//input: file file 
-//meta.ext: csv
-//meta.fileViewerCheck: Curves:checkCsvIsPlate
-export async function importPlateCsv(fileContent: string, file: DG.FileInfo) {
-  return PackageFunctions.importPlateCsv(fileContent, file);
-}
-
-//name: Layouts
-//description: A standalone view for designing plate layouts.
-//output: view result
-export function layouts() {
-  return PackageFunctions.layouts();
+export async function checkCsvIsPlate(file: DG.FileInfo) : Promise<boolean> {
+  return await PackageFunctions.checkCsvIsPlate(file);
 }
 
 //name: Browse
 //tags: app
 //output: view result
 //meta.browsePath: Plates
-export function platesApp() {
+export function platesApp() : any {
   return PackageFunctions.platesApp();
 }
 
-//name: getPlateByBarcode
 //input: string barcode 
 //output: dynamic result
-export async function getPlateByBarcode(barcode: string) {
-  return PackageFunctions.getPlateByBarcode(barcode);
+export async function getPlateByBarcode(barcode: string) : Promise<any> {
+  return await PackageFunctions.getPlateByBarcode(barcode);
 }
 
 //name: createDummyPlateData
-export async function createDummyPlateData() {
-  return PackageFunctions.createDummyPlateData();
+export async function createDummyPlateData() : Promise<void> {
+  await PackageFunctions.createDummyPlateData();
 }
 //name: PlateGridCellRenderer
 //tags: cellRenderer

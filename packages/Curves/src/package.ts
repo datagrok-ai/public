@@ -25,9 +25,6 @@ import {getPlatesFolderPreview} from './plate/plates-folder-preview';
 import {PlateTemplateHandler} from './plates/objects/plate-template-handler';
 import * as api from './package-api';
 import {convertDataToCurves, dataToCurvesUI, WellTableParentData} from './fit/data-to-curves';
-import {parsePlateFromCsv} from './plate/csv-plates';
-import {AnalysisManager} from './plate/analyses/analysis-manager';
-import {DrcAnalysis} from './plate/analyses/drc/drc-analysis';
 import {PlateWidget} from './plate/plate-widget/plate-widget';
 
 export const _package = new DG.Package();
