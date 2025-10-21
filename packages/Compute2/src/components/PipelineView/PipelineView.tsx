@@ -134,6 +134,14 @@ export const PipelineView = Vue.defineComponent({
                 </span>
 
                 <div class={'grok-gallery-grid'}>
+                  { hasInnerStep.value &&
+                    <div
+                      class={cardsClasses}
+                      onClick={() => emit('proceedClicked')}
+                    >
+                      <IconFA name='plane-departure' class={'d4-picture'} />
+                      <div> Proceed to the first step </div>
+                    </div> }
                   { hasContextHelp(currentCall.value?.func) &&
                     <div
                       class={cardsClasses}
@@ -170,14 +178,6 @@ export const PipelineView = Vue.defineComponent({
                     >
                       <IconFA name='plus' class={'d4-picture'} />
                       <div> Choose a step to add </div>
-                    </div> }
-                  { hasInnerStep.value &&
-                    <div
-                      class={cardsClasses}
-                      onClick={() => emit('proceedClicked')}
-                    >
-                      <IconFA name='plane-departure' class={'d4-picture'} />
-                      <div> Proceed to the first step </div>
                     </div> }
                 </div>
               </div>

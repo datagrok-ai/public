@@ -17,96 +17,29 @@ import {
   makeValidationResult as makeValidationResultInst,
   makeRevalidation as makeRevalidationInst,
   mergeValidationResults as mergeValidationResultsInst,
-} from '@datagrok-libraries/compute-utils/shared-utils/validation';
-import {ModelCatalogView, ModelHandler, startModelCatalog, makeModelTreeBrowser, renderRestPanel, setModelCatalogEventHandlers, setModelCatalogHandler} from '@datagrok-libraries/compute-utils/model-catalog';
+} from '@datagrok-libraries/compute-utils';
+import {ModelCatalogView,
+  ModelHandler,
+  startModelCatalog,
+  makeModelTreeBrowser,
+  renderRestPanel,
+  setModelCatalogEventHandlers,
+  setModelCatalogHandler} from '@datagrok-libraries/compute-utils/model-catalog';
 import {
   testPipeline as testPipelineInst,
-} from '@datagrok-libraries/compute-utils/shared-utils/function-views-testing';
+} from '@datagrok-libraries/compute-utils';
+import {
+  deepCopy as  deepCopyInst,
+} from '@datagrok-libraries/compute-utils';
+
 
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
-
+export * from './package.g';
 export const _package = new DG.Package();
 
-//name: openModelFromFuncall
-//input: funccall funccall
-export function openModelFromFuncall(funccall: DG.FuncCall) {
-  ModelHandler.openModelFromFunccall(funccall);
-}
-
-//name: OutliersSelectionViewer
-//description: Creates an outliers selection viewer
-//tags: viewer
-//output: viewer result
-export function OutliersSelection() {
-  return new OutliersSelectionViewer();
-}
-
-//name: RichFunctionViewEditor
-//tags: editor
-//input: funccall call
-//output: view result
-export function RichFunctionViewEditor(call: DG.FuncCall) {
-  return RichFunctionViewInst.fromFuncCall(call, {historyEnabled: true, isTabbed: false});
-}
-
-//name: PipelineStepEditor
-//tags: editor
-//input: funccall call
-//output: view result
-export function PipelineStepEditor(call: DG.FuncCall) {
-  return RichFunctionViewInst.fromFuncCall(call, {historyEnabled: false, isTabbed: true});
-}
-
-//name: renderRestPanel
-//input: func func
-//output: widget panel
-export async function renderPanel(func: DG.Func): Promise<DG.Widget> {
-  return renderRestPanel(func);
-}
-
-let startUriLoaded = false;
-let initCompleted = false;
-
-const options = {
-  _package,
-  ViewClass: ModelCatalogView,
-  segment: 'Modelhub',
-  viewName: 'Model Hub',
-  funcName: 'modelCatalog',
-  setStartUriLoaded: () => startUriLoaded = true,
-  getStartUriLoaded: () => startUriLoaded,
-};
-
-//tags: init
-export function init() {
-  if (initCompleted)
-    return;
-
-  setModelCatalogHandler();
-  setModelCatalogEventHandlers(options);
-
-  initCompleted = true;
-}
-
-//name: Model Hub
-//tags: app
-//output: view v
-//meta.browsePath: Compute
-export function modelCatalog() {
-  return startModelCatalog(options);
-}
-
-//input: dynamic treeNode
-//input: view browseView
-export function modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup) {
-  makeModelTreeBrowser(treeNode);
-}
-
-////
-// Compute-utils API section
-///
-
+// for compute-api pakage
 export const testPipeline = testPipelineInst;
+export const deepCopy = deepCopyInst;
 export const CompView = ComputationViewInst;
 export const RFV = RichFunctionViewInst;
 export const CFV = CustomFunctionViewInst;
@@ -120,240 +53,347 @@ export const historyInput = UiUtils.historyInput;
 export const historyInputJSON = UiUtils.historyInputJSON;
 export const historyPanel = UiUtils.historyPanel;
 
-// Compatibility for older compute-api
-export const makeAdvice2 = makeAdviceInst;
-export const makeValidationResult2 = makeValidationResultInst;
+let startUriLoaded = false;
+let initCompleted = false;
 
 
-////
-// For testing only
-///
+const options = {
+  _package,
+  ViewClass: ModelCatalogView,
+  segment: 'Modelhub',
+  viewName: 'Model Hub',
+  funcName: 'modelCatalog',
+  setStartUriLoaded: () => startUriLoaded = true,
+  getStartUriLoaded: () => startUriLoaded,
+};
 
 
-//name: CustomDataUploader
-//input: func func
-//output: object uploadedCalls
-export async function CustomDataUploader(func: DG.Func) {
-  await new Promise((r) => setTimeout(r, 1000));
-
-  const dummyFunccall = await func.prepare({
-    'ambTemp': 22,
-    'initTemp': 100,
-    'desiredTemp': 30,
-    'area': 0.06,
-    'heatCap': 4200,
-    'heatTransferCoeff': 8.3,
-    'simTime': 21600,
-  }).call();
-
-  return [dummyFunccall];
-}
-
-//name: CustomUploader
-//input: object params
-//output: widget uploadWidget
-//output: funccall uploadFuncCall
-export async function CustomUploader(params: {func: DG.Func}) {
-  const uploadFunc = await grok.functions.eval('Compute:CustomDataUploader') as DG.Func;
-  const uploadFuncCall = uploadFunc.prepare({func: params.func});
-  const uploadBtn = ui.bigButton('Click me to get mock calls', () => uploadFuncCall.call());
-
-  const dummyWidget = DG.Widget.fromRoot(ui.panel([ui.divV([
-    ui.label('This part of dialog comes from my custom data uploader'),
-    ui.divH([uploadBtn], {style: {justifyContent: 'center'}}),
-  ])]));
-
-  const setLoadingSub = grok.functions.onBeforeRunAction.pipe(
-    filter((call) => call.id === uploadFuncCall.id),
-  ).subscribe(() => {
-    ui.setUpdateIndicator(uploadBtn, true);
-  });
-
-  const unsetLoadingSub = grok.functions.onAfterRunAction.pipe(
-    filter((call) => call.id === uploadFuncCall.id),
-  ).subscribe(() => {
-    ui.setUpdateIndicator(uploadBtn, false);
-  });
-
-  dummyWidget.subs.push(setLoadingSub, unsetLoadingSub);
-
-  return {uploadWidget: dummyWidget, uploadFuncCall};
-}
-
-//name: CustomCustomizer
-//input: object params
-export function CustomCustomizer(params: {defaultView: DG.TableView}) {
-  const comparisonView = params.defaultView;
-  comparisonView.scatterPlot({
-    'xColumnName': 'Initial temperature',
-    'yColumnName': 'Time to cool',
-  });
-}
-
-//name: SimTimeValidator
-//input: object params
-//output: object validator
-export function SimTimeValidator(params: any) {
-  const {reasonableMin, reasonableMax} = params;
-  return (val: number) => {
-    return makeValidationResultInst({
-      warnings: val < reasonableMin || val > reasonableMax ? [`Minimum reasonable time is ${reasonableMin}. Maximum reasonable time is ${reasonableMax}`]: undefined,
-      errors: val < 0 ? [`Time should be strictly positive`]: undefined,
-    });
-  };
-}
-
-//name: DesiredTempValidator
-//input: object params
-//output: object validator
-export function DesiredTempValidator(params: any) {
-  return (val: number, info: ValidationInfo) => {
-    const ambTemp = info.funcCall.inputs['ambTemp'];
-    const initTemp = info.funcCall.inputs['initTemp'];
-    return makeValidationResultInst({
-      errors: [
-        ...(val < ambTemp) ? [makeAdviceInst(`Desired temperature cannot be less than ambient temperature (${ambTemp}). \n`, [
-          {actionName: 'Set desired equal to ambient', action: () => info.funcCall.inputs['desiredTemp'] = ambTemp},
-        ])]: [],
-        ...(val > initTemp) ? [`Desired temperature cannot be higher than initial temperature (${initTemp})`]: [],
-      ],
-    });
-  };
-}
-
-//name: InitialTempValidator
-//input: object params
-//output: object validator
-export function InitialTempValidator(params: any) {
-  return (val: number, info: ValidationInfo) => {
-    const ambTemp = info.funcCall.inputs['ambTemp'];
-    return makeValidationResultInst({
-      errors: [
-        ...(val < ambTemp) ? [`Initial temperature cannot be less than ambient temperature (${ambTemp}).`]: [],
-      ],
-    });
-  };
-}
-
-//name: AmbTempValidator
-//input: object params
-//output: object validator
-export function AmbTempValidator(params: any) {
-  return (val: number, info: ValidationInfo) => {
-    const initTemp = info.funcCall.inputs['initTemp'];
-    return makeValidationResultInst({
-      errors: [
-        ...(val > initTemp) ? [`Ambient temperature cannot be higher than initial temperature (${initTemp})`]: [],
-      ],
-    });
-  };
-}
-
-//name: HeatCapValidator
-//input: object params
-//output: object validator
-export function HeatCapValidator(params: any) {
-  return (val: number, info: ValidationInfo) => {
-    return makeValidationResultInst({
-      errors: [
-        ...val <= 0 ? ['Heat capacity must be greater than zero.']: [],
-      ],
-      notifications: [
-        makeAdviceInst(`Heat capacity is only dependent on the object material.`, [
-          {actionName: 'Google it', action: () => {window.open(`http://google.com`);}},
-        ]),
-      ],
-    });
-  };
-}
-
-//name: CustomStringInput
-//input: object params
-//output: object input
-export function CustomStringInput(params: any) {
-  const defaultInput = ui.input.string('Custom input', {value: ''});
-  defaultInput.root.style.backgroundColor = 'aqua';
-  defaultInput.input.style.backgroundColor = 'aqua';
-  return defaultInput;
-}
-
-//name: ObjectCoolingSelector
-//input: object params
-//output: object input
-export function ObjectCoolingSelector(params: any) {
-  return UiUtils.historyInputJSON(
-    'Previous run',
-    'ObjectCooling',
-  );
-}
-
-//name: fitTestFunc
-//description: Test for optimization: multiple scalars output
-//input: double x1 = 1 {caption: param1; min: -3; max: 3}
-//input: double x2 = -1 {caption: param2; min: -3; max: 3}
-//input: dataframe y {caption: table}
-//input: bool bool
-//output: int integer
-//output: double float1
-//output: double float2
-//output: dataframe table1 {viewer: Line chart(block: 60) | Grid(block: 40) }
-//output: dataframe table2 {viewer: Line chart(block: 60) | Grid(block: 40) }
-//editor: Compute:RichFunctionViewEditor
-//meta.features: {"fitting": true, "sens-analysis": true}
-//meta.runOnOpen: true
-//meta.runOnInput: true
-export function fitTestFunc(x1: number, x2: number, y: DG.DataFrame, bool: boolean) {
-  return {
-    integer: x1**3 * (x1 - 1) * x2**3 * (x2 - 1),
-    float1: (x2 - 1)**2 + (x1 - 1)**2,
-    float2: (x2 - 1)**4 + (x1 - 1)**4,
-    table1: DG.DataFrame.fromColumns([
-      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'arg', [1, 2, 3, 4, 5]),
-      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'func', [x1 + x2 + 1, 4, 9, 16, 25]),
-    ]),
-    table2: DG.DataFrame.fromColumns([
-      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'arg', [1, 2, 3, 4, 5]),
-      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'func', [x1 + x2 + 1, 8, 27, 64, 125]),
-    ]),
-  };
-}
-
-//name: testFittingOutputs
-//description: Test for optimization: multiple scalars output
-export async function testFittingOutputs() {
-  const func = await grok.functions.find('Compute:fitTestFunc');
-
-  if (func === null) {
-    grok.shell.error('The function "Compute:fitTestFunc" not found!');
-    return;
+export class PackageFunctions {
+  @grok.decorators.func()
+  static openModelFromFuncall(funccall: DG.FuncCall) {
+    ModelHandler.openModelFromFunccall(funccall as any);
   }
 
-  const targetDf1 = DG.DataFrame.fromColumns([
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'arg', [1, 2, 3, 4, 5]),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'func', [1, 4.3, 9.1, 16, 25]),
-  ]);
-  targetDf1.name = 'test-df1';
 
-  const targetDf2 = DG.DataFrame.fromColumns([
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'arg', [1, 2, 3, 4, 5]),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'func', [1, 8.5, 27.6, 64.9, 125]),
-  ]);
-  targetDf2.name = 'test-df2';
+  @grok.decorators.func({
+    tags: ['viewer'],
+    name: 'OutliersSelectionViewer',
+    description: 'Creates an outliers selection viewer',
+    outputs: [{type: 'viewer', name: 'result'}],
+  })
+  static OutliersSelection() {
+    return new OutliersSelectionViewer();
+  }
 
-  await FittingView.fromEmpty(func, {
-    targets: {
-      integer: {default: 123, enabled: true},
-      float1: {default: 456.789, enabled: true},
-      table1: {
-        default: targetDf1,
-        enabled: true,
-        argumentCol: 'arg',
+
+  @grok.decorators.editor({outputs: [{type: 'view', name: 'result'}]})
+  static RichFunctionViewEditor(call: DG.FuncCall) {
+    return RichFunctionViewInst.fromFuncCall(call as any, {historyEnabled: true, isTabbed: false});
+  }
+
+
+  @grok.decorators.editor({outputs: [{type: 'view', name: 'result'}]})
+  static PipelineStepEditor(call: DG.FuncCall) {
+    return RichFunctionViewInst.fromFuncCall(call as any, {historyEnabled: false, isTabbed: true});
+  }
+
+
+  @grok.decorators.func({name: 'renderRestPanel'})
+  static async renderPanel(@grok.decorators.param({type: 'func'}) func: DG.Func) : Promise<DG.Widget> {
+    return renderRestPanel(func as any) as any;
+  }
+
+  @grok.decorators.init()
+  static init() {
+    if (initCompleted)
+      return;
+
+    setModelCatalogHandler();
+    setModelCatalogEventHandlers(options as any);
+
+    initCompleted = true;
+  }
+
+
+  @grok.decorators.app({
+    browsePath: 'Compute',
+    name: 'Model Hub',
+    outputs: [{type: 'view', name: 'result'}],
+  })
+  static modelCatalog() {
+    return startModelCatalog(options as any);
+  }
+
+
+  @grok.decorators.func({
+    meta: { role: ' ', app: ' '}
+  })
+  static modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.ViewBase) {
+    makeModelTreeBrowser(treeNode as any);
+  }
+
+  //
+  // Testing code
+  //
+
+  @grok.decorators.func({outputs: [{type: 'object', name: 'uploadedCalls'}]})
+  static async CustomDataUploader(func: DG.Func) {
+    await new Promise((r) => setTimeout(r, 1000));
+
+    const dummyFunccall = await func.prepare({
+      'ambTemp': 22,
+      'initTemp': 100,
+      'desiredTemp': 30,
+      'area': 0.06,
+      'heatCap': 4200,
+      'heatTransferCoeff': 8.3,
+      'simTime': 21600,
+    }).call();
+
+    return [dummyFunccall];
+  }
+
+
+  @grok.decorators.func({
+    outputs: [
+      {
+        name: 'uploadWidget',
+        type: 'widget',
       },
-      table2: {
-        default: targetDf2,
-        enabled: true,
-        argumentCol: 'arg',
+      {
+        name: 'uploadFuncCall',
+        type: 'funccall',
       },
+    ],
+  })
+  static async CustomUploader(
+    @grok.decorators.param({type: 'object'}) params: {func: DG.Func}) {
+    const uploadFunc = await grok.functions.eval('Compute:CustomDataUploader') as DG.Func;
+    const uploadFuncCall = uploadFunc.prepare({func: params.func});
+    const uploadBtn = ui.bigButton('Click me to get mock calls', () => uploadFuncCall.call());
+
+    const dummyWidget = DG.Widget.fromRoot(ui.panel([ui.divV([
+      ui.label('This part of dialog comes from my custom data uploader'),
+      ui.divH([uploadBtn], {style: {justifyContent: 'center'}}),
+    ])]));
+
+    const setLoadingSub = grok.functions.onBeforeRunAction.pipe(
+      filter((call) => call.id === uploadFuncCall.id),
+    ).subscribe(() => {
+      ui.setUpdateIndicator(uploadBtn, true);
+    });
+
+    const unsetLoadingSub = grok.functions.onAfterRunAction.pipe(
+      filter((call) => call.id === uploadFuncCall.id),
+    ).subscribe(() => {
+      ui.setUpdateIndicator(uploadBtn, false);
+    });
+
+    dummyWidget.subs.push(setLoadingSub, unsetLoadingSub);
+
+    return {uploadWidget: dummyWidget, uploadFuncCall};
+  }
+
+
+  @grok.decorators.func()
+  static CustomCustomizer(
+    @grok.decorators.param({type: 'object'}) params: {defaultView: DG.TableView}) {
+    const comparisonView = params.defaultView;
+    comparisonView.scatterPlot({
+      'xColumnName': 'Initial temperature',
+      'yColumnName': 'Time to cool',
+    });
+  }
+
+
+  @grok.decorators.func({outputs: [{type: 'object', name: 'validator'}]})
+  static SimTimeValidator(
+    @grok.decorators.param({type: 'object'}) params: any) {
+    const {reasonableMin, reasonableMax} = params;
+    return (val: number) => {
+      return makeValidationResultInst({
+        warnings: val < reasonableMin || val > reasonableMax ?
+          [`Minimum reasonable time is ${reasonableMin}. Maximum reasonable time is ${reasonableMax}`]: undefined,
+        errors: val < 0 ? [`Time should be strictly positive`]: undefined,
+      });
+    };
+  }
+
+
+  @grok.decorators.func({outputs: [{type: 'object', name: 'validator'}]})
+  static DesiredTempValidator(
+    @grok.decorators.param({type: 'object'}) params: any) {
+    return (val: number, info: ValidationInfo) => {
+      const ambTemp = info.funcCall.inputs['ambTemp'];
+      const initTemp = info.funcCall.inputs['initTemp'];
+      return makeValidationResultInst({
+        errors: [
+          ...(val < ambTemp) ?
+            [makeAdviceInst(`Desired temperature cannot be less than ambient temperature (${ambTemp}). \n`, [
+              {actionName: 'Set desired equal to ambient', action: () => info.funcCall.inputs['desiredTemp'] = ambTemp},
+            ])]: [],
+          ...(val > initTemp) ? [`Desired temperature cannot be higher than initial temperature (${initTemp})`]: [],
+        ],
+      });
+    };
+  }
+
+
+  @grok.decorators.func({outputs: [{type: 'object', name: 'validator'}]})
+  static InitialTempValidator(
+    @grok.decorators.param({type: 'object'}) params: any) {
+    return (val: number, info: ValidationInfo) => {
+      const ambTemp = info.funcCall.inputs['ambTemp'];
+      return makeValidationResultInst({
+        errors: [
+          ...(val < ambTemp) ? [`Initial temperature cannot be less than ambient temperature (${ambTemp}).`]: [],
+        ],
+      });
+    };
+  }
+
+  @grok.decorators.func({outputs: [{type: 'object', name: 'validator'}]})
+  static AmbTempValidator(
+    @grok.decorators.param({type: 'object'}) params: any) {
+    return (val: number, info: ValidationInfo) => {
+      const initTemp = info.funcCall.inputs['initTemp'];
+      return makeValidationResultInst({
+        errors: [
+          ...(val > initTemp) ? [`Ambient temperature cannot be higher than initial temperature (${initTemp})`]: [],
+        ],
+      });
+    };
+  }
+
+
+  @grok.decorators.func({outputs: [{type: 'object', name: 'validator'}]})
+  static HeatCapValidator(
+    @grok.decorators.param({type: 'object'}) params: any) {
+    return (val: number, info: ValidationInfo) => {
+      return makeValidationResultInst({
+        errors: [
+          ...val <= 0 ? ['Heat capacity must be greater than zero.']: [],
+        ],
+        notifications: [
+          makeAdviceInst(`Heat capacity is only dependent on the object material.`, [
+            {actionName: 'Google it', action: () => {window.open(`http://google.com`);}},
+          ]),
+        ],
+      });
+    };
+  }
+
+
+  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
+  static CustomStringInput(
+    @grok.decorators.param({type: 'object'}) params: any) {
+    const defaultInput = ui.input.string('Custom input', {value: ''});
+    defaultInput.root.style.backgroundColor = 'aqua';
+    defaultInput.input.style.backgroundColor = 'aqua';
+    return defaultInput;
+  }
+
+
+  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
+  static ObjectCoolingSelector(
+    @grok.decorators.param({type: 'object'}) params: any) {
+    return UiUtils.historyInputJSON(
+      'Previous run',
+      'ObjectCooling',
+    );
+  }
+
+
+  @grok.decorators.func({
+    meta: {
+      features: '{"fitting": true, "sens-analysis": true}',
+      runOnOpen: 'true',
+      runOnInput: 'true',
     },
-  });
+    outputs: [
+      {
+        name: 'integer',
+        type: 'int',
+      },
+      {
+        name: 'float1',
+        type: 'double',
+      },
+      {
+        name: 'float2',
+        type: 'double',
+      },
+      {
+        name: 'table1',
+        type: 'dataframe',
+        options: {viewer: 'Line chart(block:60) | Grid(block:40)'},
+      },
+      {
+        name: 'table2',
+        type: 'dataframe',
+        options: {viewer: 'Line chart(block:60) | Grid(block:40)'},
+      },
+    ],
+    description: 'Test for optimization: multiple scalars output',
+    editor: 'Compute:RichFunctionViewEditor',
+  })
+  static fitTestFunc(
+    @grok.decorators.param({options: {caption: 'param1', min: '-3', max: '3', initialValue: '1'}}) x1: number,
+    @grok.decorators.param({options: {caption: 'param2', min: '-3', max: '3', initialValue: '-1'}}) x2: number,
+    @grok.decorators.param({options: {caption: 'table'}}) y: DG.DataFrame,
+      bool: boolean) {
+    return {
+      integer: x1**3 * (x1 - 1) * x2**3 * (x2 - 1),
+      float1: (x2 - 1)**2 + (x1 - 1)**2,
+      float2: (x2 - 1)**4 + (x1 - 1)**4,
+      table1: DG.DataFrame.fromColumns([
+        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'arg', [1, 2, 3, 4, 5]),
+        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'func', [x1 + x2 + 1, 4, 9, 16, 25]),
+      ]),
+      table2: DG.DataFrame.fromColumns([
+        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'arg', [1, 2, 3, 4, 5]),
+        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'func', [x1 + x2 + 1, 8, 27, 64, 125]),
+      ]),
+    };
+  }
+
+
+  @grok.decorators.func({description: 'Test for optimization: multiple scalars output'})
+  static async testFittingOutputs() {
+    const func = await grok.functions.find('Compute:fitTestFunc');
+
+    if (func === null) {
+      grok.shell.error('The function "Compute:fitTestFunc" not found!');
+      return;
+    }
+
+    const targetDf1 = DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'arg', [1, 2, 3, 4, 5]),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'func', [1, 4.3, 9.1, 16, 25]),
+    ]);
+    targetDf1.name = 'test-df1';
+
+    const targetDf2 = DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'arg', [1, 2, 3, 4, 5]),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'func', [1, 8.5, 27.6, 64.9, 125]),
+    ]);
+    targetDf2.name = 'test-df2';
+
+    await FittingView.fromEmpty(func as any, {
+      targets: {
+        integer: {default: 123, enabled: true},
+        float1: {default: 456.789, enabled: true},
+        table1: {
+          default: targetDf1,
+          enabled: true,
+          argumentCol: 'arg',
+        },
+        table2: {
+          default: targetDf2,
+          enabled: true,
+          argumentCol: 'arg',
+        },
+      },
+    });
+  }
 }

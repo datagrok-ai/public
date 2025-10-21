@@ -7,6 +7,15 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 
+export namespace scripts {
+  /**
+  Calculates Minimum Significant Ratio (MSR) for compounds based on IC50 values, run dates, assay names, and target entities.
+  */
+  export async function calculateMSR(table: DG.DataFrame , ic50Column: DG.Column , compoundIdColumn: DG.Column , runDateColumn: DG.Column , assayNameColumn: DG.Column , targetEntityColumn: DG.Column ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Curves:CalculateMSR', { table, ic50Column, compoundIdColumn, runDateColumn, assayNameColumn, targetEntityColumn });
+  }
+}
+
 export namespace queries {
   export async function getPlates(): Promise<DG.DataFrame> {
     return await grok.data.query('Curves:GetPlates', {});
@@ -126,8 +135,8 @@ export namespace queries {
 }
 
 export namespace funcs {
-  export async function platesAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<void> {
-    return await grok.functions.call('Curves:PlatesAppTreeBrowser', { treeNode, browseView });
+  export async function platesAppTreeBrowserTempDisabled(treeNode: any ): Promise<void> {
+    return await grok.functions.call('Curves:PlatesAppTreeBrowserTempDisabled', { treeNode });
   }
 
   export async function fitChartCellRenderer(): Promise<any> {
@@ -185,10 +194,6 @@ export namespace funcs {
   */
   export async function checkCsvIsPlate(file: DG.FileInfo ): Promise<boolean> {
     return await grok.functions.call('Curves:CheckCsvIsPlate', { file });
-  }
-
-  export async function platesApp(): Promise<DG.View> {
-    return await grok.functions.call('Curves:PlatesApp', {});
   }
 
   export async function getPlateByBarcode(barcode: string ): Promise<any> {

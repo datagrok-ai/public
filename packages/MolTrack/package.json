@@ -4,18 +4,27 @@
   "version": "0.0.2",
   "description": "",
   "author": {
-    "name": "Andrew Skalkin",
-    "email": "askalkin@datagrok.ai"
+    "name": "Oleksandra Serhiienko",
+    "email": "oserhiienko@datagrok.ai"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.5.7",
+    "@datagrok-libraries/utils": "^4.6.9",
+    "@datagrok-libraries/tutorials": "../../libraries/tutorials",
+    "@datagrok-libraries/compute-utils": "../../libraries/compute-utils",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.25.0",
-    "dayjs": "^1.11.13"
+    "datagrok-api": "../../js-api",
+    "dayjs": "^1.11.13",
+    "randexp": "^0.5.3",
+    "rxjs": "^6.5.5"
   },
   "devDependencies": {
+    "@types/wu": "^2.1.44",
+    "@typescript-eslint/eslint-plugin": "^8.39.0",
+    "@typescript-eslint/parser": "^8.39.0",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.20",
+    "eslint": "^8.57.1",
+    "eslint-config-google": "^0.14.0",
+    "datagrok-tools": "^4.14.55",
     "style-loader": "^4.0.0",
     "ts-loader": "latest",
     "typescript": "latest",

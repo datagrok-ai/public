@@ -1,5 +1,9 @@
 # Helm changelog
 
+## 2.11.0 (2025-10-17)
+
+Support for multi type polymers in Helm Web Editor
+
 ## 2.10.0 (2025-04-14)
 
 Non-Drawing HWE for faster pseudo-molfile retrieval

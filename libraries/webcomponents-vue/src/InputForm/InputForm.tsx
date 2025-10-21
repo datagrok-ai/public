@@ -145,7 +145,8 @@ export const InputForm = Vue.defineComponent({
         funcCall={currentCall.value}
         onFormReplaced={formReplacedCb}
         onInputChanged={(ev: CustomEvent<DG.EventData<DG.InputArgs>>) => emit('inputChanged', ev.detail)}
-        onValidationChanged={(ev: CustomEvent<boolean>) => emit('validationChanged', ev.detail)}>
+        onValidationChanged={(ev: CustomEvent<boolean>) => emit('validationChanged', ev.detail)}
+        ref={formRef}>
       </dg-input-form>;
   },
 });

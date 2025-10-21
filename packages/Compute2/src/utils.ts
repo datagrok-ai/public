@@ -13,8 +13,8 @@ import {
   StepFunCallState,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {zipSync, Zippable} from 'fflate';
-import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
-import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
+import {dfToViewerMapping, getFuncCallDefaultFilename, replaceForWindowsPath, richFunctionViewReport} from '@datagrok-libraries/compute-utils';
+import {ConsistencyInfo, FuncCallStateInfo, MetaCallInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
 export type NodeWithPath = {
   state: PipelineState,
@@ -108,7 +108,7 @@ export const hasAddControls = (data: PipelineState): data is PipelineWithAdd =>
   (isParallelPipelineState(data) || isSequentialPipelineState(data)) && !data.isReadonly &&
     data.stepTypes.filter((item) => !item.disableUIAdding).length > 0;
 
-export const couldBeSaved = (data: PipelineState) => !isFuncCallState(data) && !!data.nqName;
+export const couldBeSaved = (data: PipelineState) => !isFuncCallState(data) && !!data.nqName && !data.disableHistory;
 
 export const hasSubtreeFixableInconsistencies = (
   data: PipelineState,
@@ -129,23 +129,23 @@ export const hasInconsistencies = (consistencyStates?: Record<string, Consistenc
   return !!firstInconsistency;
 };
 
-export async function reportStep(treeState?: PipelineState) {
+export async function reportTree(treeState?: PipelineState, meta: MetaCallInfo = {}, hasNotSavedEdits?: boolean) {
   if (treeState) {
     const zipConfig = {} as Zippable;
 
-    const reportStep = async (state: PipelineState, previousPath: string = '', idx: number = 1) => {
+    const reportTreeRec = async (state: PipelineState, previousPath: string = '', idx: number = 1) => {
       if (isFuncCallState(state) && state.funcCall) {
         const funccall = state.funcCall;
 
-        const [blob] = await Utils.richFunctionViewReport(
+        const [blob] = await richFunctionViewReport(
           'Excel',
           funccall.func,
           funccall,
-          Utils.dfToViewerMapping(funccall),
+          dfToViewerMapping(funccall),
         );
 
-        const validatedFilename = Utils.replaceForWindowsPath(
-          `${String(idx).padStart(3, '0')}_${Utils.getFuncCallDefaultFilename(funccall)}`,
+        const validatedFilename = replaceForWindowsPath(
+          `${String(idx).padStart(3, '0')}_${getFuncCallDefaultFilename(funccall)}`,
         );
         const validatedFilenameWithPath = `${previousPath}/${validatedFilename}`;
 
@@ -159,20 +159,23 @@ export async function reportStep(treeState?: PipelineState) {
           isStaticPipelineState(state)
       ) {
         const nestedPath = `${String(idx).padStart(3, '0')}_${state.friendlyName ?? state.nqName}`;
-        let validatedNestedPath = Utils.replaceForWindowsPath(nestedPath);
+        let validatedNestedPath = replaceForWindowsPath(nestedPath);
 
         if (previousPath.length > 0) validatedNestedPath = `${previousPath}/${validatedNestedPath}`;
 
         for (const [idx, stepState] of state.steps.entries())
-          await reportStep(stepState, validatedNestedPath, idx + 1);
+          await reportTreeRec(stepState, validatedNestedPath, idx + 1);
       }
     };
 
-    await reportStep(treeState);
+    await reportTreeRec(treeState);
 
-    DG.Utils.download(
-      `${treeState.friendlyName ?? treeState.configId}.zip`,
-      new Blob([zipSync(zipConfig)]),
-    );
+    const modelName = treeState.friendlyName ?? treeState.configId;
+    const runName = meta.title ? `${modelName} - ${meta.title}` : modelName;
+    const fileName = (meta.started && !hasNotSavedEdits) ? `${runName} - ${meta.started}` : `${runName} - edited`;
+
+    const name = replaceForWindowsPath(`${fileName}.zip`);
+
+    DG.Utils.download(name, new Blob([zipSync(zipConfig) as any]));
   }
 }

@@ -159,7 +159,7 @@ function getViewers(viewers: { [v: string]: { [k: string]: any } }, table: DG.Da
     case 'Word cloud': break;
     case 'Scaffold Tree': break;
     default:
-      if (value !== 'Shape Map') // return Shape Map back when it is reincarnated
+      if (value !== 'Shape Map' && value !== DG.VIEWER.CONFUSION_MATRIX) // return Shape Map back when it is reincarnated
         viewerList.push(value);
       break;
     }
@@ -167,9 +167,6 @@ function getViewers(viewers: { [v: string]: { [k: string]: any } }, table: DG.Da
   viewerList.push('Pivot table');
   viewerList.push('Column viewer');
   viewerList.push('Web viewer');
-  viewerList.push('Card');
-  viewerList.push('Viewer host');
-  viewerList.push('Info panel');
   viewerList.push('Scripting viewer');
 
   viewerList = [...new Set(viewerList)];
@@ -210,7 +207,7 @@ function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }, table: D
         isViewerEnabled = false;
     } else {
       if (v.options['showInGallery'] === 'false')
-        isViewerEnabled = false;
+        continue;
     }
     Object.assign(jsViewers, {
       [i]: {

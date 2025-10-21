@@ -5,13 +5,13 @@ import {closeAllAccordionPanes, demoScaffold, getAccordionPane, openMoleculeData
   openSketcher, scrollTable} from '../utils/demo-utils';
 import {DemoScript} from '@datagrok-libraries/tutorials/src/demo-script';
 import {awaitCheck, delay} from '@datagrok-libraries/utils/src/test';
-import {_package, activityCliffs} from '../package';
+import {_package, PackageFunctions} from '../package';
 import {rGroupAnalysis} from '../analysis/r-group-analysis';
 import {CLIFFS_DF_NAME, activityCliffsIdx} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 import {ScaffoldTreeViewer} from '../widgets/scaffold-tree';
-import { MatchedMolecularPairsViewer } from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
+import {MatchedMolecularPairsViewer} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
 
 
 export async function _demoChemOverview(): Promise<void> {
@@ -339,7 +339,7 @@ export async function _demoActivityCliffs(): Promise<void> {
       const molecules = table.col('smiles')!;
 
       const preprocessing = DG.Func.find({name: 'getFingerprints', package: 'Chem'})[0];
-      await activityCliffs(table, molecules, table.col('In-vivo Activity')!,
+      await PackageFunctions.activityCliffs(table, molecules, table.col('In-vivo Activity')!,
         78, DimReductionMethods.T_SNE, BitArrayMetricsNames.Tanimoto,
         preprocessing, {}, true);
       // tv = (grok.shell.view('Browse')! as DG.BrowseView)!.preview! as DG.TableView;

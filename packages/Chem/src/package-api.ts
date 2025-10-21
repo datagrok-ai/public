@@ -73,6 +73,13 @@ export namespace scripts {
     return await grok.functions.call('Chem:ChemistryGasteigerPartialCharges', { mol, contours });
   }
 
+  /**
+  Generates multiple conformers for a molecule using RDKit
+  */
+  export async function generateConformers(molecule: string , num_conformers: number , optimize: boolean , rms_threshold: number , max_attempts: number , random_seed: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:GenerateConformers', { molecule, num_conformers, optimize, rms_threshold, max_attempts, random_seed });
+  }
+
   export async function inchiToMol(id: string ): Promise<string> {
     return await grok.functions.call('Chem:InchiToMol', { id });
   }
@@ -274,6 +281,14 @@ export namespace funcs {
     return await grok.functions.call('Chem:DescriptorsDocker', {});
   }
 
+  export async function calculateDescriptorsTransform(table: DG.DataFrame , molecules: DG.Column , selected: any ): Promise<void> {
+    return await grok.functions.call('Chem:CalculateDescriptorsTransform', { table, molecules, selected });
+  }
+
+  export async function getDescriptors(molecules: DG.Column , selected?: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:GetDescriptors', { molecules, selected });
+  }
+
   export async function chemDescriptorsTree(): Promise<any> {
     return await grok.functions.call('Chem:ChemDescriptorsTree', {});
   }
@@ -288,10 +303,6 @@ export namespace funcs {
 
   export async function chemDescriptors(table: DG.DataFrame , molecules: DG.Column , descriptors: any ): Promise<void> {
     return await grok.functions.call('Chem:ChemDescriptors', { table, molecules, descriptors });
-  }
-
-  export async function chemDescriptor(molecules: DG.Column , descriptor: string ): Promise<DG.Column> {
-    return await grok.functions.call('Chem:ChemDescriptor', { molecules, descriptor });
   }
 
   export async function searchSubstructureEditor(call: any ): Promise<void> {
@@ -320,18 +331,18 @@ export namespace funcs {
     return await grok.functions.call('Chem:ChemSpaceEditor', { call });
   }
 
-  export async function getFingerprints(col: DG.Column , _metric?: string , fingerprintType?: string ): Promise<any> {
+  export async function getFingerprints(col: DG.Column , _metric?: any , fingerprintType?: string ): Promise<any> {
     return await grok.functions.call('Chem:GetFingerprints', { col, _metric, fingerprintType });
   }
 
   /**
   Maps the dataset to 2D plot based on similarity
   */
-  export async function chemSpaceTopMenu(table: DG.DataFrame , molecules: DG.Column , methodName: string , similarityMetric: string , plotEmbeddings: boolean , options?: any , preprocessingFunction?: any , clusterEmbeddings?: boolean , clusterMCS?: boolean ): Promise<void> {
+  export async function chemSpaceTopMenu(table: DG.DataFrame , molecules: DG.Column , methodName: string , similarityMetric: string , plotEmbeddings: boolean , options?: any , preprocessingFunction?: any , clusterEmbeddings?: boolean , clusterMCS?: boolean ): Promise<any> {
     return await grok.functions.call('Chem:ChemSpaceTopMenu', { table, molecules, methodName, similarityMetric, plotEmbeddings, options, preprocessingFunction, clusterEmbeddings, clusterMCS });
   }
 
-  export async function chemSpaceTransform(table: DG.DataFrame , molecules: DG.Column , methodName: string , similarityMetric: string , plotEmbeddings: boolean , options?: string , clusterEmbeddings?: boolean ): Promise<void> {
+  export async function chemSpaceTransform(table: DG.DataFrame , molecules: DG.Column , methodName: string , similarityMetric: string , plotEmbeddings: boolean , options?: string , clusterEmbeddings?: boolean ): Promise<any> {
     return await grok.functions.call('Chem:ChemSpaceTransform', { table, molecules, methodName, similarityMetric, plotEmbeddings, options, clusterEmbeddings });
   }
 
@@ -355,7 +366,7 @@ export namespace funcs {
     return await grok.functions.call('Chem:RGroupsAnalysisMenu', {});
   }
 
-  export async function rGroupDecomposition(df: DG.DataFrame , molColName: string , core: string , rGroupName: string , rGroupMatchingStrategy: string , onlyMatchAtRGroups?: string ): Promise<any> {
+  export async function rGroupDecomposition(df: DG.DataFrame , molColName: string , core: string , rGroupName: string , rGroupMatchingStrategy: string , onlyMatchAtRGroups?: boolean ): Promise<any> {
     return await grok.functions.call('Chem:RGroupDecomposition', { df, molColName, core, rGroupName, rGroupMatchingStrategy, onlyMatchAtRGroups });
   }
 
@@ -370,8 +381,8 @@ export namespace funcs {
     return await grok.functions.call('Chem:ActivityCliffs', { table, molecules, activities, similarity, methodName, similarityMetric, preprocessingFunction, options, isDemo, isTest });
   }
 
-  export async function activityCliffsInitFunction(v: any ): Promise<void> {
-    return await grok.functions.call('Chem:ActivityCliffsInitFunction', { v });
+  export async function activityCliffsInitFunction(sp: any ): Promise<void> {
+    return await grok.functions.call('Chem:ActivityCliffsInitFunction', { sp });
   }
 
   export async function activityCliffsTransform(table: DG.DataFrame , molecules: DG.Column , activities: DG.Column , similarity: number , methodName: string , similarityMetric: string , options?: string , isDemo?: boolean ): Promise<void> {
@@ -397,16 +408,16 @@ export namespace funcs {
   /**
   Highlights the fragments that could lead to potential chemical hazards
   */
-  export async function structuralAlertsTopMenu(table: DG.DataFrame , molecules: DG.Column , pains: boolean , bms: boolean , sureChembl: boolean , mlsmr: boolean , dundee: boolean , inpharmatica: boolean , lint: boolean , glaxo: boolean ): Promise<void> {
+  export async function structuralAlertsTopMenu(table: DG.DataFrame , molecules: DG.Column , pains: boolean , bms: boolean , sureChembl: boolean , mlsmr: boolean , dundee: boolean , inpharmatica: boolean , lint: boolean , glaxo: boolean ): Promise<DG.DataFrame> {
     return await grok.functions.call('Chem:StructuralAlertsTopMenu', { table, molecules, pains, bms, sureChembl, mlsmr, dundee, inpharmatica, lint, glaxo });
   }
 
-  export async function runStructuralAlerts(table: DG.DataFrame , molecules: DG.Column , pains: boolean , bms: boolean , sureChembl: boolean , mlsmr: boolean , dundee: boolean , inpharmatica: boolean , lint: boolean , glaxo: boolean ): Promise<void> {
+  export async function runStructuralAlerts(table: DG.DataFrame , molecules: DG.Column , pains: boolean , bms: boolean , sureChembl: boolean , mlsmr: boolean , dundee: boolean , inpharmatica: boolean , lint: boolean , glaxo: boolean ): Promise<DG.DataFrame> {
     return await grok.functions.call('Chem:RunStructuralAlerts', { table, molecules, pains, bms, sureChembl, mlsmr, dundee, inpharmatica, lint, glaxo });
   }
 
-  export async function runStructuralAlert(molecules: DG.Column , alert: string ): Promise<DG.Column> {
-    return await grok.functions.call('Chem:RunStructuralAlert', { molecules, alert });
+  export async function getStructuralAlerts(molecules: DG.Column , alerts?: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:GetStructuralAlerts', { molecules, alerts });
   }
 
   export async function molColumnPropertyPanel(molColumn: DG.Column ): Promise<any> {
@@ -608,24 +619,28 @@ export namespace funcs {
     return await grok.functions.call('Chem:DetectSmiles', { col, min });
   }
 
-  export async function callChemSimilaritySearch(df: DG.DataFrame , col: DG.Column , molecule: string , metricName: string , limit: number , minScore: number , fingerprint: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:CallChemSimilaritySearch', { df, col, molecule, metricName, limit, minScore, fingerprint });
+  export async function callChemSimilaritySearch(df: DG.DataFrame , col: DG.Column , molecule: string , metricName: string , fingerprint: string , limit: number , minScore: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:CallChemSimilaritySearch', { df, col, molecule, metricName, fingerprint, limit, minScore });
   }
 
-  export async function callChemDiversitySearch(col: DG.Column , metricName: string , limit: number , fingerprint: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('Chem:CallChemDiversitySearch', { col, metricName, limit, fingerprint });
+  export async function callChemDiversitySearch(col: DG.Column , metricName: string , fingerprint: string , limit: number ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:CallChemDiversitySearch', { col, metricName, fingerprint, limit });
   }
 
   export async function addChemPropertiesColumns(table: DG.DataFrame , molecules: DG.Column , MW: boolean , HBA: boolean , HBD: boolean , logP: boolean , logS: boolean , PSA: boolean , rotatableBonds: boolean , stereoCenters: boolean , moleculeCharge: boolean ): Promise<void> {
     return await grok.functions.call('Chem:AddChemPropertiesColumns', { table, molecules, MW, HBA, HBD, logP, logS, PSA, rotatableBonds, stereoCenters, moleculeCharge });
   }
 
-  export async function getMolProperty(molecules: DG.Column , property: string ): Promise<DG.Column> {
-    return await grok.functions.call('Chem:GetMolProperty', { molecules, property });
+  export async function getProperties(molecules: DG.Column , selected?: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:GetProperties', { molecules, selected });
   }
 
   export async function addChemRisksColumns(table: DG.DataFrame , molecules: DG.Column , mutagenicity: boolean , tumorigenicity: boolean , irritatingEffects: boolean , reproductiveEffects: boolean ): Promise<void> {
     return await grok.functions.call('Chem:AddChemRisksColumns', { table, molecules, mutagenicity, tumorigenicity, irritatingEffects, reproductiveEffects });
+  }
+
+  export async function getToxicityRisks(molecules: DG.Column , risks?: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:GetToxicityRisks', { molecules, risks });
   }
 
   /**
@@ -643,7 +658,7 @@ export namespace funcs {
     return await grok.functions.call('Chem:MMPEditor', { call });
   }
 
-  export async function mmpAnalysis(table: DG.DataFrame , molecules: DG.Column , activities: string[] , diffTypes: any , scalings: any , fragmentCutoff: number ): Promise<any> {
+  export async function mmpAnalysis(table: DG.DataFrame , molecules: DG.Column , activities: string[] , diffTypes: any , scalings: any , fragmentCutoff: number ): Promise<void> {
     return await grok.functions.call('Chem:MmpAnalysis', { table, molecules, activities, diffTypes, scalings, fragmentCutoff });
   }
 
@@ -772,6 +787,10 @@ export namespace funcs {
   */
   export async function mpo(): Promise<void> {
     return await grok.functions.call('Chem:Mpo', {});
+  }
+
+  export async function mpoTransformFunction(df: DG.DataFrame , currentProperties: any ): Promise<void> {
+    return await grok.functions.call('Chem:MpoTransformFunction', { df, currentProperties });
   }
 
   export async function mpoProfileEditor(file: DG.FileInfo ): Promise<DG.View> {

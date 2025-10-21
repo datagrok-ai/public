@@ -183,6 +183,8 @@ export class Tags {
 
   static TableSchema = 'table_schema';
 
+  static ReferencesSchema = 'references_schema';
+
   static ReferencesTable = 'references_table';
 
   static ReferencesColumn = 'references_column';
@@ -262,6 +264,9 @@ export class Tags {
 
   /// Specifies if the color picker control should appear in the legend to allow color selection
   static AllowColorPicking = '.allow-color-picking';
+
+  /// Used to preserve the column's original name, set only once (on the first rename)
+  static ColumnInitialName = '.%initialName';
 
 }
 export class FuncOptions {
@@ -354,6 +359,9 @@ export class FuncOptions {
   /// Scalar script inputs in this case are corresponding to dataframe column names. Dataframe that has [VectorScript.vecInputTableName]
   /// name should be used as target.
   static ScriptHandlerVectorization = 'scriptHandler.vectorizationFunction';
+
+  /// Specifies function that will handle parsing of text into Scritp object.
+  static ScriptHandlerParserFunc = 'scriptHandler.parserFunction';
 
   /// Specifies template script for this [FuncTypes.ScriptHandler].
   static ScriptHandlerTemplate = 'scriptHandler.templateScript';

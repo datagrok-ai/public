@@ -69,7 +69,6 @@ GROUP BY res.function, res.package, res.user, time_start, time_end,
 --meta.cache: all
 --meta.cache.invalidateOn: 0 0 * * *
 --connection: System:Datagrok
---test: FunctionsContextPane(1739271600, 1739275200, ['878c42b0-9a50-11e6-c537-6bf8e9ab02ee'], ['fb9cff99-ca6f-5af3-ab6a-bd0d538f9d1a'], ['usageAnalysisApp'])
 with res AS (
     select DISTINCT e.id as id_, coalesce(pp.name, p1.name, 'Core') as package,
     e.friendly_name as run, et.name as function, e.event_time as time, e.id as rid,

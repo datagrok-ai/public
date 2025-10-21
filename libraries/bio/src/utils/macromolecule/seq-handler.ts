@@ -72,6 +72,7 @@ export class SeqValueBase extends DG.SemanticValue<string> {
 
 export interface ISeqHandler {
   get column(): DG.Column<string>;
+  get refinerPromise(): Promise<void>;
 
   get alphabet(): string;
   get notation(): NOTATION;
@@ -113,5 +114,5 @@ export interface ISeqHandler {
 
   getDistanceFunctionName(): MmDistanceFunctionsNames;
   getConverter(tgtUnits: NOTATION, tgtSeparator?: string): ConvertFunc;
-  getRendererBack(gridCol: DG.GridColumn | null, tableCol: DG.Column<string>): CellRendererBackBase<string>;
+  getRendererBack(gridCol: DG.GridColumn | null, tableCol: DG.Column<string>): CellRendererBackBase<string> | null;
 }

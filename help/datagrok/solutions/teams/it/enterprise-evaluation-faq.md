@@ -26,7 +26,7 @@ title: "Enterprise evaluation FAQ"
     * [relational databases](https://youtu.be/YJmSvh3_uCM)
     * [local files](https://datagrok.ai/img/slides/access-file-formats.mp4)
     * datastore files
-  * [Embedding a Datagrok visualization into a custom web application](https://datagrok.ai/embed_test.html)
+  <!--Incorrect GIF* [Embedding a Datagrok visualization into a custom web application](https://datagrok.ai/embed_test.html)-->
   * [Embedding a custom visualization into Datagrok](../../../../visualize/viewers/markup.md)
 
 * Developer experience

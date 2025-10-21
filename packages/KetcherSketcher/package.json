@@ -13,9 +13,9 @@
     "directory": "packages/KetcherSketcher"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.5.7",
+    "@datagrok-libraries/utils": "^4.6.5",
     "@types/react-dom": "^18.2.0",
-    "datagrok-api": "^1.25.0",
+    "datagrok-api": "../../js-api",
     "file-loader": "^6.2.0",
     "ketcher-core": "^2.21.0",
     "ketcher-react": "^2.21.0",
@@ -26,7 +26,7 @@
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
     "css-loader": "latest",
-    "datagrok-tools": "^4.14.20",
+    "datagrok-tools": "^4.14.55",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "puppeteer": "^13.7.0",

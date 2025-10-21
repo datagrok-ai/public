@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, of, combineLatest, Observable, defer, Subject, merge, EMPTY} from 'rxjs';
-import {switchMap, map, takeUntil, finalize, mapTo, skip, distinctUntilChanged, withLatestFrom, filter, catchError, tap, pairwise} from 'rxjs/operators';
-import {IFuncCallAdapter, IRunnableWrapper, IStateStore} from './FuncCallAdapters';
+import {switchMap, map, takeUntil, finalize, mapTo, skip, distinctUntilChanged, withLatestFrom, filter, catchError, tap} from 'rxjs/operators';
+import {FuncCallAdapter, IFuncCallAdapter, IRunnableWrapper, IStateStore} from './FuncCallAdapters';
 import {RestrictionType, ValidationResult} from '../data/common-types';
 import {FuncCallIODescription} from '../config/config-processing-utils';
 
@@ -48,19 +48,29 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
 
   public validations$ = new BehaviorSubject<Record<HandlerId, Record<IOName, ValidationResult | undefined>>>({});
 
-  public metaStates$ = new BehaviorSubject<Record<IOName, BehaviorSubject<Record<HandlerId, Record<string, any>> | undefined>>>({});
-  public meta$ = new BehaviorSubject<Record<IOName, BehaviorSubject<Record<string, any> | undefined>>>({});
+  public metaStates: Record<IOName, BehaviorSubject<Record<HandlerId, Record<string, any>> | undefined>> = {};
+  public meta: Record<IOName, BehaviorSubject<Record<string, any> | undefined>> = {};
 
   public inputRestrictions$ = new BehaviorSubject<Record<string, RestrictionState | undefined>>({});
   public inputRestrictionsUpdates$ = new Subject<[string, RestrictionState | undefined]>();
 
   public initialValues: Record<string, any> = {};
 
-  public outdatedChanged$ = new BehaviorSubject(true);
+  private outdatedChanged$ = new BehaviorSubject(true);
   private closed$ = new Subject<true>();
   private initialData?: BridgePreInitData;
 
-  constructor(private io: FuncCallIODescription[], public readonly isReadonly: boolean) {}
+  constructor(private io: FuncCallIODescription[], public readonly isReadonly: boolean) {
+    for (const item of this.io)
+      this.metaStates[item.id] = new BehaviorSubject<any>(undefined);
+
+    for (const [key, metaItem$] of Object.entries(this.metaStates)) {
+      const convertedMeta$ = metaItem$.pipe(map((item) => this.convertMeta(item)));
+      const subject$ = new BehaviorSubject<Record<string, any> | undefined>(undefined);
+      convertedMeta$.pipe(takeUntil(this.closed$)).subscribe(subject$);
+      this.meta[key] = subject$;
+    }
+  }
 
   get id() {
     return this.instance$.value?.adapter?.id;
@@ -131,9 +141,14 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
       ...this.inputRestrictions$.value,
       [id]: restrictionPayload,
     });
+
     if (!this.isReadonly)
       currentInstance.setState(id, val, restrictionType);
     else
+      this.inputRestrictionsUpdates$.next([id, restrictionPayload] as const);
+
+    // equal values might not trigger updates with real FuncCalls
+    if (currentInstance instanceof FuncCallAdapter && currentInstance.getState(id) === assignedValue && !this.isReadonly)
       this.inputRestrictionsUpdates$.next([id, restrictionPayload] as const);
   }
 
@@ -195,9 +210,18 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
   }
 
   setMeta(id: string, handlerId: string, meta: any | undefined) {
-    const allMeta = this.metaStates$.value;
-    const currentMeta = allMeta[id].value ?? {};
-    allMeta[id].next({...currentMeta, [handlerId]: meta});
+    if (!this.metaStates[id]) {
+      const err = `No such io state ${id}, in meta handler ${handlerId}`;
+      grok.shell.error(err);
+      console.error(err);
+      return;
+    }
+    const currentMeta = this.metaStates[id].value ?? {};
+    this.metaStates[id].next({...currentMeta, [handlerId]: meta});
+  }
+
+  setOutdatedStatus(isOutdated: boolean) {
+    this.outdatedChanged$.next(isOutdated);
   }
 
   run(mockResults?: Record<string, any>, mockDelay?: number) {
@@ -240,7 +264,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     });
   }
 
-  public getIOEditsFlag(filteredInputs?: FuncCallIODescription[]) {
+  getIOEditsFlag(filteredInputs?: FuncCallIODescription[]) {
     const inputs = filteredInputs ?? this.io;
     const inputsChanges = inputs.map(
       (item) => this.getStateChanges(item.id, true).pipe(skip(1)));
@@ -295,45 +319,6 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
       map(([next]) => next),
       takeUntil(this.closed$),
     ).subscribe(this.isOutputOutdated$);
-
-    this.instance$.pipe(
-      map((instance) => {
-        if (instance == null)
-          return {};
-        const res: Record<string, BehaviorSubject<any | undefined>> = {};
-        for (const item of this.io)
-          res[item.id] = new BehaviorSubject<any>(undefined);
-
-        return res;
-      }),
-      takeUntil(this.closed$),
-    ).subscribe(this.metaStates$);
-
-    this.metaStates$.pipe(
-      pairwise(),
-      map(([_current, previous]) => {
-        if (previous) {
-          for (const val$ of Object.values(previous))
-            val$.complete();
-        }
-      }),
-      takeUntil(this.closed$),
-    ).subscribe();
-
-    this.metaStates$.pipe(
-      map((metaIn) => {
-        const metaOut: Record<string, BehaviorSubject<Record<string, any> | undefined>> = {};
-        for (const [key, metaItem$] of Object.entries(metaIn)) {
-          const convertedMeta$ = metaItem$.pipe(map((item) => this.convertMeta(item)));
-          const subject$ = new BehaviorSubject<Record<string, any> | undefined>(undefined);
-          // unsub on metaStates$ items complete
-          convertedMeta$.subscribe(subject$);
-          metaOut[key] = subject$;
-        }
-        return metaOut;
-      }),
-      takeUntil(this.closed$),
-    ).subscribe(this.meta$);
   }
 
   private isRunnable(

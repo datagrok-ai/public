@@ -17,14 +17,25 @@ const nonMetaData = [
   'helpUrl', 
   'help-url', 
   'condition',
+  'connection',
   'top-menu',
   'cache',
   'cache.invalidateOn',
   'test',
 ];
 
-const decoratorOptionToAnnotation = new Map<string, string>([
-  ['initialValue', 'default'],
+export const decoratorOptionToAnnotation = new Map<string, string>([
+  ['helpUrl', 'help-url'],
+  ['topMenu', 'top-menu'],
+  ['metaUrl', 'meta.url'],
+  ['optionsType', 'type'],
+  ['cacheInvalidateOn', 'cache.invalidateOn'],
+  ['scriptHandlerLanguage', 'scriptHandler.language'],
+  ['scriptHandlerExtensions', 'scriptHandler.extensions'],
+  ['scriptHandlerCommentStart', 'scriptHandler.commentStart'],
+  ['scriptHandlerTemplateScript', 'scriptHandler.templateScript'],
+  ['scriptHandlerCodeEditorMode', 'scriptHandler.codeEditorMode'],
+  ['scriptHandlerVectorizationFunction', 'scriptHandler.vectorizationFunction'],
 ]);
 
 export const dgAnnotationTypes: Record<string, string> = {
@@ -93,7 +104,8 @@ export enum FUNC_TYPES {
   DASHBOARD = 'dashboard',
   FUNCTION_ANALYSIS = 'functionAnalysis',
   CONVERTER = 'converter',
-  MODEL = 'model'
+  MODEL = 'model',
+  APP_TREE_BROWSER = 'appTreeBrowser'
 }
 
 export const typesToAnnotation: Record<string, string> = {
@@ -101,6 +113,8 @@ export const typesToAnnotation: Record<string, string> = {
   'DG.DataFrame': 'dataframe',
   'Column': 'column',
   'DG.Column': 'column',
+  'Column<any>': 'column',
+  'DG.Column<any>': 'column',
   'ColumnList': 'column_list',
   'DG.ColumnList': 'column_list',
   'FileInfo': 'file',
@@ -136,7 +150,7 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
   const isFileViewer = data.tags?.includes(FUNC_TYPES.FILE_VIEWER) ?? false;
   const isFileImporter = data.tags?.includes(FUNC_TYPES.FILE_HANDLER) ?? false;
   let s = '';
-  if (data.name && (!data.tags?.includes('init') || (data.name !== 'init' && data.name !== '_init')))
+  if (data.name)
     s += `${comment}name: ${data.name}${sep}`;
   if (pseudoParams.EXTENSION in data && data.tags != null && data.tags.includes(FUNC_TYPES.FILE_EXPORTER))
     s += `${comment}description: Save as ${data[pseudoParams.EXTENSION]}${sep}`;
@@ -157,39 +171,45 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
       type = type.replace(/\[\]$/, '');
       isArray = true;
     }
+
     const annotationType = typesToAnnotation[type ?? ''];
-    if ((input?.options as any)?.type)
-      type = (input?.options as any)?.type;
+    if ((input?.options as any)?.type || (input?.options as any)?.options?.type)
+      type = (input?.options as any)?.type ?? (input?.options as any)?.options?.type;
     else if (annotationType) {
       if (isArray)
         type = `list<${annotationType}>`;
       else
         type = annotationType;
     } else
-      type = 'dynamic';
-    const options = ((input?.options as any)?.options ? buildStringOfOptions((input.options as any).options ?? {}) : '');
+      type = 'dynamic'; 
+    
+    // if ((input as any)?.options?.type === 'categorical' || (input as any)?.options?.options?.type === 'categorical')
+    //   console.log(input);
+    // console.log(input);
+
+    const options = ((input?.options as any)?.options ? buildStringOfOptions((input as any).options ?? {}) : '');
     const functionName = ((input.options as any)?.name ? (input?.options as any)?.name : ` ${input.name?.replaceAll('.', '')}`)?.trim();
     
     // eslint-disable-next-line max-len
-    s += comment + 'input: ' + type + ' ' + functionName + (input.defaultValue !== undefined ? `= ${input.defaultValue}` : '') + ' ' + options.replaceAll('"', '\'') + sep;
+    s += comment + 'input: ' + type + ' ' + functionName + (input.defaultValue !== undefined ? `= ${input.defaultValue}` : '') + ' ' + options + sep;
   }
   if (data.outputs) {
     for (const output of data.outputs) {
       if (output.type !== 'void') {
       // eslint-disable-next-line max-len
-        s += comment + 'output: ' + output.type + (output.name ? ` ${output.name}${output.options ? ` ${buildStringOfOptions(output.options)}` : ''}` : '') + sep;
+        s += comment + 'output: ' + output.type + (output.name ? ` ${output.name}${output.options ? ` ${buildStringOfOptions(output)}` : ''}` : '') + sep;
       }
     }
   }
 
   if (data.meta) {
     for (const entry of Object.entries(data.meta))
-      s += `${comment}meta.${entry[0]}: ${entry[1]}${sep}`;
+      s += `${comment}meta.${decoratorOptionToAnnotation.get(entry[0]) ?? entry[0]}: ${entry[1]}${sep}`;
   }
 
   for (const parameter in data) {
     // eslint-disable-next-line max-len
-    if (parameter === pseudoParams.EXTENSION || parameter === pseudoParams.INPUT_TYPE || parameter === 'meta' || parameter === 'isAsync' || parameter === 'test')
+    if (parameter === pseudoParams.EXTENSION || parameter === pseudoParams.INPUT_TYPE || parameter === 'meta' || parameter === 'isAsync' || parameter === 'test' || parameter === 'actualTypeObj')
       continue;
     else if (parameter === pseudoParams.EXTENSIONS) {
       if (isFileViewer)
@@ -220,9 +240,46 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
   return s;
 }
 
-function buildStringOfOptions(options: any) {
+export const inputOptionsNames = [
+  'semType',
+  'category',
+  'optional',
+  'editor',
+  'nullable',
+  'separators',
+  'choices',
+  'format',
+  'min',
+  'max',
+  'caption',
+  'description',
+  'initialValue',
+  'viewer',
+  'units',
+  'type',
+  'optionsType',
+  'step',
+  'meta.url',
+  'metaUrl',
+];
+
+const nonquotedValues = ['true', 'false'];
+
+function buildStringOfOptions(input: any) {
   const optionsInString: string[] = [];
-  for (const [key, value] of Object.entries(options ?? {})) {
+  const opt = input.options ?? {};
+  let defaultValue = '';
+  if (opt['initialValue'] && /[A-Za-z]/.test(opt['initialValue']) && !opt['initialValue'].includes('\'') && 
+    !opt['initialValue'].includes('"') &&
+    !nonquotedValues.includes(opt['initialValue'])!)
+    opt['initialValue'] = `'${opt['initialValue']}'`;
+
+  if (opt['initialValue']) 
+    defaultValue = `= ${opt['initialValue']}`; 
+
+  for (const [key, value] of Object.entries(opt)) {
+    if (key === 'initialValue')
+      continue;
     let val = value;
     let option = key;
     option = decoratorOptionToAnnotation.get(option) ?? option;
@@ -231,10 +288,16 @@ function buildStringOfOptions(options: any) {
       val = JSON.stringify(value);
     optionsInString.push(`${option}: ${val}`);
   }
-  return `{ ${optionsInString.join('; ')} }`;
+  const optString = optionsInString.length> 0 ? `{ ${optionsInString.join('; ')} }`: '';
+  return defaultValue? `${defaultValue} ${optString}` : `${optString}`;
 }
 
-export const reservedDecorators: { [decorator: string]: { metadata: FuncMetadata, genFunc: Function } } = {
+
+interface ReservedDecorator{ 
+  [decorator: string]: { metadata: FuncMetadata, genFunc: Function } 
+}
+
+export const reservedDecorators : ReservedDecorator = {
   viewer: {
     metadata: {
       tags: [FUNC_TYPES.VIEWER],
@@ -258,6 +321,15 @@ export const reservedDecorators: { [decorator: string]: { metadata: FuncMetadata
       outputs: [{name: 'renderer', type: 'grid_cell_renderer'}],
     },
     genFunc: generateClassFunc,
+  },
+  appTreeBrowser: {
+    metadata: {
+      tags: [],
+      role: FUNC_TYPES.APP_TREE_BROWSER,
+      inputs: [{type: 'dynamic', name: 'treeNode'}, {type: 'view', name: 'browseView'}],
+      outputs: [],
+    },
+    genFunc: generateFunc,
   },
   fileExporter: {
     metadata: {
@@ -411,13 +483,17 @@ export function generateClassFunc(annotation: string, className: string, sep: st
   return annotation + `export function _${className}() {${sep}  return new ${className}();${sep}}${sep.repeat(2)}`;
 }
 
-const primitives = new Set([
+export const primitives = new Set([
   'string',
   'string[]',
   'number',
   'number[]',
   'boolean',
   'boolean[]',
+  'any',
+  'Uint8Array',
+  'Uint8Array[]',
+  'void',
 ]);
 
 /** Generates a DG function. */
@@ -427,13 +503,16 @@ export function generateFunc(
   sep: string = '\n', 
   className: string = '', 
   inputs: FuncParam[] = [], 
+  output: string,
   isAsync: boolean = false): string {
   // eslint-disable-next-line max-len
   const funcSigNature = (inputs.map((e) => `${e.name}${e.optional? '?': ''}: ${primitives.has(e.type ?? '') && !typesToAny.includes(e.type ?? '') ? e.type : (typesToAnnotation[e.type?.replace('[]', '') ?? ''] && !typesToAny.includes(e.type ?? '') ? e.type : 'any')}`)).join(', ');
   const funcArguments = (inputs.map((e) => e.name)).join(', ');
 
+  const returnType = output ? ( primitives.has(output) ? 
+    (!isAsync? `: ${output} `: `: Promise<${output}> `) : (!isAsync? `: any `: `: Promise<any> `)) : '';
   // eslint-disable-next-line max-len
-  return sep + annotation + `export ${isAsync ? 'async ' : ''}function ${funcName}(${funcSigNature}) {${sep}  return ${className.length > 0 ? `${className}.` : ''}${funcName}(${funcArguments});${sep}}${sep}`;
+  return sep + annotation + `export ${isAsync ? 'async ' : ''}function ${funcName}(${funcSigNature}) ${returnType}{${sep}  ${output !== 'void'? 'return ': ''}${isAsync? 'await ': ''}${className.length > 0 ? `${className}.` : ''}${funcName}(${funcArguments});${sep}}${sep}`;
 }
 
 export function generateImport(className: string, path: string, sep: string = '\n'): string {

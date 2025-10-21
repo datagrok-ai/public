@@ -23,7 +23,7 @@
     }
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.5.7",
+    "@datagrok-libraries/utils": "^4.6.5",
     "@jbrowse/react-linear-genome-view": "^3.0.5",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.4",
@@ -48,7 +48,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "babel-loader": "^10.0.0",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.20",
+    "datagrok-tools": "^4.14.55",
     "eslint": "^9.21.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.19",

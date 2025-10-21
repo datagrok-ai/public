@@ -470,12 +470,16 @@ export namespace funcs {
     return await grok.functions.call('UsageAnalysis:TestsListJoined', {});
   }
 
-  export async function testAnalysisReportForCurrentDay(date: any ): Promise<void> {
+  export async function testAnalysisReportForCurrentDay(date: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('UsageAnalysis:TestAnalysisReportForCurrentDay', { date });
   }
 
   export async function usageAnalysisApp(path?: string , date?: string , groups?: string , packages?: string , tags?: string , categories?: string , projects?: string ): Promise<DG.View> {
     return await grok.functions.call('UsageAnalysis:UsageAnalysisApp', { path, date, groups, packages, tags, categories, projects });
+  }
+
+  export async function getTicketsVerdict(ticketColumn: DG.Column , resultColumn: DG.Column , progress: any ): Promise<void> {
+    return await grok.functions.call('UsageAnalysis:GetTicketsVerdict', { ticketColumn, resultColumn, progress });
   }
 
   export async function testTrackApp(): Promise<void> {
@@ -490,12 +494,12 @@ export namespace funcs {
     return await grok.functions.call('UsageAnalysis:ServiceLogsApp', { path, params, limit });
   }
 
-  export async function serviceLogsAppTreeBrowser(treeNode: any , browseView: any ): Promise<void> {
-    return await grok.functions.call('UsageAnalysis:ServiceLogsAppTreeBrowser', { treeNode, browseView });
+  export async function serviceLogsAppTreeBrowser(treeNode: any ): Promise<void> {
+    return await grok.functions.call('UsageAnalysis:ServiceLogsAppTreeBrowser', { treeNode });
   }
 
-  export async function reportsAppTreeBrowser(treeNode: any , browseView: any ): Promise<void> {
-    return await grok.functions.call('UsageAnalysis:ReportsAppTreeBrowser', { treeNode, browseView });
+  export async function reportsAppTreeBrowser(treeNode: any ): Promise<void> {
+    return await grok.functions.call('UsageAnalysis:ReportsAppTreeBrowser', { treeNode });
   }
 
   export async function usageWidget(): Promise<any> {

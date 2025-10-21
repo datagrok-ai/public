@@ -10,7 +10,7 @@ category('Viewers: Core Viewers', () => {
 
   const skip: { [key: string]: string } = {
     'Form': 'GROK-11708',
-    'Heat map': 'GROK-11705',
+    // 'Heat map': 'GROK-11705',
     'Network diagram': 'GROK-11707',
     'Shape Map': 'GROK-16568',
   };

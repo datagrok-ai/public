@@ -2,26 +2,23 @@ import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
 //tags: init
-export async function init() {
-  return PackageFunctions.init();
+export async function init() : Promise<void> {
+  await PackageFunctions.init();
 }
 
-//name: autostart
 //tags: autostart
-export function autostart() {
-  return PackageFunctions.autostart();
+export function autostart() : void {
+  PackageFunctions.autostart();
 }
 
-//name: ask
 //input: string question 
 //output: string result
-export async function ask(question: string) {
-  return PackageFunctions.ask(question);
+export async function ask(question: string) : Promise<string> {
+  return await PackageFunctions.ask(question);
 }
 
-//name: askFun
 //input: string question 
 //output: string result
-export async function askFun(question: string) {
-  return PackageFunctions.askFun(question);
+export async function askFun(question: string) : Promise<string> {
+  return await PackageFunctions.askFun(question);
 }

@@ -5,6 +5,10 @@ import {_package} from '../package';
 
 
 export class PackageSettingsEditorWidget extends DG.Widget {
+  get type(): string {
+    return 'PackageSettingsEditorWidget';
+  }
+
   maxMonomerLengthProp: DG.Property;
   tooltipWebLogo: DG.Property;
   defaultSeparator: DG.Property;

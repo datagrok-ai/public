@@ -8,6 +8,11 @@ export type ReferencedByObject = {
 };
 export type SchemaInfo = { references: ReferenceObject; referencedBy: ReferencedByObject };
 
+export type SchemaAndConnection = {
+  schema: SchemaInfo;
+  connection: DG.DataConnection;
+}
+
 export type EntryPointOptions = {
   valueConverter: (value: string | number) => string | number;
   joinOptions: QueryJoinOptions[];

@@ -21,6 +21,10 @@ export namespace scripts {
 }
 
 export namespace funcs {
+  export async function test1(): Promise<any> {
+    return await grok.functions.call('Bio:Test1', {});
+  }
+
   /**
   Returns an instance of the monomer library helper
   */
@@ -34,6 +38,17 @@ export namespace funcs {
 
   export async function sequenceTooltip(col: DG.Column ): Promise<any> {
     return await grok.functions.call('Bio:SequenceTooltip', { col });
+  }
+
+  export async function standardiseMonomerLibrary(library: string ): Promise<string> {
+    return await grok.functions.call('Bio:StandardiseMonomerLibrary', { library });
+  }
+
+  /**
+  Matches molecules in a column with monomers from the selected library(s)
+  */
+  export async function matchWithMonomerLibrary(table: DG.DataFrame , molecules: DG.Column , polymerType: string ): Promise<void> {
+    return await grok.functions.call('Bio:MatchWithMonomerLibrary', { table, molecules, polymerType });
   }
 
   export async function getBioLib(): Promise<any> {
@@ -51,9 +66,6 @@ export namespace funcs {
     return await grok.functions.call('Bio:GetRegionPanel', { seqCol });
   }
 
-  /**
-  //tags: panel, exclude-actions-panel
-  */
   export async function libraryPanel(seqColumn: DG.Column ): Promise<any> {
     return await grok.functions.call('Bio:LibraryPanel', { seqColumn });
   }
@@ -84,6 +96,14 @@ export namespace funcs {
 
   export async function separatorSequenceCellRenderer(): Promise<any> {
     return await grok.functions.call('Bio:SeparatorSequenceCellRenderer', {});
+  }
+
+  export async function bilnSequenceCellRenderer(): Promise<any> {
+    return await grok.functions.call('Bio:BilnSequenceCellRenderer', {});
+  }
+
+  export async function refineNotationProviderForBiln(col: DG.Column , stats: any , separator?: string | null): Promise<boolean> {
+    return await grok.functions.call('Bio:RefineNotationProviderForBiln', { col, stats, separator });
   }
 
   export async function macroMolColumnPropertyPanel(molColumn: DG.Column ): Promise<any> {
@@ -133,7 +153,7 @@ export namespace funcs {
   /**
   Detects pairs of molecules with similar structure and significant difference in any given property
   */
-  export async function activityCliffs(table: DG.DataFrame , molecules: DG.Column , activities: DG.Column , similarity: number , methodName: string , similarityMetric: string , preprocessingFunction: any , options?: any , demo?: boolean ): Promise<any> {
+  export async function activityCliffs(table: DG.DataFrame , molecules: string , activities: DG.Column , similarity: number , methodName: string , similarityMetric: string , preprocessingFunction: any , options?: any , demo?: boolean ): Promise<void> {
     return await grok.functions.call('Bio:ActivityCliffs', { table, molecules, activities, similarity, methodName, similarityMetric, preprocessingFunction, options, demo });
   }
 
@@ -296,8 +316,8 @@ export namespace funcs {
     return await grok.functions.call('Bio:ManageMonomerLibrariesView', {});
   }
 
-  export async function manageMonomerLibrariesViewTreeBrowser(treeNode: any , browsePanel: any ): Promise<void> {
-    return await grok.functions.call('Bio:ManageMonomerLibrariesViewTreeBrowser', { treeNode, browsePanel });
+  export async function manageMonomerLibrariesViewTreeBrowser(treeNode: any ): Promise<void> {
+    return await grok.functions.call('Bio:ManageMonomerLibrariesViewTreeBrowser', { treeNode });
   }
 
   /**
@@ -409,9 +429,5 @@ export namespace funcs {
 
   export async function getMolFromHelm(df: DG.DataFrame , helmCol: DG.Column , chiralityEngine: boolean ): Promise<DG.Column> {
     return await grok.functions.call('Bio:GetMolFromHelm', { df, helmCol, chiralityEngine });
-  }
-
-  export async function test1(): Promise<any> {
-    return await grok.functions.call('Bio:Test1', {});
   }
 }

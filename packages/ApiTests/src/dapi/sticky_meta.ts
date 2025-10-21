@@ -73,7 +73,7 @@ category('Dapi: sticky meta', () => {
     expect(df.columns.length, schema.properties.length);  
     expect(df.col(property.name)?.name ?? "", property.name);
     expect(df.col(property.name)?.get(0), value);
-  }, {stressTest: true});
+  });
 }, {
   owner: 'aparamonov@datagrok.ai'
 });

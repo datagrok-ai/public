@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/api-tests",
   "friendlyName": "API Tests",
-  "version": "1.10.0",
+  "version": "1.10.1",
   "author": {
     "name": "Savenko Stanislav",
     "email": "ssavenko@datagrok.ai"
@@ -14,7 +14,7 @@
     "directory": "packages/ApiTests"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.6.3",
+    "@datagrok-libraries/utils": "^4.6.8",
     "cash-dom": "^8.1.1",
     "datagrok-api": "^1.26.0",
     "dayjs": "^1.11.10",
@@ -25,7 +25,7 @@
     "@types/wu": "^2.1.42",
     "@typescript-eslint/eslint-plugin": "^5.26.0",
     "@typescript-eslint/parser": "^5.26.0",
-    "datagrok-tools": "^4.14.20",
+    "datagrok-tools": "^4.14.55",
     "eslint": "^8.16.0",
     "eslint-config-google": "^0.14.0",
     "root-require": "^0.3.1",

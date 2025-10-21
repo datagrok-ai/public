@@ -5,7 +5,7 @@ import {Range} from 'rc-slider-preact';
 import 'rc-slider-preact/lib/index.css';
 import './css/DistributionTooltipComponent.css';
 import * as utils from './ts/utils';
-import CobraModel from './ts/CobraModel';
+import { CobraModelData } from './ts/types';
 
 // const utils = require('escher/src/utils.js')
 const WIDTH = 320;
@@ -137,8 +137,8 @@ export class HistogramComponent extends Component<{
 export type DistributionTooltipProps = {
   type: string;
   name: string;
-  model: CobraModel;
-  oldModel: CobraModel;
+  model: CobraModelData;
+  oldModel: CobraModelData;
   biggId: string;
   reactionData: { [key: string]: number };
   upperRange: number;
@@ -430,6 +430,18 @@ class DistributionTooltipComponent extends Component<DistributionTooltipProps> {
       const maximizeDisabled = Object.keys(this.props.objectives).length === 1 && maximizeActive;
       const hasFluxDistribution = this.props.fluxDistributions && this.props.fluxDistributions.upper_bound != null && this.props.fluxDistributions.lower_bound != null &&
         this.props.fluxDistributions.data && !!this.props.fluxDistributions.data.get(this.props.biggId);
+      
+      // create a reaction string from the model
+      const reaction = this.props.model?.reactions.find((r) => r.id === this.props.biggId);
+      let reactionString: string | null = null;
+      if (reaction && reaction.metabolites) {
+        const inputs = (Object.entries(reaction.metabolites).filter(([_, coeff]) => coeff < 0)).map(([metId, coeff]) => Math.abs(coeff) !== 1 ? `${Math.abs(coeff)}*${metId}` : metId);
+        const outputs = (Object.entries(reaction.metabolites).filter(([_, coeff]) => coeff > 0)).map(([metId, coeff]) => Math.abs(coeff) !== 1 ? `${Math.abs(coeff)}*${metId}` : metId);
+        const isReversible = reaction.reversibility || (reaction.upper_bound > 0 && reaction.lower_bound < 0);
+
+        reactionString = `${inputs.join(' + ')} ${isReversible ? '⇋' : '→'} ${outputs.join(' + ')}`;
+        
+      }
 
       return (
         <div className='escher-tooltip'
@@ -444,6 +456,11 @@ class DistributionTooltipComponent extends Component<DistributionTooltipProps> {
           <div className='name'>
             {this.props.name}
           </div>
+          {reactionString && (
+            <div className='reactionString'>
+              {reactionString}
+            </div>
+          )}
           <div className='slider' style={{width: WIDTH - 22 + 'px'}}>
             <Range
               onBeforeChange={() => this.onTouchStart()}
@@ -462,19 +479,24 @@ class DistributionTooltipComponent extends Component<DistributionTooltipProps> {
               onChange={(f) => this.sliderChange(this.boundConverter(f as number[]))}
               onAfterChange={(f) => this.onTouchEnd(this.boundConverter(f as number[]))}
             />
-            <div className='indicator' style={this.state.indicatorStyle}>
-              <svg viewBox='0 0 100 100' height='100%' width='100%'>
-                <defs>
-                  <marker id='markerArrow1' viewBox='0 0 6 6' refX='4' refY='3' orient='auto'>
-                    <path d='M5,3 L3,5 L3,1 Z' fill='black' stroke='black' />
-                  </marker>
-                </defs>
-                <line x1='50' y1='75' x2='50' y2='20' stroke-width='25' stroke='black' marker-end={'url(#markerArrow1)'} />
-              </svg>
+            {this.state.currentFlux != null && (
+              <div style={{width: '100%', position: 'relative', display: 'flex', flexDirection: 'column'}}>
+                <div className='indicator' style={this.state.indicatorStyle}>
+                <svg viewBox='0 0 100 100' height='100%' width='100%'>
+                  <defs>
+                    <marker id='markerArrow1' viewBox='0 0 6 6' refX='4' refY='3' orient='auto'>
+                      <path d='M5,3 L3,5 L3,1 Z' fill='black' stroke='black' />
+                    </marker>
+                  </defs>
+                  <line x1='50' y1='75' x2='50' y2='20' stroke-width='25' stroke='black' marker-end={'url(#markerArrow1)'} />
+                </svg>
+              </div>
+              <div className='fluxDisplay' style={this.state.fluxDisplayStyle}>
+                Flux: {this.state.currentFlux!.toFixed(2)}
+              </div>
             </div>
-            <div className='fluxDisplay' style={this.state.fluxDisplayStyle}>
-              Average Flux: {this.state.currentFlux == null ? '' : this.state.currentFlux.toFixed(2)}
-            </div>
+            )}
+            
           </div>
           {/* Kebab case for class names?  */}
 

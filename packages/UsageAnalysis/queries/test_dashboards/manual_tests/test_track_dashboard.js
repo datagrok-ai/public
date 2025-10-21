@@ -4,80 +4,113 @@
 
 async function postprocess() {
   let batchIndices = result.col('batch_index').categories;
-  let batchNames = result.col('batch_name').categories.sort();
-
+  let nameCategories = result.col('batch_name').categories;
+  let batchNames = [];
+  
+  for (var i = 0; i < result.col('batch_name').length && nameCategories.length > 0; i++) {
+    let nm =result.col('batch_name').get(i);
+    if (!batchNames.includes(nm))
+    {
+      nameCategories = nameCategories.filter(e => e !== nameCategories.includes(nm));
+      batchNames.push(nm)
+    }
+  }
+  let order = ['test', ...(batchNames.map(e=> `${e} concat unique(status)`))];
   let pivot = result
     .groupBy(['test'])
-    .pivot('batch_index')
+    .pivot('batch_name')
     //.avg('date_time')
     .add(DG.STR_AGG.CONCAT_UNIQUE, 'status')
     .add(DG.STR_AGG.CONCAT_UNIQUE, 'result')
     .aggregate();
 
-  function replaceColumn(prefix, type, batchName, newType) {
-    var col = pivot.columns.byName(prefix + type);
-    col?.setTag('friendlyName', batchName + newType);
+  function replaceColumn(prefix, type, newType) {
+    let col = pivot.columns.byName(prefix + type);
+    col?.setTag('friendlyName', prefix + newType);
   }
 
-  pivot.columns.byName('test').semType = 'autotest';
-
-  for (var i = 0; i < batchIndices.length; i++) {
-    var batchName = batchNames[i];
-    replaceColumn(batchIndices[i], ' concat unique(status)', batchName, '');
-    replaceColumn(batchIndices[i], ' concat unique(result)', batchName, ' verdict');
-    let col = pivot.col(`${batchIndices[i]} concat unique(result)`);
+  pivot.columns.byName('test').semType = 'autotest'; 
+  for (let i = 0; i < batchNames.length; i++) {
+    let batchName = batchNames[i]; 
+    replaceColumn(batchNames[i], ' concat unique(status)', '');
+    replaceColumn(batchNames[i], ' concat unique(result)', ' verdict');
+    let statusCol = pivot.col(`${batchNames[i]} concat unique(status)`);
+    if (statusCol)
+      statusCol.colors.setCategorical({
+        'passed': '#2ca02c',
+        'skipped': '#ffa500',
+        'failed': '#8e342a',
+      })
+    let col = pivot.col(`${batchName} concat unique(result)`);
     for (var j = 0; j < col.length; j++) {
       let tickets = col.getString(j);
       col.set(j, tickets.replaceAll('\n', ','));
     }
+    let ticketsStatusCol = await pivot.columns.addNewCalculated(`${batchNames[i]} tickets status`, `UsageAnalysis:getTicketsVerdict(\${${batchNames[i]} concat unique(result)})`, DG.TYPE.STRING);
+    if (ticketsStatusCol)
+      ticketsStatusCol.colors.setCategorical({
+        'Fixed': '#2ca02c',
+        'Partially Fixed (Lowest)': '#ffe51c',
+        'Partially Fixed (Low)': '#ffa500',
+        'Partially Fixed (Medium)': '#ff5a00',
+        'Partially Fixed (Blocker)': '#7b2d24',
+        'Wasn\'t Fixed (Lowest)': '#ffe51c',
+        'Wasn\'t Fixed (Low)': '#ffa500',
+        'Wasn\'t Fixed (Medium)': '#ff5a00',
+        'Wasn\'t Fixed (Blocker)': '#7b2d24',
+      })
+    order.push(`${batchNames[i]} concat unique(result)`);
+    order.push(`${batchNames[i]} tickets status`);
   }
+ pivot.columns.setOrder(order)
 
-  let schemas = await grok.dapi.stickyMeta.getSchemas();
-  let schema = schemas.filter((schema) => schema.name == 'Autotests').at(0);
+  // let schemas = await grok.dapi.stickyMeta.getSchemas();
+  // let schema = schemas.filter((schema) => schema.name == 'Autotests').at(0);
 
-  var attachedTickets = (await grok.dapi.stickyMeta.getAllValues(schema, pivot.columns.byName('test'))).col('tickets');
-  attachedTickets.name = 'jira';
+  // var attachedTickets = (await grok.dapi.stickyMeta.getAllValues(schema, pivot.columns.byName('test'))).col('tickets');
+  // attachedTickets.name = 'jira';
 
-  var ticketColumns = 5;
-  for (var i = 0; i < pivot.rowCount; i++) {
-    var tickets = attachedTickets.get(i)?.split(',') ?? [];
-    for (var j = 0; j < batchIndices.length; j++)
-      tickets.push(...pivot.col(`${batchIndices[j]} concat unique(result)`).get(i).split(','));
+  // var ticketColumns = 5;
+  // for (var i = 0; i < pivot.rowCount; i++) {
+  //   var tickets = attachedTickets.get(i)?.split(',') ?? [];
+  //   for (var j = 0; j < batchIndices.length; j++)
+  //     tickets.push(...pivot.col(`${batchIndices[j]} concat unique(result)`).get(i).split(','));
 
-    tickets = [...new Set(tickets)];
-    var ptr = 0;
-    for (var j = 0; j < tickets.length; j++) {
-      var ticketMatch = tickets[j].match(/GROK-\d+/);
-      if (ticketMatch) {
-          pivot.columns.getOrCreate('ticket ' + ptr, DG.TYPE.STRING).set(i, ticketMatch[0]);
-          ptr++;
-      }
-      ticketColumns = Math.max(ticketColumns, ptr + 1);
-  }
-  }
+  //   tickets = [...new Set(tickets)];
+  //   var ptr = 0;
+  //   for (var j = 0; j < tickets.length; j++) {
+  //     var ticketMatch = tickets[j].match(/GROK-\d+/);
+  //     if (ticketMatch) {
+  //         pivot.columns.getOrCreate('ticket ' + ptr, DG.TYPE.STRING).set(i, ticketMatch[0]);
+  //         ptr++;
+  //     }
+  //     ticketColumns = Math.max(ticketColumns, ptr + 1);
+  //   }
+  // }
 
-  for (var i = 0; i < ticketColumns; i++)
-    await pivot.columns.addNewCalculated(`severity ${i}`, `JiraConnect:getJiraField(RegExpExtract(\${ticket ${i}}, \'GROK-\d+\'), "priority:name")`, DG.TYPE.STRING);
+  // for (var i = 0; i < ticketColumns; i++)
+  //   await pivot.columns.addNewCalculated(`severity ${i}`, `JiraConnect:getJiraField(RegExpExtract(\${ticket ${i}}, \'GROK-\d+\'), "priority:name")`, DG.TYPE.STRING);
 
-  priorityOrders = ['Highest', 'High', 'Medium', 'Low', 'Lowest', '']
-  for (var i = 0; i < pivot.rowCount; i++) {
-    var maxPriority = 5;
-    for (var j = 0; j < ticketColumns; j++) {
-      var priority = 0;
-      while (priority + 1 < priorityOrders.length && pivot.col('severity ' + j).get(i) != priorityOrders[priority])
-        priority++;
-      maxPriority = Math.min(priority, maxPriority);
-    }
-    if (maxPriority >= priorityOrders.length)
-      maxPriority = priorityOrders.length - 1;
-    pivot.columns.getOrCreate('severity', DG.TYPE.STRING).set(i, priorityOrders[maxPriority]);
-  }
+  // priorityOrders = ['Highest', 'High', 'Medium', 'Low', 'Lowest', '']
+  // for (var i = 0; i < pivot.rowCount; i++) {
+  //   var maxPriority = 5;
+  //   for (var j = 0; j < ticketColumns; j++) {
+  //     var priority = 0;
+  //     while (priority + 1 < priorityOrders.length && pivot.col('severity ' + j).get(i) != priorityOrders[priority])
+  //       priority++;
+  //     maxPriority = Math.min(priority, maxPriority);
+  //   }
+  //   if (maxPriority >= priorityOrders.length)
+  //     maxPriority = priorityOrders.length - 1;
+  //   pivot.columns.getOrCreate('severity', DG.TYPE.STRING).set(i, priorityOrders[maxPriority]);
+  // }
 
-  for (var i = 0; i < ticketColumns; i++) {
-    pivot.columns.remove('severity ' + i);
-  }
+  // for (var i = 0; i < ticketColumns; i++) {
+  //   pivot.columns.remove('severity ' + i);
+  // }
 
   pivot.name = 'test track dashboard';
+  result.rows.filter(x => x.batch_name === result.rows.get(0).batch_name)
   out = pivot;
 }
 

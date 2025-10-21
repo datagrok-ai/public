@@ -20,9 +20,9 @@ export class SeachEditor {
     protocolNames: string[] = [];
 
     protocolInNotIn: DG.InputBase = ui.input.choice('Search', { value: IN_NOT_IN_COND_CHOICES[0], items: IN_NOT_IN_COND_CHOICES });
-    protocolCond: DG.InputBase = ui.input.choice('', { value: PROTOCOL_COND_CHOICES[0], items: PROTOCOL_COND_CHOICES, onValueChanged: () => {
-        this.specificProtocolDiv.style.display = this.protocolCond.value === ProtocolCond.PROTOCOL ? 'flex' : 'none';
-    } });
+    // protocolCond: DG.InputBase = ui.input.choice('', { value: PROTOCOL_COND_CHOICES[0], items: PROTOCOL_COND_CHOICES, onValueChanged: () => {
+    //     this.specificProtocolDiv.style.display = this.protocolCond.value === ProtocolCond.PROTOCOL ? 'flex' : 'none';
+    // } });
 
     specificProtocolDiv = ui.divV([]);
     protocolListChoice: DG.InputBase = ui.input.choice('', { value: '', items: [''] });
@@ -61,7 +61,7 @@ export class SeachEditor {
         this.accordion = ui.accordion(`cdd_vault_search_${this.vaultId}`);
         this.accordion.root.classList.add('cdd-search-vault-tab');
         this.protocolInNotIn.classList.add('cdd-protocol-in-not-in-input');
-        this.protocolCond.classList.add('cdd-protocol-cond-input');
+        //this.protocolCond.classList.add('cdd-protocol-cond-input');
         this.structureInput.classList.add('cdd-molecule-input');
         this.runListChoiceDiv.append(this.runsListChoice.root);
         this.runAndReadoutDiv.append(ui.divH([
@@ -81,7 +81,7 @@ export class SeachEditor {
 
         this.accordion.addPane('Protocol', () => ui.divH([
             this.protocolInNotIn.root,
-            this.protocolCond.root,
+            //this.protocolCond.root,
             this.specificProtocolDiv,
         ]));
 

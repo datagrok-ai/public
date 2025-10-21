@@ -55,19 +55,26 @@ resizes. */
   margin-top: 40px !important;
 }
 
-#selection-info-container {
+#selection-info-container, #d4-escher-reaction-data-source-info {
   position: absolute;
   top: 0px;
   left: 0px;
   width: calc(calc(100% - 410px) / 2);
   height: 40px;
   background-color: transparent;
-  z-index: 10000;
+  z-index: 10;
   text-align: left;
   padding-top: 6px;
   padding-left: 10px;
   box-sizing: border-box;
   align-content: center;
+}
+
+#d4-escher-reaction-data-source-info {
+  left: unset;
+  right: 0px;
+  text-align: center;
+  font-weight: bold;
 }
 
 #selection-info-container H3 {

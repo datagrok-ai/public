@@ -39,7 +39,11 @@ export enum HINT {
   MAX_TIME = `Max computation time, ${COMPUTATION_TIME_UNITS}.`,
   CLICK_RUN = `Click to run`,
   SOLVE = `Solve equations (${HOT_KEY.RUN})`,
-  NO_MODELS = 'No models found',
+  NO_MY_MODELS = 'No models in My files',
+  FAILED_TO_LOAD_MY_MODELS = 'Failed to load models from My files: file system error',
+  NO_RECENT_MODELS = 'No recent models',
+  FAILED_TO_LOAD_RECENT_MODELS = 'Failed to load recent models: file system error',
+  CORRUPTED_DATA_FILE = 'Failed to load recent models: corrupted data file',
   EDIT = 'Edit',
   UPDATE = 'Apply all changes to the current file',
 }; // HINT
@@ -297,7 +301,7 @@ export enum UI_TIME {
   BROWSING = APP_RUN_SOLVING + 500,
   SWITCH_TO_FOLDER = 100,
   WGT_CLICK = 10,
-  FACET_DOCKING = 50,
+  FACET_DOCKING = 100,
   TITLE_REMOVING = 500,
 };
 

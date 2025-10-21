@@ -5,9 +5,9 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {
+  convertLD50,
   getModelsSingle,
   performChemicalPropertyPredictions,
-  runAdmeticaFunc,
   setProperties,
 } from './utils/admetica-utils';
 import { properties } from './utils/admetica-utils';
@@ -17,8 +17,6 @@ import { AdmeticaViewApp } from './utils/admetica-app';
 
 export * from './package.g';
 export const _package = new DG.Package();
-
-//name: info
 
 export class PackageFunctions {
   // @grok.decorators.init()
@@ -40,10 +38,10 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func()
-  static async getModels(property: string): Promise<string[]> {
+  static async getModels(property?: string): Promise<string[]> {
     await setProperties();
     return properties.subgroup
-      .filter((subg: Subgroup) => subg.name === property)
+      .filter((subg: Subgroup) => !property || subg.name === property)
       .flatMap((subg: Subgroup) => subg.models)
       .map((model: Model) => model.name);
   }
@@ -57,13 +55,13 @@ export class PackageFunctions {
     @grok.decorators.param({ options: { choices: 'Admetica:getModels(\'Metabolism\')', nullable: true } }) metabolism: string[],
     @grok.decorators.param({ options: { choices: 'Admetica:getModels(\'Excretion\')', nullable: true } }) excretion: string[],
   ): Promise<void> {
-    const resultString: string = [
+    const models: string[] = [
       ...absorption,
       ...distribution,
       ...metabolism,
       ...excretion,
-    ].join(',');
-    await performChemicalPropertyPredictions(molecules, table, resultString);
+    ];
+    await performChemicalPropertyPredictions(molecules, table, models);
   }
 
   @grok.decorators.editor({name: 'AdmeticaEditor'})
@@ -90,25 +88,43 @@ export class PackageFunctions {
   @grok.decorators.func({
     'name': 'AdmeticaMenu',
     'top-menu': 'Chem | Admetica | Сalculate...',
-    'editor': 'Admetica: AdmeticaEditor',
+    'editor': 'Admetica:AdmeticaEditor',
   })
   static async admeticaMenu(
-    @grok.decorators.param({options: { description: 'Input data table' }})table: DG.DataFrame,
-    @grok.decorators.param({options: { type: 'categorical', semType: 'Molecule' }}) molecules: DG.Column,
+    @grok.decorators.param({options: { description: 'Input data table' }}) table: DG.DataFrame,
+    @grok.decorators.param({options: { semType: 'Molecule' }}) molecules: DG.Column,
       template: string,
       models: string[],
       addPiechart: boolean,
       addForm: boolean,
   ): Promise<void> {
-    await performChemicalPropertyPredictions(molecules, table, models.join(','), template, addPiechart, addForm);
+    await performChemicalPropertyPredictions(molecules, table, models, template, addPiechart, addForm);
   }
 
-  @grok.decorators.func()
-  static async admeProperty(
-    @grok.decorators.param({ options: { semType: 'Molecule' } }) molecule: string,
-    @grok.decorators.param({ options: { choices: ['Caco2', 'Solubility', 'Lipophilicity', 'PPBR', 'VDss'] } }) prop: string): Promise<number> {
-    const df: DG.DataFrame = await runAdmeticaFunc(`smiles\n${molecule}`, prop, false);
-    return df.get(prop, 0);
+  @grok.decorators.func({
+    name: 'getAdmeProperties',
+    meta: {vectorFunc: 'true'},
+  })
+  static async getAdmeProperties(
+    @grok.decorators.param({ options: { semType: 'Molecule' } }) molecules: DG.Column,
+    @grok.decorators.param({ type: 'list<string>', optional: true }) props?: string[],
+  ): Promise<DG.DataFrame> {
+    const values = new Array(molecules.length + 1);
+    values[0] = molecules.name;
+    for (let i = 0; i < molecules.length; i++) {
+      const value = molecules.get(i);
+      values[i + 1] = molecules.meta.units === DG.UNITS.Molecule.MOLBLOCK ? `"${value}"` : value;
+    }
+    const csv = values.join('\n');
+
+    let admeticaResults = await grok.functions.call('Admetica:run_admetica', {
+      csv: csv,
+      models: props?.join(',') ?? '',
+      raiseException: false,
+    });
+
+    admeticaResults = await convertLD50(admeticaResults, molecules);
+    return admeticaResults;
   }
 
   @grok.decorators.app({name: 'Admetica', meta: {icon: 'images/vlaaivis.png', browsePath: 'Chem'}})

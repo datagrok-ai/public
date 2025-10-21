@@ -1,0 +1,51 @@
+{
+  "name": "nodetodo",
+  "friendlyName": "NodeTodo",
+  "version": "0.0.1",
+  "description": "NodeJS Datagrok API demo",
+  "dependencies": {
+    "datagrok-api": "../../js-api",
+    "cash-dom": "^8.1.5",
+    "dayjs": "^1.11.13",
+    "@datagrok-libraries/utils": "^4.6.5"
+  },
+  "devDependencies": {
+    "datagrok-tools": "^4.14.55",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4",
+    "ts-loader": "latest",
+    "typescript": "latest",
+    "style-loader": "^3.3.0",
+    "css-loader": "^6.4.0"
+  },
+  "scripts": {
+    "link-all": "grok link",
+    "debug-datagroknodetodo": "webpack && grok publish",
+    "release-datagroknodetodo": "webpack && grok publish --release",
+    "build-datagroknodetodo": "webpack",
+    "build": "grok api && grok check && webpack",
+    "debug-datagroknodetodo-dev": "webpack && grok publish dev",
+    "release-datagroknodetodo-dev": "webpack && grok publish dev --release",
+    "debug-datagroknodetodo-public": "webpack && grok publish public",
+    "release-datagroknodetodo-public": "webpack && grok publish public --release",
+    "debug-datagroknodetodo-local": "webpack && grok publish local",
+    "release-datagroknodetodo-local": "webpack && grok publish local --release",
+    "debug-datagroknodetodo-localhost": "webpack && grok publish localhost",
+    "release-datagroknodetodo-localhost": "webpack && grok publish localhost --release",
+    "debug-datagroknodetodo-localhost-test": "webpack && grok publish localhost-test",
+    "release-datagroknodetodo-localhost-test": "webpack && grok publish localhost-test --release",
+    "debug-datagroknodetodo-release-ec2.datagrok.ai": "webpack && grok publish release-ec2.datagrok.ai",
+    "release-datagroknodetodo-release-ec2.datagrok.ai": "webpack && grok publish release-ec2.datagrok.ai --release"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/DatagrokNodeTodo"
+  }
+}

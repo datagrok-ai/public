@@ -4,13 +4,13 @@
   "version": "0.0.3",
   "description": "",
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.5.7",
+    "@datagrok-libraries/utils": "^4.6.5",
     "cash-dom": "^8.1.5",
     "datagrok-api": "^1.25.0",
     "dayjs": "^1.11.13"
   },
   "devDependencies": {
-    "datagrok-tools": "^4.14.20",
+    "datagrok-tools": "^4.14.55",
     "ts-loader": "latest",
     "typescript": "latest",
     "webpack": "^5.95.0",

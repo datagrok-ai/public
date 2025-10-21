@@ -38,7 +38,7 @@ public class DynamoDBDataProvider extends JdbcDataProvider {
                 "When specified, this connection string overrides all other parameters. Example: "
                         + "'jdbc:amazondynamodb:AWSAccessKey=[Your access key];AWSSecretKey=[Your secret key];"
                         + "Domain=[Your domain];AWSRegion=[Your region];'" , new Prop("textarea")));
-        descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
+        descriptor.connectionTemplate.add(DbCredentials.getSsl());
         descriptor.credentialsTemplate = new ArrayList<>();
         descriptor.credentialsTemplate.add(new Property(Property.STRING_TYPE, DbCredentials.ACCESS_KEY,
                     "Set this property to the access\n"

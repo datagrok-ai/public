@@ -30,6 +30,6 @@ COPY . .
 
 SHELL ["micromamba", "run", "-n", "myenv", "/bin/bash", "-c"]
 
-EXPOSE 5000
+EXPOSE 45002
 
 ENTRYPOINT ["micromamba", "run", "-n", "myenv", "python", "grok_compute.py"]

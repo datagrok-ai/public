@@ -11,7 +11,11 @@ const {
   generateExport,
   typesToAnnotation,
   dgAnnotationTypes,
+  decoratorOptionToAnnotation,
+  inputOptionsNames,
 } = require('../bin/utils/func-generation');
+
+const {api} = require('../bin/commands/api');
 
 const baseImport = 'import * as DG from \'datagrok-api/dg\';\n';
 // eslint-disable-next-line max-len
@@ -85,6 +89,7 @@ class FuncGeneratorPlugin {
       // Uncommment to add obvious import/export
       // this._writeToPackageFile(packageFilePath, genImports, genExports);
     });
+    api({_: ['api']});
   }
 
   _addNodeData(
@@ -127,19 +132,31 @@ class FuncGeneratorPlugin {
       ...(reservedDecorators[name]['metadata']['tags'] ?? []),
       ...(decoratorOptions.get('tags') ?? []),
     ]);
+
+    if ((reservedDecorators[name]['metadata']['role']?.length > 0) ) {
+      if (!decoratorOptions.get('meta'))
+        decoratorOptions.set('meta', {role: reservedDecorators[name]['metadata']['role']});
+      else if (!decoratorOptions.get('meta')['role']) 
+        decoratorOptions.get('meta')['role'] = reservedDecorators[name]['metadata']['role'];
+      delete reservedDecorators[name]['metadata']['role'];
+    }
+
     const functionParams =
       node?.type === 'MethodDefinition' ? this._readMethodParamas(node) : [];
     const annotationByReturnObj = node?.type === 'MethodDefinition' ? this._readOutputsFromReturnType(node) : undefined;
+    
     const isMethodAsync = this._isMethodAsync(node);
     const importString = generateImport(
       node?.type === 'MethodDefinition' ? className : identifierName,
       modifyImportPath(path.dirname(this.options.outputPath), file),
     );
+    
     imports.add(importString);
     const funcName = `${
       node?.type === 'MethodDefinition' ? '' : '_'
     }${identifierName}`;
     const funcAnnotaionOptions = {
+      ...{name: funcName},
       ...reservedDecorators[name]['metadata'],
       ...(annotationByReturnObj ?
         {outputs: annotationByReturnObj ?? []} :
@@ -148,7 +165,30 @@ class FuncGeneratorPlugin {
       ...{inputs: functionParams},
       ...{isAsync: isMethodAsync},
     };
-    if (!funcAnnotaionOptions.name) funcAnnotaionOptions.name = identifierName;
+
+    let actualType = undefined;
+    if (annotationByReturnObj?.length > 1)
+      actualType = 'any';
+    else if (annotationByReturnObj?.length === 1 && annotationByReturnObj[0]?.actualType)
+      actualType = annotationByReturnObj[0].actualType;
+    else if (funcAnnotaionOptions.outputs?.length === 0)
+      actualType = 'void';
+
+    // if (!funcAnnotaionOptions.name) funcAnnotaionOptions.name = identifierName;
+    function containsAnything(funcAnnotaionOptions) {
+      let hasValues = false;
+      const arrays = ['tags', 'inputs', 'outputs'];
+      for (const option of Object.keys(funcAnnotaionOptions)) {
+        if (arrays.includes(option)) {
+          if (funcAnnotaionOptions[option].length > 0)
+            hasValues = true;
+        } else if (option != 'isAsync' && option != 'name')
+          hasValues = true;
+      }
+      return hasValues;
+    }
+    if (funcAnnotaionOptions.name === funcName && containsAnything(funcAnnotaionOptions))
+      delete funcAnnotaionOptions.name;
     functions.push(
       reservedDecorators[name]['genFunc'](
         getFuncAnnotation(funcAnnotaionOptions),
@@ -156,6 +196,7 @@ class FuncGeneratorPlugin {
         '\n',
         className ?? '',
         functionParams,
+        actualType,
         funcAnnotaionOptions.isAsync ?? false,
       ),
     );
@@ -185,11 +226,27 @@ class FuncGeneratorPlugin {
     return results;
   }
 
-  _readDecoratorOptions(properties) {
+  _readDecoratorOptions(properties, readForParams= false) {
     const resultMap = new Map();
-
-    for (const prop of properties)
-      resultMap.set(prop.key.name ?? prop.key.value, this._evalLiteral(prop.value));
+    let resultObj = undefined;
+    // for (const prop of properties)
+    //   resultMap.set(prop.key.name ?? prop.key.value, this._evalLiteral(prop.value));
+    const optionsToAdd = new Map();
+    for (const prop of properties) {
+      const key = decoratorOptionToAnnotation.get(prop.key.name ?? prop.key.value ?? '') ?? prop.key.name ?? prop.key.value;
+      if (!readForParams && key === 'result')
+        resultObj = this._evalLiteral(prop.value);
+      else if (readForParams && inputOptionsNames.includes( prop.key.name ?? prop.key.value)) 
+        optionsToAdd.set(key, this._evalLiteral(prop.value));
+      else
+        resultMap.set(key, this._evalLiteral(prop.value));
+    }
+    
+    for (const [key, value] of optionsToAdd)
+      resultMap.set(key, value);
+    if (resultObj)
+      resultMap.set('outputs', [resultObj]);
+    
     return resultMap;
   }
 
@@ -225,11 +282,10 @@ class FuncGeneratorPlugin {
         param.decorators?.length > 0 ?
           Object.fromEntries(
             this._readDecoratorOptions(
-              param.decorators[0]?.expression?.arguments[0].properties,
-            ),
+              param.decorators[0]?.expression?.arguments[0].properties, true),
           ) :
           undefined;
-
+        
       // Commented code finds value by default of function's variable
       // let defaultValue = undefined;
       if (baseParam.type === 'AssignmentPattern') {
@@ -238,7 +294,6 @@ class FuncGeneratorPlugin {
         baseParam = baseParam?.left;
       }
       const optional = param.optional;
-
       if (baseParam.type === 'RestElement' || baseParam.type === 'Identifier') {
         let name =
           baseParam.type === 'RestElement' ?
@@ -294,6 +349,7 @@ class FuncGeneratorPlugin {
 
       //   return { name: name, type: type, options: options };
       // }
+
       return {name: 'value', type: 'any', options: undefined, optional: optional};
     });
     return params;
@@ -349,10 +405,14 @@ class FuncGeneratorPlugin {
     let resultType = 'void';
     let nodeAnnotation = annotation;
     let isArray = false; 
+    let isNullable = false; 
     if (nodeAnnotation?.type === 'TSUnionType' && 
       nodeAnnotation?.types?.length === 2 && 
-      nodeAnnotation?.types?.some((e)=> e?.type === 'TSNullKeyword' || e?.type === 'TSVoidKeyword'|| e?.type === 'TSUndefinedKeyword')) 
-      nodeAnnotation = nodeAnnotation.types.filter((e)=> e.type !== 'TSNullKeyword' || e?.type === 'TSVoidKeyword' || e?.type === 'TSUndefinedKeyword')[0];
+      nodeAnnotation?.types?.some((e)=> e?.type === 'TSNullKeyword' || e?.type === 'TSVoidKeyword'|| e?.type === 'TSUndefinedKeyword')) {
+      nodeAnnotation = 
+        nodeAnnotation.types.filter((e)=> e.type !== 'TSNullKeyword' || e?.type === 'TSVoidKeyword' || e?.type === 'TSUndefinedKeyword')[0];
+      isNullable = true;
+    }
     
 
     if (
@@ -375,9 +435,10 @@ class FuncGeneratorPlugin {
           nodeAnnotation?.elementType?.typeName?.right?.name;
       } 
     }
-    resultType = typesToAnnotation[resultType];
-    if (isArray && resultType) resultType = `list<${resultType}>`;
-    return resultType ?? 'dynamic';
+    let anotationType = typesToAnnotation[resultType];
+    resultType = isNullable? 'any' : resultType;
+    if (isArray && anotationType) anotationType = `list<${anotationType}>`;
+    return [anotationType ?? 'dynamic', `${resultType}${isArray? '[]': ''}` ?? 'any'];
   }
 
   _readOutputsFromReturnType(node) {
@@ -397,9 +458,14 @@ class FuncGeneratorPlugin {
     if (annotation?.type === 'TSTypeLiteral') 
       results = this._readOutputsFromReturnTypeObject(annotation);
     else {
-      const resultType = this._readReturnType(annotation);
-      if (resultType !== 'void')
-        results.push({name: 'result', type: resultType});
+      const [annotationType, resultType] = this._readReturnType(annotation);
+      if (annotationType !== 'void') {
+        results.push({
+          name: 'result', 
+          type: annotationType,
+          actualType: resultType,
+        });
+      }
     }
     return results;
   }
@@ -408,9 +474,11 @@ class FuncGeneratorPlugin {
     let i = 0;
     const results = [];
     for (const member of node.members) {
+      const [annotationType, resultType] = this._readReturnType(annotation);
       results.push({
         name: member?.key?.name ?? `result${i}`,
-        type: this._readReturnType(member.typeAnnotation.typeAnnotation),
+        type: annotationType,
+        actualType: resultType,
       });
       i++;
     }

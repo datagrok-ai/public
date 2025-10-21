@@ -215,7 +215,6 @@ export class LinksState {
               ioName: io.id,
             }],
           },
-          inputsUUID: new Map(),
           outputs: {
             'out': [{
               path: [],
@@ -223,6 +222,7 @@ export class LinksState {
             }],
           },
           actions: {},
+          inputsUUID: new Map(),
           outputsUUID: new Map(),
           isDefaultValidator: true,
         };

@@ -557,10 +557,10 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
   async function invokeTests(categoriesToInvoke: { [key: string]: Category }, options: TestExecutionOptions) {
     try {
       for (const [key, value] of Object.entries(categoriesToInvoke)) {
-        if ((!!options?.category && !key.toLowerCase().startsWith(options?.category.toLowerCase())) ||
-          options.exclude?.some((c) => key.startsWith(c)))
+        if ((!options?.category || options.exclude?.some((c) => key.startsWith(c))))
           continue;
-
+        if (!(key.toLowerCase().startsWith(`${options?.category.toLowerCase().trim()} :`) && !options.test) && key.toLowerCase().trim() !== options?.category.toLowerCase().trim())
+          continue;
         stdLog(`Started ${key} category`);
         //@ts-ignore
         const skipped = value.tests?.every((t: Test) => t.options?.skipReason);
@@ -674,7 +674,7 @@ async function execTest(t: Test, predicate: string | undefined, logs: any[],
       if (DG.Test.isProfiling)
         console.profile(`${t.category}: ${t.name}`);
 
-      r = { name: t.name, owner:t.options?.owner ?? '', category: t.category, logs: '', date: startDate, success: true, result: await timeout(t.test, timeout_) ?? 'OK', ms: 0, skipped: false , package: packageName ?? '', flaking: DG.Test.isReproducing};
+      r = { name: t.name, owner:t.options?.owner ?? '', category: t.category, logs: '', date: startDate, success: true, result: (await timeout(t.test, timeout_)).toString() ?? 'OK', ms: 0, skipped: false , package: packageName ?? '', flaking: DG.Test.isReproducing};
 
       if (DG.Test.isProfiling) {
         console.profileEnd(`${t.category}: ${t.name}`);

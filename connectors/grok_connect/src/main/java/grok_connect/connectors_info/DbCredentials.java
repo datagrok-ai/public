@@ -72,6 +72,11 @@ public class DbCredentials
         }};
     }
 
+    public static Property getSsl() {
+        return new Property(Property.BOOL_TYPE, DbCredentials.SSL, "Encrypts the connection using SSL/TLS. Enable this if your database requires secure connections.",
+                new Prop(), "SSL");
+    }
+
     public DbCredentials(Map<String, Object> map)
     {
         server = (String)map.get(SERVER);

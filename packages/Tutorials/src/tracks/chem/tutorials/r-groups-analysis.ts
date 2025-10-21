@@ -21,7 +21,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
   }
 
   get steps() {return 14;}
-  
+
   helpUrl: string = 'https://datagrok.ai/help/datagrok/solutions/domains/chem/#r-groups-analysis';
   prerequisites: TutorialPrerequisites = {packages: ['Chem'], jupyter: true};
   demoTable: string = '';
@@ -70,7 +70,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
           v = data.args.viewer;
         return found;
       })));
-    
+
     this.title('Set up the visualization', true);
     this.describe(`Once the analysis is complete, the R-group columns are added to the table,
     along with a trellis plot for visual exploration.<br>Let’s set up the visualization.`);
@@ -80,7 +80,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
         $('.grok-icon.grok-font-icon-settings').one('click', () => subscriber.next(true));
       }), v!.root.parentElement?.parentElement?.getElementsByClassName('grok-font-icon-settings')[0] as HTMLElement,
       `The <b>Context Panel</b> on the right now shows the settings for the trellis plot and the pie chart.`);
-   
+
     grok.shell.windows.showContextPanel = true;
     const getPieChartHeader = () => {
       const propPanel = document.getElementsByClassName('grok-prop-panel');
@@ -139,7 +139,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     })]), undefined, 'Note changes on the pie charts');
 
     // await this.action('In the grid, press Shift + Drag Mouse Down', this.t.onSelectionChanged.pipe(filter(() => {
-    //   return grok.shell.o.constructor.name === 'RowGroup' && 
+    //   return grok.shell.o.constructor.name === 'RowGroup' &&
     //     $('.d4-accordion-pane-header').filter((_, el) => el.textContent === 'Distributions').length > 0;
     // })), undefined, 'Note changes on the pie charts');
 
@@ -151,7 +151,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
           subscriber.next(true);
         pane.on('click', () => subscriber.next(true));
       }), $('.d4-accordion-pane-header').filter((_, el) => el.textContent === 'Distributions').get(0));
-    
+
     const getDistrLineChart = () => {
       const distrPane = document.getElementsByClassName('d4-accordion-pane-content d4-pane-distributions expanded');
       if (distrPane.length) {

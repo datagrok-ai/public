@@ -17,6 +17,7 @@ import {LIB_PATH} from '../consts';
 
 import '../../../../css/monomer-manager.css';
 import {MONOMER_RENDERER_TAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
+import {BioTags} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 
 // columns of monomers dataframe, note that rgroups is hidden and will be displayed as separate columns
 export enum MONOMER_DF_COLUMN_NAMES {
@@ -49,6 +50,175 @@ export const MONOMER_DF_COLUMNS = {
   [MONOMER_DF_COLUMN_NAMES.SOURCE]: DG.COLUMN_TYPE.STRING,
 } as const;
 
+export async function standardiseMonomers(monomers: Monomer[]) {
+  const df = await getMonomersDataFrame(monomers);
+  if (monomers.length !== df.rowCount)
+    throw new Error(`Monomers length ${monomers.length} does not match dataframe row count ${df.rowCount}`);
+  const fixedMonomers = await Promise.all(new Array(monomers.length).fill(null).map(async (_, i) => monomerFromDfRow(df.rows.get(i))));
+  return fixedMonomers;
+}
+
+/// matches molecules in the dataframe with monomers in the library by canonical smiles
+export async function matchMoleculesWithMonomers(molDf: DG.DataFrame, molColName: string, monomerLib: IMonomerLib, polymerType: PolymerType = 'PEPTIDE'): Promise<DG.DataFrame> {
+  const converterFunc = DG.Func.find({package: 'Chem', name: 'convertMoleculeNotation'})[0];
+  if (!converterFunc)
+    throw new Error('Function convertMoleculeNotation not found, please install Chem package');
+  // first: stamdardize monomers
+  const monomers = monomerLib.getMonomerSymbolsByType(polymerType).map((s) => monomerLib.getMonomer(polymerType, s)!).filter((m) => m && (m.smiles || m.molfile));
+  const fixedMonomers = await standardiseMonomers(monomers);
+  const cappedSmilse = fixedMonomers.map((m, i) => ({sym: m.symbol, smiles: capSmiles(m.smiles ?? '', m.rgroups ?? []), original: m.smiles, source: monomers[i]?.lib?.source})).filter((s) => !!s?.smiles && !s.smiles.includes('[*:'));
+  // canonicalize all monomer smiles
+  const monomerSmilesCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'MonomerSmiles', cappedSmilse.map((m) => m.smiles!));
+  monomerSmilesCol.semType = DG.SEMTYPE.MOLECULE;
+  const canonicalizedMonomersSmilesCol: DG.Column = await converterFunc.apply({molecule: monomerSmilesCol, targetNotation: DG.chem.Notation.Smiles});
+  if (!canonicalizedMonomersSmilesCol || canonicalizedMonomersSmilesCol.length !== monomerSmilesCol.length)
+    throw new Error('Error canonicalizing monomer smiles');
+  canonicalizedMonomersSmilesCol.toList().forEach((s, i) => cappedSmilse[i].smiles = s);
+
+  const molecules = molDf.col(molColName)!;
+  const canonicalizedMoleculesCol: DG.Column = await converterFunc.apply({molecule: molecules, targetNotation: DG.chem.Notation.Smiles});
+  if (!canonicalizedMoleculesCol || canonicalizedMoleculesCol.length !== molecules.length)
+    throw new Error('Error canonicalizing molecules');
+
+  const canonicalizedMolecules = canonicalizedMoleculesCol.toList();
+
+  const resultDf = molDf.clone();
+  const matchingMonomerSmilesCol = resultDf.columns.addNewString(resultDf.columns.getUnusedName('Matched monomer smiles'));
+  matchingMonomerSmilesCol.semType = DG.SEMTYPE.MOLECULE;
+  const matchingMonomerSymbolCol = resultDf.columns.addNewString(resultDf.columns.getUnusedName('Matched monomer symbol'));
+  matchingMonomerSymbolCol.semType = 'Monomer';
+  const sourceLibCol = resultDf.columns.addNewString(resultDf.columns.getUnusedName('Matched monomer source'));
+  resultDf.columns.setOrder([molColName, matchingMonomerSymbolCol.name, matchingMonomerSmilesCol.name, sourceLibCol.name]);
+
+  for (let i = 0; i < canonicalizedMolecules.length; i++) {
+    const mol = canonicalizedMolecules[i];
+    if (!mol) continue;
+    for (let j = 0; j < cappedSmilse.length; j++) {
+      if (cappedSmilse[j].smiles === mol) {
+        matchingMonomerSmilesCol.set(i, cappedSmilse[j].original!, false);
+        matchingMonomerSymbolCol.set(i, cappedSmilse[j].sym, false);
+        sourceLibCol.set(i, cappedSmilse[j].source ?? '', false);
+        break;
+      }
+    }
+  }
+  return resultDf;
+}
+
+/** Standardizes the monomer library
+ * warning: throws error if the library is not valid or has invalid monomers
+ */
+export async function standardizeMonomerLibrary(libraryString: string) {
+  const library: Monomer[] = JSON.parse(libraryString);
+  if (!library || !Array.isArray(library) || library.length === 0)
+    throw new Error('Invalid library format, expected an array of monomers');
+  const fixedMonomers = await standardiseMonomers(library);
+  const fixedLibrary = fixedMonomers.map((m) => ({...m, lib: undefined, wem: undefined}));
+  const libraryStringFixed = JSON.stringify(fixedLibrary, null, 2);
+  return libraryStringFixed;
+}
+
+export async function getMonomersDataFrame(monomers: Monomer[]) {
+  try {
+    const df = DG.DataFrame.create(monomers.length);
+
+    const uniqueRgroupNamesSet = new Set<string>();
+    for (const monomer of monomers) {
+      monomer.rgroups.forEach((rg) => {
+        rg.label && uniqueRgroupNamesSet.add(rg.label);
+      });
+    }
+    const uniqueRgroupNames = Array.from(uniqueRgroupNamesSet);
+    uniqueRgroupNames.sort();
+    for (const [k, v] of Object.entries(MONOMER_DF_COLUMNS)) {
+      df.columns.addNew(k, v);
+      if (k === MONOMER_DF_COLUMN_NAMES.R_GROUPS) {
+        for (const rgroupName of uniqueRgroupNames)
+          df.columns.addNew(rgroupName, DG.COLUMN_TYPE.STRING);
+      }
+    }
+    df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.semType = 'Monomer';
+    df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.setTag(MONOMER_RENDERER_TAGS.applyToBackground, 'true');
+    df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.setTag(BioTags.polymerTypeColumnName, MONOMER_DF_COLUMN_NAMES.POLYMER_TYPE);
+    const pg = DG.TaskBarProgressIndicator.create('Creating Monomers DataFrame...');
+    for (let i = 0; i < monomers.length; i++) {
+      if (i % 20 === 0)
+        pg.update(((i + 1) / monomers.length) * 100, 'Creating Monomers DataFrame...');
+      const doFill = () => {
+        let molSmiles = getCorrectedSmiles(monomers[i].rgroups, monomers[i].smiles, monomers[i].molfile);
+        molSmiles = fixRGroupsAsElementsSmiles(molSmiles);
+        // r-groups here might be broken, so need to make sure they are correct
+        monomers[i].rgroups = resolveRGroupInfo(monomers[i].rgroups);
+        const rgroupSmiles = uniqueRgroupNames.map((rgName) => {
+          const rgroup = monomers[i].rgroups.find((rg) => rg.label === rgName);
+          return rgroup ? getCaseInvariantValue(rgroup, HELM_RGROUP_FIELDS.CAP_GROUP_SMILES) : '';
+        });
+        let date: number | null = null;
+
+        if (monomers[i].createDate) {
+          try {
+            date = Date.parse(monomers[i].createDate!);
+          } catch (e) {
+            console.error(`Error parsing date ${monomers[i].createDate}`);
+          }
+        }
+
+
+        df.rows.setValues(i, [
+          molSmiles,
+          monomers[i].symbol,
+          monomers[i].name,
+          JSON.stringify(monomers[i].rgroups ?? []),
+          ...rgroupSmiles,
+          monomers[i].monomerType,
+          monomers[i].polymerType,
+          monomers[i].naturalAnalog,
+          monomers[i].author,
+          date,
+          monomers[i].id,
+          JSON.stringify(monomers[i].meta ?? {}),
+          monomers[i].lib?.source ?? '',
+        ], false);
+        // something is wrong with setting dates, so setting it manually for now
+        try {
+          if (date)
+            df.col(MONOMER_DF_COLUMN_NAMES.CREATE_DATE)?.set(i, date, false);
+        } catch (e) {
+          console.error(`Error setting date ${monomers[i].createDate}`, e);
+        }
+      };
+      await new Promise<void>((resolve) => {
+        // this is done not to block the UI thread for too long
+        const inProm = () => {
+          try {
+            doFill();
+            resolve();
+          } catch (e) {
+            console.error('Error in doFill', e);
+            resolve();
+          }
+        };
+        if (i % 20 === 0) {
+          setTimeout(() => {
+            inProm();
+          });
+        } else
+          inProm();
+      });
+    }
+    pg.close();
+    df.col(MONOMER_DF_COLUMN_NAMES.MONOMER)!.semType = DG.SEMTYPE.MOLECULE;
+
+    uniqueRgroupNames.forEach((rgName) => {
+        df.col(rgName)!.semType = DG.SEMTYPE.MOLECULE;
+    });
+    return df;
+  } catch (e) {
+    grok.shell.error('Error creating monomers dataframe');
+    console.error(e);
+    throw e;
+  }
+}
 
 export class MonomerManager implements IMonomerManager {
   private adjustTable() {
@@ -354,91 +524,14 @@ export class MonomerManager implements IMonomerManager {
         grok.shell.error(`Library ${fileName} not found`);
         return DG.DataFrame.create();
       }
+
       const ploymerTypes = this.activeMonomerLib.getPolymerTypes();
       const monomers = ploymerTypes.flatMap((polymerType) => {
         return this.activeMonomerLib!.getMonomerSymbolsByType(polymerType).map((symbol) => {
           return this.activeMonomerLib!.getMonomer(polymerType, symbol)!;
         });
       });
-      const df = DG.DataFrame.create(monomers.length);
-
-      const uniqueRgroupNamesSet = new Set<string>();
-      for (const monomer of monomers) {
-        monomer.rgroups.forEach((rg) => {
-          rg.label && uniqueRgroupNamesSet.add(rg.label);
-        });
-      }
-      const uniqueRgroupNames = Array.from(uniqueRgroupNamesSet);
-      uniqueRgroupNames.sort();
-      for (const [k, v] of Object.entries(MONOMER_DF_COLUMNS)) {
-        df.columns.addNew(k, v);
-        if (k === MONOMER_DF_COLUMN_NAMES.R_GROUPS) {
-          for (const rgroupName of uniqueRgroupNames)
-            df.columns.addNew(rgroupName, DG.COLUMN_TYPE.STRING);
-        }
-      }
-      df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.semType = 'Monomer';
-      df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.setTag(MONOMER_RENDERER_TAGS.applyToBackground, 'true');
-
-
-      for (let i = 0; i < monomers.length; i++) {
-        let molSmiles = getCorrectedSmiles(monomers[i].rgroups, monomers[i].smiles, monomers[i].molfile);
-        molSmiles = fixRGroupsAsElementsSmiles(molSmiles);
-        // r-groups here might be broken, so need to make sure they are correct
-        monomers[i].rgroups = resolveRGroupInfo(monomers[i].rgroups);
-        const rgroupSmiles = uniqueRgroupNames.map((rgName) => {
-          const rgroup = monomers[i].rgroups.find((rg) => rg.label === rgName);
-          return rgroup ? getCaseInvariantValue(rgroup, HELM_RGROUP_FIELDS.CAP_GROUP_SMILES) : '';
-        });
-        let date: number | null = null;
-
-        if (monomers[i].createDate) {
-          try {
-            date = Date.parse(monomers[i].createDate!);
-          } catch (e) {
-            console.error(`Error parsing date ${monomers[i].createDate}`);
-          }
-        }
-
-
-        df.rows.setValues(i, [
-          molSmiles,
-          monomers[i].symbol,
-          monomers[i].name,
-          JSON.stringify(monomers[i].rgroups ?? []),
-          ...rgroupSmiles,
-          monomers[i].monomerType,
-          monomers[i].polymerType,
-          monomers[i].naturalAnalog,
-          monomers[i].author,
-          date,
-          monomers[i].id,
-          JSON.stringify(monomers[i].meta ?? {}),
-          monomers[i].lib?.source ?? '',
-        ]);
-        // something is wrong with setting dates, so setting it manually for now
-        try {
-          if (date)
-            df.col(MONOMER_DF_COLUMN_NAMES.CREATE_DATE)?.set(i, date, false);
-        } catch (e) {
-          console.error(`Error setting date ${monomers[i].createDate}`);
-        }
-      }
-      df.col(MONOMER_DF_COLUMN_NAMES.MONOMER)!.semType = DG.SEMTYPE.MOLECULE;
-      uniqueRgroupNames.forEach((rgName) => {
-        df.col(rgName)!.semType = DG.SEMTYPE.MOLECULE;
-      });
-      df.currentRowIdx = -1;
-      // eslint-disable-next-line rxjs/no-ignored-subscription, rxjs/no-async-subscribe
-      df.onCurrentRowChanged.subscribe(async (_) => {
-        try {
-          if (df.currentRowIdx === -1 || this._newMonomerForm.molChanged)
-            return;
-          await this.editMonomer(df.rows.get(df.currentRowIdx));
-        } catch (e) {
-          console.error(e);
-        }
-      });
+      const df = await getMonomersDataFrame(monomers);
       return df;
     } catch (e) {
       grok.shell.error('Error creating monomers dataframe');

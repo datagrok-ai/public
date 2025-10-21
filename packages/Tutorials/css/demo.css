@@ -103,6 +103,7 @@
 
 .grok-gallery-grid-view-demo-app {
 	flex-direction: column;
+	flex-wrap: nowrap;
 }
 
 .d4-tree-view-root.demo-app-group-view .grok-gallery-grid > div {
@@ -115,6 +116,10 @@
 
 .d4-tree-view-root.demo-app-group-view .d4-tree-view-node {
 	padding: 4px 0;
+}
+
+.demo-app-group-view {
+	width: 100%;
 }
 
 .demo-breadcrumbs-home-element {
@@ -283,10 +288,15 @@ div.demo-script-countdown svg>circle {
 .demo-app-widget.d4-tree-view-root {
 	margin-top: 12px;
 	min-width: 100%;
-	overflow-y: unset;
+	overflow-y: auto;
 }
+
 .demo-app-widget .d4-tree-view-group {
 	width: 100%;
+}
+
+.demo-app-widget.d4-tree-view-root.demo-app-widget-overflow-hidden {
+	overflow: hidden;
 }
 
 .demo-app-search-input {

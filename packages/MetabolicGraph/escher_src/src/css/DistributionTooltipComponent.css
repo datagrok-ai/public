@@ -60,11 +60,19 @@
   }
   
   .escher-tooltip .name {
-    height: 21px;
+    height: 23px;
     font-size: 15px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+   .escher-tooltip .reactionString {
+    font-size: 15px;
+    padding-bottom: 5px;
+
+    white-space: wrap;
+    font-weight: bold;
   }
   
   .escher-tooltip .interfacePanel {

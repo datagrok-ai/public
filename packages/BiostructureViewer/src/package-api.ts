@@ -226,7 +226,7 @@ export namespace funcs {
     return await grok.functions.call('BiostructureViewer:ReadAsText', { file });
   }
 
-  export async function readAsTextDapi(file: string ): Promise<void> {
+  export async function readAsTextDapi(file: string ): Promise<string> {
     return await grok.functions.call('BiostructureViewer:ReadAsTextDapi', { file });
   }
 

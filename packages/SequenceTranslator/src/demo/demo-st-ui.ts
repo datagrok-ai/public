@@ -3,19 +3,19 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {delay} from '@datagrok-libraries/utils/src/test';
-import {oligoTranslatorApp, oligoPatternApp, oligoStructureApp} from '../package';
+import {PackageFunctions} from '../package';
 import {tryCatch} from '../apps/common/model/helpers';
 
 export async function demoOligoTranslatorUI() {
   await tryCatch(async () => {
-    const view = await oligoTranslatorApp();
+    const view = await PackageFunctions.oligoTranslatorApp();
     grok.shell.addView(view);
   });
 }
 
 export async function demoOligoPatternUI() {
   await tryCatch(async () => {
-    const view = await oligoPatternApp();
+    const view = await PackageFunctions.oligoPatternApp();
     grok.shell.addView(view);
   });
 }
@@ -31,7 +31,7 @@ export async function demoOligoStructureUI() {
       textarea.dispatchEvent(event);
     }
 
-    const view = await oligoStructureApp();
+    const view = await PackageFunctions.oligoStructureApp();
     grok.shell.addView(view);
     const inputSequences = ['Afcgacsu', 'Afcgacsu', 'Afcgacsu'];
     inputSequences.forEach(async (sequence, idx) => {

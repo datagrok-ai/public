@@ -14,8 +14,11 @@ import {BIOREACTOR_DEMO} from './demo/bioreactor';
 import {DF_NAME} from './constants';
 import {UI_TIME} from './ui-constants';
 
-import {ODEs, SolverOptions} from '@datagrok/diff-grok';
+import {ODEs, SolverOptions} from 'diff-grok';
 import {Model} from './model';
+
+import utc from 'dayjs/plugin/utc';
+import dayjs from 'dayjs';
 
 export const _package = new DG.Package();
 
@@ -26,7 +29,30 @@ export function info() {
 
 export class PackageFunctions {
   @grok.decorators.init({})
-  static async init() {}
+  static async init() {
+    dayjs.extend(utc);
+  }
+
+  @grok.decorators.func({})
+  static dock(): void {
+    const df = grok.data.demo.demog(100);
+    const view = grok.shell.addTableView(df);
+
+    setTimeout(() => {
+      const chart = DG.Viewer.boxPlot(df);
+      let node = view.dockManager.dock(chart, 'right', null, 'ANOVA');
+
+      const div = ui.div([
+        ui.button('Click me', () => {
+          grok.shell.info('Clicked');
+        }),
+      ]);
+      node = view.dockManager.dock(div, 'down', node, 'Title', 0.3);
+
+      const grid = DG.Viewer.grid(grok.data.demo.demog(100));
+      view.dockManager.dock(grid, 'fill', node);
+    }, 100);
+  }
 
   @grok.decorators.func({})
   static solve(@grok.decorators.param({type: 'object'}) problem: ODEs): DG.DataFrame {
@@ -110,9 +136,9 @@ export class PackageFunctions {
     return proxiView;
   }
 
-  @grok.decorators.treeBrowser({ })
-  static async runDiffStudioTreeBrowser(treeNode: DG.TreeViewGroup, browsePanel: DG.BrowsePanel) {
-    new DiffStudio(false, false, false, {treeNode: treeNode, browsePanel: browsePanel});
+  @grok.decorators.func()
+  static async runDiffStudioTreeBrowser(treeNode: DG.TreeViewGroup) {
+    new DiffStudio(false, false, false, {treeNode: treeNode, browsePanel: grok.shell.browsePanel});
   }
 
   @grok.decorators.model({

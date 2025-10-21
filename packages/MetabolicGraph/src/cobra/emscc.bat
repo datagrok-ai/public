@@ -1,0 +1,4 @@
+em++ -O3 ./sampler-minimal.cpp -o ./sampler.js -s INITIAL_MEMORY=536870912 -s MAXIMUM_MEMORY=1073741824 -s ALLOW_MEMORY_GROWTH=1 -s MODULARIZE=1 -s EXPORT_NAME="exportCppSampler" -s EXPORTED_FUNCTIONS=["_sample","_malloc","_free"] -s EXPORTED_RUNTIME_METHODS=["cwrap","ccall","HEAPU8","HEAP32","HEAPF64"] -s ENVIRONMENT=web,worker -s STACK_SIZE=268435456
+
+@REM prepend the generated sampler.js text with "export" text
+

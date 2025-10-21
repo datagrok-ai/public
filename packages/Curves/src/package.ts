@@ -71,14 +71,14 @@ export class PackageFunctions {
   //   grok.shell.addView(await PackageFunctions.previewPlateXlsx(plateFile) as DG.ViewBase);
   // }
 
-  @grok.decorators.init({})
+  @grok.decorators.init()
   static _initCurves(): void {
     DG.ObjectHandler.register(new FitGridCellHandler());
     DG.ObjectHandler.register(new PlateCellHandler());
     DG.ObjectHandler.register(new PlateTemplateHandler());
   }
 
-  @grok.decorators.func({})
+  @grok.decorators.func()
   static async dataToCurves(df: DG.DataFrame, concentrationCol: DG.Column, readoutCol: DG.Column, batchIDCol: DG.Column, assayCol: DG.Column,
     runIDCol: DG.Column, compoundIDCol: DG.Column, targetEntityCol: DG.Column, @grok.decorators.param({options: {nullable: true}})excludeOutliersCol?: DG.Column,
     // rest is parent level data
@@ -89,13 +89,15 @@ export class PackageFunctions {
     @grok.decorators.param({options: {nullable: true}})experimentIDColumn?: string, @grok.decorators.param({options: {nullable: true}})qualifierColumn?: string,
     @grok.decorators.param({options: {nullable: true}})additionalColumns?: string[],
     @grok.decorators.param({options: {nullable: true}})wellLevelJoinCol?: string,
-    @grok.decorators.param({options: {nullable: true}})parentLevelJoinCol?: string
+    @grok.decorators.param({options: {nullable: true}})parentLevelJoinCol?: string,
+    @grok.decorators.param({options: {nullable: true, optional: true}})wellLevelAdditionalColumns?: string[]
   ): Promise<DG.DataFrame> {
     const pt = parentTable;
     const joinInfo = pt && wellLevelJoinCol && parentLevelJoinCol && df.col(wellLevelJoinCol) && pt.col(parentLevelJoinCol) ? {
       wellLevelCol: df.col(wellLevelJoinCol)!,
       parentLevelCol: pt.col(parentLevelJoinCol)!,
     } : undefined;
+    const wellLevelAdditionalColumnsAct = (wellLevelAdditionalColumns ?? []).map((c) => df.col(c)).filter((c) => c != null) as DG.Column[];
     // this needs to work with datasync so we use wide format
     return convertDataToCurves(df, concentrationCol, readoutCol, batchIDCol, assayCol, runIDCol, compoundIDCol, targetEntityCol, excludeOutliersCol, {
       table: pt,
@@ -106,11 +108,11 @@ export class PackageFunctions {
       qualifierColumn: qualifierColumn ? pt?.col(qualifierColumn) ?? undefined : undefined,
       additionalColumns: (additionalColumns ?? []).map((c) => pt?.col(c)).filter((c) => c != null) as DG.Column[],
     },
-    joinInfo
+    joinInfo, wellLevelAdditionalColumnsAct
     );
   }
 
-  @grok.decorators.func({'top-menu': 'Data | Curves | Data to Curves'})
+  @grok.decorators.func({'top-menu': 'Data | Curves | Data to Curves', 'outputs': [{'name': 'result', 'type': 'dynamic'}]})
   static async dataToCurvesTopMenu() {
     dataToCurvesUI();
   }
@@ -181,7 +183,7 @@ export class PackageFunctions {
     return column;
   }
 
-  @grok.decorators.folderViewer({})
+  @grok.decorators.folderViewer({outputs: [{'name': 'result', 'type': 'dynamic'}]})
   static async platesFolderPreview(folder: DG.FileInfo, files: DG.FileInfo[]): Promise<DG.Widget | DG.ViewBase | undefined> {
     const nameLowerCase = folder.name?.toLowerCase();
     if (!nameLowerCase?.includes('plate'))
@@ -257,6 +259,8 @@ export class PackageFunctions {
   description: 'Checks if a CSV file can be parsed as a plate.'
 })
   static async checkCsvIsPlate(file: DG.FileInfo): Promise<boolean> {
+  @grok.decorators.func()
+  static async checkExcelIsPlate(content: Uint8Array): Promise<boolean> {
     try {
       const contentSample = await file.readAsString();
       const firstLine = contentSample.substring(0, contentSample.indexOf('\n')).toLowerCase();
@@ -268,6 +272,11 @@ export class PackageFunctions {
   }
 
 
+  @grok.decorators.func()
+  static checkFileIsPlate(content: string): boolean {
+    if (content.length > 1_000_000)
+      return false;
+    return PlateReader.getReader(content) != null;
 static async parseExcelPlate(content: string | Uint8Array, name?: string):Promise<Plate> {
   if (typeof content === 'string') {
     const blob = new Blob([content], {type: 'application/octet-binary'});
@@ -284,14 +293,16 @@ static platesApp(): DG.View {
   return platesAppView();
 }
 
-@grok.decorators.func({})
-static async getPlateByBarcode(barcode: string): Promise<Plate> {
-  await initPlates();
-  const df: DG.DataFrame = await api.queries.getWellValuesByBarcode(barcode);
+  @grok.decorators.func()
+  static async getPlateByBarcode(barcode: string): Promise<Plate> {
+    await initPlates();
+    const df: DG.DataFrame = await api.queries.getWellValuesByBarcode(barcode);
+    return Plate.fromDbDataFrame(df);
+  }
 
-  if (df.rowCount === 0) {
-    console.error(`Plate with barcode '${barcode}' not found in the database.`);
-    throw new Error(`Plate not found: ${barcode}`);
+  @grok.decorators.func()
+  static async createDummyPlateData(): Promise<void> {
+    await __createDummyPlateData();
   }
   return Plate.fromDbDataFrame(df);
 }

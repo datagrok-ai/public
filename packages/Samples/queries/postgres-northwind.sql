@@ -32,7 +32,7 @@ select * from customers
 --connection: PostgresNorthwind
 --input: int quantity = 9
 --input: string productName = "Tofu" {choices: Query("SELECT distinct productname FROM products")}
---input: string country = "Germany" { choices: Samples:countries }
+--input: string country = "Germany" { choices: Samples:PostgresCountries }
 select
     order_details.orderid,
     order_details.unitprice,

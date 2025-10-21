@@ -74,7 +74,10 @@ public class BigQueryDataProvider extends JdbcDataProvider {
         if (conn.credentials == null)
             throw new GrokConnectException("Credentials can't be null");
 
-        com.simba.googlebigquery.jdbc42.DataSource ds = getDataSource(conn);
+        boolean resolvedByDatagrok = conn.credentials.parameters.getOrDefault("#dg_resolved", Boolean.FALSE).equals(true);
+        com.simba.googlebigquery.jdbc42.DataSource ds = getDataSource(conn, resolvedByDatagrok);
+        if (resolvedByDatagrok)
+            return ds.getConnection();
         String key = getDataSourceKey(conn, ds);
         Connection connection = ConnectionPool.getConnection(ds, key);
         return (Connection) Proxy.newProxyInstance(
@@ -152,7 +155,7 @@ public class BigQueryDataProvider extends JdbcDataProvider {
             return null;
     }
 
-    private com.simba.googlebigquery.jdbc42.DataSource getDataSource(DataConnection conn) throws GrokConnectException {
+    private com.simba.googlebigquery.jdbc42.DataSource getDataSource(DataConnection conn, boolean resolvedByDatagrok) throws GrokConnectException {
         try {
             com.simba.googlebigquery.jdbc42.DataSource ds = new com.simba.googlebigquery.jdbc42.DataSource();
             ds.setLogDirectory("");
@@ -163,9 +166,16 @@ public class BigQueryDataProvider extends JdbcDataProvider {
             }
 
             String method = (String) conn.credentials.parameters.get("#chosen-auth-method");
-            if (GrokConnectUtil.isEmpty(method))
+            if (GrokConnectUtil.isEmpty(method) && !resolvedByDatagrok)
                 throw new GrokConnectException("Authentication method was not set");
-            if (method.equals(SERVICE_ACCOUNT_METHOD)) {
+            if (resolvedByDatagrok || method.equals(OAUTH_METHOD)) {
+                String token = (String) conn.credentials.parameters.get(DbCredentials.SECRET_KEY);
+                if (GrokConnectUtil.isEmpty(token))
+                    throw new GrokConnectException("Invalid OAuth token");
+                ds.setOAuthType(2);
+                ds.setOAuthAccessToken(token);
+            }
+            else if (method.equals(SERVICE_ACCOUNT_METHOD)) {
                 String serviceEmail = (String) conn.credentials.parameters.get(DbCredentials.OAUTH_SERVICE_ACCOUNT_EMAIL);
                 if (GrokConnectUtil.isEmpty(serviceEmail))
                     throw new GrokConnectException("OAuthServiceAcctEmail is mandatory for OAuthType=0");
@@ -176,13 +186,9 @@ public class BigQueryDataProvider extends JdbcDataProvider {
                 ds.setOAuthServiceAcctEmail(serviceEmail);
                 ds.setOAuthPvtKey(new String(Base64.getDecoder().decode(jsonSecretKey)));
             }
-            else {
-                String token = (String) conn.credentials.parameters.get(DbCredentials.SECRET_KEY);
-                if (GrokConnectUtil.isEmpty(token))
-                    throw new GrokConnectException("Invalid OAuth token");
-                ds.setOAuthType(2);
-                ds.setOAuthAccessToken(token);
-            }
+            else
+                throw new GrokConnectException("Unsupported authentication method for BigQuery");
+
             return ds;
         } catch (Exception e) {
             throw new GrokConnectException(e);

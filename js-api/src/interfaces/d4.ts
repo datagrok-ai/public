@@ -72,8 +72,8 @@ export interface IConfusionMatrixSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
-  /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  /// Viewer controls elements font.
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -141,8 +141,8 @@ export interface IRocCurveSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
-  /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  /// Viewer controls elements font.
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -325,8 +325,8 @@ export interface IBarChartSettings {
 
   legendPosition: keyof typeof FlexAutoPosition;
 
-  /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  /// Viewer controls elements font.
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -493,10 +493,10 @@ export interface IBoxPlotSettings {
   /// Points are not shown if the number of rows is greater than *Show Values Limit*.
   showValuesLimit: number;
 
-  /// Show points inside the Q2-Q3 bar
+  /// Show points inside the interquartile range (Q3 - Q1).
   showInsideValues: boolean;
 
-  /// Show points outside Q2-Q3
+  /// Show points outside the interquartile range (Q3 - Q1).
   showOutsideValues: boolean;
 
   /// Show p-value. Press T to toggle.
@@ -510,9 +510,40 @@ export interface IBoxPlotSettings {
 
   statistics: Array<string>;
 
+  showTotalCount: boolean;
+
+  /// Shown values count inside lower and upper bounds, where:
+  /// IQR = Q3 - Q1.
+  /// Lower Bound = Q1 - (1.5 * IQR).
+  /// Upper Bound = Q3 + (1.5 * IQR).
+  showInliersCount: boolean;
+
+  /// Shown values count outside lower and upper bounds, where:
+  /// IQR = Q3 - Q1.
+  /// Lower Bound = Q1 - (1.5 * IQR).
+  /// Upper Bound = Q3 + (1.5 * IQR).
+  showOutliersCount: boolean;
+
+  showMin: boolean;
+
+  showMax: boolean;
+
+  showAvg: boolean;
+
+  showMed: boolean;
+
+  showStdev: boolean;
+
+  showQ1: boolean;
+
+  showQ3: boolean;
+
   viewport: string;
 
   autoLayout: boolean;
+
+  /// When checked, both categories from **Category 1** and **Category 2** columns are shown ignoring axis size adjustments.
+  showAllCategories: boolean;
 
   plotStyle: string;
 
@@ -576,8 +607,8 @@ export interface IBoxPlotSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
-  /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  /// Viewer controls elements font.
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -621,6 +652,8 @@ export interface ICalendarSettings {
   date: string;
   dateColumnName: string;
 
+  controlsFont: string;
+
   showHeader: boolean;
 
   redWeekends: boolean;
@@ -645,9 +678,6 @@ export interface ICalendarSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
-
-  /// Viewer components font size in pixels.
-  controlsFontSize: number;
 
   allowDynamicMenus: boolean;
 
@@ -733,6 +763,8 @@ export enum CardValueSourceType {
 }
 
 export interface ICorrelationPlotSettings {
+  controlsFont: string;
+
   /// Columns to be put on the X axis
   xColumnNames: Array<string>;
 
@@ -752,6 +784,10 @@ export interface ICorrelationPlotSettings {
 
   backColor: number;
 
+  defaultCellFont: string;
+
+  colHeaderFont: string;
+
   /// Determines the rows shown on the plot.
   rowSource: keyof typeof RowSet;
 
@@ -761,9 +797,6 @@ export interface ICorrelationPlotSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
-
-  /// Viewer components font size in pixels.
-  controlsFontSize: number;
 
   allowDynamicMenus: boolean;
 
@@ -861,8 +894,8 @@ export interface IDensityPlotSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
-  /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  /// Viewer controls elements font.
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -1023,6 +1056,8 @@ export interface IFormSettings {
 }
 
 export interface IGridSettings {
+  controlsFont: string;
+
   /// Indicates whether the grid is editable.
   /// See also *Show Add New Row Icon*
   allowEdit: boolean;
@@ -1257,7 +1292,9 @@ export interface IGridSettings {
   /// Determines whether newly added columns are added to the grid
   syncNewColumns: boolean;
 
-  colorScheme: Array<number>;
+  linearColorScheme: Array<number>;
+
+  categoricalColorScheme: Array<number>;
 
   columnHeaderTypes: Array<string>;
 
@@ -1280,9 +1317,6 @@ export interface IGridSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
-
-  /// Viewer components font size in pixels.
-  controlsFontSize: number;
 
   allowDynamicMenus: boolean;
 
@@ -1520,8 +1554,8 @@ export interface IHistogramSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
-  /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  /// Viewer controls elements font.
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -1663,12 +1697,58 @@ export interface ILineChartSettings {
 
   overviewAggrType: string;
 
+  /// Shows/hides upper and lower control limits, and [Western Electric rules](https://sentient.cloud/what-are-western-electric-rules-2/).
+  showStaticalProcessControl: boolean;
+
+  /// Shows/hides upper and lower control limits.
+  showControlLimits: boolean;
+
+  showSigma1: boolean;
+
+  showSigma2: boolean;
+
+  showAverage: boolean;
+
+  lowerControlLimit: number;
+
+  upperControlLimit: number;
+
+  /// Rile 1: One point is more than 3 standard deviations from the mean. When sample(s) is grossly out of control.
+  showOutlier: boolean;
+
+  /// Rule 2: Nine (or more) points in a row are on the same side of the mean. Some prolonged "bias" exists.
+  showBias: boolean;
+
+  /// Rule 3: Six (or more) points in a row are continually increasing (or decreasing). When a "trend" exists.
+  showConsistentTrend: boolean;
+
+  /// Rule 4: Fourteen (or more) points in a row alternate in direction, increasing then decreasing.
+  /// This much "oscillation" is beyond noise. Note that the rule is considered with directionality only.
+  /// The position of the mean and the size of the standard deviation have no bearing.
+  showOscillation: boolean;
+
+  /// Rule 5:Two (or three) out of the three points in a row are more than 2 standard deviations from the mean
+  /// in the same direction. There is a medium tendency for samples to be mediumly out of control.
+  /// The side of the mean for the third point is unspecified.
+  showMediumShift: boolean;
+
+  /// Rule 6: Four (or five) out of five points in a row are more than 1 standard deviation from the mean
+  /// in the same direction. There is strong tendency for samples to be slightly out of control.
+  /// The side of the mean for the fifth point is unspecified.
+  showSustainedShift: boolean;
+
+  /// Rule 7: Fifteen points in a row are all within 1 standard deviation of the mean on either side of the mean.
+  /// With 1 standard deviation, greater variation would be expected.
+  showSuppressedVariation: boolean;
+
   /// Show vertical line reflecting the position of the mouse-over row
   /// See also *Mouse Over Line Color*
   showMouseOverRowLine: boolean;
 
   /// Use column format for axis labels, where possible
   axesUseColumnFormat: boolean;
+
+  showAggrTypeSelector: boolean;
 
   /// Marker type for showing the distribution of the aggregated values
   /// when multiple values have the same X value
@@ -1682,8 +1762,6 @@ export interface ILineChartSettings {
   autoLayout: boolean;
 
   segmentsFont: string;
-
-  columnSelectorsFont: string;
 
   lineWidth: number;
 
@@ -1721,6 +1799,14 @@ export interface ILineChartSettings {
 
   currentLineColor: number;
 
+  selectedRowsColor: number;
+
+  statisticalProcessLineColor: number;
+
+  statisticalProcessAreaColor: number;
+
+  statisticalProcessRuleColor: number;
+
   xAxisMin: number;
 
   xAxisMax: number;
@@ -1752,9 +1838,9 @@ export interface ILineChartSettings {
 
   rowGroupTooltip: string;
 
-  /// When true, lines are added to the legend
-  /// Requires *Multi Axis* to be enabled
-  addLinesToLegend: boolean;
+  /// When selected, column names are added to the legend.
+  /// Requires *Multi Axis* to be enabled.
+  addYColumnsToLegend: boolean;
 
   autoAdjustMultiAxisLegendPosition: boolean;
 
@@ -1804,8 +1890,8 @@ export interface ILineChartSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
-  /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  /// Viewer controls elements font.
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -1902,8 +1988,8 @@ export interface IMapViewerSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
-  /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  /// Viewer controls elements font.
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -1988,6 +2074,8 @@ export enum TextInterpretationMode {
 }
 
 export interface IMatrixPlotSettings {
+  controlsFont: string;
+
   /// Columns to use on the X axis
   xColumnNames: Array<string>;
 
@@ -2017,9 +2105,6 @@ export interface IMatrixPlotSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
-
-  /// Viewer components font size in pixels.
-  controlsFontSize: number;
 
   allowDynamicMenus: boolean;
 
@@ -2294,6 +2379,10 @@ export interface IPcPlotSettings {
 
   labelsOrientation: keyof typeof TextOrientation;
 
+  minMaxOrientation: keyof typeof TextOrientation;
+
+  axisFont: string;
+
   linearColorScheme: Array<number>;
 
   categoricalColorScheme: Array<number>;
@@ -2358,8 +2447,8 @@ export interface IPcPlotSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
-  /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  /// Viewer controls elements font.
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -2475,8 +2564,8 @@ export interface IPieChartSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
-  /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  /// Viewer controls elements font.
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -2542,8 +2631,8 @@ export interface IPivotViewerSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
-  /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  /// Viewer controls elements font.
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -2725,6 +2814,7 @@ export interface IScatterPlotSettings {
   linesOrder: string;
   linesOrderColumnName: string;
 
+  /// Defines the width of the lines connecting the markers. See **Lines Width**.
   linesWidth: number;
 
   /// Label columns to show next to the markers.
@@ -2755,6 +2845,14 @@ export interface IScatterPlotSettings {
   showRegressionLine: boolean;
 
   showRegressionLineEquation: boolean;
+
+  showSpearmanCorrelation: boolean;
+
+  showPearsonCorrelation: boolean;
+
+  showMeanAbsoluteError: boolean;
+
+  showRootMeanSquareError: boolean;
 
   regressionPerCategory: boolean;
 
@@ -2861,6 +2959,8 @@ export interface IScatterPlotSettings {
 
   labelFont: string;
 
+  formulaFont: string;
+
   defaultRenderer: boolean;
 
   legendVisibility: keyof typeof VisibilityMode;
@@ -2877,8 +2977,8 @@ export interface IScatterPlotSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
-  /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  /// Viewer controls elements font.
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -2987,8 +3087,8 @@ export interface IScatterPlot3dSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
-  /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  /// Viewer controls elements font.
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -3072,6 +3172,8 @@ export interface ISparklinesSettings {
 }
 
 export interface IStatsViewerSettings {
+  controlsFont: string;
+
   columnNames: Array<string>;
 
   stats: Array<string>;
@@ -3087,9 +3189,6 @@ export interface IStatsViewerSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
-
-  /// Viewer components font size in pixels.
-  controlsFontSize: number;
 
   allowDynamicMenus: boolean;
 
@@ -3191,6 +3290,8 @@ export interface ISummarySettings {
 }
 
 export interface ITileViewerSettings {
+  controlsFont: string;
+
   lanesColumnName: string;
 
   cardMarkup: string;
@@ -3215,9 +3316,6 @@ export interface ITileViewerSettings {
   ///   ${SEVERITY} == 'Medium'
   ///   ${RACE}.endsWith('sian')
   filter: string;
-
-  /// Viewer components font size in pixels.
-  controlsFontSize: number;
 
   allowDynamicMenus: boolean;
 
@@ -3304,8 +3402,8 @@ export interface ITreeMapSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
-  /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  /// Viewer controls elements font.
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 
@@ -3406,8 +3504,8 @@ export interface ITrellisPlotSettings {
   ///   ${RACE}.endsWith('sian')
   filter: string;
 
-  /// Viewer components font size in pixels.
-  controlsFontSize: number;
+  /// Viewer controls elements font.
+  controlsFont: string;
 
   allowDynamicMenus: boolean;
 

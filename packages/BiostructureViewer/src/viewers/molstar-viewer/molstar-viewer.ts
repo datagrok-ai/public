@@ -619,7 +619,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     
     var blob;
     if (files.length === 1)
-      blob = new Blob([files[0][1]]), files[0][0];
+      blob = new Blob([files[0][1] as BlobPart]), files[0][0];
     else if (files.length > 1) {
       const zipData: Record<string, Uint8Array> = {};
       for (const [fn, data] of files) {
@@ -634,6 +634,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       const assetManager = new AssetManager();
       const ctx = { runtime: SyncRuntimeContext, assetManager };
       const buffer = await zip(ctx.runtime, zipData);
+      //@ts-ignore
       blob = new Blob([new Uint8Array(buffer, 0, buffer.byteLength)]);
     }
     return await blob?.text();

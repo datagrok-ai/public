@@ -6,6 +6,10 @@ import {TutorialRunner} from './tutorial-runner';
 import '../css/tutorial.css';
 
 export class TutorialWidget extends DG.Widget {
+  get type(): string {
+    return 'TutorialWidget';
+  }
+
   caption: string;
   order: string;
   totalTracks: number = 0;
@@ -44,6 +48,12 @@ export class TutorialWidget extends DG.Widget {
           const dockRoot = ui.div([root,
             ui.panel([], {id: 'tutorial-child-node', style: {paddingTop: '10px'}}),
           ], 'tutorials-root');
+          const existingTutorials = document.querySelector('.tutorials-root') as HTMLElement;
+          if (existingTutorials) {
+            const existingDock = grok.shell.dockManager.findNode(existingTutorials);
+            if (existingDock)
+              grok.shell.dockManager.close(existingDock);
+          }
           grok.shell.dockManager.dock(dockRoot, DG.DOCK_TYPE.LEFT, null, 'Tutorials', 0.27);
         });
 

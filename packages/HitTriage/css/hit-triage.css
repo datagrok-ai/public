@@ -68,6 +68,7 @@ table.hit-triage-table {
     max-height: 550px;
     max-width: 800px;
     min-width: 550px;
+    overflow: clip;
 }
 
 .hit-triage-compute-dialog-descriptors-group {
@@ -97,4 +98,8 @@ table.hit-triage-table {
 	white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.hit-triage-info-view-container .fa-trash-alt:hover {
+    color: #ff0000 !important;
 }

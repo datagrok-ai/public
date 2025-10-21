@@ -48,9 +48,23 @@ export interface CobraReaction extends BaseReaction {
   // Reaction properties
   label_x?: number
   label_y?: number
+  objective_coefficient?: number
+  id: string
+  lower_bound?: number
+  upper_bound?: number
+  subsystem?: string
+}
+
+export type ReactionBounds = {
+  upper_bound: number
+  lower_bound: number
 }
 
 export interface CobraModelData {
+  id?: string
+  name?: string
+  description?: string
+  notes?: any // TODO: define the structure of notes
   reactions: CobraReaction[]
   metabolites: CobraMetabolite[]
   genes: CobraGene[]
@@ -176,13 +190,15 @@ export interface SettingsType {
   }
   saveAction?: (() => void) | null
   loadAction?: (() => void) | null
-  pathFindingDisabled?: boolean
+  pathFindingDisabled?: boolean,
+  runFBA?: () => Promise<void>
 }
 
 export type SamplingFunctionResult = {
   upper_bound: number;
   lower_bound: number;
   data: Map<string, number[]>;
+  cancled?: boolean;
 }
 
 // DataStyles types

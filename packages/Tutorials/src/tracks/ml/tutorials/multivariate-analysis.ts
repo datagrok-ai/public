@@ -12,7 +12,7 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     statistical techniques to explore the relationships among multiple variables.`;
   }
   get steps() { return 7; }
-    
+
   demoTable: string = 'cars.csv';
   helpUrl: string = 'https://datagrok.ai/help/explore/multivariate-analysis';
 
@@ -29,30 +29,30 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML);
 
     const plsDlg = await this.openDialog('Click on "ML | Analyze | Multivariate Analysis..."',
-      'Multivariate Analysis (PLS)', this.getMenuItem('ML'));
+      'Multivariate Analysis (PLS)', this.getMenuItem('ML', true));
 
     plsDlg.root.hidden = true;
-    
+
     // We create fake dialog that runs analysis (since inputs of the "main" dialog are added using ui.form).
     const dlg = ui.dialog({title: 'Multivariate Analysis (PLS)', helpUrl: this.helpUrl});
 
     dlg.add(ui.input.column('Predict', {table: this.t!,
       filter: (col: DG.Column) => (col.type === DG.COLUMN_TYPE.INT) || (col.type === DG.COLUMN_TYPE.FLOAT)
     }));
-  
+
     dlg.add(ui.input.columns('Using', {table: this.t!,
       value: [], available: this.t!.columns.toList().filter((col) =>
         (col.type === DG.COLUMN_TYPE.INT) || (col.type === DG.COLUMN_TYPE.FLOAT)
       ).map((col) => col.name),
     }));
-  
+
     dlg.add(ui.input.int('Components'));
     dlg.add(ui.input.bool('Quadratic', {value: false}));
-  
+
     dlg.add(ui.input.column('Names', {table: this.t!, filter: (col: DG.Column) => (col.type === DG.COLUMN_TYPE.STRING)}));
 
     let viewers = [] as DG.Viewer[];
-  
+
     dlg.addButton('RUN', () => {
       dlg.close();
       plsDlg.getButton('RUN').click();
@@ -62,44 +62,44 @@ export class MultivariateAnalysisTutorial extends Tutorial {
         //console.log(viewers);
       }, 2000);
     }, undefined, 'Perform multivariate analysis');
-  
+
     dlg.show();
-      
+
     await this.dlgInputAction(dlg, 'Set "Predict" to "price"', 'Predict', 'price',
       'Specify column with the response variable.');
-      
+
     await this.dlgInputAction(dlg, 'Select all columns, except "price", as "Using"', 'Using',
       this.t!.columns.names().filter((n: string) => n !== 'model' && n !== 'price').join(','),
       `Set columns with predictors' values. Click "All" in the column selection dialog and uncheck "price".`);
 
     await this.dlgInputAction(dlg, 'Set the number of components to "3"', 'Components', '3',
       'Define the number of the latent factors.');
-    
+
     await this.dlgInputAction(dlg, 'Set "Names" to "model"', 'Names', 'model',
       'Select column with data samples names.');
 
     await this.action('Press "RUN" and wait for the analysis', dlg.onClose);
 
     let viewerRoots: HTMLElement[];
-      
+
     const viewerMd = [
       '# Observed vs. Predicted\n\nCloser to the line means better price prediction.',
-      '# Scores\n\n' +      
-      'Similarities & dissimilarities among samples:\n\n' +       
-      "* volvo's are close to each other\n" + 
+      '# Scores\n\n' +
+      'Similarities & dissimilarities among samples:\n\n' +
+      "* volvo's are close to each other\n" +
       '* porsche & mercedes are different',
-      '# Loadings\n\n' +       
+      '# Loadings\n\n' +
       'The impact of each feature on the latent factors: higher loading means stronger influence.',
-      '# Regression Coefficients\n\n' +      
-      'Parameters of the obtained linear model:\n\n' +       
+      '# Regression Coefficients\n\n' +
+      'Parameters of the obtained linear model:\n\n' +
       '* features make different contribution to the prediction\n' +
       '* "diesel" effects the most',
-      '# Explained Variance\n\n' +       
-      'How well the latent factors fit source data:\n\n' + 
+      '# Explained Variance\n\n' +
+      'How well the latent factors fit source data:\n\n' +
       '* closer to one means better fit\n' +
       '* 3 latent components explain 92% of the price variation',
     ];
-    
+
     let idx = 0;
     let hint: HTMLElement;
     let msg: HTMLDivElement;
@@ -141,10 +141,10 @@ export class MultivariateAnalysisTutorial extends Tutorial {
 
       step();
     }, 2100);
-    
+
     await this.action('Explore each viewer', new Observable((subscriber: any) => {
       //@ts-ignore
       $(doneBtn).one('click', () => subscriber.next(true));
-    }), undefined, 'Press "Next" to switch to the next viewer');    
+    }), undefined, 'Press "Next" to switch to the next viewer');
   }
 }

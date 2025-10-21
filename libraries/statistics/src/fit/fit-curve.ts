@@ -133,6 +133,7 @@ export interface IFitChartOptions {
   showColumnLabel?: boolean; // defines whether to show the column label in the legend or not
   showStatistics?: string[]; // defines the statistics that would be shown on the plot
   labelOptions?: IFitChartLabelOptions[]; // controls the plot labels
+  useAuxLegendNames?: boolean; // if true, uses aux legend names instead of series names
 }
 
 /** Data for the fit chart. */
@@ -166,12 +167,14 @@ export interface IFitSeriesOptions {
   connectDots?: boolean;                // defines whether to connect the points with lines or not. If true and showFitLine is false - fitting is disabled - otherwise, it will be rendered accordingly to the parameter value.
   showFitLine?: boolean;                // defines whether to show the fit line or not
   showPoints?: string;                  // defines the data display mode
+  showOutliers?: boolean;               // defines whether to show the outliers or not
   showCurveConfidenceInterval?: boolean;    // defines whether to show the confidence intervals or not
   errorModel?: FitErrorModelType;       // defines the series error model
   clickToToggle?: boolean;    // if true, clicking on the point toggles its outlier status and causes curve refitting
   labels?: {[key: string]: string | number | boolean}; // controlled by IFitChartData labelOptions, shows labels
   droplines?: string[];                 // defines the droplines that would be shown on the plot (IC50)
   columnName?: string;                  // defines the column name where the series is stored
+  auxLegendName?: string;               // defines the auxiliary legend name for the series
 }
 // TODO: show labels in property panel if present, color by default from series
 

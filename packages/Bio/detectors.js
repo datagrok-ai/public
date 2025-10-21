@@ -12,6 +12,7 @@
  * TODO: Use detectors from WebLogo pickUp.. methods
  */
 // eslint-disable-next-line max-lines
+/// <reference path="../../globals.d.ts" />
 
 const SEQ_SAMPLE_LIMIT = 100;
 const SEQ_SAMPLE_LENGTH_LIMIT = 100;
@@ -195,6 +196,20 @@ class BioPackageDetectors extends DG.Package {
         col.setTag(DG.TAGS.CELL_RENDERER, 'helm');
         return DG.SEMTYPE.MACROMOLECULE;
       }
+
+      //not HELM
+      const dotIsLikelyBilnSplitter = categoriesSample.every((s) => {
+        const parts = s.split('.');
+        // each part should be connected
+        return parts.length == 1 || parts.every((p) => /\(\d{1,2},\d{1,2}\)/g.test(p));
+      });
+      // if the dot (dissalowed character for macromolecules) is likely a biln separator,
+      // we can just replace it with '-' and remove all connection parts to help detector detect it as separator
+      if (dotIsLikelyBilnSplitter) {
+        for (let i = 0; i < categoriesSample.length; i++)
+          categoriesSample[i] = categoriesSample[i].replaceAll(/\(\d{1,2},\d{1,2}\)/g, '').replaceAll('.', '-');
+      }
+
       const multiplier = colNameVeryLikely ? 1.4 : colNameLikely ? 1.2 : 1.0;
       const decoyAlphabets = [
         ['NUMBERS', this.numbersRawAlphabet, 0.25 * multiplier, undefined],
@@ -626,8 +641,8 @@ class BioPackageDetectors extends DG.Package {
         return true;
       }
 
-      if (event.args.item && event.args.item instanceof DG.GridColumn && event.args.item.column &&
-        event.args.item.column.type === DG.TYPE.STRING && !event.args.item.column.semType) {
+      if (event.args.item && event.args.item instanceof DG.GridColumn && event.args.item.column && // there might be cases where PDS sequences with spaces are detected as text
+        event.args.item.column.type === DG.TYPE.STRING && (!event.args.item.column.semType || event.args.item.column.semType === DG.SEMTYPE.TEXT)) {
         const contextMenu = event.args.menu;
         const column = event.args.item.column;
         try {

@@ -11,9 +11,9 @@ import TabItem from '@theme/TabItem';
 Datagrok lets you work with files and directories right from the web browser. 
 It supports all [popular file systems](shares/shares.md), 
 including [S3](shares/s3.md),
-[Dropbox](shares/dropbox.md), [Google Drive](shares/googlecloud.md), [Sharepoint](shares/sharepoint.md), 
+[Dropbox](shares/dropbox.md), [Google Cloud Storage](shares/googlecloud.md), [Sharepoint](shares/sharepoint.md), 
 [Azure](shares/azure.md), [CoreWeave](shares/coreweave.md), and
-[Git](shares/git.md), as well as [Windows and Linux network shares](shares/files.md).
+[GitHub](shares/git.md), as well as [Windows and Linux network shares](shares/files.md).
 
 Once a connection is established, you can browse, preview, open, create, delete,
 rename, download, clone, and share files and directories.
@@ -258,6 +258,23 @@ displays the augmented file preview and the number of detected cell segments.
 </details>
 
 :::
+
+## Creating dynamic dashboards from files
+
+Similarly to [database queries](../databases/databases.md#creating-dynamic-dashboards-for-query-results),
+you can create and publish dashboards with a file as a data source. This file
+is re-read each time a dashboard is open (see also [caching](#caching)), providing you
+up-to-data data.
+
+To create a dashboard with a file as a data source:
+
+1. From the [file manager](#file-manager), double-click a file to open it.
+2. Design your dashboard using the built-in [visualizations](../../visualize/viewers/viewers.md).
+3. Click **SAVE** on top to upload and share the project. The file loading script
+  will be under the  "Creation script" section. 
+  
+Sharing the dashboard with a file as a data source also grants the
+"read" privilege to the corresponding file connection.
 
 ## File sharing and access control
 

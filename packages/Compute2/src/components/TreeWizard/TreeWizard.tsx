@@ -16,20 +16,20 @@ import {AugmentedStat} from './types';
 import '@he-tree/vue/style/default.css';
 import '@he-tree/vue/style/material-design.css';
 import {PipelineView} from '../PipelineView/PipelineView';
-import {useUrlSearchParams} from '@vueuse/core';
+import {useUrlSearchParams, computedAsync} from '@vueuse/core';
 import {Inspector} from '../Inspector/Inspector';
 import {
   findNextStep,
   findNodeWithPathByUuid, findTreeNodeByPath,
   findTreeNodeParrent, hasSubtreeFixableInconsistencies,
-  reportStep,
+  reportTree,
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 import {take} from 'rxjs/operators';
-import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {setHelpService} from '../../composables/use-help';
+import {reportFuncCallExcel} from '@datagrok-libraries/compute-utils';
 
 const DEVELOPERS_GROUP = 'Developers';
 
@@ -103,8 +103,17 @@ export const TreeWizard = Vue.defineComponent({
     const searchParams = useUrlSearchParams<{id?: string, currentStep?: string}>('history');
     const modelName = Vue.computed(() => props.modelName);
     const isTreeReady = Vue.computed(() => treeState.value && !treeMutationsLocked.value && !isGlobalLocked.value);
-    const providerFunc = Vue.computed(() => DG.Func.byName(props.providerFunc));
+    const providerFunc = Vue.computed(() => {
+      const func = DG.Func.byName(props.providerFunc);
+      return func ? Vue.markRaw(func) : undefined;
+    });
     const showReturn = Vue.computed(() => props.showReturn);
+    const reportBugUrl = computedAsync<string | undefined>(async () => {
+      return (await providerFunc.value?.package?.getProperties() as any)?.REPORT_BUG_URL;
+    });
+    const reqFeatureUrl = computedAsync<string | undefined>(async () => {
+      return (await providerFunc.value?.package?.getProperties() as any)?.REQUEST_FEATURE_URL;
+    });
 
     ////
     // results
@@ -330,7 +339,7 @@ export const TreeWizard = Vue.defineComponent({
     const exports = Vue.computed(() => {
       if (!treeState.value || isFuncCallState(treeState.value))
         return [];
-      return [{id: 'default', friendlyName: 'Default Excel', handler: () => reportStep(treeState.value)}, ...(treeState.value.customExports ?? [])];
+      return [{id: 'default', friendlyName: 'Default Excel', handler: () => reportTree(treeState.value, currentMetaCallData.value, hasNotSavedEdits.value)}, ...(treeState.value.customExports ?? [])];
     });
 
     const chosenStepState = Vue.computed(() => chosenStep.value?.state);
@@ -485,7 +494,7 @@ export const TreeWizard = Vue.defineComponent({
             {
               exports.value.map(({id, friendlyName, handler}) =>
                 <span onClick={() => (treeState.value) ?
-                  handler(treeState.value, {reportFuncCallExcel: Utils.reportFuncCallExcel}) :
+                  handler(treeState.value, {reportFuncCallExcel: reportFuncCallExcel}) :
                   null}>
                   <div> {friendlyName ?? id} </div>
                 </span>,
@@ -493,12 +502,30 @@ export const TreeWizard = Vue.defineComponent({
             }
           </RibbonMenu>
         }
+        {(reportBugUrl.value || reqFeatureUrl.value) &&
+          <RibbonMenu groupName='Feedback' view={currentView.value}>
+            {
+              reportBugUrl.value &&
+              <span onClick={() => window.open(reportBugUrl.value, '_blank')}>
+                <div>Report a bug</div>
+              </span>
+            }
+            {
+              reqFeatureUrl.value &&
+              <span onClick={() => window.open(reqFeatureUrl.value, '_blank')}>
+                <div>Request a feature</div>
+              </span>
+            }
+          </RibbonMenu>
+        }
         <DockManager class='block h-full'
-          key={providerFunc.value.id}
+          style={{overflow: 'hidden !important'}}
+          key={providerFunc.value?.id}
           onPanelClosed={handlePanelClose}
         >
           { !inspectorHidden.value &&
             <Inspector
+              key="inspector"
               treeState={treeState.value}
               config={config.value}
               logs={logs.value}
@@ -515,6 +542,7 @@ export const TreeWizard = Vue.defineComponent({
               Vue.withDirectives(<Draggable
                 class="ui-div mtl-tree p-2 overflow-scroll h-full"
                 style={{paddingLeft: '25px'}}
+                key="navigation"
 
                 dock-spawn-title='Steps'
                 dock-spawn-panel-icon='folder-tree'
@@ -575,6 +603,7 @@ export const TreeWizard = Vue.defineComponent({
             !rfvHidden.value && chosenStepState.value && chosenStepUuid.value &&
             isFuncCallState(chosenStepState.value) && chosenStepState.value.funcCall &&
               <RichFunctionView
+                key={chosenStepUuid.value!}
                 class={{'overflow-hidden': true}}
                 funcCall={chosenStepState.value.funcCall}
                 uuid={chosenStepUuid.value!}
@@ -606,6 +635,7 @@ export const TreeWizard = Vue.defineComponent({
                 DG.Func.byName(chosenStepState.value.nqName!).prepare() :
                 undefined
               }
+              key={chosenStepUuid.value!}
               state={chosenStepState.value}
               uuid={chosenStepUuid.value}
               isRoot={isRootChoosen.value}

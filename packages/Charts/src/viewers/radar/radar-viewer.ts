@@ -228,9 +228,8 @@ export class RadarViewer extends EChartViewer {
         return numValue !== -2147483648 ? numValue : 0;
       });
 
-      const color = this.colorColumnName ?
-        DG.Color.getRowColor(this.dataFrame.getCol(this.colorColumnName), i) :
-        this.lineColor;
+      const colorColumn = this.dataFrame.col(this.colorColumnName);
+      const color = colorColumn ? DG.Color.getRowColor(colorColumn, i) : this.lineColor;
 
       seriesData.push({
         value: value,
@@ -251,6 +250,36 @@ export class RadarViewer extends EChartViewer {
     }
 
     return seriesData;
+  }
+
+  calculateRadarLabelWidths(n: number, padding: number = 5) {
+    const {clientWidth: canvasWidth, clientHeight: canvasHeight} = this.root;
+    const radiusPercent = parseInt(option.radar.radius) / 100;
+    const centerX = canvasWidth / 2;
+    const radius = radiusPercent * Math.min(canvasWidth, canvasHeight) / 2;
+
+    const labels = Array.from({length: n}, (_, i) => {
+      const theta = (2 * Math.PI * i) / n - Math.PI / 2;
+      const x = centerX + radius * Math.cos(theta);
+      let maxWidth: number;
+
+      if (Math.abs(Math.cos(theta)) < 0.1)
+        maxWidth = canvasWidth - 2 * padding;
+      else if (Math.cos(theta) > 0)
+        maxWidth = canvasWidth - x - padding;
+      else
+        maxWidth = x - padding;
+      maxWidth = Math.max(0, maxWidth);
+      return maxWidth;
+    });
+
+    return labels;
+  }
+
+  formatLabel(text: string, maxWidth: number, avgCharWidth: number = 8) {
+    const maxChars = Math.floor(maxWidth / avgCharWidth);
+    if (text.length <= maxChars) return text;
+    return text.slice(0, Math.max(1, maxChars - 1)) + '…';
   }
 
   updateCurrentRow(): void {
@@ -275,7 +304,7 @@ export class RadarViewer extends EChartViewer {
 
   createRadarIndicator(c: DG.Column): RadarIndicator {
     const minimalVal = c.min < 0 ? (c.min + c.min * 0.1) : 0;
-    const indicator: RadarIndicator = { name: this.formatLabel(c.name) };
+    const indicator: RadarIndicator = { name: c.name };
 
     if (c.type === 'datetime') {
       indicator.max = this.getYearFromDate(c.max);
@@ -380,11 +409,6 @@ export class RadarViewer extends EChartViewer {
     return columns;
   }
 
-  formatLabel(value: string): string {
-    const specialCharactersRegex: RegExp = /[^a-zA-Z0-9]+/g;
-    return value.split(specialCharactersRegex).join('\n');
-  }
-
   _testColumns(): boolean {
     const columns = this.dataFrame.columns.toList();
     const numColumns = columns.filter((col) => ['double', 'int'].includes(col.type));
@@ -402,6 +426,14 @@ export class RadarViewer extends EChartViewer {
     MessageHandler._removeMessage(this.root, WARNING_CLASS);
     MessageHandler._removeMessage(this.root, ERROR_CLASS);
     this.getSeriesData(indexes!);
+
+    const radarLabelWidths = this.calculateRadarLabelWidths(this.columns.length);
+    option.radar.axisName.formatter = (param: string) => {
+      const idx = this.columns.findIndex((c) => c.name === param);
+      if (idx === -1) return param;
+      return this.formatLabel(param, radarLabelWidths[idx]);
+    };
+
     this.chart.setOption(option, false, true);
   }
 

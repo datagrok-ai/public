@@ -21,6 +21,10 @@
 6. Test other **properties**
 - Modify additional settings in the context panel (colors, grid lines, tooltips, etc.).
   - All changes apply smoothly without errors. Viewer updates correctly.
+7. Test **Popup menu**
+- Right mouse click on the viewer > popup menu opens.
+  - Check all possible actions.
+  - Main attention to Grid > Order or Hide Columns dialog: column selecting / unselecting should not cause row names disappearing [#3492](https://github.com/datagrok-ai/public/issues/3492)
 
 ---
 {

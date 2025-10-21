@@ -3,18 +3,15 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {awaitCheck, before, category, delay, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
-import {ensureContainerRunning} from '@datagrok-libraries/utils/src/test-container-utils';
+import {awaitCheck, before, category, delay, expect, expectArray, test, timeout} from '@datagrok-libraries/utils/src/test';
 
 import {
   performChemicalPropertyPredictions,
   getQueryParams,
   properties,
   setProperties,
-  runAdmeticaFunc
 } from '../utils/admetica-utils';
-
-export const CONTAINER_TIMEOUT = 900000;
+import { getAdmeProperties } from '../package';
 
 category('Admetica', () => {
   let v: DG.TableView;
@@ -25,6 +22,16 @@ category('Admetica', () => {
     grok.shell.closeAll();
     grok.shell.windows.showProperties = false;
 
+    try {
+      await timeout(
+        () => grok.functions.call('Admetica:check_health', {}),
+        180000,
+        'Health check timed out',
+      );
+    } catch (err: any) {
+      throw new Error(`Health check failed: ${err}`);
+    }
+
     await Promise.all([
       setProperties(),
       delay(1000),
@@ -32,15 +39,15 @@ category('Admetica', () => {
   });
 
   test('Container. Post request', async () => {
-    await ensureContainerRunning('admetica', CONTAINER_TIMEOUT);
-    const smiles = `smiles
-    O=C1Nc2ccccc2C(C2CCCCC2)=NC1`;
-    const distributionResults = await runAdmeticaFunc(smiles, 'PPBR,VDss', false);
+    const smilesColumn = DG.Column.fromStrings('smiles', [
+      'O=C1Nc2ccccc2C(C2CCCCC2)=NC1',
+    ]);
+    const admeProps = ['PPBR', 'VDss'];
+    const distributionResults = await getAdmeProperties(smilesColumn, admeProps);
     expect(distributionResults != null, true);
-  }, {timeout: CONTAINER_TIMEOUT + 25000});
+  }, {timeout: 25000});
 
   test('Calculate dialog. UI', async () => {
-    await ensureContainerRunning('admetica', CONTAINER_TIMEOUT);
     molecules = grok.data.demo.molecules(100);
     v = grok.shell.addTableView(molecules);
     await grok.data.detectSemanticTypes(molecules);
@@ -60,25 +67,23 @@ category('Admetica', () => {
     expectArray(Array.from(admeticaDialog!.querySelectorAll('.d4-tree-view-item-label')).map((item) => item.innerHTML), models);
     v.close();
     grok.shell.o = ui.div();
-  }, {timeout: CONTAINER_TIMEOUT + 25000});
+  }, {timeout: 25000});
 
   test('Calculate dialog. Added properties', async () => {
-    await ensureContainerRunning('admetica', CONTAINER_TIMEOUT);
     molecules = grok.data.demo.molecules(5);
     v = grok.shell.addTableView(molecules);
     await delay(1000);
     smilesColumn = molecules.columns.bySemType(DG.SEMTYPE.MOLECULE)!;
     const newTableColumn = 'Caco2';
-    await performChemicalPropertyPredictions(smilesColumn, v.dataFrame, newTableColumn);
+    await performChemicalPropertyPredictions(smilesColumn, v.dataFrame, [newTableColumn]);
     await delay(2000);
     expect(molecules.columns.names().includes(newTableColumn), true, `${newTableColumn} column has not been added`);
     expect(parseFloat(molecules.col(newTableColumn)!.get(0).toFixed(2)), -4.62, `Calculated value for ${newTableColumn} is incorrect`);
     expect(molecules.col(newTableColumn)!.getTag('.color-coding-type'), DG.COLOR_CODING_TYPE.LINEAR, `Expected ${DG.COLOR_CODING_TYPE.LINEAR} color coding type, but got a different value`);
     expect(molecules.col(newTableColumn)!.getTag('.color-coding-linear'), '[4292224808,4281114668]', 'Expected another linear color values');
-  }, {timeout: CONTAINER_TIMEOUT + 100000});
+  }, {timeout: 100000});
 
   test('Calculate. For single cell', async () => {
-    await ensureContainerRunning('admetica', CONTAINER_TIMEOUT);
     const molecules = grok.data.demo.molecules(20);
     const v = grok.shell.addTableView(molecules);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'Table failed to load', 3000);
@@ -115,28 +120,27 @@ category('Admetica', () => {
 
     const propertiesTable = admePanel?.parentElement?.querySelector('.d4-table.d4-item-table.d4-info-table') as HTMLElement;
     await awaitCheck(() => propertiesTable?.innerText.trim() !== '', 'Properties weren’t calculated', 8000);
-  }, { timeout: CONTAINER_TIMEOUT + 100000 });
+  }, { timeout: 100000 });
 
   test('Calculate.Benchmark column', async () => {
-    await ensureContainerRunning('admetica', CONTAINER_TIMEOUT);
     const runAdmeticaBenchmark = async (moleculesCount: number) => {
       const molecules = grok.data.demo.molecules(moleculesCount);
       molecules.columns.remove('logD');
-      const args = [molecules.toCsv(), await getQueryParams(), false];
-      return await runOnce(runAdmeticaFunc, ...args);
+      const args = [molecules, await getQueryParams()];
+      return await runOnce(getAdmeProperties, ...args);
     };
     await DG.timeAsync('Admetica column', async () => await runAdmeticaBenchmark(5000));
-  }, {timeout: CONTAINER_TIMEOUT + 10000000000, benchmark: true });
+  }, {timeout: 10000000000, benchmark: true });
 
   test('Calculate.Benchmark cell', async () => {
-    await ensureContainerRunning('admetica', CONTAINER_TIMEOUT);
-    const smiles = `smiles
-    O=C1Nc2ccccc2C(C2CCCCC2)=NC1`;
     const distributionSubgroup = properties.subgroup.find((subgroup: any) => subgroup.name === 'Distribution');
     const distributionModels = distributionSubgroup ? distributionSubgroup.models.map((model: any) => model.name) : [];
-    const args = [smiles, distributionModels, false];
-    await DG.timeAsync('Admetica cell', async () => await runOnce(runAdmeticaFunc, ...args));
-  }, {timeout: CONTAINER_TIMEOUT + 1000000, benchmark: true});
+    const smilesColumn = DG.Column.fromStrings('smiles', [
+      'O=C1Nc2ccccc2C(C2CCCCC2)=NC1',
+    ]);
+    const args = [smilesColumn, distributionModels];
+    await DG.timeAsync('Admetica cell', async () => await runOnce(getAdmeProperties, ...args));
+  }, {timeout: 1000000, benchmark: true});
 });
 
 async function runOnce(func: (...args: any[]) => Promise<DG.DataFrame | null>, ...args: any[]) {

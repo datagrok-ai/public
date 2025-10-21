@@ -31,7 +31,7 @@ public class MsSqlDataProvider extends JdbcDataProvider {
         descriptor.category = "Database";
         descriptor.description = "Query MS SQL database";
         descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
-        descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
+        descriptor.connectionTemplate.add(DbCredentials.getSsl());
         descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
         descriptor.canBrowseSchema = true;
         descriptor.defaultSchema = "dbo";

@@ -104,25 +104,60 @@ function changeBounds(bounds: DG.Rect, chartOptions: IFitChartOptions): DG.Rect 
   let y = bounds.y;
   let width = bounds.width;
   let height = bounds.height;
+  let boundsAdjusted = false;
 
-  if (chartOptions.minX !== undefined && chartOptions.minX !== null &&
+  if (chartOptions.minX != null && chartOptions.minX <= bounds.maxX &&
     ((!chartOptions.logX) || (chartOptions.logX && chartOptions.minX > 0))) {
     width += x - chartOptions.minX;
     x = chartOptions.minX;
+    boundsAdjusted = true;
   }
-  if (chartOptions.maxX !== undefined && chartOptions.maxX !== null &&
-    ((!chartOptions.logX) || (chartOptions.logX && chartOptions.maxX > 0)))
+  if (chartOptions.maxX != null && chartOptions.maxX >= bounds.minX &&
+    ((!chartOptions.logX) || (chartOptions.logX && chartOptions.maxX > 0))) {
     width += chartOptions.maxX - (x + width);
-  if (chartOptions.minY !== undefined && chartOptions.minY !== null &&
+    boundsAdjusted = true;
+  }
+  if (chartOptions.minY != null && chartOptions.minY <= bounds.maxY &&
     ((!chartOptions.logY) || (chartOptions.logY && chartOptions.minY > 0))) {
     height += y - chartOptions.minY;
     y = chartOptions.minY;
+    boundsAdjusted = true;
   }
-  if (chartOptions.maxY !== undefined && chartOptions.maxY !== null &&
-    ((!chartOptions.logY) || (chartOptions.logY && chartOptions.maxY > 0)))
+  if (chartOptions.maxY != null && chartOptions.maxY >= bounds.minY &&
+    ((!chartOptions.logY) || (chartOptions.logY && chartOptions.maxY > 0))) {
     height += chartOptions.maxY - (y + height);
+    boundsAdjusted = true;
+  }
 
-  return new DG.Rect(x, y, width, height);
+  return boundsAdjusted ? new DG.Rect(x, y, width, height) : padBounds(bounds, chartOptions);
+}
+
+function padBounds(bounds: DG.Rect, chartOptions: IFitChartOptions, ratio = 0.05): DG.Rect {
+  let left = bounds.left;
+  let right = bounds.right;
+  let top = bounds.top;
+  let bottom = bounds.bottom;
+
+  if (chartOptions.logX) {
+    left = left > 0 ? left / (1 + ratio) : left;
+    right = right * (1 + ratio);
+  }
+  else {
+    const dx = bounds.width * ratio;
+    left -= dx;
+    right += dx;
+  }
+  if (chartOptions.logY) {
+    top = top > 0 ? top / (1 + ratio) : top;
+    bottom = bottom * (1 + ratio);
+  }
+  else {
+    const dy = bounds.height * ratio;
+    top -= dy;
+    bottom += dy;
+  }
+
+  return new DG.Rect(left, top, right - left, bottom - top);
 }
 
 /** Returns the bounds of an {@link IFitChartData} object */
@@ -139,7 +174,7 @@ export function getChartBounds(chartData: IFitChartData): DG.Rect {
         continue;
       bounds = bounds.union(DG.Rect.fromXYArrays(xs, ys));
     }
-    return o ? changeBounds(bounds, o!): bounds;
+    return o ? changeBounds(bounds, o!): padBounds(bounds, o!);
   }
 }
 

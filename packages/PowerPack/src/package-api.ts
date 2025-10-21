@@ -14,12 +14,12 @@ export namespace queries {
 }
 
 export namespace funcs {
-  export async function compareColumns(): Promise<void> {
-    return await grok.functions.call('PowerPack:CompareColumns', {});
+  export async function addNewColumnDialog(call?: any ): Promise<void> {
+    return await grok.functions.call('PowerPack:AddNewColumnDialog', { call });
   }
 
-  export async function addNewColumnDialog(call: any ): Promise<void> {
-    return await grok.functions.call('PowerPack:AddNewColumnDialog', { call });
+  export async function compareColumns(): Promise<void> {
+    return await grok.functions.call('PowerPack:CompareColumns', {});
   }
 
   export async function welcomeView(): Promise<DG.View> {
@@ -46,10 +46,6 @@ export namespace funcs {
     return await grok.functions.call('PowerPack:HtmlWidget', {});
   }
 
-  export async function learnWidget(): Promise<any> {
-    return await grok.functions.call('PowerPack:LearnWidget', {});
-  }
-
   export async function kpiWidget(): Promise<any> {
     return await grok.functions.call('PowerPack:KpiWidget', {});
   }
@@ -66,7 +62,7 @@ export namespace funcs {
     return await grok.functions.call('PowerPack:PowerPackSearchProvider', {});
   }
 
-  export async function formulaLinesDialog(src: DG.DataFrame ): Promise<void> {
+  export async function formulaLinesDialog(src?: DG.DataFrame ): Promise<void> {
     return await grok.functions.call('PowerPack:FormulaLinesDialog', { src });
   }
 
@@ -82,7 +78,7 @@ export namespace funcs {
   }
 
   /**
-  Open "Viewer Gallery" dialog
+  Open 'Viewer Gallery' dialog
   */
   export async function viewerDialog(tv: any ): Promise<void> {
     return await grok.functions.call('PowerPack:ViewerDialog', { tv });

@@ -73,6 +73,7 @@ export enum MONOMER_POSITION_PROPERTIES {
   MIDDLE_COLOR = 'middleColor',
   UPPER_BOUND_COLOR = 'upperBoundColor',
   LOG_SCALE_COLOR = 'logScaleColor',
+  SHOW_FILTER_CONTROLS = 'showFilterControls',
 }
 
 export enum PROPERTY_CATEGORIES {
@@ -169,7 +170,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
       },
     });
     this.targetCategoryInput.root.style.display = 'none';
-    this.targetCategoryInput.root.style.width = '50%';
+    this.targetCategoryInput.root.style.maxWidth = '50%';
     this.targetCategoryInput.root.style.marginLeft = '8px';
   }
 
@@ -634,6 +635,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
 
 /** Structure-activity relationship viewer */
 export class MonomerPosition extends SARViewer {
+  monomerSearchInput: DG.InputBase<string>;
   colorColumnName: string;
   colorAggregation: string;
   currentGridCell: DG.GridCell | null = null;
@@ -644,6 +646,7 @@ export class MonomerPosition extends SARViewer {
   middleColor: number;
   upperBoundColor: number;
   logScaleColor: boolean = false;
+  showFilterControls: boolean = true;
   /** Sets MonomerPosition properties. */
   constructor() {
     super();
@@ -660,6 +663,26 @@ export class MonomerPosition extends SARViewer {
     this.customColorRange = this.bool(MONOMER_POSITION_PROPERTIES.CUSTOM_COLOR_RANGE, false, {category: PROPERTY_CATEGORIES.INVARIANT_MAP});
     this.minColorValue = this.float(MONOMER_POSITION_PROPERTIES.MIN_COLOR_VALUE, 0, {category: PROPERTY_CATEGORIES.INVARIANT_MAP});
     this.maxColorValue = this.float(MONOMER_POSITION_PROPERTIES.MAX_COLOR_VALUE, 0, {category: PROPERTY_CATEGORIES.INVARIANT_MAP});
+    this.showFilterControls = this.bool(MONOMER_POSITION_PROPERTIES.SHOW_FILTER_CONTROLS, true, {category: PROPERTY_CATEGORIES.GENERAL, description: 'Show monomer search and target controls'});
+    this.monomerSearchInput = ui.input.string('Search', {
+      value: '', nullable: true, placeholder: 'Search monomer', tooltipText: 'Search for monomer by symbol. For multiple monomers use comma as a separator.',
+      onValueChanged: () => {
+        const resetFilter = () => this._viewerGrid?.dataFrame?.filter?.setAll(true);
+        const val = this.monomerSearchInput.value?.trim()?.toLowerCase() ?? '';
+        if (!val || this._viewerGrid == null || this._viewerGrid.dataFrame == null) {
+          resetFilter();
+          return;
+        }
+        const searchCol = this._viewerGrid.dataFrame.col(C.COLUMNS_NAMES.MONOMER);
+        if (searchCol == null) {
+          resetFilter();
+          return;
+        }
+        const searchValues = val.split(',').map((v) => v.trim()).filter((v) => !!v);
+        const monomersList: string[] = searchCol.toList(); // all monomers are unique, so no point in doing shinanigens with raw data and cats.
+        this._viewerGrid.dataFrame.filter.init((i) => searchValues.some((s) => monomersList[i].toLowerCase().includes(s)));
+      },
+    });
   }
 
   /**
@@ -1095,12 +1118,15 @@ export class MonomerPosition extends SARViewer {
       this.viewerGrid.invalidate();
     }, 'Show Sequence Variability Map Table in full screen');
     $(expand).addClass('pep-help-icon');
-    this.targetColumnInput && (this.targetColumnInput.root.style.width = '50%');
-    const targetInputsHost = ui.divH([this.targetColumnInput?.root ?? ui.div(), this.targetCategoryInput.root],
-      {style: {alignSelf: 'center', justifyContent: 'center'}});
-    const header = ui.divH([expand, switchHost, targetInputsHost], {style: {alignSelf: 'center', lineHeight: 'normal', flexDirection: 'column'}});
+    this.targetColumnInput && (this.targetColumnInput.root.style.maxWidth = '50%');
+    this.monomerSearchInput.root.style.marginRight = '8px';
+    const targetInputsHost = ui.divH([this.monomerSearchInput.input, this.targetColumnInput?.root ?? ui.div(), this.targetCategoryInput.root],
+      {style: {alignSelf: 'center', justifyContent: 'center', width: '100%', flexWrap: 'wrap'}});
+    targetInputsHost.style.display = this.showFilterControls ? 'flex' : 'none';
+    const header = ui.divH([expand, switchHost, targetInputsHost], {style: {alignSelf: 'center', lineHeight: 'normal', flexDirection: 'column', width: '100%'}});
     this.root.appendChild(ui.divV([header, viewerRoot]));
     this.viewerGrid?.invalidate();
+    this.monomerSearchInput.fireChanged();
   }
 }
 

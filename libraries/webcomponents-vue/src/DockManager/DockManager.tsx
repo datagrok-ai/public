@@ -34,6 +34,7 @@ export const DockManager = Vue.defineComponent({
     });
 
     const dockSpawnRef = Vue.shallowRef<DockSpawnTsWebcomponent | undefined>(undefined);
+    const activePanelTitle = Vue.computed(() => props.activePanelTitle);
 
     const onManagerInitFinished = (manager: any) => {
       manager.getElementCallback = async (state: IState) => {
@@ -57,7 +58,7 @@ export const DockManager = Vue.defineComponent({
     return () => (
       <dock-spawn-ts
         style={{'width': '100%'}}
-        activePanelTitle={props.activePanelTitle}
+        activePanelTitle={activePanelTitle.value}
         onPanelClosed={(ev: {detail: any}) => emit('panelClosed', ev.detail)}
         onActivePanelChanged={(ev: {detail: {newPanel: string | null, prevPanel: string | null}}) => emit('update:activePanelTitle', ev.detail.newPanel, ev.detail.prevPanel)}
         onManagerInitFinished={onManagerInitFinished}

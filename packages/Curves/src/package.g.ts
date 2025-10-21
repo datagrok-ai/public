@@ -1,6 +1,3 @@
-import {RawPNGRenderer} from './pngRenderer';
-import {PlateGridCellRenderer} from './plate/plate-cell-renderer';
-import {PackageFunctions} from './package';
 import {MultiCurveViewer} from './fit/multi-curve-viewer';
 import {FitChartCellRenderer} from './fit/fit-renderer';
 import * as DG from 'datagrok-api/dg';

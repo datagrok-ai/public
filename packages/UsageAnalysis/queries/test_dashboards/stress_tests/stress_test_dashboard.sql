@@ -14,6 +14,7 @@ from last_builds b
     )
 select
     case r.params ->> 'backup_size' when 'small' then 'S' when 'medium' then 'M' else 'L' end as backup,
+    r.params ->> 'totalWorkers' as totalWorkers,
     r.params ->> 'worker' as worker,
     r.params ->> 'browser' as browser,
     t.name as test,
@@ -22,7 +23,8 @@ select
     r.date_time as started,
     r.batch_name as batch,
     r.params ->> 'category' as category,
-    t.package
+    t.package,
+    case r.passed when true then 1 else 0 end as passed_int
 from tests t full join last_builds_indexed b on true
     inner join test_runs r on r.test_name = t.name and r.build_name = b.name and not r.skipped and r.stress_test and (t.first_run <= r.date_time or t.first_run is null)
     left join published_packages p on p.name = t.package and p.is_current

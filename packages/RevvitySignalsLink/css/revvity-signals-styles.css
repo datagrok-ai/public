@@ -1,38 +1,17 @@
-.revvity-signals-search-required-field {
-    display: inline-flex!important;
-    flex-direction: row!important;
-    align-items: center;
-}
-
-.revvity-signals-search-required-field .asterisk{
-    color: red;
-    margin: 0 0 0 2px;
-}
-
-.revvity-signals-search .fa-trash-alt {
-    font-size: 12px;
-    color: #2083D5;
-}
-
-.query-builder-nested-condition-operators .fa-trash-alt {
-    padding: 0px 7px 0px 5px;
-    font-size: 10px !important;
-    margin-top: 2px;
-}
-
-.revvity-signals-search .fa-plus {
-    color: #2083D5;
-}
-
-.query-builder-nested-condition-operators .fa-plus {
-    padding: 1px 5px 1px 5px;
-}
-
 .revvity-signals-search-logical-operator {
     border: 1px solid #ccc;
     margin: 4px;
     padding: 4px;
     width: 100%;
+}
+
+.revvity-signals-search-query-operator .fa-trash-alt {
+    font-size: 12px;
+    color: #2083D5;
+}
+
+.revvity-signals-search-query-operator .fa-plus {
+    color: #2083D5;
 }
 
 .revvity-signals-search-query-operator {
@@ -47,13 +26,12 @@
     border-left: 3px solid var(--nesting-color, #e0e0e0);
 }
 
-.revvity-signals-search-query-preview {
-    height: 200px;
-    width: 100%;
-}
-
 .revvity-signals-search-query-operator .ui-input-text {
     width: 95%;
+}
+
+.revvity-signals-search-query-operator:hover .nested-add-delete-icons {
+    visibility: visible !important;
 }
 
 .revvity-signals-search-res-grid {
@@ -61,136 +39,56 @@
     height: 100%!important;
 }
 
-.revvity-signals-filters-or-button {
+.revvity-filters-button-icon {
+   color:#40607f;
+   width: 24px;
+   height: 24px;
+   padding: 8px;
+   cursor: pointer;
+   display: none;
+}
+
+.revvity-filters-button-icon-show {
+   display: flex;
+}
+
+.revvity-add-prop-as-column-icon {
+    color: #2083d5;
+    padding-right: 3px;
+}
+
+.revvity-saved-searches-icons-div {
     position: absolute;
-    bottom: 0px;
-    right: 0px;
-    font-size: 10px;
-    padding: 2px 6px !important;
-    display: none!important;
-    z-index: 10;
-    margin-bottom: 0px !important;
+    left: 35px;
+    z-index: 1000;
+    gap: 10px;
+    top: 5px;
 }
 
-.revvity-signals-filters-and-button {
-    position: absolute;
-    bottom: 0px;
-    right: 40px;
-    font-size: 10px;
-    padding: 2px 6px !important;
-    display: none!important;
-    z-index: 10;
-    margin-bottom: 0px !important;
-}
-
-.revvity-signals-filter-row.revvity-filter-last-row:hover .revvity-signals-filters-or-button,
-.revvity-signals-filter-row.revvity-filter-last-row:hover .revvity-signals-filters-and-button .last-row{
-    display: block!important;
-}
-
-.revvity-signals-filter-row {
-    position: relative;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    padding: 8px;
-    margin: 4px 0;
-    transition: border-color 0.2s ease;
-}
-
-.revvity-signals-filter-row:hover {
-    border-color: #2083D5;
-}
-
-.revvity-signals-filter-close-button {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    font-size: 12px;
-    padding: 2px 6px;
+.revvity-signals-starting-app .d4-update-shadow .ui-label {
     display: none;
-    background: none;
-    border: none;
-    color: #666;
-    cursor: pointer;
 }
 
-.revvity-signals-filter-close-button:hover {
-    color: #d32f2f;
+.revvity-signals-starting-app .d4-update-shadow .grok-loader {
+    width: 100px;
+    height: 30px;
 }
 
-.revvity-signals-filter-row:hover .revvity-signals-filter-close-button {
-    display: block;
-}
-
-.revvity-signals-filter-inputs {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 32px;
-}
-
-.revvity-signals-filter-inputs .ui-input-editor {
-    width: auto!important;
-}
-
-.revvity-signals-filter-inputs .ui-input-root {
-    width: auto!important;
-}
-
-.property-query-builder-and-or-operator {
-    font-size: 10px;
-    margin: 0px!important;
-    height: 12px!important;
-}
-
-.query-builder-nested-condition-operators .property-query-builder-and-or-operator {
-    padding: 2px 5px 0px 5px!important;
-    display: none!important;
-}
-
-.property-query-builder-multipe-filelds > .query-builder-nested-condition-operators .property-query-builder-and-or-operator {
-    display: flex!important;
-}
-
-.query-builder-nested-condition-operators {
-    position: absolute;
-    top: -7px;
-    border: none;
-    border-radius: 4px;
-    background-color: white;
-    left: 10px;
-}
-
-
-.revvity-signals-filter-inputs .add-delete-icons {
-    visibility: hidden;
-    gap: 6px;
-    padding-top: 15px;
-}
-
-.revvity-signals-filter-inputs:hover .add-delete-icons {
+.revvity-signals-filter-panel .query-builder-history-icon {
+    font-size: 14px;
     visibility: visible;
+    padding-bottom: 10px;
 }
 
-.nested-add-delete-icons {
-    visibility: hidden;
+.revvity-signals-statistics-hide-header .header {
+    display: none;
 }
 
-.revvity-signals-search-query-operator:hover .nested-add-delete-icons {
-    visibility: visible !important;
+.revvity-saved-search-delete {
+    padding-left: 5px;
+    padding-top: 5px;
 }
 
-/* Hide dropdown arrow on select elements by default, show only on hover */
-.revvity-signals-filter-inputs select.ui-input-editor {
-    -webkit-appearance: none !important;
-    -moz-appearance: none !important;
-    appearance: none !important;
-    background-image: none !important;
-    background: none !important;
-}
-
-.revvity-signals-filter-inputs select.ui-input-editor:hover {
-    background-image: url("../img/chevron.svg") !important;
-    background-repeat: no-repeat !important;
-    background-position: right 0px top 50% !important;
+.revvity-saved-search-delete:hover .grok-icon {
+    color: red;
 }

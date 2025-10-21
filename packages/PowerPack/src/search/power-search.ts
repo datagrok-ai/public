@@ -298,7 +298,7 @@ function tableQueriesFunctionsSearch(s: string, host: HTMLDivElement): void {
         inputParams[key] = value;
       });
 
-      host.appendChild(widgetHost(DG.Widget.fromRoot(ui.wait(async () => {
+      const outWidget = DG.Widget.fromRoot(ui.wait(async () => {
         try {
           const fc = sf.prepare(inputParams);
           const resFuncCall = await fc.call();
@@ -321,8 +321,11 @@ function tableQueriesFunctionsSearch(s: string, host: HTMLDivElement): void {
           console.error(e);
           return ui.divText('Operation caused exception');
         }
-      }))),
-      );
+      }));
+      outWidget.addProperty('caption', DG.TYPE.STRING, sf.friendlyName ?? sf.name);
+      outWidget.props.caption = sf.friendlyName ?? sf.name;
+
+      host.appendChild(widgetHost(outWidget));
     }
   }
 }

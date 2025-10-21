@@ -30,7 +30,7 @@ export class PackageFunctions
   static reinventEditor(
     call: DG.FuncCall): void {
     const funcEditor = new ReinventBaseEditor();
-    ui.dialog({title: 'Reinvent'})
+    ui.dialog({title: 'Generate molecules'})
       .add(funcEditor.getEditor())
       .onOK(async () => {
         const params = funcEditor.getParams();

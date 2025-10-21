@@ -102,7 +102,7 @@ async function request<T>(
 
   if (!response.ok || res.errors) {
     if (res.errors)
-      throw res.errors;
+      throw res.errors.map((error) => error.detail).join(';');
     throw new Error(`HTTP error!: ${response.status}`, { cause: response.status });
   }
   return res;
@@ -112,7 +112,7 @@ export async function queryUsers(): Promise<RevvityApiResponse> {
   return request('GET', `/users`);
 }
 
-export async function queryEntities(body: SignalsSearchQuery, queryParams?: SignalsSearchParams): Promise<RevvityApiResponse> {
+export async function search(body: SignalsSearchQuery, queryParams?: SignalsSearchParams): Promise<RevvityApiResponse> {
   const paramsStr = queryParams ? `?${encodeURI(paramsStringFromObj(queryParams))}` : '';
   return request('POST', `/entities/search${paramsStr}`, body);
 }
@@ -125,6 +125,18 @@ export async function queryEntityById(id: string, queryParams?: any): Promise<Re
 export async function queryMaterialById(id: string, queryParams?: any): Promise<RevvityApiResponse> {
   const paramsStr = queryParams ? `?${encodeURI(paramsStringFromObj(queryParams))}` : '';
   return request('GET', `/materials/${id}${paramsStr}`);
+}
+
+export async function queryLibraries(): Promise<RevvityApiResponse> {
+  return request('GET', `/materials/libraries`);
+}
+
+export async function queryTerms(body: SignalsSearchQuery): Promise<RevvityApiResponse> {
+  return request('POST', `/entities/search/terms`, body);
+}
+
+export async function queryTags(body: SignalsSearchQuery): Promise<RevvityApiResponse> {
+  return request('POST', `/entities/search/tags`, body);
 }
 
 

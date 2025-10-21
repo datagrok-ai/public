@@ -59,6 +59,7 @@ class MenuBar extends Component<{
     dropdownVisible: boolean;
   };
   sel: D3Selection;
+  reactionDataInfo: string;
 }> {
   componentWillMount() {
     this.props.sel.selectAll('.escher-zoom-container')
@@ -81,6 +82,7 @@ class MenuBar extends Component<{
     return (
       <div>
         <div id = "selection-info-container"></div>
+        <div id = "d4-escher-reaction-data-source-info">{this.props.reactionDataInfo ?? ''}</div>
 
         <ul className='menu-bar'>
           <Dropdown name='Map' dropdownVisible={this.props.dropdownVisible}>

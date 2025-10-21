@@ -10,9 +10,8 @@ import {IFuncCallAdapter, IStateStore, MemoryStore} from './FuncCallAdapters';
 import {FuncCallInstancesBridge, RestrictionState} from './FuncCallInstancesBridge';
 import {isPipelineConfig, isPipelineStepConfig, PipelineStepConfigurationProcessed} from '../config/config-utils';
 import {map, mapTo, scan, skip, switchMap, takeUntil, withLatestFrom} from 'rxjs/operators';
-import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {RestrictionType, ValidationResult} from '../data/common-types';
-import {mergeValidationResults} from '../utils';
+import {customDeepEqual, mergeValidationResults} from '../utils';
 
 export const descriptionOutputs = ['title', 'description', 'tags'] as const;
 const descriptionStates = descriptionOutputs.map((id) => ({id}));
@@ -90,9 +89,7 @@ export class FuncCallNode implements IStoreProvider {
       takeUntil(this.closed$),
     ).subscribe(this.validationInfo$);
 
-    this.instancesWrapper.meta$.pipe(
-      takeUntil(this.closed$),
-    ).subscribe(this.metaInfo$);
+    this.metaInfo$.next(this.instancesWrapper.meta);
 
     combineLatest([
       this.instancesWrapper.isRunning$,
@@ -119,8 +116,12 @@ export class FuncCallNode implements IStoreProvider {
     this.instancesWrapper.init({...data, initValues});
   }
 
-  changeAdapter(adapter: IFuncCallAdapter) {
-    this.instancesWrapper.change(adapter);
+  changeAdapter(adapter: IFuncCallAdapter, isNew = false) {
+    this.instancesWrapper.change(adapter, isNew);
+  }
+
+  setOutdatedStatus(isOutdated: boolean) {
+    this.instancesWrapper.setOutdatedStatus(isOutdated);
   }
 
   setDeps(deps: (readonly [string, Observable<boolean>])[]) {
@@ -189,7 +190,7 @@ export class FuncCallNode implements IStoreProvider {
   }
 
   clearOldMetas(currentIds: Set<string>) {
-    for (const meta$ of Object.values(this.instancesWrapper.metaStates$?.value ?? {})) {
+    for (const meta$ of Object.values(this.instancesWrapper.metaStates ?? {})) {
       if (!meta$?.value)
         continue;
       let needsUpdate = false;
@@ -289,7 +290,7 @@ export class FuncCallNode implements IStoreProvider {
     else {
       const {assignedValue, type} = restriction;
       const currentVal = this.instancesWrapper.getState(inputName);
-      const inconsistent = !this.deepEq(currentVal, assignedValue);
+      const inconsistent = !customDeepEqual(currentVal, assignedValue);
       return {
         restriction: type,
         inconsistent,
@@ -314,15 +315,6 @@ export class FuncCallNode implements IStoreProvider {
       map((s) => [...s]),
     );
     return pending$;
-  }
-
-  private deepEq(actual: any, expected: any) {
-    try {
-      expectDeepEqual(actual, expected, {maxErrorsReport: 1, floatTolerance: 0.0001, forbidAdditionalProps: true});
-    } catch {
-      return false;
-    }
-    return true;
   }
 }
 

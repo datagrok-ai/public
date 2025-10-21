@@ -59,7 +59,7 @@ export const injectInputBaseStatus = (emit: Function, ioName: string, t: DG.Inpu
   icon.isDataFrame = t.property.type === DG.TYPE.DATA_FRAME;
   icon.addEventListener('consistency-reset', () => emit('consistencyReset', ioName));
   icon.addEventListener('action-request', (ev: any) => emit('actionRequested', ev.detail));
-  icon.addEventListener('show-dataframe-diff', (ev: any) => showDFDiff(ev.detail, t.value));
+  icon.addEventListener('show-dataframe-diff', (ev: any) => showDFDiff(t.value, ev.detail));
 
   const wrapper = ui.element('i') as HTMLElement;
   wrapper.classList.add('rfv2-validation-icon');

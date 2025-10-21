@@ -35,6 +35,8 @@ export class PlateGridCellRenderer extends DG.GridCellRenderer {
       g.fillRect(x, y, w, h);
       return;
     }
+    if (w < 35 || h < 35)
+      return;
 
     this.plateWidget.plate = Plate.fromTableByRow(gridCell.value!);
     this.plateWidget.grid.props.colHeaderHeight = h > 120 ? 16 : 0;

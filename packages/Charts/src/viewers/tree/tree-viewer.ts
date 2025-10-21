@@ -319,7 +319,13 @@ export class TreeViewer extends EChartViewer {
     let currentCount = 0;
 
     for (const path of pathOccurrences) {
-      if (path.endsWith(basePath)) {
+      // Different paths can end with the same node label but still represent distinct nodes.
+      // Therefore, we must compare the final node label for exact equality rather than using endsWith.
+      const lastDelimiterIndex = path.lastIndexOf('|||');
+      const lastToken = lastDelimiterIndex === -1 ?
+        path.trim() || ' ' :
+        path.slice(lastDelimiterIndex + 3).trim() || ' ';
+      if (lastToken === basePath) {
         currentCount++;
         if (currentCount === targetIndex) return path;
       }
@@ -330,7 +336,6 @@ export class TreeViewer extends EChartViewer {
   paintBranchByPath(paths: string | string[], color: number, selection: SelectionData | null = null): void {
     const hoverStyle = {
       lineStyle: { color: DG.Color.toHtml(color) },
-      itemStyle: { color: DG.Color.toHtml(color) },
     };
 
     const pathsArray = Array.isArray(paths) ? paths : [paths];
@@ -357,7 +362,6 @@ export class TreeViewer extends EChartViewer {
 
     const hoverStyle = {
       lineStyle: {},
-      itemStyle: {},
     };
 
     const updatedTree = this.buildSeriesConfig(path, hoverStyle, originalTree);

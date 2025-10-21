@@ -198,7 +198,7 @@ export function createComponentPane(component: MixfileComponent): HTMLElement {
       contentsAcc.addPane(key, () => {
         const innerContentsAcc = ui.accordion();
         for (let i = 0; i < (component as any)[key].length; i++)
-          innerContentsAcc.addPane(`component ${i + 1}`, () => createComponentPane((component as any)[key][i]));
+          innerContentsAcc.addPane((component as any)[key][i].name ?? `component ${i + 1}`, () => createComponentPane((component as any)[key][i]));
 
         return innerContentsAcc.root;
       });

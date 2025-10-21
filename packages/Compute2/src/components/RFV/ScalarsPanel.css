@@ -1,0 +1,28 @@
+
+.rfv2-scalar-table {
+    border-collapse: collapse;
+    margin: 10px;
+    user-select: text;
+}
+
+.rfv2-scalar-table td {
+    width: max-content;
+    white-space: nowrap;
+}
+
+.rfv2-scalar-table tr {
+    min-height: 30px;
+    border-bottom: 1pt solid var(--grey-12);
+}
+
+.rfv2-scalar-table tr:nth-child(odd) {
+    background-color: var(--grey-1);
+}
+
+.rfv2-scalar-table td:last-child {
+    width: 100%;
+}
+
+.rfv2-scalar-widget {
+    user-select: text;
+}

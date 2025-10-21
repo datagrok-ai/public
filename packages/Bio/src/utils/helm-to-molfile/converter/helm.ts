@@ -55,7 +55,7 @@ export class Helm {
   private getSimplePolymerByMonomerIdx(monomerGlobalIdx: number): SimplePolymer {
     const shifts = this.getMonomerIdxShifts();
     const shiftValues = Object.values(shifts);
-    const lowerBound = shiftValues.sort((a, b) => a - b).find(
+    const lowerBound = shiftValues.sort((a, b) => b - a).find( // find the largest shift not exceeding monomerGlobalIdx
       (shift) => monomerGlobalIdx >= shift
     );
     if (lowerBound === undefined)

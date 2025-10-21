@@ -22,9 +22,10 @@ export type MatchInfo = {
   basePathUUID?: string;
   actions: Record<string, MatchedNodePaths>;
   inputs: Record<string, MatchedNodePaths>;
-  inputsUUID: Map<string, Set<string>>;
   outputs: Record<string, MatchedNodePaths>;
-  outputsUUID: Map<string, Set<string>>;
+  // needed to diff order beetween multiple steps of the same kind
+  inputsUUID: Map<string, Array<string>>;
+  outputsUUID: Map<string, Array<string>>;
   isDefaultValidator?: boolean;
 }
 
@@ -72,8 +73,8 @@ function matchLinkInstance(
     basePath: base?.path,
     actions,
     inputs: {},
-    inputsUUID: new Map(),
     outputs: {},
+    inputsUUID: new Map(),
     outputsUUID: new Map(),
   };
   const currentIO: Record<string, MatchedNodePaths> = {};
@@ -400,13 +401,13 @@ export function updateMatchInfoUUIDs(rnode: TreeNode<StateTreeNode>, matchInfo: 
   }
 }
 
-function matchedPathsToUUIDs(rnode: TreeNode<StateTreeNode>, paths: MatchedNodePaths) {
-  const res = new Set<string>;
+function matchedPathsToUUIDs(rnode: TreeNode<StateTreeNode>, paths: MatchedNodePaths): string[] {
+  const res: string[] = [];
   for (const path of paths) {
     const uuids = pathToUUID(rnode, path.path);
     if (path.ioName)
       uuids.push(path.ioName);
-    res.add(uuids.join('/'));
+    res.push(uuids.join('/'));
   }
   return res;
 }

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -6,11 +7,13 @@ import wu from 'wu';
 import {Observable, Subject} from 'rxjs';
 
 import {IMonomerLibBase, Monomer, RGroup} from '@datagrok-libraries/bio/src/types/index';
-import {HelmAtom, HelmType, IMonomerColors, IWebEditorMonomer, MonomerType, PolymerType} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmAtom, HelmType, IMonomerColors,
+  IWebEditorMonomer, MonomerType, PolymerType} from '@datagrok-libraries/bio/src/helm/types';
 import {getMonomerHandleArgs} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {HelmTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
-import {HELM_OPTIONAL_FIELDS as OPT, HELM_REQUIRED_FIELD as REQ, HELM_RGROUP_FIELDS as RGP} from '@datagrok-libraries/bio/src/utils/const';
+import {HELM_OPTIONAL_FIELDS as OPT, HELM_REQUIRED_FIELD as REQ,
+  HELM_RGROUP_FIELDS as RGP} from '@datagrok-libraries/bio/src/utils/const';
 import {GAP_SYMBOL, GapOriginals, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {Vector} from '@datagrok-libraries/utils/src/type-declarations';
 import {vectorAdd, vectorDotProduct, vectorLength} from '@datagrok-libraries/utils/src/vector-operations';
@@ -276,9 +279,19 @@ export class MonomerLibBase implements IMonomerLibBase {
     let res: any;
     if (monomer) {
       if (monomer.meta && monomer.meta.colors) {
+        // due to some weird formatting, meta.colors can be a string
+        if (typeof monomer.meta.colors === 'string') {
+          try {
+            monomer.meta.colors = JSON.parse(monomer.meta.colors);
+          } catch (e) {
+            _package.logger.error(`Bio: MonomerLib.getMonomerColors() failed to parse monomer.meta.colors: ${e}`);
+          }
+        }
         const monomerColors: { [colorSchemaName: string]: any } = monomer.meta.colors;
-        if (!(currentMonomerSchema in monomerColors)) monomerSchema = 'default';
-        res = monomerColors[monomerSchema];
+        if (monomerColors && typeof monomerColors != 'string' && !(currentMonomerSchema in monomerColors))
+          monomerSchema = 'default';
+        if (monomerColors && typeof monomerColors != 'string' && monomerSchema in monomerColors)
+          res = monomerColors[monomerSchema];
       }
 
       if (!res) {
@@ -291,7 +304,7 @@ export class MonomerLibBase implements IMonomerLibBase {
       }
 
       const naSymbol: string | undefined = monomer[OPT.NATURAL_ANALOG];
-      if (!res && naSymbol)
+      if (!res && naSymbol && naSymbol !== monomer.symbol)
         return this.getMonomerColors(biotype, naSymbol);
     }
 

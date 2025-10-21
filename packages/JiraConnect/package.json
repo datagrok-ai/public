@@ -1,22 +1,22 @@
 {
   "name": "@datagrok/jiraconnect",
   "friendlyName": "Jira Connect",
-  "version": "1.2.1",
+  "version": "1.2.3",
   "description": "Pakcages for Jira integration into Datagrok",
   "author": {
     "name": "Savenko Stanislav",
     "email": "ssavenko@datagrok.ai"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.5.7",
+    "@datagrok-libraries/utils": "^4.6.5",
     "cash-dom": "^8.1.5",
     "cors": "^2.8.5",
-    "datagrok-api": "^1.25.0",
+    "datagrok-api": "^1.26.0",
     "dayjs": "^1.11.13"
   },
   "devDependencies": {
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.31",
+    "datagrok-tools": "^4.14.55",
     "style-loader": "^4.0.0",
     "ts-loader": "latest",
     "typescript": "latest",

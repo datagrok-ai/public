@@ -1,10 +1,8 @@
+import { API_KEY_PARAM_NAME, API_URL_PARAM_NAME } from "./constants";
 import { _package } from "./package";
 
 let apiKey = '';
-const API_KEY_PARAM_NAME = 'apiKey';
-
 let apiUrl = '';
-const API_URL_PARAM_NAME = 'apiUrl';
 
 export async function getApiKey(): Promise<string> {
     if (apiKey === '') {

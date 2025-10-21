@@ -8,7 +8,7 @@ import {MapProxy} from "./proxies";
 import {toJs, toDart} from "./wrappers";
 import {__obs, EventData, StreamSubscription} from "./events";
 import * as rxjs from "rxjs";
-import {Subscription} from "rxjs";
+import {Subscription} from 'rxjs';
 import {filter, map} from 'rxjs/operators';
 import {Grid, Point, Rect} from "./grid";
 import {FormulaLinesHelper} from "./helpers";
@@ -298,6 +298,9 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     );
   }
 
+  /** Occurs when viewer is detached. */
+  get onDetached(): rxjs.Observable<any> { return api.grok_Viewer_OnDetached(this.dart); }
+
   copyViewersLook(other: Viewer) {
     api.grok_Viewer_Copy_Viewers_Look(this.dart, other.dart);
   }
@@ -356,7 +359,7 @@ export class JsViewer extends Viewer {
   addRowSourceAndFormula() {
     this.rowSource = this.string('rowSource', 'Filtered',
         { choices: ['All', 'Filtered', 'Selected', 'SelectedOrCurrent', 'FilteredSelected', 'MouseOverGroup', 'CurrentRow', 'MouseOverRow']});
-    this.formulaFilter = this.string('filter', '', {fieldName: 'formulaFilter'});
+    this.formulaFilter = this.string('filter', '', {fieldName: 'formulaFilter', category: 'Data'});
   }
 
   onFrameAttached(dataFrame: DataFrame): void {

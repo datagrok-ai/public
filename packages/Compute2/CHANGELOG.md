@@ -1,5 +1,38 @@
 # Compute2 changelog
 
+## 1.3.18 (2025-09-11)
+
+- Hisotry and export fixes for workflows
+
+## 1.3.17 (2025-09-09)
+
+- Save focused RFV tab in session storage
+
+## 1.3.16 (2025-09-08)
+
+- Fix funcCall reactive updates edge case
+
+## 1.3.15 (2025-09-05)
+
+- Fix optimizer returned funcCall redraw
+
+## 1.3.14 (2025-09-04)
+
+- Small bug fixes
+
+## 1.3.13 (2025-08-15)
+
+- Fix DataFrame input viewers updates
+
+## 1.3.12 (2025-08-15)
+
+- Optimization view support primary params filtering
+- Optimization view support support per script defaults
+
+## 1.3.11 (2025-08-08)
+
+- Optimization tool integration fixes
+
 ## 1.3.10 (2025-07-28)
 
 - API updated for 1.26.0
