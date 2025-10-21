@@ -135,10 +135,6 @@ export namespace queries {
 }
 
 export namespace funcs {
-  export async function platesAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<void> {
-    return await grok.functions.call('Curves:PlatesAppTreeBrowser', { treeNode, browseView });
-  }
-
   export async function fitChartCellRenderer(): Promise<any> {
     return await grok.functions.call('Curves:FitChartCellRenderer', {});
   }
@@ -198,6 +194,14 @@ export namespace funcs {
 
   export async function checkFileIsPlate(content: string ): Promise<boolean> {
     return await grok.functions.call('Curves:CheckFileIsPlate', { content });
+  }
+
+  export async function platesApp(): Promise<DG.View> {
+    return await grok.functions.call('Curves:PlatesApp', {});
+  }
+
+  export async function platesAppTreeBrowser(treeNode: any ): Promise<void> {
+    return await grok.functions.call('Curves:PlatesAppTreeBrowser', { treeNode });
   }
 
   export async function getPlateByBarcode(barcode: string ): Promise<any> {

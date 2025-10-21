@@ -277,9 +277,14 @@ static checkFileIsPlate(content: string): boolean {
   return PlateReader.getReader(content) != null;
 }
 
-  // @grok.decorators.app({name: 'Browse', browsePath: 'Plates'})
+  @grok.decorators.app({name: 'Browse', browsePath: 'Plates'})
   static platesApp(): DG.View {
     return platesAppView();
+  }
+
+  @grok.decorators.func()
+  static async platesAppTreeBrowser(treeNode: DG.TreeViewGroup) : Promise<void> {
+    await initPlatesAppTree(treeNode);
   }
 
   @grok.decorators.func()
@@ -293,12 +298,4 @@ static checkFileIsPlate(content: string): boolean {
   static async createDummyPlateData(): Promise<void> {
     await __createDummyPlateData();
   }
-}
-
-
-//name: platesAppTreeBrowser
-//input: dynamic treeNode
-//input: view browseView
-export async function platesAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.BrowsePanel) {
-  await initPlatesAppTree(treeNode);
 }

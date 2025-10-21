@@ -712,14 +712,12 @@ export async function getOrCreateProperty(name: string, type: DG.TYPE, scope: 'p
   return allProperties.find((p) => p.id === newProp.id)!;
 }
 
-
 export async function queryAnalysesGeneric(query: AnalysisQuery): Promise<DG.DataFrame> {
   await initPlates();
 
+
   const whereClauses: string[] = [];
   whereClauses.push(`ar.analysis_type = '${query.analysisName.replace(/'/g, '\'\'')}'`);
-  if (query.group && query.group.length > 0)
-    whereClauses.push(`'${query.group.replace(/'/g, '\'\'')}' = ANY(ar.groups)`);
 
   for (const condition of query.propertyMatchers) {
     const prop = allProperties.find((p) => p.name === condition.property.name);
@@ -736,6 +734,10 @@ export async function queryAnalysesGeneric(query: AnalysisQuery): Promise<DG.Dat
       )`;
     whereClauses.push(existsClause);
   }
+
+  if (query.group && query.group.length > 0)
+    whereClauses.push(`res_pivot.group_combination = ARRAY['${query.group.replace(/'/g, '\'\'')}']`);
+
 
   const finalWhereClause = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
@@ -774,6 +776,7 @@ export async function queryAnalysesGeneric(query: AnalysisQuery): Promise<DG.Dat
     ) as res_pivot
     ${finalWhereClause};
   `;
+
 
   try {
     const df = await grok.data.db.query('Curves:Plates', sqlQuery);
