@@ -28,6 +28,14 @@ export class ParetoOptimizer {
   private toChangeScatterMarkerSize = false;
   private toChange3dScatterMarkerSize = false;
   private toAddSizeCol = false;
+  private updateAxesInput = ui.input.bool('Pareto Axes', {
+    value: true,
+    tooltipText: 'Use optimized variables as scatter plot axes',
+    onValueChanged: (val) => {
+      if (val)
+        this.updateVisualization();
+    },
+  });
 
   constructor(df: DG.DataFrame) {
     this.df = df;
@@ -60,13 +68,18 @@ export class ParetoOptimizer {
     this.view.dockManager.dock(this.pcPlot, DG.DOCK_TYPE.DOWN, gridNode, undefined, RATIO.VIEWER);
     this.toUpdatePcCols = this.numColNames.length > PC_MAX_COLS;
 
-    if (this.numColsCount > 2) {
-      this.scatter3d = DG.Viewer.scatterPlot3d(df);
-      this.view.dockManager.dock(this.scatter3d, DG.DOCK_TYPE.FILL, scatterNode);
-    }
+    // if (this.numColsCount > 2) {
+    // // Disabled the use of 3d scatter due to the bug: https://reddata.atlassian.net/browse/GROK-19071
+    //   this.scatter3d = DG.Viewer.scatterPlot3d(df);
+    //   this.view.dockManager.dock(this.scatter3d, DG.DOCK_TYPE.FILL, scatterNode);
+    // }
 
     this.resultColName = cols.getUnusedName(COL_NAME.OPT);
     this.sizeColName = cols.getUnusedName(COL_NAME.SIZE);
+
+    const ribPanels = this.view.getRibbonPanels();
+    ribPanels.push([this.updateAxesInput.root]);
+    this.view.setRibbonPanels(ribPanels);
   } // constructor
 
   private getLabelColNames(): string[] {
@@ -166,6 +179,7 @@ export class ParetoOptimizer {
       const colOpt = DG.Column.fromStrings(this.resultColName, mask.map((res) => res ? LABEL.OPTIMAL : LABEL.NON_OPT));
       this.df.columns.remove(this.resultColName, true);
       this.df.columns.add(colOpt);
+      this.markResColWithColor(colOpt);
 
       if (this.toAddSizeCol) {
         const sizeCol = DG.Column.fromInt32Array(
@@ -188,6 +202,9 @@ export class ParetoOptimizer {
     plot.setOptions(colorOpt);
 
     // update axis
+    if (!this.updateAxesInput.value)
+      return;
+
     const prevAxisCols = axisNames.map((axis) => plot.getOptions().look[axis]);
 
     let toUpdate = false;
@@ -256,5 +273,20 @@ export class ParetoOptimizer {
     this.updateScatter(this.scatter3d, AXIS_NAMES_3D, colNames, colorOpt);
     this.updatePcPlot(colNames, colorOpt);
     this.setMarkers();
+    this.hideSizeCol();
   } // updateVisualization
+
+  private hideSizeCol(): void {
+    const gridCol = this.view.grid.columns.byName(this.sizeColName);
+
+    if (gridCol !== null)
+      gridCol.visible = false;
+  } // hideSizeCol
+
+  private markResColWithColor(col: DG.Column): void {
+    col.colors.setCategorical({
+      'optimal': '#ff5140',
+      'non-optimal': '#e3e3e3',
+    });
+  } // markResColWithColor
 } // ParetoOptimizer

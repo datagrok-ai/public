@@ -17,7 +17,7 @@ export type NumericFeature = {
 
 export type NumericArray = Float32Array | Float64Array | Int32Array | Uint32Array;
 
-export const DIFFERENCE = 3;
+export const DIFFERENCE = 2;
 export enum RATIO {
   FORM = 0.2,
   VIEWER = 0.5,
