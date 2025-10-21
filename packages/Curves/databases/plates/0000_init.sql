@@ -1,4 +1,38 @@
-CREATE SCHEMA IF NOT EXISTS plates;
+
+
+-- Explains the meaning of a scalar property.
+CREATE TABLE plates.semantic_types (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,    -- e.g., "Molecule", "Cell", "Tissue", "Organism", "Treatment", "Drug", "Image"
+    description TEXT
+);
+
+-- Similar to core.properties or MolTrack.properties
+-- Consider merging
+CREATE TABLE plates.properties (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL, 
+    type TEXT CHECK (type IN ('int', 'double', 'bool', 'datetime', 'string')),
+    scope TEXT NOT NULL CHECK (scope IN ('plate', 'well')), -- whether the property is associated with a given well or is plate-wide
+    nullable BOOLEAN NOT NULL DEFAULT TRUE,   -- used for validation of the submitted data
+    semType TEXT,         -- Semantic type
+    userEditable BOOLEAN, -- Whether the property should be editable via the UI
+    units TEXT,           -- Units of measurement
+    min REAL,             -- Minimum value. Applicable to numerical properties only
+    max REAL,             -- Maximum value. Applicable to numerical properties only
+    step REAL,            -- Step to be used in a slider. Only applies to numerical properties
+    showSlider REAL,      -- Whether a slider appears next to the number input. Applies to numerical columns only
+    showPlusMinus REAL,   -- Whether a plus/minus clicker appears next to the number input. Applies to numerical columns only
+    inputType TEXT,       -- Property input type (see DG.InputType)
+    category TEXT,        -- Corresponding category on the context panel
+    format TEXT,          -- Value format, such as '0.000'
+    choices TEXT,         -- JSON-encoded list of choices. Applicable to string properties only
+    validators TEXT,      -- JSON-encoded list of validators, such as '[">42"]'
+    friendlyName TEXT,    -- Custom field friendly name shown in [PropertyGrid]
+    options JSONB,        -- Additional options
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 
 CREATE TABLE plates.templates (
     id SERIAL PRIMARY KEY,
@@ -6,22 +40,6 @@ CREATE TABLE plates.templates (
     description TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     created_by UUID
-);
-
-CREATE TABLE plates.properties (
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
-    type TEXT NOT NULL CHECK (type IN ('int', 'double', 'bool', 'datetime', 'string', 'jsonb')),
-    scope TEXT NOT NULL CHECK (scope IN ('plate', 'well')),
-    nullable BOOLEAN NOT NULL DEFAULT TRUE,
-    semType TEXT,
-    userEditable BOOLEAN DEFAULT TRUE,
-    units TEXT,
-    min REAL,
-    max REAL,
-    choices TEXT,
-    friendlyName TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE plates.template_plate_properties (
@@ -51,15 +69,17 @@ CREATE TABLE plates.property_allowed_values (
 );
 
 -- Plate types
+-- maximum volume per well, material, shape (round bottom, conical).
 CREATE TABLE plates.plate_types (
     id SERIAL PRIMARY KEY,
     name TEXT NOT NULL,
     rows SMALLINT NOT NULL,
     cols SMALLINT NOT NULL,
-    max_volume REAL
+    max_volume REAL --microliters
 );
-
+ 
 -- Plates
+
 CREATE TABLE plates.plates (
     id SERIAL PRIMARY KEY,
     plate_type_id INTEGER NOT NULL REFERENCES plates.plate_types(id),
@@ -83,12 +103,14 @@ CREATE TABLE plates.analysis_runs (
 CREATE TABLE plates.plate_details (
     plate_id INTEGER NOT NULL REFERENCES plates.plates(id),
     property_id INTEGER NOT NULL REFERENCES plates.properties(id),
+
     value_datetime TIMESTAMP WITH TIME ZONE,
     value_uuid uuid,
     value_num REAL,
     value_string TEXT,
     value_bool BOOLEAN,
     value_jsonb JSONB,
+
     analysis_run_id INTEGER REFERENCES plates.analysis_runs(id) ON DELETE SET NULL
 );
 
@@ -137,17 +159,23 @@ CREATE TABLE plates.analysis_results (
     value_jsonb JSONB 
 );
 
--- Insert initial data
-INSERT INTO plates.plate_types (id, name, rows, cols) VALUES 
-    (1, 'Generic 96 wells', 8, 12),
-    (2, 'Generic 384 wells', 16, 24),
-    (3, 'Generic 1536 wells', 32, 48);
+
+INSERT INTO plates.semantic_types (name) values ('Molecule');
+INSERT INTO plates.semantic_types (name) values ('Solvent');
+INSERT INTO plates.semantic_types (name) values ('URL');
+INSERT INTO plates.semantic_types (name) values ('Image');
 
 INSERT INTO plates.properties (id, name, type, units, scope) VALUES 
     (1000, 'Volume', 'double', 'uL', 'well'),
     (1001, 'Concentration', 'double', 'uM', 'well'),
     (1002, 'Sample', 'string', 'well'),
     (1003, 'Well Role', 'string', 'well');
+
+-- Insert initial data
+INSERT INTO plates.plate_types (id, name, rows, cols) VALUES 
+    (1, 'Generic 96 wells', 8, 12),
+    (2, 'Generic 384 wells', 16, 24),
+    (3, 'Generic 1536 wells', 32, 48);
 
 INSERT INTO plates.property_allowed_values (property_id, value_string)
 VALUES
