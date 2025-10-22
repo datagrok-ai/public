@@ -31,21 +31,38 @@ category('Dapi: functions calls', async () => {
   }, {skipReason: 'GROK-15119'});
 
   test('save with DF', async () => {
+    console.log('[save with DF]: Receiving func dummyDataFrameFunction');
     const funcWithDf: DG.Func = await grok.functions.eval('ApiTests:dummyDataFrameFunction');
+    console.log('[save with DF]: Received func dummyDataFrameFunction');
     const inputTable: DG.DataFrame = grok.data.demo.demog(30);
+    console.log('[save with DF]: Saving input table');
     await grok.dapi.tables.uploadDataFrame(inputTable); // save input df before calling function
+    console.log('[save with DF]: Saved input table');
+
 
     const funcCall = await funcWithDf.prepare({'table': inputTable}).call();
-    await grok.dapi.tables.uploadDataFrame(funcCall.outputs['tableOut']); // save output df separately
 
+    console.log('[save with DF]: Saving output table');
+    await grok.dapi.tables.uploadDataFrame(funcCall.outputs['tableOut']); // save output df separately
+    console.log('[save with DF]: Saved output table');
+
+    console.log('[save with DF]: Saving func call');
     const savedFuncCall = await grok.dapi.functions.calls.save(funcCall); // save call after that
+    console.log('[save with DF]: Saved func call');
+
+    console.log('[save with DF]: Finding func call');
     const loadedFuncCall = await grok.dapi.functions.calls.find(savedFuncCall.id);
+    console.log('[save with DF]: Found');
 
     const loadedInputTableId = loadedFuncCall.inputs['table'];
     const loadedOutputTableId = loadedFuncCall.outputs['tableOut'];
-
+    console.log('[save with DF]: Fetching input table');
     expectTable(funcCall.inputs['table'], await grok.dapi.tables.getTable(loadedInputTableId));
+    console.log('[save with DF]: Fetched input table');
+
+    console.log('[save with DF]: Fetching output table');
     expectTable(funcCall.outputs['tableOut'], await grok.dapi.tables.getTable(loadedOutputTableId));
+    console.log('[save with DF]: Fetched output table');
   }, {stressTest: true});
 
   test('save with fileInfo', async () => {
