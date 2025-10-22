@@ -46,6 +46,20 @@ export class FormsViewer extends DG.JsViewer {
     this.render();
   }
 
+  protected getRendererSize(renderer: DG.GridCellRenderer): DG.Point {
+    let width = renderer.defaultWidth;
+    let height = renderer.defaultHeight;
+    if (!width || !height)
+      return this.getMoleculeSize();
+
+    switch (this.moleculeSize) {
+      case 'normal': return new DG.Point(width, height);
+      case 'large': return new DG.Point(Math.floor(width * 1.5), Math.floor(height * 1.5));
+      case 'small':
+      default: return new DG.Point(Math.floor(width * 0.66), Math.floor(height * 0.66));
+    }
+  }
+
   protected getMoleculeSize(): DG.Point {
     switch (this.moleculeSize) {
       case 'normal': return new DG.Point(200, 100);
@@ -248,20 +262,20 @@ export class FormsViewer extends DG.JsViewer {
           const grid = this.getGrid();
           // for molecules, use the gridCol renderer instead of inputBase
           const col = this.dataFrame.col(name)!;
-          if (col.semType === DG.SEMTYPE.MOLECULE && grid?.col(name)?.renderer) {
-            const molSize = this.getMoleculeSize();
+          if (col.semType && grid?.col(name)?.renderer) {
             const renderer = grid.col(name)!.renderer!;
+            const rendererSize = this.getRendererSize(renderer);
             const gridCell = DG.GridCell.fromColumnRow(grid, name, grid.tableRowToGrid(row));
-            const canvas = ui.canvas(molSize.x, molSize.y);
-            canvas.width = molSize.x * window.devicePixelRatio;
-            canvas.height = molSize.y * window.devicePixelRatio;
+            const canvas = ui.canvas(rendererSize.x, rendererSize.y);
+            canvas.width = rendererSize.x * window.devicePixelRatio;
+            canvas.height = rendererSize.y * window.devicePixelRatio;
             const ctx = canvas.getContext('2d')!;
             // ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
             
             canvas.setAttribute('column', name);
 
-            gridCell.render({context: ctx, bounds: new DG.Rect(0, 0, molSize.x, molSize.y)});
+            gridCell.render({context: ctx, bounds: new DG.Rect(0, 0, rendererSize.x, rendererSize.y)});
             resDiv = canvas;
             resDiv.style.background = 'white'; // fixes before changes of viertual view not removing old items
             resDiv.onclick = (e: MouseEvent) => {

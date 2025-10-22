@@ -1,5 +1,9 @@
 # utils changelog
 
+## 4.6.11 (2025-10-22)
+
+Forms viewers: Enable custom renderers for all semantic types
+
 ## 4.6.10 (2025-10-21)
 
 Froms viewers: extract coloring from dataframe instead of grid
