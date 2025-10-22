@@ -1,5 +1,9 @@
 # Chem changelog
 
+## 1.16.7 (2025-10-22)
+
+* Fix compatibility issues with platform version 1.25.3
+
 ## 1.16.6 (2025-10-16)
 
 ### Bug fixes
