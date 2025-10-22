@@ -129,18 +129,29 @@ export class ParetoOptimizer {
       const name = col.name;
 
       const typeInp = ui.input.choice(name, {
-        value: feature.optType,
-        nullable: false,
-        items: [OPT_TYPE.MIN, OPT_TYPE.MAX],
+        value: feature.toOptimize ? feature.optType : null,
+        nullable: true,
+        items: [null, OPT_TYPE.MIN, OPT_TYPE.MAX],
         onValueChanged: (val) => {
-          feature.optType = val;
+          if (val == null)
+            feature.toOptimize = false;
+          else {
+            feature.toOptimize = true;
+            feature.optType = val;
+          }
+
           this.computeParetoFront();
           this.updateVisualization();
         },
       });
-      ui.tooltip.bind(typeInp.input, 'Type of optimization');
+      ui.tooltip.bind(typeInp.input, () => {
+        if (feature.toOptimize)
+          return ui.markdown(`M${feature.optType.slice(1)} **${name}** during Pareto optimization`);
 
-      typeInp.input.hidden = !feature.toOptimize;
+        return ui.markdown(`Ignore **${name}** during Pareto optimization`);
+      });
+
+      //typeInp.input.hidden = !feature.toOptimize;
 
       const enableInp = ui.input.toggle('', {
         value: feature.toOptimize,
@@ -155,7 +166,7 @@ export class ParetoOptimizer {
 
       enableInp.root.classList.add('pareto-switch-input');
 
-      typeInp.root.insertBefore(enableInp.root, typeInp.captionLabel);
+      //typeInp.root.insertBefore(enableInp.root, typeInp.captionLabel);
 
       form.append(typeInp.root);
       this.features.set(name, feature);

@@ -19,7 +19,7 @@ export type NumericArray = Float32Array | Float64Array | Int32Array | Uint32Arra
 
 export const DIFFERENCE = 2;
 export enum RATIO {
-  FORM = 0.2,
+  FORM = 0.15,
   VIEWER = 0.5,
 };
 
