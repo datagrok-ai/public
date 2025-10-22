@@ -7,7 +7,7 @@ import {_package} from '../package';
 import {IFitChartData, sigmoid} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 
 import wu from 'wu';
-import {FitConstants} from './const';
+import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 
 /** Returns random number from the interval */
 function rnd(min: number, max: number): number {
