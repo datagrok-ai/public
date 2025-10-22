@@ -3,12 +3,12 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
-import { mergeChartOptions, mergeSeries } from './fit-renderer';
-import { getOrCreateParsedChartData, mergeProperties } from './fit-renderer';
-import { FitChartData, fitChartDataProperties, IFitChartData, IFitChartOptions } from '@datagrok-libraries/statistics/src/fit/fit-curve';
-import { debounce } from 'rxjs/operators';
-import { interval, merge } from 'rxjs';
-import { FitConstants } from './const';
+import {mergeChartOptions, mergeSeries} from './fit-renderer';
+import {getOrCreateParsedChartData, mergeProperties} from './fit-renderer';
+import {FitChartData, fitChartDataProperties, IFitChartData, IFitChartOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {debounce} from 'rxjs/operators';
+import {interval, merge} from 'rxjs';
+import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 
 const ERROR_CLASS = 'd4-viewer-error';
 
@@ -62,17 +62,17 @@ export class MultiCurveViewer extends DG.JsViewer {
       this.render();
     });
 
-    this.curvesColumnNames = this.addProperty('curvesColumnNames', DG.TYPE.COLUMN_LIST, [], { semType: FitConstants.FIT_SEM_TYPE });
-    this.legendColumnName = this.addProperty('legendColumnName', DG.TYPE.STRING, '', { description: 'Column to be used for curves names' });
+    this.curvesColumnNames = this.addProperty('curvesColumnNames', DG.TYPE.COLUMN_LIST, [], {semType: FitConstants.FIT_SEM_TYPE});
+    this.legendColumnName = this.addProperty('legendColumnName', DG.TYPE.STRING, '', {description: 'Column to be used for curves names'});
 
-    this.showSelectedRowsCurves = this.bool('showSelectedRowsCurves', true, { description: 'Adds curves from the selected rows' });
+    this.showSelectedRowsCurves = this.bool('showSelectedRowsCurves', true, {description: 'Adds curves from the selected rows'});
     this.showCurrentRowCurve = this.bool('showCurrentRowCurve', true);
     this.showMouseOverRowCurve = this.bool('showMouseOverRowCurve', true);
     this.mergeColumnSeries = this.bool('mergeColumnSeries', false);
     this.showOutliers = this.bool('showOutliers', true);
 
     for (const p of fitChartDataProperties)
-      this.addProperty(p.name === 'mergeSeries' ? 'mergeCellSeries' : p.name, p.propertyType, p.defaultValue, { ...p.options, showSlider: false });
+      this.addProperty(p.name === 'mergeSeries' ? 'mergeCellSeries' : p.name, p.propertyType, p.defaultValue, {...p.options, showSlider: false});
   }
 
   static fromChartData(chartData: IFitChartData): MultiCurveViewer {

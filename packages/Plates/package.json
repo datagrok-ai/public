@@ -1,8 +1,8 @@
 {
-  "name": "@datagrok/curves",
-  "friendlyName": "Curves",
-  "version": "1.10.12",
-  "description": "Curves provides support for fitted curves (such as dose-response curves), including in-grid rendering, storing charts in cells, interactivity, and automatic fitting.",
+  "name": "@datagrok/plates",
+  "friendlyName": "Plates",
+  "version": "0.0.1",
+  "description": "Plates package for Datagrok platform - tools for working with microplates, plate layouts, and plate data.",
   "author": {
     "name": "Dmytro Kovalyov",
     "email": "dkovalyov@datagrok.ai"
@@ -23,6 +23,7 @@
     "rxjs": "^6.5.5"
   },
   "devDependencies": {
+    "@datagrok/curves": "^1.10.12",
     "css-loader": "^5.0.0",
     "datagrok-tools": "^4.14.55",
     "source-map-loader": "^4.0.1",
@@ -55,7 +56,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
-    "directory": "packages/Curves"
+    "directory": "packages/Plates"
   },
   "category": "Visualizations"
 }
