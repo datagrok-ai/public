@@ -65,6 +65,7 @@ services:
             "proxyRequestTimeout": 60000
           },
           "queueSettings": {
+            "useQueue": true,
             "amqpHost": "rabbitmq",
             "amqpPassword": "guest",
             "amqpPort": 5672,
