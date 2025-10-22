@@ -287,6 +287,8 @@ services:
 
   db:
     image: postgres:12.13
+    tmpfs:
+      - /dev/shm:size=2g
     stop_grace_period: 2m
     deploy:
       replicas: 1
