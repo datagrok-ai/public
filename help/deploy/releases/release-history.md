@@ -27,7 +27,7 @@ See also:
 
 * Added support for SAML authentication
 * Introduced support for user account impersonation in Google Cloud Storage
-* Projects: Added the ability to use custom scripts when creating projects with data synchronization
+* Projects: Added support for saving projects created via custom scripts with data synchronization
 
 ## 2025-07-25 Datagrok 1.26.0 release
 
