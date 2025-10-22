@@ -9,6 +9,20 @@ keywords:
 
 See details: [issues](release-history.md), [plugin changelogs](plugins/plugins.mdx), [JS API compatibility](compatibility/compatibility.mdx)
 
+## 1.26.5 || 2025-Oct
+
+### Developer updates
+
+* Added support for SAML authentication
+* Introduced support for user account impersonation in Google Cloud Storage
+* Projects: Added support for saving projects created via custom scripts with data synchronization
+
+## 1.26 || 2025-Jul
+
+### Developer updates
+
+* **Breaking changes**: This release introduces non-backward-compatible database changes. You can upgrade to version 1.26.0 automatically; however, once you migrate the database, older versions (including 1.25) will no longer be compatible. In case you need to roll back to 1.25.N, you must manually revert the changes or restore a pre-upgrade backup.
+
 ## 1.25 || 2025-Mar
 
 ### Navigation and usability 
