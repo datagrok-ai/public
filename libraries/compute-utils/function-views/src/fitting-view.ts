@@ -1439,7 +1439,17 @@ export class FittingView {
         maxContext[name] = value;
       }
     }
-    return inputsBounds;
+
+    // use original order
+    const inputsBoundsOrdered: Record<string, ValueBoundsData> = {};
+    const variedInputs = this.getFittedInputs();
+    const fixedInputs = this.getFixedInputs();
+
+    for (const name of [...fixedInputs, ...variedInputs]) {
+      inputsBoundsOrdered[name] = inputsBounds[name];
+    }
+
+    return inputsBoundsOrdered;
   }
 
   private makeOptimizerOutputsConfig(): OutputTargetItem[] {
