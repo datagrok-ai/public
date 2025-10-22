@@ -2,7 +2,7 @@
   "name": "@datagrok/plates",
   "friendlyName": "Plates",
   "version": "0.0.1",
-  "description": "Plates package for Datagrok platform - tools for working with microplates, plate layouts, and plate data.",
+  "description": "Assay plates: ingestion, storage, and analysis",
   "author": {
     "name": "Dmytro Kovalyov",
     "email": "dkovalyov@datagrok.ai"
