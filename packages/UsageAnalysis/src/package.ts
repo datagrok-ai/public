@@ -136,7 +136,7 @@ export class PackageFunctions {
       for (const match of matches) {
         const ticket = match[0];
         if (issueIdToIdx.has(i))
-          issueIdToIdx.get(i).add(ticket);
+          issueIdToIdx.get(i)!.add(ticket);
         else
           issueIdToIdx.set(i, new Set<string>([ticket]));
         issueIdsOrKeys.add(ticket);
@@ -144,14 +144,14 @@ export class PackageFunctions {
     }
     const { issues } = await grok.functions.call('JiraConnect:getJiraTicketsBulk',
         { 'issueIdsOrKeys': [...issueIdsOrKeys], 'fields': ['status', 'priority']});
-    const resultIssuesInfo = new Map(issues.map(issue => [issue.key, issue]));
+    const resultIssuesInfo = new Map(issues.map((issue: any) => [issue.key, issue]));
 
     for (let i = 0; i < n; i++) {
       if (!issueIdToIdx.has(i))
         continue;
 
-      const resultStatuses: { status: string; severity: string }[] = [...issueIdToIdx.get(i)].map((k) => {
-        const issueData = resultIssuesInfo.get(k);
+      const resultStatuses: { status: string; severity: string }[] = [...issueIdToIdx.get(i)!].map((k) => {
+        const issueData: any = resultIssuesInfo.get(k);
         return issueData ? { status: issueData.fields.status.name, severity: issueData.fields.priority.name }
             : null;
       }).filter((s): s is { status: string; severity: string } => s !== null);
@@ -313,7 +313,7 @@ export class PackageFunctions {
     const parent = grok.functions.getCurrentCall();
     const app = new ReportingApp(parent);
     app.init(path).catch((e) => console.log(e));
-    return app.empty;
+    return app.view;
   }
 
 

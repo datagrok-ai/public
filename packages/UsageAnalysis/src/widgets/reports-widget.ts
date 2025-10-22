@@ -26,7 +26,7 @@ export class ReportsWidget extends DG.Widget {
     });
     this.root.appendChild(ui.box(ui.div(link, {style: {display: 'flex', justifyContent: 'end', alignItems: 'center', height: '40px', paddingRight: '8px'}}), {style: {maxHeight: '40px'}}));
     this.root.appendChild(ui.waitBox(async () => {
-      const result: DG.UserReport[] = await grok.dapi.reports.include('reporter').list({pageNumber: 1, pageSize: 20});
+      const result: DG.UserReport[] = await grok.dapi.reports.include('reporter').order('createdOn').list({pageNumber: 1, pageSize: 20});
       const items = [];
       for (let report of result) {
         // todo: add css instead of inline styles
