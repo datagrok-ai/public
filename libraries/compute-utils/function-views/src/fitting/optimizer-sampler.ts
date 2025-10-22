@@ -90,7 +90,7 @@ export function makeBoundsChecker(inputs: Record<string, ValueBoundsData>, varie
       const val = point[pos];
       const min = bound.bottom.type === 'value' ? bound.bottom.value : evalBoundFormula(bound.bottom, context);
       const max = bound.top.type === 'value' ? bound.top.value : evalBoundFormula(bound.top, context);
-      if (max == null || min == null || min > max)
+      if (max == null || min == null || val == null || min > max || val < min || val > max)
         return false;
       context[name] = val;
     }
