@@ -9,6 +9,8 @@ import {Plate} from '../plate/plate';
 import * as jStat from 'jstat';
 import {excelToNum, numToExcel} from '../plate/utils';
 import { PlateWidget } from '../plate/plate-widget/plate-widget';
+import { getDoseResponseSeries } from '../plate/analyses/drc/utils';
+import { inspectSeries } from '../fit/fit-inspection';
 // import {PlateWidget} from '../plate/plate-widget';
 
 
@@ -67,8 +69,8 @@ category('plates', () => {
     const lcMean = jStat.mean(plate.fieldValues('readout', {match: {'layout': 'Low Control'}}));
     plate.normalize('readout', (value) => (hcMean - value) / (hcMean - lcMean));
 
-    const drc = plate.doseResponseSeries({concentration: 'concentration', value: 'readout'}); // if we get
-    Plate.inspectSeries(drc['Compound 1'], '4pl-regression');
+    const drc = getDoseResponseSeries(plate); // if we get
+    inspectSeries(drc['Compound 1'], '4pl-regression');
   });
 
   test('render', async () => {

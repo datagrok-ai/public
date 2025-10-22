@@ -3,7 +3,6 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {Plate} from '../plate';
-// import {PlateWidget} from '../plate-widget';
 import {BaseAnalysisView} from './base-analysis-view';
 import {
   AnalysisQuery,

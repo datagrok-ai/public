@@ -8,7 +8,7 @@ import {plateTemplates, plateTypes} from '../../../plates-crud';
 import {MAPPING_SCOPES} from '../../shared/scopes';
 import './template-panel.css';
 import {TargetProperty} from '../mapping-editor/mapping-editor';
-import { createDynamicMappingRow } from '../../shared/mapping-utils';
+import {createDynamicMappingRow} from '../../shared/mapping-utils';
 function createFormRow(label: string | HTMLElement, input: DG.InputBase<any> | HTMLElement): HTMLElement {
   const labelEl = typeof label === 'string' ? ui.divText(label, 'ui-label') : label;
   const inputEl = (input instanceof DG.InputBase) ? input.root : input;

@@ -1,43 +1,44 @@
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {Subscription} from 'rxjs';
-import {FitConstants} from '../../../fit/const';
-import {FitCellOutlierToggleArgs} from '../../../fit/fit-renderer';
-import {IFitPoint, FitMarkerType} from '@datagrok-libraries/statistics/src/fit/fit-curve';
-import {Plate} from '../../plate';
+import { Subscription } from 'rxjs';
+import { FitConstants } from '../../../fit/const';
+import { FitCellOutlierToggleArgs } from '../../../fit/fit-renderer';
+import { IFitPoint, FitMarkerType } from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import { Plate } from '../../plate';
 import { PlateWidget } from '../../plate-widget/plate-widget';
-// import {PlateWidget} from '../../plate-widget';
+import { getDoseResponseSeries } from './utils';
 
 export class DrcAnalysisCoordinator {
   private subs: Subscription[] = [];
   private prevSelection: {
-        seriesIndex: number;
-        pointIndex: number;
-        markerType: FitMarkerType;
-        markerSize: number;
-        markerColor: string;
-        curvesGridCell?: DG.GridCell;
-    } | null = null;
+    seriesIndex: number;
+    pointIndex: number;
+    markerType: FitMarkerType;
+    markerSize: number;
+    markerColor: string;
+    curvesGridCell?: DG.GridCell;
+  } | null = null;
 
   constructor(
-        private plate: Plate,
-        private plateWidget: PlateWidget,
-        private curvesGrid: DG.Grid,
-        private curveCol: DG.Column,
-        private seriesVals: Array<[string, any]>,
-        private mappingOptions: {
-            roleName: string,
-            concentrationName: string,
-            valueName: string,
-        }
+    private plate: Plate,
+    private plateWidget: PlateWidget,
+    private curvesGrid: DG.Grid,
+    private curveCol: DG.Column,
+    private seriesVals: Array<[string, any]>,
+    private mappingOptions: {
+      roleName: string,
+      concentrationName: string,
+      valueName: string,
+    }
   ) {
     this.listenToPlateWidgetEvents();
     this.listenToGridEvents();
   }
 
   public regenerateCurves(): void {
-    const newSeriesData = this.plate.doseResponseSeries({
+
+    const newSeriesData = getDoseResponseSeries(this.plate, {
       value: this.mappingOptions.valueName,
       concentration: this.mappingOptions.concentrationName,
       groupBy: this.mappingOptions.roleName,

@@ -14,8 +14,6 @@ import {
 } from './utils';
 import type ExcelJS from 'exceljs';
 import {findPlatePositions, getPlateFromSheet} from './excel-plates';
-import {FitFunctionType, FitSeries} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
-import {inspectCurve} from '../fit/fit-renderer';
 import {plateDbColumn, allProperties, plateTypes} from '../plates/plates-crud';
 import {Subject} from 'rxjs';
 import { IPlateWellValidator } from './plate-well-validators';
@@ -43,16 +41,7 @@ export interface IPlateWellFilter {
   exclude?: {[key: string]: any};
 }
 
-interface ISeriesData {
-  x: number[];
-  y: number[];
-}
-
 export const PLATE_OUTLIER_WELL_NAME = 'Outlier';
-
-export function randomizeTableId() {
-  return `${Math.random()}-${Math.random()}-${Math.random()}-${Math.random()}-${Math.random()}-${Math.random()}-${Math.random()}-${Math.random()}`;
-}
 
 /** Represents experimental plate (typically 96-, 384-, or 1536-well assay plates) */
 export class Plate {
@@ -268,7 +257,6 @@ export class Plate {
     if (!platePositions.every((pc) => pc.rows == p0.rows || pc.cols == p0.cols))
       throw new Error(`Plate sizes differ in "${name}"`);
     return Plate.fromPlates(platePositions.map((p) => getPlateFromSheet(p)), name);
-    return Plate.fromTableByRow(grok.data.demo.wells(96));
   }
 
   static demo(): Plate {
@@ -367,66 +355,6 @@ export class Plate {
 
   getLayerNames(): string[] {
     return this.data.columns.names();
-  }
-
-  static inspectSeriesByName(records: Record<string, FitSeries>, seriesName: string, fitFunctionName: FitFunctionType): void {
-    if (!seriesName || !fitFunctionName)
-      return;
-    Plate.inspectSeries(records[seriesName], fitFunctionName);
-  }
-
-  static inspectSeries(series: FitSeries, fitFunctionName: FitFunctionType) {
-    const seriesName = series?.name ?? 'Series';
-    if (!series || !fitFunctionName)
-      return;
-    const curveCol = DG.Column.string('Curve', 1);
-    curveCol.set(0, JSON.stringify({
-      chartOptions: {
-        logX: true,
-        title: seriesName,
-      },
-      series: [{...series, fit: undefined, fitFunction: fitFunctionName, clickToToggle: true, droplines: ['IC50'], name: seriesName}],
-    }), false);
-    const df = DG.DataFrame.fromColumns([curveCol]);
-    df.name = seriesName;
-    df.id = randomizeTableId();
-    curveCol.semType = 'fit';
-    curveCol.tags[DG.Tags.CellRenderer] = 'fit';
-    const grid = DG.Viewer.grid(df);
-    const gridCell = grid.cell('Curve', 0);
-    grok.shell.windows.showContextPanel = true;
-    grok.shell.o = gridCell;
-    inspectCurve(gridCell, {width: 480, height: 370}, true);
-  }
-
-  doseResponseSeries(options?: IPlateWellFilter & { concentration?: string; value?: string, groupBy?: string}): Record<string, FitSeries> {
-    const valueOptions = {includeEmpty: options?.includeEmpty ?? false, exclude: options?.exclude ?? {'role': ['High Control', 'Low Control']}};
-    const concKey = options?.concentration ?? 'concentration';
-    const valueKey = options?.value ?? 'value';
-    const values = this.values([concKey, valueKey, ...(options?.groupBy ? [options.groupBy] : [])], valueOptions);
-
-    const series: Record<string, ISeriesData & Record<string, any>> = {};
-    for (const v of values) {
-      const group = options?.groupBy ? v[options.groupBy] : '0';
-      if (!series[group])
-        series[group] = {x: [], y: [], meta: [], outlier: []};
-      series[group].x.push(v[concKey]);
-      series[group].y.push(v[valueKey]);
-      series[group].meta.push(v.innerDfRow);
-
-      const isOutlier = this._isOutlier(v.innerDfRow);
-      series[group].outlier.push(isOutlier);
-    }
-
-    const seriesPointCounts = Object.fromEntries(
-      Object.entries(series).map(([key, value]) => [key, value.x.length])
-    );
-
-    return Object.fromEntries(Object.entries(series).map(([k, v]) => {
-      const fitSeries = new FitSeries(v.x.map((_, i) => ({x: v.x[i], y: v.y[i], outlier: v.outlier[i], meta: v.meta[i]})).sort((a, b) => a.x - b.x));
-      fitSeries.name = k;
-      return [k, fitSeries];
-    }));
   }
 
   merge(plate: Plate) {

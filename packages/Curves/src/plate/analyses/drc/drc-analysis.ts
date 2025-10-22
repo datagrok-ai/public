@@ -1,15 +1,15 @@
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {Plate} from '../../plate';
-// import {PlateWidget} from '../../plate-widget';
-import {AnalysisBase, IAnalysisProperty} from '../base-analysis';
-import {AnalysisRequiredFields} from '../../../plates/views/components/analysis-mapping/analysis-mapping-panel';
-import {FIT_FUNCTION_4PL_REGRESSION, IFitSeries} from '@datagrok-libraries/statistics/src/fit/fit-curve';
-import {DrcAnalysisCoordinator} from './drc-coordinator';
-import {Subscription} from 'rxjs';
+import { Plate } from '../../plate';
+import { AnalysisBase, IAnalysisProperty } from '../base-analysis';
+import { AnalysisRequiredFields } from '../../../plates/views/components/analysis-mapping/analysis-mapping-panel';
+import { FIT_FUNCTION_4PL_REGRESSION, IFitSeries } from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import { DrcAnalysisCoordinator } from './drc-coordinator';
+import { Subscription } from 'rxjs';
 import './../plate-analyses.css';
-import {PlateWidget} from '../../plate-widget/plate-widget';
+import { PlateWidget } from '../../plate-widget/plate-widget';
+import { getDoseResponseSeries } from './utils';
 
 export class DrcAnalysis extends AnalysisBase {
   readonly name: string = 'DRC';
@@ -19,16 +19,16 @@ export class DrcAnalysis extends AnalysisBase {
   private plateSubscription?: Subscription;
 
   parameters: IAnalysisProperty[] = [
-    {name: 'Normalize', type: DG.TYPE.BOOL, defaultValue: true, category: 'Parameter'},
+    { name: 'Normalize', type: DG.TYPE.BOOL, defaultValue: true, category: 'Parameter' },
   ];
   outputs: IAnalysisProperty[] = [
-    {name: 'Curve', type: DG.TYPE.STRING, category: 'Output'},
-    {name: 'IC50', type: DG.TYPE.FLOAT, category: 'Output'},
-    {name: 'Hill Slope', type: DG.TYPE.FLOAT, category: 'Output'},
-    {name: 'R Squared', type: DG.TYPE.FLOAT, category: 'Output'},
-    {name: 'Min', type: DG.TYPE.FLOAT, category: 'Output'},
-    {name: 'Max', type: DG.TYPE.FLOAT, category: 'Output'},
-    {name: 'AUC', type: DG.TYPE.FLOAT, category: 'Output'},
+    { name: 'Curve', type: DG.TYPE.STRING, category: 'Output' },
+    { name: 'IC50', type: DG.TYPE.FLOAT, category: 'Output' },
+    { name: 'Hill Slope', type: DG.TYPE.FLOAT, category: 'Output' },
+    { name: 'R Squared', type: DG.TYPE.FLOAT, category: 'Output' },
+    { name: 'Min', type: DG.TYPE.FLOAT, category: 'Output' },
+    { name: 'Max', type: DG.TYPE.FLOAT, category: 'Output' },
+    { name: 'AUC', type: DG.TYPE.FLOAT, category: 'Output' },
   ];
 
   override formatResultsForGrid(rawResults: DG.DataFrame): DG.DataFrame {
@@ -88,16 +88,16 @@ export class DrcAnalysis extends AnalysisBase {
 
   getRequiredFields(): AnalysisRequiredFields[] {
     return [
-      {name: 'Activity', required: true, description: 'Response/activity values'},
-      {name: 'Concentration', required: true, description: 'Concentration/dose values'},
-      {name: 'SampleID', required: true, description: 'Sample/compound identifiers'}
+      { name: 'Activity', required: true, description: 'Response/activity values' },
+      { name: 'Concentration', required: true, description: 'Concentration/dose values' },
+      { name: 'SampleID', required: true, description: 'Sample/compound identifiers' }
     ];
   }
   getSearchableProperties(): IAnalysisProperty[] {
     return this.outputs;
   }
 
-  private async run(plate: Plate, params: Record<string, any>, mappings: Map<string, string>): Promise<{resultsDf: DG.DataFrame, seriesVals: Array<[string, any]>, finalValueCol: string} | null> {
+  private async run(plate: Plate, params: Record<string, any>, mappings: Map<string, string>): Promise<{ resultsDf: DG.DataFrame, seriesVals: Array<[string, any]>, finalValueCol: string } | null> {
     const sampleColName = mappings.get('SampleID')!;
     const concentrationColName = mappings.get('Concentration')!;
     const activityColName = mappings.get('Activity')!;
@@ -111,7 +111,7 @@ export class DrcAnalysis extends AnalysisBase {
 
     if (params['Normalize'] && controlColumns.every((c) => plate.data.col(sampleColName)!.categories.includes(c))) {
       const [lStats, hStats] = controlColumns
-        .map((colName) => plate.getStatistics(activityColName, ['mean', 'std'], {match: {[sampleColName]: colName}}))
+        .map((colName) => plate.getStatistics(activityColName, ['mean', 'std'], { match: { [sampleColName]: colName } }))
         .sort((a, b) => a.mean - b.mean);
 
       if (hStats.mean !== lStats.mean) {
@@ -120,7 +120,7 @@ export class DrcAnalysis extends AnalysisBase {
       }
     }
 
-    const series = plate.doseResponseSeries({
+    const series = getDoseResponseSeries(plate, {
       value: finalValueCol,
       concentration: concentrationColName,
       groupBy: sampleColName
@@ -130,7 +130,7 @@ export class DrcAnalysis extends AnalysisBase {
     if (seriesVals.length === 0 || !seriesVals.some(([_, s]) => s.points.length > 1))
       return null;
 
-    const minMax = normed ? {minY: -10, maxY: 110} : {};
+    const minMax = normed ? { minY: -10, maxY: 110 } : {};
     const roleCol = DG.Column.string(sampleColName, seriesVals.length).init((i) => seriesVals[i][0]);
     const curveCol = DG.Column.string('Curve', seriesVals.length);
     curveCol.semType = 'fit';
@@ -163,29 +163,29 @@ export class DrcAnalysis extends AnalysisBase {
 
     const resultsDf = DG.DataFrame.fromColumns([roleCol, curveCol]);
 
-    const statsToAdd: Record<string, string> = {'interceptX': 'IC50', 'slope': 'Hill Slope', 'rSquared': 'R Squared', 'bottom': 'Min', 'top': 'Max', 'auc': 'AUC'};
+    const statsToAdd: Record<string, string> = { 'interceptX': 'IC50', 'slope': 'Hill Slope', 'rSquared': 'R Squared', 'bottom': 'Min', 'top': 'Max', 'auc': 'AUC' };
 
     for (const [statName, colName] of Object.entries(statsToAdd)) {
       if (this.outputs.some((o) => o.name === colName)) {
-        const funcParams = {table: resultsDf, colName: 'Curve', propName: statName, seriesNumber: 0};
-        const col = (DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(funcParams).callSync({processed: false})).getOutputParamValue();
+        const funcParams = { table: resultsDf, colName: 'Curve', propName: statName, seriesNumber: 0 };
+        const col = (DG.Func.find({ name: 'addStatisticsColumn' })[0].prepare(funcParams).callSync({ processed: false })).getOutputParamValue();
         col.name = colName;
       }
     }
     if (resultsDf.col('IC50'))
-        resultsDf.col('IC50')!.meta.format = 'scientific';
+      resultsDf.col('IC50')!.meta.format = 'scientific';
 
-    return {resultsDf, seriesVals, finalValueCol};
+    return { resultsDf, seriesVals, finalValueCol };
   }
 
-  createView(plate: Plate, plateWidget: PlateWidget, currentMappings: Map<string, string>, onMap: (t: string, s: string) => void, onUndo: (t: string) => void, onRerender?:()=>void): HTMLElement {
+  createView(plate: Plate, plateWidget: PlateWidget, currentMappings: Map<string, string>, onMap: (t: string, s: string) => void, onUndo: (t: string) => void, onRerender?: () => void): HTMLElement {
     return this._createStandardMappingView(plate, currentMappings, onMap, onUndo,
       (mappedPlate, mappedMappings) => {
         this.coordinator?.destroy();
         this.plateSubscription?.unsubscribe();
 
         const container = ui.divV([ui.loader()], 'assay-plates--drc-analysis-container');
-        const params = {'Normalize': this.parameters.find((p) => p.name === 'Normalize')?.defaultValue ?? true};
+        const params = { 'Normalize': this.parameters.find((p) => p.name === 'Normalize')?.defaultValue ?? true };
 
         this.run(mappedPlate, params, mappedMappings).then((runOutput) => {
           ui.empty(container);
@@ -195,7 +195,7 @@ export class DrcAnalysis extends AnalysisBase {
             return;
           }
 
-          const {resultsDf, seriesVals, finalValueCol} = runOutput;
+          const { resultsDf, seriesVals, finalValueCol } = runOutput;
           const resultsGrid = resultsDf.plot.grid();
           resultsGrid.props.rowHeight = 200;
 
@@ -242,6 +242,6 @@ export class DrcAnalysis extends AnalysisBase {
 
   protected _getGroups(resultsDf: DG.DataFrame): { groupColumn: string, groups: string[] } {
     const groupColumn = resultsDf.columns.byIndex(0).name;
-    return {groupColumn: groupColumn, groups: resultsDf.col(groupColumn)!.categories};
+    return { groupColumn: groupColumn, groups: resultsDf.col(groupColumn)!.categories };
   }
 }

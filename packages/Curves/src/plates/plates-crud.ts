@@ -7,7 +7,6 @@ import {Plate} from '../plate/plate';
 import {Matcher, NumericMatcher} from './matchers';
 import {Subject} from 'rxjs';
 import * as api from '../package-api';
-import {FIT_FUNCTION_4PL_REGRESSION, IFitChartData, IFitSeries} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {AnalysisManager} from '../plate/analyses/analysis-manager';
 
 export const events: Subject<CrudEvent> = new Subject();

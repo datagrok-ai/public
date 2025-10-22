@@ -17,12 +17,31 @@
     flex: 1;
     min-height: 0;
     height: 100%;
+    /* Added display: flex to make its child (splitter) fill the space */
+    display: flex; 
+    flex-direction: column;
 }
 
-.ui-split-h, .ui-split-v {
+/* --- SCOPED SPLITTER RULES --- */
+/* These rules now only apply to splitters *inside* your view */
+.assay-plates--create-plate-view .ui-split-h,
+.assay-plates--create-plate-view .ui-split-v {
     flex: 1;
     min-height: 0;
 }
+
+.assay-plates--create-plate-view .ui-split-h > *:not(.ui-split-h-divider) {
+    flex: 1;
+    min-width: 0;
+}
+
+.assay-plates--create-plate-view .ui-split-v > *:not(.ui-split-v-divider) {
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+}
+/* --- END SCOPED SPLITTER RULES --- */
+
 
 .assay-plates--create-plate-view__tab-control {
     flex: 1;
@@ -51,48 +70,35 @@
     display: flex;
     flex-direction: column;
 }
-/* FORCE Datagrok components to be flexible */
+
+/* FORCE Datagrok components to be flexible *within this view* */
 .assay-plates--create-plate-view .d4-grid-root,
 .assay-plates--create-plate-view .d4-tab-host,
 .assay-plates--create-plate-view .d4-tab-contents,
 .assay-plates--create-plate-view .d4-tab-pane,
 .assay-plates--create-plate-view .d4-tab-pane-content {
-  width: 100% !important;
-  min-width: 0 !important;
-  max-width: none !important;
-  flex: 1 !important;
-}
-
-.assay-plates--create-plate-view [style*="width"] {
-  max-width: none !important;
-}
-
-.ui-split-h > *:not(.ui-split-h-divider) {
-  flex: 1;
-  min-width: 0;
-}
-
-.ui-split-v > *:not(.ui-split-v-divider) {
-  flex: 1;
-  min-height: 0;
-  min-width: 0;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    flex: 1 !important;
 }
 
 /* make sure the plate widget container expands */
-.assay-plates--plate-widget,
-.assay-plates--plate-widget > div,
-.assay-plates--plate-widget .d4-tab-host,
-.assay-plates--plate-widget .d4-tab-contents {
-  width: 100% !important;
-  min-width: 0 !important;
+.assay-plates--create-plate-view .assay-plates--plate-widget,
+.assay-plates--create-plate-view .assay-plates--plate-widget > div,
+.assay-plates--create-plate-view .assay-plates--plate-widget .d4-tab-host,
+.assay-plates--create-plate-view .assay-plates--plate-widget .d4-tab-contents {
+    width: 100% !important;
+    min-width: 0 !important;
 }
+
 /* ensure all dg inputs in the template panel are responsive */
-.assay-plates--template-panel .ui-input-root,
-.assay-plates--template-panel .ui-input-editor,
-.assay-plates--template-panel input,
-.assay-plates--template-panel select {
-  width: 100% !important;
-  min-width: 0 !important;
-  max-width: 100% !important;
-  box-sizing: border-box !important;
+.assay-plates--create-plate-view .assay-plates--template-panel .ui-input-root,
+.assay-plates--create-plate-view .assay-plates--template-panel .ui-input-editor,
+.assay-plates--create-plate-view .assay-plates--template-panel input,
+.assay-plates--create-plate-view .assay-plates--template-panel select {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
 }
