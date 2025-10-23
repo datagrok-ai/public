@@ -22,56 +22,56 @@ export namespace funcs {
   /**
   Chord viewer visualizes weighted relationships between several entities
   */
-  export async function chordViewerDemo(): Promise<any> {
+  export async function chordViewerDemo(): Promise<void> {
     return await grok.functions.call('Charts:ChordViewerDemo', {});
   }
 
   /**
   Radar viewer is used on multivariate data to plot groups of values over several common variables
   */
-  export async function radarViewerDemo(): Promise<any> {
+  export async function radarViewerDemo(): Promise<void> {
     return await grok.functions.call('Charts:RadarViewerDemo', {});
   }
 
   /**
   Sankey viewer depicts a flow from one set of values to another
   */
-  export async function sankeyViewerDemo(): Promise<any> {
+  export async function sankeyViewerDemo(): Promise<void> {
     return await grok.functions.call('Charts:SankeyViewerDemo', {});
   }
 
   /**
   Sunburst viewer displays hierarchical data
   */
-  export async function sunburstViewerDemo(): Promise<any> {
+  export async function sunburstViewerDemo(): Promise<void> {
     return await grok.functions.call('Charts:SunburstViewerDemo', {});
   }
 
   /**
   Surface plot viewer displays a set of three-dimensional data as a mesh surface
   */
-  export async function surfacePlotDemo(): Promise<any> {
+  export async function surfacePlotDemo(): Promise<void> {
     return await grok.functions.call('Charts:SurfacePlotDemo', {});
   }
 
   /**
   Timelines viewer displays the flow of events over time
   */
-  export async function timelinesViewerDemo(): Promise<any> {
+  export async function timelinesViewerDemo(): Promise<void> {
     return await grok.functions.call('Charts:TimelinesViewerDemo', {});
   }
 
   /**
   Tree viewer visualizes hierarchical data by categories
   */
-  export async function treeViewerDemo(): Promise<any> {
+  export async function treeViewerDemo(): Promise<void> {
     return await grok.functions.call('Charts:TreeViewerDemo', {});
   }
 
   /**
   Word Cloud viewer visualizes unstructured text data
   */
-  export async function wordCloudViewerDemo(): Promise<any> {
+  export async function wordCloudViewerDemo(): Promise<void> {
     return await grok.functions.call('Charts:WordCloudViewerDemo', {});
   }
 

@@ -131,6 +131,7 @@ export class GlobeViewer extends DG.JsViewer {
     // By default, beam color and size depend on the same column
     this.colorByColumnName = this.magnitudeColumnName;
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
+    this.subs.push(DG.debounce(this.dataFrame.filter.onChanged).subscribe((_) => this.render));
     this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => {
       const width = this.root.parentElement!.clientWidth;
       const height = this.root.parentElement!.clientHeight;
@@ -138,6 +139,11 @@ export class GlobeViewer extends DG.JsViewer {
       this.camera!.aspect = width / height;
       this.camera!.updateProjectionMatrix();
     }));
+    this.render();
+  }
+
+  // Override onSourceRowsChanged to re-render the chord automatically on row source updates
+  onSourceRowsChanged() {
     this.render();
   }
 
