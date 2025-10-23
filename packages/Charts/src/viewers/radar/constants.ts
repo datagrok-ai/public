@@ -1,36 +1,3 @@
-export const option: { [key: string]: any } = {
-  animation: false,
-  silent: false,
-  legend: {
-    show: true,
-  },
-  color: ['#b0d7ff', '#4fbcf7', '#4287cc'],
-  radar: {
-    axisName: {
-      backgroundColor: 'transparent',
-      fontSize: '13px',
-      fontFamily: 'Roboto',
-      padding: [3, 5],
-      color: '#4d5261',
-    },
-    radius: '60%',
-    indicator: [],
-  },
-  tooltip: {
-    show: false,
-  },
-  series: [{
-    type: 'radar',
-    data: [],
-  }, {
-    type: 'radar',
-    data: [],
-  }, {
-    type: 'radar',
-    data: [],
-  }],
-};
-
 export const MAXIMUM_ROW_NUMBER = 1000;
 export const MAXIMUM_SERIES_NUMBER = 25;
 export const MAXIMUM_COLUMN_NUMBER = 10;
