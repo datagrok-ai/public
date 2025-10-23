@@ -31,21 +31,52 @@ category('Dapi: functions calls', async () => {
   }, {skipReason: 'GROK-15119'});
 
   test('save with DF', async () => {
+    const start = Date.now();
+    let last = start;
+    const log = (msg: string) => {
+      const now = Date.now();
+      const diff = ((now - last) / 1000).toFixed(2);
+      const total = ((now - start) / 1000).toFixed(2);
+      console.log(`[${msg}] (+${diff}s, total ${total}s)`);
+      last = now;
+    };
+
+    log('Receiving func dummyDataFrameFunction');
     const funcWithDf: DG.Func = await grok.functions.eval('ApiTests:dummyDataFrameFunction');
+    log('Received func dummyDataFrameFunction');
+
     const inputTable: DG.DataFrame = grok.data.demo.demog(30);
-    await grok.dapi.tables.uploadDataFrame(inputTable); // save input df before calling function
+    log('Saving input table');
+    await grok.dapi.tables.uploadDataFrame(inputTable);
+    log('Saved input table');
 
     const funcCall = await funcWithDf.prepare({'table': inputTable}).call();
-    await grok.dapi.tables.uploadDataFrame(funcCall.outputs['tableOut']); // save output df separately
+    log('Called func');
 
-    const savedFuncCall = await grok.dapi.functions.calls.save(funcCall); // save call after that
+    log('Saving output table');
+    await grok.dapi.tables.uploadDataFrame(funcCall.outputs['tableOut']);
+    log('Saved output table');
+
+    log('Saving func call');
+    const savedFuncCall = await grok.dapi.functions.calls.save(funcCall);
+    log('Saved func call');
+
+    log('Finding func call');
     const loadedFuncCall = await grok.dapi.functions.calls.find(savedFuncCall.id);
+    log('Found func call');
 
     const loadedInputTableId = loadedFuncCall.inputs['table'];
     const loadedOutputTableId = loadedFuncCall.outputs['tableOut'];
 
+    log('Fetching input table');
     expectTable(funcCall.inputs['table'], await grok.dapi.tables.getTable(loadedInputTableId));
+    log('Fetched input table');
+
+    log('Fetching output table');
     expectTable(funcCall.outputs['tableOut'], await grok.dapi.tables.getTable(loadedOutputTableId));
+    log('Fetched output table');
+
+    log('Test completed');
   }, {stressTest: true});
 
   test('save with fileInfo', async () => {

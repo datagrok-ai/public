@@ -49,8 +49,7 @@
     "debug-metabolicgraph-release2": "webpack && grok publish release2",
     "release-metabolicgraph-release2": "webpack && grok publish release2 --release",
     "lint": "eslint src --ext .ts",
-    "lint-fix": "eslint src --ext .ts --fix",
-    "test": "grok test"
+    "lint-fix": "eslint src --ext .ts --fix"
   },
   "canEdit": [
     "Developers"

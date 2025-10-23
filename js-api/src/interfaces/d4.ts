@@ -784,6 +784,10 @@ export interface ICorrelationPlotSettings {
 
   backColor: number;
 
+  defaultCellFont: string;
+
+  colHeaderFont: string;
+
   /// Determines the rows shown on the plot.
   rowSource: keyof typeof RowSet;
 
@@ -3300,6 +3304,8 @@ export interface ITileViewerSettings {
   sketchState: {[index: string]: any};
 
   columnsJson: string;
+
+  tilesFont: string;
 
   lanes: Array<string>;
 

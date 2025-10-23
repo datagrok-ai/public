@@ -31,12 +31,23 @@ export interface JiraIssue {
     fields: Record<string, any>;
 }
 
+export interface JiraIssueError {
+    id: string,
+    errorMessage: string
+}
+
 export interface JiraIssuesList {
     maxResults: number;
     startAt: number;
     total:number;
     issues: JiraIssue[];
-} 
+}
+
+export interface JiraIssuesBulkList {
+    expand: string[],
+    issueErrors: JiraIssueError[],
+    issues: JiraIssue[];
+}
 
 export interface ErrorMessageResponse {
     errorMessages: string

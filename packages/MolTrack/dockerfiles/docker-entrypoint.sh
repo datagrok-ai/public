@@ -16,7 +16,7 @@ if [ -n "$db" ]; then
   if [[ "$DB_HOST_RAW" == "localhost" ]]; then
     DB_HOST='host.docker.internal'
   else
-    DB_HOST="10.152.183.177"
+    DB_HOST=$DB_HOST_RAW
   fi
 
   export DB_HOST DB_USER DB_PASSWORD DB_NAME APP_PORT

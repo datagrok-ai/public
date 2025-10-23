@@ -12,7 +12,7 @@ import {
   LogOptions
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
-import {FitConstants} from './const';
+import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {BoxPlotStatistics, calculateBoxPlotStatistics} from '@datagrok-libraries/statistics/src/box-plot-statistics';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 import {FitFunction} from '@datagrok-libraries/statistics/src/fit/new-fit-API';

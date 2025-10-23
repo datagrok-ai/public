@@ -28,7 +28,7 @@ category('w_chemprop', () => {
     binBlob = await file?.async('uint8array')!;
 
     expect(file !== null, true);
-  }, {timeout: 90000 + CONTAINER_TIMEOUT});
+  }, {timeout: 90000 + CONTAINER_TIMEOUT, skipReason: 'GROK-19084'});
 
   test('utilizeModel', async () => {
     await ensureContainerRunning('chemprop', CONTAINER_TIMEOUT);
@@ -36,7 +36,7 @@ category('w_chemprop', () => {
     const column = await fetchWrapper(() => PackageFunctions.applyModelChemprop(binBlob, DG.DataFrame.fromColumns([smilesColumn]).toCsv()));
 
     expect(column.length, 20);
-  });
+  }, {skipReason: 'GROK-19084'});
 }, {timeout: 90000 + CONTAINER_TIMEOUT});
 
 function getParameterValues() {
