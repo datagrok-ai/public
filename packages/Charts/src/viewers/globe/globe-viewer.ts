@@ -142,7 +142,7 @@ export class GlobeViewer extends DG.JsViewer {
     this.render();
   }
 
-  // Override onSourceRowsChanged to re-render the chord automatically on row source updates
+  // Override onSourceRowsChanged to re-render the globe automatically on row source updates
   onSourceRowsChanged() {
     this.render();
   }

@@ -146,6 +146,11 @@ export class ChordViewer extends DG.JsViewer {
     this.render();
   }
 
+  // Override onSourceRowsChanged to re-render the chord automatically on row source updates
+  onSourceRowsChanged() {
+    this.render();
+  }
+
   onPropertyChanged(property: DG.Property) {
     if (this.initialized && this._testColumns()) {
       if (property.name === 'colorBy' && this.chords.length) this.render(false);
