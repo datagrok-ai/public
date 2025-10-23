@@ -147,7 +147,7 @@ static checkFileIsPlate(content: string): boolean {
   return PlateReader.getReader(content) != null;
 }
 
-  @grok.decorators.app({name: 'Browse', browsePath: 'Plates'})
+  @grok.decorators.app({name: 'Plates'})
   static platesApp(): DG.View {
     return platesAppView();
   }

@@ -104,7 +104,7 @@ function getAnalysesSearchView(
       const groups = await getAnalysisRunGroups(analysis.name);
       if (groups.length > 0) {
         const groupInput = ui.input.multiChoice('Groups', {
-          items: groups, 
+          items: groups,
           value: [],
         });
 
@@ -173,19 +173,19 @@ function getAnalysesSearchView(
 }
 
 export function searchAnalysesView(): DG.View {
-  return getAnalysesSearchView('Search Analyses', queryAnalysesGeneric, (grid, analysisName) => {
+  return getAnalysesSearchView('Search Analyses', queryAnalysesGeneric, (grid) => {
     grid.setOptions({allowEdit: true});
-    const curveCol = grid.col('Curve');
-    grid.dataFrame.getCol('Curve').semType ='fit';
-    grid.dataFrame.getCol('Curve').setTag(DG.TAGS.CELL_RENDERER, 'fit');
 
-    if (curveCol) {
+    const curveCol = grid.col('Curve');
+    if (curveCol && curveCol.column) {
+      curveCol.column.semType = 'fit';
+      curveCol.column.setTag(DG.TAGS.CELL_RENDERER, 'fit');
+
       grid.props.rowHeight = 250;
+
       setTimeout(() => {
-        if (grid.col('Curve')) {
-            grid.col('Curve')!.width = 400;
-            grid.invalidate();
-        }
+        curveCol.width = 400;
+        grid.invalidate();
       }, 200);
     }
 

@@ -46,10 +46,9 @@ export function checkFileIsPlate(content: string) : boolean {
   return PackageFunctions.checkFileIsPlate(content);
 }
 
-//name: Browse
+//name: Plates
 //tags: app
 //output: view result
-//meta.browsePath: Plates
 export function platesApp() : any {
   return PackageFunctions.platesApp();
 }
