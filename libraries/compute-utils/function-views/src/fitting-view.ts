@@ -7,7 +7,7 @@ import $ from 'cash-dom';
 import {BehaviorSubject, Subject} from 'rxjs';
 import {RunComparisonView} from './run-comparison-view';
 import {combineLatest} from 'rxjs';
-import {take, filter} from 'rxjs/operators';
+import {take, filter, debounceTime} from 'rxjs/operators';
 import '../css/sens-analysis.css';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
 import {getDefaultValue} from './shared/utils';
@@ -148,6 +148,8 @@ const getSwitchMock = () => ui.div([], 'sa-switch-input');
 const isValidForFitting = (prop: DG.Property) => ((prop.propertyType === DG.TYPE.INT) || (prop.propertyType === DG.TYPE.FLOAT) || (prop.propertyType === DG.TYPE.DATA_FRAME));
 
 export class FittingView {
+  private validationCheckRequests$ = new Subject<true>();
+
   generateInputFields = (func: DG.Func) => {
     const getInputValue = (inputProp: DG.Property, key: keyof RangeDescription) => {
       const range = this.options.ranges?.[inputProp.name];
@@ -173,26 +175,41 @@ export class FittingView {
     const getFormulaInput = (inputProp: DG.Property, key: keyof RangeDescription) => {
       const formula = getRangeFormula(inputProp, key) ?? '';
       const caption = `${inputProp.caption ?? inputProp.name} (${key})`;
-      const inp = ui.input.textArea(caption, {value: formula})
+      const it = this;
+      const inp = ui.input.textArea(caption, {
+        value: formula,
+        onValueChanged() {
+          it.updateApplicabilityState();
+        }
+      });
+
       inp.setTooltip(`Formula for '${caption}', variable: ${inputProp.name}`);
       return inp;
     };
 
     const getFormulaToggleInput = (inputProp: DG.Property, key: keyof RangeDescription, inputNumber: DG.InputBase, inputFormula: DG.InputBase) => {
       const formula = getRangeFormula(inputProp, key);
+      const it = this;
+      const toggleInputs = (val: boolean) => {
+        if (!this.allowFormulas) {
+          $(boolInput.root).hide();
+          $(inputFormula.root).hide();
+        } else if (val) {
+          $(inputNumber.root).hide();
+          $(inputFormula.root).show();
+        } else {
+          $(inputNumber.root).show();
+          $(inputFormula.root).hide();
+        }
+      }
       const boolInput = ui.input.bool('Use formula', {
         value: !!formula,
         onValueChanged(val) {
-          if (val) {
-            $(inputNumber.root).hide();
-            $(inputFormula.root).show();
-          } else {
-            $(inputNumber.root).show();
-            $(inputFormula.root).hide();
-          }
+          toggleInputs(val);
+          it.updateApplicabilityState();
         }
       });
-      boolInput.fireChanged();
+      toggleInputs(!!formula);
       return boolInput;
     };
 
@@ -323,6 +340,7 @@ export class FittingView {
           isChangingInputConst.value = val;
           isChangingInputConst.notify = true;
         });
+
         combineLatest([
           ref.isChanging,
         ]).subscribe(([isChanging]) => {
@@ -636,6 +654,9 @@ export class FittingView {
     units: '%',
   }));
 
+  // Disable formulas, unless annotation says otherwise
+  private allowFormulas = false;
+
   // Auxiliary dock nodes with results
   private helpDN: DG.DockNode | undefined = undefined;
 
@@ -753,12 +774,22 @@ export class FittingView {
       this.similarity = this.defaultsOverrides.similarity;
       this.similarityInput.value = this.similarity;
     }
+    if (this.defaultsOverrides.allowFormulas != null) {
+      this.allowFormulas = this.defaultsOverrides.allowFormulas;
+    }
 
     grok.events.onViewRemoved.pipe(filter((v) => v.id === baseView.id), take(1)).subscribe(() => {
       if (options.acceptMode && !this.isFittingAccepted) {
         this.acceptedFitting$.next(null);
         this.isFittingAccepted = true;
       }
+    });
+
+    this.validationCheckRequests$.pipe(
+      debounceTime(0)
+    ).subscribe(() => {
+      this.readyToRun = this.canFittingBeRun() && (!this.isFittingRunning);
+      this.updateRunIconStyle();
     });
 
     this.buildForm(options.inputsLookup).then((form) => {
@@ -1221,8 +1252,7 @@ export class FittingView {
 
   /** Check applicability of fitting */
   private updateApplicabilityState(): void {
-    this.readyToRun = this.canFittingBeRun() && (!this.isFittingRunning);
-    this.updateRunIconStyle();
+    this.validationCheckRequests$.next(true);
   } // updateApplicabilityState
 
   private updateRunIconStyle(): void {
