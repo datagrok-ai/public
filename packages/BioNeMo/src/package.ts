@@ -46,8 +46,7 @@ export class PackageFunctions {
       await grok.data.detectSemanticTypes(table);
       grid.invalidate();
     } catch (e: any) {
-      console.error('Error running ESMFold model:', e.message);
-      grok.shell.error(`Failed to run ESMFold model: ${e.message}`);
+      grok.shell.error(e.message);
     }
   }
 
@@ -106,8 +105,7 @@ export class PackageFunctions {
       });
       return new TextDecoder().decode(encodedPoses.data);
     } catch (e: any) {
-      console.error('Error running DiffDock model:', e.message);
-      throw new Error(`Failed to run DiffDock model: ${e.message}`);
+      throw new Error(e.message);
     }
   }
 
@@ -153,7 +151,7 @@ export async function getApiKey(): Promise<string> {
   const apiKey = (await _package.getSettings())['apiKey'];
   if (apiKey)
     return apiKey;
-  throw new Error('Api key not set');
+  throw new Error('API key is not set in package credentials');
 }
 
 async function handleRunClick(smiles: DG.SemanticValue, poses: number, target: string, resultsContainer: HTMLDivElement) {
