@@ -2,53 +2,35 @@
 
 import {NumericArray, OPT_TYPE} from './defs';
 
-export function paretoMaskFromCoordinates(data: NumericArray[], sense: OPT_TYPE[], nPoints: number): boolean[] {
-  const nDims = data.length;
-  if (nDims === 0) return [];
-  //const nPoints = data[0].length;
+export function getParetoMask(rawData: NumericArray[], sense: OPT_TYPE[], nPoints: number): boolean[] {
+  if (nPoints === 0)
+    return [];
 
+  const nDims = rawData.length;
   if (sense.length !== nDims)
     throw new Error('Sense array length must match number of dimensions');
 
+  const pointIndices = new Uint32Array(nPoints);
+  for (let i = 0; i < nPoints; i++)
+    pointIndices[i] = i;
 
-  // Transpose data: convert from coordinate-wise to points
-  const points: NumericArray[] = Array(nPoints)
-    .fill(0)
-    .map((_, i) => {
-      const point = new Float64Array(nDims);
-      for (let d = 0; d < nDims; d++)
-        point[d] = data[d][i];
-
-      return point;
-    });
-
-  // Reuse optimized Pareto mask function
-  return paretoMaskOptimized(points, sense, nPoints);
-} // paretoMaskFromCoordinates
-
-function paretoMaskOptimized(data: NumericArray[], sense: OPT_TYPE[], nPoints: number): boolean[] {
-  //const nPoints = data.length;
-  if (nPoints === 0) return [];
-  const nDims = data[0].length;
-
-  const points = data.map((p, i) => ({point: p, index: i}));
-
-  // Sort by first dimension according to sense
-  points.sort((a, b) => (sense[0] === OPT_TYPE.MIN ? a.point[0] - b.point[0] : b.point[0] - a.point[0]));
+  pointIndices.sort((i1: number, i2: number) => {
+    return sense[0] === OPT_TYPE.MIN ? rawData[0][i1] - rawData[0][i2] : rawData[0][i2] - rawData[0][i1];
+  });
 
   const mask: boolean[] = Array(nPoints).fill(true);
-  const paretoFront: NumericArray[] = [];
+  const paretoFrontIndices: number[] = [];
 
-  for (const {point, index} of points) {
+  for (const index of pointIndices) {
     let dominated = false;
 
-    for (const frontPoint of paretoFront) {
+    for (const frontPointIndex of paretoFrontIndices) {
       let dominates = true;
       let strictlyBetter = false;
 
       for (let d = 0; d < nDims; d++) {
-        const a = frontPoint[d];
-        const b = point[d];
+        const a = rawData[d][frontPointIndex];
+        const b = rawData[d][index];
         const s = sense[d];
 
         if (s === OPT_TYPE.MIN) {
@@ -69,8 +51,8 @@ function paretoMaskOptimized(data: NumericArray[], sense: OPT_TYPE[], nPoints: n
     if (dominated)
       mask[index] = false;
     else
-      paretoFront.push(point);
+      paretoFrontIndices.push(index);
   }
 
   return mask;
-} // paretoMaskOptimized
+} // getParetoMask

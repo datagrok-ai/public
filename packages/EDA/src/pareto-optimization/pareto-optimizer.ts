@@ -3,10 +3,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import '../../css/pareto.css';
-import {paretoMaskFromCoordinates} from './pareto-computations';
+import {getParetoMask} from './pareto-computations';
 import {NumericFeature, OPT_TYPE, NumericArray, DIFFERENCE, RATIO, COL_NAME,
   PC_MAX_COLS, AXIS_NAMES, ColorOpt, AXIS_NAMES_3D, LABEL, SIZE, SCATTER_ROW_LIM, SCATTER3D_ROW_LIM} from './defs';
-import {getColorScaleDiv, getOutputPalette, PALETTE} from './utils';
+import {getColorScaleDiv, getOutputPalette} from './utils';
 
 export class ParetoOptimizer {
   private df: DG.DataFrame;
@@ -187,7 +187,7 @@ export class ParetoOptimizer {
     });
 
     if (data.length > 0) {
-      const mask = paretoMaskFromCoordinates(data, sense, this.rowCount);
+      const mask = getParetoMask(data, sense, this.rowCount);
       const colOpt = DG.Column.fromStrings(this.resultColName, mask.map((res) => res ? LABEL.OPTIMAL : LABEL.NON_OPT));
       this.df.columns.remove(this.resultColName, true);
       this.df.columns.add(colOpt);
