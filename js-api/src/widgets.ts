@@ -1524,6 +1524,89 @@ export class DateInput extends InputBase<dayjs.Dayjs | null> {
 }
 
 
+export class TagsInput<T> extends InputBase<T> {
+
+  constructor(dart: any) {
+    super(dart);
+    api.grok_TagsInput_Set_JsTagsInput(dart, this);
+  };
+
+  itemToString(item: T): string { return api.grok_TagsInput_ItemToString(this.dart, toDart(item)); };
+
+  async getSuggestions(inputText: string): Promise<T[]> { return (await api.grok_TagsInput_GetSuggestions(this.dart, inputText)) };
+
+  createTag(item: T): Element {
+    return toJs(api.grok_TagsInput_CreateTag(this.dart, toDart(item)));
+  };
+
+  createNewItem(inputText: string): T { return toJs(api.grok_TagsInput_CreateNewItem(this.dart, inputText)) };
+
+  shouldFilterItem(item: string): boolean { return api.grok_TagsInput_shouldFilterItem(this.dart, toDart(item)) };
+
+  async gatherItems(selectedItems: T[], selectedItem: T, findItems: boolean): Promise<T[]> {
+    return  (await api.grok_TagsInput_GatherItems(this.dart, findItems))
+  };
+}
+
+
+export class TagsInputCustom extends TagsInput<string> {
+
+  constructor(dart: any) {
+    super(dart);
+    api.grok_TagsInput_Set_JsTagsInput(dart, this);
+  };
+
+  async getSuggestions(inputText: string): Promise<string[]> { 
+    return ['my', 'custom', 'suggestions'];
+  };
+
+  createTag(item: string): Element {
+    return ui.divH([ui.icons.delete(() => {
+      api.grok_TagsInput_RemoveItem(this.dart, toDart(item));
+    }), ui.divText(item)])
+  };
+
+  async gatherItems(selectedItems: string[], selectedItem: string, findItems: boolean): Promise<string[]> {
+    if (selectedItem)
+      selectedItems.push(selectedItem);
+    return selectedItems;
+  };
+}
+
+  export type MyObj = {
+    a: string,
+    b: string,
+  }
+export class TagsInputCustomObj extends TagsInput<MyObj> {
+
+  constructor(dart: any) {
+    super(dart);
+    api.grok_TagsInput_Set_JsTagsInput(dart, this);
+  };
+
+  itemToString(item: MyObj): string { return `${item.a}_${item.b}` };
+
+  
+  async getSuggestions(inputText: string): Promise<MyObj[]> { 
+    return [{a: 'qwert', b: 'asdfghj'}, {a: 'cvbnm', b: 'zxcvbn'}];
+  };
+
+  createTag(item: MyObj): Element {
+     return ui.divH([ui.icons.delete(() => {
+      const selectedItems: MyObj[] = api.grok_TagsInput_Get_Selected_Items(this.dart).map((it) => toJs(it));
+      const idxToRemove = selectedItems.findIndex((it) => it.a === item.a && it.b === item.b);
+      if (idxToRemove !== -1)
+        api.grok_TagsInput_RemoveItemByIdx(this.dart, toDart(item), idxToRemove);
+    }), ui.divText(`${item.a}_${item.b}`)]);
+  };
+
+    async gatherItems(selectedItems: MyObj[], selectedItem: MyObj, findItems: boolean): Promise<MyObj[]> {
+    if (selectedItem)
+      selectedItems.push(selectedItem);
+    return selectedItems;
+  };
+}
+
 export class ChoiceInput<T> extends InputBase<T> {
   declare dart: any;
 

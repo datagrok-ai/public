@@ -25,6 +25,10 @@ import {
   TypeAhead,
   TypeAheadConfig,
   ChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput, MarkdownConfig,
+  TagsInput,
+  TagsInputCustom,
+  TagsInputCustomObj,
+  MyObj,
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -717,7 +721,8 @@ export namespace input {
   }
 
   const optionsMap: {[key: string]: (input: InputBase, option: any) => void} = {
-    value: (input, x) => input.value = input.inputType === d4.InputType.File ? toDart(x) : x,
+    value: (input, x) => input.value = input.inputType === d4.InputType.File ? toDart(x) : 
+      input.inputType === d4.InputType.Tags ? x.map((elem: any) => toDart(elem)) : x,
     nullable: (input, x) => input.nullable = x, // finish it?
     property: (input, x) => input.property = x,
     tooltipText: (input, x) => input.setTooltip(x),
@@ -730,20 +735,14 @@ export namespace input {
     items: (input, x) => input.inputType === d4.InputType.Choice ? (input as ChoiceInput<typeof x>).items = x :
       input.inputType === d4.InputType.Table ? (input as ChoiceInput<typeof x>).items = x.map((elem: DataFrame) => toDart(elem)) :
         input.inputType === d4.InputType.MultiChoice ? api.grok_MultiChoiceInput_Set_Items(input.dart, x) :
-          [d4.InputType.Tags, d4.InputType.User, d4.InputType.UserGroups].includes(input.inputType) ? api.grok_TagsInput_Set_Items(input.dart, x) :
+          [d4.InputType.User, d4.InputType.UserGroups, d4.InputType.Tags].includes(input.inputType) ? api.grok_TagsInput_Set_Items(input.dart, x.map((elem: any) => toDart(elem))) :
             api.grok_RadioInput_Set_Items(input.dart, x),
     icon: (input, x) => api.grok_StringInput_AddIcon(input.dart, x),
     available: (input, x) => api.grok_ColumnsInput_ChangeAvailableColumns(input.dart, x),
     checked: (input, x) => api.grok_ColumnsInput_ChangeCheckedColumns(input.dart, x),
     showOnlyColorBox: (input, x) => api.grok_ColorInput_SetShowOnlyColorBox(input.dart, x),
-    allowNew: (input, x) => {
-      if ([d4.InputType.Tags, d4.InputType.User, d4.InputType.UserGroups].includes(input.inputType))
-        api.grok_TagsInput_Set_Allow_New(input.dart, x)
-    },
-    multiValue: (input, x) => {
-      if ([d4.InputType.Tags, d4.InputType.User, d4.InputType.UserGroups].includes(input.inputType))
-        api.grok_TagsInput_Set_Multi_Value(input.dart, x)
-    },
+    allowNew: (input, x) => api.grok_TagsInput_Set_Allow_New(input.dart, x),
+    multiValue: (input, x) => api.grok_TagsInput_Set_Multi_Value(input.dart, x),
   };
 
   function setInputOptions(input: InputBase, inputType: d4.InputType, options?: IInputInitOptions, ignoreProp: boolean = false): void {
@@ -799,7 +798,8 @@ export namespace input {
   }
 
   export interface TagsInputConfig<T> extends IMultiChoiceInputInitOptions<T> {
-    tags?: string[];
+    items?: T[];
+    tags?: T[];
     showButton?: boolean;
     allowNew?: boolean;
     multiValue?: boolean;
@@ -968,20 +968,12 @@ export namespace input {
   }
 
   export function user(name: string, options?: TagsInputConfig<User[]>): InputBase<User[] | null> {
-    return _createUserInput(name, options, true);
+    return _create(d4.InputType.User, name, options);
   }
 
 
   export function userGroups(name: string, options?: TagsInputConfig<User[]>): InputBase<User[] | null> {
-    return _createUserInput(name, options);
-  }
-
-  function _createUserInput(name: string, options?: TagsInputConfig<User[]>, userOnly?: boolean): InputBase<User[] | null> {
-    if (options?.items && Array.isArray(options?.items))
-      options.items = toDart(options.items.map((it) => toDart(it)));
-    if (options?.value && Array.isArray(options?.value))
-      options.value = toDart(options.value.map((it) => toDart(it)));
-    return _create(userOnly ? d4.InputType.User : d4.InputType.UserGroups, name, options);
+    return _create(d4.InputType.UserGroups, name, options);
   }
 
   export function image(name: string, options?: IInputInitOptions<string>): InputBase<string | null> {
@@ -996,8 +988,27 @@ export namespace input {
     return new CodeInput(name, options);
   }
 
-  export function tags<T>(name: string, config?: TagsInputConfig<T>): TagsInput<T | null> {
-    return new TagsInput(name, config);
+  export function tags<T>(name: string, config?: TagsInputConfig<T>): InputBase<T | null> {
+    //put tags into items (for backward compatibility)
+    if (config?.tags && !config.items)
+        config.items = config.tags as any[];
+    const input = _create(d4.InputType.Tags, name, config);
+    return input;
+  }
+
+    export function tagsCustomNoOverrides(name: string, config?: TagsInputConfig<string>): TagsInput<string | null> {
+    const jsTagsInput = new TagsInput<string>(tags(name, config).dart);
+    return jsTagsInput;
+  }
+
+  export function tagsCustomWithOverrides(name: string, config?: TagsInputConfig<string>): TagsInput<string | null> {
+    const jsTagsInput = new TagsInputCustom(tags(name, config).dart);
+    return jsTagsInput;
+  }
+
+  export function tagsCustomObj(name: string, config?: TagsInputConfig<MyObj>): TagsInput<MyObj | null> {
+    const jsTagsInput = new TagsInputCustomObj(tags(name, config).dart);
+    return jsTagsInput;
   }
 
   export async function markdownPreview(markdown: string): Promise<HTMLDivElement> {
@@ -1006,17 +1017,6 @@ export namespace input {
     //@ts-ignore
     markdownPreview.innerHTML = marked.parse(markdown ?? '');
     return markdownPreview;
-  }
-
-  export class TagsInput<T> extends InputBase<T> {
-    declare dart: any;
-
-    constructor(name: string, config?: TagsInputConfig<T>) {
-      if (config?.tags && !config.items)
-        config.items = config.tags as any[];
-      const input = _create(d4.InputType.Tags, name, config) as TagsInput<T[]>;
-      super(input.dart);
-    }
   }
 
 }
