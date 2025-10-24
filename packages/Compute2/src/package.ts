@@ -18,6 +18,7 @@ import {Subject} from 'rxjs';
 import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {OptimizerParams, runOptimizer} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
+import dayjs from 'dayjs';
 
 declare global {
   var initialURLHandled: boolean;
@@ -477,7 +478,8 @@ class MyView extends CustomFunctionView {
       this.aIn,
       this.bIn,
       ui.div([ui.bigButton('Run', async () => {
-        await this.funcCall!.call();
+        await this.funcCall!.call(undefined, undefined, {processed:true, report:false});
+        this.funcCall!.started = dayjs();
         await this.saveRun(this.funcCall!);
         this.res!.value = this.funcCall?.outputs.res;
       })]),
