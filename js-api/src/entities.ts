@@ -1001,6 +1001,8 @@ export class Group extends Entity {
   get hidden(): boolean { return api.grok_Group_Get_Hidden(this.dart); }
   set hidden(e: boolean) { api.grok_Group_Set_Hidden(this.dart, e); }
 
+  get user(): User { return toJs(api.grok_Group_Get_User(this.dart)); }
+
   static get defaultGroupsIds() {
     return {
       "All users": "a4b45840-9a50-11e6-9cc9-8546b8bf62e6",
