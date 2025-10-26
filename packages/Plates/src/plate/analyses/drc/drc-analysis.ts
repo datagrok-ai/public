@@ -1,4 +1,5 @@
 /* eslint-disable max-len */
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {Plate} from '../../plate';
@@ -10,6 +11,7 @@ import {Subscription} from 'rxjs';
 import {PlateWidget} from '../../plate-widget/plate-widget';
 import {getDoseResponseSeries} from './utils';
 import './../plate-analyses.css';
+
 
 export class DrcAnalysis extends AnalysisBase {
   readonly name: string = 'DRC';
@@ -165,10 +167,28 @@ export class DrcAnalysis extends AnalysisBase {
 
     const statsToAdd: Record<string, string> = {'interceptX': 'IC50', 'slope': 'Hill Slope', 'rSquared': 'R Squared', 'bottom': 'Min', 'top': 'Max', 'auc': 'AUC'};
 
+
+
+
+
+
     for (const [statName, colName] of Object.entries(statsToAdd)) {
       if (this.outputs.some((o) => o.name === colName)) {
-        const funcParams = {table: resultsDf, colName: 'Curve', propName: statName, seriesNumber: 0};
-        const col = (DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(funcParams).callSync({processed: false})).getOutputParamValue();
+        // this previosuly called:
+        // const funcParams = {table: resultsDf, colName: 'Curve', propName: statName, seriesNumber: 0};
+        // const col = (DG.Func.find({name: 'AddStatisticsColumn'})[0].prepare(funcParams).callSync({processed: false})).getOutputParamValue();
+
+        // tried this after splitting the package. neither works:
+        //  "Unable to get project asset 'addStatisticsColumn'"
+        //  OR
+        // logger.ts:105 TypeError: Cannot read properties of undefined (reading 'prepare')
+        // Translating stack trace... Look below, ID = vnaYVV
+        const col = await grok.functions.call('Curves:AddStatisticsColumn', {
+          table: resultsDf,
+          colName: 'Curve',
+          propName: statName,
+          seriesNumber: 0
+        });
         col.name = colName;
       }
     }
