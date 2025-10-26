@@ -308,3 +308,10 @@ WHERE template_id = @templateId AND property_id = @propertyId;
 DELETE FROM plts.template_well_properties 
 WHERE template_id = @templateId AND property_id = @propertyId;
 -- end
+
+
+-- name: getPlatesCount
+-- connection: Plates:plts
+-- output: int result
+select count(*) from plts.plates
+-- end

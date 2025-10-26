@@ -68,6 +68,11 @@ export async function getPlateByBarcode(barcode: string) : Promise<any> {
 export async function createDummyPlateData() : Promise<void> {
   await PackageFunctions.createDummyPlateData();
 }
+
+//tags: init
+export async function _init() : Promise<void> {
+  await PackageFunctions._init();
+}
 //name: PlateGridCellRenderer
 //tags: cellRenderer
 //output: grid_cell_renderer renderer
