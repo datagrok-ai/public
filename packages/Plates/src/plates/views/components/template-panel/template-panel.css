@@ -3,9 +3,8 @@
 
 /* == Main Panel Layout == */
 .assay-plates--template-panel {
-  flex: 0 0 auto;
+  flex: 0 1 auto; 
   min-width: 350px;
-  max-width: 600px;
   width: auto;
   display: flex;
   flex-direction: column;

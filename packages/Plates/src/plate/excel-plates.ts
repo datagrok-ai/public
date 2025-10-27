@@ -97,11 +97,41 @@ export function findPlatePositions(workbook: ExcelJS.Workbook): ExcelPlatePositi
 
 
 /** Constructs a plate from the specified position in the Excel sheet. */
+/** Constructs a plate from the specified position in the Excel sheet. */
 export function getPlateFromSheet(p: ExcelPlatePosition): Plate {
   const df = DataFrame.create(p.rows);
+
   for (let col = p.startCol + 1; col <= p.startCol + p.cols; col++) {
-    const strings = DG.range(p.rows).map((i) => p.sheet.getCell(p.startRow + i + 1, col).toString()).toArray();
-    df.columns.add(DG.Column.fromStrings(`${col - p.startCol + 1}`, strings));
+    const values: any[] = [];
+    let hasNonNumeric = false;
+
+    // First pass: collect values and check if they're all numeric
+    for (let i = 0; i < p.rows; i++) {
+      const cellValue = p.sheet.getCell(p.startRow + i + 1, col).value;
+      values.push(cellValue);
+
+      if (cellValue !== null && cellValue !== undefined && cellValue !== '' &&
+          typeof cellValue !== 'number' && isNaN(Number(cellValue)))
+        hasNonNumeric = true;
+    }
+
+    // Create appropriate column type
+    const colName = `${col - p.startCol}`;
+    if (hasNonNumeric) {
+      // String column
+      const stringCol = DG.Column.fromStrings(colName, values.map((v) => v?.toString() ?? ''));
+      df.columns.add(stringCol);
+    } else {
+      // Numeric column
+      const numericCol = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, colName,
+        values.map((v) => {
+          if (v === null || v === undefined || v === '') return null;
+          return typeof v === 'number' ? v : Number(v);
+        })
+      );
+      df.columns.add(numericCol);
+    }
   }
+
   return Plate.fromGridDataFrame(df, p.sheet.name);
 }

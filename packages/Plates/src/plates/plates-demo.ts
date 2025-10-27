@@ -1,10 +1,16 @@
 /* eslint-disable max-len */
 import {PlateProperty, plateTypes, savePlate} from './plates-crud';
-import {initPlates} from './plates-crud';
+import {
+  initPlates, createAnalysisRun, saveAnalysisRunParameter,
+  getOrCreateProperty, saveAnalysisResult,
+} from './plates-crud';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {createPlateTemplate, createNewPlateForTemplate} from './plates-crud';
 import {Plate} from '../plate/plate';
+import {DrcAnalysis} from '../plate/analyses/drc/drc-analysis';
+import {getDoseResponseSeries} from '../plate/analyses/drc/utils';
+import {FIT_FUNCTION_4PL_REGRESSION, IFitSeries} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 
 
 export async function __createDummyPlateData() {
@@ -71,14 +77,138 @@ async function createDummyPlates() {
         plate.data.col(property!.name!)?.init((_) => getDemoValue(property as PlateProperty));
 
       await savePlate(plate);
+
+      if (template.name === 'Dose-response' && plate.id) {
+        try {
+          const drcAnalysis = new DrcAnalysis();
+          const mappings = new Map<string, string>([
+            ['Activity', 'Activity'],
+            ['Concentration', 'Concentration'],
+            ['SampleID', 'Sample'],
+          ]);
+          const params: Record<string, any> = {'Normalize': true};
+
+          const sampleColName = mappings.get('SampleID')!;
+          const concentrationColName = mappings.get('Concentration')!;
+          const activityColName = mappings.get('Activity')!;
+
+          const finalValueCol = activityColName;
+          const controlColumns = ['High Control', 'Low Control'];
+          if (params['Normalize'] && controlColumns.every((c) => plate.data.col(sampleColName)!.categories.includes(c))) {
+            // ... normalization logic would go here, but forget it for the demo
+          }
+
+          const series = getDoseResponseSeries(plate, {
+            value: finalValueCol,
+            concentration: concentrationColName,
+            groupBy: sampleColName,
+          });
+
+          const seriesVals = Object.entries(series);
+          if (seriesVals.length === 0 || !seriesVals.some(([_, s]) => s.points.length > 1)) {
+            console.warn(`DRC: No series data for demo plate ${plate.id}, skipping analysis save.`);
+            continue;
+          }
+
+          const roleCol = DG.Column.string(sampleColName, seriesVals.length).init((i) => seriesVals[i][0]);
+          const curveCol = DG.Column.string('Curve', seriesVals.length);
+          curveCol.semType = 'fit';
+
+          curveCol.init((i) => {
+            const currentSeries = seriesVals[i][1];
+            const seriesData: IFitSeries = {
+              name: currentSeries.name,
+              points: currentSeries.points,
+              fitFunction: FIT_FUNCTION_4PL_REGRESSION,
+              parameters: undefined,
+              clickToToggle: true,
+              droplines: ['IC50'],
+              showPoints: 'points',
+            };
+            const chartData = {
+              chartOptions: {
+                xAxisName: concentrationColName,
+                yAxisName: finalValueCol,
+                logX: true,
+                title: `${seriesVals[i][0]}`,
+              },
+              series: [seriesData],
+            };
+            return JSON.stringify(chartData);
+          });
+
+          const resultsDf = DG.DataFrame.fromColumns([roleCol, curveCol]);
+
+          const statsToAdd: Record<string, string> = {
+            'interceptX': 'IC50', 'slope': 'Hill Slope', 'rSquared': 'R Squared',
+            'bottom': 'Min', 'top': 'Max', 'auc': 'AUC',
+          };
+          const outputNames = new Set(drcAnalysis.outputs.map((o) => o.name));
+
+          for (const [statName, colName] of Object.entries(statsToAdd)) {
+            if (outputNames.has(colName)) {
+              const col = await grok.functions.call('Curves:AddStatisticsColumn', {
+                table: resultsDf,
+                colName: 'Curve',
+                propName: statName,
+                seriesNumber: 0,
+              });
+              col.name = colName;
+            }
+          }
+
+          const groupColumn = resultsDf.columns.byIndex(0).name;
+          const groups = resultsDf.col(groupColumn)!.categories;
+
+          const runId = await createAnalysisRun(plate.id, drcAnalysis.name, groups);
+
+          for (const param of drcAnalysis.parameters) {
+            await saveAnalysisRunParameter({
+              runId: runId,
+              propertyName: param.name,
+              propertyType: param.type as DG.TYPE,
+              value: params[param.name] ?? param.defaultValue,
+            });
+          }
+
+          const outputProperties = new Map<string, PlateProperty>();
+          for (const output of drcAnalysis.outputs) {
+            const prop = await getOrCreateProperty(output.name, output.type as DG.TYPE, 'plate');
+            outputProperties.set(output.name, prop);
+          }
+
+          for (let rowIdx = 0; rowIdx < resultsDf.rowCount; rowIdx++) {
+            const row = resultsDf.row(rowIdx);
+            const groupName = row.get(groupColumn);
+            const groupCombination = [groupName];
+
+            for (const output of drcAnalysis.outputs) {
+              if (resultsDf.columns.contains(output.name)) {
+                const value = row.get(output.name);
+                const prop = outputProperties.get(output.name)!;
+
+                if (value !== null && value !== undefined) {
+                  await saveAnalysisResult({
+                    runId: runId,
+                    propertyId: prop.id,
+                    propertyName: prop.name,
+                    propertyType: prop.type,
+                    value: value,
+                    groupCombination: groupCombination,
+                  });
+                }
+              }
+            }
+          }
+          console.log(`Saved demo DRC analysis (runId: ${runId}) for plate ${plate.id}`);
+        } catch (e) {
+          console.error(`Failed to create demo analysis for plate ${plate.id}:`, e);
+        }
+      }
     }
   }
 }
 
-/**
- * Demonstrates importing plates from Excel files
- * and forcing them to comply to the template
-*/
 async function createDummyPlatesFromExcel() {
   // create a template for excel plates (you only need to do this once)
   const excelPlateTemplate = await createPlateTemplate({
