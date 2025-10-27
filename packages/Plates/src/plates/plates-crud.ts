@@ -3,9 +3,12 @@
 /* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+
+import {Subject} from 'rxjs';
+import dayjs, {Dayjs} from 'dayjs';
+
 import {Plate} from '../plate/plate';
 import {Matcher, NumericMatcher} from './matchers';
-import {Subject} from 'rxjs';
 import * as api from '../package-api';
 import {AnalysisManager} from '../plate/analyses/analysis-manager';
 
@@ -109,6 +112,7 @@ export const plateDbColumn: {[key: string]: string} = {
   [DG.COLUMN_TYPE.INT]: 'value_num',
   [DG.COLUMN_TYPE.BOOL]: 'value_bool',
   [DG.COLUMN_TYPE.STRING]: 'value_string',
+  [DG.COLUMN_TYPE.DATE_TIME]: 'value_datetime',
 };
 export const plateDbJsonColumn = 'value_jsonb';
 
@@ -207,10 +211,12 @@ function getValueType(x: any): string {
 }
 
 
-function sqlStr(s?: string | number): string {
+function sqlStr(s?: string | number | Dayjs): string {
   if (!s)
     return 'null';
-  if (typeof s == 'string')
+  if (dayjs.isDayjs(s))
+    return `'${s.format('YYYY-MM-DD HH:mm:ss')}'`;
+  else if (typeof s == 'string')
     return `'${s}'`;
   else
     return `${s}`;

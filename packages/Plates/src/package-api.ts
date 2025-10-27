@@ -199,10 +199,6 @@ export namespace funcs {
     return await grok.functions.call('Plates:CreateDummyPlateData', {});
   }
 
-  export async function init(): Promise<void> {
-    return await grok.functions.call('Plates:Init', {});
-  }
-
   export async function plateGridCellRenderer(): Promise<any> {
     return await grok.functions.call('Plates:PlateGridCellRenderer', {});
   }

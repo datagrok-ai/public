@@ -10,8 +10,8 @@ export async function assayPlatesDemo() : Promise<void> {
 }
 
 //tags: init
-export function _initPlates() : void {
-  PackageFunctions._initPlates();
+export async function _initPlates() : Promise<void> {
+  await PackageFunctions._initPlates();
 }
 
 //tags: folderViewer
@@ -99,11 +99,6 @@ export async function getPlateByBarcode(barcode: string) : Promise<any> {
 //name: createDummyPlateData
 export async function createDummyPlateData() : Promise<void> {
   await PackageFunctions.createDummyPlateData();
-}
-
-//tags: init
-export async function _init() : Promise<void> {
-  await PackageFunctions._init();
 }
 //name: PlateGridCellRenderer
 //tags: cellRenderer
