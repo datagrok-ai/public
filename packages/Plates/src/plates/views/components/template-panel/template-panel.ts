@@ -9,12 +9,9 @@ import {MAPPING_SCOPES} from '../../shared/scopes';
 import {TargetProperty} from '../mapping-editor/mapping-editor';
 import {createDynamicMappingRow} from '../../shared/mapping-utils';
 import './template-panel.css';
-function createFormRow(label: string | HTMLElement, input: DG.InputBase<any> | HTMLElement): HTMLElement {
-  const labelEl = typeof label === 'string' ? ui.divText(label, 'ui-label') : label;
-  const inputEl = (input instanceof DG.InputBase) ? input.root : input;
-  inputEl.querySelector('label')?.remove();
-  return ui.divH([labelEl, inputEl], 'assay-plates--form-row');
-}
+
+export const TEMPLATE_PANEL_VALIDATION_CHANGED = 'template-panel-validation-changed';
+
 
 export class TemplatePanel {
   root: HTMLElement;
@@ -22,19 +19,14 @@ export class TemplatePanel {
   private wellPropertiesHost: HTMLElement;
   private subscriptions: Subscription[] = [];
   private identifierControlsHost: HTMLElement;
-  private platePropsTemplateName: HTMLElement;
-  private wellPropsTemplateName: HTMLElement;
-
 
   constructor(
     private stateManager: PlateStateManager
   ) {
-    this.root = ui.divV([], 'assay-plates--template-panel');
-    this.platePropertiesHost = ui.divV([], 'assay-plates--properties-content');
-    this.wellPropertiesHost = ui.divV([], 'assay-plates--properties-content');
+    this.root = ui.divV([]);
+    this.platePropertiesHost = ui.wideForm([]);
+    this.wellPropertiesHost = ui.wideForm([]);
     this.identifierControlsHost = ui.divV([], 'identifier-controls-host');
-    this.platePropsTemplateName = ui.span([], 'assay-plates--properties-template-name');
-    this.wellPropsTemplateName = ui.span([], 'assay-plates--properties-template-name');
     this.buildPanel();
     this.subscribeToStateChanges();
   }
@@ -56,6 +48,8 @@ export class TemplatePanel {
       });
     }
 
+    console.log('property');
+    console.log(prop);
     const property = DG.Property.fromOptions(prop);
     const input = DG.InputBase.forProperty(property);
     if (currentValue !== undefined)
@@ -66,34 +60,19 @@ export class TemplatePanel {
   }
 
   private buildPanel(): void {
-    const importSection = this.createImportSection();
-    const templateSelectorSection = this.createTemplateSelectorSection();
-
-    const platePropsHeader = ui.divH([
-      ui.divText('Plate Properties', 'assay-plates--properties-subheader'),
-      this.platePropsTemplateName
-    ], 'assay-plates--properties-header-row');
-
-    const wellPropsHeader = ui.divH([
-      ui.divText('Well Properties', 'assay-plates--properties-subheader'),
-      this.wellPropsTemplateName
-    ], 'assay-plates--properties-header-row');
-
-    const propertiesPanel = ui.divV([
-      platePropsHeader,
-      this.platePropertiesHost,
-      wellPropsHeader,
-      this.wellPropertiesHost,
-    ], 'assay-plates--template-properties-panel');
-
-    this.root.append(importSection, templateSelectorSection, propertiesPanel);
+    const accordion = ui.accordion();
+    accordion.addPane('Import', () => this.createImportSection(), true);
+    accordion.addPane('Template', () => this.createTemplateSelectorSection(), true);
+    accordion.addPane('Plate Properties', () => this.platePropertiesHost, true);
+    accordion.addPane('Well Properties', () => this.wellPropertiesHost, true);
+    this.root.append(accordion.root);
   }
 
   private createImportSection(): HTMLElement {
     const fileInput = this.createFileInput();
     const content = ui.divV([fileInput.root, this.identifierControlsHost]);
     this.updateIdentifierControls();
-    return this.createCollapsiblePanel(ui.h2('Import'), content, true);
+    return content;
   }
 
   private createFileInput(): DG.InputBase<DG.FileInfo | null> {
@@ -144,8 +123,7 @@ export class TemplatePanel {
       }, 'Remove this index column');
       removeBtn.classList.add('assay-plates--icon-button', 'assay-plates--remove-button');
 
-      const formRow = createFormRow(`Plate Index ${index + 1}`, choiceInput);
-      const controlRow = ui.divH([formRow, removeBtn], 'assay-plates--identifier-control-row');
+      const controlRow = ui.divH([choiceInput.root, removeBtn], 'assay-plates--identifier-control-row');
       this.identifierControlsHost.appendChild(controlRow);
     });
 
@@ -155,7 +133,6 @@ export class TemplatePanel {
   }
 
   private createTemplateSelectorSection(): HTMLElement {
-    const templateHeader = ui.h2('Template');
     const plateTypeSelector = ui.input.choice('Plate Type', {
       value: this.stateManager.currentPlateType.name,
       items: plateTypes.map((pt) => pt.name),
@@ -174,36 +151,7 @@ export class TemplatePanel {
       },
     });
 
-    plateTemplateSelector.root.classList.add('assay-plates--template-dropdown');
-
-    const templateContent = ui.divV([
-      createFormRow('Plate Type', plateTypeSelector),
-      createFormRow('Template', plateTemplateSelector),
-    ]);
-
-    const headerContainer = ui.divH([templateHeader], 'assay-plates--collapsible-header-container');
-    templateContent.classList.add('assay-plates--collapsible-content');
-    templateContent.style.display = 'block';
-
-    return ui.divV([headerContainer, templateContent], 'assay-plates--left-panel-section assay-plates--template-selector-section');
-  }
-
-  private createCollapsiblePanel(header: HTMLElement, content: HTMLElement, expanded: boolean = true): HTMLElement {
-    const icon = ui.iconFA(expanded ? 'chevron-down' : 'chevron-right', () => {
-      const isExpanded = content.style.display !== 'none';
-      content.style.display = isExpanded ? 'none' : 'block';
-      icon.classList.toggle('fa-chevron-down', !isExpanded);
-      icon.classList.toggle('fa-chevron-right', isExpanded);
-    });
-    icon.classList.add('assay-plates--collapsible-icon');
-
-    header.onclick = () => icon.click();
-    const headerContainer = ui.divH([icon, header], 'assay-plates--collapsible-header-container');
-
-    content.style.display = expanded ? 'block' : 'none';
-    content.classList.add('assay-plates--collapsible-content');
-
-    return ui.divV([headerContainer, content], 'assay-plates--left-panel-section');
+    return ui.wideForm([plateTypeSelector, plateTemplateSelector]);
   }
 
   private subscribeToStateChanges(): void {
@@ -217,25 +165,12 @@ export class TemplatePanel {
   }
 
   private updatePanelContent(): void {
-    const template = this.stateManager.currentTemplate;
-    const activePlate = this.stateManager.activePlate;
-    const state = this.stateManager.currentState;
+    const {currentTemplate: template, activePlate, currentState: state} = this.stateManager;
     const requiredPropIds = new Set(template.required_props.map((tuple) => tuple[0]));
-
-    const templateNameContent = [
-      ui.span(['•'], 'assay-plates--properties-template-dot'),
-      ui.span([template.name])
-    ];
-    ui.empty(this.platePropsTemplateName);
-    ui.empty(this.wellPropsTemplateName);
-    this.platePropsTemplateName.appendChild(ui.span(templateNameContent.slice()));
-    this.wellPropsTemplateName.appendChild(ui.span(templateNameContent.slice()));
-
 
     ui.empty(this.platePropertiesHost);
     ui.empty(this.wellPropertiesHost);
 
-    const platePropertyInputs: HTMLElement[] = [];
     for (const prop of template.plateProperties) {
       if (!prop || !prop.name || !prop.type) continue;
 
@@ -251,22 +186,12 @@ export class TemplatePanel {
         if (activePlate) {
           if (!activePlate.plate.details) activePlate.plate.details = {};
           activePlate.plate.details[prop.name!] = input.value;
+          grok.events.fireCustomEvent(TEMPLATE_PANEL_VALIDATION_CHANGED, {valid: input.validate()});
         }
       });
 
-      const label = ui.label(prop.name!);
-      if (isRequired) {
-        label.classList.add('assay-plates--required-field');
-        const asterisk = ui.span([' *'], 'assay-plates--required-asterisk');
-        asterisk.style.color = 'red';
-        asterisk.style.marginLeft = '2px';
-        label.appendChild(asterisk);
-      }
-      platePropertyInputs.push(createFormRow(label, input));
+      this.platePropertiesHost.append(input.root);
     }
-    if (platePropertyInputs.length > 0)
-      platePropertyInputs.forEach((row) => this.platePropertiesHost.appendChild(row));
-
 
     const templateProps: TargetProperty[] = template.wellProperties
       .filter((p) => p && p.name).map((p) => ({
@@ -294,6 +219,7 @@ export class TemplatePanel {
       onUndo: handleUndo,
     });
   }
+
   private createDynamicMappingRow(sourceColumns: string[], onMap: (target: string, source: string) => void, onCancel: () => void): HTMLElement {
     return createDynamicMappingRow({sourceColumns, onMap, onCancel});
   }
@@ -341,7 +267,8 @@ export class TemplatePanel {
         undoIcon.classList.add('assay-plates--mapping-undo-icon');
         rightCell.appendChild(undoIcon);
       }
-      host.appendChild(createFormRow(propNameEl, rightCell));
+      // //@ts-ignore
+      // host.appendChild(createFormRow(propNameEl, rightCell));
     });
 
     const addRowHost = ui.divH([], 'assay-plates--add-row-container');

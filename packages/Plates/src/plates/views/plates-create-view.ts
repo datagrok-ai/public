@@ -5,13 +5,12 @@ import * as ui from 'datagrok-api/ui';
 import {Plate} from '../../plate/plate';
 import {plateTemplates, plateTypes, savePlate} from '../plates-crud';
 import {PlateStateManager} from './shared/plate-state-manager';
-import {TemplatePanel} from './components/template-panel/template-panel';
+import {TEMPLATE_PANEL_VALIDATION_CHANGED, TemplatePanel} from './components/template-panel/template-panel';
 import {Subscription} from 'rxjs';
 import {PlateGridManager} from './components/plate-grid-manager/plate-grid-manager';
 import {AnalysisManager} from '../../plate/analyses/analysis-manager';
 import {PlateWidget} from '../../plate/plate-widget/plate-widget';
 import {PlateSelectionController} from '../../plate/plate-widget/plate-selection-controller';
-import {MAPPING_SCOPES} from './shared/scopes';
 import './components/plate-grid-manager/plate-grid-manager.css';
 import './plates-create-view.css';
 
@@ -153,8 +152,6 @@ export function createPlatesView(): DG.View {
     stateManager
   );
 
-
-
   stateManager.onStateChange$.subscribe(async (event) => {
     const activePlate = stateManager.activePlate;
     if (activePlate)
@@ -239,87 +236,32 @@ export function createPlatesView(): DG.View {
 
   stateManager.setTemplate(plateTemplates[0]);
 
+  const createButton = ui.bigButton('CREATE', async () => {
+    const plateToSave = await stateManager.getOrCreateDefaultPlate();
+    if (!plateToSave) {
+      grok.shell.warning('No active plate to save.');
+      return;
+    }
+
+    const template = stateManager.currentTemplate;
+    const activeIndex = stateManager.currentState?.activePlateIdx ?? -1;
+
+    if (activeIndex < 0) {
+      grok.shell.warning('No active plate is selected.');
+      return;
+    }
+
+    plateToSave.plateTemplateId = stateManager.currentTemplate.id;
+    await savePlate(plateToSave);
+    const plateInfo = ui.divV([
+      ui.divText(`Barcode: ${plateToSave.barcode}`),
+      ui.divText(`Template: ${template.name}`),
+    ]);
+    grok.shell.info(ui.divV([ui.h3('Plate Created Successfully'), plateInfo]));
+  });
+
   view.setRibbonPanels([[
-    ui.bigButton('CREATE', async () => {
-      const plateToSave = await stateManager.getOrCreateDefaultPlate();
-      if (!plateToSave) {
-        grok.shell.warning('No active plate to save.');
-        return;
-      }
-
-      const template = stateManager.currentTemplate;
-      const activeIndex = stateManager.currentState?.activePlateIdx ?? -1;
-
-      if (activeIndex < 0) {
-        grok.shell.warning('No active plate is selected.');
-        return;
-      }
-
-      const wellPropertyMappings = stateManager.getMappings(activeIndex, MAPPING_SCOPES.TEMPLATE);
-      const plateDetails = plateToSave.details || {};
-      const requiredPropIds = new Set(template.required_props.map((tuple) => tuple[0]));
-
-      const missingPlateProps: string[] = template.plateProperties
-        .filter((p) => p && p.name && requiredPropIds.has(p.id!))
-        .filter((prop) => {
-          const value = plateDetails[prop.name!];
-          return value === null || value === undefined || value === '';
-        })
-        .map((prop) => prop.name!);
-
-      const missingWellProps: string[] = template.wellProperties
-        .filter((p) => p && p.name && requiredPropIds.has(p.id!))
-        .filter((prop) => !wellPropertyMappings.has(prop.name!))
-        .map((prop) => prop.name!);
-
-      const totalErrors = missingPlateProps.length + missingWellProps.length;
-
-      if (totalErrors > 0) {
-        const plateErrors = missingPlateProps.map((prop) => {
-          const li = ui.element('li');
-          li.appendChild(ui.span([prop], 'ui-label'));
-          return li;
-        });
-        const wellErrors = missingWellProps.map((prop) => {
-          const li = ui.element('li');
-          li.appendChild(ui.span([prop], 'ui-label'));
-          return li;
-        });
-
-        const errorContent = ui.divV([]);
-
-        if (missingPlateProps.length > 0) {
-          errorContent.appendChild(ui.h3('Missing Plate Properties:'));
-          const plateErrorList = ui.element('ul', 'ui-list');
-          plateErrors.forEach((li) => plateErrorList.appendChild(li));
-          errorContent.appendChild(plateErrorList);
-        }
-
-        if (missingWellProps.length > 0) {
-          errorContent.appendChild(ui.h3('Missing Well Mappings:'));
-          const wellErrorList = ui.element('ul', 'ui-list');
-          wellErrors.forEach((li) => wellErrorList.appendChild(li));
-          errorContent.appendChild(wellErrorList);
-        }
-
-        ui.dialog('Validation Failed')
-          .add(ui.divText('Please resolve the following required items before creating the plate:'))
-          .add(errorContent)
-          .onOK(() => {})
-          .show();
-
-        return;
-      }
-
-      plateToSave.plateTemplateId = stateManager.currentTemplate.id;
-      await savePlate(plateToSave);
-      const plateInfo = ui.divV([
-        ui.divText(`Barcode: ${plateToSave.barcode}`),
-        ui.divText(`Template: ${template.name}`),
-      ]);
-      grok.shell.info(ui.divV([ui.h3('Plate Created Successfully'), plateInfo]));
-    }),
-
+    createButton,
     ui.button('Create Template from Current Plate', async () => {
       grok.shell.warning('This is not yet implemented.');
       const plateToSave = await stateManager.getOrCreateDefaultPlate();
@@ -364,6 +306,10 @@ export function createPlatesView(): DG.View {
     handleDroppedFile(file);
   });
   subscriptions.push(fileImportSub);
+
+  grok.events.onCustomEvent(TEMPLATE_PANEL_VALIDATION_CHANGED).subscribe((args) => {
+    createButton.classList.toggle('dim', args.valid);
+  });
 
   const originalDetach = view.detach.bind(view);
   view.detach = () => {

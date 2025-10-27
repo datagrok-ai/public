@@ -200,8 +200,9 @@ export class Plate {
       const pid = pidCol?.get(start);
       const property = allProperties.find((p) => p.id == pid)!;
       const valueColumn = df.col(plateDbColumn[property.type])!;
+      const propUnusedName = plate.data.columns.getUnusedName(property.name);
       //@ts-ignore
-      const newCol = plate.data.columns.addNew(property.name, property.type)
+      const newCol = plate.data.columns.addNew(propUnusedName, property.type)
         .init((i) => valueColumn.get(start + i));
     }
 

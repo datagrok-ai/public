@@ -25,38 +25,19 @@ function getSearchForm(
   getUniqueValues: (prop: any) => string[]
 ): { root: HTMLElement, templateForm: DG.InputForm, otherForm: DG.InputForm } {
   const createInput = (prop: PlateProperty): PropInput | null => {
-    let input: PropInput | null = null;
-
-    if (prop.choices && prop.choices.length > 0) {
-      let choicesList: string[];
+    if (prop.choices) {
       if (typeof prop.choices === 'string') {
         try {
-          choicesList = JSON.parse(prop.choices as any);
+          prop.choices = JSON.parse(prop.choices as any);
         } catch {
-          choicesList = [prop.choices as any];
+          prop.choices = [prop.choices as any];
         }
-      } else {
-        choicesList = prop.choices;
       }
-      input = ui.input.multiChoice(prop.name, {items: choicesList}) as PropInput;
-    } else if (prop.type === DG.TYPE.STRING) {
-      const uniqueValues = getUniqueValues(prop);
-      if (uniqueValues.length > 0)
-        input = ui.input.multiChoice(prop.name, {items: uniqueValues}) as PropInput;
-      else
-        input = ui.input.string(prop.name) as PropInput;
-    } else if (prop.type === DG.TYPE.FLOAT || prop.type === DG.TYPE.INT) {
-      input = ui.input.string(prop.name) as PropInput;
-      input.addValidator((s) => NumericMatcher.parse(s) ? null : 'Invalid numerical criteria. Example: ">10"');
-    } else if (prop.type === DG.TYPE.BOOL) {
-      input = ui.input.bool(prop.name) as PropInput;
+      prop.type = DG.TYPE.LIST;
     }
 
-    if (input)
-      input.prop = prop;
-
-
-    return input;
+    const propN = DG.Property.fromOptions(prop);
+    return DG.InputBase.forProperty(propN) as PropInput;
   };
 
   const templatePropNames = new Set(templateProperties.map((p) => p.name));

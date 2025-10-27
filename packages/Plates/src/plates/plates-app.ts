@@ -19,7 +19,6 @@ export function platesAppView(): DG.View {
   const view = DG.TableView.create(dummy);
   view.name = 'Plates';
 
-
   crud.queryPlates({plateMatchers: [], wellMatchers: [], analysisMatchers: []}).then((df: DG.DataFrame) => {
     df.col('barcode')!.semType = 'Plate Barcode';
     view.dataFrame = df;

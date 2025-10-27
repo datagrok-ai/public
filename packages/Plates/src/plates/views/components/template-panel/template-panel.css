@@ -29,19 +29,6 @@
   margin-bottom: 0 !important;
 }
 
-.assay-plates--collapsible-header-container {
-  display: flex;
-  align-items: center;
-  min-width: 0; 
-}
-
-.assay-plates--collapsible-icon {
-  margin-right: 8px;
-  color: var(--grey-4);
-  cursor: pointer;
-  flex-shrink: 0; 
-}
-
 .assay-plates--left-panel-section h2 {
   margin: 0 !important;
   font-size: 18px;
@@ -51,14 +38,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0; 
-}
-
-.assay-plates--collapsible-content {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 8px 0;
-  min-width: 0;
 }
 
 .assay-plates--form-row {

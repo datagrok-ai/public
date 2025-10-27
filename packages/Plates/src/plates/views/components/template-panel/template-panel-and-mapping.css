@@ -15,33 +15,6 @@
 }
 
 /* == Collapsible Sections == */
-.assay-plates--left-panel-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  border-bottom: 1px solid var(--grey-1);
-  margin-bottom: 12px;
-}
-
-.assay-plates--collapsible-header-container {
-  display: flex;
-  align-items: center;
-}
-
-.assay-plates--collapsible-header {
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-grow: 1;
-}
-
-.assay-plates--collapsible-icon {
-  margin-right: 8px;
-  color: var(--grey-4);
-  cursor: pointer;
-}
-
 .assay-plates--left-panel-section h2 {
   margin: 0 !important;
   font-size: 18px;
@@ -57,10 +30,6 @@
   flex-direction: column;
   gap: 12px;
   padding: 8px 0 16px 0;
-}
-
-.assay-plates--collapsible-content {
-  padding-left: 24px;
 }
 
 /* == Generic Form & Input Controls == */

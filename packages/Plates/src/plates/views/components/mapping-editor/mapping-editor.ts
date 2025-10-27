@@ -3,16 +3,18 @@ import * as ui from 'datagrok-api/ui';
 import {createDynamicMappingRow} from '../../shared/mapping-utils';
 
 export interface TargetProperty {
-    name: string;
-    required?: boolean;
+  name: string;
+  required?: boolean;
 }
+
 export interface MappingEditorOptions {
-    targetProperties: TargetProperty[];
-    sourceColumns: string[];
-    mappings: Map<string, string>;
-    onMap: (target: string, source: string) => void;
-    onUndo: (target: string) => void;
+  targetProperties: TargetProperty[];
+  sourceColumns: string[];
+  mappings: Map<string, string>;
+  onMap: (target: string, source: string) => void;
+  onUndo: (target: string) => void;
 }
+
 export function renderMappingEditor(host: HTMLElement, options: MappingEditorOptions): void {
   const {targetProperties, sourceColumns, mappings, onMap, onUndo} = options;
 
@@ -24,23 +26,19 @@ export function renderMappingEditor(host: HTMLElement, options: MappingEditorOpt
     return;
   }
 
-  const tableHost = ui.divV([], 'assay-plates--mapping-editor-table');
-  host.appendChild(tableHost);
+  function getAllTargetProperties(): TargetProperty[] {
+    const allPropsMap = new Map<string, TargetProperty>();
+    targetProperties.forEach((p) => allPropsMap.set(p.name, p));
+    mappings.forEach((_, targetCol) => {
+      if (!allPropsMap.has(targetCol)) allPropsMap.set(targetCol, {name: targetCol, required: false});
+    });
+    return Array.from(allPropsMap.values()).sort((a, b) => {
+      if (a.required !== b.required) return a.required ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+  }
 
-  const allPropsMap = new Map<string, TargetProperty>();
-  targetProperties.forEach((p) => allPropsMap.set(p.name, p));
-  mappings.forEach((_, targetCol) => {
-    if (!allPropsMap.has(targetCol))
-      allPropsMap.set(targetCol, {name: targetCol, required: false});
-  });
-
-  const allTargetProps = Array.from(allPropsMap.values()).sort((a, b) => {
-    if (a.required !== b.required) return a.required ? -1 : 1;
-    return a.name.localeCompare(b.name);
-  });
-
-  allTargetProps.forEach((prop) => {
-    const mappedSource = mappings.get(prop.name);
+  function createPropertyCell(prop: TargetProperty): HTMLElement {
     const propNameEl = ui.divH([ui.span([prop.name])]);
     if (prop.required) {
       const asterisk = ui.element('sup');
@@ -48,9 +46,13 @@ export function renderMappingEditor(host: HTMLElement, options: MappingEditorOpt
       asterisk.innerText = '*';
       propNameEl.appendChild(asterisk);
     }
+    return propNameEl;
+  }
 
+  function createChoiceCell(prop: TargetProperty): HTMLElement {
+    const mappedSource = mappings.get(prop.name);
     const choiceControl = ui.input.choice('', {
-      value: mappedSource || null,
+      value: mappedSource ?? null,
       items: [null, ...sourceColumns],
       nullable: true,
       onValueChanged: (v: string | null) => {
@@ -60,29 +62,40 @@ export function renderMappingEditor(host: HTMLElement, options: MappingEditorOpt
     });
 
     const rightCell = ui.divH([choiceControl.root], 'assay-plates--mapping-input-container');
+
     if (mappedSource) {
       const undoIcon = ui.iconFA('times', () => onUndo(prop.name), 'Undo mapping');
       undoIcon.classList.add('assay-plates--mapping-undo-icon');
       rightCell.appendChild(undoIcon);
     }
 
-    const row = ui.divH([propNameEl, rightCell], 'assay-plates--mapping-editor-row');
-    tableHost.appendChild(row);
-  });
+    return rightCell;
+  }
 
-  const addRowHost = ui.divH([], 'assay-plates--mapping-add-row');
-  const addIcon = ui.iconFA('plus', () => {
-    const newDynamicRow = createDynamicMappingRow(
-      {
-        sourceColumns,
-        onMap,
-        onCancel: () => newDynamicRow.remove()
-      }
-    );
-    tableHost.insertBefore(newDynamicRow, addRowHost);
-    (newDynamicRow.querySelector('input[type="text"]') as HTMLElement)?.focus();
-  }, 'Add new property mapping');
-  addIcon.classList.add('assay-plates--mapping-add-icon');
-  addRowHost.appendChild(addIcon);
-  tableHost.appendChild(addRowHost);
+  // function createAddRowButton(): HTMLElement {
+  //   const addRowHost = ui.divH([], 'assay-plates--mapping-add-row');
+  //   const addIcon = ui.iconFA('plus', () => {
+  //     const newDynamicRow = createDynamicMappingRow({
+  //       sourceColumns,
+  //       onMap,
+  //       onCancel: () => newDynamicRow.remove(),
+  //     });
+  //     table.parentElement?.insertBefore(newDynamicRow, addRowHost);
+  //     (newDynamicRow.querySelector('input[type="text"]') as HTMLElement)?.focus();
+  //   }, 'Add new property mapping');
+
+  //   addIcon.classList.add('assay-plates--mapping-add-icon');
+  //   addRowHost.appendChild(addIcon);
+  //   return addRowHost;
+  // }
+
+  const table = ui.table(
+    getAllTargetProperties(),
+    (prop) => [createPropertyCell(prop), createChoiceCell(prop)],
+    ['Property', 'Source Column']
+  );
+
+  table.classList.add('assay-plates--mapping-editor-table');
+  host.appendChild(table);
+  // host.appendChild(createAddRowButton());
 }
