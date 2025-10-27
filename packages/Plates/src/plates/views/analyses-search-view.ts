@@ -167,10 +167,18 @@ function getAnalysesSearchView(
   refreshAnalysisUI();
   return mainView;
 }
-
 export function searchAnalysesView(): DG.View {
   return getAnalysesSearchView('Search Analyses', queryAnalysesGeneric, (grid, analysisName) => {
     grid.setOptions({allowEdit: true});
+
+    const plateIdCol = grid.col('plate_id');
+    if (plateIdCol) plateIdCol.visible = false;
+
+    const runIdCol = grid.col('run_id');
+    if (runIdCol) runIdCol.visible = false;
+
+    const groupCol = grid.col('group_combination');
+    if (groupCol) groupCol.visible = false;
 
     if (grid.dataFrame.columns.byName('Curve')) {
       const curveCol = grid.dataFrame.getCol('Curve');
@@ -181,8 +189,10 @@ export function searchAnalysesView(): DG.View {
         s.unsubscribe();
         const visibleCurveCol = grid.col('Curve');
         if (visibleCurveCol) {
-          visibleCurveCol.width = 400;
+          visibleCurveCol.width = grid.root.clientWidth / 3;
           grid.props.rowHeight = 250;
+
+
           grid.invalidate();
         }
       });

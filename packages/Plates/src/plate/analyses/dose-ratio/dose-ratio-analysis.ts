@@ -214,15 +214,15 @@ export class DoseRatioAnalysis extends AnalysisBase {
 
       try {
         const properties = JSON.parse(propsJson);
-        const groupArray = row.get('group_combination');
+        const groupCombinationValue = row.get('group_combination');
 
         finalRows.push({
           'run_id': row.get('run_id'),
           'plate_id': row.get('plate_id'),
           'barcode': row.get('barcode'),
-          'group_combination': groupArray,
-          'Antagonist Conc.': Array.isArray(groupArray) && groupArray.length > 0 ?
-            parseFloat(groupArray[0]).toExponential(1) + ' M' : null,
+          'group_combination': groupCombinationValue,
+          'Antagonist Conc.': groupCombinationValue ?
+            parseFloat(groupCombinationValue).toExponential(1) + ' M' : null,
           'Curve': properties.Curve,
           'Min Value': properties['Min Value'],
           'Max Value': properties['Max Value'],
@@ -241,6 +241,15 @@ export class DoseRatioAnalysis extends AnalysisBase {
     if (curveCol)
       curveCol.semType = 'fit';
 
+    const minCol = resultDf.col('Min Value');
+    if (minCol)
+      minCol.meta.format = '0.00';
+
+    const maxCol = resultDf.col('Max Value');
+    if (maxCol)
+      maxCol.meta.format = '0.00';
+
     return resultDf;
   }
 }
+

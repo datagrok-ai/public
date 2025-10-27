@@ -50,15 +50,14 @@ export class DrcAnalysis extends AnalysisBase {
 
       try {
         const properties = JSON.parse(propsJson);
-        const groupArray = row.get('group_combination');
-        const compound = Array.isArray(groupArray) && groupArray.length > 0 ? groupArray[0] : null;
+        const groupCombinationValue = row.get('group_combination');
 
         finalRows.push({
           'run_id': row.get('run_id'),
           'plate_id': row.get('plate_id'),
           'barcode': row.get('barcode'),
-          'Compound': compound,
-          'group_combination': groupArray,
+          'Sample ID': groupCombinationValue,
+          'group_combination': groupCombinationValue,
           'Curve': properties.Curve,
           'IC50': properties.IC50,
           'Hill Slope': properties['Hill Slope'],
@@ -83,7 +82,28 @@ export class DrcAnalysis extends AnalysisBase {
 
     const ic50Col = resultDf.col('IC50');
     if (ic50Col)
-      ic50Col.meta.format = '0.00e0';
+      ic50Col.meta.format = '0.000';
+
+    const hillSlopeCol = resultDf.col('Hill Slope');
+    if (hillSlopeCol)
+      hillSlopeCol.meta.format = '0.00';
+
+    const rSquaredCol = resultDf.col('R Squared');
+    if (rSquaredCol)
+      rSquaredCol.meta.format = '0.000';
+
+    const minCol = resultDf.col('Min');
+    if (minCol)
+      minCol.meta.format = '0.00';
+
+    const maxCol = resultDf.col('Max');
+    if (maxCol)
+      maxCol.meta.format = '0.00';
+
+    const aucCol = resultDf.col('AUC');
+    if (aucCol)
+      aucCol.meta.format = '0.00';
+
     return resultDf;
   }
 
