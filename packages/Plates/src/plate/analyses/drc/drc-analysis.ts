@@ -167,11 +167,6 @@ export class DrcAnalysis extends AnalysisBase {
 
     const statsToAdd: Record<string, string> = {'interceptX': 'IC50', 'slope': 'Hill Slope', 'rSquared': 'R Squared', 'bottom': 'Min', 'top': 'Max', 'auc': 'AUC'};
 
-
-
-
-
-
     for (const [statName, colName] of Object.entries(statsToAdd)) {
       if (this.outputs.some((o) => o.name === colName)) {
         // this previosuly called:

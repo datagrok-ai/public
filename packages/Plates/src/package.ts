@@ -22,17 +22,9 @@ import {DrcAnalysis} from './plate/analyses/drc/drc-analysis';
 export const _package = new DG.Package();
 
 
-// //tags: autostart
-// export async function autostart(): Promise<void> {
-// }
-
-export class Sync {
-  private static _currentPromise: Promise<any> = Promise.resolve();
-  public static async runWhenDone<T>(func: () => Promise<T>): Promise<T> {
-    Sync._currentPromise = Sync._currentPromise.then(async () => { try { return await func(); } catch (e) { _package.logger.error(e); } });
-    return Sync._currentPromise;
-  }
-  // the number at the end is the column version
+//tags: autostart
+export async function autostart(): Promise<void> {
+  await PackageFunctions.createDummyPlateData();
 }
 
 
@@ -151,33 +143,100 @@ static async parseExcelPlate(content: string | Uint8Array, name?: string): Promi
 
 @grok.decorators.fileHandler({outputs: [], ext: 'xlsx', fileViewerCheck: 'Plates:checkExcelIsPlate'})
 static async importPlateXlsx(fileContent: Uint8Array): Promise<any[]> {
-  console.log('importPlateXlsx CALLED!', fileContent.length);
   const view = DG.View.create();
   const plate = await PackageFunctions.parseExcelPlate(fileContent);
-  console.log('Plate parsed!', plate);
 
-  view.root.appendChild(PlateWidget.fromPlate(plate).root);
+  const plateWidget = PlateWidget.fromPlate(plate);
+  const initialMappings = PackageFunctions.autoDetectDrcMappings(plate);
+  const drcAnalysis = new DrcAnalysis();
+  const analysisView = drcAnalysis.createView(
+    plate,
+    plateWidget,
+    initialMappings,
+    (target: string, source: string) => {
+      // Handle mapping changes
+      initialMappings.set(target, source);
+    },
+    (target: string) => {
+      initialMappings.delete(target);
+    }
+  );
+
+  const container = ui.divV([
+    plateWidget.root,
+    analysisView
+  ], 'xlsx-plate-container');
+
+  view.root.appendChild(container);
   view.name = 'Plate';
   grok.shell.addView(view);
   return [];
 }
 
+// this is a basic solution to make the demo files work. Perhaps this should be a Plate-specific registry of bespoke "heuristics" in the future.
+private static autoDetectDrcMappings(plate: Plate): Map<string, string> {
+  const mappings = new Map<string, string>();
+  const columnNames = plate.data.columns.names();
+  const activityCandidates = ['activity', 'response', 'readout', 'value', 'signal', 'raw data'];
+  for (const candidate of activityCandidates) {
+    const found = columnNames.find((name) => name.toLowerCase().includes(candidate));
+    if (found) {
+      mappings.set('Activity', found);
+      break;
+    }
+  }
+
+  const concCandidates = ['concentration', 'conc', 'dose', 'concentrations'];
+  for (const candidate of concCandidates) {
+    const found = columnNames.find((name) => name.toLowerCase().includes(candidate));
+    if (found) {
+      mappings.set('Concentration', found);
+      break;
+    }
+  }
+
+  const sampleCandidates = ['sample', 'compound', 'id', 'name', 'layout', 'plate layout'];
+  for (const candidate of sampleCandidates) {
+    const found = columnNames.find((name) => name.toLowerCase().includes(candidate));
+    if (found) {
+      mappings.set('SampleID', found);
+      break;
+    }
+  }
+
+  return mappings;
+}
+
 @grok.decorators.fileViewer({name: 'viewPlateXlsx', fileViewer: 'xlsx', fileViewerCheck: 'Plates:checkExcelIsPlate'})
 static async previewPlateXlsx(file: DG.FileInfo): Promise<DG.View> {
-  console.log('previewPlateXlsx CALLED!', file.name);
   const view = DG.View.create();
   view.name = file.friendlyName;
   const plate = await PackageFunctions.parseExcelPlate(await file.readAsBytes());
 
-  console.log('Plate dimensions:', plate.rows, 'x', plate.cols);
-  console.log('Plate columns:', plate.data.columns.names());
-  console.log('Plate data row count:', plate.data.rowCount);
-  console.log('First column sample:', plate.data.columns.byIndex(0).name, ':', plate.data.columns.byIndex(0).toList().slice(0, 10));
+  const plateWidget = PlateWidget.fromPlate(plate);
 
-  const widget = PlateWidget.fromPlate(plate);
-  console.log('PlateWidget created, current pane:', widget.tabs.currentPane?.name);
+  const initialMappings = PackageFunctions.autoDetectDrcMappings(plate);
 
-  view.root.appendChild(widget.root);
+  // Create DRC analysis
+  const drcAnalysis = new DrcAnalysis();
+  const analysisView = drcAnalysis.createView(
+    plate,
+    plateWidget,
+    initialMappings,
+    (target: string, source: string) => {
+      initialMappings.set(target, source);
+    },
+    (target: string) => {
+      initialMappings.delete(target);
+    }
+  );
+
+  const container = ui.divV([
+    plateWidget.root,
+    analysisView
+  ], 'xlsx-plate-container');
+
+  view.root.appendChild(container);
   return view;
 }
 
@@ -223,6 +282,10 @@ static checkFileIsPlate(content: string): boolean {
 
   @grok.decorators.func()
   static async createDummyPlateData(): Promise<void> {
-    await __createDummyPlateData();
+    try {
+      await __createDummyPlateData();
+    } catch (e) {
+      throw e;
+    }
   }
 }

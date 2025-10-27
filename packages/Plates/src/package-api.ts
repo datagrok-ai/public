@@ -126,6 +126,17 @@ export namespace queries {
 }
 
 export namespace funcs {
+  export async function autostart(): Promise<void> {
+    return await grok.functions.call('Plates:Autostart', {});
+  }
+
+  /**
+  Assasy plates with concentration, layout and readout data
+  */
+  export async function assayPlatesDemo(): Promise<void> {
+    return await grok.functions.call('Plates:AssayPlatesDemo', {});
+  }
+
   export async function initPlates(): Promise<void> {
     return await grok.functions.call('Plates:InitPlates', {});
   }
@@ -140,6 +151,21 @@ export namespace funcs {
 
   export async function importPlate(fileContent: string ): Promise<any> {
     return await grok.functions.call('Plates:ImportPlate', { fileContent });
+  }
+
+  /**
+  Checks if an Excel file contains plate data.
+  */
+  export async function checkExcelIsPlate(content: any ): Promise<boolean> {
+    return await grok.functions.call('Plates:CheckExcelIsPlate', { content });
+  }
+
+  export async function importPlateXlsx(fileContent: any ): Promise<void> {
+    return await grok.functions.call('Plates:ImportPlateXlsx', { fileContent });
+  }
+
+  export async function previewPlateXlsx(file: DG.FileInfo ): Promise<DG.View> {
+    return await grok.functions.call('Plates:PreviewPlateXlsx', { file });
   }
 
   /**
