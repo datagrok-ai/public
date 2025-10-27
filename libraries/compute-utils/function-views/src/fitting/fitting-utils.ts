@@ -110,13 +110,13 @@ export function makeGetCalledFuncCall(func: DG.Func, inputs: Record<string, any>
       funcCall.inputs[param.name] = inputs[param.name];
     for (const param of funcCall.outputParams.values())
       funcCall.outputs[param.name] = undefined;
-  }
+  };
 
   return async function getCalledFuncCall(x: Float64Array): Promise<DG.FuncCall> {
     resetSharedCall();
     x.forEach((val, idx) => funcCall.inputs[variedInputNames[idx]] = val);
-    return funcCall.call(undefined, undefined, {processed:true, report:false});
-  }
+    return funcCall.call(undefined, undefined, {processed: true, report: false});
+  };
 } // makeGetCalledFuncCall
 
 

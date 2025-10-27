@@ -21,14 +21,15 @@ export function makeConstFunction(
   throw new Error(`Unknown type ${type}`);
 }
 
-function makeMadCostFunc(func: DG.Func, bounds: Record<string, ValueBoundsData>, inputs: Record<string, any>, variedInputNames: string[], outputTargets: OutputTargetItem[]) {
+function makeMadCostFunc(func: DG.Func, bounds: Record<string, ValueBoundsData>,
+  inputs: Record<string, any>, variedInputNames: string[], outputTargets: OutputTargetItem[]) {
   /** Maximum absolute deviation (MAD) cost function */
   const getCalledFuncCall = makeGetCalledFuncCall(func, inputs, variedInputNames);
   const boundsChecker = makeBoundsChecker(bounds, variedInputNames);
-  let lastWorkStartTs: number | undefined = undefined
+  let lastWorkStartTs: number | undefined = undefined;
 
   const madCostFunc = async (x: Float64Array): Promise<number | undefined> => {
-    if(!boundsChecker(x))
+    if (!boundsChecker(x))
       return;
 
     const calledFuncCall = await getCalledFuncCall(x);
@@ -51,13 +52,14 @@ function makeMadCostFunc(func: DG.Func, bounds: Record<string, ValueBoundsData>,
   return madCostFunc;
 }
 
-function makeRmseCostFunc(func: DG.Func,  bounds: Record<string, ValueBoundsData>, inputs: Record<string, any>, variedInputNames: string[], outputTargets: OutputTargetItem[]) {
+function makeRmseCostFunc(func: DG.Func, bounds: Record<string, ValueBoundsData>,
+  inputs: Record<string, any>, variedInputNames: string[], outputTargets: OutputTargetItem[]) {
   /** Root mean sqaure error (RMSE) cost function */
   const getCalledFuncCall = makeGetCalledFuncCall(func, inputs, variedInputNames);
   const boundsChecker = makeBoundsChecker(bounds, variedInputNames);
-  let lastWorkStartTs: number | undefined = undefined
+  let lastWorkStartTs: number | undefined = undefined;
   const rmseCostFunc = async (x: Float64Array): Promise<number| undefined> => {
-    if(!boundsChecker(x))
+    if (!boundsChecker(x))
       return;
 
     const calledFuncCall = await getCalledFuncCall(x);

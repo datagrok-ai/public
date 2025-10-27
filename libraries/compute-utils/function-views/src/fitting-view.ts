@@ -157,12 +157,12 @@ export class FittingView {
       if (range?.[key] != undefined && (typeof range?.[key] !== 'string' || !isValidForFitting(inputProp)))
         return range[key];
       switch (key) {
-        case 'min':
-          return inputProp.min;
-        case 'max':
-          return inputProp.max;
-        default:
-          return getDefaultValue(inputProp);
+      case 'min':
+        return inputProp.min;
+      case 'max':
+        return inputProp.max;
+      default:
+        return getDefaultValue(inputProp);
       }
     };
 
@@ -180,7 +180,7 @@ export class FittingView {
         value: formula,
         onValueChanged() {
           it.updateApplicabilityState();
-        }
+        },
       });
 
       inp.setTooltip(`Formula for '${caption}', variable: ${inputProp.name}`);
@@ -201,13 +201,13 @@ export class FittingView {
           $(inputNumber.root).show();
           $(inputFormula.root).hide();
         }
-      }
+      };
       const boolInput = ui.input.bool('Use formula', {
         value: !!formula,
         onValueChanged(val) {
           toggleInputs(val);
           it.updateApplicabilityState();
-        }
+        },
       });
       toggleInputs(!!formula);
       return boolInput;
@@ -254,7 +254,7 @@ export class FittingView {
             value: defaultValue, onValueChanged: (value) => {
               ref.const.value = value;
               this.updateApplicabilityState();
-            }
+            },
           });
           inp.root.insertBefore(isChangingInputConst.root, inp.captionLabel);
           inp.addPostfix(inputProp.options['units']);
@@ -268,7 +268,7 @@ export class FittingView {
             value: getInputValue(inputProp, 'min'), onValueChanged: (value) => {
               (ref).min.value = value;
               this.updateApplicabilityState();
-            }
+            },
           });
           inp.addValidator((s: string) => (Number(s) > ref.max.value) ? 'Greater than max' : null);
           inp.addPostfix(inputProp.options['units']);
@@ -285,7 +285,7 @@ export class FittingView {
             value: getInputValue(inputProp, 'max'), onValueChanged: (value) => {
               (ref).max.value = value;
               this.updateApplicabilityState();
-            }
+            },
           });
           inp.addValidator((s: string) => (Number(s) < ref.min.value) ? 'Smaller than min' : null);
           inp.addPostfix(inputProp.options['units']);
@@ -314,7 +314,7 @@ export class FittingView {
             input: maxInput,
             value: getInputValue(inputProp, 'max'),
             formula: maxFormulaInput,
-            useFormula: maxUseFormulaInput
+            useFormula: maxUseFormulaInput,
           },
           isChanging: new BehaviorSubject<boolean>(false),
           constForm: [constInput],
@@ -325,7 +325,7 @@ export class FittingView {
             minUseFormulaInput,
             maxInput,
             maxFormulaInput,
-            maxUseFormulaInput
+            maxUseFormulaInput,
           ],
         };
 
@@ -774,9 +774,9 @@ export class FittingView {
       this.similarity = this.defaultsOverrides.similarity;
       this.similarityInput.value = this.similarity;
     }
-    if (this.defaultsOverrides.allowFormulas != null) {
+    if (this.defaultsOverrides.allowFormulas != null)
       this.allowFormulas = this.defaultsOverrides.allowFormulas;
-    }
+
 
     grok.events.onViewRemoved.pipe(filter((v) => v.id === baseView.id), take(1)).subscribe(() => {
       if (options.acceptMode && !this.isFittingAccepted) {
@@ -786,7 +786,7 @@ export class FittingView {
     });
 
     this.validationCheckRequests$.pipe(
-      debounceTime(0)
+      debounceTime(0),
     ).subscribe(() => {
       this.readyToRun = this.canFittingBeRun() && (!this.isFittingRunning);
       this.updateRunIconStyle();
@@ -1264,7 +1264,7 @@ export class FittingView {
   } // updateRunIconStyle
 
   private getInputValue(input: DG.InputBase) {
-    return input.inputType === "Choice" ? input.stringValue : input.value;
+    return input.inputType === 'Choice' ? input.stringValue : input.value;
   }
 
   // make inputs with formulas bounds last
@@ -1475,9 +1475,9 @@ export class FittingView {
     const variedInputs = this.getFittedInputs();
     const fixedInputs = this.getFixedInputs();
 
-    for (const name of [...fixedInputs, ...variedInputs]) {
+    for (const name of [...fixedInputs, ...variedInputs])
       inputsBoundsOrdered[name] = inputsBounds[name];
-    }
+
 
     return inputsBoundsOrdered;
   }
@@ -1685,7 +1685,7 @@ export class FittingView {
 
       if (allExtrCount < 1) {
         this.currentFuncCalls = [];
-        this.comparisonView.dataFrame = DG.DataFrame.fromColumns([DG.Column.fromFloat64Array(TITLE.LOSS, [] as any)])
+        this.comparisonView.dataFrame = DG.DataFrame.fromColumns([DG.Column.fromFloat64Array(TITLE.LOSS, [] as any)]);
         return;
       }
 

@@ -64,7 +64,7 @@ async function getInitialParams(
   objectiveFunc: (x: Float64Array) => Promise<number|undefined>,
   settings: Map<string, number>,
   paramsInitial: Float64Array,
-  costOutside: number
+  costOutside: number,
 ): Promise<[Float64Array[], number[]]> {
   const dim = paramsInitial.length + 1;
   const dimParams = paramsInitial.length;
@@ -83,7 +83,6 @@ async function getInitialParams(
           optParams[i][j] = nonZeroParam;
         else
           optParams[i][j] += initScale * paramsInitial[i - 1];
-
       }
     }
 
@@ -113,7 +112,6 @@ function fillPoint(
   for (let i = 0; i < dimParams; i++) {
     point[i] = centroid[i];
     point[i] += scale * (centroid[i] - optParams[lastIndex][i]);
-
   }
 }
 

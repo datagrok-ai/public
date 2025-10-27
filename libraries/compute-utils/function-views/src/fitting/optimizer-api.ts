@@ -4,9 +4,11 @@ import * as DG from 'datagrok-api/dg';
 import {EarlyStoppingSettings, LOSS, ReproSettings} from './constants';
 import {makeConstFunction} from './cost-functions';
 import {performNelderMeadOptimization} from './optimizer';
-import {Extremum, OptimizationResult, OptimizerInputsConfig, OptimizerOutputsConfig, TargetTableOutput, ValueBoundsData} from './optimizer-misc';
+import {Extremum, OptimizationResult, OptimizerInputsConfig, OptimizerOutputsConfig,
+  TargetTableOutput, ValueBoundsData} from './optimizer-misc';
 import {nelderMeadSettingsOpts} from './optimizer-nelder-mead';
-import {defaultEarlyStoppingSettings, defaultRandomSeedSettings, getInputsData, makeGetCalledFuncCall} from './fitting-utils';
+import {defaultEarlyStoppingSettings, defaultRandomSeedSettings, getInputsData,
+  makeGetCalledFuncCall} from './fitting-utils';
 import {getNonSimilar} from './similarity-utils';
 import {compileFormula} from './formulas-resolver';
 
@@ -36,9 +38,8 @@ export async function runOptimizer(
     settings,
     reproSettings,
     earlyStoppingSettings,
-  }: OptimizerParams
+  }: OptimizerParams,
 ): Promise<[OptimizationResult, DG.FuncCall[]]> {
-
   const {variedInputNames, fixedInputs} = getInputsData(inputBounds);
 
   const objectiveFunc = makeConstFunction(lossType, func, inputBounds, outputTargets);
@@ -55,7 +56,8 @@ export async function runOptimizer(
   similarity = similarity ?? defaultsOverrides.similarity ?? 10;
 
   const reproSettingsFull = {...defaultRandomSeedSettings, ...defaultsOverrides, ...(reproSettings ?? {})};
-  const earlyStoppingSettingsFull = {...defaultEarlyStoppingSettings, ...defaultsOverrides, ...(earlyStoppingSettings ?? {})};
+  const earlyStoppingSettingsFull = {...defaultEarlyStoppingSettings,
+    ...defaultsOverrides, ...(earlyStoppingSettings ?? {})};
 
   const optResult = await performNelderMeadOptimization({
     objectiveFunc,
@@ -72,7 +74,7 @@ export async function runOptimizer(
   const targetDfs: TargetTableOutput[] = outputTargets
     .filter((output) => output.type === DG.TYPE.DATA_FRAME)
     .map((output) => {
-      return { name: output.propName, target: output.target as DG.DataFrame, argColName: output.argName };
+      return {name: output.propName, target: output.target as DG.DataFrame, argColName: output.argName};
     });
 
   const nonSimilarExtrema = await getNonSimilar(extrema, similarity!, getCalledFuncCall, targetDfs);

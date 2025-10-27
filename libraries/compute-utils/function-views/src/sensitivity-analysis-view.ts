@@ -1013,7 +1013,7 @@ export class SensitivityAnalysisView {
 
         const selectedInput = funcInputs[cell.tableRowIndex ?? 0];
         const funcCall = this.func.prepare(selectedInput);
-        const selectedRun = await funcCall.call(undefined, undefined, {processed:true, report:false});
+        const selectedRun = await funcCall.call(undefined, undefined, {processed: true, report: false});
 
         const scalarParams = ([...selectedRun.outputParams.values()])
           .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
@@ -1172,7 +1172,7 @@ export class SensitivityAnalysisView {
 
         const selectedInput = funcInputs[cell.tableRowIndex ?? 0];
         const funcCall = this.func.prepare(selectedInput);
-        const selectedRun = await funcCall.call(undefined, undefined, {processed:true, report:false});
+        const selectedRun = await funcCall.call(undefined, undefined, {processed: true, report: false});
 
         const scalarParams = ([...selectedRun.outputParams.values()])
           .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
@@ -1354,7 +1354,7 @@ export class SensitivityAnalysisView {
 
         const selectedInput = funcInputs[cell.tableRowIndex ?? 0];
         const funcCall = this.func.prepare(selectedInput);
-        const selectedRun = await funcCall.call(undefined, undefined, {processed:true, report:false});
+        const selectedRun = await funcCall.call(undefined, undefined, {processed: true, report: false});
 
         const scalarParams = ([...selectedRun.outputParams.values()])
           .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));

@@ -824,7 +824,7 @@ export class OptimizationView {
       // Single call for output specification
       minVals.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
       const funcCall = this.func.prepare(inputs);
-      const calledFuncCall = await funcCall.call(undefined, undefined, {processed:true, report:false});
+      const calledFuncCall = await funcCall.call(undefined, undefined, {processed: true, report: false});
 
       outputsOfInterest.forEach((output) => {
         const caption = output.prop.caption ?? output.prop.name;
@@ -868,7 +868,7 @@ export class OptimizationView {
 
         x.forEach((val, idx) => inputs[variedInputNames[idx]] = val);
         const funcCall = this.func.prepare(inputs);
-        const calledFuncCall = await funcCall.call(undefined, undefined, {processed:true, report:false});
+        const calledFuncCall = await funcCall.call(undefined, undefined, {processed: true, report: false});
 
         const result = new Float32Array(outputDim);
         let curOutIdx = 0;

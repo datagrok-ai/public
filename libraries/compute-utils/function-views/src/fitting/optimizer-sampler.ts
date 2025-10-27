@@ -60,16 +60,16 @@ function getAccData(inputs: Record<string, ValueBoundsData>) {
       acc.boundsIdx++;
     }
     return acc;
-  }, { constValues: [], nonFormulaBounds: [], formulaBounds: [], boundsIdx: 0 } as AccData);
+  }, {constValues: [], nonFormulaBounds: [], formulaBounds: [], boundsIdx: 0} as AccData);
   return data;
 }
 
 function getFixedContext(constValues: [string, ConstValue][]) {
   const contextFixed: Record<string, any> = {};
   // add fixes inputs (can be any type) to formula context
-  for (const [name, data] of constValues) {
+  for (const [name, data] of constValues)
     contextFixed[name] = data.value;
-  }
+
   return contextFixed;
 }
 
@@ -79,7 +79,7 @@ function evalBoundFormula(bound: BoundFormula, context: Record<string, any>) {
 
 export function makeBoundsChecker(inputs: Record<string, ValueBoundsData>, variedInputNames: string[]) {
   // indexing by name in point
-  const variedNameToPosition = new Map(variedInputNames.map((name, pos) => [name, pos]))
+  const variedNameToPosition = new Map(variedInputNames.map((name, pos) => [name, pos]));
   const {constValues, nonFormulaBounds, formulaBounds} = getAccData(inputs);
   const contextFixed = getFixedContext(constValues);
 
@@ -95,7 +95,7 @@ export function makeBoundsChecker(inputs: Record<string, ValueBoundsData>, varie
       context[name] = val;
     }
     return true;
-  }
+  };
 }
 
 export function sampleParamsWithFormulaBounds(

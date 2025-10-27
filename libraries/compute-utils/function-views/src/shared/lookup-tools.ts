@@ -67,7 +67,7 @@ async function loadTable(command: string): Promise<DG.DataFrame | null> {
     return null;
   }
 
-  const calledFuncCall = await funcCall.call(undefined, undefined, {processed:true, report:false});
+  const calledFuncCall = await funcCall.call(undefined, undefined, {processed: true, report: false});
   const output = calledFuncCall.getOutputParamValue();
 
   if (!(output instanceof DG.DataFrame)) {

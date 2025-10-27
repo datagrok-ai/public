@@ -106,15 +106,14 @@ export function sleep(ms: number) {
 
 
 export async function throttle(
-  desiredWorkIntervalMs: number, sleepIntervalMs: number, lastWorkStartTs: number = performance.now()
+  desiredWorkIntervalMs: number, sleepIntervalMs: number, lastWorkStartTs: number = performance.now(),
 ): Promise<number> {
   const now = performance.now();
   if (now - lastWorkStartTs >= desiredWorkIntervalMs) {
     await sleep(sleepIntervalMs);
     return performance.now();
-  } else {
+  } else
     return lastWorkStartTs;
-  }
 }
 
 /** Target dataframe */
