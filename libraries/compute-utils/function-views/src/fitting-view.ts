@@ -1174,10 +1174,6 @@ export class FittingView {
     this.fittingSettingsIcon.style.minWidth = '50px';
     form.appendChild(this.methodInput.root);
 
-    const settingsHeader = ui.h2('with settings');
-    ui.tooltip.bind(settingsHeader, () => `Settings of the ${this.method} method`);
-    this.fittingSettingsDiv.appendChild(settingsHeader);
-
     // Add general settings
     [this.lossInput, this.samplesCountInput, this.similarityInput].forEach((inp) => {
       inp.root.insertBefore(getSwitchMock(), inp.captionLabel);
