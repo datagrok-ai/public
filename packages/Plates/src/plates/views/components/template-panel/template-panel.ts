@@ -48,8 +48,6 @@ export class TemplatePanel {
       });
     }
 
-    console.log('property');
-    console.log(prop);
     const property = DG.Property.fromOptions(prop);
     const input = DG.InputBase.forProperty(property);
     if (currentValue !== undefined)
@@ -182,6 +180,9 @@ export class TemplatePanel {
         activePlate.plate.details[prop.name!] = input.value;
       }
 
+      if (isRequired)
+        input.captionLabel.classList.add('required');
+
       input.onChanged.subscribe(() => {
         if (activePlate) {
           if (!activePlate.plate.details) activePlate.plate.details = {};
@@ -243,45 +244,38 @@ export class TemplatePanel {
 
     allTargetProps.forEach((prop) => {
       const mappedSource = mappings.get(prop.name);
-      const propNameEl = ui.span([prop.name]);
-      if (prop.required) {
-        const asterisk = ui.span([' *'], 'assay-plates--required-asterisk');
-        asterisk.style.color = 'red';
-        asterisk.style.marginLeft = '2px';
-        propNameEl.appendChild(asterisk);
-      }
-      const choiceControl = ui.input.choice('', {
+      const choiceInput = ui.input.choice(prop.name, {
         value: mappedSource || null,
         items: [null, ...sourceColumns],
         nullable: true,
         onValueChanged: (v: string | null) => { if (v) onMap(prop.name, v); else if (mappedSource) onUndo(prop.name); },
       });
 
-      choiceControl.enabled = hasSourceData;
-      if (!hasSourceData)
-        choiceControl.root.style.opacity = '0.6';
+      if (prop.required)
+        choiceInput.captionLabel.classList.add('required');
 
-      const rightCell = ui.divH([choiceControl.root], 'assay-plates--mapping-input-container');
+      choiceInput.enabled = hasSourceData;
+
+      const rightCell = ui.divH([choiceInput.root], 'assay-plates--mapping-input-container');
       if (mappedSource) {
         const undoIcon = ui.iconFA('times', () => onUndo(prop.name), 'Undo mapping');
         undoIcon.classList.add('assay-plates--mapping-undo-icon');
         rightCell.appendChild(undoIcon);
       }
-      // //@ts-ignore
-      // host.appendChild(createFormRow(propNameEl, rightCell));
+      this.wellPropertiesHost.appendChild(choiceInput.root);
     });
 
-    const addRowHost = ui.divH([], 'assay-plates--add-row-container');
-    const addBtn = ui.button(ui.iconFA('plus'), () => {
-      const newRow = this.createDynamicMappingRow(sourceColumns, onMap, () => newRow.remove());
-      host.insertBefore(newRow, addRowHost);
-    }, 'Add new property mapping');
-    addBtn.classList.add('assay-plates--icon-button', 'assay-plates--add-button');
+    // const addRowHost = ui.divH([], 'assay-plates--add-row-container');
+    // const addBtn = ui.button(ui.iconFA('plus'), () => {
+    //   const newRow = this.createDynamicMappingRow(sourceColumns, onMap, () => newRow.remove());
+    //   host.insertBefore(newRow, addRowHost);
+    // }, 'Add new property mapping');
+    // addBtn.classList.add('assay-plates--icon-button', 'assay-plates--add-button');
 
-    addBtn.disabled = !hasSourceData;
+    // addBtn.disabled = !hasSourceData;
 
-    addRowHost.appendChild(addBtn);
-    host.appendChild(addRowHost);
+    // addRowHost.appendChild(addBtn);
+    // host.appendChild(addRowHost);
   }
 
   destroy(): void {
