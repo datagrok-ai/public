@@ -1,5 +1,10 @@
 # bio changelog
 
+## 5.60.0 (2025-10-28)
+
+* Monomer library management rework: Transition to library providers, instead of single file based monomer libraries. Support multiple library providers.
+* NB! BREAKING CHANGE to the monomer library management API. Update your code accordingly.
+
 ## 5.55.0 (2025-10-03)
 
 * Full BILN support: conversion to/from HELM/separator/fasta/molecular form, parsing, rendering, monomer library handling.

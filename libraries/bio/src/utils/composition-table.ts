@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {TAGS as bioTAGS, ALPHABET} from './macromolecule';
 import {GAP_SYMBOL} from './macromolecule/consts';
-import {IMonomerLibBase} from './../types';
+import {IMonomerLibBase} from './../types/monomer-library';
 import {HelmType} from './../helm/types';
 
 export function buildCompositionTable(

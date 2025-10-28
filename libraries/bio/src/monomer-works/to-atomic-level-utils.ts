@@ -3,7 +3,7 @@ import {monomerWorksConsts as C} from './consts';
 import {getMolGraph, LoopConstants, LoopVariables, MolfileWithMap, MolGraph, MonomerMap, MonomerMolGraphMap} from './types';
 import {HELM_FIELDS, HELM_CORE_FIELDS, HELM_POLYMER_TYPE, HELM_MONOMER_TYPE,} from '../utils/const';
 import {ALPHABET, GAP_SYMBOL} from '../utils/macromolecule/consts';
-import {IMonomerLibBase, Monomer} from '../types';
+import {IMonomerLibBase, Monomer} from '../types/monomer-library';
 import {ISeqMonomer, PolymerType} from '../helm/types';
 import {helmTypeToPolymerType} from './monomer-works';
 

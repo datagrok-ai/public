@@ -5,7 +5,7 @@ import wu from 'wu';
 import {ALPHABET, getAlphabet, NOTATION, TAGS} from './macromolecule';
 import {ISeqHelper} from './seq-helper';
 import {StringListSeqSplitted} from './macromolecule/utils';
-import {IMonomerLib} from '../types/index';
+import {IMonomerLib} from '../types/monomer-library';
 import {PolymerTypes} from '../helm/consts';
 import {GapOriginals} from './macromolecule/consts';
 

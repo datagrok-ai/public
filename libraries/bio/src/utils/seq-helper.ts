@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {IMonomerLibBase} from '../types';
+import {IMonomerLibBase} from '../types/monomer-library';
 
 import {ISeqHandler} from './macromolecule/seq-handler';
 import {MolfileWithMap} from '../monomer-works/types';

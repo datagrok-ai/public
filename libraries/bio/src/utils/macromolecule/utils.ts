@@ -489,7 +489,6 @@ export function detectAlphabet(freq: MonomerFreqs, candidates: CandidateType[], 
     alphabetName = sim.name;
   } else
     alphabetName = ALPHABET.UN;
-  console.log(maxSim, alphabetName);
   return alphabetName;
 }
 
