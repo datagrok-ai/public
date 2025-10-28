@@ -42,7 +42,7 @@ Datagrok supports multiple modalities, including:
 
   - [Sequence-activity relationship analysis](../solutions/domains/bio/bio.md#sequence-activity-relationship-analysis)
   - [Multiple sequence alignment](../solutions/domains/bio/bio.md#multiple-sequence-alignment-msa)
-  - [Atomic-level structure generation](../solutions/domains/bio/bio.md#get-atomic-level-structure)
+  - [Atomic-level structure generation](../solutions/domains/bio/bio.md#convert-to-atomic-level)
 
 - Predictive modeling and ADMET:
 
