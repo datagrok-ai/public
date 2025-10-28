@@ -6,11 +6,11 @@ import wu from 'wu';
 
 /* eslint-disable max-len */
 import {ALIGNMENT, ALPHABET, candidateAlphabets, getSplitterWithSeparator, NOTATION, positionSeparator, splitterAsFasta, splitterAsHelm, TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule/index';
-import {INotationProvider, ISeqConnection, ISeqSplitted, SeqColStats, SplitterFunc,} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {CandidateType, INotationProvider, ISeqConnection, ISeqSplitted, SeqColStats, SplitterFunc,} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {detectAlphabet, detectHelmAlphabet, splitterAsFastaSimple, StringListSeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 import {mmDistanceFunctions, MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {mmDistanceFunctionType} from '@datagrok-libraries/ml/src/macromolecule-distance-functions/types';
-import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {HELM_POLYMER_TYPE, HELM_WRAPPERS_REGEXP, PHOSPHATE_SYMBOL} from '@datagrok-libraries/bio/src/utils/const';
 import {GAP_SYMBOL, GapOriginals} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {CellRendererBackBase, GridCellRendererTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
@@ -201,7 +201,20 @@ export class SeqHandler implements ISeqHandler {
     } else if (units === NOTATION.HELM) {
       let alphabet = uh.column.getTag(TAGS.alphabet);
       if (alphabet === null) {
-        alphabet = detectHelmAlphabet(uh.stats.freq, candidateAlphabets, uh.defaultGapOriginal);
+        // const cats = uh.column.categories;
+        // const splitter = uh.getSplitter();
+        // const samples = Array.from(new Set(
+        //   wu.count(0).take(Math.min(100, cats.length)).map((_) => Math.floor(Math.random() * cats.length)).toArray())
+        // ).map((catIndex) => cats[catIndex]).filter((s) => (s?.length ?? 0) > 0).map((s) => splitter(s));
+        // // splitted helm has info about polymer types
+        // const polymerTypes = new Set<HELM_POLYMER_TYPE>();
+        // for (const ss of samples) {
+        //   ss.graphInfo?.polymerTypes
+        // }
+        // increase the detection threshold for candidate alphabets
+        const modifiedCandidateAlphabets = candidateAlphabets.map((ca) => new CandidateType(ca.name, ca.alphabet, 0.9));
+
+        alphabet = detectHelmAlphabet(uh.stats.freq, modifiedCandidateAlphabets, uh.defaultGapOriginal);
         uh.column.setTag(TAGS.alphabet, alphabet);
       }
     }

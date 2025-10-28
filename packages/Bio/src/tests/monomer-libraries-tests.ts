@@ -3,13 +3,13 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {test, after, before, category, expect, expectObject} from '@datagrok-libraries/utils/src/test';
-import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {
   getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {expectMonomerLib} from '@datagrok-libraries/bio/src/tests/monomer-lib-tests';
 import {MonomerTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
-import {Monomer} from '@datagrok-libraries/bio/src/types/index';
+import {Monomer} from '@datagrok-libraries/bio/src/types/monomer-library';
 
 import {monomerLibForTestsSummary} from '../utils/monomer-lib/consts';
 
@@ -50,11 +50,13 @@ category('monomerLibraries', () => {
   test('empty', async () => {
     // exclude all monomer libraries for empty set
     const libSettings = await getUserLibSettings();
-    const libFileManager = await monomerLibHelper.getFileManager();
 
-    let libFnList = libFileManager.getValidLibraryPaths();
-    if (libFnList.length === 0)
-      libFnList = await libFileManager.getValidLibraryPathsAsynchronously();
+
+    let libFnList = await monomerLibHelper.getAvaliableLibraryNames();
+    if (libFnList.length === 0) {
+      await monomerLibHelper.refreshValidLibraryLists();
+      libFnList = await monomerLibHelper.getAvaliableLibraryNames();
+    }
 
     libSettings.exclude = libFnList;
     libSettings.explicit = [];

@@ -12,16 +12,17 @@ import {
   MonomerSetType, PolymerType,
 } from '@datagrok-libraries/bio/src/helm/types';
 import {IMonomerLibBase, IMonomerLib, Monomer,
-  MonomerLibData, MonomerLibSummaryType} from '@datagrok-libraries/bio/src/types';
+  MonomerLibData, MonomerLibSummaryType} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {getUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 
-import {MonomerLibBase, MonomerLibDataType} from './monomer-lib-base';
+import {MonomerLibBase} from './monomer-lib-base';
 
 import {_package} from '../../package';
 
+//@ts-ignore
 import '../../../css/cell-renderer.css';
 
 /** Wrapper for monomers obtained from different sources. For managing monomere
@@ -38,7 +39,7 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
   private duplicatesNotified: boolean = false;
 
   constructor(
-    monomers: MonomerLibDataType,
+    monomers: MonomerLibData,
     source: string,
     public readonly error: string | undefined = undefined,
   ) {
@@ -158,7 +159,7 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
     this._isEmpty = this.isEmpty && lib.isEmpty;
   }
 
-  public updateLibs(libList: IMonomerLib[], reload: boolean = false): void {
+  public async updateLibs(libList: IMonomerLib[], reload: boolean = false): Promise<void> {
     if (reload) {
       this._monomers = {};
       this._isEmpty = true;
@@ -167,9 +168,8 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
     for (const lib of libList)
       if (!lib.error) this._updateLibInt(lib);
     if (Object.entries(this.duplicateMonomers).length > 0) {
-      getUserLibSettings().then((settings) => {
-        this.assignDuplicatePreferences(settings);
-      });
+      const settings = await getUserLibSettings();
+      this.assignDuplicatePreferences(settings);
     } else
       this._duplicatesHandled = true;
 

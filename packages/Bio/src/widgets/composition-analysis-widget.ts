@@ -6,7 +6,7 @@ import wu from 'wu';
 
 import {TAGS as bioTAGS, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {GAP_SYMBOL} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
-import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {HelmType} from '@datagrok-libraries/bio/src/helm/types';
 import {HelmTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 

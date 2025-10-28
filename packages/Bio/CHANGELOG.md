@@ -1,5 +1,10 @@
 # Bio changelog
 
+## 2.24.0 (2025-10-28)
+
+* Monomer library management rework: Transition to library providers, instead of single file based monomer libraries. Support multiple library providers.
+* NB! BREAKING CHANGE to the monomer library management API. Update your code accordingly.
+
 ## 2.23.2 (2025-10-17)
 
 * Fix Helm converter to support multi type polymers

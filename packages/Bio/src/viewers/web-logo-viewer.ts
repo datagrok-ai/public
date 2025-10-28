@@ -25,7 +25,7 @@ import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/type
 import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
 import {GAP_SYMBOL} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
-import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/index';
+import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {HelmType} from '@datagrok-libraries/bio/src/helm/types';
 import {undefinedColor} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 

@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 import {Observable, Subject} from 'rxjs';
 
-import {IMonomerLibBase, Monomer, RGroup} from '@datagrok-libraries/bio/src/types/index';
+import {IMonomerLibBase, Monomer, RGroup} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {HelmAtom, HelmType, IMonomerColors,
   IWebEditorMonomer, MonomerType, PolymerType} from '@datagrok-libraries/bio/src/helm/types';
 import {getMonomerHandleArgs} from '@datagrok-libraries/bio/src/helm/helm-helper';
@@ -23,6 +23,7 @@ import {LibraryWebEditorMonomer} from './web-editor-monomer-of-library';
 import {naturalMonomerColors} from './monomer-colors';
 
 import {_package} from '../../package';
+import {MonomerLibData} from '@datagrok-libraries/bio/src/types/monomer-library';
 
 const monomerRe = /[\w()]+/;
 //** Do not mess with monomer symbol with parenthesis enclosed in square brackets */
@@ -33,8 +34,6 @@ const drawMoleculeCall = (s: string) => {
   grok.chem.canvasMol(0, 0, 250, 250, canvas, s);
   return canvas;
 };
-
-export type MonomerLibDataType = { [polymerType: string]: { [monomerSymbol: string]: Monomer } };
 
 const whiteColorV = new Vector([255.0, 255.0, 255.0]);
 const blackColorV = new Vector([0.0, 0.0, 0.0]);
@@ -50,7 +49,7 @@ export class MonomerLibBase implements IMonomerLibBase {
 
 
   constructor(
-    protected _monomers: MonomerLibDataType,
+    protected _monomers: MonomerLibData,
     public readonly source: string,
   ) {
     this._isEmpty = !this._monomers || Object.keys(this._monomers).length === 0 ||
