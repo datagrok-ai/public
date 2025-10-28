@@ -22,8 +22,9 @@ import {convert, getSupportedTargetFormats, getTranslatedSequences} from '../mod
 import {ITranslationHelper} from '../../../types';
 
 import {NUCLEOTIDES_FORMAT, SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG} from './const';
-import './style.css';
 import {_package} from '../../../package';
+//@ts-ignore
+import './style.css';
 
 const enum REQUIRED_COLUMN_LABEL {
   SEQUENCE = 'Sequence',

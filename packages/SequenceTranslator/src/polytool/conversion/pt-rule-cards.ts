@@ -2,9 +2,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+// @ts-ignore
 import './style.css';
 
-import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {Rules} from './pt-rules';
 import {getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {doPolyToolConvert} from './pt-conversion';

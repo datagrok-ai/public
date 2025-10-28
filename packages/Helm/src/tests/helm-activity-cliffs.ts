@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {after, awaitCheck, before, category, test} from '@datagrok-libraries/utils/src/test';
 
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
-import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {
   getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';

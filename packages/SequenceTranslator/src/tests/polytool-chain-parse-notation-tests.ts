@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -81,7 +82,7 @@ category('PolyTool: Chain: parseNotation', () => {
     '3-in-1-1-6-3': {inIdx: 1, spIdx: 2, outIdx: 3, monomers: [['0'], ['1'], ['2', '3', '4', '5', '6', '7'], ['8', '9', '10']]},
     '7-in-1-1-6-3': {inIdx: 5, spIdx: 2, outIdx: 7, monomers: [['0'], ['1'], ['2', '3', '4', '5', '6', '7'], ['8', '9', '10']]},
     '8-in-1-1-6-3': {inIdx: 0, spIdx: 3, outIdx: 8, monomers: [['0'], ['1'], ['2', '3', '4', '5', '6', '7'], ['8', '9', '10']]},
-//    '11-in-1-1-6-3': {inIdx: 0, spIdx: 4}, src: {outIdx: 11, monomers: [['0'], ['1'], ['2', '3', '4', '5', '6', '7'], ['8', '9', '10']]}},
+    //    '11-in-1-1-6-3': {inIdx: 0, spIdx: 4}, src: {outIdx: 11, monomers: [['0'], ['1'], ['2', '3', '4', '5', '6', '7'], ['8', '9', '10']]}},
   };
 
   for (const [testName, {inIdx, spIdx, outIdx, monomers}] of Object.entries(innerIdxTests)) {
