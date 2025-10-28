@@ -85,17 +85,15 @@ function analysisFormToMatchers(form: DG.InputForm, analysisName: string): Analy
   if (!form || !analysisName) return matchers;
 
   for (const input of form.inputs) {
-    if (input.value == null || input.value === '') continue;
+    if (input.value == null || input.value === '' || (Array.isArray(input.value) && input.value.length === 0)) continue;
 
-    // Handle group condition
-    if (input.caption === 'Group') {
+    if (input.caption === 'Groups' && Array.isArray(input.value)) {
       matchers.push({
         analysisName: analysisName,
         group: input.value,
-      } as AnalysisCondition);
+      });
       continue;
     }
-
     // Handle property conditions
     const propInput = input as AnalysisPropInput;
     if (propInput.prop && propInput.inputType === DG.InputType.Text && NumericMatcher.parse(propInput.value)) {
@@ -173,10 +171,21 @@ function getSearchView(viewName: string,
     const selectedAnalysis = AnalysisManager.instance.byFriendlyName(analysisTypeSelector.value as string);
     const analysisName = selectedAnalysis ? selectedAnalysis.name : '';
 
+    const analysisMatchers = analysisFormToMatchers(analysisForm, analysisName);
+
+    // If an analysis is selected (analysisName is not 'None' or empty),
+    // but no sub-filters are filled out (analysisMatchers is empty),
+    // we must add a "base" condition to filter by the analysis type itself.
+    if (analysisName && analysisMatchers.length === 0) {
+      analysisMatchers.push({
+        analysisName: analysisName
+      } as AnalysisCondition);
+    }
+
     const query: PlateQuery = {
       plateMatchers: [...searchFormToMatchers(platesTemplateForm), ...searchFormToMatchers(platesOtherForm)],
       wellMatchers: [...searchFormToMatchers(wellsTemplateForm), ...searchFormToMatchers(wellsOtherForm)],
-      analysisMatchers: analysisFormToMatchers(analysisForm, analysisName),
+      analysisMatchers: analysisMatchers,
     };
 
     search(query).then((df) => {
@@ -209,8 +218,9 @@ function getSearchView(viewName: string,
     if (analysis.name === 'DRC' || analysis.name === 'Dose-Ratio') {
       const groups = await getAnalysisRunGroups(analysis.name);
       if (groups.length > 0) {
-        const groupInput = ui.typeAhead('Group', {
-          source: {local: groups}
+        const groupInput = ui.input.multiChoice('Groups', {
+          items: groups,
+          value: [],
         });
         inputs.push(groupInput);
       }
@@ -276,7 +286,7 @@ function getSearchView(viewName: string,
   const filterPanel = ui.divV([
     ui.divH([plateTemplateSelector.root]),
     ui.divH([
-      ui.divV([ui.h2('Plates'), platesFormHost], {style: {flexGrow: '1', marginRight: '10px'}}),
+      ui.divV([ui.h2('Plates'), platesFormHost], {style: {flexGrow: '1T', marginRight: '10px'}}),
       ui.divV([ui.h2('Wells'), wellsFormHost], {style: {flexGrow: '1', marginLeft: '10px'}})
     ], {style: {width: '100%'}}),
     ui.divV([
