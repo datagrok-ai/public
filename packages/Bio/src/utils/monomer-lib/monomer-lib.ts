@@ -55,32 +55,6 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
     return resJSON;
   }
 
-  getMonomer(polymerType: PolymerType | null, argMonomerSymbol: string): Monomer | null {
-    const logPrefix = `Bio: MonomerLib.getMonomer()`;
-    // Adjust RNA's 'R' for ribose to 'r' and 'P' for phosphate to 'p' for case-sensitive monomer names.
-    // There are uppercase 'R' and 'P' at RNA samples in test data 'helm2.csv' but lowercase in HELMCoreLibrary.json
-    let monomerSymbol = argMonomerSymbol;
-    if (polymerType == 'RNA' && monomerSymbol == 'R')
-      monomerSymbol = 'r';
-    if (polymerType == 'RNA' && monomerSymbol == 'P')
-      monomerSymbol = 'p';
-
-    let res: Monomer | null = null;
-
-    if (!polymerType) {
-      _package.logger.warning(`${logPrefix} symbol '${argMonomerSymbol}', polymerType not specified.`);
-      // Assume any polymer type
-      for (const [_polymerType, dict] of Object.entries(this._monomers)) {
-        res = dict[monomerSymbol];
-        if (res) break;
-      }
-    } else {
-      const dict = this._monomers[polymerType];
-      res = dict?.[monomerSymbol] ?? null;
-    }
-    return res;
-  }
-
   private _monomerSets: { [biotype: string /*HelmType*/]: MonomerSetType } | null = null;
 
   getMonomerSet(biotype: HelmType): MonomerSetType | null {

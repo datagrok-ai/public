@@ -34,6 +34,7 @@ import {AggFunc, getAgg} from '../utils/agg';
 import {_package, PackageFunctions} from '../package';
 import {numbersWithinMaxDiff} from './utils';
 import {buildCompositionTable} from '@datagrok-libraries/bio/src/utils/composition-table';
+import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 
 declare global {
   interface HTMLCanvasElement {
@@ -212,14 +213,24 @@ export class PositionInfo {
   ) {
     for (const [monomer, pmInfo] of Object.entries(this._freqs)) {
       if (monomer !== GAP_SYMBOL) {
-        const monomerTxt = monomerToShort(monomer, maxMonomerLetters);
+        // to handle explicit smiles based monomers in monomer lib
+        let monomerDisplayValue = monomer;
+
         const b = pmInfo.bounds!;
         const left = b.left;
 
         let color: string = undefinedColor;
-        if (monomerLib)
-          color = monomerLib.getMonomerTextColor(biotype, monomer)!;
-
+        if (monomerLib) {
+          try {
+            color = monomerLib.getMonomerTextColor(biotype, monomer)!;
+            const m = monomerLib.getMonomer(helmTypeToPolymerType(biotype), monomer);
+            if (m && m.symbol !== monomer) // for explicit smiles based monomers
+              monomerDisplayValue = m.symbol;
+          } catch (e) {
+            errorToConsole(e);
+          }
+        }
+        const monomerTxt = monomerToShort(monomerDisplayValue, maxMonomerLetters);
         g.resetTransform();
         g.strokeStyle = 'lightgray';
         g.lineWidth = 1;

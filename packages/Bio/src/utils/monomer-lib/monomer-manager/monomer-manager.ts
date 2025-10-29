@@ -1178,7 +1178,7 @@ function getCorrectedSmiles(rgroups: RGroup[], smiles?: string, molBlock?: strin
   return isSmilesMalformed ? canonical : grok.chem.convert(canonical, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles);
 }
 
-function getCorrectedMolBlock(molBlock: string) {
+export function getCorrectedMolBlock(molBlock: string) {
   // to correct molblock, we should make sure that
   // 1. RGP field is present at the end, before the M END line
   // 2. RGP field is present in the correct format

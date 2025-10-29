@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.25.0 (2025-10-29)
+
+* CHEMS and SMILES support in HELM
+
 ## 2.24.0 (2025-10-28)
 
 * Monomer library management rework: Transition to library providers, instead of single file based monomer libraries. Support multiple library providers.

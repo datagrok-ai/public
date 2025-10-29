@@ -1,16 +1,24 @@
 import {HELM_POLYMER_TYPE} from '@datagrok-libraries/bio/src/utils/const';
 import {ConnectionList} from './connection-list';
-import {HELM_ITEM_SEPARATOR, HELM_SECTION_SEPARATOR} from './const';
+import {HELM_ITEM_SEPARATOR} from './const';
 import {SimplePolymer} from './simple-polymer';
 import {Bond} from './types';
 
 export class Helm {
   constructor(private helmString: string) {
-    const helmSections = this.helmString.split(HELM_SECTION_SEPARATOR);
-    const simplePolymers = helmSections[0].split(HELM_ITEM_SEPARATOR);
-    this.simplePolymers = simplePolymers
+    const indexOfSequenceEnd = helmString.indexOf('}$');
+    const sequencePart = helmString.substring(0, indexOfSequenceEnd + 1);
+    const connectionsEndPart = helmString.indexOf('$', indexOfSequenceEnd + 2);
+    const connectionsPart = helmString.substring(indexOfSequenceEnd + 2, connectionsEndPart);
+    // const helmParts = seq.split('$');
+    const spList = sequencePart.split('}|');
+    // since we removed }|, need to add } to last part
+    for (let i = 0; i < spList.length - 1; i++)
+      spList[i] = spList[i] + '}';
+
+    this.simplePolymers = spList
       .map((item) => new SimplePolymer(item));
-    this.connectionList = new ConnectionList(helmSections[1]);
+    this.connectionList = new ConnectionList(connectionsPart);
     this.bondData = this.getBondData();
 
     this.bondedRGroupsMap = this.getBondedRGroupsMap();
