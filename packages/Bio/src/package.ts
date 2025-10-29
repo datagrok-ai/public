@@ -123,7 +123,7 @@ export class PackageFunctions {
 
   @grok.decorators.init({})
   static async initBio(): Promise<void> {
-    if (initBioPromise === null)
+    if (initBioPromise == null)
       initBioPromise = initBioInt();
 
     await initBioPromise;

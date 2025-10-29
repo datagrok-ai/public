@@ -153,7 +153,7 @@ export class MonomerLibBase implements IMonomerLibBase {
       if (this._smilesMonomerCache[polymerType]?.[monomerSymbol])
         monomerSymbol = this._smilesMonomerCache[polymerType][monomerSymbol];
       const dict = this._monomers[polymerType];
-      res = dict ? dict[monomerSymbol] : null;
+      res = dict?.[monomerSymbol] ?? null;
     }
     return res;
   }

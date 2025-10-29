@@ -19,13 +19,13 @@ export class RGroupHandler {
 
   getAtomicIdx(rGroupId: number): number | null {
     const atomicIdx = this.rGroupIdToAtomicIndexMap.get(rGroupId);
-    return atomicIdx === undefined ? null : atomicIdx;
+    return atomicIdx == undefined ? null : atomicIdx;
   }
 
   private removeRGroupsFromAtomBlock(rGroupIds: number[]): void {
     rGroupIds.forEach((rgroupId) => {
       const atomicIdx = this.rGroupIdToAtomicIndexMap.get(rgroupId);
-      if (atomicIdx === undefined)
+      if (atomicIdx == undefined)
         throw new Error(`Cannot find atomic index for R group ${rgroupId}`);
     });
 

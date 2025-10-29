@@ -29,7 +29,7 @@ export class HelmToMolfileConverter implements IHelmToMolfileConverter {
     const smilesColName = `smiles(${helmCol.name})`;
     const smilesColNameU = df ? df.columns.getUnusedName(smilesColName) : smilesColName;
     return DG.Column.fromStrings(smilesColNameU, smiles.map((molecule) => {
-      if (molecule === null)
+      if (molecule == null)
         return '';
       return molecule;
     }));
@@ -57,7 +57,7 @@ export class HelmToMolfileConverter implements IHelmToMolfileConverter {
 
   public getMolV3000ViaOCL(beautifiedMols: (RDMol | null)[], columnName: string): DG.Column<string> {
     const beautifiedMolV2000 = beautifiedMols.map((mol) => {
-      if (mol === null)
+      if (mol == null)
         return '';
       const molBlock = mol.get_v3Kmolblock();
       mol!.delete();
@@ -97,7 +97,7 @@ export class HelmToMolfileConverter implements IHelmToMolfileConverter {
     if (chiralityEngine)
       return this.getMolV3000ViaOCL(beautifiedMols, molColNameU);
     return DG.Column.fromStrings(molColNameU, beautifiedMols.map((mol) => {
-      if (mol === null)
+      if (mol == null)
         return '';
       const molBlock = mol.get_v3Kmolblock();
       mol!.delete();

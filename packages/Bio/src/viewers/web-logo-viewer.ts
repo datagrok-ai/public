@@ -960,7 +960,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       return [null, null, null];
 
     const monomer: string | undefined = pi.getMonomerAt(calculatedX, p.y);
-    if (monomer === undefined)
+    if (monomer == undefined)
       return [pi, null, null];
 
     return [pi, monomer, pi.getFreq(monomer)];
@@ -1273,7 +1273,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       const [pi, monomer] = this.getMonomer(cursorP, dpr);
       const positionLabelHeight = this.showPositionLabels ? POSITION_LABELS_HEIGHT * dpr : 0;
 
-      if (pi !== null && monomer === null && 0 <= cursorP.y && cursorP.y <= positionLabelHeight) {
+      if (pi !== null && monomer == null && 0 <= cursorP.y && cursorP.y <= positionLabelHeight) {
         // Position tooltip
 
         const tooltipRows = [ui.divText(`Position ${pi.label}`)];
@@ -1384,8 +1384,8 @@ function renderPositionLabels(g: CanvasRenderingContext2D,
       const pos = positions[jPos];
       const tm = g.measureText(pos.name);
       const textHeight = tm.actualBoundingBoxDescent - tm.actualBoundingBoxAscent;
-      maxPosNameWidth = maxPosNameWidth === null ? tm.width : Math.max(maxPosNameWidth, tm.width);
-      maxPosNameHeight = maxPosNameHeight === null ? textHeight : Math.max(maxPosNameHeight, textHeight);
+      maxPosNameWidth = maxPosNameWidth == null ? tm.width : Math.max(maxPosNameWidth, tm.width);
+      maxPosNameHeight = maxPosNameHeight == null ? textHeight : Math.max(maxPosNameHeight, textHeight);
     }
     const hScale = maxPosNameWidth! < (positionWidth * dpr - 2) ? 1 : (positionWidth * dpr - 2) / maxPosNameWidth!;
 

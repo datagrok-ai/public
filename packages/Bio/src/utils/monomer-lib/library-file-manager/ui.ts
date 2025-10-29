@@ -50,7 +50,7 @@ class MonomerLibraryManagerWidget {
   private libHelper: IMonomerLibHelper;
 
   static async getInstance(): Promise<MonomerLibraryManagerWidget> {
-    if (MonomerLibraryManagerWidget.instancePromise === undefined) {
+    if (MonomerLibraryManagerWidget.instancePromise == undefined) {
       MonomerLibraryManagerWidget.instancePromise = (async () => {
         const instance = new MonomerLibraryManagerWidget();
         const libHelper = await getMonomerLibHelper();

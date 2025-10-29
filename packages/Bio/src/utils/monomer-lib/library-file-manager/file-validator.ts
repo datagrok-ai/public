@@ -22,7 +22,7 @@ export class MonomerLibFileValidator {
 
   validateFile(fileContent: string, fileName: string): boolean {
     const jsonContent = this.parseJson(fileContent, fileName);
-    if (jsonContent === null)
+    if (jsonContent == null)
       return false;
 
     if (!Array.isArray(jsonContent)) {

@@ -138,7 +138,7 @@ async function onDialogOk(
     colInput.fireChanged();
     if (colInput.value.semType !== DG.SEMTYPE.MACROMOLECULE)
       throw new Error('Chosen column has to be of Macromolecule semantic type');
-    if (performAlignment === undefined) // value can only be undefined when column can't be processed with either method
+    if (performAlignment == undefined) // value can only be undefined when column can't be processed with either method
       throw new Error('Invalid column format');
     msaCol = await performAlignment(); // progress
     if (msaCol == null)

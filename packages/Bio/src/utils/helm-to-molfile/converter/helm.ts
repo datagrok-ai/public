@@ -66,7 +66,7 @@ export class Helm {
     const lowerBound = shiftValues.sort((a, b) => b - a).find( // find the largest shift not exceeding monomerGlobalIdx
       (shift) => monomerGlobalIdx >= shift
     );
-    if (lowerBound === undefined)
+    if (lowerBound == undefined)
       throw new Error(`Cannot find simple polymer for monomer ${monomerGlobalIdx}`);
     const simplePolymerId = Object.keys(shifts).find((simplePolymerId) => shifts[simplePolymerId] === lowerBound)!;
     const simplePolymer = this.simplePolymers.find((simplePolymer) => simplePolymer.id === simplePolymerId)!;
