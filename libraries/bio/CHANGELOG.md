@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.61.0 (2025-10-29)
+
+* CHEMS and SMILES support in HELM
+
 ## 5.60.0 (2025-10-28)
 
 * Monomer library management rework: Transition to library providers, instead of single file based monomer libraries. Support multiple library providers.
