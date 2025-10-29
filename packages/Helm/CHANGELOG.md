@@ -1,5 +1,10 @@
 # Helm changelog
 
+## 2.13.0 (2025-10-29)
+
+* CHEMS and SMILES support in HELM
+* Monomer library management rework: Transition to library providers, instead of single file based monomer libraries. Support multiple library providers.
+
 ## 2.11.0 (2025-10-17)
 
 Support for multi type polymers in Helm Web Editor
