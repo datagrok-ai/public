@@ -6,7 +6,7 @@ import '../css/revvity-signals-styles.css';
 import { SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
 import { queryLibraries, queryTags, queryTerms, queryUsers, RevvityData, RevvityUser, search } from './revvity-api';
 import { reorderColumns, transformData, getViewNameByCompoundType, createRevvityWidgetByCorporateId, createWidgetByRevvityLabel } from './utils';
-import { addMoleculeStructures } from './compounds';
+import { addMoleculeStructures, getConditionForLibAndType } from './compounds';
 import { createInitialSatistics, getRevvityLibraries, RevvityLibrary } from './libraries';
 import { createViewForExpandabelNode, createViewFromPreDefinedQuery, handleInitialURL } from './view-utils';
 import { createSavedSearchesSatistics, SAVED_SEARCH_STORAGE } from './search-utils';
@@ -272,7 +272,7 @@ export async function getTags(type: string, assetTypeId: string): Promise<string
 export async function searchTerms(query: string): Promise<string> {
   const response = await queryTerms(JSON.parse(query));
   if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
-    return '{}';
+    return '[]';
   const data: RevvityData[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
   return JSON.stringify(data);
 }
@@ -285,43 +285,7 @@ export async function searchTerms(query: string): Promise<string> {
 //input: bool isMaterial
 //output: list<string> terms
 export async function getTermsForField(fieldName: string, type: string, assetTypeId: string, isMaterial: boolean): Promise<string[]> {
-  const innerAndConditions: any[] = [
-    {
-      "$match": {
-        "field": "assetTypeEid",
-        "value": assetTypeId,
-      }
-    },
-    {
-      "$match": {
-        "field": "type",
-        "value": type,
-        "mode": "keyword"
-      }
-    },
-  ];
-  if (isMaterial) {
-    innerAndConditions.push({
-      "$and": [
-        {
-          "$match": {
-            "field": "isMaterial",
-            "value": true
-          }
-        },
-        {
-          "$not": [
-            {
-              "$match": {
-                "field": "type",
-                "value": "assetType"
-              }
-            }
-          ]
-        }
-      ]
-    })
-  }
+  const innerAndConditions = getConditionForLibAndType(type, assetTypeId, isMaterial);
   const query: SignalsSearchQuery = {
     "query": {
       "$and": innerAndConditions

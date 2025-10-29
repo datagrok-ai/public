@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { ComplexCondition, Operators, QueryBuilder, QueryBuilderLayout, SUGGESTIONS_FUNCTION } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { convertComplexConditionToSignalsSearchQuery, SignalsSearchQuery } from './signals-search-query';
-import { materialsCondition, retrieveQueriesMap } from './compounds';
+import { getConditionForLibAndType, materialsCondition, retrieveQueriesMap } from './compounds';
 import { createLibsObjectForStatistics, getRevvityLibraries, RevvityLibrary } from './libraries';
 import { getDefaultProperties, REVVITY_FIELD_TO_PROP_TYPE_MAPPING } from './properties';
 import { getTermsForField } from './package';
@@ -24,37 +24,33 @@ export let currentQueryBuilderConfig: QueryBuilderConfig | undefined = undefined
 export const filterProperties: {[key: string]: DG.Property[]} = {};
 
 export async function runSearchQuery(libId: string, compoundType: string,
-  queryBuilderCondition: ComplexCondition): Promise<DG.DataFrame> {
-  let condition = '';
-  if (queryBuilderCondition.conditions.length === 0)
-    condition = JSON.stringify(retrieveQueriesMap[compoundType])
-  else {
-    const cond: ComplexCondition = {
-      logicalOperator: Operators.Logical.and,
-      conditions: [
-        materialsCondition //now we have only materials section in our revvity instance, so adding condition to search through materials
-      ]
-    }
-    cond.conditions.push(
-      {
-        field: "assetTypeEid",
-        operator: Operators.EQ,
-        value: libId
-      }
-    );
-    cond.conditions.push(
-      {
-        field: "type",
-        operator: Operators.EQ,
-        value: compoundType
-      }
-    );
-    cond.conditions.push(queryBuilderCondition);
-    const signalsQuery: SignalsSearchQuery = convertComplexConditionToSignalsSearchQuery(cond);
-    console.log(signalsQuery);
-    condition = JSON.stringify(signalsQuery);
+  queryBuilderCondition?: ComplexCondition): Promise<DG.DataFrame> {
+
+  const cond: ComplexCondition = {
+    logicalOperator: Operators.Logical.and,
+    conditions: [
+      materialsCondition //now we have only materials section in our revvity instance, so adding condition to search through materials
+    ]
   }
-  const resultDf = await funcs.searchEntitiesWithStructures(condition, '{}');
+  cond.conditions.push(
+    {
+      field: "assetTypeEid",
+      operator: Operators.EQ,
+      value: libId
+    }
+  );
+  cond.conditions.push(
+    {
+      field: "type",
+      operator: Operators.EQ,
+      value: compoundType
+    }
+  );
+  if (queryBuilderCondition && queryBuilderCondition.conditions.length > 0)
+    cond.conditions.push(queryBuilderCondition);
+  const signalsQuery: SignalsSearchQuery = convertComplexConditionToSignalsSearchQuery(cond);
+  console.log(signalsQuery);
+  const resultDf = await funcs.searchEntitiesWithStructures(JSON.stringify(signalsQuery), '{}');
   return resultDf;
 }
 
