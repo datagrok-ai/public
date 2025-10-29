@@ -9,7 +9,7 @@ import { excludedScopes, MOLTRACK_ENTITY_LEVEL, MOLTRACK_IS_STATIC_FIELD, SAVED_
 import { createSavedSearchesSatistics, createSearchExpandableNode, createSearchNode, createSearchView, getSavedSearches, handleSearchURL, loadSearchFields, molTrackSearchFieldsArr } from './views/search';
 import { registerAllData, registerAssayData, updateAllMolTrackSchemas } from './utils/registration-utils';
 import { batchView, compoundView, createPath, getQuickActionsWidget, getStatisticsWidget, initBulkRegisterView, initRegisterView } from './utils/view-utils';
-import { flattened, getCorporateCompoundIdByExactStructure } from './utils/utils';
+import { flattened } from './utils/utils';
 import { molTrackPropPanel } from './widgets/moltrack-property-panel';
 import { PropertySchemaView } from './views/schema-view';
 import { registerSemanticTypes } from './utils/detectors';

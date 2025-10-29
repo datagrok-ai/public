@@ -8,7 +8,7 @@ if [ -n "$db" ]; then
   DB_USER=$(echo "$db" | jq -r '.credentials.parameters.login')
   DB_PASSWORD=$(echo "$db" | jq -r '.credentials.parameters.password')
   DB_NAME=$(echo "$db" | jq -r '.parameters.db')
-  APP_PORT=18000
+  APP_PORT=28000
 
   DB_HOST_RAW=$(echo "$db" | jq -r '.parameters.server')
   echo $DB_HOST_RAW
@@ -18,6 +18,9 @@ if [ -n "$db" ]; then
   else
     DB_HOST=$DB_HOST_RAW
   fi
+  
+  echo "Final exported DB host:"
+  echo "$DB_HOST"
 
   export DB_HOST DB_USER DB_PASSWORD DB_NAME APP_PORT
 
