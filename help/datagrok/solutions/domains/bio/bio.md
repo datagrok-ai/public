@@ -138,25 +138,28 @@ Info panes be extended with [functions](../../../concepts/functions/functions.md
 
 The [spreadsheet](../../../../visualize/viewers/grid.md) lets you visualize and [edit](#sketching-and-editing) sequences and macromolecules. You can add new columns with calculated values, interactively [filter and search](#searching-and-filtering) rows, color-code columns, pin rows or columns, set edit permissions, and more.
 
+Clicking on any sequence cell highlights the differing monomers in other sequences, allowing you to quickly identify similarities and differences.
+
 ```mdx-code-block
 <Tabs>
-<TabItem value="display-for-helm" label="HELM" default>
+<TabItem value="display-for-fasta" label="FASTA" default>
+```
+
+Sequences in various modalities are color-coded based on monomer properties, natural analog or explicitely set colors.
+
+![FASTA rendering](img/fasta-format-0.png)
+
+
+```mdx-code-block
+</TabItem>
+<TabItem value="display-for-helm" label="HELM">
+
 ```
 
 HELM is used for macromolecules with non-natural monomers, circular and branching structures.
 The structures are displayed with colors corresponding to each monomer.
 
 ![HELM rendering](img/helm-format.png)
-
-```mdx-code-block
-</TabItem>
-<TabItem value="display-for-fasta" label="FASTA">
-```
-
-Peptide sequences are color-coded based on amino acid properties. DNA sequences are colored-coded to distinguish between various nucleotides.
-
-![FASTA rendering](img/fasta-format-0.png)
-
 
 ```mdx-code-block
 </TabItem>
