@@ -37,6 +37,8 @@ const miscName = 'Misc';
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const SIDE_INPUT_CLASS = 'side-input';
 const SIDE_ICON_CLASS = 'side-icon';
+const FORM_TITLE_CLASS = 'form-title';
+const FORM_SECTION_CLASS = 'form-section';
 
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
 type OutputTarget = number | DG.DataFrame | null;
@@ -997,6 +999,7 @@ export class FittingView {
       if (topCategory !== null) {
         const roots = inputsByCategories.get(topCategory);
         const catEl = getCategoryWidget(topCategory, roots!, expandHandler);
+        catEl.classList.add(FORM_SECTION_CLASS);
         newCategoriesElements.set(topCategory, catEl);
         form.append(catEl);
         form.append(...roots!);
@@ -1005,6 +1008,7 @@ export class FittingView {
       inputsByCategories.forEach((roots, category) => {
         if ((category !== miscName) && (category !== topCategory)) {
           const catEl = getCategoryWidget(category, roots, expandHandler);
+          catEl.classList.add(FORM_SECTION_CLASS);
           newCategoriesElements.set(category, catEl);
           form.append(catEl);
           form.append(...roots);
@@ -1017,6 +1021,7 @@ export class FittingView {
         if (miscRoots!.length > 0) {
           const roots = inputsByCategories.get(miscName)!;
           const catEl = getCategoryWidget(miscName, roots, expandHandler);
+          catEl.classList.add(FORM_SECTION_CLASS);
           newCategoriesElements.set(miscName, catEl);
           form.append(catEl);
           form.append(...roots);
@@ -1031,6 +1036,8 @@ export class FittingView {
   private async buildForm(inputsLookup?: string) {
     // the main form
     const fitHeader = ui.h1(TITLE.FIT);
+    fitHeader.classList.add(FORM_TITLE_CLASS);
+
     ui.tooltip.bind(fitHeader, 'Select inputs to be fitted');
     const form = ui.form([], {style: {padding: '5px'}});
 
@@ -1120,6 +1127,8 @@ export class FittingView {
 
     // 2. Outputs of the function
     const toGetHeader = ui.h1(TITLE.TARGET);
+    toGetHeader.classList.add(FORM_TITLE_CLASS);
+
     ui.tooltip.bind(toGetHeader, 'Select target outputs');
     form.appendChild(toGetHeader);
 
@@ -1174,6 +1183,7 @@ export class FittingView {
 
     // 4. Method & settings block
     const usingHeader = ui.h1('Using');
+    usingHeader.classList.add(FORM_TITLE_CLASS);
     ui.tooltip.bind(usingHeader, 'Specify fitting method');
     form.appendChild(usingHeader);
     this.fittingSettingsIcon.style.minWidth = '50px';
@@ -1219,6 +1229,8 @@ export class FittingView {
         item.style.top = '14px';
         item.style.left = '14px';
         item.style.position = 'relative';
+      } else if(item.classList.contains(FORM_TITLE_CLASS) || item.classList.contains(FORM_SECTION_CLASS)) {
+        continue;
       } else {
         item.style.marginLeft = '50px';
       }
