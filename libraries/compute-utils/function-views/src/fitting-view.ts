@@ -1204,6 +1204,9 @@ export class FittingView {
     this.generateSettingInputs();
     this.showHideSettingInputs();
     form.appendChild(this.fittingSettingsDiv);
+    this.settingsInputs.forEach((array) => array.forEach((input) => {
+      this.fittingSettingsDiv.append(input.root);
+    }));
 
     // deal with side inputs
     for (const item of Array.from(form.children) as HTMLElement[]) {
