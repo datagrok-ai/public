@@ -18,9 +18,6 @@ if [ -n "$db" ]; then
   else
     DB_HOST=$DB_HOST_RAW
   fi
-  
-  echo "Final exported DB host:"
-  echo "$DB_HOST"
 
   export DB_HOST DB_USER DB_PASSWORD DB_NAME APP_PORT
 
