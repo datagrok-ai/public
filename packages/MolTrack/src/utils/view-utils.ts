@@ -2,10 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { _package, getBatchByCorporateId, getCompoundByCorporateId } from '../package';
-import { excludedScopes, MOLTRACK_APP_PATH, Scope } from './constants';
+import { excludedScopes, MOLTRACK_APP_PATH, MolTrackProp, Scope } from './constants';
 import { EntityBaseView } from '../views/registration-entity-base';
 import { RegistrationView } from '../views/registration-tab';
 import { u2 } from '@datagrok-libraries/utils/src/u2';
+import { AssayRegistrationView } from '../views/registration-assay-tab';
 
 export function createPath(viewName: string) {
   let path = `${MOLTRACK_APP_PATH}/`;
@@ -116,6 +117,13 @@ export function initBulkRegisterView(setPath: boolean = true) {
   return registrationView.view;
 }
 
+export function initAssayRegisterView() {
+  const registrationView = new AssayRegistrationView();
+  registrationView.view.path = createPath('Assay');
+  registrationView.show();
+  return registrationView.view;
+}
+
 export function getAppHeader(): HTMLElement {
   const appHeader = u2.appHeader({
     iconPath: _package.webRoot + '/images/moltrack.png',
@@ -199,4 +207,73 @@ export function getQuickActionsWidget(): HTMLElement {
   container.classList.add('moltrack-quick-container');
 
   return container;
+}
+
+export async function createPropertySection(
+  title: string,
+  fetchPropsFn: () => Promise<any>,
+  convertToDGProperty: (prop: any) => DG.Property,
+  options?: {
+    disableNames?: string[];
+    initiallyOpen?: boolean;
+    onValidationChange?: (invalid: boolean) => void;
+    reservedProperties?: string[];
+    generateExample?: (pattern: string) => string;
+  },
+): Promise<{ section: HTMLElement; inputs: DG.InputBase[]; formBackingObject: Record<string, any> }> {
+  const {
+    disableNames = [],
+    initiallyOpen = false,
+    onValidationChange,
+    reservedProperties = [],
+    generateExample = () => '',
+  } = options ?? {};
+
+  const disableAll = disableNames.includes('*');
+  let props: DG.Property[] = [];
+  let propArray: any[] = [];
+  const formBackingObject: Record<string, any> = {};
+
+  try {
+    const rawProps = await fetchPropsFn();
+    const parsed = typeof(rawProps) === 'string' ? JSON.parse(rawProps) : rawProps;
+    propArray = parsed.properties ?? parsed;
+
+    props = propArray.map(convertToDGProperty);
+    for (const p of props)
+      formBackingObject[p.name] = null;
+  } catch (err) {
+    grok.shell.error(`Failed to fetch properties for "${title}": ${err}`);
+  }
+
+  const inputs = props.map((p) => {
+    const input = DG.InputBase.forProperty(p, formBackingObject);
+    input.onChanged.subscribe(() => {
+      const invalid = !input.validate();
+      onValidationChange?.(invalid);
+    });
+
+    const rawProp = propArray.find((rp) => rp.name === p.name);
+    if (rawProp?.pattern) {
+      const message = reservedProperties.includes(rawProp.name) ?
+        'will be assigned at registration' :
+        `e.g., ${generateExample(rawProp.pattern)}`;
+      (input.input as HTMLInputElement).placeholder = message;
+    }
+
+    if (disableAll || disableNames.includes(p.name))
+      input.readOnly = true;
+
+    return input;
+  });
+
+  const form = ui.wideForm(inputs);
+  form.classList.add('moltrack-compound-form', 'moltrack-form');
+
+  const acc = ui.accordion();
+  const accPane = acc.addPane(title, () => form);
+  accPane.expanded = initiallyOpen;
+  const section = accPane.root;
+
+  return { section, inputs, formBackingObject };
 }

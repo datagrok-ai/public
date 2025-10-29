@@ -8,7 +8,7 @@ import { MolTrackDockerService } from './services/moltrack-docker-service';
 import { excludedScopes, MOLTRACK_ENTITY_LEVEL, MOLTRACK_IS_STATIC_FIELD, SAVED_SEARCHES_NODE, Scope, SEARCH_NODE } from './utils/constants';
 import { createSavedSearchesSatistics, createSearchExpandableNode, createSearchNode, createSearchView, getSavedSearches, handleSearchURL, loadSearchFields, molTrackSearchFieldsArr } from './views/search';
 import { registerAllData, registerAssayData, updateAllMolTrackSchemas } from './utils/registration-utils';
-import { batchView, compoundView, createPath, getQuickActionsWidget, getStatisticsWidget, initBulkRegisterView, initRegisterView } from './utils/view-utils';
+import { batchView, compoundView, createPath, getQuickActionsWidget, getStatisticsWidget, initAssayRegisterView, initBulkRegisterView, initRegisterView } from './utils/view-utils';
 import { flattened } from './utils/utils';
 import { molTrackPropPanel } from './widgets/moltrack-property-panel';
 import { PropertySchemaView } from './views/schema-view';
@@ -100,6 +100,7 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
   });
   createRegisterNode('Compound', () => initRegisterView('Compound'));
   createRegisterNode('Batch', () => initRegisterView('Batch'));
+  createRegisterNode('Assay', () => initAssayRegisterView());
   createRegisterNode('Bulk', () => initBulkRegisterView());
   createRegisterNode('Schema', async () => {
     const schemaView = new PropertySchemaView();

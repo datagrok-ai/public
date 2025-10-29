@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import { ErrorHandling, MolTrackProp, Scope } from '../utils/constants';
-import { createPath } from '../utils/view-utils';
+import { createPath, createPropertySection } from '../utils/view-utils';
 import { buildPropertyOptions, getCorporateCompoundIdByExactStructure } from '../utils/utils';
 
 import { fetchBatchProperties, fetchCompoundProperties, registerBulk } from '../package';
@@ -16,7 +16,6 @@ let openedView: DG.ViewBase | null = null;
 export class EntityBaseView {
   view: DG.View;
   sketcherInstance: grok.chem.Sketcher;
-  previewDf: DG.DataFrame | undefined;
 
   inputs: DG.InputBase[] = [];
   batchInputs: DG.InputBase<any>[] = [];
@@ -66,60 +65,6 @@ export class EntityBaseView {
     return DG.Property.fromOptions(
       buildPropertyOptions(p, {reserved: reservedProperties, skipReservedCheck: true}),
     );
-  }
-
-  private async createPropertySection(
-    title: string,
-    fetchPropsFn: () => Promise<any>,
-    options?: {
-        disableNames?: string[];
-        initiallyOpen?: boolean;
-  },
-  ): Promise<{ section: HTMLElement; inputs: DG.InputBase[]; formBackingObject: Record<string, any> }> {
-    const { disableNames = [], initiallyOpen = false } = options ?? {};
-    const disableAll = disableNames.includes('*');
-
-    let props: DG.Property[] = [];
-    let propArray: MolTrackProp[] = [];
-    const formBackingObject: Record<string, any> = {};
-
-    try {
-      const rawProps = await fetchPropsFn();
-      const parsed: any = JSON.parse(rawProps);
-
-      propArray = parsed.properties ?? parsed;
-      props = propArray.map(this.convertToDGProperty.bind(this));
-      for (const p of props)
-        formBackingObject[p.name] = null;
-    } catch (err) {
-      grok.shell.error(`Failed to fetch properties for "${title}": ${err}`);
-    }
-
-    const inputs = props.map((p) => {
-      const input = DG.InputBase.forProperty(p, formBackingObject);
-      input.onChanged.subscribe(() => {
-        this.invalidForm = !input.validate();
-        this.registerButton?.classList.toggle('dim', this.invalidForm);
-      });
-      const rawProp = propArray.find((rp) => rp.name === p.name);
-      if (rawProp?.pattern) {
-        const message = reservedProperties.includes(rawProp.name) ? 'will be assigned at registration' : `e.g., ${generateExample(rawProp?.pattern)}`;
-        (input.input as HTMLInputElement).placeholder = message;
-      }
-
-      if (disableAll || disableNames.includes(p.name))
-        input.readOnly = true;
-      return input;
-    });
-
-    const form = ui.wideForm(inputs);
-    form.classList.add('moltrack-compound-form', 'moltrack-form');
-
-    const acc = ui.accordion();
-    const accPane = acc.addPane(title, () => form);
-    accPane.expanded = initiallyOpen;
-    const section = accPane.root;
-    return { section, inputs, formBackingObject };
   }
 
   private clearAll() {
@@ -280,12 +225,19 @@ export class EntityBaseView {
       section: compoundSection,
       inputs: compoundInputs,
       formBackingObject: compoundFormBackingObject,
-    } = await this.createPropertySection(
+    } = await createPropertySection(
       'Compound properties',
       fetchCompoundProperties,
+      this.convertToDGProperty.bind(this),
       {
         disableNames: this.singleRetrieved ? ['*'] : reservedProperties,
         initiallyOpen: true,
+        reservedProperties: reservedProperties,
+        generateExample: generateExample,
+        onValidationChange: (invalid) => {
+          this.invalidForm = invalid;
+          this.registerButton?.classList.toggle('dim', this.invalidForm);
+        },
       },
     );
 
@@ -293,12 +245,19 @@ export class EntityBaseView {
       section: batchSection,
       inputs: batchInputs,
       formBackingObject: batchFormBackingObject,
-    } = await this.createPropertySection(
+    } = await createPropertySection(
       'Batch properties',
       fetchBatchProperties,
+      this.convertToDGProperty.bind(this),
       {
         disableNames: this.singleRetrieved ? ['*'] : reservedProperties,
         initiallyOpen: this.isBatchSectionExpanded,
+        reservedProperties: reservedProperties,
+        generateExample: generateExample,
+        onValidationChange: (invalid) => {
+          this.invalidForm = invalid;
+          this.registerButton?.classList.toggle('dim', this.invalidForm);
+        },
       },
     );
 
@@ -329,7 +288,7 @@ export class EntityBaseView {
   }
 }
 
-function generateExample(pattern: string, index: number = 1): string {
+function generateExample(pattern: string): string {
   try {
     return new RandExp(new RegExp(pattern)).gen();
   } catch {
