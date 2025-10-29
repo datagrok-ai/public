@@ -35,6 +35,9 @@ const colorsCount = colors.length;
 
 const miscName = 'Misc';
 const RUN_NAME_COL_LABEL = 'Run name' as const;
+const SIDE_INPUT_CLASS = 'side-input';
+const SIDE_ICON_CLASS = 'side-icon';
+
 const supportedOutputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.DATA_FRAME];
 type OutputTarget = number | DG.DataFrame | null;
 
@@ -50,6 +53,7 @@ type InputRangeBounds = {
 type InputValues = {
   isChanging: BehaviorSubject<boolean>,
   const: InputWithValue<boolean | number | string | DG.DataFrame>,
+  isChangingInput?: DG.InputBase<boolean>,
   constForm: DG.InputBase[],
   saForm: DG.InputBase[],
 }
@@ -101,6 +105,8 @@ type FittingOutputsStore = {
   prop: DG.Property,
   input: DG.InputBase,
   isInterest: BehaviorSubject<boolean>,
+  showInfoWidget: HTMLElement,
+  isInterestInput: DG.InputBase<boolean>,
   target: OutputTarget,
   argName: string,
   argColInput: DG.ChoiceInput<string | null>,
@@ -142,8 +148,6 @@ export type DiffGrok = {
   ivpWW: IVP2WebWorker,
   pipelineCreator: PipelineCreator,
 };
-
-const getSwitchMock = () => ui.div([], 'sa-switch-input');
 
 const isValidForFitting = (prop: DG.Property) => ((prop.propertyType === DG.TYPE.INT) || (prop.propertyType === DG.TYPE.FLOAT) || (prop.propertyType === DG.TYPE.DATA_FRAME));
 
@@ -242,10 +246,7 @@ export class FittingView {
           this.updateApplicabilityState();
         });
 
-        const isChangingInputConst = getSwitchElement(false, (v: boolean) => {
-          ref.isChanging.next(v);
-          this.updateApplicabilityState();
-        });
+        isChangingInput.classList.add(SIDE_INPUT_CLASS);
 
         const caption = inputProp.caption ?? inputProp.name;
 
@@ -256,7 +257,6 @@ export class FittingView {
               this.updateApplicabilityState();
             },
           });
-          inp.root.insertBefore(isChangingInputConst.root, inp.captionLabel);
           inp.addPostfix(inputProp.options['units']);
           inp.setTooltip(`Value of '${caption}', variable: ${inputProp.name}`);
           inp.nullable = false;
@@ -317,9 +317,9 @@ export class FittingView {
             useFormula: maxUseFormulaInput,
           },
           isChanging: new BehaviorSubject<boolean>(false),
+          isChangingInput,
           constForm: [constInput],
           saForm: [
-            isChangingInput,
             minInput,
             minFormulaInput,
             minUseFormulaInput,
@@ -335,10 +335,6 @@ export class FittingView {
           isChangingInput.notify = false;
           isChangingInput.value = val;
           isChangingInput.notify = true;
-
-          isChangingInputConst.notify = false;
-          isChangingInputConst.value = val;
-          isChangingInputConst.notify = true;
         });
 
         combineLatest([
@@ -355,7 +351,6 @@ export class FittingView {
           }
         });
       } else {
-        const switchMock = getSwitchMock();
 
         const tempDefault = {
           input: (() => {
@@ -365,7 +360,6 @@ export class FittingView {
               tempDefault.value = temp.value;
               this.updateApplicabilityState();
             });
-            temp.root.insertBefore(switchMock, temp.captionLabel);
             temp.addPostfix(inputProp.options['units']);
             temp.nullable = false;
 
@@ -378,10 +372,10 @@ export class FittingView {
           const: tempDefault,
           constForm: [tempDefault.input],
           saForm: [] as DG.InputBase[],
-          type: inputProp.propertyType,
+          type: inputProp.propertyType as any,
           prop: inputProp,
           isChanging: new BehaviorSubject(false),
-        } as FittingConstStore;
+        };
       }
 
       return acc;
@@ -427,6 +421,32 @@ export class FittingView {
         };
 
         const isInterest = new BehaviorSubject(false);
+        const isInterestInput = getSwitchElement(
+          isInterest.value,
+          (v: boolean) => {
+            temp.isInterest.next(v);
+            this.updateApplicabilityState();
+          },
+          false,
+        );
+        isInterestInput.classList.add(SIDE_INPUT_CLASS);
+
+
+        isInterest.subscribe((val) => {
+          isInterestInput.notify = false;
+          try {
+            isInterestInput.value = val;
+          } finally {
+            isInterestInput.notify = true;
+          }
+        });
+
+        const showInfoWidget = getShowInfoWidget(
+          isInterestInput.root,
+          outputProp.caption ?? outputProp.name,
+        );
+        showInfoWidget.classList.add(SIDE_ICON_CLASS);
+
         const temp: FittingOutputsStore = {
           prop: outputProp,
           input:
@@ -447,6 +467,7 @@ export class FittingView {
 
             isInterest.subscribe((val) => {
               input.input.hidden = !val;
+              showInfoWidget.hidden = !val;
 
               if (dfInputIcons != null)
                 dfInputIcons.hidden = !val;
@@ -499,27 +520,10 @@ export class FittingView {
               this.updateApplicabilityState();
             });
 
-            const isInterestInput = getSwitchElement(
-              isInterest.value,
-              (v: boolean) => {
-                temp.isInterest.next(v);
-                this.updateApplicabilityState();
-              },
-              false,
-            );
-
-            isInterest.subscribe((val) => {
-              isInterestInput.notify = false;
-              try {
-                isInterestInput.value = val;
-              } finally {
-                isInterestInput.notify = true;
-              }
-            });
-            input.root.insertBefore(isInterestInput.root, input.captionLabel);
-
             return input;
           })(),
+          isInterestInput,
+          showInfoWidget,
           argName: defaultArgColName ?? '_',
           argColInput: (() => {
             const input = ui.input.choice<string | null>('argument', {
@@ -556,7 +560,6 @@ export class FittingView {
               tooltipText: 'Target dependent variables',
               onValueChanged: (cols) => this.updateApplicabilityState(),
             });
-            input.root.insertBefore(getSwitchMock(), input.captionLabel);
             isInterest.subscribe((val) => input.root.hidden = !val || (outputProp.propertyType !== DG.TYPE.DATA_FRAME));
             ui.tooltip.bind(input.captionLabel, 'Columns with values of target dependent variables:');
             input.addValidator(validator);
@@ -980,9 +983,6 @@ export class FittingView {
 
     const lookupElement = await getLookupChoiceInput(inputsLookup, constIputs);
 
-    if (lookupElement !== null)
-      lookupElement.input.root.insertBefore(getSwitchMock(), lookupElement.input.captionLabel);
-
     return lookupElement;
   }
 
@@ -1032,7 +1032,9 @@ export class FittingView {
     // the main form
     const fitHeader = ui.h1(TITLE.FIT);
     ui.tooltip.bind(fitHeader, 'Select inputs to be fitted');
-    const form = ui.div([fitHeader], {style: {overflowY: 'scroll', width: '100%'}});
+    const form = ui.form([], {style: {padding: '5px'}});
+
+    form.append(fitHeader);
 
     //0. Handling primary/secondary inputs outputs, but only if at
     //least one is set as primray
@@ -1076,7 +1078,11 @@ export class FittingView {
     Object.values(this.store.inputs).forEach((inputConfig) => {
       const category = inputConfig.prop.category;
       const propName = inputConfig.prop.name;
-      const roots = [...inputConfig.constForm.map((input) => input.root), ...inputConfig.saForm.map((input) => input.root)];
+      const roots = [
+        ...(inputConfig.isChangingInput ? [inputConfig.isChangingInput.root] : []),
+        ...inputConfig.constForm.map((input) => input.root),
+        ...inputConfig.saForm.map((input) => input.root)
+      ];
       const isPrimary = this.options.ranges?.[propName]?.isPrimary;
       if (isPrimary)
         roots.forEach((item) => primaryInputRoots.add(item));
@@ -1120,13 +1126,13 @@ export class FittingView {
     // group outputs by categories
     Object.values(this.store.outputs).forEach((outputConfig) => {
       const category = outputConfig.prop.category;
-      const roots = [outputConfig.input.root];
+      const roots = [outputConfig.isInterestInput.root, outputConfig.input.root];
       if (outputConfig.prop.type === DG.TYPE.DATA_FRAME) {
-        outputConfig.argColInput.root.insertBefore(getShowInfoWidget(
-          outputConfig.input.root,
-          outputConfig.prop.caption ?? outputConfig.prop.name,
-        ), outputConfig.argColInput.captionLabel);
-        roots.push(outputConfig.argColInput.root, outputConfig.funcColsInput.root);
+        roots.push(
+          outputConfig.showInfoWidget,
+          outputConfig.argColInput.root,
+          outputConfig.funcColsInput.root
+        );
       }
       const propName = outputConfig.prop.name;
       const isPrimary = this.options.targets?.[propName]?.isPrimary;
@@ -1170,70 +1176,53 @@ export class FittingView {
     const usingHeader = ui.h1('Using');
     ui.tooltip.bind(usingHeader, 'Specify fitting method');
     form.appendChild(usingHeader);
-    this.methodInput.root.insertBefore(this.fittingSettingsIcon, this.methodInput.captionLabel);
     this.fittingSettingsIcon.style.minWidth = '50px';
+    this.fittingSettingsIcon.classList.add(SIDE_ICON_CLASS);
+
+    form.appendChild(this.fittingSettingsIcon);
     form.appendChild(this.methodInput.root);
 
     // Add general settings
     [this.lossInput, this.samplesCountInput, this.similarityInput].forEach((inp) => {
-      inp.root.insertBefore(getSwitchMock(), inp.captionLabel);
       inp.nullable = false;
       this.fittingSettingsDiv.appendChild(inp.root);
     });
 
     // Add random generator settings
-    this.randInputs.reproducibility.root.insertBefore(
-      getSwitchMock(),
-      this.randInputs.reproducibility.captionLabel,
-    );
     this.fittingSettingsDiv.appendChild(this.randInputs.reproducibility.root);
 
-    this.randInputs.seed.root.insertBefore(
-      getSwitchMock(),
-      this.randInputs.seed.captionLabel,
-    );
     this.fittingSettingsDiv.appendChild(this.randInputs.seed.root);
 
     // Add filtering results inputs
-    this.earlyStoppingInputs.earlyStopping.root.insertBefore(
-      getSwitchMock(),
-      this.earlyStoppingInputs.earlyStopping.captionLabel,
-    );
     this.fittingSettingsDiv.appendChild(this.earlyStoppingInputs.earlyStopping.root);
 
-    this.earlyStoppingInputs.threshold.root.insertBefore(
-      getSwitchMock(),
-      this.earlyStoppingInputs.threshold.captionLabel,
-    );
     this.fittingSettingsDiv.appendChild(this.earlyStoppingInputs.threshold.root);
 
-    this.earlyStoppingInputs.stopAtFirst.root.insertBefore(
-      getSwitchMock(),
-      this.earlyStoppingInputs.stopAtFirst.captionLabel,
-    );
     this.fittingSettingsDiv.appendChild(this.earlyStoppingInputs.stopAtFirst.root);
 
     // Add input related to the methods
     this.generateSettingInputs();
     this.showHideSettingInputs();
     form.appendChild(this.fittingSettingsDiv);
-    this.settingsInputs.forEach((array) => array.forEach((input) => {
-      input.root.insertBefore(getSwitchMock(), input.captionLabel);
-      this.fittingSettingsDiv.append(input.root);
-    }));
 
-    $(form).addClass('ui-form');
+    // deal with side inputs
+    for (const item of Array.from(form.children) as HTMLElement[]) {
+      if (item.classList.contains(SIDE_INPUT_CLASS)) {
+        item.style.height = '0';
+        item.style.top = '22px';
+        item.style.position = 'relative';
+      } else if(item.classList.contains(SIDE_ICON_CLASS)) {
+        item.style.height = '0';
+        item.style.top = '14px';
+        item.style.left = '14px';
+        item.style.position = 'relative';
+      } else {
+        item.style.marginLeft = '50px';
+      }
+    }
 
     this.updateApplicabilityState();
 
-    $(form).css({
-      'padding-left': '12px',
-      'overflow-y': 'scroll',
-      'padding-right': '4px',
-      'position': 'relative',
-      'z-index': '2',
-      'background-color': 'white',
-    });
     return form;
   } // buildForm
 
