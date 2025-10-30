@@ -12,7 +12,7 @@ import { createViewForExpandabelNode, createViewFromPreDefinedQuery, handleIniti
 import { createSavedSearchesSatistics, SAVED_SEARCH_STORAGE } from './search-utils';
 import { funcs } from './package-api';
 import { HIDDEN_ID_COL_NAME, ID_COL_NAME, MOL_COL_NAME, REVVITY_LABEL_SEM_TYPE, REVVVITY_LABEL_FIELDS, USER_FIELDS } from './constants';
-import { getRevvityUsers } from './users';
+import { getRevvityUsers, getUsersAllowed, updateRevvityUsers } from './users';
 import { convertIdentifierFormatToRegexp } from './detectors';
 
 
@@ -131,6 +131,13 @@ export async function searchEntities(query: string, params: string): Promise<DG.
   const paramsJson: SignalsSearchParams = JSON.parse(params);
   const response = await search(queryJson, Object.keys(paramsJson).length ? paramsJson : undefined);
   const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
+
+  //in case /users endpoint is not allowed, extract users from included section
+  if (!getUsersAllowed) {
+    const newUsers = response.included?.filter((it) => it.type === 'user').map((it) => it.attributes);
+    if (newUsers?.length)
+      updateRevvityUsers(newUsers);
+  }
   const rows = await transformData(data);
   const df = rows.length === 0 ? DG.DataFrame.create() : DG.DataFrame.fromObjects(rows)!;
   USER_FIELDS.forEach((field) => {
@@ -183,7 +190,7 @@ export async function getUsers(): Promise<string> {
   const users: RevvityUser[] = [];
   const response = await queryUsers();
   if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
-    return '{}';
+    return '[]';
   const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
   for (const user of data)
     users.push(user.attributes);

@@ -7,11 +7,32 @@ import { funcs } from './package-api';
 //key is revvity user Id
 export let users: RevvityUser[] | undefined = undefined;
 export const revvityToDatagrokUsersMapping: {[key: string]: DG.User} = {};
+export let getUsersAllowed = true; 
 
 export async function getRevvityUsers(): Promise<RevvityUser[] | undefined> {
-    if (!users) {
-        const usersStr = await funcs.getUsers();
-        users = JSON.parse(usersStr);
+    try {
+        if (!users) {
+            const usersStr = await funcs.getUsers();
+            users = JSON.parse(usersStr);
+        }
+    } catch (e: any) {
+        if (e !== '403')
+            throw e;
+        else {
+            users = [];
+            getUsersAllowed = false;
+        }
+    }
+    return users;
+}
+
+
+export function updateRevvityUsers(newUsers: RevvityUser[]): RevvityUser[] | undefined {
+    if (users) {
+        for (const user of newUsers) {
+            if (!users.filter((it) => it.userId === user.userId).length)
+                users.push(user);
+        }
     }
     return users;
 }
