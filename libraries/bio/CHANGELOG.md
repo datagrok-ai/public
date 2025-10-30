@@ -1,5 +1,9 @@
 # bio changelog
 
+## 5.61.1 (2025-10-30)
+
+* Rework User lib settings storage to accomodate shortened duplicate preferences
+
 ## 5.61.0 (2025-10-29)
 
 * CHEMS and SMILES support in HELM
