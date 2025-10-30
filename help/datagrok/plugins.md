@@ -39,6 +39,7 @@ sidebar_position: 1.2
 |[NMRium](https://github.com/datagrok-ai/public/tree/master/packages/nmrium)| NMR data |Fit-for-purpose| Visualization of NMR diagram | Stable |
 |[Spectra Viewer](https://github.com/datagrok-ai/chem-spectra-viewer/tree/main)| Spectral data |Fit-for-purpose| Preview of JDX format for various types of spectra, including IR, UV, Mass, HPLC, absorption and others | Stable |
 |[Excalidraw](https://github.com/datagrok-ai/public/tree/master/packages/Excalidraw)| Diagrams |Fit-for-purpose| Enables working with diagrams and drawings in the .excalidraw format| Stable |
+|[Metabolic Graph](https://github.com/datagrok-ai/public/tree/master/packages/MetabolicGraph)| Diagrams |Fit-for-purpose| Metabolic graph visualizations for pathway mapping and analysis |Stable| 
 <!--
 |Viewers |[Forms]||???|Beta|
 |Misc |[ChaRPy]|Fit-for-purpose|Adds two commands, "To Python script" and "To R script," to Datagrok viewers. These commands generate Python or R code for the selected viewer and execute the script to show the corresponding plot.|Beta|
