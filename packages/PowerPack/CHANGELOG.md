@@ -1,5 +1,39 @@
 # Power Pack changelog
 
+## 1.7.15 (2025-10-27)
+
+* Removed recent projects widget
+
+## 1.7.14 (2025-10-20)
+
+* GROK-19080 Add new column: type change is broken
+
+## 1.7.12 (2025-10-15)
+
+* Add new column dialog: Some validation fixes
+
+## 1.7.11 (2025-10-15)
+
+* Add new column dialog: Case insensitive packages search for hints
+
+## 1.7.10 (2025-10-09)
+
+* Add new column dialog: Fixed validation error when passing empty array to vector functions
+
+## 1.7.9 (2025-10-08)
+
+* GROK-18237: Widgets: Removed the Settings button for widgets
+* GROK-18139: Activity dashboard:
+  * Made sure clicking on entities will open the property panel (needs new JS API version)
+  * Removed `Previous tip` arrow
+  * Retired `Learn` widget and added it to the activity dashboard instead
+
+## 1.7.8 (2025-10-07)
+
+* GROK-18139: Activity dashboard: Made subwidget functions return DG.Widget instead of HTMLElement[]
+* Removed unnecessary logs
+* Removed DG User handler
+
 ## 1.7.7 (2025-10-02)
 
 * GROK-18139: Activity dashboard:

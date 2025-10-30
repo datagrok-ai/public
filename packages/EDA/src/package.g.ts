@@ -104,6 +104,7 @@ export async function MCLClustering(df: DG.DataFrame, cols: DG.Column[], metrics
 //description: Markov clustering viewer
 //tags: viewer
 //output: viewer result
+//meta.showInGallery: false
 export function markovClusteringViewer() : any {
   return PackageFunctions.markovClusteringViewer();
 }

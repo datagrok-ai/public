@@ -46,10 +46,6 @@ export namespace funcs {
     return await grok.functions.call('PowerPack:HtmlWidget', {});
   }
 
-  export async function learnWidget(): Promise<any> {
-    return await grok.functions.call('PowerPack:LearnWidget', {});
-  }
-
   export async function kpiWidget(): Promise<any> {
     return await grok.functions.call('PowerPack:KpiWidget', {});
   }

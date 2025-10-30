@@ -201,3 +201,104 @@
 .moltrack-panel-register-button {
   width: 80px!important;
 }
+
+.moltrack-table {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.moltrack-table th:nth-child(1),
+.moltrack-table td:nth-child(1) {
+  width: 12%;
+}
+
+.moltrack-table th:nth-child(2),
+.moltrack-table td:nth-child(2),
+.moltrack-table th:nth-child(3),
+.moltrack-table td:nth-child(3) {
+  width: 44%;
+}
+
+.moltrack-table td,
+.moltrack-table th {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 4px 8px;
+}
+
+.moltrack-table td > *:not(.moltrack-input-editor),
+.moltrack-table th > *:not(.moltrack-input-editor) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+.moltrack-flex-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.moltrack-input-editor {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.moltrack-div {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.moltrack-required-asterisk {
+  color: var(--red-3);
+  margin-left: 2px;
+  cursor: help;
+}
+.moltrack-search-stats-div {
+  position: relative;
+  margin-top: 20px;
+}
+
+.moltrack-statistics-hide-header .header {
+  display: none;
+}
+
+.moltrack-saved-search-delete {
+  padding-left: 5px;
+  padding-top: 5px;
+}
+
+.moltrack-saved-search-delete:hover .grok-icon {
+  color: red;
+}
+
+.moltrack-quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.moltrack-bolt-icon {
+  color: #FFD700;
+  font-size: 16px;
+}
+
+.moltrack-quick-label {
+  font-weight: bold;
+}
+
+.moltrack-quick-links {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.moltrack-quick-container {
+  display: flex;
+  flex-direction: column;
+}

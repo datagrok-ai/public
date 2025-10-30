@@ -336,7 +336,6 @@ export class TreeViewer extends EChartViewer {
   paintBranchByPath(paths: string | string[], color: number, selection: SelectionData | null = null): void {
     const hoverStyle = {
       lineStyle: { color: DG.Color.toHtml(color) },
-      itemStyle: { color: DG.Color.toHtml(color) },
     };
 
     const pathsArray = Array.isArray(paths) ? paths : [paths];
@@ -363,7 +362,6 @@ export class TreeViewer extends EChartViewer {
 
     const hoverStyle = {
       lineStyle: {},
-      itemStyle: {},
     };
 
     const updatedTree = this.buildSeriesConfig(path, hoverStyle, originalTree);

@@ -42,7 +42,7 @@ Datagrok supports multiple modalities, including:
 
   - [Sequence-activity relationship analysis](../solutions/domains/bio/bio.md#sequence-activity-relationship-analysis)
   - [Multiple sequence alignment](../solutions/domains/bio/bio.md#multiple-sequence-alignment-msa)
-  - [Atomic-level structure generation](../solutions/domains/bio/bio.md#get-atomic-level-structure)
+  - [Atomic-level structure generation](../solutions/domains/bio/bio.md#convert-to-atomic-level)
 
 - Predictive modeling and ADMET:
 
@@ -72,7 +72,8 @@ Yes. Datagrok supports both:
 * Table view (assay-centric): multiple compounds in a table with configurable endpoints  
 [Table view](../../datagrok/navigation/views/table-view.md) | [Forms](../../visualize/viewers/forms.md) 
 
-Users can configure coloring, highlighting, and switch between compounds as rows or columns, and filter, search, and sort the data. [Common actions](../../datagrok/navigation/views/table-view.md#common-actions) | [Substructure search](../../datagrok/solutions/domains/chem/chem.md#substructure-search--filtering)
+Users can configure coloring, highlighting, and switch between compounds as rows or columns, and filter, search, and sort the data.  
+[Common actions](../../datagrok/navigation/views/table-view.md#common-actions) | [Substructure search](../../datagrok/solutions/domains/chem/chem.md#substructure-search--filtering)
 
 ##### <b>Q: How can I ingest raw assay data into Datagrok?</b>
 
@@ -207,13 +208,21 @@ GitHub requires all code contributors to enable two-factor authentication (2FA) 
 
 When you open a local file in Datagrok (like dragging and dropping a file to your browser), you can analyze it without saving. This data stays in your browser's memory and isn't sent to the server unless you run resource-intensive server-side computations. Your data is gone when you close the browser tab. To save your work, you need to upload it to the server. Note that uploading data does not make it accessible to others. Your data stays private and visible to you only until you explicitly share it. Learn how to [save](../concepts/project/project.md#saving-entities-to-projects) and [share](../navigation/basic-tasks/basic-tasks.md#share) data.
 
-##### <b>Q: What data or telemetry is sent back to Datagrok? What egress ports/protocols are used?</b>
+##### <b>Q: What data or telemetry is sent back to Datagrok? </b>
 
 * No automatic telemetry: Datagrok does not send any data to Datagrok servers by default.
-* Optional error report/feedback: Users can optionally send feedback or error reports to Datagrok by selecting the "Send report to Datagrok" checkbox in the corresponding dialog.
+* Optional error report/feedback: Users can optionally send feedback or error reports to Datagrok by selecting the "Send report to Datagrok" checkbox in the corresponding dialog. This feature can be disabled by the administrator.
 * Package/image pulls: Datagrok can download images from Docker Hub or packages from NPM.
-* Your connectors: Any external calls come from plugins you install (e.g., APIs, databases) over their standard ports/protocols.
 
+##### <b>Q: When deployed on-prem, is my data ever gets sent anywhere? </b>
+
+Your data is safe and secure with Datagrok, and nothing gets sent outside your security perimeter by default.
+All computations are done either [in-the-browser](../../develop/under-the-hood/performance.md#in-memory-database), or
+in [docker containers deployed on your virtual cloud](../../develop/how-to/packages/docker-containers.md).
+However, some of the optional [plugins](../plugins.md) are explicitly designed for connectivity with external systems. 
+good examples are [CDD Vault Link](https://github.com/datagrok-ai/public/tree/master/packages/CddVaultLink),
+[Benchling Link](https://github.com/datagrok-ai/public/tree/master/packages/BenchlingLink) or
+[Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace).
 
 ### Data security 
 
@@ -285,7 +294,7 @@ For example, from a SMILES column you can generate molecular properties (e.g., M
 
 ## Explore
 
-##### <b>Q: What analytical and predictive capabilities does Datagrok provide for scientific research?</b>
+##### <b>Q: Can Datagrok handle complex scientific data types in a single interface?</b>
 
 Datagrok supports a wide range of capabilities, including:
 
@@ -299,13 +308,24 @@ Datagrok supports a wide range of capabilities, including:
 * Extensibility
   [More than 60 plugins](https://github.com/datagrok-ai/public/tree/master/packages)
 
-See [Explore data](../../explore/explore.md) for more information
+[Multiple complex data types in one interface](#q-can-datagrok-handle-multiple-complex-data-types-in-one-interface) | [Explore data](../../explore/explore.md)
 
 ## Visualize
 
 ##### <b>Q: What are the maximum dataset sizes?</b>
 
-Datagrok handles millions of data points interactively for visualization and exploration. See [Why Datagrok?](../../datagrok/datagrok.md#why-datagrok) for details. 
+Datagrok handles millions of data points interactively for visualization and exploration. 
+
+The fundamental limitation is the amount of RAM allowed to use by the browser tab, which is different
+between browsers (currently no limit for Firefox, and 4GB for Chrome). With Datagrok's efficient
+[in-memory data engine](../../develop/under-the-hood/performance.md#in-memory-database), 
+even the 4GB lets you work with the following datasets:
+* 10 numerical columns: 100,000,000 rows
+* 100,000 numerical columns: 1,000 rows
+* Small molecules as SMILES: 10,000,000 rows
+
+And if the dataset won't fit in the memory, Datagrok provides 
+powerful [ways to work with the database](../../access/databases/databases.md).
 
 ##### <b>Q: What visualization options does Datagrok provide for data analysis and chemical structures?</b>  
 
@@ -322,8 +342,18 @@ See also: [Viewer gallery](https://github.com/datagrok-ai/public/blob/master/hel
 
 ##### <b>Q: Can I create custom visualizations?</b>
 
-In addition to the built-in [viewers](../../visualize/viewers/viewers.md), which are highly customizable and extendable, you can create fully custom visualizations using various approaches. See [Can developers create custom visualizations?](#q-can-developers-create-custom-visualizations) for details.
+In addition to the built-in [viewers](../../visualize/viewers/viewers.md), which are highly customizable and extendable, you can create fully custom visualizations using various approaches:
 
+* Paste Python/R visualization code directly into a scripting viewer, see [Creating a scripting viewer](../../develop/onboarding/exercises.md#exercise-6-creating-a-scripting-viewer) 
+* Write annotated scripts, see [Example: Gasteiger partial charges script](../solutions/domains/chem/chem.md#chemical-scripts) that visualizes molecular properties 
+* Build [custom viewers](../../develop/how-to/viewers/develop-custom-viewer.md) using the
+[JavaScript API](../../develop/packages/js-api.md)
+
+:::note developers
+
+You can visualize tabular data ([viewers](../../visualize/viewers/viewers.md), [cell renderers](../../develop/how-to/grid/custom-cell-renderers.md)), individual objects (e.g. molecules), file and folder contents. See [Can developers create custom visualizations?](#q-can-developers-create-custom-visualizations) for more information.
+
+:::
 
 ##### <b>Q: How can I visualize old and new data side by side?</b>
 
@@ -360,24 +390,20 @@ Yes. Use [Forms](../../visualize/viewers/forms.md) viewer.
 
 ### Filtering & search
 
-##### **Q: How can I perform fast and flexible searches?**
+##### **Q: How can I search and filter data quickly and intuitively?**
 
-Datagrok provides several advanced search capabilities to help you quickly find and filter data:
+Datagrok provides advanced and intuitive search and filtering capabilities:
 
 * [Global platform search](https://github.com/datagrok-ai/public/tree/master/packages/PowerPack#power-search)
 * Dataset-specific [search and filtering](../../visualize/viewers/filters.md#search)
 * Chemical/biological property filters (B/D/L-numbers, HELM notation, MW, OEB). See [Filters](../../visualize/viewers/filters.md) and [Calculators](../solutions/domains/chem/chem.md#calculators)
 * Substructure/SMARTS search for specific substructures within datasets using [substructure search](../solutions/domains/chem/chem.md#substructure-search--filtering) or [chemical cartridges](../solutions/domains/chem/chem.md#data-access)
-
-##### <b>Q: Can I search and filter data intuitively?</b>
-
-Datagrok lets you intuitively search and filter all data using scientifically logical and searchable lists:  
-- Logical conditions (e.g., `is not null`)  
-- Combined logic with `AND` / `OR`  
-- Date ranges and comparisons (`<`, `>`)  
-- Text substring and fuzzy matching  
-
-See [Data filtering and search](../../visualize/viewers/filters.md#search) for detailed guidance
+* Scientifically logical and searchable lists:  
+  - Logical conditions (e.g., `is not null`)  
+  - Combined logic with `AND` / `OR`  
+  - Date ranges and comparisons (`<`, `>`)  
+  - Text substring and fuzzy matching  
+  See [Data filtering and search](../../visualize/viewers/filters.md#search) for detailed guidance
 
 ## Collaborate
 

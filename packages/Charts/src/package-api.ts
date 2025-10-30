@@ -8,6 +8,13 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace funcs {
+  /**
+  Creates a timelines viewer
+  */
+  export async function timelinesViewer(): Promise<any> {
+    return await grok.functions.call('Charts:TimelinesViewer', {});
+  }
+
   export async function flagCellRenderer(): Promise<any> {
     return await grok.functions.call('Charts:FlagCellRenderer', {});
   }
@@ -122,13 +129,6 @@ export namespace funcs {
   */
   export async function surfacePlot(): Promise<any> {
     return await grok.functions.call('Charts:SurfacePlot', {});
-  }
-
-  /**
-  Creates a timelines viewer
-  */
-  export async function timelinesViewer(): Promise<any> {
-    return await grok.functions.call('Charts:TimelinesViewer', {});
   }
 
   /**

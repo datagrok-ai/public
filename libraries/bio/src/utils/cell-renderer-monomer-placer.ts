@@ -10,11 +10,11 @@ import {ALPHABET, MonomerToShortFunc, NOTATION, SplitterFunc, TAGS as bioTAGS} f
 import {ISeqSplitted} from './macromolecule/types';
 import {CellRendererBackBase} from './cell-renderer-back-base';
 import {ILogger} from './logger';
-import {getMonomerLibHelper} from '../monomer-works/monomer-utils';
+import {getMonomerLibHelper} from '../types/monomer-library';
 import {errInfo} from './err-info';
 import {DrawStyle, printLeftOrCentered, TAGS as mmcrTAGS, PrintOptions} from './cell-renderer';
 import {MmcrTemps, rendererSettingsChangedState, tempTAGS} from './cell-renderer-consts';
-import {IMonomerLibBase} from '../types/index';
+import {IMonomerLibBase} from '../types/monomer-library';
 import {HelmTypes} from '../helm/consts';
 import {ISeqMonomer} from '../helm/types';
 import {execMonomerHoverLinks} from '../monomer-works/monomer-hover';

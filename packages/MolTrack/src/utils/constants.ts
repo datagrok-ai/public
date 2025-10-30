@@ -48,6 +48,7 @@ export const scopeToUrl: { [key: string]: string } = {
 export type MolTrackProp = {
   name: string;
   value_type: string;
+  entity_type?: string;
   description?: string;
   pattern?: string;
   friendly_name?: string;
@@ -56,9 +57,10 @@ export type MolTrackProp = {
 export const GITHUB_BASE_URL =
   'https://raw.githubusercontent.com/datagrok-ai/mol-track/main/data/black/';
 
+export const USER_FIELDS = ['created_by', 'updated_by', 'deleted_by'];
 
 export const EXCLUDE_SEARCH_FIELDS = ['id', 'molregno', 'batch_regno', 'original_molfile', 'hash_mol',
-  'hash_tautomer', 'created_by', 'updated_by', 'deleted_by', 'hash_canonical_smiles', 'hash_no_stereo_smiles',
+  'hash_tautomer', 'hash_canonical_smiles', 'hash_no_stereo_smiles',
   'hash_no_stereo_tautomer'];
 
 export const EXCLUDE_SEARCH_OUTPUT_FIELDS = ['id', 'molregno', 'batch_regno', 'hash_mol', 'hash_tautomer', 'uuid',
@@ -84,3 +86,9 @@ export const SEARCH_NODE = 'Search';
 export const SAVED_SEARCHES_NODE = 'Saved Searches';
 
 export const MOLTRACK_APP_PATH: string = 'apps/MolTrack';
+
+export const MOLTRACK_REQUEST_TITLE_UPDATE = 'moltrack-updateTitleRequested';
+export const MOLTRACK_MAPPING_VALIDATION_CHANGED = 'moltrack-mappingValidationChanged';
+export const excludedScopes = [Scope.ASSAY_RUNS, Scope.ASSAY_RESULTS];
+
+export const LAYOUT_STORAGE = 'MolTrackLayouts';

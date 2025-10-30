@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {FileInputUtils} from '@datagrok-libraries/tutorials/src/utils/file-input-utils';
 
-import { ErrorHandlingLabels, ScopeLabels, ScopeLabelsReduced } from '../utils/constants';
+import { ErrorHandlingLabels, MOLTRACK_MAPPING_VALIDATION_CHANGED, MOLTRACK_REQUEST_TITLE_UPDATE, ScopeLabels, ScopeLabelsReduced } from '../utils/constants';
 import { renderMappingEditor, TargetProperty } from '../components/mapping_editor';
 import { MolTrackDockerService } from '../services/moltrack-docker-service';
 import { fetchSchema } from '../package';
@@ -48,6 +48,7 @@ export class RegistrationView {
   }
 
   private async addTitle() {
+    ui.empty(this.messageContainer);
     const titleText = ui.divText(this.title, 'moltrack-title');
     this.messageContainer.append(titleText);
   }
@@ -56,10 +57,17 @@ export class RegistrationView {
     this.entityTypeInput = this.createChoiceInput(
       'Register',
       Object.keys(ScopeLabels).filter((k) => k !== 'Assays'),
-      (value) => this.createMapping(value),
+      (value) => {
+        this.createMapping(value);
+        requestTitleUpdate();
+      },
     );
 
-    this.errorStrategyInput = this.createChoiceInput('On error', Object.keys(ErrorHandlingLabels));
+    this.errorStrategyInput = this.createChoiceInput(
+      'On error',
+      Object.keys(ErrorHandlingLabels),
+      (value) => requestTitleUpdate(),
+    );
   }
 
   private buildUI() {
@@ -72,7 +80,12 @@ export class RegistrationView {
 
     const leftPanel = ui.divV([inputRow, this.mappingEditorDiv]);
 
-    const dragDropInput = FileInputUtils.createFileInputPane(async (file: File) => await this.loadFile(file));
+    const dragDropInput = FileInputUtils.createFileInputPane(async (file: File) => {
+      await this.loadFile(file);
+      requestTitleUpdate();
+    });
+    const inputEditor = dragDropInput.querySelector('.ui-input-editor') as HTMLElement;
+    inputEditor.style.border = '';
 
     this.rightPanel = ui.divV([
       dragDropInput,
@@ -87,6 +100,7 @@ export class RegistrationView {
   }
 
   private async loadFile(file: File) {
+    ui.empty(this.uploadedPreviewDiv);
     if (!file) return;
 
     const extension = file.name.split('.').pop()!;
@@ -193,26 +207,24 @@ export class RegistrationView {
         ...(corporateId && df.columns.names().includes(corporateId) ? [corporateId] : []),
       ];
 
-      const smilesCol = this.uploadedDf.columns.bySemType(DG.SEMTYPE.MOLECULE);
-      if (!smilesCol)
-        throw new Error(`No column with semantic type ${DG.SEMTYPE.MOLECULE} found in the uploaded data`);
+      const firstColName = this.uploadedDf.columns.names()[0];
 
       this.uploadedDf.join(
         df,
-        [smilesCol.name],
-        [smilesCol.name],
+        [firstColName],
+        [firstColName],
         null,
         joinColumns,
         DG.JOIN_TYPE.INNER,
         true,
       );
 
-
       this.createSummary();
     } catch (err: any) {
       grok.shell.error(`Registration failed: ${err.message}`);
     } finally {
       this.registerButton?.classList.remove('dim');
+      loader.remove();
       this.registrationStarted = false;
     }
   }
@@ -306,10 +318,11 @@ export class RegistrationView {
   }
 
   private addSubs() {
-    this.subs.push(grok.events.onCustomEvent('mappingValidationChanged').subscribe((args) => {
+    this.subs.push(grok.events.onCustomEvent(MOLTRACK_MAPPING_VALIDATION_CHANGED).subscribe((args) => {
       this.hasErrors = args.hasErrors;
       this.registerButton?.classList.toggle('dim', this.hasErrors);
     }));
+    this.subs.push(grok.events.onCustomEvent(MOLTRACK_REQUEST_TITLE_UPDATE).subscribe((_) => this.addTitle()));
   }
 
   show() {
@@ -317,4 +330,8 @@ export class RegistrationView {
     openedView = this.view;
     grok.shell.addPreview(this.view);
   }
+}
+
+export function requestTitleUpdate(): void {
+  grok.events.fireCustomEvent(MOLTRACK_REQUEST_TITLE_UPDATE, {});
 }

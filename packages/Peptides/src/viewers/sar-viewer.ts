@@ -20,7 +20,6 @@ import {
   PositionStats,
   StatsItem,
 } from '../utils/statistics';
-import {_package} from '../package';
 import {showTooltip} from '../utils/tooltips';
 import {calculateCliffsStatistics, calculateMonomerPositionStatistics, findMutations, MutationCliffsOptions} from '../utils/algorithms';
 import {
@@ -38,7 +37,7 @@ import {splitAlignedSequences} from '@datagrok-libraries/bio/src/utils/splitter'
 import {LogoSummaryTable} from './logo-summary';
 import {TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {PeptideUtils} from '../peptideUtils';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
@@ -1120,7 +1119,7 @@ export class MonomerPosition extends SARViewer {
     $(expand).addClass('pep-help-icon');
     this.targetColumnInput && (this.targetColumnInput.root.style.maxWidth = '50%');
     this.monomerSearchInput.root.style.marginRight = '8px';
-    const targetInputsHost = ui.divH([this.monomerSearchInput.root, this.targetColumnInput?.root ?? ui.div(), this.targetCategoryInput.root],
+    const targetInputsHost = ui.divH([this.monomerSearchInput.input, this.targetColumnInput?.root ?? ui.div(), this.targetCategoryInput.root],
       {style: {alignSelf: 'center', justifyContent: 'center', width: '100%', flexWrap: 'wrap'}});
     targetInputsHost.style.display = this.showFilterControls ? 'flex' : 'none';
     const header = ui.divH([expand, switchHost, targetInputsHost], {style: {alignSelf: 'center', lineHeight: 'normal', flexDirection: 'column', width: '100%'}});

@@ -10,9 +10,8 @@ import {
 import {getHelmHelper, getMonomerHandleArgs} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {Atom, HelmType, IJsAtom, GetMonomerFunc, HelmAtom} from '@datagrok-libraries/bio/src/helm/types';
-import {MonomerLibSummaryType} from '@datagrok-libraries/bio/src/types';
 import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
-import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
   getUserLibSettings, setUserLibSettings,
@@ -69,7 +68,7 @@ t27:{"args":{"a":{"T":"ATOM","p":{"x":96,"y":0},"charge":0,"isotope":null,"radic
 t28:{"args":{"a":{"T":"ATOM","p":{"x":96,"y":0},"charge":0,"isotope":null,"radical":null,"group":null,"alias":null,"superatom":null,"attachpoints":[],"rgroup":null,"bio":{"type":"HELM_LINKER","id":null,"ambiguity":null},"locked":false,"hidden":null,"_rect":null,"elem":"p","color":null,"hcount":null,"selected":false,"f":null,"bonds":null,"id":null,"atommapid":null,"query":null,"hasError":null,"hs":null,"val":null,"tag":null,"_parent":"[object Object]","_aaid":3}},"tgt":{"id":"p","m":"\n     RDKit          2D\n\n  5  4  0  0  0  0  0  0  0  0999 V2000\n   -1.2990    0.7500    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n    0.0000    0.0000    0.0000 P   0  0  0  0  0  0  0  0  0  0  0  0\n    1.2990   -0.7500    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.7500   -1.2990    0.0000 R#  0  0  0  0  0  0  0  0  0  0  0  0\n    0.7500    1.2990    0.0000 R#  0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  2  0\n  2  3  1  0\n  2  4  1  0\n  2  5  1  0\nM  RGP  2   4   1   5   2\nM  END\n","n":"Phosphate","na":"p","rs":2,"at":{"R1":"OH","R2":"OH"}}}
     //@formatter:off
   /* eslint-enable */
-};
+  };
 
 category('getMonomer', ()=> {
   let helmHelper: IHelmHelper;

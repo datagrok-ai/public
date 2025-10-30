@@ -28,7 +28,7 @@ export class SimplePolymer {
 
   private getPolymerType(): string {
     const regex = new RegExp(
-      `(${HELM_POLYMER_TYPE.PEPTIDE}|${HELM_POLYMER_TYPE.RNA})[0-9]+{`
+      `(${HELM_POLYMER_TYPE.PEPTIDE}|${HELM_POLYMER_TYPE.RNA}|${HELM_POLYMER_TYPE.CHEM}|${HELM_POLYMER_TYPE.BLOB})[0-9]+{`
     );
     const match = this.simplePolymer.match(regex);
     if (!match)

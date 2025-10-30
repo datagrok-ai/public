@@ -9,12 +9,11 @@
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "ecmaVersion": 2022,
-    "project": "./packages/bio/tsconfig.json",
+    "project": "./packages/Biologics/tsconfig.json",
     "sourceType": "module"
   },
   "plugins": [
-    "@typescript-eslint",
-    "rxjs"
+    "@typescript-eslint"
   ],
   "rules": {
     "indent": ["error", 2, {"SwitchCase": 0}],
@@ -47,12 +46,6 @@
     "comma-spacing": "error",
     "comma-style": "error",
     "guard-for-in": "off",
-    "space-infix-ops": "error",
-    "rxjs/no-async-subscribe": "error",
-    "rxjs/no-ignored-observable": "error",
-    "rxjs/no-ignored-subscription": "error",
-    "rxjs/no-nested-subscribe": "error",
-    "rxjs/no-unbound-methods": "error",
-    "rxjs/throw-error": "error"
+    "space-infix-ops": "error"
   }
 }

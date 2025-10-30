@@ -20,3 +20,4 @@ yarn-debug.log*
 yarn-error.log*
 test-console-output.log
 /api/
+/js-api/

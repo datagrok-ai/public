@@ -177,11 +177,17 @@ export async function loadPackages(
   release?: boolean): Promise<string[]> {
   const packagesToRun = new Map<string, boolean>();
   const hostString = host === undefined ? `` : `${host}`;
-  if (packagesToLoad !== 'all') {
-    for (const pacakgeName of (packagesToLoad ?? '').split(' ')) {
-      if ((pacakgeName ?? '').length !== 0)
-        packagesToRun.set(spaceToCamelCase(pacakgeName).toLocaleLowerCase(), false);
-    }
+  if (packagesToLoad && packagesToLoad !== 'all') {
+    const packageNames = packagesToLoad
+        .split(' ')
+        .map((p) => p.trim())
+        .filter((p) => p.length > 0);
+
+    if (skipPublish && skipBuild && !linkPackage)
+      return packageNames;
+
+    for (const name of packageNames)
+      packagesToRun.set(spaceToCamelCase(name).toLowerCase(), false);
   }
 
   for (const dirName of fs.readdirSync(packagesDir)) {
@@ -222,17 +228,37 @@ export async function loadPackages(
   }
   console.log();
   return Array.from(packagesToRun)
-    .filter(([key, value]) => value === true)
-    .map(([key]) => key); ;
+    .filter(([_, value]) => value)
+    .map(([key, _]) => key);
 }
 
-export async function loadTestsList(packages: string[], core: boolean = false): Promise<Test[]> {
+export async function loadTestsList(packages: string[], core: boolean = false, record: boolean = false): Promise<Test[]> {
   const packageTestsData = await timeout(async () => {
     const params = Object.assign({}, defaultLaunchParameters);
-    // params['headless'] = false;
     const out = await getBrowserPage(puppeteer, params);
     const browser: Browser = out.browser;
     const page: Page = out.page;
+
+    let recorder = null;
+    if (record) {
+      const suffix = process.env.BACKUP_SIZE && process.env.WORKER_ID && process.env.TOTAL_WORKERS
+          ? `_${process.env.BACKUP_SIZE}_${process.env.WORKER_ID}_${process.env.TOTAL_WORKERS}`
+          : '';
+      const logsDir = `./load-test-console-output${suffix}.log`;
+      const recordDir = `./load-test-record${suffix}.mp4`;
+
+      recorder = new PuppeteerScreenRecorder(page, recorderConfig);
+      await recorder.start(recordDir);
+      await page.exposeFunction('addLogsToFile', addLogsToFile);
+
+      fs.writeFileSync(logsDir, ``);
+      page.on('console', (msg) => {addLogsToFile(logsDir, `CONSOLE LOG ENTRY: ${msg.text()}\n`);});
+      page.on('pageerror', (error) => {addLogsToFile(logsDir, `CONSOLE LOG ERROR: ${error.message}\n`);});
+      page.on('response', (response) => {
+        addLogsToFile(logsDir, `CONSOLE LOG REQUEST: ${response.status()}, ${response.url()}\n`);
+      });
+    }
+
     const r = await page.evaluate((packages, coreTests): Promise<LoadedPackageData[] | { failReport: string }> => {
       return new Promise<LoadedPackageData[] | { failReport: string }>((resolve, reject) => {
         const promises: any[] = [];
@@ -270,9 +296,9 @@ export async function loadTestsList(packages: string[], core: boolean = false): 
           });
       });
     }, packages, core);
-    if (browser != null) 
-      await browser.close();
-    
+
+    await recorder?.stop();
+    await browser?.close();
 
     return r;
   }, testCollectionTimeout);
@@ -348,16 +374,22 @@ async function runTests(testsParams: { package: any, params: any }[], stopOnFail
   let lastTest: any = null;
   let res: string = '';
 
-  // function addColumn(columnName: string, column: any, df : any) {
-  //   if (!df.getCol(columnName)) 
-  //     df.columns.add(column);
-  // }
-
   try {
     for (const testParam of testsParams) {
       lastTest = testParam;
       const df: DG.DataFrame = await (<any>window).grok.functions.call(testParam.package + ':test', testParam.params);
-      
+
+      if (!df.getCol('flaking')) {
+          const flakingCol = (<any>window).DG.Column.fromType((<any>window).DG.COLUMN_TYPE.BOOL, 'flaking', df.rowCount);
+          df.columns.add(flakingCol);
+      }
+
+      if (!df.getCol('package')) {
+        const packageNameCol =
+                (<any>window).DG.Column.fromList((<any>window).DG.COLUMN_TYPE.STRING, 'package', Array(df.rowCount).fill(testParam.package));
+        df.columns.add(packageNameCol);
+      }
+
       df.columns
         .setOrder([ 
           'date', 'category', 'name', 'success', 'result', 'ms', 'skipped', 'logs', 'owner', 'package', 'widgetsDifference', 'flaking']);
@@ -368,7 +400,7 @@ async function runTests(testsParams: { package: any, params: any }[], stopOnFail
       //   df.columns.add(flakingCol);
       // }
       // if (!df.getCol('package')) {
-      //   const packageNameCol = 
+      //   const packageNameCol =
       //     (<any>window).DG.Column.fromList((<any>window).DG.COLUMN_TYPE.STRING, 'package', Array(df.rowCount).fill(testParam.package));
       //   df.columns.add(packageNameCol);
       // }
@@ -380,6 +412,7 @@ async function runTests(testsParams: { package: any, params: any }[], stopOnFail
       }
 
       let row = df.rows.get(0);
+      console.log(`DEBUG: runTests: IN A LOOP: rows in df ${df.rowCount}`);
       if (df.rowCount > 1) {
         const unhandledErrorRow = df.rows.get(1);
         if (!unhandledErrorRow.get('success')) {
@@ -404,8 +437,13 @@ async function runTests(testsParams: { package: any, params: any }[], stopOnFail
 
       if (resultDF === undefined)
         resultDF = df;
-      else
+      else {
+        console.log(`DEBUG: COLUMN NAMES IN RESULT_DF: ${resultDF.columns.names()}`);
+        console.log(`DEBUG: COLUMN TYPES IN RESULT_DF: ${resultDF.columns.names().map((c) => `${c}: ${resultDF.col(c)?.type}`)}`);
+        console.log(`DEBUG: COLUMN NAMES IN DF: ${df.columns.names()}`);
+        console.log(`DEBUG: COLUMN TYPES IN DF: ${df.columns.names().map((c) => `${c}: ${df.col(c)?.type}`)}`);
         resultDF = resultDF.append(df);
+      }
 
       if (row['skipped']) {
         verboseSkipped += `Test result : Skipped : ${time} : ${category}: ${testName} :  ${result}\n`;
@@ -418,8 +456,9 @@ async function runTests(testsParams: { package: any, params: any }[], stopOnFail
         countFailed += 1;
         failed = true;
       }
-      if ((success !== true && skipped !== true) && stopOnFail)
+      if ((success !== true && skipped !== true) && stopOnFail) {
         break;
+      }
     }
 
     if ((<any>window).DG.Test.isInDebug) {
@@ -428,6 +467,7 @@ async function runTests(testsParams: { package: any, params: any }[], stopOnFail
     }
 
     res = '';
+    console.log(`DEBUG: runTests: AFTER THE LOOP: rows in resultDF ${resultDF?.rowCount}`);
     if (resultDF) {
       const bs = (<any>window).DG.BitSet.create(resultDF.rowCount);
       bs.setAll(true);
@@ -437,18 +477,20 @@ async function runTests(testsParams: { package: any, params: any }[], stopOnFail
         
       }
       resultDF = resultDF.clone(bs);
+      console.log(`DEBUG: runTests: IN IF CONDITION: rows in resultDF ${resultDF.rowCount}`);
       res = resultDF.toCsv();
+      console.log(`DEBUG: runTests: IN IF CONDITION: csv length ${res?.length}`);
     }
   } catch (e) {
     failed = true;
-
-    error = lastTest ? 
-      `category: ${
-        lastTest.params.category}, name: ${
-        lastTest.params.test}, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}` :
-      `test: null, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}`;
+    console.log(`DEBUG: runTests: IN CATCH: ERROR: ${e}`);
+    error = lastTest ?
+        `category: ${
+            lastTest.params.category}, name: ${
+            lastTest.params.test}, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}` :
+        `test: null, error: ${e}, ${await (<any>window).DG.Logger.translateStackTrace((e as any).stack)}`;
   }
-
+  console.log(`DEBUG: runTests: BEFORE RETURN: RES: ${res.length}, FAILED: ${failed}, ERROR: ${error}`);
   return {
     failed: failed,
     verbosePassed: verbosePassed,
@@ -662,23 +704,22 @@ export type OrganizedTests = {
   }
 }
 
-export async function addColumnToCsv(csv: string, columnName: string, defaultValue: string | number | boolean): Promise<string> {
-  let result = csv;
-  Papa.parse(csv, {
+export function addColumnToCsv(
+    csv: string,
+    columnName: string,
+    defaultValue: string | number | boolean
+): string {
+  const results = Papa.parse(csv, {
     header: true,
     skipEmptyLines: true,
-    complete: function(results) {
-      const dataWithDefaultColumn = results.data.map((row: any) => {
-        row[columnName] = defaultValue;
-        return row;
-      });
-
-      result = Papa.unparse(dataWithDefaultColumn, {
-        header: true,
-      });
-    },
   });
-  return result;
+
+  const dataWithDefaultColumn = (results.data as any[]).map((row) => ({
+    ...row,
+    [columnName]: defaultValue,
+  }));
+
+  return Papa.unparse(dataWithDefaultColumn, { header: true });
 }
 
 export function escapeRegex(s: string): string {

@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -12,7 +13,7 @@ import {getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {App, HweWindow} from '@datagrok-libraries/bio/src/helm/types';
 import {HelmInputBase, IHelmHelper, IHelmInputInitOptions} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
-import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 
 import {getPropertiesWidget} from './widgets/properties-widget';
 import {HelmGridCellRenderer, HelmGridCellRendererBack} from './utils/helm-grid-cell-renderer';
@@ -92,10 +93,9 @@ function checkMonomersAndOpenWebEditor(cell: DG.GridCell, value?: string, units?
   openWebEditor(cell, value, units);
 }
 
-export class PackageFunctions{
+export class PackageFunctions {
   @grok.decorators.init()
   static async initHelm(): Promise<void> {
-  
     if (initHelmPromise === null)
       initHelmPromise = initHelmInt();
     return initHelmPromise;
@@ -104,10 +104,9 @@ export class PackageFunctions{
 
   @grok.decorators.func({
     'description': 'Helm renderer service',
-    'outputs': [{'type': 'object',  'name': 'result'}]
+    'outputs': [{'type': 'object', 'name': 'result'}]
   })
   static async getHelmService(): Promise<HelmServiceBase> {
-  
     return _getHelmService();
   }
 
@@ -120,7 +119,6 @@ export class PackageFunctions{
     'outputs': [{name: 'result', type: 'grid_cell_renderer'}]
   })
   static helmCellRenderer(): DG.GridCellRenderer {
-  
     const logPrefix = `Helm: _package.getHelmCellRenderer()`;
     _package.logger.debug(`${logPrefix}, start`);
     // return new HelmCellRenderer(); // old
@@ -134,8 +132,7 @@ export class PackageFunctions{
     'description': 'Macromolecule'
   })
   static editMoleculeCell(
-    @grok.decorators.param({'type':'grid_cell'})  cell: DG.GridCell): void {
-  
+    @grok.decorators.param({'type': 'grid_cell'}) cell: DG.GridCell): void {
     checkMonomersAndOpenWebEditor(cell, undefined, undefined);
   }
 
@@ -146,8 +143,7 @@ export class PackageFunctions{
     'description': 'Adds editor'
   })
   static openEditor(
-    @grok.decorators.param({'options':{'semType':'Macromolecule'}})  mol: DG.SemanticValue): void {
-  
+    @grok.decorators.param({'options': {'semType': 'Macromolecule'}}) mol: DG.SemanticValue): void {
     const df = grok.shell.tv.grid.dataFrame;
     const col = df.columns.bySemType('Macromolecule')! as DG.Column<string>;
     const colSh = _package.seqHelper.getSeqHandler(col);
@@ -174,21 +170,18 @@ export class PackageFunctions{
     'name': 'Properties'
   })
   static propertiesWidget(
-    @grok.decorators.param({'options':{'semType':'Macromolecule'}})  sequence: DG.SemanticValue): DG.Widget {
-  
+    @grok.decorators.param({'options': {'semType': 'Macromolecule'}}) sequence: DG.SemanticValue): DG.Widget {
     return getPropertiesWidget(sequence);
   }
 
   @grok.decorators.func()
   static getMolfiles(
-    @grok.decorators.param({'type': 'column', 'options':{'semType':'Macromolecule'}})  col: DG.Column<string>): DG.Column<string> {
-  
+    @grok.decorators.param({'type': 'column', 'options': {'semType': 'Macromolecule'}}) col: DG.Column<string>): DG.Column<string> {
     const helmStrList = col.toList();
     const molfileList = _package.helmHelper.getMolfiles(helmStrList);
     const molfileCol = DG.Column.fromStrings('mols', molfileList);
     return molfileCol;
   }
-
 
 
   @grok.decorators.func({
@@ -197,28 +190,24 @@ export class PackageFunctions{
       'semType': 'Macromolecule'
     },
     'tags': ['valueEditor'],
-    'outputs': [{'type': 'object',  'name': 'result'}]
+    'outputs': [{'type': 'object', 'name': 'result'}]
   })
   static helmInput(
-    @grok.decorators.param({'options':{'optional':true}})  name: string,
-    @grok.decorators.param({'type':'object','options':{'optional':true}})   options: IHelmInputInitOptions): HelmInputBase {
-  
+    @grok.decorators.param({'options': {'optional': true}}) name: string,
+    @grok.decorators.param({'type': 'object', 'options': {'optional': true}}) options: IHelmInputInitOptions): HelmInputBase {
     // TODO: Annotate for semType = 'Macromolecule' AND units = 'helm'
     return _package.helmHelper.createHelmInput(name, options);
   }
 
 
-
-  @grok.decorators.func({'outputs': [{'type': 'object',  'name': 'result'}]})
+  @grok.decorators.func({'outputs': [{'type': 'object', 'name': 'result'}]})
   static getHelmHelper(): IHelmHelper {
-  
     return _package.helmHelper;
   }
 
 
   @grok.decorators.func()
   static async measureCellRenderer(): Promise<void> {
-  
     const grid = grok.shell.tv.grid;
     const gridCol = grid.columns.byName('sequence')!;
     const back = gridCol.temp.rendererBack as HelmGridCellRendererBack;
@@ -251,12 +240,10 @@ export class PackageFunctions{
   }
 
 
-
   @grok.decorators.func({
     'name': 'Highlight Monomers'
   })
   static async highlightMonomers(): Promise<void> {
-  
     const pi = DG.TaskBarProgressIndicator.create('Test app highlight monomers');
     try {
       const df = await _package.files.readCsv('tests/peptide.csv');

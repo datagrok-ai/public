@@ -1,4 +1,4 @@
-import {IMonomerLib, IMonomerLibBase, Monomer} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib, IMonomerLibBase, Monomer} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';

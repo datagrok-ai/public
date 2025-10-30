@@ -23,14 +23,6 @@ export function activityDashboardWidget() : any {
   return PackageFunctions.activityDashboardWidget();
 }
 
-//name: Recent projects
-//tags: dashboard
-//output: widget result
-//meta.order: 2
-export function recentProjectsWidget() : any {
-  return PackageFunctions.recentProjectsWidget();
-}
-
 //name: Community
 //tags: dashboard
 //output: widget result
@@ -47,14 +39,6 @@ export function webWidget() : any {
 //output: widget result
 export function htmlWidget() : any {
   return PackageFunctions.htmlWidget();
-}
-
-//name: Learn
-//tags: dashboard
-//output: widget result
-//meta.order: 5
-export function learnWidget() : any {
-  return PackageFunctions.learnWidget();
 }
 
 //output: widget result

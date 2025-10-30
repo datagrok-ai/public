@@ -71,7 +71,7 @@ function getInputBaseArray(props: DG.Property[], param: any): DG.InputBase[] {
   });
 }
 
-let conn; 
+let conn;
 
 async function getDataQuery(sql: string): Promise<DG.DataQuery> {
   const regex = /--connection:\s*(\S+)/;
@@ -166,7 +166,7 @@ async function openFse(v: DG.View, functionCode: string) {
 
     const onItemClick = async (item: DG.Property) => {
       inputScriptCopy[item.name] = ' ';
-      const newInputs = ui.inputs(  
+      const newInputs = ui.inputs(
         Object.values(functionProps)
           .filter((prop) => !!prop.get(inputScriptCopy) || !!(inputScriptCopy as any)[prop.name])
           .map((prop) => addFullWidthInput(
@@ -270,7 +270,7 @@ async function openFse(v: DG.View, functionCode: string) {
 
     const helpIcon = ui.iconFA('question', () => {
       window.open(
-        'https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation', 
+        'https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation',
         '_blank'
       );
     });
@@ -279,7 +279,7 @@ async function openFse(v: DG.View, functionCode: string) {
     grok.shell.o = ui.divV([
       ui.divH(
         [
-          ui.h1(`Param: ${paramName}`), 
+          ui.h1(`Param: ${paramName}`),
           helpIcon
         ],
       ), ui.block75([result])
@@ -326,7 +326,7 @@ async function openFse(v: DG.View, functionCode: string) {
   const obligatoryFuncParamsTags: DG.Property[] = COMMON_TAG_NAMES.map((name) => nameToProp(name));
 
   const optionalFuncParamsTags: DG.Property[] = OPTIONAL_TAG_NAMES.map((name) => nameToProp(name, getChoicesByName[name]));
-  
+
   const paramsDF = DG.DataFrame.create(functionParamsCopy.length);
   for (const p of obligatoryFuncParamsProps) {
     (paramsDF.columns as DG.ColumnList)
@@ -468,7 +468,7 @@ async function openFse(v: DG.View, functionCode: string) {
 
   const refreshPreview = async () => {
     let result = '';
-    if (v.type === DATA_QUERY_VIEW) 
+    if (v.type === DATA_QUERY_VIEW)
       result += `${headerSign[language]}${functionPropsCode[FUNC_PROPS_FIELD.CONNECTION]}: ${conn}\n`;
     Object.values(functionProps).map((propField) => {
       const propValue = propField.get(inputScriptCopy) || (inputScriptCopy as any)[propField.name];
@@ -481,9 +481,12 @@ async function openFse(v: DG.View, functionCode: string) {
       result += generateParamLine(param, param.options.direction);
     });
     const regex = new RegExp(`^(${headerSign[language]}.*\n)*`, 'g');
-    result += (v.type === DATA_QUERY_VIEW) 
-    ? (inputScriptCopy as DG.DataQuery).query.substring((inputScriptCopy as DG.DataQuery).query.match(regex)[0].length + 1) 
-    : (inputScriptCopy as DG.Script).script.substring((inputScriptCopy as DG.Script).script.match(regex)[0].length + 1);
+    const match = (v.type === DATA_QUERY_VIEW) ? (inputScriptCopy as DG.DataQuery).query.match(regex) :
+      (inputScriptCopy as DG.Script).script.match(regex);
+    if (match) {
+      result += (v.type === DATA_QUERY_VIEW) ? (inputScriptCopy as DG.DataQuery).query.substring(match[0].length) :
+        (inputScriptCopy as DG.Script).script.substring(match[0].length);
+    }
     myCM.setOption('mode', highlightModeByLang[language]);
     myCM.setValue(result);
     myCM.setSize('100%', '100%');

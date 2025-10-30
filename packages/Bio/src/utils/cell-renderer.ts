@@ -20,7 +20,7 @@ import {
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
-import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {GapOriginals} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {execMonomerHoverLinks} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
 import {CellRendererBackBase, getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';

@@ -3,9 +3,9 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {CHEM_SIMILARITY_METRICS} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import '../../css/chem.css';
-import { Subject, Subscription } from 'rxjs';
-import { AVAILABLE_FPS } from '../constants';
-import { pickTextColorBasedOnBgColor } from '../utils/ui-utils';
+import {Subject, Subscription} from 'rxjs';
+import {AVAILABLE_FPS} from '../constants';
+import {pickTextColorBasedOnBgColor} from '../utils/ui-utils';
 
 export const SIMILARITY = 'similarity';
 export const DIVERSITY = 'diversity';
@@ -80,10 +80,10 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
           await this.render(compute);
         }));
       this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50)
-        .subscribe(async (_: any) => 
+        .subscribe(async (_: any) =>
           await this.render(this.rowSource === RowSourceTypes.Selected || this.rowSource === RowSourceTypes.FilteredSelected)));
       this.subs.push(DG.debounce((this.dataFrame.onFilterChanged), 50)
-        .subscribe(async (_: any) => 
+        .subscribe(async (_: any) =>
           await this.render(this.rowSource === RowSourceTypes.Filtered || this.rowSource === RowSourceTypes.FilteredSelected)));
       this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50)
         .subscribe(async (_: any) => await this.render(false)));
@@ -156,7 +156,6 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
     const propsDict: {[key: string]: any} = {};
     if (!grok.shell.tv)
       return ui.div();
-    const grid = grok.shell.tv?.grid;
     if (similarity) {
       if (refMolecule)
         propsDict['Reference'] = {val: ''};
@@ -164,11 +163,14 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
         propsDict[SIMILARITY] = {val: similarity};
     }
     for (const col of this.moleculeProperties) {
-      propsDict[col] = {val: this.moleculeColumn!.dataFrame.col(col)!.getString(idx)};
-      const colorCoding = this.moleculeColumn!.dataFrame.col(col)!.meta.colors.getType();
-      if (colorCoding && colorCoding !== DG.COLOR_CODING_TYPE.OFF) {
-        propsDict[col].color = grid?.cell(col, idx).color;
-        propsDict[col].isTextColorCoded = grid?.col(col)?.isTextColorCoded;
+      const propCol = this.moleculeColumn!.dataFrame.col(col);
+      if (propCol) {
+        propsDict[col] = {val: propCol.getString(idx)};
+        const colorCoding = propCol.meta.colors.getType();
+        if (colorCoding && colorCoding !== DG.COLOR_CODING_TYPE.OFF) {
+          propsDict[col].color = this.dataFrame.col(col)?.meta.colors.getColor(idx);
+          propsDict[col].isTextColorCoded = grok.shell.tv.grid?.col(col)?.isTextColorCoded;
+        }
       }
     }
     //const item = ui.divH([], 'similarity-prop-item');
@@ -222,22 +224,22 @@ export class ChemSearchBaseViewer extends DG.JsViewer {
 
   getRowSourceIndexes(): DG.BitSet {
     const bitset = DG.BitSet.create(this.dataFrame.rowCount);
-    switch(this.rowSource) {
-      case RowSourceTypes.All:
-        bitset.setAll(true);
-        break;
-      case RowSourceTypes.Filtered:
-        bitset.copyFrom(this.dataFrame.filter);
-        break;
-      case RowSourceTypes.Selected:
-        bitset.copyFrom(this.dataFrame.selection);
-        break;
-      case RowSourceTypes.FilteredSelected:
-        const filterCopy = DG.BitSet.create(this.dataFrame.rowCount).copyFrom(this.dataFrame.filter);
-        bitset.copyFrom(filterCopy.and(this.dataFrame.selection));
-        break;
-      default:
-        break;
+    switch (this.rowSource) {
+    case RowSourceTypes.All:
+      bitset.setAll(true);
+      break;
+    case RowSourceTypes.Filtered:
+      bitset.copyFrom(this.dataFrame.filter);
+      break;
+    case RowSourceTypes.Selected:
+      bitset.copyFrom(this.dataFrame.selection);
+      break;
+    case RowSourceTypes.FilteredSelected:
+      const filterCopy = DG.BitSet.create(this.dataFrame.rowCount).copyFrom(this.dataFrame.filter);
+      bitset.copyFrom(filterCopy.and(this.dataFrame.selection));
+      break;
+    default:
+      break;
     }
     return bitset;
   }

@@ -76,7 +76,7 @@ export async function createInitialSatistics(statsDiv: HTMLElement, libName?: st
   statsDiv.append(tableDiv);
 
   ui.setUpdateIndicator(tableDiv, true, 'Loading statistics...');
-  const libObjForTable: any[] = await createLibsObjectForStatistics();
+  const libObjForTable: any[] = await createLibsObjectForStatistics(libName);
 
   const statsElement = createLibsStatsTable(libObjForTable, libName);
   tableDiv.append(statsElement);

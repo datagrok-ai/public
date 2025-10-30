@@ -16,7 +16,7 @@ export async function admeticaWidget(semValue: DG.SemanticValue) : Promise<any> 
 
 //input: string property 
 //output: list<string> result
-export async function getModels(property: string) : Promise<string[]> {
+export async function getModels(property?: string) : Promise<string[]> {
   return await PackageFunctions.getModels(property);
 }
 
@@ -41,7 +41,7 @@ export function admeticaEditor(call: DG.FuncCall) : void {
 
 //name: AdmeticaMenu
 //input: dataframe table { description: Input data table }
-//input: categorical molecules { type: categorical; semType: Molecule }
+//input: column molecules { semType: Molecule }
 //input: string template 
 //input: list<string> models 
 //input: bool addPiechart 
@@ -52,11 +52,12 @@ export async function admeticaMenu(table: DG.DataFrame, molecules: DG.Column, te
   await PackageFunctions.admeticaMenu(table, molecules, template, models, addPiechart, addForm);
 }
 
-//input: string molecule { semType: Molecule }
-//input: string prop { choices: ["Caco2","Solubility","Lipophilicity","PPBR","VDss"] }
-//output: double result
-export async function admeProperty(molecule: string, prop: string) : Promise<number> {
-  return await PackageFunctions.admeProperty(molecule, prop);
+//input: column molecules { semType: Molecule }
+//input: list<string> props 
+//output: dataframe result
+//meta.vectorFunc: true
+export async function getAdmeProperties(molecules: DG.Column, props?: string[]) : Promise<any> {
+  return await PackageFunctions.getAdmeProperties(molecules, props);
 }
 
 //name: Admetica

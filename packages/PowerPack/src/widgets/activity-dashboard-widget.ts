@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import dayjs from 'dayjs';
 import {queries} from '../package-api';
+import {LearningWidget} from './learning-widget';
 
 
 enum SpotlightTabNames {
@@ -12,7 +13,7 @@ enum SpotlightTabNames {
 }
 
 export class ActivityDashboardWidget extends DG.Widget {
-  public get type(): string {
+  get type(): string {
     return 'ActivityDashboardWidget';
   }
 
@@ -77,15 +78,26 @@ export class ActivityDashboardWidget extends DG.Widget {
       'Favorites': () => ui.wait(async () => await this.getFavoritesTab()),
       'Notifications': () => ui.wait(async () => await this.getNotificationsTab()),
       'My Activity': () => ui.wait(async () => await this.getActivityTab()),
+      'Learn': () => new LearningWidget().root,
     };
 
     this.tabControl = ui.tabControl(tabs, true);
-    this.tabControl.onTabChanged.subscribe((_) => this.cleanLists());
+    this.subs.push(this.tabControl.onTabChanged.subscribe((tabPane: DG.TabPane) => {
+      this.cleanLists();
+      tabPane.name === 'Learn' ? tabPane.content.parentElement?.classList.add('power-pack-overflow-hidden') :
+        tabPane.content.parentElement?.classList.remove('power-pack-overflow-hidden');
+    }));
     this.tabControl.root.style.height = '90%';
     this.tabControl.root.style.width = '100%';
 
     this.root.appendChild(this.tabControl.root);
     this.root.appendChild(await this.createRandomizedTipOfTheDay());
+    // TODO: uncomment when JS API 1.27/1.26.5 is released
+    // this.subs.push((grok.events.onCurrentObjectChanged.subscribe((args) => {
+    //   const trigger = args.args.trigger;
+    //   if (this.root.contains(trigger))
+    //     grok.shell.windows.context.visible = true;
+    // })));
   }
 
   async getDemosOfTheDay(): Promise<string[]> {
@@ -154,7 +166,6 @@ export class ActivityDashboardWidget extends DG.Widget {
     else
       randomTip = todayItemListFromType.length > 0 ? todayItemListFromType[Math.floor(seededRandom(weekSeed) * todayItemListFromType.length)] : '';
 
-    const usedTipList: (DG.Func | string)[] = [randomTip];
     let tipIdx = 0;
     const demoApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'demoApp'})[0];
     const tutorialsApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'trackOverview'})[0];
@@ -176,28 +187,16 @@ export class ActivityDashboardWidget extends DG.Widget {
         link = ui.link(newRandomTip, async () => await tutorialsApp.apply());
         tip.appendChild(link);
       }
-
-      let prevTipIcon: HTMLElement;
-      let nextTipIcon: HTMLElement;
-      const updateTip = (next: boolean) => {
-        next ? tipIdx++ : tipIdx--;
-        tipIdx === 0 ? prevTipIcon.classList.add('tip-prev-hidden') : prevTipIcon.classList.remove('tip-prev-hidden');
-        const newRandomTip = tipIdx < usedTipList.length ? usedTipList[tipIdx] : randomizedTips[Math.floor(Math.random() * randomizedTips.length)];
-        if (tipIdx >= usedTipList.length)
-          usedTipList.push(newRandomTip);
+      const updateTip = () => {
+        tipIdx++;
+        const newRandomTip = randomizedTips[Math.floor(Math.random() * randomizedTips.length)];
         const newTip = createTip(newRandomTip);
         tip.replaceWith(newTip);
       };
 
-      prevTipIcon = ui.iconFA('chevron-left', () => updateTip(false), 'Previous tip');
-      prevTipIcon.classList.add('tip-prev');
-      if (tipIdx === 0)
-        prevTipIcon.classList.add('tip-prev-hidden');
-      nextTipIcon = ui.iconFA('chevron-right', () => updateTip(true), 'Next tip');
+      const nextTipIcon = ui.iconFA('chevron-right', updateTip, 'Next tip');
       nextTipIcon.classList.add('tip-next');
-      tipText.prepend(prevTipIcon);
-      tip.appendChild(nextTipIcon);
-
+      tip.prepend(nextTipIcon);
       return tip;
     };
     return createTip(randomTip);

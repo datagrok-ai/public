@@ -1,0 +1,323 @@
+/* --- assay-plates.css --- */
+/* A consolidated and scoped stylesheet for the Assay Plates feature. */
+
+/* == Main Panel Layout == */
+.assay-plates--template-panel {
+  flex-shrink: 0;
+  width: 410px;
+  max-width: 450px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: hidden;
+  border-right: 1px solid var(--grey-2);
+  padding-right: 12px;
+}
+
+/* == Collapsible Sections == */
+.assay-plates--left-panel-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-bottom: 1px solid var(--grey-1);
+  margin-bottom: 12px;
+}
+
+.assay-plates--collapsible-header-container {
+  display: flex;
+  align-items: center;
+}
+
+.assay-plates--collapsible-header {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-grow: 1;
+}
+
+.assay-plates--collapsible-icon {
+  margin-right: 8px;
+  color: var(--grey-4);
+  cursor: pointer;
+}
+
+.assay-plates--left-panel-section h2 {
+  margin: 0 !important;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--grey-8);
+  text-transform: none;
+  letter-spacing: normal;
+  line-height: 1.2;
+}
+
+.assay-plates--left-panel-section-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0 16px 0;
+}
+
+.assay-plates--collapsible-content {
+  padding-left: 24px;
+}
+
+/* == Generic Form & Input Controls == */
+/* Replace the existing .assay-plates--form-row with this */
+.assay-plates--form-row {
+  display: grid;
+  grid-template-columns: 140px 1fr; /* Fixed width for labels */
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  min-height: 32px;
+  background: transparent;
+}
+
+.assay-plates--form-row .ui-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--grey-5);
+  text-align: left; /* Ensure left alignment */
+}
+
+.assay-plates--form-row .d4-input-root {
+  width: 100%;
+  margin: 0 !important;
+}
+
+/* Ensure ALL input types maintain consistent width */
+.assay-plates--form-row .d4-input-root input,
+.assay-plates--form-row .d4-input-root select,
+.assay-plates--form-row .d4-input-root .ui-input-editor {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Prevent focus/active states from changing layout */
+.assay-plates--form-row .d4-input-root:focus-within {
+  margin: 0 !important;
+}
+
+
+.assay-plates--form-row .d4-input-root {
+  width: 100%;
+  margin: 0 !important;
+}
+
+.assay-plates--plate-import-input {
+  width: 100%;
+}
+
+.assay-plates--plate-import-input .ui-input-editor {
+  width: 100%;
+}
+
+.assay-plates--plate-import-input button {
+  width: 100%;
+  justify-content: center !important;
+  gap: 8px;
+}
+
+/* == Plate Identifier Controls == */
+.assay-plates--identifier-control-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.assay-plates--identifier-control-row .assay-plates--form-row > :last-child {
+  flex-grow: 1;
+}
+
+.assay-plates--add-identifier-container {
+  margin-top: 8px;
+}
+
+/* == Icon Buttons == */
+.assay-plates--icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  border: 1px solid var(--grey-2);
+  background-color: var(--grey-0);
+  margin-left: 8px;
+  height: 30px;
+  width: 30px;
+}
+
+.assay-plates--icon-button:hover {
+  border-color: var(--blue-2);
+  background-color: var(--grey-1);
+}
+
+.assay-plates--icon-button i.grok-icon {
+  font-size: 16px;
+  margin: 0 !important;
+}
+
+.assay-plates--add-button i.grok-icon {
+  color: var(--blue-3);
+}
+
+.assay-plates--remove-button i.grok-icon {
+  color: var(--red-3);
+}
+
+.assay-plates--add-button {
+  width: 100%;
+  justify-content: center;
+}
+
+
+/* == Mapping Editor / Validation Table == */
+.assay-plates--mapping-editor,
+.assay-plates--validation-table {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.assay-plates--mapping-editor-row,
+.assay-plates--validation-table-row {
+display: grid;
+grid-template-columns: 140px 1fr; 
+gap: 12px;
+align-items: center;
+min-height: 32px;
+padding: 8px 0;
+border-radius: 4px;
+transition: all 0.15s ease;
+}
+
+.assay-plates--mapping-editor-row:hover,
+.assay-plates--validation-table-row:hover {
+  background-color: var(--blue-0);
+}
+
+/* Property name styling */
+.assay-plates--mapping-editor-row > div:first-child,
+.assay-plates--validation-table-row > div:first-child {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--grey-5);
+}
+
+.assay-plates--required-asterisk {
+  color: var(--red-3);
+  margin-left: 2px;
+  font-weight: bold;
+}
+
+/* Mapping input container */
+.assay-plates--mapping-input-container {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+}
+
+.assay-plates--mapping-input-container .ui-input-root {
+  flex: 1;
+  margin: 0 !important;
+}
+
+/* Mapping icons (Undo, Cancel, Add) */
+.assay-plates--mapping-undo-icon,
+.assay-plates--mapping-cancel-icon,
+.assay-plates--mapping-add-icon {
+  color: var(--grey-4);
+  cursor: pointer;
+  transition: color 0.15s;
+  padding: 4px;
+  border-radius: 2px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.assay-plates--mapping-undo-icon {
+  visibility: hidden; /* Only show on row hover */
+}
+
+.assay-plates--mapping-editor-row:hover .assay-plates--mapping-undo-icon,
+.assay-plates--validation-table-row:hover .assay-plates--mapping-undo-icon {
+  visibility: visible;
+}
+
+.assay-plates--mapping-undo-icon:hover,
+.assay-plates--mapping-cancel-icon:hover {
+  color: var(--red-2);
+  background-color: var(--red-0);
+}
+
+.assay-plates--mapping-add-icon:hover {
+  color: var(--blue-2);
+  background-color: var(--blue-0);
+}
+
+.assay-plates--mapping-add-row {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0;
+  margin-top: 8px;
+}
+.assay-plates--validation-add-row {
+  padding: 8px 0;
+  margin-top: 8px;
+}
+
+/* Dynamic row for adding new properties */
+.assay-plates--dynamic-row-right-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.assay-plates--dynamic-row-right-cell .ui-input-choice {
+  flex: 1;
+}
+
+/* Info message */
+.assay-plates--info-message {
+  text-align: center;
+  color: var(--grey-3);
+  font-style: italic;
+  padding: 24px;
+  background-color: var(--grey-0);
+  border: 1px solid var(--grey-1);
+  border-radius: 4px;
+}
+
+/* Legacy support for grid styling inside section content */
+.assay-plates--left-panel-section-content .d4-input-base {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 12px;
+}
+
+.assay-plates--left-panel-section-content .d4-input-label {
+  margin-bottom: 0 !important;
+}
+/* Ensure consistent spacing across all collapsible sections */
+.assay-plates--left-panel-section {
+  padding: 0;
+  margin-bottom: 16px;
+}
+
+.assay-plates--left-panel-section-content {
+  padding: 12px 0 16px 24px; /* Consistent left padding for indentation */
+}
+
+/* Ensure all form rows in all sections use the same grid */
+.assay-plates--left-panel-section .assay-plates--form-row,
+.assay-plates--identifier-control-row .assay-plates--form-row {
+  grid-template-columns: 140px 1fr; /* Same fixed width across all sections */
+}

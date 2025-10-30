@@ -1,88 +1,101 @@
+/* eslint-disable guard-for-in */
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {DesirabilityProfile, mpo} from '@datagrok-libraries/statistics/src/mpo/mpo';
+import {DesirabilityProfile} from '@datagrok-libraries/statistics/src/mpo/mpo';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 
-export async function _mpoDialog(table: DG.DataFrame): Promise<void> {
-  // Get list of MPO files from appData/Chem/mpo
-  const mpoFiles = await grok.dapi.files.list('System:AppData/Chem/mpo');
+const MPO_TEMPLATE_PATH = 'System:AppData/Chem/mpo';
 
-  const dataFrame = grok.shell.t;
-  const mpoProfileEditor = new MpoProfileEditor(dataFrame);
-  const defaultTemplateName = mpoFiles.length > 0 ? mpoFiles[0].fileName : null;
-  // eslint-disable-next-line max-len
-  const templateInput = ui.input.choice('Template', {items: mpoFiles.map((f) => f.fileName), value: defaultTemplateName!});
+export class MpoProfileDialog {
+  dataFrame: DG.DataFrame;
+  mpoProfileEditor: MpoProfileEditor;
+  templateInput: DG.ChoiceInput<string | null>;
+  mpoFiles: DG.FileInfo[] = [];
+  currentTemplate: DesirabilityProfile | null = null;
+  currentTemplateFileName: string | null = null;
 
-  // Keep track of current template data to avoid modifying original on cancel
-  let currentTemplate: DesirabilityProfile | null = null;
-  let currentTemplateFileName: string | null = defaultTemplateName; // Track filename
+  constructor(dataFrame?: DG.DataFrame) {
+    this.dataFrame = dataFrame ?? grok.shell.t;
+    this.mpoProfileEditor = new MpoProfileEditor(this.dataFrame);
 
-  async function loadProfile(profileFileName: string | null) {
-    currentTemplateFileName = profileFileName; // Update tracked filename
-    const templateFile = mpoFiles.find((f) => f.fileName === profileFileName);
-    const templateContent = await templateFile!.readAsString();
-    currentTemplate = JSON.parse(templateContent) as DesirabilityProfile;
-    mpoProfileEditor.setProfile(currentTemplate);
+    this.templateInput = ui.input.choice('Template', {
+      onValueChanged: async (value) => await this.loadProfile(value),
+      nullable: false,
+    });
   }
 
-  // Update property info when template changes
-  templateInput.onChanged.subscribe((value) => {
-    loadProfile(value);
-  });
+  async init(): Promise<void> {
+    this.mpoFiles = await grok.dapi.files.list(MPO_TEMPLATE_PATH);
+    const defaultTemplate = this.mpoFiles.length > 0 ? this.mpoFiles[0].fileName : null;
 
-  // Create dialog
-  const dialog = ui.dialog('MPO Score')
-  // .add(molColInput) // Molecule column is now determined automatically
-    .add(templateInput)
-    .add(mpoProfileEditor.root) // Add the container for properties
-    .onOK(async () => {
-      // --- Apply the changes ---
-      // 1. Save the modified template (optional, could just use in memory)
-      // Example: Save back to the file
-      try {
-        const updatedTemplateString = JSON.stringify(currentTemplate, null, 2);
-        await grok.dapi.files.writeAsText(`System:AppData/Chem/mpo/${currentTemplateFileName}`, updatedTemplateString);
-        grok.shell.info(`Template '${currentTemplateFileName}' updated.`);
-      } catch (e) {
-        console.error('Failed to save template:', e);
-        grok.shell.error(`Failed to save template '${currentTemplateFileName}': ${e instanceof Error ? e.message : String(e)}`);
-        // Decide if you want to proceed with calculation even if saving failed
-        // return;
-      }
+    this.templateInput.items = this.mpoFiles.map((f) => f.fileName);
+    if (defaultTemplate) {
+      this.templateInput.value = defaultTemplate;
+      await this.loadProfile(defaultTemplate);
+    }
+  }
+
+  private async loadProfile(fileName: string | null): Promise<void> {
+    if (!fileName) return;
+    this.currentTemplateFileName = fileName;
+    const templateFile = this.mpoFiles.find((f) => f.fileName === fileName);
+    if (!templateFile) return;
+
+    try {
+      const templateContent = await templateFile.readAsString();
+      this.currentTemplate = JSON.parse(templateContent) as DesirabilityProfile;
+      this.mpoProfileEditor.setProfile(this.currentTemplate);
+    } catch (e) {
+      grok.shell.error(`Failed to load template '${fileName}': ${e instanceof Error ? e.message : e}`);
+    }
+  }
+
+  private async saveTemplate(): Promise<void> {
+    if (!this.currentTemplateFileName || !this.currentTemplate) return;
+    try {
+      const updatedTemplateString = JSON.stringify(this.currentTemplate, null, 2);
+      await grok.dapi.files.writeAsText(
+        `${MPO_TEMPLATE_PATH}/${this.currentTemplateFileName}`,
+        updatedTemplateString,
+      );
+      grok.shell.info(`Template '${this.currentTemplateFileName}' updated.`);
+    } catch (e) {
+      grok.shell.error(`Failed to save template '${this.currentTemplateFileName}': ${e instanceof Error ? e.message : e}`);
+    }
+  }
+
+  private async runMpoCalculation(): Promise<void> {
+    try {
+      const [func] = await DG.Func.find({name: 'mpoTransformFunction'});
+      await func.prepare({
+        df: this.dataFrame,
+        currentProperties: this.currentTemplate?.properties,
+      }).call(undefined, undefined, {processed: false});
+    } catch (e) {
+      grok.shell.error(`Failed to run MPO calculation: ${e instanceof Error ? e.message : e}`);
+    }
+  }
 
 
-      // 2. Check for necessary columns and set tags
-      const columnsToProcess: DG.Column[] = [];
-      let missingColumns = false;
-      for (const propertyName in currentTemplate!.properties) {
-        const column = dataFrame.columns.byName(propertyName);
-        if (!column) {
-          grok.shell.warning(`Column ${propertyName} from template not found in table. Skipping this property for calculation.`);
-          missingColumns = true;
-          continue; // Skip this property if column is missing
-        }
-        // Set the *modified* desirability info as a tag
-        column.setTag('desirabilityTemplate', JSON.stringify(currentTemplate!.properties[propertyName]));
-        columnsToProcess.push(column);
-      }
+  getEditor(): HTMLElement {
+    return ui.divV([
+      this.templateInput.root,
+      this.mpoProfileEditor.root,
+    ]);
+  }
 
-      if (columnsToProcess.length === 0) {
-        grok.shell.error('No valid columns found matching the template properties. Cannot calculate MPO score.');
-        return;
-      }
+  async showDialog(): Promise<void> {
+    await this.init();
 
-      // 3. Call MPO function with the relevant columns
-      try {
-        const resultCol = mpo(dataFrame, columnsToProcess); // mpo now adds the column itself
-        grok.shell.info(`MPO score calculated in column '${resultCol.name}'.`);
-      } catch (e) {
-        console.error('MPO Calculation Error:', e);
-        grok.shell.error(`MPO calculation failed: ${e instanceof Error ? e.message : String(e)}`);
-      }
-    })
-    .show();
-
-  loadProfile(templateInput.value!);
+    ui.dialog('MPO Score')
+      .add(this.getEditor())
+      .onOK(async () => {
+        await this.saveTemplate();
+        await this.runMpoCalculation();
+      })
+      .show();
+  }
 }

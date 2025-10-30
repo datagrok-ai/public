@@ -300,6 +300,7 @@ export class PackageFunctions {
     'tags': [
       'viewer'
     ],
+    'meta': {showInGallery: 'false'},
     'name': 'MCL',
     'description': 'Markov clustering viewer'
   })

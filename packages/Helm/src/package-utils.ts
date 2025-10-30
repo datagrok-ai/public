@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
@@ -11,10 +12,10 @@ import {
   DojoType, DojoxType, HweWindow, IOrgHelmWebEditor, Monomers
 } from '@datagrok-libraries/bio/src/helm/types';
 import {HelmServiceBase} from '@datagrok-libraries/bio/src/viewers/helm-service';
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {LoggerWrapper} from '@datagrok-libraries/bio/src/utils/logger';
 import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
-import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {HelmService} from './utils/helm-service';
@@ -60,7 +61,6 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
   //@ts-ignore
   const defineBackup = window['define'];
   try {
-
     // Dojo modules required by JDraw2 and HELMWebEditor
     // 'dojo.window','dojo.io.script','dojo.io.iframe','dojo.dom',
     // 'dojox.gfx','dojox.gfx.svg','dojox.gfx.shape','dojox.charting'
@@ -133,7 +133,7 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
                 'dojox/storage/Provider', 'dojox/storage/LocalStorageProvider',
                 'dijit/_base', 'dijit/Tooltip', 'dijit/form/_FormValueWidget',
                 'dijit/form/DropDownButton', 'dijit/layout/AccordionContainer', 'dijit/form/ComboButton',
-                'dijit/layout/StackController', 'dijit/layout/StackContainer',],
+                'dijit/layout/StackController', 'dijit/layout/StackContainer'],
               (...args: any[]) => { resolve(); });
             /* eslint-enable indent */
           });
@@ -143,8 +143,6 @@ export async function initHelmLoadAndPatchDojo(): Promise<void> {
             _package.logger.debug(`${logPrefix}, window.require( ${JSON.stringify(args)} )`);
             dojoRequire(...args);
           };
-
-          
         }
 
         /** List of dojo modules not ready yet */ let dojoNotReadyList: string[];

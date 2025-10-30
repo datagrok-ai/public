@@ -209,6 +209,7 @@ export function molstarViewer() {
 //tags: panel, viewer
 //output: viewer result
 //meta.keywords: PDB, track
+//meta.showInGallery: false
 export function saguaroViewer() {
   return PackageFunctions.saguaroViewer();
 }

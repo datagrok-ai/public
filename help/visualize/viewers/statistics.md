@@ -12,7 +12,7 @@ Many options are available under the context menu.
 | Rows                                    | Choose which rows to include (All, Filtered, or Selected) |
 | Context menu \| Statistics \| Histogram | Show histogram                                            |
 | Context menu \| Statistics              | Choose descriptive statistics to show                     |
-| Context menu \| Save as table           | Add statistics table to the workspace                     |
+| Context menu \| Open as table           | Add statistics table to the workspace                     |
 
 ## Statistical measures
 

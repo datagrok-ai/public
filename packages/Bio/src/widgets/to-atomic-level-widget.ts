@@ -45,9 +45,13 @@ export async function toAtomicLevelSingle(sequence: DG.SemanticValue): Promise<{
     if (sequence.cell.column.temp[SeqTemps.notationProvider])
       singleValCol.temp[SeqTemps.notationProvider] = sequence.cell.column.temp[SeqTemps.notationProvider];
     // helm and biln will have cyclization marks, so we need to use POM to convert them
-    const shouldUsePOM = (seqSh.getSplitted(sequence.cell.rowIndex).graphInfo?.connections?.length ?? 0) > 0;
+    const seqSplitted = seqSh.getSplitted(sequence.cell.rowIndex);
+    const shouldUsePOM = (seqSplitted.graphInfo?.connections?.length ?? 0) > 0;
+    const isHelmWithMultiplePolymerTypes = seqSh.isHelm() &&
+      (new Set((seqSplitted.graphInfo?.polymerTypes ?? []))).size > 1;
+
     await PackageFunctions.toAtomicLevel(sDf, singleValCol,
-      shouldUsePOM, false);
+      shouldUsePOM || isHelmWithMultiplePolymerTypes, false);
     if (sDf.columns.length < 2) {
       errorText = 'No structure generated';
       return {errorText, mol: ''};

@@ -4,13 +4,15 @@ import * as ui from 'datagrok-api/ui';
 import {QueryJoinOptions} from './types';
 
 export async function queryDB(
-  connection: DG.DataConnection,
+  connection: DG.DataConnection | null,
   tableName: string,
   match: string,
   matchValue: string | number,
   schemaName: string,
   joinOptions: QueryJoinOptions[] = []
 ): Promise<DG.DataFrame> {
+  if (connection == null)
+    return DG.DataFrame.create(0);
   const matchValueStr = typeof matchValue === 'string' ? `'${matchValue}'` : matchValue;
   const startCharCode = 98; // ascii b
 
@@ -45,11 +47,13 @@ export async function queryDB(
 }
 
 export async function queryDBMultiple(
-  connection: DG.DataConnection,
+  connection: DG.DataConnection | null,
   tableName: string,
   match: string,
   matchValues: (string | number)[]
 ): Promise<DG.DataFrame | string> {
+  if (connection == null)
+    return DG.DataFrame.create(0);
   if ((matchValues?.length ?? 0) < 1) return DG.DataFrame.create(0);
 
   // matchValues can be more than 1000, which is the limit for oracle and others

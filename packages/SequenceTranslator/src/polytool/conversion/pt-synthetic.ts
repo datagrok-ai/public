@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {Rules, RuleReaction, getMonomerPairs} from './pt-rules';
 import {InvalidReactionError, MonomerNotFoundError} from '../types';
@@ -7,8 +8,7 @@ import * as grok from 'datagrok-api/grok';
 
 import wu from 'wu';
 import {PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
-import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {IMonomerLib, IMonomerLibBase, Monomer, MonomerLibData, RGroup} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib, IMonomerLibBase, Monomer, MonomerLibData, RGroup, getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {RDModule, RDMol, RDReaction, MolList, RDReactionResult} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {HELM_REQUIRED_FIELD as REQ,
   HELM_OPTIONAL_FIELDS as OPT, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';

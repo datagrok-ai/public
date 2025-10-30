@@ -7,6 +7,10 @@ import {IDartApi} from 'datagrok-api/src/api/grok_api.g';
 const api: IDartApi = <any>window;
 
 export class RecentProjectsWidget extends DG.Widget {
+  get type(): string {
+    return 'RecentProjectsWidget';
+  }
+
   caption: string;
 
   constructor() {

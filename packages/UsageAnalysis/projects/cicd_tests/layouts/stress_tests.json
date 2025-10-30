@@ -1,5 +1,5 @@
 {
-  "#type": "ViewInfo",
+  "#type": "ViewLayout",
   "table": {
     "id": "56209430-8560-11f0-adc2-636035fa442a"
   },
@@ -7,32 +7,32 @@
   "viewStateMap": {
     "containerType": "horizontal",
     "state": {
-      "width": 1242,
-      "height": 1067
+      "width": 2256,
+      "height": 1185
     },
     "children": [
       {
         "containerType": "vertical",
         "state": {
-          "width": 500,
-          "height": 1067
+          "width": 848,
+          "height": 1185
         },
         "children": [
           {
             "containerType": "fill",
             "state": {
-              "width": 500,
-              "height": 682,
+              "width": 848,
+              "height": 681,
               "documentManager": true
             },
             "children": [
               {
                 "containerType": "panel",
                 "state": {
-                  "width": 500,
-                  "height": 682,
+                  "width": 848,
+                  "height": 681,
                   "element": {
-                    "id": "8a22f0c0-8560-11f0-8994-17a11dcb8911",
+                    "id": "813ab300-8560-11f0-8cc2-612b4b671dde",
                     "type": "Grid",
                     "look": {
                       "#type": "GridLook",
@@ -147,6 +147,22 @@
                             "vertAlign": "bottom",
                             "textWrap": "words"
                           }
+                        },
+                        {
+                          "width": 98,
+                          "columnName": "totalworkers",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 88,
+                          "columnName": "passed_int",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
                         }
                       ]
                     },
@@ -161,10 +177,10 @@
           {
             "containerType": "panel",
             "state": {
-              "width": 500,
-              "height": 384,
+              "width": 848,
+              "height": 503,
               "element": {
-                "id": "8a2317d0-8560-11f0-ed9d-edce0e0a927f",
+                "id": "813ab300-8560-11f0-838b-017f570fdc61",
                 "type": "Trellis plot",
                 "look": {
                   "#type": "TrellisPlotLook",
@@ -189,7 +205,7 @@
                     "marginRight": 5,
                     "marginBottom": 5,
                     "legendVisibility": "Never",
-                    "table": "Stress Tests Dashboard",
+                    "table": "Stress_ Tests",
                     "legendPosition": "Auto"
                   },
                   "globalScale": true,
@@ -204,105 +220,237 @@
         ]
       },
       {
-        "containerType": "vertical",
+        "containerType": "horizontal",
         "state": {
-          "width": 740,
-          "height": 1067
+          "width": 1407,
+          "height": 1185
         },
         "children": [
           {
-            "containerType": "panel",
+            "containerType": "vertical",
             "state": {
-              "width": 740,
-              "height": 541,
-              "element": {
-                "id": "8a233ee0-8560-11f0-9a92-c1e6a097b4fe",
-                "type": "Box plot",
-                "look": {
-                  "#type": "BoxPlotLook",
-                  "categoryColumnNames": [
-                    "batch",
-                    "backup"
-                  ],
-                  "category1ColumnName": "batch",
-                  "category2ColumnName": "backup",
-                  "valueColumnName": "duration",
-                  "markerColorColumnName": "backup",
-                  "markerSizeColumnName": "",
-                  "viewport": "",
-                  "title": "Boxplot of duration grouped by backup size",
-                  "legendPosition": "Auto"
-                },
-                "title": "Boxplot of duration grouped by backup size"
-              }
+              "width": 703,
+              "height": 1185
             },
-            "children": []
+            "children": [
+              {
+                "containerType": "panel",
+                "state": {
+                  "width": 703,
+                  "height": 767,
+                  "element": {
+                    "id": "813ada10-8560-11f0-876a-afe82601c9f8",
+                    "type": "Box plot",
+                    "look": {
+                      "#type": "BoxPlotLook",
+                      "categoryColumnNames": [
+                        "batch",
+                        "backup"
+                      ],
+                      "category1ColumnName": "batch",
+                      "category2ColumnName": "backup",
+                      "valueColumnName": "duration",
+                      "markerColorColumnName": "backup",
+                      "markerSizeColumnName": "",
+                      "title": "Boxplot of duration grouped by backup size",
+                      "legendPosition": "Auto"
+                    },
+                    "title": "Boxplot of duration grouped by backup size"
+                  }
+                },
+                "children": []
+              },
+              {
+                "containerType": "panel",
+                "state": {
+                  "width": 703,
+                  "height": 417,
+                  "element": {
+                    "id": "813ada10-8560-11f0-f231-4595c19f69bd",
+                    "type": "Trellis plot",
+                    "look": {
+                      "#type": "TrellisPlotLook",
+                      "xColumnNames": [
+                        "category"
+                      ],
+                      "yColumnNames": [
+                        "batch",
+                        "backup"
+                      ],
+                      "innerViewerLook": {
+                        "#type": "PieChartLook",
+                        "categoryColumnName": "passed",
+                        "autoLayout": false,
+                        "segmentAngleColumnName": "started",
+                        "showInnerLabel": false,
+                        "showColumnSelector": false,
+                        "showMouseOverRowGroup": false,
+                        "marginLeft": 5,
+                        "marginTop": 5,
+                        "marginRight": 5,
+                        "marginBottom": 5,
+                        "legendVisibility": "Never",
+                        "table": "Stress_ Tests",
+                        "legendPosition": "Auto"
+                      },
+                      "title": "Pass rate by test category",
+                      "legendPosition": "Auto"
+                    },
+                    "title": "Pass rate by test category"
+                  }
+                },
+                "children": []
+              }
+            ]
           },
           {
             "containerType": "panel",
             "state": {
-              "width": 740,
-              "height": 525,
+              "width": 703,
+              "height": 1185,
               "element": {
-                "id": "8a2365f0-8560-11f0-b871-e9537d6615f0",
-                "type": "Trellis plot",
+                "id": "813ada10-8560-11f0-9fe0-c51f2a5f7d66",
+                "type": "Line chart",
                 "look": {
-                  "#type": "TrellisPlotLook",
-                  "xColumnNames": [
-                    "category"
-                  ],
-                  "yColumnNames": [
+                  "#type": "LineChartLook",
+                  "splitColumnNames": [
                     "batch",
                     "backup"
                   ],
-                  "innerViewerLook": {
-                    "#type": "PieChartLook",
-                    "categoryColumnName": "passed",
-                    "autoLayout": false,
-                    "segmentAngleColumnName": "started",
-                    "showInnerLabel": false,
-                    "showColumnSelector": false,
-                    "showMouseOverRowGroup": false,
-                    "marginLeft": 5,
-                    "marginTop": 5,
-                    "marginRight": 5,
-                    "marginBottom": 5,
-                    "legendVisibility": "Never",
-                    "table": "Stress Tests Dashboard",
-                    "legendPosition": "Auto"
-                  },
-                  "title": "Pass rate by test category",
+                  "overviewColumnName": "count(passed_int)",
+                  "yAggrTypes": [
+                    "avg"
+                  ],
+                  "xColumnName": "totalworkers",
+                  "yColumnNames": [
+                    "failure"
+                  ],
+                  "chartTypes": [
+                    "Line Chart"
+                  ],
+                  "title": "Failure % vs Number of Workers (per batch and backup)",
+                  "table": "Stress Tests Aggregation",
                   "legendPosition": "Auto"
                 },
-                "title": "Pass rate by test category"
+                "title": "Failure % vs Number of Workers (per batch and backup)"
               }
             },
             "children": []
           }
         ]
-      },
-      {
-        "containerType": "panel",
-        "state": {
-          "width": 400,
-          "height": 1185,
-          "element": {
-            "id": "aa1b1570-8560-11f0-9c06-a31c92d5b5f7",
-            "type": "Scripting Viewer",
-            "look": {
-              "#type": "ScriptingViewerLook",
-              "script": "#name: Template\n#language: pyodide\n#input: dataframe df [Data table]\n#output: graphics plot [Number of cells in table]\n\nimport pandas as pd\nimport matplotlib.pyplot as plt\n\n# Convert 'passed' column from string to boolean\ndf['passed'] = df['passed'].astype(str).str.lower() == 'true'\n\n# Group by (backup, totalworkers, batch)\nsummary = (\n    df.groupby(['backup', 'totalworkers', 'batch'])\n    .agg(total=('passed', 'size'),\n         failed=('passed', lambda x: (~x).sum()))\n    .reset_index()\n)\n\n# Add failure percentage\nsummary['failed_pct'] = 100 * summary['failed'] / summary['total']\n\n# ---- Select latest batch per backup if you want only last run ----\n# Or comment this out if you want to show all batches separately\nlatest_batch = summary['batch'].max()\nsummary = summary[summary['batch'] == latest_batch]\n\n# Pivot for plotting: each backup = one line\npivot = summary.pivot(index='totalworkers', columns='backup', values='failed_pct')\n\n# Plot\nplt.figure(figsize=(9, 6))\nfor backup in pivot.columns:\n    plt.plot(pivot.index, pivot[backup], marker='o', label=f'Backup {backup}')\n\nplt.title(\"Failure % vs Number of Workers (per batch)\")\nplt.xlabel(\"Total Workers\")\nplt.ylabel(\"Failed Tests (%)\")\nplt.xticks(sorted(summary['totalworkers'].unique()))\nplt.grid(True, linestyle=\"--\", alpha=0.6)\nplt.legend(title=\"Backup\")\nplt.tight_layout()\nplt.show()\n"
-            },
-            "title": "Scripting Viewer"
-          }
-        },
-        "children": []
       }
     ],
     "floating": [],
     "tableId": "56209430-8560-11f0-adc2-636035fa442a",
     "tableName": "Stress Tests"
   },
+  "columns": [
+    {
+      "name": "batch",
+      "type": "string",
+      "id": "66625d00-8560-11f0-eb7f-617aaaa232f4",
+      "friendlyName": "Batch",
+      "entityTags": [
+        {
+          "tag": ".id",
+          "id": "813b0120-8560-11f0-9a76-33fced9e2595"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "813b0120-8560-11f0-d7b0-e5eebec50d66"
+        }
+      ],
+      "metaParams": {
+        ".id": "66625d00-8560-11f0-eb7f-617aaaa232f4",
+        ".semantic-detection-duration": "1"
+      }
+    },
+    {
+      "name": "backup",
+      "type": "string",
+      "id": "666235f0-8560-11f0-9960-3f4cbf502594",
+      "friendlyName": "Backup",
+      "entityTags": [
+        {
+          "tag": ".id",
+          "id": "813b0120-8560-11f0-f79e-e1f8bc3d17e0"
+        },
+        {
+          "tag": ".color-coding-type",
+          "id": "813b0120-8560-11f0-bd0e-6f5112d17ae1"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "813b0120-8560-11f0-cb3e-afdc5a7a5480"
+        }
+      ],
+      "metaParams": {
+        ".id": "666235f0-8560-11f0-9960-3f4cbf502594",
+        ".color-coding-type": "Categorical",
+        ".semantic-detection-duration": "3"
+      }
+    },
+    {
+      "name": "duration",
+      "type": "int",
+      "id": "666235f0-8560-11f0-d199-a3c4d018e45a",
+      "friendlyName": "Duration",
+      "entityTags": [
+        {
+          "tag": ".id",
+          "id": "813b0120-8560-11f0-c347-3590e1196fa6"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "813b0120-8560-11f0-d16a-2f765940d0e6"
+        }
+      ],
+      "metaParams": {
+        ".id": "666235f0-8560-11f0-d199-a3c4d018e45a",
+        ".semantic-detection-duration": "2"
+      }
+    },
+    {
+      "name": "category",
+      "type": "string",
+      "id": "66625d00-8560-11f0-97ab-ad6c6a122e63",
+      "friendlyName": "Category",
+      "entityTags": [
+        {
+          "tag": ".id",
+          "id": "813b0120-8560-11f0-cd8f-5f5b7ca1d91d"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "813b2830-8560-11f0-cf66-2f9c049f7ba3"
+        }
+      ],
+      "metaParams": {
+        ".id": "66625d00-8560-11f0-97ab-ad6c6a122e63",
+        ".semantic-detection-duration": "1"
+      }
+    },
+    {
+      "name": "totalworkers",
+      "type": "string",
+      "id": "666235f0-8560-11f0-efb8-570686c4e502",
+      "friendlyName": "Totalworkers",
+      "entityTags": [
+        {
+          "tag": ".id",
+          "id": "813b2830-8560-11f0-be74-0d50c7d0b069"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "813b2830-8560-11f0-8b87-5d55c232d650"
+        }
+      ],
+      "metaParams": {
+        ".id": "666235f0-8560-11f0-efb8-570686c4e502",
+        ".semantic-detection-duration": "2"
+      }
+    }
+  ],
   "id": "8994ba80-8560-11f0-becb-77e8fdebb5be",
   "name": "StressTests_3",
   "friendlyName": "Stress Tests",

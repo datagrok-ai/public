@@ -288,10 +288,15 @@ div.demo-script-countdown svg>circle {
 .demo-app-widget.d4-tree-view-root {
 	margin-top: 12px;
 	min-width: 100%;
-	overflow-y: unset;
+	overflow-y: auto;
 }
+
 .demo-app-widget .d4-tree-view-group {
 	width: 100%;
+}
+
+.demo-app-widget.d4-tree-view-root.demo-app-widget-overflow-hidden {
+	overflow: hidden;
 }
 
 .demo-app-search-input {

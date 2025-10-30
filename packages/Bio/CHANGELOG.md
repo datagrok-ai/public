@@ -1,5 +1,24 @@
 # Bio changelog
 
+## 2.25.0 (2025-10-29)
+
+* CHEMS and SMILES support in HELM
+
+## 2.24.0 (2025-10-28)
+
+* Monomer library management rework: Transition to library providers, instead of single file based monomer libraries. Support multiple library providers.
+* NB! BREAKING CHANGE to the monomer library management API. Update your code accordingly.
+
+## 2.23.2 (2025-10-17)
+
+* Fix Helm converter to support multi type polymers
+
+## 2.23.1 (2025-10-16)
+
+* Monomer Cell: Support polymer type source
+* Support multy polymer type helm
+* Speedup Monomer lib loading
+
 ## 2.23.0 (2025-10-03)
 
 * Full BILN support: conversion to/from HELM/separator/fasta/molecular form, parsing, rendering, monomer library handling.

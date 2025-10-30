@@ -10,6 +10,9 @@ import { TreeViewGroup } from 'datagrok-api/dg';
 
 
 export class DemoAppWidget extends DG.Widget {
+    get type(): string {
+      return 'DemoAppWidget';
+    }
 
     constructor() {
         super(ui.panel([], 'tutorial-widget'));
@@ -133,6 +136,11 @@ export class DemoAppWidget extends DG.Widget {
             searchInput.value = '';
             searchInput.fireChanged();
           };
+
+          const updateTreeScroll = () => tree.root.scrollHeight - tree.root.clientHeight > 2 ?
+            tree.root.classList.remove('demo-app-widget-overflow-hidden') : tree.root.classList.add('demo-app-widget-overflow-hidden');
+          updateTreeScroll();
+          tree.onChildNodeExpandedChanged.subscribe((node) => updateTreeScroll());
 
           this.root.append(ui.divV([searchInput.root, tree.root]));
     }

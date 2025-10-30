@@ -1,6 +1,11 @@
-import { getBatchByCorporateId, getCompoundByCorporateId } from '../package';
-import { MOLTRACK_APP_PATH } from './constants';
+import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
+import * as DG from 'datagrok-api/dg';
+import { _package, getBatchByCorporateId, getCompoundByCorporateId } from '../package';
+import { excludedScopes, MOLTRACK_APP_PATH, Scope } from './constants';
 import { EntityBaseView } from '../views/registration-entity-base';
+import { RegistrationView } from '../views/registration-tab';
+import { u2 } from '@datagrok-libraries/utils/src/u2';
 
 export function createPath(viewName: string) {
   let path = `${MOLTRACK_APP_PATH}/`;
@@ -8,8 +13,8 @@ export function createPath(viewName: string) {
   return path;
 }
 
-export function createPathFromArr(pathComponents: string[]) {
-  let path = `${MOLTRACK_APP_PATH}`;
+export function createPathFromArr(view: DG.ViewBase, pathComponents: string[]) {
+  let path = view.path.toLowerCase().includes(MOLTRACK_APP_PATH.toLowerCase()) ? `` : `${MOLTRACK_APP_PATH}`;
   path += `/${pathComponents.map((it) => encodeURIComponent(it)).join('/')}`;
   return path;
 }
@@ -102,4 +107,96 @@ export function initRegisterView(entity: 'Compound' | 'Batch', setPath: boolean 
 
   view.show();
   return view.view;
+}
+
+export function initBulkRegisterView(setPath: boolean = true) {
+  const registrationView = new RegistrationView();
+  registrationView.view.path = createPath('Bulk');
+  registrationView.show();
+  return registrationView.view;
+}
+
+export function getAppHeader(): HTMLElement {
+  const appHeader = u2.appHeader({
+    iconPath: _package.webRoot + '/images/moltrack.png',
+    learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/MolTrack/README.md',
+    description: '- Chemical compound registration system\n' +
+        '- Analyze assay data\n' +
+        '- Find contextual information on molecules.\n',
+    appTitle: 'MolTrack',
+    appSubTitle: 'Track, analyze, and manage chemical data',
+    bottomLine: true,
+  });
+  return appHeader;
+}
+
+const snakeCaseToTitleCase = (str: string) =>
+  str.replace(/(^|_)([a-z])/g, (_, __, c) => ' ' + c.toUpperCase()).trim();
+
+export async function getStatisticsWidget(
+  onCountClick: (...args: any[]) => void,
+): Promise<HTMLTableElement> {
+  const scopes = Object.values(Scope);
+  const rows: (string | HTMLElement)[][] = await Promise.all(
+    scopes.map(async (entity) => {
+      try {
+        const df = await grok.functions.call('MolTrack:retrieveEntity', { scope: entity, flatten: true });
+        const count = df?.rowCount ?? 0;
+        const entityTitle = snakeCaseToTitleCase(entity);
+
+        const link = ui.link(count.toString(), () => {
+          const args = [entityTitle, entity];
+          onCountClick(...args);
+        });
+
+        return [entityTitle, link];
+      } catch (e: any) {
+        grok.shell.error(`Failed to retrieve ${entity}: ${e.message ?? e}`);
+        return [snakeCaseToTitleCase(entity), 'Error'];
+      }
+    }),
+  );
+
+  return ui.table(rows, (row) => row);
+}
+
+export function getQuickActionsWidget(): HTMLElement {
+  const boltIcon = ui.iconFA('bolt');
+  boltIcon.classList.add('moltrack-bolt-icon');
+
+  const quickActionsLabel = ui.label('Quick Actions');
+  quickActionsLabel.classList.add('moltrack-quick-label');
+
+  const quickActionsTitle = ui.divH([boltIcon, quickActionsLabel]);
+  quickActionsTitle.classList.add('moltrack-quick-actions');
+
+  const linksConfig: { label: string; createView: () => DG.View }[] = [
+    {
+      label: 'Register compound',
+      createView: () => initRegisterView('Compound', true),
+    },
+    {
+      label: 'Register batch',
+      createView: () => initRegisterView('Batch', true),
+    },
+    {
+      label: 'Register bulk',
+      createView: () => initBulkRegisterView(true),
+    },
+  ];
+
+  const quickLinks = ui.divV(
+    linksConfig.map((cfg) =>
+      ui.link(cfg.label, () => {
+        grok.shell.v.close();
+        cfg.createView();
+      }),
+    ),
+  );
+  quickLinks.classList.add('moltrack-quick-links');
+
+  const container = ui.divV([quickActionsTitle, quickLinks]);
+  container.classList.add('moltrack-quick-container');
+
+  return container;
 }

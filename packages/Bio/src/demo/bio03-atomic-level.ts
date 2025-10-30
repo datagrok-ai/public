@@ -18,7 +18,7 @@ export async function demoToAtomicLevel(): Promise<void> {
   adjustGridcolAfterRender(view.grid, 'molfile(HELM)', 500, 300, true);
   adjustGridcolAfterRender(view.grid, 'HELM', 500, undefined, true);
   grok.shell.info('Hover over monomers in HELM column to highlight them in molecular structure.', {timeout: 10});
-  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/bio/bio.md#get-atomic-level-structure');
+  grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/bio/bio.md#convert-to-atomic-level');
 }
 
 export async function demoBio03UI(): Promise<void> {

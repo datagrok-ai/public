@@ -9,7 +9,6 @@ import {FormulaLinesDialog, DEFAULT_OPTIONS, EditorOptions} from './dialogs/form
 import {RecentProjectsWidget} from './widgets/recent-projects-widget';
 import {CommunityWidget} from './widgets/community-widget';
 import {WebWidget} from './widgets/web-widget';
-import {LearningWidget} from './widgets/learning-widget';
 import {appSearch, connectionsSearch,
   dockerSearch, filesSearch, functionSearch, groupsSearch,
   helpSearch, jsSamplesSearch, pdbSearch, pubChemSearch, querySearch,
@@ -131,7 +130,6 @@ export class PackageFunctions {
     return welcomeView();
   }
 
-
   @grok.decorators.dashboard({
     meta: {
       'showName': 'false',
@@ -143,16 +141,6 @@ export class PackageFunctions {
     return new ActivityDashboardWidget();
   }
 
-
-  @grok.decorators.dashboard({
-    order: '2',
-    name: 'Recent projects',
-  })
-  static recentProjectsWidget(): DG.Widget {
-    return new RecentProjectsWidget();
-  }
-
-
   @grok.decorators.dashboard({
     order: '6',
     name: 'Community',
@@ -161,40 +149,26 @@ export class PackageFunctions {
     return new CommunityWidget();
   }
 
-
   @grok.decorators.func()
   static webWidget(): DG.Widget {
     return new WebWidget();
   }
-
 
   @grok.decorators.func()
   static htmlWidget(): DG.Widget {
     return new HtmlWidget();
   }
 
-
-  @grok.decorators.dashboard({
-    order: '5',
-    name: 'Learn',
-  })
-  static learnWidget(): DG.Widget {
-    return new LearningWidget();
-  }
-
-
   @grok.decorators.func()
   static kpiWidget(): DG.Widget {
     return new KpiWidget();
   }
-
 
   @grok.decorators.func({})
   static isFormulaColumn(
     col: DG.Column): boolean {
     return !!col.getTag(DG.Tags.Formula);
   }
-
 
   @grok.decorators.panel({
     name: 'Formula',
@@ -216,7 +190,6 @@ export class PackageFunctions {
     new AddNewColumnDialog(fc, widget);
     return widget;
   }
-
 
   @grok.decorators.func({tags: ['searchProvider']})
   static powerPackSearchProvider(): DG.SearchProvider {
@@ -291,7 +264,6 @@ export class PackageFunctions {
     return providers;
   }
 
-
   @grok.decorators.func({
     name: 'formulaLinesEditor',
     outputs: [],
@@ -311,7 +283,7 @@ export class PackageFunctions {
     initSearch();
 
     _properties = await _package.getProperties();
-    registerDGUserHandler(_package); // lazy without await
+    registerDGUserHandler(); // lazy without await
 
     // saving and restoring the scrolls when changing views
     const maxDepth = 40;
@@ -337,12 +309,10 @@ export class PackageFunctions {
     DG.debounce(merge(grok.events.onCurrentViewChanged, grok.events.onViewChanged), 100).subscribe((_) => setScrolls());
   }
 
-
   @grok.decorators.autostart({description: 'Windows Manager'})
   static windowsManager() {
     windowsManagerPanel();
   }
-
 
   @grok.decorators.func({description: 'Open \'Viewer Gallery\' dialog'})
   static viewerDialog(
@@ -351,7 +321,6 @@ export class PackageFunctions {
       return viewersDialog(tv, tv.table!);
   }
 
-
   @grok.decorators.autostart({description: 'ViewerGallery'})
   static viewerGallery(): void {
     grok.events.onViewAdded.subscribe((view) => _viewerGallery(view));
@@ -359,7 +328,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.fileViewer({
-    fileViewer: 'md,mdx'
+    fileViewer: 'md,mdx',
   })
   static async markdownFileViewer(
     file: DG.FileInfo): Promise<DG.View> {
@@ -370,7 +339,6 @@ export class PackageFunctions {
     viewFile.append(preview);
     return viewFile;
   }
-
 
   @grok.decorators.fileHandler({
     ext: 'xlsx',
@@ -394,7 +362,6 @@ export function addNewColumnDialog(call: DG.FuncCall | null = null): AddNewColum
   return new AddNewColumnDialog(call as any);
 }
 
-
 grok.events.onContextMenu.subscribe((args) => {
   const src = args.args.context;
   let menu;
@@ -409,7 +376,6 @@ grok.events.onContextMenu.subscribe((args) => {
   if (menu != null)
     menu.item('Formula Lines...', () => {PackageFunctions.formulaLinesDialog(src);});
 });
-
 
 function _viewerGallery(view: DG.ViewBase): void {
   if (view?.type == 'TableView') {

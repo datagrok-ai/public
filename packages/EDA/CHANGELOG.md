@@ -1,5 +1,9 @@
 # EDA changelog
 
+## 1.4.8 (2025-10-15)
+
+Updated tutorials
+
 ## 1.4.7 (2025-10-01)
 
 Updated utils and js-api

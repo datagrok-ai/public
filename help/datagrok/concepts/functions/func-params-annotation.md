@@ -580,6 +580,77 @@ result = `${country} - ${orders.rowCount * factor}`;
 
 </details>
 
+### Complex calculated columns
+
+When you need to compute **several related columns from the same data**, complex calculated columns let you do it
+through a **single function**.
+
+This approach improves both **efficiency** and **user experience**: instead of defining multiple separate calculated
+columns with nearly identical logic, you define one formula that returns several results at once. Each of these results
+becomes its own calculated column in the table.
+
+This is particularly useful when several properties are derived from the same source data, for example:
+
+* Computing multiple **ADME properties** (absorption, distribution, metabolism, excretion).
+* Calculating **chemical descriptors** such as logP, TPSA, molecular weight, or others.
+* Generating **statistical summaries** (mean, median, standard deviation, etc.) for related data columns.
+
+Since all the derived columns are computed together, Datagrok can **reuse cached computations**, ensuring fast and
+consistent recalculation when input data changes.
+
+#### How It Works
+
+To define a complex calculated column function:
+
+1. Add the annotation
+    ```ts
+    //meta.vectorFunc: true
+    ```
+2. Make your function return a **dataframe** — each column in the returned dataframe becomes a calculated column in the
+source table.
+3. Optionally, add a `list<string>` **parameter** to let users select which specific result columns to create (for
+instance, particular chemical properties or statistical measures). This parameter should be placed **last** in the
+function signature, since it’s optional.
+
+Inputs can include both regular columns and scalar parameters.
+
+<details>
+<summary> Example: Computing chemical properties from the Chem package </summary>
+
+```ts
+//input: column molecules {semType: Molecule} 
+//input: list<string> out {optional: true}
+//meta.vectorFunc: true
+//output: dataframe result
+export async function getProperties(molecules: DG.Column, out?: string[]): Promise<DG.DataFrame> { 
+  const propNames = Object.keys(CHEM_PROP_MAP);
+  const props = !out || out.length === 0
+    ? propNames
+    : propNames.filter((p) => out.includes(p));
+
+  const cols = await getPropertiesAsColumns(molecules, props);
+  return DG.DataFrame.fromColumns(cols); 
+}
+```
+
+This function calculates several chemical properties (such as logP, TPSA, or molecular weight) at once. Users can
+select which properties to generate, and each one will appear as a calculated column in the table.
+
+</details>
+
+#### Integration with “Add New Column”
+
+You can use complex calculated column functions **directly in the** [Add new column](../../../transform/add-new-column.md)
+**dialog** — just type or insert such a function into the formula editor.
+
+If the function has the `meta.vectorFunc: true` annotation, Datagrok automatically:
+
+* Adds all resulting columns from the returned dataframe to your table.
+* Keeps them **synchronized and efficiently recalculated** as data changes.
+
+This allows you to create multiple derived columns (for example, several computed chemical descriptors) from one
+unified expression — all from the familiar **Add new column** interface.
+
 ### Input types
 
 Input fields such as text boxes or combo boxes get generated automatically based on

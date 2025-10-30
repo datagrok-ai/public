@@ -184,6 +184,7 @@ services:
             "proxyRequestTimeout": 60000
           },
           "queueSettings":{
+            "useQueue": true,
             "amqpHost": "rabbitmq",
             "amqpPassword": "guest",
             "amqpPort": 5672,
@@ -286,6 +287,8 @@ services:
 
   db:
     image: postgres:12.13
+    tmpfs:
+      - /dev/shm:size=2g
     stop_grace_period: 2m
     deploy:
       replicas: 1
@@ -380,7 +383,7 @@ services:
     environment:
       GROK_PARAMETERS: |
         {
-          "queuePluginSettings": {"useQueue": true, "amqpHost": "rabbitmq", "amqpUser": "guest", "amqpPassword": "guest", "amqpPort": 5672, "pipeHost": "grok_pipe", "pipePort": 3000, "pipeKey": "test-key", "maxConcurrentCalls": 4}
+          "queueSettings": {"useQueue": true, "amqpHost": "rabbitmq", "amqpUser": "guest", "amqpPassword": "guest", "amqpPort": 5672, "pipeHost": "grok_pipe", "pipePort": 3000, "pipeKey": "test-key", "maxConcurrentCalls": 4}
         }
     networks:
       datagrok:

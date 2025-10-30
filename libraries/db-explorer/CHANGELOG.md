@@ -1,8 +1,8 @@
 # db-explorer changelog
 
-## 4.6.0 (2025-07-25)
+## 1.3.0 (2025-10-16)
 
-Compatibility with 1.26.0
+* Lazy loading of schemas and references
 
 ## 1.1.4 (2025-04-10)
 

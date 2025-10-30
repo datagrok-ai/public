@@ -13,7 +13,7 @@ category('Dapi: packages', () => {
   test('find', async () => {
     const apiTestsPackage = await grok.dapi.packages.find(_package.id);
     expect(apiTestsPackage.updatedOn?.toString(), _package.updatedOn?.toString());
-    await expectExceptionAsync(() => grok.dapi.packages.find('00000').then());
+    expect(await grok.dapi.packages.find('00000000-0000-0000-0000-000000000000'),undefined);
   }, {stressTest: true});
 
   test('webRoot content', async () => {

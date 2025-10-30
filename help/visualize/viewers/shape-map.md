@@ -1,5 +1,6 @@
 ---
 title: "Shape map"
+unlisted: true
 ---
 
 Shows a map that is applicable for the specified dataset. Typically, it would represent a geographical area (countries,

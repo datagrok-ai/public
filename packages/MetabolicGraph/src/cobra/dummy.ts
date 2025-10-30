@@ -1,3 +1,3 @@
 export function dummy() {
-    return 42;
+  return 42;
 }

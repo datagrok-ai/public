@@ -49,14 +49,11 @@ function initWidgetHost(host: HTMLDivElement, w: DG.Widget, title?: string) {
     host.style.order = w.props.order;
 
   const header = host.querySelector('.d4-dialog-header')! as HTMLElement;
-  if (title === '') {
+  if (!title) {
     header.classList.add('d4-dialog-header-hidden');
     w.root.appendChild(ui.icons.close(remove, 'Remove'));
-  }
-  else {
-    header.appendChild(ui.icons.settings(() => {grok.shell.o = w;}, 'Edit settings'));
+  } else
     header.appendChild(ui.icons.close(remove, 'Remove'));
-  }
 
   if (w.root.classList.contains('widget-narrow'))
     host.classList.add('widget-narrow');

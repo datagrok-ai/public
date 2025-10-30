@@ -38,7 +38,7 @@ category('Timelines', () => {
       splitByColumnName: 'USUBJID',
       startColumnName: 'AESTDY',
       endColumnName: 'AEENDY',
-      colorByColumnName: 'SEX',
+      colorColumnName: 'SEX',
       showOpenIntervals: false,
       eventColumnName: 'SEX',
       eventsColumnNames: null,
@@ -56,14 +56,14 @@ category('Timelines', () => {
     expect(JSON.stringify(standardOptions), JSON.stringify(await getOptions(viewer)));
 
     viewer.setOptions({
-      colorByColumnName: 'USUBJID',
+      colorColumnName: 'USUBJID',
       markerSize: 4,
       dateFormat: '{yyyy}-{MM}-{dd}',
       showZoomSliders: false,
     });
 
     const options = await getOptions(viewer);
-    expect(options.colorByColumnName, 'USUBJID');
+    expect(options.colorColumnName, 'USUBJID');
     expect(options.markerSize, 4);
     expect(options.dateFormat, '{yyyy}-{MM}-{dd}');
     expect(options.showZoomSliders, false);

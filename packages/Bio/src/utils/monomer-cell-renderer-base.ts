@@ -2,9 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
-import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {CellRendererBackBase} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
-import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/index';
+import {IMonomerLibBase, getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {_package} from '../package';

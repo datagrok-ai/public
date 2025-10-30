@@ -1,5 +1,4 @@
 import {RawPNGRenderer} from './pngRenderer';
-import {PlateGridCellRenderer} from './plate/plate-cell-renderer';
 import {PackageFunctions} from './package';
 import {MultiCurveViewer} from './fit/multi-curve-viewer';
 import {FitChartCellRenderer} from './fit/fit-renderer';
@@ -30,13 +29,6 @@ export function _MultiCurveViewer() {
 //test: curveFitDemo() //wait: 2000 
 export async function curveFitDemo() : Promise<void> {
   await PackageFunctions.curveFitDemo();
-}
-
-//name: Assay Plates
-//description: Assasy plates with concentration, layout and readout data
-//meta.demoPath: Curves | Assay Plates
-export async function assayPlatesDemo() : Promise<void> {
-  await PackageFunctions.assayPlatesDemo();
 }
 
 //tags: init
@@ -95,81 +87,6 @@ export function addStatisticsColumn(table: DG.DataFrame, colName: string, propNa
 export function addAggrStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, aggrType: string) : any {
   return PackageFunctions.addAggrStatisticsColumn(table, colName, propName, aggrType);
 }
-
-//tags: folderViewer
-//input: file folder 
-//input: list<file> files 
-//output: dynamic result
-export async function platesFolderPreview(folder: DG.FileInfo, files: DG.FileInfo[]) {
-  return await PackageFunctions.platesFolderPreview(folder, files);
-}
-
-//tags: fileViewer
-//input: file file 
-//output: view result
-//meta.fileViewer: txt
-//meta.fileViewerCheck: Curves:checkFileIsPlate
-export function previewPlate(file: DG.FileInfo) : any {
-  return PackageFunctions.previewPlate(file);
-}
-
-//tags: file-handler
-//input: string fileContent 
-//output: list<dataframe> result
-//meta.ext: txt
-//meta.fileViewerCheck: Curves:checkFileIsPlate
-export async function importPlate(fileContent: string) : Promise<any> {
-  return await PackageFunctions.importPlate(fileContent);
-}
-
-//tags: file-handler
-//input: blob fileContent 
-//meta.ext: xlsx
-//meta.fileViewerCheck: Curves:checkExcelIsPlate
-export async function importPlateXlsx(fileContent: Uint8Array) : Promise<any> {
-  return await PackageFunctions.importPlateXlsx(fileContent);
-}
-
-//name: viewPlateXlsx
-//tags: fileViewer
-//input: file file 
-//output: view result
-//meta.fileViewer: xlsx
-//meta.fileViewerCheck: Curves:checkExcelIsPlate
-export async function previewPlateXlsx(file: DG.FileInfo) : Promise<any> {
-  return await PackageFunctions.previewPlateXlsx(file);
-}
-
-//input: blob content 
-//output: bool result
-export async function checkExcelIsPlate(content: Uint8Array) : Promise<boolean> {
-  return await PackageFunctions.checkExcelIsPlate(content);
-}
-
-//input: string content 
-//output: bool result
-export function checkFileIsPlate(content: string) : boolean {
-  return PackageFunctions.checkFileIsPlate(content);
-}
-
-//input: string barcode 
-//output: dynamic result
-export async function getPlateByBarcode(barcode: string) : Promise<any> {
-  return await PackageFunctions.getPlateByBarcode(barcode);
-}
-
-//name: createDummyPlateData
-export async function createDummyPlateData() : Promise<void> {
-  await PackageFunctions.createDummyPlateData();
-}
-//name: PlateGridCellRenderer
-//tags: cellRenderer
-//output: grid_cell_renderer renderer
-//meta.cellType: Plate
-export function _PlateGridCellRenderer() {
-  return new PlateGridCellRenderer();
-}
-
 //name: rawPng
 //tags: cellRenderer
 //output: grid_cell_renderer renderer

@@ -6,17 +6,20 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {IMonomerManager, INewMonomerForm} from '@datagrok-libraries/bio/src/utils/monomer-ui';
-import {IMonomerLib, Monomer, RGroup} from '@datagrok-libraries/bio/src/types';
+import {findProviderWithLibraryName, IMonomerLib, IMonomerLibProvider, Monomer, RGroup} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {DUMMY_MONOMER, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
 import {ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
 import {mostSimilarNaturalAnalog} from '@datagrok-libraries/bio/src/utils/macromolecule/monomers';
 import {PolymerType, MonomerType} from '@datagrok-libraries/bio/src/helm/types';
 
 import {MonomerLibManager} from '../lib-manager';
-import {LIB_PATH} from '../consts';
 
-import '../../../../css/monomer-manager.css';
 import {MONOMER_RENDERER_TAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
+import {BioTags} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+//@ts-ignore
+import '../../../../css/monomer-manager.css';
+import {Subscription} from 'rxjs';
+
 
 // columns of monomers dataframe, note that rgroups is hidden and will be displayed as separate columns
 export enum MONOMER_DF_COLUMN_NAMES {
@@ -50,7 +53,7 @@ export const MONOMER_DF_COLUMNS = {
 } as const;
 
 export async function standardiseMonomers(monomers: Monomer[]) {
-  const df = getMonomersDataFrame(monomers);
+  const df = await getMonomersDataFrame(monomers);
   if (monomers.length !== df.rowCount)
     throw new Error(`Monomers length ${monomers.length} does not match dataframe row count ${df.rowCount}`);
   const fixedMonomers = await Promise.all(new Array(monomers.length).fill(null).map(async (_, i) => monomerFromDfRow(df.rows.get(i))));
@@ -117,7 +120,7 @@ export async function standardizeMonomerLibrary(libraryString: string) {
   return libraryStringFixed;
 }
 
-export function getMonomersDataFrame(monomers: Monomer[]) {
+export async function getMonomersDataFrame(monomers: Monomer[]) {
   try {
     const df = DG.DataFrame.create(monomers.length);
 
@@ -136,11 +139,14 @@ export function getMonomersDataFrame(monomers: Monomer[]) {
           df.columns.addNew(rgroupName, DG.COLUMN_TYPE.STRING);
       }
     }
-      df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.semType = 'Monomer';
-      df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.setTag(MONOMER_RENDERER_TAGS.applyToBackground, 'true');
-
-
-      for (let i = 0; i < monomers.length; i++) {
+    df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.semType = 'Monomer';
+    df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.setTag(MONOMER_RENDERER_TAGS.applyToBackground, 'true');
+    df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.setTag(BioTags.polymerTypeColumnName, MONOMER_DF_COLUMN_NAMES.POLYMER_TYPE);
+    const pg = DG.TaskBarProgressIndicator.create('Creating Monomers DataFrame...');
+    for (let i = 0; i < monomers.length; i++) {
+      if (i % 20 === 0)
+        pg.update(((i + 1) / monomers.length) * 100, 'Creating Monomers DataFrame...');
+      const doFill = () => {
         let molSmiles = getCorrectedSmiles(monomers[i].rgroups, monomers[i].smiles, monomers[i].molfile);
         molSmiles = fixRGroupsAsElementsSmiles(molSmiles);
         // r-groups here might be broken, so need to make sure they are correct
@@ -182,12 +188,33 @@ export function getMonomersDataFrame(monomers: Monomer[]) {
         } catch (e) {
           console.error(`Error setting date ${monomers[i].createDate}`, e);
         }
-      }
-      df.col(MONOMER_DF_COLUMN_NAMES.MONOMER)!.semType = DG.SEMTYPE.MOLECULE;
-      uniqueRgroupNames.forEach((rgName) => {
-        df.col(rgName)!.semType = DG.SEMTYPE.MOLECULE;
+      };
+      await new Promise<void>((resolve) => {
+        // this is done not to block the UI thread for too long
+        const inProm = () => {
+          try {
+            doFill();
+            resolve();
+          } catch (e) {
+            console.error('Error in doFill', e);
+            resolve();
+          }
+        };
+        if (i % 20 === 0) {
+          setTimeout(() => {
+            inProm();
+          });
+        } else
+          inProm();
       });
-      return df;
+    }
+    pg.close();
+    df.col(MONOMER_DF_COLUMN_NAMES.MONOMER)!.semType = DG.SEMTYPE.MOLECULE;
+
+    uniqueRgroupNames.forEach((rgName) => {
+        df.col(rgName)!.semType = DG.SEMTYPE.MOLECULE;
+    });
+    return df;
   } catch (e) {
     grok.shell.error('Error creating monomers dataframe');
     console.error(e);
@@ -243,7 +270,6 @@ export class MonomerManager implements IMonomerManager {
     if (!this.instance) {
       const monManager = await MonomerLibManager.getInstance();
       await monManager.awaitLoaded();
-      await monManager.loadLibrariesPromise;
       this.instance = new MonomerManager(monManager);
     }
     return this.instance;
@@ -252,19 +278,18 @@ export class MonomerManager implements IMonomerManager {
   public static async getNewInstance(): Promise<MonomerManager> {
     const monManager = await MonomerLibManager.getInstance();
     await monManager.awaitLoaded();
-    await monManager.loadLibrariesPromise;
     return new MonomerManager(monManager);
   }
 
-  async createNewMonomerLib(libName: string, _monomers: Monomer[]): Promise<void> {
+  async createNewMonomerLib(providerName: string, libName: string, _monomers: Monomer[]): Promise<void> {
     this.tv?.grid && ui.setUpdateIndicator(this.tv.grid.root, true);
     try {
-      const monomersString = JSON.stringify(_monomers.map((m) => ({...m, lib: undefined, wem: undefined})), null, 2);
-      if (!libName.endsWith('.json'))
-        libName += '.json';
-      await (await this.monomerLibManamger.getFileManager()).addLibraryFile(monomersString, libName);
-      await grok.dapi.files.writeAsText(LIB_PATH + libName, monomersString);
-      await this.monomerLibManamger.loadLibraries(false);
+      const provider = (await this.monomerLibManamger.getProviders()).find((p) => p.name === providerName);
+      if (!provider)
+        throw new Error(`Provider ${providerName} not found`);
+      const monomersMapped = _monomers.map((m) => ({...m, lib: undefined, wem: undefined}));
+      await provider.addOrUpdateLibrary(libName, monomersMapped);
+      await this.monomerLibManamger.loadMonomerLib(false);
 
       //await this.monomerLibManamger.loadLibraries(true);
       grok.shell.v = await this.getViewRoot(libName);
@@ -277,7 +302,7 @@ export class MonomerManager implements IMonomerManager {
   }
 
   async createNewLibDialog(monomers?: Monomer[]) {
-    const monomerLibs = (await this.monomerLibManamger.getFileManager()).getValidLibraryPaths();
+    const monomerLibs = await this.monomerLibManamger.getAvaliableLibraryNames();
     const libNameInput = ui.input.string('Library Name', {
       placeholder: 'Enter library name',
       nullable: false,
@@ -286,20 +311,20 @@ export class MonomerManager implements IMonomerManager {
         d.getButton('Create')?.classList?.toggle('d4-disabled', !!res);
       }
     });
-    function getFileNameInputValue() {
-      let fileName = libNameInput.value;
-      if (!fileName.endsWith('.json'))
-        fileName += '.json';
-      return fileName;
-    };
     function validateInput(v: string) {
       if (!v || !v.trim()) return 'Library name cannot be empty';
-      if ((v.endsWith('.json') && monomerLibs.includes(v)) || monomerLibs.includes(v + '.json'))
+      if (monomerLibs.includes(v) || monomerLibs.includes(v + '.json'))
         return 'Library with this name already exists';
       return null;
     }
     libNameInput.addValidator(validateInput);
+    const providersNames = (await this.monomerLibManamger.getProviders()).map((p) => p.name);
+    const providerInput = ui.input.choice('Storage', {items: providersNames, value: providersNames[0], nullable: false, tooltipText: 'Select storage provider for the new library'});
+    if (providersNames.length === 1)
+      providerInput.readOnly = true; // consider hiding instead
+
     const d = ui.dialog('Create New Library')
+      .add(providerInput)
       .add(libNameInput)
       .addButton('Create', async () => {
         const vr = validateInput(libNameInput.value);
@@ -307,8 +332,12 @@ export class MonomerManager implements IMonomerManager {
           grok.shell.warning(vr);
           return;
         }
+        if (!providerInput.value) {
+          grok.shell.warning('Please select storage provider');
+          return;
+        }
         try {
-          await this.createNewMonomerLib(getFileNameInputValue(), monomers ?? []);
+          await this.createNewMonomerLib(providerInput.value!, libNameInput.value!, monomers ?? []);
         } catch (e) {
           grok.shell.error('Error creating library');
           console.error(e);
@@ -325,12 +354,14 @@ export class MonomerManager implements IMonomerManager {
     return this._newMonomerForm;
   }
 
+  private _contextMenuSub: Subscription | null = null;
   private async getMonomersTableView(fileName?: string, addView = true): Promise<DG.TableView> {
     const df = await this.getMonomersDf(fileName);
     this.tv = DG.TableView.create(df, addView);
 
     this.adjustTable();
-    this.tv.subs.push(
+    this._contextMenuSub?.unsubscribe();
+    this._contextMenuSub =
       grok.events.onContextMenu.subscribe(({args}) => {
         if (!args || !args.menu || !args.context || args.context.type !== DG.VIEWER.GRID || !args.context.tableView ||
           args.context.tableView.id !== (this.tv!.id ?? '') || !args.item || !args.item.isTableCell || (args.item.tableRowIndex ?? -1) < 0)
@@ -360,8 +391,8 @@ export class MonomerManager implements IMonomerManager {
             this._newMonomerForm.removeMonomers([monomer], this.libInput.value!);
           });
         }
-      })
-    );
+      });
+
     this.tv.grid && (this.tv.grid.props.allowEdit = false); // disable editing
     return this.tv;
   }
@@ -385,7 +416,7 @@ export class MonomerManager implements IMonomerManager {
   private _skipLibInputOnchange: boolean = false;
 
   async getViewRoot(libName?: string, addView = true) {
-    const availableMonLibs = (await this.monomerLibManamger.getFileManager()).getValidLibraryPaths();
+    const availableMonLibs = await this.monomerLibManamger.getAvaliableLibraryNames();
     this._newMonomerForm.molSketcher.resize();
     if (addView && (this.tv = this.findActiveManagerView()) && (libName ?? this.libInput.value)) {
       // get monomer library list
@@ -450,7 +481,10 @@ export class MonomerManager implements IMonomerManager {
         return grok.shell.error('No library selected');
       let lib: string | null = null;
       try {
-        lib = await grok.dapi.files.readAsText(LIB_PATH + libName);
+        const provider = await findProviderWithLibraryName(await this.monomerLibManamger.getProviders(), libName);
+        if (!provider)
+          throw new Error(`Library ${libName} not found in any provider`);
+        lib = await provider.getLibraryAsString(libName);
       } catch (e) {
         grok.shell.error(`Error reading library ${libName}`);
         return console.error(e);
@@ -493,8 +527,19 @@ export class MonomerManager implements IMonomerManager {
   async getMonomersDf(fileName?: string) {
     this.tv?.grid && ui.setUpdateIndicator(this.tv.grid.root, true);
     try {
-      fileName ??= (await this.monomerLibManamger.getFileManager()).getValidLibraryPaths()[0];
-      this.activeMonomerLib = await this.monomerLibManamger.readLibrary(LIB_PATH, fileName);
+      let provider: IMonomerLibProvider | null = null;
+      const providers = await this.monomerLibManamger.getProviders();
+      if (providers.length === 0)
+        throw new Error('No monomer library providers available');
+      if (!fileName) {
+        provider = providers[0];
+        fileName = (await provider.listLibraries())[0];
+      } else {
+        provider = await findProviderWithLibraryName(providers, fileName);
+        if (!provider)
+          throw new Error(`Library ${fileName} not found in any provider`);
+      }
+      this.activeMonomerLib = await this.monomerLibManamger.readSingleLibrary(provider!.name, fileName);
       if (!this.activeMonomerLib) {
         grok.shell.error(`Library ${fileName} not found`);
         return DG.DataFrame.create();
@@ -506,7 +551,7 @@ export class MonomerManager implements IMonomerManager {
           return this.activeMonomerLib!.getMonomer(polymerType, symbol)!;
         });
       });
-      const df = getMonomersDataFrame(monomers);
+      const df = await getMonomersDataFrame(monomers);
       return df;
     } catch (e) {
       grok.shell.error('Error creating monomers dataframe');
@@ -523,19 +568,20 @@ export class MonomerManager implements IMonomerManager {
       .add(ui.divText('Do you wish to continue?'))
       .onOK(async () => {
         const monomerDf = this.tv?.dataFrame;
-        let libName = this.libInput.value;
+        const libName = this.libInput.value;
         if (!monomerDf || !libName) {
           grok.shell.error('No monomer library loaded');
           return;
         }
         this.tv?.grid && ui.setUpdateIndicator(this.tv.grid.root, true);
         try {
+          const provider = await findProviderWithLibraryName(await this.monomerLibManamger.getProviders(), libName);
+          if (!provider)
+            throw new Error(`Library ${libName} not found in any provider`); // should not happen
           const monomers = await Promise.all(new Array(monomerDf.rowCount).fill(0).map((_, i) => monomerFromDfRow(monomerDf.rows.get(i))));
-          const monomersString = JSON.stringify(monomers.map((m) => ({...m, lib: undefined, wem: undefined})), null, 2);
-          if (!libName.endsWith('.json'))
-            libName += '.json';
-          await grok.dapi.files.writeAsText(LIB_PATH + libName, monomersString);
-          await this.monomerLibManamger.loadLibraries(true);
+          const monomersString = monomers.map((m) => ({...m, lib: undefined, wem: undefined}));
+          await provider.addOrUpdateLibrary(libName, monomersString);
+          await this.monomerLibManamger.loadMonomerLib(true);
           //await this.monomerLibManamger.loadLibraries(true);
           grok.shell.v = await this.getViewRoot(libName);
         } catch (e) {
@@ -973,73 +1019,61 @@ class MonomerForm implements INewMonomerForm {
   }
 
   async removeMonomers(monomers: Monomer[], libName: string, notify = true) {
-    let libJSON: Monomer[] = [];
-    try {
-      const libTXT = await grok.dapi.files.readAsText(LIB_PATH + libName);
-      libJSON = JSON.parse(libTXT);
-    } catch (e) {
-      grok.shell.error(`Error reading library ${libName}`);
-      return console.error(e);
+    const provider = await findProviderWithLibraryName(await this.monomerLibManager.getProviders(), libName);
+    if (!provider) {
+      grok.shell.error(`Library ${libName} not found in any provider`);
+      return;
     }
-    const monomerIdxs = monomers.map((monomer) => findLastIndex(libJSON, (m) => m.symbol === monomer.symbol && m.polymerType === monomer.polymerType));
-    for (let i = 0; i < monomerIdxs.length; i++) {
-      const monomerIdx = monomerIdxs[i];
-      if (monomerIdx === -1) {
-        grok.shell.error(`Monomer ${monomers[i].symbol} not found in library ${libName}`);
-        return;
-      }
-    }
-
-    const removingMonomers = monomerIdxs.map((idx) => libJSON[idx]);
-    const infoTables = ui.divV(removingMonomers.map((m) => this.getMonomerInfoTable(m)), {style: {maxHeight: '500px', overflow: 'scroll'}});
-    const isPlural = removingMonomers.length > 1;
+    const infoTables = ui.divV(monomers.map((m) => this.getMonomerInfoTable(m)), {style: {maxHeight: '500px', overflow: 'scroll'}});
+    const isPlural = monomers.length > 1;
     const promptText = isPlural ?
-      `Are you sure you want to remove monomers ${removingMonomers.map((m) => m.symbol).join(', ')} from ${libName} library?` :
-      `Are you sure you want to remove monomer with symbol ${removingMonomers[0].symbol} from ${libName} library?`;
+      `Are you sure you want to remove monomers ${monomers.map((m) => m.symbol).join(', ')} from ${libName} library?` :
+      `Are you sure you want to remove monomer with symbol ${monomers[0].symbol} from ${libName} library?`;
 
 
     const dlg = ui.dialog('Remove Monomer' + (isPlural ? 's' : ''))
       .add(ui.h1(promptText))
       .add(infoTables)
       .addButton('Remove', async () => {
-        libJSON = libJSON.filter((m) => !removingMonomers.includes(m));
-        await grok.dapi.files.writeAsText(LIB_PATH + libName, JSON.stringify(libJSON, null, 2));
-        await (await MonomerLibManager.getInstance()).loadLibraries(true);
+        await provider.deleteMonomersFromLibrary(libName, monomers);
+        await this.monomerLibManager.loadMonomerLib(true);
         await this.refreshTable();
-
         if (notify)
-          grok.shell.info(`Monomer${isPlural ? 's' : ''} ${removingMonomers.map((m) => m.symbol).join(', ')} ${isPlural ? 'were' : 'was'} successfully removed from ${libName} library`);
+          grok.shell.info(`Monomer${isPlural ? 's' : ''} ${monomers.map((m) => m.symbol).join(', ')} ${isPlural ? 'were' : 'was'} successfully removed from ${libName} library`);
         dlg.close();
       })
       .show();
   }
 
   private async addMonomerToLib(monomer: Monomer, libName: string) {
-    // TODO: permissions logic;
-    let libJSON: Monomer[] = [];
-    try {
-      const libTXT = await grok.dapi.files.readAsText(LIB_PATH + libName);
-      libJSON = JSON.parse(libTXT);
-    } catch (e) {
-      grok.shell.error(`Error reading library ${libName}`);
-      return console.error(e);
+    // TODO: permissions logic -- to be handled on the side of providers;
+    const curDf = this.getMonomersDataFrame();
+    if (!curDf) {
+      grok.shell.error('No monomer library loaded');
+      return;
+    }
+    const polymerTypes = curDf?.col(MONOMER_DF_COLUMN_NAMES.POLYMER_TYPE)?.toList() ?? [];
+    const symbols = curDf?.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)?.toList() ?? [];
+    const monomerSmiles = curDf?.col(MONOMER_DF_COLUMN_NAMES.MONOMER)?.toList() ?? [];
+    if (polymerTypes.length !== symbols.length || polymerTypes.length !== monomerSmiles.length) {
+      grok.shell.error('Monomer library data frame is corrupted');
+      return;
     }
     // check if monomer with given symbol exists in library. search from the end to get the last monomer with that symbol (there can be duplicates)
-    const existingMonomerIdx = findLastIndex(libJSON, (m) => m.symbol === monomer.symbol && m.polymerType === monomer.polymerType);
+    const existingMonomerIdx = polymerTypes.findIndex((pt, idx) => pt === monomer.polymerType && symbols[idx] === monomer.symbol);
     // check if the same structure already exists in the library. as everything is in canonical smiles, we can directly do string matching
-    const existingStructureIdx = this.getMonomersDataFrame()?.col(MONOMER_DF_COLUMN_NAMES.MONOMER)?.toList()?.findIndex((smi) => smi === monomer.smiles);
+    const existingStructureIdx = monomerSmiles.findIndex((smi) => smi === monomer.smiles);
 
     const saveLib = async () => {
       try {
-        // first remove the existing monomer with that symbol
-        const monomerIdx = libJSON.findIndex((m) => m.symbol === monomer.symbol && m.polymerType === monomer.polymerType);
-        if (monomerIdx >= 0)
-          libJSON[monomerIdx] = {...monomer, lib: undefined, wem: undefined};
-        else
-          libJSON.push({...monomer, lib: undefined, wem: undefined});
+        const provider = await findProviderWithLibraryName(await this.monomerLibManager.getProviders(), libName);
+        if (!provider) {
+          grok.shell.error(`Library ${libName} not found in any provider`);
+          return;
+        }
+        await provider.updateOrAddMonomersInLibrary(libName, [{...monomer, lib: undefined, wem: undefined}]);
 
-        await grok.dapi.files.writeAsText(LIB_PATH + libName, JSON.stringify(libJSON, null, 2));
-        await (await MonomerLibManager.getInstance()).loadLibraries(true);
+        await this.monomerLibManager.loadMonomerLib(true);
         await this.refreshTable(monomer.symbol);
         this._molChanged = false; // reset the flag
         grok.shell.info(`Monomer ${monomer.symbol} was successfully saved in library ${libName}`);
@@ -1052,7 +1086,7 @@ class MonomerForm implements INewMonomerForm {
     let infoTable: HTMLDivElement | null = null;
     let promptMessage = '';
     if (existingMonomerIdx >= 0) {
-      infoTable = this.getMonomerInfoTable(libJSON[existingMonomerIdx]);
+      infoTable = this.getMonomerInfoTable(await monomerFromDfRow(curDf!.row(existingMonomerIdx)));
       promptMessage = `Monomer with symbol '${monomer.symbol}' already exists in library ${libName}.\nAre you sure you want to overwrite it?`;
     } else if ((existingStructureIdx ?? -1) >= 0) {
       const m = await monomerFromDfRow(this.getMonomersDataFrame()!.rows.get(existingStructureIdx!));
@@ -1120,7 +1154,7 @@ class MonomerForm implements INewMonomerForm {
   }
 }
 
-function findLastIndex<T>(ar: ArrayLike<T>, pred: (el: T) => boolean): number {
+export function findLastIndex<T>(ar: ArrayLike<T>, pred: (el: T) => boolean): number {
   let foundIdx = -1;
   for (let i = ar.length - 1; i >= 0; i--) {
     if (pred(ar[i])) {
@@ -1144,7 +1178,7 @@ function getCorrectedSmiles(rgroups: RGroup[], smiles?: string, molBlock?: strin
   return isSmilesMalformed ? canonical : grok.chem.convert(canonical, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles);
 }
 
-function getCorrectedMolBlock(molBlock: string) {
+export function getCorrectedMolBlock(molBlock: string) {
   // to correct molblock, we should make sure that
   // 1. RGP field is present at the end, before the M END line
   // 2. RGP field is present in the correct format

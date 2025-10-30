@@ -33,7 +33,8 @@ export enum TAGS {
   positionLabels = '.positionLabels',
   regions = '.regions',
   positionShift = '.positionShift',
-  selectedPosition = '.selectedPosition'
+  selectedPosition = '.selectedPosition',
+  polymerTypeColumnName = '.polymerTypeColumnName',
 }
 
 export {TAGS as BioTags};
@@ -63,7 +64,7 @@ export const candidateAlphabets: CandidateType[] = [
 ];
 
 /** Canonical gap symbol */
-export const GAP_SYMBOL: string = '';
+export const GAP_SYMBOL: string = '' as const;
 
 export const GapOriginals: {
   [units: string]: string

@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {_package} from '../../../../package';
 import {DEFAULT_FORMATS} from '../const';
 
-import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {HELM_REQUIRED_FIELD as REQ, HELM_OPTIONAL_FIELDS as OPT} from '@datagrok-libraries/bio/src/utils/const';
 
 import {META_FIELDS as MET} from './const';
