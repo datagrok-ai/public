@@ -182,7 +182,7 @@ export class FittingTutorial extends Tutorial {
       return;
     }
 
-    const fitFormRoot = await getElement(fittingView.root, 'div.ui-div.ui-form');
+    const fitFormRoot = await getElement(fittingView.root, 'div.ui-form');
     const velocityInputRoot = fitFormRoot!.children[20] as HTMLElement;
     const velocitySwitcher = velocityInputRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
@@ -205,7 +205,7 @@ export class FittingTutorial extends Tutorial {
     );
 
     // 8. Target value
-    const distFitInputRoot = fitFormRoot!.children[37] as HTMLElement;
+    const distFitInputRoot = fitFormRoot!.children[38] as HTMLElement;
     const distSwitcher = distFitInputRoot.querySelector('input.ui-input-editor') as HTMLInputElement;
     const numSource = fromEvent(distSwitcher, 'input').pipe(map((_) => distSwitcher.value), filter((val) => val === '10'));
 
@@ -266,7 +266,7 @@ export class FittingTutorial extends Tutorial {
     );
 
     // 12. Switch on Trajectory
-    const trajectoryRoot = fitFormRoot!.querySelector('div.ui-input-choice.ui-input-table.ui-input-root') as HTMLElement;
+    const trajectoryRoot = fitFormRoot!.children[41] as HTMLElement;
     const trajectorySwitcher = trajectoryRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
     await this.action(
