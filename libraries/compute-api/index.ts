@@ -71,3 +71,12 @@ export async function startWorkflow<T=any>(nqName: string, version: string, inst
   await call.call();
   return call.getOutputParamValue();
 }
+
+import {OptimizerParams} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
+
+export async function runOptimizer(params: OptimizerParams): Promise<DG.FuncCall[]> {
+  const optimFunc = DG.Func.find({package: 'Compute2', name: 'RunOptimizer'})[0];
+  const call = optimFunc.prepare({params});
+  await call.call();
+  return call.getOutputParamValue();
+}
