@@ -1,5 +1,9 @@
 # compute-utils changelog
 
+## 1.44.10 (2025-10-30)
+
+- Fitting formulas initial implementation
+
 ## 1.44.9 (2025-10-06)
 
 Features
