@@ -37,7 +37,8 @@ export class SchemaEditor extends DG.Widget {
 
     this.table.onSelected.subscribe((item) => {
       ui.empty(this.extraPropertiesDiv);
-      const propKeys = Object.keys(DG.Property.propertyOptions).filter(k => k !== 'type' && k !== 'name');
+      const excludedKeys = ['type', 'name', 'defaultValue', 'valueValidators'];
+      const propKeys = Object.keys(DG.Property.propertyOptions).filter((key) => !excludedKeys.includes(key));
       const extraProperties = propKeys
         .map(k => DG.Property.propertyOptions[k as keyof typeof DG.Property.propertyOptions]!)
         .filter(p => p.applicableTo == null || (p.applicableTo == DG.TYPE.NUMERICAL && (isNumeric(p.type!))))

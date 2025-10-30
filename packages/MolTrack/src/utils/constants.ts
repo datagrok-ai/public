@@ -92,3 +92,12 @@ export const MOLTRACK_MAPPING_VALIDATION_CHANGED = 'moltrack-mappingValidationCh
 export const excludedScopes = [Scope.ASSAY_RUNS, Scope.ASSAY_RESULTS];
 
 export const LAYOUT_STORAGE = 'MolTrackLayouts';
+
+export interface SchemaProperty extends Partial<MolTrackProp> {
+  type?: string;
+  value_type?: string;
+  entity_type?: string;
+  property_class?: string;
+}
+
+export type GroupedProperties = Record<string, SchemaProperty[]>;
