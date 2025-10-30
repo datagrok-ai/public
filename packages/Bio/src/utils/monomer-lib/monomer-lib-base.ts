@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* eslint-disable max-lines */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -6,7 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 import {Observable, Subject} from 'rxjs';
 
-import {IMonomerLibBase, Monomer, RGroup} from '@datagrok-libraries/bio/src/types/index';
+import {IMonomerLibBase, Monomer, RGroup} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {HelmAtom, HelmType, IMonomerColors,
   IWebEditorMonomer, MonomerType, PolymerType} from '@datagrok-libraries/bio/src/helm/types';
 import {getMonomerHandleArgs} from '@datagrok-libraries/bio/src/helm/helm-helper';
@@ -18,11 +19,14 @@ import {GAP_SYMBOL, GapOriginals, NOTATION} from '@datagrok-libraries/bio/src/ut
 import {Vector} from '@datagrok-libraries/utils/src/type-declarations';
 import {vectorAdd, vectorDotProduct, vectorLength} from '@datagrok-libraries/utils/src/vector-operations';
 
-import {AmbiguousWebEditorMonomer, GapWebEditorMonomer, MissingWebEditorMonomer} from './web-editor-monomer-dummy';
+import {AmbiguousWebEditorMonomer, GapWebEditorMonomer, MissingWebEditorMonomer, SmilesWebEditorMonomer} from './web-editor-monomer-dummy';
 import {LibraryWebEditorMonomer} from './web-editor-monomer-of-library';
 import {naturalMonomerColors} from './monomer-colors';
 
 import {_package} from '../../package';
+import {MonomerLibData} from '@datagrok-libraries/bio/src/types/monomer-library';
+import {smiles2Monomer} from './smiles2Monomer';
+import {polymerTypeToHelmType} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 
 const monomerRe = /[\w()]+/;
 //** Do not mess with monomer symbol with parenthesis enclosed in square brackets */
@@ -33,8 +37,6 @@ const drawMoleculeCall = (s: string) => {
   grok.chem.canvasMol(0, 0, 250, 250, canvas, s);
   return canvas;
 };
-
-export type MonomerLibDataType = { [polymerType: string]: { [monomerSymbol: string]: Monomer } };
 
 const whiteColorV = new Vector([255.0, 255.0, 255.0]);
 const blackColorV = new Vector([0.0, 0.0, 0.0]);
@@ -50,7 +52,7 @@ export class MonomerLibBase implements IMonomerLibBase {
 
 
   constructor(
-    protected _monomers: MonomerLibDataType,
+    protected _monomers: MonomerLibData,
     public readonly source: string,
   ) {
     this._isEmpty = !this._monomers || Object.keys(this._monomers).length === 0 ||
@@ -62,8 +64,14 @@ export class MonomerLibBase implements IMonomerLibBase {
   }
 
   getMonomerSymbolsByType(polymerType: PolymerType): string[] {
-    return Object.keys(this._monomers[polymerType]);
+    const res = Object.keys(this._monomers[polymerType]);
+    if (this._smilesMonomerCache[polymerType])
+      res.push(...Object.keys(this._smilesMonomerCache[polymerType]));
+    return res;
   }
+
+  // smiles to symbol Mapping cache
+  private _smilesMonomerCache: {[polymerType: string]: {[smiles: string]: string}} = {};
 
   /** Creates missing {@link Monomer} */
   addMissingMonomer(polymerType: PolymerType, monomerSymbol: string): Monomer {
@@ -78,6 +86,22 @@ export class MonomerLibBase implements IMonomerLibBase {
       monomerName = 'Any';
     else if (polymerType === PolymerTypes.RNA && monomerSymbol === 'N')
       monomerName = 'Any';
+
+    // test if it is smiles
+    // check if the missing monomer symbol is a valid SMILES string
+    const smilesMonomer = smiles2Monomer(monomerSymbol, polymerType);
+    if (smilesMonomer) {
+      this._smilesMonomerCache[polymerType] = this._smilesMonomerCache[polymerType] ?? {};
+      const smSet = this._smilesMonomerCache[polymerType];
+      const symbol = Object.keys(smSet).length + 1;
+      smSet[monomerSymbol] = `#${polymerType[0]}${symbol}`; // e.g. #P1, #R2, #C3, #B4
+      const m: Monomer = {...smilesMonomer, symbol: smSet[monomerSymbol]};
+      // note, the ID becomes #<index> for smiles based monomers, and as the smiles, original smiles is passed (which is in monomerSymbol), to avoid key duplication
+      const wem = new SmilesWebEditorMonomer(polymerTypeToHelmType(polymerType), m.symbol, monomerSymbol, `SMILES Monomer ${m.symbol}`, m.rgroups.map((rg) => rg[RGP.LABEL]));
+      m.wem = wem;
+      mSet[m.symbol] = m;
+      return m;
+    }
 
     const m = mSet[monomerSymbol] = {
       [REQ.SYMBOL]: monomerSymbol,
@@ -125,8 +149,11 @@ export class MonomerLibBase implements IMonomerLibBase {
         if (res) break;
       }
     } else {
+      // Check smiles cache, modify with mapped symbol
+      if (this._smilesMonomerCache[polymerType]?.[monomerSymbol])
+        monomerSymbol = this._smilesMonomerCache[polymerType][monomerSymbol];
       const dict = this._monomers[polymerType];
-      res = dict ? dict[monomerSymbol] : null;
+      res = dict?.[monomerSymbol] ?? null;
     }
     return res;
   }

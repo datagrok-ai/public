@@ -42,10 +42,9 @@ export async function usageAnalysisApp(path?: string, date?: string, groups?: st
 
 //input: column<string> ticketColumn 
 //input: column<string> resultColumn 
-//input: object progress 
 //meta.vectorFunc: true
-export async function getTicketsVerdict(ticketColumn: DG.Column, resultColumn: DG.Column, progress: any) : Promise<void> {
-  await PackageFunctions.getTicketsVerdict(ticketColumn, resultColumn, progress);
+export async function getTicketsVerdict(ticketColumn: DG.Column, resultColumn: DG.Column) : Promise<void> {
+  await PackageFunctions.getTicketsVerdict(ticketColumn, resultColumn);
 }
 
 //name: Test Track

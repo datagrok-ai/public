@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {expectObject} from '@datagrok-libraries/utils/src/test';
 
-import {IMonomerLib, MonomerLibSummaryType} from '../types/index';
+import {IMonomerLib, MonomerLibSummaryType} from '../types/monomer-library';
 
 export function expectMonomerLib(lib: IMonomerLib, summary: { [polymerType: string]: number }): void {
   const exp: MonomerLibSummaryType = summary;

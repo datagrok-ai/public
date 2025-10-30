@@ -11,10 +11,8 @@ function getFirstOfCol(col) {
 function prepareTicketsVerdict(
     pivot,
     ticketColumn,
-    resultColumnName,
-    progressLabel,
+    resultColumnName
 ) {
-  const progress = DG.TaskBarProgressIndicator.create(progressLabel, { cancelable: true });
   const resultColumn = pivot.columns.getOrCreate(resultColumnName, DG.COLUMN_TYPE.STRING);
   const ticketRegex = /GROK-\d*/;
 
@@ -26,8 +24,7 @@ function prepareTicketsVerdict(
 
   grok.functions.call('UsageAnalysis:getTicketsVerdict', {
     ticketColumn,
-    resultColumn,
-    progress,
+    resultColumn
   });
 
   return resultColumn;
@@ -96,10 +93,10 @@ async function postprocess() {
 
 
   const rCol = pivot.getCol(`${builds[0]} concat unique(result)`);
-  const ticketsStatusCol = prepareTicketsVerdict(pivot, rCol, `${rCol} ticket verdict`, 'Loading verdicts column');
+  const ticketsStatusCol = prepareTicketsVerdict(pivot, rCol, `${rCol} ticket verdict`);
 
   const ignoreReasonCol = pivot.getCol('ignoreReason');
-  const stickyMetaStatusCol = prepareTicketsVerdict(pivot, ignoreReasonCol, 'ignore status', 'Loading ignore status column');
+  const stickyMetaStatusCol = prepareTicketsVerdict(pivot, ignoreReasonCol, 'ignore status');
 
 
   // let ticketsStatusCol = await pivot.columns.addNewCalculated(`${builds[0]} tickets status`, `UsageAnalysis:getTicketsVerdict(\${${builds[0]} concat unique(result)})`, DG.TYPE.STRING);

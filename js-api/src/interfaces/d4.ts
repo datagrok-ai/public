@@ -3305,6 +3305,8 @@ export interface ITileViewerSettings {
 
   columnsJson: string;
 
+  tilesFont: string;
+
   lanes: Array<string>;
 
   /// Determines the rows shown on the plot.

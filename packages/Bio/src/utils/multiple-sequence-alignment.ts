@@ -149,7 +149,7 @@ function parseKalignError(out: string, limit?: number): string {
   const errLineList: string[] = [];
   const errLineRe = /^.+ERROR : (.+)$/gm;
   let ma: RegExpExecArray | null;
-  while ((ma = errLineRe.exec(out)) != null && (limit === undefined || errLineList.length < limit)) {
+  while ((ma = errLineRe.exec(out)) != null && (limit == undefined || errLineList.length < limit)) {
     //
     errLineList.push(ma[1]);
   }

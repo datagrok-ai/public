@@ -6,7 +6,7 @@ import wu from 'wu';
 
 import {category, test, expectFloat, before, after, expect} from '@datagrok-libraries/utils/src/test';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {IMonomerLibHelper, getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {IMonomerLibHelper, getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 
 import {
   getUserLibSettings, setUserLibSettings

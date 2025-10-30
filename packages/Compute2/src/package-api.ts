@@ -28,6 +28,10 @@ export namespace funcs {
     return await grok.functions.call('Compute2:StartWorkflow', { nqName, version, instanceConfig });
   }
 
+  export async function runOptimizer(params: any ): Promise<any> {
+    return await grok.functions.call('Compute2:RunOptimizer', { params });
+  }
+
   export async function viewerTestApp(): Promise<void> {
     return await grok.functions.call('Compute2:ViewerTestApp', {});
   }

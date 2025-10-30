@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 export class InputColumnBase extends DG.InputBase<DG.Column | null> {
-
   private readonly options?: ui.input.IColumnInputInitOptions<DG.Column>;
 
   constructor(name: string, options?: ui.input.IColumnInputInitOptions<DG.Column>) {

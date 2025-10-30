@@ -399,7 +399,13 @@ export class TableView extends View {
   }
 
   /** Associated table, if it exists (for TableView), or null. */
-  get table(): DataFrame | null { return toJs(api.grok_View_Get_Table(this.dart)); }
+  get table(): DataFrame | null {
+    return toJs(api.grok_View_Get_Table(this.dart));
+  }
+
+  set table(df: DataFrame | null) {
+    toJs(api.grok_TableView_Set_DataFrame(this.dart, df ? df.dart : null));
+  }
 
   /** Associated grid (spreadsheet). */
   get grid(): Grid { return toJs(api.grok_View_Get_Grid(this.dart)); }

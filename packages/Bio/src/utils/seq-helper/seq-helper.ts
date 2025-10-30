@@ -6,12 +6,11 @@ import wu from 'wu';
 
 import {ISeqHelper, ToAtomicLevelRes} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
-import {IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {MolfileWithMap} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {getMolColName} from '@datagrok-libraries/bio/src/monomer-works/utils';
 import {ChemTags} from '@datagrok-libraries/chem-meta/src/consts';
-import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/index';
+import {IMonomerLibBase, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 
 import {HelmToMolfileConverter} from '../helm-to-molfile/converter';
 import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';

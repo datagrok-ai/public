@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import '../styles.css';
 import * as C from '../utils/constants';
 import * as type from '../utils/types';
 import {PeptidesModel, VIEWER_TYPE} from '../model';
@@ -13,7 +12,8 @@ import {ALIGNMENT, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/
 import {ILogoSummaryTable, LogoSummaryTable} from '../viewers/logo-summary';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {MCL_INPUTS} from './settings';
-
+//@ts-ignore
+import '../styles.css';
 export type DialogParameters = { host: HTMLElement, callback: () => Promise<boolean> };
 
 /**

@@ -33,7 +33,7 @@ export async function getEncodedSeqSpaceCol(
   for (let rowIdx = 0; rowIdx < rowCount; rowIdx++) {
     const catI = seqColRawData[rowIdx];
     const seq = seqColCats[catI];
-    if (seq === null || seqCol.isNone(rowIdx)) {
+    if (seq == null || seqCol.isNone(rowIdx)) {
       //@ts-ignore
       encList[rowIdx] = null;
       continue;

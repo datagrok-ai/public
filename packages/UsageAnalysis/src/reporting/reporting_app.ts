@@ -7,8 +7,7 @@ import {delay} from 'rxjs/operators'
 
 export class ReportingApp {
   static readonly APP_NAME = 'Reports';
-  empty: DG.View = DG.View.create();
-  view?: DG.TableView;
+  view: DG.TableView = DG.TableView.create(DG.DataFrame.create());
   users: { [_: string]: any; } = {};
   parentCall: DG.FuncCall;
   currentFilter?: DG.Viewer<interfaces.IFiltersSettings>;
@@ -16,13 +15,16 @@ export class ReportingApp {
 
   constructor(parentCall: DG.FuncCall) {
     this.parentCall = parentCall;
-    this.empty.name = ReportingApp.APP_NAME;
+    this.view.name = ReportingApp.APP_NAME;
     const loader: HTMLElement = ui.loader();
     loader.style.flexGrow = 'initial!important';
-    this.empty.root.append(loader);
-    this.empty.root.style.display = 'flex';
-    this.empty.root.style.alignItems = 'center';
-    this.empty.root.style.justifyContent = 'center';
+    this.view.root.append(loader);
+    this.view.root.style.display = 'flex';
+    this.view.root.style.alignItems = 'center';
+    this.view.root.style.justifyContent = 'center';
+    this.view.path = '';
+    this.view.setRibbonPanels([[ui.button('Add rule...', async () =>
+        await DG.UserReportsRule.showAddDialog())]]);
   }
 
   async init(path?: string): Promise<void> {
@@ -41,45 +43,37 @@ export class ReportingApp {
         reportNumber = parseInt(segments[0]);
     }
     let table: DG.DataFrame = await grok.dapi.reports.getReports(reportNumber);
-    this.view = DG.TableView.create(table, false);
-    this.view.parentCall = this.parentCall;
-    this.view.path = '';
-    this.view.name = ReportingApp.APP_NAME;
-    this.view.setRibbonPanels([[ui.button('Add rule...', async () =>
-      await DG.UserReportsRule.showAddDialog())]]);
-    this.empty.root.replaceWith(this.view.root);
-    this.empty.setRibbonPanels(this.view.getRibbonPanels());
-    setTimeout(async () => {
-      this.view!._onAdded();
-      await this.refresh(table, this.view!.grid);
-      if (reportNumber) {
-        const progress = DG.TaskBarProgressIndicator.create('Loading reports...');
-        try {
-          const reports = await grok.dapi.reports.getReports();
-          reports.rows.removeWhere((r) => r.get('number') === reportNumber);
-          const columns = reports.columns.toList();
-          for (const col of columns) {
-            if (!table.col(col.name))
-              table.columns.add(DG.Column.fromType(col.type, col.name, table.rowCount))
-          }
-          table.appendMerge(reports);
-          await this.refresh(table, this.view!.grid);
-          setTimeout(async () => {
-            const length = table.rowCount;
-            for (let i = 0; i < length; i++) {
-              if (this.view?.grid.cell('number', i).cell.value == reportNumber) {
-                this.view?.grid.scrollToCell('date', i);
-                break;
-              }
-            }
-          }, 200);
-        } catch (e) {
-          console.error(e);
-        } finally {
-          progress.close();
+    this.view.table = table;
+
+    await this.refresh(table, this.view!.grid);
+    if (reportNumber) {
+      const progress = DG.TaskBarProgressIndicator.create('Loading reports...');
+      try {
+        const reports = await grok.dapi.reports.getReports();
+        reports.rows.removeWhere((r) => r.get('number') === reportNumber);
+        const columns = reports.columns.toList();
+        for (const col of columns) {
+          if (!table.col(col.name))
+            table.columns.add(DG.Column.fromType(col.type, col.name, table.rowCount))
         }
+        table.appendMerge(reports);
+        await this.refresh(table, this.view!.grid);
+        setTimeout(async () => {
+          const length = table.rowCount;
+          for (let i = 0; i < length; i++) {
+            if (this.view?.grid.cell('number', i).cell.value == reportNumber) {
+              this.view?.grid.scrollToCell('date', i);
+              break;
+            }
+          }
+        }, 200);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        progress.close();
       }
-    }, 300);
+    }
+
   }
 
   refresh(table: DG.DataFrame, grid: DG.Grid) {

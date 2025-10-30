@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {SeqPalette, SeqPaletteBase} from './seq-palettes';
-import {getMonomerLibHelper} from './monomer-works/monomer-utils';
+import {getMonomerLibHelper} from './types/monomer-library';
 import {PolymerType} from './helm/types';
 import {PolymerTypes} from './helm/consts';
 

@@ -6,7 +6,7 @@ import $ from 'cash-dom';
 
 import {after, before, category, delay, expect, test, testEvent} from '@datagrok-libraries/utils/src/test';
 import {IHelmHelper, getHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
-import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {
   getUserLibSettings, setUserLibSettings,
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';

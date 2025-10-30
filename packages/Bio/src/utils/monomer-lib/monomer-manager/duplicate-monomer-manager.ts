@@ -3,11 +3,12 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {Monomer} from '@datagrok-libraries/bio/src/types';
+import {Monomer} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
-import '../../../../css/monomer-manager.css';
 import {MonomerLibManager} from '../lib-manager';
+// @ts-ignore
+import '../../../../css/monomer-manager.css';
 
 class MonomerCard {
   root: HTMLElement = ui.divV([], {classes: 'monomer-card-root'});
@@ -109,7 +110,6 @@ export class DuplicateMonomerManager {
     this.settings = await getUserLibSettings();
     const libManager = await MonomerLibManager.getInstance();
     await libManager.awaitLoaded();
-    await libManager.loadLibrariesPromise;
     this.monomers = libManager.duplicateMonomers;
     this.monomerCardRows = [];
     for (const polymerType in this.monomers) {

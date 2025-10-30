@@ -3,9 +3,9 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import { awaitCheck, delay } from '@datagrok-libraries/utils/src/test';
 import { getRevvityLibraries } from './libraries';
-import { filterProperties, getPropertiesForLibAndEntityType, initializeFilters, SAVED_SEARCH_STORAGE } from './search-utils';
+import { filterProperties, getPropertiesForLibAndEntityType, initializeFilters, runSearchQuery, SAVED_SEARCH_STORAGE } from './search-utils';
 import { getCompoundTypeByViewName, getViewNameByCompoundType } from './utils';
-import { retrieveQueriesMap } from './compounds';
+import { getConditionForLibAndType, retrieveQueriesMap } from './compounds';
 import { ComplexCondition } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { RevvityUser } from './revvity-api';
 import { LAYOUT_STORAGE, USER_FIELDS } from './constants';
@@ -30,7 +30,7 @@ export async function updateView(tv: DG.TableView, df: DG.DataFrame, compoundTyp
     if (lib.length)
       libId = lib[0].id;
   }
-  if(libId)
+  if (libId)
     await setColumnsFriendlyNames(libId, compoundType, tv.dataFrame);
 
   applyRevvityLayout(tv.grid, `${libName}|${compoundType}`);
@@ -88,7 +88,7 @@ export async function openRevvityNode(treeNode: DG.TreeViewGroup, nodesToExpand:
     try {
       await awaitCheck(() => treeNode.items.find((node) => node.text.toLowerCase() === nodeName.toLowerCase()) !== undefined,
         `${nodeName} haven't been loaded in 10 seconds`, 10000);
-    } catch(e: any) {
+    } catch (e: any) {
       grok.shell.error(e?.message ?? e);
       return;
     }
@@ -119,7 +119,7 @@ export async function handleInitialURL(treeNode: DG.TreeViewGroup, url: string) 
     let libs;
     try {
       libs = await getRevvityLibraries();
-    } catch(e: any) {
+    } catch (e: any) {
       grok.shell.error(`Revvity libraries haven't been loaded: ${e?.message ?? e}`);
       return;
     }
@@ -167,7 +167,7 @@ export async function handleInitialURL(treeNode: DG.TreeViewGroup, url: string) 
           const condition = JSON.parse(componentsArr[idx + 2]);
           openRevvityNode(treeNode, nodesToExpand, componentsArr[idx], libName,
             entityType, condition, false);
-            return;
+          return;
         }
         openRevvityNode(treeNode, nodesToExpand, componentsArr[idx], libName, entityType);
       }
@@ -177,7 +177,7 @@ export async function handleInitialURL(treeNode: DG.TreeViewGroup, url: string) 
 }
 
 export function createViewForExpandabelNode(viewName: string,
-  getElement:(root: HTMLElement, libName?: string, typeName?: string) => Promise<void>, libName?: string, typeName?: string) {
+  getElement: (root: HTMLElement, libName?: string, typeName?: string) => Promise<void>, libName?: string, typeName?: string) {
   openedView?.close();
   const div = ui.div();
   openedView = grok.shell.addPreview(DG.View.fromRoot(div));
@@ -191,17 +191,13 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
   let name = path[path.length - 1];
   if (!isSavedSearch)
     name = getViewNameByCompoundType(compoundType);
-  if (openedView && openedView.name.toLowerCase() === name.toLowerCase() && ("dockNode" in openedView && openedView.dockNode.parent)) {
-    grok.shell.v = openedView;
-    return;
-  }
   openedView?.close();
 
   const df = DG.DataFrame.create();
   const tv = grok.shell.addTablePreview(df);
-  const icon = ui.iconImage('',  `${_package.webRoot}img/revvity.png`);
+  const icon = ui.iconImage('', `${_package.webRoot}img/revvity.png`);
   //tv.setIcon(icon); TODO!!! Uncomment when setIcon method is available in js-api
-  
+
   openedView = tv;
   openedView.name = name.charAt(0).toUpperCase() + name.slice(1);
   openedView.path = createPath(path);
@@ -222,15 +218,25 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
   }
 
   if (!initialSearchQuery) {
-    funcs.searchEntitiesWithStructures(JSON.stringify(retrieveQueriesMap[compoundType]), '{}')
-    .then(async (res: DG.DataFrame) => {
-      updateView(openedView as DG.TableView, res, compoundType, libName, undefined, filtersDiv);
-      initFilters();
+    getRevvityLibraries().then((libs) => {
+      if (!libs.length) {
+        grok.shell.warning(`No materials libraries found`);
+        return;
+      }
+      const libId = libs.filter((it) => it.name.toLowerCase() === libName.toLowerCase());
+      if (!libId.length) {
+        grok.shell.warning(`Library ${libName} not found`);
+        return;
+      }
+      runSearchQuery(libId[0].id, compoundType)
+        .then(async (res: DG.DataFrame) => {
+          updateView(openedView as DG.TableView, res, compoundType, libName, undefined, filtersDiv);
+          initFilters();
+        }).catch((e: any) => {
+          grok.shell.error(e?.message ?? e);
+          ui.setUpdateIndicator(openedView!.root, false);
+        });
     })
-      .catch((e: any) => {
-        grok.shell.error(e?.message ?? e);
-        ui.setUpdateIndicator(openedView!.root, false);
-      });
   } else
     initFilters();
 }

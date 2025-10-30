@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {Monomer} from '../types/index';
+import {Monomer} from '../types/monomer-library';
 import {MonomerTypes, PolymerTypes} from '../helm/consts';
 
 export interface INewMonomerForm {
@@ -22,7 +22,7 @@ export interface IMonomerGallery {
 export interface IMonomerManager {
 
   /** Creates new monomer library in correct folder and adds given monomers */
-  createNewMonomerLib(libName: string, monomers: Monomer[]): Promise<void>;
+  createNewMonomerLib(providerName: string, libName: string, monomers: Monomer[]): Promise<void>;
 
   editMonomer(dfRow: DG.Row): Promise<Monomer>;
 

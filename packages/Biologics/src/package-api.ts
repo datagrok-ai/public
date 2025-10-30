@@ -7,6 +7,16 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 
+export namespace queries {
+  export async function assaysByOrganism(organism: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('Biologics:AssaysByOrganism', { organism });
+  }
+
+  export async function adcsLinkedToDrug(drugID: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('Biologics:AdcsLinkedToDrug', { drugID });
+  }
+}
+
 export namespace funcs {
   export async function info(): Promise<void> {
     return await grok.functions.call('Biologics:Info', {});

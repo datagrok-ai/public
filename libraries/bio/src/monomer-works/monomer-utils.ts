@@ -11,11 +11,11 @@ import {
   HELM_FIELDS, HELM_CORE_FIELDS, HELM_RGROUP_FIELDS, jsonSdfMonomerLibDict,
   MONOMER_ENCODE_MAX, MONOMER_ENCODE_MIN, SDF_MONOMER_NAME, HELM_REQUIRED_FIELD,
 } from '../utils/const';
-import {IMonomerLib, IMonomerSet} from '../types/index';
 import {ISeqSplitted} from '../utils/macromolecule/types';
 import {splitAlignedSequences} from '../utils/splitter';
 import {GAP_SYMBOL} from '../utils/macromolecule/consts';
 import {ISeqHelper} from '../utils/seq-helper';
+import {getMonomerLibHelper} from '../types/monomer-library';
 
 export function encodeMonomers(col: DG.Column, seqHelper: ISeqHelper): DG.Column | null {
   let encodeSymbol = MONOMER_ENCODE_MIN;
@@ -144,74 +144,6 @@ export function createJsonMonomerLibFromSdf(table: DG.DataFrame): any {
   return resultLib;
 }
 
-export interface IMonomerLibFileEventManager {
-  get addLibraryFileRequested$(): Observable<void>;
-  get updateUIControlsRequested$(): Observable<string[]>;
-  get librarySelectionRequested$(): Observable<[string, boolean]>;
-
-  updateLibrarySelectionStatus(libFileName: string, isSelected: boolean): void;
-}
-
-export interface IMonomerLibFileManager {
-  get eventManager(): IMonomerLibFileEventManager;
-
-  getValidLibraryPaths(): string[];
-  getValidLibraryPathsAsynchronously(): Promise<string[]>;
-
-  addLibraryFile(fileContent: string, fileName: string): Promise<void>;
-  deleteLibraryFile(fileName: string): Promise<void>;
-
-  loadLibraryFromFile(path: string, fileName: string): Promise<IMonomerLib>;
-}
-
-export interface IMonomerLibHelper {
-  get eventManager(): IMonomerLibFileEventManager;
-
-  /** Ensures files are loaded and validated, throws error after timeout */
-  awaitLoaded(timeout?: number): Promise<void>;
-
-  /** Singleton monomer library collected from various sources */
-  getMonomerLib(): IMonomerLib;
-
-  /**  @deprecated Use {@link getMonomerLib} */
-  getBioLib(): IMonomerLib;
-
-  /** Singleton monomer set collected from various sources */
-  getMonomerSets(): IMonomerSet;
-
-  getFileManager(): Promise<IMonomerLibFileManager>;
-
-  /** (Re)Loads libraries based on settings in user storage {@link LIB_STORAGE_NAME} to singleton.
-   * @param {boolean} reload Clean {@link monomerLib} before load libraries [false]
-   */
-  loadMonomerLib(reload?: boolean): Promise<void>;
-
-  /** @deprecated Use {@link loadMonomerLib} */
-  loadLibraries(reload?: boolean): Promise<void>;
-
-  /** (Re)loads monomer sets based on settings in user storage {@link SETS_STORAGE_NAME} to singleton.
-   * @param {boolean} reload Clean {@link monomerSets} before load sets [false]
-   */
-  loadMonomerSets(reload?: boolean): Promise<void>;
-
-  /** Reads library from file shares, handles .json and .sdf */
-  readLibrary(path: string, fileName: string): Promise<IMonomerLib>;
-
-  // -- Settings --
-
-  /** Changes user lib settings. */
-  loadMonomerLibForTests(): Promise<void>;
-}
-
-export async function getMonomerLibHelper(): Promise<IMonomerLibHelper> {
-  const funcList = DG.Func.find({package: 'Bio', name: 'getMonomerLibHelper'});
-  if (funcList.length === 0)
-    throw new Error('Package "Bio" must be installed for MonomerLibHelper.');
-
-  const res: IMonomerLibHelper = (await funcList[0].prepare().call()).getOutputParamValue() as IMonomerLibHelper;
-  return res;
-}
-
 /** Calculates chemical similarity between reference sequence and list of sequences.
  * Similarity is computed as a sum of monomer similarities on corresponding positions. Monomer similarity is calculated
  * based on Morgan fingerprints.
@@ -261,11 +193,11 @@ export async function sequenceChemSimilarity(
 
     for (let rowIdx = 0; rowIdx < rowCount; ++rowIdx) {
       const monomerCategoryIdx = monomerColData[rowIdx];
-      if (referenceMonomerCanonical !== GAP_SYMBOL && monomerCategoryIdx !== emptyCategoryIdx) {
+      if (referenceMonomerCanonical !== GAP_SYMBOL && monomerCategoryIdx !== emptyCategoryIdx)
         totalSimilarity[rowIdx] += similarityColData![monomerCategoryIdx];
-      } else if (referenceMonomerCanonical === GAP_SYMBOL && monomerCategoryIdx === emptyCategoryIdx) {
+      else if (referenceMonomerCanonical === GAP_SYMBOL && monomerCategoryIdx === emptyCategoryIdx)
         totalSimilarity[rowIdx] += 1;
-      } // Do not increase similarity on mismatch score/penalty equals 0;
+      // Do not increase similarity on mismatch score/penalty equals 0;
     }
   }
 
@@ -322,7 +254,9 @@ export async function getMonomerSubstitutionMatrix(monomerSet: string[], fingerp
     new Array(monomerSet.length).fill(0).map(() => new Array(monomerSet.length).fill(0));
   const alphabetIndexes: { [id: string]: number } = {};
   // note, below specifically boolean OR is used to get either molfile or smiles, because we want to skip '' molfiles
-  const monomerMolecules = monomerSet.map((monomer) => monomerLib.getMonomer('PEPTIDE', monomer)?.molfile || monomerLib.getMonomer('PEPTIDE', monomer)?.smiles || '');
+  const monomerMolecules = monomerSet
+    .map((monomer) => monomerLib
+      .getMonomer('PEPTIDE', monomer)?.molfile || monomerLib.getMonomer('PEPTIDE', monomer)?.smiles || '');
   const fingerprintsFunc = DG.Func.find({package: 'Chem', name: 'getFingerprints'})[0];
   if (!fingerprintsFunc) {
     console.warn('Function "Chem:getFingerprints" is not found in chem package. falling back to Morgan fingerprints');

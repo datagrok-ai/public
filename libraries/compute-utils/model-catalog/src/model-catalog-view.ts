@@ -112,7 +112,7 @@ export class ModelCatalogView extends DG.CustomCardView {
     if (!f)
       return [];
     const fc = f.prepare();
-    await fc.call();
+    await fc.call(undefined, undefined, {processed:true, report:false});
     return fc.getOutputParamValue() ?? [];
   }
 }

@@ -35,7 +35,8 @@ export function saveAsSdfDialog() {
     sdfDialog.add(filteredRowsInput);
     const selectedRowsInput = ui.input.bool('Selected Rows Only', {value: false, tooltipText: 'Include only the currently selected rows. Can be combined with [filteredRowsOnly].'});
     sdfDialog.add(selectedRowsInput);
-    sdfDialog.initFromLocalStorage();
+    if ('initFromLocalStorage' in sdfDialog && typeof sdfDialog['initFromLocalStorage'] === 'function') // temporary compatibility fix for platform versions <1.26
+      sdfDialog.initFromLocalStorage();
     sdfDialog.initDefaultHistory();
     colsInput.value = cols[0];
     sdfDialog.onOK(async () => {

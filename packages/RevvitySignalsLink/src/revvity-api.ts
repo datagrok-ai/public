@@ -101,8 +101,12 @@ async function request<T>(
   const res: RevvityApiResponse<T> = text ? await response.bytes() : await response.json();
 
   if (!response.ok || res.errors) {
-    if (res.errors)
+    if (res.errors) {
+      //check for 403 error to further check in getUsers method
+      if (res.errors.length === 1 && res.errors[0].status === '403')
+        throw '403';
       throw res.errors.map((error) => error.detail).join(';');
+    }
     throw new Error(`HTTP error!: ${response.status}`, { cause: response.status });
   }
   return res;

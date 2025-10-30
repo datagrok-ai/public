@@ -21,6 +21,14 @@ See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
 
+## 2025-10-22 Datagrok 1.26.5 release
+
+### Improvements and fixes:
+
+* Added support for SAML authentication
+* Introduced support for user account impersonation in Google Cloud Storage
+* Projects: Added support for saving projects created via custom scripts with data synchronization
+
 ## 2025-07-25 Datagrok 1.26.0 release
 
 The Datagrok 1.26.0 release focuses on improved data access and collaboration, enhanced visualization capabilities, and navigation UI/UX improvements.

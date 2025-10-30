@@ -1,10 +1,11 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {before, after, category, expect, test, expectArray, testEvent, expectObject}
   from '@datagrok-libraries/utils/src/test';
-import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
   getUserLibSettings, setUserLibSettings

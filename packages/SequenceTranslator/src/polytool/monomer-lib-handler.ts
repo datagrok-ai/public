@@ -7,7 +7,7 @@ import {HELM_FIELDS, DUMMY_MONOMER} from '@datagrok-libraries/bio/src/utils/cons
 import {
   helmFieldsToPolyToolInputFields, R_GROUP_BLOCK_DUMMY
 } from './const';
-import {Monomer, RGroup} from '@datagrok-libraries/bio/src/types/index';
+import {Monomer, RGroup} from '@datagrok-libraries/bio/src/types/monomer-library';
 
 export class PolyToolMonomerLibHandler {
   constructor(private rawLib: any[]) { }

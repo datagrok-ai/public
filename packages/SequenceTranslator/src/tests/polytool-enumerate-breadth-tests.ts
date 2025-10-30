@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {before, after, category, expect, test, expectArray} from '@datagrok-libraries/utils/src/test';
 import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
-import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
   getUserLibSettings, setUserLibSettings
@@ -94,15 +94,15 @@ category('PolyTool: Enumerate', () => {
         ],
       },
       tgt: [
-        {seq: "PEPTIDE1{[Ac(1)].F.Y.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0", name: "-W3K-K3Y"},
-        {seq: "PEPTIDE1{[Ac(1)].F.K.Y.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0", name: "-W3K-G4Y"},
-        {seq: "PEPTIDE1{[Ac(1)].F.K.G.Y.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0", name: "-W3K-P5Y"},
-        {seq: "PEPTIDE1{[Ac(1)].F.Y.K.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0", name: "-G4K-W3Y"},
-        {seq: "PEPTIDE1{[Ac(1)].F.W.Y.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0", name: "-G4K-K4Y"},
-        {seq: "PEPTIDE1{[Ac(1)].F.W.K.Y.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0", name: "-G4K-P5Y"},
-        {seq: "PEPTIDE1{[Ac(1)].F.Y.G.K.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0", name: "-P5K-W3Y"},
-        {seq: "PEPTIDE1{[Ac(1)].F.W.Y.K.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0", name: "-P5K-G4Y"},
-        {seq: "PEPTIDE1{[Ac(1)].F.W.G.Y.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0", name: "-P5K-K5Y"}
+        {seq: 'PEPTIDE1{[Ac(1)].F.Y.G.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-W3K-K3Y'},
+        {seq: 'PEPTIDE1{[Ac(1)].F.K.Y.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-W3K-G4Y'},
+        {seq: 'PEPTIDE1{[Ac(1)].F.K.G.Y.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-W3K-P5Y'},
+        {seq: 'PEPTIDE1{[Ac(1)].F.Y.K.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-G4K-W3Y'},
+        {seq: 'PEPTIDE1{[Ac(1)].F.W.Y.P.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-G4K-K4Y'},
+        {seq: 'PEPTIDE1{[Ac(1)].F.W.K.Y.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-G4K-P5Y'},
+        {seq: 'PEPTIDE1{[Ac(1)].F.Y.G.K.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-P5K-W3Y'},
+        {seq: 'PEPTIDE1{[Ac(1)].F.W.Y.K.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-P5K-G4Y'},
+        {seq: 'PEPTIDE1{[Ac(1)].F.W.G.Y.L.[Tic].[C(1)].G.[NH2]}$$$$V2.0', name: '-P5K-K5Y'}
       ]
     }
   };

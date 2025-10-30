@@ -104,6 +104,7 @@ export interface IDartApi {
   grok_View_Get_Viewers(v: any): any;
   grok_View_SetIcon(v: any, icon: any): any;
   grok_TableView(d: any, addToWorkspace: Bool): any;
+  grok_TableView_Set_DataFrame(v: any, d: any): any;
   grok_TableView_Get_SyncCurrentObject(tv: any): any;
   grok_TableView_Set_SyncCurrentObject(tv: any, x: Bool): any;
   grok_TableView_GetFilters(tv: any, addDefaultFilters: Bool): any;
@@ -1479,7 +1480,7 @@ export interface IDartApi {
   grok_Entity_Get_UpdatedOn(p: any): any;
   grok_Entity_Get_Author(p: any): any;
   grok_Entity_Get_nqName(p: any): any;
-  grok_Entity_Share(e: any, g: any, isEdit: Bool): Promise<any>;
+  grok_Entity_Share(e: any, g: any, full: Bool): Promise<any>;
   grok_DataConnection_Create(name: String, dataSource: String, options: any): any;
   grok_DataConnection_Get_Parameters(c: any): any;
   grok_DataConnection_Query(c: any, name: String, sql: String): any;

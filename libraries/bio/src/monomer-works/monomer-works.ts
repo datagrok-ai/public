@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {IMonomerLibBase} from '../types';
+import {IMonomerLibBase} from '../types/monomer-library';
 import {HelmType, PolymerType} from '../helm/types';
 import {HelmTypes, PolymerTypes} from '../helm/consts';
 

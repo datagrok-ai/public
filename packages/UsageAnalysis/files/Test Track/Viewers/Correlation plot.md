@@ -10,8 +10,8 @@
   - Column order should update accordingly.
 3. Open Scatter Plot
 - Double-click any numeric cell in the Correlation Plot. A Scatter Plot viewer opens showing the selected data.
-4. Save as Table action
-- Right-click on any cell: Select **Save as Table**. A new table view opens with selected data.
+4. Open as Table action
+- Right-click on any cell: Select **Open as Table**. A new table view opens with selected data.
 - Toggle Show Pearson R checkbox. Viewer updates accordingly based on the checkbox state.
 5. Context panel - Gear Icon
 - Click the gear icon in the viewer to open the context panel.

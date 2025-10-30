@@ -15,7 +15,7 @@ export abstract class MolfileWrapper {
 
   protected shiftR1GroupToOrigin(): void {
     const r1Idx = this.rGroups.getAtomicIdx(1);
-    if (r1Idx === null)
+    if (r1Idx == null)
       return; // R1 group is not present, nothing to shift
     const {x, y} = this.atoms.atomCoordinates[r1Idx];
     this.atoms.shift({x: -x, y: -y});
@@ -23,7 +23,7 @@ export abstract class MolfileWrapper {
 
   protected alignR2AlongX(): void {
     const r2Idx = this.rGroups.getAtomicIdx(2);
-    if (r2Idx === null)
+    if (r2Idx == null)
       throw new Error(`Cannot find R2 group for monomer ${this.monomerSymbol}`);
     const r2Coordinates = this.atoms.atomCoordinates[r2Idx];
     const tan = r2Coordinates.y / r2Coordinates.x;

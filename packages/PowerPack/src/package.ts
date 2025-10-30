@@ -130,7 +130,6 @@ export class PackageFunctions {
     return welcomeView();
   }
 
-
   @grok.decorators.dashboard({
     meta: {
       'showName': 'false',
@@ -142,16 +141,6 @@ export class PackageFunctions {
     return new ActivityDashboardWidget();
   }
 
-
-  @grok.decorators.dashboard({
-    order: '2',
-    name: 'Recent projects',
-  })
-  static recentProjectsWidget(): DG.Widget {
-    return new RecentProjectsWidget();
-  }
-
-
   @grok.decorators.dashboard({
     order: '6',
     name: 'Community',
@@ -160,12 +149,10 @@ export class PackageFunctions {
     return new CommunityWidget();
   }
 
-
   @grok.decorators.func()
   static webWidget(): DG.Widget {
     return new WebWidget();
   }
-
 
   @grok.decorators.func()
   static htmlWidget(): DG.Widget {
@@ -177,13 +164,11 @@ export class PackageFunctions {
     return new KpiWidget();
   }
 
-
   @grok.decorators.func({})
   static isFormulaColumn(
     col: DG.Column): boolean {
     return !!col.getTag(DG.Tags.Formula);
   }
-
 
   @grok.decorators.panel({
     name: 'Formula',
@@ -205,7 +190,6 @@ export class PackageFunctions {
     new AddNewColumnDialog(fc, widget);
     return widget;
   }
-
 
   @grok.decorators.func({tags: ['searchProvider']})
   static powerPackSearchProvider(): DG.SearchProvider {
@@ -280,7 +264,6 @@ export class PackageFunctions {
     return providers;
   }
 
-
   @grok.decorators.func({
     name: 'formulaLinesEditor',
     outputs: [],
@@ -326,12 +309,10 @@ export class PackageFunctions {
     DG.debounce(merge(grok.events.onCurrentViewChanged, grok.events.onViewChanged), 100).subscribe((_) => setScrolls());
   }
 
-
   @grok.decorators.autostart({description: 'Windows Manager'})
   static windowsManager() {
     windowsManagerPanel();
   }
-
 
   @grok.decorators.func({description: 'Open \'Viewer Gallery\' dialog'})
   static viewerDialog(
@@ -339,7 +320,6 @@ export class PackageFunctions {
     if (tv instanceof DG.TableView)
       return viewersDialog(tv, tv.table!);
   }
-
 
   @grok.decorators.autostart({description: 'ViewerGallery'})
   static viewerGallery(): void {
@@ -359,7 +339,6 @@ export class PackageFunctions {
     viewFile.append(preview);
     return viewFile;
   }
-
 
   @grok.decorators.fileHandler({
     ext: 'xlsx',
@@ -383,7 +362,6 @@ export function addNewColumnDialog(call: DG.FuncCall | null = null): AddNewColum
   return new AddNewColumnDialog(call as any);
 }
 
-
 grok.events.onContextMenu.subscribe((args) => {
   const src = args.args.context;
   let menu;
@@ -398,7 +376,6 @@ grok.events.onContextMenu.subscribe((args) => {
   if (menu != null)
     menu.item('Formula Lines...', () => {PackageFunctions.formulaLinesDialog(src);});
 });
-
 
 function _viewerGallery(view: DG.ViewBase): void {
   if (view?.type == 'TableView') {
