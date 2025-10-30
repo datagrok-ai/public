@@ -1049,21 +1049,30 @@ function joinToHelm(srcSS: ISeqSplitted, wrappers: string[], isDnaOrRna: boolean
 }
 
 function joinToBiln(srcSS: ISeqSplitted): string {
+  const needsSquareBrackets = (cm: string | null) => {
+    return cm && (cm.includes('-') || cm.includes('*') || cm.includes('[R'));
+  };
+
   if (!srcSS.graphInfo || !((srcSS.graphInfo.connections?.length ?? 0) > 0)) {
     const resOMList: string[] = new Array<string>(srcSS.length);
     for (let posIdx: number = 0; posIdx < srcSS.length; ++posIdx) {
-      resOMList[posIdx] = srcSS.getCanonical(posIdx);
-      if (resOMList[posIdx]?.includes('-')) // Biln uses '-' as a separator, need to enclose in []
-        resOMList[posIdx] = `[${resOMList[posIdx]}]`;
+      const canonical = srcSS.getCanonical(posIdx);
+      if (needsSquareBrackets(canonical)) // Biln uses '-' as a separator, need to enclose in []. also there might be smiles in there, where Rs are represented as '*' or R
+        resOMList[posIdx] = `[${canonical}]`;
+      else
+        resOMList[posIdx] = canonical;
     }
     return resOMList.join('-'); // Biln uses '-' as a separator
   } else { // conversion happens only if there is a graph info
     const disjointSequenceIdxs = srcSS.graphInfo.disjointSeqStarts;
     const allSeqParts = new Array<string>(srcSS.length);
     for (let posIdx = 0; posIdx < srcSS.length; ++posIdx) {
-      allSeqParts[posIdx] = srcSS.getCanonical(posIdx);
-      if (allSeqParts[posIdx]?.includes('-')) // Biln uses '-' as a separator, need to enclose in []
-        allSeqParts[posIdx] = `[${allSeqParts[posIdx]}]`;
+      const canonical = srcSS.getCanonical(posIdx);
+      // allSeqParts[posIdx] = srcSS.getCanonical(posIdx);
+      if (needsSquareBrackets(canonical)) // Biln uses '-' as a separator, need to enclose in []
+        allSeqParts[posIdx] = `[${canonical}]`;
+      else
+        allSeqParts[posIdx] = canonical;
     }
     for (let i = 0; i < srcSS.graphInfo.connections.length; i++) {
       const conn: ISeqConnection = srcSS.graphInfo.connections[i];

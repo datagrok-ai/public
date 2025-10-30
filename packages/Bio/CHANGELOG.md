@@ -1,5 +1,12 @@
 # Bio changelog
 
+## 2.25.1 (2025-10-30)
+
+* Rework User lib settings storage to accomodate shortened duplicate preferences
+* Detectors: Improve BILN with SMILES/CHEMS detection
+* Support BILN with SMILES/CHEMS rendering, conversion and Helm converter
+* Monomer libraries: Fix dialogs for adding/removing libraries
+
 ## 2.25.0 (2025-10-29)
 
 * CHEMS and SMILES support in HELM
