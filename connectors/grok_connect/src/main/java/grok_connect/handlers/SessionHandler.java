@@ -2,6 +2,7 @@ package grok_connect.handlers;
 
 import grok_connect.connectors_info.DataQueryRunResult;
 import grok_connect.log.EventType;
+import grok_connect.providers.DatabricksProvider;
 import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.QueryCancelledByUser;
 import grok_connect.utils.QueryChunkNotSent;
@@ -52,6 +53,9 @@ public class SessionHandler {
         if (err.getClass().equals(GrokConnectException.class) && err.getCause() != null)
             err = err.getCause();
         String message = err.getMessage();
+        // todo: improve this
+        if (queryManager.provider.getClass().equals(DatabricksProvider.class))
+            message = DatabricksProvider.simplifyDatabricksError(message);
         String stackTrace = Arrays.stream(err.getStackTrace()).map(StackTraceElement::toString)
                 .collect(Collectors.joining(System.lineSeparator()));
         LOGGER.error(EventType.ERROR.getMarker(), message, err);
