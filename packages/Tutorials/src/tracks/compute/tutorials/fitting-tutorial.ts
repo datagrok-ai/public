@@ -183,25 +183,27 @@ export class FittingTutorial extends Tutorial {
     }
 
     const fitFormRoot = await getElement(fittingView.root, 'div.ui-form');
-    const velocityInputRoot = fitFormRoot!.children[20] as HTMLElement;
-    const velocitySwitcher = velocityInputRoot.querySelector('div.ui-input-editor') as HTMLElement;
+
+    const switchers = fitFormRoot!.querySelectorAll('div.ui-input-bool-switch');
+    const velocitySwitcher = switchers[3] as HTMLElement;
+    const velocityToggle = velocitySwitcher.querySelector('div.ui-input-editor') as HTMLElement;
 
     this.describe('Let\'s find the initial velocity and angle.');
 
     await this.action(
       'Toggle the "Velocity" parameter',
-      fromEvent(velocitySwitcher, 'click'),
-      velocitySwitcher,
+      fromEvent(velocityToggle, 'click'),
+      velocityToggle,
     );
 
-    // 7. Switch Angle
-    const angleFitInputRoot = fitFormRoot!.children[28] as HTMLElement;
-    const angleSwitcher = angleFitInputRoot.querySelector('div.ui-input-editor') as HTMLElement;
+    // 7. Switch Angle    
+    const angleSwitcher = switchers[4] as HTMLElement;
+    const angleToggle = angleSwitcher.querySelector('div.ui-input-editor') as HTMLElement;
 
     await this.action(
       'Toggle the "Angle" parameter',
-      fromEvent(angleSwitcher, 'click'),
-      angleSwitcher,
+      fromEvent(angleToggle, 'click'),
+      angleToggle,
     );
 
     // 8. Target value
