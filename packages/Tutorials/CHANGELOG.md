@@ -1,5 +1,9 @@
 # Tutorials changelog
 
+## 1.10.5 (2025-10-31)
+
+* Tutorial: Updated the parameter optimization tutorial
+
 ## 1.10.4 (2025-10-30)
 
 * Fitting: New layout related update
