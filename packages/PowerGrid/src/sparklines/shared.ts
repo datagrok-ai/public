@@ -25,6 +25,8 @@ export enum NormalizationType {
 
 export interface SummarySettingsBase {
   columnNames: string[];
+  logColumnNames: string[];
+  invertColumnNames: string[];
   colorCode: SummaryColumnColoringType;
   normalization: NormalizationType;
 }
@@ -143,7 +145,16 @@ export function createBaseInputs(gridColumn: DG.GridColumn, settings: SummarySet
         settings.columnNames = names(value);
         gridColumn.grid.invalidate();
       },
-      available: isSmartForm ? names(gridColumn.grid.dataFrame.columns) : names(gridColumn.grid.dataFrame.columns.numerical)
+      available: isSmartForm ? names(gridColumn.grid.dataFrame.columns) : names(gridColumn.grid.dataFrame.columns.numerical),
+      additionalColumns: {
+        'log': gridColumn.grid.dataFrame.columns.byNames(settings.logColumnNames ?? []),
+        'invert': gridColumn.grid.dataFrame.columns.byNames(settings.invertColumnNames ?? []),
+      },
+      onAdditionalColumnsChanged: (values: { [key: string]: DG.Column[] }) => {
+        settings.logColumnNames = names(values['log'] ?? []);
+        settings.invertColumnNames = names(values['invert'] ?? []);
+        gridColumn.grid.invalidate();
+      }
     }),
     ...inputs,
     ui.input.choice<SummaryColumnColoringType>('Color Code', {
