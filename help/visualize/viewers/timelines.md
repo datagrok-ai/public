@@ -38,7 +38,7 @@ For example, you can:
  
  ![Timelines viewer](img/timelines.gif "Timelines viewer")
 
-## See Also  
+## See also
   
 - [Clinical Case](https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase)  
 - [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts)  
