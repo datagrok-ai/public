@@ -6,6 +6,8 @@ import {delay} from '@datagrok-libraries/utils/src/test';
 const enum ITEM_TYPE {
   LINE = 'line',
   BAND = 'band',
+  AREA_ANNOTATION = 'area',
+  FORMULA_ANNOTATION = 'formula',
 }
 
 /** Formula Line captions */
@@ -17,6 +19,8 @@ const enum ITEM_CAPTION {
   HORZ_LINE = 'Line - Horizontal',
   HORZ_BAND = 'Band - Horizontal',
   VERT_BAND = 'Band - Vertical',
+  RECT_AREA = 'Region - Draw Rectangular area',
+  POLYGON_AREA = 'Region - Draw Polygonal area (using lasso)',
 }
 
 const enum ITEM_ORIENTATION {
@@ -39,11 +43,16 @@ const enum BTN_CAPTION {
   EMPTY = 'Empty',
 }
 
+type EditorItem = DG.FormulaLine | DG.AnnotationRegion;
+
+const isAnnotationRegionType = (type: string): boolean => type === ITEM_TYPE.AREA_ANNOTATION || type === ITEM_TYPE.FORMULA_ANNOTATION;
+
 export const DEFAULT_OPTIONS: EditorOptions = {
   allowEditDFLines: true,
 };
 
 const HISTORY_KEY = 'formula-lines-dialog';
+const HISTORY_KEY_ANNOTATIONS = 'annotation-regions-dialog';
 const HISTORY_LENGTH = 12;
 
 /**
@@ -70,43 +79,62 @@ function getItemTypeByCaption(caption: string): string {
  * Reads, storages and saves Formula Lines to the host (DataFrame and Viewer).
  */
 class Host {
-  dframeItems?: DG.FormulaLine[];
-  viewerItems?: DG.FormulaLine[];
+  private dframeFormulaLinesHelper?: DG.FormulaLinesHelper;
+  private viewerFormulaLinesHelper?: DG.FormulaLinesHelper;
+  private dfAnnotationRegionsHelper?: DG.AnnotationRegionsHelper;
+  private viewerAnnotationRegionsHelper?: DG.AnnotationRegionsHelper;
 
-  _dframeHelper?: DG.FormulaLinesHelper;
-  _viewerHelper?: DG.FormulaLinesHelper;
+  public dframeFormulaLineItems?: DG.FormulaLine[];
+  public viewerFormulaLineItems?: DG.FormulaLine[];
+  public dframeAnnotationRegionItems?: DG.AnnotationRegion[];
+  public viewerAnnotationRegionItems?: DG.AnnotationRegion[];
+
+  public get dframeItems(): EditorItem[] {
+    return [ ...(this.dframeFormulaLineItems ?? []), ...(this.dframeAnnotationRegionItems ?? []) ];
+  }
+
+  public get viewerItems(): EditorItem[] {
+    return [ ...(this.viewerFormulaLineItems ?? []), ...(this.viewerAnnotationRegionItems ?? []) ];
+  }
 
   constructor(src: DG.DataFrame | DG.Viewer) {
     if (!src)
-      throw 'Source table/viewer not found.';
+      throw new Error('Source table/viewer not found.');
 
-    if (src instanceof DG.DataFrame) {
-      this._dframeHelper = src.meta.formulaLines;
-      this.dframeItems = this._dframeHelper.items;
-    } else {
-      {
-        this._viewerHelper = src.meta.formulaLines;
-        {
-          this.viewerItems = this._viewerHelper.items;
-          if (src.dataFrame) {
-            this._dframeHelper = src.dataFrame.meta.formulaLines;
-            this.dframeItems = this._dframeHelper.items;
-          } else
-            throw 'Viewer not attached to table.';
-        }
-      }
-    }
+    const isViewer = src instanceof DG.Viewer;
+    if (isViewer)
+      this.initViewerParams(src);
+
+    const df = isViewer ? src.dataFrame : src;
+    if (df)
+      this.initDfParams(df);
+    else if (isViewer)
+      throw new Error('Viewer not attached to table.');
+  }
+  
+  private initDfParams(src: DG.DataFrame | DG.Viewer) {
+    this.dframeFormulaLinesHelper = src.meta.formulaLines;
+    this.dfAnnotationRegionsHelper = src.meta.annotationRegions;
+    this.dframeFormulaLineItems = this.dframeFormulaLinesHelper?.items;
+    this.dframeAnnotationRegionItems = this.dfAnnotationRegionsHelper?.items;
   }
 
-  save() {
-    if (this._dframeHelper) {
-      this._dframeHelper.clear();
-      this._dframeHelper.addAll(this.dframeItems!);
-    }
-    if (this._viewerHelper) {
-      this._viewerHelper.clear();
-      this._viewerHelper.addAll(this.viewerItems!);
-    }
+  private initViewerParams(src: DG.DataFrame | DG.Viewer) {
+    this.viewerFormulaLinesHelper = src.meta.formulaLines;
+    this.viewerAnnotationRegionsHelper = src.meta.annotationRegions;
+    this.viewerFormulaLineItems = this.viewerFormulaLinesHelper.items;
+    this.viewerAnnotationRegionItems = this.viewerAnnotationRegionsHelper.items;
+  }
+
+  public save() {
+    this.dframeFormulaLinesHelper?.clear();
+    this.dframeFormulaLinesHelper?.addAll(this.dframeFormulaLineItems!);
+    this.dfAnnotationRegionsHelper?.clear();
+    this.dfAnnotationRegionsHelper?.addAll(this.viewerAnnotationRegionsHelper!.items);
+    this.viewerFormulaLinesHelper?.clear();
+    this.viewerFormulaLinesHelper?.addAll(this.viewerFormulaLineItems!);
+    this.viewerAnnotationRegionsHelper?.clear();
+    this.viewerAnnotationRegionsHelper?.addAll(this.viewerAnnotationRegionsHelper!.items);
   }
 }
 
@@ -114,14 +142,12 @@ class Host {
  * Table Helper for displaying and navigating Formula Lines list.
  */
 class Table {
-  items: DG.FormulaLine[];
   get root(): HTMLElement {return this._grid.root;}
-  get currentItem(): DG.FormulaLine | null {
-    return this._currentItemIdx < 0 ? null : this.items[this._currentItemIdx];
+  get currentItem(): EditorItem | null {
+    return this._currentItemIdx < 0 ? null : this.formulaLineItems[this._currentItemIdx];
   }
 
   _grid: DG.Grid;
-  _onItemChangedAction: Function;
 
   get _dataFrame(): DG.DataFrame {return this._grid.dataFrame!;}
 
@@ -134,28 +160,44 @@ class Table {
   /** Creates "Delete" button */
   _deleteBtn(itemIdx: number): HTMLElement {
     const btn = ui.button(ui.iconFA('trash-alt'), () => {
-      this.items.splice(itemIdx, 1);
+      this.formulaLineItems.splice(itemIdx, 1);
       this._dataFrame.rows.removeAt(itemIdx);
       if (this._currentItemIdx > itemIdx)
         this._currentItemIdx--;
-      this._onItemChangedAction(this._currentItemIdx);
+      this.onItemChangedAction(this._currentItemIdx);
     });
     btn.style.textAlign = 'center';
     btn.style.height = '20px';
     return btn;
   }
 
-  constructor(items: DG.FormulaLine[], onItemChangedAction: Function, srcAxes?: AxisNames) {
-    this.items = items;
-    this._onItemChangedAction = onItemChangedAction;
+  constructor(public formulaLineItems: DG.FormulaLine[],
+    public annotationRegionItems: DG.AnnotationRegion[],
+    private onItemChangedAction: Function, srcAxes?: AxisNames) {
 
-    const dataFrame = this.items.length > 0 ?
-      DG.DataFrame.fromObjects(this.items)! :
+    const dataFrame = this.formulaLineItems.length > 0 ?
+      DG.DataFrame.fromObjects(this.formulaLineItems)! :
       DG.DataFrame.fromColumns([
         DG.Column.fromList('string', 'title', []),
         DG.Column.fromList('string', 'formula', []),
         DG.Column.fromList('bool', 'visible', []),
       ]);
+
+    for (let i = 0; i < this.annotationRegionItems.length; i++) {
+      let formulaContent = '';
+      if (this.annotationRegionItems[i].type === ITEM_TYPE.AREA_ANNOTATION) {
+        const r = this.annotationRegionItems[i] as DG.AreaAnnotationRegion;
+        formulaContent = `(${r.x}, ${r.y}): ${r.area}`;
+      } else if (this.annotationRegionItems[i].type === ITEM_TYPE.FORMULA_ANNOTATION) {
+        const r = this.annotationRegionItems[i] as DG.FormulaAnnotationRegion;
+        formulaContent = JSON.stringify({ formula1: r.formula1, formula2: r.formula2 });
+      }
+
+      dataFrame.rows.addNew([this.annotationRegionItems[i].header ?? '',
+        formulaContent,
+        !this.annotationRegionItems[i].hidden,
+      ]);
+    }
 
     /** Column for "trash" buttons */
     dataFrame.columns.addNewString(BTN_CAPTION.REMOVE);
@@ -193,24 +235,40 @@ class Table {
         cell.style.element = this._deleteBtn(cell.gridRow);
     });
 
-    this._dataFrame.onCurrentRowChanged.subscribe((_) => this._onItemChangedAction(this._currentItemIdx));
+    this._dataFrame.onCurrentRowChanged.subscribe((_) => this.onItemChangedAction(this._currentItemIdx));
 
     this._dataFrame.onValuesChanged.subscribe((ed) => {
       if (!this._notify)
         return;
       if (ed.args?.indexes && ed.args.indexes.length === 1 && ed.args.indexes[0] !== -1)
         this._currentItemIdx = ed.args.indexes[0];
-      const item = this.currentItem!;
-      item.title = this._dataFrame.get('title', this._currentItemIdx);
-      item.formula = this._dataFrame.get('formula', this._currentItemIdx);
-      item.visible = this._dataFrame.get('visible', this._currentItemIdx);
-      this._onItemChangedAction(this._currentItemIdx);
+
+      if (this.formulaLineItems.length > 0 && this._currentItemIdx >= this.formulaLineItems.length) {
+        const item = this.annotationRegionItems[this._currentItemIdx - this.formulaLineItems.length];
+        item.header = this._dataFrame.get('title', this._currentItemIdx);
+        item.hidden = !this._dataFrame.get('visible', this._currentItemIdx);
+        if (item.type === ITEM_TYPE.AREA_ANNOTATION) {
+          (item as DG.AreaAnnotationRegion).area = this._dataFrame.get('formula', this._currentItemIdx).replace(`(${item.x}, ${item.y}): `, '');
+        } else {
+          const ctx = JSON.parse(this._dataFrame.get('formula', this._currentItemIdx));
+          (item as DG.FormulaAnnotationRegion).formula1 = ctx.formula1;
+          (item as DG.FormulaAnnotationRegion).formula2 = ctx.formula2;
+        }
+        this.onItemChangedAction(this._currentItemIdx);
+      } else {
+        const item = this.currentItem! as DG.FormulaLine;
+        item.title = this._dataFrame.get('title', this._currentItemIdx);
+        item.formula = this._dataFrame.get('formula', this._currentItemIdx);
+        item.visible = this._dataFrame.get('visible', this._currentItemIdx);
+        this.onItemChangedAction(this._currentItemIdx);
+      }
+
     });
 
-    if (srcAxes && srcAxes.x && srcAxes.y && items.length > 0) {
-      const neededItem = items.find((item) => item.formula?.includes(srcAxes.x!) && item.formula?.includes(srcAxes.y!));
+    if (srcAxes && srcAxes.x && srcAxes.y && formulaLineItems.length > 0 && annotationRegionItems.length) {
+      const neededItem = formulaLineItems.find((item: DG.FormulaLine) => item.formula?.includes(srcAxes.x!) && item.formula?.includes(srcAxes.y!));
       if (neededItem) {
-        const itemIdx = items.indexOf(neededItem);
+        const itemIdx = formulaLineItems.indexOf(neededItem);
         delay(1).then((_) => {
           this._currentItemIdx = itemIdx;
         });
@@ -219,31 +277,70 @@ class Table {
   }
 
   setFirstItemAsCurrent() {
-    if (this.items.length > 0) {
+    if (this.formulaLineItems.length > 0 || this.annotationRegionItems.length > 0) {
       this._currentItemIdx = 0;
-      this._onItemChangedAction(0);
+      this.onItemChangedAction(0);
     } else
-      this._onItemChangedAction(-1);
+      this.onItemChangedAction(-1);
   }
 
-  update(itemIdx: number) {
-    const item = this.items[itemIdx];
-    this._notify = false;
-    this._dataFrame.set('title', itemIdx, item.title);
-    this._dataFrame.set('formula', itemIdx, item.formula);
-    this._notify = true;
+  update(itemIdx: number, isFormulaLine: boolean = true) {
+    if (isFormulaLine) {
+      const item = this.formulaLineItems[itemIdx];
+      this._notify = false;
+      this._dataFrame.set('title', itemIdx, item.title);
+      this._dataFrame.set('formula', itemIdx, item.formula);
+      this._notify = true;
+      this._dataFrame.currentRowIdx = itemIdx;
+    } else {
+      const item = this.annotationRegionItems[itemIdx];
+      this._notify = false;
+      this._dataFrame.set('title', itemIdx + this.formulaLineItems.length, item.header);
+      let formulaContent = '';
+      if (this.annotationRegionItems[itemIdx].type === ITEM_TYPE.AREA_ANNOTATION) {
+        const r = this.annotationRegionItems[itemIdx] as DG.AreaAnnotationRegion;
+        formulaContent = `(${r.x}, ${r.y}): ${r.area}`;
+      } else if (this.annotationRegionItems[itemIdx].type === ITEM_TYPE.FORMULA_ANNOTATION) {
+        const r = this.annotationRegionItems[itemIdx] as DG.FormulaAnnotationRegion;
+        formulaContent = JSON.stringify({ formula1: r.formula1, formula2: r.formula2 });
+      }
+      this._dataFrame.set('formula', itemIdx + this.formulaLineItems.length, formulaContent);
+      this._notify = true;
+      this._dataFrame.currentRowIdx = itemIdx + this.formulaLineItems.length;
+    }
   }
 
-  add(item: DG.FormulaLine) {
-    this.items.unshift(item);
-    this._dataFrame.rows.insertAt(0);
-    this._notify = false;
-    this._dataFrame.set('title', 0, item.title);
-    this._dataFrame.set('formula', 0, item.formula);
-    this._dataFrame.set('visible', 0, item.visible);
-    this._dataFrame.set(BTN_CAPTION.REMOVE, 0, '');
-    this._notify = true;
-    this._currentItemIdx = 0;
+  add(item: EditorItem, isFormulaLine: boolean = true) {
+    if (isFormulaLine) {
+      const el = item as DG.FormulaLine;
+      this.formulaLineItems.unshift(el);
+      this._dataFrame.rows.insertAt(0);
+      this._notify = false;
+      this._dataFrame.set('title', 0, el.title);
+      this._dataFrame.set('formula', 0, el.formula);
+      this._dataFrame.set('visible', 0, el.visible);
+      this._dataFrame.set(BTN_CAPTION.REMOVE, 0, '');
+      this._notify = true;
+      this._currentItemIdx = 0;
+    } else {
+      const el = item as DG.AnnotationRegion;
+      this.annotationRegionItems.unshift(el);
+      this._dataFrame.rows.insertAt(0);
+      this._notify = false;
+      this._dataFrame.set('title', this.formulaLineItems.length, el.header);
+      let formulaContent = '';
+      if (el.type === ITEM_TYPE.AREA_ANNOTATION) {
+        const r = el as DG.AreaAnnotationRegion;
+        formulaContent = `(${r.x}, ${r.y}): ${r.area}`;
+      } else if (el.type === ITEM_TYPE.FORMULA_ANNOTATION) {
+        const r = el as DG.FormulaAnnotationRegion;
+        formulaContent = JSON.stringify({ formula1: r.formula1, formula2: r.formula2 });
+      }
+      this._dataFrame.set('formula', this.formulaLineItems.length, formulaContent);
+      this._dataFrame.set(BTN_CAPTION.REMOVE, this.formulaLineItems.length, '');
+      this._notify = true;
+      this._currentItemIdx = this.formulaLineItems.length;
+    }
   }
 }
 
@@ -276,8 +373,6 @@ class Preview {
   
   /** Original data frame (used for line chart to validate columns).*/
   originalDataFrame?: DG.DataFrame;
-
-  items: DG.FormulaLine[];
 
   /** Source Scatter Plot axes */
   _srcAxes?: AxisNames;
@@ -367,9 +462,10 @@ class Preview {
     return result;
   }
 
-  constructor(items: DG.FormulaLine[], src: DG.DataFrame | DG.Viewer, onContextMenu: Function) {
-    this.items = items;
-
+  constructor(public formulaLineItems: DG.FormulaLine[],
+    public annotationRegionItems: DG.AnnotationRegion[],
+    src: DG.DataFrame | DG.Viewer, onContextMenu: Function
+  ) {
     if (src instanceof DG.DataFrame)
       this.dataFrame = src;
     else if (src instanceof DG.Viewer) {
@@ -407,6 +503,7 @@ class Preview {
       });
     else {
       this.viewer = DG.Viewer.scatterPlot(this.dataFrame, {
+        ...(src as DG.ScatterPlotViewer).props,
         yAxisType: src instanceof DG.Viewer && src.getOptions()['type'] == DG.VIEWER.SCATTER_PLOT ? src.props.yAxisType : 'linear',
         xAxisType: src instanceof DG.Viewer && src.getOptions()['type'] == DG.VIEWER.SCATTER_PLOT ? src.props.xAxisType : 'linear',
         invertXAxis: src instanceof DG.Viewer && src.getOptions()['type'] == DG.VIEWER.SCATTER_PLOT ? src.props.invertXAxis : false,
@@ -414,6 +511,7 @@ class Preview {
           src.props.invertYAxis : false,
         showDataframeFormulaLines: false,
         showViewerFormulaLines: true,
+        showDataframeAnnotationRegions: false,
         showSizeSelector: false,
         showColorSelector: false,
         showContextMenu: false,
@@ -443,29 +541,70 @@ class Preview {
     });
   }
 
-  /**
-   * Shows a line with [itemIdx] index on the Scatter Plot.
-   * Returns true if the rendering was successful, false otherwise.
-   */
-  update(itemIdx: number): boolean {
-    /** If there are no lines, try to set the axes as in the original Scatter Plot. */
+  public updateAnnotationRegions(itemIdx: number): boolean {
+    /** If there are no regions, try to set the axes as in the original Scatter Plot. */
     if (itemIdx < 0 && this._srcAxes)
       this._axes = this._srcAxes;
 
     try {
       /** Duplicate the original item to display it even if it's hidden */
-      const item = this.items[itemIdx];
-      const previewItem = Object.assign({}, item);
-      previewItem.visible = true;
-
+      const item = this.annotationRegionItems[itemIdx];
+      const previewItem = Object.assign({}, item) as DG.AnnotationRegion;
+      previewItem.hidden = false;
       /** Trying to show the item */
-      this.viewer.meta.formulaLines.clear();
-      this.viewer.meta.formulaLines.add(previewItem);
+      this.viewer.meta.annotationRegions.clear();
+      this.viewer.meta.annotationRegions.add(previewItem);
       this._axes = this._getItemAxes(previewItem);
       return true;
     } catch {
-      this.viewer.meta.formulaLines.clear();
+      this.viewer.meta.annotationRegions.clear();
       return false;
+    }
+  }
+
+  /**
+   * Shows a line with [itemIdx] index on the Scatter Plot.
+   * Returns true if the rendering was successful, false otherwise.
+   */
+  public update(itemIdx: number, isFormulaLine: boolean = true): boolean {
+    /** If there are no lines, try to set the axes as in the original Scatter Plot. */
+    if (itemIdx < 0 && this._srcAxes)
+      this._axes = this._srcAxes;
+
+    if (isFormulaLine) {
+      try {
+        /** Duplicate the original item to display it even if it's hidden */
+        const item = this.formulaLineItems[itemIdx];
+        const previewItem = Object.assign({}, item) as DG.FormulaLine;
+        previewItem.visible = true;
+  
+        /** Trying to show the item */
+        this.viewer.meta.formulaLines.clear();
+        this.viewer.meta.formulaLines.add(previewItem);
+        this._axes = this._getItemAxes(previewItem);
+        return true;
+      } catch {
+        this.viewer.meta.formulaLines.clear();
+        return false;
+      }
+    } else {
+      try {
+        /** Duplicate the original item to display it even if it's hidden */
+        const item = this.annotationRegionItems[itemIdx];
+        const previewItem = Object.assign({}, item) as DG.AnnotationRegion;
+        previewItem.hidden = false;
+  
+        /** Trying to show the item */
+        this.viewer.meta.annotationRegions.clear();
+        this.viewer.meta.annotationRegions.add(previewItem);
+
+        // TODO: add logic
+        // this._axes = this._getItemAxes(previewItem);
+        return true;
+      } catch {
+        this.viewer.meta.annotationRegions.clear();
+        return false;
+      }
     }
   }
 }
@@ -474,13 +613,9 @@ class Preview {
  * Editor Helper for Formula Lines (form with corresponding inputs).
  */
 class Editor {
-  items: DG.FormulaLine[];
   get root(): HTMLElement {return this._form;}
 
   _form: HTMLElement;
-  _dataFrame: DG.DataFrame;
-  _onItemChangedAction: Function;
-  _onFormulaValidation: Function;
   _columnInput: DG.InputBase<DG.Column | null> | undefined;
 
   /** The title must be accessible from other inputs, because it may depend on the formula */
@@ -491,23 +626,60 @@ class Editor {
       this._ibTitle!.value = newFormula;
   }
 
-  constructor(items: DG.FormulaLine[], dataFrame: DG.DataFrame, onItemChangedAction: Function, onFormulaValidation: Function) {
+  constructor(public formulaLineItems: DG.FormulaLine[],
+    public annotationRegionItems: DG.AnnotationRegion[],
+    private dataFrame: DG.DataFrame,
+    private onItemChangedAction: Function,
+    private onFormulaValidation: Function) {
     this._form = ui.form([]);
-    this.items = items;
-    this._dataFrame = dataFrame;
-    this._onItemChangedAction = onItemChangedAction;
-    this._onFormulaValidation = onFormulaValidation;
   }
 
   /** Creates and fills editor for given Formula Line */
-  update(itemIdx: number) {
-    const newForm = this._createForm(itemIdx);
+  public update(itemIdx: number, isFormulaLine: boolean = true) {
+    const newForm = isFormulaLine ? this.createFormulaLineForm(itemIdx) : this.annotationRegionForm(itemIdx);
     this._form.replaceWith(newForm);
     this._form = newForm;
   }
 
-  _createForm(itemIdx: number): HTMLElement {
-    const item = itemIdx >= 0 ? this.items[itemIdx] : {type: ITEM_TYPE.BAND};
+  private annotationRegionForm(itemIdx: number): HTMLElement {
+    const item = itemIdx >= 0 ? this.annotationRegionItems[itemIdx] : {type: ITEM_TYPE.AREA_ANNOTATION};
+
+    const mainPane = ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px', overflowX: 'auto'}});
+    const formatPane = ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px', overflowX: 'auto'}});
+    const descriptionPane = ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px', overflowX: 'auto'}});
+
+    /** Preparing the "Main" panel */
+    if (item.type === ITEM_TYPE.AREA_ANNOTATION) {
+      mainPane.append(this.inputAreaColumn(itemIdx, 'x'));
+      mainPane.append(this.inputAreaColumn(itemIdx, 'y'));
+      mainPane.append(this.areaDescription(itemIdx));
+    } else {
+      mainPane.append(this.inputAnnotationFormula(itemIdx, 'formula1'));
+      mainPane.append(this.inputAnnotationFormula(itemIdx, 'formula2'));
+    }
+
+    /** Preparing the "Format" panel */
+    formatPane.append(this.areaInputColor(itemIdx, 'Region Color', 'fillColor', DG.Color.toHtml(DG.Color.gray)));
+    formatPane.append(this.inputOpacity(itemIdx, false));
+    formatPane.append(this.areaInputColor(itemIdx, 'Outline Color', 'outlineColor', DG.Color.toHtml(DG.Color.gray)));
+    formatPane.append(this.inputLineWidth(itemIdx));
+    
+    /** Preparing the "Description" panel */
+    descriptionPane.append(this.inputHeader(itemIdx));
+    descriptionPane.append(this.areaInputColor(itemIdx, 'Header Color', 'headerColor'));
+    descriptionPane.append(this.inputDescription(itemIdx, false));
+
+    /** Creating the accordion */
+    const combinedPanels = ui.accordion();
+    combinedPanels.addPane(item.type === ITEM_TYPE.AREA_ANNOTATION ? 'Area' : 'Formula', () => mainPane, true);
+    combinedPanels.addPane('Format', () => formatPane, true);
+    combinedPanels.addPane('Description', () => descriptionPane, true);
+
+    return ui.div([combinedPanels.root]);
+  }
+
+  private createFormulaLineForm(itemIdx: number): HTMLElement {
+    const item = itemIdx >= 0 ? this.formulaLineItems[itemIdx] : {type: ITEM_TYPE.BAND};
     let caption = ITEM_CAPTION.BAND;
     let [itemY, itemX, expression] = ['', '', ''];
 
@@ -525,24 +697,24 @@ class Editor {
       this._columnInput = undefined;
       /** Preparing the "Main" panel */
       mainPane.append(caption === ITEM_CAPTION.CONST_LINE ?
-        this._inputConstant(itemIdx, itemY, expression) :
-        this._inputFormula(itemIdx));
+        this.inputConstant(itemIdx, itemY, expression) :
+        this.inputFormula(itemIdx));
       if (caption === ITEM_CAPTION.BAND)
-        mainPane.append(this._inputColumn2(itemIdx));
+        mainPane.append(this.inputColumn2(itemIdx));
 
       /** Preparing the "Format" panel */
-      formatPane.append(this._inputColor(itemIdx));
-      formatPane.append(this._inputOpacity(itemIdx));
+      formatPane.append(this.inputColor(itemIdx));
+      formatPane.append(this.inputOpacity(itemIdx));
       if (caption != ITEM_CAPTION.BAND)
-        formatPane.append(this._inputStyle(itemIdx));
-      formatPane.append(this._inputRange(itemIdx));
-      formatPane.append(this._inputArrange(itemIdx));
+        formatPane.append(this.inputStyle(itemIdx));
+      formatPane.append(this.inputRange(itemIdx));
+      formatPane.append(this.inputArrange(itemIdx));
 
       /** Preparing the "Tooltip" panel */
-      tooltipPane.append(this._inputTitle(itemIdx));
-      tooltipPane.append(this._inputShowLabels(itemIdx));
-      tooltipPane.append(this._inputShowDescriptionInTooltip(itemIdx));
-      tooltipPane.append(this._inputDescription(itemIdx));
+      tooltipPane.append(this.inputTitle(itemIdx));
+      tooltipPane.append(this.inputShowLabels(itemIdx));
+      tooltipPane.append(this.inputShowDescriptionInTooltip(itemIdx));
+      tooltipPane.append(this.inputDescription(itemIdx));
     }
 
     /** Creating the accordion */
@@ -555,14 +727,14 @@ class Editor {
   }
 
   /** Creates textarea for item formula */
-  _inputFormula(itemIdx: number): HTMLElement {
-    const item = this.items[itemIdx];
+  private inputFormula(itemIdx: number): HTMLElement {
+    const item = this.formulaLineItems[itemIdx] as DG.FormulaLine;
 
     const ibFormula = ui.input.textArea('', {value: item.formula ?? '',
       onValueChanged: (value) => {
         const oldFormula = item.formula!;
         item.formula = value;
-        const resultOk = this._onItemChangedAction(itemIdx);
+        const resultOk = this.onItemChangedAction(itemIdx);
         elFormula.classList.toggle('d4-forced-invalid', !resultOk);
         if (!resultOk) {
           const splitValues = value?.split('=');
@@ -571,7 +743,7 @@ class Editor {
         }
         else
           ibFormula.setTooltip('');
-        this._onFormulaValidation(resultOk);
+        this.onFormulaValidation(resultOk);
         this._setTitleIfEmpty(oldFormula, item.formula);
       }});
 
@@ -580,19 +752,19 @@ class Editor {
     //elFormula.setAttribute('style', 'width: 360px; height: 60px; margin-right: -6px;');
     elFormula.setAttribute('style', 'height: 60px;');
 
-    ui.tools.initFormulaAccelerators(ibFormula, this._dataFrame);
+    ui.tools.initFormulaAccelerators(ibFormula, this.dataFrame);
 
     return ibFormula.root;
   }
 
   /** Creates color picker for item color */
-  _inputColor(itemIdx: number): HTMLElement {
-    const item = this.items[itemIdx];
+  private inputColor(itemIdx: number): HTMLElement {
+    const item = this.formulaLineItems[itemIdx] as DG.FormulaLine;
 
     const ibColor = ui.input.color('Color', {value: item.color ?? '#000000',
       onValueChanged: (value) => {
         item.color = value;
-        this._onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx);
       }});
 
     const elColor = ibColor.input as HTMLInputElement;
@@ -602,18 +774,50 @@ class Editor {
     return ui.divH([ibColor.root]);
   }
 
+  private areaInputColor(itemIdx: number, header: string = 'Color', key: keyof DG.AnnotationRegion, defaultColor: string = '#000000'): HTMLElement {
+    const item = this.annotationRegionItems[itemIdx] as DG.AnnotationRegion;
+    const ibColor = ui.input.color(header, {value: item[key] ? DG.Color.toHtml(item[key] as number) : defaultColor,
+      onValueChanged: (value) => {
+        (item as any)[key] = DG.Color.fromHtml(value);
+        this.onItemChangedAction(itemIdx);
+      }});
+    const elColor = ibColor.input as HTMLInputElement;
+    elColor.placeholder = defaultColor;
+    return ui.divH([ibColor.root]);
+  }
+
+  private inputLineWidth(itemIdx: number): HTMLElement {
+    const item = this.annotationRegionItems[itemIdx] as DG.AnnotationRegion;
+    
+    const elOpacity = ui.element('input');
+    elOpacity.type = 'range';
+    elOpacity.min = 0;
+    elOpacity.max = 20;
+    elOpacity.value = item.outlineWidth ?? 1;
+    elOpacity.addEventListener('input', () => {
+      item.outlineWidth = parseInt(elOpacity.value);
+      this.onItemChangedAction(itemIdx);
+    });
+    // elOpacity.setAttribute('style', 'width: 204px; margin-top: 6px; margin-left: 0px;');
+    elOpacity.setAttribute('style', 'margin-top: 6px; width: 100%;');
+
+    const label = ui.label('Outline Width', 'ui-label ui-input-label');
+
+    return ui.divH([ui.div([label, elOpacity], 'ui-input-root')]);
+  }
+
   /** Creates range slider for item opacity */
-  _inputOpacity(itemIdx: number): HTMLElement {
-    const item = this.items[itemIdx];
+  private inputOpacity(itemIdx: number, isFormulaLine: boolean = false): HTMLElement {
+    const item = isFormulaLine ? this.formulaLineItems[itemIdx] : this.annotationRegionItems[itemIdx];
 
     const elOpacity = ui.element('input');
     elOpacity.type = 'range';
     elOpacity.min = 0;
     elOpacity.max = 100;
-    elOpacity.value = item.opacity ?? 100;
+    elOpacity.value = item.opacity ?? 30;
     elOpacity.addEventListener('input', () => {
       item.opacity = parseInt(elOpacity.value);
-      this._onItemChangedAction(itemIdx);
+      this.onItemChangedAction(itemIdx);
     });
     // elOpacity.setAttribute('style', 'width: 204px; margin-top: 6px; margin-left: 0px;');
     elOpacity.setAttribute('style', 'margin-top: 6px; width: 100%;');
@@ -623,14 +827,15 @@ class Editor {
     return ui.divH([ui.div([label, elOpacity], 'ui-input-root')]);
   }
 
+
   /** Creates combobox for item line style and text input for item width */
-  _inputStyle(itemIdx: number): HTMLElement {
-    const item = this.items[itemIdx];
+  private inputStyle(itemIdx: number): HTMLElement {
+    const item = this.formulaLineItems[itemIdx] as DG.FormulaLine;
 
     const ibStyle = ui.input.choice('Style', {value: item.style ?? 'solid',
       items: ['solid', 'dotted', 'dashed', 'longdash', 'dotdash'], onValueChanged: (value) => {
         item.style = value;
-        this._onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx);
       }});
 
     const elStyle = ibStyle.input as HTMLInputElement;
@@ -639,7 +844,7 @@ class Editor {
     const ibWidth = ui.input.int('', {value: item.width ?? 1,
       onValueChanged: (value) => {
         item.width = value;
-        this._onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx);
       }});
     ibWidth.addPostfix('px');
 
@@ -653,13 +858,13 @@ class Editor {
   }
 
   /** Creates text inputs for min-max values of item */
-  _inputRange(itemIdx: number): HTMLElement {
-    const item = this.items[itemIdx];
+  private inputRange(itemIdx: number): HTMLElement {
+    const item = this.formulaLineItems[itemIdx] as DG.FormulaLine;
 
     const ibMin = ui.input.string('Range', {value: `${item.min ?? ''}`,
       onValueChanged: (value) => {
         item.min = value.length === 0 ? undefined : Number(value);
-        this._onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx);
       }});
 
     const elMin = ibMin.input as HTMLInputElement;
@@ -669,7 +874,7 @@ class Editor {
     const ibMax = ui.input.string('', {value: `${item.max ?? ''}`,
       onValueChanged: (value) => {
         item.max = value.length === 0 ? undefined : Number(value);
-        this._onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx);
       }});
 
     const elMax = ibMax.input as HTMLInputElement;
@@ -680,14 +885,14 @@ class Editor {
   }
 
   /** Creates combobox for item position (z-index) */
-  _inputArrange(itemIdx: number): HTMLElement {
-    const item = this.items[itemIdx];
+  private inputArrange(itemIdx: number): HTMLElement {
+    const item = this.formulaLineItems[itemIdx] as DG.FormulaLine;
 
     const ibArrange = ui.input.choice('Arrange', {
       value: item.zIndex && item.zIndex > 0 ? 'above markers' : 'below markers', items: ['above markers', 'below markers'],
       onValueChanged: (value) => {
         item.zIndex = value === 'above markers' ? 100 : -100;
-        this._onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx);
       }});
 
     const elArrange = ibArrange.input as HTMLInputElement;
@@ -707,9 +912,25 @@ class Editor {
     return title;
   }
 
+  private inputAnnotationFormula(itemIdx: number, title: keyof DG.FormulaAnnotationRegion): HTMLElement {
+    const item = this.annotationRegionItems[itemIdx] as DG.FormulaAnnotationRegion;
+
+    const ibHeader = ui.input.string(title == 'formula1' ? 'Formula 1' : 'Formula 2', {value: item[title] ? item[title] as string : '',
+      onValueChanged: (value) => {
+        (item as any)[title] = value;
+        this.onItemChangedAction(itemIdx);
+      }});
+
+    const elHeader = ibHeader.input as HTMLInputElement;
+    elHeader.setAttribute('style', 'width: 204px; max-width: none;');
+
+    return ui.divH([ibHeader.root]);
+  }
+
+
   /** Creates text input for item title */
-  _inputTitle(itemIdx: number): HTMLElement {
-    const item = this.items[itemIdx];
+  private inputTitle(itemIdx: number): HTMLElement {
+    const item = this.formulaLineItems[itemIdx] as DG.FormulaLine;
     if (!item.title || item.title === item.formula)
       item.title = this.getTitleFromFormula(item.formula!);
     const thisElem = this;
@@ -728,7 +949,7 @@ class Editor {
     this._ibTitle = ui.input.string('Title', {value: item.title ?? '',
       onValueChanged: (value) => {
         item.title = formTitleValue(value);
-        this._onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx);
       }});
 
     const elTitle = this._ibTitle.input as HTMLInputElement;
@@ -738,14 +959,29 @@ class Editor {
     return ui.divH([this._ibTitle.root]);
   }
 
+  private inputHeader(itemIdx: number): HTMLElement {
+    const item = this.annotationRegionItems[itemIdx];
+
+    const ibHeader = ui.input.string('Header', {value: item.header ?? '',
+      onValueChanged: (value) => {
+        item.header = value;
+        this.onItemChangedAction(itemIdx);
+      }});
+
+    const elHeader = ibHeader.input as HTMLInputElement;
+    elHeader.setAttribute('style', 'width: 204px; max-width: none;');
+
+    return ui.divH([ibHeader.root]);
+  }
+
   /** Creates show on plot bool */
-  _inputShowLabels(itemIdx: number): HTMLElement {
-    const item = this.items[itemIdx];
+  private inputShowLabels(itemIdx: number): HTMLElement {
+    const item = this.formulaLineItems[itemIdx] as DG.FormulaLine;
 
     const iShowLabels = ui.input.bool('Show on plot', {value: item.showOnPlot ?? true,
       onValueChanged: (value) => {
         item.showOnPlot = value;
-        this._onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx);
       }});
 
 
@@ -753,13 +989,13 @@ class Editor {
   }
 
   /** Creates show on plot bool */
-  _inputShowDescriptionInTooltip(itemIdx: number): HTMLElement {
-    const item = this.items[itemIdx];
+  inputShowDescriptionInTooltip(itemIdx: number): HTMLElement {
+    const item = this.formulaLineItems[itemIdx] as DG.FormulaLine;
 
     const iShowLabels = ui.input.bool('Show on tooltip', {value: item.showOnTooltip ?? true,
       onValueChanged: (value) => {
         item.showOnTooltip = value;
-        this._onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx);
       }});
 
 
@@ -771,14 +1007,34 @@ class Editor {
       this._columnInput.value = value;
   }
 
+  private areaDescription(itemIdx: number): HTMLElement {
+    const item = this.annotationRegionItems[itemIdx] as DG.AreaAnnotationRegion;
+
+    const ibDescription = ui.input.textArea('Area', {value: item.area ?? '',
+      onValueChanged: (value) => {
+        item.area = value;
+        this.onItemChangedAction(itemIdx);
+      }});
+
+    // ui.input.map();
+
+    const elDescription = ibDescription.input as HTMLInputElement;
+    elDescription.setAttribute('style',
+      'height: 40px; font-family: inherit; font-size: inherit;');
+    // 'width: 194px; height: 40px; padding-left: 6px; margin-right: -8px; font-family: inherit; font-size: inherit;');
+
+    return ibDescription.root;
+  }
+  
+
   /** Creates textarea for item description */
-  _inputDescription(itemIdx: number): HTMLElement {
-    const item = this.items[itemIdx];
+  private inputDescription(itemIdx: number, isFormulaLine: boolean = true): HTMLElement {
+    const item = isFormulaLine ? this.formulaLineItems[itemIdx] : this.annotationRegionItems[itemIdx];
 
     const ibDescription = ui.input.textArea('Description', {value: item.description ?? '',
       onValueChanged: (value) => {
         item.description = value;
-        this._onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx);
       }});
 
     const elDescription = ibDescription.input as HTMLInputElement;
@@ -789,15 +1045,33 @@ class Editor {
     return ibDescription.root;
   }
 
-  /** Creates column input for band second column */
-  _inputColumn2(itemIdx: number): HTMLElement {
-    const item = this.items[itemIdx];
+   /** Creates column input for band second column */
+  private inputAreaColumn(itemIdx: number, type: 'x' | 'y'): HTMLElement {
+    const item = this.annotationRegionItems[itemIdx] as DG.AreaAnnotationRegion;
 
     //@ts-ignore
-    const ibColumn2 = ui.input.column('Adjacent column', {table: this._dataFrame, value: item.column2 ? this._dataFrame.col(item.column2) : null,
+    const ibColumn2 = ui.input.column(type.toUpperCase() + ' column', {table: this.dataFrame, value: this.dataFrame.col(item[type]),
+      onValueChanged: (value) => {
+        item[type] = value.name;
+        this.onItemChangedAction(itemIdx);
+      }});
+      
+    this._columnInput = ibColumn2;
+    const elColumn2 = ibColumn2.input as HTMLInputElement;
+    //elColumn2.setAttribute('style', 'width: 204px; max-width: none;');
+    
+    return ui.divH([ibColumn2.root]);
+  }
+
+  /** Creates column input for band second column */
+  private inputColumn2(itemIdx: number): HTMLElement {
+    const item = this.formulaLineItems[itemIdx] as DG.FormulaLine;
+
+    //@ts-ignore
+    const ibColumn2 = ui.input.column('Adjacent column', {table: this.dataFrame, value: item.column2 ? this.dataFrame.col(item.column2) : null,
       onValueChanged: (value) => {
         item.column2 = value.name;
-        this._onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx);
       }});
       
     this._columnInput = ibColumn2;
@@ -808,15 +1082,15 @@ class Editor {
   }
 
   /** Creates column input and text input for constant item */
-  _inputConstant(itemIdx: number, colName: string, value: string): HTMLElement {
-    const item = this.items[itemIdx];
+  private inputConstant(itemIdx: number, colName: string, value: string): HTMLElement {
+    const item = this.formulaLineItems[itemIdx] as DG.FormulaLine;
 
     //@ts-ignore
-    const ibColumn = ui.input.column('Column', {table: this._dataFrame, value: colName ? this._dataFrame.col(colName) : null,
+    const ibColumn = ui.input.column('Column', {table: this.dataFrame, value: colName ? this.dataFrame.col(colName) : null,
       onValueChanged: (value) => {
         const oldFormula = item.formula!;
         item.formula = '${' + value + '} = ' + ibValue.value;
-        this._onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx);
         this._setTitleIfEmpty(oldFormula, item.formula);
       }});
 
@@ -827,7 +1101,7 @@ class Editor {
     const ibValue = ui.input.string('Value', {value: value, onValueChanged: (value) => {
       const oldFormula = item.formula!;
       item.formula = '${' + ibColumn.value + '} = ' + value;
-      this._onItemChangedAction(itemIdx);
+      this.onItemChangedAction(itemIdx);
       this._setTitleIfEmpty(oldFormula, item.formula);
     }});
     ibValue.nullable = false;
@@ -843,46 +1117,76 @@ class Editor {
  * Helper that implements the logic of creating a Formula Line item of a given type.
  */
 class CreationControl {
-  popupMenu: Function;        // Opens a popup menu with predefined new Formula Line item types
-  _getCols: Function;         // Used to create constant lines passing through the mouse click point on the Scatter Plot
-  _getCurrentItem: Function;  // Used to create clone
+  public popupMenu: Function;        // Opens a popup menu with predefined new Formula Line item types
 
   /** Items for History menu group */
-  _historyItems: DG.FormulaLine[];           // Stores session history
-  _justCreatedItems: DG.FormulaLine[] = [];  // Stores history of the currently open dialog
+  public historyItems: EditorItem[];           // Stores session history
+  public justCreatedItems: EditorItem[] = [];  // Stores history of the currently open dialog
 
-  _loadHistory(): DG.FormulaLine[] {return localStorage[HISTORY_KEY] ? JSON.parse(localStorage[HISTORY_KEY]) : [];}
+  public annotationRegionItems: DG.AnnotationRegion[];
+  public justCreatedAnnotationItems: EditorItem[] = [];
 
-  saveHistory() {
-    const compareItems = (a: DG.FormulaLine, b: DG.FormulaLine) => JSON.stringify(a) === JSON.stringify(b);
+  public loadHistory(): EditorItem[] {return localStorage[HISTORY_KEY] ? JSON.parse(localStorage[HISTORY_KEY]) : [];}
+  public loadAnnotationHistory(): EditorItem[] {return localStorage[HISTORY_KEY_ANNOTATIONS] ? JSON.parse(localStorage[HISTORY_KEY_ANNOTATIONS]) : [];}
+
+  public saveHistory() {
+    const compareItems = (a: EditorItem, b: EditorItem) => JSON.stringify(a) === JSON.stringify(b);
     /** Remove duplicates from just created items (object comparison via JSON.stringify) */
-    this._justCreatedItems = this._justCreatedItems.filter((val, ind, arr) =>
+    this.justCreatedItems = this.justCreatedItems.filter((val, ind, arr) =>
       arr.findIndex((t) => compareItems(t, val)) === ind);
 
     /** Remove identical older items from history */
-    this._historyItems = this._historyItems.filter((arr) =>
-      !this._justCreatedItems.find((val) => compareItems(val, arr)));
+    this.historyItems = this.historyItems.filter((arr) =>
+      !this.justCreatedItems.find((val) => compareItems(val, arr)));
 
-    const newHistoryItems = this._justCreatedItems.concat(this._historyItems);
+    const newHistoryItems = this.justCreatedItems.concat(this.historyItems);
     newHistoryItems.splice(HISTORY_LENGTH);
 
     localStorage[HISTORY_KEY] = JSON.stringify(newHistoryItems);
+
+    /** Repeat for annotation regions */
+    this.justCreatedAnnotationItems = this.justCreatedAnnotationItems.filter((val, ind, arr) =>
+      arr.findIndex((t) => compareItems(t, val)) === ind);
+
+    this.annotationRegionItems = this.annotationRegionItems.filter((arr) =>
+      !this.justCreatedAnnotationItems.find((val) => compareItems(val, arr)));
+
+    const newAnnotationHistoryItems = this.justCreatedAnnotationItems.concat(this.annotationRegionItems);
+    newAnnotationHistoryItems.splice(HISTORY_LENGTH);
+
+    localStorage[HISTORY_KEY_ANNOTATIONS] = JSON.stringify(newAnnotationHistoryItems);
   }
 
   /** Creates a button and binds an item creation menu to it */
-  get button(): HTMLElement {
+  public get button(): HTMLElement {
     const btn = ui.bigButton(BTN_CAPTION.ADD_NEW, this.popupMenu);
     return ui.div([btn], {style: {width: '100%', textAlign: 'right'}});
   }
 
-  constructor(getCols: Function, getCurrentItem: Function, onItemCreatedAction: Function) {
-    this._getCols = getCols;
-    this._getCurrentItem = getCurrentItem;
-    this._historyItems = this._loadHistory();
+  constructor(
+    getCols: () => AxisColumns,                              // Used to create constant lines passing through the mouse click point on the Scatter Plot
+    getCurrentItem: () => EditorItem | null,                 // Used to create clone
+    onItemCreatedAction: (item: EditorItem) => void,                          // Updates the Table, Preview and Editor states after item creation
+    createArea: (lassoMode?: boolean) => Promise<DG.AnnotationRegion | null>  // Used to create area annotation regions
+  ) {
+    this.historyItems = this.loadHistory();
+    this.annotationRegionItems = this.loadAnnotationHistory();
 
     this.popupMenu = (valY?: number, valX?: number) => {
       const onClickAction = (itemCaption: string) => {
-        const cols: AxisColumns = this._getCols();
+        if (isAnnotationRegionType(itemCaption)) {
+          createArea?.(itemCaption === ITEM_CAPTION.POLYGON_AREA).then((region: DG.AnnotationRegion | null) => {
+            if (!region)
+              return;
+
+            this.justCreatedAnnotationItems.unshift(region);
+            /** Update the Table, Preview and Editor states */
+            onItemCreatedAction(region);
+          });
+          return;
+        }
+
+        const cols: AxisColumns = getCols();
         const colY = cols.y;
         const colX = cols.x;
         let item: DG.FormulaLine = {};
@@ -922,7 +1226,7 @@ class CreationControl {
             break;
 
           case BTN_CAPTION.CLONE:
-            item = this._getCurrentItem();
+            item = getCurrentItem() as DG.FormulaLine;
             break;
         }
 
@@ -930,7 +1234,7 @@ class CreationControl {
         
         item = DG.FormulaLinesHelper.setDefaults(item);
 
-        this._justCreatedItems.unshift(item);
+        this.justCreatedItems.unshift(item);
 
         /** Update the Table, Preview and Editor states */
         onItemCreatedAction(item);
@@ -943,29 +1247,31 @@ class CreationControl {
         ITEM_CAPTION.HORZ_LINE,
         ITEM_CAPTION.VERT_BAND,
         ITEM_CAPTION.HORZ_BAND,
+        ITEM_CAPTION.RECT_AREA,
+        ITEM_CAPTION.POLYGON_AREA
       ], onClickAction);
 
       /** Add separator only if other menu items exist */
-      if (this._getCurrentItem() || this._historyItems.length > 0)
+      if (getCurrentItem() || this.historyItems.length > 0)
         menu.separator();
 
       /**
        * Add "Clone" menu if the current table line exists.
        * TODO: The best option is to make the menu item enabled/disabled. But there is no such API yet.
        */
-      if (this._getCurrentItem())
+      if (getCurrentItem())
         menu.items([BTN_CAPTION.CLONE], onClickAction);
 
       /**
        * Add "History" menu group.
        * TODO: The best option is to make the menu item enabled/disabled. But there is no such API yet.
        */
-      if (this._historyItems.length > 0) {
+      if (this.historyItems.length > 0) {
         const historyGroup = menu.group(BTN_CAPTION.HISTORY);
-        this._historyItems.forEach((item) => {
-          historyGroup.item(item.formula!, () => {
+        this.historyItems.forEach((item) => {
+          historyGroup.item((item as DG.FormulaLine).formula!, () => {
             const newItem = Object.assign({}, item);
-            this._justCreatedItems.unshift(newItem);
+            this.justCreatedItems.unshift(newItem);
             onItemCreatedAction(newItem);
           });
         });
@@ -1000,7 +1306,9 @@ export class FormulaLinesDialog {
   }
 
   /** Initializes all parameters and opens the Dialog window */
-  constructor(src: DG.DataFrame | DG.Viewer, options: EditorOptions = DEFAULT_OPTIONS) {
+  constructor(src: DG.DataFrame | DG.Viewer, options: EditorOptions = DEFAULT_OPTIONS,
+    private showValueOnOpen?: { index?: number, isDataFrame?: boolean, isAnnotationArea?: boolean })
+  {
     /** Init Helpers */
     this.options = options;
     this.host = this._initHost(src);
@@ -1008,23 +1316,23 @@ export class FormulaLinesDialog {
     this.preview = this._initPreview(src);
     this.editor = this._initEditor();
     this.tabs = this._initTabs();
-    this.dialog.sub(this.preview.viewer.onDartPropertyChanged.subscribe((typeArgs) => {
-      if (!this.editor || !this.preview?.viewer || !this._currentTable.currentItem?.orientation)
-        return;
+    // this.dialog.sub(this.preview.viewer.onDartPropertyChanged.subscribe((typeArgs) => {
+    //   if (!this.editor || !this.preview?.viewer || !this._currentTable.currentItem?.orientation)
+    //     return;
 
-      var propName = (typeArgs as unknown as DG.TypedEventArgs<unknown>)?.dart?.name;
-      const vertOrientation = this._currentTable.currentItem.orientation === ITEM_ORIENTATION.VERTICAL;
-      const df = this.preview.viewer.dataFrame;
-      if (this.preview.viewer.type === DG.VIEWER.LINE_CHART
-          && (vertOrientation ? propName === 'yColumnNames' : propName === 'xColumnName')) {
-        const props = this.preview.viewer.props as DG.ILineChartSettings;
-        this.editor.changeColumnInput(df.col(vertOrientation ? props['yColumnNames'][0] : props['xColumnName']));
-      } else if (this.preview.viewer.type === DG.VIEWER.SCATTER_PLOT
-          && (vertOrientation ? propName === 'yColumnName' : propName === 'xColumnName')) {
-        const props = this.preview.viewer.props as DG.IScatterPlotSettings;
-        this.editor.changeColumnInput(df.col(vertOrientation ? props['yColumnName'] : props['xColumnName']));
-      }
-    }));
+    //   var propName = (typeArgs as unknown as DG.TypedEventArgs<unknown>)?.dart?.name;
+    //   const vertOrientation = this._currentTable.currentItem.orientation === ITEM_ORIENTATION.VERTICAL;
+    //   const df = this.preview.viewer.dataFrame;
+    //   if (this.preview.viewer.type === DG.VIEWER.LINE_CHART
+    //       && (vertOrientation ? propName === 'yColumnNames' : propName === 'xColumnName')) {
+    //     const props = this.preview.viewer.props as DG.ILineChartSettings;
+    //     this.editor.changeColumnInput(df.col(vertOrientation ? props['yColumnNames'][0] : props['xColumnName']));
+    //   } else if (this.preview.viewer.type === DG.VIEWER.SCATTER_PLOT
+    //       && (vertOrientation ? propName === 'yColumnName' : propName === 'xColumnName')) {
+    //     const props = this.preview.viewer.props as DG.IScatterPlotSettings;
+    //     this.editor.changeColumnInput(df.col(vertOrientation ? props['yColumnName'] : props['xColumnName']));
+    //   }
+    // }));
 
     this.dialog.sub(this.dialog.onClose.subscribe(() => this.dialog.detach()));
 
@@ -1038,6 +1346,20 @@ export class FormulaLinesDialog {
       .add(layout)
       .onOK(this._onOKAction.bind(this), {closeOnEnter: false})
       .show({resizable: true, width: 850, height: 660});
+
+    this._initDefaultOnOpenState();
+  }
+    
+  _initDefaultOnOpenState(): void {      
+      if (!this.showValueOnOpen)
+        return;
+
+      this.tabs.currentPane = this.tabs.getPane(this.showValueOnOpen.isDataFrame ? ITEM_SOURCE.DATAFRAME : ITEM_SOURCE.VIEWER);
+      if (this.showValueOnOpen.index) {
+        this._currentTable.update(this.showValueOnOpen.index, this.preview.formulaLineItems.length > 0 && this.showValueOnOpen.index < this.preview.formulaLineItems.length);
+      } else {
+        this._currentTable.setFirstItemAsCurrent();
+      }
   }
 
   _initHost(src: DG.DataFrame | DG.Viewer): Host {
@@ -1045,7 +1367,9 @@ export class FormulaLinesDialog {
   }
 
   _initPreview(src: DG.DataFrame | DG.Viewer): Preview {
-    const preview = new Preview(this.host.viewerItems! ?? this.host.dframeItems!, src, this.creationControl.popupMenu);
+    const preview = new Preview(this.host.viewerFormulaLineItems! ?? this.host.dframeFormulaLineItems!,
+        this.host.viewerAnnotationRegionItems! ?? this.host.dframeAnnotationRegionItems!,
+        src, this.creationControl.popupMenu);
     preview.height = 310;
     return preview;
   }
@@ -1054,14 +1378,33 @@ export class FormulaLinesDialog {
     return new CreationControl(
       () => this.preview.axisCols,
       () => this._currentTable.currentItem,
-      (item: DG.FormulaLine) => this._onItemCreatedAction(item));
+      (item: EditorItem) =>
+        this._onItemCreatedAction(item, !isAnnotationRegionType(item?.type ?? '')),
+      (lassoMode?: boolean) => new Promise<DG.AnnotationRegion | null>((resolve) => {
+        if (this.preview.viewer instanceof DG.ScatterPlotViewer) {
+          this.preview.viewer.enableAnnotationRegionDrawing(lassoMode, (region: { [key: string]: unknown }) => {
+            region['isDataFrameRegion'] = this.tabs.currentPane.name === ITEM_SOURCE.DATAFRAME;
+            const props = this.preview.viewer.props as DG.IScatterPlotSettings;
+            const annotationRegions = JSON.parse(props.annotationRegions || '[]');
+            annotationRegions.push(region);
+            props.annotationRegions = JSON.stringify(annotationRegions);
+            
+            resolve(region as DG.AnnotationRegion);
+          });
+        } else {
+          resolve(null);
+        }
+      })
+    );
   }
 
   _initEditor(): Editor {
-    return new Editor(this.host.viewerItems! ?? this.host.dframeItems!, this.preview.dataFrame,
+    return new Editor(this.host.viewerFormulaLineItems! ?? this.host.dframeFormulaLineItems!,
+      this.host.viewerAnnotationRegionItems! ?? this.host.dframeAnnotationRegionItems!,
+      this.preview.dataFrame,
       (itemIdx: number): boolean => {
-        this._currentTable.update(itemIdx);
-        return this.preview.update(itemIdx);
+        this._currentTable.update(itemIdx, this.preview.formulaLineItems.length > 0 && itemIdx < this.preview.formulaLineItems.length);
+        return this.preview.update(itemIdx, this.preview.formulaLineItems.length > 0 && itemIdx < this.preview.formulaLineItems.length);
       },
       (isValid: boolean): void => {
         isValid ? this.dialog.getButton('OK').classList.remove('disabled') : this.dialog.getButton('OK').classList.add('disabled');
@@ -1073,42 +1416,41 @@ export class FormulaLinesDialog {
     tabs.root.style.height = '230px';
 
     /** Init Viewer Table (in the first tab) */
-    if (this.host.viewerItems) {
+    if (this.host.viewerFormulaLineItems || this.host.viewerAnnotationRegionItems) {
       tabs.addPane(ITEM_SOURCE.VIEWER, () => {
-        this.viewerTable = this._initTable(this.host.viewerItems!);
+        this.viewerTable = this._initTable(this.host.viewerFormulaLineItems ?? [], this.host.viewerAnnotationRegionItems ?? []);
         return this.viewerTable.root;
       });
     }
 
     /** Init DataFrame Table (in the second tab) */
-    if (this.options.allowEditDFLines && this.host.dframeItems) {
+    if (this.options.allowEditDFLines && (this.host.dframeFormulaLineItems || this.host.dframeAnnotationRegionItems)) {
       tabs.addPane(ITEM_SOURCE.DATAFRAME, () => {
-        this.dframeTable = this._initTable(this.host.dframeItems!);
+        this.dframeTable = this._initTable(this.host.dframeFormulaLineItems ?? [], this.host.dframeAnnotationRegionItems ?? []);
         return this.dframeTable.root;
       });
     }
     // Overrides the standard component logic that hides the header containing only one tab
     tabs.header.style.removeProperty('display');
 
-
     /** Display "Add new" button */
     tabs.header.append(this.creationControl.button);
 
     /** Change data source when switching tabs */
     tabs.onTabChanged.subscribe((_) => {
-      this.editor.items = this._currentTable.items;
-      this.preview.items = this._currentTable.items;
+      this.editor.formulaLineItems = this._currentTable.formulaLineItems;
+      this.preview.formulaLineItems = this._currentTable.formulaLineItems;
       this._currentTable.setFirstItemAsCurrent();
     });
 
     return tabs;
   }
 
-  _initTable(items: DG.FormulaLine[]): Table {
-    return new Table(items,
+  _initTable(formulaLineItems: DG.FormulaLine[], annotationRegionItems: DG.AnnotationRegion[]): Table {
+    return new Table(formulaLineItems, annotationRegionItems,
       (itemIdx: number): boolean => {
-        this.editor.update(itemIdx);
-        return this.preview.update(itemIdx);
+        this.editor.update(itemIdx, this.preview.formulaLineItems.length > 0 && itemIdx < this.preview.formulaLineItems.length);
+        return this.preview.update(itemIdx, this.preview.formulaLineItems.length > 0 && itemIdx < this.preview.formulaLineItems.length);
       }, this.preview._srcAxes);
   }
 
@@ -1117,9 +1459,9 @@ export class FormulaLinesDialog {
     this.creationControl.saveHistory();
   }
 
-  _onItemCreatedAction(item: DG.FormulaLine) {
-    this._currentTable.add(item);
-    this.editor.update(0);
-    this.preview.update(0);
+  _onItemCreatedAction(item: DG.FormulaLine, isFormulaLine: boolean = true): void {
+    this._currentTable.add(item, isFormulaLine);
+    this.editor.update(0, isFormulaLine);
+    this.preview.update(0, isFormulaLine);
   }
 }

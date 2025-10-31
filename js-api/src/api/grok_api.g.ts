@@ -318,6 +318,8 @@ export interface IDartApi {
   grok_ScatterPlotViewer_WorldToScreen(s: any, x: Num, y: Num): any;
   grok_ScatterPlotViewer_ScreenToWorld(s: any, x: Num, y: Num): any;
   grok_ScatterPlotViewer_Render(s: any, g: any): any;
+  grok_ScatterPlotViewer_EnableAnnotationRegionDrawing(s: any, lassoMode: Bool, onAfterDraw: any): any;
+  grok_ScatterPlotViewer_DisableAnnotationRegionDrawing(s: any): any;
   grok_ScatterPlotViewer_GetRowTooltip(s: any, rowIdx: Num): any;
   grok_ScatterPlotViewer_GetMarkerSize(s: any, rowIdx: Num): any;
   grok_ScatterPlotViewer_GetMarkerSizes(s: any): any;

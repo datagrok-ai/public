@@ -11,7 +11,7 @@ import * as rxjs from "rxjs";
 import {Subscription} from 'rxjs';
 import {filter, map} from 'rxjs/operators';
 import {Grid, Point, Rect} from "./grid";
-import {FormulaLinesHelper} from "./helpers";
+import {FormulaLinesHelper, AnnotationRegionsHelper} from "./helpers";
 import * as interfaces from "./interfaces/d4";
 import dayjs from "dayjs";
 import {TableView, View} from "./views/view";
@@ -587,8 +587,12 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotSettings> {
   getMarkerTypes(): Uint32Array { return api.grok_ScatterPlotViewer_GetMarkerTypes(this.dart); }
   getMarkerColor(rowIdx: number): number { return api.grok_ScatterPlotViewer_GetMarkerColor(this.dart, rowIdx); }
   getMarkerColors(): Uint32Array { return api.grok_ScatterPlotViewer_GetMarkerColors(this.dart); }
-
-
+  enableAnnotationRegionDrawing(lassoMode?: boolean, onAfterDraw?: (region: { [key: string]: unknown }) => void): void {
+    api.grok_ScatterPlotViewer_EnableAnnotationRegionDrawing(this.dart, lassoMode ?? null,
+      onAfterDraw ? (region: unknown) => onAfterDraw(DG.toJs(region)) : null);
+  }
+  disableAnnotationRegionDrawing(): void { api.grok_ScatterPlotViewer_DisableAnnotationRegionDrawing(this.dart); }
+  
   get onZoomed(): rxjs.Observable<Rect> { return this.onEvent('d4-scatterplot-zoomed'); }
   get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-scatterplot-reset-view'); }
   get onViewportChanged(): rxjs.Observable<Rect> { return this.onEvent('d4-viewport-changed'); }
@@ -697,10 +701,12 @@ export class ViewerMetaHelper {
   private readonly _viewer: Viewer;
 
   readonly formulaLines: ViewerFormulaLinesHelper;
+  readonly annotationRegions: ViewerAnnotationRegionsHelper;
 
   constructor(viewer: Viewer) {
     this._viewer = viewer;
     this.formulaLines = new ViewerFormulaLinesHelper(this._viewer);
+    this.annotationRegions = new ViewerAnnotationRegionsHelper(this._viewer);
   }
 }
 
@@ -730,6 +736,30 @@ export class ViewerFormulaLinesHelper extends FormulaLinesHelper {
       api.grok_PropMixin_SetPropertyValue(innerLook, 'formulaLines', value);
     } else
       this.viewer.props['formulaLines'] = value;
+  }
+
+  constructor(viewer: Viewer) {
+    super();
+    this.viewer = viewer;
+  }
+}
+
+export class ViewerAnnotationRegionsHelper extends AnnotationRegionsHelper {
+  readonly viewer: Viewer;
+
+  get storage(): string {
+    if (this.viewer.getOptions()['type'] === DG.VIEWER.TRELLIS_PLOT) {
+      let innerLook = this.viewer.props['innerViewerLook'];
+      return api.grok_PropMixin_GetPropertyValue(innerLook, 'annotationRegions');
+    }
+    return this.viewer.props['annotationRegions'];
+  }
+  set storage(value: string) {
+    if (this.viewer.getOptions()['type'] === DG.VIEWER.TRELLIS_PLOT) {
+      let innerLook = this.viewer.props['innerViewerLook'];
+      api.grok_PropMixin_SetPropertyValue(innerLook, 'annotationRegions', value);
+    } else
+      this.viewer.props['annotationRegions'] = value;
   }
 
   constructor(viewer: Viewer) {

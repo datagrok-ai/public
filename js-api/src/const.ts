@@ -307,6 +307,7 @@ export const TAGS = {
 
   MARKER_CODING: '.marker-coding',
   FORMULA_LINES: '.formula-lines',
+  ANNOTATION_REGIONS: '.annotation-regions',
 
   /** When a dataframe is loaded from a CSV, the maximum number of significant digits
    in the fractional part for each numeric column is determined  */

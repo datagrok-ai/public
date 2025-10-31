@@ -2920,6 +2920,12 @@ export interface IScatterPlotSettings {
 
   formulaLines: string;
 
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
+
   viewport: string;
 
   /// Controls scatter plot tooltip visibility
@@ -2954,6 +2960,8 @@ export interface IScatterPlotSettings {
   labelFont: string;
 
   formulaFont: string;
+
+  annotationFont: string;
 
   defaultRenderer: boolean;
 
