@@ -601,6 +601,9 @@ export interface IDartApi {
   grok_ColumnsInput_ChangeTable(input: any, table: any, predicate: any): any;
   grok_ColumnsInput_ChangeAvailableColumns(input: any, availableColumns: any): any;
   grok_ColumnsInput_ChangeCheckedColumns(input: any, checkedColumns: any): any;
+  grok_ColumnsInput_GetAdditionalColumns(input: any): any;
+  grok_ColumnsInput_SetAdditionalColumns(input: any, columns: any): any;
+  grok_ColumnsInput_SetOnAdditionalColumnsChanged(input: any, fn: any): any;
   grok_ColorInput_SetShowOnlyColorBox(input: any, x: any): any;
   grok_PropertyGrid(): any;
   grok_PropertyGrid_Update(propGrid: any, src: any, props: any): any;
@@ -865,7 +868,7 @@ export interface IDartApi {
   grok_ColumnGrid_GetCol(cg: any, row: Num): any;
   grok_ColumnGrid_Get_CurrentColumn(cg: any): any;
   grok_ColumnGrid_Get_MouseOverColumn(cg: any): any;
-  grok_ColumnGrid_AddChecks(cg: any, isChecked: any, addAdditionalChecks: any, additionalChecksName: String): any;
+  grok_ColumnGrid_AddChecks(cg: any, isChecked: any, addAdditionalChecks: any, additionalChecksName: any): any;
   grok_ColumnGrid_CheckAll(cg: any, flag: Bool): any;
   grok_ColumnGrid_GetCheckedIndexes(cg: any): any;
   grok_ColumnGrid_GetCheckedColumns(cg: any): any;
@@ -1686,10 +1689,10 @@ export interface IDartApi {
   grok_FuncOptions_Create(): any;
   grok_FuncParamOptions_Create(): any;
 
-  // Generated from ../d4\lib\src\common\common.api.g.dart
+  // Generated from ../d4/lib/src/common/common.api.g.dart
   grok_UsageType_Create(): any;
 
-  // Generated from ../d4\lib\src\grid\grid.api.g.dart
+  // Generated from ../d4/lib/src/grid/grid.api.g.dart
   grok_GridCellStyle_Create(): any;
   grok_GridCellStyle_Get_defaultStyle(): any;
   grok_GridCellStyle_Set_defaultStyle(v: any): any;
@@ -1739,7 +1742,7 @@ export interface IDartApi {
   grok_GridCellStyle_Set_choices(x: any, v: any): any;
   grok_renderMultipleHistograms(g: any, bounds: any, histograms: any, categoryColumn: any, colors: any, tension: Num, normalize: Bool, markerSize: Num, fill: Bool, minBin: Num, maxBin: Num, localMaximum: Bool, highlightedHistogram: Num): any;
 
-  // Generated from ../d4\lib\src\viewer_base\viewer_base.api.g.dart
+  // Generated from ../d4/lib/src/viewer_base/viewer_base.api.g.dart
   grok_ViewerEvent_Create(): any;
   grok_ViewerEvent_Get_viewer(x: any): any;
   grok_ViewerEvent_Set_viewer(x: any, v: any): any;
@@ -1755,6 +1758,6 @@ export interface IDartApi {
   grok_ViewerEvent_Set_mouseEvent(x: any, v: any): any;
   grok_ViewerEvent_Get_bitset(x: any): any;
 
-  // Generated from ../d4\lib\src\widgets\widgets.api.g.dart
+  // Generated from ../d4/lib/src/widgets/widgets.api.g.dart
   grok_InputType_Create(): any;
 }
