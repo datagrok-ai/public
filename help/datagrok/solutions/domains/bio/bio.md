@@ -43,7 +43,8 @@ packages using the [Package Manager](https://public.datagrok.ai/packages) (on th
 Datagrok lets you work with macromolecules both on the macro (sequence) level and atomic level:
 
 * Data visualization and exploration
-  * Support for multiple formats, such as FASTA (DNA/RNA/protein), delimiter-separated FASTA, [HELM](https://en.wikipedia.org/wiki/Hierarchical_editing_language_for_macromolecules), [BILN](https://pubs.acs.org/doi/10.1021/acs.jcim.2c00703), [PDB](https://en.wikipedia.org/wiki/Protein_Data_Bank_(file_format)), and [others](../../../../access/files/supported-formats.md). Handles nucleotides, natural and non-natural peptides, 3D-structures, and other modalities.
+  * [Formats](#formats): such as FASTA (DNA/RNA/protein), delimiter-separated FASTA, [HELM](https://en.wikipedia.org/wiki/Hierarchical_editing_language_for_macromolecules), [BILN](https://pubs.acs.org/doi/10.1021/acs.jcim.2c00703), [PDB](https://en.wikipedia.org/wiki/Protein_Data_Bank_(file_format)), and [others](../../../../access/files/supported-formats.md). Handles nucleotides, natural and non-natural peptides, 3D-structures, and other modalities.
+  * [Format conversion](#format-conversion): SMILES to HELM, HELM to SMILES, etc
   * [Automatic detection of sequences](../../../../govern/catalog/semantic-types.md) upon data import.
   * Flexible and fast [spreadsheet](#spreadsheet) that shows both macro and small molecules.
   * [Interactive visualization of biological data](#exploring-biological-data).
@@ -79,6 +80,32 @@ and multiple notations for nucleotide and amino acid / protein sequences, with n
 aligned and non-aligned forms.
 
 You can also create macromolecule queries against data sources using built-in querying tools. To learn more about querying data and data access in general, see the [Access](../../../../access/access.md) section of our documentation.
+
+### Formats
+
+Datagrok understand most popular notations for representing macromolecules, 
+such as FASTA (DNA/RNA/protein), delimiter-separated FASTA, 
+[HELM](https://en.wikipedia.org/wiki/Hierarchical_editing_language_for_macromolecules), 
+[BILN](https://pubs.acs.org/doi/10.1021/acs.jcim.2c00703),
+[PDB](https://en.wikipedia.org/wiki/Protein_Data_Bank_(file_format)), and [others](../../../../access/files/supported-formats.md). 
+Handles nucleotides, natural and non-natural peptides, 3D-structures, and other modalities.
+
+### Format conversion
+
+Sequences from any format notation can be converted to molecular form (MOLBLOCKS/SMILES). 
+Hovering over monomers of sequence will also highlight the corresponding monomer fragment in the resulting molecule. 
+Also, check out a YouTube video of [RDKit UGM presentation](https://www.youtube.com/watch?v=la-kj52djeI) about the conversion toolkit.
+
+<details>
+<summary>HELM to SMILES</summary>
+<img src="img/helm-mol-highlight.png" alt="HELM to SMILES"/>
+</details>
+
+<details>
+<summary>SMILES to HELM</summary>
+<img src="img/mol-to-helm.gif" alt="SMILES to HELM"/>
+</details>
+
 
 ## Exploring biological data
 
