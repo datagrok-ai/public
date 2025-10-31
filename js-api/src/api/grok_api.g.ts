@@ -607,7 +607,7 @@ export interface IDartApi {
   grok_TagsInput_shouldFilterItem(input: any, x: any): any;
   grok_TagsInput_GatherItems(input: any, findItems: Bool): any;
   grok_TagsInput_RemoveItem(input: any, x: any): any;
-  grok_TagsInput_RemoveItemByIdx(input: any, x: any, index: Num): any;
+  grok_TagsInput_RemoveItemByIdx(input: any, index: Num): any;
   grok_StringInput_AddClearIcon(input: any, x: any): any;
   grok_StringInput_AddEscClears(input: any, x: any): any;
   grok_StringInput_AddIcon(input: any, x: any): any;

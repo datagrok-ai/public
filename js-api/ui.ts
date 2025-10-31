@@ -25,10 +25,6 @@ import {
   TypeAhead,
   TypeAheadConfig,
   ChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput, MarkdownConfig,
-  TagsInput,
-  TagsInputCustom,
-  TagsInputCustomObj,
-  MyObj,
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -803,6 +799,7 @@ export namespace input {
     showButton?: boolean;
     allowNew?: boolean;
     multiValue?: boolean;
+    createCustomInputFunc?: (dart: any) => any;
   };
 
   export interface IMultiChoiceInputInitOptions<T> extends Omit<IChoiceInputInitOptions<T>, 'value'> {
@@ -992,23 +989,12 @@ export namespace input {
     //put tags into items (for backward compatibility)
     if (config?.tags && !config.items)
         config.items = config.tags as any[];
-    const input = _create(d4.InputType.Tags, name, config);
-    return input;
-  }
-
-    export function tagsCustomNoOverrides(name: string, config?: TagsInputConfig<string>): TagsInput<string | null> {
-    const jsTagsInput = new TagsInput<string>(tags(name, config).dart);
-    return jsTagsInput;
-  }
-
-  export function tagsCustomWithOverrides(name: string, config?: TagsInputConfig<string>): TagsInput<string | null> {
-    const jsTagsInput = new TagsInputCustom(tags(name, config).dart);
-    return jsTagsInput;
-  }
-
-  export function tagsCustomObj(name: string, config?: TagsInputConfig<MyObj>): TagsInput<MyObj | null> {
-    const jsTagsInput = new TagsInputCustomObj(tags(name, config).dart);
-    return jsTagsInput;
+    const tagsBaseInput = _create(d4.InputType.Tags, name, config);
+    if (config?.createCustomInputFunc) {
+      const customObjInput = config.createCustomInputFunc(tagsBaseInput.dart);
+      return customObjInput;
+    }
+    return tagsBaseInput;    
   }
 
   export async function markdownPreview(markdown: string): Promise<HTMLDivElement> {
