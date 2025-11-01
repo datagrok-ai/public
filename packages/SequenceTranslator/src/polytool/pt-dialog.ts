@@ -28,7 +28,7 @@ import {
 } from './const';
 
 import {_package} from '../package';
-import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/index';
+import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {MonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/utils';
 import {MonomerMap} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {ISeqMonomer} from '@datagrok-libraries/bio/src/helm/types';
@@ -42,7 +42,6 @@ import {addSubstructProvider, getMonomerHover, ISubstruct, setMonomerHover}
 import {getMolHighlight} from '@datagrok-libraries/bio/src/monomer-works/seq-to-molfile';
 import {ChemTags} from '@datagrok-libraries/chem-meta/src/consts';
 import {mergeSubstructs} from '@datagrok-libraries/chem-meta/src/types';
-import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {dealGroups, helmToMol} from './conversion/pt-atomic';
 
 type PolyToolConvertSerialized = {
@@ -94,13 +93,14 @@ export async function getPolyToolConvertDialog(srcCol?: DG.Column): Promise<DG.D
     if (!srcColVal) {
       if (srcColList.length < 1)
         throw new Error(PT_ERROR_DATAFRAME);
-      
+
       if (customSrcCols.length < 1) {
         const toAtomicLevelFunc = DG.Func.find({package: 'Bio', name: 'toAtomicLevel'})[0];
         if (toAtomicLevelFunc) {
           toAtomicLevelFunc.prepare().edit();
           return null;
         }
+        // eslint-disable-next-line max-len
         grok.shell.warning('Polytool requires a macromolecule column with custom notation. \n\nUse Top menu | Bio | Transform | To Atomic Level.');
         return null;
       }

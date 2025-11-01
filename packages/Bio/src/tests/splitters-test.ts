@@ -8,9 +8,9 @@ import {after, before, category, test, expect, expectArray} from '@datagrok-libr
 import {TAGS as bioTAGS, splitterAsFasta} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {splitterAsHelm} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 import {ISeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
-import {IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
-import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {splitToMonomersUI} from '../utils/split-to-monomers';

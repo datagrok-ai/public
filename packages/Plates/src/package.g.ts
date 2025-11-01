@@ -78,10 +78,9 @@ export function checkFileIsPlate(content: string) : boolean {
   return PackageFunctions.checkFileIsPlate(content);
 }
 
-//name: Browse
+//name: Plates
 //tags: app
 //output: view result
-//meta.browsePath: Plates
 export function platesApp() : any {
   return PackageFunctions.platesApp();
 }
@@ -100,6 +99,11 @@ export async function getPlateByBarcode(barcode: string) : Promise<any> {
 //name: createDummyPlateData
 export async function createDummyPlateData() : Promise<void> {
   await PackageFunctions.createDummyPlateData();
+}
+
+//tags: init
+export async function _init() : Promise<void> {
+  await PackageFunctions._init();
 }
 //name: PlateGridCellRenderer
 //tags: cellRenderer

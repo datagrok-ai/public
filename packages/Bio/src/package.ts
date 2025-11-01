@@ -13,11 +13,11 @@ import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cli
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {BitArrayMetrics, KnownMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 import {SCORE} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
-import {createJsonMonomerLibFromSdf, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {createJsonMonomerLibFromSdf,} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {ActivityCliffsEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-function-editor';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
@@ -78,6 +78,7 @@ import {molecular3DStructureWidget, toAtomicLevelWidget} from './widgets/to-atom
 import {handleSequenceHeaderRendering} from './widgets/sequence-scrolling-widget';
 import {PolymerType} from '@datagrok-libraries/js-draw-lite/src/types/org';
 import {BilnNotationProvider} from './utils/biln';
+import {MonomerLibFromFilesProvider} from './utils/monomer-lib/library-file-manager/monomers-lib-provider';
 export const _package = new BioPackage(/*{debug: true}/**/);
 export * from './package.g';
 
@@ -122,7 +123,7 @@ export class PackageFunctions {
 
   @grok.decorators.init({})
   static async initBio(): Promise<void> {
-    if (initBioPromise === null)
+    if (initBioPromise == null)
       initBioPromise = initBioInt();
 
     await initBioPromise;
@@ -1056,9 +1057,14 @@ export class PackageFunctions {
     return await showManageLibrariesView(false);
   }
 
+  // @grok.decorators.func({tags: ['monomer-lib-provider'], result: {type: 'object', name: 'result'}})
+  // static async getMonomerLibFileProvider(): Promise<MonomerLibFromFilesProvider> {
+  //   return
+  // }
+
   @grok.decorators.func({name: 'Monomer Manager Tree Browser', meta: {role: 'appTreeBrowser'}})
   static async manageMonomerLibrariesViewTreeBrowser(treeNode: DG.TreeViewGroup) {
-    const libraries = (await (await MonomerLibManager.getInstance()).getFileManager()).getValidLibraryPaths();
+    const libraries = (await (await MonomerLibManager.getInstance()).getAvaliableLibraryNames());
     libraries.forEach((libName) => {
       const nodeName = libName.endsWith('.json') ? libName.substring(0, libName.length - 5) : libName;
       const libNode = treeNode.item(nodeName);

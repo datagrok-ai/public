@@ -38,6 +38,12 @@ export async function StartWorkflow(nqName: string, version: string, instanceCon
   return await PackageFunctions.StartWorkflow(nqName, version, instanceConfig);
 }
 
+//input: object params 
+//output: object result
+export async function RunOptimizer(params: any) {
+  return await PackageFunctions.RunOptimizer(params);
+}
+
 //tags: test, vue
 export async function ViewerTestApp() : Promise<void> {
   await PackageFunctions.ViewerTestApp();

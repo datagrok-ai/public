@@ -61,7 +61,7 @@ export class HelmService extends HelmServiceBase {
 
     let resEditor: HelmEditor | undefined = this.editorLruCache.get(editorKey);
     if (!resEditor) {
-      const getMonomerFuncs = _package.helmHelper.buildMonomersFuncsFromLib(props.monomerLib, );
+      const getMonomerFuncs = _package.helmHelper.buildMonomersFuncsFromLib(props.monomerLib );
       const hostDiv = this.getNewEditorHost();
       resEditor = new JSDraw2.Editor<HelmType, IHelmBio, IHelmEditorOptions>(hostDiv, {
         width: props.width, height: props.height, skin: 'w8', viewonly: true,

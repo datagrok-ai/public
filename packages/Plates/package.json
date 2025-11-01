@@ -4,8 +4,8 @@
   "version": "0.0.1",
   "description": "Assay plates: ingestion, storage, and analysis",
   "author": {
-    "name": "Dmytro Kovalyov",
-    "email": "dkovalyov@datagrok.ai"
+    "name": "Oleksandra Serhiienko",
+    "email": "oserhiienko@datagrok.ai"
   },
   "dependencies": {
     "@datagrok-libraries/statistics": "^1.10.0",

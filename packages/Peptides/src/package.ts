@@ -21,7 +21,7 @@ import {SequencePositionStatsViewer} from './viewers/position-statistics-viewer'
 
 let monomerWorks: MonomerWorks | null = null;
 let treeHelper: ITreeHelper;
-
+export const _package = new DG.Package();
 export * from './package.g';
 
 /** Temporary polyfill */
@@ -31,7 +31,7 @@ function getDecoratorFunc() {
     return function(
       target: any,
       propertyKey: string,
-      descriptor: PropertyDescriptor
+      descriptor: PropertyDescriptor,
     ) { };
   };
 }
@@ -45,7 +45,7 @@ const decorators = [
   'func', 'init', 'param', 'panel', 'editor', 'demo', 'app',
   'appTreeBrowser', 'fileHandler', 'fileExporter', 'model', 'viewer', 'filter', 'cellRenderer', 'autostart',
   'dashboard', 'folderViewer', 'semTypeDetector', 'packageSettingsEditor', 'functionAnalysis', 'converter',
-  'fileViewer', 'model', 'treeBrowser', 'polyfill'
+  'fileViewer', 'model', 'treeBrowser', 'polyfill',
 ];
 
 decorators.forEach((decorator) => {
@@ -54,9 +54,6 @@ decorators.forEach((decorator) => {
 });
 
 /** End temporary polyfill */
-
-export const _package = new DG.Package();
-
 
 export function getMonomerWorksInstance(): MonomerWorks | null {
   return monomerWorks;
@@ -127,8 +124,8 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'Bio | Analyze | SAR...',
-    name: 'Bio Peptides',
-    outputs: []
+    'name': 'Bio Peptides',
+    'outputs': [],
   })
   static peptidesDialog(): DG.Dialog | null {
     if (!grok.shell.t || !grok.shell.t.columns.bySemType('Macromolecule')?.length) {
@@ -180,7 +177,7 @@ export class PackageFunctions {
     description: 'Peptides Sequence Variability Map Viewer',
     outputs: [{type: 'viewer', name: 'result'}],
   })
-  static monomerPosition(): MonomerPosition {
+  static monomerPosition(): DG.Viewer {
     return new MonomerPosition();
   }
 
@@ -192,7 +189,7 @@ export class PackageFunctions {
     description: 'Peptides Most Potent Residues Viewer',
     outputs: [{type: 'viewer', name: 'result'}],
   })
-  static mostPotentResidues(): MostPotentResidues {
+  static mostPotentResidues(): DG.Viewer {
     return new MostPotentResidues();
   }
 
@@ -203,7 +200,7 @@ export class PackageFunctions {
     name: 'Logo Summary Table',
     outputs: [{type: 'viewer', name: 'result'}],
   })
-  static logoSummaryTable(): LogoSummaryTable {
+  static logoSummaryTable(): DG.Viewer {
     return new LogoSummaryTable();
   }
 
@@ -224,7 +221,7 @@ export class PackageFunctions {
     name: 'Active peptide selection',
     outputs: [{type: 'viewer', name: 'result'}],
   })
-  static clusterMaxActivity(): ClusterMaxActivityViewer {
+  static clusterMaxActivity(): DG.Viewer {
     return new ClusterMaxActivityViewer();
   }
 
@@ -269,7 +266,7 @@ export class PackageFunctions {
     name: 'LST Pie Chart',
     outputs: [{type: 'grid_cell_renderer', name: 'result'}],
   })
-  static lstPiechartCellRenderer(): LSTPieChartRenderer {
+  static lstPiechartCellRenderer(): DG.GridCellRenderer {
     return new LSTPieChartRenderer();
   }
 }

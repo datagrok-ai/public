@@ -123,6 +123,10 @@ export namespace queries {
   export async function removeTemplateWellProperty(templateId: number , propertyId: number ): Promise<DG.DataFrame> {
     return await grok.data.query('Plates:RemoveTemplateWellProperty', { templateId, propertyId });
   }
+
+  export async function getPlatesCount(): Promise<number> {
+    return await grok.data.query('Plates:GetPlatesCount', {});
+  }
 }
 
 export namespace funcs {
@@ -193,6 +197,10 @@ export namespace funcs {
 
   export async function createDummyPlateData(): Promise<void> {
     return await grok.functions.call('Plates:CreateDummyPlateData', {});
+  }
+
+  export async function init(): Promise<void> {
+    return await grok.functions.call('Plates:Init', {});
   }
 
   export async function plateGridCellRenderer(): Promise<any> {

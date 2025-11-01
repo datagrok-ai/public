@@ -1,5 +1,9 @@
 # Compute2 changelog
 
+## 1.3.19 (2025-10-30)
+
+- Fitting with formulas support
+
 ## 1.3.18 (2025-09-11)
 
 - Hisotry and export fixes for workflows

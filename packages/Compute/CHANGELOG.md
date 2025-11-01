@@ -1,5 +1,9 @@
 # Compute changelog
 
+## 1.45.5 (2025-10-30)
+
+- Fitting with formulas support
+
 ## 1.44.4 (2025-09-04)
 
 - Small bug fixes

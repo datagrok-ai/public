@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/sequence-translator",
   "friendlyName": "Sequence Translator",
-  "version": "1.9.15",
+  "version": "1.10.1",
   "author": {
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
@@ -22,7 +22,7 @@
     }
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.54.8",
+    "@datagrok-libraries/bio": "^5.60.1",
     "@datagrok-libraries/chem-meta": "^1.2.8",
     "@datagrok-libraries/tutorials": "^1.6.1",
     "@datagrok-libraries/utils": "^4.6.5",
@@ -39,9 +39,9 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@datagrok-libraries/helm-web-editor": "^1.1.13",
+    "@datagrok-libraries/helm-web-editor": "^1.1.16",
     "@datagrok-libraries/js-draw-lite": "^0.0.10",
-    "@datagrok/bio": "^2.18.0",
+    "@datagrok/bio": "^2.24.0",
     "@datagrok/chem": "^1.13.0",
     "@datagrok/helm": "^2.7.0",
     "@types/jquery": "^3.5.32",

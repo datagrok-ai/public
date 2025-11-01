@@ -168,34 +168,20 @@ function getAnalysesSearchView(
   return mainView;
 }
 export function searchAnalysesView(): DG.View {
-  return getAnalysesSearchView('Search Analyses', queryAnalysesGeneric, (grid, analysisName) => {
+  return getAnalysesSearchView('Search Analyses', queryAnalysesGeneric, (grid) => {
     grid.setOptions({allowEdit: true});
 
-    const plateIdCol = grid.col('plate_id');
-    if (plateIdCol) plateIdCol.visible = false;
+    const curveCol = grid.col('Curve');
+    if (curveCol && curveCol.column) {
+      curveCol.column.semType = 'fit';
+      curveCol.column.setTag(DG.TAGS.CELL_RENDERER, 'fit');
 
-    const runIdCol = grid.col('run_id');
-    if (runIdCol) runIdCol.visible = false;
+      grid.props.rowHeight = 250;
 
-    const groupCol = grid.col('group_combination');
-    if (groupCol) groupCol.visible = false;
-
-    if (grid.dataFrame.columns.byName('Curve')) {
-      const curveCol = grid.dataFrame.getCol('Curve');
-      curveCol.semType = 'fit';
-      curveCol.setTag(DG.TAGS.CELL_RENDERER, 'fit');
-
-      const s = DG.debounce(grid.onAfterDrawContent, 300).subscribe(() => {
-        s.unsubscribe();
-        const visibleCurveCol = grid.col('Curve');
-        if (visibleCurveCol) {
-          visibleCurveCol.width = grid.root.clientWidth / 3;
-          grid.props.rowHeight = 250;
-
-
-          grid.invalidate();
-        }
-      });
+      setTimeout(() => {
+        curveCol.width = 400;
+        grid.invalidate();
+      }, 200);
     }
   });
 }

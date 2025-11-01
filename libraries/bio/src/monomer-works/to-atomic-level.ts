@@ -9,7 +9,7 @@ import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 import {HELM_FIELDS, HELM_POLYMER_TYPE, HELM_RGROUP_FIELDS} from '../utils/const';
 import {ALPHABET, NOTATION} from '../utils/macromolecule/consts';
-import {IMonomerLib, IMonomerLibBase, Monomer} from '../types';
+import {IMonomerLib, IMonomerLibBase, Monomer} from '../types/monomer-library';
 import {getFormattedMonomerLib, keepPrecision} from './to-atomic-level-utils';
 import {seqToMolFileWorker} from './seq-to-molfile';
 import {Atoms, Bonds, hasMolGraph, ITypedArray, LibMonomerKey, MolGraph,

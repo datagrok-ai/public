@@ -38,7 +38,7 @@ export class ReportsWidget extends DG.Widget {
           return userHandler.renderTooltip(report.reporter.dart)!;
         });
         portrait.style.marginRight = '10px';
-        const content = ui.divH([clock, portrait, ui.divText(report.description)]);
+        const content = ui.divH([clock, portrait, ui.divText(this.truncate(report.description, 30))]);
         const item = ui.card(content);
         item.style.overflow = 'visible';
         item.style.width = '100%';
@@ -57,5 +57,11 @@ export class ReportsWidget extends DG.Widget {
       d.style.lineHeight = '1';
       return d;
     }));
+  }
+
+  truncate(str: string, maxLength: number) {
+    if (str.length <= maxLength)
+      return str;
+    return str.slice(0, maxLength - 3) + '...';
   }
 }

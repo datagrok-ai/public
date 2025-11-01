@@ -1,9 +1,10 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {HelmType, IWebEditorMonomer, MonomerType, PolymerType, WebEditorRGroups} from '@datagrok-libraries/bio/src/helm/types';
-import {IMonomerLibBase, Monomer} from '@datagrok-libraries/bio/src/types/index';
+import {IMonomerLibBase, Monomer} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {HELM_OPTIONAL_FIELDS as OPT, HELM_REQUIRED_FIELD as REQ, HELM_RGROUP_FIELDS as RGP} from '@datagrok-libraries/bio/src/utils/const';
 
 import {BrokenWebEditorMonomer} from './web-editor-monomer-dummy';

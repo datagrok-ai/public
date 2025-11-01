@@ -64,7 +64,7 @@ export const candidateAlphabets: CandidateType[] = [
 ];
 
 /** Canonical gap symbol */
-export const GAP_SYMBOL: string = '';
+export const GAP_SYMBOL: string = '' as const;
 
 export const GapOriginals: {
   [units: string]: string

@@ -42,7 +42,7 @@ export async function getPolyToolUnruleDialog(srcCol?: DG.Column<string>): Promi
     });
     let ruleFileList: string[];
     const ruleInputs = new RuleInputs(RULES_PATH, RULES_STORAGE_NAME, '.json', {
-      onValueChanged: (value: string[]) => { ruleFileList = value;}
+      onValueChanged: (value: string[]) => { ruleFileList = value; }
     });
     const rulesHeader = ui.inlineText([PT_UI_RULES_USED]);
     const rulesForm = await ruleInputs.getForm();
@@ -95,7 +95,7 @@ export async function polyToolUnrule(
     const rules = await getRules(ruleFiles);
     const resHelmList = doPolyToolUnrule(srcCol.toList(), rules, helmHelper);
     const resHelmColName = `harmonized(srcCol.name)`;
-    const resHelmCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, resHelmColName, resHelmList,);
+    const resHelmCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, resHelmColName, resHelmList);
     resHelmCol.semType = DG.SEMTYPE.MACROMOLECULE;
     resHelmCol.meta.units = NOTATION.CUSTOM;
     if (table) {

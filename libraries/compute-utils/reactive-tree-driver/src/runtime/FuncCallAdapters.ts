@@ -33,7 +33,7 @@ export class FuncCallAdapter implements IFuncCallAdapter {
   constructor(public instance: DG.FuncCall, public readonly isReadonly: boolean) {}
 
   run() {
-    return defer(() => this.instance.call());
+    return defer(() => this.instance.call(undefined, undefined, {processed:true, report:false}));
   }
 
   getStateChanges<T = any>(

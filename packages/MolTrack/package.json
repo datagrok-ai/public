@@ -8,7 +8,7 @@
     "email": "oserhiienko@datagrok.ai"
   },
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.6.9",
+    "@datagrok-libraries/utils": "../../libraries/utils",
     "@datagrok-libraries/tutorials": "../../libraries/tutorials",
     "@datagrok-libraries/compute-utils": "../../libraries/compute-utils",
     "cash-dom": "^8.1.5",

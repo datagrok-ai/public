@@ -9,7 +9,6 @@ import * as ui from 'datagrok-api/ui';
 
 import {PlateCellHandler} from './plate/plate-cell-renderer';
 import {Plate} from './plate/plate';
-// import {PlateWidget} from './plate/plate-widget';
 import {PlateReader} from './plate/plate-reader';
 import {initPlatesAppTree, platesAppView} from './plates/plates-app';
 import {initPlates} from './plates/plates-crud';
@@ -40,9 +39,15 @@ export class PackageFunctions {
   }
 
   @grok.decorators.init()
-  static _initPlates(): void {
+  static async _initPlates(): Promise<void> {
     DG.ObjectHandler.register(new PlateCellHandler());
     DG.ObjectHandler.register(new PlateTemplateHandler());
+
+    const plates = await api.queries.getPlatesCount();
+    if (plates == 0) {
+      grok.shell.info('Populating plates with dummy data, might take a minute or two...')
+      await __createDummyPlateData();
+    }
   }
 
   @grok.decorators.folderViewer({outputs: [{'name': 'result', 'type': 'dynamic'}]})
@@ -257,13 +262,13 @@ static async checkCsvIsPlate(file: DG.FileInfo): Promise<boolean> {
 
 
   @grok.decorators.func()
-static checkFileIsPlate(content: string): boolean {
-  if (content.length > 1_000_000)
-    return false;
-  return PlateReader.getReader(content) != null;
-}
+  static checkFileIsPlate(content: string): boolean {
+    if (content.length > 1_000_000)
+      return false;
+    return PlateReader.getReader(content) != null;
+  }
 
-  @grok.decorators.app({name: 'Browse', browsePath: 'Plates'})
+  @grok.decorators.app({name: 'Plates'})
   static platesApp(): DG.View {
     return platesAppView();
   }

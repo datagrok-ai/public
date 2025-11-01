@@ -1405,7 +1405,7 @@ export class ColumnGrid extends Widget {
     filter?: (c: Column) => boolean;
     order?: Column[];
     checks?: (colName: string) => boolean;
-    addAdditionalChecks?: (colName: string) => boolean;
+    addAdditionalChecks?: (colName: string, additionalColumnName?: string) => boolean;
     additionalChecksName?: string;
     applyOrder?: (cg: ColumnGrid) => void;
     applyVisibility?: (cg: ColumnGrid) => void;

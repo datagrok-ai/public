@@ -34,7 +34,7 @@ packages using the [Package Manager](https://public.datagrok.ai/packages) (on th
 * Required. [Bio](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md).
 * Optional. [Biostructure Viewer](https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer/README.md): Visualization of macromolecules in 3D.
 * Optional. [Helm](https://github.com/datagrok-ai/public/tree/master/packages/Helm/README.md): Rendering, editing, managing monomer libraries.
-<!--* Optional. [Sequence Translator](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator): Translates oligonucleotide sequences between multiple representations.-->
+* Optional. [Sequence Translator](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator): Translates oligonucleotide sequences between multiple representations.
 * Optional. [Peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides/README.md): SAR analysis for sequences.
 <!--* Optional. [Oligo Batch Calculator](https://github.com/datagrok-ai/public/tree/master/packages/OligoBatchCalculator/README.md): Calculators for oligonecleotide properties.-->
 
@@ -43,7 +43,8 @@ packages using the [Package Manager](https://public.datagrok.ai/packages) (on th
 Datagrok lets you work with macromolecules both on the macro (sequence) level and atomic level:
 
 * Data visualization and exploration
-  * Support for multiple formats, such as FASTA (DNA/RNA/protein), delimiter-separated FASTA, [HELM](https://en.wikipedia.org/wiki/Hierarchical_editing_language_for_macromolecules), [PDB](https://en.wikipedia.org/wiki/Protein_Data_Bank_(file_format)), and [others](../../../../access/files/supported-formats.md). Handles nucleotides, natural and non-natural peptides, 3D-structures, and other modalities.
+  * [Formats](#formats): such as FASTA (DNA/RNA/protein), delimiter-separated FASTA, [HELM](https://en.wikipedia.org/wiki/Hierarchical_editing_language_for_macromolecules), [BILN](https://pubs.acs.org/doi/10.1021/acs.jcim.2c00703), [PDB](https://en.wikipedia.org/wiki/Protein_Data_Bank_(file_format)), and [others](../../../../access/files/supported-formats.md). Handles nucleotides, natural and non-natural peptides, 3D-structures, and other modalities.
+  * [Format conversion](#format-conversion): SMILES to HELM, HELM to SMILES, etc
   * [Automatic detection of sequences](../../../../govern/catalog/semantic-types.md) upon data import.
   * Flexible and fast [spreadsheet](#spreadsheet) that shows both macro and small molecules.
   * [Interactive visualization of biological data](#exploring-biological-data).
@@ -61,7 +62,7 @@ Datagrok lets you work with macromolecules both on the macro (sequence) level an
 clustering, dimensionality reduction techniques, imputation, PCA/PLS, and other tasks. Built-in statistics.
   * Flexible reporting and sharing options, including [dynamic dashboards](../../../../access/databases/databases.md#sharing-query-results).
 * [Oligonucleotides chemical modifications and format conversion](#oligo-toolkit).
-* Connection to chemistry level: [split to monomers](#split-to-monomers), and [get the atomic-level structure](#get-atomic-level-structure).
+* Connection to chemistry level: [split to monomers](#split-to-monomers), and [get the atomic-level structure](#convert-to-atomic-level).
 * [Extensible environment](#customizing-and-extending-the-platform)
   * Ability to add or customize any functionality using [scripts](../../../../compute/scripting/scripting.mdx) in Python, R, Matlab, and other supported languages.
   * Ability to create custom plugins and fit-for-purpose applications.
@@ -87,14 +88,15 @@ In addition, Datagrok provides a comprehensive
 [machine learning toolkit](../../../solutions/domains/data-science.md) for
 clustering, dimensionality reduction techniques, imputation, PCA/PLS, and other tasks (**Top Menu** > **ML**). Some of these tools can be applied directly to macromolecules.
 
-When you open a dataset, Datagrok automatically detects macromolecules and makes available macromolecule-specific context actions. For example, when you open a CSV file containing macromolecules in the FASTA format, the following happens:
+When you open a dataset, Datagrok automatically detects macromolecules and makes macromolecule-specific context actions available. For example, when you open a CSV file containing sequences in FASTA format, the following happens:
 
 * Data is parsed, and the [semantic type](../../../../govern/catalog/semantic-types.md) _macromolecule_ is assigned to the corresponding column.
 * Macromolecules are automatically rendered in the spreadsheet.
+* Hovering over monomers in the sequence shows their name and molecular structure, as per the active monomer library.
 * Column tooltip now shows the sequence composition.
 * Default column filter is now a subsequence search.
-* A top menu item labeled **Bio** appears.
-* Column and cell properties now show macromolecule-specific actions, such as sequence renderer and libraries options, sequence preview, and macromolecule space preview.
+* A top menu item labeled **Bio** becomes available.
+* Column and cell properties now show macromolecule-specific actions, such as sequence renderer and libraries options, sequence and macromolecule space preview, molecular structure and others.
 
 ![Explore macromolecules](img/marcomol-explore.png)
 
@@ -137,25 +139,28 @@ Info panes be extended with [functions](../../../concepts/functions/functions.md
 
 The [spreadsheet](../../../../visualize/viewers/grid.md) lets you visualize and [edit](#sketching-and-editing) sequences and macromolecules. You can add new columns with calculated values, interactively [filter and search](#searching-and-filtering) rows, color-code columns, pin rows or columns, set edit permissions, and more.
 
+Clicking on any sequence cell highlights the differing monomers in other sequences, allowing you to quickly identify similarities and differences.
+
 ```mdx-code-block
 <Tabs>
-<TabItem value="display-for-helm" label="HELM" default>
+<TabItem value="display-for-fasta" label="FASTA" default>
+```
+
+Sequences in various modalities are color-coded based on monomer properties, natural analog or explicitely set colors.
+
+![FASTA rendering](img/fasta-format-0.png)
+
+
+```mdx-code-block
+</TabItem>
+<TabItem value="display-for-helm" label="HELM">
+
 ```
 
 HELM is used for macromolecules with non-natural monomers, circular and branching structures.
 The structures are displayed with colors corresponding to each monomer.
 
 ![HELM rendering](img/helm-format.png)
-
-```mdx-code-block
-</TabItem>
-<TabItem value="display-for-fasta" label="FASTA">
-```
-
-Peptide sequences are color-coded based on amino acid properties. DNA sequences are colored-coded to distinguish between various nucleotides.
-
-![FASTA rendering](img/fasta-format-0.png)
-
 
 ```mdx-code-block
 </TabItem>
@@ -320,7 +325,7 @@ To learn more about filtering, watch this [video](https://www.youtube.com/watch?
 
 ## Manage monomer libraries
 
-Datagrok enables you to manage monomer libraries for various macromolecule types, including DNA, RNA, peptides, and custom structures. These libraries define the building blocks, or monomers, that compose polymers and store detailed metadata about each monomer, such as properties, labels, and molecular structures. This metadata supports flexible and accurate functionality across the platform, such as the [To Atomic Level](#get-atomic-level-structure) conversion, sequence analysis, and polymer enumeration in tools like PolyTool. By managing monomer libraries, users can select specific monomers for custom analyses and workflows, ensuring precise control over macromolecule representation and manipulation.
+Datagrok enables you to manage monomer libraries for various macromolecule types, including DNA, RNA, peptides, and custom structures. These libraries define the building blocks, or monomers, that compose polymers and store detailed metadata about each monomer, such as properties, labels, and molecular structures. This metadata supports flexible and accurate functionality across the platform, such as the [To Atomic Level](#convert-to-atomic-level) conversion, sequence analysis, and polymer enumeration in tools like PolyTool. By managing monomer libraries, users can select specific monomers for custom analyses and workflows, ensuring precise control over macromolecule representation and manipulation.
 
 
 The default [HELM monomer library](https://github.com/datagrok-ai/public/blob/master/packages/Bio/files/monomer-libraries/HELMCoreLibrary.json) is pre-installed with the [Bio package](https://github.com/datagrok-ai/public/tree/master/packages/Bio). You can add your own monomer libraries using the view accessible from **Top Menu** > **Bio** > **Manage** > **Monomer Libraries**:
@@ -373,11 +378,11 @@ The Monomer manager view consists of two main parts: On the left side, you can s
 
 You can create a
 [sequence logo](https://en.wikipedia.org/wiki/Sequence_logo) to show the letter composition for each position in
-a sequence. A sequence logo is usually created from a set of aligned sequences
+a collection of sequences. A sequence logo is usually created from a set of aligned sequences
 and helps identify patterns and variations within those sequences.
 A common use is to visualize protein-binding sites in DNA or functional motives in proteins.
 
-![Logo plot](../../../../uploads/macromolecules/macromolecules-10.gif "Logo plot") <!--redo gif due to poor resolution-->
+![Logo plot](../../../../visualize/viewers/img/weblogo.gif "Logo plot") <!--redo gif due to poor resolution-->
 
 <details>
 <summary>How to use</summary>
@@ -575,38 +580,87 @@ application performs SAR analysis of peptides. The app offers the following feat
 
 ## Utilities
 
+### Formats
+
+Datagrok understand most popular notations for representing macromolecules,
+such as FASTA (DNA/RNA/protein), delimiter-separated FASTA,
+[HELM](https://en.wikipedia.org/wiki/Hierarchical_editing_language_for_macromolecules),
+[BILN](https://pubs.acs.org/doi/10.1021/acs.jcim.2c00703),
+[PDB](https://en.wikipedia.org/wiki/Protein_Data_Bank_(file_format)), and [others](../../../../access/files/supported-formats.md).
+Handles nucleotides, natural and non-natural peptides, 3D-structures, and other modalities.
+
 ### Format conversion
 
-Datagrok converts macromolecules between formats, such as HELM or FASTA.
+Sequences from supported notations (HELM, FASTA, BILN) can be converted to molecular form (MOLBLOCK/SMILES), or back.
+Hovering over monomers of sequence will also highlight the corresponding monomer fragment in the resulting molecule.
 
-For individual macromolecules, the conversion happens automatically as you interact with them in the dataset. The **Context Panel** shows all supported notations, along with the sequence view <!--in the **Sequence** info pane (**Context Panel** > **Sequence**)-->. You can also perform conversion on the entire column by choosing the corresponding option from the **Bio** > **Convert** menu.
+For individual macromolecules, the conversion happens automatically as you interact with them. 
+To convert explicitly, see the **Bio** > **Transform** menu.
+
+Also, check out a YouTube video of [RDKit UGM presentation](https://www.youtube.com/watch?v=la-kj52djeI) about the conversion toolkit.
+
+<details>
+<summary>HELM to SMILES</summary>
+<img src="img/helm-mol-highlight.png" alt="HELM to SMILES"/>
+</details>
+
+<details>
+<summary>SMILES to HELM</summary>
+<img src="img/mol-to-helm.gif" alt="SMILES to HELM"/>
+</details>
+
 
 ### Split to monomers
 
-You can split linear macromolecules to monomers.
+You can split linear macromolecules to monomers, and generate one column for each position.
 
 ![Split to monomers](img/split-to-monomers.gif)
 
 <details>
 <summary>How to use</summary>
 
-1. In the **Top Menu**, select **Bio** > **Convert** > **Split to Monomers**. A dialog opens.
+1. In the **Top Menu**, select **Bio** > **Transform** > **Split to Monomers**. A dialog opens.
 1. In the dialog, select the sequence column and click **OK** to execute. New columns containing monomers are added to the table.
 
 </details>
 
-### Get atomic-level structure
+### Convert to atomic level
+
+Datagrok enables you to generate atomic-level structures for macromolecule sequences in HELM, FASTA, BILN or Separator notations.
 
 You have two options to generate the atomic structure of the sequences:
 
-* Generate the sequence using the Helm Editor which results in the unordered molecule graph.
-* For linear sequences, reproduce the linear form of molecules. This is useful for better visual inspection of a sequence and duplex comparison.
+* Convert non-linear, cyclic and branched sequences and optimize molecular structure using RDKit.
+* For linear sequences, reproduce the linear form of molecules. This is useful for better visual inspection of a linear peptide or nucleotide sequences.
 
-This approach could be used for any given case of HELM notation
-in order to get a visually appropriate form of monomers
-in cycles etc. Structure at atomic level could be saved in available notations.
+This approach allows you to restore atomic-level structures for macromolecules containing non-natural monomers, cyclic and branching structures.
+Monomers are sourced from the active [monomer libraries](#manage-monomer-libraries) in Datagrok.
 
-![Restoring structure atomic level](../../../../uploads/macromolecules/restore-structures-800.gif)
+After conversion, hovering over monomers in the sequence highlights the corresponding part of the atomic structure in the corresponding molecule.
+
+```mdx-code-block
+<Tabs>
+<TabItem value="display-for-non-linear" label="Non-linear sequences" default>
+```
+
+Non-linear sequences, represented in HELM or BILN notations, can be converted to atomic-level structures. The conversion process involves generating the molecular structure based on the sequence and optimizing it using RDKit.
+
+![Non Linear HELM/BILN](img/helm-mol-highlight.png)
+
+```mdx-code-block
+</TabItem>
+<TabItem value="display-for-linear" label="Linear sequences" default>
+```
+
+Linear sequences, represented in any notation (HELM, FASTA, BILN, Separator), can be converted to atomic-level structures by reconstructing the linear form of the molecules. This method is particularly useful for visual inspection of linear peptide or nucleotide sequences.
+
+![Linear Sequences](img/linear-seq-highlight.png)
+
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
 
 <details>
 <summary>How to use</summary>

@@ -21,7 +21,7 @@ See details: [issues](release-history.md), [plugin changelogs](plugins/plugins.m
 
 ### Developer updates
 
-* **Breaking changes**: This release introduces non-backward-compatible database changes. You can upgrade to version 1.26.0 automatically; however, once you migrate the database, older versions (including 1.25) will no longer be compatible. In case you need to roll back to 1.25.N, you must manually revert the changes or restore a pre-upgrade backup.
+* [Breaking changes](https://datagrok.ai/help/deploy/releases/compatibility/?from=1.26.0&to=1.25.4&breakingchanges=true): This release introduces non-backward-compatible database changes. You can upgrade to version 1.26.0 automatically; however, once you migrate the database, older versions (including 1.25) will no longer be compatible. In case you need to roll back to 1.25.N, you must manually revert the changes or restore a pre-upgrade backup.
 
 ## 1.25 || 2025-Mar
 
@@ -56,7 +56,7 @@ See details: [issues](release-history.md), [plugin changelogs](plugins/plugins.m
 * New features:
   * Classes: 0
   * Functions: 10
-* [Breaking changes](http://localhost:3000/help/deploy/releases/compatibility/?from=1.23.1&to=1.24.0&breakingchanges=true)
+* [Breaking changes](http://datagrok.ai/help/deploy/releases/compatibility/?from=1.23.1&to=1.24.0&breakingchanges=true)
 
 
 ## 1.23 || 2024-Dec

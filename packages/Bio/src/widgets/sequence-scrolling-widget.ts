@@ -10,11 +10,10 @@ import {ConservationTrack, MSAHeaderTrack, MSAScrollingHeader, WebLogoTrack} fro
 import {MonomerPlacer} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 import {ALPHABET, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {_package} from '../package';
-import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 import * as RxJs from 'rxjs';
 import {filter} from 'rxjs/operators';
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib, getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import wu from 'wu';
 
 // ============================================================================

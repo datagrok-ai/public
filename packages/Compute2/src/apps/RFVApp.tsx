@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 import {Subject, BehaviorSubject, of, from} from 'rxjs';
-
+import dayjs from 'dayjs';
 import {RichFunctionView} from '../components/RFV/RichFunctionView';
 import {historyUtils, saveIsFavorite} from '@datagrok-libraries/compute-utils';
 import {debounceTime, switchMap, take, withLatestFrom} from 'rxjs/operators';
@@ -103,7 +103,9 @@ export const RFVApp = Vue.defineComponent({
       if (!currentFuncCall.value) return;
       currentCallState.value.isRunning = true;
       try {
-        await currentFuncCall.value.call();
+        await currentFuncCall.value.call(undefined, undefined, {processed:true, report:false});
+        currentFuncCall.value.started = dayjs();
+
         currentCallState.value.isOutputOutdated = false;
         currentFuncCall.value.options[OUTPUT_OUTDATED_PATH] = 'false';
       } finally {

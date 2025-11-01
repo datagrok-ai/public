@@ -19,7 +19,7 @@ import {
   HelmConvertRes, HelmInputBase, HelmNotSupportedError, IHelmHelper, IHelmInputInitOptions
 } from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
-import {IMonomerLib, IMonomerLibBase, IMonomerLinkData, IMonomerSetPlaceholder} from '@datagrok-libraries/bio/src/types/index';
+import {IMonomerLib, IMonomerLibBase, IMonomerLinkData, IMonomerSetPlaceholder} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {GAP_SYMBOL, GapOriginals, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
@@ -30,7 +30,7 @@ import {getHoveredMonomerFromEditorMol} from './utils/get-hovered';
 /* eslint-enable max-len */
 
 import {_package} from './package';
-import { IEditorOptions } from '@datagrok-libraries/js-draw-lite/src/types/jsdraw2';
+import {IEditorOptions} from '@datagrok-libraries/js-draw-lite/src/types/jsdraw2';
 
 declare const dojo: DojoType;
 declare const JSDraw2: JSDraw2ModuleType;

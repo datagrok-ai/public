@@ -4,7 +4,7 @@ export abstract class MolfileBonds {
   protected bondedAtomPairs: number[][] = [];
   protected rawBondLines: string[] = [];
 
-  public get count(): number { return this.bondedAtomPairs.length;}
+  public get count(): number { return this.bondedAtomPairs.length; }
 
   /** Get bond lines with new values for bonded atoms  */
   abstract getBondLines(): string[];
@@ -31,7 +31,7 @@ export abstract class MolfileBonds {
   }
 
   replacePositionsInBondsByDummy(positions: PositionInBonds[], dummy?: number): void {
-    if (dummy === undefined)
+    if (dummy == undefined)
       dummy = -1;
     positions.forEach((position) => {
       const {bondLineIdx, nodeIdx} = position;

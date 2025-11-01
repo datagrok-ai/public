@@ -754,6 +754,14 @@ export namespace input {
       }
       if (key !== 'nullable' && optionsMap[key] !== undefined)
         optionsMap[key](input, (specificOptions as IIndexable)[key]);
+
+      if (inputType === d4.InputType.Columns) {
+        if (key == 'additionalColumns' && options[key])
+          setInputAdditionalColumns(input, options[key]);
+
+        if (key == 'onAdditionalColumnsChanged' && options[key])
+          setInputAdditionalColumnsOnChanged(input, options[key]);
+      }
     }
     const baseOptions = (({value, nullable, property, onCreated, onValueChanged}) => ({value, nullable, property, onCreated, onValueChanged}))(options);
     for (let key of Object.keys(baseOptions)) {
@@ -812,6 +820,8 @@ export namespace input {
   export interface IColumnsInputInitOptions<T> extends IColumnInputInitOptions<T> {
     available?: string[];
     checked?: string[];
+    additionalColumns?: { [key: string]: Column[] };
+    OnAdditionalColumnsChanged?: (additionalColumns: { [key: string]: Column[] }) => void;
   }
 
   export interface IColorInputInitOptions<T> extends IInputInitOptions<T> {
@@ -828,6 +838,26 @@ export namespace input {
   export function setColumnsInputTable(input: InputBase, table: DataFrame, filter?: Function) {
     const columnsFilter = typeof filter === 'function' ? (x: any) => filter!(toJs(x)) : null;
     api.grok_ColumnsInput_ChangeTable(input.dart, table.dart, columnsFilter);
+  }
+
+  /** Sets additional columns for the columns input */
+  export function setInputAdditionalColumns(input: InputBase, additionalColumns: { [key: string]: Column[] }): void {
+    const mapToSet = {};
+    for (const [key, columns] of Object.entries(additionalColumns))
+      mapToSet[key] = columns.map(c => c.dart);
+
+    api.grok_ColumnsInput_SetAdditionalColumns(input.dart, toDart(mapToSet));
+  }
+
+  /** Sets additional columns on change event */
+  export function setInputAdditionalColumnsOnChanged(input: InputBase, onChange: (values: { [key: string]: Column[] }) => void): void {
+    api.grok_ColumnsInput_SetOnAdditionalColumnsChanged(input.dart, !onChange ? null : toDart((values: any) => {
+      values = toJs(values);
+      for (const key of Object.keys(values))
+        values[key] = values[key].map(toJs);
+
+      onChange(values);
+    }));
   }
 
   /** Creates input for the specified property, and optionally binds it to the specified object */

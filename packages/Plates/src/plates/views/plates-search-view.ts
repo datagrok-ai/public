@@ -144,8 +144,10 @@ function getSearchView(viewName: string,
   resultsView.name = viewName;
   resultsView._onAdded();
 
-  let platesTemplateForm: DG.InputForm; let platesOtherForm: DG.InputForm;
-  let wellsTemplateForm: DG.InputForm; let wellsOtherForm: DG.InputForm;
+  let platesTemplateForm: DG.InputForm;
+  let platesOtherForm: DG.InputForm;
+  let wellsTemplateForm: DG.InputForm;
+  let wellsOtherForm: DG.InputForm;
   let analysisForm: DG.InputForm;
 
   const platesFormHost = ui.div();
@@ -156,10 +158,13 @@ function getSearchView(viewName: string,
 
   const plateTemplateSelector = ui.input.choice('Template', {
     items: plateTemplates.map((pt) => pt.name),
-    value: plateTemplates[0].name,
-    onValueChanged: (v) => setTemplate(plateTemplates.find((pt) => pt.name === v)!)
+    value: plateTemplate?.name,
+    onValueChanged: (v) => {
+      const selectedTemplate = plateTemplates.find((pt) => pt.name === v);
+      if (selectedTemplate)
+        setTemplate(selectedTemplate);
+    }
   });
-
 
   const analysisTypeSelector = ui.input.choice('Analysis', {
     items: ['None', ...AnalysisManager.instance.analyses.map((a) => a.friendlyName)],
