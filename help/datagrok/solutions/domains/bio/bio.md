@@ -81,32 +81,6 @@ aligned and non-aligned forms.
 
 You can also create macromolecule queries against data sources using built-in querying tools. To learn more about querying data and data access in general, see the [Access](../../../../access/access.md) section of our documentation.
 
-### Formats
-
-Datagrok understand most popular notations for representing macromolecules, 
-such as FASTA (DNA/RNA/protein), delimiter-separated FASTA, 
-[HELM](https://en.wikipedia.org/wiki/Hierarchical_editing_language_for_macromolecules), 
-[BILN](https://pubs.acs.org/doi/10.1021/acs.jcim.2c00703),
-[PDB](https://en.wikipedia.org/wiki/Protein_Data_Bank_(file_format)), and [others](../../../../access/files/supported-formats.md). 
-Handles nucleotides, natural and non-natural peptides, 3D-structures, and other modalities.
-
-### Format conversion
-
-Sequences from any format notation can be converted to molecular form (MOLBLOCKS/SMILES). 
-Hovering over monomers of sequence will also highlight the corresponding monomer fragment in the resulting molecule. 
-Also, check out a YouTube video of [RDKit UGM presentation](https://www.youtube.com/watch?v=la-kj52djeI) about the conversion toolkit.
-
-<details>
-<summary>HELM to SMILES</summary>
-<img src="img/helm-mol-highlight.png" alt="HELM to SMILES"/>
-</details>
-
-<details>
-<summary>SMILES to HELM</summary>
-<img src="img/mol-to-helm.gif" alt="SMILES to HELM"/>
-</details>
-
-
 ## Exploring biological data
 
 Datagrok provides a range of tools for analyzing macromolecules (**Top Menu** > **Bio**).
@@ -606,11 +580,35 @@ application performs SAR analysis of peptides. The app offers the following feat
 
 ## Utilities
 
+### Formats
+
+Datagrok understand most popular notations for representing macromolecules,
+such as FASTA (DNA/RNA/protein), delimiter-separated FASTA,
+[HELM](https://en.wikipedia.org/wiki/Hierarchical_editing_language_for_macromolecules),
+[BILN](https://pubs.acs.org/doi/10.1021/acs.jcim.2c00703),
+[PDB](https://en.wikipedia.org/wiki/Protein_Data_Bank_(file_format)), and [others](../../../../access/files/supported-formats.md).
+Handles nucleotides, natural and non-natural peptides, 3D-structures, and other modalities.
+
 ### Format conversion
 
-Datagrok converts macromolecules between formats, such as HELM, FASTA, Separator or BILN.
+Sequences from supported notations (HELM, FASTA, BILN) can be converted to molecular form (MOLBLOCK/SMILES), or back.
+Hovering over monomers of sequence will also highlight the corresponding monomer fragment in the resulting molecule.
 
-For individual macromolecules, the conversion happens automatically as you interact with them in the dataset. The **Context Panel** shows all supported notations, along with the sequence view <!--in the **Sequence** info pane (**Context Panel** > **Sequence**)-->. You can also perform conversion on the entire column by choosing the corresponding option from the **Bio** >  **Transform** > **Convert Sequence Notation** menu.
+For individual macromolecules, the conversion happens automatically as you interact with them. 
+To convert explicitly, see the **Bio** > **Transform** menu.
+
+Also, check out a YouTube video of [RDKit UGM presentation](https://www.youtube.com/watch?v=la-kj52djeI) about the conversion toolkit.
+
+<details>
+<summary>HELM to SMILES</summary>
+<img src="img/helm-mol-highlight.png" alt="HELM to SMILES"/>
+</details>
+
+<details>
+<summary>SMILES to HELM</summary>
+<img src="img/mol-to-helm.gif" alt="SMILES to HELM"/>
+</details>
+
 
 ### Split to monomers
 
