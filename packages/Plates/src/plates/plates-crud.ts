@@ -85,11 +85,10 @@ export type AnalysisQuery = {
 }
 
 export type AnalysisCondition = {
-  property: AnalysisProperty;
-  matcher: Matcher;
+  property?: AnalysisProperty;
+  matcher?: Matcher;
   analysisName: string;
-  // MODIFIED: Add an optional 'group' property to filter by a specific group (e.g., a compound).
-  group?: string;
+  group?: string | string[];
 }
 
 
@@ -259,13 +258,24 @@ function getPlateSearchSql(query: PlateQuery): string {
   }
 
   for (const [analysisName, conditions] of analysisConditionsByType.entries()) {
-    const selectedGroup = conditions.find((c) => c.group)?.group;
+    const groupCondition = conditions.find((c) => c.group);
+    const selectedGroup = groupCondition?.group;
     const propertyConditions = conditions.filter((c) => c.property);
 
+    let groupsArray: string = '';
+    let hasGroupFilter = false;
+
+    if (selectedGroup) {
+      const groups = Array.isArray(selectedGroup) ? selectedGroup : [selectedGroup];
+      if (groups.length > 0) {
+        hasGroupFilter = true;
+        groupsArray = groups.map((g) => `'${g.replace(/'/g, '\'\'')}'`).join(',');
+      }
+    }
     let analysisSubClauses: string[] = [];
 
     for (const condition of propertyConditions) {
-      const prop = allProperties.find((p) => p.name === condition.property.name);
+      const prop = allProperties.find((p) => p.name === condition.property!.name);
       if (!prop) continue;
 
       const dbColumn = plateDbColumn[prop.type] ?? plateDbJsonColumn;
@@ -275,13 +285,12 @@ function getPlateSearchSql(query: PlateQuery): string {
           SELECT 1 FROM plts.analysis_results res
           WHERE res.analysis_run_id = ar.id
           AND res.property_id = ${prop.id}
-          AND (${condition.matcher.toSql(`res.${dbColumn}`)})
+          AND (${condition.matcher!.toSql(`res.${dbColumn}`)})
       `;
 
-      if (selectedGroup) {
-        // Assuming single-item group_combination arrays like {'compound 9'}
-        subClause += ` AND res.group_combination = ARRAY['${selectedGroup}']`;
-      }
+      if (hasGroupFilter)
+        subClause += ` AND res.group_combination && ARRAY[${groupsArray}]`;
+
 
       subClause += `)`;
       analysisSubClauses.push(subClause);
@@ -293,13 +302,12 @@ function getPlateSearchSql(query: PlateQuery): string {
         WHERE ar.plate_id = p.id AND ar.analysis_type = '${analysisName}'
     `;
 
-    if (selectedGroup && propertyConditions.length === 0)
-      analysisClause += ` AND '${selectedGroup}' = ANY(ar.groups)`;
+    if (hasGroupFilter && propertyConditions.length === 0)
+      analysisClause += ` AND ar.groups && ARRAY[${groupsArray}]`;
 
 
     if (analysisSubClauses.length > 0)
       analysisClause += ` AND ${analysisSubClauses.join(' AND ')}`;
-
 
     analysisClause += `)`;
     existsClauses.push(analysisClause);
@@ -504,7 +512,7 @@ function getPlateInsertSql(plate: Plate): string {
 
     const dbCol = plateDbColumn[property.type];
     sql += `\n insert into plts.plate_details(plate_id, property_id, ${dbCol}) values ` +
-            `(${plate.id}, ${property.id}, ${sqlStr(plate.details[layer])});`;
+           `(${plate.id}, ${property.id}, ${sqlStr(plate.details[layer])});`;
   }
 
   for (const layer of plate.getLayerNames()) {
@@ -517,9 +525,9 @@ function getPlateInsertSql(plate: Plate): string {
 
     const dbCol = plateDbColumn[property.type];
     sql += `\n\n insert into plts.plate_well_values(plate_id, row, col, property_id, ${dbCol}) values\n` +
-            plate.wells
-              .map((pw) => `  (${plate.id}, ${pw.row}, ${pw.col}, ${property.id}, ${sqlStr(pw[layer])})`)
-              .toArray().join(',\n') + ';';
+           plate.wells
+             .map((pw) => `  (${plate.id}, ${pw.row}, ${pw.col}, ${property.id}, ${sqlStr(pw[layer])})`)
+             .toArray().join(',\n') + ';';
   }
 
   return sql;

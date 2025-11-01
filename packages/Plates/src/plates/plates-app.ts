@@ -64,19 +64,9 @@ export async function initPlatesAppTree(treeNode: DG.TreeViewGroup): Promise<voi
     plateTemplateNode.onSelected.subscribe(async (_) => grok.shell.addPreview(templateView(template)));
   }
 
-  // auto-delete templates from the tree when they are deleted
   crud.events.pipe(filter((event) => event.eventType === 'deleted')).subscribe((event) => {
     treeNode.removeChildrenWhere((node) => node.value instanceof DG.SemanticValue &&
        crud.entityTypes.includes(node.value.semType) &&
        node.value.value.id && node.value.value.id === event.object.id);
   });
-
-  // const queriesNode = treeNode.group('Queries');
-  // const nameCol = plateUniquePropertyValues.col('name')!;
-  // const valueCol = plateUniquePropertyValues.col('value_string')!;
-  // for (const propertyName of nameCol.categories) {
-  //   const propertyNode = queriesNode.group(propertyName);
-  //   for (const i of plateUniquePropertyValues.rows.where(i => nameCol.get(i) == propertyName))
-  //     propertyNode.item(valueCol.get(i), () => grok.shell.info('foo!'));
-  // }
 }

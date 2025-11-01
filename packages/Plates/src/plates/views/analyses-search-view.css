@@ -1,0 +1,47 @@
+.assay-analyses-search-view {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.assay-analyses-search-view__main-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.assay-analyses-search-view__filter-panel {
+  padding: 12px;
+  flex: 0 0 auto;
+  overflow-y: auto;
+  max-height: 40vh;
+  border-bottom: 1px solid var(--grey-2);
+  margin-bottom: 20px;
+}
+
+.assay-analyses-search-view__results-container {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: auto;
+}
+
+.assay-analyses-search-view__analysis-type-selector {
+  max-width: 300px;
+}
+
+.assay-analyses-search-view__group-input {
+  min-width: 200px;
+}
+
+.assay-analyses-search-view__form-host {
+  width: 100%;
+}

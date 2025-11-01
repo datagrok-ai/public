@@ -5,6 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import {AnalysisManager} from '../../plate/analyses/analysis-manager';
 import {AnalysisProperty, AnalysisQuery, getAnalysisRunGroups, queryAnalysesGeneric, PropertyCondition, allProperties, queryAnalyses} from '../plates-crud';
 import {NumericMatcher} from '../matchers';
+import './analyses-search-view.css';
 
 type AnalysisPropInput = DG.InputBase & { prop: AnalysisProperty };
 
@@ -51,12 +52,13 @@ function getAnalysesSearchView(
 ): DG.View {
   const mainView = DG.View.create();
   mainView.name = viewName;
-  const resultsView = DG.TableView.create(DG.DataFrame.create(0), false);
-  resultsView._onAdded();
-
+  mainView.root.classList.add('assay-analyses-search-view');
+  const initialDf = DG.DataFrame.create(0);
+  const resultsView = DG.TableView.create(initialDf);
+  resultsView.root.classList.add('assay-analyses-search-view__results-container');
   let analysisForm: DG.InputForm;
 
-  const analysisFormHost = ui.div();
+  const analysisFormHost = ui.div([], 'assay-analyses-search-view__form-host');
 
   const refreshResults = () => {
     const selectedAnalysis = AnalysisManager.instance.byFriendlyName(analysisTypeSelector.value as string);
@@ -76,11 +78,20 @@ function getAnalysesSearchView(
       queryAnalyses(query);
 
     searchPromise.then((df) => {
-      resultsView.dataFrame = df;
-      df.name = viewName;
-      onResults(resultsView.grid, selectedAnalysis.name);
+      if (df) {
+        resultsView.dataFrame = df;
+        df.name = viewName;
+        onResults(resultsView.grid, selectedAnalysis.name);
+        resultsView.grid.invalidate();
+        setTimeout(() => {
+          resultsView.grid.invalidate();
+        }, 100);
+      }
+    }).catch((error) => {
+      console.error('Error loading results:', error);
+      grok.shell.error(`Failed to load results: ${error.message}`);
     });
-  }; ;
+  };
 
   const refreshAnalysisUI = async () => {
     ui.empty(analysisFormHost);
@@ -108,8 +119,7 @@ function getAnalysesSearchView(
           value: [],
         });
 
-        groupInput.root.style.minWidth = '200px';
-
+        groupInput.root.classList.add('assay-analyses-search-view__group-input');
         inputs.push(groupInput);
       }
     }
@@ -127,15 +137,6 @@ function getAnalysesSearchView(
       }
     }
 
-    // for (const prop of analysis.outputs) {
-    //   if (prop.type === DG.TYPE.FLOAT || prop.type === DG.TYPE.INT) {
-    //     const input = ui.input.string(prop.name) as AnalysisPropInput;
-    //     input.prop = prop as AnalysisProperty;
-    //     input.addValidator((s) => (s === '' || NumericMatcher.parse(s)) ? null : 'Invalid criteria. Example: ">10"');
-    //     inputs.push(input);
-    //   }
-    // }
-
     analysisForm = DG.InputForm.forInputs(inputs);
     analysisForm.root.style.width = '100%';
     analysisFormHost.appendChild(analysisForm.root);
@@ -150,28 +151,22 @@ function getAnalysesSearchView(
     value: 'None',
     onValueChanged: refreshAnalysisUI,
   });
-  analysisTypeSelector.root.style.maxWidth = '300px';
+  analysisTypeSelector.root.classList.add('assay-analyses-search-view__analysis-type-selector');
 
   const filterPanel = ui.divV([
     ui.h2('Analysis Filters'),
     analysisTypeSelector.root,
     analysisFormHost,
-  ], {classes: 'ui-panel'});
-  filterPanel.style.overflowY = 'auto';
-  filterPanel.style.padding = '0 12px';
+  ], 'assay-analyses-search-view__filter-panel');
+  const mainContainer = ui.divV([
+    filterPanel,
+    resultsView.root
+  ], 'assay-analyses-search-view__main-container');
 
-  const splitter = ui.splitV(
-    [filterPanel, resultsView.root],
-    {style: {width: '100%', height: '100%'}},
-    true
-  );
-
-  mainView.root.appendChild(splitter);
-
+  mainView.root.appendChild(mainContainer);
   refreshAnalysisUI();
   return mainView;
 }
-
 export function searchAnalysesView(): DG.View {
   return getAnalysesSearchView('Search Analyses', queryAnalysesGeneric, (grid) => {
     grid.setOptions({allowEdit: true});
@@ -188,9 +183,5 @@ export function searchAnalysesView(): DG.View {
         grid.invalidate();
       }, 200);
     }
-
-    // const groupCol = grid.dataFrame.getCol('group_combination');
-    // if (groupCol)
-    //   groupCol.setTag(DG.TAGS.CELL_RENDERER, 'Tags');
   });
 }
