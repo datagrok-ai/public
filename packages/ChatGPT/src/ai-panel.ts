@@ -12,15 +12,24 @@ export function initAiPanel() {
   input.style.boxShadow = 'none';
   input.style.borderColor = '--var(grey-2)'
   input.style.width = '100%';
+  const spinner = ui.icons.spinner();
   
   // Add Enter key event listener
-  input.addEventListener('keydown', (event) => {
+  input.addEventListener('keydown', async (event) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       const currentView = grok.shell.v;
-      if (currentView && currentView.type === DG.VIEW_TYPE.TABLE_VIEW && input.value.trim()) {
+      const question = input.value.trim();
+      if (currentView && currentView.type === DG.VIEW_TYPE.TABLE_VIEW && question) {
         const tableView = currentView as DG.TableView;
-        askAiTableView(tableView, input.value);
+        aiPanel.append(ui.divText(question, { classes: 'ai-panel-question' }));
+        aiPanel.append(spinner);
+        try {
+          await askAiTableView(tableView, input.value);
+        }
+        finally {
+          spinner.remove();
+        }
         input.value = '';
       }
     }
