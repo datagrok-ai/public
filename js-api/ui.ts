@@ -1114,6 +1114,20 @@ export class tools {
     return host;
   }
 
+  /** Initialized onClick and sets the tooltip for the element. */
+  static bind(e: HTMLElement, onClick: Function, tooltipMsg: string | null = null): HTMLElement {
+    if (onClick)
+      e?.addEventListener('click', (e) => onClick(e));
+    tooltip.bind(e, tooltipMsg);
+    return e;
+  }
+
+  static parseHtml(html: string): HTMLElement {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    return doc.body!.firstChild! as HTMLElement;
+  }
+
   static initFormulaAccelerators(textInput: InputBase, table: DataFrame): void {
     api.grok_UI_InitFormulaAccelerators(toDart(textInput), table.dart);
   }
@@ -1659,12 +1673,12 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
         if (!element.classList.contains('ui-split-v-divider')) {
           if (element.style.height != '') {
             defaultHeigh += Number(element.style.height.replace(/px$/, ''));
-          } else {
-            noHeightCount++;
           }
-        }else{
-          element.style.height = '4px';
+          else
+            noHeightCount++;
         }
+        else
+          element.style.height = '4px';
       });
 
       childs.forEach((element) => {
@@ -1675,7 +1689,6 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
           }
         }
       })
-
     });
 
     tools.handleResize(b, (w,h)=>{
@@ -1690,10 +1703,9 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
           $(b.childNodes[i]).css('height', 4);
         }
       }
-
     });
-
-  } else {
+  }
+  else {
     $(b).addClass('ui-split-v').append(items.map(item => box(item)))
   }
   return b;
@@ -1918,7 +1930,7 @@ export function panel(items: HTMLElement[] = [], options?: string | ElementOptio
  */
 export function label(text: string | null, options: {} | null = null): HTMLLabelElement {
   let c = document.createElement('label');
-  c.textContent = text;
+  c.textContent = text ?? '';
   $(c).addClass('ui-label');
   _options(c, options);
   return c;
@@ -2089,6 +2101,10 @@ export let icons = {
   search: (handler: Function, tooltipMsg: string | null = null) => _iconFA('search', handler, tooltipMsg),
   filter: (handler: Function, tooltipMsg: string | null = null) => _iconFA('filter', handler, tooltipMsg),
   play: (handler: Function, tooltipMsg: string | null = null) => _iconFA('play', handler, tooltipMsg),
+  spinner: (handler: Function, tooltipMsg: string | null = null) =>
+    tools.bind(tools.parseHtml('<i class="fa fa-spinner fa-pulse fa-3x fa-fw"></i>'), handler, tooltipMsg),
+  loader: (handler: Function, tooltipMsg: string | null = null) =>
+    tools.bind(tools.parseHtml('<div class="grok-loader"><div></div><div></div><div></div><div></div></div>'), handler, tooltipMsg),
 }
 
 export function setDisplayAll(elements: HTMLElement[], show: boolean): void {
@@ -2374,7 +2390,7 @@ export namespace hints {
 
   /** Removes the hint indication from the provided element and returns it. */
   export function remove(el?: HTMLElement): HTMLElement | null {
-    if (el != null) {
+    if (el) {
       const id = el.getAttribute('data-target');
       $(`div.ui-hint-blob[data-target="${id}"]`)[0]?.remove();
       el.classList.remove('ui-hint-target', 'ui-text-hint-target');
