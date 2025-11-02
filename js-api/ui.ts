@@ -253,11 +253,23 @@ export function iconImage(name: string, path: string,
   return _options(i, options);
 }
 
+
+/** Creates an icon for the SVG image
+ * Usage:
+ * - iconSvg('ai.svg') would map to /images/ai.svg
+ * - iconSvg('ai') would map to the `svg-ai` class
+ *  */
 export function iconSvg(name: string, handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null, tooltipMsg: string | null = null): HTMLElement {
-  let i = element('i');
+  const i: HTMLElement = element('i');
   i.classList.add('svg-icon');
   i.classList.add('grok-icon');
-  i.classList.add(`svg-${name}`);
+
+  i.dataset['name'] = (name.includes('.') ? name.split('.')[0] : name);
+  if (name.includes('.svg'))
+    i.style.backgroundImage = `url('/images/${name}')`;
+  else
+    i.classList.add(`svg-${name}`);
+
   if (handler !== null)
     i.addEventListener('click', handler);
   if (tooltipMsg !== null)
