@@ -601,12 +601,12 @@ Also, check out a YouTube video of [RDKit UGM presentation](https://www.youtube.
 
 <details>
 <summary>HELM to SMILES</summary>
-<img src="img/helm-mol-highlight.png" alt="HELM to SMILES"/>
+![](img/helm-mol-highlight.png)
 </details>
 
 <details>
 <summary>SMILES to HELM</summary>
-<img src="img/mol-to-helm.gif" alt="SMILES to HELM"/>
+![](img/mol-to-helm.gif)
 </details>
 
 
