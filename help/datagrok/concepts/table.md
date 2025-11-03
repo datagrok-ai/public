@@ -28,8 +28,6 @@ manually, right-click a column header and select
 
 <!--TODO: revise when this feature (manually add metadata) is updated. Possibly merge Column Properties and Properties context menu options -->
 
-You can search tables by metadata in [projects](project/project.md).
-
 ## Filtering
 
 You can use these fields to filter tables with smart search:
@@ -49,7 +47,8 @@ You can use these fields to filter tables with smart search:
 See also:
 
 * [JS API: Dataframe](https://datagrok.ai/api/js/dg/classes/DataFrame)
-* [Project](project/project.md)
+* [Space](project/space.md)
+* [Dashboard](project/dashboard.md)
 * [Table view](../navigation/views/table-view.md)
 * [View layout](../../visualize/view-layout.md)
 * [Tags](../../govern/catalog/tags.md)

@@ -56,7 +56,7 @@ icon on the right and select **Split right** or **Split down**.
 
 ## Embedding views
 
-For saved [projects](../../concepts/project/project.md), you can also embed views into an external site as an iframe.
+For saved [dashboards](../../concepts/project/dashboard.md), you can also embed views into an external site as an iframe.
 Embedded views remain fully interactive and maintain the connection with the
 data from which it was created inside Datagrok.
 

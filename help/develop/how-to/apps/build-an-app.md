@@ -232,30 +232,21 @@ You typically don't want to mention connections to these data sources or their n
 proprietary. Or, sometimes your application is in public domain, but the customer data resides isolated on their side.
 
 Usually it isn't desired to handle customers' specifics in the shared application code. To handle these cases, we
-recommend you to use Datagrok's namespaces (also called "Root Projects"). As described below, this technique will
-provide for a unique `<NAMESPACE>` within one Datagrok instance, so that in your application code you'd now *always*
+recommend you to use Datagrok's Spaces. As described below, this technique will
+provide for a unique `<SPACE>` within one Datagrok instance, so that in your application code you'd now *always*
 refer to your `<CONNECTION>`
-as `<NAMESPACE>::<CONNECTION>`, in addition to always available `<PACKAGE>::<CONNECTION>`
+as `<SPACE>::<CONNECTION>`, in addition to always available `<PACKAGE>::<CONNECTION>`
 and `<YOUR_NAME>::<CONNECTION>`.
 
 Let's have a `<CONNECTION>` created (say, to a database or a file share) under your Datagrok account, so that it's now
 available as `<YOUR_NAME>::<CONNECTION>`. To not use this token to call to a connection in an application, let's create
-a namespace for it.
+a [Space](../../../datagrok/concepts/project/space.md) for it.
 
-1. Right-click on the connection and select `Add to Project`.
-2. Proceed to the `Projects` section in the Datagrok's left sidebar. Find that the selected connection is now part of
-   the `Scratchpad` project. This is an "unsaved" project, which should save with the `UPLOAD` button.
-   *Note:* alternatively to p.1, you could drag-and-drop the connection onto the `Projects` list.
-3. Give the project a name, say, `NewNamespace`, hit `Ok`. Share it to the groups and users of interest.
-4. Now, without leaving the `Projects` pane, left-click on the project's name, `NewNamespace`. You'd see the property
-   panel on the right. Find there `Convert to root project` command and left-click on it. Verify the status nearby the
-   button is now saying "This is a root project".
-5. What's left is a tweak to harmonize the newly given project's names. Right-click on the project name
-   `NewNamespace` on the left side of the window, again, and select `Rename...`. Provide that both
-   `Name` or `Function Name` are `NewNamespace`, and hit `Ok`.
-6. *Left*-click on the `<CONNECTION>` under the project's name (without leaving the `Projects`
-   section), and observe its context panel on the right. Find `Links...` and left-click on it. You should find that the
-   link to the connection is now suffixed by `NewNamespace:<CONNECTION>`.
+[Browse](../../navigation/views/browse.md) organizes spaces in a tree
+that governs their hierarchy. You can create your own hierarchy under **Spaces**:
+ 
+1. Right-click **Spaces**, select **Create Space...**, and name your space in the dialog that opens.
+2. Drag and drop the connection to the created space. Select **Move** in dialog that opens.
 
 <!--
 #### Pushing credentials to connections

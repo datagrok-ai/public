@@ -4,7 +4,7 @@ sidebar_position: 2
 format: mdx
 ---
 
-Dashboards are [projects](project.md) that contain data (a [dataframe](../table.md)) and the visualizations applied
+Dashboards are projects like [spaces](space.md) that contain data (a [dataframe](../table.md)) and the visualizations applied
 to it (a [layout](../../../visualize/view-layout.md)). 
 
 <!---

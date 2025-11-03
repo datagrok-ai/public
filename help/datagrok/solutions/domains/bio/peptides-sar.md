@@ -122,7 +122,7 @@ You can modify parameters such as activity column, sequence column, other aggreg
 ## Sharing Analysis Results
 
 Analysis results can be saved and shared using Datagrok projects for collaboration purposes. Learn more about Datagrok project saving and
-sharing [here](../../../concepts/project/project.md).
+sharing [here](../../../concepts/project/dashboard.md).
 
 ## Videos
 
