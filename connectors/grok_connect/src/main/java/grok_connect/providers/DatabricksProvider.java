@@ -72,7 +72,8 @@ public class DatabricksProvider extends JdbcDataProvider {
         Properties properties = new Properties();
         if (!conn.hasCustomConnectionString()) {
             properties.setProperty("SSL", "1"); // Always true
-            setIfNotEmpty(properties, "ConnCatalog", (String) conn.get("Catalog"));
+            if (!conn.hasCustomConnectionString())
+                setIfNotEmpty(properties, "ConnCatalog", conn.get("Catalog"));
         }
 
         String method = (String) conn.credentials.parameters.get("#chosen-auth-method");
@@ -117,7 +118,7 @@ public class DatabricksProvider extends JdbcDataProvider {
         try (Connection dbConnection = getConnection(connection);
                  ResultSet schemas = dbConnection.getMetaData().getSchemas()) {
             DataFrame result = DataFrame.fromColumns(new StringColumn("table_schema"));
-            String db = connection.get("Catalog");
+            String db = connection.hasCustomConnectionString() ? null : connection.get("Catalog");
             while (schemas.next()) {
                 String catalog = schemas.getString(2);
                 if (GrokConnectUtil.isEmpty(db) || catalog == null || catalog.equals(db))
@@ -138,7 +139,7 @@ public class DatabricksProvider extends JdbcDataProvider {
                     new StringColumn("table_name"), new StringColumn("column_name"),
                     new StringColumn("data_type"), new IntColumn("is_view"));
             DatabaseMetaData metaData = dbConnection.getMetaData();
-            String db = GrokConnectUtil.isEmpty(connection.get("Catalog")) ? null : connection.get("Catalog");
+            String db = connection.hasCustomConnectionString() ? null : GrokConnectUtil.isEmpty(connection.get("Catalog")) ? null : connection.get("Catalog");
             try (ResultSet tables = metaData.getTables(db, schema, "%", new String[] {"TABLE", "VIEW"})) {
                 while (tables.next()) {
                     String tableCatalog = tables.getString("TABLE_CAT");
