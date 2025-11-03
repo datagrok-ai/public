@@ -24,8 +24,8 @@ export namespace funcs {
     return await grok.functions.call('RevvitySignalsLink:SearchEntities', { query, params });
   }
 
-  export async function searchEntitiesWithStructures(query: string , params: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('RevvitySignalsLink:SearchEntitiesWithStructures', { query, params });
+  export async function searchEntitiesWithStructures(query: string , params: string , doNotAddStructures?: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('RevvitySignalsLink:SearchEntitiesWithStructures', { query, params, doNotAddStructures });
   }
 
   export async function getUsers(): Promise<string> {

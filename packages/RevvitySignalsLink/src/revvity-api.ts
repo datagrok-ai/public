@@ -3,6 +3,7 @@
 import { getApiKey, getApiUrl } from "./credentials-utils";
 import * as grok from 'datagrok-api/grok';
 import { SignalsSearchParams, SignalsSearchQuery } from "./signals-search-query";
+import { MAX_RETURN_ROWS } from "./constants";
 
 // Top-level response interface
 export interface RevvityApiResponse<T = any, I = any> {
@@ -117,7 +118,10 @@ export async function queryUsers(): Promise<RevvityApiResponse> {
 }
 
 export async function search(body: SignalsSearchQuery, queryParams?: SignalsSearchParams): Promise<RevvityApiResponse> {
-  const paramsStr = queryParams ? `?${encodeURI(paramsStringFromObj(queryParams))}` : '';
+  const params = queryParams ?? {};
+  if (!params['page[limit]'])
+    params['page[limit]'] = MAX_RETURN_ROWS;
+  const paramsStr = `?${encodeURI(paramsStringFromObj(params))}`;
   return request('POST', `/entities/search${paramsStr}`, body);
 }
 

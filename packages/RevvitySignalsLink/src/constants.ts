@@ -37,3 +37,5 @@ export const API_KEY_PARAM_NAME = 'apiKey';
 export const REVVITY_LABEL_SEM_TYPE = 'revvity-label';
 
 export const REVVVITY_LABEL_FIELDS = ['materials.project'];
+export const REVVITY_SEARCH_RES_TOTAL_COUNT = '~RevvitySearchResTotalCount';
+export const MAX_RETURN_ROWS = 100;

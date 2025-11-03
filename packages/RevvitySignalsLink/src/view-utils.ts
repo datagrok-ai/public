@@ -6,7 +6,7 @@ import { getRevvityLibraries } from './libraries';
 import { filterProperties, getPropertiesForLibAndEntityType, initializeFilters, runSearchQuery, SAVED_SEARCH_STORAGE } from './search-utils';
 import { getCompoundTypeByViewName, getViewNameByCompoundType } from './utils';
 import { getConditionForLibAndType, retrieveQueriesMap } from './compounds';
-import { ComplexCondition } from '@datagrok-libraries/utils/src/query-builder/query-builder';
+import { ComplexCondition, Operators } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { RevvityUser } from './revvity-api';
 import { LAYOUT_STORAGE, USER_FIELDS } from './constants';
 import { funcs } from './package-api';
@@ -228,14 +228,11 @@ export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, 
         grok.shell.warning(`Library ${libName} not found`);
         return;
       }
-      runSearchQuery(libId[0].id, compoundType)
-        .then(async (res: DG.DataFrame) => {
-          updateView(openedView as DG.TableView, res, compoundType, libName, undefined, filtersDiv);
-          initFilters();
-        }).catch((e: any) => {
-          grok.shell.error(e?.message ?? e);
-          ui.setUpdateIndicator(openedView!.root, false);
-        });
+      initialSearchQuery = {
+        logicalOperator: Operators.Logical.and,
+        conditions: []
+      }
+      initFilters();
     })
   } else
     initFilters();

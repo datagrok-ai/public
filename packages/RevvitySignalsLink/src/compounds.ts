@@ -95,12 +95,23 @@ export const materialsCondition: ComplexCondition = {
     ]
 }
 
-export async function addMoleculeStructures(moleculeIds: string[], molCol: DG.Column): Promise<void> {  
-    const promises = moleculeIds.map((id, index) => 
-    queryStructureById(id)
-      .then(molecule => molCol.set(index, molecule))
-      .catch(() => {})
-  );
+export async function addMoleculeStructures(moleculeIds: string[], molCol: DG.Column): Promise<void> {
 
-  await Promise.allSettled(promises);
+    let counter = 0;
+    const pb = DG.TaskBarProgressIndicator.create('Loading molecule structures...');
+    const promises = moleculeIds.map((id, index) =>
+        queryStructureById(id)
+            .then(molecule => {
+                counter++;
+                molCol.set(index, molecule);
+                pb.update((counter / molCol.length) * 100, `Loaded ${counter} of ${molCol.length} molecules`);
+            })
+            .catch(() => { })
+    );
+
+    try {
+        await Promise.allSettled(promises);
+    } finally {
+        pb.close();
+    }
 }

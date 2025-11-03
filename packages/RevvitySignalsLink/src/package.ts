@@ -11,7 +11,7 @@ import { createInitialSatistics, getRevvityLibraries, RevvityLibrary } from './l
 import { createViewForExpandabelNode, createViewFromPreDefinedQuery, handleInitialURL } from './view-utils';
 import { createSavedSearchesSatistics, SAVED_SEARCH_STORAGE } from './search-utils';
 import { funcs } from './package-api';
-import { HIDDEN_ID_COL_NAME, ID_COL_NAME, MOL_COL_NAME, REVVITY_LABEL_SEM_TYPE, REVVVITY_LABEL_FIELDS, USER_FIELDS } from './constants';
+import { HIDDEN_ID_COL_NAME, ID_COL_NAME, MOL_COL_NAME, REVVITY_LABEL_SEM_TYPE, REVVITY_SEARCH_RES_TOTAL_COUNT, REVVVITY_LABEL_FIELDS, USER_FIELDS } from './constants';
 import { getRevvityUsers, getUsersAllowed, updateRevvityUsers } from './users';
 import { convertIdentifierFormatToRegexp } from './detectors';
 
@@ -140,6 +140,11 @@ export async function searchEntities(query: string, params: string): Promise<DG.
   }
   const rows = await transformData(data);
   const df = rows.length === 0 ? DG.DataFrame.create() : DG.DataFrame.fromObjects(rows)!;
+
+  //saving total result count
+  if (rows.length)
+    df.setTag(REVVITY_SEARCH_RES_TOTAL_COUNT, response.meta ? response.meta!.total.toString() : '');
+
   USER_FIELDS.forEach((field) => {
     const col = df.col(field);
     if (col)
@@ -159,8 +164,9 @@ export async function searchEntities(query: string, params: string): Promise<DG.
 //name: Search Entities With Structures
 //input: string query
 //input: string params
+//input: bool doNotAddStructures {optional: true}
 //output: dataframe df
-export async function searchEntitiesWithStructures(query: string, params: string): Promise<DG.DataFrame> {
+export async function searchEntitiesWithStructures(query: string, params: string, doNotAddStructures?: boolean): Promise<DG.DataFrame> {
   let df = DG.DataFrame.create();
   try {
     df = await funcs.searchEntities(query, params);
@@ -174,7 +180,8 @@ export async function searchEntitiesWithStructures(query: string, params: string
       moleculeColumn.meta.units = DG.UNITS.Molecule.MOLBLOCK;
       df.columns.add(moleculeColumn);
       reorderColumns(df);
-      addMoleculeStructures(moleculeIds, moleculeColumn);
+      if (!doNotAddStructures)
+        addMoleculeStructures(moleculeIds, moleculeColumn);
     }
   } catch (e: any) {
     grok.shell.error(e?.message ?? e);
