@@ -17,6 +17,16 @@ See details: [issues](release-history.md), [plugin changelogs](plugins/plugins.m
 * Introduced support for user account impersonation in Google Cloud Storage
 * Projects: Added support for saving projects created via custom scripts with data synchronization
 
+### Service compatible versions
+
+| Service                | Version          |
+|------------------------|------------------|
+| Grok Connect           | 2.5.2 or higher  |
+| Grok Pipe              | 1.0.1 or higher  |
+| Grok Spawner           | 1.11.4 or higher |
+| RabbitMQ               | 4.0.5-management |
+| Jupyter Kernel Gateway | 1.16.2 or higher |
+
 ## 1.26 || 2025-Jul
 
 ### Developer updates
