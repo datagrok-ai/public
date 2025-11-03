@@ -45,7 +45,8 @@ const enum BTN_CAPTION {
 
 type EditorItem = DG.FormulaLine | DG.AnnotationRegion;
 
-const isAnnotationRegionType = (type: string | undefined): boolean => type === ITEM_TYPE.AREA_REGION_ANNOTATION || type === ITEM_TYPE.FORMULA_REGION_ANNOTATION;
+const isAnnotationRegionType = (type: string | undefined): boolean =>
+  type === ITEM_TYPE.AREA_REGION_ANNOTATION || type === ITEM_TYPE.FORMULA_REGION_ANNOTATION;
 
 export const DEFAULT_OPTIONS: EditorOptions = {
   allowEditDFLines: true,
@@ -224,6 +225,12 @@ class Table {
 
     this.grid = DG.Grid.create(dataFrame);
     this.grid.setOptions({
+      showCurrentRowIndicator: true,
+      showSelectedRows: false,
+      allowRowResizing: false,
+      allowBlockSelection: false,
+      allowColSelection: false,
+      allowRowReordering: false,
       showRowHeader: false,
       showCellTooltip: false,
       showColumnTooltip: false,
@@ -275,7 +282,7 @@ class Table {
             (item as DG.AreaAnnotationRegion).area = JSON.parse(data || '[]');
           }
           catch {
-            (item as DG.AreaAnnotationRegion).area = '[]';
+            (item as DG.AreaAnnotationRegion).area = [];
           }
         } else {
           const data = this.dataFrame.get('formula', this.currentItemIdx).split('; ');
@@ -505,10 +512,10 @@ class Preview {
     else {
       this.viewer = DG.Viewer.scatterPlot(this.dataFrame, {
         ...(src as DG.ScatterPlotViewer).props,
-        yAxisType: src instanceof DG.Viewer && src.getOptions()['type'] == DG.VIEWER.SCATTER_PLOT ? src.props.yAxisType : 'linear',
-        xAxisType: src instanceof DG.Viewer && src.getOptions()['type'] == DG.VIEWER.SCATTER_PLOT ? src.props.xAxisType : 'linear',
-        invertXAxis: src instanceof DG.Viewer && src.getOptions()['type'] == DG.VIEWER.SCATTER_PLOT ? src.props.invertXAxis : false,
-        invertYAxis: src instanceof DG.Viewer && src.getOptions()['type'] == DG.VIEWER.SCATTER_PLOT ?
+        yAxisType: src instanceof DG.Viewer && src.getOptions()['type'] === DG.VIEWER.SCATTER_PLOT ? src.props.yAxisType : 'linear',
+        xAxisType: src instanceof DG.Viewer && src.getOptions()['type'] === DG.VIEWER.SCATTER_PLOT ? src.props.xAxisType : 'linear',
+        invertXAxis: src instanceof DG.Viewer && src.getOptions()['type'] === DG.VIEWER.SCATTER_PLOT ? src.props.invertXAxis : false,
+        invertYAxis: src instanceof DG.Viewer && src.getOptions()['type'] === DG.VIEWER.SCATTER_PLOT ?
           src.props.invertYAxis : false,
         showDataframeFormulaLines: false,
         showViewerFormulaLines: true,
@@ -557,7 +564,7 @@ class Preview {
       try {
         /** Duplicate the original item to display it even if it's hidden */
         const item = this.formulaLineItems[itemIdx];
-        const previewItem = Object.assign({}, item) as DG.FormulaLine;
+        const previewItem = structuredClone(item);
         previewItem.visible = true;
   
         /** Trying to show the item */
@@ -574,7 +581,7 @@ class Preview {
       try {
         /** Duplicate the original item to display it even if it's hidden */
         const item = this.annotationRegionItems[itemIdx];
-        const previewItem = structuredClone(item) as DG.AnnotationRegion;
+        const previewItem = structuredClone(item);
         previewItem.hidden = false;
   
         /** Trying to show the item */
@@ -617,8 +624,8 @@ class Editor {
     public formulaLineItems: DG.FormulaLine[],
     public annotationRegionItems: DG.AnnotationRegion[],
     private dataFrame: DG.DataFrame,
-    private onItemChangedAction: Function,
-    private onFormulaValidation: Function
+    private onItemChangedAction: (itemIdx: number, isFormulaLine: boolean) => boolean,
+    private onFormulaValidation: (isValid: boolean) => void,
   ) {
     this.form = ui.form([]);
   }
@@ -639,17 +646,19 @@ class Editor {
   }
 
   private annotationRegionForm(itemIdx: number): HTMLElement {
-    const item = itemIdx >= 0 ? this.annotationRegionItems[itemIdx] : {type: ITEM_TYPE.AREA_REGION_ANNOTATION};
-
+    const item = itemIdx >= 0 ? this.annotationRegionItems[itemIdx] : { type: ITEM_TYPE.AREA_REGION_ANNOTATION };
     const mainPane = ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px', overflowX: 'auto'}});
     const formatPane = ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px', overflowX: 'auto'}});
     const descriptionPane = ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px', overflowX: 'auto'}});
+    const pointsPane = item.type === ITEM_TYPE.AREA_REGION_ANNOTATION
+      ? ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px', overflowX: 'auto'}})
+      : null;
 
     /** Preparing the "Main" panel */
     if (item.type === ITEM_TYPE.AREA_REGION_ANNOTATION) {
       mainPane.append(this.inputAreaColumn(itemIdx, 'x'));
       mainPane.append(this.inputAreaColumn(itemIdx, 'y'));
-      mainPane.append(this.areaDescription(itemIdx));
+      pointsPane?.append(this.areaPointsInput(itemIdx));
     } else {
       mainPane.append(this.inputAnnotationFormula(itemIdx, 'formula1'));
       mainPane.append(this.inputAnnotationFormula(itemIdx, 'formula2'));
@@ -669,6 +678,9 @@ class Editor {
     /** Creating the accordion */
     const combinedPanels = ui.accordion();
     combinedPanels.addPane(item.type === ITEM_TYPE.AREA_REGION_ANNOTATION ? 'Area' : 'Formula', () => mainPane, true);
+    if (pointsPane)
+      combinedPanels.addPane('Area', () => pointsPane, false);
+
     combinedPanels.addPane('Format', () => formatPane, true);
     combinedPanels.addPane('Description', () => descriptionPane, true);
 
@@ -731,7 +743,7 @@ class Editor {
       onValueChanged: (value) => {
         const oldFormula = item.formula!;
         item.formula = value;
-        const resultOk = this.onItemChangedAction(itemIdx);
+        const resultOk = this.onItemChangedAction(itemIdx, true);
         elFormula.classList.toggle('d4-forced-invalid', !resultOk);
         if (!resultOk) {
           const splitValues = value?.split('=');
@@ -761,7 +773,7 @@ class Editor {
     const ibColor = ui.input.color('Color', {value: item.color ?? '#000000',
       onValueChanged: (value) => {
         item.color = value;
-        this.onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx, true);
       }});
 
     const elColor = ibColor.input as HTMLInputElement;
@@ -776,7 +788,7 @@ class Editor {
     const ibColor = ui.input.color(header, {value: item[key] ? DG.Color.toHtml(item[key] as number) : defaultColor,
       onValueChanged: (value) => {
         (item as any)[key] = DG.Color.fromHtml(value);
-        this.onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx, false);
       }});
     const elColor = ibColor.input as HTMLInputElement;
     elColor.placeholder = defaultColor;
@@ -793,7 +805,7 @@ class Editor {
     elOpacity.value = item.outlineWidth ?? 1;
     elOpacity.addEventListener('input', () => {
       item.outlineWidth = parseInt(elOpacity.value);
-      this.onItemChangedAction(itemIdx);
+      this.onItemChangedAction(itemIdx, false);
     });
     // elOpacity.setAttribute('style', 'width: 204px; margin-top: 6px; margin-left: 0px;');
     elOpacity.setAttribute('style', 'margin-top: 6px; width: 100%;');
@@ -814,7 +826,7 @@ class Editor {
     elOpacity.value = item.opacity ?? 30;
     elOpacity.addEventListener('input', () => {
       item.opacity = parseInt(elOpacity.value);
-      this.onItemChangedAction(itemIdx);
+      this.onItemChangedAction(itemIdx, isFormulaLine);
     });
     // elOpacity.setAttribute('style', 'width: 204px; margin-top: 6px; margin-left: 0px;');
     elOpacity.setAttribute('style', 'margin-top: 6px; width: 100%;');
@@ -832,7 +844,7 @@ class Editor {
     const ibStyle = ui.input.choice('Style', {value: item.style ?? 'solid',
       items: ['solid', 'dotted', 'dashed', 'longdash', 'dotdash'], onValueChanged: (value) => {
         item.style = value;
-        this.onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx , true);
       }});
 
     const elStyle = ibStyle.input as HTMLInputElement;
@@ -841,7 +853,7 @@ class Editor {
     const ibWidth = ui.input.int('', {value: item.width ?? 1,
       onValueChanged: (value) => {
         item.width = value;
-        this.onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx, true);
       }});
     ibWidth.addPostfix('px');
 
@@ -861,7 +873,7 @@ class Editor {
     const ibMin = ui.input.string('Range', {value: `${item.min ?? ''}`,
       onValueChanged: (value) => {
         item.min = value.length === 0 ? undefined : Number(value);
-        this.onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx, true);
       }});
 
     const elMin = ibMin.input as HTMLInputElement;
@@ -871,7 +883,7 @@ class Editor {
     const ibMax = ui.input.string('', {value: `${item.max ?? ''}`,
       onValueChanged: (value) => {
         item.max = value.length === 0 ? undefined : Number(value);
-        this.onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx, true);
       }});
 
     const elMax = ibMax.input as HTMLInputElement;
@@ -889,7 +901,7 @@ class Editor {
       value: item.zIndex && item.zIndex > 0 ? 'above markers' : 'below markers', items: ['above markers', 'below markers'],
       onValueChanged: (value) => {
         item.zIndex = value === 'above markers' ? 100 : -100;
-        this.onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx, true);
       }});
 
     const elArrange = ibArrange.input as HTMLInputElement;
@@ -898,7 +910,7 @@ class Editor {
     return ui.divH([ibArrange.root]);
   }
 
-  getTitleFromFormula(formula: string): string {
+  private getTitleFromFormula(formula: string): string {
     let title = formula;
     if (title) {
       const regexp = /\${(.+?)}/gi;
@@ -912,10 +924,10 @@ class Editor {
   private inputAnnotationFormula(itemIdx: number, title: keyof DG.FormulaAnnotationRegion): HTMLElement {
     const item = this.annotationRegionItems[itemIdx] as DG.FormulaAnnotationRegion;
 
-    const ibHeader = ui.input.string(title == 'formula1' ? 'Formula 1' : 'Formula 2', {value: item[title] ? item[title] as string : '',
+    const ibHeader = ui.input.string(title === 'formula1' ? 'Formula 1' : 'Formula 2', {value: item[title] ? item[title] as string : '',
       onValueChanged: (value) => {
         (item as any)[title] = value;
-        this.onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx, false);
       }});
 
     const elHeader = ibHeader.input as HTMLInputElement;
@@ -923,7 +935,6 @@ class Editor {
 
     return ui.divH([ibHeader.root]);
   }
-
 
   /** Creates text input for item title */
   private inputTitle(itemIdx: number): HTMLElement {
@@ -946,7 +957,7 @@ class Editor {
     this.ibTitle = ui.input.string('Title', {value: item.title ?? '',
       onValueChanged: (value) => {
         item.title = formTitleValue(value);
-        this.onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx, true);
       }});
 
     const elTitle = this.ibTitle.input as HTMLInputElement;
@@ -962,7 +973,7 @@ class Editor {
     const ibHeader = ui.input.string('Header', {value: item.header ?? '',
       onValueChanged: (value) => {
         item.header = value;
-        this.onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx, false);
       }});
 
     const elHeader = ibHeader.input as HTMLInputElement;
@@ -978,7 +989,7 @@ class Editor {
     const iShowLabels = ui.input.bool('Show on plot', {value: item.showOnPlot ?? true,
       onValueChanged: (value) => {
         item.showOnPlot = value;
-        this.onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx, true);
       }});
 
 
@@ -992,7 +1003,7 @@ class Editor {
     const iShowLabels = ui.input.bool('Show on tooltip', {value: item.showOnTooltip ?? true,
       onValueChanged: (value) => {
         item.showOnTooltip = value;
-        this.onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx, true);
       }});
 
 
@@ -1004,23 +1015,63 @@ class Editor {
       this.columnInput.value = value;
   }
 
-  private areaDescription(itemIdx: number): HTMLElement {
+  private areaPointsInput(itemIdx: number): HTMLElement {
     const item = this.annotationRegionItems[itemIdx] as DG.AreaAnnotationRegion;
+    // Points may contain same x coordinates that are treated as
+    // different input value key, so points should be created manually
+    const values = ({ ...(item?.area?.map(p => p[1]?.toString() ?? '') ?? []) });
+    const pointsMap = ui.input.map('Points', {
+      value: values as any,
+      onValueChanged: () => {
+        const points: [number, number][] = [];
+        pointsMap.root.querySelectorAll('tr').forEach((tr) => {
+          const [ xInput, yInput ]: HTMLInputElement[] = Array.from(tr.querySelectorAll('td input.ui-input-editor'));
+          const x = parseFloat(xInput?.value);
+          const y = parseFloat(yInput?.value);
+          if (!isNaN(x) && !isNaN(y))
+            points.push([x, y]);
+        });
 
-    const ibDescription = ui.input.textArea('Area', {value: item.area ?? '',
-      onValueChanged: (value) => {
-        item.area = value;
-        this.onItemChangedAction(itemIdx);
-      }});
+        item.area = points;
+        this.onItemChangedAction(itemIdx, false);
+      },
+    });
 
-    // ui.input.map();
+    // Apply styles to improve the layout
+    pointsMap.root.setAttribute('style', 'width: 100%; max-width: none;');
 
-    const elDescription = ibDescription.input as HTMLInputElement;
-    elDescription.setAttribute('style',
-      'height: 40px; font-family: inherit; font-size: inherit;');
-    // 'width: 194px; height: 40px; padding-left: 6px; margin-right: -8px; font-family: inherit; font-size: inherit;');
+    // Add CSS for input alignment
+    const style = document.createElement('style');
+    style.textContent = `
+      .area-points-map input.ui-input-editor {
+        text-align: center;
+      }
+    `;
 
-    return ibDescription.root;
+    pointsMap.root.appendChild(style);
+    pointsMap.root.classList.add('area-points-map');
+    pointsMap.root.querySelectorAll('tr').forEach((tr) => {
+      const [ xTd, yTd ] = Array.from(tr.querySelectorAll('td'));
+      const [ xInput, yInput ] = [xTd, yTd].map(td => td.querySelector('input.ui-input-editor') as HTMLInputElement | null);
+      
+      // Set equal widths for X and Y input cells
+      xTd?.setAttribute('style', 'width: 50%; padding-right: 4px;');
+      yTd?.setAttribute('style', 'width: 50%; padding-left: 4px;');
+      
+      // Style the input fields for better fit and center alignment
+      xInput?.setAttribute('style', 'width: 100%; box-sizing: border-box; text-align: center;');
+      yInput?.setAttribute('style', 'width: 100%; box-sizing: border-box; text-align: center;');
+
+      if (xInput)
+        xInput.value = item?.area?.[parseInt(xInput.value)]?.[0]?.toString() ?? '';
+    });
+
+    // Add custom styles for the delete button column
+    pointsMap.root.querySelectorAll('td:last-child').forEach((td) => {
+      td.setAttribute('style', 'width: 24px; padding-left: 8px;');
+    });
+
+    return pointsMap.root;
   }
   
 
@@ -1031,7 +1082,7 @@ class Editor {
     const ibDescription = ui.input.textArea('Description', {value: item.description ?? '',
       onValueChanged: (value) => {
         item.description = value;
-        this.onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx, isFormulaLine);
       }});
 
     const elDescription = ibDescription.input as HTMLInputElement;
@@ -1050,7 +1101,7 @@ class Editor {
     const ibColumn2 = ui.input.column(type.toUpperCase() + ' column', {table: this.dataFrame, value: this.dataFrame.col(item[type]),
       onValueChanged: (value) => {
         item[type] = value.name;
-        this.onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx, false);
       }});
       
     this.columnInput = ibColumn2;
@@ -1068,7 +1119,7 @@ class Editor {
     const ibColumn2 = ui.input.column('Adjacent column', {table: this.dataFrame, value: item.column2 ? this.dataFrame.col(item.column2) : null,
       onValueChanged: (value) => {
         item.column2 = value.name;
-        this.onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx, true);
       }});
       
     this.columnInput = ibColumn2;
@@ -1087,7 +1138,7 @@ class Editor {
       onValueChanged: (value) => {
         const oldFormula = item.formula!;
         item.formula = '${' + value + '} = ' + ibValue.value;
-        this.onItemChangedAction(itemIdx);
+        this.onItemChangedAction(itemIdx, true);
         this.setTitleIfEmpty(oldFormula, item.formula);
       }});
 
@@ -1098,7 +1149,7 @@ class Editor {
     const ibValue = ui.input.string('Value', {value: value, onValueChanged: (value) => {
       const oldFormula = item.formula!;
       item.formula = '${' + ibColumn.value + '} = ' + value;
-      this.onItemChangedAction(itemIdx);
+      this.onItemChangedAction(itemIdx, true);
       this.setTitleIfEmpty(oldFormula, item.formula);
     }});
     ibValue.nullable = false;
@@ -1267,7 +1318,7 @@ class CreationControl {
         const historyGroup = menu.group(BTN_CAPTION.HISTORY);
         this.historyItems.forEach((item) => {
           historyGroup.item((item as DG.FormulaLine).formula!, () => {
-            const newItem = Object.assign({}, item);
+            const newItem = structuredClone(item);
             this.justCreatedItems.unshift(newItem);
             onItemCreatedAction(newItem);
           });
@@ -1375,8 +1426,8 @@ export class FormulaLinesDialog {
 
   private initPreview(src: DG.DataFrame | DG.Viewer): Preview {
     const preview = new Preview(this.host.viewerFormulaLineItems! ?? this.host.dframeFormulaLineItems!,
-        this.host.viewerAnnotationRegionItems! ?? this.host.dframeAnnotationRegionItems!,
-        src, this.creationControl.popupMenu);
+      this.host.viewerAnnotationRegionItems! ?? this.host.dframeAnnotationRegionItems!,
+      src, this.creationControl.popupMenu);
     preview.height = 310;
     return preview;
   }
@@ -1409,8 +1460,7 @@ export class FormulaLinesDialog {
     return new Editor(this.host.viewerFormulaLineItems! ?? this.host.dframeFormulaLineItems!,
       this.host.viewerAnnotationRegionItems! ?? this.host.dframeAnnotationRegionItems!,
       this.preview.dataFrame,
-      (itemIdx: number): boolean => {
-        const isFormulaLine = this.preview.formulaLineItems.length > 0 && itemIdx < this.preview.formulaLineItems.length;
+      (itemIdx: number, isFormulaLine: boolean = true): boolean => {
         this.currentTable.update(itemIdx, isFormulaLine);
         return this.preview.update(itemIdx, isFormulaLine);
       },
