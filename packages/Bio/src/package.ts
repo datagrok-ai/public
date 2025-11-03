@@ -621,12 +621,12 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Molecules to HELM',
-    topMenu: 'Bio | Transform | Molecules to HELM...',
+    'top-menu': 'Bio | Transform | Molecules to HELM...',
     description: 'Converts Peptide molecules to HELM notation by matching with monomer library',
   })
   static async moleculesToHelmTopMenu(
     @grok.decorators.param({name: 'table', options: {description: 'Input data table'}})table: DG.DataFrame,
-    @grok.decorators.param({name: 'molecules', semType: 'Molecule', options: {semType: 'Molecule', description: 'Molecule column'}})molecules: DG.Column,
+    @grok.decorators.param({name: 'molecules', options: {semType: 'Molecule', description: 'Molecule column'}})molecules: DG.Column,
   ) {
     // collect current monomer library
     const monomerLib = _package.monomerLib;
