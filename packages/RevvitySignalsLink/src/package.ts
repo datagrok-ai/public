@@ -121,12 +121,12 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
 }
 
 //name: Search Entities
-//meta.cache: all
-//meta.cache.invalidateOn: 0 0 * * *
 //input: string query
 //input: string params
+//input: string libId
+//input: string entityType
 //output: dataframe df
-export async function searchEntities(query: string, params: string): Promise<DG.DataFrame> {
+export async function searchEntities(query: string, params: string, libId: string, entityType: string): Promise<DG.DataFrame> {
   const queryJson: SignalsSearchQuery = JSON.parse(query);
   const paramsJson: SignalsSearchParams = JSON.parse(params);
   const response = await search(queryJson, Object.keys(paramsJson).length ? paramsJson : undefined);
@@ -138,12 +138,10 @@ export async function searchEntities(query: string, params: string): Promise<DG.
     if (newUsers?.length)
       updateRevvityUsers(newUsers);
   }
-  const rows = await transformData(data);
-  const df = rows.length === 0 ? DG.DataFrame.create() : DG.DataFrame.fromObjects(rows)!;
+  const df = await transformData(data, libId, entityType);
 
   //saving total result count
-  if (rows.length)
-    df.setTag(REVVITY_SEARCH_RES_TOTAL_COUNT, response.meta ? response.meta!.total.toString() : '');
+  df.setTag(REVVITY_SEARCH_RES_TOTAL_COUNT, response.meta ? response.meta!.total.toString() : '');
 
   USER_FIELDS.forEach((field) => {
     const col = df.col(field);
@@ -164,12 +162,15 @@ export async function searchEntities(query: string, params: string): Promise<DG.
 //name: Search Entities With Structures
 //input: string query
 //input: string params
+//input: string libId
+//input: string entityType
 //input: bool doNotAddStructures {optional: true}
 //output: dataframe df
-export async function searchEntitiesWithStructures(query: string, params: string, doNotAddStructures?: boolean): Promise<DG.DataFrame> {
+export async function searchEntitiesWithStructures(query: string, params: string,
+  libId: string, entityType: string, doNotAddStructures?: boolean): Promise<DG.DataFrame> {
   let df = DG.DataFrame.create();
   try {
-    df = await funcs.searchEntities(query, params);
+    df = await funcs.searchEntities(query, params, libId, entityType);
     let idCol = df.col(HIDDEN_ID_COL_NAME);
     if (!idCol)
       idCol = df.col(ID_COL_NAME);

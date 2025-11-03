@@ -51,7 +51,8 @@ export async function runSearchQuery(libId: string, compoundType: string,
     cond.conditions.push(queryBuilderCondition);
   const signalsQuery: SignalsSearchQuery = convertComplexConditionToSignalsSearchQuery(cond);
   console.log(signalsQuery);
-  const resultDf = await funcs.searchEntitiesWithStructures(JSON.stringify(signalsQuery), params ? JSON.stringify(params) : '{}', withoutStructures);
+  const resultDf = await funcs.searchEntitiesWithStructures(JSON.stringify(signalsQuery),
+    params ? JSON.stringify(params) : '{}', libId, compoundType, withoutStructures);
   return resultDf;
 }
 
@@ -221,9 +222,10 @@ export async function getPropertiesForLibAndEntityType(libId: string, compoundTy
     const tagsStr = await funcs.getTags(compoundType, libId);
     const tags: { [key: string]: string } = JSON.parse(tagsStr);
     Object.keys(tags).forEach((tagName) => {
+      const propType = REVVITY_FIELD_TO_PROP_TYPE_MAPPING[tags[tagName]] ?? DG.TYPE.STRING;
       const propOptions: { [key: string]: any } = {
         name: tagName,
-        type: REVVITY_FIELD_TO_PROP_TYPE_MAPPING[tags[tagName]],
+        type: propType,
       };
       const nameArr = tagName.split('.');
       if (nameArr.length > 1)

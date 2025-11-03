@@ -1,7 +1,9 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { queryStructureById } from './revvity-api';
 import { ComplexCondition, Operators } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { SignalsSearchQuery } from './signals-search-query';
+import { delay } from '@datagrok-libraries/utils/src/test';
 
 export const assetsQuery = {
     "query": {
@@ -96,22 +98,43 @@ export const materialsCondition: ComplexCondition = {
 }
 
 export async function addMoleculeStructures(moleculeIds: string[], molCol: DG.Column): Promise<void> {
-
+    const BATCH_SIZE = 100;
     let counter = 0;
     const pb = DG.TaskBarProgressIndicator.create('Loading molecule structures...');
-    const promises = moleculeIds.map((id, index) =>
-        queryStructureById(id)
-            .then(molecule => {
-                counter++;
-                molCol.set(index, molecule);
-                pb.update((counter / molCol.length) * 100, `Loaded ${counter} of ${molCol.length} molecules`);
-            })
-            .catch(() => { })
-    );
+    
+    // Split IDs into batches
+    const batches: string[][] = [];
+    for (let i = 0; i < moleculeIds.length; i += BATCH_SIZE) {
+        batches.push(moleculeIds.slice(i, i + BATCH_SIZE));
+    }
+
+    const failedIdxs: number[] = [];
 
     try {
-        await Promise.allSettled(promises);
+        // Process each batch sequentially
+        for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+            const batch = batches[batchIndex];
+            const promises = batch.map(async (id, batchItemIndex) => {
+                const globalIndex = batchIndex * BATCH_SIZE + batchItemIndex;
+                try {
+                    const molecule = await queryStructureById(id);
+                    counter++;
+                    molCol.set(globalIndex, molecule);
+                    pb.update((counter / molCol.length) * 100, `Loaded ${counter} of ${molCol.length} molecules`);
+                } catch (e) {
+                    failedIdxs.push(globalIndex);
+                }
+            });
+            
+            await Promise.allSettled(promises);
+            //make a delay after each batch to avoid 429 (Too many requests) error
+            await delay(1000);
+        }
+    } catch (e: any) {
+        throw e;
     } finally {
         pb.close();
+        if (failedIdxs.length)
+            grok.shell.warning(`Smiles for molecules ${failedIdxs.join(',')} failed to load`);
     }
 }

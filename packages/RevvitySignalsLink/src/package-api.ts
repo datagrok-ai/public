@@ -20,12 +20,12 @@ export namespace funcs {
     return await grok.functions.call('RevvitySignalsLink:RevvitySignalsLinkAppTreeBrowser', { treeNode, browseView });
   }
 
-  export async function searchEntities(query: string , params: string ): Promise<DG.DataFrame> {
-    return await grok.functions.call('RevvitySignalsLink:SearchEntities', { query, params });
+  export async function searchEntities(query: string , params: string , libId: string , entityType: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('RevvitySignalsLink:SearchEntities', { query, params, libId, entityType });
   }
 
-  export async function searchEntitiesWithStructures(query: string , params: string , doNotAddStructures?: boolean ): Promise<DG.DataFrame> {
-    return await grok.functions.call('RevvitySignalsLink:SearchEntitiesWithStructures', { query, params, doNotAddStructures });
+  export async function searchEntitiesWithStructures(query: string , params: string , libId: string , entityType: string , doNotAddStructures?: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('RevvitySignalsLink:SearchEntitiesWithStructures', { query, params, libId, entityType, doNotAddStructures });
   }
 
   export async function getUsers(): Promise<string> {
