@@ -756,11 +756,13 @@ export namespace input {
         optionsMap[key](input, (specificOptions as IIndexable)[key]);
 
       if (inputType === d4.InputType.Columns) {
-        if (key == 'additionalColumns' && options[key])
-          setInputAdditionalColumns(input, options[key]);
+        const additionalCols = options[key] as { [key: string]: Column[] } | undefined;
+        const onAdditionalColsChanged = options[key] as ((additionalColumns: { [key: string]: Column[] }) => void) | undefined;        
+        if (key === 'additionalColumns' && additionalCols)
+          setInputAdditionalColumns(input, additionalCols);
 
-        if (key == 'onAdditionalColumnsChanged' && options[key])
-          setInputAdditionalColumnsOnChanged(input, options[key]);
+        if (key === 'onAdditionalColumnsChanged' && onAdditionalColsChanged)
+          setInputAdditionalColumnsOnChanged(input, onAdditionalColsChanged);
       }
     }
     const baseOptions = (({value, nullable, property, onCreated, onValueChanged}) => ({value, nullable, property, onCreated, onValueChanged}))(options);
@@ -782,6 +784,8 @@ export namespace input {
     tooltipText?: string;
     onCreated?: (input: InputBase<T>) => void;
     onValueChanged?: (value: T, input: InputBase<T>) => void;
+    additionalColumns?: { [key: string]: Column[] };
+    onAdditionalColumnsChanged?: (additionalColumns: { [key: string]: Column[] }) => void;
   }
 
   export interface INumberInputInitOptions<T> extends IInputInitOptions<T> {
@@ -821,7 +825,7 @@ export namespace input {
     available?: string[];
     checked?: string[];
     additionalColumns?: { [key: string]: Column[] };
-    OnAdditionalColumnsChanged?: (additionalColumns: { [key: string]: Column[] }) => void;
+    onAdditionalColumnsChanged?: (additionalColumns: { [key: string]: Column[] }) => void;
   }
 
   export interface IColorInputInitOptions<T> extends IInputInitOptions<T> {
