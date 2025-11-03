@@ -96,7 +96,7 @@ export function getNewMonomers(rdkit: RDModule, mLib: IMonomerLib, rule: RuleRea
     pMolblock = mol?.get_molblock();//molP?.get_v3Kmolblock();//
   } catch (err: any) {
     const [errMsg, _errStack] = errInfo(err);
-    grok.shell.error(`Can not assemble monomer '${monomerName}': ${errMsg}.`);
+    console.error(`Can not assemble monomer '${monomerName}': ${errMsg}.`);
     throw err;
   } finally {
     mol?.delete();
@@ -185,7 +185,7 @@ function cutReactant(rdkit: RDModule, reactant: string, rxn: RDReaction, monomer
     molBlock = molP?.get_molblock();//molP?.get_v3Kmolblock();//
   } catch (err: any) {
     const [errMsg, _errStack] = errInfo(err);
-    grok.shell.error(`Can not assemble monomer '${monomerName}': ${errMsg}.`);
+    console.error(`Can not assemble monomer '${monomerName}': ${errMsg}.`);
     throw err;
   } finally {
     mols?.delete();
@@ -205,7 +205,7 @@ function getReactionSmirks(rdkit: RDModule, smirks: string): RDReaction {
   } catch (err: any) {
     rxn?.delete();
     const [errMsg, _errStack] = errInfo(err);
-    grok.shell.error(`Can not assemble monomer '${smirks}': ${errMsg}.`);
+    console.error(`Can not assemble monomer '${smirks}': ${errMsg}.`);
     throw err;
   } finally {
 
@@ -275,7 +275,7 @@ function getSyntheticMolBlock(rdkit: RDModule, reaction: string,
     molBlock = molP?.get_molblock();//molP?.get_v3Kmolblock();//
   } catch (err: any) {
     const [errMsg, _errStack] = errInfo(err);
-    grok.shell.error(`Can not assemble monomer '${monomerName}': ${errMsg}.`);
+    console.error(`Can not assemble monomer '${monomerName}': ${errMsg}.`);
     throw err;
   } finally {
     rxn?.delete();
