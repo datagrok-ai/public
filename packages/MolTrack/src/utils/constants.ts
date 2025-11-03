@@ -71,7 +71,7 @@ export const CORPORATE_COMPOUND_ID_COL_NAME = 'corporate_compound_id';
 export const STRUCTURE_FIELDS = [MOL_COL_NAME, 'original_molfile'];
 export const STRUCTURE_SEARCH_FIELD = 'structure';
 
-export const STRING_AGGREGATIONS = ['CONCAT ALL', 'CONCAT UNIQUE', 'MOST FREQUENT'];
+export const STRING_AGGREGATIONS = ['FIRST', 'CONCAT ALL', 'CONCAT UNIQUE', 'MOST FREQUENT'];
 export const NUMERIC_AGGREGATIONS = ['COUNT', 'VALUES', 'UNIQUE', 'NULLS', 'MIN', 'MAX', 'SUM',
   'MED', 'AVG', 'STDEV', 'VARIANCE', 'Q1', 'Q2', 'Q3'];
 export const PROP_NUM_TYPES = [DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.INT, DG.TYPE.NUM, DG.TYPE.QNUM];
