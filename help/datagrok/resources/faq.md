@@ -410,7 +410,7 @@ Datagrok provides advanced and intuitive search and filtering capabilities:
 ##### <b>Q: Can users save and share custom dashboards, analyses, and visualizations in Datagrok?</b>  
 
 Users can create projects that include data, analyses, and dashboards, then share them with others. Dashboards are dynamic and customizable.   
-[Creating and managing projects](../concepts/project/project.md#creating-and-managing-projects) | [Creating dynamic dashboards](../../access/databases/databases.md#creating-dynamic-dashboards-for-query-results)  
+[Creating and managing projects](../concepts/project/dashboard.md) | [Creating dynamic dashboards](../../access/databases/databases.md#creating-dynamic-dashboards-for-query-results)  
 
 ##### <b>Q: How can I link raw data, metadata, and analysis results to compounds or sequences so that this information can be easily recalled and shared across Datagrok dashboards?</b>
 
