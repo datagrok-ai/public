@@ -27,7 +27,7 @@ export async function performNelderMeadOptimization(
   const rand = reproSettings.reproducible ? seededRandom(reproSettings.seed) : Math.random;
   const params = sampleParamsWithFormulaBounds(samplesCount, inputsBounds, rand);
 
-  let extremums: Extremum[] = [];
+  const extremums: Extremum[] = [];
   const warnings: string[] = [];
   const failedInitPoint: Float64Array[] = [];
   let failsCount = 0;
@@ -35,7 +35,7 @@ export async function performNelderMeadOptimization(
 
   let i: number;
   let percentage = 0;
-  const pi = DG.TaskBarProgressIndicator.create(`Fitting... (${percentage}%)`, { cancelable: true });
+  const pi = DG.TaskBarProgressIndicator.create(`Fitting... (${percentage}%)`, {cancelable: true});
 
   const useEarlyStopping = earlyStoppingSettings.useEarlyStopping;
   const threshold = useEarlyStopping ? earlyStoppingSettings.costFuncThreshold : undefined;

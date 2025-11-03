@@ -353,7 +353,6 @@ export class FittingView {
           }
         });
       } else {
-
         const tempDefault = {
           input: (() => {
             const temp = ui.input.forProperty(inputProp);
@@ -1088,7 +1087,7 @@ export class FittingView {
       const roots = [
         ...(inputConfig.isChangingInput ? [inputConfig.isChangingInput.root] : []),
         ...inputConfig.constForm.map((input) => input.root),
-        ...inputConfig.saForm.map((input) => input.root)
+        ...inputConfig.saForm.map((input) => input.root),
       ];
       const isPrimary = this.options.ranges?.[propName]?.isPrimary;
       if (isPrimary)
@@ -1140,7 +1139,7 @@ export class FittingView {
         roots.push(
           outputConfig.showInfoWidget,
           outputConfig.argColInput.root,
-          outputConfig.funcColsInput.root
+          outputConfig.funcColsInput.root,
         );
       }
       const propName = outputConfig.prop.name;
@@ -1224,16 +1223,15 @@ export class FittingView {
         item.style.height = '0';
         item.style.top = '22px';
         item.style.position = 'relative';
-      } else if(item.classList.contains(SIDE_ICON_CLASS)) {
+      } else if (item.classList.contains(SIDE_ICON_CLASS)) {
         item.style.height = '0';
         item.style.top = '14px';
         item.style.left = '14px';
         item.style.position = 'relative';
-      } else if(item.classList.contains(FORM_TITLE_CLASS) || item.classList.contains(FORM_SECTION_CLASS)) {
+      } else if (item.classList.contains(FORM_TITLE_CLASS) || item.classList.contains(FORM_SECTION_CLASS))
         continue;
-      } else {
+      else
         item.style.marginLeft = '50px';
-      }
     }
 
     this.updateApplicabilityState();

@@ -13,7 +13,7 @@ export function callHandler<R, P = any>(handler: HandlerBase<P, R>, params: P): 
     return defer(async () => {
       const f = DG.Func.byName(handler);
       const call = f.prepare({params});
-      await call.call(undefined, undefined, {processed:true, report:false});
+      await call.call(undefined, undefined, {processed: true, report: false});
       const res = call.getOutputParamValue() as R;
       return res;
     });
@@ -82,24 +82,24 @@ const areObjectsEqual: TypeEqualityComparator<Record<any, any>> = (a, b) => {
     return true;
   }
 
-  if (dayjs.isDayjs(a) && dayjs.isDayjs(b)) {
+  if (dayjs.isDayjs(a) && dayjs.isDayjs(b))
     return a.isSame(b);
-  }
+
 
   if (!deepEqual(a, b))
     return false;
 
   return true;
-}
+};
 
-const FLOAT_TOLERANCE = 0.0001
+const FLOAT_TOLERANCE = 0.0001;
 
 const areNumbersEqual: TypeEqualityComparator<number> = (a, b) => {
   if (isNaN(a) && isNaN(b))
     return true;
   return Math.abs(a - b) < FLOAT_TOLERANCE;
-}
+};
 
 export const customDeepEqual = createCustomEqual({
-  createCustomConfig: () => ({ areNumbersEqual, areObjectsEqual })
+  createCustomConfig: () => ({areNumbersEqual, areObjectsEqual}),
 });
