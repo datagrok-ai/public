@@ -1,5 +1,12 @@
 # Bio changelog
 
+## 2.25.2 (2025-11-03)
+
+* Update Bio Lib API
+* Sequence header: Enable for shorter and non-MSA sequences
+* Monomer manager: Chech both capped and uncapped monomers when matching mols with libraries, provide multiple sources for matching
+* Mol-To-Helm converter: Add initial version of Molecules to sequence converter
+
 ## 2.25.1 (2025-10-30)
 
 * Rework User lib settings storage to accomodate shortened duplicate preferences

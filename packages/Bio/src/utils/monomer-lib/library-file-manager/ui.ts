@@ -1,3 +1,5 @@
+/* eslint-disable rxjs/no-async-subscribe */
+/* eslint-disable rxjs/no-ignored-subscription */
 /* eslint-disable max-lines */
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
