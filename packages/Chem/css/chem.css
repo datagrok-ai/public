@@ -257,6 +257,11 @@
   color: var(--blue-1) !important;
 }
 
+.chem-scaffold-tree-toolbar .d4-flex-row > .grok-icon.inactive {
+  cursor: not-allowed;
+  color: gray !important;
+}
+
 .d4-viewer.d4-filters:hover .chem-scaffold-tree-toolbar {
   visibility: visible;
 }
