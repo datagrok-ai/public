@@ -3,37 +3,31 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import { ErrorHandling, MolTrackProp, Scope } from '../utils/constants';
+import { ErrorHandling, Scope } from '../utils/constants';
 import { createPath, createPropertySection } from '../utils/view-utils';
-import { buildPropertyOptions, getCorporateCompoundIdByExactStructure } from '../utils/utils';
+import { getCorporateCompoundIdByExactStructure } from '../utils/utils';
 
 import { fetchBatchProperties, fetchCompoundProperties, registerBulk } from '../package';
 
 import RandExp from 'randexp';
+import { RegistrationViewBase } from './registration-view-base';
 
 let openedView: DG.ViewBase | null = null;
 
-export class EntityBaseView {
-  view: DG.View;
+export class EntityBaseView extends RegistrationViewBase {
   sketcherInstance: grok.chem.Sketcher;
 
   inputs: DG.InputBase[] = [];
   batchInputs: DG.InputBase<any>[] = [];
   isBatchSectionExpanded: boolean = false;
-  formBackingObject: Record<string, any> = {};
 
-  title: string = 'Register a new compound';
   initialSmiles: string = 'CC(=O)Oc1ccccc1C(=O)O';
   singleRetrieved: boolean = false;
   compoundExists: boolean = false;
-  invalidForm: boolean = false;
-  path: string = 'Compound';
-
-  protected messageContainer: HTMLDivElement = ui.div([], 'moltrack-info-container');
-  registerButton: HTMLButtonElement | undefined;
 
   constructor(buildUI: boolean = true) {
-    this.view = DG.View.create();
+    super('Register a new compound');
+    this.path = 'Compound';
     this.sketcherInstance = new grok.chem.Sketcher();
 
     const validationFunc = (s: string) => {
@@ -61,22 +55,16 @@ export class EntityBaseView {
       this.buildUIMethod();
   }
 
-  protected convertToDGProperty(p: MolTrackProp): DG.Property {
-    return DG.Property.fromOptions(
-      buildPropertyOptions(p, {reserved: reservedProperties, skipReservedCheck: true}),
-    );
-  }
-
   private clearAll() {
     this.sketcherInstance.setValue('');
     for (const input of this.inputs)
       input.value = null;
   }
 
-  private async registerButtonHandler() {
+  protected async handleRegisterClick() {
     try {
       const smiles = this.sketcherInstance.getSmiles();
-      const propValues = this.collectNonEmptyInputValues();
+      const propValues = this.collectNonEmptyInputValues(this.inputs);
       const batchInputNames = this.batchInputs.map((input) => input.property.name);
       const isBatch = Object.keys(propValues).find((name) => batchInputNames.includes(name)) !== undefined;
       const scope = (isBatch || this.isBatchSectionExpanded) ? Scope.BATCHES : Scope.COMPOUNDS;
@@ -118,15 +106,6 @@ export class EntityBaseView {
     }
   }
 
-  private collectNonEmptyInputValues(): Record<string, any> {
-    return this.inputs
-      .filter((input) => input.value !== null && input.value !== undefined && input.value !== '')
-      .reduce((acc, input) => {
-        acc[input.property.name] = input.stringValue;
-        return acc;
-      }, {} as Record<string, any>);
-  }
-
   private createCsvFile(smiles: string, propValues: Record<string, any>, scope: string): DG.FileInfo {
     const headers = ['smiles', ...Object.keys(propValues)];
     const row = [smiles, ...Object.values(propValues)];
@@ -153,15 +132,7 @@ export class EntityBaseView {
 
     const errorMatch = errorMsg.match(/^\d+:\s*(.*)$/);
     const message = status === 'success' ? '' : `${errorMatch ? errorMatch[1] : ''}`;
-
-    const infoDiv = ui.info(message, header, true);
-    const bar = infoDiv.querySelector('.grok-info-bar') as HTMLElement;
-    if (bar) {
-      bar.classList.toggle('moltrack-bar-success', status === 'success');
-      bar.classList.toggle('moltrack-bar-error', status !== 'success');
-    }
-
-    this.messageContainer.appendChild(infoDiv);
+    this.showMessage(status === 'success', header, message);
   }
 
   private async buildSketcherOrPreview(): Promise<HTMLElement> {
@@ -185,7 +156,6 @@ export class EntityBaseView {
       return this.sketcherInstance.root;
   }
 
-
   public async buildUIMethod() {
     const container = await this.buildSketcherOrPreview();
     if (!this.singleRetrieved) {
@@ -196,7 +166,7 @@ export class EntityBaseView {
           e.preventDefault();
           e.stopPropagation();
         } else
-          await this.registerButtonHandler();
+          await this.handleRegisterClick();
       });
 
       this.registerButton.onmouseenter = (e) => {

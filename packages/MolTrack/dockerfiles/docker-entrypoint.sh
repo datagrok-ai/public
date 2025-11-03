@@ -8,7 +8,7 @@ if [ -n "$db" ]; then
   DB_USER=$(echo "$db" | jq -r '.credentials.parameters.login')
   DB_PASSWORD=$(echo "$db" | jq -r '.credentials.parameters.password')
   DB_NAME=$(echo "$db" | jq -r '.parameters.db')
-  APP_PORT=28000
+  APP_PORT=18000
 
   DB_HOST_RAW=$(echo "$db" | jq -r '.parameters.server')
   echo $DB_HOST_RAW

@@ -12,6 +12,6 @@ RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh
 
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-EXPOSE 28000
+EXPOSE 18000
 
 ENTRYPOINT ["docker-entrypoint.sh"]
