@@ -756,13 +756,16 @@ export namespace input {
         optionsMap[key](input, (specificOptions as IIndexable)[key]);
 
       if (inputType === d4.InputType.Columns) {
-        const additionalCols = options[key] as { [key: string]: Column[] } | undefined;
-        const onAdditionalColsChanged = options[key] as ((additionalColumns: { [key: string]: Column[] }) => void) | undefined;        
-        if (key === 'additionalColumns' && additionalCols)
-          setInputAdditionalColumns(input, additionalCols);
-
-        if (key === 'onAdditionalColumnsChanged' && onAdditionalColsChanged)
-          setInputAdditionalColumnsOnChanged(input, onAdditionalColsChanged);
+        if (key === 'additionalColumns') {
+          const additionalCols = options.additionalColumns as { [key: string]: Column[] } | undefined;
+          if (additionalCols)
+            setInputAdditionalColumns(input, additionalCols);
+        }
+        if (key === 'onAdditionalColumnsChanged') {
+          const onAdditionalColsChanged = options.onAdditionalColumnsChanged as((additionalColumns: { [key: string]: Column[] }) => void) | undefined;
+          if (onAdditionalColsChanged)
+            setInputAdditionalColumnsOnChanged(input, onAdditionalColsChanged);
+        }
       }
     }
     const baseOptions = (({value, nullable, property, onCreated, onValueChanged}) => ({value, nullable, property, onCreated, onValueChanged}))(options);
@@ -846,7 +849,7 @@ export namespace input {
 
   /** Sets additional columns for the columns input */
   export function setInputAdditionalColumns(input: InputBase, additionalColumns: { [key: string]: Column[] }): void {
-    const mapToSet = {};
+    const mapToSet: { [key: string]: any } = {};
     for (const [key, columns] of Object.entries(additionalColumns))
       mapToSet[key] = columns.map(c => c.dart);
 
