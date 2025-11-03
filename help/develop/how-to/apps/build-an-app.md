@@ -242,7 +242,7 @@ Let's have a `<CONNECTION>` created (say, to a database or a file share) under y
 available as `<YOUR_NAME>::<CONNECTION>`. To not use this token to call to a connection in an application, let's create
 a [Space](../../../datagrok/concepts/project/space.md) for it.
 
-[Browse](../../navigation/views/browse.md) organizes spaces in a tree
+[Browse](../../../datagrok/navigation/views/browse.md) organizes spaces in a tree
 that governs their hierarchy. You can create your own hierarchy under **Spaces**:
  
 1. Right-click **Spaces**, select **Create Space...**, and name your space in the dialog that opens.

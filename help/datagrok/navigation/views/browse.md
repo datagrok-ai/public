@@ -73,7 +73,7 @@ the change.
 :::caution
 
 Moving entities between projects 
-impacts their hierarchy, names, and privileges. [Learn more about moving entities between projects](../../concepts/project/project.md#moving-entities-between-projects).
+impacts their hierarchy, names, and privileges. [Learn more about moving entities between projects](../../concepts/project/space.md#moving-entities-between-spaces).
 
 :::
 
