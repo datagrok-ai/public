@@ -90,6 +90,8 @@ export function getNewMonomers(rdkit: RDModule, mLib: IMonomerLib, rule: RuleRea
   // const monomer1 = mLib.getMonomer('PEPTIDE', rule.firstMonomers[0]);
   // const monomer2 = mLib.getMonomer('PEPTIDE', rule.secondMonomers[0]);
   let mol: RDMol | null = null;
+  reactionMembers[1] = reactionMembers[1].replace('[C:1]', '[1*]').replace('[C:2]', '[2*]').replace('[C:3]', '[3*]');
+
   let pMolblock = '';
   try {
     mol = rdkit.get_mol(reactionMembers[1]);
@@ -146,16 +148,18 @@ export function getNewMonomers(rdkit: RDModule, mLib: IMonomerLib, rule: RuleRea
 }
 
 function modProduct(product: string): string {
-  const fullMol = product.replace('M  RAD', 'M  RGP');
+  const fullMol = product.replace('M  RAD', 'M  RGP').replace('M  ISO', 'M  RGP');
   const lines = fullMol.split('\n');
-  const natoms = Number(lines[3].substring(0, 3));
-  const nbonds = Number(lines[3].substring(3, 6));
-  const rgpShift = 4 + natoms + nbonds;
+  // const natoms = Number(lines[3].substring(0, 3));
+  // const nbonds = Number(lines[3].substring(3, 6));
+  const rgpShift = lines.findIndex((line) => line.startsWith('M  RGP'));
 
   const fAtom = Number(lines[rgpShift].substring(9, 13));
   const sAtom = Number(lines[rgpShift].substring(17, 21));
+  const firstRgroupIndex = Number(lines[rgpShift].substring(13, 17));
+  const secondRgroupIndex = Number(lines[rgpShift].substring(21, 25));
 
-  lines[rgpShift] = lines[rgpShift].substring(0, 13) + '   1' + lines[rgpShift].substring(17, 21) + '   2';
+  lines[rgpShift] = lines[rgpShift].substring(0, 13) + `   ${firstRgroupIndex}` + lines[rgpShift].substring(17, 21) + `   ${secondRgroupIndex}`;
 
   lines[3 + fAtom] = lines[3 + fAtom].substring(0, 30) + ' R#  0  0  0  0  0  0  0  0  0  0  0  0';
   lines[3 + sAtom] = lines[3 + sAtom].substring(0, 30) + ' R#  0  0  0  0  0  0  0  0  0  0  0  0';

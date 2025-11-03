@@ -1,5 +1,9 @@
 # Sequence Translator changelog
 
+## 1.10.3 (2025-11-03)
+
+* Fix synthetic rule application for multiple instances when r group numbering is reversed
+
 ## 1.10.2 (2025-11-03)
 
 * Update Bio Lib API
