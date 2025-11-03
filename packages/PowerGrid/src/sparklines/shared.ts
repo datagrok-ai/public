@@ -1,4 +1,3 @@
-/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 import * as ui from 'datagrok-api/ui';
@@ -22,6 +21,13 @@ export enum NormalizationType {
   Column = 'Column',
   Global = 'Global'
 }
+
+export type ScaleSettings = {
+  normalization: NormalizationType;
+  zeroScale?: boolean;
+  invertScale?: boolean;
+  logScale?: boolean;
+};
 
 export interface SummarySettingsBase {
   columnNames: string[];
@@ -67,18 +73,39 @@ export function distance(p1: DG.Point, p2: DG.Point): number {
   return Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y));
 }
 
-export function getScaledNumber(cols: DG.Column[], row: number, activeColumn: DG.Column, settings: {normalization: NormalizationType, zeroScale?: boolean}): number {
-  const normalization = settings.normalization;
-  const zeroScale = settings.zeroScale ?? false;
-  const colMins: number[] = cols.map((c: DG.Column) => c?.min).filter((c) => c !== null) as number[];
-  const colMaxs: number[] = cols.map((c: DG.Column) => c?.max).filter((c) => c !== null) as number[];
-  const colNumbers: number[] = cols.map((c: DG.Column) => c?.getNumber(row)).filter((c) => c !== null) as number[];
-  const gmin = zeroScale ? 0 : normalization === NormalizationType.Global ? Math.min(...colMins) :
-    normalization === NormalizationType.Row ? Math.min(...colNumbers) : 0;
-  const gmax = normalization === NormalizationType.Global ? Math.max(...colMaxs) :
-    normalization === NormalizationType.Row ? Math.max(...colNumbers) : 0;
-  return (normalization === NormalizationType.Row || normalization === NormalizationType.Global) ?
-    (gmax === gmin ? 0 : activeColumn ? (activeColumn.getNumber(row) - gmin) / (gmax - gmin) : 0) : activeColumn.scale(row);
+export function getScaledNumber(cols: DG.Column[], row: number, activeColumn: DG.Column, settings: ScaleSettings): number {
+  const { normalization, zeroScale = false, invertScale = false } = settings;
+
+  const colNumbers: number[] = [];
+  const colMins: number[] = [];
+  const colMaxs: number[] = [];
+
+  for (const c of cols) {
+    const num = c?.getNumber(row);
+    if (num != null) colNumbers.push(num);
+
+    if (c?.min != null) colMins.push(c.min);
+    if (c?.max != null) colMaxs.push(c.max);
+  }
+
+  let normalized = 0;
+
+  if (normalization === NormalizationType.Global || normalization === NormalizationType.Row) {
+    const values = normalization === NormalizationType.Global ? colMins : colNumbers;
+    const ranges = normalization === NormalizationType.Global ? colMaxs : colNumbers;
+
+    const gmin = zeroScale ? 0 : Math.min(...values);
+    const gmax = Math.max(...ranges);
+
+    const value = activeColumn.getNumber(row) ?? 0;
+    normalized = gmax === gmin ? 0 : (value - gmin) / (gmax - gmin);
+  } else {
+    normalized = activeColumn.scale(row) ?? 0;
+  }
+
+  if (invertScale) normalized = 1 - normalized;
+
+  return normalized;
 }
 
 export function getSparklinesContextPanel(gridCell: DG.GridCell, colNames: string[]): HTMLDivElement {
