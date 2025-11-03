@@ -26,7 +26,7 @@ declare global {
 declare let ENABLE_VUE_DEV_TOOLS: any;
 
 export * from './package.g';
-export const _package = new DG.Package();
+export {_package} from './package-instance';
 
 function setViewHierarchyData(call: DG.FuncCall, view: DG.ViewBase) {
   view.parentCall = call.parentCall;

@@ -7,6 +7,7 @@ import {
   DGButton, DGIconFA,
   DGToggleInput, DGComboPopup, DGMarkdown,
   ValidationIcon,
+  DGIconImage,
 } from '@datagrok-libraries/webcomponents';
 import {DockSpawnTsWebcomponent} from '@datagrok-libraries/dock-spawn-dg';
 import './styles.css';
@@ -26,6 +27,7 @@ export class PackageFunctions {
     customElements.define('dg-button', DGButton, {extends: 'button'});
     customElements.define('dg-big-button', DGBigButton, {extends: 'button'});
     customElements.define('dg-icon-fa', DGIconFA);
+    customElements.define('dg-icon-image', DGIconImage);
     customElements.define('dg-toggle-input', DGToggleInput);
     customElements.define('dg-combo-popup', DGComboPopup);
     customElements.define('dock-spawn-ts', DockSpawnTsWebcomponent);
@@ -39,6 +41,7 @@ export class PackageFunctions {
       customElements.whenDefined('dg-button'),
       customElements.whenDefined('dg-big-button'),
       customElements.whenDefined('dg-icon-fa'),
+      customElements.whenDefined('dg-icon-image'),
       customElements.whenDefined('dg-toggle-input'),
       customElements.whenDefined('dg-combo-popup'),
       customElements.whenDefined('dock-spawn-ts'),
