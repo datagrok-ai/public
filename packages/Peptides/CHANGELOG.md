@@ -1,5 +1,13 @@
 # Peptides changelog
 
+## 1.25.0 (2025-11-04)
+
+* Update dependencies
+* Enable filter reactivity for All Peptides Viewers (Invariant Map, Monomer-Position, Most Potent Residues, Logo Summary Table, WebLogo in header)
+* Got rid of target column for Peptides analysis
+* Add sum columns for Monomer-Position
+* Fix navigation bugs
+
 ## 1.23.14 (2025-06-17)
 
 * Default selection grid for Peptides analysis

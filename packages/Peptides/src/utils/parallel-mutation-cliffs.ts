@@ -22,8 +22,6 @@ export class ParallelMutationCliffs {
     options: MutationCliffsOptions = {}): Promise<type.MutationCliffs> {
     const substitutionsInfo: type.MutationCliffs = new Map();
     try {
-      const currentTargetIdx = options.targetCol?.cat!.indexOf(options.currentTarget!) ?? -1;
-
       const len = activityArray.length;
       const promises = new Array<Promise<ParallelMutationReturnType>>(this._workerCount);
       const matSize = len * (len - 1) / 2; // size of reduced upper triangular matrix
@@ -34,13 +32,12 @@ export class ParallelMutationCliffs {
       monomerInfoArray.forEach((monomerInfo) => {
         monomerInfo.cat = monomerInfo.cat?.slice();
       });
-      options.targetCol?.cat && (options.targetCol.cat = options.targetCol.cat.slice());
       for (let idx = 0; idx < this._workerCount; idx++) {
         promises[idx] = new Promise((resolveWorker, rejectWorker) => {
           const startIdx = Math.floor(idx * chunkSize);
           const endIdx = idx === this._workerCount - 1 ? matSize : Math.floor((idx + 1) * chunkSize);
           this._workers[idx].postMessage(
-            {startIdx, endIdx, activityArray, monomerInfoArray, settings: options, currentTargetIdx});
+            {startIdx, endIdx, activityArray, monomerInfoArray, settings: options});
           this._workers[idx].onmessage = ({data: {pos, seq1Idxs, seq2Idxs, error}}): void => {
             if (error) {
               this._workers[idx]?.terminate();

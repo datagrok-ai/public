@@ -388,7 +388,8 @@ export function getSelectionBitset(selection: type.Selection, stats: MasksInfo):
     }
   }
 
-  return (combinedBitset != null) ? DG.BitSet.fromBytes(combinedBitset!.buffer.buffer, combinedBitset!.length) : null;
+  return (combinedBitset != null) ?
+    DG.BitSet.fromBytes(combinedBitset!.buffer.buffer as ArrayBuffer, combinedBitset!.length) : null;
 }
 
 /**

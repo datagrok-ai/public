@@ -195,9 +195,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
    * @return - cluster selection.
    */
   get clusterSelection(): type.Selection {
-    const tagSelection = this.dataFrame.getTag(C.TAGS.CLUSTER_SELECTION);
-    this._clusterSelection ??= tagSelection === null ? this.initClusterSelection({notify: false}) :
-      JSON.parse(tagSelection);
+    this._clusterSelection ??= this.initClusterSelection({notify: false});
     return this._clusterSelection!;
   }
 
@@ -207,7 +205,6 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
    */
   set clusterSelection(selection: type.Selection) {
     this._clusterSelection = selection;
-    this.dataFrame.setTag(C.TAGS.CLUSTER_SELECTION, JSON.stringify(selection));
     this.model.fireBitsetChanged(VIEWER_TYPE.LOGO_SUMMARY_TABLE);
     this.model.analysisView.grid.invalidate();
   }

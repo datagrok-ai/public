@@ -127,7 +127,7 @@ export function renderMutationCliffCell(canvasContext: CanvasRenderingContext2D,
   } else if (viewer instanceof MostPotentResidues) {
     // in case of most potent residues viewer, we render the invariant of monomer-position. i.e. how many sequences there are with that monomer at that position
     // same as in invariant map viewer
-    const positionStats = viewer.monomerPositionStats ?? viewer?.model?.monomerPositionStats;
+    const positionStats = viewer.monomerPositionStats;
     const count = positionStats?.[currentPosition]?.[currentMonomer]?.count;
     if (count)
       canvasContext.fillText(count.toString(), midX + halfWidth - 5, midY, halfWidth - 5);

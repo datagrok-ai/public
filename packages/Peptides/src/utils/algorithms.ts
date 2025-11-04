@@ -18,8 +18,7 @@ import {
 export type MutationCliffsOptions = {
   maxMutations?: number,
   minActivityDelta?: number,
-  targetCol?: type.RawColumn | null,
-  currentTarget?: string | null
+  filter?: Uint32Array
 };
 
 /**
@@ -98,10 +97,6 @@ export function calculateMonomerPositionStatistics(activityCol: DG.Column<number
   positionColumns: DG.Column<string>[], options: {
     isFiltered?: boolean,
     columns?: string[],
-    target?: {
-      col: DG.Column<string>,
-      cat: string,
-    },
     aggValue?: {
       col: DG.Column,
       type: DG.AGG
@@ -109,27 +104,23 @@ export function calculateMonomerPositionStatistics(activityCol: DG.Column<number
   } = {}): MonomerPositionStats {
   options.isFiltered ??= false;
   const monomerPositionObject = {general: {}} as MonomerPositionStats & { general: SummaryStats };
-  let activityColData: Float64Array = activityCol.getRawData() as Float64Array;
-  let sourceDfLen = activityCol.length;
+  const activityColData: Float64Array = activityCol.getRawData() as Float64Array;
+  const sourceDfLen = activityCol.length;
   options.columns ??= positionColumns.map((col) => col.name);
-  if (options.isFiltered) {
-    sourceDfLen = filter.trueCount;
-    const tempActivityData = new Float64Array(sourceDfLen);
-    const selectedIndexes = filter.getSelectedIndexes();
-    for (let i = 0; i < sourceDfLen; ++i)
-      tempActivityData[i] = activityColData[selectedIndexes[i]];
+  // if (options.isFiltered) {
+  //   sourceDfLen = filter.trueCount;
+  //   const tempActivityData = new Float64Array(sourceDfLen);
+  //   const selectedIndexes = filter.getSelectedIndexes();
+  //   for (let i = 0; i < sourceDfLen; ++i)
+  //     tempActivityData[i] = activityColData[selectedIndexes[i]];
 
 
-    activityColData = tempActivityData;
-    positionColumns = DG.DataFrame.fromColumns(positionColumns).clone(filter, options.columns).columns.toList();
-    if (options.target)
-      options.target.col = options.target.col.clone(filter);
-    if (options.aggValue)
-      options.aggValue.col = options.aggValue.col.clone(filter);
-  }
-  const targetColIndexes = options.target?.col?.getRawData();
-  const targetColCat = options.target?.col.categories;
-  const targetIndex = options.target?.cat ? targetColCat?.indexOf(options.target.cat) : -1;
+  //   activityColData = tempActivityData;
+  //   positionColumns = DG.DataFrame.fromColumns(positionColumns).clone(filter, options.columns).columns.toList();
+  //   if (options.aggValue)
+  //     options.aggValue.col = options.aggValue.col.clone(filter);
+  // }
+
   for (const posCol of positionColumns) {
     if (!options.columns.includes(posCol.name))
       continue;
@@ -147,7 +138,7 @@ export function calculateMonomerPositionStatistics(activityCol: DG.Column<number
 
       const boolArray: boolean[] = new Array(sourceDfLen).fill(false);
       for (let i = 0; i < sourceDfLen; ++i) {
-        if (posColData[i] === categoryIndex && (!targetColIndexes || targetIndex === -1 || targetColIndexes[i] === targetIndex))
+        if (posColData[i] === categoryIndex && (!options.isFiltered || filter.get(i)))
           boolArray[i] = true;
       }
       const bitArray = BitArray.fromValues(boolArray);

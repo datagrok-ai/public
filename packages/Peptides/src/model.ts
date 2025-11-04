@@ -312,9 +312,7 @@ export class PeptidesModel {
    * @return {type.Selection} - Current Monomer-Position selection that came from WebLogo in header
    */
   get webLogoSelection(): type.Selection {
-    const tagSelection = this.df.getTag(`${C.SUFFIXES.WL}${C.TAGS.INVARIANT_MAP_SELECTION}`);
-    this._webLogoSelection ??= tagSelection === null && this.positionColumns !== null ?
-      initSelection(this.positionColumns) : JSON.parse(tagSelection ?? `{}`);
+    this._webLogoSelection ??= initSelection(this.positionColumns ?? []);
     return this._webLogoSelection!;
   }
 
@@ -323,7 +321,6 @@ export class PeptidesModel {
    */
   set webLogoSelection(selection: type.Selection) {
     this._webLogoSelection = selection;
-    this.df.setTag(`${C.SUFFIXES.WL}${C.TAGS.INVARIANT_MAP_SELECTION}`, JSON.stringify(selection));
     this.fireBitsetChanged(null);
     this.analysisView.grid.invalidate();
   }

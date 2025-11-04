@@ -1,5 +1,10 @@
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
+
 onmessage = async (event): Promise<void> => {
-  const {startIdx, endIdx, activityArray, monomerInfoArray, settings, currentTargetIdx} = event.data;
+  const {startIdx, endIdx, activityArray, monomerInfoArray, settings} = event.data;
+  const filterArray: Uint32Array = settings.filter;
+  const filter = filterArray ? new BitArray(filterArray, filterArray.length * 32) : null;
+
   const pos: string[] = [];
   const seq1Idxs: number[] = [];
   const seq2Idxs: number[] = [];
@@ -12,8 +17,7 @@ onmessage = async (event): Promise<void> => {
   let seq2Idx = startCol;
   const tempData = new Array(monomerInfoArray.length);
   while (cnt < chunkSize) {
-    if (!(currentTargetIdx !== -1 && (settings.targetCol?.rawData[seq1Idx] !== currentTargetIdx ||
-      settings.targetCol?.rawData[seq2Idx] !== currentTargetIdx))) {
+    if (!filter || (filter.getBit(seq1Idx) && filter.getBit(seq2Idx))) {
       let substCounter = 0;
       const activityValSeq1 = activityArray[seq1Idx];
       const activityValSeq2 = activityArray[seq2Idx];
