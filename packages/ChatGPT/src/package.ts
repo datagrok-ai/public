@@ -81,7 +81,7 @@ export class PackageFunctions {
     grok.events.onViewAdded.subscribe((view) => {
       if (view.type === DG.VIEW_TYPE.TABLE_VIEW) {
         const tableView = view as DG.TableView;
-        const iconFse = ui.iconFA('brain', () => setAiPanelVisibility(true), 'Ask AI');
+        const iconFse = ui.iconSvg('ai.svg', () => setAiPanelVisibility(true), 'Ask AI');
         tableView.setRibbonPanels([...tableView.getRibbonPanels(), [iconFse]]);
       }
     });

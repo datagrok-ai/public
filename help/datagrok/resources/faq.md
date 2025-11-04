@@ -206,7 +206,7 @@ GitHub requires all code contributors to enable two-factor authentication (2FA) 
 
 ##### <b>Q: What happens to my data when I open a local file in Datagrok?</b>
 
-When you open a local file in Datagrok (like dragging and dropping a file to your browser), you can analyze it without saving. This data stays in your browser's memory and isn't sent to the server unless you run resource-intensive server-side computations. Your data is gone when you close the browser tab. To save your work, you need to upload it to the server. Note that uploading data does not make it accessible to others. Your data stays private and visible to you only until you explicitly share it. Learn how to [save](../concepts/project/project.md#saving-entities-to-projects) and [share](../navigation/basic-tasks/basic-tasks.md#share) data.
+When you open a local file in Datagrok (like dragging and dropping a file to your browser), you can analyze it without saving. This data stays in your browser's memory and isn't sent to the server unless you run resource-intensive server-side computations. Your data is gone when you close the browser tab. To save your work, you need to upload it to the server. Note that uploading data does not make it accessible to others. Your data stays private and visible to you only until you explicitly share it. Learn how to [share](../concepts/project/space.md#moving-entities-between-spaces) and [share](../navigation/basic-tasks/basic-tasks.md#share) data.
 
 ##### <b>Q: What data or telemetry is sent back to Datagrok? </b>
 
@@ -410,7 +410,7 @@ Datagrok provides advanced and intuitive search and filtering capabilities:
 ##### <b>Q: Can users save and share custom dashboards, analyses, and visualizations in Datagrok?</b>  
 
 Users can create projects that include data, analyses, and dashboards, then share them with others. Dashboards are dynamic and customizable.   
-[Creating and managing projects](../concepts/project/project.md#creating-and-managing-projects) | [Creating dynamic dashboards](../../access/databases/databases.md#creating-dynamic-dashboards-for-query-results)  
+[Creating and managing projects](../concepts/project/dashboard.md) | [Creating dynamic dashboards](../../access/databases/databases.md#creating-dynamic-dashboards-for-query-results)  
 
 ##### <b>Q: How can I link raw data, metadata, and analysis results to compounds or sequences so that this information can be easily recalled and shared across Datagrok dashboards?</b>
 

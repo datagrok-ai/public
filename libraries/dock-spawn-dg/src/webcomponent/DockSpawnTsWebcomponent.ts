@@ -72,11 +72,11 @@ export class DockSpawnTsWebcomponent extends HTMLElement {
 
         this.observer = new MutationObserver((mutations) => {
             mutations.forEach((mutation) => {
-                mutation.addedNodes.forEach((node) => {
-                    this.handleAddedChildNode(node as HTMLElement);
-                });
                 mutation.removedNodes.forEach((node) => {
                     this.handleRemovedChildNode(node as HTMLElement);
+                });
+                mutation.addedNodes.forEach((node) => {
+                    this.handleAddedChildNode(node as HTMLElement);
                 });
             });
         });

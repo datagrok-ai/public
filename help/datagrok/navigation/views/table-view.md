@@ -381,8 +381,7 @@ patterns, Datagrok defaults to an `exact value` search.
 ### Save and share
 
 You can [save](../basic-tasks/basic-tasks.md#save-and-share-a-table) and [share](../basic-tasks/basic-tasks.md#share) a **Table View** as a special
-type of project called a [dashboard](../../concepts/project/dashboard.md). To learn more about projects, see
-[Projects](../../concepts/project/project.md). To save just the layout, in the **Top Menu**, select **View** > **Layout** > **Save to Gallery**.
+type of project called a [dashboard](../../concepts/project/dashboard.md). To save just the layout, in the **Top Menu**, select **View** > **Layout** > **Save to Gallery**.
 
 ###  Embed
 

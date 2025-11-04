@@ -84,6 +84,7 @@ export type MonomerLibData = { [polymerType: string]: { [symbol: string]: Monome
 
 export interface IMonomerLib extends IMonomerLibBase {
   get error(): string | undefined;
+  get duplicateMonomers(): { [polymerType: string]: { [monomerSymbol: string]: Monomer[] } };
 
   getMonomerMolsByPolymerType(polymerType: PolymerType): { [monomerSymbol: string]: string } | null;
   getMonomerSymbolsByRGroup(rGroupNumber: number, polymerType: PolymerType, element?: string): string[];

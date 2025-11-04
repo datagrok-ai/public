@@ -41,7 +41,7 @@ export class BioPackageProperties extends Map<string, any> {
   }
 
   public set maxMonomerLength(value: number | null) {
-    const vs = value === null ? 'long' : value.toString();
+    const vs = value == null ? 'long' : value.toString();
     super.set(BioPackagePropertiesNames.MaxMonomerLength, vs);
     this._onPropertyChanged.next(BioPackagePropertiesNames.MaxMonomerLength);
   }

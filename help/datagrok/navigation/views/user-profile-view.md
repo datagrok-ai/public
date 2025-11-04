@@ -41,7 +41,7 @@ Panel** updates with user-specific [info panes](../panels/info-panels.md):
 
 * **Personal**: Shows your personal information, such as the date you joined and
   the [groups](../../../govern/access-control/users-and-groups.md#groups) you belong to.
-* **Projects**: Lists the [projects](../../concepts/project/project.md) you've created or used.
+* **Dashboards**: Lists the [dashboards](../../concepts/project/dashboard.md) you've created or used.
 * **Chat**: Shows your chat history.
 
 

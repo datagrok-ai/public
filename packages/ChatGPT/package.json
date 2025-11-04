@@ -39,6 +39,9 @@
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/ChatGPT"
   },
+  "sources": [
+    "css/ai.css"
+  ],
   "properties": [
     {
       "name": "apiKey",

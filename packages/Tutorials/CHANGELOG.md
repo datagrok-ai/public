@@ -1,5 +1,13 @@
 # Tutorials changelog
 
+## 1.10.5 (2025-10-31)
+
+* Tutorial: Updated the parameter optimization tutorial
+
+## 1.10.4 (2025-10-30)
+
+* Fitting: New layout related update
+
 ## 1.10.3 (2025-10-08)
 
 * GROK-18139: Activity dashboard: Retired Learn widget and added it to the activity dashboard instead

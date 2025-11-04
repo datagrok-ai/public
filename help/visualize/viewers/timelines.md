@@ -14,7 +14,7 @@ Timelines viewer displays the flow of events over time. Each row represents a su
 > Developers: To add the viewer from the console, use:
 `grok.shell.tv.addViewer('Timelines');`
 
-When you add a timelines viewer, it automatically selects appropriate columns based on [SDTM](https://www.cdisc.org/standards/foundational/sdtm) vocabulary and data characteristics.
+> Note: You can use this viewer with clinical data. When you add a timelines viewer, it automatically selects appropriate columns based on [SDTM](https://www.cdisc.org/standards/foundational/sdtm) vocabulary and data characteristics.
 
 ## Configuring a timelines viewer
 
@@ -38,7 +38,7 @@ For example, you can:
  
  ![Timelines viewer](img/timelines.gif "Timelines viewer")
 
-## See Also  
+## See also
   
 - [Clinical Case](https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase)  
 - [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts)  

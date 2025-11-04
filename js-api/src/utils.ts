@@ -644,7 +644,7 @@ export class LruCache<K = any, V = any> {
 }
 
 
-export function _options(element: HTMLElement, options: any) {
+export function _options(element: HTMLElement, options: any): HTMLElement {
   if (options == null)
     return element;
   if (typeof options === 'string')

@@ -43,7 +43,8 @@ packages using the [Package Manager](https://public.datagrok.ai/packages) (on th
 Datagrok lets you work with macromolecules both on the macro (sequence) level and atomic level:
 
 * Data visualization and exploration
-  * Support for multiple formats, such as FASTA (DNA/RNA/protein), delimiter-separated FASTA, [HELM](https://en.wikipedia.org/wiki/Hierarchical_editing_language_for_macromolecules), [BILN](https://pubs.acs.org/doi/10.1021/acs.jcim.2c00703), [PDB](https://en.wikipedia.org/wiki/Protein_Data_Bank_(file_format)), and [others](../../../../access/files/supported-formats.md). Handles nucleotides, natural and non-natural peptides, 3D-structures, and other modalities.
+  * [Formats](#formats): such as FASTA (DNA/RNA/protein), delimiter-separated FASTA, [HELM](https://en.wikipedia.org/wiki/Hierarchical_editing_language_for_macromolecules), [BILN](https://pubs.acs.org/doi/10.1021/acs.jcim.2c00703), [PDB](https://en.wikipedia.org/wiki/Protein_Data_Bank_(file_format)), and [others](../../../../access/files/supported-formats.md). Handles nucleotides, natural and non-natural peptides, 3D-structures, and other modalities.
+  * [Format conversion](#format-conversion): SMILES to HELM, HELM to SMILES, etc
   * [Automatic detection of sequences](../../../../govern/catalog/semantic-types.md) upon data import.
   * Flexible and fast [spreadsheet](#spreadsheet) that shows both macro and small molecules.
   * [Interactive visualization of biological data](#exploring-biological-data).
@@ -138,25 +139,28 @@ Info panes be extended with [functions](../../../concepts/functions/functions.md
 
 The [spreadsheet](../../../../visualize/viewers/grid.md) lets you visualize and [edit](#sketching-and-editing) sequences and macromolecules. You can add new columns with calculated values, interactively [filter and search](#searching-and-filtering) rows, color-code columns, pin rows or columns, set edit permissions, and more.
 
+Clicking on any sequence cell highlights the differing monomers in other sequences, allowing you to quickly identify similarities and differences.
+
 ```mdx-code-block
 <Tabs>
-<TabItem value="display-for-helm" label="HELM" default>
+<TabItem value="display-for-fasta" label="FASTA" default>
+```
+
+Sequences in various modalities are color-coded based on monomer properties, natural analog or explicitely set colors.
+
+![FASTA rendering](img/fasta-format-0.png)
+
+
+```mdx-code-block
+</TabItem>
+<TabItem value="display-for-helm" label="HELM">
+
 ```
 
 HELM is used for macromolecules with non-natural monomers, circular and branching structures.
 The structures are displayed with colors corresponding to each monomer.
 
 ![HELM rendering](img/helm-format.png)
-
-```mdx-code-block
-</TabItem>
-<TabItem value="display-for-fasta" label="FASTA">
-```
-
-Peptide sequences are color-coded based on amino acid properties. DNA sequences are colored-coded to distinguish between various nucleotides.
-
-![FASTA rendering](img/fasta-format-0.png)
-
 
 ```mdx-code-block
 </TabItem>
@@ -576,11 +580,35 @@ application performs SAR analysis of peptides. The app offers the following feat
 
 ## Utilities
 
+### Formats
+
+Datagrok understand most popular notations for representing macromolecules,
+such as FASTA (DNA/RNA/protein), delimiter-separated FASTA,
+[HELM](https://en.wikipedia.org/wiki/Hierarchical_editing_language_for_macromolecules),
+[BILN](https://pubs.acs.org/doi/10.1021/acs.jcim.2c00703),
+[PDB](https://en.wikipedia.org/wiki/Protein_Data_Bank_(file_format)), and [others](../../../../access/files/supported-formats.md).
+Handles nucleotides, natural and non-natural peptides, 3D-structures, and other modalities.
+
 ### Format conversion
 
-Datagrok converts macromolecules between formats, such as HELM, FASTA, Separator or BILN.
+Sequences from supported notations (HELM, FASTA, BILN) can be converted to molecular form (MOLBLOCK/SMILES), or back.
+Hovering over monomers of sequence will also highlight the corresponding monomer fragment in the resulting molecule.
 
-For individual macromolecules, the conversion happens automatically as you interact with them in the dataset. The **Context Panel** shows all supported notations, along with the sequence view <!--in the **Sequence** info pane (**Context Panel** > **Sequence**)-->. You can also perform conversion on the entire column by choosing the corresponding option from the **Bio** >  **Transform** > **Convert Sequence Notation** menu.
+For individual macromolecules, the conversion happens automatically as you interact with them. 
+To convert explicitly, see the **Bio** > **Transform** menu.
+
+Also, check out a YouTube video of [RDKit UGM presentation](https://www.youtube.com/watch?v=la-kj52djeI) about the conversion toolkit.
+
+<details>
+<summary>HELM to SMILES</summary>
+![](img/helm-mol-highlight.png)
+</details>
+
+<details>
+<summary>SMILES to HELM</summary>
+![](img/mol-to-helm.gif)
+</details>
+
 
 ### Split to monomers
 

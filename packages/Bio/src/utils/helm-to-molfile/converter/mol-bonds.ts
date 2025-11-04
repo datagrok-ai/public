@@ -31,7 +31,7 @@ export abstract class MolfileBonds {
   }
 
   replacePositionsInBondsByDummy(positions: PositionInBonds[], dummy?: number): void {
-    if (dummy === undefined)
+    if (dummy == undefined)
       dummy = -1;
     positions.forEach((position) => {
       const {bondLineIdx, nodeIdx} = position;

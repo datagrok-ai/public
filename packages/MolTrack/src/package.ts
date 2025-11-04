@@ -8,10 +8,9 @@ import { MolTrackDockerService } from './services/moltrack-docker-service';
 import { excludedScopes, MOLTRACK_ENTITY_LEVEL, MOLTRACK_IS_STATIC_FIELD, SAVED_SEARCHES_NODE, Scope, SEARCH_NODE } from './utils/constants';
 import { createSavedSearchesSatistics, createSearchExpandableNode, createSearchNode, createSearchView, getSavedSearches, handleSearchURL, loadSearchFields, molTrackSearchFieldsArr } from './views/search';
 import { registerAllData, registerAssayData, updateAllMolTrackSchemas } from './utils/registration-utils';
-import { batchView, compoundView, createPath, getQuickActionsWidget, getStatisticsWidget, initAssayRegisterView, initBulkRegisterView, initRegisterView } from './utils/view-utils';
+import { batchView, compoundView, createPath, getQuickActionsWidget, getStatisticsWidget, initAssayRegisterView, initBulkRegisterView, initRegisterView, initSchemaView } from './utils/view-utils';
 import { flattened } from './utils/utils';
 import { molTrackPropPanel } from './widgets/moltrack-property-panel';
-import { PropertySchemaView } from './views/schema-view';
 import { registerSemanticTypes } from './utils/detectors';
 
 export const _package = new DG.Package();
@@ -51,6 +50,7 @@ export async function molTrackApp(path: string): Promise<DG.ViewBase> {
   const isCompoundPath = hasPath && path.includes('Compound');
   const isRegisterPath = hasPath && path.includes('Register');
   const isBatchPath = hasPath && path.includes('Batch');
+  const isSchemaPath = hasPath && path.includes('Schema');
   const isSearchPath = hasPath && (path.includes(SEARCH_NODE) || path.includes(SAVED_SEARCHES_NODE));
   const isBulkPath = hasPath && path.includes('Bulk');
   const isAssayPath = hasPath && path.includes('Assay');
@@ -85,6 +85,9 @@ export async function molTrackApp(path: string): Promise<DG.ViewBase> {
   if (isBatchPath)
     return setPathAndReturn(initRegisterView('Batch', false));
 
+  if (isSchemaPath)
+    return setPathAndReturn(await initSchemaView());
+
   const statisticsWidget = await getStatisticsWidget(createSearchView);
   const quickActionsWidget = getQuickActionsWidget();
   const viewRoot = ui.divH([statisticsWidget, quickActionsWidget], { style: { gap: '50px' } });
@@ -106,11 +109,7 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
   createRegisterNode('Batch', () => initRegisterView('Batch'));
   createRegisterNode('Assay', () => initAssayRegisterView());
   createRegisterNode('Bulk', () => initBulkRegisterView());
-  createRegisterNode('Schema', async () => {
-    const schemaView = new PropertySchemaView();
-    await schemaView.init();
-    schemaView.show();
-  });
+  createRegisterNode('Schema', async () => await initSchemaView());
 
   const searchNode = appNode.getOrCreateGroup(SEARCH_NODE);
   const searchableScopes = Object.values(Scope)

@@ -253,11 +253,23 @@ export function iconImage(name: string, path: string,
   return _options(i, options);
 }
 
+
+/** Creates an icon for the SVG image
+ * Usage:
+ * - iconSvg('ai.svg') would map to /images/ai.svg
+ * - iconSvg('ai') would map to the `svg-ai` class
+ *  */
 export function iconSvg(name: string, handler: ((this: HTMLElement, ev: MouseEvent) => any) | null = null, tooltipMsg: string | null = null): HTMLElement {
-  let i = element('i');
+  const i: HTMLElement = element('i');
   i.classList.add('svg-icon');
   i.classList.add('grok-icon');
-  i.classList.add(`svg-${name}`);
+
+  i.dataset['name'] = (name.includes('.') ? name.split('.')[0] : name);
+  if (name.includes('.svg'))
+    i.style.backgroundImage = `url('/images/${name}')`;
+  else
+    i.classList.add(`svg-${name}`);
+
   if (handler !== null)
     i.addEventListener('click', handler);
   if (tooltipMsg !== null)
@@ -754,6 +766,19 @@ export namespace input {
       }
       if (key !== 'nullable' && optionsMap[key] !== undefined)
         optionsMap[key](input, (specificOptions as IIndexable)[key]);
+
+      if (inputType === d4.InputType.Columns) {
+        if (key === 'additionalColumns') {
+          const additionalCols = options.additionalColumns as { [key: string]: Column[] } | undefined;
+          if (additionalCols)
+            setInputAdditionalColumns(input, additionalCols);
+        }
+        if (key === 'onAdditionalColumnsChanged') {
+          const onAdditionalColsChanged = options.onAdditionalColumnsChanged as((additionalColumns: { [key: string]: Column[] }) => void) | undefined;
+          if (onAdditionalColsChanged)
+            setInputAdditionalColumnsOnChanged(input, onAdditionalColsChanged);
+        }
+      }
     }
     const baseOptions = (({value, nullable, property, onCreated, onValueChanged}) => ({value, nullable, property, onCreated, onValueChanged}))(options);
     for (let key of Object.keys(baseOptions)) {
@@ -774,6 +799,8 @@ export namespace input {
     tooltipText?: string;
     onCreated?: (input: InputBase<T>) => void;
     onValueChanged?: (value: T, input: InputBase<T>) => void;
+    additionalColumns?: { [key: string]: Column[] };
+    onAdditionalColumnsChanged?: (additionalColumns: { [key: string]: Column[] }) => void;
   }
 
   export interface INumberInputInitOptions<T> extends IInputInitOptions<T> {
@@ -812,6 +839,8 @@ export namespace input {
   export interface IColumnsInputInitOptions<T> extends IColumnInputInitOptions<T> {
     available?: string[];
     checked?: string[];
+    additionalColumns?: { [key: string]: Column[] };
+    onAdditionalColumnsChanged?: (additionalColumns: { [key: string]: Column[] }) => void;
   }
 
   export interface IColorInputInitOptions<T> extends IInputInitOptions<T> {
@@ -828,6 +857,26 @@ export namespace input {
   export function setColumnsInputTable(input: InputBase, table: DataFrame, filter?: Function) {
     const columnsFilter = typeof filter === 'function' ? (x: any) => filter!(toJs(x)) : null;
     api.grok_ColumnsInput_ChangeTable(input.dart, table.dart, columnsFilter);
+  }
+
+  /** Sets additional columns for the columns input */
+  export function setInputAdditionalColumns(input: InputBase, additionalColumns: { [key: string]: Column[] }): void {
+    const mapToSet: { [key: string]: any } = {};
+    for (const [key, columns] of Object.entries(additionalColumns))
+      mapToSet[key] = columns.map(c => c.dart);
+
+    api.grok_ColumnsInput_SetAdditionalColumns(input.dart, toDart(mapToSet));
+  }
+
+  /** Sets additional columns on change event */
+  export function setInputAdditionalColumnsOnChanged(input: InputBase, onChange: (values: { [key: string]: Column[] }) => void): void {
+    api.grok_ColumnsInput_SetOnAdditionalColumnsChanged(input.dart, !onChange ? null : toDart((values: any) => {
+      values = toJs(values);
+      for (const key of Object.keys(values))
+        values[key] = values[key].map(toJs);
+
+      onChange(values);
+    }));
   }
 
   /** Creates input for the specified property, and optionally binds it to the specified object */
@@ -1070,6 +1119,20 @@ export class tools {
     let host = div([]);
     host.innerHTML = htmlString.trim();
     return host;
+  }
+
+  /** Initialized onClick and sets the tooltip for the element. */
+  static bind(e: HTMLElement, onClick: Function, tooltipMsg: string | null = null): HTMLElement {
+    if (onClick)
+      e?.addEventListener('click', (e) => onClick(e));
+    tooltip.bind(e, tooltipMsg);
+    return e;
+  }
+
+  static parseHtml(html: string): HTMLElement {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    return doc.body!.firstChild! as HTMLElement;
   }
 
   static initFormulaAccelerators(textInput: InputBase, table: DataFrame): void {
@@ -1617,12 +1680,12 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
         if (!element.classList.contains('ui-split-v-divider')) {
           if (element.style.height != '') {
             defaultHeigh += Number(element.style.height.replace(/px$/, ''));
-          } else {
-            noHeightCount++;
           }
-        }else{
-          element.style.height = '4px';
+          else
+            noHeightCount++;
         }
+        else
+          element.style.height = '4px';
       });
 
       childs.forEach((element) => {
@@ -1633,7 +1696,6 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
           }
         }
       })
-
     });
 
     tools.handleResize(b, (w,h)=>{
@@ -1648,10 +1710,9 @@ export function splitV(items: HTMLElement[], options: ElementOptions | null = nu
           $(b.childNodes[i]).css('height', 4);
         }
       }
-
     });
-
-  } else {
+  }
+  else {
     $(b).addClass('ui-split-v').append(items.map(item => box(item)))
   }
   return b;
@@ -1876,7 +1937,7 @@ export function panel(items: HTMLElement[] = [], options?: string | ElementOptio
  */
 export function label(text: string | null, options: {} | null = null): HTMLLabelElement {
   let c = document.createElement('label');
-  c.textContent = text;
+  c.textContent = text ?? '';
   $(c).addClass('ui-label');
   _options(c, options);
   return c;
@@ -2047,6 +2108,10 @@ export let icons = {
   search: (handler: Function, tooltipMsg: string | null = null) => _iconFA('search', handler, tooltipMsg),
   filter: (handler: Function, tooltipMsg: string | null = null) => _iconFA('filter', handler, tooltipMsg),
   play: (handler: Function, tooltipMsg: string | null = null) => _iconFA('play', handler, tooltipMsg),
+  spinner: (handler: Function, tooltipMsg: string | null = null) =>
+    tools.bind(tools.parseHtml('<i class="fa fa-spinner fa-pulse fa-3x fa-fw"></i>'), handler, tooltipMsg),
+  loader: (handler: Function, tooltipMsg: string | null = null) =>
+    tools.bind(tools.parseHtml('<div class="grok-loader"><div></div><div></div><div></div><div></div></div>'), handler, tooltipMsg),
 }
 
 export function setDisplayAll(elements: HTMLElement[], show: boolean): void {
@@ -2332,7 +2397,7 @@ export namespace hints {
 
   /** Removes the hint indication from the provided element and returns it. */
   export function remove(el?: HTMLElement): HTMLElement | null {
-    if (el != null) {
+    if (el) {
       const id = el.getAttribute('data-target');
       $(`div.ui-hint-blob[data-target="${id}"]`)[0]?.remove();
       el.classList.remove('ui-hint-target', 'ui-text-hint-target');

@@ -355,18 +355,27 @@ export function getSplitterWithSeparator(separator: string, limit: number | unde
 /** Splits Helm string to monomers, but does not replace monomer names to other notation (e.g. for RNA).
  * Only for linear polymers, does not split RNA for ribose and phosphate monomers.
  * EG byciclic helm: PEPTIDE1{F}|PEPTIDE2{[dI].[Trp_Ome].[Asp_OMe].[Cys_Bn].[meG].[Phe_3Cl].[dD].T.[dI].T.[dK].[aG].[3Pal].[xiIle].[meD].[Ala_tBu]}|PEPTIDE3{L.[Pro_4Me3OH].S.[NMe2Abz].Q.[3Pal].[xiIle].[D-Hyp].[Ala_tBu].[dI].[Trp_Ome].[Asp_OMe].N.[meG].[Phe_34diCl].[Phe_34diCl]}$PEPTIDE2,PEPTIDE2,16:R2-1:R1|PEPTIDE3,PEPTIDE3,16:R2-1:R1|PEPTIDE3,PEPTIDE2,10:R3-1:R3|PEPTIDE1,PEPTIDE2,1:R2-9:R3$$$V2.0
+ * Also should support smiles in monomer names, like: PEPTIDE1{[ac].L.N.[*N[C@H](C(=O)*)Cc1ccc(cc1)OP(=O)(O)O |$_R1;;;;;_R2;;;;;;;;;;;;$|].I.D.L.D.L.V.[am]}$$$$
  * @param {string} seq Source string of HELM notation
  * @param {ISeqSource} src Source of the {@link seq} string
  * @return {string[]}
  */
 export const splitterAsHelm: SplitterFunc = (seq: string): ISeqSplitted => {
-  const helmParts = seq.split('$');
-  const spList = helmParts[0].split('|');
+  const indexOfSequenceEnd = seq.indexOf('}$');
+  const sequencePart = seq.substring(0, indexOfSequenceEnd + 1);
+  const connectionsEndPart = seq.indexOf('$', indexOfSequenceEnd + 2);
+  const connectionsPart = seq.substring(indexOfSequenceEnd + 2, connectionsEndPart);
+  // const helmParts = seq.split('$');
+  const spList = sequencePart.split('}|');
+  // since we removed }|, need to add } to last part
+  for (let i = 0; i < spList.length - 1; i++)
+    spList[i] = spList[i] + '}';
+
   const mListSplit = spList
     .map((sp: string) => (sp.match(/(?<=\{).+(?=})/)?.[0]?.split('.') ?? [])
       .map((m) => cleanupHelmSymbol(m)));
   const polymerTypes = spList.map((sp) => sp.replace(/\d{1,2}\{.+\}/, '')) as PolymerTypes[];
-  const res = new HelmSplitted(mListSplit, helmParts[1] ?? '', polymerTypes, GapOriginals[NOTATION.HELM]);
+  const res = new HelmSplitted(mListSplit, connectionsPart ?? '', polymerTypes, GapOriginals[NOTATION.HELM]);
 
   return res;
 };

@@ -403,7 +403,7 @@ export class StateTree {
       });
     } else if (action.spec.type === 'funccall') {
       return this.withTreeLock(() => action.exec(additionalParams).pipe(
-        finalize(() => this.makeStateRequests$.next(true))
+        finalize(() => this.makeStateRequests$.next(true)),
       ));
     } else
       return action.exec(additionalParams);
@@ -433,7 +433,7 @@ export class StateTree {
       item.setOutdatedStatus(false);
       return of(item);
     }).pipe(
-      finalize(() => this.makeStateRequests$.next(true))
+      finalize(() => this.makeStateRequests$.next(true)),
     );
   }
 

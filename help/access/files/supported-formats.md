@@ -8,14 +8,14 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 
 | Format <div style={{ width:90 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|-----------------------------------------------|------------------|
-| `.csv`             | File format       | Comma-separated values                         | --               |
-| `.tsv`             | File format       | Tab-separated values                           | --               |
-| `.txt`             | File format       | Plain text                                     | --               |
-| `.xlsx`            | File format       | Microsoft Excel                                | --               |
-| `.d42`             | File format       | Datagrok [project]                             | --               |
-| `.json`            | File format       | JavaScript Object Notation                     | --               |
-| `.xml `            | File format       | Extensible Markup Language                     | --               |
-| `.HTML`            | File format       | HyperText Markup Language                      | --               |
+| `.csv`             | File format       | Comma-separated values                        | --               |
+| `.tsv`             | File format       | Tab-separated values                          | --               |
+| `.txt`             | File format       | Plain text                                    | --               |
+| `.xlsx`            | File format       | Microsoft Excel                               | --               |
+| `.d42`             | File format       | Datagrok [dashboadr]                          | --               |
+| `.json`            | File format       | JavaScript Object Notation                    | --               |
+| `.xml `            | File format       | Extensible Markup Language                    | --               |
+| `.HTML`            | File format       | HyperText Markup Language                     | --               |
 
 ### Statistical and scientific formats
 
@@ -189,7 +189,7 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 
 
 
-[Project]: <../../datagrok/concepts/project/project.md>
+[Dashboard]: <../../datagrok/concepts/project/dashboard.md>
 [Chem]: <https://github.com/datagrok-ai/public/tree/master/packages/Chem#readme>
 [Bio]: <https://github.com/datagrok-ai/public/tree/master/packages/Bio#readme>
 [Biostructure Viewer]: <https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer#readme>

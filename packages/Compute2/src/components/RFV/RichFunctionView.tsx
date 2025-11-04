@@ -10,6 +10,7 @@ import {
   ifOverlapping,
   tooltip,
   Button,
+  IconImage,
 } from '@datagrok-libraries/webcomponents-vue';
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
@@ -27,6 +28,7 @@ import {ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver
 import {startWith, take, map} from 'rxjs/operators';
 import {useHelp} from '../../composables/use-help';
 import {useObservable} from '@vueuse/rxjs';
+import { _package } from '../../package-instance';
 
 interface ScalarsState {
   type: 'scalars',
@@ -451,15 +453,19 @@ export const RichFunctionView = Vue.defineComponent({
             }}
             tooltip='Generate standard report for the current step'
           />}
-          { isSAenabled.value && <IconFA
-            name='analytics'
-            onClick={runSA}
-            tooltip='Run sensitivity analysis'
-          />}
-          { isFittingEnabled.value && <IconFA
-            name='chart-line'
+          { isFittingEnabled.value && <IconImage
+            name='fitting'
+            path={`${_package.webRoot}files/icons/icon-chart-dots.svg`}
             onClick={runFitting}
             tooltip='Fit inputs'
+            style={{width: '24px', height: '24px'}}
+          />}
+          { isSAenabled.value && <IconImage
+            name='sa'
+            path={`${_package.webRoot}files/icons/icon-chart-sensitivity.svg`}
+            onClick={runSA}
+            tooltip='Run sensitivity analysis'
+            style={{width: '24px', height: '24px'}}
           />}
           { <IconFA
             name='question'

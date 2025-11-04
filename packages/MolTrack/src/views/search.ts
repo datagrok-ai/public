@@ -517,9 +517,8 @@ export function createFiltersIcon(tv: DG.TableView, filtersDiv: HTMLDivElement) 
   });
   ui.tooltip.bind(externalFilterIcon, 'Add MolTrack filters');
   const filtersButton = ui.div(externalFilterIcon);
-  tv.setRibbonPanels([[filtersButton]]);
+  tv.setRibbonPanels([[filtersButton]], false);
 }
-
 
 export async function createSearchFileds(): Promise<DG.Property[]> {
   const propArr: DG.Property[] = [];
@@ -823,9 +822,10 @@ export async function createSearchView(viewName: string, scope: Scope, initialQu
   }
   const df = DG.DataFrame.create();
   openedSearchView?.close();
-  const tv = grok.shell.addTablePreview(df);
+  const tv = DG.TableView.create(df, false);
   openedSearchView = tv;
   openedSearchView.name = viewName;
+  grok.shell.addPreview(openedSearchView);
   const initPath = [
     isSavedSearch ? SAVED_SEARCHES_NODE : SEARCH_NODE,
     isSavedSearch ? scope : viewName,

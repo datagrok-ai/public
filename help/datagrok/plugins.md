@@ -36,13 +36,7 @@ sidebar_position: 1.2
 |[Dendrogram](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram)| Trees |Fit-for-purpose| [Dendrogram](../visualize/viewers/dendrogram.md) viewer | Stable |
 |[PhyloTree Viewer](https://github.com/datagrok-ai/public/tree/master/packages/PhyloTreeViewer)| Trees | Fit-for-purpose | [PhylocanvasGL](../visualize/viewers/img/phylocanvas-gl-viewer.gif) viewer|  Stable |
 |[GIS](https://github.com/datagrok-ai/public/tree/master/packages/GIS)| GIS |Fit-for-purpose|GIS (geographic information system) functionality, like maps and geocoding| Stable |
-|[NMRium](https://github.com/datagrok-ai/public/tree/master/packages/nmrium)| NMR data |Fit-for-purpose| Visualization of NMR diagram | Stable |
-|[Spectra Viewer](https://github.com/datagrok-ai/chem-spectra-viewer/tree/main)| Spectral data |Fit-for-purpose| Preview of JDX format for various types of spectra, including IR, UV, Mass, HPLC, absorption and others | Stable |
 |[Excalidraw](https://github.com/datagrok-ai/public/tree/master/packages/Excalidraw)| Diagrams |Fit-for-purpose| Enables working with diagrams and drawings in the .excalidraw format| Stable |
-<!--
-|Viewers |[Forms]||???|Beta|
-|Misc |[ChaRPy]|Fit-for-purpose|Adds two commands, "To Python script" and "To R script," to Datagrok viewers. These commands generate Python or R code for the selected viewer and execute the script to show the corresponding plot.|Beta|
--->
 
 ## Compute
 
@@ -64,7 +58,6 @@ sidebar_position: 1.2
 |[EDA](https://github.com/datagrok-ai/public/tree/master/packages/EDA)| ML Toolkit |Required|ML toolkit: dimensionality reduction, multivariate analysis, supervised ML, ANOVA, etc.|Stable|
 |[Notebooks](https://github.com/datagrok-ai/public/tree/master/packages/Notebooks)| Jupyter Notebooks |Optional|Integration with [JupyterLab Notebooks](https://jupyter.org/)|Stable|
 |[MLflow](https://github.com/datagrok-ai/public/tree/master/packages/MLFlow)| MLflow models | Fit-for-purpose| Integrates MLflow models into the Datagrok platform|Beta|
-
 
 ## Develop
 
@@ -94,6 +87,8 @@ sidebar_position: 1.2
 | [Retrosynthesis](https://github.com/datagrok-ai/public/tree/master/packages/Retrosynthesis)| Synthetic planning | Optional |Creates retrosynthesis paths for the selected molecule, built on top of [AiZynthFinder](https://github.com/MolecularAI/aizynthfinder) | Beta |
 | [CDD Vault Link](https://github.com/datagrok-ai/public/tree/master/packages/CddVaultLink)| Registration system integration | Optional |Provides integration with [CDD Vault](https://www.collaborativedrug.com/cdd-informatics-platform) registration system | Beta |
 | [Reinvent4](https://github.com/datagrok-ai/public/tree/master/packages/Reinvent4)| Generative molecular design | Fit-for-purpose |Provides integration with the [Reinvent4](https://github.com/MolecularAI/REINVENT4) molecular design tool | Beta |
+|[NMRium](https://github.com/datagrok-ai/public/tree/master/packages/nmrium)| Visualization |Fit-for-purpose| Visualization of NMR diagram | Stable |
+|[Spectra Viewer](https://github.com/datagrok-ai/chem-spectra-viewer/tree/main)| Visualization |Fit-for-purpose| Preview of JDX format for various types of spectra, including IR, UV, Mass, HPLC, absorption and others | Stable |
 
 ### Bio
 
@@ -102,6 +97,9 @@ sidebar_position: 1.2
 |[Bio](https://github.com/datagrok-ai/public/tree/master/packages/Bio) | General | Required| Bioinformatics support ([wiki](solutions/domains/bio/bio.md))|Stable|
 |[HELM](https://github.com/datagrok-ai/public/tree/master/packages/Helm)| Data format |Recommended |Support for [HELM notation](https://pistoiaalliance.atlassian.net/wiki/spaces/HELM/overview), HELM editor |Stable|
 |[Biostructure Viewer](https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer) | Visualization | Recommended| Visualization of biological structures ([wiki](../visualize/viewers/biostructure.md)) |Stable|
+|[Dendrogram](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram)| Visualization |Fit-for-purpose| [Dendrogram](../visualize/viewers/dendrogram.md) viewer | Stable |
+|[PhyloTree Viewer](https://github.com/datagrok-ai/public/tree/master/packages/PhyloTreeViewer)| Visualization | Fit-for-purpose | [PhylocanvasGL](../visualize/viewers/img/phylocanvas-gl-viewer.gif) viewer|  Stable |
+|[Metabolic Graph](https://github.com/datagrok-ai/public/tree/master/packages/MetabolicGraph)| Visualization |Fit-for-purpose| Metabolic graph visualizations for pathway mapping and analysis |Stable|
 | [Peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides)| SAR  | Fit-for-purpose| App for sequence-activity relationship analysis for peptides ([wiki](solutions/domains/bio/peptides-sar.md))|Stable|
 |[Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves)| Curve fitting | Fit-for-purpose| Support for fitted curves (like dose-response curves), including in-grid rendering, storing charts in cells, interactivity, and automatic fitting | Stable |
 |[Sequence Translator](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator) | Oligonucleotides  | Fit-for-purpose| App that converts oligonucleotides into various formats  |Stable|

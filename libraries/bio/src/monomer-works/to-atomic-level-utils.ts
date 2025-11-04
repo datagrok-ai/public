@@ -33,7 +33,7 @@ export function getFormattedMonomerLib(
         //@ts-ignore
         monomerObject[field] = it[field];
       });
-      map.set(it[HELM_FIELDS.SYMBOL], monomerObject);
+      map.set(monomerSymbol, monomerObject);
     }
   }
   return map;

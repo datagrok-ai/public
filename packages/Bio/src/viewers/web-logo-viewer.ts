@@ -34,6 +34,7 @@ import {AggFunc, getAgg} from '../utils/agg';
 import {_package, PackageFunctions} from '../package';
 import {numbersWithinMaxDiff} from './utils';
 import {buildCompositionTable} from '@datagrok-libraries/bio/src/utils/composition-table';
+import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 
 declare global {
   interface HTMLCanvasElement {
@@ -212,14 +213,24 @@ export class PositionInfo {
   ) {
     for (const [monomer, pmInfo] of Object.entries(this._freqs)) {
       if (monomer !== GAP_SYMBOL) {
-        const monomerTxt = monomerToShort(monomer, maxMonomerLetters);
+        // to handle explicit smiles based monomers in monomer lib
+        let monomerDisplayValue = monomer;
+
         const b = pmInfo.bounds!;
         const left = b.left;
 
         let color: string = undefinedColor;
-        if (monomerLib)
-          color = monomerLib.getMonomerTextColor(biotype, monomer)!;
-
+        if (monomerLib) {
+          try {
+            color = monomerLib.getMonomerTextColor(biotype, monomer)!;
+            const m = monomerLib.getMonomer(helmTypeToPolymerType(biotype), monomer);
+            if (m && m.symbol !== monomer) // for explicit smiles based monomers
+              monomerDisplayValue = m.symbol;
+          } catch (e) {
+            errorToConsole(e);
+          }
+        }
+        const monomerTxt = monomerToShort(monomerDisplayValue, maxMonomerLetters);
         g.resetTransform();
         g.strokeStyle = 'lightgray';
         g.lineWidth = 1;
@@ -949,7 +960,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       return [null, null, null];
 
     const monomer: string | undefined = pi.getMonomerAt(calculatedX, p.y);
-    if (monomer === undefined)
+    if (monomer == undefined)
       return [pi, null, null];
 
     return [pi, monomer, pi.getFreq(monomer)];
@@ -1262,7 +1273,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       const [pi, monomer] = this.getMonomer(cursorP, dpr);
       const positionLabelHeight = this.showPositionLabels ? POSITION_LABELS_HEIGHT * dpr : 0;
 
-      if (pi !== null && monomer === null && 0 <= cursorP.y && cursorP.y <= positionLabelHeight) {
+      if (pi !== null && monomer == null && 0 <= cursorP.y && cursorP.y <= positionLabelHeight) {
         // Position tooltip
 
         const tooltipRows = [ui.divText(`Position ${pi.label}`)];
@@ -1373,8 +1384,8 @@ function renderPositionLabels(g: CanvasRenderingContext2D,
       const pos = positions[jPos];
       const tm = g.measureText(pos.name);
       const textHeight = tm.actualBoundingBoxDescent - tm.actualBoundingBoxAscent;
-      maxPosNameWidth = maxPosNameWidth === null ? tm.width : Math.max(maxPosNameWidth, tm.width);
-      maxPosNameHeight = maxPosNameHeight === null ? textHeight : Math.max(maxPosNameHeight, textHeight);
+      maxPosNameWidth = maxPosNameWidth == null ? tm.width : Math.max(maxPosNameWidth, tm.width);
+      maxPosNameHeight = maxPosNameHeight == null ? textHeight : Math.max(maxPosNameHeight, textHeight);
     }
     const hScale = maxPosNameWidth! < (positionWidth * dpr - 2) ? 1 : (positionWidth * dpr - 2) / maxPosNameWidth!;
 

@@ -78,9 +78,11 @@ import {molecular3DStructureWidget, toAtomicLevelWidget} from './widgets/to-atom
 import {handleSequenceHeaderRendering} from './widgets/sequence-scrolling-widget';
 import {PolymerType} from '@datagrok-libraries/js-draw-lite/src/types/org';
 import {BilnNotationProvider} from './utils/biln';
-import {MonomerLibFromFilesProvider} from './utils/monomer-lib/library-file-manager/monomers-lib-provider';
+
+import * as api from './package-api';
 export const _package = new BioPackage(/*{debug: true}/**/);
 export * from './package.g';
+
 
 // /** Avoid reassigning {@link monomerLib} because consumers subscribe to {@link IMonomerLib.onChanged} event */
 // let monomerLib: MonomerLib | null = null;
@@ -123,7 +125,7 @@ export class PackageFunctions {
 
   @grok.decorators.init({})
   static async initBio(): Promise<void> {
-    if (initBioPromise === null)
+    if (initBioPromise == null)
       initBioPromise = initBioInt();
 
     await initBioPromise;
@@ -616,6 +618,30 @@ export class PackageFunctions {
       });
     return res;
   }
+
+  @grok.decorators.func({
+    name: 'Molecules to HELM',
+    'top-menu': 'Bio | Transform | Molecules to HELM...',
+    description: 'Converts Peptide molecules to HELM notation by matching with monomer library',
+  })
+  static async moleculesToHelmTopMenu(
+    @grok.decorators.param({name: 'table', options: {description: 'Input data table'}})table: DG.DataFrame,
+    @grok.decorators.param({name: 'molecules', options: {semType: 'Molecule', description: 'Molecule column'}})molecules: DG.Column,
+  ) {
+    // collect current monomer library
+    const monomerLib = _package.monomerLib;
+    const libJSON = JSON.stringify(monomerLib.toJSON());
+    await api.scripts.molToHelmConverterPy(table, molecules, libJSON);
+
+    // semtype is not automatically set, so we set it manually
+    const newCol = table.columns.toList().find((c) => c.name.toLowerCase().includes('regenerated sequence') && c.semType !== DG.SEMTYPE.MACROMOLECULE);
+    if (newCol) {
+      newCol.meta.units = NOTATION.HELM;
+      newCol.semType = DG.SEMTYPE.MACROMOLECULE;
+      newCol.setTag('cell.renderer', 'helm');
+    }
+  }
+
 
   @grok.decorators.func({
     name: 'To Atomic Level',

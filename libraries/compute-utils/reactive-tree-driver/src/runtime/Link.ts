@@ -32,7 +32,7 @@ export class Link {
   public readonly isValidator = this.matchInfo.spec.type === 'validator';
   public readonly isMeta = this.matchInfo.spec.type === 'meta';
   public readonly isMutation = this.matchInfo.spec.type === 'pipeline';
-  public readonly isNodeMeta =  this.matchInfo.spec.type === 'nodemeta' || this.matchInfo.spec.type === 'selector';
+  public readonly isNodeMeta = this.matchInfo.spec.type === 'nodemeta' || this.matchInfo.spec.type === 'selector';
   public readonly isFuncallAction = this.matchInfo.spec.type === 'funccall';
   public readonly isReturn = this.matchInfo.spec.type === 'return';
 

@@ -92,3 +92,17 @@
 .revvity-saved-search-delete:hover .grok-icon {
     color: red;
 }
+
+.revvity-load-all-search-results {
+    position: relative;
+    margin-left: 14px;
+}
+
+.revvity-load-all-search-results-button {
+    font-size: 10px;
+}
+
+.revvity-search-results-count {
+    font-style: italic;
+    align-self: center;
+}

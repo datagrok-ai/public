@@ -26,7 +26,7 @@ Datagrok supports two authentication methods for AWS:
     - **ECS/Fargate:** Credentials are fetched from the task role endpoint.
 
 ### Creating an AWS Connection
-1. Navigate to **Databases → AWS**.
+1. Navigate to **Platform → Credentials → AWS**.
 2. Right-click the provider and select **Add connection...**.
 3. Select the **Authentication Method**.
 4. Fill in the required fields and **save** the connection.
@@ -57,7 +57,7 @@ Datagrok supports two authentication methods for GCP:
 2. **Service account impersonation** – Provide a **Service Account Email**. If Datagrok runs under a service account with the **Service Account Token Creator** role, it can impersonate the specified account.
 
 ### Creating a GCP Connection
-1. Navigate to **Databases → GCP**.
+1. Navigate to **Platform → Credentials → GCP**.
 2. Right-click the provider and select **Add connection...**.
 3. Select the **Authentication Method**.
 4. Fill in the required fields and **save** the connection.

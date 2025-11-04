@@ -264,6 +264,15 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Co
   return await PackageFunctions.sequenceSpaceTopMenu(table, molecules, methodName, similarityMetric, plotEmbeddings, preprocessingFunction, options, clusterEmbeddings, isDemo);
 }
 
+//name: Molecules to HELM
+//description: Converts Peptide molecules to HELM notation by matching with monomer library
+//input: dataframe table { description: Input data table }
+//input: column molecules { semType: Molecule; description: Molecule column }
+//top-menu: Bio | Transform | Molecules to HELM...
+export async function moleculesToHelmTopMenu(table: DG.DataFrame, molecules: DG.Column) : Promise<void> {
+  await PackageFunctions.moleculesToHelmTopMenu(table, molecules);
+}
+
 //name: To Atomic Level
 //description: Converts sequences to molblocks
 //input: dataframe table { description: Input data table }

@@ -90,7 +90,7 @@ class BioPackageDetectors extends DG.Package {
   }
 
   /** Parts of the column name required in the column's name under the detector. It must be in lowercase. */
-  likelyColNamePartList = ['seq', 'msa', 'dna', 'rna', 'fasta', 'helm', 'sense', 'protein', 'pep', 'enumerated'];
+  likelyColNamePartList = ['seq', 'msa', 'dna', 'rna', 'fasta', 'helm', 'sense', 'protein', 'pep', 'enumerated', 'biln'];
 
   veryLikelyColNamePartList = ['peptide', 'oligo', 'sequence', 'enumerated',
     'heavy_chain', 'light_chain', 'heay-chain', 'light-chain', 'heavychain', 'lightchain',
@@ -156,10 +156,11 @@ class BioPackageDetectors extends DG.Package {
     try {
       const last = this.detectMacromoleculeStoreLast();
       const colName = col.name;
+      const colNameLower = colName.toLowerCase();
       const colNameLikely = this.likelyColNamePartList.some(
-        (requiredColNamePart) => colName.toLowerCase().includes(requiredColNamePart));
+        (requiredColNamePart) => colNameLower.includes(requiredColNamePart));
       const colNameVeryLikely = this.veryLikelyColNamePartList.some(
-        (requiredColNamePart) => colName.toLowerCase().includes(requiredColNamePart));
+        (requiredColNamePart) => colNameLower.includes(requiredColNamePart));
       const seqMinLength = colNameVeryLikely ? 3 : colNameLikely ? 7 : 10;
       const maxBadRatio = colNameLikely ? 0.05 : 0.005;
 
@@ -172,7 +173,7 @@ class BioPackageDetectors extends DG.Package {
       const categoriesSample = [...new Set((col.length < SEQ_SAMPLE_LIMIT ?
         wu.count(0).take(Math.min(SEQ_SAMPLE_LIMIT, col.length)).map((rowI) => col.get(rowI)) :
         this.sample(col, SEQ_SAMPLE_LIMIT))
-        .map((seq) => !!seq ? seq.substring(0, SEQ_SAMPLE_LENGTH_LIMIT * 5) : '')
+        .map((seq) => !!seq ? seq.substring(0, SEQ_SAMPLE_LENGTH_LIMIT * 10) : '')
         .filter((seq) => seq.length !== 0/* skip empty values for detector */),
       )].map((s) => s?.trim());
       last.categoriesSample = categoriesSample;
@@ -198,11 +199,14 @@ class BioPackageDetectors extends DG.Package {
       }
 
       //not HELM
-      const dotIsLikelyBilnSplitter = categoriesSample.every((s) => {
+      let hasDots = false;
+      let dotIsLikelyBilnSplitter = categoriesSample.every((s) => {
         const parts = s.split('.');
         // each part should be connected
+        hasDots = hasDots || parts.length > 1;
         return parts.length == 1 || parts.every((p) => /\(\d{1,2},\d{1,2}\)/g.test(p));
       });
+      dotIsLikelyBilnSplitter = dotIsLikelyBilnSplitter && hasDots;
       // if the dot (dissalowed character for macromolecules) is likely a biln separator,
       // we can just replace it with '-' and remove all connection parts to help detector detect it as separator
       if (dotIsLikelyBilnSplitter) {
@@ -257,7 +261,16 @@ class BioPackageDetectors extends DG.Package {
         return null;
       }
 
-      const separator = this.detectSeparator(statsAsChars.freq, categoriesSample, seqMinLength);
+      // for BILN, there might be smiles in there, with bunch of special characters
+      let isPossiblyBiln = colNameLower.includes('biln') || dotIsLikelyBilnSplitter;
+      if (isPossiblyBiln) {
+        for (const symbol of ['@', '$', ';', '*'])
+          delete statsAsChars.freq[symbol];
+      }
+
+      const separator = this.detectSeparator(statsAsChars.freq, categoriesSample, seqMinLength, isPossiblyBiln);
+      if (separator !== '-')
+        isPossiblyBiln = false;
       const checkForbiddenSeparatorRes = this.checkForbiddenSeparator(separator);
       if (checkForbiddenSeparatorRes) {
         last.rejectReason = `Separator '${separator}' is forbidden.`;
@@ -300,7 +313,7 @@ class BioPackageDetectors extends DG.Package {
         }
         // Single- and multi-char monomer names for sequences with separators have constraints
         if (units === NOTATION.SEPARATOR || (units === NOTATION.FASTA && alphabetIsMultichar)) {
-          const badSymbol /*: string | null*/ = this.checkBadMultichar(stats.freq);
+          const badSymbol /*: string | null*/ = this.checkBadMultichar(stats.freq, isPossiblyBiln);
           if (badSymbol) {
             last.rejectReason = `Forbidden multi-char monomer: '${badSymbol}'.`;
             return null;
@@ -349,7 +362,7 @@ class BioPackageDetectors extends DG.Package {
    * @param categoriesSample A string array of seqs sample
    * @param seqMinLength A threshold on min seq length for contributing to stats
    */
-  detectSeparator(freq, categoriesSample, seqMinLength) {
+  detectSeparator(freq, categoriesSample, seqMinLength, isPossiblyBiln = false) {
     // To detect a separator we analyze col's sequences character frequencies.
     // If there is an exceptionally frequent symbol, then we will call it the separator.
     // The most frequent symbol should occur with a rate of at least 0.15
@@ -371,7 +384,7 @@ class BioPackageDetectors extends DG.Package {
 
     const maxFreq = Math.max(...Object.values(cleanFreq));
 
-    const sep = Object.entries(freq).find(([k, v]) => v === maxFreq)[0];
+    const sep = Object.entries(cleanFreq).find(([k, v]) => v === maxFreq)[0];
     const sepFreq = freq[sep];
     const otherSumFreq = Object.entries(freq).filter((kv) => kv[0] !== sep)
       .map((kv) => kv[1]).reduce((pSum, a) => pSum + a, 0);
@@ -379,7 +392,7 @@ class BioPackageDetectors extends DG.Package {
     // Splitter with separator test application
     const splitter = this.getSplitterWithSeparator(sep, SEQ_SAMPLE_LENGTH_LIMIT);
     const stats = this.getStats(categoriesSample, seqMinLength, splitter);
-    const badSymbol = this.checkBadMultichar(stats.freq);
+    const badSymbol = this.checkBadMultichar(stats.freq, isPossiblyBiln);
     if (badSymbol) return null;
     // TODO: Test for Gamma/Erlang distribution
     const totalMonomerCount = wu(Object.values(stats.freq)).reduce((sum, a) => sum + a, 0);
@@ -407,11 +420,12 @@ class BioPackageDetectors extends DG.Package {
   /** Dots and colons are nor allowed in multichar monomer names (but space is allowed).
    * The monomer name/label cannot contain digits only (but single digit is allowed).
    */
-  checkBadMultichar(freq) /* : string | null */ {
+  checkBadMultichar(freq, isPossiblyBiln = false) /* : string | null */ {
     for (const symbol of Object.keys(freq)) {
       if (symbol && !isNaN(symbol))
         return symbol; // performance evaluated better with RegExp
-
+      if (isPossiblyBiln && symbol.startsWith('[') && symbol.endsWith(']'))
+        continue; // biln monomer smiles can contain forbidden characters within []
       const symbolLen = symbol.length;
       if (this.forbiddenMulticharFirst.includes(symbol[0]))
         return symbol;

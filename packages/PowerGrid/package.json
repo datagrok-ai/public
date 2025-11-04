@@ -12,6 +12,7 @@
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/PowerGrid"
   },
+  "datagrok-api": "../../js-api",
   "dependencies": {
     "@datagrok-libraries/gridext": "1.5.2",
     "@datagrok-libraries/statistics": "^1.8.0",

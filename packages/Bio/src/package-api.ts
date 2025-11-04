@@ -13,6 +13,13 @@ export namespace scripts {
   }
 
   /**
+  Converts molecules to HELM notation based on monomer library
+  */
+  export async function molToHelmConverterPy(moleculesDataframe: DG.DataFrame , moleculesColumn: DG.Column , libraryJSON: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Bio:MolToHelmConverterPy', { moleculesDataframe, moleculesColumn, libraryJSON });
+  }
+
+  /**
   Create the model peptides/DNA sequences with peptides data
   */
   export async function sequenceGenerator(clusters: number , num_sequences: number , alphabet_key: string , motif_length: number , max_variants_position: number , random_length: number , dispersion: number , activity_range: number , cliff_probability: number , cliff_strength: number , cliff_strength_dispersion: number , assay_noise_levels: string , assay_scales: string , disable_negatives: boolean , fasta_separator: string | null, helm_library_file: DG.FileInfo | null, helm_connection_mode: string ): Promise<DG.DataFrame> {
@@ -170,6 +177,13 @@ export namespace funcs {
   */
   export async function sequenceSpaceTopMenu(table: DG.DataFrame , molecules: DG.Column , methodName: string , similarityMetric: string , plotEmbeddings: boolean , preprocessingFunction?: any , options?: any , clusterEmbeddings?: boolean , isDemo?: boolean ): Promise<void> {
     return await grok.functions.call('Bio:SequenceSpaceTopMenu', { table, molecules, methodName, similarityMetric, plotEmbeddings, preprocessingFunction, options, clusterEmbeddings, isDemo });
+  }
+
+  /**
+  Converts Peptide molecules to HELM notation by matching with monomer library
+  */
+  export async function moleculesToHelmTopMenu(table: DG.DataFrame , molecules: DG.Column ): Promise<void> {
+    return await grok.functions.call('Bio:MoleculesToHelmTopMenu', { table, molecules });
   }
 
   /**
