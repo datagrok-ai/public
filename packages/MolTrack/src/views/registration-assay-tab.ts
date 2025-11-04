@@ -103,7 +103,7 @@ export class AssayRegistrationView extends RegistrationViewBase {
       assayResultProps.map((p) => DG.Column.fromStrings(p.name, [p.name])),
     );
 
-    const columnsEditor = ui.input.columns('Select assay result properties', {
+    const columnsEditor = ui.input.columns('Assay result properties', {
       table: df,
       value: df.columns.toList(),
       tooltipText: 'Select which assay result properties you want to configure below',

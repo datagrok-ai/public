@@ -25,8 +25,8 @@ export class EntityBaseView extends RegistrationViewBase {
   singleRetrieved: boolean = false;
   compoundExists: boolean = false;
 
-  constructor(buildUI: boolean = true) {
-    super('Register a new compound');
+  constructor(buildUI: boolean = true, title: string = 'Register a new compound') {
+    super(title);
     this.path = 'Compound';
     this.sketcherInstance = new grok.chem.Sketcher();
 
@@ -136,9 +136,6 @@ export class EntityBaseView extends RegistrationViewBase {
   }
 
   private async buildSketcherOrPreview(): Promise<HTMLElement> {
-    const titleText = ui.divText(this.title, 'moltrack-title');
-    this.messageContainer.append(titleText);
-
     this.sketcherInstance.setSmiles(this.initialSmiles);
 
     if (this.singleRetrieved) {
@@ -198,7 +195,7 @@ export class EntityBaseView extends RegistrationViewBase {
     } = await createPropertySection(
       'Compound properties',
       fetchCompoundProperties,
-      this.convertToDGProperty.bind(this),
+      (prop) => this.convertToDGProperty(prop, { reserved: reservedProperties, skipReservedCheck: true }),
       {
         disableNames: this.singleRetrieved ? ['*'] : reservedProperties,
         initiallyOpen: true,
@@ -218,7 +215,7 @@ export class EntityBaseView extends RegistrationViewBase {
     } = await createPropertySection(
       'Batch properties',
       fetchBatchProperties,
-      this.convertToDGProperty.bind(this),
+      (prop) => this.convertToDGProperty(prop, { reserved: reservedProperties, skipReservedCheck: true }),
       {
         disableNames: this.singleRetrieved ? ['*'] : reservedProperties,
         initiallyOpen: this.isBatchSectionExpanded,

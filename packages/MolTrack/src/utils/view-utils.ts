@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { _package, getBatchByCorporateId, getCompoundByCorporateId } from '../package';
-import { excludedScopes, MOLTRACK_APP_PATH, MolTrackProp, Scope } from './constants';
+import { MOLTRACK_APP_PATH, MolTrackProp, Scope } from './constants';
 import { EntityBaseView } from '../views/registration-entity-base';
 import { RegistrationView } from '../views/registration-tab';
 import { u2 } from '@datagrok-libraries/utils/src/u2';
@@ -35,7 +35,7 @@ export async function buildRegistrationView({
   batchSection: boolean,
   path: string,
 }) {
-  const registrationView = new EntityBaseView(false);
+  const registrationView = new EntityBaseView(false, title);
   registrationView.initialSmiles = smiles;
   registrationView.singleRetrieved = true;
   registrationView.title = title;
@@ -212,7 +212,7 @@ export function getQuickActionsWidget(): HTMLElement {
 export async function createPropertySection(
   title: string,
   fetchPropsFn: () => Promise<any>,
-  convertToDGProperty: (prop: any) => DG.Property,
+  convertToDGProperty: (prop: MolTrackProp, options?: any) => DG.Property,
   options?: {
     disableNames?: string[];
     initiallyOpen?: boolean;
