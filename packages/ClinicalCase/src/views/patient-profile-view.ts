@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, LAB_DAY, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N,
-  LAB_TEST, SUBJECT_ID, VISIT_DAY, VISIT_NAME} from '../constants/columns-constants';
+  LAB_TEST, SUBJECT_ID, VISIT_DAY, VISIT} from '../constants/columns-constants';
 import {addColumnWithDrugPlusDosage, dynamicComparedToBaseline,
   labDynamicComparedToMinMax, labDynamicRelatedToRef} from '../data-preparation/data-preparation';
 import {getUniqueValues, getVisitNamesAndDays} from '../data-preparation/utils';
@@ -109,11 +109,11 @@ export class PatientProfileView extends ClinicalCaseViewBase {
   }
 
   private createLabBaselineVisitSelect() {
-    if (studies[this.studyId].domains.lb && [VISIT_DAY, VISIT_NAME]
+    if (studies[this.studyId].domains.lb && [VISIT_DAY, VISIT]
       .every((it) => studies[this.studyId].domains.lb.col(it) !== null)) {
-      this.visitNamesAndDays = getVisitNamesAndDays(studies[this.studyId].domains.lb, VISIT_NAME, VISIT_DAY);
+      this.visitNamesAndDays = getVisitNamesAndDays(studies[this.studyId].domains.lb, VISIT, VISIT_DAY);
       this.bl = this.visitNamesAndDays[0].name;
-      this.uniqueLabVisits = Array.from(getUniqueValues(studies[this.studyId].domains.lb, VISIT_NAME));
+      this.uniqueLabVisits = Array.from(getUniqueValues(studies[this.studyId].domains.lb, VISIT));
       const blVisitChoices = ui.input.choice('Baseline', {value: this.bl, items: this.uniqueLabVisits});
       blVisitChoices.onChanged.subscribe((value) => {
         this.bl = value;
@@ -269,7 +269,7 @@ export class PatientProfileView extends ClinicalCaseViewBase {
         },
       },
       {
-        req_cols: [SUBJECT_ID, LAB_DAY, LAB_TEST, LAB_RES_N, LAB_LO_LIM_N, LAB_HI_LIM_N, VISIT_NAME, VISIT_DAY],
+        req_cols: [SUBJECT_ID, LAB_DAY, LAB_TEST, LAB_RES_N, LAB_LO_LIM_N, LAB_HI_LIM_N, VISIT, VISIT_DAY],
         domain: 'lb',
         opts: {
           tableName: 'patient_lb',

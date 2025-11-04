@@ -7,7 +7,6 @@ import {TimelinesView} from './views/timelines-view';
 import {PatientProfileView} from './views/patient-profile-view';
 import {AdverseEventsView} from './views/adverse-events-view';
 import {ValidationView} from './views/validation-view';
-import {AdverseEventHandler} from './panels/adverse-event-handler';
 import {LaboratoryView} from './views/laboratory-view';
 import {AERiskAssessmentView} from './views/ae-risk-assessment-view';
 import {SurvivalAnalysisView} from './views/survival-analysis-view';
@@ -19,13 +18,13 @@ import {TreeMapView} from './views/tree-map-view';
 import {MedicalHistoryView} from './views/medical-history-view';
 import {VisitsView} from './views/visits-view';
 import {StudyConfigurationView} from './views/study-config-view';
-import {ADVERSE_EVENTS_VIEW_NAME, AE_BROWSER_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_NAME, COHORT_VIEW_NAME,
+import {ADVERSE_EVENTS_VIEW_NAME, AE_BROWSER_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_NAME,
   CORRELATIONS_VIEW_NAME, DISTRIBUTIONS_VIEW_NAME, LABORATORY_VIEW_NAME, MEDICAL_HISTORY_VIEW_NAME,
   PATIENT_PROFILE_VIEW_NAME, QUESTIONNAIRES_VIEW_NAME, STUDY_CONFIGURATIN_VIEW_NAME, SUMMARY_VIEW_NAME,
   SURVIVAL_ANALYSIS_VIEW_NAME, TIMELINES_VIEW_NAME, TIME_PROFILE_VIEW_NAME, TREE_MAP_VIEW_NAME,
   VALIDATION_VIEW_NAME, VISITS_VIEW_NAME} from './constants/view-names-constants';
 import {createClinCaseTableView, TABLE_VIEWS} from './utils/views-creation-utils';
-import {CohortView} from './views/cohort-view';
+//import {CohortView} from './views/cohort-view';
 import {QuestionnaiesView} from './views/questionnaires-view';
 import {ClinCaseTableView, ClinStudyConfig} from './utils/types';
 import {domainsToValidate, StudyJsonName} from './constants/constants';
@@ -33,6 +32,7 @@ import {ClinicalStudy, studies} from './clinical-study';
 import {ClinicalCaseViewBase} from './model/ClinicalCaseViewBase';
 import '../css/clinical-case.css';
 import {u2} from '@datagrok-libraries/utils/src/u2';
+import {scripts} from './package-api';
 
 export * from './package.g';
 
@@ -57,10 +57,8 @@ export let existingStudies: {[key: string]: ClinStudyConfig} | null = null;
 const validationNodes: {[key: string]: DG.TreeViewNode} = {};
 
 const domains = (studyId: string, exactDomains?: string[]) =>
-  (exactDomains ?? Object.keys(studies[studyId].domains)).map((it) => `${it.toLocaleLowerCase()}.csv`);
+  (exactDomains ?? Object.keys(studies[studyId].domains)).map((it) => it.toLocaleLowerCase());
 export let c: DG.FuncCall;
-
-let cliniclaCaseLaunched = false;
 
 function getCurrentStudyAndView(path: string): CurrentStudyAndView {
   let currentStudy = '';
@@ -135,6 +133,7 @@ export function openStudy(treeNode: DG.TreeViewGroup,
         `browse${CLINICAL_CASE_APP_PATH}/${study.name}/${viewName.replaceAll(' ', '')}`;
   };
 
+  // eslint-disable-next-line no-unused-vars
   for (const [_, study] of Object.entries(existingStudies)) {
     const node = treeNode.getOrCreateGroup(study.friendlyName ?? study.name, null, false);
     if (!studies[study.name]) {
@@ -205,20 +204,42 @@ export async function initClinicalStudy(study: ClinStudyConfig) {
 
 
 export async function readClinicalData(study: ClinStudyConfig, domainsToDownLoad?: string[]): Promise<boolean> {
-  const studyFiles = await _package.files.list(`studies/${study.name}`);
-  const domainsList = domains(study.name, domainsToDownLoad);
-  await Promise.all(studyFiles.map(async (file) => {
-    const domainName = file.fileName.toLowerCase();
-    if (!studies[study.name].domains[domainName] && domainsList.includes(domainName)) {
-      const df = await _package.files.readCsv(`studies/${study.name}/${domainName}`);
-      studies[study.name].domains[domainName.replace('.csv', '')] = df;
+  const pb = DG.TaskBarProgressIndicator.create(`Reading data for ${study.friendlyName ?? study.name}...`);
+  try {
+    const studyFiles = await _package.files.list(`studies/${study.name}`);
+    const domainsList = domains(study.name, domainsToDownLoad);
+    const removeExtension = (filename: string) => {
+      const lastDotIndex = filename.lastIndexOf('.');
+      return lastDotIndex === -1 ? filename : filename.substring(0, lastDotIndex);
+    };
+    for (let i = 0; i < studyFiles.length; i++) {
+      const domainNameWithExt = studyFiles[i].fileName.toLowerCase();
+      const isXpt = domainNameWithExt.endsWith('.xpt');
+      const domainNameWithoutExt = removeExtension(domainNameWithExt);
+      pb.update(i/studyFiles.length * 100, `Reading ${domainNameWithExt}...`);
+      if (!studies[study.name].domains[domainNameWithoutExt] && domainsList.includes(domainNameWithoutExt)) {
+        let df: DG.DataFrame | null = null;
+        if (isXpt) {
+          //const bytes = await _package.files.(`studies/${study.name}/${domainNameWithExt}`);
+          console.log(`*************** read ${domainNameWithExt}`);
+          df = await scripts.readSas(studyFiles[i]);
+          console.log(`*************** converted ${domainNameWithExt}`);
+        } else
+          df = await _package.files.readCsv(`studies/${study.name}/${domainNameWithExt}`);
+        if (df) {
+          df.name = domainNameWithoutExt;
+          studies[study.name].domains[domainNameWithoutExt] = df;
+        }
+      }
     }
-  }));
-  if (!studies[study.name].domains.dm) {
-    grok.shell.error(`No demographic data found for study ${study.name}`);
-    return false;
+    if (!studies[study.name].domains.dm) {
+      grok.shell.error(`No demographic data found for study ${study.name}`);
+      return false;
+    }
+    return true;
+  } finally {
+    pb.close();
   }
-  return true;
 }
 
 
@@ -279,7 +300,6 @@ export class PackageFunctions {
       studiesHeader,
       studiesDiv,
     ]));
-    cliniclaCaseLaunched = true;
     return view;
   }
 
@@ -321,6 +341,16 @@ export class PackageFunctions {
         }),
       ]));
     }
+  }
+
+  @grok.decorators.fileHandler({
+    'ext': 'xpt',
+  })
+  static async xptFileHandler(
+    @grok.decorators.param({'type': 'list'}) file: DG.FileInfo): Promise<DG.DataFrame[]> {
+    const res: DG.DataFrame = await scripts.readSas(file);
+    res.name = file.name;
+    return [res];
   }
 }
 

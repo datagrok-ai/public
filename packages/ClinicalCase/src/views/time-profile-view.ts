@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {addDataFromDmDomain, createPivotedDataframeAvg,
   getUniqueValues, getVisitNamesAndDays} from '../data-preparation/utils';
-import {ETHNIC, LAB_RES_N, LAB_TEST, VISIT_DAY, VISIT_NAME, RACE, SEX,
+import {ETHNIC, LAB_RES_N, LAB_TEST, VISIT_DAY, VISIT, RACE, SEX,
   SUBJECT_ID, VS_TEST, VS_RES_N} from '../constants/columns-constants';
 import {dynamicComparedToBaseline} from '../data-preparation/data-preparation';
 import {updateDivInnerHTML} from '../utils/utils';
@@ -52,11 +52,11 @@ export class TimeProfileView extends ClinicalCaseViewBase {
     this.selectedDomain = this.domains[0];
     this.uniqueLabValues = Array.from(getUniqueValues(studies[this.studyId].domains[this.selectedDomain],
       this.domainFields[this.selectedDomain]['test']));
-    this.uniqueVisits = Array.from(getUniqueValues(studies[this.studyId].domains[this.selectedDomain], VISIT_NAME));
+    this.uniqueVisits = Array.from(getUniqueValues(studies[this.studyId].domains[this.selectedDomain], VISIT));
     this.selectedLabValue = this.uniqueLabValues[0] as string;
     this.selectedType = this.types[0];
     this.visitNamesAndDays = getVisitNamesAndDays(studies[this.studyId].domains[this.selectedDomain],
-      VISIT_NAME, VISIT_DAY);
+      VISIT, VISIT_DAY);
     this.bl = this.visitNamesAndDays[0].name;
     this.ep = this.visitNamesAndDays[this.visitNamesAndDays.length-1].name;
     this.createLaboratoryDataframe();
@@ -66,10 +66,10 @@ export class TimeProfileView extends ClinicalCaseViewBase {
       this.selectedDomain = value;
       this.uniqueLabValues = Array.from(getUniqueValues(studies[this.studyId].domains[this.selectedDomain],
         this.domainFields[this.selectedDomain]['test']));
-      this.uniqueVisits = Array.from(getUniqueValues(studies[this.studyId].domains[this.selectedDomain], VISIT_NAME));
+      this.uniqueVisits = Array.from(getUniqueValues(studies[this.studyId].domains[this.selectedDomain], VISIT));
       this.selectedLabValue = this.uniqueLabValues[0] as string;
       this.visitNamesAndDays = getVisitNamesAndDays(studies[this.studyId].domains[this.selectedDomain],
-        VISIT_NAME, VISIT_DAY);
+        VISIT, VISIT_DAY);
       if (this.visitNamesAndDays.findIndex((it) => it.name === this.bl) === -1)
         this.bl = this.visitNamesAndDays[0].name;
 
@@ -188,7 +188,7 @@ export class TimeProfileView extends ClinicalCaseViewBase {
     let df = this.filterDataFrameByDays(studies[this.studyId].domains[this.selectedDomain].clone());
     if (this.splitBy.length) {
       df = addDataFromDmDomain(df, studies[this.studyId].domains.dm,
-        [SUBJECT_ID, VISIT_DAY, VISIT_NAME].concat(Object.values(this.domainFields[this.selectedDomain])),
+        [SUBJECT_ID, VISIT_DAY, VISIT].concat(Object.values(this.domainFields[this.selectedDomain])),
         this.splitBy);
     }
 
@@ -199,9 +199,9 @@ export class TimeProfileView extends ClinicalCaseViewBase {
   private createrelativeChangeFromBlDataframe() {
     let df = this.filterDataFrameByDays(studies[this.studyId].domains[this.selectedDomain].clone());
     dynamicComparedToBaseline(df, this.domainFields[this.selectedDomain]['test'],
-      this.domainFields[this.selectedDomain]['res'], this.bl, VISIT_NAME, 'LAB_DYNAMIC_BL', true);
+      this.domainFields[this.selectedDomain]['res'], this.bl, VISIT, 'LAB_DYNAMIC_BL', true);
     if (this.splitBy.length) {
-      df = addDataFromDmDomain(df, studies[this.studyId].domains.dm, [SUBJECT_ID, VISIT_DAY, VISIT_NAME,
+      df = addDataFromDmDomain(df, studies[this.studyId].domains.dm, [SUBJECT_ID, VISIT_DAY, VISIT,
         this.domainFields[this.selectedDomain]['test'], this.domainFields[this.selectedDomain]['res']], this.splitBy);
     }
 
@@ -214,6 +214,7 @@ export class TimeProfileView extends ClinicalCaseViewBase {
     const blDay = this.visitNamesAndDays.find((it) => it.name === this.bl).day;
     const epDay = this.visitNamesAndDays.find((it) => it.name === this.ep).day;
     const filteredDf = df.groupBy(df.columns.names())
+      // eslint-disable-next-line max-len
       .where(`${VISIT_DAY} >= ${blDay} and ${VISIT_DAY} <= ${epDay} and ${this.domainFields[this.selectedDomain]['test']} = ${this.selectedLabValue}`)
       .aggregate();
     return filteredDf;

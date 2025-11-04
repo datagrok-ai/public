@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {addDataFromDmDomain, getUniqueValues} from '../data-preparation/utils';
 import {createBaselineEndpointDataframe} from '../data-preparation/data-preparation';
-import {ETHNIC, LAB_RES_N, LAB_TEST, VISIT_DAY, VISIT_NAME, RACE,
+import {ETHNIC, LAB_RES_N, LAB_TEST, VISIT_DAY, VISIT, RACE,
   SEX, SUBJECT_ID, VS_TEST, VS_RES_N} from '../constants/columns-constants';
 import {updateDivInnerHTML} from '../utils/utils';
 import {_package} from '../package';
@@ -68,7 +68,7 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
     this.selectedSplitBy = this.splitBy[0];
 
     this.domains.forEach((it) => {
-      const df = studies[this.studyId].domains[it].clone(null, [SUBJECT_ID, VISIT_NAME, VISIT_DAY,
+      const df = studies[this.studyId].domains[it].clone(null, [SUBJECT_ID, VISIT, VISIT_DAY,
         this.domainFields[it]['test'], this.domainFields[it]['res']]);
       df.getCol(this.domainFields[it]['test']).name = 'test';
       df.getCol(this.domainFields[it]['res']).name = 'res';
@@ -85,19 +85,19 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
 
     /* let minLabVisit = this.distrDataframe.getCol(VISIT_DAY).stats[ 'min' ];
     let minVisitName = this.distrDataframe
-      .groupBy([ VISIT_DAY, VISIT_NAME ])
+      .groupBy([ VISIT_DAY, VISIT ])
       .where(`${VISIT_DAY} = ${minLabVisit}`)
       .aggregate()
-      .get(VISIT_NAME, 0);
+      .get(VISIT, 0);
     this.bl = minVisitName; */
 
-    this.uniqueVisits = Array.from(getUniqueValues(this.distrDataframe, VISIT_NAME));
+    this.uniqueVisits = Array.from(getUniqueValues(this.distrDataframe, VISIT));
     this.bl = this.uniqueVisits[0];
     this.distrWithDmData = addDataFromDmDomain(this.distrDataframe, studies[this.studyId].domains.dm,
-      [SUBJECT_ID, VISIT_DAY, VISIT_NAME, 'test', 'res'], this.splitBy);
+      [SUBJECT_ID, VISIT_DAY, VISIT, 'test', 'res'], this.splitBy);
     this.distrWithDmData = this.distrWithDmData
       .groupBy(this.distrWithDmData.columns.names())
-      .where(`${VISIT_NAME} = ${this.bl}`)
+      .where(`${VISIT} = ${this.bl}`)
       .aggregate();
     this.getTopPValues(4);
 
@@ -174,7 +174,7 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
         this.selectedValuesByDomain[domain].forEach((it) => {
           const df = createBaselineEndpointDataframe(
             this.distrDataframe.clone(this.distrDataframe.filter), studies[this.studyId].domains.dm, [category],
-            'test', 'res', [], it, this.bl, '', VISIT_NAME, `${it}_BL`);
+            'test', 'res', [], it, this.bl, '', VISIT, `${it}_BL`);
           this.getPValues(df, domain, it, category, `${it}_BL`);
           const plot = DG.Viewer.boxPlot(df, {
             categoryColumnNames: [category],

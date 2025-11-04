@@ -9,7 +9,7 @@ import {createBaselineEndpointScatterPlot, createHysLawScatterPlot} from '../cus
 import {updateDivInnerHTML} from '../utils/utils';
 import {_package} from '../package';
 import {getUniqueValues} from '../data-preparation/utils';
-import {LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_TEST, VISIT_DAY, VISIT_NAME,
+import {LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_TEST, VISIT_DAY, VISIT,
   SUBJECT_ID, LAB_RES_N} from '../constants/columns-constants';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {TRT_ARM_FIELD, VIEWS_CONFIG} from '../views-config';
@@ -50,7 +50,7 @@ export class LaboratoryView extends ClinicalCaseViewBase {
 
 
     this.uniqueLabValues = this.lb.col(LAB_TEST) ? Array.from(getUniqueValues(this.lb, LAB_TEST)) : [];
-    this.uniqueVisits = this.lb.col(VISIT_NAME) ? Array.from(getUniqueValues(this.lb, VISIT_NAME)) : [];
+    this.uniqueVisits = this.lb.col(VISIT) ? Array.from(getUniqueValues(this.lb, VISIT)) : [];
     this.uniqueTreatmentArms = this.dm && this.dm.col(VIEWS_CONFIG[this.name][TRT_ARM_FIELD]) ?
       Array.from(getUniqueValues(this.dm, VIEWS_CONFIG[this.name][TRT_ARM_FIELD])) : [];
     this.selectedLabBlEp = this.uniqueLabValues.length ? this.uniqueLabValues[0] : null;
@@ -86,7 +86,7 @@ export class LaboratoryView extends ClinicalCaseViewBase {
 
     checkColumnsAndCreateViewer(
       studies[this.studyId].domains.lb,
-      [SUBJECT_ID, LAB_TEST, LAB_RES_N, VISIT_NAME, LAB_LO_LIM_N, LAB_HI_LIM_N],
+      [SUBJECT_ID, LAB_TEST, LAB_RES_N, VISIT, LAB_LO_LIM_N, LAB_HI_LIM_N],
       this.baselineEndpointDiv, () => {
         this.updateBaselineEndpointPlot();
       },
@@ -133,7 +133,7 @@ export class LaboratoryView extends ClinicalCaseViewBase {
   }
 
   updateBaselineEndpointPlot() {
-    const visitCol = VISIT_NAME;
+    const visitCol = VISIT;
     const blNumCol = `${this.selectedLabBlEp}_BL`;
     const epNumCol = `${this.selectedLabBlEp}_EP`;
     const baselineEndpointDataframe = createBaselineEndpointDataframe(this.lb, this.dm,

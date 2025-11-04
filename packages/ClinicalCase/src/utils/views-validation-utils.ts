@@ -26,6 +26,7 @@ export function createErrorsByDomainMap(validationResults: DG.DataFrame): {[key:
 export function checkRequiredColumns(df: DG.DataFrame, columns: string[], viwerName: string) {
   const missingCols = columns.filter((it) => !df.columns.names().includes(it));
   if (missingCols.length)
+    // eslint-disable-next-line max-len
     return `The following columns are required for ${viwerName} viewer: ${columns.join(',')}. Missing ${missingCols.join(',')}`;
 
   return null;
@@ -217,7 +218,7 @@ export function getRequiredColumnsByView() {
           'req': [
             sdtmCols.SUBJECT_ID,
             sdtmCols.VISIT_DAY,
-            sdtmCols.VISIT_NAME,
+            sdtmCols.VISIT,
             sdtmCols.LAB_RES_N,
             sdtmCols.LAB_TEST,
           ],
@@ -226,7 +227,7 @@ export function getRequiredColumnsByView() {
           'req': [
             sdtmCols.SUBJECT_ID,
             sdtmCols.VISIT_DAY,
-            sdtmCols.VISIT_NAME,
+            sdtmCols.VISIT,
             sdtmCols.VS_RES_N,
             sdtmCols.VS_TEST,
           ],
@@ -239,7 +240,7 @@ export function getRequiredColumnsByView() {
           'req': [
             sdtmCols.SUBJECT_ID,
             sdtmCols.LAB_TEST,
-            sdtmCols.VISIT_NAME,
+            sdtmCols.VISIT_DAY,
             sdtmCols.LAB_RES_N,
           ],
         },
@@ -247,7 +248,7 @@ export function getRequiredColumnsByView() {
           'req': [
             sdtmCols.SUBJECT_ID,
             sdtmCols.VS_TEST,
-            sdtmCols.VISIT_NAME,
+            sdtmCols.VISIT_DAY,
             sdtmCols.VS_RES_N,
           ],
         },
@@ -259,7 +260,6 @@ export function getRequiredColumnsByView() {
           'req': [
             sdtmCols.SUBJECT_ID,
             sdtmCols.LAB_TEST,
-            sdtmCols.VISIT_NAME,
             sdtmCols.VISIT_DAY,
             sdtmCols.LAB_RES_N,
           ],
@@ -268,7 +268,6 @@ export function getRequiredColumnsByView() {
           'req': [
             sdtmCols.SUBJECT_ID,
             sdtmCols.VS_TEST,
-            sdtmCols.VISIT_NAME,
             sdtmCols.VISIT_DAY,
             sdtmCols.VS_RES_N,
           ],
@@ -312,7 +311,7 @@ export function getRequiredColumnsByView() {
             sdtmCols.SUBJECT_ID,
             sdtmCols.VISIT_START_DATE,
             sdtmCols.VISIT_DAY,
-            sdtmCols.VISIT_NAME,
+            sdtmCols.VISIT,
           ],
         },
         'dm': {

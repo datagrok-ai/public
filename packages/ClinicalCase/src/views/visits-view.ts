@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {updateDivInnerHTML} from '../utils/utils';
 import {createPivotedDataframe, getVisitNamesAndDays, addDataFromDmDomain} from '../data-preparation/utils';
-import {LAB_RES_N, LAB_TEST, SUBJECT_ID, VISIT_DAY, VISIT_NAME, VISIT_START_DATE,
+import {LAB_RES_N, LAB_TEST, SUBJECT_ID, VISIT_DAY, VISIT, VISIT_START_DATE,
   VS_RES_N, VS_TEST} from '../constants/columns-constants';
 import {PatientVisit} from '../model/patient-visit';
 import {StudyVisit} from '../model/study-visit';
@@ -51,7 +51,7 @@ export class VisitsView extends ClinicalCaseViewBase {
       .concat(Object.keys(this.eventsSinceLastVisit))
       .filter((it) => studies[this.studyId].domains[it] !== null);
     this.assignColorsToDomains();
-    this.sortedVisitNamesAndDays = getVisitNamesAndDays(studies[this.studyId].domains.sv, VISIT_NAME, VISIT_DAY, true);
+    this.sortedVisitNamesAndDays = getVisitNamesAndDays(studies[this.studyId].domains.sv, VISIT, VISIT_DAY, true);
     this.sortedVisitNames = this.sortedVisitNamesAndDays.map((it) => it.name);
 
     this.switchGrid = this.createSwitchGridInput();
@@ -84,7 +84,7 @@ export class VisitsView extends ClinicalCaseViewBase {
 
   private createPivotedSv() {
     this.sv = studies[this.studyId].domains.sv.clone();
-    this.pivotedSv = createPivotedDataframe(this.sv, [SUBJECT_ID], VISIT_NAME, VISIT_START_DATE, []);
+    this.pivotedSv = createPivotedDataframe(this.sv, [SUBJECT_ID], VISIT, VISIT_START_DATE, []);
     this.pivotedSv.columns.names().forEach((col) => {
       if (this.pivotedSv.getCol(col).name !== VISIT_START_DATE)
         this.pivotedSv.getCol(col).meta.format = 'yyyy-MM-dd';
@@ -307,11 +307,11 @@ export class VisitsView extends ClinicalCaseViewBase {
   private datasetsWithNumberProceduresAtVisit() {
     const countDfs = {};
     Object.keys(this.proceduresAtVisit).forEach((domain) => {
-      if (studies[this.studyId].domains[domain] && [SUBJECT_ID, VISIT_NAME,
+      if (studies[this.studyId].domains[domain] && [SUBJECT_ID, VISIT,
         this.proceduresAtVisit[domain].column]
         .every((it) => studies[this.studyId].domains[domain].columns.names().includes(it))) {
         countDfs[domain] = studies[this.studyId].domains[domain]
-          .groupBy([SUBJECT_ID, VISIT_NAME])
+          .groupBy([SUBJECT_ID, VISIT])
           .count(this.proceduresAtVisit[domain].column)
           .aggregate();
       }
@@ -337,7 +337,7 @@ export class VisitsView extends ClinicalCaseViewBase {
   private updateProceduresAtVisitCount(countDfs: any) {
     Object.keys(countDfs).forEach((domain) => {
       for (let i = 0; i < countDfs[domain].rowCount; i++) {
-        const visitName = countDfs[domain].get(VISIT_NAME, i);
+        const visitName = countDfs[domain].get(VISIT, i);
         if (!this.sortedVisitNames.includes(visitName))
           continue;
 

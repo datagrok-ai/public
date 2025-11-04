@@ -1,13 +1,16 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
-import {delay, expect} from '@datagrok-libraries/utils/src/test';
+import {expect} from '@datagrok-libraries/utils/src/test';
 import {_package} from '../package-test';
 import {ClinicalDomains} from '../clinical-study';
-import {createBaselineEndpointDataframe, createHysLawDataframe, createLabValuesByVisitDataframe, createSurvivalData, cumulativeEnrollemntByDay, dynamicComparedToBaseline, labDynamicComparedToMinMax, labDynamicRelatedToRef} from '../data-preparation/data-preparation';
-import {AE_START_DATE, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT, VISIT_DAY, VISIT_NAME} from '../constants/columns-constants';
+import {createBaselineEndpointDataframe, createHysLawDataframe, createLabValuesByVisitDataframe, createSurvivalData,
+  cumulativeEnrollemntByDay, dynamicComparedToBaseline, labDynamicComparedToMinMax,
+  labDynamicRelatedToRef} from '../data-preparation/data-preparation';
+import {AE_START_DATE, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT,
+  SUBJ_REF_STDT, VISIT_DAY, VISIT} from '../constants/columns-constants';
 import {dataframeContentToRow} from '../data-preparation/utils';
 import {createValidationDataFrame} from '../sdtm-validation/validation-utils';
-import {vaidateAEDomain, vaidateDMDomain} from '../sdtm-validation/services/validation-service';
+import {vaidateAEDomain} from '../sdtm-validation/services/validation-service';
 import {ALT, BILIRUBIN} from '../constants/constants';
 import {StudyVisit} from '../model/study-visit';
 import {PatientVisit} from '../model/patient-visit';
@@ -66,7 +69,8 @@ export async function _testValidation() {
 export async function _testHysLaw() {
   const lb = await readDataframe('lb.csv');
   const dm = await readDataframe('dm.csv');
-  const hysLawDf = createHysLawDataframe(lb, dm, 'Alanine Aminotransferase', 'Aspartate Aminotransferase', 'Bilirubin', VIEWS_CONFIG[LABORATORY_VIEW_NAME][TRT_ARM_FIELD]);
+  const hysLawDf = createHysLawDataframe(lb, dm, 'Alanine Aminotransferase', 'Aspartate Aminotransferase',
+    'Bilirubin', VIEWS_CONFIG[LABORATORY_VIEW_NAME][TRT_ARM_FIELD]);
   expect(hysLawDf.rowCount, 6);
   testRowValues(hysLawDf, 0, {[SUBJECT_ID]: '01-701-1015', [ALT]: 3.5, [BILIRUBIN]: 3});
 }
@@ -74,8 +78,9 @@ export async function _testHysLaw() {
 export async function _testBaselineEndpoint() {
   const lb = await readDataframe('lb.csv');
   const dm = await readDataframe('dm.csv');
-  const baselineEndpointDataframe = createBaselineEndpointDataframe(lb, dm, [VIEWS_CONFIG[LABORATORY_VIEW_NAME][TRT_ARM_FIELD]], LAB_TEST, LAB_RES_N,
-    [LAB_LO_LIM_N, LAB_HI_LIM_N], 'Alkaline Phosphatase', 'SCREENING 1', 'WEEK 4', VISIT_NAME, 'BL', 'EP');
+  const baselineEndpointDataframe = createBaselineEndpointDataframe(lb, dm,
+    [VIEWS_CONFIG[LABORATORY_VIEW_NAME][TRT_ARM_FIELD]], LAB_TEST, LAB_RES_N,
+    [LAB_LO_LIM_N, LAB_HI_LIM_N], 'Alkaline Phosphatase', 'SCREENING 1', 'WEEK 4', VISIT, 'BL', 'EP');
   expect(baselineEndpointDataframe.rowCount, 6);
   testRowValues(baselineEndpointDataframe, 0, {[SUBJECT_ID]: '01-701-1015', 'BL': 34, 'EP': 41});
 }
@@ -83,7 +88,8 @@ export async function _testBaselineEndpoint() {
 export async function _testLabValuesByVisit() {
   const lb = await readDataframe('lb.csv');
   const dm = await readDataframe('dm.csv');
-  const labByVisitDataframe = createLabValuesByVisitDataframe(lb, dm, 'Alkaline Phosphatase', VIEWS_CONFIG[LABORATORY_VIEW_NAME][TRT_ARM_FIELD],
+  const labByVisitDataframe = createLabValuesByVisitDataframe(lb, dm, 'Alkaline Phosphatase',
+    VIEWS_CONFIG[LABORATORY_VIEW_NAME][TRT_ARM_FIELD],
     'Placebo', 'Values', VISIT_DAY);
   expect(labByVisitDataframe.rowCount, 40);
   testRowValues(labByVisitDataframe, 0, {[SUBJECT_ID]: '01-701-1015', 'Values': 34, [VISIT_DAY]: -7});
@@ -102,25 +108,30 @@ export async function _testSurvivalDataframe() {
 
 export async function _testLabChangesComparedToBaseline() {
   const lb = await readDataframe('lb.csv');
-  dynamicComparedToBaseline(lb, LAB_TEST, LAB_RES_N, 'SCREENING 1', VISIT_NAME, 'LAB_DYNAMIC_BL', false);
+  dynamicComparedToBaseline(lb, LAB_TEST, LAB_RES_N, 'SCREENING 1', VISIT, 'LAB_DYNAMIC_BL', false);
   expect(lb.rowCount, 1329);
-  testRowValues(lb, 1, {[SUBJECT_ID]: '01-701-1015', 'LBTEST': 'Albumin', 'BL_LBSTRESN': 38, [LAB_RES_N]: 76, 'LAB_DYNAMIC_BL': 1});
+  testRowValues(lb, 1, {[SUBJECT_ID]: '01-701-1015', 'LBTEST': 'Albumin',
+    'BL_LBSTRESN': 38, [LAB_RES_N]: 76, 'LAB_DYNAMIC_BL': 1});
 }
 
 export async function _testLabChangesBetweenMinMax() {
   const lb = await readDataframe('lb.csv');
   labDynamicComparedToMinMax(lb, 'LAB_DYNAMIC_MIN_MAX');
   expect(lb.rowCount, 1329);
-  testRowValues(lb, 3, {[SUBJECT_ID]: '01-701-1015', 'LBTEST': 'Albumin', 'min(LBSTRESN)': 16.5, 'max(LBSTRESN)': 98, [LAB_RES_N]: 98, 'LAB_DYNAMIC_MIN_MAX': 1});
+  testRowValues(lb, 3, {[SUBJECT_ID]: '01-701-1015', 'LBTEST': 'Albumin',
+    'min(LBSTRESN)': 16.5, 'max(LBSTRESN)': 98, [LAB_RES_N]: 98, 'LAB_DYNAMIC_MIN_MAX': 1});
 }
 
 export async function _testLabChangesRelatedToRef() {
   const lb = await readDataframe('lb.csv');
   labDynamicRelatedToRef(lb, 'LAB_DYNAMIC_REF');
   expect(lb.rowCount, 1329);
-  testRowValues(lb, 0, {[SUBJECT_ID]: '01-701-1015', 'LBTEST': 'Albumin', [LAB_LO_LIM_N]: 33, [LAB_HI_LIM_N]: 49, [LAB_RES_N]: 38, 'LAB_DYNAMIC_REF': -0.375});
-  testRowValues(lb, 2, {[SUBJECT_ID]: '01-701-1015', 'LBTEST': 'Albumin', [LAB_LO_LIM_N]: 33, [LAB_HI_LIM_N]: 49, [LAB_RES_N]: 16.5, 'LAB_DYNAMIC_REF': -2});
-  testRowValues(lb, 3, {[SUBJECT_ID]: '01-701-1015', 'LBTEST': 'Albumin', [LAB_LO_LIM_N]: 33, [LAB_HI_LIM_N]: 49, [LAB_RES_N]: 98, 'LAB_DYNAMIC_REF': 2});
+  testRowValues(lb, 0, {[SUBJECT_ID]: '01-701-1015', 'LBTEST': 'Albumin',
+    [LAB_LO_LIM_N]: 33, [LAB_HI_LIM_N]: 49, [LAB_RES_N]: 38, 'LAB_DYNAMIC_REF': -0.375});
+  testRowValues(lb, 2, {[SUBJECT_ID]: '01-701-1015', 'LBTEST': 'Albumin',
+    [LAB_LO_LIM_N]: 33, [LAB_HI_LIM_N]: 49, [LAB_RES_N]: 16.5, 'LAB_DYNAMIC_REF': -2});
+  testRowValues(lb, 3, {[SUBJECT_ID]: '01-701-1015', 'LBTEST': 'Albumin',
+    [LAB_LO_LIM_N]: 33, [LAB_HI_LIM_N]: 49, [LAB_RES_N]: 98, 'LAB_DYNAMIC_REF': 2});
 }
 
 export async function _testStudyVisit() {

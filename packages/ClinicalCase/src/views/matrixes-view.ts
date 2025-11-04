@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import {updateDivInnerHTML} from '../utils/utils';
 import {_package} from '../package';
 import {getUniqueValues} from '../data-preparation/utils';
-import {LAB_RES_N, LAB_TEST, VISIT_NAME, SUBJECT_ID, VS_TEST, VS_RES_N} from '../constants/columns-constants';
+import {LAB_RES_N, LAB_TEST, VISIT, SUBJECT_ID, VS_TEST, VS_RES_N} from '../constants/columns-constants';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {studies} from '../clinical-study';
 
@@ -35,7 +35,7 @@ export class MatrixesView extends ClinicalCaseViewBase {
     this.domains = this.domains.filter((it) => studies[this.studyId].domains[it] !== null &&
       !this.optDomainsWithMissingCols.includes(it));
     this.domains.forEach((it) => {
-      const df = studies[this.studyId].domains[it].clone(null, [SUBJECT_ID, VISIT_NAME,
+      const df = studies[this.studyId].domains[it].clone(null, [SUBJECT_ID, VISIT,
         this.domainFields[it]['test'], this.domainFields[it]['res']]);
       df.getCol(this.domainFields[it]['test']).name = 'test';
       df.getCol(this.domainFields[it]['res']).name = 'res';
@@ -49,7 +49,7 @@ export class MatrixesView extends ClinicalCaseViewBase {
       this.uniqueValues[it] = Array.from(getUniqueValues(studies[this.studyId].domains[it],
         this.domainFields[it]['test']));
     });
-    this.uniqueVisits = Array.from(getUniqueValues(this.initialDataframe, VISIT_NAME));
+    this.uniqueVisits = Array.from(getUniqueValues(this.initialDataframe, VISIT));
 
     let topNum = 20;
     Object.keys(this.uniqueValues).forEach((key) => {
@@ -129,10 +129,10 @@ export class MatrixesView extends ClinicalCaseViewBase {
   private updateMarixPlot() {
     if (this.selectedValues && this.bl) {
       let filteredDataframe = this.matrixDataframe.clone(null,
-        this.selectedValues.map((it) => `${it} avg(res)`).concat([SUBJECT_ID, VISIT_NAME]));
+        this.selectedValues.map((it) => `${it} avg(res)`).concat([SUBJECT_ID, VISIT]));
       filteredDataframe = filteredDataframe
         .groupBy(filteredDataframe.columns.names())
-        .where(`${VISIT_NAME} = ${this.bl}`)
+        .where(`${VISIT} = ${this.bl}`)
         .aggregate();
       filteredDataframe.plot.fromType(DG.VIEWER.CORR_PLOT).then((v: any) => {
         this.matrixPlot = v;
@@ -150,7 +150,7 @@ export class MatrixesView extends ClinicalCaseViewBase {
   private createCorrelationMatrixDataframe(df: DG.DataFrame) {
     const dfForPivot = df.clone();
     this.matrixDataframe = dfForPivot
-      .groupBy([SUBJECT_ID, VISIT_NAME])
+      .groupBy([SUBJECT_ID, VISIT])
       .pivot('test')
       .avg('res')
       .aggregate();
