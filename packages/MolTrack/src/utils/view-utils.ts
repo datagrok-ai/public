@@ -110,7 +110,7 @@ export function initRegisterView(entity: 'Compound' | 'Batch', setPath: boolean 
   return view.view;
 }
 
-export function initBulkRegisterView(setPath: boolean = true) {
+export function initBulkRegisterView() {
   const registrationView = new RegistrationView();
   registrationView.view.path = createPath('Bulk');
   registrationView.show();
@@ -188,8 +188,12 @@ export function getQuickActionsWidget(): HTMLElement {
       createView: () => initRegisterView('Batch', true),
     },
     {
+      label: 'Register assay',
+      createView: () => initAssayRegisterView(),
+    },
+    {
       label: 'Register bulk',
-      createView: () => initBulkRegisterView(true),
+      createView: () => initBulkRegisterView(),
     },
   ];
 

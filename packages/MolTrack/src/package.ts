@@ -53,6 +53,7 @@ export async function molTrackApp(path: string): Promise<DG.ViewBase> {
   const isBatchPath = hasPath && path.includes('Batch');
   const isSearchPath = hasPath && (path.includes(SEARCH_NODE) || path.includes(SAVED_SEARCHES_NODE));
   const isBulkPath = hasPath && path.includes('Bulk');
+  const isAssayPath = hasPath && path.includes('Assay');
 
   const setPathAndReturn = (view: DG.View) => {
     view.path = path;
@@ -67,7 +68,10 @@ export async function molTrackApp(path: string): Promise<DG.ViewBase> {
   }
 
   if (isBulkPath)
-    return setPathAndReturn(initBulkRegisterView(false));
+    return setPathAndReturn(initBulkRegisterView());
+
+  if (isAssayPath)
+    return setPathAndReturn(initAssayRegisterView());
 
   if (corporateCompoundId)
     return await compoundView(corporateCompoundId);
