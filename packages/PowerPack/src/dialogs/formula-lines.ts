@@ -19,8 +19,10 @@ const enum ITEM_CAPTION {
   HORZ_LINE = 'Line - Horizontal',
   HORZ_BAND = 'Band - Horizontal',
   VERT_BAND = 'Band - Vertical',
+  POINT_AREA = 'Region - Point Area',
+  FORMULA_AREA = 'Region - Formula Area',
   RECT_AREA = 'Region - Draw Rectangular area',
-  POLYGON_AREA = 'Region - Draw Polygonal area (using lasso)',
+  POLYGON_AREA = 'Region - Draw Polygonal Area (Using Lasso)',
 }
 
 const enum ITEM_ORIENTATION {
@@ -502,6 +504,7 @@ class Preview {
         yAxisType: src.props.yAxisType,
         xAxisType: src.props.xAxisType,
         invertXAxis: src.props.invertXAxis,
+        showLabels: 'Never',
         showDataframeFormulaLines: false,
         showViewerFormulaLines: true,
         showContextMenu: false,
@@ -1257,8 +1260,42 @@ class CreationControl {
         const cols: AxisColumns = getCols();
         const colY = cols.y;
         const colX = cols.x;
-        let item: DG.FormulaLine = {};
+        if (itemCaption === ITEM_CAPTION.POINT_AREA) {
+          const item: DG.AreaAnnotationRegion = {
+            type: ITEM_TYPE.AREA_REGION_ANNOTATION,
+            x: colX.name,
+            y: colY.name,
+            area: [
+              [colX.stats.q1, colY.stats.q1],
+              [colX.stats.q3, colY.stats.q1],
+              [colX.stats.q3, colY.stats.q3],
+              [colX.stats.q1, colY.stats.q3],
+            ],
+          };
 
+          this.annotationRegionsJustCreatedItems.unshift(item);
+          /** Update the Table, Preview and Editor states */
+          onItemCreatedAction(item);
+          return;
+        }
+
+        if (itemCaption === ITEM_CAPTION.FORMULA_AREA) {
+          const item: DG.FormulaAnnotationRegion = {
+            type: ITEM_TYPE.FORMULA_REGION_ANNOTATION,
+            x: colX.name,
+            y: colY.name,
+            formula1: '${' + colY.name + '} = ${' + colX.name + '}' + ' + ' + colY.stats.q2.toFixed(1),
+            formula2: '${' + colY.name + '} = ${' + colX.name + '}' + ' - ' + colY.stats.q2.toFixed(1),
+          };
+
+          this.annotationRegionsJustCreatedItems.unshift(item);
+          /** Update the Table, Preview and Editor states */
+          onItemCreatedAction(item);
+          return;
+        }
+
+        let item: DG.FormulaLine = {};
+        
         /** Fill the item with the necessary data */
         switch (itemCaption) {
           case ITEM_CAPTION.LINE:
@@ -1315,6 +1352,8 @@ class CreationControl {
         ITEM_CAPTION.HORZ_LINE,
         ITEM_CAPTION.VERT_BAND,
         ITEM_CAPTION.HORZ_BAND,
+        ITEM_CAPTION.POINT_AREA,
+        ITEM_CAPTION.FORMULA_AREA,
         ITEM_CAPTION.RECT_AREA,
         ITEM_CAPTION.POLYGON_AREA
       ], onClickAction);
