@@ -42,6 +42,12 @@ interface DataFrameState {
   config: Record<string, any>,
 }
 
+interface DockSpawnConfigItem {
+  'dock-spawn-dock-type'?: 'left' | 'right' | 'up' | 'down',
+  'dock-spawn-dock-to'?: string,
+  'dock-spawn-dock-ratio'?: number,
+}
+
 type TabContent = Map<string, ScalarsState | DataFrameState>;
 
 interface RenderStateItem {
@@ -237,6 +243,7 @@ export const RichFunctionView = Vue.defineComponent({
     const tabLabels = Vue.shallowRef<string[]>([]);
     const visibleTabLabels = Vue.shallowRef([] as string[]);
     const activePanelTitle = Vue.shallowRef<string | undefined>(undefined);
+    const dockSpawnConfig = Vue.shallowRef<Record<string, DockSpawnConfigItem>>({});
 
     const isSAenabled = Vue.ref(false);
     const isReportEnabled = Vue.ref(false);
@@ -273,6 +280,7 @@ export const RichFunctionView = Vue.defineComponent({
       isSAenabled.value = Utils.getFeature(features, 'sens-analysis', false);
       isReportEnabled.value = Utils.getFeature(features, 'export', true);
       isFittingEnabled.value = Utils.getFeature(features, 'fitting', false);
+      dockSpawnConfig.value = Utils.getDockSpawnConfig(call.func);
     }, {immediate: true});
 
     Vue.watch([currentCall, isOutputOutdated, visibleTabLabels], ([call, isOutputOutdated, visibleTabLabels], [prevCall, prevOutputOutdated, prevLabels]) => {
@@ -560,6 +568,7 @@ export const RichFunctionView = Vue.defineComponent({
           {
             tabsData.value
               .map(({tabLabel, tabContent, isInput}) => {
+                const tabConfig = dockSpawnConfig.value[tabLabel] ?? {}
                 if (tabContent?.type === 'dataframe') {
                   const options = tabContent.config;
                   return <div
@@ -567,6 +576,7 @@ export const RichFunctionView = Vue.defineComponent({
                     dock-spawn-title={tabLabel}
                     dock-spawn-panel-icon={isInput ? 'sign-in-alt': 'sign-out-alt'}
                     key={tabLabel}
+                    {...tabConfig}
                   >
                     {
                       Vue.withDirectives(<Viewer
@@ -590,6 +600,7 @@ export const RichFunctionView = Vue.defineComponent({
                     dock-spawn-panel-icon='sign-out-alt'
                     dock-spawn-title={tabLabel}
                     key={tabLabel}
+                    {...tabConfig}
                   />;
 
                   return Vue.withDirectives(panel, [[ifOverlapping, isRunning.value, 'Recalculating...']]);
