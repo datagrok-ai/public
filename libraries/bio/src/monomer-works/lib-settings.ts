@@ -67,7 +67,7 @@ export async function getUserLibSettings(): Promise<UserLibSettings> {
           res.duplicateMonomerPreferences[polymerType][monomerSymbol] = libraryName;
       }
     }
-    console.debug(`Bio: getUserLibSettings()\n${JSON.stringify(res, undefined, 2)}`);
+    // console.debug(`Bio: getUserLibSettings()\n${JSON.stringify(res, undefined, 2)}`);
   });
   await userLibSettingsPromise;
   return res!;
@@ -76,7 +76,7 @@ export async function getUserLibSettings(): Promise<UserLibSettings> {
 export async function setUserLibSettings(value: UserLibSettings): Promise<void> {
   userLibSettingsPromise = userLibSettingsPromise.then(async () => {
     value.duplicateMonomerPreferences = value.duplicateMonomerPreferences ?? {};
-    console.debug(`Bio: setUserLibSettings()\n${JSON.stringify(value, undefined, 2)}`);
+    // console.debug(`Bio: setUserLibSettings()\n${JSON.stringify(value, undefined, 2)}`);
     // extract short hand for duplicateMonomerPreferences
     const duplicatePrefsShortHand: DuplicateMonomerPreferencesShortHand = {};
     for (const polymerType in value.duplicateMonomerPreferences) {
