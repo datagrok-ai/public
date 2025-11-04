@@ -8,7 +8,7 @@ import { MolTrackDockerService } from './services/moltrack-docker-service';
 import { excludedScopes, MOLTRACK_ENTITY_LEVEL, MOLTRACK_IS_STATIC_FIELD, SAVED_SEARCHES_NODE, Scope, SEARCH_NODE } from './utils/constants';
 import { createSavedSearchesSatistics, createSearchExpandableNode, createSearchNode, createSearchView, getSavedSearches, handleSearchURL, loadSearchFields, molTrackSearchFieldsArr } from './views/search';
 import { registerAllData, registerAssayData, updateAllMolTrackSchemas } from './utils/registration-utils';
-import { batchView, compoundView, createPath, getQuickActionsWidget, getStatisticsWidget, initBulkRegisterView, initRegisterView, initSchemaView } from './utils/view-utils';
+import { batchView, compoundView, createPath, getQuickActionsWidget, getStatisticsWidget, initAssayRegisterView, initBulkRegisterView, initRegisterView, initSchemaView } from './utils/view-utils';
 import { flattened } from './utils/utils';
 import { molTrackPropPanel } from './widgets/moltrack-property-panel';
 import { registerSemanticTypes } from './utils/detectors';
@@ -53,6 +53,7 @@ export async function molTrackApp(path: string): Promise<DG.ViewBase> {
   const isSchemaPath = hasPath && path.includes('Schema');
   const isSearchPath = hasPath && (path.includes(SEARCH_NODE) || path.includes(SAVED_SEARCHES_NODE));
   const isBulkPath = hasPath && path.includes('Bulk');
+  const isAssayPath = hasPath && path.includes('Assay');
 
   const setPathAndReturn = (view: DG.View) => {
     view.path = path;
@@ -68,6 +69,9 @@ export async function molTrackApp(path: string): Promise<DG.ViewBase> {
 
   if (isBulkPath)
     return setPathAndReturn(initBulkRegisterView());
+
+  if (isAssayPath)
+    return setPathAndReturn(initAssayRegisterView());
 
   if (corporateCompoundId)
     return await compoundView(corporateCompoundId);
@@ -103,6 +107,7 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
   });
   createRegisterNode('Compound', () => initRegisterView('Compound'));
   createRegisterNode('Batch', () => initRegisterView('Batch'));
+  createRegisterNode('Assay', () => initAssayRegisterView());
   createRegisterNode('Bulk', () => initBulkRegisterView());
   createRegisterNode('Schema', async () => await initSchemaView());
 

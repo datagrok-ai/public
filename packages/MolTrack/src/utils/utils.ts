@@ -49,6 +49,7 @@ export function buildPropertyOptions(
     name: p.name,
     friendlyName: p.friendly_name,
     type: p.value_type,
+    nullable: p.nullable,
   };
 
   if (p.description)

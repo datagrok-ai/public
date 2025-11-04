@@ -2,12 +2,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { _package, getBatchByCorporateId, getCompoundByCorporateId } from '../package';
-import { excludedScopes, MOLTRACK_APP_PATH, Scope, SEARCH_NODE } from './constants';
+import { MOLTRACK_APP_PATH, Scope, SEARCH_NODE } from './constants';
 import { EntityBaseView } from '../views/registration-entity-base';
 import { RegistrationView } from '../views/registration-tab';
 import { u2 } from '@datagrok-libraries/utils/src/u2';
-import { createSearchExpandableNode, createSearchView } from '../views/search';
+import { AssayRegistrationView } from '../views/registration-assay-tab';
 import { PropertySchemaView } from '../views/schema-view';
+import { createSearchExpandableNode, createSearchView } from '../views/search';
 
 export function createPath(viewName: string) {
   let path = `${MOLTRACK_APP_PATH}/`;
@@ -36,7 +37,7 @@ export async function buildRegistrationView({
   batchSection: boolean,
   path: string,
 }) {
-  const registrationView = new EntityBaseView(false);
+  const registrationView = new EntityBaseView(false, title);
   registrationView.initialSmiles = smiles;
   registrationView.singleRetrieved = true;
   registrationView.title = title;
@@ -118,6 +119,13 @@ export function initBulkRegisterView() {
   return registrationView.view;
 }
 
+export function initAssayRegisterView() {
+  const registrationView = new AssayRegistrationView();
+  registrationView.view.path = createPath('Assay');
+  registrationView.show();
+  return registrationView.view;
+}
+
 export async function initSchemaView() {
   const schemaView = new PropertySchemaView();
   await schemaView.init();
@@ -188,6 +196,10 @@ export function getQuickActionsWidget(): HTMLElement {
     {
       label: 'Register batch',
       createView: async () => initRegisterView('Batch', true),
+    },
+    {
+      label: 'Register assay',
+      createView: async () => initAssayRegisterView(),
     },
     {
       label: 'Register bulk',
