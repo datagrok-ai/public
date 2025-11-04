@@ -39,14 +39,12 @@ const enum BTN_CAPTION {
   ADD_NEW = 'Add new',
   CLONE = 'Clone',
   REMOVE = 'Remove',
-  HISTORY = 'History',
+  FORMULA_LINES_HISTORY = 'Formula Lines History',
+  ANNOTATION_REGIONS_HISTORY = 'Annotation Regions History',
   EMPTY = 'Empty',
 }
 
 type EditorItem = DG.FormulaLine | DG.AnnotationRegion;
-
-const isAnnotationRegionType = (type: string | undefined): boolean =>
-  type === ITEM_TYPE.AREA_REGION_ANNOTATION || type === ITEM_TYPE.FORMULA_REGION_ANNOTATION;
 
 export const DEFAULT_OPTIONS: EditorOptions = {
   allowEditDFLines: true,
@@ -73,6 +71,22 @@ function getItemTypeByCaption(caption: string): string {
 
     default: throw 'Unknown item caption.';
   }
+}
+
+const isAnnotationRegionType = (type: string | undefined): boolean =>
+  type === ITEM_TYPE.AREA_REGION_ANNOTATION || type === ITEM_TYPE.FORMULA_REGION_ANNOTATION;
+
+const formatAreaFormula = (item: DG.AnnotationRegion): string => {
+  if (!item)
+    return '';
+
+  if (item.type === ITEM_TYPE.AREA_REGION_ANNOTATION) {
+    const region = item as DG.AreaAnnotationRegion;
+    return `(${region.x}, ${region.y}): ${JSON.stringify(region.area)}`;
+  }
+
+  const region = item as DG.FormulaAnnotationRegion;
+  return `${region.formula1}; ${region.formula2}`;
 }
 
 /**
@@ -181,19 +195,6 @@ class Table {
     return btn;
   }
 
-  private formatAreaFormula(item: DG.AnnotationRegion): string {
-    if (!item)
-      return '';
-
-    if (item.type === ITEM_TYPE.AREA_REGION_ANNOTATION) {
-      const region = item as DG.AreaAnnotationRegion;
-      return `(${region.x}, ${region.y}): ${JSON.stringify(region.area)}`;
-    }
-
-    const region = item as DG.FormulaAnnotationRegion;
-    return `${region.formula1}; ${region.formula2}`;
-  }
-
   constructor(
     public formulaLineItems: DG.FormulaLine[],
     public annotationRegionItems: DG.AnnotationRegion[],
@@ -215,7 +216,7 @@ class Table {
 
     for (let i = 0; i < this.annotationRegionItems.length; i++) {
       dataFrame.rows.addNew([this.annotationRegionItems[i].header ?? '',
-        this.formatAreaFormula(this.annotationRegionItems[i]),
+        formatAreaFormula(this.annotationRegionItems[i]),
         !this.annotationRegionItems[i].hidden,
       ]);
     }
@@ -333,7 +334,7 @@ class Table {
     const item: EditorItem = isFormulaLine ? this.formulaLineItems[itemIdx] : this.annotationRegionItems[itemIdx];
     this.notify = false;
     this.dataFrame.set('title', idx, isFormulaLine ? (item as DG.FormulaLine).title : (item as DG.AnnotationRegion).header);
-    this.dataFrame.set('formula', idx, isFormulaLine ? (item as DG.FormulaLine).formula : this.formatAreaFormula(item as DG.AnnotationRegion));
+    this.dataFrame.set('formula', idx, isFormulaLine ? (item as DG.FormulaLine).formula : formatAreaFormula(item as DG.AnnotationRegion));
     this.notify = true;
     this.dataFrame.currentRowIdx = idx;
   }
@@ -344,7 +345,7 @@ class Table {
     this.dataFrame.rows.insertAt(firstIdx);
     this.notify = false;
     this.dataFrame.set('title', firstIdx, isFormulaLine ? (item as DG.FormulaLine).title : (item as DG.AnnotationRegion).header);
-    this.dataFrame.set('formula', firstIdx, isFormulaLine ? (item as DG.FormulaLine).formula : this.formatAreaFormula(item as DG.AnnotationRegion));
+    this.dataFrame.set('formula', firstIdx, isFormulaLine ? (item as DG.FormulaLine).formula : formatAreaFormula(item as DG.AnnotationRegion));
     this.dataFrame.set('visible', firstIdx, isFormulaLine ? (item as DG.FormulaLine).visible : !(item as DG.AnnotationRegion).hidden);
     this.dataFrame.set(BTN_CAPTION.REMOVE, firstIdx, '');
     this.notify = true;
@@ -1020,9 +1021,45 @@ class Editor {
     // Points may contain same x coordinates that are treated as
     // different input value key, so points should be created manually
     const values = ({ ...(item?.area?.map(p => p[1]?.toString() ?? '') ?? []) });
+
+    // Create a function to apply styles that we can reuse
+    const applyStyles = (root: HTMLElement) => {
+      // Apply styles to improve the layout
+      root.setAttribute('style', 'width: 100%; max-width: none;');
+      root.classList.add('area-points-map');
+
+      // Style all rows and inputs
+      root.querySelectorAll('tr').forEach((tr) => {
+        const [ xTd, yTd ] = Array.from(tr.querySelectorAll('td'));
+        const [ xInput, yInput ] = [xTd, yTd].map(td => td.querySelector('input.ui-input-editor') as HTMLInputElement | null);
+        
+        // Set equal widths for X and Y input cells
+        xTd?.setAttribute('style', 'width: 50%; padding-right: 4px;');
+        yTd?.setAttribute('style', 'width: 50%; padding-left: 4px;');
+        
+        // Style the input fields for better fit and center alignment
+        xInput?.setAttribute('style', 'width: 100%; box-sizing: border-box; text-align: center;');
+        yInput?.setAttribute('style', 'width: 100%; box-sizing: border-box; text-align: center;');
+
+        if (xInput && !xInput.dataset.coordsSet) {
+          xInput.value = item?.area?.[parseInt(xInput.value)]?.[0]?.toString() ?? '';
+          xInput.dataset.coordsSet = 'true';
+        }
+      });
+
+      // Add custom styles for the delete button column
+      root.querySelectorAll('td:last-child').forEach((td) => {
+        td.setAttribute('style', 'width: 24px; padding-left: 8px;');
+      });
+    };
+
     const pointsMap = ui.input.map('Points', {
       value: values as any,
       onValueChanged: () => {
+        // First apply styles to any new elements
+        applyStyles(pointsMap.root);
+
+        // Then update the data model
         const points: [number, number][] = [];
         pointsMap.root.querySelectorAll('tr').forEach((tr) => {
           const [ xInput, yInput ]: HTMLInputElement[] = Array.from(tr.querySelectorAll('td input.ui-input-editor'));
@@ -1037,9 +1074,6 @@ class Editor {
       },
     });
 
-    // Apply styles to improve the layout
-    pointsMap.root.setAttribute('style', 'width: 100%; max-width: none;');
-
     // Add CSS for input alignment
     const style = document.createElement('style');
     style.textContent = `
@@ -1047,29 +1081,10 @@ class Editor {
         text-align: center;
       }
     `;
-
     pointsMap.root.appendChild(style);
-    pointsMap.root.classList.add('area-points-map');
-    pointsMap.root.querySelectorAll('tr').forEach((tr) => {
-      const [ xTd, yTd ] = Array.from(tr.querySelectorAll('td'));
-      const [ xInput, yInput ] = [xTd, yTd].map(td => td.querySelector('input.ui-input-editor') as HTMLInputElement | null);
-      
-      // Set equal widths for X and Y input cells
-      xTd?.setAttribute('style', 'width: 50%; padding-right: 4px;');
-      yTd?.setAttribute('style', 'width: 50%; padding-left: 4px;');
-      
-      // Style the input fields for better fit and center alignment
-      xInput?.setAttribute('style', 'width: 100%; box-sizing: border-box; text-align: center;');
-      yInput?.setAttribute('style', 'width: 100%; box-sizing: border-box; text-align: center;');
-
-      if (xInput)
-        xInput.value = item?.area?.[parseInt(xInput.value)]?.[0]?.toString() ?? '';
-    });
-
-    // Add custom styles for the delete button column
-    pointsMap.root.querySelectorAll('td:last-child').forEach((td) => {
-      td.setAttribute('style', 'width: 24px; padding-left: 8px;');
-    });
+    
+    // Initial style application
+    applyStyles(pointsMap.root);
 
     return pointsMap.root;
   }
@@ -1168,38 +1183,43 @@ class CreationControl {
   public popupMenu: Function;        // Opens a popup menu with predefined new Formula Line item types
 
   /** Items for History menu group */
-  public historyItems: EditorItem[];           // Stores session history
-  public justCreatedItems: EditorItem[] = [];  // Stores history of the currently open dialog
+  public formulaLinesHistoryItems: DG.FormulaLine[];           // Stores session history
+  public formulaLinesJustCreatedItems: DG.FormulaLine[] = [];  // Stores history of the currently open dialog
 
-  public annotationRegionItems: DG.AnnotationRegion[];
-  public justCreatedAnnotationItems: EditorItem[] = [];
+  public annotationRegionsHistoryItems: DG.AnnotationRegion[];
+  public annotationRegionsJustCreatedItems: DG.AnnotationRegion[] = [];
 
-  public loadHistory(): EditorItem[] {return localStorage[HISTORY_KEY] ? JSON.parse(localStorage[HISTORY_KEY]) : [];}
-  public loadAnnotationHistory(): EditorItem[] {return localStorage[HISTORY_KEY_ANNOTATIONS] ? JSON.parse(localStorage[HISTORY_KEY_ANNOTATIONS]) : [];}
+  public loadFormulaLinesHistory(): DG.FormulaLine[] {
+    return localStorage[HISTORY_KEY] ? JSON.parse(localStorage[HISTORY_KEY]) : [];
+  }
+
+  public loadAnnotationRegionsHistory(): DG.AnnotationRegion[] {
+    return localStorage[HISTORY_KEY_ANNOTATIONS] ? JSON.parse(localStorage[HISTORY_KEY_ANNOTATIONS]) : []
+  }
 
   public saveHistory() {
     const compareItems = (a: EditorItem, b: EditorItem) => JSON.stringify(a) === JSON.stringify(b);
     /** Remove duplicates from just created items (object comparison via JSON.stringify) */
-    this.justCreatedItems = this.justCreatedItems.filter((val, ind, arr) =>
+    this.formulaLinesJustCreatedItems = this.formulaLinesJustCreatedItems.filter((val, ind, arr) =>
       arr.findIndex((t) => compareItems(t, val)) === ind);
 
     /** Remove identical older items from history */
-    this.historyItems = this.historyItems.filter((arr) =>
-      !this.justCreatedItems.find((val) => compareItems(val, arr)));
+    this.formulaLinesHistoryItems = this.formulaLinesHistoryItems.filter((arr) =>
+      !this.formulaLinesJustCreatedItems.find((val) => compareItems(val, arr)));
 
-    const newHistoryItems = this.justCreatedItems.concat(this.historyItems);
+    const newHistoryItems = this.formulaLinesJustCreatedItems.concat(this.formulaLinesHistoryItems);
     newHistoryItems.splice(HISTORY_LENGTH);
 
     localStorage[HISTORY_KEY] = JSON.stringify(newHistoryItems);
 
     /** Repeat for annotation regions */
-    this.justCreatedAnnotationItems = this.justCreatedAnnotationItems.filter((val, ind, arr) =>
+    this.annotationRegionsJustCreatedItems = this.annotationRegionsJustCreatedItems.filter((val, ind, arr) =>
       arr.findIndex((t) => compareItems(t, val)) === ind);
 
-    this.annotationRegionItems = this.annotationRegionItems.filter((arr) =>
-      !this.justCreatedAnnotationItems.find((val) => compareItems(val, arr)));
+    this.annotationRegionsHistoryItems = this.annotationRegionsHistoryItems.filter((arr) =>
+      !this.annotationRegionsJustCreatedItems.find((val) => compareItems(val, arr)));
 
-    const newAnnotationHistoryItems = this.justCreatedAnnotationItems.concat(this.annotationRegionItems);
+    const newAnnotationHistoryItems = this.annotationRegionsJustCreatedItems.concat(this.annotationRegionsHistoryItems);
     newAnnotationHistoryItems.splice(HISTORY_LENGTH);
 
     localStorage[HISTORY_KEY_ANNOTATIONS] = JSON.stringify(newAnnotationHistoryItems);
@@ -1214,11 +1234,11 @@ class CreationControl {
   constructor(
     getCols: () => AxisColumns,                              // Used to create constant lines passing through the mouse click point on the Scatter Plot
     getCurrentItem: () => EditorItem | null,                 // Used to create clone
-    onItemCreatedAction: (item: EditorItem) => void,                          // Updates the Table, Preview and Editor states after item creation
+    private onItemCreatedAction: (item: EditorItem) => void,                          // Updates the Table, Preview and Editor states after item creation
     createArea: (lassoMode?: boolean) => Promise<DG.AnnotationRegion | null>  // Used to create area annotation regions
   ) {
-    this.historyItems = this.loadHistory();
-    this.annotationRegionItems = this.loadAnnotationHistory();
+    this.formulaLinesHistoryItems = this.loadFormulaLinesHistory();
+    this.annotationRegionsHistoryItems = this.loadAnnotationRegionsHistory();
 
     this.popupMenu = (valY?: number, valX?: number) => {
       const onClickAction = (itemCaption: string) => {
@@ -1227,7 +1247,7 @@ class CreationControl {
             if (!region)
               return;
 
-            this.justCreatedAnnotationItems.unshift(region);
+            this.annotationRegionsJustCreatedItems.unshift(region);
             /** Update the Table, Preview and Editor states */
             onItemCreatedAction(region);
           });
@@ -1282,7 +1302,7 @@ class CreationControl {
         
         item = DG.FormulaLinesHelper.setDefaults(item);
 
-        this.justCreatedItems.unshift(item);
+        this.formulaLinesJustCreatedItems.unshift(item);
 
         /** Update the Table, Preview and Editor states */
         onItemCreatedAction(item);
@@ -1300,7 +1320,7 @@ class CreationControl {
       ], onClickAction);
 
       /** Add separator only if other menu items exist */
-      if (getCurrentItem() || this.historyItems.length > 0)
+      if (getCurrentItem() || this.formulaLinesHistoryItems.length > 0)
         menu.separator();
 
       /**
@@ -1314,20 +1334,28 @@ class CreationControl {
        * Add "History" menu group.
        * TODO: The best option is to make the menu item enabled/disabled. But there is no such API yet.
        */
-      if (this.historyItems.length > 0) {
-        const historyGroup = menu.group(BTN_CAPTION.HISTORY);
-        this.historyItems.forEach((item) => {
-          historyGroup.item((item as DG.FormulaLine).formula!, () => {
-            const newItem = structuredClone(item);
-            this.justCreatedItems.unshift(newItem);
-            onItemCreatedAction(newItem);
-          });
-        });
-        historyGroup.endGroup();
-      }
+      this.fillHistoryGroup(menu.group(BTN_CAPTION.FORMULA_LINES_HISTORY),
+        this.formulaLinesHistoryItems, this.formulaLinesJustCreatedItems, (item: DG.FormulaLine) => item.formula!);
+
+      this.fillHistoryGroup(menu.group(BTN_CAPTION.ANNOTATION_REGIONS_HISTORY),
+        this.annotationRegionsHistoryItems, this.annotationRegionsJustCreatedItems, formatAreaFormula);
 
       menu.show();
     };
+  }
+
+  private fillHistoryGroup(group: DG.Menu, items: EditorItem[], justCreatedItems: EditorItem[], getTitle: (item: EditorItem) => string): void {
+    for (const item in items) {
+      const title = getTitle(items[item]);
+      if (title)
+        group.item(title.length > 50 ? title.substring(0, 50) + '...' : title, () => {
+          const newItem = structuredClone(items[item]);
+          justCreatedItems.unshift(newItem);
+          this.onItemCreatedAction(newItem);
+        });
+    }
+
+    group.endGroup();
   }
 }
 
