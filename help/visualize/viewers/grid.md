@@ -281,6 +281,30 @@ Examples of built-in renderers include molecules, URL based images, fit lines, c
 
 :::
 
+#### Choice renderer
+
+The `Choice` renderer provides a drop-down list for a single selection from a predefined set of options. When you
+double-click the cell, it allows you to pick one value from the list.
+
+To configure it, set the column tag, `.choices`, to a JSON string array of the options (e.g., `["Option 1", "Option 2", "Option 3"]`).
+After that, double-clicking the cell will show a drop-down list with those options.
+
+#### MultiChoice renderer
+
+The `MultiChoice` renderer displays a list of predefined options as checkboxes within a cell. To configure it:
+
+1. Set the column tag `cell.renderer` to `MultiChoice`.
+
+2. Set another column tag, `.choices`, to a JSON string array of the options you want to display (e.g., ["Option 1", "Option 2", "Option 3"]).
+
+#### Tags renderer
+
+The `Tags` renderer is used to display comma-separated values from a string column as individual "tags". To use it:
+
+1. Set the column tag `cell.renderer` to `Tags`.
+
+2. Ensure the cell values are formatted as a comma-separated string (e.g., "Opt1,Opt2,Opt3").
+
 ### Summary columns
 
 Summary columns show data from multiple columns within a row. To simply display
