@@ -81,12 +81,13 @@ export class MonomerCellRendererBack extends CellRendererWithMonomerLibBackBase 
   }
 
   override onMouseMove(gridCell: GridCell, e: MouseEvent) {
+    const [gridCol, tableCol, temp] = getGridCellColTemp(gridCell);
     if (
-      gridCell.grid.dart != this.gridCol?.grid.dart || gridCell.gridColumn.dart != this.gridCol?.dart ||
-      !gridCell.tableColumn || !gridCell.isTableCell
+      gridCell.grid.dart != this.gridCol?.grid.dart || gridCol?.dart != this.gridCol?.dart ||
+      !tableCol || !gridCell.isTableCell
     ) return false;
 
-    const alphabet = gridCell.tableColumn.getTag(bioTAGS.alphabet) as ALPHABET;
+    const alphabet = tableCol.getTag(bioTAGS.alphabet) as ALPHABET;
     const monomerName: string = gridCell.cell.value;
     const canvasClientRect = gridCell.grid.canvas.getBoundingClientRect();
     const x1 = gridCell.bounds.right + canvasClientRect.left - 4;
@@ -127,9 +128,10 @@ export class MonomerCellRendererBack extends CellRendererWithMonomerLibBackBase 
 
   private getHelmType(gridCell: GridCell, defaultType: HelmType): HelmType {
     let biotype = defaultType;
-    if ((gridCell.tableRowIndex ?? -1) > -1 && gridCell.tableColumn?.getTag(BioTags.polymerTypeColumnName)) {
-      const ptColName = gridCell.tableColumn.getTag(BioTags.polymerTypeColumnName);
-      const ptCol = gridCell.tableColumn.dataFrame?.col(ptColName);
+    const [gridCol, tableCol, temp] = getGridCellColTemp(gridCell);
+    if ((gridCell.tableRowIndex ?? -1) > -1 && tableCol?.getTag(BioTags.polymerTypeColumnName)) {
+      const ptColName = tableCol.getTag(BioTags.polymerTypeColumnName);
+      const ptCol = tableCol.dataFrame?.col(ptColName);
       if (ptCol) {
         const ptrString = ptCol.get(gridCell.tableRowIndex!);
         if (ptrString && [PolymerTypes.BLOB, PolymerTypes.CHEM, PolymerTypes.G, PolymerTypes.PEPTIDE, PolymerTypes.RNA].includes(ptrString))
