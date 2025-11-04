@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import { ErrorHandling, Scope } from '../utils/constants';
-import { createPath, createPropertySection } from '../utils/view-utils';
+import { createPath } from '../utils/view-utils';
 import { getCorporateCompoundIdByExactStructure } from '../utils/utils';
 
 import { fetchBatchProperties, fetchCompoundProperties, registerBulk } from '../package';
@@ -192,7 +192,7 @@ export class EntityBaseView extends RegistrationViewBase {
       section: compoundSection,
       inputs: compoundInputs,
       formBackingObject: compoundFormBackingObject,
-    } = await createPropertySection(
+    } = await this.createPropertySection(
       'Compound properties',
       fetchCompoundProperties,
       (prop) => this.convertToDGProperty(prop, { reserved: reservedProperties, skipReservedCheck: true }),
@@ -212,7 +212,7 @@ export class EntityBaseView extends RegistrationViewBase {
       section: batchSection,
       inputs: batchInputs,
       formBackingObject: batchFormBackingObject,
-    } = await createPropertySection(
+    } = await this.createPropertySection(
       'Batch properties',
       fetchBatchProperties,
       (prop) => this.convertToDGProperty(prop, { reserved: reservedProperties, skipReservedCheck: true }),

@@ -4,7 +4,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import { MolTrackProp } from '../utils/constants';
-import { createPropertySection } from '../utils/view-utils';
 import { fetchSchema, registerAssays } from '../package';
 import { RegistrationViewBase } from './registration-view-base';
 
@@ -83,7 +82,7 @@ export class AssayRegistrationView extends RegistrationViewBase {
       this.fetchAssayResultProperties(),
     ]);
 
-    const { section: assaySection, inputs, formBackingObject } = await createPropertySection(
+    const { section: assaySection, inputs, formBackingObject } = await this.createPropertySection(
       'Assay properties',
       async () => assayProps,
       this.convertToDGProperty.bind(this),
