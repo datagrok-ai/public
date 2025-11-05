@@ -60,6 +60,7 @@ export function showTooltipAt(df: DG.DataFrame, activityCol: DG.Column<number>, 
 
 
     const mask = DG.BitSet.fromBytes(stats.mask.buffer.buffer as ArrayBuffer, activityCol.length);
+    mask.and(df.filter);
     const hist = getActivityDistribution(getDistributionTable(activityCol, mask), true);
     const tableMap = getStatsTableMap(stats);
     if (options.fromViewer) {
@@ -85,6 +86,7 @@ export function showTooltipAt(df: DG.DataFrame, activityCol: DG.Column<number>, 
     if (!stats)
       return null;
     const mask = DG.BitSet.fromBytes(stats.mask.buffer.buffer as ArrayBuffer, activityCol.length);
+    mask.and(df.filter);
     const hist = getActivityDistribution(getDistributionTable(activityCol, mask), true);
     const tableMap = getStatsTableMap(stats, {countName: 'Unique count'});
     if (options.fromViewer) {

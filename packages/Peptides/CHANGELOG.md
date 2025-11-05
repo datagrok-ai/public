@@ -1,5 +1,11 @@
 # Peptides changelog
 
+## 1.26.0 (2025-11-05)
+
+* Full filter reactivity for all panels, tooltips, aggregations and viewers
+* Corrected aggregate calculations, statistics and mean difference comparisons
+* Fix MCL viewer premature shutdown on loading
+
 ## 1.25.1 (2025-11-05)
 
 * Fix distribution tooltips not showing on weblogo hover

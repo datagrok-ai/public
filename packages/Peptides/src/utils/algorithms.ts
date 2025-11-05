@@ -6,6 +6,7 @@ import {ParallelMutationCliffs} from './parallel-mutation-cliffs';
 import {CLUSTER_TYPE} from '../viewers/logo-summary';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {
+  bitSetToBitArray,
   ClusterStats,
   ClusterTypeStats,
   getStats,
@@ -120,6 +121,7 @@ export function calculateMonomerPositionStatistics(activityCol: DG.Column<number
   //   if (options.aggValue)
   //     options.aggValue.col = options.aggValue.col.clone(filter);
   // }
+  const filterBitArray = options.isFiltered ? bitSetToBitArray(filter) : undefined;
 
   for (const posCol of positionColumns) {
     if (!options.columns.includes(posCol.name))
@@ -144,7 +146,7 @@ export function calculateMonomerPositionStatistics(activityCol: DG.Column<number
       const bitArray = BitArray.fromValues(boolArray);
       if (bitArray.allFalse)
         continue;
-      const stats = getStats(activityColData, bitArray, options.aggValue);
+      const stats = getStats(activityColData, bitArray, filterBitArray, options.aggValue);
       currentPositionObject[monomer] = stats;
       getSummaryStats(currentPositionObject.general, stats);
     }
@@ -245,6 +247,7 @@ export function calculateClusterStatistics(df: DG.DataFrame, clustersColumnName:
   const origClustStats: ClusterStats = {};
   const customClustStats: ClusterStats = {};
 
+  const filterMask = df.filter.anyFalse ? bitSetToBitArray(df.filter) : undefined;
   for (const clustType of Object.values(CLUSTER_TYPE)) {
     const masks = clustType === CLUSTER_TYPE.ORIGINAL ? origClustMasks : customClustMasks;
     const clustNames = clustType === CLUSTER_TYPE.ORIGINAL ? origClustColCat : customClustColNamesList;
@@ -253,7 +256,7 @@ export function calculateClusterStatistics(df: DG.DataFrame, clustersColumnName:
       const mask = masks[maskIdx];
       resultStats[clustNames[maskIdx]] = mask.allTrue || mask.allFalse ?
         {count: mask.length, meanDifference: 0, ratio: 1.0, pValue: null, mask: mask, mean: activityCol.stats.avg} :
-        getStats(activityColData, mask);
+        getStats(activityColData, mask, filterMask);
     }
   }
 

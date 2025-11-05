@@ -410,7 +410,10 @@ export function setWebLogoRenderer(grid: DG.Grid, monomerPositionStats: MonomerP
         return;
       }
       tooltipOptions.monomerPosition = monomerPosition;
-      requestWebLogoAction(ev, monomerPosition, df, activityCol, options, tooltipOptions);
+      const isDfFiltered = df.filter.anyFalse;
+      const actionDf = isDfFiltered ? df.clone(df.filter) : df;
+      const actionActivityCol = actionDf.getCol(activityCol.name) as DG.Column<number>;
+      requestWebLogoAction(ev, monomerPosition, actionDf, actionActivityCol, options, tooltipOptions);
       if (!options.isSelectionTable && options.highlightCallback != null)
         options.highlightCallback(monomerPosition, df, monomerPositionStats);
     } else if (options.unhighlightCallback != null)

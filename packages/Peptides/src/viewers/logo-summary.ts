@@ -11,6 +11,7 @@ import * as CR from '../utils/cell-renderer';
 import {HorizontalAlignments, IWebLogoViewer, PositionHeight} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {
   AggregationColumns,
+  bitSetToBitArray,
   ClusterTypeStats,
   getAggregatedColumnValues,
   getAggregatedValue,
@@ -315,15 +316,30 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
   onTableAttached(): void {
     super.onTableAttached();
     if (isApplicableDataframe(this.dataFrame)) {
-      const activityColName = wu(this.dataFrame.columns.numerical).next().value.name;
-      this.getProperty(`${LST_PROPERTIES.SEQUENCE}${COLUMN_NAME}`)
-        ?.set(this, this.dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE)!.name);
-      this.getProperty(`${LST_PROPERTIES.ACTIVITY}${COLUMN_NAME}`)
-        ?.set(this, activityColName);
-      this.getProperty(`${LST_PROPERTIES.WEB_LOGO_AGGREGATION_COLUMN_NAME}`)?.set(this, activityColName);
+      const potentialActivityColName = wu(this.dataFrame.columns.numerical).filter((col) => col.name?.includes('activ')).take(1).toArray()[0]?.name;
+      const activityColName = potentialActivityColName ??
+        wu(this.dataFrame.columns.numerical).take(1).toArray()?.[0]?.name;
+      const seqCol = this.dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
+      // const clusterCol =
+      if (seqCol) {
+        this.getProperty(`${LST_PROPERTIES.SEQUENCE}${COLUMN_NAME}`)
+          ?.set(this, seqCol.name);
+      }
+      if (activityColName) {
+        this.getProperty(`${LST_PROPERTIES.ACTIVITY}${COLUMN_NAME}`)
+          ?.set(this, activityColName);
+        this.getProperty(`${LST_PROPERTIES.WEB_LOGO_AGGREGATION_COLUMN_NAME}`)?.set(this, activityColName);
+      }
 
-      this.getProperty(`${LST_PROPERTIES.CLUSTERS}${COLUMN_NAME}`)
-        ?.set(this, wu(this.dataFrame.columns.categorical).next().value.name);
+      const potentialClusterCol = wu(this.dataFrame.columns.categorical)
+        .filter((col) => col.name?.toLowerCase().includes('cluster') && col.name != seqCol?.name && col.type !== DG.COLUMN_TYPE.BOOL)?.take(1)?.toArray()?.[0];
+      const clusterCol = potentialClusterCol ??
+        wu(this.dataFrame.columns.categorical)
+          .filter((col) => col.name != seqCol?.name && col.categories.length <= 50 && col.type !== DG.COLUMN_TYPE.BOOL)?.take(1)?.toArray()?.[0];
+      if (clusterCol) {
+        this.getProperty(`${LST_PROPERTIES.CLUSTERS}${COLUMN_NAME}`)
+          ?.set(this, clusterCol.name);
+      }
     } else {
       const msg = 'PeptidesError: dataframe is missing Macromolecule or numeric columns';
       grok.log.error(msg);
@@ -914,8 +930,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     const viewerDfColsLength = viewerDfCols.length;
     const newClusterVals = new Array(viewerDfCols.length);
     const activityScaledCol = this.getScaledActivityColumn();
-    const bitArray = BitArray.fromString(currentSelection.toBinaryString());
-    const stats = getStats(activityScaledCol.getRawData(), bitArray);
+    const bitArray = bitSetToBitArray(currentSelection);
+    const stats = getStats(activityScaledCol.getRawData(), bitArray, bitSetToBitArray(this.dataFrame.filter));
 
     this.bitsets.push(currentSelection.clone());
 

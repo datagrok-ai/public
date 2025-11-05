@@ -511,53 +511,54 @@ export class PeptidesModel {
       descritionsHost,
     ], 'css-gap-small'));
 
-    if (filterAndSelectionBs.anyTrue) {
-      acc.addPane('Actions', () => {
-        try {
-          const newView = ui.label('New view');
-          $(newView).addClass('d4-link-action');
-          newView.onclick = (): string => trueModel.createNewView();
-          newView.onmouseover = (ev): void =>
-            ui.tooltip.show('Creates a new view from current selection', ev.clientX + 5, ev.clientY + 5);
-          if (trueLSTViewer === null)
-            return ui.divV([newView]);
+    // ACTIONS PANE temporarily disabled
+    // if (filterAndSelectionBs.anyTrue) {
+    //   acc.addPane('Actions', () => {
+    //     try {
+    //       const newView = ui.label('New view');
+    //       $(newView).addClass('d4-link-action');
+    //       newView.onclick = (): string => trueModel.createNewView();
+    //       newView.onmouseover = (ev): void =>
+    //         ui.tooltip.show('Creates a new view from current selection', ev.clientX + 5, ev.clientY + 5);
+    //       if (trueLSTViewer === null)
+    //         return ui.divV([newView]);
 
 
-          const newCluster = ui.label('New cluster');
-          $(newCluster).addClass('d4-link-action');
-          newCluster.onclick = (): void => {
-            if (trueLSTViewer === null)
-              throw new Error('Logo summary table viewer is not found');
+    //       const newCluster = ui.label('New cluster');
+    //       $(newCluster).addClass('d4-link-action');
+    //       newCluster.onclick = (): void => {
+    //         if (trueLSTViewer === null)
+    //           throw new Error('Logo summary table viewer is not found');
 
 
-            trueLSTViewer.clusterFromSelection();
-          };
-          newCluster.onmouseover = (ev): void =>
-            ui.tooltip.show('Creates a new cluster from selection', ev.clientX + 5, ev.clientY + 5);
+    //         trueLSTViewer.clusterFromSelection();
+    //       };
+    //       newCluster.onmouseover = (ev): void =>
+    //         ui.tooltip.show('Creates a new cluster from selection', ev.clientX + 5, ev.clientY + 5);
 
-          const removeCluster = ui.label('Remove cluster');
-          $(removeCluster).addClass('d4-link-action');
-          removeCluster.onclick = (): void => {
-            const lstViewer = trueModel.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
-            if (lstViewer === null)
-              throw new Error('Logo summary table viewer is not found');
+    //       const removeCluster = ui.label('Remove cluster');
+    //       $(removeCluster).addClass('d4-link-action');
+    //       removeCluster.onclick = (): void => {
+    //         const lstViewer = trueModel.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
+    //         if (lstViewer === null)
+    //           throw new Error('Logo summary table viewer is not found');
 
 
-            lstViewer.removeCluster();
-          };
-          removeCluster.onmouseover = (ev): void =>
-            ui.tooltip.show('Removes currently selected custom cluster', ev.clientX + 5, ev.clientY + 5);
-          removeCluster.style.visibility = trueLSTViewer.clusterSelection[CLUSTER_TYPE.CUSTOM].length === 0 ? 'hidden' :
-            'visible';
+    //         lstViewer.removeCluster();
+    //       };
+    //       removeCluster.onmouseover = (ev): void =>
+    //         ui.tooltip.show('Removes currently selected custom cluster', ev.clientX + 5, ev.clientY + 5);
+    //       removeCluster.style.visibility = trueLSTViewer.clusterSelection[CLUSTER_TYPE.CUSTOM].length === 0 ? 'hidden' :
+    //         'visible';
 
-          return ui.divV([newView, newCluster, removeCluster]);
-        } catch (e) {
-          const errorDiv = ui.divText('Error in Actions');
-          ui.tooltip.bind(errorDiv, String(e));
-          return errorDiv;
-        }
-      }, true);
-    }
+    //       return ui.divV([newView, newCluster, removeCluster]);
+    //     } catch (e) {
+    //       const errorDiv = ui.divText('Error in Actions');
+    //       ui.tooltip.bind(errorDiv, String(e));
+    //       return errorDiv;
+    //     }
+    //   }, true);
+    // }
 
     // Get the source of the bitset change and find viewers that share the same parameters as source
     let requestSource: SARViewer | LogoSummaryTable | PeptidesSettings | null = trueModel.settings;
@@ -587,27 +588,27 @@ export class PeptidesModel {
       v !== null && areParametersEqual(requestSource!, v) && (v !== trueModel.settings || trueModel.isInitialized);
     const panelDataSources = viewers.filter(notEmpty);
     panelDataSources.push(requestSource);
-    const combinedBitset: DG.BitSet | null = DG.BitSet.create(trueModel.df.rowCount);
-    for (const panelDataSource of panelDataSources) {
-      const bitset =
-        (panelDataSource === this.settings) ? getSelectionBitset(this.webLogoSelection, this.monomerPositionStats!) :
-          (panelDataSource instanceof LogoSummaryTable) ?
-            getSelectionBitset(panelDataSource.clusterSelection, panelDataSource.clusterStats) :
-            (panelDataSource instanceof SARViewer) ?
-              getSelectionBitset(panelDataSource.mutationCliffsSelection,
-                mutationCliffsToMaskInfo(panelDataSource.mutationCliffs ?? new Map(), trueModel.df.rowCount)) :
-              null;
-      if (bitset !== null)
-        combinedBitset.or(bitset);
+    //const combinedBitset: DG.BitSet | null = DG.BitSet.create(trueModel.df.rowCount);
+    // for (const panelDataSource of panelDataSources) {
+    //   const bitset =
+    //     (panelDataSource === this.settings) ? getSelectionBitset(this.webLogoSelection, this.monomerPositionStats!) :
+    //       (panelDataSource instanceof LogoSummaryTable) ?
+    //         getSelectionBitset(panelDataSource.clusterSelection, panelDataSource.clusterStats) :
+    //         (panelDataSource instanceof SARViewer) ?
+    //           getSelectionBitset(panelDataSource.mutationCliffsSelection,
+    //             mutationCliffsToMaskInfo(panelDataSource.mutationCliffs ?? new Map(), trueModel.df.rowCount)) :
+    //           null;
+    //   if (bitset !== null)
+    //     combinedBitset.or(bitset);
 
 
-      if (panelDataSource instanceof MonomerPosition) {
-        const invariantMapSelectionBitset = getSelectionBitset(panelDataSource.invariantMapSelection,
-          panelDataSource.monomerPositionStats);
-        if (invariantMapSelectionBitset !== null)
-          combinedBitset.or(invariantMapSelectionBitset);
-      }
-    }
+    //   if (panelDataSource instanceof MonomerPosition) {
+    //     const invariantMapSelectionBitset = getSelectionBitset(panelDataSource.invariantMapSelection,
+    //       panelDataSource.monomerPositionStats);
+    //     if (invariantMapSelectionBitset !== null)
+    //       combinedBitset.or(invariantMapSelectionBitset);
+    //   }
+    // }
 
     const sarViewer = requestSource as any as SARViewer | LogoSummaryTable;
     if (requestSource !== trueModel.settings && !(sarViewer instanceof LogoSummaryTable) &&
@@ -630,7 +631,6 @@ export class PeptidesModel {
     acc.addPane('Distribution', () => {
       try {
         return getDistributionWidget(trueModel.df, {
-          peptideSelection: combinedBitset,
           columns: isModelSource ? trueModel.settings!.columns ?? {} :
             (requestSource as PeptideViewer).getAggregationColumns(),
           activityCol: isModelSource ? trueModel.getScaledActivityColumn()! :
@@ -869,7 +869,8 @@ export class PeptidesModel {
       }
     }
 
-    return DG.BitSet.fromBytes(combinedSelection.buffer.buffer as ArrayBuffer, combinedSelection.length);
+    const res = DG.BitSet.fromBytes(combinedSelection.buffer.buffer as ArrayBuffer, combinedSelection.length);
+    return this.df.filter.anyFalse ? res.and(this.df.filter) : res;
   }
 
 
@@ -1402,6 +1403,13 @@ export class PeptidesModel {
       await DG.delay(500);
       this._mclViewer = this.findViewer(VIEWER_TYPE.MCL) as MCLViewer;
       await this._mclViewer.initPromise;
+      // after waiting for init promise, it can be resolved by just removing the viewer, so check again
+      this._mclViewer = this.findViewer(VIEWER_TYPE.MCL) as MCLViewer | null;
+      if (!this._mclViewer || !this._mclViewer.isDetached) {
+        mclAdditionSub?.unsubscribe();
+        columnAddedSub?.unsubscribe();
+        return;
+      }
       const lstViewer = this.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
       if (lstViewer) { // beware, this is accessing private things
         lstViewer._clusterStats = null;

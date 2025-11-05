@@ -131,39 +131,33 @@ export function getDistributionPanel(hist: DG.Viewer<DG.IHistogramSettings>, sta
  * Creates a table to plot activity distribution.
  * @param activityCol - Activity column.
  * @param selection - Selection bitset.
- * @param [peptideSelection] - Peptide selection bitset.
  * @return - Dataframe with activity distribution.
  */
-export function getDistributionTable(activityCol: DG.Column<number>, selection: DG.BitSet, peptideSelection?: DG.BitSet,
-): DG.DataFrame {
-  const selectionMismatch = peptideSelection?.clone().xor(selection).anyTrue ?? false;
+export function getDistributionTable(activityCol: DG.Column<number>, selection: DG.BitSet): DG.DataFrame {
+  const filter = activityCol.dataFrame!.filter;
+  const selectionAndFilter = selection.clone().and(filter);
   const rowCount = activityCol.length;
   const activityColData = activityCol.getRawData();
-  const activityData = new Float32Array(rowCount + selection.trueCount +
-    (selectionMismatch ? (peptideSelection?.trueCount ?? 0) : 0));
+  const filteredRowCount = filter.trueCount;
+  const activityData = new Float32Array(filteredRowCount + selectionAndFilter.trueCount);
   const categories: string[] = new Array(activityData.length);
 
-  for (let i = 0, j = 0, k = 0; i < rowCount; ++i) {
-    const isSelected = selection.get(i);
-    activityData[i] = activityColData[i];
-    categories[i] = isSelected ? SPLIT_CATEGORY.SELECTION : SPLIT_CATEGORY.ALL;
+  for (let i = 0, /*J is counting for filtered data*/j = 0, /*selected data*/k = 0; i < rowCount; ++i) {
+    if (!filter.get(i))
+      continue;
+    const isSelected = selectionAndFilter.get(i);
+    activityData[j] = activityColData[i];
+    categories[j] = isSelected ? SPLIT_CATEGORY.SELECTION : SPLIT_CATEGORY.ALL;
+    j++;
     if (isSelected) {
-      activityData[rowCount + j] = activityColData[i];
-      categories[rowCount + j] = SPLIT_CATEGORY.ALL;
-      ++j;
-    }
-    if (selectionMismatch && peptideSelection?.get(i)) {
-      activityData[rowCount + selection.trueCount + k] = activityColData[i];
-      categories[rowCount + selection.trueCount + k] = SPLIT_CATEGORY.PEPTIDES_SELECTION;
+      activityData[filteredRowCount + k] = activityColData[i];
+      categories[filteredRowCount + k] = SPLIT_CATEGORY.ALL;
       ++k;
     }
   }
 
   const splitCol = DG.Column.fromStrings(C.COLUMNS_NAMES.SPLIT_COL, categories);
   const categoryOrder = [SPLIT_CATEGORY.ALL, SPLIT_CATEGORY.SELECTION];
-  if (selectionMismatch)
-    categoryOrder.push(SPLIT_CATEGORY.PEPTIDES_SELECTION);
-
 
   splitCol.setCategoryOrder(categoryOrder);
   splitCol.meta.colors.setCategorical();
