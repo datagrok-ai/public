@@ -60,7 +60,8 @@ export function bitArrayToBitSet(bitArray: BitArray): DG.BitSet {
  */
 export function getStats(data: RawData | number[], bitArray: BitArray, filter?: BitArray,
   aggData?: {col: DG.Column, type: DG.AGG}): StatsItem {
-  if (data.length !== bitArray.length && (!filter || data.length !== filter.length))
+  // if column length is less than 16, raw data will be still of length 16
+  if ((data.length !== bitArray.length && data.length !== 16) || (filter && data.length !== filter.length && data.length !== 16))
     throw new Error('PeptidesError: Data and bit array have different lengths');
   if (filter && filter.allTrue)
     filter = undefined; // no need to filter if all true

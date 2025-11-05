@@ -134,6 +134,8 @@ export function getDistributionPanel(hist: DG.Viewer<DG.IHistogramSettings>, sta
  * @return - Dataframe with activity distribution.
  */
 export function getDistributionTable(activityCol: DG.Column<number>, selection: DG.BitSet): DG.DataFrame {
+  if (!activityCol.dataFrame)
+    DG.DataFrame.fromColumns([activityCol]); // to make sure that activityCol has a parent dataframe
   const filter = activityCol.dataFrame!.filter;
   const selectionAndFilter = selection.clone().and(filter);
   const rowCount = activityCol.length;
