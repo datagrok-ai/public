@@ -103,7 +103,7 @@ export const RFVApp = Vue.defineComponent({
       if (!currentFuncCall.value) return;
       currentCallState.value.isRunning = true;
       try {
-        await currentFuncCall.value.call(undefined, undefined, {processed:true, report:false});
+        await currentFuncCall.value.call(undefined, undefined, {processed: true, report: false});
         currentFuncCall.value.started = dayjs();
 
         currentCallState.value.isOutputOutdated = false;

@@ -175,7 +175,7 @@ export class PackageFunctions {
   static async RunOptimizer(
     @grok.decorators.param({'type': 'object'}) params: OptimizerParams,
   ) {
-    const [,calls] = await runOptimizer(params);
+    const [, calls] = await runOptimizer(params);
     return calls;
   }
 
@@ -480,7 +480,7 @@ class MyView extends CustomFunctionView {
       this.aIn,
       this.bIn,
       ui.div([ui.bigButton('Run', async () => {
-        await this.funcCall!.call(undefined, undefined, {processed:true, report:false});
+        await this.funcCall!.call(undefined, undefined, {processed: true, report: false});
         this.funcCall!.started = dayjs();
         await this.saveRun(this.funcCall!);
         this.res!.value = this.funcCall?.outputs.res;

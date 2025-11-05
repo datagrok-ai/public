@@ -28,7 +28,7 @@ import {ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver
 import {startWith, take, map} from 'rxjs/operators';
 import {useHelp} from '../../composables/use-help';
 import {useObservable} from '@vueuse/rxjs';
-import { _package } from '../../package-instance';
+import {_package} from '../../package-instance';
 
 interface ScalarsState {
   type: 'scalars',
@@ -257,6 +257,7 @@ export const RichFunctionView = Vue.defineComponent({
     const historyRef = Vue.shallowRef<InstanceType<typeof History> | undefined>(undefined);
     const helpRef = Vue.shallowRef<HTMLElement | undefined>(undefined);
     const formRef = Vue.shallowRef<HTMLElement | undefined>(undefined);
+    const dockSpawnRef = Vue.shallowRef<InstanceType<typeof DockManager> | undefined>(undefined);
     const inputFormComponentRef = Vue.shallowRef<InstanceType<typeof InputForm> | undefined>(undefined);
 
     ////
@@ -333,7 +334,7 @@ export const RichFunctionView = Vue.defineComponent({
 
       if (currentCall.value)
         sessionStorage.setItem(`opened_tab_${currentCall.value.func?.nqName}`, name ?? '');
-    }
+    };
 
     Vue.watch(currentCall, () => {
       visibleTabLabels.value = [...tabLabels.value];
@@ -467,14 +468,14 @@ export const RichFunctionView = Vue.defineComponent({
             onClick={runFitting}
             tooltip='Fit inputs'
             style={{width: '24px', height: '24px'}}
-          />}
+          /> }
           { isSAenabled.value && <IconImage
             name='sa'
             path={`${_package.webRoot}files/icons/icon-chart-sensitivity.svg`}
             onClick={runSA}
             tooltip='Run sensitivity analysis'
             style={{width: '24px', height: '24px'}}
-          />}
+          /> }
           { <IconFA
             name='question'
             tooltip={ helpHidden.value ? 'Open help panel' : 'Close help panel' }
@@ -494,22 +495,23 @@ export const RichFunctionView = Vue.defineComponent({
           onUpdate:activePanelTitle={handlePanelChanged}
           key={currentUuid.value}
           activePanelTitle={activePanelTitle.value}
+          ref={dockSpawnRef}
         >
           { !historyHidden.value && props.historyEnabled &&
             <History
-                key="__HISTORY__"
-                func={currentCall.value.func}
-                onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
-                allowCompare={true}
-                forceHideInputs={false}
-                showIsComplete={true}
-                dock-spawn-dock-type='right'
-                dock-spawn-dock-ratio={0.2}
-                dock-spawn-title='History'
-                dock-spawn-panel-icon='history'
-                ref={historyRef}
-                class='overflow-scroll h-full'
-              /> }
+              key="__HISTORY__"
+              func={currentCall.value.func}
+              onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
+              allowCompare={true}
+              forceHideInputs={false}
+              showIsComplete={true}
+              dock-spawn-dock-type='right'
+              dock-spawn-dock-ratio={0.2}
+              dock-spawn-title='History'
+              dock-spawn-panel-icon='history'
+              ref={historyRef}
+              class='overflow-scroll h-full'
+            /> }
           { !formHidden.value &&
               <div
                 key="__FORM__"
@@ -568,7 +570,7 @@ export const RichFunctionView = Vue.defineComponent({
           {
             tabsData.value
               .map(({tabLabel, tabContent, isInput}) => {
-                const tabConfig = dockSpawnConfig.value[tabLabel] ?? {}
+                const tabConfig = dockSpawnConfig.value[tabLabel] ?? {};
                 if (tabContent?.type === 'dataframe') {
                   const options = tabContent.config;
                   return <div
