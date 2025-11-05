@@ -75,6 +75,8 @@ export function showTooltipAt(df: DG.DataFrame, activityCol: DG.Column<number>, 
     }
     const distroStatsElem = getDistributionPanel(hist, resultMap);
     ui.tooltip.show(distroStatsElem, options.x, options.y);
+    if (!options.fromViewer)
+      setTimeout(() => hist.props.legendVisibility = 'Never', 100); // cause rerendering
     return distroStatsElem;
   } else {
     const stats = options.cliffStats?.get(options.monomerPosition.monomerOrCluster)

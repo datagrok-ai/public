@@ -1,5 +1,10 @@
 # Peptides changelog
 
+## 1.25.1 (2025-11-05)
+
+* Fix distribution tooltips not showing on weblogo hover
+* Enable filter reactivity by default SAR viewers
+
 ## 1.25.0 (2025-11-04)
 
 * Update dependencies

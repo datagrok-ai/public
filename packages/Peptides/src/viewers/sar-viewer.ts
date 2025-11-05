@@ -114,7 +114,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
   activityTarget: C.ACTIVITY_TARGET;
   valueColumnName: string;
   valueAggregation: DG.AGG;
-  dataSource: 'All' | 'Filtered' = 'All';
+  dataSource: 'All' | 'Filtered' = 'Filtered';
 
   mutationCliffsDebouncer: (
     activityArray: type.RawData, monomerInfoArray: type.RawColumn[], options?: MutationCliffsOptions
@@ -126,9 +126,10 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
     // General properties
     this.sequenceColumnName = this.column(SAR_PROPERTIES.SEQUENCE,
       {category: PROPERTY_CATEGORIES.GENERAL, semType: DG.SEMTYPE.MACROMOLECULE, nullable: false});
-    this.dataSource = this.string(SAR_PROPERTIES.DATA_SOURCE, 'All', {category: PROPERTY_CATEGORIES.GENERAL, choices: ['All', 'Filtered'], nullable: false,
+    this.dataSource = this.string(SAR_PROPERTIES.DATA_SOURCE, 'Filtered', {category: PROPERTY_CATEGORIES.GENERAL, choices: ['All', 'Filtered'], nullable: false,
       description: 'Data source for calculations and rendering. Can be set to whole data set or filtered data only.',
     }) as 'All' | 'Filtered';
+
     this.activityColumnName = this.column(SAR_PROPERTIES.ACTIVITY,
       {category: PROPERTY_CATEGORIES.GENERAL, nullable: false});
     this.activityScaling = this.string(SAR_PROPERTIES.ACTIVITY_SCALING, C.SCALING_METHODS.NONE,
