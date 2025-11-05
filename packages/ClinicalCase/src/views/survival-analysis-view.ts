@@ -7,9 +7,9 @@ import {SURVIVAL_ANALYSIS_GUIDE} from '../constants/constants';
 import {createSurvivalData} from '../data-preparation/data-preparation';
 import {dataframeContentToRow} from '../data-preparation/utils';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
-import {_package} from '../package';
+import {_package, studiesViewsConfigs} from '../package';
 import {SURVIVAL_ANALYSIS_VIEW_NAME} from '../constants/view-names-constants';
-import {AE_START_DAY_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG} from '../views-config';
+import {AE_START_DAY_FIELD, TRT_ARM_FIELD} from '../views-config';
 import {updateDivInnerHTML} from '../utils/utils';
 import {studies} from '../clinical-study';
 
@@ -53,7 +53,8 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
   createView(): void {
     this.colsRequiredForEndpoints = this.getColsRequiredForEndpoints();
     this.updateEndpointOptions();
-    this.covariatesOptions = [AGE, SEX, RACE, VIEWS_CONFIG[SURVIVAL_ANALYSIS_VIEW_NAME][TRT_ARM_FIELD]]
+    this.covariatesOptions = [AGE, SEX, RACE,
+      studiesViewsConfigs[this.studyId].config[SURVIVAL_ANALYSIS_VIEW_NAME][TRT_ARM_FIELD]]
       .filter((it) => studies[this.studyId].domains.dm.columns.names().includes(it));
     this.endpoint = Object.keys(this.endpointOptions)[0];
     this.endpointChoices = ui.input.choice('Endpoint',
@@ -294,11 +295,14 @@ export class SurvivalAnalysisView extends ClinicalCaseViewBase {
 
   private getColsRequiredForEndpoints() {
     return {
-      'SAE': {'ae': [VIEWS_CONFIG[SURVIVAL_ANALYSIS_VIEW_NAME][AE_START_DAY_FIELD], SUBJECT_ID, AE_SEVERITY, AE_SEQ]},
+      'SAE': {'ae': [studiesViewsConfigs[this.studyId].config[SURVIVAL_ANALYSIS_VIEW_NAME][AE_START_DAY_FIELD],
+        SUBJECT_ID, AE_SEVERITY, AE_SEQ]},
       'DEATH': {'dm': [DEATH_DATE]},
-      'HOSPITALIZATION': {'ae': [VIEWS_CONFIG[SURVIVAL_ANALYSIS_VIEW_NAME][AE_START_DAY_FIELD], SUBJECT_ID,
-        AE_REQ_HOSP, AE_SEVERITY, AE_SEQ]},
-      'DRUG RELATED AE': {'ae': [VIEWS_CONFIG[SURVIVAL_ANALYSIS_VIEW_NAME][AE_START_DAY_FIELD], SUBJECT_ID,
+      'HOSPITALIZATION': {'ae': [
+        studiesViewsConfigs[this.studyId].config[SURVIVAL_ANALYSIS_VIEW_NAME][AE_START_DAY_FIELD],
+        SUBJECT_ID, AE_REQ_HOSP, AE_SEVERITY, AE_SEQ]},
+      'DRUG RELATED AE': {'ae': [
+        studiesViewsConfigs[this.studyId].config[SURVIVAL_ANALYSIS_VIEW_NAME][AE_START_DAY_FIELD], SUBJECT_ID,
         AE_CAUSALITY, AE_SEVERITY, AE_SEQ]},
     };
   }

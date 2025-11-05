@@ -23,7 +23,7 @@ import {ADVERSE_EVENTS_VIEW_NAME, AE_BROWSER_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_
   PATIENT_PROFILE_VIEW_NAME, QUESTIONNAIRES_VIEW_NAME, STUDY_CONFIGURATIN_VIEW_NAME, SUMMARY_VIEW_NAME,
   SURVIVAL_ANALYSIS_VIEW_NAME, TIMELINES_VIEW_NAME, TIME_PROFILE_VIEW_NAME, TREE_MAP_VIEW_NAME,
   VALIDATION_VIEW_NAME, VISITS_VIEW_NAME} from './constants/view-names-constants';
-import {createClinCaseTableView, TABLE_VIEWS} from './utils/views-creation-utils';
+import {createClinCaseTableView, TABLE_VIEWS_META} from './utils/views-creation-utils';
 //import {CohortView} from './views/cohort-view';
 import {QuestionnaiesView} from './views/questionnaires-view';
 import {ClinCaseTableView, ClinStudyConfig} from './utils/types';
@@ -33,6 +33,7 @@ import {ClinicalCaseViewBase} from './model/ClinicalCaseViewBase';
 import '../css/clinical-case.css';
 import {u2} from '@datagrok-libraries/utils/src/u2';
 import {scripts} from './package-api';
+import {ClinicalCaseViewsConfig} from './views-config';
 
 export * from './package.g';
 
@@ -41,6 +42,7 @@ export const _package = new DG.Package();
 export let validationRulesList = null;
 
 export const VIEWS: {[key: string]: {[key: string]: DG.ViewBase}} = {};
+export const studiesViewsConfigs: {[key: string]: ClinicalCaseViewsConfig} = {};
 
 const loadingStudyData: {[key: string]: boolean} = {};
 
@@ -108,7 +110,7 @@ export function openStudy(treeNode: DG.TreeViewGroup,
     let view = VIEWS[study.name][viewName];
     let helper: any;
     if (!view) {
-      if (Object.keys(TABLE_VIEWS).includes(viewName)) { //load table view
+      if (Object.keys(TABLE_VIEWS_META).includes(viewName)) { //load table view
         const clinCaseTableView = VIEW_CREATE_FUNC[viewName](study.name, viewName) as ClinCaseTableView;
         view = clinCaseTableView.view;
         helper = clinCaseTableView.helper;
@@ -231,6 +233,7 @@ export async function readClinicalData(study: ClinStudyConfig, domainsToDownLoad
           studies[study.name].domains[domainNameWithoutExt] = df;
         }
       }
+      studiesViewsConfigs[study.name] = new ClinicalCaseViewsConfig();
     }
     if (!studies[study.name].domains.dm) {
       grok.shell.error(`No demographic data found for study ${study.name}`);

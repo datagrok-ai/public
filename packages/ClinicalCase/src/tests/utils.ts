@@ -7,15 +7,14 @@ import {createBaselineEndpointDataframe, createHysLawDataframe, createLabValuesB
   cumulativeEnrollemntByDay, dynamicComparedToBaseline, labDynamicComparedToMinMax,
   labDynamicRelatedToRef} from '../data-preparation/data-preparation';
 import {AE_START_DATE, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT,
-  SUBJ_REF_STDT, VISIT_DAY, VISIT} from '../constants/columns-constants';
+  SUBJ_REF_STDT, VISIT_DAY, VISIT,
+  ACT_TRT_ARM} from '../constants/columns-constants';
 import {dataframeContentToRow} from '../data-preparation/utils';
 import {createValidationDataFrame} from '../sdtm-validation/validation-utils';
 import {vaidateAEDomain} from '../sdtm-validation/services/validation-service';
 import {ALT, BILIRUBIN} from '../constants/constants';
 import {StudyVisit} from '../model/study-visit';
 import {PatientVisit} from '../model/patient-visit';
-import {TRT_ARM_FIELD, VIEWS_CONFIG} from '../views-config';
-import {LABORATORY_VIEW_NAME} from '../constants/view-names-constants';
 
 export const allViews = [
   'Summary',
@@ -70,7 +69,7 @@ export async function _testHysLaw() {
   const lb = await readDataframe('lb.csv');
   const dm = await readDataframe('dm.csv');
   const hysLawDf = createHysLawDataframe(lb, dm, 'Alanine Aminotransferase', 'Aspartate Aminotransferase',
-    'Bilirubin', VIEWS_CONFIG[LABORATORY_VIEW_NAME][TRT_ARM_FIELD]);
+    'Bilirubin', ACT_TRT_ARM);
   expect(hysLawDf.rowCount, 6);
   testRowValues(hysLawDf, 0, {[SUBJECT_ID]: '01-701-1015', [ALT]: 3.5, [BILIRUBIN]: 3});
 }
@@ -79,7 +78,7 @@ export async function _testBaselineEndpoint() {
   const lb = await readDataframe('lb.csv');
   const dm = await readDataframe('dm.csv');
   const baselineEndpointDataframe = createBaselineEndpointDataframe(lb, dm,
-    [VIEWS_CONFIG[LABORATORY_VIEW_NAME][TRT_ARM_FIELD]], LAB_TEST, LAB_RES_N,
+    [ACT_TRT_ARM], LAB_TEST, LAB_RES_N,
     [LAB_LO_LIM_N, LAB_HI_LIM_N], 'Alkaline Phosphatase', 'SCREENING 1', 'WEEK 4', VISIT, 'BL', 'EP');
   expect(baselineEndpointDataframe.rowCount, 6);
   testRowValues(baselineEndpointDataframe, 0, {[SUBJECT_ID]: '01-701-1015', 'BL': 34, 'EP': 41});
@@ -89,8 +88,7 @@ export async function _testLabValuesByVisit() {
   const lb = await readDataframe('lb.csv');
   const dm = await readDataframe('dm.csv');
   const labByVisitDataframe = createLabValuesByVisitDataframe(lb, dm, 'Alkaline Phosphatase',
-    VIEWS_CONFIG[LABORATORY_VIEW_NAME][TRT_ARM_FIELD],
-    'Placebo', 'Values', VISIT_DAY);
+    ACT_TRT_ARM, 'Placebo', 'Values', VISIT_DAY);
   expect(labByVisitDataframe.rowCount, 40);
   testRowValues(labByVisitDataframe, 0, {[SUBJECT_ID]: '01-701-1015', 'Values': 34, [VISIT_DAY]: -7});
 }
@@ -136,7 +134,7 @@ export async function _testLabChangesRelatedToRef() {
 
 export async function _testStudyVisit() {
   const domains = await createClinicalDomains(['sv', 'lb', 'ae']);
-  const studyVisit = new StudyVisit();
+  const studyVisit = new StudyVisit(VISIT);
   studyVisit.updateStudyVisit(domains, 28, 'WEEK 4', 14);
   expect(studyVisit.totalPatients, 6);
   expect(studyVisit.minVisitDate.getDate(), 2);

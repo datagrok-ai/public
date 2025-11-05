@@ -2,11 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {AE_BROWSER_VIEW_NAME, TIMELINES_VIEW_NAME} from '../constants/view-names-constants';
 import * as sdtmCols from '../constants/columns-constants';
-import {AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, VIEWS_CONFIG} from '../views-config';
+import {AE_START_DAY_FIELD} from '../views-config';
 import {AEBrowserHelper} from '../helpers/ae-browser-helper';
 import {ValidationHelper} from '../helpers/validation-helper';
-import {c} from '../package';
-import {createValidationErrorsDiv} from './views-validation-utils';
+import {c, studiesViewsConfigs} from '../package';
+import {createValidationErrorsDiv, getRequiredColumnsByView} from './views-validation-utils';
 import {updateDivInnerHTML} from './utils';
 import {studies} from '../clinical-study';
 import {ClinCaseTableView} from './types';
@@ -21,7 +21,8 @@ export function createAEBrowserHelper(studyId: string): any {
   aeBrowserDf.onCurrentRowChanged.subscribe(() => {
     aeBrowserHelper.currentSubjId = aeBrowserDf.get(sdtmCols.SUBJECT_ID, aeBrowserDf.currentRowIdx);
     aeBrowserHelper.currentAeDay = aeBrowserDf
-      .get(VIEWS_CONFIG[AE_BROWSER_VIEW_NAME][AE_START_DAY_FIELD], aeBrowserDf.currentRowIdx);
+      .get(studiesViewsConfigs[studyId].config[AE_BROWSER_VIEW_NAME][AE_START_DAY_FIELD],
+        aeBrowserDf.currentRowIdx);
     aeBrowserHelper.propertyPanel();
   });
   return {helper: aeBrowserHelper, df: aeBrowserDf};
@@ -38,11 +39,10 @@ export function addView(view: DG.ViewBase): DG.ViewBase {
 export function createClinCaseTableView(studyId: string, viewName: string): ClinCaseTableView {
   const tableView = createTableView(
     studyId,
-    TABLE_VIEWS[viewName].domainsAndColsToCheck,
+    getRequiredColumnsByView(studyId),
     viewName,
-    TABLE_VIEWS[viewName].helpUrl,
-    TABLE_VIEWS[viewName].createViewHelper,
-    TABLE_VIEWS[viewName].paramsForHelper,
+    TABLE_VIEWS_META[viewName].helpUrl,
+    TABLE_VIEWS_META[viewName].createViewHelper,
   );
   return {view: tableView.view, helper: tableView.helper};
 }
@@ -73,19 +73,9 @@ export function createTableView(
   return {helper: viewHelper, view: tableView};
 }
 
-export const TABLE_VIEWS = {
+export const TABLE_VIEWS_META = {
   [AE_BROWSER_VIEW_NAME]: {
-    domainsAndColsToCheck: {
-      'req_domains': {
-        'ae': {
-          'req': [
-            VIEWS_CONFIG[AE_BROWSER_VIEW_NAME][AE_TERM_FIELD],
-            VIEWS_CONFIG[AE_BROWSER_VIEW_NAME][AE_START_DAY_FIELD],
-            VIEWS_CONFIG[AE_BROWSER_VIEW_NAME][AE_END_DAY_FIELD],
-          ],
-        },
-      },
-    },
+    // eslint-disable-next-line max-len
     helpUrl: 'https://raw.githubusercontent.com/datagrok-ai/public/master/packages/ClinicalCase/views_help/ae_browser.md',
     createViewHelper: createAEBrowserHelper,
   },

@@ -1,19 +1,20 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, LAB_DAY, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N,
-  LAB_TEST, SUBJECT_ID, VISIT_DAY, VISIT} from '../constants/columns-constants';
-import {addColumnWithDrugPlusDosage, dynamicComparedToBaseline,
+  LAB_TEST, SUBJECT_ID, VISIT_DAY,
+  VISIT_DAY_STR} from '../constants/columns-constants';
+import {addColumnWithDrugPlusDosage, createVisitDayStrCol, dynamicComparedToBaseline,
   labDynamicComparedToMinMax, labDynamicRelatedToRef} from '../data-preparation/data-preparation';
 import {getUniqueValues, getVisitNamesAndDays} from '../data-preparation/utils';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
-import {_package} from '../package';
+import {_package, studiesViewsConfigs} from '../package';
 import {PATIENT_PROFILE_VIEW_NAME} from '../constants/view-names-constants';
 import {AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, CON_MED_END_DAY_FIELD, CON_MED_NAME_FIELD,
-  CON_MED_START_DAY_FIELD, INV_DRUG_END_DAY_FIELD, INV_DRUG_NAME_FIELD, INV_DRUG_START_DAY_FIELD,
-  VIEWS_CONFIG} from '../views-config';
+  CON_MED_START_DAY_FIELD, INV_DRUG_END_DAY_FIELD, INV_DRUG_NAME_FIELD,
+  INV_DRUG_START_DAY_FIELD,
+  VISIT_FIELD} from '../views-config';
 import { } from '../utils/utils';
 import {studies} from '../clinical-study';
-
 
 export class PatientProfileView extends ClinicalCaseViewBase {
   options: any;
@@ -39,6 +40,8 @@ export class PatientProfileView extends ClinicalCaseViewBase {
   }
 
   createView(): void {
+    if (studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD] === VISIT_DAY_STR)
+      createVisitDayStrCol(studies[this.studyId].domains.lb);
     this.tableNamesAndFields = this.getTableNamesAndFields();
     this.options = this.getOptions();
     const patientIds = Array.from(getUniqueValues(studies[this.studyId].domains.dm, SUBJECT_ID));
@@ -109,11 +112,14 @@ export class PatientProfileView extends ClinicalCaseViewBase {
   }
 
   private createLabBaselineVisitSelect() {
-    if (studies[this.studyId].domains.lb && [VISIT_DAY, VISIT]
-      .every((it) => studies[this.studyId].domains.lb.col(it) !== null)) {
-      this.visitNamesAndDays = getVisitNamesAndDays(studies[this.studyId].domains.lb, VISIT, VISIT_DAY);
+    if (studies[this.studyId].domains.lb &&
+        // eslint-disable-next-line max-len
+        [VISIT_DAY, studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD]].every((it) => studies[this.studyId].domains.lb.col(it) !== null)) {
+      this.visitNamesAndDays = getVisitNamesAndDays(studies[this.studyId].domains.lb,
+        studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD], VISIT_DAY);
       this.bl = this.visitNamesAndDays[0].name;
-      this.uniqueLabVisits = Array.from(getUniqueValues(studies[this.studyId].domains.lb, VISIT));
+      this.uniqueLabVisits = Array.from(getUniqueValues(studies[this.studyId].domains.lb,
+        studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD]));
       const blVisitChoices = ui.input.choice('Baseline', {value: this.bl, items: this.uniqueLabVisits});
       blVisitChoices.onChanged.subscribe((value) => {
         this.bl = value;
@@ -170,7 +176,8 @@ export class PatientProfileView extends ClinicalCaseViewBase {
     this.createSeries();
     if (this.getSeriesIndexByName('Drug Exposure') !== -1) {
       addColumnWithDrugPlusDosage(this.tables['ex'],
-        VIEWS_CONFIG[this.name][INV_DRUG_NAME_FIELD], INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, 'EXTRT_WITH_DOSE');
+        studiesViewsConfigs[this.studyId].config[this.name][INV_DRUG_NAME_FIELD],
+        INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, 'EXTRT_WITH_DOSE');
     }
 
     if (this.getSeriesIndexByName('Lab Values Line Chart') !== -1) {
@@ -221,12 +228,12 @@ export class PatientProfileView extends ClinicalCaseViewBase {
   private getTableNamesAndFields() {
     return {
       'lb': {'start': LAB_DAY},
-      'ae': {'start': VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][AE_START_DAY_FIELD],
-        'end': VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][AE_END_DAY_FIELD]},
-      'ex': {'start': VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_START_DAY_FIELD],
-        'end': VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_END_DAY_FIELD]},
-      'cm': {'start': VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][CON_MED_START_DAY_FIELD],
-        'end': VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][CON_MED_END_DAY_FIELD]},
+      'ae': {'start': studiesViewsConfigs[this.studyId].config[PATIENT_PROFILE_VIEW_NAME][AE_START_DAY_FIELD],
+        'end': studiesViewsConfigs[this.studyId].config[PATIENT_PROFILE_VIEW_NAME][AE_END_DAY_FIELD]},
+      'ex': {'start': studiesViewsConfigs[this.studyId].config[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_START_DAY_FIELD],
+        'end': studiesViewsConfigs[this.studyId].config[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_END_DAY_FIELD]},
+      'cm': {'start': studiesViewsConfigs[this.studyId].config[PATIENT_PROFILE_VIEW_NAME][CON_MED_START_DAY_FIELD],
+        'end': studiesViewsConfigs[this.studyId].config[PATIENT_PROFILE_VIEW_NAME][CON_MED_END_DAY_FIELD]},
     };
   }
 
@@ -269,7 +276,8 @@ export class PatientProfileView extends ClinicalCaseViewBase {
         },
       },
       {
-        req_cols: [SUBJECT_ID, LAB_DAY, LAB_TEST, LAB_RES_N, LAB_LO_LIM_N, LAB_HI_LIM_N, VISIT, VISIT_DAY],
+        req_cols: [SUBJECT_ID, LAB_DAY, LAB_TEST, LAB_RES_N, LAB_LO_LIM_N, LAB_HI_LIM_N,
+          studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD], VISIT_DAY],
         domain: 'lb',
         opts: {
           tableName: 'patient_lb',
@@ -337,17 +345,18 @@ export class PatientProfileView extends ClinicalCaseViewBase {
         },
       },
       {
-        req_cols: [SUBJECT_ID, VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][AE_TERM_FIELD],
-          VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][AE_START_DAY_FIELD],
-          VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][AE_END_DAY_FIELD]],
+        req_cols: [SUBJECT_ID, studiesViewsConfigs[this.studyId].config[PATIENT_PROFILE_VIEW_NAME][AE_TERM_FIELD],
+          studiesViewsConfigs[this.studyId].config[PATIENT_PROFILE_VIEW_NAME][AE_START_DAY_FIELD],
+          studiesViewsConfigs[this.studyId].config[PATIENT_PROFILE_VIEW_NAME][AE_END_DAY_FIELD]],
         domain: 'ae',
         opts: {
           tableName: 'patient_ae',
           title: 'Adverse Events',
           type: 'timeLine',
-          y: VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][AE_TERM_FIELD], // category column
-          x: [VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][AE_START_DAY_FIELD],
-            VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][AE_END_DAY_FIELD]], // [startTime, endTime]
+          y: studiesViewsConfigs[this.studyId].config[PATIENT_PROFILE_VIEW_NAME][AE_TERM_FIELD], // category column
+          x: [studiesViewsConfigs[this.studyId].config[PATIENT_PROFILE_VIEW_NAME][AE_START_DAY_FIELD],
+            // eslint-disable-next-line max-len
+            studiesViewsConfigs[this.studyId].config[PATIENT_PROFILE_VIEW_NAME][AE_END_DAY_FIELD]], // [startTime, endTime]
           yType: 'category',
           color: 'red', // color of marker
           markerShape: 'circle',
@@ -358,17 +367,17 @@ export class PatientProfileView extends ClinicalCaseViewBase {
         },
       },
       {
-        req_cols: [SUBJECT_ID, VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_NAME_FIELD],
-          VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_START_DAY_FIELD],
-          VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_END_DAY_FIELD]],
+        req_cols: [SUBJECT_ID, studiesViewsConfigs[this.studyId].config[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_NAME_FIELD],
+          studiesViewsConfigs[this.studyId].config[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_START_DAY_FIELD],
+          studiesViewsConfigs[this.studyId].config[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_END_DAY_FIELD]],
         domain: 'ex',
         opts: {
           tableName: 'patient_ex',
           title: 'Drug Exposure',
           type: 'timeLine',
           y: 'EXTRT_WITH_DOSE',
-          x: [VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_START_DAY_FIELD],
-            VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_END_DAY_FIELD]],
+          x: [studiesViewsConfigs[this.studyId].config[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_START_DAY_FIELD],
+            studiesViewsConfigs[this.studyId].config[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_END_DAY_FIELD]],
           yType: 'category',
           color: 'red',
           markerShape: 'circle',
@@ -379,17 +388,17 @@ export class PatientProfileView extends ClinicalCaseViewBase {
         },
       },
       {
-        req_cols: [SUBJECT_ID, VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][CON_MED_NAME_FIELD],
-          VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][CON_MED_START_DAY_FIELD],
-          VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][CON_MED_END_DAY_FIELD]],
+        req_cols: [SUBJECT_ID, studiesViewsConfigs[this.studyId].config[PATIENT_PROFILE_VIEW_NAME][CON_MED_NAME_FIELD],
+          studiesViewsConfigs[this.studyId].config[PATIENT_PROFILE_VIEW_NAME][CON_MED_START_DAY_FIELD],
+          studiesViewsConfigs[this.studyId].config[PATIENT_PROFILE_VIEW_NAME][CON_MED_END_DAY_FIELD]],
         domain: 'cm',
         opts: {
           tableName: 'patient_cm',
           title: 'Concomitant Medication',
           type: 'timeLine',
-          y: VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][CON_MED_NAME_FIELD],
-          x: [VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][CON_MED_START_DAY_FIELD],
-            VIEWS_CONFIG[PATIENT_PROFILE_VIEW_NAME][CON_MED_END_DAY_FIELD]],
+          y: studiesViewsConfigs[this.studyId].config[PATIENT_PROFILE_VIEW_NAME][CON_MED_NAME_FIELD],
+          x: [studiesViewsConfigs[this.studyId].config[PATIENT_PROFILE_VIEW_NAME][CON_MED_START_DAY_FIELD],
+            studiesViewsConfigs[this.studyId].config[PATIENT_PROFILE_VIEW_NAME][CON_MED_END_DAY_FIELD]],
           yType: 'category',
           color: 'red',
           markerShape: 'circle',

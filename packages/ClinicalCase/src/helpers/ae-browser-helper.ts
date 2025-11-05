@@ -6,9 +6,10 @@ import {dictToString, getNullOrValue} from '../data-preparation/utils';
 import {getSubjectDmData} from '../data-preparation/data-preparation';
 import {SEVERITY_COLOR_DICT} from '../constants/constants';
 import {updateDivInnerHTML} from '../utils/utils';
-import {AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG} from '../views-config';
+import {AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, TRT_ARM_FIELD} from '../views-config';
 import {AE_BROWSER_VIEW_NAME} from '../constants/view-names-constants';
 import {studies} from '../clinical-study';
+import {studiesViewsConfigs} from '../package';
 
 export class AEBrowserHelper {
   domains = ['ae', 'ex', 'cm'];
@@ -53,10 +54,15 @@ export class AEBrowserHelper {
         `${SUBJECT_ID} = ${this.currentSubjId}` :
         this.dyDomains.includes(domain) ?
           studies[this.studyId].domains[domain].col(`${domain.toUpperCase()}DY`) ?
-            `${SUBJECT_ID} = ${this.currentSubjId} and ${domain.toUpperCase()}DY < ${this.currentAeDay} and ${domain.toUpperCase()}DY > ${this.currentAeDay - this.daysPriorAe}` :
+            `${SUBJECT_ID} = ${this.currentSubjId} and ${domain
+              .toUpperCase()}DY < ${this.currentAeDay} and ${domain
+              .toUpperCase()}DY > ${this.currentAeDay - this.daysPriorAe}` :
             null :
-          [`${domain.toUpperCase()}STDY`, `${domain.toUpperCase()}ENDY`].every((it) => studies[this.studyId].domains[domain].col(it) !== null) ?
-            `${SUBJECT_ID} = ${this.currentSubjId} and ${domain.toUpperCase()}STDY < ${this.currentAeDay} and ${domain.toUpperCase()}ENDY > ${this.currentAeDay - this.daysPriorAe}` :
+          [`${domain.toUpperCase()}STDY`, `${domain
+            .toUpperCase()}ENDY`].every((it) => studies[this.studyId].domains[domain].col(it) !== null) ?
+            `${SUBJECT_ID} = ${this.currentSubjId} and ${domain
+              .toUpperCase()}STDY < ${this.currentAeDay} and ${domain
+              .toUpperCase()}ENDY > ${this.currentAeDay - this.daysPriorAe}` :
             null;
       if (condition) {
         this[domain] = studies[this.studyId].domains[domain]
@@ -83,10 +89,12 @@ export class AEBrowserHelper {
     if (this.aeToSelect.currentRowIdx !== -1) {
       const subjId = this.aeToSelect.get(SUBJECT_ID, this.aeToSelect.currentRowIdx);
       const title = ui.tooltip.bind(ui.label(subjId),
-        dictToString(getSubjectDmData(subjId, [AGE, SEX, RACE, VIEWS_CONFIG[this.name][TRT_ARM_FIELD]], this.studyId)));
+        dictToString(getSubjectDmData(subjId, [AGE, SEX, RACE,
+          studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD]], this.studyId)));
       const description = ui.divH([
-        ui.divText(String(this.aeToSelect.get(VIEWS_CONFIG[AE_BROWSER_VIEW_NAME][AE_TERM_FIELD],
-          this.aeToSelect.currentRowIdx).toLowerCase()))]);
+        ui.divText(String(this.aeToSelect
+          .get(studiesViewsConfigs[this.studyId].config[AE_BROWSER_VIEW_NAME][AE_TERM_FIELD],
+            this.aeToSelect.currentRowIdx).toLowerCase()))]);
 
       if (this.aeToSelect.columns.names().includes(AE_SEVERITY)) {
         const severity = this.aeToSelect.get(AE_SEVERITY, this.aeToSelect.currentRowIdx);
@@ -108,9 +116,11 @@ export class AEBrowserHelper {
       };
 
       const startEndDays = ui.tooltip.bind(
-        ui.label(`${getNullOrValue(this.aeToSelect, VIEWS_CONFIG[AE_BROWSER_VIEW_NAME][AE_START_DAY_FIELD],
+        ui.label(`${getNullOrValue(this.aeToSelect,
+          studiesViewsConfigs[this.studyId].config[AE_BROWSER_VIEW_NAME][AE_START_DAY_FIELD],
           this.aeToSelect.currentRowIdx)} - ${getNullOrValue(this.aeToSelect,
-          VIEWS_CONFIG[AE_BROWSER_VIEW_NAME][AE_END_DAY_FIELD], this.aeToSelect.currentRowIdx)}`),
+          studiesViewsConfigs[this.studyId].config[AE_BROWSER_VIEW_NAME][AE_END_DAY_FIELD],
+          this.aeToSelect.currentRowIdx)}`),
         `${getAeDate(AE_START_DATE)} - ${getAeDate(AE_END_DATE)}`);
 
 

@@ -6,7 +6,8 @@ import {ACTIVE_ARM_POSTTFIX, AE_PERCENT, ALT, AST, BILIRUBIN, DOMAINS_WITH_EVENT
 import {addDataFromDmDomain, dateDifferenceInDays, filterBooleanColumn, filterNulls} from './utils';
 import {AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AE_START_DATE, LAB_HI_LIM_N, LAB_LO_LIM_N,
   LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT, VISIT_DAY,
-  VISIT, VISIT_START_DATE} from '../constants/columns-constants';
+  VISIT, VISIT_START_DATE,
+  VISIT_DAY_STR} from '../constants/columns-constants';
 import {studies} from '../clinical-study';
 const {jStat} = require('jstat');
 
@@ -504,3 +505,15 @@ export function getSubjectBaselineDates(studyId: string) {
   return subjBaselineDates;
 }
 
+export function createVisitDayStrCol(df: DG.DataFrame) {
+  if (!df)
+    return;
+  if (!df.col(VISIT_DAY_STR)) {
+    const visitDayCol = df.col(VISIT_DAY);
+
+    if (visitDayCol) {
+      df.columns.addNewString(VISIT_DAY_STR)
+        .init((i) => visitDayCol.isNone(i) ? undefined : visitDayCol.get(i).toString());
+    }
+  }
+}

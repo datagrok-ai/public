@@ -1,11 +1,12 @@
 import * as DG from 'datagrok-api/dg';
-import {INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, INV_DRUG_NAME, SUBJECT_ID, VISIT,
+import {INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, INV_DRUG_NAME, SUBJECT_ID,
   VISIT_START_DATE} from '../constants/columns-constants';
 import {addColumnWithDrugPlusDosage} from '../data-preparation/data-preparation';
 
 export class StudyVisit {
   day = null;
   name = '';
+  visitFieldName = '';
   num: number;
   previsousVisitDay = null;
   totalPatients = 0;
@@ -19,9 +20,10 @@ export class StudyVisit {
   vsAtVisit: DG.DataFrame;
   extrtWithDoseColName = 'EXTRT_WITH_DOSE';
 
-  constructor(name?: string, day?: string) {
+  constructor(visitFieldName: string, name?: string, day?: string) {
     this.name = name;
     this.day = day;
+    this.visitFieldName = visitFieldName;
   }
 
   updateStudyVisit(domains: any, visitDay: number, visitName: string, previsousVisitDay: number) {
@@ -29,31 +31,31 @@ export class StudyVisit {
     this.name = visitName;
     this.previsousVisitDay = previsousVisitDay;
     this.visitDataframe = domains.sv.groupBy(domains.sv.columns.names())
-      .where(`${VISIT} = ${this.name}`)
+      .where(`${this.visitFieldName} = ${this.name}`)
       .aggregate();
     this.totalPatients = this.visitDataframe.getCol(SUBJECT_ID).stats.uniqueCount;
     this.minVisitDate = new Date(this.visitDataframe.getCol(VISIT_START_DATE).stats.min * 1e-3);
     this.maxVisitDate = new Date(this.visitDataframe.getCol(VISIT_START_DATE).stats.max * 1e-3);
     this.aeSincePreviusVisit = this.createEventSincePeviousVisitDf(domains['ae']);
     this.conmedSincePreviusVisit = this.createEventSincePeviousVisitDf(domains['cm']);
-    if (domains.ex && domains.ex.columns.names().includes(VISIT)) {
+    if (domains.ex && domains.ex.columns.names().includes(this.visitFieldName)) {
       const ex = domains.ex.clone();
       if (ex.columns.names().includes(INV_DRUG_NAME)) {
         addColumnWithDrugPlusDosage(ex, INV_DRUG_NAME,
           INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, this.extrtWithDoseColName);
       }
       this.exAtVisit = ex.groupBy(ex.columns.names())
-        .where(`${VISIT} = ${this.name}`)
+        .where(`${this.visitFieldName} = ${this.name}`)
         .aggregate();
     };
-    if (domains.lb && domains.lb.columns.names().includes(VISIT)) {
+    if (domains.lb && domains.lb.columns.names().includes(this.visitFieldName)) {
       this.lbAtVisit = domains.lb.groupBy(domains.lb.columns.names())
-        .where(`${VISIT} = ${this.name}`)
+        .where(`${this.visitFieldName} = ${this.name}`)
         .aggregate();
     };
-    if (domains.vs && domains.vs.columns.names().includes(VISIT)) {
+    if (domains.vs && domains.vs.columns.names().includes(this.visitFieldName)) {
       this.vsAtVisit = domains.vs.groupBy(domains.vs.columns.names())
-        .where(`${VISIT} = ${this.name}`)
+        .where(`${this.visitFieldName} = ${this.name}`)
         .aggregate();
     };
   }
