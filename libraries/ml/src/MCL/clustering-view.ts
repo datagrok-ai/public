@@ -67,7 +67,9 @@ export async function markovCluster(
     threshold, weights, aggregationMethod, metrics, distanceFnArgs, maxIterations, useWebGPU, inflate);
 
   const terminateSub = grok.events.onViewerClosed.subscribe((args) => {
-    if (args.args.viewer?.props?.title === sc.props.title && sc.type === args.args?.viewer?.type) {
+    const viewerRoot = args?.args?.viewer?.root;
+
+    if (viewerRoot && (sc.root === viewerRoot || viewerRoot.contains(sc.root))) {
       terminateSub.unsubscribe();
       mclWorker.terminate();
     }

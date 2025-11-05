@@ -112,8 +112,10 @@ export class MCLViewer extends DG.JsViewer {
       const res = await markovCluster(this.dataFrame, cols, options.metrics, options.weights,
         options.aggregationMethod, preprocessingFuncs, options.preprocessingFuncArgs, options.threshold,
         options.maxIterations, options.useWebGPU, options.inflate, options.minClusterSize, this.sc);
-      if (!res)
+      if (!res) {
+        this.reseolver();
         return;
+      }
       // if dataframe has datasync enabled, we should not save the lines, as they will be saved in the data sync
       if (this.dataFrame.getTag('.script') || !this.isDataFrameSavable()) {
         this.linesRenderer?.destroy();
