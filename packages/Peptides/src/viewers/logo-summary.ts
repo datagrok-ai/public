@@ -331,8 +331,8 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
         this.getProperty(`${LST_PROPERTIES.WEB_LOGO_AGGREGATION_COLUMN_NAME}`)?.set(this, activityColName);
       }
 
-      const potentialClusterCol = wu(this.dataFrame.columns.categorical)
-        .filter((col) => col.name?.toLowerCase().includes('cluster') && col.name != seqCol?.name && col.type !== DG.COLUMN_TYPE.BOOL)?.take(1)?.toArray()?.[0];
+      const potentialClusterCol = wu(this.dataFrame.columns)
+        .filter((col) => (col.isCategorical || col.type === DG.COLUMN_TYPE.INT) && col.name?.toLowerCase().includes('cluster') && col.name != seqCol?.name && col.type !== DG.COLUMN_TYPE.BOOL)?.take(1)?.toArray()?.[0];
       const clusterCol = potentialClusterCol ??
         wu(this.dataFrame.columns.categorical)
           .filter((col) => col.name != seqCol?.name && col.categories.length <= 50 && col.type !== DG.COLUMN_TYPE.BOOL)?.take(1)?.toArray()?.[0];
