@@ -430,6 +430,12 @@ export class JsViewer extends Viewer {
     return this.addProperty(propertyName, TYPE.STRING, defaultValue, options);
   }
 
+  protected choices<T extends string>(propertyType, defaultValue: T, choices: T[], options: { [key: string]: any } & IProperty | null = null): T {
+    options = options ?? {};
+    options['choices'] = choices;
+    return this.addProperty(propertyType, TYPE.STRING, defaultValue, options);
+  }
+
   /** Registers a string list property with the specified name and defaultValue */
   protected stringList(propertyName: ViewerPropertyType, defaultValue: string[] | null = null, options: { [key: string]: any } & IProperty | null = null): string[] {
     return this.addProperty(propertyName, TYPE.STRING_LIST, defaultValue, options);
