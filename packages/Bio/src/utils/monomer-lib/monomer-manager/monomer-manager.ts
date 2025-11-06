@@ -19,7 +19,7 @@ import {BioTags} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 //@ts-ignore
 import '../../../../css/monomer-manager.css';
 import {Subscription} from 'rxjs';
-
+import {STANDRARD_R_GROUPS} from './const';
 
 // columns of monomers dataframe, note that rgroups is hidden and will be displayed as separate columns
 export enum MONOMER_DF_COLUMN_NAMES {
@@ -69,6 +69,9 @@ export async function matchMoleculesWithMonomers(molDf: DG.DataFrame, molColName
   // first: stamdardize monomers
   const monomers = monomerLib.getMonomerSymbolsByType(polymerType).map((s) => monomerLib.getMonomer(polymerType, s)!).filter((m) => m && (m.smiles || m.molfile));
   const fixedMonomers = await standardiseMonomers(monomers);
+  fixedMonomers.forEach((m, i) => {
+    m.lib = monomers[i].lib;
+  });
   const unCappedMonomerSmilesMap = fixedMonomers.filter((m) => !!m.smiles).reduce((acc, m) => {
     acc[m.smiles] = {symbol: m.symbol, smiles: m.smiles, original: m.smiles, source: m.lib?.source}; return acc;
   }, {} as {[smiles: string]: {symbol: string, smiles: string, original: string | undefined, source: string | undefined}});
@@ -115,7 +118,15 @@ export async function matchMoleculesWithMonomers(molDf: DG.DataFrame, molColName
   for (let i = 0; i < canonicalizedMolecules.length; i++) {
     const mol = canonicalizedMolecules[i];
     if (!mol) continue;
-    const match = cappedMonomerSmilesMap[mol] ?? unCappedMonomerSmilesMap[mol];
+    let match = cappedMonomerSmilesMap[mol] ?? unCappedMonomerSmilesMap[mol];
+    if (!match) {
+      // try capping the molecule and matching again
+      const cappedMol = capSmiles(mol, STANDRARD_R_GROUPS);
+      if (cappedMol !== mol) {
+        const correctedMol = grok.chem.convert(cappedMol, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles);
+        match = cappedMonomerSmilesMap[correctedMol] ?? unCappedMonomerSmilesMap[correctedMol];
+      }
+    }
     if (match) {
       const matchSymbol = match.symbol;
       const sources = (duplicates[matchSymbol]?.length ?? 0) > 0 ? duplicates[matchSymbol].map((m) => m?.lib?.source).filter((s) => !!s).join(', ') : (match.source ?? '');

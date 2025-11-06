@@ -179,6 +179,37 @@ class FragmentGraph:
             for node in ordered_nodes
         ]
     
+    def is_cyclic(self) -> bool:
+        """
+        Detect if the peptide is cyclic.
+        A cyclic peptide has a peptide bond connecting the last residue back to near the beginning.
+        Handles cases where N-terminal caps (like 'ac' from Lys_Ac) create an extra fragment at position 0.
+        """
+        if len(self.nodes) < 3:
+            return False
+        
+        # Get ordered nodes
+        ordered = self.get_ordered_nodes()
+        if len(ordered) < 3:
+            return False
+        
+        # Get the last node ID
+        last_id = ordered[-1].id
+        
+        # For a cyclic peptide, the last residue should connect back to one of the first few residues
+        # (usually first, but could be second if there's an N-terminal cap like 'ac')
+        # Check if last node has a peptide bond to any of the first 3 nodes
+        first_few_ids = [ordered[i].id for i in range(min(3, len(ordered)))]
+        
+        for link in self.links:
+            if link.linkage_type == LinkageType.PEPTIDE:
+                # Check if link connects last node to one of the first few nodes
+                if (link.from_node_id == last_id and link.to_node_id in first_few_ids) or \
+                   (link.to_node_id == last_id and link.from_node_id in first_few_ids):
+                    return True
+        
+        return False
+    
     def __len__(self):
         return len(self.nodes)
     
@@ -221,8 +252,15 @@ class BondDetector:
     #GENERALIZATION ITEM: BOND PATTERNS SHOULD BE DERIVED FROM LIBRARY
     def __init__(self):
         # True peptide bond: C and N both in backbone (each bonded to carbons)
-        # Alpha carbons can be sp3 (X4) or sp2 (X3) for dehydroamino acids
-        self.peptide_bond = Chem.MolFromSmarts('[C;X3,X4]-[C;X3](=[O;X1])-[N;X3]-[C;X3,X4]')
+        # First carbon can be aliphatic or aromatic (for amino acids like NMe2Abz)
+        # Carbonyl carbon is sp2 (X3)
+        # Exclude if carbonyl is in a small ring (r5 or r6) to avoid cleaving lactams like Pyr
+        # !r5 = not in 5-membered ring, !r6 = not in 6-membered ring
+        # This preserves lactams but allows large macrocycles and proline (C=O outside ring)
+        # Nitrogen can be X2 (proline, imino) or X3 (standard amino, N-methyl)
+        # N-C bond can be single (-) or double (=) for imine bonds in dehydro amino acids
+        # Alpha carbon after N can be sp3 (X4) or sp2 (X3) for dehydroamino acids
+        self.peptide_bond = Chem.MolFromSmarts('[#6]-[C;X3;!r5;!r6](=[O;X1])-[N;X2,X3]~[C;X3,X4]')
         # True disulfide bond: S-S where each S is bonded to carbon (cysteine residues)
         self.disulfide_bond = Chem.MolFromSmarts('[C;X4]-[S;X2]-[S;X2]-[C;X4]')
         # Primary amine at N-terminus (can be NH2 or NH3+), alpha-C can be sp3 or sp2
@@ -265,7 +303,7 @@ class BondDetector:
             matches = mol.GetSubstructMatches(self.peptide_bond)
             for match in matches:
                 if len(match) >= 5:
-                    # Pattern: [C;X3,X4]-[C;X3](=[O;X1])-[N;X3]-[C;X3,X4]
+                    # Pattern: [C;X3,X4]-[C;X3](=[O;X1])-[N;X2,X3]~[C;X3,X4]
                     # match[0]=alpha-C (sp2 or sp3), match[1]=carbonyl-C, match[2]=O, match[3]=N, match[4]=next-alpha-C (sp2 or sp3)
                     c_atom = match[1]  # Carbonyl carbon
                     n_atom = match[3]  # Nitrogen
@@ -399,17 +437,16 @@ class FragmentProcessor:
             # Fragment the molecule
             fragmented_mol = Chem.FragmentOnBonds(mol, bond_indices, addDummies=True)
             
-            # Get fragments AND their atom mappings separately
-            fragments_tuple = Chem.GetMolFrags(
-                fragmented_mol, 
-                asMols=True, 
-                sanitizeFrags=True
-            )
-            fragments = list(fragments_tuple)
+            # Get fragments as molecules
+            fragments = Chem.GetMolFrags(fragmented_mol, asMols=True, sanitizeFrags=True)
+            
+            # Get atom mappings separately (which original atoms are in which fragment)
+            atom_mappings = Chem.GetMolFrags(fragmented_mol, asMols=False, fragsMolAtomMapping=True)
             
             # Store bond cleavage info for recovery - we'll use this to selectively re-fragment
             graph.cleaved_bond_indices = bond_indices
             graph.bond_info = bond_info
+            graph.atom_mappings = atom_mappings
             print(f"DEBUG: Created {len(fragments)} fragments, cleaved {len(bond_indices)} bonds")
 
             # Create nodes for each fragment
@@ -426,20 +463,45 @@ class FragmentProcessor:
                     graph.add_node(node)
                     fragment_nodes.append((i, node))
 
-            # Create links between fragments based on cleaved bonds
-            # For sequential peptide bonds
-            peptide_links = [b for b in bond_info if b[3] == LinkageType.PEPTIDE]
-            for i in range(len(fragment_nodes) - 1):
-                from_id, _ = fragment_nodes[i]
-                to_id, _ = fragment_nodes[i + 1]
-                link = FragmentLink(from_id, to_id, LinkageType.PEPTIDE)
-                graph.add_link(link)
+            # Create links between fragments based on the actual cleaved bonds
+            # Build mapping: original atom index → (fragment_idx, new_atom_idx_in_fragment)
+            atom_to_fragment_and_idx = {}
+            for frag_idx, original_atom_indices in enumerate(atom_mappings):
+                for new_idx_in_frag, original_atom_idx in enumerate(original_atom_indices):
+                    atom_to_fragment_and_idx[original_atom_idx] = (frag_idx, new_idx_in_frag)
             
-            # Add disulfide bridges (if any)
-            # TODO: Track which fragments contain the S atoms for proper linking
-            disulfide_links = [b for b in bond_info if b[3] == LinkageType.DISULFIDE]
-            # For now, disulfide bonds require more complex atom tracking
-            # This is a placeholder for future enhancement
+            print(f"DEBUG: Processing {len(bond_info)} cleaved bonds to create links")
+            print(f"DEBUG: atom_to_fragment_and_idx has {len(atom_to_fragment_and_idx)} entries")
+            
+            # For each cleaved bond, determine which fragments it connects
+            link_count = 0
+            for bond_idx, atom1_orig, atom2_orig, linkage_type in bond_info:
+                # Find which fragments contain these atoms and their new indices
+                frag1_info = atom_to_fragment_and_idx.get(atom1_orig)
+                frag2_info = atom_to_fragment_and_idx.get(atom2_orig)
+                
+                if frag1_info is None or frag2_info is None:
+                    print(f"DEBUG: Skipping bond atoms {atom1_orig}-{atom2_orig}: not found in fragments")
+                    continue
+                
+                frag1, atom1_new = frag1_info
+                frag2, atom2_new = frag2_info
+                    
+                # Create link even if both atoms are in same fragment (internal bond like in Phe_4Sdihydroorotamido)
+                # This creates a "self-link" that will be used during recovery to reconstruct the monomer
+                link = FragmentLink(frag1, frag2, linkage_type, 
+                                   from_atom_idx=atom1_new, to_atom_idx=atom2_new)
+                graph.add_link(link)
+                link_count += 1
+                
+                if frag1 == frag2:
+                    print(f"DEBUG: Link {link_count}: {linkage_type.value.upper()} SELF-LINK frag{frag1} "
+                          f"orig_atoms({atom1_orig}<->{atom2_orig}) frag_atoms({atom1_new}<->{atom2_new})")
+                else:
+                    print(f"DEBUG: Link {link_count}: {linkage_type.value.upper()} frag{frag1}<->frag{frag2} "
+                          f"orig_atoms({atom1_orig}<->{atom2_orig}) frag_atoms({atom1_new}<->{atom2_new})")
+            
+            print(f"DEBUG: Created {link_count} links total")
 
             return graph
 
@@ -472,6 +534,94 @@ class FragmentProcessor:
         except Exception:
             return None
 
+    def _reconstruct_fragment_with_links(self, node_ids: list, graph: FragmentGraph, 
+                                         links_to_exclude: list) -> Chem.Mol:
+        """
+        Reconstruct a molecule by combining multiple fragment nodes, using link information.
+        
+        Args:
+            node_ids: List of node IDs to merge
+            graph: The fragment graph
+            links_to_exclude: List of FragmentLink objects connecting the nodes to merge
+        
+        Returns:
+            Combined RDKit molecule, or None if reconstruction fails
+        """
+        if not node_ids or not hasattr(graph, 'original_mol'):
+            return None
+        
+        if not hasattr(graph, 'cleaved_bond_indices') or not hasattr(graph, 'bond_info'):
+            return None
+        
+        try:
+            # Find which bond indices correspond to the links we want to exclude
+            bonds_to_exclude_indices = []
+            
+            for link in links_to_exclude:
+                # Find the bond_info entry that matches this link's original atoms
+                # We need to find which bond connected these fragments
+                for bond_list_idx, (bond_idx, atom1, atom2, linkage_type) in enumerate(graph.bond_info):
+                    # Check if this bond connects the fragments in this link
+                    if hasattr(graph, 'atom_mappings'):
+                        # Find which fragments contain these atoms
+                        frag1 = None
+                        frag2 = None
+                        for frag_idx, atom_indices in enumerate(graph.atom_mappings):
+                            if atom1 in atom_indices:
+                                frag1 = frag_idx
+                            if atom2 in atom_indices:
+                                frag2 = frag_idx
+                        
+                        # If this bond connects the two fragments in the link, exclude it
+                        if (frag1 == link.from_node_id and frag2 == link.to_node_id) or \
+                           (frag1 == link.to_node_id and frag2 == link.from_node_id):
+                            bonds_to_exclude_indices.append(bond_list_idx)
+                            print(f"DEBUG: Excluding {linkage_type.value} bond at index {bond_list_idx} (atoms {atom1}<->{atom2})")
+                            break
+            
+            # Create new bond list excluding the bonds we want to keep
+            new_bond_indices = [
+                bond_idx for i, bond_idx in enumerate(graph.cleaved_bond_indices)
+                if i not in bonds_to_exclude_indices
+            ]
+            
+            print(f"DEBUG reconstruct: Original had {len(graph.cleaved_bond_indices)} cleaved bonds, "
+                  f"excluding {len(bonds_to_exclude_indices)} bonds, new list has {len(new_bond_indices)} bonds")
+            
+            # Re-fragment with the modified bond list
+            if not new_bond_indices:
+                # No bonds to cleave - return whole molecule
+                return graph.original_mol
+            
+            fragmented_mol = Chem.FragmentOnBonds(graph.original_mol, new_bond_indices, addDummies=True)
+            fragments = Chem.GetMolFrags(fragmented_mol, asMols=True, sanitizeFrags=True)
+            new_atom_mappings = Chem.GetMolFrags(fragmented_mol, asMols=False, fragsMolAtomMapping=True)
+            
+            # Find which new fragment contains atoms from our target nodes
+            # Look for the fragment that contains atoms from the first node we want to merge
+            sorted_nodes = sorted(node_ids)
+            first_node_atoms = set(graph.atom_mappings[sorted_nodes[0]])
+            
+            target_fragment_idx = None
+            for new_frag_idx, new_atoms in enumerate(new_atom_mappings):
+                # Check if this new fragment contains any atoms from our first target node
+                if first_node_atoms & set(new_atoms):
+                    target_fragment_idx = new_frag_idx
+                    break
+            
+            print(f"DEBUG reconstruct: Got {len(fragments)} fragments after re-fragmentation, "
+                  f"target_fragment_idx={target_fragment_idx}")
+            
+            if target_fragment_idx is not None and target_fragment_idx < len(fragments):
+                clean_frag = self._clean_fragment(fragments[target_fragment_idx])
+                return clean_frag if clean_frag else fragments[target_fragment_idx]
+            
+            return None
+        
+        except Exception as e:
+            print(f"DEBUG reconstruct: Exception: {e}")
+            return None
+    
     def _reconstruct_fragment(self, node_ids: list, graph: FragmentGraph) -> Chem.Mol:
         """
         Reconstruct a molecule by combining multiple fragment nodes.
@@ -581,7 +731,7 @@ class FragmentProcessor:
 
     def recover_unmatched_fragments(self, graph: FragmentGraph, matcher) -> bool:
         """
-        Try to recover unmatched fragments by merging with neighbors.
+        Try to recover unmatched fragments by merging with neighbors based on graph links.
         Returns True if any merges were successful.
         """
         # Identify unmatched nodes
@@ -603,33 +753,33 @@ class FragmentProcessor:
             if node_id not in graph.nodes:
                 continue
             
-            # Get neighbors
+            # Get neighbors from graph links (returns list of (neighbor_id, linkage_type))
             neighbors = graph.get_neighbors(node_id)
-            neighbor_ids = [n[0] for n in neighbors]
             
-            if not neighbor_ids:
+            if not neighbors:
+                print(f"DEBUG: Node {node_id} has no neighbors")
                 continue
             
-            # Separate left and right neighbors (assuming sequential order)
-            left_neighbors = [n for n in neighbor_ids if n < node_id]
-            right_neighbors = [n for n in neighbor_ids if n > node_id]
+            print(f"DEBUG: Node {node_id} neighbors: {[(n[0], n[1].value) for n in neighbors]}")
             
-            # Try merge combinations: left only, right only, both
-            merge_attempts = []
-            
-            if left_neighbors:
-                merge_attempts.append([left_neighbors[0], node_id])
-            if right_neighbors:
-                merge_attempts.append([node_id, right_neighbors[0]])
-            if left_neighbors and right_neighbors:
-                merge_attempts.append([left_neighbors[0], node_id, right_neighbors[0]])
-            
-            # Try each merge combination
-            for nodes_to_merge in merge_attempts:
-                print(f"DEBUG: Trying to merge nodes {nodes_to_merge}")
+            # Try merging with each individual neighbor first
+            for neighbor_id, linkage_type in neighbors:
+                if neighbor_id not in graph.nodes:
+                    continue
+                    
+                nodes_to_merge = sorted([node_id, neighbor_id])
+                print(f"DEBUG: Trying to merge nodes {nodes_to_merge} (via {linkage_type.value} bond)")
+                
+                # Find the links between nodes we're merging
+                links_to_exclude = []
+                for link in graph.links:
+                    from_in = link.from_node_id in nodes_to_merge
+                    to_in = link.to_node_id in nodes_to_merge
+                    if from_in and to_in:
+                        links_to_exclude.append(link)
                 
                 # Reconstruct combined molecule
-                combined_mol = self._reconstruct_fragment(nodes_to_merge, graph)
+                combined_mol = self._reconstruct_fragment_with_links(nodes_to_merge, graph, links_to_exclude)
                 if not combined_mol:
                     print(f"DEBUG: Failed to reconstruct molecule for {nodes_to_merge}")
                     continue
@@ -637,7 +787,7 @@ class FragmentProcessor:
                 print(f"DEBUG: Reconstructed mol with {combined_mol.GetNumAtoms()} atoms")
                 
                 # Count expected connections for this merged fragment
-                # Get all unique neighbors of the merged set
+                # Get all unique neighbors of the merged set (excluding internal connections)
                 all_neighbors = set()
                 for nid in nodes_to_merge:
                     if nid in graph.nodes:
@@ -655,7 +805,7 @@ class FragmentProcessor:
                 if monomer:
                     print(f"DEBUG: SUCCESS! Matched to {monomer.symbol}")
                     # Success! Create new merged node
-                    new_node_id = min(nodes_to_merge)  # Use lowest ID
+                    new_node_id = min(nodes_to_merge)
                     new_node = FragmentNode(new_node_id, combined_mol)
                     new_node.monomer = monomer
                     
@@ -663,9 +813,12 @@ class FragmentProcessor:
                     self._merge_nodes_in_graph(graph, nodes_to_merge, new_node)
                     
                     had_changes = True
-                    break  # Stop trying other combinations for this node
+                    break  # Stop trying other neighbors for this node
                 else:
                     print(f"DEBUG: No match found for merge {nodes_to_merge}")
+            
+            if had_changes:
+                break  # Restart from beginning after a successful merge
         
         return had_changes
 
@@ -710,30 +863,69 @@ class HELMGenerator:
         ordered_nodes = graph.get_ordered_nodes()
         sequence_symbols = [node.monomer.symbol if node.monomer else "X" for node in ordered_nodes]
         
-        # Generate linear peptide notation
-        sequence = ".".join(sequence_symbols)
+        # Check if cyclic
+        is_cyclic = graph.is_cyclic()
         
-        # Check for disulfide bridges or other non-peptide bonds
-        has_special_bonds = any(
-            link.linkage_type != LinkageType.PEPTIDE 
-            for link in graph.links
-        )
+        # Generate sequence notation
+        if is_cyclic:
+            # Cyclic: wrap multi-letter monomers in brackets, single-letter ones stay as-is
+            formatted_symbols = [f"[{symbol}]" if len(symbol) > 1 else symbol for symbol in sequence_symbols]
+            sequence = ".".join(formatted_symbols)
+        else:
+            # Linear: no brackets
+            sequence = ".".join(sequence_symbols)
         
-        if has_special_bonds:
-            # Add connection notation for disulfide bridges
-            connections = []
-            for link in graph.links:
-                if link.linkage_type == LinkageType.DISULFIDE:
-                    # Format: PEPTIDE1,PEPTIDE1,from_idx:R3-to_idx:R3
-                    connections.append(
-                        f"PEPTIDE1,PEPTIDE1,{link.from_node_id + 1}:R3-{link.to_node_id + 1}:R3"
-                    )
+        # Collect non-sequential connections (disulfide bridges, cyclic bonds, etc.)
+        connections = []
+        
+        if is_cyclic:
+            # Find the actual cyclic peptide bond (last residue connects back to beginning)
+            # This handles cases where N-terminal caps (like 'ac') are at position 1
+            last_id = ordered_nodes[-1].id
+            first_few_ids = [ordered_nodes[i].id for i in range(min(3, len(ordered_nodes)))]
             
-            if connections:
-                connection_str = "|".join(connections)
-                helm = f"PEPTIDE1{{{sequence}}}${connection_str}$$$V2.0"
-            else:
-                helm = f"PEPTIDE1{{{sequence}}}$$$$"
+            for link in graph.links:
+                if link.linkage_type == LinkageType.PEPTIDE:
+                    # Check if this is the cyclic bond (last to one of first few)
+                    is_cyclic_bond = False
+                    from_id, to_id = None, None
+                    
+                    if link.from_node_id == last_id and link.to_node_id in first_few_ids:
+                        from_id, to_id = link.from_node_id, link.to_node_id
+                        is_cyclic_bond = True
+                    elif link.to_node_id == last_id and link.from_node_id in first_few_ids:
+                        from_id, to_id = link.to_node_id, link.from_node_id
+                        is_cyclic_bond = True
+                    
+                    if is_cyclic_bond:
+                        # Find positions (1-indexed)
+                        from_pos = next((i + 1 for i, n in enumerate(ordered_nodes) if n.id == from_id), None)
+                        to_pos = next((i + 1 for i, n in enumerate(ordered_nodes) if n.id == to_id), None)
+                        
+                        if from_pos and to_pos:
+                            connections.append(f"PEPTIDE1,PEPTIDE1,{from_pos}:R2-{to_pos}:R1")
+                            break
+        
+        # Add disulfide bridges
+        for link in graph.links:
+            if link.linkage_type == LinkageType.DISULFIDE:
+                # Get positions in ordered sequence (1-indexed)
+                from_pos = None
+                to_pos = None
+                for i, node in enumerate(ordered_nodes):
+                    if node.id == link.from_node_id:
+                        from_pos = i + 1
+                    if node.id == link.to_node_id:
+                        to_pos = i + 1
+                
+                if from_pos and to_pos:
+                    # Format: PEPTIDE1,PEPTIDE1,from_pos:R3-to_pos:R3
+                    connections.append(f"PEPTIDE1,PEPTIDE1,{from_pos}:R3-{to_pos}:R3")
+        
+        # Generate final HELM notation
+        if connections:
+            connection_str = "|".join(connections)
+            helm = f"PEPTIDE1{{{sequence}}}${connection_str}$$$V2.0"
         else:
             helm = f"PEPTIDE1{{{sequence}}}$$$$"
         
