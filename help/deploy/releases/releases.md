@@ -9,6 +9,43 @@ keywords:
 
 See details: [issues](release-history.md), [plugin changelogs](plugins/plugins.mdx), [JS API compatibility](compatibility/compatibility.mdx)
 
+## 1.26.7 || 2025-Nov
+
+### Developer updates
+
+* Fixed Databrics schema browser
+
+### Service compatible versions
+
+| Service                | Version          |
+|------------------------|------------------|
+| Grok Connect           | 2.5.3 or higher  |
+| Grok Pipe              | 1.0.1 or higher  |
+| Grok Spawner           | 1.11.7 or higher |
+| RabbitMQ               | 4.0.5-management |
+| Jupyter Kernel Gateway | 1.16.2 or higher |
+
+## 1.26.6 || 2025-Oct
+
+### Developer updates
+
+* Added support for IAP short token format.
+* Added the ability to move and copy files in Google Cloud Storage.
+* Fixed:
+  * CSV parsing issue in Google Cloud Storage
+  * OpenID autologin behavior
+  * GPU machine selection priority for Docker containers
+
+### Service compatible versions
+
+| Service                | Version          |
+|------------------------|------------------|
+| Grok Connect           | 2.5.2 or higher  |
+| Grok Pipe              | 1.0.1 or higher  |
+| Grok Spawner           | 1.11.7 or higher |
+| RabbitMQ               | 4.0.5-management |
+| Jupyter Kernel Gateway | 1.16.2 or higher |
+
 ## 1.26.5 || 2025-Oct
 
 ### Developer updates
