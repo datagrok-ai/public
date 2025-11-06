@@ -4,8 +4,12 @@
 4. On the scatterplot viewer, click the **Gear** icon. The **Context Panel** opens.
 5. Go to the **Data** info panel and check all the properties, including the following:
     1. Tables switching (SPGI-linked1, SPGI-linked2, SPGI)
-    2. **Zoom and Filter** with different options (check when zooming in and out, combine with changing range sliders)
-    3. Check `pack and zoom by filter`
+    2. **Zoom and Filter** with different options:
+        - Check when zooming in and out
+        - Combine with changing range sliders
+        - Set high jitter values, pan the scatterplot and check the consistency of filtering and points visibility
+        - While jitter values are high, use some filtering and set **Zoom and Filter** to `zoom by filter` and `pack and zoom by filter`
+        - Check `pack and zoom by filter` with other settings
     4. Save to Layout. Check
     5. Set **Filter** to `${CAST Idea ID} <636500` , set color coding by Series, and set different options for **Legend Visibility** and **Legend Position**. Arbitrary change some other settings
 6. Go to the **X** and **Y** info panels and check all the properties, including the following:
