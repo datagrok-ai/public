@@ -21,6 +21,23 @@ See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
 
+## 2025-11-03 Datagrok 1.26.7 release
+
+* Fixed Databrics schema browser
+
+## 2025-10-31 Datagrok 1.26.6 release
+
+### Improvements:
+
+* Added support for IAP short token format.
+* Added the ability to move and copy files in Google Cloud Storage.
+
+### Fixed:
+
+* CSV parsing issue in Google Cloud Storage
+* OpenID autologin behavior
+* GPU machine selection priority for Docker containers
+
 ## 2025-10-22 Datagrok 1.26.5 release
 
 ### Improvements and fixes:
