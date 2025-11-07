@@ -41,7 +41,7 @@ async function createDummyPlates() {
         {name: 'Sample', choices: ['GRK-1', 'GRK-2', 'GRK-3', 'GRK-4', 'GRK-5', 'GRK-6'], type: DG.COLUMN_TYPE.STRING, is_required: true}
       ]
     });
-    createCcPlates = true; 
+    createCcPlates = true;
   } else {
     console.log('"Cell counting" template found.');
     const ccPlatesCheck = await grok.data.db.query('Plates:Plts', `
@@ -53,7 +53,7 @@ async function createDummyPlates() {
     `);
     if (ccPlatesCheck.rowCount === 0) {
       console.log('No plates found for "Cell counting", creating them...');
-      createCcPlates = true; 
+      createCcPlates = true;
     }
   }
 
@@ -81,7 +81,7 @@ async function createDummyPlates() {
         {name: 'Activity', min: 0, max: 100, type: DG.COLUMN_TYPE.FLOAT, is_required: true},
       ]
     });
-    createDrPlates = true; 
+    createDrPlates = true;
   } else {
     console.log('"Dose-response" template found.');
     const drPlatesCheck = await grok.data.db.query('Plates:Plts', `

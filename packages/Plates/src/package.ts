@@ -182,32 +182,21 @@ static async importPlateXlsx(fileContent: Uint8Array): Promise<any[]> {
 private static autoDetectDrcMappings(plate: Plate): Map<string, string> {
   const mappings = new Map<string, string>();
   const columnNames = plate.data.columns.names();
-  const activityCandidates = ['activity', 'response', 'readout', 'value', 'signal', 'raw data'];
-  for (const candidate of activityCandidates) {
-    const found = columnNames.find((name) => name.toLowerCase().includes(candidate));
-    if (found) {
-      mappings.set('Activity', found);
-      break;
-    }
-  }
 
-  const concCandidates = ['concentration', 'conc', 'dose', 'concentrations'];
-  for (const candidate of concCandidates) {
-    const found = columnNames.find((name) => name.toLowerCase().includes(candidate));
-    if (found) {
-      mappings.set('Concentration', found);
-      break;
+  const detect = (target: string, candidates: string[]) => {
+    const lower = columnNames.map((c) => c.toLowerCase());
+    for (const cand of candidates) {
+      const idx = lower.findIndex((name) => name.includes(cand));
+      if (idx !== -1) {
+        mappings.set(target, columnNames[idx]);
+        break;
+      }
     }
-  }
+  };
 
-  const sampleCandidates = ['sample', 'compound', 'id', 'name', 'layout', 'plate layout'];
-  for (const candidate of sampleCandidates) {
-    const found = columnNames.find((name) => name.toLowerCase().includes(candidate));
-    if (found) {
-      mappings.set('SampleID', found);
-      break;
-    }
-  }
+  detect('Activity', ['activity', 'response', 'readout', 'value', 'signal', 'raw data']);
+  detect('Concentration', ['concentration', 'conc', 'dose', 'concentrations']);
+  detect('SampleID', ['sample', 'compound', 'id', 'name', 'layout', 'plate layout']);
 
   return mappings;
 }

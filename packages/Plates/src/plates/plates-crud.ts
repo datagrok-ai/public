@@ -262,16 +262,16 @@ function getPlateSearchSql(query: PlateQuery): string {
     const selectedGroup = groupCondition?.group;
     const propertyConditions = conditions.filter((c) => c.property);
 
-    let groupsArray: string = '';
-    let hasGroupFilter = false;
+    let groupsArray = '';
+    const groups = selectedGroup ?
+      (Array.isArray(selectedGroup) ? selectedGroup : [selectedGroup]) :
+      [];
 
-    if (selectedGroup) {
-      const groups = Array.isArray(selectedGroup) ? selectedGroup : [selectedGroup];
-      if (groups.length > 0) {
-        hasGroupFilter = true;
-        groupsArray = groups.map((g) => `'${g.replace(/'/g, '\'\'')}'`).join(',');
-      }
-    }
+    const hasGroupFilter = groups.length > 0;
+
+    if (hasGroupFilter)
+      groupsArray = groups.map((g) => `'${g.replace(/'/g, '\'\'')}'`).join(',');
+
     let analysisSubClauses: string[] = [];
 
     for (const condition of propertyConditions) {

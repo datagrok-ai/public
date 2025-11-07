@@ -153,8 +153,6 @@ export function createPlatesView(): DG.View {
     stateManager
   );
 
-
-
   stateManager.onStateChange$.subscribe(async (event) => {
     const activePlate = stateManager.activePlate;
     if (activePlate)

@@ -80,29 +80,20 @@ export class DrcAnalysis extends AnalysisBase {
     if (curveCol)
       curveCol.semType = 'fit';
 
-    const ic50Col = resultDf.col('IC50');
-    if (ic50Col)
-      ic50Col.meta.format = '0.000';
+    const columnFormats: Record<string, string> = {
+      'IC50': '0.000',
+      'Hill Slope': '0.00',
+      'R Squared': '0.000',
+      'Min': '0.00',
+      'Max': '0.00',
+      'AUC': '0.00',
+    };
 
-    const hillSlopeCol = resultDf.col('Hill Slope');
-    if (hillSlopeCol)
-      hillSlopeCol.meta.format = '0.00';
-
-    const rSquaredCol = resultDf.col('R Squared');
-    if (rSquaredCol)
-      rSquaredCol.meta.format = '0.000';
-
-    const minCol = resultDf.col('Min');
-    if (minCol)
-      minCol.meta.format = '0.00';
-
-    const maxCol = resultDf.col('Max');
-    if (maxCol)
-      maxCol.meta.format = '0.00';
-
-    const aucCol = resultDf.col('AUC');
-    if (aucCol)
-      aucCol.meta.format = '0.00';
+    for (const [name, format] of Object.entries(columnFormats)) {
+      const col = resultDf.col(name);
+      if (col)
+        col.meta.format = format;
+    }
 
     return resultDf;
   }

@@ -241,13 +241,17 @@ export class DoseRatioAnalysis extends AnalysisBase {
     if (curveCol)
       curveCol.semType = 'fit';
 
-    const minCol = resultDf.col('Min Value');
-    if (minCol)
-      minCol.meta.format = '0.00';
+    const formats: Record<string, string> = {
+      'Min Value': '0.00',
+      'Max Value': '0.00',
+      'Mean Value': '0.000',
+    };
 
-    const maxCol = resultDf.col('Max Value');
-    if (maxCol)
-      maxCol.meta.format = '0.00';
+    for (const [name, fmt] of Object.entries(formats)) {
+      const col = resultDf.col(name);
+      if (col)
+        col.meta.format = fmt;
+    }
 
     return resultDf;
   }
