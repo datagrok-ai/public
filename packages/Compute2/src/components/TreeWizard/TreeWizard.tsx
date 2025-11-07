@@ -132,6 +132,14 @@ export const TreeWizard = Vue.defineComponent({
     // actions
     ////
 
+    // after step change we need to reveal the current view
+    const revealCurrent = () => {
+      if (!chosenStepState.value)
+        return;
+      if (isFuncCallState(chosenStepState.value)) rfvHidden.value = false;
+      if (!isFuncCallState(chosenStepState.value)) pipelineViewHidden.value = false;
+    }
+
     const runActionWithConfirmation = (uuid: string) => {
       const calledAction = chosenStepState.value?.actions?.find((action) => action.uuid === uuid);
       const confirmationMessage = calledAction?.confirmationMessage;
@@ -149,14 +157,6 @@ export const TreeWizard = Vue.defineComponent({
         .add(ui.markdown(`Do you want to update input values to consistent ones and rerun substeps? You will lose inconsistent values.`))
         .onOK(() => runSequence(startUuid, rerunWithConsistent))
         .show({center: true, modal: true});
-    };
-
-    const goNextStep = () => {
-      if (chosenStepUuid.value == null || treeState.value == null)
-        return;
-      const nextData = findNextStep(chosenStepUuid.value, treeState.value);
-      if (nextData)
-        chosenStepUuid.value = nextData.state.uuid;
     };
 
     const saveSubTreeState = (uuid: string) => {
@@ -185,11 +185,20 @@ export const TreeWizard = Vue.defineComponent({
       dialog.show({center: true, width: 500});
     };
 
+    const goNextStep = () => {
+      if (chosenStepUuid.value == null || treeState.value == null)
+        return;
+      const nextData = findNextStep(chosenStepUuid.value, treeState.value);
+      if (nextData) {
+        chosenStepUuid.value = nextData.state.uuid;
+        revealCurrent();
+      }
+    };
+
     const onPipelineProceed = () => {
       if (chosenStepState.value && !isFuncCallState(chosenStepState.value)) {
-        if (isFuncCallState(chosenStepState.value.steps[0])) rfvHidden.value = false;
-        if (!isFuncCallState(chosenStepState.value.steps[0])) pipelineViewHidden.value = false;
         chosenStepUuid.value = chosenStepState.value.steps[0].uuid;
+        revealCurrent();
       }
     };
 
