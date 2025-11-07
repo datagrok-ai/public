@@ -90,12 +90,17 @@ export class PlateStateManager {
 
   async setTemplate(template: PlateTemplate): Promise<void> {
     this.currentTemplate = template;
+
+    // Initialize template state if it doesn't exist, but preserve source data
     if (!this.templateStates.has(template.id)) {
       this.templateStates.set(template.id, {
         plates: [],
         activePlateIdx: -1,
       });
+      if (this.sourceDataFrame)
+        await this.processPlatesForCurrentTemplate();
     }
+
     this.onStateChange$.next({
       type: 'template-changed',
       templateId: template.id,
@@ -122,13 +127,27 @@ export class PlateStateManager {
   }
 
   async loadDataFrame(df: DG.DataFrame): Promise<void> {
+    // Reset everything when new file is uploaded
+    this.resetState();
+
     this.sourceDataFrame = df;
     this.autodetectIdentifierColumn();
-    await this.processPlates();
+    await this.processPlatesForCurrentTemplate();
   }
 
+  private resetState(): void {
+    // Clear all template states and mappings
+    this.templateStates.clear();
+    this.plateMappings.clear();
+    this.identifierColumns = [];
 
-  async processPlates(): Promise<void> {
+    this.templateStates.set(this.currentTemplate.id, {
+      plates: [],
+      activePlateIdx: -1,
+    });
+  }
+
+  private async processPlatesForCurrentTemplate(): Promise<void> {
     if (!this.sourceDataFrame) return;
 
     const parsedPlateResults = parsePlates(this.sourceDataFrame, this.identifierColumns);
@@ -153,14 +172,14 @@ export class PlateStateManager {
 
   public addIdentifierColumn(): void {
     this.identifierColumns.push(null);
-    this.processPlates();
+    this.processPlatesForCurrentTemplate();
     this.onStateChange$.next({type: 'identifier-changed'});
   }
 
   public removeIdentifierColumn(index: number): void {
     if (index >= 0 && index < this.identifierColumns.length) {
       this.identifierColumns.splice(index, 1);
-      this.processPlates();
+      this.processPlatesForCurrentTemplate();
       this.onStateChange$.next({type: 'identifier-changed'});
     }
   }
@@ -168,7 +187,7 @@ export class PlateStateManager {
   public setIdentifierColumn(index: number, columnName: string | null): void {
     if (index >= 0 && index < this.identifierColumns.length) {
       this.identifierColumns[index] = columnName;
-      this.processPlates();
+      this.processPlatesForCurrentTemplate();
     }
   }
 
@@ -180,7 +199,6 @@ export class PlateStateManager {
       state.activePlateIdx = index;
     else
       state.activePlateIdx = -1;
-
 
     this.onStateChange$.next({
       type: 'plate-selected',

@@ -17,34 +17,26 @@ import {getPlatesFolderPreview} from './plate/plates-folder-preview';
 import {PlateTemplateHandler} from './plates/objects/plate-template-handler';
 import * as api from './package-api';
 import {PlateWidget} from './plate/plate-widget/plate-widget';
-
+import {DrcAnalysis} from './plate/analyses/drc/drc-analysis';
 export const _package = new DG.Package();
 
 
-// //tags: autostart
-// export async function autostart(): Promise<void> {
-// }
-
-export class Sync {
-  private static _currentPromise: Promise<any> = Promise.resolve();
-  public static async runWhenDone<T>(func: () => Promise<T>): Promise<T> {
-    Sync._currentPromise = Sync._currentPromise.then(async () => { try { return await func(); } catch (e) { _package.logger.error(e); } });
-    return Sync._currentPromise;
-  }
-  // the number at the end is the column version
+//tags: autostart
+export async function autostart(): Promise<void> {
+  await PackageFunctions.createDummyPlateData();
 }
 
 
 export class PackageFunctions {
-  // @grok.decorators.func({
-  //   name: 'Assay Plates',
-  //   description: 'Assasy plates with concentration, layout and readout data',
-  //   meta: {demoPath: 'Curves | Assay Plates'},
-  // })
-  // static async assayPlatesDemo(): Promise<void> {
-  //   const plateFile = (await grok.dapi.files.list('System:DemoFiles/hts/xlsx_plates'))[0];
-  //   grok.shell.addView(await PackageFunctions.previewPlateXlsx(plateFile) as DG.ViewBase);
-  // }
+  @grok.decorators.func({
+    name: 'Assay Plates',
+    description: 'Assasy plates with concentration, layout and readout data',
+    meta: {demoPath: 'Plates | Assay Plates'},
+  })
+  static async assayPlatesDemo(): Promise<void> {
+    const plateFile = (await grok.dapi.files.list('System:DemoFiles/hts/xlsx_plates'))[0];
+    grok.shell.addView(await PackageFunctions.previewPlateXlsx(plateFile) as DG.ViewBase);
+  }
 
   @grok.decorators.init()
   static async _initPlates(): Promise<void> {
@@ -130,19 +122,132 @@ export class PackageFunctions {
 
 
 @grok.decorators.func({
-  name: 'checkCsvIsPlate',
-  description: 'Checks if a CSV file can be parsed as a plate.'
+  name: 'checkExcelIsPlate',
+  description: 'Checks if an Excel file contains plate data.'
 })
-  static async checkCsvIsPlate(file: DG.FileInfo): Promise<boolean> {
+  static async checkExcelIsPlate(content: Uint8Array): Promise<boolean> {
     try {
-      const contentSample = await file.readAsString();
-      const firstLine = contentSample.substring(0, contentSample.indexOf('\n')).toLowerCase();
-      const commonHeaders = ['well', 'position', 'pos'];
-      return commonHeaders.some((h) => firstLine.includes(h));
-    } catch {
+      if (content.length > 1_000_000) // haven't seen plate files larger than 1MB
+        return false;
+      const plate = await PackageFunctions.parseExcelPlate(content);
+      return plate !== null;
+    } catch (e) {
       return false;
     }
   }
+
+static async parseExcelPlate(content: string | Uint8Array, name?: string): Promise<Plate> {
+  if (typeof content === 'string') {
+    const blob = new Blob([content], {type: 'application/octet-binary'});
+    const buf = await blob.arrayBuffer();
+    return await Plate.fromExcel(new Uint8Array(buf), name);
+  } else {
+    return await Plate.fromExcel(content, name);
+  }
+}
+
+@grok.decorators.fileHandler({outputs: [], ext: 'xlsx', fileViewerCheck: 'Plates:checkExcelIsPlate'})
+static async importPlateXlsx(fileContent: Uint8Array): Promise<any[]> {
+  const view = DG.View.create();
+  const plate = await PackageFunctions.parseExcelPlate(fileContent);
+
+  const plateWidget = PlateWidget.fromPlate(plate);
+  const initialMappings = PackageFunctions.autoDetectDrcMappings(plate);
+  const drcAnalysis = new DrcAnalysis();
+  const analysisView = drcAnalysis.createView(
+    plate,
+    plateWidget,
+    initialMappings,
+    (target: string, source: string) => {
+      // Handle mapping changes
+      initialMappings.set(target, source);
+    },
+    (target: string) => {
+      initialMappings.delete(target);
+    }
+  );
+
+  const container = ui.divV([
+    plateWidget.root,
+    analysisView
+  ], 'xlsx-plate-container');
+
+  view.root.appendChild(container);
+  view.name = 'Plate';
+  grok.shell.addView(view);
+  return [];
+}
+
+// this is a basic solution to make the demo files work. Perhaps this should be a Plate-specific registry of bespoke "heuristics" in the future.
+private static autoDetectDrcMappings(plate: Plate): Map<string, string> {
+  const mappings = new Map<string, string>();
+  const columnNames = plate.data.columns.names();
+
+  const detect = (target: string, candidates: string[]) => {
+    const lower = columnNames.map((c) => c.toLowerCase());
+    for (const cand of candidates) {
+      const idx = lower.findIndex((name) => name.includes(cand));
+      if (idx !== -1) {
+        mappings.set(target, columnNames[idx]);
+        break;
+      }
+    }
+  };
+
+  detect('Activity', ['activity', 'response', 'readout', 'value', 'signal', 'raw data']);
+  detect('Concentration', ['concentration', 'conc', 'dose', 'concentrations']);
+  detect('SampleID', ['sample', 'compound', 'id', 'name', 'layout', 'plate layout']);
+
+  return mappings;
+}
+
+@grok.decorators.fileViewer({name: 'viewPlateXlsx', fileViewer: 'xlsx', fileViewerCheck: 'Plates:checkExcelIsPlate'})
+static async previewPlateXlsx(file: DG.FileInfo): Promise<DG.View> {
+  const view = DG.View.create();
+  view.name = file.friendlyName;
+  const plate = await PackageFunctions.parseExcelPlate(await file.readAsBytes());
+
+  const plateWidget = PlateWidget.fromPlate(plate);
+
+  const initialMappings = PackageFunctions.autoDetectDrcMappings(plate);
+
+  // Create DRC analysis
+  const drcAnalysis = new DrcAnalysis();
+  const analysisView = drcAnalysis.createView(
+    plate,
+    plateWidget,
+    initialMappings,
+    (target: string, source: string) => {
+      initialMappings.set(target, source);
+    },
+    (target: string) => {
+      initialMappings.delete(target);
+    }
+  );
+
+  const container = ui.divV([
+    plateWidget.root,
+    analysisView
+  ], 'xlsx-plate-container');
+
+  view.root.appendChild(container);
+  return view;
+}
+
+@grok.decorators.func({
+  name: 'checkCsvIsPlate',
+  description: 'Checks if a CSV file can be parsed as a plate.'
+})
+static async checkCsvIsPlate(file: DG.FileInfo): Promise<boolean> {
+  try {
+    const contentSample = await file.readAsString();
+    const firstLine = contentSample.substring(0, contentSample.indexOf('\n')).toLowerCase();
+    const commonHeaders = ['well', 'position', 'pos'];
+    return commonHeaders.some((h) => firstLine.includes(h));
+  } catch {
+    return false;
+  }
+}
 
 
   @grok.decorators.func()
@@ -171,6 +276,10 @@ export class PackageFunctions {
 
   @grok.decorators.func()
   static async createDummyPlateData(): Promise<void> {
-    await __createDummyPlateData();
+    try {
+      await __createDummyPlateData();
+    } catch (e) {
+      throw e;
+    }
   }
 }

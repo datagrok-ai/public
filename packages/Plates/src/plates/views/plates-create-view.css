@@ -30,11 +30,6 @@
     min-height: 0;
 }
 
-.assay-plates--create-plate-view .ui-split-h > *:not(.ui-split-h-divider) {
-    flex: 1;
-    min-width: 0;
-}
-
 .assay-plates--create-plate-view .ui-split-v > *:not(.ui-split-v-divider) {
     flex: 1;
     min-height: 0;

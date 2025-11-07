@@ -153,10 +153,6 @@ export function createPlatesView(): DG.View {
     stateManager
   );
 
-
-  templatePanel.root.style.minWidth = '350px';
-  templatePanel.root.style.maxWidth = '600px';
-
   stateManager.onStateChange$.subscribe(async (event) => {
     const activePlate = stateManager.activePlate;
     if (activePlate)
