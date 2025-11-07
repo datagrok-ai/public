@@ -595,8 +595,12 @@ export class FittingView {
 
   private acceptIcon = ui.iconFA('ballot-check', async () => {
     const choiceItems = Array.from({length: this.currentFuncCalls.length}, (_, i) => i + 1);
-    let chosenItem = -1;
-    const input = ui.input.choice('Select fitting', {items: choiceItems, onValueChanged: (x) => chosenItem = x});
+    if (choiceItems.length === 0) {
+      grok.shell.warning("No fittings");
+      return;
+    }
+    let chosenItem = 1;
+    const input = ui.input.choice('Select fitting', {items: choiceItems, value: chosenItem, onValueChanged: (x) => chosenItem = x});
     const confirmed = await new Promise((resolve, _reject) => {
       ui.dialog({title: 'Accept fitting'})
         .add(ui.div([input]))
