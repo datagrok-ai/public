@@ -19,7 +19,8 @@ import {
 export type MutationCliffsOptions = {
   maxMutations?: number,
   minActivityDelta?: number,
-  filter?: Uint32Array
+  filter?: Uint32Array,
+  singlePosition?: {position: number}
 };
 
 /**

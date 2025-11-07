@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.26.1 (2025-11-07)
+
+* Sequence mutation cliffs viewer: Initial release
+
 ## 1.26.0 (2025-11-05)
 
 * Full filter reactivity for all panels, tooltips, aggregations and viewers

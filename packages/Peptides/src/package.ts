@@ -18,6 +18,7 @@ import {ClusterMaxActivityViewer} from './viewers/cluster-max-activity-viewer';
 import {LSTPieChartRenderer} from './utils/cell-renderer';
 import {PeptideUtils} from './peptideUtils';
 import {SequencePositionStatsViewer} from './viewers/position-statistics-viewer';
+import {MutationCliffsViewer} from './viewers/mutation-cliffs-viewer';
 
 let monomerWorks: MonomerWorks | null = null;
 let treeHelper: ITreeHelper;
@@ -191,6 +192,17 @@ export class PackageFunctions {
   })
   static mostPotentResidues(): DG.Viewer {
     return new MostPotentResidues();
+  }
+
+  @grok.decorators.func({
+    meta: {icon: 'files/icons/sequence-statistics-viewer.svg'},
+    tags: ['viewer'],
+    name: 'Sequence Mutation Cliffs',
+    description: 'Mutation Cliffs Line Chart',
+    outputs: [{type: 'viewer', name: 'result'}],
+  })
+  static mutationCliffs(): DG.Viewer {
+    return new MutationCliffsViewer();
   }
 
 

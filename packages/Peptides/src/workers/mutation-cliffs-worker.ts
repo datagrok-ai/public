@@ -1,8 +1,11 @@
+/* eslint-disable max-len */
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 onmessage = async (event): Promise<void> => {
   const {startIdx, endIdx, activityArray, monomerInfoArray, settings} = event.data;
   const filterArray: Uint32Array = settings.filter;
+  const singlePosition: {position: number} | undefined = settings.singlePosition;
+  const singlePositionIndex = singlePosition ? singlePosition.position : -1;
   const filter = filterArray ? new BitArray(filterArray, filterArray.length * 32) : null;
 
   const pos: string[] = [];
@@ -25,14 +28,15 @@ onmessage = async (event): Promise<void> => {
       if (Math.abs(delta) >= settings.minActivityDelta) {
         let substCounterFlag = false;
         let tempDataIdx = 0;
-        for (const monomerInfo of monomerInfoArray) {
+        for (let positionIndex = 0; positionIndex < monomerInfoArray.length; positionIndex++) {
+          const monomerInfo = monomerInfoArray[positionIndex];
           const seq1categoryIdx = monomerInfo.rawData[seq1Idx];
           const seq2categoryIdx = monomerInfo.rawData[seq2Idx];
           if (seq1categoryIdx === seq2categoryIdx)
             continue;
 
           substCounter++;
-          substCounterFlag = substCounter > settings.maxMutations;
+          substCounterFlag = substCounter > settings.maxMutations || (singlePositionIndex !== -1 && positionIndex !== singlePositionIndex);
           if (substCounterFlag)
             break;
 
