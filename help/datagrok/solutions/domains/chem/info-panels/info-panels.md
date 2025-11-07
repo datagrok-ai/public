@@ -3,24 +3,28 @@ title: Info panes for chemical data
 ---
 
 The [info panes](../../../../navigation/panels/info-panels.md) are displayed
-automatically in the **Context Panel** when you select a molecule in a dataset.
+automatically in the **Context Panel** when you select a molecule or mixture in a dataset.
 
-|Panel|Description|
-|-----|-----------|
-|Gasteiger partial charges | [RDKit-based script](https://dev.datagrok.ai/script/7acf813d-4f65-51f2-bc3f-503cde26c460) |  
-|Descriptors |The following descriptors are shown by default:<br/><li>FractionCSP3</li><li>HeavyAtomCount</li><li>NHOHCount</li><br/> To calculate other descriptors, click the **SELECT** button and choose from the list. The info pane updates accordingly|
-|Properties | Shows molecular properties, such as formula, molecular weight, LogP, and others|
-| Databases | Depending on the plugins installed, allows to search by substructure or similarity in databases like ChEMBL, Chemspace, DrugBank, PubChem, as well as the Enamine store catalog |
-|Drug likeness | [Calculates drug likeness](drug-likeness.md) and displays the results  |
-|Structural alerts | [Calculates and displays structural alerts](structural-alerts.md)  |
-|Toxicity | [Calculates toxicity](toxicity-risks.md) and displays the results  |
-|ADME/Tox | [Calculates ADMET](https://github.com/datagrok-ai/public/tree/master/packages/Admetica). In addition, the **Summary** info pane visualizes ADMET in a pie chart |
-|Identifiers | Calculates identifiers like SMILES, InChi, ChEMBL ID, etc.|
-|3D Structure| Shows an interactive 3D view of the molecule|
-|2D Structure| Shows a 2D view of the molecule|
-| Retrosynthesis|Shows the most efficient synthetic pathways and commercially available starting materials for your target molecules (based on [AiZynthFinder](https://github.com/MolecularAI/aizynthfinder))|
-|CDD Vault|Shows vault data for the current molecule|
-|SureChEMBL|Shows patent information for target molecule based on similarity or substructure search|
+|Semantic type <div style={{ width:120 }}></div>|Panel <div style={{ width:90 }}></div>|Description <div style={{ width:700 }}></div>|
+|-----|-----|-----------|
+|Molecule|Gasteiger partial charges | [RDKit-based script](https://dev.datagrok.ai/script/7acf813d-4f65-51f2-bc3f-503cde26c460) |  
+|Molecule|Descriptors |The following descriptors are shown by default:<br/><li>FractionCSP3</li><li>HeavyAtomCount</li><li>NHOHCount</li><br/> To calculate other descriptors, click the **SELECT** button and choose from the list. The info pane updates accordingly|
+|Molecule|Properties | Shows molecular properties, such as formula, molecular weight, LogP, and others|
+|Molecule| Retrosynthesis|Shows the most efficient synthetic pathways and commercially available starting materials for your target molecules (based on [AiZynthFinder](https://github.com/MolecularAI/aizynthfinder))|
+|Molecule| Databases | Depending on the plugins installed, allows to search by substructure or similarity in databases like ChEMBL, Chemspace, DrugBank, PubChem, as well as the Enamine store catalog |
+|Molecule|CDD Vault|Shows vault data for the current molecule|
+|Molecule|SureChEMBL|Shows patent information for target molecule based on similarity or substructure search|
+|Molecule|AutoDock | Displays docking results for molecules that have undergone AutoDock analysis |
+|Molecule|Drug likeness | [Calculates drug likeness](drug-likeness.md) and displays the results  |
+|Molecule|Structural alerts | [Calculates and displays structural alerts](structural-alerts.md)  |
+|Molecule|Toxicity | [Calculates toxicity](toxicity-risks.md) and displays the results  |
+|Molecule|Admetica | [Calculates ADMET](https://github.com/datagrok-ai/public/tree/master/packages/Admetica). In addition, the **Summary** info pane visualizes ADMET in a pie chart |
+|Molecule|DiffDock | Provides an interactive interface for running molecular docking using NVIDIA's DiffDock model |
+|Molecule|Identifiers | Calculates identifiers like SMILES, InChi, ChEMBL ID, etc.|
+|Molecule|3D Structure| Shows an interactive 3D view of the molecule|
+|Molecule|2D Structure| Shows a 2D view of the molecule|
+|ChemicalMixture|Mixture | Displays all mixture components with their properties, such as structure, name, relation, quantity, units, ratio, standard error, hierarchy level, and parent mixture name|
+|ChemicalMixture|Mixture Tree | Shows the mixture structure as a hierarchical tree with the mixfile version and all nested components |
 
 <br/>
 
