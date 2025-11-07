@@ -21,6 +21,10 @@ category('Viewers: Basic', () => {
     await PeptideUtils.loadComponents();
 
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
+    const clusterCol = df.col('cluster')!.convertTo(DG.COLUMN_TYPE.STRING);
+    clusterCol!.name = 'cluster';
+    df.columns.remove('cluster');
+    df.columns.add(clusterCol!);
     await delay(500);
   });
 
