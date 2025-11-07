@@ -98,6 +98,8 @@ export class MutationCliffsViewer extends DG.JsViewer {
   private _dfSubs: Subscription[] = [];
 
   private async calculateDf() {
+    if (!this.dataFrame || !this.activityColumnName || !this.sequenceColumnName || !this.position)
+      throw new Error('Activity column or Sequence column is not set, or position is invalid');
     const mutationCliffs = await this.mutationCliffsData;
     const uniqueIndexes = new Set<number>();
     mutationCliffs.cliffs.forEach((positionMap) => {
@@ -233,6 +235,8 @@ export class MutationCliffsViewer extends DG.JsViewer {
   public get positionColumns(): DG.Column[] {
     if (this._positionColumns)
       return this._positionColumns;
+    if (!this.dataFrame)
+      return [];
     // try to find model and its position columns if the SAR was run
     const peptidesModel = PeptidesModel.getInstance(this.dataFrame);
     const posCols = peptidesModel?.positionColumns;
@@ -357,6 +361,7 @@ export class MutationCliffsViewer extends DG.JsViewer {
     super.detach();
     this._dfSubs.forEach((s) => s.unsubscribe());
     this._dfSubs = [];
+    clearTimeout(this._debounceTimer);
   }
 
 
