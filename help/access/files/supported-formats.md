@@ -26,6 +26,7 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 | `.h5`              | File format       | Hierarchical data in HDF5                      | --                 |
 | `.nc`, `.netcdf`     | File format       | NetCDF scientific data file                      | --                 |
 | `.sas7bdat`        | File format       | SAS database file                              | --                 |
+| `.xpt`             | File format       | SAS Transport Format (XPORT)                   | [Clinical Case]     |
 | `.kxl`             | File format       | KeyCreator engineering data format                 | --                 |
 
 ### Columnar and database formats
@@ -166,7 +167,7 @@ Datagrok supports over 50 file formats, including domain-specific like SDF, FAST
 
 | Format <div style={{ width:90 }}></div> | Type <div style={{ width:150 }}></div> | Description <div style={{ width:400 }}></div> | Required plugins <div style={{ width:75 }}></div> |
 |------------------|-------------------|------------------------------------------------------------------|----------------------|
-| `.csv`             | Data structure       | SDTM-formatted datasets (auto-detected from folder structure)   | [Clinical Case]      |
+| `.csv`, `.xpt`             | Data structure       | SDTM-formatted datasets (auto-detected from folder structure)   | [Clinical Case]      |
 
 ### Geospatial formats
 
