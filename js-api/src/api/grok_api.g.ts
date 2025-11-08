@@ -343,12 +343,15 @@ export interface IDartApi {
   grok_Form_Get_RowIdx(form: any): any;
   grok_Form_Get_State(form: any): any;
   grok_Form_Set_State(form: any, state: String): any;
-  grok_LineChartViewer_activeFrame(s: any): any;
+  grok_LineChartViewer_activeFrame(l: any): any;
   grok_LineChartViewer_ResetView(l: any): any;
+  grok_LineChartViewer_EnableAnnotationRegionDrawing(l: any, lassoMode: Bool, onAfterDraw: any): any;
+  grok_LineChartViewer_DisableAnnotationRegionDrawing(l: any): any;
   grok_BarChartViewer_ResetView(b: any): any;
   grok_BoxPlotViewer_ResetView(b: any): any;
   grok_FormulaLineHelper_SetDefaultParams(formulaItem: any): any;
   grok_FormulaLineHelper_GetMeta(formulaItem: any): any;
+  grok_FormulaLineHelper_GetMetaByFormula(formula: String, type: String): any;
   grok_CanvasViewer_RunPostponedComputations(v: any): any;
   grok_Widget_RegisterCleanup(element: any, cleanup: any): any;
   grok_Widget_Get_Root(widget: any): any;

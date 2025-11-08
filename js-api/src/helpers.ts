@@ -41,8 +41,8 @@ export interface AnnotationRegion {
   fillColor?: string;
   outlineWidth?: number;
   outlineColor?: number;
-  x?: string;
-  y?: string;
+  xMap?: string;
+  yMap?: string;
   hidden?: boolean;
   description?: string;
   opacity?: number;
@@ -53,6 +53,8 @@ export interface AnnotationRegion {
  * Represents an area annotation region (defined by polygon points) parameters.
  */
 export interface AreaAnnotationRegion extends AnnotationRegion {
+  x?: string;
+  y?: string;
   area?: string;
 }
 
@@ -134,6 +136,8 @@ export abstract class FormulaLinesHelper {
   static setDefaults(item: FormulaLine): FormulaLine { return toJs(api.grok_FormulaLineHelper_SetDefaultParams(item)); }
 
   static getMeta(item: FormulaLine): FormulaLineMeta { return toJs(api.grok_FormulaLineHelper_GetMeta(item)); }
+
+  static getMetaByFormula(formula: string, type: string): FormulaLineMeta { return toJs(api.grok_FormulaLineHelper_GetMetaByFormula(formula, type)); }
 }
 
 export abstract class AnnotationRegionsHelper {

@@ -19,10 +19,9 @@ const enum ITEM_CAPTION {
   HORZ_LINE = 'Line - Horizontal',
   HORZ_BAND = 'Band - Horizontal',
   VERT_BAND = 'Band - Vertical',
-  POINT_AREA = 'Region - Point Area',
-  FORMULA_AREA = 'Region - Formula Area',
-  RECT_AREA = 'Region - Draw Rectangular area',
-  POLYGON_AREA = 'Region - Draw Polygonal Area (Using Lasso)',
+  FORMULA_REGION = 'Region - Formula Lines',
+  RECT_REGION = 'Region - Draw Rectangle',
+  POLYGON_REGION = 'Region - Draw Lasso',
 }
 
 const enum ITEM_ORIENTATION {
@@ -280,7 +279,8 @@ class Table {
         item.header = this.dataFrame.get('title', this.currentItemIdx);
         item.hidden = !this.dataFrame.get('visible', this.currentItemIdx);
         if (item.type === ITEM_TYPE.AREA_REGION_ANNOTATION) {
-          const data = this.dataFrame.get('formula', this.currentItemIdx).replace(`(${item.x}, ${item.y}): `, '');
+          const data = this.dataFrame.get('formula', this.currentItemIdx)
+            .replace(`(${(item as DG.AreaAnnotationRegion).x}, ${(item as DG.AreaAnnotationRegion).y}): `, '');
           try {
             (item as DG.AreaAnnotationRegion).area = JSON.parse(data || '[]');
           }
@@ -379,7 +379,7 @@ export interface EditorOptions {
  * Scatter Plot viewer by default.
  */
 class Preview {
-  public viewer: DG.ScatterPlotViewer | DG.Viewer<DG.ILineChartSettings>;
+  public viewer: DG.ScatterPlotViewer | DG.LineChartViewer;
   public dataFrame: DG.DataFrame;
   
   /** Original data frame (used for line chart to validate columns).*/
@@ -420,25 +420,55 @@ class Preview {
 
   /** Sets the current axes of the preview Scatter Plot by column names */
   private set axes(names: AxisNames) {
-    if (names && names.y && this.dataFrame.getCol(names.y))
-      this.viewer.setOptions(this.viewer.type === DG.VIEWER.LINE_CHART
-      ? {yColumnNames: [names.y]}
-      : {y: names.y, yMap: names.yMap});
-    
-    const xColName = this.viewer.type === DG.VIEWER.LINE_CHART && names.xMap && names.x
-      && this.originalDataFrame?.col(names.x)?.type === DG.TYPE.DATE_TIME
-        ? `${names.x} ${names.xMap}`
-        : names.x ?? '';
+    const options: {  [x: string]: any} = {};
+    if (names?.y && this.dataFrame.getCol(names.y))
+      if (this.viewer.type === DG.VIEWER.LINE_CHART)
+        options['yColumnNames'] = [names.y]
+      else {
+        options['yColumnName'] = names.y;
+        options['yMap'] = names.yMap;
+      }
 
-    if (names && names.x && this.dataFrame.getCol(xColName))
-      this.viewer.setOptions({xMap: names.xMap, x: xColName});
+    if (names?.x && this.dataFrame.getCol(names.x)) {
+      options['xColumnName'] = names.x;
+      options['xMap'] = names.xMap;
+    }
+
+    this.viewer.setOptions(options);
   }
 
   /**
    * Extracts the axes names from the formula. If possible, adjusts the axes
    * of the formula to the axes of the original scatterplot.
    */
-  private getItemAxes(item: DG.FormulaLine): AxisNames {
+  private getItemAxes(axesItem: EditorItem): AxisNames {
+    if (isAnnotationRegionType(axesItem.type)) {
+      if (axesItem.type === ITEM_TYPE.AREA_REGION_ANNOTATION)
+        return {
+          y: (axesItem as DG.AreaAnnotationRegion).y,
+          x: (axesItem as DG.AreaAnnotationRegion).x,
+          yMap: (axesItem as DG.AreaAnnotationRegion).yMap,
+          xMap: (axesItem as DG.AreaAnnotationRegion).xMap,
+        };
+      
+        const item = axesItem as DG.FormulaAnnotationRegion;
+        const meta1 = item.formula1
+          ? DG.FormulaLinesHelper.getMetaByFormula(item.formula1, ITEM_TYPE.LINE)
+          : null;
+
+        const meta2 = item.formula2
+          ? DG.FormulaLinesHelper.getMetaByFormula(item.formula2, ITEM_TYPE.LINE)
+          : null;
+        
+        return {
+          y: meta1?.funcName ?? meta2?.funcName,
+          x: meta1?.argName ?? meta2?.argName,
+          yMap: item.yMap,
+          xMap: item.xMap,
+        };
+    }
+
+    const item = axesItem as DG.FormulaLine;
     const itemMeta = DG.FormulaLinesHelper.getMeta(item);
     const result: AxisNames = {
       y: item.orientation === ITEM_ORIENTATION.VERTICAL ? itemMeta.argName : itemMeta.funcName,
@@ -500,27 +530,28 @@ class Preview {
       throw 'Host is not DataFrame or Viewer.';
 
     if (src instanceof DG.Viewer && src.getOptions()['type'] === DG.VIEWER.LINE_CHART)
-      this.viewer = DG.Viewer.lineChart(this.dataFrame, {
+      this.viewer = new DG.LineChartViewer(((window ?? global.window) as any).grok_Viewer_LineChart(this.dataFrame.dart, DG._toJson({
         yAxisType: src.props.yAxisType,
         xAxisType: src.props.xAxisType,
         invertXAxis: src.props.invertXAxis,
         showLabels: 'Never',
         showDataframeFormulaLines: false,
         showViewerFormulaLines: true,
+        showDataframeAnnotationRegions: false,
+        showViewerAnnotationRegions: true,
         showContextMenu: false,
         axesFollowFilter: false,
         axisFont: '11px Arial',
         legendVisibility: DG.VisibilityMode.Never,
         xAxisHeight: 25,
-      });
+      })));
     else {
       this.viewer = DG.Viewer.scatterPlot(this.dataFrame, {
         ...(src as DG.ScatterPlotViewer).props,
         yAxisType: src instanceof DG.Viewer && src.getOptions()['type'] === DG.VIEWER.SCATTER_PLOT ? src.props.yAxisType : 'linear',
         xAxisType: src instanceof DG.Viewer && src.getOptions()['type'] === DG.VIEWER.SCATTER_PLOT ? src.props.xAxisType : 'linear',
         invertXAxis: src instanceof DG.Viewer && src.getOptions()['type'] === DG.VIEWER.SCATTER_PLOT ? src.props.invertXAxis : false,
-        invertYAxis: src instanceof DG.Viewer && src.getOptions()['type'] === DG.VIEWER.SCATTER_PLOT ?
-          src.props.invertYAxis : false,
+        invertYAxis: src instanceof DG.Viewer && src.getOptions()['type'] === DG.VIEWER.SCATTER_PLOT ? src.props.invertYAxis : false,
         showDataframeFormulaLines: false,
         showViewerFormulaLines: true,
         showDataframeAnnotationRegions: false,
@@ -562,7 +593,11 @@ class Preview {
     /** If there are no lines, try to set the axes as in the original Scatter Plot. */
     if (itemIdx < 0 && this.srcAxes)
       this.axes = this.srcAxes;
-
+    
+    const clearMeta = (): void => {
+      this.viewer.meta.annotationRegions.clear();
+      this.viewer.meta.formulaLines.clear();  
+    }
 
     if (isFormulaLine) {
       try {
@@ -572,13 +607,12 @@ class Preview {
         previewItem.visible = true;
   
         /** Trying to show the item */
-        this.viewer.meta.annotationRegions.clear();
-        this.viewer.meta.formulaLines.clear();
+        clearMeta();
         this.viewer.meta.formulaLines.add(previewItem);
         this.axes = this.getItemAxes(previewItem);
         return true;
       } catch {
-        this.viewer.meta.formulaLines.clear();
+        clearMeta();
         return false;
       }
     } else {
@@ -589,17 +623,12 @@ class Preview {
         previewItem.hidden = false;
   
         /** Trying to show the item */
-        this.viewer.meta.formulaLines.clear();
-        this.viewer.meta.annotationRegions.clear();
+        clearMeta();
         this.viewer.meta.annotationRegions.add(previewItem);
-
-        if (item.type === ITEM_TYPE.AREA_REGION_ANNOTATION)
-          this.axes = { x: item.x, y: item.y };          
-
-        // this.axes = this.getItemAxes(previewItem);
+        this.axes = this.getItemAxes(previewItem);
         return true;
       } catch {
-        this.viewer.meta.annotationRegions.clear();
+        clearMeta();
         return false;
       }
     }
@@ -654,15 +683,12 @@ class Editor {
     const mainPane = ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px', overflowX: 'auto'}});
     const formatPane = ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px', overflowX: 'auto'}});
     const descriptionPane = ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px', overflowX: 'auto'}});
-    const pointsPane = item.type === ITEM_TYPE.AREA_REGION_ANNOTATION
-      ? ui.div([], {classes: 'ui-form', style: {marginLeft: '-20px', overflowX: 'auto'}})
-      : null;
 
     /** Preparing the "Main" panel */
     if (item.type === ITEM_TYPE.AREA_REGION_ANNOTATION) {
       mainPane.append(this.inputAreaColumn(itemIdx, 'x'));
       mainPane.append(this.inputAreaColumn(itemIdx, 'y'));
-      pointsPane?.append(this.areaPointsInput(itemIdx));
+      mainPane?.append(this.areaPointsInput(itemIdx));
     } else {
       mainPane.append(this.inputAnnotationFormula(itemIdx, 'formula1'));
       mainPane.append(this.inputAnnotationFormula(itemIdx, 'formula2'));
@@ -682,9 +708,6 @@ class Editor {
     /** Creating the accordion */
     const combinedPanels = ui.accordion();
     combinedPanels.addPane(item.type === ITEM_TYPE.AREA_REGION_ANNOTATION ? 'Area' : 'Formula', () => mainPane, true);
-    if (pointsPane)
-      combinedPanels.addPane('Area', () => pointsPane, false);
-
     combinedPanels.addPane('Format', () => formatPane, true);
     combinedPanels.addPane('Description', () => descriptionPane, true);
 
@@ -1021,75 +1044,28 @@ class Editor {
 
   private areaPointsInput(itemIdx: number): HTMLElement {
     const item = this.annotationRegionItems[itemIdx] as DG.AreaAnnotationRegion;
-    // Points may contain same x coordinates that are treated as
-    // different input value key, so points should be created manually
-    const values = ({ ...(item?.area?.map(p => p[1]?.toString() ?? '') ?? []) });
+    const value = item.area ? JSON.stringify(item.area).replaceAll(',', ', ') :  '';
+    const textArea = ui.input.textArea('Points', {
+      value: value.substring(1, value.length - 1),
+      onValueChanged: (value) => {
+        try {
+          var parsed = JSON.parse(`[${value}]`);
+          if (!Array.isArray(parsed))
+            return;
+          
+          item.area = parsed.filter((p) => Array.isArray(p) && p.length == 2
+            && typeof p[0] === 'number' && typeof p[1] === 'number');
 
-    // Create a function to apply styles that we can reuse
-    const applyStyles = (root: HTMLElement) => {
-      // Apply styles to improve the layout
-      root.setAttribute('style', 'width: 100%; max-width: none;');
-      root.classList.add('area-points-map');
+          this.onItemChangedAction(itemIdx, false);
+        } catch { /** Invalid input isn't handled */ }
+      }});
 
-      // Style all rows and inputs
-      root.querySelectorAll('tr').forEach((tr) => {
-        const [ xTd, yTd ] = Array.from(tr.querySelectorAll('td'));
-        const [ xInput, yInput ] = [xTd, yTd].map(td => td.querySelector('input.ui-input-editor') as HTMLInputElement | null);
-        
-        // Set equal widths for X and Y input cells
-        xTd?.setAttribute('style', 'width: 50%; padding-right: 4px;');
-        yTd?.setAttribute('style', 'width: 50%; padding-left: 4px;');
-        
-        // Style the input fields for better fit and center alignment
-        xInput?.setAttribute('style', 'width: 100%; box-sizing: border-box; text-align: center;');
-        yInput?.setAttribute('style', 'width: 100%; box-sizing: border-box; text-align: center;');
+    const elDescription = textArea.input as HTMLInputElement;
+    elDescription.setAttribute('style',
+      'height: 75px; font-family: inherit; font-size: inherit;');
+    // 'width: 194px; height: 40px; padding-left: 6px; margin-right: -8px; font-family: inherit; font-size: inherit;');
 
-        if (xInput && !xInput.dataset.coordsSet) {
-          xInput.value = item?.area?.[parseInt(xInput.value)]?.[0]?.toString() ?? '';
-          xInput.dataset.coordsSet = 'true';
-        }
-      });
-
-      // Add custom styles for the delete button column
-      root.querySelectorAll('td:last-child').forEach((td) => {
-        td.setAttribute('style', 'width: 24px; padding-left: 8px;');
-      });
-    };
-
-    const pointsMap = ui.input.map('Points', {
-      value: values as any,
-      onValueChanged: () => {
-        // First apply styles to any new elements
-        applyStyles(pointsMap.root);
-
-        // Then update the data model
-        const points: [number, number][] = [];
-        pointsMap.root.querySelectorAll('tr').forEach((tr) => {
-          const [ xInput, yInput ]: HTMLInputElement[] = Array.from(tr.querySelectorAll('td input.ui-input-editor'));
-          const x = parseFloat(xInput?.value);
-          const y = parseFloat(yInput?.value);
-          if (!isNaN(x) && !isNaN(y))
-            points.push([x, y]);
-        });
-
-        item.area = points;
-        this.onItemChangedAction(itemIdx, false);
-      },
-    });
-
-    // Add CSS for input alignment
-    const style = document.createElement('style');
-    style.textContent = `
-      .area-points-map input.ui-input-editor {
-        text-align: center;
-      }
-    `;
-    pointsMap.root.appendChild(style);
-    
-    // Initial style application
-    applyStyles(pointsMap.root);
-
-    return pointsMap.root;
+    return textArea.root;
   }
   
 
@@ -1115,10 +1091,17 @@ class Editor {
   private inputAreaColumn(itemIdx: number, type: 'x' | 'y'): HTMLElement {
     const item = this.annotationRegionItems[itemIdx] as DG.AreaAnnotationRegion;
 
-    //@ts-ignore
-    const ibColumn2 = ui.input.column(type.toUpperCase() + ' column', {table: this.dataFrame, value: this.dataFrame.col(item[type]),
+    const mapKey = type + 'Map' as keyof DG.AreaAnnotationRegion;
+    const itemCol = item[type] ?? '';
+    const colName = item[mapKey] && itemCol && itemCol.endsWith(item[mapKey] as string)
+      ? itemCol.substring(0, itemCol.length - (item[mapKey] as string).length - 1)
+      : item[type];
+
+    const ibColumn2 = ui.input.column(type.toUpperCase() + ' column', {
+      table: this.dataFrame,
+      value: this.dataFrame.col(colName ?? '') ?? undefined,
       onValueChanged: (value) => {
-        item[type] = value.name;
+        item[type] = item[mapKey] && value?.name ? `${value.name} ${item[mapKey]}` : value?.name;
         this.onItemChangedAction(itemIdx, false);
       }});
       
@@ -1245,8 +1228,8 @@ class CreationControl {
 
     this.popupMenu = (valY?: number, valX?: number) => {
       const onClickAction = (itemCaption: string) => {
-        if (itemCaption === ITEM_CAPTION.POLYGON_AREA || itemCaption === ITEM_CAPTION.RECT_AREA) {
-          createArea?.(itemCaption === ITEM_CAPTION.POLYGON_AREA).then((region: DG.AnnotationRegion | null) => {
+        if (itemCaption === ITEM_CAPTION.POLYGON_REGION || itemCaption === ITEM_CAPTION.RECT_REGION) {
+          createArea?.(itemCaption === ITEM_CAPTION.POLYGON_REGION).then((region: DG.AnnotationRegion | null) => {
             if (!region)
               return;
 
@@ -1260,30 +1243,9 @@ class CreationControl {
         const cols: AxisColumns = getCols();
         const colY = cols.y;
         const colX = cols.x;
-        if (itemCaption === ITEM_CAPTION.POINT_AREA) {
-          const item: DG.AreaAnnotationRegion = {
-            type: ITEM_TYPE.AREA_REGION_ANNOTATION,
-            x: colX.name,
-            y: colY.name,
-            area: [
-              [colX.stats.q1, colY.stats.q1],
-              [colX.stats.q3, colY.stats.q1],
-              [colX.stats.q3, colY.stats.q3],
-              [colX.stats.q1, colY.stats.q3],
-            ],
-          };
-
-          this.annotationRegionsJustCreatedItems.unshift(item);
-          /** Update the Table, Preview and Editor states */
-          onItemCreatedAction(item);
-          return;
-        }
-
-        if (itemCaption === ITEM_CAPTION.FORMULA_AREA) {
+        if (itemCaption === ITEM_CAPTION.FORMULA_REGION) {
           const item: DG.FormulaAnnotationRegion = {
             type: ITEM_TYPE.FORMULA_REGION_ANNOTATION,
-            x: colX.name,
-            y: colY.name,
             formula1: '${' + colY.name + '} = ${' + colX.name + '}' + ' + ' + colY.stats.q2.toFixed(1),
             formula2: '${' + colY.name + '} = ${' + colX.name + '}' + ' - ' + colY.stats.q2.toFixed(1),
           };
@@ -1352,11 +1314,18 @@ class CreationControl {
         ITEM_CAPTION.HORZ_LINE,
         ITEM_CAPTION.VERT_BAND,
         ITEM_CAPTION.HORZ_BAND,
-        ITEM_CAPTION.POINT_AREA,
-        ITEM_CAPTION.FORMULA_AREA,
-        ITEM_CAPTION.RECT_AREA,
-        ITEM_CAPTION.POLYGON_AREA
       ], onClickAction);
+
+      const regionItems: Record<string, string> = {
+        [ITEM_CAPTION.FORMULA_REGION]: 'Adds a new area defined by two formula lines.',
+        [ITEM_CAPTION.RECT_REGION]: 'Draws a rectangle area.',
+        [ITEM_CAPTION.POLYGON_REGION]: 'Draws a polygon area using lasso tool.',
+      }
+
+      for (const itemCaption in regionItems)
+        menu.item(itemCaption, () => onClickAction(itemCaption), null, {
+          description: regionItems[itemCaption]
+        });
 
       /** Add separator only if other menu items exist */
       if (getCurrentItem() || this.formulaLinesHistoryItems.length > 0)
@@ -1506,19 +1475,20 @@ export class FormulaLinesDialog {
       (item: EditorItem) =>
         this.onItemCreatedAction(item, !isAnnotationRegionType(item?.type ?? '')),
       (lassoMode?: boolean) => new Promise<DG.AnnotationRegion | null>((resolve) => {
-        if (this.preview.viewer instanceof DG.ScatterPlotViewer) {
+        if (this.preview.viewer instanceof DG.ScatterPlotViewer || this.preview.viewer instanceof DG.LineChartViewer) {
+          this.preview.viewer.disableAnnotationRegionDrawing();
+          this.preview.viewer.setOptions({ annotationRegions: '[]', formulaLines: '[]' });
+          this.editor.update(-1, false);
           this.preview.viewer.enableAnnotationRegionDrawing(lassoMode, (region: { [key: string]: unknown }) => {
             region['isDataFrameRegion'] = this.tabs.currentPane.name === ITEM_SOURCE.DATAFRAME;
             const props = this.preview.viewer.props as DG.IScatterPlotSettings;
             const annotationRegions = JSON.parse(props.annotationRegions || '[]');
             annotationRegions.push(region);
             props.annotationRegions = JSON.stringify(annotationRegions);
-            
             resolve(region as DG.AnnotationRegion);
           });
-        } else {
+        } else
           resolve(null);
-        }
       })
     );
   }

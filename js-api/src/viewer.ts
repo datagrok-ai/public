@@ -539,6 +539,13 @@ export class LineChartViewer extends Viewer<interfaces.ILineChartSettings> {
   get onZoomed(): rxjs.Observable<null> { return this.onEvent('d4-linechart-zoomed'); }
   get onLineSelected(): rxjs.Observable<EventData<LineChartLineArgs>> { return this.onEvent('d4-linechart-line-selected'); }
   get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-linechart-reset-view'); }
+
+  enableAnnotationRegionDrawing(lassoMode?: boolean, onAfterDraw?: (region: { [key: string]: unknown }) => void): void {
+    api.grok_LineChartViewer_EnableAnnotationRegionDrawing(this.dart, lassoMode ?? null,
+      onAfterDraw ? (region: unknown) => onAfterDraw(DG.toJs(region)) : null);
+  }
+
+  disableAnnotationRegionDrawing(): void { api.grok_LineChartViewer_DisableAnnotationRegionDrawing(this.dart); }
 }
 
 /** 2D scatter plot */
