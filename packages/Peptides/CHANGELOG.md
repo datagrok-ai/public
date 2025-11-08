@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.26.2 (2025-11-08)
+
+* Add Current row tracking option to mutation cliffs viewer
+
 ## 1.26.1 (2025-11-07)
 
 * Sequence mutation cliffs viewer: Initial release

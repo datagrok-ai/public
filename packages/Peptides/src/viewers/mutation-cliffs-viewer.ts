@@ -20,6 +20,7 @@ export class MutationCliffsViewer extends DG.JsViewer {
   public seriesColumnName: string;
   public activityColumnName: string;
   public position = 1;
+  public currentRowMutationsOnly: boolean = false;
   public yAxisType: 'Linear' | 'Logarithmic' = 'Linear';
   constructor() {
     super();
@@ -28,6 +29,7 @@ export class MutationCliffsViewer extends DG.JsViewer {
     this.activityColumnName = this.column('activity', {columnTypeFilter: 'numerical', nullable: false});
     this.position = this.int('position', 1, {nullable: false, showSlider: false, min: 1, max: 100, showPlusMinus: true, description: 'Position in the sequence to analyze (1 Based).', category: 'Data'});
     this.yAxisType = this.string('yAxisType', 'Linear', {choices: ['Linear', 'Logarithmic'], description: 'Y-Axis scale type.', nullable: false, category: 'Data'}) as 'Linear' | 'Logarithmic';
+    this.currentRowMutationsOnly = this.bool('currentRowMutationsOnly', false, {nullable: false, defaultValue: false, description: 'When enabled, the viewer will show mutations related to the peptide in current row in the dataframe and selected position.', category: 'Data'});
   }
 
   onTableAttached(): void {
@@ -105,8 +107,11 @@ export class MutationCliffsViewer extends DG.JsViewer {
     mutationCliffs.cliffs.forEach((positionMap) => {
       positionMap.forEach((mcData) => { // should be only one position
         Array.from(mcData.entries()).forEach(([from, toIndexes]) => {
-          uniqueIndexes.add(Number(from));
-          toIndexes.forEach((toIdx) => uniqueIndexes.add(Number(toIdx)));
+          const f = Number(from);
+          if (!this.currentRowMutationsOnly || this.dataFrame.currentRowIdx === f) {
+            uniqueIndexes.add(f);
+            toIndexes.forEach((toIdx) => uniqueIndexes.add(Number(toIdx)));
+          }
         });
       });
     });
@@ -160,14 +165,31 @@ export class MutationCliffsViewer extends DG.JsViewer {
       }),
     );
 
+    let currentRowFromLineChartFired = false;
+    // when clicking on point in line chart, set current row in main df
     this._dfSubs.push(
       df.onCurrentRowChanged.subscribe((_) => {
         if (df.currentRowIdx >= 0) {
+          currentRowFromLineChartFired = true;
           const originalIdx = indexesArray[df.currentRowIdx];
           this.dataFrame.currentRowIdx = originalIdx;
         }
       }),
     );
+    // if the viewer is set to follow current row, listen to it
+    if (this.currentRowMutationsOnly) {
+      this._dfSubs.push(
+        this.dataFrame.onCurrentRowChanged.subscribe((_) => {
+          if (currentRowFromLineChartFired) {
+            currentRowFromLineChartFired = false;
+            return;
+          }
+          // recalculate viewer df
+          this.clearCache(false);
+          this.debouncedRender();
+        }));
+    }
+
 
     let firedFromViewer = false;
     let firedFromTable = false;
@@ -272,7 +294,8 @@ export class MutationCliffsViewer extends DG.JsViewer {
   private async render() {
     $(this.root).empty();
     if (!this.dataFrame || !this.activityColumnName || !this.sequenceColumnName || !this.position) {
-      this.root.appendChild(ui.divText('Please set Activity column, Sequence column and Position properties.'));
+      ui.setUpdateIndicator(this.root, false);
+      this.root.appendChild(noDataDiv('Please set Activity column, Sequence column and Position properties.'));
       return;
     }
 
@@ -290,32 +313,41 @@ export class MutationCliffsViewer extends DG.JsViewer {
     this.root.style.flexDirection = 'column';
 
     const df = await this.innerDf;
-
-    this._lineChart = df.plot.line({
-      xColumnName: `Position ${this.position}`,
-      yColumnNames: [this.activityColumnName],
-      splitColumnNames: this.seriesColumnName ? [this.seriesColumnName] : [],
-      legendVisibility: this.seriesColumnName ? 'Always' : 'Never',
-      legendPosition: 'Right',
-      showXSelector: false,
-      showYSelector: true,
-      showSplitSelector: false,
-      xAxisLabelOrientation: 'Auto',
-      axisFont: 'normal normal 14px "Roboto"',
-      controlsFont: 'normal normal 14px "Roboto"',
-    } as Partial<DG.ILineChartSettings>) as DG.LineChartViewer;
-
-
-    this._lineChart.sub(this._lineChart.onPropertyValueChanged.subscribe((_e) => {
-      if (this._lineChart?.props?.yColumnNames && this._lineChart?.props?.yColumnNames?.[0] !== this.activityColumnName) {
-        const value = this._lineChart?.props?.yColumnNames?.[0];
-        setTimeout(() => this.getProperty('activityColumnName')!.set(this, value), 1);
-      }
-    }));
-
     ui.setUpdateIndicator(this.root, false);
-    this.root.appendChild(this._lineChart.root);
+    if (df.rowCount === 0) {
+      if (this.currentRowMutationsOnly) {
+        if (this.dataFrame.currentRowIdx >= 0)
+          this.root.appendChild(noDataDiv('No mutations cliffs found for the current peptide at the selected position.'));
+        else
+          this.root.appendChild(noDataDiv('Please select a row in the main table to see mutation cliffs for the corresponding peptide at the selected position.'));
+      }
+      else
+        this.root.appendChild(noDataDiv('No mutation cliffs found for the selected position.'));
+    } else {
+      this._lineChart = df.plot.line({
+        xColumnName: `Position ${this.position}`,
+        yColumnNames: [this.activityColumnName],
+        splitColumnNames: this.seriesColumnName ? [this.seriesColumnName] : [],
+        legendVisibility: this.seriesColumnName ? 'Always' : 'Never',
+        legendPosition: 'Right',
+        showXSelector: false,
+        showYSelector: true,
+        showSplitSelector: false,
+        xAxisLabelOrientation: 'Auto',
+        axisFont: 'normal normal 14px "Roboto"',
+        controlsFont: 'normal normal 14px "Roboto"',
+      } as Partial<DG.ILineChartSettings>) as DG.LineChartViewer;
 
+
+      this._lineChart.sub(this._lineChart.onPropertyValueChanged.subscribe((_e) => {
+        if (this._lineChart?.props?.yColumnNames && this._lineChart?.props?.yColumnNames?.[0] !== this.activityColumnName) {
+          const value = this._lineChart?.props?.yColumnNames?.[0];
+          setTimeout(() => this.getProperty('activityColumnName')!.set(this, value), 1);
+        }
+      }));
+
+      this.root.appendChild(this._lineChart.root);
+    }
     const maxPosition = this.positionColumns.length + 1;
     const positions = new Array<number>(maxPosition - 1).fill(0).map((_, i) => i + 1).map((v) => v.toString());
     const positionInput = ui.input.choice('Position', {value: this.position.toString(), items: positions, nullable: false,
@@ -330,16 +362,18 @@ export class MutationCliffsViewer extends DG.JsViewer {
     positionInput.input.style.width = '40px';
     this.root.appendChild(ui.divH([positionInput.root], {style: {justifyContent: 'center', marginTop: '4px', width: '100%', font: 'normal normal 14px "Roboto"'}}));
 
-    const seriesColSelector = ui.input.column('Series', {table: this.dataFrame,
-      filter: (col: DG.Column) => {
-        return col.isCategorical && col.name !== this.sequenceColumnName;
-      }, tooltipText: 'Select column for series splitting.',
-      onValueChanged: (col: DG.Column | null) => {
-        const colName = col ? col.name : undefined;
+    if (df.rowCount > 0) {
+      const seriesColSelector = ui.input.column('Series', {table: this.dataFrame,
+        filter: (col: DG.Column) => {
+          return col.isCategorical && col.name !== this.sequenceColumnName;
+        }, tooltipText: 'Select column for series splitting.',
+        onValueChanged: (col: DG.Column | null) => {
+          const colName = col ? col.name : undefined;
         this.getProperty('seriesColumnName')!.set(this, colName);
-      }, value: this.seriesColumnName ? this.dataFrame.col(this.seriesColumnName)! : undefined,
-    });
-    this.root.prepend(ui.divH([seriesColSelector.root], {style: {justifyContent: 'flex-end', paddingBottom: '4px', padding: '8px', width: '100%', font: 'normal normal 14px "Roboto"'}}));
+        }, value: this.seriesColumnName ? this.dataFrame.col(this.seriesColumnName)! : undefined,
+      });
+      this.root.prepend(ui.divH([seriesColSelector.root], {style: {justifyContent: 'flex-end', paddingBottom: '4px', padding: '8px', width: '100%', font: 'normal normal 14px "Roboto"'}}));
+    }
   }
 
   private _debounceTimer: any = null;
@@ -350,8 +384,10 @@ export class MutationCliffsViewer extends DG.JsViewer {
     this._debounceTimer = setTimeout(() => this.render(), 300);
   }
 
-  private clearCache() {
-    this._mutationCliffsData = null;
+  private clearCache(clearMutationCliffsData: boolean = true) {
+    // while following current row, makes no sense to clear mutation cliffs data.
+    if (clearMutationCliffsData)
+      this._mutationCliffsData = null;
     this._innerDf = null;
     this._dfSubs.forEach((s) => s.unsubscribe());
     this._dfSubs = [];
@@ -368,11 +404,27 @@ export class MutationCliffsViewer extends DG.JsViewer {
   onPropertyChanged(property: DG.Property | null): void {
     super.onPropertyChanged(property);
     if (property?.name === 'activityColumnName' || property?.name === 'sequenceColumnName' || property?.name === 'position' || property?.name === 'seriesColumnName') {
-      this.clearCache();
+      const retainMutationCliffsData = property?.name === 'seriesColumnName' || property?.name === 'activityColumnName'; // these do not affect mutation cliffs calculation
+      this.clearCache(!retainMutationCliffsData);
+      if (property?.name === 'sequenceColumnName')
+        this._positionColumns = null;
+
       this.debouncedRender();
-    } if (property?.name === 'yAxisType') {
+    } else if (property?.name === 'yAxisType') {
       if (this._lineChart)
         this._lineChart.props.yAxisType = this.yAxisType.toLowerCase() as DG.AxisType;
+    } else if (property?.name === 'currentRowMutationsOnly') {
+      // when this changes, we only clear the dataframe cache to reflect current row changes
+      this.clearCache(false);
+      this.debouncedRender();
     }
   }
+}
+
+function noDataDiv(message: string): HTMLDivElement {
+  const noDataDiv = ui.divText(message);
+  noDataDiv.style.fontSize = '14px';
+  noDataDiv.style.marginTop = '10px';
+  noDataDiv.style.textAlign = 'center';
+  return noDataDiv;
 }
