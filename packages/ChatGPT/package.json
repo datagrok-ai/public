@@ -6,11 +6,13 @@
   "author": "oserhiienko@datagrok.ai",
   "dependencies": {
     "@datagrok-libraries/utils": "^4.6.5",
+    "@types/dom-chromium-ai": "^0.0.10",
     "cash-dom": "latest",
     "datagrok-api": "^1.26.0",
     "dayjs": "latest"
   },
   "devDependencies": {
+    "@types/dom-speech-recognition": "^0.0.7",
     "datagrok-tools": "^4.14.55",
     "ts-loader": "latest",
     "typescript": "latest",

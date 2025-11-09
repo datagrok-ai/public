@@ -1122,7 +1122,7 @@ export class tools {
   }
 
   /** Initialized onClick and sets the tooltip for the element. */
-  static bind(e: HTMLElement, onClick: Function, tooltipMsg: string | null = null): HTMLElement {
+  static bind(e: HTMLElement, onClick: Function | null = null, tooltipMsg: string | null = null): HTMLElement {
     if (onClick)
       e?.addEventListener('click', (e) => onClick(e));
     tooltip.bind(e, tooltipMsg);
@@ -2108,9 +2108,9 @@ export let icons = {
   search: (handler: Function, tooltipMsg: string | null = null) => _iconFA('search', handler, tooltipMsg),
   filter: (handler: Function, tooltipMsg: string | null = null) => _iconFA('filter', handler, tooltipMsg),
   play: (handler: Function, tooltipMsg: string | null = null) => _iconFA('play', handler, tooltipMsg),
-  spinner: (handler: Function, tooltipMsg: string | null = null) =>
+  spinner: (handler: Function | null = null, tooltipMsg: string | null = null) =>
     tools.bind(tools.parseHtml('<i class="fa fa-spinner fa-pulse fa-3x fa-fw"></i>'), handler, tooltipMsg),
-  loader: (handler: Function, tooltipMsg: string | null = null) =>
+  loader: (handler: Function | null = null, tooltipMsg: string | null = null) =>
     tools.bind(tools.parseHtml('<div class="grok-loader"><div></div><div></div><div></div><div></div></div>'), handler, tooltipMsg),
 }
 
