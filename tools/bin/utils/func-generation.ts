@@ -165,7 +165,13 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
   for (const input of data.inputs ?? []) {
     if (!input)
       continue;
-    let type = input?.type;
+    let type = input?.type?.replaceAll(" ", "");
+    if (type?.includes(`|undefined`)) {
+      type = type.replaceAll(`|undefined`, '');
+      // modify original payload
+      input.optional = true;
+      input.type = type;
+    }
     let isArray = false;
     if (type?.includes(`[]`)) {
       type = type.replace(/\[\]$/, '');
@@ -498,18 +504,31 @@ export const primitives = new Set([
 
 /** Generates a DG function. */
 export function generateFunc(
-  annotation: string, 
-  funcName: string, 
-  sep: string = '\n', 
-  className: string = '', 
-  inputs: FuncParam[] = [], 
+  annotation: string,
+  funcName: string,
+  sep: string = '\n',
+  className: string = '',
+  inputs: FuncParam[] = [],
   output: string,
   isAsync: boolean = false): string {
-  // eslint-disable-next-line max-len
-  const funcSigNature = (inputs.map((e) => `${e.name}${e.optional? '?': ''}: ${primitives.has(e.type ?? '') && !typesToAny.includes(e.type ?? '') ? e.type : (typesToAnnotation[e.type?.replace('[]', '') ?? ''] && !typesToAny.includes(e.type ?? '') ? e.type : 'any')}`)).join(', ');
+  // FuncCall can have an optional followed by mandatory args for ui reasons, typescript cannot
+  let firstTsValidOptionalIdx = inputs.length-1;
+  for (; firstTsValidOptionalIdx >= 0; firstTsValidOptionalIdx--) {
+    const e = inputs[firstTsValidOptionalIdx];
+    if (!e.optional)
+      break;
+  }
+  const funcSigNature = (inputs.map((e, idx) => {
+    const namePart = `${e.name}${(e.optional && idx >= firstTsValidOptionalIdx) ? '?': ''}`;
+    // eslint-disable-next-line max-len
+    let typePart = `${primitives.has(e.type ?? '') && !typesToAny.includes(e.type ?? '') ? e.type : (typesToAnnotation[e.type?.replace('[]', '') ?? ''] && !typesToAny.includes(e.type ?? '') ? e.type : 'any')}`;
+    if (e.optional && idx < firstTsValidOptionalIdx)
+      typePart += ' | undefined';
+    return `${namePart}: ${typePart}`;
+  })).join(', ');
   const funcArguments = (inputs.map((e) => e.name)).join(', ');
 
-  const returnType = output ? ( primitives.has(output) ? 
+  const returnType = output ? ( primitives.has(output) ?
     (!isAsync? `: ${output} `: `: Promise<${output}> `) : (!isAsync? `: any `: `: Promise<any> `)) : '';
   // eslint-disable-next-line max-len
   return sep + annotation + `export ${isAsync ? 'async ' : ''}function ${funcName}(${funcSigNature}) ${returnType}{${sep}  ${output !== 'void'? 'return ': ''}${isAsync? 'await ': ''}${className.length > 0 ? `${className}.` : ''}${funcName}(${funcArguments});${sep}}${sep}`;
@@ -522,4 +541,3 @@ export function generateImport(className: string, path: string, sep: string = '\
 export function generateExport(className: string, sep: string = '\n'): string {
   return `export {${className}};${sep}`;
 }
-
