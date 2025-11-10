@@ -25,6 +25,7 @@ import {
   TypeAhead,
   TypeAheadConfig,
   TagsInput, ChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput, TagsInputConfig, MarkdownConfig,
+  FileInput,
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -746,6 +747,7 @@ export namespace input {
     available: (input, x) => api.grok_ColumnsInput_ChangeAvailableColumns(input.dart, x),
     checked: (input, x) => api.grok_ColumnsInput_ChangeCheckedColumns(input.dart, x),
     showOnlyColorBox: (input, x) => api.grok_ColorInput_SetShowOnlyColorBox(input.dart, x),
+    directoryInput: (input, x) => api.grok_FileInput_Set_Directory_Input(input.dart, x),
   };
 
   function setInputOptions(input: InputBase, inputType: d4.InputType, options?: IInputInitOptions, ignoreProp: boolean = false): void {
@@ -801,6 +803,10 @@ export namespace input {
     onValueChanged?: (value: T, input: InputBase<T>) => void;
     additionalColumns?: { [key: string]: Column[] };
     onAdditionalColumnsChanged?: (additionalColumns: { [key: string]: Column[] }) => void;
+  }
+
+  export interface IFileInitOptions<T = any> extends IInputInitOptions<T> {
+    directoryInput?: boolean;
   }
 
   export interface INumberInputInitOptions<T> extends IInputInitOptions<T> {
@@ -963,8 +969,8 @@ export namespace input {
     return _create(d4.InputType.Switch, name, options);
   }
 
-  export function file(name: string, options?: IInputInitOptions<FileInfo>): InputBase<FileInfo | null> {
-    return _create(d4.InputType.File, name, options);
+  export function file(name: string, options?: IFileInitOptions<FileInfo>): FileInput<FileInfo | null> {
+    return _create(d4.InputType.File, name, options) as FileInput<FileInfo>;
   }
 
   export function list(name: string, options?: IInputInitOptions<Array<any>>): InputBase<Array<any> | null> {

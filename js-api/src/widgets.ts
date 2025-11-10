@@ -1539,6 +1539,19 @@ export class ChoiceInput<T> extends InputBase<T> {
   set items(s: T[]) { api.grok_ChoiceInput_Set_Items(this.dart, toDart(s)); }
 }
 
+export class FileInput<FileInfo> extends InputBase<FileInfo> {
+  declare dart: any;
+
+  constructor(dart: any, onChanged: any = null) {
+    super(dart, onChanged);
+  }
+
+  get directoryFiles(): FileInfo[] {
+    const files = api.grok_FileInput_Get_Directory_Files(this.dart);
+    return files?.map((it) => toJs(it)); 
+  }
+}
+
 
 export class TaskBarProgressIndicator extends ProgressIndicator {
   static create(name?: string, options?: { cancelable?: boolean, pausable?: boolean, spinner?: boolean }): TaskBarProgressIndicator {
