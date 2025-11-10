@@ -529,3 +529,12 @@ export function isApplicableXGBooster(df: DG.DataFrame, predictColumn: DG.Column
 export function paretoFront() : void {
   PackageFunctions.paretoFront();
 }
+
+//name: Pareto front
+//description: Pareto front viewer
+//tags: viewer
+//output: viewer result
+//meta.icon: icons/pareto-front-viewer.svg
+export function paretoFrontViewer() : any {
+  return PackageFunctions.paretoFrontViewer();
+}

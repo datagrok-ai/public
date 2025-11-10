@@ -1,19 +1,15 @@
-<svg width="36" height="36" xmlns="http://www.w3.org/2000/svg">
-
- <g>
-  <title>Layer 1</title>
-  <line stroke-linecap="undefined" stroke-linejoin="undefined" id="svg_14" y2="34.87491" x2="1.07509" y1="0.75009" x1="1.07509" stroke="#666666" fill="none"/>
-  <line stroke="#666666" stroke-linecap="undefined" stroke-linejoin="undefined" id="svg_15" y2="35.12491" x2="0.57509" y1="35.12491" x1="34.69991" fill="none"/>
-  <ellipse ry="2.6" rx="2.6" id="svg_75" cy="19.49999" cx="6.07506" stroke="#b2b2b2" fill="#e5e5e5"/>
-  <ellipse ry="2.6" rx="2.6" id="svg_76" cy="28.56244" cx="9.51254" stroke="#b2b2b2" fill="#e5e5e5"/>
-  <ellipse ry="2.6" rx="2.6" id="svg_77" cy="23.12497" cx="16.88751" stroke="#b2b2b2" fill="#e5e5e5"/>
-  <ellipse ry="2.6" rx="2.6" id="svg_81" cy="30.24993" cx="22.19998" stroke="#b2b2b2" fill="#e5e5e5"/>
-  <ellipse ry="2.6" rx="2.6" id="svg_85" cy="7.81255" cx="7.95005" stroke="#00bf00" fill="#aaffaa"/>
-  <ellipse ry="2.6" rx="2.6" id="svg_87" cy="13.25002" cx="18.2625" stroke="#00bf00" fill="#aaffaa"/>
-  <ellipse ry="2.6" rx="2.6" id="svg_88" cy="20.49999" cx="26.57495" stroke="#00bf00" fill="#aaffaa"/>
-  <ellipse ry="2.6" rx="2.6" id="svg_89" cy="29.74993" cx="31" stroke="#00bf00" fill="#aaffaa"/>
-  <path id="svg_92" d="m-13.10396,3.53545l0.19963,-0.34574l0.34574,-0.19963l0.39926,0l0.34574,0.19963l0.19963,0.34574l0,0.39926l-0.19963,0.34574l-0.34574,0.19963l-0.39926,0l-0.34574,-0.19963l-0.19963,-0.34574l0,-0.39926z" stroke="#00bf00" fill="none"/>
-  <path id="svg_93" d="m-19.82017,1.91858l0.19963,-0.34574l0.34574,-0.19963l0.39926,0l0.34574,0.19963l0.19963,0.34574l0,0.39926l-0.19963,0.34574l-0.34574,0.19963l-0.39926,0l-0.34574,-0.19963l-0.19963,-0.34574l0,-0.39926z" stroke="#00bf00" fill="none"/>
-  <path id="svg_94" d="m17.119,45.07648l0.19963,-0.34574l0.34574,-0.19963l0.39926,0l0.34574,0.19963l0.19963,0.34574l0,0.39926l-0.19963,0.34574l-0.34574,0.19963l-0.39926,0l-0.34574,-0.19963l-0.19963,-0.34574l0,-0.39926z" stroke="#00bf00" fill="none"/>
- </g>
+<svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+<line stroke-linecap="undefined" stroke-linejoin="undefined" id="svg_14" y2="33" x2="4" y1="3" x1="4" stroke="#666666" fill="none"/>
+<line stroke="#666666" stroke-linecap="undefined" stroke-linejoin="undefined" id="svg_15" y2="33" x2="32" y1="33" x1="4" fill="none"/>
+<ellipse ry="2" rx="2" id="svg_75" cy="18" cx="9" stroke="#b2b2b2" fill="#e5e5e5"/>
+<ellipse ry="2" rx="2" id="svg_76" cy="27" cx="11" stroke="#b2b2b2" fill="#e5e5e5"/>
+<ellipse ry="2" rx="2" id="svg_77" cy="21" cx="17" stroke="#b2b2b2" fill="#e5e5e5"/>
+<ellipse ry="2" rx="2" id="svg_81" cy="27" cx="21" stroke="#b2b2b2" fill="#e5e5e5"/>
+<ellipse ry="2" rx="2" id="svg_85" cy="9" cx="9" stroke="#00bf00" fill="#aaffaa"/>
+<ellipse ry="2" rx="2" id="svg_87" cy="13" cx="18" stroke="#00bf00" fill="#aaffaa"/>
+<ellipse ry="2" rx="2" id="svg_88" cy="19" cx="25" stroke="#00bf00" fill="#aaffaa"/>
+<ellipse ry="2" rx="2" id="svg_89" cy="28" cx="29" stroke="#00bf00" fill="#aaffaa"/>
+<path id="svg_92" d="m-13.10396,3.53545l0.19963,-0.34574l0.34574,-0.19963l0.39926,0l0.34574,0.19963l0.19963,0.34574l0,0.39926l-0.19963,0.34574l-0.34574,0.19963l-0.39926,0l-0.34574,-0.19963l-0.19963,-0.34574l0,-0.39926z" stroke="#00bf00" fill="none"/>
+<path id="svg_93" d="m-19.82017,1.91858l0.19963,-0.34574l0.34574,-0.19963l0.39926,0l0.34574,0.19963l0.19963,0.34574l0,0.39926l-0.19963,0.34574l-0.34574,0.19963l-0.39926,0l-0.34574,-0.19963l-0.19963,-0.34574l0,-0.39926z" stroke="#00bf00" fill="none"/>
+<path id="svg_94" d="m17.119,45.07648l0.19963,-0.34574l0.34574,-0.19963l0.39926,0l0.34574,0.19963l0.19963,0.34574l0,0.39926l-0.19963,0.34574l-0.34574,0.19963l-0.39926,0l-0.34574,-0.19963l-0.19963,-0.34574l0,-0.39926z" stroke="#00bf00" fill="none"/>
 </svg>

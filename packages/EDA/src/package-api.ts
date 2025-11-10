@@ -267,4 +267,11 @@ export namespace funcs {
   export async function paretoFront(): Promise<void> {
     return await grok.functions.call('EDA:ParetoFront', {});
   }
+
+  /**
+  Pareto front viewer
+  */
+  export async function paretoFrontViewer(): Promise<any> {
+    return await grok.functions.call('EDA:ParetoFrontViewer', {});
+  }
 }

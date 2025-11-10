@@ -37,6 +37,7 @@ import {SoftmaxClassifier} from './softmax-classifier';
 import {initXgboost} from '../wasm/xgbooster';
 import {XGBooster} from './xgbooster';
 import {ParetoOptimizer} from './pareto-optimization/pareto-optimizer';
+import {ParetoFrontViewer} from './pareto-optimization/pareto-front-viewer';
 
 export const _package = new DG.Package();
 export * from './package.g';
@@ -978,5 +979,16 @@ export class PackageFunctions {
     const optimizer = new ParetoOptimizer(df);
     optimizer.run();
     //runParetoOptimizer();
+  }
+
+  @grok.decorators.func({
+    'name': 'Pareto front',
+    'description': 'Pareto front viewer',
+    'tags': ['viewer'],
+    'outputs': [{'name': 'result', 'type': 'viewer'}],
+    'meta': {'icon': 'icons/pareto-front-viewer.svg'},
+  })
+  static paretoFrontViewer(): DG.Viewer {
+    return new ParetoFrontViewer();
   }
 }
