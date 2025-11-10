@@ -23,8 +23,8 @@ automatically in the **Context Panel** when you select a molecule or mixture in 
 |Molecule|Identifiers | Calculates identifiers like SMILES, InChi, ChEMBL ID, etc.|
 |Molecule|3D Structure| Shows an interactive 3D view of the molecule|
 |Molecule|2D Structure| Shows a 2D view of the molecule|
-|ChemicalMixture|Mixture | Displays all mixture components and their properties (structure, name, relation, etc.) in a tabular view. The table can be added to the workspace|
-|ChemicalMixture|Mixture Tree | Shows the mixture structure as a hierarchical tree with the mixfile version and all nested components |
+|Chemical mixture|Mixture | Displays all mixture components and their properties (structure, name, relation, etc.) in a tabular view. The table can be added to the workspace|
+|Chemical mixture|Mixture Tree | Shows the mixture structure as a hierarchical tree with the mixfile version and all nested components |
 
 <br/>
 
