@@ -1,6 +1,6 @@
 import * as dayjs from "dayjs";
 import * as wu from "wu";
-const { AsyncLocalStorage } = require('async_hooks');
+import { AsyncLocalStorage } from 'node:async_hooks';
 
 (globalThis as any).self = globalThis;
 (globalThis as any).window = {};
@@ -66,8 +66,8 @@ export function getContext() {
 }
 
 (globalThis as any).getTokenFromAsyncLocalStorage = function() {
-    const store = datagrokAsyncLocalStorage.getStore();
-    return store ? store.token : null;
+    const store = datagrokAsyncLocalStorage.getStore() as { token?: string } | undefined;
+    return store?.token ?? null;
 }
 
 export async function startDatagrok(options: {apiUrl: string, apiToken?: string | undefined}): Promise<any> {

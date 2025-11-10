@@ -760,16 +760,10 @@ export interface IDartApi {
   grok_Notebook_Set_Notebook_Content(n: any, jsObject: any): any;
   grok_Notebook_Set_Description(n: any, d: String): any;
   grok_Package_Get_Credentials(packageName: String): Promise<any>;
-  grok_Package_Get_Meta(p: any): any;
-  grok_Package_GetModuleName(p: any, file: String): any;
   grok_Package_GetModule(p: any, file: String): any;
   grok_Package_GetIconUrl(p: any): any;
   grok_Package_Get_Settings_Sync(packageName: String): any;
   grok_Package_Set_Settings(packageName: String, settings: any, group: any): Promise<any>;
-  grok_Package_Get_Version(p: any): any;
-  grok_Package_Set_Version(p: any, version: String): any;
-  grok_Package_Get_WebRoot(p: any): any;
-  grok_Package_Get_Package_Author(p: any): any;
   grok_Package_Get_Properties(packageName: String): Promise<any>;
   grok_Package_Get_Settings(packageName: String): Promise<any>;
   grok_Rect_Pack(r: any, bytes: any): any;
@@ -1667,6 +1661,12 @@ export interface IDartApi {
   grok_Get_Simple_StackTrace_Hash(stackTrace: String): any;
   grok_GetLogger(params: any): any;
   grok_Log(logger: any, level: String, message: String, params: any, auditType: String, stackTrace: String): any;
+  grok_Package_Get_Meta(p: any): any;
+  grok_Package_GetModuleName(p: any, file: String): any;
+  grok_Package_Get_Version(p: any): any;
+  grok_Package_Set_Version(p: any, version: String): any;
+  grok_Package_Get_WebRoot(p: any): any;
+  grok_Package_Get_Package_Author(p: any): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;

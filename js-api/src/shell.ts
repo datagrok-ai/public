@@ -45,11 +45,18 @@ export class Shell {
   }
 
   async reportTest(type: String, params: object): Promise<void> {
-    await fetch(`${grok.dapi.root}/log/tests/${type}?benchmark=${DG.Test.isInBenchmark}&ciCd=${DG.Test.isCiCd}`, {
-      method: 'POST', headers: {'Content-Type': 'application/json'},
-      credentials: 'same-origin',
-      body: api.grok_JSON_encode(toDart(params))
-    });
+    const isNode = typeof process !== 'undefined';
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (isNode)
+      headers['Authorization'] = grok.dapi.token;
+    const options: RequestInit = {
+      method: 'POST',
+      headers,
+      body: api.grok_JSON_encode(toDart(params)),
+    };
+    if (!isNode)
+      options.credentials = 'same-origin';
+    await fetch(`${grok.dapi.root}/log/tests/${type}?benchmark=${DG.Test.isInBenchmark}&ciCd=${DG.Test.isCiCd}`, options);
   }
 
   /** Current table, or null. */
