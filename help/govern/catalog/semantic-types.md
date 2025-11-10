@@ -23,28 +23,53 @@ automatically by semantic type detectors or set manually.
 
 ## Manually setting semantic types
 
-Open column properties (click on a column and press F2, or right-click and select Properties), see '
-Semantics' field.
+Open the **Context Panel** and go to the **Details** tab to set the 'Semantic type' field.
+Alternatively, open column properties (click a column and press F2, or right-click the column and select **Column Properties...**) and set the `quality` and `cell.renderer` [tags](tags.md).
 
-![Column Properties](semantic-properties.gif "Column Properties")
+![Column Properties](manually-setting-semantic-type.gif "Column Properties")
 
 ## Automatic semantic type detection
 
 Out of the box, the following semantic types are automatically detected based on the content:
+| Semantic type           | Value             | Required plugins        |
+|-------------------------|-----------------|------------------------|
+| **Cheminformatics types** |                 |                        |
+| Molecule                | 'Molecule'         | Chem                   |
+| Chemical reaction       | 'ChemicalReaction' | Chem                   |
+| Chemical mixture (Mixfile format)       | 'ChemicalMixture'  | Chem                   |
+| **Bioinformatics types** |                 |                        |
+| Macromolecule           | 'Macromolecule'    | Bio                    |
+| HELM                    | 'HELM'             | Bio                    |
+| Phylogenetic trees                  | 'Newick'           | Bio                    |
+| Molecule 3D             | 'Molecule3D'       | BiostructureViewer     |
+| PDB identifiers           | PDB_ID           | BiostructureViewer     |
+| **General types**        |                 |                        |
+| Text                    | 'Text'             | -                      |
+| Duration                | 'Duration'         | -                      |
+| Gender                  | 'Gender'           | -                      |
+| Money                   | 'Money'            | -                      |
+| Image                   | 'Image'            | -                      |
+| File                    | 'File'             | -                      |
+| URL                     | 'URL'              | -                      |
+| IP address              | 'IP Address'       | -                      |
+| **Contact information**  |                 |                        |
+| Email           | 'Email Address'    | -                      |
+| Phone number            | 'Phone Number'     | -                      |
+| **Geographic data**      |                 |                        |
+| City                    | 'City'             | -                      |
+| Country                 | 'Country'          | -                      |
+| State                   | 'State'            | -                      |
+| County                  | 'County'           | -                      |
+| Place name              | 'Place Name'       | -                      |
+| Zip code                | 'Zip Code'         | -                      |
+| Area code               | 'Area Code'        | -                      |
+| Street address          | 'Street Address'   | -                      |
+| Latitude                | 'Latitude'         | -                      |
+| Longitude               | 'Longitude'        | -                      |
+| **Specialized types**    |                 |                        |
+| Curve data              | 'fit'              | Curves                 |
+| PNG images               | 'rawPng'           | Curves                 |
 
-* Molecule
-* IP Address
-* Area Code
-* Zip Code
-* Phone Number
-* Email
-* Latitude
-* Longitude
-* Country name (notations: common, cca2, cca3, cioc)
-* US State (notations: common, abbreviated)
-* US County
-* US City
-* Stock ticker
 
 ## Custom semantic types
 
