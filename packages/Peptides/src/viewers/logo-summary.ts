@@ -761,7 +761,9 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
         } else if (gridCell.tableColumn?.name === C.LST_COLUMN_NAMES.DISTRIBUTION) {
           let viewer = distCache.get(currentRowIdx);
           if (viewer === undefined) {
-            const distributionDf = getDistributionTable(activityCol, clusterBitSet);
+            if (!activityCol.dataFrame)
+              DG.DataFrame.fromColumns([activityCol]);
+            const distributionDf = getDistributionTable(activityCol, clusterBitSet, activityCol.dataFrame);
             viewer = distributionDf.plot.histogram({
               filteringEnabled: false,
               valueColumnName: activityCol.name,
@@ -1070,7 +1072,9 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
 
 
     const mask = DG.BitSet.fromBytes(bitArray.buffer.buffer as ArrayBuffer, rowCount);
-    const distributionTable = getDistributionTable(activityCol, mask);
+    if (!activityCol.dataFrame)
+      DG.DataFrame.fromColumns([activityCol]);
+    const distributionTable = getDistributionTable(activityCol, mask, activityCol.dataFrame);
     const hist = getActivityDistribution(distributionTable, true);
     const tableMap = getStatsTableMap(stats);
     const aggregatedColMap = getAggregatedColumnValues(this.dataFrame,

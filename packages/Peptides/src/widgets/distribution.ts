@@ -144,7 +144,7 @@ export function getStatsTableMap(stats: StatsItem,
  */
 function getSingleDistribution(table: DG.DataFrame, stats: StatsItem, options: DistributionItemOptions,
   labelMap: DistributionLabelMap = {}): HTMLDivElement {
-  const hist = getActivityDistribution(getDistributionTable(options.activityCol, table.selection));
+  const hist = getActivityDistribution(getDistributionTable(options.activityCol, table.selection, table));
   const aggregatedColMap = getAggregatedColumnValues(table, Object.entries(options.columns),
     {filterDf: true, mask: DG.BitSet.fromBytes(stats.mask.buffer.buffer as ArrayBuffer, stats.mask.length)});
   const tableMap = getStatsTableMap(stats);

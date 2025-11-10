@@ -63,19 +63,31 @@ export function calculateCliffsStatistics(
     const monomerSubMap = cliffs.get(monomer)!;
     for (const position of monomerSubMap.keys()) {
       const subMap = monomerSubMap.get(position)!;
-      const mask = new BitArray(activityArray.length, false);
       if (subMap.size === 0)
         continue;
+      // create two masks, one filtering the activities to only mutation cliffs (with given monomer at given position and its substitutions)
+      // another one corresponding to only the given monomer at given position within the mutation cliffs
+      const filterMask = new BitArray(activityArray.length, false);
+      const maskMCWithMonomerAtPosition = new BitArray(activityArray.length, false);
       for (const index of subMap.keys()) {
-        mask.setFast(index, true);
+        // set the filter mask to true for all sequences within the mutation cliff pairs
+        filterMask.setFast(index, true);
         const toIndexes = subMap.get(index)!;
-        toIndexes.forEach((i) => mask.setFast(i, true));
+        toIndexes.forEach((i) => filterMask.setFast(i, true));
+        // set the mask for sequences with the given monomer at the given position within the mutation cliffs
+        maskMCWithMonomerAtPosition.setFast(index, true);
       }
-      const stats = getStats(activityArray, mask);
+      const stats = getStats(activityArray, maskMCWithMonomerAtPosition, filterMask);
+      stats.mask = filterMask; // store the filter mask for later use in the viewer
       minDiff = Math.min(minDiff, stats.meanDifference);
       maxDiff = Math.max(maxDiff, stats.meanDifference);
       minCount = Math.min(minCount, stats.count);
       maxCount = Math.max(maxCount, stats.count);
+      // here, stats will show the following
+      // count - number of sequences with the given monomer at the given position within the mutation cliffs
+      // mask.trueCount - number of unique sequences within the mutation cliffs (with given monomer at given position and its substitutions)
+      // meanDifference - difference between mean activity of sequences with the given monomer at the given position within the mutation cliffs
+      // and mean activity of other sequences within the mutation cliffs (with given monomer at given position substitutions)
       monomerStatsMap.set(position, stats);
     }
   }

@@ -65,6 +65,7 @@ export enum VIEWER_TYPE {
   DENDROGRAM = 'Dendrogram',
   CLUSTER_MAX_ACTIVITY = 'Active peptide selection',
   MCL = 'MCL',
+  SEQUENCE_MUTATION_CLIFFS = 'Sequence Mutation Cliffs',
 }
 
 export type CachedWebLogoTooltip = { bar: string, tooltip: HTMLDivElement | null };
@@ -621,6 +622,7 @@ export class PeptidesModel {
         sequenceColumnName: sarViewer.sequenceColumnName,
         positionColumns: sarViewer.positionColumns,
         activityCol: sarViewer.getScaledActivityColumn(),
+        mutationCliffStats: sarViewer.cliffStats,
       }).root, true);
     }
     const isModelSource = requestSource === trueModel.settings;

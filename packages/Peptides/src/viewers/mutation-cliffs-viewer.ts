@@ -320,8 +320,7 @@ export class MutationCliffsViewer extends DG.JsViewer {
           this.root.appendChild(noDataDiv('No mutations cliffs found for the current peptide at the selected position.'));
         else
           this.root.appendChild(noDataDiv('Please select a row in the main table to see mutation cliffs for the corresponding peptide at the selected position.'));
-      }
-      else
+      } else
         this.root.appendChild(noDataDiv('No mutation cliffs found for the selected position.'));
     } else {
       this._lineChart = df.plot.line({

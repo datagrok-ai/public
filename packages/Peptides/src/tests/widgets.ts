@@ -146,6 +146,7 @@ category('Widgets: Mutation cliffs', () => {
       sequenceColumnName: sarViewer.sequenceColumnName,
       positionColumns: sarViewer.positionColumns,
       activityCol: scaledActivityCol,
+      mutationCliffStats: sarViewer.cliffStats,
     });
   });
 });

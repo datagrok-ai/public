@@ -1,5 +1,9 @@
 # Peptides changelog
 
+## 1.27.0 (2025-11-10)
+
+* Rework mutation cliffs and tooltips, shown information about sequence pairs and their statistics.
+
 ## 1.26.2 (2025-11-08)
 
 * Add Current row tracking option to mutation cliffs viewer

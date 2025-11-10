@@ -131,7 +131,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
     }) as 'All' | 'Filtered';
 
     this.activityColumnName = this.column(SAR_PROPERTIES.ACTIVITY,
-      {category: PROPERTY_CATEGORIES.GENERAL, nullable: false});
+      {category: PROPERTY_CATEGORIES.GENERAL, nullable: false, columnTypeFilter: 'numerical'});
     this.activityScaling = this.string(SAR_PROPERTIES.ACTIVITY_SCALING, C.SCALING_METHODS.NONE,
       {category: PROPERTY_CATEGORIES.GENERAL, choices: Object.values(C.SCALING_METHODS), nullable: false},
     ) as C.SCALING_METHODS;
@@ -555,10 +555,11 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
     if (isApplicableDataframe(this.dataFrame)) {
       this.getProperty(`${SAR_PROPERTIES.SEQUENCE}${COLUMN_NAME}`)
         ?.set(this, this.dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE)!.name);
+      const potentialActivityColumn = wu(this.dataFrame.columns.numerical).find((col) => col.name.toLowerCase().includes('activity'))?.name;
       this.getProperty(`${SAR_PROPERTIES.ACTIVITY}${COLUMN_NAME}`)
-        ?.set(this, wu(this.dataFrame.columns.numerical).next().value.name);
+        ?.set(this, potentialActivityColumn ?? wu(this.dataFrame.columns.numerical).next().value.name);
       this.getProperty(`${SAR_PROPERTIES.VALUE_INVARIANT_MAP}${COLUMN_NAME}`)
-        ?.set(this, wu(this.dataFrame.columns.numerical).next().value.name);
+        ?.set(this, potentialActivityColumn ?? wu(this.dataFrame.columns.numerical).next().value.name);
       if (this.mutationCliffs === null && this.sequenceColumnName && this.activityColumnName)
         this.calculateMutationCliffs().then((mc) => {this.mutationCliffs = mc.cliffs; this.cliffStats = mc.cliffStats;});
       this.subs.push(grok.events.onContextMenu.subscribe((a: DG.EventData) => {
@@ -934,7 +935,7 @@ export class MonomerPosition extends SARViewer {
         if (this.valueColumnName && this.valueAggregation && this.valueAggregation !== DG.AGG.VALUE_COUNT && this.valueAggregation !== DG.AGG.TOTAL_COUNT)
           columnEntries.unshift([this.valueColumnName, this.valueAggregation as DG.AGG]);
       } else {
-        // in invariant map, show pairs count along with unique sequences count
+        // in mutation cliffs, show pairs count along with unique sequences count
         const pairs = this.mutationCliffs?.get(monomerPosition.monomerOrCluster)?.get(monomerPosition.positionOrClusterType);
         if (pairs) {
           let pairsCount = 0;
@@ -947,6 +948,7 @@ export class MonomerPosition extends SARViewer {
         fromViewer: true,
         isMutationCliffs: this.mode === SELECTION_MODE.MUTATION_CLIFFS, monomerPosition, x, y,
         mpStats: this.monomerPositionStats, cliffStats: this.cliffStats?.stats ?? undefined, postfixes, additionalStats,
+        cliffIndexes: this.mutationCliffs?.get(monomerPosition.monomerOrCluster)?.get(monomerPosition.positionOrClusterType),
       });
     });
     grid.root.addEventListener('mouseleave', (_ev) => this.model.unhighlight());

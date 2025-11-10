@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
@@ -111,13 +112,10 @@ export function getDistributionPanel(hist: DG.Viewer<DG.IHistogramSettings>, sta
   const splitCol = hist.dataFrame.getCol(C.COLUMNS_NAMES.SPLIT_COL);
   const labels = [];
   const categories = splitCol.categories as SPLIT_CATEGORY[];
-  const rawData = splitCol.getRawData();
   for (let categoryIdx = 0; categoryIdx < categories.length; ++categoryIdx) {
-    if (!Object.values(SPLIT_CATEGORY).includes(categories[categoryIdx]))
+    if (!categories[categoryIdx])
       continue;
-
-
-    const color = DG.Color.toHtml(splitCol.meta.colors.getColor(rawData.indexOf(categoryIdx)));
+    const color = DG.Color.toHtml(DG.Color.categoricalPalette[categoryIdx % DG.Color.categoricalPalette.length]);
     const label = ui.label(labelMap[categories[categoryIdx]] ?? categories[categoryIdx], {style: {color}});
     labels.push(label);
   }
@@ -133,10 +131,8 @@ export function getDistributionPanel(hist: DG.Viewer<DG.IHistogramSettings>, sta
  * @param selection - Selection bitset.
  * @return - Dataframe with activity distribution.
  */
-export function getDistributionTable(activityCol: DG.Column<number>, selection: DG.BitSet): DG.DataFrame {
-  if (!activityCol.dataFrame)
-    DG.DataFrame.fromColumns([activityCol]); // to make sure that activityCol has a parent dataframe
-  const filter = activityCol.dataFrame!.filter;
+export function getDistributionTable(activityCol: DG.Column<number>, selection: DG.BitSet, dataFrame: DG.DataFrame): DG.DataFrame {
+  const filter = dataFrame.filter;
   const selectionAndFilter = selection.clone().and(filter);
   const rowCount = activityCol.length;
   const activityColData = activityCol.getRawData();
@@ -164,6 +160,44 @@ export function getDistributionTable(activityCol: DG.Column<number>, selection: 
   splitCol.setCategoryOrder(categoryOrder);
   splitCol.meta.colors.setCategorical();
   return DG.DataFrame.fromColumns([DG.Column.fromFloat32Array(C.COLUMNS_NAMES.ACTIVITY, activityData), splitCol]);
+}
+
+/**
+ * Creates distribution table for mutation cliffs.
+ * @param activityCol
+ * @param mpCliffs
+ */
+export function getMutationCliffsDistributionTable(activityCol: DG.Column<number>, mpCliffs: Map<type.INDEX, type.INDEXES>, monomerName: string) {
+  // instead of stats.selection vs everything, here we want to show mutated vs non-mutated
+  if (!activityCol.dataFrame)
+    DG.DataFrame.fromColumns([activityCol]); // to make sure that activityCol has a parent dataframe
+  const tableFilter = activityCol.dataFrame!.filter;
+  const activityData = activityCol.getRawData();
+  const uniqueMPCliffsIndexes = Array.from(new Set(mpCliffs.keys())).map((k) => Number(k)).filter((i) => tableFilter.get(i));
+  const uniqueMutatedCliffsIndexesSet = new Set<number>();
+  for (const indexes of mpCliffs.values()) {
+    for (const index of indexes as number[])
+      uniqueMutatedCliffsIndexesSet.add(index);
+  }
+  const uniqueMutatedCliffsIndexes = Array.from(uniqueMutatedCliffsIndexesSet).filter((i) => tableFilter.get(i));
+  const totalRowCount = uniqueMPCliffsIndexes.length + uniqueMutatedCliffsIndexes.length;
+  const categories: string[] = new Array(totalRowCount);
+  const activityValues = new Float32Array(totalRowCount);
+  for (let i = 0; i < uniqueMPCliffsIndexes.length; ++i) {
+    const rowIndex = uniqueMPCliffsIndexes[i];
+    activityValues[i] = activityData[rowIndex];
+    categories[i] = monomerName;
+  }
+  for (let i = 0; i < uniqueMutatedCliffsIndexes.length; ++i) {
+    const rowIndex = uniqueMutatedCliffsIndexes[i];
+    activityValues[uniqueMPCliffsIndexes.length + i] = activityData[rowIndex];
+    categories[uniqueMPCliffsIndexes.length + i] = 'Mutated';
+  }
+  const splitCol = DG.Column.fromStrings(C.COLUMNS_NAMES.SPLIT_COL, categories);
+  const categoryOrder = [monomerName, 'Mutated'];
+  splitCol.setCategoryOrder(categoryOrder);
+  splitCol.meta.colors.setCategorical();
+  return DG.DataFrame.fromColumns([DG.Column.fromFloat32Array(C.COLUMNS_NAMES.ACTIVITY, activityValues), splitCol]);
 }
 
 /**
