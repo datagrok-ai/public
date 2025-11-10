@@ -1,13 +1,14 @@
+import type * as _grok from 'datagrok-api/grok';
+import type * as _DG from 'datagrok-api/dg';
+declare let grok: typeof _grok, DG: typeof _DG;
+
 import {category, test} from '@datagrok-libraries/utils/src/test';
-import * as grok from 'datagrok-api/grok';
-// import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
 
 
 category('Benchmarks: Detectors', () => {
   const df = grok.data.demo.demog(100000);
-  const detectors: DG.Func[] = DG.Func.find({tags: ['semTypeDetector']});
-  const cols: DG.Column[] = df.columns.byNames(['site', 'age', 'started', 'height']);
+  const detectors: _DG.Func[] = DG.Func.find({tags: ['semTypeDetector']});
+  const cols: _DG.Column[] = df.columns.byNames(['site', 'age', 'started', 'height']);
   grok.shell.closeTable(df);
 
   for (const d of detectors) {

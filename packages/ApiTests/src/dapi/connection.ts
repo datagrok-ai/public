@@ -1,8 +1,8 @@
-import * as grok from 'datagrok-api/grok';
-import * as DG from 'datagrok-api/dg';
+import type * as _grok from 'datagrok-api/grok';
+import type * as _DG from 'datagrok-api/dg';
+declare let grok: typeof _grok, DG: typeof _DG;
 
 import { before, category, expect, test, expectArray, after } from '@datagrok-libraries/utils/src/test';
-import { delay, delayWhen } from "rxjs/operators";
 
 
 category('Dapi: connection', () => {
@@ -54,7 +54,7 @@ category('Dapi: connection', () => {
   });
 
   after(async () => {
-    const connections:DG.DataConnection[] = await grok.dapi.connections.filter(`name="Local DG Test"`).list();
+    const connections: _DG.DataConnection[] = await grok.dapi.connections.filter(`name="Local DG Test"`).list();
     for (const conn of connections) {
       try {
         await grok.dapi.connections.delete(conn);
@@ -68,7 +68,7 @@ category('Dapi: connection cache', () => {
   const testFilePath2: string = 'System:AppData/ApiTests/renamed_test_files.txt';
 
   before(async () => {
-    const connection: DG.DataConnection = await grok.dapi.connections.filter(`shortName="AppData"`).first();
+    const connection: _DG.DataConnection = await grok.dapi.connections.filter(`shortName="AppData"`).first();
     await grok.functions.call('DropConnectionCache', { 'connection': connection });
   });
 
@@ -165,7 +165,7 @@ category('Dapi: connection cache', () => {
 }, { owner: 'ppolovyi@datagrok.ai'});
 
 category('Dapi: TableQuery', () => {
-  let dc: DG.DataConnection;
+  let dc: _DG.DataConnection;
   const tableName = 'public.orders';
   const fields = ['orderid', 'freight'];
   const whereClauses = [{
@@ -183,7 +183,7 @@ category('Dapi: TableQuery', () => {
   const orderByDb = [{
     field: 'orderid',
   }];
-  let fromTable: DG.TableInfo;
+  let fromTable: _DG.TableInfo;
   let from: string;
 
   before(async () => {

@@ -1,5 +1,6 @@
-import * as grok from 'datagrok-api/grok';
-import * as DG from 'datagrok-api/dg';
+import type * as _grok from 'datagrok-api/grok';
+import type * as _DG from 'datagrok-api/dg';
+declare let grok: typeof _grok, DG: typeof _DG;
 
 import {category, test, expect, expectTable, expectFloat} from '@datagrok-libraries/utils/src/test';
 
@@ -7,7 +8,7 @@ category('Dapi: functions calls', async () => {
   const xValue = 1.5;
 
   test('clone DFs', async () => {
-    const funcWithDf: DG.Func = await grok.functions.eval('ApiTests:dummyDataFrameFunction');
+    const funcWithDf: _DG.Func = await grok.functions.eval('ApiTests:dummyDataFrameFunction');
     const funcCall = await funcWithDf.prepare({'table': grok.data.demo.demog(30)}).call();
     const clonedFunccall = funcCall.clone();
     expectTable(funcCall.inputs['table'], clonedFunccall.inputs['table'].dataFrame);
@@ -15,7 +16,7 @@ category('Dapi: functions calls', async () => {
   });
 
   test('save', async () => {
-    const func: DG.Func = await grok.functions.eval('Sin');
+    const func: _DG.Func = await grok.functions.eval('Sin');
     const funcCall = await func.prepare({x: xValue}).call();
     funcCall.newId();
     const savedFuncCall = await grok.dapi.functions.calls.save(funcCall);
@@ -23,7 +24,7 @@ category('Dapi: functions calls', async () => {
   }, {stressTest: true});
 
   test('save & get author', async () => {
-    const func: DG.Func = await grok.functions.eval('Sin');
+    const func: _DG.Func = await grok.functions.eval('Sin');
     const funcCall = await func.prepare({x: xValue}).call();
     funcCall.newId();
     const savedFuncCall = await grok.dapi.functions.calls.include('session.user').save(funcCall);
@@ -42,10 +43,10 @@ category('Dapi: functions calls', async () => {
     };
 
     log('Receiving func dummyDataFrameFunction');
-    const funcWithDf: DG.Func = await grok.functions.eval('ApiTests:dummyDataFrameFunction');
+    const funcWithDf: _DG.Func = await grok.functions.eval('ApiTests:dummyDataFrameFunction');
     log('Received func dummyDataFrameFunction');
 
-    const inputTable: DG.DataFrame = grok.data.demo.demog(30);
+    const inputTable: _DG.DataFrame = grok.data.demo.demog(30);
     log('Saving input table');
     await grok.dapi.tables.uploadDataFrame(inputTable);
     log('Saved input table');
@@ -94,7 +95,7 @@ category('Dapi: functions calls', async () => {
   }, {stressTest: true});
 
   test('save options', async () => {
-    const func: DG.Func = await grok.functions.eval('Sin');
+    const func: _DG.Func = await grok.functions.eval('Sin');
     const funcCall = await func.prepare({x: xValue}).call();
     funcCall.newId();
     funcCall.options['testName'] = 'testValue';
@@ -103,7 +104,7 @@ category('Dapi: functions calls', async () => {
   }, {stressTest: true});
 
   test('load package function call', async () => {
-    const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
+    const packFunc: _DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
     const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
     funcCall.newId();
     await grok.dapi.functions.calls.save(funcCall);
@@ -113,7 +114,7 @@ category('Dapi: functions calls', async () => {
   });
 
   test('load script call', async () => {
-    const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
+    const packFunc: _DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
     const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
     funcCall.newId();
     await grok.dapi.functions.calls.save(funcCall);
@@ -123,7 +124,7 @@ category('Dapi: functions calls', async () => {
   });
 
   test('load script call author', async () => {
-    const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
+    const packFunc: _DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
     const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
     funcCall.newId();
     await grok.dapi.functions.calls.save(funcCall);
@@ -133,7 +134,7 @@ category('Dapi: functions calls', async () => {
   });
 
   test('load package function author', async () => {
-    const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
+    const packFunc: _DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
     const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
     funcCall.newId();
     await grok.dapi.functions.calls.save(funcCall);
@@ -161,7 +162,7 @@ category('Dapi: functions calls', async () => {
   });
 
   test('load script call inputs & outputs', async () => {
-    const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
+    const packFunc: _DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
     const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
     funcCall.newId();
     await grok.dapi.functions.calls.save(funcCall);
@@ -173,7 +174,7 @@ category('Dapi: functions calls', async () => {
   });
 
   test('load package function call inputs & outputs', async () => {
-    const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
+    const packFunc: _DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
     const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
     funcCall.newId();
     await grok.dapi.functions.calls.save(funcCall);
@@ -185,7 +186,7 @@ category('Dapi: functions calls', async () => {
   });
 
   test('load package funccall with func\'s valid nqName', async () => {
-    const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
+    const packFunc: _DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
     const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
     funcCall.newId();
     await grok.dapi.functions.calls.save(funcCall);
@@ -195,7 +196,7 @@ category('Dapi: functions calls', async () => {
   });
 
   test('load script funccall with func\'s valid nqName', async () => {
-    const scriptFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
+    const scriptFunc: _DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
     const funcCall = await scriptFunc.prepare({a: 1, b: 2}).call();
     funcCall.newId();
     await grok.dapi.functions.calls.save(funcCall);
@@ -205,7 +206,7 @@ category('Dapi: functions calls', async () => {
   });
 
   test('list package funccall with func\'s valid nqName', async () => {
-    const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
+    const packFunc: _DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
     const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
     funcCall.newId();
     await grok.dapi.functions.calls.save(funcCall);
@@ -218,7 +219,7 @@ category('Dapi: functions calls', async () => {
   });
 
   test('list script funccall with func\'s valid nqName', async () => {
-    const scriptFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
+    const scriptFunc: _DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
     const funcCall = await scriptFunc.prepare({a: 1, b: 2}).call();
     funcCall.newId();
     await grok.dapi.functions.calls.save(funcCall);
@@ -231,7 +232,7 @@ category('Dapi: functions calls', async () => {
   });
 
   test('list', async () => {
-    const func: DG.Func = await grok.functions.eval('Sin');
+    const func: _DG.Func = await grok.functions.eval('Sin');
     const funcCall = await func.prepare({x: xValue}).call();
     funcCall.newId();
     await grok.dapi.functions.calls.save(funcCall);
@@ -240,7 +241,7 @@ category('Dapi: functions calls', async () => {
   });
 
   test('list script calls with author', async () => {
-    const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
+    const packFunc: _DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
     const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
     funcCall.newId();
     await grok.dapi.functions.calls.save(funcCall);
@@ -251,7 +252,7 @@ category('Dapi: functions calls', async () => {
   });
 
   test('list package function with params script', async () => {
-    const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
+    const packFunc: _DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
     const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
     funcCall.newId();
     await grok.dapi.functions.calls.save(funcCall);
@@ -262,7 +263,7 @@ category('Dapi: functions calls', async () => {
   });
 
   test('list package functions with author', async () => {
-    const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
+    const packFunc: _DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
     const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
     funcCall.newId();
     await grok.dapi.functions.calls.save(funcCall);
@@ -273,7 +274,7 @@ category('Dapi: functions calls', async () => {
   });
 
   test('list package function with params func', async () => {
-    const packFunc: DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
+    const packFunc: _DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
     const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
     funcCall.newId();
     await grok.dapi.functions.calls.save(funcCall);
@@ -314,7 +315,7 @@ category('Dapi: functions calls', async () => {
   }, {skipReason: 'GROK-16229'});
 
   test('find', async () => {
-    const func: DG.Func = await grok.functions.eval('Sin');
+    const func: _DG.Func = await grok.functions.eval('Sin');
     const funcCall = await func.prepare({x: xValue}).call();
     funcCall.newId();
     await grok.dapi.functions.calls.save(funcCall);
@@ -323,7 +324,7 @@ category('Dapi: functions calls', async () => {
   });
 
   test('find options', async () => {
-    const func: DG.Func = await grok.functions.eval('Sin');
+    const func: _DG.Func = await grok.functions.eval('Sin');
     const funcCall = await func.prepare({x: xValue}).call();
     funcCall.newId();
     funcCall.options['testName'] = 'testValue';
@@ -333,7 +334,7 @@ category('Dapi: functions calls', async () => {
   });
 
   test('find func with params', async () => {
-    const func: DG.Func = await grok.functions.eval('Sin');
+    const func: _DG.Func = await grok.functions.eval('Sin');
     const funcCall = await func.prepare({x: xValue}).call();
     funcCall.newId();
     await grok.dapi.functions.calls.save(funcCall);
@@ -342,7 +343,7 @@ category('Dapi: functions calls', async () => {
   });
 
   test('delete', async () => {
-    const func: DG.Func = await grok.functions.eval('Sin');
+    const func: _DG.Func = await grok.functions.eval('Sin');
     const funcCall = await func.prepare({x: xValue}).call();
     funcCall.newId();
     await grok.dapi.functions.calls.save(funcCall);
@@ -378,9 +379,9 @@ category('Dapi: functions', async () => {
   }, {skipReason: 'GROK-15175'});
 
   test('Call query', async () => {
-    const queryList: DG.DataQuery[] = await grok.dapi.queries.filter('name = "dummyPackageQuery" and package.name = "ApiTests"').list();
+    const queryList: _DG.DataQuery[] = await grok.dapi.queries.filter('name = "dummyPackageQuery" and package.name = "ApiTests"').list();
     expect(queryList.length, 1);
-    const query: DG.DataQuery = queryList[0];
+    const query: _DG.DataQuery = queryList[0];
     expect(query.inputs.length, 1);
     const call = query.prepare({'x': 0.5});
     const res = (await call.call()).getOutputParamValue();

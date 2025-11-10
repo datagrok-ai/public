@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {before, category, expect, test, expectTable, expectExceptionAsync, after} from '@datagrok-libraries/utils/src/test';
-import {_package} from '../package-test';
+import {_package} from 'package-test';
 
 category('Packages: migrations', () => {
 
@@ -40,7 +40,7 @@ category('Packages: migrations', () => {
 
   async function publish(packageData: Uint8Array, name: string, debug: boolean) {
     const uploadResponse = await fetch(`${grok.dapi.root}/packages/dev/${key}/${name}?debug=${debug}&rebuild=false`,
-      {method: 'POST', body: packageData});
+      {method: 'POST', body: packageData as BodyInit});
     expect(uploadResponse.status, 200);
     expect((await uploadResponse.text()).indexOf('ApiError'), -1);
     await waitPackageInit();

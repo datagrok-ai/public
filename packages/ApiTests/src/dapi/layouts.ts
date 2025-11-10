@@ -1,8 +1,7 @@
-import { before, category, expect, test } from '@datagrok-libraries/utils/src/test';
-import * as DG from 'datagrok-api/dg';
-import * as grok from 'datagrok-api/grok';
-// import * as ui from 'datagrok-api/ui';
-// import * as DG from 'datagrok-api/dg';
+import type * as _grok from 'datagrok-api/grok';
+declare let grok: typeof _grok;
+
+import { category, expect, test } from '@datagrok-libraries/utils/src/test';
 
 category('Dapi: layouts', () => {
 
@@ -16,8 +15,4 @@ category('Dapi: layouts', () => {
     const layouts = (await grok.dapi.layouts.filter(`friendlyName = "${layout.friendlyName}"`).list());
     expect(layouts.length >= 0, true);
   }, { owner: 'aparamonov@datagrok.ai' });
-
-  test('viewLayout', async () => {
-    DG.ViewLayout
-  })
 });

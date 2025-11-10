@@ -1,9 +1,9 @@
-import * as grok from 'datagrok-api/grok';
-// import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
+import type * as _grok from 'datagrok-api/grok';
+import type * as _DG from 'datagrok-api/dg';
+declare let grok: typeof _grok, DG: typeof _DG;
 
 import {after, before, category, expect, expectTable, test} from '@datagrok-libraries/utils/src/test';
-import {_package} from '../package-test';
+import {_package} from 'package-test';
 
 category('Dapi: files', () => {
   const filePrefix = 'System:AppData/ApiTests/';
@@ -121,10 +121,9 @@ category('Dapi: files: formats', () => {
 
   for (const ext of extensions) {
     test(ext, async () => {
-      grok.data.files.openTable('System:AppData/ApiTests/datasets/formats/cars.' + ext).then((df) => {
-        expect(df.rowCount, 10, 'wrong rows number');
-        expect(df.columns.length, 10, 'wrong columns number');
-      });
+      const df = await grok.data.files.openTable('System:AppData/ApiTests/datasets/formats/cars.' + ext);
+      expect(df.rowCount, 10, 'wrong rows number');
+      expect(df.columns.length, 10, 'wrong columns number');
     }, ['kmz', 'kml'].includes(ext) ? {skipReason: 'GROK-13263'} : undefined);
   }
 }, {owner: 'aparamonov@datagrok.ai'});

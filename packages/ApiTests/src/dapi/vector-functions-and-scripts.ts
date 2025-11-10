@@ -1,9 +1,7 @@
-import * as grok from 'datagrok-api/grok';
-import * as DG from 'datagrok-api/dg';
+import type * as _DG from 'datagrok-api/dg';
+declare let DG: typeof _DG;
 
-import { category, test, expect, expectTable, awaitCheck } from '@datagrok-libraries/utils/src/test';
-
-const GDF = grok.dapi.functions;
+import { category, test, awaitCheck } from '@datagrok-libraries/utils/src/test';
 
 category('Dapi: vector scripts and functions', async () => {
 
