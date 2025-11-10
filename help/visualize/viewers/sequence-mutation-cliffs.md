@@ -49,7 +49,7 @@ The viewer maintains bidirectional selection synchronization with the main datas
 
 Use the position selector at the bottom of the viewer to switch between different sequence positions. Only positions that contain mutation cliffs will show data points.
 
-![Mutation Cliffs Viewer](./img/mutation-cliffs-viewer.gif)3
+![Mutation Cliffs Viewer](./img/sequence-mut-clifs.gif)
 
 ## Integration with SAR Analysis
 
