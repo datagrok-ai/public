@@ -397,7 +397,8 @@ export class PackageFunctions {
   })
   static isWebGPURenderValid(sc: DG.ScatterPlotViewer) : boolean {
     return sc.props.zoomAndFilter != 'pack and zoom by filter' &&
-      !sc.props.markersColumnName;
+      !sc.props.markersColumnName &&// different markers not yet supported YET
+      (sc.props.jitterSize ?? 0) == 0 && (sc.props.jitterSizeY ?? 0) == 0; // jittering not supported yet
   }
 }
 export {_ImageCellRenderer};
