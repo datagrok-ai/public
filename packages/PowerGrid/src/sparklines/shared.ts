@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import wu from 'wu';
 import * as ui from 'datagrok-api/ui';
@@ -74,7 +75,7 @@ export function distance(p1: DG.Point, p2: DG.Point): number {
 }
 
 export function getScaledNumber(cols: DG.Column[], row: number, activeColumn: DG.Column, settings: ScaleSettings): number {
-  const { normalization, zeroScale = false, invertScale = false } = settings;
+  const {normalization, zeroScale = false, invertScale = false} = settings;
 
   const colNumbers: number[] = [];
   const colMins: number[] = [];
