@@ -2,8 +2,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { ChatGptAssistant } from './gpt-base';
 import {powerSearchQueryTable, processPowerSearchTableView} from '@datagrok-libraries/db-explorer/src/search/search-widget-utils';
+import { ChatGptAssistant } from './prompt-engine/chatgpt-assistant';
+import { ChatGPTPromptEngine } from './prompt-engine/prompt-engine';
+import { AssistantRenderer } from './prompt-engine/rendering-tools';
 
 export const _package = new DG.Package();
 
@@ -129,38 +131,43 @@ export async function askMultiStep(question: string): Promise<DG.Widget> {
         container.appendChild(loader);
 
         try {
-          const gptAssistant = new ChatGptAssistant(apiKey);
-          const response = await gptAssistant.askMultiStep(question);
-
+          const gptEngine = new ChatGPTPromptEngine(apiKey, 'gpt-4.1-mini-2025-04-14');
+          const gptAssistant = new ChatGptAssistant(gptEngine);
+          // const response = await gptAssistant.plan(question);
+          // console.log('ChatGPT response:', response);
+          const { plan, result } = await gptAssistant.plan(question);
           ui.empty(container);
+          container.append(AssistantRenderer.renderFullOutput(plan, result).root);
 
-          const func = DG.Func.find({ name: response.function })[0];
-          if (!func) {
-            container.appendChild(
-              ui.divText(`Function "${response.function}" not found.`, { style: { textAlign: 'center' } })
-            );
-            return;
-          }
+          // ui.empty(container);
 
-          if (func.type === 'data-query' && !(func.outputs.length == 1 && func.outputs[0].propertyType === 'string')) {
-            const inputParams = response.arguments;
-            container.appendChild(
-              (await createTableQueryWidget(func, inputParams)).root
-            );
-          } else {
-            const result = response.result;
-            if (typeof result === 'string') {
-              if (grok.chem.checkSmiles(result)) {
-                container.appendChild(grok.chem.drawMolecule(result, 300,300));
-              } else {
-                container.appendChild(ui.divText(result, { style: { textAlign: 'center' } }));
-              }
-            } else if (result instanceof HTMLElement) {
-              container.appendChild(result);
-            } else {
-              container.appendChild(ui.divText('Unsupported result type: ' + typeof result , { style: { textAlign: 'center' } }));
-            }
-          }
+          // const func = DG.Func.find({ name: response.function })[0];
+          // if (!func) {
+          //   container.appendChild(
+          //     ui.divText(`Function "${response.function}" not found.`, { style: { textAlign: 'center' } })
+          //   );
+          //   return;
+          // }
+
+          // if (func.type === 'data-query' && !(func.outputs.length == 1 && func.outputs[0].propertyType === 'string')) {
+          //   const inputParams = response.arguments;
+          //   container.appendChild(
+          //     (await createTableQueryWidget(func, inputParams)).root
+          //   );
+          // } else {
+          //   const result = response.result;
+          //   if (typeof result === 'string') {
+          //     if (grok.chem.checkSmiles(result)) {
+          //       container.appendChild(grok.chem.drawMolecule(result, 300,300));
+          //     } else {
+          //       container.appendChild(ui.divText(result, { style: { textAlign: 'center' } }));
+          //     }
+          //   } else if (result instanceof HTMLElement) {
+          //     container.appendChild(result);
+          //   } else {
+          //     container.appendChild(ui.divText('Unsupported result type: ' + typeof result , { style: { textAlign: 'center' } }));
+          //   }
+          // }
         } catch (error) {
           ui.empty(container);
           container.appendChild(ui.divText('Error while processing request.', { style: { textAlign: 'center' } }));
