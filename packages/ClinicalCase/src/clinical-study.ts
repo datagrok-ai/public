@@ -8,6 +8,8 @@ import {SITE_ID, STUDY_ID} from './constants/columns-constants';
 import {addVisitDayFromTvDomain, createEventStartEndDaysCol} from './data-preparation/data-preparation';
 import {createFilters} from './utils/utils';
 import {createErrorsByDomainMap} from './utils/views-validation-utils';
+import {ClinStudyConfig} from './utils/types';
+import {ClinicalCaseViewsConfig} from './views-config';
 
 export class ClinicalDomains {
   ae: DG.DataFrame = null;
@@ -69,6 +71,10 @@ export class ClinicalDomains {
   all(): DG.DataFrame[] {
     return Object.keys(this).map((k) => this[k]).filter((v) => v != null);
   }
+
+  static allClinicalDomainsNames(): string[] {
+    return Object.keys(this);
+  }
 }
 
 export class ClinicalStudy {
@@ -83,10 +89,14 @@ export class ClinicalStudy {
   validated = false;
   subjSitesCountsProcessed = false;
   initCompleted = false;
+  config: ClinStudyConfig;
+  viewsConfig = new ClinicalCaseViewsConfig();
+  views: {[key: string]: DG.ViewBase} = {};
+  loadingStudyData: boolean | null = null;
 
-  constructor(studyId?: string) {
-    if (studyId)
-      this.studyId = studyId;
+  constructor(config: ClinStudyConfig) {
+    this.config = config;
+    this.studyId = config.name;
   }
 
   initFromWorkspace(): void {

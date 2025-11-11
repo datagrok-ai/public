@@ -10,7 +10,6 @@ import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {TRT_ARM_FIELD} from '../views-config';
 import {tTest} from '@datagrok-libraries/statistics/src/tests';
 import {getPearsonChiCriterionPValue} from '../stats/pearson-chi-criteria';
-import {studiesViewsConfigs} from '../package';
 const {jStat} = require('jstat');
 
 
@@ -45,7 +44,7 @@ export class QuestionnaiesView extends ClinicalCaseViewBase {
   }
 
   createView(): void {
-    this.splitBy = [SEX, RACE, ETHNIC, studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD]]
+    this.splitBy = [SEX, RACE, ETHNIC, studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD]]
       .filter((it) => studies[this.studyId].domains.dm.columns.names().includes(it)) as string[];
     this.selectedSplitBy = this.splitBy.length ? this.splitBy[0] : '';
     this.qsWithDm = addDataFromDmDomain(studies[this.studyId].domains.qs, studies[this.studyId].domains.dm,

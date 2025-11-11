@@ -48,7 +48,6 @@ export const DOMAINS_COLOR_PALETTE = {
         'ex': DG.Color.purple
 };
 export const DOMAINS_WITH_EVENT_START_END_DAYS = ['ae', 'cm', 'ex'];
-export const TIMELINES_VIEWER = 'Timelines';
 
 export const StudyConfigFileName = 'study.json';
 export const demoStudyId = 'CDISCPILOT01';

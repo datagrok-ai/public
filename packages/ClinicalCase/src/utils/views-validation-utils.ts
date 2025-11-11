@@ -10,7 +10,7 @@ import {AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, CON_MED_END_DAY_FIE
   TRT_ARM_FIELD,
   VISIT_FIELD} from '../views-config';
 import {updateDivInnerHTML} from './utils';
-import {studiesViewsConfigs} from '../package';
+import {studies} from '../clinical-study';
 
 
 export function createErrorsByDomainMap(validationResults: DG.DataFrame): {[key: string]: number} {
@@ -88,27 +88,27 @@ export function getRequiredColumnsByView(studyId: string) {
           'req': [
             sdtmCols.DOMAIN,
             sdtmCols.SUBJECT_ID,
-            studiesViewsConfigs[studyId].config[TIMELINES_VIEW_NAME][AE_START_DAY_FIELD],
-            studiesViewsConfigs[studyId].config[TIMELINES_VIEW_NAME][AE_END_DAY_FIELD],
-            studiesViewsConfigs[studyId].config[TIMELINES_VIEW_NAME][AE_TERM_FIELD],
+            studies[studyId].viewsConfig.config[TIMELINES_VIEW_NAME][AE_START_DAY_FIELD],
+            studies[studyId].viewsConfig.config[TIMELINES_VIEW_NAME][AE_END_DAY_FIELD],
+            studies[studyId].viewsConfig.config[TIMELINES_VIEW_NAME][AE_TERM_FIELD],
           ],
         },
         'cm': {
           'req': [
             sdtmCols.DOMAIN,
             sdtmCols.SUBJECT_ID,
-            studiesViewsConfigs[studyId].config[TIMELINES_VIEW_NAME][CON_MED_NAME_FIELD],
-            studiesViewsConfigs[studyId].config[TIMELINES_VIEW_NAME][CON_MED_START_DAY_FIELD],
-            studiesViewsConfigs[studyId].config[TIMELINES_VIEW_NAME][CON_MED_END_DAY_FIELD],
+            studies[studyId].viewsConfig.config[TIMELINES_VIEW_NAME][CON_MED_NAME_FIELD],
+            studies[studyId].viewsConfig.config[TIMELINES_VIEW_NAME][CON_MED_START_DAY_FIELD],
+            studies[studyId].viewsConfig.config[TIMELINES_VIEW_NAME][CON_MED_END_DAY_FIELD],
           ],
         },
         'ex': {
           'req': [
             sdtmCols.DOMAIN,
             sdtmCols.SUBJECT_ID,
-            studiesViewsConfigs[studyId].config[TIMELINES_VIEW_NAME][INV_DRUG_NAME_FIELD],
-            studiesViewsConfigs[studyId].config[TIMELINES_VIEW_NAME][INV_DRUG_START_DAY_FIELD],
-            studiesViewsConfigs[studyId].config[TIMELINES_VIEW_NAME][INV_DRUG_END_DAY_FIELD],
+            studies[studyId].viewsConfig.config[TIMELINES_VIEW_NAME][INV_DRUG_NAME_FIELD],
+            studies[studyId].viewsConfig.config[TIMELINES_VIEW_NAME][INV_DRUG_START_DAY_FIELD],
+            studies[studyId].viewsConfig.config[TIMELINES_VIEW_NAME][INV_DRUG_END_DAY_FIELD],
           ],
         },
       },
@@ -135,25 +135,25 @@ export function getRequiredColumnsByView(studyId: string) {
         'ae': {
           'req': [
             sdtmCols.SUBJECT_ID,
-            studiesViewsConfigs[studyId].config[PATIENT_PROFILE_VIEW_NAME][AE_TERM_FIELD],
-            studiesViewsConfigs[studyId].config[PATIENT_PROFILE_VIEW_NAME][AE_START_DAY_FIELD],
-            studiesViewsConfigs[studyId].config[PATIENT_PROFILE_VIEW_NAME][AE_END_DAY_FIELD],
+            studies[studyId].viewsConfig.config[PATIENT_PROFILE_VIEW_NAME][AE_TERM_FIELD],
+            studies[studyId].viewsConfig.config[PATIENT_PROFILE_VIEW_NAME][AE_START_DAY_FIELD],
+            studies[studyId].viewsConfig.config[PATIENT_PROFILE_VIEW_NAME][AE_END_DAY_FIELD],
           ],
         },
         'ex': {
           'req': [
             sdtmCols.SUBJECT_ID,
-            studiesViewsConfigs[studyId].config[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_NAME_FIELD],
-            studiesViewsConfigs[studyId].config[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_START_DAY_FIELD],
-            studiesViewsConfigs[studyId].config[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_END_DAY_FIELD],
+            studies[studyId].viewsConfig.config[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_NAME_FIELD],
+            studies[studyId].viewsConfig.config[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_START_DAY_FIELD],
+            studies[studyId].viewsConfig.config[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_END_DAY_FIELD],
           ],
         },
         'cm': {
           'req': [
             sdtmCols.SUBJECT_ID,
-            studiesViewsConfigs[studyId].config[PATIENT_PROFILE_VIEW_NAME][CON_MED_NAME_FIELD],
-            studiesViewsConfigs[studyId].config[PATIENT_PROFILE_VIEW_NAME][CON_MED_START_DAY_FIELD],
-            studiesViewsConfigs[studyId].config[PATIENT_PROFILE_VIEW_NAME][CON_MED_END_DAY_FIELD],
+            studies[studyId].viewsConfig.config[PATIENT_PROFILE_VIEW_NAME][CON_MED_NAME_FIELD],
+            studies[studyId].viewsConfig.config[PATIENT_PROFILE_VIEW_NAME][CON_MED_START_DAY_FIELD],
+            studies[studyId].viewsConfig.config[PATIENT_PROFILE_VIEW_NAME][CON_MED_END_DAY_FIELD],
           ],
         },
       },
@@ -179,13 +179,13 @@ export function getRequiredColumnsByView(studyId: string) {
         'ae': {
           'req': [
             sdtmCols.SUBJECT_ID,
-            studiesViewsConfigs[studyId].config[AE_RISK_ASSESSMENT_VIEW_NAME][AE_TERM_FIELD],
+            studies[studyId].viewsConfig.config[AE_RISK_ASSESSMENT_VIEW_NAME][AE_TERM_FIELD],
           ],
         },
         'dm': {
           'req': [
             sdtmCols.SUBJECT_ID,
-            studiesViewsConfigs[studyId].config[AE_RISK_ASSESSMENT_VIEW_NAME][TRT_ARM_FIELD],
+            studies[studyId].viewsConfig.config[AE_RISK_ASSESSMENT_VIEW_NAME][TRT_ARM_FIELD],
           ],
         },
       },
@@ -211,7 +211,7 @@ export function getRequiredColumnsByView(studyId: string) {
             sdtmCols.ETHNIC,
             sdtmCols.SEX,
             sdtmCols.RACE,
-            studiesViewsConfigs[studyId].config[DISTRIBUTIONS_VIEW_NAME][TRT_ARM_FIELD],
+            studies[studyId].viewsConfig.config[DISTRIBUTIONS_VIEW_NAME][TRT_ARM_FIELD],
           ],
         },
       },
@@ -220,7 +220,7 @@ export function getRequiredColumnsByView(studyId: string) {
           'req': [
             sdtmCols.SUBJECT_ID,
             sdtmCols.VISIT_DAY,
-            studiesViewsConfigs[studyId].config[DISTRIBUTIONS_VIEW_NAME][VISIT_FIELD],
+            studies[studyId].viewsConfig.config[DISTRIBUTIONS_VIEW_NAME][VISIT_FIELD],
             sdtmCols.LAB_RES_N,
             sdtmCols.LAB_TEST,
           ],
@@ -229,7 +229,7 @@ export function getRequiredColumnsByView(studyId: string) {
           'req': [
             sdtmCols.SUBJECT_ID,
             sdtmCols.VISIT_DAY,
-            studiesViewsConfigs[studyId].config[DISTRIBUTIONS_VIEW_NAME][VISIT_FIELD],
+            studies[studyId].viewsConfig.config[DISTRIBUTIONS_VIEW_NAME][VISIT_FIELD],
             sdtmCols.VS_RES_N,
             sdtmCols.VS_TEST,
           ],
@@ -242,7 +242,7 @@ export function getRequiredColumnsByView(studyId: string) {
           'req': [
             sdtmCols.SUBJECT_ID,
             sdtmCols.LAB_TEST,
-            studiesViewsConfigs[studyId].config[CORRELATIONS_VIEW_NAME][VISIT_FIELD],
+            studies[studyId].viewsConfig.config[CORRELATIONS_VIEW_NAME][VISIT_FIELD],
             sdtmCols.LAB_RES_N,
           ],
         },
@@ -250,7 +250,7 @@ export function getRequiredColumnsByView(studyId: string) {
           'req': [
             sdtmCols.SUBJECT_ID,
             sdtmCols.VS_TEST,
-            studiesViewsConfigs[studyId].config[CORRELATIONS_VIEW_NAME][VISIT_FIELD],
+            studies[studyId].viewsConfig.config[CORRELATIONS_VIEW_NAME][VISIT_FIELD],
             sdtmCols.VS_RES_N,
           ],
         },
@@ -262,7 +262,7 @@ export function getRequiredColumnsByView(studyId: string) {
           'req': [
             sdtmCols.SUBJECT_ID,
             sdtmCols.LAB_TEST,
-            studiesViewsConfigs[studyId].config[TIME_PROFILE_VIEW_NAME][VISIT_FIELD],
+            studies[studyId].viewsConfig.config[TIME_PROFILE_VIEW_NAME][VISIT_FIELD],
             sdtmCols.VISIT_DAY,
             sdtmCols.LAB_RES_N,
           ],
@@ -271,7 +271,7 @@ export function getRequiredColumnsByView(studyId: string) {
           'req': [
             sdtmCols.SUBJECT_ID,
             sdtmCols.VS_TEST,
-            studiesViewsConfigs[studyId].config[TIME_PROFILE_VIEW_NAME][VISIT_FIELD],
+            studies[studyId].viewsConfig.config[TIME_PROFILE_VIEW_NAME][VISIT_FIELD],
             sdtmCols.VISIT_DAY,
             sdtmCols.VS_RES_N,
           ],
@@ -288,7 +288,7 @@ export function getRequiredColumnsByView(studyId: string) {
             sdtmCols.ETHNIC,
             sdtmCols.SEX,
             sdtmCols.RACE,
-            studiesViewsConfigs[studyId].config[TREE_MAP_VIEW_NAME][TRT_ARM_FIELD],
+            studies[studyId].viewsConfig.config[TREE_MAP_VIEW_NAME][TRT_ARM_FIELD],
           ],
         },
         'ae': {
@@ -315,7 +315,7 @@ export function getRequiredColumnsByView(studyId: string) {
             sdtmCols.SUBJECT_ID,
             sdtmCols.VISIT_START_DATE,
             sdtmCols.VISIT_DAY,
-            studiesViewsConfigs[studyId].config[VISITS_VIEW_NAME][VISIT_FIELD],
+            studies[studyId].viewsConfig.config[VISITS_VIEW_NAME][VISIT_FIELD],
           ],
         },
         'dm': {
@@ -344,7 +344,7 @@ export function getRequiredColumnsByView(studyId: string) {
             sdtmCols.ETHNIC,
             sdtmCols.SEX,
             sdtmCols.RACE,
-            studiesViewsConfigs[studyId].config[QUESTIONNAIRES_VIEW_NAME][TRT_ARM_FIELD],
+            studies[studyId].viewsConfig.config[QUESTIONNAIRES_VIEW_NAME][TRT_ARM_FIELD],
           ],
         },
       },
@@ -353,9 +353,9 @@ export function getRequiredColumnsByView(studyId: string) {
       'req_domains': {
         'ae': {
           'req': [
-            studiesViewsConfigs[studyId].config[AE_BROWSER_VIEW_NAME][AE_TERM_FIELD],
-            studiesViewsConfigs[studyId].config[AE_BROWSER_VIEW_NAME][AE_START_DAY_FIELD],
-            studiesViewsConfigs[studyId].config[AE_BROWSER_VIEW_NAME][AE_END_DAY_FIELD],
+            studies[studyId].viewsConfig.config[AE_BROWSER_VIEW_NAME][AE_TERM_FIELD],
+            studies[studyId].viewsConfig.config[AE_BROWSER_VIEW_NAME][AE_START_DAY_FIELD],
+            studies[studyId].viewsConfig.config[AE_BROWSER_VIEW_NAME][AE_END_DAY_FIELD],
           ],
         },
       },

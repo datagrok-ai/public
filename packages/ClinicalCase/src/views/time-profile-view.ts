@@ -8,7 +8,7 @@ import {ETHNIC, LAB_RES_N, LAB_TEST, VISIT_DAY, RACE, SEX,
   VISIT_DAY_STR} from '../constants/columns-constants';
 import {createVisitDayStrCol, dynamicComparedToBaseline} from '../data-preparation/data-preparation';
 import {updateDivInnerHTML} from '../utils/utils';
-import {_package, studiesViewsConfigs} from '../package';
+import {_package} from '../package';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {TRT_ARM_FIELD, VISIT_FIELD} from '../views-config';
 import {TIME_PROFILE_VIEW_NAME} from '../constants/view-names-constants';
@@ -45,10 +45,10 @@ export class TimeProfileView extends ClinicalCaseViewBase {
   }
 
   createView(): void {
-    this.splitBy = [studiesViewsConfigs[this.studyId].config[TIME_PROFILE_VIEW_NAME][TRT_ARM_FIELD], SEX, RACE, ETHNIC]
+    this.splitBy = [studies[this.studyId].viewsConfig.config[TIME_PROFILE_VIEW_NAME][TRT_ARM_FIELD], SEX, RACE, ETHNIC]
       .filter((it) => studies[this.studyId].domains.dm &&
       studies[this.studyId].domains.dm.columns.names().includes(it));
-    if (studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD] === VISIT_DAY_STR)
+    if (studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD] === VISIT_DAY_STR)
       this.domains.forEach((it) => createVisitDayStrCol(studies[this.studyId].domains[it]));
     this.domains = this.domains.filter((it) =>
       studies[this.studyId].domains[it] !== null && !this.optDomainsWithMissingCols.includes(it));
@@ -56,11 +56,11 @@ export class TimeProfileView extends ClinicalCaseViewBase {
     this.uniqueLabValues = Array.from(getUniqueValues(studies[this.studyId].domains[this.selectedDomain],
       this.domainFields[this.selectedDomain]['test']));
     this.uniqueVisits = Array.from(getUniqueValues(studies[this.studyId].domains[this.selectedDomain],
-      studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD]));
+      studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD]));
     this.selectedLabValue = this.uniqueLabValues[0] as string;
     this.selectedType = this.types[0];
     this.visitNamesAndDays = getVisitNamesAndDays(studies[this.studyId].domains[this.selectedDomain],
-      studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD], VISIT_DAY);
+      studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD], VISIT_DAY);
     this.bl = this.visitNamesAndDays[0].name;
     this.ep = this.visitNamesAndDays[this.visitNamesAndDays.length-1].name;
     this.createLaboratoryDataframe();
@@ -71,10 +71,10 @@ export class TimeProfileView extends ClinicalCaseViewBase {
       this.uniqueLabValues = Array.from(getUniqueValues(studies[this.studyId].domains[this.selectedDomain],
         this.domainFields[this.selectedDomain]['test']));
       this.uniqueVisits = Array.from(getUniqueValues(studies[this.studyId].domains[this.selectedDomain],
-        studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD]));
+        studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD]));
       this.selectedLabValue = this.uniqueLabValues[0] as string;
       this.visitNamesAndDays = getVisitNamesAndDays(studies[this.studyId].domains[this.selectedDomain],
-        studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD], VISIT_DAY);
+        studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD], VISIT_DAY);
       if (this.visitNamesAndDays.findIndex((it) => it.name === this.bl) === -1)
         this.bl = this.visitNamesAndDays[0].name;
 
@@ -193,7 +193,7 @@ export class TimeProfileView extends ClinicalCaseViewBase {
     let df = this.filterDataFrameByDays(studies[this.studyId].domains[this.selectedDomain].clone());
     if (this.splitBy.length) {
       df = addDataFromDmDomain(df, studies[this.studyId].domains.dm,
-        [SUBJECT_ID, VISIT_DAY, studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD]]
+        [SUBJECT_ID, VISIT_DAY, studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD]]
           .concat(Object.values(this.domainFields[this.selectedDomain])),
         this.splitBy);
     }
@@ -206,10 +206,10 @@ export class TimeProfileView extends ClinicalCaseViewBase {
     let df = this.filterDataFrameByDays(studies[this.studyId].domains[this.selectedDomain].clone());
     dynamicComparedToBaseline(df, this.domainFields[this.selectedDomain]['test'],
       this.domainFields[this.selectedDomain]['res'], this.bl,
-      studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD], 'LAB_DYNAMIC_BL', true);
+      studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD], 'LAB_DYNAMIC_BL', true);
     if (this.splitBy.length) {
       df = addDataFromDmDomain(df, studies[this.studyId].domains.dm, [SUBJECT_ID, VISIT_DAY,
-        studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD],
+        studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD],
         this.domainFields[this.selectedDomain]['test'], this.domainFields[this.selectedDomain]['res']], this.splitBy);
     }
 

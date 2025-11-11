@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import {MH_BODY_SYSTEM, MH_CATEGORY, SUBJECT_ID} from '../constants/columns-constants';
-import {_package, studiesViewsConfigs} from '../package';
+import {_package} from '../package';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {updateDivInnerHTML} from '../utils/utils';
 import {MH_TERM_FIELD} from '../views-config';
@@ -44,7 +44,7 @@ export class MedicalHistoryView extends ClinicalCaseViewBase {
 
     checkColumnsAndCreateViewer(
       studies[this.studyId].domains.mh,
-      [studiesViewsConfigs[this.studyId].config[this.name][MH_TERM_FIELD]],
+      [studies[this.studyId].viewsConfig.config[this.name][MH_TERM_FIELD]],
       this.mhDecodTermChart, () => {
         this.createDecodeTermChart(viewerTitle);
       },
@@ -88,7 +88,7 @@ export class MedicalHistoryView extends ClinicalCaseViewBase {
 
   private createDecodeTermChart(viewerTitle: any) {
     const mhDecodTermChart = this.mh.plot.bar({
-      split: studiesViewsConfigs[this.studyId].config[this.name][MH_TERM_FIELD],
+      split: studies[this.studyId].viewsConfig.config[this.name][MH_TERM_FIELD],
       style: 'dashboard',
       legendVisibility: 'Never',
     }).root;
