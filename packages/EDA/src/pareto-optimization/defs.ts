@@ -40,3 +40,7 @@ export type ColorOpt = Record<string, string | undefined>;
 
 export const SCATTER_ROW_LIM = 5000;
 export const SCATTER3D_ROW_LIM = 1000;
+
+export const USE_PARETO_AXES = true;
+export const USE_AUTO_SELECTION = true;
+export const PARETO_COLOR_CODING = true;

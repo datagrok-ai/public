@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {USE_AUTO_SELECTION, PARETO_COLOR_CODING, USE_PARETO_AXES} from './defs';
 
 export class ParetoFrontViewer extends DG.JsViewer {
   private title: string;
@@ -11,15 +12,19 @@ export class ParetoFrontViewer extends DG.JsViewer {
   private minimizeColumnNames: string[];
   private maximizeColumnNames: string[];
   private labelColumnNames: string[];
-  private autoLabelsSelection: boolean = true;
+  private useAutoSelection: boolean = true;
   private xColumnName: string;
   private yColumnName: string;
   private useParetoAxes: boolean;
   private legendVisibility: string;
   private legendPosition: string;
   private colorColumnName: string;
-  private autoColorSelection: boolean = true;
+  private paretoColorCoding: boolean = true;
   private initialized = false;
+
+  get type(): string {
+    return 'ParetoFrontViewer';
+  }
 
   constructor() {
     super();
@@ -59,7 +64,8 @@ export class ParetoFrontViewer extends DG.JsViewer {
       nullable: false,
     });
 
-    this.useParetoAxes = this.bool('useParetoAxes', true, {
+    this.useParetoAxes = this.bool('useParetoAxes', USE_PARETO_AXES, {
+      defaultValue: USE_PARETO_AXES,
       category: 'Axes',
       description: 'Use optimized variables as scatter plot axes.',
     });
@@ -69,10 +75,10 @@ export class ParetoFrontViewer extends DG.JsViewer {
       description: 'Label columns to show next to the markers.',
     });
 
-    this.autoLabelsSelection = this.bool('Labels auto-selection', true, {
+    this.useAutoSelection = this.bool('useAutoSelection', USE_AUTO_SELECTION, {
       category: 'Labels',
       description: 'Automatically select the most relevant columns for the legend.',
-      defaultValue: true,
+      defaultValue: USE_AUTO_SELECTION,
     });
 
     this.legendVisibility = this.string('legendVisibility', 'Auto', {choices: ['Auto', 'Always', 'Never']});
@@ -86,15 +92,21 @@ export class ParetoFrontViewer extends DG.JsViewer {
       nullable: false,
     });
 
-    this.autoColorSelection = this.bool('paretoColorCoding', true, {
+    this.paretoColorCoding = this.bool('paretoColorCoding', PARETO_COLOR_CODING, {
       category: 'Color',
-      description: 'Colors markers based on whether a sample is Pareto optimal or not.',
-      defaultValue: true,
+      description: 'Color markers based on whether a point is Pareto optimal or not.',
+      defaultValue: PARETO_COLOR_CODING,
     });
   } // constructor
 
   private init() {
+    this.setOptions({
+      useParetoAxes: USE_PARETO_AXES,
+      useAutoSelection: USE_AUTO_SELECTION,
+      paretoColorCoding: PARETO_COLOR_CODING,
+    });
 
+    console.log(this);
   }
 
   onTableAttached() {
