@@ -186,9 +186,11 @@ export type EarlyStoppingSettings = {
   useEarlyStopping: boolean,
   costFuncThreshold: number,
   stopAfter: number,
+  useAboveThresholdPoints: boolean,
 };
 
 export const EARLY_STOP_DEFAULT = false;
+export const USE_ABOVE_THRESHOLD_DEFAULT = false;
 export const COST_FUNC_THRESH = 1e-5;
 export const STOP_AFTER_DEFAULT = 1;
 export const STOP_AFTER_MIN = 1;

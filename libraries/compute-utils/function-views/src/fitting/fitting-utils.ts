@@ -17,7 +17,8 @@ import {GRID_SIZE, HELP_LINK, INDICES, TIMEOUT, TARGET_DATAFRAME_INFO, TITLE, NA
   EARLY_STOP_DEFAULT,
   COST_FUNC_THRESH,
   STOP_AFTER_DEFAULT,
-  STOP_AFTER_MIN} from './constants';
+  STOP_AFTER_MIN,
+  USE_ABOVE_THRESHOLD_DEFAULT} from './constants';
 
 /** Returns indices corresponding to the closest items */
 export function getIndices(expArg: DG.Column, simArg: DG.Column): Uint32Array {
@@ -103,7 +104,7 @@ export function getErrors(expArg: DG.Column | null, expFuncs: DG.Column[],
 
 
 /** Get call funcCall with the specified inputs */
-export function makeGetCalledFuncCall(func: DG.Func, inputs: Record<string, any>, variedInputNames: string[]) {
+export function makeGetCalledFuncCall(func: DG.Func, inputs: Record<string, any>, variedInputNames: string[], useClone: boolean) {
   const funcCall = func.prepare(inputs);
   const resetSharedCall = () => {
     for (const param of funcCall.inputParams.values())
@@ -115,7 +116,8 @@ export function makeGetCalledFuncCall(func: DG.Func, inputs: Record<string, any>
   return async function getCalledFuncCall(x: Float64Array): Promise<DG.FuncCall> {
     resetSharedCall();
     x.forEach((val, idx) => funcCall.inputs[variedInputNames[idx]] = val);
-    return funcCall.call(undefined, undefined, {processed: true, report: false});
+    await funcCall.call(undefined, undefined, {processed: true, report: false});
+    return useClone ? funcCall.clone() : funcCall;
   };
 } // makeGetCalledFuncCall
 
@@ -527,6 +529,7 @@ export const defaultEarlyStoppingSettings: EarlyStoppingSettings = {
   useEarlyStopping: EARLY_STOP_DEFAULT,
   costFuncThreshold: COST_FUNC_THRESH,
   stopAfter: STOP_AFTER_DEFAULT,
+  useAboveThresholdPoints: USE_ABOVE_THRESHOLD_DEFAULT,
 };
 
 /** Returns early stopping intpus & settings */

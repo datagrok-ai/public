@@ -1557,7 +1557,7 @@ export class FittingView {
       const toShowTableName = outputsOfInterest.map((item) => item.prop.propertyType).filter((type) => type === DG.TYPE.DATA_FRAME).length > 1;
 
       /** Get call funcCall with the specified inputs */
-      const getCalledFuncCall = makeGetCalledFuncCall(this.func, inputs, variedInputNames);
+      const getCalledFuncCall = makeGetCalledFuncCall(this.func, inputs, variedInputNames, true);
 
       // get optimizer inputs/outputs config
       const inputBounds = this.makeOptimizerInputsConfig();

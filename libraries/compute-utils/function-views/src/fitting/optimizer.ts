@@ -27,7 +27,8 @@ export async function performNelderMeadOptimization(
   const rand = reproSettings.reproducible ? seededRandom(reproSettings.seed) : Math.random;
   const params = sampleParamsWithFormulaBounds(samplesCount, inputsBounds, rand);
 
-  const extremums: Extremum[] = [];
+  const validExtremums: Extremum[] = [];
+  const allExtremums: Extremum[] = [];
   const warnings: string[] = [];
   const failedInitPoint: Float64Array[] = [];
   let failsCount = 0;
@@ -38,6 +39,7 @@ export async function performNelderMeadOptimization(
   const pi = DG.TaskBarProgressIndicator.create(`Fitting... (${percentage}%)`, {cancelable: true});
 
   const useEarlyStopping = earlyStoppingSettings.useEarlyStopping;
+  const useAboveThresholdPoints = earlyStoppingSettings.useAboveThresholdPoints;
   const threshold = useEarlyStopping ? earlyStoppingSettings.costFuncThreshold : undefined;
   const maxValidPoints = earlyStoppingSettings.stopAfter;
 
@@ -52,14 +54,15 @@ export async function performNelderMeadOptimization(
 
       if (useEarlyStopping) {
         if (extremum.cost <= threshold!) {
-          extremums.push(extremum);
+          validExtremums.push(extremum);
           ++validPointsCount;
-        }
+        } else
+          allExtremums.push(extremum);
 
         if (validPointsCount >= maxValidPoints)
           break;
       } else
-        extremums.push(extremum);
+        validExtremums.push(extremum);
 
       percentage = Math.floor(100 * (i + 1) / samplesCount);
       pi.update(percentage, `Fitting... (${percentage}%)`);
@@ -90,8 +93,11 @@ export async function performNelderMeadOptimization(
     failsDF.columns.add(DG.Column.fromStrings('Issue', warnings));
   }
 
+  if (useEarlyStopping && useAboveThresholdPoints && maxValidPoints > validExtremums.length)
+    validExtremums.push(...allExtremums);
+
   return {
-    extremums: extremums,
+    extremums: validExtremums,
     fails: failsDF,
   };
 }
