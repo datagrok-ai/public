@@ -34,15 +34,15 @@ Out of the box, the following semantic types are automatically detected based on
 | Semantic type           | Value             | Required plugins        |
 |-------------------------|-----------------|------------------------|
 | **Cheminformatics types** |                 |                        |
-| Molecule                | 'Molecule'         | Chem                   |
-| Chemical reaction       | 'ChemicalReaction' | Chem                   |
-| Chemical mixture (Mixfile format)       | 'ChemicalMixture'  | Chem                   |
+| Molecule                | 'Molecule'         | [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)                   |
+| Chemical reaction       | 'ChemicalReaction' | [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)                   |
+| Chemical mixture (Mixfile format)       | 'ChemicalMixture'  | [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)                   |
 | **Bioinformatics types** |                 |                        |
-| Macromolecule           | 'Macromolecule'    | Bio                    |
-| HELM                    | 'HELM'             | Bio                    |
-| Phylogenetic trees                  | 'Newick'           | Bio                    |
-| Molecule 3D             | 'Molecule3D'       | BiostructureViewer     |
-| PDB identifiers           | PDB_ID           | BiostructureViewer     |
+| Macromolecule           | 'Macromolecule'    | [Bio](https://github.com/datagrok-ai/public/tree/master/packages/Bio)                    |
+| HELM                    | 'HELM'             | [Bio](https://github.com/datagrok-ai/public/tree/master/packages/Bio)                    |
+| Phylogenetic trees                  | 'Newick'           | [Bio](https://github.com/datagrok-ai/public/tree/master/packages/Bio)                    |
+| Molecule 3D             | 'Molecule3D'       | [Biostructure Viewer](https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer)     |
+| PDB identifiers           | PDB_ID           | [Biostructure Viewer](https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer)     |
 | **General types**        |                 |                        |
 | Text                    | 'Text'             | -                      |
 | Duration                | 'Duration'         | -                      |
@@ -67,8 +67,8 @@ Out of the box, the following semantic types are automatically detected based on
 | Latitude                | 'Latitude'         | -                      |
 | Longitude               | 'Longitude'        | -                      |
 | **Specialized types**    |                 |                        |
-| Curve data              | 'fit'              | Curves                 |
-| PNG images               | 'rawPng'           | Curves                 |
+| Curve data              | 'fit'              | [Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves)                 |
+| PNG images               | 'rawPng'           | [Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves)                 |
 
 
 ## Custom semantic types
