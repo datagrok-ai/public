@@ -1,11 +1,11 @@
-import type * as _grok from 'datagrok-api/grok.js';
-import type * as _DG from 'datagrok-api/dg.js';
+import type * as _grok from 'datagrok-api/grok';
+import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
 import { Observable } from 'rxjs';
-import { testData } from './dataframe-utils.js';
+import { testData } from './dataframe-utils';
 import Timeout = NodeJS.Timeout;
-import { changeOptionsSaveLayout, filterAsync, loadLayout, selectFilterChangeCurrent, testViewerInternal } from './test-viewer-utils.js';
+import { changeOptionsSaveLayout, filterAsync, loadLayout, selectFilterChangeCurrent, testViewerInternal } from './test-viewer-utils';
 
 const STANDART_TIMEOUT = 30000;
 const BENCHMARK_TIMEOUT = 10800000;

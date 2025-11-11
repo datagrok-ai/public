@@ -1,7 +1,7 @@
 import type * as _grok from 'datagrok-api/grok.js';
 import type * as _DG from 'datagrok-api/dg.js';
 declare let grok: typeof _grok, DG: typeof _DG;
-import { delay, expect, testEvent, testEventAsync } from "./test.js";
+import { delay, expect, testEvent, testEventAsync } from "./test";
 import { Observable } from 'rxjs';
 
 export async function createViewer(tv: _DG.TableView, v: string, packageName?: string): Promise<_DG.Viewer> {
