@@ -277,7 +277,7 @@ export async function moleculesToHelmTopMenu(table: DG.DataFrame, molecules: DG.
 //description: Converts sequences to molblocks
 //input: dataframe table { description: Input data table }
 //input: column seqCol { semType: Macromolecule; caption: Sequence }
-//input: bool nonlinear = false { caption: Non-linear; description: Slower mode for cycling/branching HELM structures }
+//input: bool nonlinear = true { caption: Non-linear; description: Slower mode for cycling/branching HELM structures }
 //input: bool highlight = false { caption: Highlight monomers; description: Highlight monomers' substructures of the molecule }
 //top-menu: Bio | Transform | To Atomic Level...
 export async function toAtomicLevel(table: DG.DataFrame, seqCol: DG.Column, nonlinear: boolean, highlight: boolean) : Promise<void> {

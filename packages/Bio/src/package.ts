@@ -651,7 +651,7 @@ export class PackageFunctions {
   static async toAtomicLevel(
     @grok.decorators.param({options: {description: 'Input data table'}})table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Macromolecule', caption: 'Sequence'}})seqCol: DG.Column,
-    @grok.decorators.param({options: {initialValue: 'false', caption: 'Non-linear', description: 'Slower mode for cycling/branching HELM structures'}}) nonlinear: boolean,
+    @grok.decorators.param({options: {initialValue: 'true', caption: 'Non-linear', description: 'Slower mode for cycling/branching HELM structures'}}) nonlinear: boolean = true,
     @grok.decorators.param({options: {initialValue: 'false', caption: 'Highlight monomers', description: 'Highlight monomers\' substructures of the molecule'}}) highlight: boolean = false
   ): Promise<void> {
     const pi = DG.TaskBarProgressIndicator.create('Converting to atomic level ...');

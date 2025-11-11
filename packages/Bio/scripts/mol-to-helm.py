@@ -25,6 +25,7 @@ from typing import Optional
 from typing import Tuple
 import json
 import os
+import re
 
 # ============================================================================
 # Content from: fragment_graph.py
@@ -259,8 +260,8 @@ class BondDetector:
         # This preserves lactams but allows large macrocycles and proline (C=O outside ring)
         # Nitrogen can be X2 (proline, imino) or X3 (standard amino, N-methyl)
         # N-C bond can be single (-) or double (=) for imine bonds in dehydro amino acids
-        # Alpha carbon after N can be sp3 (X4) or sp2 (X3) for dehydroamino acids
-        self.peptide_bond = Chem.MolFromSmarts('[#6]-[C;X3;!r5;!r6](=[O;X1])-[N;X2,X3]~[C;X3,X4]')
+        # Alpha carbon after N can be sp3 (X4) or sp2 (X3) for dehydroamino acids, or aromatic (#6 includes both)
+        self.peptide_bond = Chem.MolFromSmarts('[#6]-[C;X3;!r5;!r6](=[O;X1])-[N;X2,X3]~[#6;X3,X4]')
         # True disulfide bond: S-S where each S is bonded to carbon (cysteine residues)
         self.disulfide_bond = Chem.MolFromSmarts('[C;X4]-[S;X2]-[S;X2]-[C;X4]')
         # Primary amine at N-terminus (can be NH2 or NH3+), alpha-C can be sp3 or sp2
@@ -447,7 +448,6 @@ class FragmentProcessor:
             graph.cleaved_bond_indices = bond_indices
             graph.bond_info = bond_info
             graph.atom_mappings = atom_mappings
-            print(f"DEBUG: Created {len(fragments)} fragments, cleaved {len(bond_indices)} bonds")
 
             # Create nodes for each fragment
             fragment_nodes = []
@@ -470,8 +470,6 @@ class FragmentProcessor:
                 for new_idx_in_frag, original_atom_idx in enumerate(original_atom_indices):
                     atom_to_fragment_and_idx[original_atom_idx] = (frag_idx, new_idx_in_frag)
             
-            print(f"DEBUG: Processing {len(bond_info)} cleaved bonds to create links")
-            print(f"DEBUG: atom_to_fragment_and_idx has {len(atom_to_fragment_and_idx)} entries")
             
             # For each cleaved bond, determine which fragments it connects
             link_count = 0
@@ -743,8 +741,6 @@ class FragmentProcessor:
         if not unmatched_nodes:
             return False
         
-        print(f"DEBUG: Found {len(unmatched_nodes)} unmatched nodes: {unmatched_nodes}")
-        
         had_changes = False
         
         # Try to recover each unmatched node
@@ -757,10 +753,7 @@ class FragmentProcessor:
             neighbors = graph.get_neighbors(node_id)
             
             if not neighbors:
-                print(f"DEBUG: Node {node_id} has no neighbors")
                 continue
-            
-            print(f"DEBUG: Node {node_id} neighbors: {[(n[0], n[1].value) for n in neighbors]}")
             
             # Try merging with each individual neighbor first
             for neighbor_id, linkage_type in neighbors:
@@ -768,7 +761,6 @@ class FragmentProcessor:
                     continue
                     
                 nodes_to_merge = sorted([node_id, neighbor_id])
-                print(f"DEBUG: Trying to merge nodes {nodes_to_merge} (via {linkage_type.value} bond)")
                 
                 # Find the links between nodes we're merging
                 links_to_exclude = []
@@ -797,13 +789,11 @@ class FragmentProcessor:
                                 all_neighbors.add(neighbor_id)
                 
                 num_connections = len(all_neighbors)
-                print(f"DEBUG: Expecting {num_connections} connections")
                 
-                # Try to match the combined fragment
+                # Try to match the combined fragment (exact match only)
                 monomer = matcher.find_exact_match(combined_mol, num_connections)
                 
                 if monomer:
-                    print(f"DEBUG: SUCCESS! Matched to {monomer.symbol}")
                     # Success! Create new merged node
                     new_node_id = min(nodes_to_merge)
                     new_node = FragmentNode(new_node_id, combined_mol)
@@ -814,13 +804,69 @@ class FragmentProcessor:
                     
                     had_changes = True
                     break  # Stop trying other neighbors for this node
-                else:
-                    print(f"DEBUG: No match found for merge {nodes_to_merge}")
             
             if had_changes:
                 break  # Restart from beginning after a successful merge
         
         return had_changes
+    
+    def recover_unmatched_with_stereo_agnostic(self, graph: FragmentGraph, matcher) -> int:
+        """
+        Separate recovery procedure: Try to match remaining unmatched fragments 
+        using stereochemistry-agnostic comparison.
+        
+        This handles poor quality input data where stereochemistry is not assigned.
+        Only called after regular recovery attempts have finished.
+        
+        Args:
+            graph: FragmentGraph with some unmatched nodes
+            matcher: MonomerMatcher instance
+        
+        Returns:
+            Number of fragments that were successfully matched
+        """
+        from rdkit import Chem
+        
+        # Find all unmatched nodes (nodes with mock/unknown monomers)
+        unmatched_nodes = []
+        for node_id, node in graph.nodes.items():
+            if node.monomer and (node.monomer.symbol.startswith('X') or 
+                                 node.monomer.name.startswith('Unknown')):
+                unmatched_nodes.append(node_id)
+        
+        if not unmatched_nodes:
+            return 0
+        
+        print(f"DEBUG: Attempting stereo-agnostic recovery for {len(unmatched_nodes)} unmatched nodes")
+        
+        matched_count = 0
+        
+        for node_id in unmatched_nodes:
+            if node_id not in graph.nodes:
+                continue
+            
+            node = graph.nodes[node_id]
+            
+            # Get fragment SMILES
+            fragment_smiles = Chem.MolToSmiles(node.mol, canonical=True)
+            
+            # Count connections
+            neighbors = graph.get_neighbors(node_id)
+            num_connections = len(neighbors)
+            
+            # Try stereo-agnostic matching
+            monomer = matcher.monomer_library.find_monomer_by_fragment_smiles_no_stereo(
+                fragment_smiles, num_connections
+            )
+            
+            if monomer:
+                print(f"DEBUG: Stereo-agnostic match for node {node_id}: {monomer.symbol}")
+                node.monomer = monomer
+                matched_count += 1
+            else:
+                print(f"DEBUG: No stereo-agnostic match for node {node_id}")
+        
+        return matched_count
 
 # ============================================================================
 # Content from: helm_generator.py
@@ -859,12 +905,48 @@ class HELMGenerator:
         if len(graph) == 0:
             return ""
         
-        # Get ordered sequence of monomers
-        ordered_nodes = graph.get_ordered_nodes()
-        sequence_symbols = [node.monomer.symbol if node.monomer else "X" for node in ordered_nodes]
+        # Get ordered sequence of monomers (backbone)
+        ordered_nodes_raw = graph.get_ordered_nodes()
         
         # Check if cyclic
         is_cyclic = graph.is_cyclic()
+        
+        # Filter backbone: nodes that are part of R1-R2 chain are backbone
+        # Nodes connected only via R3 (side chain) are branches
+        # 
+        # Logic: A node at position 1 is a branch if:
+        # - It has no R1 (N-terminus) - meaning it's a cap like 'ac' that only has R2
+        # - It only has 1 peptide connection (to the real backbone)
+        # 
+        # Example: [ac].K in cyclic peptide
+        # - 'ac' has only R2, no R1 → it's a cap
+        # - 'ac' connects to K's R3 (side chain), not K's R1 (backbone)
+        # - So 'ac' should be PEPTIDE2, not part of PEPTIDE1
+        
+        backbone_nodes = []
+        for i, node in enumerate(ordered_nodes_raw):
+            is_branch = False
+            
+            if i == 0 and len(ordered_nodes_raw) > 1 and node.monomer:
+                # Check if this first node lacks R1 (N-terminus)
+                # If it has no R1, it's a cap that should be a branch
+                has_r1 = 'R1' in node.monomer.r_groups
+                
+                if not has_r1:
+                    # This is an N-terminal cap (like 'ac') at position 1
+                    # It should be a branch, not part of the main backbone
+                    is_branch = True
+            
+            if not is_branch:
+                backbone_nodes.append(node)
+        
+        ordered_nodes = backbone_nodes
+        sequence_symbols = [node.monomer.symbol if node.monomer else "X" for node in ordered_nodes]
+        
+        # Detect branch nodes (nodes not in backbone)
+        ordered_node_ids = {node.id for node in ordered_nodes}
+        branch_nodes = [(node_id, node) for node_id, node in graph.nodes.items() 
+                       if node_id not in ordered_node_ids]
         
         # Generate sequence notation
         if is_cyclic:
@@ -922,12 +1004,55 @@ class HELMGenerator:
                     # Format: PEPTIDE1,PEPTIDE1,from_pos:R3-to_pos:R3
                     connections.append(f"PEPTIDE1,PEPTIDE1,{from_pos}:R3-{to_pos}:R3")
         
+        # Handle branch nodes (side chain modifications)
+        # Create separate PEPTIDE chains for each branch
+        branch_chains = []
+        if branch_nodes:
+            for branch_idx, (branch_node_id, branch_node) in enumerate(branch_nodes, start=2):
+                branch_chain_name = f"PEPTIDE{branch_idx}"
+                branch_symbol = branch_node.monomer.symbol if branch_node.monomer else f"X{branch_node_id}"
+                
+                # Format branch chain (single monomer, so no dots needed)
+                if is_cyclic and len(branch_symbol) > 1:
+                    branch_chains.append(f"{branch_chain_name}{{[{branch_symbol}]}}")
+                else:
+                    branch_chains.append(f"{branch_chain_name}{{{branch_symbol}}}")
+                
+                # Find which backbone node this branch connects to
+                # Look for links connecting this branch to the main backbone
+                for link in graph.links:
+                    backbone_node_id = None
+                    if link.from_node_id == branch_node_id and link.to_node_id in ordered_node_ids:
+                        backbone_node_id = link.to_node_id
+                    elif link.to_node_id == branch_node_id and link.from_node_id in ordered_node_ids:
+                        backbone_node_id = link.from_node_id
+                    
+                    if backbone_node_id is not None:
+                        # Find position of backbone node (1-indexed)
+                        backbone_pos = next((i + 1 for i, n in enumerate(ordered_nodes) if n.id == backbone_node_id), None)
+                        if backbone_pos:
+                            # Determine which R-group the branch uses
+                            # If branch has R1, connect to R1; if only R2, connect to R2
+                            branch_r_group = "R1"
+                            if branch_node.monomer:
+                                if 'R1' in branch_node.monomer.r_groups:
+                                    branch_r_group = "R1"
+                                elif 'R2' in branch_node.monomer.r_groups:
+                                    branch_r_group = "R2"
+                            
+                            # Connection: backbone position R3 (side chain) to branch position 1 R-group
+                            connections.append(f"PEPTIDE1,{branch_chain_name},{backbone_pos}:R3-1:{branch_r_group}")
+                            break
+        
         # Generate final HELM notation
+        all_chains = [f"PEPTIDE1{{{sequence}}}"] + branch_chains
+        helm_chains = "|".join(all_chains)
+        
         if connections:
             connection_str = "|".join(connections)
-            helm = f"PEPTIDE1{{{sequence}}}${connection_str}$$$V2.0"
+            helm = f"{helm_chains}${connection_str}$$$V2.0"
         else:
-            helm = f"PEPTIDE1{{{sequence}}}$$$$"
+            helm = f"{helm_chains}$$$$V2.0"
         
         return helm
 
@@ -960,9 +1085,33 @@ from collections import defaultdict
 from itertools import combinations
 import json
 import os
+import re
 
 # Suppress RDKit warnings
 RDLogger.DisableLog('rdApp.warning')
+
+def remove_stereochemistry_from_smiles(smiles: str) -> str:
+    """
+    Remove stereochemistry markers from SMILES string.
+    Converts [C@@H], [C@H] to C, etc.
+    
+    This is used for matching when input molecules don't have stereochemistry defined.
+    """
+    if not smiles:
+        return smiles
+    
+    # Remove @ symbols (stereochemistry markers)
+    # Pattern: [@]+ inside brackets
+    smiles_no_stereo = re.sub(r'(@+)', '', smiles)
+    
+    # Also remove H when it's explicit in brackets like [C@@H] -> [C] -> C
+    # But we need to be careful not to remove H from [H] or CH3
+    # After removing @, we might have [CH] which should become C
+    smiles_no_stereo = re.sub(r'\[([A-Z][a-z]?)H\]', r'\1', smiles_no_stereo)
+    # Handle [C] -> C (single atoms in brackets with no other info)
+    smiles_no_stereo = re.sub(r'\[([A-Z][a-z]?)\]', r'\1', smiles_no_stereo)
+    
+    return smiles_no_stereo
 
 class MonomerData:
     def __init__(self):
@@ -1201,9 +1350,62 @@ class MonomerLibrary:
                 # Generate SMILES with these R-groups removed (lazy, cached)
                 candidate_smiles = monomer.get_capped_smiles_for_removed_rgroups(removed_set)
                 
-                # Check if it matches the fragment
+                # Check if it matches the fragment (exact match only)
                 if candidate_smiles == fragment_smiles:
                     return monomer
+        
+        return None
+    
+    def find_monomer_by_fragment_smiles_no_stereo(self, fragment_smiles: str, num_connections: int):
+        """
+        Find monomer by matching fragment SMILES WITHOUT stereochemistry.
+        Used only in recovery for handling poor quality input data.
+        
+        Uses molecular graph isomorphism to handle cases where RDKit generates 
+        different canonical SMILES for the same molecule.
+        
+        Args:
+            fragment_smiles: Canonical SMILES of the fragment  
+            num_connections: Number of connections this fragment has in the graph
+        
+        Returns:
+            MonomerData if match found, None otherwise
+        """
+        # Parse fragment molecule once (without stereochemistry)
+        fragment_no_stereo_smiles = remove_stereochemistry_from_smiles(fragment_smiles)
+        fragment_mol = Chem.MolFromSmiles(fragment_no_stereo_smiles)
+        if not fragment_mol:
+            return None
+        
+        # Search through all monomers
+        for symbol, monomer in self.monomers.items():
+            # Skip if monomer doesn't have enough R-groups
+            if monomer.r_group_count < num_connections:
+                continue
+            
+            # Generate all combinations of num_connections R-groups that could have been removed
+            r_group_labels = list(monomer.r_groups.keys())
+            
+            # For each combination of R-groups that could have been removed
+            for removed_combo in combinations(r_group_labels, num_connections):
+                removed_set = frozenset(removed_combo)
+                
+                # Generate SMILES with these R-groups removed (lazy, cached)
+                candidate_smiles = monomer.get_capped_smiles_for_removed_rgroups(removed_set)
+                
+                # Try string comparison first (fast path)
+                candidate_no_stereo = remove_stereochemistry_from_smiles(candidate_smiles)
+                
+                if candidate_no_stereo == fragment_no_stereo_smiles:
+                    return monomer
+                
+                # If string comparison fails, try molecular graph isomorphism (slower but more robust)
+                # This handles cases where RDKit generates different canonical SMILES for same molecule
+                candidate_mol = Chem.MolFromSmiles(candidate_no_stereo)
+                if candidate_mol and fragment_mol.HasSubstructMatch(candidate_mol) and candidate_mol.HasSubstructMatch(fragment_mol):
+                    # Both molecules are substructures of each other = they're the same
+                    if fragment_mol.GetNumAtoms() == candidate_mol.GetNumAtoms():
+                        return monomer
         
         return None
 
@@ -1355,14 +1557,16 @@ def preload_library():
     return processor is not None
 
 
-def convert_molecules_batch(molfiles: list, library_json: str = None) -> list:
+def convert_molecules_batch(molecules: list, library_json: str = None, input_type: str = "auto") -> list:
     """
-    Convert a batch of molecules from molfile format to HELM notation.
+    Convert a batch of molecules to HELM notation.
     
     Args:
-        molfiles: List of molfile strings
+        molecules: List of molecule strings (molfiles or SMILES)
         library_json: Optional monomer library as JSON string.
                      If None, uses default cached library from HELMCoreLibrary.json
+        input_type: Type of input molecules - "molfile", "smiles", or "auto" (default).
+                   "auto" will attempt to detect the format automatically.
     
     Returns:
         List of tuples: (success: bool, helm_notation: str)
@@ -1376,13 +1580,13 @@ def convert_molecules_batch(molfiles: list, library_json: str = None) -> list:
             print("Initializing monomer library and processors...")
             if not preload_library():
                 print("ERROR: Failed to load monomer library")
-                return [(False, "Library initialization failed") for _ in molfiles]
+                return [(False, "Library initialization failed") for _ in molecules]
             print()
         
         # Use shared processor instances
         processor, matcher, helm_generator = _get_processors()
         if not processor:
-            return [(False, "") for _ in molfiles]
+            return [(False, "") for _ in molecules]
     else:
         # Load custom library from provided JSON string (no caching)
         try:
@@ -1410,7 +1614,7 @@ def convert_molecules_batch(molfiles: list, library_json: str = None) -> list:
         
         if not library.monomers:
             print("ERROR: No monomers loaded from custom library")
-            return [(False, "Library loading failed") for _ in molfiles]
+            return [(False, "Library loading failed") for _ in molecules]
         
         print(f"Custom library loaded: {len(library.monomers)} monomers")
         
@@ -1419,11 +1623,46 @@ def convert_molecules_batch(molfiles: list, library_json: str = None) -> list:
         matcher = MonomerMatcher(library)
         helm_generator = HELMGenerator()
     
+    # Helper function to detect molecule format
+    def _is_molfile(mol_string: str) -> bool:
+        """Check if string is a molfile (starts with RDKit molfile markers or has multiple lines)"""
+        if not mol_string:
+            return False
+        lines = mol_string.strip().split('\n')
+        # Molfiles typically have multiple lines and specific format
+        if len(lines) > 3:
+            # Check for V2000 or V3000 molfile markers
+            if 'V2000' in mol_string or 'V3000' in mol_string:
+                return True
+            # Check for typical molfile structure (counts line format)
+            if len(lines) > 3:
+                counts_line = lines[3] if len(lines) > 3 else ""
+                # Molfile counts line has specific format with atom/bond counts
+                if len(counts_line) >= 6 and counts_line[:6].replace(' ', '').isdigit():
+                    return True
+        return False
+    
     results = []
     
-    for i in range(len(molfiles)):
-        molfile = molfiles[i]
-        mol = Chem.MolFromMolBlock(molfile)
+    for i in range(len(molecules)):
+        mol_string = molecules[i]
+        
+        # Determine input type and parse molecule
+        if input_type == "auto":
+            # Auto-detect format
+            if _is_molfile(mol_string):
+                mol = Chem.MolFromMolBlock(mol_string)
+            else:
+                # Assume SMILES if not molfile
+                mol = Chem.MolFromSmiles(mol_string)
+        elif input_type == "molfile":
+            mol = Chem.MolFromMolBlock(mol_string)
+        elif input_type == "smiles":
+            mol = Chem.MolFromSmiles(mol_string)
+        else:
+            results.append((False, f"Invalid input_type: {input_type}"))
+            continue
+        
         if not mol:
             results.append((False, ""))
             continue
@@ -1457,6 +1696,12 @@ def convert_molecules_batch(molfiles: list, library_json: str = None) -> list:
                 if not had_changes:
                     break
             
+            # After regular recovery, try stereo-agnostic matching for remaining unmatched fragments
+            # This handles poor quality data with missing stereochemistry
+            stereo_matched = processor.recover_unmatched_with_stereo_agnostic(graph, matcher)
+            if stereo_matched > 0:
+                print(f"DEBUG: Stereo-agnostic recovery matched {stereo_matched} additional fragments")
+            
             if len(graph.nodes) > 0:
                 helm_notation = helm_generator.generate_helm_from_graph(graph)
                 results.append((True, helm_notation))
@@ -1466,6 +1711,36 @@ def convert_molecules_batch(molfiles: list, library_json: str = None) -> list:
             results.append((False, f"Error: {str(e)}"))
     
     return results
+
+
+def convert_molfiles_to_helm(molfiles: list, library_json: str = None) -> list:
+    """
+    Convert a batch of molfiles to HELM notation.
+    Convenience wrapper for convert_molecules_batch with input_type="molfile".
+    
+    Args:
+        molfiles: List of molfile strings
+        library_json: Optional monomer library as JSON string
+    
+    Returns:
+        List of tuples: (success: bool, helm_notation: str)
+    """
+    return convert_molecules_batch(molfiles, library_json=library_json, input_type="molfile")
+
+
+def convert_smiles_to_helm(smiles_list: list, library_json: str = None) -> list:
+    """
+    Convert a batch of SMILES to HELM notation.
+    Convenience wrapper for convert_molecules_batch with input_type="smiles".
+    
+    Args:
+        smiles_list: List of SMILES strings
+        library_json: Optional monomer library as JSON string
+    
+    Returns:
+        List of tuples: (success: bool, helm_notation: str)
+    """
+    return convert_molecules_batch(smiles_list, library_json=library_json, input_type="smiles")
 
 res_helm_list = convert_molecules_batch(molListToProcess, library_json=libraryJSON)
 result_helm = pd.DataFrame(map(lambda x: x[1], res_helm_list), columns=["regenerated sequences"])
