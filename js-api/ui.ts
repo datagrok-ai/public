@@ -1303,8 +1303,9 @@ export class tools {
         });
         let e = $(element).find('select')[0];
         if (e != undefined) {
-          e.style.maxWidth = `${width + 30}px`;
-          e.style.width = `${width + 30}px`;
+          width += 30;
+          e.style.maxWidth = `${width}px`;
+          e.style.width = `${width}px`;
         }
       }
       let optionsWidth = 0;
@@ -1316,14 +1317,15 @@ export class tools {
           element.classList.contains('ui-input-text')) {
           (options[i] as HTMLElement).style.marginLeft = `-${optionsWidth}px`;
         }
-        if (optionsWidth > 0) {
-          let inputs = $(element).find('.ui-input-editor');
-          inputs.each((i) => {
-            inputs[i]!.style.paddingRight = `${optionsWidth}px`;
-          });
-        }
-        // width += optionsWidth;
+
       });
+      if (optionsWidth > 0) {
+        let inputs = $(element).find('.ui-input-editor');
+        inputs.each((i) => {
+          inputs[i]!.style.paddingRight = `${optionsWidth}px`;
+        });
+      }
+      width += optionsWidth;
       // todo: analyze content(?) and metadata
       // todo: analyze more types
       widths.push(width);
