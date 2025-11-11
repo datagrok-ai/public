@@ -248,6 +248,7 @@ export const RichFunctionView = Vue.defineComponent({
     const isSAenabled = Vue.ref(false);
     const isReportEnabled = Vue.ref(false);
     const isFittingEnabled = Vue.ref(false);
+    const allowRerun = Vue.ref(false);
 
     const isLocked = Vue.ref(false);
 
@@ -281,6 +282,7 @@ export const RichFunctionView = Vue.defineComponent({
       isSAenabled.value = Utils.getFeature(features, 'sens-analysis', false);
       isReportEnabled.value = Utils.getFeature(features, 'export', true);
       isFittingEnabled.value = Utils.getFeature(features, 'fitting', false);
+      allowRerun.value = Utils.getFeature(features, 'rerun', false);
       dockSpawnConfig.value = Utils.getDockSpawnConfig(call.func);
     }, {immediate: true});
 
@@ -300,6 +302,8 @@ export const RichFunctionView = Vue.defineComponent({
     Vue.watch(currentCall, async (call) => {
       changeHelpFunc(call?.func);
     }, {immediate: true});
+
+    const showRun = Vue.computed(() => props.showRunButton && (isOutputOutdated.value || allowRerun.value))
 
     const run = async () => {
       emit('runClicked');
@@ -549,7 +553,7 @@ export const RichFunctionView = Vue.defineComponent({
                       , [[tooltip, action.description]]))
                   }
                   {
-                    props.showRunButton &&
+                    showRun.value &&
                       <BigButton
                         isDisabled={!isRunnable.value || isRunning.value || props.isTreeLocked || props.isReadonly}
                         onClick={run}
