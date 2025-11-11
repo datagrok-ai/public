@@ -187,6 +187,13 @@ export namespace funcs {
     return await grok.functions.call('Chem:InitChemAutostart', {});
   }
 
+  /**
+  Recalculates 2D coordinates for molecules in the column using Open Chem Lib
+  */
+  export async function recalculateCoordsViaOCL(table: DG.DataFrame , molecules: DG.Column , join: boolean ): Promise<DG.Column> {
+    return await grok.functions.call('Chem:RecalculateCoordsViaOCL', { table, molecules, join });
+  }
+
   export async function chemTooltip(col: DG.Column ): Promise<any> {
     return await grok.functions.call('Chem:ChemTooltip', { col });
   }
@@ -323,7 +330,7 @@ export namespace funcs {
   /**
   Calculates most common substructures for each cluster
   */
-  export async function performClusterMCS(molCol: DG.Column , clusterCol: DG.Column ): Promise<DG.Column> {
+  export async function performClusterMCS(molCol: DG.Column , clusterCol: string ): Promise<DG.Column> {
     return await grok.functions.call('Chem:PerformClusterMCS', { molCol, clusterCol });
   }
 
