@@ -7,7 +7,7 @@ import {createValidationDataFrame} from './sdtm-validation/validation-utils';
 import {SITE_ID, STUDY_ID} from './constants/columns-constants';
 import {addVisitDayFromTvDomain, createEventStartEndDaysCol} from './data-preparation/data-preparation';
 import {createFilters} from './utils/utils';
-import { createErrorsByDomainMap } from './utils/views-validation-utils';
+import {createErrorsByDomainMap} from './utils/views-validation-utils';
 
 export class ClinicalDomains {
   ae: DG.DataFrame = null;
