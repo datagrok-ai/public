@@ -35,7 +35,6 @@ Out of the box, the following semantic types are automatically detected based on
 |-------------------------|-----------------|------------------------|
 | **Cheminformatics types** |                 |                        |
 | Molecule                | 'Molecule'         | [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)                   |
-| Chemical reaction       | 'ChemicalReaction' | [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)                   |
 | Chemical mixture (Mixfile format)       | 'ChemicalMixture'  | [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)                   |
 | **Bioinformatics types** |                 |                        |
 | Macromolecule           | 'Macromolecule'    | [Bio](https://github.com/datagrok-ai/public/tree/master/packages/Bio)                    |
@@ -69,7 +68,7 @@ Out of the box, the following semantic types are automatically detected based on
 | **Specialized types**    |                 |                        |
 | Curve data              | 'fit'              | [Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves)                 |
 | PNG images               | 'rawPng'           | [Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves)                 |
-
+<!--| Chemical reaction       | 'ChemicalReaction' | [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)                   |-->
 
 ## Custom semantic types
 
