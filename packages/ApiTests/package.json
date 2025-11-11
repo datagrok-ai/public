@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "@types/wu": "^2.1.42",
+    "@types/yargs": "^17.0.34",
     "@typescript-eslint/eslint-plugin": "^5.26.0",
     "@typescript-eslint/parser": "^5.26.0",
     "datagrok-tools": "^4.14.55",
@@ -40,7 +41,7 @@
   },
   "scripts": {
     "build-node": "tsc -p tsconfig.node.json",
-    "start-node": "node -r ./tsconfig-paths-bootstrap.js dist-node/package-test-node.js",
+    "start-node": "node -r ./tsconfig-paths-bootstrap.js dist-node/package-test-node.js --apiUrl=http://localhost:8888/api --devKey=admin",
     "debug-js-api-tests": "webpack && grok publish localhost",
     "release-js-api-tests": "grok publish localhost --release",
     "link-all": "npm link @datagrok-libraries/utils @datagrok-libraries/ml datagrok-api",
@@ -97,5 +98,8 @@
       "defaultValue": "value1",
       "nullable": false
     }
-  ]
+  ],
+  "optionalDependencies": {
+    "yargs": "^18.0.0"
+  }
 }
