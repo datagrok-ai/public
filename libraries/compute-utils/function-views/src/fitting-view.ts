@@ -468,6 +468,8 @@ export class FittingView {
 
             isInterest.subscribe((val) => {
               input.input.hidden = !val;
+              if (input.root.lastChild)
+                (input.root.lastChild as HTMLElement).hidden = !val;
               showInfoWidget.hidden = !val;
 
               if (dfInputIcons != null)
