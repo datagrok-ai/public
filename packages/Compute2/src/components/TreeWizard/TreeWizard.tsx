@@ -132,8 +132,8 @@ export const TreeWizard = Vue.defineComponent({
     // actions
     ////
 
-    // after step change we need to reveal the current view
-    const revealCurrent = () => {
+    // after step change we need to render the correct component
+    const updateCurrentNodeRender = () => {
       if (!chosenStepState.value)
         return;
       if (isFuncCallState(chosenStepState.value)) rfvHidden.value = false;
@@ -191,14 +191,14 @@ export const TreeWizard = Vue.defineComponent({
       const nextData = findNextStep(chosenStepUuid.value, treeState.value);
       if (nextData) {
         chosenStepUuid.value = nextData.state.uuid;
-        revealCurrent();
+        updateCurrentNodeRender();
       }
     };
 
     const onPipelineProceed = () => {
       if (chosenStepState.value && !isFuncCallState(chosenStepState.value)) {
         chosenStepUuid.value = chosenStepState.value.steps[0].uuid;
-        revealCurrent();
+        updateCurrentNodeRender();
       }
     };
 
@@ -286,29 +286,29 @@ export const TreeWizard = Vue.defineComponent({
       else setViewName(modelName.value);
     });
 
-    let pendingStepPath: string | null = null;
 
-    const processPendingStepPath = (treeState: PipelineState) => {
+    const setCurrentStepByPath = (pendingStepPath: string, treeState: PipelineState) => {
       if (pendingStepPath) {
         const nodeWithPath = findTreeNodeByPath(
           pendingStepPath.split(' ').map((pathSegment) => Number.parseInt(pathSegment)),
           treeState,
         );
-        pendingStepPath = null;
         if (nodeWithPath?.state) {
           chosenStepUuid.value = nodeWithPath.state.uuid;
-          if (isFuncCallState(nodeWithPath.state)) rfvHidden.value = false;
-          if (!isFuncCallState(nodeWithPath.state)) pipelineViewHidden.value = false;
+          updateCurrentNodeRender();
         }
       }
     };
+
+    let pendingStepPath: string | null = null;
 
     Vue.watch(treeState, (treeState) => {
       if (!treeState)
         return;
 
       if (pendingStepPath) {
-        processPendingStepPath(treeState);
+        setCurrentStepByPath(pendingStepPath, treeState);
+        pendingStepPath = null;
         return;
       }
 
@@ -323,13 +323,26 @@ export const TreeWizard = Vue.defineComponent({
       pendingStepPath = startUrl.searchParams.get('currentStep');
       if (loadingId)
         loadPipeline(loadingId);
-      else if (pendingStepPath)
-        processPendingStepPath(treeState);
+      else if (pendingStepPath) {
+        setCurrentStepByPath(pendingStepPath, treeState);
+        pendingStepPath = null;
+      }
     }, {immediate: true});
 
     const chosenStep = Vue.computed(() => {
       if (!treeState.value)
         return null;
+
+      let step = chosenStepUuid.value && (findNodeWithPathByUuid(chosenStepUuid.value, treeState.value));
+
+      if (step)
+        return step;
+
+      // step with current uuid is removed from the tree, try setting the current step by the route
+      const currentURL = new URL(window.location.href);
+      const currentStep = currentURL.searchParams.get('currentStep');
+      if (currentStep)
+        setCurrentStepByPath(currentStep, treeState.value);
 
       return chosenStepUuid.value ? findNodeWithPathByUuid(chosenStepUuid.value, treeState.value) : undefined;
     });
