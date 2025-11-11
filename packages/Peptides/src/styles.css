@@ -60,3 +60,14 @@
   left: 5px;
   top: 1px;
 }
+
+.panel-base:has(.peptides-viewer-show-title:only-child) > .panel-titlebar > .panel-titlebar-text {
+    visibility: visible;
+    display: block;
+    text-align: center;
+    margin-left: 36px;
+    padding: 0;
+    width: 100%;
+    font-size: 14px !important;
+    color: #4d5261 !important;
+}

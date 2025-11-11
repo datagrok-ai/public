@@ -30,6 +30,7 @@ export class MutationCliffsViewer extends DG.JsViewer {
     this.position = this.int('position', 1, {nullable: false, showSlider: false, min: 1, max: 100, showPlusMinus: true, description: 'Position in the sequence to analyze (1 Based).', category: 'Data'});
     this.yAxisType = this.string('yAxisType', 'Linear', {choices: ['Linear', 'Logarithmic'], description: 'Y-Axis scale type.', nullable: false, category: 'Data'}) as 'Linear' | 'Logarithmic';
     this.currentRowMutationsOnly = this.bool('currentRowMutationsOnly', false, {nullable: false, defaultValue: false, description: 'When enabled, the viewer will show mutations related to the peptide in current row in the dataframe and selected position.', category: 'Data'});
+    this.root.classList.add('peptides-viewer-show-title');
   }
 
   onTableAttached(): void {

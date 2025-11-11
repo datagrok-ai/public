@@ -76,7 +76,6 @@ export interface ILogoSummaryTable {
 
 /** LogoSummaryTable viewer shows per cluster information. */
 export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
-  _titleHost = ui.divText(VIEWER_TYPE.LOGO_SUMMARY_TABLE, {id: 'pep-viewer-title'});
   sequenceColumnName: string;
   clustersColumnName: string;
   webLogoMode: string;
@@ -98,6 +97,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
   /** Creates LogoSummaryTable properties. */
   constructor() {
     super();
+    this.root.classList.add('peptides-viewer-show-title');
 
     this.sequenceColumnName = this.column(LST_PROPERTIES.SEQUENCE,
       {
@@ -365,7 +365,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     if (!this.logoSummaryTable.filter.anyTrue) {
       const emptyDf = ui.divText('No clusters to satisfy the threshold. ' +
         'Please, lower the threshold in viewer proeperties to include clusters');
-      this.root.appendChild(ui.divV([this._titleHost, emptyDf]));
+      this.root.appendChild(ui.divV([emptyDf]));
       return;
     }
     const expand = ui.iconFA('expand-alt', () => {
@@ -380,7 +380,7 @@ export class LogoSummaryTable extends DG.JsViewer implements ILogoSummaryTable {
     this.viewerGrid.root.style.height = 'auto';
     this.viewerGrid.root.style.overflow = 'hidden';
     this.root.appendChild(ui.divV([
-      ui.divH([this._titleHost, expand], {
+      ui.divH([expand], {
         style: {
           alignSelf: 'center',
           lineHeight: 'normal',

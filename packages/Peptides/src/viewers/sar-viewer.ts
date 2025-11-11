@@ -23,6 +23,7 @@ import {
 import {showTooltip} from '../utils/tooltips';
 import {calculateCliffsStatistics, calculateMonomerPositionStatistics, findMutations, MutationCliffsOptions} from '../utils/algorithms';
 import {
+  dartLike,
   debounce,
   extractColInfo,
   getTotalAggColumns,
@@ -41,7 +42,6 @@ import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-lib
 import {PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {PeptideUtils} from '../peptideUtils';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
-import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 export enum SELECTION_MODE {
   MUTATION_CLIFFS = 'Mutation Cliffs',
@@ -177,6 +177,7 @@ export abstract class SARViewer extends DG.JsViewer implements ISARViewer {
     // this.targetCategoryInput.root.style.display = 'none';
     // this.targetCategoryInput.root.style.maxWidth = '50%';
     // this.targetCategoryInput.root.style.marginLeft = '8px'
+    this.root.classList.add('peptides-viewer-show-title');
   }
 
   _viewerGrid: DG.Grid | null = null;
@@ -678,7 +679,7 @@ export class MonomerPosition extends SARViewer {
     this.customColorRange = this.bool(MONOMER_POSITION_PROPERTIES.CUSTOM_COLOR_RANGE, false, {category: PROPERTY_CATEGORIES.INVARIANT_MAP});
     this.minColorValue = this.float(MONOMER_POSITION_PROPERTIES.MIN_COLOR_VALUE, 0, {category: PROPERTY_CATEGORIES.INVARIANT_MAP});
     this.maxColorValue = this.float(MONOMER_POSITION_PROPERTIES.MAX_COLOR_VALUE, 0, {category: PROPERTY_CATEGORIES.INVARIANT_MAP});
-    this.showFilterControls = this.bool(MONOMER_POSITION_PROPERTIES.SHOW_FILTER_CONTROLS, true, {category: PROPERTY_CATEGORIES.GENERAL, description: 'Show monomer search and target controls'});
+    this.showFilterControls = this.bool(MONOMER_POSITION_PROPERTIES.SHOW_FILTER_CONTROLS, true, {category: PROPERTY_CATEGORIES.GENERAL, description: 'Show monomer search and target controls', userEditable: false}); // Old stuff. Not used anymore
     this.monomerSearchInput = ui.input.string('Search', {
       value: '', nullable: true, placeholder: 'Search monomer', tooltipText: 'Search for monomer by symbol. For multiple monomers use comma as a separator.',
       onValueChanged: () => {
@@ -832,7 +833,7 @@ export class MonomerPosition extends SARViewer {
       let maxColorVal = -9999999;
       const filter = (this.dataSource === 'Filtered' && this.dataFrame.filter.anyFalse) ?
         this.dataFrame.filter : null;
-      const isTarget = filter == null ? (index: number) => true : (index: number) => filter.get(index);
+      const isTarget = filter == null ? (_index: number) => true : (index: number) => filter.get(index);
       for (const pCol of this.positionColumns) {
         pCol.temp[C.TAGS.INVARIANT_MAP_COLOR_CACHE] = {};
         const colorCache = pCol.temp[C.TAGS.INVARIANT_MAP_COLOR_CACHE];
@@ -1104,6 +1105,8 @@ export class MonomerPosition extends SARViewer {
     };
   }
 
+  private _showSearchInput = false;
+
   /** Renders the MonomerPosition viewer body. */
   render(): void {
     $(this.root).empty();
@@ -1150,20 +1153,20 @@ export class MonomerPosition extends SARViewer {
     }
     const viewerRoot = this.viewerGrid.root;
     viewerRoot.style.width = 'auto';
-    // expand button
-    const expand = ui.iconFA('expand-alt', () => {
-      const dialog = ui.dialog();
-      dialog.add(ui.divV([switchHost, viewerRoot], {style: {height: '100%'}}));
-      dialog.onCancel(() => this.render());
-      dialog.showModal(true);
-      this.viewerGrid.invalidate();
-    }, 'Show Sequence Variability Map Table in full screen');
-    $(expand).addClass('pep-help-icon');
-    this.monomerSearchInput.root.style.marginRight = '8px';
-    const targetInputsHost = ui.divH([this.monomerSearchInput.input],
+    // search icon
+    const searchIcon = ui.icons.search(() => {
+      this._showSearchInput = !this._showSearchInput;
+      this.monomerSearchInput.input.style.display = this._showSearchInput ? 'block' : 'none';
+    }, 'Toggle monomer search input visibility');
+
+    this.monomerSearchInput.input.style.display = this._showSearchInput ? 'block' : 'none';
+    $(searchIcon).addClass('pep-help-icon');
+    dartLike(searchIcon.style).set('top', '3px').set('fontSize', '14px');
+
+    const filtersHost = ui.divH([this.monomerSearchInput.input], // plural because might expand in future
       {style: {alignSelf: 'center', justifyContent: 'center', width: '100%', flexWrap: 'wrap'}});
-    targetInputsHost.style.display = this.showFilterControls ? 'flex' : 'none';
-    const header = ui.divH([expand, switchHost, targetInputsHost], {style: {alignSelf: 'center', lineHeight: 'normal', flexDirection: 'column', width: '100%'}});
+    // targetInputsHost.style.display = this.showFilterControls ? 'flex' : 'none';
+    const header = ui.divH([searchIcon, switchHost, filtersHost], {style: {alignSelf: 'center', lineHeight: 'normal', flexDirection: 'column', width: '100%'}});
     this.root.appendChild(ui.divV([header, viewerRoot]));
     this.viewerGrid?.invalidate();
     this.monomerSearchInput.fireChanged();
@@ -1470,11 +1473,11 @@ export class MostPotentResidues extends SARViewer {
       this.root.appendChild(ui.divText('Please, select a sequence and activity columns in the viewer properties'));
       return;
     }
-    const switchHost = ui.divText(VIEWER_TYPE.MOST_POTENT_RESIDUES, {id: 'pep-viewer-title'});
+
     const viewerRoot = this.viewerGrid.root;
     viewerRoot.style.width = 'auto';
-    const header = ui.divH([switchHost], {style: {alignSelf: 'center', lineHeight: 'normal'}});
-    this.root.appendChild(ui.divV([header, viewerRoot]));
+
+    this.root.appendChild(ui.divV([viewerRoot]));
     this.viewerGrid?.invalidate();
   }
 }

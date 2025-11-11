@@ -500,3 +500,13 @@ export function debounce<T extends Array<any>, K>(f: (...args: T) => Promise<K>,
 export function isInDemo(): boolean {
   return 'isInDemo' in grok.shell && !!grok.shell.isInDemo;
 }
+
+export function dartLike<T extends any>(obj: T) {
+  return {
+    set: function<K extends keyof T>(key: K, value: T[K]) {
+      (obj as any)[key] = value;
+      return this;
+    },
+  };
+}
+
