@@ -35,21 +35,32 @@ category('Dapi: connection', () => {
   }, {stressTest: true});
 
   test('JS postprocess', async () => {
-    const script = `
-    //language: javascript
-    //input: dataframe result
-    //output: int rowCount
-    //output: int columns
-    rowCount = result.rowCount;
-    columns = result.columns.length;
-    console.log(rowCount, columns);
-    `;
-    const dc = (await grok.dapi.connections.filter('NorthwindTest').list())[0];
-    const q = dc.query('JS postprocess query test', 'select * from orders');
+    const script = `//language: javascript
+//input: dataframe result
+//output: dataframe modified
+result.columns.remove('id');
+modified = result;
+`;
+    const dc = (await grok.dapi.connections.filter('Datagrok').list())[0];
+    const q = dc.query('JS postprocess query test', `SELECT
+  i AS id,
+  'name_' || i AS name,
+  'category_' || (i % 3) AS category,
+  i * 10 AS value,
+  (i * 1.5)::numeric(10,2) AS price,
+  (i % 2 = 0) AS is_active,
+  now() - (i || ' days')::interval AS created_at,
+  now() AS updated_at,
+  'desc_' || i AS description,
+  md5(i::text) AS hash
+FROM generate_series(1, 10) AS s(i);
+    `);
+    q.postProcessScript = script;
     const query = await grok.dapi.queries.save(q);
-    await query.setProperties({ jsScript: script });
-    expect((await query.getProperties()).jsScript, script);
-    await query.executeTable();
+    expect(query.postProcessScript, script);
+    const df = await query.executeTable();
+    expect(df.rowCount, 10);
+    expect(df.columns.length, 9);
     await grok.dapi.queries.delete(query);
   });
 
@@ -97,7 +108,7 @@ category('Dapi: connection cache', () => {
     await grok.dapi.files.delete(testFilePath2);
     list = await grok.dapi.files.list('System:AppData/ApiTests');
     expect(list.every((f) => f.name !== 'renamed_test_files.txt'));
-  });
+  }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
 
   test('Dataframe: Ids', async () => {
     // not from cache
@@ -117,7 +128,7 @@ category('Dapi: connection cache', () => {
     });
     // second execution should be faster
     expect(second * 2 < first);
-  });
+  }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
 
   test('Sequential stress test', async () => {
     const times = DG.Test.isInBenchmark ? 100 : 10;

@@ -96,7 +96,7 @@ category('Dapi: files', () => {
 
   test('writeBinaryDataFrames', async () => {
     const df = grok.data.demo.demog(10);
-    const filePath = `${filePrefix}writeBinaryDataFrames.d42`;
+    const filePath = `writeBinaryDataFrames.d42`;
     //@ts-ignore
     await _package.files.writeBinaryDataFrames(filePath, [df]);
     const dfList = await _package.files.readBinaryDataFrames(filePath);
@@ -124,6 +124,8 @@ category('Dapi: files: formats', () => {
       const df = await grok.data.files.openTable('System:AppData/ApiTests/datasets/formats/cars.' + ext);
       expect(df.rowCount, 10, 'wrong rows number');
       expect(df.columns.length, 10, 'wrong columns number');
-    }, ['kmz', 'kml'].includes(ext) ? {skipReason: 'GROK-13263'} : undefined);
+    }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment'
+          : ['kmz', 'kml'].includes(ext) ? 'GROK-13263'
+              : undefined});
   }
 }, {owner: 'aparamonov@datagrok.ai'});

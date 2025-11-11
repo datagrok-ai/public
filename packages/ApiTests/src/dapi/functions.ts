@@ -13,7 +13,7 @@ category('Dapi: functions calls', async () => {
     const clonedFunccall = funcCall.clone();
     expectTable(funcCall.inputs['table'], clonedFunccall.inputs['table'].dataFrame);
     expectTable(funcCall.outputs['tableOut'], clonedFunccall.outputs['tableOut'].dataFrame);
-  });
+  }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
 
   test('save', async () => {
     const func: _DG.Func = await grok.functions.eval('Sin');
@@ -28,7 +28,7 @@ category('Dapi: functions calls', async () => {
     const funcCall = await func.prepare({x: xValue}).call();
     funcCall.newId();
     const savedFuncCall = await grok.dapi.functions.calls.include('session.user').save(funcCall);
-    expect(savedFuncCall.author, grok.shell.user);
+    expect(savedFuncCall.author, await grok.dapi.users.current());
   }, {skipReason: 'GROK-15119'});
 
   test('save with DF', async () => {
@@ -78,7 +78,7 @@ category('Dapi: functions calls', async () => {
     log('Fetched output table');
 
     log('Test completed');
-  }, {stressTest: true});
+  }, {stressTest: true, skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
 
   test('save with fileInfo', async () => {
     const func = await grok.functions.eval('ApiTests:FileFuncTest');
@@ -92,7 +92,7 @@ category('Dapi: functions calls', async () => {
     expect(savedParam.property.propertyType, DG.TYPE.FILE);
     expect(savedParam.value /* id of fileInfo */, fileInfo.id /* id is added during grok.dapi.files.write */);
     expect(await grok.dapi.files.readAsText(savedParam.value)/* read by id */, 'Hello world!');
-  }, {stressTest: true});
+  }, {stressTest: true, skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
 
   test('save options', async () => {
     const func: _DG.Func = await grok.functions.eval('Sin');
@@ -130,7 +130,7 @@ category('Dapi: functions calls', async () => {
     await grok.dapi.functions.calls.save(funcCall);
 
     const loadedCall = await grok.dapi.functions.calls.include('session.user').find(funcCall.id);
-    expect(loadedCall.author.id, grok.shell.user.id);
+    expect(loadedCall.author.id, (await grok.dapi.users.current()).id);
   });
 
   test('load package function author', async () => {
@@ -140,7 +140,7 @@ category('Dapi: functions calls', async () => {
     await grok.dapi.functions.calls.save(funcCall);
 
     const loadedCall = await grok.dapi.functions.calls.include('session.user').find(funcCall.id);
-    expect(loadedCall.author.id, grok.shell.user.id);
+    expect(loadedCall.author.id, (await grok.dapi.users.current()).id);
   });
 
   test('load package function with func and package', async () => {
@@ -183,7 +183,7 @@ category('Dapi: functions calls', async () => {
     expect(loadedCall.inputs['a'], 1);
     expect(loadedCall.inputs['b'], 2);
     expect(loadedCall.outputs['c'], 3);
-  });
+  }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
 
   test('load package funccall with func\'s valid nqName', async () => {
     const packFunc: _DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
@@ -193,7 +193,7 @@ category('Dapi: functions calls', async () => {
     const loadedWithFunc = await grok.dapi.functions.calls.include('func').find(funcCall.id);
 
     expect(loadedWithFunc.func.nqName, 'ApiTests:dummyPackageFunction');
-  });
+  }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
 
   test('load script funccall with func\'s valid nqName', async () => {
     const scriptFunc: _DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
@@ -203,7 +203,7 @@ category('Dapi: functions calls', async () => {
     const loadedWithFunc = await grok.dapi.functions.calls.include('func').find(funcCall.id);
 
     expect(loadedWithFunc.func.nqName, 'ApiTests:DummyPackageScript');
-  });
+  }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
 
   test('list package funccall with func\'s valid nqName', async () => {
     const packFunc: _DG.Func = await grok.functions.eval('ApiTests:dummyPackageFunction');
@@ -216,7 +216,7 @@ category('Dapi: functions calls', async () => {
       .list({pageSize: 10});
 
     expect(loadedWithFuncs[0].func.nqName, 'ApiTests:dummyPackageFunction');
-  });
+  }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
 
   test('list script funccall with func\'s valid nqName', async () => {
     const scriptFunc: _DG.Func = await grok.functions.eval('ApiTests:dummyPackageScript');
@@ -229,7 +229,7 @@ category('Dapi: functions calls', async () => {
       .list({pageSize: 10});
 
     expect(loadedWithFuncs[0].func.nqName, 'ApiTests:DummyPackageScript');
-  });
+  }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined});
 
   test('list', async () => {
     const func: _DG.Func = await grok.functions.eval('Sin');
@@ -245,10 +245,10 @@ category('Dapi: functions calls', async () => {
     const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
     funcCall.newId();
     await grok.dapi.functions.calls.save(funcCall);
-
+    const currentUser = await grok.dapi.users.current();
     const loadedCalls =
-      await grok.dapi.functions.calls.filter(`id = "${funcCall.id}" and session.user.id="${grok.shell.user.id}"`).include('session.user').first();
-    expect(loadedCalls.author.id, grok.shell.user.id);
+      await grok.dapi.functions.calls.filter(`id = "${funcCall.id}" and session.user.id="${currentUser.id}"`).include('session.user').first();
+    expect(loadedCalls.author.id, currentUser.id);
   });
 
   test('list package function with params script', async () => {
@@ -256,9 +256,9 @@ category('Dapi: functions calls', async () => {
     const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
     funcCall.newId();
     await grok.dapi.functions.calls.save(funcCall);
-
+    const currentUser = await grok.dapi.users.current();
     const loadedCall =
-      await grok.dapi.functions.calls.filter(`id = "${funcCall.id}" and session.user.id="${grok.shell.user.id}" and func.name="dummyPackageScript"`).include('session.user, func.params').first();
+      await grok.dapi.functions.calls.filter(`id = "${funcCall.id}" and session.user.id="${currentUser.id}" and func.name="dummyPackageScript"`).include('session.user, func.params').first();
     expect(loadedCall.func.inputs[0].name, 'a');
   });
 
@@ -267,10 +267,10 @@ category('Dapi: functions calls', async () => {
     const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
     funcCall.newId();
     await grok.dapi.functions.calls.save(funcCall);
-
+    const currentUser = await grok.dapi.users.current();
     const loadedCalls =
-      await grok.dapi.functions.calls.filter(`id = "${funcCall.id}" and session.user.id="${grok.shell.user.id}"`).include('session.user').first();
-    expect(loadedCalls.author.id, grok.shell.user.id);
+      await grok.dapi.functions.calls.filter(`id = "${funcCall.id}" and session.user.id="${currentUser.id}"`).include('session.user').first();
+    expect(loadedCalls.author.id, currentUser.id);
   });
 
   test('list package function with params func', async () => {
@@ -278,9 +278,9 @@ category('Dapi: functions calls', async () => {
     const funcCall = await packFunc.prepare({a: 1, b: 2}).call();
     funcCall.newId();
     await grok.dapi.functions.calls.save(funcCall);
-
+    const currentUser = await grok.dapi.users.current();
     const loadedCall =
-      await grok.dapi.functions.calls.filter(`id = "${funcCall.id}" and session.user.id="${grok.shell.user.id}"`).include('session.user, func.params').first();
+      await grok.dapi.functions.calls.filter(`id = "${funcCall.id}" and session.user.id="${currentUser.id}"`).include('session.user, func.params').first();
     expect(loadedCall.func.inputs[0].name, 'a');
   });
 

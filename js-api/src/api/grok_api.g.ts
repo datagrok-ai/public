@@ -959,6 +959,7 @@ export interface IDartApi {
   grok_EntitiesDataSource_SetProperties(s: any, e: any, props: any): Promise<any>;
   grok_EntitiesDataSource_DeleteProperties(s: any, props: any): Promise<any>;
   grok_CredentialsDataSource_ForEntity(s: any, e: any): Promise<any>;
+  grok_CredentialsDataSource_Save(s: any, c: any): Promise<any>;
   grok_Dapi_UserDataStorage_PostValue(name: String, key: String, value: String, currentUser: Bool): Promise<any>;
   grok_Dapi_UserDataStorage_Post(name: String, data: any, currentUser: Bool): Promise<any>;
   grok_Dapi_UserDataStorage_Put(name: String, data: any, currentUser: Bool): Promise<any>;
@@ -1420,6 +1421,8 @@ export interface IDartApi {
   grok_Query_Set_AdHoc(q: any, adHoc: Bool): any;
   grok_Query_Get_Connection(q: any): any;
   grok_Query_Set_Connection(q: any, dc: any): any;
+  grok_Query_Get_PostProcessScript(q: any): any;
+  grok_Query_Set_PostProcessScript(q: any, script: String): any;
   grok_Query_ExecuteTable(q: any): Promise<any>;
   grok_TableQuery_Create(dc: any): any;
   grok_TableQuery_SetTable(tc: any, tableName: String): any;
