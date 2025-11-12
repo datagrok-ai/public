@@ -28,13 +28,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
   private toChangeScatterMarkerSize = false;
   private colorColumnName: string | null = null;
 
-  private scatter = DG.Viewer.scatterPlot(grok.data.demo.demog(), {
-    showColorSelector: false,
-    showSizeSelector: false,
-    autoLayout: false,
-    showLabels: 'Always',
-    showLabelNamedColumns: 'Always',
-  });
+  private scatter: DG.ScatterPlotViewer | null = null;
 
   private numCols: DG.Column[] = [];
   private numColNames: string[] = [];
@@ -102,7 +96,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
 
     this.autoLabelsSelection = this.bool('autoLabelsSelection', AUTO_LABELS_SELECTION, {
       category: 'Labels',
-      description: 'Automatically select the most relevant columns for the legend.',
+      description: 'Select legend columns automatically; labels show unique categories.',
       defaultValue: AUTO_LABELS_SELECTION,
     });
 
@@ -111,7 +105,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
       choices: ['Auto', 'Left', 'Right', 'Top', 'Bottom', 'RightTop', 'RightBottom', 'LeftTop', 'LeftBottom'],
     });
 
-    this.root.append(this.scatter.root);
+    //this.root.append(this.scatter.root);
   } // constructor
 
   private initializeData() {
@@ -216,6 +210,9 @@ export class ParetoFrontViewer extends DG.JsViewer {
   } // isApplicable
 
   private setScatterOptions() {
+    if (this.scatter == null)
+      return;
+
     if (this.toChangeScatterMarkerSize)
       this.scatter.setOptions({markerMinSize: SIZE.NON_OPT, markerMaxSize: SIZE.OPTIMAL});
 
@@ -224,9 +221,6 @@ export class ParetoFrontViewer extends DG.JsViewer {
     this.scatter.setOptions({
       title: this.title,
       showTitle: this.showTitle,
-      description: this.description,
-      descriptionPosition: this.descriptionPosition,
-      descriptionVisibilityMode: this.descriptionVisibilityMode,
       xColumnName: this.xAxisColumnName,
       yColumnName: this.yAxisColumnName,
       legendVisibility: this.legendVisibility,
@@ -236,15 +230,21 @@ export class ParetoFrontViewer extends DG.JsViewer {
 
     if (this.labelColumnsColumnNames != null) {
       console.log('Setting labels');
-      this.scatter.setOptions({labelColumnNames: this.labelColumnsColumnNames});
-      console.log(this.scatter.getOptions());
+      this.scatter!.setOptions({labelColumnNames: this.labelColumnsColumnNames});
+      console.log(this.scatter!.getOptions());
     }
   }
 
   private init() {
     this.initializeData();
     if (this.isApplicable) {
-      this.scatter.dataFrame = this.dataFrame;
+      this.scatter = DG.Viewer.scatterPlot(this.dataFrame, {
+        showColorSelector: false,
+        showSizeSelector: false,
+        autoLayout: false,
+        showLabels: 'Always',
+      });
+      this.root.append(this.scatter.root);
       this.autoLabelColNames = this.getLabelColNames();
 
       const initColNames = this.numColNames.filter((_, idx) => this.numColsCount - idx - 1 < DIFFERENCE);
@@ -309,7 +309,8 @@ export class ParetoFrontViewer extends DG.JsViewer {
 
   render(computeData = false) {
     if (!this.isApplicable) {
-      this.scatter.root.hidden = true;
+      if (this.scatter != null)
+        this.scatter.root.hidden = true;
       this._showErrorMessage(this.errMsg);
       return;
     }
@@ -322,7 +323,8 @@ export class ParetoFrontViewer extends DG.JsViewer {
     }
 
     this.setScatterOptions();
-    this.scatter.root.hidden = false;
+    if (this.scatter != null)
+      this.scatter.root.hidden = false;
   } // render
 
   private updateOptimizedColNames() {
