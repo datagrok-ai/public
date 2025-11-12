@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {USE_AUTO_SELECTION, PARETO_COLOR_CODING, USE_PARETO_AXES, SCATTER_ROW_LIM, SIZE, COL_NAME, OPT_TYPE,
+import {USE_AUTO_SELECTION, USE_CUSTOM_AXES, SCATTER_ROW_LIM, SIZE, COL_NAME, OPT_TYPE,
   NumericArray,
   LABEL,
   DIFFERENCE} from './defs';
@@ -19,12 +19,12 @@ export class ParetoFrontViewer extends DG.JsViewer {
   private useAutoSelection: boolean = true;
   private xAxisColumnName: string;
   private yAxisColumnName: string;
-  private useParetoAxes: boolean;
+  private useCustomAxes: boolean;
+  private toChangeUseCustomAxes: boolean = true;
   private legendVisibility: string;
   private legendPosition: string;
-  private colorColumnName: string;
-  private paretoColorCoding: boolean = true;
   private toChangeScatterMarkerSize = false;
+  private colorColumnName: string | null = null;
 
   private scatter = DG.Viewer.scatterPlot(grok.data.demo.demog(), {
     showColorSelector: false,
@@ -84,10 +84,11 @@ export class ParetoFrontViewer extends DG.JsViewer {
       nullable: false,
     });
 
-    this.useParetoAxes = this.bool('useParetoAxes', USE_PARETO_AXES, {
-      defaultValue: USE_PARETO_AXES,
+    this.useCustomAxes = this.bool('useCustomAxes', USE_CUSTOM_AXES ? true : null, {
+      defaultValue: USE_CUSTOM_AXES ? true : null,
       category: 'Axes',
-      description: 'Use optimized variables as scatter plot axes.',
+      // eslint-disable-next-line max-len
+      description: 'If checked, custom coordinate axes are used. If unchecked, axes are selected automatically based on the optimized features.',
     });
 
     this.labelColumnNames = this.addProperty('labelColumnsColumnNames', DG.TYPE.COLUMN_LIST, null, {
@@ -104,18 +105,6 @@ export class ParetoFrontViewer extends DG.JsViewer {
     this.legendVisibility = this.string('legendVisibility', 'Auto', {choices: ['Auto', 'Always', 'Never']});
     this.legendPosition = this.string('legendPosition', 'Top', {
       choices: ['Auto', 'Left', 'Right', 'Top', 'Bottom', 'RightTop', 'RightBottom', 'LeftTop', 'LeftBottom'],
-    });
-
-    this.colorColumnName = this.string('colorColumnName', null, {
-      category: 'Color',
-      description: 'A column to be used for color-coding.',
-      nullable: true,
-    });
-
-    this.paretoColorCoding = this.bool('paretoColorCoding', PARETO_COLOR_CODING, {
-      category: 'Color',
-      description: 'Color markers based on whether a point is Pareto optimal or not.',
-      defaultValue: PARETO_COLOR_CODING,
     });
 
     this.root.append(this.scatter.root);
@@ -237,8 +226,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
       yColumnName: this.yAxisColumnName,
       legendVisibility: this.legendVisibility,
       legendPosition: this.legendPosition,
-      colorColumnName: this.colorColumnName ?? null,
-      paretoColorCoding: this.colorColumnName == COL_NAME.OPT,
+      colorColumnName: this.colorColumnName,
     });
   }
 
@@ -253,8 +241,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
         minimizeColumnNames: initColNames,
         xAxisColumnName: initColNames[0],
         yAxisColumnName: initColNames[1],
-        colorColumnName: COL_NAME.OPT,
-        paretoColorCoding: true,
+        useCustomAxes: USE_CUSTOM_AXES ? true : null,
       });
     }
   }
@@ -282,17 +269,14 @@ export class ParetoFrontViewer extends DG.JsViewer {
       return;
 
     switch (property.name) {
-    case 'colorColumnName':
-      if (this.colorColumnName != COL_NAME.OPT)
-        this.setOptions({paretoColorCoding: null});
-
+    case 'xAxisColumnName':
+    case 'yAxisColumnName':
+      if (this.toChangeUseCustomAxes)
+        this.setOptions({useCustomAxes: true});
+      this.toChangeUseCustomAxes = true;
       break;
 
-    case 'paretoColorCoding':
-      this.updateColors();
-      break;
-
-    case 'useParetoAxes':
+    case 'useCustomAxes':
       this.updateAxesColumnOptions();
       break;
     }
@@ -311,7 +295,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
       this.computeParetoFront();
       this.updateOptimizedColNames();
       this.updateAxesColumnOptions();
-      this.updateColors();
+      this.colorColumnName = (this.optimizedColNames.length < 1) ? null : COL_NAME.OPT;
     }
 
     this.setScatterOptions();
@@ -329,7 +313,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
   } // updateOptimizedColNames
 
   private updateAxesColumnOptions(): void {
-    if (!this.useParetoAxes)
+    if (this.useCustomAxes)
       return;
 
     const length = this.optimizedColNames.length;
@@ -341,25 +325,20 @@ export class ParetoFrontViewer extends DG.JsViewer {
     const yIdx = this.optimizedColNames.indexOf(this.yAxisColumnName);
 
     if (length > 1) {
-      if (xIdx < 0)
+      if (xIdx < 0) {
+        this.toChangeUseCustomAxes = false;
         this.setOptions({xAxisColumnName: this.optimizedColNames[yIdx !== 0 ? 0 : 1]});
+      }
 
-      if (yIdx < 0)
+      if (yIdx < 0) {
+        this.toChangeUseCustomAxes = false;
         this.setOptions({yAxisColumnName: this.optimizedColNames[xIdx !== 1 ? 1 : 0]});
+      }
     } else {
-      if ((xIdx < 0) && (yIdx < 0))
+      if ((xIdx < 0) && (yIdx < 0)) {
+        this.toChangeUseCustomAxes = false;
         this.setOptions({xAxisColumnName: this.optimizedColNames[0]});
+      }
     }
   } // updateAxesColumnOptions
-
-  private updateColors(): void {
-    if (!this.paretoColorCoding)
-      return;
-
-    if (this.optimizedColNames.length < 1)
-      this.setOptions({colorColumnName: null});
-
-    if (this.colorColumnName != COL_NAME.OPT)
-      this.setOptions({colorColumnName: COL_NAME.OPT});
-  }
 } // ParetoFrontViewer
