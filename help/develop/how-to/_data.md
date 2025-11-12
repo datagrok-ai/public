@@ -10,7 +10,7 @@ work with huge datasets in the browser. Essentially, it is a columnar in-memory 
 scratch and optimized for the purpose of exploratory data analysis, interactive visualizations, and machine learning.
 
 Note that Datagrok dataframes live and operate entirely inside the browser, but not on our
-[compute server](../under-the-hood/infrastructure.md#compute-components). However, it's possible to pass dataframes to scripts (in Python, R and others)
+compute server. However, it's possible to pass dataframes to scripts (in Python, R and others)
 which run on the server, and get dataframes in return.
 
 You get dataframes within your application in various ways. Dataframe may be a table rendered by a table view, a new
@@ -21,15 +21,15 @@ aggregations.
 
 Dataframes are comprised of [columns](). Columns may be used as Datagrok functions arguments. For columns, it's possible
 to get its underlying dataframe. In return, columns are comprised of cells, and it's possible to get a cell's underlying
-column. There is also a diverse [system of events](https://datagrok.ai/js-api/classes/dg.DataFrame) one can subscribe on
+column. There is also a diverse [system of events](https://datagrok.ai/api/js/dg/classes/DataFrame) one can subscribe on
 a dataframe.
 
 ### Data types
 
 ---
 
-Use [DataFrame](https://datagrok.ai/js-api/classes/dg.DataFrame), [Column](https://datagrok.ai/js-api/classes/dg.Column)
-, [ColumnList](https://datagrok.ai/js-api/classes/dg.ColumnList), and [Row](https://datagrok.ai/js-api/classes/dg.Row) classes for table manipulation.
+Use [DataFrame](https://datagrok.ai/api/js/dg/classes/DataFrame), [Column](https://datagrok.ai/api/js/dg/classes/Column)
+, [ColumnList](https://datagrok.ai/api/js/dg/classes/ColumnList), and [Row](https://datagrok.ai/api/js/dg/classes/Row) classes for table manipulation.
 
 ```javascript
 demog = grok.testData('demog', 5000);
@@ -65,7 +65,7 @@ do this, simply start a tag name with the `.` prefix.
 
 ### Detectors
 
-Sematic type [detectors](define-semantic-type-detectors.md) are meant to be lightweight, simple, and efficient. Keep
+Sematic type [detectors](functions/define-semantic-type-detectors.md) are meant to be lightweight, simple, and efficient. Keep
 this fact in mind when designing these functions. If columns you are interested in generally contain a lot of unique
 values, use a special sampling method to run your checks on a random subset of column categories. Empty values deserve
 special attention: make sure you don't match them with your semantic type as it will be confusing to find it assigned to

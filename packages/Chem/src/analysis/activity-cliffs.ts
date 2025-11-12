@@ -1,12 +1,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {drawMoleculeToCanvas, getUncommonAtomsAndBonds} from '../utils/chem-common-rdkit';
+import {drawMoleculeToCanvas} from '../utils/chem-common-rdkit';
 import {ITooltipAndPanelParams} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
-import {convertMolNotation, getRdKitModule} from '../package';
-import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {PackageFunctions} from '../package';
+import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getMCS} from '../utils/most-common-subs';
 import {BitArrayMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
+import {getUncommonAtomsAndBonds} from '../utils/chem-common';
 
 const canvasWidth = 200;
 const canvasHeight = 100;
@@ -39,7 +40,7 @@ async function drawMoleculesWithMcsAsync(params: ITooltipAndPanelParams, hosts: 
 }
 
 function drawMolecules(params: ITooltipAndPanelParams, hosts: HTMLElement[], molecules: [string, string]) {
-  const rdkit = getRdKitModule();
+  const rdkit = PackageFunctions.getRdKitModule();
   let mcsMol: RDMol | null = null;
   const mcsGenerated = cashedData.has(`${molecules[0]}_${molecules[1]}`);
   try {
@@ -49,11 +50,11 @@ function drawMolecules(params: ITooltipAndPanelParams, hosts: HTMLElement[], mol
       const imageHost = ui.canvas(canvasWidth, canvasHeight);
       if (params.seqCol.meta.units === DG.chem.Notation.Smiles) {
         //convert to molFile to draw in coordinates similar to dataframe cell
-        molecule = convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
+        molecule = PackageFunctions.convertMolNotation(molecule, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
       }
       const substruct = mcsGenerated ? getUncommonAtomsAndBonds(molecule!, mcsMol, rdkit) : null;
       drawMoleculeToCanvas(0, 0, canvasWidth, canvasHeight, imageHost, molecule, '',
-        { normalizeDepiction: true, straightenDepiction: true }, substruct);
+        {normalizeDepiction: true, straightenDepiction: true}, substruct);
       ui.empty(hosts[index]);
       if (!cashedData.has(`${molecules[0]}_${molecules[1]}`))
         hosts[index].append(ui.divText('MCS loading...'));
@@ -94,19 +95,18 @@ function moleculeInfo(df: DG.DataFrame, idx: number, seqColName: string): HTMLEl
 
 function createElementTemplate(params: ITooltipAndPanelParams,
   drawFunc: (params: ITooltipAndPanelParams, element: HTMLDivElement, hosts: HTMLDivElement[],
-  molIdx: number, idx: number) => void,
+  molIdx: number, idx: number, vertical?: boolean) => void,
   vertical: boolean, flexColNames: boolean, colNameStyle?: any) {
   const element = vertical ? ui.divH([]) : ui.divV([]);
   const columnNames = vertical ? ui.divV([]) : ui.divH([]);
   columnNames.append(colNameStyle ? ui.divText(params.seqCol.name, colNameStyle) : ui.divText(params.seqCol.name));
   columnNames.append(ui.divText(params.activityCol.name));
-  columnNames.style.fontWeight = 'bold';
-  columnNames.style.justifyContent = 'space-between';
+  columnNames.classList.add(vertical ? 'chem-activity-cliffs-tooltip' : 'chem-activity-cliffs-context-panel');
   if (flexColNames) columnNames.style.display = 'flex';
   element.append(columnNames);
   const hosts: HTMLDivElement[] = [];
   params.points.forEach((molIdx: number, idx: number) => {
-    drawFunc(params, element, hosts, molIdx, idx);
+    drawFunc(params, element, hosts, molIdx, idx, vertical);
   });
   findMcsAndUpdateDrawings(params, hosts);
   return element;
@@ -124,7 +124,7 @@ export function createPropPanelElement(params: ITooltipAndPanelParams): HTMLDivE
 }
 
 function drawPropPanelElement(params: ITooltipAndPanelParams, element: HTMLDivElement,
-  hosts: HTMLDivElement[], molIdx: number, idx: number) {
+  hosts: HTMLDivElement[], molIdx: number, idx: number, vertical?: boolean) {
   const activity = ui.divText(params.activityCol.get(molIdx).toFixed(2));
   activity.style.paddingLeft = '15px';
   activity.style.paddingLeft = '10px';
@@ -145,9 +145,12 @@ function drawPropPanelElement(params: ITooltipAndPanelParams, element: HTMLDivEl
       grok.shell.o = obj;
     }, 1000);
   };
-  element.append(ui.divH([
+  const content = ui.divH([
     molHost,
     activity,
-  ]));
+  ]);
+  if (!vertical)
+    content.classList.add('chem-activity-cliffs-context-panel-content');
+  element.append(content);
   hosts.push(molHost);
 }

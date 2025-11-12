@@ -2,146 +2,307 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import $ from 'cash-dom';
 
 import '@datagrok-libraries/bio/src/types/ngl'; // To enable import from the NGL module declared in bio lib
-import {GridSize, IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
+import {IAutoDockService} from '@datagrok-libraries/bio/src/pdb/auto-dock-service';
 import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
-import {DockingRole, DockingTags} from '@datagrok-libraries/bio/src/viewers/molecule3d';
 
 import {AutoDockApp, AutoDockDataType} from './apps/auto-dock-app';
-import {_runAutodock, AutoDockService, _runAutodock2} from './utils/auto-dock-service';
-import {_package, TARGET_PATH, CACHED_DOCKING, BINDING_ENERGY_COL, POSE_COL, 
-  PROPERTY_DESCRIPTIONS, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, setPose, setAffinity, ERROR_COL_NAME, ERROR_MESSAGE} from './utils/constants';
-import { _demoDocking } from './demo/demo-docking';
+import {_runAutodock, AutoDockService, _runAutodock2, ensureNoDockingError} from './utils/auto-dock-service';
+import {TARGET_PATH, BINDING_ENERGY_COL, POSE_COL, BINDING_ENERGY_COL_UNUSED, POSE_COL_UNUSED, ERROR_COL_NAME, ERROR_MESSAGE, AUTODOCK_PROPERTY_DESCRIPTIONS} from './utils/constants';
+import { _demoDocking } from './demo/demo';
 import { DockingViewApp } from './demo/docking-app';
+import { addColorCoding, formatColumns, getFromPdbs, getReceptorData, processAutodockResults, prop } from './utils/utils';
+export * from './package.g';
+export const _package = new DG.Package();
 
-//name: info
-export function info() {
-  grok.shell.info(_package.webRoot);
-}
 
-// -- Services & Helpers --
+export class PackageFunctions{
+  @grok.decorators.func()
+  static info() {
+    grok.shell.info(_package.webRoot);
+  }
 
-//name: getAutoDockService
-//output: object result
-export async function getAutoDockService(): Promise<IAutoDockService> {
-  const resSvc: IAutoDockService = await AutoDockService.getSvc();
-  return resSvc;
-}
+  @grok.decorators.func({
+    'outputs': [
+      {
+        'name': 'result',
+        'type': 'object',
+      }
+    ]
+  })
+  static async getAutoDockService(): Promise<IAutoDockService> {
+    const resSvc: IAutoDockService = await AutoDockService.getSvc();
+    return resSvc;
+  }
 
-// -- Test apps --
+  @grok.decorators.func()
+  static async autoDockApp(): Promise<void> {
+    const pi = DG.TaskBarProgressIndicator.create('AutoDock app...');
+    try {
+      const app = new AutoDockApp('autoDockApp');
+      await app.init();
+    } finally {
+      pi.close();
+    }
+  }
 
-//name: autoDockApp
-export async function autoDockApp(): Promise<void> {
-  const pi = DG.TaskBarProgressIndicator.create('AutoDock app...');
-  try {
-    const app = new AutoDockApp('autoDockApp');
+  @grok.decorators.func()
+  static async getConfigFiles(): Promise<string[]> {
+    const targetsFiles: DG.FileInfo[] = await grok.dapi.files.list(TARGET_PATH, true);
+    const directoriesWithGpf = await Promise.all(
+      targetsFiles.filter(file => file.isDirectory).map(async dir => {
+        const filesInDir = await grok.dapi.files.list(dir.fullPath, true);
+        return filesInDir.some(file => file.path.endsWith('.gpf')) ? dir.name : null;
+      })
+    );
+    return directoriesWithGpf.filter((dir): dir is string => Boolean(dir));
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'cache': 'all',
+      'cache.invalidateOn': '0 0 1 * *'
+    }
+  })
+  static async dockLigandCached(
+    jsonForm: string,
+    containerId: string): Promise<string> {
+
+    const params: RequestInit = {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: jsonForm,
+    };
+
+    const path = `/autodock/dock_ligand`;
+    const dockingResult = await grok.dapi.docker.dockerContainers.fetchProxy(containerId, path, params);
+    const dockingResultText = await dockingResult.json();
+    ensureNoDockingError(dockingResultText);
+    return dockingResultText;
+  }
+
+  @grok.decorators.func({
+    'tags': [
+      'HitTriageFunction'
+    ],
+    'top-menu': 'Chem | Docking | AutoDock...',
+    'name': 'AutoDock',
+    'description': 'Autodock plugin UI'
+  })
+  static async runAutodock(
+    @grok.decorators.param({options: {description: '\'Input data table\''}}) table: DG.DataFrame,
+    @grok.decorators.param({options: {type: 'categorical', semType: 'Molecule', description: '\'Small molecules to dock\''}}) ligands: DG.Column,
+    @grok.decorators.param({options: {choices: 'Docking:getConfigFiles', description: '\'Folder with config and macromolecule\''}}) target: string,
+    @grok.decorators.param({type: 'int', options: {initialValue: '10', description: '\'Number of output conformations for each small molecule\''}}) poses: number): Promise<void> {
+
+    const desirableHeight = 100;
+    const desirableWidth = 100;
+    const pi = DG.TaskBarProgressIndicator.create('AutoDock load data ...');
+    try {
+      const data = await prepareAutoDockData(target, table, ligands.name, poses);
+      if (!data)
+        return;
+
+      const app = new AutoDockApp();
+      const autodockResults = await app.init(data);
+      if (!autodockResults)
+        return;
+
+      formatColumns(autodockResults);
+      const processedResults = processAutodockResults(autodockResults, table);
+      for (let col of processedResults.columns)
+        table.columns.add(col);
+
+      const {grid} = grok.shell.getTableView(table.name);
+
+      addColorCoding(grid.columns.byName(BINDING_ENERGY_COL_UNUSED)!);
+      grid.sort([BINDING_ENERGY_COL_UNUSED]);
+
+      await grok.data.detectSemanticTypes(table);
+
+      grid.onCellRender.subscribe((args: any) => {
+        grid.setOptions({ 'rowHeight': desirableHeight });
+        grid.col(POSE_COL_UNUSED)!.width = desirableWidth;
+        grid.col(BINDING_ENERGY_COL_UNUSED)!.width = desirableWidth + 50;
+
+        const { cell, g, bounds } = args;
+        const value = cell.cell.value;
+        const isPoseCell = cell.isTableCell && cell.cell.column.name === POSE_COL_UNUSED;
+        const isErrorValue = typeof value === 'string' && value.toLowerCase().includes(ERROR_COL_NAME);
+
+        if (isPoseCell && isErrorValue) {
+          g.fillStyle = 'black';
+          g.fillText(ERROR_MESSAGE, bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+          args.preventDefault();
+        }
+      });
+    } finally {
+      pi.close();
+    }
+  }
+
+  @grok.decorators.func()
+  static isApplicableAutodock(molecule: string): boolean {
+    return molecule.includes('binding energy');
+  }
+
+  @grok.decorators.panel({
+    'tags': [
+      'chem',
+      'widgets'
+    ],
+    'name': 'AutoDock',
+    'condition': 'Docking:isApplicableAutodock(molecule)'
+  })
+  static async autodockWidget(
+    @grok.decorators.param({'options':{'semType':'Molecule3D'}}) molecule: DG.SemanticValue): Promise<DG.Widget<any> | null> {
+    return await PackageFunctions.getAutodockSingle(molecule);
+  }
+
+  @grok.decorators.func()
+  static async getAutodockSingle(
+    molecule: DG.SemanticValue, showProperties: boolean = true,
+    table?: DG.DataFrame): Promise<DG.Widget<any> | null> {
+
+    const value = molecule.value;
+    if (value.toLowerCase().includes(ERROR_COL_NAME))
+      return new DG.Widget(ui.divText(value));
+
+    const tableView = grok.shell.tv;
+    const currentTable = table ?? tableView.dataFrame;
+
+    const addedToPdb = value.includes(BINDING_ENERGY_COL);
+    if (!addedToPdb)
+      return new DG.Widget(ui.divText('Docking has not been run'));
+
+    const autodockResults: DG.DataFrame = getFromPdbs(molecule);
+    const widget = new DG.Widget(ui.div([]));
+
+    if (table)
+      currentTable.currentRowIdx = 0;
+
+    const receptorData = await getReceptorData(value);
+    const targetViewer = await currentTable.plot.fromType('Biostructure', {
+      dataJson: BiostructureDataJson.fromData(receptorData),
+      ligandColumnName: molecule.cell.column.name,
+      zoom: true,
+    });
+    targetViewer.root.classList.add('bsv-container-info-panel');
+    widget.root.append(targetViewer.root);
+    if (!showProperties) return widget;
+
+    const result = ui.div();
+    const map: { [_: string]: any } = {};
+    for (let i = 0; i < autodockResults!.columns.length; ++i) {
+      const columnName = autodockResults!.columns.names()[i];
+      const propertyCol = autodockResults!.col(columnName);
+      map[columnName] = prop(molecule, propertyCol!, result, AUTODOCK_PROPERTY_DESCRIPTIONS);
+    }
+    result.appendChild(ui.tableFromMap(map));
+    widget.root.append(result);
+
+    return widget;
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'demoPath': 'Bioinformatics | Docking'
+    },
+    'name': 'Demo Docking',
+    'description': 'Small molecule docking to a macromolecule with pose visualization'
+  })
+  static async demoDocking(): Promise<void> {
+    await _demoDocking();
+  }
+
+  @grok.decorators.panel({
+    'name': 'Biology | AutoDock',
+    'tags': ['widgets']
+  })
+  static async autodockPanel(
+    @grok.decorators.param({'options':{'semType':'Molecule'}}) smiles: DG.SemanticValue): Promise<DG.Widget> {
+
+    const items = await PackageFunctions.getConfigFiles();
+    const target = ui.input.choice('Target', {value: items[0], items: items})
+    const poses = ui.input.int('Poses', {value: 10});
+
+    const resultsContainer = ui.div();
+    const button = ui.button('Run', async () => {
+      resultsContainer.innerHTML = '';
+
+      const loader = ui.loader();
+      resultsContainer.appendChild(loader);
+
+      const widget = await runDocking(smiles, target.value!, poses.value!);
+      resultsContainer.removeChild(loader);
+      if (widget) {
+        resultsContainer.appendChild(widget.root);
+      }
+    });
+
+    const form = ui.form([target, poses]);
+    const panels = ui.divV([form, button, resultsContainer]);
+
+    return DG.Widget.fromRoot(panels);
+  }
+
+  @grok.decorators.app({
+    'meta': {
+      'icon': 'images/docking-icon.png',
+      'browsePath': 'Bio'
+    },
+    'name': 'Docking'
+  })
+  static async dockingView(
+    @grok.decorators.param({ 'options':{'meta.url':true,'optional':true}})  path?: string): Promise<DG.ViewBase | null> {
+    const parent = grok.functions.getCurrentCall();
+    const app = new DockingViewApp(parent);
     await app.init();
-  } finally {
-    pi.close();
+    return app.tableView!;
   }
 }
 
-// -- AutoDock --
+export async function runDocking(
+  smiles: DG.SemanticValue,
+  target: string,
+  poses: number
+): Promise<DG.Widget | null> {
 
-//name: runAutodock
-//input: file receptor
-//input: file ligand
-//input: int x
-//input: int y
-//input: int z
-//output: dataframe result
-export async function runAutodock(
-  receptor: DG.FileInfo, ligand: DG.FileInfo, x: number, y: number, z: number,
-): Promise<DG.DataFrame | null> {
-  const npts = new GridSize(x, y, z);
-  return await _runAutodock(receptor, ligand, npts);
-}
+  const ligandColumnName = 'ligand';
+  const column = DG.Column.fromStrings(ligandColumnName, [smiles.value]);
+  const table = DG.DataFrame.fromColumns([column]);
+  column.semType = DG.SEMTYPE.MOLECULE;
+  await grok.data.detectSemanticTypes(table);
 
-//name: runAutodock2
-// //input: dataframe df
-// //input: column molCol { semType: Molecule }
-// //input: file receptorFi { optional: true }
-export async function runAutodock2(): Promise<void> {
-  const [csv, receptorPdb] = await Promise.all([
-    grok.functions.call(`${_package.name}:readAsText`,
-      {file: 'CHEMBL2366517/ic50.mol.csv'}),
-    grok.functions.call(`${_package.name}:readAsText`, {file: 'CHEMBL2366517/1bdq.pdb'}),
-  ]);
-  if (!csv || !receptorPdb)
-    throw new Error('Empty input data');
+  const data = await prepareAutoDockData(target, table, ligandColumnName, poses);
+  if (!data)
+    return null;
 
-  const df = DG.DataFrame.fromCsv(csv);
-  const molCol: DG.Column<string> = df.getCol('molecule');
+  const app = new AutoDockApp();
+  const autodockResults = await app.init(data);
 
-  return await _runAutodock2(molCol, receptorPdb);
-}
-
-//name: runAutodock3
-//input: dataframe name
-//input: column ligandCol
-export async function runAutodock3(df: DG.DataFrame, ligandCol: DG.Column): Promise<void> {
-
-}
-
-//name: runAutodock4
-//input: file receptor { caption: 'Receptor structure file' }
-//input: file gridParams { nullable: true, caption: 'Grid parameters file' }
-//input: dataframe ligandTable { caption: 'Ligand table' }
-//input: column ligandColumn { caption: 'Ligand molecule column', semType: Molecule }
-//editor: Docking:getRunAutodockFuncEditor
-export async function runAutodock4(
-  receptor: DG.FileInfo, gridParams: DG.FileInfo | null, ligandTable: DG.DataFrame, ligandColumn: DG.Column
-): Promise<void> {
-  const pi = DG.TaskBarProgressIndicator.create('AutoDock load data ...');
-  try {
-    // AutoDock works with .pdb or .pdbqt files, both are text formats.
-    const receptorData: BiostructureData = {
-      binary: false,
-      data: (new TextDecoder).decode(receptor.data) ?? (await grok.dapi.files.readAsText(receptor)),
-      ext: receptor.extension,
-      options: {name: receptor.name,},
-    };
-
-    const data: AutoDockDataType = {
-      ligandDf: ligandTable,
-      ligandMolColName: ligandColumn.name,
-      receptor: receptorData,
-    };
-
-    const app = new AutoDockApp();
-    await app.init(data);
-  } finally {
-    pi.close();
+  if (autodockResults) {
+    const pose = autodockResults.cell(0, POSE_COL);
+    return await PackageFunctions.getAutodockSingle(DG.SemanticValue.fromTableCell(pose!), false, autodockResults);
   }
-}
 
-//name: getConfigFiles
-//output: list<string> configFiles
-export async function getConfigFiles(): Promise<string[]> {
-  const targetsFiles: DG.FileInfo[] = await grok.dapi.files.list(TARGET_PATH, true);
-  const directoriesWithGpf = await Promise.all(
-    targetsFiles.filter(file => file.isDirectory).map(async dir => {
-      const filesInDir = await grok.dapi.files.list(dir.fullPath, true);
-      return filesInDir.some(file => file.path.endsWith('.gpf')) ? dir.name : null;
-    })
-  );
-  return directoriesWithGpf.filter((dir): dir is string => Boolean(dir));
+  return null;
 }
 
 export async function prepareAutoDockData(
-  target: string, 
-  table: DG.DataFrame, 
-  ligandColumn: string, 
+  target: string,
+  table: DG.DataFrame,
+  ligandColumn: string,
   poses: number
 ): Promise<AutoDockDataType | null> {
   const isGpfFile = (file: DG.FileInfo): boolean => file.extension === 'gpf';
   const configFile = (await grok.dapi.files.list(`${TARGET_PATH}/${target}`, true)).find(isGpfFile)!;
-  const receptor = (await grok.dapi.files.list(`${TARGET_PATH}/${target}`)).find((file) => file.extension === 'pdbqt')!;
+  const receptor = (await grok.dapi.files.list(`${TARGET_PATH}/${target}`))
+    .find(file => ['pdbqt', 'pdb'].includes(file.extension)) || null;
 
   if (!configFile || !receptor) {
-    grok.shell.warning('Missing .gpf or .pdbqt file in the target folder.');
+    grok.shell.warning('Missing .gpf or .pdbqt/.pdb file in the target folder.');
     return null;
   }
 
@@ -160,265 +321,4 @@ export async function prepareAutoDockData(
     posesNum: poses,
     ligandDfString: table.columns.byName(ligandColumn).toString(),
   };
-}
-
-function getTableView(tableName?: string): DG.TableView {
-  const inBrowseView = grok.shell.v.type === DG.VIEW_TYPE.BROWSE;
-  const tableView = inBrowseView
-    ? ((grok.shell.view('Browse') as DG.BrowseView)?.preview as DG.TableView)
-    : (tableName ? grok.shell.getTableView(tableName) : grok.shell.tv);
-  return tableView;
-}
-
-
-//top-menu: Chem | AutoDock...
-//name: Autodock
-//tags: HitTriageFunction
-//description: Autodock plugin UI
-//input: dataframe table [Input data table]
-//input: column ligands {type:categorical; semType: Molecule} [Small molecules to dock]
-//input: string target {choices: Docking: getConfigFiles} [Folder with config and macromolecule]
-//input: int poses = 10 [Number of output conformations for each small molecule]
-export async function runAutodock5(table: DG.DataFrame, ligands: DG.Column, target: string, poses: number): Promise<void> {
-  const desirableHeight = 100;
-  const desirableWidth = 100;
-  const pi = DG.TaskBarProgressIndicator.create('AutoDock load data ...');
-  try {
-    const data = await prepareAutoDockData(target, table, ligands.name, poses);
-    if (!data)
-      return;
-
-    const app = new AutoDockApp();
-    const autodockResults = await app.init(data);
-    if (!autodockResults)
-      return;
-
-    formatColumns(autodockResults);
-    const processedResults = processAutodockResults(autodockResults, table);
-    for (let col of processedResults.columns)
-      table.columns.add(col);
-    
-    const {grid} = getTableView(table.name);
-
-    addColorCoding(grid.columns.byName(BINDING_ENERGY_COL_UNUSED)!);
-    grid.sort([BINDING_ENERGY_COL_UNUSED]);
-
-    await grok.data.detectSemanticTypes(table);
-
-    grid.onCellRender.subscribe((args: any) => {
-      grid.setOptions({ 'rowHeight': desirableHeight });
-      grid.col(POSE_COL_UNUSED)!.width = desirableWidth;
-      grid.col(BINDING_ENERGY_COL_UNUSED)!.width = desirableWidth + 50;
-
-      const { cell, g, bounds } = args;
-      const value = cell.cell.value;
-      const isPoseCell = cell.isTableCell && cell.cell.column.name === POSE_COL_UNUSED;
-      const isErrorValue = typeof value === 'string' && value.toLowerCase().includes(ERROR_COL_NAME);
-
-      if (isPoseCell && isErrorValue) {
-        g.fillStyle = 'black';
-        g.fillText(ERROR_MESSAGE, bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
-        args.preventDefault();
-      }
-    });
-  } finally {
-    pi.close();
-  }
-}
-
-function formatColumns(autodockResults: DG.DataFrame) {
-  for (let col of autodockResults.columns.numerical)
-    col.meta.format = '0.00';
-}
-
-export function addColorCoding(column: DG.GridColumn) {
-  column.isTextColorCoded = true;
-  column.column!.meta.colors.setLinear([DG.Color.green, DG.Color.red]);
-}
-
-function processAutodockResults(autodockResults: DG.DataFrame, table: DG.DataFrame): DG.DataFrame {
-  const affinityDescription = 'Estimated Free Energy of Binding.\
-    Lower values correspond to stronger binding.';
-  const poseCol = autodockResults.col(POSE_COL);
-  poseCol!.name = table.columns.getUnusedName(POSE_COL);
-  setPose(poseCol!.name);
-  const affinityCol = autodockResults.col(BINDING_ENERGY_COL);
-  affinityCol!.name = table.columns.getUnusedName(BINDING_ENERGY_COL);
-  setAffinity(affinityCol!.name);
-  const processedTable = DG.DataFrame.fromColumns([poseCol!, affinityCol!]);
-  affinityCol!.setTag(DG.TAGS.DESCRIPTION, affinityDescription);
-  return processedTable;
-}
-
-//name: isApplicable
-//input: semantic_value molecule
-//output: bool result
-export function isApplicable(molecule: DG.SemanticValue): boolean {
-  return molecule.cell.column.getTag(DockingTags.dockingRole) === DockingRole.ligand;
-}
-
-
-//name: AutoDock
-//tags: panel, chem, widgets
-//input: semantic_value molecule { semType: Molecule3D }
-//output: widget result
-export async function autodockWidget(molecule: DG.SemanticValue): Promise<DG.Widget<any> | null> {
-  return await getAutodockSingle(molecule);
-}
-
-//name: getAutodockSingle
-export async function getAutodockSingle(
-  molecule: DG.SemanticValue, showProperties: boolean = true, 
-  table?: DG.DataFrame): Promise<DG.Widget<any> | null> {
-  const value = molecule.value;
-  if (value.toLowerCase().includes(ERROR_COL_NAME))
-    return new DG.Widget(ui.divText(value));
-
-  const tableView = getTableView();
-  const currentTable = table ?? tableView.dataFrame;
-  //@ts-ignore
-  const index = CACHED_DOCKING.V.findIndex((cachedData: DG.DataFrame) => {
-    if (cachedData) {
-      const names = currentTable?.columns.names();
-      const indexPoses = names!.findIndex(name => name.includes(molecule.cell.column.name));
-      const samePoses = cachedData.col(molecule.cell.column.name)?.toString() === currentTable?.col(names![indexPoses])?.toString();
-      return currentTable?.rowCount === cachedData.rowCount && samePoses;
-    }
-    return false;
-  });
-
-  //@ts-ignore
-  const key = CACHED_DOCKING.K[index];
-  //@ts-ignore
-  const matchingValue = CACHED_DOCKING.V[index];
-  if (!matchingValue)
-    return new DG.Widget(ui.divText('Docking has not been run'));
-
-  const autodockResults: DG.DataFrame = matchingValue.clone();
-  const widget = new DG.Widget(ui.div([]));
-
-  if (table)
-    currentTable.currentRowIdx = 0;
-
-  const targetViewer = await currentTable.plot.fromType('Biostructure', {
-    dataJson: BiostructureDataJson.fromData(key.receptor),
-    ligandColumnName: molecule.cell.column.name,
-    zoom: true,
-  });
-  targetViewer.root.classList.add('bsv-container-info-panel');
-  widget.root.append(targetViewer.root);
-  if (!showProperties) return widget;
-
-  const result = ui.div();
-  const map: { [_: string]: any } = {};
-  for (let i = 3; i < autodockResults!.columns.length; ++i) {
-    const columnName = autodockResults!.columns.names()[i];
-    const propertyCol = autodockResults!.col(columnName);
-    map[columnName] = prop(molecule, propertyCol!, result);
-  }
-  result.appendChild(ui.tableFromMap(map));
-  widget.root.append(result);
-
-  return widget;
-}
-
-function prop(molecule: DG.SemanticValue, propertyCol: DG.Column, host: HTMLElement) : HTMLElement {
-  const addColumnIcon = ui.iconFA('plus', () => {
-    const df = molecule.cell.dataFrame;
-    propertyCol.name = df.columns.getUnusedName(propertyCol.name);
-    propertyCol.setTag(DG.TAGS.DESCRIPTION, PROPERTY_DESCRIPTIONS[propertyCol.name]);
-    df.columns.add(propertyCol);
-  }, `Calculate ${propertyCol.name} for the whole table`);
-
-  ui.tools.setHoverVisibility(host, [addColumnIcon]);
-  $(addColumnIcon)
-    .css('color', '#2083d5')
-    .css('position', 'absolute')
-    .css('top', '2px')
-    .css('left', '-12px')
-    .css('margin-right', '5px');
-  
-  const idx = molecule.cell.rowIndex;
-  return ui.divH([addColumnIcon, propertyCol.get(idx)], {style: {'position': 'relative'}});
-}
-
-//name: Demo Docking
-//description: Small molecule docking to a macromolecule with pose visualization
-//meta.demoPath: Bioinformatics | Docking
-export async function demoDocking(): Promise<void> {
-  await _demoDocking();
-}
-
-//name: Biology | AutoDock
-//tags: panel, widgets
-//input: semantic_value smiles { semType: Molecule }
-//output: widget result
-export async function autodockPanel(smiles: DG.SemanticValue): Promise<DG.Widget> {
-  const items = await getConfigFiles();
-  const target = ui.input.choice('Target', {value: items[0], items: items})
-  const poses = ui.input.int('Poses', {value: 10});
-
-  const resultsContainer = ui.div();
-  const button = ui.button('Run', async () => {
-    resultsContainer.innerHTML = '';
-
-    const loader = ui.loader();
-    resultsContainer.appendChild(loader);
-
-    const widget = await runDocking(smiles, target.value!, poses.value!);
-    resultsContainer.removeChild(loader);
-    if (widget) {
-      resultsContainer.appendChild(widget.root);
-    }
-  });
-
-  const form = ui.form([target, poses]);
-  const panels = ui.divV([form, button, resultsContainer]);
-
-  return DG.Widget.fromRoot(panels);
-}
-
-export async function runDocking(
-  smiles: DG.SemanticValue,
-  target: string,
-  poses: number
-): Promise<DG.Widget | null> {
-  const ligandColumnName = 'ligand';
-  const column = DG.Column.fromStrings(ligandColumnName, [smiles.value]);
-  const table = DG.DataFrame.fromColumns([column]);
-  column.semType = DG.SEMTYPE.MOLECULE;
-  await grok.data.detectSemanticTypes(table);
-
-  const data = await prepareAutoDockData(target, table, ligandColumnName, poses);
-  if (!data)
-    return null;
-
-  const app = new AutoDockApp();
-  const autodockResults = await app.init(data);
-
-  if (autodockResults) {
-    formatColumns(autodockResults);
-    const processedResults = processAutodockResults(autodockResults, table);
-
-    for (let col of processedResults.columns) {
-      table.columns.add(col);
-    }
-
-    const pose = table.cell(0, POSE_COL);
-    return await getAutodockSingle(DG.SemanticValue.fromTableCell(pose!), false, table);
-  }
-
-  return null;
-}
-
-//name: Docking
-//tags: app
-//input: string path {meta.url: true; optional: true}
-//output: view v
-//meta.browsePath: Bio
-export async function dockingApp(path?: string): Promise<DG.ViewBase | null> {
-  const parent = grok.functions.getCurrentCall();
-  const app = new DockingViewApp(parent);
-  await app.init();
-  return app.tableView!;
 }

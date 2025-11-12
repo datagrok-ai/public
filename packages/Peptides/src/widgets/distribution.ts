@@ -5,7 +5,8 @@ import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations'
 import $ from 'cash-dom';
 
 import * as C from '../utils/constants';
-import {AggregationColumns, getAggregatedColumnValues, getStats, StatsItem} from '../utils/statistics';
+import {AggregationColumns, bitSetToBitArray,
+  getAggregatedColumnValues, getStats, StatsItem} from '../utils/statistics';
 import {DistributionLabelMap, getDistributionPanel, getDistributionTable, SPLIT_CATEGORY} from '../utils/misc';
 import {SARViewer} from '../viewers/sar-viewer';
 import {CLUSTER_TYPE, LogoSummaryTable} from '../viewers/logo-summary';
@@ -13,7 +14,7 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {Selection} from '../utils/types';
 
 export type DistributionItemOptions = {
-  peptideSelection: DG.BitSet, columns: AggregationColumns, clusterColName?: string,
+  columns: AggregationColumns, clusterColName?: string,
   activityCol: DG.Column<number>, monomerPositionSelection: Selection, clusterSelection: Selection,
 };
 
@@ -80,7 +81,7 @@ export function getDistributionWidget(table: DG.DataFrame, options: Distribution
       inputsArray[inputIdx].enabled = Object.entries(options.monomerPositionSelection).length !== 0;
   }
 
-  const inputsHost = ui.form(inputsArray);
+  const inputsHost = ui.form(inputsArray, {style: {flexDirection: 'row'}});
   // $(inputsHost).css('display', 'inline-flex');
   return ui.divV([inputsHost, distributionCategoriesHost]);
 }
@@ -119,11 +120,11 @@ export function getActivityDistribution(
  * @return - Stats table map
  */
 export function getStatsTableMap(stats: StatsItem,
-  options: { fractionDigits?: number } = {},
+  options: { fractionDigits?: number, countName?: string } = {},
 ): StringDictionary {
   options.fractionDigits ??= 3;
   const tableMap: StringDictionary = {
-    'Count': `${stats.count} (${(stats.ratio * 100).toFixed(options.fractionDigits)}%)`,
+    [options?.countName ?? 'Count']: `${stats.count} (${(stats.ratio * 100).toFixed(options.fractionDigits)}%)`,
     'Mean difference': stats.meanDifference.toFixed(options.fractionDigits),
     'Mean activity': stats.mean.toFixed(options.fractionDigits),
   };
@@ -143,10 +144,9 @@ export function getStatsTableMap(stats: StatsItem,
  */
 function getSingleDistribution(table: DG.DataFrame, stats: StatsItem, options: DistributionItemOptions,
   labelMap: DistributionLabelMap = {}): HTMLDivElement {
-  const hist = getActivityDistribution(getDistributionTable(options.activityCol, table.selection,
-    options.peptideSelection));
+  const hist = getActivityDistribution(getDistributionTable(options.activityCol, table.selection, table));
   const aggregatedColMap = getAggregatedColumnValues(table, Object.entries(options.columns),
-    {filterDf: true, mask: DG.BitSet.fromBytes(stats.mask.buffer.buffer, stats.mask.length)});
+    {filterDf: true, mask: DG.BitSet.fromBytes(stats.mask.buffer.buffer as ArrayBuffer, stats.mask.length)});
   const tableMap = getStatsTableMap(stats);
   const resultMap: { [key: string]: any } = {...tableMap, ...aggregatedColMap};
   const distributionRoot = getDistributionPanel(hist, resultMap, labelMap);
@@ -165,15 +165,17 @@ function getSingleDistribution(table: DG.DataFrame, stats: StatsItem, options: D
 function getDistributionCategory(category: DISTRIBUTION_CATEGORIES_KEYS | typeof general, table: DG.DataFrame,
   options: DistributionItemOptions): HTMLDivElement {
   let body: HTMLDivElement = ui.divText('No distribution');
+  const selectionAndFilter = table.selection.clone().and(table.filter);
+  const selectionAndFilterBA = BitArray.fromUint32Array(
+    selectionAndFilter.length, new Uint32Array(selectionAndFilter.getBuffer().buffer));
   switch (category) {
   case general:
-    const bitArray = BitArray.fromSeq(table.selection.length, (i: number) => table.selection.get(i));
     const stats = !table.selection.anyTrue || !table.selection.anyFalse ?
       {
-        count: options.activityCol.length, pValue: null, meanDifference: 0, ratio: 1, mask: bitArray,
+        count: options.activityCol.length, pValue: null, meanDifference: 0, ratio: 1, mask: selectionAndFilterBA,
         mean: options.activityCol.stats.avg,
       } :
-      getStats(options.activityCol.getRawData(), bitArray);
+      getStats(options.activityCol.getRawData(), selectionAndFilterBA, bitSetToBitArray(table.filter));
 
     body = getSingleDistribution(table, stats, options);
     break;
@@ -207,6 +209,7 @@ function getDistributionForClusters(table: DG.DataFrame, options: Required<Distr
   const clusterCol = table.getCol(options.clusterColName);
   const clusterColCategories = clusterCol.categories;
   const clusterColData = clusterCol.getRawData() as Int32Array;
+  const filterBitArray = bitSetToBitArray(table.filter);
 
   // Build distributions for original clusters
   const selectedClustersCategoryIndexes = selectionObject[CLUSTER_TYPE.ORIGINAL]
@@ -220,7 +223,7 @@ function getDistributionForClusters(table: DG.DataFrame, options: Required<Distr
   }
   for (let selectedClusterIdx = 0; selectedClusterIdx < selectedClustersCategoryIndexes.length; selectedClusterIdx++) {
     const selectedClusterCategoryIndex = selectedClustersCategoryIndexes[selectedClusterIdx];
-    const stats = getStats(activityColData, clusterMasks[selectedClusterIdx]);
+    const stats = getStats(activityColData, clusterMasks[selectedClusterIdx], filterBitArray);
     distributions.push(getSingleDistribution(table, stats, options,
       {[SPLIT_CATEGORY.SELECTION]: clusterColCategories[selectedClusterCategoryIndex]}));
   }
@@ -230,7 +233,7 @@ function getDistributionForClusters(table: DG.DataFrame, options: Required<Distr
   for (const clusterColumnName of customClusterSelection) {
     const customClustCol = table.getCol(clusterColumnName);
     const bitArray = BitArray.fromUint32Array(rowCount, customClustCol.getRawData() as Uint32Array);
-    const stats = getStats(activityColData, bitArray);
+    const stats = getStats(activityColData, bitArray, filterBitArray);
     distributions.push(getSingleDistribution(table, stats, options,
       {[SPLIT_CATEGORY.SELECTION]: clusterColumnName}));
   }
@@ -254,6 +257,7 @@ function getDistributionForPositions(table: DG.DataFrame, options: DistributionI
   const positionColumns: (DG.Column<string> | undefined)[] = [];
   const positionColumnsCategories: (string[] | undefined)[] = [];
   const positionColumnsData: (Int32Array | undefined)[] = [];
+  const filterBitArray = bitSetToBitArray(table.filter);
 
   for (let posIdx = 0; posIdx < positions.length; posIdx++) {
     const position = positions[posIdx];
@@ -276,7 +280,7 @@ function getDistributionForPositions(table: DG.DataFrame, options: DistributionI
           mask.setTrue(i);
       }
     }
-    const stats = getStats(activityColData, mask);
+    const stats = getStats(activityColData, mask, filterBitArray);
     distributions.push(getSingleDistribution(table, stats, options, {[SPLIT_CATEGORY.SELECTION]: position}));
   }
 
@@ -299,6 +303,7 @@ function getDistributionForMonomers(table: DG.DataFrame, options: DistributionIt
   const positionColumnsCategories: (string[] | undefined)[] = [];
   const positionColumnsData: (Int32Array | undefined)[] = [];
   const activityColData = options.activityCol.getRawData();
+  const filterBitArray = bitSetToBitArray(table.filter);
 
   for (const monomer of monomers) {
     const posList = reversedSelectionObject[monomer];
@@ -316,7 +321,7 @@ function getDistributionForMonomers(table: DG.DataFrame, options: DistributionIt
           mask.setTrue(i);
       }
     }
-    const stats = getStats(activityColData, mask);
+    const stats = getStats(activityColData, mask, filterBitArray);
 
     distributions.push(getSingleDistribution(table, stats, options, {[SPLIT_CATEGORY.SELECTION]: monomer}));
   }

@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getSeqHelper, ISeqHelper, ToAtomicLevelRes} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
@@ -53,7 +53,7 @@ export async function sequenceToMolfile(
     res.molCol.name = molColName;
     df.columns.add(res.molCol, true);
 
-    buildMonomerHoverLink(macroMolecule, res.molCol, monomerLib, seqHelper, rdKitModule);
+    await buildMonomerHoverLink(macroMolecule, res.molCol, monomerLib, seqHelper, rdKitModule, nonlinear);
     res.molCol.setTag(ChemTags.SEQUENCE_SRC_HL_MONOMERS, String(highlight));
     await grok.data.detectSemanticTypes(df);
   }

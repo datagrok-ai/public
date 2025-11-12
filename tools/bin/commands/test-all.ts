@@ -5,14 +5,16 @@ import path from 'path';
 import yaml from 'js-yaml';
 import * as utils from '../utils/utils';
 import * as testUtils from '../utils/test-utils';
-import { setRandomOrder, setAlphabeticalOrder, setPackageRandomOrder, setPackageAlphabeticalOrder } from '../utils/order-functions';
-import { WorkerOptions, loadTestsList, saveCsvResults, printWorkersResult, runWorker, ResultObject, Test, OrganizedTests } from '../utils/test-utils';
+import { setRandomOrder, setAlphabeticalOrder, setPackageRandomOrder, setPackageAlphabeticalOrder, setTestToBrowserOrder } from '../utils/order-functions';
+import { BrowserOptions, loadTestsList, saveCsvResults, printBrowsersResult, runBrowser, ResultObject, Test, OrganizedTests, addColumnToCsv } from '../utils/test-utils';
+import * as Papa from 'papaparse';
 
 enum order {
   random = 0,
   alphabetical = 1,
   packageRandom = 2,
   packageAlphabetical = 3,
+  testToBrowser = 4,
 }
 
 function getEnumOrder(orderStr: string): order {
@@ -33,6 +35,9 @@ function getEnumOrder(orderStr: string): order {
     case "packageatoz":
       return order.packageAlphabetical;
       break;
+    case "testtobrowser":
+      return order.testToBrowser;
+      break;
   }
   return order.random;
 }
@@ -44,13 +49,14 @@ const csvReportDir = path.join(curDir, 'test-report.csv');
 
 const testInvocationTimeout = 7200000;
 
-const orderingFunctions: Map<order, (tests: Test[], workersAmount: number, testRepeats: number) => Test[][]> = new Map<order, (tests: Test[], workersAmount: number, testRepeats: number) => Test[][]>([
+const orderingFunctions: Map<order, (tests: Test[], browsersAmount: number, testRepeats: number) => Test[][]> = new Map<order, (tests: Test[], browsersAmount: number, testRepeats: number) => Test[][]>([
   [order.random, setRandomOrder],
   [order.alphabetical, setAlphabeticalOrder],
   [order.packageRandom, setPackageRandomOrder],
-  [order.packageAlphabetical, setPackageAlphabeticalOrder]
+  [order.packageAlphabetical, setPackageAlphabeticalOrder],
+  [order.testToBrowser, setTestToBrowserOrder]
 ]);
-let workersStarted: number = 0;
+let browsersStarted: number = 0;
 
 export async function testAll(args: TestArgs): Promise<boolean> {
   const config = yaml.load(fs.readFileSync(confPath, { encoding: 'utf-8' })) as utils.Config;
@@ -58,34 +64,43 @@ export async function testAll(args: TestArgs): Promise<boolean> {
   utils.setHost(args.host, config);
   let packagesToRun = await testUtils.loadPackages(curDir, args.packages, args.host, args['skip-publish'], args['skip-build']);
 
-  let testsObj = await loadTestsList(packagesToRun, args.core);
+  console.log('Loading tests');
+  let start = Date.now();
+  let testsObj = await loadTestsList(packagesToRun, args.core ?? false, args.record ?? false);
+  console.log(`Loaded tests in ${Date.now() - start} ms`);
   let filteredTests: Test[] = await filterTests(testsObj, (args.tags ?? "").split(" "), args['stress-test'], args.benchmark);
-  let workersOrder = await setWorkersOrder(filteredTests, getEnumOrder(args.order ?? ''), args['workers-count'], args.testRepeat);
+  let browsersOrder = await setBrowsersOrder(filteredTests, getEnumOrder(args.order ?? ''), args['browsers-count'], args.testRepeat);
 
-  let testsResults = await runTests(workersOrder, {
+  let testsResults = await runTests(browsersOrder, {
     benchmark: args.benchmark ?? false,
+    stressTest: args['stress-test'] ?? false,
     catchUnhandled: args.catchUnhandled ?? false,
     gui: args.gui ?? false,
     record: args.record ?? false,
     report: args.report ?? false,
-    verbose: args.verbose ?? false
+    verbose: args.verbose ?? false,
+    debug: args['debug'] ?? false
   });
 
   let i = 0;
   for (let result of testsResults) {
-    console.log(`\nWorker #${i++} `)
-    printWorkersResult(result, args.verbose);
+    console.log(`\nBrowser #${i++} `)
+    printBrowsersResult(result, args.verbose);
   }
 
   if (args.csv) {
+    console.log(`Saving ${(testsResults.length)} browsers results`);
+    for (const res of testsResults)
+      console.log(`DEBUG: testAll: number of lines in csv ${res.csv.length}`);
+    console.log(`Saving ${(testsResults.length)} browsers results`);
     saveCsvResults(testsResults.map(result => result.csv), csvReportDir);
   }
 
-  return !(testsResults.map((test) => test.failed)).some(failStatus => failStatus === true);
+  return testsResults.every(test => !test.failed);
 }
 
 async function filterTests(tests: Test[], tags: string[], stressTest: boolean = false, benchmark: boolean = false): Promise<Test[]> {
-  let filteredTests: Test [] = [];
+  let filteredTests: Test[] = [];
   let stressTestValue: boolean = tags.includes("stress-test") || stressTest;
   let benchmarkValue: boolean = benchmark;
 
@@ -106,39 +121,48 @@ async function filterTests(tests: Test[], tags: string[], stressTest: boolean = 
   return filteredTests;
 }
 
-async function setWorkersOrder(tests: Test[], invocationOrder: order = 0, countOfWorkers: number = 1, testRepeats: number = 1): Promise<Test[][]> {
+async function setBrowsersOrder(tests: Test[], invocationOrder: order = 0, countOfBrowsers: number = 1, testRepeats: number = 1): Promise<Test[][]> {
   let resultOrder: Test[][] = [];
 
   let orderingFunction = orderingFunctions.get(invocationOrder);
   if (orderingFunction !== undefined)
-    resultOrder = orderingFunction(tests, countOfWorkers, testRepeats);
+    resultOrder = orderingFunction(tests, countOfBrowsers, testRepeats);
   else
     throw new Error("Cannot find ordering function");
   return resultOrder;
 }
 
-async function runTests(workersOrder: Test[][], workerOptions: WorkerOptions): Promise<ResultObject[]> {
-  let workersCommands: OrganizedTests[][] = [];
+async function runTests(browsersOrder: Test[][], browserOptions: BrowserOptions): Promise<ResultObject[]> {
+  let browsersCommands: OrganizedTests[][] = [];
 
-  for (let workerOrder of workersOrder)
-    workersCommands.push(workerOrder.map(testObj => ({
+  for (let browserOrder of browsersOrder)
+    browsersCommands.push(browserOrder.map(testObj => ({
       package: testObj.packageName,
       params: {
         category: testObj.category,
         test: testObj.name,
         options: {
-          catchUnhandled: workerOptions.catchUnhandled,
-          report: workerOptions.report
+          catchUnhandled: browserOptions.catchUnhandled,
+          report: browserOptions.report
         }
       }
     })))
 
-  let workersPromises: Promise<ResultObject>[] = [];
+  let browsersPromises: Promise<ResultObject>[] = [];
 
-  for (let workerCommands of workersCommands) {
-    workersPromises.push(runWorker(workerCommands, workerOptions, workersStarted++, testInvocationTimeout));
+  for (let browserCommands of browsersCommands) {
+    browsersPromises.push(runBrowser(browserCommands, browserOptions, browsersStarted++, testInvocationTimeout));
   }
-  let resultObjects = await Promise.all(workersPromises);
+  let resultObjects = await Promise.all(browsersPromises);
+  for (const res of resultObjects)
+    console.log(`DEBUG: runTests BEFORE LOOP: number of lines in csv ${res.csv.length}`);
+  for (let i = 0; i < resultObjects.length; i++) {
+    resultObjects[i].csv = addColumnToCsv(resultObjects[i].csv, "browser", i);
+    resultObjects[i].csv = addColumnToCsv(resultObjects[i].csv, "stress_test", browserOptions.stressTest ?? false);
+    resultObjects[i].csv = addColumnToCsv(resultObjects[i].csv, "benchmark", browserOptions.benchmark ?? false);
+  }
+  for (const res of resultObjects)
+    console.log(`DEBUG: runTests AFTER LOOP: number of lines in csv ${res.csv.length}`);
   return resultObjects;
 }
 
@@ -154,6 +178,7 @@ interface TestArgs {
   core?: boolean,
   csv?: boolean;
   gui?: boolean;
+  'debug'?: boolean,
   record?: boolean;
   report?: boolean;
   verbose?: boolean;
@@ -164,5 +189,5 @@ interface TestArgs {
   'stress-test'?: boolean;
   tags?: string;
   testRepeat?: number;
-  'workers-count'?: number;
+  'browsers-count'?: number;
 }

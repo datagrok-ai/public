@@ -1,6 +1,58 @@
 # Grok Connect changelog
 
-# 2.2.25 (2024-12-02) WIP
+# 2.5.3 (2025-11-03) WIP
+
+* Databricks: Oauth2(M-M) scheme support, driver update, schema browsing and visual query fixes
+
+# 2.5.2 (2025-10-02)
+
+* Athena: Fixed STS token usage
+
+# 2.5.1 (2025-09-30)
+
+* Athena: Apply session token when passed
+
+# 2.5.0 (2025-09-19)
+
+* TableQuery: Support joining between different schemas
+* BigQuery: Support token resolution
+* Postgres, Oracle, Snowflake: Additional driver properties to tune
+* DynamoDB: Removed connector from the list, friendly name for ssl
+
+# 2.4.0 (2025-07-24)
+
+* BigQuery: Improved provider support, schem browsing, service account auth
+* Fixed bug with duplicated columns in schemas during browsing
+
+## Requires
+
+* Datagrok >= 1.24.0
+
+# 2.3.31 (2025-07-03)
+
+* Snowflake: RSA keys authentication
+* TableQuery: Add schema name to join
+* Possibility to set port using env variables
+* Minor bugs fixes
+
+# 2.3.30 (2025-03-125)
+
+* Memory leaks fixes
+
+# 2.3.29 (2025-02-17)
+
+* Postgres: Set uuid as object
+
+# 2.3.28 (2025-02-12)
+
+* TableQuery: Order by support and having with aggregations
+* Bugs fixes and improvements
+
+## Requires
+
+* Datagrok >= 1.24.0
+
+# 2.2.25 (2024-12-02)
 
 * TableQuery: Join supports
 

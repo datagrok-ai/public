@@ -1,6 +1,6 @@
 import * as rxjs from 'rxjs';
 import {toJs} from './wrappers';
-import {_toIterable} from './utils';
+import {_toIterable} from './utils_convert';
 import {DockType} from './const';
 import {Viewer} from './viewer';
 import {IDartApi} from "./api/grok_api.g";
@@ -8,7 +8,7 @@ import {StreamSubscription} from "./events";
 
 
 declare let DG: any;
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 /**
  * Dock node.
@@ -82,6 +82,10 @@ export class DockContainer {
   /** Removes a dock container from the dock layout hierarchy
    *  @returns {DockNode} - the node that was removed from the dock tree */
   //remove() { return new DockNode(api.grok_DockContainer_Remove(this.dart)); }
+
+  setActiveChild(child: DockContainer): void {
+    api.grok_DockContainer_SetActiveChild(this.dart, child.dart);
+  }
 }
 
 
@@ -129,7 +133,7 @@ export class DockManager {
    * @returns {DockNode}
    * */
   dock(element: HTMLElement | Viewer, dockType: DockType = DG.DOCK_TYPE.LEFT, refNode: DockNode | null = null, title?: string, ratio: number = 0.5): DockNode {
-    return new DockNode(api.grok_DockManager_Dock(this.dart, refNode === null ? null : refNode.dart, element, dockType, title, ratio));
+    return new DockNode(api.grok_DockManager_Dock(this.dart, refNode === null ? null : refNode.dart, element, dockType, title ?? '', ratio));
   }
 
   /**

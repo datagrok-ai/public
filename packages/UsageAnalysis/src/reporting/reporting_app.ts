@@ -6,7 +6,8 @@ import * as rx from "rxjs";
 import {delay} from 'rxjs/operators'
 
 export class ReportingApp {
-  view?: DG.TableView;
+  static readonly APP_NAME = 'Reports';
+  view: DG.TableView = DG.TableView.create(DG.DataFrame.create());
   users: { [_: string]: any; } = {};
   parentCall: DG.FuncCall;
   currentFilter?: DG.Viewer<interfaces.IFiltersSettings>;
@@ -14,6 +15,16 @@ export class ReportingApp {
 
   constructor(parentCall: DG.FuncCall) {
     this.parentCall = parentCall;
+    this.view.name = ReportingApp.APP_NAME;
+    const loader: HTMLElement = ui.loader();
+    loader.style.flexGrow = 'initial!important';
+    this.view.root.append(loader);
+    this.view.root.style.display = 'flex';
+    this.view.root.style.alignItems = 'center';
+    this.view.root.style.justifyContent = 'center';
+    this.view.path = '';
+    this.view.setRibbonPanels([[ui.button('Add rule...', async () =>
+        await DG.UserReportsRule.showAddDialog())]]);
   }
 
   async init(path?: string): Promise<void> {
@@ -32,43 +43,37 @@ export class ReportingApp {
         reportNumber = parseInt(segments[0]);
     }
     let table: DG.DataFrame = await grok.dapi.reports.getReports(reportNumber);
-    this.view = DG.TableView.create(table, false);
-    this.view.parentCall = this.parentCall;
-    this.view.path = '';
-    this.view.name = 'Reports';
-    this.view.setRibbonPanels([[ui.button('Add rule...', async () =>
-      await DG.UserReportsRule.showAddDialog())]]);
-    setTimeout(async () => {
-      this.view!._onAdded();
-      await this.refresh(table, this.view!.grid);
-      if (reportNumber) {
-        const progress = DG.TaskBarProgressIndicator.create('Loading reports...');
-        try {
-          const reports = await grok.dapi.reports.getReports();
-          reports.rows.removeWhere((r) => r.get('number') === reportNumber);
-          const columns = reports.columns.toList();
-          for (const col of columns) {
-            if (!table.col(col.name))
-              table.columns.add(DG.Column.fromType(col.type, col.name, table.rowCount))
-          }
-          table.appendMerge(reports);
-          await this.refresh(table, this.view!.grid);
-          setTimeout(async () => {
-            const length = table.rowCount;
-            for (let i = 0; i < length; i++) {
-              if (this.view?.grid.cell('number', i).cell.value == reportNumber) {
-                this.view?.grid.scrollToCell('date', i);
-                break;
-              }
-            }
-          }, 200);
-        } catch (e) {
-          console.error(e);
-        } finally {
-          progress.close();
+    this.view.table = table;
+
+    await this.refresh(table, this.view!.grid);
+    if (reportNumber) {
+      const progress = DG.TaskBarProgressIndicator.create('Loading reports...');
+      try {
+        const reports = await grok.dapi.reports.getReports();
+        reports.rows.removeWhere((r) => r.get('number') === reportNumber);
+        const columns = reports.columns.toList();
+        for (const col of columns) {
+          if (!table.col(col.name))
+            table.columns.add(DG.Column.fromType(col.type, col.name, table.rowCount))
         }
+        table.appendMerge(reports);
+        await this.refresh(table, this.view!.grid);
+        setTimeout(async () => {
+          const length = table.rowCount;
+          for (let i = 0; i < length; i++) {
+            if (this.view?.grid.cell('number', i).cell.value == reportNumber) {
+              this.view?.grid.scrollToCell('date', i);
+              break;
+            }
+          }
+        }, 200);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        progress.close();
       }
-    }, 300);
+    }
+
   }
 
   refresh(table: DG.DataFrame, grid: DG.Grid) {
@@ -82,6 +87,15 @@ export class ReportingApp {
       table.getCol('first_occurrence').setTag('friendlyName', 'first');
       table.getCol('description').semType = 'Text';
       table.getCol('error_stack_trace').semType = 'Text';
+
+      // table.getCol('reporter').semType = 'User';
+      // table.getCol('reporter').setTag('cell.renderer', 'User');
+      //
+      // table.getCol('assignee').semType = 'User';
+      // table.getCol('assignee').setTag('cell.renderer', 'User');
+      table.getCol('jira').semType = 'JIRA Ticket';
+      table.getCol('jira').setTag('cell.renderer', 'JIRA Ticket');
+
       this.applyStyle(grid);
       grid.onCellPrepare(async (gc) => {
         if ((gc.gridColumn.name === 'reporter' || gc.gridColumn.name === 'assignee') && gc.cell.value) {
@@ -95,17 +109,17 @@ export class ReportingApp {
             });
           }
         }
-        if (gc.gridColumn.name === 'jira' && gc.cell.value) {
-          const link = ui.link((gc.cell.value as string).replace('GROK-', ''), `https://reddata.atlassian.net/jira/software/c/projects/GROK/issues/${gc.cell.value}`);
-          link.addEventListener('click', (e) => {
-            e.preventDefault();
-            window.open(link.href, '_blank');
-          });
-          link.style.position = 'absolute';
-          link.style.top = 'calc(50% - 8px)';
-          link.style.left = '3px';
-          gc.style.element = ui.tooltip.bind(link, () => 'Link to JIRA ticket');
-        }
+        // if (gc.gridColumn.name === 'jira' && gc.cell.value) {
+        //   const link = ui.link((gc.cell.value as string).replace('GROK-', ''), `https://reddata.atlassian.net/jira/software/c/projects/GROK/issues/${gc.cell.value}`);
+        //   link.addEventListener('click', (e) => {
+        //     e.preventDefault();
+        //     window.open(link.href, '_blank');
+        //   });
+        //   link.style.position = 'absolute';
+        //   link.style.top = 'calc(50% - 8px)';
+        //   link.style.left = '3px';
+        //   gc.style.element = ui.tooltip.bind(link, () => 'Link to JIRA ticket');
+        // }
       });
       table.getCol('labels').meta.multiValueSeparator = ',';
       this.view!.subs.push(
@@ -224,11 +238,12 @@ export class ReportingApp {
 
   updatePath(reportNumber: number): void {
     const segments = window.location.href.split('/');
-    const last = segments[segments.length - 1];
-    if (last === 'reports')
+    if (segments[segments.length - 1] === 'reports?browse=apps')
+      segments[segments.length - 1] = 'reports';
+    if (segments[segments.length - 1] === 'reports')
       segments.push(reportNumber.toString());
     else {
-      if (/^-?\d+$/.test(last))
+      if (/^-?\d+$/.test(segments[segments.length - 1]))
         segments[segments.length - 1] = reportNumber.toString();
       else
         return;

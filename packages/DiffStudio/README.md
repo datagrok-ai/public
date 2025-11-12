@@ -2,9 +2,9 @@
 
 Diff Studio is a [package](https://datagrok.ai/help/develop/#packages) for the [Datagrok](https://datagrok.ai) platform. It provides in-browser tools for solving [initial value problem](https://en.wikipedia.org/wiki/Initial_value_problem) for systems of ordinary differential equations (ODE) and its interactive exploration.
 
-* Go to **Apps** and run **Diff Studio**
+* Go to **Apps > Compute** and run **Diff Studio**
 * Enter formulas or modify template
-* Press **F5** or go to **Run** tab
+* Run computations and explore your model
 
 The solver takes a set of the differential equations in a declarative form, and creates a UI that solves the equations, visualizes the results, and lets you change parameters on the fly.
 
@@ -13,35 +13,33 @@ The solver takes a set of the differential equations in a declarative form, and 
 Datagrok provides intuitive tools for the rapid solving ODEs.
 
 * Run the solver:
-  * Go to **Apps** and run **Diff Studio**
-  * Go to **Run** tab to launch computations
-* Modify a template:
+  * Go to **Apps > Compute**
+  * Run **Diff Studio**
+  * Modify inputs and explore computations
+* Modify equations:
+  * Turn on the **Edit** toggle on the top panel
   * Edit formulas or add new ones
-  * Press **F5** or go to **Run** tab
-  * Cahnge inputs and explore your model
-* Use an advanced template:
-  * Click on the "Open" icon <i class="fas fa-folder-open"></i> on the top panel
-  * Select **Templates > Advanced...**
-  * Modify formulas and press **F5**
-* Save model in a local file:
-  * Click on the "Save" icon <i class="fas fa-save"></i> on the top panel
-  * Click `Save as Local File...` to save model to a local file. Find the ivp-file in Downloads. You can open and edit this file using any text editor
-  * Click `Save to My Files...` to save model to your platform files (**Browse > Files > My files**)
+  * Click <i class="fas fa-sync"></i> **Refresh** or press **F5** to apply changes
+* Use templates:
+  * Click <i class="fas fa-folder-open d4-combo-popup" style="min-width: 0px; cursor: default"></i> **Open** icon on the top panel
+  * Go to **Templates** and select one of them
+  * Once you have completed your model, turn off the **Edit** toggle  
+* Save model:
+  * Click the **Save** button on the top panel to save model to your platform files (**Browse > Files > My files**)
+  * Click <i class="fas fa-arrow-to-bottom"></i> **Download** to save model to a local file. Find the *ivp*-file in Downloads. You can open and edit this file using any text editor
+  * Click <i class="fas fa-layer-plus"></i> icon to save model to **Model Hub**
 * Drag-n-drop:
   * Drag *ivp*-file with equations right into the browser
-* Load equations from a local file:
-  * Click on the "Open" icon <i class="fas fa-folder-open"></i> on the top panel
-  * Select **From file...**
-  * Select a file with formulas
-* Explore model:
-  * Click on the "Run sensitivity analysis" icon <i class="fas fa-analytics"></i>
-  * Analyze the relationship between inputs and outputs using one of the following methods:
-    * [Monte Carlo](https://datagrok.ai/help/compute/function-analysis#monte-carlo)
-    * [Sobol](https://datagrok.ai/help/compute/function-analysis#sobol)
-    * [Grid](https://datagrok.ai/help/compute/function-analysis#grid)
-* Fit parameters:
-  * Click on the "Fit inputs" icon <i class="grok-icon fas fa-chart-line"></i>
-  * Find input conditions leading to specified output constraints
+* Load model:
+  * Click <i class="fas fa-folder-open d4-combo-popup" style="min-width: 0px; cursor: default"></i> **Open** on the top panel
+  * Select **Import...** to load model from local file
+  * **My Models** contains models from your platform files
+  * Find last called models in **Recent**
+  * Explore examples in **Library**. They cover all possibilities of Diff Studio
+* Analyze model
+  * Turn off the **Edit** toggle on the top panel
+  * Click the **Fit** icon to [optimize inputs](https://datagrok.ai/help/compute/function-analysis#parameter-optimization)
+  * Click the **Sensitivity** icon to run [sensitivity analysis](https://datagrok.ai/help/compute/function-analysis#sensitivity-analysis)
 
 ## Create model from template
 
@@ -118,7 +116,6 @@ Use the following sections to specify various problems:
 |```#parameters```|Parameters specification|
 |```#expressions```|Defines auxiliary compuations|
 |```#output```|Defines output columns and their captions|
-|```#tags```|Specifies tags (`model`, `app`, etc.)|
 |```#description```|Defines description of the model|
 |```#comment```|Specifies comments block|
 |```#meta.solver```|Defines the solver settings|
@@ -239,30 +236,25 @@ The MRT, ROS3PRw and ROS34PRw methods demonstrate the following time performance
 
 |Problem|Segment|Points|Tolerance|MRT, ms|ROS3PRw, ms|ROS34PRw, ms|
 |-|-|-|-|-|-|-|
-|[Rober](https://archimede.uniba.it/~testset/report/rober.pdf)|[0, 10E+11]|40K|1E-7|125|1066|507|
-|[HIRES](https://archimede.uniba.it/~testset/report/hires.pdf)|[0, 321.8122]|32K|1E-10|626|931|489|
-|[VDPOL](https://archimede.uniba.it/~testset/report/vdpol.pdf)|[0, 2000]|20K|1E-12|1124|2884|904|
-|[OREGO](https://archimede.uniba.it/~testset/report/orego.pdf)|[0, 360]|36K|1E-8|947|1131|440|
-|[E5](https://archimede.uniba.it/~testset/report/e5.pdf)|[0, 10E+13]|40K|1E-6|24|52|18|
-|[Pollution](https://archimede.uniba.it/~testset/report/pollu.pdf)|[0, 60]|30K|1E-6|71|139|32|
+|[Rober](https://archimede.uniba.it/~testset/report/rober.pdf)|[0, 10E+11]|40K|1E-7|103|446|285|
+|[HIRES](https://archimede.uniba.it/~testset/report/hires.pdf)|[0, 321.8122]|32K|1E-10|222|362|215|
+|[VDPOL](https://archimede.uniba.it/~testset/report/vdpol.pdf)|[0, 2000]|20K|1E-12|963|1576|760|
+|[OREGO](https://archimede.uniba.it/~testset/report/orego.pdf)|[0, 360]|36K|1E-8|381|483|199|
+|[E5](https://archimede.uniba.it/~testset/report/e5.pdf)|[0, 10E+13]|40K|1E-6|14|17|8|
+|[Pollution](https://archimede.uniba.it/~testset/report/pollu.pdf)|[0, 60]|30K|1E-6|36|50|23|
 
 This table compares the efficiency of the methods when solving each test problem on a fixed segment and providing solutions at a specified number of points with a given tolerance.
 
-## Export to JavaScript script
+## Platform applications
 
-Once you are satisfied with the result, you can convert your model to a Datagrok application. To do so:
+Once you are satisfied with the result, click <i class="fas fa-layer-plus"></i> icon on the top panel to save your model to **Model Hub**.
 
-1. Click **JS** button on the top panel
-2. Click **SAVE** button
-3. Script is created, and can be found in the "Scripts" section of the platform
+You can export your model to JavaScript script. To do so:
 
-Improve usability. Use `#tags: model` to add your model to `Model Catalog`. Provide a description in the `#description`-line:
-
-```python
-#name: Bioreaction
-#tags: model
-#description: Complex bioreaction simulation
-```
+1. Turn on the **Edit** toggle on the top panel
+2. Click `</>` icon. Script editor opens in a new view
+3. Click **SAVE** button
+4. Script is created, and can be found in the "Scripts" section of the platform
 
 Apply [scripting](https://datagrok.ai/help/compute/scripting) tools to get:
 

@@ -5,9 +5,9 @@ import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
 import {fromEvent, Observable, Unsubscribable} from 'rxjs';
 
-import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/index';
+import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {HelmInputBase, IHelmHelper, IHelmInputInitOptions} from '@datagrok-libraries/bio/src/helm/helm-helper';
-import {HelmAtom, HelmMol, HelmString, IHelmEditorOptions, IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmAtom, HelmMol, IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
 import {SeqValueBase} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 import {MonomerNumberingTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';

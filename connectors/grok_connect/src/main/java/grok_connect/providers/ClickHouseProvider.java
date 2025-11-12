@@ -25,8 +25,8 @@ public class ClickHouseProvider extends JdbcDataProvider {
         descriptor.type = "ClickHouse";
         descriptor.description = "Query ClickHouse database";
         descriptor.connectionTemplate = new ArrayList<>(DbCredentials.dbConnectionTemplate);
-        descriptor.connectionTemplate.add(new Property(Property.BOOL_TYPE, DbCredentials.SSL));
-        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
+        descriptor.connectionTemplate.add(DbCredentials.getSsl());
+        descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
         descriptor.canBrowseSchema = true;
         descriptor.nameBrackets = "\"";
         descriptor.typesMap = new HashMap<String, String>() {{
@@ -71,7 +71,7 @@ public class ClickHouseProvider extends JdbcDataProvider {
         return String.format("SELECT c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
                         + "c.data_type as data_type, "
                         + "if(t.table_type ='VIEW', toInt8(1), toInt8(0)) as is_view FROM information_schema.columns c "
-                        + "JOIN information_schema.tables t ON t.table_name = c.table_name%s"
+                        + "JOIN information_schema.tables t ON t.table_name = c.table_name AND t.table_schema = c.table_schema AND t.table_catalog = c.table_catalog %s"
                 , schema == null && table == null ? "" : whereClause);
     }
 

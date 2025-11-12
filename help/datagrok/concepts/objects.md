@@ -19,7 +19,8 @@ features applicable to them. We call these objects _entities_. Here they are:
 * [Model](../../learn/learn.md)
 * [Notebook](../../compute/jupyter-notebook.md)
 * [Package](../../develop/develop.md#packages)
-* [Project](project/project.md)
+* [Space](project/space.md)
+* [Dashboard](project/dashboard.md)
 * Repository
 * [Script](../../compute/scripting/scripting.mdx)
 * [Table (dataframe)](table.md)

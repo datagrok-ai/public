@@ -12,10 +12,15 @@ import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
-import grok_connect.utils.GrokConnectUtil;
-import grok_connect.utils.Prop;
-import grok_connect.utils.Property;
+import grok_connect.utils.*;
+import net.snowflake.client.jdbc.SnowflakeBasicDataSource;
+import net.snowflake.client.pooling.SnowflakeConnectionPoolDataSource;
 import serialization.Types;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.*;
@@ -31,6 +36,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
     private static final String DESCRIPTION = "Query Snowflake database";
     private static final List<String> AVAILABLE_CLOUDS =
             Collections.unmodifiableList(Arrays.asList("aws", "azure", "gcp", "privatelink"));
+    private static final String RSA_METHOD = "Username/Private key";
 
     public SnowflakeDataProvider() {
         init();
@@ -38,7 +44,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
 
     @Override
     public Properties getProperties(DataConnection conn) {
-        java.util.Properties properties = defaultConnectionProperties(conn);
+        java.util.Properties properties = super.getProperties(conn);
         if (!conn.hasCustomConnectionString()) {
             setIfNotNull(properties, DbCredentials.DB, conn.getDb());
             setIfNotNull(properties, DbCredentials.WAREHOUSE, conn.get(DbCredentials.WAREHOUSE));
@@ -60,6 +66,20 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
     }
 
     @Override
+    public Connection getConnection(DataConnection conn) throws SQLException, GrokConnectException {
+        prepareProvider();
+        if (conn.credentials == null)
+            throw new GrokConnectException("Credentials can't be null");
+        String method = (String) conn.credentials.parameters.get("#chosen-auth-method");
+        if (GrokConnectUtil.isNotEmpty(method) && method.equals(RSA_METHOD)) {
+            SnowflakeBasicDataSource ds = getDataSource(conn);
+            return ConnectionPool.getConnection(ds, getDataSourceKey(conn, ds));
+        }
+        else
+            return ConnectionPool.getConnection(getConnectionString(conn), getProperties(conn), driverClassName);
+    }
+
+    @Override
     public String getSchemasSql(String db) {
         return "SELECT DISTINCT table_schema FROM information_schema.columns;";
     }
@@ -76,7 +96,8 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
         return String.format("SELECT c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
                         + "c.data_type as data_type, "
                         + "case t.table_type when 'VIEW' then 1 else 0 end as is_view FROM information_schema.columns c "
-                        + "JOIN information_schema.tables t ON t.table_name = c.table_name%s ORDER BY c.table_name, c.ordinal_position;",
+                        + "JOIN information_schema.tables t ON t.table_name = c.table_name AND t.table_schema = c.table_schema AND LOWER(t.table_catalog) = LOWER(c.table_catalog)%s " +
+                        "ORDER BY c.table_name, c.ordinal_position;",
                 isEmptyDb && isEmptySchema && isEmptyTable ? "" : whereClause);
     }
 
@@ -131,7 +152,10 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
             add(new Property(Property.STRING_TYPE, DbCredentials.CONNECTION_STRING,
                     DbCredentials.CONNECTION_STRING_DESCRIPTION, new Prop("textarea")));
         }};
-        descriptor.credentialsTemplate = DbCredentials.dbCredentialsTemplate;
+        descriptor.credentialsTemplate = DbCredentials.getDbCredentialsTemplate();
+        descriptor.credentialsTemplate.add(new Property(Property.STRING_TYPE, DbCredentials.PRIVATE_KEY, null, RSA_METHOD, new Prop("rsa"), ".pem,.der"));
+        descriptor.credentialsTemplate.add(new Property(Property.STRING_TYPE, "passPhrase", "Passphrase for decrypting private key.", RSA_METHOD, new Prop("password")));
+        descriptor.credentialsTemplate.stream().filter(p -> p.name.equals(DbCredentials.LOGIN)).forEach(p -> p.category = "Username/Password," + RSA_METHOD);
         descriptor.nameBrackets = "\"";
 
         descriptor.typesMap = new HashMap<String, String>() {{
@@ -149,6 +173,22 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
             put("binary", Types.BLOB);
         }};
         descriptor.aggregations.add(new AggrFunctionInfo(Stats.STDEV, "stddev(#)", Types.dataFrameNumericTypes));
+        descriptor.jdbcPropertiesTemplate = new ArrayList<Property>() {{
+            add(new Property(Property.INT_TYPE, "loginTimeout",
+                    "Maximum time to wait for login in seconds", new Prop()));
+            add(new Property(Property.INT_TYPE, "networkTimeout",
+                    "Socket read/write timeout in milliseconds", new Prop()));
+            add(new Property(Property.INT_TYPE, "queryTimeout",
+                    "Query execution timeout in seconds", new Prop()));
+            add(new Property(Property.BOOL_TYPE, "CLIENT_SESSION_KEEP_ALIVE",
+                    "Keep the session alive until explicitly closed", new Prop(), "keepAlive"));
+
+
+            add(new Property(Property.INT_TYPE, "CLIENT_PREFETCH_THREADS",
+                    "Number of threads to prefetch result chunks", new Prop(), "prefetchThreads"));
+            add(new Property(Property.BOOL_TYPE, "CLIENT_DISABLE_INCIDENTS",
+                    "Disable sending incidents to Snowflake", new Prop(), "disableIncidents"));
+        }};
     }
 
     private String buildAccount(DataConnection conn) {
@@ -158,5 +198,52 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
         if (GrokConnectUtil.isNotEmpty(conn.get(DbCredentials.CLOUD)))
             builder.append(URL_SEPARATOR).append(conn.get(DbCredentials.CLOUD));
         return builder.toString();
+    }
+
+    private SnowflakeBasicDataSource getDataSource(DataConnection conn) throws GrokConnectException {
+        try {
+            SnowflakeBasicDataSource sfDataSource = new SnowflakeConnectionPoolDataSource();
+            sfDataSource.setPrivateKey(KeyLoader.get((String) conn.credentials.parameters.get(DbCredentials.PRIVATE_KEY), (String) conn.credentials.parameters.get("passPhrase")));
+            sfDataSource.setUser(conn.credentials.getLogin());
+            if (!conn.hasCustomConnectionString()) {
+                if (conn.getDb() != null)
+                    sfDataSource.setDatabaseName(conn.getDb());
+                if (conn.get(DbCredentials.WAREHOUSE) != null)
+                    sfDataSource.setWarehouse(conn.get(DbCredentials.WAREHOUSE));
+                if (conn.get(DbCredentials.SCHEMA) != null)
+                    sfDataSource.setSchema(conn.get(DbCredentials.SCHEMA));
+                if (conn.get(DbCredentials.ROLE) != null)
+                    sfDataSource.setRole(conn.get(DbCredentials.ROLE));
+            }
+            sfDataSource.setUrl(getConnectionString(conn));
+            return sfDataSource;
+        } catch (Exception e) {
+            throw new GrokConnectException(e);
+        }
+    }
+
+    private String getDataSourceKey(DataConnection conn, SnowflakeBasicDataSource ds) throws GrokConnectException {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            String privateKeyContent = (String) conn.credentials.parameters.get(DbCredentials.PRIVATE_KEY);
+            String privateKeyHash = privateKeyContent != null
+                    ? Base64.getEncoder().encodeToString(digest.digest(privateKeyContent.trim().getBytes(StandardCharsets.UTF_8)))
+                    : "";
+
+            String rawKey = String.join("|",
+                    "user=" + GrokConnectUtil.nullSafe(conn.credentials.getLogin()),
+                    "account=" + GrokConnectUtil.nullSafe(buildAccount(conn)),
+                    "db=" + GrokConnectUtil.nullSafe(conn.getDb()),
+                    "schema=" + GrokConnectUtil.nullSafe(conn.get(DbCredentials.SCHEMA)),
+                    "warehouse=" + GrokConnectUtil.nullSafe(conn.get(DbCredentials.WAREHOUSE)),
+                    "role=" + GrokConnectUtil.nullSafe(conn.get(DbCredentials.ROLE)),
+                    "url=" + GrokConnectUtil.nullSafe(ds.getUrl()),
+                    "key=" + privateKeyHash
+            );
+
+            return Base64.getEncoder().encodeToString(rawKey.getBytes(StandardCharsets.UTF_8));
+        } catch (NoSuchAlgorithmException e) {
+            throw new GrokConnectException(e);
+        }
     }
 }

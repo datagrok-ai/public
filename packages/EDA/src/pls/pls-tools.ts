@@ -7,7 +7,7 @@ import * as DG from 'datagrok-api/dg';
 import {PLS_ANALYSIS, ERROR_MSG, TITLE, HINT, LINK, COMPONENTS, INT, TIMEOUT,
   RESULT_NAMES, WASM_OUTPUT_IDX, RADIUS, LINE_WIDTH, COLOR, X_COORD, Y_COORD,
   DEMO_INTRO_MD, DEMO_RESULTS_MD, DEMO_RESULTS} from './pls-constants';
-import {checkWasmDimensionReducerInputs, checkColumnType, checkMissingVals} from '../utils';
+import {checkWasmDimensionReducerInputs, checkColumnType, checkMissingVals, describeElements} from '../utils';
 import {_partialLeastSquareRegressionInWebWorker} from '../../wasm/EDAAPI';
 import {carsDataframe} from '../data-generators';
 
@@ -30,8 +30,11 @@ export type PlsInput = {
   features: DG.ColumnList,
   predict: DG.Column,
   components: number,
+  isQuadratic: boolean,
   names : DG.Column | undefined,
 };
+
+type TypedArray = Int32Array | Float32Array | Uint32Array | Float64Array;
 
 /** Return lines */
 export function getLines(names: string[]): DG.FormulaLine[] {
@@ -113,12 +116,63 @@ function debiasedPrediction(features: DG.ColumnList, params: DG.Column,
   return DG.Column.fromFloat32Array('Debiased', debiased, samples);
 }
 
+/** Return an input for the quadratic PLS regression */
+function getQuadraticPlsInput(input: PlsInput): PlsInput {
+  if (!input.isQuadratic)
+    return input;
+
+  const cols: DG.Column[] = input.features.toList();
+  const colsCount = cols.length;
+  const rowsCount = input.table.rowCount;
+  const quadrCols: DG.Column[] = [];
+  let col1: DG.Column;
+  let raw1: TypedArray;
+  let col2: DG.Column;
+  let raw2: TypedArray;
+  let qaudrRaw: Float32Array;
+
+  for (let i = 0; i < colsCount; ++i) {
+    col1 = cols[i];
+    raw1 = col1.getRawData();
+
+    for (let j = i; j < colsCount; ++j) {
+      col2 = cols[j];
+      raw2 = col2.getRawData();      
+      qaudrRaw = new Float32Array(rowsCount);
+
+      for (let k = 0; k < rowsCount; ++k)
+        qaudrRaw[k] = raw1[k] * raw2[k];
+
+      const quadrCol = DG.Column.fromFloat32Array(`${col1.name} x ${col2.name}`, qaudrRaw);
+
+      if (quadrCol.stats.stdev > 0)
+        quadrCols.push(quadrCol);
+    }
+  }
+
+  const extendedTable = DG.DataFrame.fromColumns(cols.concat(quadrCols));
+
+  return {
+    table: extendedTable,
+    features: extendedTable.columns,
+    isQuadratic: true,
+    names: input.names,
+    predict: input.predict,
+    components: input.components,
+  };
+}
+
 /** Perform multivariate analysis using the PLS regression */
 async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<void> {
+  const sourceTable = input.table;
+
+  if (input.isQuadratic)
+    input = getQuadraticPlsInput(input);
+
   const result = await getPlsAnalysis(input);
 
   const plsCols = result.tScores;
-  const cols = input.table.columns;
+  const cols = sourceTable.columns;
   const features = input.features;
   const featuresNames = features.names();
   const prefix = (analysisType === PLS_ANALYSIS.COMPUTE_COMPONENTS) ? RESULT_NAMES.PREFIX : TITLE.XSCORE;
@@ -132,11 +186,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   if (analysisType === PLS_ANALYSIS.COMPUTE_COMPONENTS)
     return;
 
-  //const view = grok.shell.tableView(input.table.name);
-
-  const view = (analysisType === PLS_ANALYSIS.DEMO) ?
-    (grok.shell.view(TITLE.BROWSE) as DG.BrowseView).preview as DG.TableView :
-    grok.shell.tableView(input.table.name);
+  const view = grok.shell.tableView(sourceTable.name);
 
   // 0.1 Buffer table
   const loadingsRegrCoefsTable = DG.DataFrame.fromColumns([
@@ -144,7 +194,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     result.regressionCoefficients,
   ]);
 
-  loadingsRegrCoefsTable.name = `${input.table.name}(${TITLE.ANALYSIS})`;
+  loadingsRegrCoefsTable.name = `${sourceTable.name}(${TITLE.ANALYSIS})`;
   grok.shell.addTable(loadingsRegrCoefsTable);
 
   // 0.2. Add X-Loadings
@@ -158,7 +208,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   const pred = debiasedPrediction(features, result.regressionCoefficients, input.predict, result.prediction);
   pred.name = cols.getUnusedName(`${input.predict.name} ${RESULT_NAMES.SUFFIX}`);
   cols.add(pred);
-  const predictVsReferScatter = view.addViewer(DG.Viewer.scatterPlot(input.table, {
+  const predictVsReferScatter = view.addViewer(DG.Viewer.scatterPlot(sourceTable, {
     title: TITLE.MODEL,
     xColumnName: input.predict.name,
     yColumnName: pred.name,
@@ -167,8 +217,6 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     showLabels: 'Always',
     help: LINK.MODEL,
   }));
-
-  console.log(input.names?.name);
 
   if ((input.names !== undefined) && (input.names !== null))
     predictVsReferScatter.setOptions({labelColumnNames: [input.names?.name]});
@@ -194,7 +242,6 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     xColumnName: `${TITLE.XLOADING}1`,
     yColumnName: `${TITLE.XLOADING}${result.xLoadings.length > 1 ? '2' : '1'}`,
     markerType: DG.MARKER_TYPE.CIRCLE,
-    // @ts-ignore
     labelColumnNames: [TITLE.FEATURE],
     help: LINK.LOADINGS,
   }));
@@ -210,21 +257,20 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   });
 
   // 4.2) create scatter
-  const scoresScatter = DG.Viewer.scatterPlot(input.table, {
+  const scoresScatter = DG.Viewer.scatterPlot(sourceTable, {
     title: TITLE.SCORES,
     xColumnName: plsCols[0].name,
     yColumnName: (plsCols.length > 1) ? plsCols[1].name : result.uScores[0].name,
     markerType: DG.MARKER_TYPE.CIRCLE,
     help: LINK.SCORES,
     showViewerFormulaLines: true,
+    labelColumnNames: ((input.names !== undefined) && (input.names !== null)) ? [input.names?.name] : undefined,
   });
 
-  if ((input.names !== undefined) && (input.names !== null))
-    scoresScatter.setOptions({labelColumnNames: [input.names?.name]});
 
-  // 4.3) create lines & circles
-  scoresScatter.meta.formulaLines.addAll(getLines(scoreNames));
+  // 4.3) create lines & circles  
   view.addViewer(scoresScatter);
+  scoresScatter.meta.formulaLines.addAll(getLines(scoreNames));
 
   // 5. Explained Variances
 
@@ -232,7 +278,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   //      here, we use notations from this paper
   const q = result.yLoadings.getRawData();
   const p = result.xLoadings.map((col) => col.getRawData());
-  const n = input.table.rowCount;
+  const n = sourceTable.rowCount;
   const m = featuresNames.length;
   const A = input.components;
   const yExplVars = new Float32Array(A);
@@ -257,7 +303,7 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
     DG.Column.fromFloat32Array(input.predict.name, yExplVars),
   ]);
 
-  explVarsDF.name = `${input.table.name}(${TITLE.EXPL_VAR})`;
+  explVarsDF.name = `${sourceTable.name}(${TITLE.EXPL_VAR})`;
   grok.shell.addTable(explVarsDF);
 
   xExplVars.forEach((arr, idx) => explVarsDF.columns.add(DG.Column.fromFloat32Array(featuresNames[idx], arr)));
@@ -275,26 +321,20 @@ async function performMVA(input: PlsInput, analysisType: PLS_ANALYSIS): Promise<
   }));
 
   // emphasize viewers in the demo case
-  if (analysisType === PLS_ANALYSIS.DEMO) {
-    const pages = [predictVsReferScatter, scoresScatter, loadingsScatter, regrCoeffsBar, explVarsBar]
-      .map((viewer, idx) => {
-        return {
-          text: DEMO_RESULTS[idx].text,
-          showNextTo: viewer.root,
-        };
-      });
-
-    const wizard = ui.hints.addTextHint({title: TITLE.EXPLORE, pages: pages});
-    wizard.helpUrl = LINK.MVA;
+  if (analysisType === PLS_ANALYSIS.DEMO) {    
     grok.shell.windows.help.showHelp(ui.markdown(DEMO_RESULTS_MD));
+
+    describeElements(
+      [predictVsReferScatter, scoresScatter, loadingsScatter, regrCoeffsBar, explVarsBar].map((v) => v.root),
+      DEMO_RESULTS.map((info) => `<b>${info.caption}</b>\n\n${info.text}`),
+      ['left', 'left', 'right', 'right', 'left'],
+    );
   }
 } // performMVA
 
 /** Run multivariate analysis (PLS) */
 export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
-  const table = (analysisType === PLS_ANALYSIS.DEMO) ?
-    ((grok.shell.view(TITLE.BROWSE) as DG.BrowseView).preview as DG.TableView).table :
-    grok.shell.t;
+  const table = grok.shell.t;
 
   if (table === null) {
     grok.shell.warning(ERROR_MSG.NO_DF);
@@ -332,33 +372,65 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
     return;
   }
 
-  // responce (to predict)
+  let features: DG.Column[] = numCols.slice(0, numCols.length - 1);
   let predict = numCols[numCols.length - 1];
-  const predictInput = ui.input.column(TITLE.PREDICT, {table: table, value: predict, onValueChanged: (value) => {
-    predict = value;
-    updateIputs();
-  }, filter: (col: DG.Column) => isValidNumeric(col)},
-  );
-  predictInput.setTooltip(HINT.PREDICT);
+  let components = min(numColNames.length - 1, COMPONENTS.DEFAULT as number);
+  let isQuadratic = false;
+
+  const isPredictValid = () => {
+    for (const col of features)
+      if (col.name === predict.name)
+        return false;
+    return true;
+  };
+
+  const isCompConsistent = () => {
+    if (components < 1)
+      return false;
+
+    const n = features.length;
+
+    if (isQuadratic)      
+      return components <= (n + 1) * n / 2 + n;
+
+    return components <= n;
+  }
+
+  // response (to predict)
+  const predictInput = ui.input.column(TITLE.PREDICT, {
+    table: table,
+    value: predict,
+    nullable: false,
+    onValueChanged: (value) => {
+      predict = value;
+      updateIputs();
+    },
+    filter: (col: DG.Column) => isValidNumeric(col),
+    tooltipText: HINT.PREDICT,
+  });
 
   // predictors (features)
-  let features: DG.Column[];
-  const featuresInput = ui.input.columns(TITLE.USING, {table: table, available: numColNames});
-  featuresInput.onInput.subscribe(() => updateIputs());
-  featuresInput.setTooltip(HINT.FEATURES);
+  const featuresInput = ui.input.columns(TITLE.USING, {
+    table: table,
+    available: numColNames,
+    value: features,
+    onValueChanged: (val) => {
+      features = val;
+      updateIputs();      
+    },
+    tooltipText: HINT.FEATURES,
+  });
 
   // components count
-  let components = min(numColNames.length - 1, COMPONENTS.DEFAULT as number);
-  const componentsInput = ui.input.forProperty(DG.Property.fromOptions({
-    name: TITLE.COMPONENTS,
-    inputType: INT,
-    defaultValue: components,
-    //@ts-ignore
+  const componentsInput = ui.input.int(TITLE.COMPONENTS, {
+    value: components,
     showPlusMinus: true,
-    min: COMPONENTS.MIN,
-  }));
-  componentsInput.onInput.subscribe(() => updateIputs());
-  componentsInput.setTooltip(HINT.COMPONENTS);
+    onValueChanged: (val) => {
+      components = val;
+      updateIputs();
+    },
+    tooltipText: HINT.COMPONENTS,
+  });
 
   let dlgTitle: string;
   let dlgHelpUrl: string;
@@ -374,14 +446,57 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
     dlgRunBtnTooltip = HINT.MVA;
   }
 
+  const setStyle = (valid: boolean, element: HTMLElement, tooltip: string, errorMsg: string) => {
+    if (valid) {
+      element.style.color = COLOR.VALID_TEXT;
+      element.style.borderBottomColor = COLOR.VALID_LINE;
+      ui.tooltip.bind(element, tooltip);
+    } else {
+      element.style.color = COLOR.INVALID;
+      element.style.borderBottomColor = COLOR.INVALID;
+      ui.tooltip.bind(element, () => {
+        const hint = ui.label(tooltip);
+        const err = ui.label(errorMsg);
+        err.style.color = COLOR.INVALID;
+        return ui.divV([hint, err]);
+      });
+    }    
+  };
+
   const updateIputs = () => {
-    featuresInput.value = featuresInput.value.filter((col) => col !== predict);
-    features = featuresInput.value;
+    const predValid = isPredictValid();
+    let compValid: boolean;
 
-    componentsInput.value = min(max(componentsInput.value ?? components, COMPONENTS.MIN), features.length);
-    components = componentsInput.value;
+    if (predValid) {
+      setStyle(true, predictInput.input, HINT.PREDICT, '');
+      setStyle(true, featuresInput.input, HINT.FEATURES, '');
+    } else {
+      setStyle(false, predictInput.input, HINT.PREDICT, ERROR_MSG.PREDICT);
+      setStyle(false, featuresInput.input, HINT.FEATURES, ERROR_MSG.PREDICT);
+    }
 
-    dlg.getButton(TITLE.RUN).disabled = (features.length === 0) || (components <= 0);
+    if (components < 1) {
+      setStyle(false, componentsInput.input, HINT.COMPONENTS, ERROR_MSG.COMPONENTS);
+      compValid = false;  
+    } else {
+      compValid = isCompConsistent();
+
+      if (compValid) {
+        setStyle(true, componentsInput.input, HINT.COMPONENTS, '');
+        if (predValid)
+          setStyle(true, featuresInput.input, HINT.FEATURES, '');
+      } else {
+        const errMsg = isQuadratic ? ERROR_MSG.COMP_QUA_PLS : ERROR_MSG.COMP_LIN_PLS;
+        setStyle(false, componentsInput.input, HINT.COMPONENTS, errMsg);
+        setStyle(false, featuresInput.input, HINT.FEATURES, ERROR_MSG.ENOUGH);
+      }
+    }
+
+    const isValid = predValid && compValid;
+
+    dlg.getButton(TITLE.RUN).disabled = !isValid;
+
+    return isValid;
   };
 
   // names of samples
@@ -395,18 +510,27 @@ export async function runMVA(analysisType: PLS_ANALYSIS): Promise<void> {
   namesInputs.setTooltip(HINT.NAMES);
   namesInputs.root.hidden = (strCols.length === 0) || (analysisType === PLS_ANALYSIS.COMPUTE_COMPONENTS);
 
+  // quadratic/linear model
+  const isQuadraticInput = ui.input.bool(TITLE.QUADRATIC, {
+    value: isQuadratic,
+    tooltipText: HINT.QUADRATIC,
+    onValueChanged: (val) => {
+      isQuadratic = val;
+      updateIputs();
+    },
+  });
+
   const dlg = ui.dialog({title: dlgTitle, helpUrl: dlgHelpUrl})
-    .add(ui.form([predictInput, featuresInput, componentsInput, namesInputs]))
+    .add(ui.form([predictInput, featuresInput, componentsInput, isQuadraticInput, namesInputs]))
     .addButton(TITLE.RUN, async () => {
       dlg.close();
-
-      console.log(names);
 
       await performMVA({
         table: table,
         features: DG.DataFrame.fromColumns(features).columns,
         predict: predict,
         components: components,
+        isQuadratic: isQuadratic,
         names: names,
       }, analysisType);
     }, undefined, dlgRunBtnTooltip)

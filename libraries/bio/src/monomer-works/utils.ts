@@ -36,9 +36,9 @@ export function alphabetToPolymerType(alphabet: ALPHABET): PolymerType {
     resPolymerType = HELM_POLYMER_TYPE.PEPTIDE;
   else if (alphabet === ALPHABET.RNA || alphabet === ALPHABET.DNA)
     resPolymerType = HELM_POLYMER_TYPE.RNA;
-  else {
+  else
     throw new Error(`Unexpected alphabet '${alphabet}'.`);
-  }
+
   return resPolymerType;
 }
 

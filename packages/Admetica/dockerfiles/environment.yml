@@ -4,7 +4,7 @@ channels:
   - pytorch
   - nvidia
 dependencies:
-  - python>=3.11
+  - python=3.11
   - rdkit
   - joblib
   - numpy
@@ -12,15 +12,16 @@ dependencies:
   - scikit-learn
   - scipy
   - boto3
-  - gunicorn
-  - Flask
   - chemprop=2.0.4
   - mkl
-  - flask_cors
   - cuda-version=11.8
   - cudatoolkit=11.8
-  - cuDNN
-  - pytorch>=1.8.1=*cuda*
+  - cudnn
+  - pytorch==2.5.0=*cu*
+  - torchvision==0.20.0=*cu*
+  - torchaudio==2.5.0=*cu*
   - pytorch-cuda=11.8
-  - torchvision=*=*_cu*
-  - torchaudio=*=*_cu*
+  - pip
+  - pip:
+      - datagrok-celery-task==0.1.8
+      - celery

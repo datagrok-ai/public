@@ -33,5 +33,5 @@ category('GUI', () => {
     okButton!.click();
     await awaitCheck(() => {return demog.col('TestNewStringColumn') != undefined;});
     isColumnPresent(demog.columns, 'TestNewStringColumn');
-  });
+  }, { owner: 'mdolotova@datagrok.ai'});
 });

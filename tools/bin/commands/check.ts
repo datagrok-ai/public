@@ -8,28 +8,31 @@ import { PackageFile } from '../utils/interfaces';
 import * as testUtils from '../utils/test-utils';
 import { error } from 'console';
 
+
 const warns = ['Latest package version', 'Datagrok API version should contain'];
+const forbiddenNames = ['function', 'class', 'export'];
+const namesInFiles = new Map<string, string[]>();
 
 export function check(args: CheckArgs): boolean {
   const nOptions = Object.keys(args).length - 1;
-  if (args['_'].length !== 1 || nOptions > 2 || (nOptions > 0 && !args.r && !args.recursive))
-    return false;
   const curDir = process.cwd();
 
   if (args.recursive)
-    return runChecksRec(curDir);
+    return runChecksRec(curDir, args.soft ?? false);
   else {
     if (!utils.isPackageDir(curDir)) {
       color.error('File `package.json` not found. Run the command from the package directory');
       return false;
     }
-    return runChecks(curDir);
+    return runChecks(curDir, args.soft ?? false);
   }
 }
 
-function runChecks(packagePath: string): boolean {
-  const files = walk.sync({ path: packagePath, ignoreFiles: ['.npmignore', '.gitignore'] });
-  const jsTsFiles = files.filter((f) => !f.startsWith('dist/') && (f.endsWith('.js') || f.endsWith('.ts') || f.endsWith('.sql') || f.endsWith('.py')));
+function runChecks(packagePath: string, soft: boolean = false): boolean {
+  if (packagePath.includes(`${path.sep}node_modules${path.sep}`))
+    return true;
+  const files = (walk.sync({ path: packagePath, ignoreFiles: ['.npmignore', '.gitignore'] })).filter(e => !e.includes('node_modules'));
+  const jsTsFiles = files.filter((f) => (f.startsWith('src' + path.sep) || f.startsWith('queries' + path.sep) || f.startsWith('scripts' + path.sep)) && (f.endsWith('.js') || f.endsWith('.ts') || f.endsWith('.sql') || f.endsWith('.py')));
   const packageFiles = ['src/package.ts', 'src/detectors.ts', 'src/package.js', 'src/detectors.js',
     'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js'];
   // const funcFiles = jsTsFiles.filter((f) => packageFiles.includes(f)); 
@@ -51,10 +54,13 @@ function runChecks(packagePath: string): boolean {
     if (externals)
       errors.push(...checkImportStatements(packagePath, jsTsFiles, externals));
   }
-  errors.push(...checkSourceMap(packagePath));
+  if (!soft)
+    errors.push(...checkSourceMap(packagePath));
   errors.push(...checkNpmIgnore(packagePath));
   warnings.push(...checkScriptNames(packagePath));
-  errors.push(...checkFuncSignatures(packagePath, jsTsFiles));
+  const [signatureWarnings, signatureErrors] = checkFuncSignatures(packagePath, jsTsFiles);
+  warnings.push(...signatureWarnings);
+  errors.push(...signatureErrors);
   errors.push(...checkPackageFile(packagePath, json, { isWebpack, externals, isReleaseCandidateVersion }));
   if (!isReleaseCandidateVersion)
     warnings.push(...checkChangelog(packagePath, json));
@@ -67,7 +73,7 @@ function runChecks(packagePath: string): boolean {
   if (errors.length) {
     console.log(`Checking package ${path.basename(packagePath)}...`);
     showError(errors);
-    if (json.version.startsWith('0') || (errors.every((w) => warns.some((ww) => w.includes(ww)))))
+    if (soft || json.version.startsWith('0') || (errors.every((w) => warns.some((ww) => w.includes(ww)))))
       return true;
     testUtils.exitWithCode(1);
   }
@@ -75,17 +81,17 @@ function runChecks(packagePath: string): boolean {
   return true;
 }
 
-function runChecksRec(dir: string): boolean {
+function runChecksRec(dir: string, soft: boolean = false): boolean {
   const files = fs.readdirSync(dir);
   for (const file of files) {
     const filepath = path.join(dir, file);
     const stats = fs.statSync(filepath);
     if (stats.isDirectory()) {
       if (utils.isPackageDir(filepath))
-        return runChecks(filepath);
+        return runChecks(filepath, soft);
       else {
         if (file !== 'node_modules' && !file.startsWith('.'))
-          runChecksRec(path.join(dir, file));
+          runChecksRec(path.join(dir, file), soft);
       }
     }
   }
@@ -145,8 +151,9 @@ export function checkImportStatements(packagePath: string, files: string[], exte
   return warnings;
 }
 
-export function checkFuncSignatures(packagePath: string, files: string[]): string[] {
+export function checkFuncSignatures(packagePath: string, files: string[]): [string[], string[]] {
   const warnings: string[] = [];
+  const errors: string[] = [];
   const checkFunctions: { [role: string]: FuncValidator } = {
     app: ({ name }: { name?: string }) => {
       let value = true;
@@ -280,9 +287,12 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
   const functionRoles = Object.keys(checkFunctions);
 
   for (const file of files) {
+    if (file.includes('.min.'))
+      continue;
     const content = fs.readFileSync(path.join(packagePath, file), { encoding: 'utf-8' });
     const functions = getFuncMetadata(content, file.split('.').pop() ?? 'ts');
-    for (const f of functions) {
+
+    for (const f of functions.meta) {
       const paramsCheck = checkFunctions.params(f);
       if (!paramsCheck.value)
         warnings.push(`File ${file}, function ${f.name}:\n${paramsCheck.message}`);
@@ -292,22 +302,41 @@ export function checkFuncSignatures(packagePath: string, files: string[]): strin
         warnings.push(`File ${file}, function ${f.name}: several function roles are used (${roles.join(', ')})`);
       else if (roles.length === 1) {
         const vr = checkFunctions[roles[0]](f);
-        if (!vr.value)
+        if (!vr.value) {
           warnings.push(`File ${file}, function ${f.name}:\n${vr.message}`);
+        }
       }
-      if(f.isInvalidateOnWithoutCache)
-        warnings.push(`File ${file}, function ${f.name}: Can't use invalidateOn without cache, please follow this example: 'meta.cache.invalidateOn'`);
+      let wrongInputNames = f.inputs.filter((e) => forbiddenNames.includes(e?.name ?? ''))
+      if (f.name && f.name !== 'postprocess') {
+        if (namesInFiles.has(f.name))
+          namesInFiles.get(f.name)?.push(file);
+        else
+          namesInFiles.set(f.name, [file]);
+      }
+
+      if (wrongInputNames.length > 0)
+        errors.push(`File ${file}, function ${f.name}: Wrong input names: (${wrongInputNames.map((e) => e.name).join(', ')})`);
+      if (f.isInvalidateOnWithoutCache)
+        errors.push(`File ${file}, function ${f.name}: Can't use invalidateOn without cache, please follow this example: 'meta.cache.invalidateOn'`);
 
       if (f.cache)
-        if (!utils.cahceValues.includes(f.cache))
-          warnings.push(`File ${file}, function ${f.name}: unsupposed variable for cache : ${f.cache}`);
+        if (!utils.cacheValues.includes(f.cache))
+          errors.push(`File ${file}, function ${f.name}: unsupposed variable for cache : ${f.cache}`);
       if (f.invalidateOn)
         if (!utils.isValidCron(f.invalidateOn))
-          warnings.push(`File ${file}, function ${f.name}: unsupposed variable for invalidateOn : ${f.invalidateOn}`);
+          errors.push(`File ${file}, function ${f.name}: unsupposed variable for invalidateOn : ${f.invalidateOn}`);
     }
+
+    functions.warnings.forEach(e => {
+      warnings.push(`${e} In the file: ${file}.`)
+    });
+  }
+  for (const [name, files] of namesInFiles) {
+    if (files.length > 1)
+      errors.push(`Duplicate names ('${name}'): \n  ${files.join('\n  ')}`);
   }
 
-  return warnings;
+  return [warnings, errors];
 }
 
 const sharedLibExternals: { [lib: string]: {} } = {
@@ -316,6 +345,7 @@ const sharedLibExternals: { [lib: string]: {} } = {
   'common/ngl_viewer/ngl.js': { 'NGL': 'NGL' },
   'common/openchemlib-full.js': { 'openchemlib/full': 'OCL' },
   'common/codemirror/codemirror.js': { 'codemirror': 'CodeMirror' },
+  'common/vue.js': { 'vue': 'Vue' }
 };
 
 export function checkPackageFile(packagePath: string, json: PackageFile, options?: {
@@ -357,9 +387,9 @@ export function checkPackageFile(packagePath: string, json: PackageFile, options
       warnings.push('File "package.json": Datagrok API version should starts with > | >= | ~ | ^ | < | <=');
   }
 
-  const dt = json.devDependencies?.['datagrok-tools'] ?? json.dependencies?.['datagrok-tools'];
-  if (dt && dt !== 'latest')
-    warnings.push('File "package.json": "datagrok-tools" dependency must be "latest" version.');
+  // const dt = json.devDependencies?.['datagrok-tools'] ?? json.dependencies?.['datagrok-tools'];
+  // if (dt && dt !== 'latest')
+  //   warnings.push('File "package.json": "datagrok-tools" dependency must be "latest" version.');
 
   if (Array.isArray(json.sources) && json.sources.length > 0) {
     for (const source of json.sources) {
@@ -408,8 +438,6 @@ export function checkPackageFile(packagePath: string, json: PackageFile, options
 
     if (!hasRCDependency) {
       for (let dependency of Object.keys(json.dependencies ?? {})) {
-        console.log(dependency);
-        console.log((json.dependencies ?? {})[dependency]);
         if (/\d+.\d+.\d+-rc(.[A-Za-z0-9]*.[A-Za-z0-9]*)?/.test((json.devDependencies ?? {})[dependency])) {
           hasRCDependency = true;
           break;
@@ -482,7 +510,7 @@ export function checkSourceMap(packagePath: string): string[] {
 
 export function checkNpmIgnore(packagePath: string): string[] {
   const warnings: string[] = [];
-  if (path.join(...[packagePath, '.npmignore'])) {
+  if (fs.existsSync(path.join(...[packagePath, '.npmignore']))) {
     const npmIgnoreContent: string = fs.readFileSync(path.join(...[packagePath, '.npmignore']), { encoding: 'utf-8' });
     for (const row of npmIgnoreContent.split('\n')) {
       if ((row.match(new RegExp('\\s*dist\\/?\\s*$'))?.length || -1) > 0) {
@@ -540,8 +568,9 @@ function warn(warnings: string[]): void {
   warnings.forEach((w) => color.warn(w));
 }
 
-function getFuncMetadata(script: string, fileExtention: string): FuncMetadata[] {
+function getFuncMetadata(script: string, fileExtention: string): { meta: FuncMetadata[], warnings: string[] } {
   const funcData: FuncMetadata[] = [];
+  const warnings: string[] = [];
   let isHeader = false;
   let data: FuncMetadata = { name: '', inputs: [], outputs: [] };
 
@@ -554,8 +583,13 @@ function getFuncMetadata(script: string, fileExtention: string): FuncMetadata[] 
       if (!isHeader)
         isHeader = true;
       const param = match[1];
+
+      if (!utils.headerTags.includes(param) && !param.includes('meta.')) {
+        warnings.push(`Unknown header tag: ${param},`);
+        continue;
+      }
       if (param === 'name')
-        data.name = line.match(utils.nameAnnRegex)?.[2];
+        data.name = line.match(utils.nameAnnRegex)?.[2]?.toLocaleLowerCase();
       else if (param === 'description')
         data.description = match[2];
       else if (param === 'input') {
@@ -578,8 +612,14 @@ function getFuncMetadata(script: string, fileExtention: string): FuncMetadata[] 
     }
     if (isHeader) {
       const nm = line.match(utils.nameRegex);
-      if (nm && !match) {
-        data.name = data.name || nm[1];
+      if (data.name === '') {
+        data = { name: '', inputs: [], outputs: [] };
+        isHeader = false;
+        continue;
+      }
+      if (nm)
+        data.name = nm[1]?.toLocaleLowerCase();
+      if (data.name && !match) {
         funcData.push(data);
         data = { name: '', inputs: [], outputs: [] };
         isHeader = false;
@@ -587,11 +627,12 @@ function getFuncMetadata(script: string, fileExtention: string): FuncMetadata[] 
     }
   }
 
-  return funcData;
+  return { meta: funcData, warnings };
 }
 
 interface CheckArgs {
   _: string[],
   r?: boolean,
   recursive?: boolean,
+  soft?: boolean,
 }

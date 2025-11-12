@@ -7,7 +7,7 @@ import {_package} from '../package';
 import {IFitChartData, sigmoid} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 
 import wu from 'wu';
-import {FitConstants} from "./const";
+import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 
 /** Returns random number from the interval */
 function rnd(min: number, max: number): number {
@@ -36,9 +36,9 @@ export function createSigmoidPoints(length: number, step: number, pointsPerX: nu
   // adding 20% noise
   const range = (pointsPerX === 1 ? 0.2 : 0.4) * (Math.max(...y) - Math.min(...y));
   const minY = Math.min(...y);
-  for (let i = 0; i < x.length; i++) {
+  for (let i = 0; i < x.length; i++)
     y[i] = -minY + y[i] + rnd(0, range);
-  }
+
 
   return {x: x, y: y, params: params};
 }
@@ -65,7 +65,7 @@ export function createDemoDataFrame(rowCount: number, chartsCount: number, chart
 
     const jsonColumn = df.columns.addNewString(`json chart ${colIdx}`); // charts as json
     jsonColumn.semType = FitConstants.FIT_SEM_TYPE;
-    let charts = colIdx % 2 === 0 ? chartsPerCell : 1;
+    const charts = colIdx % 2 === 0 ? chartsPerCell : 1;
 
     for (let i = 0; i < rowCount; i++) {
       const chartData: IFitChartData = {
@@ -81,7 +81,7 @@ export function createDemoDataFrame(rowCount: number, chartsCount: number, chart
 
       for (let j = 0; j < charts; j++) {
         const points = createSigmoidPoints(seriesLength, step, pointsPerX);
-        let color = DG.Color.toHtml(DG.Color.getCategoricalColor(colIdx * chartsPerCell + j));
+        const color = DG.Color.toHtml(DG.Color.getCategoricalColor(colIdx * chartsPerCell + j));
         chartData.series?.push({
           parameters: undefined,
           // TODO: make better parameter generating
@@ -105,6 +105,6 @@ export async function curveDemo(): Promise<void> {
   grok.shell.windows.showContextPanel = true;
   // const df = createDemoDataFrame(30, 5, 2);
   const df = await grok.data.loadTable(`${_package.webRoot}files/curves-demo.csv`);
-  const tableView = grok.shell.addTableView(df);
+  const _tableView = grok.shell.addTableView(df);
   // tableView.addViewer('MultiCurveViewer');
 }

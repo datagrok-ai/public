@@ -2,7 +2,8 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {
   getSettingsBase, SummarySettingsBase, createTooltip, distance, Hit,
-  SparklineType, isSummarySettingsBase, SummaryColumnColoringType, createBaseInputs, getRenderColor
+  SparklineType, isSummarySettingsBase, SummaryColumnColoringType, createBaseInputs, getRenderColor, getScaledNumber,
+  NormalizationType, getSparklinesContextPanel
 } from './shared';
 
 
@@ -26,6 +27,7 @@ function getSettings(gc: DG.GridColumn): RadarChartSettings {
       ...getSettingsBase(gc, SparklineType.Radar),
       // ...{radius: 10,},
     };
+  settings.normalization ??= NormalizationType.Column;
   settings.colorCode ??= SummaryColumnColoringType.Off;
   return settings;
 }
@@ -37,7 +39,7 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   const settings = getSettings(gridCell.gridColumn);
   const box = new DG.Rect(gridCell.bounds.x, gridCell.bounds.y, gridCell.bounds.width, gridCell.bounds.height)
     .fitSquare().inflate(-2, -2);
-  const cols = df.columns.byNames(settings.columnNames);
+  const cols = df.columns.byNames(settings.columnNames).filter((c) => c != null);
   const vectorX = e.offsetX - gridCell.bounds.midX;
   const vectorY = e.offsetY - gridCell.bounds.midY;
   const atan2 = Math.atan2(vectorY, vectorX);
@@ -94,7 +96,7 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
     const settings = getSettings(gridCell.gridColumn);
     const box = new DG.Rect(x, y, w, h).fitSquare().inflate(-2, -2);
     const row = gridCell.cell.row.idx;
-    const cols = df.columns.byNames(settings.columnNames);
+    const cols = df.columns.byNames(settings.columnNames).filter((c) => c != null);
 
     g.strokeStyle = 'lightgray';
 
@@ -109,9 +111,16 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
       }
     }
 
+    const path = it.range(cols.length).map((i) => {
+      const value = !cols[i].isNone(row) ?
+        getScaledNumber(cols, row, cols[i], {
+          normalization: settings.normalization,
+          invertScale: settings.invertColumnNames?.includes(cols[i].name),
+        }) :
+        0;
+      return p(i, value);
+    });
 
-    const path = it.range(cols.length)
-      .map((i) => p(i, !cols[i].isNone(row) ? cols[i].scale(row) : 0));
     g.setFillStyle('#00cdff')
       .polygon(path)
       .fill();
@@ -127,9 +136,15 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
         .stroke();
     }
     it.range(cols.length).map(function(i) {
-      if (!cols[i].isNone(row))
-        DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, p(i, cols[i].scale(row)).x, p(i, cols[i].scale(row)).y,
+      if (!cols[i].isNone(row)) {
+        const scaledNumber = getScaledNumber(cols, row, cols[i], {
+          normalization: settings.normalization,
+          invertScale: settings.invertColumnNames?.includes(cols[i].name),
+        });
+        const point = p(i, scaledNumber);
+        DG.Paint.marker(g, DG.MARKER_TYPE.CIRCLE, point.x, point.y,
           getRenderColor(settings, DG.Color.fromHtml('#1E90FF'), {column: cols[i], colIdx: i, rowIdx: row}), 3);
+      }
     });
   }
 
@@ -137,5 +152,10 @@ export class RadarChartCellRender extends DG.GridCellRenderer {
     const settings: RadarChartSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
       gc.settings[SparklineType.Radar] ??= getSettings(gc);
     return ui.inputs(createBaseInputs(gc, settings));
+  }
+
+  hasContextValue(gridCell: DG.GridCell): boolean { return true; }
+  async getContextValue(gridCell: DG.GridCell): Promise<any> {
+    return getSparklinesContextPanel(gridCell, getSettings(gridCell.gridColumn).columnNames);
   }
 }

@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils';
 
 type ConstructorTypeOf<T> = new (...args:any[]) => T;
 
@@ -17,16 +18,15 @@ declare global {
       CompView: ConstructorTypeOf<ComputationView>,
       RFV: ConstructorTypeOf<RichFunctionView>,
       Pipeline: ConstructorTypeOf<PipelineView>,
-      CompositionPipeline: {
-        new (...args:any[]): CompositionPipeline,
-        compose: typeof composeCompositionPipeline
-      }
+      CFV: ConstructorTypeOf<CustomFunctionView>,
 
       makeValidationResult: typeof makeValidationResult,
       makeAdvice: typeof makeAdvice,
       makeRevalidation: typeof makeRevalidation,
       mergeValidationResults: typeof mergeValidationResults,
-    }
+
+      deepCopy: typeof deepCopy,
+    },
   }
 }
 
@@ -35,6 +35,9 @@ export {testPipeline};
 
 import * as UiUtils from './src/ui-utils';
 export {UiUtils};
+
+import {deepCopy} from '@datagrok-libraries/compute-utils/shared-utils/utils';
+export {deepCopy};
 
 import {
   makeValidationResult, makeAdvice, makeRevalidation, mergeValidationResults,
@@ -45,19 +48,35 @@ export {
   ValidationInfo,
 };
 
+export type * from '@datagrok-libraries/compute-utils/reactive-tree-driver/index';
+
 import {
-  ComputationView, RichFunctionView, PipelineView, CompositionPipeline,
-  createCompView, createRFV, createPipeline, createCompositionPipeline, composeCompositionPipeline,
-  PipelineCompositionConfiguration, PipelineConfiguration,
+  ComputationView, RichFunctionView, PipelineView, CustomFunctionView,
+  createCompView, createRFV, createPipeline, createCFV
 } from './src/views';
 export {
-  ComputationView, RichFunctionView, PipelineView, CompositionPipeline,
-  createCompView, createRFV, createPipeline, createCompositionPipeline, composeCompositionPipeline,
-  PipelineCompositionConfiguration, PipelineConfiguration,
+  ComputationView, RichFunctionView, PipelineView, CustomFunctionView,
+  createCompView, createRFV, createPipeline, createCFV
 };
 
 export async function initComputeApi() {
   const initFunc = DG.Func.find({package: 'Compute', name: 'init'})[0];
   if (initFunc)
     await initFunc.prepare().call();
+}
+
+export async function startWorkflow<T=any>(nqName: string, version: string, instanceConfig: PipelineInstanceConfig): Promise<T> {
+  const startFunc = DG.Func.find({package: 'Compute2', name: 'StartWorkflow'})[0];
+  const call = startFunc.prepare({nqName, version, instanceConfig});
+  await call.call();
+  return call.getOutputParamValue();
+}
+
+import {OptimizerParams} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
+
+export async function runOptimizer(params: OptimizerParams): Promise<DG.FuncCall[]> {
+  const optimFunc = DG.Func.find({package: 'Compute2', name: 'RunOptimizer'})[0];
+  const call = optimFunc.prepare({params});
+  await call.call();
+  return call.getOutputParamValue();
 }

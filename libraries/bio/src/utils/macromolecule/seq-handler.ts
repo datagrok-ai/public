@@ -3,9 +3,10 @@ import * as DG from 'datagrok-api/dg';
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 
 import {ISeqSplitted, SeqColStats, SplitterFunc} from './types';
-import {NOTATION} from './consts';
+import {ALPHABET, NOTATION} from './consts';
 import {HelmType} from '../../helm/types';
 import {CellRendererBackBase} from '../cell-renderer-back-base';
+import {splitterAsHelm, StringListSeqSplitted} from './utils';
 
 export const SeqTemps = new class {
   /** Column's temp slot name for a SeqHandler object */
@@ -16,12 +17,19 @@ export type ConvertFunc = (src: string) => string;
 export type JoinerFunc = (src: ISeqSplitted) => string;
 
 export class SeqValueBase extends DG.SemanticValue<string> {
-
   override get value(): string { return this.seqHandler.column.get(this.rowIdx)!; }
 
   override set value(v: string) { this.seqHandler.column.set(this.rowIdx, v); }
 
   get helm(): string { return this.seqHandler.getHelm(this.rowIdx); }
+
+  isDna(): boolean { return this.seqHandler.alphabet === ALPHABET.DNA; }
+
+  isRna(): boolean { return this.seqHandler.alphabet === ALPHABET.RNA; }
+
+  isNaturalPeptide(): boolean { return this.seqHandler.alphabet === ALPHABET.PT; }
+
+  isHelm(): boolean { return this.seqHandler.isHelm(); }
 
   constructor(
     private rowIdx: number,
@@ -38,10 +46,33 @@ export class SeqValueBase extends DG.SemanticValue<string> {
   getSplitted(): ISeqSplitted {
     return this.seqHandler.getSplitted(this.rowIdx);
   }
+
+  getSplittedWithSugarsAndPhosphates(): ISeqSplitted {
+    if (!this.isDna() && !this.isRna())
+      return this.getSplitted();
+    const originalSplit = splitterAsHelm(this.helm);
+    const fullArray: string[] = [];
+    // heuristic for detecting dna/rna
+    const helmNucleotideFullRe = /\(|\)/;
+
+    for (let i = 0; i < originalSplit.length; i++) {
+      const m = originalSplit.getOriginal(i);
+      const splitM = m.split(helmNucleotideFullRe).filter((el) => !!el);
+      if (splitM.length === 3) {
+        fullArray.push(splitM[0]);
+        fullArray.push(splitM[1]);
+        fullArray.push(splitM[2]);
+      } else
+        fullArray.push(m);
+    }
+
+    return new StringListSeqSplitted(fullArray, this.seqHandler.defaultGapOriginal);
+  }
 }
 
 export interface ISeqHandler {
   get column(): DG.Column<string>;
+  get refinerPromise(): Promise<void>;
 
   get alphabet(): string;
   get notation(): NOTATION;
@@ -58,6 +89,7 @@ export interface ISeqHandler {
   get joiner(): JoinerFunc;
 
   get posList(): string[];
+  get isCanonicalAlphabet(): boolean;
 
   isFasta(): boolean;
   isMsa(): boolean;
@@ -67,6 +99,9 @@ export interface ISeqHandler {
   getSplitted(rowIdx: number, limit?: number): ISeqSplitted;
   getValue(rowIdx: number, options?: any): SeqValueBase;
   getHelm(rowIdx: number): string;
+
+  getMonomerAtPosition(rowIdx: number, position: number, canonical: boolean): string;
+  getMonomersAtPosition(position: number, canonical: boolean): string[];
 
   getAlphabetSize(): number;
   getAlphabetIsMultichar(): boolean;
@@ -79,5 +114,5 @@ export interface ISeqHandler {
 
   getDistanceFunctionName(): MmDistanceFunctionsNames;
   getConverter(tgtUnits: NOTATION, tgtSeparator?: string): ConvertFunc;
-  getRendererBack(gridCol: DG.GridColumn | null, tableCol: DG.Column<string>): CellRendererBackBase<string>;
+  getRendererBack(gridCol: DG.GridColumn | null, tableCol: DG.Column<string>): CellRendererBackBase<string> | null;
 }

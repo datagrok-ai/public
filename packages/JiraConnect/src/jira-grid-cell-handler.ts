@@ -1,23 +1,38 @@
 
-import { delay, DockManager, GridCell } from "datagrok-api/dg";
+import { delay, DockManager, GridCell, GridCellRenderer, GridCellStyle, LruCache, x } from 'datagrok-api/dg';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
-import { loadIssueData } from "./api/data";
-import { _package } from "./package-test";
-import { AuthCreds } from "./api/objects";
-import { getJiraCreds } from "./app/credentials";
-import { issueData } from "./package";
+import { loadIssueData, loadIssues } from './api/data';
+import { BatchCellRenderer } from '@datagrok-libraries/utils/src/batch-cell-renderer';
+import { _package } from './package-test';
+import { AuthCreds, JiraIssue } from './api/objects';
+import { getJiraCreds } from './app/credentials';
+import { cache, issueData, queried } from './package';
+import imgBug from './images/bug.png';
+import imgEpic from './images/epic.png';
+import imgFeature from './images/feature.png';
+import imgImprovement from './images/improvement.png';
+import imgTask from './images/task.png';
+
+function image(url: string) {
+    const img = new Image();
+    img.src = url;
+    return img;
+}
 
 export class JiraGridCellHandler extends DG.ObjectHandler {
 
     get type(): string {
-        return 'JIRA Ticket';
+        return 'Jira Ticket';
     }
-
 
     isApplicable(x: any): boolean {
         return x instanceof DG.SemanticValue && this.type === x.semType;
+    }
+
+    getGridCellRenderer(): GridCellRenderer | null {
+        return new JiraTicketGridCellRenderer();
     }
 
     renderProperties(semValue: DG.SemanticValue, context: any = null): HTMLElement {
@@ -30,9 +45,11 @@ export class JiraGridCellHandler extends DG.ObjectHandler {
     renderCard(x: DG.SemanticValue, context?: any): HTMLElement {
         return ui.wait(async () => {
             const issue = await issueData(x.value);
+            if (!issue || issue === null)
+                return ui.divText('Issue was not found');
             const creds = await getJiraCreds();
-            if (!issue)
-                return ui.divText('Issue not found');
+            if (!creds)
+                return ui.div('There is no any creds to get tickets\'s data');
 
             const object: Record<string, WithCalcButtonType> = {};
             const column = x && x.cell && x.cell.dart && x.cell.column ? x.cell.column : null; // need to check dart, sometimes its null
@@ -60,6 +77,20 @@ export class JiraGridCellHandler extends DG.ObjectHandler {
 
     renderTooltip(semValue: DG.SemanticValue, context?: any): HTMLElement {
         return this.renderCard(semValue, context);
+    }
+}
+
+function getIssueFields(issue: JiraIssue): Record<string, string> {
+    return {
+        'Summary': issue.fields.summary ?? '',
+        'Type': issue.fields.issuetype?.name ?? '',
+        'Priority': issue.fields.priority?.name ?? '',
+        'Created': issue.fields.created ?? '',
+        'Updated': issue.fields.updated ?? '',
+        'Status': issue.fields.status?.name ?? '',
+        'Assignee': issue.fields.assignee?.displayName ?? '',
+        'Creator': issue.fields.creator?.displayName ?? '',
+        'Labels': issue.fields.labels?.join(', ') ?? '',
     }
 }
 
@@ -146,4 +177,109 @@ function listRenderer(list: string[], withTooltip = true) {
     if (list.join(' ').toString().length > 20 && withTooltip)
         ui.tooltip.bind(nameHost, list.join(' ').toString());
     return nameHost;
+}
+
+class JiraTicketGridCellRenderer extends BatchCellRenderer<JiraIssue> {
+    get name(): string { return 'Jira Ticket'; }
+    get cellType(): string { return 'Jira Ticket'; }
+    get defaultWidth(): number | null { return 100; }
+
+    currentTimeout: any = null;
+    isRunning: boolean = false;
+    loadedTickets: Set<string> = new Set<string>();
+    images: Record<string, HTMLImageElement> = {
+        Bug: image(imgBug),
+        'New Feature': image(imgFeature),
+        Improvement: image(imgImprovement),
+        Epic: image(imgEpic),
+        Task: image(imgTask)
+    };
+
+    constructor() {
+        super();
+        this.cache = cache;
+    }
+
+
+    async loadData(keys: string[]): Promise<Map<string, JiraIssue>> {
+        const result = new Map<string, JiraIssue>();
+        const jiraCreds = await getJiraCreds();
+        if (!jiraCreds) {
+            throw new Error('Could not get Jira CREDS')
+        }
+
+        const chunkSize = 100;
+        let index = 0;
+        while (index < keys.length) {
+            const keysToLoad = keys.slice(index, index + chunkSize);
+            try {
+                const loadedIssues = await loadIssues(jiraCreds.host, new AuthCreds(jiraCreds.userName, jiraCreds.authKey),
+                    0, chunkSize, undefined, keysToLoad);
+                for (let issue of loadedIssues?.issues ?? []) {
+                    result.set(issue.key, issue);
+                }
+            } catch (error) {
+                console.error(`Error loading issues for index range ${index} - ${index + chunkSize}`, error);
+            }
+            index += chunkSize;
+        }
+        return result;
+    }
+
+
+    render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell, cellStyle: DG.GridCellStyle) {
+        const key = gridCell.cell.valueString;
+
+        if (!key || key.length == 0)
+            return;
+
+        const stRen = DG.GridCellRenderer.byName('string')!;
+        const keyHeight = Math.min(25, h);
+        const ticket = cache.get(key);
+        const props = ticket ? getIssueFields(ticket) : null;
+
+        const renderKey = () => {
+            stRen.render(g, x + 17, y, w, keyHeight, gridCell, cellStyle);
+            if (props && (this.images as any)[props.Type]) {
+                g.drawImage((this.images as any)[props.Type], x + 4, y + 4, 16, 16);
+            }
+        };
+
+        if (!cache.has(key)) {
+            const isRenderOnGrid = gridCell?.grid && gridCell?.grid.dart && g.canvas === gridCell?.grid?.canvas;
+
+            g.font = '15px "Font Awesome 5 Pro"';
+            g.fillStyle = '#4d5261';
+            g.fillText('\uf110', x + w / 2, y + h / 2);
+
+            this.retrieveBatch(gridCell, () => { gridCell.render(isRenderOnGrid ? undefined : { context: g, bounds: new DG.Rect(x, y, w, h) }) }, g.canvas);
+        }
+        else {
+            g.clearRect(x, y, w, h);
+            cellStyle.textColor = ticket ? cellStyle.textColor : DG.Color.fromHtml('red');
+            renderKey();
+
+            if (ticket && props) {
+                g.fillStyle = '#4d5261';
+                g.textAlign = 'left';
+
+                if (w > 150) {
+                    g.fillText(props.Summary, x + 20, y + 30);
+                    delete props.Summary;
+                }
+
+                if (h > 40) {
+                    const fields = Object.getOwnPropertyNames(props);
+                    for (let i = 0; i < fields.length; i++) {
+                        g.fillText(fields[i], x + 20, y + 50 + 20 * i, 100);
+                        g.fillText('' + props[fields[i]], x + 80, y + 50 + 20 * i);
+                    }
+                }
+            }
+        }
+    }
+
+    // onMouseMove(gridCell: GridCell, e: MouseEvent) {
+    //     DG.GridCellRenderer.byName('string')?.onMouseMove(gridCell, e);
+    // }
 }

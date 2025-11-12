@@ -1,5 +1,7 @@
 import {category, expect, expectObject, test} from '@datagrok-libraries/utils/src/test';
 import * as grok from 'datagrok-api/grok';
+import * as DG from 'datagrok-api/dg';
+import {_package} from 'package-test';
 // import * as ui from 'datagrok-api/ui';
 // import * as DG from 'datagrok-api/dg';
 
@@ -16,7 +18,7 @@ category('UserSettingsStorage', () => {
     const storageName = 'js-api-storage-name2';
     const value = {'key': 'value'};
     grok.userSettings.addAll(storageName, value);
-    const receivedValue =  grok.userSettings.get(storageName);
+    const receivedValue = grok.userSettings.get(storageName);
     expect(JSON.stringify(receivedValue), JSON.stringify(value));
   });
 
@@ -43,4 +45,29 @@ category('UserSettingsStorage', () => {
     const receivedValue = grok.userSettings.getValue(storageName, key);
     expect(receivedValue == undefined);
   }, {stressTest: true});
-});
+
+  test('credentials', async () => {
+    console.log(_package);
+    const url = `https://${window.location.host}/api/credentials/for/${_package.name}`;
+    const headers = new Headers();
+    headers.append('Accept', 'application/json');
+    headers.append('testAuth', `test`);
+    headers.append('original-url', url);
+    headers.append('Authorization', grok.dapi.token);
+    headers.append('original-method', 'POST');
+
+    const requestOptions: RequestInit = {
+      method: 'POST',
+      headers: headers,
+      redirect: 'follow',
+
+      body: JSON.stringify({test: 'test'}),
+    };
+    const response = await grok.dapi.fetchProxy(url, requestOptions);
+    
+    const credentialsParams = (await _package.getCredentials()).parameters;
+
+    expect(credentialsParams['test'], 'test');
+  });
+
+}, {owner: 'ppolovyi@datagrok.ai'});

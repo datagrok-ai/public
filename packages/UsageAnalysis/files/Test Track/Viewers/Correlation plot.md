@@ -1,21 +1,30 @@
 ### Correlation plot
 
-1. Open the **SPGI dataset** by pressing 'star' icon in TestTrack (with tooltip "Open test data").
-2. On the **Viewers tab**, click **Correlation plot**. The viewer opens.
-3. Check Column Width Adjustment. Click and drag the edges of the column headers to resize column`s width.
-  * Expected Result: The column width should adjust smoothly, and the data should be not overlap or disappear from the cell.
-4. Check changing the order of columns. Click on any column header in the Correlation Plot. While holding down the left mouse button, drag the column header to the left or right.
-  * Expected Result: The order of the columns should change according to the direction in which the column was dragged.
-5. Identify a cell with numeric data within the Correlation Plot. Double-click on the selected cell.
-  * Expected Result: A Scatterplot Viewer should open.
-6. Right-Click on a Cell.   
-  * Check the "Save as Table" option in the context menu. (Expected Result: The selected data should be saved as a table, witch opens is a new view)
-  * Checking/unchecking the  "Show Person R" checkbox shoukd influence the viewer
-7. On the **Correlation plot** viewer, click the **Gear** icon. The **Property Pane** opens.
-8. Modify Column/Row Visibility and Order in Viewer Settings: In the X or Y axis menu, change the order of the columns. Hide some of the columns or rows by unchecking their checkboxes.
-  * Expected Result: The Correlation Plot should reflect the changes in the column or row order and the visibility of the hidden columns or rows.
-9. Modify various properties in **Property Pane**:
-  * Expected Result: Changes to the properties should be reflected in the Correlation Plot without errors, and the plot should update accordingly.
+- Open the **SPGI dataset** by clicking the 'Star' icon in TestTrack (tooltip: Open test data).
+- Go to the Viewers tab and click **Correlation plot**.
+1. Adjust **column width**
+- Click and drag the edge of any column header to resize it.
+  - Column width adjusts smoothly without overlapping or cutting off the content.
+2. Change **column order**
+- Click and drag any column header left or right.
+  - Column order should update accordingly.
+3. Open Scatter Plot
+- Double-click any numeric cell in the Correlation Plot. A Scatter Plot viewer opens showing the selected data.
+4. Open as Table action
+- Right-click on any cell: Select **Open as Table**. A new table view opens with selected data.
+- Toggle Show Pearson R checkbox. Viewer updates accordingly based on the checkbox state.
+5. Context panel - Gear Icon
+- Click the gear icon in the viewer to open the context panel.
+- Modify Axis Visibility and Order
+  - In X or Y axis settings reorder columns and uncheck checkboxes to hide columns or rows.
+  - Viewer updates to reflect changes in order and visibility.
+6. Test other **properties**
+- Modify additional settings in the context panel (colors, grid lines, tooltips, etc.).
+  - All changes apply smoothly without errors. Viewer updates correctly.
+7. Test **Popup menu**
+- Right mouse click on the viewer > popup menu opens.
+  - Check all possible actions.
+  - Main attention to Grid > Order or Hide Columns dialog: column selecting / unselecting should not cause row names disappearing [#3492](https://github.com/datagrok-ai/public/issues/3492)
 
 ---
 {

@@ -80,4 +80,4 @@ category('UI: Tags', () => {
   after(async () => {
     grok.shell.closeAll();
   });
-}, { clear: false });
+}, { clear: false, owner: 'drizhinashvili@datagrok.ai' });

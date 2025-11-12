@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/monomer-library';
 
 import {SeqHelper} from '../seq-helper';
 
@@ -14,7 +14,8 @@ export async function getMolColumnFromHelm(
 ): Promise<DG.Column<string>> {
   const seqHelper: SeqHelper = _package.seqHelper as SeqHelper;
   const converter = await seqHelper.getHelmToMolfileConverter(monomerLib);
-  const molCol = converter.convertToRdKitBeautifiedMolfileColumn(helmCol, chiralityEngine, _package.rdKitModule, monomerLib);
+  const molCol = converter
+    .convertToRdKitBeautifiedMolfileColumn(helmCol, chiralityEngine, _package.rdKitModule, monomerLib);
   molCol.semType = DG.SEMTYPE.MOLECULE;
   return molCol;
 }

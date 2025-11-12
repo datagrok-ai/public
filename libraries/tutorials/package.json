@@ -8,33 +8,34 @@
     "access": "public"
   },
   "friendlyName": "Tutorials",
-  "version": "1.5.2",
+  "version": "1.7.4",
   "description": "Helpers for creating tutorials",
   "dependencies": {
-    "@datagrok-libraries/compute-utils": "^1.39.5",
-    "@datagrok-libraries/utils": "^4.3.0",
+    "@datagrok-libraries/compute-utils": "^1.44.9",
+    "@datagrok-libraries/utils": "^4.5.7",
     "cash-dom": "^8.1.4",
-    "datagrok-api": "^1.22.1",
+    "datagrok-api": "^1.25.0",
     "dayjs": "=1.11.10",
     "rxjs": "6.6.7"
   },
   "devDependencies": {
+    "@types/wu": "^2.1.44",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
+    "datagrok-tools": "^4.14.20",
     "dts-bundle-generator": "^7.0.0",
     "eslint": "^8.57.1",
     "eslint-config-google": "^0.14.0",
     "ts-loader": "^9.5.1",
-    "typescript": "^5.6.3",
-    "@types/wu": "^2.1.44"
+    "typescript": "^5.6.3"
   },
   "scripts": {
     "link": "npm link",
     "link-api": "npm link datagrok-api",
-    "link-all": "npm link datagrok-api @datagrok-libraries/utils",
-    "build": "tsc",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/compute-utils",
+    "build": "grok check --soft && tsc",
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
-    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm run build"
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/compute-utils run build && npm run build"
   }
 }

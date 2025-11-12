@@ -6,14 +6,15 @@ import * as type from './types';
 import * as C from '../utils/constants';
 
 import {getActivityDistribution, getStatsTableMap} from '../widgets/distribution';
-import {getDistributionPanel, getDistributionTable} from './misc';
+import {getDistributionPanel, getDistributionTable, getMutationCliffsDistributionTable} from './misc';
 import {getAggregatedColumnValues, MonomerPositionStats} from './statistics';
 import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 
 export type TooltipOptions = {
   fromViewer?: boolean, isMutationCliffs?: boolean, x: number, y: number, monomerPosition: type.SelectionItem,
   mpStats: MonomerPositionStats, aggrColValues?: StringDictionary,
-  isMostPotentResidues?: boolean, cliffStats?: type.MutationCliffStats['stats']
+  isMostPotentResidues?: boolean, cliffStats?: type.MutationCliffStats['stats'],
+  postfixes?: StringDictionary, additionalStats?: StringDictionary, cliffIndexes?: Map<type.INDEX, type.INDEXES>,
 };
 
 /**
@@ -50,15 +51,17 @@ export function showTooltipAt(df: DG.DataFrame, activityCol: DG.Column<number>, 
   options.fromViewer ??= false;
   options.isMutationCliffs ??= false;
   options.isMostPotentResidues ??= false;
-  if (!options.cliffStats || !options.isMutationCliffs) {
+  options.additionalStats ??= {};
+  if (!options.cliffStats || !options.isMutationCliffs || !options.cliffIndexes) { // monomer position stats
     const stats = options
       .mpStats[options.monomerPosition.positionOrClusterType]![options.monomerPosition.monomerOrCluster];
     if (!stats?.count)
       return null;
 
 
-    const mask = DG.BitSet.fromBytes(stats.mask.buffer.buffer, activityCol.length);
-    const hist = getActivityDistribution(getDistributionTable(activityCol, mask), true);
+    const mask = DG.BitSet.fromBytes(stats.mask.buffer.buffer as ArrayBuffer, activityCol.length);
+    mask.and(df.filter);
+    const hist = getActivityDistribution(getDistributionTable(activityCol, mask, df), true);
     const tableMap = getStatsTableMap(stats);
     if (options.fromViewer) {
       tableMap['Mean difference'] = `${tableMap['Mean difference']}${options.isMostPotentResidues ? ' (size)' : ''}`;
@@ -66,26 +69,37 @@ export function showTooltipAt(df: DG.DataFrame, activityCol: DG.Column<number>, 
         tableMap['p-value'] = `${tableMap['p-value']}${options.isMostPotentResidues ? ' (color)' : ''}`;
     }
     const aggregatedColMap = options.aggrColValues ?? getAggregatedColumnValues(df, columns, {mask: mask});
-    const resultMap = {...tableMap, ...aggregatedColMap};
+    const resultMap = {...options.additionalStats, ...tableMap, ...aggregatedColMap};
+    for (const [key, value] of Object.entries(options.postfixes ?? {})) {
+      if (resultMap[key])
+        resultMap[key] = `${resultMap[key]}${value}`;
+    }
     const distroStatsElem = getDistributionPanel(hist, resultMap);
     ui.tooltip.show(distroStatsElem, options.x, options.y);
+    if (!options.fromViewer)
+      setTimeout(() => hist.props.legendVisibility = 'Never', 100); // cause rerendering
     return distroStatsElem;
-  } else {
+  } else { // mutation cliffs
     const stats = options.cliffStats?.get(options.monomerPosition.monomerOrCluster)
       ?.get(options.monomerPosition.positionOrClusterType)
       ;
     if (!stats)
       return null;
-    const mask = DG.BitSet.fromBytes(stats.mask.buffer.buffer, activityCol.length);
-    const hist = getActivityDistribution(getDistributionTable(activityCol, mask), true);
-    const tableMap = getStatsTableMap(stats);
+    const mask = DG.BitSet.fromBytes(stats.mask.buffer.buffer as ArrayBuffer, activityCol.length);
+    mask.and(df.filter);
+    const hist = getActivityDistribution(
+      getMutationCliffsDistributionTable(activityCol, options.cliffIndexes, options.monomerPosition.monomerOrCluster),
+      true);
+    const countName = 'MP in cliffs count';
+    const tableMap = getStatsTableMap(stats, {countName: countName});
     if (options.fromViewer) {
       tableMap['Mean difference'] = `${tableMap['Mean difference']}${' (Color)'}`;
-      if (tableMap['Count'])
-        tableMap['Count'] = `${tableMap['Count']}${' (Size)'}`;
+      if (tableMap[countName])
+        tableMap[countName] = `${tableMap[countName]}${' (Size)'}`;
+      options.additionalStats!['Unique count'] = mask.trueCount.toString();
     }
     const aggregatedColMap = options.aggrColValues ?? getAggregatedColumnValues(df, columns, {mask: mask});
-    const resultMap = {...tableMap, ...aggregatedColMap};
+    const resultMap = {...options.additionalStats, ...tableMap, ...aggregatedColMap};
     const distroStatsElem = getDistributionPanel(hist, resultMap);
     ui.tooltip.show(distroStatsElem, options.x, options.y);
     return distroStatsElem;

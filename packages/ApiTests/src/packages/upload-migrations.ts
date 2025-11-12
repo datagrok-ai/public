@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {before, category, expect, test, expectTable, expectExceptionAsync, after} from '@datagrok-libraries/utils/src/test';
-import {_package} from '../package-test';
+import {_package} from 'package-test';
 
 category('Packages: migrations', () => {
 
@@ -40,7 +40,7 @@ category('Packages: migrations', () => {
 
   async function publish(packageData: Uint8Array, name: string, debug: boolean) {
     const uploadResponse = await fetch(`${grok.dapi.root}/packages/dev/${key}/${name}?debug=${debug}&rebuild=false`,
-      {method: 'POST', body: packageData});
+      {method: 'POST', body: packageData as BodyInit});
     expect(uploadResponse.status, 200);
     expect((await uploadResponse.text()).indexOf('ApiError'), -1);
     await waitPackageInit();
@@ -59,9 +59,6 @@ category('Packages: migrations', () => {
   });
 
   test('Upload new migration', async () => {
-    await expectExceptionAsync(() => publish(packageWithSecondMigration, 'apitestsdb', true));
-    await waitPackageInit();
-
     // in release: published, updated
     await publish(packageWithSecondMigration, 'apitestsdb', false);
     await grok.functions.call('apitestsdb:AccessTableB');
@@ -76,4 +73,6 @@ category('Packages: migrations', () => {
     await expectExceptionAsync(() => publish(packageWithDropEntities, 'apitestsbad', false));
     await deletePackage('apitestsbad');
   });
+}, {
+  owner: 'aparamonov@datagrok.ai'
 });

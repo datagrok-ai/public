@@ -1,9 +1,7 @@
-import * as grok from 'datagrok-api/grok';
-import * as DG from 'datagrok-api/dg';
+import type * as _DG from 'datagrok-api/dg';
+declare let DG: typeof _DG;
 
-import { category, test, expect, expectTable, awaitCheck } from '@datagrok-libraries/utils/src/test';
-
-const GDF = grok.dapi.functions;
+import { category, test, awaitCheck } from '@datagrok-libraries/utils/src/test';
 
 category('Dapi: vector scripts and functions', async () => {
 
@@ -68,7 +66,7 @@ category('Dapi: vector scripts and functions', async () => {
         `incorrect value in newColScalar2 after initial value changed, actual: ${df.col('newColScalar2')?.get(0)}, expected: 3_11`, 1000);
   })
 
-});
+}, {owner: 'mdolotova@datagrok.ai'});
 
 async function testVectorFunc(formula: string, results: string[], colToChange: string, newVals: number[], resultsAfterValChange: string[]): Promise<void> {
     const df = DG.DataFrame.fromCsv(`x, y, val

@@ -1,0 +1,46 @@
+{
+  "env": {
+    "browser": true,
+    "es2020": true
+  },
+  "extends": [
+    "google"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "project": "./packages/MetabolicGraph/tsconfig.json",
+    "sourceType": "module"
+  },
+  "plugins": [
+    "@typescript-eslint"
+  ],
+  "rules": {
+    "indent": ["error", 2, {"SwitchCase": 0}],
+    "max-len": ["error", 320],
+    "no-throw-literal": "error",
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": ["warn", { "varsIgnorePattern": "^(_|ui$|grok$|DG$)", "argsIgnorePattern": "^_"}],
+    "require-jsdoc": "off",
+    "valid-jsdoc": "off",
+    "spaced-comment": "off",
+    "linebreak-style": "off",
+    "curly": [
+      "error",
+      "multi-or-nest"
+    ],
+    "brace-style": [
+      "error",
+      "1tbs",
+      {
+        "allowSingleLine": true
+      }
+    ],
+    "block-spacing": [2, "always"],
+    "comma-dangle": "off",
+    "comma-spacing": "error",
+    "comma-style": "error",
+    "guard-for-in": "off",
+    "space-infix-ops": "error"
+  }
+}

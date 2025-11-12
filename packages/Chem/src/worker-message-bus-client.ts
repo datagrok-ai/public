@@ -18,4 +18,8 @@ export class WorkerMessageBusClient {
       this._worker.postMessage({op: op, args: args}, [channel.port2]);
     });
   }
+
+  terminate() {
+    this._worker.terminate();
+  }
 }

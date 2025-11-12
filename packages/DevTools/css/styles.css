@@ -71,18 +71,27 @@
 }
 
 .dt-res-string {
-  align-items: center;
+  align-items: flex-end;
+  justify-content: space-between;
 }
 
-.dt-res-string > div > span:first-child {
+.dt-res-string > div {
+  padding: 20px;
+}
+
+.dt-res-string > div > p {
+  margin: 2px 0;
+}
+
+.dt-res-string > div > p:first-child {
   color: var(--green-2);
 }
 
-.dt-res-string > div > span:nth-child(2) {
+.dt-res-string > div > p:nth-child(2) {
   color: var(--red-3);
 }
 
-.dt-res-string > div > span:last-child {
+.dt-res-string > div > p:last-child {
   color: var(--orange-2);
   padding-right: 10px;
 }
@@ -102,4 +111,8 @@
 .tm-button label {
   order: 1;
   margin-left: 5px;
+}
+
+.dt-res-string > button{
+  padding: 20px !important;
 }

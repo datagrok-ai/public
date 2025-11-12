@@ -27,7 +27,7 @@ export class UaView extends DG.ViewBase {
     this.box = true;
   }
 
-  async tryToinitViewers(path?: string): Promise<void> {
+  async tryToInitViewers(path?: string): Promise<void> {
     if (!this.initialized) {
       this.initialized = true;
       await this.initViewers(path);

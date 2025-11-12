@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "outDir": "dist-node",
+    "rootDir": "src",
+    "sourceMap": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "noEmitOnError": false,
+    "allowJs": true,
+    "baseUrl": "src",
+    "paths": {
+      "package-test": ["./package-test-node"]
+    }
+  },
+  "include": ["src/package-test-node.ts", "src/dapi/*", "package.json"]
+}

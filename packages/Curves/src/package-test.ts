@@ -1,6 +1,6 @@
-import * as DG from "datagrok-api/dg";
+import * as DG from 'datagrok-api/dg';
 
-import {runTests, tests, TestContext, initAutoTests as initTests } from '@datagrok-libraries/utils/src/test';
+import {runTests, tests, TestContext, initAutoTests as initTests} from '@datagrok-libraries/utils/src/test';
 
 import './tests/detector-tests';
 import './tests/curves-cell-renderer-tests';
@@ -22,5 +22,5 @@ export async function test(category: string, test: string, testContext: TestCont
 
 //name: initAutoTests
 export async function initAutoTests() {
-  await initTests(_package, _package.getModule('package-test.js'));
+  //await initTests(_package, _package.getModule('package-test.js'));
 }

@@ -2,15 +2,53 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {InputForm, Viewer, DGBigButton, DGButton} from '@datagrok-libraries/webcomponents/src';
-
+import {
+  InputForm, Viewer, DGBigButton,
+  DGButton, DGIconFA,
+  DGToggleInput, DGComboPopup, DGMarkdown,
+  ValidationIcon,
+  DGIconImage,
+} from '@datagrok-libraries/webcomponents';
+import {DockSpawnTsWebcomponent} from '@datagrok-libraries/dock-spawn-dg';
+import './styles.css';
+export * from './package.g';
 export const _package = new DG.Package();
 
-//tags: autostart
-export function registerWebcomponents() {
-  console.log('registerWebcomponents');
-  customElements.define('dg-viewer', Viewer);
-  customElements.define('dg-input-form', InputForm);
-  customElements.define('dg-button', DGButton, {extends: 'button'});
-  customElements.define('dg-big-button', DGBigButton, {extends: 'button'});
+let inited = false;
+
+
+export class PackageFunctions {
+  @grok.decorators.init()
+  static async init() {
+    if (inited) return;
+
+    customElements.define('dg-viewer', Viewer);
+    customElements.define('dg-input-form', InputForm);
+    customElements.define('dg-button', DGButton, {extends: 'button'});
+    customElements.define('dg-big-button', DGBigButton, {extends: 'button'});
+    customElements.define('dg-icon-fa', DGIconFA);
+    customElements.define('dg-icon-image', DGIconImage);
+    customElements.define('dg-toggle-input', DGToggleInput);
+    customElements.define('dg-combo-popup', DGComboPopup);
+    customElements.define('dock-spawn-ts', DockSpawnTsWebcomponent);
+    customElements.define('dg-markdown', DGMarkdown);
+    customElements.define('dg-validation-icon', ValidationIcon);
+    inited = true;
+
+    await Promise.all([
+      customElements.whenDefined('dg-viewer'),
+      customElements.whenDefined('dg-input-form'),
+      customElements.whenDefined('dg-button'),
+      customElements.whenDefined('dg-big-button'),
+      customElements.whenDefined('dg-icon-fa'),
+      customElements.whenDefined('dg-icon-image'),
+      customElements.whenDefined('dg-toggle-input'),
+      customElements.whenDefined('dg-combo-popup'),
+      customElements.whenDefined('dock-spawn-ts'),
+      customElements.whenDefined('dg-markdown'),
+      customElements.whenDefined('dg-validation-icon'),
+    ]);
+
+    console.log('webcomponents registered');
+  }
 }

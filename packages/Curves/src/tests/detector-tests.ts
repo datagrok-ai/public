@@ -1,8 +1,9 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
-import {FitConstants} from '../fit/const';
+import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 
 
 category('detectors', () => {
@@ -15,7 +16,7 @@ category('detectors', () => {
     const col2 = df.columns.byName('json chart 1');
     const col3 = df.columns.byName('json chart 2');
     await grok.data.detectSemanticTypes(df);
-    
+
     expect(col1.semType, FitConstants.FIT_SEM_TYPE);
     expect(col2.semType, FitConstants.FIT_SEM_TYPE);
     expect(col3.semType, FitConstants.FIT_SEM_TYPE);
@@ -27,7 +28,7 @@ category('detectors', () => {
     const df = DG.DataFrame.fromCsv(testCsv);
     const col = df.columns.byName('xmlCurveFitChart');
     await grok.data.detectSemanticTypes(df);
-    
+
     expect(col.semType, FitConstants.FIT_SEM_TYPE);
     expect(col.tags[FitConstants.TAG_FIT_CHART_FORMAT], FitConstants.TAG_FIT_CHART_FORMAT_3DX);
   });

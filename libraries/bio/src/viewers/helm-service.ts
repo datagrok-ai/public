@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {HelmMol, HelmType, IHelmBio, Mol} from '../helm/types';
 import {PropsBase, RenderServiceBase} from '../utils/cell-renderer-async-base';
-import {IMonomerLibBase} from '../types/index';
+import {IMonomerLibBase} from '../types/monomer-library';
 
 export class HelmProps extends PropsBase {
   public constructor(

@@ -10,8 +10,8 @@ let descriptorsCached: object[];
 async function getContainer() {
   if (!chemContainer)
     chemContainer = await grok.dapi.docker.dockerContainers.filter('name = "chem-chem"').first();
-  if (chemContainer.status !== 'started' && chemContainer.status !== 'checking')
-    await grok.dapi.docker.dockerContainers.run(chemContainer.id, true);
+  // if (chemContainer.status !== 'started' && chemContainer.status !== 'checking')
+  //   await grok.dapi.docker.dockerContainers.run(chemContainer.id, true);
   return chemContainer;
 }
 
@@ -30,9 +30,11 @@ export async function calculateDescriptors(molecules: DG.Column, descriptors: st
   const result: object = await gzipPostRequest({'molecules': molecules.toList(), 'descriptors': descriptors},
     '/chem/descriptors');
   const colArray = Array<DG.Column>(Object.entries(result).length);
+  let counter = 0;
   for (const [key, value] of Object.entries(result)) {
     const column = DG.Column.fromList(value['type'], key, value['value']);
-    colArray.push(column);
+    colArray[counter] = column;
+    counter++;
   }
   return colArray;
 }

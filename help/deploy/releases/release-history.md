@@ -2,34 +2,451 @@
 title: "Release history"
 slug: develop/admin/releases/release-history
 position: 6 # float position is supported
+hide_search: true
+hide_sidebar: true
+unlisted: true
 ---
 
 ## Latest version
 
-| Service                                                   | Docker Image                                                                                      |
-|-----------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [Datagrok](../../develop/under-the-hood/infrastructure.md#datagrok-components)      | [datagrok/datagrok:1.18.6](https://hub.docker.com/r/datagrok/datagrok)                            |
-| [Grok Connect](../../access/access.md#data-connection) | [datagrok/grok_connect:2.1.10](https://hub.docker.com/r/datagrok/grok_connect)                    |
-| Grok Spawner                                              | [datagrok/grok_spawner:1.4.8](https://hub.docker.com/r/datagrok/grok_spawner)                     |
-| [Grok Compute](../../develop/under-the-hood/infrastructure.md#grok-compute)         | [datagrok/grok_compute:1.5.5](https://hub.docker.com/r/datagrok/grok_compute)                     |
-| [Jupyter Kernel Gateway](../../compute/scripting/scripting.mdx)   | [datagrok/jupyter_kernel_gateway:1.6.2](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) |
-| [Jupyter Notebook](../../compute/jupyter-notebook.md)  | [datagrok/jupyter_notebook:1.1.1](https://hub.docker.com/r/datagrok/jupyter_notebook)             |
-| [H2O](../../develop/under-the-hood/infrastructure.md#h2o)                           | [datagrok/h2o:1.1.1](https://hub.docker.com/r/datagrok/h2o)                                       |
-| [CVM Nginx](../../develop/under-the-hood/infrastructure.md#load-balancer)           | [datagrok/cvm_nginx:1.10.0](https://hub.docker.com/r/datagrok/cvm_nginx)                          |
+| Service                                                                   | Docker Image                                                                                      |
+|---------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
+| [Datagrok](../../develop/under-the-hood/infrastructure.md#1-core-components) | [datagrok/datagrok:1.18.6](https://hub.docker.com/r/datagrok/datagrok)                            |
+| [Grok Connect](../../develop/under-the-hood/infrastructure.md#3-external-database-connectivity) | [datagrok/grok_connect:2.1.10](https://hub.docker.com/r/datagrok/grok_connect)                    |
+| Grok Spawner                                                              | [datagrok/grok_spawner:1.4.8](https://hub.docker.com/r/datagrok/grok_spawner)                     |
+| [Jupyter Kernel Gateway](../../compute/scripting/scripting.mdx)           | [datagrok/jupyter_kernel_gateway:1.6.2](https://hub.docker.com/r/datagrok/jupyter_kernel_gateway) |
+
 
 See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
+
+## 2025-11-03 Datagrok 1.26.7 release
+
+* Fixed Databrics schema browser
+
+## 2025-10-31 Datagrok 1.26.6 release
+
+### Improvements:
+
+* Added support for IAP short token format.
+* Added the ability to move and copy files in Google Cloud Storage.
+
+### Fixed:
+
+* CSV parsing issue in Google Cloud Storage
+* OpenID autologin behavior
+* GPU machine selection priority for Docker containers
+
+## 2025-10-22 Datagrok 1.26.5 release
+
+### Improvements and fixes:
+
+* Added support for SAML authentication
+* Introduced support for user account impersonation in Google Cloud Storage
+* Projects: Added support for saving projects created via custom scripts with data synchronization
+
+## 2025-07-25 Datagrok 1.26.0 release
+
+The Datagrok 1.26.0 release focuses on improved data access and collaboration, enhanced visualization capabilities, and navigation UI/UX improvements.
+
+### Breaking changes
+
+This release introduces non-backward-compatible database changes. You can upgrade to version 1.26.0 automatically; however, once you migrate the database, older versions (including 1.25) will no longer be compatible. In case you need to roll back to 1.25.N, you must manually revert the changes or restore a pre-upgrade backup
+
+### Main updates
+
+* Introducing **Spaces**, a new section in **Browse** that helps you organize, access, and share projects, files, folders, connections, and other frequently used items, making collaboration easier
+* Enhanced **Power Search** on the **Home Page** now lets you quickly find tables, queries, functions, projects, and help topics all from one place
+* A new **Home Page** widget, **Activity Dashboard**, provides a unified view of recent activity, shared items, favorites, personal actions, and notifications, so you can easily track and access key updates
+* **Complex calculated columns**: you can now use a single vector function to generate multiple columns in one step, so you no longer have to add each column manually
+* **Python Celery task wrapper** enables seamless integration of Python Docker applications with Datagrok,
+running Python functions as Celery tasks in isolated containers while the platform handles orchestration, task queuing, and results. For details, see [Creating Python Docker apps](https://datagrok.ai/help/develop/how-to/packages/python-functions)
+
+### Platform
+
+* [#2835](https://github.com/datagrok-ai/public/issues/2835): Data-Link Tables: Enabled editing of data-link tables without needing to unlink them
+* [#2919](https://github.com/datagrok-ai/public/issues/2919): Added support for capture groups in regular expressions
+* [#3346](https://github.com/datagrok-ai/public/issues/3346): Added option to export selected dataframe as SDF with customization
+* Provided the possibility to send email notifications with membership requests
+* Added the ability to restrict sharing within user groups
+* Enabled custom function call editors that integrate into the Datagrok UI, allowing tailored parameter input forms. For details, see [Custom function editors](https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation#custom-function-editors)
+  
+* Fixed: 
+  * [#3325](https://github.com/datagrok-ai/public/issues/3325): CSV Export: Pinned columns are not saved when "Visible Columns Only" is enabled 
+  * [#2654](https://github.com/datagrok-ai/public/issues/2654): Projects: Error when using joining table function  
+  * [#3127](https://github.com/datagrok-ai/public/issues/3127): Projects: Datasync joined tables error when reopened in project/dashboard  
+  * [#3269](https://github.com/datagrok-ai/public/issues/3269): XLSX files with multiple sheets: data sync is only provided for the first sheet  
+  * [#3300](https://github.com/datagrok-ai/public/issues/3300): Projects: Data sync save setting resets to OFF after reopening saved data sync project  
+  * Find and Replace: Finding all empty values is not supported  
+  * Float column formats: Some different formats look the same in examples  
+  
+#### Browse
+
+* Browse tree navigation improvements: the selected directory is now sticky, so it stays in view when you navigate between sections, making it easier to keep your context while browsing
+* Redesigned Docker UX with added **Resources**, **Logs**, and **Build logs** sections for easier container management and monitoring
+
+### [JS API](https://datagrok.ai/help/develop/js-api)
+
+* Added the alias for 'memberships', addressing the previous limitation that required using group.parents in the JavaScript API. For details, see [how to get a list of users](https://community.datagrok.ai/t/how-to-delete-users-from-grok-server/613/7)
+
+### Viewers
+
+* [#3322](https://github.com/datagrok-ai/public/issues/3322): Split date-based viewer timeline by time periods (week, month, quarter, year)
+* [#3077](https://github.com/datagrok-ai/public/issues/3077): Coloring: Added the ability to define colors for linear coloring (min, max, inflection point)
+* [#3303](https://github.com/datagrok-ai/public/issues/3303): Legend now considers categories filtering
+* [#3394](https://github.com/datagrok-ai/public/issues/3394): Added an option to adjust the font size of axis titles (column names), currently available for box plot, scatterplot, pie chart, bar chart, histogram, and density plot viewers
+* [Box plot](../../visualize/viewers/box-plot.md): [#3373](https://github.com/datagrok-ai/public/issues/3373): Added the ability to select date/time column for X-axis and aggregation by month/year/quarter 
+* [PC plot](../../visualize/viewers/pc-plot.md): Added box plot and violin plot visualization
+* [Line Chart](../../visualize/viewers/line-chart.md): Added an option to choose column for markers
+* Fixed:
+  * [Tile Viewer](../../visualize/viewers/tile-viewer.md):  
+    * [#3416](https://github.com/datagrok-ai/public/issues/3416): Tile Viewer editor: Renamed "Reset" button for clarity  
+    * [#3343](https://github.com/datagrok-ai/public/issues/3343): Freezes when opening "Properties > Data > Lanes > Id"  
+    * [#3344](https://github.com/datagrok-ai/public/issues/3344): Not updating after editing calculated column result  
+  * [Trellis plot](../../visualize/viewers/trellis-plot.md):  
+    * [#3389](https://github.com/datagrok-ai/public/issues/3389): Formula line preview for Scatterplot in Trellis plot does not reflect axes configuration  
+    * [#3390](https://github.com/datagrok-ai/public/issues/3390): Formula lines on Scatterplot within Trellis plot are added incorrectly  
+  * [Pivot table](../../visualize/viewers/pivot-table.md): [#3414](https://github.com/datagrok-ai/public/issues/3414): Fixed duplicated tables on Pivot added via properties
+  * [#3398](https://github.com/datagrok-ai/public/issues/3398): Legend coloring: Icon change and direct access for numerical color editing
+  * [#3410](https://github.com/datagrok-ai/public/issues/3410): Designed Form: Fixed alignment of some column values  
+
+### [Grid](../../visualize/viewers/grid.md)
+
+Fixed:
+
+* [#3327](https://github.com/datagrok-ai/public/issues/3327): Coloring: Fails to apply to text after project reopening  
+* [#3406](https://github.com/datagrok-ai/public/issues/3406): Coloring: Resetting applied categorical coloring in some cases  
+* [#3413](https://github.com/datagrok-ai/public/issues/3413): Issues with color coding saving in Grid  
+* [#3376](https://github.com/datagrok-ai/public/issues/3376): Tooltip not shown after changing "Show" option in grid menu  
+* [#3220](https://github.com/datagrok-ai/public/issues/3220): Context menu hidden on last columns with no content on the right  
+
+### [Scatterplot](../../visualize/viewers/scatter-plot.md)
+
+* [#3339](https://github.com/datagrok-ai/public/issues/3339): Improved scatterplot whiskers
+* [#3404](https://github.com/datagrok-ai/public/issues/3404): Harmonizes min/max and range selection for whiskers
+* Fixed:
+  * [#3338](https://github.com/datagrok-ai/public/issues/3338): Whiskers: Incorrect behavior if only one of Min/Max columns selected  
+  * [#1434](https://github.com/datagrok-ai/public/issues/1434): Colors not updating after turning off color coding  
+  * [#3204](https://github.com/datagrok-ai/public/issues/3204): Formula lines cannot be edited in some cases  
+  * [#3323](https://github.com/datagrok-ai/public/issues/3323): Labels: Drag option not working for All or Filtered  
+  * [#3392](https://github.com/datagrok-ai/public/issues/3392): Formula lines: Axis in dialog should match viewer  
+  * [#3290](https://github.com/datagrok-ai/public/issues/3290): Color and Marker legend incorrect structure rendering
+
+### [Filter Panel](../../visualize/viewers/filters.md):  
+  * [#3341](https://github.com/datagrok-ai/public/issues/3341): Expression filter: Added support for values separated by line breaks
+  * Histogram: Improved filters performance for large datasets
+
+### Packages
+
+#### [Bio](https://github.com/datagrok-ai/public/tree/master/packages/Bio/CHANGELOG.md)
+
+* [MSA Header Enhancements](https://community.datagrok.ai/t/plugin-releases/775/122):
+  * Added header tracks: Conservation and WebLogo
+  * Added tooltips for the WebLogo header
+  * Improved performance of Conservation and WebLogo calculations
+* Sequence Scrolling and Positioning:
+  * Added optional scrolling header for short sequences
+  * Improved detection of the maximum sequence length
+  * Improved display of the current position
+* Performance Improvements:
+  *  Added faster methods for retrieving monomers at specified positions
+
+#### [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem/CHANGELOG.md)
+
+* [#3302](https://github.com/datagrok-ai/public/issues/3302): Multiple scaffold trees: Added the ability to apply scaffold tree colors to scatterplot
+* [#3365](https://github.com/datagrok-ai/public/issues/3365): Scaffold Tree: Added Description field to viewer
+* Fixed:
+  * [#3408](https://github.com/datagrok-ai/public/issues/3408): Scaffold tree: Molecule coloring disappears after closing the tree
+  * [#3399](https://github.com/datagrok-ai/public/issues/3399): Scaffold tree: Prevented modification of scaffold colors from scatterplot or other viewers
+
+#### [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts/CHANGELOG.md)
+
+* [#3420](https://github.com/datagrok-ai/public/issues/3420): Tree viewer: Moved `Show mouse over line` to **Style** section on the **Context Panel**
+* [#3298](https://github.com/datagrok-ai/public/issues/3298): Tree viewer: Ctrl+Click updates, coloring, dash line behavior
+* Fixed:
+  * [#3307](https://github.com/datagrok-ai/public/issues/3307): Tree viewer: Upper node not clickable  
+  * [#3377](https://github.com/datagrok-ai/public/issues/3377): Sunburst: Tooltip displays wrong number of rows  
+  * [#3421](https://github.com/datagrok-ai/public/issues/3421): Tree viewer: Different row source behavior when changing `On Click` property  
+  * [#3397](https://github.com/datagrok-ai/public/issues/3397): Tree viewer: Selection and clicking issues
+
+#### [Diff Studio](https://github.com/datagrok-ai/public/tree/master/packages/DiffStudio/CHANGELOG.md)
+
+* Model Analysis: Improved fitting and sensitivity analysis
+* Sensitivity Analysis: implemented parallel evaluation of Diff Studio models, which significantly speeds up calculations
+* Parameters optimization: improved usability and consistent line chart colors
+
+#### [EDA](https://github.com/datagrok-ai/public/tree/master/packages/EDA/CHANGELOG.md)
+
+* Quadratic PLS: Implemented quadratic partial least squares (PLS) regression
+
+## 2025-03-28 Datagrok 1.25.0 release
+
+The Datagrok 1.25.0 release focuses on enhancing the UI/UX, visualizations, and overall workflow efficiency
+
+### Breaking changes
+
+Browse UX: Site markup, UI API, and CSS styles have been updated. If your packages or integrations rely on specific UI elements or styling, it is recommended to check for compatibility and make the necessary adjustments.
+
+### Main updates
+ * **New Browse UX**: three new tabs—Toolbox, Dashboards, and Favorites—make navigation more intuitive and organized
+* **Content-specific file viewers**: improved file viewer support now detects both format and content, allowing files like .xlsx to open in the most suitable viewer—e.g., plain data opens as tables, while plate-formatted files open in the [plate reader](https://github.com/datagrok-ai/public/tree/master/packages/Curves#plate-readers)
+* **Harmonized server settings**: we removed unchanged settings (hosts, ports, credentials), eliminated empty entries, and standardized service configurations
+
+ ### Viewers
+
+* Mini-legend: added an interactive tooltip 
+* [#2303](https://github.com/datagrok-ai/public/issues/2303): Provided 3-point-color scheme for gradient colors 
+* [Box plot](../../visualize/viewers/box-plot.md):  [#3292](https://github.com/datagrok-ai/public/issues/3292): Implemented zoom persistence for visualizations in layouts
+* Pivot table: [#3199](https://github.com/datagrok-ai/public/issues/3199): Added the ability to open data in new workspace
+* [Trellis plot](../../visualize/viewers/trellis-plot.md): Enabled filter on cell click
+* [PC plot](../../visualize/viewers/pc-plot.md): Now features legend and column coloring
+* [ Pie chart](../../visualize/viewers/pie-chart.md): Added max pie circle size property
+* Fixed for [Line Chart](../../visualize/viewers/line-chart.md):
+   * [#3288](https://github.com/datagrok-ai/public/issues/3288): Added more detailed explanation for “too many categories” 
+   * [#3289](https://github.com/datagrok-ai/public/issues/3289): If the column in the legend has too many categories, the legend is not displayed
+
+
+#### [Grid](../../visualize/viewers/grid.md)
+
+*  Image Url columns now support links to images using Datagrok paths
+* [#3077](https://github.com/datagrok-ai/public/issues/3077): Added the ability to define colors for the linear coloring (min, max, inflection point)
+* [#3285](https://github.com/datagrok-ai/public/issues/3285): Сalculated columns now show unique columns in the error message
+* Fixed [#3243](https://github.com/datagrok-ai/public/issues/3243): Columns coloring via Edit Column Properties 
+#### [Scatterplot](../../visualize/viewers/scatter-plot.md)
+
+* Improved the jittering function. For details, see [Jittering function in scatterplot](https://community.datagrok.ai/t/jittering-fucntion-in-scatter-plot/904/4?u=oahadzhanian.datagrok.ai)
+* Fixed [#3193](https://github.com/datagrok-ai/public/issues/3193): The color by expression dialog now retains the last entered formula
+
+### Packages
+
+#### [Chem:](https://github.com/datagrok-ai/public/tree/master/packages/Chem/CHANGELOG.md)
+
+*  [#3273](https://github.com/datagrok-ai/public/issues/3273): Scaffold tree: Added the ability to apply scaffold tree colors to scatterplot or other viewers
+
+#### [Charts:](https://github.com/datagrok-ai/public/tree/master/packages/Charts/CHANGELOG.md)
+
+* [#3249](https://github.com/datagrok-ai/public/issues/3249): Tree viewer: Added cross-viewer selection
+* Fixed [#3307](https://github.com/datagrok-ai/public/issues/3307): Tree viewer not clickable upper node 
+
+#### [Power Grid](https://github.com/datagrok-ai/public/blob/master/packages/PowerGrid/CHANGELOG.md)
+
+* Fixed [#3242](https://github.com/datagrok-ai/public/issues/3242): Pinned columns: Long column name is not visible when column is pinned  
+
+
+#### [Usage analysis](https://github.com/datagrok-ai/public/blob/master/packages/UsageAnalysis/CHANGELOG.md)
+
+ *  Implemented the ability to filter functions usage by function tag
+ *  [#3213](https://github.com/datagrok-ai/public/issues/3213): Added a new Projects tab (beta). For details, see [Usage Analysis: Features](https://datagrok.ai/help/govern/audit/usage-analysis#features)
+
+#### [Diff studio](https://github.com/datagrok-ai/public/blob/master/packages/DiffStudio/CHANGELOG.md)
+
+ *  Implemented in-webworker solving equations
+ *  Refactored Diff Studio to leverage the Diff Grok library for improved performance and extensibility
+
+
+## 2025-02-18 Datagrok 1.24.0 release
+
+The Datagrok 1.24.0 release includes stability, visualization, and UX improvements
+
+### Main updates
+
+* **New plate cell renderer** for visualizing experimental plates (96 wells, 384 wells, 1536 wells)
+* **Grid**: columns groups, files in cells, dynamic column width, and mouse panning
+* Calculated columns persisting with the layout
+* **Tab ordering**: you can now reorder tables (tabs) within the project by dragging and dropping them
+
+### Platform
+
+* [#3110](https://github.com/datagrok-ai/public/issues/3110): Added the ability to send informational emails to users or groups
+* Projects: 
+   * Calculated columns now persist with the layout
+   * [#2833](https://github.com/datagrok-ai/public/issues/2833): Added the ability to order tables (tabs) in project via drag-n-drop
+   * [#2883](https://github.com/datagrok-ai/public/issues/2883): Added the ability to view the creation script when uploading the data-sync project 
+
+
+  #### Data Access
+
+* Visual Query: Added the `Order by` option
+
+### Viewers
+
+* Improved legend positioning:
+   * Added the ability to customize the legend's position in the viewer's corners
+   * Implemented automatic positioning: the legend can appear on the right or top based on size, or float in a corner
+* [#3203](https://github.com/datagrok-ai/public/issues/3203): Preserved legend position in the previously saved layouts
+* Improved handling of color schemes:
+   *  Ability to select color schemes from the context menu
+   * Grid column and viewers linear color schemes now stay in sync — changing one updates the other
+   * Redesigned the linear and categorical color scheme selector icons for the **Context Panel**
+
+
+* [#3162](https://github.com/datagrok-ai/public/issues/3162): Viewer properties: Added null state for property types: color properties, string input, numeric (with slider), column selector
+* [#3224](https://github.com/datagrok-ai/public/issues/3224): [Box plot](../../visualize/viewers/box-plot.md): Added the option to define Y-axis minimum and maximum range
+*  [Bar chart](../../visualize/viewers/bar-chart.md): Bars are now colored when `Stack` and `Split` are set to the same value
+* [Trellis plot:](../../visualize/viewers/trellis-plot.md) 
+   * Added the ability to select a current cell using the keyboard
+   * Added the ability to add/remove categories using plus/minus icons
+* Fixed:
+   * [#3212](https://github.com/datagrok-ai/public/issues/3212): Resetting filters unexpectedly resets selection if PC plot with transformation is present
+ 
+#### [Grid](../../visualize/viewers/grid.md)
+
+* [#3195](https://github.com/datagrok-ai/public/issues/3195): Implemented a new plate cell renderer for visualizing experimental plates in grid
+* Added new cell types: `File` and `User`
+* [#3194](https://github.com/datagrok-ai/public/issues/3194): Added adaptive grid cells for Jira tickets
+* Implemented convenient handling of hidden columns
+* Row height resizing: Font size and column widths now automatically adjust when resizing
+* Added mouse-panning via the right button
+* Column properties: Added the ability to set color coding for multiple selected columns
+* [#3178](https://github.com/datagrok-ai/public/issues/3178): Add new column: Added the ability to remove qualifier
+* Summary columns: Implemented normalization for sparklines. For details, see [Grid updates](https://community.datagrok.ai/t/grid-updates/616/14)
+* Fixed:
+  *  [#3208](https://github.com/datagrok-ai/public/issues/3208): Hamburger icon in the column header does not disappear when cursor is no longer in the header in some cases
+   *  [#3220](https://github.com/datagrok-ai/public/issues/3220): Context menu partially or fully hidden on the last columns when nothing is present on the right
+
+#### [Scatterplot](../../visualize/viewers/scatter-plot.md)
+
+Fixed:
+*  [#3201](https://github.com/datagrok-ai/public/issues/3201): Two formula lines with same formula but different min/max cannot be displayed
+* [#3181](https://github.com/datagrok-ai/public/issues/3181): Labels: Resizing has no effect if label does not contain a structure
+
+#### [Line Chart](../../visualize/viewers/line-chart.md)
+
+* [#3210](https://github.com/datagrok-ai/public/issues/3210): Set a reasonable limit on the number of categories to prevent users from crashing the page
+* Improved the automatic initial selection of the X column
+
+### Packages
+
+#### [Charts:](https://github.com/datagrok-ai/public/tree/master/packages/Charts/CHANGELOG.md)
+
+Fixed:
+
+* [#3245](https://github.com/datagrok-ai/public/issues/3245): Tree viewer: Usability issues
+* [#3196](https://github.com/datagrok-ai/public/issues/3196): Sunburst chart causes performance issues
+
+#### [PowerGrid:](https://github.com/datagrok-ai/public/tree/master/packages/PowerGrid/CHANGELOG.md)
+
+Fixed:
+
+* [#3229](https://github.com/datagrok-ai/public/issues/3229): Pin columns: Wrong order in pin column after reordering by another column
+*  [#3075](https://github.com/datagrok-ai/public/issues/3075): Pinned columns: Table header hamburger menu disappears after hovering pinned columns
+
+## 2024-12-23 Datagrok 1.23.0 release
+
+The Datagrok 1.23.0 release includes stability and data access improvements
+
+### Main updates
+*  **Visual Query**: with an enhanced UX, you can seamlessly join multiple tables, select specific columns for your report, and pivot and group data
+* **Improved function execution**: parallel queries and scripts now run 10x faster
+
+### Platform
+
+#### Browse
+
+* Galleries: Enabled keyboard navigation and selection in brief and card mode
+
+<!-- #### [Scripting](https://datagrok.ai/help/compute/scripting/)
+
+* Inputs: improved InputForm alignment, including for InputForms with complex options -->
+    
+#### JS API
+
+* Added indefinite parameter to `grok.shell.info`
+* Ability to specify tooltip position relative to the element (left / right / top / bottom)
+* Added support for different types of parameters for calls:
+    *  `grok.functions.call('sin', 0.5);`
+  * `grok.functions.call('sin', {x: 0.5});`
+  * `grok.functions.call('sin', [0.5]);`
+
+<!-- #### Data Access
+
+*  Enhanced Visual Query
+* Improve client-server socket dispatch for functions execution: parallel queries and scripts now run 10x faster
+-->
+   
+### Viewers
+
+* Legend improvements and fixes:
+    * Automatic positioning for optimal layout
+    * Automatic hiding when the viewer size is too small
+    * Proper rendering when positioned on top
+* [Trellis plot](../../visualize/viewers/trellis-plot.md): Added support for mouse-over row group for inner viewers
+* Fixed:
+  *  [#3184](https://github.com/datagrok-ai/public/issues/3184): [Tile Viewer](../../visualize/viewers/tile-viewer.md): Scroll reset and rendering issues after adding new viewer
+  * [#3150](https://github.com/datagrok-ai/public/issues/3150): [Box plot](../../visualize/viewers/box-plot.md): New multi-category box plot is not compatible with older layouts that have only single category
+  *  [#3188](https://github.com/datagrok-ai/public/issues/3188): [Bar chart](../../visualize/viewers/bar-chart.md): Some categories are missing in the legend when data is filtered
+
+#### [Grid](../../visualize/viewers/grid.md)
+
+* [#2968](https://github.com/datagrok-ai/public/issues/2968): Added multi-column style editing 
+* Fixed:
+  * [#3101](https://github.com/datagrok-ai/public/issues/3101): Shift-click selects unexpected rows in some cases
+  *  [#3168](https://github.com/datagrok-ai/public/issues/3168):  Horizontal scroll bar in table disappears on double-click
+
+#### [Scatterplot](../../visualize/viewers/scatter-plot.md)
+
+* [#3124](https://github.com/datagrok-ai/public/issues/3124): Added support for resizing structure labels
+* [#3142](https://github.com/datagrok-ai/public/issues/3142): Added ability to define columns for scatterplot whiskers
+* [#2708](https://github.com/datagrok-ai/public/issues/2708): Preserve formula line configuration upon changing columns on the axis
+* Fixed:
+    * [ #3091](https://github.com/datagrok-ai/public/issues/3091): Show a more detailed message for a missing column
+    * [#3055](https://github.com/datagrok-ai/public/issues/3055): Page is freezing after applying layout with multiple scaffold trees with large number of structures (data-specific)
+    * [#2965](https://github.com/datagrok-ai/public/issues/2965): Legend color cannot be edited (no color picker icon) if both color and markers use the same column
+    * [#3145](https://github.com/datagrok-ai/public/issues/3145): Label can be dragged out of scatter plot area and completely hidden
+    * [#3123](https://github.com/datagrok-ai/public/issues/3123): Not all formula lines are shown in some cases
+    * [#3175](https://github.com/datagrok-ai/public/issues/3175): Scatterplot with conditionally colored column as color inconsistency: color editor icon is shown, but colors cannot be changed
+    * [#3176](https://github.com/datagrok-ai/public/issues/3176): Some labels disappear unexpectedly on zoom in / out
+    * [#3180](https://github.com/datagrok-ai/public/issues/3180): Labels: Context menu disappears when unclicking the mouse
+
+#### [Line Chart](../../visualize/viewers/line-chart.md)
+
+* [#3111](https://github.com/datagrok-ai/public/issues/3111): Added color pickers to the legend
+* Fixed:
+  * [#3033](https://github.com/datagrok-ai/public/issues/3033): Viewer has 'Marker size' option, but it cannot be changed
+  * [#2776](https://github.com/datagrok-ai/public/issues/2776):  Page is frozen if too many categories are used in split
+
+### Other fixes
+
+* [#3122](https://github.com/datagrok-ai/public/issues/3122): Pinned columns: Opening the project with pinned columns hides the pinned columns
+* [#3119](https://github.com/datagrok-ai/public/issues/3119): Add new column: formula with multi-argument functions is parsed incorrectly if more than one argument contains a column
+* [#3211](https://github.com/datagrok-ai/public/issues/3211): Add new column: do not show error message when using ‘IsNotEmpty’ for numerics
+* [#3024](https://github.com/datagrok-ai/public/issues/3024):  Parsing source maps is loading the platform
+
+### Packages
+
+* Plugin management improvements: Added package install logs to UI
+
+#### [Hit Triage:](https://github.com/datagrok-ai/public/tree/master/packages/HitTriage/CHANGELOG.md)
+
+* Added ability to edit campaign stages once the campaign starts
+
+## 2024-12-20 1.22.3
+
+### Improvements and fixes:
+* Viewers:
+  * [#3133](https://github.com/datagrok-ai/public/issues/3133): [Grid](../../visualize/viewers/grid.md): Right arrow on changing column position with drag-and-drop is  working if there is not panel/viewer at the right side
+  * [#3184](https://github.com/datagrok-ai/public/issues/3184): [Tile viewer](../../visualize/viewers/tile-viewer.md): Scroll reset and rendering issues after adding new viewer
+  * [#3188](https://github.com/datagrok-ai/public/issues/3188): [Bar chart](../../visualize/viewers/bar-chart.md): Some categories are missing in the legend when data is filtered
+  * [Scatterplot](../../visualize/viewers/scatter-plot.md):
+    * [#2965](https://github.com/datagrok-ai/public/issues/2965): Legend color can not be edited if both color and markers use the same column
+    * [#3176](https://github.com/datagrok-ai/public/issues/3176): Some labels disappear unexpectedly on zoom in / out
+    * [#3189](https://github.com/datagrok-ai/public/issues/3189): Scatter plot labels are shown for filtered out points
+    * [#3191](https://github.com/datagrok-ai/public/issues/3191): Some dots are not shown on scatter plot when labels are enabled
+    * [#3175](https://github.com/datagrok-ai/public/issues/3175): Scatter plot with conditionally colored column as color inconsistency: color editor icon is shown, but colors cannot be changed
+* [#3174](https://github.com/datagrok-ai/public/issues/3176): Table header tooltip overlaps menus
+* [#3168](https://github.com/datagrok-ai/public/issues/3168): Horizontal scroll bar in table disappears on double-click
+
 ## 2024-11-25 1.22.2
 
-### Addressed Issues
-
-* (Bug) GROK-16997: #3145: Viewers: Scatter plot: label can be dragged out of scatter plot area and completely hidden 
-* (Bug) GROK-16948: #3120: Viewers: Scatter plot: cannot drag label if Mouse Drag = Select 
-* (Bug) GROK-16898: PC Plot: Transformation doesn't work 
-* (Bug) [#3150](https://github.com/datagrok-ai/public/issues/3150): Box plot: New multi-category Box plot is not compatible with older layouts that have only single category 
-* (Bug) GROK-16965: #3123: Scatter plot: not all formula lines are shown in some cases 
-
+### Improvements and fixes:
+* Viewers:
+  * [Scatterplot](../../visualize/viewers/scatter-plot.md):
+    * [#3145](https://github.com/datagrok-ai/public/issues/3145): Label can be dragged out of scatter plot area and completely hidden
+    * [#3120](https://github.com/datagrok-ai/public/issues/3120): Cannot drag label if Mouse Drag = Select
+    * [#3123](https://github.com/datagrok-ai/public/issues/3123): Not all formula lines are shown
+  * [PC Plot](../../visualize/viewers/pc-plot.md): Transformation doesn't work
+  * [#3150](https://github.com/datagrok-ai/public/issues/3150): [Box plot](../../visualize/viewers/box-plot.md): New multi-category Box plot is not compatible with older layouts that have only single category
 
 ## 2024-11-04 1.22.1
 
@@ -1014,7 +1431,7 @@ Datagrok 1.17 release focuses on stability, performance, and usability improveme
 * The ability to configure the platform through the **Settings** wizard.
 * Browser designed for navigation, preview, and convenient access to everything available on the platform: features, applications, plugins, models, shared dashboards, and more.
 * Function view now shows function signature if parameters are not user-editable.
-* Improved client-side caching of function and query results. To learn more, see [Caching function results](https://datagrok.ai/help/develop/function_results_cache#client-side-cache)
+* Improved client-side caching of function and query results. To learn more, see [Caching function results](https://datagrok.ai/help/develop/how-to/function_results_cache#client-side-cache)
 * Summary viewer that aggregates the numeric attributes of features.
 * Capability to render table cells with any viewer, along with support for linked tables in in-grid dataframes.
 * **Content** tab on the **Context Panel**, making it easy to compare selected rows, filters, highlights, and more.
@@ -1299,7 +1716,7 @@ Datagrok 1.16 release focuses on performance and usability improvements:
 * [Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts/CHANGELOG.md): improvements for Timelines and Sunburst plot, Radar chart fixes.
 * [Chem](https://github.com/datagrok-ai/public/blob/master/packages/Chem/CHANGELOG.md): RDKit rendering for various databases (Chembl, ChemblAPI, PubChem, and DrugBank) when OCL is used, **Scaffold Tree** integration into the **Filters Panel**, and other improvements.
 * [Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves/CHANGELOG.md): rendering for curves and confidence intervals, user-defined Javascript function support for running curves with caching, enhanced rendering in small cells, and more. 
-* [Demo](https://github.com/datagrok-ai/public/tree/master/packages/Demo/CHANGELOG.md): new [Bioreactors](https://public.datagrok.ai/apps/Tutorials/Demo/Bioreactors), [heatmap](https://public.datagrok.ai/apps/Tutorials/Demo/Visualization/General/Heatmap) and [Chem](https://public.datagrok.ai/apps/Tutorials/Demo/Cheminformatics) demos.
+* [Demo](https://github.com/datagrok-ai/public/tree/master/packages/Demo/CHANGELOG.md): new Bioreactors, [heatmap](https://public.datagrok.ai/apps/Tutorials/Demo/Visualization/General/Heatmap) and [Chem](https://public.datagrok.ai/apps/Tutorials/Demo/Cheminformatics) demos.
 * [Dendrogram](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram/CHANGELOG.md): ability to select leaves from specific nodes, separate loader view, and ability to switch distance calculation methods for macromolecules, while also supporting the semType `macromolecules`.
 * [Helm](https://github.com/datagrok-ai/public/tree/master/packages/Helm/CHANGELOG.md): addressed issues.
 * [Peptides](https://github.com/datagrok-ai/public/blob/master/packages/Peptides/CHANGELOG.md):  **Invariant Map** now selects sequences instead of filtering.
@@ -1307,7 +1724,7 @@ Datagrok 1.16 release focuses on performance and usability improvements:
 * [Tutorials](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials/CHANGELOG.md): new tutorials.
 
   
-### Enhancements in libraries
+### Enhancements in libraries 
 
 * A new [math](https://github.com/datagrok-ai/public/tree/master/libraries/math/CHANGELOG.md) library intended to be used for high efficiency (mostly wasm) calculations.
 * See other updates for [utils](https://github.com/datagrok-ai/public/tree/master/libraries/utils/CHANGELOG.md), [ml](https://github.com/datagrok-ai/public/tree/master/libraries/ml/CHANGELOG.md) and [bio](https://github.com/datagrok-ai/public/tree/master/libraries/bio/CHANGELOG.md).
@@ -1375,7 +1792,7 @@ We've launched a new version of the Datagrok platform 1.15.0. This update introd
 * Namespaces view for easy access to all data sources and content within the platform. Now you can explore and access all available data in one centralized location.
 * [EDA package](release-history.md#eda) using partial least squares regression for the multivariate data analysis.
 * [Bioreactors package](#bioreactors) for the simulation of the mechanism of Controlled Fab-Arm Exchange.
-* Usage Analysis package for studying usage statistics. It enables you to analyze user activity, package distribution, and function usage to gain valuable insights for statistical analysis. To learn more, see [Usage Analysis](https://datagrok.ai/help/govern/usage-analysis#usage-analysis-application).
+* Usage Analysis package for studying usage statistics. It enables you to analyze user activity, package distribution, and function usage to gain valuable insights for statistical analysis. To learn more, see [Usage Analysis](https://datagrok.ai/help/govern/audit/usage-analysis).
 * [Demo application](https://public.datagrok.ai/apps/Tutorials/Demo), an interactive educational resource showcasing the diverse capabilities and features of the DataGrok platform. It offers tutorials and demonstrations for hands-on learning of data manipulation, visualization, modeling, and more.
 * Multiple improvements in plugins, such as  [Chem](#chem), [Peptides](#peptides), [Dendrogram](#dendrogram).
 
@@ -1469,13 +1886,13 @@ We've launched a new version of the Datagrok platform 1.15.0. This update introd
 
 #### [Usage Analysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis#readme)
 
-We've released Usage Analysis 1.0.0, a tool for comprehensive statistics and insights into usage patterns on the Datagrok platform. Gain a deeper understanding of user interactions, make data-driven decisions, and optimize performance to enhance the user experience. To learn more, see [Usage Analysis](https://datagrok.ai/help/govern/usage-analysis#usage-analysis-application).
+We've released Usage Analysis 1.0.0, a tool for comprehensive statistics and insights into usage patterns on the Datagrok platform. Gain a deeper understanding of user interactions, make data-driven decisions, and optimize performance to enhance the user experience. To learn more, see [Usage Analysis](https://datagrok.ai/help/govern/audit/usage-analysis).
 
 #### [EDA](https://github.com/datagrok-ai/public/tree/master/packages/EDA)
 
-We've implemented the multivariate data analysis using partial least squares (PLS) regression in the EDA package. Our solution reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on them. To provide high-performance in-browser computations, we use WebAssembly. For details, see [Multivariate analysis](https://datagrok.ai/help/explore/multivariate-analysis/pls).
+We've implemented the multivariate data analysis using partial least squares (PLS) regression in the EDA package. Our solution reduces the predictors to a smaller set of uncorrelated components and performs least squares regression on them. To provide high-performance in-browser computations, we use WebAssembly. For details, see [Multivariate analysis](https://datagrok.ai/help/explore/multivariate-analysis).
 
-#### [Bioreactors](https://github.com/datagrok-ai/public/tree/master/packages/Bioreactors#readme)
+#### [Bioreactors](https://github.com/datagrok-ai/public/blob/master/packages/DiffStudio/README.md)
 
 We've created the Bioreactors package for the simulation of the mechanism of [Controlled Fab-Arm Exchange](https://www.jbc.org/article/S0021-9258(20)40445-4/fulltext). The unique Datagrok WebAutosolver tool provides an in-browser solution for implementing simulations of the considered phenomena. To ensure high performance, we utilize wasm-computations.
 
@@ -1817,7 +2234,7 @@ We've separated **Images** and **Docker Containers** in the platform.
 
 We've added `Qnum` to supported column types and fixed the issue with the execution of some functions in the **Add new column** dialog.
 
-#### [Viewers](../../develop/how-to/develop-custom-viewer.md)
+#### [Viewers](../../develop/how-to/viewers/develop-custom-viewer.md)
 
 * Added canvas grid cell renderers to the gridext library to render multiple values in a grid cell using a vertical layout.
 * Cell renderer now can estimate the desired cell size based on the entire column
@@ -2014,12 +2431,12 @@ We've added `Qnum` to supported column types and fixed the issue with the execut
 * Viewers: added sankey viewer redrawing on filtering
 * ClinicalCase: Fix connection to S3 bucket with files
 * Test manager: Mark all tests yellow if Unhandled exception occurred
-* #863: moved pepsea to Bio package
+* 863: moved pepsea to Bio package
 * (Bug) Table content queries fire events
 * Removed StackedBarChart
 * Chem: menu: sketcher types as radio buttons
 * Viewers: fixed labels which don't move with selected graph node
-* #1480: Demo App: WIP
+* 1480: Demo App: WIP
 * PIDB: Connection string generation
 * bio lib: Fix TreeCutOptions type for min, max optional
 * Dendrogram: Fixes allowing empty trees
@@ -2040,12 +2457,12 @@ We've added `Qnum` to supported column types and fixed the issue with the execut
 * Chem: fixing top menu script based.mutate
 * closes #1467 date values should be shown in tooltips.
 * Tutorials: reuse code from the tutorials lib
-* #1465 Improve usability of range filters
+* 1465 Improve usability of range filters
 * Chem: map identifiers (increase wait)
 * dpetrov/1364: Support for non-standard fragments in structure search
 * dpetrov/1217: Scaffold-Tree: fixed environments, fixed aromatics, various ui-changes
 * closes #1465 Improve usability of range filters
-* #1472 Reuse 'Pick up style' functionality for JsViewers
+* 1472 Reuse 'Pick up style' functionality for JsViewers
 * Utils: parentView made optional
 * chen-meta: bump version
 * dpetrov/1217: Scaffold-Tree: fixed autogenerate & deserialize
@@ -2071,16 +2488,16 @@ We've added `Qnum` to supported column types and fixed the issue with the execut
 * closes #1481 Chem | Cell with molecule: ‘Use as Filter ‘ action causes error
 * JKG: Disable Datlas autostart in container
 * BiostructureViewer: add 1pdbq.sdf
-* #1336: creating new cluster
-* #1336: custom clusters serialization
-* #1336: enable cluster removing
+* 1336: creating new cluster
+* 1336: custom clusters serialization
+* 1336: enable cluster removing
 * Charts: added documentation about new viewers
-* #1465 Improve usability of range filters, layout problem
+* 1465 Improve usability of range filters, layout problem
 * (Bug) GrokConnect: Neptune list parameters don't work
-* #1465 filters improvements default size
+* 1465 filters improvements default size
 * (Bug) Viewers | Map: layer data export doesn't work
 * Tutorials: items to fix (WIP)
-* #1333: multiple views
+* 1333: multiple views
 * update grok connect version to 1.2.1
 * Proper parameter visibility
 * Peptides: Disabled Get Peptides Structure
@@ -2088,7 +2505,7 @@ We've added `Qnum` to supported column types and fixed the issue with the execut
 * bio lib: Fix for handling errors in toAtomicLevel, fix for gaps in MSA in toAtomicLevel bump version
 * Bio: bump version for dependencies on utils ligand bio lib
 * Peptides: throw error if barchart rendering fails
-* #1077: UI fixes
+* 1077: UI fixes
 * Peptides: fixed aggregated columns not showing in LST
 * Peptides: fixed errors in LST
 * Peptides: lint fixes
@@ -2164,7 +2581,7 @@ We've added `Qnum` to supported column types and fixed the issue with the execut
 * Chem: Scaffold Tree: minor fix
 * Minor visual improvements
 * Fixed #1502: fixed missing custom cluster name in distribution widget
-* #1077: WebLogo fixes
+* 1077: WebLogo fixes
 * Chem: Scaffold Tree: support for loading and saving trees
 * Chem: Scaffold Tree: ability to invoke it from the top menu
 * Fixed #1503: added custom cluster name property in logo summary table
@@ -2187,7 +2604,7 @@ We've added `Qnum` to supported column types and fixed the issue with the execut
 * Charts: added filtering to group-analysis
 * (Bug) FuncCall.options can't be saved to DB
 * closes #1499 Legend/viewer inconsistencies when table is filtered
-* #1354: fixed RGroup failing with OCL sketcher
+* 1354: fixed RGroup failing with OCL sketcher
 * Dendrogram: Fix hierarchicalClustering for datetime type column as float
 * JS UI Test: SPE
 * closes 1464 Change order of filters
@@ -2207,7 +2624,7 @@ We've added `Qnum` to supported column types and fixed the issue with the execut
 * Build: Windows compatibility
 * Revert "Build: Windows compatibility"
 * Widgets: bumped up the version
-* #928 recheck properties order
+* 928 recheck properties order
 * Build: Docker cache for files in Windows
 * Build: Docker files copy
 * The ability to construct byte array column using fromList constructor
@@ -2220,9 +2637,9 @@ We've added `Qnum` to supported column types and fixed the issue with the execut
 * Fixed #1517: fixed cluster not removing
 * add webpack to DSP-package
 * Fixes #1521: don't create empty new views
-* #1518: replaced settings button with wrench icon
-* #1518: removed view name field
-* #1518: moved New view button to property panel on selection
+* 1518: replaced settings button with wrench icon
+* 1518: removed view name field
+* 1518: moved New view button to property panel on selection
 * Added Dmytro to beta users
 * Chem: add tests for mol2 importer
 * Bio: substructure filters refactoring
@@ -2236,25 +2653,25 @@ We've added `Qnum` to supported column types and fixed the issue with the execut
 * Bio: Move WebLogo viewer to Bio package
 * Peptides: Remove reexporting index.ts from bio lib
 * Charts: skipped timelines viewer creation tests, version up
-* #1314: Chem \- fixed properties widget
-* #1487: fixed Structural Alerts panel mol orientation
+* 1314: Chem \- fixed properties widget
+* 1487: fixed Structural Alerts panel mol orientation
 * Chem: updated Group analysis function, bump version
 * Chem: fixed typo in panels
-* #1454: use the same instance of rdkit module in structural alerts panel
+* 1454: use the same instance of rdkit module in structural alerts panel
 * Chem: bump version
 * FittingTools: bum version
 * Revert "GitHub Actions: Bump Meta package version for"
 * Peptides: refactored views
 * Build: Remove Windows symbols
 * Chembl: New server for databases
-* #1518: moved custom cluster actions to property panel
+* 1518: moved custom cluster actions to property panel
 * Charts: changed mode to development
-* #1518: Monomer-Position viewer hints in icon
+* 1518: Monomer-Position viewer hints in icon
 * Chembl: Add Chem as grok dependency
-* #1518: nullable clusters column input
-* #1524: nullable clusters field
-* #1524: autogenerate aligned column name
-* #1524: added inputs tooltips
+* 1518: nullable clusters column input
+* 1524: nullable clusters field
+* 1524: autogenerate aligned column name
+* 1524: added inputs tooltips
 * (Bug) Viewers | Trellis plot: errors occur when a trellis plot is displayed in R-Groups Analysis
 * (Bug) Package can't be installed with npm proxy specified
 * Helm: fixing datagrok-libraries/bio version
@@ -2274,7 +2691,7 @@ We've added `Qnum` to supported column types and fixed the issue with the execut
 * Grok Compute: Default configuration
 * Grok Compute: downgrade numpy Fix 'AttributeError: module 'numpy' has no attribute 'bool'' error Numpy removed method
   bool in 1.24.0 More information: https://github.com/numpy/numpy/releases/tag/v1.24.0
-* #1529: Chem \- added check if package has been initiated
+* 1529: Chem \- added check if package has been initiated
 * DSP: package.json indent
 * Update Meta package
 * 1476 chem similarity search improvements (#1536)
@@ -2322,10 +2739,10 @@ We've added `Qnum` to supported column types and fixed the issue with the execut
 * DevTools: testFunctions fix
 * Add team page
 * Update css styles
-* #1307: fixed PubChem api panels fixed width in window
+* 1307: fixed PubChem api panels fixed width in window
 * Top panel refimnement (WIP)
-* #1030: limited drug likeness panel vertically
-* #1030: limited structural alerts panel vertically
+* 1030: limited drug likeness panel vertically
+* 1030: limited structural alerts panel vertically
 * closes #1500 Line chart coloring should be able to scale to visible range of data
 * dpetrov/1545: Fixed appending orphans folders after scaffold tree is loaded from a local file
 * Grok Spawner: Deploy containers to datagrok host if host label is missing
@@ -2334,7 +2751,7 @@ We've added `Qnum` to supported column types and fixed the issue with the execut
 * Cheminformatics | Stability and Polishings (WIP)
 * Grok Spawner: Fail if hosts with required labels are missing
 * Release notes 1.12.0
-* #1465 improve usability of range filters
+* 1465 improve usability of range filters
 * Fixed #1543: MPR row ordering fix
 * (Bug) Predictive Modeling | H2O: Input fields are not shown in training view (on https://public.datagrok.ai/)
 * trellis plot issue
@@ -2371,21 +2788,21 @@ We've added `Qnum` to supported column types and fixed the issue with the execut
 * Bio: Enable tests for substructure search, fix grokDependencies versions
 * Helm: Fix imports from bio lib, bump version
 * fix julia scripts working
-* #1523: mutation cliffs now respond to filtering
-* #1523: fixed distribution widget for custom clusters
-* #1523: fixed cluster creation
-* #1523: fixed wrong tooltip stats in LST if filter is applied
-* #1557: fixed filter not applied on project load
-* #1523: made logo summary table react to filtering
-* #1523: store cluster names in selection
-* #1557: fixed wrong object is shown on project load
-* #1556: added aggregated column to cluster tooltip
+* 1523: mutation cliffs now respond to filtering
+* 1523: fixed distribution widget for custom clusters
+* 1523: fixed cluster creation
+* 1523: fixed wrong tooltip stats in LST if filter is applied
+* 1557: fixed filter not applied on project load
+* 1523: made logo summary table react to filtering
+* 1523: store cluster names in selection
+* 1557: fixed wrong object is shown on project load
+* 1556: added aggregated column to cluster tooltip
 * Peptides: fixed Monomer-Position hints
-* #274: fixed save and load test
+* 274: fixed save and load test
 * Library GridExt: Adding repaint call on adding pinned columns
 * Removed extra menu items
 * Package PowerGrid: Bumping Up version
-* #1498 reset filter legend refresh
+* 1498 reset filter legend refresh
 * 1500 readjusting X axis
 * grid core height by visible cols
 * scatterplot invalidate method
@@ -2546,7 +2963,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * [Radar viewer](../../visualize/viewers/radar.md):
   * Fixed changing color issue: synchronized the color of percentiles on the legend and **Context Pane**.
 
-#### [MLB](https://github.com/datagrok-ai/public/tree/master/packages/MolecularLiabilityBrowser#readme)
+#### MLB
 
 * VRs tree for grid.
 * Revert database connection dataSource `PostgresNet`.
@@ -2554,7 +2971,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ### Improvements for developers
 
-#### [Viewers](../../develop/how-to/develop-custom-viewer.md)
+#### [Viewers](../../develop/how-to/viewers/develop-custom-viewer.md)
 
 * Added the ability to specify default viewer settings for the dataframe,
   see [annotation](https://github.com/datagrok-ai/public/issues/1395#issuecomment-1364325511).
@@ -2669,7 +3086,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 ## 2023-01-06 Dev build 1.11.2
 
 * Save table linking to project
-* #1412 column selector dialog position in prop panel
+* 1412 column selector dialog position in prop panel
 * closes #1344 Legend for continuous colorColumn
 * Scatter plot coloured by numerical or date column: some data is missing after re-applying saved layout #1411
   Workaround
@@ -2683,15 +3100,15 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-12-22 Dev build 1.11.0
 
-* #1236 Color coding: ability to invert colors for linear color coding
+* 1236 Color coding: ability to invert colors for linear color coding
 * Elemental analysis: minor fixes (columns hadn't been added if dataset already had the columns with such names)
 * Environments: Remove top-menu from demo scripts
-* #1282 Chem: fixed molecule size when drawing on canvas
+* 1282 Chem: fixed molecule size when drawing on canvas
 * SequenceTranslator: Handle errors for rows with error while Save SDF
 * Environments: Small demo script fix
 * ST: Fix error message, bump version
 * Implement Logger
-* #1289: Chem \- place recent molecules on top of the list, saving the most recent coordinates
+* 1289: Chem \- place recent molecules on top of the list, saving the most recent coordinates
 * Utils: fixed HistoryInput CSS
 * Environments: Test for inline environments
 * closes #1253 Formula lines not parallel in log axes
@@ -2700,8 +3117,8 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Elemental analysis: provided an opportunity to add column with molecular formula
 * Created index on name and namespace
 * Fixed #1281: revert gasteiger charges panel to script-based
-* #1297: temporary disable Info panel
-* #1261: Chem \- clear sketcher button style fix
+* 1297: temporary disable Info panel
+* 1261: Chem \- clear sketcher button style fix
 * Fixed package notification
 * Chem: filtering incorrect recent/favorite molecules
 * Chem: returned saving recent/favorites as molfiles
@@ -2714,14 +3131,14 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * GIS: geocoding update
 * Chem: fixed bug in addFavorite
 * Chem: returned popup menu to similarity/diversity, structure 2d
-* #1236 Color coding: ability to invert colors for linear color coding (WIP)
+* 1236 Color coding: ability to invert colors for linear color coding (WIP)
 * Chem: handle cases when previous local storage included malformed molecules
-* #1300: handling malformed target molecules in similarity search
+* 1300: handling malformed target molecules in similarity search
 * Remove delays in JS UI Tests  (WIP)
 * Color settings, fix the view styles
 * Fixed #1304: rendering only 3 symbols of monomer
 * bio lib: Move newickToDf to ITreeHelper api and extend args, remove INewickHelper
-* #1221 PhyloTreeViewer: Extend newickToDf args, move it to TreeHelper, remove NewickHelper, bump version
+* 1221 PhyloTreeViewer: Extend newickToDf args, move it to TreeHelper, remove NewickHelper, bump version
 * Elemental analysis: removing option that adds a column with molecular formulas
 * ScaffoldTree: changing function names
 * Chem: activity cliffs \- remove duplicate code
@@ -2734,7 +3151,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Preventing changing of the current object by expanding a property panel ()
 * Chem: constants for units
 * Chem: bump version
-* #1221 MLB: show all trees / clones of current antigen with NetworkDiagram viewer
+* 1221 MLB: show all trees / clones of current antigen with NetworkDiagram viewer
 * bio lib: bump version to publish
 * PhyloTreeViewer: Bump version to publish
 * Chem: inchi sketcher bug fix
@@ -2754,25 +3171,25 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * ScaffoldTree: removing one parameter from the script
 * ScaffoldTree: minor fixes
 * Closes #1329: JS API: ability to highlight rows
-* #1252 Color coding: min/max properties for continuous color schemes
+* 1252 Color coding: min/max properties for continuous color schemes
 * Peptides: settings subject type
 * Peptides: selection rendering fix
 * Peptides: fixed barchart not rendering on project load
 * Peptides: fixed grid row height
-* #1077: SAR viewer switch input interaction fix
+* 1077: SAR viewer switch input interaction fix
 * Peptides: code cleanup
 * Peptides: visible columns fix
 * Peptides: fixed settings not triggering changes
 * Peptides: fixed settings not updating columns
 * Peptides: stability enhancement
-* #1119: refactoring WIP
-* #1119: made viewers more standalone
-* #1119: using raw data for clusters df creation
-* #1119: fixed substitution info redundant calculations
+* 1119: refactoring WIP
+* 1119: made viewers more standalone
+* 1119: using raw data for clusters df creation
+* 1119: fixed substitution info redundant calculations
 * Peptides: fixed monomer-position viewer not rendering
 * Peptides: don't add columns pane if no columns present
-* #1043: Invariant Map color coding
-* #1117: Logo Summary Table enhancements
+* 1043: Invariant Map color coding
+* 1117: Logo Summary Table enhancements
 * Peptides: removed constant clusters column name
 * Peptides: cluster tooltip fix
 * Peptides: removed activity columns from 'Columns to include'
@@ -2789,18 +3206,18 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Help: Word cloud
 * Help: Heatmap
 * fix UI tests (awaitCheck)
-* #1236, #1252
-* #1330: temporary disable include columns feature
+* 1236, #1252
+* 1330: temporary disable include columns feature
 * Peptides: fixed missing value statistics calculation
 * Avoid saving functions when called from socket
 * Fixed analyzer warning
 * Fixed #1332: devicePixelRation for WebLogo header cell renderer
-* #1230 add as value does not work when tags are saved in df
+* 1230 add as value does not work when tags are saved in df
 * closes #1237 Scatter plot tooltip
 * Peptides: release version 1.5.0
-* #1330: enable column choice for Logo Summary table
+* 1330: enable column choice for Logo Summary table
 * Peptides: release version 1.5.1
-* #1310: Chem \- fixed similarity/diversity limit
+* 1310: Chem \- fixed similarity/diversity limit
 * ST: highlight cells with invalid Type upon registration, initial version
 * bio lib: Add generic parameter TNode for getLeafList and getNodeList
 * Help | Visualize | Viewers | Heatmap: Edit documentation (WIP)
@@ -2813,13 +3230,13 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Chem: Fix test top menu chem space/UMAP logic
 * (Bug) Color coding: All does not work for boolean columns
 * Jenkins: CI: Set UID and GID for jenkins user in puppeteer container
-* #1236 Scatter plot support
+* 1236 Scatter plot support
 * Rename PostgreSQL to dev and hide, rename PostgresNet to Postgres
-* #1236 Update the invert icon
+* 1236 Update the invert icon
 * JS API: add the special tags for continuous color schemes
-* #1077: added shadow to Mutation Cliff cell renderer value
+* 1077: added shadow to Mutation Cliff cell renderer value
 * Peptides: fixed selection not showing immediately
-* #1236 Add the 'Scheme' label
+* 1236 Add the 'Scheme' label
 * Update the generated files
 * Fixes #1237 Scatter plot tooltip data values
 * Chem: #1325 fix queries alignment (#1347)
@@ -2827,10 +3244,10 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Fixed links and trailing spaces
 * ST: autostart fix
 * DB: Test: HealthCheck start period
-* #1236 Update the editor layout
+* 1236 Update the editor layout
 * (Bug) First package publication on fresh database fails
 * SequenceTranslator: Fix package-lock.json for @luma.gl version 8.5.17
-* #1345 Formula lines issues
+* 1345 Formula lines issues
 * Chem: remove fix#1325
 * GIS: nominatim docker file added
 * Help: minor fix
@@ -2840,7 +3257,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * MySQL: Build: microdnf instead of apt-get
 * Oracle: Build: user to install
 * (Bug) Manage: Users: current object does not change if you make a few consecutive clicks
-* #1338: using float for activity delta
+* 1338: using float for activity delta
 * (Bug) d4: Fix TreeMap test
 * DSTK: Test: Skip tests until we figure out the new infrastructure
 * Datagrok: Build: New version of Grok Connect
@@ -2887,14 +3304,14 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * ApiTests, Arrow: updated utils lib version and package-test.ts
 * extended tests with example of datetime column type and join (#1106)
 * skip package filter test
-* #1078: revert using virtual columns
+* 1078: revert using virtual columns
 * DevTools: test-manager \- ability to copy error text from property panel, version up
 * Peptides: selection state saving fix
 * PTV: Fixed phylocanvas.gl and deck.gl versions
 * GIS: selection of rows-points
 * JS UI Test: Tags
 * Simplified icon methods
-* #943 3dscatterplot onload error sometimes
+* 943 3dscatterplot onload error sometimes
 * Utils: #466: Observable naming fix & patch version bump
 * Utils: #466: added file input validators
 * Utils: #466: fixed input DF uploading
@@ -2916,18 +3333,18 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * closes #1131 MultiColumn Selector: selects only columns filtered by search
 * (Bug) Nginx: Add additional logging to investigate timeouts
 * Docs: LE certificates remewal
-* #1103 layout not saving
+* 1103 layout not saving
 * (Bug) Grok Connect: the connection visibility
 * Settings: mark instance as production (WIP)
 * Removed obsolete packages
 * Alation: enable Open With handling
-* #943 3dscatterplot fix try
+* 943 3dscatterplot fix try
 * Button alignment for form
 * Issue #1034: Charts. RadarViewer removing unused options
 * Issue #1123: RadarViewer. Adding tests for the case when options are changed
 * Charts: Increase the version
 * GIS: selection map points/grid rows (update)
-* #609 aggregation mode for pc plot
+* 609 aggregation mode for pc plot
 * Bio: #264 monomer colours by properties
 * closes #1134 trellis plot viewer icon
 * Docs: Scenarios for release manual testing (WIP)
@@ -2942,10 +3359,10 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Issue #976: Add packages check
 * Issue #976: Check whether elementalAnalysis had been done before in order to avoid error messages
 * Chem: Increase version
-* #1047: Bio \- substructure filters (helm filtering performance, modified linear search)
-* #1118: distribution controls fix
-* #1118: SAR mode switch fix
-* #1118: collaborative filtering fix
+* 1047: Bio \- substructure filters (helm filtering performance, modified linear search)
+* 1118: distribution controls fix
+* 1118: SAR mode switch fix
+* 1118: collaborative filtering fix
 * PhyloTreeViewer: PhylocanvasGL wrapper, injectTreeToGrid
 * Converted const isPlainObject to function
 * (Bug) Packages: Debug version duplicates release
@@ -2967,7 +3384,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * SequenceTranslator: Axo Labs Pattern enhancement (WIP)
 * Bio: substructure filters tests
 * JS: Icons support for JS Viewers
-* #943 scrollbars should not appear
+* 943 scrollbars should not appear
 * closes 932 Vertical scrollbar is not working in Order or Hide Columns menu
 * Bio: #1139 refactor bio, export of capped monomers
 * Fixed analyzer warnings
@@ -3021,7 +3438,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * add images to provider conneectors
 * fix image sizes for added connectoin images
 * Utils: Ability to skip tests
-* #1077: settings dialog UI
+* 1077: settings dialog UI
 * (Bug) Simplify the chain for ViewerSerializationContext
 * 1128 order or hide dialog(move top move bottom)
 * closes 709 filterpanel sync (case with closing filter in different layout)
@@ -3032,36 +3449,36 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Bio: sequence space on fingerprints
 * GIS: detectors sampling of cathegories
 * GIS: code optimised, some TODO's removed
-* #709 dont close filters menu, just reset them
+* 709 dont close filters menu, just reset them
 * Context menu commands: update conditions for JsViewers
 * Charts: update readme
 * added viewers test (layout)
-* #1110 legend cats count incorrect
+* 1110 legend cats count incorrect
 * closes #643 regression lines in log mode, r2 value
 * Issue #1052: Adding pviz-bundle.min.js file
-* #1077: Peptides settings
+* 1077: Peptides settings
 * DrugBank: version bump
 * JS UI Test: Chem Sketcher
 * Alation: tests fix
-* #1152, Bio: work wth pdbs
+* 1152, Bio: work wth pdbs
 * SQLite: version bump
 * PubChemApi: version bump
-* #1077: analysis start from top menu
+* 1077: analysis start from top menu
 * bio lib: NodeType, NodeCuttedType interfaces, fixes imports, PhylocanvasGL service interfaces and types
 * Bio: Fix test substructureFilters/helm
-* #1047: sequence activity cliffs using fingerprints
+* 1047: sequence activity cliffs using fingerprints
 * GIS: color coding (linear/conditional). Filtering attempts
-* #1047: Bio \- sequence activity cliffs using fingerprints
-* #1047: Chem: added functions used in Bio to calculate activity cliffs
+* 1047: Bio \- sequence activity cliffs using fingerprints
+* 1047: Chem: added functions used in Bio to calculate activity cliffs
 * Utils: #466: Historical runs with package isolation
 * Add vertical alignment
 * utils lib: Fix expectedObject for float tolerance
 * PhyloTreeViewer: PhylocanvasGlService, fix for grid scroll events, skip render tasks by key, PhylocanvasGlViewer open
   test
-* #1152
+* 1152
 * Merged in onuf/1148-color-coding-extended-ui (pull request #282)
-* #1077: fixed analysis dialog UI
-* #1077: replaced SAR viewer title with inputs
+* 1077: fixed analysis dialog UI
+* 1077: replaced SAR viewer title with inputs
 * Wiki: update the color coding section
 * closes #1156 filter bitset is reset after adding new column
 * bio lib: Add IPhylocanvasGlViewer .onAfterRender and onHover, add ITreeHelper
@@ -3096,9 +3513,9 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * created missing indexes
 * SequenceTranslator: minor change
 * gridext lib: Up datagrok-api dependency version to 1.8.2, bump version
-* #1155: Chem: substituent analysis in progress
+* 1155: Chem: substituent analysis in progress
 * Chem: removed incorrect import from package.ts
-* #709 #643 minor improvments
+* 709 #643 minor improvments
 * PhyloTreeViewer: Fix GridWthTree and TreeHelper.setGridOrder for use leafColName and DataFrame tag '
   .newickLeafColumn', add tree generator, fix TreeHelper.cutTreeGrid to clean previous cluster marks, up used gridext
   dependency version
@@ -3106,8 +3523,8 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Added the SPGI demo dataset
 * HELM: updated dependency
 * Bio: #264 \- monomers read and calculated palettte creation
-* #1125 add methods for getting value color into ColumnColorHelper (#1137)
-* #1125 add methods for getting value color into ColumnColorHelper
+* 1125 add methods for getting value color into ColumnColorHelper (#1137)
+* 1125 add methods for getting value color into ColumnColorHelper
 * Release of Pinned Rows
 * JS-API: Exposing pinned rows API
 * Bio: fix init
@@ -3127,7 +3544,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Grid: fix #1130: No tooltip on column header if column is too narrow
 * DataFrameViewer: add onDataFrameChanged event
 * Library gridext: Bumping up version
-* #1148 Color coding: Disable the context menu command instead of error message when coloring type is not applicable
+* 1148 Color coding: Disable the context menu command instead of error message when coloring type is not applicable
 * Utils: fixed run double-load in ComputationView
 * fix #1083: Grid: Popup Dialog from hamburger menu stays after the column is deleted
 * fix #805: Grid: Change column type \- some strange appearance
@@ -3166,19 +3583,19 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Oauth: Bind custom google application
 * gridext lib: add .gitignore .npmignore, bump version
 * OligoBatchCalculator: adiitional modification validation start
-* #1155: Chem: substituent analysis viewer in progress
+* 1155: Chem: substituent analysis viewer in progress
 * bio: eror fixed
 * Fixed null pointer exception
 * CSS fixes
 * Helm: bio related refactor
-* #1155: Chem: substituent analysis \- fixing bugs,
+* 1155: Chem: substituent analysis \- fixing bugs,
 * Fixed attirbute exception
-* #1077: replaced barchart with weblogo
+* 1077: replaced barchart with weblogo
 * Peptides: settings sliders fix
-* #1077: include columnds
+* 1077: include columnds
 * GitHub 1159 Multiple feature requests for Pin Column sort
 * JS-API: notify for copyFrom and invert methods
-* #1166: collaborative filtering fix
+* 1166: collaborative filtering fix
 * Library gridext: Adressing sorting issues in pinned columns
 * Library gridext: Updating the version of JS-API
 * Package PowerGrid: Bumping up package version, JS-API, gridext
@@ -3193,11 +3610,11 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Chem: bump version
 * Bio: Bump version for dependencies and to publish npm
 * Oauth setup
-* #1161 transformation editor improvemrnts
-* #1157 Order & hide dialog checkbox alignment
+* 1161 transformation editor improvemrnts
+* 1157 Order & hide dialog checkbox alignment
 * Bio: fix manage libraries
 * closes #1174 Can not select empty value colored data points in scatterplot
-* #1119: moved out mutation cliffs calculation
+* 1119: moved out mutation cliffs calculation
 * add clickhouse connector image
 * Peptides: fixed multiple analysis starts
 * GIS: colorcoding with data stored in cells
@@ -3205,7 +3622,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Help | Visualize | Viewers | Radar Chart: Create documentation
 * closes #1186 Calculated columns dialog is too large in some cases (#1187)
 * Dkryvchuk/add new col 2 (#1188)
-* #1128 Order or hide dialog not working correctly in chrome
+* 1128 Order or hide dialog not working correctly in chrome
 * (Bug) DG.Logger.audit fails with entity params
 * JS: Introduce ObjectColumn class
 * Packages: PowerPack: update viewer categories
@@ -3215,7 +3632,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Bio: fix if 0 libraries chosen
 * Ability to set custom url for app
 * Chem: test fix
-* #1117: filtering out unimprotant clusters (naive)
+* 1117: filtering out unimprotant clusters (naive)
 * CI: Build dockerfiles for packages in GitHub Actions
 * (Bug) Grid's Hamburger menu jumps around cursor when resizing columns
 * Library gridext: Enabled pinned column resize functionality
@@ -3236,15 +3653,15 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * (Bug) Packages: if a package's detector.js is not loaded, the whole semantic type detection system stops working
 * Packages: deactivate semantic type detector if it throws an error
 * SequenceTranslator: remove errorExist flag
-* #1077: Header WebLogo selection rendering
+* 1077: Header WebLogo selection rendering
 * Surface plot: datetime fix
-* #1077: header WebLogo interactions
-* #1077: fixed most potent residues viewer title
-* #1117: rendering mode switch
-* #1077: monomer-position viewer cell value color fix (WIP)
+* 1077: header WebLogo interactions
+* 1077: fixed most potent residues viewer title
+* 1117: rendering mode switch
+* 1077: monomer-position viewer cell value color fix (WIP)
 * Chem: refinements
 * Peptides: settings dialog fix
-* #1117: columns aggregation
+* 1117: columns aggregation
 * JS UI Test: Project Upload
 * Remove delays in JS UI Tests  (WIP)
 * Bio: Fix import from lib utils, bump version for dependencies and publish to npm
@@ -3256,8 +3673,8 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Peptides: logo monomer ordering fix
 * Peptides: version 1.4.0
 * Docs: Create Help pages for every provider
-* #1155: substituent analysis viewer \- fixing bugs
-* #1155: substituent analysis \- fixing bugs
+* 1155: substituent analysis viewer \- fixing bugs
+* 1155: substituent analysis \- fixing bugs
 * (Bug) Charts | Radar viewer: the wrong axis occurs
 * (Bug) Charts | Radar viewer: doesn't respond to the column deletion in the grid
 * (Bug) JS: check permissions method always returns true
@@ -3265,8 +3682,8 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Summary columns don't show after refreshing the page #930
 * Issue #534: exposed TableQuery and DbTableQueryBuilder
 * Issue #534: docs for TableQuery and DbTableQueryBuilder
-* #534: TableQuery & DbTableQueryBuilder tests WIP
-* #534: TableQuery & DbTableQueryBuilder tests & fixes WIP
+* 534: TableQuery & DbTableQueryBuilder tests WIP
+* 534: TableQuery & DbTableQueryBuilder tests & fixes WIP
 * (Bug) Charts | Radar chart: 'Show All Rows' property issue
 * (Bug) Charts | Radar viewer: toggling 'Show Min' and 'Show Max' issues
 * RadarViewer: Updating init function
@@ -3284,7 +3701,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * (Bug) Charts | Radar viewer: the number of axes should be limited
 * Charts: Added radar-viewer-test to package-test
 * Resolves #1204 JS API: add Column.meta.format helper
-* #1204 JS API: add Column.meta.format helper
+* 1204 JS API: add Column.meta.format helper
 * (Bug) Multiple Issues with Chem functionality in Grid
 * JS API Tests: TableQuery: create, run (on different query types) (WIP)
 * SequenceTranslator: parse dimer/triplex
@@ -3296,7 +3713,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * SequenceTranslator: move functions used in draw-svg to helpers
 * bio lib: Add getAlphabet by name, fix NotationConverter.convertHelm, fix UnitsHandler separator property allowing
   undefined, bump version
-* #1204 JS API: update Column.meta.format
+* 1204 JS API: update Column.meta.format
 * Lstolbov/biostructure/render (#1205)
 * Meta: updated chemDraw package version
 * Closes #1192 Bio: detectMacromolecule benchmark tests
@@ -3323,7 +3740,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * SequenceTranslator: draw-svg: object with Y coordinates
 * SequenceTranslator: filter instead of counter using for loop
 * (Bug) Chem: Filters: when there are multiple molecule columns, all filters default to the first one
-* #709 trying to preserve both state and column name
+* 709 trying to preserve both state and column name
 * Utils: #466: getAbout func updated
 * Docker: CI: KyotoCabinet version based on python 3.8
 
@@ -3346,12 +3763,12 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Layouts pane: ability to put the layout on the property panel
 * CI: Deploy process documentation
 * closes #798 selecting dots in jittered scatterplot
-* #828 formula lines modal fixed
-* #828 order/hide dialog rewworked
-* #828 make modal not resizable by default
+* 828 formula lines modal fixed
+* 828 order/hide dialog rewworked
+* 828 make modal not resizable by default
 * JS API: ui.fileBrowser
 * Work in progress.
-* #831: HitTriage: work in progress
+* 831: HitTriage: work in progress
 * Moved InputBase descendants to separate files.
 * AppEvents.onInputCreated global event
 * Ability to reuse database browser, and specify how results are interpreted
@@ -3381,7 +3798,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Datlas connections leaking investigation
 * Datlas: remove trailing ; in the row checking query
 * JS API: Menu.click method
-* #831: HitTriage: work in progress \- refactoring
+* 831: HitTriage: work in progress \- refactoring
 * closes #800 Form does not work after filtering
 * Introduced Entity.package Implemented safe delete New permissions check Derived properties support in ORM
 * Introduced Entity.package
@@ -3425,7 +3842,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Min() and Max() are not compatible with date and datetime columns #689
 * Fixed tests
 * removed debug lines
-* #closes 858 Cell as an input for widget
+* closes 858 Cell as an input for widget
 * (Bug) FilesView: dock manager exception on opening
 * Setup fixes
 * Update doc for proxy
@@ -3544,7 +3961,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Docker: Remove elastic from datagrok
 * Docs: Upgrade docker instructions with certificates
 * PowerGrid: bumped up version to 1.1.0
-* #969 forrula-lines vert lines
+* 969 forrula-lines vert lines
 * Reversed wrong commit
 * Public token
 * Chem #995: clean up -Similarity
@@ -3554,11 +3971,11 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Docs: Alllow askalkin@datagrok.ai to view encrypted files
 * (Bug) JS: grok.functions.call doesn't handle error
 * JS API: correct return type for viewer.getOptions
-* #953: Filters turned off status is not saved in layout
-* #966: Deleted column filter should not be filtered on
-* #969 new classes system ,aybe should be reworked
+* 953: Filters turned off status is not saved in layout
+* 966: Deleted column filter should not be filtered on
+* 969 new classes system ,aybe should be reworked
 * Change order of interop type checks
-* #969 linechart hittest
+* 969 linechart hittest
 * closes #996 Tooltip not working for partly truncated values
 * Funcs: JS-based context functions for multiple columns
 * (Bug) ColumnsInput: number of selected columns is not shown upon construction
@@ -3566,19 +3983,19 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * closes #1015: PowerGrid: Sparklines: Ability to add sparklines from the "Actions" pane for selected columns
 * JS API: GridColumn.scrollIntoView, RangeSlider.scrollBy, RangeSlider.scrollTo
 * PowerGrid: Sparklines: accessing settings from the hamburger menu
-* #930: PowerGrid: sparklines: ability to rename and remove summary columns
-* #930: PowerGrid: sparklines: managing column order
-* #930: PowerGrid: sparklines: setting the sparkline column as a current object after it is created
+* 930: PowerGrid: sparklines: ability to rename and remove summary columns
+* 930: PowerGrid: sparklines: managing column order
+* 930: PowerGrid: sparklines: setting the sparkline column as a current object after it is created
 * Possible NPE fix
 * Deprecated old tests
 * Chem: #454 descriptors
 * Chem: small fix
 * Fixed package init
 * Datlas: fixed project info retrieval
-* #1000 viewport exists
-* #1000 viewport apeears properly, style changed
+* 1000 viewport exists
+* 1000 viewport apeears properly, style changed
 * dialog cliptoscreen onresize
-* #1000 bands
+* 1000 bands
 * Remove labs submodule
 * (Bug) Custom context menu items for JS widgets and viewers cannot be registered via API
 * (Bug) Dropbox provider doesn't work
@@ -3607,7 +4024,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * JS API: update param type in Column.aggregate
 * Grok Spawner: docker entrypoint script
 * Chem: rgroups exclusion
-* #1001 syncing tables in wrong place
+* 1001 syncing tables in wrong place
 * PowerGrid: version bump up
 * Sketch View: update UI
 * closes #657 line chart selectors with special symbols
@@ -3648,19 +4065,19 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Grok Spawner: network properties in responses
 * CI: Junit test results converter
 * 1002 adds axes to matrix plot
-* #1002 inner viewwer setting icon not merged
+* 1002 inner viewwer setting icon not merged
 * Improve start mode selection
 * Dockerfiles: get container port
-* ##1042: Onboarding documentation: moved things around, minor cleanup
+* #1042: Onboarding documentation: moved things around, minor cleanup
 * CI: Add tests manually to junit reports
 * Dashboard Projects (WIP)
-* #1002 matrix plot axes code refactored
+* 1002 matrix plot axes code refactored
 * CI: Convert JSON files to Junit reports
 * CI: Add Rsync to pepputeer base image
 * PowerGrid: version 1.1.2
 * CI: Correct messages to jest tests failures
 * Provided a hook to borrow Hamburger menu by external components
-* #943 basic axes
+* 943 basic axes
 * Removed grid column reset for Hamburger menu
 * CI: Append timeout and evaluation errors to junit reports
 * closes #953 Filters turned off status is not saved in layout
@@ -3671,10 +4088,10 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Docs: Access to servers using SSH
 * Added exportable indices bounds for visible rows and columns
 * Added xangle registration for export of visible rows and columns
-* #943 3D scatter plot enhancements (log coordinates, some ui moments)
+* 943 3D scatter plot enhancements (log coordinates, some ui moments)
 * Add new method (RangeSlider_SetShowHandles) \- need for on/off resize in slider
 * fixes choice unput value not screened
-* #closes 1075
+* closes 1075
 * PropertyGrid editors: moved each editor to a separate file.
 * Viewers: ability to pre-aggregate source DataFrame (WIP)
 * (Bug) Scripting: JS Script fails, when contains more than 6 params
@@ -3691,35 +4108,35 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
   item
 * dpetrov/GitHub-1083 Made Actions closable in the Hamburger menu
 * ColumnComboBox: not opening the drop-down part when right-clicked
-* #943 use existing methods for axes tickmarks
+* 943 use existing methods for axes tickmarks
 * labels refactoring
 * Dockerfile methods WIP
 * Dockerfiles containerAddress fix
 * DockerfilesClient proxyRequest method fix
 * GH-863: Dockerfiles JS API update
-* #1096 x axis fixed
-* #1096 y labels fix
+* 1096 x axis fixed
+* 1096 y labels fix
 * Proper packages names
 * (Bug) Package Entities Naming issues (WIP)
 * (Bug) Script icon incorrect
 * dpetrov/GitHub-1093 Added virtual columns support for grid's columns manager
-* #1096 fixes multiple columns labels
+* 1096 fixes multiple columns labels
 * dpetrov/GitHub-1093 Minor fixes for the grid's columns manager
 * Jenkins: Docs: Add Jenkins setup information
 * Jenkins: Docs: Add password information for Jenkins
 * (Bug) Query Transformation name issue
-* #1098 add hittesting and selection to pc plot
+* 1098 add hittesting and selection to pc plot
 * JS API: Custom inputs (WIP)
 * dpetrov/GitHub-1104: Fixed returning null view field in ViewLayout object
 * Merged in onuf/color-coding-update-bug (pull request #270)
 * Group passwords (WIP)
-* #601 PC plot improvements(add interactivity)
-* #928 context menus
+* 601 PC plot improvements(add interactivity)
+* 928 context menus
 * 601 PC plot improvements(pc plot dies when transformation reset)
-* #943 axes improvments
+* 943 axes improvments
 * Merged in onuf/color-coding-update-bug (pull request #273)
 * update public token
-* #943 issue with axes on otherinstances
+* 943 issue with axes on otherinstances
 * add Dmytro Nahovskyi to list
 * (Bug) Right Click on the Grid's Row Header generates exception
 * 1103 fixes filters in layout behavior
@@ -3740,22 +4157,22 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
   -f772192786c7f01c4f7afacfe68affa1dd2fe9a9-f772192786c7f01c4f7afacfe68affa1dd2fe9a9.docker.tar edited online with
   Bitbucket
 * closes 1126 scatterPlot packed cats with no values
-* #609 pc plot filter in aggr mode
+* 609 pc plot filter in aggr mode
 * skip package filter test
 * Simplified icon methods
-* #943 3dscatterplot onload error sometimes
+* 943 3dscatterplot onload error sometimes
 * (Bug) ColorPicker blinks in Chrome (WIP)
 * Chem: remove substructure search from panel
 * closes 1110 Viewers: legend cannot be resized again
 * closes #1131 MultiColumn Selector: selects only columns filtered by search
 * (Bug) Nginx: Add additional logging to investigate timeouts
 * Docs: LE certificates remewal
-* #1103 layout not saving
+* 1103 layout not saving
 * (Bug) Grok Connect: the connection visibility
 * Settings: mark instance as production (WIP)
-* #943 3dscatterplot fix try
+* 943 3dscatterplot fix try
 * Button alignment for form
-* #609 aggregation mode for pc plot
+* 609 aggregation mode for pc plot
 * closes #1134 trellis plot viewer icon
 * Introduce Viewer Serialization Context for saving layouts and projects
 * (Bug) InfoPanels: Returning map or widget doesn't work
@@ -3767,7 +4184,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * closes #776 Viewer legend is not synchronized with in-viewer filter
 * update deploy.md
 * JS: Icons support for JS Viewers
-* #943 scrollbars should not appear
+* 943 scrollbars should not appear
 * closes 932 Vertical scrollbar is not working in Order or Hide Columns menu
 * Fixed ambiguous column names
 * Package functions: set helpUrl
@@ -3785,18 +4202,18 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * (Bug) Simplify the chain for ViewerSerializationContext
 * 1128 order or hide dialog(move top move bottom)
 * closes 709 filterpanel sync (case with closing filter in different layout)
-* #709 dont close filters menu, just reset them
+* 709 dont close filters menu, just reset them
 * Context menu commands: update conditions for JsViewers
-* #1110 legend cats count incorrect
+* 1110 legend cats count incorrect
 * closes #643 regression lines in log mode, r2 value
 * Merged in onuf/1148-color-coding-extended-ui (pull request #282)
 * closes #1156 filter bitset is reset after adding new column
 * closes #1157 show visible only mode in Order and hide dialog
 * Chem: descriptors dlg fix
 * created missing indexes
-* #709 #643 minor improvments
+* 709 #643 minor improvments
 * Added the SPGI demo dataset
-* #1125 add methods for getting value color into ColumnColorHelper
+* 1125 add methods for getting value color into ColumnColorHelper
 * Release of Pinned Rows
 * Reorder Columns Dialog: improved a tooltip
 * HomeView: got rid of unused code
@@ -3808,7 +4225,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * TrellisPlot: code cleanup
 * Grid: fix #1130: No tooltip on column header if column is too narrow
 * DataFrameViewer: add onDataFrameChanged event
-* #1148 Color coding: Disable the context menu command instead of error message when coloring type is not applicable
+* 1148 Color coding: Disable the context menu command instead of error message when coloring type is not applicable
 * fix #1083: Grid: Popup Dialog from hamburger menu stays after the column is deleted
 * fix #805: Grid: Change column type \- some strange appearance
 * closes #1161 Transformation Editor: use column selector instead of popup menus
@@ -3841,12 +4258,12 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Layouts pane: ability to put the layout on the property panel
 * CI: Deploy process documentation
 * closes #798 selecting dots in jittered scatterplot
-* #828 formula lines modal fixed
-* #828 order/hide dialog rewworked
-* #828 make modal not resizable by default
+* 828 formula lines modal fixed
+* 828 order/hide dialog rewworked
+* 828 make modal not resizable by default
 * JS API: ui.fileBrowser
 * Work in progress.
-* #831: HitTriage: work in progress
+* 831: HitTriage: work in progress
 * Moved InputBase descendants to separate files.
 * AppEvents.onInputCreated global event
 * Ability to reuse database browser, and specify how results are interpreted
@@ -3876,7 +4293,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Datlas connections leaking investigation
 * Datlas: remove trailing ; in the row checking query
 * JS API: Menu.click method
-* #831: HitTriage: work in progress \- refactoring
+* 831: HitTriage: work in progress \- refactoring
 * closes #800 Form does not work after filtering
 * Introduced Entity.package Implemented safe delete New permissions check Derived properties support in ORM
 * Introduced Entity.package
@@ -3920,7 +4337,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Min() and Max() are not compatible with date and datetime columns #689
 * Fixed tests
 * removed debug lines
-* #closes 858 Cell as an input for widget
+* closes 858 Cell as an input for widget
 * (Bug) FilesView: dock manager exception on opening
 * Setup fixes
 * Update doc for proxy
@@ -4039,7 +4456,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Docker: Remove elastic from datagrok
 * Docs: Upgrade docker instructions with certificates
 * PowerGrid: bumped up version to 1.1.0
-* #969 forrula-lines vert lines
+* 969 forrula-lines vert lines
 * Reversed wrong commit
 * Public token
 * Chem #995: clean up -Similarity
@@ -4049,11 +4466,11 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Docs: Alllow askalkin@datagrok.ai to view encrypted files
 * (Bug) JS: grok.functions.call doesn't handle error
 * JS API: correct return type for viewer.getOptions
-* #953: Filters turned off status is not saved in layout
-* #966: Deleted column filter should not be filtered on
-* #969 new classes system ,aybe should be reworked
+* 953: Filters turned off status is not saved in layout
+* 966: Deleted column filter should not be filtered on
+* 969 new classes system ,aybe should be reworked
 * Change order of interop type checks
-* #969 linechart hittest
+* 969 linechart hittest
 * closes #996 Tooltip not working for partly truncated values
 * Funcs: JS-based context functions for multiple columns
 * (Bug) ColumnsInput: number of selected columns is not shown upon construction
@@ -4061,19 +4478,19 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * closes #1015: PowerGrid: Sparklines: Ability to add sparklines from the "Actions" pane for selected columns
 * JS API: GridColumn.scrollIntoView, RangeSlider.scrollBy, RangeSlider.scrollTo
 * PowerGrid: Sparklines: accessing settings from the hamburger menu
-* #930: PowerGrid: sparklines: ability to rename and remove summary columns
-* #930: PowerGrid: sparklines: managing column order
-* #930: PowerGrid: sparklines: setting the sparkline column as a current object after it is created
+* 930: PowerGrid: sparklines: ability to rename and remove summary columns
+* 930: PowerGrid: sparklines: managing column order
+* 930: PowerGrid: sparklines: setting the sparkline column as a current object after it is created
 * Possible NPE fix
 * Deprecated old tests
 * Chem: #454 descriptors
 * Chem: small fix
 * Fixed package init
 * Datlas: fixed project info retrieval
-* #1000 viewport exists
-* #1000 viewport apeears properly, style changed
+* 1000 viewport exists
+* 1000 viewport apeears properly, style changed
 * dialog cliptoscreen onresize
-* #1000 bands
+* 1000 bands
 * Remove labs submodule
 * (Bug) Custom context menu items for JS widgets and viewers cannot be registered via API
 * (Bug) Dropbox provider doesn't work
@@ -4102,7 +4519,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * JS API: update param type in Column.aggregate
 * Grok Spawner: docker entrypoint script
 * Chem: rgroups exclusion
-* #1001 syncing tables in wrong place
+* 1001 syncing tables in wrong place
 * PowerGrid: version bump up
 * Sketch View: update UI
 * closes #657 line chart selectors with special symbols
@@ -4143,19 +4560,19 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Grok Spawner: network properties in responses
 * CI: Junit test results converter
 * 1002 adds axes to matrix plot
-* #1002 inner viewwer setting icon not merged
+* 1002 inner viewwer setting icon not merged
 * Improve start mode selection
 * Dockerfiles: get container port
-* ##1042: Onboarding documentation: moved things around, minor cleanup
+* #1042: Onboarding documentation: moved things around, minor cleanup
 * CI: Add tests manually to junit reports
 * Dashboard Projects (WIP)
-* #1002 matrix plot axes code refactored
+* 1002 matrix plot axes code refactored
 * CI: Convert JSON files to Junit reports
 * CI: Add Rsync to pepputeer base image
 * PowerGrid: version 1.1.2
 * CI: Correct messages to jest tests failures
 * Provided a hook to borrow Hamburger menu by external components
-* #943 basic axes
+* 943 basic axes
 * Removed grid column reset for Hamburger menu
 * CI: Append timeout and evaluation errors to junit reports
 * closes #953 Filters turned off status is not saved in layout
@@ -4166,10 +4583,10 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Docs: Access to servers using SSH
 * Added exportable indices bounds for visible rows and columns
 * Added xangle registration for export of visible rows and columns
-* #943 3D scatter plot enhancements (log coordinates, some ui moments)
+* 943 3D scatter plot enhancements (log coordinates, some ui moments)
 * Add new method (RangeSlider_SetShowHandles) \- need for on/off resize in slider
 * fixes choice unput value not screened
-* #closes 1075
+* closes 1075
 * PropertyGrid editors: moved each editor to a separate file.
 * Viewers: ability to pre-aggregate source DataFrame (WIP)
 * (Bug) Scripting: JS Script fails, when contains more than 6 params
@@ -4186,35 +4603,35 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
   item
 * dpetrov/GitHub-1083 Made Actions closable in the Hamburger menu
 * ColumnComboBox: not opening the drop-down part when right-clicked
-* #943 use existing methods for axes tickmarks
+* 943 use existing methods for axes tickmarks
 * labels refactoring
 * Dockerfile methods WIP
 * Dockerfiles containerAddress fix
 * DockerfilesClient proxyRequest method fix
 * GH-863: Dockerfiles JS API update
-* #1096 x axis fixed
-* #1096 y labels fix
+* 1096 x axis fixed
+* 1096 y labels fix
 * Proper packages names
 * (Bug) Package Entities Naming issues (WIP)
 * (Bug) Script icon incorrect
 * dpetrov/GitHub-1093 Added virtual columns support for grid's columns manager
-* #1096 fixes multiple columns labels
+* 1096 fixes multiple columns labels
 * dpetrov/GitHub-1093 Minor fixes for the grid's columns manager
 * Jenkins: Docs: Add Jenkins setup information
 * Jenkins: Docs: Add password information for Jenkins
 * (Bug) Query Transformation name issue
-* #1098 add hittesting and selection to pc plot
+* 1098 add hittesting and selection to pc plot
 * JS API: Custom inputs (WIP)
 * dpetrov/GitHub-1104: Fixed returning null view field in ViewLayout object
 * Merged in onuf/color-coding-update-bug (pull request #270)
 * Group passwords (WIP)
-* #601 PC plot improvements(add interactivity)
-* #928 context menus
+* 601 PC plot improvements(add interactivity)
+* 928 context menus
 * 601 PC plot improvements(pc plot dies when transformation reset)
-* #943 axes improvments
+* 943 axes improvments
 * Merged in onuf/color-coding-update-bug (pull request #273)
 * update public token
-* #943 issue with axes on otherinstances
+* 943 issue with axes on otherinstances
 * add Dmytro Nahovskyi to list
 * (Bug) Right Click on the Grid's Row Header generates exception
 * 1103 fixes filters in layout behavior
@@ -4235,22 +4652,22 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
   -f772192786c7f01c4f7afacfe68affa1dd2fe9a9-f772192786c7f01c4f7afacfe68affa1dd2fe9a9.docker.tar edited online with
   Bitbucket
 * closes 1126 scatterPlot packed cats with no values
-* #609 pc plot filter in aggr mode
+* 609 pc plot filter in aggr mode
 * skip package filter test
 * Simplified icon methods
-* #943 3dscatterplot onload error sometimes
+* 943 3dscatterplot onload error sometimes
 * (Bug) ColorPicker blinks in Chrome (WIP)
 * Chem: remove substructure search from panel
 * closes 1110 Viewers: legend cannot be resized again
 * closes #1131 MultiColumn Selector: selects only columns filtered by search
 * (Bug) Nginx: Add additional logging to investigate timeouts
 * Docs: LE certificates remewal
-* #1103 layout not saving
+* 1103 layout not saving
 * (Bug) Grok Connect: the connection visibility
 * Settings: mark instance as production
-* #943 3dscatterplot fix try
+* 943 3dscatterplot fix try
 * Button alignment for form
-* #609 aggregation mode for pc plot
+* 609 aggregation mode for pc plot
 * closes #1134 trellis plot viewer icon
 * Introduce Viewer Serialization Context for saving layouts and projects
 * (Bug) InfoPanels: Returning map or widget doesn't work
@@ -4262,13 +4679,13 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * closes #776 Viewer legend is not synchronized with in-viewer filter
 * update deploy.md
 * JS: Icons support for JS Viewers
-* #943 scrollbars should not appear
+* 943 scrollbars should not appear
 * closes 932 Vertical scrollbar is not working in Order or Hide Columns menu
 * Fixed ambiguous column names
 * Package functions: set helpUrl
 * Removed debug code
 * ORM: FuncCall visibility should depend on Func visibility (WIP)
-* #1110 legend cats count incorrect
+* 1110 legend cats count incorrect
 * add images for connector
 
 ## 2022-10-19 Dev build 1.8.0
@@ -4290,12 +4707,12 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Layouts pane: ability to put the layout on the property panel
 * CI: Deploy process documentation
 * closes #798 selecting dots in jittered scatterplot
-* #828 formula lines modal fixed
-* #828 order/hide dialog rewworked
-* #828 make modal not resizable by default
+* 828 formula lines modal fixed
+* 828 order/hide dialog rewworked
+* 828 make modal not resizable by default
 * JS API: ui.fileBrowser
 * Work in progress.
-* #831: HitTriage: work in progress
+* 831: HitTriage: work in progress
 * Moved InputBase descendants to separate files.
 * AppEvents.onInputCreated global event
 * Ability to reuse database browser, and specify how results are interpreted
@@ -4325,7 +4742,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Datlas connections leaking investigation
 * Datlas: remove trailing ; in the row checking query
 * JS API: Menu.click method
-* #831: HitTriage: work in progress \- refactoring
+* 831: HitTriage: work in progress \- refactoring
 * closes #800 Form does not work after filtering
 * Introduced Entity.package Implemented safe delete New permissions check Derived properties support in ORM
 * Introduced Entity.package
@@ -4369,7 +4786,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Min() and Max() are not compatible with date and datetime columns #689
 * Fixed tests
 * removed debug lines
-* #closes 858 Cell as an input for widget
+* closes 858 Cell as an input for widget
 * (Bug) FilesView: dock manager exception on opening
 * Setup fixes
 * Update doc for proxy
@@ -4488,7 +4905,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Docker: Remove elastic from datagrok
 * Docs: Upgrade docker instructions with certificates
 * PowerGrid: bumped up version to 1.1.0
-* #969 forrula-lines vert lines
+* 969 forrula-lines vert lines
 * Reversed wrong commit
 * Public token
 * Chem #995: clean up -Similarity
@@ -4498,11 +4915,11 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Docs: Alllow askalkin@datagrok.ai to view encrypted files
 * (Bug) JS: grok.functions.call doesn't handle error
 * JS API: correct return type for viewer.getOptions
-* #953: Filters turned off status is not saved in layout
-* #966: Deleted column filter should not be filtered on
-* #969 new classes system ,aybe should be reworked
+* 953: Filters turned off status is not saved in layout
+* 966: Deleted column filter should not be filtered on
+* 969 new classes system ,aybe should be reworked
 * Change order of interop type checks
-* #969 linechart hittest
+* 969 linechart hittest
 * closes #996 Tooltip not working for partly truncated values
 * Funcs: JS-based context functions for multiple columns
 * (Bug) ColumnsInput: number of selected columns is not shown upon construction
@@ -4510,19 +4927,19 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * closes #1015: PowerGrid: Sparklines: Ability to add sparklines from the "Actions" pane for selected columns
 * JS API: GridColumn.scrollIntoView, RangeSlider.scrollBy, RangeSlider.scrollTo
 * PowerGrid: Sparklines: accessing settings from the hamburger menu
-* #930: PowerGrid: sparklines: ability to rename and remove summary columns
-* #930: PowerGrid: sparklines: managing column order
-* #930: PowerGrid: sparklines: setting the sparkline column as a current object after it is created
+* 930: PowerGrid: sparklines: ability to rename and remove summary columns
+* 930: PowerGrid: sparklines: managing column order
+* 930: PowerGrid: sparklines: setting the sparkline column as a current object after it is created
 * Possible NPE fix
 * Deprecated old tests
 * Chem: #454 descriptors
 * Chem: small fix
 * Fixed package init
 * Datlas: fixed project info retrieval
-* #1000 viewport exists
-* #1000 viewport apeears properly, style changed
+* 1000 viewport exists
+* 1000 viewport apeears properly, style changed
 * dialog cliptoscreen onresize
-* #1000 bands
+* 1000 bands
 * Remove labs submodule
 * (Bug) Custom context menu items for JS widgets and viewers cannot be registered via API
 * (Bug) Dropbox provider doesn't work
@@ -4551,7 +4968,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * JS API: update param type in Column.aggregate
 * Grok Spawner: docker entrypoint script
 * Chem: rgroups exclusion
-* #1001 syncing tables in wrong place
+* 1001 syncing tables in wrong place
 * PowerGrid: version bump up
 * Sketch View: update UI
 * closes #657 line chart selectors with special symbols
@@ -4592,19 +5009,19 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Grok Spawner: network properties in responses
 * CI: Junit test results converter
 * 1002 adds axes to matrix plot
-* #1002 inner viewwer setting icon not merged
+* 1002 inner viewwer setting icon not merged
 * Improve start mode selection
 * Dockerfiles: get container port (WIP)
-* ##1042: Onboarding documentation: moved things around, minor cleanup
+* #1042: Onboarding documentation: moved things around, minor cleanup
 * CI: Add tests manually to junit reports
 * Dashboard Projects (WIP)
-* #1002 matrix plot axes code refactored
+* 1002 matrix plot axes code refactored
 * CI: Convert JSON files to Junit reports
 * CI: Add Rsync to pepputeer base image
 * PowerGrid: version 1.1.2
 * CI: Correct messages to jest tests failures
 * Provided a hook to borrow Hamburger menu by external components
-* #943 basic axes
+* 943 basic axes
 * Removed grid column reset for Hamburger menu
 * CI: Append timeout and evaluation errors to junit reports
 * closes #953 Filters turned off status is not saved in layout
@@ -4615,10 +5032,10 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Docs: Access to servers using SSH
 * Added exportable indices bounds for visible rows and columns
 * Added xangle registration for export of visible rows and columns
-* #943 3D scatter plot enhancements (log coordinates, some ui moments)
+* 943 3D scatter plot enhancements (log coordinates, some ui moments)
 * Add new method (RangeSlider_SetShowHandles) \- need for on/off resize in slider
 * fixes choice unput value not screened
-* #closes 1075
+* closes 1075
 * PropertyGrid editors: moved each editor to a separate file.
 * Viewers: ability to pre-aggregate source DataFrame (WIP)
 * (Bug) Scripting: JS Script fails, when contains more than 6 params
@@ -4635,35 +5052,35 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
   item
 * dpetrov/GitHub-1083 Made Actions closable in the Hamburger menu
 * ColumnComboBox: not opening the drop-down part when right-clicked
-* #943 use existing methods for axes tickmarks
+* 943 use existing methods for axes tickmarks
 * labels refactoring
 * Dockerfile methods WIP
 * Dockerfiles containerAddress fix
 * DockerfilesClient proxyRequest method fix
 * GH-863: Dockerfiles JS API update
-* #1096 x axis fixed
-* #1096 y labels fix
+* 1096 x axis fixed
+* 1096 y labels fix
 * Proper packages names
 * (Bug) Package Entities Naming issues (WIP)
 * (Bug) Script icon incorrect
 * dpetrov/GitHub-1093 Added virtual columns support for grid's columns manager
-* #1096 fixes multiple columns labels
+* 1096 fixes multiple columns labels
 * dpetrov/GitHub-1093 Minor fixes for the grid's columns manager
 * Jenkins: Docs: Add Jenkins setup information
 * Jenkins: Docs: Add password information for Jenkins
 * (Bug) Query Transformation name issue
-* #1098 add hittesting and selection to pc plot
+* 1098 add hittesting and selection to pc plot
 * JS API: Custom inputs (WIP)
 * dpetrov/GitHub-1104: Fixed returning null view field in ViewLayout object
 * Merged in onuf/color-coding-update-bug (pull request #270)
 * Group passwords (WIP)
-* #601 PC plot improvements(add interactivity)
-* #928 context menus
+* 601 PC plot improvements(add interactivity)
+* 928 context menus
 * 601 PC plot improvements(pc plot dies when transformation reset)
-* #943 axes improvments
+* 943 axes improvments
 * Merged in onuf/color-coding-update-bug (pull request #273)
 * update public token
-* #943 issue with axes on otherinstances
+* 943 issue with axes on otherinstances
 * add Dmytro Nahovskyi to list
 * (Bug) Right Click on the Grid's Row Header generates exception (WIP)
 * 1103 fixes filters in layout behavior
@@ -4684,7 +5101,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
   -f772192786c7f01c4f7afacfe68affa1dd2fe9a9-f772192786c7f01c4f7afacfe68affa1dd2fe9a9.docker.tar edited online with
   Bitbucket
 * closes 1126 scatterPlot packed cats with no values
-* #609 pc plot filter in aggr mode
+* 609 pc plot filter in aggr mode
 * skip package filter test
 * (Bug) ColorPicker blinks in Chrome (WIP)
 
@@ -4711,12 +5128,12 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Layouts pane: ability to put the layout on the property panel
 * CI: Deploy process documentation
 * closes #798 selecting dots in jittered scatterplot
-* #828 formula lines modal fixed
-* #828 order/hide dialog rewworked
-* #828 make modal not resizable by default
+* 828 formula lines modal fixed
+* 828 order/hide dialog rewworked
+* 828 make modal not resizable by default
 * JS API: ui.fileBrowser
 * Work in progress.
-* #831: HitTriage: work in progress
+* 831: HitTriage: work in progress
 * Moved InputBase descendants to separate files.
 * AppEvents.onInputCreated global event
 * Ability to reuse database browser, and specify how results are interpreted
@@ -4746,7 +5163,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Datlas connections leaking investigation (WIP)
 * Datlas: remove trailing ; in the row checking query
 * JS API: Menu.click method
-* #831: HitTriage: work in progress \- refactoring
+* 831: HitTriage: work in progress \- refactoring
 * closes #800 Form does not work after filtering
 * Introduced Entity.package Implemented safe delete New permissions check Derived properties support in ORM
 * Introduced Entity.package
@@ -4790,7 +5207,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Min() and Max() are not compatible with date and datetime columns #689
 * Fixed tests
 * removed debug lines
-* #closes 858 Cell as an input for widget
+* closes 858 Cell as an input for widget
 * (Bug) FilesView: dock manager exception on opening
 * Setup fixes
 * Update doc for proxy
@@ -4909,7 +5326,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Docker: Remove elastic from datagrok
 * Docs: Upgrade docker instructions with certificates
 * PowerGrid: bumped up version to 1.1.0
-* #969 forrula-lines vert lines
+* 969 forrula-lines vert lines
 * Reversed wrong commit
 * Public token
 * Chem #995: clean up -Similarity
@@ -4919,11 +5336,11 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Docs: Alllow askalkin@datagrok.ai to view encrypted files
 * (Bug) JS: grok.functions.call doesn't handle error
 * JS API: correct return type for viewer.getOptions
-* #953: Filters turned off status is not saved in layout
-* #966: Deleted column filter should not be filtered on
-* #969 new classes system ,aybe should be reworked
+* 953: Filters turned off status is not saved in layout
+* 966: Deleted column filter should not be filtered on
+* 969 new classes system ,aybe should be reworked
 * Change order of interop type checks
-* #969 linechart hittest
+* 969 linechart hittest
 * closes #996 Tooltip not working for partly truncated values
 * Funcs: JS-based context functions for multiple columns (WIP)
 * (Bug) ColumnsInput: number of selected columns is not shown upon construction
@@ -4931,19 +5348,19 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * closes #1015: PowerGrid: Sparklines: Ability to add sparklines from the "Actions" pane for selected columns
 * JS API: GridColumn.scrollIntoView, RangeSlider.scrollBy, RangeSlider.scrollTo
 * PowerGrid: Sparklines: accessing settings from the hamburger menu
-* #930: PowerGrid: sparklines: ability to rename and remove summary columns
-* #930: PowerGrid: sparklines: managing column order
-* #930: PowerGrid: sparklines: setting the sparkline column as a current object after it is created
+* 930: PowerGrid: sparklines: ability to rename and remove summary columns
+* 930: PowerGrid: sparklines: managing column order
+* 930: PowerGrid: sparklines: setting the sparkline column as a current object after it is created
 * Possible NPE fix
 * Deprecated old tests
 * Chem: #454 descriptors
 * Chem: small fix
 * Fixed package init
 * Datlas: fixed project info retrieval
-* #1000 viewport exists
-* #1000 viewport apeears properly, style changed
+* 1000 viewport exists
+* 1000 viewport apeears properly, style changed
 * dialog cliptoscreen onresize
-* #1000 bands
+* 1000 bands
 * Remove labs submodule
 * (Bug) Custom context menu items for JS widgets and viewers cannot be registered via API
 * (Bug) Dropbox provider doesn't work
@@ -4972,7 +5389,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * JS API: update param type in Column.aggregate
 * Grok Spawner: docker entrypoint script
 * Chem: rgroups exclusion
-* #1001 syncing tables in wrong place
+* 1001 syncing tables in wrong place
 * PowerGrid: version bump up
 * Sketch View: update UI
 * closes #657 line chart selectors with special symbols
@@ -4991,7 +5408,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Migrate Chem tests from ApiTests to Chem package
 * SequenceTranslator: fix validation corner case
 * (Bug) __jsThen error during some packages init
-* #1014: Monomer cell renderer fix
+* 1014: Monomer cell renderer fix
 * Peptides: cleanup
 * Peptides: fixed Mutation Cliffs cell colors
 * Bio: using grok.shell.tv for splitToMonomers
@@ -4999,7 +5416,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Peptides: renamed constant
 * Peptides: moved gridCellValidation function
 * Peptides: renamed grid cell validation function
-* #731: Chem \- sketcher tests
+* 731: Chem \- sketcher tests
 * Docking: highlighting the separator
 * Bio: #970 fingerprints
 * Add a script to find internal links in help
@@ -5023,12 +5440,12 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Layouts pane: ability to put the layout on the property panel
 * CI: Deploy process documentation
 * closes #798 selecting dots in jittered scatterplot
-* #828 formula lines modal fixed
-* #828 order/hide dialog rewworked
-* #828 make modal not resizable by default
+* 828 formula lines modal fixed
+* 828 order/hide dialog rewworked
+* 828 make modal not resizable by default
 * JS API: ui.fileBrowser
 * Work in progress.
-* #831: HitTriage: work in progress
+* 831: HitTriage: work in progress
 * Moved InputBase descendants to separate files.
 * AppEvents.onInputCreated global event
 * Ability to reuse database browser, and specify how results are interpreted
@@ -5058,7 +5475,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Datlas connections leaking investigation (WIP)
 * Datlas: remove trailing ; in the row checking query
 * JS API: Menu.click method
-* #831: HitTriage: work in progress \- refactoring
+* 831: HitTriage: work in progress \- refactoring
 * closes #800 Form does not work after filtering
 * Introduced Entity.package Implemented safe delete New permissions check Derived properties support in ORM
 * Introduced Entity.package
@@ -5102,7 +5519,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Min() and Max() are not compatible with date and datetime columns #689
 * Fixed tests
 * removed debug lines
-* #closes 858 Cell as an input for widget
+* closes 858 Cell as an input for widget
 * (Bug) FilesView: dock manager exception on opening
 * Setup fixes
 * Update doc for proxy
@@ -5221,7 +5638,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Docker: Remove elastic from datagrok
 * Docs: Upgrade docker instructions with certificates
 * PowerGrid: bumped up version to 1.1.0
-* #969 forrula-lines vert lines
+* 969 forrula-lines vert lines
 * Reversed wrong commit
 * Public token
 * Chem #995: clean up -Similarity
@@ -5231,11 +5648,11 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Docs: Alllow askalkin@datagrok.ai to view encrypted files
 * (Bug) JS: grok.functions.call doesn't handle error
 * JS API: correct return type for viewer.getOptions
-* #953: Filters turned off status is not saved in layout
-* #966: Deleted column filter should not be filtered on
-* #969 new classes system ,aybe should be reworked
+* 953: Filters turned off status is not saved in layout
+* 966: Deleted column filter should not be filtered on
+* 969 new classes system ,aybe should be reworked
 * Change order of interop type checks
-* #969 linechart hittest
+* 969 linechart hittest
 * closes #996 Tooltip not working for partly truncated values
 * Funcs: JS-based context functions for multiple columns (WIP)
 * (Bug) ColumnsInput: number of selected columns is not shown upon construction
@@ -5243,9 +5660,9 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * closes #1015: PowerGrid: Sparklines: Ability to add sparklines from the "Actions" pane for selected columns
 * JS API: GridColumn.scrollIntoView, RangeSlider.scrollBy, RangeSlider.scrollTo
 * PowerGrid: Sparklines: accessing settings from the hamburger menu
-* #930: PowerGrid: sparklines: ability to rename and remove summary columns
-* #930: PowerGrid: sparklines: managing column order
-* #930: PowerGrid: sparklines: setting the sparkline column as a current object after it is created
+* 930: PowerGrid: sparklines: ability to rename and remove summary columns
+* 930: PowerGrid: sparklines: managing column order
+* 930: PowerGrid: sparklines: setting the sparkline column as a current object after it is created
 * Possible NPE fix
 * Deprecated old tests
 * Fixed package init
@@ -5273,12 +5690,12 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Layouts pane: ability to put the layout on the property panel
 * CI: Deploy process documentation
 * closes #798 selecting dots in jittered scatterplot
-* #828 formula lines modal fixed
-* #828 order/hide dialog rewworked
-* #828 make modal not resizable by default
+* 828 formula lines modal fixed
+* 828 order/hide dialog rewworked
+* 828 make modal not resizable by default
 * JS API: ui.fileBrowser
 * Work in progress.
-* #831: HitTriage: work in progress
+* 831: HitTriage: work in progress
 * Moved InputBase descendants to separate files.
 * AppEvents.onInputCreated global event
 * Ability to reuse database browser, and specify how results are interpreted
@@ -5308,7 +5725,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Datlas connections leaking investigation (WIP)
 * Datlas: remove trailing ; in the row checking query
 * JS API: Menu.click method
-* #831: HitTriage: work in progress \- refactoring
+* 831: HitTriage: work in progress \- refactoring
 * closes #800 Form does not work after filtering
 * Introduced Entity.package Implemented safe delete New permissions check Derived properties support in ORM
 * Introduced Entity.package
@@ -5352,7 +5769,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Min() and Max() are not compatible with date and datetime columns #689
 * Fixed tests
 * removed debug lines
-* #closes 858 Cell as an input for widget
+* closes 858 Cell as an input for widget
 * (Bug) FilesView: dock manager exception on opening
 * Setup fixes
 * Update doc for proxy
@@ -5471,7 +5888,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Docker: Remove elastic from datagrok
 * Docs: Upgrade docker instructions with certificates
 * PowerGrid: bumped up version to 1.1.0
-* #969 forrula-lines vert lines
+* 969 forrula-lines vert lines
 * Reversed wrong commit
 * Public token
 * Chem #995: clean up -Similarity
@@ -5481,11 +5898,11 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Docs: Alllow askalkin@datagrok.ai to view encrypted files
 * (Bug) JS: grok.functions.call doesn't handle error
 * JS API: correct return type for viewer.getOptions
-* #953: Filters turned off status is not saved in layout
-* #966: Deleted column filter should not be filtered on
-* #969 new classes system ,aybe should be reworked
+* 953: Filters turned off status is not saved in layout
+* 966: Deleted column filter should not be filtered on
+* 969 new classes system ,aybe should be reworked
 * Change order of interop type checks
-* #969 linechart hittest
+* 969 linechart hittest
 * closes #996 Tooltip not working for partly truncated values
 * Funcs: JS-based context functions for multiple columns (WIP)
 * (Bug) ColumnsInput: number of selected columns is not shown upon construction
@@ -5493,9 +5910,9 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * closes #1015: PowerGrid: Sparklines: Ability to add sparklines from the "Actions" pane for selected columns
 * JS API: GridColumn.scrollIntoView, RangeSlider.scrollBy, RangeSlider.scrollTo
 * PowerGrid: Sparklines: accessing settings from the hamburger menu
-* #930: PowerGrid: sparklines: ability to rename and remove summary columns
-* #930: PowerGrid: sparklines: managing column order
-* #930: PowerGrid: sparklines: setting the sparkline column as a current object after it is created
+* 930: PowerGrid: sparklines: ability to rename and remove summary columns
+* 930: PowerGrid: sparklines: managing column order
+* 930: PowerGrid: sparklines: setting the sparkline column as a current object after it is created
 * Possible NPE fix
 * Deprecated old tests
 * Fixed package init
@@ -5534,12 +5951,12 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Layouts pane: ability to put the layout on the property panel
 * CI: Deploy process documentation
 * closes #798 selecting dots in jittered scatterplot
-* #828 formula lines modal fixed
-* #828 order/hide dialog rewworked
-* #828 make modal not resizable by default
+* 828 formula lines modal fixed
+* 828 order/hide dialog rewworked
+* 828 make modal not resizable by default
 * JS API: ui.fileBrowser
 * Work in progress.
-* #831: HitTriage: work in progress
+* 831: HitTriage: work in progress
 * Moved InputBase descendants to separate files.
 * AppEvents.onInputCreated global event
 * Ability to reuse database browser, and specify how results are interpreted
@@ -5569,7 +5986,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Datlas connections leaking investigation (WIP)
 * Datlas: remove trailing ; in the row checking query
 * JS API: Menu.click method
-* #831: HitTriage: work in progress \- refactoring
+* 831: HitTriage: work in progress \- refactoring
 * closes #800 Form does not work after filtering
 * Introduced Entity.package Implemented safe delete New permissions check Derived properties support in ORM
 * Introduced Entity.package
@@ -5613,7 +6030,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Min() and Max() are not compatible with date and datetime columns #689
 * Fixed tests
 * removed debug lines
-* #closes 858 Cell as an input for widget
+* closes 858 Cell as an input for widget
 * (Bug) FilesView: dock manager exception on opening
 * Setup fixes
 * Update doc for proxy
@@ -5732,7 +6149,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Docker: Remove elastic from datagrok
 * Docs: Upgrade docker instructions with certificates
 * PowerGrid: bumped up version to 1.1.0
-* #969 forrula-lines vert lines
+* 969 forrula-lines vert lines
 * Reversed wrong commit
 * Public token
 * Chem #995: clean up -Similarity
@@ -5742,13 +6159,13 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Docs: Alllow askalkin@datagrok.ai to view encrypted files
 * (Bug) JS: grok.functions.call doesn't handle error
 * JS API: correct return type for viewer.getOptions
-* #953: Filters turned off status is not saved in layout
-* #966: Deleted column filter should not be filtered on
-* #969 new classes system ,aybe should be reworked
+* 953: Filters turned off status is not saved in layout
+* 966: Deleted column filter should not be filtered on
+* 969 new classes system ,aybe should be reworked
 * Change order of interop type checks
-* #969 linechart hittest
+* 969 linechart hittest
 * closes #996 Tooltip not working for partly truncated values
-* #864: splitToMonomers function
+* 864: splitToMonomers function
 * Issue #976 Chem: elemental analysis code refactoring
 * Issue #976: Chem: elemental analysis (add conversion from smiles to molblock)
 * Funcs: JS-based context functions for multiple columns (WIP)
@@ -5761,10 +6178,10 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * closes #1015: PowerGrid: Sparklines: Ability to add sparklines from the "Actions" pane for selected columns
 * JS API: GridColumn.scrollIntoView, RangeSlider.scrollBy, RangeSlider.scrollTo
 * PowerGrid: Sparklines: accessing settings from the hamburger menu
-* #930: PowerGrid: sparklines: ability to rename and remove summary columns
-* #930: PowerGrid: sparklines: not including datatime columns by default
-* #930: PowerGrid: sparklines: managing column order
-* #930: PowerGrid: sparklines: setting the sparkline column as a current object after it is created
+* 930: PowerGrid: sparklines: ability to rename and remove summary columns
+* 930: PowerGrid: sparklines: not including datatime columns by default
+* 930: PowerGrid: sparklines: managing column order
+* 930: PowerGrid: sparklines: setting the sparkline column as a current object after it is created
 * Test utils
 * Possible NPE fix
 * Deprecated old tests
@@ -5789,12 +6206,12 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Layouts pane: ability to put the layout on the property panel
 * CI: Deploy process documentation
 * closes #798 selecting dots in jittered scatterplot
-* #828 formula lines modal fixed
-* #828 order/hide dialog rewworked
-* #828 make modal not resizable by default
+* 828 formula lines modal fixed
+* 828 order/hide dialog rewworked
+* 828 make modal not resizable by default
 * JS API: ui.fileBrowser
 * Work in progress.
-* #831: HitTriage: work in progress
+* 831: HitTriage: work in progress
 * Moved InputBase descendants to separate files.
 * AppEvents.onInputCreated global event
 * Ability to reuse database browser, and specify how results are interpreted
@@ -5824,7 +6241,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Datlas connections leaking investigation (WIP)
 * Datlas: remove trailing ; in the row checking query
 * JS API: Menu.click method
-* #831: HitTriage: work in progress \- refactoring
+* 831: HitTriage: work in progress \- refactoring
 * closes #800 Form does not work after filtering
 * Introduced Entity.package Implemented safe delete New permissions check Derived properties support in ORM
 * Introduced Entity.package
@@ -5868,7 +6285,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Min() and Max() are not compatible with date and datetime columns #689
 * Fixed tests
 * removed debug lines
-* #closes 858 Cell as an input for widget
+* closes 858 Cell as an input for widget
 * (Bug) FilesView: dock manager exception on opening
 * Setup fixes
 * Update doc for proxy
@@ -6016,12 +6433,12 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Layouts pane: ability to put the layout on the property panel
 * CI: Deploy process documentation
 * closes #798 selecting dots in jittered scatterplot
-* #828 formula lines modal fixed
-* #828 order/hide dialog rewworked
-* #828 make modal not resizable by default
+* 828 formula lines modal fixed
+* 828 order/hide dialog rewworked
+* 828 make modal not resizable by default
 * JS API: ui.fileBrowser
 * Work in progress.
-* #831: HitTriage: work in progress
+* 831: HitTriage: work in progress
 * Moved InputBase descendants to separate files.
 * AppEvents.onInputCreated global event
 * Ability to reuse database browser, and specify how results are interpreted
@@ -6051,7 +6468,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Datlas connections leaking investigation (WIP)
 * Datlas: remove trailing ; in the row checking query
 * JS API: Menu.click method
-* #831: HitTriage: work in progress \- refactoring
+* 831: HitTriage: work in progress \- refactoring
 * closes #800 Form does not work after filtering
 * Introduced Entity.package Implemented safe delete New permissions check Derived properties support in ORM
 * Introduced Entity.package
@@ -6095,7 +6512,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Min() and Max() are not compatible with date and datetime columns #689
 * Fixed tests
 * removed debug lines
-* #closes 858 Cell as an input for widget
+* closes 858 Cell as an input for widget
 * (Bug) FilesView: dock manager exception on opening
 * Setup fixes
 * Update doc for proxy
@@ -6244,12 +6661,12 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Layouts pane: ability to put the layout on the property panel
 * CI: Deploy process documentation
 * closes #798 selecting dots in jittered scatterplot
-* #828 formula lines modal fixed
-* #828 order/hide dialog rewworked
-* #828 make modal not resizable by default
+* 828 formula lines modal fixed
+* 828 order/hide dialog rewworked
+* 828 make modal not resizable by default
 * JS API: ui.fileBrowser
 * Work in progress.
-* #831: HitTriage: work in progress
+* 831: HitTriage: work in progress
 * Moved InputBase descendants to separate files.
 * AppEvents.onInputCreated global event
 * Ability to reuse database browser, and specify how results are interpreted
@@ -6279,7 +6696,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Datlas connections leaking investigation (WIP)
 * Datlas: remove trailing ; in the row checking query
 * JS API: Menu.click method
-* #831: HitTriage: work in progress \- refactoring
+* 831: HitTriage: work in progress \- refactoring
 * closes #800 Form does not work after filtering
 * Introduced Entity.package Implemented safe delete New permissions check Derived properties support in ORM
 * Introduced Entity.package
@@ -6323,7 +6740,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Min() and Max() are not compatible with date and datetime columns #689
 * Fixed tests
 * removed debug lines
-* #closes 858 Cell as an input for widget
+* closes 858 Cell as an input for widget
 * (Bug) FilesView: dock manager exception on opening
 * Setup fixes
 * Update doc for proxy
@@ -6446,14 +6863,14 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Ability to save favorites for groups
 * Grok connect: stress test
 * Wiki: macromolecules: harmonization & cleanup
-* #10933legends almost work in any position
-* #10933 resdrawing legend while dragging
+* 10933legends almost work in any position
+* 10933 resdrawing legend while dragging
 * closes #10933 delete comments and redraw list on setData
 * vertical legend maxheight
 * generate comments for ts interfaces
 * JS API: add optional tooltip check to InputBase.setTooltip
 * (Bug) Packages: settings editor doesn't update package properties
-* #718 Custom categorical columns sort order in not reflected on plots after page reload
+* 718 Custom categorical columns sort order in not reflected on plots after page reload
 * GitHub #777: exposed DataConnection query method
 * closes #10938 Make modals resizable
 * StatusBar improvements
@@ -6463,8 +6880,8 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * recloses #756 bar chart zoom slider visibility
 * Grok Spawner port
 * CI: Fix all integration tests for any environment
-* #424 fixed x axis log availability
-* #756 dont show slider asap viewer created
+* 424 fixed x axis log availability
+* 756 dont show slider asap viewer created
 * Deploy docker images
 * Cleanup in beta users
 * Documentation
@@ -6488,14 +6905,14 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Ability to save favorites for groups
 * Grok connect: stress test
 * Wiki: macromolecules: harmonization & cleanup
-* #10933legends almost work in any position
-* #10933 resdrawing legend while dragging
+* 10933legends almost work in any position
+* 10933 resdrawing legend while dragging
 * closes #10933 delete comments and redraw list on setData
 * vertical legend maxheight
 * generate comments for ts interfaces
 * JS API: add optional tooltip check to InputBase.setTooltip
 * (Bug) Packages: settings editor doesn't update package properties
-* #718 Custom categorical columns sort order in not reflected on plots after page reload
+* 718 Custom categorical columns sort order in not reflected on plots after page reload
 * GitHub #777: exposed DataConnection query method
 * closes #10938 Make modals resizable
 * StatusBar improvements
@@ -6505,8 +6922,8 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * recloses #756 bar chart zoom slider visibility
 * Grok Spawner port
 * CI: Fix all integration tests for any environment
-* #424 fixed x axis log availability
-* #756 dont show slider asap viewer created
+* 424 fixed x axis log availability
+* 756 dont show slider asap viewer created
 * Deploy docker images
 * Cleanup in beta users
 * Documentation
@@ -6522,9 +6939,9 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * JS UI Test: Density Plot
 * Bio: modified getMolfilesFromSeq function
 * CSS adjustments
-* #740: barchart tooltips
+* 740: barchart tooltips
 * Model Property Panel layout
-* #740: Peptide Space tooltip
+* 740: Peptide Space tooltip
 
 ## 2022-07-07 Dev build 1.4.13
 
@@ -6545,7 +6962,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Added initial permissions for Admin user
 * Fix docker datagrok image
 * Added missing migration
-* #763: distribution panel label fix
+* 763: distribution panel label fix
 * Bio: getting monomer objects from HELM lib
 
 ## 2022-07-05 Dev build 1.4.12
@@ -6554,8 +6971,8 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Status Bar
 * Popup: ability to show context menu next to the element
 * Fix link to dart for Windows
-* #735 and #736 property panel search improvments, expand all button
-* #758 [Tooltip] \- using the option to sketch form for the tooltip completely breaks its responsiveness for further
+* 735 and #736 property panel search improvments, expand all button
+* 758 [Tooltip] \- using the option to sketch form for the tooltip completely breaks its responsiveness for further
   modifications (WIP)
 * Ability to set layout on third-party system exported data
 * Implement JWT tokens (WIP)
@@ -6607,7 +7024,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 
 ## 2022-06-29 Dev build 1.4.7
 
-* #741: Peptides Space fix
+* 741: Peptides Space fix
 * Peptide space tests fix and performance benchmark
 * Helm: Updating the sizes of the HelmWebEditor
 * Chem: activity cliffs tests
@@ -6717,7 +7134,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * (Bug) Functions: invalid date format in `Time()`  in some acceptable cases
 * Packages Manager (WIP)
 * Fixed test
-* # 700: Helm fixing trouble with rendering
+*  700: Helm fixing trouble with rendering
 * F2 no longer edits a cell as it is still used as a column editor hotkey
 * (Bug) Data | Text: Semantic type is not detected after table loaded
 * JS API: Exposed Column.Aggregate
@@ -6752,7 +7169,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Closes #703: Dialog: onCancel does not get invoked if you close it by pressing ESC or by clicking on the 'x' icon
 * improve enter behavior
 * JS API: convert datetime to dayjs object in DG.toJs
-* # 700: Fixing bugs in opening the editor
+*  700: Fixing bugs in opening the editor
 
 ## 2022-06-13 Dev build 1.3.1
 
@@ -6774,7 +7191,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Exclude broken integration tests
 * Datagrok incapsulated grok connect
 * Packages: context menu improvements (WIP)
-* # 695: style paramter for range slider
+*  695: style paramter for range slider
 * Packages: Package install fail timeout
 * Packages: fixed exception on packages without repository
 * PackagesClient.deletePublished
@@ -6783,17 +7200,17 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * SelectAll: only selecting rows, not columns
 * Filters: fixed the indication of the active/inactive state
 * Packages: Debug packages permissions fix (WIP)
-* # 698: custom property panel
+*  698: custom property panel
 * Peptides: p-value column format fix
 * Viewers: harmonizing properties \- WIP
 * Peptides: accordion panels width fix
 * Update icons.
 * Helm: initial update (test files + detectors)
 * Helm: updated README.md
-* # 700: Helm: implemented renderer, updated wiki
+*  700: Helm: implemented renderer, updated wiki
 * Compute: UX harmonization #180
 * Peptides: visual fixes
-* # 700: Helm: help update
+*  700: Helm: help update
 * Peptides: analysis save-load fix
 * Peptides: lint fix
 * Compute: UX harmonization #180 URL fix
@@ -6824,7 +7241,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Make CloseAll aware of ignoreCloseAll
 * Wiki: fix documentation using markdownlint
 * JS-API: fixed check marks in sketcher menu
-* # 691: getColumnSeparator function intial
+*  691: getColumnSeparator function intial
 
 ## 2022-06-07 Dev build 1.1.9
 
@@ -6845,7 +7262,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Closes #640: How to switch Structure Search to categorical filter
 * Code cleanup.
 * Closes #637: [Filter Panel] \- the history of Structure Search fields
-* # 604: Chem: "Use as Substructure Filter" action for molecules \- WIP
+*  604: Chem: "Use as Substructure Filter" action for molecules \- WIP
 * Ability to specify actions for semantic types as JS functions
 * Closes #604: Chem: "Use as Substructure Filter" action for molecules
 * Dockerfile datagrok multiarch
@@ -6890,7 +7307,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Closes #535: Chem: Structure filter (MarvinJS) cannot be removed from filter panel once added
 * Charts: add webpack-cli to dev dependencies
 * Simple mode: correct misspellings
-* # 618 Charts: Timelines: ability to define multiple "Events" columns (WIP)
+*  618 Charts: Timelines: ability to define multiple "Events" columns (WIP)
 * Test for dateTime pattern added
 * JS API: JsViewer.columnList property
 * Meta fix
@@ -6907,7 +7324,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
   names columns to separate tables containing scheme and chain within table name.
 * JS-Api: implemented sketcher inplace/external modes
 * Usage analysis: use groups instead of users in filters
-* # 646: replaced objects with Maps & storing indexes
+*  646: replaced objects with Maps & storing indexes
 * JS API Tests: Stats: test each exposed method and property (WIP)
 
 ## 2022-05-24 Dev build 1.1.2
@@ -7240,13 +7657,13 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * ViewFactories ScriptView construction enhancement
 * Move all demo assets to packages
 * (Bug)  JS-based file handlers are not invoked when you double-click on a file in file browser
-* # 277 Chem: Substructure filter: fixed collaborative filtering
-* # 277 Chem: Substructure filter: picking up current filter
+*  277 Chem: Substructure filter: fixed collaborative filtering
+*  277 Chem: Substructure filter: picking up current filter
 * (Bug) DAPI: Filter returns incorrect query
 * Fixed test
 * (Bug) Grid: column tools: filter: add: there should be no other filters in the filter group
 * Simplified the creation of the popup filter
-* # 277 Chem: Substructure filter: better integration for the filter group / popup filter / property panel filter
+*  277 Chem: Substructure filter: better integration for the filter group / popup filter / property panel filter
 * Formula Lines: Fixed typo
 * Update the beta users list
 * Fix a css rule
@@ -7358,7 +7775,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Test file fixed precision
 * (Bug) Grid scrolls to first row after adding/deleting row
 * Grid: ability to easily add rows to the end
-* # 323: MultiForm: WIP
+*  323: MultiForm: WIP
 * Fixed null exception
 * (Bug) Parameter subquery is empty
 * Harmonize viewer title
@@ -7464,7 +7881,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Merged in kdoncov/grok_connect_vulnerability_fixes (pull request #163)
 * Remove deploy folder
 * Unable to set value to datetime column from JS
-* # 396: Chem: support SMARTS for db querying
+*  396: Chem: support SMARTS for db querying
 * Elasticsearch config
 * Chem: polishing
 * Closes #401: Vertical Axis: incorrect label density for custom renderers (i.e., Molecules)
@@ -7492,11 +7909,11 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Closes $443: PowerGrid: PercentCompleted cell renderer
 * Allow minor builds in push_version script
 * PGAdmin connect through SSH tunnel
-* # 424: Blocking option (graying it out) to switch to log scale for columns with negative values \- WIP
+*  424: Blocking option (graying it out) to switch to log scale for columns with negative values \- WIP
 * Allow user to rename the viewers from the arranged tab #341
 * ignore IDE files
 * removed duplicate
-* # 424: Blocking option (graying it out) to switch to log scale for columns with negative values
+*  424: Blocking option (graying it out) to switch to log scale for columns with negative values
 * New method: ListUtils.move(list, from, to)
 * Grid: manual row reordering
 * Closes #455: Ability to define order of categories
@@ -7506,11 +7923,11 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Closes #465: Column selectors: search field is invisible (above the screen) when the number of columns is big
 * Grid: Order columns: ability to show/hide all selected columns at once
 * Grid: Order or Hide: ability to reorder all selected columns at once
-* # 466: ComputationView \- work in progress
+*  466: ComputationView \- work in progress
 * Added banner
 * (Bug) DataFrame: Column.init(...) does not increment dataframe version
 * (Bug) Grid: html cells: rendered cells should be invalidated when table content changes
-* # 470: JS API: JS-based custom inputs \- work in progress
+*  470: JS API: JS-based custom inputs \- work in progress
 * Miss configured in-visualisation filter kills the browser session #344
 * New VPN server
 * Temporarily rolled back JsView.name-related changes
@@ -7523,12 +7940,12 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Fixed typing
 * (Bug) Registry is undefined when a package repository update job is launched
 * Added Alexander to the list of users.
-* # 480: Ordering categories: SMILES should be rendered as molecules
+*  480: Ordering categories: SMILES should be rendered as molecules
 * JS-API: added notify parameter to BitSet.init
 * Revert grok_server and connectors changes
 * HttpDataSource -\- dapi.functions support
 * Fixed wrong parameter name
-* # 466 Computation View \- Integration with FunctionView
+*  466 Computation View \- Integration with FunctionView
 * JS-API: exposed setBufferSilent method
 * JS-API: setBuffer method
 * Closes #488: Positioning of Grid cells in HTML rendering mode
@@ -7560,7 +7977,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Top Menu: change "mousedown" event to "click" for clicks on menu items
 * (Bug) Package content validation: one-line functions get annotation warnings
 * Closes #532: Show only filtered category items on legends
-* # 342: (Only) show filtered category items on scatterplot axes
+*  342: (Only) show filtered category items on scatterplot axes
 * Caching Column.getUsedCategories for performance reasons
 * JS: bySemTypeAll method
 * DataSourceCardView categories (WIP)
@@ -7608,7 +8025,7 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Closes #588: DataFrame: strongly-typed columns #588
 * Closes #589: Strongly-typed InputBase.value
 * Share git secret to aparamonov
-* #594: the 'Features' dialog in the predictive modeling view shows incorrect count of checked columns when opened for the second time
+* 594: the 'Features' dialog in the predictive modeling view shows incorrect count of checked columns when opened for the second time
 * TreeView harmonization
 * (Bug) Connections deploy doesn't deploy connection credentials
 * Folder content preview wiki: fixed the title
@@ -7624,4 +8041,4 @@ We've merged package **Viewers** to **Charts**, removed obsolete viewers, and re
 * Package guidelines (WIP)
 * JS API: GridColumn.renderer
 * Sparklines: renamed "Normalize" to "Global Scale"
-* #612: Compute: Add "open" option for DataFrameInput
+* 612: Compute: Add "open" option for DataFrameInput

@@ -6,6 +6,7 @@ export enum NOTATION {
   SEPARATOR = 'separator',
   HELM = 'helm',
   /* Requires notation handler */ CUSTOM = 'custom',
+  /* Requires notation handler */ BILN = 'biln',
 }
 
 export const enum ALIGNMENT {
@@ -31,6 +32,9 @@ export enum TAGS {
   positionNames = '.positionNames',
   positionLabels = '.positionLabels',
   regions = '.regions',
+  positionShift = '.positionShift',
+  selectedPosition = '.selectedPosition',
+  polymerTypeColumnName = '.polymerTypeColumnName',
 }
 
 export {TAGS as BioTags};
@@ -60,7 +64,7 @@ export const candidateAlphabets: CandidateType[] = [
 ];
 
 /** Canonical gap symbol */
-export const GAP_SYMBOL: string = '';
+export const GAP_SYMBOL: string = '' as const;
 
 export const GapOriginals: {
   [units: string]: string
@@ -68,4 +72,7 @@ export const GapOriginals: {
   [NOTATION.FASTA]: '-',
   [NOTATION.SEPARATOR]: '',
   [NOTATION.HELM]: '*',
+  [NOTATION.BILN]: '',
 };
+
+export const MONOMER_MOTIF_SPLITTER = ' , ';

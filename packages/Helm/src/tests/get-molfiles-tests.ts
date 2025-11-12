@@ -8,7 +8,7 @@ import {
   getUserLibSettings, setUserLibSettings,
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
-import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
 

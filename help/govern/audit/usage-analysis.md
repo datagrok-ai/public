@@ -31,15 +31,15 @@ The Usage Analysis app consists of several tabs, each providing unique insights
 into platform usage:
 
 1. **Overview**: Serves as the central hub for understanding the overall usage
-   trends. It provides a holistic view of platform usage through, allowing you
+   trends. It provides a holistic view of platform usage, allowing you
    to:
-   * View period-on-period changes in new and active users and and selected user
+   * View period-on-period changes in new, active and selected users
      activity
    * Track the number of unique users over time
    * Compare package usage and users by their activity.
 1. **Packages**: Lets you analyze user activity across
-   [plugins](../../datagrok/plugins.md). This data is visualized on a an
-   interactive [scatterplot](../../visualize/viewers/scatter-plot.md), making it easy to identify the most popular packages and or find the ones that need attention.
+   [plugins](../../datagrok/plugins.md). This data is visualized on an
+   interactive [scatterplot](../../visualize/viewers/scatter-plot.md), making it easy to identify the most popular packages and/or find the ones that need attention.
 1. **Functions**: Similar to the **Packages** tab in design, the **Functions** tab helps you analyze how users engage with specific [functions](../../datagrok/concepts/functions/functions.md). By analyzing this data, you can:
    * Identify the most frequently used functions
    * Pinpoint areas of high or low user engagement
@@ -49,9 +49,13 @@ into platform usage:
       the sources of events, with each event color-coded. Using this chart, you can
       identify where the majority of activities originate.
     * **User events**: A [scatterplot](../../visualize/viewers/scatter-plot.md) visualizes events specific to individual users, allowing you to track their activity history and understand their usage patterns better.
-1. **Log**: A table lists all log events, which you can filter by user and source
-1. **Tests**: Provides a holistic overview of automated test execution
-1. **Errors**: Visualizes error events
+1. **Log**: A table lists all log events, which you can filter by user and source.
+1. **Projects**: Provides insights into how users interact with projects on the platform:
+    * **Scatterplot** shows a timeline of access events per project. The tooltip displays `access_count`, which is the number of times a project was opened.
+    * **Unique Users Per Project**: A [barchart](../../visualize/viewers/bar-chart.md) displays the number of distinct users who accessed each project over the given period.
+    * **Access Frequency Daily**: A table lists projects accessed more than once per day by at least one user:
+       * **AVG Unique Users Daily** – the average number of such users per day
+       * **Days Between Access** – the average time gap between project openings by different users.
 
 ### Native Datagrok capabilities
 

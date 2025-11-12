@@ -1,6 +1,7 @@
 #name: Summary
 #description: Extractive Text Summarization Using TextRank Algorithm
 #language: python
+#environment: channels: [conda-forge], dependencies: [python=3.8, {pip: [gensim==3.6.0, textract, cleantext]}]
 #tags: nlp, panel
 #input: file file {semType: text} [Given text]
 #output: string summary {semType: text} [Summary]

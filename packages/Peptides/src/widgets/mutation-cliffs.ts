@@ -1,12 +1,16 @@
+/* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as C from '../utils/constants';
 import * as type from '../utils/types';
-import {addExpandIconGen, getSeparator, setGridProps} from '../utils/misc';
+import {addExpandIconGen, getDistributionPanel, getMutationCliffsDistributionTable, getSeparator, setGridProps} from '../utils/misc';
 import {renderCellSelection} from '../utils/cell-renderer';
+import {SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
+import {getActivityDistribution, getStatsTableMap} from './distribution';
+import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 
-export type MutationCliffsOptions = {
-  mutationCliffs: type.MutationCliffs, mutationCliffsSelection: type.Selection, sequenceColumnName: string,
+export type MutationCliffsWidgetOptions = {
+  mutationCliffs: type.MutationCliffs, mutationCliffStats: type.MutationCliffStats | null, mutationCliffsSelection: type.Selection, sequenceColumnName: string,
   positionColumns: DG.Column<string>[], gridColumns: DG.GridColumnList, activityCol: DG.Column<number>,
 };
 
@@ -19,7 +23,7 @@ export type MutationCliffsOptions = {
  * @return - mutation cliffs widget.
  */
 export function mutationCliffsWidget(
-  table: DG.DataFrame, options: MutationCliffsOptions, allowExpand = true,
+  table: DG.DataFrame, options: MutationCliffsWidgetOptions, allowExpand = true,
 ): DG.Widget {
   //addExpandIcon(pairsGrid);
   //addExpandIcon(uniqueSequencesGrid);
@@ -30,12 +34,72 @@ export function mutationCliffsWidget(
   const comboGrids = [pairsGrid, uniqueSequencesGrid];
   const widgetRoot = ui.divV([aminoToInput.root, ...comboGrids.map((grid) => grid.root)],
     {style: {width: '100%'}});
+  // add mutation cliffs distribution histogram
+  const isSingleMutationPosition = Object.values(options.mutationCliffsSelection).filter((monomers) => monomers.length > 0).length === 1;
+  if (isSingleMutationPosition) {
+    const position = Object.keys(options.mutationCliffsSelection).find((pos) => options.mutationCliffsSelection[pos].length > 0)!;
+    const monomers = options.mutationCliffsSelection[position];
+    if (monomers.length === 1) {
+      const monomerName = monomers[0];
+      const cliffs = options.mutationCliffs?.get(monomerName)?.get(position);
+      if (cliffs && cliffs.size > 0) {
+        const distributionTable = getMutationCliffsDistributionTable(options.activityCol, cliffs, monomerName);
+        const hist = getActivityDistribution(distributionTable, false);
+        // quick stats
+        const stats = options.mutationCliffStats?.stats?.get(monomerName)?.get(position);
+        const tableMap = {} as StringDictionary;
+        let pairsCount = 0;
+        for (const indexArray of cliffs.values())
+          pairsCount += indexArray.length;
+        tableMap['Pairs count'] = pairsCount.toString();
+        if (stats) {
+          tableMap['Unique Count'] = stats.mask.trueCount().toString();
+          Object.assign(tableMap, getStatsTableMap(stats, {countName: 'MP in cliffs count'}));
+        }
+        const distributionPanel = getDistributionPanel(hist, tableMap); // no need to show stats here
+        hist.root.style.maxHeight = '100px';
+        distributionPanel.style.marginTop = '10px';
+        widgetRoot.appendChild(distributionPanel);
+      }
+    }
+  }
+
+
   if (allowExpand) {
     addExpandIconGen('Mutation Cliffs pairs', aminoToInput.root, widgetRoot,
       () => {
         const parts = cliffsPairsWidgetParts(table, options);
-        return ui.divV([parts!.aminoToInput.root, parts!.pairsGrid.root, parts!.uniqueSequencesGrid.root],
-          {style: {width: '100%', height: '100%'}});
+        const div = ui.splitH(
+          [ui.divV([parts!.aminoToInput.root, parts!.pairsGrid.root], {style: {marginRight: '10px'}}),
+            ui.divV([parts!.uniqueSequencesGrid.root], {style: {marginLeft: '10px'}})],
+          {style: {width: '100%', height: '100%'}}, true);
+
+        setTimeout(() => {
+          if (document.contains(div)) {
+            const dW = div.offsetWidth;
+            const pairsGridParent = parts!.pairsGrid.canvas?.parentElement;
+            parts!.pairsGrid.props.showRowHeader = true;
+            parts!.uniqueSequencesGrid.props.showRowHeader = true;
+            const uniqueSequencesGridParent = parts!.uniqueSequencesGrid.canvas?.parentElement;
+            if (pairsGridParent && uniqueSequencesGridParent) {
+              pairsGridParent.style.height = '100%';
+              uniqueSequencesGridParent.style.height = 'calc(100% - 20px)';
+              uniqueSequencesGridParent.style.marginTop = '20px';
+              if (dW > 400) {
+                const macroMolWidth = Math.max(dW * 0.33, 200);
+
+                const mutationGridCol = parts!.pairsGrid.columns.byName('Mutation');
+                if (mutationGridCol)
+                  mutationGridCol.width = macroMolWidth;
+                const seqGridCol = parts!.uniqueSequencesGrid.columns.byName(options.sequenceColumnName);
+                if (seqGridCol)
+                  seqGridCol.width = macroMolWidth;
+              }
+            }
+          }
+        }, 500);
+
+        return div;
       });
   }
 
@@ -43,7 +107,7 @@ export function mutationCliffsWidget(
 }
 
 
-function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOptions):
+function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsWidgetOptions):
   {pairsGrid: DG.Grid, uniqueSequencesGrid: DG.Grid, aminoToInput: DG.InputBase<string>} | null {
   const filteredIndexes = table.filter.getSelectedIndexes();
   const positions = Object.keys(options.mutationCliffsSelection);
@@ -53,8 +117,9 @@ function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOpti
 
 
   const substitutionsArray: string[] = [];
-  const deltaArray: number[] = [];
+  const deltaArray: (number | null)[] = [];
   const substitutedToArray: string[] = [];
+  const mutationsGroupsArray: string[] = [];
   const fromIdxArray: number[] = [];
   const toIdxArray: number[] = [];
   const alignedSeqCol = table.getCol(options.sequenceColumnName!);
@@ -64,6 +129,9 @@ function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOpti
   const activityScaledColData = options.activityCol.getRawData();
   const seenIndexes = new Map<number, number[]>();
   const uniqueSequencesBitSet = DG.BitSet.create(table.rowCount);
+
+  // one mutation position and monomer can contain multiple groups of substitutions
+  const mutationsGroupMap: Record<number, number> = {};
 
   const positionColumns: { [colName: string]: DG.Column<string> } =
     Object.fromEntries(options.positionColumns.map((col) => [col.name, col]));
@@ -82,12 +150,15 @@ function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOpti
       for (const [referenceIdx, indexArray] of substitutionsMap.entries()) {
         if (!filteredIndexes.includes(referenceIdx))
           continue;
-
+        if (!mutationsGroupMap[referenceIdx])
+          mutationsGroupMap[referenceIdx] = Object.keys(mutationsGroupMap).length + 1;
+        const group = mutationsGroupMap[referenceIdx];
 
         const forbiddentIndexes = seenIndexes.get(referenceIdx) ?? [];
         const baseSequence = alignedSeqColCategories[alignedSeqColData[referenceIdx]];
         const baseActivity = activityScaledColData[referenceIdx];
-
+        // activities can be null, and when getting raw data, they will come up as DG.FLOAT_NULL, so very close to 0, leading to incorrect deltas.
+        const actBaseActivity = options.activityCol.isNone(referenceIdx) ? null : baseActivity;
         for (const subIdx of indexArray) {
           if (forbiddentIndexes.includes(subIdx) || !filteredIndexes.includes(subIdx))
             continue;
@@ -98,10 +169,13 @@ function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOpti
 
 
           const subSeq = alignedSeqColCategories[alignedSeqColData[subIdx]];
-
+          // same here, check for null
+          const actActivity = options.activityCol.isNone(subIdx) ? null : activityScaledColData[subIdx];
+          const delta = actBaseActivity == null || actActivity == null ? null : actBaseActivity - actActivity;
           seenIndexes.get(subIdx)!.push(referenceIdx);
           substitutionsArray.push(`${baseSequence}#${subSeq}`);
-          deltaArray.push(baseActivity - activityScaledColData[subIdx]);
+          mutationsGroupsArray.push(`${group}`);
+          deltaArray.push(delta);
           substitutedToArray.push(posColCategories[posColData[subIdx]]);
           fromIdxArray.push(referenceIdx);
           toIdxArray.push(subIdx);
@@ -118,10 +192,12 @@ function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOpti
 
   const substCol = DG.Column.fromStrings('Mutation', substitutionsArray);
   const activityDeltaCol = DG.Column.fromList('double', 'Delta', deltaArray);
+  const mutationGroupCol = DG.Column.fromStrings('Group', mutationsGroupsArray);
   const hiddenSubstToAarCol = DG.Column.fromStrings('~to', substitutedToArray);
   const toIdxCol = DG.Column.fromList(DG.COLUMN_TYPE.INT, '~toIdx', toIdxArray);
   const fromIdxCol = DG.Column.fromList(DG.COLUMN_TYPE.INT, '~fromIdx', fromIdxArray);
-  const pairsTable = DG.DataFrame.fromColumns([substCol, activityDeltaCol, hiddenSubstToAarCol, toIdxCol, fromIdxCol]);
+  const pairsTable =
+    DG.DataFrame.fromColumns([substCol, activityDeltaCol, mutationGroupCol, hiddenSubstToAarCol, toIdxCol, fromIdxCol]);
   pairsTable.name = 'Mutation Cliff pairs';
 
   const aminoToInput = ui.input.string('Mutated to:', {value: '', onValueChanged: (value) => {
@@ -139,6 +215,7 @@ function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOpti
   substCol.tags[C.TAGS.SEPARATOR] = getSeparator(alignedSeqCol);
   substCol.tags[DG.TAGS.UNITS] = alignedSeqCol.tags[DG.TAGS.UNITS];
   substCol.tags[DG.TAGS.CELL_RENDERER] = 'MacromoleculeDifference';
+  substCol.temp[SeqTemps.notationProvider] = alignedSeqCol.temp[SeqTemps.notationProvider];
 
   let keyPress = false;
   let lastSelectedIndex: number | null = null;
@@ -198,6 +275,18 @@ function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOpti
     pairsGrid.invalidate();
     uniqueSequencesGrid.invalidate();
   });
+
+
+  // just a cosmetic thing, draw null values in delta column as N/A
+  pairsGrid.onCellPrepare((gc) => {
+    if (gc?.isTableCell && gc?.gridColumn?.name?.toLowerCase() == 'delta' && (gc?.cell?.value == null || gc?.cell?.value == DG.FLOAT_NULL)) {
+      try {
+        gc.customText = 'N/A';
+      } catch (_) {
+      }
+    }
+  });
+
   pairsGrid.onCellRender.subscribe((gcArgs) => {
     if (gcArgs.cell.tableColumn?.name !== substCol.name || !pairsSelectedIndexes.includes(gcArgs.cell.tableRowIndex!))
       return;
@@ -219,6 +308,10 @@ function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOpti
   uniqueSequencesTable.name = 'Unique sequences that form Mutation Cliffs pairs';
   const seqIdxCol = uniqueSequencesTable.columns.addNewInt('~seqIdx');
   const seqIdxColData = seqIdxCol.getRawData();
+  if (uniqueSequencesTable.col(options.sequenceColumnName)) {
+    uniqueSequencesTable.col(options.sequenceColumnName)!.temp[SeqTemps.notationProvider] =
+      alignedSeqCol.temp[SeqTemps.notationProvider];
+  }
   const selectedIndexes = uniqueSequencesBitSet.getSelectedIndexes();
   seqIdxCol.init((idx) => selectedIndexes[idx]);
   const uniqueSequencesGrid = uniqueSequencesTable.plot.grid();
@@ -239,12 +332,16 @@ function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOpti
   pairsGrid.root.style.width = '100% !important';
   uniqueSequencesGrid.root.style.width = '100% !important';
   setTimeout(() => {
+    pairsGrid.autoSize(window.innerWidth, 250, undefined, undefined, false);
+    uniqueSequencesGrid.autoSize(window.innerWidth, 250, undefined, undefined, false);
     pairsGrid.root.style.removeProperty('width');
     pairsGrid.root.style.setProperty('width', '100%');
     uniqueSequencesGrid.root.style.removeProperty('width');
     uniqueSequencesGrid.root.style.setProperty('width', '100%');
-    pairsGrid.root.style.minHeight = '250px';
-    uniqueSequencesGrid.root.style.minHeight = '250px';
+    pairsGrid.root.style.minHeight = '70px';// 4.02 5062, ANPK
+    uniqueSequencesGrid.root.style.minHeight = '100px';
+    pairsGrid.root.style.height = 'unset';
+    uniqueSequencesGrid.root.style.height = 'unset';
   }, 200);
 
   return {pairsGrid, uniqueSequencesGrid, aminoToInput};

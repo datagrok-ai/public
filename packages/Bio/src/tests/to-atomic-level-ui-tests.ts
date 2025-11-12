@@ -2,9 +2,9 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import {after, before, category, expect, expectArray, test} from '@datagrok-libraries/utils/src/test';
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {sequenceToMolfile} from '../utils/sequence-to-mol';
-import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 
@@ -20,7 +20,6 @@ type TestDataType = {
 };
 
 category('toAtomicLevel-ui', () => {
-
   let monomerLibHelper: IMonomerLibHelper;
   let userLibSettings: UserLibSettings;
   let seqHelper: ISeqHelper;
@@ -64,16 +63,16 @@ category('toAtomicLevel-ui', () => {
     },
   };
 
-//   const fastaCsv = `seq
-// MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW
-// MIEVFLFGIVLGLIPITLAGLFVTAYLQYRRGDQLDL
-// MMELVLKTIIGPIVVGVVLRIVDKWLNKDK
-// `;
-//   const helmCsv = `seq
-// PEPTIDE1{meI.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Aze.dV.E.N.dV.Phe_4Me}$$$$
-// PEPTIDE1{meI.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.meM.D-Chg.dV.E.N.D-Orn.D-aThr.Phe_4Me}$$$$
-// PEPTIDE1{meI.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.D-Cit.N.D-Orn.D-aThr.Phe_4Me}$$$$
-// `;
+  //   const fastaCsv = `seq
+  // MDYKETLLMPKTDFPMRGGLPNKEPQIQEKW
+  // MIEVFLFGIVLGLIPITLAGLFVTAYLQYRRGDQLDL
+  // MMELVLKTIIGPIVVGVVLRIVDKWLNKDK
+  // `;
+  //   const helmCsv = `seq
+  // PEPTIDE1{meI.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Aze.dV.E.N.dV.Phe_4Me}$$$$
+  // PEPTIDE1{meI.hHis.Aca.N.T.dK.Thr_PO3H2.Aca.meM.D-Chg.dV.E.N.D-Orn.D-aThr.Phe_4Me}$$$$
+  // PEPTIDE1{meI.Aca.N.T.dK.Thr_PO3H2.Aca.D-Tyr_Et.Tyr_ab-dehydroMe.dV.D-Cit.N.D-Orn.D-aThr.Phe_4Me}$$$$
+  // `;
 
   const getSeqCol = async (testData: TestDataType): Promise<DG.Column<string>> => {
     const seq = testData.src.seq;
@@ -88,11 +87,16 @@ category('toAtomicLevel-ui', () => {
       await _testToAtomicLevelFunc(seqCol, false, testData.tgt);
     });
   }
-  for (const [testName, testData] of Object.entries(tests)) {
-    test(`${testName}-nonlinear`, async () => {
-      const seqCol = await getSeqCol(testData);
-      await _testToAtomicLevelFunc(seqCol, true, testData.tgt);
-    });
+
+  //test non-linear cases only if helm package is installed
+  const helmPackInstalled = DG.Func.find({package: 'Helm', name: 'getHelmHelper'}).length;
+  if (helmPackInstalled) {
+    for (const [testName, testData] of Object.entries(tests)) {
+      test(`${testName}-nonlinear`, async () => {
+        const seqCol = await getSeqCol(testData);
+        await _testToAtomicLevelFunc(seqCol, true, testData.tgt);
+      });
+    }
   }
 
   async function _testToAtomicLevelFunc(

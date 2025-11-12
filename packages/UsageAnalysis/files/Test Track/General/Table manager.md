@@ -12,7 +12,7 @@ The implementation is based on the **grid**, so many of the grid's features appl
 * When pressing on a dataset in the Table Manager, tab with the selected table opens.
 * Call context panel for dataet in Table Manager. Selected dataset in Table Manager is displayed on Context Panel. 
 
-2. Click on "Save as table" item in context menu:
+2. Click on "Open as table" item in context menu:
 * New tab has been created with table constaining information from Table Manager`s datasets.
 * New row has been created in Table Manager.
 

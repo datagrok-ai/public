@@ -160,13 +160,11 @@ abstract class TableQueryTest {
         testTableQuery.groupByFields = fields;
         testTableQuery.limit = 50;
         Map<String, Object> options = new HashMap<>();
-        options.put("op", PatternMatcher.IN);
-        FieldPredicate fieldPredicate = new FieldPredicate("source", "in", "string");
+        options.put("op", ">");
+        HavingPredicate fieldPredicate = new HavingPredicate("sum", "source", ">1", "int");
         List<String> values = new ArrayList<>();
         options.put("values", values);
-        values.add("func");
-        values.add("query");
-        values.add("script");
+        values.add("1");
         fieldPredicate.matcher = new PatternMatcher(options, "source");
         testTableQuery.having.add(fieldPredicate);
         testQuery(testTableQuery, getAggregationAndGroupByAndHavingLimitWithoutDot());
@@ -185,13 +183,12 @@ abstract class TableQueryTest {
         testTableQuery.groupByFields = fields;
         testTableQuery.limit = 50;
         Map<String, Object> options = new HashMap<>();
-        options.put("op", PatternMatcher.IN);
-        FieldPredicate fieldPredicate = new FieldPredicate("events.source", "in", "string");
+        options.put("op", ">");
+        HavingPredicate fieldPredicate = new HavingPredicate("sum", "events.source", ">1", "int");
+
         List<String> values = new ArrayList<>();
         options.put("values", values);
-        values.add("func");
-        values.add("query");
-        values.add("script");
+        values.add("1");
         fieldPredicate.matcher = new PatternMatcher(options, "events.source");
         testTableQuery.having.add(fieldPredicate);
         testQuery(testTableQuery, getAggregationAndGroupByAndHavingLimitWithDot());

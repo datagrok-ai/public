@@ -1,5 +1,122 @@
 # Peptides changelog
 
+## 1.27.0 (2025-11-10)
+
+* Rework mutation cliffs and tooltips, shown information about sequence pairs and their statistics.
+
+## 1.26.2 (2025-11-08)
+
+* Add Current row tracking option to mutation cliffs viewer
+
+## 1.26.1 (2025-11-07)
+
+* Sequence mutation cliffs viewer: Initial release
+
+## 1.26.0 (2025-11-05)
+
+* Full filter reactivity for all panels, tooltips, aggregations and viewers
+* Corrected aggregate calculations, statistics and mean difference comparisons
+* Fix MCL viewer premature shutdown on loading
+
+## 1.25.1 (2025-11-05)
+
+* Fix distribution tooltips not showing on weblogo hover
+* Enable filter reactivity by default SAR viewers
+
+## 1.25.0 (2025-11-04)
+
+* Update dependencies
+* Enable filter reactivity for All Peptides Viewers (Invariant Map, Monomer-Position, Most Potent Residues, Logo Summary Table, WebLogo in header)
+* Got rid of target column for Peptides analysis
+* Add sum columns for Monomer-Position
+* Fix navigation bugs
+
+## 1.23.14 (2025-06-17)
+
+* Default selection grid for Peptides analysis
+
+## 1.23.11 (2025-05-26)
+
+* Fix model loading with empty cluster selection
+
+## 1.23.10 (2025-05-15)
+
+* Improved description for position statistics viewer
+
+## 1.23.9 (2025-05-14)
+
+* Reveerse events for Position statistics viewer
+
+## 1.23.8 (2025-05-12)
+
+* Performance improvements to Peptide viewers
+* LST white space reduction
+* Bug fixes
+* Position statistics viewer
+
+## 1.23.6 (2025-04-30)
+
+* Fix Peptides analysis not starting on data with existing position columns
+
+## 1.23.5 (2025-04-22)
+
+* Fix invisible Scroller in mutations cliffs 
+
+## 1.23.4 (2025-04-21)
+
+* Fixes for selection table for DG null values
+* Correction of unselection for standalone viewers
+* Cosmetic corrections to null values in predictions
+
+## 1.23.3 (2025-04-17)
+
+Selection widget: value retrieving fix
+
+## 1.23.2 (2025-04-14)
+
+* Manual setting of notation providers to tables
+
+## 1.22.0 (2025-03-22)
+
+* Fixed unhighlighting of header weblogo
+* Harmonization of selection and counts in monomer-position and MPR viewers
+* Added more comprehensive tooltips
+
+## 1.21.7 (2025-03-17)
+
+* Fixes and improvements of Selection panel
+
+## 1.21.6 (2025-03-13)
+
+* Fix demo and compatibility to older platform versions
+
+## 1.21.5 (2025-03-12)
+
+* Fix weblogo renderer with corrected colors and background corrections
+* Improved mutation cliffs preview window with horizontal splitter
+* Correct circle rendering in Monomer-Position viewer
+* Mutations groups column in mutation cliffs pairs panel 
+
+## 1.21.4 (2025-03-03)
+
+Fix SAR errors on nulling targets
+
+## 1.21.3 (2025-02-28)
+
+MCL: Sparse matrix pruning to avoid browser crash
+
+## 1.21.2 (2025-02-03)
+
+Correct Sizing of mutation cliff grids
+
+## 1.21.1 (2025-01-10)
+
+LST: Fix flickering and incorrect rendering in some cases
+
+## 1.21.0 (2025-01-06)
+
+Enable Project saving for SAR analysis
+
 ## 1.19.1 (2024-12-10)
 
 Fix JS-API related changes

@@ -1,12 +1,12 @@
-import {after, before, category, test, expect} from '@datagrok-libraries/utils/src/test';
-import * as grok from 'datagrok-api/grok';
-// import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
+import type * as _grok from 'datagrok-api/grok';
+import type * as _DG from 'datagrok-api/dg';
+declare let grok: typeof _grok, DG: typeof _DG;
 
+import {after, before, category, test, expect} from '@datagrok-libraries/utils/src/test';
 
 category('Dapi: groups', () => {
   const testGroupName = 'js-api-test-group';
-  let testGroup : DG.Group;
+  let testGroup : _DG.Group;
 
   before(async () => {
     testGroup = await grok.dapi.groups.createNew(testGroupName);
@@ -78,4 +78,4 @@ category('Dapi: groups', () => {
   after(async () => {
     await grok.dapi.groups.delete(testGroup);
   });
-});
+}, {owner: 'aparamonov@datagrok.ai'});

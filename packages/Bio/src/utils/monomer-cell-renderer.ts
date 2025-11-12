@@ -1,21 +1,23 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import {GridCell} from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {ALPHABET, monomerToShort} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {GAP_SYMBOL, TAGS as bioTAGS,} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
+import {BioTags, GAP_SYMBOL, MONOMER_MOTIF_SPLITTER, TAGS as bioTAGS,} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {MONOMER_RENDERER_TAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 import {getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
 
 import {CellRendererWithMonomerLibBackBase} from './monomer-cell-renderer-base';
 import * as C from './constants';
 import {undefinedColor} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
-import {HelmTypes} from '@datagrok-libraries/js-draw-lite/src/types/org';
+import {HelmType, HelmTypes, PolymerType, PolymerTypes} from '@datagrok-libraries/js-draw-lite/src/types/org';
+import {polymerTypeToHelmType} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 
 const Tags = new class {
   tooltipHandlerTemp = 'tooltip-handler.Monomer';
 }();
 
-const svgMolOptions = {autoCrop: true, autoCropMargin: 0, suppressChiralText: true};
+const DASH_GAP_SYMBOL = '-';
 
 export class MonomerCellRendererBack extends CellRendererWithMonomerLibBackBase {
   constructor(gridCol: DG.GridColumn | null, tableCol: DG.Column) {
@@ -26,58 +28,72 @@ export class MonomerCellRendererBack extends CellRendererWithMonomerLibBackBase 
     x: number, y: number, w: number, h: number, gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
   ): void {
     g.save();
+    // clip the cell
+    g.beginPath();
+    g.rect(x, y, w, h);
+    g.clip();
     try {
-      if (gridCell.gridRow < 0) return;
-      const applyToBackground = gridCell.cell?.column && gridCell.cell.column.getTag(MONOMER_RENDERER_TAGS.applyToBackground) === 'true';
+      if (!gridCell.isTableCell) return;
+      const applyToBackground = gridCell.cell?.column && gridCell.cell.column?.dart && gridCell.cell.column.getTag(MONOMER_RENDERER_TAGS.applyToBackground) === 'true';
 
       g.font = `12px monospace`;
       g.textBaseline = 'middle';
-      g.textAlign = 'center';
+      g.textAlign = 'left';
 
-      const symbol: string = gridCell.cell.value;
-      if (!symbol || symbol == GAP_SYMBOL) return;
-
-      let textcolor = undefinedColor;
-      let backgroundcolor = 'rgb(255, 255, 255)';
-      if (this.monomerLib) {
-        const alphabet = this.tableCol.getTag(bioTAGS.alphabet);
-        const biotype = alphabet === ALPHABET.RNA || alphabet === ALPHABET.DNA ? HelmTypes.NUCLEOTIDE : HelmTypes.AA;
-        if (applyToBackground) {
-          const colors = this.monomerLib.getMonomerColors(biotype, symbol);
-          textcolor = colors?.textcolor ?? textcolor;
-          backgroundcolor = colors?.backgroundcolor ?? backgroundcolor;
-        } else {
-          textcolor = this.monomerLib.getMonomerTextColor(biotype, symbol);
-        }
-      }
-
+      let value: string = gridCell.cell.value;
+      if (!value || value === GAP_SYMBOL)
+        value = DASH_GAP_SYMBOL;
+      const symbols = value.split(MONOMER_MOTIF_SPLITTER).map((s) => !s || s === GAP_SYMBOL ? DASH_GAP_SYMBOL : s.trim());
       //cell width of monomer should dictate how many characters can be displayed
       // for width 40, 6 characters can be displayed (0.15 is 6 / 40)
-      const maxChars = Math.max(2, Math.floor(w * 0.15));
-      if (applyToBackground) {
-        g.fillStyle = backgroundcolor;
-        g.fillRect(x, y, w, h);
+      const shortSymbols = symbols.map((s) => monomerToShort(s, Math.max(2, Math.floor(w * 0.15 / symbols.length))));
+      const symbolWidths = shortSymbols.map((s) => g.measureText(s).width);
+      const totalWidth = symbolWidths.reduce((a, b) => a + b, 0);
+      const xOffset = (w - totalWidth) / 2;
+      let xPos = x + xOffset;
+      const alphabet = this.tableCol.getTag(bioTAGS.alphabet);
+      const biotype = alphabet === ALPHABET.RNA || alphabet === ALPHABET.DNA ? HelmTypes.NUCLEOTIDE : HelmTypes.AA;
+      for (let i = 0; i < shortSymbols.length; i++) {
+        const symbol: string = symbols[i];
+        const actBioType: HelmType = this.getHelmType(gridCell, biotype);
+
+        let textcolor = undefinedColor;
+        let backgroundcolor = 'rgb(255, 255, 255)';
+        if (this.monomerLib) {
+          if (applyToBackground) {
+            const colors = this.monomerLib.getMonomerColors(actBioType, symbol);
+            textcolor = colors?.textcolor ?? textcolor;
+            backgroundcolor = colors?.backgroundcolor ?? backgroundcolor;
+          } else
+            textcolor = this.monomerLib.getMonomerTextColor(actBioType, symbol);
+        }
+        if (applyToBackground && symbols.length == 1) {
+          g.fillStyle = backgroundcolor;
+          g.fillRect(x, y, w, h);
+        }
+        g.fillStyle = textcolor;
+        g.fillText(shortSymbols[i], xPos, y + (h / 2), w);
+        xPos += symbolWidths[i];
       }
-      g.fillStyle = textcolor;
-      g.fillText(monomerToShort(symbol, maxChars), x + (w / 2), y + (h / 2), w);
     } finally {
       g.restore();
     }
   }
 
   override onMouseMove(gridCell: GridCell, e: MouseEvent) {
+    const [gridCol, tableCol, temp] = getGridCellColTemp(gridCell);
     if (
-      gridCell.grid.dart != this.gridCol?.grid.dart || gridCell.gridColumn.dart != this.gridCol?.dart ||
-      !gridCell.tableColumn || !gridCell.isTableCell
+      gridCell.grid.dart != this.gridCol?.grid.dart || gridCol?.dart != this.gridCol?.dart ||
+      !tableCol || !gridCell.isTableCell
     ) return false;
 
-    const alphabet = gridCell.tableColumn.getTag(bioTAGS.alphabet) as ALPHABET;
-    const monomerName = gridCell.cell.value;
+    const alphabet = tableCol.getTag(bioTAGS.alphabet) as ALPHABET;
+    const monomerName: string = gridCell.cell.value;
     const canvasClientRect = gridCell.grid.canvas.getBoundingClientRect();
     const x1 = gridCell.bounds.right + canvasClientRect.left - 4;
     const y1 = gridCell.bounds.bottom + canvasClientRect.top - 4;
 
-    if (monomerName == GAP_SYMBOL) {
+    if (!monomerName || monomerName == GAP_SYMBOL || monomerName == DASH_GAP_SYMBOL) {
       ui.tooltip.show(ui.divText('gap'), x1, y1);
       return true;
     }
@@ -88,10 +104,41 @@ export class MonomerCellRendererBack extends CellRendererWithMonomerLibBackBase 
     }
 
     const biotype = alphabet === ALPHABET.RNA || alphabet === ALPHABET.DNA ? HelmTypes.NUCLEOTIDE : HelmTypes.AA;
-    const tooltipEl = this.monomerLib.getTooltip(biotype, monomerName);
+    const tooltipEls = monomerName.split(MONOMER_MOTIF_SPLITTER)
+      .map((s) => {
+        if (!s || s === GAP_SYMBOL || s === DASH_GAP_SYMBOL)
+          return ui.divText('gap');
+        const actBioType: HelmType = this.getHelmType(gridCell, biotype);
+        return this.monomerLib!.getTooltip(actBioType, s);
+      });
+    const tooltipEl = ui.divH(tooltipEls, {style: {alignItems: 'top'}});
+    // tooltip max width is 600px, so we need to shrink the canvases a bit if needed. by default, it is 250px
+    const canvases = Array.from(tooltipEl.querySelectorAll('canvas'));
+    if (canvases.length > 2) {
+      const side = Math.floor(550 / canvases.length);
+      canvases.forEach((c) => {
+        c.style.setProperty('max-width', `${side}px`, 'important');
+        c.style.setProperty('max-height', `${side}px`, 'important');
+      });
+    }
     ui.tooltip.show(tooltipEl, x1, y1);
 
     return true; // To prevent default tooltip behaviour
+  }
+
+  private getHelmType(gridCell: GridCell, defaultType: HelmType): HelmType {
+    let biotype = defaultType;
+    const [gridCol, tableCol, temp] = getGridCellColTemp(gridCell);
+    if ((gridCell.tableRowIndex ?? -1) > -1 && tableCol?.getTag(BioTags.polymerTypeColumnName)) {
+      const ptColName = tableCol.getTag(BioTags.polymerTypeColumnName);
+      const ptCol = tableCol.dataFrame?.col(ptColName);
+      if (ptCol) {
+        const ptrString = ptCol.get(gridCell.tableRowIndex!);
+        if (ptrString && [PolymerTypes.BLOB, PolymerTypes.CHEM, PolymerTypes.G, PolymerTypes.PEPTIDE, PolymerTypes.RNA].includes(ptrString))
+          biotype = polymerTypeToHelmType(ptrString as PolymerType);
+      }
+    }
+    return biotype;
   }
 
   override async awaitRendered(timeout: number = 10000, reason: string = `${timeout} timeout`): Promise<void> {
@@ -139,5 +186,6 @@ export class MonomerCellRenderer extends DG.GridCellRenderer {
   onMouseMove(gridCell: GridCell, e: MouseEvent) {
     const back = MonomerCellRendererBack.getOrCreate(gridCell);
     back.onMouseMove(gridCell, e);
+    e.preventDefault();
   }
 }

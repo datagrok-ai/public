@@ -1,5 +1,13 @@
 # math changelog
 
+## 1.2.6 (2024-12-17)
+
+* Vector distance functions support on webGPU
+
+## 1.2.5 (2024-12-17)
+
+* Generations updated
+
 ## 1.2.4 (2024-12-13)
 
 * Remove deprecated adapter info function

@@ -22,8 +22,9 @@ import {convert, getSupportedTargetFormats, getTranslatedSequences} from '../mod
 import {ITranslationHelper} from '../../../types';
 
 import {NUCLEOTIDES_FORMAT, SEQUENCE_COPIED_MSG, SEQ_TOOLTIP_MSG} from './const';
-import './style.css';
 import {_package} from '../../../package';
+//@ts-ignore
+import './style.css';
 
 const enum REQUIRED_COLUMN_LABEL {
   SEQUENCE = 'Sequence',
@@ -471,9 +472,10 @@ class ColumnInputsManager {
   private selectColumnIfTableNotNull(
     table: DG.DataFrame | null, columnName: string, columnLabel: REQUIRED_COLUMN_LABEL
   ): void {
-    if (table !== null) {
-      const selectedColumn = table.getCol(columnName);
-      this.eventBus.selectColumn(columnLabel, selectedColumn);
+    if (table !== null && columnName) {
+      const selectedColumn = table.col(columnName);
+      if (selectedColumn)
+        this.eventBus.selectColumn(columnLabel, selectedColumn);
     }
   }
 }

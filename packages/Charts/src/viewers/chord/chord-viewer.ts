@@ -142,7 +142,12 @@ export class ChordViewer extends DG.JsViewer {
 
     this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
     this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render(false)));
+    this.subs.push(DG.debounce(this.dataFrame.onFilterChanged, 50).subscribe((_) => this.render()));
+    this.render();
+  }
 
+  // Override onSourceRowsChanged to re-render the chord automatically on row source updates
+  onSourceRowsChanged() {
     this.render();
   }
 
@@ -231,9 +236,24 @@ export class ChordViewer extends DG.JsViewer {
         ui.tooltip.hide();
       },
       mousedown: (datum: any, index: number, nodes: any, event: MouseEvent) => {
+        const {label} = datum;
+        const {shiftKey, ctrlKey, metaKey} = event;
+        const isMultiSelect = shiftKey || ctrlKey || metaKey;
+        const isMultiDeselect = (shiftKey && ctrlKey) || (shiftKey && metaKey);
+
         this.dataFrame.selection.handleClick((i) => {
-          return this.filter.get(i) && (this.fromColumn!.get(i) === datum.label ||
-            this.toColumn!.get(i) === datum.label);
+          if (!this.filter.get(i))
+            return false;
+
+          const fromMatches = this.fromColumn?.get(i) === label;
+          const toMatches = this.toColumn?.get(i) === label;
+          const matches = fromMatches || toMatches;
+
+          if (!matches)
+            return false;
+          if (isMultiDeselect)
+            return false;
+          return true;
         }, event);
       },
     };

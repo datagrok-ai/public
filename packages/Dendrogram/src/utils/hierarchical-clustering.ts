@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -10,7 +11,12 @@ import {ITreeHelper} from '@datagrok-libraries/bio/src/trees/tree-helper';
 import {attachLoaderDivToGrid} from '.';
 
 // Custom UI Dialog for Hierarchical Clustering
-export async function hierarchicalClusteringDialog(): Promise<void> {
+export async function hierarchicalClusteringDialog(getDefaultCoulumn: (t: DG.DataFrame) => DG.Column | null = (_t) => null): Promise<void> {
+  if (!grok.shell.tv?.table) {
+    grok.shell.warning('Please open a table for hierarchical clustering.');
+    return;
+  }
+
   let currentTableView = grok.shell.tv.table;
   let currentSelectedColNames: string[] = [];
 
@@ -27,15 +33,17 @@ export async function hierarchicalClusteringDialog(): Promise<void> {
   };
 
   const onTableInputChanged = (table: DG.DataFrame) => {
+    const defaultCol = getDefaultCoulumn(table);
+    const defaultVal = defaultCol ? [defaultCol] : [];
     const newColInput = ui.input.columns('Features', {table: table,
-      onValueChanged: (value) => onColNamesChange(value), available: availableColNames(table)});
+      onValueChanged: (value) => onColNamesChange(value), available: availableColNames(table), value: defaultVal});
     ui.empty(columnsInputDiv);
     columnsInputDiv.appendChild(newColInput.root);
     currentTableView = table;
-    currentSelectedColNames = [];
+    currentSelectedColNames = newColInput.value.map((c) => c.name);
   };
 
-  const tableInput = ui.input.table('Table', {value: currentTableView!, items: grok.shell.tables,
+  const tableInput = ui.input.table('Table', {value: currentTableView!, items: grok.shell.tables, nullable: false,
     onValueChanged: (value) => onTableInputChanged(value)});
   const columnsInput = ui.input.columns('Features', {table: currentTableView!,
     onValueChanged: (value) => onColNamesChange(value), available: availableColNames(currentTableView!)});
@@ -50,6 +58,8 @@ export async function hierarchicalClusteringDialog(): Promise<void> {
     distanceInput.root,
     linkageInput.root,
   ]);
+
+  onTableInputChanged(currentTableView!);
 
   ui.dialog('Hierarchical Clustering')
     .add(verticalDiv)
@@ -141,12 +151,35 @@ export async function hierarchicalClusteringUI(
     // const clusterDf = DG.DataFrame.fromColumns([
     //   DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'cluster', [])]);
     loaderNB.close();
-    injectTreeForGridUI2(tv.grid, newickRoot, undefined, neighborWidth);
+    tv.grid.props.onInitializedScript = `
+      setTimeout(async () => {
+        const t = grok.shell.table('${tv.dataFrame.name}');
+        if (!t)
+          return;
+        await t.meta.detectSemanticTypes();
+        const func = DG.Func.find({name: 'hierarchicalClustering'})[0];
+        if (!func)
+          return;
+        const cols = ${JSON.stringify(colNameList)};
+        func.apply({
+          df: t,
+          colNameList: cols,
+          distance: '${distance}',
+          linkage: '${linkage}'
+        });
+      }, 1000)
+    `;
+    const nb = injectTreeForGridUI2(tv.grid, newickRoot, undefined, neighborWidth);
+    const s = nb.onClosed.subscribe(() => {
+      tv.grid.props.onInitializedScript = '';
+      s.unsubscribe();
+    });
     const viewRemoveSub = grok.events.onViewRemoved.subscribe((view) => {
       if (view === tv) {
         try {
           viewRemoveSub.unsubscribe();
           loaderNB.close();
+          tv.grid.props.onInitializedScript = '';
         } catch {}
       };
     });

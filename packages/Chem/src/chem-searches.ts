@@ -153,7 +153,7 @@ function saveColumn(col: DG.Column, data: (Uint8Array | string | null)[],
     throw new Error('Column has no parent dataframe');
 
   const savedColumnName = '~' + col.name + '.' + tagName;
-  const newCol = col.dataFrame.columns.getOrCreate(savedColumnName, colType, data.length);
+  const newCol = col.dataFrame.columns.getOrCreate(savedColumnName, colType);
 
   newCol.init((i) => data[i]);
   newCol.meta.includeInCsvExport = false;

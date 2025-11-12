@@ -1,5 +1,95 @@
 # Compute changelog
 
+## 1.45.5 (2025-10-30)
+
+- Fitting with formulas support
+
+## 1.44.4 (2025-09-04)
+
+- Small bug fixes
+
+## 1.44.3 (2025-08-15)
+
+- Update compute-utils
+
+## 1.44.1 (2025-08-08)
+
+- Update compute-utils
+
+## 1.43.10 (2025-06-09)
+
+- Sensitivity Analysis UI update
+
+## 1.43.9 (2025-06-03)
+
+- Update deps
+
+## 1.43.7 (2025-05-28)
+
+- Help tweaks
+
+## 1.43.6 (2025-05-12)
+
+- Sensitivity Analysis update
+
+## 1.43.5 (2025-05-02)
+
+- `OutliersSelectionViewer` improvements
+
+## 1.43.4 (2025-05-02)
+
+- Compute2 small changes/fixes
+
+## 1.43.1 (2025-04-22)
+
+Updated the Fitting feature:
+
+- Target columns selection
+- Fitting results displaying
+- Goodness of fit viewers creation
+
+## 1.43.0 (2025-04-14)
+
+- Compute2 related changes/fixes
+
+## 1.42.2 (2025-04-10)
+
+Updated Parameters Optimization:
+
+- Added progress bar;
+- Target columns selection
+- The hide similar curves feature
+- Navigation for users
+
+## 1.42.1 (2025-03-31)
+
+- Fix browser tree path
+
+## 1.42.0 (2025-03-30)
+
+- Rewrite to better support browse view.
+
+## 1.41.1 (2025-02-20)
+
+- FittingView: in-webworker parameters optimization of Diff Studio models
+
+## 1.41.0 (2025-02-19)
+
+- ModelCatalog refactored
+- API updated for 1.24.0
+
+## 1.40.4 (2025-01-28)
+
+- ModelHandler: help disable sync
+
+## 1.40.3 (2024-12-28)
+
+- ModelHandler: help fix
+
+## 1.40.1 (2024-12-25)
+
+- History fixes and removing obsolete API calls
+
 ## 1.39.7 (2024-11-25)
 
 - Added method to render model preview in BrowseTree
@@ -26,21 +116,13 @@
 
 - Fixed DF input in the Fitting view
 
-## 1.38.0-rc.2 (2024-09-09)
+## 1.38.0 (2024-09-09)
 
 - Fixed DF input processing with no viewers
-
-## 1.38.0-rc (2024-09-06)
-
-- Preparing 1.21.1 release
 
 ## 1.37.0 (2024-09-05)
 
 - Release for 1.21.0
-
-## 1.37.0-rc (2024-09-04)
-
-- Preparing 1.21.0 release
 
 ## 1.36.7 (2024-08-05)
 

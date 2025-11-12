@@ -1,20 +1,20 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {getSeqHelper, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
 import {ALPHABET, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 export function dealGroups(col: DG.Column<string>): void {
   for (let i = 0; i < col.length; i++) {
     col.set(i, col.get(i)!.replaceAll('undefined', 'H'));
-    col.set(i, col.get(i)!.replaceAll('Oh', 'O'));
+    col.set(i, col.get(i)!.replaceAll('Oh', 'O').replaceAll('OH', 'O'));
     col.set(i, col.get(i)!.replaceAll('0.000000 3', '0.000000 0'));
     col.set(i, col.get(i)!.replaceAll('?', 'O'));
-    col.set(i, col.get(i)!.replaceAll('0 3\n', '0 0\n'));
+    col.set(i, col.get(i)!.replaceAll(' 0 3\n', ' 0 0\n'));
     col.set(i, col.get(i)!.replaceAll('RGROUPS=(1 1)', ''));
   }
 }
@@ -29,7 +29,6 @@ export async function helmToMol(resHelmCol: DG.Column, resList: string[],
 
   const toAtomicLevelRes =
     await seqHelper.helmToAtomicLevel(resHelmCol, chiralityEngine, highlight, lib);
-
   const resMolCol = toAtomicLevelRes.molCol!;
 
   const allLinear = isLinear.filter((l) => l).length;

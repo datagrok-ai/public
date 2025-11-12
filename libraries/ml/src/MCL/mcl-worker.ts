@@ -30,6 +30,9 @@ onmessage = async (event) => {
     sparse = await new SparseMatrixService()
       .calcMultiColumn(data, distanceFns, threshold / 100, distanceFnArgs, weights, aggregationMethod);
   }
+  const MAX_MCL_CONNECTIONS = 1_000_000;
+  if (sparse.i.length > MAX_MCL_CONNECTIONS)
+    sparse = SparseMatrixService.pruneSparseMatrix(sparse, MAX_MCL_CONNECTIONS);
   console.timeEnd('sparse matrix');
 
   //const res = await new MCLSparseReducer({maxIterations: maxIterations ?? 5}).transform(sparse, data[0].length);

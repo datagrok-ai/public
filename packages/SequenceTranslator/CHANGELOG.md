@@ -1,6 +1,34 @@
 # Sequence Translator changelog
 
-## 1.6.5 (WIP)
+## 1.10.3 (2025-11-03)
+
+* Fix synthetic rule application for multiple instances when r group numbering is reversed
+
+## 1.10.2 (2025-11-03)
+
+* Update Bio Lib API
+* Fix synthetic rule errors for missing monomers
+* Fix incosistent R group conneections for reversed rule orders
+
+## 1.9.5 (2025-05-02)
+
+* Fix changing bond numbers when fixing molblocks
+
+## 1.9.4 (2025-04-08)
+
+* Linearization fix for polytool convert.
+
+## 1.9.1 (2025-03-31)
+
+* Combination of sequence sets dialog.
+
+## 1.8.0 (2025-02-20)
+
+* Support for enumeration in all notations
+* fallback for polytool convert
+* Corrected highlighting
+
+## 1.6.5 (2024-12-01)
 
 ### New features
 

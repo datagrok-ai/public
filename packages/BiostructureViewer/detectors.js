@@ -14,7 +14,7 @@ class BiostructureViewerPackageDetectors extends DG.Package {
     if (DG.Detector.sampleCategories(col,
       // (s) => s.includes('COMPND') && s.includes('ATOM') && s.includes('END'), 1)
       (s) => s.match(/^COMPND/m) && s.match(/^END/m) &&
-        (s.match(/^ATOM/m) || s.match(/^HETATM/m)),
+        (s.match(/^ATOM/m) || s.match(/^HETATM/m)), 1
     )) {
       col.meta.units = 'pdb';
       return 'Molecule3D';

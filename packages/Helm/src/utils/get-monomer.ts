@@ -3,8 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
-import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
-import {Atom, HelmType, IWebEditorMonomer, GetMonomerResType, IHelmBio, HelmAtom} from '@datagrok-libraries/bio/src/helm/types';
+import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types/monomer-library';
+import {Atom, HelmType, IWebEditorMonomer, GetMonomerResType, HelmAtom} from '@datagrok-libraries/bio/src/helm/types';
 
 import {OrgHelmModule, ScilModule} from '../types';
 import {RGROUP_CAP_GROUP_NAME, RGROUP_LABEL, SMILES} from '../constants';
@@ -69,9 +69,13 @@ export function rewriteLibraries(monomerLib: IMonomerLib): void {
         });
         webEditorMonomer.at = at;
       } else if (monomer[SMILES] != null) {
-        // @ts-ignore
-        webEditorMonomer.rs = Object.keys(getRS(monomer[SMILES].toString())).length;
-        webEditorMonomer.at = monomerLib.getRS(monomer[SMILES].toString());
+        const rs = monomerLib.getRS(monomer[SMILES].toString());
+        if (rs == null || Object.keys(rs).length === 0)
+          isBroken = true;
+        else {
+          webEditorMonomer.rs = Object.keys(rs).length;
+          webEditorMonomer.at = rs;
+        }
       } else
         isBroken = true;
 

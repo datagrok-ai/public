@@ -66,7 +66,7 @@ export class ClusterMaxActivityViewer extends DG.JsViewer implements IClusterMax
       'activityTarget', ACTIVITY_TARGET.HIGH, {choices: [ACTIVITY_TARGET.HIGH, ACTIVITY_TARGET.LOW]},
     ) as ACTIVITY_TARGET;
     this.clusterSizeThreshold = this.int(ClusterMaxActivityProps.CLUSTER_SIZE_THRESHOLD, 20);
-    this.activityThreshold = this.int(ClusterMaxActivityProps.ACTIVITY_THRESHOLD, 1000);
+    this.activityThreshold = this.float(ClusterMaxActivityProps.ACTIVITY_THRESHOLD, 1000, {step: 0.1});
     this.connectivityColumnName = this.column(ClusterMaxActivityProps.CONNECTIVITY_COLUMN, {nullable: true});
   }
 

@@ -1,6 +1,164 @@
 # Chem changelog
 
-## 1.13.1 (WIP)
+## 1.16.8 (2025-11-11)
+
+* Support datasync for biochemical functions
+
+## 1.16.7 (2025-10-22)
+
+* Fix compatibility issues with platform version 1.25.3
+
+## 1.16.6 (2025-10-16)
+
+### Bug fixes
+
+* GROK-19062 Similarity Search viewer: incorrect coloring after sorting a dataset
+* GROK-18817: Chem | Scaffold tree: Add explanation tooltip why the tree can't be generated
+* GROK-18901: Chem | Scaffold tree: Error when loading the layout
+* Chem: Fix Distance functions
+* GROK-18916: Chem: Remove hint on viewer close
+* GROK-18931: Chem | Properties: Molecule charge is NaN
+* GROK-18944: Chemprop: train model: 'Creating interactive model preview' step takes too long
+* GROK-18945: Chem | Scaffold Tree: Color column not restored when reapplying saved layout
+* GROK-18815, GROK-18816, GROK-18820: Top Menu: UI/UX improvements: Fixed names, captions
+* [#3497](https://github.com/datagrok-ai/public/pull/3497): Chem: MPO: Update to work correctly with data sync
+
+
+### Features
+
+* Chem: Mixtures widget in context panel: show components names where available
+* Chem: calculate context panel descriptors via docker
+* Ability to run Descriptors, Properties, Toxicity risks, Structural alerts using Add new column dialog
+
+## 1.16.5 (2025-09-15)
+
+* Add layout persistant tag for scaffold alignment
+
+## 1.16.4 (2025-09-05)
+
+* Fixed issues with tableview getting for cloned views in functions.
+
+## 1.16.3 (2025-08-26)
+
+### Features
+
+* Removed on demand from docker containers
+
+## 1.16.2 (2025-08-07)
+
+### Bug fixes
+
+* GROK-18622: Implement logic to check and switch TableView if needed
+* [#3445](https://github.com/datagrok-ai/public/issues/3445) Structure filter does not realign when coordinates change but structure does not
+
+## 1.16.1 (2025-08-04)
+
+### Bug fixes
+
+* GROK-18609: MMP: Demo throws errors: Cannot read properties of null (reading 'toList')
+
+## 1.16.0 (2025-07-28)
+
+### Features
+
+* Chem: MMP: Added hints
+* Chem: Similarity/Diversity: Show error in case no molecule column was found
+* Chem: MMP: Collaborative filtering with parent table
+* Chem: MMP: Ability to filter fragments/pairs
+* Chem: MMP: View results on PC plot, select activity difference function with scaling, in cell pc plots for activities, show trellis filters in popup, added trellis legend
+* Chem: Added description to scatter plot for chemical space and activity cliffs
+* Chem: Mixtures renderer, mixtures widgets and semantic type
+* [#3426](https://github.com/datagrok-ai/public/pull/3426) CPC: Moved to chem, factored into a separate widget file
+
+### Bug fixes
+
+* Chem: Scaffold Tree: Fix bitset not updating on structure change
+* Chem: Scaffold Tree: Check if viewer is detached
+* GROK-18069: Chem | Scaffold tree: Error when closing
+* GROK-18074 Chem: Context Panel: Content tab: df flickers when filtering by Scaffold Tree and Activity Cliffs simultaneously
+* Chem: Deprotect: Column already exists
+* GROK-18103: Chem | Scaffold Tree: Skip processing if column is empty
+* Chem: Correct most diverse structures logic
+* GROK-18066: Chem: Context Panel: Structural Alerts: calculate for whole dataset doesn't work for some data
+* GROK-18061: Chem: Prevent from running functions which add viewers not on the active table view
+* Chem: Scaffold Tree: Exclude fragment column from Select columns dialog
+* GROK-18283: Chem | Scaffold Tree: Error when changing scaffold size
+* GROK-18284: Chem | Scaffold Tree: Resetting Description > Title creates duplicates
+* GROK-18305: Chem | Scaffold tree: Error when uploading tree for non-molecular dataset
+* GROK-18269: Chem: Scaffold Tree: Viewer is empty when opening a project
+* Chem: MMP: Do not interpret missing values as zero
+* GROK-18290 : Substructure filter: multiple identical filters issue
+* [#3346](https://github.com/datagrok-ai/public/issues/3346): Export as SDF: Fixed none values are written as numbers ant not as empty strings
+* GROK-18388: Chem | Scaffold tree filter: Error after Close All
+* [#3399](https://github.com/datagrok-ai/public/issues/3399): Do not allow to modify Scaffold colors from Scatterplot or other viewers
+* Chem: do not allow multiple substructure filters
+* GROK-18391: Chem: the project opens with different filtering results before and after clearing the cache
+* GROK-18409: Chem: R-group analysis: column prefix in dialog not working
+* GROK-18405: Chem | Scaffold tree: Incorrect filtering after layout application
+* GROK-18417: Chem: Fix column parent in structural alerts
+* GROK-18419: Chem: MMP: activity list is empty
+* GROK-18495: Chem: Fix errors on current row unselection
+* GROK-18477: Chem: MMP: Update legend when changing activities on tp
+* GROK-18491: Chem: MMP: Fragments: "Full screen" trellis plot icon is not working
+* GROK-18479: Chem: MMP: Generation: should be no empty values
+* GROK-18493: Chem: MMP: Fragments: trellis legend optimization in case of big amount of legend items
+* GROK-18494: Chem: MMP: Properties: changing Molecules name cause no effect and triggers "reading 'toList'" errors in console
+* GROK-18570: Chem | Structural Alerts: Broken styles
+* GROK-18530 Chem: Substructure Filter: incorrect filtering in the cloned view when using the "Similar" option
+* GROK-18567: Chem | Chemprop: Cross validation fails for mol1k.csv
+
+## 1.15.1 (2025-04-23)
+
+### Features
+
+* [#3302](https://github.com/datagrok-ai/public/issues/3302): Multiple scaffold trees: Naming/coloring should be saved in projects
+
+### Bug fixes
+
+* GROK-17929: Chem: Similarity sorting checks
+* GROK-17958: Chem: some demos overwrite Datagrok tab name
+
+## 1.15.0 (2025-03-29)
+
+### Features
+
+* [#3273](https://github.com/datagrok-ai/public/issues/3273): Scaffold tree: add the ability to apply Scaffold tree colors to Scatterplot or other viewers
+* GROK-17731: Chem | Scaffold Tree: Remember previous hide/show state
+* GROK-17867: Chem: Demo improvements
+* Add caching to Gasteiger charges
+* [#3302](https://github.com/datagrok-ai/public/issues/3302): Multiple scaffold trees: add the ability to apply Scaffold tree colors to Scatterplot
+* MMP: Open scatter plot context menu when right click on cliffs sp, separate generations scatter plots for each activity, cliffs tab scatter plot improvements, trellis filters improvements, use column descriptions instead of custom tooltips for non molecule columns, added help url
+* Chem: Cluster MCL Implementation
+* [#3314](https://github.com/datagrok-ai/public/pull/3314): Chem: Scaffold Tree: Demo improvements
+* Chem: Parallel beautification
+
+### Bug fixes
+
+* GROK-17761: Chem: Demo: Chem: Activity cliffs: Viewer initialization function failed
+* GROK-17791: Chem: Scaffold tree: Coloring the scaffold tree element triggers the grid scroll to the end
+* Chem: Similarity/DIversity search: some progress bar related fixes
+* GROK-17892: Chem | Scaffold tree: Errors on closing viewer
+* GROK-17867: Chem: Demo: Added setTimeout for showing help
+
+## 1.14.0 (2025-02-24)
+
+### Features
+
+* New improved MMP implementation
+* Integration with Reinvent
+* Copy molecule as image
+* Context actions for chemical columns
+
+### Bug fixes
+
+* GROK-17483: Chem: Structure filter is not reset on reseting the filtering in some cases
+* GROK-17461: Scaffold tree: Error when uploading the saved tree
+* GROK-17511: Chem | ChemProp: Error when training a model
+* GROK-17555: Filter Panel: Reset filter causes errors in some cases
+* GROK-17471: Chem: Incorrect filter UI when adding filter via 'Use as filter' or 'Add filter'
+* GROK-17597: Chem: Wrong filtering when opening the project
+
+## 1.13.1 (2025-01-06)
 
 ### Bug fixes
 

@@ -26,7 +26,7 @@ category('Widgets: Settings', () => {
   let scaledActivityCol: DG.Column<number>;
 
   before(async () => {
-    await PeptideUtils.loadSeqHelper();
+    await PeptideUtils.loadComponents();
 
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
     activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
@@ -73,7 +73,7 @@ category('Widgets: Distribution panel', () => {
   let scaledActivityCol: DG.Column<number>;
 
   before(async () => {
-    await PeptideUtils.loadSeqHelper();
+    await PeptideUtils.loadComponents();
 
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
     activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
@@ -98,7 +98,7 @@ category('Widgets: Distribution panel', () => {
     await delay(1000);
     const lstViewer = model.findViewer(VIEWER_TYPE.LOGO_SUMMARY_TABLE) as LogoSummaryTable | null;
     getDistributionWidget(model.df, {
-      peptideSelection: DG.BitSet.create(model.df.rowCount), columns: model.settings!.columns!,
+      columns: model.settings!.columns!,
       activityCol: scaledActivityCol, clusterSelection: lstViewer!.clusterSelection, clusterColName: clusterCol.name,
       monomerPositionSelection: model.webLogoSelection,
     });
@@ -114,7 +114,7 @@ category('Widgets: Mutation cliffs', () => {
   let scaledActivityCol: DG.Column<number>;
 
   before(async () => {
-    await PeptideUtils.loadSeqHelper();
+    await PeptideUtils.loadComponents();
 
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
     activityCol = df.getCol(TEST_COLUMN_NAMES.ACTIVITY);
@@ -146,6 +146,7 @@ category('Widgets: Mutation cliffs', () => {
       sequenceColumnName: sarViewer.sequenceColumnName,
       positionColumns: sarViewer.positionColumns,
       activityCol: scaledActivityCol,
+      mutationCliffStats: sarViewer.cliffStats,
     });
   });
 });
@@ -159,7 +160,7 @@ category('Widgets: Actions', () => {
   let scaledActivityCol: DG.Column<number>;
 
   before(async () => {
-    await PeptideUtils.loadSeqHelper();
+    await PeptideUtils.loadComponents();
 
     df = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/HELM_small.csv'));
     await df.meta.detectSemanticTypes();

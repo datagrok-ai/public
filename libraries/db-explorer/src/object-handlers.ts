@@ -1,8 +1,10 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {DBValueObject, EntryPointOptions, SchemaInfo} from './types';
+import {DBValueObject, EntryPointOptions, SchemaAndConnection} from './types';
 import {DBExplorerRenderer} from './renderer';
+
 
 export class DBExplorerObjectHandler extends DG.ObjectHandler {
   get type(): string {
@@ -15,12 +17,11 @@ export class DBExplorerObjectHandler extends DG.ObjectHandler {
 
   constructor(
     public options: EntryPointOptions,
-    private schemaInfo: SchemaInfo,
-    connection: DG.DataConnection,
+    private schemaInfoPromise: () => Promise<SchemaAndConnection | null>,
     schemaName: string
   ) {
     super();
-    this.renderer = new DBExplorerRenderer(schemaInfo, connection, schemaName, options);
+    this.renderer = new DBExplorerRenderer(schemaInfoPromise, schemaName, options);
   }
 
   addCustomRenderer(
@@ -51,7 +52,7 @@ export class DBExplorerObjectHandler extends DG.ObjectHandler {
       return await this.renderer.renderTable(
         x.table,
         x.column,
-        this.options.valueConverter(x.value),
+        this.options.valueConverter(x.value ?? ''),
         this.options.joinOptions
       );
     });
@@ -72,17 +73,22 @@ export class DBExplorerObjectHandler extends DG.ObjectHandler {
     const acc = ui.accordion(tableName);
     acc.addPane(paneName, () => this.renderInnerCard(x), true);
     this.renderer
-      .getTable(tableName, x.column, this.options.valueConverter(x.value), this.options.joinOptions)
+      .getTable(tableName, x.column, this.options.valueConverter(x.value ?? ''), this.options.joinOptions)
       .then((df) => {
-        this.renderer.renderAssociations(acc, this.schemaInfo, tableName, df);
+        this.renderer.renderAssociations(acc, this.schemaInfoPromise, tableName, df);
       });
     return acc;
   }
 
   renderProperties(x: DBValueObject, _context?: any): HTMLElement {
-    const acc = this.renderInnerProperties(x.table, x, this.options.valueConverter(x.value).toString());
+    const acc = this.renderInnerProperties(x.table, x, this.options.valueConverter(x.value ?? '').toString());
     if (x.semValue) {
       const origAcc = ui.panels.infoPanel(x.semValue);
+      origAcc.context = x.semValue;
+      if (x.semValue.semType)
+        x.semValue.tags[DG.Tags.Quality] = x.semValue.semType;
+      origAcc?.end();
+
       return ui.divV([acc.root, origAcc.root]);
     }
     return acc.root;
@@ -94,6 +100,11 @@ export class SemValueObjectHandler extends DBExplorerObjectHandler {
     return this.semanticType;
   }
 
+  private _rgExample: (typeof DG.ObjectHandler.prototype.regexpExample) | null = null;
+
+  override get regexpExample() {
+    return this._rgExample;
+  }
   isApplicable(x: any): boolean {
     return x instanceof DG.SemanticValue && x.semType == this.semanticType;
   }
@@ -103,26 +114,23 @@ export class SemValueObjectHandler extends DBExplorerObjectHandler {
     private tableName: string,
     private columnName: string,
     options: EntryPointOptions,
-    schemaInfo: SchemaInfo,
-    connection: DG.DataConnection,
+    schemaInfoPromise: () => Promise<SchemaAndConnection | null>,
     schemaName: string
   ) {
-    super(options, schemaInfo, connection, schemaName);
+    super(options, schemaInfoPromise, schemaName);
+    if (options && options.regexpExample && options.regexpExample.nonVariablePart && options.regexpExample.regexpMarkup)
+      this._rgExample = options.regexpExample;
   }
 
   renderCard(x: any, context?: any): HTMLElement {
-    return super.renderCard(new DBValueObject(this.tableName, this.columnName, x.value, x), context);
+    return super.renderCard(new DBValueObject(this.tableName, this.columnName, this.options.valueConverter(x.value ?? ''), x), context);
   }
 
   renderTooltip(x: any, context?: any): HTMLElement {
-    return super.renderTooltip(new DBValueObject(this.tableName, this.columnName, x.value, x), context);
+    return super.renderTooltip(new DBValueObject(this.tableName, this.columnName, this.options.valueConverter(x.value ?? ''), x), context);
   }
 
   renderProperties(x: any, context?: any): HTMLElement {
-    const existingAcc = ui.panels.infoPanel(x);
-    return ui.divV([
-      super.renderProperties(new DBValueObject(this.tableName, this.columnName, x.value, x), context),
-      existingAcc.root
-    ]);
+    return super.renderProperties(new DBValueObject(this.tableName, this.columnName, this.options.valueConverter(x.value ?? ''), x), context);
   }
 }

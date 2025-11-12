@@ -47,6 +47,46 @@ export class OCLService {
     return result;
   }
 
+  async doParallelArrayResult<T = string>(molCol: Array<string>, argList: any[], op: OCLServiceCall, notationType: MolNotationType): Promise<Array<T>> {
+    const molList = molCol;
+    const colLenght = molList.length;
+    const chunkSize = Math.ceil(colLenght / this._threadCount);
+    const result = new Array<T>().fill(null as T);
+    const promises: Promise<{res:Array<T>, errors: string[]}>[] = new Array(this._threadCount);
+    for (let i = 0; i < this._threadCount; i++) {
+      const chunk = molList.slice(i * chunkSize, (i === (this._threadCount - 1)) ? colLenght : (i + 1) * chunkSize);
+      this._workers[i].postMessage({op, data: chunk, argList, notationType});
+      promises[i] = new Promise((resolve) => {
+        this._workers[i].onmessage = ({data: {res, errors}}) => {
+          resolve({res, errors});
+        };
+      });
+    }
+    const scatterRes = await Promise.all(promises);
+    const totalErrors = scatterRes.map(({errors}) => errors.length)
+      .reduce((prev, cur) => prev + cur, 0);
+    const errorPercentages = totalErrors / colLenght;
+    if (errorPercentages > 0.1)
+      grok.shell.warning(`Operation resulted in error for ${totalErrors} molecules`);
+    let accum = 0;
+    for (let i = 0; i < scatterRes.length; i++) {
+      const res = scatterRes[i].res;
+      for (let j = 0; j < res.length; j++)
+        result[j + accum] = res[j];
+
+      accum += res.length;
+    }
+    return result;
+  }
+
+  async molfileToV3K(molCol: Array<string>): Promise<Array<string>> {
+    return this.doParallelArrayResult(molCol, [], OCLServiceCall.Molfile_To_V3K, MolNotationType.MOLBLOCK);
+  }
+
+  async recalculateCoordinates(molCol: Array<string>): Promise<Array<string>> {
+    const notationType = DG.chem.isMolBlock(molCol[0]) ? MolNotationType.MOLBLOCK : MolNotationType.SMILES;
+    return this.doParallelArrayResult(molCol, [], OCLServiceCall.RECALCULATE_COORDINATES, notationType);
+  }
 
   async getChemProperties(molCol: DG.Column, propList: string[]): Promise<{[key: string]: Array<number>}> {
     return this._doParallel(molCol, propList, OCLServiceCall.CHEM_PROPERTIES);

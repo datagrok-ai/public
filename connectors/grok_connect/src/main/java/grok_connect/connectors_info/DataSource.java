@@ -21,7 +21,7 @@ public class DataSource
     public String defaultSchema = null;
     public String nameBrackets = "[]";
     public boolean limitAtEnd = true;
-
+    public boolean requiresFullyQualifiedTable = false;
     public List<Property> connectionTemplate;
     public List<Property> credentialsTemplate;
     public List<Property> cacheTemplate = new ArrayList<Property>() {{
@@ -32,6 +32,8 @@ public class DataSource
     }};
 
     public List<Property> queryTemplate;
+
+    public List<Property> jdbcPropertiesTemplate;
 
     public List<AggrFunctionInfo> aggregations = new ArrayList<AggrFunctionInfo>() {{
         add(new AggrFunctionInfo(Stats.AVG, "avg(#)", Types.dataFrameNumericTypes));

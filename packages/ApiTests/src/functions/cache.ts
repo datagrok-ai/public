@@ -51,7 +51,7 @@ category('Benchmarks: Client-side cache', () => {
     const type = DG.Test.isInBenchmark ? 'h' : 'l';
     return DG.toDart(await runLoop(true, demog, getHeavyGenerator(10, type)));
   }, {timeout: 180000, benchmark: true});
-});
+}, { owner: 'ppolovyi@datagrok.ai'});
 
 category('Functions: Client-side cache', () => {
 
@@ -152,7 +152,7 @@ id1,${Date.now()}`));
     const df2 = await demog.apply({'type': 'l'});
     expect(df1.id !== df2.id, true);
   });
-});
+}, { owner: 'ppolovyi@datagrok.ai'});
 
 async function expectSameResults(f: DG.Func, params?: object): Promise<any> {
   const first = await f.apply(params);

@@ -10,7 +10,7 @@ import {Unsubscribable} from 'rxjs';
 
 import {GetMonomerResType, HelmAtom, MonomerNumberingTypes} from '@datagrok-libraries/helm-web-editor/src/types/org-helm';
 import {getHelmHelper, HelmInputBase, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
-import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {HelmType, PolymerType} from '@datagrok-libraries/bio/src/helm/types';
 import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
@@ -32,7 +32,7 @@ import {RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './conversion/pt-rules'
 import {Chain} from './conversion/pt-chain';
 import {polyToolConvert} from './pt-dialog';
 
-import {_package, applyNotationProviderForCyclized} from '../package';
+import {_package, PackageFunctions} from '../package';
 import {buildMonomerHoverLink} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 
@@ -167,6 +167,9 @@ async function getPolyToolEnumerateDialog(
         resDataRole = (resSeqValue.tags[PolyToolTags.dataRole] as PolyToolDataRole.template) ?? PolyToolDataRole.macromolecule;
       } else {
         const seqCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'seq', [PT_HELM_EXAMPLE]);
+        seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
+        const _tempDf = DG.DataFrame.fromColumns([seqCol]);
+
         seqCol.meta.units = NOTATION.HELM;
         const sh = seqHelper.getSeqHandler(seqCol);
         resSeqValue = sh.getValue(0);
@@ -192,9 +195,20 @@ async function getPolyToolEnumerateDialog(
               monomerNumbering: MonomerNumberingTypes.continuous,
               getMonomer: (a: HelmAtom | HelmType, name?: string): GetMonomerResType => {
                 const aa: HelmAtom = a as HelmAtom;
+
+
                 if (aa.T === 'ATOM') {
-                  const canonicalSymbol = seqValue.getSplitted().getCanonical(aa.bio!.continuousId - 1);
-                  return monomerLibFuncs.getMonomer(aa.bio!.type, canonicalSymbol);
+                  try {
+                    if (!seqValue.isDna() && !seqValue.isRna()) {
+                      const canonicalSymbol = seqValue.getSplitted().getCanonical(aa.bio!.continuousId - 1);
+                      return monomerLibFuncs.getMonomer(aa.bio!.type, canonicalSymbol);
+                    } else {
+                      const canonicalSymbol = seqValue.getSplittedWithSugarsAndPhosphates().getCanonical(aa.bio!.continuousId - 1);
+                      return monomerLibFuncs.getMonomer(aa.bio!.type, canonicalSymbol);
+                    }
+                  } catch (_) {
+                    return monomerLibFuncs.getMonomer(a, name);
+                  }
                 } else { return monomerLibFuncs.getMonomer(a, name); }
               },
             },
@@ -576,7 +590,11 @@ async function getPolyToolEnumerateDialog(
               return;
             }
             const monLibName = placeHoldersValue[0].monomers[0];
-            const monLib = await libHelper.readLibrary(LIB_PATH, monLibName);
+            const monLib = await libHelper.readSingleLibraryByName(monLibName);
+            if (!monLib) {
+              grok.shell.warning(`Monomer Library '${monLibName}' was not found`);
+              return;
+            }
             const peptideMonomers = monLib.getMonomerSymbolsByType(PolymerTypes.PEPTIDE);
             placeHoldersValue[0].monomers = peptideMonomers;
             enumerationType = PolyToolEnumeratorTypes.Single;
@@ -709,14 +727,14 @@ async function polyToolEnumerateSeq(
       enumCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Enumerated', templateList);
       enumCol.semType = DG.SEMTYPE.MACROMOLECULE;
       enumCol.setTag(PolyToolTags.dataRole, PolyToolDataRole.template);
-      applyNotationProviderForCyclized(enumCol, '-');
+      PackageFunctions.applyNotationProviderForCyclized(enumCol, '-');
       break;
     }
     }
     const enumeratorResDf = DG.DataFrame.fromColumns([enumCol]);
     await grok.data.detectSemanticTypes(enumeratorResDf);
     if (dataRole == PolyToolDataRole.template)
-      applyNotationProviderForCyclized(enumCol, '-');
+      PackageFunctions.applyNotationProviderForCyclized(enumCol, '-');
 
 
     if (toAtomicLevel) {
@@ -727,7 +745,7 @@ async function polyToolEnumerateSeq(
           toAtomicLevel.chiralityEngine, toAtomicLevel.highlightMonomers);
         enumeratorResDf.columns.add(talRes.molCol!, false);
         const resMolCol = talRes.molCol!;
-        buildMonomerHoverLink(resHelmCol, resMolCol, monomerLib, helmHelper.seqHelper, rdKitModule);
+        await buildMonomerHoverLink(resHelmCol, resMolCol, monomerLib, helmHelper.seqHelper, rdKitModule, true);
       } else if (dataRole === PolyToolDataRole.template) {
         const talRes = await polyToolConvert(enumCol,
           toAtomicLevel.generateHelm, false, toAtomicLevel.chiralityEngine, false, toAtomicLevel.rules);

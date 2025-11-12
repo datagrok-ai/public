@@ -1,0 +1,660 @@
+{
+  "#type": "ViewLayout",
+  "viewStateMap": {
+    "containerType": "horizontal",
+    "state": {
+      "width": 1240,
+      "height": 1067
+    },
+    "children": [
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 241,
+          "height": 1067,
+          "element": {
+            "id": "8c7b4760-8560-11f0-cef2-f751bc5e4936",
+            "type": "testDashboardsViewer",
+            "look": {
+              "#type": "JsViewerHostLook"
+            },
+            "title": "testDashboardsViewer"
+          }
+        },
+        "children": []
+      },
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 297,
+          "height": 1067,
+          "element": {
+            "id": "8c7be3a0-8560-11f0-894b-2783ed406eea",
+            "type": "Filters",
+            "look": {
+              "#type": "FiltersLook",
+              "filters": [
+                {
+                  "type": "hierarchical",
+                  "column": null,
+                  "active": true,
+                  "colNames": [
+                    "~test_0",
+                    "~test_1",
+                    "~test_2",
+                    "~test_3",
+                    "~test_4",
+                    "~test_5"
+                  ],
+                  "allEnabled": true,
+                  "splittingSeparator": ":",
+                  "splitColumnName": "test",
+                  "columnless-filter-identifier": "~test_0,~test_1,~test_2,~test_3,~test_4,~test_5",
+                  "boolInput": null
+                },
+                {
+                  "type": "bool-columns",
+                  "column": null,
+                  "active": true,
+                  "mode": "OR",
+                  "true": [
+                    true,
+                    true,
+                    true,
+                    true
+                  ],
+                  "false": [
+                    true,
+                    true,
+                    true,
+                    true
+                  ],
+                  "columnless-filter-identifier": "needs_attention,stable,failing,flaking",
+                  "boolInput": null
+                },
+                {
+                  "type": "categorical",
+                  "column": "owner",
+                  "active": true,
+                  "boolInput": null
+                }
+              ]
+            },
+            "title": "Filters"
+          }
+        },
+        "children": []
+      },
+      {
+        "containerType": "vertical",
+        "state": {
+          "width": 699,
+          "height": 1067
+        },
+        "children": [
+          {
+            "containerType": "fill",
+            "state": {
+              "width": 699,
+              "height": 901,
+              "documentManager": true
+            },
+            "children": [
+              {
+                "containerType": "panel",
+                "state": {
+                  "width": 699,
+                  "height": 901,
+                  "element": {
+                    "id": "8c7e0680-8560-11f0-a833-59531b1af419",
+                    "type": "Grid",
+                    "look": {
+                      "#type": "GridLook",
+                      "showAddNewRowIcon": true,
+                      "addNewRowOnLastRowEdit": true,
+                      "showColumnLabels": false,
+                      "colHeaderHeight": 69,
+                      "rowHeight": 19,
+                      "sortByColumnNames": [
+                        "test"
+                      ],
+                      "sortTypes": [
+                        true
+                      ],
+                      "topLevelDefaultMenu": true,
+                      "allowColumnMenu": true,
+                      "colLabelsOrientation": "Vert",
+                      "columns": [
+                        {
+                          "width": 43.20330640862683,
+                          "backgroundColor": 4294440951,
+                          "customName": "",
+                          "cellType": "row header",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 374.258695313461,
+                          "columnName": "test",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          },
+                          "settings": {
+                            "isPinned": false,
+                            "idxPinned": -1
+                          }
+                        },
+                        {
+                          "width": 17.75372985088903,
+                          "columnName": "owner",
+                          "cellType": "User",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          },
+                          "settings": {
+                            "isPinned": false,
+                            "idxPinned": -1
+                          }
+                        },
+                        {
+                          "width": 36.503628502831404,
+                          "columnName": "needs_attention",
+                          "cellType": "bool",
+                          "colorCodingCategorical": {
+                            "false": 4288208778,
+                            "true": 4292224808
+                          },
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 23.5442980214213,
+                          "columnName": "stable",
+                          "cellType": "bool",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          },
+                          "settings": {
+                            "isPinned": false,
+                            "idxPinned": -1
+                          }
+                        },
+                        {
+                          "width": 29.64498931667736,
+                          "columnName": "failing",
+                          "cellType": "bool",
+                          "colorCodingCategorical": {
+                            "false": "#98df8a",
+                            "true": "#d62728"
+                          },
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          },
+                          "settings": {
+                            "isPinned": false,
+                            "idxPinned": -1
+                          }
+                        },
+                        {
+                          "width": 28.407458735951074,
+                          "columnName": "flaking",
+                          "cellType": "bool",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "width": 16,
+                          "columnName": "1",
+                          "tooltipColumns": [
+                            "1 build_date",
+                            "1 result"
+                          ],
+                          "tooltipType": "Columns",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {
+                            "failed": 4292224808,
+                            "passed": 4288208778,
+                            "skipped": 4292598669
+                          },
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "width": 16,
+                          "columnName": "2",
+                          "tooltipColumns": [
+                            "2 build_date",
+                            "2 result"
+                          ],
+                          "tooltipType": "Columns",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {
+                            "failed": 4292224808,
+                            "passed": 4288208778,
+                            "skipped": 4292598669
+                          },
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "width": 15,
+                          "columnName": "3",
+                          "tooltipColumns": [
+                            "3 build_date",
+                            "3 result"
+                          ],
+                          "tooltipType": "Columns",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {
+                            "failed": 4292224808,
+                            "passed": 4288208778,
+                            "skipped": 4292598669
+                          },
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "width": 17,
+                          "columnName": "4",
+                          "tooltipColumns": [
+                            "4 build_date",
+                            "4 result"
+                          ],
+                          "tooltipType": "Columns",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {
+                            "failed": 4292224808,
+                            "passed": 4288208778,
+                            "skipped": 4292598669
+                          },
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "width": 19,
+                          "columnName": "5",
+                          "tooltipColumns": [
+                            "5 build_date",
+                            "5 result"
+                          ],
+                          "tooltipType": "Columns",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {
+                            "failed": 4292224808,
+                            "passed": 4288208778,
+                            "skipped": 4292598669
+                          },
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 91.76470588235293,
+                          "customName": "sparkline",
+                          "cellType": "sparkline",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          },
+                          "settings": {
+                            "sparkline": {
+                              "columnNames": [
+                                "1 duration",
+                                "2 duration",
+                                "3 duration",
+                                "4 duration",
+                                "5 duration"
+                              ],
+                              "normalization": "Row",
+                              "colorCode": "Values",
+                              "zeroScale": true
+                            }
+                          }
+                        },
+                        {
+                          "width": 37,
+                          "columnName": "ignore?",
+                          "cellType": "bool",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 91,
+                          "columnName": "ignoreReason",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "width": 52,
+                          "columnName": "ignore status",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {
+                            "Fixed": "#2ca02c",
+                            "Partially Fixed (Lowest)": "#ffe51c",
+                            "Partially Fixed (Low)": "#ffa500",
+                            "Partially Fixed (Medium)": "#ff5a00",
+                            "Partially Fixed (Blocker)": "#7b2d24",
+                            "Wasn't Fixed (Lowest)": "#ffe51c",
+                            "Wasn't Fixed (Low)": "#ffa500",
+                            "Wasn't Fixed (Medium)": "#ff5a00",
+                            "Wasn't Fixed (Blocker)": "#7b2d24"
+                          },
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 84,
+                          "columnName": "1 duration",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 93,
+                          "columnName": "1 result",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "isColorCoded": true,
+                          "width": 54,
+                          "columnName": "1 tickets status",
+                          "colorCodingType": "Categorical",
+                          "colorCodingCategorical": {
+                            "Fixed": "#2ca02c",
+                            "Partially Fixed (Lowest)": "#ffe51c",
+                            "Partially Fixed (Low)": "#ffa500",
+                            "Partially Fixed (Medium)": "#ff5a00",
+                            "Partially Fixed (Blocker)": "#7b2d24",
+                            "Wasn't Fixed (Lowest)": "#ffe51c",
+                            "Wasn't Fixed (Low)": "#ffa500",
+                            "Wasn't Fixed (Medium)": "#ff5a00",
+                            "Wasn't Fixed (Blocker)": "#7b2d24"
+                          },
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 84,
+                          "columnName": "2 duration",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 84,
+                          "columnName": "2 result",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 84,
+                          "columnName": "3 duration",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 77,
+                          "columnName": "3 result",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 84,
+                          "columnName": "4 duration",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 85,
+                          "columnName": "4 result",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 84,
+                          "columnName": "5 duration",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 84,
+                          "columnName": "5 result",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 85,
+                          "columnName": "lastResolved",
+                          "customFormat": "M/d/yyyy HH:mm:ss.fff",
+                          "cellType": "number",
+                          "format": "M/d/yyyy HH:mm:ss.fff",
+                          "headerCellStyle": {
+                            "vertAlign": "bottom",
+                            "textWrap": "words"
+                          }
+                        }
+                      ]
+                    },
+                    "title": "Grid",
+                    "default": true
+                  }
+                },
+                "children": []
+              }
+            ]
+          },
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 699,
+              "height": 165,
+              "element": {
+                "id": "8c7f17f0-8560-11f0-e0ef-a56b00acd90c",
+                "type": "Bar chart",
+                "look": {
+                  "#type": "BarChartLook",
+                  "rowSource": "All",
+                  "onClick": "Filter",
+                  "valueColumnName": "test",
+                  "valueAggrType": "count",
+                  "barSortType": "by value",
+                  "barSortOrder": "desc",
+                  "splitColumnName": "~test_0",
+                  "showCategoryValues": false,
+                  "showCategorySelector": false,
+                  "stackColumnName": "needs_attention",
+                  "showStackSelector": false,
+                  "colorColumnName": "",
+                  "maxCategoryWidth": 100,
+                  "minTextHeight": 14,
+                  "legendVisibility": "Never",
+                  "legendPosition": "Right"
+                },
+                "title": "Bar chart"
+              }
+            },
+            "children": []
+          }
+        ]
+      }
+    ],
+    "floating": [],
+    "tableId": "6e8831f0-8560-11f0-a76b-0350ab1c32c8",
+    "tableName": "0. Tests Dashboard"
+  },
+  "columns": [
+    {
+      "name": "owner",
+      "type": "string",
+      "semType": "User",
+      "id": "6eebd5c0-8560-11f0-f583-f73db3f6cd23",
+      "friendlyName": "Owner",
+      "entityTags": [
+        {
+          "tag": "aggr.type",
+          "id": "8c7f8d20-8560-11f0-8edc-37e94f152b0b"
+        },
+        {
+          "tag": "aggr.src.col.name",
+          "id": "8c7fb430-8560-11f0-d0f6-5b9c2b582477"
+        },
+        {
+          "tag": "quality",
+          "id": "8c7fb430-8560-11f0-92c7-27161f1f74b5"
+        },
+        {
+          "tag": "cell.renderer",
+          "id": "8c7fb430-8560-11f0-f2a5-176b0eda0289"
+        },
+        {
+          "tag": ".id",
+          "id": "8c7fdb40-8560-11f0-c145-d1a93e0e9822"
+        }
+      ],
+      "metaParams": {
+        "aggr.type": "key",
+        "aggr.src.col.name": "owner",
+        "quality": "User",
+        "cell.renderer": "User",
+        ".id": "6eebd5c0-8560-11f0-f583-f73db3f6cd23"
+      }
+    },
+    {
+      "name": "test",
+      "type": "string",
+      "semType": "autotest",
+      "id": "6eebaeb0-8560-11f0-949b-97c952cf099e",
+      "friendlyName": "Test",
+      "entityTags": [
+        {
+          "tag": "aggr.type",
+          "id": "8c7fdb40-8560-11f0-8a36-5171ee93a7f0"
+        },
+        {
+          "tag": "aggr.src.col.name",
+          "id": "8c7fdb40-8560-11f0-e3d6-c9fffa328942"
+        },
+        {
+          "tag": "quality",
+          "id": "8c7fdb40-8560-11f0-bdc2-fd7614f9c1bc"
+        },
+        {
+          "tag": ".id",
+          "id": "8c800250-8560-11f0-98f8-dff75663449a"
+        }
+      ],
+      "metaParams": {
+        "aggr.type": "key",
+        "aggr.src.col.name": "test",
+        "quality": "autotest",
+        ".id": "6eebaeb0-8560-11f0-949b-97c952cf099e"
+      }
+    },
+    {
+      "name": "~test_0",
+      "type": "string",
+      "id": "8c802960-8560-11f0-9d7c-733483bd16a1",
+      "friendlyName": "~test_0",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "8c802960-8560-11f0-88d7-79216a92268d"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "5"
+      }
+    },
+    {
+      "name": "needs_attention",
+      "type": "bool",
+      "id": "6ef01b80-8560-11f0-8298-e9211e90fdb0",
+      "friendlyName": "Needs_attention",
+      "entityTags": [
+        {
+          "tag": "formula",
+          "id": "8c807780-8560-11f0-e78d-85eeaabd6f65"
+        },
+        {
+          "tag": ".color-coding-categorical",
+          "id": "8c807780-8560-11f0-c655-53fb97d4825d"
+        },
+        {
+          "tag": ".id",
+          "id": "8c807780-8560-11f0-a8c6-1b3cbfa33cb7"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "8c809e90-8560-11f0-9541-676e30bcc993"
+        }
+      ],
+      "metaParams": {
+        "formula": "And(${failing}, Not(${ignore?}))",
+        ".color-coding-categorical": "{\"false\":4288208778,\"true\":4292224808}",
+        ".id": "6ef01b80-8560-11f0-8298-e9211e90fdb0",
+        ".semantic-detection-duration": "3"
+      }
+    }
+  ],
+  "name": "TestsDashboard",
+  "friendlyName": "0. Tests Dashboard",
+  "author": {
+    "id": "f7c9fb10-fec0-11ee-829a-bd6a1fb43c6f"
+  },
+  "createdOn": "2025-09-11T13:45:16.243Z"
+}

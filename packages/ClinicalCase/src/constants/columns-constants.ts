@@ -4,8 +4,9 @@ export const SITE_ID = 'SITEID';
 export const DOMAIN = 'DOMAIN';
 export const SUBJECT_ID = 'USUBJID';
 export const VISIT_DAY = 'VISITDY';
-export const VISIT_NAME = 'VISIT';
+export const VISIT = 'VISIT';
 export const VISIT_NUM = 'VISITNUM';
+export const VISIT_DAY_STR = 'VISITDY_STR';
 //dm
 export const ACT_TRT_ARM = 'ACTARM';
 export const PLANNED_TRT_ARM = 'ARM';

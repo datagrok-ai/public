@@ -11,11 +11,15 @@ module.exports = {
     package: './src/package.ts',
   },
   resolve: {
-    extensions: ['.ts', '.json', '.js'],
+    extensions: ['.ts', '.js'],
   },
   module: {
     rules: [
-      { test: /\.tsx?$/, loader: 'ts-loader' }
+      {
+        test: /\.ts?$/,
+        use: 'ts-loader',
+        exclude: /node_modules/,
+      },
     ],
   },
   devtool: 'source-map',

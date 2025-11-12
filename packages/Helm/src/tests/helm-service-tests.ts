@@ -13,7 +13,7 @@ import {
 } from '@datagrok-libraries/bio/src/viewers/helm-service';
 import {RenderTask} from '@datagrok-libraries/bio/src/utils/cell-renderer-async-base';
 
-import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
   getUserLibSettings, setUserLibSettings,

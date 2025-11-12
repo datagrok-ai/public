@@ -1,26 +1,36 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import * as grok from 'datagrok-api/grok';
 
 import {
-  fitSeries,
   getSeriesStatistics,
   getSeriesFitFunction,
   LogOptions,
   getChartBounds,
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
-import {statisticsProperties, fitSeriesProperties, fitChartDataProperties, IFitChartData, IFitSeries, IFitChartOptions, IFitSeriesOptions, FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 import {
-  FitChartCellRenderer,
-  getChartData,
+  statisticsProperties,
+  fitChartDataProperties,
+  IFitChartData,
+  IFitSeries,
+  IFitChartOptions,
+  IFitSeriesOptions,
+  FitStatistics,
+  FIT_FUNCTION_4PL_REGRESSION, FIT_FUNCTION_SIGMOID,
+} from '@datagrok-libraries/statistics/src/fit/fit-curve';
+import {
+  getOrCreateParsedChartData,
   getColumnChartOptions,
   getDataFrameChartOptions,
   isColorValid,
   mergeProperties,
-  substituteZeroes
+  substituteZeroes, getOrCreateCachedFitCurve, getOrCreateCachedCurvesDataPoints, FitChartCellRenderer
 } from './fit-renderer';
-import {CellRenderViewer} from '@datagrok-libraries/utils/src/viewers/cell-render-viewer';
 import {convertXMLToIFitChartData} from './fit-parser';
-import {FitConstants} from './const';
+import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
+import {ColorType, getSeriesColor} from './render-utils';
+import {fitSeriesProperties} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
 
 
 const CHART_OPTIONS = 'chartOptions';
@@ -50,30 +60,34 @@ const AGGREGATION_TYPES: {[key: string]: string} = {
 };
 
 
-export function calculateSeriesStats(series: IFitSeries, chartLogOptions: LogOptions): FitStatistics {
+export function calculateSeriesStats(series: IFitSeries, seriesIdx: number, chartLogOptions: LogOptions,
+  tableCell: DG.Cell, useCache: boolean = true): FitStatistics {
   const fitFunction = getSeriesFitFunction(series);
   if (series.parameters) {
-    if (chartLogOptions.logX)
+    if (chartLogOptions.logX) {
       if (series.parameters[2] > 0)
         series.parameters[2] = Math.log10(series.parameters[2]);
-  }
-  else {
-    const params = fitSeries(series, fitFunction, chartLogOptions).parameters;
+    }
+  } else {
+    const params = getOrCreateCachedFitCurve(series, seriesIdx, fitFunction, chartLogOptions, tableCell, useCache).parameters;
     series.parameters = [...params];
   }
 
-  const seriesStatistics = getSeriesStatistics(series, fitFunction, chartLogOptions);
+  const seriesStatistics = getSeriesStatistics(series, fitFunction,
+    getOrCreateCachedCurvesDataPoints(series, seriesIdx, chartLogOptions, false, tableCell), chartLogOptions);
+  if ([FIT_FUNCTION_4PL_REGRESSION, FIT_FUNCTION_SIGMOID].includes(fitFunction.name) && chartLogOptions.logX && seriesStatistics.interceptX !== undefined && seriesStatistics.interceptX < 0)
+    seriesStatistics.interceptX = Math.pow(10, seriesStatistics.interceptX);
   return seriesStatistics;
 }
 
-export function getChartDataAggrStats(chartData: IFitChartData, aggrType: string): FitStatistics {
+export function getChartDataAggrStats(chartData: IFitChartData, aggrType: string, tableCell: DG.Cell): FitStatistics {
   const chartLogOptions: LogOptions = {logX: chartData.chartOptions?.logX, logY: chartData.chartOptions?.logY};
-  const rSquaredValues: number[] = [], aucValues: number[] = [], interceptXValues: number[] =  [], interceptYValues: number[] = [],
-    slopeValues: number[] = [], topValues: number[] = [], bottomValues: number[] = [];
+  const rSquaredValues: number[] = []; const aucValues: number[] = []; const interceptXValues: number[] = []; const interceptYValues: number[] = [];
+  const slopeValues: number[] = []; const topValues: number[] = []; const bottomValues: number[] = [];
   for (let i = 0, j = 0; i < chartData.series?.length!; i++) {
     if (chartData.series![i].points.every((p) => p.outlier))
       continue;
-    const seriesStats = calculateSeriesStats(chartData.series![i], chartLogOptions);
+    const seriesStats = calculateSeriesStats(chartData.series![i], i, chartLogOptions, tableCell);
     rSquaredValues[j] = seriesStats.rSquared!;
     aucValues[j] = seriesStats.auc!;
     interceptXValues[j] = seriesStats.interceptX!;
@@ -107,8 +121,7 @@ function changePlotOptions(chartData: IFitChartData, inputBase: DG.InputBase, op
   if (options === CHART_OPTIONS) {
     if (chartData.chartOptions === undefined) return;
     (chartData.chartOptions[propertyName as keyof IFitChartOptions] as any) = inputBase.value;
-  }
-  else if (options === SERIES_OPTIONS) {
+  } else if (options === SERIES_OPTIONS) {
     if (chartData.series === undefined) return;
     for (let i = 0; i < chartData.series.length; i++)
       (chartData.series[i][propertyName as keyof IFitSeries] as any) = inputBase.value;
@@ -175,18 +188,16 @@ function changeCurvesOptions(gridCell: DG.GridCell, inputBase: DG.InputBase, opt
     const chartData: IFitChartData = JSON.parse(value ?? '{}') ?? {};
     changePlotOptions(chartData, inputBase, options);
     gridCell.cell.value = JSON.stringify(chartData);
-  }
-  else {
+  } else {
     let columns: DG.Column[];
     if (manipulationLevel === MANIPULATION_LEVEL.DATAFRAME) {
       gridCell.cell.dataFrame.tags[FitConstants.TAG_FIT] = JSON.stringify(chartOptions);
       columns = gridCell.cell.dataFrame.columns.bySemTypeAll(FitConstants.FIT_SEM_TYPE);
-    }
-    else {
+    } else {
       gridCell.cell.column.tags[FitConstants.TAG_FIT] = JSON.stringify(chartOptions);
       columns = [gridCell.cell.column];
     }
-    
+
     for (let i = 0; i < columns.length; i++) {
       if (manipulationLevel === MANIPULATION_LEVEL.DATAFRAME) {
         const columnChartOptions = getColumnChartOptions(columns[i]);
@@ -205,15 +216,15 @@ function changeCurvesOptions(gridCell: DG.GridCell, inputBase: DG.InputBase, opt
           if (chartData.chartOptions[propertyName as keyof IFitChartOptions] === undefined)
             return value;
           delete chartData.chartOptions[propertyName as keyof IFitChartOptions];
-        }
-        else {
+        } else {
           if (chartData.series === undefined) return value;
           let isSeriesChanged = false;
-          for (const series of chartData.series)
+          for (const series of chartData.series) {
             if (series[propertyName as keyof IFitSeriesOptions] !== undefined) {
               delete series[propertyName as keyof IFitSeriesOptions];
               isSeriesChanged = true;
             }
+          }
           if (chartData.seriesOptions)
             delete chartData.seriesOptions[propertyName as keyof IFitSeriesOptions];
           if (!isSeriesChanged) return value;
@@ -235,13 +246,13 @@ export class FitGridCellHandler extends DG.ObjectHandler {
   isApplicable(x: any): boolean {
     return x instanceof DG.GridCell && x.cellType === FitConstants.FIT_CELL_TYPE;
   }
-  
+
   // TODO: add aspect ratio for the cell
   // TODO: add legend
   // TODO: add the table for the values on the cell or don't render it at all
   // TODO: fix the curves demo app
 
-  renderProperties(gridCell: DG.GridCell, context: any = null): HTMLElement {
+  renderProperties(gridCell: DG.GridCell, _context: any = null): HTMLElement {
     const acc = ui.accordion('Curves property panel');
     // TODO: make just the base ui.input.choice after nullable option is added
     const switchProperty = DG.Property.js('level', DG.TYPE.STRING, {description: 'Controls the level at which properties will be switched',
@@ -251,47 +262,35 @@ export class FitGridCellHandler extends DG.ObjectHandler {
     // temporarily because input doesn't show the tooltip
     ui.tooltip.bind(switchLevelInput.captionLabel, 'Controls the level at which properties will be switched');
 
-    const chartData = getChartData(gridCell);
+    const chartData = getOrCreateParsedChartData(gridCell.cell);
     const columnChartOptions = getColumnChartOptions(gridCell.cell.column);
     const dfChartOptions = getDataFrameChartOptions(gridCell.cell.dataFrame);
 
-    const seriesOptionsRefresh = {onValueChanged: (v: any, inputBase: DG.InputBase) => 
+    const seriesOptionsRefresh = {onValueChanged: (v: any, inputBase: DG.InputBase) =>
       changeCurvesOptions(gridCell, inputBase, SERIES_OPTIONS, switchLevelInput.value)};
     const chartOptionsRefresh = {onValueChanged: (v: any, inputBase: DG.InputBase) =>
       changeCurvesOptions(gridCell, inputBase, CHART_OPTIONS, switchLevelInput.value)};
 
-    if (!isColorValid(dfChartOptions.seriesOptions?.pointColor) && !isColorValid(columnChartOptions.seriesOptions?.pointColor)) {
-      if (chartData.seriesOptions) {
-        if (!isColorValid(chartData.seriesOptions.pointColor))
-          chartData.seriesOptions.pointColor = DG.Color.toHtml(DG.Color.getCategoricalColor(0));
+    const setValidColors = (colorFieldName: string) => {
+      if (dfChartOptions.seriesOptions && !isColorValid(dfChartOptions.seriesOptions[colorFieldName]) &&
+        columnChartOptions.seriesOptions && !isColorValid(columnChartOptions.seriesOptions[colorFieldName])) {
+        if (chartData.seriesOptions) {
+          if (!isColorValid(chartData.seriesOptions[colorFieldName])) {
+            chartData.seriesOptions[colorFieldName] = DG.Color.toHtml(colorFieldName === 'outlierColor' ?
+              DG.Color.red : DG.Color.getCategoricalColor(0));
+          }
+        } else {
+          if (!isColorValid(chartData.series ? chartData.series[0][colorFieldName] : '')) {
+chartData.series![0][colorFieldName] = DG.Color.toHtml(colorFieldName === 'outlierColor' ?
+  DG.Color.red : DG.Color.getCategoricalColor(0));
+          }
+        }
       }
-      else {
-        if (!isColorValid(chartData.series ? chartData.series![0].pointColor : ''))
-          chartData.series![0].pointColor = DG.Color.toHtml(DG.Color.getCategoricalColor(0));
-      }
-    }
-
-    if (!isColorValid(dfChartOptions.seriesOptions?.fitLineColor) && !isColorValid(columnChartOptions.seriesOptions?.fitLineColor)) {
-      if (chartData.seriesOptions) {
-        if (!isColorValid(chartData.seriesOptions.fitLineColor))
-          chartData.seriesOptions.fitLineColor = DG.Color.toHtml(DG.Color.getCategoricalColor(0));
-      }
-      else {
-        if (!isColorValid(chartData.series ? chartData.series![0].fitLineColor : ''))
-          chartData.series![0].fitLineColor = DG.Color.toHtml(DG.Color.getCategoricalColor(0));
-      }
-    }
-
-    if (!isColorValid(dfChartOptions.seriesOptions?.outlierColor) && !isColorValid(columnChartOptions.seriesOptions?.outlierColor)) {
-      if (chartData.seriesOptions) {
-        if (!isColorValid(chartData.seriesOptions.outlierColor))
-          chartData.seriesOptions.outlierColor = DG.Color.toHtml(DG.Color.red);
-      }
-      else {
-        if (!isColorValid(chartData.series ? chartData.series![0].outlierColor : ''))
-          chartData.series![0].outlierColor = DG.Color.toHtml(DG.Color.red);
-      }
-    }
+    };
+    const tableCell = gridCell.cell;
+    setValidColors('pointColor');
+    setValidColors('fitLineColor');
+    setValidColors('outlierColor');
 
     mergeProperties(fitSeriesProperties, columnChartOptions.seriesOptions, chartData.seriesOptions ? chartData.seriesOptions :
       chartData.series ? chartData.series[0] ?? {} : {});
@@ -312,9 +311,10 @@ export class FitGridCellHandler extends DG.ObjectHandler {
     ui.forms.addGroup(form, 'Chart options', fitChartDataProperties.map((p) => ui.input.forProperty(p, chartData.chartOptions, chartOptionsRefresh)));
     acc.addPane('Options', () => form);
 
+    const choices = (chartData.series?.length ?? 0) > 1 ? ['all', 'aggregated'] : ['all'];
     const seriesStatsProperty = DG.Property.js('series', DG.TYPE.STRING,
       {description: 'Controls whether to show series statistics or aggregated statistics',
-        defaultValue: 'All', choices: ['all', 'aggregated'], nullable: false});
+        defaultValue: 'all', choices: choices, nullable: false});
     const seriesStatsInput = ui.input.forProperty(seriesStatsProperty, null, {onValueChanged: () => {
       acc.getPane('Fit').root.lastElementChild!.replaceChildren(createFitPane());
     }});
@@ -326,7 +326,9 @@ export class FitGridCellHandler extends DG.ObjectHandler {
     }});
 
     function createFitPane(): HTMLElement {
-      const host = ui.divV(seriesStatsInput.stringValue === 'aggregated' ? [seriesStatsInput.root, aggrTypeInput.root] : [seriesStatsInput.root]);
+      const hostItems = (chartData.series?.length ?? 0) > 1 ? seriesStatsInput.stringValue === 'aggregated' ?
+        [seriesStatsInput.root, aggrTypeInput.root] : [seriesStatsInput.root] : null;
+      const host = ui.divV(hostItems!);
       const dataBounds = getChartBounds(chartData);
       if (dataBounds.x <= 0 && chartData.chartOptions) chartData.chartOptions.logX = false;
       if (dataBounds.y <= 0 && chartData.chartOptions) chartData.chartOptions.logY = false;
@@ -335,42 +337,48 @@ export class FitGridCellHandler extends DG.ObjectHandler {
         const chartLogOptions: LogOptions = {logX: chartData.chartOptions?.logX, logY: chartData.chartOptions?.logY};
         for (let i = 0; i < chartData.series!.length; i++) {
           const series = chartData.series![i];
-          const seriesStatistics = calculateSeriesStats(series, chartLogOptions);
-  
-          const color = series.fitLineColor ? DG.Color.fromHtml(series.fitLineColor) ?
-            series.fitLineColor : DG.Color.toHtml(DG.Color.getCategoricalColor(i)) : DG.Color.toHtml(DG.Color.getCategoricalColor(i));
+          const seriesStatistics = calculateSeriesStats(series, i, chartLogOptions, tableCell);
+
+          const color = getSeriesColor(series, i, ColorType.FIT_LINE);
+          const seriesName = series.name ?? 'series ' + i;
           host.appendChild(ui.panel([
-            ui.h1(series.name ?? 'series ' + i, {style: {color: color}}),
+            ui.h1(seriesName, {style: {color: color}}),
             ui.input.form(seriesStatistics, statisticsProperties, {
               onCreated: (input) => input.root.appendChild(ui.iconFA('plus', async () => {
-                  const funcParams = {df: gridCell.cell.dataFrame, colName: gridCell.gridColumn.name, propName: input.property.name, seriesName: series.name, seriesNumber: i};
-                  await DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(funcParams).call(undefined, undefined, {processed: false});
-                }, `Calculate ${input.property.name} for the whole column`))
+                const funcParams = {table: gridCell.cell.dataFrame, colName: gridCell.gridColumn.name, propName: input.property.name, seriesNumber: i};
+                await DG.Func.find({name: 'addStatisticsColumn'})[0].prepare(funcParams).call(undefined, undefined, {processed: false});
+              }, `Calculate ${input.property.name} for the whole column`))
+
+              // TODO: Replace with this one after dima merges his branch
+              //   const newName = gridCell.cell.dataFrame.columns.getUnusedName(`${gridCell.gridColumn.name} ${seriesName} ${input.property.name}`);
+              //   await gridCell.cell.dataFrame.columns.addNewCalculated(newName, `Curves:addStatisticsColumn("table", \$\{${gridCell.gridColumn.name}\}, "${input.property.name}", ${i})`, undefined, undefined, false);
+              // }, `Calculate ${input.property.name} for the whole column`))
             })
           ]));
         }
-      }
-      else {
-        const seriesStatistics = getChartDataAggrStats(chartData, aggrTypeInput.stringValue);
+      } else {
+        const seriesStatistics = getChartDataAggrStats(chartData, aggrTypeInput.stringValue, tableCell);
         host.appendChild(ui.panel([
-            ui.h1(`series ${aggrTypeInput.stringValue}`),
-            ui.input.form(seriesStatistics, statisticsProperties, {
-              onCreated: (input) => input.root.appendChild(ui.iconFA('plus', async () => {
-                  const funcParams = {df: gridCell.cell.dataFrame, colName: gridCell.gridColumn.name, propName: input.property.name, aggrType: aggrTypeInput.stringValue};
-                  await DG.Func.find({name: 'addAggrStatisticsColumn'})[0].prepare(funcParams).call(undefined, undefined, {processed: false});
-                }, `Calculate ${input.property.name} ${aggrTypeInput.stringValue} for the whole column`))
-            })
-          ]));
+          ui.h1(`series ${aggrTypeInput.stringValue}`),
+          ui.input.form(seriesStatistics, statisticsProperties, {
+            onCreated: (input) => input.root.appendChild(ui.iconFA('plus', async () => {
+              const funcParams = {table: gridCell.cell.dataFrame, colName: gridCell.gridColumn.name, propName: input.property.name, aggrType: aggrTypeInput.stringValue};
+              await DG.Func.find({name: 'addAggrStatisticsColumn'})[0].prepare(funcParams).call(undefined, undefined, {processed: false});
+            }, `Calculate ${input.property.name} ${aggrTypeInput.stringValue} for the whole column`))
+          })
+        ]));
       }
 
       return host;
     }
 
-    acc.addPane('Fit', () => {
-      return createFitPane();
-    });
+    const chartPane = acc.addPane('Chart', () => DG.GridCellWidget.fromGridCell(gridCell).root);
+    const screenBounds = FitChartCellRenderer.inflateScreenBounds(gridCell.bounds);
+    if (screenBounds.width < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_WIDTH ||
+      screenBounds.height < FitConstants.MIN_POINTS_AND_STATS_VISIBILITY_PX_HEIGHT)
+      chartPane.expanded = true;
 
-    acc.addPane('Chart', () => CellRenderViewer.fromGridCell(gridCell, new FitChartCellRenderer()).root);
+    acc.addPane('Fit', () => createFitPane());
 
     return acc.root;
   }

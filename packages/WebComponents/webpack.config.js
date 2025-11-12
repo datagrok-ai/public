@@ -1,5 +1,6 @@
 const path = require('path');
 const packageName = path.parse(require('./package.json').name).name.toLowerCase().replace(/-/g, '');
+const FuncGeneratorPlugin = require('datagrok-tools/plugins/func-gen-plugin');
 
 module.exports = {
   mode: 'production',
@@ -8,13 +9,17 @@ module.exports = {
     package: './src/package.ts',
   },
   resolve: {
-    extensions: ['.wasm', '.mjs', '.ts', '.tsx', '.json', '.js'],
+    extensions: ['.wasm', '.ts', '.tsx', '.mjs', '.js', '.jsx',  '.json'],
   },
   module: {
     rules: [
       {test: /\.tsx?$/, loader: 'ts-loader', options: {allowTsInNodeModules: true}},
       {
-        test: /\.(js|mjs|jsx|ts|tsx)$/,
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader'],
+      },
+      {
+        test: /\.(ts|tsx|mjs|js|jsx)$/,
         enforce: 'pre',
         use: ['source-map-loader'],
       },
@@ -43,5 +48,8 @@ module.exports = {
   optimization: {
     usedExports: true,
     concatenateModules: false,
-  }
+  },
+  plugins: [
+    new FuncGeneratorPlugin({outputPath: './src/package.g.ts'}),
+  ],
 };

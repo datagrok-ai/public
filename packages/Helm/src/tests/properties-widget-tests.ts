@@ -7,7 +7,7 @@ import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/u
 import {
   getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
-import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {generateLongSequence} from '@datagrok-libraries/bio/src/utils/generator';
 import {getSeqHelper, ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 

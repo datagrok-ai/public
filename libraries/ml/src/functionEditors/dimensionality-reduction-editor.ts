@@ -199,6 +199,7 @@ export class DimReductionBaseEditor {
       const firstSupportedColumn = this.tableInput.value?.columns.toList()
         .find((col) => !!this.columnFunctionsMap[col.name]) ?? null;
       const input = ui.input.column('Column', {table: this.tableInput.value!, value: firstSupportedColumn!,
+        nullable: false,
         onValueChanged: () => this.onColumnInputChanged(),
         filter: (col: DG.Column) => !!this.columnFunctionsMap[col.name]});
       if (!this.colInputRoot)
@@ -222,25 +223,31 @@ export class DimReductionBaseEditor {
       const value = this.tableInput.value;
       if (!value)
         return;
-      this.columnFunctionsMap = {};
-      const columns = value.columns.toList();
-      columns.forEach((col) => {
-        Object.keys(this.supportedFunctions).forEach((funcName) => {
-          const semTypes = this.supportedFunctions[funcName].semTypes;
-          const types = this.supportedFunctions[funcName].types;
-          const units = this.supportedFunctions[funcName].units;
-          const semTypeSupported = !semTypes.length || (col.semType && semTypes.includes(col.semType));
-          const typeSuported = !types.length || types.includes(col.type);
-          const unitsSupported = !units.length ||
-            (col.meta.units && units.includes(col.meta.units));
-          if (semTypeSupported && typeSuported && unitsSupported) {
-            if (!this.columnFunctionsMap[col.name])
-              this.columnFunctionsMap[col.name] = [];
-            this.columnFunctionsMap[col.name].push(funcName);
-          }
+      const changed = () => {
+        this.columnFunctionsMap = {};
+        const columns = value.columns.toList();
+        columns.forEach((col) => {
+          Object.keys(this.supportedFunctions).forEach((funcName) => {
+            const semTypes = this.supportedFunctions[funcName].semTypes;
+            const types = this.supportedFunctions[funcName].types;
+            const units = this.supportedFunctions[funcName].units;
+            const semTypeSupported = !semTypes.length || (col.semType && semTypes.includes(col.semType));
+            const typeSuported = !types.length || types.includes(col.type);
+            const unitsSupported = !units.length ||
+              (col.meta.units && units.includes(col.meta.units));
+            if (semTypeSupported && typeSuported && unitsSupported) {
+              if (!this.columnFunctionsMap[col.name])
+                this.columnFunctionsMap[col.name] = [];
+              this.columnFunctionsMap[col.name].push(funcName);
+            }
+          });
         });
-      });
-      this.regenerateColInput();
+        this.regenerateColInput();
+      }
+      changed();
+      // the table can be uploaded on spot, so lets check that
+      if (!value.columns.toList().some((col) => !!col.getTag(DG.Tags.SemanticDetectionDuration)))
+        value.meta.detectSemanticTypes().then(() => {changed();})
     }
 
     private onColumnInputChanged() {

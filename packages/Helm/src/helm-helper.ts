@@ -9,6 +9,8 @@ import {
   App, Point, HelmType, IHelmBio, HelmAtom, HelmBond, HelmMol, GetMonomerFunc, GetMonomerResType,
   MonomerExplorer, TabDescType, MonomersFuncs, MonomerSetType, ISeqMonomer, PolymerType, MonomerType,
   DojoType, JSDraw2ModuleType, IHelmEditorOptions, IHelmDrawOptions,
+  Editor,
+  IBio,
 } from '@datagrok-libraries/bio/src/helm/types';
 import {HelmTabKeys, HelmTypes, MonomerTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
@@ -17,7 +19,7 @@ import {
   HelmConvertRes, HelmInputBase, HelmNotSupportedError, IHelmHelper, IHelmInputInitOptions
 } from '@datagrok-libraries/bio/src/helm/helm-helper';
 import {IHelmWebEditor} from '@datagrok-libraries/bio/src/helm/types';
-import {IMonomerLib, IMonomerLibBase, IMonomerLinkData, IMonomerSetPlaceholder} from '@datagrok-libraries/bio/src/types/index';
+import {IMonomerLib, IMonomerLibBase, IMonomerLinkData, IMonomerSetPlaceholder} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {GAP_SYMBOL, GapOriginals, NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
@@ -28,6 +30,7 @@ import {getHoveredMonomerFromEditorMol} from './utils/get-hovered';
 /* eslint-enable max-len */
 
 import {_package} from './package';
+import {IEditorOptions} from '@datagrok-libraries/js-draw-lite/src/types/jsdraw2';
 
 declare const dojo: DojoType;
 declare const JSDraw2: JSDraw2ModuleType;
@@ -326,20 +329,48 @@ export class HelmHelper implements IHelmHelper {
     return getHoveredMonomerFromEditorMol(x, y, mol, height);
   }
 
+  //if molfiles are accessed too often, it is better to cache it
+  private _molfilesEditor: Editor<unknown, IBio<unknown>, IEditorOptions> | null = null;
+  private _molfilesEditorHost: HTMLDivElement | null = null;
+  private get molfilesEditor(): Editor<unknown, IBio<unknown>, IEditorOptions> {
+    if (this._molfilesEditorRemovingTimer)
+      clearTimeout(this._molfilesEditorRemovingTimer);
+    if (this._molfilesEditor == null) {
+      this._molfilesEditorHost = ui.div([], {style: {width: '0px', height: '0px', position: 'fixed'}});
+      document.documentElement.appendChild(this._molfilesEditorHost);
+      this._molfilesEditor = new JSDraw2.Editor(this._molfilesEditorHost, {viewonly: true});
+    }
+    this._molfilesEditorRemovingTimer = setTimeout(() => {
+      this.removeMolfilesEditor();
+    }, 1000);
+    return this._molfilesEditor;
+  }
+
+  // after batch conversion, remove the editor to avoid sliding pages
+  private _molfilesEditorRemovingTimer: any = null;
+  private removeMolfilesEditor(): void {
+    if (this._molfilesEditorHost) {
+      $(this._molfilesEditorHost).empty();
+      this._molfilesEditorHost.remove();
+      this._molfilesEditorHost = null;
+      this._molfilesEditor = null;
+    }
+  }
+
   public getMolfiles(helmStrList: string[]): string[] {
-    const host = ui.div([], {style: {width: '0', height: '0'}});
-    document.documentElement.appendChild(host);
     try {
-      const editor = new JSDraw2.Editor(host, {viewonly: true});
+      const editor = this.molfilesEditor;
       const resList = helmStrList.map((helmStr, i) => {
+        //no-draw instruction to avoid time spent on rendering
+        editor.helm && (editor.helm.noDraw = true);
         editor.setHelm(helmStr);
         const mol = editor.getMolfile();
         return mol;
       });
       return resList;
     } finally {
-      $(host).empty();
-      host.remove();
+      // $(host).empty();
+      // host.remove();
     }
   }
 

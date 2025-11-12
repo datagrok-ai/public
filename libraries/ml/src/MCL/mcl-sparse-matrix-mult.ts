@@ -19,7 +19,7 @@ const lock = async () => {
 export async function multSparseMatrix(
   sparseMatrix: SparseMatrix, nRows: number, pruneValue: number
 ): Promise<SparseMatrix> {
-  const workersNum = Math.min(Math.max(navigator.hardwareConcurrency - 2, 1), nRows);
+  const workersNum = Math.min(Math.min(Math.max(navigator.hardwareConcurrency - 2, 1), nRows), 10);
 
   // number of horizontal strips that we will divide the matrix into
   // we divide the matrix into horizontal strips, because its faster for indexing and better for cache

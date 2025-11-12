@@ -11,13 +11,13 @@ It is based on such excellent libraries as:
 
 This package implements [custom file exporters](https://datagrok.ai/help/develop/how-to/file-exporters) for parquet and feather file types. This is how it looks in action:
 
-![FileExporters](../../packages/Arrow/vendor/FileExporters.gif)
+![FileExporters](vendor/FileExporters.gif)
 
 ## File handlers
 
 This package implements [custom file handlers](https://datagrok.ai/help/develop/how-to/file-handlers) for parquet and feather file types. This is how it looks in action:
 
-![FileHandlers_new](../../packages/Arrow/vendor/FileHandlers_new.gif)
+![FileHandlers_new](vendor/FileHandlers_new.gif)
 
 See also:
 

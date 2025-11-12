@@ -162,7 +162,7 @@ category('UI: Inputs', () => {
     input.fireChanged();
     input.root.remove();
   }
-}, { clear: false });
+}, {clear: false, owner: 'dkovalyov@datagrok.ai'});
 
 category('UI: Choice input', () => {
   test('nullable', async () => {
@@ -177,7 +177,7 @@ category('UI: Choice input', () => {
     expect(selector.item(2)?.textContent, '2');
 
     expectArray(t.items, [null, '1', '2']);
-  }, { skipReason: 'GROK-15799' });
+  });
 
   test('non-nullable', async () => {
     const t = ui.input.choice('test', { value: '1', items: ['1', '2'], nullable: false });
@@ -256,7 +256,7 @@ category('UI: Choice input', () => {
   after(async () => {
     grok.shell.closeAll();
   });
-});
+}, {owner: 'dkovalyov@datagrok.ai'});
 
 category('UI: Choice input new', () => {
   test('nullable', async () => {
@@ -271,7 +271,7 @@ category('UI: Choice input new', () => {
     expect(selector.item(2)?.textContent, '2');
 
     expectArray(t.items, [null, '1', '2']);
-  }, { skipReason: 'GROK-15799' });
+  });
 
   test('non-nullable', async () => {
     const t = ui.input.choice('test', { value: '1', items: ['1', '2'], nullable: false });
@@ -348,14 +348,11 @@ category('UI: Choice input new', () => {
   after(async () => {
     grok.shell.closeAll();
   });
-});
+}, {owner: 'dkovalyov@datagrok.ai'});
 
 category('UI: Table input new', () => {
-  before(async () => {
-    grok.shell.addTableView(grok.data.demo.demog(10));
-  });
-
   test('nullable', async () => {
+    grok.shell.addTableView(grok.data.demo.demog(10));
     const t = ui.input.table('test', { nullable: true });
 
     const view = grok.shell.newView();
@@ -367,6 +364,7 @@ category('UI: Table input new', () => {
   });
 
   test('non-nullable', async () => {
+    grok.shell.addTableView(grok.data.demo.demog(10));
     const t = ui.input.table('test', { nullable: false });
 
     const view = grok.shell.newView();
@@ -374,9 +372,9 @@ category('UI: Table input new', () => {
 
     const selector = view.root.querySelector('select.ui-input-editor') as HTMLSelectElement;
     expect(selector.item(0)?.textContent, 'demog 10');
-  }, { skipReason: 'GROK-15799' });
+  });
 
   after(async () => {
     grok.shell.closeAll();
   });
-});
+}, {owner: 'dkovalyov@datagrok.ai'});

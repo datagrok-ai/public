@@ -57,13 +57,47 @@ export class DemoScript {
   private _node?: DG.DockNode;
   private _closeBtn: HTMLButtonElement = ui.button(ui.iconFA('chevron-left'), () => this._closeDock(), 'Back to demo');
 
+  private _path?: string;
+  DEMO_PATH: string = 'apps/Tutorials/Demo';
+
+  private _setBreadcrumbsInViewName(): void {
+    const path = ['Home', 'Demo', ...((this._path ?? '').split('/'))];
+    const breadcrumbs = ui.breadcrumbs(path);
+
+    breadcrumbs.onPathClick.subscribe(async (value) => {
+      const actualItem = value[value.length - 1];
+      if (actualItem === breadcrumbs.path[breadcrumbs.path.length - 1])
+        return;
+      const tree = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').getOrCreateGroup('Demo');
+      tree.currentItem = actualItem === 'Demo' ? tree : tree.items.find((item) => item.text === actualItem)!;
+    });
+
+    if (grok.shell.v) {
+      // eslint-disable-next-line max-len
+      if (breadcrumbs.path.length !== 0 && breadcrumbs.path[0] === 'Home') { // integrate it to the actual breadcrumbs element
+        const homeIcon = ui.iconFA('home', () => {
+          grok.shell.v.close();
+          grok.shell.v = DG.View.createByType(DG.VIEW_TYPE.HOME);
+        });
+        homeIcon.classList.add('demo-breadcrumbs-home-element');
+        breadcrumbs.root.firstElementChild!.replaceWith(homeIcon);
+      }
+      const viewNameRoot = grok.shell.v.ribbonMenu.root.parentElement?.getElementsByClassName('d4-ribbon-name')[0];
+      if (viewNameRoot) {
+        viewNameRoot.textContent = '';
+        viewNameRoot.appendChild(breadcrumbs.root);
+      }
+    }
+  }
+
 
   constructor(name: string, description: string, isAutomatic: boolean = false,
-    options?: {autoStartFirstStep?: boolean}) {
+    options?: {autoStartFirstStep?: boolean, path?: string}) {
     this.name = name;
     this.description = description;
     this._isAutomatic = isAutomatic;
     this._autoStartFirstStep = options?.autoStartFirstStep ?? false;
+    this._path = options?.path ?? '';
 
     this._progress.max = 0;
     this._progress.value = 1;
@@ -138,16 +172,8 @@ export class DemoScript {
     grok.shell.windows.showContextPanel = true;
     grok.shell.windows.showHelp = false;
 
-    const scriptDockNode = grok.shell.isInDemo ?
-      Array.from((grok.shell.view('Browse') as DG.BrowseView).dockManager.rootNode.children)[0] :
-      Array.from(grok.shell.dockManager.rootNode.children)[0];
-
-    this._node = grok.shell.dockManager.dock(this._root, DG.DOCK_TYPE.FILL, scriptDockNode, '');
-
-    if (scriptDockNode.parent.container.containerElement.firstElementChild?.lastElementChild?.
-      classList.contains('tab-handle-list-container'))
-      scriptDockNode.parent.container.containerElement.firstElementChild?.lastElementChild.remove();
-
+    this._node = grok.shell.dockManager.dock(this._root, DG.DOCK_TYPE.FILL,
+      grok.shell.dockManager.findNode(grok.shell.browsePanel.root), this.name);
     this._node.container.containerElement.classList.add('tutorials-demo-script-container');
 
     this._addHeader();
@@ -155,6 +181,14 @@ export class DemoScript {
 
     this._addDescription();
     this._root.append(this._activity);
+  }
+
+  private _setViewParams() {
+    if (grok.shell.v) {
+      grok.shell.v.name = this.name;
+      grok.shell.v.path = `${this.DEMO_PATH}/${(this._path ?? '').replaceAll(' ', '-')}`;
+      this._setBreadcrumbsInViewName();
+    }
   }
 
   /** Processes next step */
@@ -178,10 +212,10 @@ export class DemoScript {
       this._steps[this._currentStep].options?.delay! : 2000;
 
     try {
-      grok.shell.isInDemo = true;
+      this._setViewParams();
       await this._steps[this._currentStep].func();
+      this._setViewParams();
     } catch (e) {
-      grok.shell.isInDemo = false;
       console.error(e);
     }
 
@@ -204,7 +238,6 @@ export class DemoScript {
     if (this._currentStep === this.stepNumber) {
       this._isAutomatic ? this._stopStartBtn.replaceWith(this._restartBtn) :
         this._nextStepBtn.replaceWith(this._restartBtn);
-      grok.shell.isInDemo = false;
       return;
     }
 
@@ -216,13 +249,8 @@ export class DemoScript {
       this._nextStepBtn.classList.remove('disabled');
       (this._nextStepBtn.firstChild as HTMLElement).classList.remove('fa-disabled');
     }
-
-    if (grok.shell.isInDemo) {
-      const browseView = grok.shell.view('Browse') as DG.BrowseView;
-      if (browseView?.preview instanceof DG.TableView)
-        await grok.data.detectSemanticTypes(browseView.preview.dataFrame);
-      grok.shell.isInDemo = false;
-    }
+    if (grok.shell.v instanceof DG.TableView)
+      await grok.data.detectSemanticTypes(grok.shell.tv.dataFrame);
   }
 
   /** Starts the demo script actions */
@@ -351,7 +379,6 @@ export class DemoScript {
   cancelScript(): void {
     this._isCancelled = true;
     DemoScript.currentObject = null;
-    grok.shell.isInDemo = false;
   }
 
   /**
@@ -372,9 +399,12 @@ export class DemoScript {
 
   /** Starts the demo script */
   async start(): Promise<void> {
-    grok.shell.isInDemo = true;
     this._initRoot();
-    grok.shell.newView(this.name);
+    if (grok.shell.v.name === this.name) {
+      grok.shell.v.close();
+      this._node = grok.shell.dockManager.dock(this._root, DG.DOCK_TYPE.FILL,
+        grok.shell.dockManager.findNode(grok.shell.browsePanel.root), this.name);
+    }
 
     if (this._isAutomatic) {
       await this._startScript();

@@ -27,14 +27,20 @@ public class FuncParam {
 
     public void setValue(Object value) {
         if (value instanceof String && !propertyType.equals(Types.STRING)) {
-            if (propertyType.equals(Types.INT))
-                this.value = Integer.parseInt((String)value);
-            else if (propertyType.equals(Types.FLOAT))
-                this.value = Float.parseFloat((String)value);
-            else if (propertyType.equals(Types.BOOL))
-                this.value = value.equals("true");
-            else
-                this.value = value;
+            switch (propertyType) {
+                case Types.INT:
+                    this.value = ((Double) Double.parseDouble((String) value)).intValue();
+                    break;
+                case Types.FLOAT:
+                    this.value = Float.parseFloat((String) value);
+                    break;
+                case Types.BOOL:
+                    this.value = value.equals("true");
+                    break;
+                default:
+                    this.value = value;
+                    break;
+            }
         } else {
             if (propertyType.equals(Types.INT) && (value instanceof Double))
                 this.value = ((Double) value).intValue();

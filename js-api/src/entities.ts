@@ -14,17 +14,22 @@ import {
 } from "./const";
 import { FuncCall } from "./functions";
 import {toDart, toJs} from "./wrappers";
-import {FileSource} from "./dapi";
-import {MapProxy} from "./utils";
+import type {FileSource} from "./dapi";
+import {MapProxy} from "./proxies";
 import {DataFrame} from "./dataframe";
 import {PackageLogger} from "./logger";
 import dayjs from "dayjs";
 import {IDartApi} from "./api/grok_api.g";
 import {DataSourceType} from "./api/grok_shared.api.g";
-import { Tags } from "../dg";
+import { Tags } from "./api/ddt.api.g";
+import {View, ViewBase} from "./views/view";
+import {InputType} from "./api/d4.api.g";
+import {Observable} from "rxjs";
+import {observeStream} from "./events";
 
 declare var grok: any;
-const api: IDartApi = <any>window;
+declare var DG: any;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
 
 type PropertyGetter<TSource = any, TProp = any> = (a: TSource) => TProp;
@@ -43,7 +48,7 @@ export interface DatabaseConnectionProperties {
 }
 
 /** Represents connection cache properties
- *  See also: {@link https://datagrok.ai/help/develop/function_results_cache}
+ *  See also: {@link https://datagrok.ai/help/develop/how-to/function_results_cache}
  *  */
 export interface DataConnectionCacheProperties {
   cacheResults?: boolean;
@@ -192,6 +197,9 @@ export class User extends Entity {
   /** Security Group */
   get group(): Group { return toJs(api.grok_User_Get_Group(this.dart)); }
 
+  /** Date when user joined */
+  get joined(): dayjs.Dayjs { return dayjs(api.grok_User_Get_Joined(this.dart)); }
+
   static get defaultUsersIds() {
     return {
       "Test": "ca1e672e-e3be-40e0-b79b-d2c68e68d380",
@@ -199,6 +207,12 @@ export class User extends Entity {
       "System": "3e32c5fa-ac9c-4d39-8b4b-4db3e576b3c3",
     } as const;
   }
+
+  static get test(): User { return new User(api.grok_User_Test()); }
+
+  static get admin(): User { return new User(api.grok_User_Admin()); }
+
+  static get system(): User { return new User(api.grok_User_System()); }
 }
 
 
@@ -251,8 +265,15 @@ export class Func extends Entity {
   /** Help URL. */
   get helpUrl(): string { return api.grok_Func_Get_HelpUrl(this.dart); }
 
+  set helpUrl(url: string) { api.grok_Func_Set_HelpUrl(this.dart, url); }
+
   /** A package this function belongs to. */
   get package(): Package { return api.grok_Func_Get_Package(this.dart); }
+
+  /** Indicates that the function (or script) is already vector, meaning it
+   * accepts vector input (an entire column) and processes it in a single call,
+   * rather than being executed separately for each scalar element (row) */
+  get isVectorFunc(): boolean { return api.grok_Func_Get_IsVectorFunc(this.dart); }
 
   /** Returns {@link FuncCall} object in a stand-by state */
   prepare(parameters: {[name: string]: any} = {}): FuncCall {
@@ -363,6 +384,14 @@ export class Project extends Entity {
     return api.grok_Project_IsEmpty(this.dart);
   }
 
+  get isDashboard(): boolean {
+    return api.grok_Project_IsDashboard(this.dart);
+  }
+
+  get isPackage(): boolean {
+    return api.grok_Project_IsPackage(this.dart);
+  }
+
   toMarkup(): string {
     return api.grok_Project_ToMarkup(this.dart);
   }
@@ -425,6 +454,8 @@ export class DataQuery extends Func {
   get connection(): DataConnection { return toJs(api.grok_Query_Get_Connection(this.dart)); }
   set connection(c: DataConnection) { api.grok_Query_Set_Connection(this.dart, toDart(c)); }
 
+  get postProcessScript(): string {return api.grok_Query_Get_PostProcessScript(this.dart);}
+  set postProcessScript(script: string) { api.grok_Query_Set_PostProcessScript(this.dart, script);}
   /** Executes query
    * @returns {Promise<DataFrame>} */
   async executeTable(): Promise<DataFrame> { return toJs(await api.grok_Query_ExecuteTable(this.dart)); }
@@ -770,7 +801,7 @@ export class DataConnection extends Entity {
 
 /** Represents a predictive model
  * @extends Entity
- * {@link https://datagrok.ai/help/learn/predictive-modeling-info}
+ * {@link https://datagrok.ai/help/learn/-info}
  * */
 export class Model extends Entity {
   /** @constructs Model */
@@ -784,15 +815,10 @@ export class Model extends Entity {
  * {@link https://datagrok.ai/help/compute/jupyter-notebook}
  * */
 export class Notebook extends Entity {
+
   /** @constructs Notebook */
   constructor(dart: any) {
     super(dart);
-  }
-
-  /** Create Notebook on server for edit.
-   * @returns {Promise<string>} Current notebook's name */
-  edit(): Promise<string> {
-    return api.grok_Notebook_Edit(this.dart);
   }
 
   /** Environment name */
@@ -803,11 +829,8 @@ export class Notebook extends Entity {
   get description(): string { return api.grok_Notebook_Get_Description(this.dart); }
   set description(e: string) { api.grok_Notebook_Set_Description(this.dart, e); }
 
-  /** Converts Notebook to HTML code
-   * @returns {Promise<string>} */
-  toHtml(): Promise<string> {
-    return api.grok_Notebook_ToHtml(this.dart);
-  }
+  get notebook(): {[_:string]: any} { return api.grok_Notebook_Get_Notebook_Content(this.dart); }
+  set notebook(data: {[_:string]: any}) { api.grok_Notebook_Set_Notebook_Content(this.dart, data); }
 }
 
 /** @extends Entity
@@ -868,6 +891,9 @@ export class FileInfo extends Entity {
 
   /** Returns full path, i.e. `Demo:TestJobs:Files:DemoFiles/geo/dmv_offices.csv` */
   get fullPath(): string { return api.grok_FileInfo_Get_FullPath(this.dart); }
+
+  /** Returns URL path, i.e. `Demo.TestJobs.Files.DemoFiles/geo/dmv_offices.csv` */
+  get viewPath(): string { return api.grok_FileInfo_Get_ViewPath(this.dart); }
 
   /** Returns file extension, i.e. `csv` */
   get extension(): string { return api.grok_FileInfo_Get_Extension(this.dart); }
@@ -988,6 +1014,20 @@ export class Group extends Entity {
       "Administrators": "1ab8b38d-9c4e-4b1e-81c3-ae2bde3e12c5",
     } as const;
   }
+
+  static get allUsers(): Group { return new Group(api.grok_Group_AllUsers()); }
+
+  static get developers(): Group { return new Group(api.grok_Group_Developers()); }
+
+  static get needToCreate(): Group { return new Group(api.grok_Group_NeedToCreate()); }
+
+  static get test(): Group { return new Group(api.grok_Group_Test()); }
+
+  static get admin(): Group { return new Group(api.grok_Group_Admin()); }
+
+  static get system(): Group { return new Group(api.grok_Group_System()); }
+
+  static get administrators(): Group { return new Group(api.grok_Group_Administrators()); }
 }
 
 /** @extends Func
@@ -1004,6 +1044,10 @@ export class Script extends Func {
 
   static create(script: string): Script { return new Script(api.grok_Script_Create(script)); }
 
+  static fromParams(inputs: Property[], outputs: Property[], script: string = ''): Script {
+    return new Script(api.grok_Script_FromParams(inputs.map((i) => toDart(i)), outputs.map((i) => toDart(i)), script));
+  }
+
   /** Script */
   get script(): string { return api.grok_Script_GetScript(this.dart); }
   set script(s: string) { api.grok_Script_SetScript(this.dart, s); }
@@ -1011,23 +1055,28 @@ export class Script extends Func {
   /** Script */
   get clientCode(): string { return api.grok_Script_ClientCode(this.dart); }
 
-  /** Script language. See also: https://datagrok.ai/help/datagrok/functions/func-params-annotation */
+  /** Script language. See also: https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation */
   get language(): ScriptingLanguage { return api.grok_Script_GetLanguage(this.dart); }
   set language(s: ScriptingLanguage) { api.grok_Script_SetLanguage(this.dart, s); }
 
-  /** Environment name. See also: https://datagrok.ai/help/datagrok/functions/func-params-annotation */
+  /** Indicates that the script is already vector, meaning it accepts vector
+   * input (an entire column) and processes it in a single call, rather than
+   * being executed separately for each scalar element (row) */
+  get isVectorFunc(): boolean { return api.grok_Script_Get_IsVectorFunc(this.dart); }
+
+  /** Environment name. See also: https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation */
   get environment(): string { return api.grok_Script_Get_Environment(this.dart); }
   set environment(s: string) { api.grok_Script_Set_Environment(this.dart, s); }
 
-  /** Reference header parameter. See also: https://datagrok.ai/help/datagrok/functions/func-params-annotation */
+  /** Reference header parameter. See also: https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation */
   get reference(): string { return api.grok_Script_Get_Reference(this.dart); }
   set reference(s: string) { api.grok_Script_Set_Reference(this.dart, s); }
 
-  /** Sample table. See also: https://datagrok.ai/help/datagrok/functions/func-params-annotation */
+  /** Sample table. See also: https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation */
   get sample(): string { return api.grok_Script_Get_Sample(this.dart); }
   set sample(s: string) { api.grok_Script_Set_Sample(this.dart, s); }
 
-  /** Script tags. See also: https://datagrok.ai/help/datagrok/functions/func-params-annotation */
+  /** Script tags. See also: https://datagrok.ai/help/datagrok/concepts/functions/func-params-annotation */
   get tags(): string[] { return api.grok_Script_Get_Tags(this.dart); }
   set tags(tags: string[]) { api.grok_Script_Set_Tags(this.dart, tags); }
 }
@@ -1035,7 +1084,7 @@ export class Script extends Func {
 /** Represents connection credentials
  *  Usually it is a login and a password pair
  *  Passwords are stored in the secured credentials storage
- *  See also: {@link https://datagrok.ai/help/govern/security}
+ *  See also: {@link https://datagrok.ai/help/datagrok/solutions/enterprise/security#credentials}
  *  */
 export class Credentials extends Entity {
   /**
@@ -1074,11 +1123,6 @@ export class ScriptEnvironment extends Entity {
 
   /** Environment yaml file content */
   get environment(): string { return api.grok_ScriptEnvironment_Environment(this.dart); }
-
-  /** Setup environment */
-  setup(): Promise<void> {
-    return api.grok_ScriptEnvironment_Setup(this.dart);
-  }
 }
 
 export class LogEventType extends Entity {
@@ -1108,19 +1152,18 @@ export class LogEvent extends Entity {
   /** Friendly name of the event */
   get name(): string { return api.grok_LogEvent_Get_Name(this.dart); }
 
-  /** Source of the event */
-  get source(): string { return api.grok_LogEvent_Get_Source(this.dart); }
-
   /** Session id of the event */
   get session(): UserSession | string { return toJs(api.grok_LogEvent_Get_Session(this.dart)); }
 
   /** Parameters of the event
    * @type {Array<LogEventParameterValue>} */
-  get parameters(): LogEventParameterValue[] { return api.grok_LogEvent_Get_Parameters(this.dart); }
+  get parameters(): LogEventParameterValue[] { return toJs(api.grok_LogEvent_Get_Parameters(this.dart)); }
 
   /** Type of the event
    * @type {LogEventType} */
   get eventType(): LogEventType { return toJs(api.grok_LogEvent_Get_Type(this.dart)); }
+
+  get eventTime(): dayjs.Dayjs { return dayjs(api.grok_LogEvent_Get_EventTime(this.dart)); }
 }
 
 export class LogEventParameter extends Entity {
@@ -1133,15 +1176,6 @@ export class LogEventParameter extends Entity {
 
   /** Type of the parameter */
   get type(): string { return api.grok_LogEventParameter_Get_Type(this.dart); }
-
-  /** Description of the parameter */
-  get description(): string { return api.grok_LogEventParameter_Get_Description(this.dart); }
-
-  /** Is the parameter input */
-  get isInput(): boolean { return api.grok_LogEventParameter_Get_IsInput(this.dart); }
-
-  /** Is the parameter optional */
-  get isOptional(): boolean { return api.grok_LogEventParameter_Get_IsOptional(this.dart); }
 }
 
 export class LogEventParameterValue extends Entity {
@@ -1202,6 +1236,10 @@ export class Package extends Entity {
     this._webRoot = x;
   }
 
+  get packageOwner(): string {
+    return api.grok_Package_Get_Package_Author(this.dart);
+  }
+
   get version(): string {
     if (this.dart != null)
       return api.grok_Package_Get_Version(this.dart);
@@ -1254,7 +1292,7 @@ export class Package extends Entity {
    * The metadata gets generated when the package is built.
    * It is a concatenation of JSON files located under the /meta folder.
    * See example: /packages/PowerPack. */
-  get meta(): {[key: string]: any} {
+  get meta(): {[key: string]: any} | null {
     return (this.dart == null) ? null : toJs(api.grok_Package_Get_Meta(this.dart));
   }
 
@@ -1302,7 +1340,7 @@ export class Package extends Entity {
 
   /** Global application data */
   get files(): FileSource {
-    return new FileSource(`System:AppData/${this.name}`);
+    return new DG.FileSource(`System:AppData/${this.name}`);
   }
 
   public async getTests(core: boolean = false) {
@@ -1338,12 +1376,14 @@ export class DockerContainer extends Entity {
 }
 
 
-export interface PropertyOptions {
+/** Represents a property.
+ * See also {@link Property}. */
+export interface IProperty {
 
   /** Property name */
   name?: string;
 
-  /** Property type */
+  /** Property data type. See {@link TYPE}. */
   type?: string;
 
   /** Property input type */
@@ -1367,10 +1407,22 @@ export interface PropertyOptions {
   /** Maximum value. Applicable to numerical properties only */
   max?: number;
 
+  /** Step to be used in a slider. Only applies to numerical properties. */
+  step?: number;
+
+  /** Whether a slider appears next to the number input. Applies to numerical columns only. */
+  showSlider?: boolean;
+
+  /** Whether a plus/minus clicker appears next to the number input. Applies to numerical columns only. */
+  showPlusMinus?: boolean;
+
   /** List of choices. Applicable to string properties only */
   choices?: string[];
 
-  /** Default value (used for deserialization, cloning, etc) */
+  /** Initial value used when initializing UI. See also {@link defaultValue} */
+  initialValue?: any;
+
+  /** Default value used for deserialization and cloning. See also {@link initialValue}. */
   defaultValue?: any;
 
   /** Custom editor (such as slider or text area) */
@@ -1379,7 +1431,7 @@ export interface PropertyOptions {
   /** Corresponding category on the context panel */
   category?: string;
 
-  /** Value format */
+  /** Value format, such as '0.000' */
   format?: string;
 
   /** Whether the property should be editable via the UI */
@@ -1400,16 +1452,26 @@ export interface PropertyOptions {
   /** Custom field friendly name shown in [PropertyGrid] */
   friendlyName?: string;
 
-  /** Field postfix shown in [PropertyGrid]. [units] take precedence over the [postfix] value. */
-  postfix?: string;
-
   /** Name of the corresponding JavaScript field. No need to specify it if it is the same as name. */
   fieldName?: string;
 
   tags?: any;
 
-  /** Filter for columns, can be numerical, categorical or directly a column type (string, int...) */
-  columnTypeFilter?: ColumnType | 'numerical' | 'categorical';
+  /** Additional options. */
+  options?: any;
+
+  /** Filter for columns, can be numerical, categorical or directly a column type (string, int...)
+   * Applicable when type = Column */
+  columnTypeFilter?: ColumnType | 'numerical' | 'categorical' | null;
+
+
+  viewer?: string;
+}
+
+
+/** Properties of properties. See also {@link Property.propertyOptions}. */
+interface IPropertyMeta {
+  applicableTo?: string;
 }
 
 
@@ -1419,7 +1481,7 @@ export interface PropertyOptions {
  *
  * Samples:
  */
-export class Property {
+export class Property implements IProperty {
   public readonly dart: any;
   public options: any;
 
@@ -1443,14 +1505,24 @@ export class Property {
   get name(): string { return api.grok_Property_Get_Name(this.dart); }
   set name(s: string) { api.grok_Property_Set_Name(this.dart, s); }
 
+  /** Custom field caption shown in the UI
+   * @deprecated The property will be removed soon. Use {@link friendlyName} instead */
   get caption(): string { return api.grok_Property_Get_Caption(this.dart); }
   set caption(s: string) { api.grok_Property_Set_Caption(this.dart, s); }
+
+  /** Custom field caption shown in the UI */
+  get friendlyName(): string { return api.grok_Property_Get_Caption(this.dart); }
+  set friendlyName(s: string) { api.grok_Property_Set_Caption(this.dart, s); }
 
   /** Property category */
   get category(): string { return api.grok_Property_Get_Category(this.dart); }
   set category(s: string) { api.grok_Property_Set_Category(this.dart, s); }
 
-  /** Property type */
+  /** Property type. Same as {@link propertyType} */
+  get type(): TYPE { return api.grok_Property_Get_PropertyType(this.dart); }
+  set type(s: TYPE) { api.grok_Property_Set_PropertyType(this.dart, s); }
+
+  /** Property type. Same as {@link type} */
   get propertyType(): TYPE { return api.grok_Property_Get_PropertyType(this.dart); }
   set propertyType(s: TYPE) { api.grok_Property_Set_PropertyType(this.dart, s); }
 
@@ -1465,6 +1537,10 @@ export class Property {
   get semType(): SemType | string { return api.grok_Property_Get_SemType(this.dart); }
   set semType(s: SemType | string) { api.grok_Property_Set_SemType(this.dart, s); }
 
+  /** Input type. See also {@link InputType} */
+  get inputType(): string { return api.grok_Property_Get_InputType(this.dart); }
+  set inputType(s: string) { api.grok_Property_Set_InputType(this.dart, s); }
+
   /** Description */
   get description(): string { return api.grok_Property_Get_Description(this.dart); }
   set description(s: string) { api.grok_Property_Set_Description(this.dart, s); }
@@ -1472,6 +1548,10 @@ export class Property {
   /** Nullable */
   get nullable(): boolean { return api.grok_Property_Get_Nullable(this.dart); }
   set nullable(s: boolean) { api.grok_Property_Set_Nullable(this.dart, s); }
+
+  /** Initial value used when initializing UI */
+  get initialValue(): string { return toJs(api.grok_Property_Get_InitialValue(this.dart)); }
+  set initialValue(s: string) { api.grok_Property_Set_InitialValue(this.dart, toDart(s)); }
 
   /** Default value */
   get defaultValue(): any { return toJs(api.grok_Property_Get_DefaultValue(this.dart)); }
@@ -1481,28 +1561,37 @@ export class Property {
   get editor(): string { return api.grok_Property_Get(this.dart, 'editor'); }
   set editor(s: string) { api.grok_Property_Set(this.dart, 'editor', s); }
 
-  /** Whether a slider appears next to the number input. Applies to numerical columns only. */
-  get showSlider(): string { return api.grok_Property_Get_ShowSlider(this.dart); }
-  set showSlider(s: string) { api.grok_Property_Set_ShowSlider(this.dart, s); }
+  /** Units of measurement. */
+  get units(): string { return api.grok_Property_Get_Units(this.dart); }
+  set units(s: string) { api.grok_Property_Set_Units(this.dart, s); }
 
-  /** Whether a plus/minus clicker appears next to the number input. Applies to numerical columns only. */
-  get showPlusMinus(): string { return api.grok_Property_Get_ShowPlusMinus(this.dart); }
-  set showPlusMinus(s: string) { api.grok_Property_Set_ShowPlusMinus(this.dart, s); }
-
+  /** Format to be used for displaying the value. */
   get format(): string { return api.grok_Property_Get_Format(this.dart); }
   set format(s: string) { api.grok_Property_Set_Format(this.dart, s); }
 
+  /** Whether a user can edit this property from the UI. */
   get userEditable(): boolean { return api.grok_Property_Get_UserEditable(this.dart); }
   set userEditable(s: boolean) { api.grok_Property_Set_UserEditable(this.dart, s); }
 
+  /** Minimum value. Used when constructing UI (sliders), validating, etc. */
   get min(): number { return api.grok_Property_Get_Min(this.dart); }
   set min(s: number) { api.grok_Property_Set_Min(this.dart, s); }
 
+  /** Maximum value. Used when constructing UI (sliders), validating, etc. */
   get max(): number { return api.grok_Property_Get_Max(this.dart); }
   set max(s: number) { api.grok_Property_Set_Max(this.dart, s); }
 
+  /** Step to be used in a slider. Only applies to numerical properties. */
   get step(): number { return api.grok_Property_Get_Step(this.dart); }
   set step(s: number) { api.grok_Property_Set_Step(this.dart, s); }
+
+  /** Whether a slider appears next to the number input. Applies to numerical columns only. */
+  get showSlider(): boolean { return api.grok_Property_Get_ShowSlider(this.dart); }
+  set showSlider(s: boolean) { api.grok_Property_Set_ShowSlider(this.dart, s); }
+
+  /** Whether a plus/minus clicker appears next to the number input. Applies to numerical columns only. */
+  get showPlusMinus(): boolean { return api.grok_Property_Get_ShowPlusMinus(this.dart); }
+  set showPlusMinus(s: boolean) { api.grok_Property_Set_ShowPlusMinus(this.dart, s); }
 
   /** List of possible values of that property.
    *  PropertyGrid will use it to populate combo boxes.
@@ -1510,17 +1599,22 @@ export class Property {
   get choices(): string[] { return api.grok_Property_Get_Choices(this.dart); }
   set choices(x: string[]) { api.grok_Property_Set_Choices(this.dart, x); }
 
+  /** Validation conditions to be checked when editing the property.
+   * See also {@link PropertyValidator}. */
+  get validators(): string[] { return api.grok_Property_Get_Validators(this.dart); }
+  set validators(x: string[]) { api.grok_Property_Set_Validators(this.dart, x); }
+
   get isVectorizable(): boolean { return api.grok_Property_Get_IsVectorizable(this.dart); }
 
   get vectorName(): string { return api.grok_Property_Get_VectorName(this.dart); }
 
-  /** Column type filter */
-  get columnFilter(): ColumnType | 'numerical' | 'categorical' | null {
+  /** Column type filter (previously "columnFilter") */
+  get columnTypeFilter(): ColumnType | 'numerical' | 'categorical' | null {
     return api.grok_Property_Get_ColumnTypeFilter(this.dart);
   }
 
   /** Applies the specified options */
-  fromOptions(opt?: PropertyOptions): Property {
+  fromOptions(opt?: IProperty): Property {
     if (opt)
       api.grok_Property_Options(this.dart, opt);
     return this;
@@ -1560,26 +1654,54 @@ export class Property {
   }
 
   /** Creates property for the JavaScript objects with the corresponding property name */
-  static js(name: string, type: TYPE, options?: PropertyOptions): Property {
+  static js(name: string, type: TYPE, options?: IProperty): Property {
     return Property.create(name, type,
       (x: any) => x[name],
       function (x: any, v: any) { x[name] = v; },
       options?.defaultValue).fromOptions(options);
   }
 
-  static jsInt(name: string, options?: PropertyOptions): Property { return Property.js(name, TYPE.INT, options); }
-  static jsBool(name: string, options?: PropertyOptions): Property { return Property.js(name, TYPE.BOOL, options); }
-  static jsFloat(name: string, options?: PropertyOptions): Property { return Property.js(name, TYPE.FLOAT, options); }
-  static jsString(name: string, options?: PropertyOptions): Property { return Property.js(name, TYPE.STRING, options); }
-  static jsDateTime(name: string, options?: PropertyOptions): Property { return Property.js(name, TYPE.DATE_TIME, options); }
+  static jsInt(name: string, options?: IProperty): Property { return Property.js(name, TYPE.INT, options); }
+  static jsBool(name: string, options?: IProperty): Property { return Property.js(name, TYPE.BOOL, options); }
+  static jsFloat(name: string, options?: IProperty): Property { return Property.js(name, TYPE.FLOAT, options); }
+  static jsString(name: string, options?: IProperty): Property { return Property.js(name, TYPE.STRING, options); }
+  static jsDateTime(name: string, options?: IProperty): Property { return Property.js(name, TYPE.DATE_TIME, options); }
 
-  static fromOptions(options: PropertyOptions): Property { return Property.js(options.name!, options.type! as TYPE, options); }
+  static fromOptions(options: IProperty): Property { return Property.js(options.name!, options.type! as TYPE, options); }
 
   /** Registers the attached (dynamic) property for the specified type.
    * It is editable via the context panel, and gets saved into the view layout as well.
    * Property getter/setter typically uses Widget's "temp" property for storing the value. */
   static registerAttachedProperty(typeName: string, property: Property) {
     api.grok_Property_RegisterAttachedProperty(typeName, property.dart);
+  }
+
+  static propertyOptions:{[name in keyof IProperty]: IProperty & IPropertyMeta } = {
+    'name': { name: 'name', type: TYPE.STRING, nullable: false },
+    'type': { name: 'type', type: TYPE.STRING, nullable: false, description: 'Property data type, such as "int" or "string".' },
+    'inputType': { name: 'inputType', type: TYPE.STRING, friendlyName: 'Input type', description: 'Property input type' },
+    'nullable': { name: 'nullable', type: TYPE.BOOL, description: 'Whether an empty value is allowed. This is used by validators.' },
+    'description': { name: 'description', type: TYPE.STRING, editor: InputType.TextArea, description: 'Property description' },
+    'semType': { name: 'semType', type: TYPE.STRING, friendlyName: 'Semantic type', description: 'Semantic type' },
+    'units': { name: 'units', type: TYPE.STRING, description: 'Units of measurement. See also: [postfix]' },
+    'min': { name: 'min', applicableTo: TYPE.NUMERICAL, type: TYPE.FLOAT, description: 'Minimum value. Applicable to numerical properties only' },
+    'max': { name: 'max', applicableTo: TYPE.NUMERICAL, type: TYPE.FLOAT, description: 'Maximum value. Applicable to numerical properties only' },
+    'step': { name: 'step', applicableTo: TYPE.NUMERICAL, type: TYPE.FLOAT, description: 'Step to be used in a slider. Only applies to numerical properties.' },
+    'showSlider': { name: 'showSlider', applicableTo: TYPE.NUMERICAL, type: TYPE.BOOL, description: 'Whether a slider appears next to the number input. Applies to numerical columns only.' },
+    'showPlusMinus': { name: 'showPlusMinus', applicableTo: TYPE.NUMERICAL, type: TYPE.BOOL, description: 'Whether a plus/minus clicker appears next to the number input. Applies to numerical columns only.' },
+    'choices': { name: 'choices', applicableTo: TYPE.STRING, type: TYPE.STRING_LIST, description: 'List of choices. Applicable to string properties only' },
+    'initialValue': { name: 'initialValue', type: TYPE.STRING, description: 'Initial value used when initializing UI. See also {@link defaultValue}' },
+    'defaultValue': { name: 'defaultValue', type: TYPE.OBJECT, description: 'Default value used for deserialization and cloning. See also {@link initialValue}.' },
+    'editor': { name: 'editor', type: TYPE.STRING, description: 'Custom editor (such as slider or text area)' },
+    'category': { name: 'category', type: TYPE.STRING, description: 'Corresponding category on the context panel' },
+    'format': { name: 'format', type: TYPE.STRING, description: 'Value format, such as "0.00"' },
+    'userEditable': { name: 'userEditable', type: TYPE.BOOL, description: 'Whether the property should be editable via the UI' },
+    'validators': { name: 'validators', type: TYPE.STRING_LIST, description: 'List of validators. It can include [NAMED_VALIDATORS] as well as any pre-defined function names. Signature: validator(x: DG.Type): string | null. [null] indicates that the value is valid, [string] describes a validation error.' },
+    'valueValidators': { name: 'valueValidators', type: TYPE.OBJECT, description: 'List of value validators (functions that take a value and return error message or null)' },
+    'friendlyName': { name: 'friendlyName', type: TYPE.STRING, description: 'Custom field friendly name shown in [PropertyGrid]' },
+    'fieldName': { name: 'fieldName', type: TYPE.STRING, description: 'Name of the corresponding JavaScript field. No need to specify it if it is the same as name.' },
+    'tags': { name: 'tags', type: TYPE.MAP, description: 'Additional tags' },
+    'options': { name: 'options', type: TYPE.MAP, description: 'Additional options.' },
   }
 }
 
@@ -1678,4 +1800,195 @@ export class UserReportsRule extends Entity {
   static async showAddDialog(): Promise<void> {
     await api.grok_ReportsRule_Add_Dialog();
   }
+}
+
+export class UserNotification {
+  public dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  };
+
+  get user(): User {
+    return toJs(api.grok_UserNotification_User(this.dart));
+  }
+
+  get name(): string {
+    return toJs(api.grok_UserNotification_Name(this.dart));
+  }
+
+  get friendlyName(): string {
+    return toJs(api.grok_UserNotification_FriendlyName(this.dart));
+  }
+
+  get text(): string {
+    return toJs(api.grok_UserNotification_Text(this.dart));
+  }
+
+  get data(): string {
+    return toJs(api.grok_UserNotification_Data(this.dart));
+  }
+
+  get sender(): string {
+    return toJs(api.grok_UserNotification_Sender(this.dart));
+  }
+
+  get createdAt(): dayjs.Dayjs {
+    return dayjs(api.grok_UserNotification_CreatedAt(this.dart));
+  }
+
+  get isRead(): boolean {
+    return api.grok_UserNotification_IsRead(this.dart);
+  }
+
+  get readAt(): dayjs.Dayjs {
+    return dayjs(api.grok_UserNotification_ReadAt(this.dart));
+  }
+}
+
+
+
+export class ViewLayout extends Entity {
+
+  /** @constructs ViewLayout */
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  static fromJson(json: string): ViewLayout {
+    return toJs(api.grok_ViewLayout_FromJson(json));
+  }
+
+  static fromViewState(state: string): ViewLayout {
+    return toJs(api.grok_ViewLayout_FromViewState(state));
+  }
+
+  get viewState(): string {
+    return api.grok_ViewLayout_Get_ViewState(this.dart);
+  }
+
+  set viewState(state: string) {
+    api.grok_ViewLayout_Set_ViewState(this.dart, state);
+  }
+
+  getUserDataValue(key: string): string {
+    return api.grok_ViewLayout_Get_UserDataValue(this.dart, key);
+  }
+
+  setUserDataValue(key: string, value: string) {
+    return api.grok_ViewLayout_Set_UserDataValue(this.dart, key, value);
+  }
+
+  toJson(): string {
+    return api.grok_ViewLayout_ToJson(this.dart);
+  }
+
+  get columns(): ColumnInfo[] {
+    return toJs(api.grok_ViewLayout_Get_Columns(this.dart));
+  }
+
+}
+
+export class ViewInfo extends Entity {
+
+  /** @constructs ViewInfo */
+  constructor(dart: any) {
+    super(dart);
+  }
+
+  static fromJson(json: string): ViewInfo {
+    return new ViewInfo(api.grok_ViewInfo_FromJson(json));
+  }
+
+  static fromViewState(state: string): ViewInfo {
+    return new ViewInfo(api.grok_ViewInfo_FromViewState(state));
+  }
+
+  get table() : TableInfo {
+    return toJs(api.grok_ViewInfo_Get_Table(this.dart));
+  }
+
+  /** Only defined within the context of the OnViewLayoutXXX events */
+  get view(): View {
+    return toJs(api.grok_ViewInfo_Get_View(this.dart));
+  }
+
+  get viewState(): string {
+    return api.grok_ViewInfo_Get_ViewState(this.dart);
+  }
+
+  set viewState(state: string) {
+    api.grok_ViewInfo_Set_ViewState(this.dart, state);
+  }
+
+  getUserDataValue(key: string): string {
+    return api.grok_ViewInfo_Get_UserDataValue(this.dart, key);
+  }
+
+  setUserDataValue(key: string, value: string) {
+    return api.grok_ViewInfo_Set_UserDataValue(this.dart, key, value);
+  }
+
+  toJson(): string {
+    return api.grok_ViewInfo_ToJson(this.dart);
+  }
+}
+
+
+export class ProgressIndicator {
+  dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  static create() {
+    return toJs(api.grok_ProgressIndicator_Create());
+  }
+
+  get percent(): number {
+    return api.grok_ProgressIndicator_Get_Percent(this.dart);
+  }
+
+  /** Flag indicating whether the operation was canceled by the user. */
+  get canceled(): boolean { return api.grok_ProgressIndicator_Get_Canceled(this.dart); }
+
+  get description(): string { return api.grok_ProgressIndicator_Get_Description(this.dart); }
+  set description(s: string) { api.grok_ProgressIndicator_Set_Description(this.dart, s); }
+
+  update(percent: number, description: string): void {
+    api.grok_ProgressIndicator_Update(this.dart, percent, description);
+  }
+
+  log(line: string): void {
+    api.grok_ProgressIndicator_Log(this.dart, line);
+  }
+
+  get onProgressUpdated(): Observable<any> {
+    return observeStream(api.grok_Progress_Updated(this.dart));
+  }
+
+  get onLogUpdated(): Observable<any> {
+    return observeStream(api.grok_Progress_Log_Updated(this.dart));
+  }
+
+  get onCanceled(): Observable<any> {
+    return observeStream(api.grok_Progress_Canceled(this.dart));
+  }
+}
+
+export type ViewSpecificSearchProvider = {
+  isApplicable?: (s: string) => boolean;
+  returnType?: string;
+  search: (s: string, view?: ViewBase) => Promise<{priority?: number, results: any} | null>;
+  getSuggestions?: (s: string) => {priority?: number, suggestionText: string, suggestionValue?: string}[] | null;
+  onValueEnter?: (s: string, view?: ViewBase) => Promise<void>;
+  name: string;
+  description?: string;
+  options?: {relatedViewName?: string, widgetHeight?: number, [key: string]: any}
+}
+
+/** the home view should be under the name home and rest should match the views that they are applicable to */
+export type SearchProvider = {
+  [view: string]: ViewSpecificSearchProvider | ViewSpecificSearchProvider[];
 }

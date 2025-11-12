@@ -29,7 +29,7 @@ export const distanceMetrics: { [name: string]: (x: BitArray, y: BitArray) => nu
   [BitArrayMetricsNames.Russel]: russelDistance,
   [BitArrayMetricsNames.Sokal]: sokalDistance,
   [BitArrayMetricsNames.Hamming]: hammingDistance,
-  [BitArrayMetricsNames.Euclidean]: euclideanDistance,
+  [BitArrayMetricsNames.Euclidean]: euclideanDistanceBitArray,
 };
 
 export const CHEM_SIMILARITY_METRICS = [
@@ -66,6 +66,33 @@ export function tanimotoDistanceIntArray(x: Uint32Array, y: Uint32Array): number
   return getDistanceFromSimilarity(tanimotoSimilarity(xb, yb));
 }
 
+export function vectorEuclideanDistance(x: ArrayLike<number>, y: ArrayLike<number>): number {
+  let sum = 0;
+  for (let i = 0; i < x.length; i++)
+    sum += Math.pow(x[i] - y[i], 2);
+  return Math.sqrt(sum);
+}
+
+export function vectorManhattenDistance(x: ArrayLike<number>, y: ArrayLike<number>): number {
+  let sum = 0;
+  for (let i = 0; i < x.length; i++)
+    sum += Math.abs(x[i] - y[i]);
+  return sum;
+}
+
+export function vectorCosineDistance(x: ArrayLike<number>, y: ArrayLike<number>): number {
+  let multSum = 0; let xSquareSum = 0; let ySquareSum = 0;
+  for (let i = 0; i < x.length; i++) {
+    multSum += x[i] * y[i];
+    xSquareSum += x[i] * x[i];
+    ySquareSum += y[i] * y[i];
+  }
+  const sim = multSum / (Math.sqrt(xSquareSum) * Math.sqrt(ySquareSum));
+  // similarity is in range [-1, 1], but we need distance in range [0, 1]
+  return (1 - sim) / 2; 
+
+}
+
 export function diceSimilarity(x: BitArray, y: BitArray): number {
   const total = x.trueCount() + y.trueCount();
   if (total == 0) return 0.0;
@@ -89,10 +116,10 @@ export function cosineDistance(x: BitArray, y: BitArray): number {
 }
 
 export function euclideanSimilarity(x: BitArray, y: BitArray): number {
-  return getSimilarityFromDistance(euclideanDistance(x, y));
+  return getSimilarityFromDistance(euclideanDistanceBitArray(x, y));
 }
 
-export function euclideanDistance(x: BitArray, y: BitArray): number {
+export function euclideanDistanceBitArray(x: BitArray, y: BitArray): number {
   return Math.sqrt(x.trueCount() + y.trueCount() - 2 * x.andWithCountBits(y, true));
 }
 
@@ -188,7 +215,7 @@ export function getSimilarityFromDistance(distance: number) {
 }
 
 export function getDistanceFromSimilarity(similarity: number) { //in case similarity is 0, use max number for float32
-  return similarity === 0 ? 3.402823E+38 : (1 / similarity) - 1;
+  return similarity <= 0 ? 3.402823E+38 : (1 / similarity) - 1;
 }
 
 export function numericDistance(args?: {range?: number}) {

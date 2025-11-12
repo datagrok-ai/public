@@ -6,6 +6,8 @@ import * as DG from 'datagrok-api/dg';
 import {expect, expectTable as _expectTable} from '@datagrok-libraries/utils/src/test';
 import dayjs from "dayjs";
 
+export const _package = new DG.Package();
+
 //name: getTable
 //input: string name
 //input: string path {optional: true}
@@ -45,7 +47,6 @@ export function getCell(table: DG.DataFrame, rowIndex: number, columnName: strin
 }
 
 //name: expectTable
-//shortName: expectTable
 //input: dataframe actual
 //input: dataframe expected
 //output: bool result
@@ -160,7 +161,6 @@ export function testOutputWithoutAction(data: DG.DataFrame, col: DG.Column<strin
 }
 
 //name: expectDate
-//shortName: expectDate
 //input: datetime actual
 //input: datetime expected
 export function expectDate(actual: dayjs.Dayjs, expected: dayjs.Dayjs): void {

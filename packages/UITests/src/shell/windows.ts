@@ -42,7 +42,7 @@ category('Shell: Windows', () => {
   test('SimpleMode', async () => {
     await checkSwitch('simpleMode', '.d4-app-root:not(.d4-show-menu)');
   });
-});
+}, { owner: 'aparamonov@datagrok.ai' });
 
 function checkElementVisible(selector: string, exists: boolean = true): void {
   const e = document.body.querySelector(selector);

@@ -21,6 +21,11 @@ keywords:
   - docking
   - admetox
   - admet
+  - retrosynthesis
+  - patents search
+  - cdd vault integration
+  - compound registration system
+  - mixtures
 ---
 
 ```mdx-code-block
@@ -28,51 +33,39 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 ```
 
-<details>
-<summary>Requirements</summary>
+Datagrok provides an intuitive, [enterprise-ready](../../teams/it/enterprise-evaluation-faq.md) 
+high-performance environment for working with chemical data, covering full-range of tasks - from data access to _de novo_
+design.
 
-To access the cheminformatics functionality, install these
-packages using the [Package Manager](https://public.datagrok.ai/packages) (on the **Sidebar**, click **Manage** > **Packages**):
+* **Data access**
+  * Built-in connectors to [30+ data sources](../../../../access/databases/connectors/connectors.md)
+  * Automatic structure detection on [import](../../../../access/access.md)
+  * Support for SMILES, SMARTS, InChI, InChiKey, SDF, PDB, MOL2, [and more](../../../../access/files/supported-formats.md#cheminformatics)
+  * [Integration with compound registration systems](#compound-registration-systems)
+* **Interactive exploration and analysis**
+  * Highly customized 2D (RDKit or OpenChemLib) and 3D (NGL) rendering of molecules, rendering of chemical mixtures
+  * Powerful chemically-aware [spreadsheet](#chemically-aware-spreadsheet) and [viewers](#chemically-aware-viewers)
+  * [Chemical space](#chemical-space) and interactive [structure search](#structure-search)
+  * Comprehensive [ML toolkit](../../../solutions/domains/data-science.md) for
+    clustering, dimensionality reduction, imputation, PCA/PLS, and more. Built-in statistics
+  * [Dynamic dashboards](../../../../access/databases/databases.md#sharing-query-results)
+* **Sketching and structure analysis**
+  * Multiple molecular [sketchers](#sketching)
+  * Tools for [R-groups](#r-groups-analysis), [scaffold trees](#scaffold-tree-analysis), [retrosynthesis](#retrosynthesis), and [elemental analysis](#elemental-analysis)
+* **SAR analysis**  
+  * [Activity cliffs](#structure-relationship-analysis)
+  * [Matched molecular pairs](#matched-molecular-pairs)
+* **Predictive and generative modeling**
+  * [QSAR/QSPR modeling](#qsar-and-qspr-modeling) and [ADMET predictions](#admet-predictions)
+  * [Docking](#docking) using AutoDock Vina
+  * [Generative chemistry](#generative-chemistry) via REINVENT4
+* **Data augmentation and utilities**
+  * Calculated columns using [500+ functions](../../../concepts/functions/functions.md) (or create your own)
+  * [Chemical scripts](#chemical-scripts) and [custom plugins](#customizing-and-extending-the-platform)
+  * [Calculators](#calculators), [curation](#curation), [mutation](#mutation), [virtual synthesis](#virtual-synthesis)
 
-* Required. [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem).
-* Optional. Sketchers: The Chem package includes a built-in OpenChemLib Sketcher, but you can use your favorite sketcher, such as
-  [Ketcher](https://github.com/datagrok-ai/public/tree/master/packages/KetcherSketcher) ([Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0)), MarvinJS (commercial license), or ChemDraw (commercial license).
-* Optional. [Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl): Integration with the ChEMBL database deployed on your premises.
-* Optional. [DrugBank](https://github.com/datagrok-ai/public/tree/master/packages/DrugBank): Integration with DrugBank (information on 11,300 drugs is included with the plugin).
-* Optional. Integration with external webservices (**these packages transmit your data to external services**):
-  * [ChemblAPI](https://github.com/datagrok-ai/public/tree/master/packages/ChemblAPI)
-  * [PubChem](https://github.com/datagrok-ai/public/tree/master/packages/PubChemApi)
-  * [Enamine](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore): Integration with Enamine, a service for online shopping for the chemical building blocks.
-  * [Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace): Integration with Chemspace, a service for online shopping for chemical building blocks.
-
-</details>
-
-Datagrok provides an intuitive interface and a wide range of tools for working
-with chemical data:
-
-* Data visualization and exploration
-  * Automatic detection of chemical structures upon [data import](../../../../access/access.md).
-  * Highly customized 2D (RDKit or OpenChemLib) and 3D (NGL) rendering of molecules.<!--Add links?-->
-  * Multiple molecular [sketchers](#sketching).
-  * Support for multiple formats, such as SMILES, SMARTS, InChI, InChiKey, SDF, PDB, MOL2, and others.
-  * Flexible and fast [chemically-aware spreadsheet](#chemically-aware-spreadsheet).
-  * Interactive visualization of chemical data using [chemically aware viewers](#chemically-aware-viewers).
-  * Customizable [chemical info panes](#chemical-scripts) with information about molecules and context actions.
-  * [Substructure search](#substructure-search--filtering).
-  * [Chemical space analysis](#chemical-space).
-  * Structure analysis using [R-groups decomposition](#r-groups-analysis), [scaffold tree](#scaffold-tree-analysis), [elemental analysis](#elemental-analysis).
-  * SAR: [activity cliffs](#structure-relationship-analysis), [matched molecular pairs](#matched-molecular-pairs).
-  <!--* [ADME/Tox calculators](#admetox).-->
-  * Property and descriptor [calculators](#calculators).
-  * A comprehensive [ML toolkit](../../../solutions/domains/data-science.md) for
-clustering, dimensionality reduction techniques, imputation, PCA/PLS, and other tasks. Built-in statistics.
-  * Flexible reporting and sharing options, including [dynamic dashboards](../../../../access/databases/databases.md#sharing-query-results).
-* [QSAR and QSPR modeling support](#qsar-and-qspr-modeling)
-* Common utilities: [identifier conversion](#molecule-identifier-conversions), [structure curation](#curation), [dataset mutation](#mutation), and [virtual synthesis](#virtual-synthesis).
-* [Extensible environment](#customizing-and-extending-the-platform)
-  * Ability to add or customize any functionality using [scripts](#chemical-scripts).
-  * Ability to create custom plugins and fit-for-purpose applications.
-* [Enterprise-grade platform](../../enterprise/enterprise-evaluation-faq.md) for efficient data access and management of any data.
+To get started, install the required [packages](../../../plugins.md#chem) 
+(see [instructions](../../../../deploy/complete-setup/install-packages.md)).
 
 ## Data access
 
@@ -118,6 +111,65 @@ To run a query, sketch the substructure and click **OK**. Datagrok retrieves the
 
 To learn more about querying data and data access in general, see the [Access](../../../../access/access.md) section of our documentation.
 
+### Compound registration systems
+
+Datagrok integrates with compound registration systems. You can browse and analyze your assay data directly in the platform.
+
+#### CDD Vault
+
+Datagrok integrates with [CDD Vault](https://www.collaborativedrug.com/cdd-informatics-platform).
+You can:
+* browse molecules available in the selected vault
+* search vaults by similarity and substructure
+* save searches and explore them in Datagrok
+* view linked assay data for a target compound in the **Context Panel**  
+
+<details>
+<summary> How to use </summary>
+
+To use the app, you need to be registered in the CDD Vault system and have at least one vault set up.
+The CDD Vault api key should be set in package credentials manager under `apiKey` key.
+
+To access assay data, in the **Browse** panel, go to **Apps** > **Chem** > **CDD Vault**.
+The app lists all connected vaults. Each vault contains 3 sections. 
+You can also explore the vault data directly in the **Context Panel** (**Databases** > **CDD Vault**). 
+[Watch a video tutorial](https://www.youtube.com/watch?v=BUQnzbjCqIs) (~2 mins).
+
+<Tabs>
+<TabItem value="molecules" label="Molecules" default>
+* Shows all molecules available in the selected vault
+* The **Id** column contains contains direct links to corresponding molecules in your vault
+<br/>
+![Molecules tab](img/cdd_molecules.png)
+</TabItem>
+<TabItem value="protocols" label="Protocols">
+* Shows all protocols available in the selected vault. Click any protocol to show corresponding molecules
+<br/>
+![Protocols tab](img/cdd_protocols.png)
+</TabItem>
+<TabItem value="saved-searches" label="Saved searches">
+Lists all saved searches in your vault. Click any search in the list to view its results
+<br/>
+![Saved search](img/cdd_saved_search.png)
+</TabItem>
+<TabItem value="collections" label="Collections">
+Lists all collections available in the selected vault. Click any collection to show corresponding molecules
+<br/>
+![Collections](img/cdd_collections.png)
+</TabItem>
+<TabItem value="search" label="Search">
+Provides basic vault search functionality with similarity and diversity searches
+<br/>
+![Search tab](img/cdd_search.png)
+</TabItem>
+<TabItem value="context-panel" label="Context Panel">
+Shows vault data for the current molecule
+<br/> 
+![Context panel](img/cdd_context_panel.png)
+</TabItem>
+</Tabs>
+</details>
+
 ## Exploring chemical data
 
 When you open a dataset, Datagrok automatically detects molecules and makes available molecule-specific context actions. For example, when you open a CSV file containing molecules in the SMILES format, the following happens:
@@ -127,22 +179,9 @@ When you open a dataset, Datagrok automatically detects molecules and makes avai
 * Column tooltip now shows the most diverse molecules in your dataset.
 * Default column filter is now a sketcher-driven substructure search.
 * A top menu item labeled **Chem** appears.
-* When you click a molecule, the **Context Panel** on the right shows molecule-specific [info panes](../../../../datagrok/navigation/panels/info-panels.md), such as **Toxicity** or **Drug Likeness**.
+* When you click a molecule, the **Context Panel** on the right shows molecule-specific [info panes](../../../../datagrok/navigation/panels/info-panels.md), such as **Toxicity** or **Drug Likeness** ([see the full list](info-panels/info-panels.md)).
 
 ![Chem dataset exploration](img/chem-exploration.png)
-
-The following info panes are shown by default for the current molecule:
-
-* Gasteiger Partial Charges (shows a 2D representation with partial charges highlighted).
-* Descriptors (shows [descriptors](descriptors.md)).
-* Properties (shows molecule properties).
-* [Drug Likeness](info-panels/drug-likeness.md).
-* [Structural Alerts](info-panels/structural-alerts.md).
-* [Toxicity](info-panels/toxicity-risks.md) (predictions using [openchemlib calculations](https://github.com/Actelion/openchemlib)).
-* Identifiers (shows [all known identifiers](#molecule-identifier-conversions) for the selected structure).
-* 3D Structure
-* 2D Structure
-* Databases (performs substructure and similarity searches for the selected structure against all connected data sources).
 
 The following info panes are shown by default for the current molecular column:
 
@@ -177,6 +216,20 @@ Info panes can be extended with [functions](../../../concepts/functions/function
 
 :::
 
+Also Datagrok is capable of detecting and rendering mixtures. Mixtures should be in a [Mixfile](https://github.com/cdd/mixtures) format introduced by Collaborative Drug Discovery, Inc.
+Mixfiles are automatically detected by Datagrok and the data is assigned with ChemicalMixture semantic type, allowing you to render mixtures of any complexity and retrieve detailed information through context panel.
+The main features are:
+
+* rendering of the list of components in one cell with clear differentiation between components (square brackets are used for nested mixtures). In case component quantity/ratio is present in the Mixfile, it is also shown within the cell
+
+* interaction with each mixture component straight from the grid cell. Hover over any component to get more details in the tooltip. Click on separate component to get structure details in the context panel
+
+![Mixtures renderer](img/mixtures_components.gif)
+
+* summary of mixture information in the context panel. You can browse the mixture using either table or tree view
+
+![Mixtures panels](img/mixtures_context_panel.gif)
+
 ### Chemically aware spreadsheet
 
 The spreadsheet lets you visualize, edit, and efficiently work with chemical structures. Additionally, you can add new columns with calculated values or visualizations from info panes or context actions. The features also include the ability to interactively filter rows, color-code columns, pin rows or columns, set edit permissions, and more. To learn how to work with the spreadsheet, see [this article](../../../../visualize/viewers/grid.md) or complete [this tutorial](https://public.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/GridCustomization).
@@ -193,9 +246,52 @@ To learn how to use viewers to explore chemical data, complete [this tutorial](h
 
 :::note developers
 
-You can [add custom viewers](../../../../develop/how-to/develop-custom-viewer.md).
+You can [add custom viewers](../../../../develop/how-to/viewers/develop-custom-viewer.md).
 
 :::
+
+### Chemical space
+
+Analyze chemical space using distance-based dimensionality reduction algorithms, such as [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) and [UMAP](https://umap-learn.readthedocs.io/en/latest/). These algorithms use fingerprints to convert cross-similarities into 2D coordinates. This allows to visualize the similarities between molecular structures and identify clusters of similar molecules, outliers, or patterns that might be difficult to detect otherwise. The results are visualized on the interactive [scatterplot](../../../../visualize/viewers/scatter-plot.md).
+
+![chem-space](../../../../compute/chem-space.gif)
+
+<details>
+<summary> How to use </summary>
+
+Go to the **Top Menu Ribbon** and choose **Chem** > **Analyze** > **Chemical Space...** This opens a **Chemical Space** parameter dialog.
+
+The dialog has the following inputs:
+
+* **Table**: The table containing the column of sequences.
+* **Column**: The column containing the sequences.
+* **Encoding function**: The encoding function that will be used for pre-processing of molecules. Currently, only one encoding function is available, that will use [chemical fingerprint](https://www.rdkit.org/UGM/2012/Landrum_RDKit_UGM.Fingerprints.Final.pptx.pdf) distances between each molecule to calculate pairwise distances. The `Fingerprints` function has 1 parameter which you can adjust using the gear (⚙️) button next to the encoding function selection: 
+  * Fingerprint type: The type of molecular fingerprints that will be used to generate monomer substitution matrix. Options are `Morgan`, `Pattern` or `RDKit`.
+* **Method**: The dimensionality reduction method that will be used. The options are:
+  * UMAP: [UMAP](https://umap-learn.readthedocs.io/en/latest/) is a dimensionality reduction technique that can be used for visualization similarly to t-SNE, but also for general non-linear dimension reduction.
+    * t-SNE: [t-SNE](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding) is a machine learning algorithm for dimensionality reduction developed by Geoffrey Hinton and Laurens van der Maaten. It is a nonlinear dimensionality reduction technique that is particularly well-suited for embedding high-dimensional data into a space of two or three dimensions, which can then be visualized in a scatterplot.
+
+    Other parameters for dimensionality reduction method can be accessed through the gear (⚙️) button next to the method selection.
+* **Similarity**: The similarity/distance function that will be used to calculate pairwise distances between fingerprints of the molecules. The options are: `Tanimoto`, `Asymetric`, `Cosine` and `Sokal`. All this distance functions are based on the [bit array](https://en.wikipedia.org/wiki/Bit_array) representation of the fingerprints.
+
+* **Plot embeddings**: If checked, the plot of the embeddings will be shown after the calculation is finished.
+* **Postprocessing**: The postprocessing function that will be applied to the resulting embeddings. The options are:
+  * **None**: No postprocessing will be applied.
+  * **DBSCAN**: The DBSCAN algorithm groups together points that are closely packed together (points with many nearby neighbors), marking as outliers points that lie alone in low-density regions (whose nearest neighbors are too far away). The DBSCAN algorithm has two parameters that you can adjust through the gear (⚙️) button next to the postprocessing selection:
+        * **Epsilon**: The maximum distance between two points for them to be considered as in the same neighborhood.
+        * **Minimum points**: The number of samples (or total weight) in a neighborhood for a point to be considered as a core point. This includes the point itself.
+  * **Radial Coloring**: The radial coloring function will color the points based on their distance from the center of the plot. The color will be calculated as a gradient from the center to the border of the plot.
+
+**WebGPU (experimental)**
+
+WebGPU is an experimental feature that allows you to use the GPU for calculations in browser. We have implemented the KNN graph generation (with support to all simple and non-trivial distance functions like Tanimoto, Cosine, etc.) and UMAP algorithms in webGPU, which can be enabled in the dimensionality reduction dialog. This can speed up the calculations significantly, especially for large datasets, up to 100x. This option can be found in the gear (⚙️) button next to the method selection (UMAP). 
+
+Please note, that webGPU is still considered as experimental feature, and for now only works in Chrome or Edge browsers (although it is planned to be supported in Firefox and Safari in the future). If webGPU is not supported in your browser, this checkbox will not appear in the dialog. To make sure that your operating system gives browser access to correct(faster) GPU, you can check the following:
+* Go to settings and find display settings
+* Go to Graphics settings.
+* In the list of apps, make sure that your browser is set to use high performance GPU.
+
+</details>
 
 ## Sketching
 
@@ -314,7 +410,7 @@ To sort a dataset by similarity, right-click your reference molecule and select 
 
 To explore the dataset further, use the similarity and diversity viewers (**Top Menu** > **Chem** > **Search** > **Similarity Search...**  or **Diversity Search...**). The viewers are interactive and let you quickly switch between the molecules of interest. 
 
-<img alt="Similarity and diversity search" src={require('./similarity-and-diversity-search.gif').default} width="800px"/>
+![Similarity and diversity search](similarity-and-diversity-search.gif)
 
 <details>
 <summary>How to use</summary>
@@ -329,48 +425,37 @@ You can enhance the viewer cards by incorporating column data. To do so, use the
 
 </details>
 
-### Chemical space
+### External data sources
 
-Datagrok lets you analyze chemical space using distance-based dimensionality reduction algorithms, such as [tSNE](https://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html) and [UMAP](https://umap-learn.readthedocs.io/en/latest/). These algorithms use fingerprints to convert cross-similarities into 2D coordinates. This allows to visualize the similarities between molecular structures and identify clusters of similar molecules, outliers, or patterns that might be difficult to detect otherwise. The results are visualized on the interactive [scatter plot](../../../../visualize/viewers/scatter-plot.md).
+Datagrok integrates with multiple data sources to enable structure-based
+search, including:
+* ChEMBL
+* DrugBank
+* PubChem (supports identity search)
+* [SureChEMBL](info-panels/surechembl.md) (search patented molecules similar to your compounds)
+* Chemspace (includes filters by shipping country and compound category)
 
-![chem-space](../../../../compute/chem-space.gif)
+To see the full list, see [Plugins](../../../plugins.md#chem).
 
-<details>
-<summary> How to use: </summary>
+To run a substructure or similarity search, either [sketch](#sketching) or click a molecule in your
+dataset and expand the **Databases** section of the **Context Panel** to view
+matches for your target molecule. You can also open the results in a separate [Table View](../../../navigation/views/table-view.md) by clicking the plus (**+**) icon within the relevant info pane.
 
-Go to the **Top Menu Ribbon** and choose **Chem** > **Analyze** > **Chemical Space...** This opens a **Chemical Space** parameter dialog.
+:::note Developers
 
-The dialog has the following inputs:
+To dynamically enrich compound IDs with linked data, 
+[register identifier patterns](../../../../develop/how-to/grid/register-identifiers.md) 
+(e.g., `CHEMBL\d+`). Once registered, the matching values:
 
-* **Table**: The table containing the column of sequences.
-* **Column**: The column containing the sequences.
-* **Encoding function**: The encoding function that will be used for pre-processing of molecules. Currently, only one encoding function is available, that will use [chemical fingerprint](https://www.rdkit.org/UGM/2012/Landrum_RDKit_UGM.Fingerprints.Final.pptx.pdf) distances between each molecule to calculate pairwise distances. The `Fingerprints` function has 1 parameter which you can adjust using the gear (⚙️) button next to the encoding function selection: 
-    * Fingerprint type: The type of molecular fingerprints that will be used to generate monomer substitution matrix. Options are `Morgan`, `Pattern` or `RDKit`.
-* **Method**: The dimensionality reduction method that will be used. The options are:
-    * UMAP: [UMAP](https://umap-learn.readthedocs.io/en/latest/) is a dimensionality reduction technique that can be used for visualization similarly to t-SNE, but also for general non-linear dimension reduction.
-    * t-SNE: [t-SNE](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding) is a machine learning algorithm for dimensionality reduction developed by Geoffrey Hinton and Laurens van der Maaten. It is a nonlinear dimensionality reduction technique that is particularly well-suited for embedding high-dimensional data into a space of two or three dimensions, which can then be visualized in a scatter plot.
+* are automatically detected and highlighted across the platform
+* show linked content on click, hover, and in search results
 
-    Other parameters for dimensionality reduction method can be accessed through the gear (⚙️) button next to the method selection.
-* **Similarity**: The similarity/distance function that will be used to calculate pairwise distances between fingerprints of the molecules. The options are: `Tanimoto`, `Asymetric`, `Cosine` and `Sokal`. All this distance functions are based on the [bit array](https://en.wikipedia.org/wiki/Bit_array) representation of the fingerprints.
+This is especially useful when working with diverse identifiers from sources
+like GDB exports, internal registries, or assay results. 
 
-* **Plot embeddings**: If checked, the plot of the embeddings will be shown after the calculation is finished.
-* **Postprocessing**: The postprocessing function that will be applied to the resulting embeddings. The options are:
-    * **None**: No postprocessing will be applied.
-    * **DBSCAN**: The DBSCAN algorithm groups together points that are closely packed together (points with many nearby neighbors), marking as outliers points that lie alone in low-density regions (whose nearest neighbors are too far away). The DBSCAN algorithm has two parameters that you can adjust through the gear (⚙️) button next to the postprocessing selection:
-        * **Epsilon**: The maximum distance between two points for them to be considered as in the same neighborhood.
-        * **Minimum points**: The number of samples (or total weight) in a neighborhood for a point to be considered as a core point. This includes the point itself.
-    * **Radial Coloring**: The radial coloring function will color the points based on their distance from the center of the plot. The color will be calculated as a gradient from the center to the border of the plot.
+![Registered identifier patterns](../../workflows/img/custom-identifier-patterns.gif)
 
-**WebGPU (experimental)**
-
-WebGPU is an experimental feature that allows you to use the GPU for calculations in browser. We have implemented the KNN graph generation (with support to all simple and non-trivial distance functions like Tanimoto, Cosine, etc.) and UMAP algorithms in webGPU, which can be enabled in the dimensionality reduction dialog. This can speed up the calculations significantly, especially for large datasets, up to 100x. This option can be found in the gear (⚙️) button next to the method selection (UMAP). 
-
-Please note, that webGPU is still considered as experimental feature, and for now only works in Chrome or Edge browsers (although it is planned to be supported in Firefox and Safari in the future). If webGPU is not supported in your browser, this checkbox will not appear in the dialog. To make sure that your opperating system gives browser access to correct(faster) GPU, you can check the following:
-* Go to settings and find display settings
-* Go to Graphics settings.
-* In the list of apps, make sure that your browser is set to use high performance GPU.
-
-</details>
+:::
 
 ## Structure analysis
 
@@ -380,7 +465,7 @@ R-group analysis decomposes a set of molecules into a core and R-groups (ligands
 consists of the scaffold and ligand attachment points represented by R-groups.
 R-group analysis runs in browser using RDKit JS library.
 
-<img alt="R-Group Analysis" src={require('./img/new_r_group_analysis.gif').default} width="800px"/>
+![R-Group Analysis](img/new_r_group_analysis.gif)
 
 <details>
 <summary> How to use </summary>
@@ -412,80 +497,180 @@ To run the r-group decomposition programmatically, see [this sample script](http
 
 ### Scaffold tree analysis
 
-Scaffold tree organizes molecular datasets by arranging molecules into a tree hierarchy based on their scaffolds. This hierarchy can then be used for filtering or selecting the corresponding rows in the dataset.
+The scaffold tree viewer viewer organizes molecules into a hierarchical tree
+based on their scaffolds, making it easy to explore structure-activity
+relationships, filter datasets, and navigate chemical space.
 
-A hierarchy can be either generated automatically, or sketched manually. To access, in the **Menu Ribbon** select **Chem** > **Analyze** > **Scaffold Tree**. When Scaffold Tree is initially created, a tree is generated automatically. You can also sketch the tree manually, or modify the automatically generated one. For tree generation, we use a derivative of the open-source
-[ScaffoldGraph](https://github.com/UCLCheminformatics/ScaffoldGraph) library
-developed by Oliver Scott.
+You can:
+* Automatically generate scaffold trees using a customized [ScaffoldGraph](https://github.com/UCLCheminformatics/ScaffoldGraph) algorithm
+* Manually sketch the tree or edit nodes
+* Highlight matching molecules, filter datasets, and color-code scaffolds for easy profiling 
 
-:::note
+The scaffold tree is synchronized with other viewers and can be saved as part of a
+[layout](../../../../visualize/view-layout.md) or dashboard.
 
-Scaffold tree generation is computationally intensive and may take a significant time.
+![Scaffold tree](img/scaffold-tree-annotated.gif)
 
-:::
+<details>
+<summary>How to use</summary>
 
-![scaffold-tree-generate-edit](scaffold-tree-generate-edit.gif)
+<Tabs>
+<TabItem value="anatomy" label="Anatomy" default>
 
-A scaffold tree consists of scaffolds and orphan nodes. Each scaffold should contain its parent scaffold as a substructure. Orphans are molecules that contain the parent scaffold but do not contain any of the sibling scaffolds. A picture best illustrates this:
+Each node represents a scaffold. Nodes form a hierarchy where:
+* The root scaffold is the smallest common substructure
+* Child scaffolds contain their parent as a substructure
+* Each scaffold builds on the structure above it in the tree
+* Orphan nodes contains the parent scaffold but don't have any sibling scaffolds
 
 ![Scaffold tree anatomy](scaffold-tree-anatomy.png)
 
-<details>
-<summary>Sketch or modify a scaffold tree</summary>
-To manually sketch or modify the scaffold tree, use these controls:
+</TabItem>
+<TabItem value="add-scaffold-tree" label="Add">
 
-* To clear the tree, in the **Toolbar**, click the **Drop all trees** (trash) icon.
-* To add a new root node,  in the **Toolbar**, click the **Add new root structure** (**+**) icon. This opens a molecular sketcher.
-* To add a new scaffold under an existing one, click the **Add new scaffold** (**+**) icon next to the scaffold.
-  Alternatively, right-click the molecule and select **Add New...**.
-* To delete a scaffold along with its children, right-click it and select **Remove**.
-* To edit a scaffold, click the **Edit...** icon next to the scaffold.
-  Alternatively, right-click the molecule, and select **Edit...**. This opens a molecular sketcher.
+**Generate automatically**:
+ 1. Go to **Top Menu** > **Chem** > **Analyze** > **Scaffold Tree**. This adds the scaffold tree viewer to your dataset. 
+ 1. On the viewer, click **Generate** to build the tree. Generation may take several minutes for large datasets.
 
-In addition, you can download a file with the scaffold tree to your local drive. To do so, hover over any scaffold tile and click the **Download** icon in the **Toolbar**. To load a previously saved tree, hover over any scaffold tile and click the **Open** (+) icon in the **Toolbar**, then select the saved file.
+**Load from your computer**:
+* **To download**, click the **Download** icon at the top of the viewer.
+* **To upload**, click the **Open** icon at the top of the viewer and select your file.
+
+**Sketch manually**:
+ 1. Go to **Top Menu** > **Chem** > **Analyze** > **Scaffold Tree**. This adds the viewer to your dataset.
+ 1. To create the root scaffold, at the top of the viewer, click the **Add new root structure** (**+**) icon and sketch your structure.
+ 1. To add scaffolds below, click the **Add new scaffold** (**+**) icon on a scaffold and sketch. 
+
+>Tip: The viewer's toolbar icons appear when the viewer is active or when you hover over it. 
+
+![scaffold-tree-generate-edit](scaffold-tree-generate-edit.gif)
+
+</TabItem>
+<TabItem value="edit-tree" label="Edit">
+
+**Viewer controls (top of viewer)**:
+* **Clear all scaffolds**: Click the **Drop all trees** (trash) icon
+* **Add root scaffold**: Click the **Add new root structure** (**+**) icon
+
+**Scaffold controls (on each scaffold card)**:
+* **Add scaffold below**: Click the **Add new scaffold** (**+**) icon
+* **Edit scaffold**: Click the **Edit** icon to sketch
+* **Delete scaffold**: Click the **Remove scaffold** (trash) icon to delete the scaffold and all scaffolds below it
+>Tip: You can also right-click any scaffold for these options: **Add New...**, **Edit...**, or **Remove**.
 
 ![scaffold-tree-controls](img/scaffold-tree-toolbar-actions-1.png)
 
+</TabItem>
+<TabItem value="filter" label="Selection and filtering">
+
+**Selection**:
+* **Highlight rows**: Hover over any scaffold
+* **Select rows**: Click the **Select rows** icon on the scaffold
+* **Deselect rows**: Click the **Deselect rows** icon on the scaffold
+* **Exclude from selection**: Click the **≠** icon on the scaffold (inverts the selection state)
+
+**Filtering**:
+* **Filter by scaffold**: Click it
+* **Exclude from filtered subset**: Click the **≠** icon on the scaffold (inverts the filtered state)
+* **Clear filters**: At the top of the viewer, click the **Filter** icon.
+
+To select or filter by multiple scaffolds, select the checkbox to the left of each desired scaffold. 
+Use the **AND/OR** control at the top of the viewer to define the logic:
+* **OR** (default): includes rows matching _any_ selected scaffold
+* **AND**: includes only rows matching _all_ selected scaffolds
+
+Selections and filters sync across all viewers in your dataset. 
+You can use the scaffold tree in combination with other [filters](../../../../visualize/viewers/filters.md). 
+<!---- You can also add the tree as a filter to the **Filter panel** (see details below)--->.
+
+<!---
+
+<details>
+<summary>Add scaffold tree to the **Filter Panel**</summary>
+
+1. In the **Top Menu**, click the **Filter** icon. This toggles the **Filter panel**.
+1. In the panel's top left corner, click the **Hamburger** (☰) icon > **Add Filter** >
+   **Scaffold Tree Filter**. A dialog opens.
+1. In the dialog, select the column and click **OK**. A scaffold tree
+   filter is added to the **Filter panel**.
+1. To filter, click the **Add** (**+**) icon, then paste or draw a scaffold
+   using a sketcher.
 </details>
 
-Scaffold tree is a viewer, which means it's synchronized with other viewers, can be shared or saved as part of a [layout](../../../../visualize/view-layout.md) or a dashboard, or used to filter a dataset.
+----->
+
+</TabItem>
+<TabItem value="color-code" label="Color-code">
+
+Color scaffolds to highlight relationships. The colors appear both in the
+dataset column and the scaffold tree.
+
+* To toggle coloring, on the scaffold, click the **Circle** icon. When off, the
+  node inherits color from its nearest colored parent.
+* To assign new color, click the **Palette** icon. The color applies to the scaffold
+  and all its child scaffolds unless they already have custom colors.
+* To override an inherited color, assign the new color. Custom node colors
+  takes precedence.
+
+![scaffold-tree-coloring](scaffold-tree-coloring.gif)
+
+</TabItem>
+</Tabs>
+</details>
+
+### Retrosynthesis
+
+You can explore the most efficient synthetic pathways and commercially available
+starting materials for your target molecules. To view the results for your
+target, click or sketch a molecule, and expand the **Retrosynthesis** pane in
+the **Context Panel**. Requires the [Retrosynthesis](https://github.com/datagrok-ai/public/blob/master/packages/Retrosynthesis/README.md) plugin.
+
+![Retrosynthesis panel](img/retrosynthesis-panel.png)
 
 <details>
-<summary>Filtering and selection</summary>
+<summary>How to use</summary>
 
-To highlight rows matching a particular scaffold, hover the mouse over the
-scaffold tile. To select rows matching a particular scaffold, click the **Select
-rows** icon next to the scaffold. To deselect rows matching a particular
-scaffold, click the **Deselect rows** icon next to the scaffold. The state is
-picked up by other viewers.
+[Watch a video tutorial](https://youtu.be/FScZ4W_etEE) (~3 mins).
 
-![scaffold-tree-filter-select](scaffold-tree-filter-select.gif)
+To explore retrosynthesis pathways for a compound:
+1. **Select a target molecule**: Click on a molecule in your dataset or [sketch](#sketching) one
+1. In the **Context Panel**, open the **Retrosynthesis pane**
+1. **View routes**: Each tab shows a different pathway, ranked by score based on
+   stock availability, route length, and confidence. The best routes appear
+   first
+1. **Interact with the results**: 
+   * Click any precursor or intermediate to view its details in the **Context Panel**
+   * Hover over a pathway to reveal action icons, then click the **Add to
+     workspace** (**+**) icon to open the entire pathway in a separate [Table View](../../../navigation/views/table-view.md)
+ 
+You can use custom models, stock databases, and
+display parameters (e.g., route length). 
 
-To filter a dataset using a scaffold tree, do the following:
-
-* To filter by a particular scaffold exclusively, select the checkbox
-  to the left of the molecule. This action automatically clears any other checkboxes and helps to navigate quickly within the dataset.
-* To add another scaffold to the filtered subset, select the corresponding
-  checkbox. Use the **AND/OR** control in the **Toolbar** to set the desired
-  logical operation. If needed, you can invert the function of an individual
-  checkbox to exclude the scaffold from the subset instead of adding it. To
-  invert the checkbox mode, click the **Doesn't equal** icon located in the top
-  left corner of the scaffold tile. The change in the state of an individual
-  checkbox doesn't affect the state of other checkboxes.
-* To clear all filters, click the **Filter** icon in the **Toolbar**.
-
-![scaffold-tree-controls](img/scaffold-tree-toolbar-actions-1.png)
-
-You can add the scaffold tree as a filter to the **Filter Panel**:
-
-1. In the **Menu Ribbon**, click the **Filter** icon to toggle the **Filter panel**.
-1. In the top left corner, click the **Hamburger** (☰) icon > **Add External** > **Scaffold Tree Filter**. A dialog opens.
-1. In the dialog, select the molecular column and click **OK**. A scaffold tree tile is added to the **Filter Panel**.
-1. To filter, click the **Add** (**+**) icon, then paste or draw a scaffold using a sketcher.
-
-![Scaffold tree filter panel](scaffold-tree-filter.gif)
-
-You can use a scaffold tree with other [filters](../../../../visualize/viewers/filters.md), where each filter eliminates rows that do not meet the filtering criteria.
+To set up a custom configuration:
+1. **Create a configuration folder**: Go to **Browse** > **AppData** >
+   **Retrosynthesis** > **configs** and create a folder with your custom
+   configuration name
+1. **Add required files** to your configuration folder. The minimum required files are:
+   * Expansion model
+   * Templates file
+   * Stock file
+   * `config.yml` with file paths and parameters
+1. **Define file paths in `config.yml`**. Paths must follow this format: `/app/aizynthcli_data/configs/<your_custom_config_name>/<file_name>`
+  
+    **IMPORTANT**: Correct path naming is critical for the configuration to work properly.
+    
+    Example: 
+  
+   ```yaml
+    expansion:
+      full:
+        - /app/aizynthcli_data/configs/my_config/my_expansion_model.onnx
+        - /app/aizynthcli_data/configs/my_config/my_templates.csv.gz
+    stock:
+      my_stock: /app/aizynthcli_data/configs/my_config/my_stock.hdf5
+   ```
+1. **Apply your configuration**: Hover over any route and click the gear icon,
+   and select your custom configuration as the current one.
 
 </details>
 
@@ -536,193 +721,253 @@ As you browse the dataset, the **Context Panel** updates with relevant informati
 
 ### Matched molecular pairs
 
-:::note
+The **Matched Molecular Pairs** (MMP) tool supports lead optimization by
+quantifying how specific structural changes affect potency, solubility,
+permeability, and ADMET properties across your dataset.
 
-This feature is in Beta.
-
-:::
-
-The **Matched Molecular Pairs** ("MMP") tool lets you explore chemical space and
-identify structural transformation rules that can be used to improve potency and
-ADMET properties during lead optimization. This tool automatically detects
-matched molecule pairs in your dataset and calculates the difference in property
-or activity values between them. The mean change in property or activity values
-across your dataset represents the expected size of the change when the
-transformation is applied to a molecule.
+MMP analysis automatically detects matched molecular pairs within your
+dataset, calculates the differences in their properties, and aggregates these
+results. The mean property change derived from these
+transformations highlights consistent structure-activity relationships, indicating
+the expected effect of applying a similar modification to a new molecule.
 
 The results of the MMP analysis are presented in a series of tables and
 visualizations, allowing you to:
 
-* View fragments and substitutions in your dataset 
-* Analyze the effect of specific fragments on the chosen activity or property of
-  a lead compound
-* Generate new molecules based on the transformations present in your dataset
-  and view their predicted properties and activities.
+* Identify high-impact structural modifications that enhance target properties
+* Evaluate how specific chemical changes affect a compound's profile
+* Generate optimized molecules with predicted properties based on transformations data
+
+![MMP Demo](img/mmp-full.gif)
 
 <details>
 <summary>How to use</summary>
 
 To run MMP analysis:
 
-1. In the **Top Menu**, select **Chem** > **Analyze ** > **Matched Molecular
-   Pairs...** A dialog opens.
-1. In the dialog, select the table you want to analyze (**Table**), the column
-   containing molecules within this table (**Molecules**), and the
-   activity/property columns (**Activity**). Click **OK**. An MMP section is
-   added to the view. It has four tabs:
+1. In the **Top Menu**, select **Chem** > **Analyze** > **Matched Molecular
+ Pairs...** to open the analysis dialog.
+2. In the dialog, configure the analysis by selecting:
+    * **Table**: The dataset you want to analyze
+    * **Molecules**: The column containing molecules
+    * **Activity**: The column(s) representing activity or property values
+    * **Fragment Cutoff**: The maximum allowed fragment size relative to the core
+3. Click OK. An MMP analysis is added to the view with four tabs:
 
 <Tabs>
-<TabItem value="transformations" label="Transformations" default> 
+<TabItem value="substitutions" label="Substitutions" default> 
 
-The **Transformations** tab has two tables:
+The **Substitutions** tab has two interactive tables:
 
-* **The upper table** shows all fragment substitutions found in the dataset for
-  the current molecule. It includes the frequency of each substitution and the
-  corresponding change in the analyzed activity or property.
-* **The lower table** shows all pairs of molecules associated with the
-  substitution from the upper table.  It provides details about the analyzed
-  activity or property for each pair of molecules.
+1. **Fragments** table (upper): Shows all fragment substitutions found in your
+  dataset along with their frequency and mean change in activity or property. It
+  has two viewing modes:
+   * **All**: Shows all fragment pairs. Clicking a row here highlights molecules in
+your dataset that contain either fragment from a current substitution.
+   * **Current molecule**: Shows only fragment pairs relevant to the current molecule
+molecule in your dataset, enabling exploration of molecule-specific
+substitutions. The number of corresponding substitutions appears in the top-left
+corner.
+
+1. **Molecule pairs** table (lower): Shows pairs of molecules and their property changes corresponding to the current
+   substitution in the **Fragments** table. Clicking a row here pins the molecule pair at the top of your
+   dataset and shows the details about the pair in the **Context Panel**. 
+
+To select multiple rows in any table, use **Ctrl+click**. To open a table in a separate view, click the **+** icon above the corresponding table.
+
+ ![Substitutions tab](img/mmp-tab-substitutions.gif)
 
 </TabItem>
 <TabItem value="fragments" label="Fragments">
 
-In the **Fragments** tab, a 
-[trellis plot](../../../../visualize/viewers/trellis-plot.md) shows all identified
-fragments on the x and y axes. Each intersection in the plot displays the change
-in the analyzed activity or property resulting from a fragment substitution.
+The **Fragments** tab contains:
+
+1. [Trellis plot](../../../../visualize/viewers/trellis-plot.md): Shows
+identified fragments along the _x_ and _y_ axes, with property changes shown at
+their intersections. Click a cell to filter corresponding molecule pairs in the
+table below. Use the filter icon to refine results, or sort fragments by
+frequency or molecular weight using the sorting icons on the axes.
+
+1. **Molecule pairs** table: Shows molecule pairs for the selected substitution
+   and functions identically to the **Molecule pairs** table in the
+   **Substitutions** tab.
+
+![Sort Fragments trellis plot](img/mmp-tab-fragments.gif)
+
 
 </TabItem>
 <TabItem value="cliffs" label="Cliffs"> 
 
-In the **Cliffs** tab, a
-[scatterplot](../../../../visualize/viewers/scatter-plot.md) shows clusters of
-molecules with similar structures but significant differences in the analyzed
-activity or property. Arrows connecting molecules represent changes in the
-specified activity or property, with the arrow pointing toward the molecule with
-the higher value. Clicking an arrow shows both molecules in the **Context
-Panel**, along with the information about the analyzed activity or property.
+The **Cliffs** tab includes:
+
+1. [Scatterplot](../../../../visualize/viewers/scatter-plot.md): Shows clusters
+of molecules with similar structures but significant differences in the activity
+or property. Arrows connecting molecules represent a property change, pointing
+toward the molecule with the higher value.
+
+1. **Molecule pairs** table: Shows molecule pairs for the selected substitution,
+identical to the table in the **Substitutions** tab. Clicking a row here zooms
+to that pair on the scatterplot and shows the pair's details in the **Context
+Panel**. Conversely, clicking an arrow on the scatterplot shows that pair in the
+table. Toggle the table's visibility with the **Show Pairs** checkbox above the
+scatterplot. 
+
+Use activity filters on the scatterplot to refine results in both views.
+![Filter Cliffs scatterplot](img/mmp-tab-cliffs.gif)
 
 </TabItem>
 <TabItem value="generation" label="Generation">
 
-In the **Generation** tab, transformation rules derived from the matched molecule pairs in
-your dataset are used to generate new molecules and predict their property and
-activity values. For every molecule in your dataset, the table shows each
-potential transformation, providing:
+The **Generation** tab uses transformation rules derived from your dataset
+to create and predict new molecules. For each molecule, the table shows:
 
-* Both the starting and new compounds.
-* The maximum common substructure for this pair and the substituted fragment.
-* Original and predicted values for one of the analyzed activities or
-  properties.
+* Original and transformed molecules
+* Molecule status (existing or newly generated)
+* Maximum common substructure and the substituted fragment for this pair
+* Original and predicted property or activity values
+
+The **Context Panel** shows a scatterplot comparing observed vs. predicted values based on your dataset molecules.
+
+![MMP Generations](img/mmp-generations.gif)
 
 </TabItem>
 </Tabs>
 </details>
 
-<!--### ADME/Tox-->
+## Docking
 
-<!--The **ADME/Tox** tool predicts absorption, distribution, metabolism, excretion, toxicity, solubility, and lipophilicity properties for chemical structures. The tool obtains predictions for either a single chemical structure (implemented as a chemical info pane) or for an entire column of structures (available from the context menu). Under the hood, the tool uses publicly available [ADMETlab](https://github.com/ifyoungnet/ADMETlab) models.
+Use molecular docking to analyze how small molecules bind to protein targets (powered by [AutoDock Vina](https://autodock.scripps.edu/)).
+Datagrok visualizes predicted poses and calculates binding scores. Requires the [Docking](https://github.com/datagrok-ai/public/blob/master/packages/Docking/README.md) package.
 
-[gif placeholder]
-
-[INSERT DETAILS ADMONITION]
-How to use
-
-For individual molecules, the ADME/Tox prediction happens automatically as you browse the dataset. Upon clicking a molecule, the **Context Panel** dynamically updates to show all available predictions in the **ADME/Tox** info pane.
-
-To predict properties for the entire column:
-
-1. In the **Menu Ribbon**, select **Chem** > **ADME/Tox**. An **ADME/Tox** dialog opens.
-1. In the dialog, select the desired options for predicting ADMET, lipophilicity, and solubility.
-1. Click **OK** to execute. The corresponding numerical columns for each prediction are added to the dataframe, along with the [form viewer](../../../../visualize/viewers/form.md) for visual exploration.
-
-You can visualize or filter these predictions using the built-in tools provided by Datagrok.
-
-[CLOSE DETAILS ADMONITION]-->
-
-## QSAR and QSPR modeling
-
-Datagrok lets you easily train, apply, and manage structure-based [predictive models](../../../solutions/domains/data-science.md#predictive-modeling)
-using these modeling methods:
-
-1. Classical models (such as XGBoost) that work on the calculated descriptors.
-1. Cheminformatics-specific models, such as [chemprop](https://chemprop.readthedocs.io/en/latest/#).
+![Docking](  https://github.com/datagrok-ai/public/raw/master/packages/Docking/help/additional-properties.gif)
 
 <details>
-<summary>Train</summary>
+<summary>How to use</summary>
+
+**Step 1. Prepare targets**
+
+Prepare receptor structures using AutoDock tools and upload them to Datagrok. 
+
+To learn how, see the [video tutorial](https://www.youtube.com/watch?v=IIcJfTJ0Hn8) 
+or [plugin docs](https://github.com/datagrok-ai/public/blob/master/packages/Docking/README.md).
+
+**Step 2. Run docking**
+
+1. Go to **Top Menu** > **Chem** > **Docking...**
+1. In the dialog, select the ligand column, choose a target, and set the number of conformations
+1. Click **OK** to start docking 
+
+> Note: Docking may take time during the first run. Subsequent runs use cached results and are faster.
+
+**Step 3. Analyze the results**
+
+Explore predicted poses and binding scores in your dataset and the **Context Panel** (under **Docking**).
+
+</details>
+
+## Predictive modeling
+
+### QSAR and QSPR modeling
+
+Use Datagrok to train, apply, and integrate structure-based [predictive models](../../../solutions/domains/data-science.md#predictive-modeling) for molecular property prediction and virtual screening. Supported approaches include:
+
+1. Classical machine learning (e.g., XGBoost) using calculated descriptors
+1. Deep learning models designed for chemistry, such as [Chemprop](https://chemprop.readthedocs.io/en/latest/#).
+
+<Tabs>
+<TabItem value="train" label="Train" default>
 
 Train a model based on a measured response using calculated descriptors as
-features. Use an integrated [model building mechanism](../../../../learn/learn.md) that supports different backends and
-dozens of models with hundreds of hyperparameters available. You may try it as a
-[tutorial](https://dev.datagrok.ai/apps/tutorials/Tutorials/Cheminformatics/VirtualScreening)
-and walk through an illustrative example of virtual screening exercise.
+features. Use built-in [modeling engine](../../../../learn/learn.md), 
+which supports different backends, dozens of model types, and extensive hyperparameter tuning. 
+
+Try it in the
+[Virtual screening tutorial](https://dev.datagrok.ai/apps/tutorials/Tutorials/Cheminformatics/VirtualScreening)
+for a guided example.
 
 ![Training](../../../../uploads/gifs/chem-train-model.gif "Training")
 
-</details>
+</TabItem>
+<TabItem value="apply" label="Apply">
 
-<details>
-<summary>Apply</summary>
-
-[Model building mechanism](../../../../learn/learn.md#apply-model)
+Apply existing models to new compounds using [the same engine](../../../../learn/learn.md#apply-model). 
+Predictions are written directly to the data table and can be explored with all Datagrok tools.
 
 ![Applying](../../../../uploads/gifs/chem-apply-model.gif "Applying")
 
-</details>
+</TabItem>
+<TabItem value="augment" label="Augment">
 
-<details>
-<summary>Augment</summary>
-
-A simple yet efficient way to deploy models is through the use of [info panes](../../../../datagrok/navigation/panels/info-panels.md). These panes provide predicted values that dynamically update as you interact with a chemical structure (e.g.,  upon clicking, modifying, or sketching a molecule.) This approach enables quick access to model predictions, enhancing the user experience and facilitating insights.
+Deploy models for real-time prediction using [info panes](../../../../datagrok/navigation/panels/info-panels.md). 
+Predictions appear dynamically as users click, sketch, or modify structures.
 
 ![Augmenting](../../../../uploads/gifs/chem-model-augment.gif "Augmenting")
 
-</details>
-
-## Chemical scripts
-
-Chem package comes with several scripts that can be used either directly, or as an example for building custom chemical functions in languages such as Python (with RDKit) or R. These chemical functions can be integrated into larger scripts and workflows across the platform, enabling a variety of use cases such as data transformation, enrichment, calculations, building UI components, workflow automation, and more. Here's an example:
-
-```mdx-code-block
-<Tabs>
-<TabItem value="script" label="Script" default>
-```
-
-![Gasteiger partial charges script](img/script-gasteiger-part-charges-0.png)
-
-```mdx-code-block
-</TabItem>
-<TabItem value="script-output" label="Script output">
-```
-
-![Gasteiger partial charges script output](img/script-output-gasteiger-part-charges-0.png)
-
-```mdx-code-block
-</TabItem>
-<TabItem value="script-output-in-info-pane" label="Script output in info pane">
-```
-
-![Script-based info pane](img/script-output-info-pane-0.png)
-
-```mdx-code-block
 </TabItem>
 </Tabs>
-```
 
-In this example, a [Python script based on RDKit](https://public.datagrok.ai/script/276a5929-6f21-5105-8eec-576845aabae0)
-calculates and visualizes Gasteiger partial charges. When you run the script
-explicitly, Datagrok shows a dialog for sketching a query molecule and
-visualizes the results. In this case, however, the script is also tagged as a
-`panel`. This instructs Datagrok to show the results as an interactive UI
-element that updates dynamically for the current molecule.
+### ADMET predictions
 
-To view the chemical scripts you've created or those shared with you, open the [Scripts Gallery](https://public.datagrok.ai/scripts?q=%23chem) (**Functions** > **Scripts**) and filter by the tag `#chem`. You can search for individual scripts and use the **Context Panel** to view details, edit, run, manage, and perform other actions for the selected script.
+Quickly evaluate the drug-likeness and safety of compounds. 
+The [Admetica package](https://github.com/datagrok-ai/public/tree/master/packages/Admetica) 
+provides in-browser access to [23 models](https://github.com/datagrok-ai/admetica?tab=readme-ov-file#available-predictive-models) that predict pharmacokinetic and toxicity
+properties. Models include both classification and regression outputs for endpoints such as:
+* Caco-2 permeability
+* Plasma protein binding
+* CYP450 inhibition
+* hERG inhibition
+* Clearance
+* LD50 toxicity
 
-:::note
+These models are trained on public datasets and can be extended with proprietary
+data ([see details](https://github.com/datagrok-ai/admetica?tab=readme-ov-file#usage)). 
+Datagrok visualizes the results directly in the grid and **Context
+Panel**, making it easy to assess compounds during screening and optimization.
 
-For a full list of chemical scripts, along with details on their implementation and associated performance metrics, see [Chemical scripts](scripts/chem-functions.md). To learn more about scripting, see [Scripting](../../../../compute/scripting/scripting.mdx).
+![Admetica](img/admetica-column.gif)
 
-:::
+<details>
+<summary>How to use</summary>
+
+**For a single molecule:** 
+* Click on a molecule in your dataset. The **Context
+Panel** automatically updates, showing ADMET predictions in the **Admetica** info
+pane.
+
+**For a column with molecules**:
+
+1. Go to **Top Menu** > **Chem** > **Admetica** > **Calculate...**
+1. In the dialog, choose which properties to predict and configure how results are interpreted and displayed
+1. Click **OK**. Datagrok adds a new column for each predicted property along with the visualization of results.
+
+Use built-in tools to explore and analyze the prediction results.
+
+</details>
+
+## Multiparameter optimization
+
+Medicinal chemistry is a balancing act: potency must rise while properties like solubility, permeability, clearance, safety, and selectivity stay in acceptable ranges. In practice, teams use a mix of complementary methods to optimize across many (often conflicting) endpoints:
+
+* **Property rules & gates.** Start with simple [filters](../../../../visualize/viewers/filters.md) to eliminate obvious non-starters. These are fast guardrails but can be blunt and may miss promising trade-offs.
+
+  New numeric columns can be added for immediate charting and filtering such as physical chemical properties (Top menu: Chem → Calculate → Chemical Properties...) or ADME properties with the Admetica plugin (Top menu: Chem → Admetica → Calculate...). Custom properties, like Ligand Efficiency (LE) or Lipophilic Ligand Efficiency (LLE), can be calculated using the [Add New Column](../../../../transform/add-new-column.md) feature.  Viewers, like [parallel coordinates plot](../../../../visualize/viewers/pc-plot.md), [radar](../../../../visualize/viewers/radar.md) or [row-level pie bar charts](../../../../visualize/viewers/grid.md#summary-columns), are especially useful for examining the profile of properties.  
+
+* **Desirability/utility functions & composite scores.** Map each property to a 0–1 “desirability” curve, then combine (sum/mean/weighted) into a single score that encodes the team’s preferences. A well-known example that is included by default is CNS MPO from Pfizer, which combines six physicochemical properties into a 0–6 score and correlates with clinical CNS success. 
+
+  Available from `Chem -> Calculate -> MPO Score...`:
+
+  ![](mpo-desirability-functions.png)
+
+* **Pareto (multi-objective) optimization.** Instead of collapsing objectives, identify the Pareto front: compounds for which no property can be improved without worsening another. Common in modern DDD pipelines and often paired with evolutionary algorithms or scalarization for ranking. 
+
+* **Active/Bayesian multi-objective optimization.** Use surrogate models to propose new compounds that efficiently move the Pareto front (or a scalarized objective), reducing screening cost and focusing make/test cycles. 
+
+* **Desirability-based QSAR/MQSAR.** Use the built-in [predictive modeling capabilities](#predictive-modeling) to predict property desirabilities directly (or predict properties first, then score). 
+
+## Generative chemistry
+
+Generate novel compounds optimized for specific properties using [Reinvent4](https://github.com/MolecularAI/REINVENT4). 
+For details, see the [Reinvent4 package docs](https://github.com/datagrok-ai/public/tree/master/packages/Reinvent4). 
 
 ## Utilities
 
@@ -827,6 +1072,51 @@ For instance, you can add new data formats, apply custom models, and perform oth
 
 [Learn more about extending and customizing Datagrok](../../../../develop/develop.md), including this
 [cheminformatics-specific section](../../../../develop/domains/chem/cheminformatics.md).
+
+### Chemical scripts
+
+Chem package comes with several scripts that can be used either directly, or as an example for building custom chemical functions in languages such as Python (with RDKit) or R. These chemical functions can be integrated into larger scripts and workflows across the platform, enabling a variety of use cases such as data transformation, enrichment, calculations, building UI components, workflow automation, and more. Here's an example:
+
+```mdx-code-block
+<Tabs>
+<TabItem value="script" label="Script" default>
+```
+
+![Gasteiger partial charges script](img/script-gasteiger-part-charges-0.png)
+
+```mdx-code-block
+</TabItem>
+<TabItem value="script-output" label="Script output">
+```
+
+![Gasteiger partial charges script output](img/script-output-gasteiger-part-charges-0.png)
+
+```mdx-code-block
+</TabItem>
+<TabItem value="script-output-in-info-pane" label="Script output in info pane">
+```
+
+![Script-based info pane](img/script-output-info-pane-0.png)
+
+```mdx-code-block
+</TabItem>
+</Tabs>
+```
+
+In this example, a [Python script based on RDKit](https://public.datagrok.ai/script/276a5929-6f21-5105-8eec-576845aabae0)
+calculates and visualizes Gasteiger partial charges. When you run the script
+explicitly, Datagrok shows a dialog for sketching a query molecule and
+visualizes the results. In this case, however, the script is also tagged as a
+`panel`. This instructs Datagrok to show the results as an interactive UI
+element that updates dynamically for the current molecule.
+
+To view the chemical scripts you've created or those shared with you, open the [Scripts Gallery](https://public.datagrok.ai/scripts?q=%23chem) (**Functions** > **Scripts**) and filter by the tag `#chem`. You can search for individual scripts and use the **Context Panel** to view details, edit, run, manage, and perform other actions for the selected script.
+
+:::note
+
+For a full list of chemical scripts, along with details on their implementation and associated performance metrics, see [Chemical scripts](scripts/chem-functions.md). To learn more about scripting, see [Scripting](../../../../compute/scripting/scripting.mdx).
+
+:::
 
 ## Resources
 

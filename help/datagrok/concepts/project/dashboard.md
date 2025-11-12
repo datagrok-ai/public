@@ -4,13 +4,13 @@ sidebar_position: 2
 format: mdx
 ---
 
-Dashboards are [projects](project.md) that contain data (a [dataframe](../table.md)) and the visualizations applied
+Dashboards are projects like [spaces](space.md) that contain data (a [dataframe](../table.md)) and the visualizations applied
 to it (a [layout](../../../visualize/view-layout.md)). 
 
 <!---
 Use dashboards to visually present data in a pre-specified way. In contrast to
 [table views](../../navigation/views/table-view.md) that excel at
-[exploratory data analysis](../../solutions/domains/use-cases/eda.md),
+[exploratory data analysis](../../solutions/workflows/eda.md),
 [data wrangling](../../../transform/transform.md), and other table-specific tasks, dashboards trade the ability to quickly
 interrogate data in unpredicted ways for delivering the visuals precisely as designed. In particular, here are some
 features that are unique to dashboards:

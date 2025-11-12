@@ -8,9 +8,15 @@ export type ReferencedByObject = {
 };
 export type SchemaInfo = { references: ReferenceObject; referencedBy: ReferencedByObject };
 
+export type SchemaAndConnection = {
+  schema: SchemaInfo;
+  connection: DG.DataConnection;
+}
+
 export type EntryPointOptions = {
   valueConverter: (value: string | number) => string | number;
   joinOptions: QueryJoinOptions[];
+  regexpExample?: (typeof DG.ObjectHandler.prototype.regexpExample)
 };
 export type QueryJoinOptions = {
   fromTable: string;
@@ -23,9 +29,12 @@ export type QueryJoinOptions = {
 export type DBExplorerConfig = {
     connectionName: string;
     schemaName: string;
+    nqName?: string;
+    dataSourceName?: string;
     entryPoints: {[semtype: string]: {
         table: string;
         column: string;
+        regexpExample?: EntryPointOptions['regexpExample'];
     }}
     joinOptions?: QueryJoinOptions[];
     headerNames?: {[tableName: string]: string};

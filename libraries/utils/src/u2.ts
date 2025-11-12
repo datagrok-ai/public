@@ -25,19 +25,35 @@ export namespace u2 {
     iconPath: string;
     description: string;
     learnMoreUrl?: string;
+    appTitle?: string;
+    appSubTitle?: string;
+    bottomLine?: boolean; 
   }
 
   export function appHeader(header: IAppInfo): HTMLElement {
     const icon = ui.iconImage('', header.iconPath);
     $(icon).addClass('ui-app-header-icon').css('margin-right', '20px');
+    const appHeaderDiv = panels.horz([]);
+    if (header.appTitle) {
+      appHeaderDiv.classList.add('u2-app-header-with-name');
+      const nameDiv = ui.divV([ui.divText(header.appTitle, 'u2-app-header-app-name-div')], 'u2-app-header-app-name-and-slogan-div');
+      if (header.appSubTitle)
+        nameDiv.append(ui.divText(header.appSubTitle));
+      const iconDiv = ui.div(icon);
+      appHeaderDiv.append(ui.divH([iconDiv, nameDiv]));
+    }
+    else
+      appHeaderDiv.append(icon);
 
-    return panels.horz([
-      icon,
-      panels.vert([
-        ui.markdown(header.description),
-        header.learnMoreUrl ? ui.link('Learn more', header.learnMoreUrl) : null
-      ])
+    const description = panels.vert([
+      ui.markdown(header.description),
+      header.learnMoreUrl ? ui.link('Learn more', header.learnMoreUrl, undefined, {style: {marginLeft: '15px'}}) : null
     ]);
+    description.classList.add('u2-app-header-description');
+    appHeaderDiv.append(description);
+    if (header.bottomLine)
+      appHeaderDiv.classList.add('u2-app-header-bottom-line');
+    return appHeaderDiv;
   }
 
 

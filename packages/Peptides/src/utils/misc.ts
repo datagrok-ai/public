@@ -1,5 +1,7 @@
+/* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import * as grok from 'datagrok-api/grok';
 import * as C from './constants';
 import * as type from './types';
 import {PeptidesSettings} from './types';
@@ -110,13 +112,10 @@ export function getDistributionPanel(hist: DG.Viewer<DG.IHistogramSettings>, sta
   const splitCol = hist.dataFrame.getCol(C.COLUMNS_NAMES.SPLIT_COL);
   const labels = [];
   const categories = splitCol.categories as SPLIT_CATEGORY[];
-  const rawData = splitCol.getRawData();
   for (let categoryIdx = 0; categoryIdx < categories.length; ++categoryIdx) {
-    if (!Object.values(SPLIT_CATEGORY).includes(categories[categoryIdx]))
+    if (!categories[categoryIdx])
       continue;
-
-
-    const color = DG.Color.toHtml(splitCol.meta.colors.getColor(rawData.indexOf(categoryIdx)));
+    const color = DG.Color.toHtml(DG.Color.categoricalPalette[categoryIdx % DG.Color.categoricalPalette.length]);
     const label = ui.label(labelMap[categories[categoryIdx]] ?? categories[categoryIdx], {style: {color}});
     labels.push(label);
   }
@@ -130,43 +129,75 @@ export function getDistributionPanel(hist: DG.Viewer<DG.IHistogramSettings>, sta
  * Creates a table to plot activity distribution.
  * @param activityCol - Activity column.
  * @param selection - Selection bitset.
- * @param [peptideSelection] - Peptide selection bitset.
  * @return - Dataframe with activity distribution.
  */
-export function getDistributionTable(activityCol: DG.Column<number>, selection: DG.BitSet, peptideSelection?: DG.BitSet,
-): DG.DataFrame {
-  const selectionMismatch = peptideSelection?.clone().xor(selection).anyTrue ?? false;
+export function getDistributionTable(activityCol: DG.Column<number>, selection: DG.BitSet, dataFrame: DG.DataFrame): DG.DataFrame {
+  const filter = dataFrame.filter;
+  const selectionAndFilter = selection.clone().and(filter);
   const rowCount = activityCol.length;
   const activityColData = activityCol.getRawData();
-  const activityData = new Float32Array(rowCount + selection.trueCount +
-    (selectionMismatch ? (peptideSelection?.trueCount ?? 0) : 0));
+  const filteredRowCount = filter.trueCount;
+  const activityData = new Float32Array(filteredRowCount + selectionAndFilter.trueCount);
   const categories: string[] = new Array(activityData.length);
 
-  for (let i = 0, j = 0, k = 0; i < rowCount; ++i) {
-    const isSelected = selection.get(i);
-    activityData[i] = activityColData[i];
-    categories[i] = isSelected ? SPLIT_CATEGORY.SELECTION : SPLIT_CATEGORY.ALL;
+  for (let i = 0, /*J is counting for filtered data*/j = 0, /*selected data*/k = 0; i < rowCount; ++i) {
+    if (!filter.get(i))
+      continue;
+    const isSelected = selectionAndFilter.get(i);
+    activityData[j] = activityColData[i];
+    categories[j] = isSelected ? SPLIT_CATEGORY.SELECTION : SPLIT_CATEGORY.ALL;
+    j++;
     if (isSelected) {
-      activityData[rowCount + j] = activityColData[i];
-      categories[rowCount + j] = SPLIT_CATEGORY.ALL;
-      ++j;
-    }
-    if (selectionMismatch && peptideSelection?.get(i)) {
-      activityData[rowCount + selection.trueCount + k] = activityColData[i];
-      categories[rowCount + selection.trueCount + k] = SPLIT_CATEGORY.PEPTIDES_SELECTION;
+      activityData[filteredRowCount + k] = activityColData[i];
+      categories[filteredRowCount + k] = SPLIT_CATEGORY.ALL;
       ++k;
     }
   }
 
   const splitCol = DG.Column.fromStrings(C.COLUMNS_NAMES.SPLIT_COL, categories);
   const categoryOrder = [SPLIT_CATEGORY.ALL, SPLIT_CATEGORY.SELECTION];
-  if (selectionMismatch)
-    categoryOrder.push(SPLIT_CATEGORY.PEPTIDES_SELECTION);
-
 
   splitCol.setCategoryOrder(categoryOrder);
   splitCol.meta.colors.setCategorical();
   return DG.DataFrame.fromColumns([DG.Column.fromFloat32Array(C.COLUMNS_NAMES.ACTIVITY, activityData), splitCol]);
+}
+
+/**
+ * Creates distribution table for mutation cliffs.
+ * @param activityCol
+ * @param mpCliffs
+ */
+export function getMutationCliffsDistributionTable(activityCol: DG.Column<number>, mpCliffs: Map<type.INDEX, type.INDEXES>, monomerName: string) {
+  // instead of stats.selection vs everything, here we want to show mutated vs non-mutated
+  if (!activityCol.dataFrame)
+    DG.DataFrame.fromColumns([activityCol]); // to make sure that activityCol has a parent dataframe
+  const tableFilter = activityCol.dataFrame!.filter;
+  const activityData = activityCol.getRawData();
+  const uniqueMPCliffsIndexes = Array.from(new Set(mpCliffs.keys())).map((k) => Number(k)).filter((i) => tableFilter.get(i));
+  const uniqueMutatedCliffsIndexesSet = new Set<number>();
+  for (const indexes of mpCliffs.values()) {
+    for (const index of indexes as number[])
+      uniqueMutatedCliffsIndexesSet.add(index);
+  }
+  const uniqueMutatedCliffsIndexes = Array.from(uniqueMutatedCliffsIndexesSet).filter((i) => tableFilter.get(i));
+  const totalRowCount = uniqueMPCliffsIndexes.length + uniqueMutatedCliffsIndexes.length;
+  const categories: string[] = new Array(totalRowCount);
+  const activityValues = new Float32Array(totalRowCount);
+  for (let i = 0; i < uniqueMPCliffsIndexes.length; ++i) {
+    const rowIndex = uniqueMPCliffsIndexes[i];
+    activityValues[i] = activityData[rowIndex];
+    categories[i] = monomerName;
+  }
+  for (let i = 0; i < uniqueMutatedCliffsIndexes.length; ++i) {
+    const rowIndex = uniqueMutatedCliffsIndexes[i];
+    activityValues[uniqueMPCliffsIndexes.length + i] = activityData[rowIndex];
+    categories[uniqueMPCliffsIndexes.length + i] = 'Mutated';
+  }
+  const splitCol = DG.Column.fromStrings(C.COLUMNS_NAMES.SPLIT_COL, categories);
+  const categoryOrder = [monomerName, 'Mutated'];
+  splitCol.setCategoryOrder(categoryOrder);
+  splitCol.meta.colors.setCategorical();
+  return DG.DataFrame.fromColumns([DG.Column.fromFloat32Array(C.COLUMNS_NAMES.ACTIVITY, activityValues), splitCol]);
 }
 
 /**
@@ -243,7 +274,8 @@ export function addExpandIconGen(dialogName: string,
     const fullScreenElement = onClickElementFunc();
     const fullScreenDialog = ui.dialog(dialogName);
     fullScreenDialog.add(fullScreenElement);
-    fullScreenDialog.showModal(true);
+    fullScreenDialog.show(
+      {resizable: true, modal: true, width: window.innerWidth - 60, x: 30, y: 30, height: window.innerHeight - 60});
   }, 'Expand to full screen');
   fullScreenIcon.style.marginLeft = 'auto';
   fullScreenIcon.style.marginRight = '15px';
@@ -386,7 +418,8 @@ export function getSelectionBitset(selection: type.Selection, stats: MasksInfo):
     }
   }
 
-  return (combinedBitset != null) ? DG.BitSet.fromBytes(combinedBitset!.buffer.buffer, combinedBitset!.length) : null;
+  return (combinedBitset != null) ?
+    DG.BitSet.fromBytes(combinedBitset!.buffer.buffer as ArrayBuffer, combinedBitset!.length) : null;
 }
 
 /**
@@ -463,3 +496,17 @@ export function debounce<T extends Array<any>, K>(f: (...args: T) => Promise<K>,
     });
   };
 }
+
+export function isInDemo(): boolean {
+  return 'isInDemo' in grok.shell && !!grok.shell.isInDemo;
+}
+
+export function dartLike<T extends any>(obj: T) {
+  return {
+    set: function<K extends keyof T>(key: K, value: T[K]) {
+      (obj as any)[key] = value;
+      return this;
+    },
+  };
+}
+

@@ -5,23 +5,24 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import wu from 'wu';
-import {Observable, Subject} from 'rxjs';
+import {Observable} from 'rxjs';
 
 import {
-  HelmType, HelmAtom,
-  MonomerSetType, MonomerType, PolymerType, IWebEditorMonomer,
+  HelmType,
+  MonomerSetType, PolymerType,
 } from '@datagrok-libraries/bio/src/helm/types';
-import {IMonomerLibBase, IMonomerLib, IMonomerSet, Monomer, MonomerLibData, MonomerLibSummaryType, RGroup} from '@datagrok-libraries/bio/src/types';
-import {HELM_OPTIONAL_FIELDS as OPT, HELM_REQUIRED_FIELD as REQ, HELM_RGROUP_FIELDS as RGP} from '@datagrok-libraries/bio/src/utils/const';
+import {IMonomerLibBase, IMonomerLib, Monomer,
+  MonomerLibData, MonomerLibSummaryType} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
-import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
+import {getUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 
-import {MonomerLibBase, MonomerLibDataType} from './monomer-lib-base';
+import {MonomerLibBase} from './monomer-lib-base';
 
 import {_package} from '../../package';
 
+//@ts-ignore
 import '../../../css/cell-renderer.css';
 
 /** Wrapper for monomers obtained from different sources. For managing monomere
@@ -38,7 +39,7 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
   private duplicatesNotified: boolean = false;
 
   constructor(
-    monomers: MonomerLibDataType,
+    monomers: MonomerLibData,
     source: string,
     public readonly error: string | undefined = undefined,
   ) {
@@ -54,32 +55,6 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
     return resJSON;
   }
 
-  getMonomer(polymerType: PolymerType | null, argMonomerSymbol: string): Monomer | null {
-    const logPrefix = `Bio: MonomerLib.getMonomer()`;
-    // Adjust RNA's 'R' for ribose to 'r' and 'P' for phosphate to 'p' for case-sensitive monomer names.
-    // There are uppercase 'R' and 'P' at RNA samples in test data 'helm2.csv' but lowercase in HELMCoreLibrary.json
-    let monomerSymbol = argMonomerSymbol;
-    if (polymerType == 'RNA' && monomerSymbol == 'R')
-      monomerSymbol = 'r';
-    if (polymerType == 'RNA' && monomerSymbol == 'P')
-      monomerSymbol = 'p';
-
-    let res: Monomer | null = null;
-
-    if (!polymerType) {
-      _package.logger.warning(`${logPrefix} symbol '${argMonomerSymbol}', polymerType not specified.`);
-      // Assume any polymer type
-      for (const [_polymerType, dict] of Object.entries(this._monomers)) {
-        res = dict[monomerSymbol];
-        if (res) break;
-      }
-    } else {
-      const dict = this._monomers[polymerType];
-      res = dict?.[monomerSymbol] ?? null;
-    }
-    return res;
-  }
-
   private _monomerSets: { [biotype: string /*HelmType*/]: MonomerSetType } | null = null;
 
   getMonomerSet(biotype: HelmType): MonomerSetType | null {
@@ -87,7 +62,7 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
     if (!this._monomerSets)
       this._monomerSets = {};
     if (!(biotype in this._monomerSets)) {
-      for (const [monomerSymbol, monomer] of Object.entries(this._monomers[polymerType])) {
+      for (const [_monomerSymbol, _monomer] of Object.entries(this._monomers[polymerType])) {
 
       }
     }
@@ -158,7 +133,7 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
     this._isEmpty = this.isEmpty && lib.isEmpty;
   }
 
-  public updateLibs(libList: IMonomerLib[], reload: boolean = false): void {
+  public async updateLibs(libList: IMonomerLib[], reload: boolean = false): Promise<void> {
     if (reload) {
       this._monomers = {};
       this._isEmpty = true;
@@ -167,9 +142,8 @@ export class MonomerLib extends MonomerLibBase implements IMonomerLib {
     for (const lib of libList)
       if (!lib.error) this._updateLibInt(lib);
     if (Object.entries(this.duplicateMonomers).length > 0) {
-      getUserLibSettings().then((settings) => {
-        this.assignDuplicatePreferences(settings);
-      });
+      const settings = await getUserLibSettings();
+      this.assignDuplicatePreferences(settings);
     } else
       this._duplicatesHandled = true;
 

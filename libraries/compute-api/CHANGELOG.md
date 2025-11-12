@@ -1,16 +1,52 @@
-# compute-utils changelog
+# compute-api changelog
 
-## 0.1.1-rc (2024-09-06)
+## 0.6.5 (2025-10-30)
 
-- Preparing 1.21.1 release
+- Add optimizer runner
+
+## 0.6.5 (2025-09-04)
+
+- Update to the latest lib
+
+## 0.6.4 (2025-07-28)
+
+- Release for 1.26.0
+
+## 0.6.3 (2025-06-09)
+
+- Add StartWorkflow return
+
+## 0.6.2 (2025-05-03)
+
+- Update Compute2 API
+
+## 0.6.1 (2025-05-13)
+
+- Update Compute2 API
+
+## 0.5.0 (2025-05-02)
+
+- Update Compute2 API
+
+## 0.5.0 (2025-04-24)
+
+- Update Compute2 API
+
+## 0.4.0 (2025-02-19)
+
+- Release for 1.24.0
+
+## 0.3.2 (2025-01-27)
+
+- Build fix
+
+## 0.3.1 (2025-01-16)
+
+- Preparing 1.23.0 release
 
 ## 0.1.0 (2024-09-05)
 
 - Release for 1.21.0
-
-## 0.1.0-rc (2024-09-04)
-
-- Preparing 1.21.0 release
 
 ## 0.0.8 (2024-07-01)
 

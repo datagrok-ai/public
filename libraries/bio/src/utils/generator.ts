@@ -5,7 +5,7 @@ import wu from 'wu';
 import {ALPHABET, getAlphabet, NOTATION, TAGS} from './macromolecule';
 import {ISeqHelper} from './seq-helper';
 import {StringListSeqSplitted} from './macromolecule/utils';
-import {IMonomerLib} from '../types/index';
+import {IMonomerLib} from '../types/monomer-library';
 import {PolymerTypes} from '../helm/consts';
 import {GapOriginals} from './macromolecule/consts';
 
@@ -19,8 +19,8 @@ export function generateManySequences(): DG.Column[] {
   return columns;
 }
 
-/** Generates the column 'MSA' with sequences length of order 10^6 and the 'Activity' float column. */
-export function generateLongSequence(length: number = 10 ** 5): DG.Column[] {
+/** Generates the column 'MSA' with sequences length of order 10^5 and the 'Activity' float column. */
+export function generateLongSequence(length: number = 10 ** 4): DG.Column[] {
   const longSequence =
     `meI/hHis/Aca/N//dE/Thr_PO3H2/Aca/D-Tyr_Et/Tyr_ab-dehydroMe`.repeat(Math.ceil(length / 10)).slice(0, -1);
   const msaCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'MSA', new Array(10 ** 2).fill(longSequence));

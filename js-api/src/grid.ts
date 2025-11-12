@@ -2,16 +2,19 @@ import {Cell, Column, DataFrame, Row} from './dataframe';
 import {Viewer} from './viewer';
 import {toDart, toJs} from './wrappers';
 import {__obs, _sub, EventData, GridCellArgs, StreamSubscription} from './events';
-import {_identityInt32, _toIterable, MapProxy} from './utils';
+import {_identityInt32, _isDartium}  from './utils';
+import {_toIterable} from './utils_convert';
+import { MapProxy} from "./proxies";
 import {Observable} from 'rxjs';
-import {Color, RangeSlider} from './widgets';
+import {RangeSlider, Widget} from './widgets';
+import {Color} from './color';
 import {SemType} from './const';
 import {Property} from './entities';
 import {IFormSettings, IGridSettings} from "./interfaces/d4";
 import {IDartApi} from "./api/grok_api.g";
 
 
-const api: IDartApi = <any>window;
+const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 let _bytes = new Float64Array(4);
 
 export type ColorType = number | string;
@@ -19,6 +22,11 @@ export type ColorType = number | string;
 export interface IPoint {
   x: number;
   y: number;
+}
+
+export interface Size {
+  width: number;
+  height: number;
 }
 
 /** Represents a point. */
@@ -88,14 +96,14 @@ export class Rect {
     let minY = y[0];
     let maxX = x[0];
     let maxY = y[0];
-  
+
     for (let i = 1; i < x.length; i++) {
       minX = Math.min(minX, x[i]);
       minY = Math.min(minY, y[i]);
       maxX = Math.max(maxX, x[i]);
       maxY = Math.max(maxY, y[i]);
     }
-  
+
     return new Rect(minX, minY, maxX - minX, maxY - minY);
   }
 
@@ -483,7 +491,7 @@ export class Rect {
 }
 
 /** Represents a grid cell */
-export class GridCell {
+export class GridCell<TData = any> {
   dart: any;
 
   constructor(dart: any) {
@@ -509,6 +517,11 @@ export class GridCell {
     return api.grok_GridCell_Get_CellType(this.dart);
   }
 
+  /** Allows to set cell type (needed when rendering single grid cell) */
+  set cellType(x: string) {
+    api.grok_GridCell_Set_CellType(this.dart, x);
+  }
+
   /** @returns {boolean} Whether this is a table (data) cell (as opposed to special cells like row headers). */
   get isTableCell(): boolean {
     return api.grok_GridCell_Get_IsTableCell(this.dart);
@@ -525,13 +538,13 @@ export class GridCell {
   }
 
   /** @returns {Column} Corresponding table column, or null. */
-  get tableColumn(): Column | null {
+  get tableColumn(): Column<TData> | null {
     return this.gridColumn.column;
   }
 
   /** @returns {Row} Corresponding table row, or null. */
   get tableRow(): Row | null {
-    return this.isTableCell || this.isRowHeader ? this.cell.row : null;
+    return this.cell?.row;
   }
 
   /** @returns {number|null} Index of the corresponding table row. */
@@ -545,9 +558,12 @@ export class GridCell {
   }
 
   /** @returns {GridColumn} Corresponding grid column. */
-  get gridColumn(): GridColumn {
+  get gridColumn(): GridColumn<TData> {
     return new GridColumn(api.grok_GridCell_Get_GridColumn(this.dart));
   }
+
+  /** For debugging mostly. Returns `${this.gridColumn.name}: ${this.gridRow}`. */
+  get position(): string { return `${this.gridColumn.name}: ${this.gridRow}`};
 
   /** Custom text to be shown in a cell . */
   get customText(): string { return api.grok_GridCell_Get_CustomText(this.dart); }
@@ -561,6 +577,14 @@ export class GridCell {
   /** @returns {Cell} Corresponding table cell. */
   get cell(): Cell {
     return new Cell(api.grok_GridCell_Get_Cell(this.dart));
+  }
+
+  /** Returns the value of the grid cell.
+   * Note that the value could differ from the corresponding table cell due to the following:
+   * 1. setting gridCell.value inside onPrepareCell
+   * 2. as a result of evaluating onPrepareValueScript */
+  get value(): TData {
+    return toJs(api.grok_GridCell_Get_Value(this.dart));
   }
 
   /** @returns {GridCellStyle} Style to use for rendering. */
@@ -602,10 +626,42 @@ export class GridCell {
   setValue(x: any, notify: boolean = true): void { api.grok_GridCell_SetValue(this.dart, x, notify); }
 }
 
+/** Renders the content of the specified [gridCell], and provides interactivity as well. */
+export class GridCellWidget {
+  dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  static fromGridCell(gridCell: GridCell, canvasSize: Size = {width: 300, height: 150}): GridCellWidget {
+    const gridCellWidget = toJs(api.grok_GridCellWidget());
+    gridCellWidget.gridCell = gridCell;
+    gridCellWidget.root.style.removeProperty('height');
+    gridCellWidget.root.style.aspectRatio = `${canvasSize.width / canvasSize.height}`;
+    gridCellWidget.canvas.width = canvasSize.width;
+    gridCellWidget.canvas.height = canvasSize.height;
+    if (_isDartium())
+      gridCellWidget.root.style.height = `${canvasSize.height}px`;
+    return gridCellWidget;
+  }
+
+  get canvas(): HTMLCanvasElement { return api.grok_GridCellWidget_Get_Canvas(this.dart); }
+
+  get root(): HTMLDivElement { return api.grok_GridCellWidget_Get_Root(this.dart); }
+
+  get gridCell(): GridCell { return new GridCell(api.grok_GridCellWidget_Get_GridCell(this.dart)); }
+  set gridCell(x: GridCell) { api.grok_GridCellWidget_Set_GridCell(this.dart, x.dart); }
+
+  get bounds(): Rect { return Rect.fromDart(api.grok_GridCellWidget_Get_Bounds(this.dart)); }
+
+  render(): void { api.grok_GridCellWidget_Render(this.dart); }
+}
+
 export type GridColumnTooltipType = 'Default' | 'None' | 'Form' | 'Columns';
 
 /** Represents a grid column */
-export class GridColumn {
+export class GridColumn<TData = any> {
   dart: any;
 
   constructor(dart: any) {
@@ -622,7 +678,7 @@ export class GridColumn {
   }
 
   /** @returns {Column} Corresponding table column, or null. */
-  get column(): Column | null {
+  get column(): Column<TData> | null {
     let col = api.grok_GridColumn_Get_Column(this.dart);
     return col === null ? null : new Column(col);
   }
@@ -698,6 +754,11 @@ export class GridColumn {
   /** isTextColorCoded. Whether to apply color to the text or background. */
   get isTextColorCoded(): boolean { return api.grok_GridColumn_Get_isTextColorCoded(this.dart); }
   set isTextColorCoded(x: boolean) { api.grok_GridColumn_Set_isTextColorCoded(this.dart, x); }
+
+  /** A script that returns cell value, using the "gridCell" parameter.
+   * See example: ApiSamples/grid/advanced/dynamic-value-retrieval.js */
+  get onPrepareValueScript(): string { return api.grok_GridColumn_Get_OnPrepareValueScript(this.dart); }
+  set onPrepareValueScript(x: string) { api.grok_GridColumn_Set_OnPrepareValueScript(this.dart, x); }
 
   /** Left border (in pixels in the virtual viewport) */
   get left(): number { return api.grok_GridColumn_Get_Left(this.dart); }
@@ -781,8 +842,14 @@ export class GridColumnList {
 
   /** Adds a new column to the grid (but not to the underlying dataframe). */
   add(options: {gridColumnName?: string, cellType: string, index?: number}): GridColumn {
-    return api.grok_GridColumnList_Add(this.dart, options.cellType, options.gridColumnName);
+    return api.grok_GridColumnList_Add(this.dart, options.cellType, options?.gridColumnName, options?.index);
   }
+
+  /** Removes a grid column at the specified position. */
+  removeAt(index: number) { api.grok_GridColumnList_RemoveAt(this.dart, index); }
+
+  /** Removes all columns. */
+  clear() { api.grok_GridColumnList_Clear(this.dart); }
 }
 
 /** DataFrame-bound viewer that contains {@link Form} */
@@ -878,10 +945,18 @@ export class Grid extends Viewer<IGridSettings> {
   }
 
   /**
+   * Occurs after the grid cell has been rendered. Do `args.preventDefault()` to prevent standard rendering.
    * Sample: {@link https://public.datagrok.ai/js/samples/grid/custom-cell-rendering-indexes}
-   * @returns {Observable<GridCellRenderArgs>} */
+   * See also {@link onCellRendered}. */
   get onCellRender(): Observable<GridCellRenderArgs> {
     return __obs('d4-grid-cell-render', this.dart);
+  }
+
+  /**
+   * Occurs after the grid cell has been rendered. See also {@link onCellRender}.
+   **/
+  get onCellRendered(): Observable<GridCellRenderArgs> {
+    return __obs('d4-grid-cell-rendered', this.dart);
   }
 
   /** @returns {HTMLCanvasElement} */
@@ -1046,7 +1121,7 @@ export class Grid extends Viewer<IGridSettings> {
   get onAfterDrawOverlay(): Observable<EventData> { return __obs('d4-grid-after-draw-overlay', this.dart); }
   get onBeforeDrawContent(): Observable<EventData> { return __obs('d4-grid-before-draw-content', this.dart); }
   get onAfterDrawContent(): Observable<EventData> { return __obs('d4-grid-after-draw-content', this.dart); }
-
+  get onTooltipCreating(): Observable<GridTooltipArgs> { return __obs('d4-grid-show-tooltip', this.dart) };
   get onGridCellLinkClicked(): Observable<EventData<GridCellArgs>> {return __obs('d4-grid-cell-link-clicked-local', this.dart); }
 
   /** Returns currently visible cells */
@@ -1058,11 +1133,17 @@ export class Grid extends Viewer<IGridSettings> {
   autoSize(maxWidth: number, maxHeight: number, minWidth?: number, minHeight?: number, autoSizeOnDataChange?: boolean): void {
     api.grok_Grid_AutoSize(this.dart, maxWidth, maxHeight, minWidth, minHeight, autoSizeOnDataChange);
   }
+
+  /** Renders the content of this grid to the specified canvas and bounds. */
+  render(g: CanvasRenderingContext2D, bounds: Rect) {
+    api.grok_Grid_Render(this.dart, g, bounds.toDart());
+  }
 }
 
 
 export type HorzAlign = 'right' | 'center' | 'left';
 export type VertAlign = 'top' | 'center' | 'bottom';
+export type TextWrap = 'auto' | 'none' | 'new line' | 'words' | 'characters' | 'ellipsis';
 
 
 /** Represents grid cell style. */
@@ -1107,6 +1188,12 @@ export class GridCellStyle {
   /** Vertical text orientation */
   get textVertical(): boolean { return api.grok_GridCellStyle_Get_TextVertical(this.dart); }
   set textVertical(x: boolean) { api.grok_GridCellStyle_Set_TextVertical(this.dart, x); }
+
+  get vertAlign(): VertAlign | null { return api.grok_GridCellStyle_Get_vertAlign(this.dart); }
+  set vertAlign(x: VertAlign | null) { api.grok_GridCellStyle_Set_vertAlign(this.dart, x); }
+
+  get textWrap(): TextWrap | null { return api.grok_GridCellStyle_Get_textWrap(this.dart); }
+  set textWrap(x: TextWrap | null) { api.grok_GridCellStyle_Set_textWrap(this.dart, x); }
 }
 
 
@@ -1133,6 +1220,16 @@ export class GridCellRenderArgs extends EventData {
   }
 }
 
+export class GridTooltipArgs extends EventData {
+  constructor(dart: any) {
+    super(dart);
+  }
+  preventDefault(): void {
+    api.grok_EventData_PreventDefault(this.dart);
+  }
+
+}
+
 
 export class CanvasRenderer {
   get defaultWidth(): number | null {
@@ -1153,20 +1250,20 @@ export class CanvasRenderer {
 }
 
 
-export class GridCellRenderer extends CanvasRenderer {
+export class GridCellRenderer<TData = any> extends CanvasRenderer {
   clip: boolean = true;
 
   get name(): string {
-    throw 'Not implemented';
+    throw '"name" property not implemented';
   }
 
   get cellType(): string {
-    throw 'Not implemented';
+    throw '"cellType" property not implemented';
   }
 
-  renderSettings(gridColumn: GridColumn): Element | null { return null; }
+  renderSettings(gridColumn: GridColumn<TData>): Element | null { return null; }
 
-  renderInternal(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: GridCell, cellStyle: GridCellStyle): void {
+  renderInternal(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: GridCell<TData>, cellStyle: GridCellStyle): void {
     try {
       if (this.clip) {
         g.save()
@@ -1189,18 +1286,20 @@ export class GridCellRenderer extends CanvasRenderer {
     return api.grok_GridCellRenderer_ByName(rendererName);
   }
 
-  onKeyDown(gridCell: GridCell, e: KeyboardEvent): void {}
-  onKeyPress(gridCell: GridCell, e: KeyboardEvent): void {}
+  hasContextValue(gridCell: GridCell<TData>): boolean { return false; }
+  async getContextValue(gridCell: GridCell<TData>): Promise<any> { return null; }
 
-  onMouseEnter(gridCell: GridCell, e: MouseEvent): void {}
-  onMouseLeave(gridCell: GridCell, e: MouseEvent): void {}
-  onMouseDown(gridCell: GridCell, e: MouseEvent): void {}
-  onMouseUp(gridCell: GridCell, e: MouseEvent): void {}
-  onMouseMove(gridCell: GridCell, e: MouseEvent): void {}
-  onClick(gridCell: GridCell, e: MouseEvent): void {}
-  onDoubleClick(gridCell: GridCell, e: MouseEvent): void {}
+  onKeyDown(gridCell: GridCell<TData>, e: KeyboardEvent): void { }
+  onKeyPress(gridCell: GridCell<TData>, e: KeyboardEvent): void { }
+
+  onMouseEnter(gridCell: GridCell<TData>, e: MouseEvent): void { }
+  onMouseLeave(gridCell: GridCell<TData>, e: MouseEvent): void { }
+  onMouseDown(gridCell: GridCell<TData>, e: MouseEvent): void { }
+  onMouseUp(gridCell: GridCell<TData>, e: MouseEvent): void { }
+  onMouseMove(gridCell: GridCell<TData>, e: MouseEvent): void { }
+  onClick(gridCell: GridCell<TData>, e: MouseEvent): void { }
+  onDoubleClick(gridCell: GridCell<TData>, e: MouseEvent): void { }
 }
-
 
 /** Proxy class for the Dart-based grid cell renderers. */
 export class GridCellRendererProxy extends GridCellRenderer {
@@ -1276,4 +1375,136 @@ export class SemanticValue<T = any> {
 
   get viewer(): Viewer { return api.grok_SemanticValue_Get_Viewer(this.dart); }
   set viewer(x: Viewer) { api.grok_SemanticValue_Set_Viewer(this.dart, toDart(x)); }
+}
+
+
+/** Proxy class for the Dart-based column grid. */
+export class ColumnGrid extends Widget {
+  constructor(public readonly dart: any) {
+    super(api.grok_Widget_Get_Root(dart));
+  }
+
+  /** Creates a new grid. */
+  static create(options?: {
+    filter: (c: Column) => boolean;
+    isColGrayedOut: (input: any) => any;
+    gridOptions: { [key: string]: any };
+    showMenuIcon: boolean;
+  }): ColumnGrid {
+    return new ColumnGrid(api.grok_ColumnGrid_Create(options?.filter, options?.isColGrayedOut, options?.gridOptions, options?.showMenuIcon));
+  }
+
+  /** Creates a new column manager grid. */
+  static columnManager(dfSource?: DataFrame, filter?: (c: Column) => boolean, gridOptions?: { [key: string]: any }): ColumnGrid {
+    return new ColumnGrid(api.grok_ColumnGrid_Create_ColumnManager(dfSource?.dart, filter, gridOptions));
+  }
+
+  /** Creates a new column reorder manager grid. */
+  static columnReorderManagerDialog(df: DataFrame, title: string, options?: {
+    dfSource?: Grid;
+    filter?: (c: Column) => boolean;
+    order?: Column[];
+    checks?: (colName: string) => boolean;
+    addAdditionalChecks?: (colName: string, additionalColumnName?: string) => boolean;
+    additionalChecksName?: string;
+    applyOrder?: (cg: ColumnGrid) => void;
+    applyVisibility?: (cg: ColumnGrid) => void;
+    gridOptions?: { [key: string]: any };
+    addServiceColumns: boolean;
+  }) : ColumnGrid {
+    return new ColumnGrid(api.grok_ColumnGrid_Create_ColumnReorderManagerDialog(df.dart, title,
+      toJs(options?.dfSource), options?.filter, options?.order?.map(c => c.dart), options?.checks, options?.addAdditionalChecks,
+      options?.additionalChecksName ?? null, options?.applyOrder ? (cg: any) => options?.applyOrder?.(toJs(cg)) : null,
+      options?.applyVisibility ? (cg: any) => options?.applyVisibility?.(toJs(cg)) : null,
+      options?.gridOptions, options?.addServiceColumns));
+  }
+
+  /** Creates a new popup grid. */
+  static popup(dfSource: DataFrame, options?: {
+    filter?: (c: Column) => boolean;
+    addEmpty?: boolean;
+    widgetMode?: boolean;
+    grayedOutColsMode?: boolean;
+    serviceColsTagName?: string;
+  }): ColumnGrid {
+    return new ColumnGrid(api.grok_ColumnGrid_Create_Popup(dfSource.dart, options?.filter, options?.addEmpty ?? false,
+      options?.widgetMode ?? false, options?.grayedOutColsMode ?? false, options?.serviceColsTagName ?? null));
+  }
+
+  /** Creates a new column selector grid. */
+  static columnSelector(dfSource: DataFrame, options?: {
+    checkAll?: boolean;
+    filter?: (c: Column) => boolean;
+    isChecked?: (c: Column) => boolean;
+  }): ColumnGrid {
+    return new ColumnGrid(api.grok_ColumnGrid_Create_ColumnSelector(dfSource.dart, options?.checkAll ?? false, options?.filter, options?.isChecked));
+  }
+
+  get dfColumns(): DataFrame { return toJs(api.grok_ColumnGrid_Get_DfColumns(this.dart)); }
+  get dfSource(): DataFrame { return toJs(api.grok_ColumnGrid_Get_DfSource(this.dart)); }
+  get gridSource(): Grid { return toJs(api.grok_ColumnGrid_Get_GridSource(this.dart)); }
+  get grid(): Grid { return toJs(api.grok_ColumnGrid_Get_Grid(this.dart)); }
+  get nameCol(): Column { return toJs(api.grok_ColumnGrid_Get_NameCol(this.dart)); }
+  get typeNameCol(): Column { return toJs(api.grok_ColumnGrid_Get_TypeNameCol(this.dart)); }
+
+  get filter(): (c: Column) => boolean { return api.grok_ColumnGrid_Get_Filter(this.dart); }
+  set filter(f: (c: Column) => boolean) { api.grok_ColumnGrid_Set_Filter(this.dart, f); }
+
+  addCheckedSelect(): void { api.grok_ColumnGrid_AddCheckedSelect(this.dart); }
+  filterColumns(): void { api.grok_ColumnGrid_FilterColumns(this.dart); }
+  shouldShowColumnTooltip(col: Column): boolean { return api.grok_ColumnGrid_ShouldShowColumnTooltip(this.dart, col.dart); }
+  passesFilter(col: Column, columnName?: string): boolean { return api.grok_ColumnGrid_PassesFilter(this.dart, col.dart, columnName ?? null); }
+  refreshStats(): void { api.grok_ColumnGrid_RefreshStats(this.dart); }
+
+  get showSearch(): boolean { return api.grok_ColumnGrid_Get_ShowSearch(this.dart); }
+  set showSearch(x: boolean) { api.grok_ColumnGrid_Set_ShowSearch(this.dart, x); }
+
+  close(): void { api.grok_ColumnGrid_Close(this.dart); }
+  detach(): void { api.grok_ColumnGrid_Detach(this.dart); }
+  addColumnSelectionControls(): void { api.grok_ColumnGrid_AddColumnSelectionControls(this.dart); }
+
+  initGrayedOutColumnStyle(): void { api.grok_ColumnGrid_InitGrayedOutColumnStyle(this.dart); }
+  initTypeColoring(): void { api.grok_ColumnGrid_InitTypeColoring(this.dart); }
+  initColumnTooltips(): void { api.grok_ColumnGrid_InitColumnTooltips(this.dart); }
+  initColumnDragDrop(): void { api.grok_ColumnGrid_InitColumnDragDrop(this.dart); }
+  init(dfSource: DataFrame, gridSource?: Grid, filter?: (c: Column) => boolean,
+    syncSelections?: boolean, order?: Column[], addServiceColumns?: boolean): void {
+    api.grok_ColumnGrid_Init(this.dart, dfSource.dart, gridSource?.dart, filter,
+      syncSelections ?? true, order?.map((c) => c.dart), addServiceColumns ?? false);
+  }
+  initColumnSelector(dfSource: DataFrame, checkAll?: boolean, filter?: (c: Column) => boolean): void {
+    api.grok_ColumnGrid_InitColumnSelector(this.dart, dfSource.dart ?? false, checkAll, filter);
+  }
+  initContextMenu(): void { api.grok_ColumnGrid_InitContextMenu(this.dart); }
+  initColumnManager(dfSource: DataFrame, filter?: (c: Column) => boolean) : void {
+    api.grok_ColumnGrid_InitColumnManager(this.dart, dfSource.dart, filter);
+  }
+
+  getRow(col: Column): number { return api.grok_ColumnGrid_GetRow(this.dart, col.dart); }
+  getCol(row: number): Column { return toJs(api.grok_ColumnGrid_GetCol(this.dart, row)); }
+  get currentColumn(): Column { return toJs(api.grok_ColumnGrid_Get_CurrentColumn(this.dart)); }
+  get mouseOverColumn(): Column { return toJs(api.grok_ColumnGrid_Get_MouseOverColumn(this.dart)); }
+
+  addChecks(isChecked: (colName: string) => boolean, addAdditionalChecks: (colName: string) => boolean, additionalChecksName: string): void {
+    api.grok_ColumnGrid_AddChecks(this.dart, isChecked, addAdditionalChecks, additionalChecksName);
+  }
+  checkAll(isChecked?: boolean): void { api.grok_ColumnGrid_CheckAll(this.dart, isChecked ?? false); }
+
+  getCheckedIndexes(): number[] { return api.grok_ColumnGrid_GetCheckedIndexes(this.dart); }
+  getCheckedColumns(): Column[] { return api.grok_ColumnGrid_GetCheckedColumns(this.dart).map(toJs); }
+  getCheckedColumnNames(): string[] { return api.grok_ColumnGrid_GetCheckedColumnNames(this.dart); }
+
+  getAdditionalCheckedIndexes(): number[] { return api.grok_ColumnGrid_GetAdditionalCheckedIndexes(this.dart); }
+  getAdditionalCheckedColumns(): Column[] { return api.grok_ColumnGrid_GetAdditionalCheckedColumns(this.dart).map(toJs); }
+  getAdditionalCheckedColumnNames(): string[] { return api.grok_ColumnGrid_GetAdditionalCheckedColumnNames(this.dart); }
+
+  getSelectedColumns(): Column[] { return api.grok_ColumnGrid_GetSelectedColumns(this.dart).map(toJs); }
+  setSelectedColumns(columnIds: any[]): void { api.grok_ColumnGrid_SetSelectedColumns(this.dart, columnIds); }
+
+  indexes(rows: string): number[] { return api.grok_ColumnGrid_Indexes(this.dart, rows); }
+  addColumnStats(aggType: string): Column { return toJs(api.grok_ColumnGrid_AddColumnStats(this.dart, aggType)); }
+  addColumnProperty(p: Property): Column { return toJs(api.grok_ColumnGrid_AddColumnProperty(this.dart, p.dart)); }
+  columnsToDataFrame(columnsOrder?: Column[], addServiceColumns?: boolean, serviceColsTagName?: string): void {
+    api.grok_ColumnGrid_ColumnsToDataFrame(this.dart, columnsOrder?.map(c => c.dart), addServiceColumns ?? false, serviceColsTagName ?? null);
+  }
 }

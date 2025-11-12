@@ -31,27 +31,27 @@ category('PepSeA', () => {
 
   test('Basic alignment', async () => {
     const df = DG.DataFrame.fromCsv(testCsv);
-    const resMsaCol = await runPepsea(df.getCol('HELM'), 'msa(HELM)');
+    const resMsaCol = await runPepsea(df, df.getCol('HELM'), 'msa(HELM)');
     const tgtMsaCol = df.getCol('MSA');
     for (let i = 0; i < resMsaCol!.length; ++i)
       expect(resMsaCol!.get(i) == tgtMsaCol.get(i), true);
-  }, {timeout: 60000 /* docker */, stressTest: true, skipReason: 'Fails in docker'});
+  }, {timeout: 60000 /* docker */, skipReason: 'Fails in docker'});
 
   test('stderr', async () => {
     const logger = new TestLogger();
     const df = DG.DataFrame.fromCsv(pepseaStderrCsv);
-    const resMsaCol = await runPepsea(df.getCol('HELM'), 'msa(HELM)',
+    const resMsaCol = await runPepsea(df, df.getCol('HELM'), 'msa(HELM)',
       undefined, undefined, undefined, undefined, logger);
     const tgtMsaCol = df.getCol('MSA');
     expectArray(resMsaCol!.toList(), tgtMsaCol.toList());
     expect(logger.warningList[0].message, pepseaStderrWarningList);
-  }, {timeout: 60000 /* docker */, stressTest: true, skipReason: 'Fails in docker'});
+  }, {timeout: 60000 /* docker */, skipReason: 'Fails in docker'});
 
   test('error', async () => {
     const logger = new TestLogger();
     try {
       const df = DG.DataFrame.fromCsv(pepseaErrorCsv);
-      const _resMsaCol = await runPepsea(df.getCol('HELM'), 'msa(HELM)',
+      const _resMsaCol = await runPepsea(df, df.getCol('HELM'), 'msa(HELM)',
         undefined, undefined, undefined, undefined, logger);
     } catch (err: any) {
       const [errMsg, errStack] = errInfo(err);

@@ -1,14 +1,12 @@
-Jupyter Notebook is an open-source web application that allows you to create and share documents that contain live code,
-equations, visualizations and narrative text.
 
-1. Open linked datasets
-2. Right-click the table view title and select **Open in Notebook** from the context menu
-3. On the top toolbar, click the **HTML** button.
-4. On the top toolbar, click the **Download** button and download the created notebook in all suggested formats.
+1. Open **demog** (click the star icon in **TestTrack**)
+2. Right-click the table header and select **Table** > **Open in Notebook** (or use **Context Panel** > **Actions** > **Open in Notebook**)
+3. In the notebook toolbar, click **HTML**
+4. Click **Download** and save the notebook in all offered formats
+5. Drag and drop any `.ipynb` file and verify it opens correctly
 
 ---
 {
   "order": 1,
-  "datasets": ["System:DemoFiles/demog.csv"
-  ]
+  "datasets": ["System:DemoFiles/demog.csv"]
 }

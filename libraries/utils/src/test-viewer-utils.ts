@@ -1,25 +1,26 @@
-import * as grok from 'datagrok-api/grok';
-import * as DG from 'datagrok-api/dg';
+import type * as _grok from 'datagrok-api/grok.js';
+import type * as _DG from 'datagrok-api/dg.js';
+declare let grok: typeof _grok, DG: typeof _DG;
 import { delay, expect, testEvent, testEventAsync } from "./test";
 import { Observable } from 'rxjs';
 
-export async function createViewer(tv: DG.TableView, v: string, packageName?: string): Promise<DG.Viewer> {
-    let res: DG.Viewer;
+export async function createViewer(tv: _DG.TableView, v: string, packageName?: string): Promise<_DG.Viewer> {
+    let res: _DG.Viewer;
     if (packageName) {
-        res = await tv.dataFrame.plot.fromType(v) as DG.Viewer;
+        res = await tv.dataFrame.plot.fromType(v) as _DG.Viewer;
         tv.dockManager.dock(res);
     } else
         res = tv.addViewer(v);
     return res;
-};
+}
 
-export async function testViewerInternal(tv: DG.TableView, viewerName: string, packageName: string,
+export async function testViewerInternal(tv: _DG.TableView, viewerName: string, packageName: string,
     event: Observable<any>, actions?: (args: any, withDelay: boolean) => Promise<any>,
-    awaitViewer?: (viewer: DG.Viewer) => Promise<void>, layout?: DG.ViewLayout,
+    awaitViewer?: (viewer: _DG.Viewer) => Promise<void>, layout?: _DG.ViewLayout,
     actionArgs?: any, actionsWithDelay = true): Promise<any> {
     let actionsRes: any = null;
     await testEventAsync(event, async (e: any) => {
-        let viewer: DG.Viewer | null = null;
+        let viewer: _DG.Viewer | null = null;
         for (const v1 of tv!.viewers) {
             if (v1.type === viewerName)
                 viewer = v1;
@@ -53,7 +54,7 @@ export async function selectFilterChangeCurrent(args: any, withDelay = true): Pr
     Array.from(currentDf.row(0).cells).forEach((c: any) => c.value = null);
     //selection
     const num = currentDf.rowCount < 20 ? Math.floor(currentDf.rowCount / 2) : 10;
-    currentDf.rows.select((row: DG.Row) => row.idx >= 0 && row.idx < num);
+    currentDf.rows.select((row: _DG.Row) => row.idx >= 0 && row.idx < num);
     if (withDelay)
         await delay(50);
     //filter
@@ -74,12 +75,12 @@ export async function selectFilterChangeCurrent(args: any, withDelay = true): Pr
 
 
 export async function filterAsync(args: any, withDelay = true): Promise<void> {
-    const currentDf: DG.DataFrame = args.tv.dataFrame;
+    const currentDf: _DG.DataFrame = args.tv.dataFrame;
     setTimeout(() => currentDf.filter.set(0, !currentDf.filter.get(0)), 0);
 }
 
 
-export async function changeOptionsSaveLayout(args: any, withDelay = true): Promise<{ layout: DG.ViewLayout, savedProps: any }> {
+export async function changeOptionsSaveLayout(args: any, withDelay = true): Promise<{ layout: _DG.ViewLayout, savedProps: any }> {
     //get current options and properties
     let optns: { [p: string]: any };
     try {
@@ -88,7 +89,7 @@ export async function changeOptionsSaveLayout(args: any, withDelay = true): Prom
         //@ts-ignore
         throw new Error(`Viewer's .getOptions() error.`, { cause: err });
     }
-    let props: DG.Property[];
+    let props: _DG.Property[];
     try {
         props = args.viewer!.getProperties();
     } catch (err: any) {
@@ -98,8 +99,8 @@ export async function changeOptionsSaveLayout(args: any, withDelay = true): Prom
     //change options and properties
     const newProps: Record<string, string | boolean> = {};
     Object.keys(optns).filter((k) => typeof optns[k] === 'boolean').forEach((k) => newProps[k] = !optns[k]);
-    props.filter((p: DG.Property) => p.choices !== null)
-        .forEach((p: DG.Property) => newProps[p.name] = p.choices.find((c: any) => c !== optns[p.name])!);
+    props.filter((p: _DG.Property) => p.choices !== null)
+        .forEach((p: _DG.Property) => newProps[p.name] = p.choices.find((c: any) => c !== optns[p.name])!);
     //set new options
     args.viewer!.setOptions(newProps);
     await delay(300);

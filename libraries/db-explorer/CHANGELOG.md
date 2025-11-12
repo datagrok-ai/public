@@ -1,5 +1,13 @@
 # db-explorer changelog
 
+## 1.3.0 (2025-10-16)
+
+* Lazy loading of schemas and references
+
+## 1.1.4 (2025-04-10)
+
+* Ability to specify nqName and provider name in connection details
+
 ## 1.1.3 (2024-10-03)
 
 Add detection of variable names in search integrated queries

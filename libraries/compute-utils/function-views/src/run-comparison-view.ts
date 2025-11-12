@@ -10,8 +10,6 @@ import {CARD_VIEW_TYPE, FUNCTIONS_VIEW_TYPE,
 import {getDfFromRuns} from './shared/utils';
 import {RUN_NAME_COL_LABEL} from '../../shared-utils/consts';
 
-const api: any = window;
-
 /**
  * View designed to compare several FuncCalls.
  * See {@link fromComparedRuns} for limitations and creation.
@@ -61,7 +59,7 @@ export class RunComparisonView extends DG.TableView {
       parentCall?: DG.FuncCall,
     } = {},
   ) {
-    super(api.grok_TableView(dataFrame.dart, false));
+    super((window as any).grok_TableView(dataFrame.dart, false));
 
     if (options.parentView) this.parentView = options.parentView;
     this.parentCall = options.parentCall || grok.functions.getCurrentCall();
@@ -125,7 +123,7 @@ export class RunComparisonView extends DG.TableView {
 
       if (gc.tableColumn!.name === RUN_NAME_COL_LABEL) {
         gc.customText = '';
-        const rows = gc.cell.value.split(' - ') as string[];
+        const rows = String(gc.cell.value).split(' - ');
         const elems = (rows.length > 1) ? [rows[0], ui.element('br'), rows[1]]: rows;
         gc.element = ui.div(elems, {style: {
           writingMode: 'vertical-rl',

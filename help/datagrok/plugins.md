@@ -5,117 +5,117 @@ sidebar_position: 1.2
 
 ## General
 
-|Area <div style={{ width:130 }}></div>  |Plugin <div style={{ width:140 }}></div>|  Tag <div style={{ width:115 }}></div> |Description  | Release|
+|Plugin <div style={{ width:140 }}></div> |Area <div style={{ width:130 }}></div>|  Tag <div style={{ width:110 }}></div> |Description <div style={{ width:315 }}></div> | Release|
 |------|-------|------------|---------------|-------|
-| Platform |[PowerPack](https://github.com/datagrok-ai/public/tree/master/packages/PowerPack)| Recommended| Commonly used platform enhancements| Stable|
-| Resources | [Tutorials](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials)|Recommended| App for learning Datagrok with interactive tutorials, Demo app| Stable |
+|[Power Pack](https://github.com/datagrok-ai/public/tree/master/packages/PowerPack)| Platform | Recommended| Commonly used platform enhancements| Stable|
+| [Tutorials](https://github.com/datagrok-ai/public/tree/master/packages/Tutorials)| Resources |Recommended| App for learning Datagrok with interactive tutorials, Demo app| Stable |
 
 ## Access
 
-|Area <div style={{ width:130 }}></div> |Plugin<div style={{ width:140 }}></div>|  Tag <div style={{ width:115 }}></div> |Description <div style={{ width:270 }}></div> | Release|
+|Plugin <div style={{ width:140 }}></div> |Area <div style={{ width:130 }}></div>|  Tag <div style={{ width:110 }}></div> |Description <div style={{ width:315 }}></div> | Release|
 |------|-------|------------|----------------------|---|
-| Data format |[SQLite](https://github.com/datagrok-ai/public/tree/master/packages/SQLite)|Optional|Support for SQLite |Stable|
-| Data format |[Arrow](https://github.com/datagrok-ai/public/tree/master/packages/Arrow)|Optional |Support for parquet and feather |Stable|
-| Data format |[FileEditors](https://github.com/datagrok-ai/public/tree/master/packages/FileEditors)|Optional |Support for PDF, DOCX |Stable|
-| Misc |[Alation](https://github.com/datagrok-ai/public/tree/master/packages/Alation)|Optional| Integration with [Alation](https://www.alation.com/) (commercial 3rd party license)|Stable|
+|[SQLite](https://github.com/datagrok-ai/public/tree/master/packages/SQLite)| Data format |Optional|Support for SQLite |Stable|
+|[Arrow](https://github.com/datagrok-ai/public/tree/master/packages/Arrow)| Data format |Optional |Support for parquet and feather |Stable|
+|[File Editors](https://github.com/datagrok-ai/public/tree/master/packages/FileEditors)| Data format |Optional |Support for PDF, DOCX |Stable|
+|[Alation](https://github.com/datagrok-ai/public/tree/master/packages/Alation)| Misc |Optional| Integration with [Alation](https://www.alation.com/) (commercial 3rd party license)|Stable|
+|[Jira Connect](https://github.com/datagrok-ai/public/tree/master/packages/JiraConnect)| Jira |Optional| Integration with Jira |Stable|
 
 ## Govern
 
-|Area <div style={{ width:130 }}></div> |Plugin<div style={{ width:140 }}></div>|  Tag <div style={{ width:90 }}></div> |Description  | Release|
+|Plugin <div style={{ width:140 }}></div> |Area <div style={{ width:130 }}></div>|  Tag <div style={{ width:110 }}></div> |Description <div style={{ width:315 }}></div> | Release|
 |------|-------|---------------|-------------------|---|
-| Usage analysis | [UsageAnalysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis) | Optional|App that monitors platform and plugins usage, event log ([wiki](../govern/audit/usage-analysis.md)) | Beta |
+| [Usage Analysis](https://github.com/datagrok-ai/public/tree/master/packages/UsageAnalysis) | Usage analysis | Optional|App that monitors platform and plugins usage, event log ([wiki](../govern/audit/usage-analysis.md)) | Beta |
 
 
 ## Visualize
 
-|Area <div style={{ width:130 }}></div>  |Plugin<div style={{ width:140 }}></div>|  Tag <div style={{ width:110 }}></div> |Description | Release  |
+|Plugin <div style={{ width:140 }}></div> |Area <div style={{ width:130 }}></div>|  Tag <div style={{ width:110 }}></div> |Description <div style={{ width:315 }}></div> | Release|
 |------|-------|---------------|-----|--------------|
-|Spreadsheet |[PowerGrid](https://github.com/datagrok-ai/public/tree/master/packages/PowerGrid)| Recommended| [Grid](../visualize/viewers/grid.md) viewer enhancements | Stable|
-|Viewers, misc |[Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts)|Optional| Visualizations based on external libraries ([ECharts](https://echarts.apache.org/en/index.html), [D3.js](https://d3js.org/), [Circos](https://github.com/nicgirault/circosJS), and [three.js](https://threejs.org/))| Stable |
-| Curve fitting |[Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves)| Fit-for-purpose| Support for fitted curves (like dose-response curves), including in-grid rendering, storing charts in cells, interactivity, and automatic fitting | Beta |
-| Trees |[Dendrogram](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram)|Fit-for-purpose| [Dendrogram](../visualize/viewers/dendrogram.md) viewer | Stable |
-| Trees |[PhyloTreeViewer](https://github.com/datagrok-ai/public/tree/master/packages/PhyloTreeViewer)| Fit-for-purpose | [PhylocanvasGL](../visualize/viewers/img/phylocanvas-gl-viewer.gif) viewer|  Stable |
-|GIS|[GIS](https://github.com/datagrok-ai/public/tree/master/packages/GIS)|Fit-for-purpose|GIS (geographic information system) functionality, like maps and geocoding| Stable |
-<!--
-|Viewers |[Forms]||???|Beta|
-|Misc |[ChaRPy]|Fit-for-purpose|Adds two commands, "To Python script" and "To R script," to Datagrok viewers. These commands generate Python or R code for the selected viewer and execute the script to show the corresponding plot.|Beta|
--->
+|[Power Grid](https://github.com/datagrok-ai/public/tree/master/packages/PowerGrid)| Spreadsheet | Recommended| [Grid](../visualize/viewers/grid.md) viewer enhancements | Stable|
+|[Charts](https://github.com/datagrok-ai/public/tree/master/packages/Charts)| Viewers, misc |Optional| Visualizations based on external libraries ([ECharts](https://echarts.apache.org/en/index.html), [D3.js](https://d3js.org/), [Circos](https://github.com/nicgirault/circosJS), and [three.js](https://threejs.org/))| Stable |
+|[Dendrogram](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram)| Trees |Fit-for-purpose| [Dendrogram](../visualize/viewers/dendrogram.md) viewer | Stable |
+|[PhyloTree Viewer](https://github.com/datagrok-ai/public/tree/master/packages/PhyloTreeViewer)| Trees | Fit-for-purpose | [PhylocanvasGL](../visualize/viewers/img/phylocanvas-gl-viewer.gif) viewer|  Stable |
+|[GIS](https://github.com/datagrok-ai/public/tree/master/packages/GIS)| GIS |Fit-for-purpose|GIS (geographic information system) functionality, like maps and geocoding| Stable |
+|[Excalidraw](https://github.com/datagrok-ai/public/tree/master/packages/Excalidraw)| Diagrams |Fit-for-purpose| Enables working with diagrams and drawings in the .excalidraw format| Stable |
 
 ## Compute
 
-|Area <div style={{ width:125 }}></div> |Plugin| Tag <div style={{ width:110 }}></div> |Description  | Release|
+|Plugin <div style={{ width:140 }}></div> |Area <div style={{ width:130 }}></div>|  Tag <div style={{ width:110 }}></div> |Description <div style={{ width:315 }}></div> | Release|
 |------|-------|------------|----------------------|---|
-|General |[Compute](https://github.com/datagrok-ai/public/tree/master/packages/Compute)|Required|Provides analytical and UI blocks for scientific computing|Stable|
-|ODE Solver |[DiffStudio](https://github.com/datagrok-ai/public/tree/master/packages/ODEs)|Fit-for-purpose|An app for solving ordinary differential equations (ODE)|Stable|
+|[Compute](https://github.com/datagrok-ai/public/tree/master/packages/Compute)| General |Required|Provides analytical and UI blocks for scientific computing|Stable|
+|[Diff Studio](https://github.com/datagrok-ai/public/tree/master/packages/DiffStudio)| ODE Solver |Fit-for-purpose|An app for solving ordinary differential equations (ODE)|Stable|
 
-<!----
+## Scripting
 
-|Modeling |[Bioreactors](https://github.com/datagrok-ai/public/tree/master/packages/Bioreactors)|Fit-for-purpose|Simulation of the Controlled Fab-Arm Exchange mechanism|Alpha|
-|Modeling |SimPKPD|Fit-for-purpose|App for PKPD simulations|Labs|
-
----->
+|Plugin <div style={{ width:140 }}></div> |Area <div style={{ width:130 }}></div>|  Tag <div style={{ width:110 }}></div> |Description <div style={{ width:315 }}></div> | Release|
+|------|-------|------------|----------------------|---|
+|[Pyodide](https://github.com/datagrok-ai/public/tree/master/packages/Pyodide)| Scripting |Optional|Enables running Python scripts in the browser|Stable|
 
 ## Learn
 
-|Area <div style={{ width:125 }}></div> |Plugin <div style={{ width:140 }}></div>| Tag <div style={{ width:110 }}></div> |Description  | Release|
+|Plugin <div style={{ width:140 }}></div> |Area <div style={{ width:130 }}></div>|  Tag <div style={{ width:110 }}></div> |Description <div style={{ width:315 }}></div> | Release|
 |------|-------|------------|----------------------|---|
-|ML Toolkit |[EDA](https://github.com/datagrok-ai/public/tree/master/packages/EDA)|Required|ML toolkit: dimensionality reduction, multivariate analysis, supervised ML, ANOVA, etc.|Stable|
-|Jupyter Notebooks |[Notebooks](https://github.com/datagrok-ai/public/tree/master/packages/Notebooks)|Optional|Integration with [JupyterLab Notebooks](https://jupyter.org/)|Stable|
-<!--
-|?? |[TensorFlow.js]|Optional|Support for training and applying TensorFlow.js-based predictive models|Labs|
--->
+|[EDA](https://github.com/datagrok-ai/public/tree/master/packages/EDA)| ML Toolkit |Required|ML toolkit: dimensionality reduction, multivariate analysis, supervised ML, ANOVA, etc.|Stable|
+|[Notebooks](https://github.com/datagrok-ai/public/tree/master/packages/Notebooks)| Jupyter Notebooks |Optional|Integration with [JupyterLab Notebooks](https://jupyter.org/)|Stable|
+|[MLflow](https://github.com/datagrok-ai/public/tree/master/packages/MLFlow)| MLflow models | Fit-for-purpose| Integrates MLflow models into the Datagrok platform|Beta|
 
 ## Develop
 
-|Area <div style={{ width:125 }}></div> |Plugin <div style={{ width:140 }}></div>| Tag <div style={{ width:110 }}></div> |Description  | Release|
+|Plugin <div style={{ width:140 }}></div> |Area <div style={{ width:130 }}></div>|  Tag <div style={{ width:110 }}></div> |Description <div style={{ width:315 }}></div> | Release|
 |------|-------|------------|----------------------|---|
-|DevTools |[DevTools](https://github.com/datagrok-ai/public/tree/master/packages/DevTools)|Recommended|Developer tools (TestManager, DevPanel, etc.)|Stable|
-|Resources |[ApiSamples](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples)|Recommended|Examples of Grok API|Stable|
+|[Dev Tools](https://github.com/datagrok-ai/public/tree/master/packages/DevTools)| DevTools |Recommended|Developer tools (TestManager, DevPanel, etc.)|Stable|
+|[API Samples](https://github.com/datagrok-ai/public/tree/master/packages/ApiSamples)| Resources |Recommended|Examples of Grok API|Stable|
 
 ## Solutions
 
 ### Chem
 
-|Area <div style={{ width:125 }}></div> |Plugin| Tag <div style={{ width:110 }}></div> |Description  | Release|
+|Plugin <div style={{ width:140 }}></div> |Area <div style={{ width:130 }}></div>|  Tag <div style={{ width:110 }}></div> |Description <div style={{ width:315 }}></div> | Release|
 |------|-------|-------------------|---------------|---|
-| General |[Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem) | Required| Cheminformatics support ([wiki](solutions/domains/chem/chem.md)).<br/>Comes with OpenChemLib sketcher | Stable|
-| Sketchers |[Marvin](https://github.com/datagrok-ai/labs/tree/master/packages/Marvin) | Optional| Integration with Marvin JS (commercial 3rd party license) | Stable|
-| Sketchers |[KetcherSketcher](https://github.com/datagrok-ai/public/tree/master/packages/KetcherSketcher) | Optional| Integration with [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) (Apache license, version 2.0) | Stable|
-| Sketchers |[ChemDrawSketcher](https://github.com/datagrok-ai/labs/tree/master/packages/ChemDraw) | Optional| Integration with ChemDraw (commercial 3rd party license) | Stable|
-| Database search |[Chembl](https://github.com/datagrok-ai/public/tree/master/packages/Chembl) | Recommended| ChEMBL database for on-premise deployment | Stable|
-| Database search |[DrugBank](https://github.com/datagrok-ai/public/tree/master/packages/DrugBank)   | Optional| Information on 11,300 drugs from [DrugBank](https://go.drugbank.com/)| Stable|
-| Database search |[ChemblAPI](https://github.com/datagrok-ai/public/tree/master/packages/ChemblAPI) | Optional| Webservice integration: ChEMBL | Stable|
-| Database search |[PubChemApi](https://github.com/datagrok-ai/public/tree/master/packages/PubChemApi)   | Optional| Webservice integration: [PubChem](https://pubchem.ncbi.nlm.nih.gov/) | Stable|
-| Database search |[Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace) | Optional| Webservice integration: [Chemspace](https://chem-space.com/)  |  Stable|
-| Virtual screening | [Docking](https://github.com/datagrok-ai/public/tree/master/packages/Docking)| Optional |Let's you batch screen libraries against AutoDock-prepared targets with interactive visualization | Stable |
-| Virtual screening<br/>Hit to lead |[HitTriage](https://github.com/datagrok-ai/public/tree/master/packages/HitTriage)| Fit-for-purpose| Apps for virtual screening (Hit Triage) and hit design (Hit Design) | Beta|
-| Misc |[EnamineStore](https://github.com/datagrok-ai/public/tree/master/packages/EnamineStore) | Optional| Webservice integration: [Enamine](https://enaminestore.com/search), a service for online shopping for chemical building blocks |  Stable|
-
-<!--
-|Misc |[Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace)|Misc|Integration with the Chemspace, a service for online shopping for the chemical building blocks|Alpha|
--->
+|[Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem) | General | Required| Cheminformatics support ([wiki](solutions/domains/chem/chem.md)).<br/>Comes with OpenChemLib sketcher | Stable|
+|[Marvin](https://github.com/datagrok-ai/labs/tree/master/packages/Marvin) | Sketchers | Optional| Integration with Marvin JS (commercial 3rd party license) | Stable|
+|[Ketcher Sketcher](https://github.com/datagrok-ai/public/tree/master/packages/KetcherSketcher) | Sketchers | Optional| Integration with [Ketcher](https://lifescience.opensource.epam.com/ketcher/index.html) (Apache license, version 2.0) | Stable|
+|[Chem Draw Sketcher](https://github.com/datagrok-ai/labs/tree/master/packages/ChemDraw) | Sketchers | Optional| Integration with ChemDraw (commercial 3rd party license) | Stable|
+|[ChEMBL](https://github.com/datagrok-ai/public/tree/master/packages/Chembl) | Database search | Recommended| ChEMBL database for on-premise deployment | Stable|
+|[DrugBank](https://github.com/datagrok-ai/public/tree/master/packages/DrugBank) | Database search | Optional| Information on 11,300 drugs from [DrugBank](https://go.drugbank.com/)| Stable|
+|[ChEMBL API](https://github.com/datagrok-ai/public/tree/master/packages/ChemblAPI) | Database search | Optional| Webservice integration: ChEMBL | Stable|
+|[PubChem](https://github.com/datagrok-ai/public/tree/master/packages/PubChemApi) | Database search | Optional| Webservice integration: [PubChem](https://pubchem.ncbi.nlm.nih.gov/) | Stable|
+|[Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace) | Database search | Optional| Webservice integration: [Chemspace](https://chem-space.com/)  |  Stable|
+|[SureChEMBL](https://github.com/datagrok-ai/public/tree/master/packages/SureChembl)| Database search | Optional| Performs searches through a locally deployed [SureChEMBL](https://www.surechembl.org) database | Beta|
+| [Docking](https://github.com/datagrok-ai/public/tree/master/packages/Docking)| Virtual screening | Optional |Let's you batch screen libraries against AutoDock-prepared targets with interactive visualization | Stable |
+|[Hit Triage](https://github.com/datagrok-ai/public/tree/master/packages/HitTriage)| Virtual screening<br/>Hit to lead | Fit-for-purpose| Apps for virtual screening (Hit Triage) and hit design (Hit Design) | Stable|
+| [Retrosynthesis](https://github.com/datagrok-ai/public/tree/master/packages/Retrosynthesis)| Synthetic planning | Optional |Creates retrosynthesis paths for the selected molecule, built on top of [AiZynthFinder](https://github.com/MolecularAI/aizynthfinder) | Beta |
+| [CDD Vault Link](https://github.com/datagrok-ai/public/tree/master/packages/CddVaultLink)| Registration system integration | Optional |Provides integration with [CDD Vault](https://www.collaborativedrug.com/cdd-informatics-platform) registration system | Beta |
+| [Reinvent4](https://github.com/datagrok-ai/public/tree/master/packages/Reinvent4)| Generative molecular design | Fit-for-purpose |Provides integration with the [Reinvent4](https://github.com/MolecularAI/REINVENT4) molecular design tool | Beta |
+|[NMRium](https://github.com/datagrok-ai/public/tree/master/packages/nmrium)| Visualization |Fit-for-purpose| Visualization of NMR diagram | Stable |
+|[Spectra Viewer](https://github.com/datagrok-ai/chem-spectra-viewer/tree/main)| Visualization |Fit-for-purpose| Preview of JDX format for various types of spectra, including IR, UV, Mass, HPLC, absorption and others | Stable |
 
 ### Bio
 
-|Area  |Plugin|Tag <div style={{ width:110 }}></div> | Description | Release|
+|Plugin <div style={{ width:140 }}></div> |Area <div style={{ width:130 }}></div>|  Tag <div style={{ width:110 }}></div> |Description <div style={{ width:315 }}></div> | Release|
 |------|-------|-----------------|-----------------|---|
-| General |[Bio](https://github.com/datagrok-ai/public/tree/master/packages/Bio) | Required| Bioinformatics support ([wiki](solutions/domains/bio/bio.md))|Stable|
-|Data format|[HELM](https://github.com/datagrok-ai/public/tree/master/packages/HELM)|Recommended |Support for [HELM notation](https://pistoiaalliance.atlassian.net/wiki/spaces/HELM/overview), HELM editor |Stable|
-| Visualization |[BiostructureViewer](https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer) | Recommended| Visualization of biological structures ([wiki](../visualize/viewers/biostructure.md)) |Stable|
-| SAR  | [Peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides)| Fit-for-purpose| App for sequence-activity relationship analysis for peptides ([wiki](solutions/domains/bio/peptides-sar.md))|Beta|
-| Oligonucleotides  |[SequenceTranslator](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator) | Fit-for-purpose| App that converts oligonucleotides into various formats  |Beta|
-| Oligonucleotides  |[OligoBatchCalculator](https://github.com/datagrok-ai/public/tree/master/packages/OligoBatchCalculator) |Fit-for-purpose| App that calculates oligonucleotide properties |Beta|
-| ADMET | [ADMETox](https://github.com/datagrok-ai/public/tree/master/packages/ADMETox) | Optional | App that lets you evaluate ADMET properties | Alpha |
-| Docking | [Docking](https://github.com/datagrok-ai/public/tree/master/packages/Docking) | Optional | Integration with [Autodock GPU](https://catalog.ngc.nvidia.com/orgs/hpc/containers/autodock) that let's you run docking and analyze the results in Datagrok| Alpha |
+|[Bio](https://github.com/datagrok-ai/public/tree/master/packages/Bio) | General | Required| Bioinformatics support ([wiki](solutions/domains/bio/bio.md))|Stable|
+|[HELM](https://github.com/datagrok-ai/public/tree/master/packages/Helm)| Data format |Recommended |Support for [HELM notation](https://pistoiaalliance.atlassian.net/wiki/spaces/HELM/overview), HELM editor |Stable|
+|[Biostructure Viewer](https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer) | Visualization | Recommended| Visualization of biological structures ([wiki](../visualize/viewers/biostructure.md)) |Stable|
+|[Dendrogram](https://github.com/datagrok-ai/public/tree/master/packages/Dendrogram)| Visualization |Fit-for-purpose| [Dendrogram](../visualize/viewers/dendrogram.md) viewer | Stable |
+|[PhyloTree Viewer](https://github.com/datagrok-ai/public/tree/master/packages/PhyloTreeViewer)| Visualization | Fit-for-purpose | [PhylocanvasGL](../visualize/viewers/img/phylocanvas-gl-viewer.gif) viewer|  Stable |
+|[Metabolic Graph](https://github.com/datagrok-ai/public/tree/master/packages/MetabolicGraph)| Visualization |Fit-for-purpose| Metabolic graph visualizations for pathway mapping and analysis |Stable|
+| [Peptides](https://github.com/datagrok-ai/public/tree/master/packages/Peptides)| SAR  | Fit-for-purpose| App for sequence-activity relationship analysis for peptides ([wiki](solutions/domains/bio/peptides-sar.md))|Stable|
+|[Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves)| Curve fitting | Fit-for-purpose| Support for fitted curves (like dose-response curves), including in-grid rendering, storing charts in cells, interactivity, and automatic fitting | Stable |
+|[Sequence Translator](https://github.com/datagrok-ai/public/tree/master/packages/SequenceTranslator) | Oligonucleotides  | Fit-for-purpose| App that converts oligonucleotides into various formats  |Stable|
+|[Oligo Batch Calculator](https://github.com/datagrok-ai/public/tree/master/packages/OligoBatchCalculator) | Oligonucleotides  | Fit-for-purpose| App that calculates oligonucleotide properties |Beta|
+| [Admetica](https://github.com/datagrok-ai/public/tree/master/packages/Admetica) | ADMET | Optional | App that lets you evaluate ADMET properties | Stable |
+| [Docking](https://github.com/datagrok-ai/public/tree/master/packages/Docking) | Docking | Optional | Integration with [Autodock GPU](https://catalog.ngc.nvidia.com/orgs/hpc/containers/autodock) that let's you run docking and analyze the results in Datagrok| Stable |
+| [BioNeMo](https://github.com/datagrok-ai/public/tree/master/packages/BioNeMo) | Protein structure prediction, docking | Fit-for-purpose | Integrates advanced models for protein structure prediction and molecular docking| Beta |
 
 ### NLP
 
-|Area <div style={{ width:110 }}></div> |Plugin <div style={{ width:140 }}></div>|  Tag <div style={{ width:110 }}></div> |Description   | Release|
+|Plugin <div style={{ width:140 }}></div> |Area <div style={{ width:130 }}></div>|  Tag <div style={{ width:110 }}></div> |Description <div style={{ width:315 }}></div> | Release|
 |------|-------|---------------|-------------------|---|
-|NLP |[NLP](https://github.com/datagrok-ai/public/tree/master/packages/NLP)|Optional|Integration with AWS Translate, a neural machine translation service. Extends Datagrok with info panels for text files|Stable|
+|[NLP](https://github.com/datagrok-ai/public/tree/master/packages/NLP)| NLP |Optional|Integration with AWS Translate, a neural machine translation service. Extends Datagrok with info panels for text files|Stable|
 
 ### Digital health, clinical
 
-|Area <div style={{ width:110 }}></div> |Plugin <div style={{ width:140 }}></div>|  Tag <div style={{ width:110 }}></div> |Description   | Release|
+|Plugin <div style={{ width:140 }}></div> |Area <div style={{ width:130 }}></div>|  Tag <div style={{ width:110 }}></div> |Description <div style={{ width:315 }}></div> | Release|
 |------|-------|---------------|-------------------|---|
-| Clinical data | [Clinical Case](https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase) | Fit-for-purpose|App for analyzing clinical data in SDTM format| Demo |
+| [Clinical Case](https://github.com/datagrok-ai/public/tree/master/packages/ClinicalCase) | Clinical data | Fit-for-purpose|App for analyzing clinical data in SDTM format| Demo |

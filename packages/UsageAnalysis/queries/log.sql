@@ -7,13 +7,13 @@
 --meta.cache.invalidateOn: 0 0 * * *
 with recursive selected_groups as (
   select id from groups
-  where id::varchar = any(@groups)
+  where id = any(@groups)
   union
   select gr.child_id as id from selected_groups sg
   join groups_relations gr on sg.id = gr.parent_id
 ),
 res AS (
-select u.friendly_name as user, et.source, e.event_time, coalesce(e.description, et.name) as event_description,
+select u.friendly_name as user, et.source, e.event_time, coalesce(e.description, et.friendly_name) as event_description,
  u.group_id as ugid, e.id
  from events e
 inner join event_types et on e.event_type_id = et.id

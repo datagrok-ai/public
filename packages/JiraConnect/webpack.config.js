@@ -21,6 +21,21 @@ module.exports = {
         test: /\.css$/, 
         use: ['style-loader', 'css-loader'] 
       },
+      {
+        test: /\.(png|svg|jpg|jpeg|gif)$/i,
+        type: 'asset/resource',
+      },
+      // {
+      //   test: /\.png$/,
+      //   use: [
+      //     {
+      //       loader: 'url-loader',
+      //       options: {
+      //         limit: 8192, // Images smaller than 8KB will be embedded as Base64
+      //       },
+      //     },
+      //   ],
+      // },
     ],
   },
   plugins: [

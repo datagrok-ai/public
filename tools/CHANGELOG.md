@@ -1,5 +1,225 @@
 # Datagrok-tools changelog
 
+## 4.14.26 (2025-07-10)
+
+### Features
+
+* Grok Decorators added support for ViewBase type
+* Grok Decorators updated comments and line feeds
+* Grok Api updated comments and line feeds
+* Grok Api minor type update
+
+## 4.14.19 (2025-06-23)
+
+### Features
+
+* Grok Check added header tag validation
+* Grok Api added optional parameters
+
+
+## 4.14.14 (2025-06-16)
+
+### Features
+
+* Grok Link added ability to link packages from root directory
+* Grok Link added repo-only option
+
+## 4.14.10 (2025-06-08)
+
+### Features
+
+* Grok Check checks update
+
+
+## 4.14.9 (2025-06-06)
+
+### Features
+
+* Grok Check added soft mode 
+
+
+## 4.14.8 (2025-06-06)
+
+### Features
+
+* Grok Check added collision checks 
+* Grok Publish runs check before invocation 
+* Grok Api creates api for the scripts in the python directory.
+
+
+## 4.14.6 (2025-05-29)
+
+### Features
+
+* Decorators added ability to set hardcoded values
+* Decorators added ability to get outputs from multiple parameters 
+
+
+## 4.14.2 (2025-05-16)
+
+### Features
+
+* Grok Link added path mode
+* Grok Link added unlink mode
+
+## 4.14.0 (2025-05-12)
+
+### Features
+
+* Added annotation creation by decorators
+
+## 4.13.70 (2025-04-14)
+
+### Features
+
+* Added error output
+
+## 4.13.67 (2025-03-26)
+
+### Features
+
+* Updated grok link:
+*   Excluded diff-grok from linking
+*   Added verbose option
+*   Updated help
+
+## 4.13.66 (2025-03-21)
+
+### Features
+
+* Added js-flag to puppeteer options
+
+## 4.13.65 (2025-03-18)
+
+### Features
+
+* Fixed func-gen-plugin for js packages 
+
+## 4.13.64 (2025-02-27)
+
+### Features
+
+* Test/TestAll opens inspector in debug mode
+
+## 4.13.63 (2025-02-27)
+
+### Features
+
+* Grok Link minor fixes
+
+## 4.13.62 (2025-02-27)
+
+### Features
+
+* No Sandbox mode for puppeteer removed
+* Added debug mode for test and testAll
+
+## 4.13.61 (2025-01-27)
+
+### Features
+
+* No Sandbox mode for puppeteer added
+
+## 4.13.60 (2025-01-09)
+
+### Features
+
+* Updated console output for cases "Tests not found"
+
+## 4.13.59 (2025-01-09)
+
+### Features
+
+* Benchmark testing fix
+* Updated csv output result(it saves benchmark and stress data now)
+
+
+## 4.13.58 (2025-01-09)
+
+### Features
+
+* Test failed results fix
+
+
+## 4.13.57 (2025-01-08)
+
+### Features
+
+* Test failed results fix
+
+## 4.13.56 (2025-01-06)
+
+### Features
+
+* Worker to browser in test all 
+
+## 4.13.55 (2025-01-06)
+
+### Features
+
+* Removed unnecessary outputs in grok check
+
+
+## 4.13.54 (2025-01-06)
+
+### Features
+
+* Grok check regex update
+
+
+## 4.13.53 (2025-01-06)
+
+### Features
+
+* Updated csv output for test all(added workes id)
+
+
+## 4.13.52 (2024-12-30)
+
+### Features
+
+* Refactored workers to browsers
+
+
+## 4.13.51 (2024-12-30)
+
+### Features
+
+* Minor fix for testToWorker order in testsAll
+
+
+## 4.13.50 (2024-12-30)
+
+### Features
+
+* Added testToWorker order for testsAll
+
+## 4.13.49 (2024-12-26)
+
+### Features
+
+* Removed load npm
+* Added ability to set vue as external lib for check
+
+## 4.13.48 (2024-12-25)
+
+### Features
+
+* Added load npm
+
+## 4.13.47 (2024-12-25)
+
+### Features
+
+* Fixed category selection for test
+
+## 4.13.46 (2024-12-23)
+
+### Features
+
+* Improved error handling:
+  - Different exit codes for package errors / grok script errors
+  - Graceful error handling when testing non-existing packages
 
 ## 4.13.45 (2024-12-12)
 

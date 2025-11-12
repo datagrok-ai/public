@@ -1,4 +1,22 @@
-# ClinicalCase changelog
+# Clinical Case changelog
+
+## 1.3.3 (2025-10-20)
+
+* GROK-19038: Clinical case: Invalid argument error for study
+
+## 1.3.2 (2025-04-01)
+
+* Modified application initial view
+
+## 1.3.1 (2025-03-31)
+
+### Bug fixes
+
+* GROK-17804: Apps: Clinical case: Run error: "properties of undefined (reading 'initCompleted')"
+
+## 1.3.0 (2025-03-31)
+
+* Dependency: datgarok-api >= 1.25.0
 
 ## 1.0.8 (2024-07-24)
 

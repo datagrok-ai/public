@@ -8,12 +8,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Properties;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -39,6 +34,7 @@ import serialization.StringColumn;
 import serialization.Types;
 
 public abstract class JdbcDataProvider extends DataProvider {
+    public static Pattern UUID_REGEX = Pattern.compile("^[\\da-fA-F]{8}-[\\da-fA-F]{4}-[\\da-fA-F]{4}-[\\da-fA-F]{4}-[\\da-fA-F]{12}$");
     protected Logger logger = LoggerFactory.getLogger(this.getClass().getName());
     protected QueryMonitor queryMonitor = QueryMonitor.getInstance();
     protected String driverClassName;
@@ -52,7 +48,22 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public Properties getProperties(DataConnection conn) {
-        return defaultConnectionProperties(conn);
+        java.util.Properties props = defaultConnectionProperties(conn);
+        if (conn.parameters.containsKey("jdbcProperties") && this.descriptor.jdbcPropertiesTemplate != null) {
+            Map<String, Object> propMap = (Map<String, Object>) conn.parameters.get("jdbcProperties");
+            if (!propMap.isEmpty()) {
+                for (Property p : this.descriptor.jdbcPropertiesTemplate) {
+                    Object value = propMap.get(p.name);
+                    if (value != null) {
+                        String strValue = value.toString();
+                        if (p.propertyType.equals(Property.INT_TYPE))
+                            strValue = String.valueOf(new Double(strValue).intValue());
+                        props.setProperty(p.name, strValue);
+                    }
+                }
+            }
+        }
+        return props;
     }
 
     public boolean autoInterpolation() {
@@ -138,31 +149,27 @@ public abstract class JdbcDataProvider extends DataProvider {
     }
 
     public ResultSet executeQuery(String query, FuncCall queryRun,
-                                  Connection connection, int timeout, Logger queryLogger, int fetchSize) throws SQLException {
-        boolean supportsTransactions = connection.getMetaData().supportsTransactions();
-        queryLogger.trace("Provider {} transactions", supportsTransactions ? "supports" : "doesn't support");
-        if (supportsTransactions)
-            connection.setAutoCommit(false);
+                                  Connection connection, int timeout, int fetchSize) throws SQLException {
         DataQuery dataQuery = queryRun.func;
         String mainCallId = (String) queryRun.aux.get("mainCallId");
 
         ResultSet resultSet;
         if (dataQuery.inputParamsCount() > 0) {
-            queryLogger.debug(EventType.QUERY_PARSE.getMarker(EventType.Stage.START), "Converting query pattern parameters...");
+            logger.debug(EventType.QUERY_PARSE.getMarker(EventType.Stage.START), "Converting query pattern parameters...");
             query = convertPatternParamsToQueryParams(queryRun, query);
-            queryLogger.debug(EventType.QUERY_PARSE.getMarker(EventType.Stage.END), "Converted query pattern parameters");
+            logger.debug(EventType.QUERY_PARSE.getMarker(EventType.Stage.END), "Converted query pattern parameters");
             if (autoInterpolation()) {
                 StringBuilder queryBuffer = new StringBuilder();
-                queryLogger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.START), "Interpolating automatically SQL query parameters...");
+                logger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.START), "Interpolating automatically SQL query parameters...");
                 List<String> names = getParameterNames(query, dataQuery, queryBuffer);
                 query = queryBuffer.toString();
-                queryLogger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.END), "Interpolated SQL query parameters. Detected {} parameters", names.size());
-                queryLogger.info("Query before execution: {}", query);
+                logger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.END), "Interpolated SQL query parameters. Detected {} parameters", names.size());
+                logger.info("Query before execution: {}", query);
 
-                queryLogger.debug("Creating PreparedStatement...");
+                logger.debug("Creating PreparedStatement...");
                 PreparedStatement statement = connection.prepareStatement(query);
-                queryLogger.debug("Created PreparedStatement");
-                queryLogger.debug(EventType.STATEMENT_PARAMETERS_REPLACEMENT.getMarker(EventType.Stage.START), "Replacing designated query parameters ? with actual values...");
+                logger.debug("Created PreparedStatement");
+                logger.debug(EventType.STATEMENT_PARAMETERS_REPLACEMENT.getMarker(EventType.Stage.START), "Replacing designated query parameters ? with actual values...");
                 int i = 0;
                 for (int n = 0; n < names.size(); n++) {
                     FuncParam param = dataQuery.getParam(names.get(n));
@@ -174,39 +181,58 @@ public abstract class JdbcDataProvider extends DataProvider {
                     }
                     else if (param.propertyType.equals(Types.BIG_INT) && param.value != null)
                         statement.setLong(n + i + 1, Long.parseLong(param.value.toString()));
+                    else if (param.propertyType.equals(Types.STRING) && param.value != null) {
+                        String s = param.value.toString();
+                        if (UUID_REGEX.matcher(s).matches())
+                            setUuid(statement, n + i + 1, s);
+                        else
+                            statement.setString(n + i + 1, s);
+                    }
                     else {
-//                        if (param.value == null) {
-//                            statement.setNull(n + i + 1, java.sql.Types.VARCHAR);
-//                        }
-//                        else
-                        statement.setObject(n + i + 1, param.value);
+                        if (param.value == null) {
+                            switch (param.propertyType) {
+                                case Types.INT:
+                                case Types.FLOAT:
+                                    statement.setNull(n + i + 1, java.sql.Types.NUMERIC);
+                                    break;
+                                case Types.BIG_INT:
+                                    statement.setNull(n + i + 1, java.sql.Types.BIGINT);
+                                case Types.BOOL:
+                                    statement.setNull(n + i + 1, java.sql.Types.BOOLEAN);
+                                default:
+                                    statement.setNull(n + i + 1, java.sql.Types.VARCHAR);
+                                    break;
+                            }
+                        }
+                        else
+                            statement.setObject(n + i + 1, param.value);
                     }
                 }
-                queryLogger.debug(EventType.STATEMENT_PARAMETERS_REPLACEMENT.getMarker(EventType.Stage.END), "Replaced designated query parameters");
-                resultSet = executeStatement(statement, queryLogger, timeout, mainCallId, fetchSize);
+                logger.debug(EventType.STATEMENT_PARAMETERS_REPLACEMENT.getMarker(EventType.Stage.END), "Replaced designated query parameters");
+                resultSet = executeStatement(statement, timeout, mainCallId, fetchSize);
             } else {
-                queryLogger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.START), "Interpolating manually SQL query parameters...");
+                logger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.START), "Interpolating manually SQL query parameters...");
                 query = manualQueryInterpolation(query, dataQuery);
-                queryLogger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.END), "Interpolated SQL query parameters");
-                queryLogger.info("Query before execution: {}", query);
-                resultSet = executeStatement(connection.prepareStatement(query), queryLogger, timeout, mainCallId, fetchSize);
+                logger.debug(EventType.QUERY_INTERPOLATION.getMarker(EventType.Stage.END), "Interpolated SQL query parameters");
+                logger.info("Query before execution: {}", query);
+                resultSet = executeStatement(connection.prepareStatement(query), timeout, mainCallId, fetchSize);
             }
         } else {
-            queryLogger.info("Query before execution: {}", query);
-            resultSet = executeStatement(connection.prepareStatement(query), queryLogger, timeout, mainCallId, fetchSize);
+            logger.info("Query before execution: {}", query);
+            resultSet = executeStatement(connection.prepareStatement(query), timeout, mainCallId, fetchSize);
         }
 
         return resultSet;
     }
 
-    private ResultSet executeStatement(PreparedStatement statement, Logger queryLogger,
-                                       int timeout, String mainCallId, int fetchSize) throws SQLException {
+    private ResultSet executeStatement(PreparedStatement statement, int timeout, String mainCallId,
+                                       int fetchSize) throws SQLException {
         queryMonitor.addNewStatement(mainCallId, statement);
         setQueryTimeOut(statement, timeout);
-        queryLogger.debug(EventType.STATEMENT_EXECUTION.getMarker(EventType.Stage.START), "Executing Statement...");
+        logger.debug(EventType.STATEMENT_EXECUTION.getMarker(EventType.Stage.START), "Executing Statement...");
         statement.setFetchSize(fetchSize);
         ResultSet resultSet = executeStatement(statement);
-        queryLogger.info(EventType.STATEMENT_EXECUTION.getMarker(EventType.Stage.END), "Executed Statement");
+        logger.info(EventType.STATEMENT_EXECUTION.getMarker(EventType.Stage.END), "Executed Statement");
         queryMonitor.removeStatement(mainCallId);
         return resultSet;
     }
@@ -309,6 +335,10 @@ public abstract class JdbcDataProvider extends DataProvider {
         return 0;
     }
 
+    protected void setUuid(PreparedStatement statement, int n, String value) throws SQLException {
+        statement.setString(n, value);
+    }
+
     protected List<String> getParameterNames(String query, DataQuery dataQuery, StringBuilder queryBuffer) {
         List<String> names = new ArrayList<>();
         String regexComment = String.format("(?m)^(?<!['\\\"])%s.*(?!['\\\"])$", descriptor.commentStart);
@@ -335,12 +365,18 @@ public abstract class JdbcDataProvider extends DataProvider {
         queryBuffer.append("?");
     }
 
-    public ResultSet getResultSet(FuncCall queryRun, Connection connection,
-                                  Logger queryLogger, int fetchSize) throws QueryCancelledByUser, SQLException {
+    public void configureAutoCommit(Connection connection) throws SQLException {
+        boolean supportsTransactions = connection.getMetaData().supportsTransactions();
+        logger.trace("Provider {} transactions", supportsTransactions ? "supports" : "doesn't support");
+        if (supportsTransactions)
+            connection.setAutoCommit(false);
+    }
+
+    public ResultSet getResultSet(FuncCall queryRun, Connection connection, int fetchSize) throws QueryCancelledByUser, SQLException {
         Integer providerTimeout = getTimeout();
         int timeout = providerTimeout != null ? providerTimeout : (queryRun.options != null && queryRun.options.containsKey(DataProvider.QUERY_TIMEOUT_SEC))
                 ? ((Double)queryRun.options.get(DataProvider.QUERY_TIMEOUT_SEC)).intValue() : 300;
-
+        configureAutoCommit(connection);
         try {
             // Remove header lines
             DataQuery dataQuery = queryRun.func;
@@ -352,14 +388,15 @@ public abstract class JdbcDataProvider extends DataProvider {
             if (!(queryRun.func.options != null
                     && queryRun.func.options.containsKey("batchMode")
                     && queryRun.func.options.get("batchMode").equals("true"))) {
-                query = query.replaceAll("(?m)^" + commentStart + ".*\\n", "");
-                resultSet = executeQuery(query, queryRun, connection, timeout, queryLogger, fetchSize);
-            } else {
-                queryLogger.debug("Executing batch mode...");
+                query = query.replaceAll("(?m)^\\s*" + commentStart + ".*\\n", "");
+                resultSet = executeQuery(query, queryRun, connection, timeout, fetchSize);
+            }
+            else {
+                logger.debug("Executing batch mode...");
                 String[] queries = query.replaceAll("\r\n", "\n").split(String.format("\n%sbatch\n|\n--batch\n", commentStart));
                 for (String currentQuery : queries)
-                    resultSet = executeQuery(currentQuery, queryRun, connection, timeout, queryLogger, fetchSize);
-                queryLogger.debug("Executed batch mode");
+                    resultSet = executeQuery(currentQuery, queryRun, connection, timeout, fetchSize);
+                logger.debug("Executed batch mode");
             }
 
             return resultSet;
@@ -370,12 +407,12 @@ public abstract class JdbcDataProvider extends DataProvider {
         }
     }
     public DataFrame getResultSetSubDf(FuncCall queryRun, ResultSet resultSet, ResultSetManager resultSetManager,
-                                       int maxIterations, int columnCount, Logger queryLogger, int operationNumber,
+                                       int maxIterations, int columnCount, int operationNumber,
                                        boolean dryRun) throws SQLException, QueryCancelledByUser {
         DataFrame dataFrame = new DataFrame();
         EventType resultSetProcessingEventType = dryRun ? EventType.RESULT_SET_PROCESSING_WITHOUT_DATAFRAME_FILL
                 : EventType.RESULT_SET_PROCESSING_WITH_DATAFRAME_FILL;
-        queryLogger.debug(resultSetProcessingEventType.getMarker(operationNumber, EventType.Stage.START),
+        logger.debug(resultSetProcessingEventType.getMarker(operationNumber, EventType.Stage.START),
                 "Filling columns of DataFrame with id {}...", operationNumber);
         if (resultSet.next()) {
             int rowCount = 0;
@@ -385,21 +422,21 @@ public abstract class JdbcDataProvider extends DataProvider {
                     Object value = getObjectFromResultSet(resultSet, c);
 
                     if (dryRun) continue;
-                    resultSetManager.processValue(value, c, queryLogger);
+                    resultSetManager.processValue(value, c);
 
                     if (queryMonitor.checkCancelledIdResultSet(queryRun.id)) {
-                        queryLogger.info("Query was canceled");
+                        logger.info("Query was canceled");
                         queryMonitor.removeResultSet(queryRun.id);
                         throw new QueryCancelledByUser();
                     }
                 }
             } while ((maxIterations < 0 || rowCount < maxIterations) && resultSet.next());
 
-            queryLogger.debug(resultSetProcessingEventType.getMarker(operationNumber, EventType.Stage.END),
+            logger.debug(resultSetProcessingEventType.getMarker(operationNumber, EventType.Stage.END),
                     "Filled columns with {} rows of DataFrame with id {}", rowCount, operationNumber);
         }
         else
-            queryLogger.debug(resultSetProcessingEventType.getMarker(operationNumber, EventType.Stage.END),
+            logger.debug(resultSetProcessingEventType.getMarker(operationNumber, EventType.Stage.END),
                     "Result set is empty");
         dataFrame.addColumns(resultSetManager.getProcessedColumns());
         return dataFrame;
@@ -407,14 +444,13 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     public DataFrame execute(FuncCall queryRun) throws QueryCancelledByUser, GrokConnectException {
         try (Connection connection = getConnection(queryRun.func.connection);
-                ResultSet resultSet = getResultSet(queryRun, connection, logger, 100)) {
+                ResultSet resultSet = getResultSet(queryRun, connection,100)) {
             if (resultSet == null)
                 return new DataFrame();
             ResultSetManager resultSetManager = getResultSetManager();
             ResultSetMetaData metaData = resultSet.getMetaData();
             resultSetManager.init(metaData, 100);
-            return getResultSetSubDf(queryRun, resultSet, resultSetManager, -1, metaData.getColumnCount(),
-                    logger, 1, false);
+            return getResultSetSubDf(queryRun, resultSet, resultSetManager, -1, metaData.getColumnCount(),1, false);
         } catch (SQLException e) {
             if (queryMonitor.checkCancelledId((String) queryRun.aux.get("mainCallId")))
                 throw new QueryCancelledByUser();
@@ -605,7 +641,9 @@ public abstract class JdbcDataProvider extends DataProvider {
         if (funcInfo != null) {
             String brackets = descriptor.nameBrackets;
             String sql = GrokConnectUtil.isNotEmpty(aggr.colName) ? funcInfo.dbFunctionName.replaceAll("#", addBrackets(aggr.colName)) : funcInfo.dbFunctionName;
-            return sql + " as " + (GrokConnectUtil.isNotEmpty(aggr.resultColName) ?  brackets.charAt(0) + aggr.resultColName + brackets.charAt(brackets.length() - 1): addBrackets(funcInfo.dbFunctionName).replaceAll("#", aggr.colName));
+            return sql + " as " + (GrokConnectUtil.isNotEmpty(aggr.resultColName)
+                    ?  brackets.charAt(0) + aggr.resultColName + brackets.charAt(brackets.length() - 1)
+                    : brackets.charAt(0) + funcInfo.functionName + "(" + aggr.colName + ")" + brackets.charAt(brackets.length() - 1));
         }
         else
             return null;
@@ -646,6 +684,11 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     public static void setIfNotNull(java.util.Properties properties, String key, String value) {
         if (value != null)
+            properties.setProperty(key, value);
+    }
+
+    public static void setIfNotEmpty(java.util.Properties properties, String key, String value) {
+        if (GrokConnectUtil.isNotEmpty(value))
             properties.setProperty(key, value);
     }
 }

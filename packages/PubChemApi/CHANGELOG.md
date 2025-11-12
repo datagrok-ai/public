@@ -1,4 +1,16 @@
-# PubChemApi changelog
+# PubChem changelog
+
+## 1.3.1 (2025-07-24)
+
+Changes according to new API
+
+## 1.2.3 (2025-02-25)
+
+README updated
+
+## 1.2.2 (2024-12-27)
+
+Added more tests
 
 ## 1.2.1 (2024-11-18)
 

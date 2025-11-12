@@ -1,5 +1,31 @@
 # Chemspace changelog
 
+## 1.2.3 (2025-05-06)
+
+Fixed token request
+
+## 1.2.2 (2025-04-22)
+
+Removed swagger file
+
+## 1.2.1 (2025-03-29)
+
+Moved application under Chem section in browse tree
+
+## 1.2.0 (2025-03-29)
+
+Datagrok api >= 1.25.0
+
+## 1.1.6 (2025-02-25)
+
+Updated README
+
+## 1.1.5 (2025-02-17)
+
+### Features
+
+* Updated tests
+
 ## 1.1.4 (2024-11-18)
 
 ### Features
