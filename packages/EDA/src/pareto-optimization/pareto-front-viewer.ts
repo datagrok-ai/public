@@ -40,6 +40,9 @@ export class ParetoFrontViewer extends DG.JsViewer {
   private resultColName: string = '';
   private sizeColName: string = '';
   private optimizedColNames: string[] = [];
+  private hasCommonMinMaxNames = false;
+
+  private errDiv: HTMLDivElement | null = null;
 
   get type(): string {
     return 'ParetoFrontViewer';
@@ -205,7 +208,17 @@ export class ParetoFrontViewer extends DG.JsViewer {
     });
   } // markResColWithColor
 
-  _showErrorMessage(msg: string) {this.root.appendChild(ui.divText(msg, 'd4-viewer-error'));}
+  private removeErrDiv(): void {
+    if (this.errDiv != null) {
+      this.root.removeChild(this.errDiv);
+      this.errDiv = null;
+    }
+  }
+
+  _showErrorMessage(msg: string) {
+    this.removeErrDiv();
+    this.errDiv = this.root.appendChild(ui.divText(msg, 'd4-viewer-error'));
+  }
 
   _testColumns(): boolean {
     if (this.dataFrame.rowCount < 1) {
@@ -296,6 +309,11 @@ export class ParetoFrontViewer extends DG.JsViewer {
       return;
 
     switch (property.name) {
+    case 'minimizeColumnNames':
+    case 'maximizeColumnNames':
+      this.updateCommonMinMaxFeatures();
+      break;
+
     case 'xAxisColumnName':
     case 'yAxisColumnName':
       if (this.toChangeAutoAxesSelection)
@@ -322,12 +340,14 @@ export class ParetoFrontViewer extends DG.JsViewer {
   }
 
   render(computeData = false) {
-    if (!this.isApplicable) {
+    if (!this.isApplicable || this.hasCommonMinMaxNames) {
       if (this.scatter != null)
         this.scatter.root.hidden = true;
       this._showErrorMessage(this.errMsg);
       return;
     }
+
+    this.removeErrDiv();
 
     if (computeData) {
       this.computeParetoFront();
@@ -340,6 +360,21 @@ export class ParetoFrontViewer extends DG.JsViewer {
     if (this.scatter != null)
       this.scatter.root.hidden = false;
   } // render
+
+  private updateCommonMinMaxFeatures(): void {
+    if ((this.minimizeColumnNames == null) || (this.maximizeColumnNames == null)) {
+      this.hasCommonMinMaxNames = false;
+      return;
+    }
+    const commonMinMaxNames = this.minimizeColumnNames.filter((name) => this.maximizeColumnNames.includes(name));
+
+    if (commonMinMaxNames.length > 0) {
+      this.hasCommonMinMaxNames = true;
+      const namesLine = commonMinMaxNames.map((name) => `"${name}"`).join(', ');
+      this.errMsg = `Cannot minimize and maximize features at the same time: ${namesLine}.`;
+    } else
+      this.hasCommonMinMaxNames = false;
+  }
 
   private updateOptimizedColNames() {
     this.optimizedColNames = [];
