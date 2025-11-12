@@ -156,12 +156,11 @@ export class ParetoFrontViewer extends DG.JsViewer {
     }
 
     const sizeCol = this.dataFrame.col(this.sizeColName);
+    let resCol = this.dataFrame.col(this.resultColName);
 
     if (data.length > 0) {
       const mask = getParetoMask(data, sense, this.rowCount);
       const colOpt = DG.Column.fromStrings(this.resultColName, mask.map((res) => res ? LABEL.OPTIMAL : LABEL.NON_OPT));
-
-      let resCol = this.dataFrame.col(this.resultColName);
 
       if (resCol == null) {
         this.dataFrame.columns.add(colOpt);
@@ -197,6 +196,15 @@ export class ParetoFrontViewer extends DG.JsViewer {
         const raw = sizeCol.getRawData();
         for (let k = 0; k < this.rowCount; ++k)
           raw[k] = SIZE.NON_OPT;
+      }
+
+      if (resCol != null) {
+        const prevRaw = resCol.getRawData();
+        const prevCats = resCol.categories;
+        const index = prevCats.indexOf(LABEL.NON_OPT as string);
+
+        for (let k = 0; k < this.rowCount; ++k)
+          prevRaw[k] = index;
       }
     }
   } // computeParetoFront
