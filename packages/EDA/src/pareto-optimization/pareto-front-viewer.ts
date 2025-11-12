@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {USE_AUTO_SELECTION, USE_CUSTOM_AXES, SCATTER_ROW_LIM, SIZE, COL_NAME, OPT_TYPE,
+import {USE_AUTO_SELECTION, AUTO_AXES_SELECTION, SCATTER_ROW_LIM, SIZE, COL_NAME, OPT_TYPE,
   NumericArray,
   LABEL,
   DIFFERENCE} from './defs';
@@ -19,8 +19,8 @@ export class ParetoFrontViewer extends DG.JsViewer {
   private useAutoSelection: boolean = true;
   private xAxisColumnName: string;
   private yAxisColumnName: string;
-  private useCustomAxes: boolean;
-  private toChangeUseCustomAxes: boolean = true;
+  private autoAxesSelection: boolean;
+  private toChangeAutoAxesSelection: boolean = true;
   private legendVisibility: string;
   private legendPosition: string;
   private toChangeScatterMarkerSize = false;
@@ -84,11 +84,11 @@ export class ParetoFrontViewer extends DG.JsViewer {
       nullable: false,
     });
 
-    this.useCustomAxes = this.bool('useCustomAxes', USE_CUSTOM_AXES ? true : null, {
-      defaultValue: USE_CUSTOM_AXES ? true : null,
+    this.autoAxesSelection = this.bool('autoAxesSelection', AUTO_AXES_SELECTION, {
+      defaultValue: AUTO_AXES_SELECTION,
       category: 'Axes',
       // eslint-disable-next-line max-len
-      description: 'If checked, custom coordinate axes are used. If unchecked, axes are selected automatically based on the optimized features.',
+      description: 'If checked, axes are selected automatically based on the optimized features. If unchecked, custom coordinate axes are used.',
     });
 
     this.labelColumnNames = this.addProperty('labelColumnsColumnNames', DG.TYPE.COLUMN_LIST, null, {
@@ -241,7 +241,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
         minimizeColumnNames: initColNames,
         xAxisColumnName: initColNames[0],
         yAxisColumnName: initColNames[1],
-        useCustomAxes: USE_CUSTOM_AXES ? true : null,
+        autoAxesSelection: AUTO_AXES_SELECTION,
       });
     }
   }
@@ -271,12 +271,12 @@ export class ParetoFrontViewer extends DG.JsViewer {
     switch (property.name) {
     case 'xAxisColumnName':
     case 'yAxisColumnName':
-      if (this.toChangeUseCustomAxes)
-        this.setOptions({useCustomAxes: true});
-      this.toChangeUseCustomAxes = true;
+      if (this.toChangeAutoAxesSelection)
+        this.setOptions({autoAxesSelection: null});
+      this.toChangeAutoAxesSelection = true;
       break;
 
-    case 'useCustomAxes':
+    case 'autoAxesSelection':
       this.updateAxesColumnOptions();
       break;
     }
@@ -313,7 +313,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
   } // updateOptimizedColNames
 
   private updateAxesColumnOptions(): void {
-    if (this.useCustomAxes)
+    if (!this.autoAxesSelection)
       return;
 
     const length = this.optimizedColNames.length;
@@ -326,17 +326,17 @@ export class ParetoFrontViewer extends DG.JsViewer {
 
     if (length > 1) {
       if (xIdx < 0) {
-        this.toChangeUseCustomAxes = false;
+        this.toChangeAutoAxesSelection = false;
         this.setOptions({xAxisColumnName: this.optimizedColNames[yIdx !== 0 ? 0 : 1]});
       }
 
       if (yIdx < 0) {
-        this.toChangeUseCustomAxes = false;
+        this.toChangeAutoAxesSelection = false;
         this.setOptions({yAxisColumnName: this.optimizedColNames[xIdx !== 1 ? 1 : 0]});
       }
     } else {
       if ((xIdx < 0) && (yIdx < 0)) {
-        this.toChangeUseCustomAxes = false;
+        this.toChangeAutoAxesSelection = false;
         this.setOptions({xAxisColumnName: this.optimizedColNames[0]});
       }
     }
