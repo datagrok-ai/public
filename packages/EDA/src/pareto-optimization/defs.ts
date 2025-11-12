@@ -42,4 +42,4 @@ export const SCATTER_ROW_LIM = 5000;
 export const SCATTER3D_ROW_LIM = 1000;
 
 export const AUTO_AXES_SELECTION = true;
-export const USE_AUTO_SELECTION = true;
+export const AUTO_LABELS_SELECTION = true;

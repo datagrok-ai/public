@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {USE_AUTO_SELECTION, AUTO_AXES_SELECTION, SCATTER_ROW_LIM, SIZE, COL_NAME, OPT_TYPE,
+import {AUTO_LABELS_SELECTION, AUTO_AXES_SELECTION, SCATTER_ROW_LIM, SIZE, COL_NAME, OPT_TYPE,
   NumericArray,
   LABEL,
   DIFFERENCE} from './defs';
@@ -15,8 +15,10 @@ export class ParetoFrontViewer extends DG.JsViewer {
   private descriptionVisibilityMode: string;
   private minimizeColumnNames: string[];
   private maximizeColumnNames: string[];
-  private labelColumnNames: string[];
-  private useAutoSelection: boolean = true;
+  private labelColumnsColumnNames: string[];
+  private autoLabelColNames: string[] = [];
+  private autoLabelsSelection: boolean = true;
+  private toChangeAutoLabelsSelection: boolean = true;
   private xAxisColumnName: string;
   private yAxisColumnName: string;
   private autoAxesSelection: boolean;
@@ -30,6 +32,8 @@ export class ParetoFrontViewer extends DG.JsViewer {
     showColorSelector: false,
     showSizeSelector: false,
     autoLayout: false,
+    showLabels: 'Always',
+    showLabelNamedColumns: 'Always',
   });
 
   private numCols: DG.Column[] = [];
@@ -91,15 +95,15 @@ export class ParetoFrontViewer extends DG.JsViewer {
       description: 'If checked, axes are selected automatically based on the optimized features. If unchecked, custom coordinate axes are used.',
     });
 
-    this.labelColumnNames = this.addProperty('labelColumnsColumnNames', DG.TYPE.COLUMN_LIST, null, {
+    this.labelColumnsColumnNames = this.addProperty('labelColumnsColumnNames', DG.TYPE.COLUMN_LIST, null, {
       category: 'Labels',
       description: 'Label columns to show next to the markers.',
     });
 
-    this.useAutoSelection = this.bool('useAutoSelection', USE_AUTO_SELECTION, {
+    this.autoLabelsSelection = this.bool('autoLabelsSelection', AUTO_LABELS_SELECTION, {
       category: 'Labels',
       description: 'Automatically select the most relevant columns for the legend.',
-      defaultValue: USE_AUTO_SELECTION,
+      defaultValue: AUTO_LABELS_SELECTION,
     });
 
     this.legendVisibility = this.string('legendVisibility', 'Auto', {choices: ['Auto', 'Always', 'Never']});
@@ -215,25 +219,33 @@ export class ParetoFrontViewer extends DG.JsViewer {
     if (this.toChangeScatterMarkerSize)
       this.scatter.setOptions({markerMinSize: SIZE.NON_OPT, markerMaxSize: SIZE.OPTIMAL});
 
+    console.log('this.labelColumnNames', this.labelColumnsColumnNames);
+
     this.scatter.setOptions({
       title: this.title,
       showTitle: this.showTitle,
       description: this.description,
       descriptionPosition: this.descriptionPosition,
       descriptionVisibilityMode: this.descriptionVisibilityMode,
-      //labelColumnNames: this.labelColumnNames,
       xColumnName: this.xAxisColumnName,
       yColumnName: this.yAxisColumnName,
       legendVisibility: this.legendVisibility,
       legendPosition: this.legendPosition,
       colorColumnName: this.colorColumnName,
     });
+
+    if (this.labelColumnsColumnNames != null) {
+      console.log('Setting labels');
+      this.scatter.setOptions({labelColumnNames: this.labelColumnsColumnNames});
+      console.log(this.scatter.getOptions());
+    }
   }
 
   private init() {
     this.initializeData();
     if (this.isApplicable) {
       this.scatter.dataFrame = this.dataFrame;
+      this.autoLabelColNames = this.getLabelColNames();
 
       const initColNames = this.numColNames.filter((_, idx) => this.numColsCount - idx - 1 < DIFFERENCE);
       this.setOptions({
@@ -242,9 +254,10 @@ export class ParetoFrontViewer extends DG.JsViewer {
         xAxisColumnName: initColNames[0],
         yAxisColumnName: initColNames[1],
         autoAxesSelection: AUTO_AXES_SELECTION,
+        autoLabelsSelection: AUTO_LABELS_SELECTION,
       });
     }
-  }
+  } // init
 
   onTableAttached() {
     this.init();
@@ -278,6 +291,16 @@ export class ParetoFrontViewer extends DG.JsViewer {
 
     case 'autoAxesSelection':
       this.updateAxesColumnOptions();
+      break;
+
+    case 'autoLabelsSelection':
+      this.updateLabelColumnOptions();
+      break;
+
+    case 'labelColumnsColumnNames':
+      if (this.toChangeAutoLabelsSelection)
+        this.setOptions({autoLabelsSelection: null});
+      this.toChangeAutoLabelsSelection = true;
       break;
     }
 
@@ -341,4 +364,22 @@ export class ParetoFrontViewer extends DG.JsViewer {
       }
     }
   } // updateAxesColumnOptions
+
+  private updateLabelColumnOptions(): void {
+    if (!this.autoLabelsSelection)
+      return;
+
+    this.toChangeAutoLabelsSelection = false;
+    console.log('Updating this.labelColumnsColumnNames');
+    this.setOptions({labelColumnsColumnNames: [...this.autoLabelColNames]});
+  } // updateLabelColumnOptions
+
+  private getLabelColNames(): string[] {
+    return this.dataFrame.columns.toList().filter((col) => {
+      if (col.type !== DG.COLUMN_TYPE.STRING)
+        return false;
+
+      return col.categories.length === this.rowCount;
+    }).map((col) => col.name);
+  } // getLabelColNames
 } // ParetoFrontViewer
