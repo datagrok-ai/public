@@ -578,10 +578,10 @@ class Preview {
      */
     this.viewer.root.addEventListener('contextmenu', (event: MouseEvent) => {
       event.preventDefault();
-      if (this.viewer.type === DG.VIEWER.LINE_CHART)
-        return;
-      const worldPoint = (this.viewer as DG.ScatterPlotViewer).screenToWorld(event.offsetX, event.offsetY);
-      onContextMenu(worldPoint.y, worldPoint.x);
+      if (this.viewer instanceof DG.ScatterPlotViewer || this.viewer instanceof DG.LineChartViewer) {
+        const worldPoint = this.viewer.screenToWorld(event.offsetX, event.offsetY);
+        onContextMenu(worldPoint.y, worldPoint.x);
+      } 
     });
   }
 

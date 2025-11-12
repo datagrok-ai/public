@@ -534,6 +534,12 @@ export class LineChartViewer extends Viewer<interfaces.ILineChartSettings> {
     api.grok_LineChartViewer_ResetView(this.dart);
   }
 
+  worldToScreen(x: number, y: number, chartIdx: number): Point {
+    return Point.fromXY(api.grok_LineChartViewer_WorldToScreen(this.dart, x, y, chartIdx));
+  }
+
+  screenToWorld(x: number, y: number): Point { return Point.fromXY(api.grok_LineChartViewer_ScreenToWorld(this.dart, x, y));}
+
   get onAfterDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-after-draw-scene'); }
   get onBeforeDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-before-draw-scene'); }
   get onZoomed(): rxjs.Observable<null> { return this.onEvent('d4-linechart-zoomed'); }

@@ -102,7 +102,9 @@ export interface IDartApi {
   grok_View_ResetLayout(v: any): any;
   grok_View_CreateJsViewHost(v: any): any;
   grok_View_Get_Viewers(v: any): any;
+  grok_View_SetIcon(v: any, icon: any): any;
   grok_TableView(d: any, addToWorkspace: Bool): any;
+  grok_TableView_Set_DataFrame(v: any, d: any): any;
   grok_TableView_Get_SyncCurrentObject(tv: any): any;
   grok_TableView_Set_SyncCurrentObject(tv: any, x: Bool): any;
   grok_TableView_GetFilters(tv: any, addDefaultFilters: Bool): any;
@@ -347,6 +349,8 @@ export interface IDartApi {
   grok_LineChartViewer_ResetView(l: any): any;
   grok_LineChartViewer_EnableAnnotationRegionDrawing(l: any, lassoMode: Bool, onAfterDraw: any): any;
   grok_LineChartViewer_DisableAnnotationRegionDrawing(l: any): any;
+  grok_LineChartViewer_WorldToScreen(l: any, x: Num, y: Num, chartIndex: Num): any;
+  grok_LineChartViewer_ScreenToWorld(l: any, x: Num, y: Num): any;
   grok_BarChartViewer_ResetView(b: any): any;
   grok_BoxPlotViewer_ResetView(b: any): any;
   grok_FormulaLineHelper_SetDefaultParams(formulaItem: any): any;
@@ -606,6 +610,9 @@ export interface IDartApi {
   grok_ColumnsInput_ChangeTable(input: any, table: any, predicate: any): any;
   grok_ColumnsInput_ChangeAvailableColumns(input: any, availableColumns: any): any;
   grok_ColumnsInput_ChangeCheckedColumns(input: any, checkedColumns: any): any;
+  grok_ColumnsInput_GetAdditionalColumns(input: any): any;
+  grok_ColumnsInput_SetAdditionalColumns(input: any, columns: any): any;
+  grok_ColumnsInput_SetOnAdditionalColumnsChanged(input: any, fn: any): any;
   grok_ColorInput_SetShowOnlyColorBox(input: any, x: any): any;
   grok_PropertyGrid(): any;
   grok_PropertyGrid_Update(propGrid: any, src: any, props: any): any;
@@ -871,7 +878,7 @@ export interface IDartApi {
   grok_ColumnGrid_GetCol(cg: any, row: Num): any;
   grok_ColumnGrid_Get_CurrentColumn(cg: any): any;
   grok_ColumnGrid_Get_MouseOverColumn(cg: any): any;
-  grok_ColumnGrid_AddChecks(cg: any, isChecked: any, addAdditionalChecks: any, additionalChecksName: String): any;
+  grok_ColumnGrid_AddChecks(cg: any, isChecked: any, addAdditionalChecks: any, additionalChecksName: any): any;
   grok_ColumnGrid_CheckAll(cg: any, flag: Bool): any;
   grok_ColumnGrid_GetCheckedIndexes(cg: any): any;
   grok_ColumnGrid_GetCheckedColumns(cg: any): any;
@@ -1469,7 +1476,7 @@ export interface IDartApi {
   grok_Entity_Get_UpdatedOn(p: any): any;
   grok_Entity_Get_Author(p: any): any;
   grok_Entity_Get_nqName(p: any): any;
-  grok_Entity_Share(e: any, g: any, isEdit: Bool): Promise<any>;
+  grok_Entity_Share(e: any, g: any, full: Bool): Promise<any>;
   grok_DataConnection_Create(name: String, dataSource: String, options: any): any;
   grok_DataConnection_Get_Parameters(c: any): any;
   grok_DataConnection_Query(c: any, name: String, sql: String): any;
