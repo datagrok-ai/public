@@ -333,6 +333,7 @@ export class MutationCliffsViewer extends DG.JsViewer {
         showXSelector: false,
         showYSelector: true,
         showSplitSelector: false,
+        packCategories: false,
         xAxisLabelOrientation: 'Auto',
         axisFont: 'normal normal 14px "Roboto"',
         controlsFont: 'normal normal 14px "Roboto"',
