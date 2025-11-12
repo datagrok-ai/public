@@ -25,7 +25,7 @@ export enum RATIO {
 
 export enum COL_NAME {
   OPT = 'Pareto optimality',
-  SIZE = '_size',
+  SIZE = 'Pareto size',
 };
 
 export const PC_MAX_COLS = 10;

@@ -2,9 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {AUTO_LABELS_SELECTION, AUTO_AXES_SELECTION, SCATTER_ROW_LIM, SIZE, COL_NAME, OPT_TYPE,
-  NumericArray,
-  LABEL,
-  DIFFERENCE} from './defs';
+  NumericArray, LABEL, DIFFERENCE} from './defs';
 import {getParetoMask} from './pareto-computations';
 
 export class ParetoFrontViewer extends DG.JsViewer {
@@ -120,8 +118,10 @@ export class ParetoFrontViewer extends DG.JsViewer {
   private initializeData() {
     this.isApplicable = this._testColumns();
 
-    if (!this.isApplicable)
+    if (!this.isApplicable) {
+      this._showErrorMessage(this.errMsg);
       return;
+    }
 
     const cols = this.dataFrame.columns;
     const colList = cols.toList();
@@ -165,6 +165,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
       if (resCol == null) {
         this.dataFrame.columns.add(colOpt);
         resCol = colOpt;
+        this.hideCol(this.resultColName);
       } else {
         const newCats = colOpt.categories;
         const newRaw = colOpt.getRawData();
@@ -185,6 +186,8 @@ export class ParetoFrontViewer extends DG.JsViewer {
             this.sizeColName,
             new Int32Array(mask.map((res) => res ? SIZE.OPTIMAL : SIZE.NON_OPT))),
           );
+
+          this.hideCol(this.sizeColName);
         } else {
           const raw = sizeCol.getRawData();
           for (let k = 0; k < this.rowCount; ++k)
@@ -249,8 +252,6 @@ export class ParetoFrontViewer extends DG.JsViewer {
     if (this.toChangeScatterMarkerSize)
       this.scatter.setOptions({markerMinSize: SIZE.NON_OPT, markerMaxSize: SIZE.OPTIMAL});
 
-    console.log('this.labelColumnNames', this.labelColumnsColumnNames);
-
     this.scatter.setOptions({
       title: this.title,
       showTitle: this.showTitle,
@@ -263,14 +264,11 @@ export class ParetoFrontViewer extends DG.JsViewer {
       sizeColumnName: this.toChangeScatterMarkerSize ? this.sizeColName : null,
     });
 
-    if (this.labelColumnsColumnNames != null) {
-      console.log('Setting labels');
+    if (this.labelColumnsColumnNames != null)
       this.scatter!.setOptions({labelColumnNames: this.labelColumnsColumnNames});
-      console.log(this.scatter!.getOptions());
-    }
   }
 
-  private init() {
+  onTableAttached() {
     this.initializeData();
     if (this.isApplicable) {
       this.scatter = DG.Viewer.scatterPlot(this.dataFrame, {
@@ -292,17 +290,25 @@ export class ParetoFrontViewer extends DG.JsViewer {
         autoLabelsSelection: AUTO_LABELS_SELECTION,
       });
     }
-  } // init
 
-  onTableAttached() {
-    this.init();
+    this.subs.push(this.onDetached.subscribe(() => this.removeResultingCols()));
+  } // onTableAttached
 
-    // Stream subscriptions
-    // this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
-    // this.subs.push(DG.debounce(this.dataFrame.filter.onChanged, 50).subscribe((_) => this.render()));
-    // this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render(false)));
+  private removeResultingCols(): void {
+    this.dataFrame.columns.remove(this.resultColName);
+    this.dataFrame.columns.remove(this.sizeColName);
+  }
 
-    this.render();
+  private hideCol(name: string): void {
+    const tv = this.tableView;
+
+    if (tv == null)
+      return;
+
+    const gridCol = tv.grid.columns.byName(name);
+
+    if (gridCol !== null)
+      gridCol.visible = false;
   }
 
   // Cancel subscriptions when the viewer is detached
@@ -351,6 +357,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
     if (!this.isApplicable || this.hasCommonMinMaxNames) {
       if (this.scatter != null)
         this.scatter.root.hidden = true;
+
       this._showErrorMessage(this.errMsg);
       return;
     }
@@ -429,7 +436,6 @@ export class ParetoFrontViewer extends DG.JsViewer {
       return;
 
     this.toChangeAutoLabelsSelection = false;
-    console.log('Updating this.labelColumnsColumnNames');
     this.setOptions({labelColumnsColumnNames: [...this.autoLabelColNames]});
   } // updateLabelColumnOptions
 
