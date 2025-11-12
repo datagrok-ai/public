@@ -238,6 +238,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
       legendVisibility: this.legendVisibility,
       legendPosition: this.legendPosition,
       colorColumnName: this.colorColumnName ?? null,
+      paretoColorCoding: this.colorColumnName == COL_NAME.OPT,
     });
   }
 
@@ -253,6 +254,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
         xAxisColumnName: initColNames[0],
         yAxisColumnName: initColNames[1],
         colorColumnName: COL_NAME.OPT,
+        paretoColorCoding: true,
       });
     }
   }
@@ -279,8 +281,20 @@ export class ParetoFrontViewer extends DG.JsViewer {
     if (!this.isApplicable)
       return;
 
-    if (property.name === 'paretoColorCoding') {
+    switch (property.name) {
+    case 'colorColumnName':
+      if (this.colorColumnName != COL_NAME.OPT)
+        this.setOptions({paretoColorCoding: null});
+
+      break;
+
+    case 'paretoColorCoding':
       this.updateColors();
+      break;
+
+    case 'useParetoAxes':
+      this.updateAxesColumnOptions();
+      break;
     }
 
     this.render((property.name === 'minimizeColumnNames') || (property.name === 'maximizeColumnNames'));
@@ -342,6 +356,10 @@ export class ParetoFrontViewer extends DG.JsViewer {
     if (!this.paretoColorCoding)
       return;
 
-    this.setOptions({colorColumnName: (this.optimizedColNames.length < 1) ? null: COL_NAME.OPT});
+    if (this.optimizedColNames.length < 1)
+      this.setOptions({colorColumnName: null});
+
+    if (this.colorColumnName != COL_NAME.OPT)
+      this.setOptions({colorColumnName: COL_NAME.OPT});
   }
 } // ParetoFrontViewer
