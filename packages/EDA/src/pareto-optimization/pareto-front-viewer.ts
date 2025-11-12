@@ -106,7 +106,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
       choices: ['Auto', 'Left', 'Right', 'Top', 'Bottom', 'RightTop', 'RightBottom', 'LeftTop', 'LeftBottom'],
     });
 
-    this.colorColumnName = this.string('colorColumnName', COL_NAME.OPT, {
+    this.colorColumnName = this.string('colorColumnName', null, {
       category: 'Color',
       description: 'A column to be used for color-coding.',
       nullable: true,
@@ -237,7 +237,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
       yColumnName: this.yAxisColumnName,
       legendVisibility: this.legendVisibility,
       legendPosition: this.legendPosition,
-      colorColumnName: this.colorColumnName,
+      colorColumnName: this.colorColumnName ?? null,
     });
   }
 
@@ -252,6 +252,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
         minimizeColumnNames: initColNames,
         xAxisColumnName: initColNames[0],
         yAxisColumnName: initColNames[1],
+        colorColumnName: COL_NAME.OPT,
       });
     }
   }
@@ -277,6 +278,10 @@ export class ParetoFrontViewer extends DG.JsViewer {
   onPropertyChanged(property: DG.Property) {
     if (!this.isApplicable)
       return;
+
+    if (property.name === 'paretoColorCoding') {
+      this.updateColors();
+    }
 
     this.render((property.name === 'minimizeColumnNames') || (property.name === 'maximizeColumnNames'));
   }
@@ -337,7 +342,6 @@ export class ParetoFrontViewer extends DG.JsViewer {
     if (!this.paretoColorCoding)
       return;
 
-    if (this.optimizedColNames.length < 1)
-      this.setOptions({colorColumnName: (this.optimizedColNames.length < 1) ? null: COL_NAME.OPT});
+    this.setOptions({colorColumnName: (this.optimizedColNames.length < 1) ? null: COL_NAME.OPT});
   }
 } // ParetoFrontViewer
