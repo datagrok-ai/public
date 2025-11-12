@@ -192,6 +192,11 @@ export const TreeWizard = Vue.defineComponent({
       if (nextData) {
         chosenStepUuid.value = nextData.state.uuid;
         updateCurrentNodeRender();
+      } else {
+        const msg = `Now you can:\n
+• Export results using top menu 'Export' options\n
+• Save the run to your history clicking on a save icon`;
+        grok.shell.info(msg);
       }
     };
 
