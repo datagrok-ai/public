@@ -55,7 +55,7 @@ export interface AnnotationRegion {
 export interface AreaAnnotationRegion extends AnnotationRegion {
   x?: string;
   y?: string;
-  area?: string;
+  area?: [number, number][];
 }
 
 /**
