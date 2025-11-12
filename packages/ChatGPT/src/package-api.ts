@@ -20,11 +20,11 @@ export namespace funcs {
     return await grok.functions.call('ChatGPT:Ask', { question });
   }
 
-  export async function askMultiStep(question: string ): Promise<any> {
-    return await grok.functions.call('ChatGPT:AskMultiStep', { question });
-  }
-  
   export async function askFun(question: string ): Promise<string> {
     return await grok.functions.call('ChatGPT:AskFun', { question });
+  }
+
+  export async function askMultiStep(question: string ): Promise<any> {
+    return await grok.functions.call('ChatGPT:AskMultiStep', { question });
   }
 }
