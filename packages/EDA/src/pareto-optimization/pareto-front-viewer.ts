@@ -152,6 +152,8 @@ export class ParetoFrontViewer extends DG.JsViewer {
       });
     }
 
+    const sizeCol = this.dataFrame.col(this.sizeColName);
+
     if (data.length > 0) {
       const mask = getParetoMask(data, sense, this.rowCount);
       const colOpt = DG.Column.fromStrings(this.resultColName, mask.map((res) => res ? LABEL.OPTIMAL : LABEL.NON_OPT));
@@ -176,8 +178,6 @@ export class ParetoFrontViewer extends DG.JsViewer {
       this.markResColWithColor(resCol);
 
       if (this.toChangeScatterMarkerSize) {
-        const sizeCol = this.dataFrame.col(this.sizeColName);
-
         if (sizeCol == null) {
           this.dataFrame.columns.add(DG.Column.fromInt32Array(
             this.sizeColName,
@@ -188,6 +188,12 @@ export class ParetoFrontViewer extends DG.JsViewer {
           for (let k = 0; k < this.rowCount; ++k)
             raw[k] = mask[k] ? SIZE.OPTIMAL : SIZE.NON_OPT;
         }
+      }
+    } else {
+      if (sizeCol != null) {
+        const raw = sizeCol.getRawData();
+        for (let k = 0; k < this.rowCount; ++k)
+          raw[k] = SIZE.NON_OPT;
       }
     }
   } // computeParetoFront
@@ -233,6 +239,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
       legendPosition: this.legendPosition,
       colorColumnName: this.colorColumnName,
       displayLabels: this.displayLabels,
+      sizeColumnName: this.toChangeScatterMarkerSize ? this.sizeColName : null,
     });
 
     if (this.labelColumnsColumnNames != null) {
