@@ -62,13 +62,13 @@ export class ParetoFrontViewer extends DG.JsViewer {
 
     this.minimizeColumnNames = this.addProperty('minimizeColumnNames', DG.TYPE.COLUMN_LIST, null, {
       columnTypeFilter: DG.TYPE.NUMERICAL,
-      category: 'Data',
+      category: 'Objectives',
       description: 'Columns with features to be minimized during Pareto optimization.',
     });
 
     this.maximizeColumnNames = this.addProperty('maximizeColumnNames', DG.TYPE.COLUMN_LIST, null, {
       columnTypeFilter: DG.TYPE.NUMERICAL,
-      category: 'Data',
+      category: 'Objectives',
       description: 'Columns with features to be maximized during Pareto optimization.',
     });
 
