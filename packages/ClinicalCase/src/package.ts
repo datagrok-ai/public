@@ -27,7 +27,7 @@ import {createClinCaseTableView, TABLE_VIEWS_META} from './utils/views-creation-
 //import {CohortView} from './views/cohort-view';
 import {QuestionnaiesView} from './views/questionnaires-view';
 import {ClinCaseTableView, ClinStudyConfig} from './utils/types';
-import {StudyConfigFileName} from './constants/constants';
+import {defineXmlFileName, StudyConfigFileName} from './constants/constants';
 import {ClinicalStudy} from './clinical-study';
 import {ClinicalCaseViewBase} from './model/ClinicalCaseViewBase';
 import '../css/clinical-case.css';
@@ -35,6 +35,7 @@ import {u2} from '@datagrok-libraries/utils/src/u2';
 import {scripts} from './package-api';
 import {Subject} from 'rxjs';
 import {delay} from '@datagrok-libraries/utils/src/test';
+import X2JS from 'x2js';
 
 export * from './package.g';
 
@@ -211,7 +212,6 @@ export async function initClinicalStudyData(study: ClinicalStudy, studyFiles?: D
   }
 }
 
-
 export async function readClinicalData(study: ClinicalStudy, importedFiles?: DG.FileInfo[]): Promise<boolean> {
   const pb = DG.TaskBarProgressIndicator
     .create(`Reading data for ${study.config.friendlyName ?? study.config.name}...`);
@@ -259,8 +259,15 @@ export async function readClinicalData(study: ClinicalStudy, importedFiles?: DG.
 
       //in case we import study - also save config file
       if (importedFiles) {
-        grok.dapi.files.writeAsText(`System:AppData/ClinicalCase/studies/${study.studyId}/study.json`,
-          JSON.stringify(study.config));
+        //save define.xml, if we have it. Otherwise, save study.json
+        const defineXml = importedFiles.filter((it) => it.name === defineXmlFileName);
+        if (defineXml.length) {
+          grok.dapi.files.writeAsText(`System:AppData/ClinicalCase/studies/${study.studyId}/define.xml`,
+            await defineXml[0].readAsString());
+        } else {
+          grok.dapi.files.writeAsText(`System:AppData/ClinicalCase/studies/${study.studyId}/study.json`,
+            JSON.stringify(study.config));
+        }
       }
     }
     if (!studies[study.studyId].domains.dm) {
@@ -273,20 +280,41 @@ export async function readClinicalData(study: ClinicalStudy, importedFiles?: DG.
   }
 }
 
+async function extractConfigFromFiles(files: DG.FileInfo[]): Promise<ClinStudyConfig> {
+  try {
+    //first look for define.xml
+    const defineXml = files.filter((it) => it.name === defineXmlFileName);
+    if (defineXml.length) {
+      const parser = new X2JS();
+      const defineJson = parser.xml2js(await defineXml[0].readAsString()) as any;
+      const studyName = defineJson?.ODM?.Study?.GlobalVariables?.StudyName;
+      if (studyName)
+        return {name: studyName};
+    } else {
+      //if define.xml not found or there is no id in it - look for study.json
+      const configFile = files.filter((it) => it.name === StudyConfigFileName);
+      if (configFile.length) {
+        const studyJson: ClinStudyConfig = JSON.parse(await configFile[0].readAsString());
+        return studyJson;
+      }
+    }
+    return null;
+  } catch (e: any) {
+    throw e;
+  }
+}
 
 export async function createStudies(treeNode: DG.TreeViewGroup,
-  importedStudyData?: {config: ClinStudyConfig, files: DG.FileInfo[]}): Promise<void> {
+  importedStudyData?: { config: ClinStudyConfig, files: DG.FileInfo[] }): Promise<void> {
   const studyConfigs = [];
   if (!importedStudyData) {
     const folders = await _package.files.list(`studies`);
     for (const folder of folders) {
       try {
-        const configFile = (await _package.files.list(folder)).filter((it) => it.name === StudyConfigFileName);
-        if (configFile.length) {
-          const studyJson: ClinStudyConfig = JSON.parse(await _package.files
-            .readAsText(configFile[0]));
-          studyConfigs.push(studyJson);
-        }
+        const filesList = await _package.files.list(folder);
+        const config = await extractConfigFromFiles(filesList);
+        if (config)
+          studyConfigs.push(config);
       } catch (e: any) {
         grok.shell.error(`Error reading study config for study ${folder}: ${e?.message ?? e}`);
         continue;
@@ -349,16 +377,12 @@ export class PackageFunctions {
         directoryInput: true,
         onValueChanged: async () => {
           //check if configuration file is present in the folder
-          const studyConfigFile = filesInput.directoryFiles.filter((it) => it.name === StudyConfigFileName);
-          if (!studyConfigFile.length)
-            // eslint-disable-next-line max-len
-            grok.shell.error(`Study folder must include study.json configuration file containing study name, e.g. { "name": "study_name" }`);
           try {
-            studyConfig = JSON.parse(await studyConfigFile[0].readAsString());
-            if (!studyConfig.name)
-              grok.shell.error(`study.json must study name, e.g. { "name": "study_name" }`);
+            studyConfig = await extractConfigFromFiles(filesInput.directoryFiles);
+            if (!studyConfig)
+              grok.shell.error(`define.xml or study.json not found or malformed`);
           } catch (e) {
-            grok.shell.error(`Error reading study.json`);
+            grok.shell.error(e);
           }
           dialog.getButton('OK').disabled = studyConfig === null;
         },
