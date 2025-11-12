@@ -1,11 +1,11 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import '../css/ai.css';
+import '../css/chatgpt.css';
 
 export class AssistantRenderer {
   static renderPlan(plan: any): HTMLElement {
-    const container = ui.divV([], 'assistant-plan');
+    const container = ui.divV([], 'chatgpt-ask-ai-plan');
     if (!plan?.steps?.length) {
       container.append(ui.divText('No steps generated.'));
       return container;
@@ -13,7 +13,7 @@ export class AssistantRenderer {
 
     const analysis = ui.divV(
       (plan.analysis ?? []).map((line: string) =>
-        ui.divText(line, { classes: 'assistant-plan-analysis' })
+        ui.divText(line)
       )
     );
 
@@ -24,7 +24,7 @@ export class AssistantRenderer {
           ui.divText(`Action: ${s.action}`),
           ui.divText(`Inputs: ${JSON.stringify(s.inputs, null, 2)}`),
           ui.divText(`Outputs: ${JSON.stringify(s.outputs)}`),
-        ], 'assistant-plan-step')
+        ], 'chatgpt-ask-ai-plan-step')
       )
     );
 
@@ -33,7 +33,7 @@ export class AssistantRenderer {
   }
   
   static renderResult(result: any): HTMLElement {
-    const container = ui.div([], 'assistant-result');
+    const container = ui.div([], 'chatgpt-ask-ai-result');
     const val = result?.finalResult?.value ?? result?.finalResult ?? result;
     const meta = result?.finalResult?.meta;
     
@@ -51,7 +51,7 @@ export class AssistantRenderer {
   }
 
   static renderFullOutput(plan: any, result: any): DG.Widget {
-    const root = ui.divV([], { classes: 'assistant-widget' });
+    const root = ui.divV([]);
     root.append(
       this.renderPlan(plan),
       ui.h2('Result'),
@@ -62,20 +62,16 @@ export class AssistantRenderer {
 }
 
 function renderGraphics(intermediateResult: any): HTMLElement {
-    if (!intermediateResult?.style?.backgroundImage) {
-        return ui.divText('No graphics available.');
-    }
-    
-    try {
-        // let base64Data = intermediateResult.style.backgroundImage;
-        // base64Data = base64Data.replace(/^url\("data:image\/png;base64,/, '').replace(/"\)$/, '');
-        // return ui.image(`data:image/png;base64,${base64Data}`, 200, 300);
-      const backgroundImageUrl = intermediateResult.style.backgroundImage;
-      let base64Data = backgroundImageUrl.split('data:image/png;base64,')[1];
-      base64Data = base64Data.slice(0, -2);
-      return ui.image(`data:image/png;base64,${base64Data}`, 200, 300);
-    } catch (err) {
-      console.error('Failed to render graphics output:', err);
-      return ui.divText('Failed to render graphics.');
-    }
+  if (!intermediateResult?.style?.backgroundImage)
+    return ui.divText('No graphics available.');
+  
+  try {
+    const backgroundImageUrl = intermediateResult.style.backgroundImage;
+    let base64Data = backgroundImageUrl.split('data:image/png;base64,')[1];
+    base64Data = base64Data.slice(0, -2);
+    return ui.image(`data:image/png;base64,${base64Data}`, 200, 300);
+  } catch (err) {
+    console.error('Failed to render graphics output:', err);
+    return ui.divText('Failed to render graphics.');
+  }
 }

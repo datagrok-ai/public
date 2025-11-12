@@ -42,6 +42,7 @@ export class ChatGptAssistant {
     return props;
   }
 
+  // TODO: Substitute with the list of available roles along with descriptions
   private packagesInfo = [
     {
       name: 'Chem',
@@ -58,18 +59,31 @@ export class ChatGptAssistant {
     },
   ];
 
-  private async selectPackage(userGoal: string): Promise<string> {
+  private async selectPackages(userGoal: string): Promise<string[]> {
     const prompt = `User goal: "${userGoal}"
-Available packages:
+    Available packages:
 ${JSON.stringify(this.packagesInfo, null, 2)}
 
-Pick the ONE most relevant package that best fits the user's goal.
-Respond only as JSON: {"selected_package":"<package_name>"}`;
+Determine which packages are relevant for achieving this goal.
+Respond ONLY in JSON with the folllowing structure, no Markdown or extra text.
+{
+  "selected_packages": [
+    { "name": "<package_name>", "reason": "<why this helps>" }
+  ]
+}
 
-    const res = await this.chat(prompt);
-    return this.parseJSON<{ selected_package: string }>(res, { selected_package: 'Chem' })
-      .selected_package;
-  }
+Rules:
+- Include only packages that can meaningfully contribute.
+- Rank them from most to least relevant.
+- Do not include packages that clearly don't apply.`;
+
+  const res = await this.chat(prompt);
+  const parsed = this.parseJSON<{ selected_packages: { name: string, reason: string }[] }>(
+    res,
+    { selected_packages: [{ name: 'Chem', reason: 'Default fallback' }] }
+  );
+  return parsed.selected_packages.map(p => p.name);
+}
 
   private readonly reasoningSystemPrompt = `
 You are a reasoning assistant that plans how to achieve user goals using available functions.
@@ -80,6 +94,7 @@ Rules:
 - Each step should be:
   { "action": "call_function", "function": "<name>", "inputs": {...}, "outputs": [...] }
 - ALL inputs must always appear in the "inputs" object, even if they can use a default value.
+- When an input value comes from a previous step’s output, prefix it with a "$".
 - If one function can directly achieve the goal, output only that.
 - Do not use helper or lookup functions unless required by the goal itself.
 - Include a short "analysis" explaining your reasoning.`;
@@ -137,13 +152,11 @@ Respond strictly as JSON with this structure:
       for (const [key, val] of Object.entries(step.inputs ?? {})) {
         if (typeof val === 'string' && val.startsWith('$')) {
           const varName = val.slice(1);
-          resolvedInputs[key] = context[varName];
+          resolvedInputs[key] = context[varName]['value'];
         } else {
           resolvedInputs[key] = val;
         }
       }
-
-      console.log(`Executing step ${index + 1}/${plan.steps.length}: ${func.name}`, resolvedInputs);
 
       let result;
       try {
@@ -164,26 +177,25 @@ Respond strictly as JSON with this structure:
     const finalKey = plan.steps.at(-1)?.outputs?.[0];
     const finalResult = finalKey ? context[finalKey] : null;
 
-    console.log('Execution completed. Context:', context);
-
     return { context, finalResult };
   }
 
   public async plan(userGoal: string): Promise<any> {
-    const pkg = await this.selectPackage(userGoal);
+    const packages = await this.selectPackages(userGoal);
     await setTimeout(() => {}, 25000);
-
-    const functions = await this.getFunctionsByPackage(pkg);
+    
+    const allFunctions: any[] = [];
+    for (const pkg of packages) {
+      const funcs = await this.getFunctionsByPackage(pkg);
+      allFunctions.push(...funcs);
+      await setTimeout(() => {}, 25000);
+    }
+    
+    const plan = await this.planFunctions(userGoal, allFunctions);
     await setTimeout(() => {}, 25000);
-
-    const plan = await this.planFunctions(userGoal, functions);
-    await setTimeout(() => {}, 25000);
-
-    console.log('FunctionChainAssistant plan:', { package: pkg, plan });
 
     const result = await this.executePlan(plan);
-    console.log('FunctionChainAssistant result:', result);
 
-    return { package: pkg, plan, result };
+    return { packages: packages, plan, result };
   }
 }
