@@ -100,6 +100,9 @@ const areNumbersEqual: TypeEqualityComparator<number> = (a, b) => {
   return Math.abs(a - b) < FLOAT_TOLERANCE;
 };
 
-export const customDeepEqual = createCustomEqual({
-  createCustomConfig: () => ({areNumbersEqual, areObjectsEqual}),
+const customFastEqual = createCustomEqual({
+  createCustomConfig: () => ({ areNumbersEqual, areObjectsEqual }),
 });
+
+// TODO: try using lib apis
+export const customDeepEqual = (a: any, b: any) => (a == null && b == null) || customFastEqual(a, b);
