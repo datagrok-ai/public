@@ -18,6 +18,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
   private labelColumnsColumnNames: string[];
   private autoLabelColNames: string[] = [];
   private autoLabelsSelection: boolean = true;
+  private displayLabels: string;
   private toChangeAutoLabelsSelection: boolean = true;
   private xAxisColumnName: string;
   private yAxisColumnName: string;
@@ -98,6 +99,11 @@ export class ParetoFrontViewer extends DG.JsViewer {
       category: 'Labels',
       description: 'Select legend columns automatically; labels show unique categories.',
       defaultValue: AUTO_LABELS_SELECTION,
+    });
+
+    this.displayLabels = this.string('displayLabels', 'Auto', {
+      choices: ['Auto', 'Always', 'Never'],
+      category: 'Labels',
     });
 
     this.legendVisibility = this.string('legendVisibility', 'Auto', {choices: ['Auto', 'Always', 'Never']});
@@ -226,6 +232,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
       legendVisibility: this.legendVisibility,
       legendPosition: this.legendPosition,
       colorColumnName: this.colorColumnName,
+      displayLabels: this.displayLabels,
     });
 
     if (this.labelColumnsColumnNames != null) {
