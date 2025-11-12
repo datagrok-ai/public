@@ -1934,12 +1934,12 @@ export class Legend extends DartWidget {
   }
 
   /** Mapped indices of filtered (selected) categories. */
-  get selectedCategories(): Set<number> | null {
+  get selectedCategories(): number[] | null {
     return api.grok_Legend_Get_SelectedCategories(this.dart);
   }
 
   /** Mapped indices of extra (selected) categories. */
-  get selectedExtraCategories(): Set<number> | null {
+  get selectedExtraCategories(): number[] | null {
     return api.grok_Legend_Get_SelectedExtraCategories(this.dart);
   }
 

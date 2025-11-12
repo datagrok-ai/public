@@ -39,6 +39,8 @@ public class DbCredentials
     public static final String ROLE = "role";
     public static final String UID = "UID";
     public static final String PWD = "PWD";
+    public static final String OAUTH2_CLIENT_ID = "OAuth2ClientID";
+    public static final String OAUTH2_SECRET = "OAuth2Secret";
 
     public String server;
     public String port;

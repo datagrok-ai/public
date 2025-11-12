@@ -1,9 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {UiUtils} from '@datagrok-libraries/compute-utils';
 import '../css/demo.css';
 import {Subscription} from 'rxjs';
+import {FileInputUtils} from './utils/file-input-utils';
 
 interface ISplash {
   close: () => void;
@@ -150,7 +150,7 @@ export abstract class BaseViewApp {
     this.mode = 'file';
     this.formContainer.style.visibility = 'hidden';
     this.formContainer.style.position = 'absolute';
-    return this.createFileInputPane();
+    return FileInputUtils.createFileInputPane(async (file: File) => await this.processFile(file));
   }
 
   private prepareTableView() {
@@ -253,78 +253,6 @@ export abstract class BaseViewApp {
         grid.invalidate();
       }
     };
-  }
-
-  private createFileInputPane() {
-    const fileInputEditor = this.initializeFileInputEditor();
-    this.removeLabels(fileInputEditor.root);
-    this.styleInputEditor(fileInputEditor.root);
-    this.setupDragAndDrop(fileInputEditor.root);
-    this.removeOptionsIcon(fileInputEditor.root);
-    fileInputEditor.root.classList.add('demo-file-input');
-    return ui.divV([fileInputEditor], {classes: 'demo-file-input-container'});
-  }
-
-  private initializeFileInputEditor() {
-    const fileInputEditor = UiUtils.fileInput('', null, async (file: File) => {
-      await this.processFile(file);
-    }, null);
-    fileInputEditor.stringValue = 'Drag and drop a CSV file here, or click to select a file.';
-    return fileInputEditor;
-  }
-
-  private removeLabels(root: HTMLElement): void {
-    const labelSelectors = '.ui-label, .ui-input-label';
-    const labels = root.querySelectorAll<HTMLElement>(labelSelectors);
-    labels.forEach((label) => label.remove());
-  }
-
-  private styleInputEditor(root: HTMLElement): void {
-    const inputEditor = root.querySelector<HTMLElement>('.ui-input-editor');
-    if (!inputEditor) return;
-
-    Object.assign(inputEditor.style, {
-      width: '100%',
-      height: '100%',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: '#ffffff',
-      color: '#007bff',
-      fontSize: '14px',
-      cursor: 'pointer',
-      textAlign: 'center',
-      borderBottom: 'none',
-    });
-  }
-
-  private setupDragAndDrop(root: HTMLElement): void {
-    const inputEditor = root.querySelector<HTMLElement>('.ui-input-editor');
-    if (!inputEditor) return;
-
-    const highlightColor = '#e0f7fa';
-    const defaultColor = '#ffffff';
-    inputEditor.style.border = '1px dashed #007bff';
-
-    const setHighlightedStyle = () => inputEditor.style.backgroundColor = highlightColor;
-    const resetStyle = () => inputEditor.style.backgroundColor = defaultColor;
-
-    inputEditor.addEventListener('dragenter', setHighlightedStyle);
-    inputEditor.addEventListener('dragover', (event) => {
-      event.preventDefault();
-      setHighlightedStyle();
-    });
-
-    inputEditor.addEventListener('dragleave', resetStyle);
-    inputEditor.addEventListener('drop', (event) => {
-      event.preventDefault();
-      resetStyle();
-    });
-  }
-
-  private removeOptionsIcon(root: HTMLElement): void {
-    const optionsIcon = root.querySelector<HTMLElement>('.ui-input-options .grok-icon.fal.fa-cloud-upload');
-    optionsIcon?.remove();
   }
 
   private async activateFileMode(): Promise<void> {

@@ -6,7 +6,7 @@ import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
 import {addCopyIcon} from '../utils/ui-utils';
 import {MESSAGE_MALFORMED} from '../constants';
-import {getDescriptorsTree} from '../docker/api';
+import {calculateDescriptors, getDescriptorsTree} from '../docker/api';
 
 const _STORAGE_NAME = 'rdkit_descriptors';
 const _KEY = 'selected';
@@ -49,11 +49,8 @@ export async function addDescriptors(smilesCol: DG.Column, viewTable: DG.DataFra
     selected = await getSelected();
     const pi = DG.TaskBarProgressIndicator.create('Calculating descriptors...');
     try {
-      const table = await getDescriptorsPy(
-        smilesCol.name, DG.DataFrame.fromColumns([smilesCol]), 'selected',
-        DG.DataFrame.fromColumns([DG.Column.fromList('string', 'selected', selected)]),
-      );
-      addResultColumns(table, viewTable);
+      const cols = (await calculateDescriptors(smilesCol, selected));
+      addDescriptorsColsToDf(viewTable, cols);
     } catch (e: any) {
       grok.shell.error(e);
     } finally {
@@ -68,7 +65,6 @@ export function getDescriptorsSingle(smiles: string): DG.Widget {
   smiles = _convertMolNotation(smiles, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles, rdKitModule);
   if (smiles === MESSAGE_MALFORMED)
     return new DG.Widget(ui.divText('Molecule is possibly malformed'));
-  const molecule = DG.chem.isMolBlock(smiles) ? `\"${smiles}\"` : smiles;
   const widget = new DG.Widget(ui.div());
   const result = ui.div();
   const selectButton = ui.bigButton('SELECT', async () => {
@@ -83,16 +79,21 @@ export function getDescriptorsSingle(smiles: string): DG.Widget {
     removeChildren(result);
     result.appendChild(ui.loader());
     getSelected().then((selected) => {
-      getDescriptorsPy(
-        'smiles', DG.DataFrame.fromCsv(`smiles\n${molecule}`), 'selected',
-        DG.DataFrame.fromColumns([DG.Column.fromList('string', 'selected', selected)]),
-      ).then((table: any) => {
-        removeChildren(result);
-        const map: { [_: string]: any } = {};
-        for (const descriptor of selected)
-          map[descriptor] = table.col(descriptor).get(0);
-        result.appendChild(ui.tableFromMap(map));
-      });
+      const smilesCol = DG.Column.string('smiles', 1).init(() => smiles);
+      calculateDescriptors(smilesCol, selected)
+        .then((columns: DG.Column[]) => {
+          removeChildren(result);
+          if (!columns.length)
+            throw Error(`Descriptors haven't been calculated for ${smiles}`);
+          const map: { [_: string]: any } = {};
+          const colNames = columns.map((it) => it.name);
+          for (const descriptor of selected) {
+            const colIdx = colNames.findIndex((it) => it === descriptor);
+            if (colIdx !== -1)
+              map[descriptor] = columns[colIdx].get(0);
+          }
+          result.appendChild(ui.tableFromMap(map));
+        });
     });
   };
 
@@ -270,7 +271,7 @@ function openDescriptorsDialog(selected: any, onOK: onOk, dataFrame?: DG.DataFra
 }
 
 //description: Get selected descriptors
-async function getSelected() : Promise<any> {
+export async function getSelected() : Promise<string[]> {
   if (!descriptors)
     descriptors = await getDescriptorsTree();
   const str = grok.userSettings.getValue(_STORAGE_NAME, _KEY);

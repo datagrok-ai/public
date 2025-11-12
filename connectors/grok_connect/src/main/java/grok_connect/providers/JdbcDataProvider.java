@@ -686,4 +686,9 @@ public abstract class JdbcDataProvider extends DataProvider {
         if (value != null)
             properties.setProperty(key, value);
     }
+
+    public static void setIfNotEmpty(java.util.Properties properties, String key, String value) {
+        if (GrokConnectUtil.isNotEmpty(value))
+            properties.setProperty(key, value);
+    }
 }

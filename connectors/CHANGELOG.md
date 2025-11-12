@@ -1,6 +1,14 @@
 # Grok Connect changelog
 
-# 2.5.1 (2025-09-30) WIP
+# 2.5.3 (2025-11-03) WIP
+
+* Databricks: Oauth2(M-M) scheme support, driver update, schema browsing and visual query fixes
+
+# 2.5.2 (2025-10-02)
+
+* Athena: Fixed STS token usage
+
+# 2.5.1 (2025-09-30)
 
 * Athena: Apply session token when passed
 

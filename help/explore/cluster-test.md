@@ -10,13 +10,13 @@
 
 1. Open "demog" dataset
 
-2. Open "Cluster..." from  **ML | Cluster**
+2. Open "Cluster Data..." from  **ML | Cluster**
 
 3. Add "Age", "Height" and "Weight" columns to field "Features"
 
 4. Enter the number of [clusters](cluster-data.md) equal to 3 in the field "Clusters"
 
-5. Set the value of field "Show scatter plot" as true
+5. Set the value of field "Show Scatter Plot" as true
 
     * Column "clusters" was added to "demog" table
     * Viewer "[Scatter Plot](../visualize/viewers/scatter-plot.md)" was created where [clusters](cluster-data.md) are

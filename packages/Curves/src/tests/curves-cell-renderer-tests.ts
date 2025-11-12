@@ -8,7 +8,7 @@ import {createSigmoidPoints, createDemoDataFrame} from '../fit/fit-demo';
 import {category, test, delay} from '@datagrok-libraries/utils/src/test';
 import {FitChartCellRenderer} from '../fit/fit-renderer';
 import {IFitChartData} from '@datagrok-libraries/statistics/src/fit/fit-curve';
-import {FitConstants} from '../fit/const';
+import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 
 
 export function createIFitChartData(seriesLength: number): IFitChartData {
@@ -20,20 +20,20 @@ export function createIFitChartData(seriesLength: number): IFitChartData {
 
   const points = createSigmoidPoints(seriesLength, step);
   const color = DG.Color.toHtml(DG.Color.scatterPlotMarker);
-	chartData.series![0] = {
-	  fitLineColor: color,
-	  pointColor: color,
-	  markerType: DG.MARKER_TYPE.CIRCLE,
-	  showFitLine: true,
-	  showPoints: 'points',
-	  showCurveConfidenceInterval: true,
-	  fitFunction: 'sigmoid',
-	  points: wu.count().take(seriesLength)
-	    .map(function(i) { return {x: points.x[i], y: points.y[i]}; })
-	    .toArray()
-	};
+chartData.series![0] = {
+  fitLineColor: color,
+  pointColor: color,
+  markerType: DG.MARKER_TYPE.CIRCLE,
+  showFitLine: true,
+  showPoints: 'points',
+  showCurveConfidenceInterval: true,
+  fitFunction: 'sigmoid',
+  points: wu.count().take(seriesLength)
+    .map(function(i) { return {x: points.x[i], y: points.y[i]}; })
+    .toArray()
+};
 
-	return chartData;
+return chartData;
 }
 
 export async function scrollTable(el: HTMLElement, delta: number, cycles: number, secDelay: number) {

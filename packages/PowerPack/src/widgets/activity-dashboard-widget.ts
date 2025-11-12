@@ -3,32 +3,36 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import dayjs from 'dayjs';
 import {queries} from '../package-api';
+import {LearningWidget} from './learning-widget';
 
 
 enum SpotlightTabNames {
   ACTION_REQUIRED = 'Action required',
   SHARED_WITH_ME = 'Shared with me',
   RECENT = 'Recent',
-  ADMIN = 'Admin',
 }
 
 export class ActivityDashboardWidget extends DG.Widget {
+  get type(): string {
+    return 'ActivityDashboardWidget';
+  }
+
   static RECENT_TIME_DAYS = 2;
   static SPOTLIGHT_ITEMS_LENGTH = 8;
 
   static sharedEntityRegex: RegExp = /<span>#{x\.([a-f0-9-]+)\.".*?"}<\/span>/g;
   keywordsToIgnore: string[] = ['"data"', '"data w/', '"fitted data"', '"reduced data"', '"reduceddata"', '"sizingparams"', '"primaryfilter', '"trimmed data"', '"input data from imported file"', '"dataanalysisdf', '"clean data"'/*, 'Ran <span>#{x.'*/];
   tipsOfTheDay: string[] = [
-    'Double-click a column header to sort the data.',
-    'Drag and drop a CSV or Excel file into Datagrok to load it as a table.',
-    'Hover over a column name to see its statistics in the tooltip.',
-    'Hold Shift and click multiple column headers to select several columns.',
-    'Use Ctrl+F in a table to search across all values.',
-    'Resize columns by dragging the separator in the header.',
-    'Use Layouts to save and restore your favorite viewer arrangements.',
-    'Use “Add New Column” to create calculated columns with formulas.',
-    'Right-click a column to see context actions available for it.',
-    'Try the “Correlation Plot” to quickly see relationships between numeric columns.',
+    'To sort the data, double-click a column header.',
+    'To load a CSV or Excel file as a table, drag and drop it into Datagrok.',
+    'To see statistics of a column, hover over its name.',
+    'To select multiple columns, hold Shift and click several column headers.',
+    'To search across all values in a table, use Ctrl+F.',
+    'To resize columns, drag the separator in the header.',
+    'To save and restore your favorite viewer arrangements, use Layouts.',
+    'To create calculated columns with formulas, use “Add New Column”.',
+    'To see context actions for a column, right-click it.',
+    'To quickly explore relationships between numeric columns, try the “Correlation Plot”.',
   ];
   availableDemosOfTheDay: DG.Func[] = DG.Func.find({meta: {'demoPath': null}});
   tutorialsOfTheDay: string[] = ['Grid Customization', 'Viewers', 'Scatter Plot', 'Embedded Viewers', 'Filters', 'Dashboards',
@@ -58,7 +62,6 @@ export class ActivityDashboardWidget extends DG.Widget {
   sharedWithMeRoot?: HTMLDivElement | null = null;
   spacesRoot?: HTMLDivElement | null = null;
   recentItemsRoot?: HTMLDivElement | null = null;
-  adminRoot?: HTMLDivElement | null = null;
   subwidgetsAdded: Map<string, HTMLDivElement | null | undefined> = new Map<string, HTMLDivElement>();
   subwidgetsAmount: number = 0;
   reportAmount?: number = 0;
@@ -75,15 +78,26 @@ export class ActivityDashboardWidget extends DG.Widget {
       'Favorites': () => ui.wait(async () => await this.getFavoritesTab()),
       'Notifications': () => ui.wait(async () => await this.getNotificationsTab()),
       'My Activity': () => ui.wait(async () => await this.getActivityTab()),
+      'Learn': () => new LearningWidget().root,
     };
 
     this.tabControl = ui.tabControl(tabs, true);
-    this.tabControl.onTabChanged.subscribe((_) => this.cleanLists());
-    this.tabControl.root.style.height = '100%';
+    this.subs.push(this.tabControl.onTabChanged.subscribe((tabPane: DG.TabPane) => {
+      this.cleanLists();
+      tabPane.name === 'Learn' ? tabPane.content.parentElement?.classList.add('power-pack-overflow-hidden') :
+        tabPane.content.parentElement?.classList.remove('power-pack-overflow-hidden');
+    }));
+    this.tabControl.root.style.height = '90%';
     this.tabControl.root.style.width = '100%';
-    this.tabControl.root.appendChild(await this.createRandomizedTipOfTheDay());
 
     this.root.appendChild(this.tabControl.root);
+    this.root.appendChild(await this.createRandomizedTipOfTheDay());
+    // TODO: uncomment when JS API 1.27/1.26.5 is released
+    // this.subs.push((grok.events.onCurrentObjectChanged.subscribe((args) => {
+    //   const trigger = args.args.trigger;
+    //   if (this.root.contains(trigger))
+    //     grok.shell.windows.context.visible = true;
+    // })));
   }
 
   async getDemosOfTheDay(): Promise<string[]> {
@@ -152,7 +166,6 @@ export class ActivityDashboardWidget extends DG.Widget {
     else
       randomTip = todayItemListFromType.length > 0 ? todayItemListFromType[Math.floor(seededRandom(weekSeed) * todayItemListFromType.length)] : '';
 
-    const usedTipList: (DG.Func | string)[] = [randomTip];
     let tipIdx = 0;
     const demoApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'demoApp'})[0];
     const tutorialsApp = DG.Func.find({tags: ['app'], package: 'Tutorials', name: 'trackOverview'})[0];
@@ -174,28 +187,16 @@ export class ActivityDashboardWidget extends DG.Widget {
         link = ui.link(newRandomTip, async () => await tutorialsApp.apply());
         tip.appendChild(link);
       }
-
-      let prevTipIcon: HTMLElement;
-      let nextTipIcon: HTMLElement;
-      const updateTip = (next: boolean) => {
-        next ? tipIdx++ : tipIdx--;
-        tipIdx === 0 ? prevTipIcon.classList.add('tip-prev-hidden') : prevTipIcon.classList.remove('tip-prev-hidden');
-        const newRandomTip = tipIdx < usedTipList.length ? usedTipList[tipIdx] : randomizedTips[Math.floor(Math.random() * randomizedTips.length)];
-        if (tipIdx >= usedTipList.length)
-          usedTipList.push(newRandomTip);
+      const updateTip = () => {
+        tipIdx++;
+        const newRandomTip = randomizedTips[Math.floor(Math.random() * randomizedTips.length)];
         const newTip = createTip(newRandomTip);
         tip.replaceWith(newTip);
       };
 
-      prevTipIcon = ui.iconFA('chevron-left', () => updateTip(false), 'Previous tip');
-      prevTipIcon.classList.add('tip-prev');
-      if (tipIdx === 0)
-        prevTipIcon.classList.add('tip-prev-hidden');
-      nextTipIcon = ui.iconFA('chevron-right', () => updateTip(true), 'Next tip');
+      const nextTipIcon = ui.iconFA('chevron-right', updateTip, 'Next tip');
       nextTipIcon.classList.add('tip-next');
-      tipText.prepend(prevTipIcon);
-      tip.appendChild(nextTipIcon);
-
+      tip.prepend(nextTipIcon);
       return tip;
     };
     return createTip(randomTip);
@@ -317,8 +318,7 @@ export class ActivityDashboardWidget extends DG.Widget {
             if (timeChild)
               timeChild.remove();
           }
-        } else if (item instanceof DG.LogEvent && item.description.toLowerCase().includes('published version'))
-          listChild.querySelector('.d4-markup')!.classList.add('power-pack-activity-widget-spotlight-column-admin-row');
+        }
 
         if (title === SpotlightTabNames.SHARED_WITH_ME && sharedNotification.text) {
           const icon = ui.iconFA('clock');
@@ -348,50 +348,42 @@ export class ActivityDashboardWidget extends DG.Widget {
 
     let root = ui.divH([], 'power-pack-activity-widget-spotlight-root');
 
-    // API changes needed
-    // if (!(DG.User.current().joined > dayjs().subtract(7, 'day')) && false) {
-    const actionRequired = this.recentNotifications.filter((n) => {
-      const text = n.text.toLowerCase();
-      return text.includes('you were assigned') || text.includes('requested a membership');
-    });
-    this.actionRequiredRoot = actionRequired.length > 0 ? createSection(SpotlightTabNames.ACTION_REQUIRED, actionRequired, ui.iconFA('exclamation-circle')) : null;
-    if (this.actionRequiredRoot)
-      root.appendChild(this.actionRequiredRoot!);
-    this.subwidgetsAdded.set(SpotlightTabNames.ACTION_REQUIRED, this.actionRequiredRoot);
+    if (!(DG.User.current().joined > dayjs().subtract(5, 'day'))) {
+      const actionRequired = this.recentNotifications.filter((n) => {
+        const text = n.text.toLowerCase();
+        return text.includes('you were assigned') || text.includes('requested a membership');
+      });
+      this.actionRequiredRoot = actionRequired.length > 0 ? createSection(SpotlightTabNames.ACTION_REQUIRED, actionRequired, ui.iconFA('exclamation-circle')) : null;
+      if (this.actionRequiredRoot)
+        root.appendChild(this.actionRequiredRoot!);
+      this.subwidgetsAdded.set(SpotlightTabNames.ACTION_REQUIRED, this.actionRequiredRoot);
 
-    this.sharedWithMeRoot = this.sharedWithMe.length > 0 ? createSection(SpotlightTabNames.SHARED_WITH_ME, this.sharedWithMe, ui.iconFA('inbox')) : null;
-    if (this.sharedWithMeRoot)
-      root.appendChild(this.sharedWithMeRoot!);
-    this.subwidgetsAdded.set(SpotlightTabNames.SHARED_WITH_ME, this.sharedWithMeRoot);
+      this.sharedWithMeRoot = this.sharedWithMe.length > 0 ? createSection(SpotlightTabNames.SHARED_WITH_ME, this.sharedWithMe, ui.iconFA('inbox')) : null;
+      if (this.sharedWithMeRoot)
+        root.appendChild(this.sharedWithMeRoot!);
+      this.subwidgetsAdded.set(SpotlightTabNames.SHARED_WITH_ME, this.sharedWithMeRoot);
 
-    this.spacesRoot = null;
-    if (this.spacesRoot)
-      root.appendChild(this.spacesRoot!);
-    // this.subwidgetsAdded.set(SpotlightTabNames.SPACES, this.spacesRoot);
+      this.spacesRoot = null;
+      if (this.spacesRoot)
+        root.appendChild(this.spacesRoot!);
+      // this.subwidgetsAdded.set(SpotlightTabNames.SPACES, this.spacesRoot);
 
-    this.recentItemsRoot = this.recentEntities.length > 0 ? createSection(SpotlightTabNames.RECENT, this.recentEntities, ui.iconFA('history')) : null;
-    if (this.recentItemsRoot)
-      root.appendChild(this.recentItemsRoot!);
-    this.subwidgetsAdded.set(SpotlightTabNames.RECENT, this.recentItemsRoot);
-
-    const adminActivity = this.recentUserActivity.filter((l) => l.description.toLowerCase().includes('published version'));
-    this.adminRoot = adminActivity.length > 0 ? createSection(SpotlightTabNames.ADMIN, adminActivity, ui.icons.settings(() => {})) : null;
-    if (this.adminRoot)
-      root.appendChild(this.adminRoot!);
-    this.subwidgetsAdded.set(SpotlightTabNames.ADMIN, this.adminRoot);
-    // }
+      this.recentItemsRoot = this.recentEntities.length > 0 ? createSection(SpotlightTabNames.RECENT, this.recentEntities, ui.iconFA('history')) : null;
+      if (this.recentItemsRoot)
+        root.appendChild(this.recentItemsRoot!);
+      this.subwidgetsAdded.set(SpotlightTabNames.RECENT, this.recentItemsRoot);
+    }
 
     if (root.children.length === 0)
       root = await this.getNewUserInfoColumns();
 
-    const additionalFuncs = DG.Func.find({meta: {'isActivityWidget': 'true'}});
+    const additionalFuncs = DG.Func.find({meta: {'activityWidgetHeader': null}});
     for (const func of additionalFuncs) {
-      const elements: HTMLElement[] = await func.apply();
-      const list = ui.list(elements);
-      list.classList.add('power-pack-activity-widget-subwidget-list-content');
-      const listRoot = ui.divV([ui.h3(ui.span([ui.span([func.options['activityWidgetHeader'] ?? ''])]), 'power-pack-activity-widget-spotlight-column-header'),
-        list], 'power-pack-activity-widget-spotlight-column');
-      root.appendChild(listRoot);
+      const subWidget: DG.Widget = await func.apply();
+      subWidget.root.classList.add('power-pack-activity-widget-subwidget-list-content');
+      const rootToAppend = ui.divV([ui.h3(ui.span([ui.span([func.options['activityWidgetHeader'] ?? ''])]), 'power-pack-activity-widget-spotlight-column-header'),
+        subWidget.root], 'power-pack-activity-widget-spotlight-column');
+      root.appendChild(rootToAppend);
     }
 
     setTimeout(() => this.cleanLists(), 500);

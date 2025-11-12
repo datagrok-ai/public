@@ -6,13 +6,13 @@ import '../css/revvity-signals-styles.css';
 import { SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
 import { queryLibraries, queryTags, queryTerms, queryUsers, RevvityData, RevvityUser, search } from './revvity-api';
 import { reorderColumns, transformData, getViewNameByCompoundType, createRevvityWidgetByCorporateId, createWidgetByRevvityLabel } from './utils';
-import { addMoleculeStructures } from './compounds';
+import { addMoleculeStructures, getConditionForLibAndType } from './compounds';
 import { createInitialSatistics, getRevvityLibraries, RevvityLibrary } from './libraries';
 import { createViewForExpandabelNode, createViewFromPreDefinedQuery, handleInitialURL } from './view-utils';
 import { createSavedSearchesSatistics, SAVED_SEARCH_STORAGE } from './search-utils';
 import { funcs } from './package-api';
-import { HIDDEN_ID_COL_NAME, ID_COL_NAME, MOL_COL_NAME, REVVITY_LABEL_SEM_TYPE, REVVVITY_LABEL_FIELDS, USER_FIELDS } from './constants';
-import { getRevvityUsers } from './users';
+import { HIDDEN_ID_COL_NAME, ID_COL_NAME, MOL_COL_NAME, REVVITY_LABEL_SEM_TYPE, REVVITY_SEARCH_RES_TOTAL_COUNT, REVVVITY_LABEL_FIELDS, USER_FIELDS } from './constants';
+import { getRevvityUsers, getUsersAllowed, updateRevvityUsers } from './users';
 import { convertIdentifierFormatToRegexp } from './detectors';
 
 
@@ -121,18 +121,28 @@ export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGrou
 }
 
 //name: Search Entities
-//meta.cache: all
-//meta.cache.invalidateOn: 0 0 * * *
 //input: string query
 //input: string params
+//input: string libId
+//input: string entityType
 //output: dataframe df
-export async function searchEntities(query: string, params: string): Promise<DG.DataFrame> {
+export async function searchEntities(query: string, params: string, libId: string, entityType: string): Promise<DG.DataFrame> {
   const queryJson: SignalsSearchQuery = JSON.parse(query);
   const paramsJson: SignalsSearchParams = JSON.parse(params);
   const response = await search(queryJson, Object.keys(paramsJson).length ? paramsJson : undefined);
   const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
-  const rows = await transformData(data);
-  const df = rows.length === 0 ? DG.DataFrame.create() : DG.DataFrame.fromObjects(rows)!;
+
+  //in case /users endpoint is not allowed, extract users from included section
+  if (!getUsersAllowed) {
+    const newUsers = response.included?.filter((it) => it.type === 'user').map((it) => it.attributes);
+    if (newUsers?.length)
+      updateRevvityUsers(newUsers);
+  }
+  const df = await transformData(data, libId, entityType);
+
+  //saving total result count
+  df.setTag(REVVITY_SEARCH_RES_TOTAL_COUNT, response.meta ? response.meta!.total.toString() : '');
+
   USER_FIELDS.forEach((field) => {
     const col = df.col(field);
     if (col)
@@ -152,11 +162,15 @@ export async function searchEntities(query: string, params: string): Promise<DG.
 //name: Search Entities With Structures
 //input: string query
 //input: string params
+//input: string libId
+//input: string entityType
+//input: bool doNotAddStructures {optional: true}
 //output: dataframe df
-export async function searchEntitiesWithStructures(query: string, params: string): Promise<DG.DataFrame> {
+export async function searchEntitiesWithStructures(query: string, params: string,
+  libId: string, entityType: string, doNotAddStructures?: boolean): Promise<DG.DataFrame> {
   let df = DG.DataFrame.create();
   try {
-    df = await funcs.searchEntities(query, params);
+    df = await funcs.searchEntities(query, params, libId, entityType);
     let idCol = df.col(HIDDEN_ID_COL_NAME);
     if (!idCol)
       idCol = df.col(ID_COL_NAME);
@@ -167,7 +181,8 @@ export async function searchEntitiesWithStructures(query: string, params: string
       moleculeColumn.meta.units = DG.UNITS.Molecule.MOLBLOCK;
       df.columns.add(moleculeColumn);
       reorderColumns(df);
-      addMoleculeStructures(moleculeIds, moleculeColumn);
+      if (!doNotAddStructures)
+        addMoleculeStructures(moleculeIds, moleculeColumn);
     }
   } catch (e: any) {
     grok.shell.error(e?.message ?? e);
@@ -183,7 +198,7 @@ export async function getUsers(): Promise<string> {
   const users: RevvityUser[] = [];
   const response = await queryUsers();
   if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
-    return '{}';
+    return '[]';
   const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
   for (const user of data)
     users.push(user.attributes);
@@ -272,7 +287,7 @@ export async function getTags(type: string, assetTypeId: string): Promise<string
 export async function searchTerms(query: string): Promise<string> {
   const response = await queryTerms(JSON.parse(query));
   if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
-    return '{}';
+    return '[]';
   const data: RevvityData[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
   return JSON.stringify(data);
 }
@@ -285,43 +300,7 @@ export async function searchTerms(query: string): Promise<string> {
 //input: bool isMaterial
 //output: list<string> terms
 export async function getTermsForField(fieldName: string, type: string, assetTypeId: string, isMaterial: boolean): Promise<string[]> {
-  const innerAndConditions: any[] = [
-    {
-      "$match": {
-        "field": "assetTypeEid",
-        "value": assetTypeId,
-      }
-    },
-    {
-      "$match": {
-        "field": "type",
-        "value": type,
-        "mode": "keyword"
-      }
-    },
-  ];
-  if (isMaterial) {
-    innerAndConditions.push({
-      "$and": [
-        {
-          "$match": {
-            "field": "isMaterial",
-            "value": true
-          }
-        },
-        {
-          "$not": [
-            {
-              "$match": {
-                "field": "type",
-                "value": "assetType"
-              }
-            }
-          ]
-        }
-      ]
-    })
-  }
+  const innerAndConditions = getConditionForLibAndType(type, assetTypeId, isMaterial);
   const query: SignalsSearchQuery = {
     "query": {
       "$and": innerAndConditions

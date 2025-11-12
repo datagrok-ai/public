@@ -29,14 +29,12 @@ public class ConnectionPool {
             HikariDataSource ds = connectionPool.computeIfAbsent(key, k -> getDataSource(url, properties, driverClassName));
             return ds.getConnection();
         } catch (HikariPool.PoolInitializationException | SQLTransientConnectionException e) {
-            if (connectionPool.containsKey(key)) {
-                HikariDataSource pool = connectionPool.remove(key);
-                if (pool != null)
-                    pool.close();
-            }
+            HikariDataSource pool = connectionPool.remove(key);
+            if (pool != null)
+                pool.close();
             Throwable cause = e.getCause();
             throw new GrokConnectException(cause != null ? cause : e);
-        } catch (SQLException e) {
+        } catch (SQLException | RuntimeException e) {
             throw new GrokConnectException(e);
         }
     }
@@ -91,6 +89,8 @@ public class ConnectionPool {
         propertiesWithoutPass.remove(DbCredentials.ACCOUNT_LOCATOR);
         propertiesWithoutPass.remove(DbCredentials.UID);
         propertiesWithoutPass.remove(DbCredentials.PWD);
+        propertiesWithoutPass.remove(DbCredentials.OAUTH2_SECRET);
+        propertiesWithoutPass.remove(DbCredentials.OAUTH2_CLIENT_ID);
 
         String alphanumeric = "[^A-Za-z\\d./|=]";
         String poolName = "Host - " + url.replaceAll("[:=]", "|").replaceAll(alphanumeric, "") +

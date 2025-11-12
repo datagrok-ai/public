@@ -1,6 +1,6 @@
 // Manager of callbacks
 
-import {SolverOptions} from '@datagrok/diff-grok';
+import {SolverOptions} from 'diff-grok';
 import {Callback} from './callback-base';
 import {TimeCheckerCallback} from './time-checker-callback';
 import {IterCheckerCallback} from './iter-checker-callback';

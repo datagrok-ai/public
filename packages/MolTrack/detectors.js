@@ -5,5 +5,6 @@
  * The class name is comprised of <PackageName> and the `PackageDetectors` suffix.
  * Follow this naming convention to ensure that your detectors are properly loaded.
  */
-class MolTrackPackageDetectors extends DG.Package {
+class MoltrackPackageDetectors extends DG.Package {
+
 }

@@ -11,16 +11,16 @@ import {getElement, getView, singleDescription, closeWindows, describeElements, 
 /** Fitting results info */
 const fittingInfo = [
   `# Grid
-  
+
   The first row presents the best fit:
-  
+
   * the computed <b>Velocity</b> and <b>Angle</b>
   * a visualization illustrating the goodness of fit`,
   `# Max distance
-  
+
   The bar chart illustrates the difference between the target and computed values of <b>Max distance</b>.`,
   `# Loss
-  
+
   The line chart shows the reduction of the loss function over iterations.`,
 ];
 
@@ -54,10 +54,10 @@ export class FittingTutorial extends Tutorial {
     // 1. Open Apps
     let browseHeader = document.querySelector('div[class="panel-titlebar disable-selection grok-browse-header"]');
     let browseIcon = document.querySelector('div[name="Browse"]') as HTMLElement;
-    if (browseHeader === null)      
+    if (browseHeader === null)
       browseIcon.click();
-    
-    const browsePanel = grok.shell.browsePanel;    
+
+    const browsePanel = grok.shell.browsePanel;
     const appsGroupRoot = await getElement(browsePanel.root, 'div[name="tree-Apps"]');
     if (appsGroupRoot === null) {
       grok.shell.warning('Failed to open Apps');
@@ -67,7 +67,7 @@ export class FittingTutorial extends Tutorial {
     const appView = grok.shell.view('Apps');
     if ((appView !== null) && (appView !== undefined))
       appView.close();
-        
+
     await this.action(
       'Open Apps',
       fromEvent(appsGroupRoot, 'click'),
@@ -76,27 +76,27 @@ export class FittingTutorial extends Tutorial {
     );
 
     await new Promise((resolve) => setTimeout(resolve, PAUSE));
-        
+
     appsGroupRoot.dispatchEvent(new Event("dblclick", { bubbles: true, cancelable: true }));
-    
+
     // 2. Run Model catalog
     const galleryGrid = await getElement(document,'div[class="grok-gallery-grid"]');
     if (galleryGrid === null) {
       grok.shell.warning('Failed to open apps');
       return;
     }
-    
+
     browseIcon.click();
-    
+
     let name = 'Model-Hub';
     const modelCatalogIcn = await getElement(galleryGrid,`div[name="div-${name}"]`);
     name = name.replace('-',' ');
-    
+
     if (modelCatalogIcn === null) {
       grok.shell.warning(`${name} not found: install the Compute package`);
       return;
     }
-    
+
     await this.action(
       `Run ${name}`,
       fromEvent(modelCatalogIcn, 'dblclick'),
@@ -136,7 +136,7 @@ export class FittingTutorial extends Tutorial {
 
     let okBtn = singleDescription(
       modelRoot,
-      `# Simulation\n\nThis model takes the ball and thrown parameters, and 
+      `# Simulation\n\nThis model takes the ball and thrown parameters, and
       computes\n\n* the flight trajectory\n\n* max height and distance`,
       'Go to the next step',
     );
@@ -157,13 +157,13 @@ export class FittingTutorial extends Tutorial {
     const ribbonPannels = modelView.getRibbonPanels();
     if (ribbonPannels.length < 1) {
       grok.shell.warning('Failed to run model analysis features');
-      return;      
+      return;
     }
 
     const rightPanel = ribbonPannels[ribbonPannels.length - 1];
     if (rightPanel.length < 2) {
       grok.shell.warning('Failed to load model analysis features');
-      return;      
+      return;
     }
 
     const fitIcnRoot = rightPanel[rightPanel.length - 2];
@@ -182,30 +182,32 @@ export class FittingTutorial extends Tutorial {
       return;
     }
 
-    const fitFormRoot = await getElement(fittingView.root, 'div.ui-div.ui-form');
-    const velocityInputRoot = fitFormRoot!.children[10] as HTMLElement;
-    const velocitySwitcher = velocityInputRoot.querySelector('div.ui-input-editor') as HTMLElement;
+    const fitFormRoot = await getElement(fittingView.root, 'div.ui-form');
+
+    const switchers = fitFormRoot!.querySelectorAll('div.ui-input-bool-switch');
+    const velocitySwitcher = switchers[3] as HTMLElement;
+    const velocityToggle = velocitySwitcher.querySelector('div.ui-input-editor') as HTMLElement;
 
     this.describe('Let\'s find the initial velocity and angle.');
 
     await this.action(
       'Toggle the "Velocity" parameter',
-      fromEvent(velocitySwitcher, 'click'),
-      velocitySwitcher,
+      fromEvent(velocityToggle, 'click'),
+      velocityToggle,
     );
 
-    // 7. Switch Angle
-    const angleFitInputRoot = fitFormRoot!.children[13] as HTMLElement;
-    const angleSwitcher = angleFitInputRoot.querySelector('div.ui-input-editor') as HTMLElement;
+    // 7. Switch Angle    
+    const angleSwitcher = switchers[4] as HTMLElement;
+    const angleToggle = angleSwitcher.querySelector('div.ui-input-editor') as HTMLElement;
 
     await this.action(
       'Toggle the "Angle" parameter',
-      fromEvent(angleSwitcher, 'click'),
-      angleSwitcher,
+      fromEvent(angleToggle, 'click'),
+      angleToggle,
     );
 
     // 8. Target value
-    const distFitInputRoot = fitFormRoot!.children[17] as HTMLElement;
+    const distFitInputRoot = fitFormRoot!.children[38] as HTMLElement;
     const distSwitcher = distFitInputRoot.querySelector('input.ui-input-editor') as HTMLInputElement;
     const numSource = fromEvent(distSwitcher, 'input').pipe(map((_) => distSwitcher.value), filter((val) => val === '10'));
 
@@ -223,7 +225,7 @@ export class FittingTutorial extends Tutorial {
       'Click "Run"',
       fromEvent(runIcnRoot, 'click'),
       runIcnRoot,
-      `Click the <b>Run</b> icon on the top panel to launch fitting <b>Velocity</b> and <b>Angle</b>. 
+      `Click the <b>Run</b> icon on the top panel to launch fitting <b>Velocity</b> and <b>Angle</b>.
       Customize optimizer's settings in the <b>Using</b> block.`,
     );
 
@@ -256,7 +258,7 @@ export class FittingTutorial extends Tutorial {
     this.title('Fit curve');
     this.describe('How to throw a ball so that it follows a given trajectory?\nYou may check the target in <b>Tables > Ball trajectory</b>.');
 
-    const maxDistRoot = fitFormRoot!.children[17] as HTMLElement;
+    const maxDistRoot = fitFormRoot!.children[37] as HTMLElement;
     const maxDistSwitcher = maxDistRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
     await this.action(
@@ -266,7 +268,7 @@ export class FittingTutorial extends Tutorial {
     );
 
     // 12. Switch on Trajectory
-    const trajectoryRoot = fitFormRoot!.querySelector('div.ui-input-choice.ui-input-table.ui-input-root') as HTMLElement;
+    const trajectoryRoot = fitFormRoot!.children[41] as HTMLElement;
     const trajectorySwitcher = trajectoryRoot.querySelector('div.ui-input-editor') as HTMLElement;
 
     await this.action(
@@ -315,7 +317,7 @@ export class FittingTutorial extends Tutorial {
       );
     }
 
-    this.describe(`Apply ${ui.link('Parameter Optimization', LINK.FITTING).outerHTML} to both ${name} and 
+    this.describe(`Apply ${ui.link('Parameter Optimization', LINK.FITTING).outerHTML} to both ${name} and
     ${ui.link('Diff Studio', LINK.DIF_STUDIO).outerHTML} models.`);
   } // _run
 } // FittingTutorial

@@ -22,6 +22,18 @@ export async function initChemAutostart() : Promise<void> {
   await PackageFunctions.initChemAutostart();
 }
 
+//name: Recalculate Coordinates
+//description: Recalculates 2D coordinates for molecules in the column using Open Chem Lib
+//tags: Transform
+//input: dataframe table 
+//input: column molecules { semType: Molecule }
+//input: bool join = true 
+//output: column result
+//top-menu: Chem | Transform | Recalculate Coordinates...
+export async function recalculateCoordsViaOCL(table: DG.DataFrame, molecules: DG.Column, join: boolean) : Promise<any> {
+  return await PackageFunctions.recalculateCoordsViaOCL(table, molecules, join);
+}
+
 //name: Chemistry | Most Diverse Structures
 //tags: tooltip
 //input: column col { semType: Molecule }
@@ -196,6 +208,14 @@ export async function calculateDescriptorsTransform(table: DG.DataFrame, molecul
   await PackageFunctions.calculateDescriptorsTransform(table, molecules, selected);
 }
 
+//input: column molecules { semType: Molecule }
+//input: list<string> selected { optional: true }
+//output: dataframe result
+//meta.vectorFunc: true
+export async function getDescriptors(molecules: DG.Column, selected?: string[]) : Promise<any> {
+  return await PackageFunctions.getDescriptors(molecules, selected);
+}
+
 //output: object descriptors
 export async function chemDescriptorsTree() : Promise<any> {
   return await PackageFunctions.chemDescriptorsTree();
@@ -220,14 +240,6 @@ export async function chemDescriptors(table: DG.DataFrame, molecules: DG.Column,
   await PackageFunctions.chemDescriptors(table, molecules, descriptors);
 }
 
-//input: column molecules { semType: Molecule }
-//input: string descriptor 
-//output: column result
-//meta.vectorFunc: true
-export async function chemDescriptor(molecules: DG.Column, descriptor: string) : Promise<any> {
-  return await PackageFunctions.chemDescriptor(molecules, descriptor);
-}
-
 //name: SearchSubstructureEditor
 //tags: editor
 //input: funccall call 
@@ -243,11 +255,11 @@ export function SubstructureSearchTopMenu(molecules: DG.Column) : void {
   PackageFunctions.SubstructureSearchTopMenu(molecules);
 }
 
+//name: Cluster MCS
 //description: Calculates most common substructures for each cluster
 //input: dataframe table 
 //input: column molCol { semType: Molecule }
-//input: column clusterCol { type: string }
-//friendlyName: Cluster MCS
+//input: column clusterCol { type: categorical }
 //top-menu: Chem | Calculate | Cluster MCS...
 export async function clusterMCSTopMenu(table: DG.DataFrame, molCol: DG.Column, clusterCol: DG.Column) : Promise<void> {
   await PackageFunctions.clusterMCSTopMenu(table, molCol, clusterCol);
@@ -382,7 +394,7 @@ export function ActivityCliffsEditor(call: DG.FuncCall) : void {
 //description: Detects pairs of molecules with similar structure and significant difference in any given property
 //input: dataframe table { description: Input data table }
 //input: column molecules { type: categorical; semType: Molecule }
-//input: numerical activities { type: numerical }
+//input: column activities { type: numerical }
 //input: double similarity = 80 { description: Similarity cutoff }
 //input: string methodName { choices: ["UMAP","t-SNE"] }
 //input: string similarityMetric { choices: ["Tanimoto","Asymmetric","Cosine","Sokal"] }
@@ -404,7 +416,7 @@ export async function activityCliffsInitFunction(sp: any) : Promise<void> {
 //tags: Transform
 //input: dataframe table { description: Input data table }
 //input: column molecules { type: categorical; semType: Molecule }
-//input: numerical activities { type: numerical }
+//input: column activities { type: numerical }
 //input: double similarity = 80 { description: Similarity cutoff }
 //input: string methodName { choices: ["UMAP","t-SNE"] }
 //input: string similarityMetric { choices: ["Tanimoto","Asymmetric","Cosine","Sokal"] }
@@ -416,7 +428,7 @@ export async function activityCliffsTransform(table: DG.DataFrame, molecules: DG
 
 //name: To InchI
 //tags: Transform
-//input: dataframe table { description: Input data table }
+//input: dataframe table 
 //input: column molecules { semType: Molecule }
 //top-menu: Chem | Calculate | To InchI...
 export function addInchisTopMenu(table: DG.DataFrame, col: DG.Column) : void {
@@ -482,11 +494,11 @@ export async function runStructuralAlerts(table: DG.DataFrame, molecules: DG.Col
 }
 
 //input: column<string> molecules { semType: Molecule }
-//input: string alert 
-//output: column res
+//input: list<string> alerts { optional: true }
+//output: dataframe result
 //meta.vectorFunc: true
-export async function runStructuralAlert(molecules: DG.Column, alert: any) : Promise<any> {
-  return await PackageFunctions.runStructuralAlert(molecules, alert);
+export async function getStructuralAlerts(molecules: DG.Column, alerts?: string[]) : Promise<any> {
+  return await PackageFunctions.getStructuralAlerts(molecules, alerts);
 }
 
 //name: Chemistry | Rendering
@@ -814,17 +826,17 @@ export async function callChemDiversitySearch(col: DG.Column, metricName: any, f
 //meta.method_info.author: Open Chem Lib Team
 //meta.method_info.year: 2024
 //meta.method_info.github: https://github.com/actelion/openchemlib
-//top-menu: Chem | Calculate | Properties...
+//top-menu: Chem | Calculate | Chemical Properties...
 export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: DG.Column, MW?: boolean, HBA?: boolean, HBD?: boolean, logP?: boolean, logS?: boolean, PSA?: boolean, rotatableBonds?: boolean, stereoCenters?: boolean, moleculeCharge?: boolean) : Promise<void> {
   await PackageFunctions.addChemPropertiesColumns(table, molecules, MW, HBA, HBD, logP, logS, PSA, rotatableBonds, stereoCenters, moleculeCharge);
 }
 
 //input: column molecules { semType: Molecule }
-//input: string property { choices: ["MW","HBA","HBD","LogP","LogS","PSA","Rotatable bonds","Stereo centers","Molecule charge"] }
-//output: column result
+//input: list<string> selected { optional: true }
+//output: dataframe result
 //meta.vectorFunc: true
-export async function getMolProperty(molecules: DG.Column, property: string) : Promise<any> {
-  return await PackageFunctions.getMolProperty(molecules, property);
+export async function getProperties(molecules: DG.Column, selected?: string[]) : Promise<any> {
+  return await PackageFunctions.getProperties(molecules, selected);
 }
 
 //name: Toxicity Risks
@@ -838,6 +850,14 @@ export async function getMolProperty(molecules: DG.Column, property: string) : P
 //top-menu: Chem | Calculate | Toxicity Risks...
 export async function addChemRisksColumns(table: DG.DataFrame, molecules: DG.Column, mutagenicity?: boolean, tumorigenicity?: boolean, irritatingEffects?: boolean, reproductiveEffects?: boolean) : Promise<void> {
   await PackageFunctions.addChemRisksColumns(table, molecules, mutagenicity, tumorigenicity, irritatingEffects, reproductiveEffects);
+}
+
+//input: column molecules { semType: Molecule }
+//input: list<string> risks { optional: true }
+//output: dataframe result
+//meta.vectorFunc: true
+export async function getToxicityRisks(molecules: DG.Column, risks?: string[]) : Promise<any> {
+  return await PackageFunctions.getToxicityRisks(molecules, risks);
 }
 
 //description: Generates a hierarchical tree based on the scaffolds presented in dataset
@@ -1072,6 +1092,13 @@ export async function convertToV3KViaOCL(mols: string[]) : Promise<string[]> {
 //top-menu: Chem | Calculate | MPO Score...
 export async function _mpo() : Promise<void> {
   await PackageFunctions._mpo();
+}
+
+//tags: Transform
+//input: dataframe df 
+//input: object currentProperties 
+export async function mpoTransformFunction(df: DG.DataFrame, currentProperties: any) : Promise<void> {
+  await PackageFunctions.mpoTransformFunction(df, currentProperties);
 }
 
 //tags: fileViewer

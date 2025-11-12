@@ -20,7 +20,7 @@ import {
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {getSplitter} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
-import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {GapOriginals} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {execMonomerHoverLinks} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
 import {CellRendererBackBase, getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
@@ -81,10 +81,9 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
 
   getRendererBack(gridCell: DG.GridCell): CellRendererBackBase<string> | null {
     const [gridCol, tableCol, _temp] = getGridCellColTemp<string, any>(gridCell);
-    if (tableCol.meta.units !== NOTATION.CUSTOM)
+    if (_temp.rendererBack)
       return _temp.rendererBack;
     let back: CellRendererBackBase<string> | null = null;
-
     if (this.seqHelper) {
       const sh = this.seqHelper.getSeqHandler(tableCol);
       back = sh.getRendererBack(gridCol, tableCol);
@@ -96,10 +95,8 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
     const colTemp: TempType = gridCell.cell.column.temp;
     colTemp[tempTAGS.currentWord] = gridCell.cell.value;
     gridCell.grid.invalidate();
-    if (gridCell.cell.column.meta.units === NOTATION.CUSTOM) {
-      const back = this.getRendererBack(gridCell);
-      back?.onClick(gridCell, _e);
-    }
+    const back = this.getRendererBack(gridCell);
+    back?.onClick(gridCell, _e);
   }
 
   override onMouseEnter(gridCell: DG.GridCell, e: MouseEvent) {
@@ -195,12 +192,11 @@ export class MacromoleculeSequenceCellRenderer extends DG.GridCellRenderer {
   }
 
   override render(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell, cellStyle: DG.GridCellStyle): void {
-    if (gridCell.cell.column?.meta?.units === NOTATION.CUSTOM) {
-      const back = this.getRendererBack(gridCell);
+    const back = this.getRendererBack(gridCell);
+    if (back)
       back?.render(g, x, y, w, h, gridCell, cellStyle);
-      return;
-    }
-    this.renderInt(g, x, y, w, h, gridCell, cellStyle);
+    else
+      this.renderInt(g, x, y, w, h, gridCell, cellStyle);
   }
 }
 

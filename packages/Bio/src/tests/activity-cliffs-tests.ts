@@ -8,7 +8,7 @@ import {_testActivityCliffsOpen} from './activity-cliffs-utils';
 
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
-import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {
   getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
@@ -67,7 +67,7 @@ category('activityCliffs', async () => {
     if (helmPackInstalled) {
       const df = await _package.files.readCsv('samples/HELM_50.csv');
       const _view = grok.shell.addTableView(df);
-  
+
       await _testActivityCliffsOpen(df, DimReductionMethods.UMAP,
         'HELM', 'Activity', 65, 20, BitArrayMetricsNames.Tanimoto, helmEncodingFunc);
     }

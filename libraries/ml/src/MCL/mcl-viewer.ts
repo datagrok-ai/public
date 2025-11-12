@@ -11,6 +11,7 @@ export type MCLViewerProps = {
     scProps: Partial<DG.IScatterPlotSettings>;
 }
 
+export const MAX_MCL_SAVABLE_ROWS = 65534;
 
 // depending if the dataframe has a data sync enabled or not, we might want to initialize the viewer in a different way
 export class MCLViewer extends DG.JsViewer {
@@ -34,8 +35,8 @@ export class MCLViewer extends DG.JsViewer {
     }
 
     onFrameAttached(dataFrame: DG.DataFrame): void {
-      if (dataFrame.rowCount > 65535)
-        throw new Error('MCL viewer supports only dataframes with less than 65535 rows');
+      // if (dataFrame.rowCount > 65535)
+      //   throw new Error('MCL viewer supports only dataframes with less than 65535 rows');
       this.sc = dataFrame.plot.scatter({
         showXAxis: false,
         showYAxis: false,
@@ -91,6 +92,10 @@ export class MCLViewer extends DG.JsViewer {
       }
     }
 
+    public isDataFrameSavable(): boolean {
+      return this.dataFrame != null && this.dataFrame.rowCount < MAX_MCL_SAVABLE_ROWS;
+    }
+
     async initFromScratch() {
       if (!this.mclProps || !this.sc || !this.dataFrame || this.initialized)
         return;
@@ -107,10 +112,12 @@ export class MCLViewer extends DG.JsViewer {
       const res = await markovCluster(this.dataFrame, cols, options.metrics, options.weights,
         options.aggregationMethod, preprocessingFuncs, options.preprocessingFuncArgs, options.threshold,
         options.maxIterations, options.useWebGPU, options.inflate, options.minClusterSize, this.sc);
-      if (!res)
+      if (!res) {
+        this.reseolver();
         return;
+      }
       // if dataframe has datasync enabled, we should not save the lines, as they will be saved in the data sync
-      if (this.dataFrame.getTag('.script')) {
+      if (this.dataFrame.getTag('.script') || !this.isDataFrameSavable()) {
         this.linesRenderer?.destroy();
         this.linesRenderer = new SCLinesRenderer(this.sc!, res.i, res.j, 6, 0.75, '128,128,128');
         this.initialized = true;
@@ -136,6 +143,6 @@ export class MCLViewer extends DG.JsViewer {
 
     encodeLines(is: ArrayLike<number>, js: ArrayLike<number>) {
       const result = new Array(is.length).fill(null).map((_, i) => `${String.fromCharCode(is[i])}${String.fromCharCode(js[i])}`).join('');
-        this.getProperty('lines')!.set(this, result);
+      this.getProperty('lines')!.set(this, result);
     }
 }

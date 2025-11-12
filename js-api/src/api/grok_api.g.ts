@@ -767,16 +767,10 @@ export interface IDartApi {
   grok_Notebook_Set_Notebook_Content(n: any, jsObject: any): any;
   grok_Notebook_Set_Description(n: any, d: String): any;
   grok_Package_Get_Credentials(packageName: String): Promise<any>;
-  grok_Package_Get_Meta(p: any): any;
-  grok_Package_GetModuleName(p: any, file: String): any;
   grok_Package_GetModule(p: any, file: String): any;
   grok_Package_GetIconUrl(p: any): any;
   grok_Package_Get_Settings_Sync(packageName: String): any;
   grok_Package_Set_Settings(packageName: String, settings: any, group: any): Promise<any>;
-  grok_Package_Get_Version(p: any): any;
-  grok_Package_Set_Version(p: any, version: String): any;
-  grok_Package_Get_WebRoot(p: any): any;
-  grok_Package_Get_Package_Author(p: any): any;
   grok_Package_Get_Properties(packageName: String): Promise<any>;
   grok_Package_Get_Settings(packageName: String): Promise<any>;
   grok_Rect_Pack(r: any, bytes: any): any;
@@ -834,6 +828,7 @@ export interface IDartApi {
   grok_Test_GetInputTestDataGeneratorByType(inputType: String): any;
   grok_Shell_GetClientBuildInfo(): any;
   grok_Shell_OpenFileDialog(): any;
+  grok_Shell_AI_Prompt(s: any): any;
   grok_BrowsePanel_Get_LocalTree(view: any): any;
   grok_BrowsePanel_Get_MainTree(view: any): any;
   grok_BrowsePanel_BindItemTooltip(view: any, content: any, el: any): any;
@@ -971,6 +966,7 @@ export interface IDartApi {
   grok_EntitiesDataSource_SetProperties(s: any, e: any, props: any): Promise<any>;
   grok_EntitiesDataSource_DeleteProperties(s: any, props: any): Promise<any>;
   grok_CredentialsDataSource_ForEntity(s: any, e: any): Promise<any>;
+  grok_CredentialsDataSource_Save(s: any, c: any): Promise<any>;
   grok_Dapi_UserDataStorage_PostValue(name: String, key: String, value: String, currentUser: Bool): Promise<any>;
   grok_Dapi_UserDataStorage_Post(name: String, data: any, currentUser: Bool): Promise<any>;
   grok_Dapi_UserDataStorage_Put(name: String, data: any, currentUser: Bool): Promise<any>;
@@ -1432,6 +1428,8 @@ export interface IDartApi {
   grok_Query_Set_AdHoc(q: any, adHoc: Bool): any;
   grok_Query_Get_Connection(q: any): any;
   grok_Query_Set_Connection(q: any, dc: any): any;
+  grok_Query_Get_PostProcessScript(q: any): any;
+  grok_Query_Set_PostProcessScript(q: any, script: String): any;
   grok_Query_ExecuteTable(q: any): Promise<any>;
   grok_TableQuery_Create(dc: any): any;
   grok_TableQuery_SetTable(tc: any, tableName: String): any;
@@ -1673,6 +1671,12 @@ export interface IDartApi {
   grok_Get_Simple_StackTrace_Hash(stackTrace: String): any;
   grok_GetLogger(params: any): any;
   grok_Log(logger: any, level: String, message: String, params: any, auditType: String, stackTrace: String): any;
+  grok_Package_Get_Meta(p: any): any;
+  grok_Package_GetModuleName(p: any, file: String): any;
+  grok_Package_Get_Version(p: any): any;
+  grok_Package_Set_Version(p: any, version: String): any;
+  grok_Package_Get_WebRoot(p: any): any;
+  grok_Package_Get_Package_Author(p: any): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;
@@ -1699,10 +1703,10 @@ export interface IDartApi {
   grok_FuncOptions_Create(): any;
   grok_FuncParamOptions_Create(): any;
 
-  // Generated from ../d4/lib/src/common/common.api.g.dart
+  // Generated from ../d4\lib\src\common\common.api.g.dart
   grok_UsageType_Create(): any;
 
-  // Generated from ../d4/lib/src/grid/grid.api.g.dart
+  // Generated from ../d4\lib\src\grid\grid.api.g.dart
   grok_GridCellStyle_Create(): any;
   grok_GridCellStyle_Get_defaultStyle(): any;
   grok_GridCellStyle_Set_defaultStyle(v: any): any;
@@ -1752,7 +1756,7 @@ export interface IDartApi {
   grok_GridCellStyle_Set_choices(x: any, v: any): any;
   grok_renderMultipleHistograms(g: any, bounds: any, histograms: any, categoryColumn: any, colors: any, tension: Num, normalize: Bool, markerSize: Num, fill: Bool, minBin: Num, maxBin: Num, localMaximum: Bool, highlightedHistogram: Num): any;
 
-  // Generated from ../d4/lib/src/viewer_base/viewer_base.api.g.dart
+  // Generated from ../d4\lib\src\viewer_base\viewer_base.api.g.dart
   grok_ViewerEvent_Create(): any;
   grok_ViewerEvent_Get_viewer(x: any): any;
   grok_ViewerEvent_Set_viewer(x: any, v: any): any;
@@ -1768,6 +1772,6 @@ export interface IDartApi {
   grok_ViewerEvent_Set_mouseEvent(x: any, v: any): any;
   grok_ViewerEvent_Get_bitset(x: any): any;
 
-  // Generated from ../d4/lib/src/widgets/widgets.api.g.dart
+  // Generated from ../d4\lib\src\widgets\widgets.api.g.dart
   grok_InputType_Create(): any;
 }

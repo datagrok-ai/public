@@ -21,7 +21,7 @@ public class DataSource
     public String defaultSchema = null;
     public String nameBrackets = "[]";
     public boolean limitAtEnd = true;
-
+    public boolean requiresFullyQualifiedTable = false;
     public List<Property> connectionTemplate;
     public List<Property> credentialsTemplate;
     public List<Property> cacheTemplate = new ArrayList<Property>() {{

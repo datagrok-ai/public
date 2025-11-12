@@ -11,7 +11,7 @@ import {autocompletion} from '@codemirror/autocomplete';
 import {SensitivityAnalysisView} from '@datagrok-libraries/compute-utils/function-views/src/sensitivity-analysis-view';
 import {FittingView} from '@datagrok-libraries/compute-utils/function-views/src/fitting-view';
 import {getFormatted} from '@datagrok-libraries/compute-utils/function-views/src/shared/lookup-tools';
-import {getIvp2WebWorker, getPipelineCreator} from '@datagrok/diff-grok';
+import {getIvp2WebWorker, getPipelineCreator} from 'diff-grok';
 
 import {DF_NAME, CONTROL_EXPR, MAX_LINE_CHART} from './constants';
 import {TEMPLATES, DEMO_TEMPLATE} from './templates';
@@ -2086,33 +2086,35 @@ export class DiffStudio {
 
   /** Append menu with my and recent models */
   private async appendMenuWithRecentModels(menu: DG.Menu) {
-    const submenu = menu.group(TITLE.RECENT);
-
     try {
       const recentDf = await getRecentModelsTable();
       const size = recentDf.rowCount;
       const infoCol = recentDf.col(TITLE.INFO);
       const isCustomCol = recentDf.col(TITLE.IS_CUST);
 
-      if ((infoCol === null) || (isCustomCol === null))
-        throw new Error('corrupted data file');
+      if (size > 0) { // the list of recent models is not empty
+        if ((infoCol === null) || (isCustomCol === null)) { // incorrect dataframe with recent models
+          menu.item(TITLE.RECENT, () => {}, null, {isEnabled: () => HINT.CORRUPTED_DATA_FILE});
+          return;
+        }
 
-      for (let i = 0; i < size; ++i) {
-        const name = infoCol.get(i);
+        const submenu = menu.group(TITLE.RECENT);
 
-        if (isCustomCol.get(i))
-          await this.appendMenuWithCustomModel(submenu, name);
-        else
-          this.appendMenuWithBuiltInModel(submenu, name);
-      }
+        for (let i = 0; i < size; ++i) {
+          const name = infoCol.get(i);
 
-      if (size < 1)
-        submenu.item(TITLE.NO_MODELS, noModels, null, {description: HINT.NO_MODELS});
-    } catch (err) {
-      submenu.item(TITLE.NO_MODELS, noModels, null, {description: HINT.NO_MODELS});
+          if (isCustomCol.get(i))
+            await this.appendMenuWithCustomModel(submenu, name);
+          else
+            this.appendMenuWithBuiltInModel(submenu, name);
+        }
+
+        submenu.endGroup();
+      } else // empty list of recent models
+        menu.item(TITLE.RECENT, () => {}, null, {isEnabled: () => HINT.NO_RECENT_MODELS});
+    } catch (err) { // file system error
+      menu.item(TITLE.RECENT, () => {}, null, {isEnabled: () => HINT.FAILED_TO_LOAD_RECENT_MODELS});
     };
-
-    submenu.endGroup();
   } // appendMenuWithRecentModels
 
   /** Append menu with built-in model model */
@@ -2155,19 +2157,18 @@ export class DiffStudio {
 
   /** Append menu with models from user's files */
   private async appendMenuWithMyModels(menu: DG.Menu) {
-    const submenu = menu.group(TITLE.MY_MODELS);
-
     try {
       const myModelFiles = await getMyModelFiles();
       if (myModelFiles.length < 1)
-        submenu.item(TITLE.NO_MODELS, noModels, null, {description: HINT.NO_MODELS});
-      else
+        menu.item(TITLE.MY_MODELS, noModels, null, {isEnabled: () => HINT.NO_MY_MODELS});
+      else {
+        const submenu = menu.group(TITLE.MY_MODELS);
         myModelFiles.forEach(async (file) => await this.appendMenuWithCustomModel(submenu, file.fullPath as TITLE));
+        submenu.endGroup();
+      }
     } catch (err) {
-      submenu.item(TITLE.NO_MODELS, noModels, null, {description: HINT.NO_MODELS});
+      menu.item(TITLE.MY_MODELS, noModels, null, {isEnabled: () => HINT.FAILED_TO_LOAD_RECENT_MODELS});
     };
-
-    submenu.endGroup();
   }
 
   /** Run last called model */

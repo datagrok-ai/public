@@ -1,5 +1,9 @@
 # Biostructure Viewer changelog
 
+## 1.4.3 (2025-09-16)
+
+* Fix caching for PdbGridCellRenderer
+
 ## 1.4.2 (2025-04-17)
 
  * Error handling for ligands and semtype check fix

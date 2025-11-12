@@ -9,7 +9,7 @@ import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 import {HELM_FIELDS, HELM_POLYMER_TYPE, HELM_RGROUP_FIELDS} from '../utils/const';
 import {ALPHABET, NOTATION} from '../utils/macromolecule/consts';
-import {IMonomerLib, IMonomerLibBase, Monomer} from '../types';
+import {IMonomerLib, IMonomerLibBase, Monomer} from '../types/monomer-library';
 import {getFormattedMonomerLib, keepPrecision} from './to-atomic-level-utils';
 import {seqToMolFileWorker} from './seq-to-molfile';
 import {Atoms, Bonds, hasMolGraph, ITypedArray, LibMonomerKey, MolGraph,
@@ -41,7 +41,7 @@ export async function _toAtomicLevel(
   const seqUh = seqHelper.getSeqHandler(seqCol);
 
   // convert 'helm' to 'separator' units
-  if (seqUh.notation !== NOTATION.SEPARATOR) {
+  if (seqUh.notation !== NOTATION.SEPARATOR && seqUh.notation !== NOTATION.BILN) {
     srcCol = seqUh.convert(NOTATION.SEPARATOR, '.');
     srcCol.name = seqCol.name; // Replace converted col name 'separator(<original>)' to '<original>';
   }
@@ -74,7 +74,7 @@ export async function _toAtomicLevel(
       const molsV3K = await chiralityFunc.apply({mols: mols});
       res.molCol.init((i) => {
         return molsV3K[i] ? molsV3K[i] : mols[i];
-      })
+      });
     } catch (err: any) {
       console.error(err);
     }

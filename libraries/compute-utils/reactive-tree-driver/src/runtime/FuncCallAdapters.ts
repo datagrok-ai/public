@@ -4,6 +4,7 @@ import {BehaviorSubject, Observable, defer, of} from 'rxjs';
 import {StateItem} from '../config/PipelineConfiguration';
 import {delay, map, mapTo, startWith, switchMap, tap} from 'rxjs/operators';
 import {RestrictionType} from '../data/common-types';
+import dayjs from 'dayjs';
 
 export interface IRunnableWrapper {
   id?: string;
@@ -33,7 +34,10 @@ export class FuncCallAdapter implements IFuncCallAdapter {
   constructor(public instance: DG.FuncCall, public readonly isReadonly: boolean) {}
 
   run() {
-    return defer(() => this.instance.call());
+    return defer(() => {
+      this.instance.started = dayjs();
+      return this.instance.call(undefined, undefined, {processed: true, report: false});
+    });
   }
 
   getStateChanges<T = any>(

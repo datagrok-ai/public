@@ -1,5 +1,9 @@
 # compute-api changelog
 
+## 0.6.5 (2025-10-30)
+
+- Add optimizer runner
+
 ## 0.6.5 (2025-09-04)
 
 - Update to the latest lib

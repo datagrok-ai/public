@@ -14,7 +14,7 @@ import {BIOREACTOR_DEMO} from './demo/bioreactor';
 import {DF_NAME} from './constants';
 import {UI_TIME} from './ui-constants';
 
-import {ODEs, SolverOptions} from '@datagrok/diff-grok';
+import {ODEs, SolverOptions} from 'diff-grok';
 import {Model} from './model';
 
 import utc from 'dayjs/plugin/utc';

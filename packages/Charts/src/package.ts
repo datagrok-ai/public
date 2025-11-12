@@ -1,7 +1,6 @@
 import {_MultiPlotViewer} from './package.g';
 import {_WordCloudViewer} from './package.g';
 import {_TreeViewer} from './package.g';
-import {_TimelinesViewer} from './package.g';
 import {_SurfacePlot} from './package.g';
 import {_SunburstViewer} from './package.g';
 import {_SankeyViewer} from './package.g';
@@ -13,11 +12,26 @@ import * as DG from 'datagrok-api/dg';
 import {FlagCellRenderer} from './renderers/flag-cell-renderer';
 import {viewerDemo} from './demos/demo';
 import * as grok from 'datagrok-api/grok';
+import {TimelinesViewer} from './viewers/timelines/timelines-viewer';
 
 export * from './package.g';
 export const _package = new DG.Package();
 
 export class PackageFunctions {
+  @grok.decorators.func({
+    name: 'Timelines',
+    description: 'Creates a timelines viewer',
+    tags: ['viewer'],
+    meta: {
+      showInGallery: 'false',
+      icon: 'icons/timelines-viewer.svg',
+    },
+    outputs: [{name: 'result', type: 'viewer'}],
+  })
+  static timelinesViewer(): TimelinesViewer {
+    return new TimelinesViewer();
+  }
+
   @grok.decorators.func({
     tags: ['cellRenderer'],
     outputs: [{name: 'result', type: 'grid_cell_renderer'}],
@@ -100,7 +114,6 @@ export {_RadarViewer};
 export {_SankeyViewer};
 export {_SunburstViewer};
 export {_SurfacePlot};
-export {_TimelinesViewer};
 export {_TreeViewer};
 export {_WordCloudViewer};
 export {_MultiPlotViewer};

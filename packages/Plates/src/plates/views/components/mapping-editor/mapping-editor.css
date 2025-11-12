@@ -1,0 +1,165 @@
+.assay-plates--mapping-editor {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+}
+
+.assay-plates--mapping-editor-table {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 2px; 
+}
+
+.assay-plates--mapping-editor-header,
+.assay-plates--mapping-editor-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    align-items: center;
+    padding: 8px 12px;
+    min-height: 32px; 
+}
+
+.assay-plates--mapping-editor-header {
+    color: var(--grey-5);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    background-color: var(--grey-1);
+    border: 1px solid var(--grey-2);
+    border-radius: 4px;
+    margin-bottom: 4px;
+}
+
+.assay-plates--mapping-editor-row {
+    border-radius: 4px;
+    background-color: white;
+    transition: all 0.15s ease;
+}
+
+.assay-plates--mapping-editor-row:hover {
+    border-color: var(--blue-2);
+    background-color: var(--blue-0);
+}
+
+/* Property name styling */
+.assay-plates--mapping-editor-row > div:first-child {
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--grey-5);
+}
+
+.assay-plates--required-asterisk {
+    color: var(--red-3);
+    font-weight: bold;
+    margin-left: 2px;
+}
+
+.assay-plates--mapping-input-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 24px;
+}
+
+.assay-plates--mapping-input-container .ui-input-root {
+    flex: 1;
+    margin: 0 !important; 
+}
+
+.assay-plates--mapping-editor-row .d4-input-editor {
+    margin: 0;
+}
+
+.assay-plates--mapping-editor .ui-input-editor {
+    margin: 0 !important;
+}
+
+/* Icon styling */
+.assay-plates--mapping-undo-icon,
+.assay-plates--mapping-cancel-icon,
+.assay-plates--mapping-add-icon {
+    color: var(--grey-4);
+    cursor: pointer;
+    transition: color 0.15s;
+    padding: 4px;
+    border-radius: 2px;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.assay-plates--mapping-undo-icon:hover,
+.assay-plates--mapping-cancel-icon:hover {
+    color: var(--red-2);
+    background-color: var(--red-0);
+}
+
+.assay-plates--mapping-add-icon:hover {
+    color: var(--blue-2);
+    background-color: var(--blue-0);
+}
+
+.assay-plates--mapping-add-row {
+    display: flex;
+    justify-content: center;
+    padding: 8px 0;
+    margin-top: 8px;
+}
+
+.assay-plates--dynamic-row-right-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.assay-plates--dynamic-row-right-cell .ui-input-choice {
+    flex: 1;
+}
+
+.assay-plates--info-message {
+    text-align: center;
+    color: var(--grey-3);
+    font-style: italic;
+    padding: 24px;
+    background-color: var(--grey-0);
+    border: 1px solid var(--grey-1);
+    border-radius: 4px;
+}
+
+.assay-plates--analysis-mapping-panel {
+    width: 100%;
+}
+
+.assay-plates--analysis-mapping-header {
+    margin-bottom: 8px;
+}
+
+.assay-plates--analysis-mapping-info {
+    margin-bottom: 12px;
+    line-height: 1.4;
+    font-size: 12px;
+    color: var(--grey-3);
+}
+
+.template-panel .assay-plates--mapping-editor {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.template-panel .assay-plates--mapping-editor-table {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.template-panel .assay-plates--mapping-editor-row {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding-right: 0;
+}

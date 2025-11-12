@@ -23,5 +23,5 @@ dependencies:
   - pytorch-cuda=11.8
   - pip
   - pip:
-      - datagrok-celery-task
+      - datagrok-celery-task==0.1.8
       - celery

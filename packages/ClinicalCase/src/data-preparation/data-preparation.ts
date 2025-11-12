@@ -6,7 +6,8 @@ import {ACTIVE_ARM_POSTTFIX, AE_PERCENT, ALT, AST, BILIRUBIN, DOMAINS_WITH_EVENT
 import {addDataFromDmDomain, dateDifferenceInDays, filterBooleanColumn, filterNulls} from './utils';
 import {AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AE_START_DATE, LAB_HI_LIM_N, LAB_LO_LIM_N,
   LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT, VISIT_DAY,
-  VISIT_NAME, VISIT_START_DATE} from '../constants/columns-constants';
+  VISIT, VISIT_START_DATE,
+  VISIT_DAY_STR} from '../constants/columns-constants';
 import {studies} from '../clinical-study';
 const {jStat} = require('jstat');
 
@@ -158,6 +159,7 @@ export function createSurvivalData(dmDf: DG.DataFrame, aeDf: DG.DataFrame,
     if (endpoint == 'HOSPITALIZATION')
       filterBooleanColumn(ae, AE_REQ_HOSP, false);
 
+    // eslint-disable-next-line max-len
     const condition = endpoint == 'DRUG RELATED AE' ? `${AE_CAUSALITY} in (PROBABLE, POSSIBLE, RELATED, UNLIKELY RELATED, POSSIBLY RELATED, RELATED)` : `${AE_SEVERITY} = SEVERE`;
     const aeGrouped = ae.groupBy([SUBJECT_ID]).
       min(AE_SEQ).
@@ -464,12 +466,12 @@ export function createEventStartEndDaysCol(studyId: string) {
 
 export function addVisitDayFromTvDomain(studyId: string) {
   if (studies[studyId].domains.tv != null && studies[studyId].domains.tv.col(VISIT_DAY)) {
-    const visitNamesAndDays = studies[studyId].domains.tv.groupBy([VISIT_NAME, VISIT_DAY]).aggregate();
+    const visitNamesAndDays = studies[studyId].domains.tv.groupBy([VISIT, VISIT_DAY]).aggregate();
     studies[studyId].domains.all().forEach((domain) => {
-      if (domain.name !== 'tv' && domain.col(VISIT_NAME) && !domain.col(VISIT_DAY)) {
+      if (domain.name !== 'tv' && domain.col(VISIT) && !domain.col(VISIT_DAY)) {
         const tableName = domain.name;
-        grok.data.joinTables(domain, visitNamesAndDays, [VISIT_NAME],
-          [VISIT_NAME], domain.columns.names(), [VISIT_DAY], DG.JOIN_TYPE.LEFT, true);
+        grok.data.joinTables(domain, visitNamesAndDays, [VISIT],
+          [VISIT], domain.columns.names(), [VISIT_DAY], DG.JOIN_TYPE.LEFT, true);
         domain.name = tableName;
       }
     });
@@ -503,3 +505,15 @@ export function getSubjectBaselineDates(studyId: string) {
   return subjBaselineDates;
 }
 
+export function createVisitDayStrCol(df: DG.DataFrame) {
+  if (!df)
+    return;
+  if (!df.col(VISIT_DAY_STR)) {
+    const visitDayCol = df.col(VISIT_DAY);
+
+    if (visitDayCol) {
+      df.columns.addNewString(VISIT_DAY_STR)
+        .init((i) => visitDayCol.isNone(i) ? undefined : visitDayCol.get(i).toString());
+    }
+  }
+}

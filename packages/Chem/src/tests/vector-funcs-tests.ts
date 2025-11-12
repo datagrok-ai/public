@@ -24,7 +24,7 @@ category('vector functions', () => {
 
     test('chemDescriptor', async () => {
         await ensureContainerRunning('name = "chem-chem"', CONTAINER_TIMEOUT);
-        await testVectorFunc('Chem:chemDescriptor(${smiles}, \'MolWt\')', 'MolWt', [0, 9],
+        await testVectorFunc('Chem:getDescriptors(${smiles}, [\'MolWt\'])', 'MolWt', [0, 9],
             [259.27099609375, 192.01600646972656]);
     }, {timeout: 30000 + CONTAINER_TIMEOUT});
 
@@ -40,7 +40,7 @@ category('vector functions', () => {
     });
 
     test('runStructuralAlert', async () => {
-        await testVectorFunc('Chem:runStructuralAlert(${smiles}, \'Dundee\')', 'Dundee', [0, 2], [false, true]);
+        await testVectorFunc('Chem:getStructuralAlerts(${smiles}, [\'Dundee\'])', 'Dundee', [0, 2], [false, true]);
     });
 
     test('getInchiKeys', async () => {
@@ -52,8 +52,8 @@ category('vector functions', () => {
         await testVectorFunc('Chem:convertMoleculeNotation(${smiles}, \'molblock\')', 'molblock', [0], [mol1]);
     });
 
-    test('getMolProperty', async () => {
-        await testVectorFunc('Chem:getMolProperty(${smiles}, \'LogP\')', 'LogP', [0, 9],
+    test('getProperties', async () => {
+        await testVectorFunc('Chem:getProperties(${smiles}, [\'LogP\'])', 'LogP', [0, 9],
             [2.939000129699707, -0.6422999501228333]);
     });
 

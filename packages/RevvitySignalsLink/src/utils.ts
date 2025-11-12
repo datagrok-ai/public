@@ -10,10 +10,11 @@ import { compoundTypeAndViewNameMapping, ENTITY_FIELDS_TO_EXCLUDE, FIELDS_SECTIO
 import { getRevvityLibraries } from './libraries';
 import { u2 } from '@datagrok-libraries/utils/src/u2';
 import { _package } from './package';
-import { currentQueryBuilderConfig, runSearchQuery } from './search-utils';
+import { currentQueryBuilderConfig, filterProperties, runSearchQuery } from './search-utils';
 import { funcs } from './package-api';
 import { ComplexCondition, Operators } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { openedView, updateView } from './view-utils';
+import dayjs from 'dayjs';
 
 
 function extractNameFromJavaObjectString(javaString: string): string {
@@ -398,16 +399,32 @@ export function createRevvityWidgetByCorporateId(response: RevvityApiResponse, i
   return acc.root;
 }
 
-export async function transformData(data: Record<string, any>[]): Promise<Record<string, any>[]> {
+export async function transformData(data: Record<string, any>[], libId: string, entityType: string): Promise<DG.DataFrame> {
+  if (!data.length)
+    return DG.DataFrame.create();
   const users = await getRevvityUsers();
-  const items = [];
-  for (const item of data) {
-        const result: any = { id: item.id };
-    const attrs = item.attributes || {};
+  const columnsData: {[key: string]: {type: string, data: any[]}} = {};
+  const createCol = (key: string, counter: number) => {
+    //find column type
+    const props = filterProperties[`${libId}|${entityType}`];
+    const prop = props.filter((it) => it.name === key);
+    if (!columnsData[key]) {
+      columnsData[key] = { type: prop.length ? prop[0].type : DG.TYPE.STRING, data: [] };
+      for (let j = 0; j < counter; j++)
+        columnsData[key].data.push(undefined);
+    }
+  }
+  for (let i = 0; i < data.length; i++) {
+    if (!columnsData.id)
+      columnsData.id = {type: DG.TYPE.STRING, data: []};
+    columnsData.id.data.push(data[i].id);
+
+    const attrs = data[i].attributes || {};
 
     for (const [key, value] of Object.entries(attrs)) {
       if (ENTITY_FIELDS_TO_EXCLUDE.includes(key))
         continue;
+      createCol(key, i);
       //handle fileds related to users
       if (USER_FIELDS.includes(key)) {
         let userArr = users?.filter((it) => it.userId === value);
@@ -417,13 +434,13 @@ export async function transformData(data: Record<string, any>[]): Promise<Record
           userString = user.email ?? user.userName ??
           (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.userId ?? 'unknown user');
         }
-        result[key] = userString;
+        columnsData[key].data.push(userString);
         continue;
       }
       if (Array.isArray(value)) {
-        result[key] = value.join('; ');
+        columnsData[key].data.push(value.join('; '));
       } else {
-        result[key] = value;
+        columnsData[key].data.push(value);
       }
     }
 
@@ -432,16 +449,31 @@ export async function transformData(data: Record<string, any>[]): Promise<Record
       for (const [tagKey, tagValue] of Object.entries(attrs.tags)) {
         if (TAGS_TO_EXCLUDE.includes(tagKey))
           continue;
+      createCol(tagKey, i);
         if (Array.isArray(tagValue)) {
-          result[tagKey] = tagValue.join('; ');
+          columnsData[tagKey].data.push(tagValue.join('; '));
         } else {
-          result[tagKey] = tagValue;
+          columnsData[tagKey].data.push(tagValue);
         }
       }
     }
-    items.push(result);
+    
+    //in case item lacked some of the keys, fill in corresponding columns with undefined values
+    for (const key of Object.keys(columnsData)) {
+      if (columnsData[key].data.length < i + 1)
+        columnsData[key].data.push(undefined);
+    }
   }
-  return items;
+
+  const columns: DG.Column[] = [];
+  for (let colName of Object.keys(columnsData)) {
+    if (columnsData[colName].type === 'datetime')
+      columnsData[colName].data = columnsData[colName].data.map((it) => dayjs(it));
+    const col = DG.Column.fromList(columnsData[colName].type as 'string' | 'int' | 'double' | 'bool' | 'qnum' | 'datetime',
+      colName, columnsData[colName].data);
+    columns.push(col);
+  }
+  return DG.DataFrame.fromColumns(columns);
 }
 
 export async function reorderColumns(df: DG.DataFrame) {
@@ -571,7 +603,9 @@ export function getAppHeader(): HTMLElement {
   return appHeader;
 }
 
+let latestLabel: string | undefined = undefined; //workaround since widget is re-created once search is performed and dataframe in the tv is chenged
 export async function createWidgetByRevvityLabel(idSemValue: DG.SemanticValue<string>) {
+
   let div = ui.divText(`No data found for ${idSemValue.value}`);
   let searchConfig = currentQueryBuilderConfig;
   if (!searchConfig) {
@@ -583,34 +617,38 @@ export async function createWidgetByRevvityLabel(idSemValue: DG.SemanticValue<st
     const terms: string[] = await funcs.getTermsForField(idSemValue.cell?.column.name,
       searchConfig!.entityType, searchConfig!.libId, true);
     if (terms.length) {
-      const inputName = idSemValue.cell?.column.getTag('friendlyName') ?? idSemValue.cell?.column.name;
+      const initValue = latestLabel ?? idSemValue.value;
+      latestLabel = undefined;
+      if (terms.includes(initValue)) {
+        const inputName = idSemValue.cell?.column.getTag('friendlyName') ?? idSemValue.cell?.column.name;
 
-      const labelInput = ui.input.choice(inputName, { value: idSemValue.value, items: terms, nullable: false });
+        const labelInput = ui.input.choice(inputName, { value: initValue, items: terms, nullable: false });
 
-      const searchButton = ui.button('Search', async () => {
-        const viewToUpdate = openedView ?? grok.shell.tv;
-        if (viewToUpdate) {
-          ui.setUpdateIndicator(viewToUpdate.root, true, `Searching ${inputName} = ${labelInput.value}`);
-          const queryBuilderCondition: ComplexCondition = {
-            logicalOperator: Operators.Logical.and,
-            conditions: [
-              { field: idSemValue.cell?.column.name, operator: Operators.EQ, value: labelInput.value }]
-          };
-          const df = await runSearchQuery(searchConfig!.libId, searchConfig!.entityType, queryBuilderCondition);
-          const filtersDiv = Array.from(document.getElementsByClassName('revvity-signals-filter-panel'));
-          updateView(viewToUpdate as DG.TableView, df, searchConfig!.entityType, searchConfig!.libName,
-            searchConfig!.libId, filtersDiv.length ? filtersDiv[0] as HTMLDivElement : undefined);
-          ui.setUpdateIndicator(viewToUpdate.root, false);
-          if (searchConfig?.qb)
-            searchConfig?.qb.loadCondition(queryBuilderCondition);
-        }
-      });
+        const searchButton = ui.button('Search', async () => {
+          latestLabel = labelInput.value!;
+          const viewToUpdate = openedView ?? grok.shell.tv;
+          if (viewToUpdate) {
+            ui.setUpdateIndicator(viewToUpdate.root, true, `Searching ${inputName} = ${labelInput.value}`);
+            const queryBuilderCondition: ComplexCondition = {
+              logicalOperator: Operators.Logical.and,
+              conditions: [
+                { field: idSemValue.cell?.column.name, operator: Operators.EQ, value: labelInput.value }]
+            };
+            const df = await runSearchQuery(searchConfig!.libId, searchConfig!.entityType, queryBuilderCondition);
+            const filtersDiv = Array.from(document.getElementsByClassName('revvity-signals-filter-panel'));
+            updateView(viewToUpdate as DG.TableView, df, searchConfig!.entityType, searchConfig!.libName,
+              searchConfig!.libId, filtersDiv.length ? filtersDiv[0] as HTMLDivElement : undefined);
+            ui.setUpdateIndicator(viewToUpdate.root, false);
+            if (searchConfig?.qb)
+              searchConfig?.qb.loadCondition(queryBuilderCondition);
+          }
+        });
 
-      div = ui.divV([
-        labelInput,
-        searchButton
-      ])
-
+        div = ui.divV([
+          labelInput,
+          searchButton
+        ]);
+      }
     }
   }
 

@@ -41,10 +41,10 @@ export async function usageAnalysisApp(path?: string, date?: string, groups?: st
 }
 
 //input: column<string> ticketColumn 
-//output: column result
+//input: column<string> resultColumn 
 //meta.vectorFunc: true
-export async function getTicketsVerdict(ticketColumn: DG.Column) : Promise<any> {
-  return await PackageFunctions.getTicketsVerdict(ticketColumn);
+export async function getTicketsVerdict(ticketColumn: DG.Column, resultColumn: DG.Column) : Promise<void> {
+  await PackageFunctions.getTicketsVerdict(ticketColumn, resultColumn);
 }
 
 //name: Test Track
@@ -113,6 +113,7 @@ export function packageUsageWidget(pckg: any) : any {
 
 //tags: viewer
 //output: viewer result
+//meta.showInGallery: false
 export function testDashboardsViewer() : any {
   return PackageFunctions.testDashboardsViewer();
 }

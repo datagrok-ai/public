@@ -1,28 +1,29 @@
 /* eslint-disable valid-jsdoc */
 import * as DG from 'datagrok-api/dg';
 
-import {IVP, IVP2WebWorker, PipelineCreator, getOutputNames, getInputVector} from '@datagrok/diff-grok';
-import {LOSS} from '../constants';
+import {IVP, IVP2WebWorker, PipelineCreator, getOutputNames, getInputVector} from 'diff-grok';
+import {EarlyStoppingSettings, LOSS, ReproSettings, STOP_AFTER_DEFAULT} from '../constants';
 import {ARG_IDX, DEFAULT_SET_VAL, MIN_TARGET_COLS_COUNT, MIN_WORKERS_COUNT, NO_ERRORS,
   RESULT_CODE, WORKERS_COUNT_DOWNSHIFT} from './defs';
 import {sampleParams} from '../optimizer-sampler';
 import {getBatches} from './fitting-utils';
 import {OptimizationResult, Extremum} from '../optimizer-misc';
+import {seededRandom} from '../fitting-utils';
 
 /** Return dataframe summarizing fails of fitting */
-export function getFailesDf(points: Float32Array[], warnings: string[]): DG.DataFrame | null {
+export function getFailesDf(points: Float64Array[], warnings: string[]): DG.DataFrame | null {
   const failsCount = points.length;
 
   if (failsCount > 0) {
     const dim = points[0].length;
-    const raw = new Array<Float32Array>(dim);
+    const raw = new Array<Float64Array>(dim);
 
     for (let i = 0; i < dim; ++i)
-      raw[i] = new Float32Array(failsCount);
+      raw[i] = new Float64Array(failsCount);
 
     points.forEach((point, idx) => point.forEach((val, jdx) => raw[jdx][idx] = val));
 
-    const failsDf = DG.DataFrame.fromColumns(raw.map((arr, idx) => DG.Column.fromFloat32Array(`arg${idx}`, arr)));
+    const failsDf = DG.DataFrame.fromColumns(raw.map((arr, idx) => DG.Column.fromFloat64Array(`arg${idx}`, arr)));
     failsDf.columns.add(DG.Column.fromStrings('Issue', warnings));
 
     return failsDf;
@@ -32,7 +33,7 @@ export function getFailesDf(points: Float32Array[], warnings: string[]): DG.Data
 } // getFailesDf
 
 /** Return input vector defined by fitting inputs */
-function getInputVec(variedInputNames: string[], minVals: Float32Array, maxVals: Float32Array,
+function getInputVec(variedInputNames: string[], minVals: Float64Array, maxVals: Float64Array,
   fixedInputs: Record<string, number>, ivp: IVP): Float64Array {
   const allInputs: Record<string, number> = {};
 
@@ -51,13 +52,16 @@ export async function getFittedParams(
   pipelineCreator: PipelineCreator,
   settings: Map<string, number>,
   variedInputNames: string[],
-  minVals: Float32Array,
-  maxVals: Float32Array,
+  minVals: Float64Array,
+  maxVals: Float64Array,
   fixedInputs: Record<string, number>,
   argColName: string,
   funcCols: DG.Column[],
   target: DG.DataFrame,
-  samplesCount: number): Promise<OptimizationResult> {
+  samplesCount: number,
+  reproSettings: ReproSettings,
+  earlyStoppingSettings: EarlyStoppingSettings,
+): Promise<OptimizationResult> {
   // Extract settings names & values
   const settingNames: string[] = [...settings.keys()];
   const settingVals = settingNames.map((name) => settings.get(name) ?? DEFAULT_SET_VAL);
@@ -98,7 +102,8 @@ export async function getFittedParams(
   const nonParamNames = [t0, t1, h].concat(ivp.deqs.solutionNames);
 
   // Generate starting points
-  const startingPoints = sampleParams(samplesCount, minVals, maxVals);
+  const rand = reproSettings.reproducible ? seededRandom(reproSettings.seed) : Math.random;
+  const startingPoints = sampleParams(samplesCount, minVals, maxVals, rand);
 
   // Create workers
   const nThreads = Math.min(
@@ -108,8 +113,8 @@ export async function getFittedParams(
   const workers = new Array(nThreads).fill(null).map((_) => new Worker(new URL('workers/basic.ts', import.meta.url)));
 
   // Structs for optimization results
-  const resultsArray: Extremum[] = [];
-  const failedInitPoints: Float32Array[] = [];
+  let resultsArray: Extremum[] = [];
+  const failedInitPoints: Float64Array[] = [];
   const warnings: string[] = [];
   const pointBatches = getBatches(startingPoints, nThreads);
 
@@ -141,6 +146,7 @@ export async function getFittedParams(
           scaleVals: scaleVals,
           samplesCount: samplesCount,
           outputNames: getOutputNames(ivp),
+          earlyStoppingSettings: earlyStoppingSettings,
         },
         startPoints: pointBatches[idx],
       });
@@ -182,6 +188,15 @@ export async function getFittedParams(
   await Promise.all(promises);
 
   pi.close();
+
+  if (earlyStoppingSettings.useEarlyStopping) {
+    const count = earlyStoppingSettings.stopAfter ?? STOP_AFTER_DEFAULT;
+
+    if (resultsArray.length > count) {
+      resultsArray.sort((a: Extremum, b: Extremum) => a.cost - b.cost);
+      resultsArray = resultsArray.slice(0, count);
+    }
+  }
 
   return {
     extremums: resultsArray,

@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {before, category, expect, test, expectTable} from '@datagrok-libraries/utils/src/test';
-import {_package} from '../package-test';
+import {_package} from 'package-test';
 
 category('Packages', () => {
 
@@ -25,7 +25,7 @@ category('Packages', () => {
 
   async function publish(debug: boolean) {
     const uploadResponse = await fetch(`${grok.dapi.root}/packages/dev/${key}/test?debug=${debug}&rebuild=false`,
-      {method: 'POST', body: data});
+      {method: 'POST', body: data as BodyInit});
     expect(uploadResponse.status, 200);
   }
 

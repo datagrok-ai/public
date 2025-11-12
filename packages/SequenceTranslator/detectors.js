@@ -66,6 +66,7 @@ class SequenceTranslatorPackageDetectors extends DG.Package {
 
 
   //name: refineNotationProviderForHarmonizedSequence
+  //tags: notationRefiner
   //input: column col
   //input: object stats
   //input: string separator = null { optional: true }

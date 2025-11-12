@@ -15,10 +15,10 @@ cluster. This results in a partitioning of the data space into _Voronoi cells_.
 ## Usage
 
 * Open table
-* Run from menu: **ML** | **Cluster** | **Cluster...**
+* Run from menu: **ML** | **Cluster** | **Cluster Data...**
 * Select numerical feature columns that will be used for clustering
 * Select number of required clusters. Integer number 1..n
-* Set **"Show scatter plot"** to open scatter plot after clustering
+* Set **"Show Scatter Plot"** to open scatter plot after clustering
 * Run clustering
 
 ![](cluster-data.gif)

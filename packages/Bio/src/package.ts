@@ -13,11 +13,11 @@ import {getActivityCliffs} from '@datagrok-libraries/ml/src/viewers/activity-cli
 import {MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {BitArrayMetrics, KnownMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-libraries/bio/src/utils/macromolecule';
-import {IMonomerLib} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {SeqPalette} from '@datagrok-libraries/bio/src/seq-palettes';
 import {FastaFileHandler} from '@datagrok-libraries/bio/src/utils/fasta-handler';
 import {SCORE} from '@datagrok-libraries/bio/src/utils/macromolecule/scoring';
-import {createJsonMonomerLibFromSdf, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {createJsonMonomerLibFromSdf,} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {ActivityCliffsEditor} from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-function-editor';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
@@ -30,7 +30,7 @@ import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/sr
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {RDModule as _RDMoule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
-import {ISeqHandler} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
+import {ISeqHandler, SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
 
 import {getMacromoleculeColumns} from './utils/ui-utils';
@@ -77,8 +77,12 @@ import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomi
 import {molecular3DStructureWidget, toAtomicLevelWidget} from './widgets/to-atomic-level-widget';
 import {handleSequenceHeaderRendering} from './widgets/sequence-scrolling-widget';
 import {PolymerType} from '@datagrok-libraries/js-draw-lite/src/types/org';
+import {BilnNotationProvider} from './utils/biln';
+
+import * as api from './package-api';
 export const _package = new BioPackage(/*{debug: true}/**/);
 export * from './package.g';
+
 
 // /** Avoid reassigning {@link monomerLib} because consumers subscribe to {@link IMonomerLib.onChanged} event */
 // let monomerLib: MonomerLib | null = null;
@@ -121,7 +125,7 @@ export class PackageFunctions {
 
   @grok.decorators.init({})
   static async initBio(): Promise<void> {
-    if (initBioPromise === null)
+    if (initBioPromise == null)
       initBioPromise = initBioInt();
 
     await initBioPromise;
@@ -295,6 +299,49 @@ export class PackageFunctions {
   })
   static separatorSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
     return new MacromoleculeSequenceCellRenderer();
+  }
+
+  @grok.decorators.func({
+    name: 'bilnSequenceCellRenderer',
+    tags: ['cellRenderer'],
+    meta: {
+      cellType: 'sequence',
+      columnTags: 'quality=Macromolecule, units=biln'
+    },
+    outputs: [{type: 'grid_cell_renderer', name: 'result'}]
+  })
+  static bilnSequenceCellRenderer(): MacromoleculeSequenceCellRenderer {
+    return new MacromoleculeSequenceCellRenderer();
+  }
+
+  @grok.decorators.func({
+    name: 'refineNotationProviderForBiln',
+    tags: ['notationRefiner'],
+    outputs: [{type: 'bool', name: 'result'}]
+  })
+  static refineNotationProviderForBiln(
+    @grok.decorators.param({type: 'column'}) col: DG.Column<string>,
+    @grok.decorators.param({type: 'object'}) stats: {freq: { [key: string]: number; }, sameLength: boolean},
+    @grok.decorators.param({type: 'string', options: {nullable: true, optional: true}}) separator: string | null
+  ): boolean {
+    if (separator !== '-')
+      return false;// biln uses '-' as a separator
+    const reCons = Object.keys(stats.freq).some((om) => om.match(/^.+\(\d{1,2},\d{1,2}\)$/));
+    if (!reCons) {
+      // biln might also encode monomers with hyphens in names encoded by []
+      // here we know that there are no monomers with connections like (1,2) in names, so we can check for []
+      const reBrackets = Object.keys(stats.freq).some((om) => om.includes('[') || om.includes(']'));
+      if (!reBrackets)
+        return false;
+    }
+    // refine the notation provider
+    col.setTag('aligned', 'SEQ');
+    col.setTag('alphabet', 'UN');
+    col.setTag('.alphabetIsMultichar', 'true');
+    col.meta.units = NOTATION.BILN;
+    col.temp[SeqTemps.notationProvider] = new BilnNotationProvider(separator, _package.seqHelper, col);
+
+    return true;
   }
 
   // // -- Property panels --
@@ -573,6 +620,30 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
+    name: 'Molecules to HELM',
+    'top-menu': 'Bio | Transform | Molecules to HELM...',
+    description: 'Converts Peptide molecules to HELM notation by matching with monomer library',
+  })
+  static async moleculesToHelmTopMenu(
+    @grok.decorators.param({name: 'table', options: {description: 'Input data table'}})table: DG.DataFrame,
+    @grok.decorators.param({name: 'molecules', options: {semType: 'Molecule', description: 'Molecule column'}})molecules: DG.Column,
+  ) {
+    // collect current monomer library
+    const monomerLib = _package.monomerLib;
+    const libJSON = JSON.stringify(monomerLib.toJSON());
+    await api.scripts.molToHelmConverterPy(table, molecules, libJSON);
+
+    // semtype is not automatically set, so we set it manually
+    const newCol = table.columns.toList().find((c) => c.name.toLowerCase().includes('regenerated sequence') && c.semType !== DG.SEMTYPE.MACROMOLECULE);
+    if (newCol) {
+      newCol.meta.units = NOTATION.HELM;
+      newCol.semType = DG.SEMTYPE.MACROMOLECULE;
+      newCol.setTag('cell.renderer', 'helm');
+    }
+  }
+
+
+  @grok.decorators.func({
     name: 'To Atomic Level',
     description: 'Converts sequences to molblocks',
     'top-menu': 'Bio | Transform | To Atomic Level...',
@@ -580,7 +651,7 @@ export class PackageFunctions {
   static async toAtomicLevel(
     @grok.decorators.param({options: {description: 'Input data table'}})table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Macromolecule', caption: 'Sequence'}})seqCol: DG.Column,
-    @grok.decorators.param({options: {initialValue: 'false', caption: 'Non-linear', description: 'Slower mode for cycling/branching HELM structures'}}) nonlinear: boolean,
+    @grok.decorators.param({options: {initialValue: 'true', caption: 'Non-linear', description: 'Slower mode for cycling/branching HELM structures'}}) nonlinear: boolean = true,
     @grok.decorators.param({options: {initialValue: 'false', caption: 'Highlight monomers', description: 'Highlight monomers\' substructures of the molecule'}}) highlight: boolean = false
   ): Promise<void> {
     const pi = DG.TaskBarProgressIndicator.create('Converting to atomic level ...');
@@ -757,7 +828,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'convertDialog',
-    'top-menu': 'Bio | Transform | Convert Notation...'
+    'top-menu': 'Bio | Transform | Convert Sequence Notation...'
   })
   static convertDialog() {
     const col: DG.Column<string> | undefined = getMacromoleculeColumns()[0];
@@ -1012,9 +1083,14 @@ export class PackageFunctions {
     return await showManageLibrariesView(false);
   }
 
+  // @grok.decorators.func({tags: ['monomer-lib-provider'], result: {type: 'object', name: 'result'}})
+  // static async getMonomerLibFileProvider(): Promise<MonomerLibFromFilesProvider> {
+  //   return
+  // }
+
   @grok.decorators.func({name: 'Monomer Manager Tree Browser', meta: {role: 'appTreeBrowser'}})
   static async manageMonomerLibrariesViewTreeBrowser(treeNode: DG.TreeViewGroup) {
-    const libraries = (await (await MonomerLibManager.getInstance()).getFileManager()).getValidLibraryPaths();
+    const libraries = (await (await MonomerLibManager.getInstance()).getAvaliableLibraryNames());
     libraries.forEach((libName) => {
       const nodeName = libName.endsWith('.json') ? libName.substring(0, libName.length - 5) : libName;
       const libNode = treeNode.item(nodeName);

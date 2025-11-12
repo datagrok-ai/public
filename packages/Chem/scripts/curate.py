@@ -5,7 +5,7 @@
 #sample: chem/chem_standards.csv
 #tags: demo, chem, rdkit
 #input: dataframe data [Input data table]
-#input: column molecules  {type:categorical; semType: Molecule}
+#input: column molecules {type:categorical; semType: Molecule}
 #input: bool kekulization = false
 #input: bool normalization = false
 #input: bool reionization = false

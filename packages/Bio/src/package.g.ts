@@ -25,6 +25,15 @@ export async function standardiseMonomerLibrary(library: string) : Promise<strin
   return await PackageFunctions.standardiseMonomerLibrary(library);
 }
 
+//description: Matches molecules in a column with monomers from the selected library(s)
+//input: dataframe table 
+//input: column molecules { semType: Molecule }
+//input: string polymerType = 'PEPTIDE' { choices: ["PEPTIDE","RNA","CHEM"]; caption: Polymer Type }
+//top-menu: Bio | Manage | Match with Monomer Library...
+export async function matchWithMonomerLibrary(table: DG.DataFrame, molecules: DG.Column, polymerType: any) : Promise<void> {
+  await PackageFunctions.matchWithMonomerLibrary(table, molecules, polymerType);
+}
+
 //output: object monomerLib
 export function getBioLib() : any {
   return PackageFunctions.getBioLib();
@@ -99,6 +108,23 @@ export function fastaSequenceCellRenderer() : any {
 //meta.columnTags: quality=Macromolecule, units=separator
 export function separatorSequenceCellRenderer() : any {
   return PackageFunctions.separatorSequenceCellRenderer();
+}
+
+//tags: cellRenderer
+//output: grid_cell_renderer result
+//meta.cellType: sequence
+//meta.columnTags: quality=Macromolecule, units=biln
+export function bilnSequenceCellRenderer() : any {
+  return PackageFunctions.bilnSequenceCellRenderer();
+}
+
+//tags: notationRefiner
+//input: column col 
+//input: object stats 
+//input: string separator { nullable: true; optional: true }
+//output: bool result
+export function refineNotationProviderForBiln(col: DG.Column<any>, stats: any, separator: any) : boolean {
+  return PackageFunctions.refineNotationProviderForBiln(col, stats, separator);
 }
 
 //name: Bioinformatics | Sequence Renderer
@@ -238,11 +264,20 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Co
   return await PackageFunctions.sequenceSpaceTopMenu(table, molecules, methodName, similarityMetric, plotEmbeddings, preprocessingFunction, options, clusterEmbeddings, isDemo);
 }
 
+//name: Molecules to HELM
+//description: Converts Peptide molecules to HELM notation by matching with monomer library
+//input: dataframe table { description: Input data table }
+//input: column molecules { semType: Molecule; description: Molecule column }
+//top-menu: Bio | Transform | Molecules to HELM...
+export async function moleculesToHelmTopMenu(table: DG.DataFrame, molecules: DG.Column) : Promise<void> {
+  await PackageFunctions.moleculesToHelmTopMenu(table, molecules);
+}
+
 //name: To Atomic Level
 //description: Converts sequences to molblocks
 //input: dataframe table { description: Input data table }
 //input: column seqCol { semType: Macromolecule; caption: Sequence }
-//input: bool nonlinear = false { caption: Non-linear; description: Slower mode for cycling/branching HELM structures }
+//input: bool nonlinear = true { caption: Non-linear; description: Slower mode for cycling/branching HELM structures }
 //input: bool highlight = false { caption: Highlight monomers; description: Highlight monomers' substructures of the molecule }
 //top-menu: Bio | Transform | To Atomic Level...
 export async function toAtomicLevel(table: DG.DataFrame, seqCol: DG.Column, nonlinear: boolean, highlight: boolean) : Promise<void> {
@@ -318,7 +353,7 @@ export function importBam(fileContent: string) : any {
   return PackageFunctions.importBam(fileContent);
 }
 
-//top-menu: Bio | Transform | Convert Notation...
+//top-menu: Bio | Transform | Convert Sequence Notation...
 export function convertDialog() : void {
   PackageFunctions.convertDialog();
 }

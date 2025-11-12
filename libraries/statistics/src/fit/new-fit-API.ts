@@ -792,3 +792,9 @@ export function getCurveConfidenceIntervals(data: {x: number[], y: number[]}, pa
 //   {'x': 4, 'y': 0},
 // ]);
 
+export interface FitCellOutlierToggleArgs {
+  gridCell: DG.GridCell;
+  series: IFitSeries;
+  seriesIdx: number;
+  pointIdx: number;
+};

@@ -78,13 +78,15 @@ export class BaseConditionEditor<T = any> {
     protected async initializeEditor(prop: DG.Property): Promise<DG.InputBase[]> {
         if (Array.isArray(this.condition.value))
             this.condition.value = undefined as T;
-        const initVal = prop.type === DG.TYPE.DATE_TIME && typeof this.condition.value === 'string' ?
-            dayjs(this.condition.value as string) : this.condition.value;
+        if (prop.type === DG.TYPE.DATE_TIME && typeof this.condition.value === 'string') {
+            this.condition.value = dayjs(this.condition.value as string) as T;
+            this.onChanged.next(this.condition);
+        }
         //allow null value for '=' and '!=' for string type to create 'is empty', 'is not empty' condition
         const nullable =  prop.type === DG.TYPE.STRING &&
             (this.condition.operator === Operators.EQ || this.condition.operator === Operators.NOT_EQ);
         const input = ui.input.forProperty(prop, undefined, {
-            value: initVal,
+            value: this.condition.value,
             nullable: nullable,
             onValueChanged: () => {
                 this.condition.value = input.value as T;

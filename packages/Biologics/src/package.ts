@@ -1,12 +1,16 @@
+/* eslint-disable max-lines-per-function */
+/* eslint-disable max-len */
+/* eslint-disable max-lines */
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {smi} from './randsmiles';
 // Placeholder imports for glyph PNGs (ensure your bundler loads them as base64 strings)
-import { glyphPool } from './glyphs/glyphs';
+import {glyphPool} from './glyphs/glyphs';
 import {DBExplorer} from '@datagrok-libraries/db-explorer/src/db-explorer';
 import {moleculeRenderer, imageRenderer, rawImageRenderer} from '@datagrok-libraries/db-explorer/src/renderer';
+import {biologicsConfig} from './config';
 
 export const _package = new DG.Package();
 
@@ -22,7 +26,7 @@ export async function createDemoBiologicsData(): Promise<any> {
   const AA = 'ACDEFGHIKLMNPQRSTVWYGGGGGGAAAADEE';
   const randInt = (min: number, max: number) => Math.floor(min + Math.random() * (max - min + 1));
   const randPick = <T>(arr: T[]) => arr[randInt(0, arr.length - 1)];
-  const escape = (s: string) => s.replace(/'/g, "''").replaceAll('@', '');
+  const escape = (s: string) => s.replace(/'/g, '\'\'').replaceAll('@', '');
 
   const exec = async (sql: string) => await grok.data.db.query(cn, sql);
 
@@ -47,7 +51,7 @@ export async function createDemoBiologicsData(): Promise<any> {
       actCons = actCons.substring(0, pos) + newAA + actCons.substring(pos + 1);
     }
     return actCons;
-  }
+  };
 
   // 1. Generate 500 protein sequences (~1000 length)
   const seqCount = 200;
@@ -62,7 +66,7 @@ export async function createDemoBiologicsData(): Promise<any> {
         j = s.length + 1;
       }
     }
-    sequences.push({ name: `Sequence_${i}`, seq: s });
+    sequences.push({name: `Sequence_${i}`, seq: s});
   }
 
   async function insertSequences(list: { name: string, seq: string }[]) {
@@ -71,7 +75,7 @@ export async function createDemoBiologicsData(): Promise<any> {
     for (let i = 0; i < list.length; i += chunkSize) {
       const chunk = list.slice(i, i + chunkSize);
       const values = chunk
-        .map(c => `('PROTEIN','${escape(c.seq)}','${escape(c.name)}')`)
+        .map((c) => `('PROTEIN','${escape(c.seq)}','${escape(c.name)}')`)
         .join(',');
       const sql = `
         INSERT INTO biologics.sequences(sequence_type, sequence, name)
@@ -90,15 +94,13 @@ export async function createDemoBiologicsData(): Promise<any> {
     // { name: 'Drug_1', smiles: 'CCO...' },
   ];
 
-  for (let i = 1; i <= 200; i++) {
-    drugSmiles.push({ name: `Drug_${i}`, smiles: smi[i] });
-  }
+  for (let i = 1; i <= 200; i++)
+    drugSmiles.push({name: `Drug_${i}`, smiles: smi[i]});
 
 
   async function insertDrugs(list: { name: string, smiles: string }[]) {
-
     if (list.length === 0) return [];
-    const values = list.map(d => `('${escape(d.name)}','${escape(d.smiles)}')`).join(',');
+    const values = list.map((d) => `('${escape(d.name)}','${escape(d.smiles)}')`).join(',');
     const sql = `
       INSERT INTO biologics.drugs(name, smiles)
       VALUES ${values}
@@ -121,13 +123,13 @@ export async function createDemoBiologicsData(): Promise<any> {
   }[] = [];
 
   for (let i = 0; i < 5; i++)
-    linkers.push({ linker_type: 'PROTEIN', linker_sequence: linkerProteinSeqs[i] });
+    linkers.push({linker_type: 'PROTEIN', linker_sequence: linkerProteinSeqs[i]});
   for (let i = 0; i < 5; i++)
-    linkers.push({ linker_type: 'SMALL', linker_molecule_smiles: linkerSmallSmiles[i] });
+    linkers.push({linker_type: 'SMALL', linker_molecule_smiles: linkerSmallSmiles[i]});
 
   async function insertLinkers(list: typeof linkers) {
     if (!list.length) return [];
-    const values = list.map(l => {
+    const values = list.map((l) => {
       if (l.linker_type === 'PROTEIN')
         return `('PROTEIN', NULL, '${escape(l.linker_sequence!)}')`;
       else
@@ -149,7 +151,7 @@ export async function createDemoBiologicsData(): Promise<any> {
   const assayTypesDf = await exec('SELECT id, name FROM biologics.assay_types');
   const assayTypes: { id: number, name: string }[] = [];
   for (let r = 0; r < assayTypesDf.rowCount; r++)
-    assayTypes.push({ id: assayTypesDf.get('id', r), name: assayTypesDf.get('name', r) });
+    assayTypes.push({id: assayTypesDf.get('id', r), name: assayTypesDf.get('name', r)});
 
   const orgDf = await exec('SELECT id, name FROM biologics.target_organisms');
   const organisms: number[] = [];
@@ -176,7 +178,7 @@ export async function createDemoBiologicsData(): Promise<any> {
   // 7. Expression batches (random subset)
   const exprSystems = ['CHO', 'HEK293', 'E.coli'];
   const exprValues: string[] = [];
-  new Array(sequenceIds.length * 3).fill(null).map((_, i) => randPick(sequenceIds)).forEach(id => {
+  new Array(sequenceIds.length * 3).fill(null).map((_, i) => randPick(sequenceIds)).forEach((id) => {
     exprValues.push(`(${id}, '${escape(randPick(exprSystems))}', ${ (Math.random() * 150).toFixed(2) }, 'ExprBatch_${id}_${(Math.floor(Math.random() * 1000))}', 'Auto-generated expression batch')`);
   });
   if (exprValues.length) {
@@ -186,7 +188,7 @@ export async function createDemoBiologicsData(): Promise<any> {
     `);
   }
 
-    // 8. ADCs (only if we have drugs)
+  // 8. ADCs (only if we have drugs)
   let adcCount = 0;
   const adcIds: number[] = [];
   if (drugIds.length && linkerIds.length) {
@@ -214,16 +216,16 @@ export async function createDemoBiologicsData(): Promise<any> {
 
   // 9. Assay results (random)
   function randomAssayValue(name: string): { val: number, units: string } {
-    if (/IC50/i.test(name)) return { val: +(Math.random() * 500).toFixed(2), units: 'nM' };
-    if (/Caspase/i.test(name)) return { val: +(Math.random() * 10).toFixed(2), units: 'RFU' };
-    if (/half-life/i.test(name)) return { val: +(Math.random() * 240).toFixed(1), units: 'min' };
-    if (/Binding affinity/i.test(name)) return { val: +(Math.random() * 50).toFixed(2), units: 'nM' };
-    if (/Cell binding/i.test(name)) return { val: +(Math.random() * 100).toFixed(2), units: 'nM' };
-    if (/DAR/i.test(name)) return { val: +(2 + Math.random() * 6).toFixed(2), units: 'ratio' };
-    if (/Cmax/i.test(name)) return { val: +(Math.random() * 100).toFixed(2), units: 'µg/mL' };
-    if (/Tmax/i.test(name)) return { val: +(Math.random() * 48).toFixed(2), units: 'h' };
-    if (/AUC/i.test(name)) return { val: +(Math.random() * 5000).toFixed(1), units: 'µg·h/mL' };
-    return { val: +(Math.random() * 100).toFixed(2), units: '' };
+    if (/IC50/i.test(name)) return {val: +(Math.random() * 500).toFixed(2), units: 'nM'};
+    if (/Caspase/i.test(name)) return {val: +(Math.random() * 10).toFixed(2), units: 'RFU'};
+    if (/half-life/i.test(name)) return {val: +(Math.random() * 240).toFixed(1), units: 'min'};
+    if (/Binding affinity/i.test(name)) return {val: +(Math.random() * 50).toFixed(2), units: 'nM'};
+    if (/Cell binding/i.test(name)) return {val: +(Math.random() * 100).toFixed(2), units: 'nM'};
+    if (/DAR/i.test(name)) return {val: +(2 + Math.random() * 6).toFixed(2), units: 'ratio'};
+    if (/Cmax/i.test(name)) return {val: +(Math.random() * 100).toFixed(2), units: 'µg/mL'};
+    if (/Tmax/i.test(name)) return {val: +(Math.random() * 48).toFixed(2), units: 'h'};
+    if (/AUC/i.test(name)) return {val: +(Math.random() * 5000).toFixed(1), units: 'µg·h/mL'};
+    return {val: +(Math.random() * 100).toFixed(2), units: ''};
   }
 
   const assayResultChunks: string[] = [];
@@ -271,7 +273,7 @@ export async function createDemoBiologicsData(): Promise<any> {
 export async function populateAdcGlyphs(limit: number = 50): Promise<{updated: number}> {
   const cn = 'Biologics:biologics';
   const exec = async (sql: string) => await grok.data.db.query(cn, sql);
-  const escape = (s: string) => s.replace(/'/g, "''");
+  const escape = (s: string) => s.replace(/'/g, '\'\'');
 
   // Use real imported glyph images if available, else fall back
   if (!glyphPool.length)
@@ -297,15 +299,9 @@ export async function populateAdcGlyphs(limit: number = 50): Promise<{updated: n
 //name: autostartbiologics
 //tags: autostart
 export async function autostartBiologics() {
-  // chech if chembl connection is available
-  const chembl = await grok.dapi.connections.filter('name="Biologics"').first();
-  if (!chembl) {
-    console.warn('Biologics connection not found. Biologics object handlers not registered');
-    return;
-  }
-  const exp = await DBExplorer.initFromConfigPath(_package);
+  const exp = DBExplorer.initFromConfig(biologicsConfig);
   if (!exp) {
-    grok.shell.error('Failed to load db-explorer config');
+    grok.shell.error('Failed to initialize Biologics DB Explorer');
     return;
   }
   exp.addCustomRenderer((_, colName, value) => {

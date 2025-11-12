@@ -3,8 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {IMonomerLib, Monomer} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib, Monomer, getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {LoggerWrapper} from '@datagrok-libraries/bio/src/utils/logger';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
@@ -21,7 +20,6 @@ import {FormatDetector} from './parsing-validation/format-detector';
 import {highlightInvalidSubsequence} from '../view/components/colored-input/input-painters';
 
 export class OligoToolkitPackage extends DG.Package implements ITranslationHelper {
-
   private _helmHelper: IHelmHelper;
   public get helmHelper(): IHelmHelper {
     if (!this._helmHelper)
@@ -119,7 +117,8 @@ async function loadMonomerLib(monomersPath: string): Promise<IMonomerLib> {
     `Initializing ${APP_NAME.COMBINED} monomer library ...`);
   try {
     const libHelper = await getMonomerLibHelper();
-    const res = await libHelper.readLibrary(monomersPath, DEFAULT_LIB_FILENAME);
+    const path = (monomersPath.endsWith('/') ? monomersPath : monomersPath + '/') + DEFAULT_LIB_FILENAME;
+    const res = await libHelper.readLibraryFromFilePath(path);
     return res;
   } finally { pi.close(); }
 }

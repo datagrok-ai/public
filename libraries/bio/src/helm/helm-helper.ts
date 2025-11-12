@@ -8,7 +8,7 @@ import type {Point, App, HelmType, IHelmEditorOptions} from './types';
 import {
   GetMonomerFunc, MonomersFuncs, HelmMol, HelmString, IHelmWebEditor, HelmAtom, IHelmDrawOptions
 } from './types';
-import {IMonomerLibBase} from '../types/index';
+import {IMonomerLibBase} from '../types/monomer-library';
 import {ISeqHelper} from '../utils/seq-helper';
 import {SeqValueBase} from '../utils/macromolecule/seq-handler';
 

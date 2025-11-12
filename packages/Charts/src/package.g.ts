@@ -1,6 +1,5 @@
 import {WordCloudViewer} from './viewers/word-cloud/word-cloud-viewer';
 import {TreeViewer} from './viewers/tree/tree-viewer';
-import {TimelinesViewer} from './viewers/timelines/timelines-viewer';
 import {SurfacePlot} from './viewers/surface-plot/surface-plot';
 import {SunburstViewer} from './viewers/sunburst/sunburst-viewer';
 import {SankeyViewer} from './viewers/sankey/sankey';
@@ -11,6 +10,16 @@ import {GlobeViewer} from './viewers/globe/globe-viewer';
 import {ChordViewer} from './viewers/chord/chord-viewer';
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
+
+//name: Timelines
+//description: Creates a timelines viewer
+//tags: viewer
+//output: viewer result
+//meta.showInGallery: false
+//meta.icon: icons/timelines-viewer.svg
+export function timelinesViewer() : any {
+  return PackageFunctions.timelinesViewer();
+}
 
 //tags: cellRenderer
 //output: grid_cell_renderer result
@@ -142,15 +151,6 @@ export function _SunburstViewer() {
 //meta.icon: icons/surfaceplot-viewer.svg
 export function _SurfacePlot() {
   return new SurfacePlot();
-}
-
-//name: Timelines
-//description: Creates a timelines viewer
-//tags: viewer
-//output: viewer result
-//meta.icon: icons/timelines-viewer.svg
-export function _TimelinesViewer() {
-  return new TimelinesViewer();
 }
 
 //name: Tree

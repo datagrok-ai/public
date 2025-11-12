@@ -3,11 +3,13 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {TAGS as bioTAGS, ALPHABET} from './macromolecule';
 import {GAP_SYMBOL} from './macromolecule/consts';
-import {IMonomerLibBase} from './../types';
+import {IMonomerLibBase} from './../types/monomer-library';
 import {HelmType} from './../helm/types';
+import {helmTypeToPolymerType} from '../monomer-works/monomer-works';
 
 export function buildCompositionTable(
-  counts: { [m: string]: number }, biotype: HelmType, monomerLib: IMonomerLibBase
+  counts: { [m: string]: number }, biotype: HelmType, monomerLib: IMonomerLibBase,
+  monomerBioTypes?: { [m: string]: HelmType }
 ): HTMLTableElement {
   let sumValue: number = 0;
   let maxValue: number | null = null;
@@ -21,8 +23,9 @@ export function buildCompositionTable(
     .map(([cm, value]) => {
       const ratio = value / sumValue;
       let color: string;
+      const actBioType = monomerBioTypes ? (monomerBioTypes[cm] || biotype) : biotype;
       try {
-        const colors = monomerLib.getMonomerColors(biotype, cm);
+        const colors = monomerLib.getMonomerColors(actBioType, cm);
         color = colors?.backgroundcolor || '#CCCCCC';
       } catch (error) {
         console.warn(`Failed to get colors for monomer ${cm}:`, error);
@@ -37,10 +40,16 @@ export function buildCompositionTable(
         barDiv.style.borderStyle = 'solid';
         barDiv.style.borderColor = DG.Color.toHtml(DG.Color.lightGray);
       }
-      const displayMonomer: string = GAP_SYMBOL === cm ? '-' : cm;
+      let monomerDisplayName = cm;
+      if (cm !== GAP_SYMBOL) {
+        const m = monomerLib.getMonomer(helmTypeToPolymerType(actBioType), cm);
+        if (m && m.symbol !== cm) // for explicit smiles based monomers
+          monomerDisplayName = m.symbol;
+      } else
+        monomerDisplayName = '-';
       const valueDiv = ui.div(`${(100 * ratio).toFixed(2)}%`);
       const el = ui.div([barDiv, valueDiv], {classes: 'macromolecule-cell-comp-analysis-value'});
-      return ({[displayMonomer]: el});
+      return ({[monomerDisplayName]: el});
     }));
 
   const table = ui.tableFromMap(elMap);

@@ -1,8 +1,6 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
-import { Project, JiraIssue, AuthCreds, JiraIssuesList, ErrorMessageResponse } from './objects';
+import {AuthCreds, ErrorMessageResponse, JiraIssue, JiraIssuesBulkList, JiraIssuesList, Project} from './objects';
 
 
 export async function loadProjectsList(host: string, creds: AuthCreds): Promise<Project[] | null> {
@@ -21,12 +19,30 @@ export async function loadProjectData(host: string, creds: AuthCreds, projectKey
     return project;
 }
 
+// https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-issues/#api-rest-api-3-issue-bulkfetch-post
+export async function loadIssuesBulk(host: string, creds: AuthCreds, issueIdsOrKeys: string[], expand?: string[], fields?: string[]): Promise<JiraIssuesBulkList> {
+    if (issueIdsOrKeys.length == 0)
+        return {expand: expand ?? ['names', 'schema'], issues: [], issueErrors: []};
+    if (issueIdsOrKeys.length > 100)
+        throw new Error('You can\'t request more than 100 issues');
+    const url = `https://${host}/rest/api/3/issue/bulkfetch`;
+    const requestOptions = buildRequestOptions(url, creds, 'POST');
+    requestOptions.body = JSON.stringify({
+        expand: expand ?? [],
+        fields: fields ?? [],
+        fieldsByKeys: false,
+        issueIdsOrKeys: issueIdsOrKeys,
+        properties: []
+    });
+    return await invokeApiFetch(url, requestOptions);
+}
+
 export async function loadIssues(host: string, creds: AuthCreds, index: number = 0, count: number = 50, filterObject?: object, keys?: string[]): Promise<JiraIssuesList> {
     let url = `https://${host}/rest/api/3/search?startAt=${index}&maxResults=${count}`;
     
     if (filterObject || keys) {
         let trimmedKeys = keys?.map(key => key.trim());
-        let keysParams = trimmedKeys?.join('+OR+key+=+').trim();
+        let keysParams = trimmedKeys?.join('+OR+key+=+')?.trim();
         let keysJQL = `key+=+${keysParams}`;
         
         let filterData = [];
@@ -46,7 +62,7 @@ export async function loadIssues(host: string, creds: AuthCreds, index: number =
 
     if ((issues as ErrorMessageResponse).errorMessages) {
         issues = { maxResults: count, startAt: index, issues: [], total: 0 }
-        for(let issue of keys ?? []) {
+        for (let issue of keys ?? []) {
             let issueData = await loadIssueData(host, creds, issue)
             if (issueData && (issueData as JiraIssue).key) {
                 issues.issues.push(issueData as JiraIssue);
@@ -60,12 +76,11 @@ export async function loadIssues(host: string, creds: AuthCreds, index: number =
 export async function loadIssueData(host: string, creds: AuthCreds, issueName: string): Promise<JiraIssue | null | ErrorMessageResponse> {
     let url = `https://${host}/rest/api/3/issue/${issueName}`;
     let requestOptions = buildRequestOptions(url, creds);
-    let issue: JiraIssue | null = await invokeApiFetch(url, requestOptions);
-    return issue;
+    return await invokeApiFetch(url, requestOptions);
 }
 
 
-function buildRequestOptions(url: string, creds: AuthCreds): RequestInit {
+function buildRequestOptions(url: string, creds: AuthCreds, method: string = 'GET'): RequestInit {
     const headers = new Headers();
     headers.append('Accept', 'application/json');
     headers.append('Authorization', `Basic ${btoa(creds.userName + ":" + creds.authKey)}`);
@@ -73,7 +88,7 @@ function buildRequestOptions(url: string, creds: AuthCreds): RequestInit {
     headers.append('original-method', 'GET');
 
     const requestOptions: RequestInit = {
-        method: "GET",
+        method: method,
         headers: headers,
         redirect: "follow"
     };

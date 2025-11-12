@@ -56,7 +56,7 @@ export class PackageFunctions {
 
   @grok.decorators.autostart()
   static tutorialsAutostart() : void {
-    if (DG.User.current().joined.add(4, 'days').diff(dayjs())) {
+    if (DG.User.current().joined.add(4, 'days').diff(dayjs()) > 0) {
       const appsNode = grok.shell.browsePanel.mainTree.children.find((c) => c.text === 'Apps') as DG.TreeViewGroup;
       if (!appsNode)
         return;
@@ -149,7 +149,10 @@ export class PackageFunctions {
     const demoView = new DemoView();
     if (pathSegments.length > 0) {
       const pathElements = pathSegments.map((elem) => elem.replaceAll('-', ' '));
-      const node = demoView.tree.items.find((node) => node.text === pathElements[pathElements.length - 1])?.root;
+      const node = demoView.tree.items.find((node) => {
+        const nodeText = node.text.replaceAll('-', ' ');
+        return nodeText === pathElements[pathElements.length - 1];
+      })?.root;
       node?.click();
     }
     return demoView;

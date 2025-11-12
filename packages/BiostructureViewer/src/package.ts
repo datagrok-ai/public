@@ -346,7 +346,8 @@ export class PackageFunctions {
     tags: ['viewer'],
     outputs: [{type: 'viewer', name: 'result'}],
     meta: {
-      keywords: 'PDB, track'
+      keywords: 'PDB, track',
+      showInGallery: 'false',
     }
   })
   static saguaroViewer(): DG.JsViewer & IBiotrackViewer {

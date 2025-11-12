@@ -28,7 +28,7 @@ const packageFiles = [
   'src/package-test.ts', 'src/package-test.js', 'package.js', 'detectors.js',
 ];
 let config: utils.Config;
-export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, suffix?: string) {
+export async function processPackage(debug: boolean, rebuild: boolean, host: string, devKey: string, packageName: any, dropDb: boolean, suffix?: string) {
   // Get the server timestamps
   let timestamps: Indexable = {};
   let url = `${host}/packages/dev/${devKey}/${packageName}`;
@@ -160,8 +160,9 @@ export async function processPackage(debug: boolean, rebuild: boolean, host: str
   zip.append(JSON.stringify(localTimestamps), {name: 'timestamps.json'});
 
   // Upload
-  url += `?debug=${debug.toString()}&rebuild=${rebuild.toString()}`;
-  if (suffix) url += `&suffix=${suffix.toString()}`;
+  url += `?debug=${debug.toString()}&rebuild=${rebuild.toString()}&dropDb=${(dropDb ?? false).toString()}`;
+  if (suffix)
+    url += `&suffix=${suffix.toString()}`;
   const uploadPromise = new Promise((resolve, reject) => {
     fetch(url, {
       method: 'POST',
@@ -313,7 +314,7 @@ async function publishPackage(args: PublishArgs) {
           args.suffix = stdout.toString().substring(0, 8);
       });
       await utils.delay(100);
-      code = await processPackage(!args.release, Boolean(args.rebuild), url, key, packageName, args.suffix);
+      code = await processPackage(!args.release, Boolean(args.rebuild), url, key, packageName, args.dropDb ?? false, args.suffix);
     } catch (error) {
       console.error(error);
       code = 1;
@@ -336,5 +337,6 @@ interface PublishArgs {
   suffix?: string,
   all?: boolean,
   refresh?: boolean,
-  link?: boolean
+  link?: boolean,
+  dropDb?: boolean
 }

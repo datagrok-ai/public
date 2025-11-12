@@ -1,10 +1,10 @@
 {
   "name": "@datagrok/dev-tools",
   "friendlyName": "Dev Tools",
-  "version": "1.6.2",
+  "version": "1.6.4",
   "author": {
     "name": "Savenko Stanislav",
-    "email": "ssavenko@datagrok.ai"
+    "email": "ppolovyi@datagrok.ai"
   },
   "description": "Tools for the Datagrok developers (TestManager, DevPanel).",
   "repository": {
@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@datagrok-libraries/compute-api": "^0.6.1",
-    "@datagrok-libraries/utils": "^4.6.5",
+    "@datagrok-libraries/utils": "^4.6.8",
     "codemirror": "^5.65.15",
     "datagrok-api": "^1.26.0",
     "rxjs": "^6.5.5"

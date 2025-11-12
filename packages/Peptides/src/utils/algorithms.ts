@@ -6,6 +6,7 @@ import {ParallelMutationCliffs} from './parallel-mutation-cliffs';
 import {CLUSTER_TYPE} from '../viewers/logo-summary';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {
+  bitSetToBitArray,
   ClusterStats,
   ClusterTypeStats,
   getStats,
@@ -18,8 +19,8 @@ import {
 export type MutationCliffsOptions = {
   maxMutations?: number,
   minActivityDelta?: number,
-  targetCol?: type.RawColumn | null,
-  currentTarget?: string | null
+  filter?: Uint32Array,
+  singlePosition?: {position: number}
 };
 
 /**
@@ -62,19 +63,31 @@ export function calculateCliffsStatistics(
     const monomerSubMap = cliffs.get(monomer)!;
     for (const position of monomerSubMap.keys()) {
       const subMap = monomerSubMap.get(position)!;
-      const mask = new BitArray(activityArray.length, false);
       if (subMap.size === 0)
         continue;
+      // create two masks, one filtering the activities to only mutation cliffs (with given monomer at given position and its substitutions)
+      // another one corresponding to only the given monomer at given position within the mutation cliffs
+      const filterMask = new BitArray(activityArray.length, false);
+      const maskMCWithMonomerAtPosition = new BitArray(activityArray.length, false);
       for (const index of subMap.keys()) {
-        mask.setFast(index, true);
+        // set the filter mask to true for all sequences within the mutation cliff pairs
+        filterMask.setFast(index, true);
         const toIndexes = subMap.get(index)!;
-        toIndexes.forEach((i) => mask.setFast(i, true));
+        toIndexes.forEach((i) => filterMask.setFast(i, true));
+        // set the mask for sequences with the given monomer at the given position within the mutation cliffs
+        maskMCWithMonomerAtPosition.setFast(index, true);
       }
-      const stats = getStats(activityArray, mask);
+      const stats = getStats(activityArray, maskMCWithMonomerAtPosition, filterMask);
+      stats.mask = filterMask; // store the filter mask for later use in the viewer
       minDiff = Math.min(minDiff, stats.meanDifference);
       maxDiff = Math.max(maxDiff, stats.meanDifference);
       minCount = Math.min(minCount, stats.count);
       maxCount = Math.max(maxCount, stats.count);
+      // here, stats will show the following
+      // count - number of sequences with the given monomer at the given position within the mutation cliffs
+      // mask.trueCount - number of unique sequences within the mutation cliffs (with given monomer at given position and its substitutions)
+      // meanDifference - difference between mean activity of sequences with the given monomer at the given position within the mutation cliffs
+      // and mean activity of other sequences within the mutation cliffs (with given monomer at given position substitutions)
       monomerStatsMap.set(position, stats);
     }
   }
@@ -98,10 +111,6 @@ export function calculateMonomerPositionStatistics(activityCol: DG.Column<number
   positionColumns: DG.Column<string>[], options: {
     isFiltered?: boolean,
     columns?: string[],
-    target?: {
-      col: DG.Column<string>,
-      cat: string,
-    },
     aggValue?: {
       col: DG.Column,
       type: DG.AGG
@@ -109,27 +118,24 @@ export function calculateMonomerPositionStatistics(activityCol: DG.Column<number
   } = {}): MonomerPositionStats {
   options.isFiltered ??= false;
   const monomerPositionObject = {general: {}} as MonomerPositionStats & { general: SummaryStats };
-  let activityColData: Float64Array = activityCol.getRawData() as Float64Array;
-  let sourceDfLen = activityCol.length;
+  const activityColData: Float64Array = activityCol.getRawData() as Float64Array;
+  const sourceDfLen = activityCol.length;
   options.columns ??= positionColumns.map((col) => col.name);
-  if (options.isFiltered) {
-    sourceDfLen = filter.trueCount;
-    const tempActivityData = new Float64Array(sourceDfLen);
-    const selectedIndexes = filter.getSelectedIndexes();
-    for (let i = 0; i < sourceDfLen; ++i)
-      tempActivityData[i] = activityColData[selectedIndexes[i]];
+  // if (options.isFiltered) {
+  //   sourceDfLen = filter.trueCount;
+  //   const tempActivityData = new Float64Array(sourceDfLen);
+  //   const selectedIndexes = filter.getSelectedIndexes();
+  //   for (let i = 0; i < sourceDfLen; ++i)
+  //     tempActivityData[i] = activityColData[selectedIndexes[i]];
 
 
-    activityColData = tempActivityData;
-    positionColumns = DG.DataFrame.fromColumns(positionColumns).clone(filter, options.columns).columns.toList();
-    if (options.target)
-      options.target.col = options.target.col.clone(filter);
-    if (options.aggValue)
-      options.aggValue.col = options.aggValue.col.clone(filter);
-  }
-  const targetColIndexes = options.target?.col?.getRawData();
-  const targetColCat = options.target?.col.categories;
-  const targetIndex = options.target?.cat ? targetColCat?.indexOf(options.target.cat) : -1;
+  //   activityColData = tempActivityData;
+  //   positionColumns = DG.DataFrame.fromColumns(positionColumns).clone(filter, options.columns).columns.toList();
+  //   if (options.aggValue)
+  //     options.aggValue.col = options.aggValue.col.clone(filter);
+  // }
+  const filterBitArray = options.isFiltered ? bitSetToBitArray(filter) : undefined;
+
   for (const posCol of positionColumns) {
     if (!options.columns.includes(posCol.name))
       continue;
@@ -147,13 +153,13 @@ export function calculateMonomerPositionStatistics(activityCol: DG.Column<number
 
       const boolArray: boolean[] = new Array(sourceDfLen).fill(false);
       for (let i = 0; i < sourceDfLen; ++i) {
-        if (posColData[i] === categoryIndex && (!targetColIndexes || targetIndex === -1 || targetColIndexes[i] === targetIndex))
+        if (posColData[i] === categoryIndex && (!options.isFiltered || filter.get(i)))
           boolArray[i] = true;
       }
       const bitArray = BitArray.fromValues(boolArray);
       if (bitArray.allFalse)
         continue;
-      const stats = getStats(activityColData, bitArray, options.aggValue);
+      const stats = getStats(activityColData, bitArray, filterBitArray, options.aggValue);
       currentPositionObject[monomer] = stats;
       getSummaryStats(currentPositionObject.general, stats);
     }
@@ -254,6 +260,7 @@ export function calculateClusterStatistics(df: DG.DataFrame, clustersColumnName:
   const origClustStats: ClusterStats = {};
   const customClustStats: ClusterStats = {};
 
+  const filterMask = df.filter.anyFalse ? bitSetToBitArray(df.filter) : undefined;
   for (const clustType of Object.values(CLUSTER_TYPE)) {
     const masks = clustType === CLUSTER_TYPE.ORIGINAL ? origClustMasks : customClustMasks;
     const clustNames = clustType === CLUSTER_TYPE.ORIGINAL ? origClustColCat : customClustColNamesList;
@@ -262,7 +269,7 @@ export function calculateClusterStatistics(df: DG.DataFrame, clustersColumnName:
       const mask = masks[maskIdx];
       resultStats[clustNames[maskIdx]] = mask.allTrue || mask.allFalse ?
         {count: mask.length, meanDifference: 0, ratio: 1.0, pValue: null, mask: mask, mean: activityCol.stats.avg} :
-        getStats(activityColData, mask);
+        getStats(activityColData, mask, filterMask);
     }
   }
 

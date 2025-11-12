@@ -40,13 +40,11 @@ In the fitting view, configure:
   * Toggle target outputs
   * Select data table (**Table**)
   * Set independent variable columns (**Argument**)
-* Under **Using**, configure optimization:
-  * Choose optimization method (**method**) and loss function type (**loss**). Datagrok uses [Nelder-Mead](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) method to minimize loss functions like MAD and RMSE
-  * Specify number of fitted points to find (**samples**)
-  * Specify maximum deviation between fitted points (**similarity**) - higher values yield fewer points
 * On the top ribbon, click <i class="fas fa-play"></i> **Run** to generate a grid showing loss function values, fitted parameters, and line charts of fit quality
 
 ![fitting-table.gif](pics/fitting-table.gif)
+
+Datagrok uses the [Nelder-Mead](https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method) method to minimize loss functions like MAD and RMSE. Сlick <i class="fas fa-cog"></i> to configure optimization.
 
 :::note developers
 

@@ -1,15 +1,16 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {before, after, category, expect, test, expectArray, testEvent, delay} from '@datagrok-libraries/utils/src/test';
-import {Monomer, MonomerLibData} from '@datagrok-libraries/bio/src/types/index';
+import {Monomer, MonomerLibData} from '@datagrok-libraries/bio/src/types/monomer-library';
 
 import {PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {getUserLibSettings, setUserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
-import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
@@ -79,9 +80,8 @@ category('toAtomicLevel', () => {
     const reactionRule = rules.reactionRules.find((r) => r.name == 'GGaz')!;
 
     const [newSymbols, newMonomers] = getNewMonomers(rdKitModule, systemMonomerLib, reactionRule);
-    expect(newSymbols[0], 'azG_GGaz');
-
-    const mol = rdKitModule.get_mol(newMonomers[0].molfile);
+    expect(newSymbols?.[0], 'azG_GGaz');
+    const mol = rdKitModule.get_mol(newMonomers[0]!.molfile);
     try {
       const molInchi = mol.get_inchi();
       const molInchiKey = rdKitModule.get_inchikey_for_inchi(molInchi);

@@ -9,6 +9,10 @@ function isNumeric(type: string) {
 }
 
 export class SchemaEditor extends DG.Widget {
+  get type(): string {
+    return 'SchemaEditor';
+  }
+
   table: PropertyTable<DG.IProperty>;
   allowedTypes: string[] = [DG.TYPE.STRING, DG.TYPE.INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATE_TIME];
   properties: DG.IProperty[] = [];
@@ -33,13 +37,14 @@ export class SchemaEditor extends DG.Widget {
 
     this.table.onSelected.subscribe((item) => {
       ui.empty(this.extraPropertiesDiv);
-      const propKeys = Object.keys(DG.Property.propertyOptions).filter(k => k !== 'type' && k !== 'name');
+      const excludedKeys = ['type', 'name', 'defaultValue', 'valueValidators'];
+      const propKeys = Object.keys(DG.Property.propertyOptions).filter((key) => !excludedKeys.includes(key));
       const extraProperties = propKeys
         .map(k => DG.Property.propertyOptions[k as keyof typeof DG.Property.propertyOptions]!)
         .filter(p => p.applicableTo == null || (p.applicableTo == DG.TYPE.NUMERICAL && (isNumeric(p.type!))))
         .map(p => DG.Property.fromOptions(p));
       const form = ui.input.form(item, extraProperties);
-      
+
       this.extraPropertiesDiv.appendChild(ui.divV([
         ui.h2(item.name!),
         form
@@ -60,6 +65,10 @@ export type TableFromPropertiesOptions<T = any> = {
 }
 
 export class PropertyTable<T = any> extends DG.Widget {
+  get type(): string {
+    return 'PropertyTable';
+  }
+
   table?: HTMLTableElement;
 
   onSelected: Subject<T> = new Subject();

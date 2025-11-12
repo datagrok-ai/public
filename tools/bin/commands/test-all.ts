@@ -64,7 +64,10 @@ export async function testAll(args: TestArgs): Promise<boolean> {
   utils.setHost(args.host, config);
   let packagesToRun = await testUtils.loadPackages(curDir, args.packages, args.host, args['skip-publish'], args['skip-build']);
 
-  let testsObj = await loadTestsList(packagesToRun, args.core);
+  console.log('Loading tests');
+  let start = Date.now();
+  let testsObj = await loadTestsList(packagesToRun, args.core ?? false, args.record ?? false);
+  console.log(`Loaded tests in ${Date.now() - start} ms`);
   let filteredTests: Test[] = await filterTests(testsObj, (args.tags ?? "").split(" "), args['stress-test'], args.benchmark);
   let browsersOrder = await setBrowsersOrder(filteredTests, getEnumOrder(args.order ?? ''), args['browsers-count'], args.testRepeat);
 
@@ -86,10 +89,14 @@ export async function testAll(args: TestArgs): Promise<boolean> {
   }
 
   if (args.csv) {
+    console.log(`Saving ${(testsResults.length)} browsers results`);
+    for (const res of testsResults)
+      console.log(`DEBUG: testAll: number of lines in csv ${res.csv.length}`);
+    console.log(`Saving ${(testsResults.length)} browsers results`);
     saveCsvResults(testsResults.map(result => result.csv), csvReportDir);
   }
 
-  return !(testsResults.map((test) => test.failed)).some(failStatus => failStatus === true);
+  return testsResults.every(test => !test.failed);
 }
 
 async function filterTests(tests: Test[], tags: string[], stressTest: boolean = false, benchmark: boolean = false): Promise<Test[]> {
@@ -147,11 +154,15 @@ async function runTests(browsersOrder: Test[][], browserOptions: BrowserOptions)
     browsersPromises.push(runBrowser(browserCommands, browserOptions, browsersStarted++, testInvocationTimeout));
   }
   let resultObjects = await Promise.all(browsersPromises);
+  for (const res of resultObjects)
+    console.log(`DEBUG: runTests BEFORE LOOP: number of lines in csv ${res.csv.length}`);
   for (let i = 0; i < resultObjects.length; i++) {
-    resultObjects[i].csv = await addColumnToCsv(resultObjects[i].csv, "browser", i);
-    resultObjects[i].csv = await addColumnToCsv(resultObjects[i].csv, "stress_test", browserOptions.stressTest ?? false);
-    resultObjects[i].csv = await addColumnToCsv(resultObjects[i].csv, "benchmark", browserOptions.benchmark ?? false);
+    resultObjects[i].csv = addColumnToCsv(resultObjects[i].csv, "browser", i);
+    resultObjects[i].csv = addColumnToCsv(resultObjects[i].csv, "stress_test", browserOptions.stressTest ?? false);
+    resultObjects[i].csv = addColumnToCsv(resultObjects[i].csv, "benchmark", browserOptions.benchmark ?? false);
   }
+  for (const res of resultObjects)
+    console.log(`DEBUG: runTests AFTER LOOP: number of lines in csv ${res.csv.length}`);
   return resultObjects;
 }
 

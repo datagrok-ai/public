@@ -46,7 +46,7 @@ export async function getCalledFuncCalls(funccalls: DG.FuncCall[]): Promise<DG.F
   let percentage = 0;
 
   for (let i = 0; i < funcCallsCount; ++i) {
-    calledFuncCalls.push(await funccalls[i].call());
+    calledFuncCalls.push(await funccalls[i].call(undefined, undefined, {processed: true, report: false}));
 
     if (i === 1) {
       percentage = Math.floor(100 * i / funcCallsCount);

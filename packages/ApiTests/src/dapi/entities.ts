@@ -1,13 +1,15 @@
-import * as grok from 'datagrok-api/grok';
-// import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
+import type * as _grok from 'datagrok-api/grok';
+import type * as _DG from 'datagrok-api/dg';
+declare let grok: typeof _grok, DG: typeof _DG;
 
-//@ts-ignore
-import { _package } from '../package-test';
 import {after, before, category, expect, test} from '@datagrok-libraries/utils/src/test';
 
-category('Dapi: entities', () => { 
-  let group: DG.Group;
+//@ts-ignore
+import { _package } from 'package-test';
+
+
+category('Dapi: entities', () => {
+  let group: _DG.Group;
 
   before(async () => {
     group = DG.Group.create('js-api-test-group1');

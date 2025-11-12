@@ -3,12 +3,14 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as C from '../utils/constants';
 import * as type from '../utils/types';
-import {addExpandIconGen, getSeparator, setGridProps} from '../utils/misc';
+import {addExpandIconGen, getDistributionPanel, getMutationCliffsDistributionTable, getSeparator, setGridProps} from '../utils/misc';
 import {renderCellSelection} from '../utils/cell-renderer';
 import {SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
+import {getActivityDistribution, getStatsTableMap} from './distribution';
+import {StringDictionary} from '@datagrok-libraries/utils/src/type-declarations';
 
-export type MutationCliffsOptions = {
-  mutationCliffs: type.MutationCliffs, mutationCliffsSelection: type.Selection, sequenceColumnName: string,
+export type MutationCliffsWidgetOptions = {
+  mutationCliffs: type.MutationCliffs, mutationCliffStats: type.MutationCliffStats | null, mutationCliffsSelection: type.Selection, sequenceColumnName: string,
   positionColumns: DG.Column<string>[], gridColumns: DG.GridColumnList, activityCol: DG.Column<number>,
 };
 
@@ -21,7 +23,7 @@ export type MutationCliffsOptions = {
  * @return - mutation cliffs widget.
  */
 export function mutationCliffsWidget(
-  table: DG.DataFrame, options: MutationCliffsOptions, allowExpand = true,
+  table: DG.DataFrame, options: MutationCliffsWidgetOptions, allowExpand = true,
 ): DG.Widget {
   //addExpandIcon(pairsGrid);
   //addExpandIcon(uniqueSequencesGrid);
@@ -32,6 +34,37 @@ export function mutationCliffsWidget(
   const comboGrids = [pairsGrid, uniqueSequencesGrid];
   const widgetRoot = ui.divV([aminoToInput.root, ...comboGrids.map((grid) => grid.root)],
     {style: {width: '100%'}});
+  // add mutation cliffs distribution histogram
+  const isSingleMutationPosition = Object.values(options.mutationCliffsSelection).filter((monomers) => monomers.length > 0).length === 1;
+  if (isSingleMutationPosition) {
+    const position = Object.keys(options.mutationCliffsSelection).find((pos) => options.mutationCliffsSelection[pos].length > 0)!;
+    const monomers = options.mutationCliffsSelection[position];
+    if (monomers.length === 1) {
+      const monomerName = monomers[0];
+      const cliffs = options.mutationCliffs?.get(monomerName)?.get(position);
+      if (cliffs && cliffs.size > 0) {
+        const distributionTable = getMutationCliffsDistributionTable(options.activityCol, cliffs, monomerName);
+        const hist = getActivityDistribution(distributionTable, false);
+        // quick stats
+        const stats = options.mutationCliffStats?.stats?.get(monomerName)?.get(position);
+        const tableMap = {} as StringDictionary;
+        let pairsCount = 0;
+        for (const indexArray of cliffs.values())
+          pairsCount += indexArray.length;
+        tableMap['Pairs count'] = pairsCount.toString();
+        if (stats) {
+          tableMap['Unique Count'] = stats.mask.trueCount().toString();
+          Object.assign(tableMap, getStatsTableMap(stats, {countName: 'MP in cliffs count'}));
+        }
+        const distributionPanel = getDistributionPanel(hist, tableMap); // no need to show stats here
+        hist.root.style.maxHeight = '100px';
+        distributionPanel.style.marginTop = '10px';
+        widgetRoot.appendChild(distributionPanel);
+      }
+    }
+  }
+
+
   if (allowExpand) {
     addExpandIconGen('Mutation Cliffs pairs', aminoToInput.root, widgetRoot,
       () => {
@@ -74,7 +107,7 @@ export function mutationCliffsWidget(
 }
 
 
-function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsOptions):
+function cliffsPairsWidgetParts(table: DG.DataFrame, options: MutationCliffsWidgetOptions):
   {pairsGrid: DG.Grid, uniqueSequencesGrid: DG.Grid, aminoToInput: DG.InputBase<string>} | null {
   const filteredIndexes = table.filter.getSelectedIndexes();
   const positions = Object.keys(options.mutationCliffsSelection);

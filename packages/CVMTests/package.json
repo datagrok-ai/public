@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/cvm-tests",
   "friendlyName": "CVM Tests",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "author": {
     "name": "Pavlo Polovyi",
     "email": "ppolovyi@datagrok.ai"
@@ -9,7 +9,7 @@
   "servicePackage": true,
   "description": "Automated CVM tests",
   "dependencies": {
-    "@datagrok-libraries/utils": "^4.6.5",
+    "@datagrok-libraries/utils": "^4.6.8",
     "cash-dom": "^8.1.5",
     "datagrok-api": "^1.26.0",
     "dayjs": "^1.11.13"

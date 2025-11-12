@@ -1,0 +1,55 @@
+Common Name,CAS,smiles,EPA Compound ID,MolLogP,Source,Source Compound Code
+"1,3-Benzenedicarboxylic acid ",121-91-5,C1=CC(=CC(=C1)C(=O)O)C(=O)O,EPA-001,1.082999945,EPA,EPA-001
+Bisphenol AF,1478-61-1,Oc1ccc(cc1)C(c2ccc(O)cc2)(C(F)(F)F)C(F)(F)F,EPA-002,4.508500099,Enamine,Enamine-2
+"2,5-Di-tert-butylbenzene-1,4-diol",88-58-4,CC(C)(C)C1=CC(O)=C(C=C1O)C(C)(C)C,EPA-003,3.692800045,E-Molecule,E-Molecue-3
+2-Ethylhexyl paraben,5153-25-3,CCCCC(CC)COC(=O)C1=CC=C(C=C1)O,EPA-004,3.765399933,Sigma-Aldrich,SA-4
+"3,3',5,5'-Tetrabromobisphenol A",79-94-7,CC(C)(c1cc(Br)c(O)c(Br)c1)c1cc(Br)c(O)c(Br)c1,EPA-005,6.473700047,ACME,ACME-5
+"4,4'-Sulfonylbis[2-(prop-2-en-1-yl)phenol]",41481-66-7,C=CCc1cc(ccc1O)S(=O)(=O)c2ccc(cc2)CC=C,EPA-006,3.681999922,WuXi,WuXi-6
+"4-(1,1,3,3-Tetramethylbutyl)phenol ",140-66-9,CC(C)(C)CC(C)(C)c1ccc(O)cc1,EPA-007,4.105999947,Pharmaron,Pharmaron-7
+4-Hexylresorcinol,136-77-6,CCCCCCc1cc(O)c(cc1)O,EPA-008,3.22059989,EPA,EPA-8
+4-Nitroaniline,0100-01-06,c1cc(ccc1N)N(=O)=O,EPA-009,,Enamine,Enamine-9
+4-Nonylphenol (Branched),84852-15-3,CC(C)CCCCCCc1ccc(O)cc1,EPA-010,4.685299873,E-Molecule,E-Molecule-10
+4-Octylphenol,1806-26-4,CCCCCCCCc1ccc(O)cc1,EPA-011,4.295199871,Sigma-Aldrich,SA-11
+4-n-Nonylphenol,104-40-5,CCCCCCCCCc1ccc(O)cc1,EPA-012,4.685299873,ACME,ACME-12
+6:2 Fluorotelemer alcohol,647-42-7,C(C(C(C(F)(F)F)(F)F)(F)F)(C(C(CCO)(F)F)(F)F)(F)F,EPA-013,,WuXi,WuXi-13
+Atrazine,1912-24-9,CCNc1nc(Cl)nc(NC(C)C)n1,EPA-014,1.777099967,Pharmaron,Pharmaron-14
+Benzyl butyl phthalate,85-68-7,CCCCOC(=O)c1ccccc1C(=O)OCC2=CC=CC=C2,EPA-015,4.000500202,EPA,EPA-15
+Benzylparaben,94-18-8,Oc1ccc(cc1)C(=O)OCC2=CC=CC=C2,EPA-016,2.749200106,Enamine,Enamine-16
+Bisphenol A,80-05-7,C=CC=1C=CC=CC1,EPA-017,2.329600096,E-Molecule,E-Molecule-17
+"2,2',4,4'-Tetrahydroxybenzophenone",131-55-5,O=C(C1=CC=C(O)C=C1O)C2=CC=C(O)C=C2O,EPA-018,1.74000001,Sigma-Aldrich,SA-18
+Celecoxib,169590-42-5,c1cc(C)ccc1c2cc(C(F)(F)F)nn2c3ccc(cc3)S(=O)(=O)N,EPA-120,3.513920069,ACME,ACME-19
+Cymoxanil,57966-95-7,CCNC(=O)NC(=O)CC#N,EPA-020,-0.2542200089,WuXi,WuXi-20
+Dapsone,80-08-0,C1=CC(=CC=C1N)S(=O)(=O)C2=CC=C(C=C2)N,EPA-021,1.683799982,Pharmaron,Pharmaron-21
+Deltamethrin,52918-63-5,CC1(C(C1C(=O)OC(C#N)C2=CC(=CC=C2)OC3=CC=CC=C3)C=C(Br)Br)C,EPA-022,6.490180016,EPA,EPA-22
+Di(2-ethylhexyl) phthalate,117-81-7,CCCCC(CC)COC(=O)C1=CC=CC=C1C(=O)OCC(CC)CCCC,EPA-023,6.433000088,Enamine,Enamine-23
+Dibutyl phthalate,84-74-2,CCCCOC(=O)C1=CC=CC=C1C(=O)OCCCC,EPA-024,3.600399971,E-Molecule,E-Molecule-24
+Diclobenil,1194-65-6,C1=CC(=C(C(=C1)Cl)C#N)Cl,EPA-025,2.865080118,Sigma-Aldrich,SA-25
+Dicumyl Peroxide,80-43-3,CC(C)(C1=CC=CC=C1)OOC(C)(C)C2=CC=CC=C2,EPA-026,4.8052001,ACME,ACME-26
+Ethylparaben,120-47-8,CCOC(=O)C1=CC=C(C=C1)O,EPA-027,1.568899989,WuXi,WuXi-27
+Fenthion,55-38-9,CC1=C(C=CC(=C1)OP(=S)(OC)OC)SC,EPA-028,3.613019943,Pharmaron,Pharmaron-28
+Heptylparaben,1085-12-7,CCCCCCCOC(=O)C1=CC=C(C=C1)O,EPA-029,3.519399881,EPA,EPA-29
+Hexaflumuron,86479-06-03,C1=CC(=C(C(=C1)F)C(=O)NC(=O)NC2=CC(=C(C(=C2)Cl)OC(C(F)F)(F)F)Cl)F,EPA-030,5.470200062,Enamine,Enamine-30
+Hydroxyflutamide,52806-53-8,CC(C)(C(=O)NC1=CC(=C(C=C1)[N+](=O)[O-])C(F)(F)F)O,EPA-031,2.322999954,E-Molecule,E-Molecule-31
+Ipconazole,125225-28-7,CC(C)C1CCC(C1(CN2C=NC=N2)O)CC3=CC=C(C=C3)Cl,EPA-032,3.587500095,Sigma-Aldrich,SA-32
+Isofenphos,25311-71-1,CCOP(=S)(NC(C)C)OC1=CC=CC=C1C(=O)OC(C)C,EPA-033,3.889600039,ACME,ACME-33
+Kaempferol,520-18-3,C1=CC(=CC=C1C2=C(C(=O)C3=C(C=C(C=C3O2)O)O)O)O,EPA-034,2.282399893,WuXi,WuXi-34
+Mestranol,72-33-3,CC12CCC3C(C1CCC2(C#C)O)CCC4=C3C=CC(=C4)OC,EPA-035,3.915600061,Pharmaron,Pharmaron-35
+"p,p'-DDE",72-55-9,C1=CC(=CC=C1C(=C(Cl)Cl)C2=CC=C(C=C2)Cl)Cl,EPA-036,6.187900066,EPA,EPA-36
+Methoxychlor,72-43-5,COC1=CC=C(C=C1)C(C2=CC=C(C=C2)OC)C(Cl)(Cl)Cl,EPA-037,5.205900192,Enamine,Enamine-37
+Myclobutanil,88671-89-0,CCCCC(CN1C=NC=N1)(C#N)C2=CC=C(C=C2)Cl,EPA-038,3.583280087,E-Molecule,E-Molecule-38
+Octyl Gallate,1034-01-01,CCCCCCCCOC(=O)C1=CC(=C(C(=C1)O)O)O,EPA-039,3.32069993,Sigma-Aldrich,SA-39
+Phenthoate,2597-03-07,CCOC(=O)C(C1=CC=CC=C1)SP(=S)(OC)OC,EPA-040,3.541300058,ACME,ACME-40
+Phoxim,14816-18-3,CCOP(=S)(OCC)ON=C(C#N)C1=CC=CC=C1,EPA-041,3.228379965,WuXi,WuXi-41
+Picoxystrobin,117428-22-5,COC=C(C1=CC=CC=C1COC2=CC=CC(=N2)C(F)(F)F)C(=O)OC,EPA-042,3.839699984,Pharmaron,Pharmaron-42
+Propargite,2312-35-8,CC(C)(C)C1=CC=C(C=C1)OC2CCCCC2OS(=O)OCC#C,EPA-043,3.919199944,EPA,EPA-43
+Propiconazole,60207-90-1,CCCC1COC(O1)(CN2C=NC=N2)C3=C(C=C(C=C3)Cl)Cl,EPA-044,3.653399944,Enamine,Enamine-44
+Simazine,122-34-9,CCNC1=NC(=NC(=N1)Cl)NCC,EPA-045,1.388599992,E-Molecule,E-Molecule-45
+Terbuthylazine,5915-41-3,CCNC1=NC(=NC(=N1)Cl)NC(C)(C)C,EPA-046,2.167200089,Sigma-Aldrich,SA-46
+Triclocarban,101-20-2,C1=CC(=CC=C1NC(=O)NC2=CC(=C(C=C2)Cl)Cl)Cl,EPA-047,5.290800095,ACME,ACME-47
+Triclosan,3380-34-5,C1=CC(=C(C=C1Cl)O)OC2=C(C=C(C=C2)Cl)Cl,EPA-048,5.14470005,WuXi,WuXi-48
+Trimethyl phosphate,512-56-1,COP(=O)(OC)OC,EPA-049,1.033699989,Pharmaron,Pharmaron-49
+Triphenyl phosphate,115-86-6,P(OC1=CC=CC=C1)(OC2=CC=CC=C2)(OC3=CC=CC=C3)=O,EPA-050,5.331500053,EPA,EPA-50
+Triphenyl phosphite,101-02-0,P(OC1=CC=CC=C1)(OC2=CC=CC=C2)OC3=CC=CC=C3,EPA-051,5.450300217,Enamine,Enamine-51
+Triphenylethylene,58-72-0,C1=CC=C(C=C1)C=C(C2=CC=CC=C2)C3=CC=CC=C3,EPA-052,5.275499821,E-Molecule,E-Molecule-52
+Zearalenone,17924-92-4,CC1CCCC(=O)CCCC=CC2=CC(=CC(=C2C(=O)O1)O)O,EPA-053,3.579600096,Sigma-Aldrich,SA-53
+Metconazole,125116-23-6,CC1(CCC(C1(CN2C=NC=N2)O)CC3=CC=C(C=C3)Cl)C,EPA-054,3.341500044,ACME,ACME-54

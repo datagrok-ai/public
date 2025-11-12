@@ -126,8 +126,8 @@ export class PackageFunctions {
   static async dbscanPostProcessingFunction(
     col1: DG.Column,
     col2: DG.Column,
-    @grok.decorators.param({'options':{'initialValue':'0.01', description: 'Minimum distance between two points to be considered as in the same neighborhood.'}})   epsilon: number,
-    @grok.decorators.param({'type':'int','options':{'initialValue':'5', description: 'Minimum number of points to form a dense region.'}})   minimumPoints: number) {
+    @grok.decorators.param({options: {initialValue: '0.01', description: 'Minimum distance between two points to be considered as in the same neighborhood.'}})   epsilon: number,
+    @grok.decorators.param({type: 'int', options: {initialValue: '5', description: 'Minimum number of points to form a dense region.'}})   minimumPoints: number) {
 
     const df = col1.dataFrame;
     if (df === null)
@@ -191,7 +191,7 @@ export class PackageFunctions {
   static async reduceDimensionality(): Promise<void> {
 
     const editor = new MultiColumnDimReductionEditor();
-    const dialog = ui.dialog('Dimensionality reduction')
+    const dialog = ui.dialog('Reduce Dimensionality')
       .add(editor.getEditor())
       .onOK(async () => {
         const params = editor.getParams();
@@ -300,6 +300,7 @@ export class PackageFunctions {
     'tags': [
       'viewer'
     ],
+    'meta': {showInGallery: 'false'},
     'name': 'MCL',
     'description': 'Markov clustering viewer'
   })

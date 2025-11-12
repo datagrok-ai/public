@@ -10,6 +10,8 @@ import {ALIGNMENT, ALPHABET, NOTATION, TAGS as bioTAGS} from '@datagrok-librarie
 import {ISeqHelper, getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 
 import {_testNeg, _testPos, DetectorTestData, DfReaderFunc, PosCol} from './utils/detectors-utils';
+import { SeqTemps } from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
+import { _testBilnDetection, detectorTestsDataForBiln } from './biln-tests';
 
 /*
 // snippet to list df columns of semType='Macromolecule' (false positive)
@@ -418,6 +420,11 @@ MWRSWY-CKHPMWRSWY-CKHP`;
     }, seqHelper);
   });
 
+  for (const bilnT of detectorTestsDataForBiln) {
+    test(bilnT.name, async () => {
+      await _testBilnDetection(bilnT.seqs, seqHelper, bilnT.negative);
+    });
+  }
   // test('samplesFastaFasta', async () => {
   //   await _testDf(readSamples(Samples.fastaFasta), {
   //     'sequence': new PosCol(NOTATION.FASTA, ALIGNMENT.SEQ, ALPHABET.PT, 20, false),

@@ -534,9 +534,9 @@ export enum VIEWER {
   TREE_MAP = 'Tree map',
   TRELLIS_PLOT = 'Trellis plot',
   WORD_CLOUD = 'Word cloud',
-  TIMELINES = 'TimelinesViewer',
-  RADAR_VIEWER = 'RadarViewer',
-  SURFACE_PLOT = 'SurfacePlot',
+  TIMELINES = 'Timelines',
+  RADAR_VIEWER = 'Radar',
+  SURFACE_PLOT = 'Surface plot',
   SCAFFOLD_TREE = 'Scaffold Tree',
   PIVOT_TABLE = 'Pivot table',
   CONFUSION_MATRIX = 'Confusion matrix'

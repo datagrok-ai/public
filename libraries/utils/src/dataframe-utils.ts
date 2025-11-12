@@ -1,11 +1,12 @@
 /* eslint-disable max-len */
-import * as DG from 'datagrok-api/dg';
+import type * as _DG from 'datagrok-api/dg.js';
+declare let DG: typeof _DG;
 import * as sha256 from 'fast-sha256';
 /**
  * For columns of string type. Checks whether column contains empty values and removes corresponding rows in case user selects to remove.
  *
  */
-export function removeEmptyStringRows(table: DG.DataFrame, col: DG.Column): number[] {
+export function removeEmptyStringRows(table: _DG.DataFrame, col: _DG.Column): number[] {
   const cats = col.categories;
   const emptyRawInd = cats.map((val, ind) => !val ? ind : null).filter((it) => it !== null);
   const rawData = [...col.getRawData()];
@@ -21,7 +22,7 @@ export function removeEmptyStringRows(table: DG.DataFrame, col: DG.Column): numb
   return emptyRawsIndexes;
 }
 
-export function hashDataFrame(table: DG.DataFrame, names?: string[]): Uint8Array {
+export function hashDataFrame(table: _DG.DataFrame, names?: string[]): Uint8Array {
   names ??= table.columns.names();
   const hasher = new sha256.Hash();
   const order = table.getSortedOrder(names);

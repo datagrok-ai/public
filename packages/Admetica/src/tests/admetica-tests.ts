@@ -10,9 +10,8 @@ import {
   getQueryParams,
   properties,
   setProperties,
-  runAdmeticaFunc,
 } from '../utils/admetica-utils';
-import * as api from './package-api';
+import { getAdmeProperties } from '../package';
 
 category('Admetica', () => {
   let v: DG.TableView;
@@ -40,9 +39,11 @@ category('Admetica', () => {
   });
 
   test('Container. Post request', async () => {
-    const smiles = `smiles
-    O=C1Nc2ccccc2C(C2CCCCC2)=NC1`;
-    const distributionResults = await runAdmeticaFunc(smiles, 'PPBR,VDss', false);
+    const smilesColumn = DG.Column.fromStrings('smiles', [
+      'O=C1Nc2ccccc2C(C2CCCCC2)=NC1',
+    ]);
+    const admeProps = ['PPBR', 'VDss'];
+    const distributionResults = await getAdmeProperties(smilesColumn, admeProps);
     expect(distributionResults != null, true);
   }, {timeout: 25000});
 
@@ -74,7 +75,7 @@ category('Admetica', () => {
     await delay(1000);
     smilesColumn = molecules.columns.bySemType(DG.SEMTYPE.MOLECULE)!;
     const newTableColumn = 'Caco2';
-    await performChemicalPropertyPredictions(smilesColumn, v.dataFrame, newTableColumn);
+    await performChemicalPropertyPredictions(smilesColumn, v.dataFrame, [newTableColumn]);
     await delay(2000);
     expect(molecules.columns.names().includes(newTableColumn), true, `${newTableColumn} column has not been added`);
     expect(parseFloat(molecules.col(newTableColumn)!.get(0).toFixed(2)), -4.62, `Calculated value for ${newTableColumn} is incorrect`);
@@ -125,19 +126,20 @@ category('Admetica', () => {
     const runAdmeticaBenchmark = async (moleculesCount: number) => {
       const molecules = grok.data.demo.molecules(moleculesCount);
       molecules.columns.remove('logD');
-      const args = [molecules.toCsv(), await getQueryParams(), false];
-      return await runOnce(runAdmeticaFunc, ...args);
+      const args = [molecules, await getQueryParams()];
+      return await runOnce(getAdmeProperties, ...args);
     };
     await DG.timeAsync('Admetica column', async () => await runAdmeticaBenchmark(5000));
   }, {timeout: 10000000000, benchmark: true });
 
   test('Calculate.Benchmark cell', async () => {
-    const smiles = `smiles
-    O=C1Nc2ccccc2C(C2CCCCC2)=NC1`;
     const distributionSubgroup = properties.subgroup.find((subgroup: any) => subgroup.name === 'Distribution');
     const distributionModels = distributionSubgroup ? distributionSubgroup.models.map((model: any) => model.name) : [];
-    const args = [smiles, distributionModels, false];
-    await DG.timeAsync('Admetica cell', async () => await runOnce(runAdmeticaFunc, ...args));
+    const smilesColumn = DG.Column.fromStrings('smiles', [
+      'O=C1Nc2ccccc2C(C2CCCCC2)=NC1',
+    ]);
+    const args = [smilesColumn, distributionModels];
+    await DG.timeAsync('Admetica cell', async () => await runOnce(getAdmeProperties, ...args));
   }, {timeout: 1000000, benchmark: true});
 });
 

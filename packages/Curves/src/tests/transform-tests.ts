@@ -4,7 +4,7 @@ import {Viewport} from '@datagrok-libraries/utils/src/transform';
 import {FitChartCellRenderer, layoutChart} from '../fit/fit-renderer';
 
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
-import {FitConstants} from '../fit/const';
+import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 
 
 category('viewport', () => {

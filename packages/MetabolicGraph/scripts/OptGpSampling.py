@@ -4,6 +4,7 @@
 #environment: channels: [Conda-forge], dependencies: [python=3.12, {pip: [cobra]}]
 #input: string cobraModel
 #input: int nSamples = 1000 {nullable: true}
+#input: int thinning = 1 {nullable: true}
 #output: dataframe res
 from cobra.core import Metabolite, Model, Reaction
 
@@ -19,7 +20,7 @@ jsonMap = json.loads(cobraModel)
 
 model = model_from_dict(jsonMap)
 
-optgp = OptGPSampler(model, 1, seed=42, n_samples = nSamples)
+optgp = OptGPSampler(model, thinning, seed=42, n_samples = nSamples)
 
 optgp_samples = optgp.sample(nSamples)
 

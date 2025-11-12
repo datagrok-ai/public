@@ -28,7 +28,6 @@ export function getSettings(): UserWidgetsSettings {
 }
 
 export function saveSettings(): void {
-  console.log(settings);
   const s: {[key: string]: any} = {};
   for (const key of Object.keys(settings))
     s[key] = JSON.stringify(settings[key]);
@@ -50,14 +49,11 @@ function initWidgetHost(host: HTMLDivElement, w: DG.Widget, title?: string) {
     host.style.order = w.props.order;
 
   const header = host.querySelector('.d4-dialog-header')! as HTMLElement;
-  if (title === '') {
+  if (!title) {
     header.classList.add('d4-dialog-header-hidden');
     w.root.appendChild(ui.icons.close(remove, 'Remove'));
-  }
-  else {
-    header.appendChild(ui.icons.settings(() => {grok.shell.o = w;}, 'Edit settings'));
+  } else
     header.appendChild(ui.icons.close(remove, 'Remove'));
-  }
 
   if (w.root.classList.contains('widget-narrow'))
     host.classList.add('widget-narrow');
@@ -66,6 +62,12 @@ function initWidgetHost(host: HTMLDivElement, w: DG.Widget, title?: string) {
 
   host.querySelector('.power-pack-widget-content')!.appendChild(w.root);
   ui.tools.setHoverVisibility(host, Array.from(host.querySelectorAll('i')));
+  if (w.factory?.name) {
+    const widgetSettings = settings[w.factory.name] ?? (settings[w.factory.name] = { });
+    if (widgetSettings.ignored === undefined || widgetSettings.ignored === null)
+      widgetSettings.ignored = false;
+    saveSettings();
+  }
 }
 
 function createWidgetHost(title: string): HTMLDivElement {

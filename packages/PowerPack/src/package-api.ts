@@ -30,10 +30,6 @@ export namespace funcs {
     return await grok.functions.call('PowerPack:ActivityDashboardWidget', {});
   }
 
-  export async function recentProjectsWidget(): Promise<any> {
-    return await grok.functions.call('PowerPack:RecentProjectsWidget', {});
-  }
-
   export async function communityWidget(): Promise<any> {
     return await grok.functions.call('PowerPack:CommunityWidget', {});
   }
@@ -44,10 +40,6 @@ export namespace funcs {
 
   export async function htmlWidget(): Promise<any> {
     return await grok.functions.call('PowerPack:HtmlWidget', {});
-  }
-
-  export async function learnWidget(): Promise<any> {
-    return await grok.functions.call('PowerPack:LearnWidget', {});
   }
 
   export async function kpiWidget(): Promise<any> {

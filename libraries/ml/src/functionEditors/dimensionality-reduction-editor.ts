@@ -10,7 +10,6 @@ import {IDimReductionParam, ITSNEOptions, IUMAPOptions}
   from '../multi-column-dimensionality-reduction/multi-column-dim-reducer';
 import {DimReductionMethods} from '../multi-column-dimensionality-reduction/types';
 import {MCLMethodName} from '../MCL';
-import wu from 'wu';
 
 export const SEQ_COL_NAMES = {
   [DG.SEMTYPE.MOLECULE]: 'Molecules',
@@ -247,7 +246,7 @@ export class DimReductionBaseEditor {
       }
       changed();
       // the table can be uploaded on spot, so lets check that
-      if (!wu(value.columns).some((col) => !!col.getTag(DG.Tags.SemanticDetectionDuration)))
+      if (!value.columns.toList().some((col) => !!col.getTag(DG.Tags.SemanticDetectionDuration)))
         value.meta.detectSemanticTypes().then(() => {changed();})
     }
 

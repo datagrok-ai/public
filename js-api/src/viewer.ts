@@ -359,7 +359,7 @@ export class JsViewer extends Viewer {
   addRowSourceAndFormula() {
     this.rowSource = this.string('rowSource', 'Filtered',
         { choices: ['All', 'Filtered', 'Selected', 'SelectedOrCurrent', 'FilteredSelected', 'MouseOverGroup', 'CurrentRow', 'MouseOverRow']});
-    this.formulaFilter = this.string('filter', '', {fieldName: 'formulaFilter'});
+    this.formulaFilter = this.string('filter', '', {fieldName: 'formulaFilter', category: 'Data'});
   }
 
   onFrameAttached(dataFrame: DataFrame): void {
@@ -428,6 +428,12 @@ export class JsViewer extends Viewer {
   /** Registers a string property with the specified name and defaultValue */
   protected string(propertyName: ViewerPropertyType, defaultValue: string | null = null, options: { [key: string]: any } & IProperty | null = null): string {
     return this.addProperty(propertyName, TYPE.STRING, defaultValue, options);
+  }
+
+  protected choices<T extends string>(propertyname: string, defaultValue: T, choices: T[], options: { [key: string]: any } & IProperty | null = null): T {
+    options = options ?? {};
+    options['choices'] = choices;
+    return this.addProperty(propertyname, TYPE.STRING, defaultValue, options);
   }
 
   /** Registers a string list property with the specified name and defaultValue */

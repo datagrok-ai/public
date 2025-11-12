@@ -53,7 +53,7 @@ category('GUI: Dialogs', () => {
     demog = df.clone();
     v = grok.shell.addTableView(demog);
     await awaitCheck(() => document.querySelector('canvas') !== null, 'cannot load table', 3000);
-    v.ribbonMenu.find('ML').find('Cluster').find('Cluster...').click();
+    v.ribbonMenu.find('ML').find('Cluster').find('Cluster Data...').click();
     await awaitCheck(() => checkDialog('Cluster Data'), 'Dialog is not open 1', 1000);
     isDialogPresent('Cluster Data');
     let okButton = Array.from(document.querySelectorAll('.ui-btn.ui-btn-ok'))
@@ -61,10 +61,10 @@ category('GUI: Dialogs', () => {
     okButton.click();
     await awaitCheck(() => demog.col('clusters') !== null, 'cannot find clusters column', 3000);
     isColumnPresent(demog.columns, 'clusters');
-    v.ribbonMenu.find('ML').find('Cluster').find('Cluster...').click();
+    v.ribbonMenu.find('ML').find('Cluster').find('Cluster Data...').click();
     await awaitCheck(() => checkDialog('Cluster Data'), 'Dialog is not open 2', 1000);
     isDialogPresent('Cluster Data');
-    returnDialog('Cluster Data')!.input('Show scatter plot').input.click();
+    returnDialog('Cluster Data')!.input('Show Scatter Plot').input.click();
     await awaitCheck(() => checkViewer(Array.from(v.viewers), 'Scatter plot'), 'Scatter plot did not appear', 3000);
     isColumnPresent(demog.columns, 'clusters (2)');
     const cancelButton = Array.from(document.querySelectorAll('.ui-btn.ui-btn-ok'))
@@ -78,13 +78,13 @@ category('GUI: Dialogs', () => {
     });
     if (demog.col('clusters (2)') !== null)
       throw new Error('cluster (2) column did not disappear after clicking on the "Cancel" button');
-    v.ribbonMenu.find('ML').find('Cluster').find('Cluster...').click();
+    v.ribbonMenu.find('ML').find('Cluster').find('Cluster Data...').click();
     await awaitCheck(() => checkDialog('Cluster Data'), 'Dialog is not open 3', 1000);
     isDialogPresent('Cluster Data');
     setDialogInputValue('Cluster Data', 'Normalize', 'Z-scores'); await delay(100);
     setDialogInputValue('Cluster Data', 'Clusters', 4); await delay(100);
     setDialogInputValue('Cluster Data', 'Metric', 'Manhattan'); await delay(100);
-    returnDialog('Cluster Data')!.input('Show scatter plot').input.click();
+    returnDialog('Cluster Data')!.input('Show Scatter Plot').input.click();
     await awaitCheck(() => checkViewer(Array.from(v.viewers), 'Scatter plot'),
       'Scatter plot did not appear', 3000);
     okButton = document.getElementsByClassName('ui-btn ui-btn-ok enabled')[0] as HTMLElement;

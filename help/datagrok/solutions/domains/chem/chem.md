@@ -266,9 +266,9 @@ The dialog has the following inputs:
 * **Table**: The table containing the column of sequences.
 * **Column**: The column containing the sequences.
 * **Encoding function**: The encoding function that will be used for pre-processing of molecules. Currently, only one encoding function is available, that will use [chemical fingerprint](https://www.rdkit.org/UGM/2012/Landrum_RDKit_UGM.Fingerprints.Final.pptx.pdf) distances between each molecule to calculate pairwise distances. The `Fingerprints` function has 1 parameter which you can adjust using the gear (⚙️) button next to the encoding function selection: 
-    * Fingerprint type: The type of molecular fingerprints that will be used to generate monomer substitution matrix. Options are `Morgan`, `Pattern` or `RDKit`.
+  * Fingerprint type: The type of molecular fingerprints that will be used to generate monomer substitution matrix. Options are `Morgan`, `Pattern` or `RDKit`.
 * **Method**: The dimensionality reduction method that will be used. The options are:
-    * UMAP: [UMAP](https://umap-learn.readthedocs.io/en/latest/) is a dimensionality reduction technique that can be used for visualization similarly to t-SNE, but also for general non-linear dimension reduction.
+  * UMAP: [UMAP](https://umap-learn.readthedocs.io/en/latest/) is a dimensionality reduction technique that can be used for visualization similarly to t-SNE, but also for general non-linear dimension reduction.
     * t-SNE: [t-SNE](https://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding) is a machine learning algorithm for dimensionality reduction developed by Geoffrey Hinton and Laurens van der Maaten. It is a nonlinear dimensionality reduction technique that is particularly well-suited for embedding high-dimensional data into a space of two or three dimensions, which can then be visualized in a scatterplot.
 
     Other parameters for dimensionality reduction method can be accessed through the gear (⚙️) button next to the method selection.
@@ -276,11 +276,11 @@ The dialog has the following inputs:
 
 * **Plot embeddings**: If checked, the plot of the embeddings will be shown after the calculation is finished.
 * **Postprocessing**: The postprocessing function that will be applied to the resulting embeddings. The options are:
-    * **None**: No postprocessing will be applied.
-    * **DBSCAN**: The DBSCAN algorithm groups together points that are closely packed together (points with many nearby neighbors), marking as outliers points that lie alone in low-density regions (whose nearest neighbors are too far away). The DBSCAN algorithm has two parameters that you can adjust through the gear (⚙️) button next to the postprocessing selection:
+  * **None**: No postprocessing will be applied.
+  * **DBSCAN**: The DBSCAN algorithm groups together points that are closely packed together (points with many nearby neighbors), marking as outliers points that lie alone in low-density regions (whose nearest neighbors are too far away). The DBSCAN algorithm has two parameters that you can adjust through the gear (⚙️) button next to the postprocessing selection:
         * **Epsilon**: The maximum distance between two points for them to be considered as in the same neighborhood.
         * **Minimum points**: The number of samples (or total weight) in a neighborhood for a point to be considered as a core point. This includes the point itself.
-    * **Radial Coloring**: The radial coloring function will color the points based on their distance from the center of the plot. The color will be calculated as a gradient from the center to the border of the plot.
+  * **Radial Coloring**: The radial coloring function will color the points based on their distance from the center of the plot. The color will be calculated as a gradient from the center to the border of the plot.
 
 **WebGPU (experimental)**
 
@@ -533,8 +533,8 @@ Each node represents a scaffold. Nodes form a hierarchy where:
  1. On the viewer, click **Generate** to build the tree. Generation may take several minutes for large datasets.
 
 **Load from your computer**:
-   * **To download**, click the **Download** icon at the top of the viewer.
-   * **To upload**, click the **Open** icon at the top of the viewer and select your file.
+* **To download**, click the **Download** icon at the top of the viewer.
+* **To upload**, click the **Open** icon at the top of the viewer and select your file.
 
 **Sketch manually**:
  1. Go to **Top Menu** > **Chem** > **Analyze** > **Scaffold Tree**. This adds the viewer to your dataset.
@@ -576,8 +576,8 @@ Each node represents a scaffold. Nodes form a hierarchy where:
 
 To select or filter by multiple scaffolds, select the checkbox to the left of each desired scaffold. 
 Use the **AND/OR** control at the top of the viewer to define the logic:
-  * **OR** (default): includes rows matching _any_ selected scaffold
-  * **AND**: includes only rows matching _all_ selected scaffolds
+* **OR** (default): includes rows matching _any_ selected scaffold
+* **AND**: includes only rows matching _all_ selected scaffolds
 
 Selections and filters sync across all viewers in your dataset. 
 You can use the scaffold tree in combination with other [filters](../../../../visualize/viewers/filters.md). 
@@ -930,7 +930,7 @@ Panel**, making it easy to assess compounds during screening and optimization.
 <summary>How to use</summary>
 
 **For a single molecule:** 
- * Click on a molecule in your dataset. The **Context
+* Click on a molecule in your dataset. The **Context
 Panel** automatically updates, showing ADMET predictions in the **Admetica** info
 pane.
 
@@ -943,6 +943,26 @@ pane.
 Use built-in tools to explore and analyze the prediction results.
 
 </details>
+
+## Multiparameter optimization
+
+Medicinal chemistry is a balancing act: potency must rise while properties like solubility, permeability, clearance, safety, and selectivity stay in acceptable ranges. In practice, teams use a mix of complementary methods to optimize across many (often conflicting) endpoints:
+
+* **Property rules & gates.** Start with simple [filters](../../../../visualize/viewers/filters.md) to eliminate obvious non-starters. These are fast guardrails but can be blunt and may miss promising trade-offs.
+
+  New numeric columns can be added for immediate charting and filtering such as physical chemical properties (Top menu: Chem → Calculate → Chemical Properties...) or ADME properties with the Admetica plugin (Top menu: Chem → Admetica → Calculate...). Custom properties, like Ligand Efficiency (LE) or Lipophilic Ligand Efficiency (LLE), can be calculated using the [Add New Column](../../../../transform/add-new-column.md) feature.  Viewers, like [parallel coordinates plot](../../../../visualize/viewers/pc-plot.md), [radar](../../../../visualize/viewers/radar.md) or [row-level pie bar charts](../../../../visualize/viewers/grid.md#summary-columns), are especially useful for examining the profile of properties.  
+
+* **Desirability/utility functions & composite scores.** Map each property to a 0–1 “desirability” curve, then combine (sum/mean/weighted) into a single score that encodes the team’s preferences. A well-known example that is included by default is CNS MPO from Pfizer, which combines six physicochemical properties into a 0–6 score and correlates with clinical CNS success. 
+
+  Available from `Chem -> Calculate -> MPO Score...`:
+
+  ![](mpo-desirability-functions.png)
+
+* **Pareto (multi-objective) optimization.** Instead of collapsing objectives, identify the Pareto front: compounds for which no property can be improved without worsening another. Common in modern DDD pipelines and often paired with evolutionary algorithms or scalarization for ranking. 
+
+* **Active/Bayesian multi-objective optimization.** Use surrogate models to propose new compounds that efficiently move the Pareto front (or a scalarized objective), reducing screening cost and focusing make/test cycles. 
+
+* **Desirability-based QSAR/MQSAR.** Use the built-in [predictive modeling capabilities](#predictive-modeling) to predict property desirabilities directly (or predict properties first, then score). 
 
 ## Generative chemistry
 

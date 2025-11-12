@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import {ActiveFiles} from '@datagrok-libraries/utils/src/settings/active-files-base';
 import {RulesManager} from './rule-manager';
 import {RuleCards} from './pt-rule-cards';
-import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {
   _package,
   PackageFunctions} from '../../package';
