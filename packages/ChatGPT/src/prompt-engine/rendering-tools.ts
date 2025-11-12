@@ -33,7 +33,7 @@ export class AssistantRenderer {
   }
   
   static renderResult(result: any): HTMLElement {
-    const container = ui.div([], 'chatgpt-ask-ai-result');
+    const container = ui.div([ui.h2('Result')], 'chatgpt-ask-ai-result');
     const val = result?.finalResult?.value ?? result?.finalResult ?? result;
     const meta = result?.finalResult?.meta;
     
@@ -48,16 +48,6 @@ export class AssistantRenderer {
     }
     
     return container;
-  }
-
-  static renderFullOutput(plan: any, result: any): DG.Widget {
-    const root = ui.divV([]);
-    root.append(
-      this.renderPlan(plan),
-      ui.h2('Result'),
-      this.renderResult(result)
-    );
-    return new DG.Widget(root);
   }
 }
 

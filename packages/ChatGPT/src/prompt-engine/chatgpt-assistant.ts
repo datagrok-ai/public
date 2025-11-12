@@ -194,8 +194,10 @@ Respond strictly as JSON with this structure:
     const plan = await this.planFunctions(userGoal, allFunctions);
     await setTimeout(() => {}, 25000);
 
-    const result = await this.executePlan(plan);
+    return plan;
+  }
 
-    return { packages: packages, plan, result };
+  public async execute(plan: any): Promise<any> {
+    return await this.executePlan(plan);
   }
 }

@@ -56,26 +56,31 @@ export async function ask(question: string): Promise<string> {
 export async function askMultiStep(question: string): Promise<DG.Widget> {
   return DG.Widget.fromRoot(
     (() => {
-      const container = ui.divV([]);
-      
-      const button = ui.button('Ask AI', async () => {
-        ui.empty(container);
-        const loader = ui.loader();
-        container.appendChild(loader);
+      const planContainer = ui.divV([]);
+      const resultContainer = ui.divV([]);
+      const gptEngine = new ChatGPTPromptEngine(apiKey, 'gpt-4.1-mini-2025-04-14');
+      const gptAssistant = new ChatGptAssistant(gptEngine);
 
-        try {
-          const gptEngine = new ChatGPTPromptEngine(apiKey, 'gpt-4.1-mini-2025-04-14');
-          const gptAssistant = new ChatGptAssistant(gptEngine);
-          const { plan, result } = await gptAssistant.plan(question);
-          ui.empty(container);
-          container.append(AssistantRenderer.renderFullOutput(plan, result).root);
-        } catch (error) {
-          ui.empty(container);
-          container.appendChild(ui.divText('Error while processing request.', { style: { textAlign: 'center' } }));
-        }
+      const button = ui.button('Ask AI', () => {
+        ui.empty(planContainer);
+        ui.empty(resultContainer);
+
+        const planWait = ui.wait(async () => {
+          const plan = await gptAssistant.plan(question);
+          return AssistantRenderer.renderPlan(plan);
+        });
+        planContainer.appendChild(planWait);
+
+        const resultWait = ui.wait(async () => {
+          const plan = await gptAssistant.plan(question);
+          const result = await gptAssistant.execute(plan);
+
+          return AssistantRenderer.renderResult(result);
+        });
+        resultContainer.appendChild(resultWait);
       });
-      container.style.paddingTop = '10px';
-      const wrapper = ui.divV([button, container]);
+
+      const wrapper = ui.divV([button, planContainer, resultContainer], 'chatgpt-ask-ai-result');
       return wrapper;
     })()
   );
