@@ -112,14 +112,6 @@ export function _pdbSearch(s: string): Promise<any> {
   return pdbSearch(s);
 }
 
-//description: ChatGpt
-//tags: search
-//input: string s
-//output: widget w
-export function _gptSearch(s: string): Promise<any> {
-  return gptSearch(s);
-}
-
 //description: PubChem
 //tags: search
 //input: string s
