@@ -37,15 +37,14 @@ export class AssistantRenderer {
     const val = result?.finalResult?.value ?? result?.finalResult ?? result;
     const meta = result?.finalResult?.meta;
     
-    if (meta?.propertyType === 'graphics') {
+    if (meta?.propertyType === 'graphics')
       container.append(renderGraphics(val));
-    } else if (meta?.propertyType === 'widget') {
+    else if (meta?.propertyType === 'widget')
       container.append(val.root);
-    } else if (typeof val === 'object') {
+    else if (typeof val === 'object')
       container.append(ui.divText(JSON.stringify(val, null, 2)));
-    } else {
+    else
       container.append(ui.divText(String(val)));
-    }
     
     return container;
   }
