@@ -14,7 +14,7 @@ import {AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, CON_MED_END_DAY_FIE
   CON_MED_START_DAY_FIELD, INV_DRUG_END_DAY_FIELD, INV_DRUG_NAME_FIELD, INV_DRUG_START_DAY_FIELD,
   TRT_ARM_FIELD} from '../views-config';
 import {TIMELINES_VIEW_NAME} from '../constants/view-names-constants';
-import {studies} from '../clinical-study';
+import {studies} from '../package';
 
 const multichoiceTableDict = {'Adverse events': 'ae', 'Concomitant medication intake': 'cm', 'Drug exposure': 'ex'};
 

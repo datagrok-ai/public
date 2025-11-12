@@ -6,7 +6,7 @@ import {_package} from '../package';
 import {getUniqueValues} from '../data-preparation/utils';
 import {LAB_RES_N, LAB_TEST, SUBJECT_ID, VS_TEST, VS_RES_N, VISIT_DAY_STR} from '../constants/columns-constants';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
-import {studies} from '../clinical-study';
+import {studies} from '../package';
 import {VISIT_FIELD} from '../views-config';
 import {createVisitDayStrCol} from '../data-preparation/data-preparation';
 

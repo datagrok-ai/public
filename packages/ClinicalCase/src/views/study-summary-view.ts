@@ -12,7 +12,7 @@ import {checkDateFormat} from '../data-preparation/utils';
 import {updateDivInnerHTML} from '../utils/utils';
 import {TRT_ARM_FIELD} from '../views-config';
 import {checkColumnsAndCreateViewer} from '../utils/views-validation-utils';
-import {studies} from '../clinical-study';
+import {studies} from '../package';
 
 
 export class StudySummaryView extends ClinicalCaseViewBase {

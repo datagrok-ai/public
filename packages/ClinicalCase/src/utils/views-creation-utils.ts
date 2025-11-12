@@ -8,7 +8,7 @@ import {ValidationHelper} from '../helpers/validation-helper';
 import {c} from '../package';
 import {createValidationErrorsDiv, getRequiredColumnsByView} from './views-validation-utils';
 import {updateDivInnerHTML} from './utils';
-import {studies} from '../clinical-study';
+import {studies} from '../package';
 import {ClinCaseTableView} from './types';
 
 export function createAEBrowserHelper(studyId: string): any {

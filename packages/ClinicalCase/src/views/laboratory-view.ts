@@ -1,7 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {ClinRow, studies} from '../clinical-study';
+import {ClinRow} from '../clinical-study';
+import {studies} from '../package';
 import {createBaselineEndpointDataframe, createHysLawDataframe,
   createLabValuesByVisitDataframe,
   createVisitDayStrCol} from '../data-preparation/data-preparation';

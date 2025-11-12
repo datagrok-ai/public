@@ -12,7 +12,7 @@ import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {TRT_ARM_FIELD, VISIT_FIELD} from '../views-config';
 import {DISTRIBUTIONS_VIEW_NAME} from '../constants/view-names-constants';
 import {tTest} from '@datagrok-libraries/statistics/src/tests';
-import {studies} from '../clinical-study';
+import {studies} from '../package';
 const {jStat} = require('jstat');
 
 

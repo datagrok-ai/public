@@ -11,7 +11,7 @@ import {_package} from '../package';
 import {SURVIVAL_ANALYSIS_VIEW_NAME} from '../constants/view-names-constants';
 import {AE_START_DAY_FIELD, TRT_ARM_FIELD} from '../views-config';
 import {updateDivInnerHTML} from '../utils/utils';
-import {studies} from '../clinical-study';
+import {studies} from '../package';
 
 const MIN_STRATA_VAL_COUNT = 5;
 export class SurvivalAnalysisView extends ClinicalCaseViewBase {

@@ -10,6 +10,7 @@ import {createFilters} from './utils/utils';
 import {createErrorsByDomainMap} from './utils/views-validation-utils';
 import {ClinStudyConfig} from './utils/types';
 import {ClinicalCaseViewsConfig} from './views-config';
+import {SUMMARY_VIEW_NAME} from './constants/view-names-constants';
 
 export class ClinicalDomains {
   ae: DG.DataFrame = null;
@@ -93,6 +94,7 @@ export class ClinicalStudy {
   viewsConfig = new ClinicalCaseViewsConfig();
   views: {[key: string]: DG.ViewBase} = {};
   loadingStudyData: boolean | null = null;
+  currentViewName: string = SUMMARY_VIEW_NAME;
 
   constructor(config: ClinStudyConfig) {
     this.config = config;
@@ -179,6 +181,3 @@ export class ClinRow {
     this.row = row;
   }
 }
-
-//export let study: ClinicalStudy = new ClinicalStudy();
-export const studies: {[key: string]: ClinicalStudy} = {};

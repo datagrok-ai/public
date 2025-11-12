@@ -1,4 +1,4 @@
-import {studies} from '../clinical-study';
+import {studies} from '../package';
 import {VISIT_DAY_STR} from '../constants/columns-constants';
 import {createVisitDayStrCol} from '../data-preparation/data-preparation';
 

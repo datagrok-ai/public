@@ -12,7 +12,7 @@ import {_package} from '../package';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {TRT_ARM_FIELD, VISIT_FIELD} from '../views-config';
 import {TIME_PROFILE_VIEW_NAME} from '../constants/view-names-constants';
-import {studies} from '../clinical-study';
+import {studies} from '../package';
 
 
 export class TimeProfileView extends ClinicalCaseViewBase {

@@ -7,7 +7,7 @@ import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {AE_PERCENT, NEG_LOG10_P_VALUE, RISK_DIFFERENCE, SE_RD_WITH_SIGN_LEVEL} from '../constants/constants';
 import {AE_TERM_FIELD, TRT_ARM_FIELD} from '../views-config';
 import {SUBJECT_ID} from '../constants/columns-constants';
-import {studies} from '../clinical-study';
+import {studies} from '../package';
 
 export class AERiskAssessmentView extends ClinicalCaseViewBase {
   aeDf: DG.DataFrame;

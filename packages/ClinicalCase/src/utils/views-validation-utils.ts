@@ -10,7 +10,7 @@ import {AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, CON_MED_END_DAY_FIE
   TRT_ARM_FIELD,
   VISIT_FIELD} from '../views-config';
 import {updateDivInnerHTML} from './utils';
-import {studies} from '../clinical-study';
+import {studies} from '../package';
 
 
 export function createErrorsByDomainMap(validationResults: DG.DataFrame): {[key: string]: number} {

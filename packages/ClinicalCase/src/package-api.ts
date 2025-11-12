@@ -8,7 +8,7 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace scripts {
-  export async function readSas(fileInput: DG.FileInfo ): Promise<DG.DataFrame> {
+  export async function readSas(fileInput: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('ClinicalCase:ReadSas', { fileInput });
   }
 }

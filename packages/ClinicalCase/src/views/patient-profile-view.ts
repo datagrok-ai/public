@@ -14,7 +14,7 @@ import {AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, CON_MED_END_DAY_FIE
   INV_DRUG_START_DAY_FIELD,
   VISIT_FIELD} from '../views-config';
 import { } from '../utils/utils';
-import {studies} from '../clinical-study';
+import {studies} from '../package';
 
 export class PatientProfileView extends ClinicalCaseViewBase {
   options: any;

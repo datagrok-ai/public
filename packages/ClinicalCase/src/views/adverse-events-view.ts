@@ -1,7 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {ClinRow, studies} from '../clinical-study';
+import {ClinRow} from '../clinical-study';
+import {studies} from '../package';
 import {addDataFromDmDomain} from '../data-preparation/utils';
 import {AE_BODY_SYSTEM, AE_CAUSALITY, AE_OUTCOME, AE_SEVERITY, SUBJECT_ID} from '../constants/columns-constants';
 import {updateDivInnerHTML} from '../utils/utils';

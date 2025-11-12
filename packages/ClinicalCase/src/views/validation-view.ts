@@ -6,7 +6,7 @@ import {pinnacleRuleIdColumnName, validationResultRuleIdColumn} from '../sdtm-va
 import {createRulesDataFrame} from '../sdtm-validation/validation-utils';
 import {getUniqueValues} from '../data-preparation/utils';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
-import {studies} from '../clinical-study';
+import {studies} from '../package';
 
 export class ValidationView extends ClinicalCaseViewBase {
   resultsDataframe: DG.DataFrame;

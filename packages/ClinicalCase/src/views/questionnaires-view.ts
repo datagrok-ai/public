@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {studies} from '../clinical-study';
+import {studies} from '../package';
 import {addDataFromDmDomain} from '../data-preparation/utils';
 import {ETHNIC, QS_CATEGORY, QS_RES, QS_RES_N, QS_SUB_CATEGORY, QS_TEST,
   RACE, SEX, SUBJECT_ID, VISIT_NUM} from '../constants/columns-constants';

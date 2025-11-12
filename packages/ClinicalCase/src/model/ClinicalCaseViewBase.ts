@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import {ValidationHelper} from '../helpers/validation-helper';
 import {updateDivInnerHTML} from '../utils/utils';
 import {createValidationErrorsDiv, getRequiredColumnsByView} from '../utils/views-validation-utils';
-import {studies} from '../clinical-study';
+import {studies} from '../package';
 
 export class ClinicalCaseViewBase extends DG.ViewBase {
   constructor(name, studyId) {
