@@ -45,6 +45,8 @@ export class ParetoFrontViewer extends DG.JsViewer {
 
   private missingValsIndices: Map<string, number[]> = new Map<string, number[]>();
 
+  private toChangeScatterOptions = true;
+
   get type(): string {
     return 'ParetoFrontViewer';
   }
@@ -137,7 +139,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
     this.resultColName = cols.getUnusedName(COL_NAME.OPT);
     this.sizeColName = cols.getUnusedName(COL_NAME.SIZE);
     this.missingValsIndices = getMissingValsIndices(this.numCols);
-  }
+  } // initializeData
 
   private computeParetoFront(): void {
     if (!this.isApplicable)
@@ -252,10 +254,10 @@ export class ParetoFrontViewer extends DG.JsViewer {
     }
 
     return true;
-  } // isApplicable
+  } // _testColumns
 
   private setScatterOptions() {
-    if (this.scatter == null)
+    if ((this.scatter == null) || !this.toChangeScatterOptions)
       return;
 
     if (this.toChangeScatterMarkerSize)
@@ -264,8 +266,6 @@ export class ParetoFrontViewer extends DG.JsViewer {
     this.scatter.setOptions({
       title: this.title,
       showTitle: this.showTitle,
-      xColumnName: this.xAxisColumnName,
-      yColumnName: this.yAxisColumnName,
       legendVisibility: this.legendVisibility,
       legendPosition: this.legendPosition,
       colorColumnName: this.colorColumnName,
@@ -275,7 +275,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
 
     if (this.labelColumnsColumnNames != null)
       this.scatter!.setOptions({labelColumnNames: this.labelColumnsColumnNames});
-  }
+  } // setScatterOptions
 
   onTableAttached() {
     this.initializeData();
@@ -290,6 +290,8 @@ export class ParetoFrontViewer extends DG.JsViewer {
       this.root.append(this.scatter.root);
       this.autoLabelColNames = this.getLabelColNames();
 
+      this.subs.push(this.scatter.onDartPropertyChanged.subscribe(() => this.checkScatterAxes()));
+
       const initColNames = this.numColNames.filter((_, idx) => this.numColsCount - idx - 1 < DIFFERENCE);
       this.setOptions({
         maximizeColumnNames: [],
@@ -299,10 +301,29 @@ export class ParetoFrontViewer extends DG.JsViewer {
         autoAxesSelection: AUTO_AXES_SELECTION,
         autoLabelsSelection: AUTO_LABELS_SELECTION,
       });
-    }
+    } // if
 
     this.subs.push(this.onDetached.subscribe(() => this.removeResultingCols()));
   } // onTableAttached
+
+  private checkScatterAxes(): void {
+    if (this.scatter == null)
+      return;
+
+    let axis = this.scatter.getOptions().look['xColumnName'];
+    if (axis !== this.xAxisColumnName) {
+      this.toChangeScatterOptions = false;
+      this.setOptions({xAxisColumnName: axis});
+      this.toChangeScatterOptions = true;
+    }
+
+    axis = this.scatter.getOptions().look['yColumnName'];
+    if (axis !== this.yAxisColumnName) {
+      this.toChangeScatterOptions = false;
+      this.setOptions({yAxisColumnName: axis});
+      this.toChangeScatterOptions = true;
+    }
+  } //checkScatterAxes
 
   private removeResultingCols(): void {
     this.dataFrame.columns.remove(this.resultColName);
@@ -319,12 +340,18 @@ export class ParetoFrontViewer extends DG.JsViewer {
 
     if (gridCol !== null)
       gridCol.visible = false;
-  }
+  } // hideCol
 
   // Cancel subscriptions when the viewer is detached
   detach() {
     this.subs.forEach((sub) => sub.unsubscribe());
     super.detach();
+  }
+
+  private updateAutoAxesSelection(): void {
+    if (this.toChangeAutoAxesSelection)
+      this.setOptions({autoAxesSelection: null});
+    this.toChangeAutoAxesSelection = true;
   }
 
   // Override to handle property changes
@@ -339,10 +366,13 @@ export class ParetoFrontViewer extends DG.JsViewer {
       break;
 
     case 'xAxisColumnName':
+      this.scatter?.setOptions({xColumnName: this.xAxisColumnName});
+      this.updateAutoAxesSelection();
+      break;
+
     case 'yAxisColumnName':
-      if (this.toChangeAutoAxesSelection)
-        this.setOptions({autoAxesSelection: null});
-      this.toChangeAutoAxesSelection = true;
+      this.scatter?.setOptions({yColumnName: this.yAxisColumnName});
+      this.updateAutoAxesSelection();
       break;
 
     case 'autoAxesSelection':
@@ -358,10 +388,10 @@ export class ParetoFrontViewer extends DG.JsViewer {
         this.setOptions({autoLabelsSelection: null});
       this.toChangeAutoLabelsSelection = true;
       break;
-    }
+    } // switch
 
     this.render((property.name === 'minimizeColumnNames') || (property.name === 'maximizeColumnNames'));
-  }
+  } // onPropertyChanged
 
   render(computeData = false) {
     if (!this.isApplicable || this.hasCommonMinMaxNames) {
@@ -399,7 +429,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
       this.errMsg = `Cannot minimize and maximize features at the same time: ${namesLine}.`;
     } else
       this.hasCommonMinMaxNames = false;
-  }
+  } // updateCommonMinMaxFeatures
 
   private updateOptimizedColNames() {
     this.optimizedColNames = [];
