@@ -169,8 +169,8 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return new DG.Grid(api.grok_Viewer_Grid(t.dart, _toJson(options)));
   }
 
-  static histogram(t: DataFrame, options?: Partial<interfaces.IHistogramSettings>): Viewer<interfaces.IHistogramSettings> {
-    return new Viewer(api.grok_Viewer_Histogram(t.dart, _toJson(options)));
+  static histogram(t: DataFrame, options?: Partial<interfaces.IHistogramSettings>): HistogramViewer {
+    return new HistogramViewer(api.grok_Viewer_Histogram(t.dart, _toJson(options)));
   }
 
   static barChart(t: DataFrame, options?: Partial<interfaces.IBarChartSettings>): Viewer<interfaces.IBarChartSettings> {
@@ -181,8 +181,8 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return new DG.Grid(Viewer.fromType(VIEWER.HEAT_MAP, t, options).dart);
   }
 
-  static boxPlot(t: DataFrame, options?: Partial<interfaces.IBoxPlotSettings>): Viewer<interfaces.IBoxPlotSettings> {
-    return new Viewer(api.grok_Viewer_BoxPlot(t.dart, _toJson(options)));
+  static boxPlot(t: DataFrame, options?: Partial<interfaces.IBoxPlotSettings>): BoxPlot {
+    return new BoxPlot(api.grok_Viewer_BoxPlot(t.dart, _toJson(options)));
   }
 
   static filters(t: DataFrame, options?: Partial<interfaces.IFiltersSettings>): Viewer<interfaces.IFiltersSettings> {
@@ -193,8 +193,8 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return new ScatterPlotViewer(api.grok_Viewer_ScatterPlot(t.dart, _toJson(options)));
   }
 
-  static lineChart(t: DataFrame, options?: Partial<interfaces.ILineChartSettings>): Viewer<interfaces.ILineChartSettings> {
-    return new Viewer(api.grok_Viewer_LineChart(t.dart, _toJson(options)));
+  static lineChart(t: DataFrame, options?: Partial<interfaces.ILineChartSettings>): LineChartViewer {
+    return new LineChartViewer(api.grok_Viewer_LineChart(t.dart, _toJson(options)));
   }
 
   static network(t: DataFrame, options?: Partial<interfaces.INetworkDiagramSettings>): Viewer<interfaces.INetworkDiagramSettings> {
@@ -533,7 +533,7 @@ export class LineChartViewer extends Viewer<interfaces.ILineChartSettings> {
   }
 
   get activeFrame(): DataFrame {
-    return api.grok_LineChartViewer_activeFrame(this.dart);
+    return api.grok_LineChartViewer_Get_ActiveFrame(this.dart);
   }
 
   resetView(): void{

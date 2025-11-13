@@ -174,8 +174,8 @@ class Table {
 
   private get dataFrame(): DG.DataFrame { return this.grid.dataFrame!; }
 
-  private get currentItemIdx(): number { return this.dataFrame.currentRowIdx; }
-  private set currentItemIdx(rowIdx: number) { this.dataFrame.currentRowIdx = rowIdx; }
+  public get currentItemIdx(): number { return this.dataFrame.currentRowIdx; }
+  public set currentItemIdx(rowIdx: number) { this.dataFrame.currentRowIdx = rowIdx; }
 
   /** Used to prevent onValuesChanged event when the grid changes itself */
   private notify: boolean = true;
@@ -394,21 +394,18 @@ class Preview {
   /** Returns the current columns pair of the preview Scatter Plot */
   public get axisCols(): AxisColumns {
     let yColName;
-    if (this.viewer.type === DG.VIEWER.LINE_CHART) {
-      const yCols: string[] = (this.viewer.props as DG.ILineChartSettings).yColumnNames;
+    if (this.viewer instanceof DG.LineChartViewer) {
+      const yCols: string[] = this.viewer.props.yColumnNames;
       yColName = this.dataFrame.columns.toList().find((col) => col.name != this.viewer.props.xColumnName &&
         yCols.some((n) => col.name.includes(n)))?.name;
     }
     else
-      yColName = (this.viewer.props as DG.IScatterPlotSettings).yColumnName;
+      yColName = (this.viewer as DG.ScatterPlotViewer).props.yColumnName;
 
-    const xMap = this.viewer.type === DG.VIEWER.LINE_CHART
-      ? (this.viewer.props as DG.ILineChartSettings).xMap
-      : (this.viewer.props as DG.IScatterPlotSettings).xMap;
-    
-    const yMap = this.viewer.type === DG.VIEWER.LINE_CHART
-      ? undefined
-      : (this.viewer.props as DG.IScatterPlotSettings).yMap;
+    const xMap = this.viewer.props.xMap;
+    const yMap = this.viewer instanceof DG.ScatterPlotViewer
+      ? this.viewer.props.yMap
+      : undefined;
 
     return {
       y: this.dataFrame.getCol(yColName!),
@@ -530,7 +527,7 @@ class Preview {
       throw 'Host is not DataFrame or Viewer.';
 
     if (src instanceof DG.Viewer && src.getOptions()['type'] === DG.VIEWER.LINE_CHART)
-      this.viewer = new DG.LineChartViewer(((window ?? global.window) as any).grok_Viewer_LineChart(this.dataFrame.dart, DG._toJson({
+      this.viewer = DG.Viewer.lineChart(this.dataFrame, {
         yAxisType: src.props.yAxisType,
         xAxisType: src.props.xAxisType,
         invertXAxis: src.props.invertXAxis,
@@ -544,7 +541,7 @@ class Preview {
         axisFont: '11px Arial',
         legendVisibility: DG.VisibilityMode.Never,
         xAxisHeight: 25,
-      })));
+      });
     else {
       this.viewer = DG.Viewer.scatterPlot(this.dataFrame, {
         ...(src as DG.ScatterPlotViewer).props,
@@ -569,6 +566,7 @@ class Preview {
         xAxisHeight: 25,
       });
     }
+
     if (this.srcAxes)
       this.axes = this.srcAxes;
 
@@ -657,7 +655,7 @@ class Editor {
     public formulaLineItems: DG.FormulaLine[],
     public annotationRegionItems: DG.AnnotationRegion[],
     private dataFrame: DG.DataFrame,
-    private onItemChangedAction: (itemIdx: number, isFormulaLine: boolean) => boolean,
+    public onItemChangedAction: (itemIdx: number, isFormulaLine: boolean) => boolean,
     private onFormulaValidation: (isValid: boolean) => void,
   ) {
     this.form = ui.form([]);
@@ -1037,11 +1035,6 @@ class Editor {
     return iShowLabels.root;
   }
 
-  changeColumnInput(value: DG.Column | null): void {
-    if (this.columnInput && this.columnInput.value?.name !== value?.name)
-      this.columnInput.value = value;
-  }
-
   private areaPointsInput(itemIdx: number): HTMLElement {
     const item = this.annotationRegionItems[itemIdx] as DG.AreaAnnotationRegion;
     const value = item.area ? JSON.stringify(item.area).replaceAll(',', ', ') :  '';
@@ -1401,24 +1394,6 @@ export class FormulaLinesDialog {
     this.preview = this.initPreview(src);
     this.editor = this.initEditor();
     this.tabs = this.initTabs();
-    // this.dialog.sub(this.preview.viewer.onDartPropertyChanged.subscribe((typeArgs) => {
-    //   if (!this.editor || !this.preview?.viewer || !this._currentTable.currentItem?.orientation)
-    //     return;
-
-    //   var propName = (typeArgs as unknown as DG.TypedEventArgs<unknown>)?.dart?.name;
-    //   const vertOrientation = this._currentTable.currentItem.orientation === ITEM_ORIENTATION.VERTICAL;
-    //   const df = this.preview.viewer.dataFrame;
-    //   if (this.preview.viewer.type === DG.VIEWER.LINE_CHART
-    //       && (vertOrientation ? propName === 'yColumnNames' : propName === 'xColumnName')) {
-    //     const props = this.preview.viewer.props as DG.ILineChartSettings;
-    //     this.editor.changeColumnInput(df.col(vertOrientation ? props['yColumnNames'][0] : props['xColumnName']));
-    //   } else if (this.preview.viewer.type === DG.VIEWER.SCATTER_PLOT
-    //       && (vertOrientation ? propName === 'yColumnName' : propName === 'xColumnName')) {
-    //     const props = this.preview.viewer.props as DG.IScatterPlotSettings;
-    //     this.editor.changeColumnInput(df.col(vertOrientation ? props['yColumnName'] : props['xColumnName']));
-    //   }
-    // }));
-
     this.dialog.sub(this.dialog.onClose.subscribe(() => this.dialog.detach()));
 
     /** Init Dialog layout */
@@ -1441,6 +1416,109 @@ export class FormulaLinesDialog {
       });
 
     this.initDefaultOnOpenState();
+
+    // this.dialog.sub(this.preview.viewer.onPropertyValueChanged.subscribe((typeArgs) => {
+    //   const { property } = typeArgs.args as unknown as { property: DG.Property };
+    //   if (!['xColumnName', 'yColumnName', 'yColumnNames', 'xMap', 'yMap'].includes(property.name))
+    //     return;
+      
+    //   const currentItem = this.currentTable?.currentItem;
+    //   if (!this.editor || !this.preview?.viewer || !currentItem)
+    //     return;
+
+    //   const update = (itemIdx: number, isFormulaLine: boolean = true): void => {
+    //     this.editor.update(itemIdx, isFormulaLine);
+    //     this.currentTable.update(itemIdx, isFormulaLine);
+    //     this.preview.update(itemIdx, isFormulaLine);
+    //   }
+
+    //   const axisCols = this.preview.axisCols;
+    //   const newX = axisCols.x.name;
+    //   const newY = axisCols.y.name;
+    //   if (isAnnotationRegionType(currentItem.type)) {
+    //     if (currentItem.type == ITEM_TYPE.AREA_REGION_ANNOTATION) {
+    //       const item = currentItem as DG.AreaAnnotationRegion;
+    //       if (item.x == newX && item.y == newY && item.xMap == axisCols.xMap && item.yMap == axisCols.yMap)
+    //         return;
+
+    //       item.x = newX;
+    //       item.y = newY;
+    //       item.xMap = axisCols.xMap;
+    //       item.yMap = axisCols.yMap;
+        
+    //       update(this.currentTable.currentItemIdx - this.currentTable.formulaLineItems.length, false);
+    //     } else if (currentItem.type == ITEM_TYPE.FORMULA_REGION_ANNOTATION) {
+    //       const item = currentItem as DG.FormulaAnnotationRegion;
+    //       const foormula1Old = item.formula1;
+    //       const foormula2Old = item.formula2;
+
+    //       const meta1 = item.formula1
+    //         ? DG.FormulaLinesHelper.getMetaByFormula(item.formula1, ITEM_TYPE.LINE)
+    //         : null;
+
+    //       const meta2 = item.formula2
+    //         ? DG.FormulaLinesHelper.getMetaByFormula(item.formula2, ITEM_TYPE.LINE)
+    //         : null;
+          
+    //       if (meta1?.funcName && meta1?.funcName != newX)
+    //         item.formula1 = item.formula1?.replaceAll(`\${${meta1.funcName}}`, `\${${newY}}`);
+          
+    //       if (meta1?.argName && meta1?.argName != newY)
+    //         item.formula1 = item.formula1?.replaceAll(`\${${meta1.argName}}`, `\${${newX}}`);
+          
+    //       if (meta2?.funcName && meta2?.funcName != newX)
+    //         item.formula2 = item.formula2?.replaceAll(`\${${meta2.funcName}}`, `\${${newY}}`);
+          
+    //       if (meta2?.argName && meta2?.argName != newY)
+    //         item.formula2 = item.formula2?.replaceAll(`\${${meta2.argName}}`, `\${${newX}}`);
+          
+    //       if (item.formula1 == foormula1Old && item.formula2 == foormula2Old
+    //         && item.xMap == axisCols.xMap && item.yMap == axisCols.yMap)
+    //         return;
+
+    //       item.xMap = axisCols.xMap;
+    //       item.yMap = axisCols.yMap;
+    //       update(this.currentTable.currentItemIdx - this.currentTable.formulaLineItems.length, false);
+    //     }
+    //   } else {
+    //     const item = currentItem as DG.FormulaLine;
+    //     item.xMap = axisCols.xMap;
+    //     item.yMap = axisCols.yMap;
+    //     const itemMeta = DG.FormulaLinesHelper.getMeta(item);
+    //     if (item.type == ITEM_TYPE.BAND) {
+    //       const oldFormula = item.formula;
+    //       const oldColumn = item.column2;
+    //       if (item.formula && itemMeta.argName)
+    //         item.formula = item.orientation === ITEM_ORIENTATION.HORIZONTAL
+    //           ? item.formula.replaceAll(`\${${itemMeta.argName}}`, `\${${newY}}`)
+    //           : item.formula.replaceAll(`\${${itemMeta.argName}}`, `\${${newX}}`);
+          
+    //       item.column2 = item.orientation === ITEM_ORIENTATION.HORIZONTAL ? newX : newY;
+    //       if (oldFormula == item.formula && oldColumn == item.column2)
+    //         return;
+
+    //       update(this.currentTable.currentItemIdx, true);
+    //     } else {
+    //       const isConstLine = !itemMeta.argName;
+    //       const oldFormula = item.formula;
+    //       if (isConstLine && item.formula) {
+    //         const newArg = item.orientation === ITEM_ORIENTATION.HORIZONTAL ? newY : newX;
+    //         item.formula = item.formula.replaceAll(`\${${itemMeta.funcName}}`, `\${${newArg}}`);
+    //       } else if (item.formula) {
+    //         if (itemMeta.funcName && itemMeta.funcName != newY)
+    //           item.formula = item.formula.replaceAll(`\${${itemMeta.funcName}}`, `\${${newY}}`);
+            
+    //         if (itemMeta.argName && itemMeta.argName != newX)
+    //           item.formula = item.formula.replaceAll(`\${${itemMeta.argName}}`, `\${${newX}}`);
+    //       }
+
+    //       if (oldFormula == item.formula)
+    //         return;
+
+    //       update(this.currentTable.currentItemIdx, true);
+    //     }
+    //   }
+    // }));
   }
     
   private initDefaultOnOpenState(): void {      
