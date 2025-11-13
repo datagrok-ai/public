@@ -269,12 +269,21 @@ export class PackageFunctions {
     outputs: [],
   })
   static formulaLinesDialog(
-    @grok.decorators.param({type: 'dataframe', options: {optional: true}}) src: DG.DataFrame | DG.Viewer): void {
+    @grok.decorators.param({type: 'dataframe', options: {optional: true}}) src: DG.DataFrame | DG.Viewer,
+    @grok.decorators.param({type: 'int', options: {optional: true}}) currentIndexToSet?: number,
+    @grok.decorators.param({type: 'bool', options: {optional: true}}) isDataFrameValue?: boolean,
+    @grok.decorators.param({type: 'bool', options: {optional: true}}) isAnnotationArea?: boolean,
+  ): void {
     const options = Object.keys(_properties)
       .filter((k) => k in DEFAULT_OPTIONS)
       .reduce((opts, k) => (opts[k] = _properties[k], opts), <EditorOptions>{});
     //TODO: use property's 'category' or 'tags' to distinguish relevant properties
-    new FormulaLinesDialog(src, options);
+
+    new FormulaLinesDialog(src, options, {
+      index: currentIndexToSet,
+      isDataFrame: isDataFrameValue,
+      isAnnotationArea: isAnnotationArea,
+    });
   }
 
   @grok.decorators.init()
@@ -373,8 +382,9 @@ grok.events.onContextMenu.subscribe((args) => {
       src.getOptions().look['viewerType'] == DG.VIEWER.SCATTER_PLOT)
     menu = args.args.menu.find(DG.VIEWER.SCATTER_PLOT).find('Tools');
 
-  if (menu != null)
-    menu.item('Formula Lines...', () => {PackageFunctions.formulaLinesDialog(src);});
+    menu?.item('Formula Lines...', () => {
+      PackageFunctions.formulaLinesDialog(src);
+    });
 });
 
 function _viewerGallery(view: DG.ViewBase): void {

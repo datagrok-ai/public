@@ -1776,6 +1776,8 @@ export interface ILineChartSettings {
   /// If false, the specified *X Axis Height*
   autoAxisSize: boolean;
 
+  annotationFont: string;
+
   /// Requires *Auto Axis Size* to be turned off.
   xAxisHeight: number;
 
@@ -1845,6 +1847,15 @@ export interface ILineChartSettings {
   autoAdjustMultiAxisLegendPosition: boolean;
 
   multiAxisLegendPosition: keyof typeof FlexExtendedPosition;
+
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
+
+  /// Enables lasso region drawing mode (instead of polygon drawing default one).
+  lassoTool: boolean;
 
   categoryCustomColorIndices: Array<number>;
 
@@ -2926,6 +2937,12 @@ export interface IScatterPlotSettings {
 
   formulaLines: string;
 
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
+
   viewport: string;
 
   /// Controls scatter plot tooltip visibility
@@ -2960,6 +2977,8 @@ export interface IScatterPlotSettings {
   labelFont: string;
 
   formulaFont: string;
+
+  annotationFont: string;
 
   defaultRenderer: boolean;
 

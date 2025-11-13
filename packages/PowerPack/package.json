@@ -26,7 +26,7 @@
     "@datagrok-libraries/utils": "^4.6.5",
     "cash-dom": "^8.1.5",
     "codemirror": "^6.0.1",
-    "datagrok-api": "^1.26.3",
+    "datagrok-api": "../../js-api",
     "dayjs": "^1.11.7",
     "exceljs": "^4.3.0",
     "fuse.js": "^6.6.2",

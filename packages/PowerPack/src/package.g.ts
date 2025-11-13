@@ -69,8 +69,11 @@ export function powerPackSearchProvider() : any {
 
 //name: formulaLinesEditor
 //input: dataframe src { optional: true }
-export function formulaLinesDialog(src: any) : void {
-  PackageFunctions.formulaLinesDialog(src);
+//input: int currentIndexToSet { optional: true }
+//input: bool isDataFrameValue { optional: true }
+//input: bool isAnnotationArea { optional: true }
+export function formulaLinesDialog(src: any, currentIndexToSet?: number, isDataFrameValue?: boolean, isAnnotationArea?: boolean) : void {
+  PackageFunctions.formulaLinesDialog(src, currentIndexToSet, isDataFrameValue, isAnnotationArea);
 }
 
 //tags: init
