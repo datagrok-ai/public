@@ -178,7 +178,7 @@ class Table {
   public set currentItemIdx(rowIdx: number) { this.dataFrame.currentRowIdx = rowIdx; }
 
   /** Used to prevent onValuesChanged event when the grid changes itself */
-  private notify: boolean = true;
+  public notify: boolean = true;
 
   /** Creates "Delete" button */
   private deleteBtn(itemIdx: number): HTMLElement {
@@ -396,8 +396,7 @@ class Preview {
     let yColName;
     if (this.viewer instanceof DG.LineChartViewer) {
       const yCols: string[] = this.viewer.props.yColumnNames;
-      yColName = this.dataFrame.columns.toList().find((col) => col.name != this.viewer.props.xColumnName &&
-        yCols.some((n) => col.name.includes(n)))?.name;
+      yColName = this.dataFrame.columns.toList().find((col) => yCols.some((n) => col.name.includes(n)))?.name;
     }
     else
       yColName = (this.viewer as DG.ScatterPlotViewer).props.yColumnName;
@@ -513,7 +512,7 @@ class Preview {
         this.originalDataFrame = src.dataFrame;
         const yCols: string[] = src.props.yColumnNames;
         const yCol = this.dataFrame.columns.toList()
-          .find((col) => col.isNumerical && col.name != src.props.xColumnName && yCols.some((n) => col.name.includes(n)));
+          .find((col) => col.isNumerical && col.name !== src.props.xColumnName && yCols.some((n) => col.name.includes(n)));
         this.srcAxes = {x: src.props.xColumnName, xMap: src.props.xMap, y: yCol === undefined ? src.props.xColumnName : yCol.name};
       } else if (src.getOptions()['type'] === DG.VIEWER.TRELLIS_PLOT) {
         this.dataFrame = src.dataFrame!;
@@ -717,7 +716,7 @@ class Editor {
     let caption = ITEM_CAPTION.BAND;
     let [itemY, itemX, expression] = ['', '', ''];
 
-    if (itemIdx >= 0 && item.type != ITEM_TYPE.BAND) {
+    if (itemIdx >= 0 && item.type !== ITEM_TYPE.BAND) {
       const itemMeta = DG.FormulaLinesHelper.getMeta(item);
       [itemY, itemX, expression] = [itemMeta.funcName!, itemMeta.argName!, itemMeta.expression!];
       caption = itemX ? ITEM_CAPTION.LINE : ITEM_CAPTION.CONST_LINE;
@@ -739,7 +738,7 @@ class Editor {
       /** Preparing the "Format" panel */
       formatPane.append(this.inputColor(itemIdx));
       formatPane.append(this.inputOpacity(itemIdx));
-      if (caption != ITEM_CAPTION.BAND)
+      if (caption !== ITEM_CAPTION.BAND)
         formatPane.append(this.inputStyle(itemIdx));
       formatPane.append(this.inputRange(itemIdx));
       formatPane.append(this.inputArrange(itemIdx));
@@ -843,7 +842,6 @@ class Editor {
   /** Creates range slider for item opacity */
   private inputOpacity(itemIdx: number, isFormulaLine: boolean = true): HTMLElement {
     const item = isFormulaLine ? this.formulaLineItems[itemIdx] : this.annotationRegionItems[itemIdx];
-
     const elOpacity = ui.element('input');
     elOpacity.type = 'range';
     elOpacity.min = 0;
@@ -1046,7 +1044,7 @@ class Editor {
           if (!Array.isArray(parsed))
             return;
           
-          item.area = parsed.filter((p) => Array.isArray(p) && p.length == 2
+          item.area = parsed.filter((p) => Array.isArray(p) && p.length === 2
             && typeof p[0] === 'number' && typeof p[1] === 'number');
 
           this.onItemChangedAction(itemIdx, false);
@@ -1091,6 +1089,7 @@ class Editor {
       : item[type];
 
     const ibColumn2 = ui.input.column(type.toUpperCase() + ' column', {
+      nullable: false,
       table: this.dataFrame,
       value: this.dataFrame.col(colName ?? '') ?? undefined,
       onValueChanged: (value) => {
@@ -1105,15 +1104,22 @@ class Editor {
     return ui.divH([ibColumn2.root]);
   }
 
+  public inputColumn2Changing: boolean = false;
+
   /** Creates column input for band second column */
   private inputColumn2(itemIdx: number): HTMLElement {
     const item = this.formulaLineItems[itemIdx] as DG.FormulaLine;
 
     //@ts-ignore
-    const ibColumn2 = ui.input.column('Adjacent column', {table: this.dataFrame, value: item.column2 ? this.dataFrame.col(item.column2) : null,
+    const ibColumn2 = ui.input.column('Adjacent column', {
+      nullable: false,
+      table: this.dataFrame,
+      value: item.column2 ? this.dataFrame.col(item.column2) ?? undefined : undefined,
       onValueChanged: (value) => {
+        this.inputColumn2Changing = true;
         item.column2 = value.name;
         this.onItemChangedAction(itemIdx, true);
+        this.inputColumn2Changing = false;
       }});
       
     this.columnInput = ibColumn2;
@@ -1128,7 +1134,10 @@ class Editor {
     const item = this.formulaLineItems[itemIdx] as DG.FormulaLine;
 
     //@ts-ignore
-    const ibColumn = ui.input.column('Column', {table: this.dataFrame, value: colName ? this.dataFrame.col(colName) : null,
+    const ibColumn = ui.input.column('Column', {
+      nullable: false,
+      table: this.dataFrame,
+      value: colName ? this.dataFrame.col(colName) ?? undefined : undefined,
       onValueChanged: (value) => {
         const oldFormula = item.formula!;
         item.formula = '${' + value + '} = ' + ibValue.value;
@@ -1417,108 +1426,25 @@ export class FormulaLinesDialog {
 
     this.initDefaultOnOpenState();
 
-    // this.dialog.sub(this.preview.viewer.onPropertyValueChanged.subscribe((typeArgs) => {
-    //   const { property } = typeArgs.args as unknown as { property: DG.Property };
-    //   if (!['xColumnName', 'yColumnName', 'yColumnNames', 'xMap', 'yMap'].includes(property.name))
-    //     return;
+    this.dialog.sub(this.preview.viewer.onPropertyValueChanged.subscribe((typeArgs) => {
+      const currentItem = this.currentTable?.currentItem;
+      if (!this.editor || this.editor.inputColumn2Changing || !this.preview?.viewer || currentItem?.type !== ITEM_TYPE.BAND)
+        return;
+
+      const band = currentItem as DG.FormulaLine;
+      const { property } = typeArgs.args as unknown as { property: DG.Property };
+      if (!['xColumnName', 'yColumnName', 'yColumnNames'].includes(property.name))
+        return;
       
-    //   const currentItem = this.currentTable?.currentItem;
-    //   if (!this.editor || !this.preview?.viewer || !currentItem)
-    //     return;
-
-    //   const update = (itemIdx: number, isFormulaLine: boolean = true): void => {
-    //     this.editor.update(itemIdx, isFormulaLine);
-    //     this.currentTable.update(itemIdx, isFormulaLine);
-    //     this.preview.update(itemIdx, isFormulaLine);
-    //   }
-
-    //   const axisCols = this.preview.axisCols;
-    //   const newX = axisCols.x.name;
-    //   const newY = axisCols.y.name;
-    //   if (isAnnotationRegionType(currentItem.type)) {
-    //     if (currentItem.type == ITEM_TYPE.AREA_REGION_ANNOTATION) {
-    //       const item = currentItem as DG.AreaAnnotationRegion;
-    //       if (item.x == newX && item.y == newY && item.xMap == axisCols.xMap && item.yMap == axisCols.yMap)
-    //         return;
-
-    //       item.x = newX;
-    //       item.y = newY;
-    //       item.xMap = axisCols.xMap;
-    //       item.yMap = axisCols.yMap;
-        
-    //       update(this.currentTable.currentItemIdx - this.currentTable.formulaLineItems.length, false);
-    //     } else if (currentItem.type == ITEM_TYPE.FORMULA_REGION_ANNOTATION) {
-    //       const item = currentItem as DG.FormulaAnnotationRegion;
-    //       const foormula1Old = item.formula1;
-    //       const foormula2Old = item.formula2;
-
-    //       const meta1 = item.formula1
-    //         ? DG.FormulaLinesHelper.getMetaByFormula(item.formula1, ITEM_TYPE.LINE)
-    //         : null;
-
-    //       const meta2 = item.formula2
-    //         ? DG.FormulaLinesHelper.getMetaByFormula(item.formula2, ITEM_TYPE.LINE)
-    //         : null;
-          
-    //       if (meta1?.funcName && meta1?.funcName != newX)
-    //         item.formula1 = item.formula1?.replaceAll(`\${${meta1.funcName}}`, `\${${newY}}`);
-          
-    //       if (meta1?.argName && meta1?.argName != newY)
-    //         item.formula1 = item.formula1?.replaceAll(`\${${meta1.argName}}`, `\${${newX}}`);
-          
-    //       if (meta2?.funcName && meta2?.funcName != newX)
-    //         item.formula2 = item.formula2?.replaceAll(`\${${meta2.funcName}}`, `\${${newY}}`);
-          
-    //       if (meta2?.argName && meta2?.argName != newY)
-    //         item.formula2 = item.formula2?.replaceAll(`\${${meta2.argName}}`, `\${${newX}}`);
-          
-    //       if (item.formula1 == foormula1Old && item.formula2 == foormula2Old
-    //         && item.xMap == axisCols.xMap && item.yMap == axisCols.yMap)
-    //         return;
-
-    //       item.xMap = axisCols.xMap;
-    //       item.yMap = axisCols.yMap;
-    //       update(this.currentTable.currentItemIdx - this.currentTable.formulaLineItems.length, false);
-    //     }
-    //   } else {
-    //     const item = currentItem as DG.FormulaLine;
-    //     item.xMap = axisCols.xMap;
-    //     item.yMap = axisCols.yMap;
-    //     const itemMeta = DG.FormulaLinesHelper.getMeta(item);
-    //     if (item.type == ITEM_TYPE.BAND) {
-    //       const oldFormula = item.formula;
-    //       const oldColumn = item.column2;
-    //       if (item.formula && itemMeta.argName)
-    //         item.formula = item.orientation === ITEM_ORIENTATION.HORIZONTAL
-    //           ? item.formula.replaceAll(`\${${itemMeta.argName}}`, `\${${newY}}`)
-    //           : item.formula.replaceAll(`\${${itemMeta.argName}}`, `\${${newX}}`);
-          
-    //       item.column2 = item.orientation === ITEM_ORIENTATION.HORIZONTAL ? newX : newY;
-    //       if (oldFormula == item.formula && oldColumn == item.column2)
-    //         return;
-
-    //       update(this.currentTable.currentItemIdx, true);
-    //     } else {
-    //       const isConstLine = !itemMeta.argName;
-    //       const oldFormula = item.formula;
-    //       if (isConstLine && item.formula) {
-    //         const newArg = item.orientation === ITEM_ORIENTATION.HORIZONTAL ? newY : newX;
-    //         item.formula = item.formula.replaceAll(`\${${itemMeta.funcName}}`, `\${${newArg}}`);
-    //       } else if (item.formula) {
-    //         if (itemMeta.funcName && itemMeta.funcName != newY)
-    //           item.formula = item.formula.replaceAll(`\${${itemMeta.funcName}}`, `\${${newY}}`);
-            
-    //         if (itemMeta.argName && itemMeta.argName != newX)
-    //           item.formula = item.formula.replaceAll(`\${${itemMeta.argName}}`, `\${${newX}}`);
-    //       }
-
-    //       if (oldFormula == item.formula)
-    //         return;
-
-    //       update(this.currentTable.currentItemIdx, true);
-    //     }
-    //   }
-    // }));
+      const isHorz = band.orientation === ITEM_ORIENTATION.HORIZONTAL;
+      if (isHorz && property.name === 'xColumnName') {
+        band.column2 = this.preview.axisCols.x.name;
+        this.editor.update(this.currentTable.currentItemIdx, true);
+      } else if (!isHorz && (property.name === 'yColumnName' || property.name === 'yColumnNames')) {
+        band.column2 = this.preview.axisCols.y.name;
+        this.editor.update(this.currentTable.currentItemIdx, true);
+      }
+    }));
   }
     
   private initDefaultOnOpenState(): void {      
