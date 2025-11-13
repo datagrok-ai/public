@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {AUTO_LABELS_SELECTION, AUTO_AXES_SELECTION, SCATTER_ROW_LIM, SIZE, COL_NAME, OPT_TYPE,
   NumericArray, LABEL, DIFFERENCE} from './defs';
 import {getParetoMask} from './pareto-computations';
+import {getMissingValsIndices} from '../missing-values-imputation/knn-imputer';
 
 export class ParetoFrontViewer extends DG.JsViewer {
   private title: string;
@@ -41,6 +42,8 @@ export class ParetoFrontViewer extends DG.JsViewer {
   private hasCommonMinMaxNames = false;
 
   private errDiv: HTMLDivElement | null = null;
+
+  private missingValsIndices: Map<string, number[]> = new Map<string, number[]>();
 
   get type(): string {
     return 'ParetoFrontViewer';
@@ -116,22 +119,26 @@ export class ParetoFrontViewer extends DG.JsViewer {
   } // constructor
 
   private initializeData() {
-    this.isApplicable = this._testColumns();
+    this.rowCount = this.dataFrame.rowCount;
+    const cols = this.dataFrame.columns;
+    const colList = cols.toList();
 
+    // Extract numerical columns: empty columns are skipped
+    this.numCols = colList.filter((col) => col.isNumerical && (col.stats.missingValueCount < this.rowCount));
+    this.numColNames = this.numCols.map((col) => col.name);
+    this.numColsCount = this.numCols.length;
+
+    // Check applicability
+    this.isApplicable = this._testColumns();
     if (!this.isApplicable) {
       this._showErrorMessage(this.errMsg);
       return;
     }
 
-    const cols = this.dataFrame.columns;
-    const colList = cols.toList();
-    this.numCols = colList.filter((col) => col.isNumerical);
-    this.numColNames = this.numCols.map((col) => col.name);
-    this.numColsCount = this.numCols.length;
-    this.rowCount = this.dataFrame.rowCount;
     this.toChangeScatterMarkerSize = this.rowCount > SCATTER_ROW_LIM;
     this.resultColName = cols.getUnusedName(COL_NAME.OPT);
     this.sizeColName = cols.getUnusedName(COL_NAME.SIZE);
+    this.missingValsIndices = getMissingValsIndices(this.numCols);
   }
 
   private computeParetoFront(): void {
@@ -140,26 +147,30 @@ export class ParetoFrontViewer extends DG.JsViewer {
 
     const data: NumericArray[] = [];
     const sense: OPT_TYPE[] = [];
+    const nullValsIndices = new Set<number>();
 
-    if (this.minimizeColumnNames != null) {
-      this.minimizeColumnNames.forEach((name) => {
-        data.push(this.dataFrame.col(name)!.getRawData());
-        sense.push(OPT_TYPE.MIN);
-      });
-    }
+    const pushCols = (names: string[] | null, optType: OPT_TYPE) => {
+      if (names == null)
+        return;
 
-    if (this.maximizeColumnNames != null) {
-      this.maximizeColumnNames.forEach((name) => {
+      names.forEach((name) => {
         data.push(this.dataFrame.col(name)!.getRawData());
-        sense.push(OPT_TYPE.MAX);
+        sense.push(optType);
+
+        const curMisValsInds = this.missingValsIndices.get(name);
+        if (curMisValsInds != null)
+          curMisValsInds.forEach((val) => nullValsIndices.add(val));
       });
-    }
+    };
+
+    pushCols(this.minimizeColumnNames, OPT_TYPE.MIN);
+    pushCols(this.maximizeColumnNames, OPT_TYPE.MAX);
 
     const sizeCol = this.dataFrame.col(this.sizeColName);
     let resCol = this.dataFrame.col(this.resultColName);
 
     if (data.length > 0) {
-      const mask = getParetoMask(data, sense, this.rowCount);
+      const mask = getParetoMask(data, sense, this.rowCount, nullValsIndices);
       const colOpt = DG.Column.fromStrings(this.resultColName, mask.map((res) => res ? LABEL.OPTIMAL : LABEL.NON_OPT));
 
       if (resCol == null) {
@@ -232,13 +243,13 @@ export class ParetoFrontViewer extends DG.JsViewer {
   }
 
   _testColumns(): boolean {
-    if (this.dataFrame.rowCount < 1) {
+    if (this.rowCount < 1) {
       this.errMsg = 'Cannot compute Pareto front: the table is empty.';
       return false;
     }
 
-    if (this.dataFrame.columns.length < 2) {
-      this.errMsg = 'Cannot compute Pareto front: at least two numeric columns are required.';
+    if (this.numColsCount < 2) {
+      this.errMsg = 'Cannot compute Pareto front: at least two non-empty numeric columns are required.';
       return false;
     }
 

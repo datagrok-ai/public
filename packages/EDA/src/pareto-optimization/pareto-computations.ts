@@ -2,7 +2,8 @@
 
 import {NumericArray, OPT_TYPE} from './defs';
 
-export function getParetoMask(rawData: NumericArray[], sense: OPT_TYPE[], nPoints: number): boolean[] {
+export function getParetoMask(rawData: NumericArray[], sense: OPT_TYPE[], nPoints: number,
+  nullIndices?: Set<number>): boolean[] {
   if (nPoints === 0)
     return [];
 
@@ -21,7 +22,13 @@ export function getParetoMask(rawData: NumericArray[], sense: OPT_TYPE[], nPoint
   const mask: boolean[] = Array(nPoints).fill(true);
   const paretoFrontIndices: number[] = [];
 
+  // Set missing values to non-optimal
+  nullIndices?.forEach((idx) => mask[idx] = false);
+
   for (const index of pointIndices) {
+    if (!mask[index])
+      continue;
+
     let dominated = false;
 
     for (const frontPointIndex of paretoFrontIndices) {
@@ -40,19 +47,19 @@ export function getParetoMask(rawData: NumericArray[], sense: OPT_TYPE[], nPoint
           if (a < b) dominates = false;
           if (a > b) strictlyBetter = true;
         }
-      }
+      } // for d
 
       if (dominates && strictlyBetter) {
         dominated = true;
         break;
       }
-    }
+    } // for frontPointIndex
 
     if (dominated)
       mask[index] = false;
     else
       paretoFrontIndices.push(index);
-  }
+  } // for index
 
   return mask;
 } // getParetoMask
