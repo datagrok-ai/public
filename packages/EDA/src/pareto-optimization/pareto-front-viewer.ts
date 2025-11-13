@@ -114,8 +114,6 @@ export class ParetoFrontViewer extends DG.JsViewer {
     this.legendPosition = this.string('legendPosition', 'Top', {
       choices: ['Auto', 'Left', 'Right', 'Top', 'Bottom', 'RightTop', 'RightBottom', 'LeftTop', 'LeftBottom'],
     });
-
-    //this.root.append(this.scatter.root);
   } // constructor
 
   private initializeData() {
@@ -287,6 +285,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
         showSizeSelector: false,
         autoLayout: false,
         showLabels: 'Always',
+        markerType: DG.MARKER_TYPE.CIRCLE,
       });
       this.root.append(this.scatter.root);
       this.autoLabelColNames = this.getLabelColNames();
