@@ -26,6 +26,7 @@ export function initSearch() {
 export function powerSearch(s: string, host: HTMLDivElement, inputElement: HTMLInputElement): void {
   ui.empty(host);
   tableQueriesFunctionsSearch(s, host);
+  tableQueriesFunctionsSearchLlm(s, host);
   jsEvalSearch(s, host) ||
   viewsSearch(s, host);
 
@@ -277,6 +278,28 @@ function removeTrailingQuotes(s: string): string {
   return ms;
 }
 
+function tableQueriesFunctionsSearchLlm(s: string, host: HTMLDivElement): void {
+  const searchPatterns = tableQueriesSearchFunctions.map((f) => f.options['searchPattern']);
+
+  grok.functions
+    .call('ChatGPT:fuzzyMatch', { prompt: s, searchPatterns })
+    .then((matches: any) => {
+      if (matches && matches.searchPattern) {
+        const sf = tableQueriesSearchFunctions.find((f) => {
+          const pattern: string = removeTrailingQuotes(f.options['searchPattern']) ?? '';
+          return pattern === matches.searchPattern;
+        });
+
+        if (sf) {
+          const widget = createOutWidget(sf, matches.parameters);
+          host.appendChild(widgetHost(widget));
+        }
+      }
+    })
+    .catch((error: any) => {
+      console.error('Error calling ChatGPT:fuzzyMatch', error);
+    });
+}
 
 function tableQueriesFunctionsSearch(s: string, host: HTMLDivElement): void {
   for (const sf of tableQueriesSearchFunctions) {
@@ -298,36 +321,40 @@ function tableQueriesFunctionsSearch(s: string, host: HTMLDivElement): void {
         inputParams[key] = value;
       });
 
-      const outWidget = DG.Widget.fromRoot(ui.wait(async () => {
-        try {
-          const fc = sf.prepare(inputParams);
-          const resFuncCall = await fc.call();
-          const v = resFuncCall.getResultViews();
-          if (!v || !v[0] || v[0].type !== DG.VIEW_TYPE.TABLE_VIEW)
-            return ui.divText('No result view produced');
-          const tv = v[0] as DG.TableView;
-          if ((tv.dataFrame?.rowCount ?? 0) === 0)
-            return ui.divText('No results found');
-          // comma separated list of values, with quotes if its string and without if its number
-          const argumentList =
-            sf.inputs.map((i) => i.propertyType === DG.TYPE.STRING ? `"${inputParams[i.name]}"` : inputParams[i.name]).join(',');
-          tv.dataFrame.setTag(DG.Tags.CreationScript, `Result = ${sf.nqName}(${argumentList})`);
-          setTimeout(() => {
-            processPowerSearchTableView(tv);
-            tv._onAdded();
-          }, 200);
-          return tv.root;
-        } catch (e) {
-          console.error(e);
-          return ui.divText('Operation caused exception');
-        }
-      }));
-      outWidget.addProperty('caption', DG.TYPE.STRING, sf.friendlyName ?? sf.name);
-      outWidget.props.caption = sf.friendlyName ?? sf.name;
-
+      const outWidget = createOutWidget(sf, inputParams);
       host.appendChild(widgetHost(outWidget));
     }
   }
+}
+
+function createOutWidget(sf: any, inputParams: any): DG.Widget {
+  const outWidget = DG.Widget.fromRoot(ui.wait(async () => {
+    try {
+      const fc = sf.prepare(inputParams);
+      const resFuncCall = await fc.call();
+      const v = resFuncCall.getResultViews();
+      if (!v || !v[0] || v[0].type !== DG.VIEW_TYPE.TABLE_VIEW)
+        return ui.divText('No result view produced');
+      const tv = v[0] as DG.TableView;
+      if ((tv.dataFrame?.rowCount ?? 0) === 0)
+        return ui.divText('No results found');
+      // comma separated list of values, with quotes if its string and without if its number
+      const argumentList =
+        sf.inputs.map((i: any) => i.propertyType === DG.TYPE.STRING ? `"${inputParams[i.name]}"` : inputParams[i.name]).join(',');
+      tv.dataFrame.setTag(DG.Tags.CreationScript, `Result = ${sf.nqName}(${argumentList})`);
+      setTimeout(() => {
+        processPowerSearchTableView(tv);
+        tv._onAdded();
+      }, 200);
+      return tv.root;
+    } catch (e) {
+      console.error(e);
+      return ui.divText('Operation caused exception');
+    }
+  }));
+  outWidget.addProperty('caption', DG.TYPE.STRING, sf.friendlyName ?? sf.name);
+  outWidget.props.caption = sf.friendlyName ?? sf.name;
+  return outWidget;
 }
 
 /// Special widgets

@@ -6,6 +6,7 @@ import { ChatGptAssistant } from './prompt-engine/chatgpt-assistant';
 import { ChatGPTPromptEngine } from './prompt-engine/prompt-engine';
 import { AssistantRenderer } from './prompt-engine/rendering-tools';
 import {getAiPanelVisibility, initAiPanel, setAiPanelVisibility} from './ai-panel';
+import { findBestFunction, QueryMatchResult } from './prompts/find-best-function';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -24,8 +25,9 @@ type IChatGptResponse = {
   }
 }
 
-let apiKey: string = '';
-let model: string = 'gpt-4';
+
+export let apiKey: string = '';
+export let model: string = 'gpt-4.1-mini-2025-04-14';
 let temperature = 0.1;
 const url = 'https://api.openai.com/v1/chat/completions';
 
@@ -198,5 +200,10 @@ export class PackageFunctions {
         return wrapper;
       })()
     );
+  }
+
+  @grok.decorators.func()
+  static async fuzzyMatch(prompt: string, searchPatterns: string[]): Promise<QueryMatchResult | null> {
+    return findBestFunction(prompt, searchPatterns);
   }
 }

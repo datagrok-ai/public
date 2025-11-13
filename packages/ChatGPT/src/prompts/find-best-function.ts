@@ -1,5 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import { ChatGPTPromptEngine } from '../prompt-engine/prompt-engine';
+import { apiKey, model } from '../package';
+import { _package } from '../package-test';
 
 
 /// Prompt API: https://developer.chrome.com/docs/ai/prompt-api
@@ -7,6 +10,12 @@ import * as DG from 'datagrok-api/dg';
 /// chrome://flags/#prompt-api-for-gemini-nano
 
 let _progress: DG.TaskBarProgressIndicator | null = null;
+
+export interface QueryMatchResult {
+  searchPattern: string;
+  parameters: Record<string, string>;
+  confidence: number;
+}
 
 export function geminiDownloadMonitor(m: CreateMonitor) {
   m.addEventListener('downloadprogress', (e) => {
@@ -18,34 +27,70 @@ export function geminiDownloadMonitor(m: CreateMonitor) {
   });
 }
 
-export async function findBestFunction(question: string): Promise<{function: string, parameterName: string} | null> {
+export async function findBestFunction(
+  question: string,
+  searchPatterns: string[]
+): Promise<QueryMatchResult | null> {
   const schema = {
-    "function": "string",
-    "parameterName": "string"
+    searchPattern: 'string',
+    parameters: 'object',
+    confidence: 'number',
   }
-  
-  const functions = [
-    'Users joined after ${date}',
-    'Bioactivity for bacterial targets for ${organism}',
-  ]
-  
-  const systemPrompt = `You are a helpful LLM that matches a user question to one of the pre-defined 
-  functions and extracts parameters, if possible. Parameters are specified as \${paramName}.
-  You can only select at most one function. You should never return functions not in the list.
-  You always return either null, or a valid JSON fitting the schema:' + JSONschema`;
 
-  const session = await LanguageModel.create({
-    monitor: geminiDownloadMonitor,
-    initialPrompts: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: "Question: Shigella bioactivity\n\nFunctions:\n" + functions.join('\n') },
-      { role: 'assistant', content: '{function: "Bioactivity for bacterial targets for ${organism}", parameter:"Shigella"}'},
-    ]
-  });
+  const systemPrompt = `
+You are an intelligent semantic query matcher. Your job is to find which query search pattern best matches a user's request.
 
-  const result = await session.prompt(
-    `Question: ${question}\n\nFunctions:\n` + functions.join('\n'), 
-    { responseConstraint: schema });
-  
-  return JSON.parse(result);
+Follow these steps carefully:
+STEP 1 — Identify the most relevant structured query:
+  - Find the query whose intent best matches the user's request semantically, even if the phrasing or order differs.
+  - Compare using meaning, not just keywords.
+  - If several are close, choose the one with the most specific match.
+
+STEP 2 — Extract parameter values:
+  - For the selected query, identify all parameters written as \${parameter}.
+  - Extract the corresponding values from the user input or infer them if clearly implied.
+  - Return them in JSON form.
+
+Important instructions:
+  - **Output only valid JSON.**
+  - **Do not include markdown, backticks, or any extra characters.**
+  - **Do not provide explanations or commentary.**
+  - Your response must exactly match this structure:
+
+  ${JSON.stringify(schema, null, 2)}
+`;
+
+  const userPrompt = `
+Available search patterns:
+${searchPatterns.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+
+User request:
+"${question}"
+`;
+
+  try {
+    let responseText: string;
+
+    const isGeminiAvailable = await LanguageModel.availability();
+    if (isGeminiAvailable === 'available') {
+      _package.logger.info('Using built-in Gemini model for fuzzy matching.');
+
+      const session = await LanguageModel.create({
+        monitor: geminiDownloadMonitor,
+        initialPrompts: [{ role: 'system', content: systemPrompt }],
+      });
+
+      responseText = await session.prompt(userPrompt, {responseConstraint: schema});
+    } else {
+      _package.logger.info('Using GPT engine for fuzzy matching.');
+      const gptEngine = new ChatGPTPromptEngine(apiKey, model);
+      responseText = await gptEngine.generate(userPrompt, systemPrompt);
+    }
+
+    return JSON.parse(responseText) as QueryMatchResult;
+  } catch (error) {
+    _package.logger.error(`Error finding best function: ${error}`);
+    return null;
+  }
 }
+  
