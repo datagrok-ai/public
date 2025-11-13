@@ -9,7 +9,8 @@ import { RegistrationViewBase } from './registration-view-base';
 
 export class AssayRegistrationView extends RegistrationViewBase {
   assayInputs: DG.InputBase[] = [];
-  assayResultInputs: DG.InputBase[] = [];
+  selectedAssayResultColumns: string[] = [];
+  selectedAssayResultRequiredColumns: string[] = [];
 
   constructor() {
     super('Register a new assay');
@@ -19,10 +20,14 @@ export class AssayRegistrationView extends RegistrationViewBase {
 
   protected async handleRegisterClick() {
     const assayValues = this.collectNonEmptyInputValues(this.assayInputs);
-    const assayResultValues = this.assayResultInputs.map((inp) => ({
-      name: inp.property.name,
-      required: inp.value,
-    }));
+
+    const assayResultValues: { [key: string]: any }[] = this.selectedAssayResultColumns.map((colName) => {
+      const isRequired = this.selectedAssayResultRequiredColumns.includes(colName);
+      return {
+        name: colName,
+        required: isRequired,
+      };
+    });
 
     assayValues['assay_result_properties'] = assayResultValues;
 
@@ -72,6 +77,10 @@ export class AssayRegistrationView extends RegistrationViewBase {
     return this.fetchProperties('ASSAY_RESULT', { overrideValueType: 'bool' });
   }
 
+  private names(columns: DG.Column[]): string[] {
+    return columns.map((col) => col.name);
+  }
+
   private async buildUI() {
     this.registerButton = ui.bigButton('REGISTER', () => this.handleRegisterClick());
     const clearAllButton = ui.iconFA('eraser', () => this.clearInputs(this.assayInputs), 'Clear all');
@@ -97,41 +106,28 @@ export class AssayRegistrationView extends RegistrationViewBase {
     this.assayInputs = inputs;
     this.formBackingObject = { ...formBackingObject };
 
-    const settings = ui.div();
     const df = DG.DataFrame.fromColumns(
       assayResultProps.map((p) => DG.Column.fromStrings(p.name, [p.name])),
     );
 
-    const columnsEditor = ui.input.columns('Assay result properties', {
-      table: df,
+    const columnsEditor = ui.input.columns('Columns', {
       value: df.columns.toList(),
-      tooltipText: 'Select which assay result properties you want to configure below',
-    });
-
-    const updateSettings = () => {
-      const chosen = columnsEditor.value.map((c) => c.name);
-      ui.empty(settings);
-      this.assayResultInputs = assayResultProps
-        .filter((p) => chosen.includes(p.name))
-        .map((p) => DG.InputBase.forProperty(this.convertToDGProperty(p)));
-
-      if (this.assayResultInputs.length > 0) {
-        const renderedTable = ui.table(
-          this.assayResultInputs,
-          (input: DG.InputBase, i: number) => [input.property.name, input.input],
-          ['Property', 'Required'],
-        );
-        settings.appendChild(renderedTable);
+      table: df,
+      onValueChanged: (value) => {
+        this.selectedAssayResultColumns = this.names(value);
+      },
+      additionalColumns: {
+        'required': df.columns.toList(),
+      },
+      onAdditionalColumnsChanged: (values: { [key: string]: DG.Column[] }) => {
+        this.selectedAssayResultRequiredColumns = this.names(values['required']);
       }
-    };
-
-    updateSettings();
-    columnsEditor.onChanged.subscribe(updateSettings);
+    });
 
     const assayResultAccordion = ui.accordion();
     assayResultAccordion.addPane(
       'Assay result properties',
-      () => ui.divV([columnsEditor.root, settings]),
+      () => columnsEditor.root,
       true,
     );
 
