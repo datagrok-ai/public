@@ -20,6 +20,7 @@ export function initAiPanel() {
   const prompt = async (question: string) => {
     aiPanel.append(ui.divText(question, {classes: 'ai-panel-question'}));
 
+    //@ts-ignore
     if (api.grok_Shell_AI_Prompt(question)) {
       return;
     }
@@ -57,7 +58,7 @@ export function initAiPanel() {
     sr.start();
   });
 
-  aiPanel.append(ui.divH([mikeIcon]));
+  aiPanel.append(ui.divH([mikeIcon], 'd4-ribbon-item'));
   aiPanel.append();
   aiPanel.append(input);
 }

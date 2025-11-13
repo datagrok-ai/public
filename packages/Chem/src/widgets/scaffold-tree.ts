@@ -1300,7 +1300,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     for (const node of checkedNodes)
       this.processNode(node, tmpBitset);
 
-    this.updateTag();
+    this.updateTag(false);
     if (triggerRequestFilter)
       this.dataFrame.rows.requestFilter();
     this.updateUI();
@@ -1518,7 +1518,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.setColorToChildren(group.children, chosenColor, smiles);
   }
 
-  updateTag() {
+  updateTag(updateFragmentsColumn: boolean = true) {
     let updatedTag: string;
     const colorCodedString = JSON.stringify(this.colorCodedScaffolds);
     const checkedNodes = this.tree.items.filter((v) => v.checked);
@@ -1533,6 +1533,9 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     if (this.setHighlightTag)
       this.setScaffoldTag(this.molColumn!, JSON.parse(updatedTag));
+
+    if (updateFragmentsColumn)
+      this.assignScaffoldColors();
   }
 
   assignScaffoldColors() {
@@ -2210,8 +2213,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
 
     scaffoldTag = JSON.stringify(parsedTag);
     column?.setTag(SCAFFOLD_TREE_HIGHLIGHT, scaffoldTag);
-    if (!detach && scaffolds.length > 0)
-      this.assignScaffoldColors();
   }
 
   selectGroup(group: DG.TreeViewNode) : void {
