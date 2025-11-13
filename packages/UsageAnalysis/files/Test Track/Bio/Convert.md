@@ -1,11 +1,15 @@
-All fucntions should be tested on sample_FASTA.csv, sample_HELM.csv, and sample_MSA.csv.
+#### Convert
+1. Test for data:
+  - data sample_FASTA.csv,
+  - sample_HELM.csv, 
+  - sample_MSA.csv.
 
-1. Go to **Bio > Convert**:
-   * **Get region**
-   * **Notation**
-   * **To Atomic level**
-   * **Split to monomers**
-4. Set options.
+2. Go to **Bio**:
+   * **Calculate > Get region**
+   * **PolyTool > Convert**
+   * **Transform > To Atomic level**
+   * **Transform > Split to monomers**
+3. Set options.
 5. Check a new column.
 ---
 {
