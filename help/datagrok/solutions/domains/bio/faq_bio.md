@@ -35,8 +35,7 @@ the monomer library, including:
 * Natural and non-natural amino acids
 * Custom residues and linkers (represented via HELM components such as CHEM/BLOB)
 
-Monomer definitions can be extended or modified through the [built-in monomer
-library management system](bio.md#manage-monomer-libraries). Bulk import with [Pistoia HELM](https://github.com/PistoiaHELM/HELMMonomerSets)
+Monomer definitions can be extended or modified through the [built-in monomer library management system](bio.md#manage-monomer-libraries). Bulk import with [Pistoia HELM](https://github.com/PistoiaHELM/HELMMonomerSets)
 JSON. Once defined, monomers are recognized consistently across the platform for
 rendering, SAR, enumeration, and other operations.
 
