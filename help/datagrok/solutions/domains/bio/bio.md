@@ -137,7 +137,7 @@ Info panes be extended with [functions](../../../concepts/functions/functions.md
 
 ### Spreadsheet
 
-The [spreadsheet](../../../../visualize/viewers/grid.md) lets you visualize and [edit](#sketching-and-editing) sequences and macromolecules. You can add new columns with calculated values, interactively [filter and search](#searching-and-filtering) rows, color-code columns, pin rows or columns, set edit permissions, and more.
+The [grid viewer](../../../../visualize/viewers/grid.md) lets you visualize and [edit](#sketching-and-editing) sequences and macromolecules. You can add new columns with calculated values, interactively [filter and search](#searching-and-filtering) rows, color-code columns, pin rows or columns, set edit permissions, and more.
 
 Clicking on any sequence cell highlights the differing monomers in other sequences, allowing you to quickly identify similarities and differences.
 
@@ -477,7 +477,7 @@ To perform MSA, do the following:
 
 1. In the Top Menu, select **Bio** > **MSA...** . A dialog opens.
 
-  ![Multiple Sequence Alignment dialog](img/MSA_dialog-800.png)<!--replace png with a GIF file showing the steps-->
+   ![Multiple Sequence Alignment dialog](img/MSA_dialog-800.png)<!--replace png with a GIF file showing the steps-->
 
 1. In the dialog, select the sequence column (**Sequence**) and set other parameters.
    If your data has been clustered already, you can align sequences only within the same cluster. To do so, specify a column containing clusters (**Cluster**).

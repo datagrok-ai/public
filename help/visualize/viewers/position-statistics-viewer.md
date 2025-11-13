@@ -1,10 +1,8 @@
 ---
-title: "Position Statistics Viewer"
+title: "Position Statistics"
 ---
 
-# Position Statistics Viewer
-
-The Position Statistics Viewer displays statistical distributions of values at specific sequence positions using violin/box plots. This viewer helps analyze how values vary across different monomers at a selected position, with optional motif context visualization.
+The Position Statistics viewer displays statistical distributions of values at specific sequence positions using violin/box plots. This viewer helps analyze how values vary across different monomers at a selected position, with optional motif context visualization.
 
 ## Features
 
@@ -16,7 +14,7 @@ The Position Statistics Viewer displays statistical distributions of values at s
 
 ## Customization
 
-You can modify the Position Statistics Viewer through the property panel:
+You can modify the Position Statistics Viewer through the **Context Panel**:
 
 - **Sequence**: The column containing sequence data in any notation
 - **Value**: The column containing numeric values for statistical analysis
@@ -25,13 +23,13 @@ You can modify the Position Statistics Viewer through the property panel:
 - **Right Motif Length**: Number of positions to include right of the selected position (0-10)
 - **Show Position Info**: Toggle display of position and overhang controls in the header
 
-## Data Requirements
+## Data requirements
 
 The viewer requires:
 - A sequence column with macromolecule data (FASTA, HELM, or separated format)
 - A numeric column with values for statistical analysis
 
-## Position Context
+## Position context
 
 The viewer creates motif representations by combining monomers from multiple positions:
 - **Center Position**: The primary position being analyzed
@@ -40,7 +38,7 @@ The viewer creates motif representations by combining monomers from multiple pos
 
 Monomers from all positions in the motif are joined to create unique combinations for statistical analysis.
 
-## Statistical Display
+## Statistical display
 
 The viewer shows statistics for each monomer(s) combination:
 - **Min/Max**: Minimum and maximum values
@@ -57,16 +55,16 @@ The Position Statistics Viewer follows standard Datagrok patterns:
 - **Value Column Selection**: The viewer automatically updates when you change the value column
 - **Responsive Layout**: Automatically adjusts to show/hide position information based on settings
 
-## Integration with SAR Analysis
+## Integration with Peptides SAR analysis
 
-When used within Peptides SAR analysis, the Position Statistics Viewer automatically:
+When used within [Peptides SAR analysis](../../datagrok/solutions/domains/bio/peptides-sar.md), the Position Statistics Viewer automatically:
 - Synchronizes with the selected position from other viewers
 - Uses the same sequence column as the main analysis
 - Updates position selection based on sequence column metadata
 
 For standalone use, the viewer generates position columns automatically from the sequence data.
 
-## Position Selection
+## Position selection
 
 The viewer can automatically detect the current position from sequence column metadata. When integrated with other sequence analysis tools, position changes are synchronized across viewers for consistent analysis.
 

@@ -1,6 +1,11 @@
 ---
 title: "Peptides SAR"
-sidebar_position: 1
+sidebar_position: 2
+keywords:
+ - peptides
+ - macromolecules
+ - biologics
+ - peptide SAR
 ---
 
 Datagrok's Peptides package provides tools for analyzing peptide [structure-activity relationship (SAR)](https://en.wikipedia.org/wiki/Structure%E2%80%93activity_relationship). Datagrok automatically detects biological sequences in various formats like HELM, Fasta, Separator, highlights monomers, understands their structure and provides analysis tools. Among these, the Peptides SAR tool enables you to explore sequence-activity trends efficiently, offering interactive visualizations and meaningful insights. 
