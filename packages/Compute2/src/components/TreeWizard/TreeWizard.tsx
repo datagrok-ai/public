@@ -132,14 +132,6 @@ export const TreeWizard = Vue.defineComponent({
     // actions
     ////
 
-    // after step change we need to render the correct component
-    const updateCurrentNodeRender = () => {
-      if (!chosenStepState.value)
-        return;
-      if (isFuncCallState(chosenStepState.value)) rfvHidden.value = false;
-      if (!isFuncCallState(chosenStepState.value)) pipelineViewHidden.value = false;
-    }
-
     const runActionWithConfirmation = (uuid: string) => {
       const calledAction = chosenStepState.value?.actions?.find((action) => action.uuid === uuid);
       const confirmationMessage = calledAction?.confirmationMessage;
@@ -191,7 +183,6 @@ export const TreeWizard = Vue.defineComponent({
       const nextData = findNextStep(chosenStepUuid.value, treeState.value);
       if (nextData) {
         chosenStepUuid.value = nextData.state.uuid;
-        updateCurrentNodeRender();
       } else {
         const msg = `Now you can:\n
 • Export results using top menu 'Export' options\n
@@ -203,7 +194,6 @@ export const TreeWizard = Vue.defineComponent({
     const onPipelineProceed = () => {
       if (chosenStepState.value && !isFuncCallState(chosenStepState.value)) {
         chosenStepUuid.value = chosenStepState.value.steps[0].uuid;
-        updateCurrentNodeRender();
       }
     };
 
@@ -300,7 +290,6 @@ export const TreeWizard = Vue.defineComponent({
         );
         if (nodeWithPath?.state) {
           chosenStepUuid.value = nodeWithPath.state.uuid;
-          updateCurrentNodeRender();
         }
       }
     };
@@ -338,7 +327,10 @@ export const TreeWizard = Vue.defineComponent({
       if (!treeState.value)
         return null;
 
-      let step = chosenStepUuid.value && (findNodeWithPathByUuid(chosenStepUuid.value, treeState.value));
+      if (!chosenStepUuid.value)
+        chosenStepUuid.value = treeState.value.uuid;
+
+      let step = findNodeWithPathByUuid(chosenStepUuid.value, treeState.value);
 
       if (step)
         return step;
@@ -349,7 +341,7 @@ export const TreeWizard = Vue.defineComponent({
       if (currentStep)
         setCurrentStepByPath(currentStep, treeState.value);
 
-      return chosenStepUuid.value ? findNodeWithPathByUuid(chosenStepUuid.value, treeState.value) : undefined;
+      return findNodeWithPathByUuid(chosenStepUuid.value, treeState.value);
     });
 
     Vue.watch(chosenStep, (newStep) => {
@@ -370,6 +362,13 @@ export const TreeWizard = Vue.defineComponent({
     });
 
     const chosenStepState = Vue.computed(() => chosenStep.value?.state);
+
+    Vue.watch(chosenStepState, (state) => {
+      if (!state)
+        return;
+      if (isFuncCallState(state)) rfvHidden.value = false;
+      if (!isFuncCallState(state)) pipelineViewHidden.value = false;
+    })
 
     const isRootChoosen = Vue.computed(() => {
       return (!!chosenStepState.value?.uuid) && chosenStepState.value?.uuid === treeState.value?.uuid;
