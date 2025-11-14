@@ -290,7 +290,7 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
         state.funcCall.inputs[state.tableInputName] = table;
         state.funcCall.inputs[state.moleculesInputName] = molecules;
 
-        await state.funcCall.call();
+        await state.funcCall.call(undefined, undefined, {processed: false});
         completedCount++;
       }
     } catch (error: unknown) {

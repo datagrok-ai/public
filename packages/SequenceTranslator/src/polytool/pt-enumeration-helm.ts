@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
@@ -10,7 +11,6 @@ import {
 
 
 import {PtBio} from './conversion/pt-tools-helmmol';
-import {getAvailableMonomers} from './utils';
 import {PolyToolEnumeratorParams, PolyToolEnumeratorTypes,
   PolyToolPlaceholder, PolyToolBreadthPlaceholder} from './types';
 

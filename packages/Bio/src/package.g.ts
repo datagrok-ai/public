@@ -110,6 +110,23 @@ export function separatorSequenceCellRenderer() : any {
   return PackageFunctions.separatorSequenceCellRenderer();
 }
 
+//tags: cellRenderer
+//output: grid_cell_renderer result
+//meta.cellType: sequence
+//meta.columnTags: quality=Macromolecule, units=biln
+export function bilnSequenceCellRenderer() : any {
+  return PackageFunctions.bilnSequenceCellRenderer();
+}
+
+//tags: notationRefiner
+//input: column col 
+//input: object stats 
+//input: string separator { nullable: true; optional: true }
+//output: bool result
+export function refineNotationProviderForBiln(col: DG.Column<any>, stats: any, separator: any) : boolean {
+  return PackageFunctions.refineNotationProviderForBiln(col, stats, separator);
+}
+
 //name: Bioinformatics | Sequence Renderer
 //tags: panel
 //input: column molColumn { semType: Macromolecule }
@@ -247,11 +264,20 @@ export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Co
   return await PackageFunctions.sequenceSpaceTopMenu(table, molecules, methodName, similarityMetric, plotEmbeddings, preprocessingFunction, options, clusterEmbeddings, isDemo);
 }
 
+//name: Molecules to HELM
+//description: Converts Peptide molecules to HELM notation by matching with monomer library
+//input: dataframe table { description: Input data table }
+//input: column molecules { semType: Molecule; description: Molecule column }
+//top-menu: Bio | Transform | Molecules to HELM...
+export async function moleculesToHelmTopMenu(table: DG.DataFrame, molecules: DG.Column) : Promise<void> {
+  await PackageFunctions.moleculesToHelmTopMenu(table, molecules);
+}
+
 //name: To Atomic Level
 //description: Converts sequences to molblocks
 //input: dataframe table { description: Input data table }
 //input: column seqCol { semType: Macromolecule; caption: Sequence }
-//input: bool nonlinear = false { caption: Non-linear; description: Slower mode for cycling/branching HELM structures }
+//input: bool nonlinear = true { caption: Non-linear; description: Slower mode for cycling/branching HELM structures }
 //input: bool highlight = false { caption: Highlight monomers; description: Highlight monomers' substructures of the molecule }
 //top-menu: Bio | Transform | To Atomic Level...
 export async function toAtomicLevel(table: DG.DataFrame, seqCol: DG.Column, nonlinear: boolean, highlight: boolean) : Promise<void> {

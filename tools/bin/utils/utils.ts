@@ -95,8 +95,8 @@ export const replacers: Indexable = {
   PARAMS_OBJECT: (s: string, params: { name?: string; type?: string }[]) => s.replace(/#{PARAMS_OBJECT}/g, params.length ?
     `{ ${params.map((p) => p.name).join(', ')} }` : `{}`),
   OUTPUT_TYPE: (s: string, type: string) => s.replace(/#{OUTPUT_TYPE}/g, type),
-  TYPED_PARAMS: (s: string, params: { name?: string; type?: string; isOptional?: boolean; nullable?: boolean }[]) => s.replace(/#{TYPED_PARAMS}/g,
-    params.map((p) => `${p.name}${p.isOptional ? '?' : ''}: ${p.type} ${p.nullable ? '| null' : ''}`).join(', ')),
+  TYPED_PARAMS: (s: string, params: { name?: string; type?: string; isOptional?: boolean; undefinable: boolean, nullable?: boolean }[]) => s.replace(/#{TYPED_PARAMS}/g,
+    params.map((p) => `${p.name}${p.isOptional ? '?' : ''}: ${p.type} ${p.undefinable ? '| undefined' : '' }${p.nullable ? '| null' : ''}`).join(', ')),
 };
 
 
@@ -237,13 +237,23 @@ export function getScriptOutputType(script: string, comment: string = '#'): stri
 
 export function getScriptInputs(script: string, comment: string = '#'): object[] {
   const regex = new RegExp(`${comment}\\s*input:\\s?([a-z_]+)(?:<[^>]*>)?\\s+(\\w+)(?:[^{\\n]*{[^}\\n]*})?`, 'g');
+  const testOptional = (inputAnnotation: string) => /isOptional\s*:\s*true/.test(inputAnnotation) || /optional\s*:\s*true/.test(inputAnnotation)
+  const inputAnnotations = [...script.matchAll(regex)];
+  let firstTsValidOptionalIdx: number = inputAnnotations.length-1;
+  for (; firstTsValidOptionalIdx >= 0; firstTsValidOptionalIdx--) {
+    const annotation = inputAnnotations[firstTsValidOptionalIdx][0];
+    if (!testOptional(annotation))
+      break;
+  }
   const inputs = [];
-  for (const match of script.matchAll(regex)) {
-    const isOptional = /isOptional\s*:\s*true/.test(match[0]) || /optional\s*:\s*true/.test(match[0]);
+  for (const [idx, match] of inputAnnotations.entries()) {
+    const hasOptionalAnnotation = testOptional(match[0])
+    const isOptional = hasOptionalAnnotation && idx >= firstTsValidOptionalIdx;
+    const undefinable = hasOptionalAnnotation && idx < firstTsValidOptionalIdx;
     const nullable = /nullable\s*:\s*true/.test(match[0]);
     const type = dgToTsTypeMap[match[1]] || 'any';
     const name = match[2];
-    inputs.push({ type, name, isOptional, nullable });
+    inputs.push({ type, name, isOptional, undefinable, nullable });
   }
   return inputs;
 };

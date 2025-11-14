@@ -29,14 +29,14 @@ export async function folding(table: DG.DataFrame, sequences: DG.Column) : Promi
   return await PackageFunctions.folding(table, sequences);
 }
 
-//name: Boltz-1
-//input: dataframe df { caption: Table }
-//input: column molecules { semType: Molecule }
+//name: Boltz
+//input: dataframe table 
+//input: column ligands { semType: Molecule }
 //input: string config { choices: Boltz1:getBoltzConfigFolders; description: 'Folder with config files for docking' }
 //output: dataframe result
-//top-menu: Chem | Docking | Boltz-1...
-export async function docking(df: DG.DataFrame, molecules: DG.Column, config: string) : Promise<any> {
-  return await PackageFunctions.docking(df, molecules, config);
+//top-menu: Chem | Docking | Boltz...
+export async function docking(table: DG.DataFrame, ligands: DG.Column, config: string) : Promise<any> {
+  return await PackageFunctions.docking(table, ligands, config);
 }
 
 //name: Boltz-1

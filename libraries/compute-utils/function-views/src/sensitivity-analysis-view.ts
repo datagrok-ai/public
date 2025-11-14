@@ -833,7 +833,7 @@ export class SensitivityAnalysisView {
     // switchInputs for inputs
     for (const propName of Object.keys(this.store.inputs)) {
       const inpType = this.store.inputs[propName].prop.propertyType;
-      if (inpType === DG.TYPE.BOOL || inpType === DG.TYPE.STRING)
+      if (inpType !== DG.TYPE.FLOAT)
         continue;
 
       const propConfig = this.store.inputs[propName];
@@ -1013,7 +1013,7 @@ export class SensitivityAnalysisView {
 
         const selectedInput = funcInputs[cell.tableRowIndex ?? 0];
         const funcCall = this.func.prepare(selectedInput);
-        const selectedRun = await funcCall.call();
+        const selectedRun = await funcCall.call(undefined, undefined, {processed: true, report: false});
 
         const scalarParams = ([...selectedRun.outputParams.values()])
           .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
@@ -1172,7 +1172,7 @@ export class SensitivityAnalysisView {
 
         const selectedInput = funcInputs[cell.tableRowIndex ?? 0];
         const funcCall = this.func.prepare(selectedInput);
-        const selectedRun = await funcCall.call();
+        const selectedRun = await funcCall.call(undefined, undefined, {processed: true, report: false});
 
         const scalarParams = ([...selectedRun.outputParams.values()])
           .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
@@ -1354,7 +1354,7 @@ export class SensitivityAnalysisView {
 
         const selectedInput = funcInputs[cell.tableRowIndex ?? 0];
         const funcCall = this.func.prepare(selectedInput);
-        const selectedRun = await funcCall.call();
+        const selectedRun = await funcCall.call(undefined, undefined, {processed: true, report: false});
 
         const scalarParams = ([...selectedRun.outputParams.values()])
           .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));

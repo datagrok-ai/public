@@ -8,10 +8,9 @@ import { MolTrackDockerService } from './services/moltrack-docker-service';
 import { excludedScopes, MOLTRACK_ENTITY_LEVEL, MOLTRACK_IS_STATIC_FIELD, SAVED_SEARCHES_NODE, Scope, SEARCH_NODE } from './utils/constants';
 import { createSavedSearchesSatistics, createSearchExpandableNode, createSearchNode, createSearchView, getSavedSearches, handleSearchURL, loadSearchFields, molTrackSearchFieldsArr } from './views/search';
 import { registerAllData, registerAssayData, updateAllMolTrackSchemas } from './utils/registration-utils';
-import { batchView, compoundView, createPath, getQuickActionsWidget, getStatisticsWidget, initBulkRegisterView, initRegisterView } from './utils/view-utils';
-import { flattened, getCorporateCompoundIdByExactStructure } from './utils/utils';
+import { batchView, compoundView, createPath, getQuickActionsWidget, getStatisticsWidget, initAssayRegisterView, initBulkRegisterView, initRegisterView, initSchemaView } from './utils/view-utils';
+import { flattened } from './utils/utils';
 import { molTrackPropPanel } from './widgets/moltrack-property-panel';
-import { PropertySchemaView } from './views/schema-view';
 import { registerSemanticTypes } from './utils/detectors';
 
 export const _package = new DG.Package();
@@ -51,8 +50,10 @@ export async function molTrackApp(path: string): Promise<DG.ViewBase> {
   const isCompoundPath = hasPath && path.includes('Compound');
   const isRegisterPath = hasPath && path.includes('Register');
   const isBatchPath = hasPath && path.includes('Batch');
+  const isSchemaPath = hasPath && path.includes('Schema');
   const isSearchPath = hasPath && (path.includes(SEARCH_NODE) || path.includes(SAVED_SEARCHES_NODE));
   const isBulkPath = hasPath && path.includes('Bulk');
+  const isAssayPath = hasPath && path.includes('Assay');
 
   const setPathAndReturn = (view: DG.View) => {
     view.path = path;
@@ -67,7 +68,10 @@ export async function molTrackApp(path: string): Promise<DG.ViewBase> {
   }
 
   if (isBulkPath)
-    return setPathAndReturn(initBulkRegisterView(false));
+    return setPathAndReturn(initBulkRegisterView());
+
+  if (isAssayPath)
+    return setPathAndReturn(initAssayRegisterView());
 
   if (corporateCompoundId)
     return await compoundView(corporateCompoundId);
@@ -80,6 +84,9 @@ export async function molTrackApp(path: string): Promise<DG.ViewBase> {
 
   if (isBatchPath)
     return setPathAndReturn(initRegisterView('Batch', false));
+
+  if (isSchemaPath)
+    return setPathAndReturn(await initSchemaView());
 
   const statisticsWidget = await getStatisticsWidget(createSearchView);
   const quickActionsWidget = getQuickActionsWidget();
@@ -100,12 +107,9 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
   });
   createRegisterNode('Compound', () => initRegisterView('Compound'));
   createRegisterNode('Batch', () => initRegisterView('Batch'));
-  createRegisterNode('Bulk...', () => initBulkRegisterView());
-  createRegisterNode('Schema', async () => {
-    const schemaView = new PropertySchemaView();
-    await schemaView.init();
-    schemaView.show();
-  });
+  createRegisterNode('Assay', () => initAssayRegisterView());
+  createRegisterNode('Bulk', () => initBulkRegisterView());
+  createRegisterNode('Schema', async () => await initSchemaView());
 
   const searchNode = appNode.getOrCreateGroup(SEARCH_NODE);
   const searchableScopes = Object.values(Scope)
@@ -246,21 +250,12 @@ export async function retrieveEntity(scope: string, flatten: boolean = true): Pr
 }
 
 //name: Databases | MolTrack
-//input: string mol {semType: Molecule}
+//input: semantic_value id {semType: Grok ID}
 //tags: panel
 //output: widget res
-export async function getMoltrackPropPanelByStructure(mol: string): Promise<DG.Widget> {
-  const corporateCompoundId = await getCorporateCompoundIdByExactStructure(mol) ?? '';
-  const retrievedCompound = await getCompoundByCorporateId(corporateCompoundId);
-  return molTrackPropPanel(retrievedCompound, mol);
-}
-
-//name: Databases | MolTrack
-//input: string id {semType: Grok ID}
-//tags: panel
-//output: widget res
-export async function getMoltrackPropPanelById(id: string): Promise<DG.Widget> {
+export async function getMoltrackPropPanelById(id: DG.SemanticValue): Promise<DG.Widget> {
+  const {value: idValue} = id;
   await MolTrackDockerService.init();
-  const compound = await MolTrackDockerService.getCompoundByCorporateId(id);
-  return molTrackPropPanel(compound);
+  const compound = await MolTrackDockerService.getCompoundByCorporateId(idValue);
+  return molTrackPropPanel(compound, id.cell.column);
 }

@@ -5,9 +5,9 @@ import {ClinRow, studies} from '../clinical-study';
 import {addDataFromDmDomain} from '../data-preparation/utils';
 import {AE_BODY_SYSTEM, AE_CAUSALITY, AE_OUTCOME, AE_SEVERITY, SUBJECT_ID} from '../constants/columns-constants';
 import {updateDivInnerHTML} from '../utils/utils';
-import {_package} from '../package';
+import {_package, studiesViewsConfigs} from '../package';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
-import {AE_START_DAY_FIELD, AE_TERM_FIELD, TRT_ARM_FIELD, VIEWS_CONFIG} from '../views-config';
+import {AE_START_DAY_FIELD, AE_TERM_FIELD, TRT_ARM_FIELD} from '../views-config';
 import {checkColumnsAndCreateViewer} from '../utils/views-validation-utils';
 
 
@@ -29,16 +29,18 @@ export class AdverseEventsView extends ClinicalCaseViewBase {
   }
 
   createView(): void {
-    if (studies[this.studyId].domains.ae.col(VIEWS_CONFIG[this.name][AE_START_DAY_FIELD]) &&
+    if (studies[this.studyId].domains.ae.col(studiesViewsConfigs[this.studyId].config[this.name][AE_START_DAY_FIELD]) &&
         !studies[this.studyId].domains.ae.col('week')) {
       studies[this.studyId].domains.ae.columns.addNewFloat('week').init((i) =>
-        Math.floor(studies[this.studyId].domains.ae.get(VIEWS_CONFIG[this.name][AE_START_DAY_FIELD], i) / 7));
+        Math.floor(studies[this.studyId].domains.ae
+          .get(studiesViewsConfigs[this.studyId].config[this.name][AE_START_DAY_FIELD], i) / 7));
     }
     ;
     if (studies[this.studyId].domains.dm) {
-      if (studies[this.studyId].domains.dm.col(VIEWS_CONFIG[this.name][TRT_ARM_FIELD])) {
+      if (studies[this.studyId].domains.dm.col(studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD])) {
         this.aeWithArm = addDataFromDmDomain(studies[this.studyId].domains.ae.clone(), studies[this.studyId].domains.dm,
-          studies[this.studyId].domains.ae.columns.names(), [VIEWS_CONFIG[this.name][TRT_ARM_FIELD]]);
+          studies[this.studyId].domains.ae.columns.names(),
+          [studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD]]);
       } else
         this.aeWithArm = studies[this.studyId].domains.ae.clone();
       ;
@@ -56,10 +58,10 @@ export class AdverseEventsView extends ClinicalCaseViewBase {
 
     checkColumnsAndCreateViewer(
       this.aeWithArm,
-      [VIEWS_CONFIG[this.name][AE_TERM_FIELD]],
+      [studiesViewsConfigs[this.studyId].config[this.name][AE_TERM_FIELD]],
       this.typesPlot, () => {
-        const bar = this.bar(VIEWS_CONFIG[this.name][AE_TERM_FIELD],
-          'Types', viewerTitle, VIEWS_CONFIG[this.name][TRT_ARM_FIELD]);
+        const bar = this.bar(studiesViewsConfigs[this.studyId].config[this.name][AE_TERM_FIELD],
+          'Types', viewerTitle, studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD]);
         updateDivInnerHTML(this.typesPlot, bar);
       },
       'Types');
@@ -68,7 +70,8 @@ export class AdverseEventsView extends ClinicalCaseViewBase {
       this.aeWithArm,
       [AE_BODY_SYSTEM],
       this.typesPlot, () => {
-        const bar = this.bar(AE_BODY_SYSTEM, 'Body system', viewerTitle, VIEWS_CONFIG[this.name][TRT_ARM_FIELD]);
+        const bar = this.bar(AE_BODY_SYSTEM, 'Body system', viewerTitle,
+          studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD]);
         updateDivInnerHTML(this.bodySystemsPlot, bar);
       },
       'Body system');
@@ -77,7 +80,8 @@ export class AdverseEventsView extends ClinicalCaseViewBase {
       this.aeWithArm,
       [AE_CAUSALITY],
       this.typesPlot, () => {
-        const bar = this.bar(AE_CAUSALITY, 'Causality', viewerTitle, VIEWS_CONFIG[this.name][TRT_ARM_FIELD]);
+        const bar = this.bar(AE_CAUSALITY, 'Causality', viewerTitle,
+          studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD]);
         updateDivInnerHTML(this.causalityPlot, bar);
       },
       'Causality');
@@ -86,14 +90,15 @@ export class AdverseEventsView extends ClinicalCaseViewBase {
       this.aeWithArm,
       [AE_OUTCOME],
       this.typesPlot, () => {
-        const bar = this.bar(AE_OUTCOME, 'Outcome', viewerTitle, VIEWS_CONFIG[this.name][TRT_ARM_FIELD]);
+        const bar = this.bar(AE_OUTCOME, 'Outcome', viewerTitle,
+          studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD]);
         updateDivInnerHTML(this.outcomePlot, bar);
       },
       'Outcome');
 
     checkColumnsAndCreateViewer(
       this.aeWithArm,
-      [VIEWS_CONFIG[this.name][AE_START_DAY_FIELD]],
+      [studiesViewsConfigs[this.studyId].config[this.name][AE_START_DAY_FIELD]],
       this.eventsPerWeekPlot, () => {
         const bar = this.eventsPerWeek(viewerTitle);
         updateDivInnerHTML(this.eventsPerWeekPlot, bar);
@@ -102,7 +107,7 @@ export class AdverseEventsView extends ClinicalCaseViewBase {
 
     checkColumnsAndCreateViewer(
       this.aeWithArm,
-      [SUBJECT_ID, VIEWS_CONFIG[this.name][AE_START_DAY_FIELD]],
+      [SUBJECT_ID, studiesViewsConfigs[this.studyId].config[this.name][AE_START_DAY_FIELD]],
       this.allEventsPlot, () => {
         const bar = this.allEvents(viewerTitle);
         updateDivInnerHTML(this.allEventsPlot, bar);
@@ -142,8 +147,9 @@ export class AdverseEventsView extends ClinicalCaseViewBase {
   }
 
   private createLegend() {
-    if (this.aeWithArm.col(VIEWS_CONFIG[this.name][TRT_ARM_FIELD])) {
-      const legend = DG.Legend.create(this.aeWithArm.columns.byName(VIEWS_CONFIG[this.name][TRT_ARM_FIELD]));
+    if (this.aeWithArm.col(studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD])) {
+      const legend = DG.Legend.create(this.aeWithArm.columns
+        .byName(studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD]));
       legend.root.style.width = '500px';
       legend.root.style.height = '35px';
       return legend.root;
@@ -166,7 +172,7 @@ export class AdverseEventsView extends ClinicalCaseViewBase {
 
   private allEvents(viewerTitle: any) {
     const scatterPlot = this.aeWithArm.plot.scatter({
-      x: VIEWS_CONFIG[this.name][AE_START_DAY_FIELD],
+      x: studiesViewsConfigs[this.studyId].config[this.name][AE_START_DAY_FIELD],
       y: SUBJECT_ID,
       color: this.aeWithArm.col(AE_SEVERITY) ? AE_SEVERITY : '',
       markerDefaultSize: 5,

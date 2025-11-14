@@ -1,0 +1,11 @@
+HELM,Activity
+"PEPTIDE1{[*N(C)[C@H](C(=O)*)CCC |$_R1;;;;;;_R2;;;$|].[*O[C@@H](C(=O)*)C |$_R1;;;;;_R2;$|].[*N(C)[C@H](C(=O)*)CCC |$_R1;;;;;;_R2;;;$|].[*O[C@@H](C(=O)*)Cc1ccccc1 |$_R1;;;;;_R2;;;;;;;$|].[*N(C)[C@H](C(=O)*)CCC |$_R1;;;;;;_R2;;;$|].[*O[C@H](C(=O)*)C |$_R1;;;;;_R2;$|].[*N(C)[C@H](C(=O)*)CCC |$_R1;;;;;;_R2;;;$|].[*O[C@@H](C(=O)*)Cc1ccccc1 |$_R1;;;;;_R2;;;;;;;$|]}$PEPTIDE1,PEPTIDE1,8:R2-1:R1$$$",5.3075109739681280
+"PEPTIDE1{[ac].D.A.D.E.[*N[C@H](C(=O)*)Cc1ccc(cc1)OC(C(=O)O)C(=O)O |$_R1;;;;;_R2;;;;;;;;;;;;;;;$|].L.[am]}$$$$	CHEMBL8284
+PEPTIDE1{[N[C@](C)(C(=O)O)Cc1ccc(c(c1)O)O]}$$$$",5.7238768534315438
+"PEPTIDE1{[meL].[*O[C@@H](C(=O)*)C |$_R1;;;;;_R2;$|].[meL].[*O[C@@H](C(=O)*)Cc1ccccc1 |$_R1;;;;;_R2;;;;;;;$|].[*N(C)[C@H](C(=O)*)CCC |$_R1;;;;;;_R2;;;$|].[*O[C@H](C(=O)*)C |$_R1;;;;;_R2;$|].[*N(C)[C@H](C(=O)*)CCC |$_R1;;;;;;_R2;;;$|].[*O[C@@H](C(=O)*)Cc1ccccc1 |$_R1;;;;;_R2;;;;;;;$|]}|PEPTIDE2{E.[*O[C@@H](C(=O)*)C |$_R1;;;;;_R2;$|].E.[*O[C@@H](C(=O)*)Cc1ccccc1 |$_R1;;;;;_R2;;;;;;;$|].[*N(C)[C@H](C(=O)*)CCC |$_R1;;;;;;_R2;;;$|].[*O[C@H](C(=O)*)C |$_R1;;;;;_R2;$|].[*N(C)[C@H](C(=O)*)CCC |$_R1;;;;;;_R2;;;$|].[*O[C@@H](C(=O)*)Cc1ccccc1 |$_R1;;;;;_R2;;;;;;;$|]}$PEPTIDE2,PEPTIDE2,8:R2-1:R1|PEPTIDE1,PEPTIDE2,1:R1-3:R3|PEPTIDE2,PEPTIDE1,1:R3-8:R2$$$V2.0",5.1858112460224372
+"PEPTIDE1{[[C@H](C(=O)*)CS* |$;;;_R2;;;_R3$|].F.I.Q.N.[dC].S.R.G.[am]}$PEPTIDE1,PEPTIDE1,1:R3-6:R3$$$V2.0",6.2235023908043692
+"PEPTIDE1{A.[dP].D.[dW].F.[dF].N.[dY].Y.[dW].G.[dN].W.[dH].G.[*N[C@@H](C(=O)*)[C@@H](C)O |$_R1;;;;;_R2;;;$|]}$PEPTIDE1,PEPTIDE1,16:R2-1:R1$$$",3.8459123763832412
+PEPTIDE1{N.L.E.R.E.[*N[C@H](C(=O)*)CSCNC(=O)C |$_R1;;;;;_R2;;;;;;;$|].L.E.E.P.[*N[C@H](C(=O)*)CSCNC(=O)C |$_R1;;;;;_R2;;;;;;;$|].S.R.E.E.A.F}$$$$,3.2792043882465700
+"PEPTIDE1{[[C@H](C(=O)*)CS* |$;;;_R2;;;_R3$|].Y.[dF].G.[dN].[dC].[dP].R.G.[am]}$PEPTIDE1,PEPTIDE1,1:R3-6:R3$$$",2.1058521529925680
+PEPTIDE1{A.[[*]C(=O)[C@H](C)N([*])C |$_R2;;;;;;_R1;;;$|].A}$$$$V2.0,1.8036950016492720
+"CHEM1{[*N[C@H](C(=O)*)Cc1ccc(cc1)OP(=O)(O)O |$_R1;;;;;_R2;;;;;;;;;;;;$|]}|PEPTIDE1{[C[C@H](N[*])C(=O)C[*] |$;;;_R1;;;;_R2$|].G.G.G.C.C.K.K.K.K}$PEPTIDE1,CHEM1,10:R3-1:R1$$$V2.0",6.3880602836120888

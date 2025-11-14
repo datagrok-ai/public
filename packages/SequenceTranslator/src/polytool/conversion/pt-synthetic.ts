@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import {getRdKitModule} from '@datagrok-libraries/bio/src/chem/rdkit-module';
 import {Rules, RuleReaction, getMonomerPairs} from './pt-rules';
 import {InvalidReactionError, MonomerNotFoundError} from '../types';
@@ -7,8 +8,7 @@ import * as grok from 'datagrok-api/grok';
 
 import wu from 'wu';
 import {PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
-import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {IMonomerLib, IMonomerLibBase, Monomer, MonomerLibData, RGroup} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib, IMonomerLibBase, Monomer, MonomerLibData, RGroup, getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {RDModule, RDMol, RDReaction, MolList, RDReactionResult} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {HELM_REQUIRED_FIELD as REQ,
   HELM_OPTIONAL_FIELDS as OPT, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
@@ -20,8 +20,8 @@ export async function getOverriddenLibrary(rules: Rules): Promise<IMonomerLibBas
   const rdkit = await getRdKitModule();
   const argLib: { [symbol: string]: Monomer } = {};
 
-  let names: string [] = [];
-  let monomers: Monomer [] = [];
+  let names: (string | null) [] = [];
+  let monomers: (Monomer | null) [] = [];
 
   for (let i = 0; i < rules.reactionRules.length; i++) {
     try {
@@ -32,8 +32,11 @@ export async function getOverriddenLibrary(rules: Rules): Promise<IMonomerLibBas
       console.error(e);
       grok.shell.warning(e);
     } finally {
-      for (let j = 0; j < names.length; j ++)
-        argLib[names[j]] = monomers[j];
+      for (let j = 0; j < names.length; j ++) {
+        if (names[j] == null || monomers[j] == null)
+          continue;
+        argLib[names[j]!] = monomers[j]!;
+      }
     }
   }
 
@@ -44,16 +47,16 @@ export async function getOverriddenLibrary(rules: Rules): Promise<IMonomerLibBas
   return overriddenMonomerLib;
 }
 
-export function getNewMonomers(rdkit: RDModule, mLib: IMonomerLib, rule: RuleReaction): [string[], Monomer[]] {
+export function getNewMonomers(rdkit: RDModule, mLib: IMonomerLib, rule: RuleReaction): [(string | null)[], (Monomer | null)[]] {
   const reacSmarts = rule.reaction;
   const monomerName = rule.name;
   const totalLength = rule.firstMonomers.length + rule.secondMonomers.length + 1;
   const reactionMembers = rule.reaction.split('>>');
   const reactants = reactionMembers[0].split('.');
 
-  const monomerNames = new Array<string>(totalLength);
-  const resMonomers = new Array<Monomer>(totalLength);
-  const monomers = new Array<string>(totalLength);
+  const monomerNames = new Array<string | null>(totalLength);
+  const resMonomers = new Array<Monomer | null>(totalLength);
+  const monomers = new Array<string | null>(totalLength);
 
   const mainRxn = getReactionSmirks(rdkit, reacSmarts);
 
@@ -66,33 +69,36 @@ export function getNewMonomers(rdkit: RDModule, mLib: IMonomerLib, rule: RuleRea
   let counter = 0;
   for (let i = 0; i < rule.firstMonomers.length; i++) {
     const monomer = mLib.getMonomer('PEPTIDE', rule.firstMonomers[i]);
-    if (!monomer) throw new MonomerNotFoundError('PEPTIDE', rule.firstMonomers[i]);
 
-    const sMolBlock = cutReactant(rdkit, monomer.molfile, rxnCutFirst, monomer.name);
-    monomers[counter] = sMolBlock;
-    monomerNames[counter] = `${monomer.symbol}_${monomerName}`;
+    if (monomer) {
+      const sMolBlock = cutReactant(rdkit, monomer.molfile, rxnCutFirst, monomer.name);
+      monomers[counter] = sMolBlock;
+      monomerNames[counter] = `${monomer.symbol}_${monomerName}`;
+    }
     counter++;
   }
   for (let i = 0; i < rule.secondMonomers.length; i++) {
     const monomer = mLib.getMonomer('PEPTIDE', rule.secondMonomers[i]);
-    if (!monomer) throw new MonomerNotFoundError('PEPTIDE', rule.secondMonomers[i]);
-
-    const sMolBlock = cutReactant(rdkit, monomer.molfile, rxnCutSecond, monomer.name);
-    monomers[counter] = sMolBlock;
-    monomerNames[counter] = `${monomer.symbol}_${monomerName}`;
+    if (monomer) {
+      const sMolBlock = cutReactant(rdkit, monomer.molfile, rxnCutSecond, monomer.name);
+      monomers[counter] = sMolBlock;
+      monomerNames[counter] = `${monomer.symbol}_${monomerName}`;
+    }
     counter++;
   }
 
   // const monomer1 = mLib.getMonomer('PEPTIDE', rule.firstMonomers[0]);
   // const monomer2 = mLib.getMonomer('PEPTIDE', rule.secondMonomers[0]);
   let mol: RDMol | null = null;
+  reactionMembers[1] = reactionMembers[1].replace('[C:1]', '[1*]').replace('[C:2]', '[2*]').replace('[C:3]', '[3*]');
+
   let pMolblock = '';
   try {
     mol = rdkit.get_mol(reactionMembers[1]);
     pMolblock = mol?.get_molblock();//molP?.get_v3Kmolblock();//
   } catch (err: any) {
     const [errMsg, _errStack] = errInfo(err);
-    grok.shell.error(`Can not assemble monomer '${monomerName}': ${errMsg}.`);
+    console.error(`Can not assemble monomer '${monomerName}': ${errMsg}.`);
     throw err;
   } finally {
     mol?.delete();
@@ -103,17 +109,21 @@ export function getNewMonomers(rdkit: RDModule, mLib: IMonomerLib, rule: RuleRea
 
   //after RDKit works - [X:N] is first atom which is exploited
   for (let i = 0; i < totalLength - 1; i ++) {
-    monomers[i] = monomers[i].replace('    0.0000    0.0000    0.0000 C   ', '    0.0000    0.0000    0.0000 R#  ')
-      .replace('M  RGP  2', 'M  RGP  3   2   3');
+    if (monomers[i]) {
+      monomers[i] = monomers[i]!.replace('    0.0000    0.0000    0.0000 C   ', '    0.0000    0.0000    0.0000 R#  ')
+        .replace('M  RGP  2', 'M  RGP  3   2   3');
+    }
   }
-  monomers[totalLength - 1] = modProduct(monomers[totalLength - 1]);
+  monomers[totalLength - 1] = modProduct(monomers[totalLength - 1]!);
 
   for (let i = 0; i < totalLength; i ++) {
     const isProduct = i == totalLength - 1 ? true : false;
+    if (!monomers[i] || !monomerNames[i])
+      continue;
     const resMonomer: Monomer = {
-      [REQ.SYMBOL]: monomerNames[i],
-      [REQ.NAME]: monomerNames[i],
-      [REQ.MOLFILE]: monomers[i],
+      [REQ.SYMBOL]: monomerNames[i]!,
+      [REQ.NAME]: monomerNames[i]!,
+      [REQ.MOLFILE]: monomers[i]!,
       [REQ.AUTHOR]: '',
       [REQ.ID]: 0,
       [REQ.RGROUPS]: getNewGroups(isProduct),
@@ -138,16 +148,18 @@ export function getNewMonomers(rdkit: RDModule, mLib: IMonomerLib, rule: RuleRea
 }
 
 function modProduct(product: string): string {
-  const fullMol = product.replace('M  RAD', 'M  RGP');
+  const fullMol = product.replace('M  RAD', 'M  RGP').replace('M  ISO', 'M  RGP');
   const lines = fullMol.split('\n');
-  const natoms = Number(lines[3].substring(0, 3));
-  const nbonds = Number(lines[3].substring(3, 6));
-  const rgpShift = 4 + natoms + nbonds;
+  // const natoms = Number(lines[3].substring(0, 3));
+  // const nbonds = Number(lines[3].substring(3, 6));
+  const rgpShift = lines.findIndex((line) => line.startsWith('M  RGP'));
 
   const fAtom = Number(lines[rgpShift].substring(9, 13));
   const sAtom = Number(lines[rgpShift].substring(17, 21));
+  const firstRgroupIndex = Number(lines[rgpShift].substring(13, 17));
+  const secondRgroupIndex = Number(lines[rgpShift].substring(21, 25));
 
-  lines[rgpShift] = lines[rgpShift].substring(0, 13) + '   1' + lines[rgpShift].substring(17, 21) + '   2';
+  lines[rgpShift] = lines[rgpShift].substring(0, 13) + `   ${firstRgroupIndex}` + lines[rgpShift].substring(17, 21) + `   ${secondRgroupIndex}`;
 
   lines[3 + fAtom] = lines[3 + fAtom].substring(0, 30) + ' R#  0  0  0  0  0  0  0  0  0  0  0  0';
   lines[3 + sAtom] = lines[3 + sAtom].substring(0, 30) + ' R#  0  0  0  0  0  0  0  0  0  0  0  0';
@@ -177,7 +189,7 @@ function cutReactant(rdkit: RDModule, reactant: string, rxn: RDReaction, monomer
     molBlock = molP?.get_molblock();//molP?.get_v3Kmolblock();//
   } catch (err: any) {
     const [errMsg, _errStack] = errInfo(err);
-    grok.shell.error(`Can not assemble monomer '${monomerName}': ${errMsg}.`);
+    console.error(`Can not assemble monomer '${monomerName}': ${errMsg}.`);
     throw err;
   } finally {
     mols?.delete();
@@ -197,7 +209,7 @@ function getReactionSmirks(rdkit: RDModule, smirks: string): RDReaction {
   } catch (err: any) {
     rxn?.delete();
     const [errMsg, _errStack] = errInfo(err);
-    grok.shell.error(`Can not assemble monomer '${smirks}': ${errMsg}.`);
+    console.error(`Can not assemble monomer '${smirks}': ${errMsg}.`);
     throw err;
   } finally {
 
@@ -267,7 +279,7 @@ function getSyntheticMolBlock(rdkit: RDModule, reaction: string,
     molBlock = molP?.get_molblock();//molP?.get_v3Kmolblock();//
   } catch (err: any) {
     const [errMsg, _errStack] = errInfo(err);
-    grok.shell.error(`Can not assemble monomer '${monomerName}': ${errMsg}.`);
+    console.error(`Can not assemble monomer '${monomerName}': ${errMsg}.`);
     throw err;
   } finally {
     rxn?.delete();

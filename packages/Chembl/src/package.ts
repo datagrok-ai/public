@@ -15,7 +15,7 @@ export * from './package.g';
 export class PackageFunctions {
   @grok.decorators.autostart()
   static init() {
-    registerChemblIdHandler(_package);
+    registerChemblIdHandler();
   }
 
 

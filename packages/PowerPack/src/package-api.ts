@@ -30,10 +30,6 @@ export namespace funcs {
     return await grok.functions.call('PowerPack:ActivityDashboardWidget', {});
   }
 
-  export async function recentProjectsWidget(): Promise<any> {
-    return await grok.functions.call('PowerPack:RecentProjectsWidget', {});
-  }
-
   export async function communityWidget(): Promise<any> {
     return await grok.functions.call('PowerPack:CommunityWidget', {});
   }
@@ -62,8 +58,8 @@ export namespace funcs {
     return await grok.functions.call('PowerPack:PowerPackSearchProvider', {});
   }
 
-  export async function formulaLinesDialog(src?: DG.DataFrame ): Promise<void> {
-    return await grok.functions.call('PowerPack:FormulaLinesDialog', { src });
+  export async function formulaLinesDialog(src?: DG.DataFrame , currentIndexToSet?: number , isDataFrameValue?: boolean , isAnnotationArea?: boolean ): Promise<void> {
+    return await grok.functions.call('PowerPack:FormulaLinesDialog', { src, currentIndexToSet, isDataFrameValue, isAnnotationArea });
   }
 
   export async function powerPackInit(): Promise<void> {

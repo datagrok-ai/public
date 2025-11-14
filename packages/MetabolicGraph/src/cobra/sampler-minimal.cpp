@@ -85,8 +85,10 @@ public:
         std::vector<int> to_remove;
         int n = corr.rows();
         for (int i = 0; i < n; ++i) {
+            if (std::find(to_remove.begin(), to_remove.end(), i) != to_remove.end()) continue;
             for (int j = i + 1; j < n; ++j) {
-                if (std::abs(corr(i, j)) > 0.995) {
+                if (std::abs(corr(i, j)) > 0.9999) {
+                    //std::cout << "Correlation between point " << i << " and point " << j << " is " << corr(i, j) << ", removing point " << j << std::endl;
                     to_remove.push_back(j);
                 }
             }
@@ -157,6 +159,9 @@ public:
                 minAlpha = std::max(minAlpha, minLowerBoundCoef);
         }
                 // make sure min and max and not infinite or NaN
+        if (std::isinf(minAlpha) || std::isinf(maxAlpha) || std::isnan(minAlpha) || std::isnan(maxAlpha))
+            std::cout << "Warning: minAlpha or maxAlpha is inf or NaN! minAlpha: " << minAlpha << ", maxAlpha: " << maxAlpha << std::endl;
+
         if (std::isinf(minAlpha)) minAlpha = 0;
         if (std::isinf(maxAlpha)) maxAlpha = 0;
         if (std::isnan(minAlpha)) minAlpha = 0;
@@ -173,6 +178,22 @@ public:
         // now sample coef in [minAlpha, maxAlpha]
         double rnd = uni01_(rng_);
         double coef = minAlpha + (maxAlpha - minAlpha) * rnd;
+        //std::cout<<coef;
+
+        auto res = x + delta * coef;
+        if (!isWithinBounds(res)) {
+            retries_ += 1;
+            std::cout << "Warning: step resulted in out-of-bounds point!" << std::endl;
+            // std::cout << "MinAlpha: " << minAlpha << ", MaxAlpha: " << maxAlpha << ", Coef: " << coef << std::endl;
+            if (retries_ > 100) {
+                std::cout << "Problem could not converge after 100 retries!" << std::endl;
+                throw std::runtime_error("Problem could not converge after 100 retries!");
+            }
+            auto newDirection = InitOpt.row(static_cast<int>(uni01_(rng_) * InitOpt.rows())).transpose();
+            return step(x, newDirection - x);
+        }
+
+
         return x + delta * coef;
 
     }
@@ -189,20 +210,27 @@ public:
         Eigen::VectorXd center = InitOpt.transpose().rowwise().mean();
         Eigen::VectorXd prev = InitOpt.row(static_cast<int>(uni01_(rng_) * InitOpt.rows())).transpose();
         // reseed random
-        rng_.seed(N);
+        rng_.seed(time(0));
         prev = step(center, prev - center);
         int n_samples = 1;
+        int retries = 0;
+        // create array of initopt size with integers set to 0...initopt.rows()-1
         for (int s = 0; s < N; ++s) {
             for (int k = 0; k < opt_.thinning; ++k) {
+                auto randomPoint = static_cast<int>(uni01_(rng_) * InitOpt.rows());
+                //std::cout << "Random point: " << randomPoint << std::endl;
                 Eigen::VectorXd targetPoint = InitOpt.row(static_cast<int>(uni01_(rng_) * InitOpt.rows())).transpose();
                 auto delta = targetPoint - center;
                 prev = step(prev, delta);
-                int iter = s * opt_.thinning + k;
-                if ((iter * opt_.thinning) % opt_.nproj == 0 && iter > 0) {
+                if ((n_samples * opt_.thinning) % opt_.nproj == 0) {
                     std::cout << "Updating center, sample: " << s << ", step: " << k << "  " << opt_.nproj <<  std::endl;
                     // update center estimate
                     prev = projectToNull_(prev);
                     center = projectToNull_(center);
+                    // repeat the step to a new random point
+                    targetPoint = InitOpt.row(static_cast<int>(uni01_(rng_) * InitOpt.rows())).transpose();
+                    auto newDelta = targetPoint - prev;
+                    prev = step(prev, newDelta);
                 }
  
                 center = (n_samples * center) / (n_samples + 1) + prev / (n_samples + 1);
@@ -210,6 +238,7 @@ public:
             }
             out[s] = prev;
         }
+
         return out;
     }
 
@@ -224,6 +253,7 @@ private:
     Eigen::VectorXd beq_;
     Eigen::VectorXd lb_;
     Eigen::VectorXd ub_;
+    int retries_ = 0;
 
     Eigen::MatrixXd InitOpt;
 
@@ -252,10 +282,20 @@ private:
         throw std::invalid_argument("Cannot infer variable dimension n");
     }
 
+    bool isWithinBounds(const Eigen::VectorXd& x) const {
+        for (int i = 0; i < n_; ++i) {
+            if (x[i] < lb_[i] - 1e-2 || x[i] > ub_[i] + 1e-2) {
+                std::cout << "Variable " << i << " out of bounds: " << x[i] << " not in [" << lb_[i] << ", " << ub_[i] << "]" << std::endl;
+                return false;
+            }
+        }
+        return true;
+    }
+
     bool isFeasible(const Eigen::VectorXd& x) const {
         // bounds
         for (int i = 0; i < n_; ++i) {
-            if (x[i] < lb_[i] - 1e-8 || x[i] > ub_[i] + 1e-8) return false;
+            if (x[i] < lb_[i] - 1e-2 || x[i] > ub_[i] + 1e-2) return false;
         }
         // inequalities
         if (A_.rows() > 0) {
@@ -318,9 +358,6 @@ float* resultSamples) {
         }	
     }
 
-	int initOptRowCount = 288;
-	int initOptColCount = 144;
-
 	Eigen::MatrixXd InitOpt(initOptRows, reactionsCount);
 	//lb(24) = 0.0; // lactate exchange reaction
 	for (int i = 0; i < initOptRows; ++i) {
@@ -366,8 +403,8 @@ float* resultSamples) {
 		}
 
 		for (int k = 0; k < reactionsCount; ++k) {
-			if ((samples[i](k) - ub(k) > 1e-5) || (samples[i](k) - lb(k) < -1e-5)) {
-				std::cout << samples[i](k) - ub(k) << ", " << samples[i](k) - lb(k) << "\n";
+			if ((samples[i](k) - ub(k) > 1e-2) || (samples[i](k) - lb(k) < -1e-2)) {
+				std::cout << i << ", "<< samples[i](k) - ub(k) << ", " << samples[i](k) - lb(k) << "\n";
 				throw std::runtime_error("Invalid sample: value is out of range");
 			}
 		}

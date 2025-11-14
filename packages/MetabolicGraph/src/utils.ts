@@ -6,9 +6,9 @@ import * as DG from 'datagrok-api/dg';
 import {_package} from './package';
 import type {BuilderType} from '../escher_src/src/Builder';
 import type {CobraModelData, ReactionBounds, SamplingFunctionResult} from '../escher_src/src/ts/types';
-import { WorkerCobraSolver } from './cobra';
+import {WorkerCobraSolver} from './cobra';
 import {ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
-import { runGLPKFBA } from './cobra/glpkFBA';
+import {solveUsingGLPKJvail} from './cobra/glpkJS';
 
 export function parsePath(path?: string): string | null {
   if (!path)
@@ -169,31 +169,55 @@ export async function sampleReactions(cobraModel: CobraModelData, builder: Build
     const binsInput = ui.input.int('Number of bins', {value: 20, nullable: false, tooltipText: 'Number of bins for histogram in the reaction tooltips'});
     const thinningInput = ui.input.int('Thinning', {value: 10, nullable: false, tooltipText: 'Thinning interval for the sampler'});
     const addDfInput = ui.input.bool('Add DataFrame', {value: false, tooltipText: 'Add a DataFrame with all sampled fluxes to the workspace'});
+    const runUsingPythonInput = ui.input.bool('Run using Python', {value: false, tooltipText: 'Use Python OptGpSampling script instead of WebAssembly sampler'});
+    const getInput = () => {
+      return {samples: samplesInput.value, thinning: thinningInput.value, bins: binsInput.value, addDf: addDfInput.value, runInPython: runUsingPythonInput.value};
+    };
+    const applyInput = (x: Partial<ReturnType<typeof getInput>>) => {
+      x.samples && (samplesInput.value = x.samples);
+      x.thinning && (thinningInput.value = x.thinning);
+      x.bins && (binsInput.value = x.bins);
+      x.addDf != undefined && (addDfInput.value = x.addDf);
+      x.runInPython != undefined && (runUsingPythonInput.value = x.runInPython);
+    };
+    const innerLocalStorageKey = 'metabolic-graph-reaction-sampling-dialog-inner-last-input';
     ui.dialog('Sample Reactions')
-    .add(samplesInput)
-    .add(thinningInput)
-    .add(binsInput)
-    .add(addDfInput)
-    .onOK(async () => {
-      try {
-        resolve(await runReactionSampling(cobraModel, builder, binsInput.value, addDfInput.value, samplesInput.value, thinningInput.value));
-      } catch (e) {
-        grok.shell.error('Error sampling reactions');
-        console.error(e);
-        reject(e);
+      .add(samplesInput)
+      .add(thinningInput)
+      .add(binsInput)
+      .add(addDfInput)
+      .add(runUsingPythonInput)
+      .onOK(async () => {
+        try {
+          try {
+            const toSave = getInput();
+            localStorage.setItem(innerLocalStorageKey, JSON.stringify(toSave));
+          } catch (_) {}
+          const result = runUsingPythonInput.value ?
+            await runReactionSamplingPython(cobraModel, builder, samplesInput.value, thinningInput.value) :
+            await runReactionSampling(cobraModel, builder, binsInput.value, addDfInput.value, samplesInput.value, thinningInput.value);
+          resolve(result);
+        } catch (e) {
+          grok.shell.error('Error sampling reactions');
+          console.error(e);
+          reject(e);
+        }
+      })
+      .onCancel(() => {
+        resolve({upper_bound: 10, lower_bound: -10, data: new Map<string, number[]>(), cancled: true});
+      })
+      .show()
+      .history(() => getInput(),
+        (x) => {
+          applyInput(x);
+        });
+    try {
+      const lastInput = localStorage.getItem(innerLocalStorageKey);
+      if (lastInput) {
+        const parsed = JSON.parse(lastInput);
+        applyInput(parsed);
       }
-    })
-    .onCancel(() => {
-      resolve({upper_bound: 10, lower_bound: -10, data: new Map<string, number[]>(), cancled: true});
-    })
-    .show()
-    .history(() => ({samples: samplesInput.value, thinning: thinningInput.value, bins: binsInput.value, addDf: addDfInput.value}),
-      (x) => {
-        x.samples && (samplesInput.value = x.samples);
-        x.thinning && (thinningInput.value = x.thinning);
-        x.bins && (binsInput.value = x.bins);
-        x.addDf !== undefined && (addDfInput.value = x.addDf);
-      });
+    } catch (_) {}
   });
 }
 
@@ -210,7 +234,7 @@ export async function runReactionSampling(cobraModel: CobraModelData, builder: B
     pg.close();
     return {upper_bound: 10, lower_bound: -10, data: sampleMap};
   }
-  
+
   try {
     // first run FBA to get a feasible solution
     const results = await WorkerCobraSolver.runSampling(cobraModel, nSamples, thinning);
@@ -218,10 +242,10 @@ export async function runReactionSampling(cobraModel: CobraModelData, builder: B
     const step = range / bins;
     const reactionCount = cobraModel.reactions.length;
 
-    for (let i = 0; i < reactionCount; i++) {
-      sampleMap.set(cobraModel.reactions[i].id, new Array(bins).fill(0)); 
-    }
-    
+    for (let i = 0; i < reactionCount; i++)
+      sampleMap.set(cobraModel.reactions[i].id, new Array(bins).fill(0));
+
+
     const reactionAverages = new Float32Array(reactionCount).fill(0);
     const reactionData: {[key: string]: number} = {};
 
@@ -254,8 +278,7 @@ export async function runReactionSampling(cobraModel: CobraModelData, builder: B
       const table = DG.DataFrame.fromColumns(columns);
       table.name = 'Sampler results';
       grok.shell.addTableView(table);
-    } 
-
+    }
   } catch (e) {
     grok.shell.error('Error sampling reactions');
     console.error(e);
@@ -264,11 +287,10 @@ export async function runReactionSampling(cobraModel: CobraModelData, builder: B
 
   pg.close();
   return {upper_bound, lower_bound, data: sampleMap};
-
 }
 
 /// Deprecated. Use runReactionSampling instead
-export async function runReactionSamplingPython(cobraModel: CobraModelData, builder: BuilderType, nSamples: number = 1000): Promise<SamplingFunctionResult> {
+export async function runReactionSamplingPython(cobraModel: CobraModelData, builder: BuilderType, nSamples: number = 1000, thinning: number = 10): Promise<SamplingFunctionResult> {
   const func = DG.Func.find({package: 'MetabolicGraph', name: 'OptGpSampling'})[0];
   const sampleMap = new Map<string, number[]>();
   let lower_bound = -10;
@@ -280,7 +302,7 @@ export async function runReactionSamplingPython(cobraModel: CobraModelData, buil
   const pg = DG.TaskBarProgressIndicator.create('Sampling reactions');
   try {
     const modelString = JSON.stringify(cobraModel).replaceAll(`'{}'`, '{}').replaceAll('"{}"', '{}');
-    const resDf: DG.DataFrame = await func.apply({cobraModel: modelString, nSamples: nSamples});
+    const resDf: DG.DataFrame = await func.apply({cobraModel: modelString, nSamples: nSamples, thinning: thinning});
     for (const col of resDf.columns) {
       if (col.name?.toLowerCase() === 'bin range')
         continue;
@@ -324,7 +346,7 @@ export function handleReactionDataUpload(view: DG.View, builder: BuilderType) {
   // window.solver = WorkerCobraSolver;
 
   grok.events.onFileImportRequest.subscribe(async (ff) => {
-    const f = ff as unknown as DG.EventData<DG.FileImportArgs>
+    const f = ff as unknown as DG.EventData<DG.FileImportArgs>;
     if ((grok.shell.v as DG.View)?.id !== view.id || (!f.args.file?.name?.endsWith('.json') && !f.args.file?.name?.endsWith('.csv')))
       return;
     f.preventDefault();
@@ -337,9 +359,8 @@ export function handleReactionDataUpload(view: DG.View, builder: BuilderType) {
           // this is a valid reaction data JSON
           builder.set_reaction_data(parsed, f.args.file.name);
           grok.shell.info(`Reaction flux data from ${f.args.file.name} loaded`);
-        } else {
+        } else
           throw new Error('Invalid reaction data JSON');
-        }
       } catch (e) {
         const df = DG.DataFrame.fromJson(fileString);
         grok.shell.addTableView(df);
@@ -358,9 +379,9 @@ export function handleReactionDataUpload(view: DG.View, builder: BuilderType) {
           for (let i = 0; i < df.rowCount; i++) {
             const reaction = reactionCol.get(i) as string;
             const flux = fluxCol.get(i) as number;
-            if (typeof reaction !== 'string' || typeof flux !== 'number') {
+            if (typeof reaction !== 'string' || typeof flux !== 'number')
               continue;
-            }
+
             reactionData[reaction] = flux;
           }
           builder.set_reaction_data(reactionData, f.args.file.name);
@@ -374,9 +395,9 @@ export function handleReactionDataUpload(view: DG.View, builder: BuilderType) {
             const reaction = reactionCol.get(i) as string;
             const lowerBound = lowerBoundCol.get(i) as number;
             const upperBound = upperBoundCol.get(i) as number;
-            if (typeof reaction !== 'string' || typeof lowerBound !== 'number' || typeof upperBound !== 'number') {
+            if (typeof reaction !== 'string' || typeof lowerBound !== 'number' || typeof upperBound !== 'number')
               continue;
-            }
+
             reactionBoundsData[reaction] = {lower_bound: lowerBound, upper_bound: upperBound};
           }
           builder.set_reaction_bounds(reactionBoundsData);
@@ -388,7 +409,6 @@ export function handleReactionDataUpload(view: DG.View, builder: BuilderType) {
         return;
       }
     }
-
   });
 }
 
@@ -402,7 +422,7 @@ export async function runFBADialog(builder: BuilderType) {
   const existingItems = objectiveReactions.map((r) => ({
     Reaction: r.id,
     Objective: r.objective_coefficient ? (r.objective_coefficient > 0 ? 'Maximize' : 'Minimize') : 'Maximize',
-  }))
+  }));
 
   const propGrid = new ItemsGrid([reactionProp, objectiveProp], existingItems, {addButtonTooltip: 'Add reaction objective', removeButtonTooltip: 'Remove reaction objective', newItemFunction: () => ({Reaction: null, Objective: 'Maximize'})});
   dialog.add(propGrid.root);
@@ -423,6 +443,7 @@ export async function runFBADialog(builder: BuilderType) {
     dialog.close();
     // run FBA
     try {
+      console.log(await solveUsingGLPKJvail(builder.model_data));
       // const solution = await runGLPKFBA(builder.model_data);
       const solution = await WorkerCobraSolver.run_optimization(builder.model_data);
       if (!solution) {
@@ -432,16 +453,15 @@ export async function runFBADialog(builder: BuilderType) {
       const fluxes: Record<string, number> = {};
       solution.reactionNames.forEach((r, i) => {
         fluxes[r] = solution.fluxes[i];
-      })
+      });
       builder.set_reaction_data(fluxes, 'FBA Result: ' + validItems.map((i) => `${i.Objective} ${i.Reaction}`).join(', '));
     } catch (e) {
       grok.shell.error('FBA failed to run');
       console.error(e);
       return;
     }
-
   });
 
   dialog.show();
-  dialog.root.style.minWidth = '400px'
+  dialog.root.style.minWidth = '400px';
 }

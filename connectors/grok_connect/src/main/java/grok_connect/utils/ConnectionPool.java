@@ -89,6 +89,8 @@ public class ConnectionPool {
         propertiesWithoutPass.remove(DbCredentials.ACCOUNT_LOCATOR);
         propertiesWithoutPass.remove(DbCredentials.UID);
         propertiesWithoutPass.remove(DbCredentials.PWD);
+        propertiesWithoutPass.remove(DbCredentials.OAUTH2_SECRET);
+        propertiesWithoutPass.remove(DbCredentials.OAUTH2_CLIENT_ID);
 
         String alphanumeric = "[^A-Za-z\\d./|=]";
         String poolName = "Host - " + url.replaceAll("[:=]", "|").replaceAll(alphanumeric, "") +

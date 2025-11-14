@@ -2,10 +2,13 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { _package, getBatchByCorporateId, getCompoundByCorporateId } from '../package';
-import { excludedScopes, MOLTRACK_APP_PATH, Scope } from './constants';
+import { MOLTRACK_APP_PATH, Scope, SEARCH_NODE } from './constants';
 import { EntityBaseView } from '../views/registration-entity-base';
 import { RegistrationView } from '../views/registration-tab';
 import { u2 } from '@datagrok-libraries/utils/src/u2';
+import { AssayRegistrationView } from '../views/registration-assay-tab';
+import { PropertySchemaView } from '../views/schema-view';
+import { createSearchExpandableNode, createSearchView } from '../views/search';
 
 export function createPath(viewName: string) {
   let path = `${MOLTRACK_APP_PATH}/`;
@@ -34,7 +37,7 @@ export async function buildRegistrationView({
   batchSection: boolean,
   path: string,
 }) {
-  const registrationView = new EntityBaseView(false);
+  const registrationView = new EntityBaseView(false, title);
   registrationView.initialSmiles = smiles;
   registrationView.singleRetrieved = true;
   registrationView.title = title;
@@ -109,11 +112,26 @@ export function initRegisterView(entity: 'Compound' | 'Batch', setPath: boolean 
   return view.view;
 }
 
-export function initBulkRegisterView(setPath: boolean = true) {
+export function initBulkRegisterView() {
   const registrationView = new RegistrationView();
   registrationView.view.path = createPath('Bulk');
   registrationView.show();
   return registrationView.view;
+}
+
+export function initAssayRegisterView() {
+  const registrationView = new AssayRegistrationView();
+  registrationView.view.path = createPath('Assay');
+  registrationView.show();
+  return registrationView.view;
+}
+
+export async function initSchemaView() {
+  const schemaView = new PropertySchemaView();
+  await schemaView.init();
+  schemaView.view.path = createPath('Schema');
+  schemaView.show();
+  return schemaView.view;
 }
 
 export function getAppHeader(): HTMLElement {
@@ -170,26 +188,36 @@ export function getQuickActionsWidget(): HTMLElement {
   const quickActionsTitle = ui.divH([boltIcon, quickActionsLabel]);
   quickActionsTitle.classList.add('moltrack-quick-actions');
 
-  const linksConfig: { label: string; createView: () => DG.View }[] = [
+  const linksConfig: { label: string; createView: () => Promise<DG.ViewBase> }[] = [
     {
       label: 'Register compound',
-      createView: () => initRegisterView('Compound', true),
+      createView: async () => initRegisterView('Compound', true),
     },
     {
       label: 'Register batch',
-      createView: () => initRegisterView('Batch', true),
+      createView: async () => initRegisterView('Batch', true),
     },
     {
-      label: 'Register bulk...',
-      createView: () => initBulkRegisterView(true),
+      label: 'Register assay',
+      createView: async () => initAssayRegisterView(),
+    },
+    {
+      label: 'Register bulk',
+      createView: async () => initBulkRegisterView(),
+    },
+    {
+      label: 'Search',
+      createView: async () => {
+        return await createSearchExpandableNode([SEARCH_NODE], () => getStatisticsWidget(createSearchView));
+      },
     },
   ];
 
   const quickLinks = ui.divV(
     linksConfig.map((cfg) =>
-      ui.link(cfg.label, () => {
+      ui.link(cfg.label, async () => {
         grok.shell.v.close();
-        cfg.createView();
+        await cfg.createView();
       }),
     ),
   );

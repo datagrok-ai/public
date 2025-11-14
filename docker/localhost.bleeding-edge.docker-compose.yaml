@@ -141,7 +141,8 @@ services:
     profiles: [ "all", "cvm", "scripting", "jupyter_kernel_gateway", "jkg" ]
 
   db:
-    image: postgres:12.20
+    image: postgres:17.4
+    shm_size: 2gb
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres

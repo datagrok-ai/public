@@ -10,6 +10,7 @@ import {
   ifOverlapping,
   tooltip,
   Button,
+  IconImage,
 } from '@datagrok-libraries/webcomponents-vue';
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
@@ -27,6 +28,7 @@ import {ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver
 import {startWith, take, map} from 'rxjs/operators';
 import {useHelp} from '../../composables/use-help';
 import {useObservable} from '@vueuse/rxjs';
+import {_package} from '../../package-instance';
 
 interface ScalarsState {
   type: 'scalars',
@@ -38,6 +40,12 @@ interface DataFrameState {
   df: Vue.ShallowRef<DG.DataFrame>,
   type: 'dataframe',
   config: Record<string, any>,
+}
+
+interface DockSpawnConfigItem {
+  'dock-spawn-dock-type'?: 'left' | 'right' | 'up' | 'down',
+  'dock-spawn-dock-to'?: string,
+  'dock-spawn-dock-ratio'?: number,
 }
 
 type TabContent = Map<string, ScalarsState | DataFrameState>;
@@ -235,10 +243,12 @@ export const RichFunctionView = Vue.defineComponent({
     const tabLabels = Vue.shallowRef<string[]>([]);
     const visibleTabLabels = Vue.shallowRef([] as string[]);
     const activePanelTitle = Vue.shallowRef<string | undefined>(undefined);
+    const dockSpawnConfig = Vue.shallowRef<Record<string, DockSpawnConfigItem>>({});
 
     const isSAenabled = Vue.ref(false);
     const isReportEnabled = Vue.ref(false);
     const isFittingEnabled = Vue.ref(false);
+    const allowRerun = Vue.ref(false);
 
     const isLocked = Vue.ref(false);
 
@@ -248,6 +258,7 @@ export const RichFunctionView = Vue.defineComponent({
     const historyRef = Vue.shallowRef<InstanceType<typeof History> | undefined>(undefined);
     const helpRef = Vue.shallowRef<HTMLElement | undefined>(undefined);
     const formRef = Vue.shallowRef<HTMLElement | undefined>(undefined);
+    const dockSpawnRef = Vue.shallowRef<InstanceType<typeof DockManager> | undefined>(undefined);
     const inputFormComponentRef = Vue.shallowRef<InstanceType<typeof InputForm> | undefined>(undefined);
 
     ////
@@ -271,6 +282,8 @@ export const RichFunctionView = Vue.defineComponent({
       isSAenabled.value = Utils.getFeature(features, 'sens-analysis', false);
       isReportEnabled.value = Utils.getFeature(features, 'export', true);
       isFittingEnabled.value = Utils.getFeature(features, 'fitting', false);
+      allowRerun.value = Utils.getFeature(features, 'rerun', false);
+      dockSpawnConfig.value = Utils.getDockSpawnConfig(call.func);
     }, {immediate: true});
 
     Vue.watch([currentCall, isOutputOutdated, visibleTabLabels], ([call, isOutputOutdated, visibleTabLabels], [prevCall, prevOutputOutdated, prevLabels]) => {
@@ -289,6 +302,8 @@ export const RichFunctionView = Vue.defineComponent({
     Vue.watch(currentCall, async (call) => {
       changeHelpFunc(call?.func);
     }, {immediate: true});
+
+    const showRun = Vue.computed(() => props.showRunButton && (isOutputOutdated.value || allowRerun.value))
 
     const run = async () => {
       emit('runClicked');
@@ -323,7 +338,7 @@ export const RichFunctionView = Vue.defineComponent({
 
       if (currentCall.value)
         sessionStorage.setItem(`opened_tab_${currentCall.value.func?.nqName}`, name ?? '');
-    }
+    };
 
     Vue.watch(currentCall, () => {
       visibleTabLabels.value = [...tabLabels.value];
@@ -451,16 +466,20 @@ export const RichFunctionView = Vue.defineComponent({
             }}
             tooltip='Generate standard report for the current step'
           />}
-          { isSAenabled.value && <IconFA
-            name='analytics'
-            onClick={runSA}
-            tooltip='Run sensitivity analysis'
-          />}
-          { isFittingEnabled.value && <IconFA
-            name='chart-line'
+          { isFittingEnabled.value && <IconImage
+            name='fitting'
+            path={`${_package.webRoot}files/icons/icon-chart-dots.svg`}
             onClick={runFitting}
             tooltip='Fit inputs'
-          />}
+            style={{width: '24px', height: '24px'}}
+          /> }
+          { isSAenabled.value && <IconImage
+            name='sa'
+            path={`${_package.webRoot}files/icons/icon-chart-sensitivity.svg`}
+            onClick={runSA}
+            tooltip='Run sensitivity analysis'
+            style={{width: '24px', height: '24px'}}
+          /> }
           { <IconFA
             name='question'
             tooltip={ helpHidden.value ? 'Open help panel' : 'Close help panel' }
@@ -480,22 +499,23 @@ export const RichFunctionView = Vue.defineComponent({
           onUpdate:activePanelTitle={handlePanelChanged}
           key={currentUuid.value}
           activePanelTitle={activePanelTitle.value}
+          ref={dockSpawnRef}
         >
           { !historyHidden.value && props.historyEnabled &&
             <History
-                key="__HISTORY__"
-                func={currentCall.value.func}
-                onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
-                allowCompare={true}
-                forceHideInputs={false}
-                showIsComplete={true}
-                dock-spawn-dock-type='right'
-                dock-spawn-dock-ratio={0.2}
-                dock-spawn-title='History'
-                dock-spawn-panel-icon='history'
-                ref={historyRef}
-                class='overflow-scroll h-full'
-              /> }
+              key="__HISTORY__"
+              func={currentCall.value.func}
+              onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
+              allowCompare={true}
+              forceHideInputs={false}
+              showIsComplete={true}
+              dock-spawn-dock-type='right'
+              dock-spawn-dock-ratio={0.2}
+              dock-spawn-title='History'
+              dock-spawn-panel-icon='history'
+              ref={historyRef}
+              class='overflow-scroll h-full'
+            /> }
           { !formHidden.value &&
               <div
                 key="__FORM__"
@@ -533,7 +553,7 @@ export const RichFunctionView = Vue.defineComponent({
                       , [[tooltip, action.description]]))
                   }
                   {
-                    props.showRunButton &&
+                    showRun.value &&
                       <BigButton
                         isDisabled={!isRunnable.value || isRunning.value || props.isTreeLocked || props.isReadonly}
                         onClick={run}
@@ -554,6 +574,7 @@ export const RichFunctionView = Vue.defineComponent({
           {
             tabsData.value
               .map(({tabLabel, tabContent, isInput}) => {
+                const tabConfig = dockSpawnConfig.value[tabLabel] ?? {};
                 if (tabContent?.type === 'dataframe') {
                   const options = tabContent.config;
                   return <div
@@ -561,6 +582,7 @@ export const RichFunctionView = Vue.defineComponent({
                     dock-spawn-title={tabLabel}
                     dock-spawn-panel-icon={isInput ? 'sign-in-alt': 'sign-out-alt'}
                     key={tabLabel}
+                    {...tabConfig}
                   >
                     {
                       Vue.withDirectives(<Viewer
@@ -584,6 +606,7 @@ export const RichFunctionView = Vue.defineComponent({
                     dock-spawn-panel-icon='sign-out-alt'
                     dock-spawn-title={tabLabel}
                     key={tabLabel}
+                    {...tabConfig}
                   />;
 
                   return Vue.withDirectives(panel, [[ifOverlapping, isRunning.value, 'Recalculating...']]);

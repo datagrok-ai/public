@@ -6,11 +6,9 @@ import * as grok from 'datagrok-api/grok';
 import {mergeChartOptions, mergeSeries} from './fit-renderer';
 import {getOrCreateParsedChartData, mergeProperties} from './fit-renderer';
 import {FitChartData, fitChartDataProperties, IFitChartData, IFitChartOptions} from '@datagrok-libraries/statistics/src/fit/fit-curve';
-
 import {debounce} from 'rxjs/operators';
 import {interval, merge} from 'rxjs';
-import {FitConstants} from './const';
-
+import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 
 const ERROR_CLASS = 'd4-viewer-error';
 

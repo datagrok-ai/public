@@ -65,6 +65,7 @@ services:
             "proxyRequestTimeout": 60000
           },
           "queueSettings": {
+            "useQueue": true,
             "amqpHost": "rabbitmq",
             "amqpPassword": "guest",
             "amqpPort": 5672,
@@ -152,6 +153,7 @@ services:
   db:
     image: postgres:17.4
     platform: linux/amd64
+    shm_size: 2gb
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres

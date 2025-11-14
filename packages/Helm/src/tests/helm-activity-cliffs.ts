@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {after, awaitCheck, before, category, test} from '@datagrok-libraries/utils/src/test';
 
 import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
-import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {
   getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
@@ -45,18 +45,18 @@ category('activityCliffs', async () => {
     const df = await _package.files.readCsv('samples/HELM_50.csv');
     const _view = grok.shell.addTableView(df);
 
-    await _testActivityCliffsOpen(df, DimReductionMethods.UMAP,
+    await _testActivityCliffsOpen(_view, df, DimReductionMethods.UMAP,
       'HELM', 'Activity', 65, 20, BitArrayMetricsNames.Tanimoto, helmEncodingFunc);
   });
 });
 
 
-async function _testActivityCliffsOpen(df: DG.DataFrame, drMethod: DimReductionMethods,
+async function _testActivityCliffsOpen(tv: DG.TableView, df: DG.DataFrame, drMethod: DimReductionMethods,
   seqColName: string, activityColName: string, similarityThr: number, tgtNumberCliffs: number,
   similarityMetric: MmDistanceFunctionsNames | BitArrayMetrics, preprocessingFunction: DG.Func,
 ): Promise<void> {
   await grok.data.detectSemanticTypes(df);
-  const scatterPlot = (await grok.functions.call('Bio:activityCliffs', {
+  (await grok.functions.call('Bio:activityCliffs', {
     table: df,
     molecules: df.getCol(seqColName),
     activities: df.getCol(activityColName),
@@ -67,6 +67,8 @@ async function _testActivityCliffsOpen(df: DG.DataFrame, drMethod: DimReductionM
     options: {[`${BYPASS_LARGE_DATA_WARNING}`]: true},
     demo: false,
   })) as DG.Viewer | undefined;
+  const scatterPlot = Array.from(tv.viewers).find((v) => v.type === DG.VIEWER.SCATTER_PLOT);
+
   expect(scatterPlot != null, true);
 
   const checkScatterPlotInitialized = () => {

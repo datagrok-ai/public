@@ -12,6 +12,7 @@ export enum COLUMNS_NAMES {
   COUNT = 'Count',
   RATIO = 'Ratio',
   MEAN = 'Mean',
+  TOTAL_COUNT = '∑'
 }
 
 export enum LST_COLUMN_NAMES {
@@ -28,13 +29,9 @@ export enum TAGS {
   MONOMER = 'monomer',
   POSITION = 'pos',
   SEPARATOR = 'separator',
-  SELECTION = 'selection',
-  MUTATION_CLIFFS_SELECTION = 'mutationCliffsSelection',
   ALPHABET = 'alphabet',
   FILTER = 'filter',
-  INVARIANT_MAP_SELECTION = 'invariantMapSelection',
   SAR_MODE = 'sarMode',
-  CLUSTER_SELECTION = 'clusterSelection',
   VISIBLE = 'visible',
   SETTINGS = 'settings',
   CUSTOM_CLUSTER = 'customCluster',

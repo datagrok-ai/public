@@ -1,5 +1,13 @@
 # Power Pack changelog
 
+## 1.7.15 (2025-10-27)
+
+* Removed recent projects widget
+
+## 1.7.14 (2025-10-20)
+
+* GROK-19080 Add new column: type change is broken
+
 ## 1.7.12 (2025-10-15)
 
 * Add new column dialog: Some validation fixes

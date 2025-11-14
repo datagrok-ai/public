@@ -2,7 +2,6 @@
 //@ts-ignore
 export * from './package.g';
 
-
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
@@ -14,21 +13,21 @@ import {curveDemo} from './fit/fit-demo';
 import {convertXMLToIFitChartData} from './fit/fit-parser';
 import {LogOptions} from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {FitStatistics} from '@datagrok-libraries/statistics/src/fit/fit-curve';
-import {FitConstants} from './fit/const';
-import {PlateCellHandler} from './plate/plate-cell-renderer';
-import {Plate} from './plate/plate';
-import {PlateWidget} from './plate/plate-widget';
-import {PlateReader} from './plate/plate-reader';
-import {initPlatesAppTree, platesAppView} from './plates/plates-app';
-import {initPlates} from './plates/plates-crud';
-import {__createDummyPlateData} from './plates/plates-demo';
-import {getPlatesFolderPreview} from './plate/plates-folder-preview';
-import {PlateDrcAnalysis} from './plate/plate-drc-analysis';
-import {PlateTemplateHandler} from './plates/objects/plate-template-handler';
+import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
+
+// import {PlateWidget} from './plate/plate-widget';
+
 import * as api from './package-api';
-import {convertDataToCurves, dataToCurvesUI, WellTableParentData} from './fit/data-to-curves';
+import {convertDataToCurves, dataToCurvesUI} from './fit/data-to-curves';
 
 export const _package = new DG.Package();
+
+
+// //tags: autostart
+// export async function autostart(): Promise<void> {
+// }
+
+
 const SOURCE_COLUMN_TAG = '.sourceColumn';
 const SERIES_NUMBER_TAG = '.seriesNumber';
 const SERIES_AGGREGATION_TAG = '.seriesAggregation';
@@ -55,21 +54,19 @@ export class PackageFunctions {
     await curveDemo();
   }
 
-  @grok.decorators.func({
-    name: 'Assay Plates',
-    description: 'Assasy plates with concentration, layout and readout data',
-    meta: {demoPath: 'Curves | Assay Plates'},
-  })
-  static async assayPlatesDemo(): Promise<void> {
-    const plateFile = (await grok.dapi.files.list('System:DemoFiles/hts/xlsx_plates'))[0];
-    grok.shell.addView(await PackageFunctions.previewPlateXlsx(plateFile) as DG.ViewBase);
-  }
+  // @grok.decorators.func({
+  //   name: 'Assay Plates',
+  //   description: 'Assasy plates with concentration, layout and readout data',
+  //   meta: {demoPath: 'Curves | Assay Plates'},
+  // })
+  // static async assayPlatesDemo(): Promise<void> {
+  //   const plateFile = (await grok.dapi.files.list('System:DemoFiles/hts/xlsx_plates'))[0];
+  //   grok.shell.addView(await PackageFunctions.previewPlateXlsx(plateFile) as DG.ViewBase);
+  // }
 
   @grok.decorators.init()
   static _initCurves(): void {
     DG.ObjectHandler.register(new FitGridCellHandler());
-    DG.ObjectHandler.register(new PlateCellHandler());
-    DG.ObjectHandler.register(new PlateTemplateHandler());
   }
 
   @grok.decorators.func()
@@ -176,108 +173,4 @@ export class PackageFunctions {
     df.columns.insert(column, df.columns.names().indexOf(colName) + 1);
     return column;
   }
-
-  @grok.decorators.folderViewer({outputs: [{'name': 'result', 'type': 'dynamic'}]})
-  static async platesFolderPreview(folder: DG.FileInfo, files: DG.FileInfo[]): Promise<DG.Widget | DG.ViewBase | undefined> {
-    const nameLowerCase = folder.name?.toLowerCase();
-    if (!nameLowerCase?.includes('plate'))
-      return undefined;
-    return getPlatesFolderPreview(files);
-  }
-
-  @grok.decorators.fileViewer({fileViewer: 'txt', fileViewerCheck: 'Curves:checkFileIsPlate'})
-  static previewPlate(file: DG.FileInfo): DG.View {
-    const view = DG.View.create();
-    view.name = file.name;
-    file.readAsString().then((content) => {
-      const plate = PlateReader.read(content);
-      if (plate !== null)
-        view.root.appendChild(PlateWidget.fromPlate(plate).root);
-    });
-    return view;
-  }
-
-  @grok.decorators.fileHandler({ext: 'txt', fileViewerCheck: 'Curves:checkFileIsPlate'})
-  static async importPlate(fileContent: string): Promise<DG.DataFrame[]> {
-    const plate = PlateReader.read(fileContent);
-    const view = DG.View.create();
-    if (plate !== null)
-      view.root.appendChild(PlateWidget.fromPlate(plate).root);
-
-    view.name = 'Plate';
-    grok.shell.addView(view);
-    return [];
-  }
-
-  @grok.decorators.fileHandler({outputs: [], ext: 'xlsx', fileViewerCheck: 'Curves:checkExcelIsPlate'})
-  static async importPlateXlsx(fileContent: Uint8Array): Promise<any[]> {
-    const view = DG.View.create();
-    const plate = await PackageFunctions.parseExcelPlate(fileContent);
-    view.root.appendChild(PlateDrcAnalysis.analysisView(plate).root);
-    view.name = 'Plate';
-    grok.shell.addView(view);
-    return [];
-  }
-
-  @grok.decorators.fileViewer({name: 'viewPlateXlsx', fileViewer: 'xlsx', fileViewerCheck: 'Curves:checkExcelIsPlate'})
-  static async previewPlateXlsx(file: DG.FileInfo): Promise<DG.View> {
-    const view = DG.View.create();
-    view.name = file.friendlyName;
-    const plate = await PackageFunctions.parseExcelPlate(await file.readAsBytes());
-    view.root.appendChild(PlateDrcAnalysis.analysisView(plate).root);
-    return view;
-  }
-
-  @grok.decorators.func()
-  static async checkExcelIsPlate(content: Uint8Array): Promise<boolean> {
-    try {
-      if (content.length > 1_000_000) // haven't really seen a plate file larger than 1MB
-        return false;
-      const plate = await PackageFunctions.parseExcelPlate(content);
-      return plate !== null;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  static async parseExcelPlate(content: string | Uint8Array, name?: string) {
-    if (typeof content === 'string') {
-      const blob = new Blob([content], {type: 'application/octet-binary'});
-      const buf = await blob.arrayBuffer();
-      const plate = await Plate.fromExcel(new Uint8Array(buf), name);
-      return plate;
-    } else {
-      return await Plate.fromExcel(content, name);
-    }
-  }
-
-  @grok.decorators.func()
-  static checkFileIsPlate(content: string): boolean {
-    if (content.length > 1_000_000)
-      return false;
-    return PlateReader.getReader(content) != null;
-  }
-
-  // @grok.decorators.app({name: 'Browse', browsePath: 'Plates'})
-  static platesApp(): DG.View {
-    return platesAppView();
-  }
-
-  @grok.decorators.func()
-  static async getPlateByBarcode(barcode: string): Promise<Plate> {
-    await initPlates();
-    const df: DG.DataFrame = await api.queries.getWellValuesByBarcode(barcode);
-    return Plate.fromDbDataFrame(df);
-  }
-
-  @grok.decorators.func()
-  static async createDummyPlateData(): Promise<void> {
-    await __createDummyPlateData();
-  }
-}
-
-//name: platesAppTreeBrowserTempDisabled
-//input: dynamic treeNode
-export async function platesAppTreeBrowserTempDisabled(treeNode: DG.TreeViewGroup) {
-  await initPlatesAppTree(treeNode);
 }

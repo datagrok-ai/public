@@ -3,16 +3,18 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {ClinRow, studies} from '../clinical-study';
 import {createBaselineEndpointDataframe, createHysLawDataframe,
-  createLabValuesByVisitDataframe} from '../data-preparation/data-preparation';
+  createLabValuesByVisitDataframe,
+  createVisitDayStrCol} from '../data-preparation/data-preparation';
 import {ALT, BILIRUBIN} from '../constants/constants';
 import {createBaselineEndpointScatterPlot, createHysLawScatterPlot} from '../custom-scatter-plots/custom-scatter-plots';
 import {updateDivInnerHTML} from '../utils/utils';
-import {_package} from '../package';
+import {_package, studiesViewsConfigs} from '../package';
 import {getUniqueValues} from '../data-preparation/utils';
-import {LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_TEST, VISIT_DAY, VISIT_NAME,
-  SUBJECT_ID, LAB_RES_N} from '../constants/columns-constants';
+import {LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_TEST, VISIT_DAY,
+  SUBJECT_ID, LAB_RES_N,
+  VISIT_DAY_STR} from '../constants/columns-constants';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
-import {TRT_ARM_FIELD, VIEWS_CONFIG} from '../views-config';
+import {TRT_ARM_FIELD, VISIT_FIELD} from '../views-config';
 import {checkColumnsAndCreateViewer} from '../utils/views-validation-utils';
 
 export class LaboratoryView extends ClinicalCaseViewBase {
@@ -44,15 +46,19 @@ export class LaboratoryView extends ClinicalCaseViewBase {
   }
 
   createView(): void {
+    if (studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD] === VISIT_DAY_STR)
+      createVisitDayStrCol(studies[this.studyId].domains.lb);
     this.lb = studies[this.studyId].domains.lb.clone();
     if (studies[this.studyId].domains.dm)
       this.dm = studies[this.studyId].domains.dm.clone();
 
 
     this.uniqueLabValues = this.lb.col(LAB_TEST) ? Array.from(getUniqueValues(this.lb, LAB_TEST)) : [];
-    this.uniqueVisits = this.lb.col(VISIT_NAME) ? Array.from(getUniqueValues(this.lb, VISIT_NAME)) : [];
-    this.uniqueTreatmentArms = this.dm && this.dm.col(VIEWS_CONFIG[this.name][TRT_ARM_FIELD]) ?
-      Array.from(getUniqueValues(this.dm, VIEWS_CONFIG[this.name][TRT_ARM_FIELD])) : [];
+    this.uniqueVisits = this.lb.col(studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD]) ?
+      Array.from(getUniqueValues(this.lb, studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD])) : [];
+    this.uniqueTreatmentArms = this.dm &&
+      this.dm.col(studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD]) ?
+      Array.from(getUniqueValues(this.dm, studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD])) : [];
     this.selectedLabBlEp = this.uniqueLabValues.length ? this.uniqueLabValues[0] : null;
     this.selectedBl = this.uniqueVisits.length ? this.uniqueVisits[0] : null;
     this.selectedEp = this.uniqueVisits.length ? this.uniqueVisits[1] : null;
@@ -86,7 +92,8 @@ export class LaboratoryView extends ClinicalCaseViewBase {
 
     checkColumnsAndCreateViewer(
       studies[this.studyId].domains.lb,
-      [SUBJECT_ID, LAB_TEST, LAB_RES_N, VISIT_NAME, LAB_LO_LIM_N, LAB_HI_LIM_N],
+      [SUBJECT_ID, LAB_TEST, LAB_RES_N, studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD],
+        LAB_LO_LIM_N, LAB_HI_LIM_N],
       this.baselineEndpointDiv, () => {
         this.updateBaselineEndpointPlot();
       },
@@ -122,22 +129,22 @@ export class LaboratoryView extends ClinicalCaseViewBase {
 
   private createHysLawScatterPlot() {
     const hysLawDataframe = createHysLawDataframe(this.lb, this.dm, this.selectedALT,
-      this.selectedAST, this.selectedBLN, VIEWS_CONFIG[this.name][TRT_ARM_FIELD]);
+      this.selectedAST, this.selectedBLN, studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD]);
     if (studies[this.studyId].domains.dm) {
       grok.data.linkTables(studies[this.studyId].domains.dm, hysLawDataframe,
         [SUBJECT_ID], [SUBJECT_ID],
         [DG.SYNC_TYPE.FILTER_TO_FILTER]);
     }
     this.hysLawScatterPlot = createHysLawScatterPlot(hysLawDataframe, ALT,
-      BILIRUBIN, VIEWS_CONFIG[this.name][TRT_ARM_FIELD]);
+      BILIRUBIN, studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD]);
   }
 
   updateBaselineEndpointPlot() {
-    const visitCol = VISIT_NAME;
+    const visitCol = studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD];
     const blNumCol = `${this.selectedLabBlEp}_BL`;
     const epNumCol = `${this.selectedLabBlEp}_EP`;
     const baselineEndpointDataframe = createBaselineEndpointDataframe(this.lb, this.dm,
-      [VIEWS_CONFIG[this.name][TRT_ARM_FIELD]], LAB_TEST, LAB_RES_N,
+      [studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD]], LAB_TEST, LAB_RES_N,
       [LAB_LO_LIM_N, LAB_HI_LIM_N], this.selectedLabBlEp, this.selectedBl,
       this.selectedEp, visitCol, blNumCol, epNumCol);
     if (studies[this.studyId].domains.dm) {
@@ -151,7 +158,7 @@ export class LaboratoryView extends ClinicalCaseViewBase {
       return;
     }
     this.baselineEndpointPlot = createBaselineEndpointScatterPlot(baselineEndpointDataframe, blNumCol,
-      epNumCol, VIEWS_CONFIG[this.name][TRT_ARM_FIELD],
+      epNumCol, studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD],
       baselineEndpointDataframe.get(LAB_LO_LIM_N, 0), baselineEndpointDataframe.get(LAB_HI_LIM_N, 0));
     updateDivInnerHTML(this.baselineEndpointDiv, this.baselineEndpointPlot.root);
   }
@@ -160,7 +167,8 @@ export class LaboratoryView extends ClinicalCaseViewBase {
     const labValue = this.selectedLabDistr;
     const labValueNumColumn = `${labValue} values`;
     const disributionDataframe = createLabValuesByVisitDataframe(this.lb, this.dm, labValue,
-      VIEWS_CONFIG[this.name][TRT_ARM_FIELD], this.selectedArm, labValueNumColumn, VISIT_DAY);
+      studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD],
+      this.selectedArm, labValueNumColumn, VISIT_DAY);
     if (studies[this.studyId].domains.dm) {
       grok.data.linkTables(studies[this.studyId].domains.dm, disributionDataframe,
         [SUBJECT_ID], [SUBJECT_ID],

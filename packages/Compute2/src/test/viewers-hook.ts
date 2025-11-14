@@ -5,11 +5,11 @@ import {category, test, before, expect, awaitCheck} from '@datagrok-libraries/ut
 import {useViewersHook} from '../composables/use-viewers-hook';
 import {BehaviorSubject} from 'rxjs';
 import * as Vue from 'vue';
-import { expectDeepEqual } from '@datagrok-libraries/utils/src/expect';
+import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 
 category('Composables: Viewers hook', async () => {
-  let mockStates = Vue.ref<Record<string, BehaviorSubject<Record<string, any>>> | undefined>();
-  let mockCall = Vue.shallowRef(DG.Func.byName('Compute2:ObjectCooling2').prepare());
+  const mockStates = Vue.ref<Record<string, BehaviorSubject<Record<string, any>>> | undefined>();
+  const mockCall = Vue.shallowRef(DG.Func.byName('Compute2:ObjectCooling2').prepare());
 
   before(async () => {
     mockStates.value = {

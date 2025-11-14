@@ -133,7 +133,7 @@ export class DockManager {
    * @returns {DockNode}
    * */
   dock(element: HTMLElement | Viewer, dockType: DockType = DG.DOCK_TYPE.LEFT, refNode: DockNode | null = null, title?: string, ratio: number = 0.5): DockNode {
-    return new DockNode(api.grok_DockManager_Dock(this.dart, refNode === null ? null : refNode.dart, element, dockType, title, ratio));
+    return new DockNode(api.grok_DockManager_Dock(this.dart, refNode === null ? null : refNode.dart, element, dockType, title ?? '', ratio));
   }
 
   /**

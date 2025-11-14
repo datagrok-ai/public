@@ -1,11 +1,23 @@
 import styles from './styles.module.css';
-import React from 'react';
+import React, { useEffect } from 'react';
 
 export default function profileCard ({children, meta}){
+    // Auto-open modal if URL hash matches this card's ID
+    useEffect(() => {
+        if (typeof window !== 'undefined' && window.location.hash === `#${meta.id}`) {
+            setTimeout(() => {
+                const modalElement = document.getElementById(meta.id + "-modal");
+                if (modalElement && window.$) {
+                    window.$(`#${meta.id}-modal`).modal('show');
+                }
+            }, 100);
+        }
+    }, [meta.id]);
+
     return(
-        <div className={"col-lg-6 col-md-6 col-sm-12 my-3"}>
+        <div id={meta.id} className={"col-lg-6 col-md-6 col-sm-12 my-3"}>
             <div className="card hover-shadow border-0 border-0 border-light shadow-sm h-100">
-                <a className="btn link" data-toggle="modal" data-target={"#"+meta.id}>
+                <a className="btn link" data-toggle="modal" data-target={"#"+meta.id+"-modal"}>
                     <div className="card-body text-left pt-0">
                         <div className="mt-3">
                             <div className="h5 mt-3 pb-2">{meta.name}</div>
@@ -17,7 +29,7 @@ export default function profileCard ({children, meta}){
                     </div>
                 </a>
             </div>
-            <div className="modal fade" tabIndex="-1" id={meta.id} aria-hidden="true">
+            <div className="modal fade" tabIndex="-1" id={meta.id+"-modal"} aria-hidden="true">
                 <div className={"modal-dialog modal-dialog-scrollable "+ styles.dialogSize}>
                     <div className={"modal-content "}>
                         <div className={"modal-body text-center "+ styles.dialogBody}>

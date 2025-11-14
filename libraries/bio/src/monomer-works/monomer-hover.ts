@@ -10,7 +10,7 @@ import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ChemTags} from '@datagrok-libraries/chem-meta/src/consts';
 import {addSubstructProvider, getMonomerHover, ISubstruct, setMonomerHover} from '@datagrok-libraries/chem-meta/src/types';
 
-import {IMonomerLibBase} from '../types/index';
+import {IMonomerLibBase} from '../types/monomer-library';
 import {ISeqMonomer} from '../helm/types';
 import {PolymerTypes} from '../helm/consts';
 import {ALPHABET} from '../utils/macromolecule';

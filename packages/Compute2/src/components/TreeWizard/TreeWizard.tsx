@@ -151,14 +151,6 @@ export const TreeWizard = Vue.defineComponent({
         .show({center: true, modal: true});
     };
 
-    const goNextStep = () => {
-      if (chosenStepUuid.value == null || treeState.value == null)
-        return;
-      const nextData = findNextStep(chosenStepUuid.value, treeState.value);
-      if (nextData)
-        chosenStepUuid.value = nextData.state.uuid;
-    };
-
     const saveSubTreeState = (uuid: string) => {
       const chosenStepDesc = states.descriptions[uuid];
       const dialog = new EditRunMetadataDialog({
@@ -185,10 +177,22 @@ export const TreeWizard = Vue.defineComponent({
       dialog.show({center: true, width: 500});
     };
 
+    const goNextStep = () => {
+      if (chosenStepUuid.value == null || treeState.value == null)
+        return;
+      const nextData = findNextStep(chosenStepUuid.value, treeState.value);
+      if (nextData) {
+        chosenStepUuid.value = nextData.state.uuid;
+      } else {
+        const msg = `Now you can:\n
+• Export results using top menu 'Export' options\n
+• Save the run to your history clicking on a save icon`;
+        grok.shell.info(msg);
+      }
+    };
+
     const onPipelineProceed = () => {
       if (chosenStepState.value && !isFuncCallState(chosenStepState.value)) {
-        if (isFuncCallState(chosenStepState.value.steps[0])) rfvHidden.value = false;
-        if (!isFuncCallState(chosenStepState.value.steps[0])) pipelineViewHidden.value = false;
         chosenStepUuid.value = chosenStepState.value.steps[0].uuid;
       }
     };
@@ -277,29 +281,28 @@ export const TreeWizard = Vue.defineComponent({
       else setViewName(modelName.value);
     });
 
-    let pendingStepPath: string | null = null;
 
-    const processPendingStepPath = (treeState: PipelineState) => {
+    const setCurrentStepByPath = (pendingStepPath: string, treeState: PipelineState) => {
       if (pendingStepPath) {
         const nodeWithPath = findTreeNodeByPath(
           pendingStepPath.split(' ').map((pathSegment) => Number.parseInt(pathSegment)),
           treeState,
         );
-        pendingStepPath = null;
         if (nodeWithPath?.state) {
           chosenStepUuid.value = nodeWithPath.state.uuid;
-          if (isFuncCallState(nodeWithPath.state)) rfvHidden.value = false;
-          if (!isFuncCallState(nodeWithPath.state)) pipelineViewHidden.value = false;
         }
       }
     };
+
+    let pendingStepPath: string | null = null;
 
     Vue.watch(treeState, (treeState) => {
       if (!treeState)
         return;
 
       if (pendingStepPath) {
-        processPendingStepPath(treeState);
+        setCurrentStepByPath(pendingStepPath, treeState);
+        pendingStepPath = null;
         return;
       }
 
@@ -314,15 +317,31 @@ export const TreeWizard = Vue.defineComponent({
       pendingStepPath = startUrl.searchParams.get('currentStep');
       if (loadingId)
         loadPipeline(loadingId);
-      else if (pendingStepPath)
-        processPendingStepPath(treeState);
+      else if (pendingStepPath) {
+        setCurrentStepByPath(pendingStepPath, treeState);
+        pendingStepPath = null;
+      }
     }, {immediate: true});
 
     const chosenStep = Vue.computed(() => {
       if (!treeState.value)
         return null;
 
-      return chosenStepUuid.value ? findNodeWithPathByUuid(chosenStepUuid.value, treeState.value) : undefined;
+      if (!chosenStepUuid.value)
+        chosenStepUuid.value = treeState.value.uuid;
+
+      let step = findNodeWithPathByUuid(chosenStepUuid.value, treeState.value);
+
+      if (step)
+        return step;
+
+      // step with current uuid is removed from the tree, try setting the current step by the route
+      const currentURL = new URL(window.location.href);
+      const currentStep = currentURL.searchParams.get('currentStep');
+      if (currentStep)
+        setCurrentStepByPath(currentStep, treeState.value);
+
+      return findNodeWithPathByUuid(chosenStepUuid.value, treeState.value);
     });
 
     Vue.watch(chosenStep, (newStep) => {
@@ -343,6 +362,13 @@ export const TreeWizard = Vue.defineComponent({
     });
 
     const chosenStepState = Vue.computed(() => chosenStep.value?.state);
+
+    Vue.watch(chosenStepState, (state) => {
+      if (!state)
+        return;
+      if (isFuncCallState(state)) rfvHidden.value = false;
+      if (!isFuncCallState(state)) pipelineViewHidden.value = false;
+    })
 
     const isRootChoosen = Vue.computed(() => {
       return (!!chosenStepState.value?.uuid) && chosenStepState.value?.uuid === treeState.value?.uuid;

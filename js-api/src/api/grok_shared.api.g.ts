@@ -91,7 +91,7 @@ export class DataSourceType {
 
   static fileDataSources = ['Azure Blob', 'Dropbox', 'Files', 'GitHub', 'GoogleCloud', 'S3', 'CoreWeave', 'SharePoint', 'Amazon EFS'];
 
-  static systemDataSources = ['AWS', 'GCP', 'PostgresDart'];
+  static systemDataSources = ['PostgresDart'];
 
   static secureSources = ['AWS', 'GCP'];
 

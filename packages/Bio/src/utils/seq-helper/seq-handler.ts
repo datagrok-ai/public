@@ -6,11 +6,11 @@ import wu from 'wu';
 
 /* eslint-disable max-len */
 import {ALIGNMENT, ALPHABET, candidateAlphabets, getSplitterWithSeparator, NOTATION, positionSeparator, splitterAsFasta, splitterAsHelm, TAGS} from '@datagrok-libraries/bio/src/utils/macromolecule/index';
-import {INotationProvider, ISeqConnection, ISeqSplitted, SeqColStats, SplitterFunc,} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
+import {CandidateType, INotationProvider, ISeqConnection, ISeqSplitted, SeqColStats, SplitterFunc,} from '@datagrok-libraries/bio/src/utils/macromolecule/types';
 import {detectAlphabet, detectHelmAlphabet, splitterAsFastaSimple, StringListSeqSplitted} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 import {mmDistanceFunctions, MmDistanceFunctionsNames} from '@datagrok-libraries/ml/src/macromolecule-distance-functions';
 import {mmDistanceFunctionType} from '@datagrok-libraries/ml/src/macromolecule-distance-functions/types';
-import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {HELM_POLYMER_TYPE, HELM_WRAPPERS_REGEXP, PHOSPHATE_SYMBOL} from '@datagrok-libraries/bio/src/utils/const';
 import {GAP_SYMBOL, GapOriginals} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {CellRendererBackBase, GridCellRendererTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
@@ -132,7 +132,7 @@ export class SeqHandler implements ISeqHandler {
       for (const seq of values) {
         const mSeq = !!seq ? splitter(seq) : [];
 
-        if (firstLength === null)
+        if (firstLength == null)
           firstLength = mSeq.length;
         else if (mSeq.length !== firstLength)
           sameLength = false;
@@ -182,13 +182,13 @@ export class SeqHandler implements ISeqHandler {
         throw new Error('Alphabet is empty and not annotated.');
 
       let aligned = uh.column.getTag(TAGS.aligned);
-      if (aligned === null) {
+      if (aligned == null) {
         aligned = uh.stats.sameLength ? ALIGNMENT.SEQ_MSA : ALIGNMENT.SEQ;
         uh.column.setTag(TAGS.aligned, aligned);
       }
 
       let alphabet = uh.column.getTag(TAGS.alphabet);
-      if (alphabet === null) {
+      if (alphabet == null) {
         alphabet = detectAlphabet(uh.stats.freq, candidateAlphabets);
         uh.column.setTag(TAGS.alphabet, alphabet);
       }
@@ -200,8 +200,21 @@ export class SeqHandler implements ISeqHandler {
       }
     } else if (units === NOTATION.HELM) {
       let alphabet = uh.column.getTag(TAGS.alphabet);
-      if (alphabet === null) {
-        alphabet = detectHelmAlphabet(uh.stats.freq, candidateAlphabets, uh.defaultGapOriginal);
+      if (alphabet == null) {
+        // const cats = uh.column.categories;
+        // const splitter = uh.getSplitter();
+        // const samples = Array.from(new Set(
+        //   wu.count(0).take(Math.min(100, cats.length)).map((_) => Math.floor(Math.random() * cats.length)).toArray())
+        // ).map((catIndex) => cats[catIndex]).filter((s) => (s?.length ?? 0) > 0).map((s) => splitter(s));
+        // // splitted helm has info about polymer types
+        // const polymerTypes = new Set<HELM_POLYMER_TYPE>();
+        // for (const ss of samples) {
+        //   ss.graphInfo?.polymerTypes
+        // }
+        // increase the detection threshold for candidate alphabets
+        const modifiedCandidateAlphabets = candidateAlphabets.map((ca) => new CandidateType(ca.name, ca.alphabet, 0.9));
+
+        alphabet = detectHelmAlphabet(uh.stats.freq, modifiedCandidateAlphabets, uh.defaultGapOriginal);
         uh.column.setTag(TAGS.alphabet, alphabet);
       }
     }
@@ -219,7 +232,7 @@ export class SeqHandler implements ISeqHandler {
 
   public get separator(): string | undefined {
     const separator: string | undefined = this.column.getTag(TAGS.separator) ?? undefined;
-    if (this.notation === NOTATION.SEPARATOR && separator === undefined)
+    if (this.notation === NOTATION.SEPARATOR && separator == undefined)
       throw new Error(`Separator is mandatory  for column '${this.column.name}' of notation '${this.notation}'.`);
     return separator;
   }
@@ -314,7 +327,7 @@ export class SeqHandler implements ISeqHandler {
       const seq = this.column.get(rowIdx);
       return this.getSplitter(limit)(seq);
     } else {
-      if (this.column.version !== this.columnVersion || this._splitted === null) {
+      if (this.column.version !== this.columnVersion || this._splitted == null) {
         this.columnVersion = this.column.version;
         this._splitted = new Array<WeakRef<ISeqSplitted>>(this.column.length);
       }
@@ -395,7 +408,7 @@ export class SeqHandler implements ISeqHandler {
   }
 
   public get stats(): SeqColStats {
-    if (this._stats === null) {
+    if (this._stats == null) {
       const freq: { [m: string]: number } = {};
       let sameLength = true;
       let firstLength = null;
@@ -422,7 +435,7 @@ export class SeqHandler implements ISeqHandler {
 
   private _maxLength: number | null = null;
   public get maxLength(): number {
-    if (this._maxLength === null) {
+    if (this._maxLength == null) {
       this._maxLength = this.column.length === 0 ? 0 :
         wu.count(0).take(this.column.length).map((rowIdx) => this.getSplitted(rowIdx).length).reduce((a, b) => a > b ? a : b, 0);
     }
@@ -431,7 +444,7 @@ export class SeqHandler implements ISeqHandler {
 
   private _posList: string[] | null = null;
   public get posList(): string[] {
-    if (this._posList === null) {
+    if (this._posList == null) {
       const posListTxt = this.column.getTag(TAGS.positionNames);
       this._posList = posListTxt ? posListTxt.split(positionSeparator).map((p) => p.trim()) :
         wu.count(1).take(this.maxLength).map((pos) => pos.toString()).toArray();
@@ -606,7 +619,7 @@ export class SeqHandler implements ISeqHandler {
   }
 
   get splitter(): SplitterFunc {
-    if (this._splitter === null)
+    if (this._splitter == null)
       this._splitter = this.getSplitter();
     return this._splitter;
   }
@@ -1036,21 +1049,30 @@ function joinToHelm(srcSS: ISeqSplitted, wrappers: string[], isDnaOrRna: boolean
 }
 
 function joinToBiln(srcSS: ISeqSplitted): string {
+  const needsSquareBrackets = (cm: string | null) => {
+    return cm && (cm.includes('-') || cm.includes('*') || cm.includes('[R'));
+  };
+
   if (!srcSS.graphInfo || !((srcSS.graphInfo.connections?.length ?? 0) > 0)) {
     const resOMList: string[] = new Array<string>(srcSS.length);
     for (let posIdx: number = 0; posIdx < srcSS.length; ++posIdx) {
-      resOMList[posIdx] = srcSS.getCanonical(posIdx);
-      if (resOMList[posIdx]?.includes('-')) // Biln uses '-' as a separator, need to enclose in []
-        resOMList[posIdx] = `[${resOMList[posIdx]}]`;
+      const canonical = srcSS.getCanonical(posIdx);
+      if (needsSquareBrackets(canonical)) // Biln uses '-' as a separator, need to enclose in []. also there might be smiles in there, where Rs are represented as '*' or R
+        resOMList[posIdx] = `[${canonical}]`;
+      else
+        resOMList[posIdx] = canonical;
     }
     return resOMList.join('-'); // Biln uses '-' as a separator
   } else { // conversion happens only if there is a graph info
     const disjointSequenceIdxs = srcSS.graphInfo.disjointSeqStarts;
     const allSeqParts = new Array<string>(srcSS.length);
     for (let posIdx = 0; posIdx < srcSS.length; ++posIdx) {
-      allSeqParts[posIdx] = srcSS.getCanonical(posIdx);
-      if (allSeqParts[posIdx]?.includes('-')) // Biln uses '-' as a separator, need to enclose in []
-        allSeqParts[posIdx] = `[${allSeqParts[posIdx]}]`;
+      const canonical = srcSS.getCanonical(posIdx);
+      // allSeqParts[posIdx] = srcSS.getCanonical(posIdx);
+      if (needsSquareBrackets(canonical)) // Biln uses '-' as a separator, need to enclose in []
+        allSeqParts[posIdx] = `[${canonical}]`;
+      else
+        allSeqParts[posIdx] = canonical;
     }
     for (let i = 0; i < srcSS.graphInfo.connections.length; i++) {
       const conn: ISeqConnection = srcSS.graphInfo.connections[i];

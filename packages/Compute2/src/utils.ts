@@ -85,10 +85,14 @@ export function findTreeNodeParrent(uuid: string, state: PipelineState): Pipelin
   }
 };
 
+const suitableForNextStep = (state: PipelineState) => {
+  return state.type === 'funccall'  || state.steps.length === 0;
+}
+
 export function findNextStep(uuid: string, state: PipelineState): NodeWithPath | undefined {
   let prevUuid = '';
   const pred = (state: PipelineState) => {
-    if (!isFuncCallState(state))
+    if (!suitableForNextStep(state))
       return false;
     if (prevUuid === uuid)
       return true;
@@ -178,4 +182,8 @@ export async function reportTree(treeState?: PipelineState, meta: MetaCallInfo =
 
     DG.Utils.download(name, new Blob([zipSync(zipConfig) as any]));
   }
+}
+
+export function setDifference<T>(a: Set<T>, b: Set<T>) {
+  return new Set(Array.from(a).filter((item) => !b.has(item)));
 }

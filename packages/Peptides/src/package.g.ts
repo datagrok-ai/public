@@ -48,6 +48,15 @@ export function mostPotentResidues() : any {
   return PackageFunctions.mostPotentResidues();
 }
 
+//name: Sequence Mutation Cliffs
+//description: Mutation Cliffs Line Chart
+//tags: viewer
+//output: viewer result
+//meta.icon: files/icons/sequence-statistics-viewer.svg
+export function mutationCliffs() : any {
+  return PackageFunctions.mutationCliffs();
+}
+
 //name: Logo Summary Table
 //tags: viewer
 //output: viewer result

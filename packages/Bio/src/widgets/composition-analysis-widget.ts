@@ -6,13 +6,14 @@ import wu from 'wu';
 
 import {TAGS as bioTAGS, ALPHABET} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {GAP_SYMBOL} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
-import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {HelmType} from '@datagrok-libraries/bio/src/helm/types';
-import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
+import {HelmTypes, PolymerTypes} from '@datagrok-libraries/bio/src/helm/consts';
 
-import '../../css/composition-analysis.css';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {buildCompositionTable} from '@datagrok-libraries/bio/src/utils/composition-table';
+import '../../css/composition-analysis.css';
+import {polymerTypeToHelmType} from '@datagrok-libraries/bio/src/utils/macromolecule/utils';
 
 export function getCompositionAnalysisWidget(
   val: DG.SemanticValue, monomerLib: IMonomerLibBase, seqHelper: ISeqHelper
@@ -26,14 +27,22 @@ export function getCompositionAnalysisWidget(
   const sh = seqHelper.getSeqHandler(val.cell.column as DG.Column<string>);
   const rowIdx = val.cell.rowIndex;
   const seqSS = sh.getSplitted(rowIdx);
+  // in case of HELM, there might be multiple biotypes in one sequence
+  const bioTypes: {[symbol: string]: HelmType} = {};
   wu.count(0).take(seqSS.length).filter((posIdx) => !seqSS.isGap(posIdx)).forEach((posIdx) => {
     let cm = seqSS.getCanonical(posIdx);
     if (biotype === HelmTypes.NUCLEOTIDE && sh.isHelm() && cm[1] === '(' && cm[cm.length - 2] === ')')
       cm = cm.substring(2, cm.length - 2);
     const count = counts[cm] || 0;
     counts[cm] = count + 1;
+    if (!bioTypes[cm] && seqSS.graphInfo?.polymerTypes) {
+      const polymerType = seqSS.graphInfo.polymerTypes[posIdx];
+      bioTypes[cm] = polymerTypeToHelmType(polymerType);
+    }
   });
-  const table = buildCompositionTable(counts, biotype, monomerLib);
+
+
+  const table = buildCompositionTable(counts, biotype, monomerLib, Object.keys(bioTypes).length ? bioTypes : undefined);
   Array.from(table.rows).forEach((row) => {
     const barCol = (row.getElementsByClassName('macromolecule-cell-comp-analysis-bar')[0] as HTMLDivElement)
       .style.backgroundColor;

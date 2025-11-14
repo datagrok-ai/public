@@ -1,5 +1,22 @@
 # bio changelog
 
+## 5.61.2 (2025-11-03)
+
+* Split User settings for duplicate monomer preferences into separate entries to avoid length limits.
+
+## 5.61.1 (2025-10-30)
+
+* Rework User lib settings storage to accomodate shortened duplicate preferences
+
+## 5.61.0 (2025-10-29)
+
+* CHEMS and SMILES support in HELM
+
+## 5.60.0 (2025-10-28)
+
+* Monomer library management rework: Transition to library providers, instead of single file based monomer libraries. Support multiple library providers.
+* NB! BREAKING CHANGE to the monomer library management API. Update your code accordingly.
+
 ## 5.55.0 (2025-10-03)
 
 * Full BILN support: conversion to/from HELM/separator/fasta/molecular form, parsing, rendering, monomer library handling.

@@ -6,6 +6,7 @@ import {findMutations, MutationCliffsOptions} from '../utils/algorithms';
 import * as type from '../utils/types';
 import {extractColInfo} from '../utils/misc';
 import {PeptideUtils} from '../peptideUtils';
+import BitArray from '@datagrok-libraries/utils/src/bit-array';
 
 category('Algorithms', () => {
   let activityCol: type.RawData;
@@ -53,8 +54,9 @@ category('Algorithms', () => {
     expect(d32[0], 1, `MutationCliffsInfo['D']['3'][2] should have value 1`);
 
     // Check with target
-    settings.targetCol = targetCol;
-    settings.currentTarget = '1';
+    const filter = new BitArray(3, false);
+    filter.setBit(0, true);
+    settings.filter = filter.buffer;
     mutationCliffsInfo = await findMutations(activityCol, monomerColumns, settings);
     expect(mutationCliffsInfo.size, 0, `MutationCliffsInfo should be empty for target '1'`);
   });

@@ -1,5 +1,36 @@
 # Peptides changelog
 
+## 1.27.0 (2025-11-10)
+
+* Rework mutation cliffs and tooltips, shown information about sequence pairs and their statistics.
+
+## 1.26.2 (2025-11-08)
+
+* Add Current row tracking option to mutation cliffs viewer
+
+## 1.26.1 (2025-11-07)
+
+* Sequence mutation cliffs viewer: Initial release
+
+## 1.26.0 (2025-11-05)
+
+* Full filter reactivity for all panels, tooltips, aggregations and viewers
+* Corrected aggregate calculations, statistics and mean difference comparisons
+* Fix MCL viewer premature shutdown on loading
+
+## 1.25.1 (2025-11-05)
+
+* Fix distribution tooltips not showing on weblogo hover
+* Enable filter reactivity by default SAR viewers
+
+## 1.25.0 (2025-11-04)
+
+* Update dependencies
+* Enable filter reactivity for All Peptides Viewers (Invariant Map, Monomer-Position, Most Potent Residues, Logo Summary Table, WebLogo in header)
+* Got rid of target column for Peptides analysis
+* Add sum columns for Monomer-Position
+* Fix navigation bugs
+
 ## 1.23.14 (2025-06-17)
 
 * Default selection grid for Peptides analysis

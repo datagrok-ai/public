@@ -1,5 +1,9 @@
 # WebComponents changelog
 
+## 1.2.9 (2025-10-30)
+
+- Update deps
+
 ## 1.2.8 (2025-09-09)
 
 - Support restoring focused tab in dock

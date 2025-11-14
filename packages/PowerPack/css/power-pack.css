@@ -99,10 +99,6 @@ div.ui-box > div.power-pack-activity-widget-content.ui-div.ui-panel {
     margin-left: 12px;
 }
 
-.power-pack-activity-widget-content .d4-tab-host.d4-tab-vertical .d4-tab-content .ui-div {
-    padding-right: 7px;
-}
-
 .power-pack-activity-widget-content .d4-tab-host.d4-tab-vertical .d4-tab-content .ui-div.tutorial-widget.tutorial-widget-demo {
     overflow: hidden !important;
 }

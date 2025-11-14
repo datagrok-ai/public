@@ -156,6 +156,7 @@ export class AddNewColumnDialog {
   autocompleteEnter = false;
   selectedColumn: DG.Column | null = null;
   error = '';
+  changedType = false;
   multipleColsOutput = false;
   mutationObserver: MutationObserver | null = null;
   mouseDownOnCm = false;
@@ -384,7 +385,10 @@ export class AddNewColumnDialog {
 
     const control = ui.input.choice('', {value: this.call.getParamValue('table') && this.call.getParamValue('type') ?
       this.call.getParamValue('type') : defaultChoice, items: this.supportedTypes});
-    control.onInput.subscribe(async () => await this.updatePreview(this.codeMirror!.state.doc.toString(), false));
+    control.onInput.subscribe(async () => {
+      this.changedType = true;
+      await this.updatePreview(this.codeMirror!.state.doc.toString(), false)
+    });
     control.setTooltip(this.tooltips['type']);
 
     const input = control.input as HTMLInputElement;
@@ -1144,7 +1148,7 @@ export class AddNewColumnDialog {
     //get result column name
     let colName = this.widget ? this.call.getParamValue('name') : this.getResultColumnName().colName;
 
-    if (this.error && this.error !== SYNTAX_ERROR) {
+    if (this.error && this.error !== SYNTAX_ERROR && !this.changedType) {
       //clearing preview df in case of error (use only within dialog)
       if (!this.widget) {
         const rowCount = this.gridPreview!.dataFrame.rowCount;
@@ -1154,6 +1158,8 @@ export class AddNewColumnDialog {
       return;
     }
 
+    this.changedType = false;
+    
     //in case name was changed in nameInput, do not recalculate preview
     if (changeName) {
       if (!this.error)
@@ -1209,13 +1215,16 @@ export class AddNewColumnDialog {
     this.gridPreview!.dataFrame = this.previwDf!.clone(null, columnIds);
     for (const colName of potentialColIds)
       this.gridPreview!.col(colName)!.backColor = this.newColumnBgColor;
-    this.resultColumnType = this.previwDf!.col(potentialColIds.length > 1 ? potentialColIds[0] : colName)!.type;
+    this.resultColumnType = this.previwDf!.col(potentialColIds[0])!.type;
 
     for (const colName of potentialColIds)
       this.previwDf!.columns.remove(colName);
 
-    if (FLOATING_POINT_TYPES.includes(this.resultColumnType) && this.gridPreview!.dataFrame.col(colName))
-      this.gridPreview!.dataFrame.col(colName)!.tags[DG.TAGS.FORMAT] = '#.00000';
+    //setting format to preview columns
+    for (const colName of this.gridPreview!.dataFrame.columns.names()) {
+      if (FLOATING_POINT_TYPES.includes(this.gridPreview!.dataFrame.col(colName)!.type))
+        this.gridPreview!.dataFrame.col(colName)!.tags[DG.TAGS.FORMAT] = '#.00000';
+    }
 
     this.setAutoType(); // Adding (or removing) the column auto-type caption to "Auto" item in the ChoiceBox.
   }

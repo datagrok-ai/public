@@ -69,7 +69,7 @@ To save:
 
 :::note
 
-Moving tables between projects impacts their hierarchy, name, and privileges. [Learn more](../../concepts/project/project.md).
+Moving tables between spaces impacts their hierarchy, name, and privileges. [Learn more](../../concepts/project/space.md).
 
 :::
 

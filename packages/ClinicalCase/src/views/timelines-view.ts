@@ -4,15 +4,15 @@ import * as grok from 'datagrok-api/grok';
 import {updateDivInnerHTML} from '../utils/utils';
 import $ from 'cash-dom';
 import {AEBrowserHelper} from '../helpers/ae-browser-helper';
-import {_package} from '../package';
+import {_package, studiesViewsConfigs} from '../package';
 import {AE_BODY_SYSTEM, AE_SEVERITY, CON_MED_DOSE, CON_MED_DOSE_FREQ, CON_MED_DOSE_UNITS, CON_MED_ROUTE,
   DOMAIN, INV_DRUG_DOSE, INV_DRUG_DOSE_FORM, INV_DRUG_DOSE_FREQ, INV_DRUG_DOSE_UNITS,
   INV_DRUG_ROUTE, SUBJECT_ID} from '../constants/columns-constants';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {addDataFromDmDomain, getNullOrValue} from '../data-preparation/utils';
 import {AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, CON_MED_END_DAY_FIELD, CON_MED_NAME_FIELD,
-  CON_MED_START_DAY_FIELD, INV_DRUG_END_DAY_FIELD, INV_DRUG_NAME_FIELD, INV_DRUG_START_DAY_FIELD, TRT_ARM_FIELD,
-  VIEWS_CONFIG} from '../views-config';
+  CON_MED_START_DAY_FIELD, INV_DRUG_END_DAY_FIELD, INV_DRUG_NAME_FIELD, INV_DRUG_START_DAY_FIELD,
+  TRT_ARM_FIELD} from '../views-config';
 import {TIMELINES_VIEW_NAME} from '../constants/view-names-constants';
 import {TIMELINES_VIEWER} from '../constants/constants';
 import {studies} from '../clinical-study';
@@ -194,28 +194,31 @@ export class TimelinesView extends ClinicalCaseViewBase {
     if (!selectedInd.length) {
       if (this.selectedDataframes.includes('ae')) {
         const aeWithArm = addDataFromDmDomain(this.resultTables.clone(), studies[this.studyId].domains.dm,
-          this.resultTables.columns.names(), [VIEWS_CONFIG[this.name][TRT_ARM_FIELD]], 'key');
-        const aeNumberByArm = aeWithArm.groupBy([VIEWS_CONFIG[this.name][TRT_ARM_FIELD]])
+          this.resultTables.columns.names(),
+          [studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD]], 'key');
+        const aeNumberByArm = aeWithArm.groupBy([studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD]])
           .where(`${DOMAIN} = ae`).count().aggregate();
-        const subjNumberByArm = studies[this.studyId].domains.dm.groupBy([VIEWS_CONFIG[this.name][TRT_ARM_FIELD]])
+        const subjNumberByArm = studies[this.studyId].domains.dm
+          .groupBy([studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD]])
           .uniqueCount(SUBJECT_ID).aggregate();
         const aeNumByArmDict = {};
         for (let i = 0; i < aeNumberByArm.rowCount; i++) {
-          aeNumByArmDict[aeNumberByArm.get(VIEWS_CONFIG[this.name][TRT_ARM_FIELD], i)] = aeNumberByArm.get('count', i) /
-            subjNumberByArm.
-              groupBy([VIEWS_CONFIG[this.name][TRT_ARM_FIELD], `unique(${SUBJECT_ID})`])
-              .where({[VIEWS_CONFIG[this.name][TRT_ARM_FIELD]]:
-                `${aeNumberByArm.get(VIEWS_CONFIG[this.name][TRT_ARM_FIELD], i)}`})
-              .aggregate()
-              .get(`unique(${SUBJECT_ID})`, 0);
+          aeNumByArmDict[aeNumberByArm.get(studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD], i)] =
+          aeNumberByArm.get('count', i) / subjNumberByArm.
+            groupBy([studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD], `unique(${SUBJECT_ID})`])
+            .where({[studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD]]:
+                `${aeNumberByArm.get(studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD], i)}`})
+            .aggregate()
+            .get(`unique(${SUBJECT_ID})`, 0);
         }
 
         const aeTop5Dict = {};
-        const aeTop5 = aeWithArm.groupBy([VIEWS_CONFIG[this.name][TRT_ARM_FIELD], 'event'])
+        const aeTop5 = aeWithArm.groupBy([studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD], 'event'])
           .where(`${DOMAIN} = ae`).count().aggregate();
-        const order = aeTop5.getSortedOrder([VIEWS_CONFIG[this.name][TRT_ARM_FIELD], 'event'] as any);
+        const order = aeTop5.getSortedOrder([studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD],
+          'event'] as any);
         order.forEach((item) => {
-          const arm = aeTop5.get(VIEWS_CONFIG[this.name][TRT_ARM_FIELD], item);
+          const arm = aeTop5.get(studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD], item);
           if (Object.keys(aeTop5Dict).includes(arm) && aeTop5Dict[arm].length < 5)
             aeTop5Dict[arm].push(aeTop5.get('event', item));
           else
@@ -333,8 +336,8 @@ export class TimelinesView extends ClinicalCaseViewBase {
   private getFilterFields() {
     return {
       ae: {'AE severity': AE_SEVERITY, 'AE body system': AE_BODY_SYSTEM},
-      cm: {'Concomitant medication': VIEWS_CONFIG[TIMELINES_VIEW_NAME][CON_MED_NAME_FIELD]},
-      ex: {'Treatment arm': VIEWS_CONFIG[TIMELINES_VIEW_NAME][INV_DRUG_NAME_FIELD]},
+      cm: {'Concomitant medication': studiesViewsConfigs[this.studyId].config[TIMELINES_VIEW_NAME][CON_MED_NAME_FIELD]},
+      ex: {'Treatment arm': studiesViewsConfigs[this.studyId].config[TIMELINES_VIEW_NAME][INV_DRUG_NAME_FIELD]},
     };
   }
 
@@ -342,21 +345,21 @@ export class TimelinesView extends ClinicalCaseViewBase {
     return {
       ae: {
         key: SUBJECT_ID,
-        start: VIEWS_CONFIG[TIMELINES_VIEW_NAME][AE_START_DAY_FIELD],
-        end: VIEWS_CONFIG[TIMELINES_VIEW_NAME][AE_END_DAY_FIELD],
-        event: VIEWS_CONFIG[TIMELINES_VIEW_NAME][AE_TERM_FIELD],
+        start: studiesViewsConfigs[this.studyId].config[TIMELINES_VIEW_NAME][AE_START_DAY_FIELD],
+        end: studiesViewsConfigs[this.studyId].config[TIMELINES_VIEW_NAME][AE_END_DAY_FIELD],
+        event: studiesViewsConfigs[this.studyId].config[TIMELINES_VIEW_NAME][AE_TERM_FIELD],
       },
       cm: {
         key: SUBJECT_ID,
-        start: VIEWS_CONFIG[TIMELINES_VIEW_NAME][CON_MED_START_DAY_FIELD],
-        end: VIEWS_CONFIG[TIMELINES_VIEW_NAME][CON_MED_END_DAY_FIELD],
-        event: VIEWS_CONFIG[TIMELINES_VIEW_NAME][CON_MED_NAME_FIELD],
+        start: studiesViewsConfigs[this.studyId].config[TIMELINES_VIEW_NAME][CON_MED_START_DAY_FIELD],
+        end: studiesViewsConfigs[this.studyId].config[TIMELINES_VIEW_NAME][CON_MED_END_DAY_FIELD],
+        event: studiesViewsConfigs[this.studyId].config[TIMELINES_VIEW_NAME][CON_MED_NAME_FIELD],
       },
       ex: {
         key: SUBJECT_ID,
-        start: VIEWS_CONFIG[TIMELINES_VIEW_NAME][INV_DRUG_START_DAY_FIELD],
-        end: VIEWS_CONFIG[TIMELINES_VIEW_NAME][INV_DRUG_END_DAY_FIELD],
-        event: VIEWS_CONFIG[TIMELINES_VIEW_NAME][INV_DRUG_NAME_FIELD],
+        start: studiesViewsConfigs[this.studyId].config[TIMELINES_VIEW_NAME][INV_DRUG_START_DAY_FIELD],
+        end: studiesViewsConfigs[this.studyId].config[TIMELINES_VIEW_NAME][INV_DRUG_END_DAY_FIELD],
+        event: studiesViewsConfigs[this.studyId].config[TIMELINES_VIEW_NAME][INV_DRUG_NAME_FIELD],
       },
     };
   }

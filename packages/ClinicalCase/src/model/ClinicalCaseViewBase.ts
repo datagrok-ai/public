@@ -24,7 +24,7 @@ export class ClinicalCaseViewBase extends DG.ViewBase {
     ui.setUpdateIndicator(this.root, true, `Loading ${this.name} view`);
     // need timeout here to make update indicator visible
     setTimeout(async ()=> {
-      this.validator = new ValidationHelper(getRequiredColumnsByView()[this.name], this.studyId);
+      this.validator = new ValidationHelper(getRequiredColumnsByView(this.studyId)[this.name], this.studyId);
       if (this.validator.validate()) {
         this.optDomainsWithMissingCols = Object.keys(this.validator.missingColumnsInOptDomains)
           .filter((it) => this.validator.missingColumnsInOptDomains[it].length);

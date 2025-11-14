@@ -25,10 +25,14 @@ export const DockManager = Vue.defineComponent({
   }>,
   emits: {
     'panelClosed': (_element: HTMLElement) => true,
+    'panelOpened': (_element: HTMLElement) => true,
     'update:activePanelTitle': (_newPanel: string | null, _prevPanel: string | null) => true,
   },
-  methods: {},
-  setup(props, {slots, emit}) {
+  methods: {
+    'saveLayout': (): string => '',
+    'loadLayout': async (_a: string) => void(0),
+  },
+  setup(props, {slots, emit, expose}) {
     Vue.onRenderTriggered((event) => {
       console.log('DockManager onRenderTriggered', event);
     });
@@ -36,7 +40,13 @@ export const DockManager = Vue.defineComponent({
     const dockSpawnRef = Vue.shallowRef<DockSpawnTsWebcomponent | undefined>(undefined);
     const activePanelTitle = Vue.computed(() => props.activePanelTitle);
 
-    const onManagerInitFinished = (manager: any) => {
+    const saveLayout = () => dockSpawnRef.value?.saveLayout();
+    const loadLayout = (layout: string) => dockSpawnRef.value?.loadLayout(layout);
+
+    expose({saveLayout, loadLayout});
+
+    const onManagerInitFinished = (ev: any) => {
+      const manager = ev.detail;
       manager.getElementCallback = async (state: IState) => {
         let aimSlot = null as null | HTMLElement;
 
@@ -60,6 +70,7 @@ export const DockManager = Vue.defineComponent({
         style={{'width': '100%'}}
         activePanelTitle={activePanelTitle.value}
         onPanelClosed={(ev: {detail: any}) => emit('panelClosed', ev.detail)}
+        onPanelOpened={(ev: {detail: any}) => emit('panelOpened', ev.detail)}
         onActivePanelChanged={(ev: {detail: {newPanel: string | null, prevPanel: string | null}}) => emit('update:activePanelTitle', ev.detail.newPanel, ev.detail.prevPanel)}
         onManagerInitFinished={onManagerInitFinished}
         ref={dockSpawnRef}

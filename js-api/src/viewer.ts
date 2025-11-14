@@ -11,7 +11,7 @@ import * as rxjs from "rxjs";
 import {Subscription} from 'rxjs';
 import {filter, map} from 'rxjs/operators';
 import {Grid, Point, Rect} from "./grid";
-import {FormulaLinesHelper} from "./helpers";
+import {FormulaLinesHelper, AnnotationRegionsHelper} from "./helpers";
 import * as interfaces from "./interfaces/d4";
 import dayjs from "dayjs";
 import {TableView, View} from "./views/view";
@@ -169,8 +169,8 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return new DG.Grid(api.grok_Viewer_Grid(t.dart, _toJson(options)));
   }
 
-  static histogram(t: DataFrame, options?: Partial<interfaces.IHistogramSettings>): Viewer<interfaces.IHistogramSettings> {
-    return new Viewer(api.grok_Viewer_Histogram(t.dart, _toJson(options)));
+  static histogram(t: DataFrame, options?: Partial<interfaces.IHistogramSettings>): HistogramViewer {
+    return new HistogramViewer(api.grok_Viewer_Histogram(t.dart, _toJson(options)));
   }
 
   static barChart(t: DataFrame, options?: Partial<interfaces.IBarChartSettings>): Viewer<interfaces.IBarChartSettings> {
@@ -181,8 +181,8 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return new DG.Grid(Viewer.fromType(VIEWER.HEAT_MAP, t, options).dart);
   }
 
-  static boxPlot(t: DataFrame, options?: Partial<interfaces.IBoxPlotSettings>): Viewer<interfaces.IBoxPlotSettings> {
-    return new Viewer(api.grok_Viewer_BoxPlot(t.dart, _toJson(options)));
+  static boxPlot(t: DataFrame, options?: Partial<interfaces.IBoxPlotSettings>): BoxPlot {
+    return new BoxPlot(api.grok_Viewer_BoxPlot(t.dart, _toJson(options)));
   }
 
   static filters(t: DataFrame, options?: Partial<interfaces.IFiltersSettings>): Viewer<interfaces.IFiltersSettings> {
@@ -193,8 +193,8 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return new ScatterPlotViewer(api.grok_Viewer_ScatterPlot(t.dart, _toJson(options)));
   }
 
-  static lineChart(t: DataFrame, options?: Partial<interfaces.ILineChartSettings>): Viewer<interfaces.ILineChartSettings> {
-    return new Viewer(api.grok_Viewer_LineChart(t.dart, _toJson(options)));
+  static lineChart(t: DataFrame, options?: Partial<interfaces.ILineChartSettings>): LineChartViewer {
+    return new LineChartViewer(api.grok_Viewer_LineChart(t.dart, _toJson(options)));
   }
 
   static network(t: DataFrame, options?: Partial<interfaces.INetworkDiagramSettings>): Viewer<interfaces.INetworkDiagramSettings> {
@@ -430,6 +430,12 @@ export class JsViewer extends Viewer {
     return this.addProperty(propertyName, TYPE.STRING, defaultValue, options);
   }
 
+  protected choices<T extends string>(propertyname: string, defaultValue: T, choices: T[], options: { [key: string]: any } & IProperty | null = null): T {
+    options = options ?? {};
+    options['choices'] = choices;
+    return this.addProperty(propertyname, TYPE.STRING, defaultValue, options);
+  }
+
   /** Registers a string list property with the specified name and defaultValue */
   protected stringList(propertyName: ViewerPropertyType, defaultValue: string[] | null = null, options: { [key: string]: any } & IProperty | null = null): string[] {
     return this.addProperty(propertyName, TYPE.STRING_LIST, defaultValue, options);
@@ -527,18 +533,31 @@ export class LineChartViewer extends Viewer<interfaces.ILineChartSettings> {
   }
 
   get activeFrame(): DataFrame {
-    return api.grok_LineChartViewer_activeFrame(this.dart);
+    return api.grok_LineChartViewer_Get_ActiveFrame(this.dart);
   }
 
   resetView(): void{
     api.grok_LineChartViewer_ResetView(this.dart);
   }
 
+  worldToScreen(x: number, y: number, chartIdx: number): Point {
+    return Point.fromXY(api.grok_LineChartViewer_WorldToScreen(this.dart, x, y, chartIdx));
+  }
+
+  screenToWorld(x: number, y: number): Point { return Point.fromXY(api.grok_LineChartViewer_ScreenToWorld(this.dart, x, y));}
+
   get onAfterDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-after-draw-scene'); }
   get onBeforeDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-before-draw-scene'); }
   get onZoomed(): rxjs.Observable<null> { return this.onEvent('d4-linechart-zoomed'); }
   get onLineSelected(): rxjs.Observable<EventData<LineChartLineArgs>> { return this.onEvent('d4-linechart-line-selected'); }
   get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-linechart-reset-view'); }
+
+  enableAnnotationRegionDrawing(lassoMode?: boolean, onAfterDraw?: (region: { [key: string]: unknown }) => void): void {
+    api.grok_LineChartViewer_EnableAnnotationRegionDrawing(this.dart, lassoMode ?? null,
+      onAfterDraw ? (region: unknown) => onAfterDraw(DG.toJs(region)) : null);
+  }
+
+  disableAnnotationRegionDrawing(): void { api.grok_LineChartViewer_DisableAnnotationRegionDrawing(this.dart); }
 }
 
 /** 2D scatter plot */
@@ -587,8 +606,12 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotSettings> {
   getMarkerTypes(): Uint32Array { return api.grok_ScatterPlotViewer_GetMarkerTypes(this.dart); }
   getMarkerColor(rowIdx: number): number { return api.grok_ScatterPlotViewer_GetMarkerColor(this.dart, rowIdx); }
   getMarkerColors(): Uint32Array { return api.grok_ScatterPlotViewer_GetMarkerColors(this.dart); }
-
-
+  enableAnnotationRegionDrawing(lassoMode?: boolean, onAfterDraw?: (region: { [key: string]: unknown }) => void): void {
+    api.grok_ScatterPlotViewer_EnableAnnotationRegionDrawing(this.dart, lassoMode ?? null,
+      onAfterDraw ? (region: unknown) => onAfterDraw(DG.toJs(region)) : null);
+  }
+  disableAnnotationRegionDrawing(): void { api.grok_ScatterPlotViewer_DisableAnnotationRegionDrawing(this.dart); }
+  
   get onZoomed(): rxjs.Observable<Rect> { return this.onEvent('d4-scatterplot-zoomed'); }
   get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-scatterplot-reset-view'); }
   get onViewportChanged(): rxjs.Observable<Rect> { return this.onEvent('d4-viewport-changed'); }
@@ -697,10 +720,12 @@ export class ViewerMetaHelper {
   private readonly _viewer: Viewer;
 
   readonly formulaLines: ViewerFormulaLinesHelper;
+  readonly annotationRegions: ViewerAnnotationRegionsHelper;
 
   constructor(viewer: Viewer) {
     this._viewer = viewer;
     this.formulaLines = new ViewerFormulaLinesHelper(this._viewer);
+    this.annotationRegions = new ViewerAnnotationRegionsHelper(this._viewer);
   }
 }
 
@@ -730,6 +755,30 @@ export class ViewerFormulaLinesHelper extends FormulaLinesHelper {
       api.grok_PropMixin_SetPropertyValue(innerLook, 'formulaLines', value);
     } else
       this.viewer.props['formulaLines'] = value;
+  }
+
+  constructor(viewer: Viewer) {
+    super();
+    this.viewer = viewer;
+  }
+}
+
+export class ViewerAnnotationRegionsHelper extends AnnotationRegionsHelper {
+  readonly viewer: Viewer;
+
+  get storage(): string {
+    if (this.viewer.getOptions()['type'] === DG.VIEWER.TRELLIS_PLOT) {
+      let innerLook = this.viewer.props['innerViewerLook'];
+      return api.grok_PropMixin_GetPropertyValue(innerLook, 'annotationRegions');
+    }
+    return this.viewer.props['annotationRegions'];
+  }
+  set storage(value: string) {
+    if (this.viewer.getOptions()['type'] === DG.VIEWER.TRELLIS_PLOT) {
+      let innerLook = this.viewer.props['innerViewerLook'];
+      api.grok_PropMixin_SetPropertyValue(innerLook, 'annotationRegions', value);
+    } else
+      this.viewer.props['annotationRegions'] = value;
   }
 
   constructor(viewer: Viewer) {

@@ -7,16 +7,26 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 
+export namespace scripts {
+  export async function readSas(fileInput: DG.FileInfo ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ClinicalCase:ReadSas', { fileInput });
+  }
+}
+
 export namespace funcs {
   export async function clinicalCaseApp(): Promise<DG.View> {
     return await grok.functions.call('ClinicalCase:ClinicalCaseApp', {});
   }
 
-  export async function clinicalCaseAppTreeBrowser(treeNode: any ): Promise<void> {
+  export async function clinicalCaseAppTreeBrowser(treeNode: any ): Promise<any> {
     return await grok.functions.call('ClinicalCase:ClinicalCaseAppTreeBrowser', { treeNode });
   }
 
   export async function clinicalCaseFolderLauncher(folder: DG.FileInfo , files: any ): Promise<any> {
     return await grok.functions.call('ClinicalCase:ClinicalCaseFolderLauncher', { folder, files });
+  }
+
+  export async function xptFileHandler(file: any ): Promise<any> {
+    return await grok.functions.call('ClinicalCase:XptFileHandler', { file });
   }
 }

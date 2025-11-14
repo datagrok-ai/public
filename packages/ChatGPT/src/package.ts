@@ -2,6 +2,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import { ChatGptAssistant } from './prompt-engine/chatgpt-assistant';
+import { ChatGPTPromptEngine } from './prompt-engine/prompt-engine';
+import { AssistantRenderer } from './prompt-engine/rendering-tools';
 import {getAiPanelVisibility, initAiPanel, setAiPanelVisibility} from './ai-panel';
 
 export * from './package.g';
@@ -23,7 +26,7 @@ type IChatGptResponse = {
 
 let apiKey: string = '';
 let model: string = 'gpt-4';
-let temperature = 0.7;
+let temperature = 0.1;
 const url = 'https://api.openai.com/v1/chat/completions';
 
 
@@ -57,7 +60,6 @@ export async function askImpl(question: string): Promise<IChatGptResponse> {
   return await chatGpt(request);
 }
 
-
 async function executeFunction(functionName: string, parameters: any) {
   const func = DG.Func.find({name: functionName})[0];
   if (func) {
@@ -81,7 +83,7 @@ export class PackageFunctions {
     grok.events.onViewAdded.subscribe((view) => {
       if (view.type === DG.VIEW_TYPE.TABLE_VIEW) {
         const tableView = view as DG.TableView;
-        const iconFse = ui.iconFA('brain', () => setAiPanelVisibility(true), 'Ask AI');
+        const iconFse = ui.iconSvg('ai.svg', () => setAiPanelVisibility(true), 'Ask AI');
         tableView.setRibbonPanels([...tableView.getRibbonPanels(), [iconFse]]);
       }
     });
@@ -161,5 +163,40 @@ export class PackageFunctions {
       return await executeFunction(functionName, JSON.parse(parameters));
     }
     return JSON.stringify(result);
+  }
+
+  @grok.decorators.func({
+    tags: ['search'],
+  })
+  static async askMultiStep(question: string): Promise<DG.Widget> {
+    return DG.Widget.fromRoot(
+      (() => {
+        const planContainer = ui.divV([]);
+        const resultContainer = ui.divV([]);
+        const gptEngine = new ChatGPTPromptEngine(apiKey, 'gpt-4.1-mini-2025-04-14');
+        const gptAssistant = new ChatGptAssistant(gptEngine);
+        
+        const button = ui.button('Ask AI', () => {
+          ui.empty(planContainer);
+          ui.empty(resultContainer);
+          
+          const planWait = ui.wait(async () => {
+            const plan = await gptAssistant.plan(question);
+            return AssistantRenderer.renderPlan(plan);
+          });
+          planContainer.appendChild(planWait);
+          
+          const resultWait = ui.wait(async () => {
+            const plan = await gptAssistant.plan(question);
+            const result = await gptAssistant.execute(plan);
+            return AssistantRenderer.renderResult(result);
+          });
+          resultContainer.appendChild(resultWait);
+        });
+        
+        const wrapper = ui.divV([button, planContainer, resultContainer], 'chatgpt-ask-ai-result');
+        return wrapper;
+      })()
+    );
   }
 }

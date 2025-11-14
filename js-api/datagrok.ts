@@ -1,12 +1,12 @@
 import * as dayjs from "dayjs";
 import * as wu from "wu";
-const { AsyncLocalStorage } = require('async_hooks');
+import { AsyncLocalStorage } from 'node:async_hooks';
 
 (globalThis as any).self = globalThis;
 (globalThis as any).window = {};
 
 (globalThis as any).fetchWithCallback = function(url:any, params:any, callback:any, errorCallback:any) {
-    fetch(url, params['o'])
+    fetch(url, params)
         .then(async(response: any) => {callback(await response.bytes(), response.status, response.statusText, response.headers);})
         .catch(err => errorCallback(err));
 };
@@ -66,11 +66,12 @@ export function getContext() {
 }
 
 (globalThis as any).getTokenFromAsyncLocalStorage = function() {
-    const store = datagrokAsyncLocalStorage.getStore();
-    return store ? store.token : null;
+    const store = datagrokAsyncLocalStorage.getStore() as { token?: string } | undefined;
+    return store?.token ?? null;
 }
 
 export async function startDatagrok(options: {apiUrl: string, apiToken?: string | undefined}): Promise<any> {
+    console.log('Initializing Datagrok environment');
     //@ts-ignore
     await import ('./src/datagrok/web/grok_shared.dart.js');
 
@@ -93,5 +94,9 @@ export async function startDatagrok(options: {apiUrl: string, apiToken?: string 
     DG.grok.dapi.root = options.apiUrl;
 
     let status = await (globalThis as any).window.grok_Init();
-    console.log(status);
+    if (status != 0) {
+        console.log('Init function returned non-zero code');
+        process.exit(status);
+    }
+    console.log('Datagrok environment is ready');
 }

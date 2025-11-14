@@ -4,6 +4,7 @@
 #environment: channels: [conda-forge, defaults], dependencies: [python=3.8, scikit-learn=0.23.2, numpy=1.19.5, pandas=1.3.5, rdkit, {pip: [mordred, xgboost]}]
 #input: dataframe table
 #input: column molecules {caption: Molecules column}
+#tags: Transform
 #meta.method_info.author: Kjell Jorner, et al.
 #meta.method_info.year: 2021
 #meta.method_info.package: AqSolPred

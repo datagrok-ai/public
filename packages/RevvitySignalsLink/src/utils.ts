@@ -10,10 +10,11 @@ import { compoundTypeAndViewNameMapping, ENTITY_FIELDS_TO_EXCLUDE, FIELDS_SECTIO
 import { getRevvityLibraries } from './libraries';
 import { u2 } from '@datagrok-libraries/utils/src/u2';
 import { _package } from './package';
-import { currentQueryBuilderConfig, runSearchQuery } from './search-utils';
+import { currentQueryBuilderConfig, filterProperties, runSearchQuery } from './search-utils';
 import { funcs } from './package-api';
 import { ComplexCondition, Operators } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { openedView, updateView } from './view-utils';
+import dayjs from 'dayjs';
 
 
 function extractNameFromJavaObjectString(javaString: string): string {
@@ -398,16 +399,32 @@ export function createRevvityWidgetByCorporateId(response: RevvityApiResponse, i
   return acc.root;
 }
 
-export async function transformData(data: Record<string, any>[]): Promise<Record<string, any>[]> {
+export async function transformData(data: Record<string, any>[], libId: string, entityType: string): Promise<DG.DataFrame> {
+  if (!data.length)
+    return DG.DataFrame.create();
   const users = await getRevvityUsers();
-  const items = [];
-  for (const item of data) {
-        const result: any = { id: item.id };
-    const attrs = item.attributes || {};
+  const columnsData: {[key: string]: {type: string, data: any[]}} = {};
+  const createCol = (key: string, counter: number) => {
+    //find column type
+    const props = filterProperties[`${libId}|${entityType}`];
+    const prop = props.filter((it) => it.name === key);
+    if (!columnsData[key]) {
+      columnsData[key] = { type: prop.length ? prop[0].type : DG.TYPE.STRING, data: [] };
+      for (let j = 0; j < counter; j++)
+        columnsData[key].data.push(undefined);
+    }
+  }
+  for (let i = 0; i < data.length; i++) {
+    if (!columnsData.id)
+      columnsData.id = {type: DG.TYPE.STRING, data: []};
+    columnsData.id.data.push(data[i].id);
+
+    const attrs = data[i].attributes || {};
 
     for (const [key, value] of Object.entries(attrs)) {
       if (ENTITY_FIELDS_TO_EXCLUDE.includes(key))
         continue;
+      createCol(key, i);
       //handle fileds related to users
       if (USER_FIELDS.includes(key)) {
         let userArr = users?.filter((it) => it.userId === value);
@@ -417,13 +434,13 @@ export async function transformData(data: Record<string, any>[]): Promise<Record
           userString = user.email ?? user.userName ??
           (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.userId ?? 'unknown user');
         }
-        result[key] = userString;
+        columnsData[key].data.push(userString);
         continue;
       }
       if (Array.isArray(value)) {
-        result[key] = value.join('; ');
+        columnsData[key].data.push(value.join('; '));
       } else {
-        result[key] = value;
+        columnsData[key].data.push(value);
       }
     }
 
@@ -432,16 +449,31 @@ export async function transformData(data: Record<string, any>[]): Promise<Record
       for (const [tagKey, tagValue] of Object.entries(attrs.tags)) {
         if (TAGS_TO_EXCLUDE.includes(tagKey))
           continue;
+      createCol(tagKey, i);
         if (Array.isArray(tagValue)) {
-          result[tagKey] = tagValue.join('; ');
+          columnsData[tagKey].data.push(tagValue.join('; '));
         } else {
-          result[tagKey] = tagValue;
+          columnsData[tagKey].data.push(tagValue);
         }
       }
     }
-    items.push(result);
+    
+    //in case item lacked some of the keys, fill in corresponding columns with undefined values
+    for (const key of Object.keys(columnsData)) {
+      if (columnsData[key].data.length < i + 1)
+        columnsData[key].data.push(undefined);
+    }
   }
-  return items;
+
+  const columns: DG.Column[] = [];
+  for (let colName of Object.keys(columnsData)) {
+    if (columnsData[colName].type === 'datetime')
+      columnsData[colName].data = columnsData[colName].data.map((it) => dayjs(it));
+    const col = DG.Column.fromList(columnsData[colName].type as 'string' | 'int' | 'double' | 'bool' | 'qnum' | 'datetime',
+      colName, columnsData[colName].data);
+    columns.push(col);
+  }
+  return DG.DataFrame.fromColumns(columns);
 }
 
 export async function reorderColumns(df: DG.DataFrame) {

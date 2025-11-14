@@ -42,7 +42,7 @@ Datagrok supports multiple modalities, including:
 
   - [Sequence-activity relationship analysis](../solutions/domains/bio/bio.md#sequence-activity-relationship-analysis)
   - [Multiple sequence alignment](../solutions/domains/bio/bio.md#multiple-sequence-alignment-msa)
-  - [Atomic-level structure generation](../solutions/domains/bio/bio.md#get-atomic-level-structure)
+  - [Atomic-level structure generation](../solutions/domains/bio/bio.md#convert-to-atomic-level)
 
 - Predictive modeling and ADMET:
 
@@ -206,15 +206,23 @@ GitHub requires all code contributors to enable two-factor authentication (2FA) 
 
 ##### <b>Q: What happens to my data when I open a local file in Datagrok?</b>
 
-When you open a local file in Datagrok (like dragging and dropping a file to your browser), you can analyze it without saving. This data stays in your browser's memory and isn't sent to the server unless you run resource-intensive server-side computations. Your data is gone when you close the browser tab. To save your work, you need to upload it to the server. Note that uploading data does not make it accessible to others. Your data stays private and visible to you only until you explicitly share it. Learn how to [save](../concepts/project/project.md#saving-entities-to-projects) and [share](../navigation/basic-tasks/basic-tasks.md#share) data.
+When you open a local file in Datagrok (like dragging and dropping a file to your browser), you can analyze it without saving. This data stays in your browser's memory and isn't sent to the server unless you run resource-intensive server-side computations. Your data is gone when you close the browser tab. To save your work, you need to upload it to the server. Note that uploading data does not make it accessible to others. Your data stays private and visible to you only until you explicitly share it. Learn how to [share](../concepts/project/space.md#moving-entities-between-spaces) and [share](../navigation/basic-tasks/basic-tasks.md#share) data.
 
-##### <b>Q: What data or telemetry is sent back to Datagrok? What egress ports/protocols are used?</b>
+##### <b>Q: What data or telemetry is sent back to Datagrok? </b>
 
 * No automatic telemetry: Datagrok does not send any data to Datagrok servers by default.
-* Optional error report/feedback: Users can optionally send feedback or error reports to Datagrok by selecting the "Send report to Datagrok" checkbox in the corresponding dialog.
+* Optional error report/feedback: Users can optionally send feedback or error reports to Datagrok by selecting the "Send report to Datagrok" checkbox in the corresponding dialog. This feature can be disabled by the administrator.
 * Package/image pulls: Datagrok can download images from Docker Hub or packages from NPM.
-* Your connectors: Any external calls come from plugins you install (e.g., APIs, databases) over their standard ports/protocols.
 
+##### <b>Q: When deployed on-prem, is my data ever gets sent anywhere? </b>
+
+Your data is safe and secure with Datagrok, and nothing gets sent outside your security perimeter by default.
+All computations are done either [in-the-browser](../../develop/under-the-hood/performance.md#in-memory-database), or
+in [docker containers deployed on your virtual cloud](../../develop/how-to/packages/docker-containers.md).
+However, some of the optional [plugins](../plugins.md) are explicitly designed for connectivity with external systems. 
+good examples are [CDD Vault Link](https://github.com/datagrok-ai/public/tree/master/packages/CddVaultLink),
+[Benchling Link](https://github.com/datagrok-ai/public/tree/master/packages/BenchlingLink) or
+[Chemspace](https://github.com/datagrok-ai/public/tree/master/packages/Chemspace).
 
 ### Data security 
 
@@ -402,7 +410,7 @@ Datagrok provides advanced and intuitive search and filtering capabilities:
 ##### <b>Q: Can users save and share custom dashboards, analyses, and visualizations in Datagrok?</b>  
 
 Users can create projects that include data, analyses, and dashboards, then share them with others. Dashboards are dynamic and customizable.   
-[Creating and managing projects](../concepts/project/project.md#creating-and-managing-projects) | [Creating dynamic dashboards](../../access/databases/databases.md#creating-dynamic-dashboards-for-query-results)  
+[Creating and managing projects](../concepts/project/dashboard.md) | [Creating dynamic dashboards](../../access/databases/databases.md#creating-dynamic-dashboards-for-query-results)  
 
 ##### <b>Q: How can I link raw data, metadata, and analysis results to compounds or sequences so that this information can be easily recalled and shared across Datagrok dashboards?</b>
 

@@ -12,8 +12,8 @@ import {HelmAux, HelmProps, HelmServiceBase} from '@datagrok-libraries/bio/src/v
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {getGridCellColTemp} from '@datagrok-libraries/bio/src/utils/cell-renderer-back-base';
-import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
-import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/index';
+import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
+import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {execMonomerHoverLinks} from '@datagrok-libraries/bio/src/monomer-works/monomer-hover';
 import {MmcrTemps} from '@datagrok-libraries/bio/src/utils/cell-renderer-consts';
 import {getHelmHelper, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
@@ -198,7 +198,6 @@ export class HelmGridCellRendererBack extends CellRendererBackAsyncBase<HelmProp
 
     e.preventDefault();
     e.stopPropagation();
-
   }
 
   onMouseLeave(gridCell: DG.GridCell, e: MouseEvent): void {

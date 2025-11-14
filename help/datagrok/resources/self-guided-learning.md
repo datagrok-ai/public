@@ -21,7 +21,8 @@ To get you started, we've prepared the following resources:
 1. [Context Panel](../navigation/panels/panels.md#context-panel)
 1. [Context Help](../navigation/panels/panels.md#context-help)
 1. [Browse](../navigation/views/browse.md)
-1. [Projects](../concepts/project/project.md)
+1. [Dashboards](../concepts/project/dashboard.md)
+1. [Spaces](../concepts/project/space.md)
 1. [Key concepts](../concepts/concepts.md)
 1. [Basic tasks](../navigation/basic-tasks/basic-tasks.md)
 
