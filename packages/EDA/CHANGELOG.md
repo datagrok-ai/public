@@ -1,5 +1,20 @@
 # EDA changelog
 
+## 1.4.11 (2025-11-18)
+
+Implemented
+
+* Pareto front viewer
+* Pareto optimization app
+
+## 1.4.10 (2025-11-05)
+
+Correct MCL worker termination
+
+## 1.4.9 (2025-11-04)
+
+Updated ML lib
+
 ## 1.4.8 (2025-10-15)
 
 Updated tutorials
