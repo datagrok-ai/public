@@ -21,6 +21,11 @@ See also:
 - [Versioning policy](../../develop/dev-process/versioning-policy.md)
 - [Docker-Compose](../docker-compose/docker-compose.md)
 
+## 2025-11-13 Datagrok 1.26.8 release
+
+* Fixed Ctrl-click selection for scatterplot
+* Restored the ability to share with a new user via email
+
 ## 2025-11-03 Datagrok 1.26.7 release
 
 * Fixed Databrics schema browser
