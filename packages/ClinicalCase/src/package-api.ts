@@ -8,7 +8,7 @@ import * as DG from 'datagrok-api/dg';
 
 
 export namespace scripts {
-  export async function readSas(fileInput: DG.FileInfo ): Promise<DG.DataFrame> {
+  export async function readSas(fileInput: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('ClinicalCase:ReadSas', { fileInput });
   }
 }
@@ -18,7 +18,7 @@ export namespace funcs {
     return await grok.functions.call('ClinicalCase:ClinicalCaseApp', {});
   }
 
-  export async function clinicalCaseAppTreeBrowser(treeNode: any ): Promise<any> {
+  export async function clinicalCaseAppTreeBrowser(treeNode: any ): Promise<void> {
     return await grok.functions.call('ClinicalCase:ClinicalCaseAppTreeBrowser', { treeNode });
   }
 

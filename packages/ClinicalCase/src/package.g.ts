@@ -5,31 +5,27 @@ import * as DG from 'datagrok-api/dg';
 //tags: app
 //output: view result
 //meta.browsePath: Clinical
-export async function clinicalCaseApp() {
-  return PackageFunctions.clinicalCaseApp();
+export async function clinicalCaseApp() : Promise<any> {
+  return await PackageFunctions.clinicalCaseApp();
 }
 
-//name: clinicalCaseAppTreeBrowser
 //input: dynamic treeNode 
-//output: dynamic result
-export async function clinicalCaseAppTreeBrowser(treeNode: any) {
-  return PackageFunctions.clinicalCaseAppTreeBrowser(treeNode);
+export async function clinicalCaseAppTreeBrowser(treeNode: any) : Promise<void> {
+  await PackageFunctions.clinicalCaseAppTreeBrowser(treeNode);
 }
 
-//name: clinicalCaseFolderLauncher
 //tags: folderViewer
 //input: file folder 
 //input: list<file> files 
-//output: dynamic result
-export async function clinicalCaseFolderLauncher(folder: DG.FileInfo, files: DG.FileInfo[]) {
-  return PackageFunctions.clinicalCaseFolderLauncher(folder, files);
+//output: widget result
+export async function clinicalCaseFolderLauncher(folder: DG.FileInfo, files: DG.FileInfo[]) : Promise<any> {
+  return await PackageFunctions.clinicalCaseFolderLauncher(folder, files);
 }
 
-//name: xptFileHandler
 //tags: file-handler
 //input: list file 
-//output: list result
+//output: list<dataframe> result
 //meta.ext: xpt
-export async function xptFileHandler(file: DG.FileInfo) {
-  return PackageFunctions.xptFileHandler(file);
+export async function xptFileHandler(file: DG.FileInfo) : Promise<any> {
+  return await PackageFunctions.xptFileHandler(file);
 }

@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {studies} from '../clinical-study';
+import {studies} from '../package';
 import {addDataFromDmDomain} from '../data-preparation/utils';
 import {ETHNIC, QS_CATEGORY, QS_RES, QS_RES_N, QS_SUB_CATEGORY, QS_TEST,
   RACE, SEX, SUBJECT_ID, VISIT_NUM} from '../constants/columns-constants';
@@ -10,7 +10,6 @@ import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {TRT_ARM_FIELD} from '../views-config';
 import {tTest} from '@datagrok-libraries/statistics/src/tests';
 import {getPearsonChiCriterionPValue} from '../stats/pearson-chi-criteria';
-import {studiesViewsConfigs} from '../package';
 const {jStat} = require('jstat');
 
 
@@ -45,7 +44,7 @@ export class QuestionnaiesView extends ClinicalCaseViewBase {
   }
 
   createView(): void {
-    this.splitBy = [SEX, RACE, ETHNIC, studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD]]
+    this.splitBy = [SEX, RACE, ETHNIC, studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD]]
       .filter((it) => studies[this.studyId].domains.dm.columns.names().includes(it)) as string[];
     this.selectedSplitBy = this.splitBy.length ? this.splitBy[0] : '';
     this.qsWithDm = addDataFromDmDomain(studies[this.studyId].domains.qs, studies[this.studyId].domains.dm,

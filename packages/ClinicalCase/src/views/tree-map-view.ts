@@ -5,8 +5,7 @@ import {ETHNIC, RACE, SEX, SUBJECT_ID} from '../constants/columns-constants';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {TRT_ARM_FIELD} from '../views-config';
 import {TIME_PROFILE_VIEW_NAME} from '../constants/view-names-constants';
-import {studies} from '../clinical-study';
-import {studiesViewsConfigs} from '../package';
+import {studies} from '../package';
 
 export class TreeMapView extends ClinicalCaseViewBase {
   aeDataframeWithDm: DG.DataFrame;
@@ -20,7 +19,7 @@ export class TreeMapView extends ClinicalCaseViewBase {
   }
 
   createView(): void {
-    this.dmFields = [studiesViewsConfigs[this.studyId].config[TIME_PROFILE_VIEW_NAME][TRT_ARM_FIELD], SEX, RACE, ETHNIC]
+    this.dmFields = [studies[this.studyId].viewsConfig.config[TIME_PROFILE_VIEW_NAME][TRT_ARM_FIELD], SEX, RACE, ETHNIC]
       .filter((it) => studies[this.studyId].domains.dm.columns.names().includes(it));
     this.aeDataframeWithDm = addDataFromDmDomain(studies[this.studyId].domains.ae, studies[this.studyId].domains.dm,
       studies[this.studyId].domains.ae.columns.names(), this.dmFields);

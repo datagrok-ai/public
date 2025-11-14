@@ -6,7 +6,7 @@ import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {filetrValueFromDf} from '../data-preparation/utils';
 import {InclusionCriterion} from '../model/InclusionCriteria';
 import {DOMAIN, SUBJECT_ID} from '../constants/columns-constants';
-import {studies} from '../clinical-study';
+import {studies} from '../package';
 
 
 export class CohortView extends ClinicalCaseViewBase {

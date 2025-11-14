@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import {ValidationHelper} from '../helpers/validation-helper';
 import {updateDivInnerHTML} from '../utils/utils';
 import {createValidationErrorsDiv, getRequiredColumnsByView} from '../utils/views-validation-utils';
-import {VIEWS} from '../package';
+import {studies} from '../package';
 
 export class ClinicalCaseViewBase extends DG.ViewBase {
   constructor(name, studyId) {
@@ -58,6 +58,6 @@ export class ClinicalCaseViewBase extends DG.ViewBase {
 
   detach(): void {
     super.detach();
-    delete VIEWS[this.studyId][this.name];
+    delete studies[this.studyId].views[this.name];
   }
 }
