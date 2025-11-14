@@ -171,6 +171,16 @@ their content is automatically visualized in the **Context Panel**.
 
 :::
 
+### Sorting
+
+To sort the table by a particular column, double-click the column header. The "↓" symbol
+next the column name would appear, indicating that the column is sorted in descending order
+(from high to low). Double-click again to sort in ascending order. Next double-click resets the
+sorting order.
+
+To sort by multiple columns at once, right-click the grid, choose "Sort...", and 
+pick the desired columns, along with the sort direction for each of the columns. 
+
 ### Selecting columns
 
 There are multiple ways to select a column:
