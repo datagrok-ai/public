@@ -40,11 +40,11 @@ See details: [issues](release-history.md), [plugin changelogs](plugins/plugins.m
 
 | Service                | Version          |
 |------------------------|------------------|
-| Grok Connect           | 2.5.2 or higher  |
-| Grok Pipe              | 1.0.1 or higher  |
-| Grok Spawner           | 1.11.7 or higher |
+| Grok Connect           | 2.5.2   |
+| Grok Pipe              | 1.0.1   |
+| Grok Spawner           | 1.11.7 |
 | RabbitMQ               | 4.0.5-management |
-| Jupyter Kernel Gateway | 1.16.2 or higher |
+| Jupyter Kernel Gateway | 1.16.2  |
 
 ## 1.26.5 || 2025-Oct
 
@@ -58,11 +58,11 @@ See details: [issues](release-history.md), [plugin changelogs](plugins/plugins.m
 
 | Service                | Version          |
 |------------------------|------------------|
-| Grok Connect           | 2.5.2 or higher  |
-| Grok Pipe              | 1.0.1 or higher  |
-| Grok Spawner           | 1.11.4 or higher |
+| Grok Connect           | 2.5.2  |
+| Grok Pipe              | 1.0.1  |
+| Grok Spawner           | 1.11.4  |
 | RabbitMQ               | 4.0.5-management |
-| Jupyter Kernel Gateway | 1.16.2 or higher |
+| Jupyter Kernel Gateway | 1.16.2 |
 
 ## 1.26 || 2025-Jul
 
