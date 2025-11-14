@@ -34,40 +34,41 @@ Out of the box, the following semantic types are automatically detected based on
 | Semantic type           | Value             | Required plugins        |
 |-------------------------|-----------------|------------------------|
 | **Cheminformatics types** |                 |                        |
-| Molecule                | 'Molecule'         | [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)                   |
-| Chemical mixture (Mixfile format)       | 'ChemicalMixture'  | [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)                   |
+| Molecule                | `Molecule`        | [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)                   |
+| Substructure | `Substructure`         | [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)                   |
+| Chemical mixture (Mixfile format)       | `ChemicalMixture`  | [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)                   |
 | **Bioinformatics types** |                 |                        |
-| Macromolecule           | 'Macromolecule'    | [Bio](https://github.com/datagrok-ai/public/tree/master/packages/Bio)                    |
-| HELM                    | 'HELM'             | [Bio](https://github.com/datagrok-ai/public/tree/master/packages/Bio)                    |
-| Phylogenetic trees                  | 'Newick'           | [Bio](https://github.com/datagrok-ai/public/tree/master/packages/Bio)                    |
-| Molecule 3D             | 'Molecule3D'       | [Biostructure Viewer](https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer)     |
-| PDB identifiers           | PDB_ID           | [Biostructure Viewer](https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer)     |
+| Macromolecule           | `Macromolecule`    | [Bio](https://github.com/datagrok-ai/public/tree/master/packages/Bio)                    |
+| HELM                    | `HELM`             | [Bio](https://github.com/datagrok-ai/public/tree/master/packages/Bio)                    |
+| Phylogenetic trees                  | `Newick`           | [Bio](https://github.com/datagrok-ai/public/tree/master/packages/Bio)                    |
+| Molecule 3D             | `Molecule3D`       | [Biostructure Viewer](https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer)     |
+| PDB identifiers           | `PDB_ID`           | [Biostructure Viewer](https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer)     |
 | **General types**        |                 |                        |
-| Text                    | 'Text'             | -                      |
-| Duration                | 'Duration'         | -                      |
-| Gender                  | 'Gender'           | -                      |
-| Money                   | 'Money'            | -                      |
-| Image                   | 'Image'            | -                      |
-| File                    | 'File'             | -                      |
-| URL                     | 'URL'              | -                      |
-| IP address              | 'IP Address'       | -                      |
+| Text                    | `Text`             | -                      |
+| Duration                | `Duration`         | -                      |
+| Gender                  | `Gender`           | -                      |
+| Money                   | `Money`            | -                      |
+| Image                   | `Image`            | -                      |
+| File                    | `File`             | -                      |
+| URL                     | `URL`              | -                      |
+| IP address              | `IP Address`       | -                      |
 | **Contact information**  |                 |                        |
-| Email           | 'Email Address'    | -                      |
-| Phone number            | 'Phone Number'     | -                      |
+| Email           | `Email Address`    | -                      |
+| Phone number            | `Phone Number`     | -                      |
 | **Geographic data**      |                 |                        |
-| City                    | 'City'             | -                      |
-| Country                 | 'Country'          | -                      |
-| State                   | 'State'            | -                      |
-| County                  | 'County'           | -                      |
-| Place name              | 'Place Name'       | -                      |
-| Zip code                | 'Zip Code'         | -                      |
-| Area code               | 'Area Code'        | -                      |
-| Street address          | 'Street Address'   | -                      |
-| Latitude                | 'Latitude'         | -                      |
-| Longitude               | 'Longitude'        | -                      |
+| City                    | `City`             | -                      |
+| Country                 | `Country`          | -                      |
+| State                   | `State`            | -                      |
+| County                  | `County`           | -                      |
+| Place name              | `Place Name`       | -                      |
+| Zip code                | `Zip Code`         | -                      |
+| Area code               | `Area Code`        | -                      |
+| Street address          | `Street Address`   | -                      |
+| Latitude                | `Latitude`         | -                      |
+| Longitude               | `Longitude`        | -                      |
 | **Specialized types**    |                 |                        |
-| Curve data              | 'fit'              | [Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves)                 |
-| PNG images               | 'rawPng'           | [Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves)                 |
+| Curve data              | `fit`              | [Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves)                 |
+| PNG images               | `rawPng`           | [Curves](https://github.com/datagrok-ai/public/tree/master/packages/Curves)                 |
 <!--| Chemical reaction       | 'ChemicalReaction' | [Chem](https://github.com/datagrok-ai/public/tree/master/packages/Chem)                   |-->
 
 ## Custom semantic types
