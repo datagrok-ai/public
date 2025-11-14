@@ -307,7 +307,8 @@ export class PackageFunctions {
   @grok.decorators.func({
     meta: {
       icon: 'files/icons/formviewer.svg',
-      viewerPosition: 'bottom'
+      viewerPosition: 'bottom',
+      toolbox: 'true',
     },
     tags: ['viewer'],
     name: 'Forms',

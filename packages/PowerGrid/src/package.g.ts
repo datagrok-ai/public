@@ -166,6 +166,7 @@ export async function _autoPowerGrid() : Promise<void> {
 //output: viewer result
 //meta.icon: files/icons/formviewer.svg
 //meta.viewerPosition: bottom
+//meta.toolbox: true
 export function formsViewer() {
   return PackageFunctions.formsViewer();
 }
