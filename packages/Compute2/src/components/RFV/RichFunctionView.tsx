@@ -249,6 +249,7 @@ export const RichFunctionView = Vue.defineComponent({
     const isReportEnabled = Vue.ref(false);
     const isFittingEnabled = Vue.ref(false);
     const allowRerun = Vue.ref(false);
+    const runLabel =  Vue.ref('Run');
 
     const isLocked = Vue.ref(false);
 
@@ -283,6 +284,7 @@ export const RichFunctionView = Vue.defineComponent({
       isReportEnabled.value = Utils.getFeature(features, 'export', true);
       isFittingEnabled.value = Utils.getFeature(features, 'fitting', false);
       allowRerun.value = Utils.getFeature(features, 'rerun', false);
+      runLabel.value = Utils.getRunLabel(call.func) ?? 'Run';
       dockSpawnConfig.value = Utils.getDockSpawnConfig(call.func);
     }, {immediate: true});
 
@@ -558,7 +560,7 @@ export const RichFunctionView = Vue.defineComponent({
                         isDisabled={!isRunnable.value || isRunning.value || props.isTreeLocked || props.isReadonly}
                         onClick={run}
                       >
-                        { isOutputOutdated.value ? 'Run' : 'Rerun' }
+                        { isOutputOutdated.value ? runLabel.value : 'Rerun' }
                       </BigButton>
                   }
                   {
