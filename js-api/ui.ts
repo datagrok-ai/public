@@ -969,8 +969,12 @@ export namespace input {
     return _create(d4.InputType.Switch, name, options);
   }
 
-  export function file(name: string, options?: IFileInitOptions<FileInfo>): FileInput<FileInfo | null> {
-    return _create(d4.InputType.File, name, options) as FileInput<FileInfo>;
+  export function file(name: string, options?: IInputInitOptions<FileInfo>): InputBase<FileInfo | null> {
+    return _create(d4.InputType.File, name, options);
+  }
+
+  export function files(name: string, options?: IInputInitOptions<FileInfo[]>): InputBase<FileInfo[] | null> {
+    return _create(d4.InputType.Files, name, options);
   }
 
   export function list(name: string, options?: IInputInitOptions<Array<any>>): InputBase<Array<any> | null> {

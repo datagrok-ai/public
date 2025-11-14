@@ -607,8 +607,6 @@ export interface IDartApi {
   grok_ColumnsInput_SetAdditionalColumns(input: any, columns: any): any;
   grok_ColumnsInput_SetOnAdditionalColumnsChanged(input: any, fn: any): any;
   grok_ColorInput_SetShowOnlyColorBox(input: any, x: any): any;
-  grok_FileInput_Get_Directory_Files(input: any): any;
-  grok_FileInput_Set_Directory_Input(input: any, x: any): any;
   grok_PropertyGrid(): any;
   grok_PropertyGrid_Update(propGrid: any, src: any, props: any): any;
   grok_TreeViewNode_Tree(): any;
