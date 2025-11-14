@@ -316,7 +316,10 @@ export class Link {
           if (data) {
             const [state, restriction] = data;
             const item = node.getItem();
-            const nextValue = state instanceof DG.DataFrame ? state.clone() : state;
+            const isDf = state instanceof DG.DataFrame;
+            const nextValue = isDf ? state.clone() : state;
+            if (isDf)
+              (nextValue as DG.DataFrame).id = uuidv4();
             if (isFuncCallNode(item) && !item.instancesWrapper.isOutputOutdated$.value)
               item.instancesWrapper.setRestriction(ioName, nextValue, restriction);
             else
