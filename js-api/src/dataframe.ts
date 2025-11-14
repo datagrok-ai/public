@@ -88,6 +88,12 @@ export interface CsvExportOptions {
   /** Column-specific formats (column name -> format).
       For format examples, see [dateTimeFormatters]. */
   columnFormats?: ColumnsFormatCsvExportOptions;
+
+  /**
+   * Whether to include UTF-8 BOM marker at the beginning of the file.
+   *   Helps Excel correctly detect UTF-8 encoding for multibyte characters.
+   */
+  includeUtf8Bom?: boolean;
 }
 
 

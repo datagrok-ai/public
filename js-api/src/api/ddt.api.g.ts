@@ -181,6 +181,8 @@ export class Tags {
   /// Expression that was used to derive the column.
   static Expression = 'expression';
 
+  static TableCatalog = 'table_catalog';
+
   static TableSchema = 'table_schema';
 
   static ReferencesSchema = 'references_schema';
