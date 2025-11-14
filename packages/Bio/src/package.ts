@@ -74,7 +74,7 @@ import {matchMoleculesWithMonomers, MonomerManager, standardizeMonomerLibrary} f
 import {calculateScoresWithEmptyValues} from './utils/calculate-scores';
 import {SeqHelper} from './utils/seq-helper/seq-helper';
 import {_toAtomicLevel} from '@datagrok-libraries/bio/src/monomer-works/to-atomic-level';
-import {molecular3DStructureWidget, toAtomicLevelWidget} from './widgets/to-atomic-level-widget';
+import {molecular3DStructureWidget, toAtomicLevelWidget, toAtomicLevelSingle} from './widgets/to-atomic-level-widget';
 import {handleSequenceHeaderRendering} from './widgets/sequence-scrolling-widget';
 import {PolymerType} from '@datagrok-libraries/js-draw-lite/src/types/org';
 import {BilnNotationProvider} from './utils/biln';
@@ -642,6 +642,20 @@ export class PackageFunctions {
     }
   }
 
+  @grok.decorators.func({name: 'Molecule to HELM Single', description: 'Converts a single molecule to HELM notation without requiring a table or column'})
+  static async moleculeToHelmSingle(
+    @grok.decorators.param({name: 'molecule', options: {semType: 'Molecule', description: 'Input molecule'}})molecule: string,
+  ): Promise<string> {
+    // create temporary dataframe
+    const tempCol = DG.Column.fromStrings('molecule', [molecule]);
+    tempCol.semType = DG.SEMTYPE.MOLECULE;
+    const tempDF = DG.DataFrame.fromColumns([tempCol]);
+    // call converter
+    await PackageFunctions.moleculesToHelmTopMenu(tempDF, tempCol);
+    // get result
+    const result = tempDF.columns.toList().find((c) => c.name.toLowerCase().includes('regenerated sequence'))?.get(0);
+    return result ?? '';
+  }
 
   @grok.decorators.func({
     name: 'To Atomic Level',
@@ -688,6 +702,41 @@ export class PackageFunctions {
       sequence: DG.SemanticValue
   ) : Promise<DG.Widget> {
     return toAtomicLevelWidget(sequence);
+  }
+
+  @grok.decorators.func({
+    name: 'To Atomic Level Single sequence',
+    description: 'Converts a single sequence to molblock'
+  })
+  static async toAtomicLevelSingleSeq(
+    @grok.decorators.param({name: 'sequence', type: 'string', options: {semType: 'Macromolecule'}}) sequence: string,
+  ) : Promise<string> {
+    // create temporary column and table
+    const isHelm = sequence.includes('$$');
+    const isSeparator = sequence.split('').filter((c) => c == '/').length > 2;
+    const isBiln = sequence.split('').filter((c) => c == '-').length > 2; // biln is super separator basically :D
+    // const isFasta = !isHelm && !isSeparator && !isBiln;
+    const tempCol = DG.Column.fromStrings('sequence', [sequence]);
+    tempCol.semType = DG.SEMTYPE.MACROMOLECULE;
+    tempCol.meta.units = isHelm ? NOTATION.HELM : isSeparator ? NOTATION.SEPARATOR : isBiln ? NOTATION.BILN : NOTATION.FASTA;
+    tempCol.setTag(bioTAGS.aligned, 'SEQ');
+    if (isSeparator)
+      tempCol.setTag(bioTAGS.separator, '/');
+    if (isBiln)
+      tempCol.setTag(bioTAGS.separator, '-');
+    tempCol.setTag(bioTAGS.alphabet, 'UN');
+    tempCol.setTag(bioTAGS.alphabetIsMultichar, 'true');
+
+    const tempDF = DG.DataFrame.fromColumns([tempCol]);
+
+    // get the sell as semantic value
+    const cell = tempDF.cell(0, 'sequence');
+    const semValue = DG.SemanticValue.fromTableCell(cell);
+
+    const res = await toAtomicLevelSingle(semValue);
+    if (res.errorText || !res.mol)
+      throw new Error(res.errorText);
+    return res.mol;
   }
 
   @grok.decorators.panel({

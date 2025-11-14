@@ -187,6 +187,13 @@ export namespace funcs {
   }
 
   /**
+  Converts a single molecule to HELM notation without requiring a table or column
+  */
+  export async function moleculeToHelmSingle(molecule: string ): Promise<string> {
+    return await grok.functions.call('Bio:MoleculeToHelmSingle', { molecule });
+  }
+
+  /**
   Converts sequences to molblocks
   */
   export async function toAtomicLevel(table: DG.DataFrame , seqCol: DG.Column , nonlinear: boolean , highlight: boolean ): Promise<void> {
@@ -199,6 +206,13 @@ export namespace funcs {
 
   export async function toAtomicLevelPanel(sequence: any ): Promise<any> {
     return await grok.functions.call('Bio:ToAtomicLevelPanel', { sequence });
+  }
+
+  /**
+  Converts a single sequence to molblock
+  */
+  export async function toAtomicLevelSingleSeq(sequence: string ): Promise<string> {
+    return await grok.functions.call('Bio:ToAtomicLevelSingleSeq', { sequence });
   }
 
   export async function sequence3dStructureWidget(sequence: any ): Promise<any> {

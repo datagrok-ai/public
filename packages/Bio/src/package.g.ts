@@ -273,6 +273,14 @@ export async function moleculesToHelmTopMenu(table: DG.DataFrame, molecules: DG.
   await PackageFunctions.moleculesToHelmTopMenu(table, molecules);
 }
 
+//name: Molecule to HELM Single
+//description: Converts a single molecule to HELM notation without requiring a table or column
+//input: string molecule { semType: Molecule; description: Input molecule }
+//output: string result
+export async function moleculeToHelmSingle(molecule: string) : Promise<string> {
+  return await PackageFunctions.moleculeToHelmSingle(molecule);
+}
+
 //name: To Atomic Level
 //description: Converts sequences to molblocks
 //input: dataframe table { description: Input data table }
@@ -297,6 +305,14 @@ export async function toAtomicLevelAction(seqCol: DG.Column) : Promise<void> {
 //output: widget result
 export async function toAtomicLevelPanel(sequence: DG.SemanticValue) : Promise<any> {
   return await PackageFunctions.toAtomicLevelPanel(sequence);
+}
+
+//name: To Atomic Level Single sequence
+//description: Converts a single sequence to molblock
+//input: string sequence { semType: Macromolecule }
+//output: string result
+export async function toAtomicLevelSingleSeq(sequence: string) : Promise<string> {
+  return await PackageFunctions.toAtomicLevelSingleSeq(sequence);
 }
 
 //name: Molecular 3D Structure
