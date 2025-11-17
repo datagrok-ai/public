@@ -1,23 +1,22 @@
 ---
 title: "Table View"
 format: mdx
-sidebar_position: 3
-unlisted: true
+sidebar_position: 1
 ---
 
 ```mdx-code-block
-import GoToDialog from './img/go-to-row-dialog.png';
-import FunnelIcon from '../../../uploads/icons/funnel.png';
-import EmbedViewerDialog from './img/embed-viewer-dialog.png';
-import GearIcon from '../../../uploads/icons/gear-icon.png';
-import HamburgerIcon from '../../../uploads/icons/hamburger-menu.png';
+import GoToDialog from '../uploads/dialogs/go-to-row-dialog.png';
+import FunnelIcon from '../uploads/icons/funnel.png';
+import EmbedViewerDialog from '../uploads/dialogs/embed-viewer-dialog.png';
+import GearIcon from '../uploads/icons/gear-icon.png';
+import HamburgerIcon from '../uploads/icons/hamburger-menu.png';
 ```
 
-**Table View** is the primary [view](views.md) for working with
-[tables](../../concepts/table.md), resembling Excel. It contains:
-* A [grid viewer](../../../visualize/viewers/grid.md) that visually represents
-  the underlying [table](../../concepts/table.md).
-* Additional [viewers](../../../visualize/viewers/viewers.md) that you can add to visualize data.
+**Table View** is the primary view for working with
+[tables](../datagrok/concepts/table.md), resembling Excel. It contains:
+* A [grid viewer](viewers/grid.md) that visually represents
+  the underlying [table](../datagrok/concepts/table.md).
+* Additional [viewers](viewers/viewers.md) that you can add to visualize data.
 
 The **Table View** also has these UI elements associated with it:
 
@@ -29,13 +28,13 @@ The **Table View** also has these UI elements associated with it:
 * **Status bar**: The central section shows the table's name, row/column counts,
    as well as filtered and selected row counts.
 
-![](../img/table-view.png)
+![](../datagrok/navigation/img/table-view.png)
 
 ## Navigation
    
 * To switch between **Table Views**, use the **Sidebar**, **Toolbox**, or the
-  [Table Manager](../panels/table-manager.md) (<kbd>Alt + T</kbd>).
-* To jump to a specific column, use the [Column Manager](../panels/column-manager.md) (**Status Bar** > **Columns:**).
+  [Table Manager](#table-manager) (<kbd>Alt + T</kbd>).
+* To jump to a specific column, use the [Column Manager](#column-manager) (**Status Bar** > **Columns:**).
 * To jump to a specific row, press <kbd>Ctrl+G</kbd>, which opens the **Go to**
   dialog. 
 
@@ -45,17 +44,17 @@ The **Table View** also has these UI elements associated with it:
 
 The relative positions of viewers in a **Table View**, along with [viewer
 properties](#viewer-properties), create a
-[layout](../../../visualize/view-layout.md). In Datagrok, layouts are
+[layout](view-layout.md). In Datagrok, layouts are
 independent from the underlying tables. This separation lets you
-[save](../basic-tasks/basic-tasks.md#save-and-share-a-table) layouts as a standalone entity and
+[save](../datagrok/navigation/basic-tasks/basic-tasks.md#save-and-share-a-table) layouts as a standalone entity and
 apply them to multiple datasets.
 
 To add a viewer to the **Table View**, on the **Toolbox** click the icon for the
 viewer you want to add. Alternatively, at the top of the screen, click the **Add
-viewer** (![](../../../uploads/icons/add-viewer-icon-temp.png)) icon and select
+viewer** (![](../uploads/icons/add-viewer-icon-temp.png)) icon and select
 the viewer you want.
 
-![](img/table-view-add-viewers-dock.gif)
+![](../datagrok/navigation/views/img/table-view-add-viewers-dock.gif)
 
 You can adjust the position and size of any viewer within the **Table View**. To
 resize a viewer, drag its border. To reposition it, start dragging the viewer's
@@ -85,9 +84,9 @@ These actions update the **Context Panel** with available settings. The most
 important data properties are shown on the viewer, for example, combo
 boxes that select columns. 
 
-Grid is a special viewer. To learn about how to change its appearance or settings, see [Grid](../../../visualize/viewers/grid.md).
+Grid is a special viewer. To learn about how to change its appearance or settings, see [Grid](viewers/grid.md).
 
-![viewer-property-panel](img/viewer-property-panel.gif)
+![viewer-property-panel](../datagrok/navigation/views/img/viewer-property-panel.gif)
 
 ### Tooltips
 
@@ -100,7 +99,7 @@ You can change this default information or disable the tooltip altogether.
 To access the tooltip options:
 * **For rows**: In the **Top Menu**, select **View** > **Tooltip**. This opens
   the **Tooltip** dialog, where you can select the columns to show or design a
-  custom tooltip using a [form viewer](../../../visualize/viewers/form.md).
+  custom tooltip using a [form viewer](viewers/form.md).
 * **For columns**: Right click the column's header and select the desired option
   under **Tooltip > Current Column**.
 * **For viewers**: Click the **Hamburger icon** in the viewer's header and select **Tooltip** > **Edit...** This opens the same **Tooltip** dialog as described above.
@@ -120,41 +119,41 @@ One of the unique features of Datagrok is the ability to create tooltips that
 interactively visualize groups of rows. For example, you can create
 a tooltip that uses a scatterplot to visualize the following:
 
-* Bars in a [histogram](../../../visualize/viewers/histogram.md)
-* Bars and stacks in a [bar chart](../../../visualize/viewers/bar-chart.md)
-* Segments and legend items in a [pie chart](../../../visualize/viewers/pie-chart.md)
-* Category labels in a [trellis plot](../../../visualize/viewers/trellis-plot.md)
-* Rectangular areas in a [tree map](../../../visualize/viewers/tree-map.md)
-* Nodes and edges in a [network diagram](../../../visualize/viewers/network-diagram.md)
-* Words in a [word cloud](../../../visualize/viewers/word-cloud.md)
-* Categories and histogram bins in a [filter](../../../visualize/viewers/filters.md).
+* Bars in a [histogram](viewers/histogram.md)
+* Bars and stacks in a [bar chart](viewers/bar-chart.md)
+* Segments and legend items in a [pie chart](viewers/pie-chart.md)
+* Category labels in a [trellis plot](viewers/trellis-plot.md)
+* Rectangular areas in a [tree map](viewers/tree-map.md)
+* Nodes and edges in a [network diagram](viewers/network-diagram.md)
+* Words in a [word cloud](viewers/word-cloud.md)
+* Categories and histogram bins in a [filter](viewers/filters.md).
 
 To set a viewer as a group tooltip:
 
 1. Add a viewer.
 1. In the viewer's header, click the **Hamburger
-   (![](../../../uploads/icons/hamburger-menu.png)) icon** and select **Tooltip > Use as Group Tooltip**. This viewer is now set as a group tooltip.
+   (![](../uploads/icons/hamburger-menu.png)) icon** and select **Tooltip > Use as Group Tooltip**. This viewer is now set as a group tooltip.
   
 The tooltip settings remain in effect even if you close the underlying viewer.
 To remove the group tooltip, repeat the steps above, but this time, select **Tooltip >
 Remove Group Tooltip**.
 
-![Group Tooltip](../../../uploads/viewers/viewer-group-tooltip.png "Group Tooltip")
+![Group Tooltip](../uploads/viewers/viewer-group-tooltip.png "Group Tooltip")
 
 ### Statistical hypothesis testing
 
 Certain viewers include statistical features:
 
-* Box [plots](../../../visualize/viewers/box-plot.md) show the [p-value](../../../visualize/viewers/box-plot.md#t-test), allowing you to determine
+* Box [plots](viewers/box-plot.md) show the [p-value](viewers/box-plot.md#t-test), allowing you to determine
   whether the findings are statistically significant.
-* Scatterplots can show one or more [regression lines](../../../visualize/viewers/scatter-plot.md#formula-lines) with
-  associated equations and color-coding. [Correlation plots](../../../visualize/viewers/correlation-plot.md) highlight the values of
+* Scatterplots can show one or more [regression lines](viewers/scatter-plot.md#formula-lines) with
+  associated equations and color-coding. [Correlation plots](viewers/correlation-plot.md) highlight the values of
   Pearson's correlation coefficient, making it easy to trace the strength of the
   relationship between given variables.
-* The statistics viewer shows key [statistics measures](../../../visualize/viewers/statistics.md#statistical-measures) for
+* The statistics viewer shows key [statistics measures](viewers/statistics.md#statistical-measures) for
   the selected columns.
 
-To learn about available hypothesis tests, see [Statistical hypothesis testing](../../solutions/domains/data-science.md#statistical-hypothesis-testing).
+To learn about available hypothesis tests, see [Statistical hypothesis testing](../datagrok/solutions/domains/data-science.md#statistical-hypothesis-testing).
 
 <!--- ChaRPY package is not active now
 
@@ -171,9 +170,9 @@ To edit data, use the **Top Menu**. Here, you can find commands like adding or
 removing columns or rows, aggregating data, or imputing missing values. 
 
 To learn about data transformation options, visit
-[Transformation](../../../transform/transform.md). To learn how to cluster data,
+[Transformation](../transform/transform.md). To learn how to cluster data,
 analyze variances, and perform other ML tasks, visit
-[Explore](../../../explore/explore.md).
+[Explore](../explore/explore.md).
 
 ### Select and filter
 
@@ -193,7 +192,7 @@ This synchronization lets you explore the dataset visually and instantly find pa
   histogram.
 * Clicking a specific data point on a scatterplot updates the current row across all viewers.
 
-![Viewers Interaction](../../../uploads/gifs/viewers-interaction.gif "Viewers Interaction")
+![Viewers Interaction](../uploads/gifs/viewers-interaction.gif "Viewers Interaction")
 
 <br/>
 
@@ -208,23 +207,23 @@ To filter, you have these options:
 To toggle filters, click the **Funnel (<img src={FunnelIcon} width="15"/>) icon** on the **Toolbox** or at the
 top of the **Table View**. To choose which columns are visible, at the top of
 the **Filters** panel, click the **Hamburger
-(![](../../../uploads/icons/hamburger-menu.png)) icon** and select **Select
+(![](../uploads/icons/hamburger-menu.png)) icon** and select **Select
 Columns...** You can also add specific columns directly by clicking the
-**Hamburger (![](../../../uploads/icons/hamburger-menu.png)) icon** in the
+**Hamburger (![](../uploads/icons/hamburger-menu.png)) icon** in the
 column header and choosing the **Add as filter** command. 
 
-![](img/filters-viewer.gif)
+![](../datagrok/navigation/views/img/filters-viewer.gif)
 
 The filters panel is a _viewer_. This means it interacts with viewers
 like any other viewer. To learn more about the filters viewer, see
-[Filters](../../../visualize/viewers/filters.md).
+[Filters](viewers/filters.md).
 
 #### Viewers as filters
 
 By default, clicking a segment representing multiple rows in viewers, like a
-[bar](../../../visualize/viewers/bar-chart.md) or a [pie chart](../../../visualize/viewers/pie-chart.md), selects those rows. However,
+[bar](viewers/bar-chart.md) or a [pie chart](viewers/pie-chart.md), selects those rows. However,
 you can set the viewer to filter the underlying table instead. To do this, click
-the **Hamburger (![](../../../uploads/icons/hamburger-menu.png)) icon** on its
+the **Hamburger (![](../uploads/icons/hamburger-menu.png)) icon** on its
 header and select **On click** > **Filter**. 
 
 You can also specify custom behavior using the **Row Source** and **On click**
@@ -236,14 +235,14 @@ To customize these settings, click the **Gear (<img src={GearIcon} width="20"/>)
 icon** at the viewer's top. You can now adjust the settings in the **Context
 Panel** under **Data**.
 
-![viewers-as-filters](img/viewers-as-filters.gif)
+![viewers-as-filters](../datagrok/navigation/views/img/viewers-as-filters.gif)
 
 #### Search
 
 You can filter or select matching rows based on search parameters:
 
 1. In the **Table View**, go to the **Toolbox** and expand the **Search** pane.
-1. Click the **Hamburger** (![](../../../uploads/icons/hamburger-menu.png)) **icon** to choose whether matching rows should be selected or filtered as you modify the search.
+1. Click the **Hamburger** (![](../uploads/icons/hamburger-menu.png)) **icon** to choose whether matching rows should be selected or filtered as you modify the search.
 1. In the **Search** field, enter your search criteria using a [search pattern](#search-patterns).
 
    <details> 
@@ -261,7 +260,7 @@ You can filter or select matching rows based on search parameters:
    
    </details>
 
-![](img/search-in-table.gif)
+![](../datagrok/navigation/views/img/search-in-table.gif)
 
 <details>
 <summary>Search shortcuts</summary>
@@ -277,13 +276,13 @@ You can filter or select matching rows based on search parameters:
 
 </details>
 
-To replace values matching your search, use the [find and replace](../../../transform/find-and-replace.md) command (<kbd>Ctrl + H</kbd>).
+To replace values matching your search, use the [find and replace](../transform/find-and-replace.md) command (<kbd>Ctrl + H</kbd>).
 
 ##### Search patterns
 
 Search patterns let you specify conditions in a free text search. Datagrok uses
 the same syntax to search both in tables and externally, such as
-when accessing databases with [parameterized queries](../../../access/databases/databases.md#parameterized-queries). 
+when accessing databases with [parameterized queries](../access/databases/databases.md#parameterized-queries). 
 
 When searching in tables, you can use conditions with the column
 name (e.g., `age > 21`). However, for external queries, specifying the column
@@ -381,8 +380,8 @@ patterns, Datagrok defaults to an `exact value` search.
 
 ### Save and share
 
-You can [save](../basic-tasks/basic-tasks.md#save-and-share-a-table) and [share](../basic-tasks/basic-tasks.md#share) a **Table View** as a special
-type of project called a [dashboard](../../concepts/project/dashboard.md). To save just the layout, in the **Top Menu**, select **View** > **Layout** > **Save to Gallery**.
+You can [save](../datagrok/navigation/basic-tasks/basic-tasks.md#save-and-share-a-table) and [share](../datagrok/navigation/basic-tasks/basic-tasks.md#share) a **Table View** as a special
+type of project called a [dashboard](../datagrok/concepts/project/dashboard.md). To save just the layout, in the **Top Menu**, select **View** > **Layout** > **Save to Gallery**.
 
 ###  Embed
 
@@ -397,7 +396,7 @@ To embed:
    * For dashboards, in the **Top Menu**, select
     **View** > **Embed**.
    * For viewers, hover over the viewer's top, click the **Hamburger
-(![](../../../uploads/icons/hamburger-menu.png)) icon**, and select **General** > **Embed...**
+(![](../uploads/icons/hamburger-menu.png)) icon**, and select **General** > **Embed...**
 1. Copy the generated iframe and use it on your site.
 
 <img src={EmbedViewerDialog} width="450"/>
@@ -411,7 +410,7 @@ open tables. Use it to navigate between
 tables, select them, or perform batch actions. It also allows to view metadata
 on multiple tables in a tabular format.
 
-The implementation is based on the [grid](../../../visualize/viewers/grid.md), so many of the grid's features apply.
+The implementation is based on the [grid](viewers/grid.md), so many of the grid's features apply.
 
 Usage:
 
@@ -437,7 +436,7 @@ between columns, select them, or perform batch actions. It also allows to view
 metadata on multiple columns in a tabular format, as well as other column
 properties, such as statistics.
 
-The implementation is based on the [grid](../../../visualize/viewers/grid.md), so many of the grid's features apply.
+The implementation is based on the [grid](viewers/grid.md), so many of the grid's features apply.
 
 Usage:
 
@@ -459,10 +458,10 @@ tables.
 * To edit a _table_, its settings, or _layout_, use the **Top Menu**.
 * To edit columns, cells, or viewer properties, use the context actions
   (available on right-click or from the **Context Panel**). Alternatively, click the
-**Hamburger (![](../../../uploads/icons/hamburger-menu.png)) icon** that appears
+**Hamburger (![](../uploads/icons/hamburger-menu.png)) icon** that appears
 when you hover over a column header or the top of a viewer.
 
-To see a complete list of available controls, visit [Controls](../shortcuts.md).
+To see a complete list of available controls, visit [Controls](../datagrok/navigation/shortcuts.md).
 
 ### Columns
 
@@ -498,8 +497,8 @@ Many viewers support the following:
 | Double-click | Reset View                                                                                                                                                                                                                                                                                                                 |
 | Alt+drag     | Zoom                                                                                                                                                                                                                                                                                                                       |
 | Mouse drag   | Pan                                                                                                                                                                                                                                                                                                                        |
-| Properties   | Show viewer properties in the [Context Panel](../panels/panels.md#context-panel)                                                                                                                                                                                                                                           |
-| Reset View   | Reset zoom level. Use in: [scatterplot](../../../visualize/viewers/scatter-plot.md), [line chart](../../../visualize/viewers/line-chart.md), [bar chart](../../../visualize/viewers/bar-chart.md), [3D scatterplot](../../../visualize/viewers/3d-scatter-plot.md), and [box plot](../../../visualize/viewers/box-plot.md) |
+| Properties   | Show viewer properties in the [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)                                                                                                                                                                                                                                           |
+| Reset View   | Reset zoom level. Use in: [scatterplot](viewers/scatter-plot.md), [line chart](viewers/line-chart.md), [bar chart](viewers/bar-chart.md), [3D scatterplot](viewers/3d-scatter-plot.md), and [box plot](visualize/viewers/box-plot.md) |
 
 General commands available under the **General** submenu:
 
@@ -508,8 +507,8 @@ General commands available under the **General** submenu:
 | Clone           | Create a copy of the viewer                                            |
 | Full Screen (**Alt+F**) | Show in full screen                                         |
 | Close           | Close the viewer                                                       |
-| Use in Trellis  | Add a [trellis plot](../../../visualize/viewers/trellis-plot.md), using this viewer as a renderer |
-| Save to Gallery | Saves this layout to a [gallery](../../../visualize/view-layout.md#layout-suggestions) |
+| Use in Trellis  | Add a [trellis plot](viewers/trellis-plot.md), using this viewer as a renderer |
+| Save to Gallery | Saves this layout to a [gallery](view-layout.md#layout-suggestions) |
 | Embed           | Create HTML code that can be embedded in an external site              |
 
 Style-related commands under the **Style** submenu:
@@ -545,7 +544,7 @@ Selection:
 | Shift+Click      | Select point or group              |
 | Ctrl+Shift+Click | Deselect point or group            |
 
-To select rows in the [grid](../../../visualize/viewers/grid.md):
+To select rows in the [grid](viewers/grid.md):
 
 |                                 |                                        |
 |---------------------------------|----------------------------------------|

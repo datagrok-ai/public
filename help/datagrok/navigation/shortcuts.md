@@ -1,5 +1,5 @@
 ---
-title: Controls
+title: Keyboard shortcuts
 keywords:
  - shortcuts
  - controls
