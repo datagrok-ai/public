@@ -9,6 +9,7 @@ import {getAiPanelVisibility, initAiPanel, setAiPanelVisibility} from './ai-pane
 import {findBestFunction, QueryMatchResult} from './prompts/find-best-function';
 import {askDeepGrok} from './deepwiki/client';
 import {askDeepWiki} from './deepwiki/ui';
+import { Plan } from './prompt-engine/interfaces';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -221,12 +222,12 @@ export class PackageFunctions {
           const searchResultHost = document.getElementsByClassName('power-pack-search-host')[0];
           if (!searchResultHost)
             return;
-          const gptEngine = new ChatGPTPromptEngine(apiKey, 'gpt-4.1-mini-2025-04-14');
+          const gptEngine = new ChatGPTPromptEngine(apiKey, model);
           const gptAssistant = new ChatGptAssistant(gptEngine);
 
           const resultWait = ui.wait(async () => {
             const resDiv = ui.divV([], 'chatgpt-ask-ai-result');
-            const plan = await gptAssistant.plan(s);
+            const plan = await grok.functions.call('ChatGPT:getExecutionPlan', {userGoal: s});
             const planDiv = AssistantRenderer.renderPlan(plan);
             resDiv.appendChild(planDiv);
             const result = await gptAssistant.execute(plan);
@@ -245,8 +246,26 @@ export class PackageFunctions {
       }
     };
   }
-  @grok.decorators.func()
- static async fuzzyMatch(prompt: string, searchPatterns: string[]): Promise<QueryMatchResult | null> {
-   return findBestFunction(prompt, searchPatterns);
+
+  @grok.decorators.func({
+    'meta': {
+      'cache': 'all',
+      'cache.invalidateOn': '0 0 1 * *'
+    }
+  })
+ static async getExecutionPlan(userGoal: string): Promise<Plan> {
+   const gptEngine = new ChatGPTPromptEngine(apiKey, model);
+   const gptAssistant = new ChatGptAssistant(gptEngine);
+   return await gptAssistant.plan(userGoal);
  }
+
+  @grok.decorators.func({
+    'meta': {
+      'cache': 'all',
+      'cache.invalidateOn': '0 0 1 * *'
+    }
+  })
+  static async fuzzyMatch(prompt: string, searchPatterns: string[]): Promise<QueryMatchResult | null> {
+    return findBestFunction(prompt, searchPatterns);
+  }
 }

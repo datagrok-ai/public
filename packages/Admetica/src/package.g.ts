@@ -60,6 +60,13 @@ export async function getAdmeProperties(molecules: DG.Column, props?: string[]) 
   return await PackageFunctions.getAdmeProperties(molecules, props);
 }
 
+//description: Predicts ADME properties for a given molecule.
+//input: string molecule { semType: Molecule }
+//output: dataframe result
+export async function getAdmePropertiesSingle(molecule: string) : Promise<any> {
+  return await PackageFunctions.getAdmePropertiesSingle(molecule);
+}
+
 //name: Admetica
 //tags: app
 //output: view result

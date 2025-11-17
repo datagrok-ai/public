@@ -36,6 +36,10 @@ export namespace funcs {
     return await grok.functions.call('ChatGPT:SmartChainExecutionProvider', {});
   }
 
+  export async function getExecutionPlan(userGoal: string ): Promise<any> {
+    return await grok.functions.call('ChatGPT:GetExecutionPlan', { userGoal });
+  }
+
   export async function fuzzyMatch(prompt: string , searchPatterns: any ): Promise<any> {
     return await grok.functions.call('ChatGPT:FuzzyMatch', { prompt, searchPatterns });
   }

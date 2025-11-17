@@ -42,10 +42,10 @@ export class AssistantRenderer {
       container.append(renderGraphics(val));
     else if (meta?.propertyType === 'widget')
       container.append(val.root);
-    else if (typeof val === 'object')
-      container.append(ui.divText(JSON.stringify(val, null, 2)));
     else if (typeof val === 'string' && meta?.semType === DG.SEMTYPE.MOLECULE)
       container.append(grok.chem.drawMolecule(val, 200, 300));
+    else if (meta?.propertyType === 'dataframe')
+      container.append(val.plot.grid().root);
     else
       container.append(ui.divText(String(val)));
 
