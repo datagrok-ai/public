@@ -19,6 +19,7 @@ import {GRID_SIZE, HELP_LINK, INDICES, TIMEOUT, TARGET_DATAFRAME_INFO, TITLE, NA
   STOP_AFTER_DEFAULT,
   STOP_AFTER_MIN,
   USE_ABOVE_THRESHOLD_DEFAULT} from './constants';
+import {deepCopy} from '../../../shared-utils/utils';
 
 /** Returns indices corresponding to the closest items */
 export function getIndices(expArg: DG.Column, simArg: DG.Column): Uint32Array {
@@ -117,7 +118,7 @@ export function makeGetCalledFuncCall(func: DG.Func, inputs: Record<string, any>
     resetSharedCall();
     x.forEach((val, idx) => funcCall.inputs[variedInputNames[idx]] = val);
     await funcCall.call(undefined, undefined, {processed: true, report: false});
-    return useClone ? funcCall.clone() : funcCall;
+    return useClone ? deepCopy(funcCall) : funcCall;
   };
 } // makeGetCalledFuncCall
 
