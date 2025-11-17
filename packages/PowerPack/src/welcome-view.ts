@@ -26,7 +26,7 @@ export function welcomeView(): DG.View | undefined {
   const helpDiv = ui.divText('Press Ctrl+Space to see suggestions', {style: {
     marginLeft: '12px', fontSize: '10px', color: 'var(--text-color-light)',
     fontStyle: 'italic',
-    marginBottom: '10px', flexGrow: '0',
+    marginBottom: '10px', flexGrow: '0', display: 'none',
   }});
 
   input.addEventListener('input', () => {
