@@ -56,6 +56,7 @@ modified = result;
 FROM generate_series(1, 10) AS s(i);
     `);
     q.postProcessScript = script;
+    q.newId();
     const query = await grok.dapi.queries.save(q);
     expect(query.postProcessScript, script);
     const df = await query.executeTable();
@@ -117,7 +118,7 @@ category('Dapi: connection cache', () => {
     const table2 = (await grok.dapi.files.readBinaryDataFrames('System:AppData/ApiTests/datasets/demog.csv'))[0];
     // id should be absent when we read as csv, and second time from cache
     expect(!table1.id && !table2.id, true);
-  });
+  }, {skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined });
 
   test('Performance: read csv', async () => {
     const first = await getExecutionTime(async () => {
@@ -163,7 +164,7 @@ category('Dapi: connection cache', () => {
     const cars1Median = median(carsReads1);
     const cars2Median = median(carsReads2);
     expect(cars2Median < cars1Median * 5, true);
-  }, { benchmark: true, timeout: 120000 });
+  }, { benchmark: true, timeout: 120000, skipReason: typeof process !== 'undefined' ? 'NodeJS environment' : undefined });
 
   after(async () => {
     try {

@@ -20,7 +20,7 @@ const testsExclude = [
 ];
 
 async function main(): Promise<void> {
-    const { apiUrl, devKey, concurrentRuns, categories, loop } = parseArgs();
+    const { apiUrl, devKey, concurrentRuns, categories, loop, concurrencyRange } = parseArgs();
     console.log('Exchanging devKey for token...');
     const apiToken = await getToken(apiUrl, devKey);
     console.log('Received token.');
@@ -45,7 +45,21 @@ async function main(): Promise<void> {
         process.exit(0);
     });
 
-    await runPool(results, concurrentRuns, new Set(categories), loop);
+    process.on("uncaughtException", (err) => {
+        console.error("Uncaught exception:", err);
+    });
+
+    process.on("unhandledRejection", (reason) => {
+        console.error("Unhandled rejection:", reason);
+    });
+
+    if (concurrencyRange) {
+        for (const runs of concurrencyRange)
+            await runPool(results, runs, new Set(categories));
+    }
+    else
+        await runPool(results, concurrentRuns, new Set(categories), loop);
+
     await saveResults(results);
     console.log('Finished running tests');
     process.exit(0);
@@ -65,8 +79,28 @@ function parseArgs() {
         })
         .option('concurrentRuns', {
             type: 'number',
-            describe: 'Number of concurrent runs to execute',
-            default: 1,
+            describe: 'Number of concurrent runs to execute'
+        })
+        .coerce('concurrencyRange', (value) => {
+            if (!value) return undefined;
+
+            const match = value.trim().match(/^(\d+)\s*-\s*(\d+)$/);
+            if (!match)
+                throw new Error(`Invalid format "${value}". Expected format: "start-end", e.g. "1-5".`);
+
+            const start = Number(match[1]);
+            const end = Number(match[2]);
+
+            if (start <= 0 || end <= 0)
+                throw new Error(`Range must contain positive integers.`);
+            if (start >= end)
+                throw new Error(`Invalid range "${value}". Start must be < end.`);
+
+            const arr = [];
+            for (let i = start; i <= end; i++)
+                arr.push(i);
+
+            return arr;
         })
         .option('categories', {
             alias: 'c',
@@ -81,16 +115,28 @@ function parseArgs() {
             default: false,
             describe: 'If true, continuously repeat tasks with the specified number of concurrent runs',
         })
+        .conflicts('concurrencyRange', ['concurrentRuns'])
+        .conflicts('concurrentRuns', 'concurrencyRange')
+        .check((argv) => {
+            if (argv.loop === true && argv.concurrencyRange !== undefined) {
+                throw new Error('You cannot use --loop together with --concurrencyRange.');
+            }
+            return true;
+        })
         .help()
         .parseSync();
 
-    return {
+    const res = {
         apiUrl: argv.apiUrl,
         devKey: argv.devKey,
         concurrentRuns: argv.concurrentRuns,
         categories: argv.categories,
-        loop: argv.loop
+        loop: argv.loop,
+        concurrencyRange: argv.concurrencyRange
     };
+    if (!res.concurrentRuns && !res.concurrencyRange)
+        res.concurrentRuns = 1;
+    return res;
 }
 
 async function getToken(url: string, key: string) {
@@ -116,7 +162,7 @@ async function loadTestFiles(): Promise<void> {
     }
 }
 
-async function run(concurrentRun: number, categories: Set<string>): Promise<_DG.DataFrame | null> {
+async function run(concurrentRun: number, categories: Set<string>, concurrency: number): Promise<_DG.DataFrame | null> {
     const { runTests, tests} = await import('@datagrok-libraries/utils/src/test');
     const data = [];
     const runAll = categories.has('all');
@@ -132,6 +178,7 @@ async function run(concurrentRun: number, categories: Set<string>): Promise<_DG.
         return null;
     const df = DG.DataFrame.fromObjects(data)!;
     await df.columns.addNewCalculated('concurrent_run', `${concurrentRun}`, DG.COLUMN_TYPE.INT, false, false);
+    await df.columns.addNewCalculated('total_concurrent_runs', `${concurrency}`, DG.COLUMN_TYPE.INT, false, false);
     return df;
 }
 const running = new Set();
@@ -140,7 +187,7 @@ async function runPool(results: _DG.DataFrame[], concurrency: number = 1, catego
 
     function startNew() {
         const id = ++counter;
-        const promise = run(id, categories)
+        const promise = run(id, categories, concurrency)
             .then((r) => { if (r != null) results.push(r); })
             .catch((err: any) => console.error(`❌ Task ${id} failed:`, err))
             .finally(() => {

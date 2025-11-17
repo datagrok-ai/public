@@ -2,7 +2,7 @@ import type * as _grok from 'datagrok-api/grok';
 import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
-import {category, before, expect, test, after} from '@datagrok-libraries/utils/src/test';
+import {category, expect, test} from '@datagrok-libraries/utils/src/test';
 
 const layout = `{
     "#type": "ViewLayout",
@@ -217,27 +217,42 @@ const layout = `{
 }`;
 
 category('Dapi: layouts', () => {
-  const l = DG.ViewLayout.fromJson(layout);
-  l.newId();
-
-  before(async () => {
-    await grok.dapi.layouts.save(l);
-  });
-
   test('get applicable', async () => {
-    const layouts = await grok.dapi.layouts.getApplicable(grok.data.demo.demog(10));
-    expect(layouts.length >= 0, true, 'error in Dapi: layouts - get applicable');
+    let layout: _DG.ViewLayout| undefined;
+    try {
+      layout = await createTestLayout();
+      const layouts = await grok.dapi.layouts.getApplicable(grok.data.demo.demog(10));
+      expect(layouts.length >= 0, true, 'error in Dapi: layouts - get applicable');
+    } finally {
+      await safeDeleteLayout(layout);
+    }
+
   }, { stressTest: true, owner: 'aparamonov@datagrok.ai' });
 
   test('filter', async () => {
-    const layout = (await grok.dapi.layouts.getApplicable(grok.data.demo.demog(10)))[0];
-    const layouts = (await grok.dapi.layouts.filter(`friendlyName = "${layout.friendlyName}"`).list());
-    expect(layouts.length >= 0, true);
-  }, { owner: 'aparamonov@datagrok.ai' });
-
-  after(async () => {
+    let l: _DG.ViewLayout| undefined;
     try {
-      await grok.dapi.layouts.delete(l);
-    } catch (_) {}
-  });
+      l = await createTestLayout();
+      const layout = (await grok.dapi.layouts.getApplicable(grok.data.demo.demog(10)))[0];
+      const layouts = (await grok.dapi.layouts.filter(`friendlyName = "${layout.friendlyName}"`).list());
+      expect(layouts.length >= 0, true);
+    } finally {
+      await safeDeleteLayout(l);
+    }
+
+  }, { owner: 'aparamonov@datagrok.ai' });
 });
+
+async function createTestLayout(): Promise<_DG.ViewLayout> {
+  const l = DG.ViewLayout.fromJson(layout);
+  l.newId();
+  await grok.dapi.layouts.save(l);
+  return l;
+}
+
+async function safeDeleteLayout(layout?: _DG.ViewLayout): Promise<void> {
+  try {
+    if (layout)
+      await grok.dapi.layouts.delete(layout);
+  } catch (_) {}
+}

@@ -2,16 +2,9 @@ import type * as _grok from 'datagrok-api/grok';
 import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
-import {after, before, category, test, expect} from '@datagrok-libraries/utils/src/test';
+import {category, test, expect} from '@datagrok-libraries/utils/src/test';
 
 category('Dapi: groups', () => {
-  const testGroupName = 'js-api-test-group';
-  let testGroup : _DG.Group;
-
-  before(async () => {
-    testGroup = await grok.dapi.groups.createNew(testGroupName);
-  });
-
   test('find group', async () => {
     expect((await grok.dapi.groups.filter('unexisting group').first()) == undefined);
   }, {stressTest: true});
@@ -19,21 +12,38 @@ category('Dapi: groups', () => {
   test('create group', async () => {
     let localTestGroup = null as any;
     try {
-      const localTestGroupName = 'js-api-test-group1';
+      const localTestGroupName = DG.Utils.randomString(7);
       localTestGroup = await grok.dapi.groups.createNew(localTestGroupName);
     } finally {
-      await grok.dapi.groups.delete(localTestGroup);
+      try {
+        if (localTestGroup)
+          await grok.dapi.groups.delete(localTestGroup);
+      } catch (_) {}
     }
   }, {stressTest: true});
 
   test('create subgroup', async () => {
-    let subgroup = null as any;
+    let group: _DG.Group | undefined;
+    let subgroup: _DG.Group | undefined;
     try {
-      const subgroupName = 'js-api-test-group1';
-      subgroup = DG.Group.create(subgroupName);
-      testGroup.includeTo(subgroup);
+      const groupName = DG.Utils.randomString(7);
+      const subgroupName = DG.Utils.randomString(7);
+      group = await grok.dapi.groups.createNew(groupName);
+      subgroup = await grok.dapi.groups.createNew(subgroupName);
+      await grok.dapi.groups.addMember(group, subgroup);
+      group = await grok.dapi.groups.find(group.id);
+      expect(group.members.some((g) => g.id === subgroup!.id));
     } finally {
-      await grok.dapi.groups.delete(subgroup);
+      if (group) {
+        try {
+          await grok.dapi.groups.delete(group);
+        } catch (_) {}
+      }
+      if (subgroup) {
+        try {
+          await grok.dapi.groups.delete(subgroup);
+        } catch (_) {}
+      }
     }
   }, {stressTest: true});
 
@@ -75,7 +85,4 @@ category('Dapi: groups', () => {
     expect((await grok.dapi.groups.filter(localTestGroupName)).count == countBefore);
   }, {stressTest: true});
 
-  after(async () => {
-    await grok.dapi.groups.delete(testGroup);
-  });
 }, {owner: 'aparamonov@datagrok.ai'});
