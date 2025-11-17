@@ -41,18 +41,18 @@ export function smartChainExecutionProvider() : any {
 }
 
 //input: string userGoal 
-//output: dynamic result
+//output: string result
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 1 * *
-export async function getExecutionPlan(userGoal: string) : Promise<any> {
+export async function getExecutionPlan(userGoal: string) : Promise<string> {
   return await PackageFunctions.getExecutionPlan(userGoal);
 }
 
 //input: string prompt 
 //input: list<string> searchPatterns 
-//output: dynamic result
+//output: string result
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 1 * *
-export async function fuzzyMatch(prompt: string, searchPatterns: string[]) : Promise<any> {
+export async function fuzzyMatch(prompt: string, searchPatterns: string[]) : Promise<string> {
   return await PackageFunctions.fuzzyMatch(prompt, searchPatterns);
 }

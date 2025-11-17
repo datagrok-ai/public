@@ -36,7 +36,7 @@ export namespace funcs {
     return await grok.functions.call('ChatGPT:SmartChainExecutionProvider', {});
   }
 
-  export async function getExecutionPlan(userGoal: string ): Promise<any> {
+  export async function getExecutionPlan(userGoal: string ): Promise<string> {
     return await grok.functions.call('ChatGPT:GetExecutionPlan', { userGoal });
   }
 

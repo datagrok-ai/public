@@ -341,8 +341,8 @@ async function tableQueriesFunctionsSearchLlm(s: string, host: HTMLDivElement): 
   const searchPatterns = tableQueriesSearchFunctions.map((f) => f.options['searchPattern']);
   host.prepend(loader);
   try {
-    const matches = await grok.functions
-      .call('ChatGPT:fuzzyMatch', {prompt: s, searchPatterns});
+    const matches = JSON.parse(await grok.functions
+      .call('ChatGPT:fuzzyMatch', {prompt: s, searchPatterns}));
     loader.remove();
     if (matches && matches.searchPattern && matches.parameters) {
       const sf = tableQueriesSearchFunctions.find((f) => {

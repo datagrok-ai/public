@@ -227,7 +227,7 @@ export class PackageFunctions {
 
           const resultWait = ui.wait(async () => {
             const resDiv = ui.divV([], 'chatgpt-ask-ai-result');
-            const plan = await grok.functions.call('ChatGPT:getExecutionPlan', {userGoal: s});
+            const plan = JSON.parse(await grok.functions.call('ChatGPT:getExecutionPlan', {userGoal: s})) as Plan;
             const planDiv = AssistantRenderer.renderPlan(plan);
             resDiv.appendChild(planDiv);
             const result = await gptAssistant.execute(plan);
@@ -253,10 +253,12 @@ export class PackageFunctions {
       'cache.invalidateOn': '0 0 1 * *'
     }
   })
- static async getExecutionPlan(userGoal: string): Promise<Plan> {
+ static async getExecutionPlan(userGoal: string): Promise<string> {
    const gptEngine = new ChatGPTPromptEngine(apiKey, model);
    const gptAssistant = new ChatGptAssistant(gptEngine);
-   return await gptAssistant.plan(userGoal);
+   const plan: Plan = await gptAssistant.plan(userGoal);
+   // Cache only works with scalar values, so we serialize the plan to a string
+   return JSON.stringify(plan);
  }
 
   @grok.decorators.func({
@@ -265,7 +267,8 @@ export class PackageFunctions {
       'cache.invalidateOn': '0 0 1 * *'
     }
   })
-  static async fuzzyMatch(prompt: string, searchPatterns: string[]): Promise<QueryMatchResult | null> {
-    return findBestFunction(prompt, searchPatterns);
+  static async fuzzyMatch(prompt: string, searchPatterns: string[]): Promise<string> {
+    const queryMatchResult = await findBestFunction(prompt, searchPatterns);
+    return JSON.stringify(queryMatchResult);
   }
 }
