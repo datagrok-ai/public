@@ -1,7 +1,8 @@
 /* eslint-disable max-len */
 import OpenAI from 'openai';
-
-class OpenAIHelpClient {
+import * as api from '../package-api';
+import { PackageFunctions } from '../package';
+export class OpenAIHelpClient {
   private openai: OpenAI;
   private constructor(private apiKey: string, private vectorStoreId: string) {
     this.openai = new OpenAI({
@@ -48,6 +49,5 @@ export async function askOpenAIHelp(question: string, apiKey: string, vectorStor
   if (!apiKey || !vectorStoreId)
     return 'API Key or Vector Store ID is not set. Please configure them in the ChatGPT package settings.';
 
-  const client = OpenAIHelpClient.getInstance(apiKey, vectorStoreId);
-  return await client.getHelpAnswer(question);
+  return await api.funcs.askDocumentationCached(question);
 }

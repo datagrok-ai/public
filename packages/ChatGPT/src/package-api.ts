@@ -43,4 +43,8 @@ export namespace funcs {
   export async function fuzzyMatch(prompt: string , searchPatterns: any ): Promise<string> {
     return await grok.functions.call('ChatGPT:FuzzyMatch', { prompt, searchPatterns });
   }
+
+  export async function askDocumentationCached(prompt: string ): Promise<string> {
+    return await grok.functions.call('ChatGPT:AskDocumentationCached', { prompt });
+  }
 }

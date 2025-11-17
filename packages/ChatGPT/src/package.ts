@@ -9,7 +9,8 @@ import {getAiPanelVisibility, initAiPanel, setAiPanelVisibility} from './ai-pane
 import {findBestFunction, QueryMatchResult} from './prompts/find-best-function';
 import {askDeepGrok} from './deepwiki/client';
 import {askDeepWiki} from './deepwiki/ui';
-import { Plan } from './prompt-engine/interfaces';
+import {Plan} from './prompt-engine/interfaces';
+import {OpenAIHelpClient} from './deepwiki/openAI-client';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -270,5 +271,16 @@ export class PackageFunctions {
   static async fuzzyMatch(prompt: string, searchPatterns: string[]): Promise<string> {
     const queryMatchResult = await findBestFunction(prompt, searchPatterns);
     return JSON.stringify(queryMatchResult);
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'cache': 'all',
+      'cache.invalidateOn': '0 0 1 * *'
+    }
+  })
+  static async askDocumentationCached(prompt: string): Promise<string> {
+    const client = OpenAIHelpClient.getInstance(apiKey, vectorStoreId);
+    return await client.getHelpAnswer(prompt);
   }
 }
