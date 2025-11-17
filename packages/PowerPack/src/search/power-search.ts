@@ -266,19 +266,19 @@ async function searchProvidersSearch(s: string, host: HTMLDivElement, searchInpu
           }
         }
       });
-      // handle automatic suggestions based on objecthandlers or dynamic queries
-      DG.ObjectHandler.list()
-        .filter((h) => h.regexpExample && h.regexpExample.nonVariablePart?.toLowerCase().includes(s.toLowerCase()))
-        .forEach((h) => {
-          const e = h.regexpExample!;
-          const eg = !e.example || e.example == e.regexpMarkup ? '' : `(e.g. ${e.example})`;
-          addSuggestion(`${e.regexpMarkup} ${eg}`, e.nonVariablePart, 0); // 0 order to make sure it is at the top
-        });
-      tableQueriesSearchFunctions.forEach((f) => {
-        const pattern: string = f.options['searchPattern'] ?? '';
-        if (pattern.toLowerCase().includes(s.toLowerCase()))
-          addSuggestion(removeTrailingQuotes(pattern), removeTrailingQuotes(pattern), 1);
+    });
+    // handle automatic suggestions based on objecthandlers or dynamic queries
+    DG.ObjectHandler.list()
+      .filter((h) => h.regexpExample && h.regexpExample.nonVariablePart?.toLowerCase().includes(s.toLowerCase()))
+      .forEach((h) => {
+        const e = h.regexpExample!;
+        const eg = !e.example || e.example == e.regexpMarkup ? '' : `(e.g. ${e.example})`;
+        addSuggestion(`${e.regexpMarkup} ${eg}`, e.nonVariablePart, 0); // 0 order to make sure it is at the top
       });
+    tableQueriesSearchFunctions.forEach((f) => {
+      const pattern: string = f.options['searchPattern'] ?? '';
+      if (pattern.toLowerCase().includes(s.toLowerCase()))
+        addSuggestion(removeTrailingQuotes(pattern), removeTrailingQuotes(pattern), 1);
     });
     if (showSuggestions) {
       _suggestionsMenu.show({element: searchInput.parentElement!, x: searchInput.offsetLeft,
