@@ -27,4 +27,8 @@ export namespace funcs {
   export async function askMultiStep(question: string ): Promise<any> {
     return await grok.functions.call('ChatGPT:AskMultiStep', { question });
   }
+
+  export async function fuzzyMatch(prompt: string , searchPatterns: any ): Promise<any> {
+    return await grok.functions.call('ChatGPT:FuzzyMatch', { prompt, searchPatterns });
+  }
 }

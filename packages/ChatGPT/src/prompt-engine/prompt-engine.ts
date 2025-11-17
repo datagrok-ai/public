@@ -1,5 +1,5 @@
 export interface PromptEngine {
-  generate(prompt: string, system?: string): Promise<string>;
+  generate(prompt: string, system: string): Promise<string>;
 }
 
 export class ChatGPTPromptEngine implements PromptEngine {
@@ -11,7 +11,7 @@ export class ChatGPTPromptEngine implements PromptEngine {
     private temperature = 0.0
   ) {}
 
-  async generate(prompt: string, system?: string): Promise<string> {
+  async generate(prompt: string, system: string): Promise<string> {
     const response = await fetch(this.url, {
       method: 'POST',
       headers: {
@@ -22,7 +22,7 @@ export class ChatGPTPromptEngine implements PromptEngine {
         model: this.model,
         temperature: this.temperature,
         messages: [
-          { role: 'system', content: system ?? 'You are a helpful assistant.' },
+          { role: 'system', content: system},
           { role: 'user', content: prompt },
         ],
       }),
@@ -34,11 +34,22 @@ export class ChatGPTPromptEngine implements PromptEngine {
   }
 }
 
-// Placeholder for Gemini integration
 export class GeminiPromptEngine implements PromptEngine {
-  async generate(prompt: string, system?: string): Promise<string> {
-    if (!('ai' in window)) throw new Error('Gemini not available in this environment');
-    const session = await (window as any).ai.createTextSession({ system });
-    return session.prompt(prompt);
+  constructor(
+    private schema: any,
+    private monitor?: CreateMonitorCallback,
+  ) {}
+
+  async generate(prompt: string, system: string): Promise<string> {
+    const session = await LanguageModel.create({
+      monitor: this.monitor,
+      initialPrompts: [{ role: 'system', content: system }],
+    });
+
+    const output = await session.prompt(prompt, {
+      responseConstraint: this.schema,
+    });
+
+    return output;
   }
 }
