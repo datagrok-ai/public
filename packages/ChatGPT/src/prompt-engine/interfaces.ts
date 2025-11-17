@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 export interface FuncParam {
   type: string;
   description: string;
-  default: any;
+  default?: any;
 }
 
 export type ChatGptFuncParams = Record<string, FuncParam>;
