@@ -29,14 +29,14 @@ export async function convertLD50(df: DG.DataFrame, smiles: DG.Column): Promise<
     return df;
 
   const ldCol = df.getCol('LD50');
-  const molWeights: DG.Column = await grok.functions.call('Chem:getMolProperty', {
+  const molWeightsDf: DG.DataFrame = await grok.functions.call('Chem:getProperties', {
     molecules: smiles,
-    property: 'MW',
+    property: ['MW'],
   });
 
   ldCol.init((i) => {
     const molPerKg = Math.pow(10, -ldCol.get(i));
-    return molPerKg * molWeights.get(i) * 1000;
+    return molPerKg * molWeightsDf.get('MW', i) * 1000;
   });
 
   return df;

@@ -1,7 +1,7 @@
 /* eslint-disable max-len */
 import OpenAI from 'openai';
 import * as api from '../package-api';
-import { PackageFunctions } from '../package';
+import {PackageFunctions} from '../package';
 export class OpenAIHelpClient {
   private openai: OpenAI;
   private constructor(private apiKey: string, private vectorStoreId: string) {

@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { getCurrentViewersString, getDataFrameDescription, getViewerDescriptionsString } from './utils';
-import { askImpl } from './package';
+import {getCurrentViewersString, getDataFrameDescription, getViewerDescriptionsString} from './utils';
+import {askImpl} from './package';
 
 type IViewerResponse = {
   viewerType: string;
@@ -22,6 +22,7 @@ type IViewerResponse = {
 export async function askAiTableView(view: DG.TableView, question: string) {
   const prompt = getPrompt(view, question);
   //console.log(prompt);
+  // TODO: substitute with the OpenAI client call
   const answer = await askImpl(prompt);
   //console.log(answer);
   //grok.shell.info(answer);
@@ -58,6 +59,6 @@ DataFrame structure:
 ${JSON.stringify(getDataFrameDescription(view.dataFrame))}
 
 Viewers:
-${getViewerDescriptionsString()}`
-}
+${getViewerDescriptionsString()}`;
+};
 
