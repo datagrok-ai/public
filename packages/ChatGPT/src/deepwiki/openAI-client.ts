@@ -18,7 +18,7 @@ class OpenAIHelpClient {
   async getHelpAnswer(question: string): Promise<string> {
     const storageIDs = [this.vectorStoreId];
     const response = await this.openai.responses.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-4o',
       instructions: `
     You are a helpful assistant with access to documentation for the datagrok platform via file_search tool. Use the available tool to answer questions accurately.
     

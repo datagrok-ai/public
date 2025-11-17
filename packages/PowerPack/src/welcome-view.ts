@@ -28,6 +28,13 @@ export function welcomeView(): DG.View | undefined {
     fontStyle: 'italic',
     marginBottom: '10px', flexGrow: '0',
   }});
+
+  input.addEventListener('input', () => {
+    if (!input.value)
+      helpDiv.style.display = 'none';
+    else
+      helpDiv.style.display = 'flex';
+  });
   inputHost.style.marginBottom = '0px';
   suggestionMenuKeyNavigation(inputContainer);
 
