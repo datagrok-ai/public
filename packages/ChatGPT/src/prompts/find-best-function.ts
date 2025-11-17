@@ -72,7 +72,7 @@ User request:
   try {
     let engine: PromptEngine;
 
-    const isGeminiAvailable = await LanguageModel.availability();
+    const isGeminiAvailable = await ('LanguageModel' in window ? LanguageModel : null)?.availability();
     if (isGeminiAvailable === 'available') {
       _package.logger.info('Using built-in Gemini model for fuzzy matching.');
       engine = new GeminiPromptEngine(schema, geminiDownloadMonitor);

@@ -20,6 +20,10 @@ export namespace funcs {
     return await grok.functions.call('ChatGPT:Autostart', {});
   }
 
+  export async function askHelpLLMProvider(): Promise<any> {
+    return await grok.functions.call('ChatGPT:AskHelpLLMProvider', {});
+  }
+
   export async function ask(question: string ): Promise<string> {
     return await grok.functions.call('ChatGPT:Ask', { question });
   }
@@ -28,8 +32,8 @@ export namespace funcs {
     return await grok.functions.call('ChatGPT:AskFun', { question });
   }
 
-  export async function askMultiStep(question: string ): Promise<any> {
-    return await grok.functions.call('ChatGPT:AskMultiStep', { question });
+  export async function smartChainExecutionProvider(): Promise<any> {
+    return await grok.functions.call('ChatGPT:SmartChainExecutionProvider', {});
   }
 
   export async function fuzzyMatch(prompt: string , searchPatterns: any ): Promise<any> {

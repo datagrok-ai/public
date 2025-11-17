@@ -54,6 +54,10 @@ export namespace funcs {
     return await grok.functions.call('PowerPack:FormulaWidget', { col });
   }
 
+  export async function llmSearchQueryProvider(): Promise<any> {
+    return await grok.functions.call('PowerPack:LlmSearchQueryProvider', {});
+  }
+
   export async function powerPackSearchProvider(): Promise<any> {
     return await grok.functions.call('PowerPack:PowerPackSearchProvider', {});
   }

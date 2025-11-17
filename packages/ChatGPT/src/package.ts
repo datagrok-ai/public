@@ -8,7 +8,7 @@ import {AssistantRenderer} from './prompt-engine/rendering-tools';
 import {getAiPanelVisibility, initAiPanel, setAiPanelVisibility} from './ai-panel';
 import {findBestFunction, QueryMatchResult} from './prompts/find-best-function';
 import {askDeepGrok} from './deepwiki/client';
-import {setupSearchUI} from './deepwiki/ui';
+import {askDeepWiki} from './deepwiki/ui';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -92,7 +92,7 @@ export class PackageFunctions {
 
   @grok.decorators.autostart()
   static autostart() {
-    setupSearchUI(() => apiKey, () => vectorStoreId);
+    // setupSearchUI(() => apiKey, () => vectorStoreId);
     // grok.shell.info('started')
     //
     grok.events.onViewAdded.subscribe((view) => {
@@ -113,6 +113,29 @@ export class PackageFunctions {
         setAiPanelVisibility(!isVisible);
       }
     });
+  }
+
+  @grok.decorators.func({tags: ['searchProvider']})
+  static askHelpLLMProvider(): DG.SearchProvider {
+    const provider: DG.SearchProvider = {
+      'home': {
+        name: 'Ask DeepGROK AI',
+        search: async (_query: string) => null,
+        getSuggestions: (_query: string) => [
+          {
+            priority: 9,
+            suggestionText: 'Ask Documentation'
+          }
+        ],
+        isApplicable: (query: string) => query.length >= 5,
+        onValueEnter: async (query: string) => {
+          await askDeepWiki(query, apiKey, vectorStoreId);
+        },
+        description: 'Get answers from DeepGROK AI assistant based on Datagrok documentation.'
+
+      }
+    };
+    return provider;
   }
 
 
@@ -180,43 +203,50 @@ export class PackageFunctions {
     return JSON.stringify(result);
   }
 
-  @grok.decorators.func({
-    tags: ['search'],
-  })
-  static async askMultiStep(question: string): Promise<DG.Widget> {
-    return DG.Widget.fromRoot(
-      (() => {
-        const planContainer = ui.divV([]);
-        const resultContainer = ui.divV([]);
-        const gptEngine = new ChatGPTPromptEngine(apiKey, 'gpt-4.1-mini-2025-04-14');
-        const gptAssistant = new ChatGptAssistant(gptEngine);
-
-        const button = ui.button('Ask AI', () => {
-          ui.empty(planContainer);
-          ui.empty(resultContainer);
-
-          const planWait = ui.wait(async () => {
-            const plan = await gptAssistant.plan(question);
-            return AssistantRenderer.renderPlan(plan);
-          });
-          planContainer.appendChild(planWait);
+ @grok.decorators.func({tags: ['searchProvider']})
+  static smartChainExecutionProvider(): DG.SearchProvider {
+    return {
+      'home': {
+        name: 'LLM Smart chain execution',
+        description: 'Plans and executes function chains based on user goals.',
+        isApplicable: (s: string) => s.length > 5,
+        returnType: 'widget',
+        options: {
+          widgetHeight: 500,
+        },
+        search: async (_s, _v) => {
+          return null;
+        },
+        onValueEnter: async (s: string, v) => {
+          const searchResultHost = document.getElementsByClassName('power-pack-search-host')[0];
+          if (!searchResultHost)
+            return;
+          const gptEngine = new ChatGPTPromptEngine(apiKey, 'gpt-4.1-mini-2025-04-14');
+          const gptAssistant = new ChatGptAssistant(gptEngine);
 
           const resultWait = ui.wait(async () => {
-            const plan = await gptAssistant.plan(question);
+            const resDiv = ui.divV([], 'chatgpt-ask-ai-result');
+            const plan = await gptAssistant.plan(s);
+            const planDiv = AssistantRenderer.renderPlan(plan);
+            resDiv.appendChild(planDiv);
             const result = await gptAssistant.execute(plan);
-            return AssistantRenderer.renderResult(result);
+
+            resDiv.appendChild(AssistantRenderer.renderResult(result));
+            return resDiv;
           });
-          resultContainer.appendChild(resultWait);
-        });
-
-        const wrapper = ui.divV([button, planContainer, resultContainer], 'chatgpt-ask-ai-result');
-        return wrapper;
-      })()
-    );
+          searchResultHost.prepend(resultWait);
+        },
+        getSuggestions: (s: string) => s.length > 5 ? [
+          {
+            suggestionText: 'Smart Grok',
+            priority: 11,
+          }
+        ] : null,
+      }
+    };
   }
-
   @grok.decorators.func()
-  static async fuzzyMatch(prompt: string, searchPatterns: string[]): Promise<QueryMatchResult | null> {
-    return findBestFunction(prompt, searchPatterns);
-  }
+ static async fuzzyMatch(prompt: string, searchPatterns: string[]): Promise<QueryMatchResult | null> {
+   return findBestFunction(prompt, searchPatterns);
+ }
 }

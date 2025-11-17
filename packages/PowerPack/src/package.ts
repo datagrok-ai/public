@@ -17,7 +17,7 @@ import {KpiWidget} from './widgets/kpi-widget';
 import {HtmlWidget} from './widgets/html-widget';
 import {viewersDialog} from './viewers-gallery';
 import {windowsManagerPanel} from './windows-manager';
-import {initSearch} from './search/power-search';
+import {getLlmQuerySearchProvider, initSearch} from './search/power-search';
 import {newUsersSearch, registerDGUserHandler} from './dg-db';
 import {merge} from 'rxjs';
 import {HelpObjectHandler} from './search/help-entity';
@@ -192,6 +192,12 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({tags: ['searchProvider']})
+  static llmSearchQueryProvider(): DG.SearchProvider {
+    const provider = getLlmQuerySearchProvider();
+    return provider;
+  }
+
+  @grok.decorators.func({tags: ['searchProvider']})
   static powerPackSearchProvider(): DG.SearchProvider {
     const providers: DG.SearchProvider = {
       'home': [{
@@ -263,6 +269,8 @@ export class PackageFunctions {
     };
     return providers;
   }
+
+
 
   @grok.decorators.func({
     name: 'formulaLinesEditor',

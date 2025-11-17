@@ -63,6 +63,12 @@ export function formulaWidget(col: DG.Column) : any {
 
 //tags: searchProvider
 //output: dynamic result
+export function llmSearchQueryProvider() : any {
+  return PackageFunctions.llmSearchQueryProvider();
+}
+
+//tags: searchProvider
+//output: dynamic result
 export function powerPackSearchProvider() : any {
   return PackageFunctions.powerPackSearchProvider();
 }

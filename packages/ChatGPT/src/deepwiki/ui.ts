@@ -10,7 +10,7 @@ let searching = false;
 
 const useDeepWiki = false; // Switch between DeepGrok and OpenAIHelpClient
 
-async function askDeepWiki(question: string, apiKey: string, vectorStoreId: string) {
+export async function askDeepWiki(question: string, apiKey: string, vectorStoreId: string) {
   if (searching)
     return;
   searching = true;

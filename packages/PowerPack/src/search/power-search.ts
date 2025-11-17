@@ -43,6 +43,32 @@ export function powerSearch(s: string, host: HTMLDivElement, inputElement: HTMLI
   searchProvidersSearch(s, host, inputElement);
 }
 
+export function getLlmQuerySearchProvider(): DG.SearchProvider {
+  return {
+    'home': {
+      name: 'LLM Query Matcher',
+      description: 'Matches user queries to table queries using LLM',
+      isApplicable: (s: string) => s.length > 5,
+      returnType: 'widget',
+      options: {
+        widgetHeight: 500,
+      },
+      search: async (_s, _v) => {
+        return null;
+      },
+      onValueEnter: async (s: string, v) => {
+        await tableQueriesFunctionsSearchLlm(s, document.getElementsByClassName('power-pack-search-host')[0]! as HTMLDivElement);
+      },
+      getSuggestions: (s: string) => s.length > 5 ? [
+        {
+          suggestionText: 'Query Search',
+          priority: 10,
+        }
+      ] : null,
+    }
+  };
+}
+
 
 /// Searches for default views that exactly match the search string
 /// Example: functions
@@ -193,6 +219,7 @@ async function _getSearchProviders(): Promise<void> {
 }
 
 let _suggestionsMenu: DG.Menu | null = null;
+let _ctrlSpaceSubscribed = false;
 async function searchProvidersSearch(s: string, host: HTMLDivElement, searchInput: HTMLInputElement): Promise<void> {
   _suggestionsMenu?.hide();
   _suggestionsMenu = null;
@@ -200,15 +227,17 @@ async function searchProvidersSearch(s: string, host: HTMLDivElement, searchInpu
     return;
   _searchProvidersPromise ??= _getSearchProviders();
   await _searchProvidersPromise;
-  _suggestionsMenu = DG.Menu.popup();
+
   let showSuggestions = false;
   const addSuggestion = (text: string, value?: string, priority?: number, onValueEnter?: (s: string, view?: DG.ViewBase) => void) => {
     // make sure that its not an exact match, where it does not make sense to add it as a suggestion
     if ((value ?? text) === searchInput.value)
       return;
     _suggestionsMenu!.item(text, () => {
-      searchInput.value = value ?? text;
-      searchInput.dispatchEvent(new Event('input', {bubbles: true})); // Trigger input event to update the view
+      if (value) {
+        searchInput.value = value;
+        searchInput.dispatchEvent(new Event('input', {bubbles: true})); // Trigger input event to update the view
+      }
       searchInput.focus();
       if (onValueEnter)
         onValueEnter(searchInput.value, grok.shell.v);
@@ -216,20 +245,63 @@ async function searchProvidersSearch(s: string, host: HTMLDivElement, searchInpu
     showSuggestions = true;
   };
 
+  // separate handler for suggestions
+  const processSuggestions = () => {
+    _suggestionsMenu?.hide();
+    _suggestionsMenu = null;
+    _suggestionsMenu = DG.Menu.popup();
+    showSuggestions = false;
+    searchProviders.forEach((sp) => {
+      if (!sp['home'])
+        return;
+      const homeSearchProviders = Array.isArray(sp.home) ? sp.home : [sp.home];
+      homeSearchProviders.forEach((pp) => {
+      // first handle the suggestions
+        if (pp.getSuggestions) {
+          const suggestions = pp.getSuggestions(s);
+          if (suggestions && suggestions.length > 0) {
+            suggestions.forEach((sug) => {
+              addSuggestion(sug.suggestionText, sug.suggestionValue, sug.priority, pp.onValueEnter);
+            });
+          }
+        }
+      });
+      // handle automatic suggestions based on objecthandlers or dynamic queries
+      DG.ObjectHandler.list()
+        .filter((h) => h.regexpExample && h.regexpExample.nonVariablePart?.toLowerCase().includes(s.toLowerCase()))
+        .forEach((h) => {
+          const e = h.regexpExample!;
+          const eg = !e.example || e.example == e.regexpMarkup ? '' : `(e.g. ${e.example})`;
+          addSuggestion(`${e.regexpMarkup} ${eg}`, e.nonVariablePart, 0); // 0 order to make sure it is at the top
+        });
+      tableQueriesSearchFunctions.forEach((f) => {
+        const pattern: string = f.options['searchPattern'] ?? '';
+        if (pattern.toLowerCase().includes(s.toLowerCase()))
+          addSuggestion(removeTrailingQuotes(pattern), removeTrailingQuotes(pattern), 1);
+      });
+    });
+    if (showSuggestions) {
+      _suggestionsMenu.show({element: searchInput.parentElement!, x: searchInput.offsetLeft,
+        y: searchInput.offsetTop + searchInput.offsetHeight});
+    }
+  };
+  processSuggestions();
+  if (!_ctrlSpaceSubscribed) {
+    _ctrlSpaceSubscribed = true;
+    searchInput.addEventListener('keydown', (event) => {
+      if (event.ctrlKey && (event.key === ' ' || event.key === 'Spacebar')) {
+        event.preventDefault();
+        processSuggestions();
+      }
+    });
+  }
+
+
   searchProviders.forEach((sp) => {
     if (!sp['home'])
       return; // Skip providers that do not have a home property
     const homeSearchProviders = Array.isArray(sp.home) ? sp.home : [sp.home];
     homeSearchProviders.forEach((pp) => {
-      // first handle the suggestions
-      if (pp.getSuggestions) {
-        const suggestions = pp.getSuggestions(s);
-        if (suggestions && suggestions.length > 0) {
-          suggestions.forEach((sug) => {
-            addSuggestion(sug.suggestionText, sug.suggestionValue, sug.priority);
-          });
-        }
-      }
       // handle search
       if (pp.isApplicable && !pp.isApplicable(s))
         return;
@@ -250,23 +322,6 @@ async function searchProvidersSearch(s: string, host: HTMLDivElement, searchInpu
       });
     });
   });
-  // handle automatic suggestions based on objecthandlers or dynamic queries
-  DG.ObjectHandler.list()
-    .filter((h) => h.regexpExample && h.regexpExample.nonVariablePart?.toLowerCase().includes(s.toLowerCase()))
-    .forEach((h) => {
-      const e = h.regexpExample!;
-      const eg = !e.example || e.example == e.regexpMarkup ? '' : `(e.g. ${e.example})`;
-      addSuggestion(`${e.regexpMarkup} ${eg}`, e.nonVariablePart, 0); // 0 order to make sure it is at the top
-    });
-  tableQueriesSearchFunctions.forEach((f) => {
-    const pattern: string = f.options['searchPattern'] ?? '';
-    if (pattern.toLowerCase().includes(s.toLowerCase()))
-      addSuggestion(removeTrailingQuotes(pattern), removeTrailingQuotes(pattern), 1);
-  });
-  if (showSuggestions) {
-    _suggestionsMenu.show({element: searchInput.parentElement!, x: searchInput.offsetLeft,
-      y: searchInput.offsetTop + searchInput.offsetHeight});
-  }
 }
 
 function removeTrailingQuotes(s: string): string {
@@ -278,27 +333,33 @@ function removeTrailingQuotes(s: string): string {
   return ms;
 }
 
-function tableQueriesFunctionsSearchLlm(s: string, host: HTMLDivElement): void {
+async function tableQueriesFunctionsSearchLlm(s: string, host: HTMLDivElement): Promise<void> {
+  const spinner = ui.icons.spinner();
+  spinner.style.color = 'var(--blue-1)';
+  const searchingText = ui.divText('Grokking queries...', {style: {marginLeft: '8px'}});
+  const loader = ui.divH([spinner, searchingText], {style: {alignItems: 'center', marginTop: '8px', width: '100%', justifyContent: 'center'}});
   const searchPatterns = tableQueriesSearchFunctions.map((f) => f.options['searchPattern']);
+  host.prepend(loader);
+  try {
+    const matches = await grok.functions
+      .call('ChatGPT:fuzzyMatch', {prompt: s, searchPatterns});
+    loader.remove();
+    if (matches && matches.searchPattern && matches.parameters) {
+      const sf = tableQueriesSearchFunctions.find((f) => {
+        const pattern: string = removeTrailingQuotes(f.options['searchPattern']) ?? '';
+        return pattern === matches.searchPattern;
+      });
 
-  grok.functions
-    .call('ChatGPT:fuzzyMatch', {prompt: s, searchPatterns})
-    .then((matches: any) => {
-      if (matches && matches.searchPattern) {
-        const sf = tableQueriesSearchFunctions.find((f) => {
-          const pattern: string = removeTrailingQuotes(f.options['searchPattern']) ?? '';
-          return pattern === matches.searchPattern;
-        });
-
-        if (sf) {
-          const widget = createOutWidget(sf, matches.parameters);
-          host.appendChild(widgetHost(widget));
-        }
+      if (sf) {
+        const widget = createOutWidget(sf, matches.parameters);
+        host.prepend(widgetHost(widget));
       }
-    })
-    .catch((error: any) => {
-      console.error('Error calling ChatGPT:fuzzyMatch', error);
-    });
+    }
+  } catch (error) {
+    console.error('Error calling ChatGPT:fuzzyMatch', error);
+  } finally {
+    loader.remove();
+  }
 }
 
 function tableQueriesFunctionsSearch(s: string, host: HTMLDivElement): void {

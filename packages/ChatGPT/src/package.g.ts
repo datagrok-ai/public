@@ -16,6 +16,12 @@ export function autostart() : void {
   PackageFunctions.autostart();
 }
 
+//tags: searchProvider
+//output: dynamic result
+export function askHelpLLMProvider() : any {
+  return PackageFunctions.askHelpLLMProvider();
+}
+
 //input: string question 
 //output: string result
 export async function ask(question: string) : Promise<string> {
@@ -28,11 +34,10 @@ export async function askFun(question: string) : Promise<string> {
   return await PackageFunctions.askFun(question);
 }
 
-//tags: search
-//input: string question 
-//output: widget result
-export async function askMultiStep(question: string) : Promise<any> {
-  return await PackageFunctions.askMultiStep(question);
+//tags: searchProvider
+//output: dynamic result
+export function smartChainExecutionProvider() : any {
+  return PackageFunctions.smartChainExecutionProvider();
 }
 
 //input: string prompt 
