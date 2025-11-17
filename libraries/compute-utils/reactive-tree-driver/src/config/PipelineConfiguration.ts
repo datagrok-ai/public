@@ -162,6 +162,7 @@ export type PipelineConfigurationBase<P> = {
   states?: StateItem[];
   tags?: string[];
   structureCheck?: StructureCheckHook;
+  forceNavigate?: boolean;
   customExports?: CustomExport[];
   disableHistory?: boolean;
   approversGroup?: string; // not used rn

@@ -377,6 +377,7 @@ export class PipelineNodeBase implements IStoreProvider {
       approversGroup: this.config.approversGroup,
       disableHistory: !!this.config.disableHistory,
       customExports: this.config.customExports,
+      forceNavigate: !!this.config.forceNavigate,
     };
     return res;
   }
