@@ -247,6 +247,7 @@ async function searchProvidersSearch(s: string, host: HTMLDivElement, searchInpu
 
   // separate handler for suggestions
   const processSuggestions = () => {
+    const si = searchInput.value?.trim() ?? '';
     _suggestionsMenu?.hide();
     _suggestionsMenu = null;
     _suggestionsMenu = DG.Menu.popup();
@@ -258,7 +259,7 @@ async function searchProvidersSearch(s: string, host: HTMLDivElement, searchInpu
       homeSearchProviders.forEach((pp) => {
       // first handle the suggestions
         if (pp.getSuggestions) {
-          const suggestions = pp.getSuggestions(s);
+          const suggestions = pp.getSuggestions(si);
           if (suggestions && suggestions.length > 0) {
             suggestions.forEach((sug) => {
               addSuggestion(sug.suggestionText, sug.suggestionValue, sug.priority, pp.onValueEnter);
@@ -269,7 +270,7 @@ async function searchProvidersSearch(s: string, host: HTMLDivElement, searchInpu
     });
     // handle automatic suggestions based on objecthandlers or dynamic queries
     DG.ObjectHandler.list()
-      .filter((h) => h.regexpExample && h.regexpExample.nonVariablePart?.toLowerCase().includes(s.toLowerCase()))
+      .filter((h) => h.regexpExample && h.regexpExample.nonVariablePart?.toLowerCase().includes(si.toLowerCase()))
       .forEach((h) => {
         const e = h.regexpExample!;
         const eg = !e.example || e.example == e.regexpMarkup ? '' : `(e.g. ${e.example})`;
@@ -277,7 +278,7 @@ async function searchProvidersSearch(s: string, host: HTMLDivElement, searchInpu
       });
     tableQueriesSearchFunctions.forEach((f) => {
       const pattern: string = f.options['searchPattern'] ?? '';
-      if (pattern.toLowerCase().includes(s.toLowerCase()))
+      if (pattern.toLowerCase().includes(si.toLowerCase()))
         addSuggestion(removeTrailingQuotes(pattern), removeTrailingQuotes(pattern), 1);
     });
     if (showSuggestions) {
