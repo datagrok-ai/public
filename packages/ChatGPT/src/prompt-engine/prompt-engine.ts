@@ -22,8 +22,8 @@ export class ChatGPTPromptEngine implements PromptEngine {
         model: this.model,
         temperature: this.temperature,
         messages: [
-          { role: 'system', content: system},
-          { role: 'user', content: prompt },
+          {role: 'system', content: system},
+          {role: 'user', content: prompt},
         ],
       }),
     });
@@ -43,7 +43,7 @@ export class GeminiPromptEngine implements PromptEngine {
   async generate(prompt: string, system: string): Promise<string> {
     const session = await LanguageModel.create({
       monitor: this.monitor,
-      initialPrompts: [{ role: 'system', content: system }],
+      initialPrompts: [{role: 'system', content: system}],
     });
 
     const output = await session.prompt(prompt, {

@@ -1,8 +1,9 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { ChatGPTPromptEngine, GeminiPromptEngine, PromptEngine } from '../prompt-engine/prompt-engine';
-import { apiKey, model } from '../package';
-import { _package } from '../package-test';
+import {ChatGPTPromptEngine, GeminiPromptEngine, PromptEngine} from '../prompt-engine/prompt-engine';
+import {apiKey, model} from '../package';
+import {_package} from '../package';
 
 
 /// Prompt API: https://developer.chrome.com/docs/ai/prompt-api
@@ -35,7 +36,7 @@ export async function findBestFunction(
     searchPattern: 'string',
     parameters: 'object',
     confidence: 'number',
-  }
+  };
 
   const systemPrompt = `
 You are an intelligent semantic query matcher. Your job is to find which query search pattern best matches a user's request.
@@ -70,7 +71,6 @@ User request:
 
   try {
     let engine: PromptEngine;
-    let responseText: string;
 
     const isGeminiAvailable = await LanguageModel.availability();
     if (isGeminiAvailable === 'available') {
@@ -81,11 +81,10 @@ User request:
       engine = new ChatGPTPromptEngine(apiKey, model);
     }
 
-    responseText = await engine.generate(userPrompt, systemPrompt);
+    const responseText = await engine.generate(userPrompt, systemPrompt);
     return JSON.parse(responseText) as QueryMatchResult;
   } catch (error) {
     _package.logger.error(`Error finding best function: ${error}`);
     return null;
   }
 }
-  

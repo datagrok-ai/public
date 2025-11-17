@@ -12,6 +12,10 @@ export namespace funcs {
     return await grok.functions.call('ChatGPT:Init', {});
   }
 
+  export async function deepDemo(question: string ): Promise<void> {
+    return await grok.functions.call('ChatGPT:DeepDemo', { question });
+  }
+
   export async function autostart(): Promise<void> {
     return await grok.functions.call('ChatGPT:Autostart', {});
   }

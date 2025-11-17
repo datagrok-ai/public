@@ -26,7 +26,7 @@ export function initSearch() {
 export function powerSearch(s: string, host: HTMLDivElement, inputElement: HTMLInputElement): void {
   ui.empty(host);
   tableQueriesFunctionsSearch(s, host);
-  tableQueriesFunctionsSearchLlm(s, host);
+  // tableQueriesFunctionsSearchLlm(s, host);
   jsEvalSearch(s, host) ||
   viewsSearch(s, host);
 
@@ -282,7 +282,7 @@ function tableQueriesFunctionsSearchLlm(s: string, host: HTMLDivElement): void {
   const searchPatterns = tableQueriesSearchFunctions.map((f) => f.options['searchPattern']);
 
   grok.functions
-    .call('ChatGPT:fuzzyMatch', { prompt: s, searchPatterns })
+    .call('ChatGPT:fuzzyMatch', {prompt: s, searchPatterns})
     .then((matches: any) => {
       if (matches && matches.searchPattern) {
         const sf = tableQueriesSearchFunctions.find((f) => {

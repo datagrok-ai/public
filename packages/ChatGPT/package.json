@@ -9,7 +9,9 @@
     "@types/dom-chromium-ai": "^0.0.10",
     "cash-dom": "latest",
     "dayjs": "latest",
-    "datagrok-api": "../../js-api"
+    "datagrok-api": "../../js-api",
+    "@modelcontextprotocol/sdk": "^1.21.1",
+    "openai": "^6.9.0"
   },
   "devDependencies": {
     "@types/dom-speech-recognition": "^0.0.7",
@@ -19,7 +21,12 @@
     "style-loader": "^4.0.0",
     "typescript": "latest",
     "webpack": "latest",
-    "webpack-cli": "latest"
+    "webpack-cli": "latest",
+    "@typescript-eslint/eslint-plugin": "^8.8.1",
+    "@typescript-eslint/parser": "^8.8.1",
+    "eslint": "^8.57.1",
+    "eslint-config-google": "^0.14.0",
+    "eslint-plugin-rxjs": "^5.0.3"
   },
   "scripts": {
     "link-all": "grok link",
@@ -51,6 +58,12 @@
       "name": "apiKey",
       "propertyType": "string",
       "defaultValue": "Enter ChatGPT API key",
+      "nullable": false
+    },
+    {
+      "name": "vectorStoreId",
+      "propertyType": "string",
+      "defaultValue": "Enter Vector Store ID",
       "nullable": false
     },
     {

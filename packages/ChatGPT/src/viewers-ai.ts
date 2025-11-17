@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { getDataFrameDescription, getViewerDescriptionsString } from './utils';
+import { getCurrentViewersString, getDataFrameDescription, getViewerDescriptionsString } from './utils';
 import { askImpl } from './package';
 
 type IViewerResponse = {
@@ -49,6 +49,8 @@ For column name properties, you can only use names from the dataframe.
 Give the answer in the JSON format with the "viewerType" identifying viewer type, and
 "properties" containing properties, like in this example: 
 {"viewerType": "Histogram", "properties": {"valueColumnName": "Age", "markerSize": 15}}
+
+${getCurrentViewersString(view)}
 
 User question: ${question}
 

@@ -2,11 +2,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { ChatGptAssistant } from './prompt-engine/chatgpt-assistant';
-import { ChatGPTPromptEngine } from './prompt-engine/prompt-engine';
-import { AssistantRenderer } from './prompt-engine/rendering-tools';
+import {ChatGptAssistant} from './prompt-engine/chatgpt-assistant';
+import {ChatGPTPromptEngine} from './prompt-engine/prompt-engine';
+import {AssistantRenderer} from './prompt-engine/rendering-tools';
 import {getAiPanelVisibility, initAiPanel, setAiPanelVisibility} from './ai-panel';
-import { findBestFunction, QueryMatchResult } from './prompts/find-best-function';
+import {findBestFunction, QueryMatchResult} from './prompts/find-best-function';
+import {askDeepGrok} from './deepwiki/client';
+import {setupSearchUI} from './deepwiki/ui';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -25,10 +27,10 @@ type IChatGptResponse = {
   }
 }
 
-
 export let apiKey: string = '';
-export let model: string = 'gpt-4.1-mini-2025-04-14';
-let temperature = 0.1;
+let vectorStoreId: string = '';
+export const model: string = 'gpt-4';
+const temperature = 0.1;
 const url = 'https://api.openai.com/v1/chat/completions';
 
 
@@ -54,32 +56,43 @@ export async function chatGpt(chatRequest: any): Promise<IChatGptResponse> {
 export async function askImpl(question: string): Promise<IChatGptResponse> {
   const request: any = {
     model: model,
-    messages: [{ role: 'user', content: question }],
+    messages: [{role: 'user', content: question}],
     max_tokens: 100,
     temperature: temperature
-  }
+  };
 
   return await chatGpt(request);
 }
 
 async function executeFunction(functionName: string, parameters: any) {
   const func = DG.Func.find({name: functionName})[0];
-  if (func) {
+  if (func)
     return await func.apply(parameters);
-  }
+
   throw new Error(`Function ${functionName} not found`);
 }
 
-export class PackageFunctions {
 
+export class PackageFunctions {
   @grok.decorators.init()
   static async init() {
     apiKey = _package.settings['apiKey'];
+    vectorStoreId = _package.settings['vectorStoreId'];
+  }
+
+  @grok.decorators.func()
+  static async deepDemo(@grok.decorators.param({name: 'question', type: 'string'}) question: string) {
+    // if (!apiKey || apiKey.length === 0) {
+    //   grok.shell.error('Please set API key in ChatGPT package settings');
+    //   return;
+    // }
+    return await askDeepGrok(question);
   }
 
 
   @grok.decorators.autostart()
   static autostart() {
+    setupSearchUI(() => apiKey, () => vectorStoreId);
     // grok.shell.info('started')
     //
     grok.events.onViewAdded.subscribe((view) => {
@@ -105,7 +118,7 @@ export class PackageFunctions {
 
   @grok.decorators.func()
   static async ask(question: string): Promise<string> {
-    let result = await askImpl(question);
+    const result = await askImpl(question);
     return result.message!.content!;
   }
 
@@ -114,26 +127,26 @@ export class PackageFunctions {
   static async askFun(question: string): Promise<string> {
     function getType(type: string): string {
       switch (type) {
-        case DG.TYPE.STRING:
-          return 'string';
-        case DG.TYPE.INT:
-          return 'integer';
-        case DG.TYPE.FLOAT:
-          return 'number';
-        case DG.TYPE.BOOL:
-          return 'boolean';
-        default:
-          return 'object';
+      case DG.TYPE.STRING:
+        return 'string';
+      case DG.TYPE.INT:
+        return 'integer';
+      case DG.TYPE.FLOAT:
+        return 'number';
+      case DG.TYPE.BOOL:
+        return 'boolean';
+      default:
+        return 'object';
       }
     }
 
     function getProperties(f: DG.Func): ChatGptFuncParams {
-      let props: ChatGptFuncParams = {};
+      const props: ChatGptFuncParams = {};
       for (const p of f.inputs) {
         props[p.name] = {
           type: getType(p.propertyType),
           description: p.description
-        }
+        };
       }
       return props;
     }
@@ -143,10 +156,10 @@ export class PackageFunctions {
         name: f.name,
         description: f.description,
         parameters: {
-          type: "object",
+          type: 'object',
           properties: getProperties(f)
         }
-      }
+      };
     });
 
     const result = await chatGpt({
@@ -156,7 +169,7 @@ export class PackageFunctions {
         {role: 'user', content: question}
       ],
       functions: functions,
-      function_call: "auto"
+      function_call: 'auto'
     });
 
     if (result.message?.function_call) {
@@ -177,17 +190,17 @@ export class PackageFunctions {
         const resultContainer = ui.divV([]);
         const gptEngine = new ChatGPTPromptEngine(apiKey, 'gpt-4.1-mini-2025-04-14');
         const gptAssistant = new ChatGptAssistant(gptEngine);
-        
+
         const button = ui.button('Ask AI', () => {
           ui.empty(planContainer);
           ui.empty(resultContainer);
-          
+
           const planWait = ui.wait(async () => {
             const plan = await gptAssistant.plan(question);
             return AssistantRenderer.renderPlan(plan);
           });
           planContainer.appendChild(planWait);
-          
+
           const resultWait = ui.wait(async () => {
             const plan = await gptAssistant.plan(question);
             const result = await gptAssistant.execute(plan);
@@ -195,7 +208,7 @@ export class PackageFunctions {
           });
           resultContainer.appendChild(resultWait);
         });
-        
+
         const wrapper = ui.divV([button, planContainer, resultContainer], 'chatgpt-ask-ai-result');
         return wrapper;
       })()

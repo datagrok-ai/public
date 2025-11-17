@@ -6,6 +6,11 @@ export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
 
+//input: string question 
+export async function deepDemo(question: string) : Promise<void> {
+  await PackageFunctions.deepDemo(question);
+}
+
 //tags: autostart
 export function autostart() : void {
   PackageFunctions.autostart();

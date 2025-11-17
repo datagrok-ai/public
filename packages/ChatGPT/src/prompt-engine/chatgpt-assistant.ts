@@ -1,7 +1,8 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { PromptEngine } from './prompt-engine';
+import {PromptEngine} from './prompt-engine';
 
 type ChatGptFuncParams = { [name: string]: { type: string, description: string, default: any } };
 
@@ -77,13 +78,13 @@ Rules:
 - Rank them from most to least relevant.
 - Do not include packages that clearly don't apply.`;
 
-  const res = await this.chat(prompt);
-  const parsed = this.parseJSON<{ selected_packages: { name: string, reason: string }[] }>(
-    res,
-    { selected_packages: [{ name: 'Chem', reason: 'Default fallback' }] }
-  );
-  return parsed.selected_packages.map(p => p.name);
-}
+    const res = await this.chat(prompt);
+    const parsed = this.parseJSON<{ selected_packages: { name: string, reason: string }[] }>(
+      res,
+      {selected_packages: [{name: 'Chem', reason: 'Default fallback'}]}
+    );
+    return parsed.selected_packages.map((p) => p.name);
+  }
 
   private readonly reasoningSystemPrompt = `
 You are a reasoning assistant that plans how to achieve user goals using available functions.
@@ -113,17 +114,17 @@ Respond strictly as JSON with this structure:
   "steps": [ { "action": "call_function", "function": "...", "inputs": {...}, "outputs": [...] } ]
 }`;
     const result = await this.chat(prompt, this.reasoningSystemPrompt);
-    return this.parseJSON(result, { steps: [] });
+    return this.parseJSON(result, {steps: []});
   }
 
   private async getFunctionsByPackage(pkg: string): Promise<any[]> {
-    const funcs = DG.Func.find({ package: pkg });
+    const funcs = DG.Func.find({package: pkg});
     return funcs.map((f) => {
       return {
         name: f.name,
-        description: (f.nqName || f.package.name) + ": " + (f.description || f.options['description'] || f.friendlyName || f.name),
-        parameters: { type: 'object', properties: this.getProperties(f) },
-        outputs: f.outputs.map(o => ({
+        description: (f.nqName || f.package.name) + ': ' + (f.description || f.options['description'] || f.friendlyName || f.name),
+        parameters: {type: 'object', properties: this.getProperties(f)},
+        outputs: f.outputs.map((o) => ({
           name: o.name,
           type: o.propertyType,
         }))
@@ -142,7 +143,7 @@ Respond strictly as JSON with this structure:
     for (const [index, step] of plan.steps.entries()) {
       if (step.action !== 'call_function') continue;
 
-      const func = DG.Func.find({ name: step.function })[0];
+      const func = DG.Func.find({name: step.function})[0];
       if (!func) {
         console.warn(`Function not found: ${step.function}`);
         continue;
@@ -153,9 +154,8 @@ Respond strictly as JSON with this structure:
         if (typeof val === 'string' && val.startsWith('$')) {
           const varName = val.slice(1);
           resolvedInputs[key] = context[varName]['value'];
-        } else {
+        } else
           resolvedInputs[key] = val;
-        }
       }
 
       let result;
@@ -168,8 +168,8 @@ Respond strictly as JSON with this structure:
 
       if (Array.isArray(step.outputs)) {
         const outputName = step.outputs[0] ?? func.name;
-        const funcOutputMeta = func.outputs.find(o => o.name === outputName);
-        context[outputName] = { value: result, meta: funcOutputMeta };
+        const funcOutputMeta = func.outputs.find((o) => o.name === outputName);
+        context[outputName] = {value: result, meta: funcOutputMeta};
         stepOutputs[outputName] = funcOutputMeta;
       }
     }
@@ -177,20 +177,20 @@ Respond strictly as JSON with this structure:
     const finalKey = plan.steps.at(-1)?.outputs?.[0];
     const finalResult = finalKey ? context[finalKey] : null;
 
-    return { context, finalResult };
+    return {context, finalResult};
   }
 
   public async plan(userGoal: string): Promise<any> {
     const packages = await this.selectPackages(userGoal);
     await setTimeout(() => {}, 25000);
-    
+
     const allFunctions: any[] = [];
     for (const pkg of packages) {
       const funcs = await this.getFunctionsByPackage(pkg);
       allFunctions.push(...funcs);
       await setTimeout(() => {}, 25000);
     }
-    
+
     const plan = await this.planFunctions(userGoal, allFunctions);
     await setTimeout(() => {}, 25000);
 
