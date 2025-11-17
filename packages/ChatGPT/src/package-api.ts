@@ -40,7 +40,7 @@ export namespace funcs {
     return await grok.functions.call('ChatGPT:GetExecutionPlan', { userGoal });
   }
 
-  export async function fuzzyMatch(prompt: string , searchPatterns: any ): Promise<any> {
+  export async function fuzzyMatch(prompt: string , searchPatterns: any ): Promise<string> {
     return await grok.functions.call('ChatGPT:FuzzyMatch', { prompt, searchPatterns });
   }
 }

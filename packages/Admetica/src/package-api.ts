@@ -36,6 +36,13 @@ export namespace funcs {
     return await grok.functions.call('Admetica:GetAdmeProperties', { molecules, props });
   }
 
+  /**
+  Predicts ADME properties for a given molecule.
+  */
+  export async function getAdmePropertiesSingle(molecule: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Admetica:GetAdmePropertiesSingle', { molecule });
+  }
+
   export async function admeticaApp(): Promise<DG.View> {
     return await grok.functions.call('Admetica:AdmeticaApp', {});
   }

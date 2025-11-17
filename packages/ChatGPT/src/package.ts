@@ -30,7 +30,7 @@ type IChatGptResponse = {
 
 export let apiKey: string = '';
 let vectorStoreId: string = '';
-export const model: string = 'gpt-4';
+export const model: string = 'gpt-4.1-mini-2025-04-14';
 const temperature = 0.1;
 const url = 'https://api.openai.com/v1/chat/completions';
 
