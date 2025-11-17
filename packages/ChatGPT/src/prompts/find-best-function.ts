@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { ChatGPTPromptEngine } from '../prompt-engine/prompt-engine';
+import { ChatGPTPromptEngine, GeminiPromptEngine, PromptEngine } from '../prompt-engine/prompt-engine';
 import { apiKey, model } from '../package';
 import { _package } from '../package-test';
 
@@ -69,24 +69,19 @@ User request:
 `;
 
   try {
+    let engine: PromptEngine;
     let responseText: string;
 
     const isGeminiAvailable = await LanguageModel.availability();
     if (isGeminiAvailable === 'available') {
       _package.logger.info('Using built-in Gemini model for fuzzy matching.');
-
-      const session = await LanguageModel.create({
-        monitor: geminiDownloadMonitor,
-        initialPrompts: [{ role: 'system', content: systemPrompt }],
-      });
-
-      responseText = await session.prompt(userPrompt, {responseConstraint: schema});
+      engine = new GeminiPromptEngine(schema, geminiDownloadMonitor);
     } else {
       _package.logger.info('Using GPT engine for fuzzy matching.');
-      const gptEngine = new ChatGPTPromptEngine(apiKey, model);
-      responseText = await gptEngine.generate(userPrompt, systemPrompt);
+      engine = new ChatGPTPromptEngine(apiKey, model);
     }
 
+    responseText = await engine.generate(userPrompt, systemPrompt);
     return JSON.parse(responseText) as QueryMatchResult;
   } catch (error) {
     _package.logger.error(`Error finding best function: ${error}`);
