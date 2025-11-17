@@ -724,7 +724,13 @@ export class PackageFunctions {
       tempCol.setTag(bioTAGS.separator, '/');
     if (isBiln)
       tempCol.setTag(bioTAGS.separator, '-');
-    tempCol.setTag(bioTAGS.alphabet, 'UN');
+    // detect alphabet
+    const dnaAlphabet = 'AGCT';
+    const RNAAlphabet = 'AGCU';
+    const isDNA = sequence.split('').every((c) => dnaAlphabet.includes(c) || c === '/' || c === '-');
+    const isRNA = !isDNA && sequence.split('').every((c) => RNAAlphabet.includes(c) || c === '/' || c === '-');
+
+    tempCol.setTag(bioTAGS.alphabet, isDNA ? ALPHABET.DNA : isRNA ? ALPHABET.RNA : 'UN');
     tempCol.setTag(bioTAGS.alphabetIsMultichar, 'true');
 
     const tempDF = DG.DataFrame.fromColumns([tempCol]);
@@ -1326,22 +1332,7 @@ export class PackageFunctions {
       nonlinear: boolean
   ): Promise<string | undefined> {
     if (!(seq.trim())) return '';
-    try {
-      const seqCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, `helm`, [seq]);
-      const df = DG.DataFrame.fromColumns([seqCol]);
-      const semType = await grok.functions.call('Bio:detectMacromolecule', {col: seqCol});
-      if (semType) seqCol.semType = semType;
-
-      const monomerLib = (await PackageFunctions.getMonomerLibHelper()).getMonomerLib();
-      const seqHelper = _package.seqHelper;
-      const rdKitModule = await getRdKitModule();
-      const res = (await sequenceToMolfile(df, seqCol, nonlinear, false, monomerLib, seqHelper, rdKitModule))?.molCol?.get(0);
-      return res ?? undefined;
-    } catch (err: any) {
-      const [errMsg, errStack] = errInfo(err);
-      _package.logger.error(errMsg, undefined, errStack);
-      throw err;
-    }
+    return PackageFunctions.toAtomicLevelSingleSeq(seq);
   }
 
   // //description: Gets similarity to a reference sequence
