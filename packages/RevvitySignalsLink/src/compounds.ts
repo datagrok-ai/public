@@ -3,6 +3,7 @@ import { queryStructureById } from './revvity-api';
 import { ComplexCondition, Operators } from '@datagrok-libraries/utils/src/query-builder/query-builder';
 import { SignalsSearchQuery } from './signals-search-query';
 import { delay } from '@datagrok-libraries/utils/src/test';
+import { funcs } from './package-api';
 
 export const assetsQuery = {
     "query": {
@@ -117,7 +118,7 @@ export async function addMoleculeStructures(moleculeIds: string[], molCol: DG.Co
             const promises = batch.map(async (id, batchItemIndex) => {
                 const globalIndex = batchIndex * BATCH_SIZE + batchItemIndex;
                 try {
-                    const molecule = await queryStructureById(id);
+                    const molecule = await funcs.getStructureById(id);
                     // Update counter and progress bar as each promise completes
                     // Using post-increment to get the current count before incrementing
                     const currentCount = ++counter;

@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import '../css/revvity-signals-styles.css';
 import { SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
-import { queryLibraries, queryTags, queryTerms, queryUsers, RevvityData, RevvityUser, search } from './revvity-api';
+import { queryLibraries, queryStructureById, queryTags, queryTerms, queryUsers, RevvityData, RevvityUser, search } from './revvity-api';
 import { reorderColumns, transformData, getViewNameByCompoundType, createRevvityWidgetByCorporateId, createWidgetByRevvityLabel } from './utils';
 import { addMoleculeStructures, getConditionForLibAndType } from './compounds';
 import { createInitialSatistics, getRevvityLibraries, RevvityLibrary } from './libraries';
@@ -311,6 +311,17 @@ export async function getTermsForField(fieldName: string, type: string, assetTyp
   const data: RevvityData[] = JSON.parse(await funcs.searchTerms(JSON.stringify(query)));
   const terms = data.map((it) => it.id).filter((term) => term != undefined);
   return terms;
+}
+
+
+//name: Get Structure By Id
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
+//input: string id
+//output: string structure
+export async function getStructureById(id: string): Promise<string> {
+  const molecule = await queryStructureById(id) as string;
+  return molecule;
 }
 
 

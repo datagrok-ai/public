@@ -52,6 +52,10 @@ export namespace funcs {
     return await grok.functions.call('RevvitySignalsLink:GetTermsForField', { fieldName, type, assetTypeId, isMaterial });
   }
 
+  export async function getStructureById(id: string ): Promise<string> {
+    return await grok.functions.call('RevvitySignalsLink:GetStructureById', { id });
+  }
+
   export async function entityTreeWidget(id: any ): Promise<any> {
     return await grok.functions.call('RevvitySignalsLink:EntityTreeWidget', { id });
   }
