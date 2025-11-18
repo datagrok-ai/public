@@ -33,11 +33,16 @@ export class PackageFunctions {
     // grok.shell.info('started')
     //
     grok.events.onViewAdded.subscribe((view) => {
-      if (view.type === DG.VIEW_TYPE.TABLE_VIEW) {
-        const tableView = view as DG.TableView;
-        const iconFse = ui.iconSvg('ai.svg', () => setAiPanelVisibility(true), 'Ask AI');
-        tableView.setRibbonPanels([...tableView.getRibbonPanels(), [iconFse]]);
-      }
+      if (view.type !== DG.VIEW_TYPE.TABLE_VIEW) return;
+
+      const tableView = view as DG.TableView;
+      const ribbons = tableView.getRibbonPanels();
+      const iconName = 'ai';
+      const exists = ribbons.flat().some((el) => el.querySelector(`i[data-name="${iconName}"]`));
+      if (exists) return;
+
+      const iconFse = ui.iconSvg(`${iconName}.svg`, () => setAiPanelVisibility(true), 'Ask AI');
+      tableView.setRibbonPanels([...ribbons, [iconFse]]);
     });
 
     initAiPanel();
