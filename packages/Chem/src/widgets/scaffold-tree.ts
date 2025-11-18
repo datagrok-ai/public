@@ -731,7 +731,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     this._initMenu();
     this.makeRootDroppable();
   }
-  
+
   makeRootDroppable() {
     ui.makeDroppable(this.root, {
       acceptDrop: (draggedItem) => draggedItem instanceof DG.FileInfo && draggedItem.extension === 'tree',
@@ -1006,7 +1006,6 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         ui.empty(node.captionLabel);
         let molHost: HTMLDivElement;
         const groupValue = value(group);
-        groupValue.smiles = molStrSketcher;
         const chosenColor = groupValue.chosenColor;
         const parentColor = groupValue.parentColor;
         const finalColor = chosenColor && groupValue.colorOn ? chosenColor : parentColor;
@@ -1022,6 +1021,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
         } else
           molHost = renderMolecule(group, this.sizesMap[this.size].width, this.sizesMap[this.size].height, undefined, thisViewer);
 
+        // Assign new SMILES only after removing the old colored scaffold
+        groupValue.smiles = molStrSketcher;
         groupValue.bitsetCalculated = false;
         molHost.onclick = () => this.makeNodeActiveAndFilter(group);
         this.addIcons(molHost, group);
