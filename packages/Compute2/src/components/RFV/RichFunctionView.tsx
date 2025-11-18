@@ -8,8 +8,6 @@ import {
   RibbonPanel, DockManager, MarkDown,
   RibbonMenu,
   ifOverlapping,
-  tooltip,
-  Button,
   IconImage,
 } from '@datagrok-libraries/webcomponents-vue';
 import './RichFunctionView.css';
@@ -24,7 +22,6 @@ import {BehaviorSubject} from 'rxjs';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {useViewersHook} from '../../composables/use-viewers-hook';
-import {ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {startWith, take, map} from 'rxjs/operators';
 import {useHelp} from '../../composables/use-help';
 import {useObservable} from '@vueuse/rxjs';
@@ -158,16 +155,6 @@ export const RichFunctionView = Vue.defineComponent({
     consistencyStates: {
       type: Object as Vue.PropType<Record<string, ConsistencyInfo>>,
     },
-    menuActions: {
-      type: Object as Vue.PropType<Record<string, ViewAction[]>>,
-    },
-    buttonActions: {
-      type: Object as Vue.PropType<ViewAction[]>,
-    },
-    isTreeLocked: {
-      type: Boolean,
-      default: false,
-    },
     isReadonly: {
       type: Boolean,
       default: false,
@@ -184,10 +171,6 @@ export const RichFunctionView = Vue.defineComponent({
       type: Boolean,
       default: true,
     },
-    showStepNavigation: {
-      type: Boolean,
-      default: false,
-    },
     skipInit: {
       type: Boolean,
       dafault: true,
@@ -203,14 +186,13 @@ export const RichFunctionView = Vue.defineComponent({
   emits: {
     'update:funcCall': (_call: DG.FuncCall) => true,
     'runClicked': () => true,
-    'nextClicked': () => true,
     'actionRequested': (_actionUuid: string) => true,
     'consistencyReset': (_ioName: string) => true,
     'formValidationChanged': (_isValid: boolean) => true,
     'formInputChanged': (_a: DG.EventData<DG.InputArgs>) => true,
     'formReplaced': (_a: DG.InputForm | undefined) => true,
   },
-  setup(props, {emit}) {
+  setup(props, {emit, slots}) {
     Vue.onRenderTriggered((event) => {
       console.log('RichFunctionView onRenderTriggered', event);
     });
@@ -236,9 +218,6 @@ export const RichFunctionView = Vue.defineComponent({
     const validationState = Vue.computed(() => props.validationStates);
     const consistencyState = Vue.computed(() => props.consistencyStates);
 
-    const menuActions = Vue.computed(() => props.menuActions);
-    const buttonActions = Vue.computed(() => props.buttonActions);
-
     const tabsData = Vue.shallowRef<RenderStateItem[]>([]);
     const tabLabels = Vue.shallowRef<string[]>([]);
     const visibleTabLabels = Vue.shallowRef([] as string[]);
@@ -249,7 +228,7 @@ export const RichFunctionView = Vue.defineComponent({
     const isReportEnabled = Vue.ref(false);
     const isFittingEnabled = Vue.ref(false);
     const allowRerun = Vue.ref(false);
-    const runLabel =  Vue.ref('Run');
+    const runLabel = Vue.ref('Run');
 
     const isLocked = Vue.ref(false);
 
@@ -305,15 +284,7 @@ export const RichFunctionView = Vue.defineComponent({
       changeHelpFunc(call?.func);
     }, {immediate: true});
 
-    const showRun = Vue.computed(() => props.showRunButton && (isOutputOutdated.value || allowRerun.value))
-
-    const run = async () => {
-      emit('runClicked');
-    };
-
-    const next = async () => {
-      emit('nextClicked');
-    };
+    const showRun = Vue.computed(() => props.showRunButton && (isOutputOutdated.value || allowRerun.value));
 
     ////
     // DockManager related
@@ -445,15 +416,6 @@ export const RichFunctionView = Vue.defineComponent({
             { !historyHidden.value && <IconFA name='check'/>}
           </span> }
         </RibbonMenu>
-        { menuActions.value && Object.entries(menuActions.value).map(([category, actions]) =>
-          <RibbonMenu groupName={category} view={currentView.value}>
-            {
-              actions.map((action) => Vue.withDirectives(<span onClick={() => emit('actionRequested', action.uuid)}>
-                <div> { action.icon && <IconFA name={action.icon} style={menuIconStyle}/> } { action.friendlyName ?? action.id } </div>
-              </span>, [[tooltip, action.description]]))
-            }
-          </RibbonMenu>)
-        }
         <RibbonPanel view={currentView.value}>
           { isReportEnabled.value && !isOutputOutdated.value && <IconFA
             name='arrow-to-bottom'
@@ -546,29 +508,14 @@ export const RichFunctionView = Vue.defineComponent({
                   />, [[ifOverlapping, isRunning.value, 'Recalculating...']])
                 }
                 <div class='flex sticky bottom-0 justify-end' style={{'z-index': 1000, 'background-color': 'rgb(255,255,255,0.75)'}}>
-                  {
-                    buttonActions.value?.map((action) => Vue.withDirectives(
-                      <Button onClick={() => emit('actionRequested', action.uuid)}>
-                        { action.icon && <IconFA name={action.icon} /> }
-                        { action.friendlyName ?? action.id }
-                      </Button>
-                      , [[tooltip, action.description]]))
-                  }
-                  {
+                  { slots.navigation ?
+                    slots.navigation({runLabel: runLabel.value, allowRerun: allowRerun.value}) :
                     showRun.value &&
                       <BigButton
-                        isDisabled={!isRunnable.value || isRunning.value || props.isTreeLocked || props.isReadonly}
-                        onClick={run}
+                        isDisabled={!isRunnable.value || isRunning.value || props.isReadonly}
+                        onClick={() => emit('runClicked')}
                       >
                         { isOutputOutdated.value ? runLabel.value : 'Rerun' }
-                      </BigButton>
-                  }
-                  {
-                    props.showStepNavigation && !isOutputOutdated.value &&
-                      <BigButton
-                        onClick={next}
-                      >
-                        Next
                       </BigButton>
                   }
                 </div>

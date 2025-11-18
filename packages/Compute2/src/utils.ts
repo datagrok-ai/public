@@ -85,14 +85,27 @@ export function findTreeNodeParrent(uuid: string, state: PipelineState): Pipelin
   }
 };
 
-const suitableForNextStep = (state: PipelineState) => {
-  return state.type === 'funccall'  || state.steps.length === 0;
+const suitableForNavStep = (state: PipelineState) => {
+  return (state.type === 'funccall' || state.steps.length === 0 || state.forceNavigate) && !state.isReadonly;
+};
+
+export function findPrevStep(uuid: string, state: PipelineState): NodeWithPath | undefined {
+  let prevUuid = '';
+  const pred = (state: PipelineState) => {
+    if (!suitableForNavStep(state))
+      return false;
+    if (state.uuid === uuid)
+      return true;
+    prevUuid = state.uuid;
+    return false;
+  };
+  return _findTreeNode([state], pred) ? findNodeWithPathByUuid(prevUuid, state) : undefined;
 }
 
 export function findNextStep(uuid: string, state: PipelineState): NodeWithPath | undefined {
   let prevUuid = '';
   const pred = (state: PipelineState) => {
-    if (!suitableForNextStep(state))
+    if (!suitableForNavStep(state))
       return false;
     if (prevUuid === uuid)
       return true;
@@ -100,6 +113,10 @@ export function findNextStep(uuid: string, state: PipelineState): NodeWithPath |
     return false;
   };
   return _findTreeNode([state], pred);
+}
+
+export function findNextSubStep(state: PipelineState): NodeWithPath | undefined {
+  return _findTreeNode([state], suitableForNavStep);
 }
 
 export type PipelineWithAdd = PipelineStateSequential<StepFunCallState, PipelineInstanceRuntimeData> |

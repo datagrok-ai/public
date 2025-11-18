@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-import {DockManager, IconFA, ifOverlapping, RibbonMenu, RibbonPanel} from '@datagrok-libraries/webcomponents-vue';
+import {BigButton, Button, DockManager, IconFA, ifOverlapping, RibbonMenu, RibbonPanel, tooltip} from '@datagrok-libraries/webcomponents-vue';
 import {
   isFuncCallState, isParallelPipelineState,
   isSequentialPipelineState,
@@ -20,7 +20,8 @@ import {useUrlSearchParams, computedAsync} from '@vueuse/core';
 import {Inspector} from '../Inspector/Inspector';
 import {
   findNextStep,
-  findNodeWithPathByUuid, findTreeNodeByPath,
+  findNextSubStep,
+  findNodeWithPathByUuid, findPrevStep, findTreeNodeByPath,
   findTreeNodeParrent, hasSubtreeFixableInconsistencies,
   reportTree,
 } from '../../utils';
@@ -181,9 +182,9 @@ export const TreeWizard = Vue.defineComponent({
       if (chosenStepUuid.value == null || treeState.value == null)
         return;
       const nextData = findNextStep(chosenStepUuid.value, treeState.value);
-      if (nextData) {
+      if (nextData)
         chosenStepUuid.value = nextData.state.uuid;
-      } else {
+      else {
         const msg = `Now you can:\n
 • Export results using top menu 'Export' options\n
 • Save the run to your history clicking on a save icon`;
@@ -191,9 +192,21 @@ export const TreeWizard = Vue.defineComponent({
       }
     };
 
+    const goBack = () => {
+      if (chosenStepUuid.value == null || treeState.value == null)
+        return;
+      const prevData = findPrevStep(chosenStepUuid.value, treeState.value);
+      if (prevData)
+        chosenStepUuid.value = prevData.state.uuid;
+      else
+        chosenStepUuid.value = treeState.value.uuid;
+    };
+
     const onPipelineProceed = () => {
       if (chosenStepState.value && !isFuncCallState(chosenStepState.value)) {
-        chosenStepUuid.value = chosenStepState.value.steps[0].uuid;
+        const nextStep = findNextSubStep(chosenStepState.value);
+        if (nextStep)
+          chosenStepUuid.value = nextStep.state.uuid;
       }
     };
 
@@ -288,9 +301,8 @@ export const TreeWizard = Vue.defineComponent({
           pendingStepPath.split(' ').map((pathSegment) => Number.parseInt(pathSegment)),
           treeState,
         );
-        if (nodeWithPath?.state) {
+        if (nodeWithPath?.state)
           chosenStepUuid.value = nodeWithPath.state.uuid;
-        }
       }
     };
 
@@ -330,7 +342,7 @@ export const TreeWizard = Vue.defineComponent({
       if (!chosenStepUuid.value)
         chosenStepUuid.value = treeState.value.uuid;
 
-      let step = findNodeWithPathByUuid(chosenStepUuid.value, treeState.value);
+      const step = findNodeWithPathByUuid(chosenStepUuid.value, treeState.value);
 
       if (step)
         return step;
@@ -363,12 +375,30 @@ export const TreeWizard = Vue.defineComponent({
 
     const chosenStepState = Vue.computed(() => chosenStep.value?.state);
 
+    const isRunDisabled = Vue.computed(() => {
+      if (!chosenStepUuid.value)
+        return true;
+      const callState = states.calls[chosenStepUuid.value];
+      if (!callState)
+        return true;
+      return (!callState.isRunnable || callState.isRunning || treeMutationsLocked.value || chosenStepState.value?.isReadonly);
+    });
+
+    const isOutputOutdated = Vue.computed(() => {
+      if (!chosenStepUuid.value)
+        return false;
+      const callState = states.calls[chosenStepUuid.value];
+      if (!callState)
+        return false;
+      return callState.isOutputOutdated;
+    });
+
     Vue.watch(chosenStepState, (state) => {
       if (!state)
         return;
       if (isFuncCallState(state)) rfvHidden.value = false;
       if (!isFuncCallState(state)) pipelineViewHidden.value = false;
-    })
+    });
 
     const isRootChoosen = Vue.computed(() => {
       return (!!chosenStepState.value?.uuid) && chosenStepState.value?.uuid === treeState.value?.uuid;
@@ -544,6 +574,15 @@ export const TreeWizard = Vue.defineComponent({
             }
           </RibbonMenu>
         }
+        { menuActions.value && Object.entries(menuActions.value).map(([category, actions]) =>
+          <RibbonMenu groupName={category} view={currentView.value}>
+            {
+              actions.map((action) => Vue.withDirectives(<span onClick={() => runActionWithConfirmation(action.uuid)}>
+                <div> { action.icon && <IconFA name={action.icon} style={{width: '15px', display: 'inline-block', textAlign: 'center'}}/> } { action.friendlyName ?? action.id } </div>
+              </span>, [[tooltip, action.description]]))
+            }
+          </RibbonMenu>)
+        }
         <DockManager class='block h-full'
           style={{overflow: 'hidden !important'}}
           key={providerFunc.value?.id}
@@ -638,21 +677,52 @@ export const TreeWizard = Vue.defineComponent({
                 viewersHook={chosenStepState.value.viewersHook}
                 validationStates={states.validations[chosenStepUuid.value]}
                 consistencyStates={states.consistency[chosenStepUuid.value]}
-                menuActions={menuActions.value}
-                buttonActions={buttonActions.value}
                 isReadonly={chosenStepState.value.isReadonly}
-                isTreeLocked={treeMutationsLocked.value}
-                showStepNavigation={true}
                 skipInit={true}
                 onUpdate:funcCall={onFuncCallChange}
-                onRunClicked={() => runStep(chosenStepState.value!.uuid)}
-                onNextClicked={goNextStep}
                 onActionRequested={runActionWithConfirmation}
                 onConsistencyReset={(ioName) => consistencyReset(chosenStepUuid.value!, ioName)}
                 dock-spawn-title='Step review'
                 ref={rfvRef}
                 view={currentView.value}
-              />
+              >
+                {{
+                  navigation: ({runLabel, allowRerun}: {runLabel: string, allowRerun: boolean}) => (
+                    <>
+                      {
+                        <Button onClick={goBack} style={{'margin-right': 'auto'}}>
+                          Back
+                        </Button>
+                      }
+                      {
+                        buttonActions.value?.map((action) => Vue.withDirectives(
+                          <Button onClick={() => runActionWithConfirmation(action.uuid)}>
+                            {action.icon && <IconFA name={action.icon} />}
+                            {action.friendlyName ?? action.id}
+                          </Button>
+                          , [[tooltip, action.description]]))
+                      }
+                      {
+                        (isOutputOutdated.value || allowRerun) &&
+                          <BigButton
+                            isDisabled={isRunDisabled.value}
+                            onClick={() => runStep(chosenStepUuid.value!)}
+                          >
+                            {isOutputOutdated.value ? runLabel: 'Rerun'}
+                          </BigButton>
+                      }
+                      {
+                        !isOutputOutdated.value &&
+                          <BigButton
+                            onClick={goNextStep}
+                          >
+                             Next
+                          </BigButton>
+                      }
+                    </>
+                  ),
+                }}
+              </RichFunctionView>
           }
           {
             !pipelineViewHidden.value && chosenStepUuid.value && chosenStepState.value && !isFuncCallState(chosenStepState.value) &&
@@ -670,6 +740,7 @@ export const TreeWizard = Vue.defineComponent({
               onActionRequested={runActionWithConfirmation}
               dock-spawn-title='Step sequence review'
               onProceedClicked={onPipelineProceed}
+              onBackClicked={goBack}
               onUpdate:funcCall={onPipelineFuncCallUpdate}
               onAddNode={({itemId, position}) => {
                 if (chosenStepUuid.value)

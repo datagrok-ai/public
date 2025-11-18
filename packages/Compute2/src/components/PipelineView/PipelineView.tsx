@@ -42,6 +42,7 @@ export const PipelineView = Vue.defineComponent({
   emits: {
     'update:funcCall': (_call: DG.FuncCall) => true,
     'proceedClicked': () => true,
+    'backClicked': () => true,
     'actionRequested': (_actionUuid: string) => true,
     'addNode': (_data: {itemId: string, position: number}) => true,
   },
@@ -141,6 +142,14 @@ export const PipelineView = Vue.defineComponent({
                     >
                       <IconFA name='plane-departure' class={'d4-picture'} />
                       <div> Proceed to the first step </div>
+                    </div> }
+                  { !isRoot.value &&
+                    <div
+                      class={cardsClasses}
+                      onClick={() => emit('backClicked')}
+                    >
+                      <IconFA name='long-arrow-left' class={'d4-picture'} />
+                      <div> Go Back </div>
                     </div> }
                   { hasContextHelp(currentCall.value?.func) &&
                     <div
