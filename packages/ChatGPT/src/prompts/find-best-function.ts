@@ -2,7 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {ChatGPTPromptEngine, GeminiPromptEngine, PromptEngine} from '../prompt-engine/prompt-engine';
-import {apiKey, model} from '../package';
+import {apiKey, modelName} from '../package';
 import {_package} from '../package';
 
 
@@ -78,7 +78,7 @@ User request:
       engine = new GeminiPromptEngine(schema, geminiDownloadMonitor);
     } else {
       _package.logger.info('Using GPT engine for fuzzy matching.');
-      engine = new ChatGPTPromptEngine(apiKey, model);
+      engine = new ChatGPTPromptEngine(apiKey, modelName);
     }
 
     const responseText = await engine.generate(userPrompt, systemPrompt);

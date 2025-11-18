@@ -3,7 +3,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {askDeepGrok} from './client';
+import {askDeepGrok} from './deepwikiclient';
 import {askOpenAIHelp} from './openAI-client';
 
 let searching = false;

@@ -7,17 +7,17 @@ import {ChatGPTPromptEngine} from './prompt-engine/prompt-engine';
 import {AssistantRenderer} from './prompt-engine/rendering-tools';
 import {getAiPanelVisibility, initAiPanel, setAiPanelVisibility} from './ai-panel';
 import {findBestFunction} from './prompts/find-best-function';
-import {askDeepGrok} from './deepwiki/client';
-import {askDeepWiki} from './deepwiki/ui';
+import {askDeepGrok} from './llm-utils/deepwikiclient';
+import {askDeepWiki} from './llm-utils/ui';
 import {ChatGptFuncParams, Plan} from './prompt-engine/interfaces';
-import {OpenAIHelpClient} from './deepwiki/openAI-client';
+import {OpenAIHelpClient} from './llm-utils/openAI-client';
 
 export * from './package.g';
 export const _package = new DG.Package();
 
 export let apiKey: string = '';
-let vectorStoreId: string = '';
-export const model: string = 'gpt-4.1-mini-2025-04-14';
+export let vectorStoreId: string = '';
+export const modelName: string = 'gpt-4.1-mini-2025-04-14';
 
 export class PackageFunctions {
   @grok.decorators.init()
@@ -102,7 +102,7 @@ export class PackageFunctions {
           const searchResultHost = document.getElementsByClassName('power-pack-search-host')[0];
           if (!searchResultHost)
             return;
-          const gptEngine = new ChatGPTPromptEngine(apiKey, model);
+          const gptEngine = new ChatGPTPromptEngine(apiKey, modelName);
           const gptAssistant = new ChatGptAssistant(gptEngine);
 
           const resultWait = ui.wait(async () => {
@@ -134,7 +134,7 @@ export class PackageFunctions {
     }
   })
  static async getExecutionPlan(userGoal: string): Promise<string> {
-   const gptEngine = new ChatGPTPromptEngine(apiKey, model);
+   const gptEngine = new ChatGPTPromptEngine(apiKey, modelName);
    const gptAssistant = new ChatGptAssistant(gptEngine);
    const plan: Plan = await gptAssistant.plan(userGoal);
    // Cache only works with scalar values, so we serialize the plan to a string

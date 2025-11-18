@@ -1,12 +1,11 @@
 /* eslint-disable max-len */
 import OpenAI from 'openai';
 import * as api from '../package-api';
-import {PackageFunctions} from '../package';
 export class OpenAIHelpClient {
   private openai: OpenAI;
   private constructor(private apiKey: string, private vectorStoreId: string) {
     this.openai = new OpenAI({
-      apiKey: this.apiKey, dangerouslyAllowBrowser: true,
+      apiKey: this.apiKey, dangerouslyAllowBrowser: true
     });
   }
 
@@ -42,6 +41,17 @@ export class OpenAIHelpClient {
       ],
     });
     return response.output_text;
+  }
+
+  async generalPrompt(model: string, systemPrompt: string, prompt: string): Promise<string> {
+    const response = await this.openai.chat.completions.create({
+      model: model,
+      messages: [
+        {role: 'system', content: systemPrompt},
+        {role: 'user', content: prompt}
+      ], temperature: 0.0,
+    });
+    return response.choices[0].message.content ?? '';
   }
 }
 
