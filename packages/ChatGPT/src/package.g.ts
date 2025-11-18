@@ -6,11 +6,6 @@ export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
 
-//input: string question 
-export async function deepDemo(question: string) : Promise<void> {
-  await PackageFunctions.deepDemo(question);
-}
-
 //tags: autostart
 export function autostart() : void {
   PackageFunctions.autostart();
@@ -20,18 +15,6 @@ export function autostart() : void {
 //output: dynamic result
 export function askHelpLLMProvider() : any {
   return PackageFunctions.askHelpLLMProvider();
-}
-
-//input: string question 
-//output: string result
-export async function ask(question: string) : Promise<string> {
-  return await PackageFunctions.ask(question);
-}
-
-//input: string question 
-//output: string result
-export async function askFun(question: string) : Promise<string> {
-  return await PackageFunctions.askFun(question);
 }
 
 //tags: searchProvider

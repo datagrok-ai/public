@@ -14,7 +14,8 @@ export function welcomeView(): DG.View | undefined {
     searchStr = params.get('q') ?? '';
   }
 
-  const input = ui.element('input', 'ui-input-editor power-search-search-everywhere-input') as HTMLInputElement;
+  const input = ui.element('input', 'ui-input-editor') as HTMLInputElement;
+  input.classList.add('power-search-search-everywhere-input'); // otherwise HTML complains if I do this above :)
   input.placeholder = 'Search everywhere. Try "aspirin" or "7JZK"';
   const inputContainer = ui.div([
     input,
@@ -26,16 +27,17 @@ export function welcomeView(): DG.View | undefined {
   const helpDiv = ui.divText('Use Ctrl+Space to see suggestions', {style: {
     marginLeft: '12px', fontSize: '10px', color: 'var(--text-color-light)',
     fontStyle: 'italic',
-    marginBottom: '10px', flexGrow: '0', display: 'none',
+    marginBottom: '10px', flexGrow: '0',
   }, classes: 'power-search-help-text-container'});
 
-  input.addEventListener('input', () => {
-    if (!input.value)
-      helpDiv.style.display = 'none';
-    else
-      helpDiv.style.display = 'flex';
-  });
-  helpDiv.style.display = input.value ? 'flex' : 'none';
+  // input.addEventListener('input', () => {
+  //   if (!input.value)
+  //     helpDiv.style.visibility = 'hidden';
+  //   else
+  //     helpDiv.style.visibility = 'visible';
+  // });
+
+  // helpDiv.style.display = input.value ? 'flex' : 'none';
   inputHost.style.marginBottom = '0px';
   suggestionMenuKeyNavigation(inputContainer);
 

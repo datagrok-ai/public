@@ -23,11 +23,6 @@ export class LLMCredsManager {
     return LLMCredsManager._instance!;
   }
 
-  static isAvailable(): boolean {
-    const instance = LLMCredsManager.getInstance();
-    return instance.apiKey.length > 0 && instance.vectorStoreId.length > 0;
-  }
-
   static getApiKey(): string {
     return LLMCredsManager.getInstance().apiKey;
   }

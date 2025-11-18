@@ -8,7 +8,7 @@ import {AssistantRenderer} from './prompt-engine/rendering-tools';
 import {getAiPanelVisibility, initAiPanel, setAiPanelVisibility} from './ai-panel';
 import {findBestFunction} from './prompts/find-best-function';
 import {askDeepGrok} from './llm-utils/deepwikiclient';
-import {askDeepWiki} from './llm-utils/ui';
+import {askDeepWiki, setupSearchUI} from './llm-utils/ui';
 import {ChatGptFuncParams, Plan} from './prompt-engine/interfaces';
 import {OpenAIHelpClient} from './llm-utils/openAI-client';
 import {LLMCredsManager} from './llm-utils/creds';
@@ -22,6 +22,7 @@ export class PackageFunctions {
   @grok.decorators.init()
   static async init() {
     LLMCredsManager.init(_package);
+    setupSearchUI();
   }
 
 
