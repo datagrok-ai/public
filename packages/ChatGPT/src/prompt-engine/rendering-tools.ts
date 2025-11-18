@@ -3,39 +3,42 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 //@ts-ignore
-import '../css/chatgpt.css';
+import '../../css/ai.css';
+import {Plan, Step} from './interfaces';
 
 export class AssistantRenderer {
-  static renderPlan(plan: any): HTMLElement {
-    const container = ui.divV([], 'chatgpt-ask-ai-plan');
+  static renderPlan(plan: Plan): HTMLElement {
+    const container = ui.divV([], 'ai-execute-plan');
     if (!plan?.steps?.length) {
       container.append(ui.divText('No steps generated.'));
       return container;
     }
 
     const analysis = ui.divV(
-      (plan.analysis ?? []).map((line: string) =>
-        ui.divText(line)
+      (plan.analysis ?? []).map((line: string) => ui.divText(line))
+    );
+
+    const stepsAccordion = ui.accordion();
+    plan.steps.map((s: Step, i: number) =>
+      stepsAccordion.addPane(
+        `Step ${i + 1}: ${s.function}`,
+        () => {
+          return ui.divV([
+            ui.divText(`Action: ${s.action}`),
+            ui.divText(`Inputs: ${JSON.stringify(s.inputs, null, 2)}`),
+            ui.divText(`Outputs: ${JSON.stringify(s.outputs)}`),
+          ]);
+        },
+        false
       )
     );
 
-    const steps = ui.list(
-      plan.steps.map((s: any, i: number) =>
-        ui.divV([
-          ui.h3(`Step ${i + 1}: ${s.function}`),
-          ui.divText(`Action: ${s.action}`),
-          ui.divText(`Inputs: ${JSON.stringify(s.inputs, null, 2)}`),
-          ui.divText(`Outputs: ${JSON.stringify(s.outputs)}`),
-        ], 'chatgpt-ask-ai-plan-step')
-      )
-    );
-
-    container.append(ui.h2('Plan'), analysis, steps);
+    container.append(ui.h2('Plan'), analysis, stepsAccordion.root);
     return container;
   }
 
   static renderResult(result: any): HTMLElement {
-    const container = ui.div([ui.h2('Result')], 'chatgpt-ask-ai-result');
+    const container = ui.div([ui.h2('Result')], 'ai-execute-result');
     const val = result?.finalResult?.value ?? result?.finalResult ?? result;
     const meta = result?.finalResult?.meta;
 
@@ -54,7 +57,7 @@ export class AssistantRenderer {
   }
 }
 
-function renderGraphics(intermediateResult: any): HTMLElement {
+function renderGraphics(intermediateResult: HTMLElement): HTMLElement {
   if (!intermediateResult?.style?.backgroundImage)
     return ui.divText('No graphics available.');
 
