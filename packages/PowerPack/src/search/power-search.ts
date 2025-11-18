@@ -43,32 +43,6 @@ export function powerSearch(s: string, host: HTMLDivElement, inputElement: HTMLI
   searchProvidersSearch(s, host, inputElement);
 }
 
-export function getLlmQuerySearchProvider(): DG.SearchProvider {
-  return {
-    'home': {
-      name: 'LLM Query Matcher',
-      description: 'Matches user queries to table queries using LLM',
-      isApplicable: (s: string) => s.length > 5,
-      returnType: 'widget',
-      options: {
-        widgetHeight: 500,
-      },
-      search: async (_s, _v) => {
-        return null;
-      },
-      onValueEnter: async (s: string, v) => {
-        await tableQueriesFunctionsSearchLlm(s, document.getElementsByClassName('power-pack-search-host')[0]! as HTMLDivElement);
-      },
-      getSuggestions: (s: string) => s.length > 5 ? [
-        {
-          suggestionText: 'Query Search',
-          priority: 10,
-        }
-      ] : null,
-    }
-  };
-}
-
 
 /// Searches for default views that exactly match the search string
 /// Example: functions
@@ -334,17 +308,11 @@ function removeTrailingQuotes(s: string): string {
   return ms;
 }
 
-async function tableQueriesFunctionsSearchLlm(s: string, host: HTMLDivElement): Promise<void> {
-  const spinner = ui.icons.spinner();
-  spinner.style.color = 'var(--blue-1)';
-  const searchingText = ui.divText('Grokking queries...', {style: {marginLeft: '8px'}});
-  const loader = ui.divH([spinner, searchingText], {style: {alignItems: 'center', marginTop: '8px', width: '100%', justifyContent: 'center'}});
+export async function tableQueriesFunctionsSearchLlm(s: string): Promise<DG.Widget> {
   const searchPatterns = tableQueriesSearchFunctions.map((f) => f.options['searchPattern']);
-  host.prepend(loader);
   try {
     const matches = JSON.parse(await grok.functions
       .call('ChatGPT:fuzzyMatch', {prompt: s, searchPatterns}));
-    loader.remove();
     if (matches && matches.searchPattern && matches.parameters) {
       const sf = tableQueriesSearchFunctions.find((f) => {
         const pattern: string = removeTrailingQuotes(f.options['searchPattern']) ?? '';
@@ -353,14 +321,15 @@ async function tableQueriesFunctionsSearchLlm(s: string, host: HTMLDivElement): 
 
       if (sf) {
         const widget = createOutWidget(sf, matches.parameters);
-        host.prepend(widgetHost(widget));
+        widget.root.style.minHeight = '500px';
+        return DG.Widget.fromRoot(widgetHost(widget));
       }
     }
   } catch (error) {
     console.error('Error calling ChatGPT:fuzzyMatch', error);
-  } finally {
-    loader.remove();
+    return DG.Widget.fromRoot(ui.divText(`Error during AI-powered table query search. Check console for details.`));
   }
+  return DG.Widget.fromRoot(ui.divText('No matching query found via AI'));
 }
 
 function tableQueriesFunctionsSearch(s: string, host: HTMLDivElement): void {

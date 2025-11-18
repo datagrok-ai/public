@@ -12,28 +12,30 @@ export namespace funcs {
     return await grok.functions.call('ChatGPT:Init', {});
   }
 
-  export async function deepDemo(question: string ): Promise<void> {
-    return await grok.functions.call('ChatGPT:DeepDemo', { question });
-  }
-
   export async function autostart(): Promise<void> {
     return await grok.functions.call('ChatGPT:Autostart', {});
   }
 
-  export async function askHelpLLMProvider(): Promise<any> {
-    return await grok.functions.call('ChatGPT:AskHelpLLMProvider', {});
+  export async function combinedLLMSearchProvider(): Promise<any> {
+    return await grok.functions.call('ChatGPT:CombinedLLMSearchProvider', {});
   }
 
-  export async function ask(question: string ): Promise<string> {
-    return await grok.functions.call('ChatGPT:Ask', { question });
+  /**
+  Get answers from DeepGROK AI assistant based on Datagrok documentation and public code.
+  */
+  export async function askHelpLLMProvider(prompt: string ): Promise<any> {
+    return await grok.functions.call('ChatGPT:AskHelpLLMProvider', { prompt });
   }
 
-  export async function askFun(question: string ): Promise<string> {
-    return await grok.functions.call('ChatGPT:AskFun', { question });
+  /**
+  Plans and executes function steps to achieve needed results
+  */
+  export async function smartChainExecutionProvider(prompt: string ): Promise<any> {
+    return await grok.functions.call('ChatGPT:SmartChainExecutionProvider', { prompt });
   }
 
-  export async function smartChainExecutionProvider(): Promise<any> {
-    return await grok.functions.call('ChatGPT:SmartChainExecutionProvider', {});
+  export async function askAIGeneralCached(model: string , systemPrompt: string , prompt: string ): Promise<string> {
+    return await grok.functions.call('ChatGPT:AskAIGeneralCached', { model, systemPrompt, prompt });
   }
 
   export async function getExecutionPlan(userGoal: string ): Promise<string> {

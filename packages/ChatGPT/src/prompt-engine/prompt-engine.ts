@@ -12,8 +12,8 @@ export class ChatGPTPromptEngine implements PromptEngine {
   ) {}
 
   async generate(prompt: string, system: string): Promise<string> {
-    const res = OpenAIHelpClient.getInstance(this.apiKey, LLMCredsManager.getVectorStoreId());
-    return await res.generalPrompt(this.model, system, prompt);
+    const res = OpenAIHelpClient.getInstance();
+    return await res.generalPromptCached(this.model, system, prompt);
   }
 }
 

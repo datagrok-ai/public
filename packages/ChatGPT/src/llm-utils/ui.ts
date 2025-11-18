@@ -3,38 +3,46 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {askDeepGrok} from './deepwikiclient';
+import {askDeepWiki} from './deepwikiclient';
 import {askOpenAIHelp} from './openAI-client';
 import {LLMCredsManager} from './creds';
+import {CombinedAISearchAssistant} from './combined-search';
+import {ChatGPTPromptEngine} from '../prompt-engine/prompt-engine';
+import {ChatGptAssistant} from '../prompt-engine/chatgpt-assistant';
+import * as api from '../package-api';
+import {Plan} from '../prompt-engine/interfaces';
+import {AssistantRenderer} from '../prompt-engine/rendering-tools';
 
-let searching = false;
 
-export async function askDeepWiki(question: string, apiKey: string, vectorStoreId: string, useOpenAI: boolean = true) {
-  if (searching)
-    return;
-  searching = true;
+export async function askWiki(question: string, useOpenAI: boolean = true) {
   try {
-    const searchResultHost = document.getElementsByClassName('power-pack-search-host')[0];
-    if (!searchResultHost)
-      return;
-    const spinner = ui.icons.spinner();
-    spinner.style.color = 'var(--blue-1)';
-    const searchingText = ui.divText('Grokking your question...', {style: {marginLeft: '8px'}});
-    const loader = ui.divH([spinner, searchingText], {style: {alignItems: 'center', marginTop: '8px'}});
-    const widgetDiv = ui.divV([loader], {style: {marginTop: '8px', marginBottom: '8px', alignItems: 'center', justifyContent: 'center'}});
-    searchResultHost.prepend(widgetDiv);
-
-    const res = !useOpenAI ? (await askDeepGrok(question)) : (await askOpenAIHelp(question, apiKey, vectorStoreId));
-    loader.remove();
-    const answerDiv = ui.markdown(res);
-    answerDiv.style.width;
-    answerDiv.style.userSelect = 'text';
-    answerDiv.style.webkitUserSelect = 'text';
-    answerDiv.style.width = '100%';
-    widgetDiv.appendChild(answerDiv);
-  } finally {
-    searching = false;
+    const res = !useOpenAI ? (await askDeepWiki(question)) : (await askOpenAIHelp(question));
+    const markdown = ui.markdown(res);
+    markdown.style.userSelect = 'text';
+    return DG.Widget.fromRoot(markdown);
+  } catch (error: any) {
+    console.error('Error during DeepGROK ask:', error);
+    return DG.Widget.fromRoot(ui.divText(`Error during DeepGROK ask: ${error.message}`));
   }
+}
+
+export async function smartExecution(prompt: string, modelName: string) {
+  const gptEngine = new ChatGPTPromptEngine(LLMCredsManager.getApiKey(), modelName);
+  const gptAssistant = new ChatGptAssistant(gptEngine);
+
+  const mainWaitDiv = ui.wait(async () => {
+    const resDiv = ui.divV([], 'chatgpt-ask-ai-result');
+    const plan = JSON.parse(await api.funcs.getExecutionPlan(prompt)) as Plan;
+    const planDiv = AssistantRenderer.renderPlan(plan);
+    resDiv.appendChild(planDiv);
+    resDiv.appendChild(ui.wait(async () => {
+      const result = await gptAssistant.execute(plan);
+      const resRen = AssistantRenderer.renderResult(result);
+      return resRen;
+    }));
+    return resDiv;
+  });
+  return DG.Widget.fromRoot(mainWaitDiv);
 }
 
 // sets up the ui button for the input
@@ -77,7 +85,7 @@ export function setupSearchUI() {
     searchInput.addEventListener('keydown', (event: KeyboardEvent) => {
       if (event.key === 'Enter' && searchInput.value?.trim()) {
         event.preventDefault();
-        aiCombinedSearch(searchInput.value);
+        setTimeout(() => aiCombinedSearch(searchInput.value), 400); // timeout needed to allow other enter handlers to run first
       }
     });
 
@@ -97,6 +105,8 @@ export function setupSearchUI() {
   }, 1000);
 }
 
-function aiCombinedSearch(prompt: string) {
-  console.log(`AI combined search for: ${prompt}`);
+async function aiCombinedSearch(prompt: string) {
+  // hide the menu
+  document.querySelector('.d4-menu-popup')?.remove();
+  await CombinedAISearchAssistant.instance.searchUI(prompt);
 }

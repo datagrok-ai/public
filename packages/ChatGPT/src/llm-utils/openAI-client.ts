@@ -1,6 +1,7 @@
 /* eslint-disable max-len */
 import OpenAI from 'openai';
 import * as api from '../package-api';
+import {LLMCredsManager} from './creds';
 export class OpenAIHelpClient {
   private openai: OpenAI;
   private constructor(private apiKey: string, private vectorStoreId: string) {
@@ -10,8 +11,8 @@ export class OpenAIHelpClient {
   }
 
   private static _instance: OpenAIHelpClient | null = null;
-  static getInstance(apiKey: string, vectorStoreId: string): OpenAIHelpClient {
-    OpenAIHelpClient._instance ??= new OpenAIHelpClient(apiKey, vectorStoreId);
+  static getInstance(): OpenAIHelpClient {
+    OpenAIHelpClient._instance ??= new OpenAIHelpClient(LLMCredsManager.getApiKey(), LLMCredsManager.getVectorStoreId());
     return OpenAIHelpClient._instance;
   }
 
@@ -43,6 +44,17 @@ export class OpenAIHelpClient {
     return response.output_text;
   }
 
+  async generalPromptCached(model: string, systemPrompt: string, prompt: string): Promise<string> {
+    return await api.funcs.askAIGeneralCached(model, systemPrompt, prompt);
+  }
+
+  /**
+   * @deprecated - use generalPromptCached instead
+   * @param model - model name
+   * @param systemPrompt - system prompt
+   * @param prompt - user prompt
+   * @returns string response from OpenAI
+   */
   async generalPrompt(model: string, systemPrompt: string, prompt: string): Promise<string> {
     const response = await this.openai.chat.completions.create({
       model: model,
@@ -55,9 +67,6 @@ export class OpenAIHelpClient {
   }
 }
 
-export async function askOpenAIHelp(question: string, apiKey: string, vectorStoreId: string): Promise<string> {
-  if (!apiKey || !vectorStoreId)
-    return 'API Key or Vector Store ID is not set. Please configure them in the ChatGPT package settings.';
-
+export async function askOpenAIHelp(question: string): Promise<string> {
   return await api.funcs.askDocumentationCached(question);
 }

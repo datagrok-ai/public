@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -7,11 +8,11 @@ import {ChatGPTPromptEngine} from './prompt-engine/prompt-engine';
 import {AssistantRenderer} from './prompt-engine/rendering-tools';
 import {getAiPanelVisibility, initAiPanel, setAiPanelVisibility} from './ai-panel';
 import {findBestFunction} from './prompts/find-best-function';
-import {askDeepGrok} from './llm-utils/deepwikiclient';
-import {askDeepWiki, setupSearchUI} from './llm-utils/ui';
+import {askWiki, setupSearchUI, smartExecution} from './llm-utils/ui';
 import {ChatGptFuncParams, Plan} from './prompt-engine/interfaces';
 import {OpenAIHelpClient} from './llm-utils/openAI-client';
 import {LLMCredsManager} from './llm-utils/creds';
+import {CombinedAISearchAssistant} from './llm-utils/combined-search';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -52,69 +53,46 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({tags: ['searchProvider']})
-  static askHelpLLMProvider(): DG.SearchProvider {
-    const provider: DG.SearchProvider = {
-      'home': {
-        name: 'Ask DeepGROK AI',
-        search: async (_query: string) => null,
-        getSuggestions: (_query: string) => [
-          {
-            priority: 9,
-            suggestionText: 'Ask Documentation'
-          }
-        ],
-        isApplicable: (query: string) => query.length >= 5,
-        onValueEnter: async (query: string) => {
-          await askDeepWiki(query, LLMCredsManager.getApiKey(), LLMCredsManager.getVectorStoreId());
-        },
-        description: 'Get answers from DeepGROK AI assistant based on Datagrok documentation.'
-
-      }
-    };
-    return provider;
-  }
-
- @grok.decorators.func({tags: ['searchProvider']})
-  static smartChainExecutionProvider(): DG.SearchProvider {
+  static combinedLLMSearchProvider(): DG.SearchProvider {
     return {
       'home': {
-        name: 'LLM Smart chain execution',
-        description: 'Plans and executes function chains based on user goals.',
-        isApplicable: (s: string) => s.length > 5,
-        returnType: 'widget',
-        options: {
-          widgetHeight: 500,
-        },
-        search: async (_s, _v) => {
+        name: 'Ask AI Assistant',
+        search: async (_query: string) => {
+          CombinedAISearchAssistant.instance.resetSearchUI();
           return null;
         },
-        onValueEnter: async (s: string, v) => {
-          const searchResultHost = document.getElementsByClassName('power-pack-search-host')[0];
-          if (!searchResultHost)
-            return;
-          const gptEngine = new ChatGPTPromptEngine(LLMCredsManager.getApiKey(), modelName);
-          const gptAssistant = new ChatGptAssistant(gptEngine);
-
-          const resultWait = ui.wait(async () => {
-            const resDiv = ui.divV([], 'chatgpt-ask-ai-result');
-            const plan = JSON.parse(await grok.functions.call('ChatGPT:getExecutionPlan', {userGoal: s})) as Plan;
-            const planDiv = AssistantRenderer.renderPlan(plan);
-            resDiv.appendChild(planDiv);
-            const result = await gptAssistant.execute(plan);
-
-            resDiv.appendChild(AssistantRenderer.renderResult(result));
-            return resDiv;
-          });
-          searchResultHost.prepend(resultWait);
-        },
-        getSuggestions: (s: string) => s.length > 5 ? [
+        getSuggestions: (_query: string) => LLMCredsManager.getApiKey() && _query?.trim().length >= 2 ? [
           {
-            suggestionText: 'Smart Grok',
-            priority: 11,
+            priority: 1,
+            suggestionText: 'Ask AI Assistant (Press Enter)'
           }
-        ] : null,
+        ] : [],
+        isApplicable: (query: string) => LLMCredsManager.getApiKey() ? query?.trim().length >= 2 : false,
+        description: 'Get answers form AI assistant',
+        onValueEnter: async (query) => {
+          LLMCredsManager.getApiKey() && query?.trim().length >= 2 &&
+            await CombinedAISearchAssistant.instance.searchUI(query);
+        }
       }
-    };
+    } satisfies DG.SearchProvider;
+  }
+
+  @grok.decorators.func({meta: {
+    role: 'aiSearchProvider',
+    useWhen: 'If the user is asking questions about how to do something, how to write the code on platform, how to execute tasks, or any other questions related to Datagrok platform functionalities and capabilities. for example, "what sequence notations are supported?'
+  }, name: 'Help',
+  description: 'Get answers from DeepGROK AI assistant based on Datagrok documentation and public code.', result: {type: 'widget', name: 'result'}})
+  static async askHelpLLMProvider(@grok.decorators.param({type: 'string'})prompt: string): Promise<DG.Widget | null> {
+    return await askWiki(prompt);
+  }
+
+ @grok.decorators.func({meta: {
+   role: 'aiSearchProvider',
+   useWhen: 'If the prompt looks like a user has a goal to achieve something with concrete input(s), and wants the system to plan and execute a series of steps/functions to achieve that goal. for example, adme properties of CHEMBL1234'
+ }, name: 'Execute',
+ description: 'Plans and executes function steps to achieve needed results', result: {type: 'widget', name: 'result'}})
+  static async smartChainExecutionProvider(@grok.decorators.param({type: 'string'})prompt: string): Promise<DG.Widget | null> {
+    return await smartExecution(prompt, modelName);
   }
 
   @grok.decorators.func({
@@ -123,13 +101,25 @@ export class PackageFunctions {
       'cache.invalidateOn': '0 0 1 * *'
     }
   })
- static async getExecutionPlan(userGoal: string): Promise<string> {
-   const gptEngine = new ChatGPTPromptEngine(LLMCredsManager.getApiKey(), modelName);
-   const gptAssistant = new ChatGptAssistant(gptEngine);
-   const plan: Plan = await gptAssistant.plan(userGoal);
-   // Cache only works with scalar values, so we serialize the plan to a string
-   return JSON.stringify(plan);
+ static async askAIGeneralCached(model: string, systemPrompt: string, prompt: string): Promise<string> {
+   const client = OpenAIHelpClient.getInstance();
+   // this is used only here to provide caching
+   return await client.generalPrompt(model, systemPrompt, prompt);
  }
+
+  @grok.decorators.func({
+    'meta': {
+      'cache': 'all',
+      'cache.invalidateOn': '0 0 1 * *'
+    }
+  })
+  static async getExecutionPlan(userGoal: string): Promise<string> {
+    const gptEngine = new ChatGPTPromptEngine(LLMCredsManager.getApiKey(), modelName);
+    const gptAssistant = new ChatGptAssistant(gptEngine);
+    const plan: Plan = await gptAssistant.plan(userGoal);
+    // Cache only works with scalar values, so we serialize the plan to a string
+    return JSON.stringify(plan);
+  }
 
   @grok.decorators.func({
     'meta': {
@@ -149,7 +139,7 @@ export class PackageFunctions {
     }
   })
   static async askDocumentationCached(prompt: string): Promise<string> {
-    const client = OpenAIHelpClient.getInstance(LLMCredsManager.getApiKey(), LLMCredsManager.getVectorStoreId());
+    const client = OpenAIHelpClient.getInstance();
     return await client.getHelpAnswer(prompt);
   }
 }

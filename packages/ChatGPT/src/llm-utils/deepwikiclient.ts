@@ -1,6 +1,6 @@
 /* eslint-disable max-len */
 import {Client} from '@modelcontextprotocol/sdk/client/index.js';
-import {StreamableHTTPClientTransport} from '@modelcontextprotocol/sdk/client/streamableHttp';
+import {SSEClientTransport} from '@modelcontextprotocol/sdk/client/sse';
 
 interface DeepWikiClientConfig {
   repository: string;
@@ -12,7 +12,7 @@ export const helpAIName = 'WIKITOR GROKOWSKY';
 
 class DeepWikiMCPClient {
   private mcpClient: Client;
-  private transport: StreamableHTTPClientTransport | null = null;
+  private transport: SSEClientTransport | null = null;
   private readonly askTool = {
     name: 'ask_question',
     description: 'Ask a question about the repository and get an answer based on its documentation.',
@@ -42,7 +42,7 @@ class DeepWikiMCPClient {
     console.log('Connecting to DeepWiki MCP server...');
 
     // Connect to DeepWiki's free mcp endpoint
-    this.transport = new StreamableHTTPClientTransport(
+    this.transport = new SSEClientTransport(
       new URL('https://mcp.deepwiki.com/mcp')
     );
 
@@ -56,7 +56,7 @@ class DeepWikiMCPClient {
     }
   }
 
-  async askUsingAskTool(question: string): Promise<string> {
+  async askDeepWiki(question: string): Promise<string> {
     if (!this.transport)
       throw new Error('Not connected to MCP server. Call connect() first.');
 
@@ -98,13 +98,13 @@ class DeepWikiMCPClient {
 }
 
 // Example usage
-export async function askDeepGrok(question: string) {
+export async function askDeepWiki(question: string) {
   const client = DeepWikiMCPClient.getInstance('datagrok-ai/public');
 
   try {
     await client.connect();
 
-    const response = await client.askUsingAskTool(
+    const response = await client.askDeepWiki(
       question
     );
 
