@@ -3,7 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { ComplexCondition, Operators, QueryBuilder, QueryBuilderLayout, SUGGESTIONS_FUNCTION } from '@datagrok-libraries/utils/src/query-builder/query-builder';
-import { convertComplexConditionToSignalsSearchQuery, SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
+import { convertComplexConditionToSignalsSearchQuery, SignalsSearchField, SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
 import { addMoleculeStructures, getConditionForLibAndType, materialsCondition, retrieveQueriesMap } from './compounds';
 import { createLibsObjectForStatistics, getRevvityLibraries, RevvityLibrary } from './libraries';
 import { getDefaultProperties, REVVITY_FIELD_TO_PROP_TYPE_MAPPING } from './properties';
@@ -50,6 +50,12 @@ export async function runSearchQuery(libId: string, compoundType: string,
   if (queryBuilderCondition && queryBuilderCondition.conditions.length > 0)
     cond.conditions.push(queryBuilderCondition);
   const signalsQuery: SignalsSearchQuery = convertComplexConditionToSignalsSearchQuery(cond);
+  if (!signalsQuery.options?.sort) {
+    signalsQuery.options ??= {};
+    signalsQuery.options.sort = {
+      [SignalsSearchField.MODIFIED_AT]: "desc"
+    }
+  }
   console.log(signalsQuery);
   const resultDf = await funcs.searchEntitiesWithStructures(JSON.stringify(signalsQuery),
     params ? JSON.stringify(params) : '{}', libId, compoundType, withoutStructures);
@@ -150,14 +156,15 @@ export async function runSearch(qb: QueryBuilder, tv: DG.TableView, filtersDiv: 
   const loadAllResults = async (count: number) => {
     const pb = DG.TaskBarProgressIndicator.create(`Loading results`);
     let totalDf: DG.DataFrame | null = null;
+    const batchSize = MAX_RETURN_ROWS;
     const calls = Math.ceil(count / MAX_RETURN_ROWS);
     for (let i = 0; i < calls; i++) {
-      const resDf = await runSearchQuery(libId, compoundType, condition, { "page[limit]": 100, "page[offset]": i * 100 }, true);
+      const resDf = await runSearchQuery(libId, compoundType, condition, { "page[limit]": batchSize, "page[offset]": i * batchSize }, true);
       if (!totalDf)
         totalDf = resDf;
       else
         totalDf.append(resDf, true);
-      pb.update(((i + 1) * 100 / count) * 100, i + 1 === calls ? `Finished loading` : `Loaded ${(i + 1) * 100} of ${count}`);
+      pb.update(((i + 1) * batchSize / count) * batchSize, i + 1 === calls ? `Finished loading` : `Loaded ${(i + 1) * batchSize} of ${count}`);
     }
     pb.close();
     if (totalDf) {

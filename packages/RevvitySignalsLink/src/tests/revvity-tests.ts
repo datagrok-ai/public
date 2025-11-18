@@ -65,7 +65,7 @@ category('revvity signals functions', () => {
         }
       }
     };
-    const df = await funcs.searchEntities(JSON.stringify(query), '{}');
+    const df = await funcs.searchEntities(JSON.stringify(query), '{}', 'assetType:686ecf60e3c7095c954bd94f', 'batch');
     expect(df.rowCount > 0, true, 'Returned empty dataframe');
   });
 
@@ -79,7 +79,7 @@ category('revvity signals functions', () => {
         }
       }
     };
-    const df = await funcs.searchEntitiesWithStructures(JSON.stringify(query), '{}');
+    const df = await funcs.searchEntitiesWithStructures(JSON.stringify(query), '{}', 'assetType:686ecf60e3c7095c954bd94f', 'asset');
     expect(df.rowCount > 0, true, 'Returned empty dataframe');
     await awaitCheck(() => !df.col(MOL_COL_NAME)!.isEmpty, 'Molecules column is not filling with values', 30000);
   });
