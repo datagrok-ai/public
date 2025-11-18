@@ -174,17 +174,15 @@ export function createBaseInputs(gridColumn: DG.GridColumn, settings: SummarySet
         gridColumn.grid.invalidate();
       },
       available: isSmartForm ? names(gridColumn.grid.dataFrame.columns) : names(gridColumn.grid.dataFrame.columns.numerical),
-      ...(!isSmartForm && {
-        additionalColumns: {
-          'log': gridColumn.grid.dataFrame.columns.byNames(settings.logColumnNames ?? []),
-          'invert': gridColumn.grid.dataFrame.columns.byNames(settings.invertColumnNames ?? []),
-        },
-        onAdditionalColumnsChanged: (values: { [key: string]: DG.Column[] }) => {
-          settings.logColumnNames = names(values['log'] ?? []);
-          settings.invertColumnNames = names(values['invert'] ?? []);
-          gridColumn.grid.invalidate();
-        },
-      }),
+      additionalColumns: {
+        'log': gridColumn.grid.dataFrame.columns.byNames(settings.logColumnNames ?? []),
+        'invert': gridColumn.grid.dataFrame.columns.byNames(settings.invertColumnNames ?? []),
+      },
+      onAdditionalColumnsChanged: (values: { [key: string]: DG.Column[] }) => {
+        settings.logColumnNames = names(values['log'] ?? []);
+        settings.invertColumnNames = names(values['invert'] ?? []);
+        gridColumn.grid.invalidate();
+      }
     }),
     ...inputs,
     ui.input.choice<SummaryColumnColoringType>('Color Code', {
