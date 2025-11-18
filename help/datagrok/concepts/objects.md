@@ -84,7 +84,7 @@ particular entity types. Common properties include:
 
 ## Search
 
-You can use metadata to [search for entities](../navigation/views/table-view.md#search)
+You can use metadata to [search for entities](../../visualize/table-view-1.md#search)
 
 See also:
 

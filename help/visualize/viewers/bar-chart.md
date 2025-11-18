@@ -41,6 +41,6 @@ Year - Month' and 'Year - Quarter':
 See also:
 
 * [Column selectors](column-selectors.md)
-* [Table View](../../datagrok/navigation/views/table-view.md)
+* [Table View](../table-view-1.md)
 * [Viewers](../viewers/viewers.md)
 * [JS API: Bar Chart](https://public.datagrok.ai/js/samples/ui/viewers/types/bar-chart)

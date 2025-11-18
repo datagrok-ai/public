@@ -21,5 +21,5 @@ See also:
 
 * [Viewers](../viewers/viewers.md)
 * [Scatter Plot](scatter-plot.md)
-* [Table View](../../datagrok/navigation/views/table-view.md)
+* [Table View](../table-view-1.md)
 * [JS API: Density plot](https://public.datagrok.ai/js/samples/ui/viewers/types/density-plot)

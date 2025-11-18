@@ -7,7 +7,7 @@ A _viewer_ is a visual component associated with a
 datasets with tens of millions of rows (or millions of columns).
 
 To learn how to use viewers, including creation, managing properties,
-filtering, row selection, tooltips, and more, see [Table View](../../datagrok/navigation/views/table-view.md#viewer-properties).
+filtering, row selection, tooltips, and more, see [Table View](../table-view-1.md#viewer-properties).
 
 
 | <div style={{ width:200 }}></div>        |  <div style={{ width:300 }}></div>                                                                                                                                                                                                                                                                                                                                                                                                                     |

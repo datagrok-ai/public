@@ -128,7 +128,7 @@ customize the scatterplot's tooltip to show the data you want using the
 **Tooltip** info panel or via the context menu.
 
 In addition, a scatterplot itself can be used as a 
-[group tooltip](../../datagrok/navigation/views/table-view.md#group-tooltips), which may be especially useful when 
+[group tooltip](../table-view-1.md#group-tooltips), which may be especially useful when 
 dealing with grouped or clustered data or when the screen space is limited.
 
 To make scatterplot appear in a tooltip when you hover over a row group, 
@@ -193,5 +193,5 @@ See also:
 * [3D Scatterplot](3d-scatter-plot.md)
 * [Column selectors](column-selectors.md)
 * [Viewers](viewers.md)
-* [Table view](../../datagrok/navigation/views/table-view.md)
+* [Table view](../table-view-1.md)
 * [JS API: Scatterplot](https://public.datagrok.ai/js/samples/ui/viewers/types/scatter-plot)

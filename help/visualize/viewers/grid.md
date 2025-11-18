@@ -661,6 +661,6 @@ or press Alt+C.
 See also:
 
 * [Viewers](../viewers/viewers.md)
-* [Table View](../../datagrok/navigation/views/table-view.md)
+* [Table View](../table-view-1.md)
 * [JS API: Grid](https://public.datagrok.ai/js/samples/ui/viewers/types/grid)
 * [PowerGrid package](https://github.com/datagrok-ai/public/blob/master/packages/PowerGrid/README.md) 

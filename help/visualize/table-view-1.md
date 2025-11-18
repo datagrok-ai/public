@@ -2,6 +2,7 @@
 title: "Table View"
 format: mdx
 sidebar_position: 1
+slug: /table-view
 ---
 
 ```mdx-code-block

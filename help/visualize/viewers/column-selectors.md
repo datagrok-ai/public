@@ -14,4 +14,4 @@ A combo box for selecting a column
 See also:
 
 * [Viewers](../viewers/viewers.md)
-* [Table View](../../datagrok/navigation/views/table-view.md)
+* [Table View](../table-view-1.md)

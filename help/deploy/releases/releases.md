@@ -76,7 +76,7 @@ See details: [issues](release-history.md), [plugin changelogs](plugins/plugins.m
 
 |<div style={{ width:220 }}></div>| <div style={{ width:500 }}></div> |
 |----------------- | -----------------------------------|
-| **Smarter file viewers**: Previously, viewer selection was based solely on file format (e.g., XLSX). Now, Datagrok also analyzes file content to choose the appropriate viewer.<br/><br/>For example, XLSX files with regular data open in the [table view](../../datagrok/navigation/views/table-view.md), while XLSX files with plate-like content open using the [plate reader](https://github.com/datagrok-ai/public/tree/master/packages/Curves#plate-readers) | ![Smarter file viewer](img/1.25-file-viewer-xlsx-format.gif) |
+| **Smarter file viewers**: Previously, viewer selection was based solely on file format (e.g., XLSX). Now, Datagrok also analyzes file content to choose the appropriate viewer.<br/><br/>For example, XLSX files with regular data open in the [table view](../../visualize/table-view-1.md), while XLSX files with plate-like content open using the [plate reader](https://github.com/datagrok-ai/public/tree/master/packages/Curves#plate-readers) | ![Smarter file viewer](img/1.25-file-viewer-xlsx-format.gif) |
 
 ### Developer updates
 

@@ -169,5 +169,5 @@ Drag-and-drop columns right from the grid to add the corresponding filters:
 See also:
 
 * [Viewers](../viewers/viewers.md)
-* [Table View](../../datagrok/navigation/views/table-view.md)
+* [Table View](../table-view-1.md)
 * [JS API: Filters](https://public.datagrok.ai/js/samples/ui/viewers/types/filters)

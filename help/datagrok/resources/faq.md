@@ -70,10 +70,10 @@ Yes. Datagrok supports both:
 [Chemically aware viewers](../../datagrok/solutions/domains/chem/chemically-aware-viewers.md) | 
 [Example: rich chemical dataset](https://public.datagrok.ai/p/skalkin.medchem_1/Med_Chem)
 * Table view (assay-centric): multiple compounds in a table with configurable endpoints  
-[Table view](../../datagrok/navigation/views/table-view.md) | [Forms](../../visualize/viewers/forms.md) 
+[Table view](../../visualize/table-view-1.md) | [Forms](../../visualize/viewers/forms.md) 
 
 Users can configure coloring, highlighting, and switch between compounds as rows or columns, and filter, search, and sort the data.  
-[Common actions](../../datagrok/navigation/views/table-view.md#common-actions) | [Substructure search](../../datagrok/solutions/domains/chem/chem.md#substructure-search--filtering)
+[Common actions](../../visualize/table-view-1.md#common-actions) | [Substructure search](../../datagrok/solutions/domains/chem/chem.md#substructure-search--filtering)
 
 ##### <b>Q: How can I ingest raw assay data into Datagrok?</b>
 
@@ -334,11 +334,11 @@ Datagrok supports rich visualization for both chemical and general data, includi
 * Common chart types: [scatterplot](../../visualize/viewers/scatter-plot.md), [bar chart](../../visualize/viewers/bar-chart.md),  [pie chart](../../visualize/viewers/pie-chart.md), [box plot](../../visualize/viewers/box-plot.md)—[viewers](../../visualize/viewers/viewers.md)
 * [Chemically aware viewers](../../datagrok/solutions/domains/chem/chemically-aware-viewers.md) and [Forms](../../visualize/viewers/forms.md)  
 * Control charting for assay consistency: [line chart](../../visualize/viewers/line-chart.md), [statistical process control](../../visualize/viewers/line-chart.md#statistical-process-control), scatterplot with [formula lines](../../visualize/viewers/scatter-plot.md#formula-lines)  
-* Statistical analysis support: [statistics viewer](../../visualize/viewers/statistics.md), [correlation plot](../../visualize/viewers/correlation-plot.md), scatter plot with [regression lines](../../visualize/viewers/scatter-plot.md#regression-lines), [statistical hypothesis testing](../navigation/views/table-view.md#statistical-hypothesis-testing)
+* Statistical analysis support: [statistics viewer](../../visualize/viewers/statistics.md), [correlation plot](../../visualize/viewers/correlation-plot.md), scatter plot with [regression lines](../../visualize/viewers/scatter-plot.md#regression-lines), [statistical hypothesis testing](../../visualize/table-view-1.md#statistical-hypothesis-testing)
 * Advanced visual features: [coloring](../../visualize/viewers/grid.md#color-code-columns), [shaping and sizing](../../visualize/viewers/grid.md#resizing-columns), [formatting](../../visualize/viewers/grid.md#format-cells), [labeling](../../visualize/viewers/scatter-plot.md#labels), [trellising](../../visualize/viewers/trellis-plot.md)
 * Table view integration for visualization, including [charts in cells](https://github.com/datagrok-ai/public/blob/master/help/visualize/viewers/charts-in-cells.md) 
 
-See also: [Viewer gallery](https://github.com/datagrok-ai/public/blob/master/help/visualize/viewers/viewer-gallery.md), [Table view](../navigation/views/table-view.md), [Grid](../../visualize/viewers/grid.md).
+See also: [Viewer gallery](https://github.com/datagrok-ai/public/blob/master/help/visualize/viewers/viewer-gallery.md), [Table view](../../visualize/table-view-1.md), [Grid](../../visualize/viewers/grid.md).
 
 ##### <b>Q: Can I create custom visualizations?</b>
 
@@ -554,7 +554,7 @@ Datagrok delivers a high-performance, interactive frontend for handling, visuali
 - 2D/3D structure rendering and interaction.  
 See [Cheminformatics](../../datagrok/solutions/domains/chem/chem.md) for details
 - Interactivity features – live data masking, filter by selection, synchronized updates across viewers, multiple input methods including 2D sketching.  
-See [Common actions](../../datagrok/navigation/views/table-view.md#common-actions), [Structure search](../../datagrok/solutions/domains/chem/chem.md#structure-search), and [Sketching and editing](../solutions/domains/bio/bio.md#sketching-and-editing) for details
+See [Common actions](../../visualize/table-view-1.md#common-actions), [Structure search](../../datagrok/solutions/domains/chem/chem.md#structure-search), and [Sketching and editing](../solutions/domains/bio/bio.md#sketching-and-editing) for details
 - API integration and extensibility. See [JavaScript API](../../develop/packages/js-api.md) for details
 - Frontend scripting scalability. See [Compute](../../compute/compute.md) for details
 

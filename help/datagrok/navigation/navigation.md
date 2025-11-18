@@ -68,7 +68,7 @@ A view may have these elements associated with it:
 <Tabs>
 <TabItem value="table-view" label="Table View">
 
-The [Table View](../navigation/views/table-view.md) is used to analyze tabular data.
+The [Table View](../../visualize/table-view-1.md) is used to analyze tabular data.
 
 Similar to Excel, the **Top Menu** lets you edit the dataset, format cells, and so on. The **Toolbox** lets you add [viewers](../../visualize/viewers/viewers.md), apply [layouts](../../visualize/view-layout.md), refresh dashboards,
 and more.
@@ -145,7 +145,7 @@ in separate windows, or toggle their visibility.
 
 When you start dragging an object, all potential drop zones are highlighted,
 guiding you where to place it. You can drag and drop almost any object. For
-example, in a [Table View](views/table-view.md), most viewers and many dialogs can accept columns
+example, in a [Table View](../../visualize/table-view-1.md), most viewers and many dialogs can accept columns
 dragged into or from them. 
 
 ![](img/drag-and-drop-columns.gif)

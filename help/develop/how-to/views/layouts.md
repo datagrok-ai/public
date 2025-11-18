@@ -31,7 +31,7 @@ let layout = grok.shell.v.saveLayout();
 ```
 
 This is quite explicit, there is just one caveat: this method can only be applied to
-[table views](../../../datagrok/navigation/views/table-view.md). The same holds for its counterpart `loadLayout`
+[table views](../../../visualize/table-view-1.md). The same holds for its counterpart `loadLayout`
 method that applies a previously saved layout to the given view. Here is an example:
 
 ```js
@@ -95,7 +95,7 @@ view.loadLayout(DG.ViewLayout.fromViewState(layout.viewState));
 The `grok.dapi.layouts` endpoint provides common functionality inherited from
 [HttpDataSource](https://datagrok.ai/api/js/api/dg/classes/HttpDataSource) that is responsible for handling collections of
 entities stored on the server. Developers can save layouts, find them by id, filter the list of entities according
-to [certain criteria](../../../datagrok/navigation/views/table-view.md#search), and so on.
+to [certain criteria](../../../visualize/table-view-1.md#search), and so on.
 
 ```js
 grok.dapi.layouts.list().then(layouts => grok.shell.info(`Total: ${layouts.length}`));
@@ -131,7 +131,7 @@ See also:
 
 - [Upload data with layouts using the server API](../data/upload-data.md#layout)
 - [View layout](../../../visualize/view-layout.md)
-- [Table view](../../../datagrok/navigation/views/table-view.md)
+- [Table view](../../../visualize/table-view-1.md)
 - [User data storage](../data/user-settings-storage.md)
 - [JavaScript API Samples: Layout permissions and metadata](https://public.datagrok.ai/js/samples/dapi/layouts-and-permissions)
 - [JavaScript API Samples: Saving layouts to user data storage](https://public.datagrok.ai/js/samples/ui/views/layouts)

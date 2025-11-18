@@ -321,7 +321,7 @@ To search a dataset for matching sequences, do the following:
 
 </details>
 
-To learn more about filtering, watch this [video](https://www.youtube.com/watch?v=GM3XixUFFUs&t=2688s) or read [this article](../../../navigation/views/table-view.md#select-and-filter).
+To learn more about filtering, watch this [video](https://www.youtube.com/watch?v=GM3XixUFFUs&t=2688s) or read [this article](../../../../visualize/table-view-1.md#select-and-filter).
 
 ## Manage monomer libraries
 

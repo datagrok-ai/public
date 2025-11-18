@@ -49,7 +49,7 @@ See also:
 * [JS API: Dataframe](https://datagrok.ai/api/js/dg/classes/DataFrame)
 * [Space](project/space.md)
 * [Dashboard](project/dashboard.md)
-* [Table view](../navigation/views/table-view.md)
+* [Table view](../../visualize/table-view-1.md)
 * [View layout](../../visualize/view-layout.md)
 * [Tags](../../govern/catalog/tags.md)
 * [Grid](../../visualize/viewers/grid.md)

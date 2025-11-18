@@ -73,7 +73,7 @@ To get you started, we've prepared the following resources:
 
 <h5>Read</h5>
 
-1. [Table View](../navigation/views/table-view.md)
+1. [Table View](../../visualize/table-view-1.md)
 1. [Layout](../../visualize/view-layout.md)
 1. [Context Panel](../navigation/panels/panels.md#context-panel)
 1. [Info panes](../navigation/panels/info-panels.md)

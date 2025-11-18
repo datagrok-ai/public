@@ -149,7 +149,7 @@ By default, newly created entities are saved to your personal project under **My
 stuff**. For changes to entities that belong to existing projects, you have [several saving options](../basic-tasks/basic-tasks.md#save-and-share-a-table). 
 
 Post-upload, the **SAVE** button on the **Scratchpad** and the
-[Table View](table-view.md) appear greyed out, indicating there are no unsaved changes.
+[Table View](../../../visualize/table-view-1.md) appear greyed out, indicating there are no unsaved changes.
 Though the **SAVE** button turns grey, you can still click it to access additional
 options, such as cloning a project, or saving just your personal view customizations.
 
@@ -232,7 +232,7 @@ Clicking an app opens an app-specific view, which can be it's landing view or a 
 </TabItem>
 <TabItem value="dashboards" label="Dashboards">
 
-Clicking a [dashboard](../../concepts/project/dashboard.md) shows a fully interactive [Table View](../views/table-view.md).
+Clicking a [dashboard](../../concepts/project/dashboard.md) shows a fully interactive [Table View](../../../visualize/table-view-1.md).
 
 <br/>
 

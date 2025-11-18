@@ -9,7 +9,7 @@ to it (a [layout](../../../visualize/view-layout.md)).
 
 <!---
 Use dashboards to visually present data in a pre-specified way. In contrast to
-[table views](../../navigation/views/table-view.md) that excel at
+[table views](../../../visualize/table-view-1.md) that excel at
 [exploratory data analysis](../../solutions/workflows/eda.md),
 [data wrangling](../../../transform/transform.md), and other table-specific tasks, dashboards trade the ability to quickly
 interrogate data in unpredicted ways for delivering the visuals precisely as designed. In particular, here are some
@@ -23,11 +23,11 @@ features that are unique to dashboards:
 
 To create a dashboard:
 
-1. Open a table to access the [Table View](../../navigation/views/table-view.md). 
+1. Open a table to access the [Table View](../../../visualize/table-view-1.md). 
 1. In the **Table View**, you can:
    * Add [viewers](../../../visualize/viewers/viewers.md) to visualize your data
    * [Transform data](../../../transform/transform.md) as needed
-   * [Add filters](../../navigation/views/table-view.md#select-and-filter)
+   * [Add filters](../../../visualize/table-view.-1md#select-and-filter)
    * Customize the grid, such as [color-coding grid columns](../../../visualize/viewers/grid.md#color-code-columns)
    * Optionally, add data from [linked tables](../../../transform/link-tables.md):
       * For viewers other than the grid, click the **Gear (<FAIcon icon="fa-solid fa-gear" size="1x" />) icon** and choose the table in the **Context Panel** under **Data** > **Table**.

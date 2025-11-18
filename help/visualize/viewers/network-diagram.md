@@ -24,5 +24,5 @@ General:
 See also:
 
 * [Viewers](../viewers/viewers.md)
-* [Table view](../../datagrok/navigation/views/table-view.md)
+* [Table view](../table-view-1.md)
 * [JS API: Network diagram](https://public.datagrok.ai/js/samples/ui/viewers/types/network-diagram)

@@ -34,5 +34,5 @@ Line chart supports Statistical Process Control (SPC) features out of the box, i
 See also:
 
 * [Viewers](../viewers/viewers.md)
-* [Table View](../../datagrok/navigation/views/table-view.md)
+* [Table View](../table-view-1.md)
 * [JS API: Line chart](https://public.datagrok.ai/js/samples/ui/viewers/types/line-chart)
