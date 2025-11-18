@@ -25,7 +25,6 @@ import {
   TypeAhead,
   TypeAheadConfig,
   TagsInput, ChoiceInput, InputForm, CodeInput, CodeConfig, MarkdownInput, TagsInputConfig, MarkdownConfig,
-  FileInput,
 } from './src/widgets';
 import {toDart, toJs} from './src/wrappers';
 import {Functions} from './src/functions';
@@ -730,7 +729,8 @@ export namespace input {
   }
 
   const optionsMap: {[key: string]: (input: InputBase, option: any) => void} = {
-    value: (input, x) => input.value = input.inputType === d4.InputType.File ? toDart(x) : x,
+    value: (input, x) => input.value = input.inputType === d4.InputType.File ? toDart(x) :
+      input.inputType === d4.InputType.Files ? x.map((elem: FileInfo) => toDart(elem)) : x,
     nullable: (input, x) => input.nullable = x, // finish it?
     property: (input, x) => input.property = x,
     tooltipText: (input, x) => input.setTooltip(x),
@@ -747,7 +747,6 @@ export namespace input {
     available: (input, x) => api.grok_ColumnsInput_ChangeAvailableColumns(input.dart, x),
     checked: (input, x) => api.grok_ColumnsInput_ChangeCheckedColumns(input.dart, x),
     showOnlyColorBox: (input, x) => api.grok_ColorInput_SetShowOnlyColorBox(input.dart, x),
-    directoryInput: (input, x) => api.grok_FileInput_Set_Directory_Input(input.dart, x),
   };
 
   function setInputOptions(input: InputBase, inputType: d4.InputType, options?: IInputInitOptions, ignoreProp: boolean = false): void {

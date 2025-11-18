@@ -34,7 +34,6 @@ import '../css/clinical-case.css';
 import {u2} from '@datagrok-libraries/utils/src/u2';
 import {scripts} from './package-api';
 import {Subject} from 'rxjs';
-import {delay} from '@datagrok-libraries/utils/src/test';
 import X2JS from 'x2js';
 
 export * from './package.g';
@@ -373,37 +372,37 @@ export class PackageFunctions {
     const importStudyButton = ui.bigButton('Import study', () => {
       const dialog = ui.dialog('Import study');
       let studyConfig: ClinStudyConfig | null = null;
-      const filesInput = ui.input.file('Files', {
-        directoryInput: true,
+      const filesInput = ui.input.files('Files', {
         onValueChanged: async () => {
           //check if configuration file is present in the folder
           try {
-            studyConfig = await extractConfigFromFiles(filesInput.directoryFiles);
+            studyConfig = await extractConfigFromFiles(filesInput.value);
             if (!studyConfig)
               grok.shell.error(`define.xml or study.json not found or malformed`);
           } catch (e) {
             grok.shell.error(e);
           }
-          dialog.getButton('OK').disabled = studyConfig === null;
+          dialog.getButton('OK').disabled = studyConfig === null || !filesInput.validate();
         },
       });
-      dialog.add(filesInput.root).show()
-        .onOK(async () => {
-          await delay(100);
-          ui.setUpdateIndicator(importStudyDiv, true, `Loading data for study ${studyConfig.name}`);
-          const sub = studyLoadedSubject.subscribe((data) => {
-            if (data.name === studyConfig.name) {
-              sub.unsubscribe();
-              if (data.loaded)
-                addStudyLink(studyConfig.name);
-              ui.setUpdateIndicator(importStudyDiv, false);
-            }
-          });
+      dialog.add(filesInput.root).show({resizable: true})
+        .onOK(() => {
+          setTimeout(() => {
+            ui.setUpdateIndicator(importStudyDiv, true, `Loading data for study ${studyConfig.name}`);
+            const sub = studyLoadedSubject.subscribe((data) => {
+              if (data.name === studyConfig.name) {
+                sub.unsubscribe();
+                if (data.loaded)
+                  addStudyLink(studyConfig.name);
+                ui.setUpdateIndicator(importStudyDiv, false);
+              }
+            });
             //create clinical study object and add tree view node
-          createStudies(clinicalCaseNode, {config: studyConfig, files: filesInput.directoryFiles}).then(() => {
+            createStudies(clinicalCaseNode, {config: studyConfig, files: filesInput.value}).then(() => {
             //open study once it is created
-            openStudy(clinicalCaseNode, studyConfig.name, SUMMARY_VIEW_NAME);
-          });
+              openStudy(clinicalCaseNode, studyConfig.name, SUMMARY_VIEW_NAME);
+            });
+          }, 100);
         });
     });
     importStudyButton.style.marginLeft = '0px';
