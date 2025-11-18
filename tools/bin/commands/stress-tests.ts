@@ -1,4 +1,5 @@
 import fs from 'fs';
+import { spawn } from 'child_process';
 import path from 'path';
 import * as utils from '../utils/utils';
 import * as testUtils from '../utils/test-utils';
@@ -24,15 +25,50 @@ export async function stressTests(args: StressTestArgs): Promise<boolean> {
         process.exit(1);
     }
     const config = getDevKey(args.host);
-    await testUtils.loadPackage('', 'ApiTests', args.host, args['skip-publish'], args['skip-build']);
+    await testUtils.loadPackage('', 'ApiTests', args.host, args['skip-publish'], args['skip-build'], false, true);
+    process.stdout.write(`Building node...`);
     await utils.runScript(`npm run build-node`, '');
+    process.stdout.write(` success!\n`);
     try {
-        await utils.runScript(`node -r ./tsconfig-paths-bootstrap.js dist-node/package-test-node.js --apiUrl=${config.url} --devKey=${config.key} --concurrentRuns=${args["concurrent-runs"] ?? 1}${args.loop ? ' --loop' : ''}`, '');
+        await run(config, args);
         return true;
     } catch (e) {
         console.error(`❌ Error: Something went wrong: ${e}`);
         return false;
     }
+}
+
+async function run(config: { url: string, key: string }, args: StressTestArgs): Promise<number> {
+    const processArgs: string[] = [];
+    processArgs.push('-r');
+    processArgs.push('./tsconfig-paths-bootstrap.js');
+    processArgs.push('dist-node/package-test-node.js');
+    processArgs.push(`--apiUrl=${config.url}`);
+    processArgs.push(`--devKey=${config.key}`);
+    if (args["concurrent-runs"])
+        processArgs.push(`--concurrentRuns=${args["concurrent-runs"]}`);
+    if (args['loop'])
+        processArgs.push(`--loop`);
+    if (args['concurrency-range'])
+        processArgs.push(`--concurrencyRange=${args["concurrency-range"]}`);
+    if (args['step'])
+        processArgs.push(`--step=${args["step"]}`);
+
+    const child = spawn(
+        'node',
+        processArgs,
+        {
+            cwd: '',
+            stdio: ['inherit', 'inherit', 'inherit'],
+        }
+    );
+
+    return new Promise((resolve, reject) => {
+        child.on('exit', (code) => {
+            if (code === 0) resolve(code);
+            else reject(new Error(`Stress tests exited with code ${code}`));
+        });
+    });
 }
 
 interface StressTestArgs {
@@ -42,4 +78,6 @@ interface StressTestArgs {
     'skip-publish'?: boolean;
     'concurrent-runs'?: number;
     loop?: number;
+    'concurrency-range'?: string;
+    step?: number;
 }
