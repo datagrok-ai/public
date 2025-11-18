@@ -27,7 +27,7 @@ table and builds a word cloud.
 ## Settings
 
 To configure a word cloud, click the **Gear** icon on top of the viewer and use
-the info panels on the **Context Pane**. For example, you can:
+the info panels on the **Context Panel**. For example, you can:
 
 * **Select the word column** using the `Column` property
 * **Select the text size** using the `Min Text Size` and `Max Text Size` properties

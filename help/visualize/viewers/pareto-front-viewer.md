@@ -25,7 +25,7 @@ Initially, the viewer selects two numerical columns as objectives to be minimize
 ## Configuring the Pareto front viewer
 
 To configure the Pareto front, click the **Gear** icon on top of the viewer and use
-the info panels on the **Context Pane**. For example, you can:
+the info panels on the **Context Panel**. For example, you can:
 
 * **Specify the columns with objectives to minimize** using the `Minimize` property.
 * **Select the columns representing objectives to maximize** using the `Maximize` property.
