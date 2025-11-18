@@ -247,6 +247,8 @@ AI uses this to understand the interface and execute commands such as:
 
 The interpretation layer converts natural-language prompts into `Func()` objects for predictable, reviewable execution.
 
+![](ai-visualizations.gif)
+
 ---
 
 # User Interface Integration
