@@ -41,7 +41,7 @@
   },
   "scripts": {
     "build-node": "tsc -p tsconfig.node.json",
-    "start-node": "node -r ./tsconfig-paths-bootstrap.js dist-node/package-test-node.js --apiUrl=http://localhost:8888/api --devKey=admin --concurrencyRange=2-100",
+    "start-node": "node -r ./tsconfig-paths-bootstrap.js dist-node/package-test-node.js --apiUrl=http://localhost:8888/api --devKey=admin --concurrencyRange=10-100 --step=5",
     "debug-js-api-tests": "webpack && grok publish localhost",
     "release-js-api-tests": "grok publish localhost --release",
     "link-all": "npm link @datagrok-libraries/utils @datagrok-libraries/ml datagrok-api",

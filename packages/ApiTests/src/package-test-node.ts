@@ -86,7 +86,7 @@ function parseArgs() {
 
             const match = value.trim().match(/^(\d+)\s*-\s*(\d+)$/);
             if (!match)
-                throw new Error(`Invalid format "${value}". Expected format: "start-end", e.g. "1-5".`);
+                throw new Error(`Invalid format "${value}". Expected format: "start-end", e.g. "1-10".`);
 
             const start = Number(match[1]);
             const end = Number(match[2]);
@@ -96,11 +96,7 @@ function parseArgs() {
             if (start >= end)
                 throw new Error(`Invalid range "${value}". Start must be < end.`);
 
-            const arr = [];
-            for (let i = start; i <= end; i++)
-                arr.push(i);
-
-            return arr;
+            return { start, end };
         })
         .option('categories', {
             alias: 'c',
@@ -115,27 +111,47 @@ function parseArgs() {
             default: false,
             describe: 'If true, continuously repeat tasks with the specified number of concurrent runs',
         })
+        .option('step', {
+            type: 'number',
+            describe: 'Step to use for concurrencyRange'
+        })
         .conflicts('concurrencyRange', ['concurrentRuns'])
         .conflicts('concurrentRuns', 'concurrencyRange')
         .check((argv) => {
-            if (argv.loop === true && argv.concurrencyRange !== undefined) {
+            if (argv.loop === true && argv.concurrencyRange !== undefined)
                 throw new Error('You cannot use --loop together with --concurrencyRange.');
-            }
+            if (argv.step && argv.concurrencyRange === undefined)
+                throw new Error('The --step parameter can only be used with --concurrencyRange.');
+
+            if (argv.step && argv.step <= 0)
+                throw new Error('The --step parameter must be a positive integer.');
+
             return true;
         })
         .help()
         .parseSync();
 
-    const res = {
+    const res: any = {
         apiUrl: argv.apiUrl,
         devKey: argv.devKey,
         concurrentRuns: argv.concurrentRuns,
         categories: argv.categories,
-        loop: argv.loop,
-        concurrencyRange: argv.concurrencyRange
+        loop: argv.loop
     };
+    if (argv.concurrencyRange) {
+        const { start, end } = argv.concurrencyRange;
+        const step = argv.step ?? 1;
+
+        const values = [];
+        for (let i = start; i <= end; i += step)
+            values.push(i);
+
+        res.concurrencyRange = values;
+    }
+
     if (!res.concurrentRuns && !res.concurrencyRange)
         res.concurrentRuns = 1;
+
     return res;
 }
 
