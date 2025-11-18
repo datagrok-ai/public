@@ -2,8 +2,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {ChatGPTPromptEngine, GeminiPromptEngine, PromptEngine} from '../prompt-engine/prompt-engine';
-import {apiKey, modelName} from '../package';
+import {modelName} from '../package';
 import {_package} from '../package';
+import {LLMCredsManager} from '../llm-utils/creds';
 
 
 /// Prompt API: https://developer.chrome.com/docs/ai/prompt-api
@@ -78,7 +79,7 @@ User request:
       engine = new GeminiPromptEngine(schema, geminiDownloadMonitor);
     } else {
       _package.logger.info('Using GPT engine for fuzzy matching.');
-      engine = new ChatGPTPromptEngine(apiKey, modelName);
+      engine = new ChatGPTPromptEngine(LLMCredsManager.getApiKey(), modelName);
     }
 
     const responseText = await engine.generate(userPrompt, systemPrompt);

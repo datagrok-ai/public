@@ -1,9 +1,9 @@
 import * as DG from 'datagrok-api/dg';
 
-export const OPENAI_HELP_APIKEY_STORAGE_NAME = 'openAIHelpApiKey';
-export const OPENAI_HELP_STORAGE_ID = 'openAIHelpVectorStoreId';
+const OPENAIApiKeyName = 'apiKey';
+const OPENAIVectorStoreName = 'vectorStoreId';
 
-export class OpenAIHelpClientCred {
+export class LLMCredsManager {
   apiKey: string;
   vectorStoreId: string;
   private constructor(apiKey: string, vectorStoreId: string) {
@@ -11,19 +11,27 @@ export class OpenAIHelpClientCred {
     this.vectorStoreId = vectorStoreId;
   }
 
-  private static _instance: OpenAIHelpClientCred | null = null;
-  static async init(pckg: DG.Package): Promise<void> {
-    const creds = (await pckg.getCredentials())?.parameters;
-    if (creds) {
-      const apiKey = creds[OPENAI_HELP_APIKEY_STORAGE_NAME] as string;
-      const vectorStoreId = creds[OPENAI_HELP_STORAGE_ID] as string;
-      if (apiKey && vectorStoreId)
-        OpenAIHelpClientCred._instance ??= new OpenAIHelpClientCred(apiKey, vectorStoreId);
-      else
-        console.warn('OpenAI Help Client credentials are not set properly.');
-    }
+  private static _instance: LLMCredsManager | null = null;
+  // Initialize the singleton instance
+  // TODO: in future this will probably move to credentials manager
+  static init(pckg: DG.Package): void {
+    const apiKey = pckg.settings[OPENAIApiKeyName];
+    const vectorStoreId = pckg.settings[OPENAIVectorStoreName];
+    LLMCredsManager._instance = new LLMCredsManager(apiKey, vectorStoreId);
   }
-  static getInstance(): OpenAIHelpClientCred | null {
-    return OpenAIHelpClientCred._instance;
+  static getInstance(): LLMCredsManager {
+    return LLMCredsManager._instance!;
+  }
+
+  static isAvailable(): boolean {
+    const instance = LLMCredsManager.getInstance();
+    return instance.apiKey.length > 0 && instance.vectorStoreId.length > 0;
+  }
+
+  static getApiKey(): string {
+    return LLMCredsManager.getInstance().apiKey;
+  }
+  static getVectorStoreId(): string {
+    return LLMCredsManager.getInstance().vectorStoreId;
   }
 }

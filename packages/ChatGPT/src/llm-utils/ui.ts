@@ -8,9 +8,7 @@ import {askOpenAIHelp} from './openAI-client';
 
 let searching = false;
 
-const useDeepWiki = false; // Switch between DeepGrok and OpenAIHelpClient
-
-export async function askDeepWiki(question: string, apiKey: string, vectorStoreId: string) {
+export async function askDeepWiki(question: string, apiKey: string, vectorStoreId: string, useOpenAI: boolean = true) {
   if (searching)
     return;
   searching = true;
@@ -25,7 +23,7 @@ export async function askDeepWiki(question: string, apiKey: string, vectorStoreI
     const widgetDiv = ui.divV([loader], {style: {marginTop: '8px', marginBottom: '8px', alignItems: 'center', justifyContent: 'center'}});
     searchResultHost.prepend(widgetDiv);
 
-    const res = useDeepWiki ? (await askDeepGrok(question)) : (await askOpenAIHelp(question, apiKey, vectorStoreId));
+    const res = !useOpenAI ? (await askDeepGrok(question)) : (await askOpenAIHelp(question, apiKey, vectorStoreId));
     loader.remove();
     const answerDiv = ui.markdown(res);
     answerDiv.style.width;
@@ -50,7 +48,7 @@ export function setupSearchUI(getApiKey: () => string, getVectorStoreId: () => s
 
   function initInput(searchInput: HTMLInputElement) {
     const parent: HTMLElement = searchInput.parentElement!;
-    const aiIcon = ui.iconFA('magic', () => { askDeepWiki(searchInput.value, getApiKey(), getVectorStoreId()); }, 'Ask DeepWiki AI');
+    const aiIcon = ui.iconFA('magic', () => { askDeepWiki(searchInput.value, getApiKey(), getVectorStoreId()); }, 'Ask AI');
     aiIcon.style.cursor = 'pointer';
     aiIcon.style.color = 'var(--blue-1)';
     aiIcon.style.marginLeft = '4px';

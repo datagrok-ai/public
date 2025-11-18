@@ -11,28 +11,17 @@ import {askDeepGrok} from './llm-utils/deepwikiclient';
 import {askDeepWiki} from './llm-utils/ui';
 import {ChatGptFuncParams, Plan} from './prompt-engine/interfaces';
 import {OpenAIHelpClient} from './llm-utils/openAI-client';
+import {LLMCredsManager} from './llm-utils/creds';
 
 export * from './package.g';
 export const _package = new DG.Package();
 
-export let apiKey: string = '';
-export let vectorStoreId: string = '';
 export const modelName: string = 'gpt-4.1-mini-2025-04-14';
 
 export class PackageFunctions {
   @grok.decorators.init()
   static async init() {
-    apiKey = _package.settings['apiKey'];
-    vectorStoreId = _package.settings['vectorStoreId'];
-  }
-
-  @grok.decorators.func()
-  static async deepDemo(@grok.decorators.param({name: 'question', type: 'string'}) question: string) {
-    // if (!apiKey || apiKey.length === 0) {
-    //   grok.shell.error('Please set API key in ChatGPT package settings');
-    //   return;
-    // }
-    return await askDeepGrok(question);
+    LLMCredsManager.init(_package);
   }
 
 
@@ -75,7 +64,7 @@ export class PackageFunctions {
         ],
         isApplicable: (query: string) => query.length >= 5,
         onValueEnter: async (query: string) => {
-          await askDeepWiki(query, apiKey, vectorStoreId);
+          await askDeepWiki(query, LLMCredsManager.getApiKey(), LLMCredsManager.getVectorStoreId());
         },
         description: 'Get answers from DeepGROK AI assistant based on Datagrok documentation.'
 
@@ -102,7 +91,7 @@ export class PackageFunctions {
           const searchResultHost = document.getElementsByClassName('power-pack-search-host')[0];
           if (!searchResultHost)
             return;
-          const gptEngine = new ChatGPTPromptEngine(apiKey, modelName);
+          const gptEngine = new ChatGPTPromptEngine(LLMCredsManager.getApiKey(), modelName);
           const gptAssistant = new ChatGptAssistant(gptEngine);
 
           const resultWait = ui.wait(async () => {
@@ -134,7 +123,7 @@ export class PackageFunctions {
     }
   })
  static async getExecutionPlan(userGoal: string): Promise<string> {
-   const gptEngine = new ChatGPTPromptEngine(apiKey, modelName);
+   const gptEngine = new ChatGPTPromptEngine(LLMCredsManager.getApiKey(), modelName);
    const gptAssistant = new ChatGptAssistant(gptEngine);
    const plan: Plan = await gptAssistant.plan(userGoal);
    // Cache only works with scalar values, so we serialize the plan to a string
@@ -159,7 +148,7 @@ export class PackageFunctions {
     }
   })
   static async askDocumentationCached(prompt: string): Promise<string> {
-    const client = OpenAIHelpClient.getInstance(apiKey, vectorStoreId);
+    const client = OpenAIHelpClient.getInstance(LLMCredsManager.getApiKey(), LLMCredsManager.getVectorStoreId());
     return await client.getHelpAnswer(prompt);
   }
 }

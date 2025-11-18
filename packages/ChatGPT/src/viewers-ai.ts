@@ -3,7 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {getCurrentViewersString, getDataFrameDescription, getViewerDescriptionsString} from './utils';
 import {OpenAIHelpClient} from './llm-utils/openAI-client';
-import {apiKey, modelName, vectorStoreId} from './package';
+import {modelName} from './package';
+import {LLMCredsManager} from './llm-utils/creds';
 
 type IViewerResponse = {
   viewerType: string;
@@ -24,7 +25,7 @@ export async function askAiTableView(view: DG.TableView, question: string) {
   const prompt = getPrompt(view, question);
   //console.log(prompt);
   // TODO: substitute with the OpenAI client call
-  const res = OpenAIHelpClient.getInstance(apiKey, vectorStoreId);
+  const res = OpenAIHelpClient.getInstance(LLMCredsManager.getApiKey(), LLMCredsManager.getVectorStoreId());
   const answer = await res.generalPrompt(modelName, '', prompt);
   //console.log(answer);
   //grok.shell.info(answer);
