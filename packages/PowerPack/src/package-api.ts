@@ -54,6 +54,13 @@ export namespace funcs {
     return await grok.functions.call('PowerPack:FormulaWidget', { col });
   }
 
+  /**
+  Tries to find a query which has the similar pattern as the prompt user entered and executes it
+  */
+  export async function llmSearchQueryProvider(prompt: string ): Promise<any> {
+    return await grok.functions.call('PowerPack:LlmSearchQueryProvider', { prompt });
+  }
+
   export async function powerPackSearchProvider(): Promise<any> {
     return await grok.functions.call('PowerPack:PowerPackSearchProvider', {});
   }

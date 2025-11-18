@@ -16,19 +16,37 @@ export namespace funcs {
     return await grok.functions.call('ChatGPT:Autostart', {});
   }
 
-  export async function ask(question: string ): Promise<string> {
-    return await grok.functions.call('ChatGPT:Ask', { question });
+  export async function combinedLLMSearchProvider(): Promise<any> {
+    return await grok.functions.call('ChatGPT:CombinedLLMSearchProvider', {});
   }
 
-  export async function askFun(question: string ): Promise<string> {
-    return await grok.functions.call('ChatGPT:AskFun', { question });
+  /**
+  Get answers from DeepGROK AI assistant based on Datagrok documentation and public code.
+  */
+  export async function askHelpLLMProvider(prompt: string ): Promise<any> {
+    return await grok.functions.call('ChatGPT:AskHelpLLMProvider', { prompt });
   }
 
-  export async function askMultiStep(question: string ): Promise<any> {
-    return await grok.functions.call('ChatGPT:AskMultiStep', { question });
+  /**
+  Plans and executes function steps to achieve needed results
+  */
+  export async function smartChainExecutionProvider(prompt: string ): Promise<any> {
+    return await grok.functions.call('ChatGPT:SmartChainExecutionProvider', { prompt });
   }
 
-  export async function fuzzyMatch(prompt: string , searchPatterns: any ): Promise<any> {
+  export async function askAIGeneralCached(model: string , systemPrompt: string , prompt: string ): Promise<string> {
+    return await grok.functions.call('ChatGPT:AskAIGeneralCached', { model, systemPrompt, prompt });
+  }
+
+  export async function getExecutionPlan(userGoal: string ): Promise<string> {
+    return await grok.functions.call('ChatGPT:GetExecutionPlan', { userGoal });
+  }
+
+  export async function fuzzyMatch(prompt: string , searchPatterns: any ): Promise<string> {
     return await grok.functions.call('ChatGPT:FuzzyMatch', { prompt, searchPatterns });
+  }
+
+  export async function askDocumentationCached(prompt: string ): Promise<string> {
+    return await grok.functions.call('ChatGPT:AskDocumentationCached', { prompt });
   }
 }

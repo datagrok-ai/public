@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* Do not change these import lines. Datagrok will import API library in exactly the same manner */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -17,7 +18,7 @@ import {KpiWidget} from './widgets/kpi-widget';
 import {HtmlWidget} from './widgets/html-widget';
 import {viewersDialog} from './viewers-gallery';
 import {windowsManagerPanel} from './windows-manager';
-import {initSearch} from './search/power-search';
+import {tableQueriesFunctionsSearchLlm, initSearch} from './search/power-search';
 import {newUsersSearch, registerDGUserHandler} from './dg-db';
 import {merge} from 'rxjs';
 import {HelpObjectHandler} from './search/help-entity';
@@ -189,6 +190,15 @@ export class PackageFunctions {
     const widget = new DG.Widget(ui.div());
     new AddNewColumnDialog(fc, widget);
     return widget;
+  }
+
+  @grok.decorators.func({meta: {
+    role: 'aiSearchProvider',
+    useWhen: 'if the prompt suggest that the user is looking for a data table result and the prompt resembles a query pattern. for example, "bioactivity data for shigella" or "compounds similar to aspirin" or first 100 chembl compounds. there should be some parts of user prompt that could match parameters in some query, like shigella, aspirin, first 100 etc.'
+  }, name: 'Query',
+  description: 'Tries to find a query which has the similar pattern as the prompt user entered and executes it', result: {type: 'widget', name: 'result'}})
+  static async llmSearchQueryProvider(@grok.decorators.param({type: 'string'})prompt: string): Promise<DG.Widget | null> {
+    return await tableQueriesFunctionsSearchLlm(prompt);
   }
 
   @grok.decorators.func({tags: ['searchProvider']})
@@ -382,9 +392,9 @@ grok.events.onContextMenu.subscribe((args) => {
       src.getOptions().look['viewerType'] == DG.VIEWER.SCATTER_PLOT)
     menu = args.args.menu.find(DG.VIEWER.SCATTER_PLOT).find('Tools');
 
-    menu?.item('Formula Lines...', () => {
-      PackageFunctions.formulaLinesDialog(src);
-    });
+  menu?.item('Formula Lines...', () => {
+    PackageFunctions.formulaLinesDialog(src);
+  });
 });
 
 function _viewerGallery(view: DG.ViewBase): void {

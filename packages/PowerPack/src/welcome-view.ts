@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
@@ -14,6 +15,7 @@ export function welcomeView(): DG.View | undefined {
   }
 
   const input = ui.element('input', 'ui-input-editor') as HTMLInputElement;
+  input.classList.add('power-search-search-everywhere-input'); // otherwise HTML complains if I do this above :)
   input.placeholder = 'Search everywhere. Try "aspirin" or "7JZK"';
   const inputContainer = ui.div([
     input,
@@ -22,6 +24,21 @@ export function welcomeView(): DG.View | undefined {
     ui.iconFA('search'),
     inputContainer,
   ], 'd4-search-bar');
+  const helpDiv = ui.divText('Use Ctrl+Space to see suggestions', {style: {
+    marginLeft: '12px', fontSize: '10px', color: 'var(--text-color-light)',
+    fontStyle: 'italic',
+    marginBottom: '10px', flexGrow: '0',
+  }, classes: 'power-search-help-text-container'});
+
+  // input.addEventListener('input', () => {
+  //   if (!input.value)
+  //     helpDiv.style.visibility = 'hidden';
+  //   else
+  //     helpDiv.style.visibility = 'visible';
+  // });
+
+  // helpDiv.style.display = input.value ? 'flex' : 'none';
+  inputHost.style.marginBottom = '0px';
   suggestionMenuKeyNavigation(inputContainer);
 
   const searchHost = ui.block([], 'power-pack-search-host');
@@ -30,6 +47,7 @@ export function welcomeView(): DG.View | undefined {
   const viewHost = ui.div([widgetsPanel, searchHost]);
   const view = DG.View.create();
   view.root.appendChild(inputHost);
+  view.root.appendChild(helpDiv);
   view.root.appendChild(viewHost);
   view.root.classList.add('power-pack-welcome-view');
 

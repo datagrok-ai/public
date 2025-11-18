@@ -23,25 +23,25 @@ type IDataFrameDescription = {
 export function getViewerDescription(viewerType: DG.ViewerType): IViewerDescription {
   const viewer = DG.Viewer.fromType(viewerType, dummy);
   const properties: { [propName: string]: IProp } = {};
-  
-  viewer.getProperties().forEach(prop => {
+
+  viewer.getProperties().forEach((prop) => {
     properties[prop.name] = {
       type: prop.type,
       description: prop.description
     };
   });
-  
+
   return {
     viewerType,
     properties
-  }
+  };
 }
 
 export function getDataFrameDescription(dataFrame: DG.DataFrame): IDataFrameDescription {
   const columns: { [columnName: string]: IProp } = {};
 
   for (const column of dataFrame.columns.all) {
-    columns[column.name] = { type: column.type };
+    columns[column.name] = {type: column.type};
 
     if (column.meta.description)
       columns[column.name].description = column.meta.description;
@@ -53,40 +53,41 @@ export function getDataFrameDescription(dataFrame: DG.DataFrame): IDataFrameDesc
   };
 }
 
-/** 
+/**
  * Returns a list of viewer types, along with the detailed descriptions of their properties.
  * This is used to generate the AI assistant's context.
  */
 export function getViewerDescriptions(): {[viewerType: string]: { [propName: string]: IProp }} {
   grok.shell.info('gvd');
   const descriptions: {[viewerType: string]: { [propName: string]: IProp }} = {};
-  
+
   for (const viewerType of DG.Viewer.CORE_VIEWER_TYPES) {
     const viewer = DG.Viewer.fromType(viewerType, dummy);
     const properties: { [propName: string]: IProp } = {};
-    
-    viewer.getProperties().forEach(prop => {
+
+    viewer.getProperties().forEach((prop) => {
       properties[prop.name] = {
         type: prop.type,
         description: prop.description
       };
     });
-    
+
     descriptions[viewerType] = properties;
   }
-  
+
   return descriptions;
 }
 
-/** 
+const commonProps = ['rowSource', 'filter', 'table'];
+/**
  * Returns a list of viewer types, along with the detailed descriptions of their properties.
  * This is used to generate the AI assistant's context.
  */
 export function getViewerDescriptionsString(): string {
-  if (viewerDescriptions !== '') 
+  if (viewerDescriptions !== '')
     return viewerDescriptions;
 
-  const commonProps = ['rowSource', 'filter', 'table'];
+
   let result = `Properties common for all viewers:
 rowSource: string  // choices: "All", "Selected", "Filtered"
 filter: string  // Formulas like "\${AGE} < 40" 
@@ -94,7 +95,6 @@ filter: string  // Formulas like "\${AGE} < 40"
 `;
 
   for (const viewerType of DG.Viewer.CORE_VIEWER_TYPES) {
-
     try {
       const viewer = DG.Viewer.fromType(viewerType, dummy);
 
@@ -103,8 +103,7 @@ filter: string  // Formulas like "\${AGE} < 40"
         if (!commonProps.includes(prop.name) && (prop.category == 'Data' || prop.name.endsWith('ColumnName')))
           result += `${prop.name} ${prop.type}` + '\n';
       }
-    }
-    catch (e) {
+    } catch (e) {
       grok.shell.error('Error getting viewer descriptions: ' + e);
     }
 
@@ -112,5 +111,20 @@ filter: string  // Formulas like "\${AGE} < 40"
   }
 
   viewerDescriptions = result;
+  return result;
+}
+
+export function getCurrentViewersString(view: DG.TableView): string {
+  let result = `Current viewers in the view:\n`;
+  for (const viewer of view.viewers) {
+    result += `${viewer.type} with properties: \n`;
+    for (const prop of viewer.getProperties()) {
+      if (!commonProps.includes(prop.name) && (prop.category == 'Data' ||
+        prop.name.endsWith('ColumnName')) && viewer.props[prop.name]
+      )
+        result += `${prop.name}: ${viewer.props[prop.name]?.toString()}` + '\n';
+    }
+    result += '\n\n';
+  }
   return result;
 }

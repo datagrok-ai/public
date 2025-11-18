@@ -1,9 +1,9 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { PromptEngine } from './prompt-engine';
-
-type ChatGptFuncParams = { [name: string]: { type: string, description: string, default: any } };
+import {PromptEngine} from './prompt-engine';
+import {ChatGptFuncParams, ExecutePlanResult, ExecutionContext, FunctionMeta, PackageInfo, Plan} from './interfaces';
 
 export class ChatGptAssistant {
   private delimiter = '####';
@@ -43,20 +43,28 @@ export class ChatGptAssistant {
   }
 
   // TODO: Substitute with the list of available roles along with descriptions
-  private packagesInfo = [
+  private packagesInfo: PackageInfo[] = [
+    {
+      name: 'Admetica',
+      description: 'Assessment of ADMET Properties',
+    },
+    {
+      name: 'Bio',
+      description: 'Bioinformatics support (import/export of sequences, HELM and other format conversion, visualization, analysis). [See more](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) for details.',
+    },
     {
       name: 'Chem',
       description:
         'Cheminformatics support: import, rendering, sketching, calculation of properties, predictive models, augmentations, multiple analyses',
     },
     {
-      name: 'Admetica',
-      description: 'Assessment of ADMET Properties',
-    },
-    {
       name: 'Chembl',
       description: 'Chembl integration, commonly used queries and browser',
     },
+    {
+      name: 'Retrosynthesis',
+      description: 'Creates retrosynthesis paths for the selected molecule',
+    }
   ];
 
   private async selectPackages(userGoal: string): Promise<string[]> {
@@ -77,13 +85,13 @@ Rules:
 - Rank them from most to least relevant.
 - Do not include packages that clearly don't apply.`;
 
-  const res = await this.chat(prompt);
-  const parsed = this.parseJSON<{ selected_packages: { name: string, reason: string }[] }>(
-    res,
-    { selected_packages: [{ name: 'Chem', reason: 'Default fallback' }] }
-  );
-  return parsed.selected_packages.map(p => p.name);
-}
+    const res = await this.chat(prompt);
+    const parsed = this.parseJSON<{ selected_packages: { name: string, reason: string }[] }>(
+      res,
+      {selected_packages: [{name: 'Chem', reason: 'Default fallback'}]}
+    );
+    return parsed.selected_packages.map((p) => p.name);
+  }
 
   private readonly reasoningSystemPrompt = `
 You are a reasoning assistant that plans how to achieve user goals using available functions.
@@ -99,7 +107,7 @@ Rules:
 - Do not use helper or lookup functions unless required by the goal itself.
 - Include a short "analysis" explaining your reasoning.`;
 
-  private async planFunctions(userGoal: string, functions: any[]): Promise<any> {
+  private async planFunctions(userGoal: string, functions: FunctionMeta[]): Promise<Plan> {
     const prompt = `
 User request: "${userGoal}"
 Available functions:
@@ -113,17 +121,17 @@ Respond strictly as JSON with this structure:
   "steps": [ { "action": "call_function", "function": "...", "inputs": {...}, "outputs": [...] } ]
 }`;
     const result = await this.chat(prompt, this.reasoningSystemPrompt);
-    return this.parseJSON(result, { steps: [] });
+    return this.parseJSON(result, {goal: '', analysis: [], steps: []});
   }
 
-  private async getFunctionsByPackage(pkg: string): Promise<any[]> {
-    const funcs = DG.Func.find({ package: pkg });
+  private async getFunctionsByPackage(pkg: string): Promise<FunctionMeta[]> {
+    const funcs = DG.Func.find({package: pkg});
     return funcs.map((f) => {
       return {
         name: f.name,
-        description: (f.nqName || f.package.name) + ": " + (f.description || f.options['description'] || f.friendlyName || f.name),
-        parameters: { type: 'object', properties: this.getProperties(f) },
-        outputs: f.outputs.map(o => ({
+        description: (f.nqName || f.package.name) + ': ' + (f.description || f.options['description'] || f.friendlyName || f.name),
+        inputs: {type: 'object', properties: this.getProperties(f)},
+        outputs: f.outputs.map((o) => ({
           name: o.name,
           type: o.propertyType,
         }))
@@ -131,18 +139,17 @@ Respond strictly as JSON with this structure:
     });
   }
 
-  public async executePlan(plan: any): Promise<any> {
+  public async executePlan(plan: Plan): Promise<ExecutePlanResult | null> {
     if (!plan?.steps?.length) {
       console.warn('No steps to execute in plan.');
       return null;
     }
 
-    const context: Record<string, any> = {};
-    const stepOutputs: Record<string, any> = {};
+    const context: ExecutionContext = {};
     for (const [index, step] of plan.steps.entries()) {
       if (step.action !== 'call_function') continue;
 
-      const func = DG.Func.find({ name: step.function })[0];
+      const func = DG.Func.find({name: step.function})[0];
       if (!func) {
         console.warn(`Function not found: ${step.function}`);
         continue;
@@ -153,9 +160,8 @@ Respond strictly as JSON with this structure:
         if (typeof val === 'string' && val.startsWith('$')) {
           const varName = val.slice(1);
           resolvedInputs[key] = context[varName]['value'];
-        } else {
+        } else
           resolvedInputs[key] = val;
-        }
       }
 
       let result;
@@ -168,36 +174,35 @@ Respond strictly as JSON with this structure:
 
       if (Array.isArray(step.outputs)) {
         const outputName = step.outputs[0] ?? func.name;
-        const funcOutputMeta = func.outputs.find(o => o.name === outputName);
-        context[outputName] = { value: result, meta: funcOutputMeta };
-        stepOutputs[outputName] = funcOutputMeta;
+        const funcOutputMeta = func.outputs.find((o) => o.name === outputName);
+        context[outputName] = {value: result, meta: funcOutputMeta};
       }
     }
 
     const finalKey = plan.steps.at(-1)?.outputs?.[0];
     const finalResult = finalKey ? context[finalKey] : null;
 
-    return { context, finalResult };
+    return {context, finalResult};
   }
 
-  public async plan(userGoal: string): Promise<any> {
+  public async plan(userGoal: string): Promise<Plan> {
     const packages = await this.selectPackages(userGoal);
     await setTimeout(() => {}, 25000);
-    
-    const allFunctions: any[] = [];
+
+    const allFunctions: FunctionMeta[] = [];
     for (const pkg of packages) {
       const funcs = await this.getFunctionsByPackage(pkg);
       allFunctions.push(...funcs);
       await setTimeout(() => {}, 25000);
     }
-    
+
     const plan = await this.planFunctions(userGoal, allFunctions);
     await setTimeout(() => {}, 25000);
 
     return plan;
   }
 
-  public async execute(plan: any): Promise<any> {
+  public async execute(plan: Plan): Promise<ExecutePlanResult | null> {
     return await this.executePlan(plan);
   }
 }

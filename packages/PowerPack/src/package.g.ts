@@ -61,6 +61,16 @@ export function formulaWidget(col: DG.Column) : any {
   return PackageFunctions.formulaWidget(col);
 }
 
+//name: Smart Query
+//description: Tries to find a query which has the similar pattern as the prompt user entered and executes it
+//input: string prompt 
+//output: widget result
+//meta.role: aiSearchProvider
+//meta.useWhen: if the prompt suggest that the user is looking for a data table result and the prompt resembles a query pattern. for example, "bioactivity data for shigella" or "compounds similar to aspirin" or first 100 chembl compounds. there should be some parts of user prompt that could match parameters in some query, like shigella, aspirin, first 100 etc.
+export async function llmSearchQueryProvider(prompt: string) : Promise<any> {
+  return await PackageFunctions.llmSearchQueryProvider(prompt);
+}
+
 //tags: searchProvider
 //output: dynamic result
 export function powerPackSearchProvider() : any {

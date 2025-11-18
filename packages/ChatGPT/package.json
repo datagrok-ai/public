@@ -6,17 +6,24 @@
   "author": "oserhiienko@datagrok.ai",
   "dependencies": {
     "@datagrok-libraries/utils": "^4.6.5",
+    "@modelcontextprotocol/sdk": "^1.21.1",
     "@types/dom-chromium-ai": "^0.0.10",
     "cash-dom": "latest",
+    "datagrok-api": "../../js-api",
     "dayjs": "latest",
-    "datagrok-api": "../../js-api"
+    "openai": "^6.9.0"
   },
   "devDependencies": {
     "@types/dom-speech-recognition": "^0.0.7",
-    "datagrok-tools": "^4.14.55",
-    "ts-loader": "latest",
+    "@typescript-eslint/eslint-plugin": "^8.8.1",
+    "@typescript-eslint/parser": "^8.8.1",
     "css-loader": "^7.1.2",
+    "datagrok-tools": "^4.14.69",
+    "eslint": "^8.57.1",
+    "eslint-config-google": "^0.14.0",
+    "eslint-plugin-rxjs": "^5.0.3",
     "style-loader": "^4.0.0",
+    "ts-loader": "latest",
     "typescript": "latest",
     "webpack": "latest",
     "webpack-cli": "latest"
@@ -51,6 +58,12 @@
       "name": "apiKey",
       "propertyType": "string",
       "defaultValue": "Enter ChatGPT API key",
+      "nullable": false
+    },
+    {
+      "name": "vectorStoreId",
+      "propertyType": "string",
+      "defaultValue": "Enter Vector Store ID",
       "nullable": false
     },
     {

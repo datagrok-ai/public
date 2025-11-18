@@ -26,7 +26,7 @@ export function initSearch() {
 export function powerSearch(s: string, host: HTMLDivElement, inputElement: HTMLInputElement): void {
   ui.empty(host);
   tableQueriesFunctionsSearch(s, host);
-  tableQueriesFunctionsSearchLlm(s, host);
+  // tableQueriesFunctionsSearchLlm(s, host);
   jsEvalSearch(s, host) ||
   viewsSearch(s, host);
 
@@ -193,6 +193,7 @@ async function _getSearchProviders(): Promise<void> {
 }
 
 let _suggestionsMenu: DG.Menu | null = null;
+let _ctrlSpaceSubscribed = false;
 async function searchProvidersSearch(s: string, host: HTMLDivElement, searchInput: HTMLInputElement): Promise<void> {
   _suggestionsMenu?.hide();
   _suggestionsMenu = null;
@@ -200,15 +201,17 @@ async function searchProvidersSearch(s: string, host: HTMLDivElement, searchInpu
     return;
   _searchProvidersPromise ??= _getSearchProviders();
   await _searchProvidersPromise;
-  _suggestionsMenu = DG.Menu.popup();
+
   let showSuggestions = false;
   const addSuggestion = (text: string, value?: string, priority?: number, onValueEnter?: (s: string, view?: DG.ViewBase) => void) => {
     // make sure that its not an exact match, where it does not make sense to add it as a suggestion
     if ((value ?? text) === searchInput.value)
       return;
     _suggestionsMenu!.item(text, () => {
-      searchInput.value = value ?? text;
-      searchInput.dispatchEvent(new Event('input', {bubbles: true})); // Trigger input event to update the view
+      if (value) {
+        searchInput.value = value;
+        searchInput.dispatchEvent(new Event('input', {bubbles: true})); // Trigger input event to update the view
+      }
       searchInput.focus();
       if (onValueEnter)
         onValueEnter(searchInput.value, grok.shell.v);
@@ -216,20 +219,64 @@ async function searchProvidersSearch(s: string, host: HTMLDivElement, searchInpu
     showSuggestions = true;
   };
 
+  // separate handler for suggestions
+  const processSuggestions = () => {
+    const si = searchInput.value?.trim() ?? '';
+    _suggestionsMenu?.hide();
+    _suggestionsMenu = null;
+    _suggestionsMenu = DG.Menu.popup();
+    showSuggestions = false;
+    searchProviders.forEach((sp) => {
+      if (!sp['home'])
+        return;
+      const homeSearchProviders = Array.isArray(sp.home) ? sp.home : [sp.home];
+      homeSearchProviders.forEach((pp) => {
+      // first handle the suggestions
+        if (pp.getSuggestions) {
+          const suggestions = pp.getSuggestions(si);
+          if (suggestions && suggestions.length > 0) {
+            suggestions.forEach((sug) => {
+              addSuggestion(sug.suggestionText, sug.suggestionValue, sug.priority, pp.onValueEnter);
+            });
+          }
+        }
+      });
+    });
+    // handle automatic suggestions based on objecthandlers or dynamic queries
+    DG.ObjectHandler.list()
+      .filter((h) => h.regexpExample && h.regexpExample.nonVariablePart?.toLowerCase().includes(si.toLowerCase()))
+      .forEach((h) => {
+        const e = h.regexpExample!;
+        const eg = !e.example || e.example == e.regexpMarkup ? '' : `(e.g. ${e.example})`;
+        addSuggestion(`${e.regexpMarkup} ${eg}`, e.nonVariablePart, 0); // 0 order to make sure it is at the top
+      });
+    tableQueriesSearchFunctions.forEach((f) => {
+      const pattern: string = f.options['searchPattern'] ?? '';
+      if (pattern.toLowerCase().includes(si.toLowerCase()))
+        addSuggestion(removeTrailingQuotes(pattern), removeTrailingQuotes(pattern), 1);
+    });
+    if (showSuggestions) {
+      _suggestionsMenu.show({element: searchInput.parentElement!, x: searchInput.offsetLeft,
+        y: searchInput.offsetTop + searchInput.offsetHeight});
+    }
+  };
+  processSuggestions();
+  if (!_ctrlSpaceSubscribed) {
+    _ctrlSpaceSubscribed = true;
+    searchInput.addEventListener('keydown', (event) => {
+      if (event.ctrlKey && (event.key === ' ' || event.key === 'Spacebar')) {
+        event.preventDefault();
+        processSuggestions();
+      }
+    });
+  }
+
+
   searchProviders.forEach((sp) => {
     if (!sp['home'])
       return; // Skip providers that do not have a home property
     const homeSearchProviders = Array.isArray(sp.home) ? sp.home : [sp.home];
     homeSearchProviders.forEach((pp) => {
-      // first handle the suggestions
-      if (pp.getSuggestions) {
-        const suggestions = pp.getSuggestions(s);
-        if (suggestions && suggestions.length > 0) {
-          suggestions.forEach((sug) => {
-            addSuggestion(sug.suggestionText, sug.suggestionValue, sug.priority);
-          });
-        }
-      }
       // handle search
       if (pp.isApplicable && !pp.isApplicable(s))
         return;
@@ -250,23 +297,6 @@ async function searchProvidersSearch(s: string, host: HTMLDivElement, searchInpu
       });
     });
   });
-  // handle automatic suggestions based on objecthandlers or dynamic queries
-  DG.ObjectHandler.list()
-    .filter((h) => h.regexpExample && h.regexpExample.nonVariablePart?.toLowerCase().includes(s.toLowerCase()))
-    .forEach((h) => {
-      const e = h.regexpExample!;
-      const eg = !e.example || e.example == e.regexpMarkup ? '' : `(e.g. ${e.example})`;
-      addSuggestion(`${e.regexpMarkup} ${eg}`, e.nonVariablePart, 0); // 0 order to make sure it is at the top
-    });
-  tableQueriesSearchFunctions.forEach((f) => {
-    const pattern: string = f.options['searchPattern'] ?? '';
-    if (pattern.toLowerCase().includes(s.toLowerCase()))
-      addSuggestion(removeTrailingQuotes(pattern), removeTrailingQuotes(pattern), 1);
-  });
-  if (showSuggestions) {
-    _suggestionsMenu.show({element: searchInput.parentElement!, x: searchInput.offsetLeft,
-      y: searchInput.offsetTop + searchInput.offsetHeight});
-  }
 }
 
 function removeTrailingQuotes(s: string): string {
@@ -278,27 +308,28 @@ function removeTrailingQuotes(s: string): string {
   return ms;
 }
 
-function tableQueriesFunctionsSearchLlm(s: string, host: HTMLDivElement): void {
+export async function tableQueriesFunctionsSearchLlm(s: string): Promise<DG.Widget> {
   const searchPatterns = tableQueriesSearchFunctions.map((f) => f.options['searchPattern']);
+  try {
+    const matches = JSON.parse(await grok.functions
+      .call('ChatGPT:fuzzyMatch', {prompt: s, searchPatterns}));
+    if (matches && matches.searchPattern && matches.parameters) {
+      const sf = tableQueriesSearchFunctions.find((f) => {
+        const pattern: string = removeTrailingQuotes(f.options['searchPattern']) ?? '';
+        return pattern === matches.searchPattern;
+      });
 
-  grok.functions
-    .call('ChatGPT:fuzzyMatch', { prompt: s, searchPatterns })
-    .then((matches: any) => {
-      if (matches && matches.searchPattern) {
-        const sf = tableQueriesSearchFunctions.find((f) => {
-          const pattern: string = removeTrailingQuotes(f.options['searchPattern']) ?? '';
-          return pattern === matches.searchPattern;
-        });
-
-        if (sf) {
-          const widget = createOutWidget(sf, matches.parameters);
-          host.appendChild(widgetHost(widget));
-        }
+      if (sf) {
+        const widget = createOutWidget(sf, matches.parameters);
+        widget.root.style.minHeight = '500px';
+        return DG.Widget.fromRoot(widgetHost(widget));
       }
-    })
-    .catch((error: any) => {
-      console.error('Error calling ChatGPT:fuzzyMatch', error);
-    });
+    }
+  } catch (error) {
+    console.error('Error calling ChatGPT:fuzzyMatch', error);
+    return DG.Widget.fromRoot(ui.divText(`Error during AI-powered table query search. Check console for details.`));
+  }
+  return DG.Widget.fromRoot(ui.divText('No matching query found via AI'));
 }
 
 function tableQueriesFunctionsSearch(s: string, host: HTMLDivElement): void {
