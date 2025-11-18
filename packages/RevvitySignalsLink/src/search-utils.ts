@@ -154,11 +154,13 @@ export async function runSearch(qb: QueryBuilder, tv: DG.TableView, filtersDiv: 
   const resultDf = await runSearchQuery(libId, compoundType, condition);
   const totalCount = resultDf.getTag(REVVITY_SEARCH_RES_TOTAL_COUNT);
   const loadAllResults = async (count: number) => {
-    const pb = DG.TaskBarProgressIndicator.create(`Loading results`);
+    const pb = DG.TaskBarProgressIndicator.create(`Loading results`, {cancelable: true});
     let totalDf: DG.DataFrame | null = null;
     const batchSize = MAX_RETURN_ROWS;
     const calls = Math.ceil(count / MAX_RETURN_ROWS);
     for (let i = 0; i < calls; i++) {
+       if (pb.canceled)
+        break;
       const resDf = await runSearchQuery(libId, compoundType, condition, { "page[limit]": batchSize, "page[offset]": i * batchSize }, true);
       if (!totalDf)
         totalDf = resDf;
@@ -181,6 +183,7 @@ export async function runSearch(qb: QueryBuilder, tv: DG.TableView, filtersDiv: 
     }
     return totalDf ?? DG.DataFrame.create();
   }
+  
   // if total number of results are more then 100, add ability to load them all
   if (totalCount) {
     let countInt: number | undefined = undefined;
@@ -202,6 +205,10 @@ export async function runSearch(qb: QueryBuilder, tv: DG.TableView, filtersDiv: 
               openResButton.style.display = 'none';
               updateView(openedView as DG.TableView, res, compoundType, libName, libId, filtersDiv);
               infoDiv.append(ui.divText(`${res.rowCount} of ${countInt} rows`, 'revvity-search-results-count'));
+              if (res.rowCount < countInt) {
+                loadResButton.style.display = 'flex';
+                infoDiv.append(loadResButton);
+              }
             });
             openResButton.classList.add('revvity-load-all-search-results-button');
             infoDiv.append(openResButton);

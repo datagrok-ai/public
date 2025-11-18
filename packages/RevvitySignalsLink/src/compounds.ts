@@ -100,7 +100,8 @@ export const materialsCondition: ComplexCondition = {
 export async function addMoleculeStructures(moleculeIds: string[], molCol: DG.Column): Promise<void> {
     const BATCH_SIZE = 100;
     let counter = 0;
-    const pb = DG.TaskBarProgressIndicator.create('Loading molecule structures...');
+    const pb = DG.TaskBarProgressIndicator.create('Loading molecule structures...', {cancelable: true});
+    
     
     // Split IDs into batches
     const batches: string[][] = [];
@@ -135,6 +136,9 @@ export async function addMoleculeStructures(moleculeIds: string[], molCol: DG.Co
             
             // Wait for all promises in this batch to complete
             const results = await Promise.allSettled(promises);
+
+            if (pb.canceled)
+                return;
             
             // Process results and set molecules at correct indices
             // This ensures deterministic assignment regardless of promise completion order
