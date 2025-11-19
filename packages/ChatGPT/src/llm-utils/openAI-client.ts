@@ -2,6 +2,7 @@
 import OpenAI from 'openai';
 import * as api from '../package-api';
 import {LLMCredsManager} from './creds';
+import { ChatCompletionParseParams } from 'openai/resources/chat/completions';
 export class OpenAIHelpClient {
   private openai: OpenAI;
   private constructor(private apiKey: string, private vectorStoreId: string) {
@@ -55,38 +56,36 @@ export class OpenAIHelpClient {
    * @param prompt - user prompt
    * @returns string response from OpenAI
    */
-  async generalPrompt(
+  async generalPrompt<T = any>(
     model: string,
     systemPrompt: string,
-    prompt: string,
-    schema?: { [key: string]: unknown }
-  ): Promise<any> {
-    const request: any = {
+    userPrompt: string,
+    schema?: Record<string, unknown>
+  ): Promise<T | string> {
+    const request: ChatCompletionParseParams = {
       model,
+      temperature: 0,
       messages: [
         {role: 'system', content: systemPrompt},
-        {role: 'user', content: prompt}
+        {role: 'user', content: userPrompt},
       ],
-      temperature: 0.0,
+      ...(schema && {
+        response_format: {
+          type: 'json_schema',
+          json_schema: {
+            name: 'ResponseSchema',
+            schema,
+          },
+        },
+      }),
     };
 
-    if (schema) {
-      request.response_format = {
-        type: 'json_schema',
-        json_schema: {
-          name: 'ResponseSchema',
-          strict: true,
-          schema,
-        },
-      };
-    }
-
     const response = await this.openai.chat.completions.parse(request);
+    const msg = response.choices?.[0]?.message;
 
     if (schema)
-      return response.choices[0].message.parsed as any;
-    else
-      return response.choices[0].message.content ?? '';
+      return msg?.parsed as T;
+    return msg?.content ?? '';
   }
 }
 

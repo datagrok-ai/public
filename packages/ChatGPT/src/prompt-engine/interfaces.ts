@@ -55,8 +55,7 @@ export interface ExecutePlanResult {
   finalResult: StepExecutionOutput | null;
 }
 
-/* Defined schemas for leveraging the structured output capabilities */
-
+/* Schemas defined to enable structured output handling */
 export const PackageSelectionSchema = {
   type: 'object',
   properties: {
@@ -114,18 +113,8 @@ export const PlanSchema = {
           },
           inputs: {
             type: 'object',
-            properties: {
-              inputName: {
-                type: 'string',
-                description: 'The name of the input parameter.'
-              },
-              parameterValue: {
-                type: 'string',
-                description: 'The value of the input parameter.'
-              },
-            },
-            required: ['inputName', 'parameterValue'],
-            additionalProperties: false
+            description: 'Function inputs as a dictionary of key-value pairs.',
+            additionalProperties: true,
           },
           outputs: {
             type: 'array',

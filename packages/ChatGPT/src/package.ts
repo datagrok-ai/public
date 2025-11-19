@@ -5,11 +5,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ChatGptAssistant} from './prompt-engine/chatgpt-assistant';
 import {ChatGPTPromptEngine} from './prompt-engine/prompt-engine';
-import {AssistantRenderer} from './prompt-engine/rendering-tools';
 import {getAiPanelVisibility, initAiPanel, setAiPanelVisibility} from './ai-panel';
 import {findBestFunction} from './prompts/find-best-function';
 import {askWiki, setupSearchUI, smartExecution} from './llm-utils/ui';
-import {ChatGptFuncParams, Plan} from './prompt-engine/interfaces';
+import {Plan} from './prompt-engine/interfaces';
 import {OpenAIHelpClient} from './llm-utils/openAI-client';
 import {LLMCredsManager} from './llm-utils/creds';
 import {CombinedAISearchAssistant} from './llm-utils/combined-search';
@@ -17,7 +16,7 @@ import {CombinedAISearchAssistant} from './llm-utils/combined-search';
 export * from './package.g';
 export const _package = new DG.Package();
 
-export const modelName: string = 'gpt-4o-mini';
+export const modelName: string = 'gpt-4.1-mini-2025-04-14';
 
 export class PackageFunctions {
   @grok.decorators.init()
