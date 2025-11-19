@@ -61,6 +61,9 @@ const getEmptyTabToProperties = () => ({
 const DEFAULT_FLOAT_PRECISION = 4;
 
 const getScalarContent = (funcCall: DG.FuncCall, prop: DG.Property) => {
+  const isHidden = JSON.parse(prop.options.hidden || 'false');
+  if (isHidden)
+    return;
   const scalarValue = funcCall.outputs[prop.name];
   let formattedScalarValue = scalarValue;
 
@@ -107,29 +110,28 @@ const tabToProperties = (fc: DG.FuncCall) => {
     return;
   };
 
-  func.inputs
-    .forEach((inputProp) => {
-      if (inputProp.propertyType === DG.TYPE.DATA_FRAME) processDf(inputProp, false);
-    });
+  func.inputs.forEach((inputProp) => {
+    if (inputProp.propertyType === DG.TYPE.DATA_FRAME) processDf(inputProp, false);
+  });
 
-  func.outputs
-    .forEach((outputProp) => {
-      if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
-        processDf(outputProp, true);
-        return;
-      }
+  func.outputs.forEach((outputProp) => {
+    if (outputProp.propertyType === DG.TYPE.DATA_FRAME) {
+      processDf(outputProp, true);
+      return;
+    }
+    const category = outputProp.category === 'Misc' ? 'Output': outputProp.category;
 
-      const category = outputProp.category === 'Misc' ? 'Output': outputProp.category;
-
-      const categoryProps = tabsToProps.outputs.get(category);
-      const [rawValue, formattedValue, units] = getScalarContent(fc, outputProp);
-      const scalarProp = {name: outputProp.name, friendlyName: outputProp.caption || outputProp.name, rawValue, formattedValue, units};
-      if (categoryProps && categoryProps.type === 'scalars')
-        categoryProps.scalarsData.push(scalarProp);
-      else
-        tabsToProps.outputs.set(category, {type: 'scalars', scalarsData: [scalarProp]});
-    });
-
+    const categoryProps = tabsToProps.outputs.get(category);
+    const content = getScalarContent(fc, outputProp);
+    if (!content)
+      return;
+    const [rawValue, formattedValue, units] = content;
+    const scalarProp = {name: outputProp.name, friendlyName: outputProp.caption || outputProp.name, rawValue, formattedValue, units};
+    if (categoryProps && categoryProps.type === 'scalars')
+      categoryProps.scalarsData.push(scalarProp);
+    else
+      tabsToProps.outputs.set(category, {type: 'scalars', scalarsData: [scalarProp]});
+  });
   return tabsToProps;
 };
 
