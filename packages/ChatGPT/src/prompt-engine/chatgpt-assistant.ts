@@ -3,30 +3,34 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {PromptEngine} from './prompt-engine';
-import {ChatGptFuncParams, ExecutePlanResult, ExecutionContext, FunctionMeta, PackageInfo, Plan} from './interfaces';
+import {ChatGptFuncParams, ExecutePlanResult, ExecutionContext, FunctionMeta, JsonSchema, PackageInfo, PackageSelection, PackageSelectionSchema, Plan, PlanSchema} from './interfaces';
 
 export class ChatGptAssistant {
   private delimiter = '####';
 
   constructor(private promptEngine: PromptEngine) {}
 
-  private async chat(prompt: string, system?: string): Promise<string> {
-    return await this.promptEngine.generate(
-      `${this.delimiter}${prompt}${this.delimiter}`,
-      system ??
-      `You are an assistant that outputs only valid JSON.
-      Do NOT include explanations or extra text.
-      User input is delimited by ${this.delimiter}.
-      Always respond strictly in JSON format.`
-    );
-  }
+  private async chat<T>(
+    prompt: string,
+    options: { system?: string; schema: JsonSchema }
+  ): Promise<T> {
+    const systemPrompt = options.system ?? `
+You are an assistant that outputs only valid JSON.
+Do NOT include explanations or extra text.
+User input is delimited by ${this.delimiter}.
+Always respond strictly in JSON format.
+`;
 
-  private parseJSON<T>(text: string, fallback: T): T {
+    const raw = await this.promptEngine.generate(
+      `${this.delimiter}${prompt}${this.delimiter}`,
+      systemPrompt,
+      options.schema
+    );
+
     try {
-      return JSON.parse(text) as T;
-    } catch {
-      console.warn('Failed to parse model output as JSON:', text);
-      return fallback;
+      return JSON.parse(raw) as T;
+    } catch (err) {
+      throw new Error(`Failed to parse JSON from LLM output: ${raw}\nError: ${err}`);
     }
   }
 
@@ -85,27 +89,36 @@ Rules:
 - Rank them from most to least relevant.
 - Do not include packages that clearly don't apply.`;
 
-    const res = await this.chat(prompt);
-    const parsed = this.parseJSON<{ selected_packages: { name: string, reason: string }[] }>(
-      res,
-      {selected_packages: [{name: 'Chem', reason: 'Default fallback'}]}
-    );
-    return parsed.selected_packages.map((p) => p.name);
+    const res = await this.chat<PackageSelection>(prompt, {schema: PackageSelectionSchema});
+    return res.selected_packages.map((p: any) => p.name);
   }
 
   private readonly reasoningSystemPrompt = `
 You are a reasoning assistant that plans how to achieve user goals using available functions.
 
-Rules:
+General output rules:
 - Output ONLY valid JSON.
 - Produce the smallest possible sequence of steps.
 - Each step should be:
   { "action": "call_function", "function": "<name>", "inputs": {...}, "outputs": [...] }
-- ALL inputs must always appear in the "inputs" object, even if they can use a default value.
-- When an input value comes from a previous step’s output, prefix it with a "$".
-- If one function can directly achieve the goal, output only that.
-- Do not use helper or lookup functions unless required by the goal itself.
-- Include a short "analysis" explaining your reasoning.`;
+
+STRICT INPUT RULES (applies to ALL models):
+- You MUST include EVERY input parameter defined for the function.
+- This includes optional inputs and those that have default values.
+- If a function defines an input parameter, it MUST appear in the "inputs" object.
+- Never omit an input field, even if its value equals the function’s default.
+- Leaving out an input is considered an ERROR.
+
+Referencing previous steps:
+- If an input value comes from a previous step's output, prefix it with "$".
+
+Planning rules:
+- Produce the minimal number of steps needed to achieve the user’s goal.
+- If one function can directly satisfy the goal, output only that step.
+- Do not use helper or lookup functions unless required by the goal.
+- Ensure all steps are valid according to the function metadata.
+- Include a short "analysis" explaining your reasoning.
+`;
 
   private async planFunctions(userGoal: string, functions: FunctionMeta[]): Promise<Plan> {
     const prompt = `
@@ -120,8 +133,10 @@ Respond strictly as JSON with this structure:
   "analysis": ["...reasoning..."],
   "steps": [ { "action": "call_function", "function": "...", "inputs": {...}, "outputs": [...] } ]
 }`;
-    const result = await this.chat(prompt, this.reasoningSystemPrompt);
-    return this.parseJSON(result, {goal: '', analysis: [], steps: []});
+    return await this.chat<Plan>(prompt, {
+      system: this.reasoningSystemPrompt,
+      schema: PlanSchema,
+    });
   }
 
   private async getFunctionsByPackage(pkg: string): Promise<FunctionMeta[]> {

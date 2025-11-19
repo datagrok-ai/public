@@ -34,8 +34,8 @@ export namespace funcs {
     return await grok.functions.call('ChatGPT:SmartChainExecutionProvider', { prompt });
   }
 
-  export async function askAIGeneralCached(model: string , systemPrompt: string , prompt: string ): Promise<string> {
-    return await grok.functions.call('ChatGPT:AskAIGeneralCached', { model, systemPrompt, prompt });
+  export async function askAIGeneralCached(model: string , systemPrompt: string , prompt: string , schema: any ): Promise<string> {
+    return await grok.functions.call('ChatGPT:AskAIGeneralCached', { model, systemPrompt, prompt, schema });
   }
 
   export async function getExecutionPlan(userGoal: string ): Promise<string> {

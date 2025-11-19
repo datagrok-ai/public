@@ -2,6 +2,8 @@
 import OpenAI from 'openai';
 import * as api from '../package-api';
 import {LLMCredsManager} from './creds';
+import {ChatCompletionParseParams} from 'openai/resources/chat/completions';
+import {JsonSchema} from '../prompt-engine/interfaces';
 export class OpenAIHelpClient {
   private openai: OpenAI;
   private constructor(private apiKey: string, private vectorStoreId: string) {
@@ -44,8 +46,8 @@ export class OpenAIHelpClient {
     return response.output_text;
   }
 
-  async generalPromptCached(model: string, systemPrompt: string, prompt: string): Promise<string> {
-    return await api.funcs.askAIGeneralCached(model, systemPrompt, prompt);
+  async generalPromptCached(model: string, systemPrompt: string, prompt: string, schema?: JsonSchema): Promise<string> {
+    return await api.funcs.askAIGeneralCached(model, systemPrompt, prompt, schema);
   }
 
   /**
@@ -55,15 +57,36 @@ export class OpenAIHelpClient {
    * @param prompt - user prompt
    * @returns string response from OpenAI
    */
-  async generalPrompt(model: string, systemPrompt: string, prompt: string): Promise<string> {
-    const response = await this.openai.chat.completions.create({
-      model: model,
+  async generalPrompt(
+    model: string,
+    systemPrompt: string,
+    userPrompt: string,
+    schema?: JsonSchema
+  ): Promise<string> {
+    const request: ChatCompletionParseParams = {
+      model,
+      temperature: 0,
       messages: [
         {role: 'system', content: systemPrompt},
-        {role: 'user', content: prompt}
-      ], temperature: 0.0,
-    });
-    return response.choices[0].message.content ?? '';
+        {role: 'user', content: userPrompt},
+      ],
+      ...(schema && {
+        response_format: {
+          type: 'json_schema',
+          json_schema: {
+            name: 'ResponseSchema',
+            schema,
+          },
+        },
+      }),
+    };
+
+    const response = await this.openai.chat.completions.parse(request);
+    const msg = response.choices?.[0]?.message;
+
+    if (schema)
+      return JSON.stringify(msg?.parsed);
+    return msg?.content ?? '';
   }
 }
 

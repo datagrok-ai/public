@@ -76,10 +76,10 @@ User request:
     const isGeminiAvailable = await ('LanguageModel' in window ? LanguageModel : null)?.availability();
     if (isGeminiAvailable === 'available') {
       _package.logger.info('Using built-in Gemini model for fuzzy matching.');
-      engine = new GeminiPromptEngine(schema, geminiDownloadMonitor);
+      engine = GeminiPromptEngine.getInstance(schema, geminiDownloadMonitor);
     } else {
       _package.logger.info('Using GPT engine for fuzzy matching.');
-      engine = new ChatGPTPromptEngine(LLMCredsManager.getApiKey(), modelName);
+      engine = ChatGPTPromptEngine.getInstance(LLMCredsManager.getApiKey(), modelName);
     }
 
     const responseText = await engine.generate(userPrompt, systemPrompt);

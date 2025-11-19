@@ -5,14 +5,14 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ChatGptAssistant} from './prompt-engine/chatgpt-assistant';
 import {ChatGPTPromptEngine} from './prompt-engine/prompt-engine';
-import {AssistantRenderer} from './prompt-engine/rendering-tools';
 import {getAiPanelVisibility, initAiPanel, setAiPanelVisibility} from './ai-panel';
 import {findBestFunction} from './prompts/find-best-function';
 import {askWiki, setupSearchUI, smartExecution} from './llm-utils/ui';
-import {ChatGptFuncParams, Plan} from './prompt-engine/interfaces';
+import {Plan} from './prompt-engine/interfaces';
 import {OpenAIHelpClient} from './llm-utils/openAI-client';
 import {LLMCredsManager} from './llm-utils/creds';
 import {CombinedAISearchAssistant} from './llm-utils/combined-search';
+import {JsonSchema} from './prompt-engine/interfaces';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -106,10 +106,15 @@ export class PackageFunctions {
       'cache.invalidateOn': '0 0 1 * *'
     }
   })
- static async askAIGeneralCached(model: string, systemPrompt: string, prompt: string): Promise<string> {
+ static async askAIGeneralCached(
+   model: string,
+   systemPrompt: string,
+   prompt: string,
+   schema?: JsonSchema
+ ): Promise<string> {
    const client = OpenAIHelpClient.getInstance();
    // this is used only here to provide caching
-   return await client.generalPrompt(model, systemPrompt, prompt);
+   return await client.generalPrompt(model, systemPrompt, prompt, schema);
  }
 
   @grok.decorators.func({
@@ -119,7 +124,7 @@ export class PackageFunctions {
     }
   })
   static async getExecutionPlan(userGoal: string): Promise<string> {
-    const gptEngine = new ChatGPTPromptEngine(LLMCredsManager.getApiKey(), modelName);
+    const gptEngine = ChatGPTPromptEngine.getInstance(LLMCredsManager.getApiKey(), modelName);
     const gptAssistant = new ChatGptAssistant(gptEngine);
     const plan: Plan = await gptAssistant.plan(userGoal);
     // Cache only works with scalar values, so we serialize the plan to a string
