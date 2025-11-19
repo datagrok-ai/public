@@ -236,8 +236,9 @@ export class RegistrationView {
     const successCount = statuses.filter((v) => v === 'success').length;
     const failedCount = statuses.filter((v) => v === 'failed').length;
     const notProcessedCount = statuses.filter((v) => v === 'not_processed').length;
+    const totalFailures = failedCount + notProcessedCount;
 
-    const header = failedCount === 0 ?
+    const header = totalFailures === 0 ?
       `✅ Bulk registration completed` :
       `⚠ Bulk registration completed with errors`;
     const status = failedCount === 0 ? 'success' : 'failed';
@@ -290,18 +291,16 @@ export class RegistrationView {
       if (exists) mappings.set(source, cleanTarget);
     }
 
-    const handleMap = (target: string, source: string) => {
-      if (!this.uploadedDf) return;
+    const normalizeType = (t: string) =>
+      t.toLowerCase().replace(/(es|s)$/, '');
 
-      const col = this.uploadedDf.col(source);
-      if (col) {
-        if (target === 'smiles') {
-          this.mappingDict[source] = target;
-          return;
-        }
-        const newName = `${this.entityTypeInput?.value.toLowerCase().replace(/(es|s)$/, '')}_details.${target}`;
-        this.mappingDict[source] = newName;
-      }
+    const handleMap = (source: string, target: string) => {
+      if (!this.uploadedDf)
+        return;
+
+      const entityType = normalizeType(this.entityTypeInput?.value ?? '');
+      const isSmiles = source === 'smiles';
+      this.mappingDict[source] = isSmiles ? 'smiles' : `${entityType}_details.${target}`;
     };
 
     const handleUndo = () => grok.shell.info('Mapping undone');
