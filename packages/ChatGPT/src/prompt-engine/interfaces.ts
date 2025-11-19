@@ -55,6 +55,17 @@ export interface ExecutePlanResult {
   finalResult: StepExecutionOutput | null;
 }
 
+export interface PackageSelection {
+  selected_packages: {
+    name: string;
+    reason: string;
+  }[];
+}
+
+export interface JsonSchema {
+  [key: string]: unknown;
+}
+
 /* Schemas defined to enable structured output handling */
 export const PackageSelectionSchema = {
   type: 'object',

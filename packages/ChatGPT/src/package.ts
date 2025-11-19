@@ -12,6 +12,7 @@ import {Plan} from './prompt-engine/interfaces';
 import {OpenAIHelpClient} from './llm-utils/openAI-client';
 import {LLMCredsManager} from './llm-utils/creds';
 import {CombinedAISearchAssistant} from './llm-utils/combined-search';
+import {JsonSchema} from './prompt-engine/interfaces';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -105,7 +106,12 @@ export class PackageFunctions {
       'cache.invalidateOn': '0 0 1 * *'
     }
   })
- static async askAIGeneralCached(model: string, systemPrompt: string, prompt: string, schema?: { [key: string]: unknown }): Promise<string> {
+ static async askAIGeneralCached(
+   model: string,
+   systemPrompt: string,
+   prompt: string,
+   schema?: JsonSchema
+ ): Promise<string> {
    const client = OpenAIHelpClient.getInstance();
    // this is used only here to provide caching
    return await client.generalPrompt(model, systemPrompt, prompt, schema);

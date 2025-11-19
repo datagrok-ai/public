@@ -2,7 +2,8 @@
 import OpenAI from 'openai';
 import * as api from '../package-api';
 import {LLMCredsManager} from './creds';
-import { ChatCompletionParseParams } from 'openai/resources/chat/completions';
+import {ChatCompletionParseParams} from 'openai/resources/chat/completions';
+import {JsonSchema} from '../prompt-engine/interfaces';
 export class OpenAIHelpClient {
   private openai: OpenAI;
   private constructor(private apiKey: string, private vectorStoreId: string) {
@@ -45,7 +46,7 @@ export class OpenAIHelpClient {
     return response.output_text;
   }
 
-  async generalPromptCached(model: string, systemPrompt: string, prompt: string, schema?: { [key: string]: unknown }): Promise<string> {
+  async generalPromptCached(model: string, systemPrompt: string, prompt: string, schema?: JsonSchema): Promise<string> {
     return await api.funcs.askAIGeneralCached(model, systemPrompt, prompt, schema);
   }
 
@@ -56,12 +57,12 @@ export class OpenAIHelpClient {
    * @param prompt - user prompt
    * @returns string response from OpenAI
    */
-  async generalPrompt<T = any>(
+  async generalPrompt(
     model: string,
     systemPrompt: string,
     userPrompt: string,
-    schema?: Record<string, unknown>
-  ): Promise<T | string> {
+    schema?: JsonSchema
+  ): Promise<string> {
     const request: ChatCompletionParseParams = {
       model,
       temperature: 0,
@@ -84,7 +85,7 @@ export class OpenAIHelpClient {
     const msg = response.choices?.[0]?.message;
 
     if (schema)
-      return msg?.parsed as T;
+      return JSON.stringify(msg?.parsed);
     return msg?.content ?? '';
   }
 }

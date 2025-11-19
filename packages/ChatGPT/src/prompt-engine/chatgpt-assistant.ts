@@ -3,26 +3,35 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {PromptEngine} from './prompt-engine';
-import {ChatGptFuncParams, ExecutePlanResult, ExecutionContext, FunctionMeta, PackageInfo, PackageSelectionSchema, Plan, PlanSchema} from './interfaces';
+import {ChatGptFuncParams, ExecutePlanResult, ExecutionContext, FunctionMeta, JsonSchema, PackageInfo, PackageSelection, PackageSelectionSchema, Plan, PlanSchema} from './interfaces';
 
 export class ChatGptAssistant {
   private delimiter = '####';
 
   constructor(private promptEngine: PromptEngine) {}
 
-  private async chat(prompt: string, options?: {
-    system?: string;
-    schema?: { [key: string]: unknown };
-  }): Promise<any> {
-    return await this.promptEngine.generate(
+  private async chat<T>(
+    prompt: string,
+    options: { system?: string; schema: JsonSchema }
+  ): Promise<T> {
+    const systemPrompt = options.system ?? `
+You are an assistant that outputs only valid JSON.
+Do NOT include explanations or extra text.
+User input is delimited by ${this.delimiter}.
+Always respond strictly in JSON format.
+`;
+
+    const raw = await this.promptEngine.generate(
       `${this.delimiter}${prompt}${this.delimiter}`,
-      options?.system ??
-      `You are an assistant that outputs only valid JSON.
-      Do NOT include explanations or extra text.
-      User input is delimited by ${this.delimiter}.
-      Always respond strictly in JSON format.`,
-      options?.schema
+      systemPrompt,
+      options.schema
     );
+
+    try {
+      return JSON.parse(raw) as T;
+    } catch (err) {
+      throw new Error(`Failed to parse JSON from LLM output: ${raw}\nError: ${err}`);
+    }
   }
 
   private getProperties(f: DG.Func): ChatGptFuncParams {
@@ -80,7 +89,7 @@ Rules:
 - Rank them from most to least relevant.
 - Do not include packages that clearly don't apply.`;
 
-    const res = await this.chat(prompt, {schema: PackageSelectionSchema});
+    const res = await this.chat<PackageSelection>(prompt, {schema: PackageSelectionSchema});
     return res.selected_packages.map((p: any) => p.name);
   }
 
@@ -124,7 +133,7 @@ Respond strictly as JSON with this structure:
   "analysis": ["...reasoning..."],
   "steps": [ { "action": "call_function", "function": "...", "inputs": {...}, "outputs": [...] } ]
 }`;
-    return await this.chat(prompt, {
+    return await this.chat<Plan>(prompt, {
       system: this.reasoningSystemPrompt,
       schema: PlanSchema,
     });

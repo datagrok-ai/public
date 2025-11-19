@@ -1,7 +1,8 @@
 import {LLMCredsManager} from '../llm-utils/creds';
 import {OpenAIHelpClient} from '../llm-utils/openAI-client';
+import {JsonSchema} from './interfaces';
 export interface PromptEngine {
-  generate(prompt: string, system: string, schema?: { [key: string]: unknown }): Promise<string>;
+  generate(prompt: string, system: string, schema?: JsonSchema): Promise<string>;
 }
 
 export class ChatGPTPromptEngine implements PromptEngine {
@@ -11,7 +12,7 @@ export class ChatGPTPromptEngine implements PromptEngine {
     private temperature = 0.0
   ) {}
 
-  async generate(prompt: string, system: string, schema?: { [key: string]: unknown }): Promise<string> {
+  async generate(prompt: string, system: string, schema?: JsonSchema): Promise<string> {
     const res = OpenAIHelpClient.getInstance();
     return await res.generalPromptCached(this.model, system, prompt, schema);
   }
@@ -34,7 +35,7 @@ export class GeminiPromptEngine implements PromptEngine {
     }
   }
 
-  async generate(prompt: string, system: string): Promise<string> {
+  async generate(prompt: string, system: string, schema?: JsonSchema): Promise<string> {
     await this.initSession(system);
     const output = await this.session!.prompt(prompt, {
       responseConstraint: this.schema,
