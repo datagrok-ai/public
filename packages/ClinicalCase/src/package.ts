@@ -238,8 +238,8 @@ export async function readClinicalData(study: ClinicalStudy, importedFiles?: DG.
           let df: DG.DataFrame | null = null;
           if (studyFiles[i].extension === 'xpt') {
             console.log(`*************** read ${domainNameWithExt}`);
-            const content = await grok.dapi.files.readAsBytes(studyFiles[i]);
-            df = await scripts.readSas(content);
+           // const content = await grok.dapi.files.readAsBytes(studyFiles[i]);
+            df = await scripts.readSas(studyFiles[i]);
             console.log(`*************** converted ${domainNameWithExt}`);
           } else
             df = await DG.DataFrame.fromCsv(await studyFiles[i].readAsString());
