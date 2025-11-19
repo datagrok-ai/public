@@ -407,7 +407,7 @@ function getSavedSearchesNode(treeNode: DG.TreeViewGroup, libName: string, compo
 }
 
 
-export async function createSavedSearchesSatistics(statsDiv: HTMLElement, libName?: string, entityType?: string) {
+export async function createSavedSearchesSatistics(statsDiv: HTMLElement, libName?: string, entityType?: string): Promise<HTMLDivElement> {
 
   const searchesDiv = ui.divV([getAppHeader()]);
   statsDiv.append(searchesDiv);
@@ -436,6 +436,7 @@ export async function createSavedSearchesSatistics(statsDiv: HTMLElement, libNam
     tableDiv.append(statsElement);
     ui.setUpdateIndicator(tableDiv, false);
   });
+  return tableDiv;
 }
 
 async function createSavedSearchStats(savedSearchesForTable: any[], libName?: string, libType?: string): Promise<HTMLElement> {

@@ -7,7 +7,7 @@ import { SignalsSearchParams, SignalsSearchQuery } from './signals-search-query'
 import { queryLibraries, queryStructureById, queryTags, queryTerms, queryUsers, RevvityData, RevvityUser, search } from './revvity-api';
 import { reorderColumns, transformData, getViewNameByCompoundType, createRevvityWidgetByCorporateId, createWidgetByRevvityLabel } from './utils';
 import { addMoleculeStructures, getConditionForLibAndType } from './compounds';
-import { createInitialSatistics, getRevvityLibraries, RevvityLibrary } from './libraries';
+import { createInitialSatistics, getRevvityLibraries, refreshStats, resetRevvityLibraries, RevvityLibrary } from './libraries';
 import { createViewForExpandabelNode, createViewFromPreDefinedQuery, handleInitialURL } from './view-utils';
 import { createSavedSearchesSatistics, SAVED_SEARCH_STORAGE } from './search-utils';
 import { funcs } from './package-api';
@@ -44,7 +44,7 @@ export function init() {
 export async function revvitySignalsLinkApp(path?: string): Promise<DG.ViewBase> {
 
   console.log(path);
-  const initViewDiv = ui.divV([]);
+  const initViewDiv = ui.divV([], {style: {flexGrow: '0'}});
   const view = DG.View.fromRoot(initViewDiv);
   view.name = 'Revvity';
 
@@ -52,8 +52,20 @@ export async function revvitySignalsLinkApp(path?: string): Promise<DG.ViewBase>
     const cddNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').getOrCreateGroup('Chem').getOrCreateGroup('Revvity Signals');
     cddNode.expanded = true;
     handleInitialURL(cddNode, path);
-  } else
-    createInitialSatistics(initViewDiv);
+  } else {
+    createInitialSatistics(initViewDiv).then((stats: HTMLDivElement) => {
+      const refreshButton = ui.button('Refresh', async () => {
+        const func = DG.Func.find({ package: 'RevvitySignalsLink', name: "getLibraries" });
+        if (func.length)
+          await grok.functions.clientCache.clear(func[0].id);
+        resetRevvityLibraries();
+        ui.empty(stats);
+        refreshStats(stats);
+      });
+      refreshButton.style.width = '72px';
+      initViewDiv.append(refreshButton);
+    });
+  }
 
   return view;
 

@@ -177,7 +177,7 @@ export async function handleInitialURL(treeNode: DG.TreeViewGroup, url: string) 
 }
 
 export function createViewForExpandabelNode(viewName: string,
-  getElement: (root: HTMLElement, libName?: string, typeName?: string) => Promise<void>, libName?: string, typeName?: string) {
+  getElement: (root: HTMLElement, libName?: string, typeName?: string) => Promise<HTMLDivElement>, libName?: string, typeName?: string) {
   openedView?.close();
   const div = ui.div();
   openedView = grok.shell.addPreview(DG.View.fromRoot(div));
