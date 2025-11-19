@@ -1065,12 +1065,22 @@ export async function isInteractiveNN(df: DG.DataFrame, predictColumn: DG.Column
 
 //name: Deprotect
 //description: Generates the new dataset based on the given structure
+//tags: Transform
 //input: dataframe table { description: Input data table }
 //input: column molecules { semType: Molecule }
 //input: string fragment = 'O=C([N:1])OCC1c2ccccc2-c2ccccc21' { semType: Molecule }
 //top-menu: Chem | Transform | Deprotect...
+//editor: Chem:DeprotectEditor
 export async function deprotect(table: DG.DataFrame, molecules: DG.Column, fragment: string) : Promise<void> {
   await PackageFunctions.deprotect(table, molecules, fragment);
+}
+
+//name: Deprotect Editor
+//tags: editor
+//input: funccall call 
+//output: widget result
+export function deprotectEditor(call: DG.FuncCall) : any {
+  return PackageFunctions.deprotectEditor(call);
 }
 
 //description: Beautifies the list of molecules and returns the list of beautified molecules

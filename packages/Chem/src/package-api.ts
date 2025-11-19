@@ -775,6 +775,10 @@ export namespace funcs {
     return await grok.functions.call('Chem:Deprotect', { table, molecules, fragment });
   }
 
+  export async function deprotectEditor(call: any ): Promise<any> {
+    return await grok.functions.call('Chem:DeprotectEditor', { call });
+  }
+
   /**
   Beautifies the list of molecules and returns the list of beautified molecules
   */

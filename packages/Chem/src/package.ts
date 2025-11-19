@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 /* eslint-disable guard-for-in */
 /* eslint-disable max-params */
 /* eslint-disable max-len */
@@ -5,7 +6,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import '../css/chem.css';
 import * as chemSearches from './chem-searches';
 import {GridCellRendererProxy, RDKitCellRenderer} from './rendering/rdkit-cell-renderer';
 import {assure} from '@datagrok-libraries/utils/src/test';
@@ -65,7 +65,7 @@ import {structure3dWidget} from './widgets/structure3d';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {_demoActivityCliffs, _demoActivityCliffsLayout, _demoChemicalSpace, _demoChemOverview, _demoMMPA,
   _demoRgroupAnalysis, _demoRGroups, _demoScaffoldTree, _demoSimilarityDiversitySearch} from './demo/demo';
-import {getStructuralAlertsByRules, RuleId, RuleSet, STRUCT_ALERTS_RULES_NAMES} from './panels/structural-alerts';
+import {getStructuralAlertsByRules, RuleSet, STRUCT_ALERTS_RULES_NAMES} from './panels/structural-alerts';
 import {getmolColumnHighlights} from './widgets/col-highlights';
 import {RDLog, RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {malformedDataWarning} from './utils/malformed-data-utils';
@@ -94,7 +94,9 @@ import {createComponentPane, createMixtureWidget, Mixfile} from './utils/mixfile
 import {biochemicalPropertiesDialog} from './widgets/biochem-properties-widget';
 import {checkCurrentView} from './utils/ui-utils';
 import {mpo, PropertyDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo';
-
+//@ts-ignore
+import '../css/chem.css';
+import {addDeprotectedColumn, DeprotectEditor} from './analysis/deprotect';
 
 export {getMCS};
 export * from './package.g';
@@ -102,11 +104,11 @@ export * from './package.g';
 /** Temporary polyfill */
 
 function getDecoratorFunc() {
-  return function(args: any) {
+  return function(_args: any) {
     return function(
-      target: any,
-      propertyKey: string,
-      descriptor: PropertyDescriptor
+      _target: any,
+      _propertyKey: string,
+      _descriptor: PropertyDescriptor,
     ) { };
   };
 }
@@ -119,7 +121,7 @@ const decorators = [
   'func', 'init', 'param', 'panel', 'editor', 'demo', 'app',
   'appTreeBrowser', 'fileHandler', 'fileExporter', 'model', 'viewer', 'filter', 'cellRenderer', 'autostart',
   'dashboard', 'folderViewer', 'semTypeDetector', 'packageSettingsEditor', 'functionAnalysis', 'converter',
-  'fileViewer', 'model', 'treeBrowser', 'polyfill'
+  'fileViewer', 'model', 'treeBrowser', 'polyfill',
 ];
 
 decorators.forEach((decorator) => {
@@ -2420,19 +2422,24 @@ export class PackageFunctions {
   @grok.decorators.func({
     'top-menu': 'Chem | Transform | Deprotect...',
     'name': 'Deprotect',
-    'description': 'Generates the new dataset based on the given structure',
+    'tags': ['Transform'],
+    'description': 'Removes drawn protecting groups / fragments from molecules',
+    'editor': 'Chem:DeprotectEditor',
   })
   static async deprotect(
     @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
     @grok.decorators.param({options: {semType: 'Molecule', initialValue: 'O=C([N:1])OCC1c2ccccc2-c2ccccc21'}}) fragment: string): Promise<void> {
-    const module = PackageFunctions.getRdKitModule();
-    const cut = cutFragments(module, molecules.toList(), fragment);
-    const res = cut.map((c) => c[0]);
-    const columnName = table.columns.getUnusedName('deprotected');
-    const col = DG.Column.fromStrings(columnName, res);
-    col.semType = DG.SEMTYPE.MOLECULE;
-    table.columns.add(col);
+    const rdModule = PackageFunctions.getRdKitModule();
+    addDeprotectedColumn(table, molecules, fragment, rdModule);
+  }
+
+  @grok.decorators.editor({
+    name: 'Deprotect Editor',
+    outputs: [{name: 'result', type: 'widget'}],
+  })
+  static deprotectEditor(call: DG.FuncCall): DG.Widget {
+    return new DeprotectEditor(call);
   }
 
   @grok.decorators.func({

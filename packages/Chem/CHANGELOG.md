@@ -1,5 +1,9 @@
 # Chem changelog
 
+## 1.16.9 (2025-11-19)
+
+* Validated deprotection feature with more precise reactions.
+
 ## 1.16.8 (2025-11-11)
 
 * Support datasync for biochemical functions
