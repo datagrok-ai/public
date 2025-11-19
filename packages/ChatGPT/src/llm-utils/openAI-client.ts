@@ -44,8 +44,8 @@ export class OpenAIHelpClient {
     return response.output_text;
   }
 
-  async generalPromptCached(model: string, systemPrompt: string, prompt: string): Promise<string> {
-    return await api.funcs.askAIGeneralCached(model, systemPrompt, prompt);
+  async generalPromptCached(model: string, systemPrompt: string, prompt: string, schema?: { [key: string]: unknown }): Promise<string> {
+    return await api.funcs.askAIGeneralCached(model, systemPrompt, prompt, schema);
   }
 
   /**
@@ -55,15 +55,38 @@ export class OpenAIHelpClient {
    * @param prompt - user prompt
    * @returns string response from OpenAI
    */
-  async generalPrompt(model: string, systemPrompt: string, prompt: string): Promise<string> {
-    const response = await this.openai.chat.completions.create({
-      model: model,
+  async generalPrompt(
+    model: string,
+    systemPrompt: string,
+    prompt: string,
+    schema?: { [key: string]: unknown }
+  ): Promise<any> {
+    const request: any = {
+      model,
       messages: [
         {role: 'system', content: systemPrompt},
         {role: 'user', content: prompt}
-      ], temperature: 0.0,
-    });
-    return response.choices[0].message.content ?? '';
+      ],
+      temperature: 0.0,
+    };
+
+    if (schema) {
+      request.response_format = {
+        type: 'json_schema',
+        json_schema: {
+          name: 'ResponseSchema',
+          strict: true,
+          schema,
+        },
+      };
+    }
+
+    const response = await this.openai.chat.completions.parse(request);
+
+    if (schema)
+      return response.choices[0].message.parsed as any;
+    else
+      return response.choices[0].message.content ?? '';
   }
 }
 

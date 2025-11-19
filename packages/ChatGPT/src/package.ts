@@ -17,7 +17,7 @@ import {CombinedAISearchAssistant} from './llm-utils/combined-search';
 export * from './package.g';
 export const _package = new DG.Package();
 
-export const modelName: string = 'gpt-4.1-mini-2025-04-14';
+export const modelName: string = 'gpt-4o-mini';
 
 export class PackageFunctions {
   @grok.decorators.init()
@@ -106,10 +106,10 @@ export class PackageFunctions {
       'cache.invalidateOn': '0 0 1 * *'
     }
   })
- static async askAIGeneralCached(model: string, systemPrompt: string, prompt: string): Promise<string> {
+ static async askAIGeneralCached(model: string, systemPrompt: string, prompt: string, schema?: { [key: string]: unknown }): Promise<string> {
    const client = OpenAIHelpClient.getInstance();
    // this is used only here to provide caching
-   return await client.generalPrompt(model, systemPrompt, prompt);
+   return await client.generalPrompt(model, systemPrompt, prompt, schema);
  }
 
   @grok.decorators.func({

@@ -1,7 +1,7 @@
 import {LLMCredsManager} from '../llm-utils/creds';
 import {OpenAIHelpClient} from '../llm-utils/openAI-client';
 export interface PromptEngine {
-  generate(prompt: string, system: string): Promise<string>;
+  generate(prompt: string, system: string, schema?: { [key: string]: unknown }): Promise<string>;
 }
 
 export class ChatGPTPromptEngine implements PromptEngine {
@@ -11,28 +11,34 @@ export class ChatGPTPromptEngine implements PromptEngine {
     private temperature = 0.0
   ) {}
 
-  async generate(prompt: string, system: string): Promise<string> {
+  async generate(prompt: string, system: string, schema?: { [key: string]: unknown }): Promise<string> {
     const res = OpenAIHelpClient.getInstance();
-    return await res.generalPromptCached(this.model, system, prompt);
+    return await res.generalPromptCached(this.model, system, prompt, schema);
   }
 }
 
 export class GeminiPromptEngine implements PromptEngine {
+  private session: LanguageModel | null = null;
+
   constructor(
-    private schema: any,
-    private monitor?: CreateMonitorCallback,
+    private readonly schema: any,
+    private readonly monitor?: CreateMonitorCallback,
   ) {}
 
-  async generate(prompt: string, system: string): Promise<string> {
-    const session = await LanguageModel.create({
-      monitor: this.monitor,
-      initialPrompts: [{role: 'system', content: system}],
-    });
+  private async initSession(system: string) {
+    if (!this.session) {
+      this.session = await LanguageModel.create({
+        monitor: this.monitor,
+        initialPrompts: [{role: 'system', content: system}],
+      });
+    }
+  }
 
-    const output = await session.prompt(prompt, {
+  async generate(prompt: string, system: string): Promise<string> {
+    await this.initSession(system);
+    const output = await this.session!.prompt(prompt, {
       responseConstraint: this.schema,
     });
-
     return output;
   }
 }

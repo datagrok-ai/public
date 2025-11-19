@@ -40,11 +40,12 @@ export async function smartChainExecutionProvider(prompt: string) : Promise<any>
 //input: string model 
 //input: string systemPrompt 
 //input: string prompt 
+//input: dynamic schema 
 //output: string result
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 1 * *
-export async function askAIGeneralCached(model: string, systemPrompt: string, prompt: string) : Promise<string> {
-  return await PackageFunctions.askAIGeneralCached(model, systemPrompt, prompt);
+export async function askAIGeneralCached(model: string, systemPrompt: string, prompt: string, schema?: any) : Promise<string> {
+  return await PackageFunctions.askAIGeneralCached(model, systemPrompt, prompt, schema);
 }
 
 //input: string userGoal 

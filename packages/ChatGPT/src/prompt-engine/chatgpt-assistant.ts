@@ -3,31 +3,26 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {PromptEngine} from './prompt-engine';
-import {ChatGptFuncParams, ExecutePlanResult, ExecutionContext, FunctionMeta, PackageInfo, Plan} from './interfaces';
+import {ChatGptFuncParams, ExecutePlanResult, ExecutionContext, FunctionMeta, PackageInfo, PackageSelectionSchema, Plan, PlanSchema} from './interfaces';
 
 export class ChatGptAssistant {
   private delimiter = '####';
 
   constructor(private promptEngine: PromptEngine) {}
 
-  private async chat(prompt: string, system?: string): Promise<string> {
+  private async chat(prompt: string, options?: {
+    system?: string;
+    schema?: { [key: string]: unknown };
+  }): Promise<any> {
     return await this.promptEngine.generate(
       `${this.delimiter}${prompt}${this.delimiter}`,
-      system ??
+      options?.system ??
       `You are an assistant that outputs only valid JSON.
       Do NOT include explanations or extra text.
       User input is delimited by ${this.delimiter}.
-      Always respond strictly in JSON format.`
+      Always respond strictly in JSON format.`,
+      options?.schema
     );
-  }
-
-  private parseJSON<T>(text: string, fallback: T): T {
-    try {
-      return JSON.parse(text) as T;
-    } catch {
-      console.warn('Failed to parse model output as JSON:', text);
-      return fallback;
-    }
   }
 
   private getProperties(f: DG.Func): ChatGptFuncParams {
@@ -85,12 +80,8 @@ Rules:
 - Rank them from most to least relevant.
 - Do not include packages that clearly don't apply.`;
 
-    const res = await this.chat(prompt);
-    const parsed = this.parseJSON<{ selected_packages: { name: string, reason: string }[] }>(
-      res,
-      {selected_packages: [{name: 'Chem', reason: 'Default fallback'}]}
-    );
-    return parsed.selected_packages.map((p) => p.name);
+    const res = await this.chat(prompt, {schema: PackageSelectionSchema});
+    return res.selected_packages.map((p: any) => p.name);
   }
 
   private readonly reasoningSystemPrompt = `
@@ -120,8 +111,10 @@ Respond strictly as JSON with this structure:
   "analysis": ["...reasoning..."],
   "steps": [ { "action": "call_function", "function": "...", "inputs": {...}, "outputs": [...] } ]
 }`;
-    const result = await this.chat(prompt, this.reasoningSystemPrompt);
-    return this.parseJSON(result, {goal: '', analysis: [], steps: []});
+    return await this.chat(prompt, {
+      system: this.reasoningSystemPrompt,
+      schema: PlanSchema,
+    });
   }
 
   private async getFunctionsByPackage(pkg: string): Promise<FunctionMeta[]> {
