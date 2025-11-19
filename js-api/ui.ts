@@ -804,10 +804,6 @@ export namespace input {
     onAdditionalColumnsChanged?: (additionalColumns: { [key: string]: Column[] }) => void;
   }
 
-  export interface IFileInitOptions<T = any> extends IInputInitOptions<T> {
-    directoryInput?: boolean;
-  }
-
   export interface INumberInputInitOptions<T> extends IInputInitOptions<T> {
     min?: number;
     max?: number;
