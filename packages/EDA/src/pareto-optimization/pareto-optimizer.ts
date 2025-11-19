@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import '../../css/pareto.css';
-import {NumericFeature, OPT_TYPE, NumericArray, DIFFERENCE, RATIO, COL_NAME, PC_MAX_COLS, ColorOpt} from './defs';
+import {NumericFeature, OPT_TYPE, DIFFERENCE, RATIO, COL_NAME, PC_MAX_COLS, ColorOpt} from './defs';
 import {getColorScaleDiv, getOutputPalette} from './utils';
 
 /** Pareto front optimization app */
@@ -17,17 +17,13 @@ export class ParetoOptimizer {
   private view: DG.TableView;
   private pcPlot: DG.Viewer<DG.IPcPlotSettings>;
   private toUpdatePcCols = false;
-
   private paretoFrontViewer: DG.Viewer;
   private resultColName: string;
-
   private intervalId: NodeJS.Timeout | null = null;
-
   private inputsMap = new Map<string, DG.InputBase>();
-
-  private subs: any[];
   private pcPlotNode: DG.DockNode | null = null;
   private inputFormNode: DG.DockNode | null = null;
+  private toChangeParetoViewerOptions = true;
 
   constructor(df: DG.DataFrame) {
     this.df = df;
@@ -56,7 +52,8 @@ export class ParetoOptimizer {
 
     this.resultColName = this.df.columns.getUnusedName(COL_NAME.OPT);
     this.showResultOptCol();
-    this.subs = this.getSubscriptions();
+
+    this.view.subs.push(...this.getSubscriptions());
   } // constructor
 
   private isApplicable(): boolean {
@@ -83,7 +80,7 @@ export class ParetoOptimizer {
   } // run
 
   private getSubscriptions() {
-    const subs = [
+    return [
       this.paretoFrontViewer.onDetached.subscribe(() => {
         if (this.pcPlotNode !== null) {
           this.view.dockManager.close(this.pcPlotNode);
@@ -99,8 +96,6 @@ export class ParetoOptimizer {
         this.features.clear();
       }),
     ];
-
-    return subs;
   } // getSubscriptions
 
   private buildInputsForm(): void {
@@ -149,21 +144,14 @@ export class ParetoOptimizer {
   } // buildInputsForm
 
   private computeParetoFront(): void {
-    const minimizeColumnNames: string[] = [];
-    const maximizeColumnNames: string[] = [];
+    if (!this.toChangeParetoViewerOptions)
+      return;
 
-    this.features.forEach((fea, name) => {
-      if (fea.toOptimize) {
-        if (fea.optType === OPT_TYPE.MIN)
-          minimizeColumnNames.push(name);
-        else
-          maximizeColumnNames.push(name);
-      }
-    });
+    const featureNames = this.getMinMaxFeatureNames();
 
     this.paretoFrontViewer.setOptions({
-      minimizeColumnNames: minimizeColumnNames,
-      maximizeColumnNames: maximizeColumnNames,
+      minimizeColumnNames: featureNames.toMin,
+      maximizeColumnNames: featureNames.toMax,
     });
   } // computeParetoFront
 
@@ -265,4 +253,20 @@ export class ParetoOptimizer {
       }
     });
   } // updateTooltips
+
+  private getMinMaxFeatureNames() {
+    const minimizeColumnNames: string[] = [];
+    const maximizeColumnNames: string[] = [];
+
+    this.features.forEach((fea, name) => {
+      if (fea.toOptimize) {
+        if (fea.optType === OPT_TYPE.MIN)
+          minimizeColumnNames.push(name);
+        else
+          maximizeColumnNames.push(name);
+      }
+    });
+
+    return {toMin: minimizeColumnNames, toMax: maximizeColumnNames};
+  }
 } // ParetoOptimizer
