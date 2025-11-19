@@ -1,8 +1,9 @@
 ---
 title: "Pareto front viewer"
+slug: /pareto-front-viewer
 ---
 
-The Pareto front viewer visualizes a graphical representation of a [Pareto front](https://en.wikipedia.org/wiki/Pareto_front) for [multi-objective optimization](https://en.wikipedia.org/wiki/Multi-objective_optimization). Each point represents a solution evaluated across several objectives, highlighting the trade-offs and non-dominated set of optimal candidates.
+[Pareto Front](https://en.wikipedia.org/wiki/Pareto_front) highlights a set of non-dominated solutions in a [multi-objective optimization](https://en.wikipedia.org/wiki/Multi-objective_optimization) problem, where improving one objective will necessarily degrade at least one other objective. It represents the optimal trade-offs between conflicting goals, such as speed versus power consumption or production rate versus energy use.
 
 ![Pareto Front](img/pareto-front.png "Pareto Front")
 
