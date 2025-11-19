@@ -3,11 +3,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import '../../css/pareto.css';
-import {getParetoMask} from './pareto-computations';
-import {NumericFeature, OPT_TYPE, NumericArray, DIFFERENCE, RATIO, COL_NAME,
-  PC_MAX_COLS, AXIS_NAMES, ColorOpt, AXIS_NAMES_3D, LABEL, SIZE, SCATTER_ROW_LIM, SCATTER3D_ROW_LIM} from './defs';
+import {NumericFeature, OPT_TYPE, NumericArray, DIFFERENCE, RATIO, COL_NAME, PC_MAX_COLS, ColorOpt} from './defs';
 import {getColorScaleDiv, getOutputPalette} from './utils';
 
+/** Pareto front optimization app */
 export class ParetoOptimizer {
   private df: DG.DataFrame;
   private numCols: DG.Column[];
@@ -16,24 +15,19 @@ export class ParetoOptimizer {
   private rowCount: number;
   private features = new Map<string, NumericFeature>();
   private view: DG.TableView;
-  private scatter: DG.ScatterPlotViewer;
-  private resultColName: string;
-  private sizeColName: string;
-  private labelColumnNames: string[];
-  private scatter3d: DG.Viewer<DG.IScatterPlot3dSettings> | null = null;
   private pcPlot: DG.Viewer<DG.IPcPlotSettings>;
   private toUpdatePcCols = false;
-  private toChangeScatterMarkerSize = false;
-  private toChange3dScatterMarkerSize = false;
-  private toAddSizeCol = false;
-  private useAxesInput = ui.input.bool('Pareto Axes', {
-    value: true,
-    tooltipText: 'Use optimized variables as scatter plot axes',
-    onValueChanged: (val) => {
-      if (val)
-        this.updateVisualization();
-    },
-  });
+
+  private paretoFrontViewer: DG.Viewer;
+  private resultColName: string;
+
+  private intervalId: NodeJS.Timeout | null = null;
+
+  private inputsMap = new Map<string, DG.InputBase>();
+
+  private subs: any[];
+  private pcPlotNode: DG.DockNode | null = null;
+  private inputFormNode: DG.DockNode | null = null;
 
   constructor(df: DG.DataFrame) {
     this.df = df;
@@ -44,53 +38,26 @@ export class ParetoOptimizer {
     this.numColsCount = this.numCols.length;
     this.rowCount = df.rowCount;
     this.view = grok.shell.getTableView(df.name);
-    this.labelColumnNames = this.getLabelColNames();
-    this.scatter = DG.Viewer.scatterPlot(df, {
-      labelColumnNames: this.labelColumnNames,
-      legendPosition: 'Top',
-      markerType: DG.MARKER_TYPE.CIRCLE,
-      autoLayout: false,
-      showSizeSelector: false,
-    });
 
-    this.toChangeScatterMarkerSize = this.rowCount > SCATTER_ROW_LIM;
-    this.toChange3dScatterMarkerSize = this.rowCount > SCATTER3D_ROW_LIM;
-    this.toAddSizeCol = this.toChangeScatterMarkerSize || this.toChange3dScatterMarkerSize;
+    this.paretoFrontViewer = DG.Viewer.fromType('Pareto front', df);
 
-    if (this.toChangeScatterMarkerSize)
-      this.scatter.setOptions({markerMinSize: SIZE.NON_OPT, markerMaxSize: SIZE.OPTIMAL});
-
-    const scatterNode = this.view.dockManager.dock(this.scatter, DG.DOCK_TYPE.RIGHT, null, undefined, RATIO.VIEWER);
+    const paretoFrontViewerNode = this.view.dockManager.dock(
+      this.paretoFrontViewer,
+      DG.DOCK_TYPE.RIGHT,
+      null,
+      undefined,
+      RATIO.VIEWER,
+    );
 
     this.pcPlot = DG.Viewer.pcPlot(df, {legendPosition: 'Top'});
-    const gridNode = this.view.dockManager.findNode(this.view.grid.root) ?? scatterNode;
-    this.view.dockManager.dock(this.pcPlot, DG.DOCK_TYPE.DOWN, gridNode, undefined, RATIO.VIEWER);
+    const gridNode = this.view.dockManager.findNode(this.view.grid.root) ?? paretoFrontViewerNode;
+    this.pcPlotNode = this.view.dockManager.dock(this.pcPlot, DG.DOCK_TYPE.DOWN, gridNode, undefined, RATIO.VIEWER);
     this.toUpdatePcCols = this.numColNames.length > PC_MAX_COLS;
 
-    // if (this.numColsCount > 2) {
-    // // Disabled the use of 3d scatter due to the bug: https://reddata.atlassian.net/browse/GROK-19071
-    //   this.scatter3d = DG.Viewer.scatterPlot3d(df);
-    //   this.view.dockManager.dock(this.scatter3d, DG.DOCK_TYPE.FILL, scatterNode);
-    // }
-
-    this.resultColName = cols.getUnusedName(COL_NAME.OPT);
-    this.sizeColName = cols.getUnusedName(COL_NAME.SIZE);
-
-    const ribPanels = this.view.getRibbonPanels();
-    ribPanels.push([this.useAxesInput.root]);
-    this.view.setRibbonPanels(ribPanels);
-
-    this.updateUseAxesInput();
+    this.resultColName = this.df.columns.getUnusedName(COL_NAME.OPT);
+    this.showResultOptCol();
+    this.subs = this.getSubscriptions();
   } // constructor
-
-  private getLabelColNames(): string[] {
-    return this.df.columns.toList().filter((col) => {
-      if (col.type !== DG.COLUMN_TYPE.STRING)
-        return false;
-
-      return col.categories.length === this.rowCount;
-    }).map((col) => col.name);
-  } // getLabelColNames
 
   private isApplicable(): boolean {
     if (this.rowCount < 1) {
@@ -115,6 +82,27 @@ export class ParetoOptimizer {
     this.updateVisualization();
   } // run
 
+  private getSubscriptions() {
+    const subs = [
+      this.paretoFrontViewer.onDetached.subscribe(() => {
+        if (this.pcPlotNode !== null) {
+          this.view.dockManager.close(this.pcPlotNode);
+          this.pcPlotNode = null;
+        }
+
+        if (this.inputFormNode !== null) {
+          this.view.dockManager.close(this.inputFormNode);
+          this.inputFormNode = null;
+        }
+
+        this.numCols.forEach((col) => col.colors.setDisabled());
+        this.features.clear();
+      }),
+    ];
+
+    return subs;
+  } // getSubscriptions
+
   private buildInputsForm(): void {
     const form = ui.form([]);
     form.classList.add('pareto-input-form');
@@ -128,7 +116,7 @@ export class ParetoOptimizer {
 
       const name = col.name;
 
-      const typeInp = ui.input.choice(name, {
+      const optimizationTypeInput = ui.input.choice(name, {
         value: feature.toOptimize ? feature.optType : null,
         nullable: true,
         items: [null, OPT_TYPE.MIN, OPT_TYPE.MAX],
@@ -144,96 +132,40 @@ export class ParetoOptimizer {
           this.updateVisualization();
         },
       });
-      ui.tooltip.bind(typeInp.input, () => {
+      ui.tooltip.bind(optimizationTypeInput.input, () => {
         if (feature.toOptimize)
           return ui.markdown(`M${feature.optType.slice(1)} **${name}** during Pareto optimization`);
 
         return ui.markdown(`Ignore **${name}** during Pareto optimization`);
       });
 
-      //typeInp.input.hidden = !feature.toOptimize;
+      this.inputsMap.set(name, optimizationTypeInput);
 
-      const enableInp = ui.input.toggle('', {
-        value: feature.toOptimize,
-        onValueChanged: (val) => {
-          feature.toOptimize = val;
-          typeInp.input.hidden = !val;
-          this.computeParetoFront();
-          this.updateVisualization();
-        },
-      });
-      ui.tooltip.bind(enableInp.root, () => `${feature.toOptimize ? 'Dis' : 'En'}able optimization for "${name}"`);
-
-      enableInp.root.classList.add('pareto-switch-input');
-
-      //typeInp.root.insertBefore(enableInp.root, typeInp.captionLabel);
-
-      form.append(typeInp.root);
+      form.append(optimizationTypeInput.root);
       this.features.set(name, feature);
     });
 
-    this.view.dockManager.dock(form, DG.DOCK_TYPE.LEFT, null, undefined, RATIO.FORM);
+    this.inputFormNode = this.view.dockManager.dock(form, DG.DOCK_TYPE.LEFT, null, undefined, RATIO.FORM);
   } // buildInputsForm
 
   private computeParetoFront(): void {
-    const data: NumericArray[] = [];
-    const sense: OPT_TYPE[] = [];
+    const minimizeColumnNames: string[] = [];
+    const maximizeColumnNames: string[] = [];
 
     this.features.forEach((fea, name) => {
       if (fea.toOptimize) {
-        data.push(this.df.col(name)!.getRawData());
-        sense.push(fea.optType);
+        if (fea.optType === OPT_TYPE.MIN)
+          minimizeColumnNames.push(name);
+        else
+          maximizeColumnNames.push(name);
       }
     });
 
-    if (data.length > 0) {
-      const mask = getParetoMask(data, sense, this.rowCount);
-      const colOpt = DG.Column.fromStrings(this.resultColName, mask.map((res) => res ? LABEL.OPTIMAL : LABEL.NON_OPT));
-      this.df.columns.remove(this.resultColName, true);
-      this.df.columns.add(colOpt);
-      this.markResColWithColor(colOpt);
-
-      if (this.toAddSizeCol) {
-        const sizeCol = DG.Column.fromInt32Array(
-          this.sizeColName,
-          new Int32Array(mask.map((res) => res ? SIZE.OPTIMAL : SIZE.NON_OPT)),
-        );
-        this.df.columns.remove(this.sizeColName, true);
-        this.df.columns.add(sizeCol);
-      }
-    } else {
-      this.df.columns.remove(this.resultColName, true);
-      this.df.columns.remove(this.sizeColName, true);
-    }
+    this.paretoFrontViewer.setOptions({
+      minimizeColumnNames: minimizeColumnNames,
+      maximizeColumnNames: maximizeColumnNames,
+    });
   } // computeParetoFront
-
-  private updateScatter(plot: DG.Viewer | null, axisNames: string[], colNames: string[], colorOpt: ColorOpt): void {
-    if (plot == null)
-      return;
-
-    plot.setOptions(colorOpt);
-
-    // update axis
-    if (!this.useAxesInput.value)
-      return;
-
-    const prevAxisCols = axisNames.map((axis) => plot.getOptions().look[axis]);
-
-    let toUpdate = false;
-
-    colNames.forEach((name) => {
-      if (!prevAxisCols.includes(name))
-        toUpdate = true;
-    });
-
-    if (toUpdate) {
-      axisNames.forEach((axis, idx) => {
-        const opt: Record<string, string> = {};
-        opt[axis] = colNames[idx];
-        plot.setOptions(opt);
-      });
-    }
-  } // updateScatter
 
   private updatePcPlot(colNames: string[], colorOpt: ColorOpt): void {
     this.pcPlot.setOptions(colorOpt);
@@ -258,20 +190,6 @@ export class ParetoOptimizer {
     }
   } // updatePcPlot
 
-  private setMarkers(): void {
-    if (this.toChangeScatterMarkerSize) {
-      this.scatter.setOptions({
-        'sizeColumnName': this.sizeColName,
-        'markerMinSize': SIZE.NON_OPT,
-        'markerMaxSize': SIZE.OPTIMAL,
-        'markerType': DG.MARKER_TYPE.CIRCLE,
-      });
-    }
-
-    if (this.toChange3dScatterMarkerSize && (this.scatter3d !== null))
-      this.scatter3d.setOptions({'size': this.sizeColName});
-  } // setMarkers
-
   private updateVisualization(): void {
     const colNames: string[] = [];
 
@@ -281,28 +199,29 @@ export class ParetoOptimizer {
     });
 
     const colorOpt: ColorOpt = {'colorColumnName': (colNames.length > 0) ? this.resultColName: undefined};
-    this.updateScatter(this.scatter, AXIS_NAMES, colNames, colorOpt);
-    this.updateScatter(this.scatter3d, AXIS_NAMES_3D, colNames, colorOpt);
     this.updatePcPlot(colNames, colorOpt);
-    this.setMarkers();
-    this.hideSizeCol();
     this.markOptColsWithColor();
     this.updateTooltips();
   } // updateVisualization
 
-  private hideSizeCol(): void {
-    const gridCol = this.view.grid.columns.byName(this.sizeColName);
+  private showResultOptCol(): void {
+    // show a column with the results, once it is added
+    this.intervalId = setInterval(() => {
+      const gridCol = this.view.grid.columns.byName(this.resultColName);
 
-    if (gridCol !== null)
-      gridCol.visible = false;
-  } // hideSizeCol
+      if (gridCol !== null) {
+        gridCol.visible = true;
+        this.stopChecking();
+      }
+    }, 1000);
+  } // showResultOptCol
 
-  private markResColWithColor(col: DG.Column): void {
-    col.colors.setCategorical({
-      'optimal': '#2ca02c',
-      'non-optimal': '#e3e3e3',
-    });
-  } // markResColWithColor
+  private stopChecking(): void {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
+  }
 
   private markOptColsWithColor(): void {
     this.numCols.forEach((col) => col.colors.setDisabled());
@@ -346,11 +265,4 @@ export class ParetoOptimizer {
       }
     });
   } // updateTooltips
-
-  private updateUseAxesInput(): void {
-    this.useAxesInput.captionLabel.style.fontSize = '10pt';
-    this.useAxesInput.captionLabel.style.position = 'relative';
-    this.useAxesInput.captionLabel.style.top = '-2px';
-    this.useAxesInput.root.style.paddingTop = '5px';
-  } // updateUseAxesInput
 } // ParetoOptimizer
