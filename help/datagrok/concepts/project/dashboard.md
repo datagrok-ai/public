@@ -27,7 +27,7 @@ To create a dashboard:
 1. In the **Table View**, you can:
    * Add [viewers](../../../visualize/viewers/viewers.md) to visualize your data
    * [Transform data](../../../transform/transform.md) as needed
-   * [Add filters](../../../visualize/table-view.-1md#select-and-filter)
+   * [Add filters](../../../visualize/table-view-1.md#select-and-filter)
    * Customize the grid, such as [color-coding grid columns](../../../visualize/viewers/grid.md#color-code-columns)
    * Optionally, add data from [linked tables](../../../transform/link-tables.md):
       * For viewers other than the grid, click the **Gear (<FAIcon icon="fa-solid fa-gear" size="1x" />) icon** and choose the table in the **Context Panel** under **Data** > **Table**.

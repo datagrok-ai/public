@@ -32,7 +32,7 @@ you can take it even further.
 * [Query](../../../access/databases/databases.md) databases, [clean and transform](../../datagrok.md#transform) datasets using [500+ functions](../../concepts/functions/functions.md), visually or programmatically 
 * [Link](../../../transform/link-tables.md) tables, [aggregate](../../../transform/aggregate-rows.md), [pivot](../../../access/databases/databases.md#visual-query-editor), [compare](../../../transform/compare-tables.md) - with and without code 
 * [Slice, dice, and explore your data](../workflows/eda.md). Render
-  millions of data points interactively, with [scientific intelligence](../../../visualize/table-view-1#statistical-hypothesis-testing) built-in
+  millions of data points interactively, with [scientific intelligence](../../../visualize/table-view-1.md#statistical-hypothesis-testing) built-in
 * Build [dynamic dashboards](../../../access/databases/databases.md#creating-dynamic-dashboards-for-query-results) in minutes (our [spreadsheet](../../../visualize/viewers/grid.md#rows) and [viewers](../../../visualize/viewers/viewers.md) are best-in-class!)
 * [Create custom metadata schemas](../../../govern/catalog/sticky-meta.md) to annotate specific objects within your dataset (like molecules or sequences). Once added, this metadata stays attached to the objects and is accessible across the platform
 * Save, search, and reuse [queries](../../../access/databases/databases.md), [scripts](../../../compute/scripting/scripting.mdx), [transformations](../../navigation/panels/panels.md#recording-macros), [layouts](../../../visualize/view-layout.md), and [dashboards](../../concepts/project/dashboard.md)

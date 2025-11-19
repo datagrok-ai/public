@@ -125,7 +125,7 @@ matching the following criteria across specified or all data providers at once:
 
 :::note
 
-To learn how searching works in Datagrok, see [Smart search](../../datagrok/navigation/views/table-view#search).
+To learn how searching works in Datagrok, see [Smart search](../../visualize/table-view-1.md#search).
 
 :::
 -->
