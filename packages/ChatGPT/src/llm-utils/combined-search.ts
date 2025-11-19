@@ -39,14 +39,16 @@ export class CombinedAISearchAssistant {
     for (const functionName of functionOrder) {
       const funcInfo = this.functions[functionName];
       const pane = tabcontrol.addPane(funcInfo.friendlyName, () => {
-        return ui.wait(async () => {
+        const wait = ui.wait(async () => {
           const inputParam: {[key: string]: any} = {};
           inputParam[funcInfo.inputName] = prompt;
           const result: DG.Widget | null = await funcInfo.func.apply(inputParam);
           if (result == null)
             return ui.divText('No result generated.');
+          result.root.style.width = '100%';
           return result.root;
-        } );
+        });
+        return wait;
       });
       ui.tooltip.bind(pane.header, funcInfo.func.description);
     }

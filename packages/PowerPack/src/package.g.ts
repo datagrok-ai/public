@@ -61,7 +61,7 @@ export function formulaWidget(col: DG.Column) : any {
   return PackageFunctions.formulaWidget(col);
 }
 
-//name: Smart Query
+//name: Query
 //description: Tries to find a query which has the similar pattern as the prompt user entered and executes it
 //input: string prompt 
 //output: widget result
