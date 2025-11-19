@@ -147,14 +147,15 @@ export class ValidationIcon extends HTMLElement {
     const {validation, consistency} = this.status$.value;
 
     const iconOptions = (() => {
+      if (consistency?.inconsistent && this.isImportantRestriction(consistency?.restriction))
+        return {name: 'handshake-slash', color: 'var(--red-3)'};
       if (validation?.errors && validation.errors.length) return {name: 'exclamation-circle', color: 'var(--red-3)'};
       if (validation?.warnings && validation.warnings.length)
         return {name: 'exclamation-circle', color: 'var(--orange-2)'};
       if (validation?.notifications && validation.notifications.length)
         return {name: 'info-circle', color: 'var(--blue-1)'};
-      if (consistency?.inconsistent)
+      if (consistency?.inconsistent && !this.isImportantRestriction(consistency?.restriction))
         return {name: 'handshake-slash', color: 'var(--blue-1)'};
-
       return null;
     })();
 
@@ -209,7 +210,7 @@ export class ValidationIcon extends HTMLElement {
     }
 
     if (status?.consistency?.inconsistent) {
-      const sectionIconOptions = this.getIconOptions('inconsistent')!;
+      const sectionIconOptions = this.getIconOptions('inconsistent', status?.consistency?.restriction)!;
       const icon = ui.iconFA(sectionIconOptions.name);
       $(icon).css({'color': sectionIconOptions.color, 'margin-right': '4px'});
 
@@ -239,14 +240,18 @@ export class ValidationIcon extends HTMLElement {
     return root;
   }
 
-  private getIconOptions(category: 'errors' | 'warnings' | 'notifications' | 'inconsistent') {
+  private getIconOptions(category: 'errors' | 'warnings' | 'notifications' | 'inconsistent', restrictionType?: string) {
     if (category === 'errors') return {name: 'exclamation-circle', color: 'var(--red-3)!important'};
     if (category === 'warnings')
       return {name: 'exclamation-circle', color: 'var(--orange-2)!important'};
     if (category === 'notifications')
       return {name: 'info-circle', color: 'var(--blue-1)!important'};
     if (category === 'inconsistent')
-      return {name: 'handshake-slash', color: 'var(--blue-1)!important'};
+      return {name: 'handshake-slash', color: this.isImportantRestriction(restrictionType) ? 'var(--red-3)!important' : 'var(--blue-1)!important'};
+  }
+
+  private isImportantRestriction(restrictionType?: string) {
+    return (restrictionType === 'disabled' || restrictionType === 'restricted');
   }
 
   private addPopover(icon: HTMLElement) {

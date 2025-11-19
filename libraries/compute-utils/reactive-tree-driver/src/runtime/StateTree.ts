@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Observable, defer, of, merge, Subject, BehaviorSubject, from, combineLatest} from 'rxjs';
-import {finalize, map, mapTo, toArray, concatMap, tap, takeUntil, debounceTime, scan} from 'rxjs/operators';
+import {finalize, map, mapTo, toArray, concatMap, tap, takeUntil, debounceTime, scan, withLatestFrom, filter} from 'rxjs/operators';
 import {NodePath, BaseTree, TreeNode} from '../data/BaseTree';
 import {getPipelineRef, PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {isFuncCallSerializedState, PipelineInstanceConfig, PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
@@ -341,16 +341,19 @@ export class StateTree {
         return of(undefined);
       return from(nodesSeq.slice(startIdx)).pipe(
         concatMap((node) => {
-          if (!isFuncCallNode(node) || node.pendingDependencies$.value?.length ||
-            !node.getStateStore().isRunable$.value || (!node.getStateStore().isOutputOutdated$.value && !rerunWithConsistent))
+          if (!isFuncCallNode(node) || node.pendingDependencies$.value?.length)
             return of(undefined);
           if (rerunWithConsistent) {
             return node.getStateStore().overrideToConsistent().pipe(
               concatMap(() => this.linksState.waitForLinks()),
+              withLatestFrom(node.getStateStore().isRunable$, node.getStateStore().isOutputOutdated$),
+              filter(([,runable, outdated]) => runable && outdated),
               concatMap(() => node.getStateStore().run()),
               concatMap(() => this.linksState.waitForLinks()),
             );
           } else {
+            if (!node.getStateStore().isRunable$.value || !node.getStateStore().isOutputOutdated$.value)
+              return of(undefined);
             return node.getStateStore().run().pipe(
               concatMap(() => this.linksState.waitForLinks()),
             );

@@ -16,13 +16,13 @@ import {AugmentedStat} from './types';
 import '@he-tree/vue/style/default.css';
 import '@he-tree/vue/style/material-design.css';
 import {PipelineView} from '../PipelineView/PipelineView';
-import {useUrlSearchParams, computedAsync} from '@vueuse/core';
+import {useUrlSearchParams} from '@vueuse/core';
 import {Inspector} from '../Inspector/Inspector';
 import {
   findNextStep,
   findNextSubStep,
   findNodeWithPathByUuid, findPrevStep, findTreeNodeByPath,
-  findTreeNodeParrent, hasSubtreeFixableInconsistencies,
+  findTreeNodeParrent, hasInconsistencies, hasSubtreeFixableInconsistencies,
   reportTree,
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
@@ -109,11 +109,11 @@ export const TreeWizard = Vue.defineComponent({
       return func ? Vue.markRaw(func) : undefined;
     });
     const showReturn = Vue.computed(() => props.showReturn);
-    const reportBugUrl = computedAsync<string | undefined>(async () => {
-      return (await providerFunc.value?.package?.getProperties() as any)?.REPORT_BUG_URL;
+    const reportBugUrl = Vue.computed<string | undefined>(() => {
+      return (providerFunc.value?.package?.settings)?.REPORT_BUG_URL;
     });
-    const reqFeatureUrl = computedAsync<string | undefined>(async () => {
-      return (await providerFunc.value?.package?.getProperties() as any)?.REQUEST_FEATURE_URL;
+    const reqFeatureUrl = Vue.computed<string | undefined>(() => {
+      return (providerFunc.value?.package?.settings)?.REQUEST_FEATURE_URL;
     });
 
     ////
@@ -146,7 +146,7 @@ export const TreeWizard = Vue.defineComponent({
     };
 
     const runSubtreeWithConfirm = (startUuid: string, rerunWithConsistent?: boolean) => {
-      ui.dialog(`Rerun confirmation`)
+      ui.dialog(`Update confirmation`)
         .add(ui.markdown(`Do you want to update input values to consistent ones and rerun substeps? You will lose inconsistent values.`))
         .onOK(() => runSequence(startUuid, rerunWithConsistent))
         .show({center: true, modal: true});
@@ -520,7 +520,7 @@ export const TreeWizard = Vue.defineComponent({
             (hasSubtreeFixableInconsistencies(treeState.value, states.calls, states.consistency) ?
               <IconFA
                 name='sync'
-                tooltip={'Rerun tree with consistent values'}
+                tooltip={'Update tree with consistent values'}
                 style={{'padding-right': '3px'}}
                 onClick={() => runSubtreeWithConfirm(treeState.value!.uuid, true)}
               />:
@@ -712,12 +712,19 @@ export const TreeWizard = Vue.defineComponent({
                           </BigButton>
                       }
                       {
-                        !isOutputOutdated.value &&
+                        !isOutputOutdated.value && !hasInconsistencies(states.consistency[chosenStepUuid.value!]) &&
                           <BigButton
                             onClick={goNextStep}
                           >
                              Next
                           </BigButton>
+                      }
+                      { hasInconsistencies(states.consistency[chosenStepUuid.value!]) &&
+                        <BigButton
+                          onClick={() => runSequence(chosenStepUuid.value!, true)}
+                        >
+                           Update
+                        </BigButton>
                       }
                     </>
                   ),
