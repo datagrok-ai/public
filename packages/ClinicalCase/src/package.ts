@@ -27,13 +27,14 @@ import {createClinCaseTableView, TABLE_VIEWS_META} from './utils/views-creation-
 //import {CohortView} from './views/cohort-view';
 import {QuestionnaiesView} from './views/questionnaires-view';
 import {ClinCaseTableView, ClinStudyConfig} from './utils/types';
-import {domainsToValidate, StudyJsonName} from './constants/constants';
-import {ClinicalStudy, studies} from './clinical-study';
+import {defineXmlFileName, StudyConfigFileName} from './constants/constants';
+import {ClinicalStudy} from './clinical-study';
 import {ClinicalCaseViewBase} from './model/ClinicalCaseViewBase';
 import '../css/clinical-case.css';
 import {u2} from '@datagrok-libraries/utils/src/u2';
 import {scripts} from './package-api';
-import {ClinicalCaseViewsConfig} from './views-config';
+import {Subject} from 'rxjs';
+import X2JS from 'x2js';
 
 export * from './package.g';
 
@@ -41,21 +42,20 @@ export const _package = new DG.Package();
 
 export let validationRulesList = null;
 
-export const VIEWS: {[key: string]: {[key: string]: DG.ViewBase}} = {};
-export const studiesViewsConfigs: {[key: string]: ClinicalCaseViewsConfig} = {};
-
-const loadingStudyData: {[key: string]: boolean} = {};
-
 const CLINICAL_CASE_APP_PATH: string = '/apps/ClinicalCase';
 
 let currentOpenedView: DG.ViewBase | null = null;
+
+const studyLoadedSubject = new Subject<{name: string, loaded: boolean}>();
+
+//export let study: ClinicalStudy = new ClinicalStudy();
+export const studies: {[key: string]: ClinicalStudy} = {};
 
 type CurrentStudyAndView = {
   study: string;
   viewName: string;
 }
 
-export let existingStudies: {[key: string]: ClinStudyConfig} | null = null;
 const validationNodes: {[key: string]: DG.TreeViewNode} = {};
 
 const domains = (studyId: string, exactDomains?: string[]) =>
@@ -78,165 +78,199 @@ async function clinicalCaseAppTB(treeNode: DG.TreeViewGroup,
   const loaderDiv = ui.div([], {style: {width: '50px', height: '24px', position: 'relative'}});
   loaderDiv.innerHTML = `<div class="grok-loader"><div></div><div></div><div></div><div></div></div>`;
   const loaderItem = treeNode.item(loaderDiv);
-  await loadStudies([]);
+  //this creates studies objects and tree view nodes
+  await createStudies(treeNode);
+  //opens exact study and view
   openStudy(treeNode, currentStudy, currentViewName);
   loaderItem.remove();
 }
 
-export function openStudy(treeNode: DG.TreeViewGroup,
-  currentStudy: string, currentViewName: string) {
-  let initialViewSelected = false;
-
-  const openStudyNode = async (study: ClinStudyConfig, node: DG.TreeViewGroup) => {
-    const summaryView = !VIEWS[study.name] ? null : VIEWS[study.name][SUMMARY_VIEW_NAME];
-    if (!summaryView) {
-      if (loadingStudyData[study.name]) {
-        grok.shell.warning(`Loading data for study ${study.name}`);
-        return;
-      }
-      if (!!studies[study.name]) {
-        const dataRead = await readClinicalData(study, domainsToValidate);
-        if (!dataRead)
-          return;
-        studies[study.name].validate();
-        studies[study.name].processSitesAndSubjectCount();
-      }
+async function openStudyNode(study: ClinicalStudy, node: DG.TreeViewGroup, currentViewName: string) {
+  if (!currentViewName)
+    currentViewName = SUMMARY_VIEW_NAME;
+  if (studies[study.studyId].loadingStudyData) {
+    if (studies[study.studyId].loadingStudyData === true) {
+      grok.shell.warning(`Loading data for study ${study.studyId}`);
+      return;
     }
-    loadView(study, SUMMARY_VIEW_NAME, node);
-  };
-
-
-  const loadView = async (study: ClinStudyConfig, viewName: string, parentNode: DG.TreeViewGroup) => {
-    let view = VIEWS[study.name][viewName];
-    let helper: any;
-    if (!view) {
-      if (Object.keys(TABLE_VIEWS_META).includes(viewName)) { //load table view
-        const clinCaseTableView = VIEW_CREATE_FUNC[viewName](study.name, viewName) as ClinCaseTableView;
-        view = clinCaseTableView.view;
-        helper = clinCaseTableView.helper;
-      } else { // load view
-        if (viewName === SUMMARY_VIEW_NAME) {
-          const errorLinkHandler = () => {
-            parentNode.expanded = true;
-            parentNode.currentItem = validationNodes[study.name];
-          };
-          view = VIEW_CREATE_FUNC[viewName](study.name, errorLinkHandler) as DG.ViewBase;
-        } else
-          view = VIEW_CREATE_FUNC[viewName](study.name) as DG.ViewBase;
-      }
-    }
-    currentOpenedView?.close();
-    currentOpenedView = grok.shell.addPreview(view);
-    if (view.hasOwnProperty('loaded') && !(view as ClinicalCaseViewBase).loaded)
-      (view as ClinicalCaseViewBase).load();
-    else
-      helper?.propertyPanel();
-    view.path =
-        `browse${CLINICAL_CASE_APP_PATH}/${study.name}/${viewName.replaceAll(' ', '')}`;
-  };
-
-  // eslint-disable-next-line no-unused-vars
-  for (const [_, study] of Object.entries(existingStudies)) {
-    const node = treeNode.getOrCreateGroup(study.friendlyName ?? study.name, null, false);
-    if (!studies[study.name]) {
-      studies[study.name] = new ClinicalStudy(study.name);
-      VIEWS[study.name] = {};
-    }
-
-    node.onSelected.subscribe(async (_) => {
-      await openStudyNode(study, node);
-    });
-
-    node.onNodeExpanding.subscribe(async (_) => {
-      if (loadingStudyData[study.name])
-        return;
-      for (const viewName of Object.keys(VIEW_CREATE_FUNC)) {
-        const viewNode = node.item(viewName);
-        if (viewName === VALIDATION_VIEW_NAME)
-          validationNodes[study.name] = viewNode;
-        viewNode.onSelected.subscribe(() => {
-          if (loadingStudyData[study.name]) {
-            grok.shell.warning(`Loading data for study ${study.name}`);
-            treeNode.currentItem = node;
-            return;
-          }
-          loadView(study, viewName, node);
-        });
-      }
-      await initClinicalStudy(study);
-      const viewItem = node.items
-        .find((node) => node.text === (initialViewSelected ? currentViewName : SUMMARY_VIEW_NAME))?.root;
-      viewItem?.click();
-      initialViewSelected = false;
-    });
   }
+  loadView(study, currentViewName, node);
+};
 
-  if (currentStudy && !Object.keys(existingStudies).includes(currentStudy))
-    grok.shell.error(`Study ${currentStudy} doesn't exist`);
-  else if (currentStudy) {
-    const studyNode = treeNode.getOrCreateGroup(currentStudy);
+
+async function loadView(study: ClinicalStudy, viewName: string, parentNode: DG.TreeViewGroup) {
+  let view = studies[study.studyId].views[viewName];
+  let helper: any;
+  if (!view) {
+    if (Object.keys(TABLE_VIEWS_META).includes(viewName)) { //load table view
+      const clinCaseTableView = VIEW_CREATE_FUNC[viewName](study.studyId, viewName) as ClinCaseTableView;
+      view = clinCaseTableView.view;
+      helper = clinCaseTableView.helper;
+    } else { // load view
+      if (viewName === SUMMARY_VIEW_NAME) {
+        const errorLinkHandler = () => {
+          parentNode.expanded = true;
+          parentNode.currentItem = validationNodes[study.studyId];
+        };
+        view = VIEW_CREATE_FUNC[viewName](study.studyId, errorLinkHandler) as DG.ViewBase;
+      } else
+        view = VIEW_CREATE_FUNC[viewName](study.studyId) as DG.ViewBase;
+    }
+  }
+  currentOpenedView?.close();
+  currentOpenedView = grok.shell.addPreview(view);
+  if (view.hasOwnProperty('loaded') && !(view as ClinicalCaseViewBase).loaded)
+    (view as ClinicalCaseViewBase).load();
+  else
+    helper?.propertyPanel();
+  view.path =
+        `browse${CLINICAL_CASE_APP_PATH}/${study.studyId}/${viewName.replaceAll(' ', '')}`;
+};
+
+function addStudyToBrowseTree(study: ClinicalStudy, treeNode: DG.TreeViewGroup, studyFiles?: DG.FileInfo[]) {
+  const node = treeNode.getOrCreateGroup(study.config.friendlyName ?? study.config.name, null, false);
+
+  node.onSelected.subscribe(async (_) => {
+    studies[study.studyId].currentViewName = SUMMARY_VIEW_NAME;
+    await openStudyNode(study, node, SUMMARY_VIEW_NAME);
+  });
+
+  node.onNodeExpanding.subscribe(async (_) => {
+    if (studies[study.studyId].loadingStudyData === true)
+      return;
+
+    for (const viewName of Object.keys(VIEW_CREATE_FUNC)) {
+      const viewNode = node.item(viewName);
+      if (viewName === VALIDATION_VIEW_NAME)
+        validationNodes[study.studyId] = viewNode;
+      viewNode.onSelected.subscribe(() => {
+        if (studies[study.studyId].loadingStudyData === true) {
+          grok.shell.warning(`Loading data for study ${study.studyId}`);
+          treeNode.currentItem = node;
+          return;
+        }
+        studies[study.studyId].currentViewName = viewName;
+        loadView(study, viewName, node);
+      });
+    }
+    if (!studies[study.studyId].initCompleted) {
+      const sub = studyLoadedSubject.subscribe((data) => {
+        if (data.name === study.studyId) {
+          sub.unsubscribe();
+          if (data.loaded)
+            openStudyNode(studies[study.studyId], node, studies[study.studyId].currentViewName);
+        }
+      });
+      initClinicalStudyData(studies[study.studyId], studyFiles);
+    }
+  });
+}
+
+
+export function openStudy(treeNode: DG.TreeViewGroup,
+  currentStudyName: string, currentViewName: string) {
+  if (currentStudyName && !Object.keys(studies).includes(currentStudyName))
+    grok.shell.error(`Study ${currentStudyName} doesn't exist`);
+  else if (currentStudyName) {
+    const studyNode = treeNode.getOrCreateGroup(currentStudyName);
     if (currentViewName && !Object.keys(VIEW_CREATE_FUNC).includes(currentViewName)) {
       grok.shell.warning(`${currentViewName} view doesn't exist, opening summary view`);
       currentViewName = SUMMARY_VIEW_NAME;
     } else if (!currentViewName)
       currentViewName = SUMMARY_VIEW_NAME;
-    initialViewSelected = true;
-    if (studyNode.expanded)
-      openStudyNode(existingStudies[currentStudy], studyNode);
-    else
+    studies[currentStudyName].currentViewName = currentViewName;
+    //this will trigger onNodeExpanding
+    if (!studyNode.expanded)
       studyNode.expanded = true;
+    else
+      openStudyNode(studies[currentStudyName], studyNode, currentViewName);
   }
 }
 
 
-export async function initClinicalStudy(study: ClinStudyConfig) {
-  if (!studies[study.name].initCompleted) {
+export async function initClinicalStudyData(study: ClinicalStudy, studyFiles?: DG.FileInfo[]) {
+  if (!studies[study.studyId].initCompleted) {
     try {
-      loadingStudyData[study.name] = true;
-      const progressBar = DG.TaskBarProgressIndicator.create(`Reading data for study ${study.name}`);
-      await readClinicalData(study);
-      studies[study.name].init();
+      studies[study.studyId].loadingStudyData = true;
+      const progressBar = DG.TaskBarProgressIndicator.create(`Reading data for study ${study.studyId}`);
+      const dataLoaded = await readClinicalData(study, studyFiles);
+      if (!dataLoaded) {
+        studies[study.studyId].loadingStudyData = false;
+        studyLoadedSubject.next({name: study.studyId, loaded: false});
+      }
+      studies[study.studyId].init();
       progressBar.close();
-      grok.shell.info(`Data for study ${study.name} is ready`);
-    } finally {
-      delete loadingStudyData[study.name];
+      grok.shell.info(`Data for study ${study.studyId} is ready`);
+      studies[study.studyId].loadingStudyData = false;
+      studyLoadedSubject.next({name: study.studyId, loaded: true});
+    } catch (e: any) {
+      studies[study.studyId].loadingStudyData = false;
+      studyLoadedSubject.next({name: study.studyId, loaded: false});
+      throw e;
     }
   }
 }
 
-
-export async function readClinicalData(study: ClinStudyConfig, domainsToDownLoad?: string[]): Promise<boolean> {
-  const pb = DG.TaskBarProgressIndicator.create(`Reading data for ${study.friendlyName ?? study.name}...`);
+export async function readClinicalData(study: ClinicalStudy, importedFiles?: DG.FileInfo[]): Promise<boolean> {
+  const pb = DG.TaskBarProgressIndicator
+    .create(`Reading data for ${study.config.friendlyName ?? study.config.name}...`);
   try {
-    const studyFiles = await _package.files.list(`studies/${study.name}`);
-    const domainsList = domains(study.name, domainsToDownLoad);
+    const studyFiles = importedFiles ?? await _package.files.list(`studies/${study.studyId}`);
+    const domainsList = domains(study.studyId);
+
     const removeExtension = (filename: string) => {
       const lastDotIndex = filename.lastIndexOf('.');
       return lastDotIndex === -1 ? filename : filename.substring(0, lastDotIndex);
     };
-    for (let i = 0; i < studyFiles.length; i++) {
-      const domainNameWithExt = studyFiles[i].fileName.toLowerCase();
-      const isXpt = domainNameWithExt.endsWith('.xpt');
-      const domainNameWithoutExt = removeExtension(domainNameWithExt);
-      pb.update(i/studyFiles.length * 100, `Reading ${domainNameWithExt}...`);
-      if (!studies[study.name].domains[domainNameWithoutExt] && domainsList.includes(domainNameWithoutExt)) {
-        let df: DG.DataFrame | null = null;
-        if (isXpt) {
-          //const bytes = await _package.files.(`studies/${study.name}/${domainNameWithExt}`);
-          console.log(`*************** read ${domainNameWithExt}`);
-          df = await scripts.readSas(studyFiles[i]);
-          console.log(`*************** converted ${domainNameWithExt}`);
-        } else
-          df = await _package.files.readCsv(`studies/${study.name}/${domainNameWithExt}`);
-        if (df) {
-          df.name = domainNameWithoutExt;
-          studies[study.name].domains[domainNameWithoutExt] = df;
+    //look for d42 file and read it in case it exists
+    const d42DataFrames = studyFiles
+      .filter((it) => removeExtension(it.fileName) === study.studyId && it.extension === 'd42');
+    if (d42DataFrames.length) {
+      const dfs = await grok.dapi.files.readBinaryDataFrames(d42DataFrames[0]);
+      for (const df of dfs)
+        studies[study.studyId].domains[df.name] = df;
+    } else { //if there is no .d42 file with dfs list, reading file by file, looking for xpt or csv
+      for (let i = 0; i < studyFiles.length; i++) {
+        const domainNameWithExt = studyFiles[i].fileName.toLowerCase();
+        const domainNameWithoutExt = removeExtension(domainNameWithExt);
+        pb.update(i / studyFiles.length * 100, `Reading ${domainNameWithExt}...`);
+        if (!studies[study.studyId].domains[domainNameWithoutExt] && domainsList.includes(domainNameWithoutExt)) {
+          let df: DG.DataFrame | null = null;
+          if (studyFiles[i].extension === 'xpt') {
+            console.log(`*************** read ${domainNameWithExt}`);
+           // const content = await grok.dapi.files.readAsBytes(studyFiles[i]);
+            df = await scripts.readSas(studyFiles[i]);
+            console.log(`*************** converted ${domainNameWithExt}`);
+          } else
+            df = await DG.DataFrame.fromCsv(await studyFiles[i].readAsString());
+          if (df) {
+            df.name = domainNameWithoutExt;
+            studies[study.studyId].domains[domainNameWithoutExt] = df;
+          }
         }
       }
-      studiesViewsConfigs[study.name] = new ClinicalCaseViewsConfig();
+
+      //saving .d42 format for further fast reading
+      const d42FileDirectory = `System:AppData/ClinicalCase/studies/${study.studyId}/${study.studyId}.d42`;
+      const dfsList = studies[study.studyId].domains.all();
+      grok.dapi.files.writeBinaryDataFrames(d42FileDirectory, dfsList)
+        .then(() => grok.shell.info(`.d42 file has been saved for study ${study.studyId}`));
+
+      //in case we import study - also save config file
+      if (importedFiles) {
+        //save define.xml, if we have it. Otherwise, save study.json
+        const defineXml = importedFiles.filter((it) => it.name === defineXmlFileName);
+        if (defineXml.length) {
+          grok.dapi.files.writeAsText(`System:AppData/ClinicalCase/studies/${study.studyId}/define.xml`,
+            await defineXml[0].readAsString());
+        } else {
+          grok.dapi.files.writeAsText(`System:AppData/ClinicalCase/studies/${study.studyId}/study.json`,
+            JSON.stringify(study.config));
+        }
+      }
     }
-    if (!studies[study.name].domains.dm) {
-      grok.shell.error(`No demographic data found for study ${study.name}`);
+    if (!studies[study.studyId].domains.dm) {
+      grok.shell.error(`No demographic data found for study ${study.studyId}`);
       return false;
     }
     return true;
@@ -245,24 +279,59 @@ export async function readClinicalData(study: ClinStudyConfig, domainsToDownLoad
   }
 }
 
+async function extractConfigFromFiles(files: DG.FileInfo[]): Promise<ClinStudyConfig> {
+  try {
+    //first look for define.xml
+    const defineXml = files.filter((it) => it.name === defineXmlFileName);
+    if (defineXml.length) {
+      const parser = new X2JS();
+      const defineJson = parser.xml2js(await defineXml[0].readAsString()) as any;
+      const studyName = defineJson?.ODM?.Study?.GlobalVariables?.StudyName;
+      if (studyName)
+        return {name: studyName};
+    } else {
+      //if define.xml not found or there is no id in it - look for study.json
+      const configFile = files.filter((it) => it.name === StudyConfigFileName);
+      if (configFile.length) {
+        const studyJson: ClinStudyConfig = JSON.parse(await configFile[0].readAsString());
+        return studyJson;
+      }
+    }
+    return null;
+  } catch (e: any) {
+    throw e;
+  }
+}
 
-export async function loadStudies(deletedCampaigns: string[]): Promise<{[name: string]: ClinStudyConfig}> {
-  if (!existingStudies) {
-    const studiesFolders = (await _package.files.list(`studies`))
-      .filter((f) => deletedCampaigns.indexOf(f.name) === -1);
-    const studiesNamesMap: {[name: string]: ClinStudyConfig} = {};
-    for (const folder of studiesFolders) {
+export async function createStudies(treeNode: DG.TreeViewGroup,
+  importedStudyData?: { config: ClinStudyConfig, files: DG.FileInfo[] }): Promise<void> {
+  const studyConfigs = [];
+  if (!importedStudyData) {
+    const folders = await _package.files.list(`studies`);
+    for (const folder of folders) {
       try {
-        const studyJson: ClinStudyConfig = JSON.parse(await _package.files
-          .readAsText(`studies/${folder.name}/${StudyJsonName}`));
-        studiesNamesMap[studyJson.name] = studyJson;
-      } catch (e) {
+        const filesList = await _package.files.list(folder);
+        const config = await extractConfigFromFiles(filesList);
+        if (config)
+          studyConfigs.push(config);
+      } catch (e: any) {
+        grok.shell.error(`Error reading study config for study ${folder}: ${e?.message ?? e}`);
         continue;
       }
     }
-    existingStudies = studiesNamesMap;
+  } else
+    studyConfigs.push(importedStudyData.config);
+  for (const config of studyConfigs) {
+    try {
+      if (!studies[config.name]) {
+        studies[config.name] = new ClinicalStudy(config);
+        addStudyToBrowseTree(studies[config.name], treeNode, importedStudyData?.files);
+      }
+    } catch (e) {
+      grok.shell.error(`Study creation error: ${e?.message ?? e}`);
+      continue;
+    }
   }
-  return existingStudies;
 }
 
 export class PackageFunctions {
@@ -283,18 +352,61 @@ export class PackageFunctions {
     });
 
     const studiesHeader = ui.h1('Studies');
-    const existingStudies = await loadStudies([]);
-    const existingStudiesNames = Object.keys(existingStudies);
+    const clinicalCaseNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps')
+      .getOrCreateGroup('Clinical').getOrCreateGroup('Clinical Case');
+    //this creates studies objects and tree view nodes
+    await createStudies(clinicalCaseNode);
+    const existingStudiesNames = Object.keys(studies);
     const studiesDiv = ui.divV([]);
-    for (const studyName of existingStudiesNames) {
+    const addStudyLink = (studyName: string) => {
       const studyLink = ui.link(studyName, async () => {
-        const clinicalCaseNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps')
-          .getOrCreateGroup('Clinical').getOrCreateGroup('Clinical Case');
         openStudy(clinicalCaseNode, studyName, SUMMARY_VIEW_NAME);
       }, 'Click to run the study');
       studyLink.style.paddingBottom = '10px';
       studiesDiv.append(studyLink);
-    }
+    };
+    for (const studyName of existingStudiesNames)
+      addStudyLink(studyName);
+
+    const importStudyDiv = ui.div('', {style: {position: 'relative'}});
+    const importStudyButton = ui.bigButton('Import study', () => {
+      const dialog = ui.dialog('Import study');
+      let studyConfig: ClinStudyConfig | null = null;
+      const filesInput = ui.input.files('Files', {
+        onValueChanged: async () => {
+          //check if configuration file is present in the folder
+          try {
+            studyConfig = await extractConfigFromFiles(filesInput.value);
+            if (!studyConfig)
+              grok.shell.error(`define.xml or study.json not found or malformed`);
+          } catch (e) {
+            grok.shell.error(e);
+          }
+          dialog.getButton('OK').disabled = studyConfig === null || !filesInput.validate();
+        },
+      });
+      dialog.add(filesInput.root).show({resizable: true})
+        .onOK(() => {
+          setTimeout(() => {
+            ui.setUpdateIndicator(importStudyDiv, true, `Loading data for study ${studyConfig.name}`);
+            const sub = studyLoadedSubject.subscribe((data) => {
+              if (data.name === studyConfig.name) {
+                sub.unsubscribe();
+                if (data.loaded)
+                  addStudyLink(studyConfig.name);
+                ui.setUpdateIndicator(importStudyDiv, false);
+              }
+            });
+            //create clinical study object and add tree view node
+            createStudies(clinicalCaseNode, {config: studyConfig, files: filesInput.value}).then(() => {
+            //open study once it is created
+              openStudy(clinicalCaseNode, studyConfig.name, SUMMARY_VIEW_NAME);
+            });
+          }, 100);
+        });
+    });
+    importStudyButton.style.marginLeft = '0px';
+    importStudyDiv.append(importStudyButton);
     const view = DG.View.create();
     view.name = 'Clinical Case';
     view.path = CLINICAL_CASE_APP_PATH;
@@ -302,6 +414,7 @@ export class PackageFunctions {
       appHeader,
       studiesHeader,
       studiesDiv,
+      importStudyDiv,
     ]));
     return view;
   }

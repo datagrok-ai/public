@@ -17,9 +17,11 @@
     "@datagrok-libraries/utils": "^4.6.5",
     "@datagrok/charts": "^1.5.1",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.26.0",
+    "datagrok-api": "../../js-api",
     "jstat": "^1.9.5",
-    "moment": "^2.29.1"
+    "moment": "^2.29.1",
+    "rxjs": "^6.5.5",
+    "x2js": "^3.4.4"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.32.0",

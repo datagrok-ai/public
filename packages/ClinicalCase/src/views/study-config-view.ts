@@ -14,7 +14,7 @@ import {ACT_TRT_ARM, AE_DECOD_TERM, AE_END_DAY, AE_END_DAY_CALCULATED, AE_START_
   VISIT_DAY_STR} from '../constants/columns-constants';
 import {updateDivInnerHTML} from '../utils/utils';
 import {addView, createClinCaseTableView, TABLE_VIEWS_META} from '../utils/views-creation-utils';
-import {studiesViewsConfigs, VIEWS} from '../package';
+import {studies} from '../package';
 
 const studiesGlobalConfigs: {[key: string]: any} = {};
 
@@ -70,10 +70,10 @@ export class StudyConfigurationView extends ClinicalCaseViewBase {
         items: this.choices[field],
       });
       fieldChoices.onChanged.subscribe((value) => {
-        Object.keys(studiesViewsConfigs[this.studyId].config).forEach((view) => {
+        Object.keys(studies[this.studyId].viewsConfig.config).forEach((view) => {
           studiesGlobalConfigs[this.studyId][field] = value;
-          if (studiesViewsConfigs[this.studyId].config[view][field]) {
-            studiesViewsConfigs[this.studyId].config[view][field] = value;
+          if (studies[this.studyId].viewsConfig.config[view][field]) {
+            studies[this.studyId].viewsConfig.config[view][field] = value;
             const obj = grok.shell.view(view) as any;
             if (obj) {
               if (obj.hasOwnProperty('loaded')) {
@@ -84,8 +84,8 @@ export class StudyConfigurationView extends ClinicalCaseViewBase {
                   obj.close();
                   const tableView = createClinCaseTableView(this.studyId, view);
                   if (this.addTableViewAsView) {
-                    VIEWS[this.studyId][view] = addView(tableView.view);
-                    VIEWS[this.studyId][view].name = view;
+                    studies[this.studyId].views[view] = addView(tableView.view);
+                    studies[this.studyId].views[view].name = view;
                   }
                 }
               }

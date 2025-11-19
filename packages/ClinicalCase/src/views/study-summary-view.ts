@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import {cumulativeEnrollemntByDay} from '../data-preparation/data-preparation';
 import {CLINICAL_TRIAL_GOV_FIELDS} from '../constants/constants';
 import {CLIN_TRIAL_GOV_SEARCH, HttpService} from '../services/http.service';
-import {_package, studiesViewsConfigs} from '../package';
+import {_package} from '../package';
 import {AGE, RACE, SEX, SUBJECT_ID, SUBJ_REF_STDT} from '../constants/columns-constants';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import $ from 'cash-dom';
@@ -12,7 +12,7 @@ import {checkDateFormat} from '../data-preparation/utils';
 import {updateDivInnerHTML} from '../utils/utils';
 import {TRT_ARM_FIELD} from '../views-config';
 import {checkColumnsAndCreateViewer} from '../utils/views-validation-utils';
-import {studies} from '../clinical-study';
+import {studies} from '../package';
 
 
 export class StudySummaryView extends ClinicalCaseViewBase {
@@ -80,10 +80,10 @@ export class StudySummaryView extends ClinicalCaseViewBase {
 
     checkColumnsAndCreateViewer(
       studies[this.studyId].domains.dm,
-      [studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD]],
+      [studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD]],
       this.armChart, () => {
         const arm = DG.Viewer.barChart(studies[this.studyId].domains.dm,
-          {split: studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD], //@ts-ignore
+          {split: studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD], //@ts-ignore
             style: 'dashboard', barColor: DG.Color.lightBlue});
         arm.root.prepend(ui.divText('Treatment arm', this.viewerTitle));
         updateDivInnerHTML(this.armChart, arm.root);

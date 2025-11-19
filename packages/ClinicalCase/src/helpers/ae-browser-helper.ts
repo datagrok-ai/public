@@ -8,8 +8,7 @@ import {SEVERITY_COLOR_DICT} from '../constants/constants';
 import {updateDivInnerHTML} from '../utils/utils';
 import {AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, TRT_ARM_FIELD} from '../views-config';
 import {AE_BROWSER_VIEW_NAME} from '../constants/view-names-constants';
-import {studies} from '../clinical-study';
-import {studiesViewsConfigs} from '../package';
+import {studies} from '../package';
 
 export class AEBrowserHelper {
   domains = ['ae', 'ex', 'cm'];
@@ -90,10 +89,10 @@ export class AEBrowserHelper {
       const subjId = this.aeToSelect.get(SUBJECT_ID, this.aeToSelect.currentRowIdx);
       const title = ui.tooltip.bind(ui.label(subjId),
         dictToString(getSubjectDmData(subjId, [AGE, SEX, RACE,
-          studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD]], this.studyId)));
+          studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD]], this.studyId)));
       const description = ui.divH([
         ui.divText(String(this.aeToSelect
-          .get(studiesViewsConfigs[this.studyId].config[AE_BROWSER_VIEW_NAME][AE_TERM_FIELD],
+          .get(studies[this.studyId].viewsConfig.config[AE_BROWSER_VIEW_NAME][AE_TERM_FIELD],
             this.aeToSelect.currentRowIdx).toLowerCase()))]);
 
       if (this.aeToSelect.columns.names().includes(AE_SEVERITY)) {
@@ -117,9 +116,9 @@ export class AEBrowserHelper {
 
       const startEndDays = ui.tooltip.bind(
         ui.label(`${getNullOrValue(this.aeToSelect,
-          studiesViewsConfigs[this.studyId].config[AE_BROWSER_VIEW_NAME][AE_START_DAY_FIELD],
+          studies[this.studyId].viewsConfig.config[AE_BROWSER_VIEW_NAME][AE_START_DAY_FIELD],
           this.aeToSelect.currentRowIdx)} - ${getNullOrValue(this.aeToSelect,
-          studiesViewsConfigs[this.studyId].config[AE_BROWSER_VIEW_NAME][AE_END_DAY_FIELD],
+          studies[this.studyId].viewsConfig.config[AE_BROWSER_VIEW_NAME][AE_END_DAY_FIELD],
           this.aeToSelect.currentRowIdx)}`),
         `${getAeDate(AE_START_DATE)} - ${getAeDate(AE_END_DATE)}`);
 

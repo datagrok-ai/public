@@ -729,7 +729,8 @@ export namespace input {
   }
 
   const optionsMap: {[key: string]: (input: InputBase, option: any) => void} = {
-    value: (input, x) => input.value = input.inputType === d4.InputType.File ? toDart(x) : x,
+    value: (input, x) => input.value = input.inputType === d4.InputType.File ? toDart(x) :
+      input.inputType === d4.InputType.Files ? x.map((elem: FileInfo) => toDart(elem)) : x,
     nullable: (input, x) => input.nullable = x, // finish it?
     property: (input, x) => input.property = x,
     tooltipText: (input, x) => input.setTooltip(x),
@@ -965,6 +966,10 @@ export namespace input {
 
   export function file(name: string, options?: IInputInitOptions<FileInfo>): InputBase<FileInfo | null> {
     return _create(d4.InputType.File, name, options);
+  }
+
+  export function files(name: string, options?: IInputInitOptions<FileInfo[]>): InputBase<FileInfo[] | null> {
+    return _create(d4.InputType.Files, name, options);
   }
 
   export function list(name: string, options?: IInputInitOptions<Array<any>>): InputBase<Array<any> | null> {

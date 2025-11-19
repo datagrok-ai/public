@@ -2,11 +2,11 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {updateDivInnerHTML} from '../utils/utils';
-import {_package, studiesViewsConfigs} from '../package';
+import {_package} from '../package';
 import {getUniqueValues} from '../data-preparation/utils';
 import {LAB_RES_N, LAB_TEST, SUBJECT_ID, VS_TEST, VS_RES_N, VISIT_DAY_STR} from '../constants/columns-constants';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
-import {studies} from '../clinical-study';
+import {studies} from '../package';
 import {VISIT_FIELD} from '../views-config';
 import {createVisitDayStrCol} from '../data-preparation/data-preparation';
 
@@ -37,11 +37,11 @@ export class MatrixesView extends ClinicalCaseViewBase {
     this.domains = this.domains.filter((it) => studies[this.studyId].domains[it] !== null &&
       !this.optDomainsWithMissingCols.includes(it));
     this.domains.forEach((it) => {
-      if (studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD] === VISIT_DAY_STR)
+      if (studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD] === VISIT_DAY_STR)
         createVisitDayStrCol(studies[this.studyId].domains[it]);
 
       const df = studies[this.studyId].domains[it].clone(null, [SUBJECT_ID,
-        studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD],
+        studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD],
         this.domainFields[it]['test'], this.domainFields[it]['res']]);
       df.getCol(this.domainFields[it]['test']).name = 'test';
       df.getCol(this.domainFields[it]['res']).name = 'res';
@@ -56,7 +56,7 @@ export class MatrixesView extends ClinicalCaseViewBase {
         this.domainFields[it]['test']));
     });
     this.uniqueVisits = Array.from(getUniqueValues(this.initialDataframe,
-      studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD]));
+      studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD]));
 
     let topNum = 20;
     Object.keys(this.uniqueValues).forEach((key) => {
@@ -137,10 +137,10 @@ export class MatrixesView extends ClinicalCaseViewBase {
     if (this.selectedValues && this.bl) {
       let filteredDataframe = this.matrixDataframe.clone(null,
         this.selectedValues.map((it) => `${it} avg(res)`).concat([SUBJECT_ID,
-          studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD]]));
+          studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD]]));
       filteredDataframe = filteredDataframe
         .groupBy(filteredDataframe.columns.names())
-        .where(`${studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD]} = ${this.bl}`)
+        .where(`${studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD]} = ${this.bl}`)
         .aggregate();
       filteredDataframe.plot.fromType(DG.VIEWER.CORR_PLOT).then((v: any) => {
         this.matrixPlot = v;
@@ -158,7 +158,7 @@ export class MatrixesView extends ClinicalCaseViewBase {
   private createCorrelationMatrixDataframe(df: DG.DataFrame) {
     const dfForPivot = df.clone();
     this.matrixDataframe = dfForPivot
-      .groupBy([SUBJECT_ID, studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD]])
+      .groupBy([SUBJECT_ID, studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD]])
       .pivot('test')
       .avg('res')
       .aggregate();

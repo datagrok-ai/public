@@ -1,14 +1,15 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {ClinRow, studies} from '../clinical-study';
+import {ClinRow} from '../clinical-study';
+import {studies} from '../package';
 import {createBaselineEndpointDataframe, createHysLawDataframe,
   createLabValuesByVisitDataframe,
   createVisitDayStrCol} from '../data-preparation/data-preparation';
 import {ALT, BILIRUBIN} from '../constants/constants';
 import {createBaselineEndpointScatterPlot, createHysLawScatterPlot} from '../custom-scatter-plots/custom-scatter-plots';
 import {updateDivInnerHTML} from '../utils/utils';
-import {_package, studiesViewsConfigs} from '../package';
+import {_package} from '../package';
 import {getUniqueValues} from '../data-preparation/utils';
 import {LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_TEST, VISIT_DAY,
   SUBJECT_ID, LAB_RES_N,
@@ -46,7 +47,7 @@ export class LaboratoryView extends ClinicalCaseViewBase {
   }
 
   createView(): void {
-    if (studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD] === VISIT_DAY_STR)
+    if (studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD] === VISIT_DAY_STR)
       createVisitDayStrCol(studies[this.studyId].domains.lb);
     this.lb = studies[this.studyId].domains.lb.clone();
     if (studies[this.studyId].domains.dm)
@@ -54,11 +55,11 @@ export class LaboratoryView extends ClinicalCaseViewBase {
 
 
     this.uniqueLabValues = this.lb.col(LAB_TEST) ? Array.from(getUniqueValues(this.lb, LAB_TEST)) : [];
-    this.uniqueVisits = this.lb.col(studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD]) ?
-      Array.from(getUniqueValues(this.lb, studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD])) : [];
+    this.uniqueVisits = this.lb.col(studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD]) ?
+      Array.from(getUniqueValues(this.lb, studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD])) : [];
     this.uniqueTreatmentArms = this.dm &&
-      this.dm.col(studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD]) ?
-      Array.from(getUniqueValues(this.dm, studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD])) : [];
+      this.dm.col(studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD]) ?
+      Array.from(getUniqueValues(this.dm, studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD])) : [];
     this.selectedLabBlEp = this.uniqueLabValues.length ? this.uniqueLabValues[0] : null;
     this.selectedBl = this.uniqueVisits.length ? this.uniqueVisits[0] : null;
     this.selectedEp = this.uniqueVisits.length ? this.uniqueVisits[1] : null;
@@ -92,7 +93,7 @@ export class LaboratoryView extends ClinicalCaseViewBase {
 
     checkColumnsAndCreateViewer(
       studies[this.studyId].domains.lb,
-      [SUBJECT_ID, LAB_TEST, LAB_RES_N, studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD],
+      [SUBJECT_ID, LAB_TEST, LAB_RES_N, studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD],
         LAB_LO_LIM_N, LAB_HI_LIM_N],
       this.baselineEndpointDiv, () => {
         this.updateBaselineEndpointPlot();
@@ -129,22 +130,22 @@ export class LaboratoryView extends ClinicalCaseViewBase {
 
   private createHysLawScatterPlot() {
     const hysLawDataframe = createHysLawDataframe(this.lb, this.dm, this.selectedALT,
-      this.selectedAST, this.selectedBLN, studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD]);
+      this.selectedAST, this.selectedBLN, studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD]);
     if (studies[this.studyId].domains.dm) {
       grok.data.linkTables(studies[this.studyId].domains.dm, hysLawDataframe,
         [SUBJECT_ID], [SUBJECT_ID],
         [DG.SYNC_TYPE.FILTER_TO_FILTER]);
     }
     this.hysLawScatterPlot = createHysLawScatterPlot(hysLawDataframe, ALT,
-      BILIRUBIN, studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD]);
+      BILIRUBIN, studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD]);
   }
 
   updateBaselineEndpointPlot() {
-    const visitCol = studiesViewsConfigs[this.studyId].config[this.name][VISIT_FIELD];
+    const visitCol = studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD];
     const blNumCol = `${this.selectedLabBlEp}_BL`;
     const epNumCol = `${this.selectedLabBlEp}_EP`;
     const baselineEndpointDataframe = createBaselineEndpointDataframe(this.lb, this.dm,
-      [studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD]], LAB_TEST, LAB_RES_N,
+      [studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD]], LAB_TEST, LAB_RES_N,
       [LAB_LO_LIM_N, LAB_HI_LIM_N], this.selectedLabBlEp, this.selectedBl,
       this.selectedEp, visitCol, blNumCol, epNumCol);
     if (studies[this.studyId].domains.dm) {
@@ -158,7 +159,7 @@ export class LaboratoryView extends ClinicalCaseViewBase {
       return;
     }
     this.baselineEndpointPlot = createBaselineEndpointScatterPlot(baselineEndpointDataframe, blNumCol,
-      epNumCol, studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD],
+      epNumCol, studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD],
       baselineEndpointDataframe.get(LAB_LO_LIM_N, 0), baselineEndpointDataframe.get(LAB_HI_LIM_N, 0));
     updateDivInnerHTML(this.baselineEndpointDiv, this.baselineEndpointPlot.root);
   }
@@ -167,7 +168,7 @@ export class LaboratoryView extends ClinicalCaseViewBase {
     const labValue = this.selectedLabDistr;
     const labValueNumColumn = `${labValue} values`;
     const disributionDataframe = createLabValuesByVisitDataframe(this.lb, this.dm, labValue,
-      studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD],
+      studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD],
       this.selectedArm, labValueNumColumn, VISIT_DAY);
     if (studies[this.studyId].domains.dm) {
       grok.data.linkTables(studies[this.studyId].domains.dm, disributionDataframe,

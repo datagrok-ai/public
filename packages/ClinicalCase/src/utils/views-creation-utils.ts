@@ -5,10 +5,10 @@ import * as sdtmCols from '../constants/columns-constants';
 import {AE_START_DAY_FIELD} from '../views-config';
 import {AEBrowserHelper} from '../helpers/ae-browser-helper';
 import {ValidationHelper} from '../helpers/validation-helper';
-import {c, studiesViewsConfigs} from '../package';
+import {c} from '../package';
 import {createValidationErrorsDiv, getRequiredColumnsByView} from './views-validation-utils';
 import {updateDivInnerHTML} from './utils';
-import {studies} from '../clinical-study';
+import {studies} from '../package';
 import {ClinCaseTableView} from './types';
 
 export function createAEBrowserHelper(studyId: string): any {
@@ -21,7 +21,7 @@ export function createAEBrowserHelper(studyId: string): any {
   aeBrowserDf.onCurrentRowChanged.subscribe(() => {
     aeBrowserHelper.currentSubjId = aeBrowserDf.get(sdtmCols.SUBJECT_ID, aeBrowserDf.currentRowIdx);
     aeBrowserHelper.currentAeDay = aeBrowserDf
-      .get(studiesViewsConfigs[studyId].config[AE_BROWSER_VIEW_NAME][AE_START_DAY_FIELD],
+      .get(studies[studyId].viewsConfig.config[AE_BROWSER_VIEW_NAME][AE_START_DAY_FIELD],
         aeBrowserDf.currentRowIdx);
     aeBrowserHelper.propertyPanel();
   });

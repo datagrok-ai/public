@@ -7,8 +7,7 @@ import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {AE_PERCENT, NEG_LOG10_P_VALUE, RISK_DIFFERENCE, SE_RD_WITH_SIGN_LEVEL} from '../constants/constants';
 import {AE_TERM_FIELD, TRT_ARM_FIELD} from '../views-config';
 import {SUBJECT_ID} from '../constants/columns-constants';
-import {studies} from '../clinical-study';
-import {studiesViewsConfigs} from '../package';
+import {studies} from '../package';
 
 export class AERiskAssessmentView extends ClinicalCaseViewBase {
   aeDf: DG.DataFrame;
@@ -40,7 +39,7 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
     this.volcanoPlotXAxis = RISK_DIFFERENCE;
     this.volcanoPlotMarkerSize = Object.values(this.sizeOptions)[0];
     this.treatmentArmOptions = studies[this.studyId].domains.dm
-      .col(studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD]).categories;
+      .col(studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD]).categories;
     this.initialGuide = ui.info('Please select values for treatment/placebo arms in a context panel', '', false);
     updateDivInnerHTML(this.riskAssessmentDiv, this.initialGuide);
     this.root.append(this.riskAssessmentDiv);
@@ -66,8 +65,8 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
 
   updateRiskAssessmentDataframe() {
     this.riskAssessmentDataframe = createAERiskAssessmentDataframe(this.aeDf.clone(this.aeDf.filter),
-      studies[this.studyId].domains.dm.clone(), studiesViewsConfigs[this.studyId].config[this.name][TRT_ARM_FIELD],
-      studiesViewsConfigs[this.studyId].config[this.name][AE_TERM_FIELD],
+      studies[this.studyId].domains.dm.clone(), studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD],
+      studies[this.studyId].viewsConfig.config[this.name][AE_TERM_FIELD],
       this.placeboArm, this.activeArm, this.pValueLimit);
     this.riskAssessmentDataframe
       .col(this.volcanoPlotXAxis).meta.colors.setConditional({'-100-0': '#0000FF', '0-100': '#FF0000'});
@@ -82,7 +81,7 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
       showViewerFormulaLines: true,
       size: this.volcanoPlotMarkerSize,
       // eslint-disable-next-line max-len
-      rowTooltip: `${studiesViewsConfigs[this.studyId].config[this.name][AE_TERM_FIELD]}_ACTIVE\n${RISK_DIFFERENCE}\n${NEG_LOG10_P_VALUE}\n${AE_PERCENT}`,
+      rowTooltip: `${studies[this.studyId].viewsConfig.config[this.name][AE_TERM_FIELD]}_ACTIVE\n${RISK_DIFFERENCE}\n${NEG_LOG10_P_VALUE}\n${AE_PERCENT}`,
     });
 
     const lines: DG.FormulaLine[] = [];
