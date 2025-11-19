@@ -1,6 +1,10 @@
 # Grok Connect changelog
 
-# 2.5.3 (2025-11-03) WIP
+# 2.5.4 (2025-11-19) WIP
+
+* Databricks: Use meta tables to get info about schemas and tables instead of JDBC ConnectionMeta
+
+# 2.5.3 (2025-11-03)
 
 * Databricks: Oauth2(M-M) scheme support, driver update, schema browsing and visual query fixes
 
