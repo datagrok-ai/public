@@ -27,7 +27,7 @@ export async function askWiki(question: string, useOpenAI: boolean = true) {
 }
 
 export async function smartExecution(prompt: string, modelName: string) {
-  const gptEngine = new ChatGPTPromptEngine(LLMCredsManager.getApiKey(), modelName);
+  const gptEngine = ChatGPTPromptEngine.getInstance(LLMCredsManager.getApiKey(), modelName);
   const gptAssistant = new ChatGptAssistant(gptEngine);
 
   const mainWaitDiv = ui.wait(async () => {

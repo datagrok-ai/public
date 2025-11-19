@@ -1,4 +1,3 @@
-import {LLMCredsManager} from '../llm-utils/creds';
 import {OpenAIHelpClient} from '../llm-utils/openAI-client';
 import {JsonSchema} from './interfaces';
 export interface PromptEngine {
@@ -6,11 +5,17 @@ export interface PromptEngine {
 }
 
 export class ChatGPTPromptEngine implements PromptEngine {
-  constructor(
+  private static instance: ChatGPTPromptEngine | null = null;
+
+  private constructor(
     private apiKey: string,
     private model = 'gpt-4o-mini',
     private temperature = 0.0
   ) {}
+
+  public static getInstance(apiKey: string, model?: string, temperature?: number): ChatGPTPromptEngine {
+    return ChatGPTPromptEngine.instance ??= new ChatGPTPromptEngine(apiKey, model, temperature);
+  }
 
   async generate(prompt: string, system: string, schema?: JsonSchema): Promise<string> {
     const res = OpenAIHelpClient.getInstance();
@@ -19,12 +24,17 @@ export class ChatGPTPromptEngine implements PromptEngine {
 }
 
 export class GeminiPromptEngine implements PromptEngine {
+  private static instance: GeminiPromptEngine | null = null;
   private session: LanguageModel | null = null;
 
-  constructor(
+  private constructor(
     private readonly schema: any,
     private readonly monitor?: CreateMonitorCallback,
   ) {}
+
+  public static getInstance(schema: any, monitor?: CreateMonitorCallback): GeminiPromptEngine {
+    return GeminiPromptEngine.instance ??= new GeminiPromptEngine(schema, monitor);
+  }
 
   private async initSession(system: string) {
     if (!this.session) {
@@ -37,9 +47,8 @@ export class GeminiPromptEngine implements PromptEngine {
 
   async generate(prompt: string, system: string, schema?: JsonSchema): Promise<string> {
     await this.initSession(system);
-    const output = await this.session!.prompt(prompt, {
-      responseConstraint: this.schema,
+    return this.session!.prompt(prompt, {
+      responseConstraint: schema ?? this.schema,
     });
-    return output;
   }
 }
