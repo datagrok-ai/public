@@ -1,9 +1,11 @@
-# Datagrok API Overview
+---
+title: Datagrok API overview
+---
 
 Datagrok provides two primary types of APIs: JavaScript and Python. Each of these APIs allows you to interact with the Datagrok
 platform for various tasks, such as data processing, groups management, and more.
 
-## API Types
+## API types
 
 - [JavaScript API](https://datagrok.ai/api/js): The JavaScript API is designed for use with Datagrok plugins.
 - [Python API](https://datagrok.ai/api/py): The Python API is ideal for data science and automation tasks, providing easy integration with Datagrok services from a Python environment.

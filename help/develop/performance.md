@@ -27,7 +27,7 @@ work, and why. Here are some universal recommendations:
 * Maintain a suite of benchmarks
 * Look into problems, and check your assumptions using the Chrome Profiler
 
-## DataFrame
+## Dataframe
 
 **DO NOT** use row-based access for iterating over rows when [performance](./advanced/performance-tips.md)
 matters (pretty much anytime when the size of the dataset is not known in advance). Each call to `row(i)` creates

@@ -1,5 +1,6 @@
 ---
-title: FAQs
+title: "Developer FAQ"
+sidebar_label: "FAQ: Developers" 
 sidebar_position: 14
 ---
 
