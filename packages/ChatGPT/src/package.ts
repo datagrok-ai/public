@@ -137,8 +137,8 @@ export class PackageFunctions {
       'cache.invalidateOn': '0 0 1 * *'
     }
   })
-  static async fuzzyMatch(prompt: string, searchPatterns: string[]): Promise<string> {
-    const queryMatchResult = await findBestFunction(prompt, searchPatterns);
+  static async fuzzyMatch(prompt: string, searchPatterns: string[], descriptions: string[]): Promise<string> {
+    const queryMatchResult = await findBestFunction(prompt, searchPatterns, descriptions);
     return JSON.stringify(queryMatchResult);
   }
 

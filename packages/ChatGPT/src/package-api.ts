@@ -42,8 +42,8 @@ export namespace funcs {
     return await grok.functions.call('ChatGPT:GetExecutionPlan', { userGoal });
   }
 
-  export async function fuzzyMatch(prompt: string , searchPatterns: any ): Promise<string> {
-    return await grok.functions.call('ChatGPT:FuzzyMatch', { prompt, searchPatterns });
+  export async function fuzzyMatch(prompt: string , searchPatterns: any , descriptions: any ): Promise<string> {
+    return await grok.functions.call('ChatGPT:FuzzyMatch', { prompt, searchPatterns, descriptions });
   }
 
   export async function askDocumentationCached(prompt: string ): Promise<string> {

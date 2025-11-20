@@ -58,11 +58,12 @@ export async function getExecutionPlan(userGoal: string) : Promise<string> {
 
 //input: string prompt 
 //input: list<string> searchPatterns 
+//input: list<string> descriptions 
 //output: string result
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 1 * *
-export async function fuzzyMatch(prompt: string, searchPatterns: string[]) : Promise<string> {
-  return await PackageFunctions.fuzzyMatch(prompt, searchPatterns);
+export async function fuzzyMatch(prompt: string, searchPatterns: string[], descriptions: string[]) : Promise<string> {
+  return await PackageFunctions.fuzzyMatch(prompt, searchPatterns, descriptions);
 }
 
 //input: string prompt 

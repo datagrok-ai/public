@@ -31,7 +31,8 @@ export function geminiDownloadMonitor(m: CreateMonitor) {
 
 export async function findBestFunction(
   question: string,
-  searchPatterns: string[]
+  searchPatterns: string[],
+  descriptions: string[],
 ): Promise<QueryMatchResult | null> {
   const schema = {
     searchPattern: 'string',
@@ -64,7 +65,7 @@ Important instructions:
 
   const userPrompt = `
 Available search patterns:
-${searchPatterns.map((p, i) => `${i + 1}. ${p}`).join('\n')}
+${searchPatterns.map((p, i) => `${i + 1}. ${descriptions[i]} \n pattern: ${p} \n`).join('\n')}
 
 User request:
 "${question}"
