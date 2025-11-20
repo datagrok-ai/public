@@ -98,7 +98,7 @@ function matchLinkInstance(
         return;
     }
     if (currentIO[io.name] != null)
-      throw new Error(`Duplicate io name ${io.name} in link ${rnode.getItem().config.id}`);
+      throw new Error(`Duplicate io name ${io.name} in link ${spec.id}, node: ${rnode.getItem().config.id}`);
     currentIO[io.name] = paths;
     matchInfo[kind][io.name] = paths;
   }

@@ -61,12 +61,14 @@ export type PipelineLinkConfigurationBase<P> = {
   dataFrameMutations?: boolean | string[];
   defaultRestrictions?: Record<string, RestrictionType> | RestrictionType;
   nodePriority?: number;
+  runOnInit?: undefined;
 }
 
 export type PipelineHandlerConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type?: 'data',
   actions?: undefined;
   handler?: Handler;
+  runOnInit?: boolean;
 };
 
 export type PipelineValidatorConfiguration<P> = PipelineLinkConfigurationBase<P> & {
