@@ -7,10 +7,11 @@ import {ADVERSE_EVENTS_VIEW_NAME, AE_BROWSER_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_
 import * as sdtmCols from '../constants/columns-constants';
 import {AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, CON_MED_END_DAY_FIELD, CON_MED_NAME_FIELD,
   CON_MED_START_DAY_FIELD, INV_DRUG_END_DAY_FIELD, INV_DRUG_NAME_FIELD, INV_DRUG_START_DAY_FIELD,
-  TRT_ARM_FIELD,
-  VISIT_FIELD} from '../views-config';
+  TRT_ARM_FIELD} from '../views-config';
 import {updateDivInnerHTML} from './utils';
 import {studies} from '../package';
+import {CDISC_STANDARD} from './types';
+import {VISIT} from '../constants/columns-constants';
 
 
 export function createErrorsByDomainMap(validationResults: DG.DataFrame): {[key: string]: number} {
@@ -219,8 +220,8 @@ export function getRequiredColumnsByView(studyId: string) {
         'lb': {
           'req': [
             sdtmCols.SUBJECT_ID,
-            sdtmCols.VISIT_DAY,
-            studies[studyId].viewsConfig.config[DISTRIBUTIONS_VIEW_NAME][VISIT_FIELD],
+          //  sdtmCols.VISIT_DAY,
+            studies[studyId].config.standard === CDISC_STANDARD.SEND ? sdtmCols.VISIT_DAY_STR : VISIT,
             sdtmCols.LAB_RES_N,
             sdtmCols.LAB_TEST,
           ],
@@ -228,8 +229,8 @@ export function getRequiredColumnsByView(studyId: string) {
         'vs': {
           'req': [
             sdtmCols.SUBJECT_ID,
-            sdtmCols.VISIT_DAY,
-            studies[studyId].viewsConfig.config[DISTRIBUTIONS_VIEW_NAME][VISIT_FIELD],
+          //  sdtmCols.VISIT_DAY,
+            studies[studyId].config.standard === CDISC_STANDARD.SEND ? sdtmCols.VISIT_DAY_STR : VISIT,
             sdtmCols.VS_RES_N,
             sdtmCols.VS_TEST,
           ],
@@ -242,7 +243,7 @@ export function getRequiredColumnsByView(studyId: string) {
           'req': [
             sdtmCols.SUBJECT_ID,
             sdtmCols.LAB_TEST,
-            studies[studyId].viewsConfig.config[CORRELATIONS_VIEW_NAME][VISIT_FIELD],
+            studies[studyId].config.standard === CDISC_STANDARD.SEND ? sdtmCols.VISIT_DAY_STR : VISIT,
             sdtmCols.LAB_RES_N,
           ],
         },
@@ -250,7 +251,7 @@ export function getRequiredColumnsByView(studyId: string) {
           'req': [
             sdtmCols.SUBJECT_ID,
             sdtmCols.VS_TEST,
-            studies[studyId].viewsConfig.config[CORRELATIONS_VIEW_NAME][VISIT_FIELD],
+            studies[studyId].config.standard === CDISC_STANDARD.SEND ? sdtmCols.VISIT_DAY_STR : VISIT,
             sdtmCols.VS_RES_N,
           ],
         },
@@ -262,8 +263,8 @@ export function getRequiredColumnsByView(studyId: string) {
           'req': [
             sdtmCols.SUBJECT_ID,
             sdtmCols.LAB_TEST,
-            studies[studyId].viewsConfig.config[TIME_PROFILE_VIEW_NAME][VISIT_FIELD],
-            sdtmCols.VISIT_DAY,
+            studies[studyId].config.standard === CDISC_STANDARD.SEND ? sdtmCols.VISIT_DAY_STR : VISIT,
+          // sdtmCols.VISIT_DAY,
             sdtmCols.LAB_RES_N,
           ],
         },
@@ -271,8 +272,8 @@ export function getRequiredColumnsByView(studyId: string) {
           'req': [
             sdtmCols.SUBJECT_ID,
             sdtmCols.VS_TEST,
-            studies[studyId].viewsConfig.config[TIME_PROFILE_VIEW_NAME][VISIT_FIELD],
-            sdtmCols.VISIT_DAY,
+            studies[studyId].config.standard === CDISC_STANDARD.SEND ? sdtmCols.VISIT_DAY_STR : VISIT,
+         //   sdtmCols.VISIT_DAY,
             sdtmCols.VS_RES_N,
           ],
         },
@@ -315,7 +316,7 @@ export function getRequiredColumnsByView(studyId: string) {
             sdtmCols.SUBJECT_ID,
             sdtmCols.VISIT_START_DATE,
             sdtmCols.VISIT_DAY,
-            studies[studyId].viewsConfig.config[VISITS_VIEW_NAME][VISIT_FIELD],
+            studies[studyId].config.standard === CDISC_STANDARD.SEND ? sdtmCols.VISIT_DAY_STR : VISIT,
           ],
         },
         'dm': {

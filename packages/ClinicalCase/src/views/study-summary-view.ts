@@ -5,7 +5,7 @@ import {cumulativeEnrollemntByDay} from '../data-preparation/data-preparation';
 import {CLINICAL_TRIAL_GOV_FIELDS} from '../constants/constants';
 import {CLIN_TRIAL_GOV_SEARCH, HttpService} from '../services/http.service';
 import {_package} from '../package';
-import {AGE, RACE, SEX, SUBJECT_ID, SUBJ_REF_STDT} from '../constants/columns-constants';
+import {AGE, AGETXT, RACE, SEX, SPECIES, SUBJECT_ID, SUBJ_REF_STDT} from '../constants/columns-constants';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import $ from 'cash-dom';
 import {checkDateFormat} from '../data-preparation/utils';
@@ -13,6 +13,7 @@ import {updateDivInnerHTML} from '../utils/utils';
 import {TRT_ARM_FIELD} from '../views-config';
 import {checkColumnsAndCreateViewer} from '../utils/views-validation-utils';
 import {studies} from '../package';
+import {CDISC_STANDARD} from '../utils/types';
 
 
 export class StudySummaryView extends ClinicalCaseViewBase {
@@ -35,6 +36,7 @@ export class StudySummaryView extends ClinicalCaseViewBase {
   };
   test: any;
   validationErrorLinkHandler;
+  isSend = false;
 
   constructor(name: string, studyId: string, errorLinkHandler?: () => void) {
     super(name, studyId);
@@ -46,6 +48,7 @@ export class StudySummaryView extends ClinicalCaseViewBase {
   }
 
   createView() {
+    this.isSend = studies[this.studyId].config.standard === CDISC_STANDARD.SEND;
     this.errorsByDomain = studies[this.studyId].errorsByDomain;
     this.errorsByDomainWithLinks = this.createErrorsMapWithLinks();
     this.buildView();
@@ -102,23 +105,38 @@ export class StudySummaryView extends ClinicalCaseViewBase {
 
     checkColumnsAndCreateViewer(
       studies[this.studyId].domains.dm,
-      [RACE],
+      [this.isSend ? SPECIES : RACE],
       this.raceChart, () => {//@ts-ignore
-        const race = DG.Viewer.barChart(studies[this.studyId].domains.dm, {split: RACE, style: 'dashboard'});
-        race.root.prepend(ui.divText('Race', this.viewerTitle));
+        const race = DG.Viewer.barChart(studies[this.studyId].domains.dm, //@ts-ignore
+          {split: this.isSend ? SPECIES : RACE, style: 'dashboard'});
+        race.root.prepend(ui.divText(this.isSend ? 'Species' : 'Race', this.viewerTitle));
         updateDivInnerHTML(this.raceChart, race.root);
       },
-      'Race');
+      this.isSend ? 'Species' : 'Race');
 
-    checkColumnsAndCreateViewer(
-      studies[this.studyId].domains.dm,
-      [AGE],
-      this.ageChart, () => { //@ts-ignore
-        const age = DG.Viewer.histogram(studies[this.studyId].domains.dm, {value: AGE, style: 'dashboard'});
-        age.root.prepend(ui.divText('Age', this.viewerTitle));
-        updateDivInnerHTML(this.ageChart, age.root);
-      },
-      'Age');
+    //in case numeric age column exists - create histogram
+    if (studies[this.studyId].domains.dm.col(AGE)) {
+      checkColumnsAndCreateViewer(
+        studies[this.studyId].domains.dm,
+        [AGE],
+        this.ageChart, () => { //@ts-ignore
+          const age = DG.Viewer.histogram(studies[this.studyId].domains.dm, {value: AGE, style: 'dashboard'});
+          age.root.prepend(ui.divText('Age', this.viewerTitle));
+          updateDivInnerHTML(this.ageChart, age.root);
+        },
+        'Age');
+    } else { //else try to create barchart with AGETXT column
+      checkColumnsAndCreateViewer(
+        studies[this.studyId].domains.dm,
+        [AGETXT],
+        this.ageChart, () => {//@ts-ignore
+          const age = DG.Viewer.barChart(studies[this.studyId].domains.dm, //@ts-ignore
+            {split: AGETXT, style: 'dashboard'});
+          age.root.prepend(ui.divText('Age', this.viewerTitle));
+          updateDivInnerHTML(this.raceChart, age.root);
+        },
+        'Age');
+    }
 
     this.root.className = 'grok-view ui-box';
     this.root.append(ui.splitV([

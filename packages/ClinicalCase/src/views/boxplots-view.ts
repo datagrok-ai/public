@@ -8,10 +8,11 @@ import {ETHNIC, LAB_RES_N, LAB_TEST, VISIT_DAY, RACE, SEX, SUBJECT_ID, VS_TEST, 
 import {updateDivInnerHTML} from '../utils/utils';
 import {_package} from '../package';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
-import {TRT_ARM_FIELD, VISIT_FIELD} from '../views-config';
+import {TRT_ARM_FIELD} from '../views-config';
 import {DISTRIBUTIONS_VIEW_NAME} from '../constants/view-names-constants';
 import {tTest} from '@datagrok-libraries/statistics/src/tests';
 import {studies} from '../package';
+import {CDISC_STANDARD} from '../utils/types';
 const {jStat} = require('jstat');
 
 
@@ -31,7 +32,7 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
 
   bl = '';
   selectedSplitBy = studies[this.studyId].viewsConfig.config[DISTRIBUTIONS_VIEW_NAME][TRT_ARM_FIELD];
-  visitDayColumnsDict: {[key: string]: string} = {'lb': VISIT_DAY, 'vs': VISIT_DAY, 'bw': VISIT_DAY, 'bg': VISIT_DAY};
+  numVisDayColDict: {[key: string]: string} = {'lb': VISIT_DAY, 'vs': VISIT_DAY, 'bw': VISIT_DAY, 'bg': VISIT_DAY};
 
   distrWithDmData: DG.DataFrame;
 
@@ -54,6 +55,8 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
     },
   };
 
+  isSend = false;
+
 
   constructor(name, studyId) {
     super(name, studyId);
@@ -62,6 +65,7 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
   }
 
   createView(): void {
+    this.isSend = studies[this.studyId].config.standard === CDISC_STANDARD.SEND;
     this.selectedValuesByDomain = {};
     this.domains = this.domains.filter((it) => studies[this.studyId].domains[it] !== null &&
       !this.optDomainsWithMissingCols.includes(it));
@@ -69,17 +73,17 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
       .filter((it) => studies[this.studyId].domains.dm.columns.names().includes(it));
     this.selectedSplitBy = this.splitBy[0];
 
-    if (studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD] === VISIT_DAY_STR)
-      this.domains.forEach((it) => createVisitDayStrCol(studies[this.studyId].domains[it], this.visitDayColumnsDict));
+    if (this.isSend)
+      this.domains.forEach((it) => createVisitDayStrCol(studies[this.studyId].domains[it], this.numVisDayColDict));
     this.domains = this.domains.filter((it) =>
       studies[this.studyId].domains[it] !== null && !this.optDomainsWithMissingCols.includes(it) &&
-        Object.keys(this.visitDayColumnsDict).includes(it));
+        Object.keys(this.numVisDayColDict).includes(it));
 
     this.domains.forEach((it) => {
       const df = (studies[this.studyId].domains[it] as DG.DataFrame).clone(null, [SUBJECT_ID,
-        studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD], this.visitDayColumnsDict[it],
+        this.isSend ? VISIT_DAY_STR : VISIT_DAY, this.numVisDayColDict[it],
         this.domainFields[it]['test'], this.domainFields[it]['res']]);
-      df.col(this.visitDayColumnsDict[it]).name = VISIT_DAY;
+      df.col(this.numVisDayColDict[it]).name = VISIT_DAY;
       df.getCol(this.domainFields[it]['test']).name = 'test';
       df.getCol(this.domainFields[it]['res']).name = 'res';
       if (!this.distrDataframe)
@@ -102,14 +106,14 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
     this.bl = minVisitName; */
 
     this.uniqueVisits = Array.from(getUniqueValues(this.distrDataframe,
-      studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD]));
+      this.isSend ? VISIT_DAY_STR : VISIT_DAY));
     this.bl = this.uniqueVisits[0];
     this.distrWithDmData = addDataFromDmDomain(this.distrDataframe, studies[this.studyId].domains.dm,
-      [SUBJECT_ID, VISIT_DAY, studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD],
+      [SUBJECT_ID, VISIT_DAY, this.isSend ? VISIT_DAY_STR : VISIT_DAY,
         'test', 'res'], this.splitBy);
     this.distrWithDmData = this.distrWithDmData
       .groupBy(this.distrWithDmData.columns.names())
-      .where(`${studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD]} = ${this.bl}`)
+      .where(`${this.isSend ? VISIT_DAY_STR : VISIT_DAY} = ${this.bl}`)
       .aggregate();
     this.getTopPValues(4);
 
@@ -187,7 +191,7 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
           const df = createBaselineEndpointDataframe(
             this.distrDataframe.clone(this.distrDataframe.filter), studies[this.studyId].domains.dm, [category],
             'test', 'res', [], it, this.bl, '',
-            studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD], `${it}_BL`);
+            this.isSend ? VISIT_DAY_STR : VISIT_DAY, `${it}_BL`);
           this.getPValues(df, domain, it, category, `${it}_BL`);
           const plot = DG.Viewer.boxPlot(df, {
             categoryColumnNames: [category],
@@ -220,7 +224,8 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
     });
     //@ts-ignore
     this.pValuesArray.sort((a, b) => a.pValue-b.pValue || isNaN(a.pValue)-isNaN(b.pValue));
-    for (let i = 0; i < topNum; i++) {
+    const limit = this.pValuesArray.length < topNum ? this.pValuesArray.length : topNum;
+    for (let i = 0; i < limit; i++) {
       const domain = this.pValuesArray[i].domain;
       const value = this.pValuesArray[i].value;
       if (!this.selectedValuesByDomain[domain])

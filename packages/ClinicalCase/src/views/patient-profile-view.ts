@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {INV_DRUG_DOSE, INV_DRUG_DOSE_UNITS, LAB_DAY, LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_RES_N,
-  LAB_TEST, SUBJECT_ID, VISIT_DAY,
+  LAB_TEST, SUBJECT_ID, VISIT, VISIT_DAY,
   VISIT_DAY_STR} from '../constants/columns-constants';
 import {addColumnWithDrugPlusDosage, createVisitDayStrCol, dynamicComparedToBaseline,
   labDynamicComparedToMinMax, labDynamicRelatedToRef} from '../data-preparation/data-preparation';
@@ -11,10 +11,10 @@ import {_package} from '../package';
 import {PATIENT_PROFILE_VIEW_NAME} from '../constants/view-names-constants';
 import {AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, CON_MED_END_DAY_FIELD, CON_MED_NAME_FIELD,
   CON_MED_START_DAY_FIELD, INV_DRUG_END_DAY_FIELD, INV_DRUG_NAME_FIELD,
-  INV_DRUG_START_DAY_FIELD,
-  VISIT_FIELD} from '../views-config';
+  INV_DRUG_START_DAY_FIELD} from '../views-config';
 import { } from '../utils/utils';
 import {studies} from '../package';
+import {CDISC_STANDARD} from '../utils/types';
 
 export class PatientProfileView extends ClinicalCaseViewBase {
   options: any;
@@ -32,6 +32,7 @@ export class PatientProfileView extends ClinicalCaseViewBase {
   uniqueLabVisits: any;
   bl: string;
   selectedPatientId: any;
+  isSend = false;
 
   constructor(name, studyId) {
     super(name, studyId);
@@ -40,7 +41,8 @@ export class PatientProfileView extends ClinicalCaseViewBase {
   }
 
   createView(): void {
-    if (studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD] === VISIT_DAY_STR)
+    this.isSend = studies[this.studyId].config.standard === CDISC_STANDARD.SEND;
+    if (this.isSend)
       createVisitDayStrCol(studies[this.studyId].domains.lb);
     this.tableNamesAndFields = this.getTableNamesAndFields();
     this.options = this.getOptions();
@@ -114,12 +116,12 @@ export class PatientProfileView extends ClinicalCaseViewBase {
   private createLabBaselineVisitSelect() {
     if (studies[this.studyId].domains.lb &&
         // eslint-disable-next-line max-len
-        [VISIT_DAY, studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD]].every((it) => studies[this.studyId].domains.lb.col(it) !== null)) {
+        [VISIT_DAY, this.isSend ? VISIT_DAY_STR : VISIT].every((it) => studies[this.studyId].domains.lb.col(it) !== null)) {
       this.visitNamesAndDays = getVisitNamesAndDays(studies[this.studyId].domains.lb,
-        studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD], VISIT_DAY);
+        this.isSend ? VISIT_DAY_STR : VISIT, VISIT_DAY);
       this.bl = this.visitNamesAndDays[0].name;
       this.uniqueLabVisits = Array.from(getUniqueValues(studies[this.studyId].domains.lb,
-        studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD]));
+        this.isSend ? VISIT_DAY_STR : VISIT));
       const blVisitChoices = ui.input.choice('Baseline', {value: this.bl, items: this.uniqueLabVisits});
       blVisitChoices.onChanged.subscribe((value) => {
         this.bl = value;
@@ -277,7 +279,7 @@ export class PatientProfileView extends ClinicalCaseViewBase {
       },
       {
         req_cols: [SUBJECT_ID, LAB_DAY, LAB_TEST, LAB_RES_N, LAB_LO_LIM_N, LAB_HI_LIM_N,
-          studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD], VISIT_DAY],
+          this.isSend ? VISIT_DAY_STR : VISIT, VISIT_DAY],
         domain: 'lb',
         opts: {
           tableName: 'patient_lb',

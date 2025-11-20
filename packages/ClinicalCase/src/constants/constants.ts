@@ -1,5 +1,5 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
-import * as views from './view-names-constants';
 
 export const ALT = 'ALT';
 export const AST = 'AST';
@@ -51,6 +51,11 @@ export const DOMAINS_WITH_EVENT_START_END_DAYS = ['ae', 'cm', 'ex'];
 
 export const StudyConfigFileName = 'study.json';
 export const defineXmlFileName = 'define.xml';
+export const studyConfigJsonFileName = 'studyConfig.json';
 export const demoStudyId = 'CDISCPILOT01';
 
 export const domainsToValidate = ['dm', 'ae'];
+
+//values from ts domain
+export const STSTDTC = 'STSTDTC';
+export const STENDTC = 'STENDTC';

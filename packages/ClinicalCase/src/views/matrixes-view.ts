@@ -5,11 +5,12 @@ import {updateDivInnerHTML} from '../utils/utils';
 import {_package} from '../package';
 import {getUniqueValues} from '../data-preparation/utils';
 import {LAB_RES_N, LAB_TEST, SUBJECT_ID, VS_TEST, VS_RES_N, VISIT_DAY_STR,
-  BW_TEST, BW_RES_N, BG_TEST, BG_RES_N} from '../constants/columns-constants';
+  BW_TEST, BW_RES_N, BG_TEST, BG_RES_N,
+  VISIT} from '../constants/columns-constants';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {studies} from '../package';
-import {VISIT_FIELD} from '../views-config';
 import {createVisitDayStrCol} from '../data-preparation/data-preparation';
+import {CDISC_STANDARD} from '../utils/types';
 
 
 export class MatrixesView extends ClinicalCaseViewBase {
@@ -26,6 +27,7 @@ export class MatrixesView extends ClinicalCaseViewBase {
   domainFields = {'lb': {'test': LAB_TEST, 'res': LAB_RES_N}, 'vs': {'test': VS_TEST, 'res': VS_RES_N},
     'bw': {'test': BW_TEST, 'res': BW_RES_N}, 'bg': {'test': BG_TEST, 'res': BG_RES_N}};
   initialDataframe: DG.DataFrame;
+  isSend = false;
 
   constructor(name, studyId) {
     super(name, studyId);
@@ -36,14 +38,15 @@ export class MatrixesView extends ClinicalCaseViewBase {
   loaded = false;
 
   createView(): void {
+    this.isSend = studies[this.studyId].config.standard === CDISC_STANDARD.SEND;
     this.domains = this.domains.filter((it) => studies[this.studyId].domains[it] !== null &&
       !this.optDomainsWithMissingCols.includes(it));
     this.domains.forEach((it) => {
-      if (studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD] === VISIT_DAY_STR)
+      if (this.isSend)
         createVisitDayStrCol(studies[this.studyId].domains[it]);
 
       const df = studies[this.studyId].domains[it].clone(null, [SUBJECT_ID,
-        studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD],
+        this.isSend ? VISIT_DAY_STR : VISIT,
         this.domainFields[it]['test'], this.domainFields[it]['res']]);
       df.getCol(this.domainFields[it]['test']).name = 'test';
       df.getCol(this.domainFields[it]['res']).name = 'res';
@@ -58,9 +61,9 @@ export class MatrixesView extends ClinicalCaseViewBase {
         this.domainFields[it]['test']));
     });
     this.uniqueVisits = Array.from(getUniqueValues(this.initialDataframe,
-      studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD]));
+      this.isSend ? VISIT_DAY_STR : VISIT));
 
-    let topNum = 2;
+    let topNum = 20;
     Object.keys(this.uniqueValues).forEach((key) => {
       this.selectedValuesByDomain[key] = [];
       if (topNum > 0) {
@@ -139,10 +142,10 @@ export class MatrixesView extends ClinicalCaseViewBase {
     if (this.selectedValues && this.bl) {
       let filteredDataframe = this.matrixDataframe.clone(null,
         this.selectedValues.map((it) => `${it} avg(res)`).concat([SUBJECT_ID,
-          studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD]]));
+          this.isSend ? VISIT_DAY_STR : VISIT]));
       filteredDataframe = filteredDataframe
         .groupBy(filteredDataframe.columns.names())
-        .where(`${studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD]} = ${this.bl}`)
+        .where(`${this.isSend ? VISIT_DAY_STR : VISIT} = ${this.bl}`)
         .aggregate();
       filteredDataframe.plot.fromType(DG.VIEWER.CORR_PLOT).then((v: any) => {
         this.matrixPlot = v;
@@ -160,7 +163,7 @@ export class MatrixesView extends ClinicalCaseViewBase {
   private createCorrelationMatrixDataframe(df: DG.DataFrame) {
     const dfForPivot = df.clone();
     this.matrixDataframe = dfForPivot
-      .groupBy([SUBJECT_ID, studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD]])
+      .groupBy([SUBJECT_ID, this.isSend ? VISIT_DAY_STR : VISIT])
       .pivot('test')
       .avg('res')
       .aggregate();

@@ -15,8 +15,9 @@ import {LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_TEST, VISIT_DAY,
   SUBJECT_ID, LAB_RES_N,
   VISIT_DAY_STR} from '../constants/columns-constants';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
-import {TRT_ARM_FIELD, VISIT_FIELD} from '../views-config';
+import {TRT_ARM_FIELD} from '../views-config';
 import {checkColumnsAndCreateViewer} from '../utils/views-validation-utils';
+import {CDISC_STANDARD} from '../utils/types';
 
 export class LaboratoryView extends ClinicalCaseViewBase {
   hysLawDiv = ui.box();
@@ -39,6 +40,7 @@ export class LaboratoryView extends ClinicalCaseViewBase {
   dm: DG.DataFrame;
   lb: DG.DataFrame;
   selectedTab: string;
+  isSend = false;
 
   constructor(name, studyId) {
     super(name, studyId);
@@ -47,7 +49,8 @@ export class LaboratoryView extends ClinicalCaseViewBase {
   }
 
   createView(): void {
-    if (studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD] === VISIT_DAY_STR)
+    this.isSend = studies[this.studyId].config.standard === CDISC_STANDARD.SEND;
+    if (this.isSend)
       createVisitDayStrCol(studies[this.studyId].domains.lb);
     this.lb = studies[this.studyId].domains.lb.clone();
     if (studies[this.studyId].domains.dm)
@@ -55,8 +58,8 @@ export class LaboratoryView extends ClinicalCaseViewBase {
 
 
     this.uniqueLabValues = this.lb.col(LAB_TEST) ? Array.from(getUniqueValues(this.lb, LAB_TEST)) : [];
-    this.uniqueVisits = this.lb.col(studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD]) ?
-      Array.from(getUniqueValues(this.lb, studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD])) : [];
+    this.uniqueVisits = this.lb.col(this.isSend ? VISIT_DAY_STR : VISIT_DAY) ?
+      Array.from(getUniqueValues(this.lb, this.isSend ? VISIT_DAY_STR : VISIT_DAY)) : [];
     this.uniqueTreatmentArms = this.dm &&
       this.dm.col(studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD]) ?
       Array.from(getUniqueValues(this.dm, studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD])) : [];
@@ -93,7 +96,7 @@ export class LaboratoryView extends ClinicalCaseViewBase {
 
     checkColumnsAndCreateViewer(
       studies[this.studyId].domains.lb,
-      [SUBJECT_ID, LAB_TEST, LAB_RES_N, studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD],
+      [SUBJECT_ID, LAB_TEST, LAB_RES_N, this.isSend ? VISIT_DAY_STR : VISIT_DAY,
         LAB_LO_LIM_N, LAB_HI_LIM_N],
       this.baselineEndpointDiv, () => {
         this.updateBaselineEndpointPlot();
@@ -141,7 +144,7 @@ export class LaboratoryView extends ClinicalCaseViewBase {
   }
 
   updateBaselineEndpointPlot() {
-    const visitCol = studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD];
+    const visitCol = this.isSend ? VISIT_DAY_STR : VISIT_DAY;
     const blNumCol = `${this.selectedLabBlEp}_BL`;
     const epNumCol = `${this.selectedLabBlEp}_EP`;
     const baselineEndpointDataframe = createBaselineEndpointDataframe(this.lb, this.dm,

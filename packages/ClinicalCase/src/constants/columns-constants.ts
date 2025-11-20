@@ -17,6 +17,8 @@ export const ETHNIC = 'ETHNIC';
 export const SUBJ_REF_STDT = 'RFSTDTC';
 export const SUBJ_REF_ENDT = 'RFENDTC';
 export const DEATH_DATE = 'DTHDTC';
+export const SPECIES = 'SPECIES';
+export const AGETXT = 'AGETXT';
 //ae
 export const AE_START_DAY = 'AESTDY';
 export const AE_START_DAY_CALCULATED = 'AESTDY_CALCULATED';
@@ -87,4 +89,9 @@ export const QS_SUB_CATEGORY = 'QSSCAT';
 export const QS_TEST = 'QSTEST';
 export const QS_RES = 'QSORRES';
 export const QS_RES_N = 'QSSTRESN';
+//ts
+export const TSPARMCD = 'TSPARMCD';
+export const TSPARM = 'TSPARM';
+export const TSVAL = 'TSVAL';
+
 
