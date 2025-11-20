@@ -1,5 +1,9 @@
 # Compute2 changelog
 
+## 1.3.20 (2025-11-20)
+
+- Workflows new buttons-based navigation
+
 ## 1.3.19 (2025-10-30)
 
 - Fitting with formulas support
