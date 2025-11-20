@@ -3,9 +3,8 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {addDataFromDmDomain, getUniqueValues} from '../data-preparation/utils';
 import {createBaselineEndpointDataframe, createVisitDayStrCol} from '../data-preparation/data-preparation';
-import {ETHNIC, LAB_RES_N, LAB_TEST, VISIT_DAY, RACE,
-  SEX, SUBJECT_ID, VS_TEST, VS_RES_N,
-  VISIT_DAY_STR} from '../constants/columns-constants';
+import {ETHNIC, LAB_RES_N, LAB_TEST, VISIT_DAY, RACE, SEX, SUBJECT_ID, VS_TEST, VS_RES_N,
+  VISIT_DAY_STR, BW_TEST, BW_RES_N, BG_TEST, BG_RES_N} from '../constants/columns-constants';
 import {updateDivInnerHTML} from '../utils/utils';
 import {_package} from '../package';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
@@ -17,8 +16,9 @@ const {jStat} = require('jstat');
 
 
 export class BoxPlotsView extends ClinicalCaseViewBase {
-  domains = ['lb', 'vs'];
-  domainFields = {'lb': {'test': LAB_TEST, 'res': LAB_RES_N}, 'vs': {'test': VS_TEST, 'res': VS_RES_N}};
+  domains = ['lb', 'vs', 'bw', 'bg'];
+  domainFields = {'lb': {'test': LAB_TEST, 'res': LAB_RES_N}, 'vs': {'test': VS_TEST, 'res': VS_RES_N},
+    'bw': {'test': BW_TEST, 'res': BW_RES_N}, 'bg': {'test': BG_TEST, 'res': BG_RES_N}};
   distrDataframe: DG.DataFrame;
 
   boxPlotDiv = ui.div();
@@ -31,6 +31,7 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
 
   bl = '';
   selectedSplitBy = studies[this.studyId].viewsConfig.config[DISTRIBUTIONS_VIEW_NAME][TRT_ARM_FIELD];
+  visitDayColumnsDict: {[key: string]: string} = {'lb': VISIT_DAY, 'vs': VISIT_DAY, 'bw': VISIT_DAY, 'bg': VISIT_DAY};
 
   distrWithDmData: DG.DataFrame;
 
@@ -68,12 +69,17 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
       .filter((it) => studies[this.studyId].domains.dm.columns.names().includes(it));
     this.selectedSplitBy = this.splitBy[0];
 
+    if (studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD] === VISIT_DAY_STR)
+      this.domains.forEach((it) => createVisitDayStrCol(studies[this.studyId].domains[it], this.visitDayColumnsDict));
+    this.domains = this.domains.filter((it) =>
+      studies[this.studyId].domains[it] !== null && !this.optDomainsWithMissingCols.includes(it) &&
+        Object.keys(this.visitDayColumnsDict).includes(it));
+
     this.domains.forEach((it) => {
-      if (studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD] === VISIT_DAY_STR)
-        createVisitDayStrCol(studies[this.studyId].domains[it]);
-      const df = studies[this.studyId].domains[it].clone(null, [SUBJECT_ID,
-        studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD], VISIT_DAY,
+      const df = (studies[this.studyId].domains[it] as DG.DataFrame).clone(null, [SUBJECT_ID,
+        studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD], this.visitDayColumnsDict[it],
         this.domainFields[it]['test'], this.domainFields[it]['res']]);
+      df.col(this.visitDayColumnsDict[it]).name = VISIT_DAY;
       df.getCol(this.domainFields[it]['test']).name = 'test';
       df.getCol(this.domainFields[it]['res']).name = 'res';
       if (!this.distrDataframe)

@@ -14,6 +14,14 @@ export async function clinicalCaseAppTreeBrowser(treeNode: any) : Promise<void> 
   await PackageFunctions.clinicalCaseAppTreeBrowser(treeNode);
 }
 
+//name: Get list of studies
+//description: Return list of clinical and preclinical studies loaded into Clinical Case application
+//tags: folderViewer
+//output: widget result
+export async function getListOfStudies() : Promise<any> {
+  return await PackageFunctions.getListOfStudies();
+}
+
 //tags: folderViewer
 //input: file folder 
 //input: list<file> files 

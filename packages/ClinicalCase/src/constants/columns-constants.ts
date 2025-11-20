@@ -66,6 +66,14 @@ export const LAB_HI_LIM_N = 'LBSTNRHI';
 export const VS_TEST = 'VSTEST';
 export const VS_RES_N = 'VSSTRESN';
 export const VS_DAY = 'VSDY';
+//bw
+export const BW_TEST = 'BWTEST';
+export const BW_RES_N = 'BWSTRESN';
+export const BW_DAY = 'BWDY';
+//bg
+export const BG_TEST = 'BGTEST';
+export const BG_RES_N = 'BGSTRESN';
+export const BG_DAY = 'BGDY';
 //mh
 export const MH_DECOD_TERM = 'MHDECOD';
 export const MH_CATEGORY = 'MHCAT';

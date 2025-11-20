@@ -22,6 +22,13 @@ export namespace funcs {
     return await grok.functions.call('ClinicalCase:ClinicalCaseAppTreeBrowser', { treeNode });
   }
 
+  /**
+  Return list of clinical and preclinical studies loaded into Clinical Case application
+  */
+  export async function getListOfStudies(): Promise<any> {
+    return await grok.functions.call('ClinicalCase:GetListOfStudies', {});
+  }
+
   export async function clinicalCaseFolderLauncher(folder: DG.FileInfo , files: any ): Promise<any> {
     return await grok.functions.call('ClinicalCase:ClinicalCaseFolderLauncher', { folder, files });
   }

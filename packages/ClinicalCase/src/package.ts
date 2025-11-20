@@ -238,7 +238,7 @@ export async function readClinicalData(study: ClinicalStudy, importedFiles?: DG.
           let df: DG.DataFrame | null = null;
           if (studyFiles[i].extension === 'xpt') {
             console.log(`*************** read ${domainNameWithExt}`);
-           // const content = await grok.dapi.files.readAsBytes(studyFiles[i]);
+            // const content = await grok.dapi.files.readAsBytes(studyFiles[i]);
             df = await scripts.readSas(studyFiles[i]);
             console.log(`*************** converted ${domainNameWithExt}`);
           } else
@@ -428,6 +428,29 @@ export class PackageFunctions {
       url.pathname.replace(`/browse${CLINICAL_CASE_APP_PATH}`, ``) : '';
     const studyAndView = getCurrentStudyAndView(currentStudyAndViewPath);
     await clinicalCaseAppTB(treeNode, studyAndView.study, studyAndView.viewName);
+  }
+
+
+  @grok.decorators.folderViewer({
+    'name': 'Get list of studies',
+    'description': 'Return list of clinical and preclinical studies loaded into Clinical Case application',
+  })
+  static async getListOfStudies(): Promise<DG.Widget> {
+    const clinicalCaseNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps')
+      .getOrCreateGroup('Clinical').getOrCreateGroup('Clinical Case');
+    await createStudies(clinicalCaseNode);
+    const existingStudiesNames = Object.keys(studies);
+    const studiesDiv = ui.divV([]);
+    const addStudyLink = (studyName: string) => {
+      const studyLink = ui.link(studyName, async () => {
+        openStudy(clinicalCaseNode, studyName, SUMMARY_VIEW_NAME);
+      }, 'Click to run the study');
+      studyLink.style.paddingBottom = '10px';
+      studiesDiv.append(studyLink);
+    };
+    for (const studyName of existingStudiesNames)
+      addStudyLink(studyName);
+    return new DG.Widget(studiesDiv);
   }
 
   @grok.decorators.folderViewer({

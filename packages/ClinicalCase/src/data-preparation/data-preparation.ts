@@ -505,15 +505,29 @@ export function getSubjectBaselineDates(studyId: string) {
   return subjBaselineDates;
 }
 
-export function createVisitDayStrCol(df: DG.DataFrame) {
+export function createVisitDayStrCol(df: DG.DataFrame, visitColNamesDict?: {[key: string]: string}) {
   if (!df)
     return;
-  if (!df.col(VISIT_DAY_STR)) {
-    const visitDayCol = df.col(VISIT_DAY);
 
-    if (visitDayCol) {
-      df.columns.addNewString(VISIT_DAY_STR)
-        .init((i) => visitDayCol.isNone(i) ? undefined : visitDayCol.get(i).toString());
-    }
+  const getVisitDayCol = () => {
+    const visitDayCol = df.col(VISIT_DAY);
+    //TODO!!! For some interval related tests, like body weight gain, there are two columns:
+    // BGDY(start of interval) and BGENDY (end of interval) - need to decide which to use and in which cases
+    const domainSpecificVisitDayCol = df.col(`${df.name.toUpperCase()}DY`);
+    const colToUse = visitDayCol ?? domainSpecificVisitDayCol;
+    return colToUse;
+  };
+  const visitDayCol = getVisitDayCol();
+  if (!df.col(VISIT_DAY_STR) && visitDayCol) {
+    //create categorical visit day column
+    df.columns.addNewString(VISIT_DAY_STR)
+      .init((i) => visitDayCol.isNone(i) ? undefined : visitDayCol.get(i).toString());
+  }
+  //set visit day column in case it is domain specific
+  if (visitColNamesDict) {
+    if (visitDayCol)
+      visitColNamesDict[df.name] = visitDayCol.name;
+    else
+      delete visitColNamesDict[df.name];
   }
 }

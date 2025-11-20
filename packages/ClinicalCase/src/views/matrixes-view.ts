@@ -4,7 +4,8 @@ import * as ui from 'datagrok-api/ui';
 import {updateDivInnerHTML} from '../utils/utils';
 import {_package} from '../package';
 import {getUniqueValues} from '../data-preparation/utils';
-import {LAB_RES_N, LAB_TEST, SUBJECT_ID, VS_TEST, VS_RES_N, VISIT_DAY_STR} from '../constants/columns-constants';
+import {LAB_RES_N, LAB_TEST, SUBJECT_ID, VS_TEST, VS_RES_N, VISIT_DAY_STR,
+  BW_TEST, BW_RES_N, BG_TEST, BG_RES_N} from '../constants/columns-constants';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {studies} from '../package';
 import {VISIT_FIELD} from '../views-config';
@@ -21,8 +22,9 @@ export class MatrixesView extends ClinicalCaseViewBase {
   selectedValues = [];
   bl: any;
   matrixDataframe: DG.DataFrame;
-  domains = ['lb', 'vs'];
-  domainFields = {'lb': {'test': LAB_TEST, 'res': LAB_RES_N}, 'vs': {'test': VS_TEST, 'res': VS_RES_N}};
+  domains = ['lb', 'vs', 'bw', 'bg'];
+  domainFields = {'lb': {'test': LAB_TEST, 'res': LAB_RES_N}, 'vs': {'test': VS_TEST, 'res': VS_RES_N},
+    'bw': {'test': BW_TEST, 'res': BW_RES_N}, 'bg': {'test': BG_TEST, 'res': BG_RES_N}};
   initialDataframe: DG.DataFrame;
 
   constructor(name, studyId) {
@@ -58,7 +60,7 @@ export class MatrixesView extends ClinicalCaseViewBase {
     this.uniqueVisits = Array.from(getUniqueValues(this.initialDataframe,
       studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD]));
 
-    let topNum = 20;
+    let topNum = 2;
     Object.keys(this.uniqueValues).forEach((key) => {
       this.selectedValuesByDomain[key] = [];
       if (topNum > 0) {

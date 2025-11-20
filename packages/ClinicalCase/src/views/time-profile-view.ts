@@ -4,8 +4,8 @@ import * as ui from 'datagrok-api/ui';
 import {addDataFromDmDomain, createPivotedDataframeAvg,
   getUniqueValues, getVisitNamesAndDays} from '../data-preparation/utils';
 import {ETHNIC, LAB_RES_N, LAB_TEST, VISIT_DAY, RACE, SEX,
-  SUBJECT_ID, VS_TEST, VS_RES_N,
-  VISIT_DAY_STR} from '../constants/columns-constants';
+  SUBJECT_ID, VS_TEST, VS_RES_N, VISIT_DAY_STR, BW_TEST, BW_RES_N,
+  BG_TEST, BG_RES_N} from '../constants/columns-constants';
 import {createVisitDayStrCol, dynamicComparedToBaseline} from '../data-preparation/data-preparation';
 import {updateDivInnerHTML} from '../utils/utils';
 import {_package} from '../package';
@@ -28,8 +28,10 @@ export class TimeProfileView extends ClinicalCaseViewBase {
   uniqueVisits: any;
   splitBy: any;
   types = ['Values', 'Changes'];
-  domains = ['vs', 'lb'];
-  domainFields = {'lb': {'test': LAB_TEST, 'res': LAB_RES_N}, 'vs': {'test': VS_TEST, 'res': VS_RES_N}};
+  domains = ['vs', 'lb', 'bw', 'bg'];
+  domainFields = {'lb': {'test': LAB_TEST, 'res': LAB_RES_N}, 'vs': {'test': VS_TEST, 'res': VS_RES_N},
+    'bw': {'test': BW_TEST, 'res': BW_RES_N}, 'bg': {'test': BG_TEST, 'res': BG_RES_N}};
+  visitDayColumnsDict: {[key: string]: string} = {'lb': VISIT_DAY, 'vs': VISIT_DAY, 'bw': VISIT_DAY, 'bg': VISIT_DAY};
   selectedLabValue: string;
   selectedType: string;
   bl: string;
@@ -49,9 +51,10 @@ export class TimeProfileView extends ClinicalCaseViewBase {
       .filter((it) => studies[this.studyId].domains.dm &&
       studies[this.studyId].domains.dm.columns.names().includes(it));
     if (studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD] === VISIT_DAY_STR)
-      this.domains.forEach((it) => createVisitDayStrCol(studies[this.studyId].domains[it]));
+      this.domains.forEach((it) => createVisitDayStrCol(studies[this.studyId].domains[it], this.visitDayColumnsDict));
     this.domains = this.domains.filter((it) =>
-      studies[this.studyId].domains[it] !== null && !this.optDomainsWithMissingCols.includes(it));
+      studies[this.studyId].domains[it] !== null && !this.optDomainsWithMissingCols.includes(it) &&
+        Object.keys(this.visitDayColumnsDict).includes(it));
     this.selectedDomain = this.domains[0];
     this.uniqueLabValues = Array.from(getUniqueValues(studies[this.studyId].domains[this.selectedDomain],
       this.domainFields[this.selectedDomain]['test']));
@@ -60,7 +63,7 @@ export class TimeProfileView extends ClinicalCaseViewBase {
     this.selectedLabValue = this.uniqueLabValues[0] as string;
     this.selectedType = this.types[0];
     this.visitNamesAndDays = getVisitNamesAndDays(studies[this.studyId].domains[this.selectedDomain],
-      studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD], VISIT_DAY);
+      studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD], this.visitDayColumnsDict[this.selectedDomain]);
     this.bl = this.visitNamesAndDays[0].name;
     this.ep = this.visitNamesAndDays[this.visitNamesAndDays.length-1].name;
     this.createLaboratoryDataframe();
@@ -74,7 +77,8 @@ export class TimeProfileView extends ClinicalCaseViewBase {
         studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD]));
       this.selectedLabValue = this.uniqueLabValues[0] as string;
       this.visitNamesAndDays = getVisitNamesAndDays(studies[this.studyId].domains[this.selectedDomain],
-        studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD], VISIT_DAY);
+        studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD],
+        this.visitDayColumnsDict[this.selectedDomain]);
       if (this.visitNamesAndDays.findIndex((it) => it.name === this.bl) === -1)
         this.bl = this.visitNamesAndDays[0].name;
 
@@ -96,7 +100,7 @@ export class TimeProfileView extends ClinicalCaseViewBase {
     this.root.className = 'grok-view ui-box';
     this.linechart = DG.Viewer.lineChart(this.laboratoryDataFrame, {
       splitColumnName: this.splitBy.length ? this.splitBy[0] : '',
-      xColumnName: VISIT_DAY,
+      xColumnName: this.visitDayColumnsDict[this.selectedDomain],
       yColumnNames: [`${this.selectedLabValue} avg(${this.domainFields[this.selectedDomain]['res']})`],
       whiskersType: 'Med | Q1, Q3',
     });
@@ -193,13 +197,15 @@ export class TimeProfileView extends ClinicalCaseViewBase {
     let df = this.filterDataFrameByDays(studies[this.studyId].domains[this.selectedDomain].clone());
     if (this.splitBy.length) {
       df = addDataFromDmDomain(df, studies[this.studyId].domains.dm,
-        [SUBJECT_ID, VISIT_DAY, studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD]]
+        [SUBJECT_ID, this.visitDayColumnsDict[this.selectedDomain],
+          studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD]]
           .concat(Object.values(this.domainFields[this.selectedDomain])),
         this.splitBy);
     }
 
-    this.laboratoryDataFrame = createPivotedDataframeAvg(df, [SUBJECT_ID, VISIT_DAY],
-      this.domainFields[this.selectedDomain]['test'], this.domainFields[this.selectedDomain]['res'], this.splitBy);
+    this.laboratoryDataFrame = createPivotedDataframeAvg(df, [SUBJECT_ID,
+      this.visitDayColumnsDict[this.selectedDomain]],
+    this.domainFields[this.selectedDomain]['test'], this.domainFields[this.selectedDomain]['res'], this.splitBy);
   }
 
   private createrelativeChangeFromBlDataframe() {
@@ -208,13 +214,15 @@ export class TimeProfileView extends ClinicalCaseViewBase {
       this.domainFields[this.selectedDomain]['res'], this.bl,
       studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD], 'LAB_DYNAMIC_BL', true);
     if (this.splitBy.length) {
-      df = addDataFromDmDomain(df, studies[this.studyId].domains.dm, [SUBJECT_ID, VISIT_DAY,
+      df = addDataFromDmDomain(df, studies[this.studyId].domains.dm, [SUBJECT_ID,
+        this.visitDayColumnsDict[this.selectedDomain],
         studies[this.studyId].viewsConfig.config[this.name][VISIT_FIELD],
         this.domainFields[this.selectedDomain]['test'], this.domainFields[this.selectedDomain]['res']], this.splitBy);
     }
 
-    this.relativeChangeFromBlDataFrame = createPivotedDataframeAvg(df, [SUBJECT_ID, VISIT_DAY],
-      this.domainFields[this.selectedDomain]['test'], this.domainFields[this.selectedDomain]['res'], this.splitBy);
+    this.relativeChangeFromBlDataFrame = createPivotedDataframeAvg(df, [SUBJECT_ID,
+      this.visitDayColumnsDict[this.selectedDomain]],
+    this.domainFields[this.selectedDomain]['test'], this.domainFields[this.selectedDomain]['res'], this.splitBy);
   }
 
 
@@ -223,7 +231,7 @@ export class TimeProfileView extends ClinicalCaseViewBase {
     const epDay = this.visitNamesAndDays.find((it) => it.name === this.ep).day;
     const filteredDf = df.groupBy(df.columns.names())
       // eslint-disable-next-line max-len
-      .where(`${VISIT_DAY} >= ${blDay} and ${VISIT_DAY} <= ${epDay} and ${this.domainFields[this.selectedDomain]['test']} = ${this.selectedLabValue}`)
+      .where(`${this.visitDayColumnsDict[df.name]} >= ${blDay} and ${this.visitDayColumnsDict[df.name]} <= ${epDay} and ${this.domainFields[this.selectedDomain]['test']} = ${this.selectedLabValue}`)
       .aggregate();
     return filteredDf;
   }
