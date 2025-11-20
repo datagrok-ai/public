@@ -6,6 +6,21 @@ import * as grok from 'datagrok-api/grok';
 import '../../css/ai.css';
 import {Plan, Step} from './interfaces';
 
+function renderHelm(value: string) {
+  return ui.wait(async () => {
+    //@ts-ignore
+    const helmInput = await ui.input.helmAsync('HELM', {
+      editable: false,
+    });
+    helmInput.setStringValue(value);
+    helmInput.root.addEventListener('click', () => {
+      grok.shell.o = helmInput.getValue();
+    });
+    return helmInput.root;
+  });
+}
+
+
 export class AssistantRenderer {
   static renderPlan(plan: Plan): HTMLElement {
     const container = ui.divV([], 'ai-execute-plan');
@@ -48,8 +63,15 @@ export class AssistantRenderer {
       container.append(val.root);
     else if (typeof val === 'string' && meta?.semType === DG.SEMTYPE.MOLECULE)
       container.append(grok.chem.drawMolecule(val, 200, 300));
-    else if (meta?.propertyType === 'dataframe')
-      container.append(val.plot.grid().root);
+    else if (typeof val === 'string' && meta?.semType === DG.SEMTYPE.MACROMOLECULE &&
+      (meta?.units?.toLowerCase() === 'helm' || meta?.options?.units?.toLowerCase() === 'helm')
+    )
+      container.append(renderHelm(val));
+    else if (meta?.propertyType === 'dataframe') {
+      const grid = val.plot.grid().root;
+      grid.style.width = '100%';
+      container.append(grid);
+    }
     else
       container.append(ui.divText(String(val)));
 

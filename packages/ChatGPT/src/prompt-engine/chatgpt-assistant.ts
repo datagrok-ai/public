@@ -200,6 +200,17 @@ Respond strictly as JSON with this structure:
 
     const finalKey = plan.steps.at(-1)?.outputs?.[0];
     const finalResult = finalKey ? context[finalKey] : null;
+    if (!finalKey) {
+      // some functions along the steps can be such that they just alter the dataFrame and do nothing, so search for the last dataFrame in the context
+      for (let i = plan.steps.length - 2; i >= 0; i--) {
+        const step = plan.steps[i];
+        const outputMeta = step.outputs?.length ? context[step.outputs[0]]?.meta : null;
+        if (outputMeta?.propertyType === 'dataframe')
+          return {context, finalResult: context[step.outputs[0]]};
+        else if (step.outputs?.length)
+          break;
+      }
+    }
 
     return {context, finalResult};
   }
