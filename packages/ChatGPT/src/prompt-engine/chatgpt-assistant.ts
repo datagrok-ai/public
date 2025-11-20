@@ -66,6 +66,10 @@ Always respond strictly in JSON format.
       description: 'Chembl integration, commonly used queries and browser',
     },
     {
+      name: 'ClinicalCase',
+      description: 'Analysis of the clinical data represented in the [SDTM](https://www.cdisc.org/standards/foundational/sdtm) and [SEND](https://www.cdisc.org/standards/foundational/send) formats.',
+    },
+    {
       name: 'Retrosynthesis',
       description: 'Creates retrosynthesis paths for the selected molecule',
     }
