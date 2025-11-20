@@ -81,11 +81,14 @@ export class FormCellRenderer extends DG.GridCellRenderer {
 
     // molecules first
     const molCols = cols.filter((c) => c.semType == DG.SEMTYPE.MOLECULE);
-    for (let i = 0; i < molCols.length; i++) {
-      if (molCols[i] != null && b.width > 30 && b.height > 20) {
-        const r = b.width / b.height > 1.5 ? b.getLeftScaled(0.5) : b.getTopScaled(0.5);
-        b = b.width / b.height > 1.5 ? b.getRightScaled(0.5) : b.getBottomScaled(0.5);
+    if (molCols.length > 0 && b.width > 30 && b.height > 20) {
+      const isLandscape = b.width / b.height > 1.5;
+      const molBox = isLandscape ? b.getLeftScaled(0.5) : b.getTopScaled(0.5);
+      b = isLandscape ? b.getRightScaled(0.5) : b.getBottomScaled(0.5);
+      for (let i = 0; i < molCols.length; i++) {
         const cell = gridCell.grid.cell(molCols[i].name, gridCell.gridRow);
+        const r = molCols.length === 1 ? molBox :
+          new DG.Rect(molBox.x, molBox.y + (i * molBox.height / molCols.length), molBox.width, molBox.height / molCols.length);
         scene.elements.push(new GridCellElement(r, cell));
       }
     }
@@ -109,6 +112,8 @@ export class FormCellRenderer extends DG.GridCellRenderer {
       ((settings.showColumnNames ?? 'Auto') == 'Auto' && effectiveWidth - maxValueWidth > 30); // as long as there is small space for names
     const columnNamesWidth = showColumnNames ? Math.max(Math.min(maxNameWidth + 10, effectiveWidth - maxValueWidth), 0) : 0;
 
+    const totalFormHeight = rowsPerCol * colHeight;
+    const verticalMargin = Math.max(0, (b.height - totalFormHeight) / 2);
     for (let i = 0; i < cols.length; i++) {
       const col = cols[i];
       const cell = gridCell.grid.cell(col.name, gridCell.gridRow);
@@ -123,7 +128,7 @@ export class FormCellRenderer extends DG.GridCellRenderer {
         const layoutColIndex = Math.floor(i / rowsPerCol);
         const layoutRowIndex = i % rowsPerCol;
         const xOffset = b.x + (layoutColIndex * effectiveWidth);
-        const yOffset = b.y + (layoutRowIndex * colHeight);
+        const yOffset = b.y + verticalMargin + (layoutRowIndex * colHeight);
 
         // render in a column
         const r = new DG.Rect(
@@ -143,17 +148,6 @@ export class FormCellRenderer extends DG.GridCellRenderer {
         cell.style.font = font;
         scene.elements.push(new GridCellElement(r.cutLeft(columnNamesWidth + leftMargin), cell));
       }
-    }
-
-    // find the lowest point in the scene, and use it to align the scene vertically
-    const lowestPoint = scene.elements.reduce((acc, el) => {
-      return Math.max(acc, el.bounds.bottom - scene.bounds.top);
-    }, 0);
-    if (lowestPoint < b.bottom) {
-      const delta = (b.height - lowestPoint) / 2;
-      scene.elements.forEach((el) => {
-        el.bounds.y += delta;
-      });
     }
 
     return scene;
