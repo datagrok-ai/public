@@ -276,7 +276,7 @@ export async function moleculesToHelmTopMenu(table: DG.DataFrame, molecules: DG.
 //name: Molecule to HELM Single
 //description: Converts a single molecule to HELM notation without requiring a table or column
 //input: string molecule { semType: Molecule; description: Input molecule }
-//output: string result
+//output: string result { semType: Macromolecule; units: helm }
 export async function moleculeToHelmSingle(molecule: string) : Promise<string> {
   return await PackageFunctions.moleculeToHelmSingle(molecule);
 }
