@@ -310,9 +310,10 @@ function removeTrailingQuotes(s: string): string {
 
 export async function tableQueriesFunctionsSearchLlm(s: string): Promise<DG.Widget> {
   const searchPatterns = tableQueriesSearchFunctions.map((f) => f.options['searchPattern']);
+  const descriptions = tableQueriesSearchFunctions.map((f) => f.description ?? 'No description');
   try {
     const matches = JSON.parse(await grok.functions
-      .call('ChatGPT:fuzzyMatch', {prompt: s, searchPatterns}));
+      .call('ChatGPT:fuzzyMatch', {prompt: s, searchPatterns, descriptions}));
     if (matches && matches.searchPattern && matches.parameters) {
       const sf = tableQueriesSearchFunctions.find((f) => {
         const pattern: string = removeTrailingQuotes(f.options['searchPattern']) ?? '';
