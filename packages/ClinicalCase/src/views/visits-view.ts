@@ -110,9 +110,9 @@ export class VisitsView extends ClinicalCaseViewBase {
         this.createVisitPropertyPanel(this.pivotedSv);
       }, 100);
     });
-    grok.data.linkTables(studies[this.studyId].domains.dm, this.pivotedSv,
-      [SUBJECT_ID], [SUBJECT_ID],
-      [DG.SYNC_TYPE.FILTER_TO_FILTER]);
+    // grok.data.linkTables(studies[this.studyId].domains.dm, this.pivotedSv,
+    //   [SUBJECT_ID], [SUBJECT_ID],
+    //   [DG.SYNC_TYPE.FILTER_TO_FILTER]);
   }
 
   private eventsSinceLastVisitCols() {
@@ -276,9 +276,9 @@ export class VisitsView extends ClinicalCaseViewBase {
         this.createVisitPropertyPanel(df);
       }, 100);
     });
-    grok.data.linkTables(studies[this.studyId].domains.dm, df,
-      [SUBJECT_ID], [SUBJECT_ID],
-      [DG.SYNC_TYPE.FILTER_TO_FILTER]);
+    // grok.data.linkTables(studies[this.studyId].domains.dm, df,
+    //   [SUBJECT_ID], [SUBJECT_ID],
+    //   [DG.SYNC_TYPE.FILTER_TO_FILTER]);
     return df;
   }
 

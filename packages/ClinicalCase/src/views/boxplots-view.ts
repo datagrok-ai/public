@@ -1,10 +1,10 @@
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {addDataFromDmDomain, getUniqueValues} from '../data-preparation/utils';
 import {createBaselineEndpointDataframe, createVisitDayStrCol} from '../data-preparation/data-preparation';
 import {ETHNIC, LAB_RES_N, LAB_TEST, VISIT_DAY, RACE, SEX, SUBJECT_ID, VS_TEST, VS_RES_N,
-  VISIT_DAY_STR, BW_TEST, BW_RES_N, BG_TEST, BG_RES_N} from '../constants/columns-constants';
+  VISIT_DAY_STR, BW_TEST, BW_RES_N, BG_TEST, BG_RES_N,
+  VISIT} from '../constants/columns-constants';
 import {updateDivInnerHTML} from '../utils/utils';
 import {_package} from '../package';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
@@ -81,7 +81,7 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
 
     this.domains.forEach((it) => {
       const df = (studies[this.studyId].domains[it] as DG.DataFrame).clone(null, [SUBJECT_ID,
-        this.isSend ? VISIT_DAY_STR : VISIT_DAY, this.numVisDayColDict[it],
+        this.isSend ? VISIT_DAY_STR : VISIT, this.numVisDayColDict[it],
         this.domainFields[it]['test'], this.domainFields[it]['res']]);
       df.col(this.numVisDayColDict[it]).name = VISIT_DAY;
       df.getCol(this.domainFields[it]['test']).name = 'test';
@@ -106,14 +106,14 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
     this.bl = minVisitName; */
 
     this.uniqueVisits = Array.from(getUniqueValues(this.distrDataframe,
-      this.isSend ? VISIT_DAY_STR : VISIT_DAY));
+      this.isSend ? VISIT_DAY_STR : VISIT));
     this.bl = this.uniqueVisits[0];
     this.distrWithDmData = addDataFromDmDomain(this.distrDataframe, studies[this.studyId].domains.dm,
-      [SUBJECT_ID, VISIT_DAY, this.isSend ? VISIT_DAY_STR : VISIT_DAY,
+      [SUBJECT_ID, VISIT_DAY, this.isSend ? VISIT_DAY_STR : VISIT,
         'test', 'res'], this.splitBy);
     this.distrWithDmData = this.distrWithDmData
       .groupBy(this.distrWithDmData.columns.names())
-      .where(`${this.isSend ? VISIT_DAY_STR : VISIT_DAY} = ${this.bl}`)
+      .where(`${this.isSend ? VISIT_DAY_STR : VISIT} = ${this.bl}`)
       .aggregate();
     this.getTopPValues(4);
 
@@ -173,9 +173,9 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
       ui.block([this.boxPlotDiv]),
     ]));
 
-    grok.data.linkTables(studies[this.studyId].domains.dm, this.distrDataframe,
-      [SUBJECT_ID], [SUBJECT_ID],
-      [DG.SYNC_TYPE.FILTER_TO_FILTER]);
+    // grok.data.linkTables(studies[this.studyId].domains.dm, this.distrDataframe,
+    //   [SUBJECT_ID], [SUBJECT_ID],
+    //   [DG.SYNC_TYPE.FILTER_TO_FILTER]);
   }
 
   updateGlobalFilter(): void {
@@ -191,7 +191,7 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
           const df = createBaselineEndpointDataframe(
             this.distrDataframe.clone(this.distrDataframe.filter), studies[this.studyId].domains.dm, [category],
             'test', 'res', [], it, this.bl, '',
-            this.isSend ? VISIT_DAY_STR : VISIT_DAY, `${it}_BL`);
+            this.isSend ? VISIT_DAY_STR : VISIT, `${it}_BL`);
           this.getPValues(df, domain, it, category, `${it}_BL`);
           const plot = DG.Viewer.boxPlot(df, {
             categoryColumnNames: [category],

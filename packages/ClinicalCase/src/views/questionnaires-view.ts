@@ -84,9 +84,9 @@ export class QuestionnaiesView extends ClinicalCaseViewBase {
     this.root.className = 'grok-view ui-box';
     this.root.append(this.questionsDiv);
 
-    grok.data.linkTables(studies[this.studyId].domains.dm, this.qsWithDm,
-      [SUBJECT_ID], [SUBJECT_ID],
-      [DG.SYNC_TYPE.FILTER_TO_FILTER]);
+    // grok.data.linkTables(studies[this.studyId].domains.dm, this.qsWithDm,
+    //   [SUBJECT_ID], [SUBJECT_ID],
+    //   [DG.SYNC_TYPE.FILTER_TO_FILTER]);
   }
 
   updateGlobalFilter(): void {

@@ -124,7 +124,8 @@ export function createLabValuesByVisitDataframe(lb: DG.DataFrame, dm: DG.DataFra
   let filtered = createFilteredDataframe(lb, condition, [SUBJECT_ID, LAB_RES_N, visitCol], labValueNumCol, LAB_RES_N);
   if (dm && dm.col(treatmentArmCol)) {
     filtered = addDataFromDmDomain(filtered, dm, filtered.columns.names(), [treatmentArmCol]);
-    filtered.rows.filter((row) => row.visitdy !== DG.INT_NULL && row[treatmentArmCol] === treatmentArm);
+    if (treatmentArm)
+      filtered.rows.filter((row) => row.visitdy !== DG.INT_NULL && row[treatmentArmCol] === treatmentArm);
   } else
     filtered.rows.filter((row) => row.visitdy !== DG.INT_NULL);
 

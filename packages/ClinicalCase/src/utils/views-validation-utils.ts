@@ -36,9 +36,10 @@ export function checkRequiredColumns(df: DG.DataFrame, columns: string[], viwerN
 }
 
 export function checkColumnsAndCreateViewer(df: DG.DataFrame, columns: string[],
-  div: HTMLDivElement, createViewer: () => any, viewerName: string) {
+  div: HTMLDivElement, createViewer: () => any, viewerName: string): boolean {
   const message = checkRequiredColumns(df, columns, viewerName);
   message ? updateDivInnerHTML(div, ui.info(`${message}`)) : createViewer();
+  return !(!!message);
 }
 
 export function createValidationErrorsDiv(missingDomains: string[],
@@ -220,7 +221,7 @@ export function getRequiredColumnsByView(studyId: string) {
         'lb': {
           'req': [
             sdtmCols.SUBJECT_ID,
-          //  sdtmCols.VISIT_DAY,
+            //  sdtmCols.VISIT_DAY,
             studies[studyId].config.standard === CDISC_STANDARD.SEND ? sdtmCols.VISIT_DAY_STR : VISIT,
             sdtmCols.LAB_RES_N,
             sdtmCols.LAB_TEST,
@@ -229,7 +230,7 @@ export function getRequiredColumnsByView(studyId: string) {
         'vs': {
           'req': [
             sdtmCols.SUBJECT_ID,
-          //  sdtmCols.VISIT_DAY,
+            //  sdtmCols.VISIT_DAY,
             studies[studyId].config.standard === CDISC_STANDARD.SEND ? sdtmCols.VISIT_DAY_STR : VISIT,
             sdtmCols.VS_RES_N,
             sdtmCols.VS_TEST,
@@ -264,7 +265,7 @@ export function getRequiredColumnsByView(studyId: string) {
             sdtmCols.SUBJECT_ID,
             sdtmCols.LAB_TEST,
             studies[studyId].config.standard === CDISC_STANDARD.SEND ? sdtmCols.VISIT_DAY_STR : VISIT,
-          // sdtmCols.VISIT_DAY,
+            // sdtmCols.VISIT_DAY,
             sdtmCols.LAB_RES_N,
           ],
         },
@@ -273,7 +274,7 @@ export function getRequiredColumnsByView(studyId: string) {
             sdtmCols.SUBJECT_ID,
             sdtmCols.VS_TEST,
             studies[studyId].config.standard === CDISC_STANDARD.SEND ? sdtmCols.VISIT_DAY_STR : VISIT,
-         //   sdtmCols.VISIT_DAY,
+            //   sdtmCols.VISIT_DAY,
             sdtmCols.VS_RES_N,
           ],
         },

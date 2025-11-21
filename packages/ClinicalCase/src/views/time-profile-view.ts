@@ -1,4 +1,3 @@
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {addDataFromDmDomain, createPivotedDataframeAvg,
@@ -108,11 +107,11 @@ export class TimeProfileView extends ClinicalCaseViewBase {
       yColumnNames: [`${this.selectedLabValue} avg(${this.domainFields[this.selectedDomain]['res']})`],
       whiskersType: 'Med | Q1, Q3',
     });
-    if (studies[this.studyId].domains.dm) {
-      grok.data.linkTables(studies[this.studyId].domains.dm, this.linechart.dataFrame,
-        [SUBJECT_ID], [SUBJECT_ID],
-        [DG.SYNC_TYPE.FILTER_TO_FILTER]);
-    }
+    // if (studies[this.studyId].domains.dm) {
+    //   grok.data.linkTables(studies[this.studyId].domains.dm, this.linechart.dataFrame,
+    //     [SUBJECT_ID], [SUBJECT_ID],
+    //     [DG.SYNC_TYPE.FILTER_TO_FILTER]);
+    // }
 
     this.root.append(this.linechart.root);
     this.setRibbonPanels([
@@ -151,11 +150,11 @@ export class TimeProfileView extends ClinicalCaseViewBase {
       break;
     }
     }
-    if (studies[this.studyId].domains.dm) {
-      grok.data.linkTables(studies[this.studyId].domains.dm, this.linechart.dataFrame,
-        [SUBJECT_ID], [SUBJECT_ID],
-        [DG.SYNC_TYPE.FILTER_TO_FILTER]);
-    }
+    // if (studies[this.studyId].domains.dm) {
+    //   grok.data.linkTables(studies[this.studyId].domains.dm, this.linechart.dataFrame,
+    //     [SUBJECT_ID], [SUBJECT_ID],
+    //     [DG.SYNC_TYPE.FILTER_TO_FILTER]);
+    // }
   }
 
   private createDropdownLists() {

@@ -1,9 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {updateDivInnerHTML} from '../utils/utils';
 import {_package} from '../package';
-import {getUniqueValues} from '../data-preparation/utils';
 import {LAB_RES_N, LAB_TEST, SUBJECT_ID, VS_TEST, VS_RES_N, VISIT_DAY_STR,
   BW_TEST, BW_RES_N, BG_TEST, BG_RES_N,
   VISIT} from '../constants/columns-constants';
@@ -14,20 +12,18 @@ import {CDISC_STANDARD} from '../utils/types';
 
 
 export class MatrixesView extends ClinicalCaseViewBase {
-  matrixPlot: any;
-  martixPlotDiv = ui.box();
-  uniqueValues = {};
-  uniqueVisits: any;
-
-  selectedValuesByDomain = {};
-  selectedValues = [];
-  bl: any;
+  corrPlotViewer: DG.Viewer | null = null;
+  corrPlotDiv = ui.box();
   matrixDataframe: DG.DataFrame;
+  matrixTableView: DG.TableView | null = null;
+  matrixFiltersGroup: DG.FilterGroup | null = null;
   domains = ['lb', 'vs', 'bw', 'bg'];
   domainFields = {'lb': {'test': LAB_TEST, 'res': LAB_RES_N}, 'vs': {'test': VS_TEST, 'res': VS_RES_N},
     'bw': {'test': BW_TEST, 'res': BW_RES_N}, 'bg': {'test': BG_TEST, 'res': BG_RES_N}};
   initialDataframe: DG.DataFrame;
   isSend = false;
+  xColumns: DG.Column[] = [];
+  yColumns: DG.Column[] = [];
 
   constructor(name, studyId) {
     super(name, studyId);
@@ -56,116 +52,104 @@ export class MatrixesView extends ClinicalCaseViewBase {
         this.initialDataframe.append(df, true);
     });
     this.createCorrelationMatrixDataframe(this.initialDataframe);
-    this.domains.forEach((it) => {
-      this.uniqueValues[it] = Array.from(getUniqueValues(studies[this.studyId].domains[it],
-        this.domainFields[it]['test']));
-    });
-    this.uniqueVisits = Array.from(getUniqueValues(this.initialDataframe,
-      this.isSend ? VISIT_DAY_STR : VISIT));
 
-    let topNum = 20;
-    Object.keys(this.uniqueValues).forEach((key) => {
-      this.selectedValuesByDomain[key] = [];
-      if (topNum > 0) {
-        if (this.uniqueValues[key].length > topNum) {
-          this.selectedValuesByDomain[key] = this.uniqueValues[key].slice(0, topNum);
-          topNum = 0;
-        } else {
-          this.selectedValuesByDomain[key] = this.uniqueValues[key].slice(0, this.uniqueValues[key].length);
-          topNum = topNum - this.uniqueValues[key].length;
-        }
+    // Set default values for xColumns and yColumns as first 5 columns (or less if fewer available)
+    const availableColumnNames = this.matrixDataframe.columns.names()
+      .filter((name) => name !== SUBJECT_ID && name !== (this.isSend ? VISIT_DAY_STR : VISIT));
+    const defaultColumnNames = availableColumnNames.slice(0, Math.min(5, availableColumnNames.length));
+    this.xColumns = defaultColumnNames.map((name) => this.matrixDataframe.col(name)).filter((col) => col !== null);
+    this.yColumns = defaultColumnNames.map((name) => this.matrixDataframe.col(name)).filter((col) => col !== null);
+
+    const filterIcon = ui.icons.filter(() => {
+      if (!this.matrixFiltersGroup) {
+        grok.shell.warning('Filters are not available yet');
+        return;
       }
-    });
-    Object.keys(this.selectedValuesByDomain)
-      .forEach((key) => this.selectedValues = this.selectedValues.concat(this.selectedValuesByDomain[key]));
-
-    this.bl = this.uniqueVisits[0];
-
-    const blVisitChoices = ui.input.choice('Baseline', {value: this.bl, items: this.uniqueVisits});
-    blVisitChoices.onChanged.subscribe((value) => {
-      this.bl = value;
-      this.updateMarixPlot();
-    });
-
-    const selectBiomarkers = ui.iconFA('cog', () => {
-      const multichoices = {};
-      this.domains.forEach((domain) => {
-        const valuesMultiChoices = ui.input.multiChoice('', {value: this.selectedValuesByDomain[domain],
-          items: this.uniqueValues[domain]});
-        valuesMultiChoices.onChanged.subscribe((value) => {
-          this.selectedValues = [];
-          this.selectedValuesByDomain[domain] = value;
-          Object.keys(this.selectedValuesByDomain)
-            .forEach((key) => this.selectedValues = this.selectedValues.concat(this.selectedValuesByDomain[key]));
-        });
-        //@ts-ignore
-        valuesMultiChoices.input.style.maxWidth = '100%';
-        //@ts-ignore
-        valuesMultiChoices.input.style.maxHeight = '100%';
-        multichoices[domain] = valuesMultiChoices;
-      });
-
-      const acc = ui.accordion();
-      this.domains.forEach((domain) => {
-        acc.addCountPane(`${domain}`,
-          () => multichoices[domain].root, () => this.selectedValuesByDomain[domain].length, false);
-        const panel = acc.getPane(`${domain}`);
-        //@ts-ignore
-        $(panel.root).css('display', 'flex');
-        //@ts-ignore
-        $(panel.root).css('opacity', '1');
-      });
-
-      ui.dialog({title: 'Select values'})
-        .add(ui.div(acc.root, {style: {width: '400px', height: '300px'}}))
-        .onOK(() => {
-          this.updateMarixPlot();
-        })
-        .show();
-    });
+      ui.showPopup(ui.div(this.matrixFiltersGroup.root), filterIcon, {vertical: true});
+    }, 'Matrix filters');
 
     this.root.className = 'grok-view ui-box';
-    this.root.append(this.martixPlotDiv);
+    this.root.append(this.corrPlotDiv);
     // this.root.style.marginTop = '15px';
     this.setRibbonPanels([
       [
-        blVisitChoices.root,
-      ],
-      [
-        selectBiomarkers,
+        filterIcon,
       ],
     ]);
-    this.updateMarixPlot();
-  }
-
-  private updateMarixPlot() {
-    if (this.selectedValues && this.bl) {
-      let filteredDataframe = this.matrixDataframe.clone(null,
-        this.selectedValues.map((it) => `${it} avg(res)`).concat([SUBJECT_ID,
-          this.isSend ? VISIT_DAY_STR : VISIT]));
-      filteredDataframe = filteredDataframe
-        .groupBy(filteredDataframe.columns.names())
-        .where(`${this.isSend ? VISIT_DAY_STR : VISIT} = ${this.bl}`)
-        .aggregate();
-      filteredDataframe.plot.fromType(DG.VIEWER.CORR_PLOT).then((v: any) => {
-        this.matrixPlot = v;
-        this.root.className = 'grok-view ui-box';
-        updateDivInnerHTML(this.martixPlotDiv, this.matrixPlot.root);
-      });
-      if (studies[this.studyId].domains.dm) {
-        grok.data.linkTables(studies[this.studyId].domains.dm, filteredDataframe,
-          [SUBJECT_ID], [SUBJECT_ID],
-          [DG.SYNC_TYPE.FILTER_TO_FILTER]);
-      }
-    }
+    this.createMarixPlot();
+    grok.shell.o = this.propertyPanel();
   }
 
   private createCorrelationMatrixDataframe(df: DG.DataFrame) {
-    const dfForPivot = df.clone();
-    this.matrixDataframe = dfForPivot
+    this.matrixDataframe = df
       .groupBy([SUBJECT_ID, this.isSend ? VISIT_DAY_STR : VISIT])
       .pivot('test')
       .avg('res')
       .aggregate();
+
+    // Create table view without adding to workspace
+    this.matrixTableView = DG.TableView.create(this.matrixDataframe, false);
+
+    // Create filter group for the table view
+    this.matrixFiltersGroup = this.matrixTableView.getFiltersGroup({createDefaultFilters: false});
+
+    const visitColName = this.isSend ? VISIT_DAY_STR : VISIT;
+    this.matrixFiltersGroup.updateOrAdd({
+      type: DG.FILTER_TYPE.CATEGORICAL,
+      column: visitColName,
+      columnName: visitColName,
+    }, false);
+  }
+
+  private createMarixPlot() {
+    const plotOptions: any = {};
+    if (this.xColumns.length > 0)
+      plotOptions.xColumnNames = this.xColumns.map((col) => col.name);
+    if (this.yColumns.length > 0)
+      plotOptions.yColumnNames = this.yColumns.map((col) => col.name);
+    this.matrixDataframe.plot
+      .fromType(DG.VIEWER.CORR_PLOT, plotOptions).then((v: any) => {
+        this.corrPlotViewer = v;
+        this.root.className = 'grok-view ui-box';
+        this.corrPlotDiv.append(this.corrPlotViewer.root);
+      });
+  }
+
+  override async propertyPanel() {
+    if (!this.matrixDataframe)
+      return;
+
+    const acc = this.createAccWithTitle(this.name);
+
+    const xColumnsInput = ui.input.columns('X', {
+      table: this.matrixDataframe,
+      value: this.xColumns,
+    });
+
+    const yColumnsInput = ui.input.columns('Y', {
+      table: this.matrixDataframe,
+      value: this.yColumns,
+    });
+
+    const updatePlotColumns = () => {
+      this.xColumns = xColumnsInput.value;
+      this.yColumns = yColumnsInput.value;
+      if (this.corrPlotViewer) {
+        this.corrPlotViewer.setOptions({
+          xColumnNames: this.xColumns.map((col) => col.name),
+          yColumnNames: this.yColumns.map((col) => col.name),
+        });
+      }
+    };
+
+    xColumnsInput.onChanged.subscribe(() => updatePlotColumns());
+    yColumnsInput.onChanged.subscribe(() => updatePlotColumns());
+
+    acc.addPane('Columns', () => ui.divV([
+      xColumnsInput.root,
+      yColumnsInput.root,
+    ]));
+
+    return acc.root;
   }
 }

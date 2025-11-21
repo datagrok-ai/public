@@ -31,7 +31,8 @@ export class ClinicalCaseViewBase extends DG.ViewBase {
         this.createView();
         this.loaded = true;
         ui.setUpdateIndicator(this.root, false);
-        grok.shell.o = await this.propertyPanel();
+        setTimeout(async () => grok.shell.o = await this.propertyPanel(), 500);
+        grok.shell.windows.showHelp = true;
       } else {
         updateDivInnerHTML(this.root,
           createValidationErrorsDiv(this.validator.missingDomains, this.validator.missingColumnsInReqDomains,

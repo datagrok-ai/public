@@ -69,6 +69,7 @@ export function createTableView(
   tableView.name = viewName;
   if (helpUrl)
     tableView.helpUrl = helpUrl;
+  grok.shell.windows.showHelp = true;
 
   return {helper: viewHelper, view: tableView};
 }

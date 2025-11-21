@@ -102,11 +102,11 @@ export class TimelinesView extends ClinicalCaseViewBase {
     this.updateTimelinesPlot();
     this.subscribeToSelection();
 
-    if (studies[this.studyId].domains.dm) {
-      grok.data.linkTables(studies[this.studyId].domains.dm, this.resultTables,
-        [SUBJECT_ID], ['key'],
-        [DG.SYNC_TYPE.FILTER_TO_FILTER]);
-    }
+    // if (studies[this.studyId].domains.dm) {
+    //   grok.data.linkTables(studies[this.studyId].domains.dm, this.resultTables,
+    //     [SUBJECT_ID], ['key'],
+    //     [DG.SYNC_TYPE.FILTER_TO_FILTER]);
+    // }
   }
 
   private subscribeToSelection() {

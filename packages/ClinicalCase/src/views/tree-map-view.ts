@@ -1,7 +1,6 @@
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {addDataFromDmDomain} from '../data-preparation/utils';
-import {ETHNIC, RACE, SEX, SUBJECT_ID} from '../constants/columns-constants';
+import {ETHNIC, RACE, SEX} from '../constants/columns-constants';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {TRT_ARM_FIELD} from '../views-config';
 import {TIME_PROFILE_VIEW_NAME} from '../constants/view-names-constants';
@@ -24,9 +23,9 @@ export class TreeMapView extends ClinicalCaseViewBase {
     this.aeDataframeWithDm = addDataFromDmDomain(studies[this.studyId].domains.ae, studies[this.studyId].domains.dm,
       studies[this.studyId].domains.ae.columns.names(), this.dmFields);
 
-    grok.data.linkTables(studies[this.studyId].domains.dm, this.aeDataframeWithDm,
-      [SUBJECT_ID], [SUBJECT_ID],
-      [DG.SYNC_TYPE.FILTER_TO_FILTER]);
+    // grok.data.linkTables(studies[this.studyId].domains.dm, this.aeDataframeWithDm,
+    //   [SUBJECT_ID], [SUBJECT_ID],
+    //   [DG.SYNC_TYPE.FILTER_TO_FILTER]);
 
     this.treeMap = DG.Viewer.fromType(DG.VIEWER.TREE_MAP, this.aeDataframeWithDm, {
       'splitByColumnNames': [

@@ -45,9 +45,9 @@ export class AdverseEventsView extends ClinicalCaseViewBase {
       } else
         this.aeWithArm = studies[this.studyId].domains.ae.clone();
       ;
-      grok.data.linkTables(studies[this.studyId].domains.dm, this.aeWithArm,
-        [SUBJECT_ID], [SUBJECT_ID],
-        [DG.SYNC_TYPE.FILTER_TO_FILTER]);
+      // grok.data.linkTables(studies[this.studyId].domains.dm, this.aeWithArm,
+      //   [SUBJECT_ID], [SUBJECT_ID],
+      //   [DG.SYNC_TYPE.FILTER_TO_FILTER]);
     }
     const viewerTitle = {
       style: {

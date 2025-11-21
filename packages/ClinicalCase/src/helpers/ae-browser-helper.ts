@@ -38,11 +38,11 @@ export class AEBrowserHelper {
       }
     });
     this.domains = this.domains.filter((it) => presentDomains.includes(it));
-    if (studies[studyId].domains.dm) {
-      grok.data.linkTables(studies[studyId].domains.dm, this.aeToSelect,
-        [SUBJECT_ID], [SUBJECT_ID],
-        [DG.SYNC_TYPE.FILTER_TO_FILTER]);
-    }
+    // if (studies[studyId].domains.dm) {
+    //   grok.data.linkTables(studies[studyId].domains.dm, this.aeToSelect,
+    //     [SUBJECT_ID], [SUBJECT_ID],
+    //     [DG.SYNC_TYPE.FILTER_TO_FILTER]);
+    // }
   }
 
   updateDomains() {

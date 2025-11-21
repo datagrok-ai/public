@@ -9,7 +9,7 @@ import {AGE, AGETXT, RACE, SEX, SPECIES, SUBJECT_ID, SUBJ_REF_STDT} from '../con
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import $ from 'cash-dom';
 import {checkDateFormat} from '../data-preparation/utils';
-import {updateDivInnerHTML} from '../utils/utils';
+import {removeExtension, updateDivInnerHTML} from '../utils/utils';
 import {TRT_ARM_FIELD} from '../views-config';
 import {checkColumnsAndCreateViewer} from '../utils/views-validation-utils';
 import {studies} from '../package';
@@ -81,6 +81,20 @@ export class StudySummaryView extends ClinicalCaseViewBase {
       },
     };
 
+    const addDomainToWorkspace = ui.icons.add(() => {
+      const menu = DG.Menu.popup();
+      for (const domain of studies[this.studyId].domains.all()) {
+        const domainName = removeExtension(domain.name);
+        menu.item(domainName, () => {
+          const df = domain.clone();
+          df.name = `${this.studyId}_${domainName}`;
+          grok.shell.addTableView(df);
+        });
+      }
+      menu.show();
+    }, 'Add domain to workspace');
+    addDomainToWorkspace.classList.add('clinical-case-add-domain-to-workspace-icon');
+
     checkColumnsAndCreateViewer(
       studies[this.studyId].domains.dm,
       [studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD]],
@@ -149,6 +163,7 @@ export class StudySummaryView extends ClinicalCaseViewBase {
           ui.divText('Errors', summaryStyle),
           errorsSummary,
         ]),
+        addDomainToWorkspace,
       ], {style: {maxHeight: '105px'}}),
       this.enrollmentChart,
       ui.splitH([
@@ -208,31 +223,50 @@ export class StudySummaryView extends ClinicalCaseViewBase {
   }
 
   override async propertyPanel() {
+    const acc = this.createAccWithTitle(this.studyId);
+    acc.addPane('General', () => {
+      const map = {};
+      for (const key of Object.keys(studies[this.studyId].config)) {
+        if (key !== 'other')
+          map[key] = studies[this.studyId].config[key];
+        else {
+          const obj = studies[this.studyId].config.other;
+          if (obj)
+            Object.keys(obj).forEach((key) => map[key] = studies[this.studyId].config!.other[key]);
+        }
+      }
+      return ui.tableFromMap(map);
+    });
+    if (!this.isSend)
+      this.getDataFromClinicalTrialsGov(acc);
+
+    return acc.root;
+  }
+
+  getDataFromClinicalTrialsGov(acc: DG.Accordion): void {
     const httpService = new HttpService();
     // const clinTrialsGovInfo: {[key: string]: string | HTMLAnchorElement} =
     //   await httpService.getStudyData('R01NS050536', Object.keys(CLINICAL_TRIAL_GOV_FIELDS));
-    const clinTrialsGovInfo: {[key: string]: string | HTMLAnchorElement} =
-      await httpService.getStudyData(this.studyId, Object.keys(CLINICAL_TRIAL_GOV_FIELDS));
 
-    const acc = this.createAccWithTitle(this.studyId);
-
-    if (clinTrialsGovInfo) {
-      const studyLink = `${CLIN_TRIAL_GOV_SEARCH}${clinTrialsGovInfo[CLINICAL_TRIAL_GOV_FIELDS.NCTId]}`;
-      clinTrialsGovInfo[`Study link`] = ui.link('Go to study page', () => {window.open(studyLink, '_blank').focus();});
-
-      const acctable = ui.tableFromMap(clinTrialsGovInfo);
-      acc.addPane('General', () => {
-        $(acctable).find('tr').css('vertical-align', 'top');
-        $(acctable).find('td').css('padding-bottom', '10px');
-        $(acctable).find('.d4-entity-list>span').css('margin', '0px');
-        return acctable;
-      }, true);
-    } else {
-      acc.addPane('General', () => {
-        return ui.divText('Study not found on clinicaltrials.gov');
-      }, true);
-    }
-    return acc.root;
+    httpService.getStudyData(this.studyId, Object.keys(CLINICAL_TRIAL_GOV_FIELDS))
+      .then((clinTrialsGovInfo: {[key: string]: string | HTMLAnchorElement}) => {
+        if (clinTrialsGovInfo) {
+          const studyLink = `${CLIN_TRIAL_GOV_SEARCH}${clinTrialsGovInfo[CLINICAL_TRIAL_GOV_FIELDS.NCTId]}`;
+          // eslint-disable-next-line max-len
+          clinTrialsGovInfo[`Study link`] = ui.link('Go to study page', () => {window.open(studyLink, '_blank').focus();});
+          const acctable = ui.tableFromMap(clinTrialsGovInfo);
+          acc.addPane('ClinicalTrials.gov', () => {
+            $(acctable).find('tr').css('vertical-align', 'top');
+            $(acctable).find('td').css('padding-bottom', '10px');
+            $(acctable).find('.d4-entity-list>span').css('margin', '0px');
+            return acctable;
+          }, true);
+        } else {
+          acc.addPane('ClinicalTrials.gov', () => {
+            return ui.divText('Study not found on clinicaltrials.gov');
+          }, true);
+        }
+      });
   }
 
   updateGlobalFilter(): void {

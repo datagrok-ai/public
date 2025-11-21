@@ -16,10 +16,18 @@ export async function clinicalCaseAppTreeBrowser(treeNode: any) : Promise<void> 
 
 //name: Get list of studies
 //description: Return list of clinical and preclinical studies loaded into Clinical Case application
-//tags: folderViewer
+//input: string name { optional: true }
+//input: string description { optional: true; description: More detailed study information including species, drug, dosing }
+//input: int numSubjects { optional: true }
+//input: string numSubjectsOperator { optional: true; description: >, <, = }
+//input: datetime startDate { optional: true }
+//input: string startDateOperator { optional: true; description: >, <, = }
+//input: datetime endDate { optional: true }
+//input: string endDateOperator { optional: true; description: >, <, = }
+//input: string standard { optional: true; description: CDISC data format, either SDTM or SEND }
 //output: widget result
-export async function getListOfStudies() : Promise<any> {
-  return await PackageFunctions.getListOfStudies();
+export async function getListOfStudies(name?: string, description?: string, numSubjects?: number, numSubjectsOperator?: string, startDate?: any, startDateOperator?: string, endDate?: any, endDateOperator?: string, standard?: any) : Promise<any> {
+  return await PackageFunctions.getListOfStudies(name, description, numSubjects, numSubjectsOperator, startDate, startDateOperator, endDate, endDateOperator, standard);
 }
 
 //tags: folderViewer

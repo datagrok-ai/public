@@ -1,13 +1,14 @@
 /* eslint-disable no-unused-vars */
 import * as DG from 'datagrok-api/dg';
+import dayjs from 'dayjs';
 
 export type ClinStudyConfig = {
     protocol?: string;
     name?: string;
     description?: string;
     totalSubjects?: number;
-    startDate?: string;
-    endDate?: string;
+    startDate?: dayjs.Dayjs;
+    endDate?: dayjs.Dayjs;
     other?: {[key: string]: string};
     standard?: CDISC_STANDARD;
 }

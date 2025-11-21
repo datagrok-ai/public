@@ -25,8 +25,8 @@ export namespace funcs {
   /**
   Return list of clinical and preclinical studies loaded into Clinical Case application
   */
-  export async function getListOfStudies(): Promise<any> {
-    return await grok.functions.call('ClinicalCase:GetListOfStudies', {});
+  export async function getListOfStudies(name?: string , description?: string , numSubjects?: number , numSubjectsOperator?: string , startDate?: any , startDateOperator?: string , endDate?: any , endDateOperator?: string , standard?: string ): Promise<any> {
+    return await grok.functions.call('ClinicalCase:GetListOfStudies', { name, description, numSubjects, numSubjectsOperator, startDate, startDateOperator, endDate, endDateOperator, standard });
   }
 
   export async function clinicalCaseFolderLauncher(folder: DG.FileInfo , files: any ): Promise<any> {

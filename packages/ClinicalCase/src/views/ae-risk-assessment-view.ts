@@ -6,7 +6,6 @@ import {updateDivInnerHTML} from '../utils/utils';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {AE_PERCENT, NEG_LOG10_P_VALUE, RISK_DIFFERENCE, SE_RD_WITH_SIGN_LEVEL} from '../constants/constants';
 import {AE_TERM_FIELD, TRT_ARM_FIELD} from '../views-config';
-import {SUBJECT_ID} from '../constants/columns-constants';
 import {studies} from '../package';
 
 export class AERiskAssessmentView extends ClinicalCaseViewBase {
@@ -43,9 +42,9 @@ export class AERiskAssessmentView extends ClinicalCaseViewBase {
     this.initialGuide = ui.info('Please select values for treatment/placebo arms in a context panel', '', false);
     updateDivInnerHTML(this.riskAssessmentDiv, this.initialGuide);
     this.root.append(this.riskAssessmentDiv);
-    grok.data.linkTables(studies[this.studyId].domains.dm, this.aeDf,
-      [SUBJECT_ID], [SUBJECT_ID],
-      [DG.SYNC_TYPE.FILTER_TO_FILTER]);
+    // grok.data.linkTables(studies[this.studyId].domains.dm, this.aeDf,
+    //   [SUBJECT_ID], [SUBJECT_ID],
+    //   [DG.SYNC_TYPE.FILTER_TO_FILTER]);
   }
 
   updateGlobalFilter(): void {
