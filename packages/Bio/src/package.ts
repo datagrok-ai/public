@@ -642,7 +642,7 @@ export class PackageFunctions {
     }
   }
 
-  @grok.decorators.func({name: 'Molecule to HELM Single', description: 'Converts a single molecule to HELM notation without requiring a table or column', result: {name: 'result', type: 'string', options: {semType: 'Macromolecule', units: 'helm'}}})
+  @grok.decorators.func({name: 'Molecule to HELM Single', description: 'Converts a single molecule to HELM notation without requiring a table or column', outputs: [{name: 'result', type: 'string', options: {semType: 'Macromolecule', units: 'helm'}}]})
   static async moleculeToHelmSingle(
     @grok.decorators.param({name: 'molecule', options: {semType: 'Molecule', description: 'Input molecule'}})molecule: string,
   ): Promise<string> {
