@@ -34,9 +34,12 @@ export class CombinedAISearchAssistant {
   public async getResultWidget(prompt: string): Promise<DG.Widget | null> {
     const functionOrder = await this.getRelevantFunctionOrder(prompt);
     console.log(`Function order for execution: ${functionOrder.join(', ')}`);
+    const remainingFunctions = Object.keys(this.functions).filter((fn) => !functionOrder.includes(fn));
+    let moreBtn: HTMLButtonElement | null = null;
     // create a lazy tabcontrol with all functions, but the chosen one first
     const tabcontrol = ui.tabControl();
-    for (const functionName of functionOrder) {
+
+    const addFunctionTab = (functionName: string) => {
       const funcInfo = this.functions[functionName];
       const pane = tabcontrol.addPane(funcInfo.friendlyName, () => {
         const wait = ui.wait(async () => {
@@ -50,8 +53,39 @@ export class CombinedAISearchAssistant {
         });
         return wait;
       });
+      tabcontrol.currentPane = pane;
       ui.tooltip.bind(pane.header, funcInfo.func.description);
+    };
+
+    const handleBtnClick = () => {
+      const menuItems: { [key: string]: () => void } = {};
+      for (const functionName of remainingFunctions) {
+        const funcFn = this.functions[functionName].friendlyName;
+        menuItems[funcFn] = () => {
+          // Remove selected function from remaining list
+          const index = remainingFunctions.indexOf(functionName);
+          if (index !== -1) remainingFunctions.splice(index, 1);
+
+          if (moreBtn && tabcontrol.header.contains(moreBtn))
+            tabcontrol.header.removeChild(moreBtn);
+
+          addFunctionTab(functionName);
+
+          if (moreBtn && remainingFunctions.length > 0)
+            tabcontrol.header.appendChild(moreBtn);
+        };
+      }
+      ui.popupMenu(menuItems);
+    };
+
+    for (const functionName of functionOrder)
+      addFunctionTab(functionName);
+
+    if (remainingFunctions.length) {
+      moreBtn = ui.button('...', () => handleBtnClick(), 'Click to see other options');
+      tabcontrol.header.appendChild(moreBtn);
     }
+
     tabcontrol.root.style.width = '100%';
     tabcontrol.root.style.height = 'unset';
     tabcontrol.root.style.minHeight = '300px';
