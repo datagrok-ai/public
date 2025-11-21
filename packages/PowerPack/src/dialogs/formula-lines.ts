@@ -698,7 +698,7 @@ class Editor {
     formatPane.append(this.inputLineWidth(itemIdx));
     
     /** Preparing the "Description" panel */
-    descriptionPane.append(this.inputHeader(itemIdx));
+    descriptionPane.append(this.inputAnnotationHeader(itemIdx));
     descriptionPane.append(this.areaInputColor(itemIdx, 'Header Color', 'headerColor'));
     descriptionPane.append(this.inputDescription(itemIdx, false));
 
@@ -990,10 +990,10 @@ class Editor {
     return ui.divH([this.ibTitle.root]);
   }
 
-  private inputHeader(itemIdx: number): HTMLElement {
+  private inputAnnotationHeader(itemIdx: number): HTMLElement {
     const item = this.annotationRegionItems[itemIdx];
 
-    const ibHeader = ui.input.string('Header', {value: item.header ?? '',
+    const ibHeader = ui.input.string('Title', {value: item.header ?? '',
       onValueChanged: (value) => {
         item.header = value;
         this.onItemChangedAction(itemIdx, false);
@@ -1318,19 +1318,22 @@ class CreationControl {
         ITEM_CAPTION.HORZ_BAND,
       ], onClickAction);
 
-      const regionItems: Record<string, string> = {
-        [ITEM_CAPTION.FORMULA_REGION]: 'Adds a new area defined by two formula lines.',
-        [ITEM_CAPTION.RECT_REGION]: 'Draws a rectangle area.',
-        [ITEM_CAPTION.POLYGON_REGION]: 'Draws a polygon area using lasso tool.',
+      const cols = getCols();
+      if (cols.x?.isNumerical && !cols.xMap && cols.y?.isNumerical && !cols.yMap) {
+        const regionItems: Record<string, string> = {
+          [ITEM_CAPTION.FORMULA_REGION]: 'Adds a new area defined by two formula lines.',
+          [ITEM_CAPTION.RECT_REGION]: 'Draws a rectangle area.',
+          [ITEM_CAPTION.POLYGON_REGION]: 'Draws a polygon area using lasso tool.',
+        }
+  
+        for (const itemCaption in regionItems)
+          menu.item(itemCaption, () => onClickAction(itemCaption), null, {
+            description: regionItems[itemCaption]
+          });
       }
 
-      for (const itemCaption in regionItems)
-        menu.item(itemCaption, () => onClickAction(itemCaption), null, {
-          description: regionItems[itemCaption]
-        });
-
       /** Add separator only if other menu items exist */
-      if (getCurrentItem() || this.formulaLinesHistoryItems.length > 0)
+      if (getCurrentItem() || this.formulaLinesHistoryItems?.length || this.annotationRegionsHistoryItems.length)
         menu.separator();
 
       /**
@@ -1344,11 +1347,13 @@ class CreationControl {
        * Add "History" menu group.
        * TODO: The best option is to make the menu item enabled/disabled. But there is no such API yet.
        */
-      this.fillHistoryGroup(menu.group(BTN_CAPTION.FORMULA_LINES_HISTORY),
-        this.formulaLinesHistoryItems, this.formulaLinesJustCreatedItems, (item: DG.FormulaLine) => item.formula!);
+      if (this.formulaLinesHistoryItems?.length)
+        this.fillHistoryGroup(menu.group(BTN_CAPTION.FORMULA_LINES_HISTORY),
+          this.formulaLinesHistoryItems, this.formulaLinesJustCreatedItems, (item: DG.FormulaLine) => item.formula!);
 
-      this.fillHistoryGroup(menu.group(BTN_CAPTION.ANNOTATION_REGIONS_HISTORY),
-        this.annotationRegionsHistoryItems, this.annotationRegionsJustCreatedItems, formatAreaFormula);
+      if (this.annotationRegionsHistoryItems?.length)
+        this.fillHistoryGroup(menu.group(BTN_CAPTION.ANNOTATION_REGIONS_HISTORY),
+          this.annotationRegionsHistoryItems, this.annotationRegionsJustCreatedItems, formatAreaFormula);
 
       menu.show();
     };
