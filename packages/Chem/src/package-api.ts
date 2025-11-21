@@ -25,7 +25,7 @@ export namespace scripts {
   /**
   Predicts aqueous solubility (logS) using the AqSolPred consensus model.
   */
-  export async function calculateLogS(table: DG.DataFrame , molecules: DG.Column ): Promise<void> {
+  export async function calculateLogS(table: DG.DataFrame , molecules: DG.Column ): Promise<DG.DataFrame> {
     return await grok.functions.call('Chem:CalculateLogS', { table, molecules });
   }
 

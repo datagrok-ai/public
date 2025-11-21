@@ -104,7 +104,7 @@ export async function translateOligonucleotideSequence(sequence: string, sourceF
 }
 
 //name: polyToolConvert
-//description: Perform cyclization of polymers
+//description: editor for Performing conversion of sequences in custom notation to molfiles
 //top-menu: Bio | PolyTool | Convert...
 export async function polyToolConvertTopMenu() : Promise<void> {
   await PackageFunctions.polyToolConvertTopMenu();
@@ -129,14 +129,14 @@ export async function polyToolConvert2(table: DG.DataFrame, seqCol: DG.Column, g
 }
 
 //name: polyToolEnumerateHelm
-//description: Perform cyclization of polymers
+//description: Dialog for configuring enumeration of a HELM sequence
 //top-menu: Bio | PolyTool | Enumerate HELM...
 export async function polyToolEnumerateHelmTopMenu() : Promise<void> {
   await PackageFunctions.polyToolEnumerateHelmTopMenu();
 }
 
 //name: polyToolEnumerateChem
-//description: Perform cyclization of polymers
+//description: Perform enumeration of a molecule using different fragments at specified positions
 //top-menu: Bio | PolyTool | Enumerate Chem...
 export async function polyToolEnumerateChemTopMenu() : Promise<void> {
   await PackageFunctions.polyToolEnumerateChemTopMenu();
@@ -179,6 +179,26 @@ export async function getPtHelmEnumeratorDialog(cell?: any) : Promise<void> {
 //input: object cell { nullable: true }
 export async function getPtChemEnumeratorDialog(cell?: any) : Promise<void> {
   await PackageFunctions.getPtChemEnumeratorDialog(cell);
+}
+
+//name: Enumerate Single HELM Sequence
+//description: Enumerate provided HELM sequence on provided positions with provided monomers and generates new table
+//input: string helmSequence 
+//input: list<double> positions 
+//input: dynamic monomerLists 
+//input: bool toAtomicLevel 
+//output: dataframe result
+export async function enumerateSingleHelmSequence(helmSequence: string, positions: number[], monomerLists: any, toAtomicLevel: boolean) : Promise<any> {
+  return await PackageFunctions.enumerateSingleHelmSequence(helmSequence, positions, monomerLists, toAtomicLevel);
+}
+
+//name: Enumerate Single HELM Sequence with natural amino acids
+//description: Enumerate provided HELM sequence on all positions with natural amino acids and generates new table. Generated table has sequence column called "Enumerated", and molecule column called "Molfile(Enumerated) if toAtomicLevel is set to true. Keywords: Optimize, enumerate, HELM optimization, Maximize Minimize property. When you want to optimize certain peptide using for example logS, set toAtomicLevel to true and use generated molecule column to calculate given property using chem package functions.
+//input: string helmSequence 
+//input: bool toAtomicLevel 
+//output: dataframe result
+export async function enumerateSingleHelmSequenceWithNaturalAAs(helmSequence: string, toAtomicLevel: boolean) : Promise<any> {
+  return await PackageFunctions.enumerateSingleHelmSequenceWithNaturalAAs(helmSequence, toAtomicLevel);
 }
 
 //name: Combine Sequences

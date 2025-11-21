@@ -244,11 +244,7 @@ export class PackageFunctions {
         search: (s: string) => pubChemSearch(s).then((r) => ({priority: 10, results: r})),
       }, {
         name: 'Wiki', description: 'Wikipedia Search', options: {widgetHeight: 500},
-        getSuggestions: (s) => s.length > 4 && !s.startsWith('wiki:') ? [{
-          suggestionValue: `wiki:${s}`,
-          suggestionText: `Search in Wikipedia`,
-          priority: 999,
-        }] : null,
+        getSuggestions: (s) => null,
         search: (s: string) => wikiSearch(s).then((r) => ({priority: 10, results: r})),
       }, {
         name: 'Apps', description: 'Apps Search', options: {relatedViewName: 'apps'},

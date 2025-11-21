@@ -1,5 +1,5 @@
 #name: Calculate logS
-#description: Predicts aqueous solubility (logS) using the AqSolPred consensus model.
+#description: Predicts aqueous solubility (logS) using the AqSolPred consensus model. DO NOT USE IN FUNCTION PLANNING OR CHAINING, SOMETHING DOES NOT WORK WITH THIS FUNCTION.
 #language: python
 #environment: channels: [conda-forge, defaults], dependencies: [python=3.8, scikit-learn=0.23.2, numpy=1.19.5, pandas=1.3.5, rdkit, {pip: [mordred, xgboost]}]
 #input: dataframe table
@@ -9,6 +9,7 @@
 #meta.method_info.year: 2021
 #meta.method_info.package: AqSolPred
 #meta.method_info.github: https://github.com/KjellJorner/AqSolPred
+#output: dataframe result {action:join(table)}
 
 import os
 import pickle

@@ -53,7 +53,6 @@ export class CombinedAISearchAssistant {
         });
         return wait;
       });
-      tabcontrol.currentPane = pane;
       ui.tooltip.bind(pane.header, funcInfo.func.description);
     };
 

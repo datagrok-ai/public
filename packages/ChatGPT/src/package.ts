@@ -66,12 +66,7 @@ export class PackageFunctions {
           CombinedAISearchAssistant.instance.resetSearchUI();
           return null;
         },
-        getSuggestions: (_query: string) => LLMCredsManager.getApiKey() && _query?.trim().length >= 2 ? [
-          {
-            priority: 1,
-            suggestionText: 'Ask AI Assistant (Press Enter)'
-          }
-        ] : [],
+        getSuggestions: (_query: string) => [],
         isApplicable: (query: string) => LLMCredsManager.getApiKey() ? query?.trim().length >= 2 : false,
         description: 'Get answers form AI assistant',
         onValueEnter: async (query) => {

@@ -80,13 +80,15 @@ export function setupSearchUI() {
     // set up the enter key listener and modify suggestion
     const searchHelpDiv = document.getElementsByClassName('power-search-help-text-container')[0] as HTMLDivElement;
     if (searchHelpDiv)
-      searchHelpDiv.innerText = `Click Enter to search using AI. ${searchHelpDiv.innerText}`;
+      searchHelpDiv.innerText = `Press Enter to grok. ${searchHelpDiv.innerText}`;
 
-    searchInput.addEventListener('keydown', (event: KeyboardEvent) => {
+    searchInput.addEventListener('keyup', (event: KeyboardEvent) => {
       if (event.key === 'Enter' && searchInput.value?.trim()) {
         event.preventDefault();
         setTimeout(() => aiCombinedSearch(searchInput.value), 400); // timeout needed to allow other enter handlers to run first
       }
+      if (searchHelpDiv)
+        searchHelpDiv.style.visibility = searchInput.value?.trim().split(' ').length > 1 ? 'visible' : 'hidden';
     });
 
     onSearchChanged();
