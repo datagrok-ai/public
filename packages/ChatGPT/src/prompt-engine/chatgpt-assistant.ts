@@ -59,7 +59,7 @@ Always respond strictly in JSON format.
     {
       name: 'Chem',
       description:
-        'Cheminformatics support: import, rendering, sketching, calculation of properties, predictive models, augmentations, multiple analyses',
+        'Cheminformatics support: import, rendering, sketching, calculation of properties, predictive models, augmentations, multiple analyses. Includes multiple different calculators(descriptors, properties, solubility(LogS through properties) and many more). Can be used in conjunction to peptides, conversion tools to optimize/maximize/minimize different properties.',
     },
     {
       name: 'Chembl',
@@ -76,6 +76,10 @@ Always respond strictly in JSON format.
     {
       name: 'Biologics',
       description: 'Database with ADC, protein sequences, peptides, drugs and their assay data. contains tools and queries into the database. compounds identifiers for peptides, sequences, drugs, ADCs etc. like GROKPEP-######, GROKADC-###### etc.',
+    },
+    {
+      name: 'SequenceTranslator',
+      description: 'Contains tools for enumerating sequences at different positions and monomers. very useful when trying to maximize/minimize/optimize certain properties of peptides/proteins by sequence enumeration.',
     }
   ];
 
@@ -98,6 +102,7 @@ Rules:
 - Do not include packages that clearly don't apply.`;
 
     const res = await this.chat<PackageSelection>(prompt, {schema: PackageSelectionSchema});
+    console.log('Selected packages:', res);
     return res.selected_packages.map((p: any) => p.name);
   }
 
@@ -126,6 +131,7 @@ Planning rules:
 - Do not use helper or lookup functions unless required by the goal.
 - Ensure all steps are valid according to the function metadata.
 - Include a short "analysis" explaining your reasoning.
+- When asked to optimize or maximize/minimize something, make sure that the calculation of the said property is also done.
 `;
 
   private async planFunctions(userGoal: string, functions: FunctionMeta[]): Promise<Plan> {
@@ -197,7 +203,7 @@ Respond strictly as JSON with this structure:
 
       if (Array.isArray(step.outputs)) {
         const outputName = step.outputs[0] ?? func.name;
-        const funcOutputMeta = func.outputs.find((o) => o.name === outputName);
+        const funcOutputMeta = func.outputs.length === 1 ? func.outputs[0] : func.outputs.find((o) => o.name === outputName);
         context[outputName] = {value: result, meta: funcOutputMeta};
       }
     }

@@ -17,7 +17,7 @@ import {JsonSchema} from './prompt-engine/interfaces';
 export * from './package.g';
 export const _package = new DG.Package();
 
-export const modelName: string = 'gpt-4.1-mini-2025-04-14';
+export const modelName: string = 'gpt-4o';
 
 export class PackageFunctions {
   @grok.decorators.init()
@@ -84,7 +84,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({meta: {
     role: 'aiSearchProvider',
-    useWhen: 'If the user is asking questions about how to do something, how to write the code on platform, how to execute tasks, or any other questions related to Datagrok platform functionalities and capabilities. for example, "what sequence notations are supported?'
+    useWhen: 'If the user is asking questions about how to do something, how to write the code on platform, how to execute tasks, or any other questions related to Datagrok platform functionalities and capabilities. The tone of the prompt should generally sound like "how do I do this" / "what is this". for example, "what sequence notations are supported?'
   }, name: 'Help',
   description: 'Get answers from DeepGROK AI assistant based on Datagrok documentation and public code.', result: {type: 'widget', name: 'result'}})
   static async askHelpLLMProvider(@grok.decorators.param({type: 'string'})prompt: string): Promise<DG.Widget | null> {
@@ -93,7 +93,7 @@ export class PackageFunctions {
 
  @grok.decorators.func({meta: {
    role: 'aiSearchProvider',
-   useWhen: 'If the prompt looks like a user has a goal to achieve something with concrete input(s), and wants the system to plan and execute a series of steps/functions to achieve that goal. for example, adme properties of CHEMBL1234'
+   useWhen: 'If the prompt looks like a user has a goal to achieve something with concrete input(s), and wants the system to plan and execute a series of steps/functions to achieve that goal. for example, adme properties of CHEMBL1234, enumerate some peptide, etc.. . Also, if the tone of the prompt sounds like "Do something", use this function'
  }, name: 'Execute',
  description: 'Plans and executes function steps to achieve needed results', result: {type: 'widget', name: 'result'}})
   static async smartChainExecutionProvider(@grok.decorators.param({type: 'string'})prompt: string): Promise<DG.Widget | null> {

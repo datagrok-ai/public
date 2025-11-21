@@ -22,7 +22,7 @@ export function combinedLLMSearchProvider() : any {
 //input: string prompt 
 //output: widget result
 //meta.role: aiSearchProvider
-//meta.useWhen: If the user is asking questions about how to do something, how to write the code on platform, how to execute tasks, or any other questions related to Datagrok platform functionalities and capabilities. for example, "what sequence notations are supported?
+//meta.useWhen: If the user is asking questions about how to do something, how to write the code on platform, how to execute tasks, or any other questions related to Datagrok platform functionalities and capabilities. The tone of the prompt should generally sound like "how do I do this" / "what is this". for example, "what sequence notations are supported?
 export async function askHelpLLMProvider(prompt: string) : Promise<any> {
   return await PackageFunctions.askHelpLLMProvider(prompt);
 }
@@ -32,7 +32,7 @@ export async function askHelpLLMProvider(prompt: string) : Promise<any> {
 //input: string prompt 
 //output: widget result
 //meta.role: aiSearchProvider
-//meta.useWhen: If the prompt looks like a user has a goal to achieve something with concrete input(s), and wants the system to plan and execute a series of steps/functions to achieve that goal. for example, adme properties of CHEMBL1234
+//meta.useWhen: If the prompt looks like a user has a goal to achieve something with concrete input(s), and wants the system to plan and execute a series of steps/functions to achieve that goal. for example, adme properties of CHEMBL1234, enumerate some peptide, etc.. . Also, if the tone of the prompt sounds like "Do something", use this function
 export async function smartChainExecutionProvider(prompt: string) : Promise<any> {
   return await PackageFunctions.smartChainExecutionProvider(prompt);
 }
