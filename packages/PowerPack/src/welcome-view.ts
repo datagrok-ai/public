@@ -98,7 +98,7 @@ export function welcomeView(): DG.View | undefined {
     searchHost.style.display = (search ? '' : 'none');
     if (search != null)
       powerSearch(s, searchHost, input);
-    view.path = search ? `search?q=${s}` : 'search';
+    view.path = search ? `search?q=${encodeURIComponent(s)}` : 'search';
   }
 
   rxjs.fromEvent(input, 'input').pipe(debounceTime(500)).subscribe((_) => doSearch(input.value));
