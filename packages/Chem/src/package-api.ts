@@ -85,7 +85,7 @@ export namespace scripts {
   }
 
   /**
-  Generates the new dataset based on the given structure
+  Generates the new dataset based on the given structure. Generated table has a column named 'mutations' with mutated structures.
   */
   export async function mutate(molecule: string , steps: number , randomize: boolean , maxRandomResults: number ): Promise<DG.DataFrame> {
     return await grok.functions.call('Chem:Mutate', { molecule, steps, randomize, maxRandomResults });
@@ -769,7 +769,7 @@ export namespace funcs {
   }
 
   /**
-  Generates the new dataset based on the given structure
+  Removes drawn protecting groups / fragments from molecules
   */
   export async function deprotect(table: DG.DataFrame , molecules: DG.Column , fragment: string ): Promise<void> {
     return await grok.functions.call('Chem:Deprotect', { table, molecules, fragment });

@@ -1064,7 +1064,7 @@ export async function isInteractiveNN(df: DG.DataFrame, predictColumn: DG.Column
 }
 
 //name: Deprotect
-//description: Generates the new dataset based on the given structure
+//description: Removes drawn protecting groups / fragments from molecules
 //tags: Transform
 //input: dataframe table { description: Input data table }
 //input: column molecules { semType: Molecule }

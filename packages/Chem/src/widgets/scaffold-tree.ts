@@ -338,13 +338,27 @@ async function updateLabelContent(labelDiv: HTMLElement, bitset: DG.BitSet, this
   labelDiv.onmouseleave = () => ui.tooltip.hide();
 }
 
-export async function updateVisibleNodes(thisViewer: ScaffoldTreeViewer, updateBitset: boolean = false, includeExpanded: boolean = false) {
-  const visibleNodes = getVisibleNodes(thisViewer, includeExpanded);
+export async function updateVisibleNodes(
+  thisViewer: ScaffoldTreeViewer,
+  options: {
+    updateBitset?: boolean;
+    includeExpanded?: boolean;
+    includeChecked?: boolean;
+  } = {}) {
+  const visibleNodes = getVisibleNodes(thisViewer, options.includeExpanded);
+  const nodesToUpdate: DG.TreeViewGroup[] = [...visibleNodes];
 
-  for (const group of visibleNodes) {
+  if (options.includeChecked) {
+    for (const n of thisViewer.tree.items) {
+      if (n.checked && !visibleNodes.includes(n as DG.TreeViewGroup))
+        nodesToUpdate.push(n as DG.TreeViewGroup);
+    }
+  }
+
+  for (const group of nodesToUpdate) {
     if (isOrphans(group)) continue; // Skip orphans
 
-    await updateLabel(thisViewer, group, updateBitset);
+    await updateLabel(thisViewer, group, options.updateBitset);
   }
 }
 
@@ -983,7 +997,7 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       // Perform heavy updates after the layout is applied
       await updateVisibleMols(thisViewer);
       this.updateUI();
-      await updateVisibleNodes(thisViewer, false, true);
+      await updateVisibleNodes(thisViewer, {updateBitset: false, includeExpanded: true, includeChecked: true});
       this.appendOrphanFolders(this.tree);
       this.updateFilters();
       this.updateTag();
@@ -1605,8 +1619,12 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
     ));
   }
 
-  updateBitset(node: DG.TreeViewNode): boolean {
-    return node && this.dataFrame ? value(node).bitset?.length !== this.dataFrame.rowCount : false;
+  updateBitset(node: DG.TreeViewNode | null): boolean {
+    if (!node || !this.dataFrame)
+      return false;
+
+    const bs = value(node).bitset;
+    return bs ? bs.length !== this.dataFrame.rowCount : false;
   }
 
   setNotBitOperation(group: TreeViewGroup, isNot: boolean) : void {
@@ -2124,8 +2142,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       if (thisViewer.tree.items.length < 1)
         return;
 
-      const updateBitset = this.updateBitset(this.tree.currentItem);
-      await updateVisibleNodes(thisViewer, updateBitset);
+      const updateBitset = this.updateBitset(this.tree.currentItem ?? this.tree.items[0]);
+      await updateVisibleNodes(thisViewer, {updateBitset: updateBitset, includeExpanded: true, includeChecked: true});
       this.bitsetUpdateInProgress = false;
       this.updateFilters(false);
     }));
