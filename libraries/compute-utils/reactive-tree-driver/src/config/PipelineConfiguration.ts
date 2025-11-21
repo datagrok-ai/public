@@ -61,7 +61,6 @@ export type PipelineLinkConfigurationBase<P> = {
   dataFrameMutations?: boolean | string[];
   defaultRestrictions?: Record<string, RestrictionType> | RestrictionType;
   nodePriority?: number;
-  runOnInit?: undefined;
 }
 
 export type PipelineHandlerConfiguration<P> = PipelineLinkConfigurationBase<P> & {
@@ -74,12 +73,14 @@ export type PipelineHandlerConfiguration<P> = PipelineLinkConfigurationBase<P> &
 export type PipelineValidatorConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'validator'
   handler: Validator;
+  runOnInit?: undefined;
 };
 
 export type PipelineMetaConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'meta'
   actions?: undefined;
   handler: MetaHandler;
+  runOnInit?: undefined;
 };
 
 export type PipelineInitConfiguration<P> = PipelineLinkConfigurationBase<P> & {
@@ -87,6 +88,7 @@ export type PipelineInitConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   base?: undefined,
   actions?: undefined;
   handler: Handler;
+  runOnInit?: undefined;
 };
 
 export type PipelineReturnConfiguration<P> = PipelineLinkConfigurationBase<P> & {
@@ -94,12 +96,14 @@ export type PipelineReturnConfiguration<P> = PipelineLinkConfigurationBase<P> & 
   base?: undefined,
   actions?: undefined;
   handler: ReturnHandler;
+  runOnInit?: undefined;
 };
 
 export type PipelineSelectorConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'nodemeta' | 'selector', // selector for API compat
   actions?: undefined;
   handler: SelectorHandler;
+  runOnInit?: undefined;
 };
 
 export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | PipelineValidatorConfiguration<P> | PipelineMetaConfiguration<P> | PipelineInitConfiguration<P> | PipelineReturnConfiguration<P> | PipelineSelectorConfiguration<P>;
@@ -112,6 +116,7 @@ export type ActionInfo = {
   menuCategory?: string;
   confirmationMessage?: string;
   icon?: string;
+  runOnInit?: undefined;
 };
 
 export type DataActionConfiguraion<P> = PipelineLinkConfigurationBase<P> & {
