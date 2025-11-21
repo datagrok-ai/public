@@ -1583,6 +1583,8 @@ export class ScaffoldTreeViewer extends DG.JsViewer {
       this.fragmentsColumn.meta.allowColorPicking = false;
       this.fragmentsColumn.setTag(DG.TAGS.DESCRIPTION, 'Column with scaffold tree fragments used to retain scaffold-based coloring in plots.');
       this.fragmentsColumn.setTag(EXCLUDE_FROM_FILTER_COLUMN_SELECT, 'true');
+      // Set the formula tag so the column is recognized as a calculated column and added before the layout is applied.
+      this.fragmentsColumn.setTag(DG.TAGS.FORMULA, '');
     }
 
     this.fragmentsColumn.semType ??= DG.SEMTYPE.MOLECULE;
