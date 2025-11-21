@@ -1,6 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {ADVERSE_EVENTS_VIEW_NAME, AE_BROWSER_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_NAME, CORRELATIONS_VIEW_NAME,
+import {ADVERSE_EVENTS_VIEW_NAME, AE_BROWSER_VIEW_NAME, AE_RISK_ASSESSMENT_VIEW_NAME, ANIMAL_PROFILE_VIEW_NAME, CORRELATIONS_VIEW_NAME,
   DISTRIBUTIONS_VIEW_NAME, LABORATORY_VIEW_NAME, MEDICAL_HISTORY_VIEW_NAME, PATIENT_PROFILE_VIEW_NAME,
   QUESTIONNAIRES_VIEW_NAME, SUMMARY_VIEW_NAME, SURVIVAL_ANALYSIS_VIEW_NAME, TIMELINES_VIEW_NAME,
   TIME_PROFILE_VIEW_NAME, TREE_MAP_VIEW_NAME, VISITS_VIEW_NAME} from '../constants/view-names-constants';
@@ -116,6 +116,51 @@ export function getRequiredColumnsByView(studyId: string) {
       },
     },
     [PATIENT_PROFILE_VIEW_NAME]: {
+      'req_domains': {
+        'dm': {
+          'req': [
+            sdtmCols.SUBJECT_ID,
+          ],
+        },
+      },
+      'opt_domains': {
+        'lb': {
+          'req': [
+            sdtmCols.SUBJECT_ID,
+            sdtmCols.LAB_DAY,
+            sdtmCols.LAB_TEST,
+            sdtmCols.LAB_RES_N,
+            sdtmCols.LAB_LO_LIM_N,
+            sdtmCols.LAB_HI_LIM_N,
+          ],
+        },
+        'ae': {
+          'req': [
+            sdtmCols.SUBJECT_ID,
+            studies[studyId].viewsConfig.config[PATIENT_PROFILE_VIEW_NAME][AE_TERM_FIELD],
+            studies[studyId].viewsConfig.config[PATIENT_PROFILE_VIEW_NAME][AE_START_DAY_FIELD],
+            studies[studyId].viewsConfig.config[PATIENT_PROFILE_VIEW_NAME][AE_END_DAY_FIELD],
+          ],
+        },
+        'ex': {
+          'req': [
+            sdtmCols.SUBJECT_ID,
+            studies[studyId].viewsConfig.config[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_NAME_FIELD],
+            studies[studyId].viewsConfig.config[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_START_DAY_FIELD],
+            studies[studyId].viewsConfig.config[PATIENT_PROFILE_VIEW_NAME][INV_DRUG_END_DAY_FIELD],
+          ],
+        },
+        'cm': {
+          'req': [
+            sdtmCols.SUBJECT_ID,
+            studies[studyId].viewsConfig.config[PATIENT_PROFILE_VIEW_NAME][CON_MED_NAME_FIELD],
+            studies[studyId].viewsConfig.config[PATIENT_PROFILE_VIEW_NAME][CON_MED_START_DAY_FIELD],
+            studies[studyId].viewsConfig.config[PATIENT_PROFILE_VIEW_NAME][CON_MED_END_DAY_FIELD],
+          ],
+        },
+      },
+    },
+    [ANIMAL_PROFILE_VIEW_NAME]: {
       'req_domains': {
         'dm': {
           'req': [
