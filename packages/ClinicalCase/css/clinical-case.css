@@ -25,3 +25,8 @@
 .clinical-case-import-study-button {
     margin-top: 20px !important;
 }
+
+.clinical-case-correlation-filters {
+   overflow-y: scroll;
+   margin: 8px;
+}
