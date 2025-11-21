@@ -1881,6 +1881,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'top-menu': 'Chem | Calculate | Chemical Properties...',
     'name': 'Chemical Properties',
+    'description': 'Calculates chemical properties and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.',
     'tags': ['HitTriageFunction', 'Transform'],
     'meta': {
       'function_family': 'biochem-calculator',

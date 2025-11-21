@@ -810,6 +810,7 @@ export async function callChemDiversitySearch(col: DG.Column, metricName: any, f
 }
 
 //name: Chemical Properties
+//description: Calculates chemical properties and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.
 //tags: HitTriageFunction, Transform
 //input: dataframe table { description: Input data table }
 //input: column molecules { semType: Molecule }
