@@ -6,17 +6,24 @@ import * as grok from 'datagrok-api/grok';
 import '../../css/ai.css';
 import {Plan, Step} from './interfaces';
 
-function renderHelm(value: string) {
+function renderHelm(value: string): HTMLElement {
   return ui.wait(async () => {
     //@ts-ignore
-    const helmInput = await ui.input.helmAsync('HELM', {
+    const helmInput = await ui.input.helmAsync('helm', {
       editable: false,
     });
     helmInput.setStringValue(value);
-    helmInput.root.addEventListener('click', () => {
+    await DG.delay(200); // wait for proper sizing
+    helmInput.getInput().addEventListener('click', () => {
       grok.shell.o = helmInput.getValue();
     });
-    return helmInput.root;
+    helmInput.getInput().addEventListener('dblclick', () => {
+      helmInput.showEditorDialog();
+    });
+
+    helmInput.getInput().style.width = '100%';
+    helmInput.getInput().style.setProperty('height', '300px', 'important');
+    return helmInput.getInput();
   });
 }
 
@@ -71,8 +78,7 @@ export class AssistantRenderer {
       const grid = val.plot.grid().root;
       grid.style.width = '100%';
       container.append(grid);
-    }
-    else
+    } else
       container.append(ui.divText(String(val)));
 
     return container;
