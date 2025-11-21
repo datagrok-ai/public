@@ -72,6 +72,10 @@ Always respond strictly in JSON format.
     {
       name: 'Retrosynthesis',
       description: 'Creates retrosynthesis paths for the selected molecule',
+    },
+    {
+      name: 'Biologics',
+      description: 'Database with ADC, protein sequences, peptides, drugs and their assay data. contains tools and queries into the database. compounds identifiers for peptides, sequences, drugs, ADCs etc. like GROKPEP-######, GROKADC-###### etc.',
     }
   ];
 
