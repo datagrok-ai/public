@@ -706,7 +706,8 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'To Atomic Level Single sequence',
-    description: 'Converts a single sequence to molblock'
+    description: 'Converts a single sequence to molblock',
+    outputs: [{name: 'molfile', type: 'string', options: {semType: 'Molecule'}}]
   })
   static async toAtomicLevelSingleSeq(
     @grok.decorators.param({name: 'sequence', type: 'string', options: {semType: 'Macromolecule'}}) sequence: string,

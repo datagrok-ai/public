@@ -310,7 +310,7 @@ export async function toAtomicLevelPanel(sequence: DG.SemanticValue) : Promise<a
 //name: To Atomic Level Single sequence
 //description: Converts a single sequence to molblock
 //input: string sequence { semType: Macromolecule }
-//output: string result
+//output: string molfile { semType: Molecule }
 export async function toAtomicLevelSingleSeq(sequence: string) : Promise<string> {
   return await PackageFunctions.toAtomicLevelSingleSeq(sequence);
 }
