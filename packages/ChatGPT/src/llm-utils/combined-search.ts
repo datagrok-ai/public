@@ -39,7 +39,7 @@ export class CombinedAISearchAssistant {
     // create a lazy tabcontrol with all functions, but the chosen one first
     const tabcontrol = ui.tabControl();
 
-    const addFunctionTab = (functionName: string) => {
+    const addFunctionTab = (functionName: string, setAsCurrentPane: boolean = false) => {
       const funcInfo = this.functions[functionName];
       const pane = tabcontrol.addPane(funcInfo.friendlyName, () => {
         const wait = ui.wait(async () => {
@@ -53,6 +53,7 @@ export class CombinedAISearchAssistant {
         });
         return wait;
       });
+      if (setAsCurrentPane) tabcontrol.currentPane = pane;
       ui.tooltip.bind(pane.header, funcInfo.func.description);
     };
 
@@ -68,7 +69,7 @@ export class CombinedAISearchAssistant {
           if (moreBtn && tabcontrol.header.contains(moreBtn))
             tabcontrol.header.removeChild(moreBtn);
 
-          addFunctionTab(functionName);
+          addFunctionTab(functionName, true);
 
           if (moreBtn && remainingFunctions.length > 0)
             tabcontrol.header.appendChild(moreBtn);
