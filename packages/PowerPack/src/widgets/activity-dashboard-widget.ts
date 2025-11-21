@@ -454,6 +454,7 @@ export class ActivityDashboardWidget extends DG.Widget {
     tryDemoAppsList.classList.add('power-pack-activity-widget-subwidget-list-content', 'power-pack-activity-widget-getting-started-subwidget-list-content');
     const tryDemoAppsRoot = ui.divV([ui.h3(ui.span([ui.iconFA('play-circle'), ui.span([' Demo Apps'])]), 'power-pack-activity-widget-spotlight-column-header'),
       tryDemoAppsList], 'power-pack-activity-widget-spotlight-getting-started-column');
+    root.append(gettingStartedRoot, tryDemoAppsRoot);
 
     const dashboardsToShow: HTMLElement[] = [];
     let medChemDashboard: DG.Project | undefined | null = null;
@@ -476,12 +477,13 @@ export class ActivityDashboardWidget extends DG.Widget {
       link.append(ui.iconSvg('project'), ui.span([demo instanceof DG.Project ? demo.friendlyName : getDemoDashboardName(demo)]));
       dashboardsToShow.push(ui.span([link], 'd4-link-label'));
     }
-    const dashboardList = ui.list(dashboardsToShow);
-    dashboardList.classList.add('power-pack-activity-widget-subwidget-list-content', 'power-pack-activity-widget-getting-started-subwidget-list-content');
-    const dashboardsRoot = ui.divV([ui.h3(ui.span([ui.iconFA('table'), ui.span([' Demo Datasets'])]), 'power-pack-activity-widget-spotlight-column-header'),
-      dashboardList], 'power-pack-activity-widget-spotlight-getting-started-column');
-
-    root.append(gettingStartedRoot, tryDemoAppsRoot, dashboardsRoot);
+    if (dashboardsToShow.length > 0) {
+      const dashboardList = ui.list(dashboardsToShow);
+      dashboardList.classList.add('power-pack-activity-widget-subwidget-list-content', 'power-pack-activity-widget-getting-started-subwidget-list-content');
+      const dashboardsRoot = ui.divV([ui.h3(ui.span([ui.iconFA('table'), ui.span([' Demo Datasets'])]), 'power-pack-activity-widget-spotlight-column-header'),
+        dashboardList], 'power-pack-activity-widget-spotlight-getting-started-column');
+      root.append(dashboardsRoot);
+    }
     return root;
   }
 
