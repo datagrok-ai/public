@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/biologics",
   "friendlyName": "Biologics",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Demo Database wrapper for ADCs",
   "author": {
     "name": "Davit Rizhinashvili",
@@ -62,6 +62,15 @@
         "parsers": [
           {
             "regexp": "GROKMOL-\\d{6}"
+          }
+        ]
+      },
+      {
+        "semType": "DG_BIOLOGICS_PEPTIDE_ID",
+        "description": "Peptide identifier from the Biologics package",
+        "parsers": [
+          {
+            "regexp": "GROKPEP-\\d{6}"
           }
         ]
       },

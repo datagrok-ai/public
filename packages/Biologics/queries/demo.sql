@@ -82,3 +82,14 @@ JOIN biologics.linkers l ON adc.linker_id = l.id
 WHERE d.identifier = @drugID;
 
 -- end
+
+--name: getBiologicsPeptideHelmByIdentifier
+--connection: Biologics:biologics
+--description: "Retrieve the HELM sequence of a biologics peptide given its identifier that should follow the pattern GROKPEP-######."
+--input: string peptideIdentifier
+--output: string result {semType: Macromolecule; units: helm}
+SELECT helm
+FROM biologics.peptides
+WHERE identifier = @peptideIdentifier
+limit 1;
+-- end

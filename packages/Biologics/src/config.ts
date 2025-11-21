@@ -12,6 +12,15 @@ export const biologicsConfig = {
         'regexpMarkup': 'GROKMOL-{d6}'
       }
     },
+    'DG_BIOLOGICS_PEPTIDE_ID': {
+      'table': 'peptides',
+      'column': 'identifier',
+      'regexpExample': {
+        'example': 'GROKPEP-000001',
+        'nonVariablePart': 'GROKPEP-',
+        'regexpMarkup': 'GROKPEP-{d6}'
+      }
+    },
     'DG_BIOLOGICS_SEQUENCE_ID': {
       'table': 'sequences',
       'column': 'identifier',
@@ -100,7 +109,8 @@ export const biologicsConfig = {
     'linkers': 'identifier',
     'target_organisms': 'identifier',
     'purification_batches': 'identifier',
-    'expression_batches': 'identifier'
+    'expression_batches': 'identifier',
+    'peptides': 'identifier',
   },
   'customSelectedColumns': {
     'adc': [
@@ -112,6 +122,11 @@ export const biologicsConfig = {
       'linker_id',
       'compound_structure',
       'glyph'
+    ],
+    'peptides': [
+      'name',
+      'identifier',
+      'helm'
     ]
   }
 };

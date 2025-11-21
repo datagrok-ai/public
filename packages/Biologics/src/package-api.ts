@@ -32,6 +32,13 @@ export namespace queries {
   export async function adcsLinkedToDrug(drugID: string ): Promise<DG.DataFrame> {
     return await grok.data.query('Biologics:AdcsLinkedToDrug', { drugID });
   }
+
+  /**
+  "Retrieve the HELM sequence of a biologics peptide given its identifier that should follow the pattern GROKPEP-######."
+  */
+  export async function getBiologicsPeptideHelmByIdentifier(peptideIdentifier: string ): Promise<string> {
+    return await grok.data.query('Biologics:GetBiologicsPeptideHelmByIdentifier', { peptideIdentifier });
+  }
 }
 
 export namespace funcs {
