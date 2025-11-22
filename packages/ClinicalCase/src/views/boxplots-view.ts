@@ -10,10 +10,8 @@ import {_package} from '../package';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {TRT_ARM_FIELD} from '../views-config';
 import {DISTRIBUTIONS_VIEW_NAME} from '../constants/view-names-constants';
-import {tTest} from '@datagrok-libraries/statistics/src/tests';
 import {studies} from '../package';
 import {CDISC_STANDARD} from '../utils/types';
-const {jStat} = require('jstat');
 
 
 export class BoxPlotsView extends ClinicalCaseViewBase {
@@ -36,22 +34,12 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
 
   distrWithDmData: DG.DataFrame;
 
-  pValuesArray: any;
-
   viewerTitle = {
     style: {
       'color': 'var(--grey-6)',
       'margin': '12px 0px 6px 12px',
       'font-size': '14px',
       'font-weight': 'bold',
-    },
-  };
-
-  viewerTitlePValue = {
-    style: {
-      'color': 'var(--grey-6)',
-      'margin': '12px 0px 6px 100px',
-      'font-size': '12px',
     },
   };
 
@@ -79,6 +67,7 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
       studies[this.studyId].domains[it] !== null && !this.optDomainsWithMissingCols.includes(it) &&
         Object.keys(this.numVisDayColDict).includes(it));
 
+    // TODO!!!! do not need to create total dataframe here, use separate domains to create boxplots
     this.domains.forEach((it) => {
       const df = (studies[this.studyId].domains[it] as DG.DataFrame).clone(null, [SUBJECT_ID,
         this.isSend ? VISIT_DAY_STR : VISIT, this.numVisDayColDict[it],
@@ -95,6 +84,17 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
     this.domains.forEach((it) => {
       this.uniqueValues[it] = Array.from(getUniqueValues(studies[this.studyId].domains[it],
         this.domainFields[it]['test']));
+    });
+
+    // Set default values to show 4 boxplots (or less if fewer values available)
+    let remainingCount = 4;
+    this.domains.forEach((domain) => {
+      if (remainingCount > 0 && this.uniqueValues[domain] && this.uniqueValues[domain].length > 0) {
+        const countToSelect = Math.min(remainingCount, this.uniqueValues[domain].length);
+        this.selectedValuesByDomain[domain] = this.uniqueValues[domain].slice(0, countToSelect);
+        remainingCount -= countToSelect;
+      } else
+        this.selectedValuesByDomain[domain] = [];
     });
 
     /* let minLabVisit = this.distrDataframe.getCol(VISIT_DAY).stats[ 'min' ];
@@ -115,20 +115,19 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
       .groupBy(this.distrWithDmData.columns.names())
       .where(`${this.isSend ? VISIT_DAY_STR : VISIT} = ${this.bl}`)
       .aggregate();
-    this.getTopPValues(4);
 
-    this.updateBoxPlots(this.viewerTitle, this.viewerTitlePValue, this.selectedSplitBy);
+    this.updateBoxPlots(this.viewerTitle, this.selectedSplitBy);
 
     const blVisitChoices = ui.input.choice('Baseline', {value: this.bl, items: this.uniqueVisits});
     blVisitChoices.onChanged.subscribe((value) => {
       this.bl = value;
-      this.updateBoxPlots(this.viewerTitle, this.viewerTitlePValue, this.selectedSplitBy);
+      this.updateBoxPlots(this.viewerTitle, this.selectedSplitBy);
     });
 
     const splitByChoices = ui.input.choice('Split by', {value: this.selectedSplitBy, items: this.splitBy});
     splitByChoices.onChanged.subscribe((value) => {
       this.selectedSplitBy = value;
-      this.updateBoxPlots(this.viewerTitle, this.viewerTitlePValue, this.selectedSplitBy);
+      this.updateBoxPlots(this.viewerTitle, this.selectedSplitBy);
     });
 
     const selectBiomarkers = ui.iconFA('cog', () => {
@@ -160,7 +159,7 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
       ui.dialog({title: 'Select values'})
         .add(ui.div(acc.root, {style: {width: '400px', height: '300px'}}))
         .onOK(() => {
-          this.updateBoxPlots(this.viewerTitle, this.viewerTitlePValue, this.selectedSplitBy);
+          this.updateBoxPlots(this.viewerTitle, this.selectedSplitBy);
         })
         .show();
     });
@@ -179,20 +178,18 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
   }
 
   updateGlobalFilter(): void {
-    this.updateBoxPlots(this.viewerTitle, this.viewerTitlePValue, this.selectedSplitBy);
+    this.updateBoxPlots(this.viewerTitle, this.selectedSplitBy);
   }
 
-  private updateBoxPlots(viewerTitle: any, viewerTitlePValue: any, category: string) {
+  private updateBoxPlots(viewerTitle: any, category: string) {
     if (Object.keys(this.selectedValuesByDomain).length && this.bl) {
       this.boxPlots = [];
-      this.pValuesArray = [];
       Object.keys(this.selectedValuesByDomain).forEach((domain) => {
         this.selectedValuesByDomain[domain].forEach((it) => {
           const df = createBaselineEndpointDataframe(
             this.distrDataframe.clone(this.distrDataframe.filter), studies[this.studyId].domains.dm, [category],
             'test', 'res', [], it, this.bl, '',
             this.isSend ? VISIT_DAY_STR : VISIT, `${it}_BL`);
-          this.getPValues(df, domain, it, category, `${it}_BL`);
           const plot = DG.Viewer.boxPlot(df, {
             categoryColumnNames: [category],
             value: `${it}_BL`,
@@ -204,8 +201,6 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
           });
           plot.root.prepend(ui.splitH([
             ui.divText(it, viewerTitle),
-            ui.divText(`p-value: ${this.pValuesArray.find((val) => val.value === it).pValue.toPrecision(5)}`,
-              viewerTitlePValue),
           ], {style: {maxHeight: '35px'}}));
           const boxPlot = Array.from(getUniqueValues(df, category)).length > 3 ? ui.block([plot.root]) :
             ui.block50([plot.root]);
@@ -214,40 +209,5 @@ export class BoxPlotsView extends ClinicalCaseViewBase {
       });
       updateDivInnerHTML(this.boxPlotDiv, ui.block(this.boxPlots));
     }
-  }
-
-  private getTopPValues(topNum: number) {
-    this.pValuesArray = [];
-    Object.keys(this.uniqueValues).forEach((domain) => {
-      this.uniqueValues[domain].forEach((val) =>
-        this.getPValues(this.distrWithDmData, domain, val, this.selectedSplitBy, 'res'));
-    });
-    //@ts-ignore
-    this.pValuesArray.sort((a, b) => a.pValue-b.pValue || isNaN(a.pValue)-isNaN(b.pValue));
-    const limit = this.pValuesArray.length < topNum ? this.pValuesArray.length : topNum;
-    for (let i = 0; i < limit; i++) {
-      const domain = this.pValuesArray[i].domain;
-      const value = this.pValuesArray[i].value;
-      if (!this.selectedValuesByDomain[domain])
-        this.selectedValuesByDomain[domain] = [value];
-      else
-        this.selectedValuesByDomain[domain] = this.selectedValuesByDomain[domain].concat(value);
-    }
-  }
-
-  getPValues(df: DG.DataFrame, domain: string, labVal: any, category: any, resColName: string) {
-    const valueData = df
-      .groupBy([SUBJECT_ID, 'test', resColName, category])
-      .where(`test = ${labVal}`)
-      .aggregate();
-    const valuesByArm = valueData.groupBy([category]).getGroups();
-    const dataForAnova = [];
-    Object.values(valuesByArm).forEach((it) => {
-      const labResults = it.getCol(resColName).getRawData();
-      dataForAnova.push(Array.from(labResults));
-    });
-    const pValue = dataForAnova.length === 2 ? tTest(dataForAnova[0],
-      dataForAnova[1])['p-value'] : jStat.anovaftest(...dataForAnova);
-    this.pValuesArray.push({value: labVal, pValue: pValue, domain: domain});
   }
 }
