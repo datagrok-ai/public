@@ -79,6 +79,9 @@ const rootViewers = ui.divH([], 'viewer-gallery');
 let dlg: DG.Dialog;
 let search: DG.InputBase;
 const viewersCount = ui.div([], 'vg-counter-label');
+const recentViewersRoot = ui.divH([], 'viewer-gallery');
+const recentLabel = ui.div(['Recently used'], 'vg-counter-label');
+const recentBlock = ui.divV([recentLabel, recentViewersRoot], {style: {marginBottom: '10px'}});
 
 export function viewersDialog(currentView: DG.TableView, currentTable: DG.DataFrame) {
   getViewers(viewers, currentTable);
@@ -119,6 +122,27 @@ export function viewersDialog(currentView: DG.TableView, currentTable: DG.DataFr
   const searchIcon = ui.iconFA('search');
   searchIcon.classList.add('vg-search-icon');
 
+  recentViewersRoot.innerHTML = '';
+  const recentNames = getRecentViewersList();
+
+  if (recentNames.length > 0) {
+    const allViewersMap: {[name: string]: {idx: string, list: any}} = {};
+    for (const i in viewers)
+      allViewersMap[viewers[i].name] = {idx: i, list: viewers};
+    for (const i in jsViewers)
+      allViewersMap[jsViewers[i].name] = {idx: i, list: jsViewers};
+    let hasValidRecents = false;
+    for (const name of recentNames) {
+      if (allViewersMap[name]) {
+        recentViewersRoot.append(renderCard(allViewersMap[name].list, allViewersMap[name].idx));
+        hasValidRecents = true;
+      }
+    }
+    recentBlock.style.display = hasValidRecents ? 'flex' : 'none';
+  }
+  else
+    recentBlock.style.display = 'none';
+
   rootViewers.innerHTML = '';
 
   for (const i in viewers)
@@ -134,7 +158,7 @@ export function viewersDialog(currentView: DG.TableView, currentTable: DG.DataFr
   ], 'vg-tags');
 
   const root = ui.divH([
-    ui.block([viewersCount, rootViewers], 'viewer-gallery-root'),
+    ui.block([recentBlock, viewersCount, rootViewers], 'viewer-gallery-root'),
     tags,
   ]);
 
@@ -237,6 +261,7 @@ function getJsViewers(jsViewers: { [v: string]: { [k: string]: any } }, table: D
 function findViewer(value: string) {
   rootViewers.innerHTML = '';
   if (value != '') {
+    recentBlock.style.display = 'none';
     for (const i in viewers) {
       if (viewers[i].name.toLowerCase().includes(value.toLowerCase()) ||
         viewers[i].group.toLowerCase().includes(value.toLowerCase()))
@@ -255,6 +280,8 @@ function findViewer(value: string) {
         rootViewers.append(renderCard(jsViewers, i));
     }
   } else {
+    if (recentViewersRoot.childElementCount > 0)
+      recentBlock.style.display = 'flex';
     for (const i in viewers)
       rootViewers.append(renderCard(viewers, i));
 
@@ -355,8 +382,30 @@ function getTotalViewer() {
 function dockViewers(viewer: string, view: DG.TableView, table: DG.DataFrame) {
   try {
     view.addViewer(DG.Viewer.fromType(viewer, table));
+    addRecentViewer(viewer);
   } catch (e) {
     grok.shell.error(`Cannot add ${viewer} for current table. Check browser console for specific errors`);
     console.error(e);
   }
+}
+
+const STORAGE_NAME = 'ViewerGallery';
+const RECENT_KEY = 'recent-viewers';
+
+function getRecentViewersList(): string[] {
+  try {
+    const jsonStr = grok.userSettings.getValue(STORAGE_NAME, RECENT_KEY);
+    if (!jsonStr)
+      return [];
+    return JSON.parse(jsonStr);
+  } catch (e) {
+    console.error('Failed to load recent viewers', e);
+    return [];
+  }
+}
+
+function addRecentViewer(viewerName: string) {
+  let recent = getRecentViewersList();
+  recent = [viewerName, ...recent.filter((n) => n !== viewerName)].slice(0, 8);
+  grok.userSettings.add(STORAGE_NAME, RECENT_KEY, JSON.stringify(recent));
 }
