@@ -4,6 +4,7 @@ export interface FuncParam {
   type: string;
   description: string;
   default?: any;
+  optional?: boolean;
 }
 
 export type ChatGptFuncParams = Record<string, FuncParam>;

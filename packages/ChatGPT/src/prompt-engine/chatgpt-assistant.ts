@@ -41,6 +41,7 @@ Always respond strictly in JSON format.
         type: p.propertyType,
         description: p.description ?? '',
         default: p.options['default'],
+        optional: p.options['optional'],
       };
     }
     return props;
@@ -116,11 +117,14 @@ General output rules:
   { "action": "call_function", "function": "<name>", "inputs": {...}, "outputs": [...] }
 
 STRICT INPUT RULES (applies to ALL models):
-- You MUST include EVERY input parameter defined for the function.
-- This includes optional inputs and those that have default values.
-- If a function defines an input parameter, it MUST appear in the "inputs" object.
-- Never omit an input field, even if its value equals the function’s default.
-- Leaving out an input is considered an ERROR.
+- You MUST include EVERY REQUIRED input parameter defined for the function.
+- Optional inputs:
+  - If a value is provided, include it in the "inputs" object.
+  - If no value is provided, the field may be omitted.
+- Inputs with default values are treated as required:
+  - You MUST include them in the "inputs", even if the value equals the default.
+- Leaving out a required input or a defaulted input is considered an ERROR.
+- Inputs should appear exactly as defined in the function metadata.
 
 Referencing previous steps:
 - If an input value comes from a previous step's output, prefix it with "$".
