@@ -2472,12 +2472,14 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     tags: ['Transform'],
+    outputs: [{name: 'res', type: 'list'}],
   })
   static async mpoTransformFunction(
     df: DG.DataFrame,
     @grok.decorators.param({type: 'object'}) currentProperties: { [key: string]: PropertyDesirability },
-  ) {
+  ): Promise<string[]> {
     const columns: DG.Column[] = [];
+    let resultCol: DG.Column | null = null;
     for (const propertyName in currentProperties) {
       const column = df.columns.byName(propertyName);
       if (!column) {
@@ -2490,16 +2492,18 @@ export class PackageFunctions {
 
     if (columns.length === 0) {
       grok.shell.error('No valid columns found matching the template properties. Cannot calculate MPO score.');
-      return;
+      return [];
     }
 
     try {
-      const resultCol = mpo(df, columns);
+      resultCol = mpo(df, columns);
       grok.shell.info(`MPO score calculated in column '${resultCol.name}'.`);
     } catch (e) {
       console.error('MPO Calculation Error:', e);
       grok.shell.error(`MPO calculation failed: ${e instanceof Error ? e.message : String(e)}`);
     }
+
+    return resultCol ? [resultCol.name] : [];
   }
 
   @grok.decorators.fileViewer({

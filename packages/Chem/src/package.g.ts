@@ -1108,8 +1108,9 @@ export async function _mpo() : Promise<void> {
 //tags: Transform
 //input: dataframe df 
 //input: object currentProperties 
-export async function mpoTransformFunction(df: DG.DataFrame, currentProperties: any) : Promise<void> {
-  await PackageFunctions.mpoTransformFunction(df, currentProperties);
+//output: list res
+export async function mpoTransformFunction(df: DG.DataFrame, currentProperties: any) : Promise<string[]> {
+  return await PackageFunctions.mpoTransformFunction(df, currentProperties);
 }
 
 //tags: fileViewer
