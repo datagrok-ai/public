@@ -347,7 +347,7 @@ export class StateTree {
             return node.getStateStore().overrideToConsistent().pipe(
               concatMap(() => this.linksState.waitForLinks()),
               withLatestFrom(node.getStateStore().isRunable$, node.getStateStore().isOutputOutdated$),
-              filter(([,runable, outdated]) => runable && outdated),
+              filter(([, runable, outdated]) => runable && outdated),
               concatMap(() => node.getStateStore().run()),
               concatMap(() => this.linksState.waitForLinks()),
             );

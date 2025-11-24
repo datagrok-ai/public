@@ -2,8 +2,9 @@
 import {IVP, IVP2WebWorker, solveIvp, applyPipeline} from 'diff-grok';
 import {optimizeNM} from '../optimizer-nelder-mead';
 import {ARG_COL_IDX, ARG_INP_COUNT, NelderMeadInput} from './defs';
-import {Extremum} from '../optimizer-misc';
+import {Extremum, ValueBoundsData} from '../optimizer-misc';
 import {COST_FUNC_THRESH, LOSS} from '../constants';
+import {makeBoundsChecker, sampleParamsWithFormulaBounds} from '../optimizer-sampler';
 
 /** Return true if in-worker fitting is applicable */
 export function isWorkerApplicable(ivp: IVP | undefined, ivpWW: IVP2WebWorker | undefined): boolean {
@@ -118,6 +119,7 @@ export function getBatches(points: Float64Array[], batchesCount: number): Float6
 export async function fit(task: NelderMeadInput, start: Float64Array): Promise<Extremum> {
   const ivp = task.ivp2ww;
   const pipeline = task.pipeline;
+  const {bounds, variedInputNames} = task;
   const inputSize = ARG_INP_COUNT + ivp.deqsCount + ivp.paramNames.length;
   const ivpInputVals = new Float64Array(inputSize);
   const ivpInputNames = task.nonParamNames.concat(ivp.paramNames);
@@ -155,15 +157,18 @@ export async function fit(task: NelderMeadInput, start: Float64Array): Promise<E
   const scaleVals = task.scaleVals.slice(1);
 
   const metric = (task.loss == LOSS.MAD) ? mad : rmse;
+  const boundsChecker = makeBoundsChecker(bounds, variedInputNames);
 
-  let solution: Float64Array[];
+  let initialCost = Infinity;
 
   const costFunc = async (x: Float64Array): Promise<number> => {
+    if (!boundsChecker(x))
+      return initialCost;
+
     for (let i = 0; i < dim; ++i)
       ivpInputVals[inpIndex[i]] = x[i];
 
-    //solution = solveIvp(ivp, ivpInputVals);
-    solution = applyPipeline(pipeline, ivp, ivpInputVals);
+    const solution = applyPipeline(pipeline, ivp, ivpInputVals);
 
     return metric(
       targetArgVals,
@@ -174,12 +179,7 @@ export async function fit(task: NelderMeadInput, start: Float64Array): Promise<E
     );
   };
 
-  const vec = new Float64Array(dim);
-
-  for (let i = 0; i < dim; ++i)
-    vec[i] = task.variedInpMin[i] + Math.random() * (task.variedInpMax[i] - task.variedInpMin[i]);
-
-  costFunc(vec);
+  initialCost = await costFunc(start);
 
   const settings = new Map<string, number>(task.settingNames.map((name, idx) => [name, task.settingVals[idx]]));
 

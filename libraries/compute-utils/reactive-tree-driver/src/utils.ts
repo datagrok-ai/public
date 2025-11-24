@@ -101,7 +101,7 @@ const areNumbersEqual: TypeEqualityComparator<number> = (a, b) => {
 };
 
 const customFastEqual = createCustomEqual({
-  createCustomConfig: () => ({ areNumbersEqual, areObjectsEqual }),
+  createCustomConfig: () => ({areNumbersEqual, areObjectsEqual}),
 });
 
 // TODO: try using lib apis

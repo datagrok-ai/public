@@ -25,7 +25,7 @@ export const getContextHelp = async (func: DG.Func) => {
   // some bug when saving package script from ui
   let packageName: string = '';
   try {
-   packageName  = func.package.name;
+    packageName = func.package.name;
   } catch {}
 
   const packagePath = `System:AppData/${packageName}/${helpPath}`;
@@ -89,7 +89,9 @@ export const isIncomplete = (run: DG.FuncCall) => {
 };
 
 export const deepCopy = (call: DG.FuncCall) => {
-  const deepClone = DG.Func.byName(call.func.nqName).prepare();
+  // if there is no ':' in nqName, it might be ambiguous, so try to
+  // reuse call.func, otherwise use nqName search
+  const deepClone = call.func?.nqName?.includes(":") ? DG.Func.byName(call.func.nqName).prepare() : call.func.prepare();
 
   deepClone.id = call.id;
 

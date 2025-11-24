@@ -598,7 +598,7 @@ export class FittingView {
   private acceptIcon = ui.iconFA('ballot-check', async () => {
     const choiceItems = Array.from({length: this.currentFuncCalls.length}, (_, i) => i + 1);
     if (choiceItems.length === 0) {
-      grok.shell.warning("No fittings");
+      grok.shell.warning('No fittings');
       return;
     }
     let chosenItem = 1;
@@ -664,8 +664,8 @@ export class FittingView {
     units: '%',
   }));
 
-  // Disable formulas, unless annotation says otherwise
-  private allowFormulas = false;
+  // Enable formulas, unless annotation says otherwise
+  private allowFormulas = true;
 
   // Auxiliary dock nodes with results
   private helpDN: DG.DockNode | undefined = undefined;
@@ -1562,58 +1562,38 @@ export class FittingView {
       // get optimizer inputs/outputs config
       const inputBounds = this.makeOptimizerInputsConfig();
       const outputTargets = this.makeOptimizerOutputsConfig();
-      const hasFormulas = Object.values(inputBounds).find(
-        (bound) => bound.type === 'changing' && (bound.top.type === 'formula' || bound.bottom.type === 'formula'));
 
       const costTooltip = this.loss === LOSS.MAD ? 'scaled maximum absolute deviation' : 'scaled root mean square error';
 
       let optResult: OptimizationResult;
 
+      if (this.method !== METHOD.NELDER_MEAD)
+        throw new Error(`Not implemented the '${this.method}' method`);
+
       // Perform optimization
-      if (this.method === METHOD.NELDER_MEAD) {
-        if (this.diffGrok !== undefined && !hasFormulas) {
-          try {
-            const index = INDICES.DIFF_STUDIO_OUTPUT;
-
-            const minVals = new Float64Array(dim);
-            const maxVals = new Float64Array(dim);
-            variedInputs.forEach((name, idx) => {
-              const propConfig = this.store.inputs[name] as FittingNumericStore;
-              minVals[idx] = propConfig.min.value ?? 0;
-              maxVals[idx] = propConfig.max.value ?? 0;
-            });
-
-            optResult = await getFittedParams(
-              this.loss,
-              this.diffGrok.ivp,
-              this.diffGrok.ivpWW,
-              this.diffGrok.pipelineCreator,
-              this.nelderMeadSettings,
-              variedInputNames,
-              minVals,
-              maxVals,
-              inputs,
-              outputsOfInterest[index].argName,
-              outputsOfInterest[index].funcColsInput.value,
-              outputsOfInterest[index].target as DG.DataFrame,
-              this.samplesCount,
-              this.randInputs.settings,
-              this.earlyStoppingInputs.settings,
-            );
-          } catch (err) { // run fitting in the main thread if in-webworker run failed
-            [optResult] = await runOptimizer({
-              lossType: this.loss,
-              func: this.func,
-              inputBounds,
-              outputTargets,
-              samplesCount: this.samplesCount,
-              similarity: this.similarity,
+      if (this.diffGrok !== undefined) {
+        try {
+          const index = INDICES.DIFF_STUDIO_OUTPUT;
+          optResult = await getFittedParams(
+            {
+              loss: this.loss,
+              ivp: this.diffGrok.ivp,
+              ivp2ww: this.diffGrok.ivpWW,
+              pipelineCreator: this.diffGrok.pipelineCreator,
               settings: this.nelderMeadSettings,
+              variedInputNames,
+              bounds: inputBounds,
+              fixedInputs: inputs,
+              argColName: outputsOfInterest[index].argName,
+              funcCols: outputsOfInterest[index].funcColsInput.value,
+              target: outputsOfInterest[index].target as DG.DataFrame,
+              samplesCount: this.samplesCount,
               reproSettings: this.randInputs.settings,
               earlyStoppingSettings: this.earlyStoppingInputs.settings,
-            });
-          }
-        } else {
+            },
+          );
+        } catch (err) { // run fitting in the main thread if in-webworker run failed
+          console.error(err);
           [optResult] = await runOptimizer({
             lossType: this.loss,
             func: this.func,
@@ -1626,8 +1606,19 @@ export class FittingView {
             earlyStoppingSettings: this.earlyStoppingInputs.settings,
           });
         }
-      } else
-        throw new Error(`Not implemented the '${this.method}' method`);
+      } else {
+        [optResult] = await runOptimizer({
+          lossType: this.loss,
+          func: this.func,
+          inputBounds,
+          outputTargets,
+          samplesCount: this.samplesCount,
+          similarity: this.similarity,
+          settings: this.nelderMeadSettings,
+          reproSettings: this.randInputs.settings,
+          earlyStoppingSettings: this.earlyStoppingInputs.settings,
+        });
+      }
 
       const extrema = optResult.extremums;
       const allExtrCount = extrema.length;

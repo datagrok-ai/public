@@ -5,10 +5,11 @@ import {IVP, IVP2WebWorker, PipelineCreator, getOutputNames, getInputVector} fro
 import {EarlyStoppingSettings, LOSS, ReproSettings, STOP_AFTER_DEFAULT} from '../constants';
 import {ARG_IDX, DEFAULT_SET_VAL, MIN_TARGET_COLS_COUNT, MIN_WORKERS_COUNT, NO_ERRORS,
   RESULT_CODE, WORKERS_COUNT_DOWNSHIFT} from './defs';
-import {sampleParams} from '../optimizer-sampler';
+import {sampleParams, sampleParamsWithFormulaBounds} from '../optimizer-sampler';
 import {getBatches} from './fitting-utils';
-import {OptimizationResult, Extremum} from '../optimizer-misc';
+import {OptimizationResult, Extremum, ValueBoundsData} from '../optimizer-misc';
 import {seededRandom} from '../fitting-utils';
+import {FittingWorkerData} from './workers/basic';
 
 /** Return dataframe summarizing fails of fitting */
 export function getFailesDf(points: Float64Array[], warnings: string[]): DG.DataFrame | null {
@@ -33,34 +34,49 @@ export function getFailesDf(points: Float64Array[], warnings: string[]): DG.Data
 } // getFailesDf
 
 /** Return input vector defined by fitting inputs */
-function getInputVec(variedInputNames: string[], minVals: Float64Array, maxVals: Float64Array,
+function getInputVec(variedInputNames: string[],
   fixedInputs: Record<string, number>, ivp: IVP): Float64Array {
   const allInputs: Record<string, number> = {};
 
   Object.entries(fixedInputs).forEach(([name, value]) => allInputs[name] = value);
 
-  variedInputNames.forEach((name, idx) => allInputs[name] = (minVals[idx] + maxVals[idx]) / 2);
+  variedInputNames.forEach((name) => allInputs[name] = 0);
 
   return getInputVector(allInputs, ivp);
 }
 
 /** Return fitted params of Diff Studio model using the Nelder-Mead method */
 export async function getFittedParams(
-  loss: LOSS,
-  ivp: IVP,
-  ivp2ww: IVP2WebWorker,
-  pipelineCreator: PipelineCreator,
-  settings: Map<string, number>,
-  variedInputNames: string[],
-  minVals: Float64Array,
-  maxVals: Float64Array,
-  fixedInputs: Record<string, number>,
-  argColName: string,
-  funcCols: DG.Column[],
-  target: DG.DataFrame,
-  samplesCount: number,
-  reproSettings: ReproSettings,
-  earlyStoppingSettings: EarlyStoppingSettings,
+  {loss,
+    ivp,
+    ivp2ww,
+    pipelineCreator,
+    settings,
+    bounds,
+    variedInputNames,
+    fixedInputs,
+    argColName,
+    funcCols,
+    target,
+    samplesCount,
+    reproSettings,
+    earlyStoppingSettings,
+  }: {
+    loss: LOSS;
+    ivp: IVP;
+    ivp2ww: IVP2WebWorker;
+    pipelineCreator: PipelineCreator;
+    settings: Map<string, number>;
+    bounds: Record<string, ValueBoundsData>,
+    variedInputNames: string[];
+    fixedInputs: Record<string, number>;
+    argColName: string;
+    funcCols: DG.Column[];
+    target: DG.DataFrame;
+    samplesCount: number;
+    reproSettings: ReproSettings;
+    earlyStoppingSettings: EarlyStoppingSettings;
+  },
 ): Promise<OptimizationResult> {
   // Extract settings names & values
   const settingNames: string[] = [...settings.keys()];
@@ -103,7 +119,7 @@ export async function getFittedParams(
 
   // Generate starting points
   const rand = reproSettings.reproducible ? seededRandom(reproSettings.seed) : Math.random;
-  const startingPoints = sampleParams(samplesCount, minVals, maxVals, rand);
+  const startingPoints = sampleParamsWithFormulaBounds(samplesCount, bounds, rand);
 
   // Create workers
   const nThreads = Math.min(
@@ -118,7 +134,7 @@ export async function getFittedParams(
   const warnings: string[] = [];
   const pointBatches = getBatches(startingPoints, nThreads);
 
-  const inputVector = getInputVec(variedInputNames, minVals, maxVals, fixedInputs, ivp);
+  const inputVector = getInputVec(variedInputNames, fixedInputs, ivp);
   const pipeline = pipelineCreator.getPipeline(inputVector);
 
   let doneWorkers = 0;
@@ -128,7 +144,7 @@ export async function getFittedParams(
   // Run optimization
   const promises = workers.map((w, idx) => {
     return new Promise<void>((resolve, reject) => {
-      w.postMessage({
+      const data: FittingWorkerData = {
         task: {
           settingNames: settingNames,
           settingVals: settingVals,
@@ -138,9 +154,8 @@ export async function getFittedParams(
           nonParamNames: nonParamNames,
           fixedInputsNames: fixedInputsNames,
           fixedInputsVals: fixedInputsVals,
+          bounds: bounds,
           variedInputNames: variedInputNames,
-          variedInpMin: minVals,
-          variedInpMax: maxVals,
           targetNames: targetNames,
           targetVals: targetVals,
           scaleVals: scaleVals,
@@ -149,7 +164,8 @@ export async function getFittedParams(
           earlyStoppingSettings: earlyStoppingSettings,
         },
         startPoints: pointBatches[idx],
-      });
+      };
+      w.postMessage(data);
 
       w.onmessage = (e: any) => {
         w.terminate();
