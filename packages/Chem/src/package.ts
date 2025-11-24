@@ -58,7 +58,7 @@ import {MatchedMolecularPairsViewer} from './analysis/molecular-matched-pairs/mm
 import {_importTripos} from './file-importers/mol2-importer';
 import {_importSmi} from './file-importers/smi-importer';
 
-import {generateScaffoldTree} from './scripts-api';
+import {Chem} from './scripts-api';
 import {renderMolecule} from './rendering/render-molecule';
 import {RDKitReactionRenderer} from './rendering/rdkit-reaction-renderer';
 import {structure3dWidget} from './widgets/structure3d';
@@ -81,7 +81,6 @@ import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/mo
 import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
 import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 import {CHEM_PROP_MAP} from './open-chem/ocl-service/calculations';
-import {cutFragments} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-react-toolkit';
 import {oclMol} from './utils/chem-common-ocl';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 import {OCLService} from './open-chem/ocl-service';
@@ -2088,7 +2087,7 @@ export class PackageFunctions {
     }
     const smilesColumn: DG.Column = DG.Column.fromStrings('smiles', smilesList);
     const dataFrame: DG.DataFrame = DG.DataFrame.fromColumns([smilesColumn]);
-    const scriptBlob = await generateScaffoldTree(dataFrame, smilesColumn!.name, ringCutoff, dischargeAndDeradicalize);
+    const scriptBlob = await Chem.generateScaffoldTree(dataFrame, smilesColumn!.name, ringCutoff, dischargeAndDeradicalize);
     const scriptRes = new TextDecoder().decode(scriptBlob.data);
     return scriptRes;
   }
@@ -2502,7 +2501,6 @@ export class PackageFunctions {
       grok.shell.error(`MPO calculation failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
-
 
   @grok.decorators.fileViewer({
     fileViewer: 'json',

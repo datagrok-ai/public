@@ -1,9 +1,9 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {smilesTo3DCoordinates} from '../scripts-api';
+import {Chem} from '../scripts-api';
 import {getRdKitModule} from '../utils/chem-common-rdkit';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
-import { MolfileHandler } from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
+import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
 import type NGL from 'ngl';
 
 const WIDTH = 300;
@@ -20,7 +20,7 @@ export async function structure3dWidget(molecule: string): Promise<DG.Widget> {
   let sdf: string;
   try {
     sdf = MolfileHandler.getInstance(molecule).z.every((coord) => coord === 0) ?
-      (await smilesTo3DCoordinates(molecule)).replaceAll('\\n', '\n') : molecule;
+      (await Chem.smilesTo3DCoordinates(molecule)).replaceAll('\\n', '\n') : molecule;
   } catch (e) {
     return new DG.Widget(ui.divText('Molecule has no atoms or malformed'));
   }

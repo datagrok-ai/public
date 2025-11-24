@@ -296,7 +296,7 @@ export async function _demoRgroupAnalysis(): Promise<void> {
     }, {description: 'Load dataset with molecule columns', delay: 2000})
     .step('Specify scaffold', async () => {
       await delay(1000);
-      rGroupAnalysis(table.col('smiles')!, true);
+      rGroupAnalysis(table.col('smiles')!);
       await delay(3000);
       sketcher = document.getElementsByClassName('d4-dialog')[0];
       sketcherInput = sketcher!.getElementsByClassName('grok-sketcher-input')[0]?.children[0] as HTMLInputElement;
