@@ -176,6 +176,14 @@ Parameters:
       ACM manually (https://docs.aws.amazon.com/acm/latest/userguide/import-certificate.html)
       and specify the Certificate ARN here.
     Type: String
+  DatagrokDbSsl:
+    AllowedValues:
+    - 'true'
+    - 'false'
+    Default: 'true'
+    Description: Enable or disable SSL for database connections. Set to true for secure
+      connections or false for non-SSL connections.
+    Type: String
   DatagrokVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|stable|bleeding-edge
     Default: 1.26.5
@@ -2075,7 +2083,7 @@ Resources:
               "dbServer": "${dbServer}", "dbPort": "${dbPort}", "db": "datagrok",
               "dbLogin": "${dbLogin}", "dbPassword": "${dbPassword}", "dbAdminLogin":
               "${dbAdminLogin}", "dbAdminPassword": "${dbAdminPassword}", "dbSsl":
-              true, "deployDemo": false, "deployTestDemo": false, "adminPassword":
+              ${dbSsl}, "deployDemo": false, "deployTestDemo": false, "adminPassword":
               "${adminPassword}", "adminDevKey": "${adminDevKey}", "queueSettings":{
               "amqpHost":"${amqpHost}", "amqpPort": 5672, "amqpUser":"guest", "amqpPassword":"${amqpPassword}",
               "pipeHost":"${pipeHost}", "pipeKey":"${grokPipeApiKey}" }, "dockerSettings":{
@@ -2132,6 +2140,8 @@ Resources:
                 Fn::GetAtt:
                 - DatagrokDB
                 - Endpoint.Address
+              dbSsl:
+                Ref: DatagrokDbSsl
               grokConnectHost:
                 Fn::Sub: grok_connect.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
               grokPipeApiKey:

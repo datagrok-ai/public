@@ -48,6 +48,13 @@ Parameters:
   Postfix:
     Type: String
     Description: URL postfix for backward compatibility. Leave blank for new installations
+  DatagrokDbSsl:
+    Description: Enable or disable SSL for database connections. Set to true for secure connections or false for non-SSL connections.
+    Type: String
+    AllowedValues:
+      - "true"
+      - "false"
+    Default: "true"
   GpuRequired:
     Type: String
     Default: 'false'
@@ -1885,7 +1892,7 @@ Resources:
                   - '{ "amazonStorageRegion": "${AWS::Region}", "amazonStorageBucket": "${bucket}",
               "dbServer": "${dbServer}", "dbPort": "${dbPort}", "db": "datagrok",
               "dbLogin": "${dbLogin}", "dbPassword": "${dbPassword}", "dbAdminLogin":
-              "${dbAdminLogin}", "dbAdminPassword": "${dbAdminPassword}", "dbSsl": true,
+              "${dbAdminLogin}", "dbAdminPassword": "${dbAdminPassword}", "dbSsl": ${dbSsl},
               "deployDemo": false, "deployTestDemo": false, "adminPassword": "${adminPassword}", "adminDevKey": "${adminDevKey}",
               "queueSettings":{ 
                 "amqpHost":"${amqpHost}", 
@@ -1919,6 +1926,8 @@ Resources:
                       Fn::GetAtt:
                         - DatagrokDB
                         - Endpoint.Address
+                    dbSsl:
+                      Ref: DatagrokDbSsl
                     dbPort:
                       Fn::GetAtt:
                         - DatagrokDB

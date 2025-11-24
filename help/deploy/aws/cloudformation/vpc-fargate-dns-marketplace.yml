@@ -206,6 +206,14 @@ Parameters:
   DatagrokDataSubnet2:
     Description: Private subnet to deploy Datagrok DB.
     Type: AWS::EC2::Subnet::Id
+  DatagrokDbSsl:
+    AllowedValues:
+    - 'true'
+    - 'false'
+    Default: 'true'
+    Description: Enable or disable SSL for database connections. Set to true for secure
+      connections or false for non-SSL connections.
+    Type: String
   DatagrokNatGatewayEIP:
     Description: Private subnet Nat Gateway IP to allow access inside network to public
       load balancer. Omit if you disable access from internet (InternetIngressAccess).
@@ -1783,7 +1791,7 @@ Resources:
               "dbServer": "${dbServer}", "dbPort": "${dbPort}", "db": "datagrok",
               "dbLogin": "${dbLogin}", "dbPassword": "${dbPassword}", "dbAdminLogin":
               "${dbAdminLogin}", "dbAdminPassword": "${dbAdminPassword}", "dbSsl":
-              true, "deployDemo": false, "deployTestDemo": false, "adminPassword":
+              ${dbSsl}, "deployDemo": false, "deployTestDemo": false, "adminPassword":
               "${adminPassword}", "adminDevKey": "${adminDevKey}", "queueSettings":{
               "amqpHost":"${amqpHost}", "amqpPort": 5672, "amqpUser":"guest", "amqpPassword":"${amqpPassword}",
               "pipeHost":"${pipeHost}", "pipeKey":"${grokPipeApiKey}" }, "dockerSettings":{
@@ -1840,6 +1848,8 @@ Resources:
                 Fn::GetAtt:
                 - DatagrokDB
                 - Endpoint.Address
+              dbSsl:
+                Ref: DatagrokDbSsl
               grokConnectHost:
                 Fn::Sub: grok_connect.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
               grokPipeApiKey:
