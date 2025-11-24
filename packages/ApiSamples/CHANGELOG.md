@@ -1,5 +1,9 @@
 # API Samples changelog
 
+## 1.2.1 (2-24-11-24)
+
+* New samples, version bump
+
 ## 1.0.12 (2024-10-17)
 
 * Add samples before for scripts
