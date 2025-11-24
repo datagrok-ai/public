@@ -29,32 +29,30 @@ export class PackageFunctions {
 
   @grok.decorators.autostart()
   static autostart() {
-    // setupSearchUI(() => apiKey, () => vectorStoreId);
-    // grok.shell.info('started')
-    //
-    grok.events.onViewAdded.subscribe((view) => {
-      if (view.type !== DG.VIEW_TYPE.TABLE_VIEW) return;
+    try {
+      grok.events.onViewAdded.subscribe((view) => {
+        if (view.type === DG.VIEW_TYPE.TABLE_VIEW) {
+          const tableView = view as DG.TableView;
+          const iconFse = ui.iconSvg('ai.svg', () => setAiPanelVisibility(true), 'Ask AI \n Ctrl+I');
+          tableView.setRibbonPanels([...tableView.getRibbonPanels(), [iconFse]]);
+        }
+      });
 
-      const tableView = view as DG.TableView;
-      const ribbons = tableView.getRibbonPanels();
-      const iconName = 'ai';
-      const exists = ribbons.flat().some((el) => el.querySelector(`i[data-name="${iconName}"]`));
-      if (exists) return;
-
-      const iconFse = ui.iconSvg(`${iconName}.svg`, () => setAiPanelVisibility(true), 'Ask AI');
-      tableView.setRibbonPanels([...ribbons, [iconFse]]);
-    });
-
-    initAiPanel();
-    // Add keyboard shortcut for toggling AI panel
-    document.addEventListener('keydown', (event) => {
-      // Check for Ctrl+I (Ctrl key + I key)
-      if (event.ctrlKey && event.key === 'i') {
-        event.preventDefault(); // Prevent default browser behavior
-        const isVisible = getAiPanelVisibility();
-        setAiPanelVisibility(!isVisible);
-      }
-    });
+      initAiPanel();
+      // Add keyboard shortcut for toggling AI panel
+      document.addEventListener('keydown', (event) => {
+        // Check for Ctrl+I (Ctrl key + I key)
+        if (event.ctrlKey && event.key === 'i') {
+          event.preventDefault(); // Prevent default browser behavior
+          const isVisible = getAiPanelVisibility();
+          setAiPanelVisibility(!isVisible);
+        }
+      });
+    }
+    catch (e) {
+      console.log('AI autostart failed.')
+      console.log(e);
+    }
   }
 
   @grok.decorators.func({tags: ['searchProvider']})

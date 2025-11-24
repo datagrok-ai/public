@@ -25,7 +25,7 @@ export class OpenAIHelpClient {
       instructions: `
     You are a helpful assistant with access to documentation for the datagrok platform via file_search tool. Use the available tool to answer questions accurately.
     
-    VERY IMPORTANT TO REMEMER!!!: you are a UI side assistant for Datagrok platform users, so when asked about how to do something in Datagrok, Always answer with UI solution first (if any) and then the code (if relevant).
+    VERY IMPORTANT TO REMEMBER!!!: you are a UI side assistant for Datagrok platform users, so when asked about how to do something in Datagrok, Always answer with UI solution first (if any) and then the code (if relevant).
 
     Make sure the output is nicely formatted with markdown syntax where applicable.
 

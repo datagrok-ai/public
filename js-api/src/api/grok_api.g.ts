@@ -273,8 +273,17 @@ export interface IDartApi {
   grok_DockManager_FindNode(m: any, e: any): any;
   grok_DockManager_HandleResize(d: any): any;
   grok_DockManager_OnElementClosed(d: any): any;
+  grok_WidgetDescriptor_GetDescriptors(): any;
+  grok_WidgetDescriptor_GetByName(name: String): any;
+  grok_WidgetDescriptor_Get_Name(d: any): any;
+  grok_WidgetDescriptor_Get_Synonyms(d: any): any;
+  grok_WidgetDescriptor_Get_Description(d: any): any;
+  grok_WidgetDescriptor_Get_Properties(d: any): any;
+  grok_WidgetDescriptor_Get_Properties(d: any): any;
+  grok_WidgetDescriptor_CreateIcon(d: any): any;
   grok_Viewer_GetViewerTypes(): any;
   grok_Viewer_Root(v: any): any;
+  grok_Viewer_Get_Descriptor(v: any): any;
   grok_Viewer_Get_Type(v: any): any;
   grok_Viewer_Get_View(v: any): any;
   grok_Viewer_Get_HelpUrl(v: any): any;
@@ -365,6 +374,9 @@ export interface IDartApi {
   grok_Widget_Kill(element: any): any;
   grok_Widget_FromRoot(element: any): any;
   grok_Widget_GetAll(): any;
+  grok_Widget_Get_Parent(widget: any): any;
+  grok_Widget_Get_Children(widget: any): any;
+  grok_Widget_GetFunctions(widget: any): any;
   grok_DataFrame_ToCsv(t: any, options: any, grid: any): any;
   grok_DataFrame_ToCsvEx(t: any, options: any, grid: any): Promise<any>;
   grok_Column_GetColors(column: any): any;
@@ -626,6 +638,8 @@ export interface IDartApi {
   grok_TreeViewNode_CheckBox(node: any): any;
   grok_TreeViewNode_Get_Checked(node: any): any;
   grok_TreeViewNode_Set_Checked(node: any, checked: Bool): any;
+  grok_TreeViewNode_Get_Icon(node: any): any;
+  grok_TreeViewNode_Set_Icon(node: any, icon: any): any;
   grok_TreeViewNode_Get_Tag(node: any): any;
   grok_TreeViewNode_Set_Tag(node: any, tag: any): any;
   grok_TreeViewNode_Get_CurrentItem(node: any): any;
@@ -828,7 +842,7 @@ export interface IDartApi {
   grok_Test_GetInputTestDataGeneratorByType(inputType: String): any;
   grok_Shell_GetClientBuildInfo(): any;
   grok_Shell_OpenFileDialog(): any;
-  grok_Shell_AI_Prompt(s: any): any;
+  grok_Shell_AI_Prompt(s: any): Promise<any>;
   grok_BrowsePanel_Get_LocalTree(view: any): any;
   grok_BrowsePanel_Get_MainTree(view: any): any;
   grok_BrowsePanel_BindItemTooltip(view: any, content: any, el: any): any;
@@ -1680,6 +1694,7 @@ export interface IDartApi {
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;
+  grok_Permission_Create(): any;
   grok_ScriptLanguage_Create(): any;
   grok_DockerImage(): any;
   grok_DockerImage_Create(): any;
@@ -1703,10 +1718,10 @@ export interface IDartApi {
   grok_FuncOptions_Create(): any;
   grok_FuncParamOptions_Create(): any;
 
-  // Generated from ../d4/lib/src/common/common.api.g.dart
+  // Generated from ../d4\lib\src\common\common.api.g.dart
   grok_UsageType_Create(): any;
 
-  // Generated from ../d4/lib/src/grid/grid.api.g.dart
+  // Generated from ../d4\lib\src\grid\grid.api.g.dart
   grok_GridCellStyle_Create(): any;
   grok_GridCellStyle_Get_defaultStyle(): any;
   grok_GridCellStyle_Set_defaultStyle(v: any): any;
@@ -1756,7 +1771,7 @@ export interface IDartApi {
   grok_GridCellStyle_Set_choices(x: any, v: any): any;
   grok_renderMultipleHistograms(g: any, bounds: any, histograms: any, categoryColumn: any, colors: any, tension: Num, normalize: Bool, markerSize: Num, fill: Bool, minBin: Num, maxBin: Num, localMaximum: Bool, highlightedHistogram: Num): any;
 
-  // Generated from ../d4/lib/src/viewer_base/viewer_base.api.g.dart
+  // Generated from ../d4\lib\src\viewer_base\viewer_base.api.g.dart
   grok_ViewerEvent_Create(): any;
   grok_ViewerEvent_Get_viewer(x: any): any;
   grok_ViewerEvent_Set_viewer(x: any, v: any): any;
@@ -1772,6 +1787,6 @@ export interface IDartApi {
   grok_ViewerEvent_Set_mouseEvent(x: any, v: any): any;
   grok_ViewerEvent_Get_bitset(x: any): any;
 
-  // Generated from ../d4/lib/src/widgets/widgets.api.g.dart
+  // Generated from ../d4\lib\src\widgets\widgets.api.g.dart
   grok_InputType_Create(): any;
 }

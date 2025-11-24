@@ -21,6 +21,44 @@ declare let DG: any;
 declare let ui: any;
 let api = (typeof window !== 'undefined' ? window : global.window) as any;
 
+
+/**
+ * Provides metadata about the widget (such as name, description, available events and properties)
+ * without having to instantiate it.
+ * Used for command palettes, AI, etc
+ * */
+export class WidgetDescriptor {
+  dart: any;
+  _props?: Property[];
+
+  /** Creates a widget descriptors from the Dart instance. Do not call directly. */
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  /** Returns all registered widget descriptors. */
+  static getDescriptors(): WidgetDescriptor[] { return api.grok_WidgetDescriptor_GetDescriptors(); }
+
+  /** Returns the descriptor with the specified name. */
+  static getByName(name: string): WidgetDescriptor | null { return api.grok_WidgetDescriptor_GetByName(name); }
+
+  /** Widget name. Save as {@link Viewer.type} */
+  get name(): string { return api.grok_WidgetDescriptor_Get_Name(this.dart); }
+
+  /** Widget synonyms (mostly used for AI) */
+  get synonyms(): string[] { return api.grok_WidgetDescriptor_Get_Synonyms(this.dart); }
+
+  /** Widget description */
+  get description(): string { return api.grok_WidgetDescriptor_Get_Description(this.dart); }
+
+  /** Widget properties */
+  get properties(): Property[] { return this._props ??= api.grok_WidgetDescriptor_Get_Properties(this.dart); }
+
+  /** Creates an icon for that widget. */
+  createIcon(): Element { return api.grok_WidgetDescriptor_CreateIcon(this.dart); }
+}
+
+
 /**
  * Represents a {@link https://datagrok.ai/help/visualize/viewers | viewer}.
  * See also {@link https://datagrok.ai/help/develop/how-to/manipulate-viewers}
@@ -55,6 +93,10 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   set filter(f: BitSet) {
     this._filter = f;
   }
+
+  /** Descriptor of this widget. */
+  get descriptor(): WidgetDescriptor { return api.grok_Viewer_Get_Descriptor(this.dart); }
+
   get onDataEvent(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event'); }
   get onTooltipCreated(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-tooltip')); }
   get onDataSelected(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-select')); }

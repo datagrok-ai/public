@@ -46,6 +46,10 @@ import {IDartApi} from "./src/api/grok_api.g";
 let api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 declare let grok: any;
 
+interface IRoot {
+  root: Element;
+}
+
 /** Creates an instance of the element for the specified tag, and optionally assigns it a CSS class.
  * @param {string} tagName The name of an element.
  * @param {string | null} className
@@ -640,7 +644,25 @@ export function virtualView(length: number, renderer: (index: number) => HTMLEle
   return view;
 }
 
-export function popupMenu(items: any): void {
+
+interface IPopupMenuOptions {
+  show?: boolean;
+}
+
+/** Functions for items, object initializers for groups */
+type IMenuInit = () => void | { [key: string]: IMenuInit; };
+
+/**
+ * Example:
+ *  ui.popupMenu({
+ *     'About': () => grok.shell.info('About'),
+ *     'File': {
+ *       'Open': () => grok.shell.info('Open'),
+ *       'Close': () => grok.shell.info('Close'),
+ *     }
+ *   });
+ *  */
+export function popupMenu(items?: IMenuInit, options?: IPopupMenuOptions): Menu {
   function populate(menu: Menu, item: { [key: string]: any; }) {
     for (let key of Object.keys(item)) {
       let value = item[key];
@@ -652,8 +674,13 @@ export function popupMenu(items: any): void {
   }
 
   let menu = Menu.popup();
-  populate(menu, items);
-  menu.show();
+  if (items)
+    populate(menu, items);
+
+  if (options?.show !== false)
+    menu.show();
+
+  return menu;
 }
 
 /**
@@ -690,8 +717,8 @@ export function makeDroppable<T>(e: Element,
       doDrop?: (dragObject: T, copying: boolean) => void
     }): void {
   api.grok_UI_MakeDroppable(e,
-      options?.acceptDrop ? (dragObject: T) => options.acceptDrop!(toJs(dragObject)) : null,
-      options?.doDrop ? (dragObject: T, copying: boolean) => options.doDrop!(toJs(dragObject), toJs(copying)) : null,
+      options?.acceptDrop ? (dragObject: T) => options?.acceptDrop!(toJs(dragObject)) : null,
+      options?.doDrop ? (dragObject: T, copying: boolean) => options?.doDrop!(toJs(dragObject), toJs(copying)) : null,
   );
 }
 
@@ -1124,6 +1151,18 @@ export class tools {
     let host = div([]);
     host.innerHTML = htmlString.trim();
     return host;
+  }
+
+  static sendKeyboardEvent(el: HTMLElement , keyCode: number) {
+    const opts = {
+      keyCode: 37,
+      bubbles: true,
+      cancelable: true,
+    };
+
+    el.dispatchEvent(new KeyboardEvent('keydown', opts));
+    el.dispatchEvent(new KeyboardEvent('keypress', opts));
+    el.dispatchEvent(new KeyboardEvent('keyup', opts));
   }
 
   /** Initialized onClick and sets the tooltip for the element. */
@@ -1866,14 +1905,17 @@ function onMouseMove(e: any) {
 }
 }
 
-export function ribbonPanel(items: HTMLElement[] | null): HTMLDivElement {
+
+/** Typically, this is a host for the icons. */
+export function ribbonPanel(items: HTMLElement[] | IRoot[]): HTMLDivElement {
   const root = document.createElement('div');
   $(root).addClass('d4-ribbon');
   if (items != null) {
     $(root).append(items.map(item => {
+      let itemElement = item instanceof Element ? item : item.root;
       let itemBox = document.createElement('div');
       $(itemBox).addClass('d4-ribbon-item');
-      $(itemBox).append(item);
+      $(itemBox).append(itemElement);
       return render(itemBox)
     }));
   }

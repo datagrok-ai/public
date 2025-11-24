@@ -233,8 +233,7 @@ They operate through the same unified function and context model.
 # Driving the UI and Visualizations
 
 Widgets in Datagrok expose:
-
-- Applicable functions
+ Applicable functions
 - Properties
 - Named events
 - Parent-child hierarchy

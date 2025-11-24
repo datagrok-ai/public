@@ -1,16 +1,16 @@
 // Icons
 
 let view = ui.divV([
-  ui.h2('Font Awesome icons'),
-  ui.divH([
+  ui.h2('Font Awesome'),
+  ui.ribbonPanel([
     ui.iconFA('question'),
     ui.iconFA('info'),
     ui.iconFA('cogs'),
     ui.iconFA('folder-open'),
     ui.iconFA('save')
-  ], {style:{justifyContent:'space-around'}}),
-  ui.h2('Special items'),
-  ui.divH([
+  ]),
+  ui.h2('Special'),
+  ui.ribbonPanel([
     ui.icons.settings(() => grok.shell.info('click'), 'Settings'),
     ui.icons.help(() => grok.shell.info('click'), 'Help'),
     ui.icons.close(() => grok.shell.info('click'), 'Close'),
@@ -25,9 +25,9 @@ let view = ui.divV([
     ui.icons.info(() => grok.shell.info('click'), 'Info'),
     ui.icons.search(() => grok.shell.info('click'), 'Search'),
     ui.icons.filter(() => grok.shell.info('click'), 'Filter')
-  ], {style:{justifyContent:'space-around'}})
+  ])
 ]);
-view.style.minWidth = '250px';
+
 ui.dialog('Icons')
   .add(view)
   .show();
