@@ -3241,8 +3241,7 @@ Resources:
           Value:
             Fn::Sub: ${AWS::Region}
         - Name: GROK_SPAWNER_DATAGROK_ECS__LAUNCH_TYPE
-          Value:
-            Fn::Sub: EC2
+          Value: EC2
         - Name: GROK_SPAWNER_DATAGROK_ECS__SUBNETS
           Value:
             Fn::Sub:
@@ -3276,8 +3275,7 @@ Resources:
           Value:
             Fn::Sub: ${AWS::Region}
         - Name: GROK_SPAWNER_CVM_ECS__LAUNCH_TYPE
-          Value:
-            Fn::Sub: EC2
+          Value: EC2
         - Name: GROK_SPAWNER_CVM_ECS__SUBNETS
           Value:
             Fn::Sub:
