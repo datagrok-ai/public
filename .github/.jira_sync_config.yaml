@@ -1,0 +1,45 @@
+settings:
+  # Jira project key to create the issue in
+  jira_project_key: GROK
+
+  # Dictionary mapping GitHub issue status to Jira issue status
+  status_mapping:
+    opened: OPEN
+    closed: DONE
+    # (Optional) Use different status for GitHub issues closed as not planned (instead of closed as
+    # completed)
+    # https://github.blog/changelog/2022-03-10-the-new-github-issues-march-10th-update/#%F0%9F%95%B5%F0%9F%8F%BD%E2%99%80%EF%B8%8F-issue-closed-reasons
+    # If not specified, `closed` status will be used.
+    not_planned: WON'T FIX
+
+  # (Optional) Jira project components that should be attached to the created issue
+  # Component names are case-sensitive
+  components: {}
+
+  # (Optional) GitHub labels. Only issues with one of those labels will be synchronized.
+  # If not specified, all issues will be synchronized
+  labels:
+    - GitHubIssue
+
+  # (Optional) (Default: false) Add a new comment in GitHub with a link to Jira created issue
+  add_gh_comment: false
+
+  # (Optional) (Default: false) Add a 'synced-to-jira' label to newly created issues once a
+  # corresponding ticket is successfully created in Jira.
+  # This label serves as confirmation that the issue sync process was completed successfully.
+  add_gh_synced_label: true
+
+  # (Optional) (Default: true) Synchronize issue description from GitHub to Jira
+  sync_description: true
+
+  # (Optional) (Default: true) Synchronize comments from GitHub to Jira
+  sync_comments: true
+
+  # (Optional) (Default: None) Parent Epic key to link the issue to
+  epic_key: {}
+
+  # (Optional) Dictionary mapping GitHub issue labels to Jira issue types.
+  # If label on the issue is not in specified list, this issue will be created as a Bug
+  label_mapping:
+    enhancement: New Feature
+    bug: Bug
