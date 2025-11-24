@@ -58,10 +58,10 @@ export class CombinedAISearchAssistant {
     };
 
     const handleBtnClick = () => {
-      const menuItems: { [key: string]: () => void } = {};
+      const menu = ui.popupMenu();
       for (const functionName of remainingFunctions) {
         const funcFn = this.functions[functionName].friendlyName;
-        menuItems[funcFn] = () => {
+        menu.item(funcFn, () => {
           // Remove selected function from remaining list
           const index = remainingFunctions.indexOf(functionName);
           if (index !== -1) remainingFunctions.splice(index, 1);
@@ -73,9 +73,9 @@ export class CombinedAISearchAssistant {
 
           if (moreBtn && remainingFunctions.length > 0)
             tabcontrol.header.appendChild(moreBtn);
-        };
+        });
       }
-      ui.popupMenu(menuItems);
+      menu.show();
     };
 
     for (const functionName of functionOrder)

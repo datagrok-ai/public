@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {askAiTableView} from './viewers-ai';
-import {IDartApi} from "datagrok-api/src/api/grok_api.g";
-import {popupMenu} from "datagrok-api/ui";
+import {IDartApi} from 'datagrok-api/src/api/grok_api.g';
+import {popupMenu} from 'datagrok-api/ui';
 
 export const aiPanel: HTMLElement = ui.divV([]);
 const input: HTMLTextAreaElement = ui.element('textarea');
@@ -15,7 +15,7 @@ export function initAiPanel() {
   input.style.overflow = 'none';
   input.style.boxShadow = 'none';
   input.style.outline = 'none';
-  input.style.borderColor = '--var(grey-2)'
+  input.style.borderColor = '--var(grey-2)';
   input.style.width = '100%';
   const spinner = ui.icons.spinner();
   const messagesDiv = ui.div();
@@ -24,9 +24,9 @@ export function initAiPanel() {
     messagesDiv.append(ui.divText(question, {classes: 'ai-panel-question'}));
 
     //@ts-ignore
-    if (await api.grok_Shell_AI_Prompt(question)) {
+    if (await api.grok_Shell_AI_Prompt(question))
       return;
-    }
+
 
     const currentView = grok.shell.v;
     if (currentView && currentView.type === DG.VIEW_TYPE.TABLE_VIEW && question) {
@@ -34,13 +34,12 @@ export function initAiPanel() {
       messagesDiv.append(spinner);
       try {
         await askAiTableView(tableView, input.value);
-      }
-      finally {
+      } finally {
         spinner.remove();
       }
       input.value = '';
     }
-  }
+  };
 
   // Add Enter key event listener
   input.addEventListener('keydown', async (event) => {
@@ -70,8 +69,7 @@ export function initAiPanel() {
       if (transcript === 'stop') {
         listening = false;
         refreshUI();
-      }
-      else
+      } else
         prompt(transcript);
     };
     sr.onend = () => {
@@ -83,12 +81,12 @@ export function initAiPanel() {
   }
 
   const mikeIcon = ui.iconFA('microphone', () => {}, 'Toggle microphone input');
-  const listeningLabel = ui.divText('Listening...', { style: {
+  const listeningLabel = ui.divText('Listening...', {style: {
     display: 'none',
     verticalAlign: 'middle'
   }});
 
-  var prompts = {
+  const prompts = {
     'Scatter plot': [
       'set x to age',
       'y by height',
@@ -131,9 +129,9 @@ export function initAiPanel() {
 
   const convosIcon = ui.icons.settings(() => {
     const menu = ui.popupMenu();
-    for (const name of Object.keys(prompts)) {
-      menu.group(name).items(prompts[name], (s) => prompt(s));
-    }
+    for (const name of Object.keys(prompts))
+      menu.group(name).items(prompts[name as keyof typeof prompts], (s) => prompt(s));
+
     menu.show();
   });
 
@@ -143,9 +141,10 @@ export function initAiPanel() {
 
     if (listening)
       listen();
-    else
+    else {
       for (const sr of recognitions.values())
         sr.stop();
+    }
   };
 
   mikeIcon.onclick = () => toggle();
@@ -167,10 +166,8 @@ export function setAiPanelVisibility(visible: boolean) {
     grok.shell.dockManager.dock(aiPanel, contextNode ? 'down' : 'right', contextNode, '', 0.4);
     input.tabIndex = 0;
     input.focus();
-  }
-  else {
+  } else
     grok.shell.dockManager.close(aiPanel);
-  }
 }
 
 export function getAiPanelVisibility(): boolean {
