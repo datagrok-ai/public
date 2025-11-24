@@ -47,6 +47,7 @@ export class LaboratoryView extends ClinicalCaseViewBase {
   selectedTab: string;
   isSend = false;
   propPanelPanes: DG.AccordionPane[] = [];
+  numVisDayColDict: {[key: string]: string} = {'lb': VISIT_DAY};
 
   constructor(name, studyId) {
     super(name, studyId);
@@ -57,7 +58,7 @@ export class LaboratoryView extends ClinicalCaseViewBase {
   createView(): void {
     this.isSend = studies[this.studyId].config.standard === CDISC_STANDARD.SEND;
     if (this.isSend)
-      createVisitDayStrCol(studies[this.studyId].domains.lb);
+      createVisitDayStrCol(studies[this.studyId].domains.lb, this.numVisDayColDict);
     this.lb = studies[this.studyId].domains.lb.clone();
     if (studies[this.studyId].domains.dm)
       this.dm = studies[this.studyId].domains.dm.clone();
@@ -93,7 +94,7 @@ export class LaboratoryView extends ClinicalCaseViewBase {
 
     const distributionCreated = checkColumnsAndCreateViewer(
       studies[this.studyId].domains.lb,
-      [SUBJECT_ID, LAB_TEST, LAB_RES_N, VISIT_DAY],
+      [SUBJECT_ID, LAB_TEST, LAB_RES_N, this.numVisDayColDict['lb']],
       this.distributionDiv, () => {
         this.updateDistributionPlot();
       },
@@ -189,17 +190,17 @@ export class LaboratoryView extends ClinicalCaseViewBase {
     const labValueNumColumn = `${labValue} values`;
     const disributionDataframe = createLabValuesByVisitDataframe(this.lb, this.dm, labValue,
       studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD],
-      this.selectedArm, labValueNumColumn, VISIT_DAY);
+      this.selectedArm, labValueNumColumn, this.numVisDayColDict['lb']);
     // if (studies[this.studyId].domains.dm) {
     //   grok.data.linkTables(studies[this.studyId].domains.dm, disributionDataframe,
     //     [SUBJECT_ID], [SUBJECT_ID],
     //     [DG.SYNC_TYPE.FILTER_TO_FILTER]);
     // }
     this.distributionPlot = DG.Viewer.boxPlot(disributionDataframe, {
-      categoryColumnNames: [VISIT_DAY],
+      categoryColumnNames: [this.numVisDayColDict['lb']],
       value: labValueNumColumn,
     });
-    this.distributionPlot.setOptions({category: VISIT_DAY});
+    this.distributionPlot.setOptions({category: this.numVisDayColDict['lb']});
     updateDivInnerHTML(this.distributionDiv, this.distributionPlot.root);
   }
 

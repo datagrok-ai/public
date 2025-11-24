@@ -70,6 +70,7 @@ export class ClinicalDomains {
   tv: DG.DataFrame = null;
   bw: DG.DataFrame = null;
   bg: DG.DataFrame = null;
+  cl: DG.DataFrame = null;
 
   all(): DG.DataFrame[] {
     return Object.keys(this).map((k) => this[k]).filter((v) => v != null);

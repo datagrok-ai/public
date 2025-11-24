@@ -93,5 +93,7 @@ export const QS_RES_N = 'QSSTRESN';
 export const TSPARMCD = 'TSPARMCD';
 export const TSPARM = 'TSPARM';
 export const TSVAL = 'TSVAL';
+//cl
+export const CLORRES = 'CLORRES';
 
 

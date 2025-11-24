@@ -497,6 +497,8 @@ export class PackageFunctions {
     // eslint-disable-next-line max-len
     @grok.decorators.param({type: 'string', options: {optional: true, description: '>, <, ='}}) endDateOperator?: string,
     // eslint-disable-next-line max-len
+    @grok.decorators.param({type: 'bool', options: {optional: true}}) ongoing?: boolean,
+    // eslint-disable-next-line max-len
     @grok.decorators.param({type: 'string', options: {optional: true, description: 'CDISC data format, either SDTM or SEND'}})
       standard?: CDISC_STANDARD): Promise<DG.Widget> {
     const clinicalCaseNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps')
@@ -510,7 +512,7 @@ export class PackageFunctions {
       endDate,
       standard: standard ? standard : undefined,
     };
-    const filteredStudies: ClinicalStudy[] = [];
+    let filteredStudies: ClinicalStudy[] = [];
     for (const study of Object.values(studies)) {
       let dateFieldProcessed = false;
       let matched = true;
@@ -577,6 +579,8 @@ export class PackageFunctions {
       if (matched)
         filteredStudies.push(study);
     }
+    if (ongoing)
+      filteredStudies = filteredStudies.filter((it) => !it.config.endDate);
     const studiesDiv = createInitialSatistics(clinicalCaseNode, filteredStudies.map((it) => it.config));
     return new DG.Widget(studiesDiv);
   }

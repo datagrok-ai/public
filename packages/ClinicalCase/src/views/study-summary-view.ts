@@ -5,7 +5,8 @@ import {cumulativeEnrollemntByDay} from '../data-preparation/data-preparation';
 import {CLINICAL_TRIAL_GOV_FIELDS} from '../constants/constants';
 import {CLIN_TRIAL_GOV_SEARCH, HttpService} from '../services/http.service';
 import {_package} from '../package';
-import {AGE, AGETXT, RACE, SEX, SPECIES, SUBJECT_ID, SUBJ_REF_STDT} from '../constants/columns-constants';
+import {AGE, AGETXT, BW_RES_N, CLORRES, RACE, SEX, SPECIES, SUBJECT_ID, SUBJ_REF_STDT,
+  VISIT_DAY} from '../constants/columns-constants';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import $ from 'cash-dom';
 import {checkDateFormat} from '../data-preparation/utils';
@@ -22,11 +23,11 @@ export class StudySummaryView extends ClinicalCaseViewBase {
   errorsByDomainWithLinks: any;
   studyId: string;
   httpService = new HttpService();
-  enrollmentChart = ui.box();
+  centralChart = ui.box();
   armChart = ui.box();
   sexChart = ui.box();
   raceChart = ui.box();
-  ageChart = ui.box();
+  ageOrWeightChart = ui.box();
   viewerTitle = {
     style: {
       'color': 'var(--grey-6)',
@@ -55,17 +56,13 @@ export class StudySummaryView extends ClinicalCaseViewBase {
   }
 
   async buildView() {
-    checkColumnsAndCreateViewer(
-      studies[this.studyId].domains.dm,
-      [SUBJ_REF_STDT],
-      this.enrollmentChart,
-      async () => {await this.createCumulativeEnrollmentChart(this.viewerTitle);},
-      'Cumulative enrollment');
-
-    const summary = ui.tableFromMap({
+    const summaryObj = {
       'subjects': studies[this.studyId].subjectsCount,
-      'sites': studies[this.studyId].sitesCount,
-    });
+    };
+    if (!this.isSend)
+      summaryObj['sites'] = studies[this.studyId].sitesCount;
+
+    const summary = ui.tableFromMap(summaryObj);
 
 
     const errorsSummary = this.errorsByDomainWithLinks ?
@@ -94,6 +91,33 @@ export class StudySummaryView extends ClinicalCaseViewBase {
       menu.show();
     }, 'Add domain to workspace');
     addDomainToWorkspace.classList.add('clinical-case-add-domain-to-workspace-icon');
+
+
+    if (!this.isSend) { //in case of SDTM - show cumulative enrollment
+      checkColumnsAndCreateViewer(
+        studies[this.studyId].domains.dm,
+        [SUBJ_REF_STDT],
+        this.centralChart,
+        async () => {await this.createCumulativeEnrollmentChart(this.viewerTitle);},
+        'Cumulative enrollment');
+    } else { //if SEND - create clinical observations chart
+      const visitDayCol = studies[this.studyId].domains.cl?.col(VISIT_DAY) ??
+        studies[this.studyId].domains.cl?.col(`CLDY`);
+      const visitDayName = visitDayCol ? visitDayCol.name : VISIT_DAY;
+      checkColumnsAndCreateViewer(
+        studies[this.studyId].domains.cl,
+        [CLORRES, visitDayName],
+        this.centralChart,
+        () => {
+          const clinicalObsGrouppedByDay = studies[this.studyId].domains.cl
+            .groupBy([visitDayName, CLORRES]).count('count').aggregate();
+          const obs = DG.Viewer.lineChart(clinicalObsGrouppedByDay,
+            {overview: 'count', splitColumnNames: [CLORRES], xColumnName: visitDayName});
+          obs.root.prepend(ui.divText('Clinical observations', this.viewerTitle));
+          updateDivInnerHTML(this.centralChart, obs.root);
+        },
+        'Clinical observations');
+    }
 
     checkColumnsAndCreateViewer(
       studies[this.studyId].domains.dm,
@@ -128,28 +152,35 @@ export class StudySummaryView extends ClinicalCaseViewBase {
       },
       this.isSend ? 'Species' : 'Race');
 
-    //in case numeric age column exists - create histogram
-    if (studies[this.studyId].domains.dm.col(AGE)) {
+    //in case of SDTM - show age distribution
+    if (!this.isSend) {
       checkColumnsAndCreateViewer(
         studies[this.studyId].domains.dm,
         [AGE],
-        this.ageChart, () => { //@ts-ignore
+        this.ageOrWeightChart, () => { //@ts-ignore
           const age = DG.Viewer.histogram(studies[this.studyId].domains.dm, {value: AGE, style: 'dashboard'});
           age.root.prepend(ui.divText('Age', this.viewerTitle));
-          updateDivInnerHTML(this.ageChart, age.root);
+          updateDivInnerHTML(this.ageOrWeightChart, age.root);
         },
         'Age');
-    } else { //else try to create barchart with AGETXT column
+    } else { //otherwise show initila body weight distribution
+      //in some cases VISITDY column is missing - look for domain specific day column
+      const visitDayCol = studies[this.studyId].domains.bw?.col(VISIT_DAY) ??
+        studies[this.studyId].domains.bw?.col(`BWDY`);
+      const visitDayName = visitDayCol ? visitDayCol.name : VISIT_DAY;
       checkColumnsAndCreateViewer(
-        studies[this.studyId].domains.dm,
-        [AGETXT],
-        this.ageChart, () => {//@ts-ignore
-          const age = DG.Viewer.barChart(studies[this.studyId].domains.dm, //@ts-ignore
-            {split: AGETXT, style: 'dashboard'});
-          age.root.prepend(ui.divText('Age', this.viewerTitle));
-          updateDivInnerHTML(this.raceChart, age.root);
+        studies[this.studyId].domains.bw,
+        [visitDayName, SUBJECT_ID, BW_RES_N],
+        this.ageOrWeightChart, () => { //@ts-ignore
+          const firstVisit = studies[this.studyId].domains.bw.col(visitDayName).stats.min;
+          //extract bw at first visit
+          const df = studies[this.studyId].domains.bw.groupBy([SUBJECT_ID, visitDayName, BW_RES_N])
+            .where(`${visitDayName} = ${firstVisit}`).aggregate();
+          const age = DG.Viewer.histogram(df, {value: BW_RES_N});
+          age.root.prepend(ui.divText('Initial BW', this.viewerTitle));
+          updateDivInnerHTML(this.ageOrWeightChart, age.root);
         },
-        'Age');
+        'Initial BW');
     }
 
     this.root.className = 'grok-view ui-box';
@@ -165,12 +196,12 @@ export class StudySummaryView extends ClinicalCaseViewBase {
         ]),
         addDomainToWorkspace,
       ], {style: {maxHeight: '105px'}}),
-      this.enrollmentChart,
+      this.centralChart,
       ui.splitH([
         this.armChart,
         this.sexChart,
         this.raceChart,
-        this.ageChart,
+        this.ageOrWeightChart,
       ]),
     ]));
   }
@@ -183,7 +214,7 @@ export class StudySummaryView extends ClinicalCaseViewBase {
     if (incorrectDates.length) {
       const subjArray = incorrectDates.map((it) => studies[this.studyId].domains.dm.get(SUBJECT_ID, it));
       const formatErrorMessage = ui.info(`Subjects #${subjArray.join(',')} have incorrect format of ${SUBJ_REF_STDT}`);
-      updateDivInnerHTML(this.enrollmentChart, formatErrorMessage);
+      updateDivInnerHTML(this.centralChart, formatErrorMessage);
     } else {
       const subjsPerDay =
         cumulativeEnrollemntByDay(studies[this.studyId].domains.dm
@@ -197,7 +228,7 @@ export class StudySummaryView extends ClinicalCaseViewBase {
       } else
         lc.setOptions({x: `${dateCol}`, yColumnNames: [cumulativeCol]});
 
-      updateDivInnerHTML(this.enrollmentChart, lc.root);
+      updateDivInnerHTML(this.centralChart, lc.root);
       lc.root.prepend(ui.divText('Enrollment by day', viewerTitle));
     }
   }
@@ -273,7 +304,7 @@ export class StudySummaryView extends ClinicalCaseViewBase {
     checkColumnsAndCreateViewer(
       studies[this.studyId].domains.dm,
       [SUBJ_REF_STDT],
-      this.enrollmentChart,
+      this.centralChart,
       async () => {await this.createCumulativeEnrollmentChart(this.viewerTitle);},
       'Cumulative enrollment');
   }
