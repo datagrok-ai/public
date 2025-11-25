@@ -193,10 +193,6 @@ export class FittingView {
       return inp;
     };
 
-    const getInputName = (name: string, caption?: string) => {
-      return `${name}` +  (caption ? `,        caption: ${caption}` : ``);
-    }
-
     const getFormulaToggleInput = (inputProp: DG.Property, key: 'min' | 'max', inputNumber: DG.InputBase, inputFormula: DG.InputBase) => {
       const formula = getRangeFormula(inputProp, key);
       const it = this;
@@ -1095,8 +1091,6 @@ export class FittingView {
     });
 
     primaryToggle.root.hidden = true;
-    const paddingDiv = ui.div('', {classes: 'sa-switch-input ui-div'});
-    primaryToggle.root.prepend(paddingDiv);
     form.append(primaryToggle.root);
 
     //1. Inputs of the function
