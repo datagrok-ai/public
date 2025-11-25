@@ -60,9 +60,9 @@ export class AssistantRenderer {
   }
 
   static renderResult(result: any): HTMLElement {
-    const container = ui.div([ui.h2('Result')], 'ai-execute-result');
     const val = result?.finalResult?.value ?? result?.finalResult ?? result;
     const meta = result?.finalResult?.meta;
+    const container = ui.div([ui.h2('Result')], 'ai-execute-result');
 
     if (meta?.propertyType === 'graphics')
       container.append(renderGraphics(val));
@@ -75,6 +75,8 @@ export class AssistantRenderer {
     )
       container.append(renderHelm(val));
     else if (meta?.propertyType === 'dataframe') {
+      container.append(ui.button('Add to Workspace', () => grok.shell.addTableView(val),
+        'Add resulting data frame to workspace'));
       const grid = val.plot.grid().root;
       grid.style.width = '100%';
       container.append(grid);
