@@ -382,15 +382,15 @@ function getTotalViewer() {
 function dockViewers(viewer: string, view: DG.TableView, table: DG.DataFrame) {
   try {
     view.addViewer(DG.Viewer.fromType(viewer, table));
-    addRecentViewer(viewer);
+    logRecentViewer(viewer);
   } catch (e) {
     grok.shell.error(`Cannot add ${viewer} for current table. Check browser console for specific errors`);
     console.error(e);
   }
 }
 
-const STORAGE_NAME = 'ViewerGallery';
-const RECENT_KEY = 'recent-viewers';
+const STORAGE_NAME = 'recentViewerSettings';
+const RECENT_KEY = 'recentViewers';
 
 function getRecentViewersList(): string[] {
   try {
@@ -404,7 +404,7 @@ function getRecentViewersList(): string[] {
   }
 }
 
-function addRecentViewer(viewerName: string) {
+function logRecentViewer(viewerName: string) {
   let recent = getRecentViewersList();
   recent = [viewerName, ...recent.filter((n) => n !== viewerName)].slice(0, 8);
   grok.userSettings.add(STORAGE_NAME, RECENT_KEY, JSON.stringify(recent));
