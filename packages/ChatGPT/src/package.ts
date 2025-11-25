@@ -17,7 +17,7 @@ import {JsonSchema} from './prompt-engine/interfaces';
 export * from './package.g';
 export const _package = new DG.Package();
 
-export const modelName: string = 'gpt-4o';
+export const modelName: string = 'gpt-4o-mini';
 
 export class PackageFunctions {
   @grok.decorators.init()
