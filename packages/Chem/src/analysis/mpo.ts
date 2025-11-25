@@ -70,12 +70,20 @@ export class MpoProfileDialog {
     }
   }
 
-  private async addParetoFrontViewer(columnNames: string[]) {
+  private addParetoFrontViewer(columnNames: string[]) {
     const view = grok.shell.getTableView(this.dataFrame.name);
-    const paretoFrontViewer = DG.Viewer.fromType('Pareto front', this.dataFrame, {
-      maximizeColumnNames: columnNames,
-    });
+    const paretoFrontViewer = DG.Viewer.fromType('Pareto front', this.dataFrame);
     view.addViewer(paretoFrontViewer);
+
+    /**
+     * Temporary workaround to ensure the Pareto front viewer applies the provided
+     * column names. The names are not applied immediately after the viewer
+     * is created (issue under investigation).
+    */
+    setTimeout(() => paretoFrontViewer.setOptions({
+      minimizeColumnNames: [],
+      maximizeColumnNames: columnNames,
+    }), 1000);
   }
 
   private async runMpoCalculation(): Promise<void> {
@@ -88,7 +96,7 @@ export class MpoProfileDialog {
 
       const columnNames: string[] = funcCall.getOutputParamValue();
       if (columnNames.length && this.addParetoFront.value)
-        await this.addParetoFrontViewer(columnNames);
+        this.addParetoFrontViewer(columnNames);
     } catch (e) {
       grok.shell.error(`Failed to run MPO calculation: ${e instanceof Error ? e.message : e}`);
     }
