@@ -176,6 +176,11 @@ export class FittingView {
       const range = this.options.ranges?.[inputProp.name];
       if (range?.[key] != undefined && typeof range?.[key] === 'string')
         return range[key];
+
+      if (key === 'min' && inputProp.options.minFormula)
+        return inputProp.options.minFormula;
+      if (key === 'max' && inputProp.options.maxFormula)
+        return inputProp.options.maxFormula;
     };
 
     const getFormulaInput = (inputProp: DG.Property, key: keyof RangeDescription) => {
