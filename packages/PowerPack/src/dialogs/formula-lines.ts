@@ -529,6 +529,7 @@ class Preview {
       this.viewer = DG.Viewer.lineChart(this.dataFrame, {
         yAxisType: src.props.yAxisType,
         xAxisType: src.props.xAxisType,
+        splitColumnNames: src.props.splitColumnNames,
         invertXAxis: src.props.invertXAxis,
         showLabels: 'Never',
         showDataframeFormulaLines: false,
