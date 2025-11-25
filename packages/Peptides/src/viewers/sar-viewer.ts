@@ -776,13 +776,18 @@ export class MonomerPosition extends SARViewer {
   createMonomerPositionDf(): DG.DataFrame {
     const uniqueMonomers = new Set<string>();
     const splitSeqCols = this.positionColumns;
-    for (const col of splitSeqCols) {
-      const colCat = col.categories;
-      for (const cat of colCat) {
-        if (cat !== '')
-          uniqueMonomers.add(cat);
+    // when table is filtered, some monomers may be absent everywhere, so we need to account for them from monomerPositionStats not the columns.
+    for (const pos of Object.keys(this.monomerPositionStats)) {
+      if (pos === 'general')
+        continue;
+      const posStats = this.monomerPositionStats[pos]!;
+      for (const monomer of Object.keys(posStats)) {
+        if (monomer === 'general')
+          continue;
+        uniqueMonomers.add(monomer);
       }
     }
+
     const monomersArray = Array.from(uniqueMonomers);
     const monomerCol = DG.Column.fromStrings(C.COLUMNS_NAMES.MONOMER, monomersArray);
     const monomerPositionDf = DG.DataFrame.fromColumns([monomerCol]);

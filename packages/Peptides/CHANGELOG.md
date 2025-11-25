@@ -1,5 +1,11 @@
 # Peptides changelog
 
+## 1.27.3 (2025-11-12)
+
+* Fix mutation cliffs viewer not updating on filter change
+* Fix mutation cliffs viewer not restoring selection on frame re-attach
+* Sequence variability map: filter out absent monomers from grid when filter is applied
+
 ## 1.27.0 (2025-11-10)
 
 * Rework mutation cliffs and tooltips, shown information about sequence pairs and their statistics.
