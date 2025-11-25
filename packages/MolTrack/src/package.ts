@@ -233,6 +233,23 @@ export async function search(query: string, entityEndpoint: string) {
   return await MolTrackDockerService.search(JSON.parse(query), entityEndpoint);
 }
 
+//name: advancedSearch
+//description: Performs a structured MolTrack compound search. The caller must provide the "output": a list of fully-qualified field names to return; "filter": a structured filter tree describing search conditions.
+//input: list output {description: List of fields to return. All fields must use MolTrack notation. Valid formats: "<table>.<field>" (direct database column) or "<table>.details.<property>" (dynamic detail property). Valid direct compound fields include (non-exhaustive): "compounds.created_at","compounds.updated_at","compounds.created_by","compounds.updated_by","compounds.canonical_smiles","compounds.original_molfile","compounds.molregno","compounds.inchi","compounds.inchikey","compounds.formula","compounds.hash_mol","compounds.hash_tautomer","compounds.hash_canonical_smiles","compounds.hash_no_stereo_smiles","compounds.hash_no_stereo_tautomer","compounds.is_archived".}
+//input: object filter {description: A structured boolean filter supporting simple and nested conditions. Simple format: {"field":"<field_name>","operator":"<operator>","value":<value>,"threshold":<number|null>} where threshold is required only for "IS SIMILAR". String operators: "=","!=","IN","STARTS WITH","ENDS WITH","LIKE","CONTAINS". Numeric operators: "<",">","<=",">=","RANGE" (expects {value:[min,max]}). Datetime operators: "BEFORE","AFTER","ON" (ISO 8601). Molecular operators (only for compounds.structure): "IS SIMILAR" (requires SMILES + numeric similarity threshold), "IS SUBSTRUCTURE OF", "HAS SUBSTRUCTURE". Complex nested conditions: {"operator":"AND"|"OR","conditions":[...]}. Notes: nested conditions may be arbitrarily deep; each branch must be simple or complex. Examples: simple {"field":"compounds.formula","operator":"=","value":"C6H6"}; complex {"operator":"AND","conditions":[{"field":"compounds.created_at","operator":"AFTER","value":"2025-01-01"},{"operator":"OR","conditions":[{"field":"compounds.formula","operator":"=","value":"C6H6"},{"field":"compounds.structure","operator":"IS SIMILAR","value":"c1ccccc1","threshold":0.8}]}]}.}
+//output: dataframe searchResult
+export async function advancedSearch(output: string[], filter: any): Promise<DG.DataFrame> {
+  const level = 'compounds';
+  const molTrackSearchQuery = {
+    level: level,
+    output: output,
+    filter: filter,
+    output_format: 'json',
+  };
+  const searchResultJson = await MolTrackDockerService.search(molTrackSearchQuery, level);
+  return DG.DataFrame.fromObjects(searchResultJson.data)!;
+}
+
 //name: retrieveEntity
 //input: string scope
 //output: dataframe result
