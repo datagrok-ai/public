@@ -193,7 +193,11 @@ export class FittingView {
       return inp;
     };
 
-    const getFormulaToggleInput = (inputProp: DG.Property, key: keyof RangeDescription, inputNumber: DG.InputBase, inputFormula: DG.InputBase) => {
+    const getInputName = (name: string, caption?: string) => {
+      return `${name}` +  (caption ? `,        caption: ${caption}` : ``);
+    }
+
+    const getFormulaToggleInput = (inputProp: DG.Property, key: 'min' | 'max', inputNumber: DG.InputBase, inputFormula: DG.InputBase) => {
       const formula = getRangeFormula(inputProp, key);
       const it = this;
       const toggleInputs = (val: boolean) => {
@@ -216,6 +220,17 @@ export class FittingView {
         },
       });
       toggleInputs(!!formula);
+
+      const icon = ui.iconFA('question', () => {
+        const avaliableVars = this.getAvaliableVars(inputProp.name).flatMap(([, { prop }]) => [ui.divText(prop.name), ui.divText(prop.caption)]);
+        const varsGrid = ui.div([ui.h3('Variable'), ui.h3('Caption'), ...avaliableVars], {style: {display: 'grid', 'gridTemplateColumns': '50% 50%'}});
+        const popupHeader = `Set formula for ${key} bound for ${inputProp.caption ?? inputProp.name}\n` +
+          `Avaliable variables:\n`;
+        ui.showPopup(ui.div([ui.divText(popupHeader), varsGrid], {
+          style: {maxWidth: '500px', maxHeight: '800px', overflowY: 'auto', userSelect: 'text', padding: '10px'}
+        }), icon);
+      });
+      boolInput.addOptions(icon)
       return boolInput;
     };
 
@@ -1284,6 +1299,7 @@ export class FittingView {
     }, {nonFormulaInputs: [], formulaInputs: []} as { nonFormulaInputs: [string, FittingInputsStore][], formulaInputs: [string, FittingInputsStore][] });
   } // splitInputs
 
+
   private getStoreInputsAndBounds(fittingStore: FittingNumericStore, minContext: Record<string, any>, maxContext: Record<string, any>) {
     const minInp = fittingStore.min.useFormula.value ? fittingStore.min.formula : fittingStore.min.input;
     const maxInp = fittingStore.max.useFormula.value ? fittingStore.max.formula : fittingStore.max.input;
@@ -1293,6 +1309,14 @@ export class FittingView {
     const max = fittingStore.max.useFormula.value ? runFormula(maxFormula!, maxContext) : fittingStore.max.input.value;
     return {minInp, maxInp, min, max, minFormula, maxFormula};
   } // getStoreInputsAndBounds
+
+  private getAvaliableVars(name: string) {
+    const {nonFormulaInputs, formulaInputs} = this.splitInputs();
+    const idx = formulaInputs.findIndex(([n]) => n === name);
+    if (idx >= 0)
+      return [...nonFormulaInputs, ...formulaInputs.slice(0, idx)];
+    return nonFormulaInputs;
+  }
 
   /** Check inputs */
   private areInputsReady(): boolean {
