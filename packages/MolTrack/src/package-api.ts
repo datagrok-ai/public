@@ -108,8 +108,8 @@ export namespace funcs {
   /**
   Performs a structured MolTrack compound search. The caller must provide the "output": a list of fully-qualified field names to return; "filter": a structured filter tree describing search conditions.
   */
-  export async function advancedSearch(output: any , filter: any ): Promise<string> {
-    return await grok.functions.call('MolTrack:AdvancedSearch', { output, filter });
+  export async function advancedSearch(outputFields: any , filter: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('MolTrack:AdvancedSearch', { outputFields, filter });
   }
 
   export async function retrieveEntity(scope: string ): Promise<DG.DataFrame> {

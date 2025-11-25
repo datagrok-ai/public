@@ -81,6 +81,10 @@ Always respond strictly in JSON format.
     {
       name: 'SequenceTranslator',
       description: 'Contains tools for enumerating sequences at different positions and monomers. very useful when trying to maximize/minimize/optimize certain properties of peptides/proteins by sequence enumeration.',
+    },
+    {
+      name: 'MolTrack',
+      description: 'A lightweight, flexible, and extendable FastAPI server for managing chemical compounds, batches, and properties, powered by RDKit-enabled Postgres for chemical intelligence'
     }
   ];
 
@@ -125,6 +129,7 @@ STRICT INPUT RULES (applies to ALL models):
   - You MUST include them in the "inputs", even if the value equals the default.
 - Leaving out a required input or a defaulted input is considered an ERROR.
 - Inputs should appear exactly as defined in the function metadata.
+- Today's date is ${new Date().toISOString().split('T')[0]}. Always use this date when interpreting natural language like "last week", "this year", or "next month".
 
 Referencing previous steps:
 - If an input value comes from a previous step's output, prefix it with "$".
