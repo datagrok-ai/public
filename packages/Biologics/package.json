@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/biologics",
   "friendlyName": "Biologics",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Demo Database wrapper for ADCs",
   "author": {
     "name": "Davit Rizhinashvili",

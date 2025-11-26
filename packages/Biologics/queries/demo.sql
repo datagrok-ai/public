@@ -70,6 +70,7 @@ WHERE at.name ILIKE 'IC50' AND (
 --name: adcsLinkedToDrug
 --connection: Biologics:biologics
 --input: string drugID {choices: query("SELECT distinct identifier FROM biologics.drugs")}
+--description: "Find ADCs in biologics database linked to a specified drug identifier."
 --meta.searchPattern: "adcs linked to ${drugID}"
 SELECT adc.identifier AS adc_identifier, adc.name AS adc_name, adc.glyph AS glyph,
     seq.identifier as sequence_identifier, seq.name AS antibody_name, seq.sequence AS antibody_sequence,

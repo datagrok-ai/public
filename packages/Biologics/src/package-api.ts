@@ -29,6 +29,9 @@ export namespace queries {
     return await grok.data.query('Biologics:ADCsWithIC50HLThan', { value, valueTarget });
   }
 
+  /**
+  "Find ADCs in biologics database linked to a specified drug identifier."
+  */
   export async function adcsLinkedToDrug(drugID: string ): Promise<DG.DataFrame> {
     return await grok.data.query('Biologics:AdcsLinkedToDrug', { drugID });
   }

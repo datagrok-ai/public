@@ -61,6 +61,10 @@ export namespace funcs {
     return await grok.functions.call('PowerPack:LlmSearchQueryProvider', { prompt });
   }
 
+  export async function getFuncTableViewWidget(func: any , inputParams: any ): Promise<any> {
+    return await grok.functions.call('PowerPack:GetFuncTableViewWidget', { func, inputParams });
+  }
+
   export async function powerPackSearchProvider(): Promise<any> {
     return await grok.functions.call('PowerPack:PowerPackSearchProvider', {});
   }

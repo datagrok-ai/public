@@ -34,6 +34,13 @@ export namespace funcs {
     return await grok.functions.call('ChatGPT:SmartChainExecutionProvider', { prompt });
   }
 
+  /**
+  Tries to find a query which has the similar pattern as the prompt user entered and executes it
+  */
+  export async function llmSearchQueryProvider(prompt: string ): Promise<any> {
+    return await grok.functions.call('ChatGPT:LlmSearchQueryProvider', { prompt });
+  }
+
   export async function askAIGeneralCached(model: string , systemPrompt: string , prompt: string , schema: any ): Promise<string> {
     return await grok.functions.call('ChatGPT:AskAIGeneralCached', { model, systemPrompt, prompt, schema });
   }
