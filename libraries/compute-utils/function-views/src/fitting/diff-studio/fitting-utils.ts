@@ -159,11 +159,11 @@ export async function fit(task: NelderMeadInput, start: Float64Array): Promise<E
   const metric = (task.loss == LOSS.MAD) ? mad : rmse;
   const boundsChecker = makeBoundsChecker(bounds, variedInputNames);
 
-  let initialCost = Infinity;
+  let costOutside = Infinity;
 
   const costFunc = async (x: Float64Array): Promise<number> => {
     if (!boundsChecker(x))
-      return initialCost;
+      return costOutside;
 
     for (let i = 0; i < dim; ++i)
       ivpInputVals[inpIndex[i]] = x[i];
@@ -179,7 +179,7 @@ export async function fit(task: NelderMeadInput, start: Float64Array): Promise<E
     );
   };
 
-  initialCost = await costFunc(start);
+  costOutside = 2*(await costFunc(start));
 
   const settings = new Map<string, number>(task.settingNames.map((name, idx) => [name, task.settingVals[idx]]));
 
