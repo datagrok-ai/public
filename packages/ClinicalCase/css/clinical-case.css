@@ -3,3 +3,30 @@
     margin-top: 20px!important;
     margin-left: auto;
 }
+
+.clinical-case-files-input-invalid .d4-invalid {
+    color: #eb6767!important;
+}
+
+.clinical-case-validation-view-no-errors {
+    align-content: center;
+    align-self: center;
+}
+
+.clinical-case-add-domain-to-workspace-icon {
+    color: var(--blue-1);
+    font-weight: 500;
+    margin-top: 18px;
+    margin-right: 20px;
+    align-self: flex-end;
+    max-height: 20px;
+}
+
+.clinical-case-import-study-button {
+    margin-top: 20px !important;
+}
+
+.clinical-case-correlation-filters {
+   overflow-y: scroll;
+   margin: 8px;
+}

@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import {tTest} from '@datagrok-libraries/statistics/src/tests';
 import {RawData} from './types';
@@ -37,24 +38,42 @@ export type SummaryStats = {
 export const getAggregatedColName = (aggF: string, colName: string): string => `${aggF}(${colName})`;
 export type AggregationColumns = { [col: string]: DG.AggregationType };
 
+export function bitSetToBitArray(bitSet: DG.BitSet): BitArray {
+  return BitArray.fromUint32Array(
+    bitSet.length,
+    new Uint32Array(bitSet.getBuffer().buffer as ArrayBuffer),
+  );
+}
+
+export function bitArrayToBitSet(bitArray: BitArray): DG.BitSet {
+  return DG.BitSet.fromBytes(
+    bitArray.buffer.buffer as ArrayBuffer,
+    bitArray.length,
+  );
+}
+
 /**
  * Returns statistics for the given activity data and bit array.
  * @param data - Activity data to calculate statistics for.
  * @param bitArray - Bit array to use for the calculation.
  * @return - Statistics for the given data and bit array.
  */
-export function getStats(data: RawData | number[], bitArray: BitArray,
+export function getStats(data: RawData | number[], bitArray: BitArray, filter?: BitArray,
   aggData?: {col: DG.Column, type: DG.AGG}): StatsItem {
-  if (data.length !== bitArray.length && data.some((v, i) => i >= bitArray.length ? v !== 0 : false))
+  // if column length is less than 16, raw data will be still of length 16
+  if ((data.length !== bitArray.length && data.length !== 16) || (filter && data.length !== filter.length && data.length !== 16))
     throw new Error('PeptidesError: Data and bit array have different lengths');
+  if (filter && filter.allTrue)
+    filter = undefined; // no need to filter if all true
 
-  const selected = new Float32Array(bitArray.trueCount());
-  const rest = new Float32Array(bitArray.falseCount());
+  const filterAndMask = filter ? bitArray.clone().and(filter) : bitArray;
+  const selected = new Float32Array(filterAndMask.trueCount());
+  const rest = new Float32Array(filter ? (filter.trueCount() - filterAndMask.trueCount()) : filterAndMask.falseCount());
   let aggValue: number | undefined;
   if (aggData) {
     try {
       aggValue = DG.DataFrame.fromColumns([aggData.col])
-        .clone(DG.BitSet.fromBytes(bitArray.buffer.buffer, bitArray.length)).col(aggData.col.name)
+        .clone(bitArrayToBitSet(filterAndMask)).col(aggData.col.name)
         ?.aggregate(aggData.type);
     } catch (e) {
       console.error(e);
@@ -63,35 +82,40 @@ export function getStats(data: RawData | number[], bitArray: BitArray,
   let selectedIndex = 0;
   let restIndex = 0;
   for (let i = 0; i < bitArray.length; ++i) {
+    if (filter && !filter.getBit(i))
+      continue;
     if (bitArray.getBit(i))
       selected[selectedIndex++] = data[i];
     else
       rest[restIndex++] = data[i];
   }
+  const totalAnalyzed = selected.length + rest.length;
 
   const selectedMean = selected.reduce((a, b) => a + b, 0) / Math.max(selected.length, 1);
   if (selected.length < 2 || rest.length < 2) {
     const restMean = rest.reduce((a, b) => a + b, 0) / Math.max(rest.length, 1);
+
     return {
       count: selected.length,
       pValue: null,
       mean: selectedMean,
       meanDifference: selectedMean - restMean,
-      ratio: selected.length / (bitArray.length),
-      mask: bitArray,
+      ratio: selected.length / totalAnalyzed,
+      mask: filterAndMask,
       aggValue,
     };
   }
 
   const testResult = tTest(selected, rest);
+
   const currentMeanDiff = testResult['Mean difference']!;
   return {
     count: selected.length,
     pValue: testResult[currentMeanDiff >= 0 ? 'p-value more' : 'p-value less'],
     mean: selectedMean,
     meanDifference: currentMeanDiff,
-    ratio: selected.length / (bitArray.length),
-    mask: bitArray,
+    ratio: selected.length / totalAnalyzed,
+    mask: filterAndMask,
     aggValue,
   };
 }
@@ -129,7 +153,7 @@ export function getAggregatedColumnValues(df: DG.DataFrame, columns: [string, DG
   options.filterDf ??= false;
   options.fractionDigits ??= 3;
 
-  const filteredDf = options.filterDf && df.filter.anyFalse ? df.clone(df.filter) : df;
+  const filteredDf = options.filterDf && df.filter.anyFalse && (!options.mask || options.mask.length === df.filter.trueCount) ? df.clone(df.filter) : df;
 
   const colResults: StringDictionary = {};
   for (const [colName, aggFn] of columns) {

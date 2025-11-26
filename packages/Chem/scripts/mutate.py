@@ -1,5 +1,5 @@
 #name: Mutate
-#description: Generates the new dataset based on the given structure
+#description: Generates the new dataset based on the given structure. Generated table has a column named 'mutations' with mutated structures.
 #help-url: https://datagrok.ai/help/domains/chem/functions/mutate
 #language: python
 #tags: demo, chem, rdkit

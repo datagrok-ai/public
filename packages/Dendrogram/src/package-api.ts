@@ -106,7 +106,7 @@ export namespace funcs {
   /**
   Calculates hierarchical clustering on features and injects tree to grid
   */
-  export async function hierarchicalClustering(df: DG.DataFrame , colNameList: string[] , distance: any , linkage: string ): Promise<void> {
+  export async function hierarchicalClustering(df: DG.DataFrame , colNameList: string[] , distance: string , linkage: string ): Promise<void> {
     return await grok.functions.call('Dendrogram:HierarchicalClustering', { df, colNameList, distance, linkage });
   }
 

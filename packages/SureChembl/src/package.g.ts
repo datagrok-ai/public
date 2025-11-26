@@ -1,25 +1,23 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//name: sureChemblSubstructureSearch
 //input: string molecule { semType: Molecule }
 //input: int limit 
 //output: dataframe result
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
-export async function sureChemblSubstructureSearch(molecule: string, limit: number) {
-  return PackageFunctions.sureChemblSubstructureSearch(molecule, limit);
+export async function sureChemblSubstructureSearch(molecule: string, limit: number) : Promise<any> {
+  return await PackageFunctions.sureChemblSubstructureSearch(molecule, limit);
 }
 
-//name: sureChemblSimilaritySearch
 //input: string molecule { semType: Molecule }
 //input: int limit 
 //input: double similarityThreshold 
 //output: dataframe result
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
-export async function sureChemblSimilaritySearch(molecule: string, limit: number, similarityThreshold?: number) {
-  return PackageFunctions.sureChemblSimilaritySearch(molecule, limit, similarityThreshold);
+export async function sureChemblSimilaritySearch(molecule: string, limit: number, similarityThreshold?: number) : Promise<any> {
+  return await PackageFunctions.sureChemblSimilaritySearch(molecule, limit, similarityThreshold);
 }
 
 //name: Databases | SureChEMBL | Substructure Search
@@ -27,7 +25,7 @@ export async function sureChemblSimilaritySearch(molecule: string, limit: number
 //input: string molecule { semType: Molecule }
 //output: widget result
 //condition: true
-export function sureChemblSubstructureSearchWidget(molecule: string) {
+export function sureChemblSubstructureSearchWidget(molecule: string) : any {
   return PackageFunctions.sureChemblSubstructureSearchWidget(molecule);
 }
 
@@ -36,6 +34,6 @@ export function sureChemblSubstructureSearchWidget(molecule: string) {
 //input: string molecule { semType: Molecule }
 //output: widget result
 //condition: true
-export function sureChemblSimilaritySearchWidget(molecule: string) {
+export function sureChemblSimilaritySearchWidget(molecule: string) : any {
   return PackageFunctions.sureChemblSimilaritySearchWidget(molecule);
 }

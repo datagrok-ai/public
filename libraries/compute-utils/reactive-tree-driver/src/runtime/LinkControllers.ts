@@ -35,7 +35,7 @@ export class ControllerBase<T> {
 
   protected checkInput(name: string) {
     if (!this.inputsSet.has(name)) {
-      const e = new Error(`Handler for Link ${this.id} is trying to set an unknown input ${name}`);
+      const e = new Error(`Handler for Link ${this.id} is trying to get an unknown input ${name}`);
       console.error(e);
       grok.shell.error(e.message);
       throw e;
@@ -154,7 +154,7 @@ export class MutationController extends ControllerBase<PipelineInstanceConfig | 
   }
 }
 
-export class NameSelectorController extends ControllerBase<any | undefined> implements INameSelectorController {
+export class NodeMetaController extends ControllerBase<any | undefined> implements INameSelectorController {
   constructor(
     public inputs: Record<string, any[]>,
     public inputsSet: Set<string>,

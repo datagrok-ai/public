@@ -39,6 +39,7 @@ export function convert(col: DG.Column<string> | undefined, seqHelper: ISeqHelpe
     NOTATION.FASTA,
     NOTATION.SEPARATOR,
     NOTATION.HELM,
+    NOTATION.BILN
   ];
   const toggleColumn = (newCol: DG.Column) => {
     srcCol = newCol;

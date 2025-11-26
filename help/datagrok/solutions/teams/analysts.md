@@ -30,13 +30,13 @@ you can take it even further.
 * [Bring data from anywhere](../../datagrok.md#access), including file
   shares/S3, databases, and APIs
 * [Query](../../../access/databases/databases.md) databases, [clean and transform](../../datagrok.md#transform) datasets using [500+ functions](../../concepts/functions/functions.md), visually or programmatically 
-* [Join](../../../access/databases/databases.md#join-tables) tables, [link](../../../transform/link-tables.md), [aggregate](../../../transform/aggregate-rows.md), [pivot](../../../access/databases/databases.md#aggregation-editor), [compare](../../../transform/compare-tables.md) - with and without code 
+* [Link](../../../transform/link-tables.md) tables, [aggregate](../../../transform/aggregate-rows.md), [pivot](../../../access/databases/databases.md#visual-query-editor), [compare](../../../transform/compare-tables.md) - with and without code 
 * [Slice, dice, and explore your data](../workflows/eda.md). Render
-  millions of data points interactively, with [scientific intelligence](../../navigation/views/table-view.md#statistical-hypothesis-testing) built-in
+  millions of data points interactively, with [scientific intelligence](../../../visualize/table-view-1.md#statistical-hypothesis-testing) built-in
 * Build [dynamic dashboards](../../../access/databases/databases.md#creating-dynamic-dashboards-for-query-results) in minutes (our [spreadsheet](../../../visualize/viewers/grid.md#rows) and [viewers](../../../visualize/viewers/viewers.md) are best-in-class!)
 * [Create custom metadata schemas](../../../govern/catalog/sticky-meta.md) to annotate specific objects within your dataset (like molecules or sequences). Once added, this metadata stays attached to the objects and is accessible across the platform
 * Save, search, and reuse [queries](../../../access/databases/databases.md), [scripts](../../../compute/scripting/scripting.mdx), [transformations](../../navigation/panels/panels.md#recording-macros), [layouts](../../../visualize/view-layout.md), and [dashboards](../../concepts/project/dashboard.md)
-* [Share](../../navigation/basic-tasks/basic-tasks.md#share) work with other Datagrok users, with [fine-grained permissions](../../../govern/access-control/access-control.md#permissions). [Download](../../navigation/basic-tasks/basic-tasks.md#download) or [embed as an iframe](../../navigation/views/table-view.md#embed) 
+* [Share](../../navigation/basic-tasks/basic-tasks.md#share) work with other Datagrok users, with [fine-grained permissions](../../../govern/access-control/access-control.md#permissions). [Download](../../navigation/basic-tasks/basic-tasks.md#download) or [embed as an iframe](../../../visualize/table-view-1.md#embed) 
 * [Track changes, and understand data lineage](../../datagrok.md#govern)
 * [Collaborate](../../datagrok.md#collaborate) across teams
 * [Let teams explore data on their own](../workflows/free-world-exploration.md#function-annotations), while maintaining control 

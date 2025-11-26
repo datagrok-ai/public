@@ -1,4 +1,3 @@
-/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -100,6 +99,7 @@ export class GroupAnalysisViewer extends DG.JsViewer {
   name = 'group';
   groupByColumnNames: string[];
   analyzedColumns: IAnalyzedColumn[];
+  analyzedColumnsEncoded: string;
   totalColumns: string[] | undefined = undefined;
   grouppedDf: DG.DataFrame | undefined = undefined;
   parentViewers: {[key: string]: DG.Viewer};
@@ -112,6 +112,7 @@ export class GroupAnalysisViewer extends DG.JsViewer {
   constructor() {
     super();
     this.groupByColumnNames = this.addProperty('groupByColumnNames', DG.TYPE.COLUMN_LIST);
+    this.analyzedColumnsEncoded = this.string('analyzedColumnsEncoded', '[]', {userEditable: false});
     this.analyzedColumns = [];
     this.parentViewers = {};
   }
@@ -150,6 +151,10 @@ export class GroupAnalysisViewer extends DG.JsViewer {
       this.updateColumnChoices(this.groupByColumnNames, 'Group by', this.grouppingColsDiv);
       this.updateGrid();
     }
+    if (p?.name === 'analyzedColumnsEncoded') {
+      this.analyzedColumns = JSON.parse(this.analyzedColumnsEncoded);
+      this.updateGrid();
+    }
   }
 
   _testColumns() {
@@ -157,57 +162,52 @@ export class GroupAnalysisViewer extends DG.JsViewer {
   }
 
   createAddColumnDialog() {
-    const columnInput = ui.input.column('Column', {table: this.dataFrame, value: this.dataFrame.columns.byIndex(0)});
+    const columnInput = ui.input.column('Column', {
+      table: this.dataFrame, value: this.dataFrame.columns.byIndex(0),
+    });
     columnInput.input.style.width = '100px';
 
-    const colTypeInput = ui.input.choice('Column type', {value: Object.keys(COL_TYPES)[0], items: Object.keys(COL_TYPES)});
-
-    const aggrTypesChoice = ui.input.choice('Function', {value: Object.keys(COL_TYPES[AGGR_TYPE])[0],
-      items: Object.keys(COL_TYPES[AGGR_TYPE])});
-    const chartTypesChoice = ui.input.choice('Chart', {value: Object.keys(COL_TYPES[CHART_TYPE])[0],
-      items: Object.keys(COL_TYPES[CHART_TYPE])});
-    const statTypesChoice = ui.input.choice('Statistic', {value: Object.keys(COL_TYPES[STAT_TYPE])[0],
-      items: Object.keys(COL_TYPES[STAT_TYPE])});
-    const columnTypeDiv = ui.div();
-    columnTypeDiv.append(aggrTypesChoice.root);
-
-    let currentColType = AGGR_TYPE;
-    let currentFuncChoice = aggrTypesChoice;
-
-    function updateColTypeDiv(choiceInput: DG.InputBase) {
-      // @ts-ignore
-      currentFuncChoice = choiceInput;
-      columnTypeDiv.append(choiceInput.root);
-    }
-
-    colTypeInput.onChanged.subscribe((value) => {
-      currentColType = value!;
-      ui.empty(columnTypeDiv);
-      switch (value) {
-      case AGGR_TYPE: {
-        updateColTypeDiv(aggrTypesChoice);
-        break;
-      }
-      case CHART_TYPE: {
-        updateColTypeDiv(chartTypesChoice);
-        break;
-      }
-      case STAT_TYPE: {
-        updateColTypeDiv(statTypesChoice);
-        break;
-      }
-      }
+    const colTypeInput = ui.input.choice('Column type', {
+      value: Object.keys(COL_TYPES)[0], items: Object.keys(COL_TYPES),
     });
 
+    const aggrTypesChoice = ui.input.choice('Function', {
+      value: Object.keys(COL_TYPES[AGGR_TYPE])[0],
+      items: Object.keys(COL_TYPES[AGGR_TYPE]),
+    });
+    const chartTypesChoice = ui.input.choice('Chart', {
+      value: Object.keys(COL_TYPES[CHART_TYPE])[0],
+      items: Object.keys(COL_TYPES[CHART_TYPE]),
+    });
+    const statTypesChoice = ui.input.choice('Statistic', {
+      value: Object.keys(COL_TYPES[STAT_TYPE])[0],
+      items: Object.keys(COL_TYPES[STAT_TYPE]),
+    });
+
+    let currentFuncChoice = aggrTypesChoice;
+
+    colTypeInput.onChanged.subscribe((value) => {
+      const oldInputRoot = currentFuncChoice.root;
+      switch (value) {
+      case AGGR_TYPE:
+        currentFuncChoice = aggrTypesChoice;
+        break;
+      case CHART_TYPE:
+        currentFuncChoice = chartTypesChoice;
+        break;
+      case STAT_TYPE:
+        currentFuncChoice = statTypesChoice;
+        break;
+      }
+      oldInputRoot.replaceWith(currentFuncChoice.root);
+    });
+
+    const form = ui.form([columnInput, colTypeInput, currentFuncChoice]);
+
     ui.dialog('Add column')
-      .add(ui.form([
-        columnInput,
-        colTypeInput,
-        //@ts-ignore
-        columnTypeDiv,
-      ]))
+      .add(form)
       .onOK(() => {
-        this.checkColExistsAndAdd(columnInput.value!.name, currentColType, currentFuncChoice.value!);
+        this.checkColExistsAndAdd(columnInput.value!.name, colTypeInput.value!, currentFuncChoice.value!);
       })
       .show();
   }
@@ -222,6 +222,7 @@ export class GroupAnalysisViewer extends DG.JsViewer {
       if (col) {
         columnToAdd.gridColName = col.name;
         this.analyzedColumns.push(columnToAdd);
+        this.analyzedColumnsEncoded = JSON.stringify(this.analyzedColumns);
         this.addColumnAndSetWidth(col, type);
       }
     }

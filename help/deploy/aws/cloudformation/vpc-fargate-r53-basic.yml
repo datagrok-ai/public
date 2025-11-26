@@ -235,7 +235,7 @@ Parameters:
     Type: AWS::EC2::VPC::Id
   DatagrokVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|stable|bleeding-edge
-    Default: 1.26.0
+    Default: 1.26.5
     Description: Enter Datagrok docker image version.
     Type: String
   GpuAMI:
@@ -296,7 +296,7 @@ Parameters:
     Type: String
   GrokConnectVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
-    Default: 2.4.0
+    Default: 2.5.2
     Description: Enter Grok Connect docker image version.
     Type: String
   GrokPipeVersion:
@@ -306,7 +306,7 @@ Parameters:
     Type: String
   GrokSpawnerVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
-    Default: 1.11.1
+    Default: 1.11.4
     Description: Enter Grok Spawner docker image version.
     Type: String
   InternetIngressAccess:
@@ -337,7 +337,7 @@ Parameters:
     Type: String
   JKGVersion:
     AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
-    Default: 1.15.0
+    Default: 1.16.2
     Description: Enter Datagrok Jupyter Kernel Gateway docker image version.
     Type: String
   Postfix:
@@ -2935,8 +2935,7 @@ Resources:
           Value:
             Fn::Sub: ${AWS::Region}
         - Name: GROK_SPAWNER_DATAGROK_ECS__LAUNCH_TYPE
-          Value:
-            Fn::Sub: EC2
+          Value: EC2
         - Name: GROK_SPAWNER_DATAGROK_ECS__SUBNETS
           Value:
             Fn::Sub:
@@ -2970,8 +2969,7 @@ Resources:
           Value:
             Fn::Sub: ${AWS::Region}
         - Name: GROK_SPAWNER_CVM_ECS__LAUNCH_TYPE
-          Value:
-            Fn::Sub: EC2
+          Value: EC2
         - Name: GROK_SPAWNER_CVM_ECS__SUBNETS
           Value:
             Fn::Sub:

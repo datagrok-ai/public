@@ -11,7 +11,7 @@ import * as rxjs from "rxjs";
 import {Subscription} from 'rxjs';
 import {filter, map} from 'rxjs/operators';
 import {Grid, Point, Rect} from "./grid";
-import {FormulaLinesHelper} from "./helpers";
+import {FormulaLinesHelper, AnnotationRegionsHelper} from "./helpers";
 import * as interfaces from "./interfaces/d4";
 import dayjs from "dayjs";
 import {TableView, View} from "./views/view";
@@ -20,6 +20,44 @@ import {ViewerEvent} from './api/d4.api.g';
 declare let DG: any;
 declare let ui: any;
 let api = (typeof window !== 'undefined' ? window : global.window) as any;
+
+
+/**
+ * Provides metadata about the widget (such as name, description, available events and properties)
+ * without having to instantiate it.
+ * Used for command palettes, AI, etc
+ * */
+export class WidgetDescriptor {
+  dart: any;
+  _props?: Property[];
+
+  /** Creates a widget descriptors from the Dart instance. Do not call directly. */
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  /** Returns all registered widget descriptors. */
+  static getDescriptors(): WidgetDescriptor[] { return api.grok_WidgetDescriptor_GetDescriptors(); }
+
+  /** Returns the descriptor with the specified name. */
+  static getByName(name: string): WidgetDescriptor | null { return api.grok_WidgetDescriptor_GetByName(name); }
+
+  /** Widget name. Save as {@link Viewer.type} */
+  get name(): string { return api.grok_WidgetDescriptor_Get_Name(this.dart); }
+
+  /** Widget synonyms (mostly used for AI) */
+  get synonyms(): string[] { return api.grok_WidgetDescriptor_Get_Synonyms(this.dart); }
+
+  /** Widget description */
+  get description(): string { return api.grok_WidgetDescriptor_Get_Description(this.dart); }
+
+  /** Widget properties */
+  get properties(): Property[] { return this._props ??= api.grok_WidgetDescriptor_Get_Properties(this.dart); }
+
+  /** Creates an icon for that widget. */
+  createIcon(): Element { return api.grok_WidgetDescriptor_CreateIcon(this.dart); }
+}
+
 
 /**
  * Represents a {@link https://datagrok.ai/help/visualize/viewers | viewer}.
@@ -55,6 +93,10 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
   set filter(f: BitSet) {
     this._filter = f;
   }
+
+  /** Descriptor of this widget. */
+  get descriptor(): WidgetDescriptor { return api.grok_Viewer_Get_Descriptor(this.dart); }
+
   get onDataEvent(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event'); }
   get onTooltipCreated(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-tooltip')); }
   get onDataSelected(): rxjs.Observable<ViewerEvent> { return this.onEvent('d4-data-event').pipe(filter((e) => e.type == 'd4-select')); }
@@ -169,8 +211,8 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return new DG.Grid(api.grok_Viewer_Grid(t.dart, _toJson(options)));
   }
 
-  static histogram(t: DataFrame, options?: Partial<interfaces.IHistogramSettings>): Viewer<interfaces.IHistogramSettings> {
-    return new Viewer(api.grok_Viewer_Histogram(t.dart, _toJson(options)));
+  static histogram(t: DataFrame, options?: Partial<interfaces.IHistogramSettings>): HistogramViewer {
+    return new HistogramViewer(api.grok_Viewer_Histogram(t.dart, _toJson(options)));
   }
 
   static barChart(t: DataFrame, options?: Partial<interfaces.IBarChartSettings>): Viewer<interfaces.IBarChartSettings> {
@@ -181,8 +223,8 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return new DG.Grid(Viewer.fromType(VIEWER.HEAT_MAP, t, options).dart);
   }
 
-  static boxPlot(t: DataFrame, options?: Partial<interfaces.IBoxPlotSettings>): Viewer<interfaces.IBoxPlotSettings> {
-    return new Viewer(api.grok_Viewer_BoxPlot(t.dart, _toJson(options)));
+  static boxPlot(t: DataFrame, options?: Partial<interfaces.IBoxPlotSettings>): BoxPlot {
+    return new BoxPlot(api.grok_Viewer_BoxPlot(t.dart, _toJson(options)));
   }
 
   static filters(t: DataFrame, options?: Partial<interfaces.IFiltersSettings>): Viewer<interfaces.IFiltersSettings> {
@@ -193,8 +235,8 @@ export class Viewer<TSettings = any> extends Widget<TSettings> {
     return new ScatterPlotViewer(api.grok_Viewer_ScatterPlot(t.dart, _toJson(options)));
   }
 
-  static lineChart(t: DataFrame, options?: Partial<interfaces.ILineChartSettings>): Viewer<interfaces.ILineChartSettings> {
-    return new Viewer(api.grok_Viewer_LineChart(t.dart, _toJson(options)));
+  static lineChart(t: DataFrame, options?: Partial<interfaces.ILineChartSettings>): LineChartViewer {
+    return new LineChartViewer(api.grok_Viewer_LineChart(t.dart, _toJson(options)));
   }
 
   static network(t: DataFrame, options?: Partial<interfaces.INetworkDiagramSettings>): Viewer<interfaces.INetworkDiagramSettings> {
@@ -359,7 +401,7 @@ export class JsViewer extends Viewer {
   addRowSourceAndFormula() {
     this.rowSource = this.string('rowSource', 'Filtered',
         { choices: ['All', 'Filtered', 'Selected', 'SelectedOrCurrent', 'FilteredSelected', 'MouseOverGroup', 'CurrentRow', 'MouseOverRow']});
-    this.formulaFilter = this.string('filter', '', {fieldName: 'formulaFilter'});
+    this.formulaFilter = this.string('filter', '', {fieldName: 'formulaFilter', category: 'Data'});
   }
 
   onFrameAttached(dataFrame: DataFrame): void {
@@ -428,6 +470,12 @@ export class JsViewer extends Viewer {
   /** Registers a string property with the specified name and defaultValue */
   protected string(propertyName: ViewerPropertyType, defaultValue: string | null = null, options: { [key: string]: any } & IProperty | null = null): string {
     return this.addProperty(propertyName, TYPE.STRING, defaultValue, options);
+  }
+
+  protected choices<T extends string>(propertyname: string, defaultValue: T, choices: T[], options: { [key: string]: any } & IProperty | null = null): T {
+    options = options ?? {};
+    options['choices'] = choices;
+    return this.addProperty(propertyname, TYPE.STRING, defaultValue, options);
   }
 
   /** Registers a string list property with the specified name and defaultValue */
@@ -527,18 +575,31 @@ export class LineChartViewer extends Viewer<interfaces.ILineChartSettings> {
   }
 
   get activeFrame(): DataFrame {
-    return api.grok_LineChartViewer_activeFrame(this.dart);
+    return api.grok_LineChartViewer_Get_ActiveFrame(this.dart);
   }
 
   resetView(): void{
     api.grok_LineChartViewer_ResetView(this.dart);
   }
 
+  worldToScreen(x: number, y: number, chartIdx: number): Point {
+    return Point.fromXY(api.grok_LineChartViewer_WorldToScreen(this.dart, x, y, chartIdx));
+  }
+
+  screenToWorld(x: number, y: number): Point { return Point.fromXY(api.grok_LineChartViewer_ScreenToWorld(this.dart, x, y));}
+
   get onAfterDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-after-draw-scene'); }
   get onBeforeDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-before-draw-scene'); }
   get onZoomed(): rxjs.Observable<null> { return this.onEvent('d4-linechart-zoomed'); }
   get onLineSelected(): rxjs.Observable<EventData<LineChartLineArgs>> { return this.onEvent('d4-linechart-line-selected'); }
   get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-linechart-reset-view'); }
+
+  enableAnnotationRegionDrawing(lassoMode?: boolean, onAfterDraw?: (region: { [key: string]: unknown }) => void): void {
+    api.grok_LineChartViewer_EnableAnnotationRegionDrawing(this.dart, lassoMode ?? null,
+      onAfterDraw ? (region: unknown) => onAfterDraw(DG.toJs(region)) : null);
+  }
+
+  disableAnnotationRegionDrawing(): void { api.grok_LineChartViewer_DisableAnnotationRegionDrawing(this.dart); }
 }
 
 /** 2D scatter plot */
@@ -587,8 +648,12 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotSettings> {
   getMarkerTypes(): Uint32Array { return api.grok_ScatterPlotViewer_GetMarkerTypes(this.dart); }
   getMarkerColor(rowIdx: number): number { return api.grok_ScatterPlotViewer_GetMarkerColor(this.dart, rowIdx); }
   getMarkerColors(): Uint32Array { return api.grok_ScatterPlotViewer_GetMarkerColors(this.dart); }
-
-
+  enableAnnotationRegionDrawing(lassoMode?: boolean, onAfterDraw?: (region: { [key: string]: unknown }) => void): void {
+    api.grok_ScatterPlotViewer_EnableAnnotationRegionDrawing(this.dart, lassoMode ?? null,
+      onAfterDraw ? (region: unknown) => onAfterDraw(DG.toJs(region)) : null);
+  }
+  disableAnnotationRegionDrawing(): void { api.grok_ScatterPlotViewer_DisableAnnotationRegionDrawing(this.dart); }
+  
   get onZoomed(): rxjs.Observable<Rect> { return this.onEvent('d4-scatterplot-zoomed'); }
   get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-scatterplot-reset-view'); }
   get onViewportChanged(): rxjs.Observable<Rect> { return this.onEvent('d4-viewport-changed'); }
@@ -697,10 +762,12 @@ export class ViewerMetaHelper {
   private readonly _viewer: Viewer;
 
   readonly formulaLines: ViewerFormulaLinesHelper;
+  readonly annotationRegions: ViewerAnnotationRegionsHelper;
 
   constructor(viewer: Viewer) {
     this._viewer = viewer;
     this.formulaLines = new ViewerFormulaLinesHelper(this._viewer);
+    this.annotationRegions = new ViewerAnnotationRegionsHelper(this._viewer);
   }
 }
 
@@ -730,6 +797,30 @@ export class ViewerFormulaLinesHelper extends FormulaLinesHelper {
       api.grok_PropMixin_SetPropertyValue(innerLook, 'formulaLines', value);
     } else
       this.viewer.props['formulaLines'] = value;
+  }
+
+  constructor(viewer: Viewer) {
+    super();
+    this.viewer = viewer;
+  }
+}
+
+export class ViewerAnnotationRegionsHelper extends AnnotationRegionsHelper {
+  readonly viewer: Viewer;
+
+  get storage(): string {
+    if (this.viewer.getOptions()['type'] === DG.VIEWER.TRELLIS_PLOT) {
+      let innerLook = this.viewer.props['innerViewerLook'];
+      return api.grok_PropMixin_GetPropertyValue(innerLook, 'annotationRegions');
+    }
+    return this.viewer.props['annotationRegions'];
+  }
+  set storage(value: string) {
+    if (this.viewer.getOptions()['type'] === DG.VIEWER.TRELLIS_PLOT) {
+      let innerLook = this.viewer.props['innerViewerLook'];
+      api.grok_PropMixin_SetPropertyValue(innerLook, 'annotationRegions', value);
+    } else
+      this.viewer.props['annotationRegions'] = value;
   }
 
   constructor(viewer: Viewer) {

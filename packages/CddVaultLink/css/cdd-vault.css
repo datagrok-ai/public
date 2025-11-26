@@ -73,3 +73,16 @@
 .cdd-search-vault-tab .d4-accordion-pane-header {
     font-weight: bold;
 }
+
+.cdd-filters-button-icon {
+   color:#40607f;
+   width: 24px;
+   height: 24px;
+   padding: 8px;
+   cursor: pointer;
+   display: none;
+}
+
+.cdd-filters-button-icon-show {
+   display: flex;
+}

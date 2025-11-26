@@ -9,14 +9,12 @@ import * as DG from 'datagrok-api/dg';
 //meta.icon: images/cdd-icon-small.png
 //meta.browsePath: Chem
 export async function cddVaultApp(path: string, filter: string) : Promise<any> {
-  return PackageFunctions.cddVaultApp(path, filter);
+  return await PackageFunctions.cddVaultApp(path, filter);
 }
 
-//name: cddVaultAppTreeBrowser
 //input: dynamic treeNode 
-//meta.role: appTreeBrowser
 export async function cddVaultAppTreeBrowser(treeNode: any) : Promise<void> {
-  PackageFunctions.cddVaultAppTreeBrowser(treeNode);
+  await PackageFunctions.cddVaultAppTreeBrowser(treeNode);
 }
 
 //name: Databases | CDD Vault
@@ -27,11 +25,10 @@ export function molColumnPropertyPanel(molecule: string) : any {
   return PackageFunctions.molColumnPropertyPanel(molecule);
 }
 
-//name: CDDVaultSearchEditor
 //tags: editor
 //input: funccall call 
 export async function CDDVaultSearchEditor(call: DG.FuncCall) : Promise<void> {
-  PackageFunctions.CDDVaultSearchEditor(call);
+  await PackageFunctions.CDDVaultSearchEditor(call);
 }
 
 //name: Get Vault Stats
@@ -41,7 +38,7 @@ export async function CDDVaultSearchEditor(call: DG.FuncCall) : Promise<void> {
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
 export async function getVaultStats(vaultId: number, vaultName: string) : Promise<string> {
-  return PackageFunctions.getVaultStats(vaultId, vaultName);
+  return await PackageFunctions.getVaultStats(vaultId, vaultName);
 }
 
 //name: Get Vaults
@@ -49,7 +46,7 @@ export async function getVaultStats(vaultId: number, vaultName: string) : Promis
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
 export async function getVaults() : Promise<string> {
-  return PackageFunctions.getVaults();
+  return await PackageFunctions.getVaults();
 }
 
 //name: Get Molecules
@@ -59,7 +56,7 @@ export async function getVaults() : Promise<string> {
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
 export async function getMolecules(vaultId: number, moleculesIds: string) : Promise<any> {
-  return PackageFunctions.getMolecules(vaultId, moleculesIds);
+  return await PackageFunctions.getMolecules(vaultId, moleculesIds);
 }
 
 //name: Get Molecules Async
@@ -70,7 +67,7 @@ export async function getMolecules(vaultId: number, moleculesIds: string) : Prom
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
 export async function getMoleculesAsync(vaultId: number, moleculesIds: string, timeoutMinutes: number) : Promise<any> {
-  return PackageFunctions.getMoleculesAsync(vaultId, moleculesIds, timeoutMinutes);
+  return await PackageFunctions.getMoleculesAsync(vaultId, moleculesIds, timeoutMinutes);
 }
 
 //name: Get Protocols Async
@@ -80,7 +77,7 @@ export async function getMoleculesAsync(vaultId: number, moleculesIds: string, t
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
 export async function getProtocolsAsync(vaultId: number, timeoutMinutes: number) : Promise<string> {
-  return PackageFunctions.getProtocolsAsync(vaultId, timeoutMinutes);
+  return await PackageFunctions.getProtocolsAsync(vaultId, timeoutMinutes);
 }
 
 //name: Get Collections Async
@@ -90,7 +87,7 @@ export async function getProtocolsAsync(vaultId: number, timeoutMinutes: number)
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
 export async function getCollectionsAsync(vaultId: number, timeoutMinutes: number) : Promise<string> {
-  return PackageFunctions.getCollectionsAsync(vaultId, timeoutMinutes);
+  return await PackageFunctions.getCollectionsAsync(vaultId, timeoutMinutes);
 }
 
 //name: Get Saved Searches
@@ -99,7 +96,7 @@ export async function getCollectionsAsync(vaultId: number, timeoutMinutes: numbe
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
 export async function getSavedSearches(vaultId: number) : Promise<string> {
-  return PackageFunctions.getSavedSearches(vaultId);
+  return await PackageFunctions.getSavedSearches(vaultId);
 }
 
 //name: Get Saved Search Results
@@ -110,13 +107,13 @@ export async function getSavedSearches(vaultId: number) : Promise<string> {
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
 export async function getSavedSearchResults(vaultId: number, searchId: number, timeoutMinutes: number) : Promise<any> {
-  return PackageFunctions.getSavedSearchResults(vaultId, searchId, timeoutMinutes);
+  return await PackageFunctions.getSavedSearchResults(vaultId, searchId, timeoutMinutes);
 }
 
 //name: CDD Vault Search Async
 //input: int vaultId { nullable: true }
 //input: string structure { category: Structure; nullable: true; semType: Molecule; description: SMILES; cxsmiles or mol string }
-//input: string structure_search_type { category: Structure; nullable: true; choices: ['exact','similarity','substructure']; description: SMILES; cxsmiles or mol string }
+//input: string structure_search_type { category: Structure; nullable: true; choices: ["exact","similarity","substructure"]; description: SMILES; cxsmiles or mol string }
 //input: double structure_similarity_threshold { category: Structure; nullable: true; description: A number between 0 and 1 }
 //input: int protocol { category: Protocol; nullable: true; description: Protocol id }
 //input: int run { category: Protocol; nullable: true; description: Specific run id }
@@ -125,7 +122,7 @@ export async function getSavedSearchResults(vaultId: number, searchId: number, t
 //meta.cache.invalidateOn: 0 0 * * *
 //editor: Cddvaultlink:CDDVaultSearchEditor
 export async function cDDVaultSearchAsync(vaultId: number, structure?: string, structure_search_type?: any, structure_similarity_threshold?: number, protocol?: number, run?: number) : Promise<any> {
-  return PackageFunctions.cDDVaultSearchAsync(vaultId, structure, structure_search_type, structure_similarity_threshold, protocol, run);
+  return await PackageFunctions.cDDVaultSearchAsync(vaultId, structure, structure_search_type, structure_similarity_threshold, protocol, run);
 }
 
 //name: CDD Vault search
@@ -148,7 +145,7 @@ export async function cDDVaultSearchAsync(vaultId: number, structure?: string, s
 //input: string projects { category: Projects; nullable: true; description: Comma separated list of project ids }
 //input: string data_sets { category: Datasets; nullable: true; description: Comma separated list of dataset ids }
 //input: string structure { category: Structure; nullable: true; semType: Molecule; description: SMILES,cxsmiles or mol string }
-//input: string structure_search_type { category: Structure; nullable: true; choices: ['exact','similarity','substructure']; description: SMILES,cxsmiles or mol string }
+//input: string structure_search_type { category: Structure; nullable: true; choices: ["exact","similarity","substructure"]; description: SMILES,cxsmiles or mol string }
 //input: double structure_similarity_threshold { category: Structure; nullable: true; description: A number between 0 and 1 }
 //input: string inchikey { category: Structure; nullable: true; description: Use this parameter instead of the 'structure' and 'structure_search_type' parameters }
 //input: list<string> molecule_fields { category: Filelds; nullable: true; description: Use this parameter to limit the number of Molecule UDF Fields to return }
@@ -158,13 +155,13 @@ export async function cDDVaultSearchAsync(vaultId: number, structure?: string, s
 //meta.cache: all
 //meta.cache.invalidateOn: 0 0 * * *
 export async function cDDVaultSearch(vaultId: number, molecules: string, names: string, include_original_structures: boolean, only_ids: boolean, only_batch_ids: boolean, created_before: string, created_after: string, modified_before: string, modified_after: string, batch_created_before: string, batch_created_after: string, batch_field_before_name: string, batch_field_before_date: string, batch_field_after_name: string, batch_field_after_date: string, projects: string, data_sets: string, structure: string, structure_search_type: any, structure_similarity_threshold: number, inchikey: string, molecule_fields: string[], batch_fields: string[], fields_search: string[]) : Promise<any> {
-  return PackageFunctions.cDDVaultSearch(vaultId, molecules, names, include_original_structures, only_ids, only_batch_ids, created_before, created_after, modified_before, modified_after, batch_created_before, batch_created_after, batch_field_before_name, batch_field_before_date, batch_field_after_name, batch_field_after_date, projects, data_sets, structure, structure_search_type, structure_similarity_threshold, inchikey, molecule_fields, batch_fields, fields_search);
+  return await PackageFunctions.cDDVaultSearch(vaultId, molecules, names, include_original_structures, only_ids, only_batch_ids, created_before, created_after, modified_before, modified_after, batch_created_before, batch_created_after, batch_field_before_name, batch_field_before_date, batch_field_after_name, batch_field_after_date, projects, data_sets, structure, structure_search_type, structure_similarity_threshold, inchikey, molecule_fields, batch_fields, fields_search);
 }
 
 //name: CDD Vault search 2
 //input: int vaultId { nullable: true }
 //input: string structure { category: Structure; nullable: true; semType: Molecule; description: SMILES,cxsmiles or mol string }
-//input: string structure_search_type { category: Structure; nullable: true; choices: ['exact','similarity','substructure']; description: SMILES,cxsmiles or mol string }
+//input: string structure_search_type { category: Structure; nullable: true; choices: ["exact","similarity","substructure"]; description: SMILES,cxsmiles or mol string }
 //input: double structure_similarity_threshold { category: Structure; nullable: true; description: A number between 0 and 1 }
 //input: int protocol { category: Protocol; nullable: true; description: Protocol id }
 //input: int run { category: Protocol; nullable: true; description: Specific run id }
@@ -173,5 +170,5 @@ export async function cDDVaultSearch(vaultId: number, molecules: string, names: 
 //meta.cache.invalidateOn: 0 0 * * *
 //editor: Cddvaultlink:CDDVaultSearchEditor
 export async function cDDVaultSearch2(vaultId: number, structure?: string, structure_search_type?: any, structure_similarity_threshold?: number, protocol?: number, run?: number) : Promise<any> {
-  return PackageFunctions.cDDVaultSearch2(vaultId, structure, structure_search_type, structure_similarity_threshold, protocol, run);
+  return await PackageFunctions.cDDVaultSearch2(vaultId, structure, structure_search_type, structure_similarity_threshold, protocol, run);
 }

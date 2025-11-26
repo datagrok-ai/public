@@ -8,10 +8,10 @@
     "access": "public"
   },
   "friendlyName": "Tutorials",
-  "version": "1.7.0",
+  "version": "1.7.4",
   "description": "Helpers for creating tutorials",
   "dependencies": {
-    "@datagrok-libraries/compute-utils": "^1.40.1",
+    "@datagrok-libraries/compute-utils": "^1.44.9",
     "@datagrok-libraries/utils": "^4.5.7",
     "cash-dom": "^8.1.4",
     "datagrok-api": "^1.25.0",
@@ -32,10 +32,10 @@
   "scripts": {
     "link": "npm link",
     "link-api": "npm link datagrok-api",
-    "link-all": "npm link datagrok-api @datagrok-libraries/utils",
+    "link-all": "npm link datagrok-api @datagrok-libraries/utils @datagrok-libraries/compute-utils",
     "build": "grok check --soft && tsc",
     "lint": "eslint src --ext .ts",
     "lint-fix": "eslint src --ext .ts --fix",
-    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm run build"
+    "build-all": "npm --prefix ./../../js-api run build && npm --prefix ./../../libraries/utils run build && npm --prefix ./../../libraries/compute-utils run build && npm run build"
   }
 }

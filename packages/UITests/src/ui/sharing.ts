@@ -22,7 +22,7 @@ category('UI: Sharing', () => {
     } finally {
       await grok.dapi.scripts.delete(newScript);
     }
-  }, {skipReason: 'GROK-11670'});
+  });
 
   test('projects.ui', async () => {
     const newProject = DG.Project.create();
@@ -33,7 +33,7 @@ category('UI: Sharing', () => {
     } finally {
       await grok.dapi.projects.delete(newProject);
     }
-  }, {skipReason: 'GROK-11670'});
+  });
 
   test('connections.ui', async () => {
     const newConnection = DG.DataConnection.create(entityName, {
@@ -47,7 +47,7 @@ category('UI: Sharing', () => {
     } finally {
       await grok.dapi.connections.delete(newConnection);
     }
-  }, {skipReason: 'GROK-11670'});
+  });
 
   test('scripts.api', async () => {
     await testEntityAPI(DG.Script.create(''), grok.dapi.scripts);

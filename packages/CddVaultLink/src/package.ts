@@ -78,18 +78,18 @@ export class PackageFunctions{
               {
                 vaultId: vault.id, structure: '', structure_search_type: CDDVaultSearchType.SUBSTRUCTURE,
                 structure_similarity_threshold: 0, protocol: item.id, run: undefined
-              }, vault.name, treeNode);
+              }, vault, treeNode);
             grok.shell.windows.context.visible = true;
             grok.shell.o = createObjectViewer(item, item.name);
           }
         );
 
-        //saved searches node - only asyn method is available (so createCDDTableViewWithPreview function is not applicable)
+        //saved searches node - only async method is available (so createCDDTableViewWithPreview function is not applicable)
         let savedSearches: SavedSearch[] | null = null;
         createNestedCDDNode(savedSearches, SAVED_SEARCHES_TAB, vaultNode, 'CDDVaultLink:getSavedSearches', { vaultId: vault.id }, treeNode, vault,
           async (item: any) => {
             createCDDTableView([SAVED_SEARCHES_TAB, item.name], `Waiting for ${item.name} results`, 'CDDVaultLink:getSavedSearchResults',
-              { vaultId: vault.id, searchId: item.id, timeoutMinutes: 5}, vault.name, treeNode);
+              { vaultId: vault.id, searchId: item.id, timeoutMinutes: 5}, vault, treeNode);
           }
         );
 
@@ -101,33 +101,29 @@ export class PackageFunctions{
             if (!item.molecules || !item.molecules.length) {
               addNodeWithEmptyResults(item.name, `No molecules found for ${item.name} collection`);
             }
-            createCDDTableViewWithPreview([COLLECTIONS_TAB, item.name], `Waiting for ${item.name} results`,
+            //use sync function with limit of returned entities, need to implement running of async function on the background (by clicking some icon or so)
+            createCDDTableView([COLLECTIONS_TAB, item.name], `Waiting for ${item.name} results`,
               'CDDVaultLink:getMolecules',
               {
                 vaultId: vault.id,
                 moleculesIds: item.molecules.join(',')
-              },
-              'CDDVaultLink:getMoleculesAsync',
-              {
-                vaultId: vault.id,
-                moleculesIds: item.molecules.join(','),
-                timeoutMinutes: 5
-              }, vault.name, treeNode);
+              }, vault, treeNode);
           }
         );
 
         //molecules node
         const moleculesNode = vaultNode.item(MOLECULES_TAB);
         moleculesNode.onSelected.subscribe(async (_) => {
-          createCDDTableViewWithPreview([MOLECULES_TAB], 'Waiting for molecules', 'CDDVaultLink:getMolecules',
-            {vaultId: vault.id, moleculesIds: ''}, 'CDDVaultLink:getMoleculesAsync', { vaultId: vault.id, moleculesIds: '', timeoutMinutes: 5}, vault.name, treeNode);
+          //use sync function with limit of returned entities, need to implement running of async function on the background (by clicking some icon or so)
+          createCDDTableView([MOLECULES_TAB], 'Waiting for molecules', 'CDDVaultLink:getMolecules',
+            {vaultId: vault.id, moleculesIds: ''}, vault, treeNode, true);
         });
 
-        //search node
-        const searchNode = vaultNode.item(SEARCH_TAB);
-        searchNode.onSelected.subscribe(() => {
-          createSearchNode(vault, treeNode);
-        });
+        // //search node - serach is not implemented as docked panel in molecules tab
+        // const searchNode = vaultNode.item(SEARCH_TAB);
+        // searchNode.onSelected.subscribe(() => {
+        //   createSearchNode(vault, treeNode);
+        // });
       //TODO! unlock other tabs
       // vaultNode.group('Plates');
       // vaultNode.group('Assays');

@@ -7,9 +7,9 @@
     align-items: center;
     cursor: pointer;
     width: 200px;
-    height: 210px;
+    height: 240px;
     min-width: 200px;
-    min-height: 210px;
+    min-height: 240px;
 }
 
 .monomer-card-info-rules {

@@ -1,4 +1,6 @@
-# Python API
+---
+title: Python API
+---
 
 The datagrok-api Python library is designed for integration with the Datagrok platform via REST API. It provides a convenient 
 interface for working with data, tables, files, and other Datagrok objects.

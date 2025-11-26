@@ -1,5 +1,5 @@
 ---
-title: Controls
+title: Keyboard shortcuts
 keywords:
  - shortcuts
  - controls
@@ -56,7 +56,7 @@ different actions. For details, see the documentation for such tool or viewer.
 
    * Manually changing a cell value via a double-click
    * Clearing the [layout](../../visualize/view-layout.md)
-   * Deleting rows or columns
+   * Deleting rows
    * Closing a viewer by clicking on the **x** icon
  
 <!--

@@ -30,10 +30,6 @@ export namespace funcs {
     return await grok.functions.call('PowerPack:ActivityDashboardWidget', {});
   }
 
-  export async function recentProjectsWidget(): Promise<any> {
-    return await grok.functions.call('PowerPack:RecentProjectsWidget', {});
-  }
-
   export async function communityWidget(): Promise<any> {
     return await grok.functions.call('PowerPack:CommunityWidget', {});
   }
@@ -44,10 +40,6 @@ export namespace funcs {
 
   export async function htmlWidget(): Promise<any> {
     return await grok.functions.call('PowerPack:HtmlWidget', {});
-  }
-
-  export async function learnWidget(): Promise<any> {
-    return await grok.functions.call('PowerPack:LearnWidget', {});
   }
 
   export async function kpiWidget(): Promise<any> {
@@ -62,12 +54,19 @@ export namespace funcs {
     return await grok.functions.call('PowerPack:FormulaWidget', { col });
   }
 
+  /**
+  Tries to find a query which has the similar pattern as the prompt user entered and executes it
+  */
+  export async function llmSearchQueryProvider(prompt: string ): Promise<any> {
+    return await grok.functions.call('PowerPack:LlmSearchQueryProvider', { prompt });
+  }
+
   export async function powerPackSearchProvider(): Promise<any> {
     return await grok.functions.call('PowerPack:PowerPackSearchProvider', {});
   }
 
-  export async function formulaLinesDialog(src?: DG.DataFrame ): Promise<void> {
-    return await grok.functions.call('PowerPack:FormulaLinesDialog', { src });
+  export async function formulaLinesDialog(src?: DG.DataFrame , currentIndexToSet?: number , isDataFrameValue?: boolean , isAnnotationArea?: boolean ): Promise<void> {
+    return await grok.functions.call('PowerPack:FormulaLinesDialog', { src, currentIndexToSet, isDataFrameValue, isAnnotationArea });
   }
 
   export async function powerPackInit(): Promise<void> {

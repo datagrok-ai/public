@@ -1,38 +1,279 @@
+/* eslint-disable max-len */
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {u2} from "@datagrok-libraries/utils/src/u2";
-export * from './package.g';
+
+import { MolTrackDockerService } from './services/moltrack-docker-service';
+import { excludedScopes, MOLTRACK_ENTITY_LEVEL, MOLTRACK_IS_STATIC_FIELD, SAVED_SEARCHES_NODE, Scope, SEARCH_NODE } from './utils/constants';
+import { createSavedSearchesSatistics, createSearchExpandableNode, createSearchNode, createSearchView, getSavedSearches, handleSearchURL, loadSearchFields, molTrackSearchFieldsArr } from './views/search';
+import { registerAllData, registerAssayData, updateAllMolTrackSchemas } from './utils/registration-utils';
+import { batchView, compoundView, createPath, getQuickActionsWidget, getStatisticsWidget, initAssayRegisterView, initBulkRegisterView, initRegisterView, initSchemaView } from './utils/view-utils';
+import { flattened } from './utils/utils';
+import { molTrackPropPanel } from './widgets/moltrack-property-panel';
+import { registerSemanticTypes } from './utils/detectors';
+
 export const _package = new DG.Package();
 
+//tags: init
+export async function init(): Promise<void> {
+  try {
+    await grok.functions.call('Chem:initChemAutostart');
+  } catch (e) {}
+  registerSemanticTypes();
+  // This will be used for the updated docker setup later.
+  const connection = await grok.dapi.connections.filter('name = "moltrack"').first();
+  const queries = await grok.dapi.queries.filter(`connection.id = "${connection.id}"`).list();
+  for (const query of queries)
+    await (query.prepare()).call();
+}
 
-export class PackageFunctions {
-  @grok.decorators.app({
-    icon: 'images/cdd-icon-small.png',
-    browsePath: 'Chem',
-    name: 'CDD Vault'
-  })
-  static async molTrackApp(): Promise<DG.ViewBase> {
-    const appHeader = u2.appHeader({
-      iconPath: _package.webRoot + '/images/cdd-icon-big.png',
-      learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/MolTrack/README.md',
-      description: '- Chemical compound registration system\n' +
-        '- Analyze assay data\n' +
-        '- Find contextual information on molecules.\n'
+//name: initDB
+export async function initDB() {
+  await updateAllMolTrackSchemas();
+  await registerAssayData();
+  await registerAllData();
+}
+
+//tags: app
+//name: MolTrack
+//meta.icon: images/moltrack.png
+//input: string path {meta.url: true; optional: true}
+//output: view v
+//meta.browsePath: Chem
+export async function molTrackApp(path: string): Promise<DG.ViewBase> {
+  const url = new URL(window.location.href);
+  const corporateCompoundId = url.searchParams.get('corporate_compound_id');
+  const corporateBatchId = url.searchParams.get('corporate_batch_id');
+
+  const hasPath = !!path;
+  const isCompoundPath = hasPath && path.includes('Compound');
+  const isRegisterPath = hasPath && path.includes('Register');
+  const isBatchPath = hasPath && path.includes('Batch');
+  const isSchemaPath = hasPath && path.includes('Schema');
+  const isSearchPath = hasPath && (path.includes(SEARCH_NODE) || path.includes(SAVED_SEARCHES_NODE));
+  const isBulkPath = hasPath && path.includes('Bulk');
+  const isAssayPath = hasPath && path.includes('Assay');
+
+  const setPathAndReturn = (view: DG.View) => {
+    view.path = path;
+    return view;
+  };
+
+  try {
+    if (isSearchPath)
+      return await handleSearchURL(path);
+  } catch (e: any) {
+    grok.shell.error(e);
+  }
+
+  if (isBulkPath)
+    return setPathAndReturn(initBulkRegisterView());
+
+  if (isAssayPath)
+    return setPathAndReturn(initAssayRegisterView());
+
+  if (corporateCompoundId)
+    return await compoundView(corporateCompoundId);
+
+  if (corporateBatchId)
+    return await batchView(corporateBatchId);
+
+  if (isCompoundPath || isRegisterPath)
+    return setPathAndReturn(initRegisterView('Compound', false));
+
+  if (isBatchPath)
+    return setPathAndReturn(initRegisterView('Batch', false));
+
+  if (isSchemaPath)
+    return setPathAndReturn(await initSchemaView());
+
+  const statisticsWidget = await getStatisticsWidget(createSearchView);
+  const quickActionsWidget = getQuickActionsWidget();
+  const viewRoot = ui.divH([statisticsWidget, quickActionsWidget], { style: { gap: '50px' } });
+  return createSearchExpandableNode([''], async () => viewRoot);
+}
+
+//input: dynamic treeNode
+//input: view browseView
+export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseView: any) {
+  function createRegisterNode(label: string, initView: () => void) {
+    appNode.getOrCreateGroup('Register').item(label).onSelected.subscribe(initView);
+  }
+
+  appNode.getOrCreateGroup('Register').onSelected.subscribe(() => {
+    const view = initRegisterView('Compound');
+    view.path = createPath('Register');
+  });
+  createRegisterNode('Compound', () => initRegisterView('Compound'));
+  createRegisterNode('Batch', () => initRegisterView('Batch'));
+  createRegisterNode('Assay', () => initAssayRegisterView());
+  createRegisterNode('Bulk', () => initBulkRegisterView());
+  createRegisterNode('Schema', async () => await initSchemaView());
+
+  const searchNode = appNode.getOrCreateGroup(SEARCH_NODE);
+  const searchableScopes = Object.values(Scope)
+    .filter((scope) => !excludedScopes.includes(scope));
+  searchNode.onSelected.subscribe(() =>
+    createSearchExpandableNode([SEARCH_NODE], () => getStatisticsWidget(createSearchView)));
+
+  //search section
+  searchableScopes.forEach((scope) => createSearchNode(appNode, scope));
+
+  //saved searches section
+  const savedSearchesNode = appNode.getOrCreateGroup(SAVED_SEARCHES_NODE);
+  savedSearchesNode.onSelected.subscribe(() => createSearchExpandableNode([SAVED_SEARCHES_NODE], () => createSavedSearchesSatistics(undefined)));
+  Object.values(Scope)
+    .filter((scope) => !excludedScopes.includes(scope))
+    .forEach((scope) => {
+      const entityGroup = savedSearchesNode.getOrCreateGroup(`${scope.charAt(0).toUpperCase()}${scope.slice(1)}`);
+      entityGroup.onSelected.subscribe(() => createSearchExpandableNode([SAVED_SEARCHES_NODE, scope], () => createSavedSearchesSatistics(scope)));
+      const savedSearches = getSavedSearches(scope);
+      Object.keys(savedSearches).forEach((savedSearch) => {
+        const savedSearchNode = entityGroup.item(savedSearch);
+        savedSearchNode.onSelected
+          .subscribe(() => createSearchView(savedSearch, scope, JSON.parse(savedSearches[savedSearch]), true));
+      });
     });
-    return DG.View.fromRoot(ui.divV([
-      appHeader,
-      ui.wait(async () => (await grok.functions.call('MolTrack:getCompounds') as DG.DataFrame).plot.grid().root)
-    ]));
-  }
+}
 
-  @grok.decorators.func()
-  static async cddVaultAppTreeBrowser(
-    @grok.decorators.param({name:'treeNode'})  appNode: DG.TreeViewGroup) {
-  
-    appNode.group('Protocols');
-    appNode.group('Plates');
-    appNode.group('Assays');
-  }
+//name: fetchCompoundProperties
+//description: Retrieves all properties defined for the 'compound' scope
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 1 * *
+//output: string result
+export async function fetchCompoundProperties(): Promise<string> {
+  await MolTrackDockerService.init();
+  return await MolTrackDockerService.fetchCompoundProperties();
+}
+
+//name: fetchBatchProperties
+//description: Retrieves all properties defined for the 'batch' scope
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 1 * *
+//output: string result
+export async function fetchBatchProperties(): Promise<string> {
+  await MolTrackDockerService.init();
+  return await MolTrackDockerService.fetchBatchProperties();
+}
+
+//name: fetchSchema
+//description: Retrieves all dynamic fields
+//output: string result
+export async function fetchSchema(): Promise<string> {
+  await MolTrackDockerService.init();
+  const res = await MolTrackDockerService.fetchSchema();
+  return JSON.stringify(res);
+}
+
+//name: fetchDirectSchema
+//description: Retrieves all static fields
+//output: string result
+export async function fetchDirectSchema(): Promise<string> {
+  await MolTrackDockerService.init();
+  const res = await MolTrackDockerService.fetchDirectSchema();
+  return JSON.stringify(res);
+}
+
+//name: getCompoundByCorporateId
+//input: string corporateValue
+//output: object compound
+export async function getCompoundByCorporateId(corporateValue: string) {
+  await MolTrackDockerService.init();
+  return await MolTrackDockerService.getCompoundByCorporateId(corporateValue);
+}
+
+//name: getBatchByCorporateId
+//input: string corporateValue
+//output: object batch
+export async function getBatchByCorporateId(corporateValue: string) {
+  await MolTrackDockerService.init();
+  return await MolTrackDockerService.getBatchByCorporateId(corporateValue);
+}
+
+// name: registerMolTrackProperties
+// input: string jsonPayload
+// description: Registers compound properties in the MolTrack service using the provided JSON payload
+// output: string result
+export async function registerMolTrackProperties(jsonPayload: string): Promise<string> {
+  await MolTrackDockerService.init();
+  return MolTrackDockerService.updateSchema(jsonPayload);
+}
+
+//name: registerAssays
+//input: string assayPayload
+//output: string result
+export async function registerAssays(assayPayload: string): Promise<string> {
+  await MolTrackDockerService.init();
+  return await MolTrackDockerService.registerAssay(assayPayload);
+}
+
+//name: registerBulk
+//input: file csvFile
+//input: string scope
+//input: string mapping
+//input: string errorHandling
+//output: dataframe result
+export async function registerBulk(
+  csvFile: DG.FileInfo,
+  scope: string,
+  mapping: string,
+  errorHandling: string,
+): Promise<DG.DataFrame> {
+  await MolTrackDockerService.init();
+  return await MolTrackDockerService.registerBulk(csvFile, scope, mapping, errorHandling);
+}
+
+//name: search
+//input: string query
+//input: string entityEndpoint
+//output: dataframe df
+export async function search(query: string, entityEndpoint: string) {
+  await MolTrackDockerService.init();
+  return await MolTrackDockerService.search(JSON.parse(query), entityEndpoint);
+}
+
+//name: advancedSearch
+//description: Performs a structured MolTrack compound search. The caller must provide the "output": a list of fully-qualified field names to return; "filter": a structured filter tree describing search conditions.
+//input: list outputFields {description: List of fields to return. All fields must use MolTrack notation. Valid formats: "<table>.<field>" (direct database column) or "<table>.details.<property>" (dynamic detail property). Valid direct compound fields include (non-exhaustive): "compounds.created_at","compounds.updated_at","compounds.created_by","compounds.updated_by","compounds.canonical_smiles","compounds.original_molfile","compounds.molregno","compounds.inchi","compounds.inchikey","compounds.formula","compounds.hash_mol","compounds.hash_tautomer","compounds.hash_canonical_smiles","compounds.hash_no_stereo_smiles","compounds.hash_no_stereo_tautomer","compounds.is_archived".}
+//input: object filter {description: A structured boolean filter supporting simple and nested conditions. Simple format: {"field":"<field_name>","operator":"<operator>","value":<value>,"threshold":<number|null>} where threshold is required only for "IS SIMILAR". String operators: "=","!=","IN","STARTS WITH","ENDS WITH","LIKE","CONTAINS". Numeric operators: "<",">","<=",">=","RANGE" (expects {value:[min,max]}). Datetime operators: "BEFORE","AFTER","ON" (ISO 8601). Molecular operators (only for compounds.structure): "IS SIMILAR" (requires SMILES + numeric similarity threshold), "IS SUBSTRUCTURE OF", "HAS SUBSTRUCTURE". Complex nested conditions: {"operator":"AND"|"OR","conditions":[...]}. Notes: nested conditions may be arbitrarily deep, each branch must be simple or complex. Examples: simple {"field":"compounds.formula","operator":"=","value":"C6H6"}, complex {"operator":"AND","conditions":[{"field":"compounds.created_at","operator":"AFTER","value":"2025-01-01"},{"operator":"OR","conditions":[{"field":"compounds.formula","operator":"=","value":"C6H6"},{"field":"compounds.structure","operator":"IS SIMILAR","value":"c1ccccc1","threshold":0.8}]}]}.}
+//output: dataframe searchResult
+export async function advancedSearch(outputFields: string[], filter: any): Promise<DG.DataFrame> {
+  const level = 'compounds';
+  const molTrackSearchQuery = {
+    level: level,
+    output: outputFields,
+    filter: filter,
+    output_format: 'json',
+  };
+  await MolTrackDockerService.init();
+  const searchResultJson = await MolTrackDockerService.search(molTrackSearchQuery, level);
+  return DG.DataFrame.fromObjects(searchResultJson.data)!;
+}
+
+//name: retrieveEntity
+//input: string scope
+//output: dataframe result
+export async function retrieveEntity(scope: string, flatten: boolean = true): Promise<DG.DataFrame | undefined> {
+  await MolTrackDockerService.init();
+  const resultJson = await MolTrackDockerService.retrieveEntity(scope);
+  await loadSearchFields();
+  const dynamicProps = molTrackSearchFieldsArr ?
+    molTrackSearchFieldsArr.filter((it) => it.options[MOLTRACK_ENTITY_LEVEL] === scope && !it.options[MOLTRACK_IS_STATIC_FIELD]) : [];
+
+  const processedRes = flatten ?
+    resultJson.map((item: any) => flattened(item, dynamicProps)) :
+    resultJson;
+  return DG.DataFrame.fromObjects(processedRes);
+}
+
+//name: Databases | MolTrack
+//input: semantic_value id {semType: Grok ID}
+//tags: panel
+//output: widget res
+export async function getMoltrackPropPanelById(id: DG.SemanticValue): Promise<DG.Widget> {
+  const {value: idValue} = id;
+  await MolTrackDockerService.init();
+  const compound = await MolTrackDockerService.getCompoundByCorporateId(idValue);
+  return molTrackPropPanel(compound, id.cell.column);
 }

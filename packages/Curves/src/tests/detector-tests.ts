@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
-import {FitConstants} from '../fit/const';
+import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 
 
 category('detectors', () => {

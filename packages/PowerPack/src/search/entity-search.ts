@@ -173,7 +173,9 @@ export async function denialSearch(s: string, w?: DG.Widget): Promise<DG.Widget 
 let _homeDataConnectionNamePromise: Promise<string | null> | null = null;
 async function _getHomeConnectionName() {
   const currentUser = DG.User.current();
-  const currentUserHomeId = currentUser.home.id;
+  const currentUserHomeId = currentUser.home?.id;
+  if (!currentUserHomeId)
+    return null;
   const connection = await grok.dapi.connections.find(currentUserHomeId);
   if (!connection)
     return null;

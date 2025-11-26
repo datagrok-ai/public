@@ -21,14 +21,6 @@ function image(url: string) {
     return img;
 }
 
-const images = {
-    Bug: image(imgBug),
-    'New Feature': image(imgFeature),
-    Improvement: image(imgImprovement),
-    Epic: image(imgEpic),
-    Task: image(imgTask)
-}
-
 export class JiraGridCellHandler extends DG.ObjectHandler {
 
     get type(): string {
@@ -54,7 +46,7 @@ export class JiraGridCellHandler extends DG.ObjectHandler {
         return ui.wait(async () => {
             const issue = await issueData(x.value);
             if (!issue || issue === null)
-                return ui.divText('Issue not found');
+                return ui.divText('Issue was not found');
             const creds = await getJiraCreds();
             if (!creds)
                 return ui.div('There is no any creds to get tickets\'s data');
@@ -195,6 +187,13 @@ class JiraTicketGridCellRenderer extends BatchCellRenderer<JiraIssue> {
     currentTimeout: any = null;
     isRunning: boolean = false;
     loadedTickets: Set<string> = new Set<string>();
+    images: Record<string, HTMLImageElement> = {
+        Bug: image(imgBug),
+        'New Feature': image(imgFeature),
+        Improvement: image(imgImprovement),
+        Epic: image(imgEpic),
+        Task: image(imgTask)
+    };
 
     constructor() {
         super();
@@ -241,8 +240,8 @@ class JiraTicketGridCellRenderer extends BatchCellRenderer<JiraIssue> {
 
         const renderKey = () => {
             stRen.render(g, x + 17, y, w, keyHeight, gridCell, cellStyle);
-            if (props && (images as any)[props.Type]) {
-                g.drawImage((images as any)[props.Type], x + 4, y + 4, 16, 16);
+            if (props && (this.images as any)[props.Type]) {
+                g.drawImage((this.images as any)[props.Type], x + 4, y + 4, 16, 16);
             }
         };
 

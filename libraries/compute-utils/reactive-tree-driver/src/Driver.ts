@@ -14,6 +14,7 @@ import {ConsistencyInfo, FuncCallStateInfo, MetaCallInfo} from './runtime/StateT
 import {ValidationResult} from './data/common-types';
 import {DriverLogger} from './data/Logger';
 import {LinksData} from './runtime/LinksState';
+import {getStartedOrNull} from '../../shared-utils/utils';
 
 export class Driver {
   public currentMetaCallData$ = new BehaviorSubject<MetaCallInfo>({});
@@ -244,6 +245,7 @@ export class Driver {
         isFavorite,
         description: call?.options.description,
         tags: call?.options.tags,
+        started: getStartedOrNull(call),
       })),
       tap(() => this.wasEdited$.next(false)),
     );
@@ -281,6 +283,7 @@ export class Driver {
           description: metaCall?.options.description,
           isFavorite,
           tags: metaCall?.options.tags,
+          started: getStartedOrNull(metaCall),
         });
         this.wasEdited$.next(false);
       }),

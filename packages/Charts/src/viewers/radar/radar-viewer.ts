@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
-import {HIGHLIGHT_WIDTH, LINE_MAX_WIDTH, LINE_MIN_WIDTH, MAXIMUM_COLUMN_NUMBER, MAXIMUM_ROW_NUMBER, MAXIMUM_SERIES_NUMBER, MOUSE_OVER_GROUP_COLOR, RadarIndicator, option} from './constants';
+import {HIGHLIGHT_WIDTH, LINE_MAX_WIDTH, LINE_MIN_WIDTH, MAXIMUM_COLUMN_NUMBER, MAXIMUM_ROW_NUMBER, MAXIMUM_SERIES_NUMBER, MOUSE_OVER_GROUP_COLOR, RadarIndicator} from './constants';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 import { EChartViewer } from '../echart/echart-viewer';
 import _ from 'lodash';
@@ -43,6 +43,9 @@ export class RadarViewer extends EChartViewer {
   columns: DG.Column[] = [];
   title: string;
 
+  private static _canvas: HTMLCanvasElement | null = null;
+  private static _ctx: CanvasRenderingContext2D | null = null;
+
   constructor() {
     super();
     this.title = this.string('title', 'Radar');
@@ -65,10 +68,51 @@ export class RadarViewer extends EChartViewer {
     this.showValues = this.bool('showValues', false);
     this.valuesColumnNames = this.addProperty('valuesColumnNames', DG.TYPE.COLUMN_LIST, null,
       {columnTypeFilter: DG.TYPE.NUMERICAL, category: 'Value'});
+
+    this.option = {
+      animation: false,
+      silent: false,
+      legend: {
+        show: true,
+      },
+      color: ['#b0d7ff', '#4fbcf7', '#4287cc'],
+      radar: {
+        axisName: {
+          backgroundColor: 'transparent',
+          fontSize: '13px',
+          fontFamily: 'Roboto',
+          padding: [3, 5],
+          color: '#4d5261',
+        },
+        radius: '60%',
+        indicator: [],
+      },
+      tooltip: {
+        show: false,
+      },
+      series: [{
+        type: 'radar',
+        data: [],
+      }, {
+        type: 'radar',
+        data: [],
+      }, {
+        type: 'radar',
+        data: [],
+      }],
+    };
+  }
+
+  private static getCanvasContext(): CanvasRenderingContext2D {
+    if (!RadarViewer._canvas) {
+      RadarViewer._canvas = ui.canvas();
+      RadarViewer._ctx = RadarViewer._canvas.getContext('2d')!;
+    }
+    return RadarViewer._ctx!;
   }
 
   init() {
-    option.radar.indicator = [];
+    this.option.radar.indicator = [];
     const columnNames: string[] = [];
     for (const column of this.dataFrame.columns.numerical)
       columnNames.push(column.name);
@@ -76,7 +120,7 @@ export class RadarViewer extends EChartViewer {
     this.columns = this.getColumns();
     for (const c of this.columns) {
       const indicator = this.createRadarIndicator(c);
-      option.radar.indicator.push(indicator);
+      this.option.radar.indicator.push(indicator);
     }
 
     this.updateMin();
@@ -96,7 +140,7 @@ export class RadarViewer extends EChartViewer {
       return;
 
 
-    const optionCopy = _.cloneDeep(option);
+    const optionCopy = _.cloneDeep(this.option);
     const series = optionCopy.series[2].data.find((series: any) => series.name === params.name);
     if (series) {
       series.lineStyle.width = HIGHLIGHT_WIDTH;
@@ -123,7 +167,7 @@ export class RadarViewer extends EChartViewer {
 
     this.chart.on('mouseout', () => {
       ui.tooltip.hide();
-      this.chart.setOption(option);
+      this.chart.setOption(this.option);
     });
 
     this.chart.on('click', (params: any) => {
@@ -178,9 +222,14 @@ export class RadarViewer extends EChartViewer {
         this.render(Array.from(indexes));
       }
     }));
-    this.subs.push(ui.onSizeChanged(this.root).subscribe((_) => {
-      requestAnimationFrame(() => this.chart?.resize());
-    }));
+    this.subs.push(
+      DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => {
+        requestAnimationFrame(() => {
+          this.chart?.resize();
+          this.render();
+        });
+      }),
+    );
     this.render();
   }
 
@@ -191,14 +240,14 @@ export class RadarViewer extends EChartViewer {
   }
 
   getSeriesData(indexes?: number[]): void {
-    option.radar.indicator = [];
+    this.option.radar.indicator = [];
     this.clearData([0, 1, 2]);
     this.columns = this.getColumns();
 
     for (const c of this.columns)
-      option.radar.indicator.push(this.createRadarIndicator(c));
+      this.option.radar.indicator.push(this.createRadarIndicator(c));
 
-    option.series[2].data = this.createSeriesData(indexes);
+    this.option.series[2].data = this.createSeriesData(indexes);
 
     if (this.filter.trueCount > MAXIMUM_ROW_NUMBER)
       MessageHandler._showMessage(this.root, 'Only first 1000 shown', WARNING_CLASS);
@@ -211,8 +260,8 @@ export class RadarViewer extends EChartViewer {
 
     this.updateCurrentRow();
     this.updateMouseOverRow();
-    option.legend.show = !(this.filter.length > 1);
-    option.silent = !this.showTooltip;
+    this.option.legend.show = !(this.filter.length > 1);
+    this.option.silent = !this.showTooltip;
   }
 
   createSeriesData(filter?: number[]): any[] {
@@ -228,9 +277,8 @@ export class RadarViewer extends EChartViewer {
         return numValue !== -2147483648 ? numValue : 0;
       });
 
-      const color = this.colorColumnName ?
-        DG.Color.getRowColor(this.dataFrame.getCol(this.colorColumnName), i) :
-        this.lineColor;
+      const colorColumn = this.dataFrame.col(this.colorColumnName);
+      const color = colorColumn ? DG.Color.getRowColor(colorColumn, i) : this.lineColor;
 
       seriesData.push({
         value: value,
@@ -251,6 +299,59 @@ export class RadarViewer extends EChartViewer {
     }
 
     return seriesData;
+  }
+
+  calculateRadarLabelWidths(n: number, padding: number = 25) {
+    const {clientWidth: canvasWidth, clientHeight: canvasHeight} = this.root;
+    const radiusPercent = parseInt(this.option.radar.radius) / 100;
+    const centerX = canvasWidth / 2;
+    const radius = radiusPercent * Math.min(canvasWidth, canvasHeight) / 2;
+
+    const labels = Array.from({length: n}, (_, i) => {
+      const theta = (2 * Math.PI * i) / n - Math.PI / 2;
+      const x = centerX + radius * Math.cos(theta);
+      let maxWidth: number;
+
+      if (Math.abs(Math.cos(theta)) < 0.1)
+        maxWidth = canvasWidth - 2 * padding;
+      else if (Math.cos(theta) > 0)
+        maxWidth = canvasWidth - x - padding;
+      else
+        maxWidth = x - padding;
+      maxWidth = Math.max(0, maxWidth);
+      return maxWidth;
+    });
+
+    return labels;
+  }
+
+  formatLabel(text: string, maxWidth: number): string {
+    const ctx = RadarViewer.getCanvasContext();
+    const {fontSize, fontFamily} = this.option.radar;
+    ctx.font = `${fontSize} ${fontFamily}`;
+
+    const ellipsis = '…';
+    const ellipsisWidth = ctx.measureText(ellipsis).width;
+
+    if (ctx.measureText(text).width <= maxWidth) return text;
+
+    let left = 0;
+    let right = text.length;
+    let truncated = '';
+
+    while (left < right) {
+      const mid = Math.floor((left + right) / 2);
+      const substr = text.slice(0, mid);
+      const width = ctx.measureText(substr).width + ellipsisWidth;
+
+      if (width <= maxWidth) {
+        truncated = substr + ellipsis;
+        left = mid + 1;
+      } else
+        right = mid;
+    }
+
+    return truncated || ellipsis;
   }
 
   updateCurrentRow(): void {
@@ -275,7 +376,7 @@ export class RadarViewer extends EChartViewer {
 
   createRadarIndicator(c: DG.Column): RadarIndicator {
     const minimalVal = c.min < 0 ? (c.min + c.min * 0.1) : 0;
-    const indicator: RadarIndicator = { name: this.formatLabel(c.name) };
+    const indicator: RadarIndicator = { name: c.name };
 
     if (c.type === 'datetime') {
       indicator.max = this.getYearFromDate(c.max);
@@ -299,7 +400,7 @@ export class RadarViewer extends EChartViewer {
   }
 
   updateMin() {
-    option.series[0].data[0] = {
+    this.option.series[0].data[0] = {
       value: this.getQuantile(this.columns, this.getOptions(true).look.min / 100),
       name: `min percentile`,
       areaStyle: {
@@ -314,11 +415,11 @@ export class RadarViewer extends EChartViewer {
       },
       symbolSize: 0,
     };
-    option.color[0] = DG.Color.toHtml(this.backgroundMinColor);
+    this.option.color[0] = DG.Color.toHtml(this.backgroundMinColor);
   }
 
   updateMax() {
-    option.series[1].data[0] = {
+    this.option.series[1].data[0] = {
       value: this.getQuantile(this.columns, this.getOptions(true).look.max / 100),
       name: `max percentile`,
       areaStyle: {
@@ -333,11 +434,11 @@ export class RadarViewer extends EChartViewer {
       },
       symbolSize: 0,
     };
-    option.color[1] = DG.Color.toHtml(this.backgroundMaxColor);
+    this.option.color[1] = DG.Color.toHtml(this.backgroundMaxColor);
   }
 
   updateRow(color: string, currentRow: number) {
-    option.series[2].data.push({
+    this.option.series[2].data.push({
       value: this.columns.map((c) => {
         if (c.type === 'datetime')
           return this.getDate(c, c.getRawData()[currentRow]);
@@ -364,7 +465,7 @@ export class RadarViewer extends EChartViewer {
 
   clearData(indexes: number[]) {
     for (let i = 0; i < indexes.length; ++i)
-      option.series[indexes[i]].data = [];
+      this.option.series[indexes[i]].data = [];
   }
 
   getColumns() : DG.Column<any>[] {
@@ -378,11 +479,6 @@ export class RadarViewer extends EChartViewer {
       }
     }
     return columns;
-  }
-
-  formatLabel(value: string): string {
-    const specialCharactersRegex: RegExp = /[^a-zA-Z0-9]+/g;
-    return value.split(specialCharactersRegex).join('\n');
   }
 
   _testColumns(): boolean {
@@ -402,7 +498,15 @@ export class RadarViewer extends EChartViewer {
     MessageHandler._removeMessage(this.root, WARNING_CLASS);
     MessageHandler._removeMessage(this.root, ERROR_CLASS);
     this.getSeriesData(indexes!);
-    this.chart.setOption(option, false, true);
+
+    const radarLabelWidths = this.calculateRadarLabelWidths(this.columns.length);
+    this.option.radar.axisName.formatter = (param: string) => {
+      const idx = this.columns.findIndex((c) => c.name === param);
+      if (idx === -1) return param;
+      return this.formatLabel(param, radarLabelWidths[idx]);
+    };
+
+    this.chart.setOption(this.option, false, true);
   }
 
   detach() {

@@ -30,7 +30,7 @@ Those privileges can be given to individuals or to groups (which can be defined 
 
 ## Filtering
 
-You can use these fields to filter action runs with [smart search](../../navigation/views/table-view#search):
+You can use these fields to filter action runs with [smart search](../../../visualize/table-view-1.md#search):
 
 | Field       | Description                                 |
 |-------------|---------------------------------------------|

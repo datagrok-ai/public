@@ -16,6 +16,10 @@ export namespace funcs {
     return await grok.functions.call('Tutorials:TutorialWidget', {});
   }
 
+  export async function tutorialsAutostart(): Promise<void> {
+    return await grok.functions.call('Tutorials:TutorialsAutostart', {});
+  }
+
   export async function tutorialsInit(): Promise<void> {
     return await grok.functions.call('Tutorials:TutorialsInit', {});
   }
@@ -27,12 +31,16 @@ export namespace funcs {
     return await grok.functions.call('Tutorials:DemoApp', { path, filter });
   }
 
-  export async function demoAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<void> {
-    return await grok.functions.call('Tutorials:DemoAppTreeBrowser', { treeNode, browseView });
+  export async function demoAppTreeBrowser(treeNode: any ): Promise<void> {
+    return await grok.functions.call('Tutorials:DemoAppTreeBrowser', { treeNode });
   }
 
   export async function demoAppWidget(): Promise<any> {
     return await grok.functions.call('Tutorials:DemoAppWidget', {});
+  }
+
+  export async function getDemoAppHierarchy(): Promise<string> {
+    return await grok.functions.call('Tutorials:GetDemoAppHierarchy', {});
   }
 
   /**

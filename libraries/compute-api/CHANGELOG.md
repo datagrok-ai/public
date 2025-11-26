@@ -1,5 +1,17 @@
 # compute-api changelog
 
+## 0.6.7 (2025-11-20)
+
+- New workflows config properties added
+
+## 0.6.5 (2025-10-30)
+
+- Add optimizer runner
+
+## 0.6.5 (2025-09-04)
+
+- Update to the latest lib
+
 ## 0.6.4 (2025-07-28)
 
 - Release for 1.26.0

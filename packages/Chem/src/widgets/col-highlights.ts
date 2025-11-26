@@ -12,6 +12,10 @@ export function getmolColumnHighlights(col: DG.Column): DG.Widget {
 }
 
 export class HighlightWidget extends DG.Widget {
+  get type(): string {
+    return 'HighlightWidget';
+  }
+
   props = [
     DG.Property.fromOptions({name: 'molecule', type: DG.TYPE.STRING}),
     DG.Property.fromOptions({name: 'color', inputType: 'Color', type: DG.TYPE.STRING}),

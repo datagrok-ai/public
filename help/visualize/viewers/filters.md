@@ -108,6 +108,16 @@ Combined boolean filter (or Flags filter) combines multiple boolean filters into
 
 ![Boolean Filter](../../uploads/gifs/bool-combined.gif)
 
+## Saving a filter configuration
+
+You can save a filter configuration for later use:
+
+1. In the **Filter Panel** context menu, select **Save or Apply > Save…**
+2. Enter a name for the saved configuration.
+
+Restore this configuration through **Save or apply** in the context menu.
+
+
 ## Column tags
 
 * For **molecular columns**, use the **.structure-filter-type** column tag to
@@ -159,5 +169,5 @@ Drag-and-drop columns right from the grid to add the corresponding filters:
 See also:
 
 * [Viewers](../viewers/viewers.md)
-* [Table View](../../datagrok/navigation/views/table-view.md)
+* [Table View](../table-view-1.md)
 * [JS API: Filters](https://public.datagrok.ai/js/samples/ui/viewers/types/filters)

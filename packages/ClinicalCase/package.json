@@ -5,8 +5,8 @@
     "name": "Maria Dolotova",
     "email": "mdolotova@datagrok.ai"
   },
-  "version": "1.3.2",
-  "description": "Analysis of the clinical data represented in the [SDTM](https://www.cdisc.org/standards/foundational/sdtm) format.",
+  "version": "1.3.3",
+  "description": "Analysis of the clinical data represented in the [SDTM](https://www.cdisc.org/standards/foundational/sdtm) and [SEND](https://www.cdisc.org/standards/foundational/send) formats.",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",
@@ -14,18 +14,21 @@
   },
   "dependencies": {
     "@datagrok-libraries/statistics": "^0.1.7",
-    "@datagrok-libraries/utils": "^4.5.7",
+    "@datagrok-libraries/utils": "^4.6.5",
     "@datagrok/charts": "^1.5.1",
     "cash-dom": "^8.1.5",
-    "datagrok-api": "^1.26.0",
+    "datagrok-api": "../../js-api",
     "jstat": "^1.9.5",
-    "moment": "^2.29.1"
+    "moment": "^2.29.1",
+    "rxjs": "^6.5.5",
+    "x2js": "^3.4.4",
+    "dayjs": "^1.11.13"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^5.32.0",
     "@typescript-eslint/parser": "^5.32.0",
     "css-loader": "^7.1.2",
-    "datagrok-tools": "^4.14.48",
+    "datagrok-tools": "^4.14.55",
     "eslint": "^8.21.0",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^4.0.0",

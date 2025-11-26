@@ -398,15 +398,80 @@ function updateView(viewName: string[], vaultName: string, treeNode: DG.TreeView
 }
 
 export async function createCDDTableView(viewName: string[], progressMessage: string, funcName: string,
-  funcParams: {[key: string]: any}, vaultName: string, treeNode: DG.TreeViewGroup) {
+  funcParams: {[key: string]: any}, vault: Vault, treeNode: DG.TreeViewGroup, addFilters?: boolean) {
   try {
-    updateView(viewName, vaultName, treeNode, progressMessage);
+    updateView(viewName, vault.name, treeNode, progressMessage);
     const df: DG.DataFrame = await grok.functions.call(funcName, funcParams);
-    updateView(viewName, vaultName, treeNode, progressMessage, df);
+    updateView(viewName, vault.name, treeNode, progressMessage, df);
+    if (addFilters && openedView)
+      initializeFilters(openedView as DG.TableView, vault);
+
   } catch (e: any) {
     grok.shell.error(e?.message ?? e);
-    updateView(viewName, vaultName, treeNode, progressMessage, DG.DataFrame.create());
+    updateView(viewName, vault.name, treeNode, progressMessage, DG.DataFrame.create());
   }
+}
+
+export async function initializeFilters(tv: DG.TableView, vault: Vault) {
+  const filtersDiv = ui.divV([]);
+  //create filters icon
+  const externalFilterIcon = document.createElement('div');
+  externalFilterIcon.innerHTML = `
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Funnel Body -->
+  <path d="M4 4H15L10 10V17L8 19V10L4 4Z" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- The arrow group is rotated -45 degrees around point (16, 13) -->
+  <g transform="rotate(-45, 16, 13)">
+    <!-- Long Horizontal Arrow Line (starts at the new x=16, y=13) -->
+    <path d="M16 13H24" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+    <!-- Arrowhead (adjusted for the new starting point) -->
+    <path d="M21 10L24 13L21 16" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>`;
+  externalFilterIcon.className = 'cdd-filters-button-icon';
+  externalFilterIcon.onclick = () => {
+    tv.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.3);
+    externalFilterIcon.classList.remove('cdd-filters-button-icon-show');
+  };
+  ui.tooltip.bind(externalFilterIcon, 'Add CDD filters');
+
+  const filtersButton = ui.div(externalFilterIcon);
+
+  tv.setRibbonPanels([[filtersButton]]);
+  //create filters panel
+  tv.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.3);
+  tv.dockManager.onClosed.subscribe((el: any) => {
+    externalFilterIcon.classList.add('cdd-filters-button-icon-show');
+  })
+
+  const funcEditor = new SeachEditor(vault.id);
+  const acc = funcEditor.getEditor();
+
+  const runSearchButton = ui.button('Search', async () => {
+    ui.setUpdateIndicator(tv.grid.root, true);
+    const params = funcEditor.getParams();
+    const df = await grok.functions.call('CDDVaultLink:cDDVaultSearchAsync',
+      {
+        vaultId: vault.id, structure: params.structure, structure_search_type: params.structure_search_type,
+        structure_similarity_threshold: params.structure_similarity_threshold, protocol: params.protocol, run: params.run
+      });
+    if (df) {
+      const protocol = params.protocol ? `, protocol: ${params.protocol}` : '';
+      const run = params.run ? `, run: ${params.run}` : '';
+      const search = params.structure ? `, ${params.structure_search_type}${params.structure_search_type === CDDVaultSearchType.SIMILARITY ?
+        `:${params.structure_similarity_threshold}` : ''} search for ${params.structure}` : '';
+
+      df!.name = `Vault: ${vault.id}${protocol}${run}${search}`;
+      tv.dataFrame = df;
+      adjustIdColumnWidth(tv);
+    }
+    ui.setUpdateIndicator(tv.grid.root, false);
+  });
+
+  filtersDiv.append(acc);
+  filtersDiv.append(ui.div(runSearchButton, { style: { paddingLeft: '4px' } }));
+
 }
 
 export async function createCDDTableViewWithPreview(viewName: string[], progressMessage: string, syncfuncName: string,

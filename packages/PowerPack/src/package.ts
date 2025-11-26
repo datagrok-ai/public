@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 /* Do not change these import lines. Datagrok will import API library in exactly the same manner */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
@@ -9,7 +10,6 @@ import {FormulaLinesDialog, DEFAULT_OPTIONS, EditorOptions} from './dialogs/form
 import {RecentProjectsWidget} from './widgets/recent-projects-widget';
 import {CommunityWidget} from './widgets/community-widget';
 import {WebWidget} from './widgets/web-widget';
-import {LearningWidget} from './widgets/learning-widget';
 import {appSearch, connectionsSearch,
   dockerSearch, filesSearch, functionSearch, groupsSearch,
   helpSearch, jsSamplesSearch, pdbSearch, pubChemSearch, querySearch,
@@ -18,7 +18,7 @@ import {KpiWidget} from './widgets/kpi-widget';
 import {HtmlWidget} from './widgets/html-widget';
 import {viewersDialog} from './viewers-gallery';
 import {windowsManagerPanel} from './windows-manager';
-import {initSearch} from './search/power-search';
+import {tableQueriesFunctionsSearchLlm, initSearch} from './search/power-search';
 import {newUsersSearch, registerDGUserHandler} from './dg-db';
 import {merge} from 'rxjs';
 import {HelpObjectHandler} from './search/help-entity';
@@ -64,7 +64,12 @@ export class ExcelJSService {
             if (result.length === 0)
               return DG.DataFrame.fromCsv('');
 
-            const headers = mapWithFor(result[0], (name, i) => name ?? `col${i + 1}`);
+            const namesUsed = new Set<string>();
+            const headers = mapWithFor(result[0], (name, i) => {
+              const nameToUse = namesUsed.has(name ?? `col${i + 1}`) ? name + ' (1)' : name ?? `col${i + 1}`;
+              namesUsed.add(nameToUse);
+              return nameToUse;
+            });
             const columnCount = headers.length;
             const rowCount = result.length - 1;
 
@@ -126,27 +131,16 @@ export class PackageFunctions {
     return welcomeView();
   }
 
-
-  // @grok.decorators.dashboard({
-  //   meta: {
-  //     'showName': 'false',
-  //   },
-  //   order: '1',
-  //   name: 'Activity dashboard',
-  // })
-  // static activityDashboardWidget(): DG.Widget {
-  //   return new ActivityDashboardWidget();
-  // }
-
-
   @grok.decorators.dashboard({
-    order: '2',
-    name: 'Recent projects',
+    meta: {
+      'showName': 'false',
+    },
+    order: '1',
+    name: 'Activity dashboard',
   })
-  static recentProjectsWidget(): DG.Widget {
-    return new RecentProjectsWidget();
+  static activityDashboardWidget(): DG.Widget {
+    return new ActivityDashboardWidget();
   }
-
 
   @grok.decorators.dashboard({
     order: '6',
@@ -156,40 +150,26 @@ export class PackageFunctions {
     return new CommunityWidget();
   }
 
-
   @grok.decorators.func()
   static webWidget(): DG.Widget {
     return new WebWidget();
   }
-
 
   @grok.decorators.func()
   static htmlWidget(): DG.Widget {
     return new HtmlWidget();
   }
 
-
-  @grok.decorators.dashboard({
-    order: '5',
-    name: 'Learn',
-  })
-  static learnWidget(): DG.Widget {
-    return new LearningWidget();
-  }
-
-
   @grok.decorators.func()
   static kpiWidget(): DG.Widget {
     return new KpiWidget();
   }
-
 
   @grok.decorators.func({})
   static isFormulaColumn(
     col: DG.Column): boolean {
     return !!col.getTag(DG.Tags.Formula);
   }
-
 
   @grok.decorators.panel({
     name: 'Formula',
@@ -212,6 +192,14 @@ export class PackageFunctions {
     return widget;
   }
 
+  @grok.decorators.func({meta: {
+    role: 'aiSearchProvider',
+    useWhen: 'if the prompt suggest that the user is looking for a data table result and the prompt resembles a query pattern. for example, "bioactivity data for shigella" or "compounds similar to aspirin" or first 100 chembl compounds. there should be some parts of user prompt that could match parameters in some query, like shigella, aspirin, first 100 etc.'
+  }, name: 'Query',
+  description: 'Tries to find a query which has the similar pattern as the prompt user entered and executes it', result: {type: 'widget', name: 'result'}})
+  static async llmSearchQueryProvider(@grok.decorators.param({type: 'string'})prompt: string): Promise<DG.Widget | null> {
+    return await tableQueriesFunctionsSearchLlm(prompt);
+  }
 
   @grok.decorators.func({tags: ['searchProvider']})
   static powerPackSearchProvider(): DG.SearchProvider {
@@ -256,11 +244,7 @@ export class PackageFunctions {
         search: (s: string) => pubChemSearch(s).then((r) => ({priority: 10, results: r})),
       }, {
         name: 'Wiki', description: 'Wikipedia Search', options: {widgetHeight: 500},
-        getSuggestions: (s) => s.length > 4 && !s.startsWith('wiki:') ? [{
-          suggestionValue: `wiki:${s}`,
-          suggestionText: `Search in Wikipedia`,
-          priority: 999,
-        }] : null,
+        getSuggestions: (s) => null,
         search: (s: string) => wikiSearch(s).then((r) => ({priority: 10, results: r})),
       }, {
         name: 'Apps', description: 'Apps Search', options: {relatedViewName: 'apps'},
@@ -286,19 +270,26 @@ export class PackageFunctions {
     return providers;
   }
 
-
   @grok.decorators.func({
     name: 'formulaLinesEditor',
-    'top-menu': 'Data | Formula Lines...',
     outputs: [],
   })
   static formulaLinesDialog(
-    @grok.decorators.param({type: 'dataframe', options: {optional: true}}) src: DG.DataFrame | DG.Viewer): void {
+    @grok.decorators.param({type: 'dataframe', options: {optional: true}}) src: DG.DataFrame | DG.Viewer,
+    @grok.decorators.param({type: 'int', options: {optional: true}}) currentIndexToSet?: number,
+    @grok.decorators.param({type: 'bool', options: {optional: true}}) isDataFrameValue?: boolean,
+    @grok.decorators.param({type: 'bool', options: {optional: true}}) isAnnotationArea?: boolean,
+  ): void {
     const options = Object.keys(_properties)
       .filter((k) => k in DEFAULT_OPTIONS)
       .reduce((opts, k) => (opts[k] = _properties[k], opts), <EditorOptions>{});
     //TODO: use property's 'category' or 'tags' to distinguish relevant properties
-    new FormulaLinesDialog(src, options);
+
+    new FormulaLinesDialog(src, options, {
+      index: currentIndexToSet,
+      isDataFrame: isDataFrameValue,
+      isAnnotationArea: isAnnotationArea,
+    });
   }
 
   @grok.decorators.init()
@@ -307,7 +298,7 @@ export class PackageFunctions {
     initSearch();
 
     _properties = await _package.getProperties();
-    registerDGUserHandler(_package); // lazy without await
+    registerDGUserHandler(); // lazy without await
 
     // saving and restoring the scrolls when changing views
     const maxDepth = 40;
@@ -330,15 +321,13 @@ export class PackageFunctions {
     };
     merge(grok.events.onCurrentViewChanging, grok.events.onViewChanging)
       .subscribe((_) => getScrolledChild(document.body));
-    DG.debounce(merge(grok.events.onCurrentViewChanged, grok.events.onViewChanged), 10).subscribe((_) => setScrolls());
+    DG.debounce(merge(grok.events.onCurrentViewChanged, grok.events.onViewChanged), 100).subscribe((_) => setScrolls());
   }
-
 
   @grok.decorators.autostart({description: 'Windows Manager'})
   static windowsManager() {
     windowsManagerPanel();
   }
-
 
   @grok.decorators.func({description: 'Open \'Viewer Gallery\' dialog'})
   static viewerDialog(
@@ -347,7 +336,6 @@ export class PackageFunctions {
       return viewersDialog(tv, tv.table!);
   }
 
-
   @grok.decorators.autostart({description: 'ViewerGallery'})
   static viewerGallery(): void {
     grok.events.onViewAdded.subscribe((view) => _viewerGallery(view));
@@ -355,7 +343,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.fileViewer({
-    fileViewer: 'md,mdx'
+    fileViewer: 'md,mdx',
   })
   static async markdownFileViewer(
     file: DG.FileInfo): Promise<DG.View> {
@@ -366,7 +354,6 @@ export class PackageFunctions {
     viewFile.append(preview);
     return viewFile;
   }
-
 
   @grok.decorators.fileHandler({
     ext: 'xlsx',
@@ -390,7 +377,6 @@ export function addNewColumnDialog(call: DG.FuncCall | null = null): AddNewColum
   return new AddNewColumnDialog(call as any);
 }
 
-
 grok.events.onContextMenu.subscribe((args) => {
   const src = args.args.context;
   let menu;
@@ -402,10 +388,10 @@ grok.events.onContextMenu.subscribe((args) => {
       src.getOptions().look['viewerType'] == DG.VIEWER.SCATTER_PLOT)
     menu = args.args.menu.find(DG.VIEWER.SCATTER_PLOT).find('Tools');
 
-  if (menu != null)
-    menu.item('Formula Lines...', () => {PackageFunctions.formulaLinesDialog(src);});
+  menu?.item('Formula Lines...', () => {
+    PackageFunctions.formulaLinesDialog(src);
+  });
 });
-
 
 function _viewerGallery(view: DG.ViewBase): void {
   if (view?.type == 'TableView') {

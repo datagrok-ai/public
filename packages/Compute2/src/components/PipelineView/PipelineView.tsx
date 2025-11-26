@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-import {DockManager, IconFA, ifOverlapping, MarkDown, RibbonMenu, tooltip} from '@datagrok-libraries/webcomponents-vue';
+import {DockManager, IconFA, ifOverlapping, MarkDown, RibbonMenu, RibbonPanel, tooltip} from '@datagrok-libraries/webcomponents-vue';
 import {History} from '../History/History';
 import {hasAddControls, PipelineWithAdd} from '../../utils';
 import {isFuncCallState, PipelineState, ViewAction} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
@@ -42,6 +42,7 @@ export const PipelineView = Vue.defineComponent({
   emits: {
     'update:funcCall': (_call: DG.FuncCall) => true,
     'proceedClicked': () => true,
+    'backClicked': () => true,
     'actionRequested': (_actionUuid: string) => true,
     'addNode': (_data: {itemId: string, position: number}) => true,
   },
@@ -113,6 +114,18 @@ export const PipelineView = Vue.defineComponent({
             }
           </RibbonMenu>)
         }
+        <RibbonPanel view={currentView.value}>
+          { <IconFA
+              name='question'
+              tooltip={helpHidden.value ? 'Open help panel' : 'Close help panel'}
+              onClick={() => {
+                helpHidden.value = !helpHidden.value;
+                if (helpHidden.value)
+                  changeHelpFunc(currentCall.value?.func);
+              }}
+              style={{ 'background-color': !helpHidden.value ? 'var(--grey-1)' : null }}
+          /> }
+        </RibbonPanel>
         <DockManager
           onPanelClosed={handlePanelClose}
           key={props.uuid}
@@ -134,6 +147,22 @@ export const PipelineView = Vue.defineComponent({
                 </span>
 
                 <div class={'grok-gallery-grid'}>
+                  { hasInnerStep.value &&
+                    <div
+                      class={cardsClasses}
+                      onClick={() => emit('proceedClicked')}
+                    >
+                      <IconFA name='plane-departure' class={'d4-picture'} />
+                      <div> Proceed to the first step </div>
+                    </div> }
+                  { !isRoot.value &&
+                    <div
+                      class={cardsClasses}
+                      onClick={() => emit('backClicked')}
+                    >
+                      <IconFA name='long-arrow-left' class={'d4-picture'} />
+                      <div> Go Back </div>
+                    </div> }
                   { hasContextHelp(currentCall.value?.func) &&
                     <div
                       class={cardsClasses}
@@ -170,14 +199,6 @@ export const PipelineView = Vue.defineComponent({
                     >
                       <IconFA name='plus' class={'d4-picture'} />
                       <div> Choose a step to add </div>
-                    </div> }
-                  { hasInnerStep.value &&
-                    <div
-                      class={cardsClasses}
-                      onClick={() => emit('proceedClicked')}
-                    >
-                      <IconFA name='plane-departure' class={'d4-picture'} />
-                      <div> Proceed to the first step </div>
                     </div> }
                 </div>
               </div>

@@ -115,6 +115,51 @@ export class DGIconFA extends HTMLElement {
 
 export interface DGIconFAT extends DGIconFA {};
 
+export class DGIconImage extends HTMLElement {
+  _name = 'edit';
+  _cursor = 'pointer';
+  _path = null as null | string;
+  _tooltip = null as null | string;
+
+  constructor() {
+    super();
+  }
+
+  private render() {
+    ui.empty(this);
+    if (!this._path)
+      return;
+    const t = ui.iconImage(this._name, this._path, null, this._tooltip);
+    t.style.cursor = this._cursor;
+    // just let the container deal with the icon size
+    t.style.width = '100%';
+    t.style.height = '100%';
+    this.appendChild(t);
+  }
+
+  set name(val: string) {
+    this._name = val;
+    this.render();
+  }
+
+  set path(val: string) {
+    this._path = val;
+    this.render();
+  }
+
+  set cursor(val: string) {
+    this._cursor = val;
+    this.render();
+  }
+
+  set tooltip(val: string | null) {
+    this._tooltip = val;
+    this.render();
+  }
+}
+
+export interface DGIconImageT extends DGIconImage {};
+
 export class DGComboPopup extends HTMLElement {
   private _caption: string | HTMLElement = 'Caption';
   private _items = [] as string[];

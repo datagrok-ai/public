@@ -1,7 +1,7 @@
 // Tests of numerical methods
 import {_package} from '../package-test';
 import {category, expect, test} from '@datagrok-libraries/utils/src/test';
-import {mrt, ros3prw, ros34prw, CorrProblem, ODEs, corrProbs, perfProbs} from '@datagrok/diff-grok';
+import {mrt, ros3prw, ros34prw, CorrProblem, ODEs, corrProbs, perfProbs} from 'diff-grok';
 
 /** Return numerical solution error: maximum absolute deviation between approximate & exact solutions */
 function getError(method: (odes: ODEs) => Float64Array[], corProb: CorrProblem): number {

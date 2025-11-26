@@ -17,6 +17,8 @@ import {HistoryApp} from './apps/HistoryApp';
 import {Subject} from 'rxjs';
 import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
+import {OptimizerParams, runOptimizer} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
+import dayjs from 'dayjs';
 
 declare global {
   var initialURLHandled: boolean;
@@ -24,7 +26,7 @@ declare global {
 declare let ENABLE_VUE_DEV_TOOLS: any;
 
 export * from './package.g';
-export const _package = new DG.Package();
+export {_package} from './package-instance';
 
 function setViewHierarchyData(call: DG.FuncCall, view: DG.ViewBase) {
   view.parentCall = call.parentCall;
@@ -45,7 +47,12 @@ function setVueAppOptions(app: Vue.App<any>) {
 export class PackageFunctions {
   @grok.decorators.init()
   static async init() {
-    await DG.Func.byName('WebComponents:init').prepare().call();
+    try {
+      await DG.Func.byName('WebComponents:init').prepare().call();
+    } catch (e) {
+      console.log(e);
+      grok.shell.error(`WebComponents package init error`);
+    }
   }
 
   @grok.decorators.editor({name: 'Custom Function View Editor'})
@@ -164,6 +171,15 @@ export class PackageFunctions {
     return promise;
   }
 
+  @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
+  static async RunOptimizer(
+    @grok.decorators.param({'type': 'object'}) params: OptimizerParams,
+  ) {
+    const [, calls] = await runOptimizer(params);
+    return calls;
+  }
+
+  // Code for testing
 
   @grok.decorators.func({
     tags: [
@@ -410,8 +426,8 @@ export class PackageFunctions {
 
   @grok.decorators.func()
   static async TestMul2(
-    @grok.decorators.param({type: 'string', options: {choices: ['0', '1']}}) a: number,
-      b: number) : Promise<number> {
+    a: number,
+    b: number) : Promise<number> {
     return Number(a) * b;
   }
 
@@ -464,7 +480,8 @@ class MyView extends CustomFunctionView {
       this.aIn,
       this.bIn,
       ui.div([ui.bigButton('Run', async () => {
-        await this.funcCall!.call();
+        await this.funcCall!.call(undefined, undefined, {processed: true, report: false});
+        this.funcCall!.started = dayjs();
         await this.saveRun(this.funcCall!);
         this.res!.value = this.funcCall?.outputs.res;
       })]),

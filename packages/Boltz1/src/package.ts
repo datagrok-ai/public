@@ -33,26 +33,26 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'Folding',
-    'top-menu': 'Bio | Folding | Boltz-1...'
+    name: 'Boltz',
+    'top-menu': 'Bio | Folding | Boltz...'
   })
   static async folding(
-    df: DG.DataFrame,
+    table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Macromolecule'}}) sequences: DG.Column,
   ): Promise<DG.DataFrame> {
-    return await BoltzService.folding(df, sequences);
+    return await BoltzService.folding(table, sequences);
   }
 
   @grok.decorators.func({
-    name: 'Docking',
-    'top-menu': 'Chem | Docking | Boltz-1...'
+    name: 'Boltz',
+    'top-menu': 'Chem | Docking | Boltz...'
   })
   static async docking(
-    df: DG.DataFrame,
-    @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
+    table: DG.DataFrame,
+    @grok.decorators.param({options: {semType: 'Molecule'}}) ligands: DG.Column,
     @grok.decorators.param({options: {choices: 'Boltz1:getBoltzConfigFolders', description: '\'Folder with config files for docking\''}}) config: string,
   ): Promise<DG.DataFrame> {
-    return await BoltzService.docking(df, molecules, config);
+    return await BoltzService.docking(table, ligands, config);
   }
 
   @grok.decorators.panel({

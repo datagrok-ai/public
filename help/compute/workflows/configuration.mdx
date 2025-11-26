@@ -1,0 +1,349 @@
+---
+title: "Configuration"
+sidebar_position: 1
+---
+
+In this section the configuration object is described in depth.
+
+### Workflow providers
+
+There is an example of a minimal workflow package setup
+[here](examples).
+To register a workflow, a package
+function (called a provider), with at least these annotations is needed:
+```
+//tags: model
+//editor: Compute2:TreeWizardEditor
+//input: object params
+//output: object result
+```
+
+`editor` tag is a system tag used by the platform to launch a workflow.
+Tag `model` means that it will be added to ModelHub.
+The function must return an object of type `PipelineConfiguration`, and accept
+an input object containing a `version` field.
+This structure allows multiple
+[workflow versions](#workflow-versioning) to coexist simultaneously.
+
+`PipelineConfiguration` is a workflow configuration, which is used to
+define a set of steps and workflow options. Where step is either
+another [workflow](#workflow-providers), a [workflow
+reference](#reusing-workflows) or a [script
+node](#script-nodes). Depending on a workflow [type](#type), steps are
+configured slightly differently.
+
+### General conventions
+
+Configuration is a tree of JavaScript objects and arrays of type
+`PipelineConfiguration`.
+
+- Most objects will have a mandatory `id` field, for definitions
+  object `id` should be unique inside an array, for reference arrays
+  `id` might be repeated.
+- If a field could have configuration objects of different types,
+  field `type` is used to specify the type. TypeScript will figure out
+  the type of the object and its fields by `type` field.
+- If an item has a corresponding UI element, usually a field
+  `friendlyName` could be used to customize it.
+
+### Common configuration options
+
+The following fields are available for `PipelineConfiguration` of
+types `static`, `parallel` and `sequential`.
+
+#### `id`
+
+This id is used in [links](./links-spec) for paths.
+
+#### `type`
+
+There are three workflow types and a reference type, specified by the
+`type` field:
+
+- `static`
+- `parallel`
+- `sequential`
+- `ref`
+
+[Static workflow](#static-workflows) is an immutable sequence of
+steps. It is using field [steps](#steps) to define its steps.
+
+Parallel and sequential are [dynamic
+workflows](#dynamic-workflows). The difference between them is mostly
+conventional, sequential workflow, as the name suggest, is a mutable
+sequence of steps. Parallel workflow is a mutable set of steps, where
+steps should not depend on each other. Both are using
+the [stepTypes](#steptypes) field to define steps.
+
+References are used to [reuse](#reusing-workflows) configurations
+returned by providers. References have a different set of fields;
+however, they are effectively replaced by a workflow configuration.
+
+#### `nqName`
+
+This is a full name of the corresponding [provider](#workflow-providers),
+containing package name and the script name, separated by `:`.
+This field is only applicable for workflow references and is not used for
+nested workflows that are not [references](#reusing-workflows).
+
+#### `version`
+
+This is just a string, should match a [provider](#workflow-providers)
+input. Not used for nested workflows that are not
+[references](#reusing-workflows).
+
+#### `friendlyName`
+
+_Optional_.
+
+A user-friendly name of a workflow, will be shown in UI.
+
+#### `links`
+
+_Optional_
+
+Links specification, described [here](./link-types).
+
+#### `actions`
+
+_Optional_
+
+Actions specification, described [here](./link-types).
+
+#### `onInit`
+
+_Optional_
+
+Init hook specification, described [here](./link-types#init-hook).
+
+#### `onReturn`
+
+_Optional_
+
+Return hook specification, described [here](./code-usage).
+
+#### `states`
+
+_Optional_
+
+A list states, each state is just an object with `id`. Could be used
+to store data from [onInit](./link-types#init-hook) hook, or some
+derived state based on scripts inputs/outputs. These states could be
+used in links the same way as scripts inputs/outputs.
+
+#### `tags`
+
+_Optional_
+
+A list of strings. The primary use case if for annotating that a
+step/workflow has a certain structural invariant, like the interface
+concept in programming. Could be matched in
+[links](./links-spec.mdx#tag-selectors).
+
+#### `structureCheck`
+
+_Optional_
+
+A synchronous function that could do checks on dynamic workflow items
+themselves (not just inputs/outputs). Receives `PipelineOutline`
+input, should return `ValidationResult` or undefined. Could be used to
+check an order of steps and give a user errors/warnings if the current
+dynamic workflow steps state has issues. `ValidationResult` is the
+same as described [here](./link-types#setvalidation).
+
+#### `forceNavigate`
+
+_Optional_
+
+Will force navigate to the workflow view when using back/next
+buttons. By default non-empty workflows views will be skipped.
+
+#### `disableHistory`
+
+_Optional_
+
+Disables workflow history, usefull for nested workflow with nqName set
+to an empty function with a help file.
+
+#### `customExports`
+
+_Optional_
+
+An array of items, with `id`, `friendlyName` and `handler`, used to
+defined custom exports for workflow data. Handler here is an async
+function that receives `PipelineState` and `ExportUtils` arguments.
+
+### Static workflows
+
+#### `steps`
+
+Is an array of nested `PipelineConfiguration` items or [script
+node](#script-nodes) . Each item must have an unique
+id. This array defines an immutable sequence of steps, but if nested
+workflows are dynamic, those could be internally mutated.
+
+### Dynamic workflows
+
+#### `stepTypes`
+
+Is an array of nested `PipelineConfiguration` items or [script
+node](#script-nodes) . Each item must have an unique id. There are
+additional [options](#additional-steptypes-items-options) per each
+item. Users might add/remove/reorder items from this list during the
+workflow.
+
+#### `initialSteps`
+
+_Optional_
+
+Is an array of initial steps. Each item is a reference to a
+[stepTypes](#steptypes) item.
+
+### Additional stepTypes items options
+
+For [dynamic workflows](#dynamic-workflows), the `stepTypes` array has additional
+options available that limit a user's ability to alter the
+workflow.
+If more validation logic is needed, a
+[structureCheck](#structurecheck) can be used.
+
+#### `disableUIAdding`
+
+_Optional_
+
+This dynamic item type cannot be added from the UI.
+
+#### `disableUIRemoving`
+
+_Optional_
+
+This dynamic item type cannot be removed from the UI.
+
+#### `disableUIDragging`
+
+_Optional_
+
+This dynamic item type cannot be dragged from the UI.
+
+
+### Script nodes
+
+These are end nodes in the configuration graph aka leafs. These nodes
+provide additional configuration for scripts.
+
+#### `id` (Script node)
+
+This id is used in [links](./links-spec) for paths.
+
+#### `nqName`  (Script node)
+
+Mandatory script full name.
+
+#### `type`  (Script node)
+
+_Optional_
+
+Could be omitted, but the only other possible value is `step`.
+
+#### `friendlyName`  (Script node)
+
+_Optional_
+
+A user-friendly name of a script to show in UI.
+
+#### `actions`  (Script node)
+
+_Optional_
+
+Same as workflow [actions](#actions)
+
+#### `tags`  (Script node)
+
+_Optional_
+
+Same as workflow [tags](#tags)
+
+#### `initialValues`  (Script node)
+
+_Optional_
+
+A key-value object of input initial values. Will override scripts own
+initial values. __Note__ Initial values don't trigger links, so there
+should be no data links that are dependent only on inputs with initial
+values.
+
+#### `inputRestrictions`  (Script node)
+
+_Optional_
+
+A key-value object with input initial restrictions. Used with
+`initialValues`. Read more about restrictions
+[here](./link-types.mdx).
+
+#### `viewersHook`  (Script node)
+
+_Optional_
+
+Is a JavaScript function that is used to tweak options of `DG.Viewer`,
+potentially based on metadata state. More information about metadata
+links is available [here](./link-types). Here is the TypeScript
+signature of viewersHook:
+
+```
+(ioName: string, type: string, viewer?: DG.Viewer, meta?: any) => void;
+```
+
+`ioName` is the name of input/output and `type` is a type of the
+viewer.
+
+
+### Reusing workflows
+
+It is done using a reference object. A returned by the provider
+function object will just replace a `ref` object.
+
+#### `id` (Reference)
+
+_Optional_
+
+Not used, id of the returned workflow will be used.
+
+#### `type` (Reference)
+
+`ref` must be provided to distinguish from other configuration types.
+
+#### `provider`  (Reference)
+
+`nqName` of the provider function.
+
+#### `version`  (Reference)
+
+A version string that will be passed as an argument to the provider
+function.
+
+
+### Workflow versioning
+
+There are might be multiple workflow versions available, so to allow a
+user to launch different workflow versions directly, the following
+[provider](#workflow-providers) function annotation could be used.
+
+```
+//meta.versions: ["2.0", "1.0"]
+```
+
+__Note__ that all versions must not be removed or altered in a
+non-compatible way, regardless of the meta-annotation, otherwise
+user's saved state of such workflows could not be
+loaded. Non-compatible here means that is not possible to get the same
+results with the same steps and inputs.
+
+For a toplevel workflow all saved users's data across all versions is
+available.
+
+For nested [references](#reusing-workflows) items only a
+specific version workflow data is available.
+
+When creating a new workflow version, all dependent workflows that need to use
+the updated dependency must also release new versions.
+This ensures proper version compatibility across the workflow ecosystem.

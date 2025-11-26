@@ -1,5 +1,17 @@
 # Compute changelog
 
+## 1.44.6 (2025-11-20)
+
+- Update deps
+
+## 1.44.5 (2025-10-30)
+
+- Fitting with formulas support
+
+## 1.44.4 (2025-09-04)
+
+- Small bug fixes
+
 ## 1.44.3 (2025-08-15)
 
 - Update compute-utils

@@ -327,6 +327,32 @@ export function convertSimpleConditionToQueryOperator(condition: SimpleCondition
     }
   };
   
+  // Special handling for EQ with null value -> EXISTS operator
+  if (operator === Operators.NOT_EQ && !value) {
+    const existsResult = {
+      field: field
+    };
+    if (shouldIncludeTagsProperty(field)) {
+      (existsResult as any).in = 'tags';
+    }
+    return { $exists: existsResult } as QueryExistsOperator;
+  }
+  
+  // Special handling for NOT_EQ with empty value -> NOT EXISTS operator
+  if (operator === Operators.EQ && !value) {
+    const notExistsResult = {
+      field: field
+    };
+    if (shouldIncludeTagsProperty(field)) {
+      (notExistsResult as any).in = 'tags';
+    }
+    return {
+      $not: [{
+        $exists: notExistsResult
+      }]
+    } as QueryNotOperator;
+  }
+  
   // Find the corresponding Revvity operator
   const revvityOperator = REVVITY_OPERATORS_MAPPING[operator as keyof typeof REVVITY_OPERATORS_MAPPING];
   

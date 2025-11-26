@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {after, before, category, delay, expect, test, expectArray, timeout} from '@datagrok-libraries/utils/src/test';
 import {HelmMol, HelmType, IHelmBio, IHelmEditorOptions, Mol, OrgType} from '@datagrok-libraries/bio/src/helm/types';
-import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
 import {
   getUserLibSettings, setUserLibSettings

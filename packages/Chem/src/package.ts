@@ -1,10 +1,11 @@
+/* eslint-disable camelcase */
+/* eslint-disable guard-for-in */
 /* eslint-disable max-params */
 /* eslint-disable max-len */
 /* eslint-disable max-lines */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import '../css/chem.css';
 import * as chemSearches from './chem-searches';
 import {GridCellRendererProxy, RDKitCellRenderer} from './rendering/rdkit-cell-renderer';
 import {assure} from '@datagrok-libraries/utils/src/test';
@@ -19,7 +20,7 @@ import {MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT, EMPTY_MOLECULE_MESSAGE,
   SMARTS_MOLECULE_MESSAGE, elementsTable} from './constants';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 import {calculateDescriptors, getDescriptorsTree} from './docker/api';
-import {addDescriptorsColsToDf, getDescriptorsSingle, openDescriptorsDialogDocker} from './descriptors/descriptors-calculation';
+import {addDescriptorsColsToDf, getDescriptorsSingle, getSelected, openDescriptorsDialogDocker} from './descriptors/descriptors-calculation';
 import {identifiersWidget, openMapIdentifiersDialog, textToSmiles} from './widgets/identifiers';
 
 //widget imports
@@ -28,7 +29,7 @@ import {drugLikenessWidget} from './widgets/drug-likeness';
 import {addPropertiesAsColumns, getChemPropertyFunc, getPropertiesAsColumns, propertiesWidget} from './widgets/properties';
 import {structuralAlertsWidget} from './widgets/structural-alerts';
 import {structure2dWidget} from './widgets/structure2d';
-import {addRisksAsColumns, toxicityWidget} from './widgets/toxicity';
+import {getToxicityRisksColumns, toxicityWidget} from './widgets/toxicity';
 
 //panels imports
 import {getInchiKeysImpl, getInchisImpl} from './panels/inchi';
@@ -57,14 +58,14 @@ import {MatchedMolecularPairsViewer} from './analysis/molecular-matched-pairs/mm
 import {_importTripos} from './file-importers/mol2-importer';
 import {_importSmi} from './file-importers/smi-importer';
 
-import {generateScaffoldTree} from './scripts-api';
+import {Chem} from './scripts-api';
 import {renderMolecule} from './rendering/render-molecule';
 import {RDKitReactionRenderer} from './rendering/rdkit-reaction-renderer';
 import {structure3dWidget} from './widgets/structure3d';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {_demoActivityCliffs, _demoActivityCliffsLayout, _demoChemicalSpace, _demoChemOverview, _demoMMPA,
   _demoRgroupAnalysis, _demoRGroups, _demoScaffoldTree, _demoSimilarityDiversitySearch} from './demo/demo';
-import {getStructuralAlertsByRules, RuleId, RuleSet, STRUCT_ALERTS_RULES_NAMES} from './panels/structural-alerts';
+import {getStructuralAlertsByRules, RuleSet, STRUCT_ALERTS_RULES_NAMES} from './panels/structural-alerts';
 import {getmolColumnHighlights} from './widgets/col-highlights';
 import {RDLog, RDModule, RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {malformedDataWarning} from './utils/malformed-data-utils';
@@ -80,11 +81,10 @@ import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/mo
 import {MolfileHandlerBase} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler-base';
 import {fetchWrapper} from '@datagrok-libraries/utils/src/fetch-utils';
 import {CHEM_PROP_MAP} from './open-chem/ocl-service/calculations';
-import {cutFragments} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-react-toolkit';
 import {oclMol} from './utils/chem-common-ocl';
 import {MpoProfileEditor} from '@datagrok-libraries/statistics/src/mpo/mpo-profile-editor';
 import {OCLService} from './open-chem/ocl-service';
-import {_mpoDialog} from './analysis/mpo';
+import {MpoProfileDialog} from './analysis/mpo';
 import {MmmpFunctionEditor, MmpDiffTypes} from './analysis/molecular-matched-pairs/mmp-function-editor';
 import {SCALING_METHODS} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {scaleActivity} from './analysis/molecular-matched-pairs/mmp-viewer/mmpa-utils';
@@ -92,9 +92,43 @@ import {MixtureCellRenderer} from './rendering/mixture-cell-renderer';
 import {createComponentPane, createMixtureWidget, Mixfile} from './utils/mixfile';
 import {biochemicalPropertiesDialog} from './widgets/biochem-properties-widget';
 import {checkCurrentView} from './utils/ui-utils';
+import {mpo, PropertyDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo';
+//@ts-ignore
+import '../css/chem.css';
+import {addDeprotectedColumn, DeprotectEditor} from './analysis/deprotect';
 
 export {getMCS};
 export * from './package.g';
+
+/** Temporary polyfill */
+
+function getDecoratorFunc() {
+  return function(_args: any) {
+    return function(
+      _target: any,
+      _propertyKey: string,
+      _descriptor: PropertyDescriptor,
+    ) { };
+  };
+}
+
+// Ensure decorators object exists and polyfill missing decorators
+if (!grok.decorators)
+  (grok as any).decorators = {};
+
+const decorators = [
+  'func', 'init', 'param', 'panel', 'editor', 'demo', 'app',
+  'appTreeBrowser', 'fileHandler', 'fileExporter', 'model', 'viewer', 'filter', 'cellRenderer', 'autostart',
+  'dashboard', 'folderViewer', 'semTypeDetector', 'packageSettingsEditor', 'functionAnalysis', 'converter',
+  'fileViewer', 'model', 'treeBrowser', 'polyfill',
+];
+
+decorators.forEach((decorator) => {
+  if (!(grok.decorators as any)[decorator])
+    (grok.decorators as any)[decorator] = getDecoratorFunc();
+});
+
+/** End temporary polyfill */
 
 const drawMoleculeToCanvas = chemCommonRdKit.drawMoleculeToCanvas;
 const SKETCHER_FUNCS_FRIENDLY_NAMES: {[key: string]: string} = {
@@ -173,6 +207,23 @@ export class PackageFunctions {
 
   @grok.decorators.autostart()
   static async initChemAutostart(): Promise<void> { }
+
+  @grok.decorators.func({'top-menu': 'Chem | Transform | Recalculate Coordinates...', 'name': 'Recalculate Coordinates',
+    'description': 'Recalculates 2D coordinates for molecules in the column using Open Chem Lib', 'tags': ['Transform'],
+  })
+  static async recalculateCoordsViaOCL(@grok.decorators.param({}) table: DG.DataFrame,
+  @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
+  @grok.decorators.param({options: {initialValue: 'true'}}) join: boolean = true,
+  ): Promise<DG.Column | void> {
+    const oclService = new OCLService();
+    const newMols = await oclService.recalculateCoordinates(molecules.toList());
+    oclService.terminate();
+    const newCol = DG.Column.fromStrings(table.columns.getUnusedName(`${molecules.name}_recalcCoords`), newMols);
+    newCol.semType = 'Molecule';
+    if (!join)
+      return newCol;
+    table.columns.add(newCol);
+  }
 
   @grok.decorators.func({
     name: 'Chemistry | Most Diverse Structures',
@@ -487,6 +538,7 @@ export class PackageFunctions {
     await openDescriptorsDialogDocker();
   }
 
+  //function with tranfrom tag to be able to run within data sync projects, adds column to dataframe
   @grok.decorators.func({
     name: 'calculateDescriptorsTransform',
     tags: ['Transform'],
@@ -498,6 +550,21 @@ export class PackageFunctions {
   ): Promise<void> {
     const cols = await calculateDescriptors(molecules, selected);
     addDescriptorsColsToDf(table, cols);
+  }
+
+  //vector function to run in add new column dialog
+  @grok.decorators.func({
+    name: 'getDescriptors',
+    meta: {vectorFunc: 'true'},
+  })
+  static async getDescriptors(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'list<string>', options: {optional: true}}) selected?: string[],
+  ): Promise<DG.DataFrame> {
+    if (!selected || selected.length === 0)
+      selected = await getSelected();
+    const cols = (await calculateDescriptors(molecules, selected)).filter((col) => col != null);
+    return DG.DataFrame.fromColumns(cols);
   }
 
   @grok.decorators.func({outputs: [{name: 'descriptors', type: 'object'}]})
@@ -523,22 +590,6 @@ export class PackageFunctions {
     const descCols = await fetchWrapper(() => calculateDescriptors(molecules, descriptors));
     addDescriptorsColsToDf(table, descCols);
   }
-
-  @grok.decorators.func({
-    meta: {vectorFunc: 'true'},
-  })
-  static async chemDescriptor(
-    @grok.decorators.param({options: {semType: 'Molecule'}})molecules: DG.Column, descriptor: string): Promise<DG.Column> {
-    let descCol: DG.Column;
-    try {
-      const descCols = await fetchWrapper(() => calculateDescriptors(molecules, [descriptor]));
-      descCol = descCols.length ? descCols.filter((it) => it)[0] : DG.Column.string(descriptor, molecules.length).init(`Error calculating ${descriptor}`);
-    } catch (e) {
-      descCol = DG.Column.string(descriptor, molecules.length).init(`Error calculating ${descriptor}`);
-    }
-    return descCol;
-  }
-
 
   @grok.decorators.editor({name: 'SearchSubstructureEditor'})
   static searchSubstructureEditor(call: DG.FuncCall): void {
@@ -592,14 +643,14 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'friendlyName': 'Cluster MCS',
+    'name': 'Cluster MCS',
     'top-menu': 'Chem | Calculate | Cluster MCS...',
     'description': 'Calculates most common substructures for each cluster',
   })
   static async clusterMCSTopMenu(
     table: DG.DataFrame,
     @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molCol: DG.Column,
-    @grok.decorators.param({type: 'column', options: {type: 'string'}}) clusterCol: DG.Column): Promise<void> {
+    @grok.decorators.param({type: 'column', options: {type: 'categorical'}}) clusterCol: DG.Column): Promise<void> {
     const c = await PackageFunctions.performClusterMCS(molCol, clusterCol);
     c.name = table.columns.getUnusedName(c.name);
     table.columns.add(c);
@@ -668,14 +719,15 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Fingerprints',
     tags: ['dim-red-preprocessing-function'],
-    meta: {supportedSemTypes: 'Molecule', supportedDistanceFunctions: 'Tanimoto, Asymmetric, Cosine, Sokal'},
+    meta: {supportedSemTypes: 'Molecule', supportedDistanceFunctions: 'Tanimoto,Asymmetric,Cosine,Sokal'},
     outputs: [{type: 'object', name: 'result'}],
   })
   static async getFingerprints(
     @grok.decorators.param({options: {semType: 'Molecule'}}) col: DG.Column,
+    @grok.decorators.param({options: {optional: true}}) _metric: string | undefined = undefined,
     @grok.decorators.param({type: 'string', options: {caption: 'Fingerprint type', optional: true,
       choices: ['Morgan', 'RDKit', 'Pattern', 'AtomPair', 'MACCS', 'TopologicalTorsion'], initialValue: 'Morgan'}}) fingerprintType: Fingerprint = Fingerprint.Morgan,
-    @grok.decorators.param({options: {optional: true}}) _metric?: string) {
+  ) {
     //TODO: get rid of fallback
     let fingerprintTypeStr = fingerprintType as string;
     if ((fingerprintTypeStr.startsWith('\'') || fingerprintTypeStr.startsWith('"')) &&
@@ -826,13 +878,13 @@ export class PackageFunctions {
     }
     //workaround for functions which add viewers to tableView (can be run only on active table view)
     checkCurrentView(table);
-
+    const view = grok.shell.tv;
     const funcCall = await DG.Func.find({name: 'runElementalAnalysis'})[0].prepare({
       table: table,
       molecules: molecules,
     }).call(undefined, undefined, {processed: false});
     const columnNames: string[] = funcCall.getOutputParamValue();
-    const view = grok.shell.getTableView(table.name);
+
     if (radarViewer) {
       let packageExists = checkPackage('Charts', 'radarViewerDemo');
       if (!packageExists) //for compatibility with previous versions of Charts
@@ -958,8 +1010,8 @@ export class PackageFunctions {
   })
   static async activityCliffs(
     @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
-    @grok.decorators.param({options: {type: 'categorical', semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({options: {type: 'numerical'}}) activities: DG.Column,
+    @grok.decorators.param({type: 'column', options: {type: 'categorical', semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'column', options: {type: 'numerical'}}) activities: DG.Column,
     @grok.decorators.param({options: {description: 'Similarity cutoff', initialValue: '80'}}) similarity: number,
     @grok.decorators.param({type: 'string', options: {choices: ['UMAP', 't-SNE']}}) methodName: DimReductionMethods,
     @grok.decorators.param({type: 'string', options: {choices: ['Tanimoto', 'Asymmetric', 'Cosine', 'Sokal']}}) similarityMetric: BitArrayMetrics,
@@ -997,7 +1049,7 @@ export class PackageFunctions {
         isDemo: isDemo,
       }).call(undefined, undefined, {processed: false});
 
-      const view = grok.shell.getTableView(table.name);
+      const view = grok.shell.tv;
 
       const description = `Molecules: ${molecules.name}, activities: ${activities.name}, method: ${methodName}, ${options ? `options: ${JSON.stringify(options)},` : ``} similarity: ${similarityMetric}, similarity cutoff: ${similarity}`;
       view.addViewer(DG.VIEWER.SCATTER_PLOT, {
@@ -1064,8 +1116,8 @@ export class PackageFunctions {
   })
   static async activityCliffsTransform(
     @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
-    @grok.decorators.param({options: {type: 'categorical', semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({options: {type: 'numerical'}}) activities: DG.Column,
+    @grok.decorators.param({type: 'column', options: {type: 'categorical', semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'column', options: {type: 'numerical'}}) activities: DG.Column,
     @grok.decorators.param({options: {description: 'Similarity cutoff', initialValue: '80'}}) similarity: number,
     @grok.decorators.param({type: 'string', options: {choices: ['UMAP', 't-SNE']}}) methodName: DimReductionMethods,
     @grok.decorators.param({type: 'string', options: {choices: ['Tanimoto', 'Asymmetric', 'Cosine', 'Sokal']}}) similarityMetric: BitArrayMetrics,
@@ -1092,7 +1144,7 @@ export class PackageFunctions {
     'tags': ['Transform'],
   })
   static addInchisTopMenu(
-    @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
+    table: DG.DataFrame,
     @grok.decorators.param({name: 'molecules', options: {semType: 'Molecule'}}) col: DG.Column): void {
     const inchiCol = getInchisImpl(col);
     inchiCol.name = table.columns.getUnusedName(inchiCol.name);
@@ -1138,7 +1190,7 @@ export class PackageFunctions {
   })
   static async structuralAlertsTopMenu(
     @grok.decorators.param({options: {description: 'Input data table', caption: 'Table'}}) table: DG.DataFrame,
-    @grok.decorators.param({options: {caption: 'Molecules', semType: 'Molecule', type: 'categorical'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'column', options: {caption: 'Molecules', semType: 'Molecule', type: 'categorical'}}) molecules: DG.Column,
     @grok.decorators.param({options: {caption: 'PAINS', initialValue: 'true', description: '"Pan Assay Interference Compounds filters"'}}) pains: boolean,
     @grok.decorators.param({options: {caption: 'BMS', initialValue: 'false', description: '"Bristol-Myers Squibb HTS Deck filters"'}}) bms: boolean,
     @grok.decorators.param({options: {caption: 'SureChEMBL', initialValue: 'false', description: '"MedChem unfriendly compounds from SureChEMBL"'}}) sureChembl: boolean,
@@ -1175,7 +1227,7 @@ export class PackageFunctions {
   })
   static async runStructuralAlerts(
     @grok.decorators.param({options: {caption: 'Table', description: 'Input data table'}}) table: DG.DataFrame,
-    @grok.decorators.param({options: {caption: 'Molecules', type: 'categorical', semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'column', options: {caption: 'Molecules', type: 'categorical', semType: 'Molecule'}}) molecules: DG.Column,
     @grok.decorators.param({options: {caption: 'PAINS', initialValue: 'true', description: '"Pan Assay Interference Compounds filters"'}}) pains: boolean,
     @grok.decorators.param({options: {caption: 'BMS', initialValue: 'false', description: '"Bristol-Myers Squibb HTS Deck filters"'}}) bms: boolean,
     @grok.decorators.param({options: {caption: 'SureChEMBL', initialValue: 'false', description: '"MedChem unfriendly compounds from SureChEMBL"'}}) sureChembl: boolean,
@@ -1183,7 +1235,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {caption: 'Dundee', initialValue: 'false', description: '"University of Dundee NTD Screening Library filters"'}}) dundee: boolean,
     @grok.decorators.param({options: {caption: 'Inpharmatica', initialValue: 'false', description: '"Inpharmatica filters"'}}) inpharmatica: boolean,
     @grok.decorators.param({options: {caption: 'LINT', initialValue: 'false', description: '"Pfizer LINT filters"'}}) lint: boolean,
-    @grok.decorators.param({options: {caption: 'Glaxo', initialValue: 'false', description: '"Glaxo Wellcome Hard filters"'}}) glaxo: boolean): Promise<DG.DataFrame | void> {
+    @grok.decorators.param({options: {caption: 'Glaxo', initialValue: 'false', description: '"Glaxo Wellcome Hard filters"'}}) glaxo: boolean): Promise<void> {
     if (table.rowCount > 5000)
       grok.shell.info('Structural Alerts detection will take a while to run');
 
@@ -1197,32 +1249,24 @@ export class PackageFunctions {
         table.columns.add(resultCol.clone());
       }
     }
-    return table;
   }
 
   @grok.decorators.func({
-    name: 'runStructuralAlert',
+    name: 'getStructuralAlerts',
     meta: {vectorFunc: 'true'},
-    outputs: [{name: 'res', type: 'column'}],
   })
-  static async runStructuralAlert(
+  static async getStructuralAlerts(
     @grok.decorators.param({type: 'column<string>', options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({type: 'string'}) alert: RuleId): Promise<DG.Column | void> {
-    let col: DG.Column = DG.Column.string(alert, molecules.length).init(`Error calculating ${alert}`);
-    try {
-      const ruleSet: {[key: string]: boolean} = {};
-      for (const rule of STRUCT_ALERTS_RULES_NAMES)
-        ruleSet[rule] = alert.toLocaleLowerCase() === rule.toLocaleLowerCase();
+    @grok.decorators.param({type: 'list<string>', options: {optional: true}}) alerts?: string[]): Promise<DG.DataFrame> {
+    const lowerCaseAlerts = alerts?.map((it) => it.toLowerCase());
+    const ruleSet: {[key: string]: boolean} = {};
+    for (const rule of STRUCT_ALERTS_RULES_NAMES)
+      ruleSet[rule] = !lowerCaseAlerts || lowerCaseAlerts.length === 0 ? true : lowerCaseAlerts.includes(rule.toLowerCase());
 
-      const resultDf = await getStructuralAlertsByRules(molecules, ruleSet as RuleSet);
-      if (resultDf) {
-        if (!resultDf.columns.names().length)
-          col = DG.Column.string(alert, molecules.length).init(`Incorrect alert`);
-        else
-          col = resultDf.columns.byIndex(0);
-      }
-    } catch (e) {}
-    return col;
+    const resultDf = await getStructuralAlertsByRules(molecules, ruleSet as RuleSet);
+    if (!resultDf)
+      throw Error(`Structural alerts haven't been calculated`);
+    return resultDf;
   }
 
   //#endregion
@@ -1617,8 +1661,8 @@ export class PackageFunctions {
     const tableRowIdx = value.cell.rowIndex;
     const dframe = molCol.dataFrame;
     const smiles = molCol.get(tableRowIdx);
-
-    const grid = value.viewer as DG.Grid ?? grok.shell.getTableView(dframe.name)?.grid;
+    checkCurrentView(dframe);
+    const grid = value.viewer as DG.Grid ?? grok.shell.tv?.grid;
     if (!grid)
       throw new Error('Cannnot access value grid');
     ui.setUpdateIndicator(grid.root, true);
@@ -1834,8 +1878,9 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'top-menu': 'Chem | Calculate | Properties...',
+    'top-menu': 'Chem | Calculate | Chemical Properties...',
     'name': 'Chemical Properties',
+    'description': 'Calculates chemical properties and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.',
     'tags': ['HitTriageFunction', 'Transform'],
     'meta': {
       'function_family': 'biochem-calculator',
@@ -1855,7 +1900,7 @@ export class PackageFunctions {
     @grok.decorators.param({options: {initialValue: 'false'}}) rotatableBonds?: boolean,
     @grok.decorators.param({options: {initialValue: 'false'}}) stereoCenters?: boolean,
     @grok.decorators.param({options: {initialValue: 'false'}}) moleculeCharge?: boolean,
-  ): Promise<DG.DataFrame> {
+  ): Promise<void> {
     const propArgs: string[] = ([] as string[]).concat(MW ? ['MW'] : [], HBA ? ['HBA'] : [],
       HBD ? ['HBD'] : [], logP ? ['LogP'] : [], logS ? ['LogS'] : [], PSA ? ['PSA'] : [],
       rotatableBonds ? ['Rotatable bonds'] : [], stereoCenters ? ['Stereo centers'] : [],
@@ -1866,32 +1911,27 @@ export class PackageFunctions {
     } finally {
       pb.close();
     }
-    return table;
   }
 
   @grok.decorators.func({
-    name: 'getMolProperty',
+    name: 'getProperties',
     meta: {vectorFunc: 'true'},
   })
-  static async getMolProperty(
+  static async getProperties(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
-    @grok.decorators.param({options: {choices: ['MW', 'HBA', 'HBD', 'LogP', 'LogS', 'PSA', 'Rotatable bonds', 'Stereo centers', 'Molecule charge']}}) property: string): Promise<DG.Column> {
-    let col: DG.Column = DG.Column.string(property, molecules.length).init(`Error calculating ${alert}`);
-    try {
-      const propNames = Object.keys(CHEM_PROP_MAP);
-      let props: string[] = [];
-
+    @grok.decorators.param({type: 'list<string>', options: {optional: true}}) selected?: string[]): Promise<DG.DataFrame> {
+    const propNames = Object.keys(CHEM_PROP_MAP);
+    let props: string[] = [];
+    if (!selected || selected.length === 0)
+      props = propNames;
+    else {
       for (const propName of propNames)
-        props = props.concat(propName === property ? [property] : []);
+        props = props.concat(selected.includes(propName) ? [propName] : []);
+    }
 
-      const cols = await getPropertiesAsColumns(molecules, props);
-      if (!cols.length)
-        col = DG.Column.string(property, molecules.length).init(`Incorrect property`);
-      else
-        col = cols[0];
-    } catch (e) {}
+    const cols = await getPropertiesAsColumns(molecules, props);
 
-    return col;
+    return DG.DataFrame.fromColumns(cols);
   }
 
 
@@ -1906,14 +1946,31 @@ export class PackageFunctions {
     @grok.decorators.param({options: {initialValue: 'false'}}) tumorigenicity?: boolean,
     @grok.decorators.param({options: {initialValue: 'false'}}) irritatingEffects?: boolean,
     @grok.decorators.param({options: {initialValue: 'false'}}) reproductiveEffects?: boolean,
-  ): Promise<DG.DataFrame> {
+  ): Promise<void> {
     const pb = DG.TaskBarProgressIndicator.create('Toxicity risks ...');
     try {
-      await addRisksAsColumns(table, molecules, {mutagenicity, tumorigenicity, irritatingEffects, reproductiveEffects});
+      const toxCols = await getToxicityRisksColumns(molecules, {mutagenicity, tumorigenicity, irritatingEffects, reproductiveEffects});
+      toxCols.forEach((col) => table.columns.add(col));
     } finally {
       pb.close();
     }
-    return table;
+  }
+
+
+  @grok.decorators.func({
+    name: 'getToxicityRisks',
+    meta: {vectorFunc: 'true'},
+  })
+  static async getToxicityRisks(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'list<string>', options: {optional: true}}) risks?: string[]): Promise<DG.DataFrame> {
+    const toxCols = await getToxicityRisksColumns(molecules, {
+      mutagenicity: !risks || !risks.length ? true : risks.includes('mutagenicity'),
+      tumorigenicity: !risks || !risks.length ? true : risks.includes('tumorigenicity'),
+      irritatingEffects: !risks || !risks.length ? true : risks.includes('irritatingEffects'),
+      reproductiveEffects: !risks || !risks.length ? true : risks.includes('reproductiveEffects'),
+    });
+    return DG.DataFrame.fromColumns(toxCols);
   }
 
   @grok.decorators.func({
@@ -1972,7 +2029,7 @@ export class PackageFunctions {
     //workaround for functions which add viewers to tableView (can be run only on active table view)
     checkCurrentView(table);
 
-    const view = grok.shell.getTableView(table.name) as DG.TableView;
+    const view = grok.shell.tv as DG.TableView;
 
     const activityColsNames = [];
     for (let i = 0; i < scalings.length; i++) {
@@ -2030,7 +2087,7 @@ export class PackageFunctions {
     }
     const smilesColumn: DG.Column = DG.Column.fromStrings('smiles', smilesList);
     const dataFrame: DG.DataFrame = DG.DataFrame.fromColumns([smilesColumn]);
-    const scriptBlob = await generateScaffoldTree(dataFrame, smilesColumn!.name, ringCutoff, dischargeAndDeradicalize);
+    const scriptBlob = await Chem.generateScaffoldTree(dataFrame, smilesColumn!.name, ringCutoff, dischargeAndDeradicalize);
     const scriptRes = new TextDecoder().decode(scriptBlob.data);
     return scriptRes;
   }
@@ -2079,7 +2136,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Demo R Group Analysis',
     description: 'R Group Analysis including R-group decomposition and  visual analysis of the obtained R-groups',
-    meta: {demoPath: 'Cheminformatics | R-Group Analysis', demoSkip: 'GROK-14320'},
+    meta: {demoPath: 'Cheminformatics | R-Group Analysis', demoSkip: 'GROK-14320', isDemoDashboard: 'true'},
   })
   static async demoRgroupAnalysis(): Promise<void> {
     await _demoRGroups();
@@ -2089,7 +2146,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Demo Activity Cliffs',
     description: 'Searching similar structures with significant activity difference',
-    meta: {demoPath: 'Cheminformatics | Molecule Activity Cliffs', demoSkip: 'GROK-14320'},
+    meta: {demoPath: 'Cheminformatics | Molecule Activity Cliffs', demoSkip: 'GROK-14320', isDemoDashboard: 'true'},
   })
   static async demoMoleculeActivityCliffs(): Promise<void> {
     await _demoActivityCliffsLayout();
@@ -2118,7 +2175,8 @@ export class PackageFunctions {
     'name': 'Names To Smiles',
     'top-menu': 'Chem | Transform | Names To Smiles...',
     'tags': ['Transform']})
-  static async namesToSmiles(data: DG.DataFrame,
+  static async namesToSmiles(
+    data: DG.DataFrame,
     @grok.decorators.param({type: 'column'}) names: DG.Column<string>): Promise<void> {
     const namesList = names.toList();
     const res = await grok.functions.call('Chembl:namesToSmiles', {names: namesList});
@@ -2364,19 +2422,24 @@ export class PackageFunctions {
   @grok.decorators.func({
     'top-menu': 'Chem | Transform | Deprotect...',
     'name': 'Deprotect',
-    'description': 'Generates the new dataset based on the given structure',
+    'tags': ['Transform'],
+    'description': 'Removes drawn protecting groups / fragments from molecules',
+    'editor': 'Chem:DeprotectEditor',
   })
   static async deprotect(
     @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
     @grok.decorators.param({options: {semType: 'Molecule', initialValue: 'O=C([N:1])OCC1c2ccccc2-c2ccccc21'}}) fragment: string): Promise<void> {
-    const module = PackageFunctions.getRdKitModule();
-    const cut = cutFragments(module, molecules.toList(), fragment);
-    const res = cut.map((c) => c[0]);
-    const columnName = table.columns.getUnusedName('deprotected');
-    const col = DG.Column.fromStrings(columnName, res);
-    col.semType = DG.SEMTYPE.MOLECULE;
-    table.columns.add(col);
+    const rdModule = PackageFunctions.getRdKitModule();
+    addDeprotectedColumn(table, molecules, fragment, rdModule);
+  }
+
+  @grok.decorators.editor({
+    name: 'Deprotect Editor',
+    outputs: [{name: 'result', type: 'widget'}],
+  })
+  static deprotectEditor(call: DG.FuncCall): DG.Widget {
+    return new DeprotectEditor(call);
   }
 
   @grok.decorators.func({
@@ -2403,7 +2466,44 @@ export class PackageFunctions {
     'description': 'Calculates the MPO score for the column of molecules',
   })
   static async _mpo(): Promise<void> {
-    _mpoDialog(grok.shell.t);
+    const mpoDialog = new MpoProfileDialog();
+    await mpoDialog.showDialog();
+  }
+
+  @grok.decorators.func({
+    tags: ['Transform'],
+    outputs: [{name: 'res', type: 'list'}],
+  })
+  static async mpoTransformFunction(
+    df: DG.DataFrame,
+    @grok.decorators.param({type: 'object'}) currentProperties: { [key: string]: PropertyDesirability },
+  ): Promise<string[]> {
+    const columns: DG.Column[] = [];
+    let resultCol: DG.Column | null = null;
+    for (const propertyName in currentProperties) {
+      const column = df.columns.byName(propertyName);
+      if (!column) {
+        grok.shell.warning(`Column ${propertyName} from template not found in table. Skipping.`);
+        continue;
+      }
+      column.setTag('desirabilityTemplate', JSON.stringify(currentProperties[propertyName]));
+      columns.push(column);
+    }
+
+    if (columns.length === 0) {
+      grok.shell.error('No valid columns found matching the template properties. Cannot calculate MPO score.');
+      return [];
+    }
+
+    try {
+      resultCol = mpo(df, columns);
+      grok.shell.info(`MPO score calculated in column '${resultCol.name}'.`);
+    } catch (e) {
+      console.error('MPO Calculation Error:', e);
+      grok.shell.error(`MPO calculation failed: ${e instanceof Error ? e.message : String(e)}`);
+    }
+
+    return resultCol ? [resultCol.name] : [];
   }
 
   @grok.decorators.fileViewer({
@@ -2460,7 +2560,7 @@ export class PackageFunctions {
     if (mixtureObj.contents && mixtureObj.contents.length) {
       const contentsAcc = ui.accordion('contents');
       for (let i = 0; i < mixtureObj.contents.length; i++)
-        contentsAcc.addPane(`component ${i + 1}`, () => createComponentPane(mixtureObj.contents![i]));
+        contentsAcc.addPane(mixtureObj.contents![i].name ?? `component ${i + 1}`, () => createComponentPane(mixtureObj.contents![i]));
       resDiv.append(contentsAcc.root);
     }
     return new DG.Widget(resDiv);

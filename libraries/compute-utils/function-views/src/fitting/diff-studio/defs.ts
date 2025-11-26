@@ -1,4 +1,6 @@
-import {IVP2WebWorker, Pipeline} from '@datagrok/diff-grok';
+import {IVP2WebWorker, Pipeline} from 'diff-grok';
+import {EarlyStoppingSettings} from '../constants';
+import {ValueBoundsData} from '../optimizer-misc';
 
 export const ARG_IDX = 0;
 export const NO_ERRORS = 'Success';
@@ -27,11 +29,11 @@ export type NelderMeadInput = {
   fixedInputsNames: string[],
   fixedInputsVals: number[],
   variedInputNames: string[],
-  variedInpMin: Float32Array,
-  variedInpMax: Float32Array,
+  bounds: Record<string, ValueBoundsData>,
   targetNames: string[],
   targetVals: Array<Float64Array>,
   scaleVals: Float64Array,
   samplesCount: number,
   outputNames: string[],
+  earlyStoppingSettings: EarlyStoppingSettings,
 };

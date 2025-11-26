@@ -1,5 +1,11 @@
 # Admetica changelog
 
+## 1.3.1 (2025-09-17)
+
+### Bug Fixes:
+
+* Admetica: Resolved issue with empty string conversion causing `Could not convert '' with type str: tried to convert to double`
+
 ## 1.1.0 (2025-03-07)
 
 ### Features

@@ -16,6 +16,10 @@ export namespace funcs {
     return await grok.functions.call('DiffStudio:Init', {});
   }
 
+  export async function dock(): Promise<void> {
+    return await grok.functions.call('DiffStudio:Dock', {});
+  }
+
   export async function solve(problem: any ): Promise<DG.DataFrame> {
     return await grok.functions.call('DiffStudio:Solve', { problem });
   }

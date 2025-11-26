@@ -35,16 +35,17 @@ export const REVVITY_FIELD_TO_PROP_TYPE_MAPPING: {[key: string]: DG.TYPE} = {
     'double': DG.TYPE.FLOAT,
     'text': DG.TYPE.STRING,
     'date': DG.TYPE.DATE_TIME,
+    'boolean': DG.TYPE.BOOL
 }
 
 export class RevvityUserConditionEditor extends BaseConditionEditor<string> {
-    override initializeEditor(prop: DG.Property): void {
+    override async initializeEditor(prop: DG.Property): Promise<DG.InputBase[]> {
         if (!this.condition.value)
-            this.createUserInput('', prop);
-        else
-            getUserStringIdById(this.condition.value).then((userString: string) => {
-                this.createUserInput(userString, prop);
-            })
+            return [this.createUserInput('', prop)];
+        else {
+            const userString = await getUserStringIdById(this.condition.value);
+            return [this.createUserInput(userString, prop)];
+        }
     }
 
     createUserInput(initValue: string, prop: DG.Property) {
@@ -59,9 +60,12 @@ export class RevvityUserConditionEditor extends BaseConditionEditor<string> {
         });
         this.root.append(userInput.root);
         this.initializeSuggestions(prop, userInput);
+        return userInput;
     }
 }
 
+//register operators for string type, applicable for Revvity
+ConditionRegistry.getInstance().registerTypeOperators(DG.TYPE.STRING, [Operators.STARTS_WITH, Operators.EQ, Operators.NOT_EQ, Operators.IN]);
 //register operators for molecule semType, applicable for Revvity
 ConditionRegistry.getInstance().registerSemTypeOperators(DG.SEMTYPE.MOLECULE, [Operators.CONTAINS, Operators.IS_SIMILAR]);
 //register operators for user semtype

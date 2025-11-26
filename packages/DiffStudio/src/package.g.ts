@@ -6,6 +6,11 @@ export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
 
+//name: dock
+export function dock() : void {
+  PackageFunctions.dock();
+}
+
 //input: object problem 
 //output: dataframe result
 export function solve(problem: any) : any {
@@ -59,14 +64,15 @@ export async function runDiffStudioTreeBrowser(treeNode: any) : Promise<void> {
 //name: Ball flight
 //description: Ball flight simulation
 //tags: model
-//input: double dB { default: 0.01; category: Ball; caption: Diameter; units: m; min: 0.01; max: 0.3 }
-//input: double roB { default: 200; category: Ball; caption: Density; description: Material density; units: kg/m^3; min: 200; max: 1200 }
-//input: double v { default: 50; category: Throw parameters; caption: Velocity; min: 40; max: 60; units: m/sec }
-//input: double a { default: 45; category: Throw parameters; caption: Angle; min: 20; max: 70; units: deg }
+//input: double dB = 0.01 { category: Ball; caption: Diameter; units: m; min: 0.01; max: 0.3; minFormula: roB / 20000; maxFormula: roB / 4000 }
+//input: double roB = 200 { category: Ball; caption: Density; description: Material density; units: kg/m^3; min: 200; max: 1200 }
+//input: double v = 50 { category: Throw parameters; caption: Velocity; min: 40; max: 60; units: m/sec }
+//input: double a = 45 { category: Throw parameters; caption: Angle; min: 20; max: 70; units: deg }
 //output: double maxDist { caption: Max distance }
 //output: double maxHeight { caption: Max height }
 //output: dataframe df { caption: Trajectory; viewer: Line chart(block: 60, multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 40) }
-//editor: Compute2:RichFunctionViewEditor
+//editor: Compute:RichFunctionViewEditor
+//sidebar: @compute
 //meta.runOnOpen: true
 //meta.runOnInput: true
 //meta.features: {"sens-analysis": true, "fitting": true}
@@ -135,23 +141,4 @@ export async function demoBioreactor() : Promise<any> {
 //input: int graphsDockRatio 
 export async function runModel(model: string, inputsTabDockRatio: number, graphsDockRatio: number) : Promise<void> {
   await PackageFunctions.runModel(model, inputsTabDockRatio, graphsDockRatio);
-}
-
-//tags: scriptHandler
-//input: funccall ivpCall 
-//meta.scriptHandler.language: ivp
-//meta.scriptHandler.extensions: ivp
-//meta.scriptHandler.commentStart: #
-//meta.scriptHandler.codeEditorMode: python
-//meta.scriptHandler.parserFunction: DiffStudio:ivpLanguageParser
-//meta.scriptHandler.templateScript: #name: Template\n#language: ivp\n#equations:\n  dy/dt = -y + sin(t) / t\n\n#argument: t\n  initial = 0.01 {min: 0.01; max: 10}\n  final = 15 {min: 15; max: 150}\n  step = 0.01 {min: 0.001; max: 0.1}\n\n#inits:\n  y = 0 {min: 0; max: 9}\n
-//meta.icon: files/icons/package.png
-export async function ivpLanguageHandler(ivpCall: DG.FuncCall) : Promise<void> {
-  await PackageFunctions.ivpLanguageHandler(ivpCall);
-}
-
-//input: string code 
-//output: dynamic result
-export function ivpLanguageParser(code: string) : any {
-  return PackageFunctions.ivpLanguageParser(code);
 }

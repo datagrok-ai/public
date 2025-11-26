@@ -1,9 +1,8 @@
-import * as grok from 'datagrok-api/grok';
-import * as DG from 'datagrok-api/dg';
+import type * as _grok from 'datagrok-api/grok';
+import type * as _DG from 'datagrok-api/dg';
+declare let grok: typeof _grok, DG: typeof _DG;
 
-import { category, test, expect, expectTable } from '@datagrok-libraries/utils/src/test';
-
-const GDF = grok.dapi.functions;
+import { category, test, expect } from '@datagrok-libraries/utils/src/test';
 
 category('Dapi: functions annotations', async () => {
 
@@ -39,14 +38,14 @@ category('Dapi: functions annotations', async () => {
 }, { owner: 'aparamonov@datagrok.ai' });
 
 async function testAnnotation(functionName: string, colName?: string): Promise<void> {
-    var df = DG.DataFrame.fromCsv(`x, y, val
+    const df = DG.DataFrame.fromCsv(`x, y, val
         1, 2, a
         4, 5, b
         7, 8, c`);
   
   // Run script and validate output
     const res = await grok.functions.call(functionName, {data: df, col: df.col('val')});
-    var len = colName == 'joined' ? 4 : 3;
+    const len = colName == 'joined' ? 4 : 3;
     expect(df.columns.length, len, "Incorrect number of columns in dataframe");
     if (!colName) {
       expect(res.dataFrame == null, true, "Parent dataframe shoul be null");

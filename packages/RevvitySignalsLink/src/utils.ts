@@ -2,25 +2,20 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import { SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
 import * as ui from 'datagrok-api/ui';
-import { getRevvityUsers } from './users';
-import { RevvityApiResponse, RevvityData, RevvityUser } from './revvity-api';
-import { MOL_COL_NAME } from './compounds';
+import { getRevvityUsers, getUserStringIdById } from './users';
+import { queryEntityById, RevvityApiResponse, RevvityData, RevvityUser, search } from './revvity-api';
+
 import { awaitCheck } from '@datagrok-libraries/utils/src/test';
+import { compoundTypeAndViewNameMapping, ENTITY_FIELDS_TO_EXCLUDE, FIELDS_SECTION_NAME, FIELDS_TO_EXCLUDE_FROM_CORPORATE_ID_WIDGET, FIELDS_TO_EXCLUDE_FROM_WIDGET, FIRST_COL_NAMES, LAST_COL_NAMES, MOL_COL_NAME, MOLECULAR_FORMULA_FIELD_NAME, NAME, PARAMS_KEY, QUERY_KEY, STORAGE_NAME, SUBMITTER_FIELD_NAME, TABS_TO_EXCLUDE_FROM_WIDGET, TAGS_TO_EXCLUDE, USER_FIELDS } from './constants';
+import { getRevvityLibraries } from './libraries';
+import { u2 } from '@datagrok-libraries/utils/src/u2';
+import { _package } from './package';
+import { currentQueryBuilderConfig, filterProperties, runSearchQuery } from './search-utils';
+import { funcs } from './package-api';
+import { ComplexCondition, Operators } from '@datagrok-libraries/utils/src/query-builder/query-builder';
+import { openedView, updateView } from './view-utils';
+import dayjs from 'dayjs';
 
-
-export const STORAGE_NAME = 'RevvitySignalsSearch';
-export const QUERY_KEY = 'query';
-export const PARAMS_KEY = 'params';
-
-const ENTITY_FIELDS_TO_EXCLUDE = ['type', 'isTemplate', 'tags', 'eid'];
-const TAGS_TO_EXCLUDE = ['system.Keywords'];
-const OWNER_FIELDS = ['owner', 'createdBy', 'editedBy'];
-const FIRST_COL_NAMES = [MOL_COL_NAME, 'id', 'name'];
-const FIELDS_SECTION_NAME = 'fields';
-const TABS_TO_EXCLUDE_FROM_WIDGET = ['chemicalDrawing'];
-const FIELDS_TO_EXCLUDE_FROM_WIDGET = ['assetTypeId', 'assetId', 'eid', 'type', 'library'];
-const MOLECULAR_FORMULA_FIELD_NAME = 'Molecular Formula';
-const SUBMITTER_FIELD_NAME = 'Submitter';
 
 function extractNameFromJavaObjectString(javaString: string): string {
   try {
@@ -195,7 +190,40 @@ export function widgetFromObject(obj: Record<string, any>): DG.Widget {
 }
 
 
-export function createRevvityResponseWidget(response: RevvityApiResponse): HTMLDivElement {
+export function processField(map: Record<string, any>, key: string, value: any): void {
+  if (typeof value === 'object' || FIELDS_TO_EXCLUDE_FROM_WIDGET.includes(key)) {
+    // Skip objects except for fields
+    return;
+  } else if (Array.isArray(value))
+    map[key] = value.join(', ');
+  else {
+    //handle molecular formula fields since they contain <sub> tags
+    if (key.includes(MOLECULAR_FORMULA_FIELD_NAME))
+      value = (value as string).replaceAll('<sub>', '').replaceAll('</sub>', '');
+    else if (key === SUBMITTER_FIELD_NAME) {
+      if (typeof value === 'string' && value.includes('firstName=')) {
+        value = extractNameFromJavaObjectString(value);
+      } else {
+        value = 'Unknown User';
+      }
+    }
+    map[key] = value === null ? '' : value;
+  }
+}
+
+export async function processAttribute(attributeName: string, value: any) {
+  //handle user fields
+  if (USER_FIELDS.includes(attributeName)) {
+    return await getUserStringIdById(value as string);
+  }
+  //handle arrays considering duplicates
+  if (Array.isArray(value)) {
+    return Array.from(new Set([1, 1, 2])).join(',');
+  }
+  return value;
+}
+
+export function createRevvityWidgetByEntityId(response: RevvityApiResponse, idSemValue: DG.SemanticValue<string>): HTMLDivElement {
   const data = response.data as RevvityData;
   if (!data || !data.attributes) {
     return ui.divText('No data available');
@@ -207,27 +235,6 @@ export function createRevvityResponseWidget(response: RevvityApiResponse): HTMLD
 
   // Create the main table from attributes
   const mainMap: Record<string, any> = {};
-
-  const processField = (map: Record<string, any>, key: string, value: any) => {
-    if (typeof value === 'object' || FIELDS_TO_EXCLUDE_FROM_WIDGET.includes(key)) {
-      // Skip objects except for fields
-      return;
-    } else if (Array.isArray(value))
-      map[key] = value.join(', ');
-    else {
-      //handle molecular formula fields since they contain <sub> tags
-      if (key.includes(MOLECULAR_FORMULA_FIELD_NAME))
-        value = (value as string).replaceAll('<sub>', '').replaceAll('</sub>', '');
-      else if (key === SUBMITTER_FIELD_NAME) {
-        if (typeof value === 'string' && value.includes('firstName=')) {
-          value = extractNameFromJavaObjectString(value);
-        } else {
-          value = 'Unknown User';
-        }
-      }
-      map[key] = value === null ? '' : value;
-    }
-  }
 
   // Process regular attributes
   for (const [key, value] of Object.entries(attributes)) {
@@ -243,8 +250,21 @@ export function createRevvityResponseWidget(response: RevvityApiResponse): HTMLD
       }
     }
   }
+  const widgetMapWithAddIcons: { [key: string]: HTMLElement } = {};
+  Object.keys(mainMap).forEach((key) => {
+    const propDiv = ui.divH([mainMap[key]], { style: { 'position': 'relative' } });
+    if (idSemValue.cell?.dataFrame && idSemValue.cell?.column) {
+      const addColumnIcon = ui.iconFA('plus', async () => {
+       // calculatePropForColumn(key, idSemValue.cell.dataFrame, idSemValue.cell.column);
+      }, `Calculate ${key} for the whole table`);
+      addColumnIcon.classList.add('revvity-add-prop-as-column-icon');
+      propDiv.prepend(addColumnIcon);
+      ui.tools.setHoverVisibility(propDiv, [addColumnIcon]);
+    }
+    widgetMapWithAddIcons[key] = propDiv;
+  });
 
-  const mainTable = ui.tableFromMap(mainMap);
+  const mainTable = ui.tableFromMap(widgetMapWithAddIcons);
   const accordions: DG.Accordion[] = [];
 
   // Create accordion tabs for relationships
@@ -289,7 +309,7 @@ export function createRevvityResponseWidget(response: RevvityApiResponse): HTMLD
         else {
           const innerAcc = ui.accordion();
           for (const relationshipItem of relationshipItems) {
-            innerAcc.addPane(OWNER_FIELDS.includes(relationshipName) ? relationshipItem.userId ?? 'User' : relationshipItem.name ?? relationshipItem.id, () => {
+            innerAcc.addPane(USER_FIELDS.includes(relationshipName) ? relationshipItem.userId ?? 'User' : relationshipItem.name ?? relationshipItem.id, () => {
               return ui.tableFromMap(relationshipItem);
             });
           }
@@ -304,25 +324,123 @@ export function createRevvityResponseWidget(response: RevvityApiResponse): HTMLD
   return ui.divV(children);
 }
 
-export async function transformData(data: Record<string, any>[]): Promise<Record<string, any>[]> {
-  const items = [];
-  for (const item of data) {
-        const result: any = { id: item.id };
-    const attrs = item.attributes || {};
+export function createRevvityWidgetByCorporateId(response: RevvityApiResponse, idSemValue: DG.SemanticValue<string>): HTMLElement {
+  let data = response.data;
+
+    const createAttributesPane = async (item: RevvityData<any>, div: HTMLDivElement, entityType: string) => {
+    //move all tags to attributes
+    if (item.attributes.tags) {
+      for (const [key, value] of Object.entries(item.attributes.tags)) {
+        if (FIELDS_TO_EXCLUDE_FROM_CORPORATE_ID_WIDGET.includes(key)) continue;
+        const splittedKey = key.split('.');
+        const keyWithoutTagName = splittedKey.length > 1 ? splittedKey[1] : splittedKey[0];
+        item.attributes[keyWithoutTagName] = value;
+      }
+    }
+    delete item.attributes['tags'];
+
+    //create attributes object for widget
+    const fieldsForWidget: { [key: string]: any } = {};
+    const fieldsToTypesMap: { [key: string]: 'string' | 'double' | 'bool' } = {};
+    for (const [key, value] of Object.entries(item.attributes)) {
+      if (FIELDS_TO_EXCLUDE_FROM_CORPORATE_ID_WIDGET.includes(key)) continue;
+      fieldsForWidget[key] = await processAttribute(key, value);
+      fieldsToTypesMap[key] = typeof value === 'number' ? 'double' : typeof value === 'boolean' ? 'bool' : 'string';
+    }
+
+    const widgetMapWithAddIcons: { [key: string]: HTMLElement } = {};
+    Object.keys(fieldsForWidget).forEach((key) => {
+      const propDiv = ui.divH([fieldsForWidget[key]], { style: { 'position': 'relative' } });
+      if (idSemValue.cell?.dataFrame && idSemValue.cell?.column) {
+        const addColumnIcon = ui.iconFA('plus', async () => {
+          calculatePropForColumn(key, fieldsToTypesMap[key], entityType, idSemValue.cell.dataFrame, idSemValue.cell.column);
+        }, `Calculate ${key} for the whole table`);
+        addColumnIcon.classList.add('revvity-add-prop-as-column-icon');
+        propDiv.prepend(addColumnIcon);
+        ui.tools.setHoverVisibility(propDiv, [addColumnIcon]);
+      }
+      widgetMapWithAddIcons[key] = propDiv;
+    });
+
+    const table = ui.tableFromMap(widgetMapWithAddIcons);
+    ui.setUpdateIndicator(div, false);
+    div.append(table);
+  }
+
+  if (!data || Array.isArray(data) && !data.length)
+    return ui.divText('No data available');
+  if (!Array.isArray(data))
+    data = [data];
+  if (data.length === 1) {
+    const itemType = data[0].attributes.type ?? data[0].attributes.eid ? data[0].attributes.eid.split(':')[0] : null;
+    if (!itemType)
+        return ui.divText('Entity of unknown type');;
+    const div = ui.div();
+    createAttributesPane(data[0], div, itemType);
+    return div;
+  }
+
+  const acc = ui.accordion();
+
+  for (let item of data) {
+    if (item.attributes) {
+      const itemType = item.attributes.type ?? item.attributes.eid ? item.attributes.eid.split(':')[0] : null;
+      if (!itemType)
+        continue;
+      acc.addPane(itemType, () => {
+        const div = ui.div();
+        ui.setUpdateIndicator(div, true);
+        createAttributesPane(item, div, itemType);
+        return div;
+      })
+    }
+  }
+
+  return acc.root;
+}
+
+export async function transformData(data: Record<string, any>[], libId: string, entityType: string): Promise<DG.DataFrame> {
+  if (!data.length)
+    return DG.DataFrame.create();
+  const users = await getRevvityUsers();
+  const columnsData: {[key: string]: {type: string, data: any[]}} = {};
+  const createCol = (key: string, counter: number) => {
+    //find column type
+    const props = filterProperties[`${libId}|${entityType}`];
+    const prop = props.filter((it) => it.name === key);
+    if (!columnsData[key]) {
+      columnsData[key] = { type: prop.length ? prop[0].type : DG.TYPE.STRING, data: [] };
+      for (let j = 0; j < counter; j++)
+        columnsData[key].data.push(undefined);
+    }
+  }
+  for (let i = 0; i < data.length; i++) {
+    if (!columnsData.id)
+      columnsData.id = {type: DG.TYPE.STRING, data: []};
+    columnsData.id.data.push(data[i].id);
+
+    const attrs = data[i].attributes || {};
 
     for (const [key, value] of Object.entries(attrs)) {
       if (ENTITY_FIELDS_TO_EXCLUDE.includes(key))
         continue;
+      createCol(key, i);
       //handle fileds related to users
-      if (OWNER_FIELDS.includes(key)) {
-        const user = (await getRevvityUsers())![value as string] as RevvityUser;
-        result[key] = user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.userName ?? value;
+      if (USER_FIELDS.includes(key)) {
+        let userArr = users?.filter((it) => it.userId === value);
+        let userString = 'unknown user';
+        if (userArr?.length) {
+          const user = userArr[0];
+          userString = user.email ?? user.userName ??
+          (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.userId ?? 'unknown user');
+        }
+        columnsData[key].data.push(userString);
         continue;
       }
       if (Array.isArray(value)) {
-        result[key] = value.join('; ');
+        columnsData[key].data.push(value.join('; '));
       } else {
-        result[key] = value;
+        columnsData[key].data.push(value);
       }
     }
 
@@ -331,29 +449,208 @@ export async function transformData(data: Record<string, any>[]): Promise<Record
       for (const [tagKey, tagValue] of Object.entries(attrs.tags)) {
         if (TAGS_TO_EXCLUDE.includes(tagKey))
           continue;
-        const fieldName = tagKey.includes('.') ? tagKey.split('.').slice(1).join('.') : tagKey;
+      createCol(tagKey, i);
         if (Array.isArray(tagValue)) {
-          result[fieldName] = tagValue.join('; ');
+          columnsData[tagKey].data.push(tagValue.join('; '));
         } else {
-          result[fieldName] = tagValue;
+          columnsData[tagKey].data.push(tagValue);
         }
       }
     }
-    items.push(result);
-  }
-  return items;
-}
-
-export async function reorderColummns(df: DG.DataFrame) {
-  const colNames = df.columns.names();
-  const newColOrder = [];
-  for (const colName of FIRST_COL_NAMES) {
-    const index = colNames.indexOf(colName);
-    if (index > -1) {
-      colNames.splice(index, 1);
-      newColOrder.push(colName);
+    
+    //in case item lacked some of the keys, fill in corresponding columns with undefined values
+    for (const key of Object.keys(columnsData)) {
+      if (columnsData[key].data.length < i + 1)
+        columnsData[key].data.push(undefined);
     }
   }
-  df.columns.setOrder(newColOrder.concat(colNames));
+
+  const columns: DG.Column[] = [];
+  for (let colName of Object.keys(columnsData)) {
+    if (columnsData[colName].type === 'datetime')
+      columnsData[colName].data = columnsData[colName].data.map((it) => dayjs(it));
+    const col = DG.Column.fromList(columnsData[colName].type as 'string' | 'int' | 'double' | 'bool' | 'qnum' | 'datetime',
+      colName, columnsData[colName].data);
+    columns.push(col);
+  }
+  return DG.DataFrame.fromColumns(columns);
 }
 
+export async function reorderColumns(df: DG.DataFrame) {
+  const colNames = df.columns.names().map((it) => it.toLowerCase());
+  const createColNamesArr = (colsToReorder: string[]) => {
+    const reorderedNames = [];
+    for (const colName of colsToReorder) {
+      const index = colNames.indexOf(colName.toLowerCase());
+      if (index > -1) {
+        colNames.splice(index, 1);
+        reorderedNames.push(colName);
+      }
+    }
+    return reorderedNames;
+  } 
+  const firstCols = createColNamesArr(FIRST_COL_NAMES);
+  const lastCols = createColNamesArr(LAST_COL_NAMES);
+
+  df.columns.setOrder(firstCols.concat(colNames).concat(lastCols));
+}
+
+export function getCompoundTypeByViewName(viewName: string): string {
+  const res = compoundTypeAndViewNameMapping.filter((it) => it.viewName === viewName);
+  return !res.length ? viewName : res[0].compoundType;
+}
+
+export function getViewNameByCompoundType(compoundType: string): string {
+  const res = compoundTypeAndViewNameMapping.filter((it) => it.compoundType === compoundType);
+  return !res.length ? compoundType : res[0].viewName;
+}
+
+export async function calculatePropForColumn(propName: string, colType: "string" | "double" | "bool", entityType: string, df: DG.DataFrame, idsCol: DG.Column) {
+  const newColName = df.columns.getUnusedName(propName);
+  const newCol = df.columns.addNew(newColName, colType);
+  const promises = idsCol.toList().map((id, index) =>
+    getEntityPropByCorporateEntityId(propName, id, entityType)
+      .then(res => newCol.set(index, res.toString()))
+      .catch(() => { })
+  );
+  await Promise.allSettled(promises);
+}
+
+export async function getEntityPropByCorporateEntityId(propName: string, name: string, type: string): Promise<any> {
+  const query = {
+    "query": {
+      "$and": [
+        {
+          "$match": {
+            "field": "type",
+            "value": type,
+            "mode": "keyword"
+          }
+        },
+        {
+          "$match": {
+            "field": "name",
+            "value": name,
+            "mode": "keyword"
+          }
+        }
+      ]
+    }
+  }
+  let prop: any = null;
+  try {
+    const entity = await search(query);
+    if (entity.data) {
+      const entityData = Array.isArray(entity.data) ? entity.data[0] : entity.data;
+      const attributes = (entityData as RevvityData).attributes;
+      if (attributes) {
+        //look for prop in attributes
+        if (Object.keys(attributes).includes(propName))
+          prop = await processAttribute(propName, attributes[propName]);
+        else if (attributes.tags) { //look for prop in tags
+          for (const tag of Object.keys(attributes.tags)) {
+            const splittedTag = tag.split('.');
+            const tagName = splittedTag.length > 1 ? splittedTag[1] : splittedTag[0];
+            if (tagName === propName) {
+              prop = await processAttribute(propName, attributes.tags[tag]);
+              break;
+            }
+          }
+        }
+      }
+    }
+  } catch (e: any) {
+    grok.shell.error(e.message ?? e);
+  }
+  return prop;
+}
+
+export async function getEntityPropByEntityId(propName: string, id: string): Promise<any> {
+  let prop: any = null;
+  try {
+  const entity = await queryEntityById(id);
+  if (entity.data) {
+    const attributes = (entity.data as RevvityData).attributes;
+    if (attributes) {
+      //look for prop in attributes
+      if(Object.keys(attributes).includes(propName))
+        prop = attributes[propName];
+      //if not in attributes - look in fields
+      if(attributes['fields'] && Object.keys(attributes['fields']))
+        prop = attributes['fields'][propName].value;
+      const tempMap = {[propName]: prop};
+      processField({[propName]: prop}, propName, prop);
+      prop = tempMap[propName];
+    }
+  }
+  } catch(e: any) {
+    grok.shell.error(e.message ?? e);
+  }
+  return prop;
+}
+
+export function getAppHeader(): HTMLElement {
+  const appHeader = u2.appHeader({
+      iconPath: _package.webRoot + '/img/revvity.png',
+      learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/RevvitySignalsLink/README.md',
+      description: '- Connect to your Revvity account\n' +
+        '- Run, save, and share searches\n' +
+        '- Visualize & analyze assay data: assets, batches, and more',
+      appTitle: 'RevvityLink',
+      appSubTitle: 'Access and analyze your assay data',
+      bottomLine: true
+    });
+  return appHeader;
+}
+
+let latestLabel: string | undefined = undefined; //workaround since widget is re-created once search is performed and dataframe in the tv is chenged
+export async function createWidgetByRevvityLabel(idSemValue: DG.SemanticValue<string>) {
+
+  let div = ui.divText(`No data found for ${idSemValue.value}`);
+  let searchConfig = currentQueryBuilderConfig;
+  if (!searchConfig) {
+    const libs = (await getRevvityLibraries()).filter((it) => it.name.toLowerCase() === 'compounds');
+    if (libs.length)
+      searchConfig = { libId: libs[0].id, libName: 'compounds', entityType: 'batch' } //use compounds|batches as default
+  }
+  if (idSemValue.cell?.column) { //now can search only through materials library - the last true parameter
+    const terms: string[] = await funcs.getTermsForField(idSemValue.cell?.column.name,
+      searchConfig!.entityType, searchConfig!.libId, true);
+    if (terms.length) {
+      const initValue = latestLabel ?? idSemValue.value;
+      latestLabel = undefined;
+      if (terms.includes(initValue)) {
+        const inputName = idSemValue.cell?.column.getTag('friendlyName') ?? idSemValue.cell?.column.name;
+
+        const labelInput = ui.input.choice(inputName, { value: initValue, items: terms, nullable: false });
+
+        const searchButton = ui.button('Search', async () => {
+          latestLabel = labelInput.value!;
+          const viewToUpdate = openedView ?? grok.shell.tv;
+          if (viewToUpdate) {
+            ui.setUpdateIndicator(viewToUpdate.root, true, `Searching ${inputName} = ${labelInput.value}`);
+            const queryBuilderCondition: ComplexCondition = {
+              logicalOperator: Operators.Logical.and,
+              conditions: [
+                { field: idSemValue.cell?.column.name, operator: Operators.EQ, value: labelInput.value }]
+            };
+            const df = await runSearchQuery(searchConfig!.libId, searchConfig!.entityType, queryBuilderCondition);
+            const filtersDiv = Array.from(document.getElementsByClassName('revvity-signals-filter-panel'));
+            updateView(viewToUpdate as DG.TableView, df, searchConfig!.entityType, searchConfig!.libName,
+              searchConfig!.libId, filtersDiv.length ? filtersDiv[0] as HTMLDivElement : undefined);
+            ui.setUpdateIndicator(viewToUpdate.root, false);
+            if (searchConfig?.qb)
+              searchConfig?.qb.loadCondition(queryBuilderCondition);
+          }
+        });
+
+        div = ui.divV([
+          labelInput,
+          searchButton
+        ]);
+      }
+    }
+  }
+
+  return div;
+}

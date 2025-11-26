@@ -9,90 +9,14 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace scripts {
   /**
-  Calculates Minimum Significant Ratio (MSR) for compounds based on IC50 values, run dates, assay names, and target entities. 
+  Calculates Minimum Significant Ratio (MSR) for compounds based on IC50 values, run dates, assay names, and target entities.
   */
   export async function calculateMSR(table: DG.DataFrame , ic50Column: DG.Column , compoundIdColumn: DG.Column , runDateColumn: DG.Column , assayNameColumn: DG.Column , targetEntityColumn: DG.Column ): Promise<DG.DataFrame> {
     return await grok.functions.call('Curves:CalculateMSR', { table, ic50Column, compoundIdColumn, runDateColumn, assayNameColumn, targetEntityColumn });
   }
 }
 
-export namespace queries {
-  export async function getPlates(): Promise<DG.DataFrame> {
-    return await grok.data.query('Curves:GetPlates', {});
-  }
-
-  /**
-  Get all well level properties (either used in a well or specified in a template)
-  */
-  export async function getWellLevelProperties(): Promise<DG.DataFrame> {
-    return await grok.data.query('Curves:GetWellLevelProperties', {});
-  }
-
-  /**
-  Get all plate level properties (either used in a plate or specified in a template)
-  */
-  export async function getPlateLevelProperties(): Promise<DG.DataFrame> {
-    return await grok.data.query('Curves:GetPlateLevelProperties', {});
-  }
-
-  export async function getPropertyNames(): Promise<DG.DataFrame> {
-    return await grok.data.query('Curves:GetPropertyNames', {});
-  }
-
-  export async function getPlateTypes(): Promise<DG.DataFrame> {
-    return await grok.data.query('Curves:GetPlateTypes', {});
-  }
-
-  export async function getPlateTemplates(): Promise<DG.DataFrame> {
-    return await grok.data.query('Curves:GetPlateTemplates', {});
-  }
-
-  export async function getWellRoles(): Promise<DG.DataFrame> {
-    return await grok.data.query('Curves:GetWellRoles', {});
-  }
-
-  export async function getWellValuesByBarcode(barcode: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('Curves:GetWellValuesByBarcode', { barcode });
-  }
-
-  export async function getWellValuesById(id: number ): Promise<DG.DataFrame> {
-    return await grok.data.query('Curves:GetWellValuesById', { id });
-  }
-
-  export async function getAllowedValues(propertyName: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('Curves:GetAllowedValues', { propertyName });
-  }
-
-  export async function getUniquePlatePropertyValues(): Promise<DG.DataFrame> {
-    return await grok.data.query('Curves:GetUniquePlatePropertyValues', {});
-  }
-
-  export async function getUniqueWellPropertyValues(): Promise<DG.DataFrame> {
-    return await grok.data.query('Curves:GetUniqueWellPropertyValues', {});
-  }
-
-  export async function createProperty(propertyName: string , valueType: string ): Promise<number> {
-    return await grok.data.query('Curves:CreateProperty', { propertyName, valueType });
-  }
-
-  export async function createTemplate(name: string , description: string ): Promise<number> {
-    return await grok.data.query('Curves:CreateTemplate', { name, description });
-  }
-
-  export async function getTemplateWellProperties(): Promise<DG.DataFrame> {
-    return await grok.data.query('Curves:GetTemplateWellProperties', {});
-  }
-
-  export async function getTemplatePlateProperties(): Promise<DG.DataFrame> {
-    return await grok.data.query('Curves:GetTemplatePlateProperties', {});
-  }
-}
-
 export namespace funcs {
-  export async function platesAppTreeBrowserTempDisabled(treeNode: any ): Promise<void> {
-    return await grok.functions.call('Curves:PlatesAppTreeBrowserTempDisabled', { treeNode });
-  }
-
   export async function fitChartCellRenderer(): Promise<any> {
     return await grok.functions.call('Curves:FitChartCellRenderer', {});
   }
@@ -111,19 +35,12 @@ export namespace funcs {
     return await grok.functions.call('Curves:CurveFitDemo', {});
   }
 
-  /**
-  Assasy plates with concentration, layout and readout data
-  */
-  export async function assayPlatesDemo(): Promise<void> {
-    return await grok.functions.call('Curves:AssayPlatesDemo', {});
-  }
-
   export async function initCurves(): Promise<void> {
     return await grok.functions.call('Curves:InitCurves', {});
   }
 
-  export async function dataToCurves(df: DG.DataFrame , concentrationCol: DG.Column , readoutCol: DG.Column , batchIDCol: DG.Column , assayCol: DG.Column , runIDCol: DG.Column , compoundIDCol: DG.Column , targetEntityCol: DG.Column , excludeOutliersCol: DG.Column | null, parentTable: DG.DataFrame | null, fitParamColumns: any | null, reportedIC50Column: string | null, reportedQualifiedIC50Column: string | null, experimentIDColumn: string | null, qualifierColumn: string | null, additionalColumns: any | null, wellLevelJoinCol: string | null, parentLevelJoinCol: string | null): Promise<DG.DataFrame> {
-    return await grok.functions.call('Curves:DataToCurves', { df, concentrationCol, readoutCol, batchIDCol, assayCol, runIDCol, compoundIDCol, targetEntityCol, excludeOutliersCol, parentTable, fitParamColumns, reportedIC50Column, reportedQualifiedIC50Column, experimentIDColumn, qualifierColumn, additionalColumns, wellLevelJoinCol, parentLevelJoinCol });
+  export async function dataToCurves(df: DG.DataFrame , concentrationCol: DG.Column , readoutCol: DG.Column , batchIDCol: DG.Column , assayCol: DG.Column , runIDCol: DG.Column , compoundIDCol: DG.Column , targetEntityCol: DG.Column , excludeOutliersCol: DG.Column | null, parentTable: DG.DataFrame | null, fitParamColumns: any | null, reportedIC50Column: string | null, reportedQualifiedIC50Column: string | null, experimentIDColumn: string | null, qualifierColumn: string | null, additionalColumns: any | null, wellLevelJoinCol: string | null, parentLevelJoinCol: string | null, wellLevelAdditionalColumns?: any | null): Promise<DG.DataFrame> {
+    return await grok.functions.call('Curves:DataToCurves', { df, concentrationCol, readoutCol, batchIDCol, assayCol, runIDCol, compoundIDCol, targetEntityCol, excludeOutliersCol, parentTable, fitParamColumns, reportedIC50Column, reportedQualifiedIC50Column, experimentIDColumn, qualifierColumn, additionalColumns, wellLevelJoinCol, parentLevelJoinCol, wellLevelAdditionalColumns });
   }
 
   export async function dataToCurvesTopMenu(): Promise<any> {
@@ -136,46 +53,6 @@ export namespace funcs {
 
   export async function addAggrStatisticsColumn(table: DG.DataFrame , colName: string , propName: string , aggrType: string ): Promise<DG.Column> {
     return await grok.functions.call('Curves:AddAggrStatisticsColumn', { table, colName, propName, aggrType });
-  }
-
-  export async function platesFolderPreview(folder: DG.FileInfo , files: any ): Promise<any> {
-    return await grok.functions.call('Curves:PlatesFolderPreview', { folder, files });
-  }
-
-  export async function previewPlate(file: DG.FileInfo ): Promise<DG.View> {
-    return await grok.functions.call('Curves:PreviewPlate', { file });
-  }
-
-  export async function importPlate(fileContent: string ): Promise<any> {
-    return await grok.functions.call('Curves:ImportPlate', { fileContent });
-  }
-
-  export async function importPlateXlsx(fileContent: any ): Promise<void> {
-    return await grok.functions.call('Curves:ImportPlateXlsx', { fileContent });
-  }
-
-  export async function previewPlateXlsx(file: DG.FileInfo ): Promise<DG.View> {
-    return await grok.functions.call('Curves:PreviewPlateXlsx', { file });
-  }
-
-  export async function checkExcelIsPlate(content: any ): Promise<boolean> {
-    return await grok.functions.call('Curves:CheckExcelIsPlate', { content });
-  }
-
-  export async function checkFileIsPlate(content: string ): Promise<boolean> {
-    return await grok.functions.call('Curves:CheckFileIsPlate', { content });
-  }
-
-  export async function getPlateByBarcode(barcode: string ): Promise<any> {
-    return await grok.functions.call('Curves:GetPlateByBarcode', { barcode });
-  }
-
-  export async function createDummyPlateData(): Promise<void> {
-    return await grok.functions.call('Curves:CreateDummyPlateData', {});
-  }
-
-  export async function plateGridCellRenderer(): Promise<any> {
-    return await grok.functions.call('Curves:PlateGridCellRenderer', {});
   }
 
   export async function rawPNGRenderer(): Promise<any> {

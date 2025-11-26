@@ -13,6 +13,13 @@ export namespace scripts {
   }
 
   /**
+  Converts molecules to HELM notation based on monomer library
+  */
+  export async function molToHelmConverterPy(moleculesDataframe: DG.DataFrame , moleculesColumn: DG.Column , libraryJSON: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Bio:MolToHelmConverterPy', { moleculesDataframe, moleculesColumn, libraryJSON });
+  }
+
+  /**
   Create the model peptides/DNA sequences with peptides data
   */
   export async function sequenceGenerator(clusters: number , num_sequences: number , alphabet_key: string , motif_length: number , max_variants_position: number , random_length: number , dispersion: number , activity_range: number , cliff_probability: number , cliff_strength: number , cliff_strength_dispersion: number , assay_noise_levels: string , assay_scales: string , disable_negatives: boolean , fasta_separator: string | null, helm_library_file: DG.FileInfo | null, helm_connection_mode: string ): Promise<DG.DataFrame> {
@@ -38,6 +45,17 @@ export namespace funcs {
 
   export async function sequenceTooltip(col: DG.Column ): Promise<any> {
     return await grok.functions.call('Bio:SequenceTooltip', { col });
+  }
+
+  export async function standardiseMonomerLibrary(library: string ): Promise<string> {
+    return await grok.functions.call('Bio:StandardiseMonomerLibrary', { library });
+  }
+
+  /**
+  Matches molecules in a column with monomers from the selected library(s)
+  */
+  export async function matchWithMonomerLibrary(table: DG.DataFrame , molecules: DG.Column , polymerType: string ): Promise<void> {
+    return await grok.functions.call('Bio:MatchWithMonomerLibrary', { table, molecules, polymerType });
   }
 
   export async function getBioLib(): Promise<any> {
@@ -85,6 +103,14 @@ export namespace funcs {
 
   export async function separatorSequenceCellRenderer(): Promise<any> {
     return await grok.functions.call('Bio:SeparatorSequenceCellRenderer', {});
+  }
+
+  export async function bilnSequenceCellRenderer(): Promise<any> {
+    return await grok.functions.call('Bio:BilnSequenceCellRenderer', {});
+  }
+
+  export async function refineNotationProviderForBiln(col: DG.Column , stats: any , separator?: string | null): Promise<boolean> {
+    return await grok.functions.call('Bio:RefineNotationProviderForBiln', { col, stats, separator });
   }
 
   export async function macroMolColumnPropertyPanel(molColumn: DG.Column ): Promise<any> {
@@ -154,6 +180,20 @@ export namespace funcs {
   }
 
   /**
+  Converts Peptide molecules to HELM notation by matching with monomer library
+  */
+  export async function moleculesToHelmTopMenu(table: DG.DataFrame , molecules: DG.Column ): Promise<void> {
+    return await grok.functions.call('Bio:MoleculesToHelmTopMenu', { table, molecules });
+  }
+
+  /**
+  Converts a single molecule to HELM notation without requiring a table or column
+  */
+  export async function moleculeToHelmSingle(molecule: string ): Promise<string> {
+    return await grok.functions.call('Bio:MoleculeToHelmSingle', { molecule });
+  }
+
+  /**
   Converts sequences to molblocks
   */
   export async function toAtomicLevel(table: DG.DataFrame , seqCol: DG.Column , nonlinear: boolean , highlight: boolean ): Promise<void> {
@@ -166,6 +206,13 @@ export namespace funcs {
 
   export async function toAtomicLevelPanel(sequence: any ): Promise<any> {
     return await grok.functions.call('Bio:ToAtomicLevelPanel', { sequence });
+  }
+
+  /**
+  Converts a single sequence to molblock
+  */
+  export async function toAtomicLevelSingleSeq(sequence: string ): Promise<string> {
+    return await grok.functions.call('Bio:ToAtomicLevelSingleSeq', { sequence });
   }
 
   export async function sequence3dStructureWidget(sequence: any ): Promise<any> {
@@ -320,6 +367,34 @@ export namespace funcs {
   */
   export async function bioSubstructureFilterTest(): Promise<any> {
     return await grok.functions.call('Bio:BioSubstructureFilterTest', {});
+  }
+
+  export async function webLogoLargeApp(): Promise<void> {
+    return await grok.functions.call('Bio:WebLogoLargeApp', {});
+  }
+
+  export async function webLogoAggApp(): Promise<void> {
+    return await grok.functions.call('Bio:WebLogoAggApp', {});
+  }
+
+  export async function getRegionApp(): Promise<void> {
+    return await grok.functions.call('Bio:GetRegionApp', {});
+  }
+
+  export async function getRegionHelmApp(): Promise<void> {
+    return await grok.functions.call('Bio:GetRegionHelmApp', {});
+  }
+
+  export async function longSeqTableSeparator(): Promise<void> {
+    return await grok.functions.call('Bio:LongSeqTableSeparator', {});
+  }
+
+  export async function longSeqTableFasta(): Promise<void> {
+    return await grok.functions.call('Bio:LongSeqTableFasta', {});
+  }
+
+  export async function longSeqTableHelm(): Promise<void> {
+    return await grok.functions.call('Bio:LongSeqTableHelm', {});
   }
 
   export async function addCopyMenu(cell: any , menu: any ): Promise<void> {

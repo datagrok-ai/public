@@ -6,7 +6,7 @@ import {pinnacleRuleIdColumnName, validationResultRuleIdColumn} from '../sdtm-va
 import {createRulesDataFrame} from '../sdtm-validation/validation-utils';
 import {getUniqueValues} from '../data-preparation/utils';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
-import {studies} from '../clinical-study';
+import {studies} from '../package';
 
 export class ValidationView extends ClinicalCaseViewBase {
   resultsDataframe: DG.DataFrame;
@@ -23,6 +23,10 @@ export class ValidationView extends ClinicalCaseViewBase {
 
   createView(): void {
     this.resultsDataframe = studies[this.studyId].validationResults;
+    if (!this.resultsDataframe.rowCount) {
+      this.root.append(ui.divText('No validation errors found', 'clinical-case-validation-view-no-errors'));
+      return;
+    }
     this.domains = studies[this.studyId].domains;
 
     const uniqueViolatedRuleIds = Array.from(getUniqueValues(studies[this.studyId].validationResults,

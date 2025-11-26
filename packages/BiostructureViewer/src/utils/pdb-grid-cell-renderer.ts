@@ -32,6 +32,9 @@ export class PdbGridCellRendererBack extends CellRendererBackAsyncBase<NglGlProp
     super(gridCol, tableCol, _package.logger, true);
   }
 
+  override get minHeight(): number { return 30; }
+  override get minWidth(): number { return 30; }
+
   protected getRenderService(): RenderServiceBase<NglGlProps, NglGlAux> {
     return _getNglGlService();
   }

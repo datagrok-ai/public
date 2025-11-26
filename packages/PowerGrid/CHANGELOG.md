@@ -1,5 +1,32 @@
 # Power Grid changelog
 
+## 1.7.10 (2025-10-21)
+
+* GROK-19073: Forms Viewer: display incorrect row coloring when scrolling grid with pinned rows
+
+## 1.7.9 (2025-09-23)
+
+* GROK-18814: Forms Viewer: Add substructure highlighting support
+
+## 1.7.8 (2025-09-23)
+
+## 1.7.7 (2025-08-28)
+
+## 1.7.6 (2025-08-15)
+
+## 1.7.5 (2025-08-14)
+
+* Summary columns: Added `onDetached` for viewers and some improvements on events with summary columns
+* Smartforms: Show only first 10 columns by default
+
+## 1.7.4 (2025-08-08)
+
+* Made correct restoring of pinned columns
+
+## 1.7.3 (2025-08-07)
+
+* Fixed pinned columns issues
+
 ## 1.7.2 (2025-07-29)
 
 * GROK-18597 Smart form: can't add add categorical columns from the Context Panel

@@ -47,9 +47,9 @@ export function getRegionDo(
     if (sh.posList[posJ] == startPosName) startPosIdx = posJ;
     if (sh.posList[posJ] == endPosName) endPosIdx = posJ;
   }
-  if (startPosIdx === null && startPosName !== null)
+  if (startPosIdx == null && startPosName !== null)
     throw new Error(`Start position ${startPosName} not found.`);
-  if (endPosIdx === null && endPosName !== null)
+  if (endPosIdx == null && endPosName !== null)
     throw new Error(`End position ${endPosName} not found.`);
 
   if (sh.posList.length < endPosIdx!)

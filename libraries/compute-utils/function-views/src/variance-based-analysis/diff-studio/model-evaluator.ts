@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {DiffGrok} from '../../fitting-view';
 import {OutputDataFromUI} from '../sa-outputs-routine';
 
-import * as DGL from '@datagrok/diff-grok';
+import * as DGL from 'diff-grok';
 import {DEFAULT_NUM, MIN_WORKERS_COUNT, WORKERS_COUNT_DOWNSHIFT,
   WorkerTask, RESULT_CODE,
   NO_ERRORS} from './defs';

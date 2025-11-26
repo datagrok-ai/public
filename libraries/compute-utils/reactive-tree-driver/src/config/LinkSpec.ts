@@ -124,7 +124,7 @@ export function parseLinkIO(io: string, ioType: IOType): LinkIOParsed[] {
     throw new Error(`Link io ${io} is not ending with input/output selector`);
   if (lastSegment && flags.includes('template')) {
     return lastSegment.ids!.map((id) => {
-      const nname = name + id;
+      const nname = name === '_' ? id : name + id;
       const nlastSegment: LinkSelectorSegment = {type: 'selector', selector: 'first', ids: [id], stopIds: []};
       const nsegments = [...segments.slice(0, -1), nlastSegment];
       return {name: nname, segments: nsegments, flags};

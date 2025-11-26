@@ -14,12 +14,13 @@ export function _welcomeView() : any {
   return PackageFunctions._welcomeView();
 }
 
-//name: Recent projects
+//name: Activity dashboard
 //tags: dashboard
 //output: widget result
-//meta.order: 2
-export function recentProjectsWidget() : any {
-  return PackageFunctions.recentProjectsWidget();
+//meta.showName: false
+//meta.order: 1
+export function activityDashboardWidget() : any {
+  return PackageFunctions.activityDashboardWidget();
 }
 
 //name: Community
@@ -30,33 +31,21 @@ export function communityWidget() : any {
   return PackageFunctions.communityWidget();
 }
 
-//name: webWidget
 //output: widget result
 export function webWidget() : any {
   return PackageFunctions.webWidget();
 }
 
-//name: htmlWidget
 //output: widget result
 export function htmlWidget() : any {
   return PackageFunctions.htmlWidget();
 }
 
-//name: Learn
-//tags: dashboard
-//output: widget result
-//meta.order: 5
-export function learnWidget() : any {
-  return PackageFunctions.learnWidget();
-}
-
-//name: kpiWidget
 //output: widget result
 export function kpiWidget() : any {
   return PackageFunctions.kpiWidget();
 }
 
-//name: isFormulaColumn
 //input: column col 
 //output: bool result
 export function isFormulaColumn(col: DG.Column) : boolean {
@@ -72,7 +61,16 @@ export function formulaWidget(col: DG.Column) : any {
   return PackageFunctions.formulaWidget(col);
 }
 
-//name: powerPackSearchProvider
+//name: Query
+//description: Tries to find a query which has the similar pattern as the prompt user entered and executes it
+//input: string prompt 
+//output: widget result
+//meta.role: aiSearchProvider
+//meta.useWhen: if the prompt suggest that the user is looking for a data table result and the prompt resembles a query pattern. for example, "bioactivity data for shigella" or "compounds similar to aspirin" or first 100 chembl compounds. there should be some parts of user prompt that could match parameters in some query, like shigella, aspirin, first 100 etc.
+export async function llmSearchQueryProvider(prompt: string) : Promise<any> {
+  return await PackageFunctions.llmSearchQueryProvider(prompt);
+}
+
 //tags: searchProvider
 //output: dynamic result
 export function powerPackSearchProvider() : any {
@@ -81,48 +79,44 @@ export function powerPackSearchProvider() : any {
 
 //name: formulaLinesEditor
 //input: dataframe src { optional: true }
-//top-menu: Data | Formula Lines...
-export function formulaLinesDialog(src: any) : void {
-  PackageFunctions.formulaLinesDialog(src);
+//input: int currentIndexToSet { optional: true }
+//input: bool isDataFrameValue { optional: true }
+//input: bool isAnnotationArea { optional: true }
+export function formulaLinesDialog(src: any, currentIndexToSet?: number, isDataFrameValue?: boolean, isAnnotationArea?: boolean) : void {
+  PackageFunctions.formulaLinesDialog(src, currentIndexToSet, isDataFrameValue, isAnnotationArea);
 }
 
-//name: powerPackInit
 //tags: init
 export async function powerPackInit() : Promise<void> {
-  PackageFunctions.powerPackInit();
+  await PackageFunctions.powerPackInit();
 }
 
-//name: windowsManager
 //description: Windows Manager
 //tags: autostart
 export function windowsManager() : void {
   PackageFunctions.windowsManager();
 }
 
-//name: viewerDialog
 //description: Open 'Viewer Gallery' dialog
 //input: dynamic tv 
 export function viewerDialog(tv: any) : void {
   PackageFunctions.viewerDialog(tv);
 }
 
-//name: viewerGallery
 //description: ViewerGallery
 //tags: autostart
 export function viewerGallery() : void {
   PackageFunctions.viewerGallery();
 }
 
-//name: markdownFileViewer
 //tags: fileViewer
 //input: file file 
 //output: view result
 //meta.fileViewer: md,mdx
 export async function markdownFileViewer(file: DG.FileInfo) : Promise<any> {
-  return PackageFunctions.markdownFileViewer(file);
+  return await PackageFunctions.markdownFileViewer(file);
 }
 
-//name: xlsxFileHandler
 //description: Opens Excel file
 //tags: file-handler
 //input: list bytes 
@@ -130,5 +124,5 @@ export async function markdownFileViewer(file: DG.FileInfo) : Promise<any> {
 //output: list<dataframe> result
 //meta.ext: xlsx
 export async function xlsxFileHandler(bytes: Uint8Array, sheetName?: string) : Promise<any> {
-  return PackageFunctions.xlsxFileHandler(bytes, sheetName);
+  return await PackageFunctions.xlsxFileHandler(bytes, sheetName);
 }

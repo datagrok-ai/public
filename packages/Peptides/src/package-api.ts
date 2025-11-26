@@ -48,6 +48,13 @@ export namespace funcs {
     return await grok.functions.call('Peptides:MostPotentResidues', {});
   }
 
+  /**
+  Mutation Cliffs Line Chart
+  */
+  export async function mutationCliffs(): Promise<any> {
+    return await grok.functions.call('Peptides:MutationCliffs', {});
+  }
+
   export async function logoSummaryTable(): Promise<any> {
     return await grok.functions.call('Peptides:LogoSummaryTable', {});
   }

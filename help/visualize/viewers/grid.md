@@ -171,6 +171,16 @@ their content is automatically visualized in the **Context Panel**.
 
 :::
 
+### Sorting
+
+To sort the table by a particular column, double-click the column header. The "↓" symbol
+next the column name would appear, indicating that the column is sorted in descending order
+(from high to low). Double-click again to sort in ascending order. Next double-click resets the
+sorting order.
+
+To sort by multiple columns at once, right-click the grid, choose "Sort...", and 
+pick the desired columns, along with the sort direction for each of the columns. 
+
 ### Selecting columns
 
 There are multiple ways to select a column:
@@ -281,6 +291,30 @@ Examples of built-in renderers include molecules, URL based images, fit lines, c
 
 :::
 
+#### Choice renderer
+
+The `Choice` renderer provides a drop-down list for a single selection from a predefined set of options. When you
+double-click the cell, it allows you to pick one value from the list.
+
+To configure it, set the column tag, `.choices`, to a JSON string array of the options (e.g., `["Option 1", "Option 2", "Option 3"]`).
+After that, double-clicking the cell will show a drop-down list with those options.
+
+#### MultiChoice renderer
+
+The `MultiChoice` renderer displays a list of predefined options as checkboxes within a cell. To configure it:
+
+1. Set the column tag `cell.renderer` to `MultiChoice`.
+
+2. Set another column tag, `.choices`, to a JSON string array of the options you want to display (e.g., ["Option 1", "Option 2", "Option 3"]).
+
+#### Tags renderer
+
+The `Tags` renderer is used to display comma-separated values from a string column as individual "tags". To use it:
+
+1. Set the column tag `cell.renderer` to `Tags`.
+
+2. Ensure the cell values are formatted as a comma-separated string (e.g., "Opt1,Opt2,Opt3").
+
 ### Summary columns
 
 Summary columns show data from multiple columns within a row. To simply display
@@ -345,7 +379,7 @@ want to show order details alongside customer orders.
 Here's how:
 
 1. [Link the tables](../../transform/link-tables.md).
-1. Right click any cell, select **Add** > **Linked Tables**, and choose the table you want. A column with data from the linked table is added to your dataset. 
+1. Right click any cell, select **Add** > **Linked Tables**, and choose the table you want. A column with data from the linked table is added to your dataset.
 
 ![Linked table data in cell](../../deploy/releases/img/grid-nested-linked-tables.gif) 
 
@@ -370,6 +404,16 @@ If images are not detected automatically, right-click the column header and sele
 * `cell.renderer` to `ImageUrl`.
 
 </details>
+
+
+### Charts in cells
+
+You can embed actual charts directly inside grid cells.
+1. [Link the tables](../../transform/link-tables.md).
+2. Right click any cell, select **Add** > **Linked Tables**, and choose the table you want. A column with data from the linked table will be added to your dataset.
+3. Click the header of the new column. In the **Context Panel** under **Renderer**, select the desired chart type (e.g., Bar Chart, Line Chart, Pie Chart, etc.).
+
+![Charts in cells](img/charts-in-cells.gif)
 
 
 ### Designed forms in cells
@@ -617,6 +661,6 @@ or press Alt+C.
 See also:
 
 * [Viewers](../viewers/viewers.md)
-* [Table View](../../datagrok/navigation/views/table-view.md)
+* [Table View](../table-view-1.md)
 * [JS API: Grid](https://public.datagrok.ai/js/samples/ui/viewers/types/grid)
 * [PowerGrid package](https://github.com/datagrok-ai/public/blob/master/packages/PowerGrid/README.md) 

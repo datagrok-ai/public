@@ -54,6 +54,7 @@ export class BaseConditionEditor<T = any> {
     root: HTMLDivElement = ui.div();
     condition: SimpleCondition<T>;
     onChanged: Subject<SimpleCondition<T>> = new Subject<SimpleCondition<T>>();
+    onValidationError: Subject<boolean> = new Subject<boolean>();
     showSuggestions = false;
     suggestionsMenuClicked = false;
 
@@ -63,17 +64,30 @@ export class BaseConditionEditor<T = any> {
             operator: operator,
             value: undefined as T
         };
-        this.initializeEditor(prop);
+        const inputs = this.initializeEditor(prop).then((inputs) => {
+            inputs.forEach((input) => {
+                input.onChanged.subscribe(() => {
+                    this.onValidationError.next(!input.validate());
+                });
+            });
+            if(inputs.some((it) => !it.validate()))
+                this.onValidationError.next(true);;
+        });
     }
 
-    protected initializeEditor(prop: DG.Property): void {
+    protected async initializeEditor(prop: DG.Property): Promise<DG.InputBase[]> {
         if (Array.isArray(this.condition.value))
             this.condition.value = undefined as T;
-        const initVal = prop.type === DG.TYPE.DATE_TIME && typeof this.condition.value === 'string' ?
-            dayjs(this.condition.value as string) : this.condition.value;
+        if (prop.type === DG.TYPE.DATE_TIME && typeof this.condition.value === 'string') {
+            this.condition.value = dayjs(this.condition.value as string) as T;
+            this.onChanged.next(this.condition);
+        }
+        //allow null value for '=' and '!=' for string type to create 'is empty', 'is not empty' condition
+        const nullable =  prop.type === DG.TYPE.STRING &&
+            (this.condition.operator === Operators.EQ || this.condition.operator === Operators.NOT_EQ);
         const input = ui.input.forProperty(prop, undefined, {
-            value: initVal,
-            nullable: false,
+            value: this.condition.value,
+            nullable: nullable,
             onValueChanged: () => {
                 this.condition.value = input.value as T;
                 this.onChanged.next(this.condition);
@@ -83,6 +97,7 @@ export class BaseConditionEditor<T = any> {
         input.addCaption('');
         this.root.append(input.root);
         this.initializeSuggestions(prop, input);
+        return [input];
     }
 
     initializeSuggestions(prop: DG.Property, input: DG.InputBase) {
@@ -113,12 +128,13 @@ export class BaseConditionEditor<T = any> {
 }
 
 export class BetweenConditionEditor extends BaseConditionEditor {
-    override initializeEditor(prop: DG.Property): void {
+    override async initializeEditor(prop: DG.Property): Promise<DG.InputBase[]> {
         if (!this.condition.value || !Array.isArray(this.condition.value)) {
             this.condition.value = [this.condition.value, undefined];
             this.onChanged.next(this.condition);
         }
-        const input1 = ui.input.forProperty(prop, this.condition.value[0], {
+        const input1 = ui.input.forProperty(prop, undefined, {
+            value: this.condition.value[0],
             nullable: false,
             onValueChanged: () => {
                 this.condition.value[0] = input1.value!;
@@ -126,7 +142,7 @@ export class BetweenConditionEditor extends BaseConditionEditor {
             }
         });
         input1.addCaption('');
-        const input2 = ui.input.forProperty(prop, this.condition.value[1], {
+        const input2 = ui.input.forProperty(prop, undefined, {
             value: this.condition.value[1],
             onValueChanged: () => {
                 this.condition.value[1] = input2.value!;
@@ -135,11 +151,31 @@ export class BetweenConditionEditor extends BaseConditionEditor {
         });
         input2.addCaption('');
         this.root.append(ui.divH([input1.root, input2.root], { style: { gap: '10px' } }));
+        return [input1, input2];
+    }
+}
+
+export class BooleanConditionEditor extends BaseConditionEditor {
+    override async initializeEditor(prop: DG.Property): Promise<DG.InputBase[]> {
+        if (this.condition.value === undefined)
+            this.condition.value = true;
+        const options = ['true', 'false'];
+        const input = ui.input.choice('', {
+            items: options,
+            nullable: false,
+            value: this.condition.value ? 'true' : 'false',
+            onValueChanged: () => {
+                this.condition.value = input.value === 'true';
+                this.onChanged.next(this.condition);
+            }
+        });
+        this.root.append(input.root);
+        return [input];
     }
 }
 
 export class MoleculeConditionEditor extends BaseConditionEditor<string> {
-    override initializeEditor(prop: DG.Property): void {
+    override async initializeEditor(prop: DG.Property): Promise<DG.InputBase[]> {
         //if we swith from similarity input to standard molecule input - need to modify value
         if (this.condition.value && typeof this.condition.value !== 'string') {
             if ('molecule' in this.condition.value)
@@ -158,6 +194,7 @@ export class MoleculeConditionEditor extends BaseConditionEditor<string> {
         //to adjust the filter width considering molecule input
         this.root.style.paddingTop = '15px';
         this.root.style.paddingBottom = '15px';
+        return [input];
     }
 }
 
@@ -166,12 +203,13 @@ export type MoleculeSimilarity = {
     threshold: number
 }
 export class MoleculeSimilarityConditionEditor extends BaseConditionEditor<MoleculeSimilarity> {
-    override initializeEditor(prop: DG.Property): void {
+    override async initializeEditor(prop: DG.Property): Promise<DG.InputBase[]> {
         //in case we switch from some other operator, where value is a string (contains, is contained)
         if (!this.condition.value || typeof this.condition.value === 'string') {
             this.condition.value = {molecule: this.condition.value ?? '', threshold: 0.7};
         }
         const moleculeInput = ui.input.molecule('', {
+            value: this.condition.value.molecule,
             onValueChanged: () => {
                 this.condition.value.molecule = moleculeInput.value;
                 this.onChanged.next(this.condition);
@@ -189,12 +227,13 @@ export class MoleculeSimilarityConditionEditor extends BaseConditionEditor<Molec
         })
         this.root.append(ui.divV([moleculeInput.root, tresholdInput.root]));
         this.root.style.paddingTop = '15px';
+        return [moleculeInput, tresholdInput];
     }
 }
 
 
 export class MultiValueConditionEditorString extends BaseConditionEditor<string[]> {
-    override initializeEditor(prop: DG.Property): void {
+    override async initializeEditor(prop: DG.Property): Promise<DG.InputBase[]> {
         if (!Array.isArray(this.condition.value)) {
             this.condition.value = [];
         }
@@ -207,11 +246,12 @@ export class MultiValueConditionEditorString extends BaseConditionEditor<string[
             }
         });
         this.root.append(input.root);
+        return [input];
     }
 }
 
 export class MultiValueConditionEditorInt extends BaseConditionEditor<number[]> {
-    override initializeEditor(prop: DG.Property): void {
+    override async initializeEditor(prop: DG.Property): Promise<DG.InputBase[]> {
         if (!Array.isArray(this.condition.value)) {
             this.condition.value = [];
         }
@@ -224,11 +264,12 @@ export class MultiValueConditionEditorInt extends BaseConditionEditor<number[]> 
             }
         });
         this.root.append(input.root);
+        return [input];
     }
 }
 
 export class MultiValueConditionEditorFloat extends BaseConditionEditor<number[]> {
-    override initializeEditor(prop: DG.Property): void {
+    override async initializeEditor(prop: DG.Property): Promise<DG.InputBase[]> {
         if (!Array.isArray(this.condition.value)) {
             this.condition.value = [];
         }
@@ -241,6 +282,7 @@ export class MultiValueConditionEditorFloat extends BaseConditionEditor<number[]
             }
         });
         this.root.append(input.root);
+        return [input];
     }
 }
 
@@ -266,7 +308,7 @@ export class ConditionRegistry {
     private initializeDefaultOperators(): void {
         // Type operators
         this.registerTypeOperators(DG.TYPE.BOOL, [Operators.EQ]);
-        this.registerTypeOperators(DG.TYPE.STRING, [Operators.STARTS_WITH, Operators.EQ, Operators.NOT_EQ, Operators.IN]);
+        this.registerTypeOperators(DG.TYPE.STRING, [Operators.STARTS_WITH, Operators.CONTAINS, Operators.EQ, Operators.NOT_EQ, Operators.IN]);
         this.registerTypeOperators(DG.TYPE.INT, [Operators.GT, Operators.LT, Operators.GTE, Operators.LTE, Operators.EQ,
             Operators.NOT_EQ, Operators.BETWEEN, Operators.IN]);
         this.registerTypeOperators(DG.TYPE.FLOAT, [Operators.GT, Operators.LT, Operators.GTE, Operators.LTE, Operators.EQ,
@@ -296,6 +338,7 @@ export class ConditionRegistry {
         this.registerEditor(DG.TYPE.STRING, DG.SEMTYPE.MOLECULE, Operators.IS_CONTAINED, MoleculeConditionEditor);
         this.registerEditor(DG.TYPE.STRING, DG.SEMTYPE.MOLECULE, Operators.EQ, MoleculeConditionEditor);
         this.registerEditor(DG.TYPE.STRING, DG.SEMTYPE.MOLECULE, Operators.IS_SIMILAR, MoleculeSimilarityConditionEditor);
+        this.registerEditor(DG.TYPE.BOOL, '', Operators.EQ, BooleanConditionEditor);
     }
 
     // Operator registration methods
@@ -401,15 +444,19 @@ export class QueryBuilder {
     properties: DG.Property[];
     structureChanged: Subject<ComplexCondition> = new Subject<ComplexCondition>();
     filterValueChanged: Subject<SimpleCondition> = new Subject<SimpleCondition>();
+    validationError: Subject<boolean> = new Subject<boolean>();
+    invalid = false;
     layout: QueryBuilderLayout;
     private _historyCacheKey: string;
     private historyIcon: HTMLElement | null = null;
+    private historyIconOnTop = false;
 
     constructor(properties: DG.Property[], initialCondition?: ComplexCondition, layout: QueryBuilderLayout = QueryBuilderLayout.Standard,
-        _historyCacheKey: string = '') {
+        historyCacheKey: string = '', historyIconOnTop = false) {
         this.properties = properties;
         this.layout = layout;
-        this._historyCacheKey = _historyCacheKey;
+        this._historyCacheKey = historyCacheKey;
+        this.historyIconOnTop = historyIconOnTop;
         
         if (initialCondition) {
             this.condition = initialCondition;
@@ -444,7 +491,10 @@ export class QueryBuilder {
             this.historyIcon.classList.add('query-builder-history-icon');
         }
 
-        this.root.appendChild(this.historyIcon);
+        if (this.historyIconOnTop)
+            this.root.prepend(this.historyIcon);
+        else
+            this.root.appendChild(this.historyIcon);
         
         // Set data attribute for CSS to control visibility
         if (this.root) {
@@ -464,7 +514,7 @@ export class QueryBuilder {
         menu.show();
     }
 
-    private loadCondition(condition: ComplexCondition): void {
+    loadCondition(condition: ComplexCondition): void {
         this.condition = JSON.parse(JSON.stringify(condition));
         this.rebuildUI();
         this.structureChanged.next(this.condition);
@@ -568,6 +618,10 @@ export class QueryBuilder {
         nestingLevel: number = 0
     ): HTMLElement {
 
+        //reset validation status
+        this.invalid = false;
+        this.validationError.next(false);
+
         if (!condition) {
             condition = {
                 logicalOperator: Operators.Logical.and,
@@ -589,6 +643,11 @@ export class QueryBuilder {
                 ui.empty(operatorInputDiv);
                 const property = getPropByFriendlyName(fieldChoiceInput.value!);
                 if (property) {
+                    //in case of boolean input we need to hide operators input
+                    if (property.type === DG.TYPE.BOOL)
+                        filterContainer.classList.add('boolean-input');
+                    else
+                        filterContainer.classList.remove('boolean-input');
                     const registry = ConditionRegistry.getInstance();
                     const operators = registry.getOperatorsForProperty(property);
                     if (!cond.operator || cond.operator === '') {
@@ -608,6 +667,7 @@ export class QueryBuilder {
                     });
                     operatorInputDiv.append(operatorsInput.root);
                     createEditor(property, cond.operator, cond);
+                    
                 }
             }
 
@@ -617,11 +677,15 @@ export class QueryBuilder {
                 const editor = registry.getConditionEditor(property, operator, condition);
                 editor.onChanged.subscribe(() => {
                     this.filterValueChanged.next(editor.condition);
-                })
+                });
+                editor.onValidationError.subscribe((error) => {
+                    this.invalid = error;
+                    this.validationError.next(error);
+                });
                 criteriaDiv.append(editor.root);
             }
 
-                       const getPropByName = (name: string) => {
+            const getPropByName = (name: string) => {
                 const property = this.properties.find((prop: DG.Property) => prop.name === name);
                 return property;
             }
@@ -680,7 +744,7 @@ export class QueryBuilder {
                 ui.div([fieldChoiceInput.root], 'query-builder-filter-field'),
                 ui.div([operatorInputDiv], 'query-builder-filter-operator'),
                 ui.div([criteriaDiv], 'query-builder-filter-value'),
-                ui.div([deleteFieldIcon, addNestedConditionIcon], 'add-delete-icons')
+                ui.div([addNestedConditionIcon, deleteFieldIcon], 'add-delete-icons')
             ], this.layout === QueryBuilderLayout.Narrow ? 'query-builder-filter-inputs-narrow' : 'query-builder-filter-inputs');
             
             container.appendChild(filterContainer);

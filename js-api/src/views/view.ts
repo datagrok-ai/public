@@ -4,8 +4,8 @@ import type * as uiType from '../../ui';
 import {FilterGroup, ScatterPlotViewer, Viewer} from '../viewer';
 import {DockManager, DockNode} from '../docking';
 import {Grid} from '../grid';
-import {DartWidget, Menu, ToolboxPage, TreeViewGroup} from '../widgets';
-import {ColumnInfo, Entity, Script, TableInfo, ViewLayout, ViewInfo} from '../entities';
+import {DartWidget, Menu, ToolboxPage, TreeViewGroup, Widget} from '../widgets';
+import {ColumnInfo, Entity, Script, TableInfo, ViewLayout, ViewInfo, Property, Func} from '../entities';
 import {toDart, toJs} from '../wrappers';
 import {_options} from '../utils';
 import {_toIterable} from '../utils_convert';
@@ -43,24 +43,23 @@ const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) a
 /**
  * Subclass ViewBase to implement a Datagrok view in JavaScript.
  * */
-export class ViewBase {
+export class ViewBase extends Widget {
   dart: any;
   subs: Subscription[];
   private _helpUrl: string | null = null;
-  protected _root: HTMLElement;
   private _closing: boolean;
 
-  /** 
+  /**
    * @constructs ViewBase
    * @param {Object} params - URL parameters.
    * @param {string} path - URL path.
    * @param {boolean} createHost - Create JS host wrapper. */
   constructor(params: object | null = null, path: string = '', createHost: boolean = true) {
+    super(ui.panel([], 'grok-view'))
     if (createHost)
       this.dart = api.grok_View_CreateJsViewHost(this);
 
     this.name = 'New view';
-    this._root = ui.panel([], 'grok-view');
     this._root.tabIndex = 0;
 
     /** @type {StreamSubscription[]} */
@@ -69,19 +68,10 @@ export class ViewBase {
     this._closing = false;
   }
 
-  /** @type {HTMLElement} */
-  get root(): HTMLElement {
-    return this._root;
-  }
+  get root(): HTMLElement { return this._root; }
+  set root(newRoot: HTMLElement) { this._root = newRoot }
 
-  set root(newRoot: HTMLElement){
-    this._root = newRoot
-  }
-
-  get box(): boolean {
-    return this.root.classList.contains('ui-box');
-  }
-
+  get box(): boolean { return this.root.classList.contains('ui-box'); }
   set box(b: boolean) {
     let r = this.root as HTMLDivElement;
     r.classList.remove('ui-panel');
@@ -90,8 +80,7 @@ export class ViewBase {
     r.classList.add(b ? 'ui-box' : 'ui-panel');
   }
 
-  /** View type
-   * @type {string} */
+  /** View type */
   get type(): string {
     return 'js-view-base';
   }
@@ -170,6 +159,8 @@ export class ViewBase {
   /** @returns {HTMLElement} View icon. Override in subclasses. */
   getIcon(): HTMLElement | null { return null; }
 
+  setIcon(icon: HTMLElement) {api.grok_View_SetIcon(this.dart, icon)};
+
   /** @returns {Object} Viewer state map. Override in subclasses. */
   saveStateMap(): object | null { return null; }
 
@@ -187,7 +178,7 @@ export class ViewBase {
    * @returns {boolean} "true" if path is acceptable, "false" otherwise. */
   acceptsPath(_urlPath: string): boolean { return false; }
 
-  /** 
+  /**
    * Appends an item to this view. Use {@link appendAll} for appending multiple elements.
    * @param {Object} item */
   append(item: any): HTMLElement {
@@ -243,7 +234,8 @@ export class View extends ViewBase {
     return api.grok_View_ForObject(toDart(x));
   }
 
-  static fromRoot(root: HTMLElement) {
+  /** Creates and returns a view with the specified element inside. */
+  static fromRoot(root: HTMLElement): View {
     let view = View.create();
     view.root.appendChild(root);
     return view;
@@ -268,6 +260,10 @@ export class View extends ViewBase {
     return toJs(api.grok_View_FromViewAsync(getViewAsync, ribbon));
   }
 
+  getProperties(): Property[] { return toJs(api.grok_PropMixin_GetProperties(this.dart)); }
+  getFunctions(): Func[] { return toJs(api.grok_Widget_GetFunctions(this.dart)); }
+
+  /** Returns the content (visual root) of this view. */
   get root(): HTMLElement {
     return api.grok_View_Get_Root(this.dart);
   }
@@ -280,22 +276,13 @@ export class View extends ViewBase {
     return api.grok_View_Get_Id(this.dart);
   }
 
-  get description(): string {
-    return api.grok_View_Get_Description(this.dart);
-  }
-
-  set description(s: string) {
-    api.grok_View_Set_Description(this.dart, s);
-  }
+  /** View description. Used in UI and AI. */
+  get description(): string { return api.grok_View_Get_Description(this.dart); }
+  set description(s: string) { api.grok_View_Set_Description(this.dart, s); }
 
   /** @returns {string|null} View help URL. */
-  get helpUrl(): string | null {
-    return api.grok_View_Get_HelpUrl(this.dart);
-  }
-
-  set helpUrl(url: string | null) {
-    api.grok_View_Set_HelpUrl(this.dart, url);
-  }
+  get helpUrl(): string | null { return api.grok_View_Get_HelpUrl(this.dart); }
+  set helpUrl(url: string | null) { api.grok_View_Set_HelpUrl(this.dart, url); }
 
   /**
    * Loads previously saved view layout. Only applicable to certain views, such as {@link TableView}.
@@ -304,7 +291,7 @@ export class View extends ViewBase {
     return api.grok_View_Load_Layout(this.dart, layout.dart, pickupColumnTags);
   }
 
-  /** 
+  /**
    *  Saves view layout as a string. Only applicable to certain views, such as {@link TableView}.
    *  See also {@link loadLayout}
    *  @returns {ViewLayout} */
@@ -318,7 +305,6 @@ export class View extends ViewBase {
   getInfo(): ViewLayout {
     return toJs(api.grok_View_Get_Info(this.dart));
   }
-
 
   /** View name. It gets shown in the tab handle.
    * @type {string} */
@@ -356,7 +342,7 @@ export class View extends ViewBase {
   static readonly FUNCTIONS = 'functions';
   static readonly DATA_CONNECTIONS = 'connections';
   static readonly DATA_JOB_RUNS = 'jobs';
-  static readonly FILES = 'files'; 
+  static readonly FILES = 'files';
   static readonly DATA_QUERY_RUNS = 'queryruns'; // no any viewer like that
   static readonly EMAILS = 'emails';
   static readonly GROUPS = 'groups';
@@ -397,7 +383,13 @@ export class TableView extends View {
   }
 
   /** Associated table, if it exists (for TableView), or null. */
-  get table(): DataFrame | null { return toJs(api.grok_View_Get_Table(this.dart)); }
+  get table(): DataFrame | null {
+    return toJs(api.grok_View_Get_Table(this.dart));
+  }
+
+  set table(df: DataFrame | null) {
+    toJs(api.grok_TableView_Set_DataFrame(this.dart, df ? df.dart : null));
+  }
 
   /** Associated grid (spreadsheet). */
   get grid(): Grid { return toJs(api.grok_View_Get_Grid(this.dart)); }
@@ -435,7 +427,7 @@ export class TableView extends View {
     return new DockNode(api.grok_View_Get_DockNode(this.dart));
   }
 
-  /** 
+  /**
    * View's dock manager. Only defined for DockView descendants such as {@link TableView}, UsersView, etc.
    * @type {DockManager} */
   get dockManager(): DockManager {
@@ -638,6 +630,11 @@ export class TableView extends View {
   loadState(x: string, options?: IViewStateApplicationOptions): void {
     api.grok_TableView_LoadState(this.dart, x, options?.pickupColumnTags);
   }
+
+  /** Re-runs the table creation script (for dynamic data), and executes post-processing if `enrich` is true. */
+  reloadData(options?: {enrich?: boolean}): Promise<void> {
+    return api.grok_TableView_ReloadData(this.dart, options?.enrich ?? true);
+  }
 }
 
 
@@ -681,7 +678,7 @@ export class BrowsePanel extends DartWidget {
 
   get localTree(): TreeViewGroup { return api.grok_BrowsePanel_Get_LocalTree(this.dart); }
   get mainTree(): TreeViewGroup { return api.grok_BrowsePanel_Get_MainTree(this.dart); }
-
+  bindItemTooltip(content: string | Element | (() => string | Element), el: Element): void { api.grok_BrowsePanel_BindItemTooltip(this.dart, content, el); }
 }
 
 /** Represents a virtual view, where visual elements are created only when user

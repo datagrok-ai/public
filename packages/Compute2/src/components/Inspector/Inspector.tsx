@@ -45,7 +45,7 @@ export const Inspector = Vue.defineComponent({
 
     const lastVisibleIdx = Vue.ref(0);
     return () => (
-      <div>
+      <div style={{userSelect: 'text'}}>
         <div>
           <select v-model={selectedTab.value}>
             <option>Log</option>
@@ -70,7 +70,7 @@ export const Inspector = Vue.defineComponent({
         }
         { selectedTab.value === 'Links' && props.links &&
           <div>
-            <VueJsonPretty deep={4} showLength={true} data={toJSON(props.links)}></VueJsonPretty>
+            <VueJsonPretty deep={3} showLength={true} data={toJSON(props.links)}></VueJsonPretty>
           </div>
         }
         { selectedTab.value === 'Config' && props.config &&

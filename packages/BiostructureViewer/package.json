@@ -5,7 +5,7 @@
     "name": "Oleksandra Serhiienko",
     "email": "oserhiienko@datagrok.ai"
   },
-  "version": "1.4.2",
+  "version": "1.4.4",
   "description": "Protein viewers: support for multiple file formats, stand-alone viewer, and in-grid viewer.",
   "repository": {
     "type": "git",
@@ -22,10 +22,10 @@
     "vendor/pviz-bundle.min.js"
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.48.2",
+    "@datagrok-libraries/bio": "^5.54.9",
     "@datagrok-libraries/chem-meta": "^1.2.7",
     "@datagrok-libraries/tutorials": "^1.6.1",
-    "@datagrok-libraries/utils": "^4.5.7",
+    "@datagrok-libraries/utils": "^4.6.5",
     "@rcsb/rcsb-api-tools": "2.3.1",
     "@rcsb/rcsb-molstar": "2.0.0-dev.8",
     "@rcsb/rcsb-saguaro": "2.0.0",
@@ -58,7 +58,7 @@
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "^6.14.0",
     "css-loader": "^6.8.1",
-    "datagrok-tools": "^4.14.48",
+    "datagrok-tools": "^4.14.55",
     "eslint": "^8.55.0",
     "eslint-config-google": "^0.14.0",
     "file-loader": "^6.2.0",

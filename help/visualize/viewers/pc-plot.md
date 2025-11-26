@@ -33,5 +33,5 @@ General:
 See also:
 
 * [Viewers](../viewers/viewers.md)
-* [Table view](../../datagrok/navigation/views/table-view.md)
+* [Table view](../table-view-1.md)
 * [JS API: PC plot](https://public.datagrok.ai/js/samples/ui/viewers/types/pc-plot)

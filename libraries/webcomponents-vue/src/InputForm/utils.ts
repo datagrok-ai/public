@@ -59,7 +59,7 @@ export const injectInputBaseStatus = (emit: Function, ioName: string, t: DG.Inpu
   icon.isDataFrame = t.property.type === DG.TYPE.DATA_FRAME;
   icon.addEventListener('consistency-reset', () => emit('consistencyReset', ioName));
   icon.addEventListener('action-request', (ev: any) => emit('actionRequested', ev.detail));
-  icon.addEventListener('show-dataframe-diff', (ev: any) => showDFDiff(ev.detail, t.value));
+  icon.addEventListener('show-dataframe-diff', (ev: any) => showDFDiff(t.value, ev.detail));
 
   const wrapper = ui.element('i') as HTMLElement;
   wrapper.classList.add('rfv2-validation-icon');
@@ -107,9 +107,30 @@ function showDFDiff(df1?: DG.DataFrame, df2?: DG.DataFrame) {
   }
   const cols1 = df1.columns.toList().map(col => col.name);
   const cols2 = df2.columns.toList().map(col => col.name);
+  const commonCols = getCommonValueCols(cols1, cols2);
   const df1c = df1.clone();
   df1c.columns.addNew(idxName, 'int').init((idx) => idx);
   const df2c = df2.clone();
   df2c.columns.addNew(idxName, 'int').init((idx) => idx);
-  grok.data.compareTables(df1c, df2c, [idxName], [idxName], cols1, cols2, true);
+  grok.data.compareTables(df1c, df2c, [idxName], [idxName], commonCols, commonCols, true);
+}
+
+function getCommonValueCols(cols1: string[], cols2: string[]) {
+  const set1 = new Set(cols1);
+  const set2 = new Set(cols2);
+  const commonCols = new Set<string>();
+  const uniqCols = new Set<string>();
+  for (const col of set1.values()) {
+    if (set2.has(col))
+      commonCols.add(col);
+    else
+      uniqCols.add(col);
+  }
+  for (const col of set2.values()) {
+    if (!set1.has(col))
+      uniqCols.add(col);
+  }
+  if (uniqCols.size > 0)
+    grok.shell.warning(`Some columns not present in both dataframes ${[...uniqCols].join(',')}`);
+  return [...commonCols];
 }

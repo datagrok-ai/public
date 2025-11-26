@@ -8,7 +8,7 @@ import $ from 'cash-dom';
 import wu from 'wu';
 
 import {after, before, category, test, expect, delay, testEvent, awaitCheck} from '@datagrok-libraries/utils/src/test';
-import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {
   getUserLibSettings, setUserLibSettings
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';
@@ -159,7 +159,7 @@ category('bio-substructure-filters', async () => {
       const view = grok.shell.addTableView(df);
       await grok.data.detectSemanticTypes(df);
       await df.meta.detectSemanticTypes();
-  
+
       _package.logger.debug(`${logPrefix}, filter attaching.`);
       const filter = new BioSubstructureFilter(seqHelper, _package.logger);
       filter.attach(df);
@@ -168,7 +168,7 @@ category('bio-substructure-filters', async () => {
       try {
         const bf = filter.bioFilter as HelmBioFilter;
         expect(filter.bioFilter !== null, true, 'bioFilter is not created');
-  
+
         // filter 1
         _package.logger.debug(`${logPrefix}, filter 1 change awaiting...`);
         await testEvent(df.onRowsFiltered, () => {}, () => {
@@ -177,7 +177,7 @@ category('bio-substructure-filters', async () => {
         _package.logger.debug(`${logPrefix}, filter 1 changed.`);
         expect(filter.dataFrame!.filter.trueCount, 1);
         expect(filter.dataFrame!.filter.toBinaryString(), '0001');
-  
+
         // filter 2
         _package.logger.debug(`${logPrefix}, filter 2 change awaiting...`);
         await testEvent(df.onRowsFiltered, () => {}, () => {
@@ -206,9 +206,9 @@ category('bio-substructure-filters', async () => {
       const col = df.getCol('HELM string');
       await grok.data.detectSemanticTypes(df);
       const view = grok.shell.addTableView(df);
-  
+
       const fg = view.getFiltersGroup();
-  
+
       // await awaitCheck(() => fg.filters.length == 1, 'await filters.length == 1', 1000);
       // const filter = fg.filters.filter((f) => f.columnName == col.name)[0] as BioSubstructureFilter;
       await awaitGrid(view.grid);
@@ -287,10 +287,10 @@ category('bio-substructure-filters', async () => {
       const df = await _package.files.readCsv('tests/filter_HELM.csv');
       await grok.data.detectSemanticTypes(df);
       const view = grok.shell.addTableView(df);
-  
+
       const fSubStr: string = 'PEPTIDE1{A.C}$$$$V2.0';
       const fTrueCount: number = 1;
-  
+
       const f1 = await createFilter('HELM string', df);
       const f2 = await createFilter('HELM string', df);
       const dlg = ui.dialog('Test filters').add(f1.root).add(f2.root).show(); // to waitForElementInDom
@@ -302,18 +302,18 @@ category('bio-substructure-filters', async () => {
         expect(f2.bioFilter!.type, 'HelmBioFilter');
         const bf1 = f1.bioFilter as HelmBioFilter;
         const bf2 = f2.bioFilter as HelmBioFilter;
-  
+
         await testEvent(df.onRowsFiltered, () => {}, () => {
           bf1.props = new BioFilterProps(fSubStr, undefined, _package.logger);
         }, 60000, 'await onRowsFiltered'); // wait to load monomers
         await awaitGrid(view.grid);
         //debugger;
-  
+
         _package.logger.debug('Bio tests: substructureFilters/sync-helm, before changed event');
         await delay(f1.debounceTime * 2);
         _package.logger.debug('Bio tests: substructureFilters/sync-helm, after changed event');
         expect(df.filter.trueCount, fTrueCount);
-  
+
         await f1.awaitRendered();
         expect(bf2.props.substructure, fSubStr);
       } finally {

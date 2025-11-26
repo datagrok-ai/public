@@ -91,11 +91,12 @@ export class ModelCatalogView extends DG.CustomCardView {
   async initMenu() {
     const standardHelpItems: {name: string, link: string}[] = [
       {
-        name: 'Compute Engine',
-        link: 'https://github.com/datagrok-ai/public/tree/master/packages/Compute',
-      }, {
-        name: 'Developing Models',
+        name: 'Developing Scripts',
         link: 'https://datagrok.ai/help/compute/scripting',
+      },
+      {
+        name: 'Developing Workflows',
+        link: 'https://datagrok.ai/help/compute/workflows',
       },
     ];
     const customHelpItems = await this.getClientSpecificHelp();
@@ -111,7 +112,7 @@ export class ModelCatalogView extends DG.CustomCardView {
     if (!f)
       return [];
     const fc = f.prepare();
-    await fc.call();
+    await fc.call(undefined, undefined, {processed: true, report: false});
     return fc.getOutputParamValue() ?? [];
   }
 }

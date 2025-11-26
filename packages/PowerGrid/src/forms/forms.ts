@@ -81,67 +81,73 @@ export class FormCellRenderer extends DG.GridCellRenderer {
 
     // molecules first
     const molCols = cols.filter((c) => c.semType == DG.SEMTYPE.MOLECULE);
-    for (let i = 0; i < molCols.length; i++) {
-      if (molCols[i] != null && b.width > 30 && b.height > 20) {
-        const r = b.width / b.height > 1.5 ? b.getLeftScaled(0.5) : b.getTopScaled(0.5);
-        b = b.width / b.height > 1.5 ? b.getRightScaled(0.5) : b.getBottomScaled(0.5);
+    if (molCols.length > 0 && b.width > 30 && b.height > 20) {
+      const isLandscape = b.width / b.height > 1.5;
+      const molBox = isLandscape ? b.getLeftScaled(0.5) : b.getTopScaled(0.5);
+      b = isLandscape ? b.getRightScaled(0.5) : b.getBottomScaled(0.5);
+      for (let i = 0; i < molCols.length; i++) {
         const cell = gridCell.grid.cell(molCols[i].name, gridCell.gridRow);
+        const r = molCols.length === 1 ? molBox :
+          new DG.Rect(molBox.x, molBox.y + (i * molBox.height / molCols.length), molBox.width, molBox.height / molCols.length);
         scene.elements.push(new GridCellElement(r, cell));
       }
     }
+
     cols = cols.filter((c) => c.semType !== DG.SEMTYPE.MOLECULE);
 
-    const maxValueWidth = Math.min(70, Math.max(...cols.map((c) => getMaxValueWidth(c))));
-    const maxNameWidth = Math.min(150, Math.max(...cols.map((c) => g.measureText(c.name).width)));
-    const showColumnNames = settings.showColumnNames == 'Always' ||
-      ((settings.showColumnNames ?? 'Auto') == 'Auto' && b.width - maxValueWidth > 30); // as long as there is small space for names
-    const columnNamesWidth = showColumnNames ? Math.max(Math.min(maxNameWidth + 10, b.width - maxValueWidth), 0) : 0;
-    const colHeight = Math.min(20, b.height / cols.length);
+    const isTwoColumn = b.width > 350 && (b.height / cols.length) < 30;
+    const numLayoutCols = isTwoColumn ? 2 : 1;
+    const rowsPerCol = Math.ceil(cols.length / numLayoutCols);
 
+    const colHeight = Math.min(26, b.height / rowsPerCol);
+    const fontSize = Math.min(Math.max(colHeight * 0.6, 10), 14);
+    const font = `${fontSize.toFixed(1)}px Roboto, Roboto Local`;
+    g.font = font;
+
+    const maxValueWidth = Math.min(100, Math.max(...cols.map((c) => getMaxValueWidth(c) * (fontSize / 11))));
+    const maxNameWidth = Math.min(200, Math.max(...cols.map((c) => g.measureText(c.name).width)));
+
+    const effectiveWidth = b.width / numLayoutCols;
+    const showColumnNames = settings.showColumnNames == 'Always' ||
+      ((settings.showColumnNames ?? 'Auto') == 'Auto' && effectiveWidth - maxValueWidth > 30); // as long as there is small space for names
+    const columnNamesWidth = showColumnNames ? Math.max(Math.min(maxNameWidth + 10, effectiveWidth - maxValueWidth), 0) : 0;
+
+    const totalFormHeight = rowsPerCol * colHeight;
+    const verticalMargin = Math.max(0, (b.height - totalFormHeight) / 2);
     for (let i = 0; i < cols.length; i++) {
       const col = cols[i];
       const cell = gridCell.grid.cell(col.name, gridCell.gridRow);
       cell.style.backColor = gridCell.grid.props.backColor;
       cell.style.textColor = getRenderColor(settings, gridCell.grid.props.cellTextColor, {column: col, colIdx: i, rowIdx: row});
-      const minColHeight = 8;
-      const fontSize = colHeight < 20 * 0.7 ? 10 + 3 * ((colHeight - 8) / 6) : 13;
-      const font = `${fontSize.toFixed(1)}px Roboto, Roboto Local`;
 
-      if (b.height < cols.length * 20 * 0.4) {
-        // render in one row
+      if (b.height < cols.length * 20 * 0.4 && !isTwoColumn) {
         const r = b.getLeftPart(cols.length, i);
         const e = new GridCellElement(r, cell);
         scene.elements.push(e);
       } else {
+        const layoutColIndex = Math.floor(i / rowsPerCol);
+        const layoutRowIndex = i % rowsPerCol;
+        const xOffset = b.x + (layoutColIndex * effectiveWidth);
+        const yOffset = b.y + verticalMargin + (layoutRowIndex * colHeight);
+
         // render in a column
-        const r = new DG.Rect(Math.ceil(b.x), Math.ceil(b.y + i * colHeight), Math.ceil(b.width), Math.ceil(colHeight));
-        if (showColumnNames) {
-          scene.elements.push(new LabelElement(r.getLeft(columnNamesWidth), fontSize * 0.6, col.name, {
-            horzAlign: 'right',
-            color: 'lightgrey',
-            font: font
-          }));
-        }
+        const r = new DG.Rect(
+          Math.ceil(xOffset),
+          Math.ceil(yOffset),
+          Math.ceil(effectiveWidth),
+          Math.ceil(colHeight)
+        );
+        if (showColumnNames)
+          scene.elements.push(new LabelElement(r.getLeft(columnNamesWidth), fontSize * 0.6, col.name,
+            {horzAlign: 'right', color: 'lightgrey', font: font}));
 
         const leftMargin = r.width >= 20 ? 5 : 0;
         cell.style.marker = markers[i % markers.length];
         cell.style.horzAlign = 'left';
         cell.style.marginLeft = 0;
         cell.style.font = font;
-
         scene.elements.push(new GridCellElement(r.cutLeft(columnNamesWidth + leftMargin), cell));
       }
-    }
-
-    // find the lowest point in the scene, and use it to align the scene vertically
-    const lowestPoint = scene.elements.reduce((acc, el) => {
-      return Math.max(acc, el.bounds.bottom - scene.bounds.top);
-    }, 0);
-    if (lowestPoint < b.bottom) {
-      const delta = (b.height - lowestPoint) / 2;
-      scene.elements.forEach((el) => {
-        el.bounds.y += delta;
-      });
     }
 
     return scene;

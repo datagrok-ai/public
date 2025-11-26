@@ -346,7 +346,8 @@ export class PackageFunctions {
     tags: ['viewer'],
     outputs: [{type: 'viewer', name: 'result'}],
     meta: {
-      keywords: 'PDB, track'
+      keywords: 'PDB, track',
+      showInGallery: 'false',
     }
   })
   static saguaroViewer(): DG.JsViewer & IBiotrackViewer {
@@ -448,8 +449,7 @@ export class PackageFunctions {
     demoPath: 'Bioinformatics | Docking Conformations',
     path: '/apps/Tutorials/Demo/Bioinformatics/Docking%20Conformations',
     demoWait: '3000',
-    demoSkip: 'GROK-15250',
-    test: {test: 'demoBioDockingConformations()', wait: '3000', timeout: '60000', skip: 'GROK-15250'}
+    test: {test: 'demoBioDockingConformations()', wait: '3000', timeout: '60000'}
   })
   static async demoBioDockingConformations(): Promise<void> {
     await demoBio06NoScript();
@@ -461,12 +461,10 @@ export class PackageFunctions {
     demoPath: 'Bioinformatics | Proteins',
     path: '/apps/Tutorials/Demo/Bioinformatics/Proteins',
     demoWait: '3000',
-    demoSkip: 'GROK-15250',
     test: {
       test: 'demoBioProteins()',
       wait: '3000',
       timeout: '60000',
-      skip: 'GROK-15250'
     }
   })
   static async demoBioProteins(): Promise<void> {

@@ -1,5 +1,5 @@
 ---
-title: "Molecular fingerprints"
+title: "Supported fingerprints"
 ---
 
 Datagrok supports calculation of the following fingerprints:

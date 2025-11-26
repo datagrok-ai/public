@@ -445,7 +445,7 @@ export const helpInfo = [
     "title": "Docking"
   },
   {
-    "helpURL": "/help/datagrok/navigation/views/table-view.md",
+    "helpURL": "/help/visualize/table-view-1.md",
     "title": "Table View"
   },
   {

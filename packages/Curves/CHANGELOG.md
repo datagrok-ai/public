@@ -1,5 +1,56 @@
 # Curves changelog
 
+## 1.10.12 (2025-09-16)
+
+* GROK-18808: Provided consistent names for Data top menu
+* Plates: Skip rendering too small plates
+
+## 1.10.11 (2025-09-12)
+
+* Data-To-Curves: Well level additional columns
+
+## 1.10.10 (2025-09-09)
+
+* Extended PNG detector
+
+## 1.10.9 (2025-08-27)
+
+* MultiCurveViewer: Added showOutliers parameter
+
+## 1.10.8 (2025-08-21)
+
+* Data-to-Curves: Correct exclude heuristic
+
+## 1.10.7 (2025-08-21)
+
+* Rendering: Added showOutliers parameter
+
+## 1.10.6 (2025-08-20)
+
+* TestData: Wells: Improved concentration/activity, samples, barcodes generation for plates
+* TreeBrowser function: Removed unnecessary browsePanel input
+* Added MSR script
+* Updated MSR env
+
+## 1.10.5 (2025-08-20)
+
+## 1.10.4 (2025-08-14)
+
+* MultiCurveViewer:
+  * Fixed issues with min/max x/y
+  * Fixed slider is added on min/max x/y fields
+  * Added legendColumnName property
+
+## 1.10.3 (2025-08-01)
+
+## 1.10.2 (2025-07-31)
+
+* Data-to-curves: Added joining options
+
+## 1.10.1 (2025-07-30)
+
+* Data-to-curves: Fixed mismatched keys
+
 ## 1.10.0 (2025-07-29)
 
 ### Features

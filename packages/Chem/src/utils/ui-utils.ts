@@ -10,8 +10,13 @@ export function checkCurrentView(dataFrame: DG.DataFrame): void {
   const tv = grok.shell.tableView(dataFrame.name);
   if (tv)
     grok.shell.v = tv;
-  else
-    throw Error('No table view found for selected table');
+  else {
+    // if there is no table view open, but the table exsits in the workspace, open a new one
+    if (grok.shell.tables.find((t) => t === dataFrame))
+      grok.shell.addTableView(dataFrame);
+    else
+      throw Error('No table view found for selected table');
+  }
 }
 
 export function updateDivInnerHTML(div: HTMLElement, content: string | Node): void {
@@ -58,14 +63,14 @@ export function pickTextColorBasedOnBgColor(bgColor: string, lightColor: string,
 }
 
 export function getGridCellColTemp<TValue, TTemp>(
-  gridCell: DG.GridCell
+  gridCell: DG.GridCell,
 ): [DG.GridColumn | null, DG.Column<TValue>, TTemp] {
   let temp: TTemp | null = null;
   let gridCol: DG.GridColumn | null = null;
   try {
     gridCol = gridCell.dart ? gridCell.gridColumn : null;
     temp = gridCol ? gridCol.temp as TTemp : null;
-  } catch { [gridCol, temp] = [null, null]; }
+  } catch {[gridCol, temp] = [null, null];}
 
   const tableCol: DG.Column<TValue> = gridCell.cell.column;
   temp = temp ?? tableCol.temp;

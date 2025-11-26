@@ -7,6 +7,17 @@ their own customizable ML models. This capability provides full access and contr
 libraries in any of the [supported languages](../compute/compute.md#functions-and-cross-language-support). The users may construct and
 configure any chosen model in their custom data pipeline.
 
+Custom models can be configured in several ways:  
+
+* **Script-based functions** — straightforward Python, R, or Julia scripts embedded in Datagrok (see [example](#example) below).
+* **Package functions** — functions provided as part of a Datagrok package. For example, see the [TensorFlow.js](https://github.com/datagrok-ai/public/tree/master/packages/TensorFlow.js) package.
+* **Celery tasks inside Docker containers** — ideal for complex models. Benefits include:  
+  * GPU support for heavy computations  
+  * Isolated, reproducible environments  
+  * Easier modularization and maintenance  
+
+For examples and a detailed setup, see the [Samples package](https://github.com/datagrok-ai/public/tree/master/packages/Samples/dockerfiles/) and the [Celery Python functions documentation](https://datagrok.ai/help/develop/how-to/packages/python-functions).
+
 Custom model functionality is implemented as a two-step process using train and apply functions. Train function is used
 to build/train a model based on provided features and a target variable. The trained model is then stored as an object
 inside a given directory. Apply function receives previously saved model and applies it to provided feature columns. The

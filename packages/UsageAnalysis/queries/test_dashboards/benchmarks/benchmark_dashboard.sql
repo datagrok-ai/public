@@ -1,7 +1,7 @@
 --name: BenchmarksDashboard
 --friendlyName: UA | Tests | Benchmarks
 --connection: System:Datagrok
---input: string instanceFilter = '' {choices: ['', 'dev', 'release', 'public']}
+--input: string instanceFilter = 'dev' {choices: ['', 'dev', 'release', 'public']}
 --input: int lastBuildsNum = 5
 --input: bool showNotRun = false {optional: true}
 --input: bool showBenchmarks = true {optional: true}
@@ -20,7 +20,7 @@ WITH last_builds AS (
           and not b.name = '' and b.name is not null
     order by b.build_date desc limit @lastBuildsNum
 ), last_builds_indexed AS (
-  select name, ROW_NUMBER() OVER (ORDER BY build_date) AS build_index,
+  select name, ROW_NUMBER() OVER (ORDER BY build_date desc) AS build_index,
          build_date
   from last_builds b
 )
@@ -43,5 +43,5 @@ and not r.stress_test and (@showNotCiCd or r.ci_cd)
 and (@instanceFilter is null or r.instance like '%' || @instanceFilter || '%')
 left join published_packages p on p.name = t.package and p.is_current
 where   t.name not like '%Unhandled exceptions: Exception' and (not t.name = ': : ') and (@showNotRun or not r.passed is null) and r.benchmark = @showBenchmarks
-order by b.name, t.name
+order by b.build_index, t.name
 --end

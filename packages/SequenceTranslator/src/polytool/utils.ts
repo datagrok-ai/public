@@ -8,8 +8,8 @@ import {ALPHABET, ALIGNMENT, NOTATION} from '@datagrok-libraries/bio/src/utils/m
 import {OrgType} from '@datagrok-libraries/bio/src/helm/types';
 
 import {
-  IMonomerLibFileManager, IMonomerLibHelper
-} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+  getMonomerLibHelper, IMonomerLibHelper
+} from '@datagrok-libraries/bio/src/types/monomer-library';
 
 declare const org: OrgType;
 export const LIB_PATH = 'System:AppData/Bio/monomer-libraries/';
@@ -28,15 +28,23 @@ function addCommonTags(col: DG.Column<any>) {
 }
 
 export async function getAvailableMonomers(screenLibrary: string): Promise<string[]> {
-  const monomerLibHelper: IMonomerLibHelper = await grok.functions.call('Bio:getMonomerLibHelper', {});
-  const monomerLib = await monomerLibHelper.readLibrary(LIB_PATH, screenLibrary);
+  const monomerLibHelper: IMonomerLibHelper = await getMonomerLibHelper();
+  const monomerLib = await monomerLibHelper.readSingleLibraryByName(screenLibrary);
+  if (!monomerLib) {
+    _package.logger.error(`Monomer library '${screenLibrary}' not found.`);
+    return [];
+  }
   //NOTICE: works with Peptides only
   return monomerLib.getMonomerSymbolsByType('PEPTIDE');
 }
 
 export async function getAvailableMonomerMols(screenLibrary: string): Promise<{[monomerSymbol: string]: string}> {
-  const monomerLibHelper: IMonomerLibHelper = await grok.functions.call('Bio:getMonomerLibHelper', {});
-  const monomerLib = await monomerLibHelper.readLibrary(LIB_PATH, screenLibrary);
+  const monomerLibHelper: IMonomerLibHelper = await getMonomerLibHelper();
+  const monomerLib = await monomerLibHelper.readSingleLibraryByName(screenLibrary);
+  if (!monomerLib) {
+    _package.logger.error(`Monomer library '${screenLibrary}' not found.`);
+    return {};
+  }
   const monomers = monomerLib.getMonomerSymbolsByType('PEPTIDE');
   const mols = new Array<string>(monomers.length);
 
@@ -45,7 +53,6 @@ export async function getAvailableMonomerMols(screenLibrary: string): Promise<{[
 }
 
 export async function getLibrariesList(): Promise<string[]> {
-  const monomerLibHelper: IMonomerLibHelper = await grok.functions.call('Bio:getMonomerLibHelper', {});
-  const monomerFileManager: IMonomerLibFileManager = await monomerLibHelper.getFileManager();
-  return monomerFileManager.getValidLibraryPaths();
+  const monomerLibHelper: IMonomerLibHelper = await getMonomerLibHelper();
+  return monomerLibHelper.getAvaliableLibraryNames();
 }

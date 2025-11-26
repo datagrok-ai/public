@@ -1,5 +1,14 @@
 # Arrow changelog
 
+## 1.4.2 (2025-09-23)
+
+* Fixes conversion of 'bigint' columns
+
+## 1.4.1 (2025-08-27)
+
+* Convert a 'string' column to a UTF-8 column instead of a categorical column.
+* Fix the creation of a 'datetime' column from a vector, which in some cases produced a column with an incorrect number of rows
+
 ## 1.4.0 (2025-07-28)
 
 * Bump datagrok-api dependency >= 1.26.0

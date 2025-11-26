@@ -14,7 +14,7 @@ import {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {zipSync, Zippable} from 'fflate';
 import {dfToViewerMapping, getFuncCallDefaultFilename, replaceForWindowsPath, richFunctionViewReport} from '@datagrok-libraries/compute-utils';
-import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
+import {ConsistencyInfo, FuncCallStateInfo, MetaCallInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 
 export type NodeWithPath = {
   state: PipelineState,
@@ -85,10 +85,27 @@ export function findTreeNodeParrent(uuid: string, state: PipelineState): Pipelin
   }
 };
 
+const suitableForNavStep = (state: PipelineState) => {
+  return (state.type === 'funccall' || state.steps.length === 0 || state.forceNavigate) && !state.isReadonly;
+};
+
+export function findPrevStep(uuid: string, state: PipelineState): NodeWithPath | undefined {
+  let prevUuid = '';
+  const pred = (state: PipelineState) => {
+    if (!suitableForNavStep(state))
+      return false;
+    if (state.uuid === uuid)
+      return true;
+    prevUuid = state.uuid;
+    return false;
+  };
+  return _findTreeNode([state], pred) ? findNodeWithPathByUuid(prevUuid, state) : undefined;
+}
+
 export function findNextStep(uuid: string, state: PipelineState): NodeWithPath | undefined {
   let prevUuid = '';
   const pred = (state: PipelineState) => {
-    if (!isFuncCallState(state))
+    if (!suitableForNavStep(state))
       return false;
     if (prevUuid === uuid)
       return true;
@@ -96,6 +113,10 @@ export function findNextStep(uuid: string, state: PipelineState): NodeWithPath |
     return false;
   };
   return _findTreeNode([state], pred);
+}
+
+export function findNextSubStep(state: PipelineState): NodeWithPath | undefined {
+  return _findTreeNode([state], suitableForNavStep);
 }
 
 export type PipelineWithAdd = PipelineStateSequential<StepFunCallState, PipelineInstanceRuntimeData> |
@@ -108,7 +129,7 @@ export const hasAddControls = (data: PipelineState): data is PipelineWithAdd =>
   (isParallelPipelineState(data) || isSequentialPipelineState(data)) && !data.isReadonly &&
     data.stepTypes.filter((item) => !item.disableUIAdding).length > 0;
 
-export const couldBeSaved = (data: PipelineState) => !isFuncCallState(data) && !!data.nqName;
+export const couldBeSaved = (data: PipelineState) => !isFuncCallState(data) && !!data.nqName && !data.disableHistory;
 
 export const hasSubtreeFixableInconsistencies = (
   data: PipelineState,
@@ -129,11 +150,11 @@ export const hasInconsistencies = (consistencyStates?: Record<string, Consistenc
   return !!firstInconsistency;
 };
 
-export async function reportStep(treeState?: PipelineState) {
+export async function reportTree(treeState?: PipelineState, meta: MetaCallInfo = {}, hasNotSavedEdits?: boolean) {
   if (treeState) {
     const zipConfig = {} as Zippable;
 
-    const reportStep = async (state: PipelineState, previousPath: string = '', idx: number = 1) => {
+    const reportTreeRec = async (state: PipelineState, previousPath: string = '', idx: number = 1) => {
       if (isFuncCallState(state) && state.funcCall) {
         const funccall = state.funcCall;
 
@@ -164,15 +185,22 @@ export async function reportStep(treeState?: PipelineState) {
         if (previousPath.length > 0) validatedNestedPath = `${previousPath}/${validatedNestedPath}`;
 
         for (const [idx, stepState] of state.steps.entries())
-          await reportStep(stepState, validatedNestedPath, idx + 1);
+          await reportTreeRec(stepState, validatedNestedPath, idx + 1);
       }
     };
 
-    await reportStep(treeState);
+    await reportTreeRec(treeState);
 
-    DG.Utils.download(
-      `${treeState.friendlyName ?? treeState.configId}.zip`,
-      new Blob([zipSync(zipConfig)]),
-    );
+    const modelName = treeState.friendlyName ?? treeState.configId;
+    const runName = meta.title ? `${modelName} - ${meta.title}` : modelName;
+    const fileName = (meta.started && !hasNotSavedEdits) ? `${runName} - ${meta.started}` : `${runName} - edited`;
+
+    const name = replaceForWindowsPath(`${fileName}.zip`);
+
+    DG.Utils.download(name, new Blob([zipSync(zipConfig) as any]));
   }
+}
+
+export function setDifference<T>(a: Set<T>, b: Set<T>) {
+  return new Set(Array.from(a).filter((item) => !b.has(item)));
 }

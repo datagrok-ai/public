@@ -156,6 +156,7 @@ export class AddNewColumnDialog {
   autocompleteEnter = false;
   selectedColumn: DG.Column | null = null;
   error = '';
+  changedType = false;
   multipleColsOutput = false;
   mutationObserver: MutationObserver | null = null;
   mouseDownOnCm = false;
@@ -164,6 +165,7 @@ export class AddNewColumnDialog {
   applyFormulaButton?: HTMLButtonElement;
   colNameWidget = '';
   colTypeWidget = '';
+  autocompleteOpened = false;
 
   constructor(call: DG.FuncCall, widget?: DG.Widget) {
     this.codeMirrorDiv.classList.add(this.widget ? 'add-new-column-widget-cm-div' : 'add-new-column-dialog-cm-div');
@@ -383,7 +385,10 @@ export class AddNewColumnDialog {
 
     const control = ui.input.choice('', {value: this.call.getParamValue('table') && this.call.getParamValue('type') ?
       this.call.getParamValue('type') : defaultChoice, items: this.supportedTypes});
-    control.onInput.subscribe(async () => await this.updatePreview(this.codeMirror!.state.doc.toString(), false));
+    control.onInput.subscribe(async () => {
+      this.changedType = true;
+      await this.updatePreview(this.codeMirror!.state.doc.toString(), false)
+    });
     control.setTooltip(this.tooltips['type']);
 
     const input = control.input as HTMLInputElement;
@@ -603,10 +608,13 @@ export class AddNewColumnDialog {
                 }, 100);
               } else if (fullFuncName?.includes(':')) {
                 const packAndFuncNames = fullFuncName.split(':');
-                if (!this.packageNames.includes(packAndFuncNames[0]))
+                const packName: string | undefined =
+                  getKeyCaseInsensitive(this.packageFunctionsNames, packAndFuncNames[0]);
+                if (!packName || !this.packageNames.includes(packName))
                   this.error = `Package ${packAndFuncNames[0]} not found`;
-                else if (packAndFuncNames[1] &&
-                  !this.packageFunctionsNames[packAndFuncNames[0]].includes(packAndFuncNames[1]))
+                else if (packAndFuncNames[1] && packName &&
+                    !this.packageFunctionsNames[packName]
+                      .some((it) => it.toLowerCase() === packAndFuncNames[1].toLowerCase()))
                   this.error = `Function ${packAndFuncNames[1]} not found in ${packAndFuncNames[0]} package`;
                 else {
                   this.error = this.validateFormula(cmValue, columnsAndSelections.columnNames,
@@ -621,7 +629,8 @@ export class AddNewColumnDialog {
             }
             this.packageAutocomplete = false;
             this.functionAutocomplete = false;
-            this.updateError();
+            if (!this.autocompleteOpened)
+              this.updateError();
             //in case of syntax error we try to run expression to save string interpolation functionality
             this.updatePreviewEvent
               .next({expression: cmValue, changeName: false});
@@ -635,13 +644,16 @@ export class AddNewColumnDialog {
       mutationsList.forEach((m) => {
         if (Array.from(m.removedNodes)
           .filter((it) => (it as HTMLElement).classList.contains('cm-tooltip-autocomplete')).length) {
+          this.autocompleteOpened = false;
           ui.empty(this.errorDiv);
           this.errorDiv.append(ui.divText(this.error, 'cm-error-div'));
           return;
         }
         if (Array.from(m.addedNodes)
-          .filter((it) => (it as HTMLElement).classList.contains('cm-tooltip-autocomplete')).length)
+          .filter((it) => (it as HTMLElement).classList.contains('cm-tooltip-autocomplete')).length) {
+          this.autocompleteOpened = true;
           ui.empty(this.errorDiv);
+        }
       });
     });
     this.mutationObserver.observe(cm.dom, {attributes: true, childList: true});
@@ -900,8 +912,9 @@ export class AddNewColumnDialog {
       } else if (property.propertyType === DG.TYPE.LIST) {
         if (!Array.isArray(funcCall.inputs[property.name]))
           return `Function ${funcCall.func.name} '${property.name}' param should be array type`;
+        //check type of array if array is not empty
         if (property.propertySubType && property.propertySubType !== actualInputType &&
-          !mappingMatch(property.propertySubType, actualInputType))
+          !mappingMatch(property.propertySubType, actualInputType) && funcCall.inputs[property.name].length > 0)
           // eslint-disable-next-line max-len
           return `Function ${funcCall.func.name} '${property.name}' param should be array of ${property.propertySubType}`;
         //check for typed lists
@@ -1135,7 +1148,7 @@ export class AddNewColumnDialog {
     //get result column name
     let colName = this.widget ? this.call.getParamValue('name') : this.getResultColumnName().colName;
 
-    if (this.error && this.error !== SYNTAX_ERROR) {
+    if (this.error && this.error !== SYNTAX_ERROR && !this.changedType) {
       //clearing preview df in case of error (use only within dialog)
       if (!this.widget) {
         const rowCount = this.gridPreview!.dataFrame.rowCount;
@@ -1145,6 +1158,8 @@ export class AddNewColumnDialog {
       return;
     }
 
+    this.changedType = false;
+    
     //in case name was changed in nameInput, do not recalculate preview
     if (changeName) {
       if (!this.error)
@@ -1200,13 +1215,16 @@ export class AddNewColumnDialog {
     this.gridPreview!.dataFrame = this.previwDf!.clone(null, columnIds);
     for (const colName of potentialColIds)
       this.gridPreview!.col(colName)!.backColor = this.newColumnBgColor;
-    this.resultColumnType = this.previwDf!.col(potentialColIds.length > 1 ? potentialColIds[0] : colName)!.type;
+    this.resultColumnType = this.previwDf!.col(potentialColIds[0])!.type;
 
     for (const colName of potentialColIds)
       this.previwDf!.columns.remove(colName);
 
-    if (FLOATING_POINT_TYPES.includes(this.resultColumnType) && this.gridPreview!.dataFrame.col(colName))
-      this.gridPreview!.dataFrame.col(colName)!.tags[DG.TAGS.FORMAT] = '#.00000';
+    //setting format to preview columns
+    for (const colName of this.gridPreview!.dataFrame.columns.names()) {
+      if (FLOATING_POINT_TYPES.includes(this.gridPreview!.dataFrame.col(colName)!.type))
+        this.gridPreview!.dataFrame.col(colName)!.tags[DG.TAGS.FORMAT] = '#.00000';
+    }
 
     this.setAutoType(); // Adding (or removing) the column auto-type caption to "Auto" item in the ChoiceBox.
   }
@@ -1452,8 +1470,9 @@ export class AddNewColumnDialog {
       };
       if (word.text.includes(':')) {
         const colonIdx = word.text.indexOf(':');
-        const packName = word.text.substring(0, word.text.indexOf(':'));
-        if (packageFunctionsNames[packName]) {
+        const packNameCaseIns = word.text.substring(0, word.text.indexOf(':'));
+        const packName = getKeyCaseInsensitive(packageFunctionsNames, packNameCaseIns);
+        if (packName) {
           packageFunctionsNames[packName].forEach((name: string, idx: number) => {
             options.push({
               label: name,
@@ -1582,4 +1601,13 @@ export function prepareAddNewColumnFuncCall(col: DG.Column): DG.FuncCall {
     'type': col.type,
   });
   return fc;
+}
+
+function getKeyCaseInsensitive(obj: Record<string, any>, keyCaseIns: string): string | undefined {
+  let key;
+  for (const objKey of Object.keys(obj)) {
+    if (objKey.toLowerCase() === keyCaseIns.toLowerCase())
+      key = objKey;
+  }
+  return key;
 }

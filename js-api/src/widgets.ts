@@ -212,7 +212,8 @@ export class Widget<TSettings = any> {
   factory: Func | null = null;
 
   protected _root: HTMLElement;
-  protected _properties: Property[];
+  protected _properties: Property[] = [];
+  protected _functions: Func[] = [];
   props: TSettings & ObjectPropertyBag; //ObjectPropertyBag;
   subs: Subscription[];
   dart: any;
@@ -220,22 +221,11 @@ export class Widget<TSettings = any> {
 
   /** @constructs Widget and initializes its root. */
   constructor(widgetRoot: HTMLElement) {
-
-    /** @member {HTMLElement} */
     this._root = widgetRoot;
-
-    /** @member {Property[]}*/
-    this._properties = [];
-
-    /** @member {ObjectPropertyBag} */
     // @ts-ignore
     this.props = new ObjectPropertyBag(this);
-
-    /** @member {StreamSubscription[]} */
     this.subs = [];
-
     this.getProperties = this.getProperties.bind(this);
-
     this.temp = {};
   }
 
@@ -274,7 +264,12 @@ export class Widget<TSettings = any> {
     return this;
   }
 
+  /** Returns all properties of this widget. */
   getProperties(): Property[] { return this._properties; }
+
+  /** Functions that are applicable to this particular widget.
+    Used in the UI to display context actions, and for the AI integrations. */
+  getFunctions(): Func[] { return this._functions;  }
 
   /** Gets called when viewer's property is changed.
    * @param {Property} property - or null, if multiple properties were changed. */
@@ -290,6 +285,12 @@ export class Widget<TSettings = any> {
     if (this.props.hasProperty('dataFrame'))
       this.props.set('dataFrame', dataFrame);
   }
+
+  /** Parent widget up the DOM tree, or null. */
+  get parent(): Widget | null { return api.grok_Widget_Get_Parent(this.toDart()); }
+
+  /** Parent widget up the DOM tree, or null. */
+  get children(): Widget[] { return api.grok_Widget_Get_Children(this.toDart()); }
 
   /** Widget's visual root.
    * @type {HTMLElement} */
@@ -469,6 +470,7 @@ export abstract class Filter extends Widget {
 }
 
 
+/** JS wrapper for the widget implemented in Dart. */
 export class DartWidget extends Widget {
   constructor(dart: any) {
     super(api.grok_Widget_Get_Root(dart));
@@ -476,17 +478,10 @@ export class DartWidget extends Widget {
     this.temp = new MapProxy(api.grok_Widget_Get_Temp(this.dart));
   }
 
-  get type(): string {
-    return api.grok_Widget_Get_Type(this.dart);
-  }
-
-  get root(): HTMLElement {
-    return api.grok_Widget_Get_Root(this.dart);
-  }
-
-  getProperties(): Property[] {
-    return toJs(api.grok_PropMixin_GetProperties(this.dart));
-  }
+  get type(): string { return api.grok_Widget_Get_Type(this.dart); }
+  get root(): HTMLElement { return api.grok_Widget_Get_Root(this.dart); }
+  getProperties(): Property[] { return toJs(api.grok_PropMixin_GetProperties(this.dart)); }
+  getFunctions(): Func[] { return toJs(api.grok_Widget_GetFunctions(this.dart)); }
 }
 
 /**
@@ -594,9 +589,10 @@ export class AccordionPane extends DartWidget {
 
 
 /** Tab control that hosts panes inside. See also {@link TabPane} */
-export class TabControl {
-  dart: any;
+export class TabControl extends DartWidget {
+
   constructor(dart: any) {
+    super(dart);
     this.dart = dart;
   }
 
@@ -646,18 +642,20 @@ export class TabControl {
   /** Occurs after the active pane is changed */
   get onTabChanged(): Observable<any> { return __obs('d4-tabcontrol-tab-changed', this.dart); }
 
+  /** Occurs after a pane is added */
   get onTabAdded(): Observable<any> { return __obs('d4-tabcontrol-tab-added', this.dart); }
+
+  /** Occurs after a pane is removed */
   get onTabRemoved(): Observable<any> { return __obs('d4-tabcontrol-tab-removed', this.dart); }
 }
 
 
 /** Represents a pane of either {@link TabControl} or {@link Accordion} */
-export class TabPane {
-  dart: any;
+export class TabPane extends DartWidget {
 
   /** Creates TabPane from the Dart handle */
   constructor(dart: any) {
-    this.dart = dart;
+    super(dart);
   }
 
   /** {@link TabControl} this pane belongs to */
@@ -1087,6 +1085,7 @@ export class Menu {
     this.dart = dart;
   }
 
+  /** Creates a top menu. */
   static create(): Menu {
     return toJs(api.grok_Menu());
   }
@@ -1096,8 +1095,10 @@ export class Menu {
     return toJs(api.grok_Menu_Context());
   }
 
+  /** Visual root */
   get root(): HTMLElement { return api.grok_Menu_Get_Root(this.dart); }
 
+  /** Whether the menu closes when clicked. */
   get closeOnClick(): boolean { return api.grok_Menu_Get_CloseOnClick(this.dart); }
   set closeOnClick(value: boolean) { api.grok_Menu_Set_CloseOnClick(this.dart, value); }
 
@@ -1629,6 +1630,7 @@ export class TreeViewNode<T = any> {
     return api.grok_TreeViewNode_Root(this.dart);
   }
 
+  /** Top-most node. */
   get rootNode(): TreeViewGroup {
     let x: TreeViewNode = this;
     while (x.parent)
@@ -1636,20 +1638,14 @@ export class TreeViewNode<T = any> {
     return x as TreeViewGroup;
   }
 
-  /* Node's parent */
-  get parent(): TreeViewNode {
-    return toJs(api.grok_TreeViewNode_Parent(this.dart));
-  }
+  /** Node's parent */
+  get parent(): TreeViewNode { return toJs(api.grok_TreeViewNode_Parent(this.dart)); }
 
   /** Caption label */
-  get captionLabel(): HTMLElement {
-    return api.grok_TreeViewNode_CaptionLabel(this.dart);
-  }
+  get captionLabel(): HTMLElement { return api.grok_TreeViewNode_CaptionLabel(this.dart); }
 
   /** Check box element  */
-  get checkBox(): HTMLElement | null {
-    return api.grok_TreeViewNode_CheckBox(this.dart);
-  }
+  get checkBox(): HTMLElement | null { return api.grok_TreeViewNode_CheckBox(this.dart); }
 
   /** Returns `true` if checked */
   get checked(): boolean { return api.grok_TreeViewNode_Get_Checked(this.dart); }
@@ -1659,10 +1655,15 @@ export class TreeViewNode<T = any> {
   get text(): string { return api.grok_TreeViewNode_Get_Text(this.dart); }
   set text(value: string) {api.grok_TreeViewNode_Set_Text(this.dart, value); }
 
+  /** Node icon */
+  get icon(): Element { return api.grok_TreeViewNode_Get_Icon(this.dart); }
+  set icon(value: Element) {api.grok_TreeViewNode_Set_Icon(this.dart, value); }
+
+  /** Auxiliary information associated with the node. */
   get tag(): any { return api.grok_TreeViewNode_Get_Tag(this.dart); }
   set tag(t : any) { api.grok_TreeViewNode_Set_Tag(this.dart, t); }
 
-  /** Node value */
+  /** Node value. Normally, when you click on the node, the context panel shows this object. */
   get value(): T { return api.grok_TreeViewNode_Get_Value(this.dart); };
   set value(v: T) { api.grok_TreeViewNode_Set_Value(this.dart, v)};
 
@@ -1671,7 +1672,7 @@ export class TreeViewNode<T = any> {
     api.grok_TreeViewNode_EnableCheckBox(this.dart, checked);
   }
 
-  /**  */
+  /** Occurs when the selected node is changed. */
   get onSelected(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-current', this.dart); }
 
   /** Removes the node and its children from the parent */
@@ -1747,18 +1748,19 @@ export class TreeViewGroup extends TreeViewNode {
     }
   }
 
+  /** Controls expanded state. */
   get expanded(): boolean { return api.grok_TreeViewNode_Get_Expanded(this.dart); }
-
   set expanded(isExpanded: boolean) { api.grok_TreeViewNode_Set_Expanded(this.dart, isExpanded); }
 
   /** Indicates whether check or uncheck is applied to a node only or to all node's children */
   get autoCheckChildren(): boolean { return api.grok_TreeViewNode_GetAutoCheckChildren(this.dart); }
   set autoCheckChildren(auto: boolean) { api.grok_TreeViewNode_SetAutoCheckChildren(this.dart, auto); }
 
+  /** Currently selected node. */
   get currentItem(): TreeViewNode { return toJs(api.grok_TreeViewNode_Get_CurrentItem(this.dart)); }
   set currentItem(node: TreeViewNode) { api.grok_TreeViewNode_Set_CurrentItem(this.dart, toDart(node)); }
 
-  /** Adds new group */
+  /** Adds new group and returns it */
   group(text: string | Element, value: object | null = null, expanded: boolean = true, index: number | null = null): TreeViewGroup {
     return toJs(api.grok_TreeViewNode_Group(this.dart, text, value, expanded, index));
   }
@@ -1773,25 +1775,24 @@ export class TreeViewGroup extends TreeViewNode {
     return toJs(api.grok_TreeViewNode_Item(this.dart, text, value));
   }
 
+  /** Adds new items to group */
+  addItems(items: any[]): TreeViewNode {
+    for (const i of items)
+      this.item(i, i);
+    return this;
+  }
+
+
   get onNodeExpanding(): Observable<TreeViewGroup> { return __obs('d4-tree-view-node-expanding', this.dart); }
-
   get onNodeAdded(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-added', this.dart); }
-
   get onNodeCheckBoxToggled(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-checkbox-toggled', this.dart); }
-
   get onChildNodeExpandedChanged(): Observable<TreeViewGroup> { return __obs('d4-tree-view-child-node-expanded-changed', this.dart); }
-
   get onChildNodeExpanding(): Observable<TreeViewGroup> { return __obs('d4-tree-view-child-node-expanding', this.dart); }
-
   // get onChildNodeContextMenu(): Observable<TreeViewNode> { return __obs('d4-tree-view-child-node-context-menu', this.dart); }
   get onNodeContextMenu(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-context-menu', this.dart); }
-
   get onSelectedNodeChanged(): Observable<TreeViewNode> { return __obs('d4-tree-view-selected-node-changed', this.dart); }
-
   get onNodeMouseEnter(): Observable<TreeViewNode> { return __obs('d4-tree-view-child-node-mouse-enter', this.dart); }
-
   get onNodeMouseLeave(): Observable<TreeViewNode> { return __obs('d4-tree-view-child-node-mouse-leave', this.dart); }
-
   get onNodeEnter(): Observable<TreeViewNode> { return __obs('d4-tree-view-node-enter', this.dart); }
 
   async loadSources(source: HttpDataSource<any>): Promise<void> {
@@ -1934,12 +1935,12 @@ export class Legend extends DartWidget {
   }
 
   /** Mapped indices of filtered (selected) categories. */
-  get selectedCategories(): Set<number> | null {
+  get selectedCategories(): number[] | null {
     return api.grok_Legend_Get_SelectedCategories(this.dart);
   }
 
   /** Mapped indices of extra (selected) categories. */
-  get selectedExtraCategories(): Set<number> | null {
+  get selectedExtraCategories(): number[] | null {
     return api.grok_Legend_Get_SelectedExtraCategories(this.dart);
   }
 
@@ -2000,30 +2001,28 @@ export class Breadcrumbs {
   }
 }
 
+
 export class DropDown {
-  private _element: HTMLElement;
+  
   private _dropDownElement: HTMLDivElement;
   private _isMouseOverElement: boolean;
-  private _label: string | Element;
+  createElement: () => HTMLElement;
 
   isExpanded: boolean;
   root: HTMLDivElement;
-
 
   constructor(label: string | Element, createElement: () => HTMLElement) {
     this._isMouseOverElement = false;
     this.isExpanded = false;
 
-    this._label = label;
-    this._element = createElement();
-    this._dropDownElement = ui.div(ui.div(this._element, 'ui-drop-down-content'), 'ui-combo-drop-down-fixed');
+    this.createElement = createElement;
+    this._dropDownElement = ui.div(ui.div([], 'ui-drop-down-content'), 'ui-combo-drop-down-fixed');
     this._dropDownElement.style.visibility = 'hidden';
 
-    this.root = ui.div([this._dropDownElement, this._label], 'ui-drop-down-root');
+    this.root = ui.div([this._dropDownElement, label], 'ui-drop-down-root');
 
     this._initEventListeners();
   }
-
 
   private _initEventListeners() {
     this.root.addEventListener('mousedown', (e) => {
@@ -2058,11 +2057,15 @@ export class DropDown {
     this.isExpanded = !isExpanded;
     if (isExpanded) {
       this.root.classList.remove('ui-drop-down-root-expanded');
+      ui.empty(this._dropDownElement);
       this._dropDownElement.style.visibility = 'hidden';
       return;
     }
 
     this.root.classList.add('ui-drop-down-root-expanded');
+    const element = this.createElement();
+    element.classList.add('ui-drop-down-content');    // this is not right - we should not change it
+    this._dropDownElement.append(element);
     this._dropDownElement.style.visibility = 'visible';
   }
 

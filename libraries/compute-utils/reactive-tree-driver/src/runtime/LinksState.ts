@@ -82,10 +82,12 @@ export class LinksState {
       ).pipe(toArray(), mapTo(undefined));
     } else {
       this.linksUpdates.next(true);
-      const metaMap = new Map(links.filter((link) => !this.isDataLink(link)).map((link) => [link.uuid, link]));
+      const metaMap = this.toLinksMap(links.filter((link) => !this.isDataLink(link)));
+      const initLinks = this.toLinksMap(links.filter((link) => this.isOnInitDataLink(link)));
       return concat(
         of(this.wireLinks(state)),
         this.runNewInits(state),
+        this.runLinks(state, initLinks, false),
         (this.defaultValidators || this.forceInitialMetaRun) ? of(null).pipe(delay(0), concatMap(() => this.runLinks(state, metaMap, true))) : of(null),
       ).pipe(toArray(), mapTo(undefined));
     }
@@ -215,7 +217,6 @@ export class LinksState {
               ioName: io.id,
             }],
           },
-          inputsUUID: new Map(),
           outputs: {
             'out': [{
               path: [],
@@ -223,6 +224,7 @@ export class LinksState {
             }],
           },
           actions: {},
+          inputsUUID: new Map(),
           outputsUUID: new Map(),
           isDefaultValidator: true,
         };
@@ -421,6 +423,10 @@ export class LinksState {
 
   public isDataLink(link: Link) {
     return !link.matchInfo.spec.type || link.matchInfo.spec.type === 'data';
+  }
+
+  public isOnInitDataLink(link: Link) {
+    return (!link.matchInfo.spec.type || link.matchInfo.spec.type === 'data') && link.matchInfo.spec.runOnInit;
   }
 
   public isDefaultValidatorLink(link: Link) {

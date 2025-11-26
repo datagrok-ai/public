@@ -1159,11 +1159,11 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
 
   async prepareMwForSorting() {
     const frags = this.fragSortingInfo.fragmentIdxs.map((idx) => this.mmpa?.frags.idToName[idx]) as string[];
-    PackageFunctions.chemDescriptor(DG.Column.fromStrings('smiles', frags), 'MolWt').then((res: DG.Column) => {
+    PackageFunctions.getDescriptors(DG.Column.fromStrings('smiles', frags), ['MolWt']).then((res: DG.DataFrame) => {
       this.fragSortingInfo.mw = new Float32Array(this.fragSortingInfo.fragmentIdxs.length);
       let errorCount = 0;
       frags.forEach((key: string, idx) => {
-        let resMW = res.get(idx);
+        let resMW = res.get('MolWt', idx);
         if (!resMW || typeof resMW === 'string') {
           errorCount++;
           resMW = undefined;
@@ -1179,6 +1179,7 @@ export class MatchedMolecularPairsViewer extends DG.JsViewer {
   detach(): void {
     if ((grok.shell.o as HTMLElement).classList?.contains(MMP_CONTEXT_PANE_CLASS))
       grok.shell.o = ui.div();
+    this.lastOpenedHint?.remove();
     super.detach();
   }
 }

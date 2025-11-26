@@ -3,18 +3,18 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {ChemTemps} from '@datagrok-libraries/chem-meta/src/consts';
-import { findRGroups, findRGroupsWithCore } from '../scripts-api';
-import { PackageFunctions } from '../package';
-import { getMCS } from '../utils/most-common-subs';
-import { IRGroupAnalysisResult } from '../rdkit-service/rdkit-service-worker-substructure';
-import { getRdKitService } from '../utils/chem-common-rdkit';
-import { _convertMolNotation } from '../utils/convert-notation-utils';
-import { SCAFFOLD_COL } from '../constants';
-import { delay } from '@datagrok-libraries/utils/src/test';
-import { hexToPercentRgb } from '../utils/chem-common';
-import { getMolSafe, getQueryMolSafe } from '../utils/mol-creation_rdkit';
-import { MolfileHandler } from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
-import { RDMol } from '@datagrok-libraries/chem-meta/src/rdkit-api';
+import {Chem} from '../scripts-api';
+import {PackageFunctions} from '../package';
+import {getMCS} from '../utils/most-common-subs';
+import {IRGroupAnalysisResult} from '../rdkit-service/rdkit-service-worker-substructure';
+import {getRdKitService} from '../utils/chem-common-rdkit';
+import {_convertMolNotation} from '../utils/convert-notation-utils';
+import {SCAFFOLD_COL} from '../constants';
+import {delay} from '@datagrok-libraries/utils/src/test';
+import {hexToPercentRgb} from '../utils/chem-common';
+import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
+import {MolfileHandler} from '@datagrok-libraries/chem-meta/src/parsing-utils/molfile-handler';
+import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 
 const R_GROUP_PARAMS_STORAGE_NAME = 'r-group-params';
@@ -88,7 +88,7 @@ export function convertToRDKit(smiles: string): string {
  * and initiate the R-Group Analysis for the specified column with molecules.
  * @param {DG.Column} col Column for which to perform R-Group Analysis with specified core
  */
-export function rGroupAnalysis(col: DG.Column, demo = false): void {
+export function rGroupAnalysis(col: DG.Column): void {
   loadRGroupUserSettings();
   const sketcher = new DG.chem.Sketcher();
 
@@ -143,7 +143,7 @@ export function rGroupAnalysis(col: DG.Column, demo = false): void {
   ui.tooltip.bind(onlyMatchAtRGroupsInput.captionLabel, 'Return matches only for labelled R groups');
 
   //settings button to adjust mcs and r-groups settings
-  const rGroupsSettingsIcon = ui.iconFA('cog', () => {
+  const rGroupsSettingsIcon = ui.icons.settings(() => {
     rGroupSettinsOpened = !rGroupSettinsOpened;
     const display = !rGroupSettinsOpened ? 'none' : 'flex';
     rGroupMatchingStrategy.root.style.display = display;
@@ -159,14 +159,14 @@ export function rGroupAnalysis(col: DG.Column, demo = false): void {
     .add(ui.div([
       sketcher,
       ui.div([
-        ui.divH([mcsButton, mcsExactAtomsCheck.root, mcsExactBondsCheck.root], { style: { paddingLeft: '108px' } }),
+        ui.divH([mcsButton, mcsExactAtomsCheck.root, mcsExactBondsCheck.root], {style: {paddingLeft: '108px'}}),
         columnInput,
         columnPrefixInput,
         ui.divH([visualAnalysisCheck.root, latestAnalysisCols[col.dataFrame.name]?.length ? replaceLatest.root : null]),
         rGroupsSettingsIcon,
         rGroupMatchingStrategy,
-        onlyMatchAtRGroupsInput
-      ], 'chem-rgroup-settings-div')
+        onlyMatchAtRGroupsInput,
+      ], 'chem-rgroup-settings-div'),
     ]))
     .onOK(async () => {
       try {
@@ -175,14 +175,14 @@ export function rGroupAnalysis(col: DG.Column, demo = false): void {
           await delay(50);
         }
         const smarts = await sketcher.getSmarts();
-        const funcCall = await DG.Func.find({ name: 'rGroupDecomposition' })[0].prepare({
+        const funcCall = await DG.Func.find({name: 'rGroupDecomposition'})[0].prepare({
           df: col.dataFrame,
           molColName: columnInput.value!,
           core: smarts,
           rGroupName: columnPrefixInput.value,
           rGroupMatchingStrategy: rGroupMatchingStrategy.value!,
           visualAnalysis: visualAnalysisCheck.value!,
-        }).call(undefined, undefined, { processed: false });
+        }).call(undefined, undefined, {processed: false});
         const res: RGroupDecompRes = funcCall.getOutputParamValue();
         if (res) {
           const view = grok.shell.getTableView(col.dataFrame.name);
@@ -194,11 +194,12 @@ export function rGroupAnalysis(col: DG.Column, demo = false): void {
               grok.shell.error('No R-Groups were found');
             else if (!res.yAxisColName || !res.xAxisColName)
               grok.shell.warning(`Not enough R group columns to create trellis plot`);
-            else
+            else {
               latestTrellisPlot[col.dataFrame.name] = view.trellisPlot({
                 xColumnNames: [res.xAxisColName],
                 yColumnNames: [res.yAxisColName],
               });
+            }
           }
         }
       } catch (e: any) {
@@ -249,9 +250,10 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
     core = PackageFunctions.convertMolNotation(core, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock);
     const labelledRGroups = !!MolfileHandler.getInstance(core)
       .atomTypes.filter((it) => it.startsWith('R')).length && core.includes('M  RGP');
-    if (!labelledRGroups && params.onlyMatchAtRGroups)
+    if (!labelledRGroups && params.onlyMatchAtRGroups) {
       throw (new Error(`Core has no labelled R groups. Add labelled R groups to core or set 
     'Only match at R groups' parameter to false`));
+    }
     const coreIsQMol = core.includes('M  ALS') || core.includes('M  RAD');
     if (coreIsQMol)
       core = coreSmarts;
@@ -263,7 +265,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
       includeTargetMolInResults: true,
       onlyMatchAtRGroups: params.onlyMatchAtRGroups,
     };
-    const { rGroups, highlightCol } = await rGroupsMinilib(col, core, coreIsQMol, rGroupPrefixIdx, rGroupOptions);
+    const {rGroups, highlightCol} = await rGroupsMinilib(col, core, coreIsQMol, rGroupPrefixIdx, rGroupOptions);
     const rdkit = PackageFunctions.getRdKitModule();
     if (rGroups.length) {
       //unmatched are those items for which all R group cols are empty
@@ -330,11 +332,10 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
     progressBar.close();
 
     return {
-      xAxisColName: rGroups.length > 1 ? rGroups[1].name : '',  //rGroups[0] column is Core column
+      xAxisColName: rGroups.length > 1 ? rGroups[1].name : '', //rGroups[0] column is Core column
       yAxisColName: rGroups.length > 2 ? rGroups[2].name : '',
       highlightColName: rGroups.length ? highlightCol?.name : undefined,
     };
-
   } catch (e: any) {
     grok.shell.error(e);
     progressBar?.close();
@@ -383,15 +384,15 @@ export async function rGroupsMinilib(molecules: DG.Column<string>, coreMolecule:
       }
       return substr;
     });
-  return { rGroups: resCols, highlightCol: substructCol };
+  return {rGroups: resCols, highlightCol: substructCol};
 }
 
 export async function rGroupsPython(col: DG.Column<string>, core: string, prefix: string, withCore: boolean,
   onlyMatchAtRGroups: boolean):
   Promise<RGroupsRes> {
   const resCols = [];
-  const res = withCore ? await findRGroupsWithCore(col.name, col.dataFrame, core, onlyMatchAtRGroups) :
-    await findRGroups(col.name, col.dataFrame, core, prefix);
+  const res = withCore ? await Chem.findRGroupsWithCore(col.name, col.dataFrame, core, onlyMatchAtRGroups) :
+    await Chem.findRGroups(col.name, col.dataFrame, core, prefix);
   const module = PackageFunctions.getRdKitModule();
   if (res.rowCount) {
     for (const resCol of res.columns) {
@@ -412,7 +413,7 @@ export async function rGroupsPython(col: DG.Column<string>, core: string, prefix
       resCols.push(rCol);
     }
   }
-  return { rGroups: resCols };
+  return {rGroups: resCols};
 }
 function removeLatestAnalysis(col: DG.Column) {
   if (latestTrellisPlot[col.dataFrame.name] && latestTrellisPlot[col.dataFrame.name]!.dataFrame)
@@ -427,7 +428,7 @@ export function loadRGroupUserSettings() {
   if (!rGroupSettings) {
     const settingsStr = grok.userSettings.getValue(R_GROUP_PARAMS_STORAGE_NAME, R_GROUP_PARAMS_KEY);
     rGroupSettings = settingsStr ? JSON.parse(settingsStr) :
-      { rGroupMatchingStrategy: RGroupMatchingStrategy.Greedy, onlyMatchAtRGroups: false };
+      {rGroupMatchingStrategy: RGroupMatchingStrategy.Greedy, onlyMatchAtRGroups: false};
   }
 }
 

@@ -14,8 +14,11 @@ import {BIOREACTOR_DEMO} from './demo/bioreactor';
 import {CONTROL_EXPR, DF_NAME} from './constants';
 import {UI_TIME} from './ui-constants';
 
-import {ODEs, SolverOptions} from '@datagrok/diff-grok';
+import {ODEs, SolverOptions} from 'diff-grok';
 import {Model} from './model';
+
+import utc from 'dayjs/plugin/utc';
+import dayjs from 'dayjs';
 
 export const _package = new DG.Package();
 
@@ -26,7 +29,30 @@ export function info() {
 
 export class PackageFunctions {
   @grok.decorators.init({})
-  static async init() {}
+  static async init() {
+    dayjs.extend(utc);
+  }
+
+  @grok.decorators.func({})
+  static dock(): void {
+    const df = grok.data.demo.demog(100);
+    const view = grok.shell.addTableView(df);
+
+    setTimeout(() => {
+      const chart = DG.Viewer.boxPlot(df);
+      let node = view.dockManager.dock(chart, 'right', null, 'ANOVA');
+
+      const div = ui.div([
+        ui.button('Click me', () => {
+          grok.shell.info('Clicked');
+        }),
+      ]);
+      node = view.dockManager.dock(div, 'down', node, 'Title', 0.3);
+
+      const grid = DG.Viewer.grid(grok.data.demo.demog(100));
+      view.dockManager.dock(grid, 'fill', node);
+    }, 100);
+  }
 
   @grok.decorators.func({})
   static solve(@grok.decorators.param({type: 'object'}) problem: ODEs): DG.DataFrame {
@@ -142,7 +168,8 @@ export class PackageFunctions {
     ],
   })
   static ballFlight(
-    @grok.decorators.param({options: {initialValue: '0.01', category: 'Ball', caption: 'Diameter', units: 'm', min: '0.01', max: '0.3'}}) dB: number,
+    // @ts-expect-error
+    @grok.decorators.param({options: {initialValue: '0.01', category: 'Ball', caption: 'Diameter', units: 'm', min: '0.01', max: '0.3', minFormula: 'roB / 20000', maxFormula: 'roB / 4000'}}) dB: number,
     @grok.decorators.param({options: {initialValue: '200', category: 'Ball', caption: 'Density', description: 'Material density', units: 'kg/m^3', min: '200', max: '1200'}}) roB: number,
     @grok.decorators.param({options: {initialValue: '50', category: 'Throw parameters', caption: 'Velocity', min: '40', max: '60', units: 'm/sec'}}) v: number,
     @grok.decorators.param({options: {initialValue: '45', category: 'Throw parameters', caption: 'Angle', min: '20', max: '70', units: 'deg'}}) a: number) {

@@ -44,7 +44,7 @@ category('Settings', () => {
     } finally {
       gss.showSelectedRowsInProperties = true;
     }
-  }, {skipReason: 'GROK-11670'});
+  });
 
   test('Windows Settings', async () => {
     expect(gss.showMenu, !grok.shell.windows.simpleMode, 'showMenu');

@@ -18,7 +18,7 @@ type ArgLimits = {
 };
 
 /** Return the Maximum Relative Deviation (%) between vectors */
-function getMRD(source: Float32Array, updated: Float32Array): number {
+function getMRD(source: Float64Array, updated: Float64Array): number {
   let mrd = 0;
 
   const len = source.length;
@@ -196,7 +196,7 @@ function areSimilar(df1: DG.DataFrame, df2: DG.DataFrame,
 /** Return non-similar extrema */
 export async function getNonSimilar(extrema: Extremum[],
   similarity: number,
-  getCalledFuncCall: (x: Float32Array) => Promise<DG.FuncCall>,
+  getCalledFuncCall: (x: Float64Array) => Promise<DG.FuncCall>,
   targetDfs: TargetTableOutput[],
 ): Promise<Extremum[]> {
   // Get computations at extrema points

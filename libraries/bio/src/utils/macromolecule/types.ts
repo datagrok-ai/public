@@ -4,10 +4,34 @@ import * as DG from 'datagrok-api/dg';
 
 import {CellRendererBackBase} from '../cell-renderer-back-base';
 import {ISeqHandler} from './seq-handler';
+import {PolymerType} from '../../helm/types';
 
 export type SeqSplittedBase = ArrayLike<string> & Iterable<string>;
 
+export interface ISeqConnection {
+  seq1Type: PolymerType;
+  seq2Type: PolymerType;
+  seqIndex1: number;
+  seqIndex2: number;
+  monomerIndex1: number;
+  monomerIndex2: number;
+  rGroup1: number;
+  rGroup2: number;
+}
+
+export interface ISeqGraphInfo {
+  /**  Connections between monomers with numbers - note that monomer numbers are 0-based*/
+  connections: ISeqConnection[];
+  /** Start positions of disjoint sequence parts in the original sequence */
+  disjointSeqStarts: number[];
+  /** Polimer types same as the indexes. only applicapble to helm */
+  polymerTypes?: PolymerType[];
+}
+
 export interface ISeqSplitted {
+
+  graphInfo?: ISeqGraphInfo;
+
   isGap(posIdx: number): boolean;
 
   /** */

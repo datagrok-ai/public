@@ -1,10 +1,11 @@
+/* eslint-disable max-len */
 import {RdKitServiceWorkerSimilarity} from './rdkit-service-worker-similarity';
 import {MolList, RDModule, RDMol, RGroupDecomp} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {IMolContext, getMolSafe, getQueryMolSafe} from '../utils/mol-creation_rdkit';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {RuleId} from '../panels/structural-alerts';
 import {SubstructureSearchType} from '../constants';
-import {stringArrayToMolList, getUncommonAtomsAndBonds} from '../utils/chem-common';
+import {stringArrayToMolList} from '../utils/chem-common';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 
 export enum MolNotation {
@@ -183,9 +184,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
         rdMol = mol?.mol;
         if (rdMol)
           rdMol.is_qmol = mol?.isQMol;
-      } else {
+      } else
         isInCache = true;
-      }
+
       if (rdMol) {
         try {
           rdMol.set_new_coords();
@@ -240,8 +241,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
             results[i] = rdMol.get_molblock();
             break;
           case MolNotation.Smiles:
-            if (!rdMol.is_qmol)
-              results[i] = rdMol.get_smiles();
+            results[i] = rdMol.get_smiles();
             break;
           case MolNotation.V3KMolBlock:
             results[i] = rdMol.get_v3Kmolblock();
@@ -381,9 +381,9 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       let counter = 0;
       if (totalColsNum > 0) {
         const atomsToHighlight = Array<Array<Uint32Array>>(totalColsNum - numOfNonRGroupCols)
-          .fill([]).map((u) => [] as Uint32Array[]);
+          .fill([]).map((_u) => [] as Uint32Array[]);
         const bondsToHighlight = Array<Array<Uint32Array>>(totalColsNum - numOfNonRGroupCols)
-          .fill([]).map((u) => [] as Uint32Array[]);
+          .fill([]).map((_u) => [] as Uint32Array[]);
         for (let i = 0; i < totalColsNum; i++) {
           const isRGroupCol = colNames[i] !== coreColName;
           const col = Array<string>(molecules.length);

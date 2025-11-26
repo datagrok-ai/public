@@ -1,17 +1,50 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import { awaitCheck } from '@datagrok-libraries/utils/src/test';
+import { awaitCheck, delay } from '@datagrok-libraries/utils/src/test';
 import { getRevvityLibraries } from './libraries';
-import { initializeFilters } from './search-utils';
+import { filterProperties, getPropertiesForLibAndEntityType, initializeFilters, runSearchQuery, SAVED_SEARCH_STORAGE } from './search-utils';
+import { getCompoundTypeByViewName, getViewNameByCompoundType } from './utils';
+import { getConditionForLibAndType, retrieveQueriesMap } from './compounds';
+import { ComplexCondition, Operators } from '@datagrok-libraries/utils/src/query-builder/query-builder';
+import { RevvityUser } from './revvity-api';
+import { LAYOUT_STORAGE, USER_FIELDS } from './constants';
+import { funcs } from './package-api';
+import { _package } from './package';
+import { applyRevvityLayout, saveRevvityLayout } from './layout';
 
 
 const REVVITY_SIGNALS_APP_PATH: string = 'apps/Revvitysignalslink';
-export let initSearchQuery = undefined;
 
-export function resetInitSearchQuery() {
-  initSearchQuery = undefined;
-} 
+export let openedView: DG.TableView | DG.ViewBase | null = null;
+
+export async function updateView(tv: DG.TableView, df: DG.DataFrame, compoundType: string, libName: string, libId?: string, filtersDiv?: HTMLDivElement) {
+  tv.dataFrame = df;
+
+  setColumnsFormat(tv);
+
+  //look for friendly names and set
+  if (!libId) {
+    const libs = await getRevvityLibraries();
+    const lib = libs.filter((it) => it.name.toLowerCase() === libName.toLowerCase());
+    if (lib.length)
+      libId = lib[0].id;
+  }
+  if (libId)
+    await setColumnsFriendlyNames(libId, compoundType, tv.dataFrame);
+
+  applyRevvityLayout(tv.grid, `${libName}|${compoundType}`);
+  const columns = tv.dataFrame.columns.names();
+  if (columns.length)
+    tv.dataFrame.currentCell = tv.dataFrame.cell(-1, tv.dataFrame.col(columns[0])!.name);
+
+  DG.debounce(tv.grid.onPropertyValueChanged, 5000).subscribe(() => {
+    saveRevvityLayout(tv.grid, libName, compoundType)
+  });
+  DG.debounce(tv.dataFrame.onMetadataChanged, 5000).subscribe(() => {
+    saveRevvityLayout(tv.grid, libName, compoundType)
+  });
+}
 
 export function createPath(viewName?: string[]) {
   let path = `${REVVITY_SIGNALS_APP_PATH}`;
@@ -48,17 +81,32 @@ export function setBreadcrumbsInViewName(viewPath: string[], tree: DG.TreeViewGr
   }
 }
 
-export async function openRevvityNode(treeNode: DG.TreeViewGroup, libToOpen: string, typeToOpen?: string) {
-  //need to wait for tree to become available
-  await awaitCheck(() => treeNode.items.find((node) => node.text.toLowerCase() === libToOpen.toLowerCase()) !== undefined,
-    `Libraries haven't been loaded in 10 seconds`, 10000);
-  const libNode = treeNode.items.find((node) => node.text.toLowerCase() === libToOpen.toLowerCase()) as DG.TreeViewGroup;
-  libNode.expanded = true;
-  if (typeToOpen) {
-    //need to wait for types to become available after lib node was expanded
-    await awaitCheck(() => libNode.items.find((node) => node.text.toLowerCase() === typeToOpen.toLowerCase()) !== undefined,
-      `Library types haven't been loaded in 10 seconds`, 10000);
-    treeNode.items.find((node) => node.text.toLowerCase() === typeToOpen.toLowerCase())?.root.click();
+export async function openRevvityNode(treeNode: DG.TreeViewGroup, nodesToExpand: string[], nodeToSelectName: string,
+  libToOpen?: string, typeToOpen?: string, initialSearchQuery?: ComplexCondition, isSavedSearch?: boolean) {
+  let lastExpandedNode = null;
+  for (let nodeName of nodesToExpand) {
+    try {
+      await awaitCheck(() => treeNode.items.find((node) => node.text.toLowerCase() === nodeName.toLowerCase()) !== undefined,
+        `${nodeName} haven't been loaded in 10 seconds`, 10000);
+    } catch (e: any) {
+      grok.shell.error(e?.message ?? e);
+      return;
+    }
+    lastExpandedNode = treeNode.items.find((node) => node.text.toLowerCase() === nodeName.toLowerCase()) as DG.TreeViewGroup;
+    lastExpandedNode.expanded = true;
+  }
+  const path = nodesToExpand.concat(nodeToSelectName)
+    .concat(initialSearchQuery ? ['search', JSON.stringify(initialSearchQuery)] : []);
+  if (libToOpen && typeToOpen) {
+    createViewFromPreDefinedQuery(treeNode, path, libToOpen, typeToOpen, initialSearchQuery, isSavedSearch);
+
+    // //selecting node manually
+    // if (lastExpandedNode) {
+    //   await awaitCheck(() => lastExpandedNode.items.find((node) => node.text.toLowerCase() === nodeToSelectName.toLowerCase()) !== undefined,
+    //     `${nodeToSelectName} types haven't been loaded in 10 seconds`, 10000);
+    //   const nodeToSelect = treeNode.items.find((node) => node.text.toLowerCase() === nodeToSelectName.toLowerCase());
+    //   nodeToSelect?.root.classList.add('d4-tree-view-node-selected');
+    // }
   }
 }
 
@@ -68,48 +116,146 @@ export async function handleInitialURL(treeNode: DG.TreeViewGroup, url: string) 
     url = url.slice(1);
   const componentsArr = url.split('/');
   if (componentsArr.length) {
-    const libs = await getRevvityLibraries();
-    //check for library
-    const libIdx = libs.findIndex((it) => it.name.toLocaleLowerCase() === componentsArr[0].toLowerCase())
-    if (libIdx === -1) {
-      grok.shell.error(`Library ${componentsArr[0]} doesn't exist`);
-      return;
-    }
-    //in case path contains only library
-    if (componentsArr.length < 2) {
-      openRevvityNode(treeNode, componentsArr[0]);
-      return;
-    }
-    //check for type
-    const typeIdx = libs[libIdx].types.findIndex((it) => it.name.toLowerCase() === componentsArr[1].toLowerCase());
-    if (typeIdx === -1) {
-      grok.shell.error(`Type ${componentsArr[1]} doesn't exist`);
-      openRevvityNode(treeNode, componentsArr[0]);
+    let libs;
+    try {
+      libs = await getRevvityLibraries();
+    } catch (e: any) {
+      grok.shell.error(`Revvity libraries haven't been loaded: ${e?.message ?? e}`);
       return;
     }
 
-    //create initial serach condition from url
-    if (componentsArr.length === 4 && componentsArr[2] === 'search') {
-        const condition = JSON.parse(componentsArr[3]);
-        initSearchQuery = condition;
+    let idx = 0;
+    const nodesToExpand = [];
+    if (componentsArr[idx] === 'saved searches') {
+      nodesToExpand.push(componentsArr[idx]);
+      idx++;
     }
+    if (componentsArr.length > idx) {
+      //collect library name
+      const libName = componentsArr[idx];
+      //check if library exists
+      const libIdx = libs.findIndex((it) => it.name.toLocaleLowerCase() === componentsArr[idx].toLowerCase())
+      if (libIdx === -1) {
+        grok.shell.error(`Library ${componentsArr[idx]} doesn't exist`);
+        openRevvityNode(treeNode, nodesToExpand, nodesToExpand[nodesToExpand.length - 1]);
+        return;
+      }
+      nodesToExpand.push(componentsArr[idx]);
+      idx++;
 
-    openRevvityNode(treeNode, componentsArr[0], componentsArr[1]);
+      if (componentsArr.length > idx) {
+        //collect type name
+        const entityType = getCompoundTypeByViewName(componentsArr[idx]);
+        //check if entity type exists
+        const typeIdx = libs[libIdx].types.findIndex((it) => it.name.toLowerCase() === entityType.toLowerCase());
+        if (typeIdx === -1) {
+          grok.shell.error(`Type ${entityType} doesn't exist`);
+          openRevvityNode(treeNode, nodesToExpand, componentsArr[idx], libName);
+          return;
+        }
+
+        //in case of saved searches
+        if (nodesToExpand[0] === 'saved searches' && componentsArr.length > idx + 1) {
+          nodesToExpand.push(componentsArr[idx]);
+          openRevvityNode(treeNode, nodesToExpand, componentsArr[idx + 1], libName,
+            entityType, undefined, true);
+          return;
+        }
+
+        //in case of search query, 'search' should be with index 2, components array should contain 4 items 
+        if (componentsArr[idx + 1] === 'search' && componentsArr.length === idx + 3) {
+          const condition = JSON.parse(componentsArr[idx + 2]);
+          openRevvityNode(treeNode, nodesToExpand, componentsArr[idx], libName,
+            entityType, condition, false);
+          return;
+        }
+        openRevvityNode(treeNode, nodesToExpand, componentsArr[idx], libName, entityType);
+      }
+      openRevvityNode(treeNode, nodesToExpand, componentsArr[idx], libName);
+    }
   }
 }
 
+export function createViewForExpandabelNode(viewName: string,
+  getElement: (root: HTMLElement, libName?: string, typeName?: string) => Promise<HTMLDivElement>, libName?: string, typeName?: string) {
+  openedView?.close();
+  const div = ui.div();
+  openedView = grok.shell.addPreview(DG.View.fromRoot(div));
+  const name = typeName ? getViewNameByCompoundType(typeName) : libName ?? viewName;
+  openedView.name = name.charAt(0).toUpperCase() + name.slice(1);
+  getElement(div, libName, typeName);
+}
 
-export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, query: string, name: string, libName: string, compoundType: string) {
-  //!!!!!!!!!!TODO: Change to .then()
-  const df = initSearchQuery ? DG.DataFrame.create() :
-    await grok.functions.call('RevvitySignalsLink:searchEntitiesWithStructures', {
-      query: query,
-      params: '{}'
-    });
+export async function createViewFromPreDefinedQuery(treeNode: DG.TreeViewGroup, path: string[], libName: string,
+  compoundType: string, initialSearchQuery?: ComplexCondition, isSavedSearch?: boolean): Promise<void> {
+  let name = path[path.length - 1];
+  if (!isSavedSearch)
+    name = getViewNameByCompoundType(compoundType);
+  openedView?.close();
+
+  const df = DG.DataFrame.create();
   const tv = grok.shell.addTablePreview(df);
-  tv.name = name;
-  tv.path = createPath([libName, compoundType]);
-  setBreadcrumbsInViewName([libName, compoundType], treeNode);
-  const filtersDiv = ui.div([]);
-  initializeFilters(tv, filtersDiv, libName, compoundType);
+  const icon = ui.iconImage('', `${_package.webRoot}img/revvity.png`);
+  //tv.setIcon(icon); TODO!!! Uncomment when setIcon method is available in js-api
+
+  openedView = tv;
+  openedView.name = name.charAt(0).toUpperCase() + name.slice(1);
+  openedView.path = createPath(path);
+  const filtersDiv = ui.divV([], 'revvity-signals-filter-panel');
+
+  if (isSavedSearch && !initialSearchQuery) {
+    const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, `${libName}|${compoundType}`) || '{}';
+    const savedSearches: { [key: string]: string } = JSON.parse(savedSearchesStr);
+    initialSearchQuery = JSON.parse(savedSearches[name]);
+  }
+
+  ui.setUpdateIndicator(openedView.root, true, `Loading ${name}...`);
+
+  const initFilters = () => {
+    ui.setUpdateIndicator(openedView!.root, false);
+    setBreadcrumbsInViewName([libName, compoundType], treeNode);
+    initializeFilters(treeNode, tv, filtersDiv, libName, compoundType, initialSearchQuery, !isSavedSearch);
+  }
+
+  if (!initialSearchQuery) {
+    getRevvityLibraries().then((libs) => {
+      if (!libs.length) {
+        grok.shell.warning(`No materials libraries found`);
+        return;
+      }
+      const libId = libs.filter((it) => it.name.toLowerCase() === libName.toLowerCase());
+      if (!libId.length) {
+        grok.shell.warning(`Library ${libName} not found`);
+        return;
+      }
+      initialSearchQuery = {
+        logicalOperator: Operators.Logical.and,
+        conditions: []
+      }
+      initFilters();
+    })
+  } else
+    initFilters();
+}
+
+export function setColumnsFormat(tv: DG.TableView) {
+  const colNames = tv.dataFrame.columns.names();
+  for (const colName of colNames) {
+    const dfColType = tv.dataFrame.col(colName)!.type;
+    const format = dfColType === DG.TYPE.DATE_TIME ? 'M/d/yyyy' : dfColType === DG.TYPE.FLOAT ? 'two digits after comma' : '';
+    if (format) {
+      const gridCol = tv.grid.col(colName)!
+      gridCol.format = format;
+    }
+  }
+}
+
+export async function setColumnsFriendlyNames(libId: string, entityType: string, dataFrame: DG.DataFrame) {
+  const colNames = dataFrame.columns.names();
+  const props = await getPropertiesForLibAndEntityType(libId, entityType);
+  for (const colName of colNames) {
+    const prop = props.filter((it) => it.name === colName);
+    if (prop.length && prop[0].friendlyName)
+      dataFrame.col(colName)!.setTag('friendlyName', prop[0].friendlyName);
+  }
 }

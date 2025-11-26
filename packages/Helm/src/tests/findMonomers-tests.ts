@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {after, before, category, delay, expect, expectObject, test} from '@datagrok-libraries/utils/src/test';
 import {UserLibSettings} from '@datagrok-libraries/bio/src/monomer-works/types';
-import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper, IMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {
   getUserLibSettings, setUserLibSettings,
 } from '@datagrok-libraries/bio/src/monomer-works/lib-settings';

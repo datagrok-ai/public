@@ -7,10 +7,10 @@
     "datagrok-api": "^1.26.0",
     "cash-dom": "^8.1.5",
     "dayjs": "^1.11.13",
-    "@datagrok-libraries/utils": "^4.6.0"
+    "@datagrok-libraries/utils": "^4.6.5"
   },
   "devDependencies": {
-    "datagrok-tools": "^4.14.38",
+    "datagrok-tools": "^4.14.53",
     "webpack": "^5.95.0",
     "webpack-cli": "^5.1.4"
   },

@@ -11,14 +11,112 @@ export namespace queries {
   export async function getCompounds(): Promise<DG.DataFrame> {
     return await grok.data.query('MolTrack:GetCompounds', {});
   }
+
+  export async function insertAdminUser(): Promise<DG.DataFrame> {
+    return await grok.data.query('MolTrack:InsertAdminUser', {});
+  }
+
+  export async function insertSemanticTypeSynonym(): Promise<DG.DataFrame> {
+    return await grok.data.query('MolTrack:InsertSemanticTypeSynonym', {});
+  }
+
+  export async function insertProperties(): Promise<DG.DataFrame> {
+    return await grok.data.query('MolTrack:InsertProperties', {});
+  }
+
+  export async function insertSettings(): Promise<DG.DataFrame> {
+    return await grok.data.query('MolTrack:InsertSettings', {});
+  }
+
+  export async function insertStandartization(): Promise<DG.DataFrame> {
+    return await grok.data.query('MolTrack:InsertStandartization', {});
+  }
 }
 
 export namespace funcs {
-  export async function molTrackApp(): Promise<DG.View> {
-    return await grok.functions.call('MolTrack:MolTrackApp', {});
+  export async function init(): Promise<void> {
+    return await grok.functions.call('MolTrack:Init', {});
   }
 
-  export async function cddVaultAppTreeBrowser(treeNode: any ): Promise<void> {
-    return await grok.functions.call('MolTrack:CddVaultAppTreeBrowser', { treeNode });
+  export async function initDB(): Promise<void> {
+    return await grok.functions.call('MolTrack:InitDB', {});
+  }
+
+  export async function molTrackApp(path?: string ): Promise<DG.View> {
+    return await grok.functions.call('MolTrack:MolTrackApp', { path });
+  }
+
+  export async function molTrackAppTreeBrowser(treeNode: any , browseView: DG.View ): Promise<void> {
+    return await grok.functions.call('MolTrack:MolTrackAppTreeBrowser', { treeNode, browseView });
+  }
+
+  /**
+  Retrieves all properties defined for the 'compound' scope
+  */
+  export async function fetchCompoundProperties(): Promise<string> {
+    return await grok.functions.call('MolTrack:FetchCompoundProperties', {});
+  }
+
+  /**
+  Retrieves all properties defined for the 'batch' scope
+  */
+  export async function fetchBatchProperties(): Promise<string> {
+    return await grok.functions.call('MolTrack:FetchBatchProperties', {});
+  }
+
+  /**
+  Retrieves all dynamic fields
+  */
+  export async function fetchSchema(): Promise<string> {
+    return await grok.functions.call('MolTrack:FetchSchema', {});
+  }
+
+  /**
+  Retrieves all static fields
+  */
+  export async function fetchDirectSchema(): Promise<string> {
+    return await grok.functions.call('MolTrack:FetchDirectSchema', {});
+  }
+
+  export async function getCompoundByCorporateId(corporateValue: string ): Promise<any> {
+    return await grok.functions.call('MolTrack:GetCompoundByCorporateId', { corporateValue });
+  }
+
+  export async function getBatchByCorporateId(corporateValue: string ): Promise<any> {
+    return await grok.functions.call('MolTrack:GetBatchByCorporateId', { corporateValue });
+  }
+
+  /**
+  Registers compound properties in the MolTrack service using the provided JSON payload
+  */
+  export async function registerMolTrackProperties(jsonPayload: string ): Promise<string> {
+    return await grok.functions.call('MolTrack:RegisterMolTrackProperties', { jsonPayload });
+  }
+
+  export async function registerAssays(assayPayload: string ): Promise<string> {
+    return await grok.functions.call('MolTrack:RegisterAssays', { assayPayload });
+  }
+
+  export async function registerBulk(csvFile: DG.FileInfo , scope: string , mapping: string , errorHandling: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('MolTrack:RegisterBulk', { csvFile, scope, mapping, errorHandling });
+  }
+
+  export async function search(query: string , entityEndpoint: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('MolTrack:Search', { query, entityEndpoint });
+  }
+
+  /**
+  Performs a structured MolTrack compound search. The caller must provide the "output": a list of fully-qualified field names to return; "filter": a structured filter tree describing search conditions.
+  */
+  export async function advancedSearch(outputFields: any , filter: any ): Promise<DG.DataFrame> {
+    return await grok.functions.call('MolTrack:AdvancedSearch', { outputFields, filter });
+  }
+
+  export async function retrieveEntity(scope: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('MolTrack:RetrieveEntity', { scope });
+  }
+
+  export async function getMoltrackPropPanelById(id: any ): Promise<any> {
+    return await grok.functions.call('MolTrack:GetMoltrackPropPanelById', { id });
   }
 }

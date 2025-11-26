@@ -1,5 +1,3 @@
-let v = grok.shell.newView('demo: context menu');
-
 let showMenu = () => {
   let showBalloon = (item) => grok.shell.info(item);
 
@@ -7,9 +5,12 @@ let showMenu = () => {
     .item('Show info', () => grok.shell.info('Info'))
     .separator()
     .items(['First', 'Second'], showBalloon)
+    .group('Group')
+      .item('Inner item', () => grok.shell.info('item click'))
+    .endGroup()
     .show();
 };
 
-let text = ui.divText('Clickable');
-v.append(text);
-text.addEventListener("click", showMenu);
+let text = ui.divText('Click me');
+text.onclick = () => showMenu();
+text

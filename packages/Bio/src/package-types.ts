@@ -8,7 +8,7 @@ import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {LoggerWrapper} from '@datagrok-libraries/bio/src/utils/logger';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
-import {IMonomerLib, IMonomerLibBase, IMonomerSet} from '@datagrok-libraries/bio/src/types';
+import {IMonomerLib, IMonomerLibBase, IMonomerSet} from '@datagrok-libraries/bio/src/types/monomer-library';
 
 /** Names of package properties/settings declared in properties section of {@link './package.json'} */
 export const enum BioPackagePropertiesNames {
@@ -41,7 +41,7 @@ export class BioPackageProperties extends Map<string, any> {
   }
 
   public set maxMonomerLength(value: number | null) {
-    const vs = value === null ? 'long' : value.toString();
+    const vs = value == null ? 'long' : value.toString();
     super.set(BioPackagePropertiesNames.MaxMonomerLength, vs);
     this._onPropertyChanged.next(BioPackagePropertiesNames.MaxMonomerLength);
   }

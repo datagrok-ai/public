@@ -35,7 +35,7 @@ Initially, a radar viewer selects the first 20 numerical columns from the corres
 ## Configuring a radar viewer
 
 To configure a radar viewer, click the **Gear** icon on top of the viewer and
-use the **Misc** and **Color** info panels on the **Context Pane**.
+use the **Misc** and **Color** info panels on the **Context Panel**.
 
 For example, you can:
 

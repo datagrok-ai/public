@@ -239,6 +239,8 @@ export class Dapi {
     params.headers['original-url'] = `${url}`;
     // @ts-ignore
     params.headers['original-method'] = params.method;
+    if (params.redirect === 'follow')
+      (params.headers as any)['follow-redirects'] = true;
     let proxyUrl = `${this.root}/connectors/proxy`;
     if (params.method == 'GET' || params.method == 'HEAD') {
       if (maxAge) {
@@ -1164,8 +1166,8 @@ export class LogDataSource extends HttpDataSource<LogEvent> {
     return new ActivityDataSource(api.grok_Dapi_Activity());
   }
 
-  where(options?: {entityId?: string, start?: dayjs.Dayjs, end?: dayjs.Dayjs}): LogDataSource {
-    return new LogDataSource(api.grok_Dapi_Log_Where(this.dart, options?.entityId ?? '', toDart(options?.start), toDart(options?.end)));
+  where(options?: {entityId?: string, start?: dayjs.Dayjs, end?: dayjs.Dayjs, favoritesOnly?: boolean}): LogDataSource {
+    return new LogDataSource(api.grok_Dapi_Log_Where(this.dart, options?.entityId ?? '', toDart(options?.start), toDart(options?.end), options?.favoritesOnly ?? false));
   }
 }
 

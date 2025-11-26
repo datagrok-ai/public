@@ -5,14 +5,13 @@ import * as DG from 'datagrok-api/dg';
 //description: Viewer to test properties and others
 //tags: panel, viewer
 //output: viewer result
-export function testViewerForProperties() {
+export function testViewerForProperties() : any {
   return PackageFunctions.testViewerForProperties();
 }
 
-//name: testCustomFilter
 //description: Test custom filter
 //tags: filter
 //output: filter result
-export function testCustomFilter() {
+export function testCustomFilter() : any {
   return PackageFunctions.testCustomFilter();
 }

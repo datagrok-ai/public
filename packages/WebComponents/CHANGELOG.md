@@ -1,5 +1,22 @@
 # WebComponents changelog
 
+## 1.2.10 (2025-11-20)
+
+- Tweak consistency icons in forms
+- Tweak dock spawn webcomponent api
+
+## 1.2.9 (2025-10-30)
+
+- Update deps
+
+## 1.2.8 (2025-09-09)
+
+- Support restoring focused tab in dock
+
+## 1.2.7 (2025-09-04)
+
+- Small bug fixes
+
 ## 1.2.6 (2025-08-28)
 
 - Compute2 related updates

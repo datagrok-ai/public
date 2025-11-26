@@ -3,47 +3,68 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { ComplexCondition, Operators, QueryBuilder, QueryBuilderLayout, SUGGESTIONS_FUNCTION } from '@datagrok-libraries/utils/src/query-builder/query-builder';
-import { convertComplexConditionToSignalsSearchQuery, SignalsSearchQuery } from './signals-search-query';
-import { materialsCondition } from './compounds';
-import { getRevvityLibraries } from './libraries';
+import { convertComplexConditionToSignalsSearchQuery, SignalsSearchField, SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
+import { addMoleculeStructures, getConditionForLibAndType, materialsCondition, retrieveQueriesMap } from './compounds';
+import { createLibsObjectForStatistics, getRevvityLibraries, RevvityLibrary } from './libraries';
 import { getDefaultProperties, REVVITY_FIELD_TO_PROP_TYPE_MAPPING } from './properties';
-import { getTerms } from './package';
-import { createPath, initSearchQuery, resetInitSearchQuery } from './view-utils';
+import { getTermsForField } from './package';
+import { createPath, createViewFromPreDefinedQuery, openedView, openRevvityNode, updateView } from './view-utils';
+import { getAppHeader, getCompoundTypeByViewName, getViewNameByCompoundType } from './utils';
+import { funcs } from './package-api';
+import { HIDDEN_ID_COL_NAME, ID_COL_NAME, MAX_RETURN_ROWS, MOL_COL_NAME, REVVITY_SEARCH_RES_TOTAL_COUNT } from './constants';
+
+export type QueryBuilderConfig = {
+  libId: string,
+  libName: string,
+  entityType: string,
+  qb?: QueryBuilder
+}
+
+export const SAVED_SEARCH_STORAGE = 'RevvitySignalsLinkSavedSearch';
+export let currentQueryBuilderConfig: QueryBuilderConfig | undefined = undefined;
+export const filterProperties: {[key: string]: DG.Property[]} = {};
 
 export async function runSearchQuery(libId: string, compoundType: string,
-  queryBuilderCondition: ComplexCondition): Promise<DG.DataFrame> {
-  const condition: ComplexCondition = {
+  queryBuilderCondition?: ComplexCondition, params?: SignalsSearchParams, withoutStructures?: boolean): Promise<DG.DataFrame> {
+
+  const cond: ComplexCondition = {
     logicalOperator: Operators.Logical.and,
     conditions: [
       materialsCondition //now we have only materials section in our revvity instance, so adding condition to search through materials
     ]
   }
-  condition.conditions.push(
+  cond.conditions.push(
     {
       field: "assetTypeEid",
       operator: Operators.EQ,
       value: libId
     }
   );
-  condition.conditions.push(
+  cond.conditions.push(
     {
       field: "type",
       operator: Operators.EQ,
       value: compoundType
     }
   );
-  condition.conditions.push(queryBuilderCondition);
-  const signalsQuery: SignalsSearchQuery = convertComplexConditionToSignalsSearchQuery(condition);
+  if (queryBuilderCondition && queryBuilderCondition.conditions.length > 0)
+    cond.conditions.push(queryBuilderCondition);
+  const signalsQuery: SignalsSearchQuery = convertComplexConditionToSignalsSearchQuery(cond);
+  if (!signalsQuery.options?.sort) {
+    signalsQuery.options ??= {};
+    signalsQuery.options.sort = {
+      [SignalsSearchField.MODIFIED_AT]: "desc"
+    }
+  }
   console.log(signalsQuery);
-  const resultDf = await grok.functions.call('RevvitySignalsLink:searchEntitiesWithStructures', {
-    query: JSON.stringify(signalsQuery),
-    params: '{}'
-  });
+  const resultDf = await funcs.searchEntitiesWithStructures(JSON.stringify(signalsQuery),
+    params ? JSON.stringify(params) : '{}', libId, compoundType, withoutStructures);
   return resultDf;
 }
 
 
-export async function initializeFilters(tv: DG.TableView, filtersDiv: HTMLDivElement, libName: string, compoundType: string) {
+export async function initializeFilters(treeNode: DG.TreeViewGroup, tv: DG.TableView, filtersDiv: HTMLDivElement, libName: string,
+  compoundType: string, initialSearchQuery?: ComplexCondition, changePath?: boolean) {
   const libs = await getRevvityLibraries();
   const selectedLib = libs.filter((l) => l.name === libName);
   if (selectedLib.length) {
@@ -62,80 +83,178 @@ export async function initializeFilters(tv: DG.TableView, filtersDiv: HTMLDivEle
     <path d="M21 10L24 13L21 16" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 </svg>`;
-    externalFilterIcon.className = 'filters-button-icon';
+    externalFilterIcon.className = 'revvity-filters-button-icon';
     externalFilterIcon.onclick = () => {
       tv.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
-      externalFilterIcon.classList.remove('filters-button-icon-show');
+      externalFilterIcon.classList.remove('revvity-filters-button-icon-show');
     };
     ui.tooltip.bind(externalFilterIcon, 'Add Revvity Signals filters');
+    
+    //save search icon
+    const saveSearchIcon = ui.icons.save(() => {
+      saveSearchQuery(treeNode, selectedLib[0].name, compoundType, qb)
+    }, 'Save current search query');
+
+
+    //load search icon
+    const loadSearchIcon = ui.iconFA('folder-open', () => {
+      loadSearchQuery(treeNode, selectedLib[0].name, compoundType, qb);
+    }, 'Load saved search query');
+    
     const filtersButton = ui.div(externalFilterIcon);
-    tv.setRibbonPanels([[filtersButton]]);
+    const saveButton = ui.div(saveSearchIcon);
+    const loadButton = ui.div(loadSearchIcon);
+    tv.setRibbonPanels(tv.getRibbonPanels().concat([[filtersButton]]));
     //create filters panel
     tv.dockManager.dock(filtersDiv, 'left', null, 'Filters', 0.2);
     tv.dockManager.onClosed.subscribe((el: any) => {
-      externalFilterIcon.classList.add('filters-button-icon-show');
+      externalFilterIcon.classList.add('revvity-filters-button-icon-show');
     })
     ui.setUpdateIndicator(filtersDiv, true, 'Loading filters...');
-    const qb = await initializeQueryBuilder(selectedLib[0].id, compoundType);
-
-    const runSearchButton = ui.bigButton('Search', async () => {
-      runSearch(qb, tv, selectedLib[0].id, compoundType, libName);
+    const filterFields = await getPropertiesForLibAndEntityType(selectedLib[0].id, compoundType);
+    const qb = new QueryBuilder(filterFields, initialSearchQuery,
+      QueryBuilderLayout.Narrow, `Revvity Signals|${selectedLib[0].id}|${compoundType}`, true);
+    currentQueryBuilderConfig = {libId: selectedLib[0].id, libName, entityType: compoundType, qb};
+    qb.validationError.subscribe((isInvalid: boolean) => {
+      runSearchButton.disabled = isInvalid;
     });
 
+    const runSearchButton = ui.button('Search', async () => {
+      runSearch(qb, tv, filtersDiv, loadAllResultsDiv, selectedLib[0].id, compoundType, libName, true);
+    });
+
+    const loadAllResultsDiv = ui.div('', 'revvity-load-all-search-results');
+
+    //set initial validation status
+    runSearchButton.disabled = qb.invalid;
+
     ui.setUpdateIndicator(filtersDiv, false);
+    filtersDiv.append(ui.divH([saveButton, loadButton], 'revvity-saved-searches-icons-div'));
     filtersDiv.append(qb.root);
     filtersDiv.append(ui.div(runSearchButton, { style: { paddingLeft: '4px' } }));
+    filtersDiv.append(loadAllResultsDiv);
+
 
     ui.onSizeChanged(filtersDiv).subscribe(() => {
       updateQueryBuilderLayout(qb, filtersDiv.clientWidth, selectedLib[0].id, compoundType);
     });
 
-    if (initSearchQuery)
-      runSearch(qb, tv, selectedLib[0].id, compoundType, libName);
+    if (initialSearchQuery)
+      runSearch(qb, tv, filtersDiv, loadAllResultsDiv, selectedLib[0].id, compoundType, libName, changePath);
   }
 }
 
-export async function runSearch(qb: QueryBuilder, tv: DG.TableView, libId: string, compoundType: string, libName: string) {
-  qb.saveConditionToHistory();
+export async function runSearch(qb: QueryBuilder, tv: DG.TableView, filtersDiv: HTMLDivElement, loadAllResDiv: HTMLDivElement, libId: string, compoundType: string,
+  libName: string, changePath?: boolean) {
+  ui.empty(loadAllResDiv);
+  if (qb.condition.conditions.length)
+    qb.saveConditionToHistory();
   ui.setUpdateIndicator(tv.grid.root, true, 'Searching...');
   const condition = qb.condition;
   const resultDf = await runSearchQuery(libId, compoundType, condition);
-  tv.dataFrame = resultDf;
-  tv.path = createPath([libName, compoundType, 'search', JSON.stringify(condition)]);
-  ui.setUpdateIndicator(tv.grid.root, false);
-  if (initSearchQuery)
-    resetInitSearchQuery();
-}
-
-
-export async function initializeQueryBuilder(libId: string, compoundType: string): Promise<QueryBuilder> {
-  const filterFields = getDefaultProperties();
-  const tagsStr = await grok.functions.call('RevvitySignalsLink:getTags', {
-    assetTypeId: libId,
-    type: compoundType
-  });
-  const tags: { [key: string]: string } = JSON.parse(tagsStr);
-  Object.keys(tags).forEach((tagName) => {
-    const propOptions: { [key: string]: any } = {
-      name: tagName,
-      type: REVVITY_FIELD_TO_PROP_TYPE_MAPPING[tags[tagName]],
-    };
-    const nameArr = tagName.split('.');
-    if (nameArr.length > 1)
-      propOptions.friendlyName = nameArr[1];
-    const prop = DG.Property.fromOptions(propOptions);
-    prop.options[SUGGESTIONS_FUNCTION] = async (text: string) => {
-      const termsStr = await getTerms(tagName, compoundType, libId, true);
-      const terms: string[] = JSON.parse(termsStr);
-      return terms.filter((it) => it.toLowerCase().includes(text.toLowerCase()));
+  const totalCount = resultDf.getTag(REVVITY_SEARCH_RES_TOTAL_COUNT);
+  const loadAllResults = async (count: number) => {
+    const pb = DG.TaskBarProgressIndicator.create(`Loading results`, {cancelable: true});
+    let totalDf: DG.DataFrame | null = null;
+    const batchSize = MAX_RETURN_ROWS;
+    const calls = Math.ceil(count / MAX_RETURN_ROWS);
+    for (let i = 0; i < calls; i++) {
+       if (pb.canceled)
+        break;
+      const resDf = await runSearchQuery(libId, compoundType, condition, { "page[limit]": batchSize, "page[offset]": i * batchSize }, true);
+      if (!totalDf)
+        totalDf = resDf;
+      else
+        totalDf.append(resDf, true);
+      pb.update(((i + 1) * batchSize / count) * batchSize, i + 1 === calls ? `Finished loading` : `Loaded ${(i + 1) * batchSize} of ${count}`);
     }
-    filterFields.push(prop);
-  });
+    pb.close();
+    if (totalDf) {
 
-  return new QueryBuilder(filterFields, initSearchQuery, QueryBuilderLayout.Narrow, `Revvity Signals|${libId}|${compoundType}`);
+      let idCol = totalDf.col(HIDDEN_ID_COL_NAME) ?? totalDf.col(ID_COL_NAME);
+      if (idCol) {
 
+        const moleculeIds = idCol.toList();
+        const moleculeColumn = totalDf.col(MOL_COL_NAME);
+
+        if (moleculeColumn)
+          addMoleculeStructures(moleculeIds, moleculeColumn);
+      }
+    }
+    return totalDf ?? DG.DataFrame.create();
+  }
+  
+  // if total number of results are more then 100, add ability to load them all
+  if (totalCount) {
+    let countInt: number | undefined = undefined;
+    try {
+      countInt = parseInt(totalCount)
+    } catch (e: any) { }
+    if (countInt) {
+      const infoDiv = ui.divH([]);
+      infoDiv.append(ui.divText(`${resultDf.rowCount} of ${countInt} rows`, 'revvity-search-results-count'));
+      loadAllResDiv.append(infoDiv);
+      if (countInt > resultDf.rowCount) {
+        const loadResButton = ui.button(`Load all`, async () => {
+          loadResButton.style.display = 'none';
+          ui.setUpdateIndicator(loadAllResDiv, true, `Loading ${totalCount} results`);
+          loadAllResults(countInt).then((res: DG.DataFrame) => {
+            ui.setUpdateIndicator(loadAllResDiv, false);
+            const openResButton = ui.button(`Open ${res.rowCount} results`, () => {
+              ui.empty(infoDiv);
+              openResButton.style.display = 'none';
+              updateView(openedView as DG.TableView, res, compoundType, libName, libId, filtersDiv);
+              infoDiv.append(ui.divText(`${res.rowCount} of ${countInt} rows`, 'revvity-search-results-count'));
+              if (res.rowCount < countInt) {
+                loadResButton.style.display = 'flex';
+                infoDiv.append(loadResButton);
+              }
+            });
+            openResButton.classList.add('revvity-load-all-search-results-button');
+            infoDiv.append(openResButton);
+          }).catch((e: any) => {
+            ui.empty(loadAllResDiv);
+            grok.shell.error(e?.message ?? e);
+          })
+        });
+        loadResButton.classList.add('revvity-load-all-search-results-button');
+        infoDiv.append(loadResButton);
+      }
+
+    }
+  }
+
+  updateView(openedView as DG.TableView, resultDf, compoundType, libName, libId, filtersDiv);
+  if (changePath)
+    tv.path = createPath([libName, getViewNameByCompoundType(compoundType), 'search', JSON.stringify(condition)]);
+  ui.setUpdateIndicator(tv.grid.root, false);
 }
 
+export async function getPropertiesForLibAndEntityType(libId: string, compoundType: string): Promise<DG.Property[]> {
+  if (!filterProperties[`${libId}|${compoundType}`]) {
+    const filterFields = getDefaultProperties();
+    const tagsStr = await funcs.getTags(compoundType, libId);
+    const tags: { [key: string]: string } = JSON.parse(tagsStr);
+    Object.keys(tags).forEach((tagName) => {
+      const propType = REVVITY_FIELD_TO_PROP_TYPE_MAPPING[tags[tagName]] ?? DG.TYPE.STRING;
+      const propOptions: { [key: string]: any } = {
+        name: tagName,
+        type: propType,
+      };
+      const nameArr = tagName.split('.');
+      if (nameArr.length > 1)
+        propOptions.friendlyName = nameArr[1];
+      const prop = DG.Property.fromOptions(propOptions);
+      prop.options[SUGGESTIONS_FUNCTION] = async (text: string) => {
+        const terms = await getTermsForField(tagName, compoundType, libId, true);
+        return terms.filter((it) => it.toLowerCase().includes(text.toLowerCase()));
+      }
+      filterFields.push(prop);
+    });
+    filterProperties[`${libId}|${compoundType}`] = filterFields;
+  }
+  return filterProperties[`${libId}|${compoundType}`];
+}
 
 function updateQueryBuilderLayout(qb: QueryBuilder, width: number, libId: string, compoundType: string) {
   if (!qb) return;
@@ -147,3 +266,242 @@ function updateQueryBuilderLayout(qb: QueryBuilder, width: number, libId: string
     qb.setLayout(newLayout);
   }
 };
+
+// Function to save search query
+async function saveSearchQuery(treeNode: DG.TreeViewGroup, libName: string, compoundType: string, queryBuilder: QueryBuilder) {
+
+  const storageKey = `${libName}|${compoundType}`;
+  const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, storageKey) || '{}';
+  const savedSearches: { [key: string]: string } = JSON.parse(savedSearchesStr);
+  
+  // Generate default name
+  let defaultName = 'new search';
+  let counter = 1;
+  while (savedSearches[defaultName]) {
+    defaultName = `new search (${counter})`;
+    counter++;
+  }
+
+  const nameInput = ui.input.string('Search Name', { value: defaultName });
+  const dialog = ui.dialog('Save Search Query')
+    .add(nameInput)
+    .onOK(async () => {
+      const searchName = nameInput.value;
+      if (!searchName.trim()) {
+        grok.shell.error('Search name cannot be empty');
+        return;
+      }
+
+      // Save the current query condition
+      savedSearches[searchName] = JSON.stringify(queryBuilder.condition);
+      grok.userSettings.add(SAVED_SEARCH_STORAGE, storageKey, JSON.stringify(savedSearches));
+
+      grok.shell.info(`Search query "${searchName}" saved successfully`);
+
+      //add corresponding saved search to browse view tree
+      const savedSearchesNode = getSavedSearchesNode(treeNode, libName, compoundType);
+      const newSearchNode = savedSearchesNode.item(searchName);
+      newSearchNode.onSelected.subscribe(async () => {
+        await createViewFromPreDefinedQuery(treeNode,
+          ['saved searches', libName, getViewNameByCompoundType(compoundType), searchName], libName, compoundType,
+          JSON.parse(savedSearches[searchName]), true);
+      });
+    });
+
+  dialog.show();
+}
+
+// Function to load search query
+async function loadSearchQuery(treeNode: DG.TreeViewGroup, libName: string, compoundType: string, queryBuilder: QueryBuilder) {
+  const storageKey = `${libName}|${compoundType}`;
+  const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, storageKey) || '{}';
+  const savedSearches: { [key: string]: string } = JSON.parse(savedSearchesStr);
+
+  const searchNames = Object.keys(savedSearches);
+  if (searchNames.length === 0) {
+    grok.shell.info('No saved searches found for this view');
+    return;
+  }
+
+  const searchNamesDf = DG.DataFrame.fromColumns([DG.Column.fromList('string', 'name', searchNames)]);
+  searchNamesDf.columns.addNewString('delete');
+
+  // Create typeahead input with saved search names
+  const searchInput = ui.typeAhead('Search name', {
+    source: {
+      local: searchNames.map(name => ({ label: name, value: name }))
+    },
+    minLength: 0,
+    limit: 10,
+    highlight: true,
+    debounceRemote: 100,
+    preventSubmit: true,
+  });
+
+  searchInput.onChanged.subscribe(() => {
+    searchNamesDf.rows.filter((row) => (row.name as string).includes(searchInput.value));
+  });
+
+
+  const savedSearchesGrid = searchNamesDf.plot.grid({allowColumnMenu: false, allowSorting: false});
+  savedSearchesGrid.onCellDoubleClick.subscribe((gc: DG.GridCell) => {
+    if (gc.isTableCell && gc.gridColumn.name === 'name') {
+      const searchName = gc.grid.dataFrame.col('name')?.get(gc.gridRow);
+      loadSavedSearchToQueryBuilder(savedSearches, searchName, queryBuilder);
+      dialog.close();
+    }
+  });
+  const deleteSearchCol = savedSearchesGrid.columns.byName('delete');
+
+  if (deleteSearchCol) {
+    deleteSearchCol.cellType = 'html';
+
+    savedSearchesGrid.onCellPrepare(function (gc) {
+      if (gc.isTableCell && gc.gridColumn.name === 'delete') {
+        const removeIcon = ui.div(ui.icons.delete(() => {
+          const searchName = gc.grid.dataFrame.col('name')?.get(gc.gridRow);
+          //remove row from table
+          searchNamesDf.rows.removeAt(gc.gridRow, 1);
+          //remove search from tree
+          const savedSearchesNode = getSavedSearchesNode(treeNode, libName, compoundType);
+          const items = savedSearchesNode.items.filter((it) => it.text === searchName);
+          if (items.length)
+            items[0].remove();
+          //save changes to storage
+          if (savedSearches[searchName])
+            delete savedSearches[searchName];
+          grok.userSettings.add(SAVED_SEARCH_STORAGE, storageKey, JSON.stringify(savedSearches));
+        }), 'revvity-saved-search-delete');
+        gc.style.element = removeIcon;
+      }
+    });
+  }
+
+  const dialog = ui.dialog('Load Search Query')
+    .add(ui.divV([searchInput, savedSearchesGrid.root]))
+    .onOK(async () => {
+      if (searchNamesDf.currentRowIdx === -1)
+        return;
+      const selectedSearchName = searchNamesDf.get('name', searchNamesDf.currentRowIdx);
+      loadSavedSearchToQueryBuilder(savedSearches, selectedSearchName, queryBuilder);
+    });
+
+  dialog.show();
+}
+
+
+function loadSavedSearchToQueryBuilder(savedSearches: { [key: string]: string }, selectedSearchName: string, queryBuilder: QueryBuilder) {
+  try {
+    const condition = JSON.parse(savedSearches[selectedSearchName]);
+    queryBuilder.loadCondition(condition);
+  } catch (e) {
+    grok.shell.error('Failed to parse saved search query');
+  }
+}
+
+function getSavedSearchesNode(treeNode: DG.TreeViewGroup, libName: string, compoundType: string): DG.TreeViewGroup {
+  const compoundTypeNode = getViewNameByCompoundType(compoundType);
+  const savedSearchesNode = treeNode.getOrCreateGroup('Saved Searches').getOrCreateGroup(libName)
+    .getOrCreateGroup(compoundTypeNode.charAt(0).toUpperCase() + compoundTypeNode.slice(1));
+  return savedSearchesNode;
+}
+
+
+export async function createSavedSearchesSatistics(statsDiv: HTMLElement, libName?: string, entityType?: string): Promise<HTMLDivElement> {
+
+  const searchesDiv = ui.divV([getAppHeader()]);
+  statsDiv.append(searchesDiv);
+  const tableDiv = ui.div('', { style: { position: 'relative', paddingTop: '15px' } });
+  searchesDiv.append(tableDiv);
+  ui.setUpdateIndicator(tableDiv, true, 'Loading saved searches...');
+
+  getRevvityLibraries().then(async (libs: RevvityLibrary[]) => {
+    const libObjForTable: any[] = [];
+    for (const lib of libs) {
+      if (libName && lib.name !== libName)
+        continue;
+      for (const libType of lib.types) {
+        if (entityType && libType.name !== entityType)
+          continue;
+        const storageKey = `${lib.name}|${libType.name}`;
+        const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, storageKey) || '{}';
+        const savedSearches: { [key: string]: string } = JSON.parse(savedSearchesStr);
+        const searchNames = Object.keys(savedSearches);
+        for (const search of searchNames)
+          libObjForTable.push({ libName: lib.name, libType: libType.name, search: search });
+      }
+    }
+
+    const statsElement = await createSavedSearchStats(libObjForTable, libName, entityType);
+    tableDiv.append(statsElement);
+    ui.setUpdateIndicator(tableDiv, false);
+  });
+  return tableDiv;
+}
+
+async function createSavedSearchStats(savedSearchesForTable: any[], libName?: string, libType?: string): Promise<HTMLElement> {
+  const outputArr: string[] = ['Library', 'Type', 'Search'];
+  let libObjForTable: any[] = [];
+  if (!savedSearchesForTable.length) {
+    libObjForTable = await createLibsObjectForStatistics(libName);
+    if (libType)
+      libObjForTable = libObjForTable.filter((it) => it.libType === libType);
+  }
+  let header = 'Saved Searches';
+
+  if (libName) {
+    outputArr.splice(0, 1);
+    header += ` > ${libName}`;
+  }
+
+  if (libType) {
+    outputArr.splice(0, 1);
+    const entityTypeName = getViewNameByCompoundType(libType);
+    header += ` > ${entityTypeName.charAt(0).toUpperCase()}${entityTypeName.slice(1)}`;
+  }
+
+  const createStatsTable = () => {
+    const table = ui.table(!savedSearchesForTable.length ? libObjForTable : savedSearchesForTable, (search) => {
+      const arr = [
+        search.libName ?? '',
+        search.libType ? search.libType.charAt(0).toUpperCase() + search.libType.slice(1) : '',
+        ui.link(savedSearchesForTable.length ? search.search : 'New search', () => {
+          const node = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').getOrCreateGroup('Chem').getOrCreateGroup('Revvity Signals');
+          node.expanded = true;
+          if (!savedSearchesForTable.length)
+            openRevvityNode(node, [search.libName, getViewNameByCompoundType(search.libType)], search.libType, search.libName, search.libType);
+          else
+            openRevvityNode(node, ['saved searches', search.libName, getViewNameByCompoundType(search.libType)], search.search, search.libName, search.libType, undefined, true);
+        }),
+      ];
+      if (libName)
+        arr.splice(0, 1);
+
+      if (libType)
+        arr.splice(0, 1);
+
+      return arr;
+    },
+      outputArr);
+    return table;
+  }
+
+  const statsDiv = ui.div([ui.h1(header, {style: {paddingLeft: '10px'}})]);
+
+  if (!savedSearchesForTable.length) {
+    let infoStr = `No searches have been saved `;
+    if (libName) {
+      infoStr += `for ${libName}`;
+      if (libType) {
+        infoStr += ` > ${libType.charAt(0).toUpperCase() + libType.slice(1)}`;
+      }
+    } 
+    statsDiv.append(ui.info(infoStr));
+  }
+
+  const table = createStatsTable();
+  if (outputArr.length === 1)
+      table.classList.add('revvity-signals-statistics-hide-header');
+  statsDiv.append(table);
+  return statsDiv;
+}

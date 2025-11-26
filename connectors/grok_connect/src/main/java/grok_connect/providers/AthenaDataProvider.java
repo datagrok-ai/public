@@ -1,9 +1,13 @@
 package grok_connect.providers;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
+
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
@@ -96,14 +100,26 @@ public class AthenaDataProvider extends JdbcDataProvider {
     @Override
     public Properties getProperties(DataConnection conn) {
         Properties properties = new Properties();
-        setIfNotNull(properties, "User", (String )conn.credentials.parameters.get(DbCredentials.ACCESS_KEY));
-        setIfNotNull(properties, "Password", (String) conn.credentials.parameters.get(DbCredentials.SECRET_KEY));
+        String accessKey = (String) conn.credentials.parameters.get(DbCredentials.ACCESS_KEY);
+        String secretKey = (String) conn.credentials.parameters.get(DbCredentials.SECRET_KEY);
+        if (GrokConnectUtil.isNotEmpty(accessKey) && GrokConnectUtil.isNotEmpty(secretKey)) {
+            properties.put("AwsCredentialsProviderClass", "grok_connect.utils.CustomAthenaSessionCredentialsProvider");
+            properties.put("AwsCredentialsProviderArguments", buildArguments(accessKey, secretKey, (String) conn.credentials.parameters.get("token")));
+        }
+
         if (!conn.hasCustomConnectionString()) {
             setIfNotNull(properties, "S3OutputLocation", conn.get(DbCredentials.S3OutputLocation));
             setIfNotNull(properties, "Schema", conn.getDb());
             setIfNotNull(properties, "S3OutputEncOption", conn.get(DbCredentials.S3OutputEncOption));
         }
         return properties;
+    }
+
+    @Override
+    public Connection getConnection(DataConnection conn) throws SQLException, GrokConnectException {
+        return GrokConnectUtil.isNotEmpty((String) conn.credentials.parameters.getOrDefault("expires", null)) ?
+                DriverManager.getConnection(getConnectionString(conn), getProperties(conn))
+                : ConnectionPool.getConnection(getConnectionString(conn), getProperties(conn), driverClassName);
     }
 
     @Override
@@ -152,5 +168,32 @@ public class AthenaDataProvider extends JdbcDataProvider {
     @Override
     protected String getRegexQuery(String columnName, String regexExpression) {
         return String.format("REGEXP_LIKE(%s, '%s')", columnName, regexExpression);
+    }
+
+    private static String escapeArg(String value) {
+        if (value == null) return "";
+        String escaped = value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"");
+        if (escaped.contains(",")) {
+            escaped = "\"" + escaped + "\"";
+        }
+        return escaped;
+    }
+
+    private static String buildArguments(String accessKey, String secretKey, String sessionToken) {
+        if (sessionToken == null || sessionToken.isEmpty()) {
+            return String.join(",",
+                    escapeArg(accessKey),
+                    escapeArg(secretKey)
+            );
+        }
+        else {
+            return String.join(",",
+                    escapeArg(accessKey),
+                    escapeArg(secretKey),
+                    escapeArg(sessionToken)
+            );
+        }
     }
 }

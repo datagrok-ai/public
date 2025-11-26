@@ -45,5 +45,5 @@ category('Projects', () => {
     grok.shell.closeAll();
     await grok.dapi.projects.delete(await grok.dapi.projects.filter('Test upload project').first());
     expect(await grok.dapi.projects.filter('Test upload project').first() == undefined);
-  }, {skipReason: 'GROK-13162'});
-}, { owner: 'aparamonov@datagrok.ai' });
+  });
+}, {owner: 'aparamonov@datagrok.ai'});

@@ -1,7 +1,7 @@
 ---
 title: "Self-guided learning"
 format: 'mdx'
-sidebar_position: 1
+sidebar_position: 2
 ---
 
 To get you started, we've prepared the following resources:
@@ -21,7 +21,8 @@ To get you started, we've prepared the following resources:
 1. [Context Panel](../navigation/panels/panels.md#context-panel)
 1. [Context Help](../navigation/panels/panels.md#context-help)
 1. [Browse](../navigation/views/browse.md)
-1. [Projects](../concepts/project/project.md)
+1. [Dashboards](../concepts/project/dashboard.md)
+1. [Spaces](../concepts/project/space.md)
 1. [Key concepts](../concepts/concepts.md)
 1. [Basic tasks](../navigation/basic-tasks/basic-tasks.md)
 
@@ -72,7 +73,7 @@ To get you started, we've prepared the following resources:
 
 <h5>Read</h5>
 
-1. [Table View](../navigation/views/table-view.md)
+1. [Table View](../../visualize/table-view-1.md)
 1. [Layout](../../visualize/view-layout.md)
 1. [Context Panel](../navigation/panels/panels.md#context-panel)
 1. [Info panes](../navigation/panels/info-panels.md)
@@ -176,6 +177,33 @@ Planned
 |Scaffold tree analysis   |<li></li><li></li><li></li> |
 |Matched molecular pair   |<li></li><li></li><li></li> |
 |Dose-response curves    |<li></li><li></li><li></li> |
+
+--->
+
+
+### Bio
+
+<h5>Read</h5>
+
+* [Bioinformatics](../solutions/domains/bio/bio.md)
+* [Peptide SAR](../solutions/domains/bio/peptides-sar.md)
+
+<h5>Watch</h5>
+
+* [Peptide SAR (~8 mins)](https://youtu.be/CPkoZ7TD4qk?si=lBK0IzJh9kxbaaft)
+
+<h5>Experience in Demo app</h5>
+
+* [Bioinformatics capabilities](https://public.datagrok.ai/apps/Tutorials/Demo/Bioinformatics)
+
+<!----
+
+<h5>Complete tutorials</h5>
+
+|Tutorial                 | Description  |
+|-------------------------|--------------|
+|Peptide SAR   |<li></li><li></li><li></li> |
+|Polytool   |<li></li><li></li><li></li> |
 
 --->
 

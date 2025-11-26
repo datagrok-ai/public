@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as OCL from 'openchemlib/full';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {_package, PackageFunctions} from '../package';
+import {SeqTemps} from '@datagrok-libraries/bio/src/utils/macromolecule/seq-handler';
 
 
 export async function toAtomicLevelSingle(sequence: DG.SemanticValue): Promise<{mol: string, errorText: string}> {
@@ -17,7 +18,7 @@ export async function toAtomicLevelSingle(sequence: DG.SemanticValue): Promise<{
       errorText = 'Atomic level conversion requeires a sequence column';
       return {errorText, mol: ''};
     }
-    const supportedUnits: string[] = [NOTATION.FASTA, NOTATION.SEPARATOR, NOTATION.HELM];
+    const supportedUnits: string[] = [NOTATION.FASTA, NOTATION.SEPARATOR, NOTATION.HELM, NOTATION.BILN];
     //todo: add support for custom notations
     if (!supportedUnits.includes(sequence.cell.column.meta.units?.toLowerCase() ?? '')) {
       errorText = 'Unsupported sequence notation. please use Bio | Polytool | Convert';
@@ -29,8 +30,8 @@ export async function toAtomicLevelSingle(sequence: DG.SemanticValue): Promise<{
       errorText = 'No sequence handler found';
       return {errorText, mol: ''};
     }
-    if ((seqSh.getSplitted(sequence.cell.rowIndex, 50)?.length ?? 100) > 40) {
-      errorText = 'Maximum number of monomers is 40';
+    if ((seqSh.getSplitted(sequence.cell.rowIndex, 60)?.length ?? 100) > 50) {
+      errorText = 'Maximum number of monomers is 50';
       return {errorText, mol: ''};
     }
     const singleValCol = DG.Column.fromStrings('singleVal', [sequence.value]);
@@ -39,7 +40,18 @@ export async function toAtomicLevelSingle(sequence: DG.SemanticValue): Promise<{
     Object.entries(sequence.cell.column.tags).forEach(([key, value]) => {
       singleValCol.setTag(key, value as string);
     });
-    await PackageFunctions.toAtomicLevel(sDf, singleValCol, sequence.cell.column.meta.units === NOTATION.HELM, false);
+
+    // if column has notation provider, we need to copy it over
+    if (sequence.cell.column.temp[SeqTemps.notationProvider])
+      singleValCol.temp[SeqTemps.notationProvider] = sequence.cell.column.temp[SeqTemps.notationProvider];
+    // helm and biln will have cyclization marks, so we need to use POM to convert them
+    const seqSplitted = seqSh.getSplitted(sequence.cell.rowIndex);
+    const shouldUsePOM = (seqSplitted.graphInfo?.connections?.length ?? 0) > 0;
+    const isHelmWithMultiplePolymerTypes = seqSh.isHelm() &&
+      (new Set((seqSplitted.graphInfo?.polymerTypes ?? []))).size > 1;
+
+    await PackageFunctions.toAtomicLevel(sDf, singleValCol,
+      shouldUsePOM || isHelmWithMultiplePolymerTypes, false);
     if (sDf.columns.length < 2) {
       errorText = 'No structure generated';
       return {errorText, mol: ''};

@@ -23,10 +23,10 @@ preview, manage, and access anything in Datagrok. To open **Browse**, click the 
 
 **Browse** is divided in two sections:
 
-* **Scratchpad** (<FAIcon icon="fa-solid fa-display" size="1x"/>): Located in the upper section, [Scratchpad](#scratchpad) shows all open entities, grouped by [project](../../concepts/project/project.md). It's used to manage and save your work in progress.
+* **Scratchpad** (<FAIcon icon="fa-solid fa-display" size="1x"/>): Located in the upper section, [Scratchpad](#scratchpad) shows all open entities. It's used to manage and save your work in progress.
 * **Main tree** (<FAIcon icon="fa-solid fa-cloud" size="1x"/>): The lower section shows all entities saved to the server and is your primary navigation and data management tool, organized as follows:
    * **My stuff**: This is your personal directory. In addition to entities you create or others share with you, it contains entities relevant to you like your favorites or recent items.
-   * **Namespaces**: Here, entities are organized by _project_, typically aligned with organizational use, such as by project or department. To learn how to create projects and add entities to them, see [Projects](../../concepts/project/project.md).
+   * **Spaces**: Here, entities are organized by _space_, typically aligned with organizational use, such as by project or department. To learn how to create projects and add entities to them, see [Spaces](../../concepts/project/space.md).
    * The rest of the tree is grouped by entity type:
       * [Dashboards](../../concepts/project/dashboard.md)
       * Apps
@@ -73,7 +73,7 @@ the change.
 :::caution
 
 Moving entities between projects 
-impacts their hierarchy, names, and privileges. [Learn more about moving entities between projects](../../concepts/project/project.md#moving-entities-between-projects).
+impacts their hierarchy, names, and privileges. [Learn more about moving entities between projects](../../concepts/project/space.md#moving-entities-between-spaces).
 
 :::
 
@@ -149,7 +149,7 @@ By default, newly created entities are saved to your personal project under **My
 stuff**. For changes to entities that belong to existing projects, you have [several saving options](../basic-tasks/basic-tasks.md#save-and-share-a-table). 
 
 Post-upload, the **SAVE** button on the **Scratchpad** and the
-[Table View](table-view.md) appear greyed out, indicating there are no unsaved changes.
+[Table View](../../../visualize/table-view-1.md) appear greyed out, indicating there are no unsaved changes.
 Though the **SAVE** button turns grey, you can still click it to access additional
 options, such as cloning a project, or saving just your personal view customizations.
 
@@ -232,7 +232,7 @@ Clicking an app opens an app-specific view, which can be it's landing view or a 
 </TabItem>
 <TabItem value="dashboards" label="Dashboards">
 
-Clicking a [dashboard](../../concepts/project/dashboard.md) shows a fully interactive [Table View](../views/table-view.md).
+Clicking a [dashboard](../../concepts/project/dashboard.md) shows a fully interactive [Table View](../../../visualize/table-view-1.md).
 
 <br/>
 

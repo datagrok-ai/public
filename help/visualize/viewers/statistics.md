@@ -12,7 +12,7 @@ Many options are available under the context menu.
 | Rows                                    | Choose which rows to include (All, Filtered, or Selected) |
 | Context menu \| Statistics \| Histogram | Show histogram                                            |
 | Context menu \| Statistics              | Choose descriptive statistics to show                     |
-| Context menu \| Save as table           | Add statistics table to the workspace                     |
+| Context menu \| Open as table           | Add statistics table to the workspace                     |
 
 ## Statistical measures
 
@@ -31,5 +31,5 @@ The results include a set of frequently used statistics, among them the measures
 See also:
 
 * [Viewers](../viewers/viewers.md)
-* [Table view](../../datagrok/navigation/views/table-view.md)
+* [Table view](../table-view-1.md)
 * [JS API: Statistics](https://public.datagrok.ai/js/samples/ui/viewers/types/statistics)

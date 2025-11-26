@@ -25,7 +25,6 @@ const nonMetaData = [
 ];
 
 export const decoratorOptionToAnnotation = new Map<string, string>([
-  ['initialValue', 'default'],
   ['helpUrl', 'help-url'],
   ['topMenu', 'top-menu'],
   ['metaUrl', 'meta.url'],
@@ -151,7 +150,7 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
   const isFileViewer = data.tags?.includes(FUNC_TYPES.FILE_VIEWER) ?? false;
   const isFileImporter = data.tags?.includes(FUNC_TYPES.FILE_HANDLER) ?? false;
   let s = '';
-  if (data.name && (!data.tags?.includes('init') || (data.name !== 'init' && data.name !== '_init')))
+  if (data.name)
     s += `${comment}name: ${data.name}${sep}`;
   if (pseudoParams.EXTENSION in data && data.tags != null && data.tags.includes(FUNC_TYPES.FILE_EXPORTER))
     s += `${comment}description: Save as ${data[pseudoParams.EXTENSION]}${sep}`;
@@ -166,27 +165,39 @@ export function getFuncAnnotation(data: FuncMetadata, comment: string = '//', se
   for (const input of data.inputs ?? []) {
     if (!input)
       continue;
-    let type = input?.type;
+    let type = input?.type?.replaceAll(" ", "");
+    if (type?.includes(`|undefined`)) {
+      type = type.replaceAll(`|undefined`, '');
+      // modify original payload
+      input.optional = true;
+      input.type = type;
+    }
     let isArray = false;
     if (type?.includes(`[]`)) {
       type = type.replace(/\[\]$/, '');
       isArray = true;
     }
+
     const annotationType = typesToAnnotation[type ?? ''];
-    if ((input?.options as any)?.type)
-      type = (input?.options as any)?.type;
+    if ((input?.options as any)?.type || (input?.options as any)?.options?.type)
+      type = (input?.options as any)?.type ?? (input?.options as any)?.options?.type;
     else if (annotationType) {
       if (isArray)
         type = `list<${annotationType}>`;
       else
         type = annotationType;
     } else
-      type = 'dynamic';
+      type = 'dynamic'; 
+    
+    // if ((input as any)?.options?.type === 'categorical' || (input as any)?.options?.options?.type === 'categorical')
+    //   console.log(input);
+    // console.log(input);
+
     const options = ((input?.options as any)?.options ? buildStringOfOptions((input as any).options ?? {}) : '');
     const functionName = ((input.options as any)?.name ? (input?.options as any)?.name : ` ${input.name?.replaceAll('.', '')}`)?.trim();
     
     // eslint-disable-next-line max-len
-    s += comment + 'input: ' + type + ' ' + functionName + (input.defaultValue !== undefined ? `= ${input.defaultValue}` : '') + ' ' + options.replaceAll('"', '\'') + sep;
+    s += comment + 'input: ' + type + ' ' + functionName + (input.defaultValue !== undefined ? `= ${input.defaultValue}` : '') + ' ' + options + sep;
   }
   if (data.outputs) {
     for (const output of data.outputs) {
@@ -258,9 +269,23 @@ export const inputOptionsNames = [
   'metaUrl',
 ];
 
+const nonquotedValues = ['true', 'false'];
+
 function buildStringOfOptions(input: any) {
   const optionsInString: string[] = [];
-  for (const [key, value] of Object.entries(input.options ?? {})) {
+  const opt = input.options ?? {};
+  let defaultValue = '';
+  if (opt['initialValue'] && /[A-Za-z]/.test(opt['initialValue']) && !opt['initialValue'].includes('\'') && 
+    !opt['initialValue'].includes('"') &&
+    !nonquotedValues.includes(opt['initialValue'])!)
+    opt['initialValue'] = `'${opt['initialValue']}'`;
+
+  if (opt['initialValue']) 
+    defaultValue = `= ${opt['initialValue']}`; 
+
+  for (const [key, value] of Object.entries(opt)) {
+    if (key === 'initialValue')
+      continue;
     let val = value;
     let option = key;
     option = decoratorOptionToAnnotation.get(option) ?? option;
@@ -269,7 +294,8 @@ function buildStringOfOptions(input: any) {
       val = JSON.stringify(value);
     optionsInString.push(`${option}: ${val}`);
   }
-  return `{ ${optionsInString.join('; ')} }`;
+  const optString = optionsInString.length> 0 ? `{ ${optionsInString.join('; ')} }`: '';
+  return defaultValue? `${defaultValue} ${optString}` : `${optString}`;
 }
 
 
@@ -478,18 +504,31 @@ export const primitives = new Set([
 
 /** Generates a DG function. */
 export function generateFunc(
-  annotation: string, 
-  funcName: string, 
-  sep: string = '\n', 
-  className: string = '', 
-  inputs: FuncParam[] = [], 
+  annotation: string,
+  funcName: string,
+  sep: string = '\n',
+  className: string = '',
+  inputs: FuncParam[] = [],
   output: string,
   isAsync: boolean = false): string {
-  // eslint-disable-next-line max-len
-  const funcSigNature = (inputs.map((e) => `${e.name}${e.optional? '?': ''}: ${primitives.has(e.type ?? '') && !typesToAny.includes(e.type ?? '') ? e.type : (typesToAnnotation[e.type?.replace('[]', '') ?? ''] && !typesToAny.includes(e.type ?? '') ? e.type : 'any')}`)).join(', ');
+  // FuncCall can have an optional followed by mandatory args for ui reasons, typescript cannot
+  let firstTsValidOptionalIdx = inputs.length-1;
+  for (; firstTsValidOptionalIdx >= 0; firstTsValidOptionalIdx--) {
+    const e = inputs[firstTsValidOptionalIdx];
+    if (!e.optional)
+      break;
+  }
+  const funcSigNature = (inputs.map((e, idx) => {
+    const namePart = `${e.name}${(e.optional && idx >= firstTsValidOptionalIdx) ? '?': ''}`;
+    // eslint-disable-next-line max-len
+    let typePart = `${primitives.has(e.type ?? '') && !typesToAny.includes(e.type ?? '') ? e.type : (typesToAnnotation[e.type?.replace('[]', '') ?? ''] && !typesToAny.includes(e.type ?? '') ? e.type : 'any')}`;
+    if (e.optional && idx < firstTsValidOptionalIdx)
+      typePart += ' | undefined';
+    return `${namePart}: ${typePart}`;
+  })).join(', ');
   const funcArguments = (inputs.map((e) => e.name)).join(', ');
 
-  const returnType = output ? ( primitives.has(output) ? 
+  const returnType = output ? ( primitives.has(output) ?
     (!isAsync? `: ${output} `: `: Promise<${output}> `) : (!isAsync? `: any `: `: Promise<any> `)) : '';
   // eslint-disable-next-line max-len
   return sep + annotation + `export ${isAsync ? 'async ' : ''}function ${funcName}(${funcSigNature}) ${returnType}{${sep}  ${output !== 'void'? 'return ': ''}${isAsync? 'await ': ''}${className.length > 0 ? `${className}.` : ''}${funcName}(${funcArguments});${sep}}${sep}`;
@@ -502,4 +541,3 @@ export function generateImport(className: string, path: string, sep: string = '\
 export function generateExport(className: string, sep: string = '\n'): string {
   return `export {${className}};${sep}`;
 }
-

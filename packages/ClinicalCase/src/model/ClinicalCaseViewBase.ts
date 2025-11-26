@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import {ValidationHelper} from '../helpers/validation-helper';
 import {updateDivInnerHTML} from '../utils/utils';
 import {createValidationErrorsDiv, getRequiredColumnsByView} from '../utils/views-validation-utils';
-import {VIEWS} from '../package';
+import {studies} from '../package';
 
 export class ClinicalCaseViewBase extends DG.ViewBase {
   constructor(name, studyId) {
@@ -24,14 +24,15 @@ export class ClinicalCaseViewBase extends DG.ViewBase {
     ui.setUpdateIndicator(this.root, true, `Loading ${this.name} view`);
     // need timeout here to make update indicator visible
     setTimeout(async ()=> {
-      this.validator = new ValidationHelper(getRequiredColumnsByView()[this.name], this.studyId);
+      this.validator = new ValidationHelper(getRequiredColumnsByView(this.studyId)[this.name], this.studyId);
       if (this.validator.validate()) {
         this.optDomainsWithMissingCols = Object.keys(this.validator.missingColumnsInOptDomains)
           .filter((it) => this.validator.missingColumnsInOptDomains[it].length);
         this.createView();
         this.loaded = true;
         ui.setUpdateIndicator(this.root, false);
-        grok.shell.o = await this.propertyPanel();
+        setTimeout(async () => grok.shell.o = await this.propertyPanel(), 500);
+        grok.shell.windows.showHelp = true;
       } else {
         updateDivInnerHTML(this.root,
           createValidationErrorsDiv(this.validator.missingDomains, this.validator.missingColumnsInReqDomains,
@@ -58,6 +59,6 @@ export class ClinicalCaseViewBase extends DG.ViewBase {
 
   detach(): void {
     super.detach();
-    delete VIEWS[this.studyId][this.name];
+    delete studies[this.studyId].views[this.name];
   }
 }

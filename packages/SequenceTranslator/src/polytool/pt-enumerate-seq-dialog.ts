@@ -10,7 +10,7 @@ import {Unsubscribable} from 'rxjs';
 
 import {GetMonomerResType, HelmAtom, MonomerNumberingTypes} from '@datagrok-libraries/helm-web-editor/src/types/org-helm';
 import {getHelmHelper, HelmInputBase, IHelmHelper} from '@datagrok-libraries/bio/src/helm/helm-helper';
-import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/monomer-works/monomer-utils';
+import {getMonomerLibHelper} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {HelmType, PolymerType} from '@datagrok-libraries/bio/src/helm/types';
 import {helmTypeToPolymerType} from '@datagrok-libraries/bio/src/monomer-works/monomer-works';
 import {getSeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
@@ -169,7 +169,7 @@ async function getPolyToolEnumerateDialog(
         const seqCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'seq', [PT_HELM_EXAMPLE]);
         seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
         const _tempDf = DG.DataFrame.fromColumns([seqCol]);
-        
+
         seqCol.meta.units = NOTATION.HELM;
         const sh = seqHelper.getSeqHandler(seqCol);
         resSeqValue = sh.getValue(0);
@@ -187,7 +187,7 @@ async function getPolyToolEnumerateDialog(
     const warningsTextDiv = ui.divText('', {style: {color: 'red'}});
     // #### Inputs
     inputs = {
-      macromolecule: helmHelper.createHelmInput(                                                     
+      macromolecule: helmHelper.createHelmInput(
         'Macromolecule', {
           editable: false,
           editorOptions: {
@@ -590,7 +590,11 @@ async function getPolyToolEnumerateDialog(
               return;
             }
             const monLibName = placeHoldersValue[0].monomers[0];
-            const monLib = await libHelper.readLibrary(LIB_PATH, monLibName);
+            const monLib = await libHelper.readSingleLibraryByName(monLibName);
+            if (!monLib) {
+              grok.shell.warning(`Monomer Library '${monLibName}' was not found`);
+              return;
+            }
             const peptideMonomers = monLib.getMonomerSymbolsByType(PolymerTypes.PEPTIDE);
             placeHoldersValue[0].monomers = peptideMonomers;
             enumerationType = PolyToolEnumeratorTypes.Single;
@@ -693,7 +697,7 @@ async function getPolyToolEnumerateDialog(
  * @param {DG.SemanticValue} srcValue Source value to enumerate, either of data role
  *                                    {@link PolyToolDataRole.template} or {@link PolyToolDataRole.macromolecule}
  * */
-async function polyToolEnumerateSeq(
+export async function polyToolEnumerateSeq(
   srcHelm: string, dataRole: PolyToolDataRole, srcId: { value: string, colName: string } | null,
   params: PolyToolEnumeratorParams,
   toAtomicLevel: { generateHelm: boolean, chiralityEngine: boolean, highlightMonomers: boolean, rules: string[] } | false,

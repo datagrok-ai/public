@@ -74,7 +74,7 @@ export namespace funcs {
   }
 
   /**
-  Perform cyclization of polymers
+  editor for Performing conversion of sequences in custom notation to molfiles
   */
   export async function polyToolConvertTopMenu(): Promise<void> {
     return await grok.functions.call('SequenceTranslator:PolyToolConvertTopMenu', {});
@@ -89,14 +89,14 @@ export namespace funcs {
   }
 
   /**
-  Perform cyclization of polymers
+  Dialog for configuring enumeration of a HELM sequence
   */
   export async function polyToolEnumerateHelmTopMenu(): Promise<void> {
     return await grok.functions.call('SequenceTranslator:PolyToolEnumerateHelmTopMenu', {});
   }
 
   /**
-  Perform cyclization of polymers
+  Perform enumeration of a molecule using different fragments at specified positions
   */
   export async function polyToolEnumerateChemTopMenu(): Promise<void> {
     return await grok.functions.call('SequenceTranslator:PolyToolEnumerateChemTopMenu', {});
@@ -124,6 +124,20 @@ export namespace funcs {
 
   export async function getPtChemEnumeratorDialog(cell: any | null): Promise<void> {
     return await grok.functions.call('SequenceTranslator:GetPtChemEnumeratorDialog', { cell });
+  }
+
+  /**
+  Enumerate provided HELM sequence on provided positions with provided monomers and generates new table
+  */
+  export async function enumerateSingleHelmSequence(helmSequence: string , positions: any , monomerLists: any , toAtomicLevel: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('SequenceTranslator:EnumerateSingleHelmSequence', { helmSequence, positions, monomerLists, toAtomicLevel });
+  }
+
+  /**
+  Enumerate provided HELM sequence on all positions with natural amino acids and generates new table. Generated table has sequence column called "Enumerated", and molecule column called "Molfile(Enumerated) if toAtomicLevel is set to true. Keywords: Optimize, enumerate, HELM optimization, Maximize Minimize property. When you want to optimize certain peptide using for example logS, set toAtomicLevel to true and use generated molecule column to calculate given property using chem package functions.
+  */
+  export async function enumerateSingleHelmSequenceWithNaturalAAs(helmSequence: string , toAtomicLevel: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('SequenceTranslator:EnumerateSingleHelmSequenceWithNaturalAAs', { helmSequence, toAtomicLevel });
   }
 
   export async function getPolyToolCombineDialog(): Promise<void> {

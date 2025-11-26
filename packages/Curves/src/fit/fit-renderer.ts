@@ -21,7 +21,7 @@ import {
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 
 import {convertXMLToIFitChartData} from './fit-parser';
-import {FitConstants} from './const';
+import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {
   renderAxesLabels,
   renderConfidenceIntervals, renderConnectDots,
@@ -33,13 +33,6 @@ import {merge} from 'rxjs';
 import {calculateSeriesStats, getChartDataAggrStats} from './fit-grid-cell-handler';
 import {Fit, FitFunction, FitFunctionTypes, fitSeriesProperties} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
 
-
-export interface FitCellOutlierToggleArgs {
-  gridCell: DG.GridCell;
-  series: IFitSeries;
-  seriesIdx: number;
-  pointIdx: number;
-}
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);

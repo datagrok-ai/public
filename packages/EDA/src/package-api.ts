@@ -260,4 +260,18 @@ export namespace funcs {
   export async function isApplicableXGBooster(df: DG.DataFrame , predictColumn: DG.Column ): Promise<boolean> {
     return await grok.functions.call('EDA:IsApplicableXGBooster', { df, predictColumn });
   }
+
+  /**
+  Perform optimization across multiple objectives: analyze trade-offs between conflicting objectives and identify Pareto-optimal points.
+  */
+  export async function paretoFront(): Promise<void> {
+    return await grok.functions.call('EDA:ParetoFront', {});
+  }
+
+  /**
+  Pareto front viewer
+  */
+  export async function paretoFrontViewer(): Promise<any> {
+    return await grok.functions.call('EDA:ParetoFrontViewer', {});
+  }
 }

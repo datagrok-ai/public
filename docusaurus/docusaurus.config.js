@@ -3,6 +3,11 @@
 
 import {themes as prismThemes} from 'prism-react-renderer';
 
+const redirectMap = require('./redirects.maps.json');
+const redirects = Object.entries(redirectMap).map(([from, to]) => ({
+   from,
+   to,
+}));
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
@@ -31,6 +36,12 @@ const config = {
     },
 
     plugins: [
+        [
+           '@docusaurus/plugin-client-redirects',
+           {
+            redirects: redirects,
+           },
+        ],
         [
             'docusaurus-plugin-typedoc',
             {

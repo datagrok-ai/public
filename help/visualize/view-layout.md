@@ -9,7 +9,7 @@ In Datagrok, the visual representation of data (a _layout_) is separate from the
 the layout and apply it later to a different dataset.
 
 You can save layouts for:
-* A [Table View](../datagrok/navigation/views/table-view.md)
+* A [Table View](table-view-1.md)
 * A specific [viewer](viewers/viewers.md)
 
 ## Table View layout

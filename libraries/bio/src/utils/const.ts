@@ -3,7 +3,7 @@ import {MonomerTypes, PolymerTypes} from '../helm/consts';
 
 import HELM_POLYMER_TYPE = PolymerTypes;
 import HELM_MONOMER_TYPE = MonomerTypes;
-import {RGroup} from '../types';
+import {RGroup} from '../types/monomer-library';
 
 export {HELM_POLYMER_TYPE, HELM_MONOMER_TYPE};
 

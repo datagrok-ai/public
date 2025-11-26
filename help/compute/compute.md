@@ -273,7 +273,7 @@ from other access-related features:
 
 * [Result caching](../access/databases/databases.md#caching-data) (very useful when working with data that changes overnight)
 * [Visual table query builder](../access/databases/databases.md#query-editor)
-* [Visual schema query builder](../access/databases/databases.md#join-tables)
+<!--* [Visual schema query builder](../access/databases/databases.md#join-tables)-->
 * [DB explorer](../access/databases/databases.md#database-manager)
 
 ## Reproducible computations
@@ -364,7 +364,7 @@ that is used to define who can see, execute, or edit models. The same mechanism 
 
 Perhaps the most commonly used data structure in computing is [dataframe](../develop/advanced/data-frame.md). To analyze
 either input or output dataframe, click the `+` ("Add to workspace")
-icon. This action opens the dataframe in the [Table View](../datagrok/navigation/views/table-view.md)
+icon. This action opens the dataframe in the [Table View](../visualize/table-view-1.md)
 mode, allowing to [visualize](../visualize/viewers/viewers.md) the data,
 [transform](../transform/query-transformations.md)
 or perform more in-depth exploration, such as multivariate analysis.

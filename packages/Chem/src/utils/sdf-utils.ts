@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
@@ -23,31 +24,32 @@ export function saveAsSdfDialog() {
       $(text).css('color', 'gray');
       $(text).css('font-size', '12px');
     }
-    const notationInput = ui.input.choice('Notation', {value: DG.chem.Notation.MolBlock, nullable: false,
-      items: [DG.chem.Notation.MolBlock, DG.chem.Notation.V3KMolBlock]});
+    const notationInput = ui.input.choice('Notation', {value: null, nullable: true,
+      items: [DG.chem.Notation.MolBlock, DG.chem.Notation.V3KMolBlock], tooltipText: `Molecule notation for selected molecular column. If not specified, the exporter will try to keep existing MolBlocks as is, and convert other formats to MolBlock V2000`});
     sdfDialog.add(notationInput);
-    const selectedColsInput = ui.input.bool('Selected Columns Only', {value: false});
+    const selectedColsInput = ui.input.bool('Selected Columns Only', {value: false, tooltipText: 'Include only the currently selected columns.'});
     sdfDialog.add(selectedColsInput);
-    const visibleColsInput = ui.input.bool('Visible Columns Only', {value: true});
+    const visibleColsInput = ui.input.bool('Visible Columns Only', {value: true, tooltipText: 'Include only columns that are visible in the view.'});
     sdfDialog.add(visibleColsInput);
-    const filteredRowsInput = ui.input.bool('Filtered Rows Only', {value: false});
+    const filteredRowsInput = ui.input.bool('Filtered Rows Only', {value: false, tooltipText: 'Include only rows that match the current filter. Can be combined with [selectedRowsOnly].'});
     sdfDialog.add(filteredRowsInput);
-    const selectedRowsInput = ui.input.bool('Selected Rows Only', {value: false});
+    const selectedRowsInput = ui.input.bool('Selected Rows Only', {value: false, tooltipText: 'Include only the currently selected rows. Can be combined with [filteredRowsOnly].'});
     sdfDialog.add(selectedRowsInput);
-    sdfDialog.initFromLocalStorage();
+    if ('initFromLocalStorage' in sdfDialog && typeof sdfDialog['initFromLocalStorage'] === 'function') // temporary compatibility fix for platform versions <1.26
+      sdfDialog.initFromLocalStorage();
     sdfDialog.initDefaultHistory();
     colsInput.value = cols[0];
-    sdfDialog.onOK(() => {
+    sdfDialog.onOK(async () => {
       const progressIndicator = DG.TaskBarProgressIndicator.create('Saving as SDF...');
       const structureColumn = colsInput.value;
       const exportOptions: DG.CsvExportOptions & {molBlockFormat?: DG.chem.Notation} = {
-        molBlockFormat: notationInput.value!,
+        molBlockFormat: notationInput.value ?? undefined,
         selectedColumnsOnly: selectedColsInput.value,
         visibleColumnsOnly: visibleColsInput.value,
         filteredRowsOnly: filteredRowsInput.value,
         selectedRowsOnly: selectedRowsInput.value,
       };
-      _saveAsSdf(table, structureColumn!, exportOptions);
+      await _saveAsSdf(table, structureColumn!, exportOptions);
       progressIndicator.close();
     });
     sdfDialog.show({x: 350, y: 100});
@@ -86,58 +88,99 @@ export async function getSdfStringAsync(structureColumn: DG.Column): Promise<str
   return result;
 }
 
-export function getSdfString(
+export async function getSdfString(
   table: DG.DataFrame,
   structureColumn: DG.Column, // non-null
   exportOptions: DG.CsvExportOptions & {molBlockFormat?: DG.chem.Notation} = {selectedColumnsOnly: false, visibleColumnsOnly: true, filteredRowsOnly: false, selectedRowsOnly: false},
-): string {
+): Promise<string> {
   let result = '';
-  const rowIndexes = table.rows.indexes({onlyFiltered: exportOptions.filteredRowsOnly, onlySelected: exportOptions.selectedRowsOnly});
-  for (const rowIdx of rowIndexes) {
-    const molecule: string = structureColumn.get(rowIdx);
-    const mol = DG.chem.isMolBlock(molecule) ? molecule :
-      _convertMolNotation(molecule, DG.chem.Notation.Unknown, exportOptions?.molBlockFormat ?? DG.chem.Notation.MolBlock, chemCommonRdKit.getRdKitModule());
-    result += `${mol}\n`;
+  //console.time('SDF export');
+  // const rowIndexes = Array.from(table.rows.indexes({onlyFiltered: exportOptions.filteredRowsOnly, onlySelected: exportOptions.selectedRowsOnly}));
+  // table.rows.
+  const mask = DG.BitSet.create(table.rowCount);
+  mask.setAll(true);
+  if (exportOptions.filteredRowsOnly)
+    mask.and(table.filter);
+  if (exportOptions.selectedRowsOnly)
+    mask.and(table.selection);
 
-    const grid = grok.shell.tv != null && grok.shell.tv.dataFrame === table ? grok.shell.tv.grid :
-      table.name && grok.shell.getTableView(table.name) ? grok.shell.getTableView(table.name).grid : null;
-    const selectedCols = Array.from(exportOptions.selectedColumnsOnly ? table.columns.selected : table.columns);
-    const visibleCols = exportOptions.visibleColumnsOnly && grid != null ? selectedCols.filter((col) => {
-      const gridCol = grid.columns.byName(col.name);
-      if (gridCol == null)
-        return false;
-      return gridCol.settings && gridCol.settings['isPinned'] === true ?
-        true : gridCol.visible; // this is needed because of how pinned columns are implemented now
-    }) : selectedCols;
+  const maskedTable = mask.anyFalse ? table.clone(mask) : table;
+
+  const grid = grok.shell.tv != null && grok.shell.tv.dataFrame === table ? grok.shell.tv.grid :
+    table.name && grok.shell.getTableView(table.name) ? grok.shell.getTableView(table.name).grid : null;
+  const selectedCols = Array.from(exportOptions.selectedColumnsOnly ? table.columns.selected : table.columns);
+  const visibleCols = (exportOptions.visibleColumnsOnly && grid != null ? selectedCols.filter((col) => {
+    const gridCol = grid.columns.byName(col.name);
+    if (gridCol == null)
+      return false;
+    return gridCol.settings && gridCol.settings['isPinned'] === true ?
+      true : gridCol.visible; // this is needed because of how pinned columns are implemented now
+  }) : selectedCols).map((col) => maskedTable.col(col.name)!);
+
+  // precompute the molecules conversions using RDKIT service workers (much faster)
+
+  const rdkitService = await chemCommonRdKit.getRdKitService();
+  const maskedStructureCol = maskedTable.getCol(structureColumn.name);
+  if (maskedStructureCol == null)
+    throw new Error(`Column ${structureColumn.name} not found`);
+
+  // if exportOptions.molBlockFormat is not set, do not convert molblocks if all of them are already in any of molblock formats
+  let molBlockFormat = exportOptions.molBlockFormat;
+  let dontTouchMolblocks = false;
+  if (molBlockFormat == null) {
+    dontTouchMolblocks = true;
+    molBlockFormat = DG.chem.Notation.MolBlock;
+  }
+
+  //const molBlockFormat = exportOptions?.molBlockFormat ?? DG.chem.Notation.MolBlock;
+  const molList = maskedStructureCol.toList();
+  const molBlockCheck = dontTouchMolblocks ? ((mol: string) => DG.chem.isMolBlock(mol)) : (molBlockFormat === DG.chem.Notation.MolBlock ? (mol: string) => DG.chem.isMolBlock(mol) && mol.includes('V2000') :
+    (mol: string) => DG.chem.isMolBlock(mol) && mol.includes('V3000'));
+
+  const skipConversion = molList.every((mol) => !mol?.trim() || molBlockCheck(mol));
+  const convertedStructures = skipConversion ? molList : await rdkitService.convertMolNotation(molList, molBlockFormat);
+  const otherMolCols: {[key: string]: string[]} = {};
+  for (const col of visibleCols) {
+    if (col !== maskedStructureCol && col.semType === DG.SEMTYPE.MOLECULE)
+      otherMolCols[col.name] = await rdkitService.convertMolNotation(col.toList(), DG.chem.Notation.Smiles);
+  }
+
+  const rowCount = maskedTable.rowCount;
+  for (let rowIdx = 0; rowIdx < rowCount; rowIdx++) {
+    // const molecule: string = structureColumn.get(rowIdx);
+    // const mol = DG.chem.isMolBlock(molecule) ? molecule :
+    //   _convertMolNotation(molecule, DG.chem.Notation.Unknown, exportOptions?.molBlockFormat ?? DG.chem.Notation.MolBlock, chemCommonRdKit.getRdKitModule());
+    const mol = maskedStructureCol.isNone(rowIdx) ? '' : convertedStructures[rowIdx] ?? '';
+    result += `${mol}\n`;
 
     // properties
     for (const col of visibleCols) {
-      if (col !== structureColumn) {
-        let cellValue = col.isNone(rowIdx) ? '' : col.get(rowIdx);
-        // convert to SMILES if necessary
-        if (col.semType === DG.SEMTYPE.MOLECULE) {
-          cellValue = _convertMolNotation(cellValue, DG.chem.Notation.Unknown,
-            DG.chem.Notation.Smiles, chemCommonRdKit.getRdKitModule());
-        }
-        result += `>  <${col.name}>\n${cellValue}\n\n`;
+      if (col !== maskedStructureCol) {
+        let cellValue: string = '';
+        if (col.semType === DG.SEMTYPE.MOLECULE)
+          cellValue = otherMolCols[col.name][rowIdx] ?? '';
+        else
+          cellValue = col.isNone(rowIdx) ? '' : [DG.COLUMN_TYPE.QNUM, DG.COLUMN_TYPE.FLOAT].includes(col.type as DG.COLUMN_TYPE) ? DG.format(col.get(rowIdx), col.meta.format ?? undefined) : col.get(rowIdx);
+        result += `>  <${col.name?.toLowerCase()?.trim() === 'molecule' ? table.columns.getUnusedName(`${col.name} (1)`) : col.name}>\n${cellValue}\n\n`;
       }
     }
     result += '$$$$\n';
   }
+  //console.timeEnd('SDF export');
   return result;
 }
 
-export function _saveAsSdf(
+export async function _saveAsSdf(
   table: DG.DataFrame,
   structureColumn: DG.Column,
   exportOptions: DG.CsvExportOptions & {molBlockFormat?: DG.chem.Notation} = {selectedColumnsOnly: false, visibleColumnsOnly: true, filteredRowsOnly: false, selectedRowsOnly: false},
-): void {
+): Promise<void> {
   //todo: load OpenChemLib (or use RDKit?)
   //todo: UI for choosing columns with properties
 
   if (structureColumn == null)
     return;
 
-  const result = getSdfString(table, structureColumn, exportOptions);
+  const result = await getSdfString(table, structureColumn, exportOptions);
   DG.Utils.download(table.name + '.sdf', result);
 }

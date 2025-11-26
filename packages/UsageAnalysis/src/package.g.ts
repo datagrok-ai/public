@@ -1,31 +1,27 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
-//name: _initUA
 //tags: init
 export function _initUA() : void {
   PackageFunctions._initUA();
 }
 
-//name: TestsList
 //output: dataframe result
 //meta.url: /tests/list
 export async function TestsList() : Promise<any> {
-  return PackageFunctions.TestsList();
+  return await PackageFunctions.TestsList();
 }
 
-//name: TestsListJoined
 //output: dataframe result
 //meta.url: /tests/joinedlist
 export async function TestsListJoined() : Promise<any> {
-  return PackageFunctions.TestsListJoined();
+  return await PackageFunctions.TestsListJoined();
 }
 
-//name: TestAnalysisReportForCurrentDay
 //input: datetime date 
 //output: dataframe result
 export async function TestAnalysisReportForCurrentDay(date: any) : Promise<any> {
-  return PackageFunctions.TestAnalysisReportForCurrentDay(date);
+  return await PackageFunctions.TestAnalysisReportForCurrentDay(date);
 }
 
 //name: Usage Analysis
@@ -41,7 +37,14 @@ export async function TestAnalysisReportForCurrentDay(date: any) : Promise<any> 
 //meta.url: /
 //meta.browsePath: Admin
 export async function usageAnalysisApp(path?: string, date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string) : Promise<any> {
-  return PackageFunctions.usageAnalysisApp(path, date, groups, packages, tags, categories, projects);
+  return await PackageFunctions.usageAnalysisApp(path, date, groups, packages, tags, categories, projects);
+}
+
+//input: column<string> ticketColumn 
+//input: column<string> resultColumn 
+//meta.vectorFunc: true
+export async function getTicketsVerdict(ticketColumn: DG.Column, resultColumn: DG.Column) : Promise<void> {
+  await PackageFunctions.getTicketsVerdict(ticketColumn, resultColumn);
 }
 
 //name: Test Track
@@ -59,7 +62,7 @@ export function testTrackApp() : void {
 //meta.url: /reports
 //meta.browsePath: Admin
 export async function reportsApp(path?: string) : Promise<any> {
-  return PackageFunctions.reportsApp(path);
+  return await PackageFunctions.reportsApp(path);
 }
 
 //name: Service Logs
@@ -74,17 +77,14 @@ export function serviceLogsApp(path?: string, params?: any, limit?: number) : an
   return PackageFunctions.serviceLogsApp(path, params, limit);
 }
 
-//name: serviceLogsAppTreeBrowser
 //input: dynamic treeNode 
-//meta.role: appTreeBrowser
 export async function serviceLogsAppTreeBrowser(treeNode: any) : Promise<void> {
-  PackageFunctions.serviceLogsAppTreeBrowser(treeNode);
+  await PackageFunctions.serviceLogsAppTreeBrowser(treeNode);
 }
 
-//name: reportsAppTreeBrowser
 //input: dynamic treeNode 
 export async function reportsAppTreeBrowser(treeNode: any) : Promise<void> {
-  PackageFunctions.reportsAppTreeBrowser(treeNode);
+  await PackageFunctions.reportsAppTreeBrowser(treeNode);
 }
 
 //name: Usage
@@ -105,21 +105,19 @@ export function reportsWidget() : any {
   return PackageFunctions.reportsWidget();
 }
 
-//name: packageUsageWidget
 //input: object pckg 
 //output: widget result
 export function packageUsageWidget(pckg: any) : any {
   return PackageFunctions.packageUsageWidget(pckg);
 }
 
-//name: testDashboardsViewer
 //tags: viewer
 //output: viewer result
+//meta.showInGallery: false
 export function testDashboardsViewer() : any {
   return PackageFunctions.testDashboardsViewer();
 }
 
-//name: describeCurrentObj
 //tags: autostart
 export function describeCurrentObj() : void {
   PackageFunctions.describeCurrentObj();

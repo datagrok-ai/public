@@ -36,7 +36,7 @@ Example of such
  [Dockerfile](https://github.com/datagrok-ai/public/blob/master/packages/Admetica/dockerfiles/Dockerfile)
  is located in Admetica package.
 
-## 2. Container Configuration
+## 2. Container configuration
 
 Each container can be configured using a `container.json` file, which must be placed in the same directory 
 as the `Dockerfile`. This file defines resource allocation and container behavior.
@@ -58,7 +58,7 @@ as the `Dockerfile`. This file defines resource allocation and container behavio
 }
 ```
 
-### Configuration Properties
+### Configuration properties
 
 | Option               | Type    | Default | Description                                                      |
 |----------------------|---------|---------|------------------------------------------------------------------|
@@ -152,7 +152,7 @@ grok publish dev
 
 The return code should be `0` to indicate a successful deployment.
 
-## 5. Managing Docker Containers and Images
+## 5. Managing docker containers and images
 
 You can check available Docker containers and images using **Browse**. Go to Datagrok and open `Platform -> Dockers`.  
 The opened view has two sections: Docker Containers (top) and Docker Images (bottom). Each section contains cards 

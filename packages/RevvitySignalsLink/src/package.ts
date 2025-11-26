@@ -2,15 +2,18 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { u2 } from "@datagrok-libraries/utils/src/u2";
 import '../css/revvity-signals-styles.css';
 import { SignalsSearchParams, SignalsSearchQuery } from './signals-search-query';
-import { queryEntities, queryLibraries, queryMaterialById, queryTags, queryTerms, queryUsers, RevvityApiResponse, RevvityData, RevvityUser } from './revvity-api';
-import { dataFrameFromObjects, reorderColummns, transformData, createRevvityResponseWidget } from './utils';
-import { addMoleculeStructures, assetsQuery, MOL_COL_NAME } from './compounds';
-import { getRevvityUsers } from './users';
-import { createInitialSatistics, getRevvityLibraries, RevvityLibrary, RevvityType } from './libraries';
-import { createViewFromPreDefinedQuery, handleInitialURL } from './view-utils';
+import { queryLibraries, queryStructureById, queryTags, queryTerms, queryUsers, RevvityData, RevvityUser, search } from './revvity-api';
+import { reorderColumns, transformData, getViewNameByCompoundType, createRevvityWidgetByCorporateId, createWidgetByRevvityLabel } from './utils';
+import { addMoleculeStructures, getConditionForLibAndType } from './compounds';
+import { createInitialSatistics, getRevvityLibraries, refreshStats, resetRevvityLibraries, RevvityLibrary } from './libraries';
+import { createViewForExpandabelNode, createViewFromPreDefinedQuery, handleInitialURL } from './view-utils';
+import { createSavedSearchesSatistics, SAVED_SEARCH_STORAGE } from './search-utils';
+import { funcs } from './package-api';
+import { HIDDEN_ID_COL_NAME, ID_COL_NAME, MOL_COL_NAME, REVVITY_LABEL_SEM_TYPE, REVVITY_SEARCH_RES_TOTAL_COUNT, REVVVITY_LABEL_FIELDS, USER_FIELDS } from './constants';
+import { getRevvityUsers, getUsersAllowed, updateRevvityUsers } from './users';
+import { convertIdentifierFormatToRegexp } from './detectors';
 
 
 export const _package = new DG.Package();
@@ -25,8 +28,13 @@ export type RevvityConfig = {
   libraries?: RevvityLibrary[];
 }
 
-let openedView: DG.View | null = null;
 let config: RevvityConfig = { libraries: undefined };
+
+
+//tags: init
+export function init() {
+  registerRevvityIdsFormats();
+}
 
 //tags: app
 //name: Revvity Signals
@@ -36,26 +44,28 @@ let config: RevvityConfig = { libraries: undefined };
 export async function revvitySignalsLinkApp(path?: string): Promise<DG.ViewBase> {
 
   console.log(path);
-  const appHeader = u2.appHeader({
-    iconPath: _package.webRoot + '/img/revvity.png',
-    learnMoreUrl: 'https://github.com/datagrok-ai/public/blob/master/packages/RevvitySignalsLink/README.md',
-    description: '- Integrate with your Revvity account.\n' +
-      '- Browse the tenant content.\n' +
-      '- Perfrom searches through you tenant.' +
-      '- Find contextual information on entities like assets, batches etc.\n' +
-      '- Analyze assay data.'
-  });
-
-  const statsDiv = ui.div('', {style: {position: 'relative'}});
-  const view = DG.View.fromRoot(ui.divV([appHeader, statsDiv]));
+  const initViewDiv = ui.divV([], {style: {flexGrow: '0'}});
+  const view = DG.View.fromRoot(initViewDiv);
   view.name = 'Revvity';
 
-      if (path) {
-      const cddNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').getOrCreateGroup('Chem').getOrCreateGroup('Revvity Signals');
-      cddNode.expanded = true;
-      handleInitialURL(cddNode, path);
-    } else
-      createInitialSatistics(statsDiv);
+  if (path) {
+    const cddNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').getOrCreateGroup('Chem').getOrCreateGroup('Revvity Signals');
+    cddNode.expanded = true;
+    handleInitialURL(cddNode, path);
+  } else {
+    createInitialSatistics(initViewDiv).then((stats: HTMLDivElement) => {
+      const refreshButton = ui.button('Refresh', async () => {
+        const func = DG.Func.find({ package: 'RevvitySignalsLink', name: "getLibraries" });
+        if (func.length)
+          await grok.functions.clientCache.clear(func[0].id);
+        resetRevvityLibraries();
+        ui.empty(stats);
+        refreshStats(stats);
+      });
+      refreshButton.style.width = '72px';
+      initViewDiv.append(refreshButton);
+    });
+  }
 
   return view;
 
@@ -64,36 +74,99 @@ export async function revvitySignalsLinkApp(path?: string): Promise<DG.ViewBase>
 //input: dynamic treeNode
 //input: view browseView
 export async function revvitySignalsLinkAppTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.View) {
-  getRevvityUsers();
-  const libs = await getRevvityLibraries();
+  const loadingNode = treeNode.item('');
+  loadingNode.captionLabel.classList.add('revvity-signals-starting-app');
+  ui.setUpdateIndicator(loadingNode.captionLabel, true);
+  let libs;
+  try {
+    await getRevvityUsers();
+    libs = await getRevvityLibraries();
+  } catch(e: any) {
+    loadingNode.remove();
+    grok.shell.error(`Revvity libraries haven't been loaded: ${e?.message ?? e}`);
+    return;
+  }
+  loadingNode.remove();
 
   for (const lib of libs) {
     const libNode = treeNode.group(lib.name);
+    libNode.onSelected.subscribe(() => createViewForExpandabelNode(lib.name, createInitialSatistics, lib.name));
     for (const libType of lib.types) {
-      const typeNode = libNode.item(`${libType.name.charAt(0).toUpperCase()}${libType.name.slice(1)}`);
+      const viewName = getViewNameByCompoundType(libType.name);
+      const typeNode = libNode.item(`${viewName.charAt(0).toUpperCase()}${viewName.slice(1)}`);
       typeNode.onSelected.subscribe(async () => {
-        await createViewFromPreDefinedQuery(treeNode, JSON.stringify(assetsQuery), `${libType.name.charAt(0).toUpperCase()}${libType.name.slice(1)}`,
-          lib.name, libType.name);
+
+        // //need woraround with nodeToDeselect to deselect node which was selected via routing (openRevvityNode function)
+        // const nodeToDeselect = treeNode.items
+        //   .find((node) => node.text.toLowerCase() !== viewName.toLowerCase() && node.root.classList.contains('d4-tree-view-node-selected'));
+        // nodeToDeselect?.root.classList.remove('d4-tree-view-node-selected');
+
+        await createViewFromPreDefinedQuery(treeNode, [lib.name, getViewNameByCompoundType(libType.name)], lib.name, libType.name);
       });
     }
   }
+
+  const savedSearchesNode = treeNode.group('Saved Searches');
+  savedSearchesNode.onSelected.subscribe(() => createViewForExpandabelNode('saved searches', createSavedSearchesSatistics));
+  for (const lib of libs) {
+    const libNode = savedSearchesNode.group(lib.name);
+    libNode.onSelected.subscribe(() => createViewForExpandabelNode(lib.name, createSavedSearchesSatistics, lib.name));
+    for (const libType of lib.types) {
+      const typeName = getViewNameByCompoundType(libType.name);
+      const typeNode = libNode.group(`${typeName.charAt(0).toUpperCase()}${typeName.slice(1)}`);
+      typeNode.onSelected.subscribe(() => createViewForExpandabelNode(lib.name, createSavedSearchesSatistics, lib.name, libType.name));
+      
+      const storageKey = `${lib.name}|${libType.name}`;
+      const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, storageKey) || '{}';
+      const savedSearches: { [key: string]: string } = JSON.parse(savedSearchesStr);
+      for (let key of Object.keys(savedSearches)) {
+        const savedSearchNode = typeNode.item(key);
+        savedSearchNode.onSelected.subscribe(async () => {
+          await createViewFromPreDefinedQuery(treeNode,
+            ['saved searches', lib.name, getViewNameByCompoundType(libType.name), key], lib.name, libType.name,
+            JSON.parse(savedSearches[key]), true);
+        });
+      }
+    }
+  }
+
 }
 
 //name: Search Entities
 //input: string query
 //input: string params
+//input: string libId
+//input: string entityType
 //output: dataframe df
-export async function searchEntities(query: string, params: string): Promise<DG.DataFrame> {
-  let df = DG.DataFrame.create();
-  try {
-    const queryJson: SignalsSearchQuery = JSON.parse(query);
-    const paramsJson: SignalsSearchParams = JSON.parse(params);
-    const response = await queryEntities(queryJson, Object.keys(paramsJson).length ? paramsJson : undefined);
-    const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
-    df = dataFrameFromObjects(data);
-    await grok.data.detectSemanticTypes(df);
-  } catch (e: any) {
-    grok.shell.error(e?.message ?? e);
+export async function searchEntities(query: string, params: string, libId: string, entityType: string): Promise<DG.DataFrame> {
+  const queryJson: SignalsSearchQuery = JSON.parse(query);
+  const paramsJson: SignalsSearchParams = JSON.parse(params);
+  const response = await search(queryJson, Object.keys(paramsJson).length ? paramsJson : undefined);
+  const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
+
+  //in case /users endpoint is not allowed, extract users from included section
+  if (!getUsersAllowed) {
+    const newUsers = response.included?.filter((it) => it.type === 'user').map((it) => it.attributes);
+    if (newUsers?.length)
+      updateRevvityUsers(newUsers);
+  }
+  const df = await transformData(data, libId, entityType);
+
+  //saving total result count
+  df.setTag(REVVITY_SEARCH_RES_TOTAL_COUNT, response.meta ? response.meta!.total.toString() : '');
+
+  USER_FIELDS.forEach((field) => {
+    const col = df.col(field);
+    if (col)
+      col.semType = DG.TYPE.USER;
+  });
+  const idCol = df.col(ID_COL_NAME);
+  if (idCol)
+    idCol.name = HIDDEN_ID_COL_NAME;
+  for (const colName of REVVVITY_LABEL_FIELDS) {
+    const col = df.col(colName);
+    if (col)
+      col.semType = REVVITY_LABEL_SEM_TYPE;
   }
   return df;
 }
@@ -101,26 +174,28 @@ export async function searchEntities(query: string, params: string): Promise<DG.
 //name: Search Entities With Structures
 //input: string query
 //input: string params
+//input: string libId
+//input: string entityType
+//input: bool doNotAddStructures {optional: true}
 //output: dataframe df
-export async function searchEntitiesWithStructures(query: string, params: string): Promise<DG.DataFrame> {
+export async function searchEntitiesWithStructures(query: string, params: string,
+  libId: string, entityType: string, doNotAddStructures?: boolean): Promise<DG.DataFrame> {
   let df = DG.DataFrame.create();
   try {
-    const queryJson: SignalsSearchQuery = JSON.parse(query);
-    const paramsJson: SignalsSearchParams = JSON.parse(params);
-    const response = await queryEntities(queryJson, Object.keys(paramsJson).length ? paramsJson : undefined);
-    if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
-      return DG.DataFrame.create();
-    const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
-
-    const rows = await transformData(data);
-    const moleculeIds = data.map((it) => it.id);
-    df = DG.DataFrame.fromObjects(rows)!;
-    const moleculeColumn = DG.Column.fromStrings(MOL_COL_NAME, new Array<string>(moleculeIds.length).fill(''));
-    moleculeColumn.semType = DG.SEMTYPE.MOLECULE;
-    moleculeColumn.meta.units = DG.UNITS.Molecule.MOLBLOCK;
-    df.columns.add(moleculeColumn);
-    reorderColummns(df);
-    addMoleculeStructures(moleculeIds, moleculeColumn);
+    df = await funcs.searchEntities(query, params, libId, entityType);
+    let idCol = df.col(HIDDEN_ID_COL_NAME);
+    if (!idCol)
+      idCol = df.col(ID_COL_NAME);
+    if (idCol) {
+      const moleculeIds = idCol.toList();
+      const moleculeColumn = DG.Column.fromStrings(MOL_COL_NAME, new Array<string>(moleculeIds.length).fill(''));
+      moleculeColumn.semType = DG.SEMTYPE.MOLECULE;
+      moleculeColumn.meta.units = DG.UNITS.Molecule.MOLBLOCK;
+      df.columns.add(moleculeColumn);
+      reorderColumns(df);
+      if (!doNotAddStructures)
+        addMoleculeStructures(moleculeIds, moleculeColumn);
+    }
   } catch (e: any) {
     grok.shell.error(e?.message ?? e);
   }
@@ -128,68 +203,53 @@ export async function searchEntitiesWithStructures(query: string, params: string
 }
 
 //name: Get Users
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
 //output: string users
 export async function getUsers(): Promise<string> {
-  const users: { [key: string]: RevvityUser } = {};
+  const users: RevvityUser[] = [];
   const response = await queryUsers();
   if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
-    return '{}';
+    return '[]';
   const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
   for (const user of data)
-    users[user.id] = Object.assign({}, user.attributes || {});
+    users.push(user.attributes);
   return JSON.stringify(users);
 }
 
 
 //name: Get Libraries
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
 //output: string libraries
 export async function getLibraries(): Promise<string> {
   const response = await queryLibraries();
-  const libraries: RevvityLibrary[] = [];
   if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
     return '[]';
   const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
-  for (const lib of data) {
-    if (lib.attributes.name && lib.id) {
-      let types: RevvityType[] = [];
-      const query = {
-        "query": {
-          "$and": [
-            {
-              "$match": {
-                "field": "assetTypeEid",
-                "value": `${lib.type}:${lib.id}`,
-              }
-            },
-            {
-              "$not": [
-                {
-                  "$match": {
-                    "field": "type",
-                    "value": "assetType"
-                  }
-                }
-              ]
-            }
-          ]
-        },
-        "field": "type"
-      }
-      const typesResponse = await queryTerms(query);
-      if (typesResponse.data) {
-        const typesData: Record<string, any>[] = !Array.isArray(typesResponse.data) ? [typesResponse.data!] : typesResponse.data!;
-        types = typesData.map((it) => {
-          return {name: it.id, count: it.attributes?.count};
-        });
-      }
-      libraries.push({ name: lib.attributes.name, id: `${lib.type}:${lib.id}`, types: types });
-    }
-  }
-  return JSON.stringify(libraries);
+  return JSON.stringify(data);
 }
 
 
+//name Register Revvity Ids Formats
+export async function registerRevvityIdsFormats() {
+  const data = JSON.parse(await funcs.getLibraries());
+  const formats: string[] = [];
+  for (const lib of data) {
+    if (lib.attributes?.assets?.numbering?.format) {
+      formats.push(lib.attributes?.assets?.numbering?.format);
+      if (lib.attributes?.batches?.numbering?.format)
+        formats.push(`${formats[0]}-${lib.attributes?.batches?.numbering?.format}`);
+    }
+  }
+  const regexp = convertIdentifierFormatToRegexp(Object.values(formats));
+  if (regexp)
+    DG.SemanticValue.registerRegExpDetector('revvity-id', regexp);
+}
+
 //name: Get Tags
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
 //input: string type
 //input: string assetTypeId
 //output: string fields
@@ -225,56 +285,34 @@ export async function getTags(type: string, assetTypeId: string): Promise<string
   const data: Record<string, any>[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
   const tags: { [key: string]: string } = {};
   for (const tag of data) {
-    tags[tag.id] = tag.attributes.types[0].type;
+    if (tag?.attributes?.types && Array.isArray(tag?.attributes?.types) && tag?.attributes?.types.length > 0)
+    tags[tag.id] = tag?.attributes?.types[0].type;
   }
   return JSON.stringify(tags);
 }
 
+//name: Search Terms
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
+//input: string query
+//output: string terms
+export async function searchTerms(query: string): Promise<string> {
+  const response = await queryTerms(JSON.parse(query));
+  if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
+    return '[]';
+  const data: RevvityData[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
+  return JSON.stringify(data);
+}
 
-//name: Get Terms
+
+//name: Get Terms For Field
 //input: string fieldName
 //input: string type
 //input: string assetTypeId
 //input: bool isMaterial
-//output: string terms
-export async function getTerms(fieldName: string, type: string, assetTypeId: string, isMaterial: boolean): Promise<string> {
-  const innerAndConditions: any[] = [
-    {
-      "$match": {
-        "field": "assetTypeEid",
-        "value": assetTypeId,
-      }
-    },
-    {
-      "$match": {
-        "field": "type",
-        "value": type,
-        "mode": "keyword"
-      }
-    },
-  ];
-  if (isMaterial) {
-    innerAndConditions.push({
-      "$and": [
-        {
-          "$match": {
-            "field": "isMaterial",
-            "value": true
-          }
-        },
-        {
-          "$not": [
-            {
-              "$match": {
-                "field": "type",
-                "value": "assetType"
-              }
-            }
-          ]
-        }
-      ]
-    })
-  }
+//output: list<string> terms
+export async function getTermsForField(fieldName: string, type: string, assetTypeId: string, isMaterial: boolean): Promise<string[]> {
+  const innerAndConditions = getConditionForLibAndType(type, assetTypeId, isMaterial);
   const query: SignalsSearchQuery = {
     "query": {
       "$and": innerAndConditions
@@ -282,21 +320,47 @@ export async function getTerms(fieldName: string, type: string, assetTypeId: str
     field: fieldName,
     in: "tags"
   };
-  const response = await queryTerms(query);
-  if (!response.data || (Array.isArray(response.data) && response.data.length === 0))
-    return '{}';
-  const data: RevvityData[] = !Array.isArray(response.data) ? [response.data!] : response.data!;
-  const tags = data.map((it) => it.id).filter((tag) => tag != undefined);
-  return JSON.stringify(tags);
+  const data: RevvityData[] = JSON.parse(await funcs.searchTerms(JSON.stringify(query)));
+  const terms = data.map((it) => it.id).filter((term) => term != undefined);
+  return terms;
+}
+
+
+//name: Get Structure By Id
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 * * *
+//input: string id
+//output: string structure
+export async function getStructureById(id: string): Promise<string> {
+  const molecule = await queryStructureById(id) as string;
+  return molecule;
 }
 
 
 //name: Revvity Signals
 //tags: panel, widgets
-//input: string id { semType: RevvitySignalsId }
+//input: semantic_value id { semType: revvity-id }
 //output: widget result
-export async function entityTreeWidget(id: string): Promise<DG.Widget> {
-  const obj = (await queryMaterialById(id)) as RevvityApiResponse;
-  const div = createRevvityResponseWidget(obj);
+export async function entityTreeWidget(idSemValue: DG.SemanticValue<string>): Promise<DG.Widget> {
+  const query = {
+    "query": {
+      "$match": {
+        "field": "name",
+        "value": idSemValue.value,
+        "mode": "keyword"
+      }
+    }
+  }
+  const obj = await search(query);
+  const div = createRevvityWidgetByCorporateId(obj, idSemValue);
+  return new DG.Widget(div);
+}
+
+//name: Revvity Signals
+//tags: panel, widgets
+//input: semantic_value id { semType: revvity-label }
+//output: widget result
+export async function revvityLabelWidget(idSemValue: DG.SemanticValue<string>): Promise<DG.Widget> {
+  const div = await createWidgetByRevvityLabel(idSemValue);
   return new DG.Widget(div);
 }

@@ -21,6 +21,14 @@ export class ScriptingTutorial extends Tutorial {
   prerequisites: TutorialPrerequisites = {jupyter: true};
 
   protected async _run() {
+    this.showBrowse();
+    const platformNode = grok.shell.browsePanel.mainTree.children.find((child) => child.text === 'Platform') as DG.TreeViewGroup;
+    if (platformNode) {
+      platformNode.expanded = true;
+      const functionsNode = platformNode.children.find((child) => child.text === 'Functions') as DG.TreeViewGroup;
+      if (functionsNode)
+        functionsNode.expanded = true;
+    }
     this.header.textContent = this.name;
     this.describe('Scripting is an integration mechanism with languages for statistical computing.');
 
@@ -33,7 +41,7 @@ export class ScriptingTutorial extends Tutorial {
       'sample dataset (press <b>F1</b> to get help on parameter format). Also, the editor lets you load ' +
       'previously saved scripts, including the samples designed to help better understand the platform.';
     const sv = await this.openViewByType(
-      'In the Browse Panel, click Functions > Scripts > New > Python Script. This opens a script editor.',
+      'In the Browse Panel, click Platform > Functions > Scripts > New > Python Script. This opens a script editor.',
       'ScriptView', providerRoot, editorIntro);
 
     // UI generation delay

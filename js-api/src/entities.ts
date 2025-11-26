@@ -197,6 +197,9 @@ export class User extends Entity {
   /** Security Group */
   get group(): Group { return toJs(api.grok_User_Get_Group(this.dart)); }
 
+  /** Date when user joined */
+  get joined(): dayjs.Dayjs { return dayjs(api.grok_User_Get_Joined(this.dart)); }
+
   static get defaultUsersIds() {
     return {
       "Test": "ca1e672e-e3be-40e0-b79b-d2c68e68d380",
@@ -451,6 +454,8 @@ export class DataQuery extends Func {
   get connection(): DataConnection { return toJs(api.grok_Query_Get_Connection(this.dart)); }
   set connection(c: DataConnection) { api.grok_Query_Set_Connection(this.dart, toDart(c)); }
 
+  get postProcessScript(): string {return api.grok_Query_Get_PostProcessScript(this.dart);}
+  set postProcessScript(script: string) { api.grok_Query_Set_PostProcessScript(this.dart, script);}
   /** Executes query
    * @returns {Promise<DataFrame>} */
   async executeTable(): Promise<DataFrame> { return toJs(await api.grok_Query_ExecuteTable(this.dart)); }
@@ -1152,7 +1157,7 @@ export class LogEvent extends Entity {
 
   /** Parameters of the event
    * @type {Array<LogEventParameterValue>} */
-  get parameters(): LogEventParameterValue[] { return api.grok_LogEvent_Get_Parameters(this.dart); }
+  get parameters(): LogEventParameterValue[] { return toJs(api.grok_LogEvent_Get_Parameters(this.dart)); }
 
   /** Type of the event
    * @type {LogEventType} */

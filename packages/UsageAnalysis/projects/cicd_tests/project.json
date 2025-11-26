@@ -7,22 +7,22 @@
       {
         "path": "Tests.csv",
         "creationScript": "Result = UsageAnalysis:TestsDashboard('dev',5,null,null,false,false,false)",
-        "id": "2d897490-9b00-11ef-bb56-cf322fcdda84"
+        "id": "6ab5be70-8560-11f0-91d7-a986b011368a"
       },
       {
         "path": "Benchmark.csv",
         "creationScript": "Result = UsageAnalysis:BenchmarksDashboard('dev',5,false,true,false)",
-        "id": "94e609e4-b5b7-437e-b91f-01da1ff73b17"
+        "id": "659778c0-8560-11f0-db7e-4721775f0c0a"
       },
       {
         "path": "Stress_Tests.csv",
         "creationScript": "Result = UsageAnalysis:StressTestsDashboard(3)",
-        "id": "48498f80-c210-11ef-9cb9-7bfcfe94b295"
-      }, 
+        "id": "56209430-8560-11f0-adc2-636035fa442a"
+      },
       {
-        "path": "Test_Track.csv",
-        "creationScript": "Result = UsageAnalysis:ManualTests(3)",
-        "id": "32a0d3c9-7b4b-420e-b06d-b05d021b8247"
+        "path": "StressTestsAggregation.csv",
+        "creationScript": "Result = Aggregate('Stress_ Tests', fields = ['batch', 'backup', 'totalworkers'], pivots = [], aggregations = ['sum(passed_int)', 'count(passed_int)'], groupByFields = ['batch', 'backup', 'totalworkers'], joins = [], whereClauses = [], filter = Filtered(null)) //{'timestamp': 1760441721206}\nAddNewColumn(Result, '(${count(passed_int)} - ${sum(passed_int)}) / 100', 'failure') //{'timestamp': 1760441777699}\nChangeType(Result, 'totalworkers', 'int', nonConvertibleValue = '') //{'timestamp': 1760462693878}",
+        "id": "dde962d0-8560-11f0-e7f6-cb949007e22c"
       }
     ]
   }

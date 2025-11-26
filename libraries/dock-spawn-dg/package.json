@@ -1,6 +1,6 @@
 {
   "name": "@datagrok-libraries/dock-spawn-dg",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "A TypeScript Version of dock-spawn with changes for Datagrok",
   "license": "MIT",
   "author": {
@@ -26,5 +26,6 @@
     "type": "git",
     "url": "git@github.com:datagrok-ai/public.git",
     "directory": "libraries/dock-spawn-dg"
-  }
+  },
+  "sideEffects": ["*.css"]
 }

@@ -10,7 +10,7 @@ const BOOLEAN_INPUT_TOP_MARGIN = 15;
 
 export class FormsViewer extends DG.JsViewer {
   get type(): string { return 'FormsViewer'; }
-  moleculeSize: string;
+  moleculeSize: 'small' | 'normal' | 'large';
   fieldsColumnNames: string[];
   colorCode: boolean;
   showCurrentRow: boolean;
@@ -46,6 +46,29 @@ export class FormsViewer extends DG.JsViewer {
     this.render();
   }
 
+  protected getRendererSize(renderer: DG.GridCellRenderer): DG.Point {
+    let width = renderer.defaultWidth;
+    let height = renderer.defaultHeight;
+    if (!width || !height)
+      return this.getMoleculeSize();
+
+    switch (this.moleculeSize) {
+      case 'normal': return new DG.Point(width, height);
+      case 'large': return new DG.Point(Math.floor(width * 1.5), Math.floor(height * 1.5));
+      case 'small':
+      default: return new DG.Point(Math.floor(width * 0.66), Math.floor(height * 0.66));
+    }
+  }
+
+  protected getMoleculeSize(): DG.Point {
+    switch (this.moleculeSize) {
+      case 'normal': return new DG.Point(200, 100);
+      case 'large': return new DG.Point(300, 150);
+      case 'small':
+      default: return new DG.Point(120, 60);
+    }
+  }
+
   constructor() {
     super();
 
@@ -57,7 +80,7 @@ export class FormsViewer extends DG.JsViewer {
     this.showCurrentRow = this.bool('showCurrentRow', true);
     this.showMouseOverRow = this.bool('showMouseOverRow', true);
     this.showSelectedRows = this.bool('showSelectedRows', true);
-    this.moleculeSize = this.string('moleculeSize', 'small', {choices: ['small', 'normal', 'large']});
+    this.moleculeSize = this.string('moleculeSize', 'small', {choices: ['small', 'normal', 'large']}) as 'small' | 'normal' | 'large';
 
     //fields
     this.indexes = [];
@@ -105,7 +128,7 @@ export class FormsViewer extends DG.JsViewer {
 
     ui.tools.waitForElementInDom(this.virtualView.root).then((_) => {
       this.fitHeaderToLabelWidth();
-    });  
+    });
   }
 
   fitHeaderToLabelWidth(width?: number) {
@@ -121,7 +144,7 @@ export class FormsViewer extends DG.JsViewer {
 
   onTableAttached() {
     if (this.fieldsColumnNames === null)
-      this.setfieldsColumnNames(this.dataFrame.columns.names());
+      this.setFieldsColumnNames(this.dataFrame.columns.names());
 
     const sub = (stream: Observable<unknown>, action: Function) => {
       this.subs.push(DG.debounce(stream, 50).subscribe((_) => action()));
@@ -133,7 +156,7 @@ export class FormsViewer extends DG.JsViewer {
     sub(this.dataFrame.onMetadataChanged, () => this.render());
 
     sub(this.dataFrame.onColumnsRemoved, () => {
-      this.updatefieldsColumnNames();
+      this.updateFieldsColumnNames();
       this.render();
     });
 
@@ -146,16 +169,11 @@ export class FormsViewer extends DG.JsViewer {
     this.render();
   }
 
-  setfieldsColumnNames(dfColumns: string[]) {
-    if (dfColumns.length > 20) {
-      grok.shell.warning(COLS_LIMIT_EXCEEDED_WARNING);
-      this.fieldsColumnNames = dfColumns.slice(0, 20);
-    }
-    else
-      this.fieldsColumnNames = dfColumns;
+  setFieldsColumnNames(dfColumns: string[]) {
+    this.fieldsColumnNames = dfColumns.length > 20 ? dfColumns.slice(0, 20) : dfColumns;
   }
 
-  updatefieldsColumnNames() {
+  updateFieldsColumnNames() {
     const newColumns = this.dataFrame.columns.names();
     let counter = this.fieldsColumnNames.length;
     for (let i = 0; i < counter; i++) {
@@ -210,6 +228,17 @@ export class FormsViewer extends DG.JsViewer {
   get currentRowPos() { return this.showCurrentRow ? 0 : null; }
   get mouseOverPos() { return this.showMouseOverRow ? (this.showCurrentRow ? 1 : 0) : null; }
 
+  getGrid() {
+    if (this.view && (this.view as DG.TableView).grid)
+      return (this.view as DG.TableView).grid;
+    if (this.dataFrame && grok.shell.tv && grok.shell.tv.dataFrame === this.dataFrame && grok.shell.tv.grid)
+      return grok.shell.tv.grid;
+    const tv = Array.from(grok.shell.tableViews).find((tv) => tv.dataFrame === this.dataFrame);
+    if (tv && tv.grid)
+      return tv.grid;
+    return null;
+  }
+
   renderForm(row: number, header?: boolean) {
     const savedIdx = row;
     if (header)
@@ -230,39 +259,66 @@ export class FormsViewer extends DG.JsViewer {
           return resDiv;
 
         try {
-          const input = DG.InputBase.forColumn(this.dataFrame.col(name)!);
-          if (input) {
-            if (this.dataFrame.col(name)!.semType === DG.SEMTYPE.MOLECULE)
-              input.input.classList.add(`d4-multi-form-molecule-input-${this.moleculeSize}`);
-            input.input.setAttribute('column', name);
-            input.value = this.dataFrame.get(name, row);
-            input.readOnly = true;
+          const grid = this.getGrid();
+          // for molecules, use the gridCol renderer instead of inputBase
+          const col = this.dataFrame.col(name)!;
+          if (col.semType && grid?.col(name)?.renderer) {
+            const renderer = grid.col(name)!.renderer!;
+            const rendererSize = this.getRendererSize(renderer);
+            const gridCell = DG.GridCell.fromColumnRow(grid, name, grid.tableRowToGrid(row));
+            const canvas = ui.canvas(rendererSize.x, rendererSize.y);
+            canvas.width = rendererSize.x * window.devicePixelRatio;
+            canvas.height = rendererSize.y * window.devicePixelRatio;
+            const ctx = canvas.getContext('2d')!;
+            // ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            
+            canvas.setAttribute('column', name);
 
-            if (this.colorCode) {
-              const grid = ((this.view ?? grok.shell.tv) as DG.TableView).grid;
-              if (grid) {
-                const gridCellIdx = grid.getRowOrder().indexOf(row);
-                if (gridCellIdx !== -1) {
-                  const color = grid.cell(name, gridCellIdx).color;
-                  if (grid.col(name)?.isTextColorCoded)
-                    input.input.setAttribute('style', `color:${DG.Color.toHtml(color)}!important;`);
-                  else {
-                    input.input.setAttribute('style',
-                      `color:${DG.Color.toHtml(DG.Color.getContrastColor(color))}!important;`);
-                    input.input.style.backgroundColor = DG.Color.toHtml(color);
-                  }
-                }
-              }
-            }
-            input.input.onclick = (e: MouseEvent) => {
+            gridCell.render({context: ctx, bounds: new DG.Rect(0, 0, rendererSize.x, rendererSize.y)});
+            resDiv = canvas;
+            resDiv.style.background = 'white'; // fixes before changes of viertual view not removing old items
+            resDiv.onclick = (e: MouseEvent) => {
               this.dataFrame.currentCell = this.dataFrame.cell(row, name);
               this.inputClicked.next(name);
             };
-            ui.tooltip.bind(input.input, name);
+            ui.tooltip.bind(resDiv, name);
 
-            resDiv = input.input;
+          } else {
+            const input = DG.InputBase.forColumn(col);
+            if (input) {
+              if (this.dataFrame.col(name)!.semType === DG.SEMTYPE.MOLECULE)
+                input.input.classList.add(`d4-multi-form-molecule-input-${this.moleculeSize}`);
+              input.input.setAttribute('column', name);
+              input.value = this.dataFrame.get(name, row);
+              input.readOnly = true;
+
+              if (this.colorCode) {
+                if (grid) {
+                  const color = this.dataFrame.col(name)?.meta.colors.getColor(row);
+                  if (color) {
+                    if (grid.col(name)?.isTextColorCoded)
+                      input.input.setAttribute('style', `color:${DG.Color.toHtml(color)}!important;`);
+                    else {
+                      input.input.setAttribute('style',
+                        `color:${DG.Color.toHtml(DG.Color.getContrastColor(color))}!important;`);
+                      input.input.style.backgroundColor = DG.Color.toHtml(color);
+                    }
+                  }
+                }
+              }
+              input.input.onclick = (e: MouseEvent) => {
+                this.dataFrame.currentCell = this.dataFrame.cell(row, name);
+                this.inputClicked.next(name);
+              };
+              ui.tooltip.bind(input.input, name);
+
+              resDiv = input.input;
+            }
           }
-        } catch { }
+        } catch (e) {
+          console.error(e);
+         }
         return resDiv;
       }
       ), 'd4-multi-form-form');

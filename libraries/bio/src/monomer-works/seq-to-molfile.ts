@@ -8,11 +8,12 @@ import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ChemTags} from '@datagrok-libraries/chem-meta/src/consts';
 import {ALPHABET} from '../utils/macromolecule';
 import {
-  MolfileWithMap, MolGraph, MonomerMap, MonomerMapValue, MonomerMolGraphMap, SeqToMolfileWorkerData, SeqToMolfileWorkerRes
+  MolfileWithMap, MolGraph, MonomerMap, MonomerMapValue, MonomerMolGraphMap,
+  SeqToMolfileWorkerData, SeqToMolfileWorkerRes
 } from './types';
 import {ISeqHelper, ToAtomicLevelRes} from '../utils/seq-helper';
 import {getMolColName, hexToPercentRgb} from './utils';
-import {IMonomerLib, IMonomerLibBase} from '../types';
+import {IMonomerLib, IMonomerLibBase} from '../types/monomer-library';
 import {ISeqMonomer, PolymerType} from '../helm/types';
 import {HelmTypes, PolymerTypes} from '../helm/consts';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
@@ -42,7 +43,9 @@ export async function seqToMolFileWorker(seqCol: DG.Column<string>, monomersDict
   const seqList: ISeqMonomer[][] = wu.count(0).take(seqCol.length).map((rowIdx) => {
     const seqSS = seqSH.getSplitted(rowIdx);
     return wu.count(0).take(seqSS.length)
-      .map((posIdx) => { return {position: posIdx, symbol: seqSS.getCanonical(posIdx), biotype: biotype} as ISeqMonomer; })
+      .map((posIdx) => {
+        return {position: posIdx, symbol: seqSS.getCanonical(posIdx), biotype: biotype} as ISeqMonomer;
+      })
       .toArray();
   }).toArray();
   for (let i = 0; i < threadCount; i++) {
@@ -90,6 +93,7 @@ export function getMolHighlight(monomerMaps: Iterable<MonomerMapValue>, monomerL
   for (const monomerMapValue of monomerMaps) {
     const wem = monomerLib.getWebEditorMonomer(monomerMapValue.biotype, monomerMapValue.symbol)!;
     const mColorStr = wem.backgroundcolor;
+    // eslint-disable-next-line deprecation/deprecation
     const mColorA = hexToPercentRgb(mColorStr ?? DG.Color.toRgb(DG.Color.mouseOverRows)) ?? [1.0, 0.0, 0.0, 0.7];
     for (const mAtom of monomerMapValue.atoms)
       hlAtoms[mAtom] = mColorA;
@@ -97,7 +101,7 @@ export function getMolHighlight(monomerMaps: Iterable<MonomerMapValue>, monomerL
       hlBonds[mBond] = mColorA;
   }
 
-  let resSubstruct: ISubstruct = {
+  const resSubstruct: ISubstruct = {
     atoms: Object.keys(hlAtoms).map((k) => parseInt(k)),
     bonds: Object.keys(hlBonds).map((k) => parseInt(k)),
     highlightAtomColors: hlAtoms,

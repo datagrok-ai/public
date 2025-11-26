@@ -14,11 +14,12 @@ export class ScatterPlotTutorial extends Tutorial {
     return 'A graph in which the values of two variables are plotted along two axes';
   }
   get steps() { return 11; }
-  
+
   helpUrl: string = 'https://datagrok.ai/help/visualize/viewers/scatter-plot';
   platform: Platform = getPlatform();
 
   protected async _run() {
+    this.showToolbox();
     this.header.textContent = this.name;
 
     this.describe('A scatter plot is a mathematical diagram that uses Cartesian coordinates ' +

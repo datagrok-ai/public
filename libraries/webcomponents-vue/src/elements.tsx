@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
 
-import type {DGBigButtonT, DGButtonT, DGComboPopupT, DGIconFAT, DGToggleInputT} from '@datagrok-libraries/webcomponents';
+import type {DGBigButtonT, DGButtonT, DGComboPopupT, DGIconFAT, DGIconImageT, DGToggleInputT} from '@datagrok-libraries/webcomponents';
 
 declare global {
   namespace JSX {
@@ -11,6 +11,7 @@ declare global {
       'dg-button': DGButtonT,
       'dg-big-button': DGBigButtonT,
       'dg-icon-fa': DGIconFAT,
+      'dg-icon-image': DGIconImageT,
       'dg-toggle-input': DGToggleInputT
       'dg-combo-popup': DGComboPopupT
     }
@@ -101,6 +102,50 @@ export const IconFA = Vue.defineComponent({
         onClick={(e: Event) => emit('click', e)}
       >
       </dg-icon-fa>);
+    };
+  },
+});
+
+export const IconImage = Vue.defineComponent({
+  name: 'IconImage',
+  props: {
+    name: String,
+    path: String,
+    cursor: {
+      type: String,
+      default: 'pointer',
+    },
+    tooltip: {
+      type: String as Vue.PropType<string | null>,
+      default: null,
+    },
+    isDisabled: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  emits: [
+    'click',
+  ],
+  setup(props, {emit}) {
+    const icon = Vue.shallowRef<HTMLElement | null>(null);
+
+    Vue.watch([() => props.isDisabled, icon] as const, ([isDisabled, btn]) => {
+      if (!btn) return;
+
+      btn.classList.toggle('d4-disabled', isDisabled);
+    }, {immediate: true});
+
+    return () => {
+      return (<dg-icon-image
+        name={props.name}
+        path={props.path}
+        ref={icon}
+        cursor={props.cursor}
+        tooltip={props.tooltip}
+        onClick={(e: Event) => emit('click', e)}
+      >
+      </dg-icon-image>);
     };
   },
 });

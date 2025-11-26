@@ -1,5 +1,6 @@
 ---
 title: "Column Manager"
+unlisted: true
 sidebar_position: 4
 ---
 

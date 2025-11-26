@@ -91,8 +91,7 @@ Why Datagrok is different:
   tools at the right time.
 
 In short, Datagrok isn't just a faster way to analyze data — it's a
-**fundamentally more powerful way to enable science**. One platform. Zero
-bottlenecks. Infinite possibilities.
+**fundamentally more powerful way to enable science**.
 
 ## Direct comparison
 

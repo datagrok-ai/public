@@ -12,7 +12,7 @@ import {
   LogOptions
 } from '@datagrok-libraries/statistics/src/fit/fit-data';
 import {Viewport} from '@datagrok-libraries/utils/src/transform';
-import {FitConstants} from './const';
+import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {BoxPlotStatistics, calculateBoxPlotStatistics} from '@datagrok-libraries/statistics/src/box-plot-statistics';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 import {FitFunction} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
@@ -479,7 +479,9 @@ function renderLegendSeries(g: CanvasRenderingContext2D, series: IFitSeries, ren
     dataBox.y + FitConstants.LEGEND_TOP_PX_MARGIN - FitConstants.LEGEND_RECORD_LINE_BOTTOM_PX_MARGIN +
       (showColumnLabel ? FitConstants.LEGEND_RECORD_PX_HEIGHT * (columnIdx + 1) : 0) +
       FitConstants.LEGEND_RECORD_PX_HEIGHT * drawnCurvesInLegend);
-  const marker = series.markerType ? series.markerType as DG.MARKER_TYPE : DG.MARKER_TYPE.CIRCLE;
+  let pointsMarkerValue = series.points && series.points.length > 0 ? series.points[0].marker : null;
+  pointsMarkerValue = series.points && series.points.every((p) => p.marker === pointsMarkerValue && p.marker != null) ? pointsMarkerValue : null;
+  const marker = pointsMarkerValue != null ? pointsMarkerValue as DG.MARKER_TYPE : series.markerType ? series.markerType as DG.MARKER_TYPE : DG.MARKER_TYPE.CIRCLE;
   DG.Paint.marker(g, marker, dataBox.maxX - textWidth - FitConstants.LEGEND_RECORD_LINE_RIGHT_PX_MARGIN -
       FitConstants.LEGEND_RECORD_LINE_PX_WIDTH / 2, dataBox.y + FitConstants.LEGEND_TOP_PX_MARGIN -
       FitConstants.LEGEND_RECORD_LINE_BOTTOM_PX_MARGIN + (showColumnLabel ? FitConstants.LEGEND_RECORD_PX_HEIGHT *

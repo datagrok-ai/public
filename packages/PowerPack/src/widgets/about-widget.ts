@@ -4,6 +4,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 export class AboutWidget extends DG.Widget {
+  get type(): string {
+    return 'AboutWidget';
+  }
+
   caption: string;
 
   constructor() {
@@ -20,8 +24,8 @@ export class AboutWidget extends DG.Widget {
     'CHEMISTRY' : () => ui.panel([
       ui.markdown(introChem),
       ui.div([
-        ui.link('Go ahead, sketch a molecule!', async () => 
-        // @ts-ignore 
+        ui.link('Go ahead, sketch a molecule!', async () =>
+        // @ts-ignore
         ui.wait(()=>{
           grok.functions.call('CmdSketcher')
           //cmdChemSketcher.run()

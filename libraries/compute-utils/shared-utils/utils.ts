@@ -22,8 +22,14 @@ export const getContextHelp = async (func: DG.Func) => {
 
   if (helpCache.get(func.id)) return helpCache.get(func.id);
 
-  const packagePath = `System:AppData/${func.package.name}/${helpPath}`;
-  if (await grok.dapi.files.exists(packagePath)) {
+  // some bug when saving package script from ui
+  let packageName: string = '';
+  try {
+    packageName = func.package.name;
+  } catch {}
+
+  const packagePath = `System:AppData/${packageName}/${helpPath}`;
+  if (packageName && await grok.dapi.files.exists(packagePath)) {
     const readme = await grok.dapi.files.readAsText(packagePath);
     helpCache.set(func.id, readme);
     return readme;
@@ -51,6 +57,14 @@ export const getFeatures = (func: DG.Func) => {
   return JSON.parse(func.options['features'] ?? '{}');
 };
 
+export const getDockSpawnConfig = (func: DG.Func) => {
+  return JSON.parse(func.options['dockSpawnConfig'] ?? '{}');
+};
+
+export const getRunLabel = (func: DG.Func) => {
+  return func.options['runLabel'];
+};
+
 export const getFeature = (features: Record<string, boolean> | string[], featureName: string, defaultValue: boolean) => {
   if (features instanceof Array)
     return features.includes(featureName);
@@ -61,11 +75,11 @@ export const getFeature = (features: Record<string, boolean> | string[], feature
   return defaultValue;
 };
 
-export const getStartedOrNull = (run: DG.FuncCall) => {
+export const getStartedOrNull = (run?: DG.FuncCall) => {
   try {
-    return run.started as any;
+    return run?.started;
   } catch {
-    return null;
+    return;
   }
 };
 
@@ -75,7 +89,9 @@ export const isIncomplete = (run: DG.FuncCall) => {
 };
 
 export const deepCopy = (call: DG.FuncCall) => {
-  const deepClone = DG.Func.byName(call.func.nqName).prepare();
+  // if there is no ':' in nqName, it might be ambiguous, so try to
+  // reuse call.func, otherwise use nqName search
+  const deepClone = call.func?.nqName?.includes(":") ? DG.Func.byName(call.func.nqName).prepare() : call.func.prepare();
 
   deepClone.id = call.id;
 

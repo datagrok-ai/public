@@ -28,7 +28,7 @@ import {
   substituteZeroes, getOrCreateCachedFitCurve, getOrCreateCachedCurvesDataPoints, FitChartCellRenderer
 } from './fit-renderer';
 import {convertXMLToIFitChartData} from './fit-parser';
-import {FitConstants} from './const';
+import {FitConstants} from '@datagrok-libraries/statistics/src/fit/const';
 import {ColorType, getSeriesColor} from './render-utils';
 import {fitSeriesProperties} from '@datagrok-libraries/statistics/src/fit/new-fit-API';
 

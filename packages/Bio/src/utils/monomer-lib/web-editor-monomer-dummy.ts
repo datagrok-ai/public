@@ -18,7 +18,7 @@ export abstract class WebEditorMonomerDummy implements IWebEditorMonomer {
   get issmiles(): boolean { return !!this.smiles; }
 
   /** R-Group index os single digit only is allowed in Pistoia code */
-  public readonly at: WebEditorRGroups = {
+  at: WebEditorRGroups = {
     R1: 'H', R2: 'H', R3: 'H', R4: 'H', R5: 'H', R6: 'H', R7: 'H', R8: 'H', R9: 'H'
   };
 
@@ -77,6 +77,20 @@ export abstract class WebEditorMonomerDummy implements IWebEditorMonomer {
 
   protected toLog(): string {
     return `Helm: ${this.className}<${this.objId}>`;
+  }
+}
+
+export class SmilesWebEditorMonomer extends WebEditorMonomerDummy {
+  public readonly backgroundcolor: string = '#808080';
+  public readonly linecolor: string = '#000000';
+  public readonly textcolor: string = '#000000';
+
+  constructor(biotype: string, id: string, smiles: string, name: string, rgpLabels: string[]) {
+    super(biotype, id, name, undefined, undefined, undefined, smiles);
+    this.at = {};
+    rgpLabels.forEach((label) => {
+      this.at[label] = 'H';
+    });
   }
 }
 

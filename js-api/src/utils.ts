@@ -407,6 +407,17 @@ export class Utils {
     }
     return '';
   }
+
+  static randomString(length: number): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    const charsLen = chars.length;
+
+    for (let i = 0; i < length; i++)
+      result += chars.charAt(Math.floor(Math.random() * charsLen));
+
+    return result;
+  }
 }
 
 
@@ -644,7 +655,7 @@ export class LruCache<K = any, V = any> {
 }
 
 
-export function _options(element: HTMLElement, options: any) {
+export function _options(element: HTMLElement, options: any): HTMLElement {
   if (options == null)
     return element;
   if (typeof options === 'string')

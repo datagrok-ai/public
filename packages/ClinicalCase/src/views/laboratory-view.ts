@@ -1,20 +1,29 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {ClinRow, studies} from '../clinical-study';
+import {ClinRow} from '../clinical-study';
+import {studies} from '../package';
 import {createBaselineEndpointDataframe, createHysLawDataframe,
-  createLabValuesByVisitDataframe} from '../data-preparation/data-preparation';
+  createLabValuesByVisitDataframe,
+  createVisitDayStrCol} from '../data-preparation/data-preparation';
 import {ALT, BILIRUBIN} from '../constants/constants';
 import {createBaselineEndpointScatterPlot, createHysLawScatterPlot} from '../custom-scatter-plots/custom-scatter-plots';
 import {updateDivInnerHTML} from '../utils/utils';
 import {_package} from '../package';
 import {getUniqueValues} from '../data-preparation/utils';
-import {LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_TEST, VISIT_DAY, VISIT_NAME,
-  SUBJECT_ID, LAB_RES_N} from '../constants/columns-constants';
+import {LAB_HI_LIM_N, LAB_LO_LIM_N, LAB_TEST, VISIT_DAY,
+  SUBJECT_ID, LAB_RES_N,
+  VISIT_DAY_STR,
+  VISIT} from '../constants/columns-constants';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
-import {TRT_ARM_FIELD, VIEWS_CONFIG} from '../views-config';
+import {TRT_ARM_FIELD} from '../views-config';
 import {checkColumnsAndCreateViewer} from '../utils/views-validation-utils';
+import {CDISC_STANDARD} from '../utils/types';
 
+const resultsTabName = 'Results';
+const distrTabName = 'Laboratory distribution';
+const hysLawTabName = 'Hy\'s law';
+const baselineEndpointTabName = 'Baseline endpoint';
 export class LaboratoryView extends ClinicalCaseViewBase {
   hysLawDiv = ui.box();
   baselineEndpointDiv = ui.box();
@@ -36,6 +45,9 @@ export class LaboratoryView extends ClinicalCaseViewBase {
   dm: DG.DataFrame;
   lb: DG.DataFrame;
   selectedTab: string;
+  isSend = false;
+  propPanelPanes: DG.AccordionPane[] = [];
+  numVisDayColDict: {[key: string]: string} = {'lb': VISIT_DAY};
 
   constructor(name, studyId) {
     super(name, studyId);
@@ -44,15 +56,21 @@ export class LaboratoryView extends ClinicalCaseViewBase {
   }
 
   createView(): void {
+    this.isSend = studies[this.studyId].config.standard === CDISC_STANDARD.SEND;
+    if (this.isSend)
+      createVisitDayStrCol(studies[this.studyId].domains.lb, this.numVisDayColDict);
     this.lb = studies[this.studyId].domains.lb.clone();
     if (studies[this.studyId].domains.dm)
       this.dm = studies[this.studyId].domains.dm.clone();
 
 
     this.uniqueLabValues = this.lb.col(LAB_TEST) ? Array.from(getUniqueValues(this.lb, LAB_TEST)) : [];
-    this.uniqueVisits = this.lb.col(VISIT_NAME) ? Array.from(getUniqueValues(this.lb, VISIT_NAME)) : [];
-    this.uniqueTreatmentArms = this.dm && this.dm.col(VIEWS_CONFIG[this.name][TRT_ARM_FIELD]) ?
-      Array.from(getUniqueValues(this.dm, VIEWS_CONFIG[this.name][TRT_ARM_FIELD])) : [];
+    this.uniqueVisits = this.lb.col(this.isSend ? VISIT_DAY_STR : VISIT) ?
+      Array.from(getUniqueValues(this.lb, this.isSend ? VISIT_DAY_STR : VISIT)) : [];
+    this.uniqueTreatmentArms = this.dm &&
+      this.dm.col(studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD]) ?
+      Array.from(getUniqueValues(this.dm, studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD])) : [];
+    this.uniqueTreatmentArms = [''].concat(this.uniqueTreatmentArms);
     this.selectedLabBlEp = this.uniqueLabValues.length ? this.uniqueLabValues[0] : null;
     this.selectedBl = this.uniqueVisits.length ? this.uniqueVisits[0] : null;
     this.selectedEp = this.uniqueVisits.length ? this.uniqueVisits[1] : null;
@@ -64,49 +82,60 @@ export class LaboratoryView extends ClinicalCaseViewBase {
       grok.shell.o = new ClinRow(this.lb.currentRow);
     });
 
-    if (studies[this.studyId].domains.dm) {
-      grok.data.linkTables(studies[this.studyId].domains.dm, this.lb,
-        [SUBJECT_ID], [SUBJECT_ID],
-        [DG.SYNC_TYPE.FILTER_TO_FILTER]);
-    }
+    // if (studies[this.studyId].domains.dm) {
+    //   grok.data.linkTables(studies[this.studyId].domains.dm, this.lb,
+    //     [SUBJECT_ID], [SUBJECT_ID],
+    //     [DG.SYNC_TYPE.FILTER_TO_FILTER]);
+    // }
 
     this.root.className = 'grok-view ui-box';
 
     const tabControl = ui.tabControl(null, false);
 
-    const hysLawGuide = ui.info('Please select values for ALT/AST and Bilirubin in a context panel', '', false);
-
-    checkColumnsAndCreateViewer(
+    const distributionCreated = checkColumnsAndCreateViewer(
       studies[this.studyId].domains.lb,
-      [SUBJECT_ID, LAB_RES_N, LAB_HI_LIM_N, LAB_TEST],
-      this.hysLawDiv, () => {
-        updateDivInnerHTML(this.hysLawDiv, hysLawGuide);
-      },
-      'Hy\'s Law');
-
-    checkColumnsAndCreateViewer(
-      studies[this.studyId].domains.lb,
-      [SUBJECT_ID, LAB_TEST, LAB_RES_N, VISIT_NAME, LAB_LO_LIM_N, LAB_HI_LIM_N],
-      this.baselineEndpointDiv, () => {
-        this.updateBaselineEndpointPlot();
-      },
-      'Baseline endpoint');
-
-    checkColumnsAndCreateViewer(
-      studies[this.studyId].domains.lb,
-      [SUBJECT_ID, LAB_TEST, LAB_RES_N, VISIT_DAY],
+      [SUBJECT_ID, LAB_TEST, LAB_RES_N, this.numVisDayColDict['lb']],
       this.distributionDiv, () => {
         this.updateDistributionPlot();
       },
-      'Laboratory distribution');
+      distrTabName);
 
-    tabControl.addPane('Hy\'s law', () => this.hysLawDiv);
+    tabControl.addPane(distrTabName, () => this.distributionDiv);
 
-    tabControl.addPane('Baseline endpoint', () => this.baselineEndpointDiv);
+    const resultsPane = tabControl.addPane(resultsTabName, () => grid.root);
 
-    tabControl.addPane('Laboratory distribution', () => this.distributionDiv);
+    checkColumnsAndCreateViewer(
+      studies[this.studyId].domains.lb,
+      [SUBJECT_ID, LAB_TEST, LAB_RES_N, this.isSend ? VISIT_DAY_STR : VISIT,
+        LAB_LO_LIM_N, LAB_HI_LIM_N],
+      this.baselineEndpointDiv, () => {
+        this.updateBaselineEndpointPlot();
+      },
+      baselineEndpointTabName);
 
-    tabControl.addPane('Results', () => grid.root);
+    tabControl.addPane(baselineEndpointTabName, () => this.baselineEndpointDiv);
+
+    //SDTM specific plots (for human clinical trials)
+    if (!this.isSend) {
+      const hysLawGuide = ui.info('Please select values for ALT/AST and Bilirubin in a context panel', '', false);
+      checkColumnsAndCreateViewer(
+        studies[this.studyId].domains.lb,
+        [SUBJECT_ID, LAB_RES_N, LAB_HI_LIM_N, LAB_TEST],
+        this.hysLawDiv, () => {
+          updateDivInnerHTML(this.hysLawDiv, hysLawGuide);
+        },
+        hysLawTabName);
+
+      tabControl.addPane(hysLawTabName, () => this.hysLawDiv);
+    }
+
+    tabControl.onTabChanged.subscribe((tab: DG.TabPane) => {
+      this.propPanelPanes.forEach((it) => it.root.style.display = it.name === tab.name ? 'flex' : 'none');
+    });
+
+    //this is done to show valid tab initially
+    if (!distributionCreated)
+      tabControl.currentPane = resultsPane;
 
     this.root.appendChild(
       tabControl.root,
@@ -122,36 +151,36 @@ export class LaboratoryView extends ClinicalCaseViewBase {
 
   private createHysLawScatterPlot() {
     const hysLawDataframe = createHysLawDataframe(this.lb, this.dm, this.selectedALT,
-      this.selectedAST, this.selectedBLN, VIEWS_CONFIG[this.name][TRT_ARM_FIELD]);
-    if (studies[this.studyId].domains.dm) {
-      grok.data.linkTables(studies[this.studyId].domains.dm, hysLawDataframe,
-        [SUBJECT_ID], [SUBJECT_ID],
-        [DG.SYNC_TYPE.FILTER_TO_FILTER]);
-    }
+      this.selectedAST, this.selectedBLN, studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD]);
+    // if (studies[this.studyId].domains.dm) {
+    //   grok.data.linkTables(studies[this.studyId].domains.dm, hysLawDataframe,
+    //     [SUBJECT_ID], [SUBJECT_ID],
+    //     [DG.SYNC_TYPE.FILTER_TO_FILTER]);
+    // }
     this.hysLawScatterPlot = createHysLawScatterPlot(hysLawDataframe, ALT,
-      BILIRUBIN, VIEWS_CONFIG[this.name][TRT_ARM_FIELD]);
+      BILIRUBIN, studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD]);
   }
 
   updateBaselineEndpointPlot() {
-    const visitCol = VISIT_NAME;
+    const visitCol = this.isSend ? VISIT_DAY_STR : VISIT;
     const blNumCol = `${this.selectedLabBlEp}_BL`;
     const epNumCol = `${this.selectedLabBlEp}_EP`;
     const baselineEndpointDataframe = createBaselineEndpointDataframe(this.lb, this.dm,
-      [VIEWS_CONFIG[this.name][TRT_ARM_FIELD]], LAB_TEST, LAB_RES_N,
+      [studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD]], LAB_TEST, LAB_RES_N,
       [LAB_LO_LIM_N, LAB_HI_LIM_N], this.selectedLabBlEp, this.selectedBl,
       this.selectedEp, visitCol, blNumCol, epNumCol);
-    if (studies[this.studyId].domains.dm) {
-      grok.data.linkTables(studies[this.studyId].domains.dm, baselineEndpointDataframe,
-        [SUBJECT_ID], [SUBJECT_ID],
-        [DG.SYNC_TYPE.FILTER_TO_FILTER]);
-    }
+    // if (studies[this.studyId].domains.dm) {
+    //   grok.data.linkTables(studies[this.studyId].domains.dm, baselineEndpointDataframe,
+    //     [SUBJECT_ID], [SUBJECT_ID],
+    //     [DG.SYNC_TYPE.FILTER_TO_FILTER]);
+    // }
     if (!baselineEndpointDataframe.rowCount) {
       updateDivInnerHTML(this.baselineEndpointDiv,
         ui.info(`No data found for ${this.selectedLabBlEp} and selected visits`));
       return;
     }
     this.baselineEndpointPlot = createBaselineEndpointScatterPlot(baselineEndpointDataframe, blNumCol,
-      epNumCol, VIEWS_CONFIG[this.name][TRT_ARM_FIELD],
+      epNumCol, studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD],
       baselineEndpointDataframe.get(LAB_LO_LIM_N, 0), baselineEndpointDataframe.get(LAB_HI_LIM_N, 0));
     updateDivInnerHTML(this.baselineEndpointDiv, this.baselineEndpointPlot.root);
   }
@@ -160,17 +189,18 @@ export class LaboratoryView extends ClinicalCaseViewBase {
     const labValue = this.selectedLabDistr;
     const labValueNumColumn = `${labValue} values`;
     const disributionDataframe = createLabValuesByVisitDataframe(this.lb, this.dm, labValue,
-      VIEWS_CONFIG[this.name][TRT_ARM_FIELD], this.selectedArm, labValueNumColumn, VISIT_DAY);
-    if (studies[this.studyId].domains.dm) {
-      grok.data.linkTables(studies[this.studyId].domains.dm, disributionDataframe,
-        [SUBJECT_ID], [SUBJECT_ID],
-        [DG.SYNC_TYPE.FILTER_TO_FILTER]);
-    }
+      studies[this.studyId].viewsConfig.config[this.name][TRT_ARM_FIELD],
+      this.selectedArm, labValueNumColumn, this.numVisDayColDict['lb']);
+    // if (studies[this.studyId].domains.dm) {
+    //   grok.data.linkTables(studies[this.studyId].domains.dm, disributionDataframe,
+    //     [SUBJECT_ID], [SUBJECT_ID],
+    //     [DG.SYNC_TYPE.FILTER_TO_FILTER]);
+    // }
     this.distributionPlot = DG.Viewer.boxPlot(disributionDataframe, {
-      categoryColumnNames: [VISIT_DAY],
+      categoryColumnNames: [this.numVisDayColDict['lb']],
       value: labValueNumColumn,
     });
-    this.distributionPlot.setOptions({category: VISIT_DAY});
+    this.distributionPlot.setOptions({category: this.numVisDayColDict['lb']});
     updateDivInnerHTML(this.distributionDiv, this.distributionPlot.root);
   }
 
@@ -178,30 +208,21 @@ export class LaboratoryView extends ClinicalCaseViewBase {
     const panelDiv = ui.div();
     const acclab = this.createAccWithTitle(this.name);
 
-    const altChoices = ui.input.choice('ALT', {value: this.selectedALT, items: this.uniqueLabValues});
-    altChoices.onChanged.subscribe((value) => {
-      this.selectedALT = value;
-      this.updateHysLawScatterPlot();
+    //distributions panel
+    const distrChoices = ui.input.choice('Value', {value: this.selectedLabDistr, items: this.uniqueLabValues});
+    const treatmentArmsChoices = ui.input.choice('Treatment arm',
+      {value: this.selectedArm, items: this.uniqueTreatmentArms});
+    distrChoices.onChanged.subscribe((value) => {
+      this.selectedLabDistr = value;
+      this.updateDistributionPlot();
     });
-    //@ts-ignore
-    altChoices.input.style.width = '150px';
-
-    const astChoices = ui.input.choice('AST', {value: this.selectedAST, items: this.uniqueLabValues});
-    astChoices.onChanged.subscribe((value) => {
-      this.selectedAST = value;
-      this.updateHysLawScatterPlot();
+    treatmentArmsChoices.onChanged.subscribe((value) => {
+      this.selectedArm = value;
+      this.updateDistributionPlot();
     });
-    //@ts-ignore
-    astChoices.input.style.width = '150px';
-
-    const blnChoices = ui.input.choice('BLN', {value: this.selectedBLN, items: this.uniqueLabValues});
-    blnChoices.onChanged.subscribe((value) => {
-      this.selectedBLN = value;
-      this.updateHysLawScatterPlot();
-    });
-    //@ts-ignore
-    blnChoices.input.style.width = '150px';
-    acclab.addPane('Hy\'s law', () => ui.divV([altChoices.root, astChoices.root, blnChoices.root]), true);
+    distrChoices.input.style.width = '150px';
+    this.propPanelPanes.push(acclab
+      .addPane(distrTabName, () => ui.divV([distrChoices.root, treatmentArmsChoices.root]), true));
 
     const labValueChoices = ui.input.choice('Value', {value: this.selectedLabBlEp, items: this.uniqueLabValues});
     const blVisitChoices = ui.input.choice('BL', {value: this.selectedBl, items: this.uniqueVisits});
@@ -218,26 +239,44 @@ export class LaboratoryView extends ClinicalCaseViewBase {
       this.selectedEp = value;
       this.updateBaselineEndpointPlot();
     });
-    //@ts-ignore
     labValueChoices.input.style.width = '150px';
-    acclab.addPane('Baseline endpoint',
+    const bePane = acclab.addPane(baselineEndpointTabName,
       () => ui.divV([labValueChoices.root, blVisitChoices.root, epVisitChoices.root]), true);
+    //set invisible by default
+    bePane.root.style.display = 'none';
+    this.propPanelPanes.push(bePane);
 
 
-    const distrChoices = ui.input.choice('Value', {value: this.selectedLabDistr, items: this.uniqueLabValues});
-    const treatmentArmsChoices = ui.input.choice('Treatment arm',
-      {value: this.selectedArm, items: this.uniqueTreatmentArms});
-    distrChoices.onChanged.subscribe((value) => {
-      this.selectedLabDistr = value;
-      this.updateDistributionPlot();
-    });
-    treatmentArmsChoices.onChanged.subscribe((value) => {
-      this.selectedArm = value;
-      this.updateDistributionPlot();
-    });
-    //@ts-ignore
-    distrChoices.input.style.width = '150px';
-    acclab.addPane('Laboratory distribution', () => ui.divV([distrChoices.root, treatmentArmsChoices.root]), true);
+    //SDTM specific options
+    if (!this.isSend) {
+      //Hy's law panel
+      const altChoices = ui.input.choice('ALT', {value: this.selectedALT, items: this.uniqueLabValues});
+      altChoices.onChanged.subscribe((value) => {
+        this.selectedALT = value;
+        this.updateHysLawScatterPlot();
+      });
+      altChoices.input.style.width = '150px';
+
+      const astChoices = ui.input.choice('AST', {value: this.selectedAST, items: this.uniqueLabValues});
+      astChoices.onChanged.subscribe((value) => {
+        this.selectedAST = value;
+        this.updateHysLawScatterPlot();
+      });
+      astChoices.input.style.width = '150px';
+
+      const blnChoices = ui.input.choice('BLN', {value: this.selectedBLN, items: this.uniqueLabValues});
+      blnChoices.onChanged.subscribe((value) => {
+        this.selectedBLN = value;
+        this.updateHysLawScatterPlot();
+      });
+      blnChoices.input.style.width = '150px';
+      const hysLawPane = acclab
+        .addPane(hysLawTabName, () => ui.divV([altChoices.root, astChoices.root, blnChoices.root]), true);
+      //set invisible by default
+      hysLawPane.root.style.display = 'none';
+      this.propPanelPanes.push(hysLawPane);
+    }
+
     panelDiv.append(acclab.root);
     return panelDiv;
   }

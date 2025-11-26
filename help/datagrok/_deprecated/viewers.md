@@ -61,7 +61,7 @@ View class.
 ## Layouts
 
 View Layout contains relative positions of viewers in
-a [table view](../navigation/views/table-view.md), along with the viewers' properties. By separating layouts from the actual
+a [table view](../table-view-1.md), along with the viewers' properties. By separating layouts from the actual
 data displayed, it's possible to save current layout (**View | Layout | Save to Gallery**) and later apply it to a
 different dataset
 (**View | Layout | Open Gallery**). 

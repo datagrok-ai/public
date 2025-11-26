@@ -19,7 +19,7 @@ import {getCategoryWidget} from './fitting/fitting-utils';
 
 import {DiffGrok} from './fitting-view';
 import {GridAnalysis} from './variance-based-analysis/grid-sensitivity-analysis';
-import { getPropViewers } from '../../shared-utils/utils';
+import {getPropViewers} from '../../shared-utils/utils';
 
 const RUN_NAME_COL_LABEL = 'Run name' as const;
 const supportedInputTypes = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATA_FRAME];
@@ -833,7 +833,7 @@ export class SensitivityAnalysisView {
     // switchInputs for inputs
     for (const propName of Object.keys(this.store.inputs)) {
       const inpType = this.store.inputs[propName].prop.propertyType;
-      if (inpType === DG.TYPE.BOOL || inpType === DG.TYPE.STRING)
+      if (inpType !== DG.TYPE.FLOAT)
         continue;
 
       const propConfig = this.store.inputs[propName];
@@ -1013,7 +1013,7 @@ export class SensitivityAnalysisView {
 
         const selectedInput = funcInputs[cell.tableRowIndex ?? 0];
         const funcCall = this.func.prepare(selectedInput);
-        const selectedRun = await funcCall.call();
+        const selectedRun = await funcCall.call(undefined, undefined, {processed: true, report: false});
 
         const scalarParams = ([...selectedRun.outputParams.values()])
           .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
@@ -1172,7 +1172,7 @@ export class SensitivityAnalysisView {
 
         const selectedInput = funcInputs[cell.tableRowIndex ?? 0];
         const funcCall = this.func.prepare(selectedInput);
-        const selectedRun = await funcCall.call();
+        const selectedRun = await funcCall.call(undefined, undefined, {processed: true, report: false});
 
         const scalarParams = ([...selectedRun.outputParams.values()])
           .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));
@@ -1354,7 +1354,7 @@ export class SensitivityAnalysisView {
 
         const selectedInput = funcInputs[cell.tableRowIndex ?? 0];
         const funcCall = this.func.prepare(selectedInput);
-        const selectedRun = await funcCall.call();
+        const selectedRun = await funcCall.call(undefined, undefined, {processed: true, report: false});
 
         const scalarParams = ([...selectedRun.outputParams.values()])
           .filter((param) => DG.TYPES_SCALAR.has(param.property.propertyType));

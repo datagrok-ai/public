@@ -9,6 +9,10 @@ import {HistoricalRunsList} from './history-list';
 import {filter} from 'rxjs/operators';
 
 export class HistoryPanel extends DG.Widget {
+  get type(): string {
+    return 'HistoryPanel';
+  }
+
   // Emitted when FuncCall should is chosen. Contains FuncCall ID
   public onRunChosen = new Subject<string>();
 

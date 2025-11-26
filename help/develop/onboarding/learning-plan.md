@@ -34,7 +34,7 @@ perspective.
 1. Grid:
    1. Read documentation:
       1. [Grid](../../visualize/viewers/grid)
-      1. [Table view](../../datagrok/navigation/views/table-view.md)
+      1. [Table view](../../visualize/table-view-1.md)
    1. Watch a [Viewers and views video](https://www.youtube.com/watch?v=wAfEqAMOZzw&t=588s)
    1. Complete the [Grid](https://dev.datagrok.ai/apps/tutorials/Tutorials/ExploratoryDataAnalysis/GridCustomization)
       tutorial

@@ -1,6 +1,6 @@
 ---
 title: "Oligo Toolkit"
-sidebar_position: 1
+sidebar_position: 3
 ---
 
 The OligoToolkit is a collection of tools helping you to work with oligonucleotide sequences 

@@ -404,8 +404,15 @@ export class FuncCall extends Entity {
 }
 
 export function callFuncWithDartParameters<T>(f: (...params: any[]) => T, params: object, dartResult: boolean): T {
-  let jsParams = paramsToJs(params);
-  if (dartResult)
-    return toDart(f.apply(null, jsParams));
-  return f.apply(null, jsParams);
+  try {
+    let jsParams = paramsToJs(params);
+    if (dartResult)
+      return toDart(f.apply(null, jsParams));
+    return f.apply(null, jsParams);
+  }
+  catch (e) {
+    if (e instanceof Error)
+      console.error(e.stack);
+    throw (e);
+  }
 }

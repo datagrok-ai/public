@@ -26,7 +26,7 @@ table and builds a treemap.
 ## Settings
 
 You can set the hierarchy and customize a treemap viewer. To do that, click the
-**Gear** icon on top of the viewer and use settings on the **Context Pane**. For
+**Gear** icon on top of the viewer and use settings on the **Context Panel**. For
 example, you can:
 
 * **Set tree hierarchy**
@@ -61,5 +61,5 @@ example, you can:
 ## See also
 
 * [Viewers](../viewers/viewers.md)
-* [Table view](../../datagrok/navigation/views/table-view.md)
+* [Table view](../table-view-1.md)
 * [JS API: Tree map](https://public.datagrok.ai/js/samples/ui/viewers/types/tree-map)

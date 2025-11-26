@@ -10,9 +10,8 @@ import {IFuncCallAdapter, IStateStore, MemoryStore} from './FuncCallAdapters';
 import {FuncCallInstancesBridge, RestrictionState} from './FuncCallInstancesBridge';
 import {isPipelineConfig, isPipelineStepConfig, PipelineStepConfigurationProcessed} from '../config/config-utils';
 import {map, mapTo, scan, skip, switchMap, takeUntil, withLatestFrom} from 'rxjs/operators';
-import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {RestrictionType, ValidationResult} from '../data/common-types';
-import {mergeValidationResults} from '../utils';
+import {customDeepEqual, mergeValidationResults} from '../utils';
 
 export const descriptionOutputs = ['title', 'description', 'tags'] as const;
 const descriptionStates = descriptionOutputs.map((id) => ({id}));
@@ -119,6 +118,10 @@ export class FuncCallNode implements IStoreProvider {
 
   changeAdapter(adapter: IFuncCallAdapter, isNew = false) {
     this.instancesWrapper.change(adapter, isNew);
+  }
+
+  setOutdatedStatus(isOutdated: boolean) {
+    this.instancesWrapper.setOutdatedStatus(isOutdated);
   }
 
   setDeps(deps: (readonly [string, Observable<boolean>])[]) {
@@ -287,7 +290,7 @@ export class FuncCallNode implements IStoreProvider {
     else {
       const {assignedValue, type} = restriction;
       const currentVal = this.instancesWrapper.getState(inputName);
-      const inconsistent = !this.deepEq(currentVal, assignedValue);
+      const inconsistent = !customDeepEqual(currentVal, assignedValue);
       return {
         restriction: type,
         inconsistent,
@@ -312,15 +315,6 @@ export class FuncCallNode implements IStoreProvider {
       map((s) => [...s]),
     );
     return pending$;
-  }
-
-  private deepEq(actual: any, expected: any) {
-    try {
-      expectDeepEqual(actual, expected, {maxErrorsReport: 1, floatTolerance: 0.0001, forbidAdditionalProps: true});
-    } catch {
-      return false;
-    }
-    return true;
   }
 }
 
@@ -383,6 +377,7 @@ export class PipelineNodeBase implements IStoreProvider {
       approversGroup: this.config.approversGroup,
       disableHistory: !!this.config.disableHistory,
       customExports: this.config.customExports,
+      forceNavigate: !!this.config.forceNavigate,
     };
     return res;
   }

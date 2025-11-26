@@ -3,10 +3,18 @@
     color: #2083D5;
 }
 
+.query-builder-search-query-operator .fa-trash-alt:hover {
+    color: red;
+}
+
 .query-builder-nested-condition-operators .fa-trash-alt {
     padding: 0px 7px 0px 5px;
-    font-size: 10px !important;
+    font-size: 12px !important;
     margin-top: 2px;
+}
+
+.query-builder-nested-condition-operators .fa-trash-alt:hover {
+    color: red;
 }
 
 .query-builder-search-query-operator .fa-plus {
@@ -87,7 +95,7 @@
 
 .query-builder-filter-inputs .add-delete-icons {
     visibility: hidden;
-    gap: 6px;
+    gap: 10px;
     padding-top: 15px;
 }
 
@@ -170,7 +178,7 @@
 .add-delete-icons {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 10px;
     flex-shrink: 0;
 }
 
@@ -198,6 +206,10 @@
 
 .query-builder-search-query-operator[data-history="false"] .query-builder-history-icon,
 .query-builder-search-query-operator:not([data-history]) .query-builder-history-icon {
-    visibility: visible;
+    visibility: hidden;
+}
+
+.boolean-input .query-builder-filter-operator {
+    display: none;
 }
 

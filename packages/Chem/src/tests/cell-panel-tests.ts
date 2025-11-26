@@ -18,10 +18,9 @@ import * as CONST from './const';
 import {structure2dWidget} from '../widgets/structure2d';
 import {structure3dWidget} from '../widgets/structure3d';
 import {molV2000, molV3000} from './utils';
-import {EMPTY_MOLECULE_MESSAGE} from '../constants';
 import {checkPackage} from '../utils/elemental-analysis-utils';
 import {PackageFunctions} from '../package';
-import {getDescriptorsPy} from '../scripts-api';
+import {calculateDescriptors} from '../docker/api';
 
 const identifiersVals: {[key: string]: string} = {
   'Smiles': 'c1ccc2ccccc2c1',
@@ -236,31 +235,13 @@ category('cell panel', async () => {
   test('chem-descriptors', async () => {
     await ensureContainerRunning('name = "chem-chem"', utils.CONTAINER_TIMEOUT);
     const selesctedDesc = ['FractionCSP3', 'HeavyAtomCount', 'NHOHCount'];
-    let jupyterRunning = false;
-    grok.functions.call('Chem:TestPythonRunning', {x: 1, y: 2}).then(() => {
-      console.log('*********** test python script completed');
-      jupyterRunning = true;
-    });
-    //check that JKG is running
-    await awaitCheck(() => jupyterRunning === true, `JKG env has not been created in 2 minutes`, 120000);
-    console.log('*********** chem-descriptors: started chem descriptors python script');
-    let res: DG.DataFrame | null = null;
-    const t = Date.now();
-    getDescriptorsPy(
-      'smiles', DG.DataFrame.fromCsv(`smiles\n${molStr}`), 'selected',
-      DG.DataFrame.fromColumns([DG.Column.fromList('string', 'selected', selesctedDesc)]),
-    ).then((desc: DG.DataFrame) => {
-      console.log(`*********** chem-descriptors: finished chem descriptors python script in ${Date.now() - t} ms`);
-      res = desc;
-    });
-    await awaitCheck(() => {
-      return res !== null && res.rowCount > 0;
-    }, `descriptors python scripts hasn't finished in 2 minutes`, 120000, 1000);
-    expect(res!.columns.names().length, 3);
-    expect(selesctedDesc.every(((it) => res!.columns.names().includes(it))), true);
-    expect((res!.get('FractionCSP3', 0) as number).toFixed(4), '0.6000');
-    expect(res!.get('HeavyAtomCount', 0), 25);
-    expect(res!.get('NHOHCount', 0), 1);
+    const cols = await calculateDescriptors(DG.Column.fromStrings('smiles', [molStr]), selesctedDesc);
+    expect(cols.length, 3);
+    const colNames = cols.map((it) => it.name);
+    expect(selesctedDesc.every(((it) => colNames.includes(it))), true);
+    expect((cols.filter((it) => it.name === 'FractionCSP3')[0].get(0) as number).toFixed(4), '0.6000');
+    expect(cols.filter((it) => it.name === 'HeavyAtomCount')[0].get(0), 25);
+    expect(cols.filter((it) => it.name === 'NHOHCount')[0]!.get(0), 1);
 
     //check that widget doesn't throw errors
     for (const mol of molFormats)

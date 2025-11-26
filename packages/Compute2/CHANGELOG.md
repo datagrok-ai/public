@@ -1,5 +1,37 @@
 # Compute2 changelog
 
+## 1.3.21 (2025-11-24)
+
+- Show workflow help button in ribbon panel as well
+
+## 1.3.20 (2025-11-20)
+
+- Workflows new buttons-based navigation
+
+## 1.3.19 (2025-10-30)
+
+- Fitting with formulas support
+
+## 1.3.18 (2025-09-11)
+
+- Hisotry and export fixes for workflows
+
+## 1.3.17 (2025-09-09)
+
+- Save focused RFV tab in session storage
+
+## 1.3.16 (2025-09-08)
+
+- Fix funcCall reactive updates edge case
+
+## 1.3.15 (2025-09-05)
+
+- Fix optimizer returned funcCall redraw
+
+## 1.3.14 (2025-09-04)
+
+- Small bug fixes
+
 ## 1.3.13 (2025-08-15)
 
 - Fix DataFrame input viewers updates

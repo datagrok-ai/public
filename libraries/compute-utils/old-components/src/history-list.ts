@@ -23,6 +23,10 @@ dayjs.extend(utc);
 const runCache = new DG.LruCache<string, DG.FuncCall>();
 
 export class HistoricalRunsList extends DG.Widget {
+  get type(): string {
+    return 'HistoricalRunsList';
+  }
+
   private onRunsChanged = new BehaviorSubject<Map<string, DG.FuncCall>>(this.initialRuns.reduce((acc, run) => {
     acc.set(run.id, run);
     return acc;

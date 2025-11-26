@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/sequence-translator",
   "friendlyName": "Sequence Translator",
-  "version": "1.9.10",
+  "version": "1.10.4",
   "author": {
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
@@ -22,10 +22,10 @@
     }
   ],
   "dependencies": {
-    "@datagrok-libraries/bio": "^5.54.7",
+    "@datagrok-libraries/bio": "^5.60.2",
     "@datagrok-libraries/chem-meta": "^1.2.8",
     "@datagrok-libraries/tutorials": "^1.6.1",
-    "@datagrok-libraries/utils": "^4.6.3",
+    "@datagrok-libraries/utils": "^4.6.5",
     "@types/react": "^18.0.15",
     "cash-dom": "^8.1.0",
     "datagrok-api": "^1.25.0",
@@ -39,9 +39,9 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@datagrok-libraries/helm-web-editor": "^1.1.13",
+    "@datagrok-libraries/helm-web-editor": "^1.1.16",
     "@datagrok-libraries/js-draw-lite": "^0.0.10",
-    "@datagrok/bio": "^2.18.0",
+    "@datagrok/bio": "^2.24.0",
     "@datagrok/chem": "^1.13.0",
     "@datagrok/helm": "^2.7.0",
     "@types/jquery": "^3.5.32",
@@ -54,7 +54,7 @@
     "@typescript-eslint/eslint-plugin": "^7.2.0",
     "@typescript-eslint/parser": "^7.2.0",
     "css-loader": "^6.7.3",
-    "datagrok-tools": "^4.14.48",
+    "datagrok-tools": "^4.14.55",
     "eslint": "^8.57.0",
     "eslint-config-google": "^0.14.0",
     "style-loader": "^3.3.1",
