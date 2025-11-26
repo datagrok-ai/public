@@ -25,7 +25,7 @@ import {useViewersHook} from '../../composables/use-viewers-hook';
 import {startWith, take, map} from 'rxjs/operators';
 import {useHelp} from '../../composables/use-help';
 import {useObservable} from '@vueuse/rxjs';
-import {getIvp2WebWorker, getPipelineCreator} from '@datagrok/diff-grok';
+import {getIvp2WebWorker, getPipelineCreator} from 'diff-grok';
 import {_package} from '../../package-instance';
 
 interface ScalarsState {
