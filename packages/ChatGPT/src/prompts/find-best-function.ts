@@ -1,5 +1,6 @@
 /* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ChatGPTPromptEngine, GeminiPromptEngine, PromptEngine} from '../prompt-engine/prompt-engine';
 import {modelName} from '../package';
@@ -40,12 +41,23 @@ export async function findBestFunction(
     confidence: 'number',
   };
 
+  const connections = searchPatterns.map((pattern) => {
+    const func = DG.Func.find({meta: {searchPattern: pattern}})[0];
+    if (!func || !(func instanceof DG.DataQuery) || !func.query)
+      return 'unknown';
+    const connLine = func.query.split('\n').find((line) => line.startsWith('--connection:'));
+    return connLine ? connLine.replace('--connection:', '').trim() : 'unknown';
+  });
+
   const systemPrompt = `
 You are an intelligent semantic query matcher. Your job is to find which query search pattern best matches a user's request.
+
+IMPORTANT: pay careful attention to the keywords in description and search pattern and also the connection. DO NOT ARTIFICIALLY INFLATE CONFIDENCE.
 
 Follow these steps carefully:
 STEP 1 — Identify the most relevant structured query:
   - Find the query whose intent best matches the user's request semantically, even if the phrasing or order differs.
+  - Prioritize matches if the name of the connection (except unknown) aligns with user's prompt, otherwise lower the confidence!
   - Compare using meaning, not just keywords.
   - If several are close, choose the one with the most specific match.
 
@@ -65,7 +77,7 @@ Important instructions:
 
   const userPrompt = `
 Available search patterns:
-${searchPatterns.map((p, i) => `${i + 1}. ${descriptions[i]} \n pattern: ${p} \n`).join('\n')}
+${searchPatterns.map((p, i) => `${i + 1}. \n description: ${descriptions[i] || 'Empty'} \n Connection: ${connections[i]} \n pattern: ${p} \n`).join('\n')}
 
 User request:
 "${question}"
@@ -89,4 +101,43 @@ User request:
     _package.logger.error(`Error finding best function: ${error}`);
     return null;
   }
+}
+
+export async function tableQueriesFunctionsSearchLlm(s: string): Promise<DG.Widget> {
+  const tvWidgeFunc = DG.Func.find({name: 'getFuncTableViewWidget'})[0];
+  if (!tvWidgeFunc)
+    return DG.Widget.fromRoot(ui.divText('Power Pack plugin not installed'));
+  const tableQueriesSearchFunctions = DG.Func.find({meta: {searchPattern: null}, returnType: 'dataframe'})
+    .filter((f) => f.options['searchPattern']);
+
+  const searchPatterns = tableQueriesSearchFunctions.map((f) => f.options['searchPattern']);
+  const descriptions = tableQueriesSearchFunctions.map((f) => f.description ?? 'No description');
+  try {
+    const matches = JSON.parse(await grok.functions
+      .call('ChatGPT:fuzzyMatch', {prompt: s, searchPatterns, descriptions}));
+    if (matches && matches.searchPattern && matches.parameters) {
+      const sf = tableQueriesSearchFunctions.find((f) => {
+        const pattern: string = removeTrailingQuotes(f.options['searchPattern']) ?? '';
+        return pattern === matches.searchPattern;
+      });
+
+      if (sf) {
+        const widget = await tvWidgeFunc.apply({func: sf, inputParams: matches.parameters});
+        return widget;
+      }
+    }
+  } catch (error) {
+    console.error('Error calling ChatGPT:fuzzyMatch', error);
+    return DG.Widget.fromRoot(ui.divText(`Error during AI-powered table query search. Check console for details.`));
+  }
+  return DG.Widget.fromRoot(ui.divText('No matching query found via AI'));
+}
+
+function removeTrailingQuotes(s: string): string {
+  let ms = s;
+  if (s.startsWith('"') || s.startsWith('\''))
+    ms = ms.substring(1);
+  if (s.endsWith('"') || s.endsWith('\''))
+    ms = ms.substring(0, ms.length - 1);
+  return ms;
 }

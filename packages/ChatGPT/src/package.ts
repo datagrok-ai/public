@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {ChatGptAssistant} from './prompt-engine/chatgpt-assistant';
 import {ChatGPTPromptEngine} from './prompt-engine/prompt-engine';
 import {getAiPanelVisibility, initAiPanel, setAiPanelVisibility} from './ai-panel';
-import {findBestFunction} from './prompts/find-best-function';
+import {findBestFunction, tableQueriesFunctionsSearchLlm} from './prompts/find-best-function';
 import {askWiki, setupSearchUI, smartExecution} from './llm-utils/ui';
 import {Plan} from './prompt-engine/interfaces';
 import {OpenAIHelpClient} from './llm-utils/openAI-client';
@@ -48,9 +48,8 @@ export class PackageFunctions {
           setAiPanelVisibility(!isVisible);
         }
       });
-    }
-    catch (e) {
-      console.log('AI autostart failed.')
+    } catch (e) {
+      console.log('AI autostart failed.');
       console.log(e);
     }
   }
@@ -93,22 +92,31 @@ export class PackageFunctions {
     return await smartExecution(prompt, modelName);
   }
 
+  @grok.decorators.func({meta: {
+    role: 'aiSearchProvider',
+    useWhen: 'if the prompt suggest that the user is looking for a data table result and the prompt resembles a query pattern. for example, "bioactivity data for shigella" or "compounds similar to aspirin" or first 100 chembl compounds. there should be some parts of user prompt that could match parameters in some query, like shigella, aspirin, first 100 etc.'
+  }, name: 'Query',
+  description: 'Tries to find a query which has the similar pattern as the prompt user entered and executes it', result: {type: 'widget', name: 'result'}})
+ static async llmSearchQueryProvider(@grok.decorators.param({type: 'string'})prompt: string): Promise<DG.Widget | null> {
+   return await tableQueriesFunctionsSearchLlm(prompt);
+ }
+
   @grok.decorators.func({
     'meta': {
       'cache': 'all',
       'cache.invalidateOn': '0 0 1 * *'
     }
   })
- static async askAIGeneralCached(
-   model: string,
-   systemPrompt: string,
-   prompt: string,
-   schema?: JsonSchema
- ): Promise<string> {
-   const client = OpenAIHelpClient.getInstance();
-   // this is used only here to provide caching
-   return await client.generalPrompt(model, systemPrompt, prompt, schema);
- }
+  static async askAIGeneralCached(
+    model: string,
+    systemPrompt: string,
+    prompt: string,
+    schema?: JsonSchema
+  ): Promise<string> {
+    const client = OpenAIHelpClient.getInstance();
+    // this is used only here to provide caching
+    return await client.generalPrompt(model, systemPrompt, prompt, schema);
+  }
 
   @grok.decorators.func({
     'meta': {

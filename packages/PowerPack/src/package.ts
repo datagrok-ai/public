@@ -18,7 +18,7 @@ import {KpiWidget} from './widgets/kpi-widget';
 import {HtmlWidget} from './widgets/html-widget';
 import {viewersDialog} from './viewers-gallery';
 import {windowsManagerPanel} from './windows-manager';
-import {tableQueriesFunctionsSearchLlm, initSearch} from './search/power-search';
+import {initSearch, createFuncTableViewWidget} from './search/power-search';
 import {newUsersSearch, registerDGUserHandler} from './dg-db';
 import {merge} from 'rxjs';
 import {HelpObjectHandler} from './search/help-entity';
@@ -192,13 +192,9 @@ export class PackageFunctions {
     return widget;
   }
 
-  @grok.decorators.func({meta: {
-    role: 'aiSearchProvider',
-    useWhen: 'if the prompt suggest that the user is looking for a data table result and the prompt resembles a query pattern. for example, "bioactivity data for shigella" or "compounds similar to aspirin" or first 100 chembl compounds. there should be some parts of user prompt that could match parameters in some query, like shigella, aspirin, first 100 etc.'
-  }, name: 'Query',
-  description: 'Tries to find a query which has the similar pattern as the prompt user entered and executes it', result: {type: 'widget', name: 'result'}})
-  static async llmSearchQueryProvider(@grok.decorators.param({type: 'string'})prompt: string): Promise<DG.Widget | null> {
-    return await tableQueriesFunctionsSearchLlm(prompt);
+  @grok.decorators.func({})
+  static getFuncTableViewWidget(func: DG.Func, inputParams: Record<string, any>): DG.Widget {
+    return DG.Widget.fromRoot(createFuncTableViewWidget(func, inputParams));
   }
 
   @grok.decorators.func({tags: ['searchProvider']})

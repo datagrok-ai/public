@@ -308,31 +308,6 @@ function removeTrailingQuotes(s: string): string {
   return ms;
 }
 
-export async function tableQueriesFunctionsSearchLlm(s: string): Promise<DG.Widget> {
-  const searchPatterns = tableQueriesSearchFunctions.map((f) => f.options['searchPattern']);
-  const descriptions = tableQueriesSearchFunctions.map((f) => f.description ?? 'No description');
-  try {
-    const matches = JSON.parse(await grok.functions
-      .call('ChatGPT:fuzzyMatch', {prompt: s, searchPatterns, descriptions}));
-    if (matches && matches.searchPattern && matches.parameters) {
-      const sf = tableQueriesSearchFunctions.find((f) => {
-        const pattern: string = removeTrailingQuotes(f.options['searchPattern']) ?? '';
-        return pattern === matches.searchPattern;
-      });
-
-      if (sf) {
-        const widget = createOutWidget(sf, matches.parameters);
-        widget.root.style.minHeight = '500px';
-        return DG.Widget.fromRoot(widgetHost(widget));
-      }
-    }
-  } catch (error) {
-    console.error('Error calling ChatGPT:fuzzyMatch', error);
-    return DG.Widget.fromRoot(ui.divText(`Error during AI-powered table query search. Check console for details.`));
-  }
-  return DG.Widget.fromRoot(ui.divText('No matching query found via AI'));
-}
-
 function tableQueriesFunctionsSearch(s: string, host: HTMLDivElement): void {
   for (const sf of tableQueriesSearchFunctions) {
     const matchStrings: string[] = (sf.options['searchPattern'] ?? '').split(',').map((s: string) => s.trim())
@@ -346,20 +321,20 @@ function tableQueriesFunctionsSearch(s: string, host: HTMLDivElement): void {
         continue;
       if (inputNames.length !== Object.entries(matches).length)
         continue;
-      const inputParams: any = {};
+      const inputParams: Record<string, any> = {};
       if (Object.values(matches).some((v) => !v || v.startsWith('${') || v.endsWith('}')))
         continue;
       Object.entries(matches).forEach(([key, value]) => {
         inputParams[key] = value;
       });
 
-      const outWidget = createOutWidget(sf, inputParams);
-      host.appendChild(widgetHost(outWidget));
+      const outWidget = createFuncTableViewWidget(sf, inputParams);
+      host.appendChild(outWidget);
     }
   }
 }
 
-function createOutWidget(sf: any, inputParams: any): DG.Widget {
+export function createFuncTableViewWidget(sf: DG.Func, inputParams: Record<string, any>): HTMLElement {
   const outWidget = DG.Widget.fromRoot(ui.wait(async () => {
     try {
       const fc = sf.prepare(inputParams);
@@ -386,7 +361,8 @@ function createOutWidget(sf: any, inputParams: any): DG.Widget {
   }));
   outWidget.addProperty('caption', DG.TYPE.STRING, sf.friendlyName ?? sf.name);
   outWidget.props.caption = sf.friendlyName ?? sf.name;
-  return outWidget;
+  outWidget.root.style.minHeight = '500px';
+  return widgetHost(outWidget);
 }
 
 /// Special widgets
