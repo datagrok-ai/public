@@ -5,7 +5,7 @@ import {LLMCredsManager} from './creds';
 import {ChatCompletionParseParams} from 'openai/resources/chat/completions';
 import {JsonSchema} from '../prompt-engine/interfaces';
 export class OpenAIHelpClient {
-  private openai: OpenAI;
+  public openai: OpenAI;
   private constructor(private apiKey: string, private vectorStoreId: string) {
     this.openai = new OpenAI({
       apiKey: this.apiKey, dangerouslyAllowBrowser: true

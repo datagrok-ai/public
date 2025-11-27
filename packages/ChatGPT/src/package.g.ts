@@ -47,6 +47,16 @@ export async function llmSearchQueryProvider(prompt: string) : Promise<any> {
   return await PackageFunctions.llmSearchQueryProvider(prompt);
 }
 
+//name: ChEMBL MCP
+//description: Executes a ChEMBL MCP tool through the LLM.
+//input: string prompt 
+//output: widget result
+//meta.role: aiSearchProvider
+//meta.useWhen: Use when the user asks for ChEMBL compound, target, or bioactivity information.
+export async function llmChemblMcpTools(prompt: string) : Promise<any> {
+  return await PackageFunctions.llmChemblMcpTools(prompt);
+}
+
 //input: string model 
 //input: string systemPrompt 
 //input: string prompt 

@@ -41,6 +41,13 @@ export namespace funcs {
     return await grok.functions.call('ChatGPT:LlmSearchQueryProvider', { prompt });
   }
 
+  /**
+  Executes a ChEMBL MCP tool through the LLM.
+  */
+  export async function llmChemblMcpTools(prompt: string ): Promise<any> {
+    return await grok.functions.call('ChatGPT:LlmChemblMcpTools', { prompt });
+  }
+
   export async function askAIGeneralCached(model: string , systemPrompt: string , prompt: string , schema: any ): Promise<string> {
     return await grok.functions.call('ChatGPT:AskAIGeneralCached', { model, systemPrompt, prompt, schema });
   }

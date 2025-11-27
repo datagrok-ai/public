@@ -102,6 +102,78 @@ export class PackageFunctions {
  }
 
   @grok.decorators.func({
+    meta: {
+      role: 'aiSearchProvider',
+      useWhen: 'Use when the user asks for ChEMBL compound, target, or bioactivity information.',
+    },
+    name: 'ChEMBL MCP',
+    description: 'Executes a ChEMBL MCP tool through the LLM.',
+    result: {type: 'widget', name: 'result'}
+  })
+  static async llmChemblMcpTools(
+  @grok.decorators.param({type: 'string'}) prompt: string
+  ): Promise<DG.Widget | null> {
+    const openaiClient = OpenAIHelpClient.getInstance();
+
+    const response = await openaiClient.openai.responses.create({
+      model: 'gpt-4o',
+      instructions: `
+You may call at most ONE ChEMBL MCP tool.
+Use the single most relevant tool or respond normally if none is needed.
+`,
+      input: prompt,
+      tools: [
+        {
+          type: 'mcp',
+          server_label: 'proxy-server',
+          server_description: 'Chembl tools',
+          server_url: 'https://nonethereally-branchlike-mickey.ngrok-free.dev/mcp',
+          require_approval: 'never',
+        },
+      ],
+    });
+
+    let calledTool: string | null = null;
+    let toolArgs: any = null;
+    let toolOutput: any = null;
+
+    for (const block of response.output ?? []) {
+      if (block.type === 'mcp_call') {
+        calledTool = block.name ?? null;
+        toolArgs = block.arguments ?? null;
+        toolOutput = block.output ?? null;
+      }
+    }
+
+    const root = ui.divV([], {style: {padding: '12px'}});
+
+    root.append(ui.h3('MCP Tool Call'));
+
+    root.append(ui.divText(`Tool: ${calledTool ?? 'None'}`));
+
+    if (toolArgs)
+      root.append(ui.divText(`Arguments:\n${JSON.stringify(toolArgs, null, 2)}`));
+
+    if (toolOutput) {
+      const parsed = JSON.parse(toolOutput);
+      const text = parsed[0]['text'];
+      const prettyJson = JSON.stringify(JSON.parse(text), null, 2);
+
+      const pre = document.createElement('pre');
+      pre.textContent = prettyJson;
+      pre.style.backgroundColor = '#f5f5f5';
+      pre.style.padding = '10px';
+      pre.style.borderRadius = '4px';
+      pre.style.overflowX = 'auto';
+
+      root.appendChild(pre);
+    }
+
+    return new DG.Widget(root);
+  }
+
+
+  @grok.decorators.func({
     'meta': {
       'cache': 'all',
       'cache.invalidateOn': '0 0 1 * *'
