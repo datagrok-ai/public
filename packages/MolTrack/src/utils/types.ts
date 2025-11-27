@@ -1,5 +1,5 @@
-import { ComplexCondition, Operators } from '@datagrok-libraries/utils/src/query-builder/query-builder';
-import { Scope } from './constants';
+import {ComplexCondition, Operators} from '@datagrok-libraries/utils/src/query-builder/query-builder';
+import {Scope} from './constants';
 import * as DG from 'datagrok-api/dg';
 
 /* eslint-disable no-unused-vars */

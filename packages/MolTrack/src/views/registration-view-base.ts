@@ -3,8 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import { MolTrackProp } from '../utils/constants';
-import { buildPropertyOptions } from '../utils/utils';
+import {MolTrackProp} from '../utils/constants';
+import {buildPropertyOptions} from '../utils/utils';
 
 let openedView: DG.ViewBase | null = null;
 
@@ -120,7 +120,7 @@ export abstract class RegistrationViewBase {
     accPane.expanded = initiallyOpen;
     const section = accPane.root;
 
-    return { section, inputs, formBackingObject };
+    return {section, inputs, formBackingObject};
   }
 
   show() {

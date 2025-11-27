@@ -3,9 +3,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import { MolTrackProp } from '../utils/constants';
-import { fetchSchema, registerAssays } from '../package';
-import { RegistrationViewBase } from './registration-view-base';
+import {MolTrackProp} from '../utils/constants';
+import {fetchSchema, registerAssays} from '../package';
+import {RegistrationViewBase} from './registration-view-base';
 
 export class AssayRegistrationView extends RegistrationViewBase {
   assayInputs: DG.InputBase[] = [];
@@ -33,7 +33,7 @@ export class AssayRegistrationView extends RegistrationViewBase {
 
     try {
       const response = await registerAssays(JSON.stringify([assayValues]));
-      const { status } = JSON.parse(response);
+      const {status} = JSON.parse(response);
       this.showRegistrationMessage(status, assayValues.name);
     } catch (err) {
       this.showRegistrationMessage('error', (err as Error).message);
@@ -61,7 +61,7 @@ export class AssayRegistrationView extends RegistrationViewBase {
     let props = parsed.filter((p: any) => p.entity_type === entityType);
 
     if (options?.overrideValueType)
-      props = props.map((p: any) => ({ ...p, value_type: options.overrideValueType }));
+      props = props.map((p: any) => ({...p, value_type: options.overrideValueType}));
 
     if (options?.append)
       props = [...options.append, ...props];
@@ -70,11 +70,11 @@ export class AssayRegistrationView extends RegistrationViewBase {
   }
 
   private async fetchAssayProperties(): Promise<MolTrackProp[]> {
-    return this.fetchProperties('ASSAY', { append: [{ name: 'name', value_type: 'string', nullable: false }] });
+    return this.fetchProperties('ASSAY', {append: [{name: 'name', value_type: 'string', nullable: false}]});
   }
 
   private async fetchAssayResultProperties(): Promise<MolTrackProp[]> {
-    return this.fetchProperties('ASSAY_RESULT', { overrideValueType: 'bool' });
+    return this.fetchProperties('ASSAY_RESULT', {overrideValueType: 'bool'});
   }
 
   private names(columns: DG.Column[]): string[] {
@@ -91,7 +91,7 @@ export class AssayRegistrationView extends RegistrationViewBase {
       this.fetchAssayResultProperties(),
     ]);
 
-    const { section: assaySection, inputs, formBackingObject } = await this.createPropertySection(
+    const {section: assaySection, inputs, formBackingObject} = await this.createPropertySection(
       'Assay properties',
       async () => assayProps,
       this.convertToDGProperty.bind(this),
@@ -104,7 +104,7 @@ export class AssayRegistrationView extends RegistrationViewBase {
       },
     );
     this.assayInputs = inputs;
-    this.formBackingObject = { ...formBackingObject };
+    this.formBackingObject = {...formBackingObject};
 
     const df = DG.DataFrame.fromColumns(
       assayResultProps.map((p) => DG.Column.fromStrings(p.name, [p.name])),
