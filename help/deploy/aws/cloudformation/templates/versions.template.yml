@@ -1,10 +1,10 @@
----
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
+
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: "Service version"
+          default: Service version
         Parameters:
           - DatagrokVersion
           - GrokConnectVersion
@@ -13,52 +13,59 @@ Metadata:
           - GrokSpawnerVersion
           - JKGVersion
       - Label:
-          default: "Advanced"
+          default: Advanced
         Parameters:
           - Postfix
     ParameterLabels:
       DatagrokVersion:
-        default: 'Datagrok Version'
+        default: Datagrok Version
       GrokConnectVersion:
-        default: 'Grok Connect Version'
+        default: Grok Connect Version
       GrokPipeVersion:
-        default: 'Grok Pipe Version'
+        default: Grok Pipe Version
       RabbitmqVersion:
-        default: 'RabbitMQ Version'
+        default: RabbitMQ Version
       GrokSpawnerVersion:
-        default: 'Grok Spawner Version'
+        default: Grok Spawner Version
       JKGVersion:
-        default: 'Jupyter Kernel Gateway Version'
+        default: Jupyter Kernel Gateway Version
+
 Parameters:
   DatagrokVersion:
+    Description: Enter Datagrok docker image version.
     Type: String
     Default: 1.26.5
-    AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|stable|bleeding-edge"
-    Description: Enter Datagrok docker image version.
+    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|stable|bleeding-edge
+
   GrokConnectVersion:
+    Description: Enter Grok Connect docker image version.
     Type: String
     Default: 2.5.2
-    AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|bleeding-edge"
-    Description: Enter Grok Connect docker image version.
+    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
+
   GrokPipeVersion:
+    Description: Enter Grok Pipe docker image version.
     Type: String
     Default: 1.0.1
-    AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|bleeding-edge"
-    Description: Enter Grok Pipe docker image version.
+    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
+
   RabbitmqVersion:
+    Description: Enter rabbitmq docker image version.
     Type: String
     Default: 4.0.5-management
-    Description: Enter rabbitmq docker image version.
+
   GrokSpawnerVersion:
+    Description: Enter Grok Spawner docker image version.
     Type: String
     Default: 1.11.4
-    AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|bleeding-edge"
-    Description: Enter Grok Spawner docker image version.
+    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
+
   JKGVersion:
+    Description: Enter Datagrok Jupyter Kernel Gateway docker image version.
     Type: String
     Default: 1.16.2
-    AllowedPattern: "([0-9]+\\.[0-9]+\\.[0-9]+)|latest|bleeding-edge"
-    Description: Enter Datagrok Jupyter Kernel Gateway docker image version.
+    AllowedPattern: ([0-9]+\.[0-9]+\.[0-9]+)|latest|bleeding-edge
+
   Postfix:
-    Type: String
     Description: URL postfix for backward compatibility. Leave blank for new installations
+    Type: String

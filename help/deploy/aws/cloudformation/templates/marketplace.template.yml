@@ -1,35 +1,34 @@
----
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
+
 Mappings:
   Images:
     Datagrok:
-      domain: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
-      repo: "datagrok/datagrok"
+      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      repo: datagrok/datagrok
     GrokConnect:
-      domain: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
-      repo: "datagrok/grok_connect"
+      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      repo: datagrok/grok_connect
     GrokPipe:
-      domain: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
-      repo: "datagrok/grok_pipe"
+      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      repo: datagrok/grok_pipe
     Rabbitmq:
-      domain: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
-      repo: "datagrok/rabbitmq"
+      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      repo: datagrok/rabbitmq
     GrokSpawner:
-      domain: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
-      repo: "datagrok/grok_spawner"
+      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      repo: datagrok/grok_spawner
     JKG:
-      domain: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
-      repo: "datagrok/jupyter_kernel_gateway"
-
+      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      repo: datagrok/jupyter_kernel_gateway
     Kaniko:
-      domain: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
-      repo: "datagrok/kaniko"
-      version: "v1.12.1"
+      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      repo: datagrok/kaniko
+      version: v1.12.1
     Searchdomain:
-      domain: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
-      repo: "datagrok/ecs-searchdomain-sidecar"
+      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      repo: datagrok/ecs-searchdomain-sidecar
       version: "1.0"
     Smtp:
-      domain: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
-      repo: "datagrok/smtp"
-      version: "1.0.0"
+      domain: 709825985650.dkr.ecr.us-east-1.amazonaws.com
+      repo: datagrok/smtp
+      version: 1.0.0

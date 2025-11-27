@@ -1,30 +1,35 @@
----
-AWSTemplateFormatVersion: '2010-09-09'
-Description: "Datagrok template to deploy all components to ECS Fargate. Template also creates ACM and DNS records."
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: Datagrok template to deploy all components to ECS Fargate. Template also creates ACM and DNS records.
+
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: "Client Endpoint configuration"
+          default: Client Endpoint configuration
         Parameters:
           - DNSZoneId
           - DNSDomain
     ParameterLabels:
       DNSZoneId:
-        default: "DNSZoneId: AWS Route53 Hosted Zone ID"
+        default: 'DNSZoneId: AWS Route53 Hosted Zone ID'
       DNSDomain:
-        default: "DNSDomain: DNS domain"
+        default: 'DNSDomain: DNS domain'
+
 Parameters:
   DNSZoneId:
-    Type: AWS::Route53::HostedZone::Id
     Description: Select existing Route53 Hosted Zone ID for Datagrok endpoint.
+    Type: AWS::Route53::HostedZone::Id
+
   DNSDomain:
+    Description: Specify DNS domain for Datagrok endpoint. The domain should be based on hosted zone name for specified DNSZoneId. For example, if you specified DNSZoneId XXXXXX, which has name domain.com, then for DNSDomain you can use either 'subdomain.domain.com' or 'domain.com'. The result endpoint will be 'StackName.subdomain.domain.com'.
     Type: String
     MinLength: 3
-    Description: Specify DNS domain for Datagrok endpoint. The domain should be based on hosted zone name for specified DNSZoneId. For example, if you specified DNSZoneId XXXXXX, which has name domain.com, then for DNSDomain you can use either 'subdomain.domain.com' or 'domain.com'. The result endpoint will be 'StackName.subdomain.domain.com'.
+
   Postfix:
-    Type: String
     Description: URL postfix for backward compatibility. Leave blank for new installations
+    Type: String
+
 #Conditions:
 #  CreateDNS:
 #    Fn::And:
@@ -49,65 +54,48 @@ Parameters:
 Resources:
   DatagrokDNS:
     Type: AWS::Route53::RecordSet
+
     #    Condition: CreateDNS
     Properties:
       Type: A
       AliasTarget:
-        HostedZoneId:
-          Fn::GetAtt:
-            - DatagrokLoadBalancer
-            - CanonicalHostedZoneID
-        DNSName:
-          Fn::GetAtt:
-            - DatagrokLoadBalancer
-            - DNSName
-      Comment:
-        Fn::Sub: "${AWS::StackName} Public Datagrok DNS"
-      HostedZoneId:
-        Ref: DNSZoneId
-      Name:
-        Fn::Sub:
-          - "${AWS::StackName}${postfix}.${domain}."
-          - postfix:
-              Ref: Postfix
-            domain:
-              Ref: DNSDomain
+        HostedZoneId: !GetAtt DatagrokLoadBalancer.CanonicalHostedZoneID
+        DNSName: !GetAtt DatagrokLoadBalancer.DNSName
+      Comment: !Sub ${AWS::StackName} Public Datagrok DNS
+      HostedZoneId: !Ref DNSZoneId
+      Name: !Sub
+        - ${AWS::StackName}${postfix}.${domain}.
+        - postfix: !Ref Postfix
+          domain: !Ref DNSDomain
+
   DatagrokArnSSLCertificate:
     Type: AWS::CertificateManager::Certificate
+
     #    Condition: CreateSSL
     Properties:
-      DomainName:
-        Fn::Sub:
-          - "${AWS::StackName}${postfix}.${domain}"
-          - domain:
-              Ref: DNSDomain
-            postfix:
-              Ref: Postfix
+      DomainName: !Sub
+        - ${AWS::StackName}${postfix}.${domain}
+        - domain: !Ref DNSDomain
+          postfix: !Ref Postfix
       DomainValidationOptions:
-        - DomainName:
-            Fn::Sub:
-              - "${AWS::StackName}${postfix}.${domain}"
-              - postfix:
-                  Ref: Postfix
-                domain:
-                  Ref: DNSDomain
-          HostedZoneId:
-            Ref: DNSZoneId
-
+        - DomainName: !Sub
+            - ${AWS::StackName}${postfix}.${domain}
+            - postfix: !Ref Postfix
+              domain: !Ref DNSDomain
+          HostedZoneId: !Ref DNSZoneId
       KeyAlgorithm: RSA_2048
       Tags:
         - Key: Name
-          Value:
-            Fn::Sub:
-              - "${AWS::StackName}${postfix}"
-              - postfix:
-                  Ref: Postfix
+          Value: !Sub
+            - ${AWS::StackName}${postfix}
+            - postfix: !Ref Postfix
       ValidationMethod: DNS
+
   DatagrokR53CleanupLambdaRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
@@ -116,31 +104,27 @@ Resources:
             Action:
               - sts:AssumeRole
       Policies:
-        - PolicyName:
-            Fn::Sub: "${AWS::StackName}-r53-lambda"
+        - PolicyName: !Sub ${AWS::StackName}-r53-lambda
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
-                  - 'logs:CreateLogStream'
-                  - 'logs:PutLogEvents'
-                Resource:
-                  Fn::Sub: "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-R53CleanupLambdaFunction-*:*"
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-R53CleanupLambdaFunction-*:*
               - Effect: Allow
                 Action:
-                  - 'acm:DescribeCertificate'
-                Resource:
-                  Ref: DatagrokArnSSLCertificate
+                  - acm:DescribeCertificate
+                Resource: !Ref DatagrokArnSSLCertificate
               - Effect: Allow
                 Action:
-                  - 'route53:ListResourceRecordSets'
-                  - 'route53:ChangeResourceRecordSets'
-                Resource:
-                  Fn::Sub:
-                    - "arn:${AWS::Partition}:route53:::hostedzone/${zone}"
-                    - zone:
-                        Ref: DNSZoneId
+                  - route53:ListResourceRecordSets
+                  - route53:ChangeResourceRecordSets
+                Resource: !Sub
+                  - arn:${AWS::Partition}:route53:::hostedzone/${zone}
+                  - zone: !Ref DNSZoneId
+
   DatagrokR53CleanupLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -187,38 +171,30 @@ Resources:
                   cfnresponse.send(event, context, cfnresponse.FAILED, responseData)
       Handler: index.handler
       Runtime: python3.10
-      Role:
-        Fn::GetAtt:
-          - DatagrokR53CleanupLambdaRole
-          - Arn
+      Role: !GetAtt DatagrokR53CleanupLambdaRole.Arn
       MemorySize: 128
       Timeout: 600
+
   DatagrokR53CleanupLambdaFunctionLogGroup:
-    Type: AWS::Logs::LogGroup
-    UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName:
-        Fn::Sub:
-          - "/aws/lambda/${function_name}"
-          - function_name:
-              Ref: DatagrokR53CleanupLambdaFunction
+      LogGroupName: !Sub
+        - /aws/lambda/${function_name}
+        - function_name: !Ref DatagrokR53CleanupLambdaFunction
       RetentionInDays: 1
+
   DatagrokR53Cleanup:
     Type: AWS::CloudFormation::CustomResource
     DependsOn:
       - DatagrokR53CleanupLambdaFunctionLogGroup
     Properties:
-      SSLCertificate:
-        Ref: DatagrokArnSSLCertificate
-      DNSZone:
-        Ref: DNSZoneId
-      ServiceToken:
-        Fn::GetAtt:
-          - DatagrokR53CleanupLambdaFunction
-          - Arn
+      SSLCertificate: !Ref DatagrokArnSSLCertificate
+      DNSZone: !Ref DNSZoneId
+      ServiceToken: !GetAtt DatagrokR53CleanupLambdaFunction.Arn
+
 Outputs:
   DatagrokEndpoint:
     Description: Datagrok endpoint
-    Value:
-      Ref: DatagrokDNS
+    Value: !Ref DatagrokDNS

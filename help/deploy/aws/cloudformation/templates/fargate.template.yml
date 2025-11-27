@@ -1,665 +1,578 @@
 #file: noinspection YAMLIncompatibleTypes
----
-AWSTemplateFormatVersion: '2010-09-09'
-Description: "Datagrok template to deploy all components to ECS Fargate"
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: Datagrok template to deploy all components to ECS Fargate
+
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: "Access configuration"
+          default: Access configuration
         Parameters:
           - InternetSubnetAllow
           - InternetSubnetAllow2
           - InternetSubnetAllow3
       - Label:
-          default: "GPU configuration"
+          default: GPU configuration
         Parameters:
           - GpuRequired
           - GpuAMI
           - GpuInstanceType
     ParameterLabels:
       InternetSubnetAllow:
-        default: "InternetSubnetAllow: Allow connect from CIDR"
+        default: 'InternetSubnetAllow: Allow connect from CIDR'
       InternetSubnetAllow2:
-        default: "InternetSubnetAllow2: Allow connect from additional CIDR (Optional)"
+        default: 'InternetSubnetAllow2: Allow connect from additional CIDR (Optional)'
       InternetSubnetAllow3:
-        default: "InternetSubnetAllow3: Allow connect from additional CIDR (Optional)"
+        default: 'InternetSubnetAllow3: Allow connect from additional CIDR (Optional)'
       GpuRequired:
-        default: "GPU required"
+        default: GPU required
       GpuAMI:
-        default: "GPU AMI"
+        default: GPU AMI
       GpuInstanceType:
-        default: "GPU Instance Type"
+        default: GPU Instance Type
+
 Parameters:
   InternetSubnetAllow:
-    Type: String
-    AllowedPattern: "[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/[0-9]+"
     Description: Subnet for access to Datagrok endpoint. Set CIDR to 0.0.0.0/0 to allow all IP addresses access, or another CIDR range.
+    Type: String
+    AllowedPattern: '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+'
+
   InternetSubnetAllow2:
-    Type: String
-    AllowedPattern: "(^$)|([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/[0-9]+)"
-    Default: ""
     Description: Additional subnet for access to Datagrok endpoint. You can omit this parameter is already specified InternetSubnetAllow.
+    Type: String
+    Default: ""
+    AllowedPattern: (^$)|([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+)
+
   InternetSubnetAllow3:
+    Description: Additional subnet for access to Datagrok endpoint. You can omit this parameter is already specified InternetSubnetAllow.
     Type: String
     Default: ""
-    AllowedPattern: "(^$)|([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+/[0-9]+)"
-    Description: Additional subnet for access to Datagrok endpoint. You can omit this parameter is already specified InternetSubnetAllow.
+    AllowedPattern: (^$)|([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+)
+
   Postfix:
-    Type: String
     Description: URL postfix for backward compatibility. Leave blank for new installations
-  GpuRequired:
     Type: String
-    Default: 'false'
+
+  GpuRequired:
+    Description: Set to true if you want to run GPU workloads.
+    Type: String
     AllowedValues:
-      - 'true'
-      - 'false'
-    Description: "Set to true if you want to run GPU workloads."
+      - "true"
+      - "false"
+    Default: "false"
+
   GpuAMI:
-    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
-    Default: '/aws/service/ecs/optimized-ami/amazon-linux-2/gpu/amzn2-ami-ecs-gpu-hvm-2.0.20241017-x86_64-ebs/image_id'
-    Description: "The AMI ID for the GPU instance. Check https://docs.aws.amazon.com/AmazonECS/latest/developerguide/retrieve-ecs-optimized_AMI.html for options"
+    Description: The AMI ID for the GPU instance. Check https://docs.aws.amazon.com/AmazonECS/latest/developerguide/retrieve-ecs-optimized_AMI.html for options
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ecs/optimized-ami/amazon-linux-2/gpu/amzn2-ami-ecs-gpu-hvm-2.0.20241017-x86_64-ebs/image_id
+
   GpuInstanceType:
+    Description: The instance type for the GPU instance.
     Type: String
-    Default: 'g4dn.xlarge'
-    Description: "The instance type for the GPU instance."
-    AllowedValues: 
-      - 'p3.2xlarge'
-      - 'p3.8xlarge'
-      - 'p3.16xlarge'
-      - 'p3dn.24xlarge'
-      - 'p5.48xlarge'
-      - 'g3s.xlarge'
-      - 'g3.4xlarge'
-      - 'g3.8xlarge'
-      - 'g3.16xlarge'
-      - 'g4dn.xlarge'
-      - 'g4dn.2xlarge'
-      - 'g4dn.4xlarge'
-      - 'g4dn.8xlarge'
-      - 'g4dn.12xlarge'
-      - 'g4dn.16xlarge'
-      - 'g5.xlarge'
-      - 'g5.2xlarge'
-      - 'g5.4xlarge'
-      - 'g5.8xlarge'
-      - 'g5.16xlarge'
-      - 'g5.12xlarge'
-      - 'g5.24xlarge'
-      - 'g5.48xlarge'
-      - 'g6.xlarge'
-      - 'g6.2xlarge'
-      - 'g6.4xlarge'
-      - 'g6.8xlarge'
-      - 'g6.16xlarge'
-      - 'g6.12xlarge'
-      - 'g6.24xlarge'
-      - 'g6.48xlarge'
-      - 'g6.metal'
-      - 'gr6.4xlarge'
-      - 'g6e.xlarge'
-      - 'g6e.2xlarge'
-      - 'g6e.4xlarge'
-      - 'g6e.8xlarge'
-      - 'g6e.16xlarge'
-      - 'g6e.12xlarge'
-Conditions:
-  AccessFromNatGW:
-    Fn::And:
-      - Condition: InternetIngressAccess
-      - Condition: InternetEgressAccess
-  AccessFromInternetSubnetAllow2:
-    Fn::Not:
-      - Fn::Equals:
-          - Ref: InternetSubnetAllow2
-          - ''
-  AccessFromInternetSubnetAllow3:
-    Fn::Not:
-      - Fn::Equals:
-          - Ref: InternetSubnetAllow3
-          - ''
-  GpuRequired:
-    Fn::Equals:
-      - Ref: GpuRequired
-      - 'true'
+    AllowedValues:
+      - p3.2xlarge
+      - p3.8xlarge
+      - p3.16xlarge
+      - p3dn.24xlarge
+      - p5.48xlarge
+      - g3s.xlarge
+      - g3.4xlarge
+      - g3.8xlarge
+      - g3.16xlarge
+      - g4dn.xlarge
+      - g4dn.2xlarge
+      - g4dn.4xlarge
+      - g4dn.8xlarge
+      - g4dn.12xlarge
+      - g4dn.16xlarge
+      - g5.xlarge
+      - g5.2xlarge
+      - g5.4xlarge
+      - g5.8xlarge
+      - g5.16xlarge
+      - g5.12xlarge
+      - g5.24xlarge
+      - g5.48xlarge
+      - g6.xlarge
+      - g6.2xlarge
+      - g6.4xlarge
+      - g6.8xlarge
+      - g6.16xlarge
+      - g6.12xlarge
+      - g6.24xlarge
+      - g6.48xlarge
+      - g6.metal
+      - gr6.4xlarge
+      - g6e.xlarge
+      - g6e.2xlarge
+      - g6e.4xlarge
+      - g6e.8xlarge
+      - g6e.16xlarge
+      - g6e.12xlarge
+    Default: g4dn.xlarge
+
 Rules:
   InternetSubnetAllow:
-    RuleCondition:
-      Fn::Or:
-        - Fn::Not:
-            - Fn::Equals:
-                - Ref: InternetSubnetAllow2
-                - ''
-        - Fn::Not:
-            - Fn::Equals:
-                - Ref: InternetSubnetAllow3
-                - ''
+    RuleCondition: !Or
+      - !Not
+        - !Equals
+          - !Ref InternetSubnetAllow2
+          - ""
+      - !Not
+        - !Equals
+          - !Ref InternetSubnetAllow3
+          - ""
     Assertions:
-      - Assert:
-          Fn::Not:
-            - Fn::Equals:
-                - Ref: InternetSubnetAllow
-                - Ref: InternetSubnetAllow2
+      - Assert: !Not
+          - !Equals
+            - !Ref InternetSubnetAllow
+            - !Ref InternetSubnetAllow2
         AssertDescription: Subnets for access to Datagrok client endpoints must be unique (InternetSubnetAllow and InternetSubnetAllow2 match)
-      - Assert:
-          Fn::Not:
-            - Fn::Equals:
-                - Ref: InternetSubnetAllow
-                - Ref: InternetSubnetAllow3
+      - Assert: !Not
+          - !Equals
+            - !Ref InternetSubnetAllow
+            - !Ref InternetSubnetAllow3
         AssertDescription: Subnets for access to Datagrok client endpoints must be unique (InternetSubnetAllow and InternetSubnetAllow3 match)
-      - Assert:
-          Fn::Not:
-            - Fn::Equals:
-                - Ref: InternetSubnetAllow2
-                - Ref: InternetSubnetAllow3
+      - Assert: !Not
+          - !Equals
+            - !Ref InternetSubnetAllow2
+            - !Ref InternetSubnetAllow3
         AssertDescription: Subnets for access to Datagrok client endpoints must be unique (InternetSubnetAllow2 and InternetSubnetAllow3 match)
+
+Conditions:
+  AccessFromNatGW: !And
+    - !Condition InternetIngressAccess
+    - !Condition InternetEgressAccess
+
+  AccessFromInternetSubnetAllow2: !Not
+    - !Equals
+      - !Ref InternetSubnetAllow2
+      - ""
+
+  AccessFromInternetSubnetAllow3: !Not
+    - !Equals
+      - !Ref InternetSubnetAllow3
+      - ""
+
+  GpuRequired: !Equals
+    - !Ref GpuRequired
+    - "true"
+
 Resources:
   DatagrokDBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
     Properties:
-      DBSubnetGroupDescription:
-        Fn::Sub: "${AWS::StackName} Datagrok DatagrokDB Subnet Group"
-      DBSubnetGroupName:
-        Fn::Sub:
-          - "${AWS::StackName}${postfix}-rds-subnet"
-          - postfix:
-              Ref: Postfix
+      DBSubnetGroupDescription: !Sub ${AWS::StackName} Datagrok DatagrokDB Subnet Group
+      DBSubnetGroupName: !Sub
+        - ${AWS::StackName}${postfix}-rds-subnet
+        - postfix: !Ref Postfix
       SubnetIds:
-        - Ref: DatagrokDataSubnet1
-        - Ref: DatagrokDataSubnet2
+        - !Ref DatagrokDataSubnet1
+        - !Ref DatagrokDataSubnet2
       Tags:
         - Key: datagrok.component
           Value: rds
+
   DatagrokDBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription:
-        Fn::Sub: "${AWS::StackName} Datagrok DB Security Group"
+      GroupDescription: !Sub ${AWS::StackName} Datagrok DB Security Group
       Tags:
         - Key: Name
-          Value:
-            Fn::Sub:
-              - "${AWS::StackName}${postfix}-rds"
-              - postfix:
-                  Ref: Postfix
+          Value: !Sub
+            - ${AWS::StackName}${postfix}-rds
+            - postfix: !Ref Postfix
         - Key: datagrok.component
           Value: datagrok
-      VpcId:
-        Ref: DatagrokVPC
-      SecurityGroupEgress: [ ]
+      VpcId: !Ref DatagrokVPC
+      SecurityGroupEgress: []
       SecurityGroupIngress:
-        - Description:
-            Fn::Sub: "${AWS::StackName} Allow connection from datagrok server"
+        - Description: !Sub ${AWS::StackName} Allow connection from datagrok server
           FromPort: 5432
           ToPort: 5432
           IpProtocol: TCP
-          SourceSecurityGroupId:
-            Ref: DatagrokSecurityGroup
-        - Description:
-            Fn::Sub: "${AWS::StackName} Allow connection from JKG server"
+          SourceSecurityGroupId: !Ref DatagrokSecurityGroup
+        - Description: !Sub ${AWS::StackName} Allow connection from JKG server
           FromPort: 5432
           ToPort: 5432
           IpProtocol: TCP
-          SourceSecurityGroupId:
-            Ref: CvmSecurityGroup
-    Type: AWS::EC2::SecurityGroup
+          SourceSecurityGroupId: !Ref CvmSecurityGroup
+
   CvmSecurityGroup:
-    Properties:
-      GroupDescription:
-        Fn::Sub: "${AWS::StackName} Datagrok CVM Security Group"
-      Tags:
-        - Key: Name
-          Value:
-            Fn::Sub:
-              - "${AWS::StackName}${postfix}-cvm"
-              - postfix:
-                  Ref: Postfix
-        - Key: datagrok.component
-          Value: cvm
-      VpcId:
-        Ref: DatagrokVPC
     Type: AWS::EC2::SecurityGroup
-  CvmSecurityGroupInternalCommunications:
     Properties:
-      Description:
-        Fn::Sub: "${AWS::StackName} Allow communication within network CVM"
-      GroupId:
-        Ref: CvmSecurityGroup
-      IpProtocol: "-1"
-      SourceSecurityGroupId:
-        Ref: CvmSecurityGroup
-    Type: AWS::EC2::SecurityGroupIngress
-  CvmSecurityGroupCommunications:
-    Properties:
-      Description:
-        Fn::Sub: "${AWS::StackName} Allow communication from Datagrok to CVM components"
-      GroupId:
-        Ref: CvmSecurityGroup
-      IpProtocol: "-1"
-      SourceSecurityGroupId:
-        Ref: DatagrokSecurityGroup
-    Type: AWS::EC2::SecurityGroupIngress
-  CvmSecurityGroupALBIntCommunications:
-    Properties:
-      Description:
-        Fn::Sub: "${AWS::StackName} Allow communication from internal ALB to CVM components"
-      GroupId:
-        Ref: CvmSecurityGroup
-      IpProtocol: "-1"
-      SourceSecurityGroupId:
-        Ref: CvmALBIntSecurityGroup
-    Type: AWS::EC2::SecurityGroupIngress
-  CvmALBIntSecurityGroup:
-    Properties:
-      GroupDescription:
-        Fn::Sub: "${AWS::StackName} Datagrok CVM ALB Internal Security Group"
+      GroupDescription: !Sub ${AWS::StackName} Datagrok CVM Security Group
       Tags:
         - Key: Name
-          Value:
-            Fn::Sub:
-              - "${AWS::StackName}${postfix}-cvm-alb-int"
-              - postfix:
-                  Ref: Postfix
+          Value: !Sub
+            - ${AWS::StackName}${postfix}-cvm
+            - postfix: !Ref Postfix
         - Key: datagrok.component
           Value: cvm
-      VpcId:
-        Ref: DatagrokVPC
+      VpcId: !Ref DatagrokVPC
+
+  CvmSecurityGroupInternalCommunications:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: !Sub ${AWS::StackName} Allow communication within network CVM
+      GroupId: !Ref CvmSecurityGroup
+      IpProtocol: "-1"
+      SourceSecurityGroupId: !Ref CvmSecurityGroup
+
+  CvmSecurityGroupCommunications:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: !Sub ${AWS::StackName} Allow communication from Datagrok to CVM components
+      GroupId: !Ref CvmSecurityGroup
+      IpProtocol: "-1"
+      SourceSecurityGroupId: !Ref DatagrokSecurityGroup
+
+  CvmSecurityGroupALBIntCommunications:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: !Sub ${AWS::StackName} Allow communication from internal ALB to CVM components
+      GroupId: !Ref CvmSecurityGroup
+      IpProtocol: "-1"
+      SourceSecurityGroupId: !Ref CvmALBIntSecurityGroup
+
+  CvmALBIntSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub ${AWS::StackName} Datagrok CVM ALB Internal Security Group
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - ${AWS::StackName}${postfix}-cvm-alb-int
+            - postfix: !Ref Postfix
+        - Key: datagrok.component
+          Value: cvm
+      VpcId: !Ref DatagrokVPC
       SecurityGroupIngress:
-        - Description:
-            Fn::Sub: "${AWS::StackName} Allow internal connections from Datagrok to CVM"
+        - Description: !Sub ${AWS::StackName} Allow internal connections from Datagrok to CVM
           FromPort: 8090
           ToPort: 8090
           IpProtocol: TCP
-          SourceSecurityGroupId:
-            Ref: DatagrokSecurityGroup
-        - Description:
-            Fn::Sub: "${AWS::StackName} Allow internal connections to HTTP"
+          SourceSecurityGroupId: !Ref DatagrokSecurityGroup
+        - Description: !Sub ${AWS::StackName} Allow internal connections to HTTP
           FromPort: 80
           ToPort: 80
           IpProtocol: TCP
-          SourceSecurityGroupId:
-            Ref: DatagrokSecurityGroup
+          SourceSecurityGroupId: !Ref DatagrokSecurityGroup
       SecurityGroupEgress:
-        - Description:
-            Fn::Sub: "${AWS::StackName} CVM egress rules"
-          DestinationSecurityGroupId:
-            Ref: CvmSecurityGroup
+        - Description: !Sub ${AWS::StackName} CVM egress rules
+          DestinationSecurityGroupId: !Ref CvmSecurityGroup
           FromPort: 0
           ToPort: 65535
           IpProtocol: TCP
-    Type: AWS::EC2::SecurityGroup
+
   CvmEgress:
     Type: AWS::EC2::SecurityGroupEgress
     Properties:
-      Description:
-        Fn::Sub: "${AWS::StackName} CVM egress rules"
-      DestinationSecurityGroupId:
-        Ref: CvmSecurityGroup
+      Description: !Sub ${AWS::StackName} CVM egress rules
+      DestinationSecurityGroupId: !Ref CvmSecurityGroup
       FromPort: 0
-      GroupId:
-        Ref: CvmALBIntSecurityGroup
+      GroupId: !Ref CvmALBIntSecurityGroup
       IpProtocol: TCP
       ToPort: 65535
+
   DatagrokSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription:
-        Fn::Sub: "${AWS::StackName} Datagrok Security Group"
+      GroupDescription: !Sub ${AWS::StackName} Datagrok Security Group
       Tags:
         - Key: Name
-          Value:
-            Fn::Sub:
-              - "${AWS::StackName}${postfix}"
-              - postfix:
-                  Ref: Postfix
+          Value: !Sub
+            - ${AWS::StackName}${postfix}
+            - postfix: !Ref Postfix
         - Key: datagrok.component
           Value: datagrok
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::EC2::SecurityGroup
+      VpcId: !Ref DatagrokVPC
+
   DatagrokALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription:
-        Fn::Sub: "${AWS::StackName} Datagrok ALB Security Group"
+      GroupDescription: !Sub ${AWS::StackName} Datagrok ALB Security Group
       Tags:
         - Key: Name
-          Value:
-            Fn::Sub:
-              - "${AWS::StackName}${postfix}-alb"
-              - postfix:
-                  Ref: Postfix
+          Value: !Sub
+            - ${AWS::StackName}${postfix}-alb
+            - postfix: !Ref Postfix
         - Key: datagrok.component
           Value: datagrok
-      VpcId:
-        Ref: DatagrokVPC
-    Type: AWS::EC2::SecurityGroup
+      VpcId: !Ref DatagrokVPC
+
   DatagrokSecurityGroupInternalCommunications:
-    Properties:
-      Description:
-        Fn::Sub: "${AWS::StackName} Allow communication within network Datagrok"
-      GroupId:
-        Ref: DatagrokSecurityGroup
-      IpProtocol: "-1"
-      SourceSecurityGroupId:
-        Ref: DatagrokSecurityGroup
     Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: !Sub ${AWS::StackName} Allow communication within network Datagrok
+      GroupId: !Ref DatagrokSecurityGroup
+      IpProtocol: "-1"
+      SourceSecurityGroupId: !Ref DatagrokSecurityGroup
+
   DatagrokSecurityGroupCvmCommunications:
-    Properties:
-      Description:
-        Fn::Sub: "${AWS::StackName} Allow communication from CVM to Datagrok components"
-      GroupId:
-        Ref: DatagrokSecurityGroup
-      IpProtocol: "-1"
-      SourceSecurityGroupId:
-        Ref: CvmSecurityGroup
     Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: !Sub ${AWS::StackName} Allow communication from CVM to Datagrok components
+      GroupId: !Ref DatagrokSecurityGroup
+      IpProtocol: "-1"
+      SourceSecurityGroupId: !Ref CvmSecurityGroup
+
   DatagrokSecurityGroupALBCommunications:
-    Properties:
-      Description:
-        Fn::Sub: "${AWS::StackName} Allow communication from ALB to Datagrok components"
-      GroupId:
-        Ref: DatagrokSecurityGroup
-      IpProtocol: "-1"
-      SourceSecurityGroupId:
-        Ref: DatagrokALBSecurityGroup
     Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: !Sub ${AWS::StackName} Allow communication from ALB to Datagrok components
+      GroupId: !Ref DatagrokSecurityGroup
+      IpProtocol: "-1"
+      SourceSecurityGroupId: !Ref DatagrokALBSecurityGroup
+
   DatagrokSecurityGroupIntALBCommunications:
-    Properties:
-      Description:
-        Fn::Sub: "${AWS::StackName} Allow communication from internal ALB to Datagrok components"
-      GroupId:
-        Ref: DatagrokSecurityGroup
-      IpProtocol: "-1"
-      SourceSecurityGroupId:
-        Ref: DatagrokALBIntSecurityGroup
     Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: !Sub ${AWS::StackName} Allow communication from internal ALB to Datagrok components
+      GroupId: !Ref DatagrokSecurityGroup
+      IpProtocol: "-1"
+      SourceSecurityGroupId: !Ref DatagrokALBIntSecurityGroup
+
   DatagrokEgress:
     Type: AWS::EC2::SecurityGroupEgress
     Properties:
-      Description:
-        Fn::Sub: "${AWS::StackName} Datagrok egress rules"
-      DestinationSecurityGroupId:
-        Ref: DatagrokSecurityGroup
+      Description: !Sub ${AWS::StackName} Datagrok egress rules
+      DestinationSecurityGroupId: !Ref DatagrokSecurityGroup
       FromPort: 0
-      GroupId:
-        Ref: DatagrokALBSecurityGroup
+      GroupId: !Ref DatagrokALBSecurityGroup
       IpProtocol: TCP
       ToPort: 65535
+
   Datagrok80Ingress:
+    Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow
-      Description:
-        Fn::Sub: "${AWS::StackName} 80/tcp on Datagrok ALB for Datagrok Server"
+      CidrIp: !Ref InternetSubnetAllow
+      Description: !Sub ${AWS::StackName} 80/tcp on Datagrok ALB for Datagrok Server
       FromPort: 80
-      GroupId:
-        Ref: DatagrokALBSecurityGroup
+      GroupId: !Ref DatagrokALBSecurityGroup
       IpProtocol: TCP
       ToPort: 80
-    Type: AWS::EC2::SecurityGroupIngress
+
   Datagrok443Ingress:
+    Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow
-      Description:
-        Fn::Sub: "${AWS::StackName} 443/tcp on Datagrok ALB for Datagrok Server"
+      CidrIp: !Ref InternetSubnetAllow
+      Description: !Sub ${AWS::StackName} 443/tcp on Datagrok ALB for Datagrok Server
       FromPort: 443
-      GroupId:
-        Ref: DatagrokALBSecurityGroup
+      GroupId: !Ref DatagrokALBSecurityGroup
       IpProtocol: TCP
       ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
+
   Datagrok80Ingress2:
-    Condition: AccessFromInternetSubnetAllow2
+    Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow2
-      Description:
-        Fn::Sub: "${AWS::StackName} 80/tcp on Datagrok ALB for Datagrok Server"
+      CidrIp: !Ref InternetSubnetAllow2
+      Description: !Sub ${AWS::StackName} 80/tcp on Datagrok ALB for Datagrok Server
       FromPort: 80
-      GroupId:
-        Ref: DatagrokALBSecurityGroup
+      GroupId: !Ref DatagrokALBSecurityGroup
       IpProtocol: TCP
       ToPort: 80
-    Type: AWS::EC2::SecurityGroupIngress
+    Condition: AccessFromInternetSubnetAllow2
+
   Datagrok443Ingress2:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      CidrIp: !Ref InternetSubnetAllow2
+      Description: !Sub ${AWS::StackName} 443/tcp on Datagrok ALB for Datagrok Server
+      FromPort: 443
+      GroupId: !Ref DatagrokALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 443
     Condition: AccessFromInternetSubnetAllow2
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow2
-      Description:
-        Fn::Sub: "${AWS::StackName} 443/tcp on Datagrok ALB for Datagrok Server"
-      FromPort: 443
-      GroupId:
-        Ref: DatagrokALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
+
   Datagrok80Ingress3:
-    Condition: AccessFromInternetSubnetAllow3
+    Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow3
-      Description:
-        Fn::Sub: "${AWS::StackName} 80/tcp on Datagrok ALB for Datagrok Server"
+      CidrIp: !Ref InternetSubnetAllow3
+      Description: !Sub ${AWS::StackName} 80/tcp on Datagrok ALB for Datagrok Server
       FromPort: 80
-      GroupId:
-        Ref: DatagrokALBSecurityGroup
+      GroupId: !Ref DatagrokALBSecurityGroup
       IpProtocol: TCP
       ToPort: 80
-    Type: AWS::EC2::SecurityGroupIngress
+    Condition: AccessFromInternetSubnetAllow3
+
   Datagrok443Ingress3:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      CidrIp: !Ref InternetSubnetAllow3
+      Description: !Sub ${AWS::StackName} 443/tcp on Datagrok ALB for Datagrok Server
+      FromPort: 443
+      GroupId: !Ref DatagrokALBSecurityGroup
+      IpProtocol: TCP
+      ToPort: 443
     Condition: AccessFromInternetSubnetAllow3
-    Properties:
-      CidrIp:
-        Ref: InternetSubnetAllow3
-      Description:
-        Fn::Sub: "${AWS::StackName} 443/tcp on Datagrok ALB for Datagrok Server"
-      FromPort: 443
-      GroupId:
-        Ref: DatagrokALBSecurityGroup
-      IpProtocol: TCP
-      ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
+
   Datagrok80IngressVPC:
+    Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      CidrIp:
-        Ref: CIDR
-      Description:
-        Fn::Sub: "${AWS::StackName} VPC 80/tcp on Datagrok ALB for Datagrok Server"
+      CidrIp: !Ref CIDR
+      Description: !Sub ${AWS::StackName} VPC 80/tcp on Datagrok ALB for Datagrok Server
       FromPort: 80
-      GroupId:
-        Ref: DatagrokALBSecurityGroup
+      GroupId: !Ref DatagrokALBSecurityGroup
       IpProtocol: TCP
       ToPort: 80
-    Type: AWS::EC2::SecurityGroupIngress
+
   Datagrok443IngressVPC:
+    Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      CidrIp:
-        Ref: CIDR
-      Description:
-        Fn::Sub: "${AWS::StackName} VPC 443/tcp on Datagrok ALB for Datagrok Server"
+      CidrIp: !Ref CIDR
+      Description: !Sub ${AWS::StackName} VPC 443/tcp on Datagrok ALB for Datagrok Server
       FromPort: 443
-      GroupId:
-        Ref: DatagrokALBSecurityGroup
+      GroupId: !Ref DatagrokALBSecurityGroup
       IpProtocol: TCP
       ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
+
   Datagrok80IngressNatGW:
-    Condition: AccessFromNatGW
+    Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      CidrIp:
-        Fn::Sub:
-          - "${ip}/32"
-          - ip:
-              Ref: DatagrokNatGatewayEIP
-      Description:
-        Fn::Sub: "${AWS::StackName} NatGW 80/tcp on Datagrok ALB for Datagrok Server"
+      CidrIp: !Sub
+        - ${ip}/32
+        - ip: !Ref DatagrokNatGatewayEIP
+      Description: !Sub ${AWS::StackName} NatGW 80/tcp on Datagrok ALB for Datagrok Server
       FromPort: 80
-      GroupId:
-        Ref: DatagrokALBSecurityGroup
+      GroupId: !Ref DatagrokALBSecurityGroup
       IpProtocol: TCP
       ToPort: 80
-    Type: AWS::EC2::SecurityGroupIngress
-  Datagrok443IngressNatGW:
     Condition: AccessFromNatGW
+
+  Datagrok443IngressNatGW:
+    Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      CidrIp:
-        Fn::Sub:
-          - "${ip}/32"
-          - ip:
-              Ref: DatagrokNatGatewayEIP
-      Description:
-        Fn::Sub: "${AWS::StackName} NatGW 443/tcp on Datagrok ALB for Datagrok Server"
+      CidrIp: !Sub
+        - ${ip}/32
+        - ip: !Ref DatagrokNatGatewayEIP
+      Description: !Sub ${AWS::StackName} NatGW 443/tcp on Datagrok ALB for Datagrok Server
       FromPort: 443
-      GroupId:
-        Ref: DatagrokALBSecurityGroup
+      GroupId: !Ref DatagrokALBSecurityGroup
       IpProtocol: TCP
       ToPort: 443
-    Type: AWS::EC2::SecurityGroupIngress
+    Condition: AccessFromNatGW
+
   DatagrokALBIntSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription:
-        Fn::Sub: "${AWS::StackName} Datagrok ALB Internal Security Group"
+      GroupDescription: !Sub ${AWS::StackName} Datagrok ALB Internal Security Group
       Tags:
         - Key: Name
-          Value:
-            Fn::Sub:
-              - "${AWS::StackName}${postfix}-alb-int"
-              - postfix:
-                  Ref: Postfix
+          Value: !Sub
+            - ${AWS::StackName}${postfix}-alb-int
+            - postfix: !Ref Postfix
         - Key: datagrok.component
           Value: datagrok
-      VpcId:
-        Ref: DatagrokVPC
+      VpcId: !Ref DatagrokVPC
       SecurityGroupIngress:
-        - Description:
-            Fn::Sub: "${AWS::StackName} Allow internal connections from CVM to Datagrok"
+        - Description: !Sub ${AWS::StackName} Allow internal connections from CVM to Datagrok
           FromPort: 8080
           ToPort: 8080
           IpProtocol: TCP
-          SourceSecurityGroupId:
-            Ref: CvmSecurityGroup
-        - Description:
-            Fn::Sub: "${AWS::StackName} Allow internal connections from CVM to Grok Pipe"
+          SourceSecurityGroupId: !Ref CvmSecurityGroup
+        - Description: !Sub ${AWS::StackName} Allow internal connections from CVM to Grok Pipe
           FromPort: 3000
           ToPort: 3000
           IpProtocol: TCP
-          SourceSecurityGroupId:
-            Ref: CvmSecurityGroup
-        - Description:
-            Fn::Sub: "${AWS::StackName} Allow internal connections from Datagrok to Datagrok"
+          SourceSecurityGroupId: !Ref CvmSecurityGroup
+        - Description: !Sub ${AWS::StackName} Allow internal connections from Datagrok to Datagrok
           FromPort: 8080
           ToPort: 8080
           IpProtocol: TCP
-          SourceSecurityGroupId:
-            Ref: DatagrokSecurityGroup
-        - Description:
-            Fn::Sub: "${AWS::StackName} Allow internal connections from Datagrok to Grok Connect"
+          SourceSecurityGroupId: !Ref DatagrokSecurityGroup
+        - Description: !Sub ${AWS::StackName} Allow internal connections from Datagrok to Grok Connect
           FromPort: 1234
           ToPort: 1234
           IpProtocol: TCP
-          SourceSecurityGroupId:
-            Ref: DatagrokSecurityGroup
-        - Description:
-            Fn::Sub: "${AWS::StackName} Allow internal connections from Datagrok to Grok Spawner"
+          SourceSecurityGroupId: !Ref DatagrokSecurityGroup
+        - Description: !Sub ${AWS::StackName} Allow internal connections from Datagrok to Grok Spawner
           FromPort: 8000
           ToPort: 8000
           IpProtocol: TCP
-          SourceSecurityGroupId:
-            Ref: DatagrokSecurityGroup
-        - Description:
-            Fn::Sub: "${AWS::StackName} Allow internal connections from Datagrok to Grok Pipe"
+          SourceSecurityGroupId: !Ref DatagrokSecurityGroup
+        - Description: !Sub ${AWS::StackName} Allow internal connections from Datagrok to Grok Pipe
           FromPort: 3000
           ToPort: 3000
           IpProtocol: TCP
-          SourceSecurityGroupId:
-            Ref: DatagrokSecurityGroup
-        - Description:
-            Fn::Sub: "${AWS::StackName} Allow internal connections from Datagrok to Rabbitmq"
+          SourceSecurityGroupId: !Ref DatagrokSecurityGroup
+        - Description: !Sub ${AWS::StackName} Allow internal connections from Datagrok to Rabbitmq
           FromPort: 5672
           ToPort: 5672
           IpProtocol: TCP
-          SourceSecurityGroupId:
-            Ref: DatagrokSecurityGroup
+          SourceSecurityGroupId: !Ref DatagrokSecurityGroup
       SecurityGroupEgress:
-        - Description:
-            Fn::Sub: "${AWS::StackName} Datagrok egress rules"
-          DestinationSecurityGroupId:
-            Ref: DatagrokSecurityGroup
+        - Description: !Sub ${AWS::StackName} Datagrok egress rules
+          DestinationSecurityGroupId: !Ref DatagrokSecurityGroup
           FromPort: 0
           ToPort: 65535
           IpProtocol: TCP
-    Type: AWS::EC2::SecurityGroup
+
   DatagrokECSPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
-      Description:
-        Fn::Sub: "${AWS::StackName} Datagrok policy for ECS Services"
+      Description: !Sub ${AWS::StackName} Datagrok policy for ECS Services
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Action:
               - logs:CreateLogStream
               - logs:PutLogEvents
             Effect: Allow
             Resource:
-              - Fn::GetAtt:
-                  - DatagrokLogGroup
-                  - Arn
-              - Fn::Sub:
-                  - "${log}:log-stream:*"
-                  - log:
-                      Fn::GetAtt:
-                        - DatagrokLogGroup
-                        - Arn
+              - !GetAtt DatagrokLogGroup.Arn
+              - !Sub
+                - ${log}:log-stream:*
+                - log: !GetAtt DatagrokLogGroup.Arn
           - Action:
               - ecr:GetAuthorizationToken
             Effect: Allow
-            Resource: "*"
+            Resource: '*'
           - Action:
               - ecr:BatchCheckLayerAvailability
               - ecr:BatchGetImage
               - ecr:GetDownloadUrlForLayer
             Effect: Allow
             Resource:
-              - "arn:aws:ecr:us-east-1:709825985650:repository/datagrok/*"
-              - Fn::Sub: "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/datagrok/*"
-      ManagedPolicyName:
-        Fn::Sub: "${AWS::StackName}ECSPolicy-${AWS::Region}"
+              - arn:aws:ecr:us-east-1:709825985650:repository/datagrok/*
+              - !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/datagrok/*
+      ManagedPolicyName: !Sub ${AWS::StackName}ECSPolicy-${AWS::Region}
+
   DatagrokTaskExecutionRole:
+    Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
         Statement:
           - Action:
               - sts:AssumeRole
-            Condition: { }
+            Condition: {}
             Effect: Allow
             Principal:
               Service: ecs-tasks.amazonaws.com
-        Version: '2012-10-17'
+        Version: "2012-10-17"
       ManagedPolicyArns:
-        - Ref: DatagrokECSPolicy
-    Type: AWS::IAM::Role
+        - !Ref DatagrokECSPolicy
+
   DatagrokJupyterKernelGatewayService:
+    Type: AWS::ECS::Service
     Properties:
-      Cluster:
-        Fn::GetAtt:
-          - CvmCluster
-          - Arn
+      Cluster: !GetAtt CvmCluster.Arn
       DeploymentConfiguration:
         MaximumPercent: 200
         MinimumHealthyPercent: 100
       DeploymentController:
         Type: ECS
       DesiredCount: 1
-      LaunchType: "FARGATE"
+      LaunchType: FARGATE
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: DISABLED
           SecurityGroups:
-            - Ref: CvmSecurityGroup
+            - !Ref CvmSecurityGroup
           Subnets:
-            - Ref: DatagrokPrivateSubnet1
-            - Ref: DatagrokPrivateSubnet2
+            - !Ref DatagrokPrivateSubnet1
+            - !Ref DatagrokPrivateSubnet2
       PlatformVersion: 1.4.0
       PropagateTags: SERVICE
       SchedulingStrategy: REPLICA
@@ -668,33 +581,36 @@ Resources:
           Value: cvm
         - Key: datagrok.service
           Value: jupyter_kernel_gateway
-      TaskDefinition:
-        Ref: DatagrokJupyterKernelGatewayTaskDefinition
-    Type: AWS::ECS::Service
+      TaskDefinition: !Ref DatagrokJupyterKernelGatewayTaskDefinition
+
   DatagrokJupyterKernelGatewayTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
     Properties:
       ContainerDefinitions:
         - Command:
-            - Fn::Sub: "${AWS::Region}.compute.internal"
-            - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
-            - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
+            - !Sub ${AWS::Region}.compute.internal
+            - !Sub ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
+            - !Sub ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
           Essential: false
-          Image:
-            Fn::Sub:
-              - "${domain}/${repo}:${tag}"
-              - domain:
-                  Fn::FindInMap: [ Images, Searchdomain, domain ]
-                repo:
-                  Fn::FindInMap: [ Images, Searchdomain, repo ]
-                tag:
-                  Fn::FindInMap: [ Images, Searchdomain, version ]
+          Image: !Sub
+            - ${domain}/${repo}:${tag}
+            - domain: !FindInMap
+                - Images
+                - Searchdomain
+                - domain
+              repo: !FindInMap
+                - Images
+                - Searchdomain
+                - repo
+              tag: !FindInMap
+                - Images
+                - Searchdomain
+                - version
           LogConfiguration:
             LogDriver: awslogs
             Options:
-              awslogs-group:
-                Ref: DatagrokLogGroup
-              awslogs-region:
-                Ref: AWS::Region
+              awslogs-group: !Ref DatagrokLogGroup
+              awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: jkg
           MemoryReservation: 100
           ReadonlyRootFilesystem: true
@@ -703,53 +619,38 @@ Resources:
             - Condition: SUCCESS
               ContainerName: ResolvConf
           Essential: true
-          Image:
-            Fn::Sub:
-              - "${domain}/${repo}:${tag}"
-              - domain:
-                  Fn::FindInMap: [ Images, JKG, domain ]
-                repo:
-                  Fn::FindInMap: [ Images, JKG, repo ]
-                tag:
-                  Ref: JKGVersion
+          Image: !Sub
+            - ${domain}/${repo}:${tag}
+            - domain: !FindInMap
+                - Images
+                - JKG
+                - domain
+              repo: !FindInMap
+                - Images
+                - JKG
+                - repo
+              tag: !Ref JKGVersion
           Environment:
             - Name: GROK_PARAMETERS
-              Value:
-                Fn::Sub:
-                  - '{
-                  "queueSettings":{ 
-                    "amqpHost":"${amqpHost}", 
-                    "amqpPort": 5672, 
-                    "amqpUser":"guest", 
-                    "amqpPassword":"${amqpPassword}",
-                    "pipeHost":"${pipeHost}", 
-                    "pipeKey":"${grokPipeApiKey}" }}'
-
-                  - amqpHost:
-                      Fn::Sub: "rabbit.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal"
-                    pipeHost:
-                      Fn::Sub: "pipe.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal"
-                    amqpPassword:
-                      Fn::Sub:
-                        - "{{resolve:secretsmanager:${secret}:SecretString:password}}"
-                        - secret:
-                            Ref: RabbitMQPassword
-                    grokPipeApiKey:
-                      Fn::Sub:
-                        - "{{resolve:secretsmanager:${secret}:SecretString:apikey}}"
-                        - secret:
-                            Ref: GrokPipeApiKeySecret
-
-          LinuxParameters: { }
+              Value: !Sub
+                - '{ "queueSettings":{ "amqpHost":"${amqpHost}", "amqpPort": 5672, "amqpUser":"guest", "amqpPassword":"${amqpPassword}", "pipeHost":"${pipeHost}", "pipeKey":"${grokPipeApiKey}" }}'
+                - amqpHost: !Sub rabbit.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
+                  pipeHost: !Sub pipe.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
+                  amqpPassword: !Sub
+                    - '{{resolve:secretsmanager:${secret}:SecretString:password}}'
+                    - secret: !Ref RabbitMQPassword
+                  grokPipeApiKey: !Sub
+                    - '{{resolve:secretsmanager:${secret}:SecretString:apikey}}'
+                    - secret: !Ref GrokPipeApiKeySecret
+          LinuxParameters: {}
           LogConfiguration:
             LogDriver: awslogs
             Options:
-              awslogs-group:
-                Ref: DatagrokLogGroup
-              awslogs-region:
-                Ref: AWS::Region
+              awslogs-group: !Ref DatagrokLogGroup
+              awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: jkg
           MemoryReservation: 2048
+
           #          ReadonlyRootFilesystem: true
           Name: jupyter_kernel_gateway
           PortMappings:
@@ -759,83 +660,73 @@ Resources:
             - ContainerPort: 8888
               HostPort: 8888
               Protocol: tcp
-      Cpu: '1024'
-      ExecutionRoleArn:
-        Fn::GetAtt:
-          - DatagrokTaskExecutionRole
-          - Arn
-      Family:
-        Fn::Sub:
-          - "${AWS::StackName}${postfix}-cvm-jupyter_kernel_gateway"
-          - postfix:
-              Ref: Postfix
-      Memory: '3072'
+      Cpu: "1024"
+      ExecutionRoleArn: !GetAtt DatagrokTaskExecutionRole.Arn
+      Family: !Sub
+        - ${AWS::StackName}${postfix}-cvm-jupyter_kernel_gateway
+        - postfix: !Ref Postfix
+      Memory: "3072"
       NetworkMode: awsvpc
       RequiresCompatibilities:
-        - "FARGATE"
+        - FARGATE
       EphemeralStorage:
         SizeInGiB: 50
-    Type: AWS::ECS::TaskDefinition
+
   DatagrokCloudMap:
-    Properties:
-      Description:
-        Fn::Sub: "${AWS::StackName} Service Map for Datagrok"
-      Name:
-        Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
-      Vpc:
-        Ref: DatagrokVPC
     Type: AWS::ServiceDiscovery::PrivateDnsNamespace
+    Properties:
+      Description: !Sub ${AWS::StackName} Service Map for Datagrok
+      Name: !Sub ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
+      Vpc: !Ref DatagrokVPC
+
   DatagrokInsightsLogGroup:
-    Type: AWS::Logs::LogGroup
-    UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName:
-        Fn::Sub:
-          - "/aws/ecs/containerinsights/${cluster_name}/performance"
-          - cluster_name:
-              Ref: DatagrokCluster
+      LogGroupName: !Sub
+        - /aws/ecs/containerinsights/${cluster_name}/performance
+        - cluster_name: !Ref DatagrokCluster
       RetentionInDays: 7
+
   DatagrokCluster:
+    Type: AWS::ECS::Cluster
     Properties:
-      ClusterName:
-        Fn::Sub:
-          - "${AWS::StackName}${postfix}"
-          - postfix:
-              Ref: Postfix
+      ClusterName: !Sub
+        - ${AWS::StackName}${postfix}
+        - postfix: !Ref Postfix
       Tags:
         - Key: datagrok.component
           Value: datagrok
       ClusterSettings:
         - Name: containerInsights
           Value: enabled
-    Type: AWS::ECS::Cluster
+
   CvmInsightsLogGroup:
-    Type: AWS::Logs::LogGroup
-    UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName:
-        Fn::Sub:
-          - "/aws/ecs/containerinsights/${cluster_name}/performance"
-          - cluster_name:
-              Ref: CvmCluster
+      LogGroupName: !Sub
+        - /aws/ecs/containerinsights/${cluster_name}/performance
+        - cluster_name: !Ref CvmCluster
       RetentionInDays: 1
+
   CvmCluster:
+    Type: AWS::ECS::Cluster
     Properties:
-      ClusterName:
-        Fn::Sub:
-          - "${AWS::StackName}${postfix}-cvm"
-          - postfix:
-              Ref: Postfix
+      ClusterName: !Sub
+        - ${AWS::StackName}${postfix}-cvm
+        - postfix: !Ref Postfix
       Tags:
         - Key: datagrok.component
           Value: cvm
       ClusterSettings:
         - Name: containerInsights
           Value: enabled
-    Type: AWS::ECS::Cluster
+
   DatagrokService:
+    Type: AWS::ECS::Service
     DependsOn:
       - DatagrokTCP80Listener
       - DatagrokTCP443Listener
@@ -843,54 +734,45 @@ Resources:
       - DatagrokS3
       - DatagrokDB
     Properties:
-      Cluster:
-        Fn::GetAtt:
-          - DatagrokCluster
-          - Arn
+      Cluster: !GetAtt DatagrokCluster.Arn
       DeploymentConfiguration:
         MaximumPercent: 200
         MinimumHealthyPercent: 100
       DeploymentController:
         Type: ECS
       DesiredCount: 1
-      LaunchType: "FARGATE"
+      LaunchType: FARGATE
       LoadBalancers:
         - ContainerName: datagrok
           ContainerPort: 8080
-          TargetGroupArn:
-            Ref: DatagrokTCP8080TargetGroup
+          TargetGroupArn: !Ref DatagrokTCP8080TargetGroup
         - ContainerName: datagrok
           ContainerPort: 8080
-          TargetGroupArn:
-            Ref: DatagrokTCP8080IntTargetGroup
+          TargetGroupArn: !Ref DatagrokTCP8080IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: DISABLED
           SecurityGroups:
-            - Ref: DatagrokSecurityGroup
+            - !Ref DatagrokSecurityGroup
           Subnets:
-            - Ref: DatagrokPrivateSubnet1
-            - Ref: DatagrokPrivateSubnet2
+            - !Ref DatagrokPrivateSubnet1
+            - !Ref DatagrokPrivateSubnet2
       PlatformVersion: 1.4.0
       PropagateTags: SERVICE
       SchedulingStrategy: REPLICA
       ServiceRegistries:
-        - RegistryArn:
-            Fn::GetAtt:
-              - DatagrokServiceDiscoveryEntry
-              - Arn
+        - RegistryArn: !GetAtt DatagrokServiceDiscoveryEntry.Arn
       Tags:
         - Key: datagrok.component
           Value: datagrok
         - Key: datagrok.service
           Value: datagrok
-      TaskDefinition:
-        Ref: DatagrokTaskDefinition
-    Type: AWS::ECS::Service
+      TaskDefinition: !Ref DatagrokTaskDefinition
+
   DatagrokServiceDiscoveryEntry:
+    Type: AWS::ServiceDiscovery::Service
     Properties:
-      Description:
-        Fn::Sub: "${AWS::StackName} Datagrok datagrok service discovery entry in Cloud Map"
+      Description: !Sub ${AWS::StackName} Datagrok datagrok service discovery entry in Cloud Map
       DnsConfig:
         DnsRecords:
           - TTL: 60
@@ -899,141 +781,126 @@ Resources:
       HealthCheckCustomConfig:
         FailureThreshold: 1
       Name: datagrok
-      NamespaceId:
-        Ref: DatagrokCloudMap
-    Type: AWS::ServiceDiscovery::Service
+      NamespaceId: !Ref DatagrokCloudMap
+
   DatagrokTCP443Listener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       DefaultActions:
         - ForwardConfig:
             TargetGroups:
-              - TargetGroupArn:
-                  Ref: DatagrokTCP8080TargetGroup
+              - TargetGroupArn: !Ref DatagrokTCP8080TargetGroup
           Type: forward
-      LoadBalancerArn:
-        Ref: DatagrokLoadBalancer
+      LoadBalancerArn: !Ref DatagrokLoadBalancer
       Port: 443
       Protocol: HTTPS
       Certificates:
-        - CertificateArn:
-            Ref: DatagrokArnSSLCertificate
-    Type: AWS::ElasticLoadBalancingV2::Listener
+        - CertificateArn: !Ref DatagrokArnSSLCertificate
+
   DatagrokTCP8080IntListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       DefaultActions:
         - ForwardConfig:
             TargetGroups:
-              - TargetGroupArn:
-                  Ref: DatagrokTCP8080IntTargetGroup
+              - TargetGroupArn: !Ref DatagrokTCP8080IntTargetGroup
           Type: forward
-      LoadBalancerArn:
-        Ref: DatagrokLoadBalancerInt
+      LoadBalancerArn: !Ref DatagrokLoadBalancerInt
       Port: 8080
       Protocol: HTTP
-    Type: AWS::ElasticLoadBalancingV2::Listener
+
   DatagrokTCP8080TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      Name:
-        Fn::Sub:
-          - "${AWS::StackName}${postfix}"
-          - postfix:
-              Ref: Postfix
+      Name: !Sub
+        - ${AWS::StackName}${postfix}
+        - postfix: !Ref Postfix
       Port: 8080
       Protocol: HTTP
       Tags:
         - Key: datagrok.component
           Value: datagrok
-      TargetType: 'ip'
-      VpcId:
-        Ref: DatagrokVPC
+      TargetType: ip
+      VpcId: !Ref DatagrokVPC
       HealthCheckIntervalSeconds: 60
-      HealthCheckPath: "/api/admin/health"
+      HealthCheckPath: /api/admin/health
       Matcher:
         HttpCode: 200
       UnhealthyThresholdCount: 5
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+
   DatagrokTCP8080IntTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      Name:
-        Fn::Sub:
-          - "${AWS::StackName}${postfix}-i"
-          - postfix:
-              Ref: Postfix
+      Name: !Sub
+        - ${AWS::StackName}${postfix}-i
+        - postfix: !Ref Postfix
       Port: 8080
       Protocol: HTTP
       Tags:
         - Key: datagrok.component
           Value: datagrok
-      TargetType: 'ip'
-      VpcId:
-        Ref: DatagrokVPC
+      TargetType: ip
+      VpcId: !Ref DatagrokVPC
       HealthCheckIntervalSeconds: 60
-      HealthCheckPath: "/api/admin/health"
+      HealthCheckPath: /api/admin/health
       Matcher:
         HttpCode: 200
       UnhealthyThresholdCount: 5
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+
   DatagrokTCP80Listener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       DefaultActions:
         - RedirectConfig:
-            Port: '443'
+            Port: "443"
             Protocol: HTTPS
             StatusCode: HTTP_301
           Type: redirect
-      LoadBalancerArn:
-        Ref: DatagrokLoadBalancer
+      LoadBalancerArn: !Ref DatagrokLoadBalancer
       Port: 80
       Protocol: HTTP
-    Type: AWS::ElasticLoadBalancingV2::Listener
+
   GrokConnectService:
+    Type: AWS::ECS::Service
     DependsOn:
       - GrokConnectTCP1234IntListener
     Properties:
-      Cluster:
-        Fn::GetAtt:
-          - DatagrokCluster
-          - Arn
+      Cluster: !GetAtt DatagrokCluster.Arn
       DeploymentConfiguration:
         MaximumPercent: 200
         MinimumHealthyPercent: 100
       DeploymentController:
         Type: ECS
       DesiredCount: 1
-      LaunchType: "FARGATE"
+      LaunchType: FARGATE
       LoadBalancers:
         - ContainerName: grok_connect
           ContainerPort: 1234
-          TargetGroupArn:
-            Ref: GrokConnectTCP1234IntTargetGroup
+          TargetGroupArn: !Ref GrokConnectTCP1234IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: DISABLED
           SecurityGroups:
-            - Ref: DatagrokSecurityGroup
+            - !Ref DatagrokSecurityGroup
           Subnets:
-            - Ref: DatagrokPrivateSubnet1
-            - Ref: DatagrokPrivateSubnet2
+            - !Ref DatagrokPrivateSubnet1
+            - !Ref DatagrokPrivateSubnet2
       PlatformVersion: 1.4.0
       PropagateTags: SERVICE
       SchedulingStrategy: REPLICA
       ServiceRegistries:
-        - RegistryArn:
-            Fn::GetAtt:
-              - GrokConnectServiceDiscoveryEntry
-              - Arn
+        - RegistryArn: !GetAtt GrokConnectServiceDiscoveryEntry.Arn
       Tags:
         - Key: datagrok.component
           Value: datagrok
         - Key: datagrok.service
           Value: grok_connect
-      TaskDefinition:
-        Ref: GrokConnectTaskDefinition
-    Type: AWS::ECS::Service
+      TaskDefinition: !Ref GrokConnectTaskDefinition
+
   GrokConnectServiceDiscoveryEntry:
+    Type: AWS::ServiceDiscovery::Service
     Properties:
-      Description:
-        Fn::Sub: "${AWS::StackName} Datagrok grok_connect service discovery entry in Cloud Map"
+      Description: !Sub ${AWS::StackName} Datagrok grok_connect service discovery entry in Cloud Map
       DnsConfig:
         DnsRecords:
           - TTL: 60
@@ -1042,33 +909,36 @@ Resources:
       HealthCheckCustomConfig:
         FailureThreshold: 1
       Name: grok_connect
-      NamespaceId:
-        Ref: DatagrokCloudMap
-    Type: AWS::ServiceDiscovery::Service
+      NamespaceId: !Ref DatagrokCloudMap
+
   GrokConnectTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
     Properties:
       ContainerDefinitions:
         - Command:
-            - Fn::Sub: "${AWS::Region}.compute.internal"
-            - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
-            - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
+            - !Sub ${AWS::Region}.compute.internal
+            - !Sub ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
+            - !Sub ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
           Essential: false
-          Image:
-            Fn::Sub:
-              - "${domain}/${repo}:${tag}"
-              - domain:
-                  Fn::FindInMap: [ Images, Searchdomain, domain ]
-                repo:
-                  Fn::FindInMap: [ Images, Searchdomain, repo ]
-                tag:
-                  Fn::FindInMap: [ Images, Searchdomain, version ]
+          Image: !Sub
+            - ${domain}/${repo}:${tag}
+            - domain: !FindInMap
+                - Images
+                - Searchdomain
+                - domain
+              repo: !FindInMap
+                - Images
+                - Searchdomain
+                - repo
+              tag: !FindInMap
+                - Images
+                - Searchdomain
+                - version
           LogConfiguration:
             LogDriver: awslogs
             Options:
-              awslogs-group:
-                Ref: DatagrokLogGroup
-              awslogs-region:
-                Ref: AWS::Region
+              awslogs-group: !Ref DatagrokLogGroup
+              awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: grok_connect
           MemoryReservation: 100
           ReadonlyRootFilesystem: true
@@ -1084,23 +954,23 @@ Resources:
             - Name: CONNECTION_POOL_IDLE_TIMEOUT
               Value: 300000
           Essential: true
-          Image:
-            Fn::Sub:
-              - "${domain}/${repo}:${tag}"
-              - domain:
-                  Fn::FindInMap: [ Images, GrokConnect, domain ]
-                repo:
-                  Fn::FindInMap: [ Images, GrokConnect, repo ]
-                tag:
-                  Ref: GrokConnectVersion
-          LinuxParameters: { }
+          Image: !Sub
+            - ${domain}/${repo}:${tag}
+            - domain: !FindInMap
+                - Images
+                - GrokConnect
+                - domain
+              repo: !FindInMap
+                - Images
+                - GrokConnect
+                - repo
+              tag: !Ref GrokConnectVersion
+          LinuxParameters: {}
           LogConfiguration:
             LogDriver: awslogs
             Options:
-              awslogs-group:
-                Ref: DatagrokLogGroup
-              awslogs-region:
-                Ref: AWS::Region
+              awslogs-group: !Ref DatagrokLogGroup
+              awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: grok_connect
           MemoryReservation: 1024
           ReadonlyRootFilesystem: true
@@ -1109,101 +979,88 @@ Resources:
             - ContainerPort: 1234
               HostPort: 1234
               Protocol: tcp
-      Cpu: '1024'
-      ExecutionRoleArn:
-        Fn::GetAtt:
-          - DatagrokTaskExecutionRole
-          - Arn
-      Family:
-        Fn::Sub:
-          - "${AWS::StackName}${postfix}-grok_connect"
-          - postfix:
-              Ref: Postfix
-      Memory: '2048'
+      Cpu: "1024"
+      ExecutionRoleArn: !GetAtt DatagrokTaskExecutionRole.Arn
+      Family: !Sub
+        - ${AWS::StackName}${postfix}-grok_connect
+        - postfix: !Ref Postfix
+      Memory: "2048"
       NetworkMode: awsvpc
       RequiresCompatibilities:
-        - "FARGATE"
-    Type: AWS::ECS::TaskDefinition
+        - FARGATE
+
   GrokConnectTCP1234IntListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       DefaultActions:
         - ForwardConfig:
             TargetGroups:
-              - TargetGroupArn:
-                  Ref: GrokConnectTCP1234IntTargetGroup
+              - TargetGroupArn: !Ref GrokConnectTCP1234IntTargetGroup
           Type: forward
-      LoadBalancerArn:
-        Ref: DatagrokLoadBalancerInt
+      LoadBalancerArn: !Ref DatagrokLoadBalancerInt
       Port: 1234
       Protocol: HTTP
-    Type: AWS::ElasticLoadBalancingV2::Listener
+
   GrokConnectTCP1234IntTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+
+    #Grok_pipe
     Properties:
-      Name:
-        Fn::Sub: "${AWS::StackName}-gcon-i"
+      Name: !Sub ${AWS::StackName}-gcon-i
       Port: 1234
       Protocol: HTTP
       Tags:
         - Key: datagrok.component
           Value: datagrok
-      TargetType: 'ip'
-      VpcId:
-        Ref: DatagrokVPC
+      TargetType: ip
+      VpcId: !Ref DatagrokVPC
       HealthCheckIntervalSeconds: 60
-      HealthCheckPath: "/health"
+      HealthCheckPath: /health
       Matcher:
         HttpCode: 200
       UnhealthyThresholdCount: 5
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-#Grok_pipe
+
   GrokPipeService:
+    Type: AWS::ECS::Service
     DependsOn:
       - GrokPipeTCP3000IntListener
     Properties:
-      Cluster:
-        Fn::GetAtt:
-          - DatagrokCluster
-          - Arn
+      Cluster: !GetAtt DatagrokCluster.Arn
       DeploymentConfiguration:
         MaximumPercent: 200
         MinimumHealthyPercent: 100
       DeploymentController:
         Type: ECS
       DesiredCount: 1
-      LaunchType: "FARGATE"
+      LaunchType: FARGATE
       LoadBalancers:
         - ContainerName: grok_pipe
           ContainerPort: 3000
-          TargetGroupArn:
-            Ref: GrokPipeTCP3000IntTargetGroup
+          TargetGroupArn: !Ref GrokPipeTCP3000IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: DISABLED
           SecurityGroups:
-            - Ref: DatagrokSecurityGroup
+            - !Ref DatagrokSecurityGroup
           Subnets:
-            - Ref: DatagrokPrivateSubnet1
-            - Ref: DatagrokPrivateSubnet2
+            - !Ref DatagrokPrivateSubnet1
+            - !Ref DatagrokPrivateSubnet2
       PlatformVersion: 1.4.0
       PropagateTags: SERVICE
       SchedulingStrategy: REPLICA
       ServiceRegistries:
-        - RegistryArn:
-            Fn::GetAtt:
-              - GrokPipeServiceDiscoveryEntry
-              - Arn
+        - RegistryArn: !GetAtt GrokPipeServiceDiscoveryEntry.Arn
       Tags:
         - Key: datagrok.component
           Value: datagrok
         - Key: datagrok.service
           Value: grok_pipe
-      TaskDefinition:
-        Ref: GrokPipeTaskDefinition
-    Type: AWS::ECS::Service
+      TaskDefinition: !Ref GrokPipeTaskDefinition
+
   GrokPipeServiceDiscoveryEntry:
+    Type: AWS::ServiceDiscovery::Service
     Properties:
-      Description:
-        Fn::Sub: "${AWS::StackName} Datagrok grok_pipe service discovery entry in Cloud Map"
+      Description: !Sub ${AWS::StackName} Datagrok grok_pipe service discovery entry in Cloud Map
       DnsConfig:
         DnsRecords:
           - TTL: 60
@@ -1212,33 +1069,36 @@ Resources:
       HealthCheckCustomConfig:
         FailureThreshold: 1
       Name: grok_pipe
-      NamespaceId:
-        Ref: DatagrokCloudMap
-    Type: AWS::ServiceDiscovery::Service
+      NamespaceId: !Ref DatagrokCloudMap
+
   GrokPipeTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
     Properties:
       ContainerDefinitions:
         - Command:
-            - Fn::Sub: "${AWS::Region}.compute.internal"
-            - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
-            - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
+            - !Sub ${AWS::Region}.compute.internal
+            - !Sub ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
+            - !Sub ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
           Essential: false
-          Image:
-            Fn::Sub:
-              - "${domain}/${repo}:${tag}"
-              - domain:
-                  Fn::FindInMap: [ Images, Searchdomain, domain ]
-                repo:
-                  Fn::FindInMap: [ Images, Searchdomain, repo ]
-                tag:
-                  Fn::FindInMap: [ Images, Searchdomain, version ]
+          Image: !Sub
+            - ${domain}/${repo}:${tag}
+            - domain: !FindInMap
+                - Images
+                - Searchdomain
+                - domain
+              repo: !FindInMap
+                - Images
+                - Searchdomain
+                - repo
+              tag: !FindInMap
+                - Images
+                - Searchdomain
+                - version
           LogConfiguration:
             LogDriver: awslogs
             Options:
-              awslogs-group:
-                Ref: DatagrokLogGroup
-              awslogs-region:
-                Ref: AWS::Region
+              awslogs-group: !Ref DatagrokLogGroup
+              awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: grok_pipe
           MemoryReservation: 100
           ReadonlyRootFilesystem: true
@@ -1247,23 +1107,23 @@ Resources:
             - Condition: SUCCESS
               ContainerName: ResolvConf
           Essential: true
-          Image:
-            Fn::Sub:
-              - "${domain}/${repo}:${tag}"
-              - domain:
-                  Fn::FindInMap: [ Images, GrokPipe, domain ]
-                repo:
-                  Fn::FindInMap: [ Images, GrokPipe, repo ]
-                tag:
-                  Ref: GrokPipeVersion
-          LinuxParameters: { }
+          Image: !Sub
+            - ${domain}/${repo}:${tag}
+            - domain: !FindInMap
+                - Images
+                - GrokPipe
+                - domain
+              repo: !FindInMap
+                - Images
+                - GrokPipe
+                - repo
+              tag: !Ref GrokPipeVersion
+          LinuxParameters: {}
           LogConfiguration:
             LogDriver: awslogs
             Options:
-              awslogs-group:
-                Ref: DatagrokLogGroup
-              awslogs-region:
-                Ref: AWS::Region
+              awslogs-group: !Ref DatagrokLogGroup
+              awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: grok_pipe
           MemoryReservation: 1024
           ReadonlyRootFilesystem: true
@@ -1274,75 +1134,65 @@ Resources:
               Protocol: tcp
           Environment:
             - Name: API_KEY
-              Value:
-                Fn::Sub:
-                  - "${apiKey}"
-                  - apiKey:
-                      Fn::Sub:
-                        - "{{resolve:secretsmanager:${secret}:SecretString:apikey}}"
-                        - secret:
-                            Ref: GrokPipeApiKeySecret
-      Cpu: '1024'
-      ExecutionRoleArn:
-        Fn::GetAtt:
-          - DatagrokTaskExecutionRole
-          - Arn
-      Family:
-        Fn::Sub:
-          - "${AWS::StackName}${postfix}-grok_pipe"
-          - postfix:
-              Ref: Postfix
-      Memory: '2048'
+              Value: !Sub
+                - ${apiKey}
+                - apiKey: !Sub
+                    - '{{resolve:secretsmanager:${secret}:SecretString:apikey}}'
+                    - secret: !Ref GrokPipeApiKeySecret
+      Cpu: "1024"
+      ExecutionRoleArn: !GetAtt DatagrokTaskExecutionRole.Arn
+      Family: !Sub
+        - ${AWS::StackName}${postfix}-grok_pipe
+        - postfix: !Ref Postfix
+      Memory: "2048"
       NetworkMode: awsvpc
       RequiresCompatibilities:
-        - "FARGATE"
-    Type: AWS::ECS::TaskDefinition
+        - FARGATE
+
   GrokPipeTCP3000IntListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       DefaultActions:
         - ForwardConfig:
             TargetGroups:
-              - TargetGroupArn:
-                  Ref: GrokPipeTCP3000IntTargetGroup
+              - TargetGroupArn: !Ref GrokPipeTCP3000IntTargetGroup
           Type: forward
-      LoadBalancerArn:
-        Ref: DatagrokLoadBalancerInt
+      LoadBalancerArn: !Ref DatagrokLoadBalancerInt
       Port: 3000
       Protocol: HTTP
-    Type: AWS::ElasticLoadBalancingV2::Listener
+
   GrokPipeTCP3000IntTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      Name:
-        Fn::Sub: "${AWS::StackName}-gpipe-i"
+      Name: !Sub ${AWS::StackName}-gpipe-i
       Port: 3000
       Protocol: HTTP
       Tags:
         - Key: datagrok.component
           Value: datagrok
-      TargetType: 'ip'
-      VpcId:
-        Ref: DatagrokVPC
+      TargetType: ip
+      VpcId: !Ref DatagrokVPC
       HealthCheckIntervalSeconds: 60
-      HealthCheckPath: "/info"
+      HealthCheckPath: /info
       Matcher:
         HttpCode: 200
       UnhealthyThresholdCount: 5
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+
   RabbitMQPassword:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Description: "Automatically generated RabbitMQ password"
+      Description: Automatically generated RabbitMQ password
       GenerateSecretString:
         SecretStringTemplate: '{"password": "password"}'
         GenerateStringKey: password
         PasswordLength: 16
         ExcludeCharacters: '"@/\!#$%^&*()-_=+[]{}|;:,.<>?`~'
+
   GrokPipeApiKeySecret:
     Type: AWS::SecretsManager::Secret
     Properties:
-      Name:
-        Fn::Sub: "${AWS::StackName}-GrokPipeApiKey"
-      Description: "Automatically generated API key for Datagrok"
+      Name: !Sub ${AWS::StackName}-GrokPipeApiKey
+      Description: Automatically generated API key for Datagrok
       GenerateSecretString:
         SecretStringTemplate: '{"apikey": ""}'
         GenerateStringKey: apikey
@@ -1350,53 +1200,46 @@ Resources:
         ExcludeCharacters: '"@/\!#$%^&*()-_=+[]{}|;:,.<>?`~'
 
   RabbitmqService:
+    Type: AWS::ECS::Service
     DependsOn:
       - RabbitmqTCP5672Listener
     Properties:
-      Cluster:
-        Fn::GetAtt:
-          - DatagrokCluster
-          - Arn
+      Cluster: !GetAtt DatagrokCluster.Arn
       DeploymentConfiguration:
         MaximumPercent: 200
         MinimumHealthyPercent: 100
       DeploymentController:
         Type: ECS
       DesiredCount: 1
-      LaunchType: "FARGATE"
+      LaunchType: FARGATE
       LoadBalancers:
         - ContainerName: rabbitmq
           ContainerPort: 5672
-          TargetGroupArn:
-            Ref: RabbitmqTCP5672TargetGroup
+          TargetGroupArn: !Ref RabbitmqTCP5672TargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: DISABLED
           SecurityGroups:
-            - Ref: RabbitMQSecurityGroup
+            - !Ref RabbitMQSecurityGroup
           Subnets:
-            - Ref: DatagrokPrivateSubnet1
-            - Ref: DatagrokPrivateSubnet2
+            - !Ref DatagrokPrivateSubnet1
+            - !Ref DatagrokPrivateSubnet2
       PlatformVersion: 1.4.0
       PropagateTags: SERVICE
       SchedulingStrategy: REPLICA
       ServiceRegistries:
-        - RegistryArn:
-            Fn::GetAtt:
-              - RabbitmqServiceDiscoveryEntry
-              - Arn
+        - RegistryArn: !GetAtt RabbitmqServiceDiscoveryEntry.Arn
       Tags:
         - Key: datagrok.component
           Value: datagrok
         - Key: datagrok.service
           Value: rabbitmq
-      TaskDefinition:
-        Ref: RabbitmqTaskDefinition
-    Type: AWS::ECS::Service
+      TaskDefinition: !Ref RabbitmqTaskDefinition
+
   RabbitmqServiceDiscoveryEntry:
+    Type: AWS::ServiceDiscovery::Service
     Properties:
-      Description:
-        Fn::Sub: "${AWS::StackName} Datagrok rabbitmq service discovery entry in Cloud Map"
+      Description: !Sub ${AWS::StackName} Datagrok rabbitmq service discovery entry in Cloud Map
       DnsConfig:
         DnsRecords:
           - TTL: 60
@@ -1405,33 +1248,36 @@ Resources:
       HealthCheckCustomConfig:
         FailureThreshold: 1
       Name: rabbitmq
-      NamespaceId:
-        Ref: DatagrokCloudMap
-    Type: AWS::ServiceDiscovery::Service
+      NamespaceId: !Ref DatagrokCloudMap
+
   RabbitmqTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
     Properties:
       ContainerDefinitions:
         - Command:
-            - Fn::Sub: "${AWS::Region}.compute.internal"
-            - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
-            - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
+            - !Sub ${AWS::Region}.compute.internal
+            - !Sub ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
+            - !Sub ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
           Essential: false
-          Image:
-            Fn::Sub:
-              - "${domain}/${repo}:${tag}"
-              - domain:
-                  Fn::FindInMap: [ Images, Searchdomain, domain ]
-                repo:
-                  Fn::FindInMap: [ Images, Searchdomain, repo ]
-                tag:
-                  Fn::FindInMap: [ Images, Searchdomain, version ]
+          Image: !Sub
+            - ${domain}/${repo}:${tag}
+            - domain: !FindInMap
+                - Images
+                - Searchdomain
+                - domain
+              repo: !FindInMap
+                - Images
+                - Searchdomain
+                - repo
+              tag: !FindInMap
+                - Images
+                - Searchdomain
+                - version
           LogConfiguration:
             LogDriver: awslogs
             Options:
-              awslogs-group:
-                Ref: DatagrokLogGroup
-              awslogs-region:
-                Ref: AWS::Region
+              awslogs-group: !Ref DatagrokLogGroup
+              awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: rabbitmq
           MemoryReservation: 100
           ReadonlyRootFilesystem: true
@@ -1440,23 +1286,23 @@ Resources:
             - Condition: SUCCESS
               ContainerName: ResolvConf
           Essential: true
-          Image:
-            Fn::Sub:
-              - "${domain}/${repo}:${tag}"
-              - domain:
-                  Fn::FindInMap: [ Images, Rabbitmq, domain ]
-                repo:
-                  Fn::FindInMap: [ Images, Rabbitmq, repo ]
-                tag:
-                  Ref: RabbitmqVersion
-          LinuxParameters: { }
+          Image: !Sub
+            - ${domain}/${repo}:${tag}
+            - domain: !FindInMap
+                - Images
+                - Rabbitmq
+                - domain
+              repo: !FindInMap
+                - Images
+                - Rabbitmq
+                - repo
+              tag: !Ref RabbitmqVersion
+          LinuxParameters: {}
           LogConfiguration:
             LogDriver: awslogs
             Options:
-              awslogs-group:
-                Ref: DatagrokLogGroup
-              awslogs-region:
-                Ref: AWS::Region
+              awslogs-group: !Ref DatagrokLogGroup
+              awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: rabbitmq
           MemoryReservation: 1024
           ReadonlyRootFilesystem: true
@@ -1469,127 +1315,107 @@ Resources:
               HostPort: 15672
               Protocol: tcp
           Environment:
-            - Name: "RABBITMQ_DEFAULT_USER"
-              Value: "guest"
+            - Name: RABBITMQ_DEFAULT_USER
+              Value: guest
             - Name: RABBITMQ_DEFAULT_PASS
-              Value:
-                Fn::Sub:
-                  - "${amqpPassword}"
-                  - amqpPassword:
-                      Fn::Sub:
-                        - "{{resolve:secretsmanager:${secret}:SecretString:password}}"
-                        - secret:
-                            Ref: RabbitMQPassword
-      Cpu: '1024'
-      ExecutionRoleArn:
-        Fn::GetAtt:
-          - DatagrokTaskExecutionRole
-          - Arn
-      Family:
-        Fn::Sub:
-          - "${AWS::StackName}${postfix}-rabbitmq"
-          - postfix:
-              Ref: Postfix
-      Memory: '2048'
+              Value: !Sub
+                - ${amqpPassword}
+                - amqpPassword: !Sub
+                    - '{{resolve:secretsmanager:${secret}:SecretString:password}}'
+                    - secret: !Ref RabbitMQPassword
+      Cpu: "1024"
+      ExecutionRoleArn: !GetAtt DatagrokTaskExecutionRole.Arn
+      Family: !Sub
+        - ${AWS::StackName}${postfix}-rabbitmq
+        - postfix: !Ref Postfix
+      Memory: "2048"
       EphemeralStorage:
         SizeInGiB: 21
       NetworkMode: awsvpc
       RequiresCompatibilities:
-        - "FARGATE"
-    Type: AWS::ECS::TaskDefinition
+        - FARGATE
+
   RabbitMQSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription:
-        Fn::Sub: "${AWS::StackName} Datagrok Security Group"
+      GroupDescription: !Sub ${AWS::StackName} Datagrok Security Group
       Tags:
         - Key: Name
-          Value:
-            Fn::Sub:
-              - "${AWS::StackName}${postfix}"
-              - postfix:
-                  Ref: Postfix
+          Value: !Sub
+            - ${AWS::StackName}${postfix}
+            - postfix: !Ref Postfix
         - Key: datagrok.component
           Value: datagrok
-      VpcId:
-        Ref: DatagrokVPC
+      VpcId: !Ref DatagrokVPC
       SecurityGroupIngress:
-        - Description: "Allow AMQP traffic from VPC"
+        - Description: Allow AMQP traffic from VPC
           IpProtocol: tcp
           FromPort: 5672
           ToPort: 5672
-          CidrIp:
-            Ref: CIDR
-        - Description: "Allow RabbitMQ Management UI (HTTP 15672) from VPC"
+          CidrIp: !Ref CIDR
+        - Description: Allow RabbitMQ Management UI (HTTP 15672) from VPC
           IpProtocol: tcp
           FromPort: 15672
           ToPort: 15672
-          CidrIp:
-            Ref: CIDR
+          CidrIp: !Ref CIDR
       SecurityGroupEgress:
-        - Description: "Allow all outbound traffic"
+        - Description: Allow all outbound traffic
           IpProtocol: "-1"
-          CidrIp: "0.0.0.0/0"
-    Type: AWS::EC2::SecurityGroup
+          CidrIp: 0.0.0.0/0
+
   RabbitmqTCP5672TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      Name:
-        Fn::Sub: "${AWS::StackName}-RabbitMQ-5672"
+      Name: !Sub ${AWS::StackName}-RabbitMQ-5672
       Port: 5672
       Protocol: TCP
       TargetType: ip
-      VpcId:
-        Ref: DatagrokVPC
+      VpcId: !Ref DatagrokVPC
       HealthCheckProtocol: TCP
       HealthCheckPort: 5672
       HealthCheckIntervalSeconds: 30
       HealthyThresholdCount: 3
       UnhealthyThresholdCount: 3
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+
   RabbitmqNLB:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      Name:
-        Fn::Sub: "${AWS::StackName}-RabbitMQ-NLB"
+      Name: !Sub ${AWS::StackName}-RabbitMQ-NLB
       Scheme: internal
       Type: network
       Subnets:
-        - Ref: DatagrokPrivateSubnet1
-        - Ref: DatagrokPrivateSubnet2
+        - !Ref DatagrokPrivateSubnet1
+        - !Ref DatagrokPrivateSubnet2
       SecurityGroups:
-        - Ref: RabbitmqSecurityGroup
+        - !Ref RabbitmqSecurityGroup
 
   RabbitmqTCP5672Listener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
-      LoadBalancerArn:
-        Ref: RabbitmqNLB
+      LoadBalancerArn: !Ref RabbitmqNLB
       Protocol: TCP
       Port: 5672
       DefaultActions:
         - Type: forward
-          TargetGroupArn:
-            Ref: RabbitmqTCP5672TargetGroup
+          TargetGroupArn: !Ref RabbitmqTCP5672TargetGroup
+
   RabbitmqSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      VpcId:
-        Ref: DatagrokVPC
-      GroupDescription: "Security Group for RabbitMQ"
+      VpcId: !Ref DatagrokVPC
+      GroupDescription: Security Group for RabbitMQ
       SecurityGroupIngress:
-        - Description:
-            Fn::Sub: "${AWS::StackName} Allow internal connections from Datagrok to Rabbitmq"
+        - Description: !Sub ${AWS::StackName} Allow internal connections from Datagrok to Rabbitmq
           FromPort: 5672
           ToPort: 5672
           IpProtocol: TCP
-          SourceSecurityGroupId:
-            Ref: DatagrokSecurityGroup
-        - Description:
-            Fn::Sub: "${AWS::StackName} Allow internal connections from CVM to Rabbitmq"
+          SourceSecurityGroupId: !Ref DatagrokSecurityGroup
+        - Description: !Sub ${AWS::StackName} Allow internal connections from CVM to Rabbitmq
           FromPort: 5672
           ToPort: 5672
           IpProtocol: TCP
-          SourceSecurityGroupId:
-            Ref: CvmSecurityGroup
+          SourceSecurityGroupId: !Ref CvmSecurityGroup
+
   DatagrokDbUser:
     Type: AWS::SecretsManager::Secret
     Properties:
@@ -1600,6 +1426,7 @@ Resources:
         RequireEachIncludedType: true
         PasswordLength: 32
         ExcludePunctuation: true
+
   DatagrokDbAdminUser:
     Type: AWS::SecretsManager::Secret
     Properties:
@@ -1610,6 +1437,7 @@ Resources:
         RequireEachIncludedType: true
         PasswordLength: 32
         ExcludePunctuation: true
+
   DatagrokAdminPassword:
     Type: AWS::SecretsManager::Secret
     Properties:
@@ -1620,6 +1448,7 @@ Resources:
         RequireEachIncludedType: true
         PasswordLength: 16
         ExcludePunctuation: true
+
   DatagrokAdminDevKey:
     Type: AWS::SecretsManager::Secret
     Properties:
@@ -1630,48 +1459,43 @@ Resources:
         RequireEachIncludedType: true
         PasswordLength: 24
         ExcludePunctuation: true
+
   DatagrokDB:
-    Type: AWS::RDS::DBInstance
-    UpdateReplacePolicy: Delete
     DeletionPolicy: Snapshot
+    UpdateReplacePolicy: Delete
+    Type: AWS::RDS::DBInstance
     Properties:
-      AllocatedStorage: '50'
+      AllocatedStorage: "50"
       AllowMajorVersionUpgrade: false
       AutoMinorVersionUpgrade: true
       BackupRetentionPeriod: 3
       DBInstanceClass: db.t3.large
-      DBInstanceIdentifier:
-        Fn::Sub:
-          - "${AWS::StackName}${postfix}-rds"
-          - postfix:
-              Ref: Postfix
+      DBInstanceIdentifier: !Sub
+        - ${AWS::StackName}${postfix}-rds
+        - postfix: !Ref Postfix
       DBName: datagrok
-      DBSubnetGroupName:
-        Ref: DatagrokDBSubnetGroup
+      DBSubnetGroupName: !Ref DatagrokDBSubnetGroup
       DeleteAutomatedBackups: true
       DeletionProtection: false
       Engine: postgres
-      EngineVersion: '17'
-      MasterUsername:
-        Fn::Sub:
-          - "{{resolve:secretsmanager:${secret}:SecretString:user}}"
-          - secret:
-              Ref: DatagrokDbAdminUser
-      MasterUserPassword:
-        Fn::Sub:
-          - "{{resolve:secretsmanager:${secret}:SecretString:password}}"
-          - secret:
-              Ref: DatagrokDbAdminUser
+      EngineVersion: "17"
+      MasterUsername: !Sub
+        - '{{resolve:secretsmanager:${secret}:SecretString:user}}'
+        - secret: !Ref DatagrokDbAdminUser
+      MasterUserPassword: !Sub
+        - '{{resolve:secretsmanager:${secret}:SecretString:password}}'
+        - secret: !Ref DatagrokDbAdminUser
       MultiAZ: false
-      Port: '5432'
+      Port: "5432"
       PubliclyAccessible: false
       StorageEncrypted: true
       Tags:
         - Key: datagrok.component
           Value: datagrok
       VPCSecurityGroups:
-        - Ref: DatagrokDBSecurityGroup
+        - !Ref DatagrokDBSecurityGroup
       EnableIAMDatabaseAuthentication: true
+
   DatagrokS3:
     Type: AWS::S3::Bucket
     Properties:
@@ -1680,17 +1504,14 @@ Resources:
           - BucketKeyEnabled: true
             ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
-      BucketName:
-        Fn::Sub:
-          - "${AWS::StackName}${postfix}-s3-${uuid}"
-          - postfix:
-              Ref: Postfix
-            uuid:
-              Fn::Select:
-                - 2
-                - Fn::Split:
-                    - "/"
-                    - Ref: AWS::StackId
+      BucketName: !Sub
+        - ${AWS::StackName}${postfix}-s3-${uuid}
+        - postfix: !Ref Postfix
+          uuid: !Select
+            - 2
+            - !Split
+              - /
+              - !Ref AWS::StackId
       ObjectLockEnabled: false
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
@@ -1700,61 +1521,51 @@ Resources:
       Tags:
         - Key: datagrok.component
           Value: datagrok
+
   DatagrokS3Policy:
     Type: AWS::S3::BucketPolicy
     Properties:
-      Bucket:
-        Ref: DatagrokS3
+      Bucket: !Ref DatagrokS3
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
-          - Fn::If:
-              - UseVPCEndpoint
-              - Action:
-                  - s3:PutObject
-                  - s3:GetObject
-                  - s3:DeleteObject
-                Condition:
-                  StringNotEquals:
-                    aws:SourceVpce:
-                      Ref: DatagrokS3VPCEndpoint
-                    "aws:PrincipalArn":
-                      - Fn::Sub: "arn:aws:iam::${AWS::AccountId}:root"
-                      - Ref: DatagrokS3EmptyLambdaRole
-                Effect: Deny
-                Principal: '*'
-                Resource:
-                  - Fn::GetAtt:
-                      - DatagrokS3
-                      - Arn
-                  - Fn::Sub:
-                      - ${bucket}/*
-                      - bucket:
-                          Fn::GetAtt:
-                            - DatagrokS3
-                            - Arn
-              - Ref: "AWS::NoValue"
-          - Principal: "*"
-            Action: "*"
+          - !If
+            - UseVPCEndpoint
+            - Action:
+                - s3:PutObject
+                - s3:GetObject
+                - s3:DeleteObject
+              Condition:
+                StringNotEquals:
+                  aws:SourceVpce: !Ref DatagrokS3VPCEndpoint
+                  aws:PrincipalArn:
+                    - !Sub arn:aws:iam::${AWS::AccountId}:root
+                    - !Ref DatagrokS3EmptyLambdaRole
+              Effect: Deny
+              Principal: '*'
+              Resource:
+                - !GetAtt DatagrokS3.Arn
+                - !Sub
+                  - ${bucket}/*
+                  - bucket: !GetAtt DatagrokS3.Arn
+            - !Ref AWS::NoValue
+          - Principal: '*'
+            Action: '*'
             Effect: Deny
             Resource:
-              - Fn::GetAtt:
-                  - DatagrokS3
-                  - Arn
-              - Fn::Sub:
-                  - "${bucket}/*"
-                  - bucket:
-                      Fn::GetAtt:
-                        - DatagrokS3
-                        - Arn
+              - !GetAtt DatagrokS3.Arn
+              - !Sub
+                - ${bucket}/*
+                - bucket: !GetAtt DatagrokS3.Arn
             Condition:
               Bool:
                 aws:SecureTransport: false
+
   DatagrokS3EmptyLambdaRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
@@ -1763,32 +1574,26 @@ Resources:
             Action:
               - sts:AssumeRole
       Policies:
-        - PolicyName:
-            Fn::Sub: "${AWS::StackName}-s3-lambda"
+        - PolicyName: !Sub ${AWS::StackName}-s3-lambda
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
-                  - 'logs:CreateLogStream'
-                  - 'logs:PutLogEvents'
-                Resource:
-                  Fn::Sub: "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}S3EmptyLambdaFunction-*:*"
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}S3EmptyLambdaFunction-*:*
               - Action:
                   - s3:GetObject
                   - s3:DeleteObject
                   - s3:ListBucket
                 Effect: Allow
                 Resource:
-                  - Fn::GetAtt:
-                      - DatagrokS3
-                      - Arn
-                  - Fn::Sub:
-                      - "${bucket}/*"
-                      - bucket:
-                          Fn::GetAtt:
-                            - DatagrokS3
-                            - Arn
+                  - !GetAtt DatagrokS3.Arn
+                  - !Sub
+                    - ${bucket}/*
+                    - bucket: !GetAtt DatagrokS3.Arn
+
   DatagrokS3EmptyLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -1817,58 +1622,56 @@ Resources:
                   cfnresponse.send(event, context, cfnresponse.FAILED, {'Exception': f"{type(e).__name__} {e}"})
       Handler: index.handler
       Runtime: python3.10
-      Role:
-        Fn::GetAtt:
-          - DatagrokS3EmptyLambdaRole
-          - Arn
+      Role: !GetAtt DatagrokS3EmptyLambdaRole.Arn
       MemorySize: 128
       Timeout: 600
+
   DatagrokS3EmptyLambdaFunctionDatagrokLogGroup:
-    Type: AWS::Logs::LogGroup
-    UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName:
-        Fn::Sub:
-          - "/aws/lambda/${function_name}"
-          - function_name:
-              Ref: DatagrokS3EmptyLambdaFunction
+      LogGroupName: !Sub
+        - /aws/lambda/${function_name}
+        - function_name: !Ref DatagrokS3EmptyLambdaFunction
       RetentionInDays: 1
+
   DatagrokS3Empty:
     Type: AWS::CloudFormation::CustomResource
     DependsOn:
       - DatagrokS3EmptyLambdaFunctionDatagrokLogGroup
     Properties:
-      BucketName:
-        Ref: DatagrokS3
-      ServiceToken:
-        Fn::GetAtt:
-          - DatagrokS3EmptyLambdaFunction
-          - Arn
+      BucketName: !Ref DatagrokS3
+      ServiceToken: !GetAtt DatagrokS3EmptyLambdaFunction.Arn
+
   DatagrokTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
     Properties:
       ContainerDefinitions:
         - Command:
-            - Fn::Sub: "${AWS::Region}.compute.internal"
-            - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
-            - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
+            - !Sub ${AWS::Region}.compute.internal
+            - !Sub ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
+            - !Sub ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
           Essential: false
-          Image:
-            Fn::Sub:
-              - "${domain}/${repo}:${tag}"
-              - domain:
-                  Fn::FindInMap: [ Images, Searchdomain, domain ]
-                repo:
-                  Fn::FindInMap: [ Images, Searchdomain, repo ]
-                tag:
-                  Fn::FindInMap: [ Images, Searchdomain, version ]
+          Image: !Sub
+            - ${domain}/${repo}:${tag}
+            - domain: !FindInMap
+                - Images
+                - Searchdomain
+                - domain
+              repo: !FindInMap
+                - Images
+                - Searchdomain
+                - repo
+              tag: !FindInMap
+                - Images
+                - Searchdomain
+                - version
           LogConfiguration:
             LogDriver: awslogs
             Options:
-              awslogs-group:
-                Ref: DatagrokLogGroup
-              awslogs-region:
-                Ref: AWS::Region
+              awslogs-group: !Ref DatagrokLogGroup
+              awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: datagrok
           MemoryReservation: 100
           ReadonlyRootFilesystem: true
@@ -1880,548 +1683,398 @@ Resources:
             - Name: GROK_MODE
               Value: auto
             - Name: GROK_PARAMETERS
-              Value:
-                Fn::Sub:
-                  - '{ "amazonStorageRegion": "${AWS::Region}", "amazonStorageBucket": "${bucket}",
-              "dbServer": "${dbServer}", "dbPort": "${dbPort}", "db": "datagrok",
-              "dbLogin": "${dbLogin}", "dbPassword": "${dbPassword}", "dbAdminLogin":
-              "${dbAdminLogin}", "dbAdminPassword": "${dbAdminPassword}", "dbSsl": true,
-              "deployDemo": false, "deployTestDemo": false, "adminPassword": "${adminPassword}", "adminDevKey": "${adminDevKey}",
-              "queueSettings":{ 
-                "amqpHost":"${amqpHost}", 
-                "amqpPort": 5672, 
-                "amqpUser":"guest", 
-                "amqpPassword":"${amqpPassword}",
-                "pipeHost":"${pipeHost}", 
-                "pipeKey":"${grokPipeApiKey}" 
-                },
-              "dockerSettings":{
-                "grokSpawnerApiKey":"test-x-api-key",
-                "grokSpawnerHost":"${grokSpawnerHost}",
-                "grokSpawnerPort":8000,
-                "imageBuildTimeoutMinutes":30,
-                "proxyRequestTimeout":60000
-               },
-             "connectorsSettings":{
-                 "dataframeParsingMode":"New Process",
-                 "externalDataFrameCompress":true,
-                 "grokConnectHost":"${grokConnectHost}",
-                 "grokConnectPort":1234,
-                 "localFileSystemAccess":false,
-                 "sambaSpaceEscape":"none",
-                 "sambaVersion":"3.0",
-                 "windowsSharesProxy":""
-                }
-              }'
-                  - bucket:
-                      Ref: DatagrokS3
-                    dbServer:
-                      Fn::GetAtt:
-                        - DatagrokDB
-                        - Endpoint.Address
-                    dbPort:
-                      Fn::GetAtt:
-                        - DatagrokDB
-                        - Endpoint.Port
-                    dbLogin:
-                      Fn::Sub:
-                        - "{{resolve:secretsmanager:${secret}:SecretString:user}}"
-                        - secret:
-                            Ref: DatagrokDbUser
-                    dbPassword:
-                      Fn::Sub:
-                        - "{{resolve:secretsmanager:${secret}:SecretString:password}}"
-                        - secret:
-                            Ref: DatagrokDbUser
-                    dbAdminLogin:
-                      Fn::Sub:
-                        - "{{resolve:secretsmanager:${secret}:SecretString:user}}"
-                        - secret:
-                            Ref: DatagrokDbAdminUser
-                    dbAdminPassword:
-                      Fn::Sub:
-                        - "{{resolve:secretsmanager:${secret}:SecretString:password}}"
-                        - secret:
-                            Ref: DatagrokDbAdminUser
-                    adminPassword:
-                      Fn::Sub:
-                        - "{{resolve:secretsmanager:${secret}:SecretString:password}}"
-                        - secret:
-                            Ref: DatagrokAdminPassword
-                    adminDevKey:
-                      Fn::Sub:
-                        - "{{resolve:secretsmanager:${secret}:SecretString:password}}"
-                        - secret:
-                            Ref: DatagrokAdminDevKey
-                    amqpHost:
-                      Fn::Sub: "rabbit.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal"
-                    grokConnectHost:
-                      Fn::Sub: "grok_connect.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal"
-                    grokSpawnerHost:
-                      Fn::Sub: "grok_spawner.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal"
-                    pipeHost:
-                      Fn::Sub: "pipe.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal"
-                    amqpPassword:
-                      Fn::Sub:
-                        - "{{resolve:secretsmanager:${secret}:SecretString:password}}"
-                        - secret:
-                            Ref: RabbitMQPassword
-                    grokPipeApiKey:
-                      Fn::Sub:
-                        - "{{resolve:secretsmanager:${secret}:SecretString:apikey}}"
-                        - secret:
-                            Ref: GrokPipeApiKeySecret
+              Value: !Sub
+                - '{ "amazonStorageRegion": "${AWS::Region}", "amazonStorageBucket": "${bucket}", "dbServer": "${dbServer}", "dbPort": "${dbPort}", "db": "datagrok", "dbLogin": "${dbLogin}", "dbPassword": "${dbPassword}", "dbAdminLogin": "${dbAdminLogin}", "dbAdminPassword": "${dbAdminPassword}", "dbSsl": true, "deployDemo": false, "deployTestDemo": false, "adminPassword": "${adminPassword}", "adminDevKey": "${adminDevKey}", "queueSettings":{ "amqpHost":"${amqpHost}", "amqpPort": 5672, "amqpUser":"guest", "amqpPassword":"${amqpPassword}", "pipeHost":"${pipeHost}", "pipeKey":"${grokPipeApiKey}" }, "dockerSettings":{ "grokSpawnerApiKey":"test-x-api-key", "grokSpawnerHost":"${grokSpawnerHost}", "grokSpawnerPort":8000, "imageBuildTimeoutMinutes":30, "proxyRequestTimeout":60000 }, "connectorsSettings":{ "dataframeParsingMode":"New Process", "externalDataFrameCompress":true, "grokConnectHost":"${grokConnectHost}", "grokConnectPort":1234, "localFileSystemAccess":false, "sambaSpaceEscape":"none", "sambaVersion":"3.0", "windowsSharesProxy":"" } }'
+                - bucket: !Ref DatagrokS3
+                  dbServer: !GetAtt DatagrokDB.Endpoint.Address
+                  dbPort: !GetAtt DatagrokDB.Endpoint.Port
+                  dbLogin: !Sub
+                    - '{{resolve:secretsmanager:${secret}:SecretString:user}}'
+                    - secret: !Ref DatagrokDbUser
+                  dbPassword: !Sub
+                    - '{{resolve:secretsmanager:${secret}:SecretString:password}}'
+                    - secret: !Ref DatagrokDbUser
+                  dbAdminLogin: !Sub
+                    - '{{resolve:secretsmanager:${secret}:SecretString:user}}'
+                    - secret: !Ref DatagrokDbAdminUser
+                  dbAdminPassword: !Sub
+                    - '{{resolve:secretsmanager:${secret}:SecretString:password}}'
+                    - secret: !Ref DatagrokDbAdminUser
+                  adminPassword: !Sub
+                    - '{{resolve:secretsmanager:${secret}:SecretString:password}}'
+                    - secret: !Ref DatagrokAdminPassword
+                  adminDevKey: !Sub
+                    - '{{resolve:secretsmanager:${secret}:SecretString:password}}'
+                    - secret: !Ref DatagrokAdminDevKey
+                  amqpHost: !Sub rabbit.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
+                  grokConnectHost: !Sub grok_connect.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
+                  grokSpawnerHost: !Sub grok_spawner.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
+                  pipeHost: !Sub pipe.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
+                  amqpPassword: !Sub
+                    - '{{resolve:secretsmanager:${secret}:SecretString:password}}'
+                    - secret: !Ref RabbitMQPassword
+                  grokPipeApiKey: !Sub
+                    - '{{resolve:secretsmanager:${secret}:SecretString:apikey}}'
+                    - secret: !Ref GrokPipeApiKeySecret
           Essential: true
-          Image:
-            Fn::Sub:
-              - "${domain}/${repo}:${tag}"
-              - domain:
-                  Fn::FindInMap: [ Images, Datagrok, domain ]
-                repo:
-                  Fn::FindInMap: [ Images, Datagrok, repo ]
-                tag:
-                  Ref: DatagrokVersion
-          LinuxParameters: { }
+          Image: !Sub
+            - ${domain}/${repo}:${tag}
+            - domain: !FindInMap
+                - Images
+                - Datagrok
+                - domain
+              repo: !FindInMap
+                - Images
+                - Datagrok
+                - repo
+              tag: !Ref DatagrokVersion
+          LinuxParameters: {}
           LogConfiguration:
             LogDriver: awslogs
             Options:
-              awslogs-group:
-                Ref: DatagrokLogGroup
-              awslogs-region:
-                Ref: AWS::Region
+              awslogs-group: !Ref DatagrokLogGroup
+              awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: datagrok
           MemoryReservation: 1024
+
           #          ReadonlyRootFilesystem: true
           Name: datagrok
           PortMappings:
             - ContainerPort: 8080
               HostPort: 8080
               Protocol: tcp
-      Cpu: '2048'
-      ExecutionRoleArn:
-        Fn::GetAtt:
-          - DatagrokTaskExecutionRole
-          - Arn
-      Family:
-        Fn::Sub:
-          - "${AWS::StackName}${postfix}"
-          - postfix:
-              Ref: Postfix
-      Memory: '4096'
+      Cpu: "2048"
+      ExecutionRoleArn: !GetAtt DatagrokTaskExecutionRole.Arn
+      Family: !Sub
+        - ${AWS::StackName}${postfix}
+        - postfix: !Ref Postfix
+      Memory: "4096"
       NetworkMode: awsvpc
       RequiresCompatibilities:
-        - "FARGATE"
-      TaskRoleArn:
-        Ref: DatagrokTaskRole
-    Type: AWS::ECS::TaskDefinition
+        - FARGATE
+      TaskRoleArn: !Ref DatagrokTaskRole
+
   DatagrokPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
-      Description:
-        Fn::Sub: "${AWS::StackName} Datagrok policy to access AWS resources"
+      Description: !Sub ${AWS::StackName} Datagrok policy to access AWS resources
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Action:
               - s3:PutObject
               - s3:GetObject
               - s3:DeleteObject
               - s3:ListBucket
-            Condition: { }
+            Condition: {}
             Effect: Allow
             Resource:
-              - Fn::GetAtt:
-                  - DatagrokS3
-                  - Arn
-              - Fn::Sub:
-                  - "${bucket}/*"
-                  - bucket:
-                      Fn::GetAtt:
-                        - DatagrokS3
-                        - Arn
-      ManagedPolicyName:
-        Fn::Sub: "${AWS::StackName}S3Access-${AWS::Region}"
+              - !GetAtt DatagrokS3.Arn
+              - !Sub
+                - ${bucket}/*
+                - bucket: !GetAtt DatagrokS3.Arn
+      ManagedPolicyName: !Sub ${AWS::StackName}S3Access-${AWS::Region}
+
   DatagrokTaskRole:
+    Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
         Statement:
           - Action:
               - sts:AssumeRole
-            Condition: { }
+            Condition: {}
             Effect: Allow
             Principal:
               Service: ecs-tasks.amazonaws.com
-        Version: '2012-10-17'
+        Version: "2012-10-17"
       ManagedPolicyArns:
-        - Ref: DatagrokPolicy
-        - Ref: DatagrokECSPolicy
+        - !Ref DatagrokPolicy
+        - !Ref DatagrokECSPolicy
       Tags:
         - Key: datagrok.component
           Value: datagrok
         - Key: datagrok.service
           Value: datagrok
-    Type: AWS::IAM::Role
+
   DatagrokLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      Name:
-        Fn::Sub:
-          - "${AWS::StackName}${postfix}"
-          - postfix:
-              Ref: Postfix
-      Scheme:
-        'Fn::If':
-          - InternetIngressAccess
-          - 'internet-facing'
-          - 'internal'
+      Name: !Sub
+        - ${AWS::StackName}${postfix}
+        - postfix: !Ref Postfix
+      Scheme: !If
+        - InternetIngressAccess
+        - internet-facing
+        - internal
       SecurityGroups:
-        - Ref: DatagrokALBSecurityGroup
-      Subnets:
-        'Fn::If':
-          - InternetIngressAccess
-          - - Ref: DatagrokPublicSubnet1
-            - Ref: DatagrokPublicSubnet2
-          - - Ref: DatagrokPrivateSubnet1
-            - Ref: DatagrokPrivateSubnet2
+        - !Ref DatagrokALBSecurityGroup
+      Subnets: !If
+        - InternetIngressAccess
+        - - !Ref DatagrokPublicSubnet1
+          - !Ref DatagrokPublicSubnet2
+        - - !Ref DatagrokPrivateSubnet1
+          - !Ref DatagrokPrivateSubnet2
       Tags:
         - Key: Name
-          Value:
-            Fn::Sub:
-              - "${AWS::StackName}${postfix}-alb"
-              - postfix:
-                  Ref: Postfix
+          Value: !Sub
+            - ${AWS::StackName}${postfix}-alb
+            - postfix: !Ref Postfix
         - Key: datagrok.component
           Value: datagrok
       Type: application
       LoadBalancerAttributes:
         - Key: routing.http.drop_invalid_header_fields.enabled
-          Value: 'true'
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+          Value: "true"
+
   DatagrokLoadBalancerInt:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      Name:
-        Fn::Sub:
-          - "${AWS::StackName}${postfix}-int"
-          - postfix:
-              Ref: Postfix
+      Name: !Sub
+        - ${AWS::StackName}${postfix}-int
+        - postfix: !Ref Postfix
       Scheme: internal
       SecurityGroups:
-        - Ref: DatagrokALBIntSecurityGroup
+        - !Ref DatagrokALBIntSecurityGroup
       Subnets:
-        - Ref: DatagrokPrivateSubnet1
-        - Ref: DatagrokPrivateSubnet2
+        - !Ref DatagrokPrivateSubnet1
+        - !Ref DatagrokPrivateSubnet2
       Tags:
         - Key: Name
-          Value:
-            Fn::Sub:
-              - "${AWS::StackName}${postfix}-alb-int"
-              - postfix:
-                  Ref: Postfix
+          Value: !Sub
+            - ${AWS::StackName}${postfix}-alb-int
+            - postfix: !Ref Postfix
         - Key: datagrok.component
           Value: datagrok
       Type: application
       LoadBalancerAttributes:
         - Key: routing.http.drop_invalid_header_fields.enabled
-          Value: 'true'
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+          Value: "true"
+
   DatagrokLogGroup:
-    Properties:
-      LogGroupName:
-        Fn::Sub:
-          - "/ecs/${AWS::StackName}${postfix}-${AWS::Region}"
-          - postfix:
-              Ref: Postfix
-      RetentionInDays: 7
-    UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub
+        - /ecs/${AWS::StackName}${postfix}-${AWS::Region}
+        - postfix: !Ref Postfix
+      RetentionInDays: 7
+
   DatagrokPrivateDNSZone:
     Type: AWS::Route53::HostedZone
     Properties:
       HostedZoneConfig:
-        Comment:
-          Fn::Sub: "${AWS::StackName} Private Datagrok Zone for internal routing"
-      Name:
-        Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal.
+        Comment: !Sub ${AWS::StackName} Private Datagrok Zone for internal routing
+      Name: !Sub ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal.
       VPCs:
-        - VPCId:
-            Ref: DatagrokVPC
-          VPCRegion:
-            Ref: AWS::Region
+        - VPCId: !Ref DatagrokVPC
+          VPCRegion: !Ref AWS::Region
+
   DatagrokPrivateDNS:
     Type: AWS::Route53::RecordSet
     Properties:
-      HostedZoneId:
-        Ref: DatagrokPrivateDNSZone
-      Comment:
-        Fn::Sub: "${AWS::StackName} Private Datagrok DNS for internal routing"
-      Name:
-        Fn::Sub: datagrok.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal.
+      HostedZoneId: !Ref DatagrokPrivateDNSZone
+      Comment: !Sub ${AWS::StackName} Private Datagrok DNS for internal routing
+      Name: !Sub datagrok.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal.
       Type: A
       AliasTarget:
-        HostedZoneId:
-          Fn::GetAtt:
-            - DatagrokLoadBalancerInt
-            - CanonicalHostedZoneID
-        DNSName:
-          Fn::GetAtt:
-            - DatagrokLoadBalancerInt
-            - DNSName
+        HostedZoneId: !GetAtt DatagrokLoadBalancerInt.CanonicalHostedZoneID
+        DNSName: !GetAtt DatagrokLoadBalancerInt.DNSName
+
   GrokConnectPrivateDNS:
     Type: AWS::Route53::RecordSet
     Properties:
-      HostedZoneId:
-        Ref: DatagrokPrivateDNSZone
-      Comment:
-        Fn::Sub: "${AWS::StackName} Private Datagrok grok connect DNS for internal routing"
-      Name:
-        Fn::Sub: grok_connect.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal.
+      HostedZoneId: !Ref DatagrokPrivateDNSZone
+      Comment: !Sub ${AWS::StackName} Private Datagrok grok connect DNS for internal routing
+      Name: !Sub grok_connect.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal.
       Type: A
       AliasTarget:
-        HostedZoneId:
-          Fn::GetAtt:
-            - DatagrokLoadBalancerInt
-            - CanonicalHostedZoneID
-        DNSName:
-          Fn::GetAtt:
-            - DatagrokLoadBalancerInt
-            - DNSName
+        HostedZoneId: !GetAtt DatagrokLoadBalancerInt.CanonicalHostedZoneID
+        DNSName: !GetAtt DatagrokLoadBalancerInt.DNSName
+
   GrokPipePrivateDNS:
     Type: AWS::Route53::RecordSet
     Properties:
-      HostedZoneId:
-        Ref: DatagrokPrivateDNSZone
-      Comment:
-        Fn::Sub: "${AWS::StackName} Private Datagrok grok pipe DNS for internal routing"
-      Name:
-        Fn::Sub: pipe.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal.
+      HostedZoneId: !Ref DatagrokPrivateDNSZone
+      Comment: !Sub ${AWS::StackName} Private Datagrok grok pipe DNS for internal routing
+      Name: !Sub pipe.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal.
       Type: A
       AliasTarget:
-        HostedZoneId:
-          Fn::GetAtt:
-            - DatagrokLoadBalancerInt
-            - CanonicalHostedZoneID
-        DNSName:
-          Fn::GetAtt:
-            - DatagrokLoadBalancerInt
-            - DNSName
+        HostedZoneId: !GetAtt DatagrokLoadBalancerInt.CanonicalHostedZoneID
+        DNSName: !GetAtt DatagrokLoadBalancerInt.DNSName
+
   RabbitmqPrivateDNS:
     Type: AWS::Route53::RecordSet
     Properties:
-      HostedZoneId:
-        Ref: DatagrokPrivateDNSZone
-      Comment:
-        Fn::Sub: "${AWS::StackName} Private Datagrok grok pipe DNS for internal routing"
-      Name:
-        Fn::Sub: rabbit.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal.
+      HostedZoneId: !Ref DatagrokPrivateDNSZone
+      Comment: !Sub ${AWS::StackName} Private Datagrok grok pipe DNS for internal routing
+      Name: !Sub rabbit.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal.
       Type: A
       AliasTarget:
-        HostedZoneId:
-          Fn::GetAtt:
-            - RabbitmqNLB
-            - CanonicalHostedZoneID
-        DNSName:
-          Fn::GetAtt:
-            - RabbitmqNLB
-            - DNSName
+        HostedZoneId: !GetAtt RabbitmqNLB.CanonicalHostedZoneID
+        DNSName: !GetAtt RabbitmqNLB.DNSName
+
   GrokSpawnerPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
-      Description:
-        Fn::Sub: "${AWS::StackName} Grok Spawner policy to access AWS resources"
+      Description: !Sub ${AWS::StackName} Grok Spawner policy to access AWS resources
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Action:
               - ecs:ListTasks
             Condition:
               ArnEquals:
                 ecs:cluster:
-                  - Fn::GetAtt:
-                      - DatagrokCluster
-                      - Arn
-                  - Fn::GetAtt:
-                      - CvmCluster
-                      - Arn
+                  - !GetAtt DatagrokCluster.Arn
+                  - !GetAtt CvmCluster.Arn
             Effect: Allow
-            Resource: "*"
+            Resource: '*'
           - Action:
               - ecs:DescribeTaskDefinition
               - ecs:ListTaskDefinitions
               - ecs:DeregisterTaskDefinition
               - ecs:RegisterTaskDefinition
               - ec2:DescribeInstances
-            Condition: { }
+            Condition: {}
             Effect: Allow
-            Resource: "*"
+            Resource: '*'
           - Action:
-              - "ecs:DescribeServices"
-              - "ecs:UpdateService"
-              - "ecs:DeleteService"
-              - "ecs:ListServices"
+              - ecs:DescribeServices
+              - ecs:UpdateService
+              - ecs:DeleteService
+              - ecs:ListServices
             Condition:
               ArnEquals:
                 ecs:cluster:
-                  - Fn::GetAtt:
-                      - DatagrokCluster
-                      - Arn
-                  - Fn::GetAtt:
-                      - CvmCluster
-                      - Arn
+                  - !GetAtt DatagrokCluster.Arn
+                  - !GetAtt CvmCluster.Arn
             Effect: Allow
             Resource:
-              - Fn::Sub:
-                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
-                  - cluster_name:
-                      Ref: DatagrokCluster
-              - Fn::Sub:
-                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
-                  - cluster_name:
-                      Ref: CvmCluster
+              - !Sub
+                - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*
+                - cluster_name: !Ref DatagrokCluster
+              - !Sub
+                - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*
+                - cluster_name: !Ref CvmCluster
           - Action:
-              - "ecs:ListContainerInstances"
+              - ecs:ListContainerInstances
             Effect: Allow
             Resource:
-              - Fn::Sub:
-                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${cluster_name}"
-                  - cluster_name:
-                      Ref: DatagrokCluster
-              - Fn::Sub:
-                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${cluster_name}"
-                  - cluster_name:
-                      Ref: CvmCluster
+              - !Sub
+                - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${cluster_name}
+                - cluster_name: !Ref DatagrokCluster
+              - !Sub
+                - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/${cluster_name}
+                - cluster_name: !Ref CvmCluster
           - Action:
-              - "ecs:DescribeContainerInstances"
+              - ecs:DescribeContainerInstances
             Effect: Allow
             Resource:
-              - Fn::Sub:
-                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:container-instance/${cluster_name}/*"
-                  - cluster_name:
-                      Ref: DatagrokCluster
-              - Fn::Sub:
-                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:container-instance/${cluster_name}/*"
-                  - cluster_name:
-                      Ref: CvmCluster
+              - !Sub
+                - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:container-instance/${cluster_name}/*
+                - cluster_name: !Ref DatagrokCluster
+              - !Sub
+                - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:container-instance/${cluster_name}/*
+                - cluster_name: !Ref CvmCluster
           - Action:
-              - "ecs:CreateService"
-              - "ecs:TagResource"
+              - ecs:CreateService
+              - ecs:TagResource
             Condition:
               StringEquals:
-                aws:RequestTag/caller: [ "grok_spawner" ]
+                aws:RequestTag/caller:
+                  - grok_spawner
               ArnEquals:
                 ecs:cluster:
-                  - Fn::GetAtt:
-                      - DatagrokCluster
-                      - Arn
-                  - Fn::GetAtt:
-                      - CvmCluster
-                      - Arn
+                  - !GetAtt DatagrokCluster.Arn
+                  - !GetAtt CvmCluster.Arn
             Effect: Allow
             Resource:
-              - Fn::Sub:
-                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
-                  - cluster_name:
-                      Ref: DatagrokCluster
-              - Fn::Sub:
-                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
-                  - cluster_name:
-                      Ref: CvmCluster
+              - !Sub
+                - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*
+                - cluster_name: !Ref DatagrokCluster
+              - !Sub
+                - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*
+                - cluster_name: !Ref CvmCluster
           - Action:
-              - "ecs:DescribeTasks"
+              - ecs:DescribeTasks
             Condition:
               ArnEquals:
                 ecs:cluster:
-                  - Fn::GetAtt:
-                      - DatagrokCluster
-                      - Arn
-                  - Fn::GetAtt:
-                      - CvmCluster
-                      - Arn
+                  - !GetAtt DatagrokCluster.Arn
+                  - !GetAtt CvmCluster.Arn
             Effect: Allow
             Resource:
-              - Fn::Sub:
-                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task/${cluster_name}/*"
-                  - cluster_name:
-                      Ref: DatagrokCluster
-              - Fn::Sub:
-                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task/${cluster_name}/*"
-                  - cluster_name:
-                      Ref: CvmCluster
+              - !Sub
+                - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task/${cluster_name}/*
+                - cluster_name: !Ref DatagrokCluster
+              - !Sub
+                - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task/${cluster_name}/*
+                - cluster_name: !Ref CvmCluster
           - Action:
-              - "logs:GetLogEvents"
+              - logs:GetLogEvents
             Effect: Allow
-            Resource:
-              Fn::Sub:
-                - "${log_group}"
-                - log_group:
-                    Fn::GetAtt:
-                      - DatagrokLogGroup
-                      - Arn
+            Resource: !Sub
+              - ${log_group}
+              - log_group: !GetAtt DatagrokLogGroup.Arn
           - Action:
-              - "ecs:DescribeClusters"
+              - ecs:DescribeClusters
             Effect: Allow
             Resource:
-               - Fn::Sub:
-                   - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
-                   - cluster_name:
-                       Ref: DatagrokCluster
-               - Fn::Sub:
-                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
-                  - cluster_name:
-                       Ref: CvmCluster
+              - !Sub
+                - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*
+                - cluster_name: !Ref DatagrokCluster
+              - !Sub
+                - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*
+                - cluster_name: !Ref CvmCluster
           - Action:
               - iam:PassRole
             Effect: Allow
             Resource:
-              - Fn::GetAtt:
-                  - DatagrokKanikoTaskRole
-                  - Arn
-              - Fn::GetAtt:
-                  - DatagrokTaskExecutionRole
-                  - Arn
-      ManagedPolicyName:
-        Fn::Sub: "${AWS::StackName}-GrokSpawner-${AWS::Region}"
+              - !GetAtt DatagrokKanikoTaskRole.Arn
+              - !GetAtt DatagrokTaskExecutionRole.Arn
+      ManagedPolicyName: !Sub ${AWS::StackName}-GrokSpawner-${AWS::Region}
+
   GrokSpawnerECRPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
-      Description:
-        Fn::Sub: "${AWS::StackName} Grok Spawner ECR policy to access AWS resources"
+      Description: !Sub ${AWS::StackName} Grok Spawner ECR policy to access AWS resources
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Action:
               - ecr:GetAuthorizationToken
             Effect: Allow
-            Resource: "*"
+            Resource: '*'
           - Action:
               - ecr:CreateRepository
             Condition:
               StringEquals:
-                aws:RequestTag/builder: [ "grok_spawner" ]
+                aws:RequestTag/builder:
+                  - grok_spawner
             Effect: Allow
-            Resource: "*"
+            Resource: '*'
           - Action:
               - ecr:TagResource
             Condition:
               StringEquals:
-                aws:RequestTag/builder: [ "grok_spawner" ]
+                aws:RequestTag/builder:
+                  - grok_spawner
             Effect: Allow
-            Resource:
-              Fn::Sub: "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/datagrok/*"
+            Resource: !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/datagrok/*
           - Action:
-              - "ecr:DescribeRepositories"
-              - "ecr:ListImages"
+              - ecr:DescribeRepositories
+              - ecr:ListImages
             Effect: Allow
-            Resource:
-              Fn::Sub: "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/datagrok/*"
-      ManagedPolicyName:
-        Fn::Sub: "${AWS::StackName}-GrokSpawner-ECR-${AWS::Region}"
+            Resource: !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/datagrok/*
+      ManagedPolicyName: !Sub ${AWS::StackName}-GrokSpawner-ECR-${AWS::Region}
+
   GrokSpawnerKanikoPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
-      Description:
-        Fn::Sub: "${AWS::StackName} Grok Spawner ECR policy to access AWS resources"
+      Description: !Sub ${AWS::StackName} Grok Spawner ECR policy to access AWS resources
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Action:
               - ecs:RunTask
@@ -2429,81 +2082,63 @@ Resources:
             Condition:
               ArnEquals:
                 ecs:cluster:
-                  - Fn::GetAtt:
-                      - DatagrokCluster
-                      - Arn
-                  - Fn::GetAtt:
-                      - CvmCluster
-                      - Arn
-            Resource:
-              Ref: DatagrokKanikoTaskDefinition
+                  - !GetAtt DatagrokCluster.Arn
+                  - !GetAtt CvmCluster.Arn
+            Resource: !Ref DatagrokKanikoTaskDefinition
           - Action:
               - iam:PassRole
             Effect: Allow
             Resource:
-              - Fn::GetAtt:
-                  - DatagrokKanikoTaskRole
-                  - Arn
-              - Fn::GetAtt:
-                  - DatagrokTaskExecutionRole
-                  - Arn
+              - !GetAtt DatagrokKanikoTaskRole.Arn
+              - !GetAtt DatagrokTaskExecutionRole.Arn
           - Action:
               - s3:GetObject
               - s3:PutObject
               - s3:ListBucket
             Effect: Allow
             Resource:
-              - Fn::GetAtt:
-                  - DatagrokS3
-                  - Arn
-              - Fn::Sub:
-                  - "${bucket}/dockerfiles/*"
-                  - bucket:
-                      Fn::GetAtt:
-                        - DatagrokS3
-                        - Arn
-      ManagedPolicyName:
-        Fn::Sub: "${AWS::StackName}-GrokSpawner-Kaniko-${AWS::Region}"
+              - !GetAtt DatagrokS3.Arn
+              - !Sub
+                - ${bucket}/dockerfiles/*
+                - bucket: !GetAtt DatagrokS3.Arn
+      ManagedPolicyName: !Sub ${AWS::StackName}-GrokSpawner-Kaniko-${AWS::Region}
+
   DatagrokSpawnerTagsPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
-      Description:
-        Fn::Sub: "${AWS::StackName} Policy for tagging resources"
+      Description: !Sub ${AWS::StackName} Policy for tagging resources
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Action:
               - ecs:TagResource
             Effect: Allow
             Condition:
               StringEquals:
-                "ecs:CreateAction":
-                  - "CreateService"
-                  - "RegisterTaskDefinition"
-                  - "UpdateService"
+                ecs:CreateAction:
+                  - CreateService
+                  - RegisterTaskDefinition
+                  - UpdateService
             Resource:
-              - Fn::Sub:
-                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
-                  - cluster_name:
-                      Ref: DatagrokCluster
-              - Fn::Sub:
-                  - "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*"
-                  - cluster_name:
-                      Ref: CvmCluster
-              - Fn::Sub: "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task-definition/*"
+              - !Sub
+                - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*
+                - cluster_name: !Ref DatagrokCluster
+              - !Sub
+                - arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${cluster_name}/*
+                - cluster_name: !Ref CvmCluster
+              - !Sub arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task-definition/*
 
   DatagrokKanikoPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
-      Description:
-        Fn::Sub: "${AWS::StackName} Kaniko policy to access AWS resources"
+      Description: !Sub ${AWS::StackName} Kaniko policy to access AWS resources
       PolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Action:
               - ecr:GetAuthorizationToken
             Effect: Allow
-            Resource: "*"
+            Resource: '*'
           - Action:
               - ecr:CompleteLayerUpload
               - ecr:UploadLayerPart
@@ -2512,120 +2147,108 @@ Resources:
               - ecr:PutImage
               - ecr:TagResource
             Effect: Allow
-            Resource:
-              Fn::Sub: "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/datagrok/*"
+            Resource: !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/datagrok/*
           - Action:
               - ecr:BatchCheckLayerAvailability
               - ecr:BatchGetImage
             Effect: Allow
-            Resource:
-              Fn::Sub: "arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/datagrok/*"
+            Resource: !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/datagrok/*
           - Action:
               - s3:GetObject
               - s3:ListBucket
             Effect: Allow
             Resource:
-              - Fn::GetAtt:
-                  - DatagrokS3
-                  - Arn
-              - Fn::Sub:
-                  - "${bucket}/dockerfiles/*"
-                  - bucket:
-                      Fn::GetAtt:
-                        - DatagrokS3
-                        - Arn
-      ManagedPolicyName:
-        Fn::Sub: "${AWS::StackName}-Kaniko-${AWS::Region}"
+              - !GetAtt DatagrokS3.Arn
+              - !Sub
+                - ${bucket}/dockerfiles/*
+                - bucket: !GetAtt DatagrokS3.Arn
+      ManagedPolicyName: !Sub ${AWS::StackName}-Kaniko-${AWS::Region}
+
   GrokSpawnerTaskRole:
+    Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
         Statement:
           - Action:
               - sts:AssumeRole
-            Condition: { }
+            Condition: {}
             Effect: Allow
             Principal:
               Service: ecs-tasks.amazonaws.com
-        Version: '2012-10-17'
+        Version: "2012-10-17"
       ManagedPolicyArns:
-        - Ref: GrokSpawnerPolicy
-        - Ref: GrokSpawnerECRPolicy
-        - Ref: GrokSpawnerKanikoPolicy
-        - Ref: DatagrokECSPolicy
-        - Ref: DatagrokSpawnerTagsPolicy
+        - !Ref GrokSpawnerPolicy
+        - !Ref GrokSpawnerECRPolicy
+        - !Ref GrokSpawnerKanikoPolicy
+        - !Ref DatagrokECSPolicy
+        - !Ref DatagrokSpawnerTagsPolicy
       Tags:
         - Key: datagrok.component
           Value: datagrok
         - Key: datagrok.service
           Value: grok_spawner
-    Type: AWS::IAM::Role
+
   DatagrokKanikoTaskRole:
+    Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
         Statement:
           - Action:
               - sts:AssumeRole
-            Condition: { }
+            Condition: {}
             Effect: Allow
             Principal:
               Service: ecs-tasks.amazonaws.com
-        Version: '2012-10-17'
+        Version: "2012-10-17"
       ManagedPolicyArns:
-        - Ref: DatagrokKanikoPolicy
+        - !Ref DatagrokKanikoPolicy
       Tags:
         - Key: datagrok.component
           Value: datagrok
         - Key: datagrok.service
           Value: grok_spawner
-    Type: AWS::IAM::Role
+
   GrokSpawnerService:
+    Type: AWS::ECS::Service
     DependsOn:
       - DatagrokTCP8000IntListener
     Properties:
-      Cluster:
-        Fn::GetAtt:
-          - DatagrokCluster
-          - Arn
+      Cluster: !GetAtt DatagrokCluster.Arn
       DeploymentConfiguration:
         MaximumPercent: 200
         MinimumHealthyPercent: 100
       DeploymentController:
         Type: ECS
       DesiredCount: 1
-      LaunchType: "FARGATE"
+      LaunchType: FARGATE
       LoadBalancers:
         - ContainerName: grok_spawner
           ContainerPort: 8000
-          TargetGroupArn:
-            Ref: DatagrokTCP8000IntTargetGroup
+          TargetGroupArn: !Ref DatagrokTCP8000IntTargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: DISABLED
           SecurityGroups:
-            - Ref: DatagrokSecurityGroup
+            - !Ref DatagrokSecurityGroup
           Subnets:
-            - Ref: DatagrokPrivateSubnet1
-            - Ref: DatagrokPrivateSubnet2
+            - !Ref DatagrokPrivateSubnet1
+            - !Ref DatagrokPrivateSubnet2
       PlatformVersion: 1.4.0
       PropagateTags: SERVICE
       SchedulingStrategy: REPLICA
       ServiceRegistries:
-        - RegistryArn:
-            Fn::GetAtt:
-              - GrokSpawnerServiceDiscoveryEntry
-              - Arn
+        - RegistryArn: !GetAtt GrokSpawnerServiceDiscoveryEntry.Arn
       Tags:
         - Key: datagrok.component
           Value: datagrok
         - Key: datagrok.service
           Value: grok_spawner
-      TaskDefinition:
-        Ref: GrokSpawnerTaskDefinition
-    Type: AWS::ECS::Service
+      TaskDefinition: !Ref GrokSpawnerTaskDefinition
+
   GrokSpawnerServiceDiscoveryEntry:
+    Type: AWS::ServiceDiscovery::Service
     Properties:
-      Description:
-        Fn::Sub: "${AWS::StackName} Datagrok grok_spawner service discovery entry in Cloud Map"
+      Description: !Sub ${AWS::StackName} Datagrok grok_spawner service discovery entry in Cloud Map
       DnsConfig:
         DnsRecords:
           - TTL: 60
@@ -2634,33 +2257,36 @@ Resources:
       HealthCheckCustomConfig:
         FailureThreshold: 1
       Name: grok_spawner
-      NamespaceId:
-        Ref: DatagrokCloudMap
-    Type: AWS::ServiceDiscovery::Service
+      NamespaceId: !Ref DatagrokCloudMap
+
   GrokSpawnerTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
     Properties:
       ContainerDefinitions:
         - Command:
-            - Fn::Sub: "${AWS::Region}.compute.internal"
-            - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
-            - Fn::Sub: ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
+            - !Sub ${AWS::Region}.compute.internal
+            - !Sub ${AWS::StackName}.datagrok.${AWS::Region}.lb.internal
+            - !Sub ${AWS::StackName}.datagrok.${AWS::Region}.cm.internal
           Essential: false
-          Image:
-            Fn::Sub:
-              - "${domain}/${repo}:${tag}"
-              - domain:
-                  Fn::FindInMap: [ Images, Searchdomain, domain ]
-                repo:
-                  Fn::FindInMap: [ Images, Searchdomain, repo ]
-                tag:
-                  Fn::FindInMap: [ Images, Searchdomain, version ]
+          Image: !Sub
+            - ${domain}/${repo}:${tag}
+            - domain: !FindInMap
+                - Images
+                - Searchdomain
+                - domain
+              repo: !FindInMap
+                - Images
+                - Searchdomain
+                - repo
+              tag: !FindInMap
+                - Images
+                - Searchdomain
+                - version
           LogConfiguration:
             LogDriver: awslogs
             Options:
-              awslogs-group:
-                Ref: DatagrokLogGroup
-              awslogs-region:
-                Ref: AWS::Region
+              awslogs-group: !Ref DatagrokLogGroup
+              awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: grok_spawner
           MemoryReservation: 100
           ReadonlyRootFilesystem: true
@@ -2669,272 +2295,225 @@ Resources:
             - Condition: SUCCESS
               ContainerName: ResolvConf
           Essential: true
-          Image:
-            Fn::Sub:
-              - "${domain}/${repo}:${tag}"
-              - domain:
-                  Fn::FindInMap: [ Images, GrokSpawner, domain ]
-                repo:
-                  Fn::FindInMap: [ Images, GrokSpawner, repo ]
-                tag:
-                  Ref: GrokSpawnerVersion
+          Image: !Sub
+            - ${domain}/${repo}:${tag}
+            - domain: !FindInMap
+                - Images
+                - GrokSpawner
+                - domain
+              repo: !FindInMap
+                - Images
+                - GrokSpawner
+                - repo
+              tag: !Ref GrokSpawnerVersion
           Environment:
-            - Name: "GROK_SPAWNER_ENVIRONMENT"
-              Value:
-                Fn::Sub: "${AWS::StackName}"
-            - Name: "GROK_SPAWNER_DATAGROK_ECS__CLUSTER"
-              Value:
-                Ref: DatagrokCluster
-            - Name: "GROK_SPAWNER_DATAGROK_ECS__CLUSTER_REGION"
-              Value:
-                Fn::Sub: "${AWS::Region}"
-            - Name: "GROK_SPAWNER_DATAGROK_ECS__LAUNCH_TYPE"
-              Value: "EC2"
-            - Name: "GROK_SPAWNER_DATAGROK_ECS__SUBNETS"
-              Value:
-                Fn::Sub:
-                  - '["${s1}", "${s2}"]'
-                  - s1:
-                      Ref: DatagrokPrivateSubnet1
-                    s2:
-                      Ref: DatagrokPrivateSubnet2
-            - Name: "GROK_SPAWNER_DATAGROK_ECS__SECURITY_GROUPS"
-              Value:
-                Fn::Sub:
-                  - '["${s1}"]'
-                  - s1:
-                      Ref: DatagrokSecurityGroup
-            - Name: "GROK_SPAWNER_DATAGROK_ECS__KANIKO_S3_BUCKET"
-              Value:
-                Ref: DatagrokS3
-            - Name: "GROK_SPAWNER_DATAGROK_ECS__KANIKO_TASK_DEFINITION"
-              Value:
-                Ref: DatagrokKanikoTaskDefinition
-            - Name: "GROK_SPAWNER_DATAGROK_ECS__LOG_GROUP"
-              Value:
-                Fn::Sub:
-                  - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${logs}
-                  - logs:
-                      Ref: DatagrokLogGroup
-            - Name: "GROK_SPAWNER_CVM_ECS__CLUSTER"
-              Value:
-                Ref: CvmCluster
-            - Name: "GROK_SPAWNER_CVM_ECS__CLUSTER_REGION"
-              Value:
-                Fn::Sub: "${AWS::Region}"
-            - Name: "GROK_SPAWNER_CVM_ECS__LAUNCH_TYPE"
-              Value: "EC2"
-            - Name: "GROK_SPAWNER_CVM_ECS__SUBNETS"
-              Value:
-                Fn::Sub:
-                  - '["${s1}", "${s2}"]'
-                  - s1:
-                      Ref: DatagrokPrivateSubnet1
-                    s2:
-                      Ref: DatagrokPrivateSubnet2
-            - Name: "GROK_SPAWNER_CVM_ECS__SECURITY_GROUPS"
-              Value:
-                Fn::Sub:
-                  - '["${s1}"]'
-                  - s1:
-                      Ref: CvmSecurityGroup
-            - Name: "GROK_SPAWNER_CVM_ECS__KANIKO_S3_BUCKET"
-              Value:
-                Ref: DatagrokS3
-            - Name: "GROK_SPAWNER_CVM_ECS__KANIKO_TASK_DEFINITION"
-              Value:
-                Ref: DatagrokKanikoTaskDefinition
-            - Name: "GROK_SPAWNER_CVM_ECS__LOG_GROUP"
-              Value:
-                Fn::Sub:
-                  - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${logs}
-                  - logs:
-                      Ref: DatagrokLogGroup
-            - Name: "GROK_SPAWNER_DATAGROK_ECS__EXEC_ROLE"
-              Value:
-                Ref: DatagrokTaskExecutionRole
-            - Name: "GROK_SPAWNER_CVM_ECS__EXEC_ROLE"
-              Value:
-                Ref: DatagrokTaskExecutionRole
-          LinuxParameters: { }
+            - Name: GROK_SPAWNER_ENVIRONMENT
+              Value: !Sub ${AWS::StackName}
+            - Name: GROK_SPAWNER_DATAGROK_ECS__CLUSTER
+              Value: !Ref DatagrokCluster
+            - Name: GROK_SPAWNER_DATAGROK_ECS__CLUSTER_REGION
+              Value: !Sub ${AWS::Region}
+            - Name: GROK_SPAWNER_DATAGROK_ECS__LAUNCH_TYPE
+              Value: EC2
+            - Name: GROK_SPAWNER_DATAGROK_ECS__SUBNETS
+              Value: !Sub
+                - '["${s1}", "${s2}"]'
+                - s1: !Ref DatagrokPrivateSubnet1
+                  s2: !Ref DatagrokPrivateSubnet2
+            - Name: GROK_SPAWNER_DATAGROK_ECS__SECURITY_GROUPS
+              Value: !Sub
+                - '["${s1}"]'
+                - s1: !Ref DatagrokSecurityGroup
+            - Name: GROK_SPAWNER_DATAGROK_ECS__KANIKO_S3_BUCKET
+              Value: !Ref DatagrokS3
+            - Name: GROK_SPAWNER_DATAGROK_ECS__KANIKO_TASK_DEFINITION
+              Value: !Ref DatagrokKanikoTaskDefinition
+            - Name: GROK_SPAWNER_DATAGROK_ECS__LOG_GROUP
+              Value: !Sub
+                - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${logs}
+                - logs: !Ref DatagrokLogGroup
+            - Name: GROK_SPAWNER_CVM_ECS__CLUSTER
+              Value: !Ref CvmCluster
+            - Name: GROK_SPAWNER_CVM_ECS__CLUSTER_REGION
+              Value: !Sub ${AWS::Region}
+            - Name: GROK_SPAWNER_CVM_ECS__LAUNCH_TYPE
+              Value: EC2
+            - Name: GROK_SPAWNER_CVM_ECS__SUBNETS
+              Value: !Sub
+                - '["${s1}", "${s2}"]'
+                - s1: !Ref DatagrokPrivateSubnet1
+                  s2: !Ref DatagrokPrivateSubnet2
+            - Name: GROK_SPAWNER_CVM_ECS__SECURITY_GROUPS
+              Value: !Sub
+                - '["${s1}"]'
+                - s1: !Ref CvmSecurityGroup
+            - Name: GROK_SPAWNER_CVM_ECS__KANIKO_S3_BUCKET
+              Value: !Ref DatagrokS3
+            - Name: GROK_SPAWNER_CVM_ECS__KANIKO_TASK_DEFINITION
+              Value: !Ref DatagrokKanikoTaskDefinition
+            - Name: GROK_SPAWNER_CVM_ECS__LOG_GROUP
+              Value: !Sub
+                - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${logs}
+                - logs: !Ref DatagrokLogGroup
+            - Name: GROK_SPAWNER_DATAGROK_ECS__EXEC_ROLE
+              Value: !Ref DatagrokTaskExecutionRole
+            - Name: GROK_SPAWNER_CVM_ECS__EXEC_ROLE
+              Value: !Ref DatagrokTaskExecutionRole
+          LinuxParameters: {}
           LogConfiguration:
             LogDriver: awslogs
             Options:
-              awslogs-group:
-                Ref: DatagrokLogGroup
-              awslogs-region:
-                Ref: AWS::Region
+              awslogs-group: !Ref DatagrokLogGroup
+              awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: grok_spawner
           MemoryReservation: 100
+
           #          ReadonlyRootFilesystem: true
           Name: grok_spawner
           PortMappings:
             - ContainerPort: 8000
               HostPort: 8000
               Protocol: tcp
-      Cpu: '1024'
-      ExecutionRoleArn:
-        Fn::GetAtt:
-          - DatagrokTaskExecutionRole
-          - Arn
-      Family:
-        Fn::Sub:
-          - "${AWS::StackName}${postfix}-grok_spawner"
-          - postfix:
-              Ref: Postfix
-      Memory: '4096'
+      Cpu: "1024"
+      ExecutionRoleArn: !GetAtt DatagrokTaskExecutionRole.Arn
+      Family: !Sub
+        - ${AWS::StackName}${postfix}-grok_spawner
+        - postfix: !Ref Postfix
+      Memory: "4096"
       NetworkMode: awsvpc
       RequiresCompatibilities:
-        - "FARGATE"
-      TaskRoleArn:
-        Ref: GrokSpawnerTaskRole
-    Type: AWS::ECS::TaskDefinition
+        - FARGATE
+      TaskRoleArn: !Ref GrokSpawnerTaskRole
+
   DatagrokKanikoTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
     Properties:
       ContainerDefinitions:
         - Essential: true
-          Image:
-            Fn::Sub:
-              - "${domain}/${repo}:${tag}"
-              - domain:
-                  Fn::FindInMap: [ Images, Kaniko, domain ]
-                repo:
-                  Fn::FindInMap: [ Images, Kaniko, repo ]
-                tag:
-                  Fn::FindInMap: [ Images, Kaniko, version ]
-          LinuxParameters: { }
+          Image: !Sub
+            - ${domain}/${repo}:${tag}
+            - domain: !FindInMap
+                - Images
+                - Kaniko
+                - domain
+              repo: !FindInMap
+                - Images
+                - Kaniko
+                - repo
+              tag: !FindInMap
+                - Images
+                - Kaniko
+                - version
+          LinuxParameters: {}
           LogConfiguration:
             LogDriver: awslogs
             Options:
-              awslogs-group:
-                Ref: DatagrokLogGroup
-              awslogs-region:
-                Ref: AWS::Region
+              awslogs-group: !Ref DatagrokLogGroup
+              awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: grok_spawner_kaniko
           MemoryReservation: 100
+
           #          ReadonlyRootFilesystem: true
           Name: grok_spawner_kaniko
-      Cpu: '1024'
-      ExecutionRoleArn:
-        Fn::GetAtt:
-          - DatagrokTaskExecutionRole
-          - Arn
-      Family:
-        Fn::Sub:
-           - "${AWS::StackName}${postfix}-grok_spawner_kaniko"
-           - postfix:
-               Ref: Postfix
-      Memory: '4096'
+      Cpu: "1024"
+      ExecutionRoleArn: !GetAtt DatagrokTaskExecutionRole.Arn
+      Family: !Sub
+        - ${AWS::StackName}${postfix}-grok_spawner_kaniko
+        - postfix: !Ref Postfix
+      Memory: "4096"
       NetworkMode: awsvpc
       RequiresCompatibilities:
-        - "FARGATE"
-      TaskRoleArn:
-        Ref: DatagrokKanikoTaskRole
-    Type: AWS::ECS::TaskDefinition
+        - FARGATE
+      TaskRoleArn: !Ref DatagrokKanikoTaskRole
+
   GrokSpawnerPrivateDNS:
     Type: AWS::Route53::RecordSet
     Properties:
-      HostedZoneId:
-        Ref: DatagrokPrivateDNSZone
-      Comment:
-        Fn::Sub: "${AWS::StackName} Private Datagrok grok spawner DNS for internal routing"
-      Name:
-        Fn::Sub: "grok_spawner.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal."
+      HostedZoneId: !Ref DatagrokPrivateDNSZone
+      Comment: !Sub ${AWS::StackName} Private Datagrok grok spawner DNS for internal routing
+      Name: !Sub grok_spawner.${AWS::StackName}.datagrok.${AWS::Region}.lb.internal.
       Type: A
       AliasTarget:
-        HostedZoneId:
-          Fn::GetAtt:
-            - DatagrokLoadBalancerInt
-            - CanonicalHostedZoneID
-        DNSName:
-          Fn::GetAtt:
-            - DatagrokLoadBalancerInt
-            - DNSName
+        HostedZoneId: !GetAtt DatagrokLoadBalancerInt.CanonicalHostedZoneID
+        DNSName: !GetAtt DatagrokLoadBalancerInt.DNSName
+
   DatagrokTCP8000IntListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       DefaultActions:
         - ForwardConfig:
             TargetGroups:
-              - TargetGroupArn:
-                  Ref: DatagrokTCP8000IntTargetGroup
+              - TargetGroupArn: !Ref DatagrokTCP8000IntTargetGroup
           Type: forward
-      LoadBalancerArn:
-        Ref: DatagrokLoadBalancerInt
+      LoadBalancerArn: !Ref DatagrokLoadBalancerInt
       Port: 8000
       Protocol: HTTP
-    Type: AWS::ElasticLoadBalancingV2::Listener
+
   DatagrokTCP8000IntTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      Name:
-        Fn::Sub: "${AWS::StackName}-gs-i"
+      Name: !Sub ${AWS::StackName}-gs-i
       Port: 8000
       Protocol: HTTP
       Tags:
         - Key: datagrok.component
           Value: datagrok
-      TargetType: 'ip'
-      VpcId:
-        Ref: DatagrokVPC
+      TargetType: ip
+      VpcId: !Ref DatagrokVPC
       HealthCheckIntervalSeconds: 60
-      HealthCheckPath: "/info"
+      HealthCheckPath: /info
       Matcher:
         HttpCode: 200
       UnhealthyThresholdCount: 5
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+
   GpuInstanceRole:
-    Condition: GpuRequired
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
         Statement:
           - Action:
               - sts:AssumeRole
-            Condition: { }
+            Condition: {}
             Effect: Allow
             Principal:
               Service: ec2.amazonaws.com
-        Version: '2012-10-17'
+        Version: "2012-10-17"
       ManagedPolicyArns:
-        - "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
-  GpuInstanceProfile:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
     Condition: GpuRequired
+
+  GpuInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Roles:
-        -  Ref: GpuInstanceRole
-  GpuInstance:
+        - !Ref GpuInstanceRole
     Condition: GpuRequired
+
+  GpuInstance:
     Type: AWS::EC2::Instance
     Properties:
-      IamInstanceProfile:
-        Ref: GpuInstanceProfile
-      ImageId: 
-        Ref: GpuAMI
-      InstanceType:
-        Ref: GpuInstanceType
+      IamInstanceProfile: !Ref GpuInstanceProfile
+      ImageId: !Ref GpuAMI
+      InstanceType: !Ref GpuInstanceType
       SecurityGroupIds:
-        - Ref: CvmSecurityGroup
-      SubnetId:
-        Ref: DatagrokPrivateSubnet1
+        - !Ref CvmSecurityGroup
+      SubnetId: !Ref DatagrokPrivateSubnet1
       Tags:
         - Key: Name
-          Value: 
-            Fn::Sub: "${AWS::StackName}-gpu-instance"
-      UserData:
-        Fn::Base64:
-          Fn::Sub: 
-            - |
-              #!/bin/bash -xe
-              echo "ECS_CLUSTER=${CvmCluster}" >> /etc/ecs/ecs.config
-              echo "ECS_ENABLE_GPU_SUPPORT=true" >> /etc/ecs/ecs.config
-              echo "ECS_IMAGE_PULL_BEHAVIOR=once" >> /etc/ecs/ecs.config
-            - CvmCluster:
-                Ref: CvmCluster
+          Value: !Sub ${AWS::StackName}-gpu-instance
+      UserData: !Base64
+        Fn::Sub:
+          - |
+            #!/bin/bash -xe
+            echo "ECS_CLUSTER=${CvmCluster}" >> /etc/ecs/ecs.config
+            echo "ECS_ENABLE_GPU_SUPPORT=true" >> /etc/ecs/ecs.config
+            echo "ECS_IMAGE_PULL_BEHAVIOR=once" >> /etc/ecs/ecs.config
+          - CvmCluster: !Ref CvmCluster
+    Condition: GpuRequired
+
 Outputs:
   DatagrokAdminPassword:
     Description: Admin password for first login
-    Value:
-      Fn::Sub:
-        - "https://${AWS::Region}.console.aws.amazon.com/secretsmanager/home?region=${AWS::Region}#!/secret?name=${secret}"
-        - secret:
-            Ref: DatagrokAdminPassword
+    Value: !Sub
+      - https://${AWS::Region}.console.aws.amazon.com/secretsmanager/home?region=${AWS::Region}#!/secret?name=${secret}
+      - secret: !Ref DatagrokAdminPassword
