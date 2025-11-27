@@ -81,6 +81,9 @@ async function saveSearch(entityLevel: Scope, savedSearch: MolTrackSearch) {
   }
 
   const nameInput = ui.input.string('Search Name', { value: defaultName });
+  nameInput.addValidator(
+    (search: string) => savedSearches[search] != null ? 'A saved search with this name already exists' : null);
+
   const dialog = ui.dialog('Save Search Query')
     .add(nameInput)
     .onOK(async () => {
