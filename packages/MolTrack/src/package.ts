@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import { MolTrackDockerService } from './services/moltrack-docker-service';
-import { excludedScopes, MOLTRACK_ENTITY_LEVEL, MOLTRACK_IS_STATIC_FIELD, SAVED_SEARCHES_NODE, Scope, SEARCH_NODE } from './utils/constants';
+import { excludedScopes, MOLTRACK_ENTITY_LEVEL, MOLTRACK_IS_STATIC_FIELD, MOLTRACK_NODE, SAVED_SEARCHES_NODE, Scope, SEARCH_NODE } from './utils/constants';
 import { createSavedSearchesSatistics, createSearchExpandableNode, createSearchNode, createSearchView, getSavedSearches, handleSearchURL, loadSearchFields, molTrackSearchFieldsArr } from './views/search';
 import { registerAllData, registerAssayData, updateAllMolTrackSchemas } from './utils/registration-utils';
 import { batchView, compoundView, createPath, getQuickActionsWidget, getStatisticsWidget, initAssayRegisterView, initBulkRegisterView, initRegisterView, initSchemaView } from './utils/view-utils';
@@ -91,7 +91,9 @@ export async function molTrackApp(path: string): Promise<DG.ViewBase> {
   const statisticsWidget = await getStatisticsWidget(createSearchView);
   const quickActionsWidget = getQuickActionsWidget();
   const viewRoot = ui.divH([statisticsWidget, quickActionsWidget], { style: { gap: '50px' } });
-  return createSearchExpandableNode([''], async () => viewRoot);
+  const view = await createSearchExpandableNode([''], async () => viewRoot);
+  view.name = MOLTRACK_NODE;
+  return view;
 }
 
 //input: dynamic treeNode
