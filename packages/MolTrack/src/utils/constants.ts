@@ -85,6 +85,7 @@ export const PROPERTIES = 'properties';
 
 export const SEARCH_NODE = 'Search';
 export const SAVED_SEARCHES_NODE = 'Saved Searches';
+export const MOLTRACK_NODE = 'MolTrack';
 
 export const MOLTRACK_APP_PATH: string = 'apps/MolTrack';
 
