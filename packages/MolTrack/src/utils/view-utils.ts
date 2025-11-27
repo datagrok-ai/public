@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import { _package, getBatchByCorporateId, getCompoundByCorporateId } from '../package';
-import { MOLTRACK_APP_PATH, Scope, SEARCH_NODE } from './constants';
+import { IViewContainer, MOLTRACK_APP_PATH, Scope, SEARCH_NODE } from './constants';
 import { EntityBaseView } from '../views/registration-entity-base';
 import { RegistrationView } from '../views/registration-tab';
 import { u2 } from '@datagrok-libraries/utils/src/u2';
@@ -108,30 +108,26 @@ export function initRegisterView(entity: 'Compound' | 'Batch', setPath: boolean 
   view.view.name = `Register a ${entity.toLowerCase()}`;
   if (setPath) view.view.path = createPath(entity);
 
-  view.show();
-  return view.view;
+  return view;
 }
 
 export function initBulkRegisterView() {
   const registrationView = new RegistrationView();
   registrationView.view.path = createPath('Bulk');
-  registrationView.show();
-  return registrationView.view;
+  return registrationView;
 }
 
 export function initAssayRegisterView() {
   const registrationView = new AssayRegistrationView();
   registrationView.view.path = createPath('Assay');
-  registrationView.show();
-  return registrationView.view;
+  return registrationView;
 }
 
 export async function initSchemaView() {
   const schemaView = new PropertySchemaView();
   await schemaView.init();
   schemaView.view.path = createPath('Schema');
-  schemaView.show();
-  return schemaView.view;
+  return schemaView;
 }
 
 export function getAppHeader(): HTMLElement {
@@ -188,7 +184,7 @@ export function getQuickActionsWidget(): HTMLElement {
   const quickActionsTitle = ui.divH([boltIcon, quickActionsLabel]);
   quickActionsTitle.classList.add('moltrack-quick-actions');
 
-  const linksConfig: { label: string; createView: () => Promise<DG.ViewBase> }[] = [
+  const linksConfig: { label: string; createView: () => Promise<IViewContainer>}[] = [
     {
       label: 'Register compound',
       createView: async () => initRegisterView('Compound', true),
@@ -208,7 +204,14 @@ export function getQuickActionsWidget(): HTMLElement {
     {
       label: 'Search',
       createView: async () => {
-        return await createSearchExpandableNode([SEARCH_NODE], () => getStatisticsWidget(createSearchView));
+        const view = await createSearchExpandableNode(
+          [SEARCH_NODE],
+          () => getStatisticsWidget(createSearchView),
+        );
+        return {
+          show: () => {},
+          view: view,
+        };
       },
     },
   ];
@@ -217,7 +220,8 @@ export function getQuickActionsWidget(): HTMLElement {
     linksConfig.map((cfg) =>
       ui.link(cfg.label, async () => {
         grok.shell.v.close();
-        await cfg.createView();
+        const view = await cfg.createView();
+        view.show();
       }),
     ),
   );

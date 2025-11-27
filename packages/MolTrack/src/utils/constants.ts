@@ -103,3 +103,8 @@ export interface SchemaProperty extends Partial<MolTrackProp> {
 }
 
 export type GroupedProperties = Record<string, SchemaProperty[]>;
+
+export interface IViewContainer {
+  view: DG.ViewBase;
+  show: () => void;
+}
