@@ -1,14 +1,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { _package, getBatchByCorporateId, getCompoundByCorporateId } from '../package';
-import { IViewContainer, MOLTRACK_APP_PATH, Scope, SEARCH_NODE } from './constants';
-import { EntityBaseView } from '../views/registration-entity-base';
-import { RegistrationView } from '../views/registration-tab';
-import { u2 } from '@datagrok-libraries/utils/src/u2';
-import { AssayRegistrationView } from '../views/registration-assay-tab';
-import { PropertySchemaView } from '../views/schema-view';
-import { createSearchExpandableNode, createSearchView } from '../views/search';
+import {_package, getBatchByCorporateId, getCompoundByCorporateId} from '../package';
+import {IViewContainer, MOLTRACK_APP_PATH, Scope, SEARCH_NODE} from './constants';
+import {EntityBaseView} from '../views/registration-entity-base';
+import {RegistrationView} from '../views/registration-tab';
+import {u2} from '@datagrok-libraries/utils/src/u2';
+import {AssayRegistrationView} from '../views/registration-assay-tab';
+import {PropertySchemaView} from '../views/schema-view';
+import {createSearchExpandableNode, createSearchView} from '../views/search';
 
 export function createPath(viewName: string) {
   let path = `${MOLTRACK_APP_PATH}/`;
@@ -65,7 +65,7 @@ export async function buildRegistrationView({
 
 export async function compoundView(corporateCompoundId: string) {
   const compound = await getCompoundByCorporateId(corporateCompoundId);
-  const { canonical_smiles: smiles, properties = [] } = compound;
+  const {canonical_smiles: smiles, properties = []} = compound;
   return buildRegistrationView({
     title: `Compound: ${corporateCompoundId}`,
     smiles,
@@ -78,7 +78,7 @@ export async function compoundView(corporateCompoundId: string) {
 
 export async function batchView(corporateBatchId: string) {
   const batch = await getBatchByCorporateId(corporateBatchId);
-  const { canonical_smiles: smiles, properties: compoundProps } = batch.compound;
+  const {canonical_smiles: smiles, properties: compoundProps} = batch.compound;
   const combinedPropsMap = new Map(
     [...compoundProps, ...batch.properties].map((prop: any) => [prop.name, prop]),
   );
@@ -154,7 +154,7 @@ export async function getStatisticsWidget(
   const rows: (string | HTMLElement)[][] = await Promise.all(
     scopes.map(async (entity) => {
       try {
-        const df = await grok.functions.call('MolTrack:retrieveEntity', { scope: entity, flatten: true });
+        const df = await grok.functions.call('MolTrack:retrieveEntity', {scope: entity, flatten: true});
         const count = df?.rowCount ?? 0;
         const entityTitle = snakeCaseToTitleCase(entity);
 

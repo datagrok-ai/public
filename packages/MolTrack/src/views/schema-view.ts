@@ -1,12 +1,12 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import { SchemaEditor } from '@datagrok-libraries/utils/src/schema-editor';
-import { merge } from 'rxjs';
+import {SchemaEditor} from '@datagrok-libraries/utils/src/schema-editor';
+import {merge} from 'rxjs';
 
-import { fetchSchema, registerMolTrackProperties } from '../package';
-import { GroupedProperties, MolTrackProp } from '../utils/constants';
-import { buildPropertyOptions } from '../utils/utils';
+import {fetchSchema, registerMolTrackProperties} from '../package';
+import {GroupedProperties, MolTrackProp} from '../utils/constants';
+import {buildPropertyOptions} from '../utils/utils';
 
 let openedView: DG.ViewBase | null = null;
 
@@ -51,7 +51,7 @@ export class PropertySchemaView {
           if (!p || Object.keys(p).length === 0)
             continue;
 
-          const newProp = { ...p, value_type: p.type, entity_type: entityType, property_class: 'measured' };
+          const newProp = {...p, value_type: p.type, entity_type: entityType, property_class: 'measured'};
           delete newProp.type;
           allProps.push(newProp);
         }
@@ -98,7 +98,7 @@ export class PropertySchemaView {
           ui.h2('MolTrack properties'),
           accordion.root,
         ]),
-        ui.div([], { style: { width: '20px' } }),
+        ui.div([], {style: {width: '20px'}}),
         this.extraPropertiesDiv,
       ]),
     );

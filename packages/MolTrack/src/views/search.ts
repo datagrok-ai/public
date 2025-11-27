@@ -11,7 +11,7 @@ import {
   ConditionRegistry,
   MoleculeConditionEditor,
 } from '@datagrok-libraries/utils/src/query-builder/query-builder';
-import { MolTrackDockerService } from '../services/moltrack-docker-service';
+import {MolTrackDockerService} from '../services/moltrack-docker-service';
 import {
   MolTrackSearchQuery,
   MolTrackFilter,
@@ -42,13 +42,13 @@ import {
   SAVED_SEARCHES_NODE,
   excludedScopes,
 } from '../utils/constants';
-import { funcs } from '../package-api';
-import dayjs, { Dayjs } from 'dayjs';
-import { _package } from '../package';
-import { Subject } from 'rxjs';
-import { awaitCheck } from '@datagrok-libraries/utils/src/test';
-import { createPathFromArr, getAppHeader, getStatisticsWidget } from '../utils/view-utils';
-import { applyMolTrackLayout, saveMolTrackLayout } from '../utils/layout';
+import {funcs} from '../package-api';
+import dayjs, {Dayjs} from 'dayjs';
+import {_package} from '../package';
+import {Subject} from 'rxjs';
+import {awaitCheck} from '@datagrok-libraries/utils/src/test';
+import {createPathFromArr, getAppHeader, getStatisticsWidget} from '../utils/view-utils';
+import {applyMolTrackLayout, saveMolTrackLayout} from '../utils/layout';
 
 export type MolTrackSearchFields = {
   direct?: DG.Property[],
@@ -80,7 +80,7 @@ async function saveSearch(entityLevel: Scope, savedSearch: MolTrackSearch) {
     counter++;
   }
 
-  const nameInput = ui.input.string('Search Name', { value: defaultName });
+  const nameInput = ui.input.string('Search Name', {value: defaultName});
   nameInput.addValidator(
     (search: string) => savedSearches[search] != null ? 'A saved search with this name already exists' : null);
 
@@ -127,7 +127,7 @@ function openSavedSearch(entityLevel: Scope, queryBuilder: QueryBuilder, outputs
   // Create typeahead input with saved search names
   const searchInput = ui.typeAhead('Search name', {
     source: {
-      local: searchNames.map((name) => ({ label: name, value: name })),
+      local: searchNames.map((name) => ({label: name, value: name})),
     },
     minLength: 0,
     limit: 10,
@@ -218,7 +218,7 @@ export function loadSearchQuery(savedSearch: MolTrackSearch, queryBuilder: Query
 
 export function saveSearchHistory(key: string, value: string) {
   let collection: MolTrackSearchHistoryItem[] = getSearchHistory(key);
-  const newItem = { date: new Date(), value: value };
+  const newItem = {date: new Date(), value: value};
   if (!collection.length)
     localStorage.setItem(key, JSON.stringify([newItem]));
   else {
@@ -333,7 +333,7 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope, in
         if (queryBuilder) {
           const search: MolTrackSearch = {
             condition: queryBuilder?.condition,
-            outputCols: outputFieldsInput.value!.map((col) => {return {name: col.name, type: col.type};}),
+            outputCols: outputFieldsInput.value!.map((col) => { return {name: col.name, type: col.type}; }),
             aggregations: aggregations,
           };
           await runSearch(tv, search, entityLevel, entityType, endpoint, true);
@@ -346,7 +346,7 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope, in
         if (queryBuilder) {
           const savedSearch: MolTrackSearch = {
             condition: queryBuilder?.condition,
-            outputCols: outputFieldsInput.value!.map((col) => {return {name: col.name, type: col.type};}),
+            outputCols: outputFieldsInput.value!.map((col) => { return {name: col.name, type: col.type}; }),
             aggregations: aggregations,
           };
           saveSearch(entityLevel, savedSearch);
@@ -383,7 +383,7 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope, in
       filtersDiv.append(queryBuilder.root);
       filtersDiv.append(outputFieldsInput.root);
       filtersDiv.append(aggregationsDiv);
-      filtersDiv.append(ui.div(runSearchButton, { style: { paddingLeft: '4px', paddingTop: '10px' } }));
+      filtersDiv.append(ui.div(runSearchButton, {style: {paddingLeft: '4px', paddingTop: '10px'}}));
       createFiltersIcon(tv, filtersDiv);
       if (initialQuery) {
         if (initialQuery.condition.conditions.length) {
@@ -434,11 +434,11 @@ export async function createEmptyMolTrackQuery(scope: Scope): Promise<MolTrackSe
   let outputFields: { name: string, type: string }[] = [];
   if (!molTrackSearchFieldsArr) {
     grok.shell.warning(`Properties haven't been loaded for ${scope}`);
-    outputFields = [{ name: CORPORATE_COMPOUND_ID_COL_NAME, type: DG.TYPE.STRING }];
+    outputFields = [{name: CORPORATE_COMPOUND_ID_COL_NAME, type: DG.TYPE.STRING}];
   } else {
     outputFields = (molTrackSearchFieldsArr
       .filter((it) => it.options[MOLTRACK_ENTITY_LEVEL] === scope &&
-        !EXCLUDE_SEARCH_OUTPUT_FIELDS.includes(it.name))).map((it) => {return { name: it.name, type: it.type };});
+        !EXCLUDE_SEARCH_OUTPUT_FIELDS.includes(it.name))).map((it) => { return {name: it.name, type: it.type}; });
   }
 
   const search: MolTrackSearch = {
@@ -546,7 +546,7 @@ export async function createSearchFileds(): Promise<DG.Property[]> {
           type: 'string',
           semType: DG.SEMTYPE.MOLECULE,
           friendlyName: prop.friendly_name,
-        }:
+        } :
         {
           name: prop.name,
           type: prop.value_type === 'uuid' ? 'string' : prop.value_type,
@@ -669,7 +669,7 @@ function convertSimpleCondition(cond: any, level: Scope, type: MolTrackEntityTyp
   if (cond.operator === Operators.IS_SIMILAR && cond.value &&
     typeof cond.value === 'object' && 'molecule' in cond.value) {
     return {
-      field: `${level}${isDynamicProp ? '.details': ''}.${cond.field}`,
+      field: `${level}${isDynamicProp ? '.details' : ''}.${cond.field}`,
       operator: Operators.IS_SIMILAR,
       value: cond.value.molecule,
       threshold: cond.value.threshold || null,
@@ -678,7 +678,7 @@ function convertSimpleCondition(cond: any, level: Scope, type: MolTrackEntityTyp
 
   // Handle regular simple conditions - operators are similar, no mapping needed
   return {
-    field: `${level}${isDynamicProp ? '.details': ''}.${cond.field}`,
+    field: `${level}${isDynamicProp ? '.details' : ''}.${cond.field}`,
     operator: cond.operator,
     value: cond.value ? cond.value instanceof dayjs ? convertDateToString(cond.value) : cond.value : null,
     threshold: cond.threshold || null,
@@ -771,7 +771,7 @@ function createAggregationRow(container: HTMLElement, menuFieldsForAggr: DG.Prop
           fieldInput.value = `${field.options[MOLTRACK_ENTITY_LEVEL]}.${field.name}`;
         });
       });
-      fieldInput.root.onclick = () => menu.show({ element: fieldInput.root, y: fieldInput.root.offsetHeight });
+      fieldInput.root.onclick = () => menu.show({element: fieldInput.root, y: fieldInput.root.offsetHeight});
     }
   }
 
@@ -992,7 +992,7 @@ export async function createSavedSearchesSatistics(scope?: Scope): Promise<HTMLE
     const savedSearches: { [key: string]: string } = JSON.parse(savedSearchesStr);
     const searchNames = Object.keys(savedSearches);
     for (const search of searchNames)
-      objForTable.push({ scope: scope, search: search });
+      objForTable.push({scope: scope, search: search});
   };
 
   scopes.forEach((it) => collectSearchesForScope(it));
@@ -1008,7 +1008,7 @@ async function createSavedSearchStats(savedSearchesForTable: any[], scope?: stri
   let scopesObjForTable: any[] = [];
   if (!savedSearchesForTable.length) {
     scopesObjForTable = Object.values(Scope)
-      .filter((scope) => !excludedScopes.includes(scope)).map((it) => {return {scope: it};});
+      .filter((scope) => !excludedScopes.includes(scope)).map((it) => { return {scope: it}; });
     if (scope)
       scopesObjForTable = scopesObjForTable.filter((it) => it.scope === scope);
   }

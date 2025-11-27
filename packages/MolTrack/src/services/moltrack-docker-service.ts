@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { ErrorHandling, ResultOutput, scopeToUrl } from '../utils/constants';
-import { MolTrackProperty, MolTrackSearchQuery, MolTrackSearchResponse} from '../utils/types';
+import {ErrorHandling, ResultOutput, scopeToUrl} from '../utils/constants';
+import {MolTrackProperty, MolTrackSearchQuery, MolTrackSearchResponse} from '../utils/types';
 
 async function handleError(response: Response) {
   if (!response.ok) {
@@ -29,7 +29,7 @@ export class MolTrackDockerService {
   static async postToEndpoint(endpoint: string, jsonPayload: string): Promise<string> {
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id, endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {'Content-Type': 'application/json'},
       body: jsonPayload,
     });
     await handleError(response);
@@ -73,7 +73,7 @@ export class MolTrackDockerService {
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id,
       `/v1/search/${endpointLevel}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(query),
       });
     await handleError(response);
@@ -92,7 +92,7 @@ export class MolTrackDockerService {
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(
       this.container.id,
       `/v1/${scope}/`,
-      { method: 'GET'},
+      {method: 'GET'},
     );
     await handleError(response);
     return response.json();
@@ -111,7 +111,7 @@ export class MolTrackDockerService {
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(
       this.container.id,
       `/v1/${endpoint}?${params.toString()}`,
-      { method: 'GET' },
+      {method: 'GET'},
     );
 
     await handleError(response);
@@ -139,7 +139,7 @@ export class MolTrackDockerService {
       `/v1/auto-map-columns`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(payload),
       },
     );
@@ -160,7 +160,7 @@ export class MolTrackDockerService {
       const response = await grok.dapi.docker.dockerContainers.fetchProxy(
         this.container.id,
         scopeToUrl[scope],
-        { method: 'POST', body: formData },
+        {method: 'POST', body: formData},
       );
 
       await handleError(response);
@@ -184,8 +184,8 @@ async function buildFormData(
   const rawBytes = await file.readAsBytes();
   const bytes = new Uint8Array(rawBytes.length);
   bytes.set(rawBytes);
-  const blob = new Blob([bytes], { type: 'text/csv' });
-  const preparedFile = new File([blob], file.fileName, { type: 'text/csv' });
+  const blob = new Blob([bytes], {type: 'text/csv'});
+  const preparedFile = new File([blob], file.fileName, {type: 'text/csv'});
 
   formData.append('file', preparedFile, file.name);
   formData.append('error_handling', errorHandling || ErrorHandling.REJECT_ROW);

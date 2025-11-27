@@ -1,4 +1,4 @@
-import { GITHUB_BASE_URL, Scope } from './constants';
+import {GITHUB_BASE_URL, Scope} from './constants';
 
 export async function fetchSchema(fileName: string): Promise<any> {
   const url = `${GITHUB_BASE_URL}${fileName}`;

@@ -3,14 +3,14 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import { ErrorHandling, Scope } from '../utils/constants';
-import { createPath } from '../utils/view-utils';
-import { getCorporateCompoundIdByExactStructure } from '../utils/utils';
+import {ErrorHandling, Scope} from '../utils/constants';
+import {createPath} from '../utils/view-utils';
+import {getCorporateCompoundIdByExactStructure} from '../utils/utils';
 
-import { fetchBatchProperties, fetchCompoundProperties, registerBulk } from '../package';
+import {fetchBatchProperties, fetchCompoundProperties, registerBulk} from '../package';
 
 import RandExp from 'randexp';
-import { RegistrationViewBase } from './registration-view-base';
+import {RegistrationViewBase} from './registration-view-base';
 
 let openedView: DG.ViewBase | null = null;
 
@@ -77,7 +77,7 @@ export class EntityBaseView extends RegistrationViewBase {
       if (!resultDf)
         return;
 
-      const { status, compoundId, batchId, errorMsg } = this.extractResultData(resultDf);
+      const {status, compoundId, batchId, errorMsg} = this.extractResultData(resultDf);
       this.showRegistrationMessage(status, batchId?.trim() || compoundId, errorMsg, singularScope);
 
       for (const [propName, value] of [
@@ -195,7 +195,7 @@ export class EntityBaseView extends RegistrationViewBase {
     } = await this.createPropertySection(
       'Compound properties',
       fetchCompoundProperties,
-      (prop) => this.convertToDGProperty(prop, { reserved: reservedProperties, skipReservedCheck: true }),
+      (prop) => this.convertToDGProperty(prop, {reserved: reservedProperties, skipReservedCheck: true}),
       {
         disableNames: this.singleRetrieved ? ['*'] : reservedProperties,
         initiallyOpen: true,
@@ -215,7 +215,7 @@ export class EntityBaseView extends RegistrationViewBase {
     } = await this.createPropertySection(
       'Batch properties',
       fetchBatchProperties,
-      (prop) => this.convertToDGProperty(prop, { reserved: reservedProperties, skipReservedCheck: true }),
+      (prop) => this.convertToDGProperty(prop, {reserved: reservedProperties, skipReservedCheck: true}),
       {
         disableNames: this.singleRetrieved ? ['*'] : reservedProperties,
         initiallyOpen: this.isBatchSectionExpanded,
