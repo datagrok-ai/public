@@ -46,7 +46,8 @@ values (
   'DECLARED', 'BATCH',
   'DGB-{:06d}',
   'Grok Batch ID'
-);
+)
+on conflict(name, entity_type) do nothing;
 --end
 
 --name: insertSettings
@@ -77,4 +78,19 @@ values (
   ',
   'Defines the molecule standardization pipeline'
 );
+--end
+
+--name: checkDBInitialized
+--connection: moltrack
+select 
+	case 
+		when exists (select 1 from moltrack.users where email = 'admin' || chr(64) || 'datagrok.ai')
+			and exists (select 1 from moltrack.semantic_types where name = 'Synonym')
+			and exists (select 1 from moltrack.properties where name = 'corporate_compound_id' and entity_type = 'COMPOUND')
+			and exists (select 1 from moltrack.properties where name = 'corporate_batch_id' and entity_type = 'BATCH')
+			and exists (select 1 from moltrack.settings where name = 'Compound Matching Rule')
+			and exists (select 1 from moltrack.settings where name = 'Molecule standardization rules')
+		then true
+		else false
+	end as db_initialized;
 --end

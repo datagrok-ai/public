@@ -21,7 +21,11 @@ export async function init(): Promise<void> {
     await grok.functions.call('Chem:initChemAutostart');
   } catch (e) {}
   registerSemanticTypes();
-  // This will be used for the updated docker setup later.
+
+  const dbInitialized = await grok.data.query('MolTrack:checkDBInitialized');
+  if (dbInitialized.get('db_initialized', 0))
+    return;
+
   const connection = await grok.dapi.connections.filter('name = "moltrack"').first();
   const queries = await grok.dapi.queries.filter(`connection.id = "${connection.id}"`).list();
   for (const query of queries)
