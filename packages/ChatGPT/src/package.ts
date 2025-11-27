@@ -13,11 +13,12 @@ import {OpenAIHelpClient} from './llm-utils/openAI-client';
 import {LLMCredsManager} from './llm-utils/creds';
 import {CombinedAISearchAssistant} from './llm-utils/combined-search';
 import {JsonSchema} from './prompt-engine/interfaces';
+import { generateAISqlQuery } from './llm-utils/sql-utils';
 
 export * from './package.g';
 export const _package = new DG.Package();
 
-export const modelName: string = 'gpt-4o-mini';
+export const modelName: string = 'gpt-4.1-nano';
 
 export class PackageFunctions {
   @grok.decorators.init()
@@ -124,6 +125,20 @@ export class PackageFunctions {
       'cache.invalidateOn': '0 0 1 * *'
     }
   })
+  static async ask(
+    question: string,
+  ): Promise<string> {
+    const client = OpenAIHelpClient.getInstance();
+    // this is used only here to provide caching
+    return await client.generalPrompt(modelName, 'You are a helpful assistant.', question);
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'cache': 'all',
+      'cache.invalidateOn': '0 0 1 * *'
+    }
+  })
   static async getExecutionPlan(userGoal: string): Promise<string> {
     const gptEngine = ChatGPTPromptEngine.getInstance(LLMCredsManager.getApiKey(), modelName);
     const gptAssistant = new ChatGptAssistant(gptEngine);
@@ -152,5 +167,19 @@ export class PackageFunctions {
   static async askDocumentationCached(prompt: string): Promise<string> {
     const client = OpenAIHelpClient.getInstance();
     return await client.getHelpAnswer(prompt);
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'cache': 'all',
+      'cache.invalidateOn': '0 0 1 * *'
+    }
+  })
+  static async generateSqlQuery(prompt: string, connectionID: string, schemaName: string): Promise<string> {
+    console.log(prompt);
+    console.log(connectionID);
+    console.log(schemaName);
+
+    return await generateAISqlQuery(prompt, connectionID, schemaName);
   }
 }

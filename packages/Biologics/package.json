@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/biologics",
   "friendlyName": "Biologics",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Demo Database wrapper for ADCs",
   "author": {
     "name": "Davit Rizhinashvili",
@@ -44,7 +44,7 @@
     "release-biologics-test": "webpack && grok publish test --release"
   },
   "canEdit": [
-    "Developers"
+    "Administrators"
   ],
   "canView": [
     "All users"
