@@ -9,8 +9,6 @@ import {DiffStudio} from './app';
 import {getIVP, IVP, getScriptLines, getScriptParams, ARG_INPUT_KEYS, SCRIPTING, STAGE_COL_NAME} from './scripting-tools';
 
 import {getBallFlightSim} from './demo/ball-flight';
-import {PK_PD_DEMO} from './demo/pk-pd';
-import {BIOREACTOR_DEMO} from './demo/bioreactor';
 import {CONTROL_EXPR, DF_NAME} from './constants';
 import {UI_TIME} from './ui-constants';
 
@@ -210,46 +208,6 @@ export class PackageFunctions {
     await call.call();
 
     return call.outputs[DF_NAME];
-  }
-
-  @grok.decorators.model({
-    name: 'PK-PD',
-    description: 'In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation',
-    icon: 'files/icons/pkpd.png',
-  })
-  static async pkPdNew(): Promise<void> {
-    await PK_PD_DEMO.run();
-  }
-
-  @grok.decorators.demo({
-    name: 'PK-PD Simulation Demo',
-    description: 'In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation',
-    demoPath: 'Compute | PK-PD Modeling',
-    test: {
-      test: 'demoSimPKPD()',
-      wait: '100',
-    },
-  })
-  static async demoSimPKPD(): Promise<any> {
-    await PK_PD_DEMO.runDemo();
-  }
-
-  @grok.decorators.model({
-    description: 'Controlled fab-arm exchange mechanism simulation',
-    icon: 'files/icons/bioreactor.png',
-  })
-  static async Bioreactor(): Promise<void> {
-    await BIOREACTOR_DEMO.run();
-  }
-
-  @grok.decorators.demo({
-    name: 'Bioreactor Demo',
-    description: 'In-browser simulation of controlled fab-arm exchange mechanism',
-    demoPath: 'Compute | Bioreactor',
-    test: {test: 'demoBioreactor()', wait: '100'},
-  })
-  static async demoBioreactor(): Promise<any> {
-    await BIOREACTOR_DEMO.runDemo();
   }
 
   @grok.decorators.func({

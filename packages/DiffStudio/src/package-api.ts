@@ -83,34 +83,6 @@ export namespace funcs {
   }
 
   /**
-  In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation
-  */
-  export async function pkPdNew(): Promise<void> {
-    return await grok.functions.call('DiffStudio:PkPdNew', {});
-  }
-
-  /**
-  In-browser two-compartment pharmacokinetic-pharmacodynamic (PK-PD) simulation
-  */
-  export async function demoSimPKPD(): Promise<any> {
-    return await grok.functions.call('DiffStudio:DemoSimPKPD', {});
-  }
-
-  /**
-  Controlled fab-arm exchange mechanism simulation
-  */
-  export async function bioreactor(): Promise<void> {
-    return await grok.functions.call('DiffStudio:Bioreactor', {});
-  }
-
-  /**
-  In-browser simulation of controlled fab-arm exchange mechanism
-  */
-  export async function demoBioreactor(): Promise<any> {
-    return await grok.functions.call('DiffStudio:DemoBioreactor', {});
-  }
-
-  /**
   Run model with Diff Studio UI
   */
   export async function runModel(model: string , inputsTabDockRatio: number , graphsDockRatio: number ): Promise<void> {
