@@ -61,6 +61,7 @@ export class InputForm extends HTMLElement {
       this.formInst = undefined;
     else {
       this.formInst = await DG.InputForm.forFuncCall(funcCall, {twoWayBinding: true, skipDefaultInit: this.skipDefaultInit} as any);
+      this.formInst.root.style.overflowY = 'hidden';
       this.appendChild(this.formInst.root);
     }
     this.formChanges$.next(this.formInst);
