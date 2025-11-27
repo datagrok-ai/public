@@ -58,6 +58,14 @@ export async function askAIGeneralCached(model: string, systemPrompt: string, pr
   return await PackageFunctions.askAIGeneralCached(model, systemPrompt, prompt, schema);
 }
 
+//input: string question 
+//output: string result
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 1 * *
+export async function ask(question: string) : Promise<string> {
+  return await PackageFunctions.ask(question);
+}
+
 //input: string userGoal 
 //output: string result
 //meta.cache: all
@@ -82,4 +90,14 @@ export async function fuzzyMatch(prompt: string, searchPatterns: string[], descr
 //meta.cache.invalidateOn: 0 0 1 * *
 export async function askDocumentationCached(prompt: string) : Promise<string> {
   return await PackageFunctions.askDocumentationCached(prompt);
+}
+
+//input: string prompt 
+//input: string connectionID 
+//input: string schemaName 
+//output: string result
+//meta.cache: all
+//meta.cache.invalidateOn: 0 0 1 * *
+export async function generateSqlQuery(prompt: string, connectionID: string, schemaName: string) : Promise<string> {
+  return await PackageFunctions.generateSqlQuery(prompt, connectionID, schemaName);
 }
