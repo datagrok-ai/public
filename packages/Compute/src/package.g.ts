@@ -1,6 +1,11 @@
 import {PackageFunctions} from './package';
 import * as DG from 'datagrok-api/dg';
 
+//tags: init
+export async function init() : Promise<void> {
+  await PackageFunctions.init();
+}
+
 //input: funccall funccall 
 export function openModelFromFuncall(funccall: DG.FuncCall) : void {
   PackageFunctions.openModelFromFuncall(funccall);
@@ -26,34 +31,6 @@ export function RichFunctionViewEditor(call: DG.FuncCall) {
 //output: view result
 export function PipelineStepEditor(call: DG.FuncCall) {
   return PackageFunctions.PipelineStepEditor(call);
-}
-
-//name: renderRestPanel
-//input: func func 
-//output: widget result
-export async function renderPanel(func: any) : Promise<any> {
-  return await PackageFunctions.renderPanel(func);
-}
-
-//tags: init
-export function init() : void {
-  PackageFunctions.init();
-}
-
-//name: Model Hub
-//tags: app
-//output: view result
-//meta.browsePath: Compute
-export function modelCatalog() {
-  return PackageFunctions.modelCatalog();
-}
-
-//input: dynamic treeNode 
-//input: view browseView 
-//meta.role:  
-//meta.app:  
-export function modelCatalogTreeBrowser(treeNode: any, browseView: DG.ViewBase) : void {
-  PackageFunctions.modelCatalogTreeBrowser(treeNode, browseView);
 }
 
 //input: dynamic func 

@@ -6,6 +6,29 @@ export async function init() : Promise<void> {
   await PackageFunctions.init();
 }
 
+//name: renderRestPanel
+//input: func func 
+//output: widget result
+export async function renderPanel(func: any) : Promise<any> {
+  return await PackageFunctions.renderPanel(func);
+}
+
+//name: Model Hub
+//tags: app
+//output: view result
+//meta.browsePath: Compute
+export function modelCatalog() {
+  return PackageFunctions.modelCatalog();
+}
+
+//input: dynamic treeNode 
+//input: view browseView 
+//meta.role:  
+//meta.app:  
+export function modelCatalogTreeBrowser(treeNode: any, browseView: DG.ViewBase) : void {
+  PackageFunctions.modelCatalogTreeBrowser(treeNode, browseView);
+}
+
 //name: Custom Function View Editor
 //tags: editor
 //input: funccall call 

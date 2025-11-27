@@ -18,6 +18,12 @@ import {Subject} from 'rxjs';
 import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {OptimizerParams, runOptimizer} from '@datagrok-libraries/compute-utils/function-views/src/fitting/optimizer-api';
+import {ModelCatalogView,
+  startModelCatalog,
+  makeModelTreeBrowser,
+  renderRestPanel,
+  setModelCatalogEventHandlers,
+  setModelCatalogHandler} from '@datagrok-libraries/compute-utils/model-catalog';
 import dayjs from 'dayjs';
 
 declare global {
@@ -26,7 +32,11 @@ declare global {
 declare let ENABLE_VUE_DEV_TOOLS: any;
 
 export * from './package.g';
+import {_package} from './package-instance';
 export {_package} from './package-instance';
+
+let initRunned = false;
+let startUriLoaded = false;
 
 function setViewHierarchyData(call: DG.FuncCall, view: DG.ViewBase) {
   view.parentCall = call.parentCall;
@@ -44,16 +54,68 @@ function setVueAppOptions(app: Vue.App<any>) {
     app.config.performance = true;
 }
 
+const modelCatalogOptions = {
+  _package,
+  ViewClass: ModelCatalogView,
+  segment: 'Modelhub',
+  viewName: 'Model Hub',
+  funcName: 'modelCatalog',
+  setStartUriLoaded: () => startUriLoaded = true,
+  getStartUriLoaded: () => startUriLoaded,
+};
+
 export class PackageFunctions {
+
   @grok.decorators.init()
   static async init() {
+    if (initRunned)
+      return;
+    initRunned = true;
+
+    setModelCatalogHandler();
+    setModelCatalogEventHandlers(modelCatalogOptions);
+
     try {
       await DG.Func.byName('WebComponents:init').prepare().call();
     } catch (e) {
       console.log(e);
       grok.shell.error(`WebComponents package init error`);
     }
+
+    try {
+      const compute1Init = DG.Func.byName('Compute:init');
+      if (compute1Init)
+        await compute1Init.prepare().call();
+    } catch (e) {
+      console.log(e);
+      grok.shell.error(`Compute1 package init error`);
+    }
   }
+
+
+  @grok.decorators.func({name: 'renderRestPanel'})
+  static async renderPanel(@grok.decorators.param({type: 'func'}) func: DG.Func) : Promise<DG.Widget> {
+    return renderRestPanel(func as any) as any;
+  }
+
+
+  @grok.decorators.app({
+    browsePath: 'Compute',
+    name: 'Model Hub',
+    outputs: [{type: 'view', name: 'result'}],
+  })
+  static modelCatalog() {
+    return startModelCatalog(modelCatalogOptions);
+  }
+
+
+  @grok.decorators.func({
+    meta: { role: ' ', app: ' '}
+  })
+  static modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.ViewBase) {
+    makeModelTreeBrowser(treeNode as any);
+  }
+
 
   @grok.decorators.editor({name: 'Custom Function View Editor'})
   static async CustomFunctionViewEditor(call: DG.FuncCall) : Promise<DG.ViewBase> {
@@ -89,12 +151,12 @@ export class PackageFunctions {
 
   @grok.decorators.editor({name: 'Rich Function View Editor'})
   static async RichFunctionViewEditor(call: DG.FuncCall) : Promise<DG.ViewBase> {
-    const view = new DG.ViewBase();
+    const view = DG.toJs(DG.toDart(new DG.ViewBase())) as DG.View;
     setViewHierarchyData(call, view);
 
     const app = Vue.createApp(RFVApp, {funcCall: Vue.markRaw(call), view: Vue.markRaw(view)});
     view.root.classList.remove('ui-panel');
-    view.root.classList.add('ui-box');
+    view.root.classList.remove('ui-box');
     setVueAppOptions(app);
 
     app.mount(view.root);
@@ -120,7 +182,7 @@ export class PackageFunctions {
     if (!providerFunc)
       throw new Error(`Model ${call?.func?.name} has no provider`);
 
-    const view = new DG.ViewBase();
+    const view = DG.toJs(DG.toDart(new DG.ViewBase())) as DG.View;
     setViewHierarchyData(call, view);
 
     const modelName = call.options?.['title'] ?? call.func?.friendlyName ?? call.func?.name;
@@ -134,7 +196,7 @@ export class PackageFunctions {
 
     const app = Vue.createApp(TreeWizardAppInstance, {providerFunc, modelName, version, instanceConfig, resolve, view: Vue.markRaw(view)});
     view.root.classList.remove('ui-panel');
-    view.root.classList.add('ui-box');
+    view.root.classList.remove('ui-box');
     setVueAppOptions(app);
 
     app.mount(view.root);
@@ -171,6 +233,7 @@ export class PackageFunctions {
     return promise;
   }
 
+
   @grok.decorators.func({outputs: [{type: 'object', name: 'result'}]})
   static async RunOptimizer(
     @grok.decorators.param({'type': 'object'}) params: OptimizerParams,
@@ -178,6 +241,7 @@ export class PackageFunctions {
     const [, calls] = await runOptimizer(params);
     return calls;
   }
+
 
   // Code for testing
 

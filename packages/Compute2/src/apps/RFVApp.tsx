@@ -22,7 +22,7 @@ export const RFVApp = Vue.defineComponent({
       required: true,
     },
     view: {
-      type: DG.ViewBase,
+      type: DG.View,
       required: true,
     },
   },
@@ -114,6 +114,9 @@ export const RFVApp = Vue.defineComponent({
     };
 
     const onInputChanged = () => {
+      if (props.view && !props.view.isPinned) {
+        props.view.pin();
+      }
       currentCallState.value.isOutputOutdated = true;
       currentFuncCall.value.options[OUTPUT_OUTDATED_PATH] = 'true';
       searchParams.id = undefined;

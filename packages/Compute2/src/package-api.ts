@@ -12,6 +12,18 @@ export namespace funcs {
     return await grok.functions.call('Compute2:Init', {});
   }
 
+  export async function renderPanel(func: any ): Promise<any> {
+    return await grok.functions.call('Compute2:RenderPanel', { func });
+  }
+
+  export async function modelCatalog(): Promise<DG.View> {
+    return await grok.functions.call('Compute2:ModelCatalog', {});
+  }
+
+  export async function modelCatalogTreeBrowser(treeNode: any , browseView: DG.View ): Promise<void> {
+    return await grok.functions.call('Compute2:ModelCatalogTreeBrowser', { treeNode, browseView });
+  }
+
   export async function customFunctionViewEditor(call: any ): Promise<DG.View> {
     return await grok.functions.call('Compute2:CustomFunctionViewEditor', { call });
   }

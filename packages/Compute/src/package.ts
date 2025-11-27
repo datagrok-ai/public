@@ -18,13 +18,7 @@ import {
   makeRevalidation as makeRevalidationInst,
   mergeValidationResults as mergeValidationResultsInst,
 } from '@datagrok-libraries/compute-utils';
-import {ModelCatalogView,
-  ModelHandler,
-  startModelCatalog,
-  makeModelTreeBrowser,
-  renderRestPanel,
-  setModelCatalogEventHandlers,
-  setModelCatalogHandler} from '@datagrok-libraries/compute-utils/model-catalog';
+import {ModelHandler} from '@datagrok-libraries/compute-utils/model-catalog';
 import {
   testPipeline as testPipelineInst,
 } from '@datagrok-libraries/compute-utils';
@@ -53,22 +47,13 @@ export const historyInput = UiUtils.historyInput;
 export const historyInputJSON = UiUtils.historyInputJSON;
 export const historyPanel = UiUtils.historyPanel;
 
-let startUriLoaded = false;
-let initCompleted = false;
-
-
-const options = {
-  _package,
-  ViewClass: ModelCatalogView,
-  segment: 'Modelhub',
-  viewName: 'Model Hub',
-  funcName: 'modelCatalog',
-  setStartUriLoaded: () => startUriLoaded = true,
-  getStartUriLoaded: () => startUriLoaded,
-};
-
 
 export class PackageFunctions {
+  @grok.decorators.init()
+  static async init() {
+  }
+
+
   @grok.decorators.func()
   static openModelFromFuncall(funccall: DG.FuncCall) {
     ModelHandler.openModelFromFunccall(funccall as any);
@@ -95,41 +80,6 @@ export class PackageFunctions {
   @grok.decorators.editor({outputs: [{type: 'view', name: 'result'}]})
   static PipelineStepEditor(call: DG.FuncCall) {
     return RichFunctionViewInst.fromFuncCall(call as any, {historyEnabled: false, isTabbed: true});
-  }
-
-
-  @grok.decorators.func({name: 'renderRestPanel'})
-  static async renderPanel(@grok.decorators.param({type: 'func'}) func: DG.Func) : Promise<DG.Widget> {
-    return renderRestPanel(func as any) as any;
-  }
-
-  @grok.decorators.init()
-  static init() {
-    if (initCompleted)
-      return;
-
-    setModelCatalogHandler();
-    setModelCatalogEventHandlers(options as any);
-
-    initCompleted = true;
-  }
-
-
-  @grok.decorators.app({
-    browsePath: 'Compute',
-    name: 'Model Hub',
-    outputs: [{type: 'view', name: 'result'}],
-  })
-  static modelCatalog() {
-    return startModelCatalog(options as any);
-  }
-
-
-  @grok.decorators.func({
-    meta: { role: ' ', app: ' '}
-  })
-  static modelCatalogTreeBrowser(treeNode: DG.TreeViewGroup, browseView: DG.ViewBase) {
-    makeModelTreeBrowser(treeNode as any);
   }
 
   //

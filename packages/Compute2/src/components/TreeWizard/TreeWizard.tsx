@@ -58,7 +58,7 @@ export const TreeWizard = Vue.defineComponent({
       required: true,
     },
     view: {
-      type: DG.ViewBase,
+      type: DG.View,
       required: true,
     },
   },
@@ -281,6 +281,9 @@ export const TreeWizard = Vue.defineComponent({
     });
 
     Vue.watch([currentMetaCallData, hasNotSavedEdits], ([metadata, hasNotSavedEdits]) => {
+      if (props.view && !props.view.isPinned && hasNotSavedEdits) {
+        props.view.pin();
+      }
       if (!metadata || hasNotSavedEdits) {
         searchParams.id = undefined;
         setViewName(modelName.value);

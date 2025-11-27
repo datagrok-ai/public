@@ -28,6 +28,10 @@ export namespace scripts {
 }
 
 export namespace funcs {
+  export async function init(): Promise<void> {
+    return await grok.functions.call('Compute:Init', {});
+  }
+
   export async function openModelFromFuncall(funccall: any ): Promise<void> {
     return await grok.functions.call('Compute:OpenModelFromFuncall', { funccall });
   }
@@ -45,22 +49,6 @@ export namespace funcs {
 
   export async function pipelineStepEditor(call: any ): Promise<DG.View> {
     return await grok.functions.call('Compute:PipelineStepEditor', { call });
-  }
-
-  export async function renderPanel(func: any ): Promise<any> {
-    return await grok.functions.call('Compute:RenderPanel', { func });
-  }
-
-  export async function init(): Promise<void> {
-    return await grok.functions.call('Compute:Init', {});
-  }
-
-  export async function modelCatalog(): Promise<DG.View> {
-    return await grok.functions.call('Compute:ModelCatalog', {});
-  }
-
-  export async function modelCatalogTreeBrowser(treeNode: any , browseView: DG.View ): Promise<void> {
-    return await grok.functions.call('Compute:ModelCatalogTreeBrowser', { treeNode, browseView });
   }
 
   export async function customDataUploader(func: any ): Promise<any> {
