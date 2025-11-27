@@ -854,18 +854,26 @@ export async function updateView(tv: DG.TableView, df: DG.DataFrame, scope: Scop
   if (columns.length)
     tv.dataFrame.currentCell = tv.dataFrame.cell(-1, tv.dataFrame.col(columns[0])!.name);
 
-  /* subscribe afetr 2 seconds for onPropertyValueChanged and onMetadataChanged
-  triggered by applyMolTrackLayout have time to finish */
-  setTimeout(() => {
-    DG.debounce(tv.grid.onPropertyValueChanged, 2000).subscribe(() => {
-      saveMolTrackLayout(tv.grid, scope);
-    });
-    DG.debounce(tv.dataFrame.onMetadataChanged, 2000).subscribe(() => {
-      saveMolTrackLayout(tv.grid, scope);
-    });
-  }, 2000);
-}
+  /** Ensure the dataframe is available before saving the MolTrack layout. */
+  const waitForGrid = (tv: DG.TableView, callback: (grid: DG.Grid) => void, interval = 100) => {
+    const handle = setInterval(() => {
+      if (tv.grid.dataFrame) {
+        clearInterval(handle);
+        callback(tv.grid);
+      }
+    }, interval);
+  };
 
+  waitForGrid(tv, (grid) => {
+    grid.onPropertyValueChanged.subscribe(() => {
+      saveMolTrackLayout(grid, scope);
+    });
+
+    tv.dataFrame.onMetadataChanged.subscribe(() => {
+      saveMolTrackLayout(grid, scope);
+    });
+  });
+}
 
 export async function reorderSearchResColummns(df: DG.DataFrame) {
   const colNames = df.columns.names();
