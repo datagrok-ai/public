@@ -17,6 +17,7 @@ import {Model} from './model';
 
 import utc from 'dayjs/plugin/utc';
 import dayjs from 'dayjs';
+import {getLookupsInfo} from './utils';
 
 export const _package = new DG.Package();
 
@@ -254,13 +255,16 @@ export class PackageFunctions {
   static ivpLanguageParser(@grok.decorators.param({ type: 'string' }) code: string): DG.Script  {
     const ivp = getIVP(code);
 
+    // not working in the core yet
+    // const lookupsOptions = ivp.inputsLookup ? [getLookupsInfo(ivp.inputsLookup) as any] : [];
+    const lookupsOptions = [];
     const argOptions = ARG_INPUT_KEYS.map((key) => DiffStudio.getOptions(key, ivp.arg[key], CONTROL_EXPR.ARG));
     const initsOptions =  [...ivp.inits.entries()].map(([key, val]) => DiffStudio.getOptions(key, val, CONTROL_EXPR.INITS));
     const paramsOptions = ivp.params ? [...ivp.params.entries()].map(([key, val]) => DiffStudio.getOptions(key, val, CONTROL_EXPR.PARAMS)) : [];
     const loopOptions = ivp.loop ? [DiffStudio.getOptions(SCRIPTING.COUNT, ivp.loop.count, CONTROL_EXPR.LOOP)] : [];
 
     const inputs: DG.Property[] = [
-      ...argOptions, ...initsOptions, ...paramsOptions, ...loopOptions
+      ...lookupsOptions, ...argOptions, ...initsOptions, ...paramsOptions, ...loopOptions
     ].map((propOpts) =>{
       const prop = DG.Property.fromOptions(propOpts);
       return prop;
