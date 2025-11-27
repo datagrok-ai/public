@@ -5,7 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import { MolTrackDockerService } from './services/moltrack-docker-service';
-import { excludedScopes, MOLTRACK_ENTITY_LEVEL, MOLTRACK_IS_STATIC_FIELD, MOLTRACK_NODE, SAVED_SEARCHES_NODE, Scope, SEARCH_NODE } from './utils/constants';
+import { excludedScopes, IViewContainer, MOLTRACK_ENTITY_LEVEL, MOLTRACK_IS_STATIC_FIELD, MOLTRACK_NODE, SAVED_SEARCHES_NODE, Scope, SEARCH_NODE } from './utils/constants';
 import { createSavedSearchesSatistics, createSearchExpandableNode, createSearchNode, createSearchView, getSavedSearches, handleSearchURL, loadSearchFields, molTrackSearchFieldsArr } from './views/search';
 import { registerAllData, registerAssayData, updateAllMolTrackSchemas } from './utils/registration-utils';
 import { batchView, compoundView, createPath, getQuickActionsWidget, getStatisticsWidget, initAssayRegisterView, initBulkRegisterView, initRegisterView, initSchemaView } from './utils/view-utils';
@@ -55,7 +55,8 @@ export async function molTrackApp(path: string): Promise<DG.ViewBase> {
   const isBulkPath = hasPath && path.includes('Bulk');
   const isAssayPath = hasPath && path.includes('Assay');
 
-  const setPathAndReturn = (view: DG.View) => {
+  const setPathAndReturn = (registerView: IViewContainer): DG.ViewBase => {
+    const {view} = registerView;
     view.path = path;
     return view;
   };
@@ -99,8 +100,12 @@ export async function molTrackApp(path: string): Promise<DG.ViewBase> {
 //input: dynamic treeNode
 //input: view browseView
 export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseView: any) {
-  function createRegisterNode(label: string, initView: () => void) {
-    appNode.getOrCreateGroup('Register').item(label).onSelected.subscribe(initView);
+  function createRegisterNode(label: string, initView: () => IViewContainer | Promise<IViewContainer>) {
+    appNode.getOrCreateGroup('Register').item(label).onSelected.subscribe(async () => {
+      const registerView = await initView();
+      registerView.show?.();
+      return registerView.view;
+    });
   }
 
   appNode.getOrCreateGroup('Register').onSelected.subscribe(() => {
