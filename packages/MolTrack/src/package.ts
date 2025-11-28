@@ -96,7 +96,7 @@ export async function molTrackApp(path: string): Promise<DG.ViewBase> {
   const statisticsWidget = await getStatisticsWidget(createSearchView);
   const quickActionsWidget = getQuickActionsWidget();
   const viewRoot = ui.divH([statisticsWidget, quickActionsWidget], {style: {gap: '50px'}});
-  const view = await createSearchExpandableNode([''], async () => viewRoot);
+  const view = await createSearchExpandableNode([], async () => viewRoot, false);
   view.name = MOLTRACK_NODE;
   return view;
 }
