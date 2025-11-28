@@ -324,7 +324,9 @@ class LazyConservationTrack extends ConservationTrack {
 // ============================================================================
 
 export const MSA_HEADER_INITIALIZED_FLAG = '__msa-scroller-initialized';
-export const MSA_SCROLLER_GRID_SUBSCRIPTION = '__msa-scroller-subscription';
+export const MSA_SCROLLER_GRID_SUBSCRIPTIONS = '__msa-scroller-subscription';
+
+type Unsubscibable = { unsubscribe: () => void };
 
 export function handleSequenceHeaderRendering() {
   const handleGrid = (grid: DG.Grid) => {
@@ -334,19 +336,26 @@ export function handleSequenceHeaderRendering() {
       const df = grid.dataFrame;
       if (!df) return;
 
-      const seqCols = df.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE);
+      if (!grid.temp[MSA_SCROLLER_GRID_SUBSCRIPTIONS])
+        grid.temp[MSA_SCROLLER_GRID_SUBSCRIPTIONS] = [] as Unsubscibable[];
+      let headerSubs = grid.temp[MSA_SCROLLER_GRID_SUBSCRIPTIONS] as Unsubscibable[];
+      headerSubs.forEach((s) => s.unsubscribe());
+      grid.temp[MSA_SCROLLER_GRID_SUBSCRIPTIONS] = headerSubs = [];
 
-      grid.temp[MSA_SCROLLER_GRID_SUBSCRIPTION]?.unsubscribe();
-      grid.temp[MSA_SCROLLER_GRID_SUBSCRIPTION] = DG.debounce(rxjs.merge(df.onColumnsAdded, df.onSemanticTypeDetected), 200).subscribe(() => handleGrid(grid));
-      grid.sub(grid.temp[MSA_SCROLLER_GRID_SUBSCRIPTION]);
+      const sub = (s: Unsubscibable) => {
+        headerSubs.push(s);
+      };
+      const seqCols = df.columns.bySemTypeAll(DG.SEMTYPE.MACROMOLECULE);
+      sub(DG.debounce(rxjs.merge(df.onColumnsAdded, df.onColumnsRemoved, df.onSemanticTypeDetected, grid.onEvent('d4-data-frame-changed')), 200).subscribe(() => handleGrid(grid)));
 
       for (const seqCol of seqCols) {
         // first check if the column was already processed
         const gCol = grid.col(seqCol.name);
         if (!gCol) continue;
 
-        if (gCol.temp[MSA_HEADER_INITIALIZED_FLAG])
-          continue;
+        // if (gCol.temp[MSA_HEADER_INITIALIZED_FLAG])
+        //   continue;
+        const wasInitialized = gCol.temp[MSA_HEADER_INITIALIZED_FLAG] === true;
         gCol.temp[MSA_HEADER_INITIALIZED_FLAG] = true;
 
 
@@ -428,7 +437,7 @@ export function handleSequenceHeaderRendering() {
           }, 50);
         });
 
-        grid.sub(filterChangeSub);
+        sub(filterChangeSub);
 
         const initializeHeaders = (monomerLib: IMonomerLib) => {
           const tracks: { id: string, track: MSAHeaderTrack, priority: number }[] = [];
@@ -501,7 +510,7 @@ export function handleSequenceHeaderRendering() {
 
           scroller.setSelectionData(df, seqCol, sh);
 
-          if (maxSeqLen > 50) {
+          if (maxSeqLen > 50 && !wasInitialized) {
             grid.props.colHeaderHeight = initialHeaderHeight;
 
             // Set column width
@@ -511,10 +520,12 @@ export function handleSequenceHeaderRendering() {
             }, 300);
           }
 
+          sub({unsubscribe: () => scroller.detach()}); // Ensure proper cleanup
           // Handle cell rendering for MSA
-          grid.sub(grid.onCellRender.subscribe((e) => {
+          const tableCol = gCol.column;
+          sub(grid.onCellRender.subscribe((e) => {
             const cell = e.cell;
-            if (!cell || !cell.isColHeader || cell?.gridColumn?.name !== gCol?.name)
+            if (!cell || !cell.isColHeader || cell?.tableColumn?.dart !== tableCol?.dart)
               return;
 
             const cellBounds = e.bounds;
