@@ -96,6 +96,121 @@ export class DataSourceType {
   static secureSources = ['AWS', 'GCP'];
 
 }
+export class Permission {
+  // ===== Admin =====
+  static CREATE_USER = 'CreateUser';
+
+  static EDIT_USER = 'EditUser';
+
+  static EDIT_GROUP = 'EditGroup';
+
+  static EDIT_GLOBAL_PERMISSIONS = 'EditGlobalPermissions';
+
+  static START_ADMIN_SESSION = 'StartAdminSession';
+
+  static EDIT_PLUGINS_SETTINGS = 'EditPluginsSettings';
+
+  static PUBLISH_PACKAGE = 'PublishPackage';
+
+  static DELETE_COMMENTS = 'DeleteComments';
+
+  static ADMIN_SYSTEM_CONNECTIONS = 'AdminSystemConnections';
+
+  static ADMIN_STICKY_META = 'AdminStickyMeta';
+
+  static CREATE_REPOSITORY = 'CreateRepository';
+
+  static CREATE_GROUP = 'CreateGroup';
+
+  static CREATE_ROLE = 'CreateRole';
+
+  // ===== Create =====
+  static SAVE_ENTITY_TYPE = 'SaveEntityType';
+
+  static CREATE_ENTITY = 'CreateEntity';
+
+  static CREATE_SCRIPT = 'CreateScript';
+
+  static CREATE_SECURITY_CONNECTION = 'CreateSecurityConnection';
+
+  static CREATE_DATABASE_CONNECTION = 'CreateDatabaseConnection';
+
+  static CREATE_FILE_CONNECTION = 'CreateFileConnection';
+
+  static CREATE_DATA_QUERY = 'CreateDataQuery';
+
+  static CREATE_DASHBOARD = 'CreateDashboard';
+
+  static CREATE_SPACE = 'CreateSpace';
+
+  // ===== General =====
+  static INVITE_USER = 'InviteUser';
+
+  static SHARE_WITH_EVERYONE = 'ShareWithEveryone';
+
+  static SEND_EMAIL = 'SendEmail';
+
+  // ===== Browse =====
+  static BROWSE_FILE_CONNECTIONS = 'BrowseFileConnections';
+
+  static BROWSE_DATABASE_CONNECTIONS = 'BrowseDatabaseConnections';
+
+  static BROWSE_APPS = 'BrowseApps';
+
+  static BROWSE_SPACES = 'BrowseSpaces';
+
+  static BROWSE_DASHBOARDS = 'BrowseDashboards';
+
+  static BROWSE_PLUGINS = 'BrowsePlugins';
+
+  static BROWSE_FUNCTIONS = 'BrowseFunctions';
+
+  static BROWSE_QUERIES = 'BrowseQueries';
+
+  static BROWSE_SCRIPTS = 'BrowseScripts';
+
+  static BROWSE_OPEN_API = 'BrowseOpenApi';
+
+  static BROWSE_USERS = 'BrowseUsers';
+
+  static BROWSE_GROUPS = 'BrowseGroups';
+
+  static BROWSE_ROLES = 'BrowseRoles';
+
+  static BROWSE_MODELS = 'BrowseModels';
+
+  static BROWSE_DOCKERS = 'BrowseDockers';
+
+  static BROWSE_LAYOUTS = 'BrowseLayouts';
+
+  static BROWSE_SHARED_DATA = 'BrowseSharedData';
+
+  // ===== Entity: Common =====
+  static VIEW = 'View';
+
+  static EDIT = 'Edit';
+
+  static DELETE = 'Delete';
+
+  static SHARE = 'Share';
+
+  // ===== Entity: DataConnection =====
+  static DATA_CONNECTION_QUERY = 'DataConnection.Query';
+
+  static DATA_CONNECTION_GET_SCHEMA = 'DataConnection.GetSchema';
+
+  static DATA_CONNECTION_LIST_FILES = 'DataConnection.ListFiles';
+
+  // ===== Entity: DataQuery =====
+  static DATA_QUERY_EXECUTE = 'DataQuery.Execute';
+
+  // ===== Entity: DataQuery =====
+  static SCRIPT_EXECUTE = 'Script.Execute';
+
+  // ===== Entity: TableInfo =====
+  static TABLE_READ_DATA = 'Table.ReadData';
+
+}
 export class ScriptLanguage {
   static Grok = 'grok';
 
