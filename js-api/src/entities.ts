@@ -280,6 +280,11 @@ export class Func extends Entity {
     return toJs(api.grok_Func_Prepare(this.dart, parameters));
   };
 
+  async prepareAsync(parameters: {[name: string]: any} = {}): Promise<FuncCall> {
+    const call = await api.grok_Func_PrepareAsync(this.dart, parameters);
+    return toJs(call);
+  };
+
   /** Input parameters */
   get inputs(): Property[] {
     return toJs(api.grok_Func_Get_InputParams(this.dart));
