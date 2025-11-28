@@ -18,7 +18,7 @@ export class SchemaEditor extends DG.Widget {
   properties: DG.IProperty[] = [];
   extraPropertiesDiv: HTMLDivElement;
 
-  constructor(options: {properties: DG.IProperty[], extraPropertiesDiv?: HTMLDivElement}) {
+  constructor(options: {properties: DG.IProperty[], extraPropertiesDiv?: HTMLDivElement, allowRemove?: boolean}) {
     super(ui.div([]));
     this.properties = options.properties;
     this.extraPropertiesDiv = options.extraPropertiesDiv ?? ui.div([]);
@@ -32,7 +32,7 @@ export class SchemaEditor extends DG.Widget {
       items: options.properties,
       mainProperties: [DG.Property.propertyOptions['name']!, typeProp],
       allowAdd: true,
-      allowRemove: true
+      allowRemove: options.allowRemove ?? true,
     });
 
     this.table.onSelected.subscribe((item) => {

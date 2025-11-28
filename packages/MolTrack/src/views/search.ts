@@ -968,14 +968,21 @@ export async function handleSearchURL(url: string): Promise<DG.ViewBase> {
 
 export async function createSearchExpandableNode(viewpath: string[],
   getElement: () => Promise<HTMLElement>,
+  addPreview: boolean = true,
 ): Promise<DG.ViewBase> {
   openedSearchView?.close();
   const header = getAppHeader();
   const contentDiv = ui.div('', 'moltrack-search-stats-div');
-  openedSearchView = grok.shell.addPreview(DG.View.fromRoot(ui.divV([header, contentDiv])));
-  openedSearchView.name = viewpath[viewpath.length - 1];
-  openedSearchView.path = createPathFromArr(openedSearchView, viewpath);
-  ui.setUpdateIndicator(contentDiv, true, `Loading ${viewpath[viewpath.length - 1]}...`);
+  const view = DG.View.fromRoot(ui.divV([header, contentDiv]));
+  openedSearchView = addPreview ? grok.shell.addPreview(view) : view;
+
+  const hasName = viewpath.length > 0;
+  const name = hasName ? viewpath[viewpath.length - 1] : '';
+  if (hasName) {
+    openedSearchView.name = name;
+    openedSearchView.path = createPathFromArr(openedSearchView, viewpath);
+  }
+  ui.setUpdateIndicator(contentDiv, true, `Loading ${name}...`);
 
   getElement()
     .then((res) => contentDiv.append(res))

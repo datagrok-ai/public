@@ -86,6 +86,7 @@ export class PropertySchemaView {
       const editor = new SchemaEditor({
         properties: props,
         extraPropertiesDiv: this.extraPropertiesDiv,
+        allowRemove: false,
       });
       this.editors[entityType] = editor;
 
