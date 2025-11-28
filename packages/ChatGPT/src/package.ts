@@ -13,12 +13,12 @@ import {OpenAIHelpClient} from './llm-utils/openAI-client';
 import {LLMCredsManager} from './llm-utils/creds';
 import {CombinedAISearchAssistant} from './llm-utils/combined-search';
 import {JsonSchema} from './prompt-engine/interfaces';
-import { generateAISqlQuery } from './llm-utils/sql-utils';
+import {generateAISqlQuery} from './llm-utils/sql-utils';
 
 export * from './package.g';
 export const _package = new DG.Package();
 
-export const modelName: string = 'gpt-4.1-nano';
+export const modelName: string = 'gpt-4o-mini';
 
 export class PackageFunctions {
   @grok.decorators.init()
