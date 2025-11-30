@@ -7,6 +7,7 @@ keywords:
  - data catalog
 format: 'mdx'
 sidebar_position: 2
+unlisted: true
 ---
 
 ```mdx-code-block

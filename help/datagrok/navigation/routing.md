@@ -1,5 +1,6 @@
 ---
 title: "Routing"
+unlisted: true
 ---
 
 In this article, we will consider in which cases the Datagrok platform retains the state in which it was before

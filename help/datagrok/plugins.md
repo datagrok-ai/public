@@ -1,6 +1,6 @@
 ---
 title: "Plugins"
-sidebar_position: 1.2 
+sidebar_position: 5 
 ---
 
 ## General

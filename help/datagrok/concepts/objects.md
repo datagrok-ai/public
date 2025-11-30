@@ -86,6 +86,60 @@ particular entity types. Common properties include:
 
 You can use metadata to [search for entities](../../visualize/table-view-1.md#search)
 
+## Entity search
+
+Use the search bar on top to filter the content in the Browse tree. In addition to searching by name,
+you can search by the entity's metadata,
+like [tags](../../govern/catalog/tags.md),
+[parameters](../concepts/objects.md#parameters), and
+[properties](../concepts/objects.md#properties). For example, entering
+`#demo` shows all entities tagged with `#demo`, and `imported < 01/01/2024`
+shows all entities imported before that date. 
+
+To apply multiple filters, use `AND` and `OR` operators and parentheses.
+
+<details>
+<summary>Examples</summary>
+
+Unstructured query; looks for 'biologics' in title and description:
+
+```
+Biologics
+```
+
+Tagged as #demo:
+
+```
+#demo
+```
+
+Tagged as either either #demo or #chem:
+
+```
+#demo or #chem
+```
+
+Created in the last 7 days:
+
+```
+createdOn > -1w
+```
+
+Complex conditions:
+
+```
+(#demo and #chem) or author = "john@google.com"
+starredBy = @current or author = @current
+```
+
+Created by recently joined users:
+
+```
+author.joined > -5d
+```
+
+</details>
+
 See also:
 
 * [Privileges](../../govern/access-control/access-control.md#authentication)
