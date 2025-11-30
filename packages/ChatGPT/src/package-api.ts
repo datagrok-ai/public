@@ -64,4 +64,8 @@ export namespace funcs {
   export async function generateSqlQuery(prompt: string , connectionID: string , schemaName: string ): Promise<string> {
     return await grok.functions.call('ChatGPT:GenerateSqlQuery', { prompt, connectionID, schemaName });
   }
+
+  export async function indexDatabaseSchema(): Promise<void> {
+    return await grok.functions.call('ChatGPT:IndexDatabaseSchema', {});
+  }
 }

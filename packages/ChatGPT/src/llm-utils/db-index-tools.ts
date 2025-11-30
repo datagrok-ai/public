@@ -186,21 +186,26 @@ export async function genDBConnectionMeta(connection: DG.DataConnection, schemas
           schema: schemaName,
           type: dbSchemaDescriptor.tables[tableName]?.columns[col.name] || col.type, // should be always present
         };
-        // get min/max for numeric columns
-        if (col.isNumerical && col.type !== DG.COLUMN_TYPE.DATE_TIME) {
-          const {min, max} = await getColumnMinMax(connection, schemaName, tableName, col.name);
-          colMeta.min = min;
-          colMeta.max = max;
-        } else if (col.isCategorical && !dbSchemaDescriptor.tables[tableName]?.columns[col.name]?.toLowerCase().startsWith('timestamp')) { // we have a bug with timestamps
-          const catValues = await getMax100CategoryValues(connection, schemaName, tableName, col.name);
-          if (catValues)
-            colMeta.categoryValues = catValues;
-        }
-        if (rowCount > 0) {
+        if (rowCount <= 1_000_000) {
+          // get min/max for numeric columns
+          if (col.isNumerical && col.type !== DG.COLUMN_TYPE.DATE_TIME) {
+            const {min, max} = await getColumnMinMax(connection, schemaName, tableName, col.name);
+            colMeta.min = min;
+            colMeta.max = max;
+          } else if (col.isCategorical && !dbSchemaDescriptor.tables[tableName]?.columns[col.name]?.toLowerCase().startsWith('timestamp')) { // we have a bug with timestamps
+            const catValues = await getMax100CategoryValues(connection, schemaName, tableName, col.name);
+            if (catValues)
+              colMeta.categoryValues = catValues;
+          }
+          if (rowCount > 0) {
           // check if unique
-          const isUnique = await getIsColumnUnique(connection, schemaName, tableName, col.name, rowCount);
-          colMeta.isUnique = isUnique;
-        }
+            const isUnique = await getIsColumnUnique(connection, schemaName, tableName, col.name, rowCount);
+            colMeta.isUnique = isUnique;
+          }
+        } else
+          console.log(`Skipping detailed indexing for column ${col.name} in table ${tableName} due to large row count (${rowCount}).`);
+
+
         // get semantic type
         if (col.semType)
           colMeta.semanticType = col.semType;

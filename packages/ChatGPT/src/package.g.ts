@@ -101,3 +101,8 @@ export async function askDocumentationCached(prompt: string) : Promise<string> {
 export async function generateSqlQuery(prompt: string, connectionID: string, schemaName: string) : Promise<string> {
   return await PackageFunctions.generateSqlQuery(prompt, connectionID, schemaName);
 }
+
+//name: indexDatabaseSchema
+export async function indexDatabaseSchema() : Promise<void> {
+  await PackageFunctions.indexDatabaseSchema();
+}

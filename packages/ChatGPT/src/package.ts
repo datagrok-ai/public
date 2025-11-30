@@ -15,6 +15,7 @@ import {CombinedAISearchAssistant} from './llm-utils/combined-search';
 import {JsonSchema} from './prompt-engine/interfaces';
 import {generateAISqlQuery} from './llm-utils/sql-utils';
 import {genDBConnectionMeta} from './llm-utils/db-index-tools';
+import { biologicsIndex } from './llm-utils/indexes/biologics-index';
 
 export * from './package.g';
 export const _package = new DG.Package();
