@@ -5,31 +5,8 @@ import * as DG from 'datagrok-api/dg';
 import {OpenAIHelpClient} from './openAI-client';
 import {getSchemaDescriptor} from '@datagrok-libraries/db-explorer/src/utils';
 import {modelName} from '../package';
+import {DBSchemaInfo} from './db-index-tools';
 
-type DBIDWithSchema = `${string}.${string}`;
-type SchemaInfo = {
-    tableInfos: string[];
-    referenceInfos: string[];
-}
-class DBSchemaInfo {
-  private static _cache: Map<DBIDWithSchema, SchemaInfo> = new Map();
-
-  static async getSchemaInfo(connectionID: string, schemaName: string): Promise<SchemaInfo> {
-    const cacheKey: DBIDWithSchema = `${connectionID}.${schemaName}`;
-    if (this._cache.has(cacheKey))
-      return this._cache.get(cacheKey)!;
-    const schemaDescriptor = await getSchemaDescriptor(connectionID, schemaName);
-    const tableInfos: string[] = [];
-    const referenceInfos: string[] = [];
-    for (const [tableName, tableInfo] of Object.entries(schemaDescriptor.tables))
-      tableInfos.push(`${tableName}: (${Object.entries(tableInfo.columns).map(([colName, colType]) => `${colName} (${colType})`).join(', ')})`);
-    for (const ref of schemaDescriptor.references)
-      referenceInfos.push(`${ref.from} -> ${ref.to}`);
-    const schemaInfo = {tableInfos, referenceInfos};
-    this._cache.set(cacheKey, schemaInfo);
-    return schemaInfo;
-  }
-}
 
 export async function generateAISqlQuery(prompt: string, connectionID: string, schemaName: string): Promise<string> {
   const client = OpenAIHelpClient.getInstance();
@@ -52,7 +29,7 @@ CRITICAL JOIN RULES:
 - ONLY use relationships explicitly listed in the References section
 
 QUERY PLANNING PROCESS (follow these steps mentally before writing SQL):
-1. Identify all tables mentioned in the user question
+1. Identify all needed tables mentioned in the user question
 2. Trace the foreign key path between these tables using ONLY the References section
 3. List all intermediate tables needed for joins
 4. Verify each join relationship exists in the References section

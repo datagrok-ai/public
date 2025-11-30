@@ -14,6 +14,7 @@ import {LLMCredsManager} from './llm-utils/creds';
 import {CombinedAISearchAssistant} from './llm-utils/combined-search';
 import {JsonSchema} from './prompt-engine/interfaces';
 import {generateAISqlQuery} from './llm-utils/sql-utils';
+import {genDBConnectionMeta} from './llm-utils/db-index-tools';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -181,5 +182,34 @@ export class PackageFunctions {
     console.log(schemaName);
 
     return await generateAISqlQuery(prompt, connectionID, schemaName);
+  }
+
+  @grok.decorators.func({})
+  static async indexDatabaseSchema() {
+    const connections = await grok.dapi.connections.list();
+    const connectionsInput = ui.input.choice('Connection', {items: connections.map((c) => c.nqName), value: connections[0].nqName, nullable: false});
+    const getConnectionByName = (): DG.DataConnection => {
+      return connections.find((c) => c.nqName === connectionsInput.value)!;
+    };
+    const schemaInputRoot = ui.div([]);
+    let schemaInput: DG.ChoiceInput<string>;
+    const createSchemaInput = async () => {
+      ui.empty(schemaInputRoot);
+      const connection = getConnectionByName();
+      const schemas = await grok.dapi.connections.getSchemas(connection);
+      schemaInput = ui.input.choice('Schema', {items: schemas, value: schemas[0], nullable: false}) as DG.ChoiceInput<string>;
+      schemaInputRoot.append(schemaInput.root);
+    };
+    connectionsInput.onChanged.subscribe(() => createSchemaInput());
+    await createSchemaInput();
+    const dialog = ui.dialog('Index Database Schema')
+      .add(connectionsInput)
+      .add(schemaInputRoot)
+      .onOK(async () => {
+        const res = await genDBConnectionMeta(getConnectionByName(), [schemaInput.value]);
+        grok.shell.info('Database schema indexed successfully.');
+        console.log(res);
+        DG.Utils.download(`${connectionsInput.value}_${schemaInput.value}_db_index.json`, JSON.stringify(res, null, 2));
+      }).show();
   }
 }
