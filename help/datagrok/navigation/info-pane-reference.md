@@ -85,7 +85,7 @@ packages, which we recommend for installation.
 | <h5>2D Structure</h5> <br/>Shows a 2D view of the molecule |`Molecule` |[Chem](https://github.com/datagrok-ai/public/blob/master/packages/Chem/README.md) |
 | <h5>Mixture</h5> <br/>Mixture components and their properties (structure, name, relation, etc.) in a tabular format (can be opened as its own view) |`ChemicalMixture` |[Chem](https://github.com/datagrok-ai/public/blob/master/packages/Chem/README.md)|
 | <h5>Mixture Tree</h5> <br/>Hierarchical visualization of mixture composition (Mixfile format) |`ChemicalMixture` |[Chem](https://github.com/datagrok-ai/public/blob/master/packages/Chem/README.md)|
-| <h5>Retrosynthesis</h5> <br/>The most efficient synthetic pathways and commercially available starting materials for target molecule (based on [AiZynthFinder](https://github.com/MolecularAI/aizynthfinder))<br/>!../solutions/domains/chem/img/retrosynthesis-panel.pngpng))|`Molecule`|[Retrosynthesis](https://github.com/datagrok-ai/public/blob/master/packages/Retrosynthesis/README.md) |
+| <h5>Retrosynthesis</h5> <br/>The most efficient synthetic pathways and commercially available starting materials for target molecule (based on [AiZynthFinder](https://github.com/MolecularAI/aizynthfinder))<br/>![](../solutions/domains/chem/img/retrosynthesis-panel.png)|`Molecule`|[Retrosynthesis](https://github.com/datagrok-ai/public/blob/master/packages/Retrosynthesis/README.md) |
 
 #### Properties and descriptors
 

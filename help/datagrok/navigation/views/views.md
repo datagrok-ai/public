@@ -84,7 +84,7 @@ easily switch between different tables by simply clicking on the desired table.
 </TabItem>
 <TabItem value="user-profile-view" label="User Profile View">
 
-In the [User Profile View](../navigation.md#account-and-settings-user-profile), the **Toolbox** lets you switch between different
+In the [User Profile View](user-profile-view.md), the **Toolbox** lets you switch between different
 views related to the user's profile.
 
 ![](img/toolbox-user-profile-view.png)
