@@ -8,73 +8,85 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 ```
 
-Datagrok provides several ways to report issues, send feedback, and share diagnostic
-information:
-- **User-driven reports**:
-  - **Report an error**: Use this when unexpected behavior occurs and handled or unhandled exceptions appear.
-  
-  <details>
-  <summary>How to report</summary>
-  <Tabs groupId="exceptions">
-  
-  <TabItem value="handled" label="Handled exception">
-  
-  Handled exception appear as a red message box in the upper right corner. Hover over it and click the **Report** icon to open the report dialog.
-  
-  ![Reporting of handled exception](img/handled_exception.gif)
-  
-  </TabItem>
-  
-  <TabItem value="unhandled" label="Unhandled exception">
+Datagrok includes a built-in error reporting system that lets you report issues directly from the platform. It automatically collects logs, system state, and your actions, so you don’t need to do any manual reporting. Reports are sent to the Datagrok support team via email (see the [Configuring error reporting system](#configuring-error-reporting-system) section) and processed promptly to resolve issues quickly and efficiently.
 
-  Unhandled exception indicates internal platform error and is indicated by a **red exclamation icon** on the **Sidebar**. Click the icon to open the report dialog.
+## Full control over what you share
 
-  ![Reporting of unhandled exception](img/unhandled_exception.png)
+Before sending, you can review the report and remove any sensitive information.
+By default, it includes metadata, general context, and a screenshot — no actual data.
+You can remove the screenshot before sending.
+For open tables, you can control the level of detail: include data, only metadata, or just the title, row and column count.
 
-  </TabItem>
-
-  </Tabs>
-  </details>
-
-  - **Submit feedback**: Use this to raise non-exception issues, such as UX concerns, questions, or feature requests, 
-    or as an alternative way to report an error.
-
-  <details>
-  <summary>How to submit</summary>
-
-  Click the **Datagrok Logo Menu** on the **Sidebar**, select **Help > Feedback**, write your feedback, check **Include logs** if needed, and submit your message.
-
-  ![Submit feedback](img/feedback.gif)
-
-  </details>
-
-- **Auto-reporting system**: Automatically log internal exceptions when enabled (see [Configuring error reporting system](#configuring-error-reporting-system)).
-  Logs are stored in [Usage Analysis](audit/usage-analysis.md) and are never sent externally.
-  Auto-reports help track recurring errors, monitor instance stability, and support in-depth debugging.
+Sending reports helps keep Datagrok stable and convenient, while keeping your data safe.
 
 ## Report an error
 
-The **Report an error** dialog contains multiple tabs with diagnostic information from recent user actions. 
-Before submitting, you can review, edit, or remove data — you remain in full control of what is included and sent.
-No diagnostic data leaves your environment unless you explicitly allow it.
+1. Open the **Report an error** dialog in one of two ways:  
+   - Hover over the **red message box** that appears when an error occurs and click the **Report** icon.  
+   - Click the **red exclamation mark icon** in the **Sidebar**. 
+   <details>
+   <summary>See visual</summary>
+   <Tabs groupId="exceptions">
+  
+   <TabItem value="handled" label="Error message">
+  
+    ![Reporting of handled exception](img/handled_exception.gif)
+  
+   </TabItem>
+  
+   <TabItem value="unhandled" label="Sidebar icon">
 
-- **SUMMARY**: 
-  - **Description**: Add context to help reproduce the issue or clarify expected behavior.  
-  - **Screenshot**: Hover over it and click **REMOVE** to exclude sensitive image, if needed.  
-  - **Email** checkbox: Select to send the report to the specified email addresses 
-    (see [Configuring error reporting system](#configuring-error-reporting-system)).
-    If unchecked, the report not sent externally, is stored in the system, and can be viewed via the **Usage Analysis** application.
+    ![Reporting of unhandled exception](img/red-exclamation-mark-icon.gif)
 
-- **DETAILS**, **ERRORS**, **TIMELINES**, **CONSOLE**, **CLIENT**, **SERVER**, **SERVICES**: Include technical traces, execution logs, and runtime diagnostics to assist in root cause analysis.
-
-- **TABLES**: Select which open tables’ data and metadata to include. The table’s title, row count, and column count are always included by default.
+   </TabItem>
+   </Tabs>
+   </details>
+2. The **Report an error** dialog opens with diagnostic information already collected.  
+3. Review the report. You can:
+   - Add a short note describing what happened.  
+   - Remove the screenshot if it contains sensitive information.  
+   - Keep the **Email** checkbox selected to send the report to the specified email address(es) (see [Configuring error reporting system](#configuring-error-reporting-system)).
+   - For each open table, choose what information to include in the report:  
+     - data and metadata  
+     - only metadata  
+     - just the table’s title, row count, and column count (included by default)  
+   - Review other information before submitting.  
+4. Press **Submit** to send the report.  
 
 :::note Note
-If the reporting system is not configured, users can save the report as a JSON file via the **Save as json** icon and share it with the support team.
+If the **Email** checkbox is not selected, the report is stored internally and can be viewed in the **Reports** application (Browse > Apps > Admin > Reports) on your instance.
+:::
 
+:::note  If external sending is not configured
+If external sending is not configured, you can save the report as a JSON file using the **Save as JSON** icon and share it with the support team at support@datagrok.ai.
 :::
 
 ![Report an error](img/report-an-error.gif)
+
+## Submit feedback
+
+You can share suggestions, ask questions, provide usability comments,  
+request new features, or report an issue through **Feedback**:
+
+1. Open **Datagrok Logo Menu > Help > Feedback**.  
+2. Write your message.  
+3. Optionally, include logs.  
+4. Click **OK**.  
+
+<details>
+<summary>See visual</summary>
+
+![Submit feedback](img/feedback.gif)
+
+</details>
+
+
+## Auto-reports
+
+You can enable the auto-reporting system to log internal errors automatically (see [Configuring error reporting system](#configuring-error-reporting-system)).  
+This helps track recurring issues, monitor system stability, and analyze errors locally within your instance.  
+
+Reports are **never sent externally** and can be viewed in the **Reports** application (Browse > Apps > Admin > Reports) on your instance.
 
 ## Configuring error reporting system
 
@@ -82,6 +94,11 @@ Administrators can configure error reporting under **Settings > Admin > Error re
 
 - **Report email:** Specify one or more email addresses (comma-separated) to receive user-submitted reports. `feedback@datagrok.ai` is recommended.
 - **Auto report errors:** Enable to automatic logging of internal exceptions.
-  Automatic reports are **never sent externally**, are stored in the system, and can be viewed via the **Usage Analysis** application.
 
 ![Configuring error reporting system](img/сonfiguring-reporting-system.gif)
+
+## Other ways to provide feedback
+
+- Ask questions or provide suggestions on the [community forum](https://community.datagrok.ai/).  
+- Report plugin-related issues on [GitHub](https://github.com/datagrok-ai/public/issues) by creating an issue.  
+
