@@ -97,6 +97,8 @@ export class Events {
   /** Sample: {@link https://public.datagrok.ai/js/samples/events/viewer-events} */
   get onContextMenu(): rxjs.Observable<any> { return __obs('d4-context-menu'); }
 
+  get onAIGenerationAbortRequest(): rxjs.Observable<any> { return __obs('d4-ai-generation-abort'); }
+
   get onContextMenuClosed(): rxjs.Observable<any> { return __obs('d4-menu-closed'); }
 
   get onCurrentViewChanged(): rxjs.Observable<any> { return __obs('d4-current-view-changed'); }

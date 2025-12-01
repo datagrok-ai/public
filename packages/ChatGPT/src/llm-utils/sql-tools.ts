@@ -12,7 +12,7 @@ import {AbortPointer} from '../utils';
 import * as rxjs from 'rxjs';
 import {getTopKSimilarQueries, getVectorEmbedding} from './embeddings';
 
-export const AI_SQL_QUERY_ABORT_EVENT = 'd4-ai-sql-query-abort';
+export const AI_SQL_QUERY_ABORT_EVENT = 'd4-ai-generation-abort';
 /**
  * Generates SQL query using function calling approach where LLM can explore schema interactively
  * @param prompt - User's natural language query
@@ -409,7 +409,7 @@ class SQLGenerationContext {
 
       const fc = this.connection.query(queryName, wrappedSql).prepare({});
       SQLGenerationContext._lastFc = fc;
-      sub = grok.events.onCustomEvent(AI_SQL_QUERY_ABORT_EVENT).subscribe(() => {
+      sub = grok.events.onEvent(AI_SQL_QUERY_ABORT_EVENT).subscribe(() => {
         try {
           fc.cancel();
         } catch (_) {

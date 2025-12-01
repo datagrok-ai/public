@@ -30,10 +30,6 @@ export class PackageFunctions {
   static async init() {
     LLMCredsManager.init(_package);
     setupSearchUI();
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape')
-        grok.events.fireCustomEvent(AI_SQL_QUERY_ABORT_EVENT, null);
-    });
   }
 
 
@@ -190,7 +186,7 @@ export class PackageFunctions {
     console.log(schemaName);
     const as: AbortPointer = {aborted: false};
     let sub: rxjs.Subscription | null = null;
-    sub = grok.events.onCustomEvent(AI_SQL_QUERY_ABORT_EVENT).subscribe(() => {
+    sub = grok.events.onEvent(AI_SQL_QUERY_ABORT_EVENT).subscribe(() => {
       as.aborted = true;
       sub?.unsubscribe();
     });
