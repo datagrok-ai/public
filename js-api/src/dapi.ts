@@ -29,6 +29,7 @@ import {IDartApi} from "./api/grok_api.g";
 import { StickyMeta } from "./sticky_meta";
 import {CsvImportOptions} from "./const";
 import dayjs from 'dayjs';
+import {DbInfo} from "./utils";
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 
@@ -663,6 +664,10 @@ export class DataConnectionsDataSource extends HttpDataSource<DataConnection> {
 
   async getUniqueColumnsNames(c: DataConnection, schema: string, table: string): Promise<string[]> {
     return toJs(await api.grok_DataConnectionsDataSource_Get_Unique_Columns(this.dart, c.dart, schema, table));
+  }
+
+  async getDatabaseInfo(c: DataConnection): Promise<DbInfo> {
+    return toJs(await api.grok_DataConnectionsDataSource_Get_Db_Info(this.dart, c.dart))
   }
 }
 

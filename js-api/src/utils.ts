@@ -10,6 +10,7 @@ import {Column, DataFrame} from './dataframe';
 import {TableView} from './views/view';
 import wu from 'wu';
 import { MapProxy } from './proxies';
+import {DataConnection, TableInfo} from "./entities";
 
 declare let DG: any;
 declare let grok: any;
@@ -738,4 +739,72 @@ export class Completer<T> {
         this.reject = reject;
     })
 	}
+}
+
+export class DbSchemaInfo {
+  public dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  get name(): string {
+    return api.grok_DbSchemaInfo_Get_Name(this.dart);
+  }
+
+  get comment(): string {
+    return api.grok_DbSchemaInfo_Get_Comment(this.dart);
+  }
+
+  get llmComment(): string {
+    return api.grok_DbSchemaInfo_Get_LlmComment(this.dart);
+  }
+
+  get connection(): DataConnection {
+    return api.grok_DbSchemaInfo_Get_Connection(this.dart);
+  }
+
+  get tables(): TableInfo[] {
+    return api.grok_DbSchemaInfo_Get_Tables(this.dart);
+  }
+}
+
+export class DbRelationInfo {
+  public dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  get name(): string { return api.grok_DbRelationInfo_Get_Name(this.dart); }
+
+  get comment(): string { return api.grok_DbRelationInfo_Get_Comment(this.dart); }
+
+  get llmComment(): string { return api.grok_DbRelationInfo_Get_LlmComment(this.dart); }
+
+  get cardinality(): string { return api.grok_DbRelationInfo_Get_Cardinality(this.dart); }
+
+  get isPrimaryPath(): boolean { return toJs(api.grok_DbRelationInfo_Get_IsPrimaryPath(this.dart)); }
+
+  get connection(): DataConnection { return toJs(api.grok_DbRelationInfo_Get_Connection(this.dart)); }
+}
+
+export class DbInfo {
+  public dart: any;
+
+  constructor(dart: any) {
+    this.dart = dart;
+  }
+
+  get name(): string { return api.grok_DbInfo_Get_Name(this.dart); }
+
+  get comment(): string { return api.grok_DbInfo_Get_Comment(this.dart); }
+
+  get llmComment(): string { return api.grok_DbInfo_Get_LlmComment(this.dart); }
+
+  get schemas(): DbSchemaInfo[] { return api.grok_DbInfo_Get_Schemas(this.dart); }
+
+  get relations(): DbRelationInfo[] { return api.grok_DbInfo_Get_Relations(this.dart); }
+
+  get connection(): DataConnection { return toJs(api.grok_DbInfo_Get_Connection(this.dart)); }
 }

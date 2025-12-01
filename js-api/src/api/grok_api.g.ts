@@ -975,6 +975,7 @@ export interface IDartApi {
   grok_DataConnectionsDataSource_Get_Schemas(s: any, c: any): Promise<any>;
   grok_DataConnectionsDataSource_Get_Schema(s: any, c: any, schema: String): Promise<any>;
   grok_DataConnectionsDataSource_Get_Unique_Columns(s: any, c: any, schema: String, table: String): Promise<any>;
+  grok_DataConnectionsDataSource_Get_Db_Info(s: any, c: any): Promise<any>;
   grok_GroupsDataSource_Save(s: any, e: any): Promise<any>;
   grok_EntitiesDataSource_GetRecent(s: any): Promise<any>;
   grok_EntitiesDataSource_SaveProperties(s: any, props: any): Promise<any>;
@@ -1694,6 +1695,23 @@ export interface IDartApi {
   grok_Package_Set_Version(p: any, version: String): any;
   grok_Package_Get_WebRoot(p: any): any;
   grok_Package_Get_Package_Author(p: any): any;
+  grok_DbInfo_Get_Name(db: any): any;
+  grok_DbInfo_Get_Comment(db: any): any;
+  grok_DbInfo_Get_LlmComment(db: any): any;
+  grok_DbInfo_Get_Schemas(db: any): any;
+  grok_DbInfo_Get_Relations(db: any): any;
+  grok_DbInfo_Get_Connection(db: any): any;
+  grok_DbRelationInfo_Get_Name(rel: any): any;
+  grok_DbRelationInfo_Get_Comment(rel: any): any;
+  grok_DbRelationInfo_Get_LlmComment(rel: any): any;
+  grok_DbRelationInfo_Get_Cardinality(rel: any): any;
+  grok_DbRelationInfo_Get_IsPrimaryPath(rel: any): any;
+  grok_DbRelationInfo_Get_Connection(rel: any): any;
+  grok_DbSchemaInfo_Get_Name(info: any): any;
+  grok_DbSchemaInfo_Get_Comment(info: any): any;
+  grok_DbSchemaInfo_Get_LlmComment(info: any): any;
+  grok_DbSchemaInfo_Get_Tables(info: any): any;
+  grok_DbSchemaInfo_Get_Connection(info: any): any;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;
