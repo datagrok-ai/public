@@ -217,8 +217,10 @@ export async function genDBConnectionMeta(connection: DG.DataConnection, schemas
     out.schemas.push(schemaMeta);
   }
 
-  const enrichedMeta = await postProcessDBConnectionMeta(out, 'gpt-4o-mini');
-  return enrichedMeta;
+  //NB: Uncomment the following lines to enable LLM-based post-processing of DB metadata
+  //const enrichedMeta = await postProcessDBConnectionMeta(out, 'gpt-4o-mini');
+  //return enrichedMeta;
+  return out;
 }
 
 // Helper schemas for structured LLM output

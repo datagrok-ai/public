@@ -187,6 +187,7 @@ export class PackageFunctions {
     const as: AbortPointer = {aborted: false};
     let sub: rxjs.Subscription | null = null;
     sub = grok.events.onEvent(AI_SQL_QUERY_ABORT_EVENT).subscribe(() => {
+      console.log('Aborting SQL generation as per user request');
       as.aborted = true;
       sub?.unsubscribe();
     });

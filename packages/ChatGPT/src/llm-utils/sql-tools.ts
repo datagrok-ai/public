@@ -51,7 +51,7 @@ export async function generateAISqlQueryWithTools(
   });
 
   // Get initial table list
-  const initialTableList = await context.listTables();
+  const initialTableList = await context.listTables(false);
 
   let similarQueriesInfo = '';
   if ((dbQueryEmbeddings?.length ?? 0) > 0) {
@@ -84,6 +84,7 @@ CRITICAL RULES:
 - Schema name is: ${schemaName}
 - Always prefix table names with schema name in SQL
 - DO NOT USE 'to' as a table alias
+- If some categorical value is supplied to match (e.g. status value or measurement units), use the information from corresponding column's category values (if any). otherwise, try to use multiple options using OR (for example for micromolar units, try 'uM', 'μM', ets).
 
 When you have the final SQL query ready, respond with ONLY the SQL query text (no markdown, no explanation, no semicolon at the end).`;
 
@@ -176,6 +177,7 @@ When you have the final SQL query ready, respond with ONLY the SQL query text (n
     if (abortSignal.aborted) {
       grok.shell.info('SQL generation aborted by user.');
       try {
+        console.log('Aborting SQL execution as per user request');
         SQLGenerationContext._lastFc?.cancel();
         SQLGenerationContext._lastFc = null;
       } catch (_) {
@@ -216,7 +218,7 @@ When you have the final SQL query ready, respond with ONLY the SQL query text (n
         try {
           switch (functionName) {
           case 'list_tables':
-            result = await context.listTables();
+            result = await context.listTables(false);
             break;
           case 'describe_tables':
             result = await context.describeTables(functionArgs.tables);
@@ -299,14 +301,16 @@ class SQLGenerationContext {
    * Tool: list_tables
    * Returns all tables with their descriptions
    */
-  async listTables(): Promise<string> {
+  async listTables(includeAllDescriptions: boolean): Promise<string> {
     if (this.schema && this.dbMeta) {
       const tables = this.schema.tables.map((table) => {
         const parts = [`${table.name}`];
-        if (table.LLMComment)
-          parts.push(`  Description: ${table.LLMComment}`);
-        else if (table.comment)
-          parts.push(`  Description: ${table.comment}`);
+        if (includeAllDescriptions) {
+          if (table.LLMComment)
+            parts.push(`  Description: ${table.LLMComment.substring(0, 200)}...`);
+          else if (table.comment)
+            parts.push(`  Description: ${table.comment.substring(0, 200)}...`);
+        }
         parts.push(`  Columns: ${table.columns.length}, Rows: ${table.rowCount}`);
         return parts.join('\n');
       });
@@ -410,6 +414,7 @@ class SQLGenerationContext {
       const fc = this.connection.query(queryName, wrappedSql).prepare({});
       SQLGenerationContext._lastFc = fc;
       sub = grok.events.onEvent(AI_SQL_QUERY_ABORT_EVENT).subscribe(() => {
+        console.log('Aborting SQL execution as per user request');
         try {
           fc.cancel();
         } catch (_) {
@@ -484,7 +489,7 @@ class SQLGenerationContext {
       if (col.min !== undefined && col.max !== undefined)
         colParts.push(`Range: ${col.min} to ${col.max}`);
       if (col.categoryValues && col.categoryValues.length > 0) {
-        const values = col.categoryValues.slice(0, 15);
+        const values = col.categoryValues;
         colParts.push(`Values: ${values.join(', ')}${col.categoryValues.length > 15 ? ', ...' : ''}`);
       }
 
