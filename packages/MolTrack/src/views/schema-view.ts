@@ -19,7 +19,7 @@ export class PropertySchemaView {
 
   constructor() {
     this.view = DG.View.create();
-    this.extraPropertiesDiv = ui.div([]);
+    this.extraPropertiesDiv = ui.div([], 'ui-form');
     this.saveButton = ui.bigButton('SAVE', () => this.onSave());
     this.saveButton.disabled = true;
   }
@@ -51,8 +51,14 @@ export class PropertySchemaView {
           if (!p || Object.keys(p).length === 0)
             continue;
 
-          const newProp = {...p, value_type: p.type, entity_type: entityType, property_class: 'measured'};
-          delete newProp.type;
+          const newProp = {
+            ...p,
+            value_type: p.type,
+            entity_type: entityType,
+            property_class: 'measured',
+            unit: p.units,
+            friendly_name: p.friendlyName,
+          };
           allProps.push(newProp);
         }
       }
@@ -88,6 +94,7 @@ export class PropertySchemaView {
         extraPropertiesDiv: this.extraPropertiesDiv,
         allowRemove: false,
       });
+      editor.extraProperties = ['nullable', 'description', 'units', 'min', 'max', 'friendlyName'];
       this.editors[entityType] = editor;
 
       accordion.addPane(entityType, () => editor.root, true);

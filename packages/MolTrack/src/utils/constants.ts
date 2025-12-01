@@ -52,6 +52,10 @@ export type MolTrackProp = {
   entity_type?: string;
   description?: string;
   pattern?: string;
+  min?: number;
+  max?: number;
+  unit?: string;
+  choices?: string[];
   friendly_name?: string;
 };
 
