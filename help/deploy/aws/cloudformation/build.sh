@@ -2,13 +2,14 @@
 
 rain fmt --write ./templates/*.yml
 
-./templates/cf_template_merge.py -i templates/create_network.template.yml -i templates/fargate.template.yml -i templates/r53.template.yml -i templates/marketplace.template.yml -i templates/versions.template.yml -o network-fargate-r53-marketplace.yml
-./templates/cf_template_merge.py -i templates/create_network.template.yml -i templates/fargate.template.yml -i templates/dns.template.yml -i templates/marketplace.template.yml -i templates/versions.template.yml -o network-fargate-dns-marketplace.yml
-./templates/cf_template_merge.py -i templates/choose_vpc.template.yml -i templates/fargate.template.yml -i templates/dns.template.yml -i templates/marketplace.template.yml -i templates/versions.template.yml -o vpc-fargate-dns-marketplace.yml
-./templates/cf_template_merge.py -i templates/choose_vpc.template.yml -i templates/fargate.template.yml -i templates/r53.template.yml -i templates/marketplace.template.yml -i templates/versions.template.yml -o vpc-fargate-r53-marketplace.yml
-./templates/cf_template_merge.py -i templates/create_network.template.yml -i templates/fargate.template.yml -i templates/r53.template.yml -i templates/basic.template.yml -i templates/versions.template.yml -o network-fargate-r53-basic.yml
-./templates/cf_template_merge.py -i templates/choose_vpc.template.yml -i templates/fargate.template.yml -i templates/r53.template.yml -i templates/basic.template.yml -i templates/versions.template.yml -o vpc-fargate-r53-basic.yml
-./templates/cf_template_merge.py -i templates/create_network.template.yml -i templates/fargate.template.yml -i templates/dns.template.yml -i templates/basic.template.yml -i templates/versions.template.yml -o network-fargate-dns-basic.yml
-./templates/cf_template_merge.py -i templates/choose_vpc.template.yml -i templates/fargate.template.yml -i templates/dns.template.yml -i templates/basic.template.yml -i templates/versions.template.yml -o vpc-fargate-dns-basic.yml
+# Merge templates using yq (preserves CloudFormation tags), example:
+yq -n 'load("templates/create_network.template.yml") * load("templates/fargate.template.yml") * load("templates/r53.template.yml") * load("templates/marketplace.template.yml") * load("templates/versions.template.yml")' > network-fargate-r53-marketplace.yml
+yq -n 'load("templates/create_network.template.yml") * load("templates/fargate.template.yml") * load("templates/dns.template.yml") * load("templates/marketplace.template.yml") * load("templates/versions.template.yml")' > network-fargate-dns-marketplace.yml
+yq -n 'load("templates/choose_vpc.template.yml") * load("templates/fargate.template.yml") * load("templates/dns.template.yml") * load("templates/marketplace.template.yml") * load("templates/versions.template.yml")' > vpc-fargate-dns-marketplace.yml
+yq -n 'load("templates/choose_vpc.template.yml") * load("templates/fargate.template.yml") * load("templates/r53.template.yml") * load("templates/marketplace.template.yml") * load("templates/versions.template.yml")' > vpc-fargate-r53-marketplace.yml
+yq -n 'load("templates/create_network.template.yml") * load("templates/fargate.template.yml") * load("templates/r53.template.yml") * load("templates/basic.template.yml") * load("templates/versions.template.yml")' > network-fargate-r53-basic.yml
+yq -n 'load("templates/choose_vpc.template.yml") * load("templates/fargate.template.yml") * load("templates/r53.template.yml") * load("templates/basic.template.yml") * load("templates/versions.template.yml")' > vpc-fargate-r53-basic.yml
+yq -n 'load("templates/create_network.template.yml") * load("templates/fargate.template.yml") * load("templates/dns.template.yml") * load("templates/basic.template.yml") * load("templates/versions.template.yml")' > network-fargate-dns-basic.yml
+yq -n 'load("templates/choose_vpc.template.yml") * load("templates/fargate.template.yml") * load("templates/dns.template.yml") * load("templates/basic.template.yml") * load("templates/versions.template.yml")' > vpc-fargate-dns-basic.yml
 
 rain fmt --write *.yml
