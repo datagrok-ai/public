@@ -15,7 +15,10 @@ import {CombinedAISearchAssistant} from './llm-utils/combined-search';
 import {JsonSchema} from './prompt-engine/interfaces';
 import {generateAISqlQuery} from './llm-utils/sql-utils';
 import {genDBConnectionMeta} from './llm-utils/db-index-tools';
-import { biologicsIndex } from './llm-utils/indexes/biologics-index';
+import {AI_SQL_QUERY_ABORT_EVENT, generateAISqlQueryWithTools} from './llm-utils/sql-tools';
+import {AbortPointer} from './utils';
+import * as rxjs from 'rxjs';
+import {embedConnectionQueries} from './llm-utils/embeddings';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -27,6 +30,10 @@ export class PackageFunctions {
   static async init() {
     LLMCredsManager.init(_package);
     setupSearchUI();
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape')
+        grok.events.fireCustomEvent(AI_SQL_QUERY_ABORT_EVENT, null);
+    });
   }
 
 
@@ -181,12 +188,26 @@ export class PackageFunctions {
     console.log(prompt);
     console.log(connectionID);
     console.log(schemaName);
-
-    return await generateAISqlQuery(prompt, connectionID, schemaName);
+    const as: AbortPointer = {aborted: false};
+    let sub: rxjs.Subscription | null = null;
+    sub = grok.events.onCustomEvent(AI_SQL_QUERY_ABORT_EVENT).subscribe(() => {
+      as.aborted = true;
+      sub?.unsubscribe();
+    });
+    try {
+      const res = await generateAISqlQueryWithTools(prompt, connectionID, schemaName, as);
+      sub.unsubscribe();
+      return res;
+    } catch (error) {
+      sub.unsubscribe();
+      throw error;
+    }
   }
 
   @grok.decorators.func({})
   static async indexDatabaseSchema() {
+    grok.shell.info('Do not touch this function if you are not a developer. :D :D :D');
+    return;
     const connections = await grok.dapi.connections.list();
     const connectionsInput = ui.input.choice('Connection', {items: connections.map((c) => c.nqName), value: connections[0].nqName, nullable: false});
     const getConnectionByName = (): DG.DataConnection => {
@@ -203,14 +224,28 @@ export class PackageFunctions {
     };
     connectionsInput.onChanged.subscribe(() => createSchemaInput());
     await createSchemaInput();
-    const dialog = ui.dialog('Index Database Schema')
+    ui.dialog('Index Database Schema')
       .add(connectionsInput)
       .add(schemaInputRoot)
       .onOK(async () => {
         const res = await genDBConnectionMeta(getConnectionByName(), [schemaInput.value]);
         grok.shell.info('Database schema indexed successfully.');
         console.log(res);
-        DG.Utils.download(`${connectionsInput.value}_${schemaInput.value}_db_index.json`, JSON.stringify(res, null, 2));
+        DG.Utils.download(`${connectionsInput.value}_${schemaInput.value}_db_index.json`, JSON.stringify(res, (_, v) => typeof v === 'bigint' ? Number(v) : v, 2));
+      }).show();
+  }
+
+  @grok.decorators.func({})
+  static async embedConnectionQueries() {
+    const connections = await grok.dapi.connections.list();
+    const connectionsInput = ui.input.choice('Connection', {items: connections.map((c) => c.nqName), value: connections[0].nqName, nullable: false});
+    ui.dialog('Embed Connection Queries')
+      .add(connectionsInput)
+      .onOK(async () => {
+        const connection = connections.find((c) => c.nqName === connectionsInput.value)!;
+        const embedRes = await embedConnectionQueries(connection.id);
+        console.log(embedRes);
+        DG.Utils.download(`${connectionsInput.value}_queries_embeddings.json`, JSON.stringify(embedRes, null, 2));
       }).show();
   }
 }

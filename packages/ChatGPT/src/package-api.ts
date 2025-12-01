@@ -68,4 +68,8 @@ export namespace funcs {
   export async function indexDatabaseSchema(): Promise<void> {
     return await grok.functions.call('ChatGPT:IndexDatabaseSchema', {});
   }
+
+  export async function embedConnectionQueries(): Promise<void> {
+    return await grok.functions.call('ChatGPT:EmbedConnectionQueries', {});
+  }
 }

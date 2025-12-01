@@ -128,3 +128,7 @@ export function getCurrentViewersString(view: DG.TableView): string {
   }
   return result;
 }
+
+export type AbortPointer = {
+  aborted: boolean;
+}

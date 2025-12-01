@@ -106,3 +106,8 @@ export async function generateSqlQuery(prompt: string, connectionID: string, sch
 export async function indexDatabaseSchema() : Promise<void> {
   await PackageFunctions.indexDatabaseSchema();
 }
+
+//name: embedConnectionQueries
+export async function embedConnectionQueries() : Promise<void> {
+  await PackageFunctions.embedConnectionQueries();
+}
