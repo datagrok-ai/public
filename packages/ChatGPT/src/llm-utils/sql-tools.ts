@@ -11,6 +11,7 @@ import {biologicsIndex} from './indexes/biologics-index';
 import {AbortPointer} from '../utils';
 import * as rxjs from 'rxjs';
 import {getTopKSimilarQueries, getVectorEmbedding} from './embeddings';
+import {SemValueObjectHandler} from '@datagrok-libraries/db-explorer/src/object-handlers';
 
 export const AI_SQL_QUERY_ABORT_EVENT = 'd4-ai-generation-abort';
 /**
@@ -52,11 +53,25 @@ export async function generateAISqlQueryWithTools(
 
   // Get initial table list
   const initialTableList = await context.listTables(false);
+  let semTypeWithinPromptInfo = '';
+  // try to also match some identifiers within the user prompt to provide even more context
+  const parsedPrompt = DG.SemanticValue.parse(prompt);
+  if (parsedPrompt?.semType && parsedPrompt.value) {
+    // @ts-ignore
+    const objHandler = DG.ObjectHandler.list().find((oh) => (oh as SemValueObjectHandler)?.columnName && (oh as SemValueObjectHandler)?.tableName && oh.type === parsedPrompt.semType) as SemValueObjectHandler | undefined;
+    if (objHandler) {
+      // TODO: remove ts ignores after updating db-explorer library in plugins
+      // @ts-ignore
+      const [entryPointTable, entryPointColumn] = [objHandler.tableName, objHandler.columnName];
+      semTypeWithinPromptInfo = `\n\n Note: The ${parsedPrompt.value} mentioned in the prompt is identified as a ${parsedPrompt.semType} type, typically found in the ${entryPointTable}.${entryPointColumn} column. Use this information to guide your SQL generation.`;
+      console.log(semTypeWithinPromptInfo);
+    }
+  }
 
   let similarQueriesInfo = '';
   if ((dbQueryEmbeddings?.length ?? 0) > 0) {
     const userQueryEmbedding = await getVectorEmbedding(openai, prompt);
-    const topSimilarQueries = getTopKSimilarQueries(userQueryEmbedding, dbQueryEmbeddings, 3);
+    const topSimilarQueries = getTopKSimilarQueries(userQueryEmbedding, dbQueryEmbeddings, 4);
     console.log('Top similar queries:', topSimilarQueries);
     similarQueriesInfo = `Here are some similar previously executed queries that might help you. 
     Note that these queries might have annotations/comments like name descriptions and so on that can help you understand the schema better.\n\n
@@ -85,6 +100,7 @@ CRITICAL RULES:
 - Always prefix table names with schema name in SQL
 - DO NOT USE 'to' as a table alias
 - If some categorical value is supplied to match (e.g. status value or measurement units), use the information from corresponding column's category values (if any). otherwise, try to use multiple options using OR (for example for micromolar units, try 'uM', 'μM', ets).
+- Some queries might require cartridge use (like RDKIT functions for similarity / substructure search). Use provided query examples and your knowledge of such functions as needed.
 
 When you have the final SQL query ready, respond with ONLY the SQL query text (no markdown, no explanation, no semicolon at the end).`;
 
@@ -94,6 +110,7 @@ When you have the final SQL query ready, respond with ONLY the SQL query text (n
       role: 'user',
       content: `Available tables in schema ${schemaName}:\n\n${initialTableList}\n\nUser Query: ${prompt}\n\n
       Explore the schema using the available tools and generate an SQL query to answer this question.
+      ${semTypeWithinPromptInfo}
         
       ${similarQueriesInfo}
       `,
@@ -446,7 +463,7 @@ class SQLGenerationContext {
 
       return result.join('\n');
     } catch (error: any) {
-      return `SQL Error: ${error?.message}\n\nThis query failed to execute. Please revise the SQL based on the schema information.`;
+      return `SQL Error: ${typeof error == 'string' ? error : error?.message}\n\nThis query failed to execute. Please revise the SQL based on the schema information.`;
     }
   }
 

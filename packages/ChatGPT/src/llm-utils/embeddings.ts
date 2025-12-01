@@ -45,13 +45,14 @@ export function cosineDistance(vecA: number[], vecB: number[]): number {
 }
 
 export function getTopKSimilarQueries(textEmbedding: number[],
-  candidates: {query: string, embedding: number[]}[], topK: number): {query: string, score: number}[] {
+  candidates: {query: string, embedding: number[]}[], topK: number, threshold = 0.3): {query: string, score: number}[] {
   const scores: {query: string, score: number}[] = candidates.map((candidate) => {
     return {
       query: candidate.query,
       score: cosineDistance(textEmbedding, candidate.embedding),
     };
   });
-  scores.sort((a, b) => b.score - a.score);
-  return scores.slice(0, topK);
+  const out = scores.filter((s) => s.score > threshold);
+  out.sort((a, b) => b.score - a.score);
+  return out.slice(0, topK);
 }
