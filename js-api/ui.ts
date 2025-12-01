@@ -442,8 +442,8 @@ export function loader(): any {
  * @param {boolean} updating - whether the indicator should be shown
  * @param {string} message
  */
-export function setUpdateIndicator(element: HTMLElement, updating: boolean = true, message: string = 'Updating...'): void {
-  return api.grok_UI_SetUpdateIndicator(element, updating, message);
+export function setUpdateIndicator(element: HTMLElement, updating: boolean = true, message: string = 'Updating...', onCancel?: Function): void {
+  return api.grok_UI_SetUpdateIndicator(element, updating, message, onCancel);
 }
 
 /**
