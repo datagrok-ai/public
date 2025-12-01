@@ -366,8 +366,8 @@ export interface IDartApi {
   grok_FormulaLineHelper_GetMeta(formulaItem: any): any;
   grok_FormulaLineHelper_GetMetaByFormula(formula: String, type: String): any;
   grok_CanvasViewer_RunPostponedComputations(v: any): any;
-  grok_CanvasViewer_Get_Viewport(s: any): any;
-  grok_CanvasViewer_SetViewport(s: any, x: Num, y: Num, width: Num, height: Num): any;
+  grok_CanvasViewportViewer_Get_Viewport(s: any): any;
+  grok_CanvasViewportViewer_SetViewport(s: any, x: Num, y: Num, width: Num, height: Num): any;
   grok_Widget_RegisterCleanup(element: any, cleanup: any): any;
   grok_Widget_Get_Root(widget: any): any;
   grok_Widget_Get_Type(widget: any): any;

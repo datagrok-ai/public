@@ -630,8 +630,8 @@ export class ScatterPlotViewer extends Viewer<interfaces.IScatterPlotSettings> {
   get xAxisBox(): Rect { return toJs(api.grok_ScatterPlotViewer_Get_XAxisBox(this.dart)); }
   get yAxisBox(): Rect { return toJs(api.grok_ScatterPlotViewer_Get_YAxisBox(this.dart)); }
 
-  get viewport(): Rect { return toJs(api.grok_CanvasViewer_Get_Viewport(this.dart)); }
-  set viewport(viewport: Rect) { api.grok_CanvasViewer_SetViewport(this.dart, viewport.x, viewport.y, viewport.width, viewport.height); }
+  get viewport(): Rect { return toJs(api.grok_CanvasViewportViewer_Get_Viewport(this.dart)); }
+  set viewport(viewport: Rect) { api.grok_CanvasViewportViewer_SetViewport(this.dart, viewport.x, viewport.y, viewport.width, viewport.height); }
 
   /** Convert coords */
   worldToScreen(x: number, y: number): Point { return Point.fromXY(api.grok_ScatterPlotViewer_WorldToScreen(this.dart, x, y)); }
@@ -714,8 +714,8 @@ export class BoxPlot extends Viewer<interfaces.IBoxPlotSettings> {
     api.grok_BoxPlotViewer_ResetView(this.dart);
   }
 
-  get viewport(): Rect { return toJs(api.grok_CanvasViewer_Get_Viewport(this.dart)); }
-  set viewport(viewport: Rect) { api.grok_CanvasViewer_SetViewport(this.dart, viewport.x, viewport.y, viewport.width, viewport.height); }
+  get viewport(): Rect { return toJs(api.grok_CanvasViewportViewer_Get_Viewport(this.dart)); }
+  set viewport(viewport: Rect) { api.grok_CanvasViewportViewer_SetViewport(this.dart, viewport.x, viewport.y, viewport.width, viewport.height); }
 
   get onResetView(): rxjs.Observable<null> { return this.onEvent('d4-boxplot-reset-view'); }
   get onAfterDrawScene(): rxjs.Observable<null> { return this.onEvent('d4-after-draw-scene'); }
