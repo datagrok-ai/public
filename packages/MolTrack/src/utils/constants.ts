@@ -60,7 +60,7 @@ export type MolTrackProp = {
 };
 
 export const GITHUB_BASE_URL =
-  'https://raw.githubusercontent.com/datagrok-ai/mol-track/main/data/black/';
+  'https://raw.githubusercontent.com/datagrok-ai/mol-track/38d3da073bf17ad1ed07aee1c7f710f5bd6dcddd/data/black/';
 
 export const USER_FIELDS = ['created_by', 'updated_by', 'deleted_by'];
 

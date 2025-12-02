@@ -32,13 +32,39 @@ export class PropertySchemaView {
     this.render();
     this.view.setRibbonPanels([[this.saveButton]]);
 
-    this.subscribeToEditorChanges();
+    this.initSubscriptions();
     return this.view;
   }
 
-  private subscribeToEditorChanges(): void {
-    const editorChanges = Object.values(this.editors).map((ed) => ed.table.onChanged);
-    merge(...editorChanges).subscribe(() => this.saveButton.disabled = false);
+  private initSubscriptions(): void {
+    const editorsArray = Object.values(this.editors);
+
+    merge(...editorsArray.map((ed) => ed.table.onChanged))
+      .subscribe(() => this.saveButton.disabled = false);
+
+    merge(...editorsArray.map((ed) => DG.debounce(ed.table.onSelected, 5)))
+      .subscribe((item) => {
+        if (!item.userEditable) this.disableInputsIn(this.extraPropertiesDiv);
+      });
+
+    merge(...editorsArray.map((ed) => ed.table.onItemAdded))
+      .subscribe((item) => item.userEditable = true);
+  }
+
+  private disableInputsIn(element: HTMLElement): void {
+    element.querySelectorAll('.ui-input-editor').forEach((el) => {
+      if (el instanceof HTMLSelectElement)
+        el.disabled = true;
+      else if (el instanceof HTMLInputElement)
+        el.type === 'checkbox' ? el.disabled = true : el.readOnly = true;
+    });
+  }
+
+  private disableAllInputs(): void {
+    for (const editor of Object.values(this.editors))
+      this.disableInputsIn(editor.root);
+
+    this.disableInputsIn(this.extraPropertiesDiv);
   }
 
   private async onSave(): Promise<void> {
@@ -51,6 +77,7 @@ export class PropertySchemaView {
           if (!p || Object.keys(p).length === 0)
             continue;
 
+          p.userEditable = false;
           const newProp = {
             ...p,
             value_type: p.type,
@@ -63,13 +90,13 @@ export class PropertySchemaView {
         }
       }
 
-      const jsonObject = {'properties': allProps};
-      const jsonPayload = JSON.stringify(jsonObject);
-      await registerMolTrackProperties(jsonPayload);
+      await registerMolTrackProperties(JSON.stringify({properties: allProps}));
       grok.shell.info('Schema saved');
+
+      this.disableAllInputs();
     } catch (e: any) {
       grok.shell.error('Failed to save');
-      console.log(e.message ?? e);
+      console.error(e);
     } finally {
       this.saveButton.disabled = true;
     }
@@ -110,6 +137,8 @@ export class PropertySchemaView {
         this.extraPropertiesDiv,
       ]),
     );
+
+    this.disableAllInputs();
   }
 
   show(): void {
