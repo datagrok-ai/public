@@ -42,9 +42,13 @@ export async function findBestFunction(
   descriptions: string[],
 ): Promise<QueryMatchResult | null> {
   const schema = {
-    searchPattern: 'string',
-    parameters: 'object',
-    confidence: 'number',
+    type: 'object',
+    properties: {
+      searchPattern: {type: 'string'},
+      parameters: {type: 'object'},
+      confidence: {type: 'number'},
+    },
+    required: ['searchPattern', 'parameters', 'confidence'],
   } as const;
 
   const connections = searchPatterns.map((pattern) => {
@@ -59,7 +63,7 @@ export async function findBestFunction(
 You are an intelligent semantic query matcher. Your job is to find which query search pattern best matches a user's request.
 
 IMPORTANT: pay careful attention to the keywords in description and search pattern and also the connection. DO NOT ARTIFICIALLY INFLATE CONFIDENCE.
-If you don't think any of the patterns are a good match, return confidence 0 and empty searchPattern and parameters.
+If you don't think any of the patterns are a good match, return low confidence (bellow 0.7) and closest match.
 
 Follow these steps carefully:
 STEP 1 — Identify the most relevant structured query:
@@ -77,9 +81,6 @@ Important instructions:
   - **Output only valid JSON.**
   - **Do not include markdown, backticks, or any extra characters.**
   - **Do not provide explanations or commentary.**
-  - Your response must exactly match this structure:
-
-  ${JSON.stringify(schema, null, 2)}
 `;
 
   const userPrompt = `
