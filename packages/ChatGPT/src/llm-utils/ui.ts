@@ -12,6 +12,7 @@ import {ChatGptAssistant} from '../prompt-engine/chatgpt-assistant';
 import * as api from '../package-api';
 import {Plan} from '../prompt-engine/interfaces';
 import {AssistantRenderer} from '../prompt-engine/rendering-tools';
+import {AI_SQL_QUERY_ABORT_EVENT, dartLike} from '../utils';
 
 
 export async function askWiki(question: string, useOpenAI: boolean = true) {
@@ -111,4 +112,43 @@ async function aiCombinedSearch(prompt: string) {
   // hide the menu
   document.querySelector('.d4-menu-popup')?.remove();
   await CombinedAISearchAssistant.instance.searchUI(prompt);
+}
+
+export async function setupAIQueryEditorUI(connectionID: string, aiElement: HTMLElement, queryEditorRoot: HTMLElement, setAndRunFunc: (query: string) => void): Promise<void> {
+  const connection = await grok.dapi.connections.find(connectionID);
+  if (!connection) {
+    grok.shell.error(`Connection with ID ${connectionID} not found.`);
+    return;
+  }
+  const schemas = await grok.dapi.connections.getSchemas(connection);
+  const defaultSchema = schemas.includes('public') ? 'public' : schemas[0];
+  const aiSchemaInput = ui.input.choice('Schema', {items: schemas, value: defaultSchema, nullable: false, tooltipText: 'Select the database schema to use for AI-assisted query generation.'});
+  const closeIcon = ui.iconFA('times', () => aiElement.style.display = 'none', 'Close AI Query Assistant');
+  const aiTextArea = document.createElement('textarea');
+  dartLike(aiTextArea).set('placeholder', 'Ask a question, such as "Largest sales per country"\nOr type SQL query below').set('className', 'd4-query-view-ai-textarea');
+  dartLike(closeIcon.style).set('position', 'absolute').set('top', '6px').set('left', '2px').set('cursor', 'pointer');
+  const inputsDiv = ui.div([aiSchemaInput.root, aiTextArea], 'd4-query-view-ai-inputs');
+  aiElement.appendChild(inputsDiv);
+  aiElement.appendChild(closeIcon);
+  aiTextArea.addEventListener('keydown', async (event: KeyboardEvent) => {
+    if (event.key === 'Enter' && (!event.ctrlKey && !event.metaKey)) {
+      const question = aiTextArea.value ?? '';
+      if (question.trim().length === 0)
+        return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      ui.setUpdateIndicator(queryEditorRoot, true, 'Grokking Query...', () => { grok.events.fireCustomEvent(AI_SQL_QUERY_ABORT_EVENT, null); });
+      // setTimeout(() => ui.setUpdateIndicator(queryEditorRoot, false), 3000);
+      try {
+        const sqlQuery = await api.funcs.generateSqlQuery(question, connectionID, aiSchemaInput.value!);
+        ui.setUpdateIndicator(queryEditorRoot, false);
+        if (sqlQuery && typeof sqlQuery === 'string')
+          setAndRunFunc(sqlQuery);
+      } catch (error: any) {
+        ui.setUpdateIndicator(queryEditorRoot, false);
+        grok.shell.error(`Error during AI query generation`);
+        console.error('Error during AI query generation:', error);
+      }
+    }
+  });
 }

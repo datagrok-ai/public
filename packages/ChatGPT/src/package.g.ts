@@ -102,6 +102,14 @@ export async function generateSqlQuery(prompt: string, connectionID: string, sch
   return await PackageFunctions.generateSqlQuery(prompt, connectionID, schemaName);
 }
 
+//input: string connectionID 
+//input: dynamic aiElement 
+//input: dynamic queryEditorRoot 
+//input: dynamic setAndRunFunc 
+export function setupAIQueryEditor(connectionID: string, aiElement: any, queryEditorRoot: any, setAndRunFunc: any) : void {
+  PackageFunctions.setupAIQueryEditor(connectionID, aiElement, queryEditorRoot, setAndRunFunc);
+}
+
 //name: indexDatabaseSchema
 export async function indexDatabaseSchema() : Promise<void> {
   await PackageFunctions.indexDatabaseSchema();

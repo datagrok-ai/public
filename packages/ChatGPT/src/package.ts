@@ -7,7 +7,7 @@ import {ChatGptAssistant} from './prompt-engine/chatgpt-assistant';
 import {ChatGPTPromptEngine} from './prompt-engine/prompt-engine';
 import {getAiPanelVisibility, initAiPanel, setAiPanelVisibility} from './ai-panel';
 import {findBestFunction, tableQueriesFunctionsSearchLlm} from './prompts/find-best-function';
-import {askWiki, setupSearchUI, smartExecution} from './llm-utils/ui';
+import {askWiki, setupAIQueryEditorUI, setupSearchUI, smartExecution} from './llm-utils/ui';
 import {Plan} from './prompt-engine/interfaces';
 import {OpenAIHelpClient} from './llm-utils/openAI-client';
 import {LLMCredsManager} from './llm-utils/creds';
@@ -15,8 +15,8 @@ import {CombinedAISearchAssistant} from './llm-utils/combined-search';
 import {JsonSchema} from './prompt-engine/interfaces';
 import {generateAISqlQuery} from './llm-utils/sql-utils';
 import {genDBConnectionMeta} from './llm-utils/db-index-tools';
-import {AI_SQL_QUERY_ABORT_EVENT, generateAISqlQueryWithTools} from './llm-utils/sql-tools';
-import {AbortPointer} from './utils';
+import {generateAISqlQueryWithTools} from './llm-utils/sql-tools';
+import {AbortPointer, getAIAbortSubscription} from './utils';
 import * as rxjs from 'rxjs';
 import {embedConnectionQueries} from './llm-utils/embeddings';
 
@@ -186,7 +186,7 @@ export class PackageFunctions {
     console.log(schemaName);
     const as: AbortPointer = {aborted: false};
     let sub: rxjs.Subscription | null = null;
-    sub = grok.events.onEvent(AI_SQL_QUERY_ABORT_EVENT).subscribe(() => {
+    sub = getAIAbortSubscription().subscribe(() => {
       console.log('Aborting SQL generation as per user request');
       as.aborted = true;
       sub?.unsubscribe();
@@ -199,6 +199,10 @@ export class PackageFunctions {
       sub.unsubscribe();
       throw error;
     }
+  }
+  @grok.decorators.func({})
+  static setupAIQueryEditor(connectionID: string, aiElement: HTMLElement, queryEditorRoot: HTMLElement, @grok.decorators.param({type: 'dynamic'}) setAndRunFunc: Function): void {
+    setupAIQueryEditorUI(connectionID, aiElement, queryEditorRoot, setAndRunFunc as (query: string) => void);
   }
 
   @grok.decorators.func({})

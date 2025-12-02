@@ -8,12 +8,10 @@ import {modelName} from '../package';
 import {DBSchemaInfo, DBConnectionMeta, DBTableMeta, DBRelationMeta, DBSchemaMeta} from './db-index-tools';
 import {chemblIndex} from './indexes/chembl-index';
 import {biologicsIndex} from './indexes/biologics-index';
-import {AbortPointer} from '../utils';
+import {AbortPointer, getAIAbortSubscription} from '../utils';
 import * as rxjs from 'rxjs';
 import {getTopKSimilarQueries, getVectorEmbedding} from './embeddings';
 import {SemValueObjectHandler} from '@datagrok-libraries/db-explorer/src/object-handlers';
-
-export const AI_SQL_QUERY_ABORT_EVENT = 'd4-ai-generation-abort';
 
 const suspiciousSQlPatterns = ['DROP ', 'DELETE ', 'UPDATE ', 'INSERT ', 'ALTER ', 'CREATE ', 'TRUNCATE ', 'EXEC ', 'MERGE '];
 /**
@@ -535,7 +533,7 @@ class SQLGenerationContext {
 
       const fc = this.connection.query(queryName, wrappedSql).prepare({});
       SQLGenerationContext._lastFc = fc;
-      sub = grok.events.onEvent(AI_SQL_QUERY_ABORT_EVENT).subscribe(() => {
+      sub = getAIAbortSubscription().subscribe(() => {
         console.log('Aborting try SQL execution as per user request');
         try {
           fc.cancel();
