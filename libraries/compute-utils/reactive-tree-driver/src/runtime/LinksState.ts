@@ -14,7 +14,10 @@ import {getLinksDiff} from './links-diff';
 import {ViewAction} from '../config/PipelineInstance';
 
 export interface LinksData {
-  prefix: NodePath;
+  uuid: string;
+  id: string;
+  prefix: Readonly<NodePath>;
+  basePath?: Readonly<NodePath>;
   isAction: boolean;
   matchInfo: MatchInfo;
 }
@@ -403,8 +406,8 @@ export class LinksState {
   }
 
   public getLinksInfo(): LinksData[] {
-    const links = [...this.links.values()].filter((l) => !l.matchInfo.isDefaultValidator).map((l) => ({prefix: l.prefix, isAction: false, matchInfo: l.matchInfo}));
-    const actions = [...this.actions.values()].map((l) => ({prefix: l.prefix, isAction: true, matchInfo: l.matchInfo}));
+    const links = [...this.links.values()].filter((l) => !l.matchInfo.isDefaultValidator).map((l) => ({id: l.matchInfo.spec.id, uuid: l.uuid, prefix: l.prefix, basePath: l.matchInfo.basePath, isAction: false, matchInfo: l.matchInfo}));
+    const actions = [...this.actions.values()].map((l) => ({id: l.matchInfo.spec.id, uuid: l.uuid, prefix: l.prefix, basePath: l.matchInfo.basePath, isAction: true, matchInfo: l.matchInfo}));
     return [...links, ...actions];
   }
 

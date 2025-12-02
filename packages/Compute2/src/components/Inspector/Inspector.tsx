@@ -18,6 +18,13 @@ function replacer(key: any, value: any) {
 
   if (value instanceof DG.DataFrame)
     return `#DataFrame`;
+
+  if (value instanceof Map)
+    return `#Map`
+
+  if (value instanceof Set)
+    return `#Set`
+
   return value;
 }
 
