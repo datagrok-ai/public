@@ -134,14 +134,14 @@ export class LinksState {
         mergedLinks.push(oldLink);
       else {
         if (this.logger && !oldLink.matchInfo.isDefaultValidator)
-          this.logger.logLink(`${prefix}Added`, {linkUUID: oldLink.uuid, prefix: oldLink.prefix, id: oldLink.matchInfo.spec.id});
+          this.logger.logLink(`${prefix}Removed`, {linkUUID: oldLink.uuid, prefix: oldLink.prefix, basePath: oldLink.matchInfo.basePath, id: oldLink.matchInfo.spec.id});
         oldLink.destroy();
       }
     }
     for (const newLink of newLinks) {
       if (toAdd.has(newLink.uuid)) {
         if (this.logger && !newLink.matchInfo.isDefaultValidator)
-          this.logger.logLink(`${prefix}Added`, {linkUUID: newLink.uuid, prefix: newLink.prefix, id: newLink.matchInfo.spec.id});
+          this.logger.logLink(`${prefix}Added`, {linkUUID: newLink.uuid, prefix: newLink.prefix, basePath: newLink.matchInfo.basePath, id: newLink.matchInfo.spec.id});
         mergedLinks.push(newLink);
         addedLinks.push(newLink);
       }

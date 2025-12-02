@@ -43,9 +43,18 @@ export const Inspector = Vue.defineComponent({
       return x ? JSON.parse(JSON.stringify(x, replacer)) : {};
     };
 
+    const linkIds = Vue.computed(() => {
+      const items = (props.links ?? []).map((link) => link.matchInfo.spec.id);
+      const itemsSet = new Set(items);
+      const uniqItems = [...itemsSet].sort();
+      return uniqItems;
+    });
+    const height = 'calc(100% - 20px)';
+    const sectionStyle = {height, display: 'flex', flexDirection: 'column' as const};
+
     const lastVisibleIdx = Vue.ref(0);
     return () => (
-      <div style={{userSelect: 'text'}}>
+      <div style={{userSelect: 'text', overflow: 'hidden'}}>
         <div>
           <select v-model={selectedTab.value}>
             <option>Log</option>
@@ -55,26 +64,26 @@ export const Inspector = Vue.defineComponent({
           </select>
         </div>
         { selectedTab.value === 'Log' && props.logs &&
-          <div>
+          <div style={sectionStyle}>
             <div style={{display: 'flex', flexDirection: 'row'}}>
               <Button onClick={() => lastVisibleIdx.value = 0}>Show All</Button>
               <Button onClick={() => lastVisibleIdx.value = props.logs?.length ?? 0}>Hide Current</Button>
             </div>
-            <Logger logs={ props.logs.slice(lastVisibleIdx.value) }></Logger>
+            <Logger linkIds={linkIds.value} logs={props.logs.slice(lastVisibleIdx.value)}></Logger>
           </div>
         }
         { selectedTab.value === 'Tree State' && props.treeState &&
-          <div>
+          <div style={{...sectionStyle, overflow: 'scroll'}}>
             <VueJsonPretty deep={4} showLength={true} data={toJSON(props.treeState)}></VueJsonPretty>
           </div>
         }
         { selectedTab.value === 'Links' && props.links &&
-          <div>
+          <div style={{...sectionStyle, overflow: 'scroll'}}>
             <VueJsonPretty deep={3} showLength={true} data={toJSON(props.links)}></VueJsonPretty>
           </div>
         }
         { selectedTab.value === 'Config' && props.config &&
-          <div>
+          <div style={{...sectionStyle, overflow: 'scroll'}}>
             <VueJsonPretty deep={4} showLength={true} data={toJSON(props.config)}></VueJsonPretty>
           </div>
         }

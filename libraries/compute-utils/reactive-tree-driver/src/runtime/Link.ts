@@ -193,6 +193,7 @@ export class Link {
         prefix: this.prefix,
         id: this.matchInfo.spec.id,
         linkUUID: this.uuid,
+        basePath: this.matchInfo.basePath
       });
     }
     if (this.matchInfo.spec.handler) {
@@ -266,6 +267,7 @@ export class Link {
         prefix: this.prefix,
         id: this.matchInfo.spec.id,
         linkUUID: this.uuid,
+        basePath: this.matchInfo.basePath,
       });
     }
     const outputsEntries = Object.entries(this.matchInfo.outputs).map(([outputAlias, outputItems]) => {
