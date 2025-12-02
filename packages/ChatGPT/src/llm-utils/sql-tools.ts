@@ -54,7 +54,7 @@ export async function generateAISqlQueryWithTools(
   });
 
   // Get initial table list
-  const initialTableList = await context.listTables(false);
+  const initialTableList = await context.listTables(false, schemaName);
   let semTypeWithinPromptInfo = '';
   // try to also match some identifiers within the user prompt to provide even more context
   const parsedPrompt = DG.SemanticValue.parse(prompt);
@@ -98,11 +98,12 @@ CRITICAL RULES:
 - ONLY use relationships explicitly listed by list_joins
 - Use try_sql to validate your query before finalizing
 - Pay attention to semantic types, value ranges, and category values from describe_tables
-- Schema name is: ${schemaName}
+- Current Schema name is: ${schemaName}
 - Always prefix table names with schema name in SQL
 - DO NOT USE 'to' as a table alias
 - If some categorical value is supplied to match (e.g. status value or measurement units), use the information from corresponding column's category values (if any). otherwise, try to use multiple options using OR (for example for micromolar units, try 'uM', 'μM', ets).
 - Some queries might require cartridge use (like RDKIT functions for similarity / substructure search). Use provided query examples and your knowledge of such functions as needed.
+- When working with large tables, try not to use order unless explicitly requested.
 
 When you have the final SQL query ready, respond with ONLY the SQL query text (no markdown, no explanation, no semicolon at the end).`;
 
@@ -124,8 +125,25 @@ When you have the final SQL query ready, respond with ONLY the SQL query text (n
     {
       type: 'function',
       function: {
-        name: 'list_tables',
-        description: 'Returns the list of all table names along with their descriptions/comments. Use this to understand what data is available.',
+        name: 'list_tables_in_schema',
+        description: 'Returns the list of all table names along with their descriptions/comments. Use this to understand what data is available. You must provide schemaName parameter to specify which schema to list tables from.',
+        parameters: {
+          type: 'object',
+          properties: {
+            schemaName: {
+              type: 'string',
+              description: 'Name of the schema to list tables from',
+            },
+          },
+          required: ['schemaName'],
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'list_all_schemas',
+        description: 'Retyurns the names all all schemas in the connection.',
         parameters: {
           type: 'object',
           properties: {},
@@ -133,6 +151,7 @@ When you have the final SQL query ready, respond with ONLY the SQL query text (n
         },
       },
     },
+
     {
       type: 'function',
       function: {
@@ -144,7 +163,7 @@ When you have the final SQL query ready, respond with ONLY the SQL query text (n
             tables: {
               type: 'array',
               items: {type: 'string'},
-              description: 'List of table names (without schema prefix) to describe',
+              description: 'List of table names (WITH schema prefix) to describe',
             },
           },
           required: ['tables'],
@@ -162,7 +181,7 @@ When you have the final SQL query ready, respond with ONLY the SQL query text (n
             tables: {
               type: 'array',
               items: {type: 'string'},
-              description: 'List of table names (without schema prefix) to find joins for',
+              description: 'List of table names (WITH schema prefix) to find joins for',
             },
           },
           required: ['tables'],
@@ -173,7 +192,7 @@ When you have the final SQL query ready, respond with ONLY the SQL query text (n
       type: 'function',
       function: {
         name: 'try_sql',
-        description: 'Execute an SQL query to test it. Returns row count and column names (limited to 10 rows). Use this to validate your query before providing the final answer. If row count is 0, the query might be wrong or the data might genuinely be absent.',
+        description: 'Execute an SQL query to test it. Returns row count and column names (limited to 10 rows). Use this to validate your query before providing the final answer. If row count is 0, the query might be wrong or the data might genuinely be absent. TRY NOT TO USE ORDER BY in YOUR TEST QUERIES on large tables unless absolutely necessary.',
         parameters: {
           type: 'object',
           properties: {
@@ -181,6 +200,10 @@ When you have the final SQL query ready, respond with ONLY the SQL query text (n
               type: 'string',
               description: 'The SQL query to test (will be automatically limited to 10 rows)',
             },
+            description: {
+              type: 'string',
+              description: 'Short description of what this SQL is trying to achieve. This will be put in ui for user context.',
+            }
           },
           required: ['sql'],
         },
@@ -208,10 +231,12 @@ When you have the final SQL query ready, respond with ONLY the SQL query text (n
     console.log(`\n=== Iteration ${iterations} ===`);
 
     const response = await openai.chat.completions.create({
-      model: modelName,
+    //   model: modelName,
+    //   temperature: 0,
+      model: 'o4-mini', // FOR DEMO USE THIS MODEL!!!!
+      temperature: 1,
       messages,
       tools,
-      temperature: 0,
     });
 
     const choice = response.choices[0];
@@ -236,8 +261,11 @@ When you have the final SQL query ready, respond with ONLY the SQL query text (n
         let result: string;
         try {
           switch (functionName) {
-          case 'list_tables':
-            result = await context.listTables(false);
+          case 'list_all_schemas':
+            result = (await context.listAllSchemas()).join(', ');
+            break;
+          case 'list_tables_in_schema':
+            result = await context.listTables(false, functionArgs.schemaName);
             break;
           case 'describe_tables':
             result = await context.describeTables(functionArgs.tables);
@@ -246,7 +274,7 @@ When you have the final SQL query ready, respond with ONLY the SQL query text (n
             result = await context.listJoins(functionArgs.tables);
             break;
           case 'try_sql':
-            result = await context.trySql(functionArgs.sql);
+            result = await context.trySql(functionArgs.sql, functionArgs.description);
             break;
           default:
             result = `Error: Unknown function ${functionName}`;
@@ -270,16 +298,16 @@ When you have the final SQL query ready, respond with ONLY the SQL query text (n
 
       // Check if this looks like SQL (basic heuristic)
       const content = message.content.trim();
-      if (content.toUpperCase().includes('SELECT') || content.toUpperCase().includes('WITH')) {
-        // Clean up the response
-        let sql = content;
-        if (sql.startsWith('```sql'))
-          sql = sql.substring(6);
-        if (sql.startsWith('```'))
-          sql = sql.substring(3);
-        if (sql.endsWith('```'))
-          sql = sql.substring(0, sql.length - 3);
-
+      // Clean up the response
+      let sql = content;
+      if (sql.startsWith('```sql'))
+        sql = sql.substring(6);
+      if (sql.startsWith('```'))
+        sql = sql.substring(3);
+      if (sql.endsWith('```'))
+        sql = sql.substring(0, sql.length - 3);
+      const contentUpperCase = sql.toUpperCase();
+      if (contentUpperCase.length > 2) {
         const res = sql.trim().replace(/;+$/, ''); // Remove trailing semicolons
         const resUpperCase = res.toUpperCase();
         if (suspiciousSQlPatterns.some((pattern) => resUpperCase.includes(pattern))) {
@@ -320,7 +348,7 @@ When you have the final SQL query ready, respond with ONLY the SQL query text (n
  * Context class that manages tool execution for SQL generation
  */
 class SQLGenerationContext {
-  private schema?: DBSchemaMeta;
+  private schemas?: DBSchemaMeta[];
 
   constructor(
     private connectionID: string,
@@ -328,17 +356,40 @@ class SQLGenerationContext {
     private dbMeta: DBConnectionMeta | undefined,
     private connection: DG.DataConnection
   ) {
-    if (dbMeta)
-      this.schema = dbMeta.schemas.find((s) => s.name === schemaName);
+    if (dbMeta && (dbMeta.schemas?.length ?? 0) > 0)
+      this.schemas = dbMeta.schemas;
+  }
+
+  private static schemasCache: {[connectionId: string]: string[]} = {};
+
+  async listAllSchemas(): Promise<string[]> {
+    if (this.schemas)
+      return this.schemas.map((s) => s.name);
+    if (SQLGenerationContext.schemasCache[this.connectionID])
+      return SQLGenerationContext.schemasCache[this.connectionID];
+    let out: string[] = [];
+    try {
+      const connection = await grok.dapi.connections.find(this.connectionID);
+      const schemas = await grok.dapi.connections.getSchemas(connection);
+      out = schemas;
+    } catch (e) {
+      console.log('Error fetching schemas:', e);
+    }
+    SQLGenerationContext.schemasCache[this.connectionID] = out;
+    return out;
   }
 
   /**
    * Tool: list_tables
    * Returns all tables with their descriptions
    */
-  async listTables(includeAllDescriptions: boolean): Promise<string> {
-    if (this.schema && this.dbMeta) {
-      const tables = this.schema.tables.map((table) => {
+  async listTables(includeAllDescriptions: boolean, schemaName: string): Promise<string> {
+    schemaName ??= this.schemaName;
+    if (this.schemas && this.dbMeta) {
+      const schema = this.schemas.find((s) => s.name === schemaName);
+      if (!schema)
+        return `Schema ${schemaName} not found in metadata.`;
+      const tables = schema.tables.map((table) => {
         const parts = [`${table.name}`];
         if (includeAllDescriptions) {
           if (table.LLMComment)
@@ -353,7 +404,7 @@ class SQLGenerationContext {
     }
 
     // Fallback to schema descriptor
-    const schemaInfo = await DBSchemaInfo.getSchemaInfo(this.connectionID, this.schemaName);
+    const schemaInfo = await DBSchemaInfo.getSchemaInfo(this.connectionID, schemaName);
     return `Tables in ${this.schemaName}:\n\n${schemaInfo.tableInfos.join('\n')}`;
   }
 
@@ -362,12 +413,20 @@ class SQLGenerationContext {
    * Returns detailed column information for specified tables
    */
   async describeTables(tableNames: string[]): Promise<string> {
+    const schemaNames = tableNames.map((t) => t.trim().indexOf('.') >= 0 ? t.split('.')[0] : this.schemaName);
     tableNames = tableNames.map((t) => t.trim()).map((t) => t.indexOf('.') >= 0 ? t.split('.')[1] : t); // Remove schema prefix if present
     const descriptions: string[] = [];
 
-    for (const tableName of tableNames) {
-      if (this.schema) {
-        const table = this.schema.tables.find((t) => t.name === tableName);
+    for (let i = 0; i < tableNames.length; i++) {
+      const tableName = tableNames[i];
+      const schemaName = schemaNames[i];
+      if (this.schemas) {
+        const schema = this.schemas.find((s) => s.name === schemaName);
+        if (!schema) {
+          descriptions.push(`Schema ${schemaName} not found`);
+          continue;
+        }
+        const table = schema.tables.find((t) => t.name === tableName);
         if (!table) {
           descriptions.push(`Table ${tableName} not found`);
           continue;
@@ -377,7 +436,7 @@ class SQLGenerationContext {
         descriptions.push(tableDesc);
       } else {
         // Fallback: basic info from schema descriptor
-        const schemaInfo = await DBSchemaInfo.getSchemaInfo(this.connectionID, this.schemaName);
+        const schemaInfo = await DBSchemaInfo.getSchemaInfo(this.connectionID, schemaNames[i]);
         const tableInfo = schemaInfo.tableInfos.find((info) => info.startsWith(`${tableName}:`));
         if (tableInfo)
           descriptions.push(tableInfo);
@@ -394,31 +453,41 @@ class SQLGenerationContext {
    * Returns all foreign key relationships involving the specified tables
    */
   async listJoins(tableNames: string[]): Promise<string> {
+    const schemaNames = tableNames.map((t) => t.trim().indexOf('.') >= 0 ? t.split('.')[0] : this.schemaName);
     tableNames = tableNames.map((t) => t.trim()).map((t) => t.indexOf('.') >= 0 ? t.split('.')[1] : t); // Remove schema prefix if present
-    const tableSet = new Set(tableNames);
+    // in case of cross-schema requests,
+    const schemaQualifiedTableSet = new Set<string>();
+    for (let i = 0; i < tableNames.length; i++)
+      schemaQualifiedTableSet.add(`${schemaNames[i]}.${tableNames[i]}`);
+
     const joins: string[] = [];
-
     if (this.dbMeta) {
-      for (const relation of this.dbMeta.relations) {
-        if (relation.fromSchema !== this.schemaName && relation.toSchema !== this.schemaName)
+      for (let i = 0; i < this.dbMeta.relations.length; i++) {
+        const relation = this.dbMeta.relations[i];
+        const fromFullName = `${relation.fromSchema}.${relation.fromTable}`;
+        const toFullName = `${relation.toSchema}.${relation.toTable}`;
+        if (!schemaQualifiedTableSet.has(fromFullName) && !schemaQualifiedTableSet.has(toFullName))
           continue;
-
-        // Include if any of the specified tables is involved
-        if (tableSet.has(relation.fromTable) || tableSet.has(relation.toTable)) {
-          const joinDesc = this.buildJoinDescription(relation);
-          joins.push(joinDesc);
-        }
+        const joinDesc = this.buildJoinDescription(relation);
+        joins.push(joinDesc);
       }
     } else {
       // Fallback to schema descriptor
-      const schemaInfo = await DBSchemaInfo.getSchemaInfo(this.connectionID, this.schemaName);
-      for (const ref of schemaInfo.referenceInfos) {
-        const [from, to] = ref.split('->').map((s) => s.trim());
-        const fromTable = from.split('.')[0];
-        const toTable = to.split('.')[0];
+      const applicableSchemaNames = Array.from(new Set(schemaNames));
+      const applicableSchemas = await Promise.all(applicableSchemaNames.map((sn) => DBSchemaInfo.getSchemaInfo(this.connectionID, sn)));
+      for (let i = 0; i < applicableSchemas.length; i++) {
+        const schemaInfo = applicableSchemas[i];
+        const schemaName = applicableSchemaNames[i];
+        for (const ref of schemaInfo.referenceInfos) {
+          const [from, to] = ref.split('->').map((s) => s.trim());
+          const fromTable = from.split('.')[0];
+          const toTable = to.split('.')[0];
+          const qualifiedFrom = `${schemaName}.${fromTable}`;
+          const qualifiedTo = `${schemaName}.${toTable}`;
 
-        if (tableSet.has(fromTable) || tableSet.has(toTable))
-          joins.push(ref);
+          if (schemaQualifiedTableSet.has(qualifiedFrom) || schemaQualifiedTableSet.has(qualifiedTo))
+            joins.push(ref);
+        }
       }
     }
 
@@ -433,7 +502,8 @@ class SQLGenerationContext {
    * Tool: try_sql
    * Executes SQL and returns row count and column names
    */
-  async trySql(sql: string): Promise<string> {
+  async trySql(sql: string, description: string): Promise<string> {
+    console.log('trySql called with description:', description);
     let sub: rxjs.Subscription | null = null;
     try {
       // Add LIMIT if not present
@@ -466,10 +536,11 @@ class SQLGenerationContext {
       const fc = this.connection.query(queryName, wrappedSql).prepare({});
       SQLGenerationContext._lastFc = fc;
       sub = grok.events.onEvent(AI_SQL_QUERY_ABORT_EVENT).subscribe(() => {
-        console.log('Aborting SQL execution as per user request');
+        console.log('Aborting try SQL execution as per user request');
         try {
           fc.cancel();
         } catch (_) {
+          console.log('Error during FC cancel');
         } finally {
           SQLGenerationContext._lastFc = null;
           sub?.unsubscribe();

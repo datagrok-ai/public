@@ -5,6 +5,82 @@ export const chemblIndex: DBConnectionMeta = {
   'name': 'Chembl',
   'schemas': [
     {
+      'name': 'rdk',
+      'tables': [
+        {
+          'name': 'fps',
+          'schema': 'rdk',
+          'columns': [
+            {
+              'name': 'molregno',
+              'table': 'fps',
+              'schema': 'rdk',
+              'type': 'bigint',
+              'semanticType': 'molregno',
+              'comment': 'Molecular registration number, uniquely identifies a molecule.',
+              'LLMComment': 'A unique identifier assigned to each molecule in the database.'
+            },
+            {
+              'name': 'torsionbv',
+              'table': 'fps',
+              'schema': 'rdk',
+              'type': 'USER-DEFINED',
+              'comment': 'User-defined data type representing torsional bond values.',
+              'LLMComment': 'Custom data type used to store information about torsional bonds in molecular structures.'
+            },
+            {
+              'name': 'mfp2',
+              'table': 'fps',
+              'schema': 'rdk',
+              'type': 'USER-DEFINED',
+              'comment': 'User-defined data type for molecular fingerprint representation.',
+              'LLMComment': 'Custom data type that encodes molecular features for similarity searching.'
+            },
+            {
+              'name': 'ffp2',
+              'table': 'fps',
+              'schema': 'rdk',
+              'type': 'USER-DEFINED',
+              'comment': 'User-defined data type for functional fingerprint representation.',
+              'LLMComment': 'Custom data type that captures functional groups and their interactions in molecules.'
+            }
+          ],
+          'rowCount': 2409268,
+          'comment': 'This table contains data related to molecular structures and their properties, specifically focusing on torsional and fingerprint representations.',
+          'LLMComment': 'The \'rdk.fps\' table is a key component in a molecular database, housing over 2.4 million entries that represent various molecular structures. Each row is identified by \'molregno\', a unique identifier for each molecule. The columns \'torsionbv\', \'mfp2\', and \'ffp2\' store user-defined data types that likely represent torsional bond variations and molecular fingerprint descriptors, which are essential for computational chemistry and cheminformatics applications. This table is crucial for tasks such as molecular similarity searches, property predictions, and structure-activity relationship modeling.'
+        },
+        {
+          'name': 'mols',
+          'schema': 'rdk',
+          'columns': [
+            {
+              'name': 'molregno',
+              'table': 'mols',
+              'schema': 'rdk',
+              'type': 'bigint',
+              'semanticType': 'molregno',
+              'comment': 'Unique identifier for each molecule in the database.',
+              'LLMComment': 'A unique identifier assigned to each molecule, used for referencing and indexing.'
+            },
+            {
+              'name': 'm',
+              'table': 'mols',
+              'schema': 'rdk',
+              'type': 'USER-DEFINED',
+              'semanticType': 'Molecule',
+              'comment': 'Representation of the molecule in a user-defined format.',
+              'LLMComment': 'A user-defined structure that encapsulates the molecular data, allowing for various representations of the molecule.'
+            }
+          ],
+          'rowCount': 2409268,
+          'comment': 'This table stores molecular data with a unique identifier for each molecule.',
+          'LLMComment': 'The \'rdk.mols\' table is a crucial component of a chemical database, containing over 2.4 million entries of molecular structures. Each entry is identified by a unique \'molregno\' (a bigint type), which serves as a primary key for referencing specific molecules. The \'m\' column is user-defined, likely containing detailed molecular information or properties that are essential for chemical analysis and research. This table plays a vital role in supporting various applications in cheminformatics, drug discovery, and molecular modeling, allowing for efficient retrieval and manipulation of molecular data.'
+        }
+      ],
+      'comment': 'The \'rdk\' schema is designed to store and manage data related to molecular structures and their properties, facilitating research and analysis in cheminformatics.',
+      'LLMComment': 'The \'rdk\' schema contains two tables: \'fps\' for storing fingerprint data of molecules and \'mols\' for storing detailed molecular information, enabling efficient querying and analysis of chemical compounds.'
+    },
+    {
       'name': 'public',
       'tables': [
         {
@@ -9975,6 +10051,22 @@ export const chemblIndex: DBConnectionMeta = {
       'LLMComment': 'Molecule IRAC classification can be linked to molecules through the molregno.',
       'cardinality': 'one-to-many',
       'IsPrimaryPath': false
+    },
+    {
+      'fromSchema': 'rdk',
+      'fromTable': 'fps',
+      'fromColumns': [
+        'molregno'
+      ],
+      'toSchema': 'rdk',
+      'toTable': 'mols',
+      'toColumns': [
+        'molregno'
+      ],
+      'comment': 'Both tables share the molregno column which represents the same molecule identifier.',
+      'LLMComment': 'The molregno column in both tables indicates that they refer to the same molecules, allowing for a join on this column.',
+      'cardinality': 'one-to-many',
+      'IsPrimaryPath': true
     }
   ],
   'comment': 'Chembl is a comprehensive database of bioactive drug-like small molecules, providing detailed information on their biological activities, chemical properties, and pharmacological data. It serves as a valuable resource for researchers in drug discovery and development.',
