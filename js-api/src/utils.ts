@@ -776,17 +776,53 @@ export class DbRelationInfo {
     this.dart = dart;
   }
 
-  get name(): string { return api.grok_DbRelationInfo_Get_Name(this.dart); }
+  get name(): string {
+    return api.grok_DbRelationInfo_Get_Name(this.dart);
+  }
 
-  get comment(): string { return api.grok_DbRelationInfo_Get_Comment(this.dart); }
+  get comment(): string {
+    return api.grok_DbRelationInfo_Get_Comment(this.dart);
+  }
 
-  get llmComment(): string { return api.grok_DbRelationInfo_Get_LlmComment(this.dart); }
+  get llmComment(): string {
+    return api.grok_DbRelationInfo_Get_LlmComment(this.dart);
+  }
 
-  get cardinality(): string { return api.grok_DbRelationInfo_Get_Cardinality(this.dart); }
+  get cardinality(): string {
+    return api.grok_DbRelationInfo_Get_Cardinality(this.dart);
+  }
 
-  get isPrimaryPath(): boolean { return toJs(api.grok_DbRelationInfo_Get_IsPrimaryPath(this.dart)); }
+  get isPrimaryPath(): boolean {
+    return toJs(api.grok_DbRelationInfo_Get_IsPrimaryPath(this.dart));
+  }
 
-  get connection(): DataConnection { return toJs(api.grok_DbRelationInfo_Get_Connection(this.dart)); }
+  get connection(): DataConnection {
+    return toJs(api.grok_DbRelationInfo_Get_Connection(this.dart));
+  }
+
+  get fromSchema(): string {
+    return api.grok_DbRelationInfo_Get_FromSchema(this.dart);
+  }
+
+  get fromTable(): string {
+    return api.grok_DbRelationInfo_Get_FromTable(this.dart);
+  }
+
+  get fromColumns(): string[] {
+    return api.grok_DbRelationInfo_Get_FromColumns(this.dart);
+  }
+
+  get toSchema(): string {
+    return api.grok_DbRelationInfo_Get_ToSchema(this.dart);
+  }
+
+  get toTable(): string {
+    return api.grok_DbRelationInfo_Get_ToTable(this.dart);
+  }
+
+  get toColumns(): string[] {
+    return api.grok_DbRelationInfo_Get_ToColumns(this.dart);
+  }
 }
 
 export class DbInfo {

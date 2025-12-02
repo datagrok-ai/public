@@ -1707,6 +1707,12 @@ export interface IDartApi {
   grok_DbRelationInfo_Get_Cardinality(rel: any): any;
   grok_DbRelationInfo_Get_IsPrimaryPath(rel: any): any;
   grok_DbRelationInfo_Get_Connection(rel: any): any;
+  grok_DbRelationInfo_Get_FromSchema(rel: any): any;
+  grok_DbRelationInfo_Get_FromTable(rel: any): any;
+  grok_DbRelationInfo_Get_FromColumns(rel: any): any;
+  grok_DbRelationInfo_Get_ToSchema(rel: any): any;
+  grok_DbRelationInfo_Get_ToTable(rel: any): any;
+  grok_DbRelationInfo_Get_ToColumns(rel: any): any;
   grok_DbSchemaInfo_Get_Name(info: any): any;
   grok_DbSchemaInfo_Get_Comment(info: any): any;
   grok_DbSchemaInfo_Get_LlmComment(info: any): any;
