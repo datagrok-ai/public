@@ -49,6 +49,13 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     public Properties getProperties(DataConnection conn) {
         java.util.Properties props = defaultConnectionProperties(conn);
+        java.util.Properties jdbcProps = getJdbcProperties(conn);
+        props.putAll(jdbcProps);
+        return props;
+    }
+
+    public Properties getJdbcProperties(DataConnection conn) {
+        java.util.Properties props = new Properties();
         if (conn.parameters.containsKey("jdbcProperties") && this.descriptor.jdbcPropertiesTemplate != null) {
             Map<String, Object> propMap = (Map<String, Object>) conn.parameters.get("jdbcProperties");
             if (!propMap.isEmpty()) {
@@ -56,6 +63,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                     Object value = propMap.get(p.name);
                     if (value != null) {
                         String strValue = value.toString();
+                        if (GrokConnectUtil.isEmpty(strValue))
+                            continue;
                         if (p.propertyType.equals(Property.INT_TYPE))
                             strValue = String.valueOf(new Double(strValue).intValue());
                         props.setProperty(p.name, strValue);
