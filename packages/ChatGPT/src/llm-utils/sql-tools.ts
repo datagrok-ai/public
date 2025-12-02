@@ -14,6 +14,8 @@ import {getTopKSimilarQueries, getVectorEmbedding} from './embeddings';
 import {SemValueObjectHandler} from '@datagrok-libraries/db-explorer/src/object-handlers';
 
 export const AI_SQL_QUERY_ABORT_EVENT = 'd4-ai-generation-abort';
+
+const suspiciousSQlPatterns = ['DROP ', 'DELETE ', 'UPDATE ', 'INSERT ', 'ALTER ', 'CREATE ', 'TRUNCATE ', 'EXEC ', 'MERGE '];
 /**
  * Generates SQL query using function calling approach where LLM can explore schema interactively
  * @param prompt - User's natural language query
@@ -278,7 +280,23 @@ When you have the final SQL query ready, respond with ONLY the SQL query text (n
         if (sql.endsWith('```'))
           sql = sql.substring(0, sql.length - 3);
 
-        return sql.trim().replace(/;+$/, ''); // Remove trailing semicolons
+        const res = sql.trim().replace(/;+$/, ''); // Remove trailing semicolons
+        const resUpperCase = res.toUpperCase();
+        if (suspiciousSQlPatterns.some((pattern) => resUpperCase.includes(pattern))) {
+          const out = await new Promise<string>((resolve) => {
+            ui.dialog('Potentially Destructive SQL Detected')
+              .add(ui.divText('The generated SQL query contains potentially destructive commands. For safety, please confirm if you want to proceed with this query.'))
+              .add(ui.markdown(`\`\`\`sql\n${res}\n\`\`\``))
+              .onOK(() => resolve(res))
+              .onCancel(() => {
+                console.log('User cancelled execution of potentially destructive SQL');
+                resolve('');
+              })
+              .show();
+          });
+          return out;
+        }
+        return res;
       }
 
       // Model is explaining something, let it continue
@@ -425,6 +443,23 @@ class SQLGenerationContext {
       if (!testSql.toUpperCase().includes('LIMIT'))
         testSql += ' LIMIT 10';
 
+      // Basic safety check to prevent destructive queries
+      const upperSql = sql.toUpperCase();
+      if (suspiciousSQlPatterns.some((pattern) => upperSql.includes(pattern))) {
+        // prompt user confirmation
+
+        const p = new Promise<boolean>((resolve) => {
+          ui.dialog('Confirm SQL Execution')
+            .add(ui.divText('Our AI is trying to execute a potentially destructive SQL command. For your safety, please confirm if you want to proceed.'))
+            .add(ui.markdown(`\`\`\`sql\n${sql}\n\`\`\``))
+            .onOK(() => resolve(true))
+            .onCancel(() => resolve(false))
+            .show();
+        });
+        const userConfirmed = await p;
+        if (!userConfirmed)
+          return 'SQL Execution Not allowed by User: Destructive commands are not allowed. Please revise the query.';
+      }
       const queryName = `test-query-${Date.now()}`;
       const wrappedSql = `--name: ${queryName}\n${testSql}`;
 
