@@ -32,15 +32,19 @@ export class RawPNGRenderer extends DG.GridCellRenderer {
     if (gridCell.gridRow < 0 || !gridCell.cell.value) return;
 
     const cacheKey = this.getCacheKey(gridCell);
+    // console.log('Cache key:', cacheKey);
     if (cacheKey && this.imageCache.has(cacheKey)) {
-      const img = this.imageCache.get(cacheKey)!;
-      this.drawInBounds(g, x, y, w, h, gridCell, img);
+      const img = this.imageCache.get(cacheKey);
+      if (img) // can be null if image failed to load or is loading currently
+        this.drawInBounds(g, x, y, w, h, gridCell, img);
       return;
     }
     const pngString: string = gridCell.cell.value;
     const img = new Image();
 
     img.src = 'data:image/png;base64,' + pngString;
+    if (cacheKey)
+      this.imageCache.set(cacheKey, null); // mark as loading
     img.onload = () => {
       if (cacheKey) {
         this.imageCache.set(cacheKey, img);
@@ -50,18 +54,19 @@ export class RawPNGRenderer extends DG.GridCellRenderer {
   }
 
   getCacheKey(gridCell: DG.GridCell): string | null {
-    if (!gridCell?.cell?.value || !gridCell.cell.dataFrame || !gridCell.cell.dataFrame.id || !gridCell.cell.column?.name || (gridCell.cell.rowIndex ?? -1) < 0 || !gridCell.cell.column.version)
+    if (!gridCell?.cell?.value || !gridCell.cell.dataFrame || !gridCell.cell.dataFrame.id ||
+      !gridCell.cell.column?.name || (gridCell.cell.rowIndex ?? -1) < 0 || gridCell.cell.column.version == null)
       return null;
     return `${gridCell.cell.dataFrame.id}-${gridCell.cell.column.name}-${gridCell.cell.rowIndex}-${gridCell.cell.column.version}`;
   }
 
-  imageCache: DG.LruCache<string, HTMLImageElement> = new DG.LruCache<string, HTMLImageElement>(300);
+  imageCache: DG.LruCache<string, HTMLImageElement | null> = new DG.LruCache<string, HTMLImageElement | null>(100);
 
   drawInBounds(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, gridCell: DG.GridCell,
     img: HTMLImageElement): void {
     g.clearRect(x, y, w, h);
     const minAxis = Math.min(w, h, (img.width ?? 0), (img.height ?? 0));
-    if (minAxis < 2)
+    if (minAxis < 4)
       return;
     // image should be scaled such that it is in the center of the cell
     const scaleBy = w < h ? (w - 4) / img.width : (h - 4) / img.height;
@@ -69,7 +74,7 @@ export class RawPNGRenderer extends DG.GridCellRenderer {
     const imgHeight = img.height * scaleBy;
     const xOffset = (w - imgWidth) / 2;
     const yOffset = (h - imgHeight) / 2;
-    g.drawImage(img, x + xOffset, y + yOffset, imgWidth, imgHeight);
+    g.drawImage(img, Math.floor(x + xOffset), Math.floor(y + yOffset), Math.floor(imgWidth), Math.floor(imgHeight));
   }
 
   onDoubleClick(gridCell: DG.GridCell<any>, e: MouseEvent): void {
