@@ -1698,9 +1698,13 @@ export interface IDartApi {
   grok_DbInfo_Get_Name(db: any): any;
   grok_DbInfo_Get_Comment(db: any): any;
   grok_DbInfo_Get_LlmComment(db: any): any;
-  grok_DbInfo_Get_Schemas(db: any): any;
-  grok_DbInfo_Get_Relations(db: any): any;
+  grok_DbInfo_Get_Schemas(db: any): Promise<any>;
+  grok_DbInfo_Get_Relations(db: any): Promise<any>;
   grok_DbInfo_Get_Connection(db: any): any;
+  grok_DbInfo_Set_Comment(db: any, comment: String): Promise<any>;
+  grok_DbInfo_Set_LlmComment(db: any, comment: String): Promise<any>;
+  grok_DbInfo_AddRelation(db: any, name: String, props: any): Promise<any>;
+  grok_DbInfo_ClearProperties(db: any): Promise<any>;
   grok_DbRelationInfo_Get_Name(rel: any): any;
   grok_DbRelationInfo_Get_Comment(rel: any): any;
   grok_DbRelationInfo_Get_LlmComment(rel: any): any;
@@ -1713,11 +1717,25 @@ export interface IDartApi {
   grok_DbRelationInfo_Get_ToSchema(rel: any): any;
   grok_DbRelationInfo_Get_ToTable(rel: any): any;
   grok_DbRelationInfo_Get_ToColumns(rel: any): any;
+  grok_DbRelationInfo_Set_Comment(rel: any, v: String): Promise<any>;
+  grok_DbRelationInfo_Set_LlmComment(rel: any, v: String): Promise<any>;
+  grok_DbRelationInfo_Set_Cardinality(rel: any, v: String): Promise<any>;
+  grok_DbRelationInfo_Set_IsPrimaryPath(rel: any, v: Bool): Promise<any>;
+  grok_DbRelationInfo_Set_FromSchema(rel: any, v: String): Promise<any>;
+  grok_DbRelationInfo_Set_FromTable(rel: any, v: String): Promise<any>;
+  grok_DbRelationInfo_Set_FromColumns(rel: any, v: any): Promise<any>;
+  grok_DbRelationInfo_Set_ToSchema(rel: any, v: String): Promise<any>;
+  grok_DbRelationInfo_Set_ToTable(rel: any, v: String): Promise<any>;
+  grok_DbRelationInfo_Set_ToColumns(rel: any, v: any): Promise<any>;
   grok_DbSchemaInfo_Get_Name(info: any): any;
   grok_DbSchemaInfo_Get_Comment(info: any): any;
   grok_DbSchemaInfo_Get_LlmComment(info: any): any;
-  grok_DbSchemaInfo_Get_Tables(info: any): any;
+  grok_DbSchemaInfo_Get_Tables(info: any): Promise<any>;
   grok_DbSchemaInfo_Get_Connection(info: any): any;
+  grok_DbSchemaInfo_Set_Comment(info: any, comment: String): Promise<any>;
+  grok_DbSchemaInfo_Set_LlmComment(info: any, llmComment: String): Promise<any>;
+  grok_DbSchemaInfo_AnnotateTable(info: any, tableName: String, props: any): Promise<any>;
+  grok_DbSchemaInfo_AnnotateColumn(info: any, tableName: String, colName: String, props: any): Promise<any>;
 
   // Generated from ../grok_shared/lib/grok_shared.api.g.dart
   grok_DataSourceType_Create(): any;
