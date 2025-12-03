@@ -917,9 +917,14 @@ export async function handleSearchURL(url: string): Promise<DG.ViewBase> {
     if (componentsArr.length === idx) {
       openMolTrackSearchNode(nodesToExpand);
       if (nodesToExpand[0].toLowerCase() === SEARCH_NODE.toLowerCase())
-        return await createSearchExpandableNode([SEARCH_NODE], () => getStatisticsWidget(createSearchView));
-      if (nodesToExpand[0].toLowerCase() === SAVED_SEARCHES_NODE.toLowerCase())
-        return await createSearchExpandableNode([SAVED_SEARCHES_NODE], () => createSavedSearchesSatistics(undefined));
+        return await createSearchExpandableNode([SEARCH_NODE], () => getStatisticsWidget(createSearchView), false);
+      if (nodesToExpand[0].toLowerCase() === SAVED_SEARCHES_NODE.toLowerCase()) {
+        return await createSearchExpandableNode(
+          [SAVED_SEARCHES_NODE],
+          () => createSavedSearchesSatistics(undefined),
+          false
+        );
+      }
     }
     if (componentsArr.length > idx) {
       const scope = componentsArr[1];
@@ -931,11 +936,11 @@ export async function handleSearchURL(url: string): Promise<DG.ViewBase> {
           openMolTrackSearchNode(nodesToExpand);
           if ((Object.values(Scope) as string[]).includes(scope.toLowerCase())) {
             return await createSearchExpandableNode([SAVED_SEARCHES_NODE, scope],
-              () => createSavedSearchesSatistics(scope as Scope));
+              () => createSavedSearchesSatistics(scope as Scope), false);
           } else {
             grok.shell.error(`Entity ${scope} doesn't exist in Moltrack`);
             return await createSearchExpandableNode([SAVED_SEARCHES_NODE],
-              () => createSavedSearchesSatistics(undefined));
+              () => createSavedSearchesSatistics(undefined), false);
           }
         }
       } else {
