@@ -13,6 +13,8 @@ import * as api from '../package-api';
 import {Plan} from '../prompt-engine/interfaces';
 import {AssistantRenderer} from '../prompt-engine/rendering-tools';
 import {AI_SQL_QUERY_ABORT_EVENT, dartLike} from '../utils';
+import {generateAISqlQueryWithTools} from './sql-tools';
+import {DBAIPanel, ModelType} from './panel';
 
 
 export async function askWiki(question: string, useOpenAI: boolean = true) {
@@ -120,35 +122,72 @@ export async function setupAIQueryEditorUI(connectionID: string, aiElement: HTML
     grok.shell.error(`Connection with ID ${connectionID} not found.`);
     return;
   }
+
   const schemas = await grok.dapi.connections.getSchemas(connection);
   const defaultSchema = schemas.includes('public') ? 'public' : schemas[0];
-  const aiSchemaInput = ui.input.choice('Schema', {items: schemas, value: defaultSchema, nullable: false, tooltipText: 'Select the database schema to use for AI-assisted query generation.'});
-  const closeIcon = ui.iconFA('times', () => aiElement.style.display = 'none', 'Close AI Query Assistant');
-  const aiTextArea = document.createElement('textarea');
-  dartLike(aiTextArea).set('placeholder', 'Ask a question, such as "Largest sales per country"\nOr type SQL query below').set('className', 'd4-query-view-ai-textarea');
-  dartLike(closeIcon.style).set('position', 'absolute').set('top', '6px').set('left', '2px').set('cursor', 'pointer');
-  const inputsDiv = ui.div([aiSchemaInput.root, aiTextArea], 'd4-query-view-ai-inputs');
-  aiElement.appendChild(inputsDiv);
-  aiElement.appendChild(closeIcon);
-  aiTextArea.addEventListener('keydown', async (event: KeyboardEvent) => {
-    if (event.key === 'Enter' && (!event.ctrlKey && !event.metaKey)) {
-      const question = aiTextArea.value ?? '';
-      if (question.trim().length === 0)
-        return;
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      ui.setUpdateIndicator(queryEditorRoot, true, 'Grokking Query...', () => { grok.events.fireCustomEvent(AI_SQL_QUERY_ABORT_EVENT, null); });
-      // setTimeout(() => ui.setUpdateIndicator(queryEditorRoot, false), 3000);
-      try {
-        const sqlQuery = await api.funcs.generateSqlQuery(question, connectionID, aiSchemaInput.value!);
-        ui.setUpdateIndicator(queryEditorRoot, false);
-        if (sqlQuery && typeof sqlQuery === 'string')
-          setAndRunFunc(sqlQuery);
-      } catch (error: any) {
-        ui.setUpdateIndicator(queryEditorRoot, false);
-        grok.shell.error(`Error during AI query generation`);
-        console.error('Error during AI query generation:', error);
-      }
-    }
+
+  const panel = new DBAIPanel(schemas, defaultSchema);
+  panel.show();
+  // temp hack
+  aiElement.remove();
+  const mutationObserver = new MutationObserver((_d) => {
+    panel.show();
   });
+  mutationObserver.observe(aiElement, {attributes: true, attributeFilter: ['style']});
+
+  panel.onRunRequest.subscribe(async (args) => {
+    ui.setUpdateIndicator(queryEditorRoot, true, 'Grokking Query...', () => { grok.events.fireCustomEvent(AI_SQL_QUERY_ABORT_EVENT, null); });
+    const session = panel.startChatSession();
+    try {
+      const sqlQuery = await generateAISqlQueryWithTools(args.currentPrompt.prompt, connectionID, args.currentPrompt.schemaName!, {
+        oldMessages: args.prevMessages,
+        aiPanel: {
+          addAIMessage: (aiMessage, title, content) => {
+            session.addAIMessage(aiMessage, title, content);
+          },
+          addEngineMessage: (aiMessage) => session.addAIMessage(aiMessage, '', '', true),
+          addUiMessage: (msg: string, fromUser: boolean) => session.addUIMessage(msg, fromUser),
+          addUserMessage: (aiMsg, content) => session.addUserMessage(aiMsg, content),
+        }, modelName: ModelType[panel.getCurrentInputs().model],
+      });
+      if (sqlQuery && typeof sqlQuery === 'string' && sqlQuery.trim().length > 0)
+        setAndRunFunc(sqlQuery);
+    } catch (error: any) {
+      ui.setUpdateIndicator(queryEditorRoot, false);
+      grok.shell.error(`Error during AI query generation`);
+      console.error('Error during AI query generation:', error);
+    }
+    ui.setUpdateIndicator(queryEditorRoot, false);
+    session.endSession();
+  });
+
+  // const aiSchemaInput = ui.input.choice('Schema', {items: schemas, value: defaultSchema, nullable: false, tooltipText: 'Select the database schema to use for AI-assisted query generation.'});
+  // const closeIcon = ui.iconFA('times', () => aiElement.style.display = 'none', 'Close AI Query Assistant');
+  // const aiTextArea = document.createElement('textarea');
+  // dartLike(aiTextArea).set('placeholder', 'Ask a question, such as "Largest sales per country"\nOr type SQL query below').set('className', 'd4-query-view-ai-textarea');
+  // dartLike(closeIcon.style).set('position', 'absolute').set('top', '6px').set('left', '2px').set('cursor', 'pointer');
+  // const inputsDiv = ui.div([aiSchemaInput.root, aiTextArea], 'd4-query-view-ai-inputs');
+  // aiElement.appendChild(inputsDiv);
+  // aiElement.appendChild(closeIcon);
+  // aiTextArea.addEventListener('keydown', async (event: KeyboardEvent) => {
+  //   if (event.key === 'Enter' && (!event.ctrlKey && !event.metaKey)) {
+  //     const question = aiTextArea.value ?? '';
+  //     if (question.trim().length === 0)
+  //       return;
+  //     event.preventDefault();
+  //     event.stopImmediatePropagation();
+  //     ui.setUpdateIndicator(queryEditorRoot, true, 'Grokking Query...', () => { grok.events.fireCustomEvent(AI_SQL_QUERY_ABORT_EVENT, null); });
+  //     // setTimeout(() => ui.setUpdateIndicator(queryEditorRoot, false), 3000);
+  //     try {
+  //       const sqlQuery = await generateAISqlQueryWithTools(question, connectionID, aiSchemaInput.value!);
+  //       ui.setUpdateIndicator(queryEditorRoot, false);
+  //       if (sqlQuery && typeof sqlQuery === 'string')
+  //         setAndRunFunc(sqlQuery);
+  //     } catch (error: any) {
+  //       ui.setUpdateIndicator(queryEditorRoot, false);
+  //       grok.shell.error(`Error during AI query generation`);
+  //       console.error('Error during AI query generation:', error);
+  //     }
+  //   }
+  // });
 }

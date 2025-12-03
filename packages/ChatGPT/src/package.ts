@@ -181,24 +181,7 @@ export class PackageFunctions {
     }
   })
   static async generateSqlQuery(prompt: string, connectionID: string, schemaName: string): Promise<string> {
-    console.log(prompt);
-    console.log(connectionID);
-    console.log(schemaName);
-    const as: AbortPointer = {aborted: false};
-    let sub: rxjs.Subscription | null = null;
-    sub = getAIAbortSubscription().subscribe(() => {
-      console.log('Aborting SQL generation as per user request');
-      as.aborted = true;
-      sub?.unsubscribe();
-    });
-    try {
-      const res = await generateAISqlQueryWithTools(prompt, connectionID, schemaName, as);
-      sub.unsubscribe();
-      return res;
-    } catch (error) {
-      sub.unsubscribe();
-      throw error;
-    }
+    return await generateAISqlQuery(prompt, connectionID, schemaName);
   }
   @grok.decorators.func({})
   static setupAIQueryEditor(connectionID: string, aiElement: HTMLElement, queryEditorRoot: HTMLElement, @grok.decorators.param({type: 'dynamic'}) setAndRunFunc: Function): void {

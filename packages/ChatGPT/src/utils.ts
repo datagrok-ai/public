@@ -142,6 +142,7 @@ export function dartLike<T extends any>(obj: T) {
       (obj as any)[key] = value;
       return this;
     },
+    value: obj as T,
   };
 }
 

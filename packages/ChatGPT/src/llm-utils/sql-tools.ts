@@ -4,18 +4,26 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import OpenAI from 'openai';
 import {LLMCredsManager} from './creds';
-import {modelName} from '../package';
 import {DBSchemaInfo, DBConnectionMeta, DBTableMeta, DBRelationMeta, DBSchemaMeta} from './db-index-tools';
 import {chemblIndex} from './indexes/chembl-index';
 import {biologicsIndex} from './indexes/biologics-index';
-import {AbortPointer, getAIAbortSubscription} from '../utils';
+import {getAIAbortSubscription} from '../utils';
 import * as rxjs from 'rxjs';
 import {getTopKSimilarQueries, getVectorEmbedding} from './embeddings';
 import {SemValueObjectHandler} from '@datagrok-libraries/db-explorer/src/object-handlers';
+import {ChatModel} from 'openai/resources/index';
+
+type AIPanelFuncs = {
+  addUserMessage: (aiMsg: OpenAI.Chat.ChatCompletionMessageParam, msg: string) => void,
+  addAIMessage: (aiMsg: OpenAI.Chat.ChatCompletionMessageParam, title: string, msg: string) => void,
+  addEngineMessage: (aiMsg: OpenAI.Chat.ChatCompletionMessageParam) => void, // one that is not shown in the UI
+  addUiMessage: (msg: string, fromUser: boolean) => void
+}
 
 const suspiciousSQlPatterns = ['DROP ', 'DELETE ', 'UPDATE ', 'INSERT ', 'ALTER ', 'CREATE ', 'TRUNCATE ', 'EXEC ', 'MERGE '];
 /**
  * Generates SQL query using function calling approach where LLM can explore schema interactively
+ * @throws Error if SQL generation fails
  * @param prompt - User's natural language query
  * @param connectionID - Database connection ID
  * @param schemaName - Schema name
@@ -25,9 +33,15 @@ export async function generateAISqlQueryWithTools(
   prompt: string,
   connectionID: string,
   schemaName: string,
-  abortSignal: AbortPointer,
-  dbMeta?: DBConnectionMeta
+  options: {
+    oldMessages?: OpenAI.Chat.ChatCompletionMessageParam[]
+    aiPanel?: AIPanelFuncs,
+    modelName?: ChatModel
+  } = {}
 ): Promise<string> {
+  let aborted = false;
+  let dbMeta: DBConnectionMeta | undefined = undefined;
+
   // Load pre-indexed metadata if available
   const connection = await grok.dapi.connections.find(connectionID);
   let dbQueryEmbeddings: {query: string, embedding: number[]}[] = [];
@@ -44,302 +58,337 @@ export async function generateAISqlQueryWithTools(
 
   // Create tool execution context
   const context = new SQLGenerationContext(connectionID, schemaName, dbMeta, connection);
-
-  // Initialize OpenAI client
-  const openai = new OpenAI({
-    apiKey: LLMCredsManager.getApiKey(),
-    dangerouslyAllowBrowser: true,
-  });
-
-  // Get initial table list
-  const initialTableList = await context.listTables(false, schemaName);
-  let semTypeWithinPromptInfo = '';
-  // try to also match some identifiers within the user prompt to provide even more context
-  const parsedPrompt = DG.SemanticValue.parse(prompt);
-  if (parsedPrompt?.semType && parsedPrompt.value) {
-    // @ts-ignore
-    const objHandler = DG.ObjectHandler.list().find((oh) => (oh as SemValueObjectHandler)?.columnName && (oh as SemValueObjectHandler)?.tableName && oh.type === parsedPrompt.semType) as SemValueObjectHandler | undefined;
-    if (objHandler) {
-      // TODO: remove ts ignores after updating db-explorer library in plugins
-      // @ts-ignore
-      const [entryPointTable, entryPointColumn] = [objHandler.tableName, objHandler.columnName];
-      semTypeWithinPromptInfo = `\n\n Note: The ${parsedPrompt.value} mentioned in the prompt is identified as a ${parsedPrompt.semType} type, typically found in the ${entryPointTable}.${entryPointColumn} column. Use this information to guide your SQL generation.`;
-      console.log(semTypeWithinPromptInfo);
+  const abortSub = getAIAbortSubscription().subscribe(() => {
+    aborted = true;
+    console.log('Aborting SQL generation as per user request');
+    try {
+      SQLGenerationContext._lastFc?.cancel();
+      SQLGenerationContext._lastFc = null;
+    } catch (_) {
     }
-  }
+    abortSub.unsubscribe();
+  });
+  try {
+  // Initialize OpenAI client
+    const openai = new OpenAI({
+      apiKey: LLMCredsManager.getApiKey(),
+      dangerouslyAllowBrowser: true,
+    });
 
-  let similarQueriesInfo = '';
-  if ((dbQueryEmbeddings?.length ?? 0) > 0) {
-    const userQueryEmbedding = await getVectorEmbedding(openai, prompt);
-    const topSimilarQueries = getTopKSimilarQueries(userQueryEmbedding, dbQueryEmbeddings, 4);
-    console.log('Top similar queries:', topSimilarQueries);
-    similarQueriesInfo = `Here are some similar previously executed queries that might help you. 
+
+    // Initial system message
+    const systemMessage = `You are an expert SQL query generator. You have access to tools to explore a database schema and generate SQL queries.
+
+    WORKFLOW:
+    1. You are provided with a list of available tables and their descriptions
+    2. Use describe_tables to get detailed column information for relevant tables
+    3. Use list_joins to understand relationships between tables
+    4. Use try_sql to test your generated queries (it returns row count and column names)
+    5. Iterate and refine your query based on test results
+    6. Once satisfied, provide the final SQL query
+
+    CRITICAL RULES:
+    - ALWAYS use list_joins to verify relationships before writing JOIN clauses
+    - NEVER assume joins exist based on column name similarity (unless no other option, or explicitly instructed by table/column comments)
+    - ONLY use relationships explicitly listed by list_joins
+    - Use try_sql to validate your query before finalizing
+    - Pay attention to semantic types, value ranges, and category values from describe_tables
+    - Current Schema name is: ${schemaName}
+    - Always prefix table names with schema name in SQL
+    - DO NOT USE 'to' as a table alias
+    - If some categorical value is supplied to match (e.g. status value or measurement units), use the information from corresponding column's category values (if any). otherwise, try to use multiple options using OR (for example for micromolar units, try 'uM', 'μM', ets).
+    - Some queries might require cartridge use (like RDKIT functions for similarity / substructure search). Use provided query examples and your knowledge of such functions as needed.
+    - When working with large tables, try not to use order unless explicitly requested.
+
+    When you have the final SQL query ready, respond with ONLY the SQL query text (no markdown, no explanation, no semicolon at the end).`;
+
+
+    const messages: OpenAI.Chat.ChatCompletionMessageParam[] = options.oldMessages ? options.oldMessages.slice() : [];
+    if (messages.length === 0) {
+      // Get initial table list
+      const initialTableList = await context.listTables(false, schemaName);
+      let semTypeWithinPromptInfo = '';
+      // try to also match some identifiers within the user prompt to provide even more context
+      const parsedPrompt = DG.SemanticValue.parse(prompt);
+      if (parsedPrompt?.semType && parsedPrompt.value) {
+        // @ts-ignore
+        const objHandler = DG.ObjectHandler.list().find((oh) => (oh as SemValueObjectHandler)?.columnName && (oh as SemValueObjectHandler)?.tableName && oh.type === parsedPrompt.semType) as SemValueObjectHandler | undefined;
+        if (objHandler) {
+          // TODO: remove ts ignores after updating db-explorer library in plugins
+          // @ts-ignore
+          const [entryPointTable, entryPointColumn] = [objHandler.tableName, objHandler.columnName];
+          semTypeWithinPromptInfo = `\n\n Note: The ${parsedPrompt.value} mentioned in the prompt is identified as a ${parsedPrompt.semType} type, typically found in the ${entryPointTable}.${entryPointColumn} column. Use this information to guide your SQL generation.`;
+          console.log(semTypeWithinPromptInfo);
+        }
+      }
+
+      let similarQueriesInfo = '';
+      if ((dbQueryEmbeddings?.length ?? 0) > 0) {
+        const userQueryEmbedding = await getVectorEmbedding(openai, prompt);
+        const topSimilarQueries = getTopKSimilarQueries(userQueryEmbedding, dbQueryEmbeddings, 4);
+        console.log('Top similar queries:', topSimilarQueries);
+        similarQueriesInfo = `Here are some similar previously executed queries that might help you. 
     Note that these queries might have annotations/comments like name descriptions and so on that can help you understand the schema better.\n\n
     Here they are:
     ${topSimilarQueries.map((q) => `- Query: ${q.query} (similarity score: ${q.score.toFixed(4)})`).join('\n')}
     `;
-  }
-  // Initial system message
-  const systemMessage = `You are an expert SQL query generator. You have access to tools to explore a database schema and generate SQL queries.
-
-WORKFLOW:
-1. You are provided with a list of available tables and their descriptions
-2. Use describe_tables to get detailed column information for relevant tables
-3. Use list_joins to understand relationships between tables
-4. Use try_sql to test your generated queries (it returns row count and column names)
-5. Iterate and refine your query based on test results
-6. Once satisfied, provide the final SQL query
-
-CRITICAL RULES:
-- ALWAYS use list_joins to verify relationships before writing JOIN clauses
-- NEVER assume joins exist based on column name similarity (unless no other option, or explicitly instructed by table/column comments)
-- ONLY use relationships explicitly listed by list_joins
-- Use try_sql to validate your query before finalizing
-- Pay attention to semantic types, value ranges, and category values from describe_tables
-- Current Schema name is: ${schemaName}
-- Always prefix table names with schema name in SQL
-- DO NOT USE 'to' as a table alias
-- If some categorical value is supplied to match (e.g. status value or measurement units), use the information from corresponding column's category values (if any). otherwise, try to use multiple options using OR (for example for micromolar units, try 'uM', 'μM', ets).
-- Some queries might require cartridge use (like RDKIT functions for similarity / substructure search). Use provided query examples and your knowledge of such functions as needed.
-- When working with large tables, try not to use order unless explicitly requested.
-
-When you have the final SQL query ready, respond with ONLY the SQL query text (no markdown, no explanation, no semicolon at the end).`;
-
-  const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    {role: 'system', content: systemMessage},
-    {
-      role: 'user',
-      content: `Available tables in schema ${schemaName}:\n\n${initialTableList}\n\nUser Query: ${prompt}\n\n
-      Explore the schema using the available tools and generate an SQL query to answer this question.
-      ${semTypeWithinPromptInfo}
-        
-      ${similarQueriesInfo}
-      `,
-    },
-  ];
-
-  // Define available tools
-  const tools: OpenAI.Chat.ChatCompletionTool[] = [
-    {
-      type: 'function',
-      function: {
-        name: 'list_tables_in_schema',
-        description: 'Returns the list of all table names along with their descriptions/comments. Use this to understand what data is available. You must provide schemaName parameter to specify which schema to list tables from.',
-        parameters: {
-          type: 'object',
-          properties: {
-            schemaName: {
-              type: 'string',
-              description: 'Name of the schema to list tables from',
-            },
-          },
-          required: ['schemaName'],
-        },
-      },
-    },
-    {
-      type: 'function',
-      function: {
-        name: 'list_all_schemas',
-        description: 'Retyurns the names all all schemas in the connection.',
-        parameters: {
-          type: 'object',
-          properties: {},
-          required: [],
-        },
-      },
-    },
-
-    {
-      type: 'function',
-      function: {
-        name: 'describe_tables',
-        description: 'Get detailed information about specific table(s) including all columns, their types, semantic types, comments, value ranges, and category values. Essential for understanding what data is in each table.',
-        parameters: {
-          type: 'object',
-          properties: {
-            tables: {
-              type: 'array',
-              items: {type: 'string'},
-              description: 'List of table names (WITH schema prefix) to describe',
-            },
-          },
-          required: ['tables'],
-        },
-      },
-    },
-    {
-      type: 'function',
-      function: {
-        name: 'list_joins',
-        description: 'Lists all foreign key relationships (joins) that involve the specified table(s). CRITICAL: Use this before writing any JOIN clause to verify the relationship exists.',
-        parameters: {
-          type: 'object',
-          properties: {
-            tables: {
-              type: 'array',
-              items: {type: 'string'},
-              description: 'List of table names (WITH schema prefix) to find joins for',
-            },
-          },
-          required: ['tables'],
-        },
-      },
-    },
-    {
-      type: 'function',
-      function: {
-        name: 'try_sql',
-        description: 'Execute an SQL query to test it. Returns row count and column names (limited to 10 rows). Use this to validate your query before providing the final answer. If row count is 0, the query might be wrong or the data might genuinely be absent. TRY NOT TO USE ORDER BY in YOUR TEST QUERIES on large tables unless absolutely necessary.',
-        parameters: {
-          type: 'object',
-          properties: {
-            sql: {
-              type: 'string',
-              description: 'The SQL query to test (will be automatically limited to 10 rows)',
-            },
-            description: {
-              type: 'string',
-              description: 'Short description of what this SQL is trying to achieve. This will be put in ui for user context.',
-            }
-          },
-          required: ['sql'],
-        },
-      },
-    },
-  ];
-
-  // Function calling loop
-  let iterations = 0;
-  const maxIterations = 15; // Prevent infinite loops
-
-  while (iterations < maxIterations) {
-    if (abortSignal.aborted) {
-      grok.shell.info('SQL generation aborted by user.');
-      try {
-        console.log('Aborting SQL execution as per user request');
-        SQLGenerationContext._lastFc?.cancel();
-        SQLGenerationContext._lastFc = null;
-      } catch (_) {
       }
 
-      return '';
+
+      const systemMsg: OpenAI.Chat.ChatCompletionMessageParam = {role: 'system', content: systemMessage};
+      messages.push(systemMsg);
+      options.aiPanel?.addEngineMessage(systemMsg);
+      const initialUserMsg: OpenAI.Chat.ChatCompletionMessageParam = {
+        role: 'user',
+        content: `Available tables in schema ${schemaName}:\n\n${initialTableList}\n\nUser Query: ${prompt}\n\n
+        Explore the schema using the available tools and generate an SQL query to answer this question.
+        ${semTypeWithinPromptInfo}
+          
+        ${similarQueriesInfo}
+        `,
+      };
+      options.aiPanel?.addUserMessage(initialUserMsg, prompt); // prompt will be shown in UI
+      messages.push(initialUserMsg);
+    } else {
+      const followUpUserMsg: OpenAI.Chat.ChatCompletionMessageParam = {role: 'user', content: `Please modify the previous query based on this feedback: ${prompt}`};
+      messages.push(followUpUserMsg);
+      options.aiPanel?.addUserMessage(followUpUserMsg, prompt);
     }
-    iterations++;
-    console.log(`\n=== Iteration ${iterations} ===`);
 
-    const response = await openai.chat.completions.create({
-    //   model: modelName,
-    //   temperature: 0,
-      model: 'o4-mini', // FOR DEMO USE THIS MODEL!!!!
-      temperature: 1,
-      messages,
-      tools,
-    });
+    // Define available tools
+    const tools: OpenAI.Chat.ChatCompletionTool[] = [
+      {
+        type: 'function',
+        function: {
+          name: 'list_tables_in_schema',
+          description: 'Returns the list of all table names along with their descriptions/comments. Use this to understand what data is available. You must provide schemaName parameter to specify which schema to list tables from.',
+          parameters: {
+            type: 'object',
+            properties: {
+              schemaName: {
+                type: 'string',
+                description: 'Name of the schema to list tables from',
+              },
+            },
+            required: ['schemaName'],
+          },
+        },
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'list_all_schemas',
+          description: 'Retyurns the names all all schemas in the connection.',
+          parameters: {
+            type: 'object',
+            properties: {},
+            required: [],
+          },
+        },
+      },
 
-    const choice = response.choices[0];
-    if (!choice) break;
+      {
+        type: 'function',
+        function: {
+          name: 'describe_tables',
+          description: 'Get detailed information about specific table(s) including all columns, their types, semantic types, comments, value ranges, and category values. Essential for understanding what data is in each table.',
+          parameters: {
+            type: 'object',
+            properties: {
+              tables: {
+                type: 'array',
+                items: {type: 'string'},
+                description: 'List of table names (WITH schema prefix) to describe',
+              },
+            },
+            required: ['tables'],
+          },
+        },
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'list_joins',
+          description: 'Lists all foreign key relationships (joins) that involve the specified table(s). CRITICAL: Use this before writing any JOIN clause to verify the relationship exists.',
+          parameters: {
+            type: 'object',
+            properties: {
+              tables: {
+                type: 'array',
+                items: {type: 'string'},
+                description: 'List of table names (WITH schema prefix) to find joins for',
+              },
+            },
+            required: ['tables'],
+          },
+        },
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'try_sql',
+          description: 'Execute an SQL query to test it. Returns row count and column names (limited to 10 rows). Use this to validate your query before providing the final answer. If row count is 0, the query might be wrong or the data might genuinely be absent. TRY NOT TO USE ORDER BY in YOUR TEST QUERIES on large tables unless absolutely necessary.',
+          parameters: {
+            type: 'object',
+            properties: {
+              sql: {
+                type: 'string',
+                description: 'The SQL query to test (will be automatically limited to 10 rows)',
+              },
+              description: {
+                type: 'string',
+                description: 'Short description of what this SQL is trying to achieve in markdown format. This will be put in ui for user context.',
+              }
+            },
+            required: ['sql'],
+          },
+        },
+      },
+    ];
 
-    const message = choice.message;
-    messages.push(message);
+    // Function calling loop
+    let iterations = 0;
+    const maxIterations = 15; // Prevent infinite loops
 
-    // Check if the model wants to call functions
-    if (message.tool_calls && message.tool_calls.length > 0) {
-      const functionToolCalls = message.tool_calls.filter((tc) => tc.type === 'function');
-      console.log(`Tool calls requested: ${functionToolCalls.map((tc) => tc.function.name).join(', ')}`);
+    while (iterations < maxIterations) {
+      if (aborted) {
+        grok.shell.info('SQL generation aborted by user.');
+        return '';
+      }
+      iterations++;
+      console.log(`\n=== Iteration ${iterations} ===`);
 
-      // Execute each tool call
-      for (const toolCall of functionToolCalls) {
-        if (toolCall.type !== 'function') continue;
-        const functionName = toolCall.function.name;
-        const functionArgs = JSON.parse(toolCall.function.arguments);
+      const response = await openai.chat.completions.create({
+        //   model: modelName,
+        //   temperature: 0,
+        model: options?.modelName ?? 'gpt-4o-mini', // FOR DEMO USE THIS MODEL!!!!
+        temperature: 1,
+        messages,
+        tools,
+      });
 
-        console.log(`Executing ${functionName} with args:`, functionArgs);
+      const choice = response.choices[0];
+      if (!choice) break;
 
-        let result: string;
-        try {
-          switch (functionName) {
-          case 'list_all_schemas':
-            result = (await context.listAllSchemas()).join(', ');
-            break;
-          case 'list_tables_in_schema':
-            result = await context.listTables(false, functionArgs.schemaName);
-            break;
-          case 'describe_tables':
-            result = await context.describeTables(functionArgs.tables);
-            break;
-          case 'list_joins':
-            result = await context.listJoins(functionArgs.tables);
-            break;
-          case 'try_sql':
-            result = await context.trySql(functionArgs.sql, functionArgs.description);
-            break;
-          default:
-            result = `Error: Unknown function ${functionName}`;
+      const message = choice.message;
+      messages.push(message);
+      options.aiPanel?.addEngineMessage(message);
+
+      // Check if the model wants to call functions
+      if (message.tool_calls && message.tool_calls.length > 0) {
+        const functionToolCalls = message.tool_calls.filter((tc) => tc.type === 'function');
+        console.log(`Tool calls requested: ${functionToolCalls.map((tc) => tc.function.name).join(', ')}`);
+
+        // Execute each tool call
+        for (const toolCall of functionToolCalls) {
+          if (toolCall.type !== 'function') continue;
+          const functionName = toolCall.function.name;
+          const functionArgs = JSON.parse(toolCall.function.arguments);
+
+          console.log(`Executing ${functionName} with args:`, functionArgs);
+
+          let result: string;
+          try {
+            switch (functionName) {
+            case 'list_all_schemas':
+              options.aiPanel?.addUiMessage(`Listing all schemas in the database.`, false);
+              result = (await context.listAllSchemas()).join(', ');
+              options.aiPanel?.addUiMessage(`Schemas found: *${result}*`, false);
+              break;
+            case 'list_tables_in_schema':
+              options.aiPanel?.addUiMessage(`Listing all tables in schema *${functionArgs.schemaName}*.`, false);
+              result = await context.listTables(false, functionArgs.schemaName);
+              options.aiPanel?.addUiMessage(`Found ${result?.split(',').length}`, false);
+              break;
+            case 'describe_tables':
+              options.aiPanel?.addUiMessage(`Getting content of following tables: *${functionArgs.tables.join(', ')}*.`, false);
+              result = await context.describeTables(functionArgs.tables);
+              break;
+            case 'list_joins':
+              options.aiPanel?.addUiMessage(`Listing relations for tables: *${functionArgs.tables.join(', ')}*.`, false);
+              result = await context.listJoins(functionArgs.tables);
+              break;
+            case 'try_sql':
+              options.aiPanel?.addUiMessage(`Testing SQL query:\n\`\`\`sql\n${functionArgs.sql}\n\`\`\``, false);
+              result = await context.trySql(functionArgs.sql, functionArgs.description);
+              options.aiPanel?.addUiMessage(`SQL Test Result: \n\n${result}`, false);
+              break;
+            default:
+              result = `Error: Unknown function ${functionName}`;
+            }
+          } catch (error: any) {
+            result = `Error executing ${functionName}: ${error.message}`;
           }
-        } catch (error: any) {
-          result = `Error executing ${functionName}: ${error.message}`;
+
+          console.log(`Result: ${result.substring(0, 200)}${result.length > 200 ? '...' : ''}`);
+
+          // Add function result to messages
+          const msg = {
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: result,
+          } as const;
+          messages.push(msg);
+          options.aiPanel?.addEngineMessage({...msg});
         }
-
-        console.log(`Result: ${result.substring(0, 200)}${result.length > 200 ? '...' : ''}`);
-
-        // Add function result to messages
-        messages.push({
-          role: 'tool',
-          tool_call_id: toolCall.id,
-          content: result,
-        });
-      }
-    } else if (message.content) {
+      } else if (message.content) {
       // Model provided a text response (hopefully the final SQL)
-      console.log('Model response:', message.content);
+        console.log('Model response:', message.content);
 
-      // Check if this looks like SQL (basic heuristic)
-      const content = message.content.trim();
-      // Clean up the response
-      let sql = content;
-      if (sql.startsWith('```sql'))
-        sql = sql.substring(6);
-      if (sql.startsWith('```'))
-        sql = sql.substring(3);
-      if (sql.endsWith('```'))
-        sql = sql.substring(0, sql.length - 3);
-      const contentUpperCase = sql.toUpperCase();
-      if (contentUpperCase.length > 2) {
-        const res = sql.trim().replace(/;+$/, ''); // Remove trailing semicolons
-        const resUpperCase = res.toUpperCase();
-        if (suspiciousSQlPatterns.some((pattern) => resUpperCase.includes(pattern))) {
-          const out = await new Promise<string>((resolve) => {
-            ui.dialog('Potentially Destructive SQL Detected')
-              .add(ui.divText('The generated SQL query contains potentially destructive commands. For safety, please confirm if you want to proceed with this query.'))
-              .add(ui.markdown(`\`\`\`sql\n${res}\n\`\`\``))
-              .onOK(() => resolve(res))
-              .onCancel(() => {
-                console.log('User cancelled execution of potentially destructive SQL');
-                resolve('');
-              })
-              .show();
-          });
-          return out;
+        // Check if this looks like SQL (basic heuristic)
+        const content = message.content.trim();
+        // Clean up the response
+        let sql = content;
+        if (sql.startsWith('```sql'))
+          sql = sql.substring(6);
+        if (sql.startsWith('```'))
+          sql = sql.substring(3);
+        if (sql.endsWith('```'))
+          sql = sql.substring(0, sql.length - 3);
+        const contentUpperCase = sql.toUpperCase();
+        if (contentUpperCase.length > 2) {
+          const res = sql.trim().replace(/;+$/, ''); // Remove trailing semicolons
+          const resUpperCase = res.toUpperCase();
+          if (suspiciousSQlPatterns.some((pattern) => resUpperCase.includes(pattern))) {
+            const out = await new Promise<string>((resolve) => {
+              ui.dialog('Potentially Destructive SQL Detected')
+                .add(ui.divText('The generated SQL query contains potentially destructive commands. For safety, please confirm if you want to proceed with this query.'))
+                .add(ui.markdown(`\`\`\`sql\n${res}\n\`\`\``))
+                .onOK(() => resolve(res))
+                .onCancel(() => {
+                  console.log('User cancelled execution of potentially destructive SQL');
+                  resolve('');
+                })
+                .show();
+            });
+            options.aiPanel?.addUiMessage(!out ? 'User cancelled execution of potentially destructive SQL.' : 'User confirmed execution of potentially destructive SQL.', false);
+            if (out)
+              options.aiPanel?.addUiMessage(`Final SQL Query:\n\`\`\`sql\n${out}\n\`\`\``, false);
+            return out;
+          }
+          if (res)
+            options.aiPanel?.addUiMessage(`Final SQL Query:\n\`\`\`sql\n${res}\n\`\`\``, false);
+          return res;
         }
-        return res;
+
+        // Model is explaining something, let it continue
+        if (choice.finish_reason === 'stop')
+          break;
+      } else {
+      // No content and no tool calls
+        break;
       }
 
-      // Model is explaining something, let it continue
+      // Check finish reason
       if (choice.finish_reason === 'stop')
         break;
-    } else {
-      // No content and no tool calls
-      break;
     }
 
-    // Check finish reason
-    if (choice.finish_reason === 'stop')
-      break;
+    // If we exhausted iterations or didn't get a proper response
+    throw new Error('Failed to generate SQL query: Maximum iterations reached or no valid SQL returned');
+  } finally {
+    abortSub.unsubscribe();
   }
-
-  // If we exhausted iterations or didn't get a proper response
-  throw new Error('Failed to generate SQL query: Maximum iterations reached or no valid SQL returned');
 }
 
 /**
@@ -502,7 +551,6 @@ class SQLGenerationContext {
    */
   async trySql(sql: string, description: string): Promise<string> {
     console.log('trySql called with description:', description);
-    let sub: rxjs.Subscription | null = null;
     try {
       // Add LIMIT if not present
       let testSql = sql.trim();
@@ -533,21 +581,9 @@ class SQLGenerationContext {
 
       const fc = this.connection.query(queryName, wrappedSql).prepare({});
       SQLGenerationContext._lastFc = fc;
-      sub = getAIAbortSubscription().subscribe(() => {
-        console.log('Aborting try SQL execution as per user request');
-        try {
-          fc.cancel();
-        } catch (_) {
-          console.log('Error during FC cancel');
-        } finally {
-          SQLGenerationContext._lastFc = null;
-          sub?.unsubscribe();
-        }
-      });
       await fc.call(false, undefined, {processed: true, report: false});
       const df = await fc.getOutputParamValue();
       SQLGenerationContext._lastFc = null;
-      sub.unsubscribe();
       if (!df)
         throw new Error('No data returned');
       const result = [
@@ -567,6 +603,7 @@ class SQLGenerationContext {
 
       return result.join('\n');
     } catch (error: any) {
+      SQLGenerationContext._lastFc = null;
       return `SQL Error: ${typeof error == 'string' ? error : error?.message}\n\nThis query failed to execute. Please revise the SQL based on the schema information.`;
     }
   }

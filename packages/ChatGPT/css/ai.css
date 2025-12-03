@@ -1,9 +1,8 @@
 .ai-panel-question {
-    font-style: italic;
+  font-style: italic;
 }
 
-.ai-panel-answer {
-}
+.ai-panel-answer {}
 
 .ai-execute-plan {
   display: flex;
@@ -13,7 +12,7 @@
   background: var(--surface);
   border-radius: 8px;
   padding: 8px 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .ai-execute-result {
@@ -26,4 +25,91 @@
 
 .ai-execute-plan .d4-accordion {
   margin-left: -10px;
+}
+
+.d4-ai-generation-panel {
+  height: 100%;
+  padding: 8px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.d4-ai-generation-panel .d4-ai-panel-input-area {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  padding-bottom: 16px;
+}
+
+.d4-ai-generation-panel .d4-ai-panel-input-area select {
+  height: 20px;
+  font-size: 10px;
+  max-width: 100px;
+}
+
+.d4-ai-generation-panel .d4-ai-panel-run-controls i {
+  margin-left: 8px;
+  cursor: pointer;
+}
+
+.d4-ai-generation-panel textarea.d4-ai-input-textarea {
+  resize: none;
+  flex-grow: 1;
+  min-height: 80px;
+  max-height: 200px;
+  font-size: 14px;
+}
+
+.d4-ai-generation-panel .d4-ai-panel-output-area {
+  display: flex;
+
+  overflow: scroll;
+  width: 100%;
+  flex-direction: column;
+  margin-top: auto;
+}
+
+.d4-ai-messages-accordion-pane pre {
+  margin-left: 0px !important;
+}
+
+.d4-ai-generation-panel .d4-ai-user-prompt-container {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  padding-left: 20px;
+}
+
+.d4-ai-generation-panel .d4-ai-user-prompt-container .d4-ai-user-prompt-divtext {
+  width: 100%;
+  border-radius: 8px;
+  background-color: var(--steel-1);
+  text-align: right;
+  padding: 8px;
+  user-select: text !important;
+}
+
+.d4-ai-generation-panel .d4-ai-assistant-response-container {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  padding-right: 20px;
+}
+
+.d4-ai-generation-panel .d4-ai-panel-controls-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.d4-ai-messages-accordion-pane {
+  width: 100%;
+}
+
+.d4-ai-messages-accordion-pane .d4-ai-assistant-response-container {
+  width: 100%;
+  overflow: scroll;
 }
