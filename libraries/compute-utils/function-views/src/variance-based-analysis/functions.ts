@@ -111,6 +111,6 @@ export async function foo() {
   for (const prop of someFunc.outputs)
     console.log(prop);
 
-  const someFuncCall = someFunc.prepare();
+  const someFuncCall = await someFunc.prepareAsync();
   console.log(someFuncCall);
 }

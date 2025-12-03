@@ -105,8 +105,8 @@ export function getErrors(expArg: DG.Column | null, expFuncs: DG.Column[],
 
 
 /** Get call funcCall with the specified inputs */
-export function makeGetCalledFuncCall(func: DG.Func, inputs: Record<string, any>, variedInputNames: string[], useClone: boolean) {
-  const funcCall = func.prepare(inputs);
+export async function makeGetCalledFuncCall(func: DG.Func, inputs: Record<string, any>, variedInputNames: string[], useClone: boolean) {
+  const funcCall = await func.prepareAsync(inputs);
   const resetSharedCall = () => {
     for (const param of funcCall.inputParams.values())
       funcCall.inputs[param.name] = inputs[param.name];
@@ -118,7 +118,7 @@ export function makeGetCalledFuncCall(func: DG.Func, inputs: Record<string, any>
     resetSharedCall();
     x.forEach((val, idx) => funcCall.inputs[variedInputNames[idx]] = val);
     await funcCall.call(undefined, undefined, {processed: true, report: false});
-    return useClone ? deepCopy(funcCall) : funcCall;
+    return useClone ? (await deepCopy(funcCall)) : funcCall;
   };
 } // makeGetCalledFuncCall
 

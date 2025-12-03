@@ -88,10 +88,10 @@ export const isIncomplete = (run: DG.FuncCall) => {
   return isOutputOutdated || !getStartedOrNull(run) || !run.id;
 };
 
-export const deepCopy = (call: DG.FuncCall) => {
+export const deepCopy = async (call: DG.FuncCall) => {
   // if there is no ':' in nqName, it might be ambiguous, so try to
   // reuse call.func, otherwise use nqName search
-  const deepClone = call.func?.nqName?.includes(":") ? DG.Func.byName(call.func.nqName).prepare() : call.func.prepare();
+  const deepClone = await (call.func?.nqName?.includes(":") ? DG.Func.byName(call.func.nqName).prepareAsync() : call.func.prepareAsync());
 
   deepClone.id = call.id;
 

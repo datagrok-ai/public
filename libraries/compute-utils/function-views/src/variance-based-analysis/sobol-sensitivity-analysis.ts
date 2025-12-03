@@ -48,26 +48,20 @@ export type ResultOfSobolAnalysis = {
 
 /** Sobol sensitivity analysis */
 export class SobolAnalysis {
-  private samplesCount: number;
   private dimension: number;
   private runsCount: number;
-  private fixedInputs: FixedInputItem[];
 
   private variedInputs: VariedNumericalInputValues[];
-  private func: DG.Func;
   private funcCalls: DG.FuncCall[] | null = null;
   private funcInputs: any[];
-  private diffGrok: DiffGrok | undefined;
-
-  private outputsOfInterest: OutputDataFromUI[];
 
   constructor(
-    func: DG.Func,
-    fixedInputs: FixedInputItem[],
+    private func: DG.Func,
+    private fixedInputs: FixedInputItem[],
     variedInputs: VariedNumericalInputInfo[],
-    outputsOfInterest: OutputDataFromUI[],
-    samplesCount: number,
-    diffGrok: DiffGrok | undefined,
+    private outputsOfInterest: OutputDataFromUI[],
+    private samplesCount: number,
+    private diffGrok: DiffGrok | undefined,
   ) {
     // check size
     checkSize(samplesCount);
@@ -100,24 +94,6 @@ export class SobolAnalysis {
     this.funcCalls = (diffGrok === undefined) ? [] : null;
     this.funcInputs = [];
 
-    // create an array of funccalls
-    for (let i = 0; i < this.runsCount; ++i) {
-      const inputs: any = {};
-
-      for (const input of fixedInputs)
-        inputs[input.name] = input.value;
-
-      for (const input of this.variedInputs)
-        inputs[input.prop.name] = input.column.get(i);
-
-      if (this.funcCalls !== null)
-        this.funcCalls.push(func.prepare(inputs));
-      this.funcInputs.push(inputs);
-    }
-
-    this.diffGrok = diffGrok;
-
-    this.outputsOfInterest = outputsOfInterest;
   } // constructor
 
   /** Returns 1-st and total order Sobol' indices. */
@@ -184,6 +160,25 @@ export class SobolAnalysis {
 
   // Performs variance-based sensitivity analysis
   async perform(): Promise<ResultOfSobolAnalysis> {
+    // create an array of funccalls
+    for (let i = 0; i < this.runsCount; ++i) {
+      const inputs: any = {};
+
+      for (const input of this.fixedInputs)
+        inputs[input.name] = input.value;
+
+      for (const input of this.variedInputs)
+        inputs[input.prop.name] = input.column.get(i);
+
+      if (this.funcCalls !== null) {
+        const fc = await this.func.prepareAsync(inputs);
+        this.funcCalls.push(fc);
+      }
+
+      this.funcInputs.push(inputs);
+    }
+
+
     // columns with the varied inputs values
     const inputCols = this.variedInputs.map((varInput) => varInput.column as DG.Column);
 

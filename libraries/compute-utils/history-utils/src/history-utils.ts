@@ -123,7 +123,7 @@ export namespace historyUtils {
       groupsCache.set('All users', allGroup);
     }
 
-    const callCopy = deepCopy(callToSave);
+    const callCopy = await deepCopy(callToSave);
     if (isIncomplete(callCopy)) callCopy.options['createdOn'] = dayjs().utc(true).unix();
 
     if (!skipFileSave) {

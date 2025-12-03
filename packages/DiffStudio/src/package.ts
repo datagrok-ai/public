@@ -9,7 +9,7 @@ import {DiffStudio} from './app';
 import {getIVP, IVP, getScriptLines, getScriptParams, ARG_INPUT_KEYS, SCRIPTING, STAGE_COL_NAME} from './scripting-tools';
 
 import {getBallFlightSim} from './demo/ball-flight';
-import {CONTROL_EXPR, DF_NAME} from './constants';
+import {CONTROL_EXPR, DF_NAME, LOOP} from './constants';
 import {UI_TIME} from './ui-constants';
 
 import {ODEs, SolverOptions} from 'diff-grok';
@@ -261,7 +261,7 @@ export class PackageFunctions {
     const argOptions = ARG_INPUT_KEYS.map((key) => DiffStudio.getOptions(key, ivp.arg[key], CONTROL_EXPR.ARG));
     const initsOptions =  [...ivp.inits.entries()].map(([key, val]) => DiffStudio.getOptions(key, val, CONTROL_EXPR.INITS));
     const paramsOptions = ivp.params ? [...ivp.params.entries()].map(([key, val]) => DiffStudio.getOptions(key, val, CONTROL_EXPR.PARAMS)) : [];
-    const loopOptions = ivp.loop ? [DiffStudio.getOptions(SCRIPTING.COUNT, ivp.loop.count, CONTROL_EXPR.LOOP)] : [];
+    const loopOptions = ivp.loop ? [DiffStudio.getOptions(LOOP.COUNT_NAME, ivp.loop.count, CONTROL_EXPR.LOOP)] : [];
 
     const inputs: DG.Property[] = [
       ...lookupsOptions, ...argOptions, ...initsOptions, ...paramsOptions, ...loopOptions

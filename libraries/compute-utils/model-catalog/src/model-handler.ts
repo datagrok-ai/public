@@ -89,8 +89,8 @@ export class ModelHandler extends DG.ObjectHandler {
     grok.shell.windows.help.showHelp(ui.markdown(readmeText ?? ''));
   }
 
-  static openModel(x: DG.Func) {
-    const fc = x.prepare();
+  static async openModel(x: DG.Func) {
+    const fc = await x.prepareAsync();
     fc.edit();
   }
 
@@ -217,6 +217,7 @@ export class ModelHandler extends DG.ObjectHandler {
     return DG.View.fromViewAsync(async () => {
       const help = await getContextHelp(x);
       const userGroups = await this.awaitUserGroups();
+      const fc = await x.prepareAsync();
       const missingMandatoryGroups = ModelHandler.getMissingGroups(x, userGroups);
       const startBtnDiv = missingMandatoryGroups.length ?
         ui.div([this.makeMandatoryGroupsInfo(missingMandatoryGroups)], {style: {
@@ -224,7 +225,7 @@ export class ModelHandler extends DG.ObjectHandler {
           padding: '10px',
           maxWidth: '400px',
         }}) :
-        ui.div([ui.bigButton('Launch', () => x.prepare().edit())]);
+        ui.div([ui.bigButton('Launch', () => fc.edit())]);
       v.append(
         ui.div(
           [
