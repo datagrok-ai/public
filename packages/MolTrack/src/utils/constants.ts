@@ -112,3 +112,6 @@ export interface IViewContainer {
   view: DG.ViewBase;
   show: () => void;
 }
+
+export const MAX_USER_SETTINGS_STRING_LENGTH = 4000;
+export const CHUNK_KEY_SUFFIX = '__CHUNK__';
