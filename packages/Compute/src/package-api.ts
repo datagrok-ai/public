@@ -43,11 +43,11 @@ export namespace funcs {
     return await grok.functions.call('Compute:OutliersSelection', {});
   }
 
-  export async function richFunctionViewEditor(call: any ): Promise<DG.View> {
+  export async function richFunctionViewEditor(call: any ): Promise<any> {
     return await grok.functions.call('Compute:RichFunctionViewEditor', { call });
   }
 
-  export async function pipelineStepEditor(call: any ): Promise<DG.View> {
+  export async function pipelineStepEditor(call: any ): Promise<any> {
     return await grok.functions.call('Compute:PipelineStepEditor', { call });
   }
 
@@ -89,19 +89,5 @@ export namespace funcs {
 
   export async function objectCoolingSelector(params: any ): Promise<any> {
     return await grok.functions.call('Compute:ObjectCoolingSelector', { params });
-  }
-
-  /**
-  Test for optimization: multiple scalars output
-  */
-  export async function fitTestFunc(x1: number , x2: number , y: DG.DataFrame , bool: boolean ): Promise<{integer: number, float1: number, float2: number, table1: DG.DataFrame, table2: DG.DataFrame}> {
-    return await grok.functions.call('Compute:FitTestFunc', { x1, x2, y, bool });
-  }
-
-  /**
-  Test for optimization: multiple scalars output
-  */
-  export async function testFittingOutputs(): Promise<void> {
-    return await grok.functions.call('Compute:TestFittingOutputs', {});
   }
 }

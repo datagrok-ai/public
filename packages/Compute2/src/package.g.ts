@@ -138,3 +138,26 @@ export async function TestDF1(df: DG.DataFrame) : Promise<any> {
 export async function TestCustomView() : Promise<void> {
   await PackageFunctions.TestCustomView();
 }
+
+//description: Test for optimization: multiple scalars output
+//input: double x1 = 1 { caption: param1; min: -3; max: 3 }
+//input: double x2 = -1 { caption: param2; min: -3; max: 3 }
+//input: dataframe y { caption: table }
+//input: bool bool 
+//output: int integer
+//output: double float1
+//output: double float2
+//output: dataframe table1 { viewer: Line chart(block:60) | Grid(block:40) }
+//output: dataframe table2 { viewer: Line chart(block:60) | Grid(block:40) }
+//meta.features: {"fitting": true, "sens-analysis": true}
+//meta.runOnOpen: true
+//meta.runOnInput: true
+//editor: Compute2:RichFunctionViewEditor
+export function fitTestFunc(x1: number, x2: number, y: DG.DataFrame, bool: boolean) {
+  return PackageFunctions.fitTestFunc(x1, x2, y, bool);
+}
+
+//description: Test for optimization: multiple scalars output
+export async function testFittingOutputs() : Promise<void> {
+  await PackageFunctions.testFittingOutputs();
+}

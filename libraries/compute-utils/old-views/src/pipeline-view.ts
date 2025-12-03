@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {zipSync, Zippable} from 'fflate';
 import {Subject, BehaviorSubject, combineLatest, merge, Observable} from 'rxjs';
-import {debounceTime, filter, map, mapTo, startWith, switchMap, take, tap, withLatestFrom} from 'rxjs/operators';
+import {debounceTime, filter, map, mapTo, startWith, switchMap, take, withLatestFrom} from 'rxjs/operators';
 import $ from 'cash-dom';
 import type ExcelJS from 'exceljs';
 import {historyUtils} from '../../history-utils';
