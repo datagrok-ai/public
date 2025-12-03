@@ -304,7 +304,7 @@ export class View extends ViewBase {
    *  See also {@link loadLayout}
    *  @returns {ViewLayout} */
   saveLayout(options?: { saveWithData?: boolean }): ViewLayout {
-    return toJs(api.grok_View_Save_Layout(this.dart, options?. ?? false));
+    return toJs(api.grok_View_Save_Layout(this.dart, options?.saveWithData ?? false));
   }
 
   /**
