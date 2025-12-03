@@ -31,6 +31,11 @@ Conditions:
     Fn::Equals:
     - Ref: InternetIngressAccess
     - 'true'
+  RestoreFromSnapshot:
+    Fn::Not:
+    - Fn::Equals:
+      - Ref: DBSnapshotIdentifier
+      - ''
   UseVPCEndpoint:
     Fn::Not:
     - Fn::Equals:
@@ -100,6 +105,10 @@ Metadata:
       - GpuAMI
       - GpuInstanceType
     - Label:
+        default: Database configuration
+      Parameters:
+      - DBSnapshotIdentifier
+    - Label:
         default: Client Endpoint configuration
       Parameters:
       - DNSZoneId
@@ -120,6 +129,8 @@ Metadata:
     ParameterLabels:
       CIDR:
         default: 'CIDR: VPC CIDR'
+      DBSnapshotIdentifier:
+        default: DB Snapshot Identifier (Optional)
       DNSDomain:
         default: 'DNSDomain: DNS domain'
       DNSZoneId:
@@ -190,6 +201,11 @@ Parameters:
     AllowedPattern: '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+'
     Default: 10.0.0.0/17
     Description: VPC CIDR block to allow communication inside VPC
+    Type: String
+  DBSnapshotIdentifier:
+    Default: ''
+    Description: 'Optional: ARN or identifier of the RDS snapshot to restore from.
+      Leave empty to create a new database.'
     Type: String
   DNSDomain:
     Description: Specify DNS domain for Datagrok endpoint. The domain should be based
@@ -780,7 +796,16 @@ Resources:
         - ${AWS::StackName}${postfix}-rds
         - postfix:
             Ref: Postfix
-      DBName: datagrok
+      DBName:
+        Fn::If:
+        - RestoreFromSnapshot
+        - Ref: AWS::NoValue
+        - datagrok
+      DBSnapshotIdentifier:
+        Fn::If:
+        - RestoreFromSnapshot
+        - Ref: DBSnapshotIdentifier
+        - Ref: AWS::NoValue
       DBSubnetGroupName:
         Ref: DatagrokDBSubnetGroup
       DeleteAutomatedBackups: true
@@ -789,15 +814,18 @@ Resources:
       Engine: postgres
       EngineVersion: '17'
       MasterUserPassword:
-        Fn::Sub:
-        - '{{resolve:secretsmanager:${secret}:SecretString:password}}'
-        - secret:
-            Ref: DatagrokDbAdminUser
+        Fn::If:
+        - RestoreFromSnapshot
+        - Ref: AWS::NoValue
+        - Fn::Sub:
+          - '{{resolve:secretsmanager:${secret}:SecretString:password}}'
+          - secret:
+              Ref: DatagrokDbAdminUser
       MasterUsername:
-        Fn::Sub:
-        - '{{resolve:secretsmanager:${secret}:SecretString:user}}'
-        - secret:
-            Ref: DatagrokDbAdminUser
+        Fn::If:
+        - RestoreFromSnapshot
+        - Ref: AWS::NoValue
+        - superuser
       MultiAZ: false
       Port: '5432'
       PubliclyAccessible: false
@@ -1691,7 +1719,11 @@ Resources:
         MinimumHealthyPercent: 100
       DeploymentController:
         Type: ECS
-      DesiredCount: 1
+      DesiredCount:
+        Fn::If:
+        - RestoreFromSnapshot
+        - 0
+        - 1
       LaunchType: FARGATE
       LoadBalancers:
       - ContainerName: datagrok

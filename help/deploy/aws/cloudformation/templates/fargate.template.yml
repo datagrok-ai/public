@@ -17,6 +17,10 @@ Metadata:
           - GpuRequired
           - GpuAMI
           - GpuInstanceType
+      - Label:
+          default: "Database configuration"
+        Parameters:
+          - DBSnapshotIdentifier
     ParameterLabels:
       InternetSubnetAllow:
         default: "InternetSubnetAllow: Allow connect from CIDR"
@@ -30,6 +34,8 @@ Metadata:
         default: "GPU AMI"
       GpuInstanceType:
         default: "GPU Instance Type"
+      DBSnapshotIdentifier:
+        default: "DB Snapshot Identifier (Optional)"
 Parameters:
   InternetSubnetAllow:
     Type: String
@@ -103,6 +109,10 @@ Parameters:
       - 'g6e.8xlarge'
       - 'g6e.16xlarge'
       - 'g6e.12xlarge'
+  DBSnapshotIdentifier:
+    Description: 'Optional: ARN or identifier of the RDS snapshot to restore from. Leave empty to create a new database.'
+    Type: String
+    Default: ""
 Conditions:
   AccessFromNatGW:
     Fn::And:
@@ -122,6 +132,11 @@ Conditions:
     Fn::Equals:
       - Ref: GpuRequired
       - 'true'
+  RestoreFromSnapshot:
+    Fn::Not:
+      - Fn::Equals:
+          - Ref: DBSnapshotIdentifier
+          - ''
 Rules:
   InternetSubnetAllow:
     RuleCondition:
@@ -852,7 +867,11 @@ Resources:
         MinimumHealthyPercent: 100
       DeploymentController:
         Type: ECS
-      DesiredCount: 1
+      DesiredCount:
+        Fn::If:
+          - RestoreFromSnapshot
+          - 0
+          - 1
       LaunchType: "FARGATE"
       LoadBalancers:
         - ContainerName: datagrok
@@ -1635,6 +1654,11 @@ Resources:
     UpdateReplacePolicy: Delete
     DeletionPolicy: Snapshot
     Properties:
+      DBSnapshotIdentifier:
+        Fn::If:
+          - RestoreFromSnapshot
+          - Ref: DBSnapshotIdentifier
+          - Ref: "AWS::NoValue"
       AllocatedStorage: '50'
       AllowMajorVersionUpgrade: false
       AutoMinorVersionUpgrade: true
@@ -1645,7 +1669,11 @@ Resources:
           - "${AWS::StackName}${postfix}-rds"
           - postfix:
               Ref: Postfix
-      DBName: datagrok
+      DBName:
+        Fn::If:
+          - RestoreFromSnapshot
+          - Ref: "AWS::NoValue"
+          - datagrok
       DBSubnetGroupName:
         Ref: DatagrokDBSubnetGroup
       DeleteAutomatedBackups: true
@@ -1653,15 +1681,18 @@ Resources:
       Engine: postgres
       EngineVersion: '17'
       MasterUsername:
-        Fn::Sub:
-          - "{{resolve:secretsmanager:${secret}:SecretString:user}}"
-          - secret:
-              Ref: DatagrokDbAdminUser
+        Fn::If:
+          - RestoreFromSnapshot
+          - Ref: "AWS::NoValue"
+          - superuser
       MasterUserPassword:
-        Fn::Sub:
-          - "{{resolve:secretsmanager:${secret}:SecretString:password}}"
-          - secret:
-              Ref: DatagrokDbAdminUser
+        Fn::If:
+          - RestoreFromSnapshot
+          - Ref: "AWS::NoValue"
+          - Fn::Sub:
+              - "{{resolve:secretsmanager:${secret}:SecretString:password}}"
+              - secret:
+                  Ref: DatagrokDbAdminUser
       MultiAZ: false
       Port: '5432'
       PubliclyAccessible: false
