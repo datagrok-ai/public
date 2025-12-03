@@ -290,7 +290,7 @@ export class FormsViewer extends DG.JsViewer {
               if (this.dataFrame.col(name)!.semType === DG.SEMTYPE.MOLECULE)
                 input.input.classList.add(`d4-multi-form-molecule-input-${this.moleculeSize}`);
               input.input.setAttribute('column', name);
-              input.value = this.dataFrame.get(name, row);
+              input.value = this.dataFrame.col(name)?.isNone(row) ? null : this.dataFrame.get(name, row);
               input.readOnly = true;
 
               if (this.colorCode) {
