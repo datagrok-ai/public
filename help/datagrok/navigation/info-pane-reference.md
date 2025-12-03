@@ -98,7 +98,7 @@ packages, which we recommend for installation.
 
 #### ADMET / safety
 
-| Info pane <div style={{ width:620 }}></div> |Semantic type <div style={{ width:120 }}></div>|Required plugin <div style={{ width:120 }}></div>|
+| Info pane <div style={{ width:640 }}></div> |Semantic type <div style={{ width:120 }}></div>|Required plugin <div style={{ width:120 }}></div>|
 |-----|-----------|---|
 | <h5>Admetica</h5> <br/>[Calculates ADMET](https://github.com/datagrok-ai/public/tree/master/packages/Admetica). In addition, the **Summary** info pane visualizes ADMET in a pie chart |`Molecule`|[Admetica](https://github.com/datagrok-ai/public/blob/master/packages/Admetica/README.md) |
 | <h5>Drug likeness</h5> <br/>[Calculates drug likeness](../solutions/domains/chem/info-panels/drug-likeness.md) and displays the results |`Molecule`|[Chem](https://github.com/datagrok-ai/public/blob/master/packages/Chem/README.md) |
@@ -107,7 +107,7 @@ packages, which we recommend for installation.
 
 #### Docking and modeling
 
-| Info pane <div style={{ width:620 }}></div> |Semantic type <div style={{ width:120 }}></div>|Required plugin <div style={{ width:120 }}></div> |
+| Info pane <div style={{ width:640 }}></div> |Semantic type <div style={{ width:120 }}></div>|Required plugin <div style={{ width:120 }}></div> |
 |-----|-----------|---|
 | <h5>AutoDock</h5> <br/>Displays docking results for molecules that have undergone AutoDock analysis |`Molecule`|[Docking](https://github.com/datagrok-ai/public/blob/master/packages/Docking/README.md)|
 | <h5>DiffDock</h5> <br/>Provides an interactive interface for running molecular docking using NVIDIA's DiffDock model |`Molecule`| |
@@ -118,7 +118,7 @@ packages, which we recommend for installation.
 
 Depending on the plugins installed, allows to search by substructure and/or similarity.
 
-| Info pane <div style={{ width:620 }}></div> |Semantic type <div style={{ width:120 }}></div>|Required plugin <div style={{ width:120 }}></div>|
+| Info pane <div style={{ width:640 }}></div> |Semantic type <div style={{ width:120 }}></div>|Required plugin <div style={{ width:120 }}></div>|
 |-----|-----------|---|
 | <h5>ChEMBL</h5>|`Molecule`|[ChEMBL](https://github.com/datagrok-ai/public/tree/master/packages/Chembl) or<br/>[ChEMBL API](https://github.com/datagrok-ai/public/tree/master/packages/ChemblAPI)|
 | <h5>DrugBank</h5> |`Molecule`|[DrugBank](https://github.com/datagrok-ai/public/tree/master/packages/DrugBank)|
@@ -128,7 +128,7 @@ Depending on the plugins installed, allows to search by substructure and/or simi
 
 ##### Compound registration systems and ELNs
 
-| Info pane <div style={{ width:620 }}></div> |Semantic type <div style={{ width:120 }}></div>|Required plugin <div style={{ width:120 }}></div>|
+| Info pane <div style={{ width:640 }}></div> |Semantic type <div style={{ width:120 }}></div>|Required plugin <div style={{ width:120 }}></div>|
 |-----|-----------|---|
 | <h5>CDD Vault</h5> <br/>Shows vault data for the current molecule |`Molecule`|[CDD Vault Link](https://github.com/datagrok-ai/public/tree/master/packages/CddVaultLink)|
 
@@ -150,7 +150,7 @@ Depending on the plugins installed, allows to search by substructure and/or simi
 
 This pane is automatically populated with the molecule that is generated. It provides a quick way to inspect the molecular properties of the macromolecule. Works for macromolecules with up to 50 monomers.
 
-| Info pane <div style={{ width:620 }}></div> | Semantic type <div style={{ width:120 }}></div> | Required plugin <div style={{ width:120 }}></div>|
+| Info pane <div style={{ width:640 }}></div> | Semantic type <div style={{ width:120 }}></div> | Required plugin <div style={{ width:120 }}></div>|
 |-----------|---------------|----------------|
 | **Molecular structure** <br/>Shows a 2D view of the macromolecule  | `Macromolecule` | [Bio](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) |
 | **Molecular 3D structure** <br/>Interactive 3D visualization of macromolecule | `Macromolecule` | [Bio](https://github.com/datagrok-ai/public/blob/master/packages/Bio/README.md) |
@@ -161,7 +161,7 @@ This pane is automatically populated with the molecule that is generated. It pro
 
 Depending on the plugins installed, allows to search by substructure and/or similarity.
 
-| Info pane <div style={{ width:620 }}></div> |Semantic type <div style={{ width:120 }}></div>|Required plugin <div style={{ width:120 }}></div>|
+| Info pane <div style={{ width:640 }}></div> |Semantic type <div style={{ width:120 }}></div>|Required plugin <div style={{ width:120 }}></div>|
 |--------|-----------|-----|
 | <h5>ChEMBL</h5>|`Molecule`|[ChEMBL](https://github.com/datagrok-ai/public/tree/master/packages/Chembl) or<br/>[ChEMBL API](https://github.com/datagrok-ai/public/tree/master/packages/ChemblAPI)|
 | <h5>DrugBank</h5> |`Molecule`|[DrugBank](https://github.com/datagrok-ai/public/tree/master/packages/DrugBank)|
@@ -171,13 +171,13 @@ Depending on the plugins installed, allows to search by substructure and/or simi
 
 ###### Compound registration systems and ELNs
 
-| Info pane <div style={{ width:620 }}></div> |Semantic type <div style={{ width:120 }}></div>|Required plugin <div style={{ width:120 }}></div>|
+| Info pane <div style={{ width:640 }}></div> |Semantic type <div style={{ width:120 }}></div>|Required plugin <div style={{ width:120 }}></div>|
 |----------|-----------|------|
 | <h5>CDD Vault</h5> <br/>Shows vault data for the current molecule |`Molecule`|[CDD Vault Link](https://github.com/datagrok-ai/public/tree/master/packages/CddVaultLink)|
 
 ##### ADMET / safety
 
-| Info pane <div style={{ width:620 }}></div> | Semantic type <div style={{ width:120 }}></div> | Required plugin <div style={{ width:120 }}></div>|
+| Info pane <div style={{ width:640 }}></div> | Semantic type <div style={{ width:120 }}></div> | Required plugin <div style={{ width:120 }}></div>|
 |-----|-----------|---|
 | <h5>Admetica</h5> <br/>[Calculates ADMET](https://github.com/datagrok-ai/public/tree/master/packages/Admetica). In addition, the **Summary** info pane visualizes ADMET in a pie chart |`Molecule`|[Admetica](https://github.com/datagrok-ai/public/blob/master/packages/Admetica/README.md) |
 | <h5>Drug likeness</h5> <br/>[Calculates drug likeness](../solutions/domains/chem/info-panels/drug-likeness.md) and displays the results |`Molecule`|[Chem](https://github.com/datagrok-ai/public/blob/master/packages/Chem/README.md) |
@@ -186,7 +186,7 @@ Depending on the plugins installed, allows to search by substructure and/or simi
 
 ##### Docking and modeling
 
-| Info pane <div style={{ width:620 }}></div> | Semantic type <div style={{ width:120 }}></div> | Required plugin <div style={{ width:120 }}></div>|
+| Info pane <div style={{ width:640 }}></div> | Semantic type <div style={{ width:120 }}></div> | Required plugin <div style={{ width:120 }}></div>|
 |-----|-----------|---|
 | <h5>AutoDock</h5> <br/>Displays docking results for molecules that have undergone AutoDock analysis |`Molecule`|[Docking](https://github.com/datagrok-ai/public/blob/master/packages/Docking/README.md)|
 | <h5>DiffDock</h5> <br/>Provides an interactive interface for running molecular docking using NVIDIA's DiffDock model |`Molecule`| |
