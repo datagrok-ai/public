@@ -15,7 +15,7 @@ search:
 expansion:
   uspto:
     - /app/configs/my_config/uspto_model.onnx
-    - /app/aconfigs/my_config/uspto_templates.csv.gz
+    - /app/configs/my_config/uspto_templates.csv.gz
   ringbreaker:
     - /app/configs/my_config/uspto_ringbreaker_model.onnx
     - /app/configs/my_config/uspto_ringbreaker_templates.csv.gz
