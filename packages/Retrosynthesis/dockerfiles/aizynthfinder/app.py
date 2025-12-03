@@ -13,9 +13,6 @@ from datagrok_api import DatagrokClient
 settings = Settings(log_level=logging.DEBUG)
 app = Celery(settings.celery_name, broker=settings.broker_url)
 
-# # TODO: Remove it when grok_spawner is updated
-# settings.api_url = 'http://host.docker.internal:8082'
-
 
 CONFIGS_DIR = Path.cwd() / "configs"
 CONFIGS_DIR.mkdir(parents=True, exist_ok=True)
@@ -41,13 +38,13 @@ def run_aizynthfind(self, molecule: str, config: str, expansion: str, filter: st
     else:
         self.update_state(meta={"description": "Config synchronization in progress..."})
         config_path = _sync_user_config(config, kwargs.get("USER_API_KEY", None))
-        logging.info(f"Config path {config_path}")
-
+    
+    logging.info(f"Config path {config_path}")
     self.update_state(meta={"description": "Calculating retrosynthesis paths..."})
     finder = None
     try:    
         finder = AiZynthFinder(configfile=config_path)
-        _silence_aizynth_logs()
+      #  _silence_aizynth_logs()
         finder.stock.select(finder.stock.items if stock == "" else stock)
         finder.expansion_policy.select_all() if expansion == "" else finder.expansion_policy.select(expansion)
         if filter != "":

@@ -1,5 +1,5 @@
 numpy==1.26.4
 datagrok-celery-task
 celery
-datagrok-api
+datagrok-api>=0.0.9
 filelock
