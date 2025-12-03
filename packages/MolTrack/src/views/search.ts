@@ -1067,7 +1067,7 @@ export async function createSavedSearchesSatistics(scope?: Scope): Promise<HTMLE
     const savedSearches: { [key: string]: string } = getSavedSearches(scope);
     const searchNames = Object.keys(savedSearches);
     for (const search of searchNames)
-      objForTable.push({scope: scope, search: search});
+      objForTable.push({scope: scope, search: search, query: JSON.parse(savedSearches[search])});
   };
 
   scopes.forEach((it) => collectSearchesForScope(it));
@@ -1106,7 +1106,7 @@ async function createSavedSearchStats(savedSearchesForTable: any[], scope?: stri
           if (!savedSearchesForTable.length)
             createSearchView(search.scope.charAt(0).toUpperCase() + search.scope.slice(1), search.scope);
           else
-            createSearchView(search.search, search.scope, undefined, true);
+            createSearchView(search.search, search.scope, search.query, true);
         }),
       ];
 
