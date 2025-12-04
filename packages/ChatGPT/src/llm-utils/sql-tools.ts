@@ -91,7 +91,7 @@ export async function generateAISqlQueryWithTools(
     - ALWAYS use list_joins to verify relationships before writing JOIN clauses
     - NEVER assume joins exist based on column name similarity (unless no other option, or explicitly instructed by table/column comments)
     - ONLY use relationships explicitly listed by list_joins
-    - Use try_sql to validate your query before finalizing
+    - ALWAYS Use try_sql to validate your query before finalizing and submitting it
     - Pay attention to semantic types, value ranges, and category values from describe_tables
     - Current Schema name is: ${schemaName}
     - Always prefix table names with schema name in SQL
@@ -140,7 +140,9 @@ export async function generateAISqlQueryWithTools(
       options.aiPanel?.addEngineMessage(systemMsg);
       const initialUserMsg: OpenAI.Chat.ChatCompletionMessageParam = {
         role: 'user',
-        content: `Available tables in schema ${schemaName}:\n\n${initialTableList}\n\nUser Query: ${prompt}\n\n
+        content: `
+        Available schemas: ${(await context.listAllSchemas()).join(', ')}\n\n
+        Available tables in schema ${schemaName}:\n\n${initialTableList}\n\nUser Query: ${prompt}\n\n
         Explore the schema using the available tools and generate an SQL query to answer this question.
         ${semTypeWithinPromptInfo}
           
@@ -261,8 +263,9 @@ export async function generateAISqlQueryWithTools(
       const response = await openai.chat.completions.create({
         //   model: modelName,
         //   temperature: 0,
-        model: options?.modelName ?? 'gpt-4o-mini', // FOR DEMO USE THIS MODEL!!!!
+        model: options?.modelName ?? 'gpt-4o-mini',
         temperature: 1,
+        reasoning_effort: options?.modelName?.startsWith('gpt-5') ? 'high' : undefined,
         messages,
         tools,
       });
@@ -298,7 +301,7 @@ export async function generateAISqlQueryWithTools(
             case 'list_tables_in_schema':
               options.aiPanel?.addUiMessage(`Listing all tables in schema *${functionArgs.schemaName}*.`, false);
               result = await context.listTables(false, functionArgs.schemaName);
-              options.aiPanel?.addUiMessage(`Found ${result?.split(',').length}`, false);
+              options.aiPanel?.addUiMessage(`Found ${result?.split(',').length} tables`, false);
               break;
             case 'describe_tables':
               options.aiPanel?.addUiMessage(`Getting content of following tables: *${functionArgs.tables.join(', ')}*.`, false);

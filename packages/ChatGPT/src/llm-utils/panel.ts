@@ -12,7 +12,8 @@ import {AI_SQL_QUERY_ABORT_EVENT, dartLike} from '../utils';
 export type ModelOption = 'Fast' | 'Deep Research';
 export const ModelType: {[type in ModelOption]: ChatModel} = {
   Fast: 'gpt-4o-mini',
-  ['Deep Research']: 'o4-mini', // hell of a smart model
+  //   ['Deep Research']: 'gpt-5.1', // hell of a smart model but expensive
+  'Deep Research': 'o4-mini', // good balance between speed, quality and $$$
 } as const;
 
 // in future might extend it with other types for response API
@@ -136,7 +137,7 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
         this._aiMessagesAccordionPane = ui.divV([], 'd4-ai-messages-accordion-pane');
         const pane = acord.addPane('Responses', () => this._aiMessagesAccordionPane!, true, undefined, false);
         pane.expanded = true;
-        acord.root.style.width = 'calc(100% - 20px)';
+        acord.root.style.width = 'calc(100% - 35px)';
         this.outputArea.appendChild(acord.root);
       }
       const markDown = ui.markdown(uiMessage.content);

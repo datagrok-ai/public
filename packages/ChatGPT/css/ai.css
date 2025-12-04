@@ -80,7 +80,7 @@
   width: 100%;
   display: flex;
   justify-content: flex-end;
-  padding-left: 20px;
+  padding-left: 35px;
 }
 
 .d4-ai-generation-panel .d4-ai-user-prompt-container .d4-ai-user-prompt-divtext {
@@ -97,6 +97,19 @@
   display: flex;
   justify-content: flex-start;
   padding-right: 20px;
+  background: aliceblue;
+  border-radius: 8px;
+  padding: 4px;
+  margin-bottom: 4px;
+  padding-bottom: 0px;
+}
+
+.d4-ai-generation-panel .d4-ai-assistant-response-container pre {
+  background: aliceblue;
+  filter: saturate(5.5);
+  padding: 6px;
+  border-radius: 8px;
+  width: max-content;
 }
 
 .d4-ai-generation-panel .d4-ai-panel-controls-container {
