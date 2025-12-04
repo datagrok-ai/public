@@ -128,6 +128,28 @@ export async function setupAIQueryEditorUI(connectionID: string, aiElement: HTML
 
   const panel = new DBAIPanel(schemas, defaultSchema);
   panel.show();
+
+  const v = grok.shell.v?.root.contains(aiElement) ? grok.shell.v : null;
+
+  if (v) {
+    // do some subscriptions
+    const sub = grok.events.onCurrentViewChanged.subscribe(() => {
+      if (grok.shell.v != v)
+        panel.hide();
+      else
+        panel.show();
+    });
+    const closeSub = grok.events.onViewRemoved.subscribe((view) => {
+      if (view == v) {
+        sub.unsubscribe();
+        closeSub.unsubscribe();
+        panel.hide();
+        panel.dispose();
+      }
+    });
+  }
+
+
   // temp hack
   aiElement.remove();
   const mutationObserver = new MutationObserver((_d) => {
@@ -160,34 +182,4 @@ export async function setupAIQueryEditorUI(connectionID: string, aiElement: HTML
     ui.setUpdateIndicator(queryEditorRoot, false);
     session.endSession();
   });
-
-  // const aiSchemaInput = ui.input.choice('Schema', {items: schemas, value: defaultSchema, nullable: false, tooltipText: 'Select the database schema to use for AI-assisted query generation.'});
-  // const closeIcon = ui.iconFA('times', () => aiElement.style.display = 'none', 'Close AI Query Assistant');
-  // const aiTextArea = document.createElement('textarea');
-  // dartLike(aiTextArea).set('placeholder', 'Ask a question, such as "Largest sales per country"\nOr type SQL query below').set('className', 'd4-query-view-ai-textarea');
-  // dartLike(closeIcon.style).set('position', 'absolute').set('top', '6px').set('left', '2px').set('cursor', 'pointer');
-  // const inputsDiv = ui.div([aiSchemaInput.root, aiTextArea], 'd4-query-view-ai-inputs');
-  // aiElement.appendChild(inputsDiv);
-  // aiElement.appendChild(closeIcon);
-  // aiTextArea.addEventListener('keydown', async (event: KeyboardEvent) => {
-  //   if (event.key === 'Enter' && (!event.ctrlKey && !event.metaKey)) {
-  //     const question = aiTextArea.value ?? '';
-  //     if (question.trim().length === 0)
-  //       return;
-  //     event.preventDefault();
-  //     event.stopImmediatePropagation();
-  //     ui.setUpdateIndicator(queryEditorRoot, true, 'Grokking Query...', () => { grok.events.fireCustomEvent(AI_SQL_QUERY_ABORT_EVENT, null); });
-  //     // setTimeout(() => ui.setUpdateIndicator(queryEditorRoot, false), 3000);
-  //     try {
-  //       const sqlQuery = await generateAISqlQueryWithTools(question, connectionID, aiSchemaInput.value!);
-  //       ui.setUpdateIndicator(queryEditorRoot, false);
-  //       if (sqlQuery && typeof sqlQuery === 'string')
-  //         setAndRunFunc(sqlQuery);
-  //     } catch (error: any) {
-  //       ui.setUpdateIndicator(queryEditorRoot, false);
-  //       grok.shell.error(`Error during AI query generation`);
-  //       console.error('Error during AI query generation:', error);
-  //     }
-  //   }
-  // });
 }

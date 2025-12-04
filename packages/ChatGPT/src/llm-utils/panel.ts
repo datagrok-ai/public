@@ -113,6 +113,14 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
     AIPanel._lastDockedPanel = grok.shell.dockManager.dock(this.root, 'right', null, 'Chat', 0.25);
   }
 
+  hide() {
+    grok.shell.dockManager.close(this.root);
+  }
+  dispose() {
+    this.root.remove();
+    this._messages = [];
+  }
+
 
   public getCurrentInputs(): K {
     return {

@@ -107,7 +107,7 @@ export async function generateAISqlQueryWithTools(
     const messages: OpenAI.Chat.ChatCompletionMessageParam[] = options.oldMessages ? options.oldMessages.slice() : [];
     if (messages.length === 0) {
       // Get initial table list
-      const initialTableList = await context.listTables(false, schemaName);
+      const initialTableList = (await context.listTables(false, schemaName)).description;
       let semTypeWithinPromptInfo = '';
       // try to also match some identifiers within the user prompt to provide even more context
       const parsedPrompt = DG.SemanticValue.parse(prompt);
@@ -301,8 +301,9 @@ export async function generateAISqlQueryWithTools(
               break;
             case 'list_tables_in_schema':
               options.aiPanel?.addUiMessage(`Listing all tables in schema *${functionArgs.schemaName}*.`, false);
-              result = await context.listTables(false, functionArgs.schemaName);
-              options.aiPanel?.addUiMessage(`Found ${result?.split(',').length} tables`, false);
+              const res = await context.listTables(false, functionArgs.schemaName);
+              result = res.description;
+              options.aiPanel?.addUiMessage(res.tableCount ? `Found ${res.tableCount} tables` : 'No tables found', false);
               break;
             case 'describe_tables':
               options.aiPanel?.addUiMessage(`Getting content of following tables: *${functionArgs.tables.join(', ')}*.`, false);
@@ -434,12 +435,12 @@ class SQLGenerationContext {
    * Tool: list_tables
    * Returns all tables with their descriptions
    */
-  async listTables(includeAllDescriptions: boolean, schemaName: string): Promise<string> {
+  async listTables(includeAllDescriptions: boolean, schemaName: string): Promise<{description: string, tableCount: number}> {
     schemaName ??= this.schemaName;
     if (this.schemas && this.dbMeta) {
       const schema = this.schemas.find((s) => s.name === schemaName);
       if (!schema)
-        return `Schema ${schemaName} not found in metadata.`;
+        return {description: `Schema ${schemaName} not found in metadata.`, tableCount: 0};
       const tables = schema.tables.map((table) => {
         const parts = [`${table.name}`];
         if (includeAllDescriptions) {
@@ -451,12 +452,12 @@ class SQLGenerationContext {
         parts.push(`  Columns: ${table.columns.length}, Rows: ${table.rowCount}`);
         return parts.join('\n');
       });
-      return `Tables in ${this.schemaName}:\n\n${tables.join('\n\n')}`;
+      return {description: `Tables in ${this.schemaName}:\n\n${tables.join('\n')}`, tableCount: tables.length};
     }
 
     // Fallback to schema descriptor
     const schemaInfo = await DBSchemaInfo.getSchemaInfo(this.connectionID, schemaName);
-    return `Tables in ${this.schemaName}:\n\n${schemaInfo.tableInfos.join('\n')}`;
+    return {description: `Tables in ${this.schemaName}:\n\n${schemaInfo.tableInfos.join('\n')}`, tableCount: schemaInfo.tableInfos.length};
   }
 
   /**
