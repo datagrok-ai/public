@@ -41,6 +41,7 @@ export async function generateAISqlQueryWithTools(
 ): Promise<string> {
   let aborted = false;
   let dbMeta: DBConnectionMeta | undefined = undefined;
+  options.aiPanel?.addUiMessage(prompt, true);
 
   // Load pre-indexed metadata if available
   const connection = await grok.dapi.connections.find(connectionID);
@@ -149,12 +150,12 @@ export async function generateAISqlQueryWithTools(
         ${similarQueriesInfo}
         `,
       };
-      options.aiPanel?.addUserMessage(initialUserMsg, prompt); // prompt will be shown in UI
+      options.aiPanel?.addEngineMessage(initialUserMsg); // prompt will be shown in UI
       messages.push(initialUserMsg);
     } else {
       const followUpUserMsg: OpenAI.Chat.ChatCompletionMessageParam = {role: 'user', content: `Please modify the previous query based on this feedback: ${prompt}`};
       messages.push(followUpUserMsg);
-      options.aiPanel?.addUserMessage(followUpUserMsg, prompt);
+      options.aiPanel?.addEngineMessage(followUpUserMsg);
     }
 
     // Define available tools
@@ -312,7 +313,7 @@ export async function generateAISqlQueryWithTools(
               result = await context.listJoins(functionArgs.tables);
               break;
             case 'try_sql':
-              options.aiPanel?.addUiMessage(`Testing SQL query:\n\`\`\`sql\n${functionArgs.sql}\n\`\`\``, false);
+              options.aiPanel?.addUiMessage(`Testing SQL query:\n${functionArgs.description}\n\`\`\`sql\n${functionArgs.sql}\n\`\`\``, false);
               result = await context.trySql(functionArgs.sql, functionArgs.description);
               options.aiPanel?.addUiMessage(`SQL Test Result: \n\n${result}`, false);
               break;
