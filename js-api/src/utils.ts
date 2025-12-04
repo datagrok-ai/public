@@ -869,8 +869,8 @@ export class DbSchemaInfo {
   ): Promise<void> {
     return api.grok_DbSchemaInfo_AnnotateColumn(
         this.dart,
-        table instanceof TableInfo ? table.friendlyName : table,
-        column instanceof ColumnInfo ? column.friendlyName : column,
+        table instanceof TableInfo ? table.friendlyName : table, //  table.friendlyName corresponds to real db table name
+        column instanceof ColumnInfo ? column.name : column, // column.name corresponds to real db col name
         props,
     );
   }
