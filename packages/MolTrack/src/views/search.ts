@@ -348,6 +348,7 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope, in
       queryBuilder = new QueryBuilder(filterFields, undefined, QueryBuilderLayout.Narrow);
       queryBuilder.validationError.subscribe((error) => {
         runSearchButton.disabled = error;
+        saveSearchIcon.classList.toggle('moltrack-disable-icon', error);
       });
       const df = DG.DataFrame.create();
       const outputFields = molTrackSearchFieldsArr
@@ -404,7 +405,6 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope, in
         }
       });
 
-
       //save search icon
       const saveSearchIcon = ui.icons.save(() => {
         if (queryBuilder) {
@@ -417,6 +417,21 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope, in
         }
       }, 'Save current search query');
 
+      queryBuilder?.structureChanged.subscribe(async () => {
+        if (!queryBuilder || !outputFieldsInput.value) return;
+
+        const fields = outputFieldsInput.value.map((col) => col.name);
+        const molTrackQuery = convertQueryBuilderConditionToMolTrackQuery(
+          queryBuilder.condition,
+          entityLevel,
+          fields,
+          aggregations ?? [],
+          entityType
+        );
+
+        const isValid = await MolTrackDockerService.validateSearchQuery(molTrackQuery);
+        queryBuilder.validationError.next(!isValid);
+      });
 
       //load search icon
       const openSearchIcon = ui.iconFA('folder-open', () => {
