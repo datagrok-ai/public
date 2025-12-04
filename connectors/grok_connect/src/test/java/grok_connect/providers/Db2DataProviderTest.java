@@ -39,7 +39,7 @@ class Db2DataProviderTest extends ContainerizedProviderBaseTest {
     @MethodSource("grok_connect.providers.arguments_provider.Db2ObjectsMother#getSchema_ok")
     public void getSchema_ok(DataFrame expected) {
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.getSchema(connection,
-                INIT_SCHEMA_NAME, INIT_TABLE_NAME));
+                INIT_SCHEMA_NAME, INIT_TABLE_NAME, false));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 

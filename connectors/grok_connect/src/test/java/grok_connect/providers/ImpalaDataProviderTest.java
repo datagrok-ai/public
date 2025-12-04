@@ -87,7 +87,7 @@ class ImpalaDataProviderTest {
     @MethodSource("grok_connect.providers.arguments_provider.ImpalaObjectsMother#getSchema_ok")
     public void getSchema_ok(DataFrame expected) {
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.getSchema(connection,
-                "default", "MOCK_DATA"));
+                "default", "MOCK_DATA", false));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 

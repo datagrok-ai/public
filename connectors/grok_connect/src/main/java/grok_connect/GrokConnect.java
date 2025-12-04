@@ -214,9 +214,10 @@ public class GrokConnect {
             BufferAccessor buffer;
             DataQueryRunResult result = new DataQueryRunResult();
             try {
+                boolean includeKeyInfo = request.queryParams("includeKeyInfo") != null && request.queryParams("includeKeyInfo").equals("true");
                 DataConnection connection = gson.fromJson(request.body(), DataConnection.class);
                 DataProvider provider = providerManager.getByName(connection.dataSource);
-                DataFrame dataFrame = provider.getSchema(connection, connection.get("schema"), connection.get("table"));
+                DataFrame dataFrame = provider.getSchema(connection, connection.get("schema"), connection.get("table"), includeKeyInfo);
                 buffer = packDataFrame(result, dataFrame);
             } catch (QueryCancelledByUser | GrokConnectException ex) {
                 buffer = packException(result, ex.getClass().equals(GrokConnectException.class)

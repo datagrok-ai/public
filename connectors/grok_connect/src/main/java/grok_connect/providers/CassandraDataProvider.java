@@ -117,17 +117,17 @@ public class CassandraDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public DataFrame getSchema(DataConnection connection, String schema, String table)
+    public DataFrame getSchema(DataConnection connection, String schema, String table, boolean includeKeyInfo)
             throws QueryCancelledByUser, GrokConnectException {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
-        queryRun.func.query = getSchemaSql(connection.get(DbCredentials.KEYSPACE), schema, table);
+        queryRun.func.query = getSchemaSql(connection.get(DbCredentials.KEYSPACE), schema, table, includeKeyInfo);
         queryRun.func.connection = connection;
         return execute(queryRun);
     }
 
     @Override
-    public String getSchemaSql(String db, String schema, String table) {
+    public String getSchemaSql(String db, String schema, String table, boolean includeKeyInfo) {
         String keySpace = GrokConnectUtil.isEmpty(db) ? schema : db;
         boolean isEmptyKeySpace = GrokConnectUtil.isEmpty(keySpace);
         boolean isEmptyTable = GrokConnectUtil.isEmpty(table);

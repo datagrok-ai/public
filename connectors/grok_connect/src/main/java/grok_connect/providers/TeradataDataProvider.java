@@ -13,7 +13,6 @@ import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.utils.GrokConnectException;
-import grok_connect.utils.Property;
 import grok_connect.utils.QueryCancelledByUser;
 import serialization.DataFrame;
 import serialization.StringColumn;
@@ -86,7 +85,7 @@ public class TeradataDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public String getSchemaSql(String db, String schema, String table) {
+    public String getSchemaSql(String db, String schema, String table, boolean includeKeyInfo) {
         List<String> filters = new ArrayList<>();
 
         if (db == null || db.length() == 0)

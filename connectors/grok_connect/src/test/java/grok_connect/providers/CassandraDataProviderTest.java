@@ -98,7 +98,7 @@ class CassandraDataProviderTest {
     @MethodSource("grok_connect.providers.arguments_provider.CassandraObjectsMother#getSchema_ok")
     public void getSchema_ok(DataFrame expected) {
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.getSchema(connection,
-                KEYSPACE, "mock_data"));
+                KEYSPACE, "mock_data", false));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 

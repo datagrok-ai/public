@@ -85,7 +85,7 @@ public class SnowflakeDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public String getSchemaSql(String db, String schema, String table) {
+    public String getSchemaSql(String db, String schema, String table, boolean includeKeyInfo) {
         boolean isEmptyDb = GrokConnectUtil.isEmpty(db);
         boolean isEmptySchema = GrokConnectUtil.isEmpty(schema);
         boolean isEmptyTable = GrokConnectUtil.isEmpty(table);

@@ -26,7 +26,6 @@ import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
-import org.testcontainers.utility.MountableFile;
 import serialization.DataFrame;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -118,7 +117,7 @@ class VerticaDataProviderTest {
     @MethodSource("grok_connect.providers.arguments_provider.VerticaObjectsMother#getSchema_ok")
     public void getSchema_ok(DataFrame expected) {
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.getSchema(connection,
-                "public", "MOCK_DATA"));
+                "public", "MOCK_DATA", false));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 

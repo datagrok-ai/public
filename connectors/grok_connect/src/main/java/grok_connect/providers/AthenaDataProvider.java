@@ -142,7 +142,7 @@ public class AthenaDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public String getSchemaSql(String db, String schema, String table) {
+    public String getSchemaSql(String db, String schema, String table, boolean includeKeyInfo) {
         List<String> filters = new ArrayList<>();
         if (GrokConnectUtil.isNotEmpty(db))
             filters.add("c.table_schema = '" + db + "'");

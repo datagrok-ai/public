@@ -5,7 +5,6 @@ import java.util.HashMap;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
-import grok_connect.utils.Property;
 import serialization.Types;
 
 public class VirtuosoDataProvider extends JdbcDataProvider {
@@ -61,7 +60,7 @@ public class VirtuosoDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public String getSchemaSql(String db, String schema, String table) {
+    public String getSchemaSql(String db, String schema, String table, boolean includeKeyInfo) {
         String whereClause = String.format(" WHERE%s%s%s",
                 db == null || db.isEmpty() ? "" : String.format(" LOWER(c.table_catalog) = LOWER('%s')", db),
                 schema == null || schema.isEmpty() ? "" : String.format("%s c.table_schema = '%s'", db == null || db.isEmpty() ? "" : " AND",schema),

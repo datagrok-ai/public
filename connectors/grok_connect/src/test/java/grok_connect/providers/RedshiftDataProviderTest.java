@@ -84,7 +84,7 @@ class RedshiftDataProviderTest {
     @MethodSource("grok_connect.providers.arguments_provider.RedshiftObjectsMother#getSchema_ok")
     public void getSchema_ok(DataFrame expected) {
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.getSchema(connection,
-                "public", "mock_data"));
+                "public", "mock_data", false));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 

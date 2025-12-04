@@ -148,7 +148,7 @@ public class DatabricksProvider extends JdbcDataProvider {
     }
 
     @Override
-    public DataFrame getSchema(DataConnection connection, String schema, String table)
+    public DataFrame getSchema(DataConnection connection, String schema, String table, boolean includeKeyInfo)
             throws QueryCancelledByUser, GrokConnectException {
 
         try (Connection db = getConnection(connection)) {

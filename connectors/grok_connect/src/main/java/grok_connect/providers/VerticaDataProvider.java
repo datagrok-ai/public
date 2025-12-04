@@ -13,7 +13,6 @@ import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.utils.GrokConnectException;
-import grok_connect.utils.Property;
 import grok_connect.utils.QueryCancelledByUser;
 import serialization.Column;
 import serialization.DataFrame;
@@ -67,7 +66,7 @@ public class VerticaDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public String getSchemaSql(String db, String schema, String table) {
+    public String getSchemaSql(String db, String schema, String table, boolean includeKeyInfo) {
         String whereClause = String.format(" WHERE%s%s",
                 schema == null ? "" : String.format(" c.table_schema = '%s'", schema),
                 table == null ? "" : String.format("%s c.table_name = '%s'", schema == null ? "" : " AND", table));
@@ -86,10 +85,10 @@ public class VerticaDataProvider extends JdbcDataProvider {
      * Replace it with InColumn for easy handle in next steps
      */
     @Override
-    public DataFrame getSchema(DataConnection connection, String schema, String table) throws QueryCancelledByUser,
+    public DataFrame getSchema(DataConnection connection, String schema, String table, boolean includeKeyInfo) throws QueryCancelledByUser,
             GrokConnectException {
         String columnName = "is_view";
-        DataFrame dataFrame = super.getSchema(connection, schema, table);
+        DataFrame dataFrame = super.getSchema(connection, schema, table, includeKeyInfo);
         Column oldColumn = dataFrame.columns.stream()
                 .filter(column -> column.name.equals(columnName))
                 .collect(Collectors.toList()).get(0);

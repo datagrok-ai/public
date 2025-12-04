@@ -40,7 +40,7 @@ class MariaDbDataProviderTest extends MySqlDataProviderTest {
     @MethodSource("grok_connect.providers.arguments_provider.MariaDbObjectsMother#getSchema_ok")
     public void getSchema_ok(DataFrame expected) {
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.getSchema(connection,
-                "datagrok", "mock_data"));
+                "datagrok", "mock_data", false));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 

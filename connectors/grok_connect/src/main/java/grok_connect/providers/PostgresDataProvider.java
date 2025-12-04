@@ -104,7 +104,7 @@ public class PostgresDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public String getSchemaSql(String db, String schema, String table)
+    public String getSchemaSql(String db, String schema, String table, boolean includeKeyInfo)
     {
         List<String> filters = new ArrayList<String>() {{
             add("c.table_schema = '" + ((schema != null) ? schema : descriptor.defaultSchema) + "'");
@@ -118,11 +118,57 @@ public class PostgresDataProvider extends JdbcDataProvider {
 
         String whereClause = "WHERE " + String.join(" AND \n", filters);
 
-        return "SELECT c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
-                + "c.data_type as data_type, "
-                + "case t.table_type when 'VIEW' then 1 else 0 end as is_view FROM information_schema.columns c "
-                + "JOIN information_schema.tables t ON t.table_name = c.table_name AND t.table_schema = c.table_schema AND t.table_catalog = c.table_catalog "
-                + whereClause + " ORDER BY c.table_name";
+        StringBuilder sql = new StringBuilder();
+
+        sql.append("SELECT ")
+                .append("c.table_schema AS table_schema, ")
+                .append("c.table_name AS table_name, ")
+                .append("c.column_name AS column_name, ")
+                .append("c.data_type AS data_type, ")
+                .append("CASE t.table_type WHEN 'VIEW' THEN 1 ELSE 0 END AS is_view");
+
+
+        if (includeKeyInfo) {
+            sql.append(", ")
+                    .append("CASE WHEN pk.column_name IS NOT NULL THEN 1 ELSE 0 END AS is_primary_key, ")
+                    .append("CASE WHEN pk.column_name IS NOT NULL OR uq.column_name IS NOT NULL ")
+                    .append("     THEN 1 ELSE 0 END AS is_unique");
+        }
+
+        sql.append(" FROM information_schema.columns c ")
+                .append("JOIN information_schema.tables t ON t.table_name = c.table_name ")
+                .append(" AND t.table_schema = c.table_schema ")
+                .append(" AND t.table_catalog = c.table_catalog ");
+
+        if (includeKeyInfo) {
+            sql.append("LEFT JOIN ( ")
+                    .append("    SELECT kcu.table_schema, kcu.table_name, kcu.column_name ")
+                    .append("    FROM information_schema.table_constraints tc ")
+                    .append("    JOIN information_schema.key_column_usage kcu ")
+                    .append("      ON tc.constraint_name = kcu.constraint_name ")
+                    .append("     AND tc.table_schema = kcu.table_schema ")
+                    .append("    WHERE tc.constraint_type = 'PRIMARY KEY' ")
+                    .append(") pk ON pk.table_schema = c.table_schema ")
+                    .append("    AND pk.table_name = c.table_name ")
+                    .append("    AND pk.column_name = c.column_name ");
+
+            sql.append("LEFT JOIN ( ")
+                    .append("    SELECT kcu.table_schema, kcu.table_name, kcu.column_name ")
+                    .append("    FROM information_schema.table_constraints tc ")
+                    .append("    JOIN information_schema.key_column_usage kcu ")
+                    .append("      ON tc.constraint_name = kcu.constraint_name ")
+                    .append("     AND tc.table_schema = kcu.table_schema ")
+                    .append("    WHERE tc.constraint_type = 'UNIQUE' ")
+                    .append(") uq ON uq.table_schema = c.table_schema ")
+                    .append("    AND uq.table_name = c.table_name ")
+                    .append("    AND uq.column_name = c.column_name ");
+        }
+
+        sql.append(" ")
+                .append(whereClause)
+                .append(" ORDER BY c.table_name, c.ordinal_position");
+
+        return sql.toString();
     }
 
     @Override

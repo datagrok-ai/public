@@ -110,11 +110,11 @@ public abstract class JdbcDataProvider extends DataProvider {
         return execute(queryRun);
     }
 
-    public DataFrame getSchema(DataConnection connection, String schema, String table) throws QueryCancelledByUser,
+    public DataFrame getSchema(DataConnection connection, String schema, String table, boolean includeKeyInfo) throws QueryCancelledByUser,
             GrokConnectException {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
-        queryRun.func.query = getSchemaSql(connection.getDb(), schema, table);
+        queryRun.func.query = getSchemaSql(connection.getDb(), schema, table, includeKeyInfo);
         queryRun.func.connection = connection;
 
         return execute(queryRun);
@@ -153,7 +153,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         throw new UnsupportedOperationException();
     }
 
-    public String getSchemaSql(String db, String schema, String table) {
+    public String getSchemaSql(String db, String schema, String table, boolean includeKeyInfo) {
         throw new UnsupportedOperationException();
     }
 
