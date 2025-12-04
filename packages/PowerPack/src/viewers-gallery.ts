@@ -179,9 +179,11 @@ function getViewers(viewers: { [v: string]: { [k: string]: any } }, table: DG.Da
     case 'Google map': break;
     case 'RadarViewer': break;
     case 'SurfacePlot': break;
-    case 'TimelinesViewer': break;
+    case 'Timelines': break;
     case 'Word cloud': break;
     case 'Scaffold Tree': break;
+    case 'Radar': break;
+    case 'Surface plot': break;
     default:
       if (value !== 'Shape Map' && value !== DG.VIEWER.CONFUSION_MATRIX) // return Shape Map back when it is reincarnated
         viewerList.push(value);
