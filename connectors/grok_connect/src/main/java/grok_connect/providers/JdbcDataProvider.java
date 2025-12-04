@@ -120,6 +120,22 @@ public abstract class JdbcDataProvider extends DataProvider {
         return execute(queryRun);
     }
 
+    public String getCommentsQuery(DataConnection connection) throws GrokConnectException {
+        throw new GrokConnectException("Operation is not supported");
+    }
+
+    public DataFrame getComments(DataConnection connection, String schema) throws GrokConnectException, QueryCancelledByUser {
+        FuncCall queryRun = new FuncCall();
+        queryRun.func = new DataQuery();
+        queryRun.func.query = getCommentsQuery(connection);
+        queryRun.func.parameters.put("schema", schema);
+        queryRun.func.params = new ArrayList<>();
+        queryRun.func.params.add(new FuncParam("string", "schema", schema));
+        queryRun.func.connection = connection;
+
+        return execute(queryRun);
+    }
+
     public List<String> getUniqueColumns(DataConnection conn, String schema, String table) throws GrokConnectException {
         try (Connection connection = getConnection(conn);
              ResultSet rs = connection.getMetaData().getIndexInfo(conn.getDb(), schema, table, true, false)) {

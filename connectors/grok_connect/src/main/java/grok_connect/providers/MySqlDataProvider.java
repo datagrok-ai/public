@@ -215,4 +215,38 @@ public class MySqlDataProvider extends JdbcDataProvider {
             throw new GrokConnectException(e);
         }
     }
+
+    @Override
+    public String getCommentsQuery(DataConnection connection) throws GrokConnectException {
+        return "--input: string schema\n" +
+                "(\n" +
+                "    SELECT\n" +
+                "        t.table_schema AS table_schema,\n" +
+                "        CASE t.table_type\n" +
+                "            WHEN 'VIEW' THEN 'view'\n" +
+                "            ELSE 'table'\n" +
+                "        END AS object_type,\n" +
+                "        t.table_name AS table_name,\n" +
+                "        NULL AS column_name,\n" +
+                "        t.table_comment AS comment\n" +
+                "    FROM information_schema.tables t\n" +
+                "    WHERE t.table_schema = @schema\n" +
+                ")\n" +
+                "\n" +
+                "UNION ALL\n" +
+                "\n" +
+                "-- COLUMN comments\n" +
+                "(\n" +
+                "    SELECT\n" +
+                "        c.table_schema AS table_schema,\n" +
+                "        'column' AS object_type,\n" +
+                "        c.table_name AS table_name,\n" +
+                "        c.column_name AS column_name,\n" +
+                "        c.column_comment AS comment\n" +
+                "    FROM information_schema.columns c\n" +
+                "    WHERE c.table_schema = @schema\n" +
+                ")\n" +
+                "\n" +
+                "ORDER BY object_type, table_name, column_name;\n";
+    }
 }

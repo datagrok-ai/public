@@ -235,4 +235,82 @@ public class MsSqlDataProvider extends JdbcDataProvider {
         queryRun.func.connection = conn;
         return execute(queryRun);
     }
+
+    @Override
+    public String getCommentsQuery(DataConnection connection) throws GrokConnectException {
+        return "--input: string schema\n" +
+                "SELECT\n" +
+                "    s.name AS table_schema,\n" +
+                "    'schema' AS object_type,\n" +
+                "    NULL AS table_name,\n" +
+                "    NULL AS column_name,\n" +
+                "    CAST(ep.value AS NVARCHAR(MAX)) AS comment\n" +
+                "FROM sys.schemas s\n" +
+                "OUTER APPLY fn_listextendedproperty(\n" +
+                "        'MS_Description',\n" +
+                "        'schema', s.name,\n" +
+                "        NULL, NULL,\n" +
+                "        NULL, NULL\n" +
+                "     ) ep\n" +
+                "WHERE s.name = @schema\n" +
+                "\n" +
+                "UNION ALL\n" +
+                "\n" +
+                "SELECT\n" +
+                "    s.name AS table_schema,\n" +
+                "    'table' AS object_type,\n" +
+                "    t.name AS table_name,\n" +
+                "    NULL AS column_name,\n" +
+                "    CAST(ep.value AS NVARCHAR(MAX)) AS comment\n" +
+                "FROM sys.tables t\n" +
+                "JOIN sys.schemas s ON s.schema_id = t.schema_id\n" +
+                "OUTER APPLY fn_listextendedproperty(\n" +
+                "        'MS_Description',\n" +
+                "        'schema', s.name,\n" +
+                "        'table', t.name,\n" +
+                "        NULL, NULL\n" +
+                "     ) ep\n" +
+                "WHERE s.name = @schema\n" +
+                "\n" +
+                "UNION ALL\n" +
+                "\n" +
+                "SELECT\n" +
+                "    s.name AS table_schema,\n" +
+                "    'view' AS object_type,\n" +
+                "    v.name AS table_name,\n" +
+                "    NULL AS column_name,\n" +
+                "    CAST(ep.value AS NVARCHAR(MAX)) AS comment\n" +
+                "FROM sys.views v\n" +
+                "JOIN sys.schemas s ON s.schema_id = v.schema_id\n" +
+                "OUTER APPLY fn_listextendedproperty(\n" +
+                "        'MS_Description',\n" +
+                "        'schema', s.name,\n" +
+                "        'view', v.name,\n" +
+                "        NULL, NULL\n" +
+                "     ) ep\n" +
+                "WHERE s.name = @schema\n" +
+                "\n" +
+                "UNION ALL\n" +
+                "\n" +
+                "SELECT\n" +
+                "    s.name AS table_schema,\n" +
+                "    'column' AS object_type,\n" +
+                "    obj.name AS table_name,\n" +
+                "    c.name AS column_name,\n" +
+                "    CAST(ep.value AS NVARCHAR(MAX)) AS comment\n" +
+                "FROM sys.columns c\n" +
+                "JOIN sys.objects obj ON obj.object_id = c.object_id\n" +
+                "JOIN sys.schemas s ON s.schema_id = obj.schema_id\n" +
+                "OUTER APPLY fn_listextendedproperty(\n" +
+                "        'MS_Description',\n" +
+                "        'schema', s.name,\n" +
+                "        CASE WHEN obj.type = 'V' THEN 'view' ELSE 'table' END,\n" +
+                "        obj.name,\n" +
+                "        'column', c.name\n" +
+                "     ) ep\n" +
+                "WHERE s.name = @schema\n" +
+                "  AND obj.type IN ('U', 'V')   -- U = tables, V = views\n" +
+                "\n" +
+                "ORDER BY object_type, table_name, column_name;\n";
+    }
 }

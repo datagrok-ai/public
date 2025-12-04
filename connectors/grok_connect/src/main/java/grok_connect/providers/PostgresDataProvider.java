@@ -1,8 +1,6 @@
 package grok_connect.providers;
 
-import java.sql.Array;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -13,9 +11,11 @@ import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
+import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
 import org.postgresql.util.PGobject;
+import serialization.DataFrame;
 import serialization.Types;
 
 public class PostgresDataProvider extends JdbcDataProvider {
@@ -197,5 +197,51 @@ public class PostgresDataProvider extends JdbcDataProvider {
             statement.setArray(n, array);
         }
         return 0;
+    }
+
+    @Override
+    public String getCommentsQuery(DataConnection connection) throws GrokConnectException {
+        return "--input: string schema\n" +
+                "SELECT \n" +
+                "    n.nspname AS table_schema,\n" +
+                "    'schema' AS object_type,\n" +
+                "    NULL AS table_name,\n" +
+                "    NULL AS column_name,\n" +
+                "    obj_description(n.oid, 'pg_namespace') AS comment\n" +
+                "FROM pg_namespace n\n" +
+                "WHERE n.nspname = @schema\n" +
+                "\n" +
+                "UNION ALL\n" +
+                "\n" +
+                "SELECT\n" +
+                "    n.nspname AS table_schema,\n" +
+                "    CASE c.relkind\n" +
+                "        WHEN 'r' THEN 'table'\n" +
+                "        WHEN 'v' THEN 'view'\n" +
+                "        WHEN 'm' THEN 'materialized_view'\n" +
+                "        ELSE c.relkind::text\n" +
+                "    END AS object_type,\n" +
+                "    c.relname AS table_name,\n" +
+                "    NULL AS column_name,\n" +
+                "    obj_description(c.oid, 'pg_class') AS comment\n" +
+                "FROM pg_class c\n" +
+                "JOIN pg_namespace n ON n.oid = c.relnamespace\n" +
+                "WHERE n.nspname = @schema\n" +
+                "  AND c.relkind IN ('r','v','m')   -- r=table, v=view, m=mat view\n" +
+                "\n" +
+                "UNION ALL\n" +
+                "\n" +
+                "SELECT\n" +
+                "    n.nspname AS table_schema,\n" +
+                "    'column' AS object_type,\n" +
+                "    c.relname AS table_name,\n" +
+                "    a.attname AS column_name,\n" +
+                "    col_description(c.oid, a.attnum) AS comment\n" +
+                "FROM pg_class c\n" +
+                "JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum > 0\n" +
+                "JOIN pg_namespace n ON n.oid = c.relnamespace\n" +
+                "WHERE n.nspname = @schema\n" +
+                "  AND c.relkind IN ('r', 'v', 'm')\n" +
+                "ORDER BY object_type, table_name, column_name;\n";
     }
 }

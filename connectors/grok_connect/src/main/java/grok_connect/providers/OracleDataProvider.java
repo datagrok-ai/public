@@ -18,6 +18,7 @@ import grok_connect.resultset.OracleResultSetManager;
 import grok_connect.resultset.ResultSetManager;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
+import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
 import oracle.jdbc.OracleResultSet;
@@ -239,5 +240,38 @@ public class OracleDataProvider extends JdbcDataProvider {
         defaultManagersMap.put(Types.INT, new OracleSnowflakeIntColumnManager());
         defaultManagersMap.put(Types.BIG_INT, new OracleBigIntColumnManager());
         return new OracleResultSetManager(defaultManagersMap.values());
+    }
+
+    @Override
+    public String getCommentsQuery(DataConnection connection) throws GrokConnectException {
+        return "--input: string schema\n" +
+                "SELECT\n" +
+                "    tc.owner AS table_schema,\n" +
+                "    tc.table_name AS object_name,\n" +
+                "    CASE \n" +
+                "        WHEN t.table_type = 'VIEW' THEN 'view'\n" +
+                "        ELSE 'table'\n" +
+                "    END AS object_type,\n" +
+                "    NULL AS column_name,\n" +
+                "    tc.comments AS comment\n" +
+                "FROM all_tab_comments tc\n" +
+                "JOIN all_objects t\n" +
+                "  ON t.owner = tc.owner\n" +
+                " AND t.object_name = tc.table_name\n" +
+                "WHERE tc.owner = @schema\n" +
+                "\n" +
+                "UNION ALL\n" +
+                "\n" +
+                "-- COLUMN comments\n" +
+                "SELECT\n" +
+                "    cc.owner AS table_schema,\n" +
+                "    cc.table_name AS object_name,\n" +
+                "    'column' AS object_type,\n" +
+                "    cc.column_name AS column_name,\n" +
+                "    cc.comments AS comment\n" +
+                "FROM all_col_comments cc\n" +
+                "WHERE cc.owner = @schema\n" +
+                "\n" +
+                "ORDER BY object_type, object_name, column_name;\n";
     }
 }
