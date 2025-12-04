@@ -13,11 +13,14 @@ export class AssayRegistrationView extends RegistrationViewBase {
   selectedAssayResultRequiredColumns: string[] = [];
 
   constructor() {
-    super('Register a new assay');
-    this.path = 'Assay';
+    const entityType = 'Assay';
+    const entityTypeLower = entityType.toLowerCase();
+
+    super(`Register a new ${entityTypeLower}`);
+    this.path = entityType;
+    this.view.name = `Register an ${entityTypeLower}`;
     this.buildUI();
   }
-
   protected async handleRegisterClick() {
     const assayValues = this.collectNonEmptyInputValues(this.assayInputs);
 

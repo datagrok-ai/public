@@ -19,6 +19,7 @@ export class PropertySchemaView {
 
   constructor() {
     this.view = DG.View.create();
+    this.view.name = 'Register a schema';
     this.extraPropertiesDiv = ui.div([], 'ui-form');
     this.saveButton = ui.bigButton('SAVE', () => this.onSave());
     this.saveButton.disabled = true;
