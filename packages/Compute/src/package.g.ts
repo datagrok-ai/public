@@ -23,7 +23,7 @@ export function RichFunctionViewEditor(call: DG.FuncCall) {
 
 //tags: editor
 //input: funccall call 
-//output: view result
+//output: object result
 export function PipelineStepEditor(call: DG.FuncCall) {
   return PackageFunctions.PipelineStepEditor(call);
 }

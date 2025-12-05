@@ -365,6 +365,8 @@ export const RichFunctionView = Vue.defineComponent({
       } catch {}
       if (hasDiffStudio) {
         const script = (currentCall.value.func as any)?.language === 'ivp' ? (currentCall.value.func as DG.Script).script : undefined;
+        if (!script)
+          return;
         const ivp = await grok.functions.call('DiffStudio:serializeEquations', { problem: script });
         diffGrok = {
           ivp,

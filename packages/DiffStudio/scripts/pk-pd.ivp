@@ -4,7 +4,7 @@
 #tags: model
 #editor: Compute2:RichFunctionViewEditor
 #meta.demoPath: Compute | PK-PD Modeling
-#meta.features: {"sens-analysis": false, "fitting": true}
+#meta.features: {"sens-analysis": true, "fitting": true}
 #meta.icon: files/icons/pkpd.png
 #comment:
   Source: https://doi.org/10.1074/jbc.RA117.000303.

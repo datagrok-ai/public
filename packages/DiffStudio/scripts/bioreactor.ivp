@@ -5,7 +5,7 @@
 #editor: Compute2:RichFunctionViewEditor
 #meta.icon: files/icons/bioreactor.png
 #meta.demoPath: Compute | Bioreactor
-#meta.features: {"sens-analysis": false, "fitting": true}
+#meta.features: {"sens-analysis": true, "fitting": true}
 #equations:
 
   d(FFox)/dt = -E11 + E12
