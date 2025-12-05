@@ -25,19 +25,16 @@ export class RandomAnalysis {
   private dimension: number;
 
   private variedInputs: VariedNumericalInputValues[];
-  private func: DG.Func;
   private funcCalls: DG.FuncCall[] | null = null;
-  private outputsOfInterest: OutputDataFromUI[];
   private funcInputs: any[];
-  private diffGrok: DiffGrok | undefined;
 
   constructor(
-    func: DG.Func,
-    fixedInputs: FixedInputItem[],
+    private func: DG.Func,
+    private fixedInputs: FixedInputItem[],
     variedInputs: VariedNumericalInputInfo[],
-    outputsOfInterest: OutputDataFromUI[],
-    samplesCount: number,
-    diffGrok: DiffGrok | undefined,
+    private outputsOfInterest: OutputDataFromUI[],
+    private samplesCount: number,
+    private diffGrok: DiffGrok | undefined,
   ) {
     // check size
     checkSize(samplesCount);
@@ -56,27 +53,30 @@ export class RandomAnalysis {
     this.diffGrok = diffGrok;
     this.funcCalls = (diffGrok === undefined) ? [] : null;
 
+
+  } // constructor
+
+  /** Performs variance-based sensitivity analysis */
+  async perform(): Promise<SensitivityAnalysisResult> {
     // create an array of funccalls
-    for (let i = 0; i < samplesCount; ++i) {
+    for (let i = 0; i < this.samplesCount; ++i) {
       const inputs: any = {};
 
-      for (const input of fixedInputs)
+      for (const input of this.fixedInputs)
         inputs[input.name] = input.value;
 
       for (const input of this.variedInputs)
         inputs[input.prop.name] = input.column.get(i);
 
-      if (this.funcCalls !== null)
-        this.funcCalls.push(func.prepare(inputs));
+      if (this.funcCalls !== null) {
+        const fc = await this.func.prepareAsync(inputs);
+        this.funcCalls.push(fc);
+      }
 
       this.funcInputs.push(inputs);
     }
 
-    this.outputsOfInterest = outputsOfInterest;
-  } // constructor
 
-  /** Performs variance-based sensitivity analysis */
-  async perform(): Promise<SensitivityAnalysisResult> {
     // columns with the varied inputs values
     const inputCols = this.variedInputs.map((varInput) => varInput.column as DG.Column);
 

@@ -61,7 +61,8 @@ export abstract class CustomFunctionView extends DG.ViewBase {
       await this.onAfterLoadRun(pulledRun);
     } else {
       const func = DG.Func.byName(this.funcNqName);
-      this.linkFunccall(func.prepare({}));
+      const fc = await func.prepareAsync({});
+      this.linkFunccall(fc);
       await this.onFuncCallReady();
     }
     this.isReady.next(true);
@@ -80,7 +81,7 @@ export abstract class CustomFunctionView extends DG.ViewBase {
   }
 
   public async saveRun(callToSave: DG.FuncCall): Promise<DG.FuncCall> {
-    const callCopy = deepCopy(callToSave);
+    const callCopy = await deepCopy(callToSave);
     await this.onBeforeSaveRun(callCopy);
 
     if (callCopy.id) callCopy.newId();

@@ -311,7 +311,7 @@ export abstract class FunctionView extends DG.ViewBase {
       this.linkFunccall(await historyUtils.loadRun(runId));
     else {
       const func = DG.Func.byName(this.initValue);
-      this.linkFunccall(func.prepare({}));
+      this.linkFunccall(await func.prepareAsync({}));
     }
 
     ui.setUpdateIndicator(this.root, false);
@@ -357,9 +357,10 @@ export abstract class FunctionView extends DG.ViewBase {
     const comparator = this.comparatorFunc;
     if (comparator) {
       const comparatorFunc = DG.Func.byName(comparator);
-      const comparatorCall = await comparatorFunc.prepare(
+      const comparatorCall = await comparatorFunc.prepareAsync(
         {params: {'comparedRuns': fullFuncCalls}},
-      ).call();
+      );
+      await comparatorCall.call();
       const customView = comparatorCall.outputs.comparisonView;
       grok.shell.addView(customView);
 
@@ -379,10 +380,10 @@ export abstract class FunctionView extends DG.ViewBase {
     const compareCustomizer = this.compareCustomizer;
     if (compareCustomizer) {
       const compareCustomizerFunc = DG.Func.byName(compareCustomizer);
-      await compareCustomizerFunc.prepare(
+      const comparatorCall = await compareCustomizerFunc.prepareAsync(
         {params: {'defaultView': defaultView}},
-      ).call();
-
+      );
+      await comparatorCall.call();
       return;
     }
   }
@@ -674,7 +675,7 @@ export abstract class FunctionView extends DG.ViewBase {
    * @stability Stable
    */
   public async saveRun(callToSave: DG.FuncCall): Promise<DG.FuncCall> {
-    let callCopy = deepCopy(callToSave);
+    let callCopy = await deepCopy(callToSave);
     await this.onBeforeSaveRun(callCopy);
 
     if (isIncomplete(callCopy)) {
@@ -747,7 +748,7 @@ export abstract class FunctionView extends DG.ViewBase {
   public async loadRun(funcCallId: string): Promise<DG.FuncCall> {
     await this.onBeforeLoadRun();
     const pulledRun = await historyUtils.loadRun(funcCallId);
-    this.lastCall = deepCopy(pulledRun);
+    this.lastCall = await deepCopy(pulledRun);
     this.linkFunccall(pulledRun);
     this.isHistorical.next(true);
     await this.onAfterLoadRun(pulledRun);
@@ -783,7 +784,7 @@ export abstract class FunctionView extends DG.ViewBase {
 
       await this.onAfterRun(this.funcCall);
 
-      this.lastCall = deepCopy(this.funcCall);
+      this.lastCall = await deepCopy(this.funcCall);
       // If a view is incapuslated into a tab (e.g. in PipelineView),
       // there is no need to save run till an entire pipeline is over.
       if (!(this.options.isTabbed || this.runningOnInput) && this.isHistoryEnabled)
