@@ -3,7 +3,6 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {filter} from 'rxjs/operators';
 import {CARD_VIEW_TYPE, FUNCTIONS_VIEW_TYPE,
   RUN_ID_COL_LABEL,
   SCRIPTS_VIEW_TYPE, VIEWER_PATH, viewerTypesMapping} from '../../shared-utils/consts';
@@ -31,7 +30,7 @@ export class RunComparisonView extends DG.TableView {
       parentCall?: DG.FuncCall,
     } = {parentView: undefined, parentCall: undefined},
   ) {
-    const comparisonDf = getDfFromRuns(
+    const comparisonDf = await getDfFromRuns(
       comparedRuns,
       func,
       options,
