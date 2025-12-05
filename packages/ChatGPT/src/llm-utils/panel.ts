@@ -7,7 +7,7 @@ import {OpenAI} from 'openai';
 // @ts-ignore .... idk why it does not like it
 import '../../css/ai.css';
 import {ChatModel} from 'openai/resources/shared';
-import {AI_SQL_QUERY_ABORT_EVENT, dartLike} from '../utils';
+import {dartLike, fireAIAbortEvent} from '../utils';
 
 export type ModelOption = 'Fast' | 'Deep Research';
 export const ModelType: {[type in ModelOption]: ChatModel} = {
@@ -116,6 +116,11 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
   hide() {
     grok.shell.dockManager.close(this.root);
   }
+
+  toggle() {
+    document.contains(this.root) ? this.hide() : this.show();
+  }
+
   dispose() {
     this.root.remove();
     this._messages = [];
@@ -186,6 +191,10 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
     };
   }
 
+  get isShown(): boolean {
+    return document.contains(this.root);
+  }
+
   private tryAgain() {
     if (this._messages.length === 0)
       return; // should never happen, but just in case
@@ -198,7 +207,7 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
   }
 
   private terminate() {
-    grok.events.fireCustomEvent(AI_SQL_QUERY_ABORT_EVENT, null);
+    fireAIAbortEvent();
   }
 
   private handleRun() {

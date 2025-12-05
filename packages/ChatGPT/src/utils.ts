@@ -3,7 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 
-export const AI_SQL_QUERY_ABORT_EVENT = 'd4-ai-generation-abort';
+const AI_SQL_QUERY_ABORT_EVENT = 'd4-ai-generation-abort';
+const AI_PANEL_TOGGLE_EVENT = 'd4-ai-panel-toggle';
 
 const dummy = grok.data.testData('demog');
 let viewerDescriptions: string = '';
@@ -148,4 +149,16 @@ export function dartLike<T extends any>(obj: T) {
 
 export function getAIAbortSubscription() {
   return rxjs.merge(grok.events.onEvent(AI_SQL_QUERY_ABORT_EVENT), grok.events.onCustomEvent(AI_SQL_QUERY_ABORT_EVENT));
+}
+
+export function getAIPanelToggleSubscription() {
+  return rxjs.merge(grok.events.onEvent(AI_PANEL_TOGGLE_EVENT), grok.events.onCustomEvent(AI_PANEL_TOGGLE_EVENT));
+}
+
+export function fireAIAbortEvent() {
+  grok.events.fireCustomEvent(AI_SQL_QUERY_ABORT_EVENT, null);
+}
+
+export function fireAIPanelToggleEvent(v: DG.View | DG.ViewBase) {
+  grok.events.fireCustomEvent(AI_PANEL_TOGGLE_EVENT, v);
 }

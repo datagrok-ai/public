@@ -102,12 +102,13 @@ export async function generateSqlQuery(prompt: string, connectionID: string, sch
   return await PackageFunctions.generateSqlQuery(prompt, connectionID, schemaName);
 }
 
+//input: view view 
 //input: string connectionID 
-//input: dynamic aiElement 
 //input: dynamic queryEditorRoot 
 //input: dynamic setAndRunFunc 
-export function setupAIQueryEditor(connectionID: string, aiElement: any, queryEditorRoot: any, setAndRunFunc: any) : void {
-  PackageFunctions.setupAIQueryEditor(connectionID, aiElement, queryEditorRoot, setAndRunFunc);
+//output: bool result
+export async function setupAIQueryEditor(view: DG.ViewBase, connectionID: string, queryEditorRoot: any, setAndRunFunc: any) : Promise<boolean> {
+  return await PackageFunctions.setupAIQueryEditor(view, connectionID, queryEditorRoot, setAndRunFunc);
 }
 
 //name: indexDatabaseSchema
