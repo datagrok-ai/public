@@ -30,16 +30,26 @@ export function geminiDownloadMonitor(m: CreateMonitor) {
   });
 }
 
+type PatternQueryMatchResult = {
+  searchPattern: string;
+  parameters: Record<string, string>;
+  confidence: number;
+};
+
 export async function findBestFunction(
   question: string,
   searchPatterns: string[],
   descriptions: string[],
 ): Promise<QueryMatchResult | null> {
   const schema = {
-    searchPattern: 'string',
-    parameters: 'object',
-    confidence: 'number',
-  };
+    type: 'object',
+    properties: {
+      searchPattern: {type: 'string'},
+      parameters: {type: 'object'},
+      confidence: {type: 'number'},
+    },
+    required: ['searchPattern', 'parameters', 'confidence'],
+  } as const;
 
   const connections = searchPatterns.map((pattern) => {
     const func = DG.Func.find({meta: {searchPattern: pattern}})[0];
@@ -53,6 +63,7 @@ export async function findBestFunction(
 You are an intelligent semantic query matcher. Your job is to find which query search pattern best matches a user's request.
 
 IMPORTANT: pay careful attention to the keywords in description and search pattern and also the connection. DO NOT ARTIFICIALLY INFLATE CONFIDENCE.
+If you don't think any of the patterns are a good match, return low confidence (bellow 0.7) and closest match.
 
 Follow these steps carefully:
 STEP 1 — Identify the most relevant structured query:
@@ -70,9 +81,6 @@ Important instructions:
   - **Output only valid JSON.**
   - **Do not include markdown, backticks, or any extra characters.**
   - **Do not provide explanations or commentary.**
-  - Your response must exactly match this structure:
-
-  ${JSON.stringify(schema, null, 2)}
 `;
 
   const userPrompt = `
@@ -89,13 +97,13 @@ User request:
     const isGeminiAvailable = await ('LanguageModel' in window ? LanguageModel : null)?.availability();
     if (isGeminiAvailable === 'available') {
       _package.logger.info('Using built-in Gemini model for fuzzy matching.');
-      engine = GeminiPromptEngine.getInstance(schema, geminiDownloadMonitor);
+      engine = GeminiPromptEngine.getInstance(geminiDownloadMonitor);
     } else {
       _package.logger.info('Using GPT engine for fuzzy matching.');
       engine = ChatGPTPromptEngine.getInstance(LLMCredsManager.getApiKey(), modelName);
     }
 
-    const responseText = await engine.generate(userPrompt, systemPrompt);
+    const responseText = await engine.generate(userPrompt, systemPrompt, schema);
     return JSON.parse(responseText) as QueryMatchResult;
   } catch (error) {
     _package.logger.error(`Error finding best function: ${error}`);
@@ -113,9 +121,10 @@ export async function tableQueriesFunctionsSearchLlm(s: string): Promise<DG.Widg
   const searchPatterns = tableQueriesSearchFunctions.map((f) => f.options['searchPattern']);
   const descriptions = tableQueriesSearchFunctions.map((f) => f.description ?? 'No description');
   try {
-    const matches = JSON.parse(await grok.functions
+    const matches: PatternQueryMatchResult | null = JSON.parse(await grok.functions
       .call('ChatGPT:fuzzyMatch', {prompt: s, searchPatterns, descriptions}));
-    if (matches && matches.searchPattern && matches.parameters) {
+    if (matches && matches.searchPattern && matches.parameters && matches.confidence > 0.5) {
+      console.log(`Function matched with confidence ${matches.confidence}`);
       const sf = tableQueriesSearchFunctions.find((f) => {
         const pattern: string = removeTrailingQuotes(f.options['searchPattern']) ?? '';
         return pattern === matches.searchPattern;
@@ -125,6 +134,9 @@ export async function tableQueriesFunctionsSearchLlm(s: string): Promise<DG.Widg
         const widget = await tvWidgeFunc.apply({func: sf, inputParams: matches.parameters});
         return widget;
       }
+    } else {
+      if (matches && matches.confidence <= 0.5)
+        console.info(`No suitable function match found. Confidence: ${matches.confidence}`);
     }
   } catch (error) {
     console.error('Error calling ChatGPT:fuzzyMatch', error);

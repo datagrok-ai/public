@@ -104,16 +104,16 @@ public class ImpalaDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public DataFrame getSchema(DataConnection connection, String schema, String table)
+    public DataFrame getSchema(DataConnection connection, String schema, String table, boolean includeKeyInfo)
             throws QueryCancelledByUser, GrokConnectException {
         if (table == null) {
-            return handleNoTable(connection);
+            return handleNoTable(connection, includeKeyInfo);
         }
-        return getSingleTableInfo(connection, table);
+        return getSingleTableInfo(connection, table, includeKeyInfo);
     }
 
     @Override
-    public String getSchemaSql(String db, String schema, String table) {
+    public String getSchemaSql(String db, String schema, String table, boolean includeKeyInfo) {
         schema = GrokConnectUtil.isEmpty(db) ? schema : db;
         return String.format("SHOW COLUMN STATS %s.%s", schema, table);
     }
@@ -161,7 +161,7 @@ public class ImpalaDataProvider extends JdbcDataProvider {
         return String.format("REGEXP_LIKE(%s, '%s')", columnName, regexExpression);
     }
 
-    private DataFrame handleNoTable(DataConnection connection) throws GrokConnectException, QueryCancelledByUser {
+    private DataFrame handleNoTable(DataConnection connection, boolean includeKeyInfo) throws GrokConnectException, QueryCancelledByUser {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         queryRun.func.query = "SHOW TABLES;";
@@ -171,18 +171,18 @@ public class ImpalaDataProvider extends JdbcDataProvider {
         for (int i = 0; i < tables.rowCount; i++) {
             String table = tables.columns.get(0).get(i)
                     .toString();
-            result.merge(getSingleTableInfo(connection, table));
+            result.merge(getSingleTableInfo(connection, table, includeKeyInfo));
         }
         return result;
     }
 
-    private DataFrame getSingleTableInfo(DataConnection connection, String table) throws GrokConnectException,
+    private DataFrame getSingleTableInfo(DataConnection connection, String table, boolean includeKeyInfo) throws GrokConnectException,
             QueryCancelledByUser {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
         String currentSchema = connection.get(DbCredentials.SCHEMA);
         currentSchema = currentSchema == null || currentSchema.isEmpty() ? descriptor.defaultSchema : currentSchema;
-        queryRun.func.query = getSchemaSql(currentSchema, currentSchema, table);
+        queryRun.func.query = getSchemaSql(currentSchema, currentSchema, table, includeKeyInfo);
         queryRun.func.connection = connection;
         DataFrame result = execute(queryRun);
         prepareGetSchemaDataFrame(result, currentSchema, table);

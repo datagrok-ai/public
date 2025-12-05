@@ -2,6 +2,7 @@
 title: "Docking"
 sidebar_position: 4
 format: mdx
+unlisted: true
 ---
 
 Datagrok provides a flexible window management system, where windows

@@ -1,5 +1,9 @@
 # Bio changelog
 
+## 2.25.9 (2025-12-02)
+
+* Fix Substructure filter for datasync
+
 ## 2.25.2 (2025-11-03)
 
 * Update Bio Lib API

@@ -2002,36 +2002,29 @@ export class Breadcrumbs {
 }
 
 
-export class DropDown {
-  
+export class DropDown extends Widget {
   private _dropDownElement: HTMLDivElement;
   private _isMouseOverElement: boolean;
+  isExpanded: boolean;
   createElement: () => HTMLElement;
 
-  isExpanded: boolean;
-  root: HTMLDivElement;
-
   constructor(label: string | Element, createElement: () => HTMLElement) {
+    const dropDownElement = ui.div(ui.div([], 'ui-drop-down-content'), 'ui-combo-drop-down-fixed');
+    super(ui.div([dropDownElement, label], 'ui-drop-down-root'));
+
     this._isMouseOverElement = false;
     this.isExpanded = false;
-
     this.createElement = createElement;
-    this._dropDownElement = ui.div(ui.div([], 'ui-drop-down-content'), 'ui-combo-drop-down-fixed');
+    this._dropDownElement = dropDownElement;
     this._dropDownElement.style.visibility = 'hidden';
-
-    this.root = ui.div([this._dropDownElement, label], 'ui-drop-down-root');
-
     this._initEventListeners();
   }
 
   private _initEventListeners() {
     this.root.addEventListener('mousedown', (e) => {
       // check if the button is LMB
-      if (e.button !== 0)
+      if (e.button !== 0 || this._isMouseOverElement)
         return;
-      if (this._isMouseOverElement)
-        return;
-
       this._setExpandedState(this.isExpanded);
     });
 
@@ -2043,14 +2036,13 @@ export class DropDown {
       this._isMouseOverElement = false;
     }, false);
 
-    document.addEventListener('click', (event) => {
+    this.sub(fromEvent<MouseEvent>(document, 'click').subscribe((event) => {
       if (this.root.contains(event.target as Node))
         return;
       if (!this.isExpanded)
         return;
-
       this._setExpandedState(this.isExpanded);
-    });
+    }));
   }
 
   private _setExpandedState(isExpanded: boolean) {

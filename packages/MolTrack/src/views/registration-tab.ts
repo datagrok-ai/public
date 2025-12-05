@@ -278,10 +278,8 @@ export class RegistrationView {
     ];
 
     let autoMapping: Map<string, string> = new Map();
-    if (this.uploadedDf) {
-      await MolTrackDockerService.init();
+    if (this.uploadedDf)
       autoMapping = await MolTrackDockerService.getAutoMapping(this.uploadedDf!.columns.names(), 'COMPOUND');
-    }
 
     const sourceColumns = this.uploadedDf ? this.uploadedDf.columns.names() : [''];
     const mappings = new Map<string, string>();

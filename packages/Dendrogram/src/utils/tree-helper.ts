@@ -276,6 +276,8 @@ export class TreeHelper implements ITreeHelper {
     console.debug('Dendrogram.setGridOrder() start');
 
     const dataDf: DG.DataFrame = grid.dataFrame;
+    if (!dataDf)
+      throw new Error('DataFrame wasn\'t found');
 
     const missedDataNodeList: string[] = [];
     const missedTreeLeafList: string[] = [];

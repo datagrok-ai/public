@@ -237,6 +237,7 @@ export class StateTree {
         mutationRootPath: ppath,
         addIdx: newIdx,
         removeIdx: oldIdx,
+        id: node.getItem().config.id,
       }];
       return of([{isMutation: true, details}]);
     });
@@ -247,12 +248,13 @@ export class StateTree {
       const data = this.nodeTree.find((item) => item.uuid === uuid);
       if (data == null)
         throw new Error(`Node uuid ${uuid} not found`);
-      const [, path] = data;
+      const [node, path] = data;
       this.nodeTree.removeBrunch(path);
       const [mutationRootPath, removeIdx] = this.getMutationSlice(path);
       const details: TreeUpdateMutationPayload[] = [{
         mutationRootPath,
         removeIdx,
+        id: node.getItem().config.id,
       }];
       return of([{isMutation: true, details}]);
     });
@@ -280,6 +282,7 @@ export class StateTree {
       const details: TreeUpdateMutationPayload[] = [{
         mutationRootPath: ppath,
         addIdx: pos,
+        id,
       }];
       return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(mapTo([{isMutation: true, details}]));
     });
@@ -310,6 +313,7 @@ export class StateTree {
       const details: TreeUpdateMutationPayload[] =[{
         mutationRootPath: ppath,
         addIdx: pos,
+        id,
       }];
       return tree.pipe(mapTo([{isMutation: true, details}]));
     });
@@ -396,7 +400,8 @@ export class StateTree {
               const mutationData: TreeUpdateMutationPayload = last ? {
                 mutationRootPath: ppath,
                 addIdx: last.idx,
-              } : {mutationRootPath: []};
+                id: last.id,
+              } : {mutationRootPath: [], id: subTree.nodeTree.root.getItem().config.id};
               return StateTree.loadOrCreateCalls(subTree, this.mockMode).pipe(mapTo(mutationData));
             })),
           ),

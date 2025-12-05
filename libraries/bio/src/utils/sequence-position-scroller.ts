@@ -1471,6 +1471,11 @@ export class MSAScrollingHeader {
     e.stopImmediatePropagation();
   }
 
+  public detach(): void {
+    this.eventElement.remove(); // all event listeners are removed along with the element
+    window.removeEventListener('keydown', this.handleKeyDown.bind(this));
+  }
+
   private handleKeyDown(e: KeyboardEvent): void {
     if (!this.isValid || this.config.currentPosition < 1) return;
     if (!document.activeElement?.contains(this.eventElement) || this.eventElement.style.display !== 'block') return;

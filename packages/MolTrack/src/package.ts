@@ -154,7 +154,6 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
 //meta.cache.invalidateOn: 0 0 1 * *
 //output: string result
 export async function fetchCompoundProperties(): Promise<string> {
-  await MolTrackDockerService.init();
   return await MolTrackDockerService.fetchCompoundProperties();
 }
 
@@ -164,7 +163,6 @@ export async function fetchCompoundProperties(): Promise<string> {
 //meta.cache.invalidateOn: 0 0 1 * *
 //output: string result
 export async function fetchBatchProperties(): Promise<string> {
-  await MolTrackDockerService.init();
   return await MolTrackDockerService.fetchBatchProperties();
 }
 
@@ -172,7 +170,6 @@ export async function fetchBatchProperties(): Promise<string> {
 //description: Retrieves all dynamic fields
 //output: string result
 export async function fetchSchema(): Promise<string> {
-  await MolTrackDockerService.init();
   const res = await MolTrackDockerService.fetchSchema();
   return JSON.stringify(res);
 }
@@ -181,7 +178,6 @@ export async function fetchSchema(): Promise<string> {
 //description: Retrieves all static fields
 //output: string result
 export async function fetchDirectSchema(): Promise<string> {
-  await MolTrackDockerService.init();
   const res = await MolTrackDockerService.fetchDirectSchema();
   return JSON.stringify(res);
 }
@@ -190,7 +186,6 @@ export async function fetchDirectSchema(): Promise<string> {
 //input: string corporateValue
 //output: object compound
 export async function getCompoundByCorporateId(corporateValue: string) {
-  await MolTrackDockerService.init();
   return await MolTrackDockerService.getCompoundByCorporateId(corporateValue);
 }
 
@@ -198,7 +193,6 @@ export async function getCompoundByCorporateId(corporateValue: string) {
 //input: string corporateValue
 //output: object batch
 export async function getBatchByCorporateId(corporateValue: string) {
-  await MolTrackDockerService.init();
   return await MolTrackDockerService.getBatchByCorporateId(corporateValue);
 }
 
@@ -207,7 +201,6 @@ export async function getBatchByCorporateId(corporateValue: string) {
 // description: Registers compound properties in the MolTrack service using the provided JSON payload
 // output: string result
 export async function registerMolTrackProperties(jsonPayload: string): Promise<string> {
-  await MolTrackDockerService.init();
   return MolTrackDockerService.updateSchema(jsonPayload);
 }
 
@@ -215,7 +208,6 @@ export async function registerMolTrackProperties(jsonPayload: string): Promise<s
 //input: string assayPayload
 //output: string result
 export async function registerAssays(assayPayload: string): Promise<string> {
-  await MolTrackDockerService.init();
   return await MolTrackDockerService.registerAssay(assayPayload);
 }
 
@@ -231,7 +223,6 @@ export async function registerBulk(
   mapping: string,
   errorHandling: string,
 ): Promise<DG.DataFrame> {
-  await MolTrackDockerService.init();
   return await MolTrackDockerService.registerBulk(csvFile, scope, mapping, errorHandling);
 }
 
@@ -240,7 +231,6 @@ export async function registerBulk(
 //input: string entityEndpoint
 //output: dataframe df
 export async function search(query: string, entityEndpoint: string) {
-  await MolTrackDockerService.init();
   return await MolTrackDockerService.search(JSON.parse(query), entityEndpoint);
 }
 
@@ -257,7 +247,6 @@ export async function advancedSearch(outputFields: string[], filter: any): Promi
     filter: filter,
     output_format: 'json',
   };
-  await MolTrackDockerService.init();
   const searchResultJson = await MolTrackDockerService.search(molTrackSearchQuery, level);
   return DG.DataFrame.fromObjects(searchResultJson.data)!;
 }
@@ -266,7 +255,6 @@ export async function advancedSearch(outputFields: string[], filter: any): Promi
 //input: string scope
 //output: dataframe result
 export async function retrieveEntity(scope: string, flatten: boolean = true): Promise<DG.DataFrame | undefined> {
-  await MolTrackDockerService.init();
   const resultJson = await MolTrackDockerService.retrieveEntity(scope);
   await loadSearchFields();
   const dynamicProps = molTrackSearchFieldsArr ?
@@ -284,7 +272,6 @@ export async function retrieveEntity(scope: string, flatten: boolean = true): Pr
 //output: widget res
 export async function getMoltrackPropPanelById(id: DG.SemanticValue): Promise<DG.Widget> {
   const {value: idValue} = id;
-  await MolTrackDockerService.init();
   const compound = await MolTrackDockerService.getCompoundByCorporateId(idValue);
   return molTrackPropPanel(compound, id.cell.column);
 }

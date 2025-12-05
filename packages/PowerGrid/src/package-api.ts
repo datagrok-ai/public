@@ -124,6 +124,10 @@ export namespace funcs {
     return await grok.functions.call('PowerGrid:IsWebGPURenderValid', { sc });
   }
 
+  export async function rawPNGRenderer(): Promise<any> {
+    return await grok.functions.call('PowerGrid:RawPNGRenderer', {});
+  }
+
   export async function scatterPlotCellRenderer(): Promise<any> {
     return await grok.functions.call('PowerGrid:ScatterPlotCellRenderer', {});
   }

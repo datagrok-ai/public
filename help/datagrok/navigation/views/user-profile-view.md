@@ -1,48 +1,29 @@
 ---
-title: 'User Profile View'
+title: 'Account and settings (User Profile)'
 format: 'mdx'
 sidebar_position: 3
 unlisted: false
 ---
 
-A **User Profile View** provides detailed information about a specific user in Datagrok.
+The **User Profile** view provides personal account settings and user-specific
+information. It is not part of core navigation, but it's useful for managing
+your credentials and access permissions and reviewing notifications or details
+about any user on the platform.
 
-To open a **User View**, you have these options:
-1. To open your own **User Profile View**:
-  * On the **Sidebar**, click your avatar, or
-  * On the **Sidebar**, click **Browse** (<FAIcon  icon="fa-solid fa-compass"/>) and then double click **My Stuff**.
+When you open a user profile (your own or someone else's), the **Context Panel**
+shows user-specific [info panes](../navigation.md#info-panes) that summarize identity,
+permissions, and activity:
+* **Personal**: Basic user information such as name, email, join date, and profile picture
+* **Roles**: Roles assigned to the user
+* **Member of**: Groups the user belongs to
+* **Projects**: Projects the user has created or interacted with (subject to your permissions)
+* **Activity**: A chronological log of recent actions performed by the user across the platform
+* **Chats**: Chat threads the user participates in
 
-1. To open another user's **User Profile View**: 
-     1. On the **Sidebar**, click **Browse > Platform > Users**. A **Users View** opens.
-     1. In the **Users View**, find the user you want and double click it. A **User Profile View** for that user opens.
+To open your own profile, click your avatar on the **Sidebar** or go to **Browse > My Stuff** root level. 
+To open someone else's user profile, navigate to **Browse > Platform > Users**
+and double-click any user in the list.
 
-![](img/user-profile-view.png)
-
-The **User Profile View** consists of several views that you can navigate using the **Toolbox**:
-
-1. **Summary**: Has your avatar (photo) and provides links for changing your
-   password, obtaining a developer key, API key, switching off the admin mode
-   (for administrators only), and logging out of the platform. It also shows
-   messages that were pushed to you as a result of someone else's activity,
-   e.g., when someone shares a project with you.
-1. **Chats**: Contains the chats you have participated in. You can also start a
-   new [chat](../../../collaborate/chat.md) from here.
-1. **Favorites**: Shows your favorite [objects](../../concepts/objects.md).
-   [Learn how to add an object to favorites](../basic-tasks/basic-tasks.md#add-to-favorites).
-1. **Activity**: Lists user actions on the platform, with the most recent
-   actions appearing on top. To get details about an object you've interacted
-   with, click it and explore the details in the [Context Panel](../panels/panels.md#context-panel).
-1. **Entity-specific** (**Projects**, **Connections**, **Queries**, **Models**,
-   **Scripts**, **Jobs**, and **Notebooks**): Each view contains the
-   corresponding entities that were created or used by you.
-
-When you click your avatar or any user in the **Users View**, the **Context
-Panel** updates with user-specific [info panes](../panels/info-panels.md):
-
-* **Personal**: Shows your personal information, such as the date you joined and
-  the [groups](../../../govern/access-control/users-and-groups.md#groups) you belong to.
-* **Dashboards**: Lists the [dashboards](../../concepts/project/dashboard.md) you've created or used.
-* **Chat**: Shows your chat history.
 
 
 

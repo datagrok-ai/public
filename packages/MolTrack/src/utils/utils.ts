@@ -50,10 +50,12 @@ export function buildPropertyOptions(
     friendlyName: p.friendly_name,
     type: p.value_type,
     nullable: p.nullable,
+    ...(p.description && {description: p.description}),
+    ...(p.min !== undefined && {min: p.min}),
+    ...(p.max !== undefined && {max: p.max}),
+    ...(p.unit && {units: p.unit}),
+    ...(p.choices?.length && {choices: p.choices}),
   };
-
-  if (p.description)
-    options.description = p.description;
 
   const reserved = opts?.reserved ?? [];
   const skipReservedCheck = opts?.skipReservedCheck ?? false;

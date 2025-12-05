@@ -28,12 +28,11 @@ export class GeminiPromptEngine implements PromptEngine {
   private session: LanguageModel | null = null;
 
   private constructor(
-    private readonly schema: any,
     private readonly monitor?: CreateMonitorCallback,
   ) {}
 
-  public static getInstance(schema: any, monitor?: CreateMonitorCallback): GeminiPromptEngine {
-    return GeminiPromptEngine.instance ??= new GeminiPromptEngine(schema, monitor);
+  public static getInstance(monitor?: CreateMonitorCallback): GeminiPromptEngine {
+    return GeminiPromptEngine.instance ??= new GeminiPromptEngine(monitor);
   }
 
   private async initSession(system: string) {
@@ -48,7 +47,7 @@ export class GeminiPromptEngine implements PromptEngine {
   async generate(prompt: string, system: string, schema?: JsonSchema): Promise<string> {
     await this.initSession(system);
     return this.session!.prompt(prompt, {
-      responseConstraint: schema ?? this.schema,
+      responseConstraint: schema ?? undefined,
     });
   }
 }

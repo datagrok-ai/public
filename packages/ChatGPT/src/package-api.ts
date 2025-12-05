@@ -64,4 +64,16 @@ export namespace funcs {
   export async function generateSqlQuery(prompt: string , connectionID: string , schemaName: string ): Promise<string> {
     return await grok.functions.call('ChatGPT:GenerateSqlQuery', { prompt, connectionID, schemaName });
   }
+
+  export async function setupAIQueryEditor(connectionID: string , aiElement: any , queryEditorRoot: any , setAndRunFunc: any ): Promise<void> {
+    return await grok.functions.call('ChatGPT:SetupAIQueryEditor', { connectionID, aiElement, queryEditorRoot, setAndRunFunc });
+  }
+
+  export async function indexDatabaseSchema(): Promise<void> {
+    return await grok.functions.call('ChatGPT:IndexDatabaseSchema', {});
+  }
+
+  export async function embedConnectionQueries(): Promise<void> {
+    return await grok.functions.call('ChatGPT:EmbedConnectionQueries', {});
+  }
 }

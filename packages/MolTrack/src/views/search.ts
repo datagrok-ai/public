@@ -41,6 +41,8 @@ import {
   SEARCH_NODE,
   SAVED_SEARCHES_NODE,
   excludedScopes,
+  MAX_USER_SETTINGS_STRING_LENGTH,
+  CHUNK_KEY_SUFFIX,
 } from '../utils/constants';
 import {funcs} from '../package-api';
 import dayjs, {Dayjs} from 'dayjs';
@@ -63,9 +65,21 @@ export const SAVED_SEARCH_STORAGE = 'MolTrackSavedSearch';
 export let molTrackSearchFieldsArr: DG.Property[] | null = null;
 export let openedSearchView: DG.ViewBase | null = null;
 
-export function getSavedSearches(entityLevel: Scope): {[key: string]: string} {
-  const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, entityLevel) || '{}';
-  const savedSearches: { [key: string]: string } = JSON.parse(savedSearchesStr);
+export function getSavedSearches(entityLevel: Scope): Record<string, string> {
+  const allSavedSearches = grok.userSettings.get(SAVED_SEARCH_STORAGE) || {};
+  const savedSearches: Record<string, string> = {};
+  const prefix = `${entityLevel}_`;
+
+  for (const key of Object.keys(allSavedSearches)) {
+    if (!key.startsWith(prefix)) continue;
+
+    const parts = key.split('_');
+    const searchName = parts[1];
+
+    if (!savedSearches[searchName])
+      savedSearches[searchName] = getFullFilterStr(entityLevel, searchName);
+  }
+
   return savedSearches;
 }
 
@@ -103,12 +117,62 @@ async function saveSearch(entityLevel: Scope, savedSearch: MolTrackSearch) {
       });
 
       // Save the current query condition
-      savedSearches[searchName] = JSON.stringify(savedSearch);
-      grok.userSettings.add(SAVED_SEARCH_STORAGE, entityLevel, JSON.stringify(savedSearches));
+      const savedSearchStr = JSON.stringify(savedSearch);
+      savedSearches[searchName] = savedSearchStr;
+      saveSearchChunked(searchName, entityLevel, savedSearchStr);
       grok.shell.info(`Search query "${searchName}" saved successfully`);
     });
 
   dialog.show();
+}
+
+function saveSearchChunked(searchName: string, entityLevel: string, savedSearch: string) {
+  const baseKey = `${entityLevel}_${searchName}`;
+  const chunkSize = MAX_USER_SETTINGS_STRING_LENGTH;
+  const chunksCount = Math.ceil(savedSearch.length / chunkSize);
+
+  for (let i = 0; i < chunksCount; i++) {
+    const start = i * chunkSize;
+    const end = start + chunkSize;
+    const chunkData = savedSearch.substring(start, end);
+
+    const key = i === 0 ? baseKey : `${baseKey}_${i}${CHUNK_KEY_SUFFIX}`;
+    const nextKey = i < chunksCount - 1 ? `${baseKey}_${i + 1}${CHUNK_KEY_SUFFIX}` : '';
+    const value = JSON.stringify({data: chunkData, next: nextKey});
+
+    grok.userSettings.add(SAVED_SEARCH_STORAGE, key, value);
+  }
+}
+
+function deleteSearchChunked(entityLevel: string, searchName: string) {
+  const baseKey = `${entityLevel}_${searchName}`;
+  let key = baseKey;
+
+  while (key) {
+    const stored = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, key);
+    if (!stored) break;
+
+    const {next} = JSON.parse(stored);
+    grok.userSettings.delete(SAVED_SEARCH_STORAGE, key);
+    key = next;
+  }
+}
+
+export function getFullFilterStr(entityLevel: string, searchName: string): string {
+  const baseKey = `${entityLevel}_${searchName}`;
+  let key = baseKey;
+  let fullStr = '';
+
+  while (key) {
+    const stored = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, key);
+    if (!stored) break;
+
+    const {data, next} = JSON.parse(stored);
+    fullStr += data;
+    key = next;
+  }
+
+  return fullStr;
 }
 
 function openSavedSearch(entityLevel: Scope, queryBuilder: QueryBuilder, outputsFieldsInput: DG.InputBase,
@@ -171,7 +235,7 @@ function openSavedSearch(entityLevel: Scope, queryBuilder: QueryBuilder, outputs
           //save changes to storage
           if (savedSearches[searchName])
             delete savedSearches[searchName];
-          grok.userSettings.add(SAVED_SEARCH_STORAGE, entityLevel, JSON.stringify(savedSearches));
+          deleteSearchChunked(entityLevel, searchName);
         }), 'moltrack-saved-search-delete');
         gc.style.element = removeIcon;
       }
@@ -284,6 +348,7 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope, in
       queryBuilder = new QueryBuilder(filterFields, undefined, QueryBuilderLayout.Narrow);
       queryBuilder.validationError.subscribe((error) => {
         runSearchButton.disabled = error;
+        saveSearchIcon.classList.toggle('moltrack-disable-icon', error);
       });
       const df = DG.DataFrame.create();
       const outputFields = molTrackSearchFieldsArr
@@ -340,7 +405,6 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope, in
         }
       });
 
-
       //save search icon
       const saveSearchIcon = ui.icons.save(() => {
         if (queryBuilder) {
@@ -353,6 +417,21 @@ export async function createSearchPanel(tv: DG.TableView, entityLevel: Scope, in
         }
       }, 'Save current search query');
 
+      queryBuilder?.structureChanged.subscribe(async () => {
+        if (!queryBuilder || !outputFieldsInput.value) return;
+
+        const fields = outputFieldsInput.value.map((col) => col.name);
+        const molTrackQuery = convertQueryBuilderConditionToMolTrackQuery(
+          queryBuilder.condition,
+          entityLevel,
+          fields,
+          aggregations ?? [],
+          entityType
+        );
+
+        const isValid = await MolTrackDockerService.validateSearchQuery(molTrackQuery);
+        queryBuilder.validationError.next(!isValid);
+      });
 
       //load search icon
       const openSearchIcon = ui.iconFA('folder-open', () => {
@@ -917,9 +996,14 @@ export async function handleSearchURL(url: string): Promise<DG.ViewBase> {
     if (componentsArr.length === idx) {
       openMolTrackSearchNode(nodesToExpand);
       if (nodesToExpand[0].toLowerCase() === SEARCH_NODE.toLowerCase())
-        return await createSearchExpandableNode([SEARCH_NODE], () => getStatisticsWidget(createSearchView));
-      if (nodesToExpand[0].toLowerCase() === SAVED_SEARCHES_NODE.toLowerCase())
-        return await createSearchExpandableNode([SAVED_SEARCHES_NODE], () => createSavedSearchesSatistics(undefined));
+        return await createSearchExpandableNode([SEARCH_NODE], () => getStatisticsWidget(createSearchView), false);
+      if (nodesToExpand[0].toLowerCase() === SAVED_SEARCHES_NODE.toLowerCase()) {
+        return await createSearchExpandableNode(
+          [SAVED_SEARCHES_NODE],
+          () => createSavedSearchesSatistics(undefined),
+          false
+        );
+      }
     }
     if (componentsArr.length > idx) {
       const scope = componentsArr[1];
@@ -931,11 +1015,11 @@ export async function handleSearchURL(url: string): Promise<DG.ViewBase> {
           openMolTrackSearchNode(nodesToExpand);
           if ((Object.values(Scope) as string[]).includes(scope.toLowerCase())) {
             return await createSearchExpandableNode([SAVED_SEARCHES_NODE, scope],
-              () => createSavedSearchesSatistics(scope as Scope));
+              () => createSavedSearchesSatistics(scope as Scope), false);
           } else {
             grok.shell.error(`Entity ${scope} doesn't exist in Moltrack`);
             return await createSearchExpandableNode([SAVED_SEARCHES_NODE],
-              () => createSavedSearchesSatistics(undefined));
+              () => createSavedSearchesSatistics(undefined), false);
           }
         }
       } else {
@@ -995,11 +1079,10 @@ export async function createSavedSearchesSatistics(scope?: Scope): Promise<HTMLE
   const objForTable: any[] = [];
   const scopes = scope ? [scope] : Object.values(Scope).filter((scope) => !excludedScopes.includes(scope));
   const collectSearchesForScope = (scope: Scope) => {
-    const savedSearchesStr = grok.userSettings.getValue(SAVED_SEARCH_STORAGE, scope) || '{}';
-    const savedSearches: { [key: string]: string } = JSON.parse(savedSearchesStr);
+    const savedSearches: { [key: string]: string } = getSavedSearches(scope);
     const searchNames = Object.keys(savedSearches);
     for (const search of searchNames)
-      objForTable.push({scope: scope, search: search});
+      objForTable.push({scope: scope, search: search, query: JSON.parse(savedSearches[search])});
   };
 
   scopes.forEach((it) => collectSearchesForScope(it));
@@ -1038,7 +1121,7 @@ async function createSavedSearchStats(savedSearchesForTable: any[], scope?: stri
           if (!savedSearchesForTable.length)
             createSearchView(search.scope.charAt(0).toUpperCase() + search.scope.slice(1), search.scope);
           else
-            createSearchView(search.search, search.scope, undefined, true);
+            createSearchView(search.search, search.scope, search.query, true);
         }),
       ];
 

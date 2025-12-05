@@ -109,7 +109,7 @@ public class PIDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public DataFrame getSchema(DataConnection connection, String schema, String table) throws
+    public DataFrame getSchema(DataConnection connection, String schema, String table, boolean includeKeyInfo) throws
             QueryCancelledByUser, GrokConnectException {
         try (Connection dbConnection = getConnection(connection);
              ResultSet columns = dbConnection.getMetaData().getColumns(schema, null, table, null)) {

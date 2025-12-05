@@ -211,7 +211,7 @@ When you open a local file in Datagrok (like dragging and dropping a file to you
 ##### <b>Q: What data or telemetry is sent back to Datagrok? </b>
 
 * No automatic telemetry: Datagrok does not send any data to Datagrok servers by default.
-* Optional error report/feedback: Users can optionally send feedback or error reports to Datagrok by selecting the "Send report to Datagrok" checkbox in the corresponding dialog. This feature can be disabled by the administrator.
+* Optional error report/feedback: Users can optionally send feedback or error reports to Datagrok by selecting the "Email" checkbox in the corresponding dialog. This feature can be disabled by the administrator. For details, see [Feedback](../../govern/bug-reports.md)
 * Package/image pulls: Datagrok can download images from Docker Hub or packages from NPM.
 
 ##### <b>Q: When deployed on-prem, is my data ever gets sent anywhere? </b>

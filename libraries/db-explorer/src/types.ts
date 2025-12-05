@@ -50,3 +50,25 @@ export class DBValueObject {
     public semValue?: DG.SemanticValue
   ) {}
 }
+
+type COLUMN_TYPE = string;
+type TABLE_COLUMN_SEPARATED_BY_DOT = `${string}.${string}`;
+export type DBConnectionDescriptor = {
+  connectionID: string;
+  name: string;
+  provider?: string;
+  description: string;
+  schemas: {
+    [schemaName: string]: {
+      description: string;
+      tables: {[tableName: string]: {
+        columns: {[columnName: string]: COLUMN_TYPE};
+        }
+      }
+      references: {
+        from: TABLE_COLUMN_SEPARATED_BY_DOT;
+        to: TABLE_COLUMN_SEPARATED_BY_DOT;
+      }[];
+    }
+  }
+}

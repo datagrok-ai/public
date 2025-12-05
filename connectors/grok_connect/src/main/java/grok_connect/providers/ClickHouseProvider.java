@@ -10,7 +10,6 @@ import grok_connect.resultset.DefaultResultSetManager;
 import grok_connect.resultset.ResultSetManager;
 import grok_connect.utils.PatternMatcher;
 import grok_connect.utils.PatternMatcherResult;
-import grok_connect.utils.Property;
 import serialization.Types;
 
 import java.sql.PreparedStatement;
@@ -64,15 +63,43 @@ public class ClickHouseProvider extends JdbcDataProvider {
     }
 
     @Override
-    public String getSchemaSql(String db, String schema, String table) {
+    public String getSchemaSql(String db, String schema, String table, boolean includeKeyInfo) {
         String whereClause = String.format(" WHERE%s%s",
                 schema == null ? "" : String.format(" c.table_schema = '%s'", schema),
                 table == null ? "" : String.format("%s c.table_name = '%s'", schema == null ? "" : " AND", table));
-        return String.format("SELECT c.table_schema as table_schema, c.table_name as table_name, c.column_name as column_name, "
-                        + "c.data_type as data_type, "
-                        + "if(t.table_type ='VIEW', toInt8(1), toInt8(0)) as is_view FROM information_schema.columns c "
-                        + "JOIN information_schema.tables t ON t.table_name = c.table_name AND t.table_schema = c.table_schema AND t.table_catalog = c.table_catalog %s"
-                , schema == null && table == null ? "" : whereClause);
+
+        StringBuilder sql = new StringBuilder();
+
+        sql.append("SELECT ")
+                .append("c.table_schema AS table_schema, ")
+                .append("c.table_name AS table_name, ")
+                .append("c.column_name AS column_name, ")
+                .append("c.data_type AS data_type, ")
+                .append("if(t.table_type = 'VIEW', toInt8(1), toInt8(0)) AS is_view");
+
+        if (includeKeyInfo) {
+            sql.append(", ")
+                    .append("if(sc.is_in_primary_key = 1, toInt8(1), toInt8(0)) AS is_primary_key, ")
+                    .append("toInt8(0) AS is_unique"); // ClickHouse has no true unique constraints
+        }
+
+        sql.append(" FROM information_schema.columns c ")
+                .append("JOIN information_schema.tables t ")
+                .append("  ON t.table_name = c.table_name ")
+                .append(" AND t.table_schema = c.table_schema ")
+                .append(" AND t.table_catalog = c.table_catalog ");
+
+        if (includeKeyInfo) {
+            sql.append("LEFT JOIN system.columns sc ON sc.database = c.table_catalog ")
+                    .append(" AND sc.table = c.table_name ")
+                    .append(" AND sc.name = c.column_name ");
+        }
+
+        if (!(schema == null && table == null)) {
+            sql.append(whereClause);
+        }
+
+        return sql.toString();
     }
 
     @Override

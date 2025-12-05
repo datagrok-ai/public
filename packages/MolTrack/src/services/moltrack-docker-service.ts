@@ -11,23 +11,21 @@ async function handleError(response: Response) {
 }
 
 export class MolTrackDockerService {
-  private static _container: DG.DockerContainer;
+  private static _container: DG.DockerContainer | null = null;
 
-  static async init(): Promise<void> {
-    this._container = await grok.dapi.docker.dockerContainers
-      .filter('name = "moltrack"')
-      .first();
-  }
-
-  private static get container(): DG.DockerContainer {
-    if (!this._container)
-      throw new Error('MolTrackDockerService not initialized. Call init() first.');
-
-    return this._container;
+  private static get container(): Promise<DG.DockerContainer> {
+    return (async () => {
+      if (!this._container) {
+        this._container = await grok.dapi.docker.dockerContainers
+          .filter('name = "moltrack"')
+          .first();
+      }
+      return this._container;
+    })();
   }
 
   static async postToEndpoint(endpoint: string, jsonPayload: string): Promise<string> {
-    const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id, endpoint, {
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy((await this.container).id, endpoint, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: jsonPayload,
@@ -37,40 +35,42 @@ export class MolTrackDockerService {
   }
 
   static async checkHealth(): Promise<string> {
-    const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id, '/v1/health');
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy((await this.container).id, '/v1/health');
     await handleError(response);
     return response.text();
   }
 
   static async fetchCompoundProperties(): Promise<string> {
-    const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id, '/v1/schema/compounds');
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy(
+      (await this.container).id, '/v1/schema/compounds');
     await handleError(response);
     return response.text();
   }
 
   static async fetchBatchProperties(): Promise<string> {
-    const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id, '/v1/schema/batches');
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy(
+      (await this.container).id, '/v1/schema/batches');
     await handleError(response);
     return response.text();
   }
 
   static async fetchSchema(): Promise<MolTrackProperty[]> {
-    const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id, '/v1/schema/');
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy((await this.container).id, '/v1/schema/');
     await handleError(response);
     const res = await response.json();
     return res;
   }
 
-
   static async fetchDirectSchema(): Promise<Partial<MolTrackProperty>[]> {
-    const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id, '/v1/schema-direct/');
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy(
+      (await this.container).id, '/v1/schema-direct/');
     await handleError(response);
     const data = await response.json();
     return data.flat();
   }
 
   static async search(query: MolTrackSearchQuery, endpointLevel: string): Promise<MolTrackSearchResponse> {
-    const response = await grok.dapi.docker.dockerContainers.fetchProxy(this.container.id,
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy((await this.container).id,
       `/v1/search/${endpointLevel}`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -78,6 +78,20 @@ export class MolTrackDockerService {
       });
     await handleError(response);
     return await response.json();
+  }
+
+  static async validateSearchQuery(query: MolTrackSearchQuery): Promise<boolean> {
+    const response = await grok.dapi.docker.dockerContainers.fetchProxy((await this.container).id,
+      '/v1/search/validate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(query),
+      });
+    await handleError(response);
+    const data = await response.json();
+    return data.valid;
   }
 
   static async updateSchema(jsonPayload: string): Promise<string> {
@@ -90,7 +104,7 @@ export class MolTrackDockerService {
 
   static async retrieveEntity(scope: string): Promise<any> {
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(
-      this.container.id,
+      (await this.container).id,
       `/v1/${scope}/`,
       {method: 'GET'},
     );
@@ -109,7 +123,7 @@ export class MolTrackDockerService {
     });
 
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(
-      this.container.id,
+      (await this.container).id,
       `/v1/${endpoint}?${params.toString()}`,
       {method: 'GET'},
     );
@@ -135,7 +149,7 @@ export class MolTrackDockerService {
     };
 
     const response = await grok.dapi.docker.dockerContainers.fetchProxy(
-      this.container.id,
+      (await this.container).id,
       `/v1/auto-map-columns`,
       {
         method: 'POST',
@@ -158,7 +172,7 @@ export class MolTrackDockerService {
     try {
       const formData = await buildFormData(file, mapping, errorHandling);
       const response = await grok.dapi.docker.dockerContainers.fetchProxy(
-        this.container.id,
+        (await this.container).id,
         scopeToUrl[scope],
         {method: 'POST', body: formData},
       );

@@ -65,7 +65,7 @@ export class OpenAIHelpClient {
   ): Promise<string> {
     const request: ChatCompletionParseParams = {
       model,
-      temperature: model == 'gpt-5-nano' ? 1 : 0,
+      temperature: model.startsWith('gpt-5') ? 1 : 0, // 5th models only work with temperature 1
       messages: [
         {role: 'system', content: systemPrompt},
         {role: 'user', content: userPrompt},

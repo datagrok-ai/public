@@ -12,19 +12,14 @@ To get you started, we've prepared the following resources:
 * **Webinars and short product demos**: [Datagrok YouTube channel](https://www.youtube.com/@Datagrok)
 * **Demo datasets**: See what else you can do: drag and drop your dataset or use ours (**Sidebar > Browse (<FAIcon icon="fa-solid fa-compass"/>) > Files > Demo Files**)
 
-## Orient yourself
+## Getting started
 
 <h5>Read</h5>
 
-1. [User interface](../navigation/navigation.md)
-1. [Views](../navigation/views/views.md)
-1. [Context Panel](../navigation/panels/panels.md#context-panel)
-1. [Context Help](../navigation/panels/panels.md#context-help)
-1. [Browse](../navigation/views/browse.md)
-1. [Dashboards](../concepts/project/dashboard.md)
-1. [Spaces](../concepts/project/space.md)
-1. [Key concepts](../concepts/concepts.md)
-1. [Basic tasks](../navigation/basic-tasks/basic-tasks.md)
+1. [User interface & navigation](../navigation/navigation.md)
+1. [Key concepts](../concepts/concepts.md):  Learn about core platform concepts (entities, functions, etc.)
+1. [Spaces](../concepts/project/space.md): Learn about project organization
+1. [Basic tasks](../navigation/basic-tasks/basic-tasks.md): Try common tasks
 
 <!---
 
@@ -75,8 +70,8 @@ To get you started, we've prepared the following resources:
 
 1. [Table View](../../visualize/table-view-1.md)
 1. [Layout](../../visualize/view-layout.md)
-1. [Context Panel](../navigation/panels/panels.md#context-panel)
-1. [Info panes](../navigation/panels/info-panels.md)
+1. [Context Panel](../navigation/navigation.md#context-panel)
+1. [Info panes](../navigation/navigation.md#info-panes)
 1. [Grid](../../visualize/viewers/grid.md)
 
 <h5>Watch</h5>
