@@ -314,7 +314,7 @@ Datagrok supports a wide range of capabilities, including:
 
 Yes. Follow these steps:
 1. In your dataset, select or filter rows.
-1. In the **Status Bar**, click the **Selected: [x]** or **Filtered: [xX]** (depending on what you used).
+1. In the **Status Bar**, click the **Selected: [x]** or **Filtered: [x]** (depending on what you used).
 1. From the context menu, select **Extract rows**. This opens a new **Table View** containing only those rows, which you can continue working with and save as a separate dataset. 
 
 ## Visualize
