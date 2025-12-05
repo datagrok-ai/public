@@ -45,6 +45,14 @@ export const getContextHelp = async (func: DG.Func) => {
   return undefined;
 };
 
+export const getPackage = (func: DG.Func) => {
+  let fpackage: DG.Package | undefined = undefined;
+  try {
+    fpackage = func.package;
+  } catch {}
+  return fpackage;
+}
+
 export const hasContextHelp = (func?: DG.Func) => {
   return !!(func?.options?.['help']);
 };
