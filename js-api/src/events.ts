@@ -4,7 +4,7 @@ import * as rxjsOperators from 'rxjs/operators';
 import {filter} from 'rxjs/operators';
 import {toJs} from './wrappers';
 import {FileInfo, Package} from './entities';
-import {Accordion, Dialog, InputBase, TreeViewNode} from "./widgets";
+import {Accordion, Dialog, InputBase, TreeViewNode, Widget} from "./widgets";
 import {View} from './views/view';
 import {ViewInfo} from './entities';
 import {Viewer} from "./viewer";
@@ -98,6 +98,8 @@ export class Events {
   get onContextMenu(): rxjs.Observable<any> { return __obs('d4-context-menu'); }
 
   get onAIGenerationAbortRequest(): rxjs.Observable<any> { return __obs('d4-ai-generation-abort'); }
+
+  get onAIPanelToggleRequest(): rxjs.Observable<Widget> { return __obs('d4-ai-panel-toggle'); }
 
   get onContextMenuClosed(): rxjs.Observable<any> { return __obs('d4-menu-closed'); }
 
