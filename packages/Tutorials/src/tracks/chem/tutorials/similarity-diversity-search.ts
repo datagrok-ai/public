@@ -21,6 +21,10 @@ export class SimilarityDiversitySearchTutorial extends Tutorial {
   }
 
   get steps() {return 12;}
+
+  get icon() {
+    return '🔍🧬';
+  }
   
   helpUrl: string = 'https://datagrok.ai/help/datagrok/solutions/domains/chem/#similarity-and-diversity-search';
   demoTable: string = '';

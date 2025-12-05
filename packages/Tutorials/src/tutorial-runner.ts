@@ -145,6 +145,7 @@ export class TutorialSubstitute extends Tutorial {
   name: string;
   description: string;
   imageUrl: string;
+  icon: string = '';
   func: DG.Func;
 
   constructor(name: string, description: string, icon: string, func: DG.Func) {

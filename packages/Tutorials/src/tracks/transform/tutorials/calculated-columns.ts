@@ -19,6 +19,10 @@ export class CalculatedColumnsTutorial extends Tutorial {
     return 13;
   }
 
+  get icon(): string {
+    return '🧮➕';
+  }
+
   helpUrl: string = 'https://datagrok.ai/help/transform/add-new-column';
   prerequisites: TutorialPrerequisites = { packages: ['PowerPack'] };
   platform: Platform = getPlatform();

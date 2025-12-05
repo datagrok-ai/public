@@ -13,6 +13,10 @@ export class MultivariateAnalysisTutorial extends Tutorial {
   }
   get steps() { return 7; }
 
+  get icon() {
+    return '📊🔀';
+  }
+
   demoTable: string = 'cars.csv';
   helpUrl: string = 'https://datagrok.ai/help/explore/multivariate-analysis';
 

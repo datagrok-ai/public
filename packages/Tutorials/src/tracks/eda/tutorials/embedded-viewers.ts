@@ -18,6 +18,10 @@ export class EmbeddedViewersTutorial extends Tutorial {
     return 10;
   }
 
+  get icon(): string {
+    return '🖼️✨';
+  }
+
   helpUrl: string = 'https://datagrok.ai/help/visualize/viewers';
 
   protected async _run(): Promise<void> {

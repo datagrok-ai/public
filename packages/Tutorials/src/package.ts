@@ -17,6 +17,7 @@ import {DemoAppWidget} from './demo-app/widget';
 import { bio } from './tracks/bio';
 import {DEMO_APP_HIERARCHY} from './demo-app/const';
 import dayjs from 'dayjs';
+import {loadBadges} from '@datagrok-libraries/tutorials/src/utils/badges-utils';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -121,6 +122,8 @@ export class PackageFunctions {
       } else
         tracks.push(new Track(trackName, [tutorial], ''));
     }
+
+    loadBadges(tracks.flatMap(track => track.tutorials));
 
     grok.events.onPackageLoaded.subscribe((p) => {
       if (p.name in tutorialIconPaths) {

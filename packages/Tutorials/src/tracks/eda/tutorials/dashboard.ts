@@ -18,6 +18,10 @@ export class DashboardTutorial extends Tutorial {
     return 27;
   }
 
+  get icon(): string {
+    return '📊✨';
+  }
+
   demoTable: string = '';
   helpUrl: string = '';
   prerequisites: TutorialPrerequisites = {grokConnect: true};

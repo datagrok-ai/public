@@ -8,6 +8,7 @@ import { Track } from '@datagrok-libraries/tutorials/src/track';
 class TestTutorial extends Tutorial {
   name = 'Test tutorial';
   description = 'Test description';
+  icon = '';
   steps = 1;
 
   protected _run(): Promise<void> {

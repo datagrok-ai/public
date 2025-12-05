@@ -15,6 +15,10 @@ export class ScatterPlotTutorial extends Tutorial {
   }
   get steps() { return 11; }
 
+  get icon() {
+    return '📈🔹';
+  }
+
   helpUrl: string = 'https://datagrok.ai/help/visualize/viewers/scatter-plot';
   platform: Platform = getPlatform();
 
