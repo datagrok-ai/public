@@ -3,6 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import {Observable, Subject} from 'rxjs';
 import {filter} from 'rxjs/operators';
+// @ts-ignore
 import '../../css/forms.css';
 
 const COLS_LIMIT_EXCEEDED_WARNING = `Number of columns is more than 20. First 20 columns are shown`;
@@ -265,6 +266,7 @@ export class FormsViewer extends DG.JsViewer {
           if (col.semType && grid?.col(name)?.renderer) {
             const renderer = grid.col(name)!.renderer!;
             const rendererSize = this.getRendererSize(renderer);
+
             const gridCell = DG.GridCell.fromColumnRow(grid, name, grid.tableRowToGrid(row));
             const canvas = ui.canvas(rendererSize.x, rendererSize.y);
             canvas.width = rendererSize.x * window.devicePixelRatio;
@@ -354,12 +356,11 @@ export class FormsViewer extends DG.JsViewer {
 
   render() {
     if (!this.showFixedRows) {
-      if (this.showSelectedRows) {
-        this.indexes = this.dataFrame.selection.trueCount > 0 ?
-          Array.from(this.dataFrame.selection.getSelectedIndexes()) : [];
+      this.indexes = [];
+      if (this.showSelectedRows && this.dataFrame.selection.trueCount > 0) {
+        const selectionAndFilter = this.dataFrame.selection.clone().and(this.dataFrame.filter);
+        this.indexes = Array.from(selectionAndFilter.getSelectedIndexes());
       }
-      else
-        this.indexes = [];
     }
 
     ui.empty(this.columnHeadersDiv);
