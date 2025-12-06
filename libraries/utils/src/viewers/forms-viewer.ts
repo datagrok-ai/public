@@ -298,7 +298,7 @@ export class FormsViewer extends DG.JsViewer {
           if (col.semType && grid?.col(name)?.renderer) {
             const renderer = grid!.col(name)!.renderer!;
             const rendererSize = this.getRendererSize(renderer);
-            const gridCell = DG.GridCell.fromColumnRow(grid, name, grid.tableRowToGrid(row));
+            const gridCell = DG.GridCell.fromColumnRow(grid!, name, grid!.tableRowToGrid(row));
             const canvas = ui.canvas(rendererSize.x, rendererSize.y);
             canvas.width = rendererSize.x * window.devicePixelRatio;
             canvas.height = rendererSize.y * window.devicePixelRatio;
