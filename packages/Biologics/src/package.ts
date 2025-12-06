@@ -12,12 +12,28 @@ import {DBExplorer} from '@datagrok-libraries/db-explorer/src/db-explorer';
 import {moleculeRenderer, imageRenderer, rawImageRenderer} from '@datagrok-libraries/db-explorer/src/renderer';
 import {biologicsConfig} from './config';
 import {helms} from './helms';
+import {chemSpaceApp, DSMMoleculeRenderer} from './chemspaceApp';
 
 export const _package = new DG.Package();
 
 //name: info
 export function info() {
   grok.shell.info(_package.webRoot);
+}
+
+//name: DSM_MOLECULE_ROW
+//tags: cellRenderer
+//output: grid_cell_renderer renderer
+//meta.cellType: DSM_MOLECULE_ROW
+export function _DSMMoleculeRenderer() {
+  return new DSMMoleculeRenderer();
+}
+
+
+//name: chemSpaceApp
+//tags: app
+export async function runChemSpace() {
+  chemSpaceApp('some analysis name');
 }
 
 

@@ -49,6 +49,14 @@ export namespace funcs {
     return await grok.functions.call('Biologics:Info', {});
   }
 
+  export async function dsmmoleculeRenderer(): Promise<any> {
+    return await grok.functions.call('Biologics:DSMMoleculeRenderer', {});
+  }
+
+  export async function runChemSpace(): Promise<void> {
+    return await grok.functions.call('Biologics:RunChemSpace', {});
+  }
+
   export async function createDemoBiologicsData(): Promise<void> {
     return await grok.functions.call('Biologics:CreateDemoBiologicsData', {});
   }
