@@ -19,12 +19,21 @@
     text-overflow: ellipsis;*/
 }
 
+.d4-multi-form-column-sort-indicator {
+	position: absolute;
+	left: -8px;
+	top: -2px;
+	color: #7b7bc8;
+}
+
 .d4-multi-form-form {
 	min-width: 170px;
 }
+
 .d4-multi-form-form input {
 	color:var(--grey-6)!important;
 }
+
 .d4-multi-form > .ui-split-h > .ui-box:first-child:hover::-webkit-scrollbar {
 	display: block;
 }

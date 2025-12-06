@@ -1,5 +1,10 @@
 # Power Grid changelog
 
+## 1.7.17 (2025-12-06)
+
+* #3546: Forms viewer: support sorting by specific columns
+* #3561: Forms: empty int value displays incorrectly
+
 ## 1.7.15 (2025-11-01)
 
 * Raw PNG Renderer
@@ -33,7 +38,7 @@
 
 ## 1.7.2 (2025-07-29)
 
-* GROK-18597 Smart form: can't add add categorical columns from the Context Panel
+* GROK-18597 Smart form: can't add categorical columns from the Context Panel
 * GROK-18596 Smart Form: incorrect rendering on column resize
 
 ## 1.6.2 (2025-04-18)
