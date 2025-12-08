@@ -6,9 +6,12 @@ import * as ui from 'datagrok-api/ui';
 import {filter} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {interval, fromEvent} from 'rxjs';
-import {describeElements, singleDescription, closeWindows, getElement, getViewWithElement, PAUSE} from './utils';
+import {describeElements, singleDescription, closeWindows, getElement,
+  getViewWithElement, PAUSE, getTextWithSlider, simulateMouseEventsWithMove} from './utils';
 
 import '../../../../css/tutorial.css';
+import '../../../../css/ui-describer.css';
+import { runDescriber } from './ui-describer';
 
 enum DS_CONSTS {
   EDIT_RIBBON_IDX = 2,
@@ -184,30 +187,29 @@ export class DifferentialEquationsTutorial extends Tutorial {
     await new Promise((resolve) => setTimeout(resolve, PAUSE));
 
     // 3. Explore elements
-    this.describe('We start with an incomplete model.');
-
     const dsView = grok.shell.v as DG.TableView;
     const dsViewRoot = dsView.root;
+    const inputsPanel = dsViewRoot.querySelector('div[class="panel-base splitter-container-horizontal"]') as HTMLElement;
     let uiFormRoot = dsViewRoot.querySelector('div.ui-form') as HTMLElement;
     let inputRoots = uiFormRoot.querySelectorAll('div.ui-input.ui-input-root.ui-input-float');
     const gridRoot = dsView.grid.root;
     const lineChartRoot = dsViewRoot.querySelector('div.d4-line-chart') as HTMLElement;
 
-    let doneBtn = describeElements([inputRoots[0] as HTMLElement, lineChartRoot, gridRoot], uiInfo);
+    // Set column format for better layout
+    const col = dsView.grid.col('Prey');
+    if (col != null)
+      col.format = '0.00E0';
+
+    let doneBtn = runDescriber({pages: [
+      {root: dsViewRoot.parentElement ?? dsViewRoot, description: '# App\n\nThis is the main view of Diff Studio.', position: 'left'},
+      {root: lineChartRoot, description: this.getLegendDiv(), position: 'left'},
+      {root: gridRoot, description: '# Dataframe 🧮\n\nThe outcomes of the numerical simulation.', position: 'top'},
+      {root: inputsPanel, description: '# Inputs 3️⃣7️⃣\n\nYou can enter the model inputs here.', position: 'left'},
+      {root: inputRoots[1] as HTMLElement, description: this.getInputDescription(), position: 'left', elementsToHighlight: [lineChartRoot]},
+    ]});
     await this.action(
       'Explore the interface',
       fromEvent(doneBtn, 'click'),
-      undefined,
-      'Click "Next" to go to the next item.',
-    );
-
-    // 4. Play with inputs
-    let finishEditor = inputRoots[1].querySelector('input[class="ui-input-editor"]') as HTMLInputElement;
-    await this.action(
-      'Set "Finish" to 150',
-      interval(100).pipe(filter(() => finishEditor.value == '150')),
-      finishEditor,
-      'You can also enter "150" (instead of dragging a slider) to achieve the goal.',
     );
 
     // 5. Go to ODEs
@@ -224,8 +226,16 @@ export class DifferentialEquationsTutorial extends Tutorial {
     // 6. Explore equations
     const editorRoot = dsViewRoot.querySelector('div.panel-base.splitter-container-horizontal') as HTMLElement;
     let ignore = await getElement(editorRoot, 'div.cm-line');
-    editorRoot.style.width = '515px';
+    const splitBar = dsViewRoot.querySelector('div.splitbar-vertical') as HTMLElement;
+    //editorRoot.style.width = '515px';
+    simulateMouseEventsWithMove(splitBar, 515, 0);    
     const lineRoots = editorRoot.querySelectorAll('div[class="cm-line"]') as unknown as HTMLElement[];
+    const editor = editorRoot.querySelector('div.cm-editor') as HTMLElement;
+
+    // doneBtn = runDescriber({pages: [
+    //   {root: editor, description: '# Editor\n\nSpecify the model here.', position: 'left', elementsToHighlight: [editorRoot.parentElement ?? editorRoot]},
+    //   {root: lineRoots[1], description: '# Equations\n\nPlace differential equations in this block.', position: 'left', elementsToHighlight: [lineRoots[1], lineRoots[2], lineRoots[3]]},
+    // ]});
 
     doneBtn = describeElements([
       lineRoots[0],
@@ -239,8 +249,6 @@ export class DifferentialEquationsTutorial extends Tutorial {
     await this.action(
       'Explore editor',
       fromEvent(doneBtn, 'click'),
-      undefined,
-      'Click "Next" to go to the next item.',
     );
 
     this.describe(`Diff Studio enables creating models declaratively using a simple ${ui.link('syntax', LINKS.COMPS_SYNTAX).outerHTML}.`);
@@ -334,9 +342,10 @@ export class DifferentialEquationsTutorial extends Tutorial {
       'Turn off the <b>Edit</b> toggle',
     );
 
-    editorRoot.style.width = '241px';
+    //editorRoot.style.width = '241px';
+    simulateMouseEventsWithMove(splitBar, -450, 0);
 
-    // 12. Play with inputs
+    // 12. Play with input
     uiFormRoot = await getElement(dsViewRoot, 'div.ui-form') as HTMLElement;
     inputRoots = uiFormRoot.querySelectorAll('div.ui-input.ui-input-root.ui-input-float');
 
@@ -357,7 +366,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
     );
 
     // 13. Play with inputs
-    finishEditor = inputRoots[1].querySelector('input[class="ui-input-editor"]') as HTMLInputElement;
+    let finishEditor = inputRoots[1].querySelector('input[class="ui-input-editor"]') as HTMLInputElement;
     await this.action(
       'Set "Finish" to 150',
       interval(100).pipe(filter(() => finishEditor.value == '150')),
@@ -367,4 +376,25 @@ export class DifferentialEquationsTutorial extends Tutorial {
 
     this.describe(`Find useful Diff Studio ${ui.link('models', LINKS.MODELS).outerHTML}.`);
   } // _run
+
+  private getLegendDiv(): HTMLElement {
+    const preyDiv = ui.markdown('🐰 The prey population grows infinitely.');
+    preyDiv.classList.add('tutorials-ui-describer-diff-studio-legend-line');
+
+    const predatorDiv = ui.markdown('🦊 The predator population steadily declines.');
+    predatorDiv.classList.add('tutorials-ui-describer-diff-studio-legend-line');
+
+    return ui.divV([
+      ui.markdown('# Graphs\n\nThe model is incomplete, leading to the following effects:'),
+      preyDiv,
+      predatorDiv,
+    ]);
+  }
+
+  private getInputDescription(): HTMLElement {
+    return ui.divV([
+      ui.markdown('# Interact 🖱️\n\n Set "Finish" to 150 and explore the results.'),
+      getTextWithSlider('Move the slider', 'and check the updates.')
+    ]);
+  }
 } // DifferentialEquationsTutorial

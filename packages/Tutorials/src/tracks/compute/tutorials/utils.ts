@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import '../../../../css/tutorial.css';
+import '../../../../css/ui-describer.css';
 import {_package} from '../../../package';
 
 /** Max waiting time */
@@ -150,7 +151,6 @@ export function closeWindows() {
   grok.shell.windows.showColumns = false;
 }
 
-
 /** Return icon from the file */
 export function getIcn(fileName: string, width: number, height: number, tooltip?: string): HTMLDivElement {
   const path = `${_package.webRoot}images/${fileName}`;
@@ -162,3 +162,51 @@ export function getIcn(fileName: string, width: number, height: number, tooltip?
 
   return div;
 }
+
+export function getTextWithSlider(textBefore: string, textAfter: string): HTMLElement {
+  const circle = ui.span([]);
+  circle.classList.add('tutorials-ui-describer-diff-studio-slider-in-text');
+  circle.style.backgroundColor = 'var(--blue-1)';
+  const sliderWithText = ui.divH([
+    ui.divText(textBefore),
+    circle,
+    ui.divText(textAfter),
+  ]);
+  sliderWithText.classList.add('tutorials-ui-describer-diff-studio-text-with-slider');
+
+  return sliderWithText;
+} // getTextWithSlider
+
+export function simulateMouseEventsWithMove(el: HTMLElement, moveX: number, moveY: number) {
+  const rect = el.getBoundingClientRect();
+  const startX = rect.left + rect.width / 2;
+  const startY = rect.top + rect.height / 2;
+
+  const downEvent = new MouseEvent("mousedown", {
+    bubbles: true,
+    clientX: startX,
+    clientY: startY,
+  });
+  el.dispatchEvent(downEvent);
+
+  const moveEvent = new MouseEvent("mousemove", {
+    bubbles: true,
+    clientX: startX + moveX,
+    clientY: startY + moveY,
+  });
+
+  setTimeout(() => {
+    el.dispatchEvent(moveEvent);
+  }, 50);
+
+  const upEvent = new MouseEvent("mouseup", {
+    bubbles: true,
+    clientX: startX + 1,
+    clientY: startY + 1,
+  });
+
+  setTimeout(() => {
+    el.dispatchEvent(upEvent);
+  }, 100);
+}
+

@@ -41,3 +41,30 @@
   left: 50%;
   transform: translate(-50%, -50%);
 }
+
+.tutorials-ui-describer-diff-studio-legend-icn {
+  margin-right: 10px;
+  margin-left: 10px;
+  margin-bottom: 5px;
+  margin-top: -3px;
+}
+
+.tutorials-ui-describer-diff-studio-legend-line {
+  margin-left: 10px;
+}
+
+.tutorials-ui-describer-diff-studio-text-with-slider {  
+  margin-top: 3px;
+  margin-bottom: 6px;
+}
+
+.tutorials-ui-describer-diff-studio-slider-in-text {    
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 4px;
+    margin-left: 4px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+}
