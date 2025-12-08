@@ -11,7 +11,7 @@ import {ACT_TRT_ARM, AE_DECOD_TERM, AE_END_DAY, AE_END_DAY_CALCULATED, AE_START_
   MH_TERM, PLANNED_TRT_ARM} from '../constants/columns-constants';
 import {updateDivInnerHTML} from '../utils/utils';
 import {addView, createClinCaseTableView, TABLE_VIEWS_META} from '../utils/views-creation-utils';
-import {studies} from '../package';
+import {studies} from '../utils/app-utils';
 
 const studiesGlobalConfigs: {[key: string]: any} = {};
 

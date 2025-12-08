@@ -6,7 +6,7 @@ import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {updateDivInnerHTML} from '../utils/utils';
 import {MH_TERM_FIELD} from '../views-config';
 import {checkColumnsAndCreateViewer} from '../utils/views-validation-utils';
-import {studies} from '../package';
+import {studies} from '../utils/app-utils';
 
 export class MedicalHistoryView extends ClinicalCaseViewBase {
   mh: DG.DataFrame;

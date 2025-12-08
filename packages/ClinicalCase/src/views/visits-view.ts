@@ -13,9 +13,9 @@ import {AE_START_DAY_FIELD, AE_TERM_FIELD, CON_MED_NAME_FIELD, CON_MED_START_DAY
   INV_DRUG_NAME_FIELD, TRT_ARM_FIELD} from '../views-config';
 import {VISITS_VIEW_NAME} from '../constants/view-names-constants';
 import {DOMAINS_COLOR_PALETTE} from '../constants/constants';
-import {studies} from '../package';
 import {createVisitDayStrCol} from '../data-preparation/data-preparation';
 import {CDISC_STANDARD} from '../utils/types';
+import {studies} from '../utils/app-utils';
 
 export class VisitsView extends ClinicalCaseViewBase {
   sv: DG.DataFrame;

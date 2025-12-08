@@ -263,6 +263,40 @@ In order to isolate packages being debugged from the production instance, we rec
 instance, if possible. To change Datagrok's server, add a new developer key to your local `config.yaml` and edit
 the `scripts` section in the `package.json` file.
 
+### Managing dependencies
+
+During the development of your plugin, your new code might start depending on new unreleased features 
+in the core, libraries, or other plugins. Our tooling supports all these cases, but you have to properly
+annotate the nature of the dependencies:
+
+* **Dependency on the new code in the libraries**. Modify the package.json file in your plugin, and change
+the library path to the relative path of the corresponding library, like that:
+  ```
+  "dependencies": {
+    "@datagrok-libraries/utils": "../../libraries/utils",
+  }
+  ```
+  When the plugin is ready for publishing:
+  1. increment its version in package.json
+  2. add the change log message to changelog.md
+  3. commit to master
+  
+  CI-CD will automatically increment package version of the library, and publish
+  the plugin.
+  
+* **Dependency on the latest JS API**: Update the package.json like that:
+  ```
+  "dependencies": {
+    "datagrok-api": "../../js-api",
+  },
+  ```
+  This means that going forward, the plugin will only work with the next (unreleased yet) version of the 
+  core. 
+
+* **Dependency on another plugin**: This is a popular question, but we do not provide any officially
+  supported solution yet. You'll have to manage it manually. Generally, cross-plugin dependencies
+  should be avoided if possible.
+
 ## Publishing
 
 ### Version control

@@ -8,7 +8,7 @@ import {SEVERITY_COLOR_DICT} from '../constants/constants';
 import {updateDivInnerHTML} from '../utils/utils';
 import {AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, TRT_ARM_FIELD} from '../views-config';
 import {AE_BROWSER_VIEW_NAME} from '../constants/view-names-constants';
-import {studies} from '../package';
+import {studies} from '../utils/app-utils';
 
 export class AEBrowserHelper {
   domains = ['ae', 'ex', 'cm'];

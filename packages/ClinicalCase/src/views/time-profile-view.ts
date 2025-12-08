@@ -12,8 +12,8 @@ import {_package} from '../package';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {TRT_ARM_FIELD} from '../views-config';
 import {TIME_PROFILE_VIEW_NAME} from '../constants/view-names-constants';
-import {studies} from '../package';
 import {CDISC_STANDARD} from '../utils/types';
+import {studies} from '../utils/app-utils';
 
 
 export class TimeProfileView extends ClinicalCaseViewBase {

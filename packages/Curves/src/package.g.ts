@@ -1,4 +1,3 @@
-import {RawPNGRenderer} from './pngRenderer';
 import {PackageFunctions} from './package';
 import {MultiCurveViewer} from './fit/multi-curve-viewer';
 import {FitChartCellRenderer} from './fit/fit-renderer';
@@ -87,11 +86,3 @@ export function addStatisticsColumn(table: DG.DataFrame, colName: string, propNa
 export function addAggrStatisticsColumn(table: DG.DataFrame, colName: string, propName: string, aggrType: string) : any {
   return PackageFunctions.addAggrStatisticsColumn(table, colName, propName, aggrType);
 }
-//name: rawPng
-//tags: cellRenderer
-//output: grid_cell_renderer renderer
-//meta.cellType: rawPng
-export function _RawPNGRenderer() {
-  return new RawPNGRenderer();
-}
-

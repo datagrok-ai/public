@@ -8,7 +8,7 @@ import {AE_CAUSALITY, AE_REQ_HOSP, AE_SEQ, AE_SEVERITY, AE_START_DATE, LAB_HI_LI
   LAB_RES_N, LAB_TEST, SUBJECT_ID, SUBJ_REF_ENDT, SUBJ_REF_STDT, VISIT_DAY,
   VISIT, VISIT_START_DATE,
   VISIT_DAY_STR} from '../constants/columns-constants';
-import {studies} from '../package';
+import {studies} from '../utils/app-utils';
 const {jStat} = require('jstat');
 
 

@@ -2,9 +2,10 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject, of, combineLatest, Observable, defer, Subject, merge, EMPTY} from 'rxjs';
 import {switchMap, map, takeUntil, finalize, mapTo, skip, distinctUntilChanged, withLatestFrom, filter, catchError, tap} from 'rxjs/operators';
-import {FuncCallAdapter, IFuncCallAdapter, IRunnableWrapper, IStateStore} from './FuncCallAdapters';
+import {FuncCallAdapter, IFuncCallAdapter, IRunnableWrapper, IStateStore, MemoryStore} from './FuncCallAdapters';
 import {RestrictionType, ValidationResult} from '../data/common-types';
 import {FuncCallIODescription} from '../config/config-processing-utils';
+import {StateItem} from '../config/PipelineConfiguration';
 
 export interface RestrictionState {
   type: RestrictionType,
@@ -48,6 +49,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
 
   public validations$ = new BehaviorSubject<Record<HandlerId, Record<IOName, ValidationResult | undefined>>>({});
 
+  public store = new MemoryStore(this.states, false);
   public metaStates: Record<IOName, BehaviorSubject<Record<HandlerId, Record<string, any>> | undefined>> = {};
   public meta: Record<IOName, BehaviorSubject<Record<string, any> | undefined>> = {};
 
@@ -60,7 +62,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
   private closed$ = new Subject<true>();
   private initialData?: BridgePreInitData;
 
-  constructor(private io: FuncCallIODescription[], public readonly isReadonly: boolean) {
+  constructor(private io: FuncCallIODescription[], private states: StateItem[], public readonly isReadonly: boolean) {
     for (const item of this.io)
       this.metaStates[item.id] = new BehaviorSubject<any>(undefined);
 
@@ -112,12 +114,18 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
   }
 
   getState<T = any>(id: string): T | undefined {
+    if (this.store.hasState(id))
+      return this.store.getState(id);
+
     const currentInstance = this.instance$.value?.adapter;
     if (currentInstance)
       return currentInstance.getState<T>(id);
   }
 
   getStateChanges<T = any>(id: string, includeDataFrameMutations = false): Observable<T | undefined> {
+    if (this.store.hasState(id))
+      return this.store.getStateChanges(id, includeDataFrameMutations)
+
     return this.instance$.pipe(
       switchMap((data, idx) => {
         if (data) {
@@ -132,6 +140,11 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
   }
 
   setState<T = any>(id: string, val: T | undefined, restrictionType: RestrictionType = 'restricted') {
+    if (this.store.hasState(id)) {
+      this.store.setState(id, val, restrictionType);
+      return;
+    }
+
     const currentInstance = this.instance$.value?.adapter;
     if (currentInstance == null)
       throw new Error(`Attempting to set an empty FuncCallInstancesBridge`);
@@ -152,7 +165,16 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
       this.inputRestrictionsUpdates$.next([id, restrictionPayload] as const);
   }
 
+  hasState(name: string) {
+    return this.store.hasState(name) || this.instance$.value?.adapter.hasState(name) || false;
+  }
+
   editState<T = any>(id: string, val: T | undefined) {
+    if (this.store.hasState(id)) {
+      this.store.editState(id, val);
+      return;
+    }
+
     const currentInstance = this.instance$.value?.adapter;
     if (currentInstance == null)
       throw new Error(`Attempting to set an empty FuncCallInstancesBridge`);
@@ -275,7 +297,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
   }
 
   getStateNames() {
-    return this.io.map((item) => item.id);
+    return [...this.io.map((item) => item.id), ...this.store.getStateNames()];
   }
 
   close() {

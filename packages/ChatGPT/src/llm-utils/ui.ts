@@ -12,7 +12,7 @@ import {ChatGptAssistant} from '../prompt-engine/chatgpt-assistant';
 import * as api from '../package-api';
 import {Plan} from '../prompt-engine/interfaces';
 import {AssistantRenderer} from '../prompt-engine/rendering-tools';
-import {AI_SQL_QUERY_ABORT_EVENT, dartLike} from '../utils';
+import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription} from '../utils';
 import {generateAISqlQueryWithTools} from './sql-tools';
 import {DBAIPanel, ModelType} from './panel';
 
@@ -116,49 +116,50 @@ async function aiCombinedSearch(prompt: string) {
   await CombinedAISearchAssistant.instance.searchUI(prompt);
 }
 
-export async function setupAIQueryEditorUI(connectionID: string, aiElement: HTMLElement, queryEditorRoot: HTMLElement, setAndRunFunc: (query: string) => void): Promise<void> {
+export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string, queryEditorRoot: HTMLElement, setAndRunFunc: (query: string) => void): Promise<boolean> {
+  if (!LLMCredsManager.getApiKey())
+    return false;
   const connection = await grok.dapi.connections.find(connectionID);
-  if (!connection) {
+  if (!connection) { // should not happen but just in case
     grok.shell.error(`Connection with ID ${connectionID} not found.`);
-    return;
+    return false;
   }
 
   const schemas = await grok.dapi.connections.getSchemas(connection);
   const defaultSchema = schemas.includes('public') ? 'public' : schemas[0];
 
-  const panel = new DBAIPanel(schemas, defaultSchema);
+  const panel = new DBAIPanel(schemas, defaultSchema, connectionID);
   panel.show();
 
-  const v = grok.shell.v?.root.contains(aiElement) ? grok.shell.v : null;
-
-  if (v) {
-    // do some subscriptions
-    const sub = grok.events.onCurrentViewChanged.subscribe(() => {
-      if (grok.shell.v != v)
+  // do some subscriptions
+  let wasShown = true;
+  const sub = grok.events.onCurrentViewChanged.subscribe(() => {
+    if (grok.shell.v != v) {
+      wasShown = panel.isShown;
+      if (wasShown)
         panel.hide();
-      else
+    } else {
+      if (wasShown)
         panel.show();
-    });
-    const closeSub = grok.events.onViewRemoved.subscribe((view) => {
-      if (view == v) {
-        sub.unsubscribe();
-        closeSub.unsubscribe();
-        panel.hide();
-        panel.dispose();
-      }
-    });
-  }
-
-
-  // temp hack
-  aiElement.remove();
-  const mutationObserver = new MutationObserver((_d) => {
-    panel.show();
+    }
   });
-  mutationObserver.observe(aiElement, {attributes: true, attributeFilter: ['style']});
+
+  const toggleSub = getAIPanelToggleSubscription().subscribe((rv) => {
+    if (rv == v)
+      panel.toggle();
+  });
+  const closeSub = grok.events.onViewRemoved.subscribe((view) => {
+    if (view == v) {
+      sub.unsubscribe();
+      closeSub.unsubscribe();
+      panel.hide();
+      panel.dispose();
+      toggleSub.unsubscribe();
+    }
+  });
 
   panel.onRunRequest.subscribe(async (args) => {
-    ui.setUpdateIndicator(queryEditorRoot, true, 'Grokking Query...', () => { grok.events.fireCustomEvent(AI_SQL_QUERY_ABORT_EVENT, null); });
+    ui.setUpdateIndicator(queryEditorRoot, true, 'Grokking Query...', () => { fireAIAbortEvent(); });
     const session = panel.startChatSession();
     try {
       const sqlQuery = await generateAISqlQueryWithTools(args.currentPrompt.prompt, connectionID, args.currentPrompt.schemaName!, {
@@ -182,4 +183,5 @@ export async function setupAIQueryEditorUI(connectionID: string, aiElement: HTML
     ui.setUpdateIndicator(queryEditorRoot, false);
     session.endSession();
   });
+  return true;
 }

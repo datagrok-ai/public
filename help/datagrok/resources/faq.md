@@ -310,6 +310,13 @@ Datagrok supports a wide range of capabilities, including:
 
 [Multiple complex data types in one interface](#q-can-datagrok-handle-multiple-complex-data-types-in-one-interface) | [Explore data](../../explore/explore.md)
 
+##### <b>Q: Can I save a filtered or selected subset as a new dataset? </b>
+
+Yes. Follow these steps:
+1. In your dataset, select or filter rows.
+1. In the **Status Bar**, click the **Selected: [x]** or **Filtered: [x]** (depending on what you used).
+1. From the context menu, select **Extract rows**. This opens a new **Table View** containing only those rows, which you can continue working with and save as a separate dataset. 
+
 ## Visualize
 
 ##### <b>Q: What are the maximum dataset sizes?</b>
@@ -442,6 +449,15 @@ collaborative workflows and effective communication between team members.
 ##### <b>Q: Can users subscribe to notifications about new or updated data in Datagrok?</b>
 
 Datagrok keeps you informed about relevant activity.  See [Collaborate](../../collaborate/collaborate.md), [Notifications](../../collaborate/collaborate.md#notifications), and [Discussions](../../collaborate/collaborate.md#discussions).
+
+##### <b>Q: Can colleagues see my notes about the molecules, experiments, or other objects?</b>
+
+Yes. With [sticky meta](../../govern/catalog/sticky-meta.md), you can add
+comments, ratings, tags, or other metadata to any object in Datagrok (molecules,
+experiments, samples, users, etc.). These annotations automatically follow the
+object across the platform. So if you leave a note on a molecule in one table,
+your collaborators will see the same note when that molecule appears in a
+different table or dataset.
 
 ## Develop
 

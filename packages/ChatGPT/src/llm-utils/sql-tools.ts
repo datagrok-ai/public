@@ -123,19 +123,6 @@ export async function generateAISqlQueryWithTools(
         }
       }
 
-      let similarQueriesInfo = '';
-      if ((dbQueryEmbeddings?.length ?? 0) > 0) {
-        const userQueryEmbedding = await getVectorEmbedding(openai, prompt);
-        const topSimilarQueries = getTopKSimilarQueries(userQueryEmbedding, dbQueryEmbeddings, 4);
-        console.log('Top similar queries:', topSimilarQueries);
-        similarQueriesInfo = `Here are some similar previously executed queries that might help you. 
-    Note that these queries might have annotations/comments like name descriptions and so on that can help you understand the schema better.\n\n
-    Here they are:
-    ${topSimilarQueries.map((q) => `- Query: ${q.query} (similarity score: ${q.score.toFixed(4)})`).join('\n')}
-    `;
-      }
-
-
       const systemMsg: OpenAI.Chat.ChatCompletionMessageParam = {role: 'system', content: systemMessage};
       messages.push(systemMsg);
       options.aiPanel?.addEngineMessage(systemMsg);
@@ -145,10 +132,7 @@ export async function generateAISqlQueryWithTools(
         Available schemas: ${(await context.listAllSchemas()).join(', ')}\n\n
         Available tables in schema ${schemaName}:\n\n${initialTableList}\n\nUser Query: ${prompt}\n\n
         Explore the schema using the available tools and generate an SQL query to answer this question.
-        ${semTypeWithinPromptInfo}
-          
-        ${similarQueriesInfo}
-        `,
+        ${semTypeWithinPromptInfo}`,
       };
       options.aiPanel?.addEngineMessage(initialUserMsg); // prompt will be shown in UI
       messages.push(initialUserMsg);
@@ -249,6 +233,49 @@ export async function generateAISqlQueryWithTools(
       },
     ];
 
+    // if we have some embeddings, then also add a tool so that LLM can use it to find similar queries
+
+    if ((dbQueryEmbeddings?.length ?? 0) > 0) {
+      tools.push({
+        type: 'function',
+        function: {
+          name: 'find_similar_queries',
+          description: 'Finds existing similar queries based on the prompt you provide (which should be based on user question). Use this to get inspiration from previously executed queries that might be similar to the user question. Return up to 3 similar queries with their descriptions/comments. Similarity is based on LLM embeddings and cosine similarity.',
+          parameters: {
+            type: 'object',
+            properties: {
+              prompt: {
+                type: 'string',
+                description: 'prompt derived from user question to find similar queries for',
+              },
+            },
+            required: ['prompt'],
+          },
+        }
+      });
+    }
+
+    const findSimilarQueryToPrompt = async (aiPrompt: string) => {
+      if ((dbQueryEmbeddings?.length ?? 0) === 0)
+        return {text: 'No queries found', n: 0};
+      if ((dbQueryEmbeddings!.length < 4))
+        return {text: `Only ${dbQueryEmbeddings.length} queries found:\n\n${dbQueryEmbeddings!.map((q) => `- ${q.query}`).join('\n\n')}`, n: dbQueryEmbeddings.length};
+      try {
+        const userQueryEmbedding = await getVectorEmbedding(openai, aiPrompt);
+        const topSimilarQueries = getTopKSimilarQueries(userQueryEmbedding, dbQueryEmbeddings!, 3);
+        console.log('Top similar queries:', topSimilarQueries);
+        if (topSimilarQueries.length === 0)
+          return {text: 'No similar queries found', n: 0};
+        return {text: `Here are some similar previously executed queries that might help you.
+          Note that these queries might have annotations/comments like name descriptions and so on that can help you understand the schema better.\n\n
+          Here they are:
+          ${topSimilarQueries.map((q) => `- Query:\n ${q.query} \n (similarity score: ${q.score.toFixed(4)})`).join('\n\n')}`, n: topSimilarQueries.length};
+      } catch (error) {
+        console.error('Error generating embedding for similar query search:', error);
+        return {text: 'Error generating embedding for similar query search', n: 0};
+      }
+    };
+
     // Function calling loop
     let iterations = 0;
     const maxIterations = 15; // Prevent infinite loops
@@ -317,6 +344,12 @@ export async function generateAISqlQueryWithTools(
               options.aiPanel?.addUiMessage(`Testing SQL query:\n${functionArgs.description}\n\`\`\`sql\n${functionArgs.sql}\n\`\`\``, false);
               result = await context.trySql(functionArgs.sql, functionArgs.description);
               options.aiPanel?.addUiMessage(`SQL Test Result: \n\n${result}`, false);
+              break;
+            case 'find_similar_queries':
+              options.aiPanel?.addUiMessage(`Searching for similar queries to help with SQL generation.`, false);
+              const similarQueries = await findSimilarQueryToPrompt(functionArgs.prompt);
+              options.aiPanel?.addUiMessage(similarQueries.n > 0 ? `Found ${similarQueries.n} similar queries.` : similarQueries.text, false);
+              result = similarQueries.text;
               break;
             default:
               result = `Error: Unknown function ${functionName}`;

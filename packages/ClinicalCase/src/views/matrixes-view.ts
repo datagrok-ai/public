@@ -6,9 +6,9 @@ import {LAB_RES_N, LAB_TEST, SUBJECT_ID, VS_TEST, VS_RES_N, VISIT_DAY_STR,
   BW_TEST, BW_RES_N, BG_TEST, BG_RES_N,
   VISIT} from '../constants/columns-constants';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
-import {studies} from '../package';
 import {createVisitDayStrCol} from '../data-preparation/data-preparation';
 import {CDISC_STANDARD} from '../utils/types';
+import {studies} from '../utils/app-utils';
 
 
 export class MatrixesView extends ClinicalCaseViewBase {

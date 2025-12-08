@@ -184,8 +184,8 @@ export class PackageFunctions {
     return await generateAISqlQuery(prompt, connectionID, schemaName);
   }
   @grok.decorators.func({})
-  static setupAIQueryEditor(connectionID: string, aiElement: HTMLElement, queryEditorRoot: HTMLElement, @grok.decorators.param({type: 'dynamic'}) setAndRunFunc: Function): void {
-    setupAIQueryEditorUI(connectionID, aiElement, queryEditorRoot, setAndRunFunc as (query: string) => void);
+  static async setupAIQueryEditor(view: DG.ViewBase, connectionID: string, queryEditorRoot: HTMLElement, @grok.decorators.param({type: 'dynamic'}) setAndRunFunc: Function): Promise<boolean> {
+    return setupAIQueryEditorUI(view, connectionID, queryEditorRoot, setAndRunFunc as (query: string) => void);
   }
 
   @grok.decorators.func({})

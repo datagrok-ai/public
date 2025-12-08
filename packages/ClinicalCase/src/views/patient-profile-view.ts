@@ -13,8 +13,8 @@ import {AE_END_DAY_FIELD, AE_START_DAY_FIELD, AE_TERM_FIELD, CON_MED_END_DAY_FIE
   CON_MED_START_DAY_FIELD, INV_DRUG_END_DAY_FIELD, INV_DRUG_NAME_FIELD,
   INV_DRUG_START_DAY_FIELD} from '../views-config';
 import { } from '../utils/utils';
-import {studies} from '../package';
 import {CDISC_STANDARD} from '../utils/types';
+import {studies} from '../utils/app-utils';
 
 export class PatientProfileView extends ClinicalCaseViewBase {
   options: any;
