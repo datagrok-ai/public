@@ -1,7 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {studies} from '../package';
 import {addDataFromDmDomain} from '../data-preparation/utils';
 import {ETHNIC, QS_CATEGORY, QS_RES, QS_RES_N, QS_SUB_CATEGORY, QS_TEST,
   RACE, SEX, SUBJECT_ID, VISIT_NUM} from '../constants/columns-constants';
@@ -10,6 +9,7 @@ import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {TRT_ARM_FIELD} from '../views-config';
 import {tTest} from '@datagrok-libraries/statistics/src/tests';
 import {getPearsonChiCriterionPValue} from '../stats/pearson-chi-criteria';
+import {studies} from '../utils/app-utils';
 const {jStat} = require('jstat');
 
 

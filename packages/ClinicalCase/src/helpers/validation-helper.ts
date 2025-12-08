@@ -1,6 +1,6 @@
-import {studies} from '../package';
 import {VISIT_DAY_STR} from '../constants/columns-constants';
 import {createVisitDayStrCol} from '../data-preparation/data-preparation';
+import {studies} from '../utils/app-utils';
 
 
 export class ValidationHelper {

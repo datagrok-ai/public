@@ -18,15 +18,23 @@ export namespace funcs {
     return await grok.functions.call('ClinicalCase:ClinicalCaseApp', {});
   }
 
+  export async function preclinicalCaseApp(): Promise<DG.View> {
+    return await grok.functions.call('ClinicalCase:PreclinicalCaseApp', {});
+  }
+
   export async function clinicalCaseAppTreeBrowser(treeNode: any ): Promise<void> {
     return await grok.functions.call('ClinicalCase:ClinicalCaseAppTreeBrowser', { treeNode });
+  }
+
+  export async function preclinicalCaseAppTreeBrowser(treeNode: any ): Promise<void> {
+    return await grok.functions.call('ClinicalCase:PreclinicalCaseAppTreeBrowser', { treeNode });
   }
 
   /**
   Return list of clinical and preclinical studies loaded into Clinical Case application
   */
-  export async function getListOfStudies(name?: string , description?: string , numSubjects?: number , numSubjectsOperator?: string , startDate?: any , startDateOperator?: string , endDate?: any , endDateOperator?: string , standard?: string ): Promise<any> {
-    return await grok.functions.call('ClinicalCase:GetListOfStudies', { name, description, numSubjects, numSubjectsOperator, startDate, startDateOperator, endDate, endDateOperator, standard });
+  export async function getListOfStudies(name?: string , description?: string , numSubjects?: number , numSubjectsOperator?: string , startDate?: any , startDateOperator?: string , endDate?: any , endDateOperator?: string , ongoing?: boolean , standard?: string ): Promise<any> {
+    return await grok.functions.call('ClinicalCase:GetListOfStudies', { name, description, numSubjects, numSubjectsOperator, startDate, startDateOperator, endDate, endDateOperator, ongoing, standard });
   }
 
   export async function clinicalCaseFolderLauncher(folder: DG.FileInfo , files: any ): Promise<any> {
@@ -35,5 +43,12 @@ export namespace funcs {
 
   export async function xptFileHandler(file: any ): Promise<any> {
     return await grok.functions.call('ClinicalCase:XptFileHandler', { file });
+  }
+
+  /**
+  Run CDISC CORE validation on datasets
+  */
+  export async function runCoreValidate(standard: string , dataPath: string , version: string , outputFormat: string , options: any ): Promise<string> {
+    return await grok.functions.call('ClinicalCase:RunCoreValidate', { standard, dataPath, version, outputFormat, options });
   }
 }

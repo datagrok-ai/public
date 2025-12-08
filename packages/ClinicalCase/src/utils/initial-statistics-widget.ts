@@ -1,9 +1,9 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {openStudy, studies} from '../package';
 import {Dayjs} from 'dayjs';
 import {SUMMARY_VIEW_NAME} from '../constants/view-names-constants';
 import {ClinStudyConfig} from './types';
+import {openStudy, studies} from './app-utils';
 
 export function createInitialSatistics(clinicalCaseNode: DG.TreeViewGroup, configs: ClinStudyConfig[]): HTMLDivElement {
   const tableDiv = ui.div('', {style: {position: 'relative', paddingTop: '15px'}});
