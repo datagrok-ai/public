@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import '../../../../css/tutorial.css';
+import {_package} from '../../../package';
 
 /** Max waiting time */
 const MAX_TIME = 60000;
@@ -147,4 +148,17 @@ export function closeWindows() {
   grok.shell.windows.showVariables = false;
   grok.shell.windows.showTables = false;
   grok.shell.windows.showColumns = false;
+}
+
+
+/** Return icon from the file */
+export function getIcn(fileName: string, width: number, height: number, tooltip?: string): HTMLDivElement {
+  const path = `${_package.webRoot}images/${fileName}`;
+  const img = ui.image(path, width, height);
+  const div = ui.div(img);
+
+  if (tooltip != null)
+    ui.tooltip.bind(div, tooltip);
+
+  return div;
 }
