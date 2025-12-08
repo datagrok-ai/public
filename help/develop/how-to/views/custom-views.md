@@ -97,4 +97,4 @@ See also:
 * [JavaScript API Samples: Virtual view](https://public.datagrok.ai/js/samples/ui/virtual-view)
 * [Table view](../../../visualize/table-view-1.md)
 * [View layout](../../../visualize/view-layout.md)
-* [Routing](../../../datagrok/navigation/routing.md)
+* [Routing](../../../datagrok/navigation/navigation.md#routing)

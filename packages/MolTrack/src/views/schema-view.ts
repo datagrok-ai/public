@@ -1,12 +1,12 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import { SchemaEditor } from '@datagrok-libraries/utils/src/schema-editor';
-import { merge } from 'rxjs';
+import {SchemaEditor} from '@datagrok-libraries/utils/src/schema-editor';
+import {merge} from 'rxjs';
 
-import { fetchSchema, registerMolTrackProperties } from '../package';
-import { GroupedProperties, MolTrackProp } from '../utils/constants';
-import { buildPropertyOptions } from '../utils/utils';
+import {fetchSchema, registerMolTrackProperties} from '../package';
+import {GroupedProperties, MolTrackProp} from '../utils/constants';
+import {buildPropertyOptions} from '../utils/utils';
 
 let openedView: DG.ViewBase | null = null;
 
@@ -19,7 +19,8 @@ export class PropertySchemaView {
 
   constructor() {
     this.view = DG.View.create();
-    this.extraPropertiesDiv = ui.div([]);
+    this.view.name = 'Register a schema';
+    this.extraPropertiesDiv = ui.div([], 'ui-form');
     this.saveButton = ui.bigButton('SAVE', () => this.onSave());
     this.saveButton.disabled = true;
   }
@@ -32,13 +33,39 @@ export class PropertySchemaView {
     this.render();
     this.view.setRibbonPanels([[this.saveButton]]);
 
-    this.subscribeToEditorChanges();
+    this.initSubscriptions();
     return this.view;
   }
 
-  private subscribeToEditorChanges(): void {
-    const editorChanges = Object.values(this.editors).map((ed) => ed.table.onChanged);
-    merge(...editorChanges).subscribe(() => this.saveButton.disabled = false);
+  private initSubscriptions(): void {
+    const editorsArray = Object.values(this.editors);
+
+    merge(...editorsArray.map((ed) => ed.table.onChanged))
+      .subscribe(() => this.saveButton.disabled = false);
+
+    merge(...editorsArray.map((ed) => DG.debounce(ed.table.onSelected, 5)))
+      .subscribe((item) => {
+        if (!item.userEditable) this.disableInputsIn(this.extraPropertiesDiv);
+      });
+
+    merge(...editorsArray.map((ed) => ed.table.onItemAdded))
+      .subscribe((item) => item.userEditable = true);
+  }
+
+  private disableInputsIn(element: HTMLElement): void {
+    element.querySelectorAll('.ui-input-editor').forEach((el) => {
+      if (el instanceof HTMLSelectElement)
+        el.disabled = true;
+      else if (el instanceof HTMLInputElement)
+        el.type === 'checkbox' ? el.disabled = true : el.readOnly = true;
+    });
+  }
+
+  private disableAllInputs(): void {
+    for (const editor of Object.values(this.editors))
+      this.disableInputsIn(editor.root);
+
+    this.disableInputsIn(this.extraPropertiesDiv);
   }
 
   private async onSave(): Promise<void> {
@@ -51,19 +78,26 @@ export class PropertySchemaView {
           if (!p || Object.keys(p).length === 0)
             continue;
 
-          const newProp = { ...p, value_type: p.type, entity_type: entityType, property_class: 'measured' };
-          delete newProp.type;
+          p.userEditable = false;
+          const newProp = {
+            ...p,
+            value_type: p.type,
+            entity_type: entityType,
+            property_class: 'measured',
+            unit: p.units,
+            friendly_name: p.friendlyName,
+          };
           allProps.push(newProp);
         }
       }
 
-      const jsonObject = {'properties': allProps};
-      const jsonPayload = JSON.stringify(jsonObject);
-      await registerMolTrackProperties(jsonPayload);
+      await registerMolTrackProperties(JSON.stringify({properties: allProps}));
       grok.shell.info('Schema saved');
+
+      this.disableAllInputs();
     } catch (e: any) {
       grok.shell.error('Failed to save');
-      console.log(e.message ?? e);
+      console.error(e);
     } finally {
       this.saveButton.disabled = true;
     }
@@ -86,7 +120,9 @@ export class PropertySchemaView {
       const editor = new SchemaEditor({
         properties: props,
         extraPropertiesDiv: this.extraPropertiesDiv,
+        allowRemove: false,
       });
+      editor.extraProperties = ['nullable', 'description', 'units', 'min', 'max', 'friendlyName'];
       this.editors[entityType] = editor;
 
       accordion.addPane(entityType, () => editor.root, true);
@@ -98,10 +134,12 @@ export class PropertySchemaView {
           ui.h2('MolTrack properties'),
           accordion.root,
         ]),
-        ui.div([], { style: { width: '20px' } }),
+        ui.div([], {style: {width: '20px'}}),
         this.extraPropertiesDiv,
       ]),
     );
+
+    this.disableAllInputs();
   }
 
   show(): void {

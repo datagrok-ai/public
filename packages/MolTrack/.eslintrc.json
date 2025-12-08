@@ -24,8 +24,8 @@
     "require-jsdoc": "off",
     "valid-jsdoc": "off",
     "spaced-comment": "off",
-    "linebreak-style": "off",
-    "object-curly-spacing": "off",
+    "linebreak-style": "error",
+    "object-curly-spacing": "error",
     "curly": [
       "error",
       "multi-or-nest"
@@ -37,6 +37,11 @@
         "allowSingleLine": true
       }
     ],
-    "block-spacing": 2
+    "block-spacing": [2, "always"],
+    "comma-dangle": "off",
+    "comma-spacing": "error",
+    "comma-style": "error",
+    "guard-for-in": "off",
+    "space-infix-ops": "error"
   }
 }

@@ -187,4 +187,4 @@ function setSelection(tableView: DG.TableView, name: string, label: string, filt
 See also:
 
 * [How-to: Build an application](./build-an-app.md)
-* [Routing](../../../datagrok/navigation/routing.md)
+* [Routing](../../../datagrok/navigation/navigation.md#routing)

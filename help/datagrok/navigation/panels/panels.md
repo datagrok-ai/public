@@ -8,6 +8,7 @@ keywords:
  - Macros
 format: mdx
 sidebar_position: 1
+unlisted: true
 ---
 
 ```mdx-code-block
@@ -217,7 +218,7 @@ ExtractRows("demog", IsNull("HEIGHT"))
 To open **Console**, press the tilde key <kbd>~</kbd> or click the **Console**
 icon on the **Status Bar**.
 
-![Autocomplete](../../../uploads/gifs/console-autocomplete.gif "Console Autocomplete")
+![Autocomplete](../img/console-autocomplete.gif "Console Autocomplete")
 
 <details>
 <summary>Console controls</summary>
@@ -248,10 +249,9 @@ events and reproduce these steps in the future. This can be useful for [data tra
 1. Directly execute functions on your data from the **Console**, which is especially helpful for
 debugging custom functions within a [package](../../../develop/develop.md#packages).
 
-![Recording Macros](img/console-macros.gif "Console Macros")
+![Recording Macros](../../concepts/functions/console-macros.gif "Console Macros")
 
 ## Variables
-
 
 The **Variables** panel is used to declare variables and is commonly used for script debugging.
 
@@ -260,6 +260,6 @@ Variables can be declared in various ways:
 * Through direct assignment in the [Console](#console), e.g., `x = 5`
 * By dragging and dropping an object to the **Variables** panel.
 
-![Variables](../../../uploads/navigation/variables.png "Variables View")
+![Variables](../img/variables.png "Variables View")
 
 To open a **Variables** panel, press <kbd>Alt + V</kbd> or click the **Variables** (**|x|**) icon on the **Sidebar**.

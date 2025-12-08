@@ -2,7 +2,6 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {ClinRow} from '../clinical-study';
-import {studies} from '../package';
 import {createBaselineEndpointDataframe, createHysLawDataframe,
   createLabValuesByVisitDataframe,
   createVisitDayStrCol} from '../data-preparation/data-preparation';
@@ -19,6 +18,7 @@ import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import {TRT_ARM_FIELD} from '../views-config';
 import {checkColumnsAndCreateViewer} from '../utils/views-validation-utils';
 import {CDISC_STANDARD} from '../utils/types';
+import {studies} from '../utils/app-utils';
 
 const resultsTabName = 'Results';
 const distrTabName = 'Laboratory distribution';

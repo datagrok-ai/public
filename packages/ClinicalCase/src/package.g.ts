@@ -4,14 +4,27 @@ import * as DG from 'datagrok-api/dg';
 //name: Clinical Case
 //tags: app
 //output: view result
-//meta.browsePath: Clinical
+//meta.icon: /img/clin_case_icon.png
 export async function clinicalCaseApp() : Promise<any> {
   return await PackageFunctions.clinicalCaseApp();
+}
+
+//name: Preclinical Case
+//tags: app
+//output: view result
+//meta.icon: /img/preclinical_case_icon.png
+export async function PreclinicalCaseApp() : Promise<any> {
+  return await PackageFunctions.PreclinicalCaseApp();
 }
 
 //input: dynamic treeNode 
 export async function clinicalCaseAppTreeBrowser(treeNode: any) : Promise<void> {
   await PackageFunctions.clinicalCaseAppTreeBrowser(treeNode);
+}
+
+//input: dynamic treeNode 
+export async function preclinicalCaseAppTreeBrowser(treeNode: any) : Promise<void> {
+  await PackageFunctions.preclinicalCaseAppTreeBrowser(treeNode);
 }
 
 //name: Get list of studies
@@ -24,10 +37,11 @@ export async function clinicalCaseAppTreeBrowser(treeNode: any) : Promise<void> 
 //input: string startDateOperator { optional: true; description: >, <, = }
 //input: datetime endDate { optional: true }
 //input: string endDateOperator { optional: true; description: >, <, = }
+//input: bool ongoing { optional: true }
 //input: string standard { optional: true; description: CDISC data format, either SDTM or SEND }
 //output: widget result
-export async function getListOfStudies(name?: string, description?: string, numSubjects?: number, numSubjectsOperator?: string, startDate?: any, startDateOperator?: string, endDate?: any, endDateOperator?: string, standard?: any) : Promise<any> {
-  return await PackageFunctions.getListOfStudies(name, description, numSubjects, numSubjectsOperator, startDate, startDateOperator, endDate, endDateOperator, standard);
+export async function getListOfStudies(name?: string, description?: string, numSubjects?: number, numSubjectsOperator?: string, startDate?: any, startDateOperator?: string, endDate?: any, endDateOperator?: string, ongoing?: boolean, standard?: any) : Promise<any> {
+  return await PackageFunctions.getListOfStudies(name, description, numSubjects, numSubjectsOperator, startDate, startDateOperator, endDate, endDateOperator, ongoing, standard);
 }
 
 //tags: folderViewer
@@ -44,4 +58,16 @@ export async function clinicalCaseFolderLauncher(folder: DG.FileInfo, files: DG.
 //meta.ext: xpt
 export async function xptFileHandler(file: DG.FileInfo) : Promise<any> {
   return await PackageFunctions.xptFileHandler(file);
+}
+
+//name: Run CDISC CORE Validation
+//description: Run CDISC CORE validation on datasets
+//input: string standard 
+//input: string dataPath 
+//input: string version 
+//input: string outputFormat 
+//input: dynamic options 
+//output: string result
+export async function runCoreValidate(standard: string, dataPath: string, version?: string, outputFormat?: string, options?: any) : Promise<string> {
+  return await PackageFunctions.runCoreValidate(standard, dataPath, version, outputFormat, options);
 }

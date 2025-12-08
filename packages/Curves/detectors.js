@@ -8,7 +8,6 @@
 const FIT_SEM_TYPE = 'fit';
 const TAG_FIT_CHART_FORMAT = '.fitChartFormat';
 const TAG_FIT_CHART_FORMAT_3DX = '3dx';
-const RAW_PNG_SEM_TYPE = 'rawPng';
 const likelyPNGColNames = ['image', 'png', 'thumbnail', 'img', 'glyph', 'icon', 'picture', 'photo'];
 /// <reference path="../../globals.d.ts" />
 class CurvesPackageDetectors extends DG.Package {
@@ -34,19 +33,6 @@ class CurvesPackageDetectors extends DG.Package {
       col.semType = FIT_SEM_TYPE;
       return col.semType;
     }
-    return null;
-  }
-
-  //tags: semTypeDetector
-  //input: column col
-  //output: string semType
-  detectRawPng(col) {
-    const colName = col.name.toLowerCase();
-    if (col.type === DG.COLUMN_TYPE.STRING &&
-      likelyPNGColNames.some((name) => colName.includes(name)) && DG.Detector.sampleCategories(col, (s) => {
-      return s && s.length > 1000 && s.startsWith('iVBORw0KGgo');
-    }, 1))
-      return RAW_PNG_SEM_TYPE;
     return null;
   }
 }

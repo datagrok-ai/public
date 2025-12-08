@@ -62,7 +62,7 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
   set calculating(value: boolean) { this.loader.style.display = value ? 'initial' : 'none'; }
 
   get filterSummary(): string {
-    return this.bioFilter!.filterSummary;
+    return this.bioFilter?.filterSummary ?? '';
   }
 
   get isFiltering(): boolean {
@@ -108,6 +108,9 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
     const superAttach = super.attach.bind(this);
     const logPrefix = `${this.filterToLog()}.attach()`;
     this.filterSyncer.sync(logPrefix, async () => {
+      // make sure semtypes are detected
+      if (dataFrame)
+        await dataFrame.meta.detectSemanticTypes();
       superAttach(dataFrame);
 
       if (!this.column) {
@@ -116,18 +119,18 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
         else
           this.column = dataFrame.columns.bySemType(DG.SEMTYPE.MACROMOLECULE);
       }
-      const sh = this.seqHelper.getSeqHandler(this.column!);
+      const _sh = this.seqHelper.getSeqHandler(this.column!);
       this.columnName ??= this.column?.name;
       this.notation ??= this.column?.meta.units!;
 
       this.bioFilter = this.notation === NOTATION.FASTA ?
         new FastaBioFilter() : this.notation === NOTATION.SEPARATOR ?
           new SeparatorBioFilter(this.column!.getTag(bioTAGS.separator)) : new HelmBioFilter(this.seqHelper);
-      this.root.appendChild(this.bioFilter!.filterPanel);
+      this.root.appendChild(this.bioFilter.filterPanel);
       this.root.appendChild(this.loader);
       await this.bioFilter.attach(); // may await waitForElementInDom
 
-      this.viewSubs.push(DG.debounce(this.bioFilter!.onChanged, this.debounceTime)
+      this.viewSubs.push(DG.debounce(this.bioFilter.onChanged, this.debounceTime)
         .subscribe(this.bioFilterOnChangedDebounced.bind(this)));
       this.viewSubs.push(grok.events.onResetFilterRequest
         .subscribe(this.grokEventsOnResetFilterRequest.bind(this)));
@@ -151,10 +154,10 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
   // -- Sync -
 
   private filterOnSync(state: FilterState): void {
-    if (state.filterId === this.filterId) return;
+    if (state.filterId === this.filterId || !this.bioFilter) return;
     if (state.dataFrameId !== this.dataFrame!.id || state.columnName !== this.columnName) return;
 
-    this.bioFilter!.props = state.props;
+    this.bioFilter.props = state.props;
   }
 
   // -- Layout --
@@ -173,7 +176,8 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
     const logPrefix = `${this.filterToLog()}.saveState()`;
     const state = super.saveState();
     this.logger.debug(`${logPrefix}, super.state = ${JSON.stringify(state)}`);
-    state.props = this.bioFilter!.saveProps();
+    if (this.bioFilter)
+      state.props = this.bioFilter.saveProps();
     return state;
   }
 
@@ -194,10 +198,12 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
     const logPrefix = `${this.filterToLog()}.fireFilterSync()`;
     this.logger.debug(`${logPrefix}, ` +
       `bioFilter = ${!!this.bioFilter ? this.bioFilter.constructor.name : 'null'}` +
-      (!!this.bioFilter ? `, props = ${JSON.stringify(this.bioFilter!.saveProps())}` : ''));
+      (!!this.bioFilter ? `, props = ${JSON.stringify(this.bioFilter.saveProps())}` : ''));
 
+    if (!this.bioFilter)
+      return;
     grok.events.fireCustomEvent(FILTER_SYNC_EVENT, new FilterState(
-      this.bioFilter!.props, this.filterId, this.dataFrame!.id, this.columnName!, this.bitset));
+      this.bioFilter.props, this.filterId, this.dataFrame!.id, this.columnName!, this.bitset));
   }
 
   // -- Handle events
@@ -212,7 +218,7 @@ export class BioSubstructureFilter extends DG.Filter implements IRenderer {
     const logPrefix = `${this.filterToLog()}.bioFilterOnChangedDebounced()`;
     this.logger.debug(`${logPrefix}, start, ` +
       `isFiltering = ${this.isFiltering}, ` +
-      `props = ${JSON.stringify(this.bioFilter!.saveProps())}`);
+      `props = ${this.bioFilter ? JSON.stringify(this.bioFilter?.saveProps()) : 'null'}`);
 
     if (!this.isFiltering) {
       this.bitset = null;

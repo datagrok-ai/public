@@ -3,15 +3,14 @@ title: "AWS Terraform"
 sidebar_position: 2
 ---
 
-The deployment consists of a few docker containers, [database](../../develop/under-the-hood/infrastructure.md#1-core-components) for storing metadata,
-and [persistent file storage](../../develop/under-the-hood/infrastructure.md#1-core-components) for storing files
+The deployment consists of several Docker containers, a [database](../../develop/under-the-hood/infrastructure.md#1-core-components) for storing metadata,
+and [persistent file storage](../../develop/under-the-hood/infrastructure.md#1-core-components) for storing files.
 
 This document contains instructions to deploy Datagrok using [Terraform](https://www.terraform.io/)
-on [AWS ECS cluster](https://aws.amazon.com/ecs/) with [AWS RDS](https://aws.amazon.com/rds/)
+on an [AWS ECS cluster](https://aws.amazon.com/ecs/) with [AWS RDS](https://aws.amazon.com/rds/)
 and [AWS S3](https://aws.amazon.com/s3/).
 
-We considered a lot of typical security nuances during the Terraform code development. As a result, you will
-create a Datagrok infrastructure in AWS that applies to all standard security policies.
+We addressed many typical security considerations during the development of the Terraform code. As a result, the deployed Datagrok infrastructure adheres to standard AWS security best practices.
 
 More information about Datagrok design and components:
 
@@ -23,46 +22,39 @@ More information about Datagrok design and components:
 ### Prerequisites
 
 1. Check that you
-   have [required permissions](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/iam.list)
-   on AWS account to perform Terraform deployment to ECS. The `cloudformation` permissions are optional.
+   have the [required permissions](https://github.com/datagrok-ai/public/blob/master/help/develop/admin/deploy/iam.list)
+   on the AWS account to perform Terraform deployment to ECS.
 2. Check that you
-   have required [S3 permissions](https://www.terraform.io/language/settings/backends/s3#s3-bucket-permissions)
-   and [DynamoDB permissions](https://www.terraform.io/language/settings/backends/s3#dynamodb-table-permissions)
+   have the required [S3 permissions](https://www.terraform.io/language/settings/backends/s3#s3-bucket-permissions)
+   and [DynamoDB permissions](https://www.terraform.io/language/settings/backends/s3#dynamodb-table-permissions).
 
-3. [Create access token in Docker Hub](https://docs.docker.com/docker-hub/access-tokens/)
+3. Create an IAM role for CloudFormation stack deployment with the following policies attached:
 
-4. Come up with two endpoints: `DATAGROK_DNS`, `CVM_DNS`. Datagrok requires two endpoints: `DATAGROK_DNS` and `CVM_DNS`.
-   Users will use `DATAGROK_DNS` to access Datagrok Web UI, and requests `CVM_DNS` will be sent automatically by
-   Datagrok Client.
+   * IAMFullAccess
+   * PowerUserAccess
+  
+  You can name it something like `CloudFormationExecutionRole`. Its ARN will be used as the `iam_role_arn` variable in the Terraform module.
 
 ## Deploy Datagrok components
 
-1. Download Terraform
-   Template: [link](https://github.com/datagrok-ai/public/blob/master/help/deploy/aws/terraform/terraform.tf)
-   .
+1. You can use our example as a template and modify it to your needs.
+   Example: [link](https://github.com/datagrok-ai/tf-module-datagrok-core/blob/main/aws/examples/vpc/main.tf).
 
-2. Replace the placeholders in the template with the actual values
+2. Make sure to change the module source to `source = "git@github.com:datagrok-ai/tf-module-datagrok-core.git//aws?ref=main"` or any other version you want to use.
 
-   * SET_YOUR_S3_BUCKET_FOR_TERRAFORM_STATE - the unique S3 bucket name to store Terraform state
-   * SET_YOUR_REGION - target region to create Datagrok Infrastructure
+3. [Set up AWS credentials to run Terraform code](https://developer.hashicorp.com/terraform/language/settings/backends/s3#credentials-and-shared-configuration)
 
-3. [Setup AWS credentials to run Terraform code](https://developer.hashicorp.com/terraform/language/settings/backends/s3#credentials-and-shared-configuration)
-
-4. Apply Terraform code
-
+4. Apply the Terraform code
    ```shell
    terraform init --upgrade
-   terraform apply -target module.datagrok_core
-   terraform apply -target module.datagrok_cvm
+   terraform apply
    ```
 
-5. After the Datagrok container starts, the Datagrok server will deploy the database. You can check the status by
-   checking the running task log in [CloudWatch](https://aws.amazon.com/cloudwatch/)
+5. Once the Datagrok container starts, the server will initialize the database. You can monitor the status by checking the running task logs in [CloudWatch](https://aws.amazon.com/cloudwatch/).
 
 ## Advanced usage
 
-The Terraform code is highly configurable. Feel free to adapt the code and variables to meet your needs and
-requirements.
+The Terraform code is highly configurable. Feel free to adapt the code and variables to meet your needs and requirements.
 Terraform modules documentation:
 
 * [Datagrok Core README](https://github.com/datagrok-ai/tf-module-datagrok-core/blob/main/aws/README.md)

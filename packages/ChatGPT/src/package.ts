@@ -7,12 +7,18 @@ import {ChatGptAssistant} from './prompt-engine/chatgpt-assistant';
 import {ChatGPTPromptEngine} from './prompt-engine/prompt-engine';
 import {getAiPanelVisibility, initAiPanel, setAiPanelVisibility} from './ai-panel';
 import {findBestFunction, tableQueriesFunctionsSearchLlm} from './prompts/find-best-function';
-import {askWiki, setupSearchUI, smartExecution} from './llm-utils/ui';
+import {askWiki, setupAIQueryEditorUI, setupSearchUI, smartExecution} from './llm-utils/ui';
 import {Plan} from './prompt-engine/interfaces';
 import {OpenAIHelpClient} from './llm-utils/openAI-client';
 import {LLMCredsManager} from './llm-utils/creds';
 import {CombinedAISearchAssistant} from './llm-utils/combined-search';
 import {JsonSchema} from './prompt-engine/interfaces';
+import {generateAISqlQuery} from './llm-utils/sql-utils';
+import {genDBConnectionMeta} from './llm-utils/db-index-tools';
+import {generateAISqlQueryWithTools} from './llm-utils/sql-tools';
+import {AbortPointer, getAIAbortSubscription} from './utils';
+import * as rxjs from 'rxjs';
+import {embedConnectionQueries} from './llm-utils/embeddings';
 
 export * from './package.g';
 export const _package = new DG.Package();
@@ -124,6 +130,20 @@ export class PackageFunctions {
       'cache.invalidateOn': '0 0 1 * *'
     }
   })
+  static async ask(
+    question: string,
+  ): Promise<string> {
+    const client = OpenAIHelpClient.getInstance();
+    // this is used only here to provide caching
+    return await client.generalPrompt(modelName, 'You are a helpful assistant.', question);
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'cache': 'all',
+      'cache.invalidateOn': '0 0 1 * *'
+    }
+  })
   static async getExecutionPlan(userGoal: string): Promise<string> {
     const gptEngine = ChatGPTPromptEngine.getInstance(LLMCredsManager.getApiKey(), modelName);
     const gptAssistant = new ChatGptAssistant(gptEngine);
@@ -152,5 +172,64 @@ export class PackageFunctions {
   static async askDocumentationCached(prompt: string): Promise<string> {
     const client = OpenAIHelpClient.getInstance();
     return await client.getHelpAnswer(prompt);
+  }
+
+  @grok.decorators.func({
+    'meta': {
+      'cache': 'all',
+      'cache.invalidateOn': '0 0 1 * *'
+    }
+  })
+  static async generateSqlQuery(prompt: string, connectionID: string, schemaName: string): Promise<string> {
+    return await generateAISqlQuery(prompt, connectionID, schemaName);
+  }
+  @grok.decorators.func({})
+  static async setupAIQueryEditor(view: DG.ViewBase, connectionID: string, queryEditorRoot: HTMLElement, @grok.decorators.param({type: 'dynamic'}) setAndRunFunc: Function): Promise<boolean> {
+    return setupAIQueryEditorUI(view, connectionID, queryEditorRoot, setAndRunFunc as (query: string) => void);
+  }
+
+  @grok.decorators.func({})
+  static async indexDatabaseSchema() {
+    grok.shell.info('Do not touch this function if you are not a developer. :D :D :D');
+    return;
+    const connections = await grok.dapi.connections.list();
+    const connectionsInput = ui.input.choice('Connection', {items: connections.map((c) => c.nqName), value: connections[0].nqName, nullable: false});
+    const getConnectionByName = (): DG.DataConnection => {
+      return connections.find((c) => c.nqName === connectionsInput.value)!;
+    };
+    const schemaInputRoot = ui.div([]);
+    let schemaInput: DG.ChoiceInput<string>;
+    const createSchemaInput = async () => {
+      ui.empty(schemaInputRoot);
+      const connection = getConnectionByName();
+      const schemas = await grok.dapi.connections.getSchemas(connection);
+      schemaInput = ui.input.choice('Schema', {items: schemas, value: schemas[0], nullable: false}) as DG.ChoiceInput<string>;
+      schemaInputRoot.append(schemaInput.root);
+    };
+    connectionsInput.onChanged.subscribe(() => createSchemaInput());
+    await createSchemaInput();
+    ui.dialog('Index Database Schema')
+      .add(connectionsInput)
+      .add(schemaInputRoot)
+      .onOK(async () => {
+        const res = await genDBConnectionMeta(getConnectionByName(), [schemaInput.value]);
+        grok.shell.info('Database schema indexed successfully.');
+        console.log(res);
+        DG.Utils.download(`${connectionsInput.value}_${schemaInput.value}_db_index.json`, JSON.stringify(res, (_, v) => typeof v === 'bigint' ? Number(v) : v, 2));
+      }).show();
+  }
+
+  @grok.decorators.func({})
+  static async embedConnectionQueries() {
+    const connections = await grok.dapi.connections.list();
+    const connectionsInput = ui.input.choice('Connection', {items: connections.map((c) => c.nqName), value: connections[0].nqName, nullable: false});
+    ui.dialog('Embed Connection Queries')
+      .add(connectionsInput)
+      .onOK(async () => {
+        const connection = connections.find((c) => c.nqName === connectionsInput.value)!;
+        const embedRes = await embedConnectionQueries(connection.id);
+        console.log(embedRes);
+        DG.Utils.download(`${connectionsInput.value}_queries_embeddings.json`, JSON.stringify(embedRes, null, 2));
+      }).show();
   }
 }

@@ -11,7 +11,6 @@ import grok_connect.connectors_info.FuncParam;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
 import grok_connect.utils.GrokConnectException;
-import grok_connect.utils.Property;
 import serialization.Column;
 import serialization.DataFrame;
 import serialization.StringColumn;
@@ -86,7 +85,7 @@ public class HiveDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public DataFrame getSchema(DataConnection connection, String schema, String table) throws GrokConnectException {
+    public DataFrame getSchema(DataConnection connection, String schema, String table, boolean includeKeyInfo) throws GrokConnectException {
         try (Connection dbConnection = getConnection(connection);
              ResultSet columns = dbConnection.getMetaData().getColumns(null, schema, table,
                      null)) {

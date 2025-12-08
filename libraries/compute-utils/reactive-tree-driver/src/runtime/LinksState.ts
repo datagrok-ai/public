@@ -14,7 +14,10 @@ import {getLinksDiff} from './links-diff';
 import {ViewAction} from '../config/PipelineInstance';
 
 export interface LinksData {
-  prefix: NodePath;
+  uuid: string;
+  id: string;
+  prefix: Readonly<NodePath>;
+  basePath?: Readonly<NodePath>;
   isAction: boolean;
   matchInfo: MatchInfo;
 }
@@ -134,14 +137,14 @@ export class LinksState {
         mergedLinks.push(oldLink);
       else {
         if (this.logger && !oldLink.matchInfo.isDefaultValidator)
-          this.logger.logLink(`${prefix}Added`, {linkUUID: oldLink.uuid, prefix: oldLink.prefix, id: oldLink.matchInfo.spec.id});
+          this.logger.logLink(`${prefix}Removed`, {linkUUID: oldLink.uuid, prefix: oldLink.prefix, basePath: oldLink.matchInfo.basePath, id: oldLink.matchInfo.spec.id});
         oldLink.destroy();
       }
     }
     for (const newLink of newLinks) {
       if (toAdd.has(newLink.uuid)) {
         if (this.logger && !newLink.matchInfo.isDefaultValidator)
-          this.logger.logLink(`${prefix}Added`, {linkUUID: newLink.uuid, prefix: newLink.prefix, id: newLink.matchInfo.spec.id});
+          this.logger.logLink(`${prefix}Added`, {linkUUID: newLink.uuid, prefix: newLink.prefix, basePath: newLink.matchInfo.basePath, id: newLink.matchInfo.spec.id});
         mergedLinks.push(newLink);
         addedLinks.push(newLink);
       }
@@ -403,8 +406,8 @@ export class LinksState {
   }
 
   public getLinksInfo(): LinksData[] {
-    const links = [...this.links.values()].filter((l) => !l.matchInfo.isDefaultValidator).map((l) => ({prefix: l.prefix, isAction: false, matchInfo: l.matchInfo}));
-    const actions = [...this.actions.values()].map((l) => ({prefix: l.prefix, isAction: true, matchInfo: l.matchInfo}));
+    const links = [...this.links.values()].filter((l) => !l.matchInfo.isDefaultValidator).map((l) => ({id: l.matchInfo.spec.id, uuid: l.uuid, prefix: l.prefix, basePath: l.matchInfo.basePath, isAction: false, matchInfo: l.matchInfo}));
+    const actions = [...this.actions.values()].map((l) => ({id: l.matchInfo.spec.id, uuid: l.uuid, prefix: l.prefix, basePath: l.matchInfo.basePath, isAction: true, matchInfo: l.matchInfo}));
     return [...links, ...actions];
   }
 

@@ -5,6 +5,7 @@
  * The class name is comprised of <PackageName> and the `PackageDetectors` suffix.
  * Follow this naming convention to ensure that your detectors are properly loaded.
  */
+const RAW_PNG_SEM_TYPE = 'rawPng';
 class PowerGridPackageDetectors extends DG.Package {
   /* @param s {String} - string to check
    * @returns {boolean} */
@@ -29,5 +30,16 @@ class PowerGridPackageDetectors extends DG.Package {
   detectByteArrayColumn(col) {
     if (col.type === DG.COLUMN_TYPE.BYTE_ARRAY)
       return 'BinaryImage';
+  }
+
+  //tags: semTypeDetector
+  //input: column col
+  //output: string semType
+  detectRawPng(col) {
+    if (col.type === DG.COLUMN_TYPE.STRING && DG.Detector.sampleCategories(col, (s) => {
+      return s && s.length > 1000 && s.startsWith('iVBORw0KGgo');
+    }, 1))
+      return RAW_PNG_SEM_TYPE;
+    return null;
   }
 }

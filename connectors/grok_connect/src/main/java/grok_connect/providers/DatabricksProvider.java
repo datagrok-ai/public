@@ -148,7 +148,7 @@ public class DatabricksProvider extends JdbcDataProvider {
     }
 
     @Override
-    public DataFrame getSchema(DataConnection connection, String schema, String table)
+    public DataFrame getSchema(DataConnection connection, String schema, String table, boolean includeKeyInfo)
             throws QueryCancelledByUser, GrokConnectException {
 
         try (Connection db = getConnection(connection)) {
@@ -304,5 +304,77 @@ public class DatabricksProvider extends JdbcDataProvider {
         msg = msg.trim().replaceAll("\\n{2,}", "\n");
 
         return msg;
+    }
+
+    @Override
+    public String getCommentsQuery(DataConnection connection) throws GrokConnectException {
+        try (Connection conn = getConnection(connection)) {
+            if (!isUnityCatalog(conn))
+                throw new GrokConnectException("Can not get comments for legacy metastore");
+        } catch (SQLException e) {
+            throw new GrokConnectException(e);
+        }
+    
+        return "--input: string schema\n" +
+                "-- SCHEMA (database.schema) comments\n" +
+                "(\n" +
+                "    SELECT \n" +
+                "        s.catalog_name,\n" +
+                "        s.schema_name as table_schema,\n" +
+                "        'schema' AS object_type,\n" +
+                "        NULL AS table_name,\n" +
+                "        NULL AS column_name,\n" +
+                "        s.comment AS comment\n" +
+                "    FROM system.information_schema.schemata s\n" +
+                "    WHERE s.schema_name = @schema\n" +
+                ")\n" +
+                "\n" +
+                "UNION ALL\n" +
+                "\n" +
+                "-- TABLE comments\n" +
+                "(\n" +
+                "    SELECT \n" +
+                "        t.table_catalog AS catalog_name,\n" +
+                "        t.table_schema  AS table_schema,\n" +
+                "        'table' AS object_type,\n" +
+                "        t.table_name,\n" +
+                "        NULL AS column_name,\n" +
+                "        t.comment AS comment\n" +
+                "    FROM system.information_schema.tables t\n" +
+                "    WHERE t.table_schema = @schema\n" +
+                "      AND t.table_type = 'BASE TABLE'\n" +
+                ")\n" +
+                "\n" +
+                "UNION ALL\n" +
+                "\n" +
+                "-- VIEW comments\n" +
+                "(\n" +
+                "    SELECT \n" +
+                "        v.table_catalog AS catalog_name,\n" +
+                "        v.table_schema  AS table_schema,\n" +
+                "        'view' AS object_type,\n" +
+                "        v.table_name,\n" +
+                "        NULL AS column_name,\n" +
+                "        v.comment AS comment\n" +
+                "    FROM system.information_schema.views v\n" +
+                "    WHERE v.table_schema = @schema\n" +
+                ")\n" +
+                "\n" +
+                "UNION ALL\n" +
+                "\n" +
+                "-- COLUMN comments (tables + views)\n" +
+                "(\n" +
+                "    SELECT \n" +
+                "        c.table_catalog AS catalog_name,\n" +
+                "        c.table_schema  AS table_schema,\n" +
+                "        'column' AS object_type,\n" +
+                "        c.table_name,\n" +
+                "        c.column_name,\n" +
+                "        c.comment AS comment\n" +
+                "    FROM system.information_schema.columns c\n" +
+                "    WHERE c.table_schema = @schema\n" +
+                ")\n" +
+                "\n" +
+                "ORDER BY object_type, table_name, column_name;\n";
     }
 }

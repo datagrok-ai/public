@@ -77,7 +77,7 @@ connections, they can be added in the connection dialog (`Databases | Actions | 
 search. The articles on
 [data access](../../access/access.md), [file shares](../../access/files/files.md)
 and
-[routing](routing.md#files) explain in more detail how to work with file shares.
+routing explain in more detail how to work with file shares.
 
 ### Databases
 

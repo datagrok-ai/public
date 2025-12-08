@@ -1,15 +1,12 @@
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {validationRulesList, _package} from '../package';
-import {pinnacleRuleIdColumnName, validationResultRuleIdColumn} from '../sdtm-validation/constants';
-import {createRulesDataFrame} from '../sdtm-validation/validation-utils';
-import {getUniqueValues} from '../data-preparation/utils';
+import {_package} from '../package';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
-import {studies} from '../package';
+import {ValidationResult} from '../types/validation-result';
+import {studies} from '../utils/app-utils';
 
 export class ValidationView extends ClinicalCaseViewBase {
-  resultsDataframe: DG.DataFrame;
+  resultsDataframes: DG.DataFrame[];
   rulesDataframe: DG.DataFrame;
   resultsGrid: DG.Grid;
   rulesGrid: DG.Grid;
@@ -22,91 +19,75 @@ export class ValidationView extends ClinicalCaseViewBase {
   }
 
   createView(): void {
-    this.resultsDataframe = studies[this.studyId].validationResults;
-    if (!this.resultsDataframe.rowCount) {
-      this.root.append(ui.divText('No validation errors found', 'clinical-case-validation-view-no-errors'));
-      return;
-    }
-    this.domains = studies[this.studyId].domains;
-
-    const uniqueViolatedRuleIds = Array.from(getUniqueValues(studies[this.studyId].validationResults,
-      validationResultRuleIdColumn));
-    this.rulesDataframe = this.getViolatedRulesDataframe(validationRulesList, uniqueViolatedRuleIds);
-
-    this.rulesGrid = this.rulesDataframe.plot.grid();
-
-    grok.data.linkTables(this.rulesDataframe, this.resultsDataframe,
-      [`${pinnacleRuleIdColumnName}`], [`${validationResultRuleIdColumn}`],
-      [DG.SYNC_TYPE.CURRENT_ROW_TO_SELECTION]);
-
-    this.generateUI();
-    this.rulesDataframe.currentRowIdx = 0;
+    if (!studies[this.studyId].validated) {
+      ui.setUpdateIndicator(this.root, true, 'Validation in progress...');
+      studies[this.studyId].validationCompleted.subscribe(() => {
+        ui.setUpdateIndicator(this.root, false);
+        this.generateUI();
+      });
+    } else
+      this.generateUI();
   }
 
   private generateUI() {
-    const viewerTitle = {style: {
-      'color': 'var(--grey-6)',
-      'margin': '12px 0px 6px 12px',
-      'font-size': '16px',
-      'justify-content': 'center',
-    }};
+    const validationResults: ValidationResult = studies[this.studyId].validationResults;
 
-
-    const violatedRules = DG.Viewer.grid(this.rulesDataframe);
-    violatedRules.root.prepend();
-
-    const tabs = ui.tabControl(this.createErrorsTabControl());
-    console.log(tabs);
-
-    this.root.className = 'grok-view ui-box';
-    this.root.appendChild(
-      ui.splitV([
-        ui.box(ui.divText('Violated rules', viewerTitle), {style: {maxHeight: '45px'}}),
-        violatedRules.root,
-        //this.resultsDataframe.plot.grid().root,
-        ui.box(ui.divText('Errors', viewerTitle), {style: {maxHeight: '45px'}}),
-        tabs.root,
-      ]),
-    );
-  }
-
-  private createErrorsTabControl() {
-    const tabControl = {};
-    Object.keys(studies[this.studyId].errorsByDomain).forEach((key) => {
-      const domainDataframe = this.domains[key].clone();
-      this.addRowNumberColumn(domainDataframe, key);
-      tabControl[`${key.toUpperCase()} (${studies[this.studyId].errorsByDomain[key]})`] =
-        DG.Viewer.grid(domainDataframe).root;
-      grok.data.linkTables(this.resultsDataframe, domainDataframe,
-        [`Row number`, 'Domain'], [`Row number`, 'Domain lower case'],
-        [DG.SYNC_TYPE.SELECTION_TO_FILTER]);
-    });
-    return tabControl;
-  }
-
-
-  private addRowNumberColumn(dataframe: DG.DataFrame, domain: string) {
-    if (!dataframe.columns.contains('Row number'))
-      dataframe.columns.addNewInt('Row number').init((i) => i);
-
-    if (!dataframe.columns.contains('Domain lower case'))
-      dataframe.columns.addNewString('Domain lower case').init((i) => domain);
-  }
-
-
-  private getViolatedRulesDataframe(rules: DG.DataFrame, uniqueViolatedRuleIds: any) {
-    const res = createRulesDataFrame();
-    const column = rules.getCol(pinnacleRuleIdColumnName);
-    const rowCount = rules.rowCount;
-    for (let i = 0; i < rowCount; i++) {
-      if (uniqueViolatedRuleIds.includes(column.get(i))) {
-        const array = [];
-        for (const col of rules.columns)
-          array.push(col.get(i));
-        res.rows.addNew(array);
-      }
+    if (!validationResults) {
+      ui.setUpdateIndicator(this.root, false);
+      this.root.appendChild(ui.divText('No validation results available'));
+      return;
     }
-    return res;
+
+    const tabControl = ui.tabControl(null, false);
+
+    // Conformance_Details tab - use ui.tableFromMap
+    if (validationResults.Conformance_Details) {
+      const conformanceMap: {[key: string]: any} = {};
+      Object.keys(validationResults.Conformance_Details).forEach((key) => {
+        const value = validationResults.Conformance_Details[key as keyof typeof validationResults.Conformance_Details];
+        conformanceMap[key] = value !== null && value !== undefined ? String(value) : '';
+      });
+      const conformanceTable = ui.tableFromMap(conformanceMap);
+      conformanceTable.style.width = 'fit-content';
+      tabControl.addPane('Conformance_Details', () => conformanceTable);
+    }
+
+    // Dataset_Details tab - grid from DataFrame
+    if (validationResults.Dataset_Details && validationResults.Dataset_Details.length > 0) {
+      const datasetDf = DG.DataFrame.fromObjects(validationResults.Dataset_Details);
+      const datasetGrid = datasetDf.plot.grid();
+      tabControl.addPane('Dataset_Details', () => datasetGrid.root);
+    }
+
+    // Issue_Summary tab - grid from DataFrame
+    if (validationResults.Issue_Summary && validationResults.Issue_Summary.length > 0) {
+      const issueSummaryDf = DG.DataFrame.fromObjects(validationResults.Issue_Summary);
+      const issueSummaryGrid = issueSummaryDf.plot.grid();
+      tabControl.addPane('Issue_Summary', () => issueSummaryGrid.root);
+    }
+
+    // Issue_Details tab - grid from DataFrame
+    if (validationResults.Issue_Details && validationResults.Issue_Details.length > 0) {
+      // Convert arrays (variables, values) to strings for display
+      const issueDetailsForDf = validationResults.Issue_Details.map((issue) => ({
+        ...issue,
+        variables: Array.isArray(issue.variables) ? issue.variables.join(', ') : String(issue.variables || ''),
+        values: Array.isArray(issue.values) ? issue.values.join(', ') : String(issue.values || ''),
+      }));
+      const issueDetailsDf = DG.DataFrame.fromObjects(issueDetailsForDf);
+      const issueDetailsGrid = issueDetailsDf.plot.grid();
+      tabControl.addPane('Issue_Details', () => issueDetailsGrid.root);
+    }
+
+    // Rules_Report tab - grid from DataFrame
+    if (validationResults.Rules_Report && validationResults.Rules_Report.length > 0) {
+      const rulesReportDf = DG.DataFrame.fromObjects(validationResults.Rules_Report);
+      const rulesReportGrid = rulesReportDf.plot.grid();
+      tabControl.addPane('Rules_Report', () => rulesReportGrid.root);
+    }
+
+    tabControl.root.style.width = '100%';
+
+    this.root.appendChild(tabControl.root);
   }
 }
-

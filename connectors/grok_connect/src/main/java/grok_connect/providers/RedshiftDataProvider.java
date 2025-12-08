@@ -14,7 +14,6 @@ import grok_connect.connectors_info.DbCredentials;
 import grok_connect.connectors_info.FuncParam;
 import grok_connect.table_query.AggrFunctionInfo;
 import grok_connect.table_query.Stats;
-import grok_connect.utils.Property;
 import serialization.Types;
 
 public class RedshiftDataProvider extends JdbcDataProvider {
@@ -74,7 +73,7 @@ public class RedshiftDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public String getSchemaSql(String db, String schema, String table) {
+    public String getSchemaSql(String db, String schema, String table, boolean includeKeyInfo) {
         List<String> filters = new ArrayList<String>() {{
             add("c.table_schema = '" + ((schema != null) ? schema : descriptor.defaultSchema) + "'");
         }};

@@ -4,14 +4,14 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import { MolTrackDockerService } from './services/moltrack-docker-service';
-import { excludedScopes, MOLTRACK_ENTITY_LEVEL, MOLTRACK_IS_STATIC_FIELD, SAVED_SEARCHES_NODE, Scope, SEARCH_NODE } from './utils/constants';
-import { createSavedSearchesSatistics, createSearchExpandableNode, createSearchNode, createSearchView, getSavedSearches, handleSearchURL, loadSearchFields, molTrackSearchFieldsArr } from './views/search';
-import { registerAllData, registerAssayData, updateAllMolTrackSchemas } from './utils/registration-utils';
-import { batchView, compoundView, createPath, getQuickActionsWidget, getStatisticsWidget, initAssayRegisterView, initBulkRegisterView, initRegisterView, initSchemaView } from './utils/view-utils';
-import { flattened } from './utils/utils';
-import { molTrackPropPanel } from './widgets/moltrack-property-panel';
-import { registerSemanticTypes } from './utils/detectors';
+import {MolTrackDockerService} from './services/moltrack-docker-service';
+import {excludedScopes, IViewContainer, MOLTRACK_ENTITY_LEVEL, MOLTRACK_IS_STATIC_FIELD, MOLTRACK_NODE, SAVED_SEARCHES_NODE, Scope, SEARCH_NODE} from './utils/constants';
+import {createSavedSearchesSatistics, createSearchExpandableNode, createSearchNode, createSearchView, getSavedSearches, handleSearchURL, loadSearchFields, molTrackSearchFieldsArr} from './views/search';
+import {registerAllData, registerAssayData, updateAllMolTrackSchemas} from './utils/registration-utils';
+import {batchView, compoundView, createPath, getQuickActionsWidget, getStatisticsWidget, initAssayRegisterView, initBulkRegisterView, initRegisterView, initSchemaView} from './utils/view-utils';
+import {flattened} from './utils/utils';
+import {molTrackPropPanel} from './widgets/moltrack-property-panel';
+import {registerSemanticTypes} from './utils/detectors';
 
 export const _package = new DG.Package();
 
@@ -21,7 +21,11 @@ export async function init(): Promise<void> {
     await grok.functions.call('Chem:initChemAutostart');
   } catch (e) {}
   registerSemanticTypes();
-  // This will be used for the updated docker setup later.
+
+  const dbInitialized = await grok.data.query('MolTrack:checkDBInitialized');
+  if (dbInitialized.get('db_initialized', 0))
+    return;
+
   const connection = await grok.dapi.connections.filter('name = "moltrack"').first();
   const queries = await grok.dapi.queries.filter(`connection.id = "${connection.id}"`).list();
   for (const query of queries)
@@ -55,7 +59,8 @@ export async function molTrackApp(path: string): Promise<DG.ViewBase> {
   const isBulkPath = hasPath && path.includes('Bulk');
   const isAssayPath = hasPath && path.includes('Assay');
 
-  const setPathAndReturn = (view: DG.View) => {
+  const setPathAndReturn = (registerView: IViewContainer): DG.ViewBase => {
+    const {view} = registerView;
     view.path = path;
     return view;
   };
@@ -90,15 +95,21 @@ export async function molTrackApp(path: string): Promise<DG.ViewBase> {
 
   const statisticsWidget = await getStatisticsWidget(createSearchView);
   const quickActionsWidget = getQuickActionsWidget();
-  const viewRoot = ui.divH([statisticsWidget, quickActionsWidget], { style: { gap: '50px' } });
-  return createSearchExpandableNode([''], async () => viewRoot);
+  const viewRoot = ui.divH([statisticsWidget, quickActionsWidget], {style: {gap: '50px'}});
+  const view = await createSearchExpandableNode([], async () => viewRoot, false);
+  view.name = MOLTRACK_NODE;
+  return view;
 }
 
 //input: dynamic treeNode
 //input: view browseView
 export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseView: any) {
-  function createRegisterNode(label: string, initView: () => void) {
-    appNode.getOrCreateGroup('Register').item(label).onSelected.subscribe(initView);
+  function createRegisterNode(label: string, initView: () => IViewContainer | Promise<IViewContainer>) {
+    appNode.getOrCreateGroup('Register').item(label).onSelected.subscribe(async () => {
+      const registerView = await initView();
+      registerView.show?.();
+      return registerView.view;
+    });
   }
 
   appNode.getOrCreateGroup('Register').onSelected.subscribe(() => {
@@ -143,7 +154,6 @@ export async function molTrackAppTreeBrowser(appNode: DG.TreeViewGroup, browseVi
 //meta.cache.invalidateOn: 0 0 1 * *
 //output: string result
 export async function fetchCompoundProperties(): Promise<string> {
-  await MolTrackDockerService.init();
   return await MolTrackDockerService.fetchCompoundProperties();
 }
 
@@ -153,7 +163,6 @@ export async function fetchCompoundProperties(): Promise<string> {
 //meta.cache.invalidateOn: 0 0 1 * *
 //output: string result
 export async function fetchBatchProperties(): Promise<string> {
-  await MolTrackDockerService.init();
   return await MolTrackDockerService.fetchBatchProperties();
 }
 
@@ -161,7 +170,6 @@ export async function fetchBatchProperties(): Promise<string> {
 //description: Retrieves all dynamic fields
 //output: string result
 export async function fetchSchema(): Promise<string> {
-  await MolTrackDockerService.init();
   const res = await MolTrackDockerService.fetchSchema();
   return JSON.stringify(res);
 }
@@ -170,7 +178,6 @@ export async function fetchSchema(): Promise<string> {
 //description: Retrieves all static fields
 //output: string result
 export async function fetchDirectSchema(): Promise<string> {
-  await MolTrackDockerService.init();
   const res = await MolTrackDockerService.fetchDirectSchema();
   return JSON.stringify(res);
 }
@@ -179,7 +186,6 @@ export async function fetchDirectSchema(): Promise<string> {
 //input: string corporateValue
 //output: object compound
 export async function getCompoundByCorporateId(corporateValue: string) {
-  await MolTrackDockerService.init();
   return await MolTrackDockerService.getCompoundByCorporateId(corporateValue);
 }
 
@@ -187,7 +193,6 @@ export async function getCompoundByCorporateId(corporateValue: string) {
 //input: string corporateValue
 //output: object batch
 export async function getBatchByCorporateId(corporateValue: string) {
-  await MolTrackDockerService.init();
   return await MolTrackDockerService.getBatchByCorporateId(corporateValue);
 }
 
@@ -196,7 +201,6 @@ export async function getBatchByCorporateId(corporateValue: string) {
 // description: Registers compound properties in the MolTrack service using the provided JSON payload
 // output: string result
 export async function registerMolTrackProperties(jsonPayload: string): Promise<string> {
-  await MolTrackDockerService.init();
   return MolTrackDockerService.updateSchema(jsonPayload);
 }
 
@@ -204,7 +208,6 @@ export async function registerMolTrackProperties(jsonPayload: string): Promise<s
 //input: string assayPayload
 //output: string result
 export async function registerAssays(assayPayload: string): Promise<string> {
-  await MolTrackDockerService.init();
   return await MolTrackDockerService.registerAssay(assayPayload);
 }
 
@@ -220,7 +223,6 @@ export async function registerBulk(
   mapping: string,
   errorHandling: string,
 ): Promise<DG.DataFrame> {
-  await MolTrackDockerService.init();
   return await MolTrackDockerService.registerBulk(csvFile, scope, mapping, errorHandling);
 }
 
@@ -229,7 +231,6 @@ export async function registerBulk(
 //input: string entityEndpoint
 //output: dataframe df
 export async function search(query: string, entityEndpoint: string) {
-  await MolTrackDockerService.init();
   return await MolTrackDockerService.search(JSON.parse(query), entityEndpoint);
 }
 
@@ -246,7 +247,6 @@ export async function advancedSearch(outputFields: string[], filter: any): Promi
     filter: filter,
     output_format: 'json',
   };
-  await MolTrackDockerService.init();
   const searchResultJson = await MolTrackDockerService.search(molTrackSearchQuery, level);
   return DG.DataFrame.fromObjects(searchResultJson.data)!;
 }
@@ -255,7 +255,6 @@ export async function advancedSearch(outputFields: string[], filter: any): Promi
 //input: string scope
 //output: dataframe result
 export async function retrieveEntity(scope: string, flatten: boolean = true): Promise<DG.DataFrame | undefined> {
-  await MolTrackDockerService.init();
   const resultJson = await MolTrackDockerService.retrieveEntity(scope);
   await loadSearchFields();
   const dynamicProps = molTrackSearchFieldsArr ?
@@ -273,7 +272,6 @@ export async function retrieveEntity(scope: string, flatten: boolean = true): Pr
 //output: widget res
 export async function getMoltrackPropPanelById(id: DG.SemanticValue): Promise<DG.Widget> {
   const {value: idValue} = id;
-  await MolTrackDockerService.init();
   const compound = await MolTrackDockerService.getCompoundByCorporateId(idValue);
   return molTrackPropPanel(compound, id.cell.column);
 }

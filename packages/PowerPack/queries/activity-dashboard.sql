@@ -19,5 +19,5 @@ JOIN entities en ON en.id = v.value_uuid
 WHERE p.type = 'entity_id'
 GROUP BY en.id
 ORDER BY last_event_time DESC
-LIMIT 50;
+LIMIT 150;
 --end

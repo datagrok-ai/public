@@ -8,9 +8,12 @@ import {SITE_ID, STUDY_ID} from './constants/columns-constants';
 import {addVisitDayFromTvDomain, createEventStartEndDaysCol} from './data-preparation/data-preparation';
 import {createFilters} from './utils/utils';
 import {createErrorsByDomainMap} from './utils/views-validation-utils';
-import {ClinStudyConfig} from './utils/types';
+import {CDISC_STANDARD, ClinStudyConfig} from './utils/types';
 import {ClinicalCaseViewsConfig} from './views-config';
 import {SUMMARY_VIEW_NAME} from './constants/view-names-constants';
+import {funcs} from './package-api';
+import {Subject} from 'rxjs';
+import {ValidationResult} from './types/validation-result';
 
 export class ClinicalDomains {
   ae: DG.DataFrame = null;
@@ -86,7 +89,7 @@ export class ClinicalStudy {
   domains: ClinicalDomains = new ClinicalDomains();
   subjectsCount: number;
   sitesCount: number;
-  validationResults: DG.DataFrame;
+  validationResults: ValidationResult;
   errorsByDomain: {[key: string]: number};
   dmFilters: DG.Viewer;
   studyId: string;
@@ -98,6 +101,7 @@ export class ClinicalStudy {
   views: {[key: string]: DG.ViewBase} = {};
   loadingStudyData: boolean | null = null;
   currentViewName: string = SUMMARY_VIEW_NAME;
+  validationCompleted = new Subject<boolean>();
 
   constructor(config: ClinStudyConfig) {
     this.config = config;
@@ -122,8 +126,9 @@ export class ClinicalStudy {
   init() {
     this.process();
     if (!this.validated)
-      this.validate();
-    this.initCompleted = true;
+      this.validate().then(() => this.initCompleted = true);
+    else
+      this.initCompleted = true;
   }
 
 
@@ -164,16 +169,25 @@ export class ClinicalStudy {
     this.subjSitesCountsProcessed = true;
   }
 
-  validate(): void {
-    this.validationResults = createValidationDataFrame();
-    if (this.domains.ae != null)
-      vaidateAEDomain(this.domains.ae, this.validationResults);
-
-    if (this.domains.dm != null)
-      vaidateDMDomain(this.domains.dm, this.validationResults);
-
-    this.errorsByDomain = createErrorsByDomainMap(this.validationResults);
+  async validate(): Promise<void> {
+    let validationResStr = '';
+    if (await grok.dapi.files
+      .exists(`System:AppData/ClinicalCase/${this.config.standard!}/studies/${this.studyId}/validation_results.json`)) {
+      validationResStr = await grok.dapi.files
+        // eslint-disable-next-line max-len
+        .readAsText(`System:AppData/ClinicalCase/${this.config.standard!}/studies/${this.studyId}/validation_results.json`);
+    } else {
+      validationResStr = await funcs.runCoreValidate(
+        this.config.standard === CDISC_STANDARD.SEND ? 'sendig' : 'sdtmig',
+        `ClinicalCase/${this.config.standard!}/studies/${this.studyId}`, '3.1', 'json', undefined);
+      grok.dapi.files
+        // eslint-disable-next-line max-len
+        .writeAsText(`System:AppData/ClinicalCase/${this.config.standard!}/studies/${this.studyId}/validation_results.json`,
+          validationResStr);
+    }
+    this.validationResults = JSON.parse(validationResStr) as ValidationResult;
     this.validated = true;
+    this.validationCompleted.next(true);
   }
 }
 

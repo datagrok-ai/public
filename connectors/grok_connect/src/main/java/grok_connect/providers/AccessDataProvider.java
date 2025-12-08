@@ -12,8 +12,6 @@ import java.util.List;
 import grok_connect.connectors_info.DataConnection;
 import grok_connect.connectors_info.DataSource;
 import grok_connect.connectors_info.DbCredentials;
-import grok_connect.table_query.AggrFunctionInfo;
-import grok_connect.table_query.GroupAggregation;
 import grok_connect.utils.GrokConnectException;
 import grok_connect.utils.Prop;
 import grok_connect.utils.Property;
@@ -60,7 +58,7 @@ public class AccessDataProvider extends JdbcDataProvider {
     }
 
     @Override
-    public DataFrame getSchema(DataConnection connection, String schema, String table) throws GrokConnectException {
+    public DataFrame getSchema(DataConnection connection, String schema, String table, boolean includeKeyInfo) throws GrokConnectException {
         try (Connection dbConnection = getConnection(connection);
              ResultSet columns = dbConnection.getMetaData().getColumns(null, schema, table, null)) {
             DataFrame result = DataFrame.fromColumns(new StringColumn("table_schema"),

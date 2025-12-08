@@ -12,6 +12,9 @@ import {ChatGptAssistant} from '../prompt-engine/chatgpt-assistant';
 import * as api from '../package-api';
 import {Plan} from '../prompt-engine/interfaces';
 import {AssistantRenderer} from '../prompt-engine/rendering-tools';
+import {dartLike, fireAIAbortEvent, getAIPanelToggleSubscription} from '../utils';
+import {generateAISqlQueryWithTools} from './sql-tools';
+import {DBAIPanel, ModelType} from './panel';
 
 
 export async function askWiki(question: string, useOpenAI: boolean = true) {
@@ -111,4 +114,74 @@ async function aiCombinedSearch(prompt: string) {
   // hide the menu
   document.querySelector('.d4-menu-popup')?.remove();
   await CombinedAISearchAssistant.instance.searchUI(prompt);
+}
+
+export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string, queryEditorRoot: HTMLElement, setAndRunFunc: (query: string) => void): Promise<boolean> {
+  if (!LLMCredsManager.getApiKey())
+    return false;
+  const connection = await grok.dapi.connections.find(connectionID);
+  if (!connection) { // should not happen but just in case
+    grok.shell.error(`Connection with ID ${connectionID} not found.`);
+    return false;
+  }
+
+  const schemas = await grok.dapi.connections.getSchemas(connection);
+  const defaultSchema = schemas.includes('public') ? 'public' : schemas[0];
+
+  const panel = new DBAIPanel(schemas, defaultSchema, connectionID);
+  panel.show();
+
+  // do some subscriptions
+  let wasShown = true;
+  const sub = grok.events.onCurrentViewChanged.subscribe(() => {
+    if (grok.shell.v != v) {
+      wasShown = panel.isShown;
+      if (wasShown)
+        panel.hide();
+    } else {
+      if (wasShown)
+        panel.show();
+    }
+  });
+
+  const toggleSub = getAIPanelToggleSubscription().subscribe((rv) => {
+    if (rv == v)
+      panel.toggle();
+  });
+  const closeSub = grok.events.onViewRemoved.subscribe((view) => {
+    if (view == v) {
+      sub.unsubscribe();
+      closeSub.unsubscribe();
+      panel.hide();
+      panel.dispose();
+      toggleSub.unsubscribe();
+    }
+  });
+
+  panel.onRunRequest.subscribe(async (args) => {
+    ui.setUpdateIndicator(queryEditorRoot, true, 'Grokking Query...', () => { fireAIAbortEvent(); });
+    const session = panel.startChatSession();
+    try {
+      const sqlQuery = await generateAISqlQueryWithTools(args.currentPrompt.prompt, connectionID, args.currentPrompt.schemaName!, {
+        oldMessages: args.prevMessages,
+        aiPanel: {
+          addAIMessage: (aiMessage, title, content) => {
+            session.addAIMessage(aiMessage, title, content);
+          },
+          addEngineMessage: (aiMessage) => session.addAIMessage(aiMessage, '', '', true),
+          addUiMessage: (msg: string, fromUser: boolean) => session.addUIMessage(msg, fromUser),
+          addUserMessage: (aiMsg, content) => session.addUserMessage(aiMsg, content),
+        }, modelName: ModelType[panel.getCurrentInputs().model],
+      });
+      if (sqlQuery && typeof sqlQuery === 'string' && sqlQuery.trim().length > 0)
+        setAndRunFunc(sqlQuery);
+    } catch (error: any) {
+      ui.setUpdateIndicator(queryEditorRoot, false);
+      grok.shell.error(`Error during AI query generation`);
+      console.error('Error during AI query generation:', error);
+    }
+    ui.setUpdateIndicator(queryEditorRoot, false);
+    session.endSession();
+  });
+  return true;
 }

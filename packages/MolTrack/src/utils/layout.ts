@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { LAYOUT_STORAGE, Scope } from './constants';
+import {LAYOUT_STORAGE, Scope} from './constants';
 
 export type MolTrackLayout = {
     tags: {[key: string]: [string, string][]},
@@ -15,7 +15,7 @@ export function saveMolTrackLayout(grid: DG.Grid, scope: Scope) {
   for (const colName of grid.dataFrame.columns.names())
     tags[colName] = Object.entries(grid.dataFrame.col(colName)?.tags);
 
-  const moltrackLayout: MolTrackLayout = { look, tags };
+  const moltrackLayout: MolTrackLayout = {look, tags};
   //TODO: uncomment user settings when size of storage is increased
   //grok.userSettings.add(LAYOUT_STORAGE, scope, JSON.stringify(moltrackLayout));
   window.localStorage.setItem(`${LAYOUT_STORAGE}|${scope}`, JSON.stringify(moltrackLayout));

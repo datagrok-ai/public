@@ -31,6 +31,10 @@ export namespace queries {
   export async function insertStandartization(): Promise<DG.DataFrame> {
     return await grok.data.query('MolTrack:InsertStandartization', {});
   }
+
+  export async function checkDBInitialized(): Promise<DG.DataFrame> {
+    return await grok.data.query('MolTrack:CheckDBInitialized', {});
+  }
 }
 
 export namespace funcs {

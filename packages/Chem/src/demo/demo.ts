@@ -430,9 +430,9 @@ export async function _demoChemicalSpace(): Promise<void> {
     linkage: 'average',
   });
   //for dendrogram to render correctly
-  const sub = grok.shell.tv.grid.onAfterDrawOverlay.subscribe(() => {
+  const sub = grok.shell.tv?.grid?.onAfterDrawOverlay?.subscribe(() => {
     sub.unsubscribe();
-    setTimeout(() => grok.shell.tv.grid.invalidate(), 100);
+    setTimeout(() => grok.shell.tv?.grid?.invalidate(), 100);
   });
   setTimeout(() => grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#chemical-space'), 1000);
 }

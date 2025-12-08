@@ -43,6 +43,12 @@ public class DataSource
         add(new AggrFunctionInfo(Stats.TOTAL_COUNT, "count(*)", Types.dataFrameColumnTypes));
         add(new AggrFunctionInfo(Stats.VALUE_COUNT, "count(#)", Types.dataFrameColumnTypes));
         add(new AggrFunctionInfo(Stats.MISSING_VALUE_COUNT, "count(*) - count(#)", Types.dataFrameColumnTypes));
+        add(new AggrFunctionInfo(Stats.UNIQUE_COUNT, "count(distinct #)", new ArrayList<String>() {{
+            addAll(Types.dataFrameNumericTypes);
+            add(Types.STRING);
+            add(Types.BOOL);
+            add(Types.DATE_TIME);
+        }}));
     }};
 
     public Map<String, String> typesMap;

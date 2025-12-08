@@ -13,4 +13,5 @@ public class Stats {
     public static final String MED = "med";
     public static final String AVG = "avg";
     public static final String STDEV = "stdev";
+    public static final String UNIQUE_COUNT = "unique";
 }

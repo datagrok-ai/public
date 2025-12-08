@@ -67,7 +67,7 @@ class MsSqlDataProviderTest extends ContainerizedProviderBaseTest {
     @MethodSource("grok_connect.providers.arguments_provider.MsSqlObjectsMother#getSchema_ok")
     public void getSchema_ok(DataFrame expected) {
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.getSchema(connection,
-                DEFAULT_SCHEMA_NAME, "MOCK_DATA"));
+                DEFAULT_SCHEMA_NAME, "MOCK_DATA", false));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 

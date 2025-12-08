@@ -17,11 +17,18 @@ export class SchemaEditor extends DG.Widget {
   allowedTypes: string[] = [DG.TYPE.STRING, DG.TYPE.INT, DG.TYPE.FLOAT, DG.TYPE.BOOL, DG.TYPE.DATE_TIME];
   properties: DG.IProperty[] = [];
   extraPropertiesDiv: HTMLDivElement;
+  extraProperties: string[] = [];
 
-  constructor(options: {properties: DG.IProperty[], extraPropertiesDiv?: HTMLDivElement}) {
+  constructor(
+    options: {
+      properties: DG.IProperty[], extraPropertiesDiv?: HTMLDivElement,
+      allowRemove?: boolean, extraProperties?: string[]
+    }
+  ) {
     super(ui.div([]));
     this.properties = options.properties;
     this.extraPropertiesDiv = options.extraPropertiesDiv ?? ui.div([]);
+    this.extraProperties = options.extraProperties ?? [];
 
     const typeProp: IProperty = {
       ...DG.Property.propertyOptions['type'],
@@ -32,13 +39,16 @@ export class SchemaEditor extends DG.Widget {
       items: options.properties,
       mainProperties: [DG.Property.propertyOptions['name']!, typeProp],
       allowAdd: true,
-      allowRemove: true
+      allowRemove: options.allowRemove ?? true,
     });
 
     this.table.onSelected.subscribe((item) => {
       ui.empty(this.extraPropertiesDiv);
       const excludedKeys = ['type', 'name', 'defaultValue', 'valueValidators'];
-      const propKeys = Object.keys(DG.Property.propertyOptions).filter((key) => !excludedKeys.includes(key));
+      const propKeys = this.extraProperties.length > 0 
+        ? this.extraProperties
+        : Object.keys(DG.Property.propertyOptions).filter(key => !excludedKeys.includes(key));
+
       const extraProperties = propKeys
         .map(k => DG.Property.propertyOptions[k as keyof typeof DG.Property.propertyOptions]!)
         .filter(p => p.applicableTo == null || (p.applicableTo == DG.TYPE.NUMERICAL && (isNumeric(p.type!))))

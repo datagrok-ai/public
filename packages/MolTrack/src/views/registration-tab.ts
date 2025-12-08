@@ -4,11 +4,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {FileInputUtils} from '@datagrok-libraries/tutorials/src/utils/file-input-utils';
 
-import { ErrorHandlingLabels, MOLTRACK_MAPPING_VALIDATION_CHANGED, MOLTRACK_REQUEST_TITLE_UPDATE, ScopeLabels, ScopeLabelsReduced } from '../utils/constants';
-import { renderMappingEditor, TargetProperty } from '../components/mapping_editor';
-import { MolTrackDockerService } from '../services/moltrack-docker-service';
-import { fetchSchema } from '../package';
-import { Subscription } from 'rxjs';
+import {ErrorHandlingLabels, MOLTRACK_MAPPING_VALIDATION_CHANGED, MOLTRACK_REQUEST_TITLE_UPDATE, ScopeLabels, ScopeLabelsReduced} from '../utils/constants';
+import {renderMappingEditor, TargetProperty} from '../components/mapping_editor';
+import {MolTrackDockerService} from '../services/moltrack-docker-service';
+import {fetchSchema} from '../package';
+import {Subscription} from 'rxjs';
 
 import '../../css/moltrack.css';
 
@@ -274,14 +274,12 @@ export class RegistrationView {
           type: p.value_type,
           required: false,
         })),
-      { name: 'smiles', required: true, semType: DG.SEMTYPE.MOLECULE },
+      {name: 'smiles', required: true, semType: DG.SEMTYPE.MOLECULE},
     ];
 
     let autoMapping: Map<string, string> = new Map();
-    if (this.uploadedDf) {
-      await MolTrackDockerService.init();
+    if (this.uploadedDf)
       autoMapping = await MolTrackDockerService.getAutoMapping(this.uploadedDf!.columns.names(), 'COMPOUND');
-    }
 
     const sourceColumns = this.uploadedDf ? this.uploadedDf.columns.names() : [''];
     const mappings = new Map<string, string>();

@@ -49,6 +49,13 @@ public abstract class JdbcDataProvider extends DataProvider {
 
     public Properties getProperties(DataConnection conn) {
         java.util.Properties props = defaultConnectionProperties(conn);
+        java.util.Properties jdbcProps = getJdbcProperties(conn);
+        props.putAll(jdbcProps);
+        return props;
+    }
+
+    public Properties getJdbcProperties(DataConnection conn) {
+        java.util.Properties props = new Properties();
         if (conn.parameters.containsKey("jdbcProperties") && this.descriptor.jdbcPropertiesTemplate != null) {
             Map<String, Object> propMap = (Map<String, Object>) conn.parameters.get("jdbcProperties");
             if (!propMap.isEmpty()) {
@@ -56,6 +63,8 @@ public abstract class JdbcDataProvider extends DataProvider {
                     Object value = propMap.get(p.name);
                     if (value != null) {
                         String strValue = value.toString();
+                        if (GrokConnectUtil.isEmpty(strValue))
+                            continue;
                         if (p.propertyType.equals(Property.INT_TYPE))
                             strValue = String.valueOf(new Double(strValue).intValue());
                         props.setProperty(p.name, strValue);
@@ -101,11 +110,27 @@ public abstract class JdbcDataProvider extends DataProvider {
         return execute(queryRun);
     }
 
-    public DataFrame getSchema(DataConnection connection, String schema, String table) throws QueryCancelledByUser,
+    public DataFrame getSchema(DataConnection connection, String schema, String table, boolean includeKeyInfo) throws QueryCancelledByUser,
             GrokConnectException {
         FuncCall queryRun = new FuncCall();
         queryRun.func = new DataQuery();
-        queryRun.func.query = getSchemaSql(connection.getDb(), schema, table);
+        queryRun.func.query = getSchemaSql(connection.getDb(), schema, table, includeKeyInfo);
+        queryRun.func.connection = connection;
+
+        return execute(queryRun);
+    }
+
+    public String getCommentsQuery(DataConnection connection) throws GrokConnectException {
+        throw new GrokConnectException("Operation is not supported");
+    }
+
+    public DataFrame getComments(DataConnection connection, String schema) throws GrokConnectException, QueryCancelledByUser {
+        FuncCall queryRun = new FuncCall();
+        queryRun.func = new DataQuery();
+        queryRun.func.query = getCommentsQuery(connection);
+        queryRun.func.parameters.put("schema", schema);
+        queryRun.func.params = new ArrayList<>();
+        queryRun.func.params.add(new FuncParam("string", "schema", schema));
         queryRun.func.connection = connection;
 
         return execute(queryRun);
@@ -144,7 +169,7 @@ public abstract class JdbcDataProvider extends DataProvider {
         throw new UnsupportedOperationException();
     }
 
-    public String getSchemaSql(String db, String schema, String table) {
+    public String getSchemaSql(String db, String schema, String table, boolean includeKeyInfo) {
         throw new UnsupportedOperationException();
     }
 

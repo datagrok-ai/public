@@ -5,6 +5,7 @@ keywords:
  - info pane
 format: mdx
 sidebar_position: 2
+unlisted: true
 ---
 
 ```mdx-code-block
@@ -168,15 +169,15 @@ When working with the [grid](../../../visualize/viewers/grid.md), the default in
 |Table, Column|<h5>**Dev**</h5>Provides access to documentation, class references, and code snippets for the current object. It also has an editor with template scripts for common actions related to the object <br/><br/> [Learn more](https://github.com/datagrok-ai/public/tree/master/packages/DevTools#components)| 
 |Table|<h5>**General**</h5>Shows basic metadata, such as number of rows, columns, source, etc.|
 |Table|<h5>**Columns**</h5> Shows all table columns as clickable links, enabling navigation to individual column info panes|
-|Table|<h5>**Models**</h5>Shows relevant models for your dataset (created by you or shared by others). From here, you can manage or train models <br/><br/> ![](img/info-pane-models-0.png)|
+|Table|<h5>**Models**</h5>Shows relevant models for your dataset (created by you or shared by others). From here, you can manage or train models <br/><br/> ![](../img/info-pane-models-0.png)|
 |Table|<h5>**History**</h5>Shows the history of actions performed on the table|
 |Column|<h5>**Details**</h5>Shows column properties and summary statistics or distributions for the column's data |
 |Column|<h5>**Filter**</h5>Quick access to a column's filter|
-|Column|<h5>**Colors**</h5> Color code a column <br/><br/> ![](img/info-panes-colors.gif)|
-|Column|<h5>**Stats**</h5> Shows summary statistics for a column <br/><br/> ![](img/context panel -stats.gif)|
+|Column|<h5>**Colors**</h5> Color code a column <br/><br/> ![](../img/info-panes-colors.gif)|
+|Column|<h5>**Stats**</h5> Shows summary statistics for a column <br/><br/> ![](../img/context-panel-stats.gif)|
 |Column|<h5>**Permissions**</h5> Specify who can edit a column |
 |Selected columns|<h5>**Plots**</h5>Visualizes selected columns for quick profiling <br/><br/> ![](../../../deploy/releases/img/plots-info-pane.gif)|
-|Selected rows|<h5>**Distributions**</h5> Shows distributions for numerical columns based on selected rows <br/><br/>![](img/info-pane-distributions-0.png)|
+|Selected rows|<h5>**Distributions**</h5> Shows distributions for numerical columns based on selected rows <br/><br/>![](../img/info-pane-distributions-0.png)|
 |Selected rows|<h5>**Content**</h5> Shows details for selected rows in a spreadsheet format<br/><br/>![](../../../deploy/releases/img/content-info-pane.gif)|
 
 <!--

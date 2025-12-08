@@ -45,6 +45,10 @@ export namespace funcs {
     return await grok.functions.call('ChatGPT:AskAIGeneralCached', { model, systemPrompt, prompt, schema });
   }
 
+  export async function ask(question: string ): Promise<string> {
+    return await grok.functions.call('ChatGPT:Ask', { question });
+  }
+
   export async function getExecutionPlan(userGoal: string ): Promise<string> {
     return await grok.functions.call('ChatGPT:GetExecutionPlan', { userGoal });
   }
@@ -55,5 +59,21 @@ export namespace funcs {
 
   export async function askDocumentationCached(prompt: string ): Promise<string> {
     return await grok.functions.call('ChatGPT:AskDocumentationCached', { prompt });
+  }
+
+  export async function generateSqlQuery(prompt: string , connectionID: string , schemaName: string ): Promise<string> {
+    return await grok.functions.call('ChatGPT:GenerateSqlQuery', { prompt, connectionID, schemaName });
+  }
+
+  export async function setupAIQueryEditor(view: DG.View , connectionID: string , queryEditorRoot: any , setAndRunFunc: any ): Promise<boolean> {
+    return await grok.functions.call('ChatGPT:SetupAIQueryEditor', { view, connectionID, queryEditorRoot, setAndRunFunc });
+  }
+
+  export async function indexDatabaseSchema(): Promise<void> {
+    return await grok.functions.call('ChatGPT:IndexDatabaseSchema', {});
+  }
+
+  export async function embedConnectionQueries(): Promise<void> {
+    return await grok.functions.call('ChatGPT:EmbedConnectionQueries', {});
   }
 }

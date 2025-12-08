@@ -109,6 +109,10 @@ export class SemValueObjectHandler extends DBExplorerObjectHandler {
     return x instanceof DG.SemanticValue && x.semType == this.semanticType;
   }
 
+  get entryPoint() {
+    return {table: this.tableName, column: this.columnName};
+  }
+
   constructor(
     private semanticType: string,
     private tableName: string,

@@ -5,7 +5,7 @@ import {cumulativeEnrollemntByDay} from '../data-preparation/data-preparation';
 import {CLINICAL_TRIAL_GOV_FIELDS} from '../constants/constants';
 import {CLIN_TRIAL_GOV_SEARCH, HttpService} from '../services/http.service';
 import {_package} from '../package';
-import {AGE, AGETXT, BW_RES_N, CLORRES, RACE, SEX, SPECIES, SUBJECT_ID, SUBJ_REF_STDT,
+import {AGE, BW_RES_N, CLORRES, RACE, SEX, SPECIES, SUBJECT_ID, SUBJ_REF_STDT,
   VISIT_DAY} from '../constants/columns-constants';
 import {ClinicalCaseViewBase} from '../model/ClinicalCaseViewBase';
 import $ from 'cash-dom';
@@ -13,8 +13,8 @@ import {checkDateFormat} from '../data-preparation/utils';
 import {removeExtension, updateDivInnerHTML} from '../utils/utils';
 import {TRT_ARM_FIELD} from '../views-config';
 import {checkColumnsAndCreateViewer} from '../utils/views-validation-utils';
-import {studies} from '../package';
 import {CDISC_STANDARD} from '../utils/types';
+import {studies} from '../utils/app-utils';
 
 
 export class StudySummaryView extends ClinicalCaseViewBase {

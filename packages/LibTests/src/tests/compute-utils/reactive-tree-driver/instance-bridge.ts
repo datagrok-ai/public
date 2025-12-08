@@ -27,7 +27,7 @@ category('ComputeUtils: Driver instance bridge', async () => {
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
       const adapter = new FuncCallMockAdapter(io, false);
-      const bridge = new FuncCallInstancesBridge(io, false);
+      const bridge = new FuncCallInstancesBridge(io, [], false);
       cold('-a').subscribe(() => {
         bridge.init({adapter, restrictions: {}, isOutputOutdated: true, initValues: false});
       });
@@ -47,7 +47,7 @@ category('ComputeUtils: Driver instance bridge', async () => {
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
       const adapter = new FuncCallMockAdapter(io, false);
-      const bridge = new FuncCallInstancesBridge(io, false);
+      const bridge = new FuncCallInstancesBridge(io, [], false);
       bridge.setPreInitialData({
         initialRestrictions: {},
         initialValues: {
@@ -74,7 +74,7 @@ category('ComputeUtils: Driver instance bridge', async () => {
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
       const adapter = new FuncCallMockAdapter(io, false);
-      const bridge = new FuncCallInstancesBridge(io, false);
+      const bridge = new FuncCallInstancesBridge(io, [], false);
       bridge.setPreInitialData({
         initialRestrictions: {
           arg1: {
@@ -120,7 +120,7 @@ category('ComputeUtils: Driver instance bridge', async () => {
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
       const adapter = new FuncCallMockAdapter(io, false);
-      const bridge = new FuncCallInstancesBridge(io, false);
+      const bridge = new FuncCallInstancesBridge(io, [], false);
       cold('-a').subscribe(() => {
         bridge.init({adapter, restrictions: {
           arg1: {
@@ -153,7 +153,7 @@ category('ComputeUtils: Driver instance bridge', async () => {
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
       const adapter = new FuncCallMockAdapter(io, true);
-      const bridge = new FuncCallInstancesBridge(io, true);
+      const bridge = new FuncCallInstancesBridge(io, [], true);
       cold('-a').subscribe(() => {
         bridge.init({adapter, restrictions: {
           arg1: {
@@ -186,7 +186,7 @@ category('ComputeUtils: Driver instance bridge', async () => {
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
       const adapter = new FuncCallMockAdapter(io, false);
-      const bridge = new FuncCallInstancesBridge(io, false);
+      const bridge = new FuncCallInstancesBridge(io, [], false);
       cold('-a').subscribe(() => {
         bridge.init({adapter, restrictions: {}, isOutputOutdated: true, initValues: false});
       });
@@ -205,11 +205,39 @@ category('ComputeUtils: Driver instance bridge', async () => {
     });
   });
 
+  test('SetState additional states changes', async () => {
+    testScheduler.run((helpers) => {
+      const { expectObservable, cold } = helpers;
+      const adapter = new FuncCallMockAdapter(io, false);
+      const bridge = new FuncCallInstancesBridge(io, [{id: 'someState'}], false);
+      cold('-a').subscribe(() => {
+        bridge.init({ adapter, restrictions: {}, isOutputOutdated: true, initValues: false });
+      });
+      cold('--a').subscribe(() => {
+        bridge.setState('arg1', 1);
+      });
+      cold('----a').subscribe(() => {
+        bridge.setState('someState', {x: 1});
+      });
+
+      expectObservable(bridge.inputRestrictions$, '^ 1000ms !').toBe('abc', { a: {}, b: {}, c: {} });
+      expectObservable(bridge.isOutputOutdated$, '^ 1000ms !').toBe('a', { a: true });
+      expectObservable(bridge.validations$, '^ 1000ms !').toBe('a', { a: {} });
+      expectObservable(bridge.isRunning$, '^ 1000ms !').toBe('a', { a: false });
+      expectObservable(bridge.isRunable$, '^ 1000ms !').toBe('ab', { a: false, b: true });
+      expectObservable(bridge.inputRestrictionsUpdates$, '^ 1000ms !').toBe('');
+      expectObservable(bridge.getStateChanges('arg1'), '^ 1000ms !').toBe('abc', { a: undefined, b: undefined, c: 1 });
+      expectObservable(bridge.getStateChanges('arg2'), '^ 1000ms !').toBe('ab', { a: undefined, b: undefined });
+      expectObservable(bridge.getStateChanges('res'), '^ 1000ms !').toBe('ab', { a: undefined, b: undefined });
+      expectObservable(bridge.getStateChanges('someState'), '^ 1000ms !').toBe('a---b', { a: undefined, b: {x: 1} });
+    });
+  });
+
   test('Edit state restrictions', async () => {
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
       const adapter = new FuncCallMockAdapter(io, false);
-      const bridge = new FuncCallInstancesBridge(io, false);
+      const bridge = new FuncCallInstancesBridge(io, [], false);
       cold('-a').subscribe(() => {
         bridge.init({adapter, restrictions: {}, isOutputOutdated: true, initValues: false});
       });
@@ -241,7 +269,7 @@ category('ComputeUtils: Driver instance bridge', async () => {
       const {expectObservable, cold} = helpers;
       const adapter = new FuncCallMockAdapter(io, true);
       adapter.editState('arg1', 1);
-      const bridge = new FuncCallInstancesBridge(io, true);
+      const bridge = new FuncCallInstancesBridge(io, [], true);
       cold('-a').subscribe(() => {
         bridge.init({adapter, restrictions: {}, isOutputOutdated: true, initValues: false});
       });
@@ -275,7 +303,7 @@ category('ComputeUtils: Driver instance bridge', async () => {
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
       const adapter = new FuncCallMockAdapter(io, false);
-      const bridge = new FuncCallInstancesBridge(io, false);
+      const bridge = new FuncCallInstancesBridge(io, [], false);
       cold('-a').subscribe(() => {
         bridge.init({adapter, restrictions: {}, isOutputOutdated: true, initValues: false});
       });
@@ -317,7 +345,7 @@ category('ComputeUtils: Driver instance bridge', async () => {
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
       const adapter = new FuncCallMockAdapter(io, false);
-      const bridge = new FuncCallInstancesBridge(io, false);
+      const bridge = new FuncCallInstancesBridge(io, [], false);
       cold('-a').subscribe(() => {
         bridge.init({adapter, restrictions: {}, isOutputOutdated: true, initValues: false});
       });

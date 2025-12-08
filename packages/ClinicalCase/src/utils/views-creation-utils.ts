@@ -8,8 +8,8 @@ import {ValidationHelper} from '../helpers/validation-helper';
 import {c} from '../package';
 import {createValidationErrorsDiv, getRequiredColumnsByView} from './views-validation-utils';
 import {updateDivInnerHTML} from './utils';
-import {studies} from '../package';
 import {ClinCaseTableView} from './types';
+import {studies} from './app-utils';
 
 export function createAEBrowserHelper(studyId: string): any {
   const aeBrowserDf = studies[studyId].domains.ae.clone();

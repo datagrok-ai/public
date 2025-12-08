@@ -36,7 +36,7 @@ class OracleDataProviderTest extends ContainerizedProviderBaseTest {
     @MethodSource("grok_connect.providers.arguments_provider.OracleObjectsMother#getSchema_ok")
     public void getSchema_ok(DataFrame expected) {
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.getSchema(connection,
-                "DATAGROK", "MOCK_DATA"));
+                "DATAGROK", "MOCK_DATA", false));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 

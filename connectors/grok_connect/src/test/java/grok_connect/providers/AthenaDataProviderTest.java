@@ -84,7 +84,7 @@ class AthenaDataProviderTest {
     @MethodSource("grok_connect.providers.arguments_provider.AthenaObjectsMother#getSchema_ok")
     public void getSchema_ok(DataFrame expected) {
         DataFrame actual = Assertions.assertDoesNotThrow(() -> provider.getSchema(connection,
-                "test_db", "mock_data"));
+                "test_db", "mock_data", false));
         Assertions.assertTrue(dataFrameComparator.isDataFramesEqual(expected, actual));
     }
 

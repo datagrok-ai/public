@@ -27,7 +27,7 @@ public abstract class DataProvider
         throw new UnsupportedOperationException();
     }
 
-    public DataFrame getSchema(DataConnection dataConnection, String schema, String table)
+    public DataFrame getSchema(DataConnection dataConnection, String schema, String table, boolean includeKeyInfo)
             throws QueryCancelledByUser, GrokConnectException {
         throw new UnsupportedOperationException();
     }

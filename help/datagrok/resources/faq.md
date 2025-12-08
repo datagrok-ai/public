@@ -211,7 +211,7 @@ When you open a local file in Datagrok (like dragging and dropping a file to you
 ##### <b>Q: What data or telemetry is sent back to Datagrok? </b>
 
 * No automatic telemetry: Datagrok does not send any data to Datagrok servers by default.
-* Optional error report/feedback: Users can optionally send feedback or error reports to Datagrok by selecting the "Send report to Datagrok" checkbox in the corresponding dialog. This feature can be disabled by the administrator.
+* Optional error report/feedback: Users can optionally send feedback or error reports to Datagrok by selecting the "Email" checkbox in the corresponding dialog. This feature can be disabled by the administrator. For details, see [Feedback](../../govern/bug-reports.md)
 * Package/image pulls: Datagrok can download images from Docker Hub or packages from NPM.
 
 ##### <b>Q: When deployed on-prem, is my data ever gets sent anywhere? </b>
@@ -309,6 +309,13 @@ Datagrok supports a wide range of capabilities, including:
   [More than 60 plugins](https://github.com/datagrok-ai/public/tree/master/packages)
 
 [Multiple complex data types in one interface](#q-can-datagrok-handle-multiple-complex-data-types-in-one-interface) | [Explore data](../../explore/explore.md)
+
+##### <b>Q: Can I save a filtered or selected subset as a new dataset? </b>
+
+Yes. Follow these steps:
+1. In your dataset, select or filter rows.
+1. In the **Status Bar**, click the **Selected: [x]** or **Filtered: [x]** (depending on what you used).
+1. From the context menu, select **Extract rows**. This opens a new **Table View** containing only those rows, which you can continue working with and save as a separate dataset. 
 
 ## Visualize
 
@@ -442,6 +449,15 @@ collaborative workflows and effective communication between team members.
 ##### <b>Q: Can users subscribe to notifications about new or updated data in Datagrok?</b>
 
 Datagrok keeps you informed about relevant activity.  See [Collaborate](../../collaborate/collaborate.md), [Notifications](../../collaborate/collaborate.md#notifications), and [Discussions](../../collaborate/collaborate.md#discussions).
+
+##### <b>Q: Can colleagues see my notes about the molecules, experiments, or other objects?</b>
+
+Yes. With [sticky meta](../../govern/catalog/sticky-meta.md), you can add
+comments, ratings, tags, or other metadata to any object in Datagrok (molecules,
+experiments, samples, users, etc.). These annotations automatically follow the
+object across the platform. So if you leave a note on a molecule in one table,
+your collaborators will see the same note when that molecule appears in a
+different table or dataset.
 
 ## Develop
 

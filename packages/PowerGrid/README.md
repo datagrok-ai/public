@@ -59,6 +59,8 @@ The viewer also works together with the grid:
 * To select or deselect rows, Ctrl+click the form.
 * To go to a particular cell in a grid, click on a field
 * To make a column current, click on the column name.
+* To sort, double-click column name, or change the "Sort by" property.
+* "Use Grid Sort" property controls whether forms follow grid sorted order.
 
 ![Forms viewer](../../help/visualize/viewers/img/forms.gif)
 

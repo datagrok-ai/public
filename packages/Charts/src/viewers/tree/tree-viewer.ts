@@ -131,7 +131,9 @@ export class TreeViewer extends EChartViewer {
             rotate: this.labelRotate,
             fontSize: this.fontSize,
           },
-
+          labelLayout: {
+            hideOverlap: true,
+          },
           leaves: {
             label: {
               position: 'right',

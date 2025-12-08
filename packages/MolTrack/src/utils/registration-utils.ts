@@ -1,8 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 
-import { registerAssays, registerBulk, registerMolTrackProperties } from '../package';
-import { Scope } from './constants';
-import { fetchCsv, fetchSchema } from './fetch-utils';
+import {registerAssays, registerBulk, registerMolTrackProperties} from '../package';
+import {Scope} from './constants';
+import {fetchCsv, fetchSchema} from './fetch-utils';
 
 export async function updateAllMolTrackSchemas(): Promise<void> {
   for (const scope of Object.values(Scope)) {
