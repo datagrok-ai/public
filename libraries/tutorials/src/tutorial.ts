@@ -5,6 +5,7 @@ import $ from 'cash-dom';
 import {fromEvent, interval, Observable, Subject} from 'rxjs';
 import {filter, first, map} from 'rxjs/operators';
 import {Track} from './track';
+import {awardBadge} from './utils/badges-utils';
 
 
 /** A base class for tutorials */
@@ -15,6 +16,7 @@ export abstract class Tutorial extends DG.Widget {
 
   abstract get name(): string;
   abstract get description(): string;
+  abstract get icon(): string;
   abstract get steps(): number;
 
   track: Track | null = null;
@@ -174,7 +176,13 @@ export abstract class Tutorial extends DG.Widget {
     this.endSection();
 
     this.title('Congratulations!');
-    this.describe('You have successfully completed this tutorial.');
+    let desc = 'You have successfully completed this tutorial';
+    if (!this.closed) {
+      const badge = awardBadge(this.name);
+      if (badge)
+        desc += `<br>and earned a badge ${badge.icon}!`;
+    }
+    this.describe(desc);
 
     const dataToSave = JSON.stringify({date: new Date().toUTCString(), isCompleted: this.progress.value === this.steps});
     await grok.userSettings.add(Tutorial.DATA_STORAGE_KEY, this.name, dataToSave);

@@ -18,6 +18,10 @@ export class FiltersTutorial extends Tutorial {
 
   get steps() { return 18; }
 
+  get icon() {
+    return '🔍🎚️';
+  }
+
   helpUrl: string = 'https://datagrok.ai/help/visualize/viewers/filters';
   platform: Platform = getPlatform();
 

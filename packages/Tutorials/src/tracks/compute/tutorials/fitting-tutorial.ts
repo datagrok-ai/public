@@ -40,6 +40,10 @@ export class FittingTutorial extends Tutorial {
   }
   get steps() {return 15;}
 
+  get icon() {
+    return '⚙️📈';
+  }
+
   demoTable: string = '';
   helpUrl: string = LINK.FITTING;
 

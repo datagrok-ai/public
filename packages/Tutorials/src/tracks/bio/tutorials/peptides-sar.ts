@@ -22,6 +22,10 @@ export class PeptidesSarTutorial extends Tutorial {
 
     get steps() { return 18; }
 
+    get icon() {
+        return '🧬📈';
+    }
+
     helpUrl: string = 'https://datagrok.ai/help/datagrok/solutions/domains/bio/peptides-sar';
     prerequisites: TutorialPrerequisites = {packages: ['Bio', 'Peptides']};
     platform: Platform = getPlatform();

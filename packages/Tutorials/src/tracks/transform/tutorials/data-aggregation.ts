@@ -20,6 +20,10 @@ export class AggregationTutorial extends Tutorial {
     return 12;
   }
 
+  get icon(): string {
+    return '📑🗂️';
+  }
+
   helpUrl: string = 'https://datagrok.ai/help/transform/aggregate-rows';
   platform: Platform = getPlatform();
 
