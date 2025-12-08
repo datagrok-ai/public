@@ -1,12 +1,12 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 
-import { category, expect, test, before, after } from '@datagrok-libraries/utils/src/test';
-import { _package } from '../package-test';
+import {category, expect, test, before, after, expectArray} from '@datagrok-libraries/utils/src/test';
+import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
-import { readDataframe } from './utils';
-import { getMCS } from '../utils/most-common-subs';
-import { rGroupsMinilib } from '../analysis/r-group-analysis';
+import {readDataframe} from './utils';
+import {getMCS} from '../utils/most-common-subs';
+import {rGroupsMinilib} from '../analysis/r-group-analysis';
 
 
 category('top menu r-groups', () => {
@@ -43,6 +43,7 @@ category('top menu r-groups', () => {
 
   test('mcs.anyAtomsExactBonds', async () => {
     const mcs = await getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `canonical_smiles` : `Structure`)!, false, true);
+    // eslint-disable-next-line max-len
     expect(mcs, DG.Test.isInBenchmark ? '[#7,#6,#8,#9,#16,#17,#35,#53]-[#6,#7,#8,#16,#53]' : '[#6,#7,#8,#9]-[#6,#7,#8]-[#7,#6](-[#6,#8,#9,#16])-[#6,#7,#9]');
   }, {benchmark: true});
 
@@ -54,7 +55,9 @@ category('top menu r-groups', () => {
   test('mcs.anyAtomsAnyBonds', async () => {
     const mcs = await getMCS(dfForMcs.col(DG.Test.isInBenchmark ? `canonical_smiles` : `Structure`)!, false, false);
     expect(mcs, DG.Test.isInBenchmark ?
+      // eslint-disable-next-line max-len
       `[#7,#6,#8,#9,#16,#17,#35,#53]-,:[#6,#7,#8,#16]-,:[#6,#7,#8,#16]:,-[#6,#7,#8,#16]:,-[#7,#6,#8,#16]:,-[#7,#6,#8,#9,#16,#17,#35]` :
+      // eslint-disable-next-line max-len
       `[#6,#8,#9]-,:[#6,#7,#8]-,:[#7,#6](-,:[#6,#7,#8,#16]-,:[#6,#7,#8]-,:[#6,#7]-,:[#7,#6,#8]-,:[#6,#7,#8,#16]-,:[#6,#7,#8,#16])-,:[#6,#7,#8]-,:[#6,#7]-,:[#6,#7,#8]-,:[#6,#7,#8,#9]`);
   }, {benchmark: true});
 
@@ -76,7 +79,7 @@ category('top menu r-groups', () => {
           core: 'c1ccccc1',
           prefix: 'R',
         }); */
-    const rgroups = DG.DataFrame.fromColumns((await rGroupsMinilib(t.col('smiles')!,
+    const rgroups = DG.DataFrame.fromColumns((await rGroupsMinilib(sampleTable.col('smiles')!,
       'c1ccccc1', false, 0, rGroupOpts)).rGroups);
     if (!DG.Test.isInBenchmark) {
       expect(rgroups.getCol('R1').get(0), 'O=C(C/N=C(/C1CCCCC1)[*:4])N[*:1]');
@@ -135,7 +138,7 @@ M  END
           prefix: 'R',
         }); */
     await rGroupsMinilib(df.col('molecule')!, core, false, 0, rGroupOpts);
-  }, { timeout: 60000 });
+  }, {timeout: 60000});
 
   test('rgroups.emptyValues', async () => {
     //const res = await findRGroups('smiles', empty, coreEmpty, 'R');
@@ -143,7 +146,7 @@ M  END
       true, 0, rGroupOpts)).rGroups);
     expect(res.getCol('R1').stats.valueCount, 16);
     expect(res.getCol('R2').stats.valueCount, 16);
-  }, { timeout: 60000 });
+  }, {timeout: 60000});
 
   test('rgroups.emptyInput', async () => {
     //await findRGroups('smiles', empty, '', 'R');
@@ -180,12 +183,28 @@ M  END
     expect(exception, true, 'Exception has not been generated on malformed core');
   });
 
+  test('rgroups.matchCertainRGroups', async () => {
+    await DG.Func.find({name: 'rGroupDecomposition'})[0].prepare({
+      df: sampleTable,
+      molColName: 'smiles',
+      // eslint-disable-next-line max-len
+      core: '[#8]=[#6]1-[#7]%91-[#6]2:[#6](:[#6]:[#6]:[#6]:[#6]:2)-[#6](-[#6]2-[#6]-[#6]-[#6]-[#6]-[#6]-2)=[#7]-[#6]-1.[*:1]-%91',
+      rGroupName: 'R',
+      rGroupMatchingStrategy: 'Greedy',
+      visualAnalysis: false,
+      onlyMatchAtRGroups: true,
+    }).call(undefined, undefined, {processed: false});
+    expect(sampleTable.columns.names().length, 5, 'Number of detected R Grpoups is incorrect');
+    expect(['smiles', 'Core', 'R1', 'r-groups-highlight_0', 'isMatch']
+      .every((it) => sampleTable.columns.names().includes(it)), true);
+  });
+
   after(async () => {
     grok.shell.closeAll();
   });
 });
 
-const t = DG.DataFrame.fromCsv(`smiles
+const sampleTable = DG.DataFrame.fromCsv(`smiles
 O=C1CN=C(c2ccccc2N1)C3CCCCC3
 CN1C(=O)CN=C(c2ccccc12)C3CCCCC3
 CCCCN1C(=O)CN=C(c2ccccc12)C3CCCCC3

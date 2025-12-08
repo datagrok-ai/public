@@ -285,12 +285,12 @@ export function ChemSpaceEditor(call: DG.FuncCall) : void {
 //name: Fingerprints
 //tags: dim-red-preprocessing-function
 //input: column col { semType: Molecule }
-//input: dynamic _metric { optional: true }
+//input: string _metric { optional: true }
 //input: string fingerprintType = 'Morgan' { caption: Fingerprint type; optional: true; choices: ["Morgan","RDKit","Pattern","AtomPair","MACCS","TopologicalTorsion"] }
 //output: object result
 //meta.supportedSemTypes: Molecule
 //meta.supportedDistanceFunctions: Tanimoto,Asymmetric,Cosine,Sokal
-export async function getFingerprints(col: DG.Column, _metric: any, fingerprintType: any) {
+export async function getFingerprints(col: DG.Column, _metric: string | undefined, fingerprintType: any) {
   return await PackageFunctions.getFingerprints(col, _metric, fingerprintType);
 }
 

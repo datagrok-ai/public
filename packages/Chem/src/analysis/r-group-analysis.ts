@@ -182,6 +182,7 @@ export function rGroupAnalysis(col: DG.Column): void {
           rGroupName: columnPrefixInput.value,
           rGroupMatchingStrategy: rGroupMatchingStrategy.value!,
           visualAnalysis: visualAnalysisCheck.value!,
+          onlyMatchAtRGroups: onlyMatchAtRGroupsInput.value,
         }).call(undefined, undefined, {processed: false});
         const res: RGroupDecompRes = funcCall.getOutputParamValue();
         if (res) {
@@ -249,7 +250,7 @@ export async function rGroupDecomp(col: DG.Column, params: RGroupParams): Promis
     const coreSmarts = core;
     core = PackageFunctions.convertMolNotation(core, DG.chem.Notation.Smarts, DG.chem.Notation.MolBlock);
     const labelledRGroups = !!MolfileHandler.getInstance(core)
-      .atomTypes.filter((it) => it.startsWith('R')).length && core.includes('M  RGP');
+      .atomTypes.filter((it) => it.startsWith('R')).length;
     if (!labelledRGroups && params.onlyMatchAtRGroups) {
       throw (new Error(`Core has no labelled R groups. Add labelled R groups to core or set 
     'Only match at R groups' parameter to false`));

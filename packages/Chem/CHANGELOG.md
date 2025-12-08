@@ -1,5 +1,9 @@
 # Chem changelog
 
+## 1.16.10 (2025-12-08)
+
+* R Group analysis: fixed ability to perform analyziz only for certain positions
+
 ## 1.16.9 (2025-11-19)
 
 * Validated deprotection feature with more precise reactions.
