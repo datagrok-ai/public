@@ -144,6 +144,7 @@ export type PipelineStepConfiguration<P, S> = {
   nqName: NqName;
   friendlyName?: string;
   actions?: (DataActionConfiguraion<P> | FuncCallActionConfiguration<P>)[];
+  states?: StateItem[];
   tags?: string[];
   initialValues?: Record<string, any>;
   inputRestrictions?: Record<string, RestrictionType>;
