@@ -128,7 +128,7 @@ export async function setupAIQueryEditorUI(v: DG.ViewBase, connectionID: string,
   const schemas = await grok.dapi.connections.getSchemas(connection);
   const defaultSchema = schemas.includes('public') ? 'public' : schemas[0];
 
-  const panel = new DBAIPanel(schemas, defaultSchema);
+  const panel = new DBAIPanel(schemas, defaultSchema, connectionID);
   panel.show();
 
   // do some subscriptions

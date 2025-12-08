@@ -33,7 +33,7 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
 }
 
 .d4-ai-generation-panel .d4-ai-panel-input-area {
@@ -61,6 +61,12 @@
   min-height: 80px;
   max-height: 200px;
   font-size: 14px;
+  border: 1px solid var(--grey-1);
+  outline: none;
+  border-radius: 8px;
+  box-shadow: 0px 0px 2px var(--steel-1);
+  background: var(--grey-1);
+  padding: 4px;
 }
 
 .d4-ai-generation-panel .d4-ai-panel-output-area {
@@ -116,8 +122,26 @@
   width: 6px;
   height: 6px;
 }
+
 .d4-ai-generation-panel .d4-ai-assistant-response-container pre::-webkit-scrollbar-corner {
   display: none;
+}
+
+.d4-ai-generation-panel .d4-ai-panel-header {
+  width: 100%;
+  padding-left: 8px;
+  padding-right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 8px;
+  box-shadow: 8px 5px 15px var(--grey-1);
+}
+
+.d4-ai-generation-panel .d4-ai-panel-header-right-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .d4-ai-generation-panel .d4-ai-assistant-response-container pre::-webkit-scrollbar-thumb {
@@ -138,4 +162,34 @@
 .d4-ai-messages-accordion-pane .d4-ai-assistant-response-container {
   width: 100%;
   overflow: auto;
+}
+
+.d4-ai-copy-code-button {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  color: var(--blue-1);
+  opacity: 0.6;
+  cursor: pointer;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s, opacity 0.3s, color 0.3s;
+  display: none;
+}
+
+.d4-ai-copy-code-button:hover {
+  opacity: 1.0;
+}
+
+.d4-markup:hover .d4-ai-copy-code-button {
+  display: flex;
+}
+
+.d4-ai-copy-code-button.d4-ai-copy-code-button-copied {
+  background-color: var(--green-2);
+  color: var(--steel-5);
+  opacity: 0.3;
 }
