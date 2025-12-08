@@ -31,7 +31,7 @@
 }
 
 .d4-multi-form-form input {
-	color:var(--grey-6)!important;
+	/*color:var(--grey-6)!important;*/
 }
 
 .d4-multi-form > .ui-split-h > .ui-box:first-child:hover::-webkit-scrollbar {

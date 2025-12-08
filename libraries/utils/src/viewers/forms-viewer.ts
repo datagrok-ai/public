@@ -166,7 +166,9 @@ export class FormsViewer extends DG.JsViewer {
     setTimeout(() => {
       const grid = this.getGrid();
       if (grid)
-        sub(grid.onRowsSorted, () => this.render());
+        sub(grid.onRowsSorted, () => {
+          setTimeout(() => this.render());
+        });
     })
 
     sub(this.dataFrame.onColumnsRemoved, () => {
@@ -328,16 +330,30 @@ export class FormsViewer extends DG.JsViewer {
 
               if (this.colorCode) {
                 if (grid) {
+                  const gc = grid.col(name);
+
                   const color = this.dataFrame.col(name)?.meta.colors.getColor(row);
-                  if (color) {
-                    if (grid.col(name)?.isTextColorCoded)
-                      input.input.setAttribute('style', `color:${DG.Color.toHtml(color)}!important;`);
+                  if (color && color != 4294967295) {
+                    if (gc?.isTextColorCoded)
+                      input.input.style.color = `${DG.Color.toHtml(color)}!important;`;
                     else {
-                      input.input.setAttribute('style',
-                        `color:${DG.Color.toHtml(DG.Color.getContrastColor(color))}!important;`);
+                      input.input.style.color = `${DG.Color.toHtml(DG.Color.getContrastColor(color))}!important;`;
                       input.input.style.backgroundColor = DG.Color.toHtml(color);
                     }
                   }
+                  else {
+                    if (gc?.contentCellStyle?.textColor)
+                      input.input.style.color = DG.Color.toHtml(gc!.contentCellStyle!.textColor);
+
+                    if (gc?.contentCellStyle?.backColor)
+                      input.input.style.backgroundColor = DG.Color.toHtml(gc!.contentCellStyle!.backColor);
+                  }
+
+                  if (gc?.contentCellStyle?.horzAlign == "center" || gc?.contentCellStyle?.horzAlign == "right")
+                    input.input.style.textAlign = gc!.contentCellStyle.horzAlign!;
+
+                  if (gc!.contentCellStyle?.font)
+                    input.input.style.font = gc!.contentCellStyle.font;
                 }
               }
               input.input.onclick = (e: MouseEvent) => {

@@ -1,9 +1,10 @@
 # Power Grid changelog
 
-## 1.7.17 (2025-12-06)
+## 1.7.18 (2025-12-07)
 
 * #3546: Forms viewer: support sorting by specific columns
 * #3561: Forms: empty int value displays incorrectly
+* Forms: Synchronize color, background color, horizontal alignment, and font with grid 
 
 ## 1.7.15 (2025-11-01)
 
