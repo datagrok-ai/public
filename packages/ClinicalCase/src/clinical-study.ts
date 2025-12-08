@@ -172,17 +172,17 @@ export class ClinicalStudy {
   async validate(): Promise<void> {
     let validationResStr = '';
     if (await grok.dapi.files
-      .exists(`System:AppData/ClinicalCase/${this.config.standard!}/studies/${this.studyId}/validation_results.json`)) {
+      .exists(`System:AppData/ClinicalCase/${this.config.standard!}/${this.studyId}/validation_results.json`)) {
       validationResStr = await grok.dapi.files
         // eslint-disable-next-line max-len
-        .readAsText(`System:AppData/ClinicalCase/${this.config.standard!}/studies/${this.studyId}/validation_results.json`);
+        .readAsText(`System:AppData/ClinicalCase/${this.config.standard!}/${this.studyId}/validation_results.json`);
     } else {
       validationResStr = await funcs.runCoreValidate(
         this.config.standard === CDISC_STANDARD.SEND ? 'sendig' : 'sdtmig',
-        `ClinicalCase/${this.config.standard!}/studies/${this.studyId}`, '3.1', 'json', undefined);
+        `ClinicalCase/${this.config.standard!}/${this.studyId}`, '3.1', 'json', undefined);
       grok.dapi.files
         // eslint-disable-next-line max-len
-        .writeAsText(`System:AppData/ClinicalCase/${this.config.standard!}/studies/${this.studyId}/validation_results.json`,
+        .writeAsText(`System:AppData/ClinicalCase/${this.config.standard!}/${this.studyId}/validation_results.json`,
           validationResStr);
     }
     this.validationResults = JSON.parse(validationResStr) as ValidationResult;
