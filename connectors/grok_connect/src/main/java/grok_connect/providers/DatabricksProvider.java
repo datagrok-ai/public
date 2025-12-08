@@ -15,6 +15,7 @@ import java.util.*;
 public class DatabricksProvider extends JdbcDataProvider {
     private static final String PAT_METHOD = "Personal Access Token";
     private static final String OAUTH_METHOD = "OAuth Client Credentials";
+    private static final String FEDERATED_SSO = "Federated (SSO)";
 
     public DatabricksProvider() {
         driverClassName = "com.databricks.client.jdbc.Driver";
@@ -40,6 +41,7 @@ public class DatabricksProvider extends JdbcDataProvider {
                     "The secret associated with the client ID.", OAUTH_METHOD, new Prop("password")));
             add(new Property(Property.STRING_TYPE, "tenantId",
                     "Azure Directory ID (tenant GUID) used for OAuth authentication. Leave empty for AWS or GCP workspaces.", OAUTH_METHOD));
+            add(new Property(Property.STRING_TYPE, "#token", null, FEDERATED_SSO, new Prop("password")));
         }};
 
         descriptor.nameBrackets = "`";
@@ -84,9 +86,10 @@ public class DatabricksProvider extends JdbcDataProvider {
             properties.setProperty("Auth_Flow", "1");
         }
         else {
+            String token = (String) (method.equals(FEDERATED_SSO) ? conn.credentials.parameters.get("#token") : conn.credentials.parameters.get("token"));
             properties.setProperty("AuthMech", "3");
             properties.setProperty(DbCredentials.UID, "token");
-            setIfNotNull(properties, DbCredentials.PWD, (String) conn.credentials.parameters.get("token"));
+            setIfNotNull(properties, DbCredentials.PWD, token);
         }
 
         return properties;
