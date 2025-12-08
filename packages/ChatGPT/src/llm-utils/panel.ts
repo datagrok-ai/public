@@ -43,6 +43,7 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
   private runButton: HTMLElement;
   private modelInput: DG.InputBase<ModelOption>;
   private newChatButton: HTMLElement;
+  private copyConversationButton: HTMLElement;
   private historyButton: HTMLElement;
   private tryAgainButton: HTMLElement;
   private _onRunRequest = new rxjs.Subject<{prevMessages: T[], currentPrompt: K}>();
@@ -88,6 +89,13 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
     ui.tooltip.bind(this.runButton, () => this.runButtonTooltip, 'left');
     this.tryAgainButton = ui.icons.sync(() => this.tryAgain(), 'Try Again');
     this.historyButton = ui.iconFA('history', () => this.showHistory(), 'Chat History...');
+    this.copyConversationButton = ui.iconFA('copy', async () => {
+      const success = await this.copyConversationToClipboard();
+      if (success)
+        grok.shell.info('Conversation copied to clipboard');
+      else
+        grok.shell.error('Failed to copy conversation to clipboard');
+    }, 'Copy Conversation to Clipboard');
 
     this.newChatButton = ui.icons.add(async () => {
       ui.setUpdateIndicator(this.root, true, 'Saving conversation...');
@@ -129,6 +137,7 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
     this.header.appendChild(headerTitle);
     const rightHeaderDiv = ui.divH([], 'd4-ai-panel-header-right-buttons');
     rightHeaderDiv.appendChild(this.newChatButton);
+    rightHeaderDiv.appendChild(this.copyConversationButton);
     rightHeaderDiv.appendChild(this.historyButton);
     this.header.appendChild(rightHeaderDiv);
   }
@@ -152,6 +161,30 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
     // save history before hiding
     this.saveCurrentConversation().catch((e) => console.error('Failed to save conversation before hiding panel:', e));
     grok.shell.dockManager.close(this.root);
+  }
+
+  formatConversation() {
+    let previousFromAI = false;
+    return this._uiMessages.map((msg) => {
+      const prefix = msg.fromUser ? 'USER:' : 'Datagrok AI:';
+      const separator = '-'.repeat(50);
+      const isContinuation = !msg.fromUser && previousFromAI;
+      previousFromAI = !msg.fromUser;
+      const actualPrefix = isContinuation ? '\n' : `${separator}\n${prefix}\n`;
+      return `${actualPrefix}${msg.text}\n`;
+    }).join('\n');
+  }
+
+  async copyConversationToClipboard() {
+    const formattedText = this.formatConversation();
+
+    try {
+      await navigator.clipboard.writeText(formattedText);
+      return true;
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      return false;
+    }
   }
 
   toggle() {
@@ -291,11 +324,13 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
   protected showContentIcons() {
     this.newChatButton.style.display = 'flex';
     this.tryAgainButton.style.display = 'flex';
+    this.copyConversationButton.style.display = 'flex';
   }
 
   protected hideContentIcons() {
     this.newChatButton.style.display = 'none';
     this.tryAgainButton.style.display = 'none';
+    this.copyConversationButton.style.display = 'none';
   }
 
   private handleClear() {
