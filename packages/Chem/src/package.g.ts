@@ -285,12 +285,12 @@ export function ChemSpaceEditor(call: DG.FuncCall) : void {
 //name: Fingerprints
 //tags: dim-red-preprocessing-function
 //input: column col { semType: Molecule }
-//input: string _metric { optional: true }
+//input: dynamic _metric { optional: true }
 //input: string fingerprintType = 'Morgan' { caption: Fingerprint type; optional: true; choices: ["Morgan","RDKit","Pattern","AtomPair","MACCS","TopologicalTorsion"] }
 //output: object result
 //meta.supportedSemTypes: Molecule
 //meta.supportedDistanceFunctions: Tanimoto,Asymmetric,Cosine,Sokal
-export async function getFingerprints(col: DG.Column, _metric: string | undefined, fingerprintType: any) {
+export async function getFingerprints(col: DG.Column, _metric: any, fingerprintType: any) {
   return await PackageFunctions.getFingerprints(col, _metric, fingerprintType);
 }
 
@@ -599,10 +599,11 @@ export function toxicity(smiles: DG.SemanticValue) : any {
 
 //input: column molecule { semType: Molecule }
 //input: string targetNotation 
+//input: bool kekulize = false { optional: true; nullable: true }
 //output: column result
 //meta.vectorFunc: true
-export async function convertMoleculeNotation(molecule: DG.Column, targetNotation: any) : Promise<any> {
-  return await PackageFunctions.convertMoleculeNotation(molecule, targetNotation);
+export async function convertMoleculeNotation(molecule: DG.Column, targetNotation: any, kekulize?: boolean) : Promise<any> {
+  return await PackageFunctions.convertMoleculeNotation(molecule, targetNotation, kekulize);
 }
 
 //description: RDKit-based conversion for SMILES, SMARTS, InChi, Molfile V2000 and Molfile V3000
@@ -622,10 +623,11 @@ export function convertMolNotation(molecule: string, sourceNotation: any, target
 //input: string targetNotation = 'smiles' { choices: ["smiles","smarts","molblock","v3Kmolblock"] }
 //input: bool overwrite = false 
 //input: bool join = true 
+//input: bool kekulize = false { optional: true; nullable: true }
 //output: column result
 //top-menu: Chem | Transform | Convert Notation...
-export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<any>, targetNotation: any, overwrite: boolean, join: boolean) : Promise<any> {
-  return await PackageFunctions.convertNotation(data, molecules, targetNotation, overwrite, join);
+export async function convertNotation(data: DG.DataFrame, molecules: DG.Column<any>, targetNotation: any, overwrite: boolean, join: boolean, kekulize?: boolean) : Promise<any> {
+  return await PackageFunctions.convertNotation(data, molecules, targetNotation, overwrite, join, kekulize);
 }
 
 //name: Convert Notation...

@@ -1,5 +1,9 @@
 # Chem changelog
 
+## 1.16.11 (2025-12-09)
+
+* Add kekulize option to molecule notation conversion functions
+
 ## 1.16.10 (2025-12-08)
 
 * R Group analysis: fixed ability to perform analyziz only for certain positions

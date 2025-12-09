@@ -1,5 +1,3 @@
-//@ts-ignore
-import RdKitWorkerClass from '../rdkit.worker.ts'; // .ts!
 import {WORKER_CALL} from './rdkit-service-worker-api';
 import {WorkerMessageBusClient} from '../worker-message-bus-client';
 import {Fingerprint} from '../utils/chem-common';
@@ -8,7 +6,7 @@ import {SubstructureSearchType} from '../constants.js';
 
 export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
   constructor() {
-    super(new RdKitWorkerClass());
+    super(new Worker(new URL('../rdkit.worker', import.meta.url)));
   }
 
   moduleInit = async (pathToRdkit: string) =>
@@ -30,8 +28,8 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
   getFingerprints = async (fingerprintType: Fingerprint, molecules?: string[], getCanonicalSmiles?: boolean) =>
     this.call(WORKER_CALL.GET_FINGERPRINTS, [fingerprintType, molecules, getCanonicalSmiles]);
 
-  convertMolNotation = async (molecules: string[], targetNotation: string) =>
-    this.call(WORKER_CALL.CONVERT_MOL_NOTATION, [molecules, targetNotation]);
+  convertMolNotation = async (molecules: string[], targetNotation: string, kekulize = false) =>
+    this.call(WORKER_CALL.CONVERT_MOL_NOTATION, [molecules, targetNotation, kekulize]);
 
   getStructuralAlerts = async (alerts: {[rule in RuleId]?: string[]}, molecules?: string[]) =>
     this.call(WORKER_CALL.GET_STRUCTURAL_ALERTS, [alerts, molecules]);
@@ -56,7 +54,7 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
     molecules: string[], exactAtomSearch: boolean, exactBondSearch: boolean,
   ): Promise<string> =>
     this.call(WORKER_CALL.MOST_COMMON_STRUCTURE, [molecules, exactAtomSearch, exactBondSearch]);
-  
+
   beautifyMols = async (molecules: string[]): Promise<string[]> =>
     this.call(WORKER_CALL.BEAUTIFY_MOLS, [molecules]);
 }

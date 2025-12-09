@@ -2,7 +2,7 @@
   "name": "@datagrok/chem",
   "friendlyName": "Chem",
   "fullName": "Chem",
-  "version": "1.16.10",
+  "version": "1.16.11",
   "author": {
     "name": "Maria Dolotova",
     "email": "mdolotova@datagrok.ai"
@@ -76,7 +76,7 @@
     "path": "^0.12.7",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.5.1",
-    "webpack": "5.95.0",
+    "webpack": "^5.103.0",
     "webpack-cli": "^5.1.4"
   },
   "browser": {

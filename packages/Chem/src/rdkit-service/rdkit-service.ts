@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {RdKitServiceWorkerClient} from './rdkit-service-worker-client';
@@ -465,11 +466,11 @@ export class RdKitService {
     return res;
   }
 
-  async convertMolNotation(molecules: string[], targetNotation: DG.chem.Notation): Promise<string[]> {
+  async convertMolNotation(molecules: string[], targetNotation: DG.chem.Notation, kekulize = false): Promise<string[]> {
     const t = this;
     const res =
       await this._initParallelWorkers(molecules, (i: number, segment: string[]) =>
-        t.parallelWorkers[i].convertMolNotation(segment, targetNotation),
+        t.parallelWorkers[i].convertMolNotation(segment, targetNotation, kekulize),
       (data: string[][]) => {
         return ([] as string[]).concat(...data);
       });
@@ -592,8 +593,8 @@ export class RdKitService {
   /**
    * gets MCS for every cluster of molecules
    * @param clusteredMolecules array of arrays of molecules per cluster
-   * @param exactAtomSearch 
-   * @param exactBondSearch 
+   * @param exactAtomSearch
+   * @param exactBondSearch
    */
   async clusterMCS(clusteredMolecules: string[][], exactAtomSearch: boolean, exactBondSearch: boolean): Promise<string[]> {
     await chemBeginCriticalSection();
@@ -608,7 +609,7 @@ export class RdKitService {
       lock.release();
       if (index >= clusteredMolecules.length) {
         console.log(index);
-        return
+        return;
       }
       const mols = clusteredMolecules[index];
       if (mols.length < 2)
@@ -624,10 +625,10 @@ export class RdKitService {
         res[index] = r;
       }
       await process(workerIndex, resolver);
-    }
+    };
 
     const promises = new Array(nWorkers).fill(null).map((_, i) => {
-      return new Promise<void>((resolve) => {process(i, resolve).then(() => {resolve()});}) 
+      return new Promise<void>((resolve) => {process(i, resolve).then(() => {resolve();});});
     });
 
     await Promise.all(promises);
@@ -642,7 +643,7 @@ export class RdKitService {
         return smiles ?? '';
       } catch (_) {}
       return '';
-    })
+    });
   }
 
   async beautifyMolsV3K(molfiles: string[]): Promise<string[]> {
@@ -654,7 +655,7 @@ export class RdKitService {
       },
       (data) => {
         return data.flat();
-      }
+      },
     );
     chemEndCriticalSection();
     return res;
