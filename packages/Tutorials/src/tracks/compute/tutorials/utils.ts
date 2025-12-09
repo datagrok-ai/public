@@ -15,6 +15,9 @@ const TICK = 100;
 /** Starting pause */
 export const PAUSE = 500;
 
+/** Editor delay */
+export const DELAY = 2000;
+
 /** Wait for current view has element */
 export async function getViewWithElement(selector: string) {
   let view: DG.ViewBase | null = null;  

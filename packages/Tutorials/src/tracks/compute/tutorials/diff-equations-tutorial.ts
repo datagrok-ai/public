@@ -6,12 +6,13 @@ import * as ui from 'datagrok-api/ui';
 import {filter} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {interval, fromEvent} from 'rxjs';
-import {describeElements, singleDescription, closeWindows, getElement,
-  getViewWithElement, PAUSE, getTextWithSlider, simulateMouseEventsWithMove} from './utils';
+import {singleDescription, closeWindows, getElement,
+  getViewWithElement, PAUSE, getTextWithSlider, simulateMouseEventsWithMove,
+  DELAY} from './utils';
 
 import '../../../../css/tutorial.css';
 import '../../../../css/ui-describer.css';
-import { runDescriber } from './ui-describer';
+import { getRect, runDescriber } from './ui-describer';
 
 enum DS_CONSTS {
   EDIT_RIBBON_IDX = 2,
@@ -35,71 +36,56 @@ export const POPULATION_MODEL = `#name: Lotka-Volterra
   dy/dt = -gamma * y
 
 #argument: t
-  initial = 0 {min: 0; max: 2; caption: Start; category: Time}
-  final = 15  {min: 2; max: 150; caption: Finish; category: Time}
-  step = 0.1  {min: 0.1; max: 1; caption: Step; category: Time}
+  initial = 0 {min: 0; max: 2; caption: Start; category: Time}    [Simulation start time.]
+  final = 15  {min: 2; max: 150; caption: Finish; category: Time} [Simulation end time.]
+  step = 0.1  {min: 0.1; max: 1; caption: Step; category: Time}   [Solution grid step.]
 
 #inits:  
   x = 20 {min: 2; max: 40; category: Seed; caption: Prey}
   y = 2  {min: 2; max: 10; category: Seed; caption: Predator}
 
 #parameters:
-  alpha = 1.1 {min: 0.1; max: 1.5; category: Parameters} [The maximum prey per capita growth rate]
-  beta = 0.4  {min: 0.1; max: 1; category: Parameters} [The effect of the presence of predators on the prey death rate]
-  gamma = 1.1 {min: 0.1; max: 1.5; category: Parameters} [The predator's per capita death rate]
-  delta = 0.4 {min: 0.1; max: 1; category: Parameters} [The effect of the presence of prey on the predator's growth rate]
+  alpha = 1.1 {min: 0.1; max: 1.5; category: Parameters} [The maximum prey per capita growth rate.]
+  beta = 0.4  {min: 0.1; max: 1; category: Parameters} [Predator impact on prey death rate.]
+  gamma = 1.1 {min: 0.1; max: 1.5; category: Parameters} [The predator's per capita death rate.]
+  delta = 0.4 {min: 0.1; max: 1; category: Parameters} [Effect of prey on predator growth.]
 
 #output:
   t {caption: Time}
   x {caption: Prey}
   y {caption: Predator}`;
 
-/** Diff Studio UI info */
-const uiInfo = [
-  `# Model
-  
-  You can enter the model inputs here.`,
-  `# Graphs
-  
-  The model is incomplete, leading to the following effects:
-
-  * The prey population grows infinitely
-  * The predator population steadily declines`,
-  `# Dataframe
-
-  The outcomes of the numerical simulation.`,
-];
-
 /** Diff Studio editor info */
-const editorInfo = [
-  `# Equations
+const editorInfo = new Map([  
+  ['eqs', `# Equations
    
-  Place differential equations in this block.`,
-  `# Argument
+  Place differential equations in this block.`],
+  ['arg', `# Argument
   
   Define the argument in this block: 
   * the initial value
   * the final value
-  * the grid step`,
-  `# Annotation
+  * the grid step`],
+  ['annot', `# Annotation
   
   Diff Studio automatically generates the user interface. To enhance usability, specify these annotations inside braces \`{}\` after each argument or parameter:
 
   * \`min\` and \`max\`: Creates a slider control with defined range for quick model adjustments
   * \`caption\`: Adds a descriptive label
-  * \`category\`: Groups related arguments together
+  * \`category\`: Groups related arguments together.`],
+  ['hint', `# Hints
+   
+  Additionally, you can add tooltips inside brackets \`[]\`.`],
+  ['inits', `# Inits
   
-  Additionally, you can add tooltips inside brackets \`[]\`.`,
-  `# Inits
+  Define initial values here.`],
+  ['params', `# Parameters
   
-  Define initial values here.`,
-  `# Parameters
-  
-  If your model has parameters, specify them here.`,
-  `# Output
+  If your model has parameters, specify them here.`],
+  ['out', `# Output
 
-  The computation output is a dataframe. Customize its columns here.`,
-];
+  The computation output is a dataframe. Customize its columns here.`],
+]);
 
 /** Tutorial on solving differential equations */
 export class DifferentialEquationsTutorial extends Tutorial {
@@ -184,7 +170,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
     const openModelFuncCall = openModelFunc.prepare({'content': POPULATION_MODEL});
     await openModelFuncCall.call();
 
-    await new Promise((resolve) => setTimeout(resolve, PAUSE));
+    await new Promise((resolve) => setTimeout(resolve, DELAY));
 
     // 3. Explore elements
     const dsView = grok.shell.v as DG.TableView;
@@ -201,11 +187,36 @@ export class DifferentialEquationsTutorial extends Tutorial {
       col.format = '0.00E0';
 
     let doneBtn = runDescriber({pages: [
-      {root: dsViewRoot.parentElement ?? dsViewRoot, description: '# App\n\nThis is the main view of Diff Studio.', position: 'left'},
-      {root: lineChartRoot, description: this.getLegendDiv(), position: 'left'},
-      {root: gridRoot, description: '# Dataframe 🧮\n\nThe outcomes of the numerical simulation.', position: 'top'},
-      {root: inputsPanel, description: '# Inputs 3️⃣7️⃣\n\nYou can enter the model inputs here.', position: 'left'},
-      {root: inputRoots[1] as HTMLElement, description: this.getInputDescription(), position: 'left', elementsToHighlight: [lineChartRoot]},
+      { // Diff Studio view
+        root: dsViewRoot.parentElement ?? dsViewRoot,
+        description: '# App\n\nThis is the main view of Diff Studio.', 
+        position: 'left',
+        elementsToHighlight: [dsViewRoot.parentElement ?? dsViewRoot],
+      },
+      { // Line charts
+        root: lineChartRoot,
+        description: this.getLegendDiv(),
+        position: 'left',
+        elementsToHighlight: [lineChartRoot],
+      },
+      { // Grid
+        root: gridRoot,
+        description: '# Dataframe 🧮\n\nThe outcomes of the numerical simulation.',
+        position: 'top',
+        elementsToHighlight: [gridRoot],
+      },
+      { // Inputs panel
+        root: inputsPanel,
+        description: '# Inputs 3️⃣7️⃣\n\nYou can enter the model inputs here.',
+        position: 'left',
+        elementsToHighlight: [inputsPanel],
+      },
+      { // Single input
+        root: inputRoots[1] as HTMLElement,
+        description: this.getInputDescription(), 
+        position: 'left', 
+        elementsToHighlight: [getRect(inputRoots[1] as HTMLElement, {paddingBottom: 3}), lineChartRoot],
+      },
     ]});
     await this.action(
       'Explore the interface',
@@ -227,24 +238,48 @@ export class DifferentialEquationsTutorial extends Tutorial {
     const editorRoot = dsViewRoot.querySelector('div.panel-base.splitter-container-horizontal') as HTMLElement;
     let ignore = await getElement(editorRoot, 'div.cm-line');
     const splitBar = dsViewRoot.querySelector('div.splitbar-vertical') as HTMLElement;
-    //editorRoot.style.width = '515px';
     simulateMouseEventsWithMove(splitBar, 515, 0);    
     const lineRoots = editorRoot.querySelectorAll('div[class="cm-line"]') as unknown as HTMLElement[];
-    const editor = editorRoot.querySelector('div.cm-editor') as HTMLElement;
 
-    // doneBtn = runDescriber({pages: [
-    //   {root: editor, description: '# Editor\n\nSpecify the model here.', position: 'left', elementsToHighlight: [editorRoot.parentElement ?? editorRoot]},
-    //   {root: lineRoots[1], description: '# Equations\n\nPlace differential equations in this block.', position: 'left', elementsToHighlight: [lineRoots[1], lineRoots[2], lineRoots[3]]},
-    // ]});
+    await new Promise((resolve) => setTimeout(resolve, DELAY));
 
-    doneBtn = describeElements([
-      lineRoots[0],
-      lineRoots[4],
-      lineRoots[5],
-      lineRoots[9],
-      lineRoots[13],
-      lineRoots[20],
-    ], editorInfo);
+    doneBtn = runDescriber({pages: [
+      { // Equations block
+        root: lineRoots[1],
+        description: editorInfo.get('eqs')!,
+        position: 'left', elementsToHighlight: [getRect(lineRoots[0], {width: 162, height: 57})],
+      },
+      { // Argument block
+        root: lineRoots[4],
+        description: editorInfo.get('arg')!,
+        position: 'left', elementsToHighlight: [getRect(lineRoots[4], {width: 105, height: 76})],
+      },
+      { // Annotation block
+        root: lineRoots[4],
+        description: editorInfo.get('annot')!,
+        position: 'left', elementsToHighlight: [getRect(lineRoots[4], {width: 477, height: 76})],
+      },
+      { // Annotation with hint block
+        root: lineRoots[4],
+        description: editorInfo.get('hint')!,
+        position: 'left', elementsToHighlight: [getRect(lineRoots[4], {width: 660, height: 76})],
+      },
+      { // Initial conditions block
+        root: lineRoots[9],
+        description: editorInfo.get('inits')!,
+        position: 'left', elementsToHighlight: [getRect(lineRoots[9], {width: 455, height: 57})],
+      },
+      { // Parameters block
+        root: lineRoots[13],
+        description: editorInfo.get('params')!,
+        position: 'left', elementsToHighlight: [getRect(lineRoots[13], {width: 717, height: 95})],
+      },
+      { // Outputs block
+        root: lineRoots[19],
+        description: editorInfo.get('out')!,
+        position: 'left', elementsToHighlight: [getRect(lineRoots[19], {width: 185, height: 76})],
+      },
+    ]});
 
     await this.action(
       'Explore editor',
@@ -262,7 +297,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
     let equation = 'dx/dt = alpha * x - beta * x * y';
     let rawEquation = equation.replaceAll(' ', '');
     let codeDiv = ui.divV([
-      ui.label('Update the first equation to obtain'),
+      ui.label('Update the first equation (🐰) to obtain'),
       ui.divH([
         ui.div(equation, 'tutorials-code-section'),
         ui.div(ui.iconFA('copy', () => {
@@ -285,7 +320,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
     equation = 'dy/dt = -gamma * y + delta * x * y';
     rawEquation = equation.replaceAll(' ', '');
     codeDiv = ui.divV([
-      ui.label('Update the second equation to obtain'),
+      ui.label('Update the second equation (🦊) to obtain'),
       ui.divH([
         ui.div(equation, 'tutorials-code-section'),
         ui.div(ui.iconFA('copy', () => {
@@ -316,20 +351,19 @@ export class DifferentialEquationsTutorial extends Tutorial {
     );
 
     // 10. Check meaning
-    const description = '# Updates\n\nNow, the model takes into account:' +
-      '\n* the effect of the presence of predators on the prey death rate' +
-      '\n* the effect of the presence of prey on the predator\'s growth rate';
-
-    let okBtn = singleDescription(lineChartRoot, description, 'Go to the next step');
-
-    if (okBtn !== null) {
-      await this.action(
-        'Click "OK"',
-        fromEvent(okBtn, 'click'),
-        undefined,
-        'Check the updates. Click "OK" to go to the next step.',
-      );
-    }
+    const clearBtn = runDescriber({
+      pages: [{
+        root: lineChartRoot,
+        description: this.getUpdatesDescription(),
+        position: 'left',
+        elementsToHighlight: [lineChartRoot],
+      }],
+      btnsText: {done: 'clear', next: '', prev: ''},
+    });  
+    await this.action(
+      'Check the updates',
+      fromEvent(clearBtn, 'click'),
+    );
 
     // 11. Close editor
     this.title('Exploration');
@@ -388,6 +422,20 @@ export class DifferentialEquationsTutorial extends Tutorial {
       ui.markdown('# Graphs\n\nThe model is incomplete, leading to the following effects:'),
       preyDiv,
       predatorDiv,
+    ]);
+  }
+
+  private getUpdatesDescription(): HTMLElement {
+    const predVsPreyDiv = ui.markdown('🦊➠🐰 the effect of the presence of predators on the prey death rate');
+    predVsPreyDiv.classList.add('tutorials-ui-describer-diff-studio-legend-line');
+
+    const preyVsPredDiv = ui.markdown('🐰➠🦊 the effect of the presence of prey on the predator\'s growth rate');
+    preyVsPredDiv.classList.add('tutorials-ui-describer-diff-studio-legend-line');
+
+    return ui.divV([
+      ui.markdown('# Updates\n\nNow, the model takes into account:'),
+      predVsPreyDiv,
+      preyVsPredDiv,
     ]);
   }
 

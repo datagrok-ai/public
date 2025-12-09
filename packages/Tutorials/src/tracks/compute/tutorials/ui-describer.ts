@@ -6,13 +6,28 @@ import * as DG from 'datagrok-api/dg';
 import '../../../../css/ui-describer.css';
 import { getIcn } from './utils';
 
+type Rect = {
+  left: number,
+  top: number,
+  width: number,
+  height: number,
+};
+
+interface IRectSettings {
+  width?: number,
+  height?: number,
+  paddingBottom?: number,
+};
+
+export type HighlightElement = HTMLElement | Rect;
+
 export type DescriptionPage = {
   root: HTMLElement,
   description: string | HTMLElement,
   position: string,
   nextBtnAction?: () => void,
   prevBtnAction?: () => void,
-  elementsToHighlight?: HTMLElement[],
+  elementsToHighlight: HighlightElement[],
 };
 
 export type ButtonsText = {
@@ -33,12 +48,35 @@ export type Tour = {
   btnsText?: ButtonsText,
 };
 
+function getHolesCount(pages: DescriptionPage[]): number {
+  let res = 0;
+
+  for (const page of pages) {
+
+  }
+
+  return res;
+}
+
+export function getRect(elem: HTMLElement, settings: IRectSettings = {}): Rect {
+  const rect = elem.getBoundingClientRect();
+
+  return {
+    left: rect.left,
+    top: rect.top,
+    width: settings.width ?? rect.width,
+    height: settings.height ?? (rect.height + (settings.paddingBottom ?? 0)),
+  };
+}
+
 /** Run ui describer */
 export function runDescriber(tour: Tour): HTMLButtonElement {
   const pages = tour.pages;
   const pagesCount = pages.length;
   if (pagesCount < 1)
     throw new Error('Empty description pages');
+
+  const overlay = createOverlay();
 
   let idx = 0;
   let closeIcn: HTMLElement;
@@ -73,6 +111,7 @@ export function runDescriber(tour: Tour): HTMLButtonElement {
   const doneBtn = ui.button(btnsText.done, () => {
     popup.remove();
     clearSpotlight();
+    overlay.remove();
 
     if (tour.doneBtnAction != null)
       tour.doneBtnAction();
@@ -90,7 +129,7 @@ export function runDescriber(tour: Tour): HTMLButtonElement {
 
       popup = ui.hints.addHint(pages[idx].root, msg, pages[idx].position as ui.hints.POSITION);
 
-      const elementsToHighlight = [popup, pages[idx].root];
+      const elementsToHighlight: HighlightElement[] = [popup];
       elementsToHighlight.push(...(pages[idx].elementsToHighlight ?? []));
 
       spotlight(elementsToHighlight);
@@ -130,7 +169,8 @@ export function getLegend(fileName: string, text: string): HTMLElement {
 
 function createOverlay(): HTMLElement {
   const existing = document.getElementById('tutorials-ui-describer-tour-overlay');
-  if (existing) return existing;
+  if (existing)
+    return existing;
 
   const overlay = document.createElement('div');
   overlay.id = 'tutorials-ui-describer-tour-overlay';
@@ -153,23 +193,23 @@ function createOverlay(): HTMLElement {
   full.setAttribute('fill', 'white');
 
   const hole1 = document.createElementNS(svgNS, 'rect');
-  hole1.id = 'hole1';
+  hole1.id = 'tutorials-ui-describer-tour-hole1';
   hole1.setAttribute('fill', 'black');
 
   const hole2 = document.createElementNS(svgNS, 'rect');
-  hole2.id = 'hole2';
+  hole2.id = 'tutorials-ui-describer-tour-hole2';
   hole2.setAttribute('fill', 'black');
 
   const hole3 = document.createElementNS(svgNS, 'rect');
-  hole3.id = 'hole3';
+  hole3.id = 'tutorials-ui-describer-tour-hole3';
   hole3.setAttribute('fill', 'black');
 
   const hole4 = document.createElementNS(svgNS, 'rect');
-  hole4.id = 'hole4';
+  hole4.id = 'tutorials-ui-describer-tour-hole4';
   hole4.setAttribute('fill', 'black');
 
   const hole5 = document.createElementNS(svgNS, 'rect');
-  hole5.id = 'hole5';
+  hole5.id = 'tutorials-ui-describer-tour-hole5';
   hole5.setAttribute('fill', 'black');
 
   mask.appendChild(full);
@@ -196,7 +236,7 @@ function createOverlay(): HTMLElement {
   return overlay;
 } // createOverlay
 
-function spotlight(elements: HTMLElement[]) {
+function spotlight(elements: HighlightElement[]) {
   const count = elements.length;
   if (count < 1)
     return;
@@ -205,21 +245,20 @@ function spotlight(elements: HTMLElement[]) {
   overlay.style.display = 'block';
 
   const holes = [
-    document.getElementById('hole1')!,
-    document.getElementById('hole2')!,
-    document.getElementById('hole3')!,
-    document.getElementById('hole4')!,
-    document.getElementById('hole5')!,
+    document.getElementById('tutorials-ui-describer-tour-hole1')!,
+    document.getElementById('tutorials-ui-describer-tour-hole2')!,
+    document.getElementById('tutorials-ui-describer-tour-hole3')!,
+    document.getElementById('tutorials-ui-describer-tour-hole4')!,
+    document.getElementById('tutorials-ui-describer-tour-hole5')!,
   ];
 
-  const padding = 0;
-
   holes.forEach((hole, idx) => {
-    const rect = elements[(idx < count) ? idx : 0].getBoundingClientRect();
-    const x = rect.left - padding;
-    const y = rect.top - padding;
-    const width = rect.width + padding * 2;
-    const height = rect.height + padding * 2;
+    const elem = elements[(idx < count) ? idx : 0];
+    const rect = (elem instanceof HTMLElement) ? elem.getBoundingClientRect() : elem;
+    const x = rect.left;
+    const y = rect.top;
+    const width = rect.width;
+    const height = rect.height;
 
     hole.setAttribute('x', x.toString());
     hole.setAttribute('y', y.toString());

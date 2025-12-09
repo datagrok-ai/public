@@ -1,5 +1,9 @@
 # Tutorials changelog
 
+## 1.10.6 (2025-12-11)
+
+* Tutorial: Updated the differential equations tutorial
+
 ## 1.10.5 (2025-10-31)
 
 * Tutorial: Updated the parameter optimization tutorial
