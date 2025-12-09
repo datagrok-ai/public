@@ -55,6 +55,8 @@ export class Tags {
 
   static ColorCodingFallbackColor = '.color-coding-fallback-color';
 
+  static ColorCodingLinkedColumnName = '.%color-coding-linked-column-name';
+
   static ShowMarkersAlways = '.show-markers-always';
 
   static DefaultAxisType = '.default-axis-type';
@@ -191,6 +193,10 @@ export class Tags {
 
   static ReferencesColumn = 'references_column';
 
+  static IsUnique = 'is_unique';
+
+  static IsPrimaryKey = 'is_primary_key';
+
   static ChemDescriptor = 'chem-descriptor';
 
   static ChemFingerprinter = 'chem-fingerprinter';
@@ -204,6 +210,44 @@ export class Tags {
   static IsDbEntity = '.db.entity';
 
   static IsDbView = '.db.view';
+
+  static DbComment = 'comment';
+
+  static LlmComment = 'llmComment';
+
+  static DbTableDomains = 'domains';
+
+  static DbTableRowCount = 'rowCount';
+
+  static DbColumnIsUnique = 'isUnique';
+
+  static DbColumnIsPrimary = 'isPrimaryKey';
+
+  static DbColumnMin = 'min';
+
+  static DbColumnMax = 'max';
+
+  static DbColumnValues = 'values';
+
+  static DbColumnSampleValues = 'sampleValues';
+
+  static DbColumnUniqueCount = 'uniqueCount';
+
+  static DbRelCardinality = 'cardinality';
+
+  static DbRelIsPrimaryPath = 'isPrimaryPath';
+
+  static DbRelFromSchema = 'fromSchema';
+
+  static DbRelFromTable = 'fromTable';
+
+  static DbRelFromColumns = 'fromColumns';
+
+  static DbRelToSchema = 'toSchema';
+
+  static DbRelToTable = 'toTable';
+
+  static DbRelToColumns = 'toColumns';
 
   static ColumnConverter = '.column.converter';
 
@@ -374,6 +418,11 @@ export class FuncOptions {
 
   /// Allows to add this function results as a column from the context menu
   static AllowAddAsColumn = 'allowAddAsColumn';
+
+  /// A way to invoke this function using the natural (English) language. Used by the AI.
+  /// Passed parameters would be substituted accordingly.
+  /// Example: "compound activity details for target ${target}"
+  static SearchPattern = 'searchPattern';
 
 }
 export class FuncParamOptions {
