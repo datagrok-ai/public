@@ -360,7 +360,7 @@ Datagrok supports rich visualization for both chemical and general data, includi
 
 See also: [Viewer gallery](https://github.com/datagrok-ai/public/blob/master/help/visualize/viewers/viewer-gallery.md), [Table view](../../visualize/table-view-1.md), [Grid](../../visualize/viewers/grid.md).
 
-##### <b>Q: Does Datagrok support analytical chemistry plots such as spectrograms?
+##### <b>Q: Does Datagrok support analytical chemistry plots such as spectrograms?</b>
 
 The [Spectra viewer](https://github.com/datagrok-ai/chem-spectra-viewer/tree/main) plugin is specifically designed for analytical chemistry data and handles common spectral file format (JDX). For custom analytical chemistry visualizations you can create specialized viewers tailored to specific analytical techniques.  
 [Can I create custom visualizations](#q-can-i-create-custom-visualizations)| [Scripting viewer](../../visualize/viewers/scripting-viewer.md) | [Custom viewers](../../develop/how-to/viewers/develop-custom-viewer.md)
