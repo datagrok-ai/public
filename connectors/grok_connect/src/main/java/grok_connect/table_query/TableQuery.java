@@ -213,7 +213,7 @@ public class TableQuery extends DataQuery {
     }
 
     private String preparePredicate(FieldPredicate clause, StringBuilder sqlHeader, JdbcDataProvider provider) {
-        String paramName = clause.getParamName().replaceAll("[()]", "_");
+        String paramName = clause.getParamName();
         clause.matcher.colName = provider.addBrackets(clause.field);
         if (clause instanceof HavingPredicate && GrokConnectUtil.isNotEmpty(((HavingPredicate) clause).aggType)) {
             provider.descriptor.aggregations.stream()
