@@ -159,7 +159,6 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
 
   hide() {
     // save history before hiding
-    this.saveCurrentConversation().catch((e) => console.error('Failed to save conversation before hiding panel:', e));
     grok.shell.dockManager.close(this.root);
   }
 
@@ -288,6 +287,7 @@ export class AIPanel<T extends MessageType = OpenAI.Chat.ChatCompletionMessagePa
         this.runButton.classList.add('fal', 'fa-paper-plane');
         this.runButton.style.color = 'var(--blue-1)';
         this.runButtonTooltip = actionButtionValues.run;
+        this.saveCurrentConversation().catch((e) => console.error('Failed to save conversation before hiding panel:', e));
         loader.remove();
       }
     };
