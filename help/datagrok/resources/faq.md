@@ -162,9 +162,9 @@ Yes. Power users (e.g., modelers) can create or edit queries and share them with
 
 Yes. Users can build queries using the [Visual Query Editor](../../access/databases/databases.md#visual-query-editor) or the [AI Query Builder](../../access/databases/databases.md#ai-query-builder).
 
-##### <b>Q: Can we connect our own OpenAI or enterprise LLM to the AI Query Builder (SQL Copilot)?</b>
+##### <b>Q: Can we connect our own OpenAI or enterprise LLM to the AI Query Builder?</b>
 
-Yes. You can use your own API key or token. The Copilot uses database schema, existing relations and user set comments to iteratively generate SQL queries based on user prompts.
+Yes. You can use your own API key or token. The AI assistant uses database schema, existing relations and user set comments to iteratively generate SQL queries based on user prompts.
 
 ##### <b>Q: Can data queries in Datagrok be exported for storage, sharing, or reuse?</b>
 
