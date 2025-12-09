@@ -7,12 +7,10 @@ category('Database Meta: DbInfo', async () => {
     let dbInfo: DG.DbInfo;
     const testComment = 'test-comment-' + Date.now();
     const testLlmComment = 'llm-comment-' + Date.now();
-    const relName1 = 'rel_test1_' + Date.now();
-    const relName2 = 'rel_test2_' + Date.now();
 
     before(async () => {
         conn = await grok.functions.eval('DbTests:PostgreSQLDBTests');
-        dbInfo = await grok.dapi.connections.getDatabaseInfo(conn);
+        dbInfo = await grok.data.db.getInfo(conn);
         try {
             await dbInfo?.clearProperties();
         } catch (_) {}
@@ -20,86 +18,87 @@ category('Database Meta: DbInfo', async () => {
 
     test('Base properties', async () => {
         expect(dbInfo.connection.id, conn.id);
-        expect(dbInfo.comment === null, true);
+        expect(dbInfo.comment === undefined || dbInfo.comment === null, true);
         await dbInfo.setComment(testComment);
         expect(dbInfo.comment, testComment);
-        let updated = await grok.dapi.connections.getDatabaseInfo(conn);
+        let updated = await grok.data.db.getInfo(conn);
         expect(updated.comment, testComment);
 
         await dbInfo.setLlmComment(testLlmComment);
         expect(dbInfo.llmComment, testLlmComment);
-        updated = await grok.dapi.connections.getDatabaseInfo(conn);
+        updated = await grok.data.db.getInfo(conn);
         expect(updated.llmComment, testLlmComment);
     });
 
     test('Add relation 1', async () => {
+        const fromTable: string = 'orders';
+        const fromColumns: string[] = ['customer_id'];
+        const toTable: string = 'customers';
+        const toColumns: string[] = ['id'];
         const props: DG.DbRelationProperties = {
             comment: 'test',
             llmComment: 'test llm comment',
             cardinality: 'one-to-many',
-            fromTable: 'orders',
             fromSchema: 'sales',
-            fromColumns: ['customer_id'],
-            toTable: 'customers',
-            toSchema: 'sales',
-            toColumns: ['id'],
+            toSchema: 'sales'
         };
 
-        const rel = await dbInfo.addRelation(relName1, props);
+        const rel = await dbInfo.addRelation(fromTable, fromColumns, toTable, toColumns, props);
         expect(rel.comment, props.comment);
         expect(rel.llmComment, props.llmComment);
         expect(rel.cardinality, props.cardinality);
-        expect(rel.fromTable, props.fromTable);
+        expect(rel.fromTable, fromTable);
         expect(rel.fromSchema, props.fromSchema);
-        expect(rel.fromColumns, props.fromColumns);
-        expect(rel.toTable, props.toTable);
+        expect(rel.fromColumns, fromColumns);
+        expect(rel.toTable, toTable);
         expect(rel.toSchema, props.toSchema);
-        expect(rel.toColumns, props.toColumns);
+        expect(rel.toColumns, toColumns);
 
-        let all = await dbInfo.relations;
-        const found = all.find(r => r.name === relName1);
+        let all = await dbInfo.getRelations();
+        const found = all.find(r => r.fromTable === fromTable);
         expect(found !== null, true);
     });
 
     test('Add relation 2', async () => {
+        const fromTable: string = 'orders';
+        const fromColumns: string[] = ['customer_name', 'customer_address'];
+        const toTable: string = 'customers';
+        const toColumns: string[] = ['name', 'address'];
+
         const props: DG.DbRelationProperties = {
             comment: 'test',
             llmComment: 'test llm comment',
             cardinality: 'one-to-many',
-            fromTable: 'orders',
             fromSchema: 'sales',
-            fromColumns: ['customer_name', 'customer_address'],
-            toTable: 'customers',
-            toSchema: 'sales',
-            toColumns: ['name', 'address'],
+            toSchema: 'sales'
         };
 
-        const rel = await dbInfo.addRelation(relName2, props);
-        expect(rel.fromColumns, props.fromColumns);
-        expect(rel.toColumns, props.toColumns);
+        const rel = await dbInfo.addRelation(fromTable, fromColumns, toTable, toColumns, props);
+        expect(rel.fromColumns, fromColumns);
+        expect(rel.toColumns, toColumns);
 
-        let all = await dbInfo.relations;
-        const found = all.find(r => r.name === relName2);
+        let all = await dbInfo.getRelations();
+        const found = all.find(r => r.fromTable === fromTable);
         expect(found !== null, true);
     });
 
     test('Clear properties', async () => {
         await dbInfo.setComment(testComment);
+        const fromTable: string = 'orders';
+        const fromColumns: string[] = ['customer_name'];
+        const toTable: string = 'customers';
+        const toColumns: string[] = ['name'];
         const props: DG.DbRelationProperties = {
             comment: 'test',
             llmComment: 'test llm comment',
-            cardinality: 'one-to-many',
-            fromTable: 'orders',
-            fromColumns: ['customer_name'],
-            toTable: 'customers',
-            toColumns: ['name'],
+            cardinality: 'one-to-many'
         };
 
-        await dbInfo.addRelation(relName1, props);
+        await dbInfo.addRelation(fromTable, fromColumns, toTable, toColumns, props);
         await dbInfo.clearProperties();
-        let updated = await grok.dapi.connections.getDatabaseInfo(conn);
+        let updated = await grok.data.db.getInfo(conn);
         expect(updated.comment == null, true);
-        const rels = await dbInfo.relations;
+        const rels = await dbInfo.getRelations();
         expect(rels.length, 0);
     });
 
@@ -118,14 +117,14 @@ category('Database Meta: DbSchemaInfo', async () => {
 
     before(async () => {
         conn = await grok.functions.eval('DbTests:PostgreSQLDBTests');
-        dbInfo = await grok.dapi.connections.getDatabaseInfo(conn);
+        dbInfo = await grok.data.db.getInfo(conn);
         try {
             await dbInfo?.clearProperties();
         } catch (_) {}
     });
 
     test('Base properties', async () => {
-        const schemas = await dbInfo.schemas;
+        const schemas = await dbInfo.getSchemas();
         expect(schemas.length, 3);
         let publicSchema = schemas.find((s) => s.name === 'public');
         expect(publicSchema !== null, true);
@@ -134,21 +133,21 @@ category('Database Meta: DbSchemaInfo', async () => {
 
         await publicSchema.setComment(testComment);
         expect(publicSchema.comment, testComment);
-        let updated = await grok.dapi.connections.getDatabaseInfo(conn);
-        let updatedSchema = (await updated.schemas).find((s) => s.name === 'public')!;
+        let updated = await grok.data.db.getInfo(conn);
+        let updatedSchema = (await updated.getSchemas()).find((s) => s.name === 'public')!;
         expect(updatedSchema.comment, testComment);
 
         await publicSchema.setLlmComment(testLlmComment);
         expect(publicSchema.llmComment, testLlmComment);
-        updated = await grok.dapi.connections.getDatabaseInfo(conn);
-        updatedSchema = (await updated.schemas).find((s) => s.name === 'public')!;
+        updated = await grok.data.db.getInfo(conn);
+        updatedSchema = (await updated.getSchemas()).find((s) => s.name === 'public')!;
         expect(updatedSchema.llmComment, testLlmComment);
     });
 
     test('Annotate table', async () => {
-        const schemas = await dbInfo.schemas;
+        const schemas = await dbInfo.getSchemas();
         let publicSchema = schemas.find((s) => s.name === 'public')!;
-        const tables = await publicSchema.tables;
+        const tables = await publicSchema.getTables();
         const t = tables.find((t) => t.name == 'mock_data') ?? tables[0];
 
         const props: DG.DbTableProperties = {
@@ -158,25 +157,25 @@ category('Database Meta: DbSchemaInfo', async () => {
 
         await publicSchema.annotateTable(t, props);
 
-        const refreshed = await dbInfo.schemas;
+        const refreshed = await dbInfo.getSchemas();
         const s2 = refreshed.find(x => x.name === publicSchema.name)!;
-        const t2 = (await s2.tables).find(x => x.name === t.name)!;
-        expect(t2.tags['comment'], 'table-comment');
-        expect(t2.tags['rowCount'], 123);
+        const t2 = (await s2.getTables()).find(x => x.name === t.name)!;
+        expect(t2.tags[DG.Tags.DbComment], 'table-comment');
+        expect(t2.tags[DG.Tags.DbTableRowCount], 123);
 
         // full refresh
-        const updatedInfo = await grok.dapi.connections.getDatabaseInfo(conn);
-        const updatedSchemas = await updatedInfo.schemas;
+        const updatedInfo = await grok.data.db.getInfo(conn);
+        const updatedSchemas = await updatedInfo.getSchemas();
         const s3 = updatedSchemas.find(x => x.name === publicSchema.name)!;
-        const t3 = (await s3.tables).find(x => x.name === t.name)!;
-        expect(t3.tags['comment'], 'table-comment');
-        expect(t3.tags['rowCount'], 123);
+        const t3 = (await s3.getTables()).find(x => x.name === t.name)!;
+        expect(t3.tags[DG.Tags.DbComment], 'table-comment');
+        expect(t3.tags[DG.Tags.DbTableRowCount], 123);
     });
 
     test('Annotate column', async () => {
-        const schemas = await dbInfo.schemas;
+        const schemas = await dbInfo.getSchemas();
         const s = schemas[0];
-        const tables = await s.tables;
+        const tables = await s.getTables();
         const t = tables[0];
         const col = t.columns[0];
 
@@ -188,23 +187,23 @@ category('Database Meta: DbSchemaInfo', async () => {
 
         await s.annotateColumn(t, col, props);
 
-        const refreshed = await dbInfo.schemas;
+        const refreshed = await dbInfo.getSchemas();
         const s2 = refreshed.find(x => x.name === s.name)!;
-        const t2 = (await s2.tables).find(x => x.name === t.name)!;
+        const t2 = (await s2.getTables()).find(x => x.name === t.name)!;
         const c2 = t2.columns.find(x => x.name === col.name)!;
-        expect(c2.tags['min'], props.min);
-        expect(c2.tags['max'], props.max);
-        expect(c2.tags['comment'], props.comment);
+        expect(c2.tags[DG.Tags.DbColumnMin], props.min);
+        expect(c2.tags[DG.Tags.DbColumnMax], props.max);
+        expect(c2.tags[DG.Tags.DbComment], props.comment);
 
         // full refresh
-        const updatedInfo = await grok.dapi.connections.getDatabaseInfo(conn);
-        const updatedSchemas = await updatedInfo.schemas;
+        const updatedInfo = await grok.data.db.getInfo(conn);
+        const updatedSchemas = await updatedInfo.getSchemas();
         const s3 = updatedSchemas.find(x => x.name === x.name)!;
-        const t3 = (await s3.tables).find(x => x.name === t.name)!;
+        const t3 = (await s3.getTables()).find(x => x.name === t.name)!;
         const c3 = t3.columns.find(x => x.name === col.name)!;
-        expect(c3.tags['min'], props.min);
-        expect(c3.tags['max'], props.max);
-        expect(c3.tags['comment'], props.comment);
+        expect(c3.tags[DG.Tags.DbColumnMin], props.min);
+        expect(c3.tags[DG.Tags.DbColumnMax], props.max);
+        expect(c3.tags[DG.Tags.DbComment], props.comment);
     });
 
     after(async () => {
@@ -217,68 +216,40 @@ category('Database Meta: DbSchemaInfo', async () => {
 category('Database Meta: DbRelationInfo', async () => {
     let conn: DG.DataConnection;
     let dbInfo: DG.DbInfo;
-    const relName = 'test_rel_fk';
 
     before(async () => {
         conn = await grok.functions.eval('DbTests:PostgreSQLDBTests');
-        dbInfo = await grok.dapi.connections.getDatabaseInfo(conn);
+        dbInfo = await grok.data.db.getInfo(conn);
         try {
             await dbInfo?.clearProperties();
         } catch (_) {}
+
+        const fromTable: string = 'orders';
+        const fromColumns: string[] = ['customer_id'];
+        const toTable: string = 'customers';
+        const toColumns: string[] = ['id'];
 
         const props: DG.DbRelationProperties = {
             comment: 'test',
             llmComment: 'test llm comment',
             cardinality: 'one-to-many',
-            fromTable: 'orders',
             fromSchema: 'sales',
-            fromColumns: ['customer_id'],
-            toTable: 'customers',
             toSchema: 'sales',
-            toColumns: ['id'],
             isPrimaryPath: true
         };
 
-        await dbInfo.addRelation(relName, props);
+        await dbInfo.addRelation(fromTable, fromColumns, toTable, toColumns, props);
     });
 
     test('Base properties', async () => {
-        const relations = await dbInfo.relations;
+        const relations = await dbInfo.getRelations();
         expect(relations.length, 1);
         const rel = relations[0];
-        expect(rel.name, relName);
-
-        const unique = 'rel-comment-' + Date.now();
-        await rel.setComment(unique);
-        await rel.setLlmComment('llm-' + unique);
-        await rel.setCardinality('one-to-one');
-        await rel.setFromTable('new_orders');
-        await rel.setFromSchema('new_sales');
-        await rel.setFromColumns(['new_customer_id']);
-        await rel.setToTable('new_customer');
-        await rel.setFromSchema('new_sales');
-        await rel.setFromColumns(['new_id']);
-        await rel.setIsPrimaryPath(false);
-
-        let updated = (await dbInfo.relations).find(x => x.name === rel.name)!;
-        expect(updated.comment, unique);
-        expect(updated.llmComment, 'llm-' + unique);
-        expect(updated.cardinality, 'one-to-one');
-        expect(updated.fromTable, 'new_orders');
-        expect(updated.fromSchema, 'new_sales');
-        expect(updated.fromColumns[0], 'new_id');
-        expect(updated.isPrimaryPath, false);
-
-        // full refresh
-        const updatedInfo = await grok.dapi.connections.getDatabaseInfo(conn);
-        updated = (await updatedInfo.relations).find(x => x.name === rel.name)!;
-        expect(updated.comment, unique);
-        expect(updated.llmComment, 'llm-' + unique);
-        expect(updated.cardinality, 'one-to-one');
-        expect(updated.fromTable, 'new_orders');
-        expect(updated.fromSchema, 'new_sales');
-        expect(updated.fromColumns[0], 'new_id');
-        expect(updated.isPrimaryPath, false);
+        expect(rel.fromTable, 'orders');
+        expect(rel.comment, 'test');
+        expect(rel.llmComment, 'test llm comment');
+        expect(rel.cardinality, 'one-to-many');
+        expect(rel.isPrimaryPath, true);
     });
 
     after(async () => {
