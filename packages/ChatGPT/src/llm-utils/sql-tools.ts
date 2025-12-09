@@ -12,12 +12,13 @@ import * as rxjs from 'rxjs';
 import {getTopKSimilarQueries, getVectorEmbedding} from './embeddings';
 import {SemValueObjectHandler} from '@datagrok-libraries/db-explorer/src/object-handlers';
 import {ChatModel} from 'openai/resources/index';
+import {UIMessageOptions} from './panel';
 
 type AIPanelFuncs = {
   addUserMessage: (aiMsg: OpenAI.Chat.ChatCompletionMessageParam, msg: string) => void,
   addAIMessage: (aiMsg: OpenAI.Chat.ChatCompletionMessageParam, title: string, msg: string) => void,
   addEngineMessage: (aiMsg: OpenAI.Chat.ChatCompletionMessageParam) => void, // one that is not shown in the UI
-  addUiMessage: (msg: string, fromUser: boolean) => void
+  addUiMessage: (msg: string, fromUser: boolean, messageOptions?: UIMessageOptions) => void
 }
 
 const suspiciousSQlPatterns = ['DROP ', 'DELETE ', 'UPDATE ', 'INSERT ', 'ALTER ', 'CREATE ', 'TRUNCATE ', 'EXEC ', 'MERGE '];
@@ -126,6 +127,15 @@ export async function generateAISqlQueryWithTools(
           const [entryPointTable, entryPointColumn] = [objHandler.tableName, objHandler.columnName];
           semTypeWithinPromptInfo = `\n\n Note: The ${parsedPrompt.value} mentioned in the prompt is identified as a ${parsedPrompt.semType} type, typically found in the ${entryPointTable}.${entryPointColumn} column. Use this information to guide your SQL generation.`;
           console.log(semTypeWithinPromptInfo);
+        }
+      }
+
+      if ((dbQueryEmbeddings?.length ?? 0) > 0) {
+        const similarQueries = await findSimilarQueriesToPrompt(prompt);
+        if (similarQueries.n > 0 && similarQueries.text) {
+          semTypeWithinPromptInfo += `\n\n Additionally, here are some similar previously executed queries that might help you:
+          \n${similarQueries.text}
+          `;
         }
       }
 
@@ -278,7 +288,7 @@ export async function generateAISqlQueryWithTools(
       });
     }
 
-    const findSimilarQueryToPrompt = async (aiPrompt: string) => {
+    async function findSimilarQueriesToPrompt(aiPrompt: string) {
       if ((dbQueryEmbeddings?.length ?? 0) === 0)
         return {text: 'No queries found', n: 0};
       if ((dbQueryEmbeddings!.length < 4))
@@ -373,7 +383,7 @@ export async function generateAISqlQueryWithTools(
               break;
             case 'find_similar_queries':
               options.aiPanel?.addUiMessage(`Searching for similar queries to help with SQL generation.`, false);
-              const similarQueries = await findSimilarQueryToPrompt(functionArgs.prompt);
+              const similarQueries = await findSimilarQueriesToPrompt(functionArgs.prompt);
               options.aiPanel?.addUiMessage(similarQueries.n > 0 ? `Found ${similarQueries.n} similar queries.` : similarQueries.text, false);
               result = similarQueries.text;
               break;
@@ -428,11 +438,11 @@ export async function generateAISqlQueryWithTools(
             });
             options.aiPanel?.addUiMessage(!out ? 'User cancelled execution of potentially destructive SQL.' : 'User confirmed execution of potentially destructive SQL.', false);
             if (out)
-              options.aiPanel?.addUiMessage(`Final SQL Query:\n\`\`\`sql\n${out}\n\`\`\``, false);
+              options.aiPanel?.addUiMessage(`Final SQL Query:\n\`\`\`sql\n${out}\n\`\`\``, false, {result: {finalResult: out}});
             return out;
           }
           if (res)
-            options.aiPanel?.addUiMessage(`Final SQL Query:\n\`\`\`sql\n${res}\n\`\`\``, false);
+            options.aiPanel?.addUiMessage(`Final SQL Query:\n\`\`\`sql\n${res}\n\`\`\``, false, {result: {finalResult: res}});
           return res;
         } else {
           const replyText = contentUpperCase.startsWith('REPLY ONLY:') ? content.substring('REPLY ONLY:'.length).trim() : content;
@@ -441,8 +451,8 @@ export async function generateAISqlQueryWithTools(
         }
 
         // Model is explaining something, let it continue
-        if (choice.finish_reason === 'stop')
-          break;
+        // if (choice.finish_reason === 'stop')
+        //   break;
       } else {
       // No content and no tool calls
         break;
