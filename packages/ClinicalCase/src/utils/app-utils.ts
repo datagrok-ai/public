@@ -414,6 +414,12 @@ export async function readClinicalData(study: ClinicalStudy, importedFiles?: DG.
         }
       }
     }
+
+    // Ensure validation columns are added to domains
+    // If validation is already completed, adds columns immediately
+    // If validation is not completed yet, subscribes to add columns when validation completes
+    study.ensureValidationColumnsAdded();
+
     return true;
   } finally {
     pb.close();

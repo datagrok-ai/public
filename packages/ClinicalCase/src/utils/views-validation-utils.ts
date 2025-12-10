@@ -13,6 +13,113 @@ import {updateDivInnerHTML} from './utils';
 import {CDISC_STANDARD} from './types';
 import {VISIT} from '../constants/columns-constants';
 import {studies} from './app-utils';
+import {IssueDetail} from '../types/validation-result';
+
+export function setupValidationErrorIndicators(tableView: DG.TableView, df: DG.DataFrame): void {
+  const grid = tableView.grid;
+  if (!grid)
+    return;
+
+  // Find USUBJID column or first string column
+  let targetColumn: DG.GridColumn | null = grid.columns.byName(sdtmCols.SUBJECT_ID);
+  if (!targetColumn) {
+    for (const col of grid.dataFrame.columns.names()) {
+      if (grid.dataFrame.col(col)!.type === DG.TYPE.STRING) {
+        targetColumn = grid.col(col)!;
+        break;
+      }
+    }
+  }
+
+  if (!targetColumn)
+    return;
+
+  // Check if HasValidationErrors and ViolatedRules columns exist
+  const hasErrorsCol = df.columns.byName('HasValidationErrors');
+  const violatedRulesCol = df.columns.byName('ViolatedRules');
+
+  if (!hasErrorsCol || !violatedRulesCol)
+    return;
+
+  // Set cell type to html to allow custom rendering
+  targetColumn.cellType = 'html';
+
+  grid.onCellPrepare((gc) => {
+    if (gc.isTableCell && gc.gridColumn.name === targetColumn.name) {
+      const rowIdx = gc.gridRow;
+      const hasErrors = hasErrorsCol.get(rowIdx);
+      const cellValue = gc.cell.value ?? '';
+
+      if (hasErrors) {
+        // Parse violated rules from JSON string
+        const violatedRulesStr = violatedRulesCol.get(rowIdx);
+        let violatedRules: IssueDetail[] = [];
+        if (violatedRulesStr) {
+          try {
+            violatedRules = JSON.parse(violatedRulesStr);
+          } catch (e) {
+            console.error('Failed to parse violated rules:', e);
+          }
+        }
+
+        // Create tooltip content
+        const tooltipContent = createValidationTooltip(violatedRules);
+
+        const errorMark = ui.iconFA('exclamation-triangle', () => {}, 'Validation errors');
+        errorMark.classList.add('clinical-case-validation-error-mark');
+
+        // Create cell content with value and error icon
+        const cellDiv = ui.div([
+          ui.span([cellValue], {style: {paddingRight: '4px'}}),
+          ui.iconFA('exclamation-triangle', () => {}, 'Validation errors'),
+        ], 'clinical-case-validation-error-cell');
+
+        // Add tooltip to icon
+        ui.tooltip.bind(errorMark, () => tooltipContent);
+
+        gc.style.element = cellDiv;
+      } else {
+        // No errors, just show cell value with same padding as other cells
+        gc.style.element = ui.span([cellValue], 'clinical-case-no-validation-error-cell');
+      }
+    }
+  });
+}
+
+
+export function createValidationTooltip(violatedRules: IssueDetail[]): HTMLElement | string {
+  if (!violatedRules || violatedRules.length === 0)
+    return 'No validation errors';
+
+  const tooltipDiv = ui.div([], {style: {maxWidth: '400px'}});
+  const createRuleTooltipField = (name: string, value: any, parentDiv: HTMLDivElement, checkLength?: boolean) => {
+    if (value) {
+      if (checkLength && !value.length)
+        return;
+      const ruleIdDiv = ui.div([
+        ui.span([name], {style: {fontWeight: 'bold'}}),
+        ui.span([checkLength ? value.join(', ') : value]),
+      ]);
+      parentDiv.append(ruleIdDiv);
+    }
+  };
+  violatedRules.forEach((rule, index) => {
+    const ruleDiv = ui.div([],
+      {style: {
+        marginBottom: '8px',
+        paddingBottom: '8px',
+        borderBottom: index < violatedRules.length - 1 ? '1px solid var(--grey-2)' : 'none',
+      }});
+    createRuleTooltipField('Rule ID: ', rule.core_id, ruleDiv);
+    createRuleTooltipField('Message: ', rule.message, ruleDiv);
+    createRuleTooltipField('Variables: ', rule.variables, ruleDiv, true);
+    createRuleTooltipField('Values: ', rule.values, ruleDiv, true);
+
+    tooltipDiv.append(ruleDiv);
+  });
+
+  return tooltipDiv;
+}
 
 
 export function createErrorsByDomainMap(validationResults: DG.DataFrame): {[key: string]: number} {

@@ -30,3 +30,22 @@
    overflow-y: scroll;
    margin: 8px;
 }
+
+.clinical-case-validation-error-cell {
+    display: flex;
+    gap: 4px;
+    padding: 4px 4px;
+}
+
+.clinical-case-validation-error-mark {
+    color: #dc3545;
+    cursor: help;
+    font-size: 10px;
+    padding-top: 2px; 
+}
+
+.clinical-case-no-validation-error-cell {
+    padding: 4px 4px;
+    display: block;
+    min-height: 100%;
+}
