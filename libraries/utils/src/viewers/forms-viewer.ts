@@ -109,22 +109,21 @@ export class FormsViewer extends DG.JsViewer {
     ui.tooltip.bind(this.mouseOverRowIndicator, 'Mouse over row');
 
     ui.tools.waitForElementInDom(this.root).then((_) => {
-      this.columnHeadersDiv.style.cssText = `
-        oveflow:hidden!important;
-        min-width: 150px;
-        flex-shrink: 0;
-      `;
-      this.splitColLeft.style.cssText = `
-        overflow: hidden!important;
-      `;
-      columnHeadersBox.style.cssText = `
-        box-sizing: content-box;
-        width:100%;
-        position:relative;
-        display:flex;
-        padding-right:17px;
-        overflow: scroll!important;
-      `;
+      this.columnHeadersDiv.style.setProperty('overflow', 'hidden', 'important');
+      Object.assign(this.columnHeadersDiv.style, {
+        // oveflow:'hidden !important',
+        minWidth: '150px',
+        flexShrink: '0'
+      });
+
+      this.splitColLeft.style.setProperty('overflow', 'hidden', 'important');
+      columnHeadersBox.style.setProperty('overflow', 'scroll', 'important');
+      Object.assign(columnHeadersBox.style, {
+        boxSizing: 'content-box',
+        width: '100%',
+        position: 'relative',
+        display: 'flex',
+        paddingRight: '17px'});
 
       columnHeadersBox.addEventListener('scroll', (e: Event) => {
         this.virtualView.root.scrollTop = columnHeadersBox.scrollTop;
