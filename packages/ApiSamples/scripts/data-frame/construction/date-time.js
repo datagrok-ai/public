@@ -1,6 +1,6 @@
 // Datetime columns return [Dayjs object](https://github.com/iamkun/dayjs/) but accept multiple types:
 
-let t = DG.DataFrame.create(10)
+let t = DG.DataFrame.create(10);
 
 // Batch initialization using functions
 t.columns.addNewDateTime('fun dayJs').init((i) => dayjs());

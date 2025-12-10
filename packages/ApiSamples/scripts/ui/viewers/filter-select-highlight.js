@@ -5,10 +5,10 @@ t.rows.filter((row) => row.idx % 3 === 0);
 t.rows.select((row) => row.idx % 5 === 0);
 
 let host = ui.divH([
-  DG.Viewer.scatterPlot(t, { x: 'height', y: 'weight'}),
-  DG.Viewer.histogram(t, { value: 'height' }),
+  DG.Viewer.scatterPlot(t, {x: 'height', y: 'weight'}),
+  DG.Viewer.histogram(t, {value: 'height'}),
   DG.Viewer.barChart(t),
-])
+]);
 
 grok.shell.newView('foo').append(host);
 

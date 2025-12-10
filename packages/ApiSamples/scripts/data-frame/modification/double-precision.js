@@ -1,4 +1,3 @@
-//tags: DataFrame, Column, modification
 
 // Smallest number > 1 representable as 64 bit floating point number precisely
 // See https://en.wikipedia.org/wiki/Double-precision_floating-point_format for more details
