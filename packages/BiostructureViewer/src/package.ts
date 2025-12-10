@@ -67,7 +67,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'chemCellRenderer',
-    tags: ['cellRenderer', 'cellRenderer-PDB_ID'],
+    tags: ['cellRenderer'],
     meta: {
       cellType: 'PDB_ID'
     },

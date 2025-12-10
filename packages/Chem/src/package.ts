@@ -352,7 +352,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'chemCellRenderer',
-    tags: ['cellRenderer', 'cellRenderer-ChemicalReaction'],
+    tags: ['cellRenderer'],
     meta: {'cellType': 'ChemicalReaction'},
     outputs: [{name: 'result', type: 'grid_cell_renderer'}],
   })
@@ -362,8 +362,8 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'chemMixtureRenderer',
-    tags: ['cellRenderer', 'cellRenderer-ChemicalMixture'],
-    meta: {'cellType': 'ChemicalMixture'},
+    tags: ['cellRenderer'],
+    meta: {'role': 'cellRenderer', 'cellType': 'ChemicalMixture'},
     outputs: [{name: 'result', type: 'grid_cell_renderer'}],
   })
   static async rdKitMixtureRenderer(): Promise<MixtureCellRenderer> {
@@ -372,7 +372,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'chemCellRenderer',
-    tags: ['cellRenderer', 'cellRenderer-Molecule'],
+    tags: ['cellRenderer'],
     meta: {'cellType': 'Molecule'},
     outputs: [{name: 'result', type: 'grid_cell_renderer'}],
   })
