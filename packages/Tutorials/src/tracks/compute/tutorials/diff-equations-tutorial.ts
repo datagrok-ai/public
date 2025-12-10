@@ -6,13 +6,12 @@ import * as ui from 'datagrok-api/ui';
 import {filter} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {interval, fromEvent} from 'rxjs';
-import {singleDescription, closeWindows, getElement,
-  getViewWithElement, PAUSE, getTextWithSlider, simulateMouseEventsWithMove,
+import {closeWindows, getElement, getViewWithElement, PAUSE, getTextWithSlider, simulateMouseEventsWithMove,
   DELAY} from './utils';
 
 import '../../../../css/tutorial.css';
 import '../../../../css/ui-describer.css';
-import { getRect, runDescriber } from './ui-describer';
+import { DescriptionPage, getRect, runDescriber } from './ui-describer';
 
 enum DS_CONSTS {
   EDIT_RIBBON_IDX = 2,
@@ -29,6 +28,12 @@ enum LINKS {
   LOTKA_VOLT = 'https://en.wikipedia.org/wiki/Lotka%E2%80%93Volterra_equations',
 };
 
+enum SIZE_LIMITS {
+  WINDOW_MIN_HEIGHT = 580,
+  WINDOW_MIN_WIDTH = 930,
+  TUTORIAL_PANEL_MIN_WIDTH = 190,  
+};
+
 /** Earth's population modeling */
 export const POPULATION_MODEL = `#name: Lotka-Volterra
 #equations: 
@@ -36,8 +41,8 @@ export const POPULATION_MODEL = `#name: Lotka-Volterra
   dy/dt = -gamma * y
 
 #argument: t
-  initial = 0 {min: 0; max: 2; caption: Start; category: Time}    [Simulation start time.]
-  final = 15  {min: 2; max: 150; caption: Finish; category: Time} [Simulation end time.]
+  initial = 0 {min: 0; max: 2; caption: Start; category: Time}    [Simulation start.]
+  final = 15  {min: 2; max: 150; caption: Finish; category: Time} [Simulation end.]
   step = 0.1  {min: 0.1; max: 1; caption: Step; category: Time}   [Solution grid step.]
 
 #inits:  
@@ -46,9 +51,9 @@ export const POPULATION_MODEL = `#name: Lotka-Volterra
 
 #parameters:
   alpha = 1.1 {min: 0.1; max: 1.5; category: Parameters} [The maximum prey per capita growth rate.]
-  beta = 0.4  {min: 0.1; max: 1; category: Parameters} [Predator impact on prey death rate.]
+  beta = 0.4  {min: 0.1; max: 1; category: Parameters}   [Predator impact on prey death rate.]
   gamma = 1.1 {min: 0.1; max: 1.5; category: Parameters} [The predator's per capita death rate.]
-  delta = 0.4 {min: 0.1; max: 1; category: Parameters} [Effect of prey on predator growth.]
+  delta = 0.4 {min: 0.1; max: 1; category: Parameters}   [Effect of prey on predator growth.]
 
 #output:
   t {caption: Time}
@@ -95,7 +100,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
   get description() {
     return 'Learn how to model processes defined by ordinary differential equations with Diff Studio';
   }
-  get steps() {return 14;}
+  get steps() {return 13;}
 
   demoTable: string = '';
   helpUrl: string = LINKS.DIF_STUDIO;
@@ -180,6 +185,8 @@ export class DifferentialEquationsTutorial extends Tutorial {
     let inputRoots = uiFormRoot.querySelectorAll('div.ui-input.ui-input-root.ui-input-float');
     const gridRoot = dsView.grid.root;
     const lineChartRoot = dsViewRoot.querySelector('div.d4-line-chart') as HTMLElement;
+    
+    const isTutorialPanelWide = (dsViewRoot.getBoundingClientRect().x >= SIZE_LIMITS.TUTORIAL_PANEL_MIN_WIDTH);
 
     // Set column format for better layout
     const col = dsView.grid.col('Prey');
@@ -208,13 +215,13 @@ export class DifferentialEquationsTutorial extends Tutorial {
       { // Inputs panel
         root: inputsPanel,
         description: '# Inputs 3️⃣7️⃣\n\nYou can enter the model inputs here.',
-        position: 'left',
+        position: isTutorialPanelWide ? 'left' : 'right',
         elementsToHighlight: [inputsPanel],
       },
       { // Single input
-        root: inputRoots[1] as HTMLElement,
+        root: isTutorialPanelWide ? (inputRoots[1] as HTMLElement) : (inputRoots[1].querySelector('label') ?? inputRoots[1] as HTMLElement),
         description: this.getInputDescription(), 
-        position: 'left', 
+        position: isTutorialPanelWide ? 'left' : 'top', 
         elementsToHighlight: [getRect(inputRoots[1] as HTMLElement, {paddingBottom: 3}), lineChartRoot],
       },
     ]});
@@ -237,49 +244,13 @@ export class DifferentialEquationsTutorial extends Tutorial {
     // 6. Explore equations
     const editorRoot = dsViewRoot.querySelector('div.panel-base.splitter-container-horizontal') as HTMLElement;
     let ignore = await getElement(editorRoot, 'div.cm-line');
-    const splitBar = dsViewRoot.querySelector('div.splitbar-vertical') as HTMLElement;
+    const splitBar = dsViewRoot.querySelector('div.splitbar-vertical') as HTMLElement;    
     simulateMouseEventsWithMove(splitBar, 515, 0);    
     const lineRoots = editorRoot.querySelectorAll('div[class="cm-line"]') as unknown as HTMLElement[];
 
     await new Promise((resolve) => setTimeout(resolve, DELAY));
 
-    doneBtn = runDescriber({pages: [
-      { // Equations block
-        root: lineRoots[1],
-        description: editorInfo.get('eqs')!,
-        position: 'left', elementsToHighlight: [getRect(lineRoots[0], {width: 162, height: 57})],
-      },
-      { // Argument block
-        root: lineRoots[4],
-        description: editorInfo.get('arg')!,
-        position: 'left', elementsToHighlight: [getRect(lineRoots[4], {width: 105, height: 76})],
-      },
-      { // Annotation block
-        root: lineRoots[4],
-        description: editorInfo.get('annot')!,
-        position: 'left', elementsToHighlight: [getRect(lineRoots[4], {width: 477, height: 76})],
-      },
-      { // Annotation with hint block
-        root: lineRoots[4],
-        description: editorInfo.get('hint')!,
-        position: 'left', elementsToHighlight: [getRect(lineRoots[4], {width: 660, height: 76})],
-      },
-      { // Initial conditions block
-        root: lineRoots[9],
-        description: editorInfo.get('inits')!,
-        position: 'left', elementsToHighlight: [getRect(lineRoots[9], {width: 455, height: 57})],
-      },
-      { // Parameters block
-        root: lineRoots[13],
-        description: editorInfo.get('params')!,
-        position: 'left', elementsToHighlight: [getRect(lineRoots[13], {width: 717, height: 95})],
-      },
-      { // Outputs block
-        root: lineRoots[19],
-        description: editorInfo.get('out')!,
-        position: 'left', elementsToHighlight: [getRect(lineRoots[19], {width: 185, height: 76})],
-      },
-    ]});
+    doneBtn = runDescriber({pages: this.getCodeDescriptionPages(lineRoots, dsViewRoot)});
 
     await this.action(
       'Explore editor',
@@ -376,11 +347,13 @@ export class DifferentialEquationsTutorial extends Tutorial {
       'Turn off the <b>Edit</b> toggle',
     );
 
-    //editorRoot.style.width = '241px';
     simulateMouseEventsWithMove(splitBar, -450, 0);
 
     // 12. Play with input
     uiFormRoot = await getElement(dsViewRoot, 'div.ui-form') as HTMLElement;
+    if (uiFormRoot == null)
+      return;
+
     inputRoots = uiFormRoot.querySelectorAll('div.ui-input.ui-input-root.ui-input-float');
 
     const preyEditor = inputRoots[3].querySelector('input[class="ui-input-editor"]') as HTMLInputElement;
@@ -445,4 +418,66 @@ export class DifferentialEquationsTutorial extends Tutorial {
       getTextWithSlider('Move the slider', 'and check the updates.')
     ]);
   }
+
+  private getCodeDescriptionPages(lineRoots: HTMLElement[], viewRoot: HTMLElement): DescriptionPage[] {
+    const isWide = window.innerWidth >= SIZE_LIMITS.WINDOW_MIN_WIDTH;
+
+    const pages = [
+      { // Equations block
+        root: lineRoots[1],
+        description: editorInfo.get('eqs')!,
+        position: 'left',
+        elementsToHighlight: [isWide ? getRect(lineRoots[0], {width: 162, height: 57}) : viewRoot],
+      },
+      { // Argument block
+        root: lineRoots[4],
+        description: editorInfo.get('arg')!,
+        position: 'left',
+        elementsToHighlight: [isWide ? getRect(lineRoots[4], {width: 105, height: 76}) : viewRoot],
+      },      
+    ];
+    
+    if (isWide) {
+      pages.push(...[
+        { // Annotation block
+          root: lineRoots[4],
+          description: editorInfo.get('annot')!,
+          position: 'left',
+          elementsToHighlight: [isWide ? getRect(lineRoots[4], {width: 477, height: 76}) : viewRoot],
+        },
+        { // Annotation with hint block
+          root: lineRoots[4],
+          description: editorInfo.get('hint')!,
+          position: 'left',
+          elementsToHighlight: [isWide ? getRect(lineRoots[4], {width: 627, height: 76}) : viewRoot],
+        },
+      ]);
+    }
+    
+    pages.push(...[
+      { // Initial conditions block
+        root: lineRoots[9],
+        description: editorInfo.get('inits')!,
+        position: 'left',
+        elementsToHighlight: [isWide ? getRect(lineRoots[9], {width: 455, height: 57}) : viewRoot],
+      },
+      { // Parameters block
+        root: lineRoots[13],
+        description: editorInfo.get('params')!,
+        position: 'left',
+        elementsToHighlight: [isWide ? getRect(lineRoots[13], {width: 412, height: 95}) : viewRoot],
+      }
+    ]);  
+    
+    if (window.innerHeight >= SIZE_LIMITS.WINDOW_MIN_HEIGHT) {
+      pages.push({ // Outputs block
+        root: lineRoots[19],
+        description: editorInfo.get('out')!,
+        position: 'left',
+        elementsToHighlight: [isWide ? getRect(lineRoots[19], {width: 185, height: 76}) : viewRoot],
+      });
+    }
+
+    return pages;
+  } // getFullDescriptionPages
 } // DifferentialEquationsTutorial
