@@ -901,6 +901,7 @@ export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column, act
 //tags: filter
 //output: filter result
 //meta.semType: Molecule
+//meta.allowMultipleFiltersForColumn: false
 export function scaffoldTreeFilter() : any {
   return PackageFunctions.scaffoldTreeFilter();
 }

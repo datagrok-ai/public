@@ -2058,7 +2058,7 @@ export class PackageFunctions {
     description: 'Scaffold Tree filter',
     tags: ['filter'],
     outputs: [{name: 'result', type: 'filter'}],
-    meta: {semType: 'Molecule'},
+    meta: {semType: 'Molecule', allowMultipleFiltersForColumn: 'false'},
   })
   static scaffoldTreeFilter(): ScaffoldTreeFilter {
     return new ScaffoldTreeFilter();
