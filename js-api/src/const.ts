@@ -403,7 +403,35 @@ export const FUNC_TYPES = {
   FUNCTION_ANALYSIS: 'functionAnalysis',
 
   /** Converts values. Has one input and one output */
-  CONVERTER: 'converter'
+  CONVERTER: 'converter',
+
+  WIDGET: 'widget',
+  EDITOR: 'editor',
+  TRANSFORM: 'transform',
+  FILTER: 'filter',
+  VIEWER: 'viewer',
+  VALUE_EDITOR: 'valueeditor',
+  CELL_EDITOR: 'celleditor',
+  UNIT_CONVERTER: 'unitConverter',
+  MOLECULE_SKETCHER: 'moleculeSketcher',
+  TOOLTIP: 'tooltip',
+  FOLDER_VIEWER: 'folderViewer',
+
+  HIT_TRIAGE_FUNCTION: 'HitTriageFunction',
+  HIT_TRIAGE_DATA_SOURCE: 'HitTriageDataSource',
+  HIT_TRIAGE_SUBMIT_FUNCTION: 'HitTriageSubmitFunction',
+  HIT_DESIGN_FUNCTION: 'HitDesignFunction',
+
+  DIM_RED_PREPROCESS: 'dim-red-preprocessing-function',
+  DIM_RED_POSTPROCESS: 'dim-red-postprocessing-function',
+
+  SC_WEBGPU_POINT_HIT_TEST: 'scWebGPUPointHitTest',
+  SC_WEBGPU_AVAILABLE: 'isWebGPUAvailable',
+  SC_WEBGPU_RENDER_VALID: 'isWebGPURenderValid',
+  SC_WEBGPU_RENDER: 'scWebGPURender',
+
+  SEARCH_PROVIDER: 'searchProvider',
+  NOTATION_REFINER: 'notationRefiner',
 }
 
 
@@ -461,7 +489,7 @@ export const functionRoles: FuncRoleDescription[] = [
   {
     role: FUNC_TYPES.FILE_IMPORTER,
     header: 'tags',
-    description: 'andles custom file formats.\n   * The `meta.ext` parameter should contain a comma-separated list of extensions',
+    description: 'Handles custom file formats.\n   * The `meta.ext` parameter should contain a comma-separated list of extensions',
     signature: 'fileImporter(x: string | TypedArray): DataFrame[]'
   },
   {
@@ -494,6 +522,144 @@ export const functionRoles: FuncRoleDescription[] = [
     header: 'role',
     signature: 'converter(x: any): any'
   },
+  {
+    role: FUNC_TYPES.WIDGET,
+    description: 'Creates a custom widget.',
+    header: 'tags',
+    signature: 'widget(...args): Widget',
+  },
+  {
+    role: FUNC_TYPES.EDITOR,
+    description: 'Creates a custom editor for a function call',
+    header: 'tags',
+    signature: 'editor(call: FuncCall): Widget',
+  },
+  {
+    role: FUNC_TYPES.TRANSFORM,
+    description: '',
+    header: 'tags',
+    signature: 'transform(table: DataFrame, ...args): any',
+  },
+  {
+    role: FUNC_TYPES.FILTER,
+    description: 'Creates a custom table filter',
+    header: 'tags',
+    signature: 'filter(): Filter',
+  },
+  {
+    role: FUNC_TYPES.VIEWER,
+    description: 'Creates a custom viewer',
+    header: 'tags',
+    signature: 'viewer(): Viewer',
+  },
+  {
+    role: FUNC_TYPES.VALUE_EDITOR,
+    description: 'Custom editor for specific input types',
+    header: 'tags',
+    signature: 'valueeditor(...args): any',
+  },
+  {
+    role: FUNC_TYPES.CELL_EDITOR,
+    description: 'CCustom editor for grid cells',
+    header: 'tags',
+    signature: 'celleditor(cell: GridCell): void',
+  },
+  {
+    role: FUNC_TYPES.UNIT_CONVERTER,
+    description: 'Converts between measurement units',
+    header: 'tags',
+    signature: 'unitConverter(value: string, source: string, target: string): string',
+  },
+  {
+    role: FUNC_TYPES.MOLECULE_SKETCHER,
+    description: 'Creates a molecule sketcher widget',
+    header: 'tags',
+    signature: 'moleculeSketcher(): Widget',
+  },
+  {
+    role: FUNC_TYPES.TOOLTIP,
+    description: 'Provides a custom tooltip for columns',
+    header: 'tags',
+    signature: 'tooltip(col: Column): Widget',
+  },
+  {
+    role: FUNC_TYPES.FOLDER_VIEWER,
+    description: 'Provides a custom folder content preview.',
+    header: 'tags',
+    signature: 'folderViewer(folder: File, files: list<file>): Widget',
+  },
+  {
+    role: FUNC_TYPES.HIT_TRIAGE_FUNCTION,
+    description: 'Compute function for Hit Triage campaigns.',
+    header: 'tags',
+    signature: 'hitTriageFunction(table: DataFrame, moleculeCol: Column): DataFrame)'
+  },
+  {
+    role: FUNC_TYPES.HIT_TRIAGE_DATA_SOURCE,
+    description: 'Provides a datasource for Hit Triage campaigns. Must return a dataframe containing molecules.',
+    header: 'tags',
+    signature: 'hitTriageDataSource(numberOfMolecules: number]): DataFrame'
+  },
+  {
+    role: FUNC_TYPES.HIT_TRIAGE_SUBMIT_FUNCTION,
+    description: 'Processes or saves the computed dataset.',
+    header: 'tags',
+    signature: 'hitTriageSubmitFunction(df: DG.DataFrame, moleculesCol: string): void'
+  },
+  {
+    role: FUNC_TYPES.HIT_DESIGN_FUNCTION,
+    description: 'Compute function for Hit Design campaigns.',
+    header: 'tags',
+    signature: 'hitDesignFunction(molecule: string): DataFrame'
+  },
+  {
+    role: FUNC_TYPES.DIM_RED_PREPROCESS,
+    description: 'Preprocessing function for dimensionality reduction.',
+    header: 'tags',
+    signature: 'preprocess(col: Column, metric: string): any'
+  },
+  {
+    role: FUNC_TYPES.DIM_RED_POSTPROCESS,
+    description: 'Postprocessing function for dimensionality reduction.',
+    header: 'tags',
+    signature: 'postprocess(data: any): void'
+  },
+  {
+    role: FUNC_TYPES.SC_WEBGPU_POINT_HIT_TEST,
+    description: 'GPU-accelerated hit test for a scatterplot.',
+    header: 'tags',
+    signature: 'scWebGPUPointHitTest(sc: ScatterPlotViewer, pt: Point): number' 
+  },
+  {
+    role: FUNC_TYPES.SC_WEBGPU_AVAILABLE,
+    description: 'Checks whether WebGPU is available.',
+    header: 'tags',
+    signature: 'isWebGPUAvailable(): boolean'
+  },
+  {
+    role: FUNC_TYPES.SC_WEBGPU_RENDER_VALID,
+    description: '',
+    header: 'tags',
+    signature: 'isWebGPURenderValid(sc: ScatterPlotViewer): boolean'
+  },
+  {
+    role: FUNC_TYPES.SC_WEBGPU_RENDER,
+    description: 'Renders a ScatterPlotViewer',
+    header: 'tags',
+    signature: 'scWebGPURender(sc: ScatterPlotViewer, show: boolean): void'
+  },
+  {
+    role: FUNC_TYPES.SEARCH_PROVIDER,
+    description: 'Marks a function to be used as a search provider in the global search.',
+    header: 'tags',
+    signature: 'searchProvider(): SearchProvider'
+  },
+  {
+    role: FUNC_TYPES.NOTATION_REFINER,
+    description: '',
+    header: 'tags',
+    signature: 'notationRefiner(column: Column, stats: any, separator: string): boolean'
+  }
 ]
 
 export enum LOG_LEVEL {
