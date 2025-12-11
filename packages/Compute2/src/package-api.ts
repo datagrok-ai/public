@@ -12,6 +12,18 @@ export namespace funcs {
     return await grok.functions.call('Compute2:Init', {});
   }
 
+  export async function renderPanel(func: any ): Promise<any> {
+    return await grok.functions.call('Compute2:RenderPanel', { func });
+  }
+
+  export async function modelCatalog(): Promise<DG.View> {
+    return await grok.functions.call('Compute2:ModelCatalog', {});
+  }
+
+  export async function modelCatalogTreeBrowser(treeNode: any , browseView: DG.View ): Promise<void> {
+    return await grok.functions.call('Compute2:ModelCatalogTreeBrowser', { treeNode, browseView });
+  }
+
   export async function customFunctionViewEditor(call: any ): Promise<DG.View> {
     return await grok.functions.call('Compute2:CustomFunctionViewEditor', { call });
   }
@@ -74,5 +86,19 @@ export namespace funcs {
 
   export async function testCustomView(): Promise<void> {
     return await grok.functions.call('Compute2:TestCustomView', {});
+  }
+
+  /**
+  Test for optimization: multiple scalars output
+  */
+  export async function fitTestFunc(x1: number , x2: number , y: DG.DataFrame , bool: boolean ): Promise<{integer: number, float1: number, float2: number, table1: DG.DataFrame, table2: DG.DataFrame}> {
+    return await grok.functions.call('Compute2:FitTestFunc', { x1, x2, y, bool });
+  }
+
+  /**
+  Test for optimization: multiple scalars output
+  */
+  export async function testFittingOutputs(): Promise<void> {
+    return await grok.functions.call('Compute2:TestFittingOutputs', {});
   }
 }
