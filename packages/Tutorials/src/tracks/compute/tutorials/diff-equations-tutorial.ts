@@ -7,7 +7,8 @@ import {filter} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {interval, fromEvent} from 'rxjs';
 import {closeWindows, getElement, getViewWithElement, PAUSE, getTextWithSlider, simulateMouseEventsWithMove,
-  DELAY} from './utils';
+  DELAY,
+  getLegendDiv} from './utils';
 
 import '../../../../css/tutorial.css';
 import '../../../../css/ui-describer.css';
@@ -204,7 +205,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
       },
       { // Line charts
         root: lineChartRoot,
-        description: this.getLegendDiv(),
+        description: this.getLegend(),
         position: 'left',
         elements: {
           major: lineChartRoot,
@@ -397,31 +398,17 @@ export class DifferentialEquationsTutorial extends Tutorial {
     this.describe(`Find useful Diff Studio ${ui.link('models', LINKS.MODELS).outerHTML}.`);
   } // _run
 
-  private getLegendDiv(): HTMLElement {
-    const preyDiv = ui.markdown('🐰 The prey population grows infinitely.');
-    preyDiv.classList.add('tutorials-ui-describer-diff-studio-legend-line');
-
-    const predatorDiv = ui.markdown('🦊 The predator population steadily declines.');
-    predatorDiv.classList.add('tutorials-ui-describer-diff-studio-legend-line');
-
-    return ui.divV([
-      ui.markdown('# Graphs\n\nThe model is incomplete, leading to the following effects:'),
-      preyDiv,
-      predatorDiv,
+  private getLegend(): HTMLElement {
+    return getLegendDiv('# Graphs\n\nThe model is incomplete, leading to the following effects:', [
+      '🐰 The prey population grows infinitely.',
+      '🦊 The predator population steadily declines.'      
     ]);
   }
 
   private getUpdatesDescription(): HTMLElement {
-    const predVsPreyDiv = ui.markdown('🦊➠🐰 the effect of the presence of predators on the prey death rate');
-    predVsPreyDiv.classList.add('tutorials-ui-describer-diff-studio-legend-line');
-
-    const preyVsPredDiv = ui.markdown('🐰➠🦊 the effect of the presence of prey on the predator\'s growth rate');
-    preyVsPredDiv.classList.add('tutorials-ui-describer-diff-studio-legend-line');
-
-    return ui.divV([
-      ui.markdown('# Updates\n\nNow, the model takes into account:'),
-      predVsPreyDiv,
-      preyVsPredDiv,
+    return getLegendDiv('# Updates\n\nNow, the model takes into account:', [
+      '🦊➠🐰 the effect of the presence of predators on the prey death rate',
+      '🐰➠🦊 the effect of the presence of prey on the predator\'s growth rate'      
     ]);
   }
 

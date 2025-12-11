@@ -213,3 +213,14 @@ export function simulateMouseEventsWithMove(el: HTMLElement, moveX: number, move
   }, 100);
 }
 
+export function getLegendDiv(title: string, lines: string[]): HTMLElement {    
+  return ui.divV([
+    ui.markdown(title),
+    ...lines.map((line) => {
+      const md = ui.markdown(line);
+      md.classList.add('tutorials-ui-describer-diff-studio-legend-line');
+
+      return md;
+    }),
+  ]);
+}
