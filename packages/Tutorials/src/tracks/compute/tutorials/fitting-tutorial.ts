@@ -6,20 +6,21 @@ import * as ui from 'datagrok-api/ui';
 import {filter, map} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {fromEvent} from 'rxjs';
-import {getElement, getView, singleDescription, closeWindows, describeElements, PAUSE} from './utils';
+import {getElement, getView, closeWindows, describeElements, PAUSE, getBallFlightModelLegend} from './utils';
+import { runDescriber } from './ui-describer';
 
 /** Fitting results info */
 const fittingInfo = [
-  `# Grid
+  `# Grid 🧮
 
   The first row presents the best fit:
 
   * the computed <b>Velocity</b> and <b>Angle</b>
   * a visualization illustrating the goodness of fit`,
-  `# Max distance
+  `# Max distance ↔️
 
   The bar chart illustrates the difference between the target and computed values of <b>Max distance</b>.`,
-  `# Loss
+  `# Loss 📉
 
   The line chart shows the reduction of the loss function over iterations.`,
 ];
@@ -134,21 +135,17 @@ export class FittingTutorial extends Tutorial {
       return;
     }
 
-    let okBtn = singleDescription(
-      modelRoot,
-      `# Simulation\n\nThis model takes the ball and thrown parameters, and
-      computes\n\n* the flight trajectory\n\n* max height and distance`,
-      'Go to the next step',
-    );
-
-    if (okBtn !== null){
-      await this.action(
-        'Click "OK"',
-        fromEvent(okBtn, 'click'),
-        undefined,
-        `Click "OK" to go to the next step.`,
-      );
-    }
+    let btnToClick = runDescriber({
+      pages: [{
+        root: modelRoot,
+        description: getBallFlightModelLegend(),
+        position: 'left',
+        elements: {major: modelView.root},
+      }],
+      btnsText: {done: 'OK', next: '', prev: ''},
+    });
+    
+    await this.action('Click "OK"', fromEvent(btnToClick, 'click'));
 
     // 5. Run fitting
     this.title('Fit scalar output');
@@ -183,6 +180,7 @@ export class FittingTutorial extends Tutorial {
     }
 
     const fitFormRoot = await getElement(fittingView.root, 'div.ui-form');
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const switchers = fitFormRoot!.querySelectorAll('div.ui-input-bool-switch');
     const velocitySwitcher = switchers[3] as HTMLElement;
@@ -238,17 +236,29 @@ export class FittingTutorial extends Tutorial {
 
     this.describe(`To fit <b>Velocity</b> and <b>Angle</b>, Datagrok iteratively minimizes the ${ui.link('loss function', 'https://en.wikipedia.org/wiki/Loss_function').outerHTML}.`);
 
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
     const grid = fittingView.grid;
     const gridRoot = grid.root;
+    const gridCellRoots = gridRoot.querySelectorAll('div.d4-g-cell') as unknown as HTMLElement[];
+    const rootsToDescribe = [
+      gridRoot,
+      gridCellRoots[0] ?? gridRoot,
+      gridCellRoots[grid.table.rowCount] ?? gridRoot,
+    ];
 
-    let doneBtn = describeElements([gridRoot, gridRoot, gridRoot], fittingInfo);
+    btnToClick = runDescriber({
+      pages: rootsToDescribe.map((root, idx) => {
+        return {
+          root: root,
+          description: fittingInfo[idx],
+          position: 'left',
+          elements: {major: root},
+        };
+      }),
+    });
 
-    await this.action(
-      'Explore results',
-      fromEvent(doneBtn, 'click'),
-      undefined,
-      'Click "Next" to switch to the next item.',
-    );
+    await this.action('Explore results', fromEvent(btnToClick, 'click'));
 
     const ballFlightTable = await grok.dapi.files.readCsv('System:AppData/Tutorials/ball-flight-trajectory.csv');
     ballFlightTable.name = 'Ball trajectory';
@@ -302,20 +312,18 @@ export class FittingTutorial extends Tutorial {
     const bestVelocity = grid.table.get('Velocity', 0) as number;
     const bestAngle = grid.table.get('Angle', 0) as number;
 
-    okBtn = singleDescription(
-      grid.cell('[Height]', 0).element,
-      '# The best fit\n\nTo make the ball follow the specified trajectory, use the following throw parameters:\n\n' +
-      `* <b>Velocity</b> = ${bestVelocity.toFixed(2)} m/sec\n\n` + `* <b>Angle</b> = ${bestAngle.toFixed(2)} deg`,
-      'Complete the step',
-      ui.hints.POSITION.RIGHT,
-    );
+    btnToClick = runDescriber({
+      pages: [{
+        root: grid.cell('[Height]', 0).element,
+        description: '# The best fit 🎯\n\nTo make the ball follow the specified trajectory, use the following throw parameters:\n\n' +
+          `* <b>Velocity</b> = ${bestVelocity.toFixed(2)} m/sec\n\n` + `* <b>Angle</b> = ${bestAngle.toFixed(2)} deg`,
+        position: 'left',
+        elements: {major: grid.cell('[Height]', 0).element}
+      }],
+      btnsText: {done: 'clear', next: '', prev: ''},
+    });
 
-    if (okBtn !== null) {
-      await this.action(
-        'Explore the fitted trajectory',
-        fromEvent(okBtn, 'click'),
-      );
-    }
+    await this.action('Explore the fitted trajectory', fromEvent(btnToClick, 'click'));
 
     this.describe(`Apply ${ui.link('Parameter Optimization', LINK.FITTING).outerHTML} to both ${name} and
     ${ui.link('Diff Studio', LINK.DIF_STUDIO).outerHTML} models.`);

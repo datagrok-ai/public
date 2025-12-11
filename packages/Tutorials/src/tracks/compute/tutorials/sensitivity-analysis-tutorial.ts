@@ -6,7 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import {filter, map} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {fromEvent} from 'rxjs';
-import {getElement, getView, describeElements, singleDescription, closeWindows, PAUSE, getLegendDiv} from './utils';
+import {getElement, getView, describeElements, singleDescription, closeWindows, PAUSE, getLegendDiv, getBallFlightModelLegend} from './utils';
 import {runDescriber, Tour, DescriptionPage} from './ui-describer';
 import '../../../../css/ui-describer.css';
 
@@ -156,7 +156,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     let btnToClick = runDescriber({
       pages: [{
         root: modelRoot,
-        description: this.getViewersLegendDiv(),
+        description: getBallFlightModelLegend(),
         position: 'left',
         elements: {major: modelView.root},
       }],
@@ -370,12 +370,5 @@ export class SensitivityAnalysisTutorial extends Tutorial {
 
     this.describe(`Apply ${ui.link('Sensitivity Analysis', LINK.SENS_AN).outerHTML} to both ${name} and 
     ${ui.link('Diff Studio', LINK.DIF_STUDIO).outerHTML} models.`);
-  } // _run
-
-  private getViewersLegendDiv(): HTMLElement {
-    return getLegendDiv('# Simulation 🏀\n\nThis model takes the ball and thrown parameters, and computes:', [
-      '* the ball flight trajectory',
-      '* max height and distance'      
-    ]);
-  }   
+  } // _run   
 } // SensitivityAnalysisTutorial

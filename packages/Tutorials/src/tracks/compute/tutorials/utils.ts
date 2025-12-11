@@ -224,3 +224,10 @@ export function getLegendDiv(title: string, lines: string[]): HTMLElement {
     }),
   ]);
 }
+
+export function getBallFlightModelLegend(): HTMLElement {
+  return getLegendDiv('# Simulation 🏀\n\nThis model takes the ball and thrown parameters, and computes:', [
+    '* the ball flight trajectory',
+    '* max height and distance'      
+  ]);
+}  
