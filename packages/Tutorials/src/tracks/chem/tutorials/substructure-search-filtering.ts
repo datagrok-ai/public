@@ -19,6 +19,10 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
   }
 
   get steps() {return 10;}
+
+  get icon() {
+    return '🔍🧪';
+  }
   
   helpUrl: string = 'https://datagrok.ai/help/datagrok/solutions/domains/chem/#substructure-search--filtering';
   demoTable: string = '';

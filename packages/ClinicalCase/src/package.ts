@@ -124,7 +124,7 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'string', options: {optional: true, description: 'CDISC data format, either SDTM or SEND'}})
       standard?: CDISC_STANDARD): Promise<DG.Widget> {
     const clinicalCaseNode = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps')
-      .getOrCreateGroup('Clinical').getOrCreateGroup('Clinical Case');
+      .getOrCreateGroup(standard === CDISC_STANDARD.SEND ? 'Preclinical Case' : 'Clinical Case');
     await createStudiesFromAppData(clinicalCaseNode, standard ?? CDISC_STANDARD.SDTM);
     const filterConfig: ClinStudyConfig = {
       name: name ? name : undefined,

@@ -173,24 +173,10 @@ export function viewersDialog(currentView: DG.TableView, currentTable: DG.DataFr
 function getViewers(viewers: { [v: string]: { [k: string]: any } }, table: DG.DataFrame) {
   let viewerList = [];
 
-  for (const value of Object.values(DG.VIEWER)) {
-    switch (String(value)) {
-    case 'Globe': break;
-    case 'Google map': break;
-    case 'RadarViewer': break;
-    case 'SurfacePlot': break;
-    case 'Timelines': break;
-    case 'Word cloud': break;
-    case 'Scaffold Tree': break;
-    case 'Radar': break;
-    case 'Surface plot': break;
-    default:
-      if (value !== 'Shape Map' && value !== DG.VIEWER.CONFUSION_MATRIX) // return Shape Map back when it is reincarnated
-        viewerList.push(value);
-      break;
-    }
+  for (const value of Object.values(DG.CORE_VIEWER)) {
+    if (value !== 'Shape Map' && value !== DG.CORE_VIEWER.CONFUSION_MATRIX)
+      viewerList.push(value);
   }
-  viewerList.push('Pivot table');
   viewerList.push('Column viewer');
   viewerList.push('Web viewer');
   viewerList.push('Scripting viewer');

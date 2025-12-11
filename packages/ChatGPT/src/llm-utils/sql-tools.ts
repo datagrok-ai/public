@@ -12,12 +12,13 @@ import * as rxjs from 'rxjs';
 import {getTopKSimilarQueries, getVectorEmbedding} from './embeddings';
 import {SemValueObjectHandler} from '@datagrok-libraries/db-explorer/src/object-handlers';
 import {ChatModel} from 'openai/resources/index';
+import {UIMessageOptions} from './panel';
 
 type AIPanelFuncs = {
   addUserMessage: (aiMsg: OpenAI.Chat.ChatCompletionMessageParam, msg: string) => void,
   addAIMessage: (aiMsg: OpenAI.Chat.ChatCompletionMessageParam, title: string, msg: string) => void,
   addEngineMessage: (aiMsg: OpenAI.Chat.ChatCompletionMessageParam) => void, // one that is not shown in the UI
-  addUiMessage: (msg: string, fromUser: boolean) => void
+  addUiMessage: (msg: string, fromUser: boolean, messageOptions?: UIMessageOptions) => void
 }
 
 const suspiciousSQlPatterns = ['DROP ', 'DELETE ', 'UPDATE ', 'INSERT ', 'ALTER ', 'CREATE ', 'TRUNCATE ', 'EXEC ', 'MERGE '];
@@ -80,6 +81,8 @@ export async function generateAISqlQueryWithTools(
     // Initial system message
     const systemMessage = `You are an expert SQL query generator. You have access to tools to explore a database schema and generate SQL queries.
 
+    Your name is GrokBerg Databazawsky.
+
     WORKFLOW:
     1. You are provided with a list of available tables and their descriptions
     2. Use describe_tables to get detailed column information for relevant tables
@@ -100,7 +103,11 @@ export async function generateAISqlQueryWithTools(
     - If some categorical value is supplied to match (e.g. status value or measurement units), use the information from corresponding column's category values (if any). otherwise, try to use multiple options using OR (for example for micromolar units, try 'uM', 'μM', ets).
     - Some queries might require cartridge use (like RDKIT functions for similarity / substructure search). Use provided query examples and your knowledge of such functions as needed.
     - When working with large tables, try not to use order unless explicitly requested.
-
+    - VERY IMPORTANT: IN some cases, user might want to just get a plain reply without sql query. In such cases, Always begin your response with "REPLY ONLY:"!!!
+    - If you fail to generate a valid working query, admit it politely instead of making something up and ask for more information from the user.
+    - If the user prompt is ambiguous, ask for clarifications instead of guessing.
+    - If user is plainly trying to communicate or chat or ask general questions, use REPLY ONLY mode to answer them appropriately.
+    - Use the reply_to_user tool to communicate with the user, explain your reasoning during chain of though and execution and so on.
     When you have the final SQL query ready, respond with ONLY the SQL query text (no markdown, no explanation, no semicolon at the end).`;
 
 
@@ -123,6 +130,15 @@ export async function generateAISqlQueryWithTools(
         }
       }
 
+      if ((dbQueryEmbeddings?.length ?? 0) > 0) {
+        const similarQueries = await findSimilarQueriesToPrompt(prompt);
+        if (similarQueries.n > 0 && similarQueries.text) {
+          semTypeWithinPromptInfo += `\n\n Additionally, here are some similar previously executed queries that might help you:
+          \n${similarQueries.text}
+          `;
+        }
+      }
+
       const systemMsg: OpenAI.Chat.ChatCompletionMessageParam = {role: 'system', content: systemMessage};
       messages.push(systemMsg);
       options.aiPanel?.addEngineMessage(systemMsg);
@@ -137,7 +153,7 @@ export async function generateAISqlQueryWithTools(
       options.aiPanel?.addEngineMessage(initialUserMsg); // prompt will be shown in UI
       messages.push(initialUserMsg);
     } else {
-      const followUpUserMsg: OpenAI.Chat.ChatCompletionMessageParam = {role: 'user', content: `Please modify the previous query based on this feedback: ${prompt}`};
+      const followUpUserMsg: OpenAI.Chat.ChatCompletionMessageParam = {role: 'user', content: `User Follow up (do modifications as/if needed based on the following): ${prompt}`};
       messages.push(followUpUserMsg);
       options.aiPanel?.addEngineMessage(followUpUserMsg);
     }
@@ -231,10 +247,27 @@ export async function generateAISqlQueryWithTools(
           },
         },
       },
+      // plain function tool for general purpose question answering
+      {
+        type: 'function',
+        function: {
+          name: 'reply_to_user',
+          description: 'Use this tool to esentially communicate with the user directly, give feedback, add context to what you are doing, explain reasoning(!!!) and so on. This is NOT for providing the final SQL query, but rather for intermediate communication. When using this tool, always provide a clear, informative and well formatted (markdown) message to the user in the reply parameter.',
+          parameters: {
+            type: 'object',
+            properties: {
+              reply: {
+                type: 'string',
+                description: 'Your text reply to the user question/prompt. this message will be shown in the UI, so make it clear, informative and formatted in markdown as needed.',
+              },
+            },
+            required: ['reply'],
+          }
+        }
+      }
     ];
 
     // if we have some embeddings, then also add a tool so that LLM can use it to find similar queries
-
     if ((dbQueryEmbeddings?.length ?? 0) > 0) {
       tools.push({
         type: 'function',
@@ -255,7 +288,7 @@ export async function generateAISqlQueryWithTools(
       });
     }
 
-    const findSimilarQueryToPrompt = async (aiPrompt: string) => {
+    async function findSimilarQueriesToPrompt(aiPrompt: string) {
       if ((dbQueryEmbeddings?.length ?? 0) === 0)
         return {text: 'No queries found', n: 0};
       if ((dbQueryEmbeddings!.length < 4))
@@ -304,7 +337,6 @@ export async function generateAISqlQueryWithTools(
       const message = choice.message;
       messages.push(message);
       options.aiPanel?.addEngineMessage(message);
-
       // Check if the model wants to call functions
       if (message.tool_calls && message.tool_calls.length > 0) {
         const functionToolCalls = message.tool_calls.filter((tc) => tc.type === 'function');
@@ -325,6 +357,10 @@ export async function generateAISqlQueryWithTools(
               options.aiPanel?.addUiMessage(`Listing all schemas in the database.`, false);
               result = (await context.listAllSchemas()).join(', ');
               options.aiPanel?.addUiMessage(`Schemas found: *${result}*`, false);
+              break;
+            case 'reply_to_user':
+              options.aiPanel?.addUiMessage(functionArgs.reply ?? '', false);
+              result = 'Reply sent to user.';
               break;
             case 'list_tables_in_schema':
               options.aiPanel?.addUiMessage(`Listing all tables in schema *${functionArgs.schemaName}*.`, false);
@@ -347,7 +383,7 @@ export async function generateAISqlQueryWithTools(
               break;
             case 'find_similar_queries':
               options.aiPanel?.addUiMessage(`Searching for similar queries to help with SQL generation.`, false);
-              const similarQueries = await findSimilarQueryToPrompt(functionArgs.prompt);
+              const similarQueries = await findSimilarQueriesToPrompt(functionArgs.prompt);
               options.aiPanel?.addUiMessage(similarQueries.n > 0 ? `Found ${similarQueries.n} similar queries.` : similarQueries.text, false);
               result = similarQueries.text;
               break;
@@ -383,8 +419,9 @@ export async function generateAISqlQueryWithTools(
           sql = sql.substring(3);
         if (sql.endsWith('```'))
           sql = sql.substring(0, sql.length - 3);
-        const contentUpperCase = sql.toUpperCase();
-        if (contentUpperCase.length > 2) {
+        const contentUpperCase = sql.toUpperCase().trim();
+        if (contentUpperCase.length > 2 && (contentUpperCase.startsWith('SELECT') || contentUpperCase.startsWith('WITH'))) {
+          // Final SQL detected
           const res = sql.trim().replace(/;+$/, ''); // Remove trailing semicolons
           const resUpperCase = res.toUpperCase();
           if (suspiciousSQlPatterns.some((pattern) => resUpperCase.includes(pattern))) {
@@ -401,17 +438,21 @@ export async function generateAISqlQueryWithTools(
             });
             options.aiPanel?.addUiMessage(!out ? 'User cancelled execution of potentially destructive SQL.' : 'User confirmed execution of potentially destructive SQL.', false);
             if (out)
-              options.aiPanel?.addUiMessage(`Final SQL Query:\n\`\`\`sql\n${out}\n\`\`\``, false);
+              options.aiPanel?.addUiMessage(`Final SQL Query:\n\`\`\`sql\n${out}\n\`\`\``, false, {result: {finalResult: out}});
             return out;
           }
           if (res)
-            options.aiPanel?.addUiMessage(`Final SQL Query:\n\`\`\`sql\n${res}\n\`\`\``, false);
+            options.aiPanel?.addUiMessage(`Final SQL Query:\n\`\`\`sql\n${res}\n\`\`\``, false, {result: {finalResult: res}});
           return res;
+        } else {
+          const replyText = contentUpperCase.startsWith('REPLY ONLY:') ? content.substring('REPLY ONLY:'.length).trim() : content;
+          options.aiPanel?.addUiMessage(replyText, false);
+          return '';
         }
 
         // Model is explaining something, let it continue
-        if (choice.finish_reason === 'stop')
-          break;
+        // if (choice.finish_reason === 'stop')
+        //   break;
       } else {
       // No content and no tool calls
         break;
@@ -421,7 +462,6 @@ export async function generateAISqlQueryWithTools(
       if (choice.finish_reason === 'stop')
         break;
     }
-
     // If we exhausted iterations or didn't get a proper response
     throw new Error('Failed to generate SQL query: Maximum iterations reached or no valid SQL returned');
   } finally {

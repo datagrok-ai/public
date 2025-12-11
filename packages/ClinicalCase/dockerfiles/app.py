@@ -160,6 +160,16 @@ def run_core_validate(
         except OSError as e:
             logging.warning(f"Failed to move .sync_meta.json: {e}")
 
+    # Remove studyConfig.json file if it exists
+    # Validation fails if folder contains JSON files that aren't SEND datasets
+    study_config_file = Path(local_data_path) / "studyConfig.json"
+    if study_config_file.exists():
+        try:
+            study_config_file.unlink()
+            logging.info(f"Removed studyConfig.json from {local_data_path}")
+        except OSError as e:
+            logging.warning(f"Failed to remove studyConfig.json: {e}")
+
     try:
         # Parse options JSON string if provided
         options_dict: Optional[Dict[str, object]] = None

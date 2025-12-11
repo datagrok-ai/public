@@ -492,8 +492,8 @@ export namespace funcs {
     return await grok.functions.call('Chem:Toxicity', { smiles });
   }
 
-  export async function convertMoleculeNotation(molecule: DG.Column , targetNotation: string ): Promise<DG.Column> {
-    return await grok.functions.call('Chem:ConvertMoleculeNotation', { molecule, targetNotation });
+  export async function convertMoleculeNotation(molecule: DG.Column , targetNotation: string , kekulize?: boolean | null): Promise<DG.Column> {
+    return await grok.functions.call('Chem:ConvertMoleculeNotation', { molecule, targetNotation, kekulize });
   }
 
   /**
@@ -503,8 +503,8 @@ export namespace funcs {
     return await grok.functions.call('Chem:ConvertMolNotation', { molecule, sourceNotation, targetNotation });
   }
 
-  export async function convertNotation(data: DG.DataFrame , molecules: DG.Column , targetNotation: string , overwrite: boolean , join: boolean ): Promise<DG.Column> {
-    return await grok.functions.call('Chem:ConvertNotation', { data, molecules, targetNotation, overwrite, join });
+  export async function convertNotation(data: DG.DataFrame , molecules: DG.Column , targetNotation: string , overwrite: boolean , join: boolean , kekulize?: boolean | null): Promise<DG.Column> {
+    return await grok.functions.call('Chem:ConvertNotation', { data, molecules, targetNotation, overwrite, join, kekulize });
   }
 
   export async function convertMolNotationAction(col: DG.Column ): Promise<void> {
@@ -803,7 +803,7 @@ export namespace funcs {
     return await grok.functions.call('Chem:Mpo', {});
   }
 
-  export async function mpoTransformFunction(df: DG.DataFrame , currentProperties: any ): Promise<void> {
+  export async function mpoTransformFunction(df: DG.DataFrame , currentProperties: any ): Promise<any> {
     return await grok.functions.call('Chem:MpoTransformFunction', { df, currentProperties });
   }
 

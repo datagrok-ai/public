@@ -17,6 +17,10 @@ export class PredictiveModelingTutorial extends Tutorial {
   }
   get steps() { return 26; }
 
+  get icon() {
+    return '📈🔮';
+  }
+
   helpUrl: string = 'https://datagrok.ai/help/learn';
   prerequisites: TutorialPrerequisites = {jupyter: true, h2o: true};
 

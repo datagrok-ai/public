@@ -13,10 +13,7 @@ import {OpenAIHelpClient} from './llm-utils/openAI-client';
 import {LLMCredsManager} from './llm-utils/creds';
 import {CombinedAISearchAssistant} from './llm-utils/combined-search';
 import {JsonSchema} from './prompt-engine/interfaces';
-import {generateAISqlQuery} from './llm-utils/sql-utils';
 import {genDBConnectionMeta} from './llm-utils/db-index-tools';
-import {generateAISqlQueryWithTools} from './llm-utils/sql-tools';
-import {AbortPointer, getAIAbortSubscription} from './utils';
 import * as rxjs from 'rxjs';
 import {embedConnectionQueries} from './llm-utils/embeddings';
 
@@ -174,15 +171,15 @@ export class PackageFunctions {
     return await client.getHelpAnswer(prompt);
   }
 
-  @grok.decorators.func({
-    'meta': {
-      'cache': 'all',
-      'cache.invalidateOn': '0 0 1 * *'
-    }
-  })
-  static async generateSqlQuery(prompt: string, connectionID: string, schemaName: string): Promise<string> {
-    return await generateAISqlQuery(prompt, connectionID, schemaName);
-  }
+  // @grok.decorators.func({
+  //   'meta': {
+  //     'cache': 'all',
+  //     'cache.invalidateOn': '0 0 1 * *'
+  //   }
+  // })
+  // static async generateSqlQuery(prompt: string, connectionID: string, schemaName: string): Promise<string> {
+  //   return await generateAISqlQuery(prompt, connectionID, schemaName);
+  // }
   @grok.decorators.func({})
   static async setupAIQueryEditor(view: DG.ViewBase, connectionID: string, queryEditorRoot: HTMLElement, @grok.decorators.param({type: 'dynamic'}) setAndRunFunc: Function): Promise<boolean> {
     return setupAIQueryEditorUI(view, connectionID, queryEditorRoot, setAndRunFunc as (query: string) => void);

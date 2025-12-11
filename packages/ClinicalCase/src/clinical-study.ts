@@ -6,14 +6,14 @@ import {vaidateAEDomain, vaidateDMDomain} from './sdtm-validation/services/valid
 import {createValidationDataFrame} from './sdtm-validation/validation-utils';
 import {SITE_ID, STUDY_ID} from './constants/columns-constants';
 import {addVisitDayFromTvDomain, createEventStartEndDaysCol} from './data-preparation/data-preparation';
-import {createFilters} from './utils/utils';
+import {createFilters, removeExtension} from './utils/utils';
 import {createErrorsByDomainMap} from './utils/views-validation-utils';
 import {CDISC_STANDARD, ClinStudyConfig} from './utils/types';
 import {ClinicalCaseViewsConfig} from './views-config';
 import {SUMMARY_VIEW_NAME} from './constants/view-names-constants';
 import {funcs} from './package-api';
 import {Subject} from 'rxjs';
-import {ValidationResult} from './types/validation-result';
+import {ValidationResult, IssueDetail} from './types/validation-result';
 
 export class ClinicalDomains {
   ae: DG.DataFrame = null;
@@ -102,6 +102,7 @@ export class ClinicalStudy {
   loadingStudyData: boolean | null = null;
   currentViewName: string = SUMMARY_VIEW_NAME;
   validationCompleted = new Subject<boolean>();
+  private validationColumnsSubscriptionSet = false;
 
   constructor(config: ClinStudyConfig) {
     this.config = config;
@@ -172,24 +173,136 @@ export class ClinicalStudy {
   async validate(): Promise<void> {
     let validationResStr = '';
     if (await grok.dapi.files
-      .exists(`System:AppData/ClinicalCase/${this.config.standard!}/studies/${this.studyId}/validation_results.json`)) {
+      .exists(`System:AppData/ClinicalCase/${this.config.standard!}/${this.studyId}/validation_results.json`)) {
       validationResStr = await grok.dapi.files
         // eslint-disable-next-line max-len
-        .readAsText(`System:AppData/ClinicalCase/${this.config.standard!}/studies/${this.studyId}/validation_results.json`);
+        .readAsText(`System:AppData/ClinicalCase/${this.config.standard!}/${this.studyId}/validation_results.json`);
     } else {
       validationResStr = await funcs.runCoreValidate(
         this.config.standard === CDISC_STANDARD.SEND ? 'sendig' : 'sdtmig',
-        `ClinicalCase/${this.config.standard!}/studies/${this.studyId}`, '3.1', 'json', undefined);
+        `ClinicalCase/${this.config.standard!}/${this.studyId}`, '3.1', 'json', undefined);
       grok.dapi.files
         // eslint-disable-next-line max-len
-        .writeAsText(`System:AppData/ClinicalCase/${this.config.standard!}/studies/${this.studyId}/validation_results.json`,
+        .writeAsText(`System:AppData/ClinicalCase/${this.config.standard!}/${this.studyId}/validation_results.json`,
           validationResStr);
     }
     this.validationResults = JSON.parse(validationResStr) as ValidationResult;
     this.validated = true;
     this.validationCompleted.next(true);
   }
+
+  /**
+   * Ensures validation columns are added to domains.
+   * If validation is already completed, adds columns immediately.
+   * If validation is not completed yet, subscribes to validationCompleted to add columns when ready.
+   */
+  ensureValidationColumnsAdded(): void {
+    if (this.validated && this.validationResults) {
+      // Validation already completed, add columns immediately
+      this.addValidationColumnsToDomains();
+    } else if (!this.validationColumnsSubscriptionSet) {
+      // Validation not completed yet, subscribe to add columns when validation completes
+      // Only subscribe once to avoid multiple subscriptions
+      this.validationCompleted.subscribe(() => {
+        this.addValidationColumnsToDomains();
+      });
+      this.validationColumnsSubscriptionSet = true;
+    }
+  }
+
+  /**
+   * Adds validation rule violation columns to all existing domains:
+   * - A boolean column indicating whether any rule is violated for the row
+   * - A string column containing JSON array of IssueDetail objects for violated rules
+   */
+  private addValidationColumnsToDomains(): void {
+    if (!this.validationResults || !this.validationResults.Issue_Details)
+      return;
+
+    // Group issues by domain (dataset)
+    const issuesByDomain: {[domain: string]: {[row: number]: IssueDetail[]}} = {};
+
+    for (const issue of this.validationResults.Issue_Details) {
+      if (!issue.dataset)
+        continue;
+      const domain = removeExtension(issue.dataset.toLowerCase());
+
+      // Parse row number - it can be string or number
+      let rowNum: number;
+      if (typeof issue.row === 'string') {
+        rowNum = parseInt(issue.row, 10);
+        if (isNaN(rowNum))
+          continue;
+      } else
+        rowNum = issue.row;
+
+      // Initialize domain entry if needed
+      if (!issuesByDomain[domain])
+        issuesByDomain[domain] = {};
+
+      // Initialize row entry if needed
+      if (!issuesByDomain[domain][rowNum])
+        issuesByDomain[domain][rowNum] = [];
+
+      // Add IssueDetail object to the row
+      issuesByDomain[domain][rowNum].push(issue);
+    }
+
+    // Process each domain and add columns
+    for (const domainName of Object.keys(this.domains)) {
+      const domain = this.domains[domainName];
+      if (!domain || !domainName)
+        continue;
+
+      const domainLower = domainName.toLowerCase();
+      const domainIssues = issuesByDomain[domainLower];
+
+      if (!domainIssues) {
+        // No issues for this domain, but still add columns with false/empty values
+        this.addValidationColumnsToDomain(domain, {});
+        continue;
+      }
+
+      this.addValidationColumnsToDomain(domain, domainIssues);
+    }
+  }
+
+  /**
+   * Adds validation columns to a specific domain dataframe
+   * @param {DG.DataFrame} domain - The domain dataframe to add columns to
+   * @param {Object} issuesByRow - Map of row index to array of IssueDetail objects
+   */
+  private addValidationColumnsToDomain(
+    domain: DG.DataFrame,
+    issuesByRow: {[row: number]: IssueDetail[]},
+  ): void {
+    const rowCount = domain.rowCount;
+    const hasErrorsColName = 'HasValidationErrors';
+    const violatedRulesColName = 'ViolatedRules';
+
+    // Create boolean column for validation errors
+    const hasErrorsCol = domain.columns.addNewBool(hasErrorsColName);
+    hasErrorsCol.init(false);
+
+    // Create string column for violated rules (stored as JSON array of IssueDetail objects)
+    const violatedRulesCol = domain.columns.addNewString(violatedRulesColName);
+    violatedRulesCol.init('');
+
+    // Set values for each row
+    for (let i = 0; i < rowCount; i++) {
+      const rowIssues = issuesByRow[i];
+      if (rowIssues && rowIssues.length > 0) {
+        hasErrorsCol.set(i, true);
+        // Serialize IssueDetail objects as JSON array string
+        violatedRulesCol.set(i, JSON.stringify(rowIssues));
+      } else {
+        hasErrorsCol.set(i, false);
+        violatedRulesCol.set(i, '');
+      }
+    }
+  }
 }
+
 
 export class ClinRow {
   row: DG.Row;

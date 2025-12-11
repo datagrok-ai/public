@@ -23,6 +23,10 @@ export class ActivityCliffsTutorial extends Tutorial {
   }
 
   get steps() {return 12;}
+
+  get icon() {
+    return '🧬⛰️';
+  }
   
   helpUrl: string = 'https://datagrok.ai/help/datagrok/solutions/domains/chem/#activity-cliffs';
   demoTable: string = '';

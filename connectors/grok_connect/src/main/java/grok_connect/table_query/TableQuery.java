@@ -247,7 +247,7 @@ public class TableQuery extends DataQuery {
         params.removeIf((p) -> p.name.equals(paramName));
         params.addAll(result.params);
         for (FuncParam p: result.params) {
-            sqlHeader.append(String.format("--input: %s %s", p.propertyType, p.name));
+            sqlHeader.append(String.format("%sinput: %s %s", provider.descriptor.commentStart, p.propertyType, p.name));
             sqlHeader.append(System.lineSeparator());
         }
 

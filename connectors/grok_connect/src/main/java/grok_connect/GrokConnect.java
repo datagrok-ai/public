@@ -202,7 +202,7 @@ public class GrokConnect {
                 DataFrame dataFrame = provider.getSchemas(connection);
                 buffer = packDataFrame(result, dataFrame);
             } catch (QueryCancelledByUser | GrokConnectException ex) {
-                buffer = packException(result, ex.getClass().equals(GrokConnectException.class)
+                buffer = packException(result, ex.getClass().equals(GrokConnectException.class) && ex.getCause() != null
                         ? (Exception) ex.getCause() : ex);
                 PARENT_LOGGER.info(DEFAULT_LOG_EXCEPTION_MESSAGE, ex);
             }

@@ -1407,7 +1407,9 @@ export class PackageFunctions {
   })
   static async convertMoleculeNotation(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecule: DG.Column,
-    @grok.decorators.param({type: 'string'}) targetNotation: DG.chem.Notation): Promise<DG.Column> {
+    @grok.decorators.param({type: 'string'}) targetNotation: DG.chem.Notation,
+    @grok.decorators.param({options: {initialValue: 'false', optional: true, nullable: true}}) kekulize?: boolean,
+  ): Promise<DG.Column> {
     let col: DG.Column;
     let newColName = `${molecule.name}_${targetNotation}`;
     try {
@@ -1416,7 +1418,7 @@ export class PackageFunctions {
     } catch (e) {}
 
     try {
-      const res = await convertNotationForColumn(molecule, targetNotation);
+      const res = await convertNotationForColumn(molecule, targetNotation, kekulize ?? false);
       col = DG.Column.fromStrings(newColName, res);
       col.semType = DG.SEMTYPE.MOLECULE;
     } catch (e: any) {
@@ -1448,8 +1450,9 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}}) molecules: DG.Column<string>,
     @grok.decorators.param({type: 'string', options: {choices: ['smiles', 'smarts', 'molblock', 'v3Kmolblock'], initialValue: 'smiles'}}) targetNotation: DG.chem.Notation,
     @grok.decorators.param({options: {initialValue: 'false'}}) overwrite: boolean = false,
-    @grok.decorators.param({options: {initialValue: 'true'}}) join: boolean = true): Promise<DG.Column<string> | void> {
-    const res = await convertNotationForColumn(molecules, targetNotation);
+    @grok.decorators.param({options: {initialValue: 'true'}}) join: boolean = true,
+    @grok.decorators.param({options: {initialValue: 'false', optional: true, nullable: true}}) kekulize?: boolean): Promise<DG.Column<string> | void> {
+    const res = await convertNotationForColumn(molecules, targetNotation, kekulize ?? false);
     const units = targetNotation === DG.chem.Notation.MolBlock ? DG.UNITS.Molecule.MOLBLOCK :
       targetNotation === DG.chem.Notation.V3KMolBlock ? DG.UNITS.Molecule.V3K_MOLBLOCK : DG.UNITS.Molecule.SMILES;
     if (overwrite) {
@@ -2055,7 +2058,7 @@ export class PackageFunctions {
     description: 'Scaffold Tree filter',
     tags: ['filter'],
     outputs: [{name: 'result', type: 'filter'}],
-    meta: {semType: 'Molecule'},
+    meta: {semType: 'Molecule', allowMultipleFiltersForColumn: 'false'},
   })
   static scaffoldTreeFilter(): ScaffoldTreeFilter {
     return new ScaffoldTreeFilter();

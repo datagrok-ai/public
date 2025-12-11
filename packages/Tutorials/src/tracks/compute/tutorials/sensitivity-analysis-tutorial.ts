@@ -60,6 +60,10 @@ export class SensitivityAnalysisTutorial extends Tutorial {
   }
   get steps() {return 16;}
 
+  get icon() {
+    return '📊🔍';
+  }
+
   demoTable: string = '';
   helpUrl: string = LINK.SENS_AN;
 

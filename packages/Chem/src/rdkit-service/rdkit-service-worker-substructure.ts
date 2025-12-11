@@ -206,7 +206,7 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
     return results;
   }
 
-  async convertMolNotation(molecules: string[], targetNotation: string): Promise<string[]> {
+  async convertMolNotation(molecules: string[], targetNotation: string, kekulize = false): Promise<string[]> {
     if (!molecules || this._requestTerminated)
       return [];
     let addedToCache = false;
@@ -233,6 +233,13 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           rdMol.is_qmol = mol?.isQMol;
       }
       if (rdMol) {
+        if (kekulize) {
+          try {
+            rdMol.convert_to_kekule_form();
+          } catch (_) {
+            // nothing to do
+          }
+        }
         try {
           switch (targetNotation) {
           case MolNotation.MolBlock:

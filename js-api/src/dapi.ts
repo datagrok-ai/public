@@ -29,7 +29,7 @@ import {IDartApi} from "./api/grok_api.g";
 import { StickyMeta } from "./sticky_meta";
 import {CsvImportOptions} from "./const";
 import dayjs from 'dayjs';
-import {DbInfo} from "./utils";
+import {DbInfo} from "./data";
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
 

@@ -108,6 +108,10 @@ export class DifferentialEquationsTutorial extends Tutorial {
   }
   get steps() {return 14;}
 
+  get icon() {
+    return '📈🧮';
+  }
+
   demoTable: string = '';
   helpUrl: string = LINKS.DIF_STUDIO;
 

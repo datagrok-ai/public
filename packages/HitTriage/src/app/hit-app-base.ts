@@ -1,10 +1,12 @@
+/* eslint-disable max-len */
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {_package} from '../package';
 import {AppName, ComputeFunctions, HitDesignCampaign, HitTriageCampaign} from './types';
-import {funcTypeNames, HitTriageComputeFunctionTag} from './consts';
+import {funcTypeNames, HitTriageComputeFunctionTag, ViDColName} from './consts';
 import {checkEditPermissions} from './utils';
+import * as api from '../package-api';
 
 export abstract class HitAppBase<T> {
   public dataFrame?: DG.DataFrame;
@@ -26,7 +28,7 @@ export abstract class HitAppBase<T> {
 
   // public layouts: Promise<DG.ViewLayout[]>;
   constructor(public parentCall: DG.FuncCall, appN: AppName) {
-    this.baseUrl = new URL(window.location.href).origin + `/apps/HitTriage/${appN.replace(' ', '')}`
+    this.baseUrl = new URL(window.location.href).origin + `/apps/HitTriage/${appN.replace(' ', '')}`;
     this._appName = appN;
     const funcs = DG.Func.find({tags: [HitTriageComputeFunctionTag]});
     const functions = funcs.filter((f) => f.type === funcTypeNames.function);
@@ -103,9 +105,12 @@ export abstract class HitAppBase<T> {
     const df2MolCol: string[] | undefined = df2.col(molColName2)?.toList()?.filter((it) => !!it)
       .map((it) => DG.chem.convert(it, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles));
     if (!df1MolCol || !df2MolCol)
-      throw new Error('Molecule column not found');
+      throw new Error('Molecule column not found'); // should not happen, but just in case
     const df2MolMap = new Map<string, number>();
     df2MolCol.forEach((it, i) => df2MolMap.set(it, i));
+    // const existingVidValues = new Set<string>();
+    // const vidCol2 = df2.col(ViDColName);
+    // vidCol2?.categories?.forEach((v) => existingVidValues.add(v));
     this.isJoining = true;
     try {
     // first check that all columns are there
@@ -125,11 +130,13 @@ export abstract class HitAppBase<T> {
             const value = col.get(i);
             df2.col(col.name)!.set(df2.rowCount - 1, value, false);
           }
-        } else if (addedColNames.length > 0) {
-          const row = df2MolMap.get(df1MolCol[i])!;
-          for (const colName of addedColNames) {
-            const value = df1.col(colName)!.get(i);
+        } else {
+          if (addedColNames.length > 0) {
+            const row = df2MolMap.get(df1MolCol[i])!;
+            for (const colName of addedColNames) {
+              const value = df1.col(colName)!.get(i);
             df2.col(colName)!.set(row, value, false);
+            }
           }
         }
       }
@@ -140,5 +147,35 @@ export abstract class HitAppBase<T> {
       df1.col(molColName1)!.name = prevCol1Name;
     }
     return df2;
+  }
+
+  protected async aquireAndWaitCampaignLock(campaignId: string, maxWaitMs = 30_000): Promise<{aquired: boolean, expires_at?: null | string}> {
+    const startTime = Date.now();
+    let errorCount = 0;
+    let lastError: any = null;
+    const curUser = DG.User.current();
+    const curUserName = curUser ? curUser.friendlyName || curUser.name || 'unknown' : 'unknown';
+    while (Date.now() - startTime < maxWaitMs && errorCount < 5) {
+      try {
+        const result = await api.queries.acquireCampaignLock(this.appName, campaignId, curUserName);
+        if (result && result.rowCount > 0) {
+          const res = {aquired: true, expires_at: result?.col('expires_at')?.getString(0)};
+          return res;
+        }
+        lastError = null;
+        await DG.delay(200);
+      } catch (err) {
+        // console.error('Error acquiring campaign lock:', err);
+        lastError = err;
+        errorCount++;
+      }
+    }
+    if (lastError)
+      throw lastError;
+    return {aquired: false, expires_at: null};
+  }
+
+  protected async releaseCampaignLock(campaignId: string): Promise<string | null> {
+    return (await api.queries.releaseCampaignLock(this.appName, campaignId))?.col('updated_at')?.getString(0) || null;
   }
 }
