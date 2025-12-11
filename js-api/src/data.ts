@@ -573,8 +573,8 @@ export interface DbColumnProperties {
   isUnique?: boolean;
   min?: number;
   max?: number;
-  values?: string;
-  sampleValues?: string;
+  values?: string[];
+  sampleValues?: string[];
   uniqueCount?: number;
 }
 
