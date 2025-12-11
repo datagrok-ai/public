@@ -227,7 +227,8 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Chemistry | Most Diverse Structures',
-    tags: ['tooltip']})
+    meta: {roles: ['tooltip']},
+  })
   static async chemTooltip(
     @grok.decorators.param({options: {semType: 'Molecule'}}) col: DG.Column): Promise<DG.Widget | undefined> {
     const initialWidth = 255;
@@ -288,8 +289,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Scaffold Tree',
-    tags: ['viewer'],
-    meta: {icon: 'files/icons/scaffold-tree-icon.svg'},
+    meta: {icon: 'files/icons/scaffold-tree-icon.svg', roles: ['viewer']},
     outputs: [{name: 'result', type: 'viewer'}],
   })
   static scaffoldTreeViewer() : ScaffoldTreeViewer {
@@ -299,8 +299,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Substructure Filter',
     description: 'RDKit-based substructure filter',
-    tags: ['filter'],
-    meta: {semType: 'Molecule', primaryFilter: 'true', allowMultipleFiltersForColumn: 'false'},
+    meta: {semType: 'Molecule', primaryFilter: 'true', allowMultipleFiltersForColumn: 'false', roles: ['filter']},
     outputs: [{name: 'result', type: 'filter'}],
   })
   static substructureFilter(): SubstructureFilter {
@@ -352,8 +351,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'chemCellRenderer',
-    tags: ['cellRenderer'],
-    meta: {'cellType': 'ChemicalReaction'},
+    meta: {cellType: 'ChemicalReaction', roles: ['cellRenderer']},
     outputs: [{name: 'result', type: 'grid_cell_renderer'}],
   })
   static async rdKitReactionRenderer(): Promise<RDKitReactionRenderer> {
@@ -362,8 +360,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'chemMixtureRenderer',
-    tags: ['cellRenderer'],
-    meta: {'role': 'cellRenderer', 'cellType': 'ChemicalMixture'},
+    meta: {cellType: 'ChemicalMixture', roles: ['cellRenderer']},
     outputs: [{name: 'result', type: 'grid_cell_renderer'}],
   })
   static async rdKitMixtureRenderer(): Promise<MixtureCellRenderer> {
@@ -372,8 +369,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'chemCellRenderer',
-    tags: ['cellRenderer'],
-    meta: {'cellType': 'Molecule'},
+    meta: {cellType: 'Molecule', roles: ['cellRenderer']},
     outputs: [{name: 'result', type: 'grid_cell_renderer'}],
   })
   static async chemCellRenderer(): Promise<DG.GridCellRenderer> {
@@ -496,9 +492,8 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Chem Similarity Search',
-    tags: ['viewer'],
     outputs: [{name: 'result', type: 'viewer'}],
-    meta: {icon: 'files/icons/chem-similarity-search-viewer.svg'},
+    meta: {icon: 'files/icons/chem-similarity-search-viewer.svg', roles: ['viewer']},
   })
   static similaritySearchViewer(): ChemSimilarityViewer {
     return new ChemSimilarityViewer();
@@ -514,9 +509,8 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Chem Diversity Search',
-    tags: ['viewer'],
     outputs: [{name: 'result', type: 'viewer'}],
-    meta: {icon: 'files/icons/chem-diversity-search-viewer.svg'},
+    meta: {icon: 'files/icons/chem-diversity-search-viewer.svg', roles: ['viewer']},
   })
   static diversitySearchViewer(): ChemDiversityViewer {
     return new ChemDiversityViewer();
@@ -541,7 +535,7 @@ export class PackageFunctions {
   //function with tranfrom tag to be able to run within data sync projects, adds column to dataframe
   @grok.decorators.func({
     name: 'calculateDescriptorsTransform',
-    tags: ['Transform'],
+    meta: {roles: ['transform']},
   })
   static async calculateDescriptorsTransform(
     table: DG.DataFrame,
@@ -718,8 +712,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Fingerprints',
-    tags: ['dim-red-preprocessing-function'],
-    meta: {supportedSemTypes: 'Molecule', supportedDistanceFunctions: 'Tanimoto,Asymmetric,Cosine,Sokal'},
+    meta: {supportedSemTypes: 'Molecule', supportedDistanceFunctions: 'Tanimoto,Asymmetric,Cosine,Sokal', roles: ['dimRedPreprocessingFunction']},
     outputs: [{type: 'object', name: 'result'}],
   })
   static async getFingerprints(
@@ -800,8 +793,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    tags: ['Transform'],
     outputs: [{type: 'viewer', name: 'result'}],
+    meta: {roles: ['transform']},
   })
   static async chemSpaceTransform(
     table: DG.DataFrame,
@@ -910,8 +903,8 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'runElementalAnalysis',
-    tags: ['Transform'],
     outputs: [{name: 'res', type: 'list'}],
+    meta: {roles: ['transform']},
   })
   static runElementalAnalysis(
     table: DG.DataFrame,
@@ -953,8 +946,8 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    tags: ['Transform'],
     outputs: [{name: 'result', type: 'object'}],
+    meta: {roles: ['transform']},
   })
   static async rGroupDecomposition(
     df: DG.DataFrame,
@@ -1112,7 +1105,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    tags: ['Transform'],
+    meta: {roles: ['transform']},
   })
   static async activityCliffsTransform(
     @grok.decorators.param({options: {description: 'Input data table'}}) table: DG.DataFrame,
@@ -1222,8 +1215,8 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'runStructuralAlerts',
-    tags: ['Transform'],
     outputs: [{name: 'result', type: 'dataframe'}],
+    meta: {roles: ['transform']},
   })
   static async runStructuralAlerts(
     @grok.decorators.param({options: {caption: 'Table', description: 'Input data table'}}) table: DG.DataFrame,
@@ -1430,8 +1423,8 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'convertMolNotation',
     description: 'RDKit-based conversion for SMILES, SMARTS, InChi, Molfile V2000 and Molfile V3000',
-    tags: ['unitConverter'],
     outputs: [{name: 'result', type: 'string', options: {semType: 'Molecule'}}],
+    meta: {roles: ['unitConverter']},
   })
   static convertMolNotation(
     @grok.decorators.param({options: {semType: 'Molecule'}}) molecule: string,
@@ -1530,7 +1523,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     description: 'Molecule',
-    tags: ['cellEditor'],
+    meta: {roles: ['cellEditor']},
   })
   static async editMoleculeCell(
     @grok.decorators.param({type: 'grid_cell'}) cell: DG.GridCell): Promise<void> {
@@ -1578,8 +1571,8 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'OpenChemLib',
-    tags: ['moleculeSketcher'],
     outputs: [{name: 'sketcher', type: 'widget'}],
+    meta: {roles: ['moleculeSketcher']},
   })
   static openChemLibSketcher(): OpenChemLibSketcher {
     return new OpenChemLibSketcher();
@@ -1988,8 +1981,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     name: 'Matched Molecular Pairs Analysis',
-    tags: ['viewer'],
-    meta: {showInGallery: 'false'},
+    meta: {showInGallery: 'false', roles: ['viewer']},
     outputs: [{name: 'result', type: 'viewer'}],
   })
   static mmpViewer(): MatchedMolecularPairsViewer {
@@ -2056,9 +2048,8 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'Scaffold Tree Filter',
     description: 'Scaffold Tree filter',
-    tags: ['filter'],
     outputs: [{name: 'result', type: 'filter'}],
-    meta: {semType: 'Molecule', allowMultipleFiltersForColumn: 'false'},
+    meta: {semType: 'Molecule', allowMultipleFiltersForColumn: 'false', roles: ['filter']},
   })
   static scaffoldTreeFilter(): ScaffoldTreeFilter {
     return new ScaffoldTreeFilter();
@@ -2474,8 +2465,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    tags: ['Transform'],
     outputs: [{name: 'res', type: 'list'}],
+    meta: {roles: ['transform']},
   })
   static async mpoTransformFunction(
     df: DG.DataFrame,
