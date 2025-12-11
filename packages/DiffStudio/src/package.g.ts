@@ -70,12 +70,13 @@ export async function runDiffStudioTreeBrowser(treeNode: any) : Promise<void> {
 //input: double a = 45 { category: Throw parameters; caption: Angle; min: 20; max: 70; units: deg }
 //output: double maxDist { caption: Max distance }
 //output: double maxHeight { caption: Max height }
-//output: dataframe df { caption: Trajectory; viewer: Line chart(block: 60, multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 40) }
+//output: dataframe df { caption: Trajectory; viewer: Line chart(multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid() }
 //editor: Compute2:RichFunctionViewEditor
 //meta.runOnOpen: true
 //meta.runOnInput: true
 //meta.features: {"sens-analysis": true, "fitting": true}
 //meta.icon: files/icons/ball.png
+//meta.dockSpawnConfig: {"Trajectory / Grid": {"dock-spawn-dock-ratio": 0.3, "dock-spawn-dock-type": "right", "dock-spawn-dock-to": "Trajectory / Line chart"}, "Output": {"dock-spawn-dock-ratio": 0.15, "dock-spawn-dock-type": "down", "dock-spawn-dock-to": "Trajectory / Line chart"}}
 export function ballFlight(dB: number, roB: number, v: number, a: number) {
   return PackageFunctions.ballFlight(dB, roB, v, a);
 }

@@ -148,6 +148,8 @@ export class PackageFunctions {
     runOnInput: 'true',
     features: '{"sens-analysis": true, "fitting": true}',
     icon: 'files/icons/ball.png',
+    // @ts-expect-error
+    dockSpawnConfig: '{"Trajectory / Grid": {"dock-spawn-dock-ratio": 0.3, "dock-spawn-dock-type": "right", "dock-spawn-dock-to": "Trajectory / Line chart"}, "Output": {"dock-spawn-dock-ratio": 0.15, "dock-spawn-dock-type": "down", "dock-spawn-dock-to": "Trajectory / Line chart"}}',
     outputs: [
       {
         name: 'maxDist',
@@ -162,7 +164,7 @@ export class PackageFunctions {
       {
         name: 'df',
         type: 'dataframe',
-        options: {caption: 'Trajectory', viewer: 'Line chart(block: 60, multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid(block: 40)'},
+        options: {caption: 'Trajectory', viewer: 'Line chart(multiAxis: "false", multiAxisLegendPosition: "RightCenter", autoLayout: "false", showAggrSelectors: "false") | Grid()'},
       },
     ],
   })
