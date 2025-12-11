@@ -2,7 +2,7 @@ import { Project, SyntaxKind, ObjectLiteralExpression, QuoteKind, IndentationTex
 import * as path from 'path';
 import { FUNC_TYPES } from 'datagrok-api/src/const';
 
-const toCamelCase = (str: string) =>
+export const toCamelCase = (str: string) =>
   str.replace(/[-_ ]+(\w)/g, (_, c) => c.toUpperCase()).replace(/^[A-Z]/, (c) => c.toLowerCase());
 
 export function migrate(argv?: string[]) {
@@ -23,7 +23,7 @@ export function migrate(argv?: string[]) {
     if (!call) return;
 
     const expr = call.getExpression().getText();
-    if (!expr.includes('grok.decorators.func')) return;
+    if (!expr.includes('grok.decorators.')) return;
 
     const arg = call.getArguments()[0];
     if (!arg || !arg.asKind(SyntaxKind.ObjectLiteralExpression)) return;
